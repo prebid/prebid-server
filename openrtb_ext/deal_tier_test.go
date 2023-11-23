@@ -4,16 +4,17 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestReadDealTiersFromImp(t *testing.T) {
 	testCases := []struct {
-		description    string
-		impExt         json.RawMessage
-		expectedResult DealTierBidderMap
-		expectedError  string
+		description       string
+		impExt            json.RawMessage
+		expectedResult    DealTierBidderMap
+		expectedErrorType error
 	}{
 		{
 			description:    "Nil",
@@ -31,54 +32,64 @@ func TestReadDealTiersFromImp(t *testing.T) {
 			expectedResult: DealTierBidderMap{},
 		},
 		{
-			description:    "imp.ext - with other params",
-			impExt:         json.RawMessage(`{"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "anyPrefix"}, "placementId": 12345}}`),
-			expectedResult: DealTierBidderMap{BidderAppnexus: {Prefix: "anyPrefix", MinDealTier: 5}},
-		},
-		{
-			description:    "imp.ext - multiple",
-			impExt:         json.RawMessage(`{"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "appnexusPrefix"}, "placementId": 12345}, "rubicon": {"dealTier": {"minDealTier": 8, "prefix": "rubiconPrefix"}, "placementId": 12345}}`),
-			expectedResult: DealTierBidderMap{BidderAppnexus: {Prefix: "appnexusPrefix", MinDealTier: 5}, BidderRubicon: {Prefix: "rubiconPrefix", MinDealTier: 8}},
-		},
-		{
-			description:    "imp.ext - no deal tier",
-			impExt:         json.RawMessage(`{"appnexus": {"placementId": 12345}}`),
+			description:    "imp.ext - no prebid but with other params",
+			impExt:         json.RawMessage(`{"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "anyPrefix"}, "placementId": 12345}, "tid": "1234"}`),
 			expectedResult: DealTierBidderMap{},
 		},
 		{
-			description:   "imp.ext - error",
-			impExt:        json.RawMessage(`{"appnexus": {"dealTier": "wrong type", "placementId": 12345}}`),
-			expectedError: "json: cannot unmarshal string into Go struct field .dealTier of type openrtb_ext.DealTier",
+			description:    "imp.ext.prebid - nil",
+			impExt:         json.RawMessage(`{"prebid": null}`),
+			expectedResult: DealTierBidderMap{},
 		},
 		{
-			description:    "imp.ext.prebid",
+			description:    "imp.ext.prebid - empty",
+			impExt:         json.RawMessage(`{"prebid": {}}`),
+			expectedResult: DealTierBidderMap{},
+		},
+		{
+			description:    "imp.ext.prebid - no bidder but with other params",
+			impExt:         json.RawMessage(`{"prebid": {"supportdeals": true}}`),
+			expectedResult: DealTierBidderMap{},
+		},
+		{
+			description:    "imp.ext.prebid.bidder - one",
 			impExt:         json.RawMessage(`{"prebid": {"bidder": {"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "anyPrefix"}, "placementId": 12345}}}}`),
 			expectedResult: DealTierBidderMap{BidderAppnexus: {Prefix: "anyPrefix", MinDealTier: 5}},
 		},
 		{
-			description:    "imp.ext.prebid- multiple",
+			description:    "imp.ext.prebid.bidder - one but it's not found in the Adapter Bidder list",
+			impExt:         json.RawMessage(`{"prebid": {"bidder": {"unknown": {"dealTier": {"minDealTier": 5, "prefix": "anyPrefix"}, "placementId": 12345}}}}`),
+			expectedResult: DealTierBidderMap{},
+		},
+		{
+			description:    "imp.ext.prebid.bidder - one but case is different from the Adapter Bidder list",
+			impExt:         json.RawMessage(`{"prebid": {"bidder": {"APpNExUS": {"dealTier": {"minDealTier": 5, "prefix": "anyPrefix"}, "placementId": 12345}}}}`),
+			expectedResult: DealTierBidderMap{BidderAppnexus: {Prefix: "anyPrefix", MinDealTier: 5}},
+		},
+		{
+			description:    "imp.ext.prebid.bidder - one with other params",
+			impExt:         json.RawMessage(`{"prebid": {"bidder": {"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "anyPrefix"}, "placementId": 12345}}, "supportdeals": true}, "tid": "1234"}`),
+			expectedResult: DealTierBidderMap{BidderAppnexus: {Prefix: "anyPrefix", MinDealTier: 5}},
+		},
+		{
+			description:    "imp.ext.prebid.bidder - multiple",
 			impExt:         json.RawMessage(`{"prebid": {"bidder": {"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "appnexusPrefix"}, "placementId": 12345}, "rubicon": {"dealTier": {"minDealTier": 8, "prefix": "rubiconPrefix"}, "placementId": 12345}}}}`),
 			expectedResult: DealTierBidderMap{BidderAppnexus: {Prefix: "appnexusPrefix", MinDealTier: 5}, BidderRubicon: {Prefix: "rubiconPrefix", MinDealTier: 8}},
 		},
 		{
-			description:    "imp.ext.prebid - no deal tier",
+			description:    "imp.ext.prebid.bidder - same bidder listed twice but with different case the last one prevails",
+			impExt:         json.RawMessage(`{"prebid": {"bidder": {"appnexus": {"dealTier": {"minDealTier": 100, "prefix": "appnexusPrefix"}, "placementId": 12345},"APpNExUS": {"dealTier": {"minDealTier": 5, "prefix": "APpNExUSPrefix"}, "placementId": 12345}}}}`),
+			expectedResult: DealTierBidderMap{BidderAppnexus: {Prefix: "APpNExUSPrefix", MinDealTier: 5}},
+		},
+		{
+			description:    "imp.ext.prebid.bidder - one without deal tier",
 			impExt:         json.RawMessage(`{"prebid": {"bidder": {"appnexus": {"placementId": 12345}}}}`),
 			expectedResult: DealTierBidderMap{},
 		},
 		{
-			description:   "imp.ext.prebid - error",
-			impExt:        json.RawMessage(`{"prebid": {"bidder": {"appnexus": {"dealTier": "wrong type", "placementId": 12345}}}}`),
-			expectedError: "json: cannot unmarshal string into Go struct field .prebid.bidder.dealTier of type openrtb_ext.DealTier",
-		},
-		{
-			description:    "imp.ext.prebid wins over imp.ext",
-			impExt:         json.RawMessage(`{"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "impExt"}, "placementId": 12345}, "prebid": {"bidder": {"appnexus": {"dealTier": {"minDealTier": 8, "prefix": "impExtPrebid"}, "placementId": 12345}}}}`),
-			expectedResult: DealTierBidderMap{BidderAppnexus: {Prefix: "impExtPrebid", MinDealTier: 8}},
-		},
-		{
-			description:    "imp.ext.prebid coexists with imp.ext",
-			impExt:         json.RawMessage(`{"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "impExt"}, "placementId": 12345}, "prebid": {"bidder": {"rubicon": {"dealTier": {"minDealTier": 8, "prefix": "impExtPrebid"}, "placementId": 12345}}}}`),
-			expectedResult: DealTierBidderMap{BidderAppnexus: {Prefix: "impExt", MinDealTier: 5}, BidderRubicon: {Prefix: "impExtPrebid", MinDealTier: 8}},
+			description:       "imp.ext.prebid.bidder - error",
+			impExt:            json.RawMessage(`{"prebid": {"bidder": {"appnexus": {"dealTier": "wrong type", "placementId": 12345}}}}`),
+			expectedErrorType: &errortypes.FailedToUnmarshal{},
 		},
 	}
 
@@ -89,10 +100,10 @@ func TestReadDealTiersFromImp(t *testing.T) {
 
 		assert.Equal(t, test.expectedResult, result, test.description+":result")
 
-		if len(test.expectedError) == 0 {
-			assert.NoError(t, err, test.description+":error")
+		if test.expectedErrorType != nil {
+			assert.IsType(t, test.expectedErrorType, err)
 		} else {
-			assert.EqualError(t, err, test.expectedError, test.description+":error")
+			assert.NoError(t, err, test.description+":error")
 		}
 	}
 }

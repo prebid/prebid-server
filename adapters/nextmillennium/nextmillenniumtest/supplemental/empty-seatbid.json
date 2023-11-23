@@ -38,7 +38,33 @@
                 "id": "7819"
               }
             }
-          }
+          },
+          "imp": [
+            {
+              "banner": {
+                "format": [
+                  {
+                    "h": 250,
+                    "w": 320
+                  },
+                  {
+                    "h": 300,
+                    "w": 320
+                  }
+                ],
+                "h": 250,
+                "w": 320
+              },
+              "ext": {
+                "prebid": {
+                  "storedrequest": {
+                    "id": "7819"
+                  }
+                }
+              },
+              "id": "testimpid"
+            }
+          ]
         }
       },
       "mockResponse": {

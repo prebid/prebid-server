@@ -1,3 +1,4 @@
+endpoint: "http://ssp.videowalldirect.com/pserver"
 maintainer:
   email: "wls_demo_box@smartyads.com"
 capabilities:

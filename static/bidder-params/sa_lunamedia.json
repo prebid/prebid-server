@@ -13,5 +13,5 @@
         "enum": ["network", "publisher"]
       }
     },
-    "required": ["key"]
+    "required": ["key", "type"]
   }

@@ -295,6 +295,7 @@
             {
               "id": "test-imp-id",
               "instl": 1,
+              "secure": 1,
               "video": {
                 "placement": 3,
                 "ext": {

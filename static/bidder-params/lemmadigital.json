@@ -1,0 +1,19 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Lemma Adapter Params",
+    "description": "A schema which validates params accepted by the Lemma adapter",
+    "type": "object",
+
+    "properties": {
+        "pid": {
+            "type": "integer",
+            "description": "Publisher ID"
+        },
+        "aid": {
+            "type": "integer",
+            "description": "Ad ID"
+        }
+    },
+
+    "required": ["pid", "aid"]
+}

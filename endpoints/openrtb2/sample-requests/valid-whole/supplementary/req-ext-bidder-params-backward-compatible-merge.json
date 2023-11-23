@@ -64,7 +64,19 @@
   "expectedReqExt": {
     "prebid": {
       "targeting": {
-        "pricegranularity": "low"
+        "pricegranularity": {
+          "precision": 2,
+          "ranges": [
+            {
+              "min": 0,
+              "max": 5,
+              "increment": 0.5
+            }
+          ]
+        },
+        "mediatypepricegranularity": {},
+        "includewinners": true,
+        "includebidderkeys": true
       },
       "cache": {
         "bids": {}
@@ -84,17 +96,18 @@
     }
   },
   "expectedImpExt": {
-    "appnexus": {
-      "placementId": 111111
-    },
-    "pubmatic": {
-      "publisherId": "5678",
-      "wrapper": {
-        "profile": 1234
-      }
-    },
     "prebid": {
-      "bidder": {}
+      "bidder": {
+        "appnexus": {
+          "placementId": 111111
+        },
+        "pubmatic": {
+          "publisherId": "5678",
+          "wrapper": {
+            "profile": 1234
+          }
+        }
+      }
     }
   },
   "expectedReturnCode": 200

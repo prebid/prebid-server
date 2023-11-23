@@ -7,20 +7,20 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
-// GumGumAdapter implements Bidder interface.
-type GumGumAdapter struct {
+// adapter implements Bidder interface.
+type adapter struct {
 	URI string
 }
 
 // MakeRequests makes the HTTP requests which should be made to fetch bids.
-func (g *GumGumAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (g *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var validImps []openrtb2.Imp
 	var siteCopy openrtb2.Site
 	if request.Site != nil {
@@ -80,7 +80,7 @@ func (g *GumGumAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adap
 }
 
 // MakeBids unpacks the server's response into Bids.
-func (g *GumGumAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (g *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -176,6 +176,14 @@ func preprocess(imp *openrtb2.Imp) (*openrtb_ext.ExtImpGumGum, error) {
 		}
 	}
 
+	if gumgumExt.Product != "" {
+		var err error
+		imp.Ext, err = json.Marshal(map[string]string{"product": gumgumExt.Product})
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &gumgumExt, nil
 }
 
@@ -222,8 +230,8 @@ func validateVideoParams(video *openrtb2.Video) (err error) {
 }
 
 // Builder builds a new instance of the GumGum adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &GumGumAdapter{
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	bidder := &adapter{
 		URI: config.Endpoint,
 	}
 	return bidder, nil

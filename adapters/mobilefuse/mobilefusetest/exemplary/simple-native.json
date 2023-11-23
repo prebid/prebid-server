@@ -1,0 +1,87 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "imp": [
+            {
+                "id": "1",
+                "native": {
+                    "ver": "1.2",
+                    "request": "{\"native\":{\"assets\":[{\"id\":0,\"required\":1,\"img\":{\"url\":\"...\"}},{\"id\":1,\"required\":1,\"title\":{\"text\":\"custom title\"}}]}}"
+                },
+                "ext": {
+                    "bidder": {
+                        "placement_id": 123456,
+                        "pub_id": 1234
+                    }
+                }
+            }
+        ]
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "http://mfx.mobilefuse.com/openrtb?pub_id=1234",
+                "body": {
+                    "id": "test-request-id",
+                    "imp": [
+                        {
+                            "id": "1",
+                            "native": {
+                                "ver": "1.2",
+                                "request": "{\"native\":{\"assets\":[{\"id\":0,\"required\":1,\"img\":{\"url\":\"...\"}},{\"id\":1,\"required\":1,\"title\":{\"text\":\"custom title\"}}]}}"
+                            },
+                            "tagid": "123456"
+                        }
+                    ]
+                }
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "test-request-id",
+                    "seatbid": [
+                        {
+                            "seat": "mobilefuse",
+                            "bid": [
+                                {
+                                    "id": "test-bid-id",
+                                    "impid": "1",
+                                    "price": 1.50,
+                                    "adm": "{\"native\":{\"link\":{\"url\":\"http://mfx.mobilefuse.com/openrtb\"},\"assets\":[{\"id\":0,\"required\":1,\"img\":{\"url\":\"...\"}},{\"id\":1,\"required\":1,\"title\":{\"text\":\"custom title\"}}]}}",
+                                    "crid": "test-crid",
+                                    "h": 50,
+                                    "w": 320,
+                                    "ext": {
+                                        "mf": {
+                                            "media_type": "native"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "cur": "USD"
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "currency": "USD",
+            "bids": [
+                {
+                    "bid": {
+                        "id": "test-bid-id",
+                        "impid": "1",
+                        "price": 1.50,
+                        "adm": "{\"native\":{\"link\":{\"url\":\"http://mfx.mobilefuse.com/openrtb\"},\"assets\":[{\"id\":0,\"required\":1,\"img\":{\"url\":\"...\"}},{\"id\":1,\"required\":1,\"title\":{\"text\":\"custom title\"}}]}}",
+                        "crid": "test-crid",
+                        "h": 50,
+                        "w": 320
+                    },
+                    "type": "native"
+                }
+            ]
+        }
+    ]
+}

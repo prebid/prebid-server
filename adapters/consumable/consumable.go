@@ -8,12 +8,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/privacy/ccpa"
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/privacy/ccpa"
 )
 
 type ConsumableAdapter struct {
@@ -22,21 +22,26 @@ type ConsumableAdapter struct {
 }
 
 type bidRequest struct {
-	Placements         []placement `json:"placements"`
-	Time               int64       `json:"time"`
-	NetworkId          int         `json:"networkId,omitempty"`
-	SiteId             int         `json:"siteId"`
-	UnitId             int         `json:"unitId"`
-	UnitName           string      `json:"unitName,omitempty"`
-	IncludePricingData bool        `json:"includePricingData"`
-	User               user        `json:"user,omitempty"`
-	Referrer           string      `json:"referrer,omitempty"`
-	Ip                 string      `json:"ip,omitempty"`
-	Url                string      `json:"url,omitempty"`
-	EnableBotFiltering bool        `json:"enableBotFiltering,omitempty"`
-	Parallel           bool        `json:"parallel"`
-	CCPA               string      `json:"ccpa,omitempty"`
-	GDPR               *bidGdpr    `json:"gdpr,omitempty"`
+	Placements         []placement          `json:"placements"`
+	Time               int64                `json:"time"`
+	NetworkId          int                  `json:"networkId,omitempty"`
+	SiteId             int                  `json:"siteId"`
+	UnitId             int                  `json:"unitId"`
+	UnitName           string               `json:"unitName,omitempty"`
+	IncludePricingData bool                 `json:"includePricingData"`
+	User               user                 `json:"user,omitempty"`
+	Referrer           string               `json:"referrer,omitempty"`
+	Ip                 string               `json:"ip,omitempty"`
+	Url                string               `json:"url,omitempty"`
+	EnableBotFiltering bool                 `json:"enableBotFiltering,omitempty"`
+	Parallel           bool                 `json:"parallel"`
+	CCPA               string               `json:"ccpa,omitempty"`
+	GDPR               *bidGdpr             `json:"gdpr,omitempty"`
+	Coppa              bool                 `json:"coppa,omitempty"`
+	SChain             openrtb2.SupplyChain `json:"schain"`
+	Content            *openrtb2.Content    `json:"content,omitempty"`
+	GPP                string               `json:"gpp,omitempty"`
+	GPPSID             []int8               `json:"gpp_sid,omitempty"`
 }
 
 type placement struct {
@@ -49,7 +54,8 @@ type placement struct {
 }
 
 type user struct {
-	Key string `json:"key,omitempty"`
+	Key  string         `json:"key,omitempty"`
+	Eids []openrtb2.EID `json:"eids,omitempty"`
 }
 
 type bidGdpr struct {
@@ -73,6 +79,8 @@ type decision struct {
 	ImpressionUrl *string    `json:"impressionUrl,omitempty"`
 	Width         uint64     `json:"width,omitempty"`  // Consumable extension, not defined by Adzerk
 	Height        uint64     `json:"height,omitempty"` // Consumable extension, not defined by Adzerk
+	Adomain       []string   `json:"adomain,omitempty"`
+	Cats          []string   `json:"cats,omitempty"`
 }
 
 type contents struct {
@@ -84,6 +92,8 @@ type pricing struct {
 }
 
 func (a *ConsumableAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	var errs []error
+
 	headers := http.Header{
 		"Content-Type": {"application/json"},
 		"Accept":       {"application/json"},
@@ -112,13 +122,14 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 		headers.Set("Referer", request.Site.Page)
 
 		pageUrl, err := url.Parse(request.Site.Page)
-		if err == nil {
+		if err != nil {
+			errs = append(errs, err)
+		} else {
 			origin := url.URL{
 				Scheme: pageUrl.Scheme,
 				Opaque: pageUrl.Opaque,
 				Host:   pageUrl.Host,
 			}
-
 			headers.Set("Origin", origin.String())
 		}
 	}
@@ -139,14 +150,17 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 	gdpr := bidGdpr{}
 
 	ccpaPolicy, err := ccpa.ReadFromRequest(request)
-	if err == nil {
+	if err != nil {
+		errs = append(errs, err)
+	} else {
 		body.CCPA = ccpaPolicy.Consent
 	}
 
-	// TODO: Replace with gdpr.ReadPolicy when it is available
 	if request.Regs != nil && request.Regs.Ext != nil {
 		var extRegs openrtb_ext.ExtRegs
-		if err := json.Unmarshal(request.Regs.Ext, &extRegs); err == nil {
+		if err := json.Unmarshal(request.Regs.Ext, &extRegs); err != nil {
+			errs = append(errs, err)
+		} else {
 			if extRegs.GDPR != nil {
 				applies := *extRegs.GDPR != 0
 				gdpr.Applies = &applies
@@ -155,13 +169,43 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 		}
 	}
 
-	// TODO: Replace with gdpr.ReadPolicy when it is available
 	if request.User != nil && request.User.Ext != nil {
 		var extUser openrtb_ext.ExtUser
-		if err := json.Unmarshal(request.User.Ext, &extUser); err == nil {
+		if err := json.Unmarshal(request.User.Ext, &extUser); err != nil {
+			errs = append(errs, err)
+		} else {
 			gdpr.Consent = extUser.Consent
 			body.GDPR = &gdpr
+
+			if hasEids(extUser.Eids) {
+				body.User.Eids = extUser.Eids
+			}
 		}
+	}
+
+	if request.Source != nil && request.Source.Ext != nil {
+		var extSChain openrtb_ext.ExtRequestPrebidSChain
+		if err := json.Unmarshal(request.Source.Ext, &extSChain); err != nil {
+			errs = append(errs, err)
+		} else {
+			body.SChain = extSChain.SChain
+		}
+	}
+
+	body.Coppa = request.Regs != nil && request.Regs.COPPA > 0
+
+	if request.Regs != nil && request.Regs.GPP != "" {
+		body.GPP = request.Regs.GPP
+	}
+
+	if request.Regs != nil && request.Regs.GPPSID != nil {
+		body.GPPSID = request.Regs.GPPSID
+	}
+
+	if request.Site != nil && request.Site.Content != nil {
+		body.Content = request.Site.Content
+	} else if request.App != nil && request.App.Content != nil {
+		body.Content = request.App.Content
 	}
 
 	for i, impression := range request.Imp {
@@ -204,7 +248,7 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 		},
 	}
 
-	return requests, nil
+	return requests, errs
 }
 
 /*
@@ -254,7 +298,8 @@ func (a *ConsumableAdapter) MakeBids(
 			bid.H = int64(decision.Height)
 			bid.CrID = strconv.FormatInt(decision.AdID, 10)
 			bid.Exp = 30 // TODO: Check this is intention of TTL
-
+			bid.ADomain = decision.Adomain
+			bid.Cat = decision.Cats
 			// not yet ported from prebid.js adapter
 			//bid.requestId = bidId;
 			//bid.currency = 'USD';
@@ -292,10 +337,19 @@ func extractExtensions(impression openrtb2.Imp) (*adapters.ExtImpBidder, *openrt
 }
 
 // Builder builds a new instance of the Consumable adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &ConsumableAdapter{
 		clock:    realInstant{},
 		endpoint: config.Endpoint,
 	}
 	return bidder, nil
+}
+
+func hasEids(eids []openrtb2.EID) bool {
+	for i := 0; i < len(eids); i++ {
+		if len(eids[i].UIDs) > 0 && eids[i].UIDs[0].ID != "" {
+			return true
+		}
+	}
+	return false
 }

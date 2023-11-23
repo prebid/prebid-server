@@ -35,7 +35,8 @@
 					"adUnits": [
 						{
 							"auId": "123",
-							"targetId": "123-test-imp-id"
+							"targetId": "123-test-imp-id",
+							"dimensions": [[300,250],[300,600]]
 						}
 					],
 					"context": "prebid.org",
@@ -80,7 +81,7 @@
 	],
 	"expectedMakeBidsErrors": [
 		{
-			"value": "json: cannot unmarshal number into Go struct field .AdUnits.Ads.CreativeHeight of type string",
+			"value": "json: cannot unmarshal number into Go struct field Ad.AdUnits.Ads.CreativeHeight of type string",
 			"comparison": "literal"
 		}
 	]

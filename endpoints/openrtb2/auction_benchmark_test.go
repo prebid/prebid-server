@@ -3,22 +3,24 @@ package openrtb2
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
 
-	analyticsConf "github.com/prebid/prebid-server/analytics/config"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/currency"
-	"github.com/prebid/prebid-server/exchange"
-	"github.com/prebid/prebid-server/gdpr"
-	metricsConfig "github.com/prebid/prebid-server/metrics/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
-	"github.com/prebid/prebid-server/usersync"
+	analyticsBuild "github.com/prebid/prebid-server/v2/analytics/build"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/currency"
+	"github.com/prebid/prebid-server/v2/exchange"
+	"github.com/prebid/prebid-server/v2/experiment/adscert"
+	"github.com/prebid/prebid-server/v2/hooks"
+	"github.com/prebid/prebid-server/v2/macros"
+	metricsConfig "github.com/prebid/prebid-server/v2/metrics/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/stored_requests/backends/empty_fetcher"
+	"github.com/prebid/prebid-server/v2/usersync"
 )
 
 // benchmarkTestServer returns the header bidding test ad. This response was scraped from a real appnexus server response.
@@ -80,9 +82,6 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 	gdprPermsBuilder := fakePermissionsBuilder{
 		permissions: &fakePermissions{},
 	}.Builder
-	tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
-		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
-	}.Builder
 
 	exchange := exchange.NewExchange(
 		adapters,
@@ -92,9 +91,11 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 		nilMetrics,
 		infos,
 		gdprPermsBuilder,
-		tcf2ConfigBuilder,
 		currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
 		empty_fetcher.EmptyFetcher{},
+		&adscert.NilSigner{},
+		macros.NewStringIndexBasedReplacer(),
+		nil,
 	)
 
 	endpoint, _ := NewEndpoint(
@@ -105,11 +106,13 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		nilMetrics,
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
 		nil,
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
+		nil,
 	)
 
 	b.ResetTimer()
@@ -134,26 +137,24 @@ func BenchmarkValidWholeExemplary(b *testing.B) {
 		b.Run(fmt.Sprintf("input_file_%s", testFile), func(b *testing.B) {
 			b.StopTimer()
 			// Set up
-			fileData, err := ioutil.ReadFile(testFile)
+			fileData, err := os.ReadFile(testFile)
 			if err != nil {
 				b.Fatalf("unable to read file %s", testFile)
 			}
-			test, err := parseTestFile(fileData, testFile)
+			test, err := parseTestData(fileData, testFile)
 			if err != nil {
 				b.Fatal(err.Error())
 			}
 			test.endpointType = OPENRTB_ENDPOINT
 
 			cfg := &config.Configuration{
-				MaxRequestSize:     maxSize,
-				BlacklistedApps:    test.Config.BlacklistedApps,
-				BlacklistedAppMap:  test.Config.getBlacklistedAppMap(),
-				BlacklistedAccts:   test.Config.BlacklistedAccounts,
-				BlacklistedAcctMap: test.Config.getBlackListedAccountMap(),
-				AccountRequired:    test.Config.AccountRequired,
+				MaxRequestSize:    maxSize,
+				BlacklistedApps:   test.Config.BlacklistedApps,
+				BlacklistedAppMap: test.Config.getBlacklistedAppMap(),
+				AccountRequired:   test.Config.AccountRequired,
 			}
 
-			auctionEndpointHandler, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg)
+			auctionEndpointHandler, _, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg)
 			if err != nil {
 				b.Fatal(err.Error())
 			}

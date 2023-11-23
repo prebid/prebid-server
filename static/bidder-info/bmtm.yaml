@@ -1,7 +1,12 @@
+endpoint: "https://one.elitebidder.com/api/pbs"
 maintainer:
   email: dev@brightmountainmedia.com
 modifyingVastXmlAllowed: false
 capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
   site:
     mediaTypes:
       - banner

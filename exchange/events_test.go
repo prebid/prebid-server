@@ -3,8 +3,9 @@ package exchange
 import (
 	"testing"
 
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/v2/exchange/entities"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -69,7 +70,7 @@ func Test_eventsData_makeBidExtEvents(t *testing.T) {
 				auctionTimestampMs: 1234567890,
 				externalURL:        "http://localhost",
 			}
-			bid := &pbsOrtbBid{bid: &openrtb2.Bid{ID: "BID-1"}, bidType: tt.args.bidType, generatedBidID: tt.args.generatedBidId}
+			bid := &entities.PbsOrtbBid{Bid: &openrtb2.Bid{ID: "BID-1"}, BidType: tt.args.bidType, GeneratedBidID: tt.args.generatedBidId}
 			assert.Equal(t, tt.want, evData.makeBidExtEvents(bid, openrtb_ext.BidderOpenx))
 		})
 	}
@@ -120,7 +121,7 @@ func Test_eventsData_modifyBidJSON(t *testing.T) {
 		},
 		{
 			name:      "banner: broken json expected to fail patching",
-			args:      args{enabledForAccount: true, enabledForRequest: true, bidType: openrtb_ext.BidTypeBanner, generatedBidId: ""},
+			args:      args{enabledForAccount: false, enabledForRequest: true, bidType: openrtb_ext.BidTypeBanner, generatedBidId: ""},
 			jsonBytes: []byte(`broken json`),
 			want:      nil,
 		},
@@ -140,7 +141,7 @@ func Test_eventsData_modifyBidJSON(t *testing.T) {
 				auctionTimestampMs: 1234567890,
 				externalURL:        "http://localhost",
 			}
-			bid := &pbsOrtbBid{bid: &openrtb2.Bid{ID: "BID-1"}, bidType: tt.args.bidType, generatedBidID: tt.args.generatedBidId}
+			bid := &entities.PbsOrtbBid{Bid: &openrtb2.Bid{ID: "BID-1"}, BidType: tt.args.bidType, GeneratedBidID: tt.args.generatedBidId}
 			modifiedJSON, err := evData.modifyBidJSON(bid, openrtb_ext.BidderOpenx, tt.jsonBytes)
 			if tt.want != nil {
 				assert.NoError(t, err, "Unexpected error")
@@ -149,6 +150,45 @@ func Test_eventsData_modifyBidJSON(t *testing.T) {
 				assert.Error(t, err)
 				assert.Equal(t, string(tt.jsonBytes), string(modifiedJSON), "Expected original json on failure to modify")
 			}
+		})
+	}
+}
+
+func Test_isEventAllowed(t *testing.T) {
+	type args struct {
+		enabledForAccount bool
+		enabledForRequest bool
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "enabled for account",
+			args: args{enabledForAccount: true, enabledForRequest: false},
+			want: true,
+		},
+		{
+			name: "enabled for request",
+			args: args{enabledForAccount: false, enabledForRequest: true},
+			want: true,
+		},
+		{
+			name: "disabled for account and request",
+			args: args{enabledForAccount: false, enabledForRequest: false},
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			evData := &eventTracking{
+				enabledForAccount: tt.args.enabledForAccount,
+				enabledForRequest: tt.args.enabledForRequest,
+			}
+			isEventAllowed := evData.isEventAllowed()
+			assert.Equal(t, tt.want, isEventAllowed)
 		})
 	}
 }

@@ -1,3 +1,4 @@
+endpoint: "http://rtb.openx.net/prebid"
 maintainer:
   email: "prebid@openx.com"
 gvlVendorID: 69
@@ -18,3 +19,4 @@ userSync:
   redirect:
     url: "https://rtb.openx.net/sync/prebid?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r={{.RedirectURL}}"
     userMacro: "${UID}"
+

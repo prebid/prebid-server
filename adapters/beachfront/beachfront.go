@@ -8,12 +8,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mxmCherry/openrtb/v16/adcom1"
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v19/adcom1"
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 const Seat = "beachfront"
@@ -58,7 +58,9 @@ type beachfrontVideoRequest struct {
 }
 
 // ---------------------------------------------------
-//              Banner
+//
+//	Banner
+//
 // ---------------------------------------------------
 type beachfrontBannerRequest struct {
 	Slots          []beachfrontSlot     `json:"slots"`
@@ -747,7 +749,7 @@ func removeVideoElement(slice []beachfrontVideoRequest, s int) []beachfrontVideo
 }
 
 // Builder builds a new instance of the Beachfront adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	extraInfo, err := getExtraInfo(config.ExtraAdapterInfo)
 	if err != nil {
 		return nil, err

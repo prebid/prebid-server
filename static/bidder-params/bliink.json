@@ -4,5 +4,15 @@
   "description": "A schema which validates params accepted by the Bliink adapter",
   "type": "object",
 
-  "properties": {}
+  "properties": {
+    "tagId": {
+      "type": "string",
+      "description": "The TagID from BLIINK"
+    },
+    "imageUrl": {
+      "type": "string",
+      "description": "The image url on which the ad is displayed in case of in-image ad"
+    }
+  },
+  "required": ["tagId"]
 }

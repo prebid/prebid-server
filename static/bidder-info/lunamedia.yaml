@@ -1,17 +1,16 @@
+endpoint: "http://rtb.lunamedia.live/?pid={{.PublisherID}}"
 maintainer:
-  email: "josh@lunamedia.io"
+  email: "cs@lunamedia.io"
 capabilities:
   site:
     mediaTypes:
     - banner
     - video
-    
   app:
     mediaTypes:
     - banner
     - video
 userSync:
   iframe:
-    url: "https://api.lunamedia.io/xp/user-sync?redirect={{.RedirectURL}}"
-    userMacro: "$UID"
-
+    url: "https://sync.lunamedia.live/psync?t=s&e=0&cb={{.RedirectURL}}"
+    userMacro: "%USER_ID%"

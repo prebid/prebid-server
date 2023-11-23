@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/adapters/adapterstest"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/adapters/adapterstest"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,7 +16,7 @@ const testsBidderEndpoint = "https://dsp.adotmob.com/headerbidding{PUBLISHER_PAT
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAdot, config.Adapter{
-		Endpoint: testsBidderEndpoint})
+		Endpoint: testsBidderEndpoint}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -38,7 +38,7 @@ func TestMediaTypeError(t *testing.T) {
 
 func TestBidResponseNoContent(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAdot, config.Adapter{
-		Endpoint: "https://dsp.adotmob.com/headerbidding{PUBLISHER_PATH}/bidrequest"})
+		Endpoint: "https://dsp.adotmob.com/headerbidding{PUBLISHER_PATH}/bidrequest"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)

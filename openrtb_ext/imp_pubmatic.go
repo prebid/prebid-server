@@ -2,7 +2,7 @@ package openrtb_ext
 
 import "encoding/json"
 
-// ExtImpPubmatic defines the contract for bidrequest.imp[i].ext.pubmatic
+// ExtImpPubmatic defines the contract for bidrequest.imp[i].ext.prebid.bidder.pubmatic
 // PublisherId is mandatory parameters, others are optional parameters
 // AdSlot is identifier for specific ad placement or ad tag
 // Keywords is bid specific parameter,
@@ -18,7 +18,7 @@ type ExtImpPubmatic struct {
 	Kadfloor    string                  `json:"kadfloor,omitempty"`
 }
 
-// ExtImpPubmaticKeyVal defines the contract for bidrequest.imp[i].ext.pubmatic.keywords[i]
+// ExtImpPubmaticKeyVal defines the contract for bidrequest.imp[i].ext.prebid.bidder.pubmatic.keywords[i]
 type ExtImpPubmaticKeyVal struct {
 	Key    string   `json:"key,omitempty"`
 	Values []string `json:"value,omitempty"`

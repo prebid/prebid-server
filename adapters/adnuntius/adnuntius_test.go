@@ -4,22 +4,25 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/adapters/adapterstest"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/adapters/adapterstest"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAdnuntius, config.Adapter{
-		Endpoint: "http://whatever.url"})
+		Endpoint:         "http://whatever.url",
+		ExtraAdapterInfo: "http://gdpr.url",
+	},
+		config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 	assertTzo(t, bidder)
-	replaceRealTimeWithKnownTime(bidder)
+	AssignDefaultValues(bidder)
 
 	adapterstest.RunJSONBidderTest(t, "adnuntiustest", bidder)
 }
@@ -38,7 +41,7 @@ func (ft *FakeTime) Now() time.Time {
 	return ft.time
 }
 
-func replaceRealTimeWithKnownTime(bidder adapters.Bidder) {
+func AssignDefaultValues(bidder adapters.Bidder) {
 	bidderAdnuntius, _ := bidder.(*adapter)
 	bidderAdnuntius.time = &FakeTime{
 		time: time.Date(2016, 1, 1, 12, 30, 15, 0, time.UTC),

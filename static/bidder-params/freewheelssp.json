@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "FreewheelSSP Adapter Params",
+  "description": "A schema which validates params accepted by the FreewheelSSP adapter",
+  "type": "object",
+
+  "properties": {
+    "zoneId": {
+      "type": ["integer", "string"],
+      "description": "Zone ID"
+    }
+  },
+
+  "required": ["zoneId"]
+}

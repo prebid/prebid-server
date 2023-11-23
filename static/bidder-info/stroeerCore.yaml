@@ -1,3 +1,5 @@
+endpoint: "http://mhb.adscale.de/s2sdsh"
+disabled: true
 maintainer:
   email: "help@cz.stroeer-labs.com"
 gvlVendorID: 136

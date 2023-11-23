@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/prebid/prebid-server/adapters/adapterstest"
+	"github.com/prebid/prebid-server/v2/adapters/adapterstest"
 )
 
 const (
@@ -22,7 +22,7 @@ const (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAMX, config.Adapter{
-		Endpoint: amxTestEndpoint})
+		Endpoint: amxTestEndpoint}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -33,14 +33,14 @@ func TestJsonSamples(t *testing.T) {
 
 func TestEndpointMalformed(t *testing.T) {
 	_, buildErr := Builder(openrtb_ext.BidderAMX, config.Adapter{
-		Endpoint: " http://leading.space.is.invalid"})
+		Endpoint: " http://leading.space.is.invalid"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	assert.Error(t, buildErr)
 }
 
 func TestEndpointQueryStringMalformed(t *testing.T) {
 	_, buildErr := Builder(openrtb_ext.BidderAMX, config.Adapter{
-		Endpoint: "http://invalid.query.from.go.docs/page?%gh&%ij"})
+		Endpoint: "http://invalid.query.from.go.docs/page?%gh&%ij"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	assert.Error(t, buildErr)
 }
@@ -50,7 +50,7 @@ func TestMakeRequestsTagID(t *testing.T) {
 	var width, height int64 = int64(w), int64(h)
 
 	bidder, buildErr := Builder(openrtb_ext.BidderAMX, config.Adapter{
-		Endpoint: amxTestEndpoint})
+		Endpoint: amxTestEndpoint}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -113,7 +113,7 @@ func TestMakeRequestsPublisherId(t *testing.T) {
 	var width, height int64 = int64(w), int64(h)
 
 	bidder, buildErr := Builder(openrtb_ext.BidderAMX, config.Adapter{
-		Endpoint: amxTestEndpoint})
+		Endpoint: amxTestEndpoint}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -175,7 +175,7 @@ func TestMakeRequestsPublisherId(t *testing.T) {
 
 func TestMakeBids(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAMX, config.Adapter{
-		Endpoint: amxTestEndpoint})
+		Endpoint: amxTestEndpoint}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Failed to build bidder: %v", buildErr)

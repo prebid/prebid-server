@@ -5,8 +5,8 @@ import (
 
 	"github.com/prebid/go-gdpr/consentconstants"
 
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -82,54 +82,57 @@ func TestIntegrationEnabled(t *testing.T) {
 			},
 		}
 
-		result := cfg.IntegrationEnabled(config.IntegrationTypeWeb)
+		result := cfg.ChannelEnabled(config.ChannelWeb)
 
 		assert.Equal(t, tt.wantIntegrationEnabled, result, tt.description)
 	}
 }
 
 func TestPurposeEnforced(t *testing.T) {
+	False := false
+	True := true
+
 	tests := []struct {
 		description                    string
-		givePurpose1HostEnforcement    string
-		givePurpose1AccountEnforcement string
-		givePurpose2HostEnforcement    string
-		givePurpose2AccountEnforcement string
+		givePurpose1HostEnforcement    bool
+		givePurpose1AccountEnforcement *bool
+		givePurpose2HostEnforcement    bool
+		givePurpose2AccountEnforcement *bool
 		givePurpose                    consentconstants.Purpose
 		wantEnforced                   bool
 	}{
 		{
 			description:                    "Purpose 1 set at account level - use account setting false",
-			givePurpose1HostEnforcement:    config.TCF2FullEnforcement,
-			givePurpose1AccountEnforcement: config.TCF2NoEnforcement,
+			givePurpose1HostEnforcement:    true,
+			givePurpose1AccountEnforcement: &False,
 			givePurpose:                    1,
 			wantEnforced:                   false,
 		},
 		{
 			description:                    "Purpose 1 set at account level - use account setting true",
-			givePurpose1HostEnforcement:    config.TCF2NoEnforcement,
-			givePurpose1AccountEnforcement: config.TCF2FullEnforcement,
+			givePurpose1HostEnforcement:    false,
+			givePurpose1AccountEnforcement: &True,
 			givePurpose:                    1,
 			wantEnforced:                   true,
 		},
 		{
 			description:                    "Purpose 1 not set at account level - use host setting false",
-			givePurpose1HostEnforcement:    config.TCF2NoEnforcement,
-			givePurpose1AccountEnforcement: "",
+			givePurpose1HostEnforcement:    false,
+			givePurpose1AccountEnforcement: nil,
 			givePurpose:                    1,
 			wantEnforced:                   false,
 		},
 		{
 			description:                    "Purpose 1 not set at account level - use host setting true",
-			givePurpose1HostEnforcement:    config.TCF2FullEnforcement,
-			givePurpose1AccountEnforcement: "",
+			givePurpose1HostEnforcement:    true,
+			givePurpose1AccountEnforcement: nil,
 			givePurpose:                    1,
 			wantEnforced:                   true,
 		},
 		{
 			description:                    "Some other purpose set at account level - use account setting true",
-			givePurpose2HostEnforcement:    config.TCF2NoEnforcement,
-			givePurpose2AccountEnforcement: config.TCF2FullEnforcement,
+			givePurpose2HostEnforcement:    false,
+			givePurpose2AccountEnforcement: &True,
 			givePurpose:                    2,
 			wantEnforced:                   true,
 		},
@@ -159,6 +162,81 @@ func TestPurposeEnforced(t *testing.T) {
 		result := cfg.PurposeEnforced(consentconstants.Purpose(tt.givePurpose))
 
 		assert.Equal(t, tt.wantEnforced, result, tt.description)
+	}
+}
+
+func TestPurposeEnforcementAlgo(t *testing.T) {
+
+	tests := []struct {
+		description             string
+		givePurpose1HostAlgo    config.TCF2EnforcementAlgo
+		givePurpose1AccountAlgo config.TCF2EnforcementAlgo
+		givePurpose2HostAlgo    config.TCF2EnforcementAlgo
+		givePurpose2AccountAlgo config.TCF2EnforcementAlgo
+		givePurpose             consentconstants.Purpose
+		wantAlgo                config.TCF2EnforcementAlgo
+	}{
+		{
+			description:             "Purpose 1 set at account level - use account setting basic",
+			givePurpose1HostAlgo:    config.TCF2FullEnforcement,
+			givePurpose1AccountAlgo: config.TCF2BasicEnforcement,
+			givePurpose:             1,
+			wantAlgo:                config.TCF2BasicEnforcement,
+		},
+		{
+			description:             "Purpose 1 set at account level - use account setting full",
+			givePurpose1HostAlgo:    config.TCF2BasicEnforcement,
+			givePurpose1AccountAlgo: config.TCF2FullEnforcement,
+			givePurpose:             1,
+			wantAlgo:                config.TCF2FullEnforcement,
+		},
+		{
+			description:             "Purpose 1 not set at account level - use host setting basic",
+			givePurpose1HostAlgo:    config.TCF2BasicEnforcement,
+			givePurpose1AccountAlgo: config.TCF2UndefinedEnforcement,
+			givePurpose:             1,
+			wantAlgo:                config.TCF2BasicEnforcement,
+		},
+		{
+			description:             "Purpose 1 not set at account level - use host setting full",
+			givePurpose1HostAlgo:    config.TCF2FullEnforcement,
+			givePurpose1AccountAlgo: config.TCF2UndefinedEnforcement,
+			givePurpose:             1,
+			wantAlgo:                config.TCF2FullEnforcement,
+		},
+		{
+			description:             "Some other purpose set at account level - use account setting basic",
+			givePurpose2HostAlgo:    config.TCF2FullEnforcement,
+			givePurpose2AccountAlgo: config.TCF2BasicEnforcement,
+			givePurpose:             2,
+			wantAlgo:                config.TCF2BasicEnforcement,
+		},
+	}
+
+	for _, tt := range tests {
+		cfg := tcf2Config{
+			AccountConfig: config.AccountGDPR{
+				Purpose1: config.AccountGDPRPurpose{
+					EnforceAlgoID: tt.givePurpose1AccountAlgo,
+				},
+				Purpose2: config.AccountGDPRPurpose{
+					EnforceAlgoID: tt.givePurpose2AccountAlgo,
+				},
+			},
+			HostConfig: config.TCF2{
+				Purpose1: config.TCF2Purpose{
+					EnforceAlgoID: tt.givePurpose1HostAlgo,
+				},
+				Purpose2: config.TCF2Purpose{
+					EnforceAlgoID: tt.givePurpose2HostAlgo,
+				},
+			},
+		}
+		MakeTCF2ConfigPurposeMaps(&cfg)
+
+		result := cfg.PurposeEnforcementAlgo(consentconstants.Purpose(tt.givePurpose))
+
+		assert.Equal(t, tt.wantAlgo, result, tt.description)
 	}
 }
 
@@ -236,64 +314,57 @@ func TestPurposeEnforcingVendors(t *testing.T) {
 	}
 }
 
-func TestPurposeVendorException(t *testing.T) {
+func TestPurposeVendorExceptions(t *testing.T) {
 	tests := []struct {
-		description                           string
-		givePurpose1HostVendorExceptionMap    map[openrtb_ext.BidderName]struct{}
-		givePurpose1AccountVendorExceptionMap map[openrtb_ext.BidderName]struct{}
-		givePurpose2HostVendorExceptionMap    map[openrtb_ext.BidderName]struct{}
-		givePurpose2AccountVendorExceptionMap map[openrtb_ext.BidderName]struct{}
-		givePurpose                           consentconstants.Purpose
-		giveBidder                            openrtb_ext.BidderName
-		wantVendorException                   bool
+		description                     string
+		givePurpose1HostExceptionMap    map[openrtb_ext.BidderName]struct{}
+		givePurpose1AccountExceptionMap map[openrtb_ext.BidderName]struct{}
+		givePurpose2HostExceptionMap    map[openrtb_ext.BidderName]struct{}
+		givePurpose2AccountExceptionMap map[openrtb_ext.BidderName]struct{}
+		givePurpose                     consentconstants.Purpose
+		wantExceptionMap                map[openrtb_ext.BidderName]struct{}
 	}{
 		{
-			description:                           "Purpose 1 exception list set at account level - vendor found",
-			givePurpose1HostVendorExceptionMap:    map[openrtb_ext.BidderName]struct{}{},
-			givePurpose1AccountVendorExceptionMap: map[openrtb_ext.BidderName]struct{}{"appnexus": {}, "rubicon": {}},
-			givePurpose:                           1,
-			giveBidder:                            "appnexus",
-			wantVendorException:                   true,
+			description:                     "Purpose 1 exception list set at account level - use empty account list",
+			givePurpose1HostExceptionMap:    map[openrtb_ext.BidderName]struct{}{},
+			givePurpose1AccountExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			givePurpose:                     1,
+			wantExceptionMap:                map[openrtb_ext.BidderName]struct{}{},
 		},
 		{
-			description:                           "Purpose 1 exception list set at account level - vendor not found",
-			givePurpose1HostVendorExceptionMap:    map[openrtb_ext.BidderName]struct{}{},
-			givePurpose1AccountVendorExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}},
-			givePurpose:                           1,
-			giveBidder:                            "appnexus",
-			wantVendorException:                   false,
+			description:                     "Purpose 1 exception list set at account level - use nonempty account list",
+			givePurpose1HostExceptionMap:    map[openrtb_ext.BidderName]struct{}{},
+			givePurpose1AccountExceptionMap: map[openrtb_ext.BidderName]struct{}{"appnexus": {}, "rubicon": {}},
+			givePurpose:                     1,
+			wantExceptionMap:                map[openrtb_ext.BidderName]struct{}{"appnexus": {}, "rubicon": {}},
 		},
 		{
-			description:                           "Purpose 1 exception list not set at account level - vendor found in host list",
-			givePurpose1HostVendorExceptionMap:    map[openrtb_ext.BidderName]struct{}{"appnexus": {}, "rubicon": {}},
-			givePurpose1AccountVendorExceptionMap: nil,
-			givePurpose:                           1,
-			giveBidder:                            "appnexus",
-			wantVendorException:                   true,
+			description:                     "Purpose 1 exception list not set at account level - use empty host list",
+			givePurpose1HostExceptionMap:    map[openrtb_ext.BidderName]struct{}{},
+			givePurpose1AccountExceptionMap: nil,
+			givePurpose:                     1,
+			wantExceptionMap:                map[openrtb_ext.BidderName]struct{}{},
 		},
 		{
-			description:                           "Purpose 1 exception list not set at account level - vendor not found in host list",
-			givePurpose1HostVendorExceptionMap:    map[openrtb_ext.BidderName]struct{}{"rubicon": {}},
-			givePurpose1AccountVendorExceptionMap: nil,
-			givePurpose:                           1,
-			giveBidder:                            "appnexus",
-			wantVendorException:                   false,
+			description:                     "Purpose 1 exception list not set at account level - use nonempty host list",
+			givePurpose1HostExceptionMap:    map[openrtb_ext.BidderName]struct{}{"appnexus": {}, "rubicon": {}},
+			givePurpose1AccountExceptionMap: nil,
+			givePurpose:                     1,
+			wantExceptionMap:                map[openrtb_ext.BidderName]struct{}{"appnexus": {}, "rubicon": {}},
 		},
 		{
-			description:                           "Purpose 1 exception list not set at account level or host level - vendor not found",
-			givePurpose1HostVendorExceptionMap:    nil,
-			givePurpose1AccountVendorExceptionMap: nil,
-			givePurpose:                           1,
-			giveBidder:                            "appnexus",
-			wantVendorException:                   false,
+			description:                     "Purpose 1 exception list not set at account level or host level",
+			givePurpose1HostExceptionMap:    nil,
+			givePurpose1AccountExceptionMap: nil,
+			givePurpose:                     1,
+			wantExceptionMap:                map[openrtb_ext.BidderName]struct{}{},
 		},
 		{
-			description:                           "Some other purpose exception list set at account level - vendor found",
-			givePurpose2HostVendorExceptionMap:    map[openrtb_ext.BidderName]struct{}{},
-			givePurpose2AccountVendorExceptionMap: map[openrtb_ext.BidderName]struct{}{"appnexus": {}, "rubicon": {}},
-			givePurpose:                           2,
-			giveBidder:                            "appnexus",
-			wantVendorException:                   true,
+			description:                     "Some other purpose exception list set at account level",
+			givePurpose2HostExceptionMap:    map[openrtb_ext.BidderName]struct{}{},
+			givePurpose2AccountExceptionMap: map[openrtb_ext.BidderName]struct{}{"appnexus": {}, "rubicon": {}},
+			givePurpose:                     2,
+			wantExceptionMap:                map[openrtb_ext.BidderName]struct{}{"appnexus": {}, "rubicon": {}},
 		},
 	}
 
@@ -301,26 +372,26 @@ func TestPurposeVendorException(t *testing.T) {
 		cfg := tcf2Config{
 			AccountConfig: config.AccountGDPR{
 				Purpose1: config.AccountGDPRPurpose{
-					VendorExceptionMap: tt.givePurpose1AccountVendorExceptionMap,
+					VendorExceptionMap: tt.givePurpose1AccountExceptionMap,
 				},
 				Purpose2: config.AccountGDPRPurpose{
-					VendorExceptionMap: tt.givePurpose2AccountVendorExceptionMap,
+					VendorExceptionMap: tt.givePurpose2AccountExceptionMap,
 				},
 			},
 			HostConfig: config.TCF2{
 				Purpose1: config.TCF2Purpose{
-					VendorExceptionMap: tt.givePurpose1HostVendorExceptionMap,
+					VendorExceptionMap: tt.givePurpose1HostExceptionMap,
 				},
 				Purpose2: config.TCF2Purpose{
-					VendorExceptionMap: tt.givePurpose2HostVendorExceptionMap,
+					VendorExceptionMap: tt.givePurpose2HostExceptionMap,
 				},
 			},
 		}
 		MakeTCF2ConfigPurposeMaps(&cfg)
 
-		result := cfg.PurposeVendorException(consentconstants.Purpose(tt.givePurpose), tt.giveBidder)
+		result := cfg.PurposeVendorExceptions(consentconstants.Purpose(tt.givePurpose))
 
-		assert.Equal(t, tt.wantVendorException, result, tt.description)
+		assert.Equal(t, tt.wantExceptionMap, result, tt.description)
 	}
 }
 
@@ -549,42 +620,39 @@ func TestPurposeOneTreatmentAllowed(t *testing.T) {
 	}
 }
 
-func TestBasicEnforcementVendor(t *testing.T) {
+func TestBasicEnforcementVendors(t *testing.T) {
 	tests := []struct {
-		description                          string
-		giveAccountBasicEnforcementVendorMap map[string]struct{}
-		giveBidder                           openrtb_ext.BidderName
-		wantBasicEnforcement                 bool
+		description               string
+		giveAccountBasicVendorMap map[string]struct{}
+		wantBasicVendorMap        map[string]struct{}
 	}{
 		{
-			description:                          "Basic enforcement vendor list set at account level - vendor found",
-			giveAccountBasicEnforcementVendorMap: map[string]struct{}{"appnexus": {}, "rubicon": {}},
-			giveBidder:                           "appnexus",
-			wantBasicEnforcement:                 true,
+			description:               "Purpose 1 basic exception vendor list not set at account level",
+			giveAccountBasicVendorMap: nil,
+			wantBasicVendorMap:        map[string]struct{}{},
 		},
 		{
-			description:                          "Basic enforcement vendor list set at account level - vendor not found",
-			giveAccountBasicEnforcementVendorMap: map[string]struct{}{"rubicon": {}},
-			giveBidder:                           "appnexus",
-			wantBasicEnforcement:                 false,
+			description:               "Purpose 1 basic exception vendor list set at account level as empty list",
+			giveAccountBasicVendorMap: map[string]struct{}{},
+			wantBasicVendorMap:        map[string]struct{}{},
 		},
 		{
-			description:                          "Basic enforcement vendor list not set at account level - vendor not found",
-			giveAccountBasicEnforcementVendorMap: nil,
-			giveBidder:                           "appnexus",
-			wantBasicEnforcement:                 false,
+			description:               "Purpose 1 basic exception vendor list not set at account level as nonempty list",
+			giveAccountBasicVendorMap: map[string]struct{}{"appnexus": {}, "rubicon": {}},
+			wantBasicVendorMap:        map[string]struct{}{"appnexus": {}, "rubicon": {}},
 		},
 	}
 
 	for _, tt := range tests {
 		cfg := tcf2Config{
 			AccountConfig: config.AccountGDPR{
-				BasicEnforcementVendorsMap: tt.giveAccountBasicEnforcementVendorMap,
+				BasicEnforcementVendorsMap: tt.giveAccountBasicVendorMap,
 			},
 		}
+		MakeTCF2ConfigPurposeMaps(&cfg)
 
-		result := cfg.BasicEnforcementVendor(tt.giveBidder)
+		result := cfg.BasicEnforcementVendors()
 
-		assert.Equal(t, tt.wantBasicEnforcement, result, tt.description)
+		assert.Equal(t, tt.wantBasicVendorMap, result, tt.description)
 	}
 }

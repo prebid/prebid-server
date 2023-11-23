@@ -3,16 +3,16 @@ package openrtb2
 import (
 	"fmt"
 
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 func processInterstitials(req *openrtb_ext.RequestWrapper) error {
 	unmarshalled := true
-	for i := range req.Imp {
-		if req.Imp[i].Instl == 1 {
+	for _, imp := range req.GetImp() {
+		if imp.Instl == 1 {
 			var prebid *openrtb_ext.ExtDevicePrebid
 			if unmarshalled {
 				if req.Device.Ext == nil {
@@ -30,7 +30,7 @@ func processInterstitials(req *openrtb_ext.RequestWrapper) error {
 					return nil
 				}
 			}
-			err := processInterstitialsForImp(&req.Imp[i], prebid, req.Device)
+			err := processInterstitialsForImp(imp, prebid, req.Device)
 			if err != nil {
 				return err
 			}
@@ -39,7 +39,7 @@ func processInterstitials(req *openrtb_ext.RequestWrapper) error {
 	return nil
 }
 
-func processInterstitialsForImp(imp *openrtb2.Imp, devExtPrebid *openrtb_ext.ExtDevicePrebid, device *openrtb2.Device) error {
+func processInterstitialsForImp(imp *openrtb_ext.ImpWrapper, devExtPrebid *openrtb_ext.ExtDevicePrebid, device *openrtb2.Device) error {
 	var maxWidth, maxHeight, minWidth, minHeight int64
 	if imp.Banner == nil {
 		// custom interstitial support is only available for banner requests.

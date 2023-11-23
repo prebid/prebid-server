@@ -1,27 +1,27 @@
-[![Build](https://img.shields.io/github/workflow/status/prebid/prebid-server/Validate/master?style=flat-square)](https://github.com/prebid/prebid-server/actions/workflows/validate.yml)
+[![Build](https://img.shields.io/github/actions/workflow/status/prebid/prebid-server/validate.yml?branch=master&style=flat-square)](https://github.com/prebid/prebid-server/actions/workflows/validate.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/prebid/prebid-server?style=flat-square)](https://goreportcard.com/report/github.com/prebid/prebid-server)
 ![Go Version](https://img.shields.io/github/go-mod/go-version/prebid/prebid-server?style=flat-square)
 
 # Prebid Server
 
 Prebid Server is an open source implementation of Server-Side Header Bidding.
-It is managed by [Prebid.org](http://prebid.org/overview/what-is-prebid-org.html),
-and upholds the principles from the [Prebid Code of Conduct](http://prebid.org/wrapper_code_of_conduct.html).
+It is managed by [Prebid.org](https://prebid.org/about/),
+and upholds the principles from the [Prebid Code of Conduct](https://prebid.org/code-of-conduct/).
 
 This project does not support the same set of Bidders as Prebid.js, although there is overlap.
 The current set can be found in the [adapters](./adapters) package. If you don't see the one you want, feel free to [contribute it](https://docs.prebid.org/prebid-server/developers/add-new-bidder-go.html).
 
 For more information, see:
 
-- [What is Prebid?](https://prebid.org/overview/intro.html)
+- [What is Prebid?](https://docs.prebid.org/overview/intro.html)
 - [Prebid Server Overview](https://docs.prebid.org/prebid-server/overview/prebid-server-overview.html)
-- [Current Bidders](http://prebid.org/dev-docs/pbs-bidders.html)
+- [Current Bidders](https://docs.prebid.org/dev-docs/pbs-bidders.html)
 
 Please consider [registering your Prebid Server](https://docs.prebid.org/prebid-server/hosting/pbs-hosting.html#optional-registration) to get on the mailing list for updates, etc.
 
 ## Installation
 
-First install [Go](https://golang.org/doc/install) version 1.16 or newer.
+First install [Go](https://golang.org/doc/install) version 1.19 or newer.
 
 Note that prebid-server is using [Go modules](https://blog.golang.org/using-go-modules).
 We officially support the most recent two major versions of the Go runtime. However, if you'd like to use a version <1.13 and are inside GOPATH `GO111MODULE` needs to be set to `GO111MODULE=on`.
@@ -45,6 +45,15 @@ Or just run the server locally:
 ```bash
 go build .
 ./prebid-server
+```
+
+Run format:
+```
+make format
+```
+or
+```bash
+./scripts/format.sh -f true
 ```
 
 Load the landing page in your browser at `http://localhost:8000/`.

@@ -1,3 +1,4 @@
+endpoint: "http://us-e-node1.bizzclick.com/bid?rtb_seat_id={{.SourceId}}&secret_key={{.AccountID}}"
 maintainer:
   email: "support@bizzclick.com"
 capabilities:

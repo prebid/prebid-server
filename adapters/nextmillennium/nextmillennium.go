@@ -5,30 +5,28 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type adapter struct {
 	endpoint string
 }
 
-type NextMillenniumBidRequest struct {
-	ID   string `json:"id"`
-	Test uint8  `json:"test,omitempty"`
-	Ext  struct {
-		Prebid struct {
-			StoredRequest struct {
-				ID string `json:"id"`
-			} `json:"storedrequest"`
-		} `json:"prebid"`
-	} `json:"ext"`
+type nmExtPrebidStoredRequest struct {
+	ID string `json:"id"`
+}
+type nmExtPrebid struct {
+	StoredRequest nmExtPrebidStoredRequest `json:"storedrequest"`
+}
+type nextMillJsonExt struct {
+	Prebid nmExtPrebid `json:"prebid"`
 }
 
-//MakeRequests prepares request information for prebid-server core
+// MakeRequests prepares request information for prebid-server core
 func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	resImps, err := getImpressionsInfo(request.Imp)
 	if len(err) > 0 {
@@ -98,12 +96,8 @@ func (adapter *adapter) buildAdapterRequest(prebidBidRequest *openrtb2.BidReques
 		Headers: headers}, nil
 }
 
-func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ImpExtNextMillennium) *NextMillenniumBidRequest {
+func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ImpExtNextMillennium) *openrtb2.BidRequest {
 	placementID := params.PlacementID
-	bidRequest := NextMillenniumBidRequest{
-		ID:   prebidBidRequest.ID,
-		Test: uint8(prebidBidRequest.Test),
-	}
 
 	if params.GroupID != "" {
 		domain := ""
@@ -126,12 +120,19 @@ func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext
 
 		placementID = fmt.Sprintf("g%s;%s;%s", params.GroupID, size, domain)
 	}
-
-	bidRequest.Ext.Prebid.StoredRequest.ID = placementID
+	ext := nextMillJsonExt{}
+	ext.Prebid.StoredRequest.ID = placementID
+	jsonExt, err := json.Marshal(ext)
+	if err != nil {
+		return prebidBidRequest
+	}
+	bidRequest := *prebidBidRequest
+	bidRequest.Ext = jsonExt
+	bidRequest.Imp[0].Ext = jsonExt
 	return &bidRequest
 }
 
-//MakeBids translates NextMillennium bid response to prebid-server specific format
+// MakeBids translates NextMillennium bid response to prebid-server specific format
 func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var msg = ""
 	if response.StatusCode == http.StatusNoContent {
@@ -167,7 +168,7 @@ func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 }
 
 // Builder builds a new instance of the NextMillennium adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	return &adapter{
 		endpoint: config.Endpoint,
 	}, nil

@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/prebid/prebid-server/metrics"
+	"github.com/prebid/prebid-server/v2/metrics"
 )
 
 // Fetcher knows how to fetch Stored Request data by id.
@@ -28,7 +28,7 @@ type Fetcher interface {
 
 type AccountFetcher interface {
 	// FetchAccount fetches the host account configuration for a publisher
-	FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error)
+	FetchAccount(ctx context.Context, accountDefaultJSON json.RawMessage, accountID string) (json.RawMessage, []error)
 }
 
 type CategoryFetcher interface {
@@ -210,7 +210,7 @@ func (f *fetcherWithCache) FetchResponses(ctx context.Context, ids []string) (da
 	return
 }
 
-func (f *fetcherWithCache) FetchAccount(ctx context.Context, accountID string) (account json.RawMessage, errs []error) {
+func (f *fetcherWithCache) FetchAccount(ctx context.Context, acccountDefaultJSON json.RawMessage, accountID string) (account json.RawMessage, errs []error) {
 	accountData := f.cache.Accounts.Get(ctx, []string{accountID})
 	// TODO: add metrics
 	if account, ok := accountData[accountID]; ok {
@@ -219,7 +219,7 @@ func (f *fetcherWithCache) FetchAccount(ctx context.Context, accountID string) (
 	} else {
 		f.metricsEngine.RecordAccountCacheResult(metrics.CacheMiss, 1)
 	}
-	account, errs = f.fetcher.FetchAccount(ctx, accountID)
+	account, errs = f.fetcher.FetchAccount(ctx, acccountDefaultJSON, accountID)
 	if len(errs) == 0 {
 		f.cache.Accounts.Save(ctx, map[string]json.RawMessage{accountID: account})
 	}

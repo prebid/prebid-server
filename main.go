@@ -4,14 +4,16 @@ import (
 	"flag"
 	"math/rand"
 	"net/http"
+	"path/filepath"
 	"runtime"
 	"time"
 
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/currency"
-	"github.com/prebid/prebid-server/router"
-	"github.com/prebid/prebid-server/server"
-	"github.com/prebid/prebid-server/util/task"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/currency"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/router"
+	"github.com/prebid/prebid-server/v2/server"
+	"github.com/prebid/prebid-server/v2/util/task"
 
 	"github.com/golang/glog"
 	"github.com/spf13/viper"
@@ -24,7 +26,16 @@ func init() {
 func main() {
 	flag.Parse() // required for glog flags and testing package flags
 
-	cfg, err := loadConfig()
+	bidderInfoPath, err := filepath.Abs(infoDirectory)
+	if err != nil {
+		glog.Exitf("Unable to build configuration directory path: %v", err)
+	}
+
+	bidderInfos, err := config.LoadBidderInfoFromDisk(bidderInfoPath)
+	if err != nil {
+		glog.Exitf("Unable to load bidder configurations: %v", err)
+	}
+	cfg, err := loadConfig(bidderInfos)
 	if err != nil {
 		glog.Exitf("Configuration could not be loaded or did not pass validation: %v", err)
 	}
@@ -44,11 +55,12 @@ func main() {
 }
 
 const configFileName = "pbs"
+const infoDirectory = "./static/bidder-info"
 
-func loadConfig() (*config.Configuration, error) {
+func loadConfig(bidderInfos config.BidderInfos) (*config.Configuration, error) {
 	v := viper.New()
-	config.SetupViper(v, configFileName)
-	return config.New(v)
+	config.SetupViper(v, configFileName, bidderInfos)
+	return config.New(v, bidderInfos, openrtb_ext.NormalizeBidderName)
 }
 
 func serve(cfg *config.Configuration) error {

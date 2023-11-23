@@ -5,40 +5,31 @@
       "id": "reqUserID"
     }
   },
+  "biddersWithGlobalFPD": [
+    "appnexus"
+  ],
   "bidderConfigFPD": {
     "appnexus": {
       "app": {
         "id": "apnAppId",
         "ext": {
           "data": {
-            "morefpdData": "morefpddata",
-            "appFpddata": "appFpddata",
-            "moreFpd": {
-              "fpd": 123
-            }
+            "other": "data"
           }
         }
       }
     }
   },
   "outputRequestData": {
-    "app": {
-      "id": "reqUserID",
-      "ext": {
-        "data": {
-          "ext": {
-            "data": {
-              "morefpdData": "morefpddata",
-              "appFpddata": "appFpddata",
-              "moreFpd": {
-                "fpd": 123
-              }
-            }
-          },
-          "id": "apnAppId"
+    "appnexus": {
+      "app": {
+        "id": "apnAppId",
+        "ext": {
+          "data": {
+            "other": "data"
+          }
         }
       }
     }
   }
 }
-

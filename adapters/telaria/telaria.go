@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 const Endpoint = "https://ads.tremorhub.com/ad/rtb/prebid"
@@ -19,7 +19,7 @@ type TelariaAdapter struct {
 	URI string
 }
 
-// This will be part of Imp[i].Ext when this adapter calls out the Telaria Ad Server
+// This will be part of imp[i].ext when this adapter calls out the Telaria Ad Server
 type ImpressionExtOut struct {
 	OriginalTagID       string `json:"originalTagid"`
 	OriginalPublisherID string `json:"originalPublisherid"`
@@ -186,7 +186,7 @@ func (a *TelariaAdapter) MakeRequests(requestIn *openrtb2.BidRequest, reqInfo *a
 	var err error
 
 	var imp = request.Imp[0]
-	// fetch adCode & seatCode from Imp[i].Ext
+	// fetch adCode & seatCode from imp[i].ext
 	telariaImpExt, err = a.FetchTelariaExtImpParams(&imp)
 	if err != nil {
 		return nil, []error{err}
@@ -194,7 +194,7 @@ func (a *TelariaAdapter) MakeRequests(requestIn *openrtb2.BidRequest, reqInfo *a
 
 	seatCode = telariaImpExt.SeatCode
 
-	// move the original tagId and the original publisher.id into the Imp[i].Ext object
+	// move the original tagId and the original publisher.id into the imp[i].ext object
 	imp.Ext, err = json.Marshal(&ImpressionExtOut{imp.TagID, originalPublisherID})
 	if err != nil {
 		return nil, []error{err}
@@ -291,7 +291,7 @@ func (a *TelariaAdapter) MakeBids(internalRequest *openrtb2.BidRequest, external
 }
 
 // Builder builds a new instance of the Telaria adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	endpoint := config.Endpoint
 	if endpoint == "" {
 		endpoint = Endpoint // Hardcoded default

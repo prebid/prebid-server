@@ -37,6 +37,17 @@
           "prebid": {
             "bidderparams": {
               "acat": ["drg","dlu","ssr"]
+            },
+            "alternatebiddercodes": {
+              "enabled": true,
+              "bidders": {
+                "pubmatic": {
+                  "enabled": true,
+                  "allowedbiddercodes": [
+                    "groupm"
+                  ]
+                }
+              }
             }
           }
         },
@@ -89,7 +100,26 @@
                     "profile": 5123,
                     "version":1
                 },
-                "acat": ["drg","dlu","ssr"]
+                "acat": ["drg","dlu","ssr"],
+                "marketplace": {
+                  "allowedbidders": ["pubmatic", "groupm"]
+                },
+                "prebid": {
+                  "bidderparams": {
+                    "acat": ["drg","dlu","ssr"]
+                  },
+                  "alternatebiddercodes": {
+                    "enabled": true,
+                    "bidders": {
+                      "pubmatic": {
+                        "enabled": true,
+                        "allowedbiddercodes": [
+                          "groupm"
+                        ]
+                      }
+                    }
+                  }
+                }
             }
           }
         },

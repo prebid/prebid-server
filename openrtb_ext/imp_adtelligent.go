@@ -1,6 +1,6 @@
 package openrtb_ext
 
-// ExtImpAdtelligent defines the contract for bidrequest.imp[i].ext.adtelligent
+// ExtImpAdtelligent defines the contract for bidrequest.imp[i].ext.prebid.bidder.adtelligent
 type ExtImpAdtelligent struct {
 	SourceId    int     `json:"aid"`
 	PlacementId int     `json:"placementId,omitempty"`

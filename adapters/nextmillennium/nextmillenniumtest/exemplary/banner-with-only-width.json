@@ -25,13 +25,31 @@
         "uri": "https://pbs.nextmillmedia.com/openrtb2/auction",
         "body":{
           "id": "testid",
+          "app": {
+            "domain": "www.example.com"
+          },
           "ext": {
             "prebid": {
               "storedrequest": {
                 "id": "g7819;;www.example.com"
               }
             }
-          }
+          },
+          "imp": [
+            {
+              "banner": {
+                "w": 320
+              },
+              "ext": {
+                "prebid": {
+                  "storedrequest": {
+                    "id": "g7819;;www.example.com"
+                  }
+                }
+              },
+              "id": "testimpid"
+            }
+          ]
         }
       },
       "mockResponse": {

@@ -1,0 +1,13 @@
+endpoint: "https://delivery.clickonometrics.pl/ortb/prebid/bid"
+maintainer:
+  email: "it@clickonometrics.pl"
+gvlVendorID: 773
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  redirect:
+    url: "https://sync.clickonometrics.pl/prebid/set-cookie?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirurl={{.RedirectURL}}"
+    userMacro: "${USER_ID}"

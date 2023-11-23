@@ -1,0 +1,14 @@
+endpoint: "http://point.contextualadv.com/?t=3&partner={{.PublisherID}}"
+maintainer:
+  email: "support@videoheroes.tv"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native

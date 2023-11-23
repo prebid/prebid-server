@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "sspBC Bid Adapter Params",
+  "description": "A schema which validates params accepted by the sspBC bid adapter",
+  "type": "object",
+  "properties": {
+    "siteid": {
+      "type": [
+        "string"
+      ],
+      "description": "Identifier of site that is selling the impression"
+    },
+    "id": {
+      "type": [
+        "string"
+      ],
+      "description": "Identifier of adslot that the auction in running on"
+    },
+    "test": {
+      "type": [
+        "integer"
+      ],
+      "description": "Switch that enables test responses"
+    }
+  },
+  "required": []
+}

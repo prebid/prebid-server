@@ -7,20 +7,32 @@ import (
 	"strconv"
 	"text/template"
 
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/macros"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type MobileFuseAdapter struct {
 	EndpointTemplate *template.Template
 }
 
+type ExtMf struct {
+	MediaType string `json:"media_type"`
+}
+
+type BidExt struct {
+	Mf ExtMf `json:"mf"`
+}
+
+type ExtSkadn struct {
+	Skadn json.RawMessage `json:"skadn"`
+}
+
 // Builder builds a new instance of the MobileFuse adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
@@ -71,9 +83,12 @@ func (adapter *MobileFuseAdapter) MakeBids(incomingRequest *openrtb2.BidRequest,
 
 	for _, seatbid := range incomingBidResponse.SeatBid {
 		for i := range seatbid.Bid {
+			bidType := getBidType(seatbid.Bid[i])
+			seatbid.Bid[i].Ext = nil
+
 			outgoingBidResponse.Bids = append(outgoingBidResponse.Bids, &adapters.TypedBid{
 				Bid:     &seatbid.Bid[i],
-				BidType: adapter.getBidType(seatbid.Bid[i].ImpID, incomingRequest.Imp),
+				BidType: bidType,
 			})
 		}
 	}
@@ -84,22 +99,18 @@ func (adapter *MobileFuseAdapter) MakeBids(incomingRequest *openrtb2.BidRequest,
 func (adapter *MobileFuseAdapter) makeRequest(bidRequest *openrtb2.BidRequest) (*adapters.RequestData, []error) {
 	var errs []error
 
-	mobileFuseExtension, errs := adapter.getFirstMobileFuseExtension(bidRequest)
-
+	mobileFuseExtension, errs := getFirstMobileFuseExtension(bidRequest)
 	if errs != nil {
 		return nil, errs
 	}
 
 	endpoint, err := adapter.getEndpoint(mobileFuseExtension)
-
 	if err != nil {
 		return nil, append(errs, err)
 	}
 
-	validImps := adapter.getValidImps(bidRequest, mobileFuseExtension)
-
-	if len(validImps) == 0 {
-		err := fmt.Errorf("No valid imps")
+	validImps, err := getValidImps(bidRequest, mobileFuseExtension)
+	if err != nil {
 		errs = append(errs, err)
 		return nil, errs
 	}
@@ -107,7 +118,6 @@ func (adapter *MobileFuseAdapter) makeRequest(bidRequest *openrtb2.BidRequest) (
 	mobileFuseBidRequest := *bidRequest
 	mobileFuseBidRequest.Imp = validImps
 	body, err := json.Marshal(mobileFuseBidRequest)
-
 	if err != nil {
 		return nil, append(errs, err)
 	}
@@ -124,7 +134,7 @@ func (adapter *MobileFuseAdapter) makeRequest(bidRequest *openrtb2.BidRequest) (
 	}, errs
 }
 
-func (adapter *MobileFuseAdapter) getFirstMobileFuseExtension(request *openrtb2.BidRequest) (*openrtb_ext.ExtImpMobileFuse, []error) {
+func getFirstMobileFuseExtension(request *openrtb2.BidRequest) (*openrtb_ext.ExtImpMobileFuse, []error) {
 	var mobileFuseImpExtension openrtb_ext.ExtImpMobileFuse
 	var errs []error
 
@@ -151,13 +161,23 @@ func (adapter *MobileFuseAdapter) getFirstMobileFuseExtension(request *openrtb2.
 	return &mobileFuseImpExtension, errs
 }
 
+func getMobileFuseExtensionForImp(imp *openrtb2.Imp, mobileFuseImpExtension *openrtb_ext.ExtImpMobileFuse) error {
+	var bidder_imp_extension adapters.ExtImpBidder
+
+	err := json.Unmarshal(imp.Ext, &bidder_imp_extension)
+	if err != nil {
+		return err
+	}
+
+	return json.Unmarshal(bidder_imp_extension.Bidder, &mobileFuseImpExtension)
+}
+
 func (adapter *MobileFuseAdapter) getEndpoint(ext *openrtb_ext.ExtImpMobileFuse) (string, error) {
 	publisher_id := strconv.Itoa(ext.PublisherId)
 
-	url, errs := macros.ResolveMacros(adapter.EndpointTemplate, macros.EndpointTemplateParams{PublisherID: publisher_id})
-
-	if errs != nil {
-		return "", errs
+	url, err := macros.ResolveMacros(adapter.EndpointTemplate, macros.EndpointTemplateParams{PublisherID: publisher_id})
+	if err != nil {
+		return "", err
 	}
 
 	if ext.TagidSrc == "ext" {
@@ -167,29 +187,55 @@ func (adapter *MobileFuseAdapter) getEndpoint(ext *openrtb_ext.ExtImpMobileFuse)
 	return url, nil
 }
 
-func (adapter *MobileFuseAdapter) getValidImps(bidRequest *openrtb2.BidRequest, ext *openrtb_ext.ExtImpMobileFuse) []openrtb2.Imp {
+func getValidImps(bidRequest *openrtb2.BidRequest, ext *openrtb_ext.ExtImpMobileFuse) ([]openrtb2.Imp, error) {
 	var validImps []openrtb2.Imp
 
 	for _, imp := range bidRequest.Imp {
-		if imp.Banner != nil || imp.Video != nil {
-			if imp.Banner != nil && imp.Video != nil {
-				imp.Video = nil
+		if imp.Banner != nil || imp.Video != nil || imp.Native != nil {
+			err := getMobileFuseExtensionForImp(&imp, ext)
+			if err != nil {
+				return nil, err
 			}
 
 			imp.TagID = strconv.Itoa(ext.PlacementId)
-			imp.Ext = nil
-			validImps = append(validImps, imp)
 
-			break
+			var extSkadn ExtSkadn
+			err = json.Unmarshal(imp.Ext, &extSkadn)
+			if err != nil {
+				return nil, err
+			}
+
+			if extSkadn.Skadn != nil {
+				imp.Ext, err = json.Marshal(map[string]json.RawMessage{"skadn": extSkadn.Skadn})
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				imp.Ext = nil
+			}
+
+			validImps = append(validImps, imp)
 		}
 	}
 
-	return validImps
+	if len(validImps) == 0 {
+		return nil, fmt.Errorf("No valid imps")
+	}
+
+	return validImps, nil
 }
 
-func (adapter *MobileFuseAdapter) getBidType(imp_id string, imps []openrtb2.Imp) openrtb_ext.BidType {
-	if imps[0].Video != nil {
-		return openrtb_ext.BidTypeVideo
+func getBidType(bid openrtb2.Bid) openrtb_ext.BidType {
+	if bid.Ext != nil {
+		var bidExt BidExt
+		err := json.Unmarshal(bid.Ext, &bidExt)
+		if err == nil {
+			if bidExt.Mf.MediaType == "video" {
+				return openrtb_ext.BidTypeVideo
+			} else if bidExt.Mf.MediaType == "native" {
+				return openrtb_ext.BidTypeNative
+			}
+		}
 	}
 
 	return openrtb_ext.BidTypeBanner

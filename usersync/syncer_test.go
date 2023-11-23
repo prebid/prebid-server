@@ -4,11 +4,8 @@ import (
 	"testing"
 	"text/template"
 
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/privacy"
-	"github.com/prebid/prebid-server/privacy/ccpa"
-	"github.com/prebid/prebid-server/privacy/gdpr"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/macros"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,7 +13,7 @@ func TestNewSyncer(t *testing.T) {
 	var (
 		supportCORS      = true
 		hostConfig       = config.UserSync{ExternalURL: "http://host.com", RedirectURL: "{{.ExternalURL}}/host"}
-		macroValues      = macros.UserSyncTemplateParams{GDPR: "A", GDPRConsent: "B", USPrivacy: "C"}
+		macroValues      = macros.UserSyncPrivacy{GDPR: "A", GDPRConsent: "B", USPrivacy: "C"}
 		iframeConfig     = &config.SyncerEndpoint{URL: "https://bidder.com/iframe?redirect={{.RedirectURL}}"}
 		redirectConfig   = &config.SyncerEndpoint{URL: "https://bidder.com/redirect?redirect={{.RedirectURL}}"}
 		errParseConfig   = &config.SyncerEndpoint{URL: "{{malformed}}"}
@@ -26,6 +23,7 @@ func TestNewSyncer(t *testing.T) {
 	testCases := []struct {
 		description         string
 		givenKey            string
+		givenBidderName     string
 		givenIFrameConfig   *config.SyncerEndpoint
 		givenRedirectConfig *config.SyncerEndpoint
 		givenExternalURL    string
@@ -37,6 +35,7 @@ func TestNewSyncer(t *testing.T) {
 		{
 			description:         "Missing Key",
 			givenKey:            "",
+			givenBidderName:     "",
 			givenIFrameConfig:   iframeConfig,
 			givenRedirectConfig: nil,
 			expectedError:       "key is required",
@@ -44,6 +43,7 @@ func TestNewSyncer(t *testing.T) {
 		{
 			description:         "Missing Endpoints",
 			givenKey:            "a",
+			givenBidderName:     "bidderA",
 			givenIFrameConfig:   nil,
 			givenRedirectConfig: nil,
 			expectedError:       "at least one endpoint (iframe and/or redirect) is required",
@@ -51,6 +51,7 @@ func TestNewSyncer(t *testing.T) {
 		{
 			description:         "IFrame & Redirect Endpoints",
 			givenKey:            "a",
+			givenBidderName:     "bidderA",
 			givenIFrameConfig:   iframeConfig,
 			givenRedirectConfig: redirectConfig,
 			expectedDefault:     SyncTypeIFrame,
@@ -60,13 +61,15 @@ func TestNewSyncer(t *testing.T) {
 		{
 			description:         "IFrame - Parse Error",
 			givenKey:            "a",
+			givenBidderName:     "bidderA",
 			givenIFrameConfig:   errParseConfig,
 			givenRedirectConfig: nil,
-			expectedError:       "iframe template: a_usersync_url:1: function \"malformed\" not defined",
+			expectedError:       "iframe template: biddera_usersync_url:1: function \"malformed\" not defined",
 		},
 		{
 			description:         "IFrame - Validation Error",
 			givenKey:            "a",
+			givenBidderName:     "bidderA",
 			givenIFrameConfig:   errInvalidConfig,
 			givenRedirectConfig: nil,
 			expectedError:       "iframe composed url: \"notAURL:http%3A%2F%2Fhost.com%2Fhost\" is invalid",
@@ -74,13 +77,15 @@ func TestNewSyncer(t *testing.T) {
 		{
 			description:         "Redirect - Parse Error",
 			givenKey:            "a",
+			givenBidderName:     "bidderA",
 			givenIFrameConfig:   nil,
 			givenRedirectConfig: errParseConfig,
-			expectedError:       "redirect template: a_usersync_url:1: function \"malformed\" not defined",
+			expectedError:       "redirect template: biddera_usersync_url:1: function \"malformed\" not defined",
 		},
 		{
 			description:         "Redirect - Validation Error",
 			givenKey:            "a",
+			givenBidderName:     "bidderA",
 			givenIFrameConfig:   nil,
 			givenRedirectConfig: errInvalidConfig,
 			expectedError:       "redirect composed url: \"notAURL:http%3A%2F%2Fhost.com%2Fhost\" is invalid",
@@ -88,6 +93,7 @@ func TestNewSyncer(t *testing.T) {
 		{
 			description:         "Syncer Level External URL",
 			givenKey:            "a",
+			givenBidderName:     "bidderA",
 			givenExternalURL:    "http://syncer.com",
 			givenIFrameConfig:   iframeConfig,
 			givenRedirectConfig: redirectConfig,
@@ -106,7 +112,7 @@ func TestNewSyncer(t *testing.T) {
 			ExternalURL: test.givenExternalURL,
 		}
 
-		result, err := NewSyncer(hostConfig, syncerConfig)
+		result, err := NewSyncer(hostConfig, syncerConfig, test.givenBidderName)
 
 		if test.expectedError == "" {
 			assert.NoError(t, err, test.description+":err")
@@ -177,7 +183,7 @@ func TestBuildTemplate(t *testing.T) {
 		key           = "anyKey"
 		syncTypeValue = "x"
 		hostConfig    = config.UserSync{ExternalURL: "http://host.com", RedirectURL: "{{.ExternalURL}}/host"}
-		macroValues   = macros.UserSyncTemplateParams{GDPR: "A", GDPRConsent: "B", USPrivacy: "C"}
+		macroValues   = macros.UserSyncPrivacy{GDPR: "A", GDPRConsent: "B", USPrivacy: "C", GPP: "D", GPPSID: "1"}
 	)
 
 	testCases := []struct {
@@ -196,14 +202,24 @@ func TestBuildTemplate(t *testing.T) {
 			expectedRendered: "hasNoComposedMacros,gdpr=A",
 		},
 		{
-			description: "All Composed Macros",
+			description: "All Composed Macros - SyncerKey",
 			givenSyncerEndpoint: config.SyncerEndpoint{
 				URL:         "https://bidder.com/sync?redirect={{.RedirectURL}}",
-				RedirectURL: "{{.ExternalURL}}/setuid?bidder={{.SyncerKey}}&f={{.SyncType}}&gdpr={{.GDPR}}&uid={{.UserMacro}}",
+				RedirectURL: "{{.ExternalURL}}/setuid?bidder={{.SyncerKey}}&f={{.SyncType}}&gdpr={{.GDPR}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&uid={{.UserMacro}}",
 				ExternalURL: "http://syncer.com",
 				UserMacro:   "$UID$",
 			},
-			expectedRendered: "https://bidder.com/sync?redirect=http%3A%2F%2Fsyncer.com%2Fsetuid%3Fbidder%3DanyKey%26f%3Dx%26gdpr%3DA%26uid%3D%24UID%24",
+			expectedRendered: "https://bidder.com/sync?redirect=http%3A%2F%2Fsyncer.com%2Fsetuid%3Fbidder%3DanyKey%26f%3Dx%26gdpr%3DA%26gpp%3DD%26gpp_sid%3D1%26uid%3D%24UID%24",
+		},
+		{
+			description: "All Composed Macros - BidderName",
+			givenSyncerEndpoint: config.SyncerEndpoint{
+				URL:         "https://bidder.com/sync?redirect={{.RedirectURL}}",
+				RedirectURL: "{{.ExternalURL}}/setuid?bidder={{.BidderName}}&f={{.SyncType}}&gdpr={{.GDPR}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&uid={{.UserMacro}}",
+				ExternalURL: "http://syncer.com",
+				UserMacro:   "$UID$",
+			},
+			expectedRendered: "https://bidder.com/sync?redirect=http%3A%2F%2Fsyncer.com%2Fsetuid%3Fbidder%3DanyKey%26f%3Dx%26gdpr%3DA%26gpp%3DD%26gpp_sid%3D1%26uid%3D%24UID%24",
 		},
 		{
 			description: "Redirect URL + External URL From Host",
@@ -432,7 +448,7 @@ func TestValidateTemplate(t *testing.T) {
 		{
 			description:   "Contains Unrecognized Macro",
 			given:         template.Must(template.New("test").Parse("invalid:{{.DoesNotExist}}")),
-			expectedError: "template: test:1:10: executing \"test\" at <.DoesNotExist>: can't evaluate field DoesNotExist in type macros.UserSyncTemplateParams",
+			expectedError: "template: test:1:10: executing \"test\" at <.DoesNotExist>: can't evaluate field DoesNotExist in type macros.UserSyncPrivacy",
 		},
 		{
 			description:   "Not A Url",
@@ -617,45 +633,45 @@ func TestSyncerGetSync(t *testing.T) {
 	)
 
 	testCases := []struct {
-		description          string
-		givenSyncer          standardSyncer
-		givenSyncTypes       []SyncType
-		givenPrivacyPolicies privacy.Policies
-		expectedError        string
-		expectedSync         Sync
+		description    string
+		givenSyncer    standardSyncer
+		givenSyncTypes []SyncType
+		givenMacros    macros.UserSyncPrivacy
+		expectedError  string
+		expectedSync   Sync
 	}{
 		{
-			description:          "No Sync Types",
-			givenSyncer:          standardSyncer{iframe: iframeTemplate, redirect: redirectTemplate},
-			givenSyncTypes:       []SyncType{},
-			givenPrivacyPolicies: privacy.Policies{GDPR: gdpr.Policy{Signal: "A", Consent: "B"}, CCPA: ccpa.Policy{Consent: "C"}},
-			expectedError:        "no sync types provided",
+			description:    "No Sync Types",
+			givenSyncer:    standardSyncer{iframe: iframeTemplate, redirect: redirectTemplate},
+			givenSyncTypes: []SyncType{},
+			givenMacros:    macros.UserSyncPrivacy{GDPR: "A", GDPRConsent: "B", USPrivacy: "C"},
+			expectedError:  "no sync types provided",
 		},
 		{
-			description:          "IFrame",
-			givenSyncer:          standardSyncer{iframe: iframeTemplate, redirect: redirectTemplate},
-			givenSyncTypes:       []SyncType{SyncTypeIFrame},
-			givenPrivacyPolicies: privacy.Policies{GDPR: gdpr.Policy{Signal: "A", Consent: "B"}, CCPA: ccpa.Policy{Consent: "C"}},
-			expectedSync:         Sync{URL: "iframe,gdpr:A,gdprconsent:B,ccpa:C", Type: SyncTypeIFrame, SupportCORS: false},
+			description:    "IFrame",
+			givenSyncer:    standardSyncer{iframe: iframeTemplate, redirect: redirectTemplate},
+			givenSyncTypes: []SyncType{SyncTypeIFrame},
+			givenMacros:    macros.UserSyncPrivacy{GDPR: "A", GDPRConsent: "B", USPrivacy: "C"},
+			expectedSync:   Sync{URL: "iframe,gdpr:A,gdprconsent:B,ccpa:C", Type: SyncTypeIFrame, SupportCORS: false},
 		},
 		{
-			description:          "Redirect",
-			givenSyncer:          standardSyncer{iframe: iframeTemplate, redirect: redirectTemplate},
-			givenSyncTypes:       []SyncType{SyncTypeRedirect},
-			givenPrivacyPolicies: privacy.Policies{GDPR: gdpr.Policy{Signal: "A", Consent: "B"}, CCPA: ccpa.Policy{Consent: "C"}},
-			expectedSync:         Sync{URL: "redirect,gdpr:A,gdprconsent:B,ccpa:C", Type: SyncTypeRedirect, SupportCORS: false},
+			description:    "Redirect",
+			givenSyncer:    standardSyncer{iframe: iframeTemplate, redirect: redirectTemplate},
+			givenSyncTypes: []SyncType{SyncTypeRedirect},
+			givenMacros:    macros.UserSyncPrivacy{GDPR: "A", GDPRConsent: "B", USPrivacy: "C"},
+			expectedSync:   Sync{URL: "redirect,gdpr:A,gdprconsent:B,ccpa:C", Type: SyncTypeRedirect, SupportCORS: false},
 		},
 		{
-			description:          "Macro Error",
-			givenSyncer:          standardSyncer{iframe: malformedTemplate},
-			givenSyncTypes:       []SyncType{SyncTypeIFrame},
-			givenPrivacyPolicies: privacy.Policies{GDPR: gdpr.Policy{Signal: "A", Consent: "B"}, CCPA: ccpa.Policy{Consent: "C"}},
-			expectedError:        "template: test:1:20: executing \"test\" at <.DoesNotExist>: can't evaluate field DoesNotExist in type macros.UserSyncTemplateParams",
+			description:    "Macro Error",
+			givenSyncer:    standardSyncer{iframe: malformedTemplate},
+			givenSyncTypes: []SyncType{SyncTypeIFrame},
+			givenMacros:    macros.UserSyncPrivacy{GDPR: "A", GDPRConsent: "B", USPrivacy: "C"},
+			expectedError:  "template: test:1:20: executing \"test\" at <.DoesNotExist>: can't evaluate field DoesNotExist in type macros.UserSyncPrivacy",
 		},
 	}
 
 	for _, test := range testCases {
-		result, err := test.givenSyncer.GetSync(test.givenSyncTypes, test.givenPrivacyPolicies)
+		result, err := test.givenSyncer.GetSync(test.givenSyncTypes, test.givenMacros)
 
 		if test.expectedError == "" {
 			assert.NoError(t, err, test.description+":err")

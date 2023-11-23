@@ -64,7 +64,9 @@
       "coppa": 1,
       "ext": {
         "gdpr": 1,
-        "us_privacy": "uspConsentString"
+        "us_privacy": "uspConsentString",
+        "gpp": "gppString",
+        "gpp_sid": [7]
       }
     }
   },
@@ -118,7 +120,9 @@
             "coppa": 1,
             "ext": {
               "gdpr": 1,
-              "us_privacy": "uspConsentString"
+              "us_privacy": "uspConsentString",
+              "gpp": "gppString",
+              "gpp_sid": [7]
             }
           },
           "site": {
@@ -129,7 +133,7 @@
             "keywords": "power tools"
           },
           "ext": {
-            "client": "prebid_server_0.4"
+            "client": "prebid_server_0.6"
           }
         }
       },

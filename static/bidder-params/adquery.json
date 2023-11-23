@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Adquery Adapter Params",
+  "description": "A schema which validates params accepted by the Adquery adapter",
+  "type": "object",
+
+  "properties": {
+    "placementId": {
+      "type": "string",
+      "minLength": 35,
+      "maxLength": 45,
+      "description": "Placement ID"
+    },
+    "type": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Bid type"
+    }
+  },
+
+  "required": ["placementId", "type"]
+}

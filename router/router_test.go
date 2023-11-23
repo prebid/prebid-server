@@ -2,13 +2,14 @@ package router
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -37,17 +38,18 @@ func ensureHasKey(t *testing.T, data map[string]json.RawMessage, key string) {
 }
 
 func TestNewJsonDirectoryServer(t *testing.T) {
-	alias := map[string]string{"aliastest": "appnexus"}
-	handler := NewJsonDirectoryServer("../static/bidder-params", &testValidator{}, alias)
+	defaultAlias := map[string]string{"aliastest": "appnexus"}
+	yamlAlias := map[openrtb_ext.BidderName]openrtb_ext.BidderName{openrtb_ext.BidderName("alias"): openrtb_ext.BidderName("parentAlias")}
+	handler := newJsonDirectoryServer("../static/bidder-params", &testValidator{}, defaultAlias, yamlAlias)
 	recorder := httptest.NewRecorder()
 	request, _ := http.NewRequest("GET", "/whatever", nil)
 	handler(recorder, request, nil)
 
 	var data map[string]json.RawMessage
-	json.Unmarshal(recorder.Body.Bytes(), &data)
+	jsonutil.UnmarshalValid(recorder.Body.Bytes(), &data)
 
 	// Make sure that every adapter has a json schema by the same name associated with it.
-	adapterFiles, err := ioutil.ReadDir(adapterDirectory)
+	adapterFiles, err := os.ReadDir(adapterDirectory)
 	if err != nil {
 		t.Fatalf("Failed to open the adapters directory: %v", err)
 	}
@@ -59,89 +61,7 @@ func TestNewJsonDirectoryServer(t *testing.T) {
 	}
 
 	ensureHasKey(t, data, "aliastest")
-}
-
-func TestApplyBidderInfoConfigOverrides(t *testing.T) {
-	var testCases = []struct {
-		description         string
-		givenBidderInfos    config.BidderInfos
-		givenAdaptersCfg    map[string]config.Adapter
-		expectedError       string
-		expectedBidderInfos config.BidderInfos
-	}{
-		{
-			description:         "Syncer Override",
-			givenBidderInfos:    config.BidderInfos{"a": {Syncer: &config.Syncer{Key: "original"}}},
-			givenAdaptersCfg:    map[string]config.Adapter{"a": {Syncer: &config.Syncer{Key: "override"}}},
-			expectedBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{Key: "override"}}},
-		},
-		{
-			// Adapter Configs use a lower case bidder name, but the Bidder Infos follow the official
-			// bidder name casing.
-			description:         "Syncer Override - Case Sensitivity",
-			givenBidderInfos:    config.BidderInfos{"A": {Syncer: &config.Syncer{Key: "original"}}},
-			givenAdaptersCfg:    map[string]config.Adapter{"a": {Syncer: &config.Syncer{Key: "override"}}},
-			expectedBidderInfos: config.BidderInfos{"A": {Syncer: &config.Syncer{Key: "override"}}},
-		},
-		{
-			description:         "UserSyncURL Override IFrame",
-			givenBidderInfos:    config.BidderInfos{"a": {Syncer: &config.Syncer{IFrame: &config.SyncerEndpoint{URL: "original"}}}},
-			givenAdaptersCfg:    map[string]config.Adapter{"a": {UserSyncURL: "override"}},
-			expectedBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{IFrame: &config.SyncerEndpoint{URL: "override"}}}},
-		},
-		{
-			description:         "UserSyncURL Supports IFrame",
-			givenBidderInfos:    config.BidderInfos{"a": {Syncer: &config.Syncer{Supports: []string{"iframe"}}}},
-			givenAdaptersCfg:    map[string]config.Adapter{"a": {UserSyncURL: "override"}},
-			expectedBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{Supports: []string{"iframe"}, IFrame: &config.SyncerEndpoint{URL: "override"}}}},
-		},
-		{
-			description:         "UserSyncURL Override Redirect",
-			givenBidderInfos:    config.BidderInfos{"a": {Syncer: &config.Syncer{Supports: []string{"redirect"}}}},
-			givenAdaptersCfg:    map[string]config.Adapter{"a": {UserSyncURL: "override"}},
-			expectedBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{Supports: []string{"redirect"}, Redirect: &config.SyncerEndpoint{URL: "override"}}}},
-		},
-		{
-			description:         "UserSyncURL Supports Redirect",
-			givenBidderInfos:    config.BidderInfos{"a": {Syncer: &config.Syncer{Redirect: &config.SyncerEndpoint{URL: "original"}}}},
-			givenAdaptersCfg:    map[string]config.Adapter{"a": {UserSyncURL: "override"}},
-			expectedBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{Redirect: &config.SyncerEndpoint{URL: "override"}}}},
-		},
-		{
-			description:      "UserSyncURL Override Syncer Not Defined",
-			givenBidderInfos: config.BidderInfos{"a": {}},
-			givenAdaptersCfg: map[string]config.Adapter{"a": {UserSyncURL: "override"}},
-			expectedError:    "adapters.a.usersync_url cannot be applied, bidder does not define a user sync",
-		},
-		{
-			description:      "UserSyncURL Override Syncer Endpoints Not Defined",
-			givenBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{}}},
-			givenAdaptersCfg: map[string]config.Adapter{"a": {UserSyncURL: "override"}},
-			expectedError:    "adapters.a.usersync_url cannot be applied, bidder does not define user sync endpoints and does not define supported endpoints",
-		},
-		{
-			description:      "UserSyncURL Override Ambiguous",
-			givenBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{IFrame: &config.SyncerEndpoint{URL: "originalIFrame"}, Redirect: &config.SyncerEndpoint{URL: "originalRedirect"}}}},
-			givenAdaptersCfg: map[string]config.Adapter{"a": {UserSyncURL: "override"}},
-			expectedError:    "adapters.a.usersync_url cannot be applied, bidder defines multiple user sync endpoints or supports multiple endpoints",
-		},
-		{
-			description:      "UserSyncURL Supports Ambiguous",
-			givenBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{Supports: []string{"iframe", "redirect"}}}},
-			givenAdaptersCfg: map[string]config.Adapter{"a": {UserSyncURL: "override"}},
-			expectedError:    "adapters.a.usersync_url cannot be applied, bidder defines multiple user sync endpoints or supports multiple endpoints",
-		},
-	}
-
-	for _, test := range testCases {
-		resultErr := applyBidderInfoConfigOverrides(test.givenBidderInfos, test.givenAdaptersCfg)
-		if test.expectedError == "" {
-			assert.NoError(t, resultErr, test.description+":err")
-			assert.Equal(t, test.expectedBidderInfos, test.givenBidderInfos, test.description+":result")
-		} else {
-			assert.EqualError(t, resultErr, test.expectedError, test.description+":err")
-		}
-	}
+	ensureHasKey(t, data, "alias")
 }
 
 func TestCheckSupportedUserSyncEndpoints(t *testing.T) {

@@ -5,27 +5,30 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 const hbconfig = "hb_pbs_1.0.0"
 
 type OpenxAdapter struct {
-	endpoint string
+	bidderName string
+	endpoint   string
 }
 
-type openxImpExt struct {
-	CustomParams map[string]interface{} `json:"customParams,omitempty"`
-}
+type openxImpExt map[string]json.RawMessage
 
 type openxReqExt struct {
 	DelDomain    string `json:"delDomain,omitempty"`
 	Platform     string `json:"platform,omitempty"`
 	BidderConfig string `json:"bc"`
+}
+
+type openxRespExt struct {
+	FledgeAuctionConfigs map[string]json.RawMessage `json:"fledge_auction_configs,omitempty"`
 }
 
 func (a *OpenxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -133,23 +136,40 @@ func preprocess(imp *openrtb2.Imp, reqExt *openxReqExt) error {
 	if imp.BidFloor == 0 && openxExt.CustomFloor > 0 {
 		imp.BidFloor = openxExt.CustomFloor
 	}
-	imp.Ext = nil
+
+	// outgoing imp.ext should be same as incoming imp.ext minus prebid and bidder
+	impExt := openxImpExt{}
+	if err := json.Unmarshal(imp.Ext, &impExt); err != nil {
+		return &errortypes.BadInput{
+			Message: err.Error(),
+		}
+	}
+	delete(impExt, openrtb_ext.PrebidExtKey)
+	delete(impExt, openrtb_ext.PrebidExtBidderKey)
 
 	if openxExt.CustomParams != nil {
-		impExt := openxImpExt{
-			CustomParams: openxExt.CustomParams,
-		}
 		var err error
-		if imp.Ext, err = json.Marshal(impExt); err != nil {
+		if impExt["customParams"], err = json.Marshal(openxExt.CustomParams); err != nil {
 			return &errortypes.BadInput{
 				Message: err.Error(),
 			}
 		}
 	}
 
+	if len(impExt) > 0 {
+		var err error
+		if imp.Ext, err = json.Marshal(impExt); err != nil {
+			return &errortypes.BadInput{
+				Message: err.Error(),
+			}
+		}
+	} else {
+		imp.Ext = nil
+	}
+
 	if imp.Video != nil {
 		videoCopy := *imp.Video
-		if bidderExt.Prebid != nil && bidderExt.Prebid.IsRewardedInventory == 1 {
+		if bidderExt.Prebid != nil && bidderExt.Prebid.IsRewardedInventory != nil && *bidderExt.Prebid.IsRewardedInventory == 1 {
 			videoCopy.Ext = json.RawMessage(`{"rewarded":1}`)
 		} else {
 			videoCopy.Ext = nil
@@ -189,6 +209,21 @@ func (a *OpenxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRe
 		bidResponse.Currency = bidResp.Cur
 	}
 
+	if bidResp.Ext != nil {
+		var bidRespExt openxRespExt
+		if err := json.Unmarshal(bidResp.Ext, &bidRespExt); err == nil && bidRespExt.FledgeAuctionConfigs != nil {
+			bidResponse.FledgeAuctionConfigs = make([]*openrtb_ext.FledgeAuctionConfig, 0, len(bidRespExt.FledgeAuctionConfigs))
+			for impId, config := range bidRespExt.FledgeAuctionConfigs {
+				fledgeAuctionConfig := &openrtb_ext.FledgeAuctionConfig{
+					ImpId:  impId,
+					Bidder: a.bidderName,
+					Config: config,
+				}
+				bidResponse.FledgeAuctionConfigs = append(bidResponse.FledgeAuctionConfigs, fledgeAuctionConfig)
+			}
+		}
+	}
+
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
@@ -218,9 +253,10 @@ func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 }
 
 // Builder builds a new instance of the Openx adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &OpenxAdapter{
-		endpoint: config.Endpoint,
+		endpoint:   config.Endpoint,
+		bidderName: string(bidderName),
 	}
 	return bidder, nil
 }

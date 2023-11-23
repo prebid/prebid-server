@@ -2,15 +2,16 @@ package unicorn
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/buger/jsonparser"
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type adapter struct {
@@ -34,7 +35,7 @@ type unicornExt struct {
 }
 
 // Builder builds a new instance of the UNICORN adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,
 	}
@@ -66,6 +67,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	err := modifyImps(request)
 	if err != nil {
+		return nil, []error{err}
+	}
+
+	if err := modifyApp(request); err != nil {
 		return nil, []error{err}
 	}
 
@@ -169,6 +174,36 @@ func getStoredRequestImpID(imp *openrtb2.Imp) (string, error) {
 
 func setSourceExt() json.RawMessage {
 	return json.RawMessage(`{"stype": "prebid_server_uncn", "bidder": "unicorn"}`)
+}
+
+func modifyApp(request *openrtb2.BidRequest) error {
+	if request.App == nil {
+		return errors.New("request app is required")
+	}
+
+	modifiableApp := *request.App
+
+	mediaId, err := jsonparser.GetString(request.Imp[0].Ext, "bidder", "mediaId")
+	if err == nil {
+		modifiableApp.ID = mediaId
+	}
+
+	publisherId, err := jsonparser.GetString(request.Imp[0].Ext, "bidder", "publisherId")
+	if err == nil {
+		var publisher openrtb2.Publisher
+		if modifiableApp.Publisher != nil {
+			publisher = *modifiableApp.Publisher
+		} else {
+			publisher = openrtb2.Publisher{}
+		}
+
+		publisher.ID = publisherId
+
+		modifiableApp.Publisher = &publisher
+	}
+
+	request.App = &modifiableApp
+	return nil
 }
 
 func setExt(request *openrtb2.BidRequest) (json.RawMessage, error) {

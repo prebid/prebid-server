@@ -1,3 +1,5 @@
+endpoint: "https://display.bfmio.com/prebid_display"
+extra_info: "{\"video_endpoint\":\"https://reachms.bfmio.com/bid.json?exchange_id\"}"
 maintainer:
   email: "prebid@beachfront.com"
 gvlVendorID: 335
@@ -14,3 +16,4 @@ userSync:
   iframe:
     url: "https://sync.bfmio.com/sync_s2s?gdpr={{.GDPR}}&us_privacy={{.USPrivacy}}&url={{.RedirectURL}}"
     userMacro: "[io_cid]"
+

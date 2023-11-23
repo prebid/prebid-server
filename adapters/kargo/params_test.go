@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 func TestValidParams(t *testing.T) {
@@ -34,14 +34,20 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
+	`{"placementId": ""}`,
+	`{"placementId": "11523"}`,
 	`{"adSlotID": ""}`,
 	`{"adSlotID": "11523"}`,
 }
 
 var invalidParams = []string{
+	`{"placementId": 42}`,
+	`{"placementId": }`,
+	`{"placementID": "32321"}`,
 	`{"adSlotID": 42}`,
 	`{"adSlotID": }`,
 	`{"adSlotId": "32321"}`,
 	`{"id": }`,
 	`{}`,
+	`{"placementId": "11523", "adSlotID": "12345"}`, // Can't include both
 }

@@ -11,20 +11,21 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/prebid/prebid-server/v2/stored_requests/backends/db_provider"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestEmptyQuery(t *testing.T) {
-	db, _, err := sqlmock.New()
+	provider, _, err := db_provider.NewDbProviderMock()
 	if err != nil {
 		t.Fatalf("Unexpected error stubbing DB: %v", err)
 	}
-	defer db.Close()
+	defer provider.Close()
 
 	fetcher := dbFetcher{
-		db:                 db,
-		queryMaker:         successfulQueryMaker(""),
-		responseQueryMaker: successfulResponseQueryMaker(""),
+		provider:              provider,
+		queryTemplate:         "",
+		responseQueryTemplate: "",
 	}
 	storedReqs, storedImps, errs := fetcher.FetchRequests(context.Background(), nil, nil)
 	assertErrorCount(t, 0, errs)
@@ -45,7 +46,7 @@ func TestGoodResponse(t *testing.T) {
 		AddRow("imp-id-2", `{"imp":true,"value":2}`, "imp")
 
 	mock, fetcher := newFetcher(t, mockReturn, mockQuery, "request-id")
-	defer fetcher.db.Close()
+	defer fetcher.provider.Close()
 
 	storedReqs, storedImps, errs := fetcher.FetchRequests(context.Background(), []string{"request-id"}, nil)
 
@@ -98,7 +99,7 @@ func TestFetchResponses(t *testing.T) {
 
 	for _, test := range testCases {
 		mock, fetcher := newFetcher(t, test.mockReturn, test.mockQuery, test.arguments...)
-		defer fetcher.db.Close()
+		defer fetcher.provider.Close()
 
 		storedResponses, errs := fetcher.FetchResponses(context.Background(), test.respIds)
 
@@ -120,7 +121,7 @@ func TestPartialResponse(t *testing.T) {
 		AddRow("stored-req-id", "{}", "request")
 
 	mock, fetcher := newFetcher(t, mockReturn, mockQuery, "stored-req-id", "stored-req-id-2")
-	defer fetcher.db.Close()
+	defer fetcher.provider.Close()
 
 	storedReqs, storedImps, errs := fetcher.FetchRequests(context.Background(), []string{"stored-req-id", "stored-req-id-2"}, nil)
 
@@ -137,7 +138,7 @@ func TestEmptyResponse(t *testing.T) {
 	mockReturn := sqlmock.NewRows([]string{"id", "data", "dataType"})
 
 	mock, fetcher := newFetcher(t, mockReturn, mockQuery, "stored-req-id", "stored-req-id-2", "stored-imp-id")
-	defer fetcher.db.Close()
+	defer fetcher.provider.Close()
 
 	storedReqs, storedImps, errs := fetcher.FetchRequests(context.Background(), []string{"stored-req-id", "stored-req-id-2"}, []string{"stored-imp-id"})
 
@@ -149,7 +150,7 @@ func TestEmptyResponse(t *testing.T) {
 
 // TestDatabaseError makes sure we exit with an error if the DB query fails.
 func TestDatabaseError(t *testing.T) {
-	db, mock, err := sqlmock.New()
+	provider, mock, err := db_provider.NewDbProviderMock()
 	if err != nil {
 		t.Fatalf("Failed to create mock: %v", err)
 	}
@@ -157,8 +158,8 @@ func TestDatabaseError(t *testing.T) {
 	mock.ExpectQuery(".*").WillReturnError(errors.New("Invalid query."))
 
 	fetcher := &dbFetcher{
-		db:         db,
-		queryMaker: successfulQueryMaker("SELECT id, data, dataType FROM my_table WHERE id IN (?, ?)"),
+		provider:      provider,
+		queryTemplate: "SELECT id, data, dataType FROM my_table WHERE id IN (?, ?)",
 	}
 
 	storedReqs, storedImps, errs := fetcher.FetchRequests(context.Background(), []string{"stored-req-id"}, nil)
@@ -169,7 +170,7 @@ func TestDatabaseError(t *testing.T) {
 
 // TestContextDeadlines makes sure a hung query returns when the timeout expires.
 func TestContextDeadlines(t *testing.T) {
-	db, mock, err := sqlmock.New()
+	provider, mock, err := db_provider.NewDbProviderMock()
 	if err != nil {
 		t.Fatalf("Failed to create mock: %v", err)
 	}
@@ -177,9 +178,9 @@ func TestContextDeadlines(t *testing.T) {
 	mock.ExpectQuery(".*").WillDelayFor(2 * time.Minute)
 
 	fetcher := &dbFetcher{
-		db:                 db,
-		queryMaker:         successfulQueryMaker("SELECT id, requestData FROM my_table WHERE id IN (?, ?)"),
-		responseQueryMaker: successfulResponseQueryMaker("SELECT id, responseData FROM my_table WHERE id IN (?, ?)"),
+		provider:              provider,
+		queryTemplate:         "SELECT id, requestData FROM my_table WHERE id IN (?, ?)",
+		responseQueryTemplate: "SELECT id, responseData FROM my_table WHERE id IN (?, ?)",
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Nanosecond)
@@ -197,7 +198,7 @@ func TestContextDeadlines(t *testing.T) {
 
 // TestContextCancelled makes sure a hung query returns when the context is cancelled.
 func TestContextCancelled(t *testing.T) {
-	db, mock, err := sqlmock.New()
+	provider, mock, err := db_provider.NewDbProviderMock()
 	if err != nil {
 		t.Fatalf("Failed to create mock: %v", err)
 	}
@@ -205,9 +206,9 @@ func TestContextCancelled(t *testing.T) {
 	mock.ExpectQuery(".*").WillDelayFor(2 * time.Minute)
 
 	fetcher := &dbFetcher{
-		db:                 db,
-		queryMaker:         successfulQueryMaker("SELECT id, requestData FROM my_table WHERE id IN (?, ?)"),
-		responseQueryMaker: successfulResponseQueryMaker("SELECT id, responseData FROM my_table WHERE id IN (?, ?)"),
+		provider:              provider,
+		queryTemplate:         "SELECT id, requestData FROM my_table WHERE id IN (?, ?)",
+		responseQueryTemplate: "SELECT id, responseData FROM my_table WHERE id IN (?, ?)",
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -224,7 +225,7 @@ func TestContextCancelled(t *testing.T) {
 
 // Prevents #338
 func TestRowErrors(t *testing.T) {
-	db, mock, err := sqlmock.New()
+	provider, mock, err := db_provider.NewDbProviderMock()
 	if err != nil {
 		t.Fatalf("Failed to create mock: %v", err)
 	}
@@ -234,8 +235,8 @@ func TestRowErrors(t *testing.T) {
 	rows.RowError(1, errors.New("Error reading from row 1"))
 	mock.ExpectQuery(".*").WillReturnRows(rows)
 	fetcher := &dbFetcher{
-		db:         db,
-		queryMaker: successfulQueryMaker("SELECT id, data, dataType FROM my_table WHERE id IN (?)"),
+		provider:      provider,
+		queryTemplate: "SELECT id, data, dataType FROM my_table WHERE id IN (?)",
 	}
 	data, _, errs := fetcher.FetchRequests(context.Background(), []string{"foo", "bar"}, nil)
 	assertErrorCount(t, 1, errs)
@@ -246,7 +247,7 @@ func TestRowErrors(t *testing.T) {
 }
 
 func TestRowErrorsFetchResponses(t *testing.T) {
-	db, mock, err := sqlmock.New()
+	provider, mock, err := db_provider.NewDbProviderMock()
 	if err != nil {
 		t.Fatalf("Failed to create mock: %v", err)
 	}
@@ -256,9 +257,9 @@ func TestRowErrorsFetchResponses(t *testing.T) {
 	rows.RowError(1, errors.New("Error reading from row 1"))
 	mock.ExpectQuery(".*").WillReturnRows(rows)
 	fetcher := &dbFetcher{
-		db:                 db,
-		queryMaker:         successfulQueryMaker("SELECT id, data, dataType FROM my_table WHERE id IN (?)"),
-		responseQueryMaker: successfulResponseQueryMaker("SELECT id, data, dataType FROM my_table WHERE id IN (?)"),
+		provider:              provider,
+		queryTemplate:         "SELECT id, data, dataType FROM my_table WHERE id IN (?)",
+		responseQueryTemplate: "SELECT id, data, dataType FROM my_table WHERE id IN (?)",
 	}
 	data, errs := fetcher.FetchResponses(context.Background(), []string{"foo", "bar"})
 	assertErrorCount(t, 1, errs)
@@ -269,7 +270,7 @@ func TestRowErrorsFetchResponses(t *testing.T) {
 }
 
 func newFetcher(t *testing.T, rows *sqlmock.Rows, query string, args ...driver.Value) (sqlmock.Sqlmock, *dbFetcher) {
-	db, mock, err := sqlmock.New()
+	provider, mock, err := db_provider.NewDbProviderMock()
 	if err != nil {
 		t.Fatalf("Failed to create mock: %v", err)
 		return nil, nil
@@ -278,9 +279,9 @@ func newFetcher(t *testing.T, rows *sqlmock.Rows, query string, args ...driver.V
 	queryRegex := fmt.Sprintf("^%s$", regexp.QuoteMeta(query))
 	mock.ExpectQuery(queryRegex).WithArgs(args...).WillReturnRows(rows)
 	fetcher := &dbFetcher{
-		db:                 db,
-		queryMaker:         successfulQueryMaker(query),
-		responseQueryMaker: successfulResponseQueryMaker(query),
+		provider:              provider,
+		queryTemplate:         query,
+		responseQueryTemplate: query,
 	}
 
 	return mock, fetcher
@@ -315,17 +316,5 @@ func assertErrorCount(t *testing.T, num int, errs []error) {
 	t.Helper()
 	if len(errs) != num {
 		t.Errorf("Wrong number of errors. Expected %d. Got %d. Errors are %v", num, len(errs), errs)
-	}
-}
-
-func successfulQueryMaker(response string) func(int, int) string {
-	return func(numReqs int, numImps int) string {
-		return response
-	}
-}
-
-func successfulResponseQueryMaker(response string) func(int) string {
-	return func(numIds int) string {
-		return response
 	}
 }

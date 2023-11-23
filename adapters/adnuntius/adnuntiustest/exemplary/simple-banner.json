@@ -36,7 +36,8 @@
                     "adUnits": [
                         {
                             "auId": "123",
-                            "targetId": "123-test-imp-id"
+                            "targetId": "123-test-imp-id",
+							"dimensions": [[300,250],[300,600]]
                         }
                     ],
                     "context": "prebid.org",

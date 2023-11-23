@@ -3,8 +3,8 @@ package gdpr
 import (
 	"context"
 
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type Permissions interface {
@@ -33,31 +33,33 @@ type RequestInfo struct {
 	PublisherID string
 }
 
-// NewPermissionsBuilder is of type PermissionsBuilderMaker
-// It takes host config data used to configure the builder function it returns
+// NewPermissionsBuilder takes host config data used to configure the builder function it returns
 func NewPermissionsBuilder(cfg config.GDPR, gvlVendorIDs map[openrtb_ext.BidderName]uint16, vendorListFetcher VendorListFetcher) PermissionsBuilder {
 	return func(tcf2Cfg TCF2ConfigReader, requestInfo RequestInfo) Permissions {
-		return NewPermissions(cfg, tcf2Cfg, gvlVendorIDs, vendorListFetcher, requestInfo)
+		purposeEnforcerBuilder := NewPurposeEnforcerBuilder(tcf2Cfg)
+
+		return NewPermissions(cfg, tcf2Cfg, gvlVendorIDs, vendorListFetcher, purposeEnforcerBuilder, requestInfo)
 	}
 }
 
 // NewPermissions gets a per-request Permissions object that can then be used to check GDPR permissions for a given bidder.
-func NewPermissions(cfg config.GDPR, tcf2Config TCF2ConfigReader, vendorIDs map[openrtb_ext.BidderName]uint16, fetcher VendorListFetcher, requestInfo RequestInfo) Permissions {
+func NewPermissions(cfg config.GDPR, tcf2Config TCF2ConfigReader, vendorIDs map[openrtb_ext.BidderName]uint16, fetcher VendorListFetcher, purposeEnforcerBuilder PurposeEnforcerBuilder, requestInfo RequestInfo) Permissions {
 	if !cfg.Enabled {
 		return &AlwaysAllow{}
 	}
 
 	permissionsImpl := &permissionsImpl{
-		fetchVendorList:       fetcher,
-		gdprDefaultValue:      cfg.DefaultValue,
-		hostVendorID:          cfg.HostVendorID,
-		nonStandardPublishers: cfg.NonStandardPublisherMap,
-		cfg:                   tcf2Config,
-		vendorIDs:             vendorIDs,
-		publisherID:           requestInfo.PublisherID,
-		gdprSignal:            SignalNormalize(requestInfo.GDPRSignal, cfg.DefaultValue),
-		consent:               requestInfo.Consent,
-		aliasGVLIDs:           requestInfo.AliasGVLIDs,
+		fetchVendorList:        fetcher,
+		gdprDefaultValue:       cfg.DefaultValue,
+		hostVendorID:           cfg.HostVendorID,
+		nonStandardPublishers:  cfg.NonStandardPublisherMap,
+		cfg:                    tcf2Config,
+		vendorIDs:              vendorIDs,
+		publisherID:            requestInfo.PublisherID,
+		gdprSignal:             SignalNormalize(requestInfo.GDPRSignal, cfg.DefaultValue),
+		consent:                requestInfo.Consent,
+		aliasGVLIDs:            requestInfo.AliasGVLIDs,
+		purposeEnforcerBuilder: purposeEnforcerBuilder,
 	}
 
 	if cfg.HostVendorID == 0 {

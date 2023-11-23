@@ -22,7 +22,7 @@
         "ext": {
           "bidder": {
             "slotid": "m8x9x3roll",
-            "adtype": "roll",
+            "adtype": "interstitial",
             "publisherid": "123123123",
             "signkey": "signkey",
             "keyid": "41",
@@ -98,9 +98,11 @@
           },
           "multislot": [
             {
-              "adtype": 60,
+              "adtype": 12,
               "slotid": "m8x9x3roll",
-              "test": 0
+              "test": 1,
+              "w": 300,
+              "h": 250
             }
           ],
           "device": {
@@ -128,7 +130,8 @@
           },
           "regs": {
           },
-          "version": "3.4"
+          "version": "3.4",
+          "clientAdRequestId": "test-req-id"
         }
       },
       "mockResponse": {
@@ -143,7 +146,7 @@
                   "contentid": "58001445",
                   "creativetype": 106,
                   "endtime": 1621344684645,
-                  "interactiontype": 2,
+                  "interactiontype": 1,
                   "landingTitle": 1,
                   "metaData": {
                     "adSign": "2",

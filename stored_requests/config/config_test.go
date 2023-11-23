@@ -2,7 +2,6 @@ package config
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -14,13 +13,14 @@ import (
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/julienschmidt/httprouter"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/metrics"
-	"github.com/prebid/prebid-server/stored_requests"
-	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
-	"github.com/prebid/prebid-server/stored_requests/backends/http_fetcher"
-	"github.com/prebid/prebid-server/stored_requests/events"
-	httpEvents "github.com/prebid/prebid-server/stored_requests/events/http"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/metrics"
+	"github.com/prebid/prebid-server/v2/stored_requests"
+	"github.com/prebid/prebid-server/v2/stored_requests/backends/db_provider"
+	"github.com/prebid/prebid-server/v2/stored_requests/backends/empty_fetcher"
+	"github.com/prebid/prebid-server/v2/stored_requests/backends/http_fetcher"
+	"github.com/prebid/prebid-server/v2/stored_requests/events"
+	httpEvents "github.com/prebid/prebid-server/v2/stored_requests/events/http"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -56,59 +56,68 @@ func TestNewEmptyFetcher(t *testing.T) {
 		},
 		{
 			config: &config.StoredRequests{
-				Postgres: config.PostgresConfig{
-					CacheInitialization: config.PostgresCacheInitializer{
+				Database: config.DatabaseConfig{
+					ConnectionInfo: config.DatabaseConnection{
+						Driver: "postgres",
+					},
+					CacheInitialization: config.DatabaseCacheInitializer{
 						Query: "test query",
 					},
-					PollUpdates: config.PostgresUpdatePolling{
+					PollUpdates: config.DatabaseUpdatePolling{
 						Query: "test poll query",
 					},
-					FetcherQueries: config.PostgresFetcherQueries{
+					FetcherQueries: config.DatabaseFetcherQueries{
 						QueryTemplate: "",
 					},
 				},
 			},
 			emptyFetcher: true,
-			description:  "If Postgres fetcher query is not defined, but Postgres Cache init query and Postgres update polling query are defined EmptyFetcher should be returned",
+			description:  "If Database fetcher query is not defined, but Database Cache init query and Database update polling query are defined EmptyFetcher should be returned",
 		},
 		{
 			config: &config.StoredRequests{
-				Postgres: config.PostgresConfig{
-					CacheInitialization: config.PostgresCacheInitializer{
+				Database: config.DatabaseConfig{
+					ConnectionInfo: config.DatabaseConnection{
+						Driver: "postgres",
+					},
+					CacheInitialization: config.DatabaseCacheInitializer{
 						Query: "",
 					},
-					PollUpdates: config.PostgresUpdatePolling{
+					PollUpdates: config.DatabaseUpdatePolling{
 						Query: "",
 					},
-					FetcherQueries: config.PostgresFetcherQueries{
+					FetcherQueries: config.DatabaseFetcherQueries{
 						QueryTemplate: "test fetcher query",
 					},
 				},
 			},
 			emptyFetcher: false,
-			description:  "If Postgres fetcher query is  defined, but Postgres Cache init query and Postgres update polling query are not defined not EmptyFetcher (DBFetcher) should be returned",
+			description:  "If Database fetcher query is defined, but Database Cache init query and Database update polling query are not defined not EmptyFetcher (DBFetcher) should be returned",
 		},
 		{
 			config: &config.StoredRequests{
-				Postgres: config.PostgresConfig{
-					CacheInitialization: config.PostgresCacheInitializer{
+				Database: config.DatabaseConfig{
+					ConnectionInfo: config.DatabaseConnection{
+						Driver: "postgres",
+					},
+					CacheInitialization: config.DatabaseCacheInitializer{
 						Query: "test cache query",
 					},
-					PollUpdates: config.PostgresUpdatePolling{
+					PollUpdates: config.DatabaseUpdatePolling{
 						Query: "test poll query",
 					},
-					FetcherQueries: config.PostgresFetcherQueries{
+					FetcherQueries: config.DatabaseFetcherQueries{
 						QueryTemplate: "test fetcher query",
 					},
 				},
 			},
 			emptyFetcher: false,
-			description:  "If Postgres fetcher query is  defined and Postgres Cache init query and Postgres update polling query are  defined not EmptyFetcher (DBFetcher) should be returned",
+			description:  "If Database fetcher query is defined and Database Cache init query and Database update polling query are defined not EmptyFetcher (DBFetcher) should be returned",
 		},
 	}
 
 	for _, test := range testCases {
-		fetcher := newFetcher(test.config, nil, &sql.DB{})
+		fetcher := newFetcher(test.config, nil, db_provider.DbProviderMock{})
 		assert.NotNil(t, fetcher, "The fetcher should be non-nil.")
 		if test.emptyFetcher {
 			assert.Equal(t, empty_fetcher.EmptyFetcher{}, fetcher, "Empty fetcher should be returned")
@@ -190,18 +199,18 @@ func TestNewInMemoryAccountCache(t *testing.T) {
 	assert.True(t, isEmptyCacheType(cache.Responses), "The newCache method should return an empty Responses cache for Accounts config")
 }
 
-func TestNewPostgresEventProducers(t *testing.T) {
+func TestNewDatabaseEventProducers(t *testing.T) {
 	metricsMock := &metrics.MetricsEngineMock{}
 	metricsMock.Mock.On("RecordStoredDataFetchTime", mock.Anything, mock.Anything).Return()
 	metricsMock.Mock.On("RecordStoredDataError", mock.Anything).Return()
 
 	cfg := &config.StoredRequests{
-		Postgres: config.PostgresConfig{
-			CacheInitialization: config.PostgresCacheInitializer{
+		Database: config.DatabaseConfig{
+			CacheInitialization: config.DatabaseCacheInitializer{
 				Timeout: 50,
 				Query:   "SELECT id, requestData, type FROM stored_data",
 			},
-			PollUpdates: config.PostgresUpdatePolling{
+			PollUpdates: config.DatabaseUpdatePolling{
 				RefreshRate: 20,
 				Timeout:     50,
 				Query:       "SELECT id, requestData, type FROM stored_data WHERE last_updated > $1",
@@ -209,13 +218,13 @@ func TestNewPostgresEventProducers(t *testing.T) {
 		},
 	}
 	client := &http.Client{}
-	db, mock, err := sqlmock.New()
+	provider, mock, err := db_provider.NewDbProviderMock()
 	if err != nil {
 		t.Fatalf("Failed to create mock: %v", err)
 	}
-	mock.ExpectQuery("^" + regexp.QuoteMeta(cfg.Postgres.CacheInitialization.Query) + "$").WillReturnError(errors.New("Query failed"))
+	mock.ExpectQuery("^" + regexp.QuoteMeta(cfg.Database.CacheInitialization.Query) + "$").WillReturnError(errors.New("Query failed"))
 
-	evProducers := newEventProducers(cfg, client, db, metricsMock, nil)
+	evProducers := newEventProducers(cfg, client, provider, metricsMock, nil)
 	assertProducerLength(t, evProducers, 1)
 
 	assertExpectationsMet(t, mock)

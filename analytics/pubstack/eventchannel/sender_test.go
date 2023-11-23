@@ -1,7 +1,7 @@
 package eventchannel
 
 import (
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -13,7 +13,7 @@ func TestBuildEndpointSender(t *testing.T) {
 	requestBody := make([]byte, 10)
 	server := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		defer req.Body.Close()
-		requestBody, _ = ioutil.ReadAll(req.Body)
+		requestBody, _ = io.ReadAll(req.Body)
 		res.WriteHeader(200)
 	}))
 

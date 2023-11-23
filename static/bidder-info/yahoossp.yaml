@@ -1,3 +1,4 @@
+endpoint: "https://s2shb.ssp.yahoo.com/admax/bid/partners/PBS"
 maintainer:
   email: "hb-fe-tech@oath.com"
 gvlVendorID: 25

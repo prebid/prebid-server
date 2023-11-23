@@ -3,9 +3,9 @@ package lmt
 import (
 	"strings"
 
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/util/iosutil"
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/iosutil"
 )
 
 var (
@@ -56,7 +56,7 @@ func modifyForIOS142OrGreater(req *openrtb2.BidRequest) {
 
 	switch *atts {
 	case openrtb_ext.IOSAppTrackingStatusNotDetermined:
-		req.Device.Lmt = &int8Zero
+		req.Device.Lmt = &int8One
 	case openrtb_ext.IOSAppTrackingStatusRestricted:
 		req.Device.Lmt = &int8One
 	case openrtb_ext.IOSAppTrackingStatusDenied:

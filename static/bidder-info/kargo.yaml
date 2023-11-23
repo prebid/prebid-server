@@ -1,3 +1,4 @@
+endpoint: "https://krk.kargo.com/api/v1/openrtb"
 maintainer:
   email: "kraken@kargo.com"
 gvlVendorID: 972
@@ -12,3 +13,4 @@ userSync:
   redirect:
     url: "https://crb.kargo.com/api/v1/dsync/PrebidServer?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&r={{.RedirectURL}}"
     userMacro: "$UID"
+endpointCompression: "GZIP"

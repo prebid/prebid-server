@@ -1,3 +1,4 @@
+endpoint: "https://grid.bidswitch.net/sp_bid?sp=prebid"
 maintainer:
   email: "grid-tech@themediagrid.com"
 gvlVendorID: 686
@@ -6,10 +7,12 @@ capabilities:
     mediaTypes:
       - banner
       - video
+      - native
   site:
     mediaTypes:
       - banner
       - video
+      - native
 userSync:
   redirect:
     url: "https://x.bidswitch.net/check_uuid/{{.RedirectURL}}?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}"

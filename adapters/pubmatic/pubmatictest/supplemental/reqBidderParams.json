@@ -99,6 +99,14 @@
             "wrapper": {
               "profile": 1234,
               "version": 2
+            },
+            "prebid": {
+              "bidderparams": {
+                "wrapper": {
+                  "profile": 1234,
+                  "version": 2
+                }
+              }
             }
           }
         }

@@ -1,3 +1,4 @@
+endpoint: "https://openrtb-us-east-1.axonix.com/supply/prebid-server/{{.AccountID}}"
 maintainer:
   email: support.axonix@emodoinc.com
 gvlVendorID: 678

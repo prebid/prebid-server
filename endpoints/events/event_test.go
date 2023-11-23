@@ -5,75 +5,70 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/analytics"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/v2/analytics"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/metrics"
+	"github.com/prebid/prebid-server/v2/privacy"
+	"github.com/prebid/prebid-server/v2/stored_requests"
 	"github.com/stretchr/testify/assert"
 )
 
-// Mock Analytics Module
 type eventsMockAnalyticsModule struct {
 	Fail    bool
 	Error   error
 	Invoked bool
 }
 
-func (e *eventsMockAnalyticsModule) LogAuctionObject(ao *analytics.AuctionObject) {
+func (e *eventsMockAnalyticsModule) LogAuctionObject(ao *analytics.AuctionObject, _ privacy.ActivityControl) {
 	if e.Fail {
 		panic(e.Error)
 	}
-	return
 }
 
-func (e *eventsMockAnalyticsModule) LogVideoObject(vo *analytics.VideoObject) {
+func (e *eventsMockAnalyticsModule) LogVideoObject(vo *analytics.VideoObject, _ privacy.ActivityControl) {
 	if e.Fail {
 		panic(e.Error)
 	}
-	return
 }
 
 func (e *eventsMockAnalyticsModule) LogCookieSyncObject(cso *analytics.CookieSyncObject) {
 	if e.Fail {
 		panic(e.Error)
 	}
-	return
 }
 
 func (e *eventsMockAnalyticsModule) LogSetUIDObject(so *analytics.SetUIDObject) {
 	if e.Fail {
 		panic(e.Error)
 	}
-	return
 }
 
-func (e *eventsMockAnalyticsModule) LogAmpObject(ao *analytics.AmpObject) {
+func (e *eventsMockAnalyticsModule) LogAmpObject(ao *analytics.AmpObject, _ privacy.ActivityControl) {
 	if e.Fail {
 		panic(e.Error)
 	}
-	return
 }
 
-func (e *eventsMockAnalyticsModule) LogNotificationEventObject(ne *analytics.NotificationEvent) {
+func (e *eventsMockAnalyticsModule) LogNotificationEventObject(ne *analytics.NotificationEvent, _ privacy.ActivityControl) {
 	if e.Fail {
 		panic(e.Error)
 	}
 	e.Invoked = true
-
-	return
 }
 
-// Mock Account fetcher
 var mockAccountData = map[string]json.RawMessage{
-	"events_enabled":  json.RawMessage(`{"events_enabled":true}`),
-	"events_disabled": json.RawMessage(`{"events_enabled":false}`),
+	"events_enabled":  json.RawMessage(`{"events": {"enabled":true}}`),
+	"events_disabled": json.RawMessage(`{"events": {"enabled":false}}`),
+	"malformed_acct":  json.RawMessage(`{"events": {"enabled":"invalid type"}}`),
+	"disabled_acct":   json.RawMessage(`{"disabled": true}`),
 }
 
 type mockAccountsFetcher struct {
@@ -82,7 +77,7 @@ type mockAccountsFetcher struct {
 	DurationMS int
 }
 
-func (maf mockAccountsFetcher) FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error) {
+func (maf mockAccountsFetcher) FetchAccount(ctx context.Context, defaultAccountJSON json.RawMessage, accountID string) (json.RawMessage, []error) {
 	if maf.DurationMS > 0 {
 		select {
 		case <-time.After(time.Duration(maf.DurationMS) * time.Millisecond):
@@ -100,7 +95,7 @@ func (maf mockAccountsFetcher) FetchAccount(ctx context.Context, accountID strin
 		return nil, []error{maf.Error}
 	}
 
-	return nil, []error{stored_requests.NotFoundError{accountID, "Account"}}
+	return nil, []error{stored_requests.NotFoundError{ID: accountID, DataType: "Account"}}
 }
 
 // Tests
@@ -126,12 +121,12 @@ func TestShouldReturnBadRequestWhenTypeIsMissing(t *testing.T) {
 	req := httptest.NewRequest("GET", "/event?b=test", strings.NewReader(reqData))
 	recorder := httptest.NewRecorder()
 
-	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule)
+	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule, &metrics.MetricsEngineMock{})
 
 	// execute
 	e(recorder, req, nil)
 
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -162,12 +157,12 @@ func TestShouldReturnBadRequestWhenTypeIsInvalid(t *testing.T) {
 	req := httptest.NewRequest("GET", "/event?t=test&b=t", strings.NewReader(reqData))
 	recorder := httptest.NewRecorder()
 
-	e := NewEventEndpoint(cfg, mockAccounts, mockAnalyticsModule)
+	e := NewEventEndpoint(cfg, mockAccounts, mockAnalyticsModule, &metrics.MetricsEngineMock{})
 
 	// execute
 	e(recorder, req, nil)
 
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -198,12 +193,12 @@ func TestShouldReturnBadRequestWhenBidIdIsMissing(t *testing.T) {
 	req := httptest.NewRequest("GET", "/event?t=win", strings.NewReader(reqData))
 	recorder := httptest.NewRecorder()
 
-	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule)
+	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule, &metrics.MetricsEngineMock{})
 
 	// execute
 	e(recorder, req, nil)
 
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -234,12 +229,12 @@ func TestShouldReturnBadRequestWhenTimestampIsInvalid(t *testing.T) {
 	req := httptest.NewRequest("GET", "/event?t=win&b=test&ts=q", strings.NewReader(reqData))
 	recorder := httptest.NewRecorder()
 
-	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule)
+	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule, &metrics.MetricsEngineMock{})
 
 	// execute
 	e(recorder, req, nil)
 
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -270,12 +265,12 @@ func TestShouldReturnUnauthorizedWhenAccountIsMissing(t *testing.T) {
 	req := httptest.NewRequest("GET", "/event?t=win&b=test&ts=1234", strings.NewReader(reqData))
 	recorder := httptest.NewRecorder()
 
-	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule)
+	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule, &metrics.MetricsEngineMock{})
 
 	// execute
 	e(recorder, req, nil)
 
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -306,12 +301,12 @@ func TestShouldReturnBadRequestWhenFormatValueIsInvalid(t *testing.T) {
 	req := httptest.NewRequest("GET", "/event?t=win&b=test&ts=1234&f=q", strings.NewReader(reqData))
 	recorder := httptest.NewRecorder()
 
-	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule)
+	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule, &metrics.MetricsEngineMock{})
 
 	// execute
 	e(recorder, req, nil)
 
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -342,12 +337,12 @@ func TestShouldReturnBadRequestWhenAnalyticsValueIsInvalid(t *testing.T) {
 	req := httptest.NewRequest("GET", "/event?t=win&b=test&ts=1234&f=b&x=4", strings.NewReader(reqData))
 	recorder := httptest.NewRecorder()
 
-	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule)
+	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule, &metrics.MetricsEngineMock{})
 
 	// execute
 	e(recorder, req, nil)
 
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -357,7 +352,7 @@ func TestShouldReturnBadRequestWhenAnalyticsValueIsInvalid(t *testing.T) {
 	assert.Equal(t, "invalid request: unknown analytics: '4'\n", string(d))
 }
 
-func TestShouldNotPassEventToAnalyticsReporterWhenAccountNotFound(t *testing.T) {
+func TestShouldNotPassEventToAnalyticsReporterWhenAccountNotFoundAndDefaultIsFalse(t *testing.T) {
 
 	// mock AccountsFetcher
 	mockAccountsFetcher := &mockAccountsFetcher{
@@ -381,11 +376,11 @@ func TestShouldNotPassEventToAnalyticsReporterWhenAccountNotFound(t *testing.T) 
 	req := httptest.NewRequest("GET", "/event?t=win&b=test&ts=1234&f=b&x=1&a=testacc", strings.NewReader(reqData))
 	recorder := httptest.NewRecorder()
 
-	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule)
+	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule, &metrics.MetricsEngineMock{})
 
 	// execute
 	e(recorder, req, nil)
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -415,12 +410,12 @@ func TestShouldReturnBadRequestWhenIntegrationValueIsInvalid(t *testing.T) {
 	req := httptest.NewRequest("GET", "/event?t=win&b=bidId&f=b&ts=1000&x=1&a=accountId&bidder=bidder&int=Te$tIntegrationType", strings.NewReader(reqData))
 	recorder := httptest.NewRecorder()
 
-	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule)
+	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule, &metrics.MetricsEngineMock{})
 
 	// execute
 	e(recorder, req, nil)
 
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -454,11 +449,11 @@ func TestShouldNotPassEventToAnalyticsReporterWhenAccountEventNotEnabled(t *test
 	req := httptest.NewRequest("GET", "/event?t=win&b=test&ts=1234&f=b&x=1&a=events_disabled", strings.NewReader(reqData))
 	recorder := httptest.NewRecorder()
 
-	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule)
+	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule, &metrics.MetricsEngineMock{})
 
 	// execute
 	e(recorder, req, nil)
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -492,7 +487,7 @@ func TestShouldPassEventToAnalyticsReporterWhenAccountEventEnabled(t *testing.T)
 	req := httptest.NewRequest("GET", "/event?t=win&b=test&ts=1234&f=b&x=1&a=events_enabled", strings.NewReader(reqData))
 	recorder := httptest.NewRecorder()
 
-	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule)
+	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule, &metrics.MetricsEngineMock{})
 
 	// execute
 	e(recorder, req, nil)
@@ -526,7 +521,7 @@ func TestShouldNotPassEventToAnalyticsReporterWhenAnalyticsValueIsZero(t *testin
 	req := httptest.NewRequest("GET", "/event?t=win&b=test&ts=1234&f=b&x=0&a=events_enabled", strings.NewReader(reqData))
 	recorder := httptest.NewRecorder()
 
-	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule)
+	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule, &metrics.MetricsEngineMock{})
 
 	// execute
 	e(recorder, req, nil)
@@ -560,12 +555,12 @@ func TestShouldRespondWithPixelAndContentTypeWhenRequestFormatIsImage(t *testing
 	req := httptest.NewRequest("GET", "/event?t=win&b=test&ts=1234&f=i&x=1&a=events_enabled", strings.NewReader(reqData))
 	recorder := httptest.NewRecorder()
 
-	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule)
+	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule, &metrics.MetricsEngineMock{})
 
 	// execute
 	e(recorder, req, nil)
 
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -601,12 +596,12 @@ func TestShouldRespondWithNoContentWhenRequestFormatIsNotDefined(t *testing.T) {
 	req := httptest.NewRequest("GET", "/event?t=imp&b=test&ts=1234&x=1&a=events_enabled", strings.NewReader(reqData))
 	recorder := httptest.NewRecorder()
 
-	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule)
+	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule, &metrics.MetricsEngineMock{})
 
 	// execute
 	e(recorder, req, nil)
 
-	d, err := ioutil.ReadAll(recorder.Result().Body)
+	d, err := io.ReadAll(recorder.Result().Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -654,6 +649,19 @@ func TestShouldParseEventCorrectly(t *testing.T) {
 				BidID:     "bidId",
 				Timestamp: 0,
 				Analytics: analytics.Enabled,
+			},
+		},
+		"case insensitive bidder name": {
+			req: httptest.NewRequest("GET", "/event?t=win&b=bidId&f=b&ts=1000&x=1&a=accountId&bidder=RubiCon&int=intType", strings.NewReader("")),
+			expected: &analytics.EventRequest{
+				Type:        analytics.Win,
+				BidID:       "bidId",
+				Timestamp:   1000,
+				Bidder:      "rubicon",
+				AccountID:   "",
+				Format:      analytics.Blank,
+				Analytics:   analytics.Enabled,
+				Integration: "intType",
 			},
 		},
 	}
@@ -805,10 +813,10 @@ func TestShouldReturnBadRequestWhenVTypeIsInvalid(t *testing.T) {
 
 		recorder := httptest.NewRecorder()
 
-		e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule)
+		e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule, &metrics.MetricsEngineMock{})
 		e(recorder, test.req, nil)
 
-		d, err := ioutil.ReadAll(recorder.Result().Body)
+		d, err := io.ReadAll(recorder.Result().Body)
 		if err != nil {
 			t.Fatal(err)
 		}

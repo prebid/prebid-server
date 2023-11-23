@@ -1,0 +1,17 @@
+endpoint: "http://bid.adsinteractive.com/prebid"
+maintainer:
+  email: it@adsinteractive.com
+gvlVendorID: 1212
+modifyingVastXmlAllowed: false
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner
+userSync:
+  redirect:
+    url: "https://sync.adsinteractive.com/getuid?{{.RedirectURL}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}"
+    userMacro: "$AUID"
+ 

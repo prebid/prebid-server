@@ -23,5 +23,5 @@
     }
   },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request: request.imp[0].ext.appnexus failed validation.\n(root): Invalid type. Expected: object, given: string\n"
+  "expectedErrorMessage": "Invalid request: request.imp[0].ext.prebid.bidder.appnexus failed validation.\n(root): Invalid type. Expected: object, given: string\n"
 }

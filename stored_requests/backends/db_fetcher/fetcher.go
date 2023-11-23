@@ -2,36 +2,42 @@ package db_fetcher
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
+
 	"github.com/lib/pq"
 
 	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/v2/stored_requests"
+	"github.com/prebid/prebid-server/v2/stored_requests/backends/db_provider"
 )
 
-func NewFetcher(db *sql.DB, queryMaker func(int, int) string, responseQueryMaker func(int) string) stored_requests.AllFetcher {
-	if db == nil {
-		glog.Fatalf("The Postgres Stored Request Fetcher requires a database connection. Please report this as a bug.")
+func NewFetcher(
+	provider db_provider.DbProvider,
+	queryTemplate string,
+	responseQueryTemplate string,
+) stored_requests.AllFetcher {
+
+	if provider == nil {
+		glog.Fatalf("The Database Stored Request Fetcher requires a database connection. Please report this as a bug.")
 	}
-	if queryMaker == nil {
-		glog.Fatalf("The Postgres Stored Request Fetcher requires a queryMaker function. Please report this as a bug.")
+	if queryTemplate == "" {
+		glog.Fatalf("The Database Stored Request Fetcher requires a queryTemplate. Please report this as a bug.")
 	}
-	if responseQueryMaker == nil {
-		glog.Fatalf("The Postgres Stored Response Fetcher requires a responseQueryMaker function. Please report this as a bug.")
+	if responseQueryTemplate == "" {
+		glog.Fatalf("The Database Stored Response Fetcher requires a responseQueryTemplate. Please report this as a bug.")
 	}
 	return &dbFetcher{
-		db:                 db,
-		queryMaker:         queryMaker,
-		responseQueryMaker: responseQueryMaker,
+		provider:              provider,
+		queryTemplate:         queryTemplate,
+		responseQueryTemplate: responseQueryTemplate,
 	}
 }
 
 // dbFetcher fetches Stored Requests from a database. This should be instantiated through the NewFetcher() function.
 type dbFetcher struct {
-	db                 *sql.DB
-	queryMaker         func(numReqs int, numImps int) (query string)
-	responseQueryMaker func(numIds int) (query string)
+	provider              db_provider.DbProvider
+	queryTemplate         string
+	responseQueryTemplate string
 }
 
 func (fetcher *dbFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (map[string]json.RawMessage, map[string]json.RawMessage, []error) {
@@ -39,16 +45,21 @@ func (fetcher *dbFetcher) FetchRequests(ctx context.Context, requestIDs []string
 		return nil, nil, nil
 	}
 
-	query := fetcher.queryMaker(len(requestIDs), len(impIDs))
-	idInterfaces := make([]interface{}, len(requestIDs)+len(impIDs))
+	requestIDsParam := make([]interface{}, len(requestIDs))
 	for i := 0; i < len(requestIDs); i++ {
-		idInterfaces[i] = requestIDs[i]
+		requestIDsParam[i] = requestIDs[i]
 	}
+	impIDsParam := make([]interface{}, len(impIDs))
 	for i := 0; i < len(impIDs); i++ {
-		idInterfaces[i+len(requestIDs)] = impIDs[i]
+		impIDsParam[i] = impIDs[i]
 	}
 
-	rows, err := fetcher.db.QueryContext(ctx, query, idInterfaces...)
+	params := []db_provider.QueryParam{
+		{Name: "REQUEST_ID_LIST", Value: requestIDsParam},
+		{Name: "IMP_ID_LIST", Value: impIDsParam},
+	}
+
+	rows, err := fetcher.provider.QueryContext(ctx, fetcher.queryTemplate, params...)
 	if err != nil {
 		if err != context.DeadlineExceeded && !isBadInput(err) {
 			glog.Errorf("Error reading from Stored Request DB: %s", err.Error())
@@ -82,7 +93,7 @@ func (fetcher *dbFetcher) FetchRequests(ctx context.Context, requestIDs []string
 		case "imp":
 			storedImpData[id] = data
 		default:
-			glog.Errorf("Postgres result set with id=%s has invalid type: %s. This will be ignored.", id, dataType)
+			glog.Errorf("Database result set with id=%s has invalid type: %s. This will be ignored.", id, dataType)
 		}
 	}
 
@@ -102,13 +113,15 @@ func (fetcher *dbFetcher) FetchResponses(ctx context.Context, ids []string) (dat
 		return nil, nil
 	}
 
-	query := fetcher.responseQueryMaker(len(ids))
 	idInterfaces := make([]interface{}, len(ids))
 	for i := 0; i < len(ids); i++ {
 		idInterfaces[i] = ids[i]
 	}
+	params := []db_provider.QueryParam{
+		{Name: "ID_LIST", Value: idInterfaces},
+	}
 
-	rows, err := fetcher.db.QueryContext(ctx, query, idInterfaces...)
+	rows, err := fetcher.provider.QueryContext(ctx, fetcher.responseQueryTemplate, params...)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -138,7 +151,7 @@ func (fetcher *dbFetcher) FetchResponses(ctx context.Context, ids []string) (dat
 
 }
 
-func (fetcher *dbFetcher) FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error) {
+func (fetcher *dbFetcher) FetchAccount(ctx context.Context, accountDefaultsJSON json.RawMessage, accountID string) (json.RawMessage, []error) {
 	return nil, []error{stored_requests.NotFoundError{accountID, "Account"}}
 }
 

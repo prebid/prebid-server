@@ -125,7 +125,7 @@
             "keywords": "power tools"
           },
           "ext": {
-            "client": "prebid_server_0.4"
+            "client": "prebid_server_0.6"
           }
         }
       },
@@ -165,6 +165,7 @@
       }
     }
   ],
+  "expectedBidResponses": [{"currency":"USD","bids":[]}],
   "expectedMakeBidsErrors": [
     {
       "value": "Unknown markup type something.",

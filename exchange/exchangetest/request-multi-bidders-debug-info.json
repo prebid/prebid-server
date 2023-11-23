@@ -15,11 +15,15 @@
             ]
           },
           "ext": {
-            "appnexus": {
-              "placementId": 1
-            },
-            "audienceNetwork": {
-              "placementId": "some-placement"
+            "prebid": {
+              "bidder": {
+                "appnexus": {
+                  "placementId": 1
+                },
+                "audienceNetwork": {
+                  "placementId": "some-placement"
+                }
+              }
             }
           }
         },
@@ -31,11 +35,15 @@
             ]
           },
           "ext": {
-            "appnexus": {
-              "placementId": 2
-            },
-            "audienceNetwork": {
-              "placementId": "some-other-placement"
+            "prebid": {
+              "bidder": {
+                "appnexus": {
+                  "placementId": 2
+                },
+                "audienceNetwork": {
+                  "placementId": "some-other-placement"
+                }
+              }
             }
           }
         }
@@ -47,6 +55,18 @@
               15,
               30
             ],
+            "pricegranularity": {
+              "precision": 2,
+              "ranges": [
+                {
+                  "min": 0,
+                  "max": 20,
+                  "increment": 0.1
+                }
+              ]
+            },
+            "includewinners": true,
+            "includebidderkeys": true,
             "includebrandcategory": {
               "primaryadserver": 1,
               "publisher": "",
@@ -65,29 +85,39 @@
           {
             "uri": "appnexusTest.com",
             "requestbody": "appnexusTestRequestBody",
-            "requestheaders": { "header_1" : ["value_11", "value_12"], "header_2" : ["value_21"] },
+            "requestheaders": {
+              "header_1": [
+                "value_11",
+                "value_12"
+              ],
+              "header_2": [
+                "value_21"
+              ]
+            },
             "responsebody": "appnexusTestResponseBody",
             "status": 200
           }
         ],
-        "pbsSeatBids": [{
-          "pbsBids": [
-            {
-              "ortbBid": {
-                "id": "winning-bid",
-                "impid": "my-imp-id",
-                "price": 12.00,
-                "w": 200,
-                "h": 250,
-                "crid": "creative-1",
-                "cat": [
-                  "IAB1-1"
-                ]
+        "pbsSeatBids": [
+          {
+            "pbsBids": [
+              {
+                "ortbBid": {
+                  "id": "winning-bid",
+                  "impid": "my-imp-id",
+                  "price": 12.00,
+                  "w": 200,
+                  "h": 250,
+                  "crid": "creative-1",
+                  "cat": [
+                    "IAB1-1"
+                  ]
+                }
               }
-            }
-          ],
-          "seat": "appnexus"
-        }]
+            ],
+            "seat": "appnexus"
+          }
+        ]
       }
     },
     "audienceNetwork": {
@@ -124,7 +154,9 @@
               "ext": {
                 "origbidcpm": 12.00,
                 "prebid": {
-                  "type": "",
+                  "meta": {
+                    "adaptercode": "appnexus"
+                  },
                   "targeting": {
                     "hb_bidder": "appnexus",
                     "hb_bidder_appnexus": "appnexus",
@@ -153,7 +185,15 @@
             {
               "uri": "appnexusTest.com",
               "requestbody": "appnexusTestRequestBody",
-              "requestheaders": { "header_1" : ["value_11", "value_12"], "header_2" : ["value_21"] },
+              "requestheaders": {
+                "header_1": [
+                  "value_11",
+                  "value_12"
+                ],
+                "header_2": [
+                  "value_21"
+                ]
+              },
               "responsebody": "appnexusTestResponseBody",
               "status": 200
             }
@@ -179,11 +219,15 @@
                 ]
               },
               "ext": {
-                "appnexus": {
-                  "placementId": 1
-                },
-                "audienceNetwork": {
-                  "placementId": "some-placement"
+                "prebid": {
+                  "bidder": {
+                    "appnexus": {
+                      "placementId": 1
+                    },
+                    "audienceNetwork": {
+                      "placementId": "some-placement"
+                    }
+                  }
                 }
               }
             },
@@ -195,11 +239,15 @@
                 ]
               },
               "ext": {
-                "appnexus": {
-                  "placementId": 2
-                },
-                "audienceNetwork": {
-                  "placementId": "some-other-placement"
+                "prebid": {
+                  "bidder": {
+                    "appnexus": {
+                      "placementId": 2
+                    },
+                    "audienceNetwork": {
+                      "placementId": "some-other-placement"
+                    }
+                  }
                 }
               }
             }
@@ -215,6 +263,18 @@
                   15,
                   30
                 ],
+                "pricegranularity": {
+                  "precision": 2,
+                  "ranges": [
+                    {
+                      "min": 0,
+                      "max": 20,
+                      "increment": 0.1
+                    }
+                  ]
+                },
+                "includewinners": true,
+                "includebidderkeys": true,
                 "includebrandcategory": {
                   "primaryadserver": 1,
                   "publisher": "",
@@ -229,5 +289,3 @@
     }
   }
 }
-
-

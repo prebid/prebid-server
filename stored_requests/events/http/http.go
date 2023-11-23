@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	httpCore "net/http"
 	"net/url"
 	"time"
@@ -12,7 +12,8 @@ import (
 	"golang.org/x/net/context/ctxhttp"
 
 	"github.com/buger/jsonparser"
-	"github.com/prebid/prebid-server/stored_requests/events"
+	"github.com/prebid/prebid-server/v2/stored_requests/events"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 
 	"github.com/golang/glog"
 )
@@ -23,40 +24,44 @@ import (
 // It expects the following endpoint to exist remotely:
 //
 // GET {endpoint}
-//   -- Returns all the known Stored Requests and Stored Imps.
+//
+//	-- Returns all the known Stored Requests and Stored Imps.
+//
 // GET {endpoint}?last-modified={timestamp}
-//   -- Returns the Stored Requests and Stored Imps which have been updated since the last timestamp.
-//      This timestamp will be sent in the rfc3339 format, using UTC and no timezone shift.
-//      For more info, see: https://tools.ietf.org/html/rfc3339
+//
+//	-- Returns the Stored Requests and Stored Imps which have been updated since the last timestamp.
+//	   This timestamp will be sent in the rfc3339 format, using UTC and no timezone shift.
+//	   For more info, see: https://tools.ietf.org/html/rfc3339
 //
 // The responses should be JSON like this:
 //
-// {
-//   "requests": {
-//     "request1": { ... stored request data ... },
-//     "request2": { ... stored request data ... },
-//     "request3": { ... stored request data ... },
-//   },
-//   "imps": {
-//     "imp1": { ... stored data for imp1 ... },
-//     "imp2": { ... stored data for imp2 ... },
-//   },
-//   "responses": {
-//     "resp1": { ... stored data for resp1 ... },
-//     "resp2": { ... stored data for resp2 ... },
-//   }
-// }
+//	{
+//	  "requests": {
+//	    "request1": { ... stored request data ... },
+//	    "request2": { ... stored request data ... },
+//	    "request3": { ... stored request data ... },
+//	  },
+//	  "imps": {
+//	    "imp1": { ... stored data for imp1 ... },
+//	    "imp2": { ... stored data for imp2 ... },
+//	  },
+//	  "responses": {
+//	    "resp1": { ... stored data for resp1 ... },
+//	    "resp2": { ... stored data for resp2 ... },
+//	  }
+//	}
+//
 // or
-// {
-//   "accounts": {
-//     "acc1": { ... config data for acc1 ... },
-//     "acc2": { ... config data for acc2 ... },
-//   },
-// }
+//
+//	{
+//	  "accounts": {
+//	    "acc1": { ... config data for acc1 ... },
+//	    "acc2": { ... config data for acc2 ... },
+//	  },
+//	}
 //
 // To signal deletions, the endpoint may return { "deleted": true }
 // in place of the Stored Data if the "last-modified" param existed.
-//
 func NewHTTPEvents(client *httpCore.Client, endpoint string, ctxProducer func() (ctx context.Context, canceller func()), refreshRate time.Duration) *HTTPEvents {
 	// If we're not given a function to produce Contexts, use the Background one.
 	if ctxProducer == nil {
@@ -168,7 +173,7 @@ func (e *HTTPEvents) parse(endpoint string, resp *httpCore.Response, err error) 
 	}
 	defer resp.Body.Close()
 
-	respBytes, err := ioutil.ReadAll(resp.Body)
+	respBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		glog.Errorf("Failed to read body of GET %s for Stored Requests: %v", endpoint, err)
 		return nil, false
@@ -180,7 +185,7 @@ func (e *HTTPEvents) parse(endpoint string, resp *httpCore.Response, err error) 
 	}
 
 	var respObj responseContract
-	if err := json.Unmarshal(respBytes, &respObj); err != nil {
+	if err := jsonutil.UnmarshalValid(respBytes, &respObj); err != nil {
 		glog.Errorf("Failed to unmarshal body of GET %s for Stored Requests: %v", endpoint, err)
 		return nil, false
 	}
