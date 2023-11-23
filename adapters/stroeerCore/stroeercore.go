@@ -51,6 +51,7 @@ func (a *adapter) MakeBids(bidRequest *openrtb2.BidRequest, requestData *adapter
 	bidderResponse.Currency = "EUR"
 
 	for _, bid := range stroeerResponse.Bids {
+		bidType, markupType := getBidMediaTypeForImp(bid.BidID, bidRequest.Imp)
 		openRtbBid := openrtb2.Bid{
 			ID:    bid.ID,
 			ImpID: bid.BidID,
@@ -59,17 +60,31 @@ func (a *adapter) MakeBids(bidRequest *openrtb2.BidRequest, requestData *adapter
 			Price: bid.CPM,
 			AdM:   bid.Ad,
 			CrID:  bid.CrID,
+			MType: markupType,
 		}
 
 		bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
 			Bid:     &openRtbBid,
-			BidType: openrtb_ext.BidTypeBanner,
+			BidType: bidType,
 		})
 	}
 
 	return bidderResponse, errors
 }
 
+func getBidMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, openrtb2.MarkupType) {
+	for _, imp := range imps {
+		if imp.ID == impID {
+			if imp.Banner != nil {
+				return openrtb_ext.BidTypeBanner, openrtb2.MarkupBanner
+			}
+			if imp.Video != nil {
+				return openrtb_ext.BidTypeVideo, openrtb2.MarkupVideo
+			}
+		}
+	}
+	return openrtb_ext.BidTypeBanner, openrtb2.MarkupBanner
+}
 func (a *adapter) MakeRequests(bidRequest *openrtb2.BidRequest, extraRequestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errors []error
 

@@ -166,7 +166,8 @@
             "adm": "advert",
             "w": 468,
             "h": 60,
-            "crid": "qwert"
+            "crid": "qwert",
+            "mtype": 1
           },
           "type": "banner"
         },
@@ -178,7 +179,8 @@
             "adm": "another advert",
             "w": 770,
             "h": 250,
-            "crid": "wasd"
+            "crid": "wasd",
+            "mtype": 1
           },
           "type": "banner"
         }

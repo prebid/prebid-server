@@ -22,6 +22,19 @@
             "sid": "123456"
           }
         }
+      },
+      {
+        "id": "9",
+        "video": {
+          "mimes": ["video/mp4"],
+          "w": 1024,
+          "h": 576
+        },
+        "ext": {
+          "bidder": {
+            "sid": "85310"
+          }
+        }
       }
     ],
     "device": {
@@ -34,7 +47,7 @@
       "domain": "www.publisher.com",
       "page": "http://www.publisher.com/some/path",
       "ext": {
-        "amp": 0
+        "amp": 1
       }
     },
     "user": {
@@ -73,6 +86,20 @@
                   "sid": "123456"
                 }
               }
+            },
+            {
+              "id": "9",
+              "tagid": "85310",
+              "video": {
+                  "mimes": ["video/mp4"],
+                  "w": 1024,
+                  "h": 576
+              },
+              "ext": {
+                "bidder": {
+                  "sid": "85310"
+                }
+              }
             }
           ],
           "device": {
@@ -85,7 +112,7 @@
             "domain": "www.publisher.com",
             "page": "http://www.publisher.com/some/path",
             "ext": {
-              "amp": 0
+              "amp": 1
             }
           },
           "user": {
@@ -99,12 +126,21 @@
           "id": "test-request-id",
           "bids": [
             {
-              "id": "8923356982838-09",
+              "id": "3929239282-01",
               "bidId": "3",
               "cpm": 2,
               "width": 468,
               "height": 60,
-              "ad": "advert",
+              "ad": "banner ad",
+              "crid": "qwert"
+            },
+            {
+              "id": "3929239282-02",
+              "bidId": "9",
+              "cpm": 7.21,
+              "width": 770,
+              "height": 250,
+              "ad": "<vast>video ad</vast>",
               "crid": "wasd"
             }
           ]
@@ -115,19 +151,34 @@
   "expectedBidResponses": [
     {
       "currency": "EUR",
-      "bids" : [{
-        "bid": {
-          "id": "8923356982838-09",
-          "impid": "3",
-          "price": 2,
-          "adm": "advert",
-          "w": 468,
-          "h": 60,
-          "crid": "wasd",
-          "mtype": 1
+      "bids": [
+        {
+          "bid": {
+            "id": "3929239282-01",
+            "impid": "3",
+            "price": 2,
+            "adm": "banner ad",
+            "w": 468,
+            "h": 60,
+            "crid": "qwert",
+            "mtype": 1
+          },
+          "type": "banner"
         },
-        "type": "banner"
-      }]
+        {
+          "bid": {
+            "id": "3929239282-02",
+            "impid": "9",
+            "price": 7.21,
+            "adm": "<vast>video ad</vast>",
+            "w": 770,
+            "h": 250,
+            "crid": "wasd",
+            "mtype": 2
+          },
+          "type": "video"
+        }
+      ]
     }
   ]
 }
