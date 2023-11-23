@@ -14,5 +14,5 @@ capabilities:
     - native
 userSync:
   redirect:
-    url: "https://sync.videowalldirect.com/sync/prebid?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir={{.RedirectURL}}"
+    url: "https://sync.videowalldirect.com/sync/prebid?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ccpa={{.USPrivacy}}&redir={{.RedirectURL}}"
     userMacro: "[UID]"
