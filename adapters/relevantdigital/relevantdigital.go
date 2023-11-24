@@ -22,11 +22,11 @@ type adapter struct {
 	name     string
 }
 
-const RELEVANT_DOMAIN = ".relevant-digital.com"
-const DEFAULT_TIMEOUT = 1000
-const DEFAULT_BUFFER_MS = 250
-const STORED_REQUEST_EXT = "{\"prebid\":{\"debug\":%t,\"storedrequest\":{\"id\":\"%s\"}},\"relevant\":{\"count\":%d,\"adapterType\":\"server\"}}"
-const STORED_IMP_EXT = "{\"prebid\":{\"storedrequest\":{\"id\":\"%s\"}}}"
+const relevant_domain = ".relevant-digital.com"
+const default_timeout = 1000
+const default_bufffer_ms = 250
+const stored_request_ext = "{\"prebid\":{\"debug\":%t,\"storedrequest\":{\"id\":\"%s\"}},\"relevant\":{\"count\":%d,\"adapterType\":\"server\"}}"
+const stored_imp_ext = "{\"prebid\":{\"storedrequest\":{\"id\":\"%s\"}}}"
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
@@ -58,12 +58,12 @@ func patchBidRequestExt(prebidBidRequest *openrtb2.BidRequest, id string) error 
 		debug = false
 	}
 
-	prebidBidRequest.Ext = []byte(fmt.Sprintf(STORED_REQUEST_EXT, debug, id, count))
+	prebidBidRequest.Ext = []byte(fmt.Sprintf(stored_request_ext, debug, id, count))
 	return nil
 }
 
 func patchBidImpExt(imp *openrtb2.Imp, id string) {
-	imp.Ext = []byte(fmt.Sprintf(STORED_IMP_EXT, id))
+	imp.Ext = []byte(fmt.Sprintf(stored_imp_ext, id))
 	if imp.Banner != nil {
 		imp.Banner.Ext = nil
 	}
@@ -81,7 +81,7 @@ func patchBidImpExt(imp *openrtb2.Imp, id string) {
 func setTMax(prebidBidRequest *openrtb2.BidRequest, pbsBufferMs int) {
 	timeout := float64(prebidBidRequest.TMax)
 	if timeout <= 0 {
-		timeout = DEFAULT_TIMEOUT
+		timeout = default_timeout
 	}
 	buffer := float64(pbsBufferMs)
 	prebidBidRequest.TMax = int64(math.Min(math.Max(timeout-buffer, buffer), timeout))
@@ -125,7 +125,7 @@ func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtRelevantDigital, error
 			Message: "imp.ext not provided",
 		}
 	}
-	relevantExt := openrtb_ext.ExtRelevantDigital{PbsBufferMs: DEFAULT_BUFFER_MS}
+	relevantExt := openrtb_ext.ExtRelevantDigital{PbsBufferMs: default_bufffer_ms}
 	if err := json.Unmarshal(bidderExt.Bidder, &relevantExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: "ext.bidder not provided",
@@ -137,7 +137,7 @@ func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtRelevantDigital, error
 func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtRelevantDigital) (string, error) {
 	params.Host = strings.ReplaceAll(params.Host, "http://", "")
 	params.Host = strings.ReplaceAll(params.Host, "https://", "")
-	params.Host = strings.ReplaceAll(params.Host, RELEVANT_DOMAIN, "")
+	params.Host = strings.ReplaceAll(params.Host, relevant_domain, "")
 
 	endpointParams := macros.EndpointTemplateParams{Host: params.Host}
 	return macros.ResolveMacros(a.endpoint, endpointParams)
