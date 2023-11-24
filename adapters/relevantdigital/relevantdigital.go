@@ -256,6 +256,20 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 	}
 }
 
+func isSupportedMediaType(bidType openrtb_ext.BidType) error {
+	switch bidType {
+	case openrtb_ext.BidTypeBanner:
+		fallthrough
+	case openrtb_ext.BidTypeVideo:
+		fallthrough
+	case openrtb_ext.BidTypeAudio:
+		fallthrough
+	case openrtb_ext.BidTypeNative:
+		return nil
+	}
+	return fmt.Errorf("bid type not supported %s", bidType)
+}
+
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if adapters.IsResponseStatusCodeNoContent(responseData) {
 		return nil, nil
@@ -276,7 +290,12 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	for _, seatBid := range response.SeatBid {
 		for i, bid := range seatBid.Bid {
 			bidType, err := getMediaTypeForBid(bid)
+
 			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+			if err := isSupportedMediaType(bidType); err != nil {
 				errs = append(errs, err)
 			} else {
 				b := &adapters.TypedBid{
