@@ -64,18 +64,6 @@ func patchBidRequestExt(prebidBidRequest *openrtb2.BidRequest, id string) error 
 
 func patchBidImpExt(imp *openrtb2.Imp, id string) {
 	imp.Ext = []byte(fmt.Sprintf(stored_imp_ext, id))
-	if imp.Banner != nil {
-		imp.Banner.Ext = nil
-	}
-	if imp.Video != nil {
-		imp.Video.Ext = nil
-	}
-	if imp.Native != nil {
-		imp.Native.Ext = nil
-	}
-	if imp.Audio != nil {
-		imp.Audio.Ext = nil
-	}
 }
 
 func setTMax(prebidBidRequest *openrtb2.BidRequest, pbsBufferMs int) {
@@ -87,35 +75,37 @@ func setTMax(prebidBidRequest *openrtb2.BidRequest, pbsBufferMs int) {
 	prebidBidRequest.TMax = int64(math.Min(math.Max(timeout-buffer, buffer), timeout))
 }
 
-func cloneBidRequest(prebidBidRequest *openrtb2.BidRequest) (*openrtb2.BidRequest, error) {
-	jsonRes, err := json.Marshal(prebidBidRequest)
-	if err != nil {
-		return nil, err
-	}
-	var copy openrtb2.BidRequest
-	err = json.Unmarshal(jsonRes, &copy)
-	return &copy, err
-}
-
 func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params []*openrtb_ext.ExtRelevantDigital) (*openrtb2.BidRequest, error) {
-	bidRequestCopy, err := cloneBidRequest(prebidBidRequest)
-	if err != nil {
-		return nil, err
-	}
+	bidRequestCopy := *prebidBidRequest;
 
-	err = patchBidRequestExt(bidRequestCopy, params[0].AccountId)
+	err := patchBidRequestExt(&bidRequestCopy, params[0].AccountId)
 	if err != nil {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("failed to create bidRequest, error: %s", err),
 		}
 	}
 
-	setTMax(bidRequestCopy, params[0].PbsBufferMs)
+	setTMax(&bidRequestCopy, params[0].PbsBufferMs)
 
 	for idx := range bidRequestCopy.Imp {
 		patchBidImpExt(&bidRequestCopy.Imp[idx], params[idx].PlacementId)
 	}
-	return bidRequestCopy, err
+	return &bidRequestCopy, err
+}
+
+func createJSONRequest(bidRequest *openrtb2.BidRequest) ([]byte, error){
+	reqJSON, err := json.Marshal(bidRequest)
+	if err != nil {
+		return nil, err
+	}
+
+	types := []string{"banner", "video", "native", "audio"}
+	for idx := range bidRequest.Imp {
+		for _, key := range types {
+			reqJSON = jsonparser.Delete(reqJSON, "imp", fmt.Sprintf("[%d]", idx), key, "ext")
+		}
+	}
+	return reqJSON, nil
 }
 
 func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtRelevantDigital, error) {
@@ -150,7 +140,8 @@ func (a *adapter) buildAdapterRequest(prebidBidRequest *openrtb2.BidRequest, par
 		return nil, err
 	}
 
-	reqJSON, err := json.Marshal(newBidRequest)
+	reqJSON, err := createJSONRequest(newBidRequest);
+
 	if err != nil {
 		return nil, err
 	}
