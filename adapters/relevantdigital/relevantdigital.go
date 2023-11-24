@@ -25,8 +25,21 @@ type adapter struct {
 const relevant_domain = ".relevant-digital.com"
 const default_timeout = 1000
 const default_bufffer_ms = 250
-const stored_request_ext = "{\"prebid\":{\"debug\":%t,\"storedrequest\":{\"id\":\"%s\"}},\"relevant\":{\"count\":%d,\"adapterType\":\"server\"}}"
-const stored_imp_ext = "{\"prebid\":{\"storedrequest\":{\"id\":\"%s\"}}}"
+
+type PrebidExt struct {
+	StoredRequest struct {
+		Id string `json:"id"`
+	} `json:"storedrequest"`
+	Debug bool `json:"debug"`
+}
+
+type RelevantExt struct {
+	Relevant struct {
+		Count       int    `json:"count"`
+		AdapterType string `json:"adapterType"`
+	} `json:"relevant"`
+	Prebid PrebidExt `json:"prebid"`
+}
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
@@ -40,12 +53,17 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 }
 
 func patchBidRequestExt(prebidBidRequest *openrtb2.BidRequest, id string) error {
-	count, cerr := jsonparser.GetInt(prebidBidRequest.Ext, "relevant", "count")
-	if cerr != nil {
-		count = 0
+	var bidRequestExt RelevantExt
+	if len(prebidBidRequest.Ext) != 0 {
+		if err := json.Unmarshal(prebidBidRequest.Ext, &bidRequestExt); err != nil {
+			return &errortypes.FailedToRequestBids{
+				Message: fmt.Sprintf("failed to unmarshal ext, %s", prebidBidRequest.Ext),
+			}
+		}
 	}
 
-	if count >= 5 {
+	count := bidRequestExt.Relevant.Count
+	if bidRequestExt.Relevant.Count >= 5 {
 		return &errortypes.FailedToRequestBids{
 			Message: "too many requests",
 		}
@@ -53,17 +71,22 @@ func patchBidRequestExt(prebidBidRequest *openrtb2.BidRequest, id string) error 
 		count = count + 1
 	}
 
-	debug, derr := jsonparser.GetBoolean(prebidBidRequest.Ext, "prebid", "debug")
-	if derr != nil {
-		debug = false
-	}
+	bidRequestExt.Relevant.Count = count
+	bidRequestExt.Relevant.AdapterType = "server"
+	bidRequestExt.Prebid.StoredRequest.Id = id
 
-	prebidBidRequest.Ext = []byte(fmt.Sprintf(stored_request_ext, debug, id, count))
+	ext, err := json.Marshal(bidRequestExt)
+	if err != nil {
+		return &errortypes.FailedToRequestBids{
+			Message: "failed to marshal",
+		}
+	}
+	prebidBidRequest.Ext = ext
 	return nil
 }
 
 func patchBidImpExt(imp *openrtb2.Imp, id string) {
-	imp.Ext = []byte(fmt.Sprintf(stored_imp_ext, id))
+	imp.Ext = []byte(fmt.Sprintf("{\"prebid\":{\"storedrequest\":{\"id\":\"%s\"}}}", id))
 }
 
 func setTMax(prebidBidRequest *openrtb2.BidRequest, pbsBufferMs int) {
@@ -75,8 +98,8 @@ func setTMax(prebidBidRequest *openrtb2.BidRequest, pbsBufferMs int) {
 	prebidBidRequest.TMax = int64(math.Min(math.Max(timeout-buffer, buffer), timeout))
 }
 
-func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params []*openrtb_ext.ExtRelevantDigital) (*openrtb2.BidRequest, error) {
-	bidRequestCopy := *prebidBidRequest;
+func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params []*openrtb_ext.ExtRelevantDigital) ([]byte, error) {
+	bidRequestCopy := *prebidBidRequest
 
 	err := patchBidRequestExt(&bidRequestCopy, params[0].AccountId)
 	if err != nil {
@@ -90,10 +113,15 @@ func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params []*openrtb_e
 	for idx := range bidRequestCopy.Imp {
 		patchBidImpExt(&bidRequestCopy.Imp[idx], params[idx].PlacementId)
 	}
-	return &bidRequestCopy, err
+
+	if err != nil {
+		return nil, err
+	}
+
+	return createJSONRequest(&bidRequestCopy)
 }
 
-func createJSONRequest(bidRequest *openrtb2.BidRequest) ([]byte, error){
+func createJSONRequest(bidRequest *openrtb2.BidRequest) ([]byte, error) {
 	reqJSON, err := json.Marshal(bidRequest)
 	if err != nil {
 		return nil, err
@@ -134,13 +162,7 @@ func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtRelevantDigital) (stri
 }
 
 func (a *adapter) buildAdapterRequest(prebidBidRequest *openrtb2.BidRequest, params []*openrtb_ext.ExtRelevantDigital) (*adapters.RequestData, error) {
-	newBidRequest, err := createBidRequest(prebidBidRequest, params)
-
-	if err != nil {
-		return nil, err
-	}
-
-	reqJSON, err := createJSONRequest(newBidRequest);
+	reqJSON, err := createBidRequest(prebidBidRequest, params)
 
 	if err != nil {
 		return nil, err
