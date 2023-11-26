@@ -15,6 +15,7 @@ import (
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/macros"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 )
 
 type adapter struct {
@@ -81,7 +82,19 @@ func patchBidRequestExt(prebidBidRequest *openrtb2.BidRequest, id string) error 
 			Message: "failed to marshal",
 		}
 	}
-	prebidBidRequest.Ext = ext
+
+	if len(prebidBidRequest.Ext) == 0 {
+		prebidBidRequest.Ext = ext
+		return nil
+	}
+
+	patchedExt, err := jsonpatch.MergePatch(prebidBidRequest.Ext, ext)
+	if err != nil {
+		return &errortypes.FailedToRequestBids{
+			Message: fmt.Sprintf("failed patch ext, %s", err),
+		}
+	}
+	prebidBidRequest.Ext = patchedExt
 	return nil
 }
 
@@ -127,11 +140,22 @@ func createJSONRequest(bidRequest *openrtb2.BidRequest) ([]byte, error) {
 		return nil, err
 	}
 
-	types := []string{"banner", "video", "native", "audio"}
+	// Scrub previous ext data from relevant, if any
+	// imp[].ext.context.relevant
+	// imp[].[banner/native/video/audio].ext.relevant
+	impKeyTypes := []string{"banner", "video", "native", "audio"}
 	for idx := range bidRequest.Imp {
-		for _, key := range types {
-			reqJSON = jsonparser.Delete(reqJSON, "imp", fmt.Sprintf("[%d]", idx), key, "ext")
+		for _, key := range impKeyTypes {
+			reqJSON = jsonparser.Delete(reqJSON, "imp", fmt.Sprintf("[%d]", idx), key, "ext", "relevant")
 		}
+		reqJSON = jsonparser.Delete(reqJSON, "imp", fmt.Sprintf("[%d]", idx), "ext", "context", "relevant")
+	}
+
+	// Scrub previous prebid data (to not set cache on wrong servers)
+	// ext.prebid.[cache/targeting/aliases]
+	prebidKeyTypes := []string{"cache", "targeting", "aliases"}
+	for _, key := range prebidKeyTypes {
+		reqJSON = jsonparser.Delete(reqJSON, "ext", "prebid", key)
 	}
 	return reqJSON, nil
 }
