@@ -13,6 +13,7 @@ import (
 	"github.com/prebid/prebid-server/v2/hooks/hookexecution"
 	"github.com/prebid/prebid-server/v2/hooks/hookstage"
 	"github.com/prebid/prebid-server/v2/modules/moduledeps"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -497,7 +498,7 @@ func TestHandleBidderRequestHook(t *testing.T) {
 			bidRequest:         nil,
 			expectedBidRequest: nil,
 			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{},
-			expectedError:      hookexecution.NewFailure("empty BidRequest provided"),
+			expectedError:      hookexecution.NewFailure("payload contains a nil bid request"),
 		},
 		{
 			description:        "Expect baadv error if bidders and media_types not defined in config conditions",
@@ -566,7 +567,8 @@ func TestHandleBidderRequestHook(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
-			payload := hookstage.BidderRequestPayload{Bidder: test.bidder, BidRequest: test.bidRequest}
+			brw := openrtb_ext.RequestWrapper{BidRequest: test.bidRequest}
+			payload := hookstage.BidderRequestPayload{Bidder: test.bidder, Request: &brw}
 
 			result, err := Builder(nil, moduledeps.ModuleDeps{})
 			assert.NoError(t, err, "Failed to build module.")
@@ -590,7 +592,8 @@ func TestHandleBidderRequestHook(t *testing.T) {
 				_, err := mut.Apply(payload)
 				assert.NoError(t, err)
 			}
-			assert.Equal(t, test.expectedBidRequest, payload.BidRequest, "Invalid BidRequest after executing BidderRequestHook.")
+
+			assert.Equal(t, test.expectedBidRequest, payload.Request.BidRequest, "Invalid BidRequest after executing BidderRequestHook.")
 
 			// reset ChangeSet not to break hookResult assertion, we validated ChangeSet separately
 			hookResult.ChangeSet = hookstage.ChangeSet[hookstage.BidderRequestPayload]{}
