@@ -27,19 +27,19 @@ const relevant_domain = ".relevant-digital.com"
 const default_timeout = 1000
 const default_bufffer_ms = 250
 
-type PrebidExt struct {
+type prebidExt struct {
 	StoredRequest struct {
 		Id string `json:"id"`
 	} `json:"storedrequest"`
 	Debug bool `json:"debug"`
 }
 
-type RelevantExt struct {
+type relevantExt struct {
 	Relevant struct {
 		Count       int    `json:"count"`
 		AdapterType string `json:"adapterType"`
 	} `json:"relevant"`
-	Prebid PrebidExt `json:"prebid"`
+	Prebid prebidExt `json:"prebid"`
 }
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
@@ -54,7 +54,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 }
 
 func patchBidRequestExt(prebidBidRequest *openrtb2.BidRequest, id string) error {
-	var bidRequestExt RelevantExt
+	var bidRequestExt relevantExt
 	if len(prebidBidRequest.Ext) != 0 {
 		if err := json.Unmarshal(prebidBidRequest.Ext, &bidRequestExt); err != nil {
 			return &errortypes.FailedToRequestBids{
