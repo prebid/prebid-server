@@ -142,7 +142,7 @@ func (a *YieldmoAdapter) MakeBids(internalRequest *openrtb2.BidRequest, external
 
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
-			bidType, err := getMediaTypeForImp(&sb.Bid[i])
+			bidType, err := getMediaTypeForImp(sb.Bid[i])
 			if err != nil {
 				continue
 			}
@@ -164,8 +164,8 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	return bidder, nil
 }
 
-// Retrieve the media type corresponding to the bid from the bid.ext object and set it in the response
-func getMediaTypeForImp(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
+// Retrieve the media type corresponding to the bid from the bid.ext object
+func getMediaTypeForImp(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 	var bidExt ExtBid
 	if err := json.Unmarshal(bid.Ext, &bidExt); err != nil {
 		return "", &errortypes.BadInput{Message: err.Error()}
@@ -173,15 +173,12 @@ func getMediaTypeForImp(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 
 	switch bidExt.MediaType {
 	case "banner":
-		bid.MType = openrtb2.MarkupBanner
 		return openrtb_ext.BidTypeBanner, nil
 	case "video":
-		bid.MType = openrtb2.MarkupVideo
 		return openrtb_ext.BidTypeVideo, nil
 	case "native":
-		bid.MType = openrtb2.MarkupNative
 		return openrtb_ext.BidTypeNative, nil
 	default:
-		return "", fmt.Errorf("invalid MediaType: %s", bidExt.MediaType)
+		return "", fmt.Errorf("invalid BidType: %s", bidExt.MediaType)
 	}
 }
