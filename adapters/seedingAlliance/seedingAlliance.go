@@ -42,10 +42,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, extraRequestInfo *a
 		}
 	}
 
-	if seatId == "" {
-		seatId = "pbs"
-	}
-
 	if !curExists(request.Cur, "EUR") {
 		request.Cur = append(request.Cur, "EUR")
 	}
@@ -150,6 +146,8 @@ func getExtInfo(imp *openrtb2.Imp) (string, error) {
 	var ext adapters.ExtImpBidder
 	var extSA openrtb_ext.ImpExtSeedingAlliance
 
+	seatID := "pbs"
+
 	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
 		return "", fmt.Errorf("could not unmarshal adapters.ExtImpBidder: %w", err)
 	}
@@ -160,5 +158,9 @@ func getExtInfo(imp *openrtb2.Imp) (string, error) {
 
 	imp.TagID = extSA.AdUnitID
 
-	return extSA.SeatID, nil
+	if extSA.SeatID != "" {
+		seatID = extSA.SeatID
+	}
+
+	return seatID, nil
 }

@@ -1,7 +1,5 @@
 endpoint: "https://b.suntcontent.se/cds/rtb/bid?ssp={{.AccountID}}"
 aliasOf: "seedingAlliance"
-maintainer:
-  email: tech@seeding-alliance.de
 gvlVendorID: 1097
 userSync:
   redirect:
