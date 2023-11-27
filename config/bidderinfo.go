@@ -127,6 +127,14 @@ type Syncer struct {
 
 	// Enabled signifies whether a bidder is enabled/disabled for user sync
 	Enabled *bool `yaml:"enabled" mapstructure:"enabled"`
+
+	// SkipWhen allows bidders to specify when they don't want to sync
+	SkipWhen *SkipWhen `yaml:"skipwhen" mapstructure:"skipwhen"`
+}
+
+type SkipWhen struct {
+	GDPR   bool     `yaml:"gdpr" mapstructure:"gdpr"`
+	GPPSID []string `yaml:"gpp_sid" mapstructure:"gpp_sid"`
 }
 
 // SyncerEndpoint specifies the configuration of the URL returned by the /cookie_sync endpoint

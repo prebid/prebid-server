@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -533,11 +534,27 @@ func getNativeFormat(adslot30 *adslot30, openRTBImp *openrtb2.Imp) error {
 		return err
 	}
 
+	//popular size for native ads
+	popularSizes := []map[string]int64{{"w": 225, "h": 150}, {"w": 300, "h": 250}, {"w": 320, "h": 250}, {"w": 640, "h": 360}, {"w": 1080, "h": 170}, {"w": 1080, "h": 430}, {"w": 1080, "h": 432}, {"w": 1080, "h": 504}, {"w": 1080, "h": 607}, {"w": 1080, "h": 1620}, {"w": 1200, "h": 627}, {"w": 1280, "h": 720}, {"w": 1312, "h": 768}, {"w": 1920, "h": 1080}}
+
 	// only compute the main image number, type = native1.ImageAssetTypeMain
 	var numMainImage = 0
 	var numVideo = 0
-	var width int64
-	var height int64
+	var formats = make([]format, 0)
+	var numFormat = 0
+	var detailedCreativeTypeList = make([]string, 0, 2)
+
+	//number of the requested image size
+	for _, asset := range nativePayload.Assets {
+		if numFormat > 1 {
+			break
+		}
+		if asset.Img != nil {
+			if asset.Img.Type == native1.ImageAssetTypeMain {
+				numFormat++
+			}
+		}
+	}
 	for _, asset := range nativePayload.Assets {
 		// Only one of the {title,img,video,data} objects should be present in each object.
 		if asset.Video != nil {
@@ -548,32 +565,50 @@ func getNativeFormat(adslot30 *adslot30, openRTBImp *openrtb2.Imp) error {
 		if asset.Img != nil {
 			if asset.Img.Type == native1.ImageAssetTypeMain {
 				numMainImage++
-				if asset.Img.H != 0 && asset.Img.W != 0 {
-					width = asset.Img.W
-					height = asset.Img.H
-				} else if asset.Img.WMin != 0 && asset.Img.HMin != 0 {
-					width = asset.Img.WMin
-					height = asset.Img.HMin
+				if numFormat > 1 && asset.Img.H != 0 && asset.Img.W != 0 && asset.Img.WMin != 0 && asset.Img.HMin != 0 {
+					formats = append(formats, format{asset.Img.W, asset.Img.H})
+				}
+				if numFormat == 1 && asset.Img.H != 0 && asset.Img.W != 0 && asset.Img.WMin != 0 && asset.Img.HMin != 0 {
+					result := filterPopularSizes(popularSizes, asset.Img.W, asset.Img.H, "ratio")
+					for i := 0; i < len(result); i++ {
+						formats = append(formats, format{result[i]["w"], result[i]["h"]})
+					}
+				}
+				if numFormat == 1 && asset.Img.H == 0 && asset.Img.W == 0 && asset.Img.WMin != 0 && asset.Img.HMin != 0 {
+					result := filterPopularSizes(popularSizes, asset.Img.W, asset.Img.H, "range")
+					for i := 0; i < len(result); i++ {
+						formats = append(formats, format{result[i]["w"], result[i]["h"]})
+					}
 				}
 			}
-			continue
 		}
+		adslot30.Format = formats
 	}
-	adslot30.W = width
-	adslot30.H = height
-
-	var detailedCreativeTypeList = make([]string, 0, 2)
-	if numVideo >= 1 {
-		detailedCreativeTypeList = append(detailedCreativeTypeList, "903")
-	} else if numMainImage > 1 {
-		detailedCreativeTypeList = append(detailedCreativeTypeList, "904")
-	} else if numMainImage == 1 {
-		detailedCreativeTypeList = append(detailedCreativeTypeList, "901")
-	} else {
-		detailedCreativeTypeList = append(detailedCreativeTypeList, "913", "914")
-	}
+	detailedCreativeTypeList = append(detailedCreativeTypeList, "901", "905")
 	adslot30.DetailedCreativeTypeList = detailedCreativeTypeList
 	return nil
+}
+
+// filter popular size by range or ratio to append format array
+func filterPopularSizes(sizes []map[string]int64, width int64, height int64, byWhat string) []map[string]int64 {
+
+	filtered := []map[string]int64{}
+	for _, size := range sizes {
+		w := size["w"]
+		h := size["h"]
+
+		if byWhat == "ratio" {
+			ratio := float64(width) / float64(height)
+			diff := math.Abs(float64(w)/float64(h) - ratio)
+			if diff <= 0.3 {
+				filtered = append(filtered, size)
+			}
+		}
+		if byWhat == "range" && w > width && h > height {
+			filtered = append(filtered, size)
+		}
+	}
+	return filtered
 }
 
 // roll ad need TotalDuration
@@ -960,10 +995,14 @@ func checkRespStatusCode(response *adapters.ResponseData) error {
 }
 
 func checkHuaweiAdsResponseRetcode(response huaweiAdsResponse) error {
-	if response.Retcode == 200 || response.Retcode == 204 || response.Retcode == 206 {
+	if response.Retcode == 200 || response.Retcode == 206 {
 		return nil
 	}
-
+	if response.Retcode == 204 {
+		return &errortypes.BadInput{
+			Message: fmt.Sprintf("HuaweiAdsResponse retcode: %d , reason: The request packet is correct, but no advertisement was found for this request.", response.Retcode),
+		}
+	}
 	if (response.Retcode < 600 && response.Retcode >= 400) || (response.Retcode < 300 && response.Retcode > 200) {
 		return &errortypes.BadInput{
 			Message: fmt.Sprintf("HuaweiAdsResponse retcode: %d , reason: %s", response.Retcode, response.Reason),
@@ -1139,6 +1178,9 @@ func (a *adapter) extractAdmNative(adType int32, content *content, bidType openr
 			}
 			responseAsset.Video = &videoObject
 		} else if asset.Img != nil {
+			if len(content.MetaData.ImageInfo) == imgIndex && asset.Img.Type == native1.ImageAssetTypeMain {
+				continue
+			}
 			var imgObject nativeResponse.Image
 			imgObject.URL = ""
 			imgObject.Type = asset.Img.Type
