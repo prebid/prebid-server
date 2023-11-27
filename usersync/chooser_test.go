@@ -6,6 +6,7 @@ import (
 
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
@@ -69,9 +70,7 @@ func TestChooserChoose(t *testing.T) {
 
 	cooperativeConfig := Cooperative{Enabled: true}
 
-	var usersyncDisabled *bool
-	enabled := false
-	usersyncDisabled = &enabled
+	usersyncDisabled := ptrutil.ToPtr(false)
 
 	testCases := []struct {
 		description        string

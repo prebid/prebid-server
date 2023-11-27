@@ -125,7 +125,7 @@ type Syncer struct {
 	// SupportCORS identifies if CORS is supported for the user syncing endpoints.
 	SupportCORS *bool `yaml:"supportCors" mapstructure:"support_cors"`
 
-	// TODO: Add description
+	// Enabled signifies whether a bidder is enabled/disabled for user sync
 	Enabled *bool `yaml:"enabled" mapstructure:"enabled"`
 }
 

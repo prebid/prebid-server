@@ -1712,7 +1712,7 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 			givenCookieHasSyncs: true,
 			givenDebug:          true,
 			givenSyncersChosen:  []usersync.SyncerChoice{},
-			expectedJSON:        `{"status":"ok","bidder_status":[],"debug":[{"bidder":"Bidder1","error":"Already in sync"},{"bidder":"Bidder2","error":"Unsupported bidder"},{"bidder":"Bidder3","error":"No sync config"},{"bidder":"Bidder4","error":"Rejected by privacy"},{"bidder":"Bidder5","error":"Type not supported"},{"bidder":"Bidder6","error":"Status blocked by user opt out"},{"bidder":"Bidder7","error":"Status blocked by disabled usersync"},{"bidder":"BidderA","error":"Duplicate bidder synced as syncerB"}]}` + "\n",
+			expectedJSON:        `{"status":"ok","bidder_status":[],"debug":[{"bidder":"Bidder1","error":"Already in sync"},{"bidder":"Bidder2","error":"Unsupported bidder"},{"bidder":"Bidder3","error":"No sync config"},{"bidder":"Bidder4","error":"Rejected by privacy"},{"bidder":"Bidder5","error":"Type not supported"},{"bidder":"Bidder6","error":"Status blocked by user opt out"},{"bidder":"Bidder7","error":"Sync disabled by config"},{"bidder":"BidderA","error":"Duplicate bidder synced as syncerB"}]}` + "\n",
 			expectedAnalytics:   analytics.CookieSyncObject{Status: 200, BidderStatus: []*analytics.CookieSyncBidder{}},
 		},
 	}

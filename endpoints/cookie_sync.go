@@ -491,7 +491,7 @@ func getDebugMessage(status usersync.Status) string {
 	case usersync.StatusTypeNotSupported:
 		return "Type not supported"
 	case usersync.StatusBlockedByDisabledUsersync:
-		return "Status blocked by disabled usersync" // TODO: Check Java
+		return "Sync disabled by config"
 	}
 	return ""
 }
