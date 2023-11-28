@@ -7,13 +7,13 @@ status_response: "ok" # default response string for /status endpoint
 gdpr:
   default_value: "0" # enable gdpr, explicitly specifying a default value is a requirement in prebid server config
 
+# set up stored request storage using local file system
 stored_requests:
   filesystem: 
     enabled: true
     directorypath: ./stored_requests/data/by_id
 
-
-## not currently working - need to implement the filesystem function to support fetching of stored response
+# set up stored response storage using local file system
 stored_responses:
   filesystem:
     enabled: true
