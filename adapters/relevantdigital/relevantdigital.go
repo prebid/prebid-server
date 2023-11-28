@@ -127,10 +127,6 @@ func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params []*openrtb_e
 		patchBidImpExt(&bidRequestCopy.Imp[idx], params[idx].PlacementId)
 	}
 
-	if err != nil {
-		return nil, err
-	}
-
 	return createJSONRequest(&bidRequestCopy)
 }
 
