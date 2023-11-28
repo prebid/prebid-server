@@ -467,9 +467,7 @@ func TestChooserEvaluate(t *testing.T) {
 	cookieAlreadyHasSyncForA := Cookie{uids: map[string]UIDEntry{"keyA": {Expires: time.Now().Add(time.Duration(24) * time.Hour)}}}
 	cookieAlreadyHasSyncForB := Cookie{uids: map[string]UIDEntry{"keyB": {Expires: time.Now().Add(time.Duration(24) * time.Hour)}}}
 
-	var usersyncDisabled *bool
-	enabled := false
-	usersyncDisabled = &enabled
+	usersyncDisabled := ptrutil.ToPtr(false)
 
 	testCases := []struct {
 		description                 string
