@@ -1,0 +1,39 @@
+# Sample
+
+The Sample describes several demos of how to quickly spin up different Prebid Server instances with various preset configurations.  These samples are intended for audiences without much knowledge about Prebid Server and intend to play around with it locally and see how it works
+
+# Installation
+
+In the sample, we use `docker` and `docker-compose` to instantiate examples, you can install both via the [official docker page](https://docs.docker.com/compose/install/#scenario-one-install-docker-desktop).
+
+With the above tools installed, you can start to use `docker-compose` command with `docker-compose.yml` provided in the folder.  In this way, you can spin up a demo server instance locally with only one command and without knowing all the complexities. The actual command will be slightly different by the exact example you decide to use.
+The docker image used in `docker-compose.yml` is the `Dockerfile` residing in the root level of the repository. 
+
+# Examples
+
+## Common File & Structures
+All required files for each example are stored in a folder that follows the name pattern <number>_<name>. The `<number>` suggests its order and `<name`>` describes its title.
+
+For every example, the following files will be present and are exclusively catered to that example.
+1.  `app.yaml` - the prebid server app config.
+2.  `pbjs.html` - the HTML file that has `Prebid JS` integration and communicates with the Prebid Server. It also provides a detailed explanation of the example.
+3.  `*.json` - additional files required to support the example. e.g. stored request and stored response.
+
+## Common steps 
+
+### Steps
+1. Bring up an instance by running `docker-compose up <number>_<name>` in the `sample` folder.
+
+2. Wait patiently until you see ` Admin server starting on: :6060` and `Main server starting on: :8000` in the command line output. This marks the Prebid Server instance finishing its initialization and is ready to serve the auction traffic.
+
+3. Additionally, you can copy the URL `http://localhost:8000/status` and paste it into your browser. You should see `ok` in the response which is another way to tell the Prebid Server main auction server is up and running.
+
+4. Open a new tab in your browser and turn on the console UI. If you are using Chrome, you can right-click on the page and click `inspect`. Once the console UI is on, click on the `Network` tab so you can inspect the traffic later.
+
+5. Copy the URL `http://localhost:8000/static/pbjs.html?pbjs_debug=true` into your browser. It starts the example immediately with debugging information available from `Prebid JS` and you can start to inspect the request and response between `Prebid JS` and `Prebid Server`.
+
+6. After you finish playing around with the example, type `docker-compose down`.
+
+
+
+
