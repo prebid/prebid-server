@@ -47,7 +47,6 @@
 
         function renderAllAdUnits() {
             var winners = pbjs.getHighestCpmBids();
-            console.log("winners:", winners)
             for (var i = 0; i < winners.length; i++) {
                 renderOne(winners[i]);
             }
