@@ -1,4 +1,4 @@
-endpoint: "https://a.teads.tv/prebid-server/bid-request"
+endpoint: "https://psrv.teads.tv/prebid-server/bid-request"
 maintainer:
   email: "support-sdk@teads.com"
 gvlVendorID: 132

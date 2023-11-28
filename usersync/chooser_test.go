@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -15,6 +16,7 @@ func TestNewChooser(t *testing.T) {
 	testCases := []struct {
 		description              string
 		bidderSyncerLookup       map[string]Syncer
+		bidderInfo               map[string]config.BidderInfo
 		expectedBiddersAvailable []string
 	}{
 		{
@@ -40,7 +42,7 @@ func TestNewChooser(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		chooser, _ := NewChooser(test.bidderSyncerLookup, make(map[string]struct{})).(standardChooser)
+		chooser, _ := NewChooser(test.bidderSyncerLookup, make(map[string]struct{}), test.bidderInfo).(standardChooser)
 		assert.ElementsMatch(t, test.expectedBiddersAvailable, chooser.biddersAvailable, test.description)
 	}
 }
@@ -72,6 +74,7 @@ func TestChooserChoose(t *testing.T) {
 		givenRequest       Request
 		givenChosenBidders []string
 		givenCookie        Cookie
+		givenBidderInfo    map[string]config.BidderInfo
 		bidderNamesLookup  func(name string) (openrtb_ext.BidderName, bool)
 		expected           Result
 	}{
@@ -340,6 +343,55 @@ func TestChooserChoose(t *testing.T) {
 				SyncersChosen:    []SyncerChoice{{Bidder: "AppNexus", Syncer: fakeSyncerA}},
 			},
 		},
+		{
+			description: "Regulation Scope GDPR",
+			givenRequest: Request{
+				Privacy: &fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true, gdprInScope: true},
+				Limit:   0,
+			},
+			givenChosenBidders: []string{"a"},
+			givenCookie:        Cookie{},
+			givenBidderInfo: map[string]config.BidderInfo{
+				"a": {
+					Syncer: &config.Syncer{
+						SkipWhen: &config.SkipWhen{
+							GDPR: true,
+						},
+					},
+				},
+			},
+			bidderNamesLookup: normalizedBidderNamesLookup,
+			expected: Result{
+				Status:           StatusOK,
+				BiddersEvaluated: []BidderEvaluation{{Bidder: "a", SyncerKey: "keyA", Status: StatusBlockedByRegulationScope}},
+				SyncersChosen:    []SyncerChoice{},
+			},
+		},
+		{
+			description: "Regulation Scope GPP",
+			givenRequest: Request{
+				Privacy: &fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
+				Limit:   0,
+				GPPSID:  "2",
+			},
+			givenChosenBidders: []string{"a"},
+			givenCookie:        Cookie{},
+			givenBidderInfo: map[string]config.BidderInfo{
+				"a": {
+					Syncer: &config.Syncer{
+						SkipWhen: &config.SkipWhen{
+							GPPSID: []string{"2", "3"},
+						},
+					},
+				},
+			},
+			bidderNamesLookup: normalizedBidderNamesLookup,
+			expected: Result{
+				Status:           StatusOK,
+				BiddersEvaluated: []BidderEvaluation{{Bidder: "a", SyncerKey: "keyA", Status: StatusBlockedByRegulationScope}},
+				SyncersChosen:    []SyncerChoice{},
+			},
+		},
 	}
 
 	bidders := []string{"anyRequested"}
@@ -355,12 +407,17 @@ func TestChooserChoose(t *testing.T) {
 			On("choose", test.givenRequest.Bidders, biddersAvailable, cooperativeConfig).
 			Return(test.givenChosenBidders)
 
+		if test.givenBidderInfo == nil {
+			test.givenBidderInfo = map[string]config.BidderInfo{}
+		}
+
 		chooser := standardChooser{
 			bidderSyncerLookup:       bidderSyncerLookup,
 			biddersAvailable:         biddersAvailable,
 			bidderChooser:            mockBidderChooser,
 			normalizeValidBidderName: test.bidderNamesLookup,
 			biddersKnown:             biddersKnown,
+			bidderInfo:               test.givenBidderInfo,
 		}
 
 		result := chooser.Choose(test.givenRequest, &test.givenCookie)
@@ -392,6 +449,8 @@ func TestChooserEvaluate(t *testing.T) {
 		givenSyncersSeen            map[string]struct{}
 		givenPrivacy                fakePrivacy
 		givenCookie                 Cookie
+		givenGPPSID                 string
+		givenBidderInfo             map[string]config.BidderInfo
 		givenSyncTypeFilter         SyncTypeFilter
 		normalizedBidderNamesLookup func(name string) (openrtb_ext.BidderName, bool)
 		expectedSyncer              Syncer
@@ -541,13 +600,56 @@ func TestChooserEvaluate(t *testing.T) {
 			expectedSyncer:              nil,
 			expectedEvaluation:          BidderEvaluation{Bidder: "unconfigured", Status: StatusUnconfiguredBidder},
 		},
+		{
+			description:      "Blocked By Regulation Scope - GDPR",
+			givenBidder:      "a",
+			givenSyncersSeen: map[string]struct{}{},
+			givenPrivacy:     fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true, gdprInScope: true},
+			givenCookie:      cookieNeedsSync,
+			givenBidderInfo: map[string]config.BidderInfo{
+				"a": {
+					Syncer: &config.Syncer{
+						SkipWhen: &config.SkipWhen{
+							GDPR: true,
+						},
+					},
+				},
+			},
+			givenSyncTypeFilter:         syncTypeFilter,
+			normalizedBidderNamesLookup: normalizedBidderNamesLookup,
+			normalisedBidderName:        "a",
+			expectedSyncer:              nil,
+			expectedEvaluation:          BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusBlockedByRegulationScope},
+		},
+		{
+			description:      "Blocked By Regulation Scope - GPP",
+			givenBidder:      "a",
+			givenSyncersSeen: map[string]struct{}{},
+			givenPrivacy:     fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
+			givenCookie:      cookieNeedsSync,
+			givenBidderInfo: map[string]config.BidderInfo{
+				"a": {
+					Syncer: &config.Syncer{
+						SkipWhen: &config.SkipWhen{
+							GPPSID: []string{"2", "3"},
+						},
+					},
+				},
+			},
+			givenGPPSID:                 "2",
+			givenSyncTypeFilter:         syncTypeFilter,
+			normalizedBidderNamesLookup: normalizedBidderNamesLookup,
+			normalisedBidderName:        "a",
+			expectedSyncer:              nil,
+			expectedEvaluation:          BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusBlockedByRegulationScope},
+		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
-			chooser, _ := NewChooser(bidderSyncerLookup, biddersKnown).(standardChooser)
+			chooser, _ := NewChooser(bidderSyncerLookup, biddersKnown, test.givenBidderInfo).(standardChooser)
 			chooser.normalizeValidBidderName = test.normalizedBidderNamesLookup
-			sync, evaluation := chooser.evaluate(test.givenBidder, test.givenSyncersSeen, test.givenSyncTypeFilter, &test.givenPrivacy, &test.givenCookie)
+			sync, evaluation := chooser.evaluate(test.givenBidder, test.givenSyncersSeen, test.givenSyncTypeFilter, &test.givenPrivacy, &test.givenCookie, test.givenGPPSID)
 
 			assert.Equal(t, test.normalisedBidderName, test.givenPrivacy.inputBidderName)
 			assert.Equal(t, test.expectedSyncer, sync, test.description+":syncer")
@@ -600,6 +702,7 @@ type fakePrivacy struct {
 	gdprAllowsBidderSync  bool
 	ccpaAllowsBidderSync  bool
 	activityAllowUserSync bool
+	gdprInScope           bool
 	inputBidderName       string
 }
 
@@ -619,4 +722,8 @@ func (p *fakePrivacy) CCPAAllowsBidderSync(bidder string) bool {
 
 func (p *fakePrivacy) ActivityAllowsUserSync(bidder string) bool {
 	return p.activityAllowUserSync
+}
+
+func (p *fakePrivacy) GDPRInScope() bool {
+	return p.gdprInScope
 }
