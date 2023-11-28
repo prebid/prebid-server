@@ -410,8 +410,7 @@ func CloneBidderReq(req *openrtb2.BidRequest) *openrtb_ext.RequestWrapper {
 	// bidder request may be modified differently per bidder based on privacy configs
 	// new request should be created for each bidder request
 	// pointer fields like User and Device should be cloned and set back to the request copy
-	var newReq *openrtb2.BidRequest
-	newReq = ptrutil.Clone(req)
+	newReq := ptrutil.Clone(req)
 
 	if req.User != nil {
 		userCopy := CloneUser(req.User)

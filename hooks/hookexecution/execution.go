@@ -179,7 +179,7 @@ func handleHookResponse[P any](
 	metricEngine metrics.MetricsEngine,
 ) (P, HookOutcome, *RejectError) {
 	var rejectErr *RejectError
-	labels := metrics.ModuleLabels{Module: moduleReplacer.Replace(hr.HookID.ModuleCode), Stage: ctx.stage, AccountID: ctx.accountId}
+	labels := metrics.ModuleLabels{Module: moduleReplacer.Replace(hr.HookID.ModuleCode), Stage: ctx.stage, AccountID: ctx.accountID}
 	metricEngine.RecordModuleCalled(labels, hr.ExecutionTime)
 
 	hookOutcome := HookOutcome{
@@ -321,7 +321,6 @@ func handleModuleActivities[T any, P any](hook hooks.HookWrapper[T], activityCon
 		return payload
 	}
 
-	// parse hook.Module to split it to type and mame?
 	scopeGeneral := privacy.Component{Type: privacy.ComponentTypeGeneral, Name: hook.Code}
 	transmitUserFPDActivityAllowed := activityControl.Allow(privacy.ActivityTransmitUserFPD, scopeGeneral, privacy.ActivityRequest{})
 

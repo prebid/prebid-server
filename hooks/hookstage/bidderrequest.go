@@ -37,7 +37,6 @@ func (brp *BidderRequestPayload) SetBidderRequestPayload(br *openrtb_ext.Request
 }
 
 // PayloadBidderRequest indicated of hook carries a bid request.
-// used for activities, name can be better
 type PayloadBidderRequest interface {
 	GetBidderRequestPayload() *openrtb_ext.RequestWrapper
 	SetBidderRequestPayload(br *openrtb_ext.RequestWrapper)

@@ -298,7 +298,7 @@ func (e *hookExecutor) ExecuteAuctionResponseStage(response *openrtb2.BidRespons
 func (e *hookExecutor) newContext(stage string) executionContext {
 	return executionContext{
 		account:         e.account,
-		accountId:       e.accountID,
+		accountID:       e.accountID,
 		endpoint:        e.endpoint,
 		moduleContexts:  e.moduleContexts,
 		stage:           stage,

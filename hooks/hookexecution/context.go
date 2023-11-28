@@ -13,7 +13,7 @@ import (
 type executionContext struct {
 	endpoint        string
 	stage           string
-	accountId       string
+	accountID       string
 	account         *config.Account
 	moduleContexts  *moduleContexts
 	activityControl privacy.ActivityControl
