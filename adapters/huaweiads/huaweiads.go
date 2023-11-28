@@ -555,12 +555,19 @@ func getNativeFormat(adslot30 *adslot30, openRTBImp *openrtb2.Imp) error {
 			}
 		}
 	}
+
+	sizeMap := make(map[format]struct{})
+	for _, size := range popularSizes {
+		sizeMap[size] = struct{}{}
+	}
+
 	for _, asset := range nativePayload.Assets {
 		// Only one of the {title,img,video,data} objects should be present in each object.
 		if asset.Video != nil {
 			numVideo++
 			formats = popularSizes
-			if (asset.Video.W != 0 && asset.Video.H != 0) && !isSizeInArray(popularSizes, asset.Video.W, asset.Video.H) {
+			_, ok := sizeMap[format{W: asset.Video.W, H: asset.Video.H}]
+			if (asset.Video.W != 0 && asset.Video.H != 0) && !ok {
 				formats = append(formats, format{asset.Video.W, asset.Video.H})
 			}
 		}
@@ -613,14 +620,6 @@ func filterPopularSizes(sizes []format, width int64, height int64, byWhat string
 		}
 	}
 	return filtered
-}
-func isSizeInArray(sizes []format, targetWidth, targetHeight int64) bool {
-	for _, size := range sizes {
-		if size.W == targetWidth && size.H == targetHeight {
-			return true
-		}
-	}
-	return false
 }
 
 // roll ad need TotalDuration
