@@ -671,7 +671,7 @@ type fakeSyncer struct {
 	key              string
 	supportsIFrame   bool
 	supportsRedirect bool
-	forceSyncType    string
+	forceOverride    string
 }
 
 func (s fakeSyncer) Key() string {
@@ -699,7 +699,7 @@ func (fakeSyncer) GetSync([]SyncType, macros.UserSyncPrivacy) (Sync, error) {
 }
 
 func (s fakeSyncer) ForceResponseFormat() string {
-	return s.forceSyncType
+	return s.forceOverride
 }
 
 type fakePrivacy struct {

@@ -53,7 +53,7 @@ type standardSyncer struct {
 	iframe          *template.Template
 	redirect        *template.Template
 	supportCORS     bool
-	forceSyncType   string
+	forceOverride   string
 }
 
 const (
@@ -76,7 +76,7 @@ func NewSyncer(hostConfig config.UserSync, syncerConfig config.Syncer, bidder st
 		key:             syncerConfig.Key,
 		defaultSyncType: resolveDefaultSyncType(syncerConfig),
 		supportCORS:     syncerConfig.SupportCORS != nil && *syncerConfig.SupportCORS,
-		forceSyncType:   syncerConfig.ForceSyncType,
+		forceOverride:   syncerConfig.FormatOverride,
 	}
 
 	if syncerConfig.IFrame != nil {
@@ -273,11 +273,11 @@ func (s standardSyncer) chooseTemplate(syncType SyncType) *template.Template {
 }
 
 func (s standardSyncer) ForceResponseFormat() string {
-	switch s.forceSyncType {
+	switch s.forceOverride {
 	case setuidSyncTypeIFrame:
-		return s.forceSyncType
+		return s.forceOverride
 	case setuidSyncTypeRedirect:
-		return s.forceSyncType
+		return s.forceOverride
 	default:
 		return ""
 	}

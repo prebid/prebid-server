@@ -125,8 +125,8 @@ type Syncer struct {
 	// SupportCORS identifies if CORS is supported for the user syncing endpoints.
 	SupportCORS *bool `yaml:"supportCors" mapstructure:"support_cors"`
 
-	// ForceSyncType allows a bidder to override their callback type "b" for iframe, "i" for redirect
-	ForceSyncType string `yaml:"forceSyncType" mapstructure:"force_sync_type"`
+	// FormatOverride allows a bidder to override their callback type "b" for iframe, "i" for redirect
+	FormatOverride string `yaml:"forceOverride" mapstructure:"force_override"`
 
 	// SkipWhen allows bidders to specify when they don't want to sync
 	SkipWhen *SkipWhen `yaml:"skipwhen" mapstructure:"skipwhen"`

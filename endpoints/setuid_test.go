@@ -34,7 +34,7 @@ func TestSetUIDEndpoint(t *testing.T) {
 		gdprAllowsHostCookies  bool
 		gdprReturnsError       bool
 		gdprMalformed          bool
-		forceSyncType          string
+		forceOverride          string
 		expectedSyncs          map[string]string
 		expectedBody           string
 		expectedStatusCode     int
@@ -342,7 +342,7 @@ func TestSetUIDEndpoint(t *testing.T) {
 			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
 			existingSyncs:          nil,
 			gdprAllowsHostCookies:  true,
-			forceSyncType:          "i",
+			forceOverride:          "i",
 			expectedSyncs:          map[string]string{"pubmatic": "123"},
 			expectedStatusCode:     http.StatusOK,
 			expectedHeaders:        map[string]string{"Content-Length": "86", "Content-Type": "image/png"},
@@ -355,7 +355,7 @@ func TestSetUIDEndpoint(t *testing.T) {
 
 	for _, test := range testCases {
 		response := doRequest(makeRequest(test.uri, test.existingSyncs), analytics, metrics,
-			test.syncersBidderNameToKey, test.gdprAllowsHostCookies, test.gdprReturnsError, test.gdprMalformed, false, 0, nil, test.forceSyncType)
+			test.syncersBidderNameToKey, test.gdprAllowsHostCookies, test.gdprReturnsError, test.gdprMalformed, false, 0, nil, test.forceOverride)
 		assert.Equal(t, test.expectedStatusCode, response.Code, "Test Case: %s. /setuid returned unexpected error code", test.description)
 
 		if test.expectedSyncs != nil {
@@ -1465,13 +1465,13 @@ func TestGetResponseFormat(t *testing.T) {
 		},
 		{
 			urlValues:      url.Values{"f": []string{"b"}},
-			syncer:         fakeSyncer{key: "a", forceSyncType: "i"},
+			syncer:         fakeSyncer{key: "a", forceOverride: "i"},
 			expectedFormat: "i",
 			description:    "parameter given as `b`, but force sync type is opposite",
 		},
 		{
 			urlValues:      url.Values{"f": []string{"i"}},
-			syncer:         fakeSyncer{key: "a", forceSyncType: "b"},
+			syncer:         fakeSyncer{key: "a", forceOverride: "b"},
 			expectedFormat: "b",
 			description:    "parameter given as `i`, but force sync type is opposite",
 		},
@@ -1574,7 +1574,7 @@ func makeRequest(uri string, existingSyncs map[string]string) *http.Request {
 	return request
 }
 
-func doRequest(req *http.Request, analytics analytics.Runner, metrics metrics.MetricsEngine, syncersBidderNameToKey map[string]string, gdprAllowsHostCookies, gdprReturnsError, gdprReturnsMalformedError, cfgAccountRequired bool, maxCookieSize int, priorityGroups [][]string, forceSyncType string) *httptest.ResponseRecorder {
+func doRequest(req *http.Request, analytics analytics.Runner, metrics metrics.MetricsEngine, syncersBidderNameToKey map[string]string, gdprAllowsHostCookies, gdprReturnsError, gdprReturnsMalformedError, cfgAccountRequired bool, maxCookieSize int, priorityGroups [][]string, forceOverride string) *httptest.ResponseRecorder {
 	cfg := config.Configuration{
 		AccountRequired: cfgAccountRequired,
 		AccountDefaults: config.Account{},
@@ -1605,7 +1605,7 @@ func doRequest(req *http.Request, analytics analytics.Runner, metrics metrics.Me
 
 	syncersByBidder := make(map[string]usersync.Syncer)
 	for bidderName, syncerKey := range syncersBidderNameToKey {
-		syncersByBidder[bidderName] = fakeSyncer{key: syncerKey, defaultSyncType: usersync.SyncTypeIFrame, forceSyncType: forceSyncType}
+		syncersByBidder[bidderName] = fakeSyncer{key: syncerKey, defaultSyncType: usersync.SyncTypeIFrame, forceOverride: forceOverride}
 		if priorityGroups == nil {
 			cfg.UserSync.PriorityGroups = [][]string{{}}
 			cfg.UserSync.PriorityGroups[0] = append(cfg.UserSync.PriorityGroups[0], bidderName)
@@ -1696,7 +1696,7 @@ func (g *fakePermsSetUID) AuctionActivitiesAllowed(ctx context.Context, bidderCo
 type fakeSyncer struct {
 	key             string
 	defaultSyncType usersync.SyncType
-	forceSyncType   string
+	forceOverride   string
 }
 
 func (s fakeSyncer) Key() string {
@@ -1716,7 +1716,7 @@ func (s fakeSyncer) GetSync(syncTypes []usersync.SyncType, privacyMacros macros.
 }
 
 func (s fakeSyncer) ForceResponseFormat() string {
-	return s.forceSyncType
+	return s.forceOverride
 }
 
 func ToHTTPCookie(cookie *usersync.Cookie) (*http.Cookie, error) {

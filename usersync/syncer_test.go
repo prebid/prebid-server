@@ -107,12 +107,12 @@ func TestNewSyncer(t *testing.T) {
 
 	for _, test := range testCases {
 		syncerConfig := config.Syncer{
-			Key:           test.givenKey,
-			SupportCORS:   &supportCORS,
-			IFrame:        test.givenIFrameConfig,
-			Redirect:      test.givenRedirectConfig,
-			ExternalURL:   test.givenExternalURL,
-			ForceSyncType: test.givenForceType,
+			Key:            test.givenKey,
+			SupportCORS:    &supportCORS,
+			IFrame:         test.givenIFrameConfig,
+			Redirect:       test.givenRedirectConfig,
+			ExternalURL:    test.givenExternalURL,
+			FormatOverride: test.givenForceType,
 		}
 
 		result, err := NewSyncer(hostConfig, syncerConfig, test.givenBidderName)
@@ -123,7 +123,7 @@ func TestNewSyncer(t *testing.T) {
 				result := result.(standardSyncer)
 				assert.Equal(t, test.givenKey, result.key, test.description+":key")
 				assert.Equal(t, supportCORS, result.supportCORS, test.description+":cors")
-				assert.Equal(t, test.givenForceType, result.forceSyncType, test.description+":cors")
+				assert.Equal(t, test.givenForceType, result.forceOverride, test.description+":cors")
 				assert.Equal(t, test.expectedDefault, result.defaultSyncType, test.description+":default_sync")
 
 				if test.expectedIFrame == "" {
@@ -807,7 +807,7 @@ func TestSyncerForceResponseFormat(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		syncer := standardSyncer{forceSyncType: test.givenForceType}
+		syncer := standardSyncer{forceOverride: test.givenForceType}
 		forceType := syncer.ForceResponseFormat()
 		assert.Equal(t, test.expectedForceType, forceType, test.description)
 	}
