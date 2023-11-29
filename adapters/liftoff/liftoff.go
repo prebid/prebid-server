@@ -89,6 +89,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 				}
 			} else {
 				errs = append(errs, errors.New("failed constructing app, must have app or site object in bid request"))
+				continue
 			}
 		}
 
