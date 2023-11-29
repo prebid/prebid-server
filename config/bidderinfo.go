@@ -126,7 +126,7 @@ type Syncer struct {
 	SupportCORS *bool `yaml:"supportCors" mapstructure:"support_cors"`
 
 	// FormatOverride allows a bidder to override their callback type "b" for iframe, "i" for redirect
-	FormatOverride string `yaml:"forceOverride" mapstructure:"force_override"`
+	FormatOverride string `yaml:"formatOverride" mapstructure:"format_override"`
 
 	// SkipWhen allows bidders to specify when they don't want to sync
 	SkipWhen *SkipWhen `yaml:"skipwhen" mapstructure:"skipwhen"`
