@@ -142,6 +142,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 				errors = append(errors, &errortypes.BadServerResponse{
 					Message: fmt.Sprintf("Unsupported creative type: %d", ext.CreativeType),
 				})
+				continue
 			}
 
 			if bid.MType == 0 {
@@ -153,6 +154,11 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 				BidType: bidType,
 			})
 		}
+	}
+
+	if len(result.Bids) == 0 {
+		// it's possible an empty seat array was sent as a response
+		return nil, errors
 	}
 	return result, errors
 }
