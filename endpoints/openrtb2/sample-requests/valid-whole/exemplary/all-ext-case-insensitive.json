@@ -51,7 +51,7 @@
           ]
         },
         "ext": {
-          "appnexus": {
+          "APPnexus": {
             "placementId": 12883451
           },
           "districtm": {
@@ -109,7 +109,7 @@
             "price": 1.01
           }
         ],
-        "seat": "appnexus"
+        "seat": "APPnexus"
       },
       {
         "bid": [

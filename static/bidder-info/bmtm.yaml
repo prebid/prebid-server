@@ -3,6 +3,10 @@ maintainer:
   email: dev@brightmountainmedia.com
 modifyingVastXmlAllowed: false
 capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
   site:
     mediaTypes:
       - banner

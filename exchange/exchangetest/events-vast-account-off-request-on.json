@@ -131,6 +131,9 @@
               "ext": {
                 "origbidcpm": 0.51,
                 "prebid": {
+                  "meta": {
+                    "adaptercode": "audienceNetwork"
+                  },
                   "bidid": "mock_uuid",
                   "type": "video"
                 }
@@ -154,6 +157,9 @@
                 "origbidcpm": 0.71,
                 "prebid": {
                   "bidid": "mock_uuid",
+                  "meta": {
+                    "adaptercode": "appnexus"
+                  },
                   "type": "video",
                   "targeting": {
                     "hb_bidder": "appnexus",
@@ -178,6 +184,9 @@
               "ext": {
                 "origbidcpm": 0.21,
                 "prebid": {
+                  "meta": {
+                    "adaptercode": "appnexus"
+                  },
                   "bidid": "mock_uuid",
                   "type": "video"
                 }

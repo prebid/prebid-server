@@ -114,6 +114,9 @@
                                 "origbidcpm": 0.3,
                                 "someField": "someValue",
                                 "prebid": {
+                                    "meta": {
+                                        "adaptercode": "openx"
+                                    },
                                     "type": "video"
                                 }
                             }
