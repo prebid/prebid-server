@@ -189,6 +189,140 @@ func CloneUser(s *openrtb2.User) *openrtb2.User {
 	return &c
 }
 
+func CloneDevice(s *openrtb2.Device) *openrtb2.Device {
+	if s == nil {
+		return nil
+	}
+
+	// Shallow Copy (Value Fields)
+	c := *s
+
+	// Deep Copy (Pointers)
+	c.Geo = CloneGeo(s.Geo)
+
+	c.DNT = CloneInt8Pointer(s.DNT)
+	c.Lmt = CloneInt8Pointer(s.Lmt)
+
+	c.SUA = CloneUserAgent(s.SUA)
+	if s.ConnectionType != nil {
+		connectionTypeCopy := s.ConnectionType.Val()
+		c.ConnectionType = &connectionTypeCopy
+	}
+
+	c.Ext = sliceutil.Clone(s.Ext)
+
+	return &c
+}
+
+func CloneInt8Pointer(s *int8) *int8 {
+	if s == nil {
+		return nil
+	}
+	var dntCopy int8
+	dntCopy = *s
+	return &dntCopy
+}
+
+func CloneUserAgent(s *openrtb2.UserAgent) *openrtb2.UserAgent {
+	if s == nil {
+		return nil
+	}
+
+	// Shallow Copy (Value Fields)
+	c := *s
+
+	// Deep Copy (Pointers)
+	c.Browsers = CloneBrandVersionSlice(s.Browsers)
+	c.Platform = CloneBrandVersion(s.Platform)
+
+	if s.Mobile != nil {
+		mobileCopy := *s.Mobile
+		c.Mobile = &mobileCopy
+	}
+	s.Ext = sliceutil.Clone(s.Ext)
+
+	return &c
+}
+
+func CloneBrandVersionSlice(s []openrtb2.BrandVersion) []openrtb2.BrandVersion {
+	if s == nil {
+		return nil
+	}
+
+	c := make([]openrtb2.BrandVersion, len(s))
+	for i, d := range s {
+		bv := CloneBrandVersion(&d)
+		c[i] = *bv
+	}
+
+	return c
+}
+
+func CloneBrandVersion(s *openrtb2.BrandVersion) *openrtb2.BrandVersion {
+	if s == nil {
+		return nil
+	}
+	c := *s
+
+	// Deep Copy (Pointers)
+	c.Version = sliceutil.Clone(s.Version)
+	c.Ext = sliceutil.Clone(s.Ext)
+
+	return &c
+}
+
+func CloneSource(s *openrtb2.Source) *openrtb2.Source {
+	if s == nil {
+		return nil
+	}
+
+	// Shallow Copy (Value Fields)
+	c := *s
+
+	// Deep Copy (Pointers)
+	c.SChain = CloneSChain(s.SChain)
+	c.Ext = sliceutil.Clone(s.Ext)
+
+	return &c
+}
+
+func CloneSChain(s *openrtb2.SupplyChain) *openrtb2.SupplyChain {
+	if s == nil {
+		return nil
+	}
+	// Shallow Copy (Value Fields)
+	c := *s
+
+	// Deep Copy (Pointers)
+	c.Nodes = CloneSupplyChainNodes(s.Nodes)
+	c.Ext = sliceutil.Clone(s.Ext)
+
+	return &c
+}
+
+func CloneSupplyChainNodes(s []openrtb2.SupplyChainNode) []openrtb2.SupplyChainNode {
+	if s == nil {
+		return nil
+	}
+
+	c := make([]openrtb2.SupplyChainNode, len(s))
+	for i, d := range s {
+		c[i] = CloneSupplyChainNode(d)
+	}
+
+	return c
+}
+
+func CloneSupplyChainNode(s openrtb2.SupplyChainNode) openrtb2.SupplyChainNode {
+	// Shallow Copy (Value Fields) Occurred By Passing Argument By Value
+
+	// Deep Copy (Pointers)
+	s.HP = CloneInt8Pointer(s.HP)
+	s.Ext = sliceutil.Clone(s.Ext)
+
+	return s
+}
+
 func CloneGeo(s *openrtb2.Geo) *openrtb2.Geo {
 	if s == nil {
 		return nil
