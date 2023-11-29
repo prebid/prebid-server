@@ -51,7 +51,12 @@ func (a *adapter) MakeBids(bidRequest *openrtb2.BidRequest, requestData *adapter
 	bidderResponse.Currency = "EUR"
 
 	for _, bid := range stroeerResponse.Bids {
-		bidType, markupType := getBidMediaTypeForImp(bid.BidID, bidRequest.Imp)
+		bidType, markupType, err := getBidMediaTypeForImp(bid.BidID, bidRequest.Imp)
+		if err != nil {
+			errors = append(errors, err)
+			continue
+		}
+
 		openRtbBid := openrtb2.Bid{
 			ID:    bid.ID,
 			ImpID: bid.BidID,
@@ -72,19 +77,23 @@ func (a *adapter) MakeBids(bidRequest *openrtb2.BidRequest, requestData *adapter
 	return bidderResponse, errors
 }
 
-func getBidMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, openrtb2.MarkupType) {
+func getBidMediaTypeForImp(impID string, imps []openrtb2.Imp) (emptyBidType openrtb_ext.BidType, emptyMarkupType openrtb2.MarkupType, err error) {
 	for _, imp := range imps {
 		if imp.ID == impID {
 			if imp.Banner != nil {
-				return openrtb_ext.BidTypeBanner, openrtb2.MarkupBanner
+				return openrtb_ext.BidTypeBanner, openrtb2.MarkupBanner, nil
 			}
 			if imp.Video != nil {
-				return openrtb_ext.BidTypeVideo, openrtb2.MarkupVideo
+				return openrtb_ext.BidTypeVideo, openrtb2.MarkupVideo, nil
 			}
 		}
 	}
-	return openrtb_ext.BidTypeBanner, openrtb2.MarkupBanner
+
+	return emptyBidType, emptyMarkupType, &errortypes.BadServerResponse{
+		Message: fmt.Sprintf("Impression \"%s\" was not matched with Bid. Uknown mediatype.", impID),
+	}
 }
+
 func (a *adapter) MakeRequests(bidRequest *openrtb2.BidRequest, extraRequestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errors []error
 
