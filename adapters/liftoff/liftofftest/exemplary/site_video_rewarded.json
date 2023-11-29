@@ -1,8 +1,8 @@
 {
   "mockBidRequest": {
     "id": "test-request-id",
-    "app": {
-      "bundle": "com.prebid"
+    "site": {
+      "name": "com.prebid"
     },
     "device": {
       "ifa": "87857b31-8942-4646-ae80-ab9c95bf3fab"
@@ -51,8 +51,7 @@
         "body": {
           "id": "test-request-id",
           "app": {
-            "id": "123",
-            "bundle": "com.prebid"
+            "id": "123"
           },
           "device": {
             "ifa": "87857b31-8942-4646-ae80-ab9c95bf3fab"

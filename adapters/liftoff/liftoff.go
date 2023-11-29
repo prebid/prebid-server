@@ -76,10 +76,23 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		imp.TagID = bidderImpExt.PlacementRefID
 		requestCopy.Imp = []openrtb2.Imp{imp}
 		// must make a shallow copy for pointers.
-		requestAppCopy := *request.App
-		requestAppCopy.ID = bidderImpExt.PubAppStoreID
-		requestCopy.App = &requestAppCopy
+		// If it is site object, need to construct an app with pub_store_id.
+		var requestAppCopy openrtb2.App
+		if request.App != nil {
+			requestAppCopy = *request.App
+			requestAppCopy.ID = bidderImpExt.PubAppStoreID
+		} else {
+			if request.Site != nil {
+				requestCopy.Site = nil
+				requestAppCopy = openrtb2.App{
+					ID: bidderImpExt.PubAppStoreID,
+				}
+			} else {
+				errs = append(errs, errors.New("failed constructing app, must have app or site object in bid request"))
+			}
+		}
 
+		requestCopy.App = &requestAppCopy
 		requestJSON, err := json.Marshal(requestCopy)
 		if err != nil {
 			errs = append(errs, err)
@@ -126,6 +139,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 			b := &adapters.TypedBid{
 				Bid:     &seatBid.Bid[i],
 				BidType: openrtb_ext.BidTypeVideo,
+				Seat:    openrtb_ext.BidderName(seatBid.Seat),
 			}
 
 			bidResponse.Bids = append(bidResponse.Bids, b)

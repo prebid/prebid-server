@@ -1,8 +1,8 @@
 {
   "mockBidRequest": {
     "id": "test-request-id",
-    "app": {
-      "bundle": "com.prebid"
+    "site": {
+      "name": "com.prebid"
     },
     "device": {
       "ifa": "87857b31-8942-4646-ae80-ab9c95bf3fab"
@@ -24,10 +24,8 @@
             "foo": "bar"
           }
         },
+        "instl": 1,
         "ext": {
-          "prebid": {
-            "is_rewarded_inventory": 1
-          },
           "bidder": {
             "app_store_id": "123",
             "placement_reference_id": "123"
@@ -37,6 +35,11 @@
     ],
     "user": {
       "buyeruid": "123"
+    },
+    "ext": {
+      "prebid": {
+        "debug": true
+      }
     }
   },
   "httpCalls": [
@@ -51,8 +54,7 @@
         "body": {
           "id": "test-request-id",
           "app": {
-            "id": "123",
-            "bundle": "com.prebid"
+            "id": "123"
           },
           "device": {
             "ifa": "87857b31-8942-4646-ae80-ab9c95bf3fab"
@@ -75,10 +77,9 @@
                   "foo": "bar"
                 }
               },
+              "instl": 1,
               "ext": {
-                "prebid": {
-                  "is_rewarded_inventory": 1
-                },
+                "prebid": null,
                 "bidder": {
                   "app_store_id": "123",
                   "placement_reference_id": "123"
@@ -93,6 +94,11 @@
           ],
           "user": {
             "buyeruid": "123"
+          },
+          "ext": {
+            "prebid": {
+              "debug": true
+            }
           }
         }
       },

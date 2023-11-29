@@ -7,3 +7,6 @@ capabilities:
   app:
     mediaTypes:
       - video
+  site:
+    mediaTypes:
+      - video
