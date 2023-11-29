@@ -107,7 +107,11 @@
             "cid": "sovrn_psa",
             "impid": "imp123",
             "price": 1.0,
-            "id": "1"
+            "id": "1",
+            "mtype": 2,
+            "ext": {
+              "creative_type": 1
+            }
           },
           "type": "video"
         }

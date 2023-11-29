@@ -31,20 +31,14 @@ type bidExt struct {
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	if request.App != nil {
-		appCopy := *request.App
-		if appCopy.Publisher == nil {
-			appCopy.Publisher = &openrtb2.Publisher{}
-		} else {
-			publisherCopy := *appCopy.Publisher
-			appCopy.Publisher = &publisherCopy
-		}
-		request.App = &appCopy
+	appCopy := *request.App
+	if appCopy.Publisher == nil {
+		appCopy.Publisher = &openrtb2.Publisher{}
 	} else {
-		return nil, []error{&errortypes.BadInput{
-			Message: "non-app request",
-		}}
+		publisherCopy := *appCopy.Publisher
+		appCopy.Publisher = &publisherCopy
 	}
+	request.App = &appCopy
 
 	var errors []error
 	var imps []openrtb2.Imp
@@ -72,11 +66,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			continue
 		}
 
+		request.App.Publisher.ID = xspExt.PubID
 		if xspExt.MedID != "" {
 			request.App.ID = xspExt.MedID
-		}
-		if xspExt.PubID != "" {
-			request.App.Publisher.ID = xspExt.PubID
 		}
 		if xspExt.ZoneID != "" {
 			imp.TagID = xspExt.ZoneID
@@ -85,7 +77,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	}
 
 	if len(imps) == 0 {
-		return nil, errors
+		return nil, append(errors, &errortypes.BadInput{
+			Message: "no matching impression with ad format",
+		})
 	}
 
 	request.Imp = imps
@@ -108,13 +102,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if responseData.StatusCode == http.StatusNoContent {
+	if adapters.IsResponseStatusCodeNoContent(responseData) {
 		return nil, nil
 	}
-	if responseData.StatusCode != http.StatusOK {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d", responseData.StatusCode),
-		}}
+	if err := adapters.CheckResponseStatusCodeForErrors(responseData); err != nil {
+		return nil, []error{err}
 	}
 
 	var response openrtb2.BidResponse
@@ -135,20 +127,27 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 			}
 
 			var bidType openrtb_ext.BidType
+			var mkupType openrtb2.MarkupType
 			switch ext.CreativeType {
 			case creativeTypeBanner:
 				bidType = openrtb_ext.BidTypeBanner
+				mkupType = openrtb2.MarkupBanner
 			case creativeTypeVideo:
 				bidType = openrtb_ext.BidTypeVideo
+				mkupType = openrtb2.MarkupVideo
 			case creativeTypeNative:
 				bidType = openrtb_ext.BidTypeNative
+				mkupType = openrtb2.MarkupNative
 			default:
 				errors = append(errors, &errortypes.BadServerResponse{
 					Message: fmt.Sprintf("Unsupported creative type: %d", ext.CreativeType),
 				})
 			}
 
-			bid.Ext = nil
+			if bid.MType == 0 {
+				bid.MType = mkupType
+			}
+
 			result.Bids = append(result.Bids, &adapters.TypedBid{
 				Bid:     &bid,
 				BidType: bidType,

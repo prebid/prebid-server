@@ -105,7 +105,11 @@
             "cid": "test_cid",
             "impid": "imp123",
             "price": 1.0,
-            "id": "1"
+            "id": "1",
+            "mtype": 1,
+            "ext": {
+              "creative_type": 0
+            }
           },
           "type": "banner"
         }

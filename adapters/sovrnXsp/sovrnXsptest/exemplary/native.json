@@ -95,7 +95,11 @@
             "cid": "test_cid",
             "impid": "imp123",
             "price": 1.0,
-            "id": "1"
+            "id": "1",
+            "mtype": 4,
+            "ext": {
+              "creative_type": 2
+            }
           },
           "type": "native"
         }
