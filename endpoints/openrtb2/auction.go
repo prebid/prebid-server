@@ -182,10 +182,11 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 
 	activityControl := privacy.ActivityControl{}
+	accPrivacy := config.AccountPrivacy{}
 	defer func() {
 		deps.metricsEngine.RecordRequest(labels)
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
-		deps.analytics.LogAuctionObject(&ao, activityControl)
+		deps.analytics.LogAuctionObject(&ao, activityControl, accPrivacy)
 	}()
 
 	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
@@ -204,6 +205,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, account.GDPR)
 
 	activityControl = privacy.NewActivityControl(&account.Privacy)
+	accPrivacy = account.Privacy
 
 	ctx := context.Background()
 

@@ -8,6 +8,7 @@ import (
 	"github.com/prebid/prebid-server/v2/analytics/filesystem"
 	"github.com/prebid/prebid-server/v2/analytics/pubstack"
 	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/prebid/prebid-server/v2/privacy"
 )
 
@@ -44,21 +45,26 @@ func New(analytics *config.Analytics) analytics.Runner {
 // Collection of all the correctly configured analytics modules - implements the PBSAnalyticsModule interface
 type enabledAnalytics map[string]analytics.Module
 
-func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac privacy.ActivityControl) {
+func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac privacy.ActivityControl, ap config.AccountPrivacy) {
 	for name, module := range ea {
-		component := privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: name}
-		if ac.Allow(privacy.ActivityReportAnalytics, component, privacy.ActivityRequest{}) {
+		if isAllowed, cloneBidderReq := evaluateActivities(ao.RequestWrapper, ac, ap, name); isAllowed {
+			if cloneBidderReq != nil {
+				ao.RequestWrapper = cloneBidderReq
+			}
 			module.LogAuctionObject(ao)
 		}
 	}
 }
 
-func (ea enabledAnalytics) LogVideoObject(vo *analytics.VideoObject, ac privacy.ActivityControl) {
+func (ea enabledAnalytics) LogVideoObject(vo *analytics.VideoObject, ac privacy.ActivityControl, ap config.AccountPrivacy) {
 	for name, module := range ea {
-		component := privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: name}
-		if ac.Allow(privacy.ActivityReportAnalytics, component, privacy.ActivityRequest{}) {
+		if isAllowed, cloneBidderReq := evaluateActivities(vo.RequestWrapper, ac, ap, name); isAllowed {
+			if cloneBidderReq != nil {
+				vo.RequestWrapper = cloneBidderReq
+			}
 			module.LogVideoObject(vo)
 		}
+
 	}
 }
 
@@ -74,10 +80,12 @@ func (ea enabledAnalytics) LogSetUIDObject(so *analytics.SetUIDObject) {
 	}
 }
 
-func (ea enabledAnalytics) LogAmpObject(ao *analytics.AmpObject, ac privacy.ActivityControl) {
+func (ea enabledAnalytics) LogAmpObject(ao *analytics.AmpObject, ac privacy.ActivityControl, ap config.AccountPrivacy) {
 	for name, module := range ea {
-		component := privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: name}
-		if ac.Allow(privacy.ActivityReportAnalytics, component, privacy.ActivityRequest{}) {
+		if isAllowed, cloneBidderReq := evaluateActivities(ao.RequestWrapper, ac, ap, name); isAllowed {
+			if cloneBidderReq != nil {
+				ao.RequestWrapper = cloneBidderReq
+			}
 			module.LogAmpObject(ao)
 		}
 	}
@@ -90,4 +98,35 @@ func (ea enabledAnalytics) LogNotificationEventObject(ne *analytics.Notification
 			module.LogNotificationEventObject(ne)
 		}
 	}
+}
+
+func evaluateActivities(rw *openrtb_ext.RequestWrapper, ac privacy.ActivityControl, ap config.AccountPrivacy, componentName string) (bool, *openrtb_ext.RequestWrapper) {
+	component := privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: componentName}
+	if ac.Allow(privacy.ActivityReportAnalytics, component, privacy.ActivityRequest{}) {
+
+		blockUserFPD := !ac.Allow(privacy.ActivityTransmitUserFPD, component, privacy.ActivityRequest{})
+		blockPreciseGeo := !ac.Allow(privacy.ActivityTransmitPreciseGeo, component, privacy.ActivityRequest{})
+
+		if blockUserFPD || blockPreciseGeo {
+			//TODO: clone bid request first, use CloneBidderReq func from Modules Activities PR
+			cloneReq := rw
+
+			if blockUserFPD {
+				privacy.ScrubUserFPD(cloneReq)
+			}
+			if blockPreciseGeo {
+				ipConf := privacy.IPConf{IPV6: ap.IPv6Config, IPV4: ap.IPv4Config}
+				privacy.ScrubGeoAndDeviceIP(cloneReq, ipConf)
+			}
+
+			//TODO:check request changed for analytics object only
+			cloneReq.RebuildRequest()
+			return true, cloneReq
+		}
+
+		// nil request wrapper means that request wrapper was not modified by activities and doesn't have to be changed in analytics object
+		// it is needed in order to use one function for all analytics objects with RequestWrapper
+		return true, nil
+	}
+	return false, nil
 }

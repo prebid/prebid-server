@@ -22,7 +22,7 @@ func TestSampleModule(t *testing.T) {
 		Status:   http.StatusOK,
 		Errors:   nil,
 		Response: &openrtb2.BidResponse{},
-	}, privacy.ActivityControl{})
+	}, privacy.ActivityControl{}, config.AccountPrivacy{})
 	if count != 1 {
 		t.Errorf("PBSAnalyticsModule failed at LogAuctionObject")
 	}
@@ -43,12 +43,12 @@ func TestSampleModule(t *testing.T) {
 		t.Errorf("PBSAnalyticsModule failed at LogCookieSyncObject")
 	}
 
-	am.LogAmpObject(&analytics.AmpObject{}, privacy.ActivityControl{})
+	am.LogAmpObject(&analytics.AmpObject{}, privacy.ActivityControl{}, config.AccountPrivacy{})
 	if count != 4 {
 		t.Errorf("PBSAnalyticsModule failed at LogAmpObject")
 	}
 
-	am.LogVideoObject(&analytics.VideoObject{}, privacy.ActivityControl{})
+	am.LogVideoObject(&analytics.VideoObject{}, privacy.ActivityControl{}, config.AccountPrivacy{})
 	if count != 5 {
 		t.Errorf("PBSAnalyticsModule failed at LogVideoObject")
 	}
@@ -151,17 +151,17 @@ func TestSampleModuleActivitiesAllowed(t *testing.T) {
 		Response: &openrtb2.BidResponse{},
 	}
 
-	am.LogAuctionObject(ao, acAllowed)
+	am.LogAuctionObject(ao, acAllowed, config.AccountPrivacy{})
 	if count != 1 {
 		t.Errorf("PBSAnalyticsModule failed at LogAuctionObject")
 	}
 
-	am.LogAmpObject(&analytics.AmpObject{}, acAllowed)
+	am.LogAmpObject(&analytics.AmpObject{}, acAllowed, config.AccountPrivacy{})
 	if count != 2 {
 		t.Errorf("PBSAnalyticsModule failed at LogAmpObject")
 	}
 
-	am.LogVideoObject(&analytics.VideoObject{}, acAllowed)
+	am.LogVideoObject(&analytics.VideoObject{}, acAllowed, config.AccountPrivacy{})
 	if count != 3 {
 		t.Errorf("PBSAnalyticsModule failed at LogVideoObject")
 	}
@@ -184,17 +184,17 @@ func TestSampleModuleActivitiesDenied(t *testing.T) {
 		Response: &openrtb2.BidResponse{},
 	}
 
-	am.LogAuctionObject(ao, acDenied)
+	am.LogAuctionObject(ao, acDenied, config.AccountPrivacy{})
 	if count != 0 {
 		t.Errorf("PBSAnalyticsModule failed at LogAuctionObject")
 	}
 
-	am.LogAmpObject(&analytics.AmpObject{}, acDenied)
+	am.LogAmpObject(&analytics.AmpObject{}, acDenied, config.AccountPrivacy{})
 	if count != 0 {
 		t.Errorf("PBSAnalyticsModule failed at LogAmpObject")
 	}
 
-	am.LogVideoObject(&analytics.VideoObject{}, acDenied)
+	am.LogVideoObject(&analytics.VideoObject{}, acDenied, config.AccountPrivacy{})
 	if count != 0 {
 		t.Errorf("PBSAnalyticsModule failed at LogVideoObject")
 	}

@@ -136,11 +136,11 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		RequestStatus: metrics.RequestStatusOK,
 	}
 	activityControl := privacy.ActivityControl{}
-
+	accPrivacy := config.AccountPrivacy{}
 	defer func() {
 		deps.metricsEngine.RecordRequest(labels)
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
-		deps.analytics.LogAmpObject(&ao, activityControl)
+		deps.analytics.LogAmpObject(&ao, activityControl, accPrivacy)
 	}()
 
 	// Add AMP headers
@@ -233,6 +233,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, account.GDPR)
 
 	activityControl = privacy.NewActivityControl(&account.Privacy)
+	accPrivacy = account.Privacy
 
 	secGPC := r.Header.Get("Sec-GPC")
 
