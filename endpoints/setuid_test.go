@@ -207,7 +207,7 @@ func TestSetUIDEndpoint(t *testing.T) {
 		},
 		{
 			uri: "/setuid?bidder=pubmatic&uid=123&gpp_sid=2,4&gpp=DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA" +
-				"gdpr=1&gdpr_consent=BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw",
+				"&gdpr=1&gdpr_consent=BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw",
 			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
 			gdprAllowsHostCookies:  true,
 			existingSyncs:          nil,
@@ -218,7 +218,7 @@ func TestSetUIDEndpoint(t *testing.T) {
 		},
 		{
 			uri: "/setuid?f=i&bidder=pubmatic&uid=123&gpp_sid=2,4&gpp=DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA" +
-				"gdpr=1&gdpr_consent=BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw",
+				"&gdpr=1&gdpr_consent=BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw",
 			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
 			gdprAllowsHostCookies:  true,
 			existingSyncs:          nil,
