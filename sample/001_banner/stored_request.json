@@ -19,7 +19,10 @@
                     "publisherId": "111111",
                     "adSlot": "test"
                 }
-            }
+            },
+            "storedbidresponse": [
+               { "bidder": "pubmatic", "id": "test-bid-id" }
+            ]
         }
     }
 }

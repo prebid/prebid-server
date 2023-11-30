@@ -4,7 +4,7 @@ The Sample describes several demos of how to quickly spin up different Prebid Se
 
 # Installation
 
-In the sample, we use `docker` and `docker-compose` to instantiate examples, you can install both via the [official docker page](https://docs.docker.com/compose/install/#scenario-one-install-docker-desktop).
+In the sample, we use `docker` and `docker-compose` to instantiate examples, you can install both via the [official docker page](https://docs.docker.com/compose/install/#scenario-one-install-docker-desktop). See the note below about using Podman instead of Docker.
 
 With the above tools installed, you can start to use `docker-compose` command with `docker-compose.yml` provided in the folder.  In this way, you can spin up a demo server instance locally with only one command and without knowing all the complexities. The actual command will be slightly different by the exact example you decide to use.
 The docker image used in `docker-compose.yml` is the `Dockerfile` residing in the root level of the repository. 
@@ -34,6 +34,15 @@ For every example, the following files will be present and are exclusively cater
 
 6. After you finish playing around with the example, type `docker-compose down`.
 
+## Docker Alternative
 
+From MacOS, you can use [podman](https://podman.io/) with these additional steps:
 
-
+```sh
+$ brew install podman docker-compose
+$ podman machine init
+$ podman machine set --rootful
+$ podman machine start
+$ cd sample
+$ docker-compose up <number>_<name>
+```
