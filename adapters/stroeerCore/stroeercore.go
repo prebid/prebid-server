@@ -90,7 +90,7 @@ func getBidMediaTypeForImp(impID string, imps []openrtb2.Imp) (emptyBidType open
 	}
 
 	return emptyBidType, emptyMarkupType, &errortypes.BadServerResponse{
-		Message: fmt.Sprintf("Impression \"%s\" was not matched with Bid. Uknown mediatype.", impID),
+		Message: fmt.Sprintf("Invalid impression bid \"%s\": No match with impression or unknown media type.", impID),
 	}
 }
 

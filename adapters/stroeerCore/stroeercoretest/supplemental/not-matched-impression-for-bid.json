@@ -1,0 +1,125 @@
+{
+  "mockBidRequest": {
+    "id": "id",
+    "imp": [
+      {
+        "id": "banner-1",
+        "banner": {
+          "w": 300,
+          "h": 200
+        },
+        "ext": {
+          "bidder": {
+            "sid": "tagid"
+          }
+        }
+      },
+      {
+        "id": "banner-2",
+        "banner": {
+          "w": 300,
+          "h": 200
+        },
+        "ext": {
+          "bidder": {
+            "sid": "tagid"
+          }
+        }
+      }
+    ],
+    "user": {
+      "buyeruid": "test-buyer-user-id"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://localhost/s2sdsh",
+        "body": {
+          "id": "id",
+          "imp": [
+            {
+              "id": "banner-1",
+              "tagid": "tagid",
+              "banner": {
+                "w": 300,
+                "h": 200
+              },
+              "ext": {
+                "bidder": {
+                  "sid": "tagid"
+                }
+              }
+            },
+            {
+              "id": "banner-2",
+              "tagid": "tagid",
+              "banner": {
+                "w": 300,
+                "h": 200
+              },
+              "ext": {
+                "bidder": {
+                  "sid": "tagid"
+                }
+              }
+            }
+          ],
+          "user": {
+            "buyeruid": "test-buyer-user-id"
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "bids": [
+            {
+              "id": "3929239282-01",
+              "bidId": "banner-1",
+              "cpm": 2,
+              "width": 300,
+              "height": 200,
+              "ad": "banner ad",
+              "crid": "qwert"
+            },
+            {
+              "id": "3929239282-02",
+              "bidId": "no-match-id",
+              "cpm": 2,
+              "width": 300,
+              "height": 200,
+              "ad": "banner ad 2",
+              "crid": "qwert"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids" : [{
+        "bid": {
+          "id": "3929239282-01",
+          "impid": "banner-1",
+          "price": 2,
+          "adm": "banner ad",
+          "w": 300,
+          "h": 200,
+          "crid": "qwert",
+          "mtype": 1
+        },
+        "type": "banner"
+      }]
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Invalid impression bid \"no-match-id\": No match with impression or unknown media type.",
+      "comparison": "literal"
+    }
+  ]
+}
