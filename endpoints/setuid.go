@@ -126,7 +126,6 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 				handleBadStatus(w, http.StatusBadRequest, metrics.SetUidBadRequest, err, metricsEngine, &so)
 				return
 			}
-			w.Write([]byte("Warning: " + err.Error()))
 		}
 
 		tcf2Cfg := tcf2CfgBuilder(cfg.GDPR.TCF2, account.GDPR)
