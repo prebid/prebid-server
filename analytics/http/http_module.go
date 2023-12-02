@@ -24,94 +24,76 @@ type HttpLogger struct {
 	config *config.AnalyticsHttp
 	clock  clock.Clock
 
-	eventCount        int64
-	maxEventCount     int64
-	maxBufferByteSize int64
-	maxDuration       time.Duration
-
+	eventCount              int64
+	maxEventCount           int64
+	maxBufferByteSize       int64
+	maxDuration             time.Duration
 	shouldTrackAuction      auctionFilter
 	shouldTrackAmp          ampFilter
 	shouldTrackCookieSync   cookieSyncFilter
 	shouldTrackNotification notificationFilter
 	shouldTrackSetUID       setUIDFilter
 	shouldTrackVideo        videoFilter
-
-	mux       sync.RWMutex
-	sigTermCh chan os.Signal
-	buffer    bytes.Buffer
-	bufferCh  chan []byte
+	mux                     sync.RWMutex
+	sigTermCh               chan os.Signal
+	buffer                  bytes.Buffer
+	bufferCh                chan []byte
 }
 
 func newHttpLogger(cfg config.AnalyticsHttp, sender httpSender, clock clock.Clock) (*HttpLogger, error) {
-	// parse max event count
 	pSize, err := units.FromHumanSize(cfg.Buffers.BufferSize)
 	if err != nil {
 		return nil, err
 	}
-
-	// parse duration
 	pDuration, err := time.ParseDuration(cfg.Buffers.Timeout)
 	if err != nil {
 		return nil, err
 	}
-
-	// Check for filters
 	randomGenerator := randomutil.RandomNumberGenerator{}
 	shouldTrackAuction, err := createAuctionFilter(cfg.Auction, randomGenerator)
 	if err != nil {
 		return nil, err
 	}
-
 	shouldTrackAmp, err := createAmpFilter(cfg.Auction, randomGenerator)
 	if err != nil {
 		return nil, err
 	}
-
 	shouldTrackCookieSync, err := createCookieSyncFilter(cfg.CookieSync, randomGenerator)
 	if err != nil {
 		return nil, err
 	}
-
 	shouldTrackNotification, err := createNotificationFilter(cfg.Notification, randomGenerator)
 	if err != nil {
 		return nil, err
 	}
-
 	shouldTrackSetUID, err := createSetUIDFilter(cfg.SetUID, randomGenerator)
 	if err != nil {
 		return nil, err
 	}
-
 	shouldTrackVideo, err := createVideoFilter(cfg.Video, randomGenerator)
 	if err != nil {
 		return nil, err
 	}
 
-	// init buffer
 	buffer := bytes.Buffer{}
 	buffer.Write([]byte("["))
 
-	// Check for filters
 	return &HttpLogger{
-		sender: sender,
-		clock:  clock,
-
-		maxBufferByteSize: pSize,
-		eventCount:        0,
-		maxEventCount:     int64(cfg.Buffers.EventCount),
-		maxDuration:       pDuration,
-
-		// Filters
+		sender:                  sender,
+		clock:                   clock,
+		maxBufferByteSize:       pSize,
+		eventCount:              0,
+		maxEventCount:           int64(cfg.Buffers.EventCount),
+		maxDuration:             pDuration,
 		shouldTrackAuction:      shouldTrackAuction,
 		shouldTrackAmp:          shouldTrackAmp,
 		shouldTrackCookieSync:   shouldTrackCookieSync,
 		shouldTrackNotification: shouldTrackNotification,
 		shouldTrackSetUID:       shouldTrackSetUID,
 		shouldTrackVideo:        shouldTrackVideo,
-
-		buffer:    buffer,
-		bufferCh:  make(chan []byte),
-		sigTermCh: make(chan os.Signal),
+		buffer:                  buffer,
+		bufferCh:                make(chan []byte),
+		sigTermCh:               make(chan os.Signal),
 	}, nil
 }
 

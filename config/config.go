@@ -461,19 +461,15 @@ func (cfg *CurrencyConverter) validate(errs []error) []error {
 }
 
 type AnalyticsHttp struct {
-	// Enable or disable the module
-	Enabled bool `mapstructure:"enabled"`
-	// Endpoint Config
-	Endpoint AnalyticsHttpEndpoint `mapstructure:"endpoint"`
-	// Buffer, triggers a flush whan any of the conditions are met
-	Buffers AnalyticsBuffer `mapstructure:"buffers"`
-	// Features
-	Auction      AnalyticsFeature `mapstructure:"auction"`
-	Video        AnalyticsFeature `mapstructure:"video"`
-	AMP          AnalyticsFeature `mapstructure:"amp"`
-	SetUID       AnalyticsFeature `mapstructure:"setuid"`
-	CookieSync   AnalyticsFeature `mapstructure:"cookie_sync"`
-	Notification AnalyticsFeature `mapstructure:"notification"`
+	Enabled      bool                  `mapstructure:"enabled"`
+	Endpoint     AnalyticsHttpEndpoint `mapstructure:"endpoint"`
+	Buffers      AnalyticsBuffer       `mapstructure:"buffers"`
+	Auction      AnalyticsFeature      `mapstructure:"auction"`
+	Video        AnalyticsFeature      `mapstructure:"video"`
+	AMP          AnalyticsFeature      `mapstructure:"amp"`
+	SetUID       AnalyticsFeature      `mapstructure:"setuid"`
+	CookieSync   AnalyticsFeature      `mapstructure:"cookie_sync"`
+	Notification AnalyticsFeature      `mapstructure:"notification"`
 }
 
 type AnalyticsBuffer struct {
@@ -830,11 +826,13 @@ type bidderInfoNillableFields struct {
 	Disabled                *bool `yaml:"disabled" mapstructure:"disabled"`
 	ModifyingVastXmlAllowed *bool `yaml:"modifyingVastXmlAllowed" mapstructure:"modifyingVastXmlAllowed"`
 }
-type nillableFieldBidderInfos map[string]nillableFieldBidderInfo
-type nillableFieldBidderInfo struct {
-	nillableFields bidderInfoNillableFields
-	bidderInfo     BidderInfo
-}
+type (
+	nillableFieldBidderInfos map[string]nillableFieldBidderInfo
+	nillableFieldBidderInfo  struct {
+		nillableFields bidderInfoNillableFields
+		bidderInfo     BidderInfo
+	}
+)
 
 func setConfigBidderInfoNillableFields(v *viper.Viper, bidderInfos BidderInfos) (nillableFieldBidderInfos, error) {
 	if len(bidderInfos) == 0 || v == nil {
@@ -1158,7 +1156,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("account_defaults.privacy.ipv6.anon_keep_bits", 56)
 	v.SetDefault("account_defaults.privacy.ipv4.anon_keep_bits", 24)
 
-	//Defaults for Price floor fetcher
+	// Defaults for Price floor fetcher
 	v.SetDefault("price_floors.fetcher.worker", 20)
 	v.SetDefault("price_floors.fetcher.capacity", 20000)
 	v.SetDefault("price_floors.fetcher.cache_size_mb", 64)
