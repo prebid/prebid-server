@@ -19,6 +19,7 @@ func compressToGZIP(requestBody []byte) ([]byte, error) {
 	w := gzip.NewWriter(&b)
 	_, err := w.Write([]byte(requestBody))
 	if err != nil {
+		_ = w.Close()
 		return nil, err
 	}
 	err = w.Close()
