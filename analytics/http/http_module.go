@@ -151,27 +151,36 @@ func (l *HttpLogger) isFull() bool {
 }
 
 func (l *HttpLogger) flush() {
+	l.mux.Lock()
+
 	if l.eventCount == 0 || l.buffer.Len() == 0 {
+		l.mux.Unlock()
 		return
 	}
-	l.mux.Lock()
-	defer l.reset()
-	defer l.mux.Unlock()
 
 	// Close the json array, remove last ,
 	l.buffer.Truncate(l.buffer.Len() - 1)
 	_, err := l.buffer.Write([]byte("]"))
 	if err != nil {
+		l.reset()
+		l.mux.Unlock()
 		glog.Warning("[HttpAnalytics] fail to close the json array")
 		return
 	}
+
 	payload := make([]byte, l.buffer.Len())
 	_, err = l.buffer.Read(payload)
 	if err != nil {
+		l.reset()
+		l.mux.Unlock()
 		glog.Warning("[HttpAnalytics] fail to copy the buffer")
 		return
 	}
+
 	go l.sender(payload)
+
+	l.reset()
+	l.mux.Unlock()
 }
 
 func (l *HttpLogger) reset() {
