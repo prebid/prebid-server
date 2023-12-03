@@ -31,24 +31,19 @@ analytics:
             sample_rate: 1 # sample rate 0-1.0 to sample the event
             filter: "RequestWrapper.BidRequest.App.ID == '123'" # Optional filter
         video:
-            enabled: false # enable video tracking
-            sample_rate: 1 
+            sample_rate: 1 # Sample rate, f 0-1 set sample rate, 1 is 100%
             filter: "" 
         amp:
-            enabled: false # enable amp tracking
-            sample_rate: 1 
+            sample_rate: 0.5 # 50% of the events are sampled
             filter: "" 
         setuid:
-            enabled: false # enable setuid tracking
-            sample_rate: 1 
+            sample_rate: 0.25 # 25% of the events are sampled
             filter: "" 
         cookie_sync:
-            enabled: false # enable cookie sync tracking
-            sample_rate: 1 
+            sample_rate: 0 # events are not sampled
             filter: "" 
         notification:
-            enabled: false # enable notification tracking
-            sample_rate: 1 
+            sample_rate: 1
             filter: "" 
 
 ```

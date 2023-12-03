@@ -222,6 +222,24 @@ func TestDefaults(t *testing.T) {
 	cmpInts(t, "account_defaults.privacy.ipv4.anon_keep_bits", 24, cfg.AccountDefaults.Privacy.IPv4Config.AnonKeepBits)
 
 	//Assert purpose VendorExceptionMap hash tables were built correctly
+	cmpBools(t, "analytics.http.enabled", false, cfg.Analytics.Http.Enabled)
+	cmpStrings(t, "analytics.http.endpoint.timeout", "2s", cfg.Analytics.Http.Endpoint.Timeout)
+	cmpBools(t, "analytics.http.endpoint.gzip", false, cfg.Analytics.Http.Endpoint.Gzip)
+	cmpStrings(t, "analytics.http.buffer.size", "2MB", cfg.Analytics.Http.Buffers.BufferSize)
+	cmpInts(t, "analytics.http.buffer.count", 100, cfg.Analytics.Http.Buffers.EventCount)
+	cmpStrings(t, "analytics.http.buffer.timeout", "15m", cfg.Analytics.Http.Buffers.Timeout)
+	cmpFloats(t, "analytics.http.auction.sample_rate", 0, cfg.Analytics.Http.Auction.SampleRate)
+	cmpStrings(t, "analytics.http.auction.filter", "", cfg.Analytics.Http.Auction.Filter)
+	cmpFloats(t, "analytics.http.video.sample_rate", 0, cfg.Analytics.Http.Video.SampleRate)
+	cmpStrings(t, "analytics.http.video.filter", "", cfg.Analytics.Http.Video.Filter)
+	cmpFloats(t, "analytics.http.amp.sample_rate", 0, cfg.Analytics.Http.AMP.SampleRate)
+	cmpStrings(t, "analytics.http.amp.filter", "", cfg.Analytics.Http.AMP.Filter)
+	cmpFloats(t, "analytics.http.setuid.sample_rate", 0, cfg.Analytics.Http.SetUID.SampleRate)
+	cmpStrings(t, "analytics.http.setuid.filter", "", cfg.Analytics.Http.SetUID.Filter)
+	cmpFloats(t, "analytics.http.cookie_sync.sample_rate", 0, cfg.Analytics.Http.CookieSync.SampleRate)
+	cmpStrings(t, "analytics.http.cookie_sync.filter", "", cfg.Analytics.Http.CookieSync.Filter)
+	cmpFloats(t, "analytics.http.notification.sample_rate", 0, cfg.Analytics.Http.Notification.SampleRate)
+	cmpStrings(t, "analytics.http.notification.filter", "", cfg.Analytics.Http.Notification.Filter)
 	expectedTCF2 := TCF2{
 		Enabled: true,
 		Purpose1: TCF2Purpose{
@@ -516,6 +534,11 @@ func cmpStrings(t *testing.T, key, expected, actual string) {
 }
 
 func cmpInts(t *testing.T, key string, expected, actual int) {
+	t.Helper()
+	assert.Equal(t, expected, actual, "%s: %d != %d", key, expected, actual)
+}
+
+func cmpFloats(t *testing.T, key string, expected, actual float64) {
 	t.Helper()
 	assert.Equal(t, expected, actual, "%s: %d != %d", key, expected, actual)
 }
