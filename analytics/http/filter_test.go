@@ -23,14 +23,16 @@ func (f FakeRandomNumberGenerator) GenerateFloat64() float64 {
 	return f.Number
 }
 
-func TestCreateAuctionFilter(t *testing.T) {
-	testCases := []struct {
-		name            string
-		randomGenerator randomutil.RandomGenerator
-		feature         config.AnalyticsFeature
-		event           *analytics.AuctionObject
-		shouldSample    bool
-	}{
+type filterTestCase[T analytics.AuctionObject | analytics.AmpObject | analytics.CookieSyncObject | analytics.NotificationEvent | analytics.SetUIDObject | analytics.VideoObject] struct {
+	name            string
+	feature         config.AnalyticsFeature
+	randomGenerator randomutil.RandomGenerator
+	event           *T
+	shouldSample    bool
+}
+
+func TestCreateFilter(t *testing.T) {
+	auctionFilterTestCases := []filterTestCase[analytics.AuctionObject]{
 		{
 			name: "Test with nil event",
 			feature: config.AnalyticsFeature{
@@ -67,20 +69,21 @@ func TestCreateAuctionFilter(t *testing.T) {
 			event:        &analytics.AuctionObject{},
 			shouldSample: false,
 		},
-		{
-			name:            "Filter on Account",
-			randomGenerator: randomutil.RandomNumberGenerator{},
-			feature: config.AnalyticsFeature{
-				SampleRate: 1,
-				Filter:     "Account.ID == \"123\"",
-			},
-			event: &analytics.AuctionObject{
-				Account: &config.Account{
-					ID: "123",
-				},
-			},
-			shouldSample: true,
-		},
+	}
+
+	for _, tc := range auctionFilterTestCases {
+		t.Run(tc.name, func(t *testing.T) {
+			filter, err := createFilter[analytics.AuctionObject](tc.feature, tc.randomGenerator)
+			assert.NoError(t, err)
+
+			gotResult := filter(tc.event)
+			assert.Equal(t, tc.shouldSample, gotResult)
+		})
+	}
+}
+
+func TestCreateAuctionFilter(t *testing.T) {
+	testCases := []filterTestCase[analytics.AuctionObject]{
 		{
 			name:            "Filter on RequestWrapper.BidRequest.Site.ID",
 			randomGenerator: randomutil.RandomNumberGenerator{},
@@ -117,7 +120,7 @@ func TestCreateAuctionFilter(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			filter, err := createAuctionFilter(tc.feature, tc.randomGenerator)
+			filter, err := createFilter[analytics.AuctionObject](tc.feature, tc.randomGenerator)
 			assert.NoError(t, err)
 
 			gotResult := filter(tc.event)
@@ -127,49 +130,7 @@ func TestCreateAuctionFilter(t *testing.T) {
 }
 
 func TestCreateAmpFilter(t *testing.T) {
-	testCases := []struct {
-		name            string
-		randomGenerator randomutil.RandomGenerator
-		feature         config.AnalyticsFeature
-		event           *analytics.AmpObject
-		shouldSample    bool
-	}{
-		{
-			name:            "Test with nil event",
-			randomGenerator: randomutil.RandomNumberGenerator{},
-			feature: config.AnalyticsFeature{
-				SampleRate: 1,
-			},
-			event:        nil,
-			shouldSample: false,
-		},
-		{
-			name:            "Sample everything with 1",
-			randomGenerator: randomutil.RandomNumberGenerator{},
-			feature: config.AnalyticsFeature{
-				SampleRate: 1,
-			},
-			event:        &analytics.AmpObject{},
-			shouldSample: true,
-		},
-		{
-			name:            "Test with SampleRate 0",
-			randomGenerator: randomutil.RandomNumberGenerator{},
-			feature: config.AnalyticsFeature{
-				SampleRate: 0,
-			},
-			event:        &analytics.AmpObject{},
-			shouldSample: false,
-		},
-		{
-			name:            "Should not sample when the random number is greater than the sample rate",
-			randomGenerator: FakeRandomNumberGenerator{Number: 0.2},
-			feature: config.AnalyticsFeature{
-				SampleRate: 0.1,
-			},
-			event:        &analytics.AmpObject{},
-			shouldSample: false,
-		},
+	testCases := []filterTestCase[analytics.AmpObject]{
 		{
 			name:            "Filter on Account",
 			randomGenerator: randomutil.RandomNumberGenerator{},
@@ -218,7 +179,7 @@ func TestCreateAmpFilter(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			filter, err := createAmpFilter(tc.feature, tc.randomGenerator)
+			filter, err := createFilter[analytics.AmpObject](tc.feature, tc.randomGenerator)
 			assert.NoError(t, err)
 
 			gotResult := filter(tc.event)
@@ -228,49 +189,7 @@ func TestCreateAmpFilter(t *testing.T) {
 }
 
 func TestCreateCookieSyncFilter(t *testing.T) {
-	testCases := []struct {
-		name            string
-		randomGenerator randomutil.RandomGenerator
-		feature         config.AnalyticsFeature
-		event           *analytics.CookieSyncObject
-		shouldSample    bool
-	}{
-		{
-			name:            "Test with nil event",
-			randomGenerator: randomutil.RandomNumberGenerator{},
-			feature: config.AnalyticsFeature{
-				SampleRate: 1,
-			},
-			event:        nil,
-			shouldSample: false,
-		},
-		{
-			name:            "Sample everything with 1",
-			randomGenerator: randomutil.RandomNumberGenerator{},
-			feature: config.AnalyticsFeature{
-				SampleRate: 1,
-			},
-			event:        &analytics.CookieSyncObject{},
-			shouldSample: true,
-		},
-		{
-			name:            "Test with SampleRate 0",
-			randomGenerator: randomutil.RandomNumberGenerator{},
-			feature: config.AnalyticsFeature{
-				SampleRate: 0,
-			},
-			event:        &analytics.CookieSyncObject{},
-			shouldSample: false,
-		},
-		{
-			name:            "Should not sample when the random number is greater than the sample rate",
-			randomGenerator: FakeRandomNumberGenerator{Number: 0.2},
-			feature: config.AnalyticsFeature{
-				SampleRate: 0.1,
-			},
-			event:        &analytics.CookieSyncObject{},
-			shouldSample: false,
-		},
+	testCases := []filterTestCase[analytics.CookieSyncObject]{
 		{
 			name:            "Filter on Status",
 			randomGenerator: randomutil.RandomNumberGenerator{},
@@ -287,7 +206,7 @@ func TestCreateCookieSyncFilter(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			filter, err := createCookieSyncFilter(tc.feature, tc.randomGenerator)
+			filter, err := createFilter[analytics.CookieSyncObject](tc.feature, tc.randomGenerator)
 			assert.NoError(t, err)
 
 			gotResult := filter(tc.event)
@@ -297,63 +216,7 @@ func TestCreateCookieSyncFilter(t *testing.T) {
 }
 
 func TestCreateNotificationFilter(t *testing.T) {
-	testCases := []struct {
-		name            string
-		randomGenerator randomutil.RandomGenerator
-		feature         config.AnalyticsFeature
-		event           *analytics.NotificationEvent
-		shouldSample    bool
-	}{
-		{
-			name:            "Test with nil event",
-			randomGenerator: randomutil.RandomNumberGenerator{},
-			feature: config.AnalyticsFeature{
-				SampleRate: 1,
-			},
-			event:        nil,
-			shouldSample: false,
-		},
-		{
-			name:            "Test with SampleRate 0",
-			randomGenerator: randomutil.RandomNumberGenerator{},
-			feature: config.AnalyticsFeature{
-				SampleRate: 0,
-			},
-			event:        &analytics.NotificationEvent{},
-			shouldSample: false,
-		},
-		{
-			name:            "Sample everything with 1",
-			randomGenerator: randomutil.RandomNumberGenerator{},
-			feature: config.AnalyticsFeature{
-				SampleRate: 1,
-			},
-			event:        &analytics.NotificationEvent{},
-			shouldSample: true,
-		},
-		{
-			name:            "Should not sample when the random number is greater than the sample rate",
-			randomGenerator: FakeRandomNumberGenerator{Number: 0.2},
-			feature: config.AnalyticsFeature{
-				SampleRate: 0.1,
-			},
-			event:        &analytics.NotificationEvent{},
-			shouldSample: false,
-		},
-		{
-			name:            "Filter on Account",
-			randomGenerator: randomutil.RandomNumberGenerator{},
-			feature: config.AnalyticsFeature{
-				SampleRate: 1,
-				Filter:     "Account.ID == \"123\"",
-			},
-			event: &analytics.NotificationEvent{
-				Account: &config.Account{
-					ID: "123",
-				},
-			},
-			shouldSample: true,
-		},
+	testCases := []filterTestCase[analytics.NotificationEvent]{
 		{
 			name:            "Filter on Request.AccountID",
 			randomGenerator: randomutil.RandomNumberGenerator{},
@@ -372,7 +235,7 @@ func TestCreateNotificationFilter(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			filter, err := createNotificationFilter(tc.feature, tc.randomGenerator)
+			filter, err := createFilter[analytics.NotificationEvent](tc.feature, tc.randomGenerator)
 			assert.NoError(t, err)
 
 			gotResult := filter(tc.event)
@@ -382,50 +245,7 @@ func TestCreateNotificationFilter(t *testing.T) {
 }
 
 func TestCreateSetUIDFilter(t *testing.T) {
-	testCases := []struct {
-		name            string
-		randomGenerator randomutil.RandomGenerator
-		feature         config.AnalyticsFeature
-		event           *analytics.SetUIDObject
-
-		shouldSample bool
-	}{
-		{
-			name:            "Test with nil event",
-			randomGenerator: randomutil.RandomNumberGenerator{},
-			feature: config.AnalyticsFeature{
-				SampleRate: 1,
-			},
-			event:        nil,
-			shouldSample: false,
-		},
-		{
-			name:            "Test with SampleRate 0",
-			randomGenerator: randomutil.RandomNumberGenerator{},
-			feature: config.AnalyticsFeature{
-				SampleRate: 0,
-			},
-			event:        &analytics.SetUIDObject{},
-			shouldSample: false,
-		},
-		{
-			name:            "Should not sample when the random number is greater than the sample rate",
-			randomGenerator: FakeRandomNumberGenerator{Number: 0.2},
-			feature: config.AnalyticsFeature{
-				SampleRate: 0.1,
-			},
-			event:        &analytics.SetUIDObject{},
-			shouldSample: false,
-		},
-		{
-			name:            "Sample everything with 1",
-			randomGenerator: randomutil.RandomNumberGenerator{},
-			feature: config.AnalyticsFeature{
-				SampleRate: 1,
-			},
-			event:        &analytics.SetUIDObject{},
-			shouldSample: true,
-		},
+	testCases := []filterTestCase[analytics.SetUIDObject]{
 		{
 			name:            "Filter on Bidder",
 			randomGenerator: randomutil.RandomNumberGenerator{},
@@ -442,7 +262,7 @@ func TestCreateSetUIDFilter(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			filter, err := createSetUIDFilter(tc.feature, tc.randomGenerator)
+			filter, err := createFilter[analytics.SetUIDObject](tc.feature, tc.randomGenerator)
 			assert.NoError(t, err)
 
 			gotResult := filter(tc.event)
@@ -452,49 +272,7 @@ func TestCreateSetUIDFilter(t *testing.T) {
 }
 
 func TestCreateVideoFilter(t *testing.T) {
-	testCases := []struct {
-		name            string
-		randomGenerator randomutil.RandomGenerator
-		feature         config.AnalyticsFeature
-		event           *analytics.VideoObject
-		shouldSample    bool
-	}{
-		{
-			name:            "Test with nil event",
-			randomGenerator: randomutil.RandomNumberGenerator{},
-			feature: config.AnalyticsFeature{
-				SampleRate: 1,
-			},
-			event:        nil,
-			shouldSample: false,
-		},
-		{
-			name:            "Test with SampleRate 0",
-			randomGenerator: randomutil.RandomNumberGenerator{},
-			feature: config.AnalyticsFeature{
-				SampleRate: 0,
-			},
-			event:        &analytics.VideoObject{},
-			shouldSample: false,
-		},
-		{
-			name:            "Sample everything with 1",
-			randomGenerator: randomutil.RandomNumberGenerator{},
-			feature: config.AnalyticsFeature{
-				SampleRate: 1,
-			},
-			event:        &analytics.VideoObject{},
-			shouldSample: true,
-		},
-		{
-			name:            "Should not sample when the random number is greater than the sample rate",
-			randomGenerator: FakeRandomNumberGenerator{Number: 0.2},
-			feature: config.AnalyticsFeature{
-				SampleRate: 0.1,
-			},
-			event:        &analytics.VideoObject{},
-			shouldSample: false,
-		},
+	testCases := []filterTestCase[analytics.VideoObject]{
 		{
 			name:            "Filter on RequestWrapper.BidRequest.Site.ID",
 			randomGenerator: randomutil.RandomNumberGenerator{},
@@ -531,7 +309,7 @@ func TestCreateVideoFilter(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			filter, err := createVideoFilter(tc.feature, tc.randomGenerator)
+			filter, err := createFilter[analytics.VideoObject](tc.feature, tc.randomGenerator)
 			assert.NoError(t, err)
 
 			gotResult := filter(tc.event)

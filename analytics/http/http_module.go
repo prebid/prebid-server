@@ -28,12 +28,12 @@ type HttpLogger struct {
 	maxEventCount           int64
 	maxBufferByteSize       int64
 	maxDuration             time.Duration
-	shouldTrackAuction      auctionFilter
-	shouldTrackAmp          ampFilter
-	shouldTrackCookieSync   cookieSyncFilter
-	shouldTrackNotification notificationFilter
-	shouldTrackSetUID       setUIDFilter
-	shouldTrackVideo        videoFilter
+	shouldTrackAuction      filterObjectFunc[analytics.AuctionObject]
+	shouldTrackAmp          filterObjectFunc[analytics.AmpObject]
+	shouldTrackCookieSync   filterObjectFunc[analytics.CookieSyncObject]
+	shouldTrackNotification filterObjectFunc[analytics.NotificationEvent]
+	shouldTrackSetUID       filterObjectFunc[analytics.SetUIDObject]
+	shouldTrackVideo        filterObjectFunc[analytics.VideoObject]
 	mux                     sync.RWMutex
 	sigTermCh               chan os.Signal
 	buffer                  bytes.Buffer
@@ -49,28 +49,29 @@ func newHttpLogger(cfg config.AnalyticsHttp, sender httpSender, clock clock.Cloc
 	if err != nil {
 		return nil, err
 	}
+
 	randomGenerator := randomutil.RandomNumberGenerator{}
-	shouldTrackAuction, err := createAuctionFilter(cfg.Auction, randomGenerator)
+	shouldTrackAuction, err := createFilter[analytics.AuctionObject](cfg.Auction, randomGenerator)
 	if err != nil {
 		return nil, err
 	}
-	shouldTrackAmp, err := createAmpFilter(cfg.Auction, randomGenerator)
+	shouldTrackAmp, err := createFilter[analytics.AmpObject](cfg.Auction, randomGenerator)
 	if err != nil {
 		return nil, err
 	}
-	shouldTrackCookieSync, err := createCookieSyncFilter(cfg.CookieSync, randomGenerator)
+	shouldTrackCookieSync, err := createFilter[analytics.CookieSyncObject](cfg.CookieSync, randomGenerator)
 	if err != nil {
 		return nil, err
 	}
-	shouldTrackNotification, err := createNotificationFilter(cfg.Notification, randomGenerator)
+	shouldTrackNotification, err := createFilter[analytics.NotificationEvent](cfg.Notification, randomGenerator)
 	if err != nil {
 		return nil, err
 	}
-	shouldTrackSetUID, err := createSetUIDFilter(cfg.SetUID, randomGenerator)
+	shouldTrackSetUID, err := createFilter[analytics.SetUIDObject](cfg.SetUID, randomGenerator)
 	if err != nil {
 		return nil, err
 	}
-	shouldTrackVideo, err := createVideoFilter(cfg.Video, randomGenerator)
+	shouldTrackVideo, err := createFilter[analytics.VideoObject](cfg.Video, randomGenerator)
 	if err != nil {
 		return nil, err
 	}
