@@ -5,7 +5,7 @@ external_url: localhost # host url of all 2 servers above
 status_response: "ok" # default response string for /status endpoint
 
 gdpr:
-  default_value: "0" # enable gdpr, explicitly specifying a default value is a requirement in prebid server config
+  default_value: "0" # disable gdpr, explicitly specifying a default value is a requirement in prebid server config
 
 # set up stored request storage using local file system
 stored_requests:
