@@ -43,6 +43,7 @@ var validParams = []string{
 	`{"networkId": 22, "siteId": 1, "unitId": 101, "unitName": "unit-1"}`,
 	`{"networkId": 22, "siteId": 1, "unitId": 101, "unitName": "-unit-1"}`, // unitName can start with a dash
 	`{"networkId": 22, "siteId": 1, "unitId": 101}`,                        // unitName can be omitted (although prebid.js doesn't allow that)
+	`{"placementId": "abcdjk232"}`,
 }
 
 var invalidParams = []string{
