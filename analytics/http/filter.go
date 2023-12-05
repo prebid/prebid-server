@@ -32,7 +32,7 @@ func createFilter[T analytics.AuctionObject | analytics.AmpObject | analytics.Vi
 			return false
 		}
 
-		// Use a filter is one is defined
+		// Use a filter if one is defined
 		if filterProgram != nil {
 			output, err := expr.Run(filterProgram, event)
 			if err != nil {
