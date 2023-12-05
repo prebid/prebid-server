@@ -27,8 +27,7 @@ analytics:
             count : 100 # greater than 100 events
             timeout: "15m" # greater than 15 minutes (parsed as golang duration)
         auction: 
-            enabled: false # enable auction tracking
-            sample_rate: 1 # sample rate 0-1.0 to sample the event
+            sample_rate: 1 # sample rate 0-1.0 to sample the event, 0 (default) disables the collector for those events
             filter: "RequestWrapper.BidRequest.App.ID == '123'" # Optional filter
         video:
             sample_rate: 1 # Sample rate, f 0-1 set sample rate, 1 is 100%
