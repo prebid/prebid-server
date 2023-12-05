@@ -4,6 +4,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 
@@ -99,6 +100,66 @@ func (m *MockedSender) Send(payload []byte) error {
 	return args.Error(0)
 }
 
+func TestConfigParsingError(t *testing.T) {
+	testCases := []struct {
+		name       string
+		config     config.AnalyticsHttp
+		shouldFail bool
+	}{
+		{
+			name: "Test with invalid/empty URL",
+			config: config.AnalyticsHttp{
+				Enabled: true,
+				Endpoint: config.AnalyticsHttpEndpoint{
+					Url:     "%%2815197306101420000%29",
+					Timeout: "1s",
+					Gzip:    false,
+				},
+			},
+			shouldFail: true,
+		},
+		{
+			name: "Test with invalid timout",
+			config: config.AnalyticsHttp{
+				Enabled: true,
+				Endpoint: config.AnalyticsHttpEndpoint{
+					Url:     "http://localhost:8000/event",
+					Timeout: "1x",
+					Gzip:    false,
+				},
+			},
+			shouldFail: true,
+		},
+		{
+			name: "Test with invalid filter",
+			config: config.AnalyticsHttp{
+				Enabled: true,
+				Endpoint: config.AnalyticsHttpEndpoint{
+					Url:     "http://localhost:8000/event",
+					Timeout: "1s",
+					Gzip:    false,
+				},
+				Auction: config.AnalyticsFeature{
+					SampleRate: 1,
+					Filter:     "foo == bar",
+				},
+			},
+			shouldFail: true,
+		},
+	}
+	clockMock := clock.NewMock()
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := NewModule(&http.Client{}, tc.config, clockMock)
+			if tc.shouldFail {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestShouldNotTrack(t *testing.T) {
 	cfg := config.AnalyticsHttp{
 		Enabled: true,
@@ -133,7 +194,7 @@ func TestShouldNotTrack(t *testing.T) {
 	assert.Zero(t, logger.eventCount)
 }
 
-func TestAllEvents(t *testing.T) {
+func TestRaceAllEvents(t *testing.T) {
 	sampleAll := config.AnalyticsFeature{
 		SampleRate: 1,
 	}
@@ -171,10 +232,13 @@ func TestAllEvents(t *testing.T) {
 	logger.LogSetUIDObject(&mockValidSetUIDObject)
 
 	clockMock.Add(10 * time.Millisecond)
+
+	logger.mux.RLock()
 	assert.Equal(t, int64(6), logger.eventCount)
+	logger.mux.RUnlock()
 }
 
-func TestBufferCount(t *testing.T) {
+func TestRaceBufferCount(t *testing.T) {
 	cfg := config.AnalyticsHttp{
 		Enabled: true,
 		Endpoint: config.AnalyticsHttpEndpoint{
@@ -203,7 +267,11 @@ func TestBufferCount(t *testing.T) {
 	logger.LogAuctionObject(&mockValidAuctionObject)
 
 	clockMock.Add(1 * time.Millisecond)
+
+	logger.mux.RLock()
 	assert.Equal(t, int64(1), logger.eventCount)
+	logger.mux.RUnlock()
+
 	assert.Equal(t, false, logger.isFull())
 
 	// add 1 more
@@ -212,7 +280,10 @@ func TestBufferCount(t *testing.T) {
 
 	// should trigger send and flash the buffer
 	mockedSender.AssertCalled(t, "Send", mock.Anything)
+
+	logger.mux.RLock()
 	assert.Equal(t, int64(0), logger.eventCount)
+	logger.mux.RUnlock()
 }
 
 func TestBufferSize(t *testing.T) {
@@ -279,73 +350,17 @@ func TestBufferTime(t *testing.T) {
 	mockedSender.AssertNumberOfCalls(t, "Send", 1)
 }
 
-func TestConfigParsingError(t *testing.T) {
-	testCases := []struct {
-		name       string
-		config     config.AnalyticsHttp
-		shouldFail bool
-	}{
-		{
-			name: "Test with invalid/empty URL",
-			config: config.AnalyticsHttp{
-				Enabled: true,
-				Endpoint: config.AnalyticsHttpEndpoint{
-					Url:     "%%2815197306101420000%29",
-					Timeout: "1s",
-					Gzip:    false,
-				},
-			},
-			shouldFail: true,
-		},
-		{
-			name: "Test with invalid timout",
-			config: config.AnalyticsHttp{
-				Enabled: true,
-				Endpoint: config.AnalyticsHttpEndpoint{
-					Url:     "http://localhost:8000/event",
-					Timeout: "1x",
-					Gzip:    false,
-				},
-			},
-			shouldFail: true,
-		},
-		{
-			name: "Test with invalid filter",
-			config: config.AnalyticsHttp{
-				Enabled: true,
-				Endpoint: config.AnalyticsHttpEndpoint{
-					Url:     "http://localhost:8000/event",
-					Timeout: "1s",
-					Gzip:    false,
-				},
-				Auction: config.AnalyticsFeature{
-					SampleRate: 1,
-					Filter:     "foo == bar",
-				},
-			},
-			shouldFail: true,
-		},
-	}
-	clockMock := clock.NewMock()
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			_, err := NewModule(&http.Client{}, tc.config, clockMock)
-			if tc.shouldFail {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
-}
+func TestRaceEnd2End(t *testing.T) {
+	var mu sync.Mutex
 
-func TestEnd2End(t *testing.T) {
 	requestBodyAsString := ""
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Check for reponse
 		requestBody, err := io.ReadAll(r.Body)
+		mu.Lock()
 		requestBodyAsString = string(requestBody)
+		mu.Unlock()
 		if err != nil {
 			http.Error(w, "Error reading request body", 500)
 			return
@@ -388,5 +403,10 @@ func TestEnd2End(t *testing.T) {
 	time.Sleep(250 * time.Millisecond)
 
 	expected := "[{\"type\":\"setuid\",\"createdAt\":\"2023-02-01T00:00:00Z\",\"status\":200},{\"type\":\"setuid\",\"createdAt\":\"2023-02-01T00:00:00Z\",\"status\":200}]"
-	assert.Equal(t, expected, requestBodyAsString)
+
+	mu.Lock()
+	actual := requestBodyAsString
+	mu.Unlock()
+
+	assert.Equal(t, expected, actual)
 }
