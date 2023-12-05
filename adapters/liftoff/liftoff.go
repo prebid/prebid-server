@@ -81,16 +81,14 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		if request.App != nil {
 			requestAppCopy = *request.App
 			requestAppCopy.ID = bidderImpExt.PubAppStoreID
-		} else {
-			if request.Site != nil {
-				requestCopy.Site = nil
-				requestAppCopy = openrtb2.App{
-					ID: bidderImpExt.PubAppStoreID,
-				}
-			} else {
-				errs = append(errs, errors.New("failed constructing app, must have app or site object in bid request"))
-				continue
+		} else if request.Site != nil {
+			requestCopy.Site = nil
+			requestAppCopy = openrtb2.App{
+				ID: bidderImpExt.PubAppStoreID,
 			}
+		} else {
+			errs = append(errs, errors.New("failed constructing app, must have app or site object in bid request"))
+			continue
 		}
 
 		requestCopy.App = &requestAppCopy
