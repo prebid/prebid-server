@@ -225,9 +225,10 @@ func TestDefaults(t *testing.T) {
 	cmpBools(t, "analytics.http.enabled", false, cfg.Analytics.Http.Enabled)
 	cmpStrings(t, "analytics.http.endpoint.timeout", "2s", cfg.Analytics.Http.Endpoint.Timeout)
 	cmpBools(t, "analytics.http.endpoint.gzip", false, cfg.Analytics.Http.Endpoint.Gzip)
-	cmpStrings(t, "analytics.http.buffer.size", "2MB", cfg.Analytics.Http.Buffers.BufferSize)
-	cmpInts(t, "analytics.http.buffer.count", 100, cfg.Analytics.Http.Buffers.EventCount)
-	cmpStrings(t, "analytics.http.buffer.timeout", "15m", cfg.Analytics.Http.Buffers.Timeout)
+	cmpNils(t, "analytics.http.endpoint.additional_headers", cfg.Analytics.Http.Endpoint.AdditionalHeaders)
+	cmpStrings(t, "analytics.http.buffers.size", "2MB", cfg.Analytics.Http.Buffers.BufferSize)
+	cmpInts(t, "analytics.http.buffers.count", 100, cfg.Analytics.Http.Buffers.EventCount)
+	cmpStrings(t, "analytics.http.buffers.timeout", "15m", cfg.Analytics.Http.Buffers.Timeout)
 	cmpFloats(t, "analytics.http.auction.sample_rate", 0, cfg.Analytics.Http.Auction.SampleRate)
 	cmpStrings(t, "analytics.http.auction.filter", "", cfg.Analytics.Http.Auction.Filter)
 	cmpFloats(t, "analytics.http.video.sample_rate", 0, cfg.Analytics.Http.Video.SampleRate)
@@ -526,6 +527,23 @@ tmax_adjustments:
   bidder_response_duration_min_ms: 700
   bidder_network_latency_buffer_ms: 100
   pbs_response_preparation_duration_ms: 100
+analytics:
+  http:
+    enabled: true
+    endpoint:
+      url: "https://my-rest-endpoint.com"
+      timeout: "5s"
+      gzip: true
+      additional_headers:
+        X-My-header: "some-thing"
+    buffers:
+      size: 10MB
+      count: 111
+      timeout: 5m
+    auction:
+      sample_rate: 0.5
+      filter: "RequestWrapper.BidRequest.App.ID == '123'"
+
 `)
 
 func cmpStrings(t *testing.T, key, expected, actual string) {
@@ -810,6 +828,15 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "experiment.adscert.remote.signing_timeout_ms", 10, cfg.Experiment.AdCerts.Remote.SigningTimeoutMs)
 	cmpBools(t, "hooks.enabled", true, cfg.Hooks.Enabled)
 	cmpBools(t, "account_modules_metrics", true, cfg.Metrics.Disabled.AccountModulesMetrics)
+	cmpBools(t, "analytics.http.enabled", true, cfg.Analytics.Http.Enabled)
+	cmpStrings(t, "analytics.http.endpoint.timeout", "5s", cfg.Analytics.Http.Endpoint.Timeout)
+	cmpBools(t, "analytics.http.endpoint.gzip", true, cfg.Analytics.Http.Endpoint.Gzip)
+	cmpStrings(t, "analytics.http.buffers.size", "10MB", cfg.Analytics.Http.Buffers.BufferSize)
+	cmpInts(t, "analytics.http.buffers.count", 111, cfg.Analytics.Http.Buffers.EventCount)
+	cmpStrings(t, "analytics.http.buffers.timeout", "5m", cfg.Analytics.Http.Buffers.Timeout)
+	cmpFloats(t, "analytics.http.auction.sample_rate", 0.5, cfg.Analytics.Http.Auction.SampleRate)
+	cmpStrings(t, "analytics.http.auction.filter", "RequestWrapper.BidRequest.App.ID == '123'", cfg.Analytics.Http.Auction.Filter)
+	cmpStrings(t, "analytics.http.endpoint.additionalHeaders.x-my-header", "some-thing", cfg.Analytics.Http.Endpoint.AdditionalHeaders["x-my-header"])
 }
 
 func TestValidateConfig(t *testing.T) {
