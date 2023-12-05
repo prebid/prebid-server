@@ -200,6 +200,8 @@ func (p *PubstackModule) LogAmpObject(ao *analytics.AmpObject) {
 	p.eventChannels[amp].Push(payload)
 }
 
+func (p *PubstackModule) Shutdown() {}
+
 func (p *PubstackModule) start(c <-chan *Configuration) {
 	for {
 		select {

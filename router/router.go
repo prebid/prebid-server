@@ -200,10 +200,14 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	// Metrics engine
 	r.MetricsEngine = metricsConf.NewMetricsEngine(cfg, openrtb_ext.CoreBidderNames(), syncerKeys, moduleStageNames)
 	shutdown, fetcher, ampFetcher, accounts, categoriesFetcher, videoFetcher, storedRespFetcher := storedRequestsConf.NewStoredRequests(cfg, r.MetricsEngine, generalHttpClient, r.Router)
-	// todo(zachbadgett): better shutdown
-	r.Shutdown = shutdown
 
 	analyticsRunner := analyticsBuild.New(&cfg.Analytics)
+
+	// todo(zachbadgett): better shutdown
+	r.Shutdown = func() {
+		shutdown()
+		analyticsRunner.Shutdown()
+	}
 
 	paramsValidator, err := openrtb_ext.NewBidderParamsValidator(schemaDirectory)
 	if err != nil {

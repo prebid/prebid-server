@@ -129,6 +129,12 @@ func (ea enabledAnalytics) LogNotificationEventObject(ne *analytics.Notification
 	}
 }
 
+func (ea enabledAnalytics) Shutdown() {
+	for _, module := range ea {
+		module.Shutdown()
+	}
+}
+
 func evaluateActivities(rw *openrtb_ext.RequestWrapper, ac privacy.ActivityControl, componentName string) (bool, *openrtb_ext.RequestWrapper) {
 	// returned nil request wrapper means that request wrapper was not modified by activities and doesn't have to be changed in analytics object
 	// it is needed in order to use one function for all analytics objects with RequestWrapper

@@ -1732,6 +1732,7 @@ func (logger mockLogger) LogNotificationEventObject(uuidObj *analytics.Notificat
 func (logger mockLogger) LogAmpObject(ao *analytics.AmpObject, _ privacy.ActivityControl) {
 	*logger.ampObject = *ao
 }
+func (logger mockLogger) Shutdown() {}
 
 func TestBuildAmpObject(t *testing.T) {
 	testCases := []struct {
