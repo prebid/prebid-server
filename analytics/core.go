@@ -19,6 +19,7 @@ type Module interface {
 	LogSetUIDObject(*SetUIDObject)
 	LogAmpObject(*AmpObject)
 	LogNotificationEventObject(*NotificationEvent)
+	Shutdown()
 }
 
 // Loggable object of a transaction at /openrtb2/auction endpoint

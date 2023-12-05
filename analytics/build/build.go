@@ -91,3 +91,9 @@ func (ea enabledAnalytics) LogNotificationEventObject(ne *analytics.Notification
 		}
 	}
 }
+
+func (ea enabledAnalytics) Shutdown() {
+	for _, module := range ea {
+		module.Shutdown()
+	}
+}
