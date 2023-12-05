@@ -473,30 +473,21 @@ type AnalyticsHttp struct {
 }
 
 type AnalyticsBuffer struct {
-	// Size of the buffer in bytes
 	BufferSize string `mapstructure:"size"`
-	// Number of events to buffer before sending
-	EventCount int `mapstructure:"count"`
-	// Buffer Timeout in milliseconds
-	Timeout string `mapstructure:"timeout"`
+	EventCount int    `mapstructure:"count"`
+	Timeout    string `mapstructure:"timeout"`
 }
 
 type AnalyticsHttpEndpoint struct {
-	// URL of the endpoint
-	Url string `mapstructure:"url"`
-	// HTTP Timeout in milliseconds
-	Timeout string `mapstructure:"timeout"`
-	// Use GZIP compression for buffering and sending, this does make the body non valid json
-	Gzip bool `mapstructure:"gzip"`
-	// Additional headers to send with the request
+	Url               string            `mapstructure:"url"`
+	Timeout           string            `mapstructure:"timeout"`
+	Gzip              bool              `mapstructure:"gzip"`
 	AdditionalHeaders map[string]string `mapstructure:"additional_headers"`
 }
 
 type AnalyticsFeature struct {
-	// Sampling rate 0-1 for the feature
 	SampleRate float64 `mapstructure:"sample_rate"`
-	// Filter to apply to the feature
-	Filter string `mapstructure:"filter"`
+	Filter     string  `mapstructure:"filter"`
 }
 
 // FileLogs Corresponding config for FileLogger as a PBS Analytics Module

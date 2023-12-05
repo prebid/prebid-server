@@ -14,7 +14,7 @@ analytics:
         endpoint: 
             # Required: url where the endpoint post data to
             url: "https://my-rest-endpoint.com"
-            # Required: timeout for the request
+            # Required: timeout for the request (parsed as golang duration)
             timeout: "2s"
             # Optional: enables gzip compression for the payload
             gzip: false
@@ -23,9 +23,9 @@ analytics:
                 X-My-header: "some-thing"
         buffer: # Flush events when (first condition reached)
             # Size of the buffer in bytes
-            size: "2MB" # greater than 2MB
+            size: "2MB" # greater than 2MB (size using SI standard eg. "44kB", "17MB")
             count : 100 # greater than 100 events
-            timeout: "15m" # greater than 15 minutes
+            timeout: "15m" # greater than 15 minutes (parsed as golang duration)
         auction: 
             enabled: false # enable auction tracking
             sample_rate: 1 # sample rate 0-1.0 to sample the event
