@@ -24,7 +24,8 @@
                 },
                 "ext": {
                     "bidder": {
-                        "adUnitId": "example-tag-id"
+                        "adUnitId": "example-tag-id",
+                        "seatId": "123"
                     }
                 }
             }
@@ -33,7 +34,7 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "https://mockup.suntcontent.com/",
+                "uri": "https://mockup.seeding-alliance.de/?ssp=123",
                 "body": {
                     "cur": [
                         "EUR"
@@ -57,7 +58,8 @@
                             "tagid": "example-tag-id",
                             "ext": {
                                 "bidder": {
-                                    "adUnitId": "example-tag-id"
+                                    "adUnitId": "example-tag-id",
+                                    "seatId": "123"
                                 }
                             }
                         }

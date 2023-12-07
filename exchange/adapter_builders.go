@@ -163,7 +163,6 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/sovrn"
 	"github.com/prebid/prebid-server/v2/adapters/sspBC"
 	"github.com/prebid/prebid-server/v2/adapters/stroeerCore"
-	"github.com/prebid/prebid-server/v2/adapters/suntContent"
 	"github.com/prebid/prebid-server/v2/adapters/taboola"
 	"github.com/prebid/prebid-server/v2/adapters/tappx"
 	"github.com/prebid/prebid-server/v2/adapters/teads"
@@ -361,7 +360,6 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderSonobi:            sonobi.Builder,
 		openrtb_ext.BidderSovrn:             sovrn.Builder,
 		openrtb_ext.BidderSspBC:             sspBC.Builder,
-		openrtb_ext.BidderSuntContent:       suntContent.Builder,
 		openrtb_ext.BidderStroeerCore:       stroeerCore.Builder,
 		openrtb_ext.BidderTaboola:           taboola.Builder,
 		openrtb_ext.BidderTappx:             tappx.Builder,

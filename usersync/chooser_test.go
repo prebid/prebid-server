@@ -66,7 +66,8 @@ func TestChooserChoose(t *testing.T) {
 
 	syncTypeFilter := SyncTypeFilter{
 		IFrame:   NewUniformBidderFilter(BidderFilterModeInclude),
-		Redirect: NewUniformBidderFilter(BidderFilterModeExclude)}
+		Redirect: NewUniformBidderFilter(BidderFilterModeExclude),
+	}
 
 	cooperativeConfig := Cooperative{Enabled: true}
 
@@ -455,11 +456,12 @@ func TestChooserEvaluate(t *testing.T) {
 	fakeSyncerB := fakeSyncer{key: "keyB", supportsIFrame: false}
 
 	biddersKnown := map[string]struct{}{"a": {}, "b": {}, "unconfigured": {}}
-	bidderSyncerLookup := map[string]Syncer{"a": fakeSyncerA, "b": fakeSyncerB, "appnexus": fakeSyncerA, "suntContent": fakeSyncerA}
+	bidderSyncerLookup := map[string]Syncer{"a": fakeSyncerA, "b": fakeSyncerB, "appnexus": fakeSyncerA, "seedingAlliance": fakeSyncerA}
 
 	syncTypeFilter := SyncTypeFilter{
 		IFrame:   NewUniformBidderFilter(BidderFilterModeInclude),
-		Redirect: NewUniformBidderFilter(BidderFilterModeExclude)}
+		Redirect: NewUniformBidderFilter(BidderFilterModeExclude),
+	}
 	normalizedBidderNamesLookup := func(name string) (openrtb_ext.BidderName, bool) {
 		return openrtb_ext.BidderName(name), true
 	}
@@ -593,17 +595,18 @@ func TestChooserEvaluate(t *testing.T) {
 		},
 		{
 			description:          "Case insensitivity check for sync type filter",
-			givenBidder:          "SuntContent",
-			normalisedBidderName: "suntContent",
+			givenBidder:          "SeedingAlliance",
+			normalisedBidderName: "seedingAlliance",
 			givenSyncersSeen:     map[string]struct{}{},
 			givenPrivacy:         fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
 			givenCookie:          cookieNeedsSync,
 			givenSyncTypeFilter: SyncTypeFilter{
-				IFrame:   NewSpecificBidderFilter([]string{"SuntContent"}, BidderFilterModeInclude),
-				Redirect: NewSpecificBidderFilter([]string{"SuntContent"}, BidderFilterModeExclude)},
+				IFrame:   NewSpecificBidderFilter([]string{"SeedingAlliance"}, BidderFilterModeInclude),
+				Redirect: NewSpecificBidderFilter([]string{"SeedingAlliance"}, BidderFilterModeExclude),
+			},
 			normalizedBidderNamesLookup: openrtb_ext.NormalizeBidderName,
 			expectedSyncer:              fakeSyncerA,
-			expectedEvaluation:          BidderEvaluation{Bidder: "SuntContent", SyncerKey: "keyA", Status: StatusOK},
+			expectedEvaluation:          BidderEvaluation{Bidder: "SeedingAlliance", SyncerKey: "keyA", Status: StatusOK},
 		},
 		{
 			description:                 "Case Insensitivity Check For Blocked By GDPR",
