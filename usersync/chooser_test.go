@@ -6,6 +6,7 @@ import (
 
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
@@ -68,6 +69,8 @@ func TestChooserChoose(t *testing.T) {
 		Redirect: NewUniformBidderFilter(BidderFilterModeExclude)}
 
 	cooperativeConfig := Cooperative{Enabled: true}
+
+	usersyncDisabled := ptrutil.ToPtr(false)
 
 	testCases := []struct {
 		description        string
@@ -344,6 +347,28 @@ func TestChooserChoose(t *testing.T) {
 			},
 		},
 		{
+			description: "Disabled Usersync",
+			givenRequest: Request{
+				Privacy: &fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
+				Limit:   0,
+			},
+			givenChosenBidders: []string{"a"},
+			givenCookie:        Cookie{},
+			givenBidderInfo: map[string]config.BidderInfo{
+				"a": {
+					Syncer: &config.Syncer{
+						Enabled: usersyncDisabled,
+					},
+				},
+			},
+			bidderNamesLookup: normalizedBidderNamesLookup,
+			expected: Result{
+				Status:           StatusOK,
+				BiddersEvaluated: []BidderEvaluation{{Bidder: "a", SyncerKey: "keyA", Status: StatusBlockedByDisabledUsersync}},
+				SyncersChosen:    []SyncerChoice{},
+			},
+		},
+		{
 			description: "Regulation Scope GDPR",
 			givenRequest: Request{
 				Privacy: &fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true, gdprInScope: true},
@@ -441,6 +466,8 @@ func TestChooserEvaluate(t *testing.T) {
 	cookieNeedsSync := Cookie{}
 	cookieAlreadyHasSyncForA := Cookie{uids: map[string]UIDEntry{"keyA": {Expires: time.Now().Add(time.Duration(24) * time.Hour)}}}
 	cookieAlreadyHasSyncForB := Cookie{uids: map[string]UIDEntry{"keyB": {Expires: time.Now().Add(time.Duration(24) * time.Hour)}}}
+
+	usersyncDisabled := ptrutil.ToPtr(false)
 
 	testCases := []struct {
 		description                 string
@@ -599,6 +626,25 @@ func TestChooserEvaluate(t *testing.T) {
 			givenCookie:                 cookieNeedsSync,
 			expectedSyncer:              nil,
 			expectedEvaluation:          BidderEvaluation{Bidder: "unconfigured", Status: StatusUnconfiguredBidder},
+		},
+		{
+			description:          "Disabled Usersync",
+			givenBidder:          "a",
+			normalisedBidderName: "a",
+			givenSyncersSeen:     map[string]struct{}{},
+			givenPrivacy:         fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
+			givenCookie:          cookieNeedsSync,
+			givenBidderInfo: map[string]config.BidderInfo{
+				"a": {
+					Syncer: &config.Syncer{
+						Enabled: usersyncDisabled,
+					},
+				},
+			},
+			givenSyncTypeFilter:         syncTypeFilter,
+			normalizedBidderNamesLookup: normalizedBidderNamesLookup,
+			expectedSyncer:              nil,
+			expectedEvaluation:          BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusBlockedByDisabledUsersync},
 		},
 		{
 			description:      "Blocked By Regulation Scope - GDPR",
