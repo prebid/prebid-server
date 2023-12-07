@@ -68,7 +68,7 @@ func executeGroup[H any, P any](
 
 	for _, hook := range group.Hooks {
 		mCtx := executionCtx.getModuleContext(hook.Module)
-		newPayload := handleModuleActivities(hook, executionCtx.activityControl, payload)
+		newPayload := handleModuleActivities(hook.Code, executionCtx.activityControl, payload)
 		wg.Add(1)
 		go func(hw hooks.HookWrapper[H], moduleCtx hookstage.ModuleInvocationContext) {
 			defer wg.Done()
@@ -315,13 +315,13 @@ func handleHookMutations[P any](
 	return payload
 }
 
-func handleModuleActivities[T any, P any](hook hooks.HookWrapper[T], activityControl privacy.ActivityControl, payload P) P {
-	payloadData, ok := any(&payload).(hookstage.PayloadBidderRequest)
+func handleModuleActivities[P any](hookCode string, activityControl privacy.ActivityControl, payload P) P {
+	payloadData, ok := any(&payload).(hookstage.RequestUpdater)
 	if !ok {
 		return payload
 	}
 
-	scopeGeneral := privacy.Component{Type: privacy.ComponentTypeGeneral, Name: hook.Code}
+	scopeGeneral := privacy.Component{Type: privacy.ComponentTypeGeneral, Name: hookCode}
 	transmitUserFPDActivityAllowed := activityControl.Allow(privacy.ActivityTransmitUserFPD, scopeGeneral, privacy.ActivityRequest{})
 
 	if !transmitUserFPDActivityAllowed {
@@ -333,7 +333,7 @@ func handleModuleActivities[T any, P any](hook hooks.HookWrapper[T], activityCon
 		privacy.ScrubUserFPD(bidderReqCopy)
 
 		var newPayload = payload
-		var np = any(&newPayload).(hookstage.PayloadBidderRequest)
+		var np = any(&newPayload).(hookstage.RequestUpdater)
 		np.SetBidderRequestPayload(bidderReqCopy)
 		return newPayload
 	}

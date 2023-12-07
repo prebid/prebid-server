@@ -3,7 +3,6 @@ package hookexecution
 import (
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/hooks"
 	"github.com/prebid/prebid-server/v2/hooks/hookstage"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/prebid/prebid-server/v2/privacy"
@@ -54,7 +53,7 @@ func TestHandleModuleActivitiesBidderRequestPayload(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
 			activityControl := privacy.NewActivityControl(test.privacyConfig)
-			newPayload := runHandleModuleActivities(test.hookCode, activityControl, test.inPayloadData)
+			newPayload := handleModuleActivities(test.hookCode, activityControl, test.inPayloadData)
 			assert.Equal(t, test.expectedPayloadData.Request.BidRequest, newPayload.Request.BidRequest)
 		})
 	}
@@ -103,7 +102,7 @@ func TestHandleModuleActivitiesProcessedAuctionRequestPayload(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
 			activityControl := privacy.NewActivityControl(test.privacyConfig)
-			newPayload := runHandleModuleActivities(test.hookCode, activityControl, test.inPayloadData)
+			newPayload := handleModuleActivities(test.hookCode, activityControl, test.inPayloadData)
 			assert.Equal(t, test.expectedPayloadData.Request.BidRequest, newPayload.Request.BidRequest)
 		})
 	}
@@ -136,16 +135,8 @@ func TestHandleModuleActivitiesNoBidderRequestPayload(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
 			activityControl := privacy.NewActivityControl(test.privacyConfig)
-			newPayload := runHandleModuleActivities(test.hookCode, activityControl, test.inPayloadData)
+			newPayload := handleModuleActivities(test.hookCode, activityControl, test.inPayloadData)
 			assert.Equal(t, test.expectedPayloadData, newPayload)
 		})
 	}
-}
-
-func runHandleModuleActivities[P any](hookCode string, activityControl privacy.ActivityControl, payload P) P {
-	hook := []hooks.HookWrapper[hookstage.BidderRequestPayload]{
-		{Module: "foobxar", Code: hookCode},
-	}
-	newPayload := handleModuleActivities(hook[0], activityControl, payload)
-	return newPayload
 }

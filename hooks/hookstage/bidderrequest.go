@@ -36,8 +36,8 @@ func (brp *BidderRequestPayload) SetBidderRequestPayload(br *openrtb_ext.Request
 	brp.Request = br
 }
 
-// PayloadBidderRequest indicated of hook carries a bid request.
-type PayloadBidderRequest interface {
+// RequestUpdater allows reading and writing a bid request
+type RequestUpdater interface {
 	GetBidderRequestPayload() *openrtb_ext.RequestWrapper
 	SetBidderRequestPayload(br *openrtb_ext.RequestWrapper)
 }

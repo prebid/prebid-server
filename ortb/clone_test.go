@@ -1148,6 +1148,7 @@ func TestCloneBidderReq(t *testing.T) {
 			Source: &openrtb2.Source{TID: "testTID"},
 		}
 		result := CloneBidderReq(given)
+		assert.Equal(t, given, result.BidRequest)
 		assert.NotSame(t, given, result.BidRequest, "pointer")
 		assert.NotSame(t, given.User, result.User, "user")
 		assert.NotSame(t, given.Device, result.Device, "device")
