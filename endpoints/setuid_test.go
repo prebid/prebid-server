@@ -218,15 +218,25 @@ func TestSetUIDEndpoint(t *testing.T) {
 		},
 		{
 			uri: "/setuid?bidder=pubmatic&uid=123&gpp_sid=2,4&gpp=DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA" +
-				"gdpr=1&gdpr_consent=BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw",
+				"&gdpr=1&gdpr_consent=BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw",
 			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
 			gdprAllowsHostCookies:  true,
 			existingSyncs:          nil,
 			expectedSyncs:          map[string]string{"pubmatic": "123"},
 			expectedStatusCode:     http.StatusOK,
-			expectedBody:           "Warning: 'gpp' value will be used over the one found in the deprecated 'gdpr_consent' field.",
-			expectedHeaders:        map[string]string{"Content-Type": "text/plain; charset=utf-8"},
-			description:            "Sets uid for a bidder allowed by GDPR in GPP, throws warning because GDPR legacy values weren't used",
+			expectedHeaders:        map[string]string{"Content-Type": "text/html", "Content-Length": "0"},
+			description:            "GPP value will be used over the one found in the deprecated GDPR consent field for iframe format",
+		},
+		{
+			uri: "/setuid?f=i&bidder=pubmatic&uid=123&gpp_sid=2,4&gpp=DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA" +
+				"&gdpr=1&gdpr_consent=BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw",
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			gdprAllowsHostCookies:  true,
+			existingSyncs:          nil,
+			expectedSyncs:          map[string]string{"pubmatic": "123"},
+			expectedStatusCode:     http.StatusOK,
+			expectedHeaders:        map[string]string{"Content-Type": "image/png", "Content-Length": "86"},
+			description:            "GPP value will be used over the one found in the deprecated GDPR consent field for redirect format",
 		},
 		{
 			uri:                    "/setuid?bidder=pubmatic&uid=123&gdpr=1&gdpr_consent=malformed",

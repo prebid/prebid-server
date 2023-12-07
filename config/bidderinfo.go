@@ -128,6 +128,9 @@ type Syncer struct {
 	// FormatOverride allows a bidder to override their callback type "b" for iframe, "i" for redirect
 	FormatOverride string `yaml:"formatOverride" mapstructure:"format_override"`
 
+	// Enabled signifies whether a bidder is enabled/disabled for user sync
+	Enabled *bool `yaml:"enabled" mapstructure:"enabled"`
+
 	// SkipWhen allows bidders to specify when they don't want to sync
 	SkipWhen *SkipWhen `yaml:"skipwhen" mapstructure:"skipwhen"`
 }

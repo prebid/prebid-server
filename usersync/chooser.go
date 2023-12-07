@@ -100,6 +100,9 @@ const (
 
 	// StatusUnconfiguredBidder refers to a bidder who hasn't been configured to have a syncer key, but is known by Prebid Server
 	StatusUnconfiguredBidder
+
+	// StatusBlockedByDisabledUsersync refers to a bidder who won't be synced because it's been disabled in its config by the host
+	StatusBlockedByDisabledUsersync
 )
 
 // Privacy determines which privacy policies will be enforced for a user sync request.
@@ -192,6 +195,10 @@ func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}
 
 	if !privacy.GDPRAllowsBidderSync(bidderNormalized.String()) {
 		return nil, BidderEvaluation{Status: StatusBlockedByPrivacy, Bidder: bidder, SyncerKey: syncer.Key()}
+	}
+
+	if c.bidderInfo[bidder].Syncer != nil && c.bidderInfo[bidder].Syncer.Enabled != nil && !*c.bidderInfo[bidder].Syncer.Enabled {
+		return nil, BidderEvaluation{Status: StatusBlockedByDisabledUsersync, Bidder: bidder, SyncerKey: syncer.Key()}
 	}
 
 	if privacy.GDPRInScope() && c.bidderInfo[bidder].Syncer != nil && c.bidderInfo[bidder].Syncer.SkipWhen != nil && c.bidderInfo[bidder].Syncer.SkipWhen.GDPR {

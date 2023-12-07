@@ -492,6 +492,8 @@ func getDebugMessage(status usersync.Status) string {
 		return "No sync config"
 	case usersync.StatusTypeNotSupported:
 		return "Type not supported"
+	case usersync.StatusBlockedByDisabledUsersync:
+		return "Sync disabled by config"
 	}
 	return ""
 }
