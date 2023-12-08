@@ -89,7 +89,8 @@
               "bidId": "3",
               "cpm": 2,
               "ad": "<vast><div>video</div></vast>",
-              "crid": "wasd"
+              "crid": "wasd",
+              "mtype": "video"
             }
           ]
         }

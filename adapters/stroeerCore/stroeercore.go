@@ -30,6 +30,18 @@ type bidResponse struct {
 	Height int64   `json:"height"`
 	Ad     string  `json:"ad"`
 	CrID   string  `json:"crid"`
+	Mtype  string  `json:"mtype"`
+}
+
+func (b bidResponse) resolveMediaType() (mt openrtb2.MarkupType, bt openrtb_ext.BidType, err error) {
+	switch b.Mtype {
+	case "banner":
+		return openrtb2.MarkupBanner, openrtb_ext.BidTypeBanner, nil
+	case "video":
+		return openrtb2.MarkupVideo, openrtb_ext.BidTypeVideo, nil
+	default:
+		return mt, bt, fmt.Errorf("unable to determine media type for bid with id \"%s\"", b.BidID)
+	}
 }
 
 func (a *adapter) MakeBids(bidRequest *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
@@ -51,9 +63,11 @@ func (a *adapter) MakeBids(bidRequest *openrtb2.BidRequest, requestData *adapter
 	bidderResponse.Currency = "EUR"
 
 	for _, bid := range stroeerResponse.Bids {
-		bidType, markupType, err := getBidMediaTypeForImp(bid.BidID, bidRequest.Imp)
+		markupType, bidType, err := bid.resolveMediaType()
 		if err != nil {
-			errors = append(errors, err)
+			errors = append(errors, &errortypes.BadServerResponse{
+				Message: fmt.Sprintf("Bid media type error: %s", err.Error()),
+			})
 			continue
 		}
 
@@ -75,23 +89,6 @@ func (a *adapter) MakeBids(bidRequest *openrtb2.BidRequest, requestData *adapter
 	}
 
 	return bidderResponse, errors
-}
-
-func getBidMediaTypeForImp(impID string, imps []openrtb2.Imp) (emptyBidType openrtb_ext.BidType, emptyMarkupType openrtb2.MarkupType, err error) {
-	for _, imp := range imps {
-		if imp.ID == impID {
-			if imp.Banner != nil {
-				return openrtb_ext.BidTypeBanner, openrtb2.MarkupBanner, nil
-			}
-			if imp.Video != nil {
-				return openrtb_ext.BidTypeVideo, openrtb2.MarkupVideo, nil
-			}
-		}
-	}
-
-	return emptyBidType, emptyMarkupType, &errortypes.BadServerResponse{
-		Message: fmt.Sprintf("Invalid impression bid \"%s\": No match with impression or unknown media type.", impID),
-	}
 }
 
 func (a *adapter) MakeRequests(bidRequest *openrtb2.BidRequest, extraRequestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {

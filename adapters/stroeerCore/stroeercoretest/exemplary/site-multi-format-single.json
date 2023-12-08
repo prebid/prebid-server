@@ -115,7 +115,8 @@
               "width": 468,
               "height": 60,
               "ad": "banner ad",
-              "crid": "qwert"
+              "crid": "qwert",
+              "mtype": "banner"
             }
           ]
         }
