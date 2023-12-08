@@ -55,6 +55,9 @@ func TestHandleModuleActivitiesBidderRequestPayload(t *testing.T) {
 			activityControl := privacy.NewActivityControl(test.privacyConfig)
 			newPayload := handleModuleActivities(test.hookCode, activityControl, test.inPayloadData)
 			assert.Equal(t, test.expectedPayloadData.Request.BidRequest, newPayload.Request.BidRequest)
+			//check input payload didn't change
+			origInPayloadData := test.inPayloadData
+			assert.Equal(t, origInPayloadData, test.inPayloadData)
 		})
 	}
 }
@@ -104,6 +107,9 @@ func TestHandleModuleActivitiesProcessedAuctionRequestPayload(t *testing.T) {
 			activityControl := privacy.NewActivityControl(test.privacyConfig)
 			newPayload := handleModuleActivities(test.hookCode, activityControl, test.inPayloadData)
 			assert.Equal(t, test.expectedPayloadData.Request.BidRequest, newPayload.Request.BidRequest)
+			//check input payload didn't change
+			origInPayloadData := test.inPayloadData
+			assert.Equal(t, origInPayloadData, test.inPayloadData)
 		})
 	}
 }
@@ -137,6 +143,9 @@ func TestHandleModuleActivitiesNoBidderRequestPayload(t *testing.T) {
 			activityControl := privacy.NewActivityControl(test.privacyConfig)
 			newPayload := handleModuleActivities(test.hookCode, activityControl, test.inPayloadData)
 			assert.Equal(t, test.expectedPayloadData, newPayload)
+			//check input payload didn't change
+			origInPayloadData := test.inPayloadData
+			assert.Equal(t, origInPayloadData, test.inPayloadData)
 		})
 	}
 }

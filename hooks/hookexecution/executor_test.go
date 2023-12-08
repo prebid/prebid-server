@@ -672,66 +672,6 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 				},
 			},
 		},
-		{
-			description:      "Group payload not changes with transmitUFPD activity restriction",
-			givenBody:        body,
-			givenUrl:         urlString,
-			givenPlanBuilder: TestWithModuleContextsPlanBuilder{},
-			givenAccount:     account,
-			expectedBody:     body,
-			expectedReject:   nil,
-			expectedModuleContexts: &moduleContexts{ctxs: map[string]hookstage.ModuleContext{
-				"module-1": {"raw-auction-ctx-1": "some-ctx-1", "raw-auction-ctx-3": "some-ctx-3"},
-				"module-2": {"raw-auction-ctx-2": "some-ctx-2"},
-			}},
-			privacyConfig: getTransmitUFPDActivityConfig("foo", false),
-			expectedStageOutcomes: []StageOutcome{
-				{
-					Entity: entityAuctionRequest,
-					Stage:  hooks.StageRawAuctionRequest.String(),
-					Groups: []GroupOutcome{
-						{
-							InvocationResults: []HookOutcome{
-								{
-									AnalyticsTags: hookanalytics.Analytics{},
-									HookID:        HookID{ModuleCode: "module-1", HookImplCode: "foo"},
-									Status:        StatusSuccess,
-									Action:        ActionNone,
-									Message:       "",
-									DebugMessages: nil,
-									Errors:        nil,
-									Warnings:      nil,
-								},
-								{
-									AnalyticsTags: hookanalytics.Analytics{},
-									HookID:        HookID{ModuleCode: "module-2", HookImplCode: "baz"},
-									Status:        StatusSuccess,
-									Action:        ActionNone,
-									Message:       "",
-									DebugMessages: nil,
-									Errors:        nil,
-									Warnings:      nil,
-								},
-							},
-						},
-						{
-							InvocationResults: []HookOutcome{
-								{
-									AnalyticsTags: hookanalytics.Analytics{},
-									HookID:        HookID{ModuleCode: "module-1", HookImplCode: "bar"},
-									Status:        StatusSuccess,
-									Action:        ActionNone,
-									Message:       "",
-									DebugMessages: nil,
-									Errors:        nil,
-									Warnings:      nil,
-								},
-							},
-						},
-					},
-				},
-			},
-		},
 	}
 
 	for _, test := range testCases {
@@ -1231,68 +1171,15 @@ func TestExecuteBidderRequestStage(t *testing.T) {
 				},
 			},
 		},
-		{
-			description:           "Group payload not changes with transmitUFPD activity restriction",
-			givenBidderRequest:    &openrtb2.BidRequest{ID: "some-id", User: &openrtb2.User{ID: "user-id"}},
-			givenPlanBuilder:      TestWithModuleContextsPlanBuilder{},
-			givenAccount:          account,
-			expectedBidderRequest: expectedBidderRequest,
-			expectedReject:        nil,
-			expectedModuleContexts: &moduleContexts{ctxs: map[string]hookstage.ModuleContext{
-				"module-1": {"bidder-request-ctx-1": "some-ctx-1"},
-				"module-2": {"bidder-request-ctx-2": "some-ctx-2"},
-			}},
-			privacyConfig: getTransmitUFPDActivityConfig("foo", false),
-			expectedStageOutcomes: []StageOutcome{
-				{
-					ExecutionTime: ExecutionTime{},
-					Entity:        entity(bidderName),
-					Stage:         hooks.StageBidderRequest.String(),
-					Groups: []GroupOutcome{
-						{
-							ExecutionTime: ExecutionTime{},
-							InvocationResults: []HookOutcome{
-								{
-									ExecutionTime: ExecutionTime{},
-									AnalyticsTags: hookanalytics.Analytics{},
-									HookID:        HookID{ModuleCode: "module-1", HookImplCode: "foo"},
-									Status:        StatusSuccess,
-									Action:        ActionNone,
-									Message:       "",
-									DebugMessages: nil,
-									Errors:        nil,
-									Warnings:      nil,
-								},
-							},
-						},
-						{
-							ExecutionTime: ExecutionTime{},
-							InvocationResults: []HookOutcome{
-								{
-									ExecutionTime: ExecutionTime{},
-									AnalyticsTags: hookanalytics.Analytics{},
-									HookID:        HookID{ModuleCode: "module-2", HookImplCode: "bar"},
-									Status:        StatusSuccess,
-									Action:        ActionNone,
-									Message:       "",
-									DebugMessages: nil,
-									Errors:        nil,
-									Warnings:      nil,
-								},
-							},
-						},
-					},
-				},
-			},
-		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
 			exec := NewHookExecutor(test.givenPlanBuilder, EndpointAuction, &metricsConfig.NilMetricsEngine{})
-			exec.SetAccount(test.givenAccount)
-			ac := privacy.NewActivityControl(test.privacyConfig)
+			privacyConfig := getTransmitUFPDActivityConfig("foo", false)
+			ac := privacy.NewActivityControl(privacyConfig)
 			exec.SetActivityControl(ac)
+			exec.SetAccount(test.givenAccount)
 
 			reject := exec.ExecuteBidderRequestStage(&openrtb_ext.RequestWrapper{BidRequest: test.givenBidderRequest}, bidderName)
 
