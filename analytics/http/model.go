@@ -52,9 +52,9 @@ type logSetUID struct {
 }
 
 type logUserSync struct {
-	Status       int                           `json:"Status,omitempty"`
-	Errors       []error                       `json:"Errors,omitempty"`
-	BidderStatus []*analytics.CookieSyncBidder `json:"BidderStatus,omitempty"`
+	Status       int                           `json:"status,omitempty"`
+	Errors       []error                       `json:"errors,omitempty"`
+	BidderStatus []*analytics.CookieSyncBidder `json:"bidderStatus,omitempty"`
 }
 
 type logAMP struct {
