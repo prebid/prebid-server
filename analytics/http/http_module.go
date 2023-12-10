@@ -21,7 +21,6 @@ type httpSender = func(payload []byte) error
 
 type HttpLogger struct {
 	sender httpSender
-	config *config.AnalyticsHttp
 	clock  clock.Clock
 
 	eventCount              int64

@@ -23,11 +23,6 @@ const (
 	EventTypeVideo        EventType = "video"
 )
 
-type logContainer[T any] struct {
-	event EventType
-	data  T
-}
-
 type logAuction struct {
 	Status               int                          `json:"status,omitempty"`
 	Errors               []error                      `json:"errors,omitempty"`
