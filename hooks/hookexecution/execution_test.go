@@ -52,11 +52,11 @@ func TestHandleModuleActivitiesBidderRequestPayload(t *testing.T) {
 	}
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
+			//check input payload didn't change
+			origInPayloadData := test.inPayloadData
 			activityControl := privacy.NewActivityControl(test.privacyConfig)
 			newPayload := handleModuleActivities(test.hookCode, activityControl, test.inPayloadData)
 			assert.Equal(t, test.expectedPayloadData.Request.BidRequest, newPayload.Request.BidRequest)
-			//check input payload didn't change
-			origInPayloadData := test.inPayloadData
 			assert.Equal(t, origInPayloadData, test.inPayloadData)
 		})
 	}
@@ -104,11 +104,11 @@ func TestHandleModuleActivitiesProcessedAuctionRequestPayload(t *testing.T) {
 	}
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
+			//check input payload didn't change
+			origInPayloadData := test.inPayloadData
 			activityControl := privacy.NewActivityControl(test.privacyConfig)
 			newPayload := handleModuleActivities(test.hookCode, activityControl, test.inPayloadData)
 			assert.Equal(t, test.expectedPayloadData.Request.BidRequest, newPayload.Request.BidRequest)
-			//check input payload didn't change
-			origInPayloadData := test.inPayloadData
 			assert.Equal(t, origInPayloadData, test.inPayloadData)
 		})
 	}
@@ -140,11 +140,11 @@ func TestHandleModuleActivitiesNoBidderRequestPayload(t *testing.T) {
 	}
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
+			//check input payload didn't change
+			origInPayloadData := test.inPayloadData
 			activityControl := privacy.NewActivityControl(test.privacyConfig)
 			newPayload := handleModuleActivities(test.hookCode, activityControl, test.inPayloadData)
 			assert.Equal(t, test.expectedPayloadData, newPayload)
-			//check input payload didn't change
-			origInPayloadData := test.inPayloadData
 			assert.Equal(t, origInPayloadData, test.inPayloadData)
 		})
 	}

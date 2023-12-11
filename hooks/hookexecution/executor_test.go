@@ -431,7 +431,6 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 		expectedReject         *RejectError
 		expectedModuleContexts *moduleContexts
 		expectedStageOutcomes  []StageOutcome
-		privacyConfig          *config.AccountPrivacy
 	}{
 		{
 			description:            "Payload not changed if hook execution plan empty",
@@ -677,11 +676,11 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
 			exec := NewHookExecutor(test.givenPlanBuilder, EndpointAuction, &metricsConfig.NilMetricsEngine{})
-			exec.SetAccount(test.givenAccount)
 
-			ac := privacy.NewActivityControl(test.privacyConfig)
+			privacyConfig := getTransmitUFPDActivityConfig("foo", false)
+			ac := privacy.NewActivityControl(privacyConfig)
 			exec.SetActivityControl(ac)
-
+			exec.SetAccount(test.givenAccount)
 			newBody, reject := exec.ExecuteRawAuctionStage([]byte(test.givenBody))
 
 			assert.Equal(t, test.expectedReject, reject, "Unexpected stage reject.")
@@ -902,6 +901,10 @@ func TestExecuteProcessedAuctionStage(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.description, func(ti *testing.T) {
 			exec := NewHookExecutor(test.givenPlanBuilder, EndpointAuction, &metricsConfig.NilMetricsEngine{})
+
+			privacyConfig := getTransmitUFPDActivityConfig("foo", false)
+			ac := privacy.NewActivityControl(privacyConfig)
+			exec.SetActivityControl(ac)
 			exec.SetAccount(test.givenAccount)
 
 			err := exec.ExecuteProcessedAuctionStage(&test.givenRequest)
@@ -1423,6 +1426,10 @@ func TestExecuteRawBidderResponseStage(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.description, func(ti *testing.T) {
 			exec := NewHookExecutor(test.givenPlanBuilder, EndpointAuction, &metricsConfig.NilMetricsEngine{})
+
+			privacyConfig := getTransmitUFPDActivityConfig("foo", false)
+			ac := privacy.NewActivityControl(privacyConfig)
+			exec.SetActivityControl(ac)
 			exec.SetAccount(test.givenAccount)
 
 			reject := exec.ExecuteRawBidderResponseStage(&test.givenBidderResponse, "the-bidder")
@@ -1702,6 +1709,10 @@ func TestExecuteAllProcessedBidResponsesStage(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
 			exec := NewHookExecutor(test.givenPlanBuilder, EndpointAuction, &metricsConfig.NilMetricsEngine{})
+
+			privacyConfig := getTransmitUFPDActivityConfig("foo", false)
+			ac := privacy.NewActivityControl(privacyConfig)
+			exec.SetActivityControl(ac)
 			exec.SetAccount(test.givenAccount)
 
 			exec.ExecuteAllProcessedBidResponsesStage(test.givenBiddersResponse)
@@ -1951,6 +1962,10 @@ func TestExecuteAuctionResponseStage(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
 			exec := NewHookExecutor(test.givenPlanBuilder, EndpointAuction, &metricsConfig.NilMetricsEngine{})
+
+			privacyConfig := getTransmitUFPDActivityConfig("foo", false)
+			ac := privacy.NewActivityControl(privacyConfig)
+			exec.SetActivityControl(ac)
 			exec.SetAccount(test.givenAccount)
 
 			exec.ExecuteAuctionResponseStage(test.givenResponse)
