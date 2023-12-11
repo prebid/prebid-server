@@ -23,7 +23,8 @@
     },
     "user": {
       "buyeruid": "A-38327932832"
-    }
+    },
+    "cur": ["TYR"]
   },
 
   "httpCalls": [
@@ -45,7 +46,8 @@
           },
           "user": {
             "buyeruid": "A-38327932832"
-          }
+          },
+          "cur": ["TYR"]
         }
       },
       "mockResponse": {
@@ -67,7 +69,8 @@
                   "w": 300
               }]
           }],
-          "bidid": "wehM-93KGr0"
+          "bidid": "wehM-93KGr0",
+          "cur": "TYR"
         }
       }
     }
@@ -75,7 +78,7 @@
 
   "expectedBidResponses": [
     {
-      "currency": "USD",
+      "currency": "TYR",
       "bids": [
         {
           "bid": {

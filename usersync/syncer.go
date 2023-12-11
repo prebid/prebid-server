@@ -9,16 +9,15 @@ import (
 	"text/template"
 
 	validator "github.com/asaskevich/govalidator"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/privacy"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/macros"
 )
 
 var (
-	errNoSyncTypesProvided        = errors.New("no sync types provided")
-	errNoSyncTypesSupported       = errors.New("no sync types supported")
-	errDefaultTypeMissingIFrame   = errors.New("default is set to iframe but no iframe endpoint is configured")
-	errDefaultTypeMissingRedirect = errors.New("default is set to redirect but no redirect endpoint is configured")
+	ErrSyncerEndpointRequired = errors.New("at least one endpoint (iframe and/or redirect) is required")
+	ErrSyncerKeyRequired      = errors.New("key is required")
+	errNoSyncTypesProvided    = errors.New("no sync types provided")
+	errNoSyncTypesSupported   = errors.New("no sync types supported")
 )
 
 // Syncer represents the user sync configuration for a bidder or a shared set of bidders.
@@ -35,7 +34,7 @@ type Syncer interface {
 
 	// GetSync returns a user sync for the user's device to perform, or an error if the none of the
 	// sync types are supported or if macro substitution fails.
-	GetSync(syncTypes []SyncType, privacyPolicies privacy.Policies) (Sync, error)
+	GetSync(syncTypes []SyncType, userSyncMacros macros.UserSyncPrivacy) (Sync, error)
 }
 
 // Sync represents a user sync to be performed by the user's device.
@@ -57,9 +56,6 @@ const (
 	setuidSyncTypeIFrame   = "b" // b = blank HTML response
 	setuidSyncTypeRedirect = "i" // i = image response
 )
-
-var ErrSyncerEndpointRequired = errors.New("at least one endpoint (iframe and/or redirect) is required")
-var ErrSyncerKeyRequired = errors.New("key is required")
 
 // NewSyncer creates a new Syncer from the provided configuration, or return an error if macro substition
 // fails or an endpoint url is invalid.
@@ -170,7 +166,7 @@ func escapeTemplate(x string) string {
 	return escaped.String()
 }
 
-var templateTestValues = macros.UserSyncTemplateParams{
+var templateTestValues = macros.UserSyncPrivacy{
 	GDPR:        "anyGDPR",
 	GDPRConsent: "anyGDPRConsent",
 	USPrivacy:   "anyCCPAConsent",
@@ -219,7 +215,7 @@ func (s standardSyncer) filterSupportedSyncTypes(syncTypes []SyncType) []SyncTyp
 	return supported
 }
 
-func (s standardSyncer) GetSync(syncTypes []SyncType, privacyPolicies privacy.Policies) (Sync, error) {
+func (s standardSyncer) GetSync(syncTypes []SyncType, userSyncMacros macros.UserSyncPrivacy) (Sync, error) {
 	syncType, err := s.chooseSyncType(syncTypes)
 	if err != nil {
 		return Sync{}, err
@@ -227,13 +223,7 @@ func (s standardSyncer) GetSync(syncTypes []SyncType, privacyPolicies privacy.Po
 
 	syncTemplate := s.chooseTemplate(syncType)
 
-	url, err := macros.ResolveMacros(syncTemplate, macros.UserSyncTemplateParams{
-		GDPR:        privacyPolicies.GDPR.Signal,
-		GDPRConsent: privacyPolicies.GDPR.Consent,
-		USPrivacy:   privacyPolicies.CCPA.Consent,
-		GPP:         privacyPolicies.GPP.Consent,
-		GPPSID:      privacyPolicies.GPP.RawSID,
-	})
+	url, err := macros.ResolveMacros(syncTemplate, userSyncMacros)
 	if err != nil {
 		return Sync{}, err
 	}

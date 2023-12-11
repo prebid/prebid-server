@@ -5,611 +5,413 @@ import (
 	"testing"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestScrubDevice(t *testing.T) {
-	device := getTestDevice()
-
+func TestScrubDeviceIDs(t *testing.T) {
 	testCases := []struct {
-		description string
-		expected    *openrtb2.Device
-		id          ScrubStrategyDeviceID
-		ipv4        ScrubStrategyIPV4
-		ipv6        ScrubStrategyIPV6
-		geo         ScrubStrategyGeo
+		name           string
+		deviceIn       *openrtb2.Device
+		expectedDevice *openrtb2.Device
 	}{
 		{
-			description: "All Strategies - None",
-			expected:    device,
-			id:          ScrubStrategyDeviceIDNone,
-			ipv4:        ScrubStrategyIPV4None,
-			ipv6:        ScrubStrategyIPV6None,
-			geo:         ScrubStrategyGeoNone,
+			name:           "all",
+			deviceIn:       &openrtb2.Device{DIDMD5: "MD5", DIDSHA1: "SHA1", DPIDMD5: "MD5", DPIDSHA1: "SHA1", IFA: "IFA", MACMD5: "MD5", MACSHA1: "SHA1"},
+			expectedDevice: &openrtb2.Device{DIDMD5: "", DIDSHA1: "", DPIDMD5: "", DPIDSHA1: "", IFA: "", MACMD5: "", MACSHA1: ""},
 		},
 		{
-			description: "All Strategies - Strictest",
-			expected: &openrtb2.Device{
-				DIDMD5:   "",
-				DIDSHA1:  "",
-				DPIDMD5:  "",
-				DPIDSHA1: "",
-				MACSHA1:  "",
-				MACMD5:   "",
-				IFA:      "",
-				IP:       "1.2.3.0",
-				IPv6:     "2001:0db8:0000:0000:0000:ff00:0:0",
-				Geo:      &openrtb2.Geo{},
-			},
-			id:   ScrubStrategyDeviceIDAll,
-			ipv4: ScrubStrategyIPV4Lowest8,
-			ipv6: ScrubStrategyIPV6Lowest32,
-			geo:  ScrubStrategyGeoFull,
-		},
-		{
-			description: "Isolated - ID - All",
-			expected: &openrtb2.Device{
-				DIDMD5:   "",
-				DIDSHA1:  "",
-				DPIDMD5:  "",
-				DPIDSHA1: "",
-				MACSHA1:  "",
-				MACMD5:   "",
-				IFA:      "",
-				IP:       "1.2.3.4",
-				IPv6:     "2001:0db8:0000:0000:0000:ff00:0042:8329",
-				Geo:      device.Geo,
-			},
-			id:   ScrubStrategyDeviceIDAll,
-			ipv4: ScrubStrategyIPV4None,
-			ipv6: ScrubStrategyIPV6None,
-			geo:  ScrubStrategyGeoNone,
-		},
-		{
-			description: "Isolated - IPv4 - Lowest 8",
-			expected: &openrtb2.Device{
-				DIDMD5:   "anyDIDMD5",
-				DIDSHA1:  "anyDIDSHA1",
-				DPIDMD5:  "anyDPIDMD5",
-				DPIDSHA1: "anyDPIDSHA1",
-				MACSHA1:  "anyMACSHA1",
-				MACMD5:   "anyMACMD5",
-				IFA:      "anyIFA",
-				IP:       "1.2.3.0",
-				IPv6:     "2001:0db8:0000:0000:0000:ff00:0042:8329",
-				Geo:      device.Geo,
-			},
-			id:   ScrubStrategyDeviceIDNone,
-			ipv4: ScrubStrategyIPV4Lowest8,
-			ipv6: ScrubStrategyIPV6None,
-			geo:  ScrubStrategyGeoNone,
-		},
-		{
-			description: "Isolated - IPv6 - Lowest 16",
-			expected: &openrtb2.Device{
-				DIDMD5:   "anyDIDMD5",
-				DIDSHA1:  "anyDIDSHA1",
-				DPIDMD5:  "anyDPIDMD5",
-				DPIDSHA1: "anyDPIDSHA1",
-				MACSHA1:  "anyMACSHA1",
-				MACMD5:   "anyMACMD5",
-				IFA:      "anyIFA",
-				IP:       "1.2.3.4",
-				IPv6:     "2001:0db8:0000:0000:0000:ff00:0042:0",
-				Geo:      device.Geo,
-			},
-			id:   ScrubStrategyDeviceIDNone,
-			ipv4: ScrubStrategyIPV4None,
-			ipv6: ScrubStrategyIPV6Lowest16,
-			geo:  ScrubStrategyGeoNone,
-		},
-		{
-			description: "Isolated - IPv6 - Lowest 32",
-			expected: &openrtb2.Device{
-				DIDMD5:   "anyDIDMD5",
-				DIDSHA1:  "anyDIDSHA1",
-				DPIDMD5:  "anyDPIDMD5",
-				DPIDSHA1: "anyDPIDSHA1",
-				MACSHA1:  "anyMACSHA1",
-				MACMD5:   "anyMACMD5",
-				IFA:      "anyIFA",
-				IP:       "1.2.3.4",
-				IPv6:     "2001:0db8:0000:0000:0000:ff00:0:0",
-				Geo:      device.Geo,
-			},
-			id:   ScrubStrategyDeviceIDNone,
-			ipv4: ScrubStrategyIPV4None,
-			ipv6: ScrubStrategyIPV6Lowest32,
-			geo:  ScrubStrategyGeoNone,
-		},
-		{
-			description: "Isolated - Geo - Reduced Precision",
-			expected: &openrtb2.Device{
-				DIDMD5:   "anyDIDMD5",
-				DIDSHA1:  "anyDIDSHA1",
-				DPIDMD5:  "anyDPIDMD5",
-				DPIDSHA1: "anyDPIDSHA1",
-				MACSHA1:  "anyMACSHA1",
-				MACMD5:   "anyMACMD5",
-				IFA:      "anyIFA",
-				IP:       "1.2.3.4",
-				IPv6:     "2001:0db8:0000:0000:0000:ff00:0042:8329",
-				Geo: &openrtb2.Geo{
-					Lat:   123.46,
-					Lon:   678.89,
-					Metro: "some metro",
-					City:  "some city",
-					ZIP:   "some zip",
-				},
-			},
-			id:   ScrubStrategyDeviceIDNone,
-			ipv4: ScrubStrategyIPV4None,
-			ipv6: ScrubStrategyIPV6None,
-			geo:  ScrubStrategyGeoReducedPrecision,
-		},
-		{
-			description: "Isolated - Geo - Full",
-			expected: &openrtb2.Device{
-				DIDMD5:   "anyDIDMD5",
-				DIDSHA1:  "anyDIDSHA1",
-				DPIDMD5:  "anyDPIDMD5",
-				DPIDSHA1: "anyDPIDSHA1",
-				MACSHA1:  "anyMACSHA1",
-				MACMD5:   "anyMACMD5",
-				IFA:      "anyIFA",
-				IP:       "1.2.3.4",
-				IPv6:     "2001:0db8:0000:0000:0000:ff00:0042:8329",
-				Geo:      &openrtb2.Geo{},
-			},
-			id:   ScrubStrategyDeviceIDNone,
-			ipv4: ScrubStrategyIPV4None,
-			ipv6: ScrubStrategyIPV6None,
-			geo:  ScrubStrategyGeoFull,
+			name:           "nil",
+			deviceIn:       nil,
+			expectedDevice: nil,
 		},
 	}
-
 	for _, test := range testCases {
-		result := NewScrubber().ScrubDevice(device, test.id, test.ipv4, test.ipv6, test.geo)
-		assert.Equal(t, test.expected, result, test.description)
-	}
-}
-
-func TestScrubDeviceNil(t *testing.T) {
-	result := NewScrubber().ScrubDevice(nil, ScrubStrategyDeviceIDNone, ScrubStrategyIPV4None, ScrubStrategyIPV6None, ScrubStrategyGeoNone)
-	assert.Nil(t, result)
-}
-
-func TestScrubUser(t *testing.T) {
-	user := getTestUser()
-
-	testCases := []struct {
-		description string
-		expected    *openrtb2.User
-		scrubUser   ScrubStrategyUser
-		scrubGeo    ScrubStrategyGeo
-	}{
-		{
-			description: "User ID And Demographic & Geo Full",
-			expected: &openrtb2.User{
-				ID:       "",
-				BuyerUID: "",
-				Yob:      0,
-				Gender:   "",
-				Ext:      json.RawMessage(`{}`),
-				Geo:      &openrtb2.Geo{},
-			},
-			scrubUser: ScrubStrategyUserIDAndDemographic,
-			scrubGeo:  ScrubStrategyGeoFull,
-		},
-		{
-			description: "User ID And Demographic & Geo Reduced",
-			expected: &openrtb2.User{
-				ID:       "",
-				BuyerUID: "",
-				Yob:      0,
-				Gender:   "",
-				Ext:      json.RawMessage(`{}`),
-				Geo: &openrtb2.Geo{
-					Lat:   123.46,
-					Lon:   678.89,
-					Metro: "some metro",
-					City:  "some city",
-					ZIP:   "some zip",
-				},
-			},
-			scrubUser: ScrubStrategyUserIDAndDemographic,
-			scrubGeo:  ScrubStrategyGeoReducedPrecision,
-		},
-		{
-			description: "User ID And Demographic & Geo None",
-			expected: &openrtb2.User{
-				ID:       "",
-				BuyerUID: "",
-				Yob:      0,
-				Gender:   "",
-				Ext:      json.RawMessage(`{}`),
-				Geo: &openrtb2.Geo{
-					Lat:   123.456,
-					Lon:   678.89,
-					Metro: "some metro",
-					City:  "some city",
-					ZIP:   "some zip",
-				},
-			},
-			scrubUser: ScrubStrategyUserIDAndDemographic,
-			scrubGeo:  ScrubStrategyGeoNone,
-		},
-		{
-			description: "User None & Geo Full",
-			expected: &openrtb2.User{
-				ID:       "anyID",
-				BuyerUID: "anyBuyerUID",
-				Yob:      42,
-				Gender:   "anyGender",
-				Ext:      json.RawMessage(`{}`),
-				Geo:      &openrtb2.Geo{},
-			},
-			scrubUser: ScrubStrategyUserNone,
-			scrubGeo:  ScrubStrategyGeoFull,
-		},
-		{
-			description: "User None & Geo Reduced",
-			expected: &openrtb2.User{
-				ID:       "anyID",
-				BuyerUID: "anyBuyerUID",
-				Yob:      42,
-				Gender:   "anyGender",
-				Ext:      json.RawMessage(`{}`),
-				Geo: &openrtb2.Geo{
-					Lat:   123.46,
-					Lon:   678.89,
-					Metro: "some metro",
-					City:  "some city",
-					ZIP:   "some zip",
-				},
-			},
-			scrubUser: ScrubStrategyUserNone,
-			scrubGeo:  ScrubStrategyGeoReducedPrecision,
-		},
-		{
-			description: "User None & Geo None",
-			expected: &openrtb2.User{
-				ID:       "anyID",
-				BuyerUID: "anyBuyerUID",
-				Yob:      42,
-				Gender:   "anyGender",
-				Ext:      json.RawMessage(`{}`),
-				Geo: &openrtb2.Geo{
-					Lat:   123.456,
-					Lon:   678.89,
-					Metro: "some metro",
-					City:  "some city",
-					ZIP:   "some zip",
-				},
-			},
-			scrubUser: ScrubStrategyUserNone,
-			scrubGeo:  ScrubStrategyGeoNone,
-		},
-	}
-
-	for _, test := range testCases {
-		result := NewScrubber().ScrubUser(user, test.scrubUser, test.scrubGeo)
-		assert.Equal(t, test.expected, result, test.description)
-	}
-}
-
-func TestScrubUserNil(t *testing.T) {
-	result := NewScrubber().ScrubUser(nil, ScrubStrategyUserNone, ScrubStrategyGeoNone)
-	assert.Nil(t, result)
-}
-
-func TestScrubRequest(t *testing.T) {
-
-	imps := []openrtb2.Imp{
-		{ID: "testId", Ext: json.RawMessage(`{"test": 1, "tid": 2}`)},
-	}
-	source := &openrtb2.Source{
-		TID: "testTid",
-	}
-	device := getTestDevice()
-	user := getTestUser()
-	user.Ext = json.RawMessage(`{"data": 1, "eids": 2}`)
-	user.EIDs = []openrtb2.EID{{Source: "test"}}
-
-	testCases := []struct {
-		description    string
-		enforcement    Enforcement
-		userExtPresent bool
-		expected       *openrtb2.BidRequest
-	}{
-		{
-			description:    "enforce transmitUFPD with user.ext",
-			enforcement:    Enforcement{UFPD: true},
-			userExtPresent: true,
-			expected: &openrtb2.BidRequest{
-				Imp:    imps,
-				Source: source,
-				User: &openrtb2.User{
-					EIDs: []openrtb2.EID{{Source: "test"}},
-					Geo:  user.Geo,
-					Ext:  json.RawMessage(`{"eids":2}`),
-				},
-				Device: &openrtb2.Device{
-					IP:   "1.2.3.4",
-					IPv6: "2001:0db8:0000:0000:0000:ff00:0042:8329",
-					Geo:  device.Geo,
-				},
-			},
-		},
-		{
-			description:    "enforce transmitUFPD without user.ext",
-			enforcement:    Enforcement{UFPD: true},
-			userExtPresent: false,
-			expected: &openrtb2.BidRequest{
-				Imp:    imps,
-				Source: source,
-				User: &openrtb2.User{
-					EIDs: []openrtb2.EID{{Source: "test"}},
-					Geo:  user.Geo,
-				},
-				Device: &openrtb2.Device{
-					IP:   "1.2.3.4",
-					IPv6: "2001:0db8:0000:0000:0000:ff00:0042:8329",
-					Geo:  device.Geo,
-				},
-			},
-		},
-		{
-			description:    "enforce transmitEids",
-			enforcement:    Enforcement{Eids: true},
-			userExtPresent: true,
-			expected: &openrtb2.BidRequest{
-				Imp:    imps,
-				Source: source,
-				Device: device,
-				User: &openrtb2.User{
-					ID:       "anyID",
-					BuyerUID: "anyBuyerUID",
-					Yob:      42,
-					Gender:   "anyGender",
-					Geo:      user.Geo,
-					EIDs:     nil,
-					Ext:      json.RawMessage(`{"data":1}`),
-				},
-			},
-		},
-		{
-			description:    "enforce transmitTid",
-			enforcement:    Enforcement{TID: true},
-			userExtPresent: true,
-			expected: &openrtb2.BidRequest{
-				Imp: []openrtb2.Imp{
-					{ID: "testId", Ext: json.RawMessage(`{"test":1}`)},
-				},
-				Source: &openrtb2.Source{
-					TID: "",
-				},
-				Device: device,
-				User: &openrtb2.User{
-					ID:       "anyID",
-					BuyerUID: "anyBuyerUID",
-					Yob:      42,
-					Gender:   "anyGender",
-					Geo:      user.Geo,
-					EIDs:     []openrtb2.EID{{Source: "test"}},
-					Ext:      json.RawMessage(`{"data": 1, "eids": 2}`),
-				},
-			},
-		},
-		{
-			description:    "enforce precise Geo",
-			enforcement:    Enforcement{PreciseGeo: true},
-			userExtPresent: true,
-			expected: &openrtb2.BidRequest{
-				Imp:    imps,
-				Source: source,
-				User: &openrtb2.User{
-					ID:       "anyID",
-					BuyerUID: "anyBuyerUID",
-					Yob:      42,
-					Gender:   "anyGender",
-					Geo: &openrtb2.Geo{
-						Lat: 123.46, Lon: 678.89,
-						Metro: "some metro",
-						City:  "some city",
-						ZIP:   "some zip",
-					},
-					EIDs: []openrtb2.EID{{Source: "test"}},
-					Ext:  json.RawMessage(`{"data": 1, "eids": 2}`),
-				},
-				Device: &openrtb2.Device{
-					IFA:      "anyIFA",
-					DIDSHA1:  "anyDIDSHA1",
-					DIDMD5:   "anyDIDMD5",
-					DPIDSHA1: "anyDPIDSHA1",
-					DPIDMD5:  "anyDPIDMD5",
-					MACSHA1:  "anyMACSHA1",
-					MACMD5:   "anyMACMD5",
-					IP:       "1.2.3.0",
-					IPv6:     "2001:0db8:0000:0000:0000:ff00:0:0",
-					Geo: &openrtb2.Geo{
-						Lat: 123.46, Lon: 678.89,
-						Metro: "some metro",
-						City:  "some city",
-						ZIP:   "some zip",
-					},
-				},
-			},
-		},
-	}
-
-	for _, test := range testCases {
-		t.Run(test.description, func(t *testing.T) {
-			bidRequest := &openrtb2.BidRequest{
-				Imp: []openrtb2.Imp{
-					{ID: "testId", Ext: json.RawMessage(`{"test": 1, "tid": 2}`)},
-				},
-				Source: &openrtb2.Source{
-					TID: "testTid",
-				},
-				User:   getTestUser(),
-				Device: getTestDevice(),
-			}
-			if test.userExtPresent {
-				bidRequest.User.Ext = json.RawMessage(`{"data": 1, "eids": 2}`)
-			} else {
-				bidRequest.User.Ext = nil
-			}
-			bidRequest.User.EIDs = []openrtb2.EID{{Source: "test"}}
-
-			result := NewScrubber().ScrubRequest(bidRequest, test.enforcement)
-			assert.Equal(t, test.expected, result, test.description)
+		t.Run(test.name, func(t *testing.T) {
+			brw := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Device: test.deviceIn}}
+			scrubDeviceIDs(brw)
+			brw.RebuildRequest()
+			assert.Equal(t, test.expectedDevice, brw.Device)
 		})
 	}
 }
 
-func TestScrubIPV4(t *testing.T) {
+func TestScrubUserIDs(t *testing.T) {
 	testCases := []struct {
-		IP          string
-		cleanedIP   string
-		description string
+		name         string
+		userIn       *openrtb2.User
+		expectedUser *openrtb2.User
 	}{
 		{
-			IP:          "0.0.0.0",
-			cleanedIP:   "0.0.0.0",
-			description: "Shouldn't do anything for a 0.0.0.0 IP address",
+			name:         "all",
+			userIn:       &openrtb2.User{Data: []openrtb2.Data{}, ID: "ID", BuyerUID: "bID", Yob: 2000, Gender: "M", Keywords: "keywords", KwArray: nil},
+			expectedUser: &openrtb2.User{Data: nil, ID: "", BuyerUID: "", Yob: 0, Gender: "", Keywords: "", KwArray: nil},
 		},
 		{
-			IP:          "192.127.111.134",
-			cleanedIP:   "192.127.111.0",
-			description: "Should remove the lowest 8 bits",
-		},
-		{
-			IP:          "192.127.111.0",
-			cleanedIP:   "192.127.111.0",
-			description: "Shouldn't change anything if the lowest 8 bits are already 0",
-		},
-		{
-			IP:          "not an ip",
-			cleanedIP:   "",
-			description: "Should return an empty string for a bad IP",
-		},
-		{
-			IP:          "",
-			cleanedIP:   "",
-			description: "Should return an empty string for a bad IP",
+			name:         "nil",
+			userIn:       nil,
+			expectedUser: nil,
 		},
 	}
-
 	for _, test := range testCases {
-		result := scrubIPV4Lowest8(test.IP)
-		assert.Equal(t, test.cleanedIP, result, test.description)
+		t.Run(test.name, func(t *testing.T) {
+			brw := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{User: test.userIn}}
+			scrubUserIDs(brw)
+			brw.RebuildRequest()
+			assert.Equal(t, test.expectedUser, brw.User)
+		})
 	}
 }
 
-func TestScrubIPV6Lowest16Bits(t *testing.T) {
+func TestScrubUserDemographics(t *testing.T) {
 	testCases := []struct {
-		IP          string
-		cleanedIP   string
-		description string
+		name         string
+		userIn       *openrtb2.User
+		expectedUser *openrtb2.User
 	}{
 		{
-			IP:          "0:0:0:0",
-			cleanedIP:   "0:0:0:0",
-			description: "Shouldn't do anything for a 0:0:0:0 IP address",
+			name:         "all",
+			userIn:       &openrtb2.User{ID: "ID", BuyerUID: "bID", Yob: 2000, Gender: "M"},
+			expectedUser: &openrtb2.User{ID: "", BuyerUID: "", Yob: 0, Gender: ""},
 		},
 		{
-			IP:          "2001:0db8:0000:0000:0000:ff00:0042:8329",
-			cleanedIP:   "2001:0db8:0000:0000:0000:ff00:0042:0",
-			description: "Should remove lowest 16 bits",
-		},
-		{
-			IP:          "2001:0db8:0000:0000:0000:ff00:0042:0",
-			cleanedIP:   "2001:0db8:0000:0000:0000:ff00:0042:0",
-			description: "Shouldn't do anything if the lowest 16 bits are already 0",
-		},
-		{
-			IP:          "not an ip",
-			cleanedIP:   "",
-			description: "Should return an empty string for a bad IP",
-		},
-		{
-			IP:          "",
-			cleanedIP:   "",
-			description: "Should return an empty string for a bad IP",
+			name:         "nil",
+			userIn:       nil,
+			expectedUser: nil,
 		},
 	}
-
 	for _, test := range testCases {
-		result := scrubIPV6Lowest16Bits(test.IP)
-		assert.Equal(t, test.cleanedIP, result, test.description)
+		t.Run(test.name, func(t *testing.T) {
+			brw := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{User: test.userIn}}
+			scrubUserDemographics(brw)
+			brw.RebuildRequest()
+			assert.Equal(t, test.expectedUser, brw.User)
+		})
 	}
 }
 
-func TestScrubIPV6Lowest32Bits(t *testing.T) {
+func TestScrubUserExt(t *testing.T) {
 	testCases := []struct {
-		IP          string
-		cleanedIP   string
-		description string
+		name         string
+		userIn       *openrtb2.User
+		fieldName    string
+		expectedUser *openrtb2.User
 	}{
 		{
-			IP:          "0:0:0:0",
-			cleanedIP:   "0:0:0:0",
-			description: "Shouldn't do anything for a 0:0:0:0 IP address",
+			name:         "nil_user",
+			userIn:       nil,
+			expectedUser: nil,
 		},
 		{
-			IP:          "2001:0db8:0000:0000:0000:ff00:0042:8329",
-			cleanedIP:   "2001:0db8:0000:0000:0000:ff00:0:0",
-			description: "Should remove lowest 32 bits",
+			name:         "nil_ext",
+			userIn:       &openrtb2.User{ID: "ID", Ext: nil},
+			expectedUser: &openrtb2.User{ID: "ID", Ext: nil},
 		},
 		{
-			IP:          "2001:0db8:0000:0000:0000:ff00:0:0",
-			cleanedIP:   "2001:0db8:0000:0000:0000:ff00:0:0",
-			description: "Shouldn't do anything if the lowest 32 bits are already 0",
-		},
-
-		{
-			IP:          "not an ip",
-			cleanedIP:   "",
-			description: "Should return an empty string for a bad IP",
+			name:         "empty_ext",
+			userIn:       &openrtb2.User{ID: "ID", Ext: json.RawMessage(`{}`)},
+			expectedUser: &openrtb2.User{ID: "ID", Ext: json.RawMessage(`{}`)},
 		},
 		{
-			IP:          "",
-			cleanedIP:   "",
-			description: "Should return an empty string for a bad IP",
+			name:         "ext_with_field",
+			userIn:       &openrtb2.User{ID: "ID", Ext: json.RawMessage(`{"data":"123","test":1}`)},
+			fieldName:    "data",
+			expectedUser: &openrtb2.User{ID: "ID", Ext: json.RawMessage(`{"test":1}`)},
+		},
+		{
+			name:         "ext_without_field",
+			userIn:       &openrtb2.User{ID: "ID", Ext: json.RawMessage(`{"data":"123","test":1}`)},
+			fieldName:    "noData",
+			expectedUser: &openrtb2.User{ID: "ID", Ext: json.RawMessage(`{"data":"123","test":1}`)},
+		},
+		{
+			name:         "nil",
+			userIn:       nil,
+			expectedUser: nil,
 		},
 	}
-
 	for _, test := range testCases {
-		result := scrubIPV6Lowest32Bits(test.IP)
-		assert.Equal(t, test.cleanedIP, result, test.description)
+		t.Run(test.name, func(t *testing.T) {
+			brw := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{User: test.userIn}}
+			scrubUserExt(brw, test.fieldName)
+			brw.RebuildRequest()
+			assert.Equal(t, test.expectedUser, brw.User)
+		})
+	}
+}
+
+func TestScrubEids(t *testing.T) {
+	testCases := []struct {
+		name         string
+		userIn       *openrtb2.User
+		expectedUser *openrtb2.User
+	}{
+		{
+			name:         "eids",
+			userIn:       &openrtb2.User{ID: "ID", EIDs: []openrtb2.EID{}},
+			expectedUser: &openrtb2.User{ID: "ID", EIDs: nil},
+		},
+		{
+			name:         "nil_eids",
+			userIn:       &openrtb2.User{ID: "ID", EIDs: nil},
+			expectedUser: &openrtb2.User{ID: "ID", EIDs: nil},
+		},
+		{
+			name:         "nil",
+			userIn:       nil,
+			expectedUser: nil,
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			brw := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{User: test.userIn}}
+			ScrubEIDs(brw)
+			brw.RebuildRequest()
+			assert.Equal(t, test.expectedUser, brw.User)
+		})
+	}
+}
+
+func TestScrubTID(t *testing.T) {
+	testCases := []struct {
+		name           string
+		sourceIn       *openrtb2.Source
+		impIn          []openrtb2.Imp
+		expectedSource *openrtb2.Source
+		expectedImp    []openrtb2.Imp
+	}{
+		{
+			name:           "nil",
+			sourceIn:       nil,
+			expectedSource: nil,
+		},
+		{
+			name:           "nil_imp_ext",
+			sourceIn:       &openrtb2.Source{TID: "tid"},
+			impIn:          []openrtb2.Imp{{ID: "impID", Ext: nil}},
+			expectedSource: &openrtb2.Source{TID: ""},
+			expectedImp:    []openrtb2.Imp{{ID: "impID", Ext: nil}},
+		},
+		{
+			name:           "empty_imp_ext",
+			sourceIn:       &openrtb2.Source{TID: "tid"},
+			impIn:          []openrtb2.Imp{{ID: "impID", Ext: json.RawMessage(`{}`)}},
+			expectedSource: &openrtb2.Source{TID: ""},
+			expectedImp:    []openrtb2.Imp{{ID: "impID", Ext: json.RawMessage(`{}`)}},
+		},
+		{
+			name:           "ext_with_tid",
+			sourceIn:       &openrtb2.Source{TID: "tid"},
+			impIn:          []openrtb2.Imp{{ID: "impID", Ext: json.RawMessage(`{"tid":"123","test":1}`)}},
+			expectedSource: &openrtb2.Source{TID: ""},
+			expectedImp:    []openrtb2.Imp{{ID: "impID", Ext: json.RawMessage(`{"test":1}`)}},
+		},
+		{
+			name:           "ext_without_tid",
+			sourceIn:       &openrtb2.Source{TID: "tid"},
+			impIn:          []openrtb2.Imp{{ID: "impID", Ext: json.RawMessage(`{"data":"123","test":1}`)}},
+			expectedSource: &openrtb2.Source{TID: ""},
+			expectedImp:    []openrtb2.Imp{{ID: "impID", Ext: json.RawMessage(`{"data":"123","test":1}`)}},
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			brw := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Source: test.sourceIn, Imp: test.impIn}}
+			ScrubTID(brw)
+			brw.RebuildRequest()
+			assert.Equal(t, test.expectedSource, brw.Source)
+			assert.Equal(t, test.expectedImp, brw.Imp)
+		})
+	}
+}
+
+func TestScrubGEO(t *testing.T) {
+	testCases := []struct {
+		name           string
+		userIn         *openrtb2.User
+		expectedUser   *openrtb2.User
+		deviceIn       *openrtb2.Device
+		expectedDevice *openrtb2.Device
+	}{
+		{
+			name:           "nil",
+			userIn:         nil,
+			expectedUser:   nil,
+			deviceIn:       nil,
+			expectedDevice: nil,
+		},
+		{
+			name:           "nil_user_geo",
+			userIn:         &openrtb2.User{ID: "ID", Geo: nil},
+			expectedUser:   &openrtb2.User{ID: "ID", Geo: nil},
+			deviceIn:       &openrtb2.Device{Geo: &openrtb2.Geo{Lat: 123.123}},
+			expectedDevice: &openrtb2.Device{Geo: &openrtb2.Geo{Lat: 123.12}},
+		},
+		{
+			name:           "with_user_geo",
+			userIn:         &openrtb2.User{ID: "ID", Geo: &openrtb2.Geo{Lat: 123.123}},
+			expectedUser:   &openrtb2.User{ID: "ID", Geo: &openrtb2.Geo{Lat: 123.12}},
+			deviceIn:       &openrtb2.Device{},
+			expectedDevice: &openrtb2.Device{},
+		},
+		{
+			name:           "nil_device_geo",
+			userIn:         &openrtb2.User{},
+			expectedUser:   &openrtb2.User{},
+			deviceIn:       &openrtb2.Device{Geo: nil},
+			expectedDevice: &openrtb2.Device{Geo: nil},
+		},
+		{
+			name:           "with_device_geo",
+			userIn:         &openrtb2.User{},
+			expectedUser:   &openrtb2.User{},
+			deviceIn:       &openrtb2.Device{Geo: &openrtb2.Geo{Lat: 123.123}},
+			expectedDevice: &openrtb2.Device{Geo: &openrtb2.Geo{Lat: 123.12}},
+		},
+		{
+			name:           "with_user_and_device_geo",
+			userIn:         &openrtb2.User{ID: "ID", Geo: &openrtb2.Geo{Lat: 123.123}},
+			expectedUser:   &openrtb2.User{ID: "ID", Geo: &openrtb2.Geo{Lat: 123.12}},
+			deviceIn:       &openrtb2.Device{Geo: &openrtb2.Geo{Lat: 123.123}},
+			expectedDevice: &openrtb2.Device{Geo: &openrtb2.Geo{Lat: 123.12}},
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			brw := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{User: test.userIn, Device: test.deviceIn}}
+			scrubGEO(brw)
+			brw.RebuildRequest()
+			assert.Equal(t, test.expectedUser, brw.User)
+			assert.Equal(t, test.expectedDevice, brw.Device)
+		})
 	}
 }
 
 func TestScrubGeoFull(t *testing.T) {
-	geo := &openrtb2.Geo{
-		Lat:   123.456,
-		Lon:   678.89,
-		Metro: "some metro",
-		City:  "some city",
-		ZIP:   "some zip",
+	testCases := []struct {
+		name           string
+		userIn         *openrtb2.User
+		expectedUser   *openrtb2.User
+		deviceIn       *openrtb2.Device
+		expectedDevice *openrtb2.Device
+	}{
+		{
+			name:           "nil",
+			userIn:         nil,
+			expectedUser:   nil,
+			deviceIn:       nil,
+			expectedDevice: nil,
+		},
+		{
+			name:           "nil_user_geo",
+			userIn:         &openrtb2.User{ID: "ID", Geo: nil},
+			expectedUser:   &openrtb2.User{ID: "ID", Geo: nil},
+			deviceIn:       &openrtb2.Device{},
+			expectedDevice: &openrtb2.Device{},
+		},
+		{
+			name:           "with_user_geo",
+			userIn:         &openrtb2.User{ID: "ID", Geo: &openrtb2.Geo{Lat: 123.123}},
+			expectedUser:   &openrtb2.User{ID: "ID", Geo: &openrtb2.Geo{}},
+			deviceIn:       &openrtb2.Device{},
+			expectedDevice: &openrtb2.Device{},
+		},
+		{
+			name:           "nil_device_geo",
+			userIn:         &openrtb2.User{},
+			expectedUser:   &openrtb2.User{},
+			deviceIn:       &openrtb2.Device{Geo: nil},
+			expectedDevice: &openrtb2.Device{Geo: nil},
+		},
+		{
+			name:           "with_device_geo",
+			userIn:         &openrtb2.User{},
+			expectedUser:   &openrtb2.User{},
+			deviceIn:       &openrtb2.Device{Geo: &openrtb2.Geo{Lat: 123.123}},
+			expectedDevice: &openrtb2.Device{Geo: &openrtb2.Geo{}},
+		},
+		{
+			name:           "with_user_and_device_geo",
+			userIn:         &openrtb2.User{ID: "ID", Geo: &openrtb2.Geo{Lat: 123.123}},
+			expectedUser:   &openrtb2.User{ID: "ID", Geo: &openrtb2.Geo{}},
+			deviceIn:       &openrtb2.Device{Geo: &openrtb2.Geo{Lat: 123.123}},
+			expectedDevice: &openrtb2.Device{Geo: &openrtb2.Geo{}},
+		},
 	}
-	geoExpected := &openrtb2.Geo{
-		Lat:   0,
-		Lon:   0,
-		Metro: "",
-		City:  "",
-		ZIP:   "",
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			brw := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{User: test.userIn, Device: test.deviceIn}}
+			scrubGeoFull(brw)
+			brw.RebuildRequest()
+			assert.Equal(t, test.expectedUser, brw.User)
+			assert.Equal(t, test.expectedDevice, brw.Device)
+		})
 	}
-
-	result := scrubGeoFull(geo)
-
-	assert.Equal(t, geoExpected, result)
 }
 
-func TestScrubGeoFullWhenNil(t *testing.T) {
-	result := scrubGeoFull(nil)
-	assert.Nil(t, result)
+func TestScrubIP(t *testing.T) {
+	testCases := []struct {
+		IP        string
+		cleanedIP string
+		bits      int
+		maskBits  int
+	}{
+		{
+			IP:        "0:0:0:0:0:0:0:0",
+			cleanedIP: "::",
+			bits:      128,
+			maskBits:  56,
+		},
+		{
+			IP:        "",
+			cleanedIP: "",
+			bits:      128,
+			maskBits:  56,
+		},
+		{
+			IP:        "1111:2222:3333:4444:5555:6666:7777:8888",
+			cleanedIP: "1111:2222:3333:4400::",
+			bits:      128,
+			maskBits:  56,
+		},
+		{
+			IP:        "1111:2222:3333:4444:5555:6666:7777:8888",
+			cleanedIP: "1111:2222::",
+			bits:      128,
+			maskBits:  34,
+		},
+		{
+			IP:        "1111:0:3333:4444:5555:6666:7777:8888",
+			cleanedIP: "1111:0:3333:4400::",
+			bits:      128,
+			maskBits:  56,
+		},
+		{
+			IP:        "1111::6666:7777:8888",
+			cleanedIP: "1111::",
+			bits:      128,
+			maskBits:  56,
+		},
+		{
+			IP:        "2001:1db8:0000:0000:0000:ff00:0042:8329",
+			cleanedIP: "2001:1db8::ff00:0:0",
+			bits:      128,
+			maskBits:  96,
+		},
+		{
+			IP:        "2001:1db8:0000:0000:0000:ff00:0:0",
+			cleanedIP: "2001:1db8::ff00:0:0",
+			bits:      128,
+			maskBits:  96,
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.IP, func(t *testing.T) {
+			// bits: ipv6 - 128, ipv4 - 32
+			result := scrubIP(test.IP, test.maskBits, test.bits)
+			assert.Equal(t, test.cleanedIP, result)
+		})
+	}
 }
 
 func TestScrubGeoPrecision(t *testing.T) {
@@ -685,24 +487,9 @@ func TestScrubUserExtIDs(t *testing.T) {
 			expected:    json.RawMessage(`{"anyExisting":{"existing":42}}`),
 		},
 		{
-			description: "Remove eids Only",
-			userExt:     json.RawMessage(`{"eids":[{"source":"anySource","id":"anyId","uids":[{"id":"anyId","ext":{"id":42}}],"ext":{"id":42}}]}`),
-			expected:    json.RawMessage(`{}`),
-		},
-		{
 			description: "Remove eids Only - Empty Array",
 			userExt:     json.RawMessage(`{"eids":[]}`),
 			expected:    json.RawMessage(`{}`),
-		},
-		{
-			description: "Remove eids Only - With Other Data",
-			userExt:     json.RawMessage(`{"anyExisting":42,"eids":[{"source":"anySource","id":"anyId","uids":[{"id":"anyId","ext":{"id":42}}],"ext":{"id":42}}]}`),
-			expected:    json.RawMessage(`{"anyExisting":42}`),
-		},
-		{
-			description: "Remove eids Only - With Other Nested Data",
-			userExt:     json.RawMessage(`{"anyExisting":{"existing":42},"eids":[{"source":"anySource","id":"anyId","uids":[{"id":"anyId","ext":{"id":42}}],"ext":{"id":42}}]}`),
-			expected:    json.RawMessage(`{"anyExisting":{"existing":42}}`),
 		},
 	}
 
@@ -710,43 +497,4 @@ func TestScrubUserExtIDs(t *testing.T) {
 		result := scrubExtIDs(test.userExt, "eids")
 		assert.Equal(t, test.expected, result, test.description)
 	}
-}
-
-func getTestUser() *openrtb2.User {
-	return &openrtb2.User{
-		ID:       "anyID",
-		BuyerUID: "anyBuyerUID",
-		Yob:      42,
-		Gender:   "anyGender",
-		Ext:      json.RawMessage(`{}`),
-		Geo: &openrtb2.Geo{
-			Lat:   123.456,
-			Lon:   678.89,
-			Metro: "some metro",
-			City:  "some city",
-			ZIP:   "some zip",
-		},
-	}
-}
-
-func getTestDevice() *openrtb2.Device {
-	return &openrtb2.Device{
-		DIDMD5:   "anyDIDMD5",
-		DIDSHA1:  "anyDIDSHA1",
-		DPIDMD5:  "anyDPIDMD5",
-		DPIDSHA1: "anyDPIDSHA1",
-		MACSHA1:  "anyMACSHA1",
-		MACMD5:   "anyMACMD5",
-		IFA:      "anyIFA",
-		IP:       "1.2.3.4",
-		IPv6:     "2001:0db8:0000:0000:0000:ff00:0042:8329",
-		Geo: &openrtb2.Geo{
-			Lat:   123.456,
-			Lon:   678.89,
-			Metro: "some metro",
-			City:  "some city",
-			ZIP:   "some zip",
-		},
-	}
-
 }

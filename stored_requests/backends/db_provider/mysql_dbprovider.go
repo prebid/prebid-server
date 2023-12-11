@@ -8,14 +8,14 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/go-sql-driver/mysql"
-	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/v2/config"
 )
 
 const customTLSKey = "prebid-tls"
@@ -106,7 +106,7 @@ func (provider *MySqlDbProvider) ConnString() (string, error) {
 func setupTLSConfig(provider *MySqlDbProvider) error {
 	rootCertPool := x509.NewCertPool()
 
-	pem, err := ioutil.ReadFile(provider.cfg.TLS.RootCert)
+	pem, err := os.ReadFile(provider.cfg.TLS.RootCert)
 	if err != nil {
 		return err
 	}

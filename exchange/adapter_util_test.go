@@ -6,12 +6,12 @@ import (
 	"testing"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/adapters/appnexus"
-	"github.com/prebid/prebid-server/adapters/rubicon"
-	"github.com/prebid/prebid-server/config"
-	metrics "github.com/prebid/prebid-server/metrics/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/adapters/appnexus"
+	"github.com/prebid/prebid-server/v2/adapters/rubicon"
+	"github.com/prebid/prebid-server/v2/config"
+	metrics "github.com/prebid/prebid-server/v2/metrics/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -66,13 +66,6 @@ func TestBuildAdapters(t *testing.T) {
 			bidderInfos: map[string]config.BidderInfo{"unknown": {}, "appNexus": {}},
 			expectedErrors: []error{
 				errors.New("unknown: unknown bidder"),
-			},
-		},
-		{
-			description: "Alias feature disabled",
-			bidderInfos: map[string]config.BidderInfo{"appNexus": {AliasOf: "rubicon"}},
-			expectedErrors: []error{
-				errors.New("This feature is currently under development"),
 			},
 		},
 	}
@@ -168,6 +161,55 @@ func TestBuildBidders(t *testing.T) {
 
 		assert.Equal(t, test.expectedBidders, bidders, test.description+":bidders")
 		assert.ElementsMatch(t, test.expectedErrors, errs, test.description+":errors")
+	}
+}
+
+func TestSetAliasBuilder(t *testing.T) {
+	rubiconBidder := fakeBidder{"b"}
+	ixBidder := fakeBidder{"ix"}
+	rubiconBuilder := fakeBuilder{rubiconBidder, nil}.Builder
+	ixBuilder := fakeBuilder{ixBidder, nil}.Builder
+
+	testCases := []struct {
+		description      string
+		bidderInfo       config.BidderInfo
+		builders         map[openrtb_ext.BidderName]adapters.Builder
+		bidderName       openrtb_ext.BidderName
+		expectedBuilders map[openrtb_ext.BidderName]adapters.Builder
+		expectedError    error
+	}{
+		{
+			description:      "Success - Alias builder",
+			bidderInfo:       config.BidderInfo{Disabled: false, AliasOf: "rubicon"},
+			bidderName:       openrtb_ext.BidderName("appnexus"),
+			builders:         map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderRubicon: rubiconBuilder},
+			expectedBuilders: map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderRubicon: rubiconBuilder, openrtb_ext.BidderAppnexus: rubiconBuilder},
+		},
+		{
+			description:   "Failure - Invalid parent bidder builder",
+			bidderInfo:    config.BidderInfo{Disabled: false, AliasOf: "rubicon"},
+			bidderName:    openrtb_ext.BidderName("appnexus"),
+			builders:      map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderIx: ixBuilder},
+			expectedError: errors.New("rubicon: parent builder not registered"),
+		},
+		{
+			description:   "Failure - Invalid parent for alias",
+			bidderInfo:    config.BidderInfo{Disabled: false, AliasOf: "unknown"},
+			bidderName:    openrtb_ext.BidderName("appnexus"),
+			builders:      map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderIx: ixBuilder},
+			expectedError: errors.New("unknown parent bidder: unknown for alias: appnexus"),
+		},
+	}
+
+	for _, test := range testCases {
+		err := setAliasBuilder(test.bidderInfo, test.builders, test.bidderName)
+
+		if test.expectedBuilders != nil {
+			assert.ObjectsAreEqual(test.builders, test.expectedBuilders)
+		}
+		if test.expectedError != nil {
+			assert.EqualError(t, test.expectedError, err.Error(), test.description+":errors")
+		}
 	}
 }
 

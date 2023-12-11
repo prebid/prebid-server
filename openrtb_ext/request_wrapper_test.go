@@ -5,7 +5,8 @@ import (
 	"testing"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/util/ptrutil"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -41,6 +42,7 @@ func TestCloneRequestWrapper(t *testing.T) {
 				appExt:    &AppExt{prebidDirty: true},
 				regExt:    &RegExt{usPrivacy: "foo"},
 				siteExt:   &SiteExt{amp: ptrutil.ToPtr[int8](1)},
+				doohExt:   &DOOHExt{},
 				sourceExt: &SourceExt{schainDirty: true},
 			},
 			reqWrapCopy: &RequestWrapper{
@@ -60,6 +62,7 @@ func TestCloneRequestWrapper(t *testing.T) {
 				appExt:    &AppExt{prebidDirty: true},
 				regExt:    &RegExt{usPrivacy: "foo"},
 				siteExt:   &SiteExt{amp: ptrutil.ToPtr[int8](1)},
+				doohExt:   &DOOHExt{},
 				sourceExt: &SourceExt{schainDirty: true},
 			},
 			mutator: func(t *testing.T, reqWrap *RequestWrapper) {},
@@ -83,6 +86,7 @@ func TestCloneRequestWrapper(t *testing.T) {
 				appExt:    &AppExt{prebidDirty: true},
 				regExt:    &RegExt{usPrivacy: "foo"},
 				siteExt:   &SiteExt{amp: ptrutil.ToPtr[int8](1)},
+				doohExt:   &DOOHExt{},
 				sourceExt: &SourceExt{schainDirty: true},
 			},
 			reqWrapCopy: &RequestWrapper{
@@ -102,6 +106,7 @@ func TestCloneRequestWrapper(t *testing.T) {
 				appExt:    &AppExt{prebidDirty: true},
 				regExt:    &RegExt{usPrivacy: "foo"},
 				siteExt:   &SiteExt{amp: ptrutil.ToPtr[int8](1)},
+				doohExt:   &DOOHExt{},
 				sourceExt: &SourceExt{schainDirty: true},
 			},
 			mutator: func(t *testing.T, reqWrap *RequestWrapper) {
@@ -115,6 +120,7 @@ func TestCloneRequestWrapper(t *testing.T) {
 				reqWrap.appExt = nil
 				reqWrap.regExt = nil
 				reqWrap.siteExt = nil
+				reqWrap.doohExt = nil
 				reqWrap.sourceExt = nil
 			},
 		},
@@ -1206,6 +1212,141 @@ func TestCloneAppExt(t *testing.T) {
 	}
 }
 
+func TestRebuildDOOHExt(t *testing.T) {
+	// These permutations look a bit wonky
+	// Since DOOHExt currently exists for consistency but there isn't a single field
+	// expected - hence unable to test dirty and variations
+	// Once one is established, updated the permutations below similar to TestRebuildAppExt example
+	testCases := []struct {
+		description           string
+		request               openrtb2.BidRequest
+		requestDOOHExtWrapper DOOHExt
+		expectedRequest       openrtb2.BidRequest
+	}{
+		{
+			description:           "Nil - Not Dirty",
+			request:               openrtb2.BidRequest{},
+			requestDOOHExtWrapper: DOOHExt{},
+			expectedRequest:       openrtb2.BidRequest{},
+		},
+		{
+			description:           "Nil - Dirty",
+			request:               openrtb2.BidRequest{},
+			requestDOOHExtWrapper: DOOHExt{},
+			expectedRequest:       openrtb2.BidRequest{DOOH: nil},
+		},
+		{
+			description:           "Nil - Dirty - No Change",
+			request:               openrtb2.BidRequest{},
+			requestDOOHExtWrapper: DOOHExt{},
+			expectedRequest:       openrtb2.BidRequest{},
+		},
+		{
+			description:           "Empty - Not Dirty",
+			request:               openrtb2.BidRequest{DOOH: &openrtb2.DOOH{}},
+			requestDOOHExtWrapper: DOOHExt{},
+			expectedRequest:       openrtb2.BidRequest{DOOH: &openrtb2.DOOH{}},
+		},
+		{
+			description:           "Empty - Dirty",
+			request:               openrtb2.BidRequest{DOOH: &openrtb2.DOOH{}},
+			requestDOOHExtWrapper: DOOHExt{},
+			expectedRequest:       openrtb2.BidRequest{DOOH: &openrtb2.DOOH{}},
+		},
+		{
+			description:           "Empty - Dirty - No Change",
+			request:               openrtb2.BidRequest{DOOH: &openrtb2.DOOH{}},
+			requestDOOHExtWrapper: DOOHExt{},
+			expectedRequest:       openrtb2.BidRequest{DOOH: &openrtb2.DOOH{}},
+		},
+		{
+			description:           "Populated - Not Dirty",
+			request:               openrtb2.BidRequest{DOOH: &openrtb2.DOOH{Ext: json.RawMessage(`{}`)}},
+			requestDOOHExtWrapper: DOOHExt{},
+			expectedRequest:       openrtb2.BidRequest{DOOH: &openrtb2.DOOH{Ext: json.RawMessage(`{}`)}},
+		},
+		{
+			description:           "Populated - Dirty",
+			request:               openrtb2.BidRequest{DOOH: &openrtb2.DOOH{Ext: json.RawMessage(`{}`)}},
+			requestDOOHExtWrapper: DOOHExt{},
+			expectedRequest:       openrtb2.BidRequest{DOOH: &openrtb2.DOOH{Ext: json.RawMessage(`{}`)}},
+		},
+		{
+			description:           "Populated - Dirty - No Change",
+			request:               openrtb2.BidRequest{DOOH: &openrtb2.DOOH{Ext: json.RawMessage(`{}`)}},
+			requestDOOHExtWrapper: DOOHExt{},
+			expectedRequest:       openrtb2.BidRequest{DOOH: &openrtb2.DOOH{Ext: json.RawMessage(`{}`)}},
+		},
+		{
+			description:           "Populated - Dirty - Cleared",
+			request:               openrtb2.BidRequest{DOOH: &openrtb2.DOOH{Ext: json.RawMessage(`{}`)}},
+			requestDOOHExtWrapper: DOOHExt{},
+			expectedRequest:       openrtb2.BidRequest{DOOH: &openrtb2.DOOH{Ext: json.RawMessage(`{}`)}},
+		},
+	}
+
+	for _, test := range testCases {
+		// create required filed in the test loop to keep test declaration easier to read
+		test.requestDOOHExtWrapper.ext = make(map[string]json.RawMessage)
+
+		w := RequestWrapper{BidRequest: &test.request, doohExt: &test.requestDOOHExtWrapper}
+		w.RebuildRequest()
+		assert.Equal(t, test.expectedRequest, *w.BidRequest, test.description)
+	}
+}
+
+func TestCloneDOOHExt(t *testing.T) {
+	testCases := []struct {
+		name        string
+		DOOHExt     *DOOHExt
+		DOOHExtCopy *DOOHExt                             // manual copy of above ext object to verify against
+		mutator     func(t *testing.T, DOOHExt *DOOHExt) // function to modify the Ext object
+	}{
+		{
+			name:        "Nil", // Verify the nil case
+			DOOHExt:     nil,
+			DOOHExtCopy: nil,
+			mutator:     func(t *testing.T, DOOHExt *DOOHExt) {},
+		},
+		{
+			name: "NoMutate",
+			DOOHExt: &DOOHExt{
+				ext:      map[string]json.RawMessage{"A": json.RawMessage(`X`), "B": json.RawMessage(`Y`)},
+				extDirty: true,
+			},
+			DOOHExtCopy: &DOOHExt{
+				ext:      map[string]json.RawMessage{"A": json.RawMessage(`X`), "B": json.RawMessage(`Y`)},
+				extDirty: true,
+			},
+			mutator: func(t *testing.T, DOOHExt *DOOHExt) {},
+		},
+		{
+			name: "General",
+			DOOHExt: &DOOHExt{
+				ext:      map[string]json.RawMessage{"A": json.RawMessage(`X`), "B": json.RawMessage(`Y`)},
+				extDirty: true,
+			},
+			DOOHExtCopy: &DOOHExt{
+				ext:      map[string]json.RawMessage{"A": json.RawMessage(`X`), "B": json.RawMessage(`Y`)},
+				extDirty: true,
+			},
+			mutator: func(t *testing.T, DOOHExt *DOOHExt) {
+				DOOHExt.ext["A"] = json.RawMessage(`"string"`)
+				DOOHExt.ext["C"] = json.RawMessage(`{}`)
+				DOOHExt.extDirty = false
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			clone := test.DOOHExt.Clone()
+			test.mutator(t, test.DOOHExt)
+			assert.Equal(t, test.DOOHExtCopy, clone)
+		})
+	}
+}
+
 func TestCloneRegExt(t *testing.T) {
 	testCases := []struct {
 		name       string
@@ -1652,10 +1793,10 @@ func TestImpWrapperGetImpExt(t *testing.T) {
 	var isRewardedInventoryOne int8 = 1
 
 	testCases := []struct {
-		description    string
-		givenWrapper   ImpWrapper
-		expectedImpExt ImpExt
-		expectedError  string
+		description       string
+		givenWrapper      ImpWrapper
+		expectedImpExt    ImpExt
+		expectedErrorType error
 	}{
 		{
 			description:    "Empty",
@@ -1693,21 +1834,21 @@ func TestImpWrapperGetImpExt(t *testing.T) {
 			expectedImpExt: ImpExt{ext: map[string]json.RawMessage{"foo": json.RawMessage("bar")}},
 		},
 		{
-			description:   "Error - Ext",
-			givenWrapper:  ImpWrapper{Imp: &openrtb2.Imp{Ext: json.RawMessage(`malformed`)}},
-			expectedError: "invalid character 'm' looking for beginning of value",
+			description:       "Error - Ext",
+			givenWrapper:      ImpWrapper{Imp: &openrtb2.Imp{Ext: json.RawMessage(`malformed`)}},
+			expectedErrorType: &errortypes.FailedToUnmarshal{},
 		},
 		{
-			description:   "Error - Ext - Prebid",
-			givenWrapper:  ImpWrapper{Imp: &openrtb2.Imp{Ext: json.RawMessage(`{"prebid":malformed}`)}},
-			expectedError: "invalid character 'm' looking for beginning of value",
+			description:       "Error - Ext - Prebid",
+			givenWrapper:      ImpWrapper{Imp: &openrtb2.Imp{Ext: json.RawMessage(`{"prebid":malformed}`)}},
+			expectedErrorType: &errortypes.FailedToUnmarshal{},
 		},
 	}
 
 	for _, test := range testCases {
 		impExt, err := test.givenWrapper.GetImpExt()
-		if test.expectedError != "" {
-			assert.EqualError(t, err, test.expectedError, test.description)
+		if test.expectedErrorType != nil {
+			assert.IsType(t, test.expectedErrorType, err)
 		} else {
 			assert.NoError(t, err, test.description)
 			assert.Equal(t, test.expectedImpExt, *impExt, test.description)

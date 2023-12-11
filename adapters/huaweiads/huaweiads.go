@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -19,10 +20,10 @@ import (
 	nativeRequests "github.com/prebid/openrtb/v19/native1/request"
 	nativeResponse "github.com/prebid/openrtb/v19/native1/response"
 	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 const huaweiAdxApiVersion = "3.4"
@@ -185,6 +186,7 @@ type metaData struct {
 	ApkInfo     apkInfo     `json:"apkInfo"`
 	Duration    int64       `json:"duration"`
 	MediaFile   mediaFile   `json:"mediaFile"`
+	Cta         string      `json:"cta"`
 }
 
 type imageInfo struct {
@@ -532,47 +534,92 @@ func getNativeFormat(adslot30 *adslot30, openRTBImp *openrtb2.Imp) error {
 		return err
 	}
 
+	//popular size for native ads
+	popularSizes := []format{{W: 225, H: 150}, {W: 1080, H: 607}, {W: 300, H: 250}, {W: 1080, H: 1620}, {W: 1280, H: 720}, {W: 640, H: 360}, {W: 1080, H: 1920}, {W: 720, H: 1280}}
+
 	// only compute the main image number, type = native1.ImageAssetTypeMain
 	var numMainImage = 0
 	var numVideo = 0
-	var width int64
-	var height int64
+	var formats = make([]format, 0)
+	var numFormat = 0
+	var detailedCreativeTypeList = make([]string, 0, 2)
+
+	//number of the requested image size
+	for _, asset := range nativePayload.Assets {
+		if numFormat > 1 {
+			break
+		}
+		if asset.Img != nil {
+			if asset.Img.Type == native1.ImageAssetTypeMain {
+				numFormat++
+			}
+		}
+	}
+
+	sizeMap := make(map[format]struct{})
+	for _, size := range popularSizes {
+		sizeMap[size] = struct{}{}
+	}
+
 	for _, asset := range nativePayload.Assets {
 		// Only one of the {title,img,video,data} objects should be present in each object.
 		if asset.Video != nil {
 			numVideo++
-			continue
+			formats = popularSizes
+			_, ok := sizeMap[format{W: asset.Video.W, H: asset.Video.H}]
+			if (asset.Video.W != 0 && asset.Video.H != 0) && !ok {
+				formats = append(formats, format{asset.Video.W, asset.Video.H})
+			}
 		}
 		// every image has the same W, H.
 		if asset.Img != nil {
 			if asset.Img.Type == native1.ImageAssetTypeMain {
 				numMainImage++
-				if asset.Img.H != 0 && asset.Img.W != 0 {
-					width = asset.Img.W
-					height = asset.Img.H
-				} else if asset.Img.WMin != 0 && asset.Img.HMin != 0 {
-					width = asset.Img.WMin
-					height = asset.Img.HMin
+				if numFormat > 1 && asset.Img.H != 0 && asset.Img.W != 0 && asset.Img.WMin != 0 && asset.Img.HMin != 0 {
+					formats = append(formats, format{asset.Img.W, asset.Img.H})
+				}
+				if numFormat == 1 && asset.Img.H != 0 && asset.Img.W != 0 && asset.Img.WMin != 0 && asset.Img.HMin != 0 {
+					result := filterPopularSizes(popularSizes, asset.Img.W, asset.Img.H, "ratio")
+					formats = append(formats, result...)
+				}
+				if numFormat == 1 && asset.Img.H == 0 && asset.Img.W == 0 && asset.Img.WMin != 0 && asset.Img.HMin != 0 {
+					result := filterPopularSizes(popularSizes, asset.Img.WMin, asset.Img.HMin, "range")
+					formats = append(formats, result...)
 				}
 			}
-			continue
 		}
+		adslot30.Format = formats
 	}
-	adslot30.W = width
-	adslot30.H = height
-
-	var detailedCreativeTypeList = make([]string, 0, 2)
 	if numVideo >= 1 {
 		detailedCreativeTypeList = append(detailedCreativeTypeList, "903")
-	} else if numMainImage > 1 {
-		detailedCreativeTypeList = append(detailedCreativeTypeList, "904")
-	} else if numMainImage == 1 {
-		detailedCreativeTypeList = append(detailedCreativeTypeList, "901")
-	} else {
-		detailedCreativeTypeList = append(detailedCreativeTypeList, "913", "914")
+	}
+	if numMainImage >= 1 {
+		detailedCreativeTypeList = append(detailedCreativeTypeList, "901", "904", "905")
 	}
 	adslot30.DetailedCreativeTypeList = detailedCreativeTypeList
 	return nil
+}
+
+// filter popular size by range or ratio to append format array
+func filterPopularSizes(sizes []format, width int64, height int64, byWhat string) []format {
+
+	filtered := []format{}
+	for _, size := range sizes {
+		w := size.W
+		h := size.H
+
+		if byWhat == "ratio" {
+			ratio := float64(width) / float64(height)
+			diff := math.Abs(float64(w)/float64(h) - ratio)
+			if diff <= 0.5 {
+				filtered = append(filtered, size)
+			}
+		}
+		if byWhat == "range" && w > width && h > height {
+			filtered = append(filtered, size)
+		}
+	}
+	return filtered
 }
 
 // roll ad need TotalDuration
@@ -959,10 +1006,14 @@ func checkRespStatusCode(response *adapters.ResponseData) error {
 }
 
 func checkHuaweiAdsResponseRetcode(response huaweiAdsResponse) error {
-	if response.Retcode == 200 || response.Retcode == 204 || response.Retcode == 206 {
+	if response.Retcode == 200 || response.Retcode == 206 {
 		return nil
 	}
-
+	if response.Retcode == 204 {
+		return &errortypes.BadInput{
+			Message: fmt.Sprintf("HuaweiAdsResponse retcode: %d , reason: The request packet is correct, but no advertisement was found for this request.", response.Retcode),
+		}
+	}
 	if (response.Retcode < 600 && response.Retcode >= 400) || (response.Retcode < 300 && response.Retcode > 200) {
 		return &errortypes.BadInput{
 			Message: fmt.Sprintf("HuaweiAdsResponse retcode: %d , reason: %s", response.Retcode, response.Reason),
@@ -1138,6 +1189,9 @@ func (a *adapter) extractAdmNative(adType int32, content *content, bidType openr
 			}
 			responseAsset.Video = &videoObject
 		} else if asset.Img != nil {
+			if len(content.MetaData.ImageInfo) == imgIndex && asset.Img.Type == native1.ImageAssetTypeMain {
+				continue
+			}
 			var imgObject nativeResponse.Image
 			imgObject.URL = ""
 			imgObject.Type = asset.Img.Type
@@ -1168,6 +1222,11 @@ func (a *adapter) extractAdmNative(adType int32, content *content, bidType openr
 			if asset.Data.Type == native1.DataAssetTypeDesc || asset.Data.Type == native1.DataAssetTypeDesc2 {
 				dataObject.Label = "desc"
 				dataObject.Value = getDecodeValue(content.MetaData.Description)
+			}
+
+			if asset.Data.Type == native1.DataAssetTypeCTAText {
+				dataObject.Type = native1.DataAssetTypeCTAText
+				dataObject.Value = getDecodeValue(content.MetaData.Cta)
 			}
 			responseAsset.Data = &dataObject
 		}

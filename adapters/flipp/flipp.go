@@ -1,6 +1,7 @@
 package flipp
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -8,11 +9,13 @@ import (
 	"strings"
 
 	"github.com/buger/jsonparser"
-	"github.com/gofrs/uuid"
+	"github.com/prebid/go-gdpr/consentconstants"
+	"github.com/prebid/go-gdpr/vendorconsent"
 	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/uuidutil"
 )
 
 const (
@@ -21,6 +24,8 @@ const (
 	flippBidder     = "flipp"
 	defaultCurrency = "USD"
 )
+
+var uuidGenerator uuidutil.UUIDGenerator
 
 var (
 	count    int64 = 1
@@ -34,6 +39,7 @@ type adapter struct {
 
 // Builder builds a new instance of the Flipp adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	uuidGenerator = uuidutil.UUIDRandomGenerator{}
 	bidder := &adapter{
 		endpoint: config.Endpoint,
 	}
@@ -114,9 +120,7 @@ func (a *adapter) processImp(request *openrtb2.BidRequest, imp openrtb2.Imp) (*a
 	}
 
 	var userIP string
-	if flippExtParams.IP != "" {
-		userIP = flippExtParams.IP
-	} else if request.Device != nil && request.Device.IP != "" {
+	if request.Device != nil && request.Device.IP != "" {
 		userIP = request.Device.IP
 	} else {
 		return nil, fmt.Errorf("no IP set in flipp bidder params or request device")
@@ -125,14 +129,15 @@ func (a *adapter) processImp(request *openrtb2.BidRequest, imp openrtb2.Imp) (*a
 	var userKey string
 	if request.User != nil && request.User.ID != "" {
 		userKey = request.User.ID
-	} else if flippExtParams.UserKey != "" {
+	} else if flippExtParams.UserKey != "" && paramsUserKeyPermitted(request) {
 		userKey = flippExtParams.UserKey
 	} else {
-		uid, err := uuid.NewV4()
+
+		uid, err := uuidGenerator.Generate()
 		if err != nil {
 			return nil, fmt.Errorf("unable to generate user uuid. %v", err)
 		}
-		userKey = uid.String()
+		userKey = uid
 	}
 
 	keywordsArray := strings.Split(request.Site.Keywords, ",")
@@ -224,4 +229,39 @@ func buildBid(decision *InlineModel, impId string) *openrtb2.Bid {
 		bid.H = 0
 	}
 	return bid
+}
+
+func paramsUserKeyPermitted(request *openrtb2.BidRequest) bool {
+	if request.Regs != nil {
+		if request.Regs.COPPA == 1 {
+			return false
+		}
+		if request.Regs.GDPR != nil && *request.Regs.GDPR == 1 {
+			return false
+		}
+	}
+	if request.Ext != nil {
+		var extData struct {
+			TransmitEids *bool `json:"transmitEids,omitempty"`
+		}
+		if err := json.Unmarshal(request.Ext, &extData); err == nil {
+			if extData.TransmitEids != nil && !*extData.TransmitEids {
+				return false
+			}
+		}
+	}
+	if request.User != nil && request.User.Consent != "" {
+		data, err := base64.RawURLEncoding.DecodeString(request.User.Consent)
+		if err != nil {
+			return true
+		}
+		consent, err := vendorconsent.Parse(data)
+		if err != nil {
+			return true
+		}
+		if !consent.PurposeAllowed(consentconstants.ContentSelectionDeliveryReporting) {
+			return false
+		}
+	}
+	return true
 }
