@@ -3,6 +3,7 @@ package hookexecution
 import (
 	"context"
 	"fmt"
+	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/ortb"
 	"strings"
 	"sync"
@@ -68,7 +69,7 @@ func executeGroup[H any, P any](
 
 	for _, hook := range group.Hooks {
 		mCtx := executionCtx.getModuleContext(hook.Module)
-		newPayload := handleModuleActivities(hook.Code, executionCtx.activityControl, payload)
+		newPayload := handleModuleActivities(hook.Code, executionCtx.activityControl, payload, executionCtx.account.Privacy)
 		wg.Add(1)
 		go func(hw hooks.HookWrapper[H], moduleCtx hookstage.ModuleInvocationContext) {
 			defer wg.Done()
@@ -315,7 +316,7 @@ func handleHookMutations[P any](
 	return payload
 }
 
-func handleModuleActivities[P any](hookCode string, activityControl privacy.ActivityControl, payload P) P {
+func handleModuleActivities[P any](hookCode string, activityControl privacy.ActivityControl, payload P, ap config.AccountPrivacy) P {
 	payloadData, ok := any(&payload).(hookstage.RequestUpdater)
 	if !ok {
 		return payload
@@ -323,14 +324,21 @@ func handleModuleActivities[P any](hookCode string, activityControl privacy.Acti
 
 	scopeGeneral := privacy.Component{Type: privacy.ComponentTypeGeneral, Name: hookCode}
 	transmitUserFPDActivityAllowed := activityControl.Allow(privacy.ActivityTransmitUserFPD, scopeGeneral, privacy.ActivityRequest{})
+	transmitPreciseGeoActivityAllowed := activityControl.Allow(privacy.ActivityTransmitPreciseGeo, scopeGeneral, privacy.ActivityRequest{})
 
-	if !transmitUserFPDActivityAllowed {
+	if !transmitUserFPDActivityAllowed || !transmitPreciseGeoActivityAllowed {
 		// changes need to be applied to new payload and leave original payload unchanged
 		bidderReq := payloadData.GetBidderRequestPayload()
 
 		bidderReqCopy := ortb.CloneBidderReq(bidderReq.BidRequest)
 
-		privacy.ScrubUserFPD(bidderReqCopy)
+		if !transmitUserFPDActivityAllowed {
+			privacy.ScrubUserFPD(bidderReqCopy)
+		}
+		if !transmitPreciseGeoActivityAllowed {
+			ipConf := privacy.IPConf{IPV6: ap.IPv6Config, IPV4: ap.IPv4Config}
+			privacy.ScrubGeoAndDeviceIP(bidderReqCopy, ipConf)
+		}
 
 		var newPayload = payload
 		var np = any(&newPayload).(hookstage.RequestUpdater)

@@ -1208,6 +1208,14 @@ func getTransmitUFPDActivityConfig(componentName string, allow bool) *config.Acc
 	}
 }
 
+func getTransmitPreciseGeoActivityConfig(componentName string, allow bool) *config.AccountPrivacy {
+	return &config.AccountPrivacy{
+		AllowActivities: &config.AllowActivities{
+			TransmitPreciseGeo: buildDefaultActivityConfig(componentName, allow),
+		},
+	}
+}
+
 func buildDefaultActivityConfig(componentName string, allow bool) config.Activity {
 	return config.Activity{
 		Default: ptrutil.ToPtr(true),
