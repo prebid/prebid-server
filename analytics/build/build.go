@@ -9,6 +9,7 @@ import (
 	"github.com/prebid/prebid-server/v2/analytics/pubstack"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/ortb"
 	"github.com/prebid/prebid-server/v2/privacy"
 )
 
@@ -108,8 +109,7 @@ func evaluateActivities(rw *openrtb_ext.RequestWrapper, ac privacy.ActivityContr
 		blockPreciseGeo := !ac.Allow(privacy.ActivityTransmitPreciseGeo, component, privacy.ActivityRequest{})
 
 		if blockUserFPD || blockPreciseGeo {
-			//TODO: clone bid request first, use CloneBidderReq func from Modules Activities PR
-			cloneReq := rw
+			cloneReq := ortb.CloneBidderReq(rw.BidRequest)
 
 			if blockUserFPD {
 				privacy.ScrubUserFPD(cloneReq)
@@ -119,7 +119,6 @@ func evaluateActivities(rw *openrtb_ext.RequestWrapper, ac privacy.ActivityContr
 				privacy.ScrubGeoAndDeviceIP(cloneReq, ipConf)
 			}
 
-			//TODO:check request changed for analytics object only
 			cloneReq.RebuildRequest()
 			return true, cloneReq
 		}

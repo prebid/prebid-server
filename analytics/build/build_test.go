@@ -1,6 +1,8 @@
 package build
 
 import (
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+
 	"net/http"
 	"os"
 	"testing"
@@ -143,7 +145,7 @@ func TestSampleModuleActivitiesAllowed(t *testing.T) {
 	var count int
 	am := initAnalytics(&count)
 
-	acAllowed := privacy.NewActivityControl(getDefaultActivityConfig("sampleModule", true))
+	acAllowed := privacy.NewActivityControl(getActivityConfig("sampleModule", true, true, true))
 
 	ao := &analytics.AuctionObject{
 		Status:   http.StatusOK,
@@ -176,7 +178,7 @@ func TestSampleModuleActivitiesDenied(t *testing.T) {
 	var count int
 	am := initAnalytics(&count)
 
-	acDenied := privacy.NewActivityControl(getDefaultActivityConfig("sampleModule", false))
+	acDenied := privacy.NewActivityControl(getActivityConfig("sampleModule", false, true, true))
 
 	ao := &analytics.AuctionObject{
 		Status:   http.StatusOK,
@@ -205,14 +207,104 @@ func TestSampleModuleActivitiesDenied(t *testing.T) {
 	}
 }
 
-func getDefaultActivityConfig(componentName string, allow bool) *config.AccountPrivacy {
+func TestEvaluateActivities(t *testing.T) {
+
+	testCases := []struct {
+		description             string
+		givenActivityControl    privacy.ActivityControl
+		expectedRequest         *openrtb_ext.RequestWrapper
+		expectedAllowActivities bool
+	}{
+		{
+			description:             "all blocked",
+			givenActivityControl:    privacy.NewActivityControl(getActivityConfig("sampleModule", false, false, false)),
+			expectedRequest:         nil,
+			expectedAllowActivities: false,
+		},
+		{
+			description:             "all allowed",
+			givenActivityControl:    privacy.NewActivityControl(getActivityConfig("sampleModule", true, true, true)),
+			expectedRequest:         nil,
+			expectedAllowActivities: true,
+		},
+
+		{
+			description:          "ActivityTransmitUserFPD and ActivityTransmitPreciseGeo disabled",
+			givenActivityControl: privacy.NewActivityControl(getActivityConfig("sampleModule", true, false, false)),
+			expectedRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{ID: "test_request", User: &openrtb2.User{ID: ""}, Device: &openrtb2.Device{IFA: "", IP: "127.0.0.0"}},
+			},
+			expectedAllowActivities: true,
+		},
+		{
+			description:          "ActivityTransmitUserFPD enabled, ActivityTransmitPreciseGeo disabled",
+			givenActivityControl: privacy.NewActivityControl(getActivityConfig("sampleModule", true, true, false)),
+			expectedRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{ID: "test_request", User: &openrtb2.User{ID: "user-id"}, Device: &openrtb2.Device{IFA: "device-ifa", IP: "127.0.0.0"}},
+			},
+			expectedAllowActivities: true,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.description, func(t *testing.T) {
+			accountPrivacy := config.AccountPrivacy{IPv4Config: config.IPv4{AnonKeepBits: 8}}
+			rw := &openrtb_ext.RequestWrapper{BidRequest: getDefaultBidRequest()}
+			resActivityAllowed, resRequest := evaluateActivities(rw, test.givenActivityControl, accountPrivacy, "sampleModule")
+			assert.Equal(t, test.expectedAllowActivities, resActivityAllowed)
+			if test.expectedRequest != nil {
+				assert.Equal(t, test.expectedRequest.User.ID, resRequest.User.ID)
+				assert.Equal(t, test.expectedRequest.Device.IFA, resRequest.Device.IFA)
+				assert.Equal(t, test.expectedRequest.Device.IP, resRequest.Device.IP)
+			} else {
+				assert.Nil(t, resRequest)
+			}
+
+		})
+	}
+
+}
+
+func getDefaultBidRequest() *openrtb2.BidRequest {
+	return &openrtb2.BidRequest{
+		ID:     "test_request",
+		User:   &openrtb2.User{ID: "user-id"},
+		Device: &openrtb2.Device{IFA: "device-ifa", IP: "127.0.0.1"}}
+
+}
+
+func getActivityConfig(componentName string, allowReportAnalytics, allowTransmitUserFPD, allowTransmitPreciseGeo bool) *config.AccountPrivacy {
 	return &config.AccountPrivacy{
 		AllowActivities: &config.AllowActivities{
 			ReportAnalytics: config.Activity{
 				Default: ptrutil.ToPtr(true),
 				Rules: []config.ActivityRule{
 					{
-						Allow: allow,
+						Allow: allowReportAnalytics,
+						Condition: config.ActivityCondition{
+							ComponentName: []string{componentName},
+							ComponentType: []string{"analytics"},
+						},
+					},
+				},
+			},
+			TransmitUserFPD: config.Activity{
+				Default: ptrutil.ToPtr(true),
+				Rules: []config.ActivityRule{
+					{
+						Allow: allowTransmitUserFPD,
+						Condition: config.ActivityCondition{
+							ComponentName: []string{componentName},
+							ComponentType: []string{"analytics"},
+						},
+					},
+				},
+			},
+			TransmitPreciseGeo: config.Activity{
+				Default: ptrutil.ToPtr(true),
+				Rules: []config.ActivityRule{
+					{
+						Allow: allowTransmitPreciseGeo,
 						Condition: config.ActivityCondition{
 							ComponentName: []string{componentName},
 							ComponentType: []string{"analytics"},
