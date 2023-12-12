@@ -9,11 +9,19 @@
       "description": "Account id",
       "minLength": 1
     },
-    "placementId": {
+    "sourceId": {
       "type": "string",
-      "description": "PlacementId id",
+      "description": "Source id",
+      "minLength": 1
+    },
+    "host": {
+      "type": "string",
+      "description": "Server region",
       "minLength": 1
     }
   },
-  "required": ["accountId", "placementId"]
+  "required": [
+    "accountId",
+    "sourceId"
+  ]
 }
