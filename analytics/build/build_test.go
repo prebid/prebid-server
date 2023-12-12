@@ -174,6 +174,41 @@ func TestSampleModuleActivitiesAllowed(t *testing.T) {
 	}
 }
 
+func TestSampleModuleActivitiesAllowedAndDenied(t *testing.T) {
+	var count int
+	am := initAnalytics(&count)
+
+	acAllowed := privacy.NewActivityControl(getActivityConfig("sampleModule", true, false, true))
+
+	rw := &openrtb_ext.RequestWrapper{BidRequest: getDefaultBidRequest()}
+	ao := &analytics.AuctionObject{
+		RequestWrapper: rw,
+		Status:         http.StatusOK,
+		Errors:         nil,
+		Response:       &openrtb2.BidResponse{},
+	}
+
+	am.LogAuctionObject(ao, acAllowed, config.AccountPrivacy{})
+	if count != 1 {
+		t.Errorf("PBSAnalyticsModule failed at LogAuctionObject")
+	}
+
+	am.LogAmpObject(&analytics.AmpObject{RequestWrapper: rw}, acAllowed, config.AccountPrivacy{})
+	if count != 2 {
+		t.Errorf("PBSAnalyticsModule failed at LogAmpObject")
+	}
+
+	am.LogVideoObject(&analytics.VideoObject{RequestWrapper: rw}, acAllowed, config.AccountPrivacy{})
+	if count != 3 {
+		t.Errorf("PBSAnalyticsModule failed at LogVideoObject")
+	}
+
+	am.LogNotificationEventObject(&analytics.NotificationEvent{}, acAllowed)
+	if count != 4 {
+		t.Errorf("PBSAnalyticsModule failed at LogNotificationEventObject")
+	}
+}
+
 func TestSampleModuleActivitiesDenied(t *testing.T) {
 	var count int
 	am := initAnalytics(&count)
