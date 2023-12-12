@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/prebid/prebid-server/v2/ortb"
 	"math/rand"
 	"strings"
 
@@ -21,7 +22,6 @@ import (
 	"github.com/prebid/prebid-server/v2/gdpr"
 	"github.com/prebid/prebid-server/v2/metrics"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/ortb"
 	"github.com/prebid/prebid-server/v2/privacy"
 	"github.com/prebid/prebid-server/v2/privacy/ccpa"
 	"github.com/prebid/prebid-server/v2/privacy/lmt"
@@ -181,7 +181,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		// FPD should be applied before policies, otherwise it overrides policies and activities restricted data
 		applyFPD(auctionReq.FirstPartyData, bidderRequest)
 
-		reqWrapper := cloneBidderReq(bidderRequest.BidRequest)
+		reqWrapper := ortb.CloneBidderReq(bidderRequest.BidRequest)
 
 		passIDActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitUserFPD, scopedName, privacy.NewRequestFromBidRequest(*req))
 		if !passIDActivityAllowed {
@@ -236,34 +236,6 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 	}
 
 	return
-}
-
-// cloneBidderReq - clones bidder request and replaces req.User and req.Device with new copies
-func cloneBidderReq(req *openrtb2.BidRequest) *openrtb_ext.RequestWrapper {
-
-	// bidder request may be modified differently per bidder based on privacy configs
-	// new request should be created for each bidder request
-	// pointer fields like User and Device should be cloned and set back to the request copy
-	var newReq *openrtb2.BidRequest
-	newReq = ptrutil.Clone(req)
-
-	if req.User != nil {
-		userCopy := ortb.CloneUser(req.User)
-		newReq.User = userCopy
-	}
-
-	if req.Device != nil {
-		deviceCopy := ortb.CloneDevice(req.Device)
-		newReq.Device = deviceCopy
-	}
-
-	if req.Source != nil {
-		sourceCopy := ortb.CloneSource(req.Source)
-		newReq.Source = sourceCopy
-	}
-
-	reqWrapper := &openrtb_ext.RequestWrapper{BidRequest: newReq}
-	return reqWrapper
 }
 
 func shouldSetLegacyPrivacy(bidderInfo config.BidderInfos, bidder string) bool {

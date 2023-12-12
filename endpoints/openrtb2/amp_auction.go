@@ -235,6 +235,8 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	activityControl = privacy.NewActivityControl(&account.Privacy)
 	accPrivacy = account.Privacy
 
+	hookExecutor.SetActivityControl(activityControl)
+
 	secGPC := r.Header.Get("Sec-GPC")
 
 	auctionRequest := &exchange.AuctionRequest{

@@ -18,6 +18,8 @@ import (
 	"github.com/prebid/prebid-server/v2/metrics"
 	metricsConfig "github.com/prebid/prebid-server/v2/metrics/config"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/privacy"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -674,8 +676,11 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
 			exec := NewHookExecutor(test.givenPlanBuilder, EndpointAuction, &metricsConfig.NilMetricsEngine{})
-			exec.SetAccount(test.givenAccount)
 
+			privacyConfig := getTransmitUFPDActivityConfig("foo", false)
+			ac := privacy.NewActivityControl(privacyConfig)
+			exec.SetActivityControl(ac)
+			exec.SetAccount(test.givenAccount)
 			newBody, reject := exec.ExecuteRawAuctionStage([]byte(test.givenBody))
 
 			assert.Equal(t, test.expectedReject, reject, "Unexpected stage reject.")
@@ -896,6 +901,10 @@ func TestExecuteProcessedAuctionStage(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.description, func(ti *testing.T) {
 			exec := NewHookExecutor(test.givenPlanBuilder, EndpointAuction, &metricsConfig.NilMetricsEngine{})
+
+			privacyConfig := getTransmitUFPDActivityConfig("foo", false)
+			ac := privacy.NewActivityControl(privacyConfig)
+			exec.SetActivityControl(ac)
 			exec.SetAccount(test.givenAccount)
 
 			err := exec.ExecuteProcessedAuctionStage(&test.givenRequest)
@@ -938,6 +947,7 @@ func TestExecuteBidderRequestStage(t *testing.T) {
 		expectedReject         *RejectError
 		expectedModuleContexts *moduleContexts
 		expectedStageOutcomes  []StageOutcome
+		privacyConfig          *config.AccountPrivacy
 	}{
 		{
 			description:            "Payload not changed if hook execution plan empty",
@@ -1169,6 +1179,9 @@ func TestExecuteBidderRequestStage(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
 			exec := NewHookExecutor(test.givenPlanBuilder, EndpointAuction, &metricsConfig.NilMetricsEngine{})
+			privacyConfig := getTransmitUFPDActivityConfig("foo", false)
+			ac := privacy.NewActivityControl(privacyConfig)
+			exec.SetActivityControl(ac)
 			exec.SetAccount(test.givenAccount)
 
 			reject := exec.ExecuteBidderRequestStage(&openrtb_ext.RequestWrapper{BidRequest: test.givenBidderRequest}, bidderName)
@@ -1184,6 +1197,29 @@ func TestExecuteBidderRequestStage(t *testing.T) {
 				assertEqualStageOutcomes(t, test.expectedStageOutcomes[0], stageOutcomes[0])
 			}
 		})
+	}
+}
+
+func getTransmitUFPDActivityConfig(componentName string, allow bool) *config.AccountPrivacy {
+	return &config.AccountPrivacy{
+		AllowActivities: &config.AllowActivities{
+			TransmitUserFPD: buildDefaultActivityConfig(componentName, allow),
+		},
+	}
+}
+
+func buildDefaultActivityConfig(componentName string, allow bool) config.Activity {
+	return config.Activity{
+		Default: ptrutil.ToPtr(true),
+		Rules: []config.ActivityRule{
+			{
+				Allow: allow,
+				Condition: config.ActivityCondition{
+					ComponentName: []string{componentName},
+					ComponentType: []string{"general"},
+				},
+			},
+		},
 	}
 }
 
@@ -1390,6 +1426,10 @@ func TestExecuteRawBidderResponseStage(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.description, func(ti *testing.T) {
 			exec := NewHookExecutor(test.givenPlanBuilder, EndpointAuction, &metricsConfig.NilMetricsEngine{})
+
+			privacyConfig := getTransmitUFPDActivityConfig("foo", false)
+			ac := privacy.NewActivityControl(privacyConfig)
+			exec.SetActivityControl(ac)
 			exec.SetAccount(test.givenAccount)
 
 			reject := exec.ExecuteRawBidderResponseStage(&test.givenBidderResponse, "the-bidder")
@@ -1669,6 +1709,10 @@ func TestExecuteAllProcessedBidResponsesStage(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
 			exec := NewHookExecutor(test.givenPlanBuilder, EndpointAuction, &metricsConfig.NilMetricsEngine{})
+
+			privacyConfig := getTransmitUFPDActivityConfig("foo", false)
+			ac := privacy.NewActivityControl(privacyConfig)
+			exec.SetActivityControl(ac)
 			exec.SetAccount(test.givenAccount)
 
 			exec.ExecuteAllProcessedBidResponsesStage(test.givenBiddersResponse)
@@ -1918,6 +1962,10 @@ func TestExecuteAuctionResponseStage(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
 			exec := NewHookExecutor(test.givenPlanBuilder, EndpointAuction, &metricsConfig.NilMetricsEngine{})
+
+			privacyConfig := getTransmitUFPDActivityConfig("foo", false)
+			ac := privacy.NewActivityControl(privacyConfig)
+			exec.SetActivityControl(ac)
 			exec.SetAccount(test.givenAccount)
 
 			exec.ExecuteAuctionResponseStage(test.givenResponse)

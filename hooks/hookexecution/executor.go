@@ -13,6 +13,7 @@ import (
 	"github.com/prebid/prebid-server/v2/hooks/hookstage"
 	"github.com/prebid/prebid-server/v2/metrics"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/privacy"
 )
 
 const (
@@ -43,17 +44,19 @@ type StageExecutor interface {
 type HookStageExecutor interface {
 	StageExecutor
 	SetAccount(account *config.Account)
+	SetActivityControl(activityControl privacy.ActivityControl)
 	GetOutcomes() []StageOutcome
 }
 
 type hookExecutor struct {
-	account        *config.Account
-	accountID      string
-	endpoint       string
-	planBuilder    hooks.ExecutionPlanBuilder
-	stageOutcomes  []StageOutcome
-	moduleContexts *moduleContexts
-	metricEngine   metrics.MetricsEngine
+	account         *config.Account
+	accountID       string
+	endpoint        string
+	planBuilder     hooks.ExecutionPlanBuilder
+	stageOutcomes   []StageOutcome
+	moduleContexts  *moduleContexts
+	metricEngine    metrics.MetricsEngine
+	activityControl privacy.ActivityControl
 	// Mutex needed for BidderRequest and RawBidderResponse Stages as they are run in several goroutines
 	sync.Mutex
 }
@@ -75,6 +78,10 @@ func (e *hookExecutor) SetAccount(account *config.Account) {
 
 	e.account = account
 	e.accountID = account.ID
+}
+
+func (e *hookExecutor) SetActivityControl(activityControl privacy.ActivityControl) {
+	e.activityControl = activityControl
 }
 
 func (e *hookExecutor) GetOutcomes() []StageOutcome {
@@ -290,11 +297,12 @@ func (e *hookExecutor) ExecuteAuctionResponseStage(response *openrtb2.BidRespons
 
 func (e *hookExecutor) newContext(stage string) executionContext {
 	return executionContext{
-		account:        e.account,
-		accountId:      e.accountID,
-		endpoint:       e.endpoint,
-		moduleContexts: e.moduleContexts,
-		stage:          stage,
+		account:         e.account,
+		accountID:       e.accountID,
+		endpoint:        e.endpoint,
+		moduleContexts:  e.moduleContexts,
+		stage:           stage,
+		activityControl: e.activityControl,
 	}
 }
 
@@ -315,6 +323,8 @@ func (e *hookExecutor) pushStageOutcome(outcome StageOutcome) {
 type EmptyHookExecutor struct{}
 
 func (executor EmptyHookExecutor) SetAccount(_ *config.Account) {}
+
+func (executor EmptyHookExecutor) SetActivityControl(_ privacy.ActivityControl) {}
 
 func (executor EmptyHookExecutor) GetOutcomes() []StageOutcome {
 	return []StageOutcome{}

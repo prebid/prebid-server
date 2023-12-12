@@ -1,4 +1,4 @@
-package suntContent
+package relevantdigital
 
 import (
 	"encoding/json"
@@ -14,7 +14,7 @@ func TestValidParams(t *testing.T) {
 	}
 
 	for _, p := range validParams {
-		if err := validator.Validate(openrtb_ext.BidderSuntContent, json.RawMessage(p)); err != nil {
+		if err := validator.Validate(openrtb_ext.BidderRelevantDigital, json.RawMessage(p)); err != nil {
 			t.Errorf("Schema rejected valid params: %s", p)
 		}
 	}
@@ -27,17 +27,16 @@ func TestInvalidParams(t *testing.T) {
 	}
 
 	for _, p := range invalidParams {
-		if err := validator.Validate(openrtb_ext.BidderSuntContent, json.RawMessage(p)); err == nil {
+		if err := validator.Validate(openrtb_ext.BidderRelevantDigital, json.RawMessage(p)); err == nil {
 			t.Errorf("Schema allowed invalid params: %s", p)
 		}
 	}
 }
 
 var validParams = []string{
-	`{"adUnitId": "1234"}`,
-	`{"adUnitId": "AB12"}`,
+	`{"accountId": "5fcf49f83a64ba6602b5be7e", "placementId" : "63b68275b4f35962c8eec9b1_5fcf49f83a64ba6602b5be9a", "pbsHost" : "some-host" }`,
 }
 
 var invalidParams = []string{
-	`{"adUnitId": 42}`,
+	`{"accountId": 123, "placementId" : 123, "pbsHost" : ""}`,
 }
