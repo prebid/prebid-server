@@ -1,4 +1,4 @@
-package yeahmobi
+package zmaticoo
 
 import (
 	"testing"
@@ -10,7 +10,7 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderYeahmobi, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderZmaticoo, config.Adapter{
 		Endpoint: "https://{{.Host}}/prebid/bid"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
@@ -21,7 +21,7 @@ func TestJsonSamples(t *testing.T) {
 }
 
 func TestEndpointTemplateMalformed(t *testing.T) {
-	_, buildErr := Builder(openrtb_ext.BidderYeahmobi, config.Adapter{
+	_, buildErr := Builder(openrtb_ext.BidderZmaticoo, config.Adapter{
 		Endpoint: "{{Malformed}}"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	assert.Error(t, buildErr)

@@ -190,6 +190,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/yieldone"
 	"github.com/prebid/prebid-server/v2/adapters/zeroclickfraud"
 	"github.com/prebid/prebid-server/v2/adapters/zeta_global_ssp"
+	"github.com/prebid/prebid-server/v2/adapters/zmaticoo"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
@@ -388,5 +389,6 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderYieldone:          yieldone.Builder,
 		openrtb_ext.BidderZeroClickFraud:    zeroclickfraud.Builder,
 		openrtb_ext.BidderZetaGlobalSsp:     zeta_global_ssp.Builder,
+		openrtb_ext.BidderZmaticoo:          zmaticoo.Builder,
 	}
 }
