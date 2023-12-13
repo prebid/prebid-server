@@ -17,7 +17,7 @@ func TestJsonSamples(t *testing.T) {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	adapterstest.RunJSONBidderTest(t, "zmaticootest", bidder)
+	adapterstest.RunJSONBidderTest(t, "yeahmobitest", bidder)
 }
 
 func TestEndpointTemplateMalformed(t *testing.T) {
