@@ -55,53 +55,64 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	}
 
 }
-func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if response.StatusCode == http.StatusNoContent {
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	if responseData.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
 
-	if response.StatusCode == http.StatusBadRequest {
+	if responseData.StatusCode == http.StatusBadRequest {
 		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Unknown status code: %d.", response.StatusCode),
+			Message: fmt.Sprintf("Unknown status code: %d.", responseData.StatusCode),
 		}}
 	}
 
-	if response.StatusCode != http.StatusOK {
+	if responseData.StatusCode != http.StatusOK {
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unknown status code: %d.", response.StatusCode),
+			Message: fmt.Sprintf("Unknown status code: %d.", responseData.StatusCode),
 		}}
 	}
 
-	var bidResp openrtb2.BidResponse
-
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	var response openrtb2.BidResponse
+	if err := json.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}
 
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
-
-	for _, sb := range bidResp.SeatBid {
-		for i := range sb.Bid {
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
+	bidResponse.Currency = response.Cur
+	var errors []error
+	for _, seatBid := range response.SeatBid {
+		for i, bid := range seatBid.Bid {
+			bidType, err := getMediaTypeForBid(bid)
+			if err != nil {
+				errors = append(errors, err)
+				continue
+			}
+			var bidVideo *openrtb_ext.ExtBidPrebidVideo
+			if bidType == openrtb_ext.BidTypeVideo {
+				bidVideo = &openrtb_ext.ExtBidPrebidVideo{Duration: int(bid.Dur)}
+			}
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     &sb.Bid[i],
-				BidType: getMediaTypeForBid(sb.Bid[i].ImpID, internalRequest.Imp),
+				Bid:      &seatBid.Bid[i],
+				BidType:  bidType,
+				BidVideo: bidVideo,
 			})
 		}
 	}
 	return bidResponse, nil
 }
 
-func getMediaTypeForBid(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
-	for _, imp := range imps {
-		if imp.ID == impID {
-			if imp.Video != nil {
-				return openrtb_ext.BidTypeVideo
-			} else if imp.Audio != nil {
-				return openrtb_ext.BidTypeAudio
-			}
+func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	if bid.Ext != nil {
+		var bidExt openrtb_ext.ExtBid
+		err := json.Unmarshal(bid.Ext, &bidExt)
+		if err == nil && bidExt.Prebid != nil {
+			return openrtb_ext.ParseBidType(string(bidExt.Prebid.Type))
 		}
 	}
-	return openrtb_ext.BidTypeBanner
+
+	return "", &errortypes.BadServerResponse{
+		Message: fmt.Sprintf("Failed to parse impression \"%s\" mediatype", bid.ImpID),
+	}
 }
 
 // Builder builds a new instance of the Consumable adapter for the given bidder with the given config.

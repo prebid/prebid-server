@@ -97,7 +97,12 @@
                   "adm": "some-test-ad",
                   "crid": "crid_10",
                   "h": 90,
-                  "w": 728
+                  "w": 728,
+                  "ext": {
+                    "prebid": {
+                      "type": "banner"
+                    }
+                  }
                 }
               ]
             }
@@ -119,7 +124,12 @@
             "adm": "some-test-ad",
             "crid": "crid_10",
             "w": 728,
-            "h": 90
+            "h": 90,
+            "ext": {
+              "prebid": {
+                "type": "banner"
+              }
+            }
           },
           "type": "banner"
         }

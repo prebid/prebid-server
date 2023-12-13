@@ -81,7 +81,12 @@
                                     "impid": "test-imp-id",
                                     "price": 0.500000,
                                     "adm": "some-test-ad",
-                                    "crid": "crid_10"
+                                    "crid": "crid_10",
+                                    "ext": {
+                                        "prebid": {
+                                            "type": "audio"
+                                        }
+                                    }
                                 }
                             ]
                         }
@@ -101,7 +106,12 @@
                         "impid": "test-imp-id",
                         "price": 0.5,
                         "adm": "some-test-ad",
-                        "crid": "crid_10"
+                        "crid": "crid_10",
+                        "ext": {
+                            "prebid": {
+                                "type": "audio"
+                            }
+                        }
                     },
                     "type": "audio"
                 }
