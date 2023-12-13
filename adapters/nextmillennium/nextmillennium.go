@@ -14,6 +14,7 @@ import (
 
 type adapter struct {
 	endpoint string
+	nmmFlags []string
 }
 
 type nmExtPrebidStoredRequest struct {
@@ -22,8 +23,12 @@ type nmExtPrebidStoredRequest struct {
 type nmExtPrebid struct {
 	StoredRequest nmExtPrebidStoredRequest `json:"storedrequest"`
 }
+type nmExtNMM struct {
+	NmmFlags []string `json:"nmmFlags,omitempty"`
+}
 type nextMillJsonExt struct {
-	Prebid nmExtPrebid `json:"prebid"`
+	Prebid         nmExtPrebid `json:"prebid"`
+	NextMillennium nmExtNMM    `json:"nextMillennium"`
 }
 
 // MakeRequests prepares request information for prebid-server core
@@ -77,7 +82,7 @@ func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ImpExtNextMillennium, err
 }
 
 func (adapter *adapter) buildAdapterRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ImpExtNextMillennium) (*adapters.RequestData, error) {
-	newBidRequest := createBidRequest(prebidBidRequest, params)
+	newBidRequest := createBidRequest(prebidBidRequest, params, adapter.nmmFlags)
 
 	reqJSON, err := json.Marshal(newBidRequest)
 	if err != nil {
@@ -96,7 +101,7 @@ func (adapter *adapter) buildAdapterRequest(prebidBidRequest *openrtb2.BidReques
 		Headers: headers}, nil
 }
 
-func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ImpExtNextMillennium) *openrtb2.BidRequest {
+func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ImpExtNextMillennium, flags []string) *openrtb2.BidRequest {
 	placementID := params.PlacementID
 
 	if params.GroupID != "" {
@@ -122,6 +127,7 @@ func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext
 	}
 	ext := nextMillJsonExt{}
 	ext.Prebid.StoredRequest.ID = placementID
+	ext.NextMillennium.NmmFlags = flags
 	jsonExt, err := json.Marshal(ext)
 	if err != nil {
 		return prebidBidRequest
@@ -169,7 +175,15 @@ func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 
 // Builder builds a new instance of the NextMillennium adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	var info nmExtNMM
+	if config.ExtraAdapterInfo != "" {
+		if err := json.Unmarshal([]byte(config.ExtraAdapterInfo), &info); err != nil {
+			return nil, fmt.Errorf("invalid extra info: %v", err)
+		}
+	}
+
 	return &adapter{
 		endpoint: config.Endpoint,
+		nmmFlags: info.NmmFlags,
 	}, nil
 }
