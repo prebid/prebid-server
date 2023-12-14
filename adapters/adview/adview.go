@@ -20,7 +20,7 @@ type adapter struct {
 }
 
 type adviewBidExt struct {
-	BidType            int               `json:"formattype,omitempty"`
+	BidType	int		`json:"formattype,omitempty"`
 }
 
 // Builder builds a new instance of the adview adapter for the given bidder with the given config.
@@ -38,78 +38,63 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
-	var requests []*adapters.RequestData
-	var errors []error
-
-	//must copy the original request.
-	requestCopy := *request
-	for _, imp := range request.Imp {
-		var bidderExt adapters.ExtImpBidder
-		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-			errors = append(errors, &errortypes.BadInput{
-				Message: fmt.Sprintf("invalid imp.ext, %s", err.Error()),
-			})
-			continue
-		}
-		//use adview
-		var advImpExt openrtb_ext.ExtImpAdView
-		if err := json.Unmarshal(bidderExt.Bidder, &advImpExt); err != nil {
-			errors = append(errors, &errortypes.BadInput{
-				Message: fmt.Sprintf("invalid bidderExt.Bidder, %s", err.Error()),
-			})
-			continue
-		}
-
-		imp.TagID = advImpExt.MasterTagID //tagid means posid
-		//for adview bid request
-		if imp.Banner != nil {
-			if len(imp.Banner.Format) != 0 {
-				bannerCopy := *imp.Banner
-				bannerCopy.H = &imp.Banner.Format[0].H
-				bannerCopy.W = &imp.Banner.Format[0].W
-				imp.Banner = &bannerCopy
-			}
-		}
-
-		// Check if imp comes with bid floor amount defined in a foreign currency
-		if imp.BidFloor > 0 && imp.BidFloorCur != "" && strings.ToUpper(imp.BidFloorCur) != "USD" {
-			// Convert to US dollars
-			convertedValue, err := requestInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, "USD")
-			if err != nil {
-				errors = append(errors, err)
-				continue
-			}
-			// Update after conversion. All imp elements inside request.Imp are shallow copies
-			// therefore, their non-pointer values are not shared memory and are safe to modify.
-			imp.BidFloorCur = "USD"
-			imp.BidFloor = convertedValue
-		}
-
-		// Set the CUR of bid to USD after converting all floors
-		requestCopy.Cur = []string{"USD"}
-		requestCopy.Imp = []openrtb2.Imp{imp}
-
-		url, err := a.buildEndpointURL(&advImpExt)
-		if err != nil {
-			errors = append(errors, err)
-			continue
-		}
-
-		reqJSON, err := json.Marshal(requestCopy) //request
-		if err != nil {
-			errors = append(errors, err)
-			continue
-		}
-
-		requestData := &adapters.RequestData{
-			Method:  http.MethodPost,
-			Uri:     url,
-			Body:    reqJSON,
-		}
-		requests = append(requests, requestData)
+	var bidderExt adapters.ExtImpBidder
+	imp := &request.Imp[0]
+	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("invalid imp.ext, %s", err.Error()),
+		}}
+	}
+	//use adview
+	var advImpExt openrtb_ext.ExtImpAdView
+	if err := json.Unmarshal(bidderExt.Bidder, &advImpExt); err != nil {
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("invalid bidderExt.Bidder, %s", err.Error()),
+		}}
 	}
 
-	return requests, errors
+	imp.TagID = advImpExt.MasterTagID //tagid means posid
+	//for adview bid request
+	if imp.Banner != nil {
+		if len(imp.Banner.Format) != 0 {
+			bannerCopy := *imp.Banner
+			bannerCopy.H = &imp.Banner.Format[0].H
+			bannerCopy.W = &imp.Banner.Format[0].W
+			imp.Banner = &bannerCopy
+		}
+	}
+
+	// Check if imp comes with bid floor amount defined in a foreign currency
+	if imp.BidFloor > 0 && imp.BidFloorCur != "" && strings.ToUpper(imp.BidFloorCur) != "USD" {
+		// Convert to US dollars
+		convertedValue, err := requestInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, "USD")
+		if err != nil {
+			return nil, []error{err}
+		}
+		// Update after conversion. All imp elements inside request.Imp are shallow copies
+		// therefore, their non-pointer values are not shared memory and are safe to modify.
+		imp.BidFloorCur = "USD"
+		imp.BidFloor = convertedValue
+	}
+
+	// Set the CUR of bid to USD after converting all floors
+	request.Cur = []string{"USD"}
+
+	url, err := a.buildEndpointURL(&advImpExt)
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	reqJSON, err := json.Marshal(request)
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	return []*adapters.RequestData{{
+		Method: http.MethodPost,
+		Body:   reqJSON,
+		Uri:    url,
+	}}, nil
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
@@ -137,7 +122,8 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
-	bidResponse.Currency = "USD" //we just support USD for resp
+	//we just support USD for resp
+	bidResponse.Currency = "USD"
 
 	var errors []error
 	for _, seatBid := range response.SeatBid {
@@ -171,7 +157,6 @@ func getMediaTypeForBid(bid openrtb2.Bid, reqImps []openrtb2.Imp) (openrtb_ext.B
 				var bidExt *adviewBidExt
 				err := json.Unmarshal(bid.Ext, &bidExt)
 				if err == nil && bidExt.BidType >= 0 {
-					//return openrtb_ext.ParseBidType(string(bidExt.Prebid.Type))
 					return getBidType(bidExt),nil
 				}
 			}
