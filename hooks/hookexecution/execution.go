@@ -326,25 +326,26 @@ func handleModuleActivities[P any](hookCode string, activityControl privacy.Acti
 	transmitUserFPDActivityAllowed := activityControl.Allow(privacy.ActivityTransmitUserFPD, scopeGeneral, privacy.ActivityRequest{})
 	transmitPreciseGeoActivityAllowed := activityControl.Allow(privacy.ActivityTransmitPreciseGeo, scopeGeneral, privacy.ActivityRequest{})
 
-	if !transmitUserFPDActivityAllowed || !transmitPreciseGeoActivityAllowed {
-		// changes need to be applied to new payload and leave original payload unchanged
-		bidderReq := payloadData.GetBidderRequestPayload()
-
-		bidderReqCopy := ortb.CloneBidderReq(bidderReq.BidRequest)
-
-		if !transmitUserFPDActivityAllowed {
-			privacy.ScrubUserFPD(bidderReqCopy)
-		}
-		if !transmitPreciseGeoActivityAllowed {
-			ipConf := privacy.IPConf{IPV6: ap.IPv6Config, IPV4: ap.IPv4Config}
-			privacy.ScrubGeoAndDeviceIP(bidderReqCopy, ipConf)
-		}
-
-		var newPayload = payload
-		var np = any(&newPayload).(hookstage.RequestUpdater)
-		np.SetBidderRequestPayload(bidderReqCopy)
-		return newPayload
+	if transmitUserFPDActivityAllowed && transmitPreciseGeoActivityAllowed {
+		return payload
 	}
 
-	return payload
+	// changes need to be applied to new payload and leave original payload unchanged
+	bidderReq := payloadData.GetBidderRequestPayload()
+
+	bidderReqCopy := ortb.CloneBidderReq(bidderReq.BidRequest)
+
+	if !transmitUserFPDActivityAllowed {
+		privacy.ScrubUserFPD(bidderReqCopy)
+	}
+	if !transmitPreciseGeoActivityAllowed {
+		ipConf := privacy.IPConf{IPV6: ap.IPv6Config, IPV4: ap.IPv4Config}
+		privacy.ScrubGeoAndDeviceIP(bidderReqCopy, ipConf)
+	}
+
+	var newPayload = payload
+	var np = any(&newPayload).(hookstage.RequestUpdater)
+	np.SetBidderRequestPayload(bidderReqCopy)
+	return newPayload
+
 }

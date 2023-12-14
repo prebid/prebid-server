@@ -677,7 +677,7 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			exec := NewHookExecutor(test.givenPlanBuilder, EndpointAuction, &metricsConfig.NilMetricsEngine{})
 
-			privacyConfig := getTransmitUFPDActivityConfig("foo", false)
+			privacyConfig := getModuleActivities("foo", false, false)
 			ac := privacy.NewActivityControl(privacyConfig)
 			exec.SetActivityControl(ac)
 			exec.SetAccount(test.givenAccount)
@@ -902,7 +902,7 @@ func TestExecuteProcessedAuctionStage(t *testing.T) {
 		t.Run(test.description, func(ti *testing.T) {
 			exec := NewHookExecutor(test.givenPlanBuilder, EndpointAuction, &metricsConfig.NilMetricsEngine{})
 
-			privacyConfig := getTransmitUFPDActivityConfig("foo", false)
+			privacyConfig := getModuleActivities("foo", false, false)
 			ac := privacy.NewActivityControl(privacyConfig)
 			exec.SetActivityControl(ac)
 			exec.SetAccount(test.givenAccount)
@@ -1179,7 +1179,7 @@ func TestExecuteBidderRequestStage(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
 			exec := NewHookExecutor(test.givenPlanBuilder, EndpointAuction, &metricsConfig.NilMetricsEngine{})
-			privacyConfig := getTransmitUFPDActivityConfig("foo", false)
+			privacyConfig := getModuleActivities("foo", false, false)
 			ac := privacy.NewActivityControl(privacyConfig)
 			exec.SetActivityControl(ac)
 			exec.SetAccount(test.givenAccount)
@@ -1197,6 +1197,15 @@ func TestExecuteBidderRequestStage(t *testing.T) {
 				assertEqualStageOutcomes(t, test.expectedStageOutcomes[0], stageOutcomes[0])
 			}
 		})
+	}
+}
+
+func getModuleActivities(componentName string, allowTransmitUserFPD, allowTransmitPreciseGeo bool) *config.AccountPrivacy {
+	return &config.AccountPrivacy{
+		AllowActivities: &config.AllowActivities{
+			TransmitUserFPD:    buildDefaultActivityConfig(componentName, allowTransmitUserFPD),
+			TransmitPreciseGeo: buildDefaultActivityConfig(componentName, allowTransmitPreciseGeo),
+		},
 	}
 }
 
@@ -1435,7 +1444,7 @@ func TestExecuteRawBidderResponseStage(t *testing.T) {
 		t.Run(test.description, func(ti *testing.T) {
 			exec := NewHookExecutor(test.givenPlanBuilder, EndpointAuction, &metricsConfig.NilMetricsEngine{})
 
-			privacyConfig := getTransmitUFPDActivityConfig("foo", false)
+			privacyConfig := getModuleActivities("foo", false, false)
 			ac := privacy.NewActivityControl(privacyConfig)
 			exec.SetActivityControl(ac)
 			exec.SetAccount(test.givenAccount)
@@ -1718,7 +1727,7 @@ func TestExecuteAllProcessedBidResponsesStage(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			exec := NewHookExecutor(test.givenPlanBuilder, EndpointAuction, &metricsConfig.NilMetricsEngine{})
 
-			privacyConfig := getTransmitUFPDActivityConfig("foo", false)
+			privacyConfig := getModuleActivities("foo", false, false)
 			ac := privacy.NewActivityControl(privacyConfig)
 			exec.SetActivityControl(ac)
 			exec.SetAccount(test.givenAccount)
@@ -1971,7 +1980,7 @@ func TestExecuteAuctionResponseStage(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			exec := NewHookExecutor(test.givenPlanBuilder, EndpointAuction, &metricsConfig.NilMetricsEngine{})
 
-			privacyConfig := getTransmitUFPDActivityConfig("foo", false)
+			privacyConfig := getModuleActivities("foo", false, false)
 			ac := privacy.NewActivityControl(privacyConfig)
 			exec.SetActivityControl(ac)
 			exec.SetAccount(test.givenAccount)
