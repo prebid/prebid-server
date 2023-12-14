@@ -55,7 +55,6 @@ func TestHandleModuleActivitiesBidderRequestPayload(t *testing.T) {
 				}},
 			},
 		},
-
 		{
 			description: "payload should change when transmitPreciseGeo is blocked by activity",
 			hookCode:    "foo",
