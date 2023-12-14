@@ -105,7 +105,10 @@
                   ],
                   "crid": "20",
                   "w": 320,
-                  "h": 50
+                  "h": 50,
+                  "ext": {
+                    "formattype": 0
+                  }
                 }
               ],
               "type": "banner",
@@ -138,7 +141,10 @@
             ],
             "crid": "20",
             "w": 320,
-            "h": 50
+            "h": 50,
+            "ext": {
+              "formattype": 0
+            }
           },
           "type": "banner"
         }

@@ -103,7 +103,10 @@
                   "adomain": [
                     "awesome.com"
                   ],
-                  "crid": "20"
+                  "crid": "20",
+                  "ext": {
+                    "formattype": 2
+                  }
                 }
               ],
               "type": "native",
@@ -134,7 +137,10 @@
             "crid": "20",
             "adomain": [
               "awesome.com"
-            ]
+            ],
+            "ext": {
+              "formattype": 2
+            }
           },
           "type": "native"
         }

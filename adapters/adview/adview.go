@@ -19,6 +19,10 @@ type adapter struct {
 	endpoint *template.Template
 }
 
+type adviewBidExt struct {
+	BidType            int               `json:"formattype,omitempty"`
+}
+
 // Builder builds a new instance of the adview adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	endpointTemplate, err := template.New("endpointTemplate").Parse(config.Endpoint)
@@ -33,63 +37,79 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var bidderExt adapters.ExtImpBidder
-	imp := &request.Imp[0]
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("invalid imp.ext, %s", err.Error()),
-		}}
-	}
-	//use adview
-	var advImpExt openrtb_ext.ExtImpAdView
-	if err := json.Unmarshal(bidderExt.Bidder, &advImpExt); err != nil {
-		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("invalid bidderExt.Bidder, %s", err.Error()),
-		}}
-	}
 
-	imp.TagID = advImpExt.MasterTagID //tagid means posid
-	//for adview bid request
-	if imp.Banner != nil {
-		if len(imp.Banner.Format) != 0 {
-			bannerCopy := *imp.Banner
-			bannerCopy.H = &imp.Banner.Format[0].H
-			bannerCopy.W = &imp.Banner.Format[0].W
-			imp.Banner = &bannerCopy
+	var requests []*adapters.RequestData
+	var errors []error
+
+	//must copy the original request.
+	requestCopy := *request
+	for _, imp := range request.Imp {
+		var bidderExt adapters.ExtImpBidder
+		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+			errors = append(errors, &errortypes.BadInput{
+				Message: fmt.Sprintf("invalid imp.ext, %s", err.Error()),
+			})
+			continue
 		}
-	}
+		//use adview
+		var advImpExt openrtb_ext.ExtImpAdView
+		if err := json.Unmarshal(bidderExt.Bidder, &advImpExt); err != nil {
+			errors = append(errors, &errortypes.BadInput{
+				Message: fmt.Sprintf("invalid bidderExt.Bidder, %s", err.Error()),
+			})
+			continue
+		}
 
-	// Check if imp comes with bid floor amount defined in a foreign currency
-	if imp.BidFloor > 0 && imp.BidFloorCur != "" && strings.ToUpper(imp.BidFloorCur) != "USD" {
-		// Convert to US dollars
-		convertedValue, err := requestInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, "USD")
+		imp.TagID = advImpExt.MasterTagID //tagid means posid
+		//for adview bid request
+		if imp.Banner != nil {
+			if len(imp.Banner.Format) != 0 {
+				bannerCopy := *imp.Banner
+				bannerCopy.H = &imp.Banner.Format[0].H
+				bannerCopy.W = &imp.Banner.Format[0].W
+				imp.Banner = &bannerCopy
+			}
+		}
+
+		// Check if imp comes with bid floor amount defined in a foreign currency
+		if imp.BidFloor > 0 && imp.BidFloorCur != "" && strings.ToUpper(imp.BidFloorCur) != "USD" {
+			// Convert to US dollars
+			convertedValue, err := requestInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, "USD")
+			if err != nil {
+				errors = append(errors, err)
+				continue
+			}
+			// Update after conversion. All imp elements inside request.Imp are shallow copies
+			// therefore, their non-pointer values are not shared memory and are safe to modify.
+			imp.BidFloorCur = "USD"
+			imp.BidFloor = convertedValue
+		}
+
+		// Set the CUR of bid to USD after converting all floors
+		requestCopy.Cur = []string{"USD"}
+		requestCopy.Imp = []openrtb2.Imp{imp}
+
+		url, err := a.buildEndpointURL(&advImpExt)
 		if err != nil {
-			return nil, []error{err}
+			errors = append(errors, err)
+			continue
 		}
-		// Update after conversion. All imp elements inside request.Imp are shallow copies
-		// therefore, their non-pointer values are not shared memory and are safe to modify.
-		imp.BidFloorCur = "USD"
-		imp.BidFloor = convertedValue
+
+		reqJSON, err := json.Marshal(requestCopy) //request
+		if err != nil {
+			errors = append(errors, err)
+			continue
+		}
+
+		requestData := &adapters.RequestData{
+			Method:  http.MethodPost,
+			Uri:     url,
+			Body:    reqJSON,
+		}
+		requests = append(requests, requestData)
 	}
 
-	// Set the CUR of bid to USD after converting all floors
-	request.Cur = []string{"USD"}
-
-	url, err := a.buildEndpointURL(&advImpExt)
-	if err != nil {
-		return nil, []error{err}
-	}
-
-	reqJSON, err := json.Marshal(request)
-	if err != nil {
-		return nil, []error{err}
-	}
-
-	return []*adapters.RequestData{{
-		Method: http.MethodPost,
-		Body:   reqJSON,
-		Uri:    url,
-	}}, nil
+	return requests, errors
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
@@ -122,7 +142,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	var errors []error
 	for _, seatBid := range response.SeatBid {
 		for i, bid := range seatBid.Bid {
-			bidType, err := getMediaTypeForImp(bid.ImpID, request.Imp)
+			bidType, err := getMediaTypeForBid(bid, request.Imp)
 			if err != nil {
 				errors = append(errors, err)
 				continue
@@ -143,17 +163,42 @@ func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtImpAdView) (string, er
 	return macros.ResolveMacros(a.endpoint, endpointParams)
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
+func getMediaTypeForBid(bid openrtb2.Bid, reqImps []openrtb2.Imp) (openrtb_ext.BidType, error) {
 	mediaType := openrtb_ext.BidTypeBanner
-	for _, imp := range imps {
-		if imp.ID == impID {
-			if imp.Video != nil {
-				mediaType = openrtb_ext.BidTypeVideo
-			} else if imp.Native != nil {
-				mediaType = openrtb_ext.BidTypeNative
+	for _, imp := range reqImps {
+		if bid.ImpID == imp.ID {
+			if bid.Ext != nil {
+				var bidExt *adviewBidExt
+				err := json.Unmarshal(bid.Ext, &bidExt)
+				if err == nil && bidExt.BidType >= 0 {
+					//return openrtb_ext.ParseBidType(string(bidExt.Prebid.Type))
+					return getBidType(bidExt),nil
+				}
 			}
 			return mediaType, nil
 		}
 	}
 	return mediaType, nil
+}
+
+// getBidType returns the bid type specified in the response bid.ext
+func getBidType(bidExt *adviewBidExt) openrtb_ext.BidType {
+	// setting "banner" as the default bid type
+	bidType := openrtb_ext.BidTypeBanner
+	if bidExt != nil && bidExt.BidType >= 0 {
+		switch bidExt.BidType {
+		case 0:
+			bidType = openrtb_ext.BidTypeBanner
+			//fmt.Println("==== [adview] getBidType(): ==> banner ===")
+		case 1:
+			bidType = openrtb_ext.BidTypeVideo
+			//fmt.Println("==== [adview] getBidType(): ==> video ===")
+		case 2:
+			bidType = openrtb_ext.BidTypeNative
+		default:
+			// default is banner
+			bidType = openrtb_ext.BidTypeBanner
+		}
+	}
+	return bidType
 }
