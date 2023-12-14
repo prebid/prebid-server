@@ -243,7 +243,6 @@ func TestSampleModuleActivitiesDenied(t *testing.T) {
 }
 
 func TestEvaluateActivities(t *testing.T) {
-
 	testCases := []struct {
 		description             string
 		givenActivityControl    privacy.ActivityControl

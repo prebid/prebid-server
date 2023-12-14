@@ -102,30 +102,29 @@ func (ea enabledAnalytics) LogNotificationEventObject(ne *analytics.Notification
 }
 
 func evaluateActivities(rw *openrtb_ext.RequestWrapper, ac privacy.ActivityControl, ap config.AccountPrivacy, componentName string) (bool, *openrtb_ext.RequestWrapper) {
+	// returned nil request wrapper means that request wrapper was not modified by activities and doesn't have to be changed in analytics object
+	// it is needed in order to use one function for all analytics objects with RequestWrapper
 	component := privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: componentName}
-	if ac.Allow(privacy.ActivityReportAnalytics, component, privacy.ActivityRequest{}) {
+	if !ac.Allow(privacy.ActivityReportAnalytics, component, privacy.ActivityRequest{}) {
+		return false, nil
+	}
+	blockUserFPD := !ac.Allow(privacy.ActivityTransmitUserFPD, component, privacy.ActivityRequest{})
+	blockPreciseGeo := !ac.Allow(privacy.ActivityTransmitPreciseGeo, component, privacy.ActivityRequest{})
 
-		blockUserFPD := !ac.Allow(privacy.ActivityTransmitUserFPD, component, privacy.ActivityRequest{})
-		blockPreciseGeo := !ac.Allow(privacy.ActivityTransmitPreciseGeo, component, privacy.ActivityRequest{})
-
-		if blockUserFPD || blockPreciseGeo {
-			cloneReq := ortb.CloneBidderReq(rw.BidRequest)
-
-			if blockUserFPD {
-				privacy.ScrubUserFPD(cloneReq)
-			}
-			if blockPreciseGeo {
-				ipConf := privacy.IPConf{IPV6: ap.IPv6Config, IPV4: ap.IPv4Config}
-				privacy.ScrubGeoAndDeviceIP(cloneReq, ipConf)
-			}
-
-			cloneReq.RebuildRequest()
-			return true, cloneReq
-		}
-
-		// nil request wrapper means that request wrapper was not modified by activities and doesn't have to be changed in analytics object
-		// it is needed in order to use one function for all analytics objects with RequestWrapper
+	if !blockUserFPD && !blockPreciseGeo {
 		return true, nil
 	}
-	return false, nil
+
+	cloneReq := ortb.CloneBidderReq(rw.BidRequest)
+
+	if blockUserFPD {
+		privacy.ScrubUserFPD(cloneReq)
+	}
+	if blockPreciseGeo {
+		ipConf := privacy.IPConf{IPV6: ap.IPv6Config, IPV4: ap.IPv4Config}
+		privacy.ScrubGeoAndDeviceIP(cloneReq, ipConf)
+	}
+
+	cloneReq.RebuildRequest()
+	return true, cloneReq
 }
