@@ -156,8 +156,10 @@ func getMediaTypeForBid(bid openrtb2.Bid, reqImps []openrtb2.Imp) (openrtb_ext.B
 			if bid.Ext != nil {
 				var bidExt *adviewBidExt
 				err := json.Unmarshal(bid.Ext, &bidExt)
-				if err == nil && bidExt.BidType >= 0 {
+				if err == nil {
 					return getBidType(bidExt),nil
+				}else {
+					return mediaType, err
 				}
 			}
 			return mediaType, nil
@@ -170,7 +172,7 @@ func getMediaTypeForBid(bid openrtb2.Bid, reqImps []openrtb2.Imp) (openrtb_ext.B
 func getBidType(bidExt *adviewBidExt) openrtb_ext.BidType {
 	// setting "banner" as the default bid type
 	bidType := openrtb_ext.BidTypeBanner
-	if bidExt != nil && bidExt.BidType >= 0 {
+	if bidExt != nil {
 		switch bidExt.BidType {
 		case 0:
 			bidType = openrtb_ext.BidTypeBanner
