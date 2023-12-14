@@ -128,7 +128,8 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	var errors []error
 	for _, seatBid := range response.SeatBid {
 		for i, bid := range seatBid.Bid {
-			bidType, err := getMediaTypeForBid(bid, request.Imp)
+			//bidType, err := getMediaTypeForBid(bid, request.Imp)
+			bidType, err := getMediaTypeForImp(bid.ImpID, request.Imp)
 			if err != nil {
 				errors = append(errors, err)
 				continue
@@ -147,6 +148,21 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtImpAdView) (string, error) {
 	endpointParams := macros.EndpointTemplateParams{AccountID: params.AccountID}
 	return macros.ResolveMacros(a.endpoint, endpointParams)
+}
+
+func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
+	mediaType := openrtb_ext.BidTypeBanner
+	for _, imp := range imps {
+		if imp.ID == impID {
+			if imp.Video != nil {
+				mediaType = openrtb_ext.BidTypeVideo
+			} else if imp.Native != nil {
+				mediaType = openrtb_ext.BidTypeNative
+			}
+			return mediaType, nil
+		}
+	}
+	return mediaType, nil
 }
 
 func getMediaTypeForBid(bid openrtb2.Bid, reqImps []openrtb2.Imp) (openrtb_ext.BidType, error) {
