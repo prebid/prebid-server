@@ -68,7 +68,6 @@ func NewHookExecutor(builder hooks.ExecutionPlanBuilder, endpoint string, me met
 		stageOutcomes:  []StageOutcome{},
 		moduleContexts: &moduleContexts{ctxs: make(map[string]hookstage.ModuleContext)},
 		metricEngine:   me,
-		account:        &config.Account{Privacy: config.AccountPrivacy{}},
 	}
 }
 

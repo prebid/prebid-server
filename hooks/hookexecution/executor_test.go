@@ -699,7 +699,7 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 
 func TestExecuteProcessedAuctionStage(t *testing.T) {
 	foobarModuleCtx := &moduleContexts{ctxs: map[string]hookstage.ModuleContext{"foobar": nil}}
-	account := &config.Account{}
+	account := &config.Account{Privacy: config.AccountPrivacy{}}
 	req := openrtb2.BidRequest{ID: "some-id", User: &openrtb2.User{ID: "user-id"}}
 	reqUpdated := openrtb2.BidRequest{ID: "some-id", User: &openrtb2.User{ID: "user-id", Yob: 2000, Consent: "true"}}
 
@@ -760,7 +760,7 @@ func TestExecuteProcessedAuctionStage(t *testing.T) {
 		{
 			description:            "Stage execution can be rejected - and later hooks rejected",
 			givenPlanBuilder:       TestRejectPlanBuilder{},
-			givenAccount:           nil,
+			givenAccount:           account,
 			givenRequest:           openrtb_ext.RequestWrapper{BidRequest: &req},
 			expectedRequest:        req,
 			expectedErr:            &RejectError{0, HookID{ModuleCode: "foobar", HookImplCode: "foo"}, hooks.StageProcessedAuctionRequest.String()},
@@ -1021,7 +1021,7 @@ func TestExecuteBidderRequestStage(t *testing.T) {
 			description:            "Stage execution can be rejected - and later hooks rejected",
 			givenBidderRequest:     &openrtb2.BidRequest{ID: "some-id", User: &openrtb2.User{ID: "user-id"}},
 			givenPlanBuilder:       TestRejectPlanBuilder{},
-			givenAccount:           nil,
+			givenAccount:           account,
 			expectedBidderRequest:  expectedBidderRequest,
 			expectedReject:         &RejectError{0, HookID{ModuleCode: "foobar", HookImplCode: "foo"}, hooks.StageBidderRequest.String()},
 			expectedModuleContexts: foobarModuleCtx,

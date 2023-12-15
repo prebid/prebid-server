@@ -91,8 +91,8 @@ func TestHandleModuleActivitiesBidderRequestPayload(t *testing.T) {
 			//check input payload didn't change
 			origInPayloadData := test.inPayloadData
 			activityControl := privacy.NewActivityControl(test.privacyConfig)
-			accountPrivacy := config.AccountPrivacy{IPv6Config: config.IPv6{testIPv6ScrubBytes}}
-			newPayload := handleModuleActivities(test.hookCode, activityControl, test.inPayloadData, accountPrivacy)
+			account := &config.Account{Privacy: config.AccountPrivacy{IPv6Config: config.IPv6{testIPv6ScrubBytes}}}
+			newPayload := handleModuleActivities(test.hookCode, activityControl, test.inPayloadData, account)
 			assert.Equal(t, test.expectedPayloadData.Request.BidRequest, newPayload.Request.BidRequest)
 			assert.Equal(t, origInPayloadData, test.inPayloadData)
 		})
@@ -175,8 +175,8 @@ func TestHandleModuleActivitiesProcessedAuctionRequestPayload(t *testing.T) {
 			//check input payload didn't change
 			origInPayloadData := test.inPayloadData
 			activityControl := privacy.NewActivityControl(test.privacyConfig)
-			accountPrivacy := config.AccountPrivacy{IPv6Config: config.IPv6{testIPv6ScrubBytes}}
-			newPayload := handleModuleActivities(test.hookCode, activityControl, test.inPayloadData, accountPrivacy)
+			account := &config.Account{Privacy: config.AccountPrivacy{IPv6Config: config.IPv6{testIPv6ScrubBytes}}}
+			newPayload := handleModuleActivities(test.hookCode, activityControl, test.inPayloadData, account)
 			assert.Equal(t, test.expectedPayloadData.Request.BidRequest, newPayload.Request.BidRequest)
 			assert.Equal(t, origInPayloadData, test.inPayloadData)
 		})
@@ -226,7 +226,7 @@ func TestHandleModuleActivitiesNoBidderRequestPayload(t *testing.T) {
 			//check input payload didn't change
 			origInPayloadData := test.inPayloadData
 			activityControl := privacy.NewActivityControl(test.privacyConfig)
-			newPayload := handleModuleActivities(test.hookCode, activityControl, test.inPayloadData, config.AccountPrivacy{})
+			newPayload := handleModuleActivities(test.hookCode, activityControl, test.inPayloadData, &config.Account{})
 			assert.Equal(t, test.expectedPayloadData, newPayload)
 			assert.Equal(t, origInPayloadData, test.inPayloadData)
 		})

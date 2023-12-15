@@ -69,7 +69,7 @@ func executeGroup[H any, P any](
 
 	for _, hook := range group.Hooks {
 		mCtx := executionCtx.getModuleContext(hook.Module)
-		newPayload := handleModuleActivities(hook.Code, executionCtx.activityControl, payload, executionCtx.account.Privacy)
+		newPayload := handleModuleActivities(hook.Code, executionCtx.activityControl, payload, executionCtx.account)
 		wg.Add(1)
 		go func(hw hooks.HookWrapper[H], moduleCtx hookstage.ModuleInvocationContext) {
 			defer wg.Done()
@@ -316,7 +316,7 @@ func handleHookMutations[P any](
 	return payload
 }
 
-func handleModuleActivities[P any](hookCode string, activityControl privacy.ActivityControl, payload P, ap config.AccountPrivacy) P {
+func handleModuleActivities[P any](hookCode string, activityControl privacy.ActivityControl, payload P, account *config.Account) P {
 	payloadData, ok := any(&payload).(hookstage.RequestUpdater)
 	if !ok {
 		return payload
@@ -339,7 +339,7 @@ func handleModuleActivities[P any](hookCode string, activityControl privacy.Acti
 		privacy.ScrubUserFPD(bidderReqCopy)
 	}
 	if !transmitPreciseGeoActivityAllowed {
-		ipConf := privacy.IPConf{IPV6: ap.IPv6Config, IPV4: ap.IPv4Config}
+		ipConf := privacy.IPConf{IPV6: account.Privacy.IPv6Config, IPV4: account.Privacy.IPv4Config}
 		privacy.ScrubGeoAndDeviceIP(bidderReqCopy, ipConf)
 	}
 
