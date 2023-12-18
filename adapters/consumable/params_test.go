@@ -57,4 +57,5 @@ var invalidParams = []string{
 	`{"siteId": 1, "unitId": 101, "unitName": 11}`,                          // networkId must be present
 	`{"networkId": 22, "unitId": 101, "unitName": 11}`,                      // siteId must be present
 	`{"siteId": 1, "networkId": 22, "unitName": 11}`,                        // unitId must be present
+	`{"placementId": "---abjk;jkewj;k;jwejklfs}`,                            // placementId must be alphanumeric
 }

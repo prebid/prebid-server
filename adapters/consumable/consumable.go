@@ -27,6 +27,18 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	}
 
 	if request.Site != nil {
+		_, consumableExt, err := extractExtensions(request.Imp[0])
+		if err != nil {
+			return nil, err
+		}
+		var siteId = consumableExt.SiteId
+		var networkId = consumableExt.NetworkId
+		var unitId = consumableExt.UnitId
+		if siteId == 0 && networkId == 0 && unitId == 0 {
+			return nil, []error{&errortypes.FailedToRequestBids{
+				Message: "SiteId, NetworkId and UnitId are all required for site requests",
+			}}
+		}
 		requests := []*adapters.RequestData{
 			{
 				Method:  "POST",
@@ -43,6 +55,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			return nil, err
 		}
 		var placementId = consumableExt.PlacementId
+		if placementId == "" {
+			return nil, []error{&errortypes.FailedToRequestBids{
+				Message: "PlacementId is required for non-site requests",
+			}}
+		}
 		requests := []*adapters.RequestData{
 			{
 				Method:  "POST",
@@ -56,20 +73,12 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 }
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if responseData.StatusCode == http.StatusNoContent {
+	if adapters.IsResponseStatusCodeNoContent(responseData) {
 		return nil, nil
 	}
 
-	if responseData.StatusCode == http.StatusBadRequest {
-		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Unknown status code: %d.", responseData.StatusCode),
-		}}
-	}
-
-	if responseData.StatusCode != http.StatusOK {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unknown status code: %d.", responseData.StatusCode),
-		}}
+	if err := adapters.CheckResponseStatusCodeForErrors(responseData); err != nil {
+		return nil, []error{err}
 	}
 
 	var response openrtb2.BidResponse
@@ -91,6 +100,17 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 			if bidType == openrtb_ext.BidTypeVideo {
 				bidVideo = &openrtb_ext.ExtBidPrebidVideo{Duration: int(bid.Dur)}
 			}
+			switch bidType {
+			case openrtb_ext.BidTypeAudio:
+				seatBid.Bid[i].MType = openrtb2.MarkupAudio
+				break
+			case openrtb_ext.BidTypeVideo:
+				seatBid.Bid[i].MType = openrtb2.MarkupVideo
+				break
+			case openrtb_ext.BidTypeBanner:
+				seatBid.Bid[i].MType = openrtb2.MarkupBanner
+				break
+			}
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:      &seatBid.Bid[i],
 				BidType:  bidType,
@@ -102,6 +122,16 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 }
 
 func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	if bid.MType != 0 {
+		switch bid.MType {
+		case openrtb2.MarkupBanner:
+			return openrtb_ext.BidTypeBanner, nil
+		case openrtb2.MarkupVideo:
+			return openrtb_ext.BidTypeVideo, nil
+		case openrtb2.MarkupAudio:
+			return openrtb_ext.BidTypeAudio, nil
+		}
+	}
 	if bid.Ext != nil {
 		var bidExt openrtb_ext.ExtBid
 		err := json.Unmarshal(bid.Ext, &bidExt)

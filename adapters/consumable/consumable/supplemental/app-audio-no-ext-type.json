@@ -82,12 +82,7 @@
                                     "price": 0.500000,
                                     "adm": "some-test-ad",
                                     "crid": "crid_10",
-                                    "mtype": 3,
-                                    "ext": {
-                                        "prebid": {
-                                            "type": "audio"
-                                        }
-                                    }
+                                    "mtype": 3
                                 }
                             ]
                         }
@@ -108,12 +103,7 @@
                         "price": 0.5,
                         "adm": "some-test-ad",
                         "crid": "crid_10",
-                        "mtype": 3,
-                        "ext": {
-                            "prebid": {
-                                "type": "audio"
-                            }
-                        }
+                        "mtype": 3
                     },
                     "type": "audio"
                 }

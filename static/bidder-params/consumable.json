@@ -27,7 +27,7 @@
     },
     "placementId": {
       "type": "string",
-      "description": "The placementID from Consumable",
+      "description": "The placementID from Consumable, Required for non-site requests",
       "pattern": "^[a-zA-Z0-9]+$"
     }
   },

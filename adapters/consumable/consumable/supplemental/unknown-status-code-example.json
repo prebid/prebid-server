@@ -71,7 +71,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "Unknown status code: 301.",
+      "value": "Unexpected status code: 301. Run with request.debug = 1 for more info",
       "comparison": "literal"
     }
   ]
