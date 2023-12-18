@@ -1,6 +1,8 @@
-endpoint: "http://{{.Host}}.bizzclick.com/bid?rtb_seat_id={{.SourceId}}&secret_key={{.AccountID}}"
+endpoint: 'http://{{.Host}}.bizzclick.com/bid?rtb_seat_id={{.SourceId}}&secret_key={{.AccountID}}'
+geoscope:
+  - global
 maintainer:
-  email: "support@bizzclick.com"
+  email: 'support@bizzclick.com'
 capabilities:
   app:
     mediaTypes:
