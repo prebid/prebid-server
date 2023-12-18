@@ -7,9 +7,11 @@ capabilities:
   app:
     mediaTypes:
       - banner
+      - video
   site:
     mediaTypes:
       - banner
+      - video
 userSync:
   # for both user syncs, stroeerCore appends the user id to end of the redirect url and does not utilize a macro
   iframe:
