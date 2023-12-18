@@ -28,7 +28,7 @@ type nmExtNMM struct {
 }
 type nextMillJsonExt struct {
 	Prebid         nmExtPrebid `json:"prebid"`
-	NextMillennium nmExtNMM    `json:"nextMillennium"`
+	NextMillennium nmExtNMM    `json:"nextMillennium,omitempty"`
 }
 
 // MakeRequests prepares request information for prebid-server core
