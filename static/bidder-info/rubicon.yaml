@@ -1,4 +1,5 @@
 endpoint: "http://exapi-us-east.rubiconproject.com/a/api/exchange.json"
+endpointCompression: GZIP
 disabled: true
 maintainer:
   email: "header-bidding@rubiconproject.com"
