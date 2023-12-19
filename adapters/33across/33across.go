@@ -114,6 +114,7 @@ func (a *TtxAdapter) makeRequest(request openrtb2.BidRequest, impList []openrtb2
 		Uri:     a.endpoint,
 		Body:    reqJSON,
 		Headers: headers,
+		ImpID:   openrtb_ext.GetImpIDs(impList),
 	}, nil
 }
 
@@ -283,4 +284,12 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 		endpoint: config.Endpoint,
 	}
 	return bidder, nil
+}
+
+func getImpIDs(impList []openrtb2.Imp) []string {
+	impIDs := []string{}
+	for _, imp := range impList {
+		impIDs = append(impIDs, imp.ID)
+	}
+	return impIDs
 }

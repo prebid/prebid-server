@@ -34,6 +34,7 @@ func (a *VrtcalAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adap
 		Uri:     a.endpoint,
 		Body:    reqJSON,
 		Headers: headers,
+		ImpID:   openrtb_ext.GetImpIDs(request.Imp),
 	}
 
 	adapterRequests = append(adapterRequests, &reqData)

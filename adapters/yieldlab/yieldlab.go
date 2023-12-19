@@ -177,6 +177,7 @@ func (a *YieldlabAdapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters
 		Method:  "GET",
 		Uri:     bidURL,
 		Headers: headers,
+		ImpID:   openrtb_ext.GetImpIDs(request.Imp),
 	}}, nil
 }
 

@@ -2,6 +2,8 @@ package openrtb_ext
 
 import (
 	"encoding/json"
+
+	"github.com/prebid/openrtb/v19/openrtb2"
 )
 
 // AuctionEnvironmentType is a Google Privacy Sandbox flag indicating where the auction may take place
@@ -83,4 +85,13 @@ type ExtStoredBidResponse struct {
 
 type Options struct {
 	EchoVideoAttrs bool `json:"echovideoattrs"`
+}
+
+// GetImpIDs
+func GetImpIDs(impList []openrtb2.Imp) []string {
+	impIDs := []string{}
+	for _, imp := range impList {
+		impIDs = append(impIDs, imp.ID)
+	}
+	return impIDs
 }
