@@ -1,6 +1,6 @@
-endpoint: "https://ads.kulture.media/pbs"
+endpoint: "https://ads.dxkulture.com/pbs"
 maintainer:
-  email: "devops@kulture.media"
+  email: "devops@dxkulture.com"
 capabilities:
   app:
     mediaTypes:
@@ -12,5 +12,5 @@ capabilities:
       - video
 userSync:
   redirect:
-    url: "https://ads.kulture.media/usync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&cb={{.RedirectURL}}"
+    url: "https://ads.dxkulture.com/usync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&cb={{.RedirectURL}}"
     userMacro: "$UID"
