@@ -31,10 +31,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		if err != nil {
 			return nil, err
 		}
-		var siteId = consumableExt.SiteId
-		var networkId = consumableExt.NetworkId
-		var unitId = consumableExt.UnitId
-		if siteId == 0 && networkId == 0 && unitId == 0 {
+		if consumableExt.SiteId == 0 && consumableExt.NetworkId == 0 && consumableExt.UnitId == 0 {
 			return nil, []error{&errortypes.FailedToRequestBids{
 				Message: "SiteId, NetworkId and UnitId are all required for site requests",
 			}}
@@ -54,8 +51,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		if err != nil {
 			return nil, err
 		}
-		var placementId = consumableExt.PlacementId
-		if placementId == "" {
+
+		if consumableExt.PlacementId == "" {
 			return nil, []error{&errortypes.FailedToRequestBids{
 				Message: "PlacementId is required for non-site requests",
 			}}
@@ -63,7 +60,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		requests := []*adapters.RequestData{
 			{
 				Method:  "POST",
-				Uri:     "https://e.serverbid.com/rtb/bid?s=" + placementId,
+				Uri:     "https://e.serverbid.com/rtb/bid?s=" + consumableExt.PlacementId,
 				Body:    bodyBytes,
 				Headers: headers,
 			},
@@ -130,13 +127,6 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 			return openrtb_ext.BidTypeVideo, nil
 		case openrtb2.MarkupAudio:
 			return openrtb_ext.BidTypeAudio, nil
-		}
-	}
-	if bid.Ext != nil {
-		var bidExt openrtb_ext.ExtBid
-		err := json.Unmarshal(bid.Ext, &bidExt)
-		if err == nil && bidExt.Prebid != nil {
-			return openrtb_ext.ParseBidType(string(bidExt.Prebid.Type))
 		}
 	}
 

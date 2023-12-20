@@ -57,13 +57,7 @@ func TestConsumableMakeBidsWithCategoryDuration(t *testing.T) {
 				AdID:  "123",
 				Cat:   []string{"IAB18-1"},
 				Dur:   30,
-				Ext: json.RawMessage(
-					`{
-						"prebid": {
-							"type": "video"
-						}
-					}`,
-				),
+				MType: openrtb2.MarkupVideo,
 			}},
 		}},
 	}

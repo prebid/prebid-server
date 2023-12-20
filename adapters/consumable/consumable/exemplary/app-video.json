@@ -90,12 +90,7 @@
                                     "w": 728,
                                     "cat": ["IAB15"],
                                     "dur": 30,
-                                    "mtype": 2,
-                                    "ext": {
-                                        "prebid": {
-                                            "type": "video"
-                                        }
-                                    }
+                                    "mtype": 2
                                 }
                             ]
                         }
@@ -120,12 +115,7 @@
                         "h": 90,
                         "cat": ["IAB15"],
                         "dur": 30,
-                        "mtype": 2,
-                        "ext": {
-                            "prebid": {
-                                "type": "video"
-                            }
-                        }
+                        "mtype": 2
                     },
                     "type": "video",
                     "BidType": "video"

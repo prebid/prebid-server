@@ -77,11 +77,7 @@
                   "crid": "crid_10",
                   "h": 90,
                   "w": 728,
-                  "ext": {
-                    "prebid": {
-                      "type": "banner"
-                    }
-                  }
+                  "mtype": 1
                 }
               ]
             }
@@ -104,12 +100,7 @@
             "crid": "crid_10",
             "w": 728,
             "h": 90,
-            "mtype": 1,
-            "ext": {
-              "prebid": {
-                "type": "banner"
-              }
-            }
+            "mtype": 1
           },
           "type": "banner"
         }
