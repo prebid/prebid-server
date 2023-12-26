@@ -245,6 +245,7 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 			Uri:     "https://e.serverbid.com/api/v2",
 			Body:    bodyBytes,
 			Headers: headers,
+			ImpID:   openrtb_ext.GetImpIDs(request.Imp),
 		},
 	}
 

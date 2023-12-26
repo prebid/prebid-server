@@ -120,7 +120,8 @@ func (a *TripleliftNativeAdapter) MakeRequests(request *openrtb2.BidRequest, ext
 		Method:  "POST",
 		Uri:     ad,
 		Body:    reqJSON,
-		Headers: headers})
+		Headers: headers,
+		ImpID:   openrtb_ext.GetImpIDs(tlRequest.Imp)})
 	return reqs, errs
 }
 

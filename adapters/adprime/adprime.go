@@ -115,6 +115,7 @@ func (a *AdprimeAdapter) makeRequest(request *openrtb2.BidRequest) (*adapters.Re
 		Uri:     a.URI,
 		Body:    reqJSON,
 		Headers: headers,
+		ImpID:   openrtb_ext.GetImpIDs(request.Imp),
 	}, errs
 }
 

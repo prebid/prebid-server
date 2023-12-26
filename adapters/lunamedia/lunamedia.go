@@ -151,7 +151,8 @@ func (adapter *LunaMediaAdapter) buildAdapterRequest(prebidBidRequest *openrtb2.
 		Method:  "POST",
 		Uri:     url,
 		Body:    reqJSON,
-		Headers: headers}, nil
+		Headers: headers,
+		ImpID:   openrtb_ext.GetImpIDs(imps)}, nil
 }
 
 func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ExtImpLunaMedia, imps []openrtb2.Imp) *openrtb2.BidRequest {

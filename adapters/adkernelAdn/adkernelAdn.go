@@ -184,7 +184,8 @@ func (adapter *adkernelAdnAdapter) buildAdapterRequest(prebidBidRequest *openrtb
 		Method:  "POST",
 		Uri:     url,
 		Body:    reqJSON,
-		Headers: headers}, nil
+		Headers: headers,
+		ImpID:   openrtb_ext.GetImpIDs(imps)}, nil
 }
 
 func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ExtImpAdkernelAdn, imps []openrtb2.Imp) *openrtb2.BidRequest {

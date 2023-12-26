@@ -57,6 +57,7 @@ func (v *adapter) MakeRequests(
 			Uri:     v.buildRequestURI(siteID),
 			Body:    requestBody,
 			Headers: makeRequestHeaders(openRTBRequest),
+			ImpID:   openrtb_ext.GetImpIDs(requestCopy.Imp),
 		}
 
 		requests = append(requests, requestData)

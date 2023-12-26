@@ -77,6 +77,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			Uri:     a.endpoint + fmt.Sprintf("?aid=%d", sourceId),
 			Body:    body,
 			Headers: headers,
+			ImpID:   openrtb_ext.GetImpIDs(reqCopy.Imp),
 		})
 	}
 

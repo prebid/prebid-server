@@ -38,6 +38,7 @@ func (a *AvocetAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adap
 		Uri:     a.Endpoint,
 		Body:    body,
 		Headers: headers,
+		ImpID:   openrtb_ext.GetImpIDs(request.Imp),
 	}
 	return []*adapters.RequestData{reqData}, nil
 }

@@ -80,6 +80,7 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest, campaignRequestBody 
 		Uri:     a.endpoint,
 		Body:    campaignRequestBodyJSON,
 		Headers: headers,
+		ImpID:   openrtb_ext.GetImpIDs(request.Imp),
 	}, err
 }
 

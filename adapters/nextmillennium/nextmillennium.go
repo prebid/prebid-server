@@ -93,7 +93,8 @@ func (adapter *adapter) buildAdapterRequest(prebidBidRequest *openrtb2.BidReques
 		Method:  "POST",
 		Uri:     adapter.endpoint,
 		Body:    reqJSON,
-		Headers: headers}, nil
+		Headers: headers,
+		ImpID:   openrtb_ext.GetImpIDs(newBidRequest.Imp)}, nil
 }
 
 func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ImpExtNextMillennium) *openrtb2.BidRequest {

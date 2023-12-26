@@ -3,12 +3,13 @@ package alkimi
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/floors"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/floors"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
@@ -54,6 +55,7 @@ func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, req *adapters
 		errs = append(errs, err)
 	} else {
 		reqBidder := buildBidderRequest(adapter, encoded)
+		reqBidder.ImpID = openrtb_ext.GetImpIDs(reqCopy.Imp)
 		reqsBidder = append(reqsBidder, reqBidder)
 	}
 	return

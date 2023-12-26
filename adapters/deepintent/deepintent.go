@@ -143,6 +143,7 @@ func (d *DeepintentAdapter) preprocess(request openrtb2.BidRequest) (*adapters.R
 		Uri:     d.URI,
 		Body:    reqJSON,
 		Headers: headers,
+		ImpID:   openrtb_ext.GetImpIDs(request.Imp),
 	}, errs
 }
 

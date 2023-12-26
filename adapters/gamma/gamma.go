@@ -138,6 +138,7 @@ func (a *GammaAdapter) makeRequest(request *openrtb2.BidRequest, imp openrtb2.Im
 		Method:  "GET",
 		Uri:     thisURI,
 		Headers: headers,
+		ImpID:   []string{imp.ID},
 	}, errors
 }
 func (a *GammaAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {

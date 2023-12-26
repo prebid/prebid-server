@@ -105,6 +105,7 @@ func (a *adapter) MakeRequests(bidRequest *openrtb2.BidRequest, extraRequestInfo
 		Uri:     a.URL,
 		Body:    reqJSON,
 		Headers: headers,
+		ImpID:   openrtb_ext.GetImpIDs(bidRequest.Imp),
 	}}, errors
 }
 

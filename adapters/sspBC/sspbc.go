@@ -128,6 +128,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		Method: http.MethodPost,
 		Uri:    requestURL.String(),
 		Body:   requestJSON,
+		ImpID:  openrtb_ext.GetImpIDs(formattedRequest.Imp),
 	}
 
 	return []*adapters.RequestData{requestData}, nil

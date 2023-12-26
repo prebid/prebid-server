@@ -74,6 +74,7 @@ func (a *AdtargetAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ad
 			Uri:     a.endpoint + fmt.Sprintf("?aid=%d", sourceId),
 			Body:    body,
 			Headers: headers,
+			ImpID:   openrtb_ext.GetImpIDs(request.Imp),
 		})
 	}
 

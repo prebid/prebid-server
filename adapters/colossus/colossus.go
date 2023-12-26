@@ -73,6 +73,7 @@ func (a *ColossusAdapter) makeRequest(request *openrtb2.BidRequest) (*adapters.R
 		Uri:     a.URI,
 		Body:    reqJSON,
 		Headers: headers,
+		ImpID:   openrtb_ext.GetImpIDs(request.Imp),
 	}, errs
 }
 
