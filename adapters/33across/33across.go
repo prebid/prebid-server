@@ -285,11 +285,3 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	}
 	return bidder, nil
 }
-
-func getImpIDs(impList []openrtb2.Imp) []string {
-	impIDs := []string{}
-	for _, imp := range impList {
-		impIDs = append(impIDs, imp.ID)
-	}
-	return impIDs
-}
