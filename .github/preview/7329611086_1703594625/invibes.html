@@ -1,0 +1,442 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>invibes: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/prebid/prebid-server/v2/adapters/invibes/invibes.go (96.9%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package invibes
+
+import (
+        "encoding/json"
+        "fmt"
+        "net/http"
+        "net/url"
+        "strconv"
+        "strings"
+        "text/template"
+
+        "github.com/prebid/openrtb/v19/openrtb2"
+        "github.com/prebid/prebid-server/v2/adapters"
+        "github.com/prebid/prebid-server/v2/config"
+        "github.com/prebid/prebid-server/v2/errortypes"
+        "github.com/prebid/prebid-server/v2/macros"
+        "github.com/prebid/prebid-server/v2/metrics"
+        "github.com/prebid/prebid-server/v2/openrtb_ext"
+)
+
+const adapterVersion = "prebid_1.0.0"
+const invibesBidVersion = "4"
+
+type InvibesAdRequest struct {
+        BidParamsJson string `json:"BidParamsJson"`
+        Location      string `json:"Location"`
+        Lid           string `json:"Lid"`
+        IsTestBid     bool   `json:"IsTestBid"`
+        Kw            string `json:"Kw"`
+        IsAMP         bool   `json:"IsAmp"`
+        Width         string `json:"Width"`
+        Height        string `json:"Height"`
+        GDPRConsent   string `json:"GdprConsent"`
+        GDPR          bool   `json:"Gdpr"`
+        Bvid          string `json:"Bvid"`
+        InvibBVLog    bool   `json:"InvibBVLog"`
+        VideoAdDebug  bool   `json:"VideoAdDebug"`
+}
+type InvibesBidParams struct {
+        PlacementIDs []string                            `json:"PlacementIds"`
+        BidVersion   string                              `json:"BidVersion"`
+        Properties   map[string]InvibesPlacementProperty `json:"Properties"`
+}
+type InvibesPlacementProperty struct {
+        Formats []openrtb2.Format `json:"Formats"`
+        ImpID   string            `json:"ImpId"`
+}
+type InvibesInternalParams struct {
+        BidParams   InvibesBidParams
+        DomainID    int
+        IsAMP       bool
+        GDPR        bool
+        GDPRConsent string
+
+        TestBvid string
+        TestLog  bool
+}
+type BidServerBidderResponse struct {
+        Currency  string              `json:"currency"`
+        TypedBids []BidServerTypedBid `json:"typedBids"`
+        Error     string              `json:"error"`
+}
+type BidServerTypedBid struct {
+        Bid          openrtb2.Bid `json:"bid"`
+        DealPriority int          `json:"dealPriority"`
+}
+
+func (a *InvibesInternalParams) IsTestRequest() bool <span class="cov8" title="1">{
+        return a.TestBvid != ""
+}</span>
+
+type InvibesAdapter struct {
+        EndpointTemplate *template.Template
+}
+
+// Builder builds a new instance of the Invibes adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) <span class="cov8" title="1">{
+        template, err := template.New("endpointTemplate").Parse(config.Endpoint)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
+        }</span>
+
+        <span class="cov8" title="1">bidder := InvibesAdapter{
+                EndpointTemplate: template,
+        }
+        return &amp;bidder, nil</span>
+}
+
+func (a *InvibesAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) <span class="cov8" title="1">{
+        var httpRequests []*adapters.RequestData
+        var tempErrors []error
+        gdprApplies, consentString := readGDPR(request)
+
+        var invibesInternalParams InvibesInternalParams = InvibesInternalParams{
+                BidParams: InvibesBidParams{
+                        Properties: make(map[string]InvibesPlacementProperty),
+                        BidVersion: invibesBidVersion,
+                },
+        }
+
+        for _, imp := range request.Imp </span><span class="cov8" title="1">{
+                var bidderExt adapters.ExtImpBidder
+                if err := json.Unmarshal(imp.Ext, &amp;bidderExt); err != nil </span><span class="cov8" title="1">{
+                        tempErrors = append(tempErrors, &amp;errortypes.BadInput{
+                                Message: "Error parsing bidderExt object",
+                        })
+                        continue</span>
+                }
+                <span class="cov8" title="1">var invibesExt openrtb_ext.ExtImpInvibes
+                if err := json.Unmarshal(bidderExt.Bidder, &amp;invibesExt); err != nil </span><span class="cov8" title="1">{
+                        tempErrors = append(tempErrors, &amp;errortypes.BadInput{
+                                Message: "Error parsing invibesExt parameters",
+                        })
+                        continue</span>
+                }
+                <span class="cov8" title="1">if imp.Banner == nil </span><span class="cov8" title="1">{
+                        tempErrors = append(tempErrors, &amp;errortypes.BadInput{
+                                Message: "Banner not specified",
+                        })
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">adFormats := readAdFormats(*imp.Banner)
+
+                invibesInternalParams.DomainID = invibesExt.DomainID
+                invibesInternalParams.BidParams.PlacementIDs = append(invibesInternalParams.BidParams.PlacementIDs, strings.TrimSpace(invibesExt.PlacementID))
+                invibesInternalParams.BidParams.Properties[invibesExt.PlacementID] = InvibesPlacementProperty{
+                        ImpID:   imp.ID,
+                        Formats: adFormats,
+                }
+                if invibesExt.Debug.TestBvid != "" </span><span class="cov8" title="1">{
+                        invibesInternalParams.TestBvid = invibesExt.Debug.TestBvid
+                }</span>
+                <span class="cov8" title="1">invibesInternalParams.TestLog = invibesExt.Debug.TestLog</span>
+        }
+        <span class="cov8" title="1">if reqInfo.PbsEntryPoint == metrics.ReqTypeAMP </span><span class="cov8" title="1">{
+                invibesInternalParams.IsAMP = true
+        }</span>
+
+        <span class="cov8" title="1">if len(invibesInternalParams.BidParams.PlacementIDs) == 0 </span><span class="cov8" title="1">{
+                return nil, tempErrors
+        }</span>
+
+        <span class="cov8" title="1">var finalErrors []error
+        invibesInternalParams.GDPR = gdprApplies
+        invibesInternalParams.GDPRConsent = consentString
+
+        newHttpRequest, err := a.makeRequest(invibesInternalParams, reqInfo, httpRequests, request)
+        if err != nil </span><span class="cov8" title="1">{
+                finalErrors = append(finalErrors, err)
+        }</span> else<span class="cov8" title="1"> if newHttpRequest != nil </span><span class="cov8" title="1">{
+                httpRequests = append(httpRequests, newHttpRequest)
+        }</span>
+
+        <span class="cov8" title="1">return httpRequests, finalErrors</span>
+}
+
+func readGDPR(request *openrtb2.BidRequest) (bool, string) <span class="cov8" title="1">{
+        consentString := ""
+        if request.User != nil </span><span class="cov8" title="1">{
+                var extUser openrtb_ext.ExtUser
+                if err := json.Unmarshal(request.User.Ext, &amp;extUser); err == nil </span><span class="cov8" title="1">{
+                        consentString = extUser.Consent
+                }</span>
+        }
+        <span class="cov8" title="1">gdprApplies := true
+        var extRegs openrtb_ext.ExtRegs
+        if request.Regs != nil </span><span class="cov8" title="1">{
+                if err := json.Unmarshal(request.Regs.Ext, &amp;extRegs); err == nil </span><span class="cov8" title="1">{
+                        if extRegs.GDPR != nil </span><span class="cov8" title="1">{
+                                gdprApplies = (*extRegs.GDPR == 1)
+                        }</span>
+                }
+        }
+        <span class="cov8" title="1">return gdprApplies, consentString</span>
+}
+
+func readAdFormats(currentBanner openrtb2.Banner) []openrtb2.Format <span class="cov8" title="1">{
+        var adFormats []openrtb2.Format
+        if currentBanner.Format != nil </span><span class="cov8" title="1">{
+                adFormats = currentBanner.Format
+        }</span> else<span class="cov8" title="1"> if currentBanner.W != nil &amp;&amp; currentBanner.H != nil </span><span class="cov8" title="1">{
+                adFormats = []openrtb2.Format{
+                        {
+                                W: *currentBanner.W,
+                                H: *currentBanner.H,
+                        },
+                }
+        }</span>
+        <span class="cov8" title="1">return adFormats</span>
+}
+
+func (a *InvibesAdapter) makeRequest(invibesParams InvibesInternalParams, reqInfo *adapters.ExtraRequestInfo, existingRequests []*adapters.RequestData, request *openrtb2.BidRequest) (*adapters.RequestData, error) <span class="cov8" title="1">{
+
+        url, err := a.makeURL(request, invibesParams.DomainID)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">parameter, errp := a.makeParameter(invibesParams, request)
+        if errp != nil </span><span class="cov8" title="1">{
+                return nil, errp
+        }</span>
+        <span class="cov8" title="1">body, errm := json.Marshal(parameter)
+        if errm != nil </span><span class="cov0" title="0">{
+                return nil, errm
+        }</span>
+
+        <span class="cov8" title="1">headers := http.Header{}
+        headers.Add("Content-Type", "application/json;charset=utf-8")
+        headers.Add("Accept", "application/json")
+
+        if request.Device != nil </span><span class="cov8" title="1">{
+                headers.Add("User-Agent", request.Device.UA)
+        }</span>
+
+        <span class="cov8" title="1">if request.Device != nil </span><span class="cov8" title="1">{
+                if request.Device.IP != "" </span><span class="cov8" title="1">{
+                        headers.Add("X-Forwarded-For", request.Device.IP)
+                }</span> else<span class="cov8" title="1"> if request.Device.IPv6 != "" </span><span class="cov8" title="1">{
+                        headers.Add("X-Forwarded-For", request.Device.IPv6)
+                }</span>
+        }
+        <span class="cov8" title="1">if request.Site != nil </span><span class="cov8" title="1">{
+                headers.Add("Referer", request.Site.Page)
+        }</span>
+        <span class="cov8" title="1">headers.Add("Aver", adapterVersion)
+
+        return &amp;adapters.RequestData{
+                Method:  "POST",
+                Uri:     url,
+                Headers: headers,
+                Body:    body,
+                ImpID:   openrtb_ext.GetImpIDs(request.Imp),
+        }, nil</span>
+}
+
+func (a *InvibesAdapter) makeParameter(invibesParams InvibesInternalParams, request *openrtb2.BidRequest) (*InvibesAdRequest, error) <span class="cov8" title="1">{
+        var lid string = ""
+        if request.User != nil &amp;&amp; request.User.BuyerUID != "" </span><span class="cov8" title="1">{
+                lid = request.User.BuyerUID
+        }</span>
+        <span class="cov8" title="1">if request.Site == nil </span><span class="cov8" title="1">{
+                return nil, &amp;errortypes.BadInput{
+                        Message: "Site not specified",
+                }
+        }</span>
+
+        <span class="cov8" title="1">var width, height string
+        if request.Device != nil </span><span class="cov8" title="1">{
+                if request.Device.W &gt; 0 </span><span class="cov8" title="1">{
+                        width = strconv.FormatInt(request.Device.W, 10)
+                }</span>
+
+                <span class="cov8" title="1">if request.Device.H &gt; 0 </span><span class="cov8" title="1">{
+                        height = strconv.FormatInt(request.Device.H, 10)
+                }</span>
+        }
+
+        <span class="cov8" title="1">var invRequest InvibesAdRequest
+        bidParamsJson, err := json.Marshal(invibesParams.BidParams)
+        if err == nil </span><span class="cov8" title="1">{
+                invRequest = InvibesAdRequest{
+                        IsTestBid:     invibesParams.IsTestRequest(),
+                        BidParamsJson: string(bidParamsJson),
+                        Location:      request.Site.Page,
+                        Lid:           lid,
+                        Kw:            request.Site.Keywords,
+                        IsAMP:         invibesParams.IsAMP,
+                        Width:         width,
+                        Height:        height,
+                        GDPRConsent:   invibesParams.GDPRConsent,
+                        GDPR:          invibesParams.GDPR,
+                        Bvid:          invibesParams.TestBvid,
+                        InvibBVLog:    invibesParams.TestLog,
+                        VideoAdDebug:  invibesParams.TestLog,
+                }
+        }</span>
+
+        <span class="cov8" title="1">return &amp;invRequest, err</span>
+}
+
+func (a *InvibesAdapter) makeURL(request *openrtb2.BidRequest, domainID int) (string, error) <span class="cov8" title="1">{
+        var subdomain string
+        if domainID == 0 || domainID == 1 || domainID == 1001 </span><span class="cov8" title="1">{
+                subdomain = "bid"
+        }</span> else<span class="cov8" title="1"> if domainID &lt; 1002 </span><span class="cov8" title="1">{
+                subdomain = "bid" + strconv.Itoa(domainID)
+        }</span> else<span class="cov8" title="1"> {
+                subdomain = "bid" + strconv.Itoa(domainID-1000)
+        }</span>
+
+        <span class="cov8" title="1">var endpointURL *url.URL
+        endpointParams := macros.EndpointTemplateParams{ZoneID: subdomain}
+        host, err := macros.ResolveMacros(a.EndpointTemplate, endpointParams)
+
+        if err == nil </span><span class="cov8" title="1">{
+                endpointURL, err = url.Parse(host)
+        }</span>
+        <span class="cov8" title="1">if err != nil </span><span class="cov0" title="0">{
+                return "", &amp;errortypes.BadInput{
+                        Message: "Unable to parse url template: " + err.Error(),
+                }
+        }</span>
+
+        <span class="cov8" title="1">return endpointURL.String(), nil</span>
+}
+
+func (a *InvibesAdapter) MakeBids(
+        internalRequest *openrtb2.BidRequest,
+        externalRequest *adapters.RequestData,
+        response *adapters.ResponseData,
+) (*adapters.BidderResponse, []error) <span class="cov8" title="1">{
+        if response.StatusCode != http.StatusOK </span><span class="cov8" title="1">{
+                return nil, []error{fmt.Errorf("Unexpected status code: %d.", response.StatusCode)}
+        }</span>
+
+        <span class="cov8" title="1">bidResponse := BidServerBidderResponse{}
+        if err := json.Unmarshal(response.Body, &amp;bidResponse); err != nil </span><span class="cov0" title="0">{
+                return nil, []error{err}
+        }</span>
+
+        <span class="cov8" title="1">var parsedResponses = adapters.NewBidderResponseWithBidsCapacity(len(bidResponse.TypedBids))
+        var errors []error
+        parsedResponses.Currency = bidResponse.Currency
+
+        if bidResponse.Error != "" </span><span class="cov8" title="1">{
+                return nil, []error{fmt.Errorf("Server error: %s.", bidResponse.Error)}
+        }</span>
+        <span class="cov8" title="1">for _, typedbid := range bidResponse.TypedBids </span><span class="cov8" title="1">{
+                bid := typedbid.Bid
+                parsedResponses.Bids = append(parsedResponses.Bids, &amp;adapters.TypedBid{
+                        Bid:          &amp;bid,
+                        BidType:      openrtb_ext.BidTypeBanner,
+                        DealPriority: typedbid.DealPriority,
+                })
+        }</span>
+
+        <span class="cov8" title="1">return parsedResponses, errors</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

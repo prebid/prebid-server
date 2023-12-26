@@ -1,0 +1,371 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>flipp: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/prebid/prebid-server/v2/adapters/flipp/flipp.go (89.8%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package flipp
+
+import (
+        "encoding/base64"
+        "encoding/json"
+        "fmt"
+        "net/http"
+        "net/url"
+        "strings"
+
+        "github.com/buger/jsonparser"
+        "github.com/prebid/go-gdpr/consentconstants"
+        "github.com/prebid/go-gdpr/vendorconsent"
+        "github.com/prebid/openrtb/v19/openrtb2"
+        "github.com/prebid/prebid-server/v2/adapters"
+        "github.com/prebid/prebid-server/v2/config"
+        "github.com/prebid/prebid-server/v2/openrtb_ext"
+        "github.com/prebid/prebid-server/v2/util/uuidutil"
+)
+
+const (
+        bannerType      = "banner"
+        inlineDivName   = "inline"
+        flippBidder     = "flipp"
+        defaultCurrency = "USD"
+)
+
+var uuidGenerator uuidutil.UUIDGenerator
+
+var (
+        count    int64 = 1
+        adTypes        = []int64{4309, 641}
+        dtxTypes       = []int64{5061}
+)
+
+type adapter struct {
+        endpoint string
+}
+
+// Builder builds a new instance of the Flipp adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) <span class="cov8" title="1">{
+        uuidGenerator = uuidutil.UUIDRandomGenerator{}
+        bidder := &amp;adapter{
+                endpoint: config.Endpoint,
+        }
+        return bidder, nil
+}</span>
+
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) <span class="cov8" title="1">{
+        adapterRequests := make([]*adapters.RequestData, 0, len(request.Imp))
+        var errors []error
+
+        for _, imp := range request.Imp </span><span class="cov8" title="1">{
+                adapterReq, err := a.processImp(request, imp)
+                if err != nil </span><span class="cov8" title="1">{
+                        errors = append(errors, err)
+                        continue</span>
+                }
+                <span class="cov8" title="1">adapterRequests = append(adapterRequests, adapterReq)</span>
+        }
+        <span class="cov8" title="1">if len(adapterRequests) == 0 </span><span class="cov8" title="1">{
+                return nil, append(errors, fmt.Errorf("adapterRequest is empty"))
+        }</span>
+        <span class="cov8" title="1">return adapterRequests, errors</span>
+}
+
+func (a *adapter) makeRequest(request *openrtb2.BidRequest, campaignRequestBody CampaignRequestBody) (*adapters.RequestData, error) <span class="cov8" title="1">{
+        campaignRequestBodyJSON, err := json.Marshal(campaignRequestBody)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">headers := http.Header{}
+        headers.Add("Content-Type", "application/json")
+        if request.Device != nil &amp;&amp; request.Device.UA != "" </span><span class="cov0" title="0">{
+                headers.Add("User-Agent", request.Device.UA)
+        }</span>
+        <span class="cov8" title="1">return &amp;adapters.RequestData{
+                Method:  http.MethodPost,
+                Uri:     a.endpoint,
+                Body:    campaignRequestBodyJSON,
+                Headers: headers,
+                ImpID:   openrtb_ext.GetImpIDs(request.Imp),
+        }, err</span>
+}
+
+func (a *adapter) processImp(request *openrtb2.BidRequest, imp openrtb2.Imp) (*adapters.RequestData, error) <span class="cov8" title="1">{
+        var flippExtParams openrtb_ext.ImpExtFlipp
+        params, _, _, err := jsonparser.Get(imp.Ext, "bidder")
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("flipp params not found. %v", err)
+        }</span>
+        <span class="cov8" title="1">err = json.Unmarshal(params, &amp;flippExtParams)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("unable to extract flipp params. %v", err)
+        }</span>
+
+        <span class="cov8" title="1">publisherUrl, err := url.Parse(request.Site.Page)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("unable to parse site url. %v", err)
+        }</span>
+
+        <span class="cov8" title="1">var contentCode string
+        if flippExtParams.Options.ContentCode != "" </span><span class="cov8" title="1">{
+                contentCode = flippExtParams.Options.ContentCode
+        }</span> else<span class="cov8" title="1"> if publisherUrl != nil </span><span class="cov8" title="1">{
+                contentCode = publisherUrl.Query().Get("flipp-content-code")
+        }</span>
+
+        <span class="cov8" title="1">placement := Placement{
+                DivName: inlineDivName,
+                SiteID:  &amp;flippExtParams.SiteID,
+                AdTypes: getAdTypes(flippExtParams.CreativeType),
+                ZoneIds: flippExtParams.ZoneIds,
+                Count:   &amp;count,
+                Prebid:  buildPrebidRequest(flippExtParams, request, imp),
+                Properties: &amp;Properties{
+                        ContentCode: &amp;contentCode,
+                },
+                Options: flippExtParams.Options,
+        }
+
+        var userIP string
+        if request.Device != nil &amp;&amp; request.Device.IP != "" </span><span class="cov8" title="1">{
+                userIP = request.Device.IP
+        }</span> else<span class="cov8" title="1"> {
+                return nil, fmt.Errorf("no IP set in flipp bidder params or request device")
+        }</span>
+
+        <span class="cov8" title="1">var userKey string
+        if request.User != nil &amp;&amp; request.User.ID != "" </span><span class="cov8" title="1">{
+                userKey = request.User.ID
+        }</span> else<span class="cov8" title="1"> if flippExtParams.UserKey != "" &amp;&amp; paramsUserKeyPermitted(request) </span><span class="cov8" title="1">{
+                userKey = flippExtParams.UserKey
+        }</span> else<span class="cov8" title="1"> {
+
+                uid, err := uuidGenerator.Generate()
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, fmt.Errorf("unable to generate user uuid. %v", err)
+                }</span>
+                <span class="cov8" title="1">userKey = uid</span>
+        }
+
+        <span class="cov8" title="1">keywordsArray := strings.Split(request.Site.Keywords, ",")
+
+        campaignRequestBody := CampaignRequestBody{
+                Placements: []*Placement{&amp;placement},
+                URL:        request.Site.Page,
+                Keywords:   keywordsArray,
+                IP:         userIP,
+                User: &amp;CampaignRequestBodyUser{
+                        Key: &amp;userKey,
+                },
+        }
+
+        adapterReq, err := a.makeRequest(request, campaignRequestBody)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("make request failed with err %v", err)
+        }</span>
+
+        <span class="cov8" title="1">return adapterReq, nil</span>
+}
+
+func buildPrebidRequest(flippExtParams openrtb_ext.ImpExtFlipp, request *openrtb2.BidRequest, imp openrtb2.Imp) *PrebidRequest <span class="cov8" title="1">{
+        var height int64
+        var width int64
+        if imp.Banner != nil &amp;&amp; len(imp.Banner.Format) &gt; 0 </span><span class="cov8" title="1">{
+                height = imp.Banner.Format[0].H
+                width = imp.Banner.Format[0].W
+        }</span>
+        <span class="cov8" title="1">prebidRequest := PrebidRequest{
+                CreativeType:            &amp;flippExtParams.CreativeType,
+                PublisherNameIdentifier: &amp;flippExtParams.PublisherNameIdentifier,
+                RequestID:               &amp;imp.ID,
+                Height:                  &amp;height,
+                Width:                   &amp;width,
+        }
+        return &amp;prebidRequest</span>
+}
+
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) <span class="cov8" title="1">{
+        if adapters.IsResponseStatusCodeNoContent(responseData) </span><span class="cov0" title="0">{
+                return nil, nil
+        }</span>
+
+        <span class="cov8" title="1">if err := adapters.CheckResponseStatusCodeForErrors(responseData); err != nil </span><span class="cov8" title="1">{
+                return nil, []error{err}
+        }</span>
+
+        <span class="cov8" title="1">var campaignResponseBody CampaignResponseBody
+        if err := json.Unmarshal(responseData.Body, &amp;campaignResponseBody); err != nil </span><span class="cov8" title="1">{
+                return nil, []error{err}
+        }</span>
+
+        <span class="cov8" title="1">bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
+        bidResponse.Currency = defaultCurrency
+        for _, imp := range request.Imp </span><span class="cov8" title="1">{
+                for _, decision := range campaignResponseBody.Decisions.Inline </span><span class="cov8" title="1">{
+                        if *decision.Prebid.RequestID == imp.ID </span><span class="cov8" title="1">{
+                                b := &amp;adapters.TypedBid{
+                                        Bid:     buildBid(decision, imp.ID),
+                                        BidType: openrtb_ext.BidType(bannerType),
+                                }
+                                bidResponse.Bids = append(bidResponse.Bids, b)
+                        }</span>
+                }
+        }
+        <span class="cov8" title="1">return bidResponse, nil</span>
+}
+
+func getAdTypes(creativeType string) []int64 <span class="cov8" title="1">{
+        if creativeType == "DTX" </span><span class="cov8" title="1">{
+                return dtxTypes
+        }</span>
+        <span class="cov8" title="1">return adTypes</span>
+}
+
+func buildBid(decision *InlineModel, impId string) *openrtb2.Bid <span class="cov8" title="1">{
+        bid := &amp;openrtb2.Bid{
+                CrID:  fmt.Sprint(decision.CreativeID),
+                Price: *decision.Prebid.Cpm,
+                AdM:   *decision.Prebid.Creative,
+                ID:    fmt.Sprint(decision.AdID),
+                ImpID: impId,
+        }
+        if len(decision.Contents) &gt; 0 || decision.Contents[0] != nil || decision.Contents[0].Data != nil </span><span class="cov8" title="1">{
+                if decision.Contents[0].Data.Width != 0 </span><span class="cov8" title="1">{
+                        bid.W = decision.Contents[0].Data.Width
+                }</span>
+                <span class="cov8" title="1">bid.H = 0</span>
+        }
+        <span class="cov8" title="1">return bid</span>
+}
+
+func paramsUserKeyPermitted(request *openrtb2.BidRequest) bool <span class="cov8" title="1">{
+        if request.Regs != nil </span><span class="cov8" title="1">{
+                if request.Regs.COPPA == 1 </span><span class="cov8" title="1">{
+                        return false
+                }</span>
+                <span class="cov8" title="1">if request.Regs.GDPR != nil &amp;&amp; *request.Regs.GDPR == 1 </span><span class="cov8" title="1">{
+                        return false
+                }</span>
+        }
+        <span class="cov8" title="1">if request.Ext != nil </span><span class="cov8" title="1">{
+                var extData struct {
+                        TransmitEids *bool `json:"transmitEids,omitempty"`
+                }
+                if err := json.Unmarshal(request.Ext, &amp;extData); err == nil </span><span class="cov8" title="1">{
+                        if extData.TransmitEids != nil &amp;&amp; !*extData.TransmitEids </span><span class="cov8" title="1">{
+                                return false
+                        }</span>
+                }
+        }
+        <span class="cov8" title="1">if request.User != nil &amp;&amp; request.User.Consent != "" </span><span class="cov8" title="1">{
+                data, err := base64.RawURLEncoding.DecodeString(request.User.Consent)
+                if err != nil </span><span class="cov0" title="0">{
+                        return true
+                }</span>
+                <span class="cov8" title="1">consent, err := vendorconsent.Parse(data)
+                if err != nil </span><span class="cov8" title="1">{
+                        return true
+                }</span>
+                <span class="cov0" title="0">if !consent.PurposeAllowed(consentconstants.ContentSelectionDeliveryReporting) </span><span class="cov0" title="0">{
+                        return false
+                }</span>
+        }
+        <span class="cov0" title="0">return true</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

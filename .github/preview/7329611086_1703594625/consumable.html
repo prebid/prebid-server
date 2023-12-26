@@ -1,0 +1,566 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>consumable: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/prebid/prebid-server/v2/adapters/consumable/adtypes.go (100.0%)</option>
+				
+				<option value="file1">github.com/prebid/prebid-server/v2/adapters/consumable/consumable.go (87.5%)</option>
+				
+				<option value="file2">github.com/prebid/prebid-server/v2/adapters/consumable/instant.go (50.0%)</option>
+				
+				<option value="file3">github.com/prebid/prebid-server/v2/adapters/consumable/retrieveAd.go (66.7%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package consumable
+
+import (
+        "strconv"
+
+        "github.com/prebid/openrtb/v19/openrtb2"
+)
+
+/* Turn array of openrtb formats into consumable's code*/
+func getSizeCodes(Formats []openrtb2.Format) []int <span class="cov8" title="1">{
+
+        codes := make([]int, 0)
+        for _, format := range Formats </span><span class="cov8" title="1">{
+                str := strconv.FormatInt(format.W, 10) + "x" + strconv.FormatInt(format.H, 10)
+                if code, ok := sizeMap[str]; ok </span><span class="cov8" title="1">{
+                        codes = append(codes, code)
+                }</span>
+        }
+        <span class="cov8" title="1">return codes</span>
+}
+
+var sizeMap = map[string]int{
+        "120x90": 1,
+        // 120x90 is in twice in prebid.js implementation - probably as spacer
+        "468x60":  3,
+        "728x90":  4,
+        "300x250": 5,
+        "160x600": 6,
+        "120x600": 7,
+        "300x100": 8,
+        "180x150": 9,
+        "336x280": 10,
+        "240x400": 11,
+        "234x60":  12,
+        "88x31":   13,
+        "120x60":  14,
+        "120x240": 15,
+        "125x125": 16,
+        "220x250": 17,
+        "250x250": 18,
+        "250x90":  19,
+        "0x0":     20, // TODO: can this be removed - I suspect it's padding in prebid.js impl
+        "200x90":  21,
+        "300x50":  22,
+        "320x50":  23,
+        "320x480": 24,
+        "185x185": 25,
+        "620x45":  26,
+        "300x125": 27,
+        "800x250": 28,
+        // below order is preserved from prebid.js implementation for easy comparison
+        "970x90":   77,
+        "970x250":  123,
+        "300x600":  43,
+        "970x66":   286,
+        "970x280":  3230,
+        "486x60":   429,
+        "700x500":  374,
+        "300x1050": 934,
+        "320x100":  1578,
+        "320x250":  331,
+        "320x267":  3301,
+        "728x250":  2730,
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package consumable
+
+import (
+        "encoding/json"
+        "fmt"
+        "net/http"
+        "net/url"
+        "strconv"
+        "strings"
+
+        "github.com/prebid/openrtb/v19/openrtb2"
+        "github.com/prebid/prebid-server/v2/adapters"
+        "github.com/prebid/prebid-server/v2/config"
+        "github.com/prebid/prebid-server/v2/errortypes"
+        "github.com/prebid/prebid-server/v2/openrtb_ext"
+        "github.com/prebid/prebid-server/v2/privacy/ccpa"
+)
+
+type ConsumableAdapter struct {
+        clock    instant
+        endpoint string
+}
+
+type bidRequest struct {
+        Placements         []placement          `json:"placements"`
+        Time               int64                `json:"time"`
+        NetworkId          int                  `json:"networkId,omitempty"`
+        SiteId             int                  `json:"siteId"`
+        UnitId             int                  `json:"unitId"`
+        UnitName           string               `json:"unitName,omitempty"`
+        IncludePricingData bool                 `json:"includePricingData"`
+        User               user                 `json:"user,omitempty"`
+        Referrer           string               `json:"referrer,omitempty"`
+        Ip                 string               `json:"ip,omitempty"`
+        Url                string               `json:"url,omitempty"`
+        EnableBotFiltering bool                 `json:"enableBotFiltering,omitempty"`
+        Parallel           bool                 `json:"parallel"`
+        CCPA               string               `json:"ccpa,omitempty"`
+        GDPR               *bidGdpr             `json:"gdpr,omitempty"`
+        Coppa              bool                 `json:"coppa,omitempty"`
+        SChain             openrtb2.SupplyChain `json:"schain"`
+        Content            *openrtb2.Content    `json:"content,omitempty"`
+        GPP                string               `json:"gpp,omitempty"`
+        GPPSID             []int8               `json:"gpp_sid,omitempty"`
+}
+
+type placement struct {
+        DivName   string `json:"divName"`
+        NetworkId int    `json:"networkId,omitempty"`
+        SiteId    int    `json:"siteId"`
+        UnitId    int    `json:"unitId"`
+        UnitName  string `json:"unitName,omitempty"`
+        AdTypes   []int  `json:"adTypes"`
+}
+
+type user struct {
+        Key  string         `json:"key,omitempty"`
+        Eids []openrtb2.EID `json:"eids,omitempty"`
+}
+
+type bidGdpr struct {
+        Applies *bool  `json:"applies,omitempty"`
+        Consent string `json:"consent,omitempty"`
+}
+
+type bidResponse struct {
+        Decisions map[string]decision `json:"decisions"` // map by bidId
+}
+
+/**
+ * See https://dev.adzerk.com/v1.0/reference/response
+ */
+type decision struct {
+        Pricing       *pricing   `json:"pricing"`
+        AdID          int64      `json:"adId"`
+        BidderName    string     `json:"bidderName,omitempty"`
+        CreativeID    string     `json:"creativeId,omitempty"`
+        Contents      []contents `json:"contents"`
+        ImpressionUrl *string    `json:"impressionUrl,omitempty"`
+        Width         uint64     `json:"width,omitempty"`  // Consumable extension, not defined by Adzerk
+        Height        uint64     `json:"height,omitempty"` // Consumable extension, not defined by Adzerk
+        Adomain       []string   `json:"adomain,omitempty"`
+        Cats          []string   `json:"cats,omitempty"`
+}
+
+type contents struct {
+        Body string `json:"body"`
+}
+
+type pricing struct {
+        ClearPrice *float64 `json:"clearPrice"`
+}
+
+func (a *ConsumableAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) <span class="cov8" title="1">{
+        var errs []error
+
+        headers := http.Header{
+                "Content-Type": {"application/json"},
+                "Accept":       {"application/json"},
+        }
+
+        if request.Device != nil </span><span class="cov8" title="1">{
+                if request.Device.UA != "" </span><span class="cov8" title="1">{
+                        headers.Set("User-Agent", request.Device.UA)
+                }</span>
+
+                <span class="cov8" title="1">if request.Device.IP != "" </span><span class="cov8" title="1">{
+                        headers.Set("Forwarded", "for="+request.Device.IP)
+                        headers.Set("X-Forwarded-For", request.Device.IP)
+                }</span>
+        }
+
+        // Set azk cookie to one we got via sync
+        <span class="cov8" title="1">if request.User != nil </span><span class="cov8" title="1">{
+                userID := strings.TrimSpace(request.User.BuyerUID)
+                if len(userID) &gt; 0 </span><span class="cov8" title="1">{
+                        headers.Add("Cookie", fmt.Sprintf("%s=%s", "azk", userID))
+                }</span>
+        }
+
+        <span class="cov8" title="1">if request.Site != nil &amp;&amp; request.Site.Page != "" </span><span class="cov8" title="1">{
+                headers.Set("Referer", request.Site.Page)
+
+                pageUrl, err := url.Parse(request.Site.Page)
+                if err != nil </span><span class="cov0" title="0">{
+                        errs = append(errs, err)
+                }</span> else<span class="cov8" title="1"> {
+                        origin := url.URL{
+                                Scheme: pageUrl.Scheme,
+                                Opaque: pageUrl.Opaque,
+                                Host:   pageUrl.Host,
+                        }
+                        headers.Set("Origin", origin.String())
+                }</span>
+        }
+
+        <span class="cov8" title="1">body := bidRequest{
+                Placements:         make([]placement, len(request.Imp)),
+                Time:               a.clock.Now().Unix(),
+                IncludePricingData: true,
+                EnableBotFiltering: true,
+                Parallel:           true,
+        }
+
+        if request.Site != nil </span><span class="cov8" title="1">{
+                body.Referrer = request.Site.Ref // Effectively the previous page to the page where the ad will be shown
+                body.Url = request.Site.Page     // where the impression will be made
+        }</span>
+
+        <span class="cov8" title="1">gdpr := bidGdpr{}
+
+        ccpaPolicy, err := ccpa.ReadFromRequest(request)
+        if err != nil </span><span class="cov0" title="0">{
+                errs = append(errs, err)
+        }</span> else<span class="cov8" title="1"> {
+                body.CCPA = ccpaPolicy.Consent
+        }</span>
+
+        <span class="cov8" title="1">if request.Regs != nil &amp;&amp; request.Regs.Ext != nil </span><span class="cov8" title="1">{
+                var extRegs openrtb_ext.ExtRegs
+                if err := json.Unmarshal(request.Regs.Ext, &amp;extRegs); err != nil </span><span class="cov0" title="0">{
+                        errs = append(errs, err)
+                }</span> else<span class="cov8" title="1"> {
+                        if extRegs.GDPR != nil </span><span class="cov8" title="1">{
+                                applies := *extRegs.GDPR != 0
+                                gdpr.Applies = &amp;applies
+                                body.GDPR = &amp;gdpr
+                        }</span>
+                }
+        }
+
+        <span class="cov8" title="1">if request.User != nil &amp;&amp; request.User.Ext != nil </span><span class="cov8" title="1">{
+                var extUser openrtb_ext.ExtUser
+                if err := json.Unmarshal(request.User.Ext, &amp;extUser); err != nil </span><span class="cov0" title="0">{
+                        errs = append(errs, err)
+                }</span> else<span class="cov8" title="1"> {
+                        gdpr.Consent = extUser.Consent
+                        body.GDPR = &amp;gdpr
+
+                        if hasEids(extUser.Eids) </span><span class="cov8" title="1">{
+                                body.User.Eids = extUser.Eids
+                        }</span>
+                }
+        }
+
+        <span class="cov8" title="1">if request.Source != nil &amp;&amp; request.Source.Ext != nil </span><span class="cov8" title="1">{
+                var extSChain openrtb_ext.ExtRequestPrebidSChain
+                if err := json.Unmarshal(request.Source.Ext, &amp;extSChain); err != nil </span><span class="cov0" title="0">{
+                        errs = append(errs, err)
+                }</span> else<span class="cov8" title="1"> {
+                        body.SChain = extSChain.SChain
+                }</span>
+        }
+
+        <span class="cov8" title="1">body.Coppa = request.Regs != nil &amp;&amp; request.Regs.COPPA &gt; 0
+
+        if request.Regs != nil &amp;&amp; request.Regs.GPP != "" </span><span class="cov8" title="1">{
+                body.GPP = request.Regs.GPP
+        }</span>
+
+        <span class="cov8" title="1">if request.Regs != nil &amp;&amp; request.Regs.GPPSID != nil </span><span class="cov8" title="1">{
+                body.GPPSID = request.Regs.GPPSID
+        }</span>
+
+        <span class="cov8" title="1">if request.Site != nil &amp;&amp; request.Site.Content != nil </span><span class="cov8" title="1">{
+                body.Content = request.Site.Content
+        }</span> else<span class="cov8" title="1"> if request.App != nil &amp;&amp; request.App.Content != nil </span><span class="cov0" title="0">{
+                body.Content = request.App.Content
+        }</span>
+
+        <span class="cov8" title="1">for i, impression := range request.Imp </span><span class="cov8" title="1">{
+
+                _, consumableExt, err := extractExtensions(impression)
+
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, err
+                }</span>
+
+                // These get set on the first one in observed working requests
+                <span class="cov8" title="1">if i == 0 </span><span class="cov8" title="1">{
+                        body.NetworkId = consumableExt.NetworkId
+                        body.SiteId = consumableExt.SiteId
+                        body.UnitId = consumableExt.UnitId
+                        body.UnitName = consumableExt.UnitName
+                }</span>
+
+                <span class="cov8" title="1">body.Placements[i] = placement{
+                        DivName:   impression.ID,
+                        NetworkId: consumableExt.NetworkId,
+                        SiteId:    consumableExt.SiteId,
+                        UnitId:    consumableExt.UnitId,
+                        UnitName:  consumableExt.UnitName,
+                        AdTypes:   getSizeCodes(impression.Banner.Format), // was adTypes: bid.adTypes || getSize(bid.sizes) in prebid.js
+                }</span>
+        }
+
+        <span class="cov8" title="1">bodyBytes, err := json.Marshal(body)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, []error{err}
+        }</span>
+
+        <span class="cov8" title="1">requests := []*adapters.RequestData{
+                {
+                        Method:  "POST",
+                        Uri:     "https://e.serverbid.com/api/v2",
+                        Body:    bodyBytes,
+                        Headers: headers,
+                        ImpID:   openrtb_ext.GetImpIDs(request.Imp),
+                },
+        }
+
+        return requests, errs</span>
+}
+
+/*
+internal original request in OpenRTB, external = result of us having converted it (what comes out of MakeRequests)
+*/
+func (a *ConsumableAdapter) MakeBids(
+        internalRequest *openrtb2.BidRequest,
+        externalRequest *adapters.RequestData,
+        response *adapters.ResponseData,
+) (*adapters.BidderResponse, []error) <span class="cov8" title="1">{
+
+        if response.StatusCode == http.StatusNoContent </span><span class="cov0" title="0">{
+                return nil, nil
+        }</span>
+
+        <span class="cov8" title="1">if response.StatusCode == http.StatusBadRequest </span><span class="cov0" title="0">{
+                return nil, []error{&amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">if response.StatusCode != http.StatusOK </span><span class="cov0" title="0">{
+                return nil, []error{&amp;errortypes.BadServerResponse{
+                        Message: fmt.Sprintf("unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">var serverResponse bidResponse // response from Consumable
+        if err := json.Unmarshal(response.Body, &amp;serverResponse); err != nil </span><span class="cov0" title="0">{
+                return nil, []error{&amp;errortypes.BadServerResponse{
+                        Message: fmt.Sprintf("error while decoding response, err: %s", err),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">bidderResponse := adapters.NewBidderResponse()
+        var errors []error
+
+        for impID, decision := range serverResponse.Decisions </span><span class="cov8" title="1">{
+
+                if decision.Pricing != nil &amp;&amp; decision.Pricing.ClearPrice != nil </span><span class="cov8" title="1">{
+                        bid := openrtb2.Bid{}
+                        bid.ID = internalRequest.ID
+                        bid.ImpID = impID
+                        bid.Price = *decision.Pricing.ClearPrice
+                        bid.AdM = retrieveAd(decision)
+                        bid.W = int64(decision.Width)
+                        bid.H = int64(decision.Height)
+                        bid.CrID = strconv.FormatInt(decision.AdID, 10)
+                        bid.Exp = 30 // TODO: Check this is intention of TTL
+                        bid.ADomain = decision.Adomain
+                        bid.Cat = decision.Cats
+                        // not yet ported from prebid.js adapter
+                        //bid.requestId = bidId;
+                        //bid.currency = 'USD';
+                        //bid.netRevenue = true;
+                        //bid.referrer = utils.getTopWindowUrl();
+
+                        bidderResponse.Bids = append(bidderResponse.Bids, &amp;adapters.TypedBid{
+                                Bid: &amp;bid,
+                                // Consumable units are always HTML, never VAST.
+                                // From Prebid's point of view, this means that Consumable units
+                                // are always "banners".
+                                BidType: openrtb_ext.BidTypeBanner,
+                        })
+                }</span>
+        }
+        <span class="cov8" title="1">return bidderResponse, errors</span>
+}
+
+func extractExtensions(impression openrtb2.Imp) (*adapters.ExtImpBidder, *openrtb_ext.ExtImpConsumable, []error) <span class="cov8" title="1">{
+        var bidderExt adapters.ExtImpBidder
+        if err := json.Unmarshal(impression.Ext, &amp;bidderExt); err != nil </span><span class="cov0" title="0">{
+                return nil, nil, []error{&amp;errortypes.BadInput{
+                        Message: err.Error(),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">var consumableExt openrtb_ext.ExtImpConsumable
+        if err := json.Unmarshal(bidderExt.Bidder, &amp;consumableExt); err != nil </span><span class="cov0" title="0">{
+                return nil, nil, []error{&amp;errortypes.BadInput{
+                        Message: err.Error(),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">return &amp;bidderExt, &amp;consumableExt, nil</span>
+}
+
+// Builder builds a new instance of the Consumable adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) <span class="cov8" title="1">{
+        bidder := &amp;ConsumableAdapter{
+                clock:    realInstant{},
+                endpoint: config.Endpoint,
+        }
+        return bidder, nil
+}</span>
+
+func hasEids(eids []openrtb2.EID) bool <span class="cov8" title="1">{
+        for i := 0; i &lt; len(eids); i++ </span><span class="cov8" title="1">{
+                if len(eids[i].UIDs) &gt; 0 &amp;&amp; eids[i].UIDs[0].ID != "" </span><span class="cov8" title="1">{
+                        return true
+                }</span>
+        }
+        <span class="cov8" title="1">return false</span>
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package consumable
+
+import "time"
+
+type instant interface {
+        Now() time.Time
+}
+
+// Send a real instance when you construct it in adapter_map.go
+type realInstant struct{}
+
+func (realInstant) Now() time.Time <span class="cov0" title="0">{
+        return time.Now()
+}</span>
+
+// Use this for tests e.g. knownInstant(time.Date(y, m, ..., time.UTC))
+type knownInstant time.Time
+
+func (i knownInstant) Now() time.Time <span class="cov8" title="1">{
+        return time.Time(i)
+}</span>
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package consumable
+
+func retrieveAd(decision decision) string <span class="cov8" title="1">{
+
+        if decision.Contents != nil &amp;&amp; len(decision.Contents) &gt; 0 </span><span class="cov8" title="1">{
+                return decision.Contents[0].Body
+        }</span>
+
+        <span class="cov0" title="0">return ""</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

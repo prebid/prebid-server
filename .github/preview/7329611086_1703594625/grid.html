@@ -1,0 +1,576 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>grid: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/prebid/prebid-server/v2/adapters/grid/grid.go (93.8%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package grid
+
+import (
+        "encoding/json"
+        "fmt"
+        "net/http"
+        "sort"
+        "strings"
+
+        "github.com/prebid/openrtb/v19/openrtb2"
+        "github.com/prebid/prebid-server/v2/adapters"
+        "github.com/prebid/prebid-server/v2/config"
+        "github.com/prebid/prebid-server/v2/errortypes"
+        "github.com/prebid/prebid-server/v2/openrtb_ext"
+        "github.com/prebid/prebid-server/v2/util/maputil"
+)
+
+type GridAdapter struct {
+        endpoint string
+}
+
+type GridBid struct {
+        *openrtb2.Bid
+        AdmNative   json.RawMessage     `json:"adm_native,omitempty"`
+        ContentType openrtb_ext.BidType `json:"content_type"`
+}
+
+type GridSeatBid struct {
+        *openrtb2.SeatBid
+        Bid []GridBid `json:"bid"`
+}
+
+type GridResponse struct {
+        *openrtb2.BidResponse
+        SeatBid []GridSeatBid `json:"seatbid,omitempty"`
+}
+
+type GridBidExt struct {
+        Bidder ExtBidder `json:"bidder"`
+}
+
+type ExtBidder struct {
+        Grid ExtBidderGrid `json:"grid"`
+}
+
+type ExtBidderGrid struct {
+        DemandSource string `json:"demandSource"`
+}
+
+type ExtImpDataAdServer struct {
+        Name   string `json:"name"`
+        AdSlot string `json:"adslot"`
+}
+
+type ExtImpData struct {
+        PbAdslot string              `json:"pbadslot,omitempty"`
+        AdServer *ExtImpDataAdServer `json:"adserver,omitempty"`
+}
+
+type ExtImp struct {
+        Prebid  *openrtb_ext.ExtImpPrebid `json:"prebid,omitempty"`
+        Bidder  json.RawMessage           `json:"bidder"`
+        Data    *ExtImpData               `json:"data,omitempty"`
+        Gpid    string                    `json:"gpid,omitempty"`
+        Skadn   json.RawMessage           `json:"skadn,omitempty"`
+        Context json.RawMessage           `json:"context,omitempty"`
+}
+
+type KeywordSegment struct {
+        Name  string `json:"name"`
+        Value string `json:"value"`
+}
+
+type KeywordsPublisherItem struct {
+        Name     string           `json:"name"`
+        Segments []KeywordSegment `json:"segments"`
+}
+
+type KeywordsPublisher map[string][]KeywordsPublisherItem
+
+type Keywords map[string]KeywordsPublisher
+
+// buildConsolidatedKeywordsReqExt builds a new request.ext json incorporating request.site.keywords, request.user.keywords,
+// and request.imp[0].ext.keywords, and request.ext.keywords. Invalid keywords in request.imp[0].ext.keywords are not incorporated.
+// Invalid keywords in request.ext.keywords.site and request.ext.keywords.user are dropped.
+func buildConsolidatedKeywordsReqExt(openRTBUser, openRTBSite string, firstImpExt, requestExt json.RawMessage) (json.RawMessage, error) <span class="cov8" title="1">{
+        // unmarshal ext to object map
+        requestExtMap := parseExtToMap(requestExt)
+        firstImpExtMap := parseExtToMap(firstImpExt)
+        // extract `keywords` field
+        requestExtKeywordsMap := extractKeywordsMap(requestExtMap)
+        firstImpExtKeywordsMap := extractBidderKeywordsMap(firstImpExtMap)
+        // parse + merge keywords
+        keywords := parseKeywordsFromMap(requestExtKeywordsMap)                // request.ext.keywords
+        mergeKeywords(keywords, parseKeywordsFromMap(firstImpExtKeywordsMap))  // request.imp[0].ext.bidder.keywords
+        mergeKeywords(keywords, parseKeywordsFromOpenRTB(openRTBUser, "user")) // request.user.keywords
+        mergeKeywords(keywords, parseKeywordsFromOpenRTB(openRTBSite, "site")) // request.site.keywords
+
+        // overlay site + user keywords
+        if site, exists := keywords["site"]; exists &amp;&amp; len(site) &gt; 0 </span><span class="cov8" title="1">{
+                requestExtKeywordsMap["site"] = site
+        }</span> else<span class="cov8" title="1"> {
+                delete(requestExtKeywordsMap, "site")
+        }</span>
+        <span class="cov8" title="1">if user, exists := keywords["user"]; exists &amp;&amp; len(user) &gt; 0 </span><span class="cov8" title="1">{
+                requestExtKeywordsMap["user"] = user
+        }</span> else<span class="cov8" title="1"> {
+                delete(requestExtKeywordsMap, "user")
+        }</span>
+        // reconcile keywords with request.ext
+        <span class="cov8" title="1">if len(requestExtKeywordsMap) &gt; 0 </span><span class="cov8" title="1">{
+                requestExtMap["keywords"] = requestExtKeywordsMap
+        }</span> else<span class="cov8" title="1"> {
+                delete(requestExtMap, "keywords")
+        }</span>
+        // marshal final result
+        <span class="cov8" title="1">if len(requestExtMap) &gt; 0 </span><span class="cov8" title="1">{
+                return json.Marshal(requestExtMap)
+        }</span>
+        <span class="cov8" title="1">return nil, nil</span>
+}
+func parseExtToMap(ext json.RawMessage) map[string]interface{} <span class="cov8" title="1">{
+        var root map[string]interface{}
+        if err := json.Unmarshal(ext, &amp;root); err != nil </span><span class="cov8" title="1">{
+                return make(map[string]interface{})
+        }</span>
+        <span class="cov8" title="1">return root</span>
+}
+func extractKeywordsMap(ext map[string]interface{}) map[string]interface{} <span class="cov8" title="1">{
+        if keywords, exists := maputil.ReadEmbeddedMap(ext, "keywords"); exists </span><span class="cov8" title="1">{
+                return keywords
+        }</span>
+        <span class="cov8" title="1">return make(map[string]interface{})</span>
+}
+func extractBidderKeywordsMap(ext map[string]interface{}) map[string]interface{} <span class="cov8" title="1">{
+        if bidder, exists := maputil.ReadEmbeddedMap(ext, "bidder"); exists </span><span class="cov8" title="1">{
+                return extractKeywordsMap(bidder)
+        }</span>
+        <span class="cov0" title="0">return make(map[string]interface{})</span>
+}
+func parseKeywordsFromMap(extKeywords map[string]interface{}) Keywords <span class="cov8" title="1">{
+        keywords := make(Keywords)
+        for k, v := range extKeywords </span><span class="cov8" title="1">{
+                // keywords may only be provided in the site and user sections
+                if k != "site" &amp;&amp; k != "user" </span><span class="cov8" title="1">{
+                        continue</span>
+                }
+                // the site or user sections must be an object
+                <span class="cov8" title="1">if section, ok := v.(map[string]interface{}); ok </span><span class="cov8" title="1">{
+                        keywords[k] = parseKeywordsFromSection(section)
+                }</span>
+        }
+        <span class="cov8" title="1">return keywords</span>
+}
+func parseKeywordsFromSection(section map[string]interface{}) KeywordsPublisher <span class="cov8" title="1">{
+        keywordsPublishers := make(KeywordsPublisher)
+        for publisherKey, publisherValue := range section </span><span class="cov8" title="1">{
+                // publisher value must be a slice
+                publisherValueSlice, ok := publisherValue.([]interface{})
+                if !ok </span><span class="cov8" title="1">{
+                        continue</span>
+                }
+                <span class="cov8" title="1">for _, publisherValueItem := range publisherValueSlice </span><span class="cov8" title="1">{
+                        // item must be an object
+                        publisherItem, ok := publisherValueItem.(map[string]interface{})
+                        if !ok </span><span class="cov8" title="1">{
+                                continue</span>
+                        }
+                        // publisher item must have a name
+                        <span class="cov8" title="1">publisherName, ok := maputil.ReadEmbeddedString(publisherItem, "name")
+                        if !ok </span><span class="cov8" title="1">{
+                                continue</span>
+                        }
+                        <span class="cov8" title="1">var segments []KeywordSegment
+                        // extract valid segments
+                        if segmentsSlice, exists := maputil.ReadEmbeddedSlice(publisherItem, "segments"); exists </span><span class="cov8" title="1">{
+                                for _, segment := range segmentsSlice </span><span class="cov8" title="1">{
+                                        if segmentMap, ok := segment.(map[string]interface{}); ok </span><span class="cov8" title="1">{
+                                                name, hasName := maputil.ReadEmbeddedString(segmentMap, "name")
+                                                value, hasValue := maputil.ReadEmbeddedString(segmentMap, "value")
+                                                if hasName &amp;&amp; hasValue </span><span class="cov8" title="1">{
+                                                        segments = append(segments, KeywordSegment{Name: name, Value: value})
+                                                }</span>
+                                        }
+                                }
+                        }
+                        // ensure consistent ordering for publisher item map
+                        <span class="cov8" title="1">publisherItemKeys := make([]string, 0, len(publisherItem))
+                        for v := range publisherItem </span><span class="cov8" title="1">{
+                                publisherItemKeys = append(publisherItemKeys, v)
+                        }</span>
+                        <span class="cov8" title="1">sort.Strings(publisherItemKeys)
+                        // compose compatible alternate segment format
+                        for _, potentialSegmentName := range publisherItemKeys </span><span class="cov8" title="1">{
+                                potentialSegmentValues := publisherItem[potentialSegmentName]
+                                // values must be an array
+                                if valuesSlice, ok := potentialSegmentValues.([]interface{}); ok </span><span class="cov8" title="1">{
+                                        for _, value := range valuesSlice </span><span class="cov8" title="1">{
+                                                if valueAsString, ok := value.(string); ok </span><span class="cov8" title="1">{
+                                                        segments = append(segments, KeywordSegment{Name: potentialSegmentName, Value: valueAsString})
+                                                }</span>
+                                        }
+                                }
+                        }
+                        <span class="cov8" title="1">if len(segments) &gt; 0 </span><span class="cov8" title="1">{
+                                keywordsPublishers[publisherKey] = append(keywordsPublishers[publisherKey], KeywordsPublisherItem{Name: publisherName, Segments: segments})
+                        }</span>
+                }
+        }
+        <span class="cov8" title="1">return keywordsPublishers</span>
+}
+func parseKeywordsFromOpenRTB(keywords, section string) Keywords <span class="cov8" title="1">{
+        keywordsSplit := strings.Split(keywords, ",")
+        segments := make([]KeywordSegment, 0, len(keywordsSplit))
+        for _, v := range keywordsSplit </span><span class="cov8" title="1">{
+                if v != "" </span><span class="cov8" title="1">{
+                        segments = append(segments, KeywordSegment{Name: "keywords", Value: v})
+                }</span>
+        }
+        <span class="cov8" title="1">if len(segments) &gt; 0 </span><span class="cov8" title="1">{
+                return map[string]KeywordsPublisher{section: map[string][]KeywordsPublisherItem{"ortb2": {{Name: "keywords", Segments: segments}}}}
+        }</span>
+        <span class="cov8" title="1">return make(Keywords)</span>
+}
+func mergeKeywords(a, b Keywords) <span class="cov8" title="1">{
+        for key, values := range b </span><span class="cov8" title="1">{
+                if _, sectionExists := a[key]; !sectionExists </span><span class="cov8" title="1">{
+                        a[key] = KeywordsPublisher{}
+                }</span>
+                <span class="cov8" title="1">for publisherKey, publisherValues := range values </span><span class="cov8" title="1">{
+                        a[key][publisherKey] = append(publisherValues, a[key][publisherKey]...)
+                }</span>
+        }
+}
+
+func setImpExtKeywords(request *openrtb2.BidRequest) error <span class="cov8" title="1">{
+        userKeywords := ""
+        if request.User != nil </span><span class="cov8" title="1">{
+                userKeywords = request.User.Keywords
+        }</span>
+        <span class="cov8" title="1">siteKeywords := ""
+        if request.Site != nil </span><span class="cov8" title="1">{
+                siteKeywords = request.Site.Keywords
+        }</span>
+        <span class="cov8" title="1">var err error
+        request.Ext, err = buildConsolidatedKeywordsReqExt(userKeywords, siteKeywords, request.Imp[0].Ext, request.Ext)
+        return err</span>
+}
+
+func processImp(imp *openrtb2.Imp) error <span class="cov8" title="1">{
+        // get the grid extension
+        var ext adapters.ExtImpBidder
+        var gridExt openrtb_ext.ExtImpGrid
+        if err := json.Unmarshal(imp.Ext, &amp;ext); err != nil </span><span class="cov8" title="1">{
+                return err
+        }</span>
+        <span class="cov8" title="1">if err := json.Unmarshal(ext.Bidder, &amp;gridExt); err != nil </span><span class="cov8" title="1">{
+                return err
+        }</span>
+
+        <span class="cov8" title="1">if gridExt.Uid == 0 </span><span class="cov8" title="1">{
+                err := &amp;errortypes.BadInput{
+                        Message: "uid is empty",
+                }
+                return err
+        }</span>
+        // no error
+        <span class="cov8" title="1">return nil</span>
+}
+
+func setImpExtData(imp openrtb2.Imp) openrtb2.Imp <span class="cov8" title="1">{
+        var ext ExtImp
+        if err := json.Unmarshal(imp.Ext, &amp;ext); err != nil </span><span class="cov0" title="0">{
+                return imp
+        }</span>
+        <span class="cov8" title="1">if ext.Data != nil &amp;&amp; ext.Data.AdServer != nil &amp;&amp; ext.Data.AdServer.AdSlot != "" </span><span class="cov8" title="1">{
+                ext.Gpid = ext.Data.AdServer.AdSlot
+                extJSON, err := json.Marshal(ext)
+                if err == nil </span><span class="cov8" title="1">{
+                        imp.Ext = extJSON
+                }</span>
+        }
+        <span class="cov8" title="1">return imp</span>
+}
+
+func fixNative(req json.RawMessage) (json.RawMessage, error) <span class="cov8" title="1">{
+        var gridReq map[string]interface{}
+        var parsedRequest map[string]interface{}
+
+        if err := json.Unmarshal(req, &amp;gridReq); err != nil </span><span class="cov0" title="0">{
+                return req, nil
+        }</span>
+        <span class="cov8" title="1">if imps, exists := maputil.ReadEmbeddedSlice(gridReq, "imp"); exists </span><span class="cov8" title="1">{
+                for _, imp := range imps </span><span class="cov8" title="1">{
+                        if gridImp, ok := imp.(map[string]interface{}); ok </span><span class="cov8" title="1">{
+                                native, hasNative := maputil.ReadEmbeddedMap(gridImp, "native")
+                                if hasNative </span><span class="cov8" title="1">{
+                                        request, hasRequest := maputil.ReadEmbeddedString(native, "request")
+                                        if hasRequest </span><span class="cov8" title="1">{
+                                                delete(native, "request")
+                                                if err := json.Unmarshal([]byte(request), &amp;parsedRequest); err == nil </span><span class="cov8" title="1">{
+                                                        native["request_native"] = parsedRequest
+                                                }</span> else<span class="cov8" title="1"> {
+                                                        native["request_native"] = request
+                                                }</span>
+                                        }
+                                }
+                        }
+                }
+        }
+
+        <span class="cov8" title="1">return json.Marshal(gridReq)</span>
+}
+
+// MakeRequests makes the HTTP requests which should be made to fetch bids.
+func (a *GridAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) <span class="cov8" title="1">{
+        var errors = make([]error, 0)
+
+        // this will contain all the valid impressions
+        var validImps []openrtb2.Imp
+        // pre-process the imps
+        for _, imp := range request.Imp </span><span class="cov8" title="1">{
+                if err := processImp(&amp;imp); err == nil </span><span class="cov8" title="1">{
+                        validImps = append(validImps, setImpExtData(imp))
+                }</span> else<span class="cov8" title="1"> {
+                        errors = append(errors, err)
+                }</span>
+        }
+        <span class="cov8" title="1">if len(validImps) == 0 </span><span class="cov8" title="1">{
+                err := &amp;errortypes.BadInput{
+                        Message: "No valid impressions for grid",
+                }
+                errors = append(errors, err)
+                return nil, errors
+        }</span>
+
+        <span class="cov8" title="1">if err := setImpExtKeywords(request); err != nil </span><span class="cov0" title="0">{
+                errors = append(errors, err)
+                return nil, errors
+        }</span>
+
+        <span class="cov8" title="1">request.Imp = validImps
+
+        reqJSON, err := json.Marshal(request)
+
+        if err != nil </span><span class="cov0" title="0">{
+                errors = append(errors, err)
+                return nil, errors
+        }</span>
+
+        <span class="cov8" title="1">fixedReqJSON, err := fixNative(reqJSON)
+
+        if err != nil </span><span class="cov0" title="0">{
+                errors = append(errors, err)
+                return nil, errors
+        }</span>
+
+        <span class="cov8" title="1">headers := http.Header{}
+        headers.Add("Content-Type", "application/json;charset=utf-8")
+
+        return []*adapters.RequestData{{
+                Method:  "POST",
+                Uri:     a.endpoint,
+                Body:    fixedReqJSON,
+                Headers: headers,
+                ImpID:   openrtb_ext.GetImpIDs(request.Imp),
+        }}, errors</span>
+}
+
+// MakeBids unpacks the server's response into Bids.
+func (a *GridAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) <span class="cov8" title="1">{
+        if response.StatusCode == http.StatusNoContent </span><span class="cov8" title="1">{
+                return nil, nil
+        }</span>
+
+        <span class="cov8" title="1">if response.StatusCode == http.StatusBadRequest </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">if response.StatusCode != http.StatusOK </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadServerResponse{
+                        Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">var bidResp GridResponse
+        if err := json.Unmarshal(response.Body, &amp;bidResp); err != nil </span><span class="cov8" title="1">{
+                return nil, []error{err}
+        }</span>
+
+        <span class="cov8" title="1">bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
+
+        for _, sb := range bidResp.SeatBid </span><span class="cov8" title="1">{
+                for i := range sb.Bid </span><span class="cov8" title="1">{
+                        bidMeta, err := getBidMeta(sb.Bid[i].Ext)
+                        bidType, err := getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp, sb.Bid[i])
+                        if sb.Bid[i].AdmNative != nil &amp;&amp; sb.Bid[i].AdM == "" </span><span class="cov8" title="1">{
+                                if bytes, err := json.Marshal(sb.Bid[i].AdmNative); err == nil </span><span class="cov8" title="1">{
+                                        sb.Bid[i].AdM = string(bytes)
+                                }</span>
+                        }
+                        <span class="cov8" title="1">if err != nil </span><span class="cov0" title="0">{
+                                return nil, []error{err}
+                        }</span>
+
+                        <span class="cov8" title="1">openrtb2Bid := sb.Bid[i].Bid
+
+                        bidResponse.Bids = append(bidResponse.Bids, &amp;adapters.TypedBid{
+                                Bid:     openrtb2Bid,
+                                BidType: bidType,
+                                BidMeta: bidMeta,
+                        })</span>
+                }
+        }
+        <span class="cov8" title="1">return bidResponse, nil</span>
+
+}
+
+// Builder builds a new instance of the Grid adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) <span class="cov8" title="1">{
+        bidder := &amp;GridAdapter{
+                endpoint: config.Endpoint,
+        }
+        return bidder, nil
+}</span>
+
+func getBidMeta(ext json.RawMessage) (*openrtb_ext.ExtBidPrebidMeta, error) <span class="cov8" title="1">{
+        var bidExt GridBidExt
+
+        if err := json.Unmarshal(ext, &amp;bidExt); err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">var bidMeta *openrtb_ext.ExtBidPrebidMeta
+        if bidExt.Bidder.Grid.DemandSource != "" </span><span class="cov8" title="1">{
+                bidMeta = &amp;openrtb_ext.ExtBidPrebidMeta{
+                        NetworkName: bidExt.Bidder.Grid.DemandSource,
+                }
+        }</span>
+        <span class="cov8" title="1">return bidMeta, nil</span>
+}
+
+func getMediaTypeForImp(impID string, imps []openrtb2.Imp, bidWithType GridBid) (openrtb_ext.BidType, error) <span class="cov8" title="1">{
+        if bidWithType.ContentType != "" </span><span class="cov8" title="1">{
+                return bidWithType.ContentType, nil
+        }</span> else<span class="cov8" title="1"> {
+                for _, imp := range imps </span><span class="cov8" title="1">{
+                        if imp.ID == impID </span><span class="cov8" title="1">{
+                                if imp.Banner != nil </span><span class="cov8" title="1">{
+                                        return openrtb_ext.BidTypeBanner, nil
+                                }</span>
+
+                                <span class="cov8" title="1">if imp.Video != nil </span><span class="cov8" title="1">{
+                                        return openrtb_ext.BidTypeVideo, nil
+                                }</span>
+
+                                <span class="cov8" title="1">if imp.Native != nil </span><span class="cov8" title="1">{
+                                        return openrtb_ext.BidTypeNative, nil
+                                }</span>
+
+                                <span class="cov0" title="0">return "", &amp;errortypes.BadServerResponse{
+                                        Message: fmt.Sprintf("Unknown impression type for ID: \"%s\"", impID),
+                                }</span>
+                        }
+                }
+        }
+
+        // This shouldnt happen. Lets handle it just incase by returning an error.
+        <span class="cov0" title="0">return "", &amp;errortypes.BadServerResponse{
+                Message: fmt.Sprintf("Failed to find impression for ID: \"%s\"", impID),
+        }</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
