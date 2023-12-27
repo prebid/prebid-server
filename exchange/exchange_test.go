@@ -4734,6 +4734,7 @@ func TestMakeBidWithValidation(t *testing.T) {
 		description       string
 		givenValidations  config.Validations
 		givenBids         []*entities.PbsOrtbBid
+		givenSeat         openrtb_ext.BidderName
 		expectedNumOfBids int
 		expectedNonBids   *nonBids
 	}{
@@ -4741,6 +4742,7 @@ func TestMakeBidWithValidation(t *testing.T) {
 			description:       "Validation is enforced, and one bid out of the two is invalid based on dimensions",
 			givenValidations:  config.Validations{BannerCreativeMaxSize: config.ValidationEnforce, MaxCreativeWidth: 100, MaxCreativeHeight: 100},
 			givenBids:         []*entities.PbsOrtbBid{{Bid: &openrtb2.Bid{W: 200, H: 200}, BidType: openrtb_ext.BidTypeBanner}, {Bid: &openrtb2.Bid{W: 50, H: 50}, BidType: openrtb_ext.BidTypeBanner}},
+			givenSeat:         "pubmatic",
 			expectedNumOfBids: 1,
 			expectedNonBids: &nonBids{
 				seatNonBidsMap: map[string][]openrtb_ext.NonBid{
@@ -4764,6 +4766,7 @@ func TestMakeBidWithValidation(t *testing.T) {
 			description:       "Validation is warned, so no bids should be removed (Validating CreativeMaxSize) ",
 			givenValidations:  config.Validations{BannerCreativeMaxSize: config.ValidationWarn, MaxCreativeWidth: 100, MaxCreativeHeight: 100},
 			givenBids:         []*entities.PbsOrtbBid{{Bid: &openrtb2.Bid{W: 200, H: 200}, BidType: openrtb_ext.BidTypeBanner}, {Bid: &openrtb2.Bid{W: 50, H: 50}, BidType: openrtb_ext.BidTypeBanner}},
+			givenSeat:         "pubmatic",
 			expectedNumOfBids: 2,
 			expectedNonBids:   &nonBids{},
 		},
@@ -4771,6 +4774,7 @@ func TestMakeBidWithValidation(t *testing.T) {
 			description:       "Validation is enforced, and one bid out of the two is invalid based on AdM",
 			givenValidations:  config.Validations{SecureMarkup: config.ValidationEnforce},
 			givenBids:         []*entities.PbsOrtbBid{{Bid: &openrtb2.Bid{AdM: "http://domain.com/invalid", ImpID: "1"}, BidType: openrtb_ext.BidTypeBanner}, {Bid: &openrtb2.Bid{AdM: "https://domain.com/valid", ImpID: "2"}, BidType: openrtb_ext.BidTypeBanner}},
+			givenSeat:         "pubmatic",
 			expectedNumOfBids: 1,
 			expectedNonBids: &nonBids{
 				seatNonBidsMap: map[string][]openrtb_ext.NonBid{
@@ -4787,6 +4791,7 @@ func TestMakeBidWithValidation(t *testing.T) {
 			description:       "Validation is warned so no bids should be removed (Validating SecureMarkup)",
 			givenValidations:  config.Validations{SecureMarkup: config.ValidationWarn},
 			givenBids:         []*entities.PbsOrtbBid{{Bid: &openrtb2.Bid{AdM: "http://domain.com/invalid", ImpID: "1"}, BidType: openrtb_ext.BidTypeBanner}, {Bid: &openrtb2.Bid{AdM: "https://domain.com/valid", ImpID: "2"}, BidType: openrtb_ext.BidTypeBanner}},
+			givenSeat:         "pubmatic",
 			expectedNumOfBids: 2,
 			expectedNonBids:   &nonBids{},
 		},
@@ -4794,6 +4799,7 @@ func TestMakeBidWithValidation(t *testing.T) {
 			description:       "Adm validation is skipped, creative size validation is enforced, one Adm is invalid, but because we skip, no bids should be removed",
 			givenValidations:  config.Validations{SecureMarkup: config.ValidationSkip, BannerCreativeMaxSize: config.ValidationEnforce},
 			givenBids:         []*entities.PbsOrtbBid{{Bid: &openrtb2.Bid{AdM: "http://domain.com/invalid"}, BidType: openrtb_ext.BidTypeBanner}, {Bid: &openrtb2.Bid{AdM: "https://domain.com/valid"}, BidType: openrtb_ext.BidTypeBanner}},
+			givenSeat:         "pubmatic",
 			expectedNumOfBids: 2,
 			expectedNonBids:   &nonBids{},
 		},
@@ -4801,6 +4807,7 @@ func TestMakeBidWithValidation(t *testing.T) {
 			description:       "Creative Size Validation is skipped, Adm Validation is enforced, one Creative Size is invalid, but because we skip, no bids should be removed",
 			givenValidations:  config.Validations{BannerCreativeMaxSize: config.ValidationWarn, MaxCreativeWidth: 100, MaxCreativeHeight: 100},
 			givenBids:         []*entities.PbsOrtbBid{{Bid: &openrtb2.Bid{W: 200, H: 200}, BidType: openrtb_ext.BidTypeBanner}, {Bid: &openrtb2.Bid{W: 50, H: 50}, BidType: openrtb_ext.BidTypeBanner}},
+			givenSeat:         "pubmatic",
 			expectedNumOfBids: 2,
 			expectedNonBids:   &nonBids{},
 		},
@@ -4842,7 +4849,7 @@ func TestMakeBidWithValidation(t *testing.T) {
 		e.bidValidationEnforcement = test.givenValidations
 		sampleBids := test.givenBids
 		nonBids := &nonBids{}
-		resultingBids, resultingErrs := e.makeBid(sampleBids, sampleAuction, true, ImpExtInfoMap, bidExtResponse, "pubmatic", "", nonBids)
+		resultingBids, resultingErrs := e.makeBid(sampleBids, sampleAuction, true, ImpExtInfoMap, bidExtResponse, test.givenSeat, "", nonBids)
 
 		assert.Equal(t, 0, len(resultingErrs), "%s. Test should not return errors \n", test.description)
 		assert.Equal(t, test.expectedNumOfBids, len(resultingBids), "%s. Test returns more valid bids than expected\n", test.description)
