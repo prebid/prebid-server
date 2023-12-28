@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "title": "Zmaticoo Adapter Params",
-  "description": "A schema which validates params accepted by the Zmaticoo adapter",
+  "title": "zMaticoo Adapter Params",
+  "description": "A schema which validates params accepted by the zMaticoo adapter",
   "type": "object",
   "properties": {
     "pubId": {
