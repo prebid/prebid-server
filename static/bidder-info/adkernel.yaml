@@ -5,11 +5,14 @@ gvlVendorID: 14
 capabilities:
   app:
     mediaTypes:
-      - banner      
+      - banner
+      - video
+      - native
   site:
     mediaTypes:
       - banner
       - video
+      - native
 userSync:
   redirect:
     url: "https://sync.adkernel.com/user-sync?t=image&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&r={{.RedirectURL}}"
