@@ -5,7 +5,12 @@
       {
         "id": "test-imp-id",
         "banner": {
-          "format": [{"w": 300, "h": 50}]
+          "format": [
+            {
+              "w": 300,
+              "h": 50
+            }
+          ]
         },
         "ext": {
           "bidder": {
@@ -16,7 +21,6 @@
       }
     ]
   },
-
   "httpCalls": [
     {
       "expectedRequest": {
@@ -25,9 +29,14 @@
           "id": "test-request-id",
           "imp": [
             {
-              "id":"test-imp-id",
+              "id": "test-imp-id",
               "banner": {
-                "format": [{"w": 300, "h": 50}]
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 50
+                  }
+                ]
               },
               "ext": {
                 "bidder": {
@@ -46,13 +55,16 @@
           "seatbid": [
             {
               "seat": "ttx",
-              "bid": [{
-                "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
-                "impid": "test-imp-id",
-                "price": 1.2,
-                "adm": "some-ads",
-                "crid": "crid_testid"
-              }]
+              "bid": [
+                {
+                  "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                  "impid": "test-imp-id",
+                  "price": 1.2,
+                  "adm": "some-ads",
+                  "crid": "crid_testid",
+                  "mtype": 1
+                }
+              ]
             }
           ],
           "cur": "USD"
@@ -60,7 +72,6 @@
       }
     }
   ],
-
   "expectedBidResponses": [
     {
       "currency": "USD",
@@ -71,7 +82,8 @@
             "impid": "test-imp-id",
             "price": 1.2,
             "adm": "some-ads",
-            "crid": "crid_testid"
+            "crid": "crid_testid",
+            "mtype": 1
           },
           "type": "banner"
         }

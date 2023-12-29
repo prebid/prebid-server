@@ -59,7 +59,8 @@
                   "impid": "test-imp-id",
                   "price": 1.2,
                   "adm": "some-ads",
-                  "crid": "crid_testid"
+                  "crid": "crid_testid",
+                  "mtype": 2
                 }
               ]
             }
@@ -79,7 +80,8 @@
             "impid": "test-imp-id",
             "price": 1.2,
             "adm": "some-ads",
-            "crid": "crid_testid"
+            "crid": "crid_testid",
+            "mtype": 2
           },
           "type": "video"
         }
