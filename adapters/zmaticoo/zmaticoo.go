@@ -149,7 +149,9 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 		return openrtb_ext.BidTypeBanner, nil
 	case openrtb2.MarkupNative:
 		return openrtb_ext.BidTypeNative, nil
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
 	default:
-		return "", fmt.Errorf("unrecognized bid type in response from rtbhouse for bid %s", bid.ImpID)
+		return "", fmt.Errorf("unrecognized bid type in response from zmaticoo for bid %s", bid.ImpID)
 	}
 }
