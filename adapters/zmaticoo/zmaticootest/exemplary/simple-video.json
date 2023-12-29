@@ -23,7 +23,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://gw-sin-bid.zmaticoo.com/prebid/bid",
+        "uri": "https://bid.zmaticoo.com/prebid/bid",
         "body": {
           "id": "test-request-id",
           "imp": [
