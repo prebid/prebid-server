@@ -5,17 +5,10 @@
     "imp": [
       {
         "id": "3",
-        "banner": {
-          "format": [
-            {
-              "w": 468,
-              "h": 60
-            },
-            {
-              "w": 300,
-              "h": 600
-            }
-          ]
+        "video": {
+          "mimes": ["video/mp4"],
+          "w": 1024,
+          "h": 576
         },
         "ext": {
           "bidder": {
@@ -56,17 +49,10 @@
             {
               "id": "3",
               "tagid": "123456",
-              "banner": {
-                "format": [
-                  {
-                    "w": 468,
-                    "h": 60
-                  },
-                  {
-                    "w": 300,
-                    "h": 600
-                  }
-                ]
+              "video": {
+                "mimes": ["video/mp4"],
+                "w": 1024,
+                "h": 576
               },
               "ext": {
                 "bidder": {
@@ -102,11 +88,9 @@
               "id": "8923356982838-09",
               "bidId": "3",
               "cpm": 2,
-              "width": 468,
-              "height": 60,
-              "ad": "advert",
+              "ad": "<vast><div>video</div></vast>",
               "crid": "wasd",
-              "mtype": "banner"
+              "mtype": "video"
             }
           ]
         }
@@ -121,13 +105,11 @@
           "id": "8923356982838-09",
           "impid": "3",
           "price": 2,
-          "adm": "advert",
-          "w": 468,
-          "h": 60,
+          "adm": "<vast><div>video</div></vast>",
           "crid": "wasd",
-          "mtype": 1
+          "mtype": 2
         },
-        "type": "banner"
+        "type": "video"
       }]
     }
   ]

@@ -25,13 +25,10 @@
       },
       {
         "id": "9",
-        "banner": {
-          "format": [
-            {
-              "w": 770,
-              "h": 250
-            }
-          ]
+        "video": {
+          "mimes": ["video/mp4"],
+          "w": 1024,
+          "h": 576
         },
         "ext": {
           "bidder": {
@@ -93,13 +90,10 @@
             {
               "id": "9",
               "tagid": "85310",
-              "banner": {
-                "format": [
-                  {
-                    "w": 770,
-                    "h": 250
-                  }
-                ]
+              "video": {
+                  "mimes": ["video/mp4"],
+                  "w": 1024,
+                  "h": 576
               },
               "ext": {
                 "bidder": {
@@ -137,7 +131,7 @@
               "cpm": 2,
               "width": 468,
               "height": 60,
-              "ad": "advert",
+              "ad": "banner ad",
               "crid": "qwert",
               "mtype": "banner"
             },
@@ -147,9 +141,9 @@
               "cpm": 7.21,
               "width": 770,
               "height": 250,
-              "ad": "another advert",
+              "ad": "<vast>video ad</vast>",
               "crid": "wasd",
-              "mtype": "banner"
+              "mtype": "video"
             }
           ]
         }
@@ -165,7 +159,7 @@
             "id": "3929239282-01",
             "impid": "3",
             "price": 2,
-            "adm": "advert",
+            "adm": "banner ad",
             "w": 468,
             "h": 60,
             "crid": "qwert",
@@ -178,13 +172,13 @@
             "id": "3929239282-02",
             "impid": "9",
             "price": 7.21,
-            "adm": "another advert",
+            "adm": "<vast>video ad</vast>",
             "w": 770,
             "h": 250,
             "crid": "wasd",
-            "mtype": 1
+            "mtype": 2
           },
-          "type": "banner"
+          "type": "video"
         }
       ]
     }
