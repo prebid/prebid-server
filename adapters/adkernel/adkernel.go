@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"text/template"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
@@ -13,6 +14,14 @@ import (
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/macros"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+)
+
+const (
+	mf_suffix        = "__mf"
+	mf_suffix_banner = "b" + mf_suffix
+	mf_suffix_video  = "v" + mf_suffix
+	mf_suffix_audio  = "a" + mf_suffix
+	mf_suffix_native = "n" + mf_suffix
 )
 
 type adkernelAdapter struct {
@@ -78,8 +87,8 @@ func validateImpression(imp *openrtb2.Imp, impExt *openrtb_ext.ExtImpAdkernel) e
 	if impExt.ZoneId < 1 {
 		return newBadInputError(fmt.Sprintf("Invalid zoneId value: %d. Ignoring imp id=%s", impExt.ZoneId, imp.ID))
 	}
-	if imp.Video == nil && imp.Banner == nil && imp.Native == nil {
-		return newBadInputError(fmt.Sprintf("Invalid imp id=%s. Expected imp.banner / imp.video / imp.native", imp.ID))
+	if imp.Video == nil && imp.Banner == nil && imp.Native == nil && imp.Audio == nil {
+		return newBadInputError(fmt.Sprintf("Invalid imp id=%s. Expected imp.banner / imp.video / imp.native / imp.audio", imp.ID))
 	}
 	return nil
 }
@@ -90,54 +99,84 @@ func dispatchImpressions(imps []openrtb2.Imp, impsExt []openrtb_ext.ExtImpAdkern
 	errors := make([]error, 0)
 	for idx := range imps {
 		imp := imps[idx]
-		err := compatImpression(&imp)
-		if err != nil {
-			errors = append(errors, err)
-			continue
-		}
+		imp.Ext = nil
 		impExt := impsExt[idx]
 		if res[impExt] == nil {
 			res[impExt] = make([]openrtb2.Imp, 0)
 		}
-		res[impExt] = append(res[impExt], imp)
+		if isMultiFormatImp(&imp) {
+			splImps := splitMultiFormatImp(&imp)
+			res[impExt] = append(res[impExt], splImps...)
+		} else {
+			res[impExt] = append(res[impExt], imp)
+		}
 	}
 	return res, errors
 }
 
-// Alter impression info to comply with adkernel platform requirements
-func compatImpression(imp *openrtb2.Imp) error {
-	imp.Ext = nil //do not forward ext to adkernel platform
-	if imp.Banner != nil {
-		return compatBannerImpression(imp)
-	}
+func isMultiFormatImp(imp *openrtb2.Imp) bool {
+	count := 0
 	if imp.Video != nil {
-		return compatVideoImpression(imp)
+		count++
+	}
+	if imp.Audio != nil {
+		count++
+	}
+	if imp.Banner != nil {
+		count++
 	}
 	if imp.Native != nil {
-		return compatNativeImpression(imp)
+		count++
 	}
-	return newBadInputError("Invalid impression")
+	return count > 1
 }
 
-func compatBannerImpression(imp *openrtb2.Imp) error {
-	imp.Audio = nil
-	imp.Video = nil
-	imp.Native = nil
-	return nil
+func isMultiFormatImps(imps []openrtb2.Imp) bool {
+	for _, imp := range imps {
+		if isMultiFormatImp(&imp) {
+			return true
+		}
+	}
+	return false
 }
 
-func compatVideoImpression(imp *openrtb2.Imp) error {
-	imp.Banner = nil
-	imp.Audio = nil
-	imp.Native = nil
-	return nil
-}
+func splitMultiFormatImp(imp *openrtb2.Imp) []openrtb2.Imp {
+	splitImps := make([]openrtb2.Imp, 0)
+	if imp.Banner != nil {
+		impCopy := *imp
+		impCopy.Video = nil
+		impCopy.Native = nil
+		impCopy.Audio = nil
+		impCopy.ID += mf_suffix_banner
+		splitImps = append(splitImps, impCopy)
+	}
+	if imp.Video != nil {
+		impCopy := *imp
+		impCopy.Banner = nil
+		impCopy.Native = nil
+		impCopy.Audio = nil
+		impCopy.ID += mf_suffix_video
+		splitImps = append(splitImps, impCopy)
+	}
 
-func compatNativeImpression(imp *openrtb2.Imp) error {
-	imp.Banner = nil
-	imp.Audio = nil
-	imp.Video = nil
-	return nil
+	if imp.Native != nil {
+		impCopy := *imp
+		impCopy.Banner = nil
+		impCopy.Video = nil
+		impCopy.Audio = nil
+		impCopy.ID += mf_suffix_native
+		splitImps = append(splitImps, impCopy)
+	}
+
+	if imp.Audio != nil {
+		impCopy := *imp
+		impCopy.Banner = nil
+		impCopy.Video = nil
+		impCopy.Native = nil
+		impCopy.ID += mf_suffix_audio
+		splitImps = append(splitImps, impCopy)
+	}
+	return splitImps
 }
 
 func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpAdkernel, error) {
@@ -232,19 +271,45 @@ func (adapter *adkernelAdapter) MakeBids(internalRequest *openrtb2.BidRequest, e
 	bidResponse.Currency = bidResp.Cur
 	for i := 0; i < len(seatBid.Bid); i++ {
 		bid := seatBid.Bid[i]
+		origImpId := bid.ImpID
+		typeSuffix := ""
+		if strings.HasSuffix(origImpId, mf_suffix) {
+			sfxStart := len(origImpId) - len(mf_suffix) - 1
+			typeSuffix = origImpId[sfxStart:]
+			bid.ImpID = origImpId[:sfxStart]
+		}
 		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 			Bid:     &bid,
-			BidType: getMediaTypeForImpID(bid.ImpID, internalRequest.Imp),
+			BidType: getMediaTypeForImpID(bid.ImpID, typeSuffix, internalRequest.Imp),
 		})
 	}
 	return bidResponse, nil
 }
 
 // getMediaTypeForImp figures out which media type this bid is for
-func getMediaTypeForImpID(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
-	for _, imp := range imps {
-		if imp.ID == impID && imp.Banner != nil {
+func getMediaTypeForImpID(impID string, typeSuffix string, imps []openrtb2.Imp) openrtb_ext.BidType {
+	if len(typeSuffix) > 0 {
+		if typeSuffix == mf_suffix_banner {
 			return openrtb_ext.BidTypeBanner
+		} else if typeSuffix == mf_suffix_video {
+			return openrtb_ext.BidTypeVideo
+		} else if typeSuffix == mf_suffix_audio {
+			return openrtb_ext.BidTypeAudio
+		} else if typeSuffix == mf_suffix_native {
+			return openrtb_ext.BidTypeNative
+		}
+	}
+	for _, imp := range imps {
+		if imp.ID == impID {
+			if imp.Banner != nil {
+				return openrtb_ext.BidTypeBanner
+			} else if imp.Video != nil {
+				return openrtb_ext.BidTypeVideo
+			} else if imp.Audio != nil {
+				return openrtb_ext.BidTypeAudio
+			} else if imp.Native != nil {
+				return openrtb_ext.BidTypeNative
+			}
 		}
 	}
 	return openrtb_ext.BidTypeVideo
