@@ -12,6 +12,10 @@ import (
 	"net/url"
 )
 
+var (
+	endPoint = "https://bid.zmaticoo.com/prebid/bid"
+)
+
 type adapter struct {
 	endpoint string
 }
@@ -20,6 +24,9 @@ type adapter struct {
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	endpointURL, err := url.Parse(config.Endpoint)
 	if err != nil {
+		return nil, fmt.Errorf("invalid endpoint: %v", err)
+	}
+	if endpointURL.String() != endPoint {
 		return nil, fmt.Errorf("invalid endpoint: %v", err)
 	}
 	bidder := &adapter{
