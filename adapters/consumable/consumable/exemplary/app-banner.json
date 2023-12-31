@@ -1,6 +1,14 @@
 {
   "mockBidRequest": {
     "id": "test-request-id",
+    "app": {
+      "id": "1",
+      "bundle": "com.foo.bar"
+    },
+    "device": {
+      "ua": "Mozilla/5.0 (Windows NT 5.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.101 Safari/537.36",
+      "ip": "73.55.27.72"
+    },
     "imp": [
       {
         "id": "test-imp-id",
@@ -8,78 +16,50 @@
           "format": [
             {
               "w": 728,
-              "h": 250
+              "h": 90
             }
           ]
         },
         "ext": {
           "bidder": {
-            "networkId": 11,
-            "siteId": 32,
-            "unitId": 42
+            "placementId": "0421008445828ceb46f496700a5fa65e"
           }
         }
       }
-    ],
-    "device": {
-      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.91 Safari/537.36",
-      "ip": "123.123.123.123"
-    },
-    "site": {
-      "domain": "www.some.com",
-      "page": "http://www.some.com/page-where-ad-will-be-shown",
-      "content": {
-        "id": "1009680902",
-        "title": "What You Know Bout Love",
-        "context": 3,
-        "url": "https://www.deezer.com/track/1009680902",
-        "artist": "Pop Smoke",
-        "album": "Shoot For The Stars Aim For The Moon"
-      }
-    }
+    ]
   },
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://e.serverbid.com/sb/rtb",
+        "uri": "https://e.serverbid.com/rtb/bid?s=0421008445828ceb46f496700a5fa65e",
         "body": {
-          "device": {
-            "ip": "123.123.123.123",
-            "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.91 Safari/537.36"
-          },
           "id": "test-request-id",
+          "app": {
+            "id": "1",
+            "bundle": "com.foo.bar"
+          },
+          "device": {
+            "ua": "Mozilla/5.0 (Windows NT 5.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.101 Safari/537.36",
+            "ip": "73.55.27.72"
+          },
           "imp": [
             {
+              "id": "test-imp-id",
               "banner": {
                 "format": [
                   {
-                    "h": 250,
-                    "w": 728
+                    "w": 728,
+                    "h": 90
                   }
                 ]
               },
               "ext": {
                 "bidder": {
-                  "networkId": 11,
-                  "siteId": 32,
-                  "unitId": 42
+                  "placementId": "0421008445828ceb46f496700a5fa65e"
                 }
-              },
-              "id": "test-imp-id"
+              }
             }
-          ],
-          "site": {
-            "content": {
-              "album": "Shoot For The Stars Aim For The Moon",
-              "artist": "Pop Smoke",
-              "context": 3,
-              "id": "1009680902",
-              "title": "What You Know Bout Love",
-              "url": "https://www.deezer.com/track/1009680902"
-            },
-            "domain": "www.some.com",
-            "page": "http://www.some.com/page-where-ad-will-be-shown"
-          }
+          ]
         }
       },
       "mockResponse": {
