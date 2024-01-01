@@ -132,7 +132,7 @@ type bidderAdapterConfig struct {
 
 func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, hookExecutor hookexecution.StageExecutor, ruleToAdjustments openrtb_ext.AdjustmentsByDealID) ([]*entities.PbsOrtbSeatBid, extraBidderRespInfo, []error) {
 	request := openrtb_ext.RequestWrapper{BidRequest: bidderRequest.BidRequest}
-	reject := hookExecutor.ExecuteBidderRequestStage(&request, string(bidderRequest.BidderName))
+	reject := hookExecutor.ExecuteBidderRequestStage(&request, string(bidderRequest.BidderName), bidderRequest.BidderCoreName)
 	if reject != nil {
 		return nil, extraBidderRespInfo{}, []error{reject}
 	}
