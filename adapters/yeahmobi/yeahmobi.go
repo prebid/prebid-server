@@ -154,32 +154,16 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
 
-	var errs []error
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
-			bid := sb.Bid[i]
-			var mediaType = getBidType(bid.ImpID, internalRequest.Imp)
-			typedBid := &adapters.TypedBid{
-				Bid:      &bid,
-				BidType:  mediaType,
-				BidVideo: &openrtb_ext.ExtBidPrebidVideo{},
-			}
-			if bid.Ext != nil {
-				var bidExt *yeahmobiBidExt
-				err := json.Unmarshal(bid.Ext, &bidExt)
-				if err != nil {
-					errs = append(errs, err)
-				} else if bidExt != nil {
-					if bidExt.VideoCreativeInfo != nil && bidExt.VideoCreativeInfo.Duration != nil {
-						typedBid.BidVideo.Duration = *bidExt.VideoCreativeInfo.Duration
-					}
-				}
-			}
-
-			bidResponse.Bids = append(bidResponse.Bids, typedBid)
+			var mediaType = getBidType(sb.Bid[i].ImpID, internalRequest.Imp)
+			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+				Bid:     &sb.Bid[i],
+				BidType: mediaType,
+			})
 		}
 	}
-	return bidResponse, errs
+	return bidResponse, nil
 
 }
 
