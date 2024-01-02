@@ -133,7 +133,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 		return nil, []error{err}
 	}
 	var errs []error
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(internalRequest.Imp))
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
 			mediaType, err := getMediaTypeForBid(sb.Bid[i])
