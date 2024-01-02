@@ -88,6 +88,7 @@ type PriceFloorData struct {
 	ModelTimestamp      int                    `json:"modeltimestamp,omitempty"`
 	ModelGroups         []PriceFloorModelGroup `json:"modelgroups,omitempty"`
 	FloorProvider       string                 `json:"floorprovider,omitempty"`
+	UseFetchDataRate    *int                   `json:"usefetchdatarate,omitempty"`
 }
 
 type PriceFloorModelGroup struct {
