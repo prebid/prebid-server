@@ -200,6 +200,7 @@ type httpRequest struct {
 	Body    json.RawMessage `json:"body"`
 	Uri     string          `json:"uri"`
 	Headers http.Header     `json:"headers"`
+	ImpID   []string        `json:"impid"`
 }
 
 type httpResponse struct {
@@ -247,6 +248,7 @@ func assertMakeRequestsOutput(t *testing.T, filename string, actual []*adapters.
 		var err error
 		for j := 0; j < len(actual); j++ {
 			if err = diffHttpRequests(fmt.Sprintf("%s: httpRequest[%d]", filename, i), actual[j], &(expected[i].Request)); err == nil {
+				assert.ElementsMatch(t, actual[j].ImpID, expected[i].Request.ImpID, filename)
 				break
 			}
 		}
