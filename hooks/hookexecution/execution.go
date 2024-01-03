@@ -3,13 +3,15 @@ package hookexecution
 import (
 	"context"
 	"fmt"
+	"github.com/prebid/prebid-server/v2/ortb"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/prebid/prebid-server/hooks"
-	"github.com/prebid/prebid-server/hooks/hookstage"
-	"github.com/prebid/prebid-server/metrics"
+	"github.com/prebid/prebid-server/v2/hooks"
+	"github.com/prebid/prebid-server/v2/hooks/hookstage"
+	"github.com/prebid/prebid-server/v2/metrics"
+	"github.com/prebid/prebid-server/v2/privacy"
 )
 
 type hookResponse[T any] struct {
@@ -66,10 +68,11 @@ func executeGroup[H any, P any](
 
 	for _, hook := range group.Hooks {
 		mCtx := executionCtx.getModuleContext(hook.Module)
+		newPayload := handleModuleActivities(hook.Code, executionCtx.activityControl, payload)
 		wg.Add(1)
 		go func(hw hooks.HookWrapper[H], moduleCtx hookstage.ModuleInvocationContext) {
 			defer wg.Done()
-			executeHook(moduleCtx, hw, payload, hookHandler, group.Timeout, resp, rejected)
+			executeHook(moduleCtx, hw, newPayload, hookHandler, group.Timeout, resp, rejected)
 		}(hook, mCtx)
 	}
 
@@ -176,7 +179,7 @@ func handleHookResponse[P any](
 	metricEngine metrics.MetricsEngine,
 ) (P, HookOutcome, *RejectError) {
 	var rejectErr *RejectError
-	labels := metrics.ModuleLabels{Module: moduleReplacer.Replace(hr.HookID.ModuleCode), Stage: ctx.stage, AccountID: ctx.accountId}
+	labels := metrics.ModuleLabels{Module: moduleReplacer.Replace(hr.HookID.ModuleCode), Stage: ctx.stage, AccountID: ctx.accountID}
 	metricEngine.RecordModuleCalled(labels, hr.ExecutionTime)
 
 	hookOutcome := HookOutcome{
@@ -307,6 +310,32 @@ func handleHookMutations[P any](
 	} else {
 		hookOutcome.Status = StatusExecutionFailure
 		metricEngine.RecordModuleExecutionError(labels)
+	}
+
+	return payload
+}
+
+func handleModuleActivities[P any](hookCode string, activityControl privacy.ActivityControl, payload P) P {
+	payloadData, ok := any(&payload).(hookstage.RequestUpdater)
+	if !ok {
+		return payload
+	}
+
+	scopeGeneral := privacy.Component{Type: privacy.ComponentTypeGeneral, Name: hookCode}
+	transmitUserFPDActivityAllowed := activityControl.Allow(privacy.ActivityTransmitUserFPD, scopeGeneral, privacy.ActivityRequest{})
+
+	if !transmitUserFPDActivityAllowed {
+		// changes need to be applied to new payload and leave original payload unchanged
+		bidderReq := payloadData.GetBidderRequestPayload()
+
+		bidderReqCopy := ortb.CloneBidderReq(bidderReq.BidRequest)
+
+		privacy.ScrubUserFPD(bidderReqCopy)
+
+		var newPayload = payload
+		var np = any(&newPayload).(hookstage.RequestUpdater)
+		np.SetBidderRequestPayload(bidderReqCopy)
+		return newPayload
 	}
 
 	return payload

@@ -11,10 +11,10 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 const MAX_IMPRESSIONS_PUBMATIC = 30
@@ -22,7 +22,8 @@ const MAX_IMPRESSIONS_PUBMATIC = 30
 const ae = "ae"
 
 type PubmaticAdapter struct {
-	URI string
+	URI        string
+	bidderName string
 }
 
 type pubmaticBidExt struct {
@@ -640,7 +641,8 @@ func getBidType(bidExt *pubmaticBidExt) openrtb_ext.BidType {
 // Builder builds a new instance of the Pubmatic adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &PubmaticAdapter{
-		URI: config.Endpoint,
+		URI:        config.Endpoint,
+		bidderName: string(bidderName),
 	}
 	return bidder, nil
 }

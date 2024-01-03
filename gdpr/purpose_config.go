@@ -2,8 +2,8 @@ package gdpr
 
 import (
 	"github.com/prebid/go-gdpr/consentconstants"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 // purposeConfig represents all of the config info selected from the host and account configs for

@@ -1,13 +1,14 @@
 package jsonutil
 
 import (
-	"github.com/stretchr/testify/assert"
+	"errors"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestDropElement(t *testing.T) {
-
 	tests := []struct {
 		description     string
 		input           []byte
@@ -181,5 +182,61 @@ func TestDropElement(t *testing.T) {
 			assert.NoError(t, err, "Error should be nil")
 			assert.Equal(t, tt.output, res, "Result is incorrect")
 		}
+	}
+}
+
+func TestTryExtractErrorMessage(t *testing.T) {
+	tests := []struct {
+		name        string
+		givenErr    string
+		expectedMsg string
+	}{
+		{
+			name:        "level-1",
+			givenErr:    "readObjectStart: expect { or n, but found m, error found in #1 byte of ...|malformed|..., bigger context ...|malformed|..",
+			expectedMsg: "expect { or n, but found m",
+		},
+		{
+			name:        "level-2",
+			givenErr:    "openrtb_ext.ExtRequestPrebidCache.Bids: readObjectStart: expect { or n, but found t, error found in #10 byte of ...|:{\"bids\":true}}|..., bigger context ...|{\"cache\":{\"bids\":true}}|...",
+			expectedMsg: "cannot unmarshal openrtb_ext.ExtRequestPrebidCache.Bids: expect { or n, but found t",
+		},
+		{
+			name:        "level-3+",
+			givenErr:    "openrtb_ext.ExtRequestPrebid.Cache: openrtb_ext.ExtRequestPrebidCache.Bids: readObjectStart: expect { or n, but found t, error found in #10 byte of ...|:{\"bids\":true}}|..., bigger context ...|{\"cache\":{\"bids\":true}}|...",
+			expectedMsg: "cannot unmarshal openrtb_ext.ExtRequestPrebidCache.Bids: expect { or n, but found t",
+		},
+		{
+			name:        "error-msg",
+			givenErr:    "Skip: do not know how to skip: 109, error found in #10 byte of ...|prebid\": malformed}|..., bigger context ...|{\"prebid\": malformed}|...",
+			expectedMsg: "do not know how to skip: 109",
+		},
+		{
+			name:        "specific",
+			givenErr:    "openrtb_ext.ExtDevicePrebid.Interstitial: unmarshalerDecoder: request.device.ext.prebid.interstitial.minwidthperc must be a number between 0 and 100, error found in #10 byte of ...|         }\n        }|..., bigger context ...|: 120,\n            \"minheightperc\": 60\n          }\n        }|...",
+			expectedMsg: "request.device.ext.prebid.interstitial.minwidthperc must be a number between 0 and 100",
+		},
+		{
+			name:        "normal",
+			givenErr:    "normal error message",
+			expectedMsg: "normal error message",
+		},
+		{
+			name:        "norma-false-start",
+			givenErr:    "false: normal error message",
+			expectedMsg: "false: normal error message",
+		},
+		{
+			name:        "norma-false-end",
+			givenErr:    "normal error message, error found in #10 but doesn't follow format",
+			expectedMsg: "normal error message, error found in #10 but doesn't follow format",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result := tryExtractErrorMessage(errors.New(test.givenErr))
+			assert.Equal(t, test.expectedMsg, result)
+		})
 	}
 }
