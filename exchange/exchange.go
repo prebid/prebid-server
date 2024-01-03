@@ -267,7 +267,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 	}
 
 	// Get currency rates conversions for the auction
-	conversions := e.getAuctionCurrencyRates(requestExtPrebid.CurrencyConversions)
+	conversions := currency.GetAuctionCurrencyRates(e.currencyConverter, requestExtPrebid.CurrencyConversions)
 
 	var floorErrs []error
 	if e.priceFloorEnabled {
@@ -577,15 +577,18 @@ func applyDealSupport(bidRequest *openrtb2.BidRequest, auc *auction, bidCategory
 	for impID, topBidsPerImp := range auc.winningBidsByBidder {
 		impDeal := impDealMap[impID]
 		for bidder, topBidsPerBidder := range topBidsPerImp {
-			maxBid := bidsToUpdate(multiBid, bidder.String())
-
+			bidderNormalized, bidderFound := openrtb_ext.NormalizeBidderName(bidder.String())
+			if !bidderFound {
+				continue
+			}
+			maxBid := bidsToUpdate(multiBid, bidderNormalized.String())
 			for i, topBid := range topBidsPerBidder {
 				if i == maxBid {
 					break
 				}
 				if topBid.DealPriority > 0 {
-					if validateDealTier(impDeal[bidder]) {
-						updateHbPbCatDur(topBid, impDeal[bidder], bidCategory)
+					if validateDealTier(impDeal[bidderNormalized]) {
+						updateHbPbCatDur(topBid, impDeal[bidderNormalized], bidCategory)
 					} else {
 						errs = append(errs, fmt.Errorf("dealTier configuration invalid for bidder '%s', imp ID '%s'", string(bidder), impID))
 					}
@@ -759,6 +762,7 @@ func (e *exchange) getAllBids(
 					} else {
 						adapterBids[bidderName] = seatBid
 					}
+					extraRespInfo.bidsFound = true
 				}
 				// collect fledgeAuctionConfigs separately from bids, as empty seatBids may be discarded
 				extraRespInfo.fledge = collectFledgeFromSeatBid(extraRespInfo.fledge, bidderName, brw.adapter, seatBid)
@@ -766,10 +770,6 @@ func (e *exchange) getAllBids(
 		}
 		//but we need to add all bidders data to adapterExtra to have metrics and other metadata
 		adapterExtra[brw.bidder] = brw.adapterExtra
-
-		if !extraRespInfo.bidsFound && adapterBids[brw.bidder] != nil && len(adapterBids[brw.bidder].Bids) > 0 {
-			extraRespInfo.bidsFound = true
-		}
 	}
 
 	return adapterBids, adapterExtra, extraRespInfo
@@ -1360,34 +1360,6 @@ func (e *exchange) getBidCacheInfo(bid *entities.PbsOrtbBid, auction *auction) (
 	}
 
 	return
-}
-
-func (e *exchange) getAuctionCurrencyRates(requestRates *openrtb_ext.ExtRequestCurrency) currency.Conversions {
-	if requestRates == nil {
-		// No bidRequest.ext.currency field was found, use PBS rates as usual
-		return e.currencyConverter.Rates()
-	}
-
-	// If bidRequest.ext.currency.usepbsrates is nil, we understand its value as true. It will be false
-	// only if it's explicitly set to false
-	usePbsRates := requestRates.UsePBSRates == nil || *requestRates.UsePBSRates
-
-	if !usePbsRates {
-		// At this point, we can safely assume the ConversionRates map is not empty because
-		// validateCustomRates(bidReqCurrencyRates *openrtb_ext.ExtRequestCurrency) would have
-		// thrown an error under such conditions.
-		return currency.NewRates(requestRates.ConversionRates)
-	}
-
-	// Both PBS and custom rates can be used, check if ConversionRates is not empty
-	if len(requestRates.ConversionRates) == 0 {
-		// Custom rates map is empty, use PBS rates only
-		return e.currencyConverter.Rates()
-	}
-
-	// Return an AggregateConversions object that includes both custom and PBS currency rates but will
-	// prioritize custom rates over PBS rates whenever a currency rate is found in both
-	return currency.NewAggregateConversions(currency.NewRates(requestRates.ConversionRates), e.currencyConverter.Rates())
 }
 
 func findCacheID(bid *entities.PbsOrtbBid, auction *auction) (string, bool) {

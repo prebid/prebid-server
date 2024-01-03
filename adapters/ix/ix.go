@@ -34,6 +34,15 @@ type IxDiag struct {
 	MultipleSiteIds string `json:"multipleSiteIds,omitempty"`
 }
 
+type auctionConfig struct {
+	BidId  string          `json:"bidId,omitempty"`
+	Config json.RawMessage `json:"config,omitempty"`
+}
+
+type ixRespExt struct {
+	AuctionConfig []auctionConfig `json:"protectedAudienceAuctionConfigs,omitempty"`
+}
+
 func (a *IxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	requests := make([]*adapters.RequestData, 0, len(request.Imp))
 	errs := make([]error, 0)
@@ -270,6 +279,26 @@ func (a *IxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReque
 				BidType:  bidType,
 				BidVideo: bidExtVideo,
 			})
+		}
+	}
+
+	if bidResponse.Ext != nil {
+		var bidRespExt ixRespExt
+		if err := json.Unmarshal(bidResponse.Ext, &bidRespExt); err != nil {
+			return nil, append(errs, err)
+		}
+
+		if bidRespExt.AuctionConfig != nil {
+			bidderResponse.FledgeAuctionConfigs = make([]*openrtb_ext.FledgeAuctionConfig, 0, len(bidRespExt.AuctionConfig))
+			for _, config := range bidRespExt.AuctionConfig {
+				if config.Config != nil {
+					fledgeAuctionConfig := &openrtb_ext.FledgeAuctionConfig{
+						ImpId:  config.BidId,
+						Config: config.Config,
+					}
+					bidderResponse.FledgeAuctionConfigs = append(bidderResponse.FledgeAuctionConfigs, fledgeAuctionConfig)
+				}
+			}
 		}
 	}
 

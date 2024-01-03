@@ -9,7 +9,7 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder("dxkulture", config.Adapter{Endpoint: "https://ads.kulture.media/pbs"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+	bidder, buildErr := Builder("dxkulture", config.Adapter{Endpoint: "https://ads.dxkulture.com/pbs"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}

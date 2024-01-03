@@ -61,7 +61,7 @@ func NewCookieSyncEndpoint(
 	}
 
 	return &cookieSyncEndpoint{
-		chooser: usersync.NewChooser(syncersByBidder, bidderHashSet),
+		chooser: usersync.NewChooser(syncersByBidder, bidderHashSet, config.BidderInfos),
 		config:  config,
 		privacyConfig: usersyncPrivacyConfig{
 			gdprConfig:             config.GDPR,
@@ -180,8 +180,10 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, ma
 			ccpaParsedPolicy: ccpaParsedPolicy,
 			activityControl:  activityControl,
 			activityRequest:  privacy.NewRequestFromPolicies(privacyPolicies),
+			gdprSignal:       gdprSignal,
 		},
 		SyncTypeFilter: syncTypeFilter,
+		GPPSID:         request.GPPSID,
 	}
 	return rx, privacyMacros, nil
 }
@@ -490,6 +492,8 @@ func getDebugMessage(status usersync.Status) string {
 		return "No sync config"
 	case usersync.StatusTypeNotSupported:
 		return "Type not supported"
+	case usersync.StatusBlockedByDisabledUsersync:
+		return "Sync disabled by config"
 	}
 	return ""
 }
@@ -554,6 +558,7 @@ type usersyncPrivacy struct {
 	ccpaParsedPolicy ccpa.ParsedPolicy
 	activityControl  privacy.ActivityControl
 	activityRequest  privacy.ActivityRequest
+	gdprSignal       gdpr.Signal
 }
 
 func (p usersyncPrivacy) GDPRAllowsHostCookie() bool {
@@ -576,4 +581,8 @@ func (p usersyncPrivacy) ActivityAllowsUserSync(bidder string) bool {
 		privacy.ActivitySyncUser,
 		privacy.Component{Type: privacy.ComponentTypeBidder, Name: bidder},
 		p.activityRequest)
+}
+
+func (p usersyncPrivacy) GDPRInScope() bool {
+	return p.gdprSignal == gdpr.SignalYes
 }

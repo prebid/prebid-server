@@ -2,6 +2,7 @@
 # We have the following regional endpoint domains: exapi-us-east, exapi-us-west, exapi-apac, exapi-eu
 # Please deploy this config in each of your datacenters with the appropriate regional subdomain
 endpoint: "https://REGION.rubiconproject.com/a/api/exchange"
+endpointCompression: GZIP
 geoscope:
   - global
 disabled: true
