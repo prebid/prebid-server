@@ -110,7 +110,14 @@ func (a *adapter) getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ImpExtMgidX,
 }
 
 func (a *adapter) buildEndpointURL(params *openrtb_ext.ImpExtMgidX) (string, error) {
-	endpointParams := macros.EndpointTemplateParams{Host: params.Host}
+	var endpointParams macros.EndpointTemplateParams
+
+	if params.Region == "eu" {
+		endpointParams = macros.EndpointTemplateParams{Host: "eu"}
+	} else {
+		endpointParams = macros.EndpointTemplateParams{Host: "us-east-x"}
+	}
+
 	return macros.ResolveMacros(a.endpoint, endpointParams)
 }
 
