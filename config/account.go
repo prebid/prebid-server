@@ -42,6 +42,7 @@ type Account struct {
 	DefaultBidLimit         int                                         `mapstructure:"default_bid_limit" json:"default_bid_limit"`
 	BidAdjustments          *openrtb_ext.ExtRequestPrebidBidAdjustments `mapstructure:"bidadjustments" json:"bidadjustments"`
 	Privacy                 AccountPrivacy                              `mapstructure:"privacy" json:"privacy"`
+	Auction                 AuctionPrivacy                              `mapstructure:"auctionprivacy" json:"auctionprivacy"`
 }
 
 // CookieSync represents the account-level defaults for the cookie sync endpoint.
@@ -361,4 +362,13 @@ func (ip *IPv4) Validate(errs []error) []error {
 		errs = append(errs, err)
 	}
 	return errs
+}
+
+type AuctionPrivacy struct {
+	PrivacySandbox PrivacySandbox `mapstructure:"privacysandbox" json:"privacysandbox"`
+}
+
+type PrivacySandbox struct {
+	CookieDeprecation              bool `mapstructure:"cookiedeprecation" json:"cookiedeprecation"`
+	CookieDeprecationExpirationSec int  `mapstructure:"cookiedeprecationexpirationsec" json:"cookiedeprecationexpirationsec"`
 }
