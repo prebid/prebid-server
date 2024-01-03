@@ -348,7 +348,7 @@ func TestSetUIDEndpoint(t *testing.T) {
 			expectedBody:           "invalid gpp_sid encoding, must be a csv list of integers",
 		},
 		{
-			uri:                    "/setuid?bidder=pubmatic&uid=123&f=b",
+			uri:                    "/setuid?bidder=pubmatic&uid=123",
 			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
 			existingSyncs:          nil,
 			gdprAllowsHostCookies:  true,
@@ -356,7 +356,7 @@ func TestSetUIDEndpoint(t *testing.T) {
 			expectedSyncs:          map[string]string{"pubmatic": "123"},
 			expectedStatusCode:     http.StatusOK,
 			expectedHeaders:        map[string]string{"Content-Length": "86", "Content-Type": "image/png"},
-			description:            "Set uid for valid bidder with iframe format, but it's overriden by formatOverride",
+			description:            "Format not provided in URL, but formatOverride is defined",
 		},
 	}
 
@@ -1474,16 +1474,22 @@ func TestGetResponseFormat(t *testing.T) {
 			description:    "parameter given is empty (by empty item), use default sync type redirect",
 		},
 		{
-			urlValues:      url.Values{"f": []string{"b"}},
+			urlValues:      url.Values{"f": []string{}},
 			syncer:         fakeSyncer{key: "a", formatOverride: "i"},
 			expectedFormat: "i",
-			description:    "parameter given as `b`, but formatOverride is opposite",
+			description:    "format not provided, but formatOverride is defined, expect i",
 		},
 		{
-			urlValues:      url.Values{"f": []string{"i"}},
+			urlValues:      url.Values{"f": []string{}},
 			syncer:         fakeSyncer{key: "a", formatOverride: "b"},
 			expectedFormat: "b",
-			description:    "parameter given as `i`, but formatOverride is opposite",
+			description:    "format not provided, but formatOverride is defined, expect b",
+		},
+		{
+			urlValues:      url.Values{"f": []string{}},
+			syncer:         fakeSyncer{key: "a", formatOverride: "b", defaultSyncType: usersync.SyncTypeRedirect},
+			expectedFormat: "b",
+			description:    "format not provided, default is defined but formatOverride is defined as well, expect b",
 		},
 	}
 
@@ -1713,8 +1719,15 @@ func (s fakeSyncer) Key() string {
 	return s.key
 }
 
-func (s fakeSyncer) DefaultSyncType() usersync.SyncType {
-	return s.defaultSyncType
+func (s fakeSyncer) DefaultResponseFormat() usersync.SyncType {
+	switch s.formatOverride {
+	case "b":
+		return usersync.SyncTypeIFrame
+	case "i":
+		return usersync.SyncTypeRedirect
+	default:
+		return s.defaultSyncType
+	}
 }
 
 func (s fakeSyncer) SupportsType(syncTypes []usersync.SyncType) bool {

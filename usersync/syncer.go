@@ -26,8 +26,8 @@ type Syncer interface {
 	// necessarily, a one-to-one mapping with a bidder.
 	Key() string
 
-	// DefaultSyncType is the default SyncType for this syncer.
-	DefaultSyncType() SyncType
+	// DefaultResponseFormat is the default SyncType for this syncer.
+	DefaultResponseFormat() SyncType
 
 	// SupportsType returns true if the syncer supports at least one of the specified sync types.
 	SupportsType(syncTypes []SyncType) bool
@@ -35,9 +35,6 @@ type Syncer interface {
 	// GetSync returns a user sync for the user's device to perform, or an error if the none of the
 	// sync types are supported or if macro substitution fails.
 	GetSync(syncTypes []SyncType, userSyncMacros macros.UserSyncPrivacy) (Sync, error)
-
-	// ForceResponseFromat returns the callback format as specified in a bidders config
-	ForceResponseFormat() string
 }
 
 // Sync represents a user sync to be performed by the user's device.
@@ -81,7 +78,7 @@ func NewSyncer(hostConfig config.UserSync, syncerConfig config.Syncer, bidder st
 
 	if syncerConfig.IFrame != nil {
 		var err error
-		syncer.iframe, err = buildTemplate(bidder, setuidSyncTypeIFrame, hostConfig, syncerConfig.ExternalURL, *syncerConfig.IFrame)
+		syncer.iframe, err = buildTemplate(bidder, setuidSyncTypeIFrame, hostConfig, syncerConfig.ExternalURL, *syncerConfig.IFrame, syncerConfig.FormatOverride)
 		if err != nil {
 			return nil, fmt.Errorf("iframe %v", err)
 		}
@@ -92,7 +89,7 @@ func NewSyncer(hostConfig config.UserSync, syncerConfig config.Syncer, bidder st
 
 	if syncerConfig.Redirect != nil {
 		var err error
-		syncer.redirect, err = buildTemplate(bidder, setuidSyncTypeRedirect, hostConfig, syncerConfig.ExternalURL, *syncerConfig.Redirect)
+		syncer.redirect, err = buildTemplate(bidder, setuidSyncTypeRedirect, hostConfig, syncerConfig.ExternalURL, *syncerConfig.Redirect, syncerConfig.FormatOverride)
 		if err != nil {
 			return nil, fmt.Errorf("redirect %v", err)
 		}
@@ -122,10 +119,14 @@ var (
 	macroRegex             = regexp.MustCompile(`{{\s*\..*?\s*}}`)
 )
 
-func buildTemplate(bidderName, syncTypeValue string, hostConfig config.UserSync, syncerExternalURL string, syncerEndpoint config.SyncerEndpoint) (*template.Template, error) {
+func buildTemplate(bidderName, syncTypeValue string, hostConfig config.UserSync, syncerExternalURL string, syncerEndpoint config.SyncerEndpoint, formatOverride string) (*template.Template, error) {
 	redirectTemplate := syncerEndpoint.RedirectURL
 	if redirectTemplate == "" {
 		redirectTemplate = hostConfig.RedirectURL
+	}
+
+	if formatOverride != "" {
+		syncTypeValue = formatOverride
 	}
 
 	externalURL := chooseExternalURL(syncerEndpoint.ExternalURL, syncerExternalURL, hostConfig.ExternalURL)
@@ -194,8 +195,15 @@ func (s standardSyncer) Key() string {
 	return s.key
 }
 
-func (s standardSyncer) DefaultSyncType() SyncType {
-	return s.defaultSyncType
+func (s standardSyncer) DefaultResponseFormat() SyncType {
+	switch s.formatOverride {
+	case setuidSyncTypeIFrame:
+		return SyncTypeIFrame
+	case setuidSyncTypeRedirect:
+		return SyncTypeRedirect
+	default:
+		return s.defaultSyncType
+	}
 }
 
 func (s standardSyncer) SupportsType(syncTypes []SyncType) bool {

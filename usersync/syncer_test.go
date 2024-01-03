@@ -323,7 +323,7 @@ func TestBuildTemplate(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		result, err := buildTemplate(key, syncTypeValue, hostConfig, test.givenSyncerExternalURL, test.givenSyncerEndpoint)
+		result, err := buildTemplate(key, syncTypeValue, hostConfig, test.givenSyncerExternalURL, test.givenSyncerEndpoint, "")
 
 		if test.expectedError == "" {
 			assert.NoError(t, err, test.description+":err")
@@ -481,7 +481,7 @@ func TestSyncerKey(t *testing.T) {
 
 func TestSyncerDefaultSyncType(t *testing.T) {
 	syncer := standardSyncer{defaultSyncType: SyncTypeRedirect}
-	assert.Equal(t, SyncTypeRedirect, syncer.DefaultSyncType())
+	assert.Equal(t, SyncTypeRedirect, syncer.DefaultResponseFormat())
 }
 
 func TestSyncerSupportsType(t *testing.T) {

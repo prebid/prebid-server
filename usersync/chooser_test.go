@@ -724,7 +724,7 @@ func (s fakeSyncer) Key() string {
 	return s.key
 }
 
-func (s fakeSyncer) DefaultSyncType() SyncType {
+func (s fakeSyncer) DefaultResponseFormat() SyncType {
 	return SyncTypeIFrame
 }
 
