@@ -187,10 +187,3 @@ func getBidType(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 	}
 	return bidType
 }
-
-type yeahmobiBidExt struct {
-	VideoCreativeInfo *yeahmobiBidExtVideo `json:"video,omitempty"`
-}
-type yeahmobiBidExtVideo struct {
-	Duration *int `json:"duration,omitempty"`
-}
