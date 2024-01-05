@@ -325,10 +325,10 @@ func clear202309Fields(r *RequestWrapper) {
 		}
 
 		if pmp := imp.PMP; pmp != nil {
-			for _, deal := range pmp.Deals {
-				deal.Guar = 0
-				deal.MinCPMPerSec = 0
-				deal.DurFloors = nil
+			for i := range pmp.Deals {
+				pmp.Deals[i].Guar = 0
+				pmp.Deals[i].MinCPMPerSec = 0
+				pmp.Deals[i].DurFloors = nil
 			}
 		}
 	}

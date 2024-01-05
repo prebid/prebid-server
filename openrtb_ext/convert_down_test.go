@@ -713,3 +713,50 @@ func TestClear202303Fields(t *testing.T) {
 	clear202303Fields(r)
 	assert.Equal(t, expected, given)
 }
+
+func TestClear202309Fields(t *testing.T) {
+	givenDurFloors := []openrtb2.DurFloors{{MinDur: 15, MaxDur: 30, BidFloor: 100}}
+
+	given := openrtb2.BidRequest{
+		ID:   "anyID",
+		ACat: []string{"acat1", "acat2"},
+		Imp: []openrtb2.Imp{
+			{
+				ID:    "imp1",
+				Audio: &openrtb2.Audio{PodID: "1", DurFloors: givenDurFloors},
+			},
+			{
+				ID:    "imp2",
+				Video: &openrtb2.Video{PodID: "2", DurFloors: givenDurFloors},
+				PMP: &openrtb2.PMP{
+					PrivateAuction: 1,
+					Deals: []openrtb2.Deal{
+						{ID: "deal1", BidFloor: 200, Guar: 1, MinCPMPerSec: 2, DurFloors: givenDurFloors}},
+				},
+			},
+		},
+	}
+
+	expected := openrtb2.BidRequest{
+		ID: "anyID",
+		Imp: []openrtb2.Imp{
+			{
+				ID:    "imp1",
+				Audio: &openrtb2.Audio{PodID: "1"},
+			},
+			{
+				ID:    "imp2",
+				Video: &openrtb2.Video{PodID: "2"},
+				PMP: &openrtb2.PMP{
+					PrivateAuction: 1,
+					Deals: []openrtb2.Deal{
+						{ID: "deal1", BidFloor: 200}},
+				},
+			},
+		},
+	}
+
+	r := &RequestWrapper{BidRequest: &given}
+	clear202309Fields(r)
+	assert.Equal(t, expected, given)
+}
