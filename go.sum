@@ -402,8 +402,8 @@ github.com/prebid/go-gdpr v1.12.0 h1:OrjQ7Uc+lCRYaOirQ48jjG/PBMvZsKNAaRTgzxN6iZ0
 github.com/prebid/go-gdpr v1.12.0/go.mod h1:mPZAdkRxn+iuSjaUuJAi9+0SppBOdM1PCzv/55UH3pY=
 github.com/prebid/go-gpp v0.1.1 h1:uTMJ+eHmKWL9WvDuxFT4LDoOeJW1yOsfWITqi49ZuY0=
 github.com/prebid/go-gpp v0.1.1/go.mod h1:b0TLoVln+HXFD9L9xeimxIH3FN8WDKPJ42auslxEkow=
-github.com/prebid/openrtb/v19 v19.0.0 h1:NA7okrg7KcvL5wEg6yI0mAyujpyfkC8XSQr3h5ocN88=
-github.com/prebid/openrtb/v19 v19.0.0/go.mod h1:jK+/g4Dh5vOnNl0Nh7isbZlub29aJYyrtoBkjmhzTIg=
+github.com/prebid/openrtb/v20 v20.1.0 h1:Rb+Z3H3UxiqqnjgJK3R9Wt73ibrh7HPzG7ikBckQNqc=
+github.com/prebid/openrtb/v20 v20.1.0/go.mod h1:hLBrA/APkSrxs5MaW639l+y/EAHivDfRagO2TX/wbSc=
 github.com/prometheus/client_golang v0.9.1/go.mod h1:7SWBe2y4D6OKWSNQJUaRYU/AaXPKyh/dDVn+NZz0KFw=
 github.com/prometheus/client_golang v1.0.0/go.mod h1:db9x61etRT2tGnBNRi70OPL5FsnadC4Ky3P0J6CfImo=
 github.com/prometheus/client_golang v1.4.0/go.mod h1:e9GMxYsXl05ICDXkRhurwBS4Q3OK1iX/F2sw+iXX5zU=

@@ -3,10 +3,12 @@ package hookexecution
 import (
 	"context"
 	"fmt"
-	"github.com/prebid/prebid-server/v2/ortb"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/ortb"
 
 	"github.com/prebid/prebid-server/v2/hooks"
 	"github.com/prebid/prebid-server/v2/hooks/hookstage"
@@ -328,7 +330,9 @@ func handleModuleActivities[P any](hookCode string, activityControl privacy.Acti
 		// changes need to be applied to new payload and leave original payload unchanged
 		bidderReq := payloadData.GetBidderRequestPayload()
 
-		bidderReqCopy := ortb.CloneBidderReq(bidderReq.BidRequest)
+		bidderReqCopy := &openrtb_ext.RequestWrapper{
+			BidRequest: ortb.CloneBidRequestPartial(bidderReq.BidRequest),
+		}
 
 		privacy.ScrubUserFPD(bidderReqCopy)
 

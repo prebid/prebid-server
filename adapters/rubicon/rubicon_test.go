@@ -13,10 +13,11 @@ import (
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 
 	"github.com/buger/jsonparser"
-	"github.com/prebid/openrtb/v19/adcom1"
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/adcom1"
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -337,8 +338,8 @@ func TestOpenRTBRequest(t *testing.T) {
 		}, {
 			ID: "test-imp-video-id",
 			Video: &openrtb2.Video{
-				W:           640,
-				H:           360,
+				W:           openrtb2.Int64Ptr(640),
+				H:           openrtb2.Int64Ptr(360),
 				MIMEs:       []string{"video/mp4"},
 				MinDuration: 15,
 				MaxDuration: 30,
@@ -419,10 +420,10 @@ func TestOpenRTBRequest(t *testing.T) {
 				t.Fatal("Error unmarshalling request from the outgoing request.")
 			}
 
-			assert.Equal(t, int64(640), rpRequest.Imp[0].Video.W,
+			assert.Equal(t, ptrutil.ToPtr[int64](640), rpRequest.Imp[0].Video.W,
 				"Video width does not match. Expected %d, Got %d", 640, rpRequest.Imp[0].Video.W)
 
-			assert.Equal(t, int64(360), rpRequest.Imp[0].Video.H,
+			assert.Equal(t, ptrutil.ToPtr[int64](360), rpRequest.Imp[0].Video.H,
 				"Video height does not match. Expected %d, Got %d", 360, rpRequest.Imp[0].Video.H)
 
 			assert.Equal(t, "video/mp4", rpRequest.Imp[0].Video.MIMEs[0], "Video MIMEs do not match. Expected %s, Got %s", "video/mp4", rpRequest.Imp[0].Video.MIMEs[0])
@@ -460,8 +461,8 @@ func TestOpenRTBRequestWithBannerImpEvenIfImpHasVideo(t *testing.T) {
 				},
 			},
 			Video: &openrtb2.Video{
-				W:     640,
-				H:     360,
+				W:     openrtb2.Int64Ptr(640),
+				H:     openrtb2.Int64Ptr(360),
 				MIMEs: []string{"video/mp4"},
 			},
 			Ext: json.RawMessage(`{"bidder": {
@@ -657,8 +658,8 @@ func TestOpenRTBRequestWithVideoImpEvenIfImpHasBannerButAllRequiredVideoFields(t
 				},
 			},
 			Video: &openrtb2.Video{
-				W:           640,
-				H:           360,
+				W:           openrtb2.Int64Ptr(640),
+				H:           openrtb2.Int64Ptr(360),
 				MIMEs:       []string{"video/mp4"},
 				Protocols:   []adcom1.MediaCreativeSubtype{adcom1.CreativeVAST10},
 				MaxDuration: 30,
@@ -707,8 +708,8 @@ func TestOpenRTBRequestWithVideoImpAndEnabledRewardedInventoryFlag(t *testing.T)
 		Imp: []openrtb2.Imp{{
 			ID: "test-imp-id",
 			Video: &openrtb2.Video{
-				W:           640,
-				H:           360,
+				W:           openrtb2.Int64Ptr(640),
+				H:           openrtb2.Int64Ptr(360),
 				MIMEs:       []string{"video/mp4"},
 				Protocols:   []adcom1.MediaCreativeSubtype{adcom1.CreativeVAST10},
 				MaxDuration: 30,

@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
@@ -106,7 +106,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		}
 
 		if imp.Video != nil {
-			if imp.Video.W == 0 || imp.Video.H == 0 {
+			if imp.Video.W == nil || *imp.Video.W == 0 || imp.Video.H == nil || *imp.Video.H == 0 {
 				errs = append(errs, &errortypes.BadInput{
 					Message: "request.Video.Sizes is required",
 				})
@@ -179,8 +179,8 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 				bidType := getMediaType(seatBid.Bid[i].ImpID, reqBid)
 
 				if bidType == "video" {
-					seatBid.Bid[i].W = reqBid.Video.W
-					seatBid.Bid[i].H = reqBid.Video.H
+					seatBid.Bid[i].W = getDimensionOrZero(reqBid.Video.W)
+					seatBid.Bid[i].H = getDimensionOrZero(reqBid.Video.H)
 				}
 
 				b := &adapters.TypedBid{
@@ -194,6 +194,13 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	return bidResponse, nil
+}
+
+func getDimensionOrZero(d *int64) int64 {
+	if d == nil {
+		return 0
+	}
+	return *d
 }
 
 func setHeaders(raiHeaders *http.Header) {

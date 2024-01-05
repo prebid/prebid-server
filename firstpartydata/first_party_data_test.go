@@ -7,10 +7,11 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -1248,9 +1249,9 @@ func TestMergeUser(t *testing.T) {
 		},
 		{
 			name:         "nested-geo",
-			givenUser:    openrtb2.User{Geo: &openrtb2.Geo{Lat: 1}},
+			givenUser:    openrtb2.User{Geo: &openrtb2.Geo{Lat: ptrutil.ToPtr(1.0)}},
 			givenFPD:     []byte(`{"geo":{"lat": 2}}`),
-			expectedUser: openrtb2.User{Geo: &openrtb2.Geo{Lat: 2}},
+			expectedUser: openrtb2.User{Geo: &openrtb2.Geo{Lat: ptrutil.ToPtr(2.0)}},
 		},
 		{
 			name:         "nested-geo-ext",
@@ -1883,20 +1884,6 @@ var (
     "channel": {
       "id": "FPDChannelId",
       "ext": {"a": "FPDChannelExt", "b": 2}
-    }
-  }
-}
-`)
-
-	user = []byte(`
-{
-  "id": "2",
-  "yob": 2000,
-  "geo": {
-    "city": "LA",
-    "ext": {
-      "b": 100,
-      "c": 3
     }
   }
 }

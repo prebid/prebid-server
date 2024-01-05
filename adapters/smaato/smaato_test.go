@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/openrtb/v19/adcom1"
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/adcom1"
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/prebid/prebid-server/v2/adapters"
@@ -37,8 +37,8 @@ func TestVideoWithCategoryAndDuration(t *testing.T) {
 		Imp: []openrtb2.Imp{{
 			ID: "1_1",
 			Video: &openrtb2.Video{
-				W:           640,
-				H:           360,
+				W:           openrtb2.Int64Ptr(640),
+				H:           openrtb2.Int64Ptr(360),
 				MIMEs:       []string{"video/mp4"},
 				MaxDuration: 60,
 				Protocols:   []adcom1.MediaCreativeSubtype{2, 3, 5, 6},

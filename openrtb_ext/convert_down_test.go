@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prebid/openrtb/v19/adcom1"
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/adcom1"
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -61,7 +62,7 @@ func TestConvertDownTo25(t *testing.T) {
 			name: "2.6-202303-dropped", // integration with clear202303Fields
 			givenRequest: openrtb2.BidRequest{
 				ID:  "anyID",
-				Imp: []openrtb2.Imp{{ID: "1", Refresh: &openrtb2.Refresh{Count: 1}}},
+				Imp: []openrtb2.Imp{{ID: "1", Refresh: &openrtb2.Refresh{Count: ptrutil.ToPtr(1)}}},
 			},
 			expectedRequest: openrtb2.BidRequest{
 				ID:  "anyID",
@@ -683,7 +684,7 @@ func TestClear202303Fields(t *testing.T) {
 			{
 				ID:      "imp1",
 				Video:   &openrtb2.Video{PodID: "1", Plcmt: adcom1.VideoPlcmtInstream},
-				Refresh: &openrtb2.Refresh{Count: 1},
+				Refresh: &openrtb2.Refresh{Count: ptrutil.ToPtr(1)},
 			},
 		},
 	}

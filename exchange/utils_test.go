@@ -12,7 +12,7 @@ import (
 
 	gpplib "github.com/prebid/go-gpp"
 	"github.com/prebid/go-gpp/constants"
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/firstpartydata"
@@ -618,8 +618,8 @@ func TestCleanOpenRTBRequestsWithBidResponses(t *testing.T) {
 				{
 					ID: "imp-id1",
 					Video: &openrtb2.Video{
-						W: 300,
-						H: 250,
+						W: openrtb2.Int64Ptr(300),
+						H: openrtb2.Int64Ptr(250),
 					},
 					Ext: json.RawMessage(`{"prebid":{"bidder":{"bidderA":{"placementId":"123"}}}}`),
 				},
@@ -642,8 +642,8 @@ func TestCleanOpenRTBRequestsWithBidResponses(t *testing.T) {
 				{
 					ID: "imp-id1",
 					Video: &openrtb2.Video{
-						W: 300,
-						H: 250,
+						W: openrtb2.Int64Ptr(300),
+						H: openrtb2.Int64Ptr(250),
 					},
 					Ext: json.RawMessage(`{"prebid":{"bidder":{"bidderA":{"placementId":"123"}}}}`),
 				},
@@ -672,8 +672,8 @@ func TestCleanOpenRTBRequestsWithBidResponses(t *testing.T) {
 				{
 					ID: "imp-id1",
 					Video: &openrtb2.Video{
-						W: 300,
-						H: 250,
+						W: openrtb2.Int64Ptr(300),
+						H: openrtb2.Int64Ptr(250),
 					},
 					Ext: json.RawMessage(`{"prebid":{"bidder":{"bidderA":{"placementId":"123"}}}}`),
 				},
@@ -703,8 +703,8 @@ func TestCleanOpenRTBRequestsWithBidResponses(t *testing.T) {
 				{
 					ID: "imp-id1",
 					Video: &openrtb2.Video{
-						W: 300,
-						H: 250,
+						W: openrtb2.Int64Ptr(300),
+						H: openrtb2.Int64Ptr(250),
 					},
 					Ext: json.RawMessage(`{"prebid":{"bidder":{"bidderA":{"placementId":"123"}}}}`),
 				},
@@ -743,8 +743,8 @@ func TestCleanOpenRTBRequestsWithBidResponses(t *testing.T) {
 				{
 					ID: "imp-id1",
 					Video: &openrtb2.Video{
-						W: 300,
-						H: 250,
+						W: openrtb2.Int64Ptr(300),
+						H: openrtb2.Int64Ptr(250),
 					},
 					Ext: json.RawMessage(`{"prebid":{"bidder":{"bidderA":{"placementId":"123"}}}}`),
 				},
@@ -2282,7 +2282,7 @@ func TestCleanOpenRTBRequestsWithOpenRTBDowngrade(t *testing.T) {
 	bidReq.User.BuyerUID = ""
 	bidReq.User.Yob = 0
 	bidReq.User.Gender = ""
-	bidReq.User.Geo = &openrtb2.Geo{Lat: 123.46}
+	bidReq.User.Geo = &openrtb2.Geo{Lat: ptrutil.ToPtr(123.46)}
 
 	downgradedRegs := *bidReq.Regs
 	downgradedUser := *bidReq.User
@@ -2593,7 +2593,7 @@ func newBidRequest(t *testing.T) *openrtb2.BidRequest {
 			DPIDSHA1: "DPIDSHA1",
 			MACMD5:   "MACMD5",
 			MACSHA1:  "MACSHA1",
-			Geo:      &openrtb2.Geo{Lat: 123.456, Lon: 11.278},
+			Geo:      &openrtb2.Geo{Lat: ptrutil.ToPtr(123.456), Lon: ptrutil.ToPtr(11.278)},
 		},
 		Source: &openrtb2.Source{
 			TID: "testTID",
@@ -2604,7 +2604,7 @@ func newBidRequest(t *testing.T) *openrtb2.BidRequest {
 			Yob:      1982,
 			Gender:   "test",
 			Ext:      json.RawMessage(`{"data": 1, "test": 2}`),
-			Geo:      &openrtb2.Geo{Lat: 123.456, Lon: 11.278},
+			Geo:      &openrtb2.Geo{Lat: ptrutil.ToPtr(123.456), Lon: ptrutil.ToPtr(11.278)},
 			EIDs: []openrtb2.EID{
 				{Source: "eids-source"},
 			},
@@ -4486,7 +4486,7 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 		Yob:      1982,
 		Gender:   "test",
 		Ext:      json.RawMessage(`{"data": 1, "test": 2}`),
-		Geo:      &openrtb2.Geo{Lat: 123.456, Lon: 11.278},
+		Geo:      &openrtb2.Geo{Lat: ptrutil.ToPtr(123.456), Lon: ptrutil.ToPtr(11.278)},
 		EIDs: []openrtb2.EID{
 			{Source: "eids-source"},
 		},
@@ -4503,7 +4503,7 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 		DPIDSHA1: "DPIDSHA1",
 		MACMD5:   "MACMD5",
 		MACSHA1:  "MACSHA1",
-		Geo:      &openrtb2.Geo{Lat: 123.456, Lon: 11.278},
+		Geo:      &openrtb2.Geo{Lat: ptrutil.ToPtr(123.456), Lon: ptrutil.ToPtr(11.278)},
 	}
 
 	expectedSourceDefault := openrtb2.Source{
@@ -4560,7 +4560,7 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 				ID:       "",
 				BuyerUID: "",
 				Yob:      0,
-				Geo:      &openrtb2.Geo{Lat: 123.456, Lon: 11.278},
+				Geo:      &openrtb2.Geo{Lat: ptrutil.ToPtr(123.456), Lon: ptrutil.ToPtr(11.278)},
 				EIDs:     nil,
 				Ext:      json.RawMessage(`{"test":2}`),
 				Data:     nil,
@@ -4576,7 +4576,7 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 				DPIDSHA1: "",
 				MACMD5:   "",
 				MACSHA1:  "",
-				Geo:      &openrtb2.Geo{Lat: 123.456, Lon: 11.278},
+				Geo:      &openrtb2.Geo{Lat: ptrutil.ToPtr(123.456), Lon: ptrutil.ToPtr(11.278)},
 			},
 			expectedSource: expectedSourceDefault,
 		},
@@ -4600,7 +4600,7 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 				ID:       "our-id",
 				BuyerUID: "their-id",
 				Yob:      1982,
-				Geo:      &openrtb2.Geo{Lat: 123.46, Lon: 11.28},
+				Geo:      &openrtb2.Geo{Lat: ptrutil.ToPtr(123.46), Lon: ptrutil.ToPtr(11.28)},
 				Gender:   "test",
 				Ext:      json.RawMessage(`{"data": 1, "test": 2}`),
 				EIDs: []openrtb2.EID{
@@ -4619,7 +4619,7 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 				DPIDSHA1: "DPIDSHA1",
 				MACMD5:   "MACMD5",
 				MACSHA1:  "MACSHA1",
-				Geo:      &openrtb2.Geo{Lat: 123.46, Lon: 11.28},
+				Geo:      &openrtb2.Geo{Lat: ptrutil.ToPtr(123.46), Lon: ptrutil.ToPtr(11.28)},
 			},
 			expectedSource: expectedSourceDefault,
 		},
