@@ -11,6 +11,7 @@ import (
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 )
 
 type adapter struct {
@@ -179,8 +180,8 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 				bidType := getMediaType(seatBid.Bid[i].ImpID, reqBid)
 
 				if bidType == "video" {
-					seatBid.Bid[i].W = getDimensionOrZero(reqBid.Video.W)
-					seatBid.Bid[i].H = getDimensionOrZero(reqBid.Video.H)
+					seatBid.Bid[i].W = ptrutil.ValueOrDefault(reqBid.Video.W)
+					seatBid.Bid[i].H = ptrutil.ValueOrDefault(reqBid.Video.H)
 				}
 
 				b := &adapters.TypedBid{
@@ -194,13 +195,6 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	return bidResponse, nil
-}
-
-func getDimensionOrZero(d *int64) int64 {
-	if d == nil {
-		return 0
-	}
-	return *d
 }
 
 func setHeaders(raiHeaders *http.Header) {

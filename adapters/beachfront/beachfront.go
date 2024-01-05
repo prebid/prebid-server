@@ -673,8 +673,8 @@ func postprocessVideo(bids []openrtb2.Bid, xtrnal openrtb2.BidRequest, uri strin
 
 			bids[i].CrID = crid
 			bids[i].ImpID = xtrnal.Imp[i].ID
-			bids[i].H = getDimensionOrZero(xtrnal.Imp[i].Video.H)
-			bids[i].W = getDimensionOrZero(xtrnal.Imp[i].Video.W)
+			bids[i].H = ptrutil.ValueOrDefault(xtrnal.Imp[i].Video.H)
+			bids[i].W = ptrutil.ValueOrDefault(xtrnal.Imp[i].Video.W)
 			bids[i].ID = fmt.Sprintf("%sNurlVideo", xtrnal.Imp[i].ID)
 		}
 
@@ -686,14 +686,6 @@ func postprocessVideo(bids []openrtb2.Bid, xtrnal openrtb2.BidRequest, uri strin
 	}
 	return bids, errs
 }
-
-func getDimensionOrZero(d *int64) int64 {
-	if d == nil {
-		return 0
-	}
-	return *d
-}
-
 func extractNurlVideoCrid(nurl string) string {
 	chunky := strings.SplitAfter(nurl, ":")
 	if len(chunky) > 1 {
