@@ -1,0 +1,889 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>beachfront: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/prebid/prebid-server/v2/adapters/beachfront/beachfront.go (90.1%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package beachfront
+
+import (
+        "encoding/json"
+        "errors"
+        "fmt"
+        "net/http"
+        "strconv"
+        "strings"
+
+        "github.com/prebid/openrtb/v20/adcom1"
+        "github.com/prebid/openrtb/v20/openrtb2"
+        "github.com/prebid/prebid-server/v2/adapters"
+        "github.com/prebid/prebid-server/v2/config"
+        "github.com/prebid/prebid-server/v2/errortypes"
+        "github.com/prebid/prebid-server/v2/openrtb_ext"
+        "github.com/prebid/prebid-server/v2/util/ptrutil"
+)
+
+const Seat = "beachfront"
+const BidCapacity = 5
+
+const defaultVideoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id"
+
+const nurlVideoEndpointSuffix = "&amp;prebidserver"
+
+const beachfrontAdapterName = "BF_PREBID_S2S"
+const beachfrontAdapterVersion = "1.0.0"
+
+const minBidFloor = 0.01
+
+const defaultVideoWidth = 300
+const defaultVideoHeight = 250
+const fakeIP = "255.255.255.255"
+
+type BeachfrontAdapter struct {
+        bannerEndpoint string
+        extraInfo      ExtraInfo
+}
+
+type ExtraInfo struct {
+        VideoEndpoint string `json:"video_endpoint,omitempty"`
+}
+
+type beachfrontRequests struct {
+        Banner    beachfrontBannerRequest
+        NurlVideo []beachfrontVideoRequest
+        ADMVideo  []beachfrontVideoRequest
+}
+
+// ---------------------------------------------------
+//              Video
+// ---------------------------------------------------
+
+type beachfrontVideoRequest struct {
+        AppId             string              `json:"appId"`
+        VideoResponseType string              `json:"videoResponseType"`
+        Request           openrtb2.BidRequest `json:"request"`
+}
+
+// ---------------------------------------------------
+//
+//        Banner
+//
+// ---------------------------------------------------
+type beachfrontBannerRequest struct {
+        Slots          []beachfrontSlot     `json:"slots"`
+        Domain         string               `json:"domain"`
+        Page           string               `json:"page"`
+        Referrer       string               `json:"referrer"`
+        Search         string               `json:"search"`
+        Secure         int8                 `json:"secure"`
+        DeviceOs       string               `json:"deviceOs"`
+        DeviceModel    string               `json:"deviceModel"`
+        IsMobile       int8                 `json:"isMobile"`
+        UA             string               `json:"ua"`
+        Dnt            int8                 `json:"dnt"`
+        User           openrtb2.User        `json:"user"`
+        AdapterName    string               `json:"adapterName"`
+        AdapterVersion string               `json:"adapterVersion"`
+        IP             string               `json:"ip"`
+        RequestID      string               `json:"requestId"`
+        Real204        bool                 `json:"real204"`
+        SChain         openrtb2.SupplyChain `json:"schain,omitempty"`
+}
+
+type beachfrontSlot struct {
+        Slot     string           `json:"slot"`
+        Id       string           `json:"id"`
+        Bidfloor float64          `json:"bidfloor"`
+        Sizes    []beachfrontSize `json:"sizes"`
+}
+
+type beachfrontSize struct {
+        W uint64 `json:"w"`
+        H uint64 `json:"h"`
+}
+
+// ---------------------------------------------------
+//                                 Banner response
+// ---------------------------------------------------
+
+type beachfrontResponseSlot struct {
+        CrID  string  `json:"crid"`
+        Price float64 `json:"price"`
+        W     uint64  `json:"w"`
+        H     uint64  `json:"h"`
+        Slot  string  `json:"slot"`
+        Adm   string  `json:"adm"`
+}
+
+type beachfrontVideoBidExtension struct {
+        Duration int `json:"duration"`
+}
+
+func (a *BeachfrontAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) <span class="cov8" title="1">{
+        beachfrontRequests, errs := preprocess(request, reqInfo)
+
+        headers := http.Header{}
+        headers.Add("Content-Type", "application/json;charset=utf-8")
+        headers.Add("Accept", "application/json")
+
+        if request.Device != nil </span><span class="cov8" title="1">{
+                if request.Device.UA != "" </span><span class="cov0" title="0">{
+                        headers.Add("User-Agent", request.Device.UA)
+                }</span>
+
+                <span class="cov8" title="1">if request.Device.Language != "" </span><span class="cov0" title="0">{
+                        headers.Add("Accept-Language", request.Device.Language)
+                }</span>
+
+                <span class="cov8" title="1">if request.Device.DNT != nil </span><span class="cov0" title="0">{
+                        headers.Add("DNT", strconv.Itoa(int(*request.Device.DNT)))
+                }</span>
+        }
+
+        <span class="cov8" title="1">var reqCount = len(beachfrontRequests.ADMVideo) + len(beachfrontRequests.NurlVideo)
+        if len(beachfrontRequests.Banner.Slots) &gt; 0 </span><span class="cov8" title="1">{
+                reqCount++
+        }</span>
+
+        <span class="cov8" title="1">var reqs = make([]*adapters.RequestData, reqCount)
+
+        var nurlBump = 0
+        var admBump = 0
+
+        if len(beachfrontRequests.Banner.Slots) &gt; 0 </span><span class="cov8" title="1">{
+                bytes, err := json.Marshal(beachfrontRequests.Banner)
+
+                if err == nil </span><span class="cov8" title="1">{
+                        reqs[0] = &amp;adapters.RequestData{
+                                Method:  "POST",
+                                Uri:     a.bannerEndpoint,
+                                Body:    bytes,
+                                Headers: headers,
+                        }
+
+                        nurlBump++
+                        admBump++
+                }</span> else<span class="cov0" title="0"> {
+                        errs = append(errs, err)
+                }</span>
+        }
+
+        <span class="cov8" title="1">if request.User != nil &amp;&amp; request.User.BuyerUID != "" &amp;&amp; reqCount &gt; 0 </span><span class="cov0" title="0">{
+                headers.Add("Cookie", "__io_cid="+request.User.BuyerUID)
+        }</span>
+
+        <span class="cov8" title="1">for j := 0; j &lt; len(beachfrontRequests.ADMVideo); j++ </span><span class="cov8" title="1">{
+                bytes, err := json.Marshal(beachfrontRequests.ADMVideo[j].Request)
+                if err == nil </span><span class="cov8" title="1">{
+                        reqs[j+nurlBump] = &amp;adapters.RequestData{
+                                Method:  "POST",
+                                Uri:     a.extraInfo.VideoEndpoint + "=" + beachfrontRequests.ADMVideo[j].AppId,
+                                Body:    bytes,
+                                Headers: headers,
+                        }
+
+                        admBump++
+
+                }</span> else<span class="cov0" title="0"> {
+                        errs = append(errs, err)
+                }</span>
+        }
+
+        <span class="cov8" title="1">for j := 0; j &lt; len(beachfrontRequests.NurlVideo); j++ </span><span class="cov8" title="1">{
+                bytes, err := json.Marshal(beachfrontRequests.NurlVideo[j].Request)
+
+                if err == nil </span><span class="cov8" title="1">{
+                        bytes = append([]byte(`{"isPrebid":true,`), bytes[1:]...)
+                        reqs[j+admBump] = &amp;adapters.RequestData{
+                                Method:  "POST",
+                                Uri:     a.extraInfo.VideoEndpoint + "=" + beachfrontRequests.NurlVideo[j].AppId + nurlVideoEndpointSuffix,
+                                Body:    bytes,
+                                Headers: headers,
+                        }
+                }</span> else<span class="cov0" title="0"> {
+                        errs = append(errs, err)
+                }</span>
+        }
+
+        <span class="cov8" title="1">return reqs, errs</span>
+}
+
+func preprocess(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) (beachfrontReqs beachfrontRequests, errs []error) <span class="cov8" title="1">{
+        var videoImps = make([]openrtb2.Imp, 0)
+        var bannerImps = make([]openrtb2.Imp, 0)
+
+        for i := 0; i &lt; len(request.Imp); i++ </span><span class="cov8" title="1">{
+                if request.Imp[i].Banner != nil &amp;&amp; request.Imp[i].Banner.Format != nil &amp;&amp;
+                        request.Imp[i].Banner.Format[0].H != 0 &amp;&amp; request.Imp[i].Banner.Format[0].W != 0 </span><span class="cov8" title="1">{
+                        bannerImps = append(bannerImps, request.Imp[i])
+                }</span>
+
+                <span class="cov8" title="1">if request.Imp[i].Video != nil </span><span class="cov8" title="1">{
+                        videoImps = append(videoImps, request.Imp[i])
+                }</span>
+        }
+
+        <span class="cov8" title="1">if len(bannerImps)+len(videoImps) == 0 </span><span class="cov8" title="1">{
+                errs = append(errs, errors.New("no valid impressions were found in the request"))
+                return
+        }</span>
+
+        <span class="cov8" title="1">if len(bannerImps) &gt; 0 </span><span class="cov8" title="1">{
+                request.Imp = bannerImps
+                beachfrontReqs.Banner, errs = getBannerRequest(request, reqInfo)
+        }</span>
+
+        <span class="cov8" title="1">if len(videoImps) &gt; 0 </span><span class="cov8" title="1">{
+                var videoErrs []error
+                var videoList []beachfrontVideoRequest
+
+                request.Imp = videoImps
+                request.Ext = nil
+
+                videoList, videoErrs = getVideoRequests(request, reqInfo)
+                errs = append(errs, videoErrs...)
+
+                for i := 0; i &lt; len(videoList); i++ </span><span class="cov8" title="1">{
+                        if videoList[i].VideoResponseType == "nurl" </span><span class="cov8" title="1">{
+                                beachfrontReqs.NurlVideo = append(beachfrontReqs.NurlVideo, videoList[i])
+                        }</span>
+
+                        <span class="cov8" title="1">if videoList[i].VideoResponseType == "adm" </span><span class="cov8" title="1">{
+                                beachfrontReqs.ADMVideo = append(beachfrontReqs.ADMVideo, videoList[i])
+                        }</span>
+                }
+        }
+
+        <span class="cov8" title="1">return</span>
+}
+
+func getAppId(ext openrtb_ext.ExtImpBeachfront, media openrtb_ext.BidType) (string, error) <span class="cov8" title="1">{
+        var appid string
+        var error error
+
+        if ext.AppId != "" </span><span class="cov8" title="1">{
+                appid = ext.AppId
+        }</span> else<span class="cov8" title="1"> if media == openrtb_ext.BidTypeVideo &amp;&amp; ext.AppIds.Video != "" </span><span class="cov8" title="1">{
+                appid = ext.AppIds.Video
+        }</span> else<span class="cov8" title="1"> if media == openrtb_ext.BidTypeBanner &amp;&amp; ext.AppIds.Banner != "" </span><span class="cov8" title="1">{
+                appid = ext.AppIds.Banner
+        }</span> else<span class="cov8" title="1"> {
+                error = errors.New("unable to determine the appId(s) from the supplied extension")
+        }</span>
+
+        <span class="cov8" title="1">return appid, error</span>
+}
+
+func getSchain(request *openrtb2.BidRequest) (openrtb_ext.ExtRequestPrebidSChain, error) <span class="cov8" title="1">{
+        var schain openrtb_ext.ExtRequestPrebidSChain
+        return schain, json.Unmarshal(request.Source.Ext, &amp;schain)
+}</span>
+
+func getBannerRequest(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) (beachfrontBannerRequest, []error) <span class="cov8" title="1">{
+        var bfr beachfrontBannerRequest
+        var errs = make([]error, 0, len(request.Imp))
+
+        for i := 0; i &lt; len(request.Imp); i++ </span><span class="cov8" title="1">{
+
+                beachfrontExt, err := getBeachfrontExtension(request.Imp[i])
+
+                if err != nil </span><span class="cov8" title="1">{
+                        errs = append(errs, err)
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">appid, err := getAppId(beachfrontExt, openrtb_ext.BidTypeBanner)
+
+                if err != nil </span><span class="cov8" title="1">{
+                        errs = append(errs, err)
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">if fatal, err := setBidFloor(&amp;beachfrontExt, &amp;request.Imp[i], reqInfo); err != nil </span><span class="cov0" title="0">{
+                        errs = append(errs, err)
+                        if fatal </span><span class="cov0" title="0">{
+                                continue</span>
+                        }
+                }
+
+                <span class="cov8" title="1">slot := beachfrontSlot{
+                        Id:       appid,
+                        Slot:     request.Imp[i].ID,
+                        Bidfloor: request.Imp[i].BidFloor,
+                }
+
+                for j := 0; j &lt; len(request.Imp[i].Banner.Format); j++ </span><span class="cov8" title="1">{
+
+                        slot.Sizes = append(slot.Sizes, beachfrontSize{
+                                H: uint64(request.Imp[i].Banner.Format[j].H),
+                                W: uint64(request.Imp[i].Banner.Format[j].W),
+                        })
+                }</span>
+
+                <span class="cov8" title="1">bfr.Slots = append(bfr.Slots, slot)</span>
+        }
+
+        <span class="cov8" title="1">if len(bfr.Slots) == 0 </span><span class="cov8" title="1">{
+                return bfr, errs
+        }</span>
+
+        <span class="cov8" title="1">if request.Device != nil </span><span class="cov8" title="1">{
+                bfr.IP = request.Device.IP
+                bfr.DeviceModel = request.Device.Model
+                bfr.DeviceOs = request.Device.OS
+                if request.Device.DNT != nil </span><span class="cov0" title="0">{
+                        bfr.Dnt = *request.Device.DNT
+                }</span>
+                <span class="cov8" title="1">if request.Device.UA != "" </span><span class="cov0" title="0">{
+                        bfr.UA = request.Device.UA
+                }</span>
+        }
+
+        <span class="cov8" title="1">var t = fallBackDeviceType(request)
+
+        if t == adcom1.DeviceMobile </span><span class="cov0" title="0">{
+                bfr.Page = request.App.Bundle
+                if request.App.Domain == "" </span><span class="cov0" title="0">{
+                        bfr.Domain = getDomain(request.App.Domain)
+                }</span> else<span class="cov0" title="0"> {
+                        bfr.Domain = request.App.Domain
+                }</span>
+
+                <span class="cov0" title="0">bfr.IsMobile = 1</span>
+        } else<span class="cov8" title="1"> if t == adcom1.DevicePC </span><span class="cov8" title="1">{
+                bfr.Page = request.Site.Page
+                if request.Site.Domain == "" </span><span class="cov8" title="1">{
+                        bfr.Domain = getDomain(request.Site.Page)
+                }</span> else<span class="cov0" title="0"> {
+                        bfr.Domain = request.Site.Domain
+                }</span>
+
+                <span class="cov8" title="1">bfr.IsMobile = 0</span>
+        }
+
+        <span class="cov8" title="1">bfr.Secure = isSecure(bfr.Page)
+
+        if request.User != nil &amp;&amp; request.User.ID != "" </span><span class="cov0" title="0">{
+                if bfr.User.ID == "" </span><span class="cov0" title="0">{
+                        bfr.User.ID = request.User.ID
+                }</span>
+        }
+
+        <span class="cov8" title="1">if request.User != nil &amp;&amp; request.User.BuyerUID != "" </span><span class="cov0" title="0">{
+                if bfr.User.BuyerUID == "" </span><span class="cov0" title="0">{
+                        bfr.User.BuyerUID = request.User.BuyerUID
+                }</span>
+        }
+
+        <span class="cov8" title="1">bfr.RequestID = request.ID
+        bfr.AdapterName = beachfrontAdapterName
+        bfr.AdapterVersion = beachfrontAdapterVersion
+
+        if request.Imp[0].Secure != nil </span><span class="cov0" title="0">{
+                bfr.Secure = *request.Imp[0].Secure
+        }</span>
+        <span class="cov8" title="1">bfr.Real204 = true
+
+        if request.Source != nil &amp;&amp; request.Source.Ext != nil </span><span class="cov8" title="1">{
+                schain, err := getSchain(request)
+                if err == nil </span><span class="cov8" title="1">{
+                        bfr.SChain = schain.SChain
+                }</span>
+        }
+
+        <span class="cov8" title="1">return bfr, errs</span>
+}
+
+func fallBackDeviceType(request *openrtb2.BidRequest) adcom1.DeviceType <span class="cov8" title="1">{
+        if request.Site != nil </span><span class="cov8" title="1">{
+                return adcom1.DevicePC
+        }</span>
+
+        <span class="cov8" title="1">return adcom1.DeviceMobile</span>
+}
+
+func getVideoRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]beachfrontVideoRequest, []error) <span class="cov8" title="1">{
+        var bfReqs = make([]beachfrontVideoRequest, len(request.Imp))
+        var errs = make([]error, 0, len(request.Imp))
+        var failedRequestIndicies = make([]int, 0)
+
+        for i := 0; i &lt; len(request.Imp); i++ </span><span class="cov8" title="1">{
+                beachfrontExt, err := getBeachfrontExtension(request.Imp[i])
+
+                if err != nil </span><span class="cov8" title="1">{
+                        failedRequestIndicies = append(failedRequestIndicies, i)
+                        errs = append(errs, err)
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">appid, err := getAppId(beachfrontExt, openrtb_ext.BidTypeVideo)
+                bfReqs[i].AppId = appid
+
+                if err != nil </span><span class="cov8" title="1">{
+                        failedRequestIndicies = append(failedRequestIndicies, i)
+                        errs = append(errs, err)
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">bfReqs[i].Request = *request
+                var secure int8
+
+                var deviceCopy openrtb2.Device
+                if bfReqs[i].Request.Device == nil </span><span class="cov8" title="1">{
+                        deviceCopy = openrtb2.Device{}
+                }</span> else<span class="cov8" title="1"> {
+                        deviceCopy = *bfReqs[i].Request.Device
+                }</span>
+
+                <span class="cov8" title="1">if beachfrontExt.VideoResponseType == "nurl" </span><span class="cov8" title="1">{
+                        bfReqs[i].VideoResponseType = "nurl"
+                }</span> else<span class="cov8" title="1"> {
+                        bfReqs[i].VideoResponseType = "adm"
+
+                        if deviceCopy.IP == "" </span><span class="cov8" title="1">{
+                                deviceCopy.IP = fakeIP
+                        }</span>
+                }
+
+                <span class="cov8" title="1">if bfReqs[i].Request.Site != nil &amp;&amp; bfReqs[i].Request.Site.Domain == "" &amp;&amp; bfReqs[i].Request.Site.Page != "" </span><span class="cov8" title="1">{
+                        siteCopy := *bfReqs[i].Request.Site
+                        siteCopy.Domain = getDomain(bfReqs[i].Request.Site.Page)
+                        bfReqs[i].Request.Site = &amp;siteCopy
+                        secure = isSecure(bfReqs[i].Request.Site.Page)
+                }</span>
+
+                <span class="cov8" title="1">if bfReqs[i].Request.App != nil &amp;&amp; bfReqs[i].Request.App.Domain == "" &amp;&amp; bfReqs[i].Request.App.Bundle != "" </span><span class="cov8" title="1">{
+                        if bfReqs[i].Request.App.Bundle != "" </span><span class="cov8" title="1">{
+                                var chunks = strings.Split(strings.Trim(bfReqs[i].Request.App.Bundle, "_"), ".")
+
+                                if len(chunks) &gt; 1 </span><span class="cov8" title="1">{
+                                        appCopy := *bfReqs[i].Request.App
+                                        appCopy.Domain = fmt.Sprintf("%s.%s", chunks[len(chunks)-(len(chunks)-1)], chunks[0])
+                                        bfReqs[i].Request.App = &amp;appCopy
+                                }</span>
+                        }
+                }
+
+                <span class="cov8" title="1">if deviceCopy.DeviceType == 0 </span><span class="cov8" title="1">{
+                        deviceCopy.DeviceType = fallBackDeviceType(request)
+                }</span>
+                <span class="cov8" title="1">bfReqs[i].Request.Device = &amp;deviceCopy
+
+                imp := request.Imp[i]
+
+                imp.Banner = nil
+                imp.Ext = nil
+                imp.Secure = &amp;secure
+                if fatal, err := setBidFloor(&amp;beachfrontExt, &amp;imp, reqInfo); err != nil </span><span class="cov8" title="1">{
+                        errs = append(errs, err)
+                        if fatal </span><span class="cov8" title="1">{
+                                failedRequestIndicies = append(failedRequestIndicies, i)
+                                continue</span>
+                        }
+                }
+
+                <span class="cov8" title="1">if (imp.Video.H == nil || *imp.Video.H == 0) &amp;&amp; (imp.Video.W == nil || *imp.Video.W == 0) </span><span class="cov0" title="0">{
+                        imp.Video.W = ptrutil.ToPtr[int64](defaultVideoWidth)
+                        imp.Video.H = ptrutil.ToPtr[int64](defaultVideoHeight)
+                }</span>
+
+                <span class="cov8" title="1">if len(bfReqs[i].Request.Cur) == 0 </span><span class="cov8" title="1">{
+                        bfReqs[i].Request.Cur = make([]string, 1)
+                        bfReqs[i].Request.Cur[0] = "USD"
+                }</span>
+
+                <span class="cov8" title="1">bfReqs[i].Request.Imp = nil
+                bfReqs[i].Request.Imp = make([]openrtb2.Imp, 1)
+                bfReqs[i].Request.Imp[0] = imp</span>
+
+        }
+
+        <span class="cov8" title="1">if len(failedRequestIndicies) &gt; 0 </span><span class="cov8" title="1">{
+                for i := 0; i &lt; len(failedRequestIndicies); i++ </span><span class="cov8" title="1">{
+                        bfReqs = removeVideoElement(bfReqs, failedRequestIndicies[i])
+                }</span>
+
+        }
+        <span class="cov8" title="1">return bfReqs, errs</span>
+}
+
+func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) <span class="cov8" title="1">{
+        if response.StatusCode == http.StatusNoContent </span><span class="cov8" title="1">{
+                return nil, nil
+        }</span>
+
+        <span class="cov8" title="1">if response.StatusCode &gt;= http.StatusInternalServerError </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadServerResponse{
+                        Message: fmt.Sprintf("server error status code %d from %s. Run with request.debug = 1 for more info", response.StatusCode, externalRequest.Uri),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">if response.StatusCode &gt;= http.StatusBadRequest </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("request error status code %d from %s. Run with request.debug = 1 for more info", response.StatusCode, externalRequest.Uri),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">if response.StatusCode != http.StatusOK </span><span class="cov0" title="0">{
+                return nil, []error{fmt.Errorf("unexpected status code %d from %s. Run with request.debug = 1 for more info", response.StatusCode, externalRequest.Uri)}
+        }</span>
+
+        <span class="cov8" title="1">var bids []openrtb2.Bid
+        var errs = make([]error, 0)
+        var xtrnal openrtb2.BidRequest
+
+        if err := json.Unmarshal(externalRequest.Body, &amp;xtrnal); err != nil </span><span class="cov0" title="0">{
+                errs = append(errs, err)
+        }</span> else<span class="cov8" title="1"> {
+                bids, errs = postprocess(response, xtrnal, externalRequest.Uri, internalRequest.ID)
+        }</span>
+
+        <span class="cov8" title="1">if len(errs) != 0 </span><span class="cov8" title="1">{
+                return nil, errs
+        }</span>
+
+        <span class="cov8" title="1">var dur beachfrontVideoBidExtension
+        bidResponse := adapters.NewBidderResponseWithBidsCapacity(BidCapacity)
+
+        for i := 0; i &lt; len(bids); i++ </span><span class="cov8" title="1">{
+
+                if err := json.Unmarshal(bids[i].Ext, &amp;dur); err == nil &amp;&amp; dur.Duration &gt; 0 </span><span class="cov8" title="1">{
+
+                        impVideo := openrtb_ext.ExtBidPrebidVideo{
+                                Duration: int(dur.Duration),
+                        }
+
+                        if len(bids[i].Cat) &gt; 0 </span><span class="cov8" title="1">{
+                                impVideo.PrimaryCategory = bids[i].Cat[0]
+                        }</span>
+
+                        <span class="cov8" title="1">bidResponse.Bids = append(bidResponse.Bids, &amp;adapters.TypedBid{
+                                Bid:      &amp;bids[i],
+                                BidType:  a.getBidType(externalRequest),
+                                BidVideo: &amp;impVideo,
+                        })</span>
+                } else<span class="cov8" title="1"> {
+                        bidResponse.Bids = append(bidResponse.Bids, &amp;adapters.TypedBid{
+                                Bid:     &amp;bids[i],
+                                BidType: a.getBidType(externalRequest),
+                        })
+                }</span>
+        }
+
+        <span class="cov8" title="1">return bidResponse, errs</span>
+}
+
+func setBidFloor(ext *openrtb_ext.ExtImpBeachfront, imp *openrtb2.Imp, reqInfo *adapters.ExtraRequestInfo) (bool, error) <span class="cov8" title="1">{
+        var initialImpBidfloor float64 = imp.BidFloor
+        var err error
+
+        if imp.BidFloorCur != "" &amp;&amp; strings.ToUpper(imp.BidFloorCur) != "USD" &amp;&amp; imp.BidFloor &gt; 0 </span><span class="cov8" title="1">{
+                imp.BidFloor, err = reqInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, "USD")
+
+                var convertedFromCurrency = imp.BidFloorCur
+                imp.BidFloorCur = "USD"
+
+                if err != nil </span><span class="cov8" title="1">{
+                        if ext.BidFloor &gt; minBidFloor </span><span class="cov8" title="1">{
+                                imp.BidFloor = ext.BidFloor
+                                return false, &amp;errortypes.Warning{
+                                        Message: fmt.Sprintf("The following error was recieved from the currency converter while attempting to convert the imp.bidfloor value of %.2f from %s to USD:\n%s\nThe provided value of imp.ext.beachfront.bidfloor, %.2f USD is being used as a fallback.",
+                                                initialImpBidfloor,
+                                                convertedFromCurrency,
+                                                err,
+                                                ext.BidFloor,
+                                        ),
+                                }
+                        }</span> else<span class="cov8" title="1"> {
+                                return true, &amp;errortypes.BadInput{
+                                        Message: fmt.Sprintf("The following error was recieved from the currency converter while attempting to convert the imp.bidfloor value of %.2f from %s to USD:\n%s\nA value of imp.ext.beachfront.bidfloor was not provided. The bid is being skipped.",
+                                                initialImpBidfloor,
+                                                convertedFromCurrency,
+                                                err,
+                                        ),
+                                }
+                        }</span>
+                }
+        }
+
+        <span class="cov8" title="1">if imp.BidFloor &lt; ext.BidFloor </span><span class="cov8" title="1">{
+                imp.BidFloor = ext.BidFloor
+        }</span>
+
+        <span class="cov8" title="1">if imp.BidFloor &gt; minBidFloor </span><span class="cov8" title="1">{
+                imp.BidFloorCur = "USD"
+        }</span> else<span class="cov8" title="1"> {
+                imp.BidFloor = 0
+                imp.BidFloorCur = ""
+        }</span>
+
+        <span class="cov8" title="1">return false, nil</span>
+}
+
+func (a *BeachfrontAdapter) getBidType(externalRequest *adapters.RequestData) openrtb_ext.BidType <span class="cov8" title="1">{
+        t := strings.Split(externalRequest.Uri, "=")[0]
+        if t == a.extraInfo.VideoEndpoint </span><span class="cov8" title="1">{
+                return openrtb_ext.BidTypeVideo
+        }</span>
+
+        <span class="cov8" title="1">return openrtb_ext.BidTypeBanner</span>
+}
+
+func postprocess(response *adapters.ResponseData, xtrnal openrtb2.BidRequest, uri string, id string) ([]openrtb2.Bid, []error) <span class="cov8" title="1">{
+        var beachfrontResp []beachfrontResponseSlot
+
+        var openrtbResp openrtb2.BidResponse
+
+        if err := json.Unmarshal(response.Body, &amp;openrtbResp); err != nil || len(openrtbResp.SeatBid) == 0 </span><span class="cov8" title="1">{
+
+                if err := json.Unmarshal(response.Body, &amp;beachfrontResp); err != nil </span><span class="cov8" title="1">{
+                        return nil, []error{&amp;errortypes.BadServerResponse{
+                                Message: "server response failed to unmarshal as valid rtb. Run with request.debug = 1 for more info",
+                        }}
+                }</span> else<span class="cov8" title="1"> {
+                        return postprocessBanner(beachfrontResp, id)
+                }</span>
+        }
+
+        <span class="cov8" title="1">return postprocessVideo(openrtbResp.SeatBid[0].Bid, xtrnal, uri, id)</span>
+}
+
+func postprocessBanner(beachfrontResp []beachfrontResponseSlot, id string) ([]openrtb2.Bid, []error) <span class="cov8" title="1">{
+
+        var bids = make([]openrtb2.Bid, len(beachfrontResp))
+        var errs = make([]error, 0)
+
+        for i := 0; i &lt; len(beachfrontResp); i++ </span><span class="cov8" title="1">{
+                bids[i] = openrtb2.Bid{
+                        CrID:  beachfrontResp[i].CrID,
+                        ImpID: beachfrontResp[i].Slot,
+                        Price: beachfrontResp[i].Price,
+                        ID:    fmt.Sprintf("%sBanner", beachfrontResp[i].Slot),
+                        AdM:   beachfrontResp[i].Adm,
+                        H:     int64(beachfrontResp[i].H),
+                        W:     int64(beachfrontResp[i].W),
+                }
+        }</span>
+
+        <span class="cov8" title="1">return bids, errs</span>
+}
+
+func postprocessVideo(bids []openrtb2.Bid, xtrnal openrtb2.BidRequest, uri string, id string) ([]openrtb2.Bid, []error) <span class="cov8" title="1">{
+
+        var errs = make([]error, 0)
+
+        if uri[len(uri)-len(nurlVideoEndpointSuffix):] == nurlVideoEndpointSuffix </span><span class="cov8" title="1">{
+
+                for i := 0; i &lt; len(bids); i++ </span><span class="cov8" title="1">{
+                        crid := extractNurlVideoCrid(bids[i].NURL)
+
+                        bids[i].CrID = crid
+                        bids[i].ImpID = xtrnal.Imp[i].ID
+                        bids[i].H = ptrutil.ValueOrDefault(xtrnal.Imp[i].Video.H)
+                        bids[i].W = ptrutil.ValueOrDefault(xtrnal.Imp[i].Video.W)
+                        bids[i].ID = fmt.Sprintf("%sNurlVideo", xtrnal.Imp[i].ID)
+                }</span>
+
+        } else<span class="cov8" title="1"> {
+                for i := 0; i &lt; len(bids); i++ </span><span class="cov8" title="1">{
+                        bids[i].ID = fmt.Sprintf("%sAdmVideo", bids[i].ImpID)
+                }</span>
+
+        }
+        <span class="cov8" title="1">return bids, errs</span>
+}
+func extractNurlVideoCrid(nurl string) string <span class="cov8" title="1">{
+        chunky := strings.SplitAfter(nurl, ":")
+        if len(chunky) &gt; 1 </span><span class="cov8" title="1">{
+                return strings.TrimSuffix(chunky[2], ":")
+        }</span>
+
+        <span class="cov0" title="0">return ""</span>
+}
+
+func getBeachfrontExtension(imp openrtb2.Imp) (openrtb_ext.ExtImpBeachfront, error) <span class="cov8" title="1">{
+        var err error
+        var bidderExt adapters.ExtImpBidder
+        var beachfrontExt openrtb_ext.ExtImpBeachfront
+
+        if err = json.Unmarshal(imp.Ext, &amp;bidderExt); err != nil </span><span class="cov0" title="0">{
+                return beachfrontExt, &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("ignoring imp id=%s, error while decoding extImpBidder, err: %s", imp.ID, err),
+                }
+        }</span>
+
+        <span class="cov8" title="1">if err = json.Unmarshal(bidderExt.Bidder, &amp;beachfrontExt); err != nil </span><span class="cov8" title="1">{
+                return beachfrontExt, &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("ignoring imp id=%s, error while decoding extImpBeachfront, err: %s", imp.ID, err),
+                }
+        }</span>
+
+        <span class="cov8" title="1">return beachfrontExt, err</span>
+}
+
+func getDomain(page string) string <span class="cov8" title="1">{
+        protoURL := strings.Split(page, "//")
+        var domainPage string
+
+        if len(protoURL) &gt; 1 </span><span class="cov8" title="1">{
+                domainPage = protoURL[1]
+        }</span> else<span class="cov0" title="0"> {
+                domainPage = protoURL[0]
+        }</span>
+
+        <span class="cov8" title="1">return strings.Split(domainPage, "/")[0]</span>
+
+}
+
+func isSecure(page string) int8 <span class="cov8" title="1">{
+        protoURL := strings.Split(page, "://")
+
+        if len(protoURL) &gt; 1 &amp;&amp; protoURL[0] == "https" </span><span class="cov8" title="1">{
+                return 1
+        }</span>
+
+        <span class="cov8" title="1">return 0</span>
+
+}
+
+func removeVideoElement(slice []beachfrontVideoRequest, s int) []beachfrontVideoRequest <span class="cov8" title="1">{
+        if len(slice) &gt;= s+1 </span><span class="cov8" title="1">{
+                return append(slice[:s], slice[s+1:]...)
+        }</span>
+
+        <span class="cov0" title="0">return []beachfrontVideoRequest{}</span>
+}
+
+// Builder builds a new instance of the Beachfront adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) <span class="cov8" title="1">{
+        extraInfo, err := getExtraInfo(config.ExtraAdapterInfo)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">bidder := &amp;BeachfrontAdapter{
+                bannerEndpoint: config.Endpoint,
+                extraInfo:      extraInfo,
+        }
+        return bidder, nil</span>
+}
+
+func getExtraInfo(v string) (ExtraInfo, error) <span class="cov8" title="1">{
+        if len(v) == 0 </span><span class="cov8" title="1">{
+                return getDefaultExtraInfo(), nil
+        }</span>
+
+        <span class="cov8" title="1">var extraInfo ExtraInfo
+        if err := json.Unmarshal([]byte(v), &amp;extraInfo); err != nil </span><span class="cov8" title="1">{
+                return extraInfo, fmt.Errorf("invalid extra info: %v", err)
+        }</span>
+
+        <span class="cov8" title="1">if extraInfo.VideoEndpoint == "" </span><span class="cov8" title="1">{
+                extraInfo.VideoEndpoint = defaultVideoEndpoint
+        }</span>
+
+        <span class="cov8" title="1">return extraInfo, nil</span>
+}
+
+func getDefaultExtraInfo() ExtraInfo <span class="cov8" title="1">{
+        return ExtraInfo{
+                VideoEndpoint: defaultVideoEndpoint,
+        }
+}</span>
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
