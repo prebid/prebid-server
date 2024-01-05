@@ -1892,8 +1892,8 @@ func getTestBuildRequest(t *testing.T) *openrtb2.BidRequest {
 				MIMEs:       []string{"video/mp4"},
 				MinDuration: 1,
 				MaxDuration: 300,
-				W:           openrtb2.Int64Ptr(300),
-				H:           openrtb2.Int64Ptr(600),
+				W:           ptrutil.ToPtr[int64](300),
+				H:           ptrutil.ToPtr[int64](600),
 			},
 			Ext: json.RawMessage(`{"prebid":{"bidder":{"appnexus": {"placementId": 1}}}}`),
 		}},
@@ -4109,7 +4109,7 @@ func TestStoredAuctionResponses(t *testing.T) {
 		ID: "request-id",
 		Imp: []openrtb2.Imp{{
 			ID:    "impression-id",
-			Video: &openrtb2.Video{W: openrtb2.Int64Ptr(400), H: openrtb2.Int64Ptr(300)},
+			Video: &openrtb2.Video{W: ptrutil.ToPtr[int64](400), H: ptrutil.ToPtr[int64](300)},
 		}},
 	}
 

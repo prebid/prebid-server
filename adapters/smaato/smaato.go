@@ -14,6 +14,7 @@ import (
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/metrics"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 	"github.com/prebid/prebid-server/v2/util/timeutil"
 )
 
@@ -551,8 +552,8 @@ func setBannerDimension(banner *openrtb2.Banner) (*openrtb2.Banner, error) {
 		return banner, &errortypes.BadInput{Message: "No sizes provided for Banner."}
 	}
 	bannerCopy := *banner
-	bannerCopy.W = openrtb2.Int64Ptr(banner.Format[0].W)
-	bannerCopy.H = openrtb2.Int64Ptr(banner.Format[0].H)
+	bannerCopy.W = ptrutil.ToPtr(banner.Format[0].W)
+	bannerCopy.H = ptrutil.ToPtr(banner.Format[0].H)
 
 	return &bannerCopy, nil
 }

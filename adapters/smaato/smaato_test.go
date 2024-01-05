@@ -13,6 +13,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/adapterstest"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 )
 
 func TestJsonSamples(t *testing.T) {
@@ -37,8 +38,8 @@ func TestVideoWithCategoryAndDuration(t *testing.T) {
 		Imp: []openrtb2.Imp{{
 			ID: "1_1",
 			Video: &openrtb2.Video{
-				W:           openrtb2.Int64Ptr(640),
-				H:           openrtb2.Int64Ptr(360),
+				W:           ptrutil.ToPtr[int64](640),
+				H:           ptrutil.ToPtr[int64](360),
 				MIMEs:       []string{"video/mp4"},
 				MaxDuration: 60,
 				Protocols:   []adcom1.MediaCreativeSubtype{2, 3, 5, 6},

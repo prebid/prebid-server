@@ -32,6 +32,7 @@ import (
 	metricsConfig "github.com/prebid/prebid-server/v2/metrics/config"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 	"github.com/prebid/prebid-server/v2/version"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -1879,7 +1880,7 @@ func TestSetAssetTypes(t *testing.T) {
 	}{
 		{
 			respAsset: nativeResponse.Asset{
-				ID: openrtb2.Int64Ptr(1),
+				ID: ptrutil.ToPtr[int64](1),
 				Img: &nativeResponse.Image{
 					URL: "http://some-url",
 				},
@@ -1905,7 +1906,7 @@ func TestSetAssetTypes(t *testing.T) {
 		},
 		{
 			respAsset: nativeResponse.Asset{
-				ID: openrtb2.Int64Ptr(2),
+				ID: ptrutil.ToPtr[int64](2),
 				Data: &nativeResponse.Data{
 					Label: "some label",
 				},
@@ -1931,7 +1932,7 @@ func TestSetAssetTypes(t *testing.T) {
 		},
 		{
 			respAsset: nativeResponse.Asset{
-				ID: openrtb2.Int64Ptr(1),
+				ID: ptrutil.ToPtr[int64](1),
 				Img: &nativeResponse.Image{
 					URL: "http://some-url",
 				},
@@ -1951,7 +1952,7 @@ func TestSetAssetTypes(t *testing.T) {
 		},
 		{
 			respAsset: nativeResponse.Asset{
-				ID: openrtb2.Int64Ptr(2),
+				ID: ptrutil.ToPtr[int64](2),
 				Data: &nativeResponse.Data{
 					Label: "some label",
 				},
@@ -1971,7 +1972,7 @@ func TestSetAssetTypes(t *testing.T) {
 		},
 		{
 			respAsset: nativeResponse.Asset{
-				ID: openrtb2.Int64Ptr(1),
+				ID: ptrutil.ToPtr[int64](1),
 				Img: &nativeResponse.Image{
 					URL: "http://some-url",
 				},

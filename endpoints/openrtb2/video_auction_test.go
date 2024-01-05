@@ -1030,15 +1030,15 @@ func TestCreateImpressionTemplate(t *testing.T) {
 	imp.Video = &openrtb2.Video{}
 	imp.Video.Protocols = []adcom1.MediaCreativeSubtype{1, 2}
 	imp.Video.MIMEs = []string{"video/mp4"}
-	imp.Video.H = openrtb2.Int64Ptr(200)
-	imp.Video.W = openrtb2.Int64Ptr(400)
+	imp.Video.H = ptrutil.ToPtr[int64](200)
+	imp.Video.W = ptrutil.ToPtr[int64](400)
 	imp.Video.PlaybackMethod = []adcom1.PlaybackMethod{5, 6}
 
 	video := openrtb2.Video{}
 	video.Protocols = []adcom1.MediaCreativeSubtype{3, 4}
 	video.MIMEs = []string{"video/flv"}
-	video.H = openrtb2.Int64Ptr(300)
-	video.W = openrtb2.Int64Ptr(0)
+	video.H = ptrutil.ToPtr[int64](300)
+	video.W = ptrutil.ToPtr[int64](0)
 	video.PlaybackMethod = []adcom1.PlaybackMethod{7, 8}
 
 	res := createImpressionTemplate(imp, &video)

@@ -338,8 +338,8 @@ func TestOpenRTBRequest(t *testing.T) {
 		}, {
 			ID: "test-imp-video-id",
 			Video: &openrtb2.Video{
-				W:           openrtb2.Int64Ptr(640),
-				H:           openrtb2.Int64Ptr(360),
+				W:           ptrutil.ToPtr[int64](640),
+				H:           ptrutil.ToPtr[int64](360),
 				MIMEs:       []string{"video/mp4"},
 				MinDuration: 15,
 				MaxDuration: 30,
@@ -461,8 +461,8 @@ func TestOpenRTBRequestWithBannerImpEvenIfImpHasVideo(t *testing.T) {
 				},
 			},
 			Video: &openrtb2.Video{
-				W:     openrtb2.Int64Ptr(640),
-				H:     openrtb2.Int64Ptr(360),
+				W:     ptrutil.ToPtr[int64](640),
+				H:     ptrutil.ToPtr[int64](360),
 				MIMEs: []string{"video/mp4"},
 			},
 			Ext: json.RawMessage(`{"bidder": {
@@ -658,8 +658,8 @@ func TestOpenRTBRequestWithVideoImpEvenIfImpHasBannerButAllRequiredVideoFields(t
 				},
 			},
 			Video: &openrtb2.Video{
-				W:           openrtb2.Int64Ptr(640),
-				H:           openrtb2.Int64Ptr(360),
+				W:           ptrutil.ToPtr[int64](640),
+				H:           ptrutil.ToPtr[int64](360),
 				MIMEs:       []string{"video/mp4"},
 				Protocols:   []adcom1.MediaCreativeSubtype{adcom1.CreativeVAST10},
 				MaxDuration: 30,
@@ -708,8 +708,8 @@ func TestOpenRTBRequestWithVideoImpAndEnabledRewardedInventoryFlag(t *testing.T)
 		Imp: []openrtb2.Imp{{
 			ID: "test-imp-id",
 			Video: &openrtb2.Video{
-				W:           openrtb2.Int64Ptr(640),
-				H:           openrtb2.Int64Ptr(360),
+				W:           ptrutil.ToPtr[int64](640),
+				H:           ptrutil.ToPtr[int64](360),
 				MIMEs:       []string{"video/mp4"},
 				Protocols:   []adcom1.MediaCreativeSubtype{adcom1.CreativeVAST10},
 				MaxDuration: 30,

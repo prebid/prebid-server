@@ -618,8 +618,8 @@ func TestCleanOpenRTBRequestsWithBidResponses(t *testing.T) {
 				{
 					ID: "imp-id1",
 					Video: &openrtb2.Video{
-						W: openrtb2.Int64Ptr(300),
-						H: openrtb2.Int64Ptr(250),
+						W: ptrutil.ToPtr[int64](300),
+						H: ptrutil.ToPtr[int64](250),
 					},
 					Ext: json.RawMessage(`{"prebid":{"bidder":{"bidderA":{"placementId":"123"}}}}`),
 				},
@@ -642,8 +642,8 @@ func TestCleanOpenRTBRequestsWithBidResponses(t *testing.T) {
 				{
 					ID: "imp-id1",
 					Video: &openrtb2.Video{
-						W: openrtb2.Int64Ptr(300),
-						H: openrtb2.Int64Ptr(250),
+						W: ptrutil.ToPtr[int64](300),
+						H: ptrutil.ToPtr[int64](250),
 					},
 					Ext: json.RawMessage(`{"prebid":{"bidder":{"bidderA":{"placementId":"123"}}}}`),
 				},
@@ -672,8 +672,8 @@ func TestCleanOpenRTBRequestsWithBidResponses(t *testing.T) {
 				{
 					ID: "imp-id1",
 					Video: &openrtb2.Video{
-						W: openrtb2.Int64Ptr(300),
-						H: openrtb2.Int64Ptr(250),
+						W: ptrutil.ToPtr[int64](300),
+						H: ptrutil.ToPtr[int64](250),
 					},
 					Ext: json.RawMessage(`{"prebid":{"bidder":{"bidderA":{"placementId":"123"}}}}`),
 				},
@@ -703,8 +703,8 @@ func TestCleanOpenRTBRequestsWithBidResponses(t *testing.T) {
 				{
 					ID: "imp-id1",
 					Video: &openrtb2.Video{
-						W: openrtb2.Int64Ptr(300),
-						H: openrtb2.Int64Ptr(250),
+						W: ptrutil.ToPtr[int64](300),
+						H: ptrutil.ToPtr[int64](250),
 					},
 					Ext: json.RawMessage(`{"prebid":{"bidder":{"bidderA":{"placementId":"123"}}}}`),
 				},
@@ -743,8 +743,8 @@ func TestCleanOpenRTBRequestsWithBidResponses(t *testing.T) {
 				{
 					ID: "imp-id1",
 					Video: &openrtb2.Video{
-						W: openrtb2.Int64Ptr(300),
-						H: openrtb2.Int64Ptr(250),
+						W: ptrutil.ToPtr[int64](300),
+						H: ptrutil.ToPtr[int64](250),
 					},
 					Ext: json.RawMessage(`{"prebid":{"bidder":{"bidderA":{"placementId":"123"}}}}`),
 				},

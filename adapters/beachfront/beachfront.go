@@ -686,6 +686,7 @@ func postprocessVideo(bids []openrtb2.Bid, xtrnal openrtb2.BidRequest, uri strin
 	}
 	return bids, errs
 }
+
 func extractNurlVideoCrid(nurl string) string {
 	chunky := strings.SplitAfter(nurl, ":")
 	if len(chunky) > 1 {
