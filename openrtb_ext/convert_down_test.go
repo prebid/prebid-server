@@ -70,6 +70,16 @@ func TestConvertDownTo25(t *testing.T) {
 			},
 		},
 		{
+			name: "2.6-202309-dropped", // integration with clear202309Fields
+			givenRequest: openrtb2.BidRequest{
+				ID:   "anyID",
+				ACat: []string{"anyACat"},
+			},
+			expectedRequest: openrtb2.BidRequest{
+				ID: "anyID",
+			},
+		},
+		{
 			name: "2.6-to-2.5-OtherExtFields",
 			givenRequest: openrtb2.BidRequest{
 				ID:     "anyID",
