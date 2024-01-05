@@ -1,0 +1,296 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>adtelligent: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/prebid/prebid-server/v2/adapters/adtelligent/adtelligent.go (92.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package adtelligent
+
+import (
+        "encoding/json"
+        "fmt"
+        "net/http"
+
+        "github.com/prebid/openrtb/v20/openrtb2"
+        "github.com/prebid/prebid-server/v2/adapters"
+        "github.com/prebid/prebid-server/v2/config"
+        "github.com/prebid/prebid-server/v2/errortypes"
+        "github.com/prebid/prebid-server/v2/openrtb_ext"
+)
+
+type AdtelligentAdapter struct {
+        endpoint string
+}
+
+type adtelligentImpExt struct {
+        Adtelligent openrtb_ext.ExtImpAdtelligent `json:"adtelligent"`
+}
+
+func (a *AdtelligentAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) <span class="cov8" title="1">{
+
+        totalImps := len(request.Imp)
+        errors := make([]error, 0, totalImps)
+        imp2source := make(map[int][]int)
+
+        for i := 0; i &lt; totalImps; i++ </span><span class="cov8" title="1">{
+
+                sourceId, err := validateImpression(&amp;request.Imp[i])
+
+                if err != nil </span><span class="cov8" title="1">{
+                        errors = append(errors, err)
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">if _, ok := imp2source[sourceId]; !ok </span><span class="cov8" title="1">{
+                        imp2source[sourceId] = make([]int, 0, totalImps-i)
+                }</span>
+
+                <span class="cov8" title="1">imp2source[sourceId] = append(imp2source[sourceId], i)</span>
+
+        }
+
+        <span class="cov8" title="1">totalReqs := len(imp2source)
+        if 0 == totalReqs </span><span class="cov8" title="1">{
+                return nil, errors
+        }</span>
+
+        <span class="cov8" title="1">headers := http.Header{}
+        headers.Add("Content-Type", "application/json;charset=utf-8")
+        headers.Add("Accept", "application/json")
+
+        reqs := make([]*adapters.RequestData, 0, totalReqs)
+
+        imps := request.Imp
+        request.Imp = make([]openrtb2.Imp, 0, len(imps))
+        for sourceId, impIds := range imp2source </span><span class="cov8" title="1">{
+                request.Imp = request.Imp[:0]
+
+                for i := 0; i &lt; len(impIds); i++ </span><span class="cov8" title="1">{
+                        request.Imp = append(request.Imp, imps[impIds[i]])
+                }</span>
+
+                <span class="cov8" title="1">body, err := json.Marshal(request)
+                if err != nil </span><span class="cov0" title="0">{
+                        errors = append(errors, fmt.Errorf("error while encoding bidRequest, err: %s", err))
+                        return nil, errors
+                }</span>
+
+                <span class="cov8" title="1">reqs = append(reqs, &amp;adapters.RequestData{
+                        Method:  "POST",
+                        Uri:     a.endpoint + fmt.Sprintf("?aid=%d", sourceId),
+                        Body:    body,
+                        Headers: headers,
+                })</span>
+        }
+
+        <span class="cov8" title="1">if 0 == len(reqs) </span><span class="cov0" title="0">{
+                return nil, errors
+        }</span>
+
+        <span class="cov8" title="1">return reqs, errors</span>
+
+}
+
+func (a *AdtelligentAdapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.RequestData, httpRes *adapters.ResponseData) (*adapters.BidderResponse, []error) <span class="cov8" title="1">{
+
+        if httpRes.StatusCode == http.StatusNoContent </span><span class="cov8" title="1">{
+                return nil, nil
+        }</span>
+
+        <span class="cov8" title="1">var bidResp openrtb2.BidResponse
+        if err := json.Unmarshal(httpRes.Body, &amp;bidResp); err != nil </span><span class="cov0" title="0">{
+                return nil, []error{&amp;errortypes.BadServerResponse{
+                        Message: fmt.Sprintf("error while decoding response, err: %s", err),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">bidResponse := adapters.NewBidderResponse()
+        var errors []error
+
+        var impOK bool
+        for _, sb := range bidResp.SeatBid </span><span class="cov8" title="1">{
+                for i := 0; i &lt; len(sb.Bid); i++ </span><span class="cov8" title="1">{
+
+                        bid := sb.Bid[i]
+
+                        impOK = false
+                        mediaType := openrtb_ext.BidTypeBanner
+                        for _, imp := range bidReq.Imp </span><span class="cov8" title="1">{
+                                if imp.ID == bid.ImpID </span><span class="cov8" title="1">{
+
+                                        impOK = true
+
+                                        if imp.Video != nil </span><span class="cov8" title="1">{
+                                                mediaType = openrtb_ext.BidTypeVideo
+                                                break</span>
+                                        }
+                                }
+                        }
+
+                        <span class="cov8" title="1">if !impOK </span><span class="cov8" title="1">{
+                                errors = append(errors, &amp;errortypes.BadServerResponse{
+                                        Message: fmt.Sprintf("ignoring bid id=%s, request doesn't contain any impression with id=%s", bid.ID, bid.ImpID),
+                                })
+                                continue</span>
+                        }
+
+                        <span class="cov8" title="1">bidResponse.Bids = append(bidResponse.Bids, &amp;adapters.TypedBid{
+                                Bid:     &amp;bid,
+                                BidType: mediaType,
+                        })</span>
+                }
+        }
+
+        <span class="cov8" title="1">return bidResponse, errors</span>
+}
+
+func validateImpression(imp *openrtb2.Imp) (int, error) <span class="cov8" title="1">{
+
+        if imp.Banner == nil &amp;&amp; imp.Video == nil </span><span class="cov8" title="1">{
+                return 0, &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("ignoring imp id=%s, Adtelligent supports only Video and Banner", imp.ID),
+                }
+        }</span>
+
+        <span class="cov8" title="1">if 0 == len(imp.Ext) </span><span class="cov0" title="0">{
+                return 0, &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("ignoring imp id=%s, extImpBidder is empty", imp.ID),
+                }
+        }</span>
+
+        <span class="cov8" title="1">var bidderExt adapters.ExtImpBidder
+
+        if err := json.Unmarshal(imp.Ext, &amp;bidderExt); err != nil </span><span class="cov0" title="0">{
+                return 0, &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("ignoring imp id=%s, error while decoding extImpBidder, err: %s", imp.ID, err),
+                }
+        }</span>
+
+        <span class="cov8" title="1">impExt := openrtb_ext.ExtImpAdtelligent{}
+        err := json.Unmarshal(bidderExt.Bidder, &amp;impExt)
+        if err != nil </span><span class="cov8" title="1">{
+                return 0, &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("ignoring imp id=%s, error while decoding impExt, err: %s", imp.ID, err),
+                }
+        }</span>
+
+        // common extension for all impressions
+        <span class="cov8" title="1">var impExtBuffer []byte
+
+        impExtBuffer, err = json.Marshal(&amp;adtelligentImpExt{
+                Adtelligent: impExt,
+        })
+
+        if impExt.BidFloor &gt; 0 </span><span class="cov8" title="1">{
+                imp.BidFloor = impExt.BidFloor
+        }</span>
+
+        <span class="cov8" title="1">imp.Ext = impExtBuffer
+
+        return impExt.SourceId, nil</span>
+}
+
+// Builder builds a new instance of the Adtelligent adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) <span class="cov8" title="1">{
+        bidder := &amp;AdtelligentAdapter{
+                endpoint: config.Endpoint,
+        }
+        return bidder, nil
+}</span>
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
