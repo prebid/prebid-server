@@ -3,10 +3,11 @@ package hookexecution
 import (
 	"context"
 	"fmt"
-	"github.com/prebid/prebid-server/v2/ortb"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/prebid/prebid-server/v2/ortb"
 
 	"github.com/prebid/prebid-server/v2/hooks"
 	"github.com/prebid/prebid-server/v2/hooks/hookstage"
@@ -190,6 +191,7 @@ func handleHookResponse[P any](
 		Warnings:      hr.Result.Warnings,
 		DebugMessages: hr.Result.DebugMessages,
 		AnalyticsTags: hr.Result.AnalyticsTags,
+		SeatNonBid:    hr.Result.SeatNonBid,
 		ExecutionTime: ExecutionTime{ExecutionTimeMillis: hr.ExecutionTime},
 	}
 

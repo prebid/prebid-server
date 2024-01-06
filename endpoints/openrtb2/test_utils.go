@@ -846,6 +846,8 @@ func (cf mockStoredReqFetcher) FetchResponses(ctx context.Context, ids []string)
 // mockExchange implements the Exchange interface
 type mockExchange struct {
 	lastRequest *openrtb2.BidRequest
+	seatNonBid  openrtb_ext.NonBidsWrapper
+	error       error
 }
 
 func (m *mockExchange) HoldAuction(ctx context.Context, auctionRequest *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*exchange.AuctionResponse, error) {
@@ -859,7 +861,8 @@ func (m *mockExchange) HoldAuction(ctx context.Context, auctionRequest *exchange
 				}},
 			}},
 		},
-	}, nil
+		SeatNonBid: m.seatNonBid,
+	}, m.error
 }
 
 // hardcodedResponseIPValidator implements the IPValidator interface.
@@ -1514,6 +1517,53 @@ func (m mockRejectionHook) HandleRawBidderResponseHook(
 	}
 
 	return result, nil
+}
+
+// mockSeatNonBidHook can be used to return seatNonBid from hook stage
+type mockSeatNonBidHook struct {
+}
+
+func (m mockSeatNonBidHook) HandleEntrypointHook(
+	_ context.Context,
+	_ hookstage.ModuleInvocationContext,
+	_ hookstage.EntrypointPayload,
+) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+	result := hookstage.HookResult[hookstage.EntrypointPayload]{}
+	result.SeatNonBid = openrtb_ext.NonBidsWrapper{}
+	result.SeatNonBid.AddBid(openrtb_ext.NonBidParams{Bid: &openrtb2.Bid{ImpID: "imp"}, Seat: "pubmatic", NonBidReason: 100})
+	return result, nil
+}
+
+func (m mockSeatNonBidHook) HandleRawAuctionHook(
+	_ context.Context,
+	_ hookstage.ModuleInvocationContext,
+	_ hookstage.RawAuctionRequestPayload,
+) (hookstage.HookResult[hookstage.RawAuctionRequestPayload], error) {
+	return hookstage.HookResult[hookstage.RawAuctionRequestPayload]{Reject: false, NbrCode: 0}, nil
+}
+
+func (m mockSeatNonBidHook) HandleProcessedAuctionHook(
+	_ context.Context,
+	_ hookstage.ModuleInvocationContext,
+	_ hookstage.ProcessedAuctionRequestPayload,
+) (hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload], error) {
+	return hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload]{Reject: true, NbrCode: 0}, fmt.Errorf("any error")
+}
+
+func (m mockSeatNonBidHook) HandleBidderRequestHook(
+	_ context.Context,
+	_ hookstage.ModuleInvocationContext,
+	payload hookstage.BidderRequestPayload,
+) (hookstage.HookResult[hookstage.BidderRequestPayload], error) {
+	return hookstage.HookResult[hookstage.BidderRequestPayload]{}, nil
+}
+
+func (m mockSeatNonBidHook) HandleRawBidderResponseHook(
+	_ context.Context,
+	_ hookstage.ModuleInvocationContext,
+	payload hookstage.RawBidderResponsePayload,
+) (hookstage.HookResult[hookstage.RawBidderResponsePayload], error) {
+	return hookstage.HookResult[hookstage.RawBidderResponsePayload]{}, nil
 }
 
 var entryPointHookUpdateWithErrors = hooks.HookWrapper[hookstage.Entrypoint]{

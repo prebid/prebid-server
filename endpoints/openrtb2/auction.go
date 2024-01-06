@@ -164,6 +164,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	// We can respect timeouts more accurately if we note the *real* start time, and use it
 	// to compute the auction timeout.
 	start := time.Now()
+	seatNonBid := &openrtb_ext.NonBidsWrapper{}
 
 	hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
 
@@ -192,12 +193,14 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	req, impExtInfoMap, storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, account, errL := deps.parseRequest(r, &labels, hookExecutor)
 	if errortypes.ContainsFatalError(errL) && writeError(errL, w, &labels) {
+		seatNonBid.MergeNonBids(getNonBidsFromStageOutcomes(hookExecutor.GetOutcomes()))
+		ao.SeatNonBid = seatNonBid.Get()
 		return
 	}
 
 	if rejectErr := hookexecution.FindFirstRejectOrNil(errL); rejectErr != nil {
 		ao.RequestWrapper = req
-		labels, ao = rejectAuctionRequest(*rejectErr, w, hookExecutor, req.BidRequest, account, labels, ao)
+		labels, ao = rejectAuctionRequest(*rejectErr, w, hookExecutor, req.BidRequest, account, labels, ao, seatNonBid)
 		return
 	}
 
@@ -234,6 +237,8 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	if err != nil {
 		errL = append(errL, err)
 		writeError(errL, w, &labels)
+		seatNonBid.MergeNonBids(getNonBidsFromStageOutcomes(hookExecutor.GetOutcomes()))
+		ao.SeatNonBid = seatNonBid.Get()
 		return
 	}
 	secGPC := r.Header.Get("Sec-GPC")
@@ -270,11 +275,13 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	var response *openrtb2.BidResponse
 	if auctionResponse != nil {
 		response = auctionResponse.BidResponse
+		seatNonBid.MergeNonBids(auctionResponse.SeatNonBid)
 	}
 	ao.Response = response
-	ao.SeatNonBid = auctionResponse.GetSeatNonBid()
 	rejectErr, isRejectErr := hookexecution.CastRejectErr(err)
 	if err != nil && !isRejectErr {
+		seatNonBid.MergeNonBids(getNonBidsFromStageOutcomes(hookExecutor.GetOutcomes()))
+		ao.SeatNonBid = seatNonBid.Get()
 		if errortypes.ReadCode(err) == errortypes.BadInputErrorCode {
 			writeError([]error{err}, w, &labels)
 			return
@@ -287,15 +294,11 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		ao.Errors = append(ao.Errors, err)
 		return
 	} else if isRejectErr {
-		labels, ao = rejectAuctionRequest(*rejectErr, w, hookExecutor, req.BidRequest, account, labels, ao)
+		labels, ao = rejectAuctionRequest(*rejectErr, w, hookExecutor, req.BidRequest, account, labels, ao, seatNonBid)
 		return
 	}
 
-	err = setSeatNonBidRaw(req, auctionResponse)
-	if err != nil {
-		glog.Errorf("Error setting seat non-bid: %v", err)
-	}
-	labels, ao = sendAuctionResponse(w, hookExecutor, response, req.BidRequest, account, labels, ao)
+	labels, ao = sendAuctionResponse(w, hookExecutor, response, req.BidRequest, account, labels, ao, seatNonBid)
 }
 
 // setSeatNonBidRaw is transitional function for setting SeatNonBid inside bidResponse.Ext
@@ -303,18 +306,20 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 // 1. today exchange.HoldAuction prepares and marshals some piece of response.Ext which is then used by auction.go, amp_auction.go and video_auction.go
 // 2. As per discussion with Prebid Team we are planning to move away from - HoldAuction building openrtb2.BidResponse. instead respective auction modules will build this object
 // 3. So, we will need this method to do first,  unmarshalling of response.Ext
-func setSeatNonBidRaw(request *openrtb_ext.RequestWrapper, auctionResponse *exchange.AuctionResponse) error {
-	if auctionResponse == nil || auctionResponse.BidResponse == nil {
+func setSeatNonBidRaw(request *openrtb_ext.RequestWrapper, response *openrtb2.BidResponse, nonBids []openrtb_ext.SeatNonBid) error {
+	if response == nil || !returnAllBidStatus(request) {
 		return nil
+	}
+	if response.Ext == nil {
+		response.Ext = json.RawMessage(`{}`)
 	}
 	// unmarshalling is required here, until we are moving away from bidResponse.Ext, which is populated
 	// by HoldAuction
-	response := auctionResponse.BidResponse
 	respExt := &openrtb_ext.ExtBidResponse{}
 	if err := jsonutil.Unmarshal(response.Ext, &respExt); err != nil {
 		return err
 	}
-	if setSeatNonBid(respExt, request, auctionResponse) {
+	if setSeatNonBid(respExt, nonBids) {
 		if respExtJson, err := jsonutil.Marshal(respExt); err == nil {
 			response.Ext = respExtJson
 			return nil
@@ -333,6 +338,7 @@ func rejectAuctionRequest(
 	account *config.Account,
 	labels metrics.Labels,
 	ao analytics.AuctionObject,
+	seatNonBid *openrtb_ext.NonBidsWrapper,
 ) (metrics.Labels, analytics.AuctionObject) {
 	response := &openrtb2.BidResponse{NBR: openrtb3.NoBidReason(rejectErr.NBR).Ptr()}
 	if request != nil {
@@ -342,7 +348,21 @@ func rejectAuctionRequest(
 	ao.Response = response
 	ao.Errors = append(ao.Errors, rejectErr)
 
-	return sendAuctionResponse(w, hookExecutor, response, request, account, labels, ao)
+	return sendAuctionResponse(w, hookExecutor, response, request, account, labels, ao, seatNonBid)
+}
+
+func getNonBidsFromStageOutcomes(stageOutcomes []hookexecution.StageOutcome) openrtb_ext.NonBidsWrapper {
+	seatNonBid := openrtb_ext.NonBidsWrapper{}
+	for _, stageOutcome := range stageOutcomes {
+		for _, groups := range stageOutcome.Groups {
+			for _, result := range groups.InvocationResults {
+				if result.Status == hookexecution.StatusSuccess {
+					seatNonBid.MergeNonBids(result.SeatNonBid)
+				}
+			}
+		}
+	}
+	return seatNonBid
 }
 
 func sendAuctionResponse(
@@ -353,12 +373,20 @@ func sendAuctionResponse(
 	account *config.Account,
 	labels metrics.Labels,
 	ao analytics.AuctionObject,
+	seatNonBid *openrtb_ext.NonBidsWrapper,
 ) (metrics.Labels, analytics.AuctionObject) {
 	hookExecutor.ExecuteAuctionResponseStage(response)
 
+	stageOutcomes := hookExecutor.GetOutcomes()
+	seatNonBid.MergeNonBids(getNonBidsFromStageOutcomes(stageOutcomes))
+	ao.SeatNonBid = seatNonBid.Get()
+
 	if response != nil {
-		stageOutcomes := hookExecutor.GetOutcomes()
 		ao.HookExecutionOutcome = stageOutcomes
+		err := setSeatNonBidRaw(ao.RequestWrapper, response, ao.SeatNonBid)
+		if err != nil {
+			glog.Errorf("Error setting seatNonBid in responseExt: %v", err)
+		}
 
 		ext, warns, err := hookexecution.EnrichExtBidResponse(response.Ext, stageOutcomes, request, account)
 		if err != nil {

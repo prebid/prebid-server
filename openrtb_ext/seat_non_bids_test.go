@@ -1,0 +1,240 @@
+package openrtb_ext
+
+import (
+	"testing"
+
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestSeatNonBidsAdd(t *testing.T) {
+	type fields struct {
+		seatNonBidsMap map[string][]NonBid
+	}
+	type args struct {
+		nonBidparams NonBidParams
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   map[string][]NonBid
+	}{
+		{
+			name:   "nil seatNonBidsMap",
+			fields: fields{seatNonBidsMap: nil},
+			args:   args{},
+			want:   nil,
+		},
+		{
+			name: "add nil bid object",
+			fields: fields{seatNonBidsMap: map[string][]NonBid{
+				"bidder1": {{ImpId: "imp", StatusCode: 100}},
+			}},
+			args: args{nonBidparams: NonBidParams{Bid: nil}},
+			want: map[string][]NonBid{
+				"bidder1": {{ImpId: "imp", StatusCode: 100}},
+			},
+		},
+		{
+			name:   "nil seatNonBidsMap with bid object",
+			fields: fields{seatNonBidsMap: nil},
+			args:   args{nonBidparams: NonBidParams{Bid: &openrtb2.Bid{ImpID: "imp"}, Seat: "bidder1"}},
+			want: map[string][]NonBid{
+				"bidder1": {{ImpId: "imp"}},
+			},
+		},
+		{
+			name: "multiple-nonbids-for-same-seat",
+			fields: fields{
+				seatNonBidsMap: map[string][]NonBid{
+					"bidder2": {{ImpId: "imp1"}},
+				},
+			},
+			args: args{nonBidparams: NonBidParams{Bid: &openrtb2.Bid{ImpID: "imp2"}, Seat: "bidder2"}},
+			want: map[string][]NonBid{
+				"bidder2": {{ImpId: "imp1"}, {ImpId: "imp2"}},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			snb := &NonBidsWrapper{
+				seatNonBidsMap: tt.fields.seatNonBidsMap,
+			}
+			snb.AddBid(tt.args.nonBidparams)
+			assert.Equalf(t, tt.want, snb.seatNonBidsMap, "expected seatNonBidsMap not nil")
+		})
+	}
+}
+
+func TestSeatNonBidsGet(t *testing.T) {
+	type fields struct {
+		snb *NonBidsWrapper
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   []SeatNonBid
+	}{
+		{
+			name:   "nil seat nonbids",
+			fields: fields{nil},
+		},
+		{
+			name: "get seat nonbids",
+			fields: fields{&NonBidsWrapper{
+				seatNonBidsMap: map[string][]NonBid{
+					"bidder1": {
+						{
+							ImpId:      "imp1",
+							StatusCode: 100,
+						},
+					},
+					"bidder2": {
+						{
+							ImpId:      "imp2",
+							StatusCode: 200,
+						},
+					},
+				},
+			}},
+			want: []SeatNonBid{
+				{
+					Seat: "bidder1",
+					NonBid: []NonBid{
+						{
+							ImpId:      "imp1",
+							StatusCode: 100,
+						},
+					},
+				},
+				{
+					Seat: "bidder2",
+					NonBid: []NonBid{
+						{
+							ImpId:      "imp2",
+							StatusCode: 200,
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.fields.snb.Get(); !assert.ElementsMatch(t, tt.want, got) {
+				t.Errorf("seatNonBids.Get() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestSeatNonBidsMerge(t *testing.T) {
+	type target struct {
+		snb *NonBidsWrapper
+	}
+	tests := []struct {
+		name   string
+		fields target
+		input  NonBidsWrapper
+		want   *NonBidsWrapper
+	}{
+		{
+			name:   "target NonBidsWrapper is nil",
+			fields: target{nil},
+			want:   nil,
+		},
+		{
+			name:   "input NonBidsWrapper contains nil map",
+			fields: target{&NonBidsWrapper{}},
+			input:  NonBidsWrapper{seatNonBidsMap: nil},
+			want:   &NonBidsWrapper{},
+		},
+		{
+			name:   "input NonBidsWrapper contains empty nonBids",
+			fields: target{&NonBidsWrapper{}},
+			input:  NonBidsWrapper{seatNonBidsMap: make(map[string][]NonBid)},
+			want:   &NonBidsWrapper{},
+		},
+		{
+			name:   "merge nonbids in empty target NonBidsWrapper",
+			fields: target{&NonBidsWrapper{}},
+			input: NonBidsWrapper{
+				seatNonBidsMap: map[string][]NonBid{
+					"pubmatic": {
+						{
+							ImpId:      "imp1",
+							StatusCode: 100,
+						},
+					},
+				},
+			},
+			want: &NonBidsWrapper{
+				seatNonBidsMap: map[string][]NonBid{
+					"pubmatic": {
+						{
+							ImpId:      "imp1",
+							StatusCode: 100,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "merge multiple nonbids in non-empty target NonBidsWrapper",
+			fields: target{&NonBidsWrapper{
+				seatNonBidsMap: map[string][]NonBid{
+					"pubmatic": {
+						{
+							ImpId:      "imp1",
+							StatusCode: 100,
+						},
+					},
+				},
+			}},
+			input: NonBidsWrapper{
+				seatNonBidsMap: map[string][]NonBid{
+					"pubmatic": {
+						{
+							ImpId:      "imp2",
+							StatusCode: 100,
+						},
+					},
+					"appnexus": {
+						{
+							ImpId:      "imp3",
+							StatusCode: 200,
+						},
+					},
+				},
+			},
+			want: &NonBidsWrapper{
+				seatNonBidsMap: map[string][]NonBid{
+					"pubmatic": {
+						{
+							ImpId:      "imp1",
+							StatusCode: 100,
+						},
+						{
+							ImpId:      "imp2",
+							StatusCode: 100,
+						},
+					},
+					"appnexus": {
+						{
+							ImpId:      "imp3",
+							StatusCode: 200,
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.fields.snb.MergeNonBids(tt.input)
+			assert.Equal(t, tt.want, tt.fields.snb, "incorrect NonBidsWrapper generated by MergeNonBids")
+		})
+	}
+}
