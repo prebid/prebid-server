@@ -484,6 +484,35 @@ func TestSyncerDefaultSyncType(t *testing.T) {
 	assert.Equal(t, SyncTypeRedirect, syncer.DefaultResponseFormat())
 }
 
+func TestSyncerDefaultResponseFormat(t *testing.T) {
+	testCases := []struct {
+		description      string
+		givenSyncer      standardSyncer
+		expectedSyncType SyncType
+	}{
+		{
+			description:      "IFrame",
+			givenSyncer:      standardSyncer{formatOverride: config.ResponseFormatIFrame},
+			expectedSyncType: SyncTypeIFrame,
+		},
+		{
+			description:      "Default with Redirect Override",
+			givenSyncer:      standardSyncer{defaultSyncType: SyncTypeIFrame, formatOverride: config.ResponseFormatRedirect},
+			expectedSyncType: SyncTypeRedirect,
+		},
+		{
+			description:      "Default with no override",
+			givenSyncer:      standardSyncer{defaultSyncType: SyncTypeRedirect},
+			expectedSyncType: SyncTypeRedirect,
+		},
+	}
+
+	for _, test := range testCases {
+		syncType := test.givenSyncer.DefaultResponseFormat()
+		assert.Equal(t, test.expectedSyncType, syncType, test.description)
+	}
+}
+
 func TestSyncerSupportsType(t *testing.T) {
 	endpointTemplate := template.Must(template.New("test").Parse("iframe"))
 
@@ -778,34 +807,5 @@ func TestSyncerChooseTemplate(t *testing.T) {
 		syncer := standardSyncer{iframe: iframeTemplate, redirect: redirectTemplate}
 		result := syncer.chooseTemplate(test.givenSyncType)
 		assert.Equal(t, test.expectedTemplate, result, test.description)
-	}
-}
-
-func TestSyncerForceResponseFormat(t *testing.T) {
-	testCases := []struct {
-		description       string
-		givenForceType    string
-		expectedForceType string
-	}{
-		{
-			description:       "IFrame",
-			givenForceType:    "b",
-			expectedForceType: "b",
-		},
-		{
-			description:       "Redirect",
-			givenForceType:    "i",
-			expectedForceType: "i",
-		},
-		{
-			description:       "Empty",
-			expectedForceType: "",
-		},
-	}
-
-	for _, test := range testCases {
-		syncer := standardSyncer{formatOverride: test.givenForceType}
-		forceType := syncer.ForceResponseFormat()
-		assert.Equal(t, test.expectedForceType, forceType, test.description)
 	}
 }

@@ -209,6 +209,11 @@ type InfoReaderFromDisk struct {
 	Path string
 }
 
+const (
+	ResponseFormatIFrame   = "b" // b = blank HTML response
+	ResponseFormatRedirect = "i" // i = image response
+)
+
 func (r InfoReaderFromDisk) Read() (map[string][]byte, error) {
 	bidderConfigs, err := os.ReadDir(r.Path)
 	if err != nil {
@@ -563,6 +568,10 @@ func validatePlatformInfo(info *PlatformInfo) error {
 func validateSyncer(bidderInfo BidderInfo) error {
 	if bidderInfo.Syncer == nil {
 		return nil
+	}
+
+	if bidderInfo.Syncer.FormatOverride != ResponseFormatIFrame && bidderInfo.Syncer.FormatOverride != ResponseFormatRedirect && bidderInfo.Syncer.FormatOverride != "" {
+		return fmt.Errorf("syncer could not be created, invalid FormatOverride value: %s", bidderInfo.Syncer.FormatOverride)
 	}
 
 	for _, supports := range bidderInfo.Syncer.Supports {
