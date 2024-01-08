@@ -129,7 +129,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			Uri:     a.endpoint,
 			Body:    req,
 			Headers: raiHeaders,
-			ImpID:   openrtb_ext.GetImpIDs(request.Imp),
+			ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 		})
 
 	}

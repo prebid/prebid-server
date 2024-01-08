@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"testing"
 
@@ -200,7 +201,7 @@ type httpRequest struct {
 	Body    json.RawMessage `json:"body"`
 	Uri     string          `json:"uri"`
 	Headers http.Header     `json:"headers"`
-	ImpID   []string        `json:"impid"`
+	ImpIDs  []string        `json:"impIDs"`
 }
 
 type httpResponse struct {
@@ -248,7 +249,6 @@ func assertMakeRequestsOutput(t *testing.T, filename string, actual []*adapters.
 		var err error
 		for j := 0; j < len(actual); j++ {
 			if err = diffHttpRequests(fmt.Sprintf("%s: httpRequest[%d]", filename, i), actual[j], &(expected[i].Request)); err == nil {
-				assert.ElementsMatch(t, actual[j].ImpID, expected[i].Request.ImpID, filename)
 				break
 			}
 		}
@@ -319,6 +319,14 @@ func diffHttpRequests(description string, actual *adapters.RequestData, expected
 		if err := diffJson(description, actualHeader, expectedHeader); err != nil {
 			return err
 		}
+	}
+
+	if len(expected.ImpIDs) < 1 {
+		return fmt.Errorf(`expected.ImpIDs must contain at least one imp ID`)
+	}
+
+	if !reflect.DeepEqual(expected.ImpIDs, actual.ImpIDs) {
+		return fmt.Errorf(`%s actual.ImpIDs "%q" do not match expected "%q"`, description, actual.ImpIDs, expected.ImpIDs)
 	}
 	return diffJson(description, actual.Body, expected.Body)
 }

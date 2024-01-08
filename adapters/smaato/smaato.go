@@ -256,7 +256,7 @@ func (adapter *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.Req
 		Uri:     adapter.endpoint,
 		Body:    reqJSON,
 		Headers: headers,
-		ImpID:   openrtb_ext.GetImpIDs(request.Imp),
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}, nil
 }
 

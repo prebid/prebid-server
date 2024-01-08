@@ -77,7 +77,7 @@ func (adg *AdgenerationAdapter) MakeRequests(request *openrtb2.BidRequest, reqIn
 			Uri:     bidRequestUri,
 			Body:    nil,
 			Headers: headers,
-			ImpID:   []string{request.Imp[index].ID},
+			ImpIDs:  []string{request.Imp[index].ID},
 		}
 		bidRequestArray = append(bidRequestArray, bidRequest)
 	}

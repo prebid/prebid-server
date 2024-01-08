@@ -66,7 +66,7 @@ func (a *ConnectAdAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 		Uri:     a.endpoint,
 		Body:    data,
 		Headers: headers,
-		ImpID:   openrtb_ext.GetImpIDs(request.Imp),
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, errs
 }
 

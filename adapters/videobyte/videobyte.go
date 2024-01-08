@@ -49,7 +49,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			Uri:     a.endpoint + "?" + getParams(impExt).Encode(),
 			Body:    body,
 			Headers: getHeaders(request),
-			ImpID:   openrtb_ext.GetImpIDs(request.Imp),
+			ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 		})
 	}
 

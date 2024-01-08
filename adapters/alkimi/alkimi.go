@@ -55,7 +55,7 @@ func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, req *adapters
 		errs = append(errs, err)
 	} else {
 		reqBidder := buildBidderRequest(adapter, encoded)
-		reqBidder.ImpID = openrtb_ext.GetImpIDs(reqCopy.Imp)
+		reqBidder.ImpIDs = openrtb_ext.GetImpIDs(reqCopy.Imp)
 		reqsBidder = append(reqsBidder, reqBidder)
 	}
 	return

@@ -58,7 +58,7 @@ func (a *DatablocksAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 			Uri:     url,
 			Body:    reqJson,
 			Headers: headers,
-			ImpID:   openrtb_ext.GetImpIDs(request.Imp)}
+			ImpIDs:  openrtb_ext.GetImpIDs(request.Imp)}
 
 		requests = append(requests, &request)
 	}

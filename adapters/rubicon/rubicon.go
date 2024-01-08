@@ -556,7 +556,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			Uri:     a.URI,
 			Body:    reqJSON,
 			Headers: headers,
-			ImpID:   openrtb_ext.GetImpIDs(rubiconRequest.Imp),
+			ImpIDs:  openrtb_ext.GetImpIDs(rubiconRequest.Imp),
 		}
 		reqData.SetBasicAuth(a.XAPIUsername, a.XAPIPassword)
 		requestData = append(requestData, reqData)

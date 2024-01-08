@@ -42,7 +42,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 		Uri:     a.endpoint,
 		Body:    requestJSON,
 		Headers: headers,
-		ImpID:   openrtb_ext.GetImpIDs(request.Imp),
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}
 
 	return []*adapters.RequestData{requestData}, nil

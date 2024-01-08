@@ -103,7 +103,7 @@
           "h": 800
         }
       },
-      "impid":["test-imp-id","test-imp-id2"]
+      "impIDs":["test-imp-id","test-imp-id2"]
     },
     "mockResponse": {
       "status": 200,

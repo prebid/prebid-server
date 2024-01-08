@@ -254,7 +254,7 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 		site = ortbRequest.Site.Page
 	}
 
-	for network, networkAdunits := range networkAdunitMap {
+	for _, networkAdunits := range networkAdunitMap {
 
 		adnuntiusRequest := adnRequest{
 			AdUnits: networkAdunits,
@@ -281,7 +281,7 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 			Uri:     endpoint,
 			Body:    adnJson,
 			Headers: headers,
-			ImpID:   networkImpIds[network],
+			ImpIDs:  openrtb_ext.GetImpIDs(ortbRequest.Imp),
 		})
 
 	}

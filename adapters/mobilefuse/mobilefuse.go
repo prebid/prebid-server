@@ -131,7 +131,7 @@ func (adapter *MobileFuseAdapter) makeRequest(bidRequest *openrtb2.BidRequest) (
 		Uri:     endpoint,
 		Body:    body,
 		Headers: headers,
-		ImpID:   openrtb_ext.GetImpIDs(mobileFuseBidRequest.Imp),
+		ImpIDs:  openrtb_ext.GetImpIDs(mobileFuseBidRequest.Imp),
 	}, errs
 }
 

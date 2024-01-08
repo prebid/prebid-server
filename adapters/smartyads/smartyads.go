@@ -103,7 +103,7 @@ func (a *SmartyAdsAdapter) MakeRequests(
 		Body:    reqJSON,
 		Uri:     url,
 		Headers: *GetHeaders(openRTBRequest),
-		ImpID:   openrtb_ext.GetImpIDs(openRTBRequest.Imp),
+		ImpIDs:  openrtb_ext.GetImpIDs(openRTBRequest.Imp),
 	}}, nil
 }
 

@@ -49,7 +49,7 @@
             "tagid": "12345"
           }]
         },
-        "impid":["test-imp-id","test-imp-id-2"]
+        "impIDs":["test-imp-id","test-imp-id-2"]
       },
       "mockResponse": {
         "status": 200,

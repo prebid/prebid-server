@@ -75,7 +75,7 @@ func (a *adapter) makeRequest(ortbRequest openrtb2.BidRequest, ortbImp openrtb2.
 		Uri:     a.endpoint,
 		Body:    requestJSON,
 		Headers: setHeaders(ortbRequest),
-		ImpID:   openrtb_ext.GetImpIDs(ortbRequest.Imp),
+		ImpIDs:  openrtb_ext.GetImpIDs(ortbRequest.Imp),
 	}
 	return requestData, nil
 }

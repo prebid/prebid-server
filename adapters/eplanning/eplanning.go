@@ -204,7 +204,7 @@ func (adapter *EPlanningAdapter) MakeRequests(request *openrtb2.BidRequest, reqI
 		Uri:     uri,
 		Body:    body,
 		Headers: headers,
-		ImpID:   openrtb_ext.GetImpIDs(request.Imp),
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}
 
 	requests := []*adapters.RequestData{&requestData}

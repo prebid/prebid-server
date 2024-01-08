@@ -87,7 +87,7 @@ type Options struct {
 	EchoVideoAttrs bool `json:"echovideoattrs"`
 }
 
-// GetImpIDs
+// GetImpIDs returns slice of all impression Ids from impList
 func GetImpIDs(impList []openrtb2.Imp) []string {
 	impIDs := []string{}
 	for _, imp := range impList {

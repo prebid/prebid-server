@@ -65,7 +65,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		Method: "POST",
 		Uri:    endpoint,
 		Body:   requestJSON,
-		ImpID:  openrtb_ext.GetImpIDs(request.Imp),
+		ImpIDs: []string{request.Imp[0].ID},
 	}
 
 	return []*adapters.RequestData{requestData}, nil

@@ -58,7 +58,7 @@ func (a *ZeroClickFraudAdapter) MakeRequests(request *openrtb2.BidRequest, reqIn
 			Uri:     url,
 			Body:    reqJson,
 			Headers: headers,
-			ImpID:   openrtb_ext.GetImpIDs(request.Imp),
+			ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 		}
 
 		requests = append(requests, &request)

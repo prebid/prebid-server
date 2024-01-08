@@ -111,7 +111,7 @@ func (a *AdOceanAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			Method:  "GET",
 			Uri:     requestData.Url.String(),
 			Headers: *requestData.Headers,
-			ImpID:   openrtb_ext.GetImpIDs(request.Imp),
+			ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 		})
 	}
 

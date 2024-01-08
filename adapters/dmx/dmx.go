@@ -208,7 +208,7 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb2.BidRequest, req *adapt
 		Uri:     adapter.endpoint + addParams(sellerId), //adapter.endpoint,
 		Body:    oJson,
 		Headers: headers,
-		ImpID:   openrtb_ext.GetImpIDs(dmxReq.Imp),
+		ImpIDs:  []string{request.Imp[0].ID},
 	}
 
 	reqsBidder = append(reqsBidder, reqBidder)

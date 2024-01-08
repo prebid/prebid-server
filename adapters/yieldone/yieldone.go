@@ -45,7 +45,7 @@ func (a *YieldoneAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ad
 		Uri:     a.endpoint,
 		Body:    reqJSON,
 		Headers: headers,
-		ImpID:   openrtb_ext.GetImpIDs(request.Imp),
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, errors
 }
 

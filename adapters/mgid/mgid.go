@@ -61,7 +61,7 @@ func (a *MgidAdapter) makeRequest(request *openrtb2.BidRequest) (*adapters.Reque
 		Uri:     a.endpoint + path,
 		Body:    reqJSON,
 		Headers: headers,
-		ImpID:   openrtb_ext.GetImpIDs(request.Imp),
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}, errs
 }
 

@@ -114,7 +114,7 @@ func (a *TtxAdapter) makeRequest(request openrtb2.BidRequest, impList []openrtb2
 		Uri:     a.endpoint,
 		Body:    reqJSON,
 		Headers: headers,
-		ImpID:   openrtb_ext.GetImpIDs(impList),
+		ImpIDs:  openrtb_ext.GetImpIDs(impList),
 	}, nil
 }
 

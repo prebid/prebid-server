@@ -70,7 +70,7 @@ func (a *PubnativeAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 			Uri:     fmt.Sprintf("%s?%s", a.URI, queryString),
 			Body:    reqJSON,
 			Headers: headers,
-			ImpID:   openrtb_ext.GetImpIDs(requestCopy.Imp),
+			ImpIDs:  openrtb_ext.GetImpIDs(requestCopy.Imp),
 		}
 
 		requestData = append(requestData, reqData)

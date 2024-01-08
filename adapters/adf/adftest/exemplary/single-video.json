@@ -57,7 +57,7 @@
           "h": 800
         }
       },
-      "impid":["test-imp-id"]
+      "impIDs":["test-imp-id"]
     },
     "mockResponse": {
       "status": 200,

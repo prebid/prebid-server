@@ -103,7 +103,7 @@ func (a *adapter) MakeRequests(bidRequest *openrtb2.BidRequest, reqInfo *adapter
 		Uri:     a.endpoint,
 		Body:    reqJSON,
 		Headers: headers,
-		ImpID:   openrtb_ext.GetImpIDs(bidRequest.Imp),
+		ImpIDs:  openrtb_ext.GetImpIDs(bidRequest.Imp),
 	})
 
 	return adapterRequests, nil

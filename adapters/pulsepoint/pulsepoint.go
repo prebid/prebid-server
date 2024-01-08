@@ -99,7 +99,7 @@ func (a *PulsePointAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 		Uri:     a.URI,
 		Body:    reqJSON,
 		Headers: headers,
-		ImpID:   openrtb_ext.GetImpIDs(request.Imp),
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, errs
 }
 

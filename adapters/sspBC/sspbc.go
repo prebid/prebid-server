@@ -128,7 +128,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		Method: http.MethodPost,
 		Uri:    requestURL.String(),
 		Body:   requestJSON,
-		ImpID:  openrtb_ext.GetImpIDs(formattedRequest.Imp),
+		ImpIDs: getImpIDs(formattedRequest.Imp),
 	}
 
 	return []*adapters.RequestData{requestData}, nil
@@ -396,4 +396,13 @@ func formatSspBcRequest(request *openrtb2.BidRequest) (*openrtb2.BidRequest, err
 	}
 
 	return request, nil
+}
+
+// used imp.TagID instead of imp.ID as formattedRequest stores imp.ID in imp.TagID
+func getImpIDs(impList []openrtb2.Imp) []string {
+	impIDs := []string{}
+	for _, imp := range impList {
+		impIDs = append(impIDs, imp.TagID)
+	}
+	return impIDs
 }

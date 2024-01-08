@@ -84,7 +84,7 @@ func (a *AcuityAdsAdapter) MakeRequests(
 		Body:    reqJSON,
 		Uri:     url,
 		Headers: getHeaders(openRTBRequest),
-		ImpID:   openrtb_ext.GetImpIDs(openRTBRequest.Imp),
+		ImpIDs:  []string{openRTBRequest.Imp[0].ID},
 	}}, nil
 }
 

@@ -108,7 +108,7 @@ func (this *FacebookAdapter) buildRequests(request *openrtb2.BidRequest) ([]*ada
 			Uri:     this.URI,
 			Body:    body,
 			Headers: headers,
-			ImpID:   openrtb_ext.GetImpIDs(fbreq.Imp),
+			ImpIDs:  openrtb_ext.GetImpIDs(fbreq.Imp),
 		})
 	}
 
