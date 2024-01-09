@@ -476,10 +476,19 @@ func getVideoRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraReque
 			}
 		}
 
-		if (imp.Video.H == nil || *imp.Video.H == 0) && (imp.Video.W == nil || *imp.Video.W == 0) {
+		wNilOrZero := imp.Video.W == nil || *imp.Video.W == 0
+		hNilOrZero := imp.Video.H == nil || *imp.Video.H == 0
+		if wNilOrZero || hNilOrZero {
 			videoCopy := *imp.Video
-			videoCopy.W = ptrutil.ToPtr[int64](defaultVideoWidth)
-			videoCopy.H = ptrutil.ToPtr[int64](defaultVideoHeight)
+
+			if wNilOrZero {
+				videoCopy.W = ptrutil.ToPtr[int64](defaultVideoWidth)
+			}
+
+			if hNilOrZero {
+				videoCopy.H = ptrutil.ToPtr[int64](defaultVideoHeight)
+			}
+
 			imp.Video = &videoCopy
 		}
 
