@@ -9,7 +9,6 @@ import (
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"net/http"
-	"net/url"
 )
 
 type adapter struct {
@@ -18,29 +17,23 @@ type adapter struct {
 
 // Builder builds a new instance of the zmaticoo adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	endpointURL, err := url.Parse(config.Endpoint)
-	if err != nil {
-		return nil, fmt.Errorf("invalid endpoint: %v", err)
-	}
-	bidder := &adapter{
-		endpoint: endpointURL.String(),
-	}
-	return bidder, nil
+	return &adapter{
+		endpoint: config.Endpoint,
+	}, nil
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var adapterRequests []*adapters.RequestData
 	adapterRequest, errs := a.makeRequest(request)
-	if errs == nil {
-		adapterRequests = append(adapterRequests, adapterRequest)
+	if errs != nil {
+		return nil, errs
 	}
-	return adapterRequests, errs
+	return []*adapters.RequestData{adapterRequest}, nil
+
 }
 
 func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, []error) {
-	var errs []error
-	zmaticooExt, errs := getZmaticooExt(request)
-	if zmaticooExt == nil {
+	errs := getZmaticooExt(request)
+	if errs != nil {
 		return nil, errs
 	}
 	err := transform(request)
@@ -90,7 +83,7 @@ func transform(request *openrtb2.BidRequest) error {
 	return nil
 }
 
-func getZmaticooExt(request *openrtb2.BidRequest) (*openrtb_ext.ExtImpZmaticoo, []error) {
+func getZmaticooExt(request *openrtb2.BidRequest) []error {
 	var extImpZmaticoo openrtb_ext.ExtImpZmaticoo
 	var errs []error
 	for _, imp := range request.Imp {
@@ -105,9 +98,12 @@ func getZmaticooExt(request *openrtb2.BidRequest) (*openrtb_ext.ExtImpZmaticoo, 
 			errs = append(errs, err)
 			continue
 		}
-		break
+		if extImpZmaticoo.ZoneId == "" || extImpZmaticoo.PubId == "" {
+			errs = append(errs, fmt.Errorf("zoneid or pubid is required"))
+			continue
+		}
 	}
-	return &extImpZmaticoo, errs
+	return errs
 
 }
 
