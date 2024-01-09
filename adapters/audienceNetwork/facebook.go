@@ -27,8 +27,8 @@ var supportedBannerHeights = map[int64]struct{}{
 	250: {},
 }
 
-type FacebookAdapter struct {
-	URI        string
+type adapter struct {
+	uri        string
 	platformID string
 	appSecret  string
 }
@@ -42,7 +42,7 @@ type facebookReqExt struct {
 	AuthID     string `json:"authentication_id"`
 }
 
-func (a *FacebookAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	if len(request.Imp) == 0 {
 		return nil, []error{&errortypes.BadInput{
 			Message: "No impressions provided",
@@ -64,7 +64,7 @@ func (a *FacebookAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ad
 	return a.buildRequests(request)
 }
 
-func (a *FacebookAdapter) buildRequests(request *openrtb2.BidRequest) ([]*adapters.RequestData, []error) {
+func (a *adapter) buildRequests(request *openrtb2.BidRequest) ([]*adapters.RequestData, []error) {
 	// Documentation suggests bid request splitting by impression so that each
 	// request only represents a single impression
 	reqs := make([]*adapters.RequestData, 0, len(request.Imp))
@@ -106,7 +106,7 @@ func (a *FacebookAdapter) buildRequests(request *openrtb2.BidRequest) ([]*adapte
 
 		reqs = append(reqs, &adapters.RequestData{
 			Method:  "POST",
-			Uri:     a.URI,
+			Uri:     a.uri,
 			Body:    body,
 			Headers: headers,
 		})
@@ -117,14 +117,14 @@ func (a *FacebookAdapter) buildRequests(request *openrtb2.BidRequest) ([]*adapte
 
 // The authentication ID is a sha256 hmac hash encoded as a hex string, based on
 // the app secret and the ID of the bid request
-func (a *FacebookAdapter) makeAuthID(req *openrtb2.BidRequest) string {
+func (a *adapter) makeAuthID(req *openrtb2.BidRequest) string {
 	h := hmac.New(sha256.New, []byte(a.appSecret))
 	h.Write([]byte(req.ID))
 
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-func (a *FacebookAdapter) modifyRequest(out *openrtb2.BidRequest) error {
+func (a *adapter) modifyRequest(out *openrtb2.BidRequest) error {
 	if len(out.Imp) != 1 {
 		panic("each bid request to facebook should only have a single impression")
 	}
@@ -324,7 +324,7 @@ func modifyImpCustom(jsonData []byte, imp *openrtb2.Imp) ([]byte, error) {
 	}
 }
 
-func (a *FacebookAdapter) MakeBids(request *openrtb2.BidRequest, adapterRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, adapterRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -424,15 +424,15 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 		return nil, errors.New("AppSecret is not configured. Did you set adapters.facebook.app_secret in the app config?")
 	}
 
-	bidder := &FacebookAdapter{
-		URI:        config.Endpoint,
+	bidder := &adapter{
+		uri:        config.Endpoint,
 		platformID: config.PlatformID,
 		appSecret:  config.AppSecret,
 	}
 	return bidder, nil
 }
 
-func (fa *FacebookAdapter) MakeTimeoutNotification(req *adapters.RequestData) (*adapters.RequestData, []error) {
+func (fa *adapter) MakeTimeoutNotification(req *adapters.RequestData) (*adapters.RequestData, []error) {
 	var (
 		rID   string
 		pubID string
