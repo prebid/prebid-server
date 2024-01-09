@@ -744,10 +744,6 @@ func (fakeSyncer) GetSync([]SyncType, macros.UserSyncPrivacy) (Sync, error) {
 	return Sync{}, nil
 }
 
-func (s fakeSyncer) ForceResponseFormat() string {
-	return s.formatOverride
-}
-
 type fakePrivacy struct {
 	gdprAllowsHostCookie  bool
 	gdprAllowsBidderSync  bool

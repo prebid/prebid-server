@@ -1350,7 +1350,7 @@ func TestBidderInfoValidationNegative(t *testing.T) {
 				},
 			},
 			[]error{
-				errors.New("syncer could not be created, invalid FormatOverride value: x"),
+				errors.New("syncer could not be created, invalid format override value: x"),
 			},
 		},
 	}

@@ -571,7 +571,7 @@ func validateSyncer(bidderInfo BidderInfo) error {
 	}
 
 	if bidderInfo.Syncer.FormatOverride != ResponseFormatIFrame && bidderInfo.Syncer.FormatOverride != ResponseFormatRedirect && bidderInfo.Syncer.FormatOverride != "" {
-		return fmt.Errorf("syncer could not be created, invalid FormatOverride value: %s", bidderInfo.Syncer.FormatOverride)
+		return fmt.Errorf("syncer could not be created, invalid format override value: %s", bidderInfo.Syncer.FormatOverride)
 	}
 
 	for _, supports := range bidderInfo.Syncer.Supports {

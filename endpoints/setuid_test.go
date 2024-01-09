@@ -1738,10 +1738,6 @@ func (s fakeSyncer) GetSync(syncTypes []usersync.SyncType, privacyMacros macros.
 	return usersync.Sync{}, nil
 }
 
-func (s fakeSyncer) ForceResponseFormat() string {
-	return s.formatOverride
-}
-
 func ToHTTPCookie(cookie *usersync.Cookie) (*http.Cookie, error) {
 	encoder := usersync.Base64Encoder{}
 	encodedCookie, err := encoder.Encode(cookie)
