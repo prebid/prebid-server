@@ -417,7 +417,7 @@ func TestValidatePriceFloorRules(t *testing.T) {
 								"*|*|www.website.com": 15.01,
 							},
 						}},
-						UseFetchDataRate: ptrutil.ToPtr(-11),
+						FetchRate: ptrutil.ToPtr(-11),
 					},
 				},
 			},

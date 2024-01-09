@@ -791,7 +791,7 @@ func (m *MockFetchDataRate0) Fetch(configs config.AccountPriceFloors) (*openrtb_
 					},
 				},
 			},
-			UseFetchDataRate: ptrutil.ToPtr(0),
+			FetchRate: ptrutil.ToPtr(0),
 		},
 	}
 	return &priceFloors, openrtb_ext.FetchSuccess
@@ -831,7 +831,7 @@ func (m *MockFetchDataRate100) Fetch(configs config.AccountPriceFloors) (*openrt
 					},
 				},
 			},
-			UseFetchDataRate: ptrutil.ToPtr(100),
+			FetchRate: ptrutil.ToPtr(100),
 		},
 	}
 	return &priceFloors, openrtb_ext.FetchSuccess
@@ -979,7 +979,7 @@ func TestResolveFloorsWithUseDataRate(t *testing.T) {
 							},
 						},
 					},
-					UseFetchDataRate: ptrutil.ToPtr(100),
+					FetchRate: ptrutil.ToPtr(100),
 				},
 			},
 		},
