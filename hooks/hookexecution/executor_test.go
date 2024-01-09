@@ -699,7 +699,7 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 
 func TestExecuteProcessedAuctionStage(t *testing.T) {
 	foobarModuleCtx := &moduleContexts{ctxs: map[string]hookstage.ModuleContext{"foobar": nil}}
-	account := &config.Account{Privacy: config.AccountPrivacy{}}
+	account := &config.Account{}
 	req := openrtb2.BidRequest{ID: "some-id", User: &openrtb2.User{ID: "user-id"}}
 	reqUpdated := openrtb2.BidRequest{ID: "some-id", User: &openrtb2.User{ID: "user-id", Yob: 2000, Consent: "true"}}
 
