@@ -57,14 +57,9 @@ func TestReadDealTiersFromImp(t *testing.T) {
 			expectedResult: DealTierBidderMap{BidderAppnexus: {Prefix: "anyPrefix", MinDealTier: 5}},
 		},
 		{
-			description:    "imp.ext.prebid.bidder_one_but_not_found_in_the_adapter_bidder_list",
-			impExt:         json.RawMessage(`{"prebid": {"bidder": {"unknown": {"dealTier": {"minDealTier": 5, "prefix": "anyPrefix"}, "placementId": 12345}}}}`),
-			expectedResult: DealTierBidderMap{},
-		},
-		{
 			description:    "imp.ext.prebid.bidder_one_but_case_is_different_from_the_adapter_bidder_list",
 			impExt:         json.RawMessage(`{"prebid": {"bidder": {"APpNExUS": {"dealTier": {"minDealTier": 5, "prefix": "anyPrefix"}, "placementId": 12345}}}}`),
-			expectedResult: DealTierBidderMap{BidderAppnexus: {Prefix: "anyPrefix", MinDealTier: 5}},
+			expectedResult: DealTierBidderMap{BidderName("APpNExUS"): {Prefix: "anyPrefix", MinDealTier: 5}},
 		},
 		{
 			description:    "imp.ext.prebid.bidder_one_with_other_params",
@@ -109,7 +104,7 @@ func TestReadDealTiersFromImp(t *testing.T) {
 		imp := openrtb2.Imp{Ext: impExt}
 		result, err := ReadDealTiersFromImp(imp)
 
-		assert.Len(t, result, 1)
+		assert.Len(t, result, 2)
 		assert.NotNil(t, result["appnexus"])
 		assert.NoError(t, err)
 	})

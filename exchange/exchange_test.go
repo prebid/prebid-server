@@ -3432,9 +3432,9 @@ func TestApplyDealSupport(t *testing.T) {
 				bidderName: openrtb_ext.BidderName("appnexus"),
 			},
 			expected: testOutput{
-				hbPbCatDur:        "tier5_movies_30s",
+				hbPbCatDur:        "12.00_movies_30s",
 				dealErr:           "",
-				dealTierSatisfied: true,
+				dealTierSatisfied: false,
 			},
 		},
 		{
@@ -3448,9 +3448,9 @@ func TestApplyDealSupport(t *testing.T) {
 				bidderName: openrtb_ext.BidderName("APPnexus"),
 			},
 			expected: testOutput{
-				hbPbCatDur:        "tier5_movies_30s",
+				hbPbCatDur:        "12.00_movies_30s",
 				dealErr:           "",
-				dealTierSatisfied: true,
+				dealTierSatisfied: false,
 			},
 		},
 		{
