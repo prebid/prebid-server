@@ -131,15 +131,6 @@ func isMultiFormatImp(imp *openrtb2.Imp) bool {
 	return count > 1
 }
 
-func isMultiFormatImps(imps []openrtb2.Imp) bool {
-	for _, imp := range imps {
-		if isMultiFormatImp(&imp) {
-			return true
-		}
-	}
-	return false
-}
-
 func splitMultiFormatImp(imp *openrtb2.Imp) []openrtb2.Imp {
 	splitImps := make([]openrtb2.Imp, 0)
 	if imp.Banner != nil {
