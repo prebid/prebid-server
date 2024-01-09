@@ -82,7 +82,8 @@
           "parallel": true,
           "gpp": "gppString",
           "gpp_sid": [7]
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,

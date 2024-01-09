@@ -84,7 +84,8 @@
           "gdpr": {
             "applies": false
           }
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,

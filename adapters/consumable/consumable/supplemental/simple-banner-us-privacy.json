@@ -82,7 +82,8 @@
           "enableBotFiltering": true,
           "parallel": true,
           "ccpa": "1NYN"
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,

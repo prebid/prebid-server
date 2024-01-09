@@ -84,7 +84,8 @@
           "gdpr": {
             "consent": "abcdefghijklm"
           }
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,

@@ -80,7 +80,8 @@
           "enableBotFiltering": true,
           "parallel": true,
           "coppa": true
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,

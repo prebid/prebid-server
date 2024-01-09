@@ -76,7 +76,8 @@
           "user":{},
           "enableBotFiltering": true,
           "parallel": true
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,

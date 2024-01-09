@@ -88,7 +88,8 @@
           "parallel": true,
           "url": "http://www.some.com/page-where-ad-will-be-shown",
           "referrer": "http://www.some.com/page-before-the-ad-if-any"
-        }
+        },
+        "impIDs":["test-no-impUrl-id"]
       },
       "mockResponse": {
         "status": 200,
