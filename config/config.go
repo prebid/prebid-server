@@ -1285,3 +1285,8 @@ type TmaxAdjustments struct {
 	// PBS won't send a request to the bidder if the bidder tmax calculated is less than the BidderResponseDurationMin value
 	BidderResponseDurationMin uint `mapstructure:"bidder_response_duration_min_ms"`
 }
+
+type AuctionPrivacy struct {
+	TopicsDomain   string         `mapstructure:"topicsdomain"`
+	PrivacySandbox PrivacySandbox `mapstructure:"privacysandbox" json:"privacysandbox"`
+}

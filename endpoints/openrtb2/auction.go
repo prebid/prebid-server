@@ -2013,6 +2013,8 @@ func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, r *openrtb_
 	}
 
 	setAuctionTypeImplicitly(r)
+
+	setSecBrowsingTopcisImplicitly(httpReq, r)
 }
 
 // setDeviceImplicitly uses implicit info from httpReq to populate bidReq.Device
@@ -2029,6 +2031,184 @@ func setAuctionTypeImplicitly(r *openrtb_ext.RequestWrapper) {
 	if r.AT == 0 {
 		r.AT = 1
 	}
+}
+
+// (100);v=chrome.1:1:20, (200);v=chrome.1:1:40, (300);v=chrome.1:1:60, ();p=P
+func setSecBrowsingTopcisImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {
+	if r.User == nil {
+		r.User = &openrtb2.User{}
+	}
+
+	secBrowsingTopics := httpReq.Header.Get("Sec-Browsing-Topics")
+	if secBrowsingTopics == "" {
+		return
+	}
+
+	// segtax-segclass-name-segIds
+	userData := map[int]map[string]map[string]map[string]struct{}{}
+	secBrowsingTopicsArr := strings.Split(secBrowsingTopics, ",")
+	c := 0
+	for _, seg := range secBrowsingTopicsArr {
+		if c > 10 {
+			break
+		}
+
+		seg = strings.TrimSpace(seg)
+		if seg == "" {
+			continue
+		}
+
+		if strings.HasPrefix(seg, "();p=") {
+			continue
+		}
+
+		segment := strings.Split(seg, ";")
+		if len(segment) != 2 {
+			continue
+		}
+
+		segmentsIds := strings.TrimSpace(segment[0])
+		if len(segmentsIds) < 3 || segmentsIds[0] != '(' || segmentsIds[len(segmentsIds)-1] != ')' {
+			continue
+		}
+		segmentsIds = strings.TrimLeft(segmentsIds, "(")
+		segmentsIds = strings.TrimRight(segmentsIds, ")")
+		segmentsIdArr := strings.Fields(segmentsIds)
+		if len(segmentsIdArr) < 1 {
+			continue
+		}
+
+		taxanomyModel := strings.Split(segment[1], ":")
+		if len(taxanomyModel) != 3 {
+			continue
+		}
+
+		taxanomyVer := strings.TrimSpace(taxanomyModel[1])
+		taxanomy, err := strconv.Atoi(taxanomyVer)
+		if err != nil || taxanomy < 1 || taxanomy > 10 {
+			continue
+		}
+		segtax := 600 + (taxanomy - 1)
+		segclass := strings.TrimSpace(taxanomyModel[2])
+		// modelVer := strings.TrimSpace(taxanomyModel[2])
+		// segclass, err := strconv.Atoi(modelVer)
+		// if err != nil {
+		// 	continue
+		// }
+
+		// if _, ok := userData["TOPICS_DOMAIN"]; !ok {
+		// 	userData["TOPICS_DOMAIN"] = map[int]map[int][]string{}
+		// }
+		if _, ok := userData[segtax]; !ok {
+			userData[segtax] = map[string]map[string]map[string]struct{}{}
+		}
+
+		if _, ok := userData[segtax][segclass]; !ok {
+			userData[segtax][segclass] = map[string]map[string]struct{}{}
+		}
+
+		if _, ok := userData[segtax][segclass]["TOPICS_DOMAIN"]; !ok {
+			userData[segtax][segclass]["TOPICS_DOMAIN"] = map[string]struct{}{}
+		}
+
+		for _, segId := range segmentsIdArr {
+			segId = strings.TrimSpace(segId)
+			if segid, err := strconv.Atoi(segId); err == nil && segid > 0 {
+				userData[segtax][segclass]["TOPICS_DOMAIN"][segId] = struct{}{}
+			}
+		}
+
+		c++
+	}
+
+	type extData struct {
+		Segtax   int
+		Segclass string
+	}
+
+	requestUserData := map[int]map[string]map[string]map[string]struct{}{}
+	for _, data := range r.User.Data {
+		ext := &extData{}
+		if err := json.Unmarshal(data.Ext, ext); err != nil {
+			continue
+		}
+
+		if ext.Segtax == 0 || ext.Segclass == "" {
+			continue
+		}
+
+		if _, ok := requestUserData[ext.Segtax]; !ok {
+			requestUserData[ext.Segtax] = map[string]map[string]map[string]struct{}{}
+		}
+
+		if _, ok := requestUserData[ext.Segtax][ext.Segclass]; !ok {
+			requestUserData[ext.Segtax][ext.Segclass] = map[string]map[string]struct{}{}
+		}
+
+		if _, ok := requestUserData[ext.Segtax][ext.Segclass][data.Name]; !ok {
+			requestUserData[ext.Segtax][ext.Segclass][data.Name] = map[string]struct{}{}
+		}
+
+		for _, segId := range data.Segment {
+			requestUserData[ext.Segtax][ext.Segclass][data.Name][segId.ID] = struct{}{}
+		}
+
+		// merge segment ids if segtax, segclass and name are the same
+		merged := false
+		if _, ok := userData[ext.Segtax]; ok {
+			if _, ok := userData[ext.Segtax][ext.Segclass]; ok {
+				if _, ok := userData[ext.Segtax][ext.Segclass][data.Name]; ok {
+					for segId := range userData[ext.Segtax][ext.Segclass][data.Name] {
+						if _, ok := requestUserData[ext.Segtax][ext.Segclass][data.Name][segId]; !ok {
+							data.Segment = append(data.Segment, openrtb2.Segment{
+								ID: segId,
+							})
+						}
+					}
+
+					delete(userData[ext.Segtax][ext.Segclass], data.Name)
+				}
+			}
+		}
+
+		if !merged {
+			continue
+		}
+
+		// if _, ok := userData[ext.Segtax]; !ok {
+		// 	userData[ext.Segtax] = map[string]map[string]map[string]struct{}{}
+		// }
+
+		// if _, ok := userData[ext.Segtax][ext.Segclass]; !ok {
+		// 	userData[ext.Segtax][ext.Segclass] = map[string]map[string]struct{}{}
+		// }
+
+		// if _, ok := userData[ext.Segtax][ext.Segclass][data.Name]; !ok {
+		// 	userData[ext.Segtax][ext.Segclass][data.Name] = map[string]struct{}{}
+		// }
+
+		// for _, segId := range data.Segment {
+		// 	userData[ext.Segtax][ext.Segclass][data.Name][segId.ID] = struct{}{}
+		// }
+	}
+
+	for segtax, SegclassSegName := range userData {
+		for segclass, segName := range SegclassSegName {
+			for segName, segIds := range segName {
+				r.User.Data = append(r.User.Data, openrtb2.Data{
+					Name: segName,
+					Ext:  json.RawMessage(fmt.Sprintf(`{"segtax": %d, "segclass": "%s"}`, segtax, segclass)),
+				})
+				for segId := range segIds {
+					r.User.Data[len(r.User.Data)-1].Segment = append(r.User.Data[len(r.User.Data)-1].Segment, openrtb2.Segment{
+						ID: segId,
+					})
+				}
+			}
+		}
+	}
+
+	// r.User.Ext = json.RawMessage(fmt.Sprintf(`{"consent": "%s"}`, secBrowsingTopic))
 }
 
 func setSiteImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {

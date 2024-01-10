@@ -364,10 +364,6 @@ func (ip *IPv4) Validate(errs []error) []error {
 	return errs
 }
 
-type AuctionPrivacy struct {
-	PrivacySandbox PrivacySandbox `mapstructure:"privacysandbox" json:"privacysandbox"`
-}
-
 type PrivacySandbox struct {
 	CookieDeprecation              bool `mapstructure:"cookiedeprecation" json:"cookiedeprecation"`
 	CookieDeprecationExpirationSec int  `mapstructure:"cookiedeprecationexpirationsec" json:"cookiedeprecationexpirationsec"`

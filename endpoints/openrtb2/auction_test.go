@@ -13,6 +13,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -6107,4 +6108,530 @@ func TestValidateAliases(t *testing.T) {
 
 func fakeNormalizeBidderName(name string) (openrtb_ext.BidderName, bool) {
 	return openrtb_ext.BidderName(strings.ToLower(name)), true
+}
+
+// func Test_secCookieDeprecation(t *testing.T) {
+// 	type args struct {
+// 		httpReq *http.Request
+// 		r       *openrtb_ext.RequestWrapper
+// 	}
+// 	tests := []struct {
+// 		name string
+// 		args args
+// 	}{
+// 		{
+// 			name: "Empty HTTP request",
+// 			args: args{
+// 				httpReq: &http.Request{},
+// 				r:       &openrtb_ext.RequestWrapper{},
+// 			},
+// 		},
+// 		{
+// 			name: "HTTP request without sec-cookie header",
+// 			args: args{
+// 				httpReq: &http.Request{
+// 					Header: http.Header{},
+// 				},
+// 				r: &openrtb_ext.RequestWrapper{},
+// 			},
+// 		},
+// 		{
+// 			name: "HTTP request with valid sec-cookie header",
+// 			args: args{
+// 				httpReq: &http.Request{
+// 					Header: http.Header{
+// 						"Sec-Cookie": []string{"some-sec-cookie-value"},
+// 					},
+// 				},
+// 				r: &openrtb_ext.RequestWrapper{
+// 					Device: &openrtb2.Device{
+// 						Ext: json.RawMessage(`{"key": "value"}`),
+// 					},
+// 				},
+// 			},
+// 		},
+// 		{
+// 			name: "HTTP request with multiple sec-cookie headers",
+// 			args: args{
+// 				httpReq: &http.Request{
+// 					Header: http.Header{
+// 						"Sec-Cookie": []string{"cookie1", "cookie2", "cookie3"},
+// 					},
+// 				},
+// 				r: &openrtb_ext.RequestWrapper{},
+// 			},
+// 		},
+// 		{
+// 			name: "HTTP request with invalid sec-cookie header",
+// 			args: args{
+// 				httpReq: &http.Request{
+// 					Header: http.Header{
+// 						"Sec-Cookie": []string{"invalid-cookie"},
+// 					},
+// 				},
+// 				r: &openrtb_ext.RequestWrapper{},
+// 			},
+// 		},
+// 	}
+// 	for _, tt := range tests {
+// 		t.Run(tt.name, func(t *testing.T) {
+// 			secCookieDeprecation(tt.args.httpReq, tt.args.r)
+
+// 			// Assert r.Device.Ext
+// 			if tt.args.r.Device.Ext != nil {
+// 				t.Errorf("Expected r.Device.Ext to be nil, got %v", tt.args.r.Device.Ext)
+// 			}
+// 		})
+// 	}
+// }
+
+func Test_setSecBrowsingTopcisImplicitly(t *testing.T) {
+	type args struct {
+		httpReq *http.Request
+		r       *openrtb_ext.RequestWrapper
+	}
+	tests := []struct {
+		name     string
+		args     args
+		wantUser *openrtb2.User
+	}{
+		{
+			name: "Empty HTTP request",
+			args: args{
+				httpReq: &http.Request{},
+				r:       &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
+			},
+			wantUser: &openrtb2.User{},
+		},
+		{
+			name: "Sec-Browsing-Topics with empty value, request.user.data empty, no change in user data",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{
+						"Sec-Browsing-Topics": []string{""},
+					},
+				},
+				r: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
+			},
+			wantUser: &openrtb2.User{},
+		},
+		{
+			name: "Sec-Browsing-Topics with invalid value, request.user.data empty, no change in user data",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{
+						"Sec-Browsing-Topics": []string{"some-sec-cookie-value"},
+					},
+				},
+				r: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
+			},
+			wantUser: &openrtb2.User{},
+		},
+		{
+			name: "Sec-Browsing-Topics with finish padding, request.user.data empty, no change in user data",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{
+						"Sec-Browsing-Topics": []string{"();p=P0000000000000000000000000000000"},
+					},
+				},
+				r: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
+			},
+			wantUser: &openrtb2.User{},
+		},
+		{
+			name: "Sec-Browsing-Topics with one valid field, request.user.data empty, valid field data added to req.user.data",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{
+						"Sec-Browsing-Topics": []string{"(1);v=chrome.1:1:2, ();p=P00000000000"},
+					},
+				},
+				r: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
+			},
+			wantUser: &openrtb2.User{
+				Data: []openrtb2.Data{
+					{
+						Name: "TOPICS_DOMAIN",
+						Segment: []openrtb2.Segment{
+							{
+								ID: "1",
+							},
+						},
+						Ext: json.RawMessage(`{"segtax": 600, "segclass": "2"}`),
+					},
+				},
+			},
+		},
+		{
+			name: "Sec-Browsing-Topics with one valid field and one invalid field, request.user.data empty, valid field data added to req.user.data",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{
+						"Sec-Browsing-Topics": []string{"(1);v=chrome.1:1:2, (4);v=chrome.1, ();p=P0000000000"},
+					},
+				},
+				r: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
+			},
+			wantUser: &openrtb2.User{
+				Data: []openrtb2.Data{
+					{
+						Name: "TOPICS_DOMAIN",
+						Segment: []openrtb2.Segment{
+							{
+								ID: "1",
+							},
+						},
+						Ext: json.RawMessage(`{"segtax": 600, "segclass": "2"}`),
+					},
+				},
+			},
+		},
+		{
+			name: "Sec-Browsing-Topics with one valid field having multiple segIds, request.user.data empty, valid field data added to req.user.data",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{
+						"Sec-Browsing-Topics": []string{"(1 2);v=chrome.1:1:2, ();p=P00000000000"},
+					},
+				},
+				r: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
+			},
+			wantUser: &openrtb2.User{
+				Data: []openrtb2.Data{
+					{
+						Name: "TOPICS_DOMAIN",
+						Segment: []openrtb2.Segment{
+							{
+								ID: "1",
+							},
+							{
+								ID: "2",
+							},
+						},
+						Ext: json.RawMessage(`{"segtax": 600, "segclass": "2"}`),
+					},
+				},
+			},
+		},
+		{
+			name: "Sec-Browsing-Topics with two valid field with different segclass, request.user.data empty, valid field data added to req.user.data",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{
+						"Sec-Browsing-Topics": []string{"(1);v=chrome.1:1:2, (1);v=chrome.1:1:1, ();p=P0000000000"},
+					},
+				},
+				r: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
+			},
+			wantUser: &openrtb2.User{
+				Data: []openrtb2.Data{
+					{
+						Name: "TOPICS_DOMAIN",
+						Segment: []openrtb2.Segment{
+							{
+								ID: "1",
+							},
+						},
+						Ext: json.RawMessage(`{"segtax": 600, "segclass": "2"}`),
+					},
+					{
+						Name: "TOPICS_DOMAIN",
+						Segment: []openrtb2.Segment{
+							{
+								ID: "1",
+							},
+						},
+						Ext: json.RawMessage(`{"segtax": 600, "segclass": "1"}`),
+					},
+				},
+			},
+		},
+		{
+			name: "Sec-Browsing-Topics with three fields one valid, one with invalid segtax > 10 and last with invalid segtax < 1, request.user.data empty, valid field data added to req.user.data",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{
+						"Sec-Browsing-Topics": []string{"(1);v=chrome.1:11:2, (1);v=chrome.1:1:4, (1);v=chrome.1:0:2, ();p=P0000000000"},
+					},
+				},
+				r: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
+			},
+			wantUser: &openrtb2.User{
+				Data: []openrtb2.Data{
+					{
+						Name: "TOPICS_DOMAIN",
+						Segment: []openrtb2.Segment{
+							{
+								ID: "1",
+							},
+						},
+						Ext: json.RawMessage(`{"segtax": 600, "segclass": "4"}`),
+					},
+				},
+			},
+		},
+		{
+			name: "Sec-Browsing-Topics with three fields one invalid, two with same segtax and segclass, request.user.data empty, common valid fields merged in req.user.data",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{
+						"Sec-Browsing-Topics": []string{"(100);v=chrome.1:111111111111111111:20, (200);v=chrome.1:2:40, (200 300);v=chrome.1:2:40, ();p=P"},
+					},
+				},
+				r: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
+			},
+			wantUser: &openrtb2.User{
+				Data: []openrtb2.Data{
+					{
+						Name: "TOPICS_DOMAIN",
+						Segment: []openrtb2.Segment{
+							{
+								ID: "200",
+							},
+							{
+								ID: "300",
+							},
+						},
+						Ext: json.RawMessage(`{"segtax": 601, "segclass": "40"}`),
+					},
+				},
+			},
+		},
+		{
+			name: "Sec-Browsing-Topics with two fields both matching segtax, segclass and segIds, request.user.data empty, data merged and added in req.user.data",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{
+						"Sec-Browsing-Topics": []string{"(1);v=chrome.1:1:2, (1);v=chrome.1:1:2, ();p=P0000000000"},
+					},
+				},
+				r: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
+			},
+			wantUser: &openrtb2.User{
+				Data: []openrtb2.Data{
+					{
+						Name: "TOPICS_DOMAIN",
+						Segment: []openrtb2.Segment{
+							{
+								ID: "1",
+							},
+						},
+						Ext: json.RawMessage(`{"segtax": 600, "segclass": "2"}`),
+					},
+				},
+			},
+		},
+		{
+			name: "Sec-Browsing-Topics with two fields both matching segtax and segclass and different segIds, request.user.data empty, data merged and added in req.user.data",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{
+						"Sec-Browsing-Topics": []string{"(1);v=chrome.1:1:2, (2);v=chrome.1:1:2, ();p=P0000000000"},
+					},
+				},
+				r: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
+			},
+			wantUser: &openrtb2.User{
+				Data: []openrtb2.Data{
+					{
+						Name: "TOPICS_DOMAIN",
+						Segment: []openrtb2.Segment{
+							{
+								ID: "1",
+							},
+							{
+								ID: "2",
+							},
+						},
+						Ext: json.RawMessage(`{"segtax": 600, "segclass": "2"}`),
+					},
+				},
+			},
+		},
+		{
+			name: "Sec-Browsing-Topics with two fields both matching segtax and segclass and different segIds, request.user.data empty, data merged and added in req.user.data",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{
+						"Sec-Browsing-Topics": []string{"(1);v=chrome.1:1:2, (2);v=chrome.1:1:2, ();p=P0000000000"},
+					},
+				},
+				r: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
+			},
+			wantUser: &openrtb2.User{
+				Data: []openrtb2.Data{
+					{
+						Name: "TOPICS_DOMAIN",
+						Segment: []openrtb2.Segment{
+							{
+								ID: "1",
+							},
+							{
+								ID: "2",
+							},
+						},
+						Ext: json.RawMessage(`{"segtax": 600, "segclass": "2"}`),
+					},
+				},
+			},
+		},
+		{
+			name: "Sec-Browsing-Topics with valid fields having special characters (whitespaces, etc), request.user.data empty, valid data filtered and added in req.user.data",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{
+						"Sec-Browsing-Topics": []string{"(1 2 4		6 7			4567	  ) ; v=chrome.1: 1 : 2, (1);v=chrome.1, ();p=P0000000000"},
+					},
+				},
+				r: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
+			},
+			wantUser: &openrtb2.User{
+				Data: []openrtb2.Data{
+					{
+						Name: "TOPICS_DOMAIN",
+						Segment: []openrtb2.Segment{
+							{
+								ID: "1",
+							},
+							{
+								ID: "2",
+							},
+							{
+								ID: "4",
+							},
+							{
+								ID: "6",
+							},
+							{
+								ID: "7",
+							},
+							{
+								ID: "4567",
+							},
+						},
+						Ext: json.RawMessage(`{"segtax": 600, "segclass": "2"}`),
+					},
+				},
+			},
+		},
+		{
+			name: "Sec-Browsing-Topics with valid fields having special characters (whitespaces, etc), request.user.data empty, valid data filtered and added in req.user.data",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{
+						"Sec-Browsing-Topics": []string{"(1 -2 4		6 7			4567	  ) ; v=chrome.1: 1 : 2, (1);v=chrome.1, ();p=P0000000000"},
+					},
+				},
+				r: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
+			},
+			wantUser: &openrtb2.User{
+				Data: []openrtb2.Data{
+					{
+						Name: "TOPICS_DOMAIN",
+						Segment: []openrtb2.Segment{
+							{
+								ID: "1",
+							},
+							{
+								ID: "4",
+							},
+							{
+								ID: "6",
+							},
+							{
+								ID: "7",
+							},
+							{
+								ID: "4567",
+							},
+						},
+						Ext: json.RawMessage(`{"segtax": 600, "segclass": "2"}`),
+					},
+				},
+			},
+		},
+		{
+			name: "Sec-Browsing-Topics with valid fields but finish padding in between, request.user.data empty, valid data filtered and added in req.user.data",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{
+						"Sec-Browsing-Topics": []string{"(1);v=chrome.1:1:4,();p=P0000000000,(2);v=chrome.1:1:4,();p=P000000000"},
+					},
+				},
+				r: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
+			},
+			wantUser: &openrtb2.User{
+				Data: []openrtb2.Data{
+					{
+						Name: "TOPICS_DOMAIN",
+						Segment: []openrtb2.Segment{
+							{
+								ID: "1",
+							},
+							{
+								ID: "2",
+							},
+						},
+						Ext: json.RawMessage(`{"segtax": 600, "segclass": "4"}`),
+					},
+				},
+			},
+		},
+		{
+			name: "Sec-Browsing-Topics with valid fields but no finish padding, request.user.data empty, valid data added in req.user.data",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{
+						"Sec-Browsing-Topics": []string{"(100);v=chrome.1:2:20"},
+					},
+				},
+				r: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
+			},
+			wantUser: &openrtb2.User{
+				Data: []openrtb2.Data{
+					{
+						Name: "TOPICS_DOMAIN",
+						Segment: []openrtb2.Segment{
+							{
+								ID: "100",
+							},
+						},
+						Ext: json.RawMessage(`{"segtax": 601, "segclass": "20"}`),
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			setSecBrowsingTopcisImplicitly(tt.args.httpReq, tt.args.r)
+
+			// sequence is not garunteed in request.user.data as we're using a map
+			if tt.wantUser.Data != nil {
+				sort.Slice(tt.wantUser.Data, func(i, j int) bool {
+					return string(tt.wantUser.Data[i].Ext) < string(tt.wantUser.Data[j].Ext)
+				})
+
+				for _, data := range tt.wantUser.Data {
+					sort.Slice(data.Segment, func(i, j int) bool {
+						return data.Segment[i].ID < data.Segment[j].ID
+					})
+				}
+			}
+			if tt.args.r.User.Data != nil {
+				sort.Slice(tt.args.r.User.Data, func(i, j int) bool {
+					return string(tt.args.r.User.Data[i].Ext) < string(tt.args.r.User.Data[j].Ext)
+				})
+
+				for _, data := range tt.args.r.User.Data {
+					sort.Slice(data.Segment, func(i, j int) bool {
+						return data.Segment[i].ID < data.Segment[j].ID
+					})
+				}
+			}
+
+			assert.Equal(t, tt.wantUser, tt.args.r.User)
+		})
+	}
 }
