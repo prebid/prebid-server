@@ -23,7 +23,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "imp.ext.pubId or imp.ext.zoneId required ",
+      "value": "imp.ext.pubId or imp.ext.zoneId required",
       "comparison": "literal"
     }
   ]
