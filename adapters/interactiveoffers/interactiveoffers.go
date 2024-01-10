@@ -51,7 +51,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		Uri:     url,
 		Body:    requestJSON,
 		Headers: headers,
-		ImpIDs:  []string{request.Imp[0].ID},
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}
 	return []*adapters.RequestData{requestData}, nil
 }

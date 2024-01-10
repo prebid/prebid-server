@@ -86,7 +86,8 @@
               "domain": "example.com"
             }
           }
-        }
+        },
+        "impIDs":["testimpid"]
       },
       "mockResponse": {
         "status": 200,
