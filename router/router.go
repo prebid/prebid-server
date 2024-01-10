@@ -77,13 +77,12 @@ func newJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.Bidder
 		if !isValid {
 			glog.Fatalf("Schema exists for an unknown bidder: %s", bidder)
 		}
-		compactedJson := pretty.Ugly([]byte(validator.Schema(bidderName)))
-		data[bidder] = json.RawMessage(compactedJson)
+		data[bidder] = pretty.Ugly([]byte(validator.Schema(bidderName)))
 	}
 
 	// Add in any aliases
 	for aliasName, parentBidder := range yamlAliases {
-		data[string(aliasName)] = json.RawMessage(validator.Schema(parentBidder))
+		data[string(aliasName)] = pretty.Ugly([]byte(validator.Schema(parentBidder)))
 	}
 
 	// Add in any default aliases
