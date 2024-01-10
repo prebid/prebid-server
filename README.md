@@ -67,7 +67,7 @@ By default, Prebid Server will attach to port 8000. To confirm the server is run
 ### Code Style
 To maintain consistency in the project's code, please:
  
-- Follow the recommendations set by [Effective Go](https://go.dev/doc/effective_go). This article provides a comprehensive guide on how to write idiomatic Go code, covering topics such as naming and formatting. Many IDEs will automatically format your code upon save. If you need to manaully format your code, run either the bash script or execute the make step:
+- Follow the recommendations set by [Effective Go](https://go.dev/doc/effective_go). This article provides a comprehensive guide on how to write idiomatic Go code, covering topics such as naming and formatting. Many IDEs will automatically format your code upon save. If you need to manaully format your code, either run the bash script or execute the make step:
    ```
    ./scripts/format.sh -f true
    ```
@@ -104,4 +104,4 @@ Auction Modules allow hosts to extend the behavior of Prebid Server at specfic s
 We welcome everyone to contribute to this project by implementing a specification or by proposing a new feature. Please review the [prioritized project board](https://github.com/orgs/prebid/projects/4), where you can select an issue labeled "Ready For Dev". To avoid redundant effort, kindly leave a comment on the issue stating your intention to take it on. To propose a feature, [open a new issue](https://github.com/prebid/prebid-server/issues/new/choose) with as much detail as possible for consideration by the Prebid Server Committee.
 
 ### Bug Fix
-Bug reports may be submitted by [opening a new issue](https://github.com/prebid/prebid-server/issues/new/choose) and describing the error in detail with with steps to reproduce and example data. A member of the core development team will validate the bug and discuss next steps. You are encouraged to open an exploratory draft pull request to either demonstrate the bug by adding a test or offering a potential fix.
+Bug reports may be submitted by [opening a new issue](https://github.com/prebid/prebid-server/issues/new/choose) and describing the error in detail with the steps to reproduce and example data. A member of the core development team will validate the bug and discuss next steps. You're encouraged to open an exploratory draft pull request to either demonstrate the bug by adding a test or offering a potential fix.
