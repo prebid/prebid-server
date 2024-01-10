@@ -7,10 +7,11 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"reflect"
 	"regexp"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/mitchellh/copystructure"
 	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
@@ -325,7 +326,8 @@ func diffHttpRequests(description string, actual *adapters.RequestData, expected
 		return fmt.Errorf(`expected.ImpIDs must contain at least one imp ID`)
 	}
 
-	if !reflect.DeepEqual(expected.ImpIDs, actual.ImpIDs) {
+	opt := cmpopts.SortSlices(func(a, b string) bool { return a < b })
+	if !cmp.Equal(expected.ImpIDs, actual.ImpIDs, opt) {
 		return fmt.Errorf(`%s actual.ImpIDs "%q" do not match expected "%q"`, description, actual.ImpIDs, expected.ImpIDs)
 	}
 	return diffJson(description, actual.Body, expected.Body)

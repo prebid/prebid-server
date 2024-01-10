@@ -120,7 +120,7 @@ func (a *GamoshiAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 		Uri:     thisURI,
 		Body:    reqJSON,
 		Headers: headers,
-		ImpIDs:  []string{request.Imp[0].ID},
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, errors
 }
 
