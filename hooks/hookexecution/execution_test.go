@@ -11,9 +11,10 @@ import (
 )
 
 const (
-	testIpv6           = "1111:2222:3333:4444:5555:6666:7777:8888"
-	testIPv6Scrubbed   = "1111:2222::"
-	testIPv6ScrubBytes = 32
+	testIpv6                = "1111:2222:3333:4444:5555:6666:7777:8888"
+	testIPv6Scrubbed        = "1111:2222::"
+	testIPv6ScrubbedDefault = "1111:2222:3333:4400::"
+	testIPv6ScrubBytes      = 32
 )
 
 func TestHandleModuleActivitiesBidderRequestPayload(t *testing.T) {
@@ -66,7 +67,7 @@ func TestHandleModuleActivitiesBidderRequestPayload(t *testing.T) {
 			privacyConfig: getTransmitPreciseGeoActivityConfig("foo", false),
 			expectedPayloadData: hookstage.BidderRequestPayload{
 				Request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
-					Device: &openrtb2.Device{IPv6: testIPv6Scrubbed},
+					Device: &openrtb2.Device{IPv6: testIPv6ScrubbedDefault},
 				},
 				}},
 		},
@@ -91,8 +92,7 @@ func TestHandleModuleActivitiesBidderRequestPayload(t *testing.T) {
 			//check input payload didn't change
 			origInPayloadData := test.inPayloadData
 			activityControl := privacy.NewActivityControl(test.privacyConfig)
-			account := &config.Account{Privacy: config.AccountPrivacy{IPv6Config: config.IPv6{testIPv6ScrubBytes}}}
-			newPayload := handleModuleActivities(test.hookCode, activityControl, test.inPayloadData, account)
+			newPayload := handleModuleActivities(test.hookCode, activityControl, test.inPayloadData, nil)
 			assert.Equal(t, test.expectedPayloadData.Request.BidRequest, newPayload.Request.BidRequest)
 			assert.Equal(t, origInPayloadData, test.inPayloadData)
 		})

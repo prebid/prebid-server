@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/ortb"
+	"github.com/prebid/prebid-server/v2/util/iputil"
 	"strings"
 	"sync"
 	"time"
@@ -339,7 +340,15 @@ func handleModuleActivities[P any](hookCode string, activityControl privacy.Acti
 		privacy.ScrubUserFPD(bidderReqCopy)
 	}
 	if !transmitPreciseGeoActivityAllowed {
-		ipConf := privacy.IPConf{IPV6: account.Privacy.IPv6Config, IPV4: account.Privacy.IPv4Config}
+		ipConf := privacy.IPConf{}
+		if account != nil {
+			ipConf = privacy.IPConf{IPV6: account.Privacy.IPv6Config, IPV4: account.Privacy.IPv4Config}
+		} else {
+			ipConf = privacy.IPConf{
+				IPV6: config.IPv6{AnonKeepBits: iputil.IPv6DefaultMaskingBitSize},
+				IPV4: config.IPv4{AnonKeepBits: iputil.IPv4DefaultMaskingBitSize}}
+		}
+
 		privacy.ScrubGeoAndDeviceIP(bidderReqCopy, ipConf)
 	}
 

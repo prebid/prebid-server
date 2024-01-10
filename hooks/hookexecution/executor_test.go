@@ -699,7 +699,6 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 
 func TestExecuteProcessedAuctionStage(t *testing.T) {
 	foobarModuleCtx := &moduleContexts{ctxs: map[string]hookstage.ModuleContext{"foobar": nil}}
-	account := &config.Account{}
 	req := openrtb2.BidRequest{ID: "some-id", User: &openrtb2.User{ID: "user-id"}}
 	reqUpdated := openrtb2.BidRequest{ID: "some-id", User: &openrtb2.User{ID: "user-id", Yob: 2000, Consent: "true"}}
 
@@ -716,7 +715,6 @@ func TestExecuteProcessedAuctionStage(t *testing.T) {
 		{
 			description:            "Request not changed if hook execution plan empty",
 			givenPlanBuilder:       hooks.EmptyPlanBuilder{},
-			givenAccount:           account,
 			givenRequest:           openrtb_ext.RequestWrapper{BidRequest: &req},
 			expectedRequest:        req,
 			expectedErr:            nil,
@@ -726,7 +724,6 @@ func TestExecuteProcessedAuctionStage(t *testing.T) {
 		{
 			description:            "Request changed if hooks return mutations",
 			givenPlanBuilder:       TestApplyHookMutationsBuilder{},
-			givenAccount:           account,
 			givenRequest:           openrtb_ext.RequestWrapper{BidRequest: &req},
 			expectedRequest:        reqUpdated,
 			expectedErr:            nil,
@@ -760,7 +757,6 @@ func TestExecuteProcessedAuctionStage(t *testing.T) {
 		{
 			description:            "Stage execution can be rejected - and later hooks rejected",
 			givenPlanBuilder:       TestRejectPlanBuilder{},
-			givenAccount:           account,
 			givenRequest:           openrtb_ext.RequestWrapper{BidRequest: &req},
 			expectedRequest:        req,
 			expectedErr:            &RejectError{0, HookID{ModuleCode: "foobar", HookImplCode: "foo"}, hooks.StageProcessedAuctionRequest.String()},
@@ -793,7 +789,6 @@ func TestExecuteProcessedAuctionStage(t *testing.T) {
 		{
 			description:            "Request can be changed when a hook times out",
 			givenPlanBuilder:       TestWithTimeoutPlanBuilder{},
-			givenAccount:           account,
 			givenRequest:           openrtb_ext.RequestWrapper{BidRequest: &req},
 			expectedRequest:        reqUpdated,
 			expectedErr:            nil,
@@ -841,7 +836,6 @@ func TestExecuteProcessedAuctionStage(t *testing.T) {
 		{
 			description:      "Modules contexts are preserved and correct",
 			givenPlanBuilder: TestWithModuleContextsPlanBuilder{},
-			givenAccount:     account,
 			givenRequest:     openrtb_ext.RequestWrapper{BidRequest: &req},
 			expectedRequest:  req,
 			expectedErr:      nil,
@@ -905,7 +899,6 @@ func TestExecuteProcessedAuctionStage(t *testing.T) {
 			privacyConfig := getModuleActivities("foo", false, false)
 			ac := privacy.NewActivityControl(privacyConfig)
 			exec.SetActivityControl(ac)
-			exec.SetAccount(test.givenAccount)
 
 			err := exec.ExecuteProcessedAuctionStage(&test.givenRequest)
 
@@ -926,7 +919,6 @@ func TestExecuteProcessedAuctionStage(t *testing.T) {
 func TestExecuteBidderRequestStage(t *testing.T) {
 	bidderName := "the-bidder"
 	foobarModuleCtx := &moduleContexts{ctxs: map[string]hookstage.ModuleContext{"foobar": nil}}
-	account := &config.Account{}
 
 	expectedBidderRequest := &openrtb2.BidRequest{ID: "some-id", User: &openrtb2.User{ID: "user-id"}}
 	expectedUpdatedBidderRequest := &openrtb2.BidRequest{
@@ -942,7 +934,6 @@ func TestExecuteBidderRequestStage(t *testing.T) {
 		description            string
 		givenBidderRequest     *openrtb2.BidRequest
 		givenPlanBuilder       hooks.ExecutionPlanBuilder
-		givenAccount           *config.Account
 		expectedBidderRequest  *openrtb2.BidRequest
 		expectedReject         *RejectError
 		expectedModuleContexts *moduleContexts
@@ -953,7 +944,6 @@ func TestExecuteBidderRequestStage(t *testing.T) {
 			description:            "Payload not changed if hook execution plan empty",
 			givenBidderRequest:     &openrtb2.BidRequest{ID: "some-id", User: &openrtb2.User{ID: "user-id"}},
 			givenPlanBuilder:       hooks.EmptyPlanBuilder{},
-			givenAccount:           account,
 			expectedBidderRequest:  expectedBidderRequest,
 			expectedReject:         nil,
 			expectedModuleContexts: &moduleContexts{ctxs: map[string]hookstage.ModuleContext{}},
@@ -963,7 +953,6 @@ func TestExecuteBidderRequestStage(t *testing.T) {
 			description:            "Payload changed if hooks return mutations",
 			givenBidderRequest:     &openrtb2.BidRequest{ID: "some-id", User: &openrtb2.User{ID: "user-id"}},
 			givenPlanBuilder:       TestApplyHookMutationsBuilder{},
-			givenAccount:           account,
 			expectedBidderRequest:  expectedUpdatedBidderRequest,
 			expectedReject:         nil,
 			expectedModuleContexts: foobarModuleCtx,
@@ -1021,7 +1010,6 @@ func TestExecuteBidderRequestStage(t *testing.T) {
 			description:            "Stage execution can be rejected - and later hooks rejected",
 			givenBidderRequest:     &openrtb2.BidRequest{ID: "some-id", User: &openrtb2.User{ID: "user-id"}},
 			givenPlanBuilder:       TestRejectPlanBuilder{},
-			givenAccount:           account,
 			expectedBidderRequest:  expectedBidderRequest,
 			expectedReject:         &RejectError{0, HookID{ModuleCode: "foobar", HookImplCode: "foo"}, hooks.StageBidderRequest.String()},
 			expectedModuleContexts: foobarModuleCtx,
@@ -1073,7 +1061,6 @@ func TestExecuteBidderRequestStage(t *testing.T) {
 			description:            "Stage execution can be timed out",
 			givenBidderRequest:     &openrtb2.BidRequest{ID: "some-id", User: &openrtb2.User{ID: "user-id"}},
 			givenPlanBuilder:       TestWithTimeoutPlanBuilder{},
-			givenAccount:           account,
 			expectedBidderRequest:  expectedUpdatedBidderRequest,
 			expectedReject:         nil,
 			expectedModuleContexts: foobarModuleCtx,
@@ -1125,7 +1112,6 @@ func TestExecuteBidderRequestStage(t *testing.T) {
 			description:           "Modules contexts are preserved and correct",
 			givenBidderRequest:    &openrtb2.BidRequest{ID: "some-id", User: &openrtb2.User{ID: "user-id"}},
 			givenPlanBuilder:      TestWithModuleContextsPlanBuilder{},
-			givenAccount:          account,
 			expectedBidderRequest: expectedBidderRequest,
 			expectedReject:        nil,
 			expectedModuleContexts: &moduleContexts{ctxs: map[string]hookstage.ModuleContext{
@@ -1182,7 +1168,6 @@ func TestExecuteBidderRequestStage(t *testing.T) {
 			privacyConfig := getModuleActivities("foo", false, false)
 			ac := privacy.NewActivityControl(privacyConfig)
 			exec.SetActivityControl(ac)
-			exec.SetAccount(test.givenAccount)
 
 			reject := exec.ExecuteBidderRequestStage(&openrtb_ext.RequestWrapper{BidRequest: test.givenBidderRequest}, bidderName)
 
