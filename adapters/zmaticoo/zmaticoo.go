@@ -99,7 +99,7 @@ func getZmaticooExt(request *openrtb2.BidRequest) []error {
 			continue
 		}
 		if extImpZmaticoo.ZoneId == "" || extImpZmaticoo.PubId == "" {
-			errs = append(errs, fmt.Errorf("zoneid or pubid is required"))
+			errs = append(errs, fmt.Errorf("imp.ext.pubId or imp.ext.zoneId required"))
 			continue
 		}
 	}
