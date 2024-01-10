@@ -44,6 +44,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	_ "github.com/lib/pq"
 	"github.com/rs/cors"
+	"github.com/tidwall/pretty"
 )
 
 // NewJsonDirectoryServer is used to serve .json files from a directory as a single blob. For example,
@@ -76,7 +77,8 @@ func newJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.Bidder
 		if !isValid {
 			glog.Fatalf("Schema exists for an unknown bidder: %s", bidder)
 		}
-		data[bidder] = json.RawMessage(validator.Schema(bidderName))
+		compactedJson := pretty.Ugly([]byte(validator.Schema(bidderName)))
+		data[bidder] = json.RawMessage(compactedJson)
 	}
 
 	// Add in any aliases
@@ -93,7 +95,7 @@ func newJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.Bidder
 		data[aliasName] = bidderData
 	}
 
-	response, err := json.Marshal(data)
+	response, err := jsonutil.Marshal(data)
 	if err != nil {
 		glog.Fatalf("Failed to marshal bidder param JSON-schema: %v", err)
 	}
