@@ -210,8 +210,8 @@ type InfoReaderFromDisk struct {
 }
 
 const (
-	ResponseFormatIFrame   = "b" // b = blank HTML response
-	ResponseFormatRedirect = "i" // i = image response
+	SyncResponseFormatIFrame   = "b" // b = blank HTML response
+	SyncResponseFormatRedirect = "i" // i = image response
 )
 
 func (r InfoReaderFromDisk) Read() (map[string][]byte, error) {
@@ -570,7 +570,7 @@ func validateSyncer(bidderInfo BidderInfo) error {
 		return nil
 	}
 
-	if bidderInfo.Syncer.FormatOverride != ResponseFormatIFrame && bidderInfo.Syncer.FormatOverride != ResponseFormatRedirect && bidderInfo.Syncer.FormatOverride != "" {
+	if bidderInfo.Syncer.FormatOverride != SyncResponseFormatIFrame && bidderInfo.Syncer.FormatOverride != SyncResponseFormatRedirect && bidderInfo.Syncer.FormatOverride != "" {
 		return fmt.Errorf("syncer could not be created, invalid format override value: %s", bidderInfo.Syncer.FormatOverride)
 	}
 

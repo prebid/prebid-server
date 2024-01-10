@@ -73,7 +73,7 @@ func NewSyncer(hostConfig config.UserSync, syncerConfig config.Syncer, bidder st
 
 	if syncerConfig.IFrame != nil {
 		var err error
-		syncer.iframe, err = buildTemplate(bidder, config.ResponseFormatIFrame, hostConfig, syncerConfig.ExternalURL, *syncerConfig.IFrame, syncerConfig.FormatOverride)
+		syncer.iframe, err = buildTemplate(bidder, config.SyncResponseFormatIFrame, hostConfig, syncerConfig.ExternalURL, *syncerConfig.IFrame, syncerConfig.FormatOverride)
 		if err != nil {
 			return nil, fmt.Errorf("iframe %v", err)
 		}
@@ -84,7 +84,7 @@ func NewSyncer(hostConfig config.UserSync, syncerConfig config.Syncer, bidder st
 
 	if syncerConfig.Redirect != nil {
 		var err error
-		syncer.redirect, err = buildTemplate(bidder, config.ResponseFormatRedirect, hostConfig, syncerConfig.ExternalURL, *syncerConfig.Redirect, syncerConfig.FormatOverride)
+		syncer.redirect, err = buildTemplate(bidder, config.SyncResponseFormatRedirect, hostConfig, syncerConfig.ExternalURL, *syncerConfig.Redirect, syncerConfig.FormatOverride)
 		if err != nil {
 			return nil, fmt.Errorf("redirect %v", err)
 		}
@@ -192,9 +192,9 @@ func (s standardSyncer) Key() string {
 
 func (s standardSyncer) DefaultResponseFormat() SyncType {
 	switch s.formatOverride {
-	case config.ResponseFormatIFrame:
+	case config.SyncResponseFormatIFrame:
 		return SyncTypeIFrame
-	case config.ResponseFormatRedirect:
+	case config.SyncResponseFormatRedirect:
 		return SyncTypeRedirect
 	default:
 		return s.defaultSyncType

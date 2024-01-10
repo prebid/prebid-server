@@ -593,7 +593,7 @@ func TestBidderInfoValidationPositive(t *testing.T) {
 					URL:       "http://bidderB.com/usersync",
 					UserMacro: "UID",
 				},
-				FormatOverride: ResponseFormatRedirect,
+				FormatOverride: SyncResponseFormatRedirect,
 			},
 		},
 		"bidderC": BidderInfo{
@@ -629,7 +629,7 @@ func TestBidderInfoValidationPositive(t *testing.T) {
 				},
 			},
 			Syncer: &Syncer{
-				FormatOverride: ResponseFormatIFrame,
+				FormatOverride: SyncResponseFormatIFrame,
 			},
 		},
 	}

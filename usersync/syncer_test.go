@@ -492,12 +492,12 @@ func TestSyncerDefaultResponseFormat(t *testing.T) {
 	}{
 		{
 			description:      "IFrame",
-			givenSyncer:      standardSyncer{formatOverride: config.ResponseFormatIFrame},
+			givenSyncer:      standardSyncer{formatOverride: config.SyncResponseFormatIFrame},
 			expectedSyncType: SyncTypeIFrame,
 		},
 		{
 			description:      "Default with Redirect Override",
-			givenSyncer:      standardSyncer{defaultSyncType: SyncTypeIFrame, formatOverride: config.ResponseFormatRedirect},
+			givenSyncer:      standardSyncer{defaultSyncType: SyncTypeIFrame, formatOverride: config.SyncResponseFormatRedirect},
 			expectedSyncType: SyncTypeRedirect,
 		},
 		{
