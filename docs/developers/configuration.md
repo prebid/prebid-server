@@ -1,14 +1,19 @@
 # Configuration
 
-Prebid Server is built using [Viper](https://github.com/spf13/viper) for configuration. Viper supports JSON, TOML, YAML, HCL, INI, envfile or Java properties formats. YAML, JSON, and Environment Variables are the most popular formats and are used as examples in this guide. 
+Prebid Server can be configured uaing environment variables and several configuration file formats. The most commonly used formats are `yaml` and `json`, which are used as examples in this guide. Other supported formats include `toml`, `hcl`, `tfvars`, `ini`, `properities` (Java), and `env`.
+
+- describe hunt path and file name
+
+
 
 Configuration is logged to standard out as Prebid Server starts up. If a validation error is detected, the application will immediately exit and report the problem.
 
-For development, it's easiest to define your config inside a `pbs.yaml` file in the project root. This file is marked to be ignored by `.gitignore` and will not be automatically included in commits.
+# Contents
+> [!IMPORTANT]
+> As we are still developing this guide, please refer to the [configuration structures in code](../../config/config.go) for a complete definition of the options.
 
-# We're Working On It
-
-As we build this guide, please refer to [the contract classes](../../config/config.go) in code for a complete defintion of the configuration options.
+- [Privacy](#privacy)
+  - [GDPR](#gdpr)
 
 # Privacy
 
