@@ -222,6 +222,14 @@ func TestDefaults(t *testing.T) {
 	cmpInts(t, "account_defaults.privacy.ipv4.anon_keep_bits", 24, cfg.AccountDefaults.Privacy.IPv4Config.AnonKeepBits)
 
 	//Assert purpose VendorExceptionMap hash tables were built correctly
+	cmpBools(t, "analytics.agma.enabled", false, cfg.Analytics.Agma.Enabled)
+	cmpStrings(t, "analytics.agma.endpoint.timeout", "2s", cfg.Analytics.Agma.Endpoint.Timeout)
+	cmpBools(t, "analytics.agma.endpoint.gzip", false, cfg.Analytics.Agma.Endpoint.Gzip)
+	cmpStrings(t, "analytics.agma.endppoint.url", "https://pbs-go.agma-analytics.de/v1/prebid-server", cfg.Analytics.Agma.Endpoint.Url)
+	cmpStrings(t, "analytics.agma.buffers.size", "2MB", cfg.Analytics.Agma.Buffers.BufferSize)
+	cmpInts(t, "analytics.agma.buffers.count", 100, cfg.Analytics.Agma.Buffers.EventCount)
+	cmpStrings(t, "analytics.agma.buffers.timeout", "15m", cfg.Analytics.Agma.Buffers.Timeout)
+	cmpInts(t, "analytics.agma.accounts", 0, len(cfg.Analytics.Agma.Accounts))
 	expectedTCF2 := TCF2{
 		Enabled: true,
 		Purpose1: TCF2Purpose{
@@ -508,6 +516,21 @@ tmax_adjustments:
   bidder_response_duration_min_ms: 700
   bidder_network_latency_buffer_ms: 100
   pbs_response_preparation_duration_ms: 100
+analytics:
+  agma:
+    enabled: true
+    endpoint:
+      url: "http://test.com"
+      timeout: "5s"
+      gzip: false
+    buffers:
+      size: 10MB
+      count: 111
+      timeout: 5m
+    accounts:
+    - code: agma-code
+      publisher_id: publisher-id
+      site_app_id: site-or-app-id
 `)
 
 func cmpStrings(t *testing.T, key, expected, actual string) {
@@ -787,6 +810,16 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "experiment.adscert.remote.signing_timeout_ms", 10, cfg.Experiment.AdCerts.Remote.SigningTimeoutMs)
 	cmpBools(t, "hooks.enabled", true, cfg.Hooks.Enabled)
 	cmpBools(t, "account_modules_metrics", true, cfg.Metrics.Disabled.AccountModulesMetrics)
+	cmpBools(t, "analytics.agma.enabled", true, cfg.Analytics.Agma.Enabled)
+	cmpStrings(t, "analytics.agma.endpoint.timeout", "5s", cfg.Analytics.Agma.Endpoint.Timeout)
+	cmpBools(t, "analytics.agma.endpoint.gzip", false, cfg.Analytics.Agma.Endpoint.Gzip)
+	cmpStrings(t, "analytics.agma.endpoint.url", "http://test.com", cfg.Analytics.Agma.Endpoint.Url)
+	cmpStrings(t, "analytics.agma.buffers.size", "10MB", cfg.Analytics.Agma.Buffers.BufferSize)
+	cmpInts(t, "analytics.agma.buffers.count", 111, cfg.Analytics.Agma.Buffers.EventCount)
+	cmpStrings(t, "analytics.agma.buffers.timeout", "5m", cfg.Analytics.Agma.Buffers.Timeout)
+	cmpStrings(t, "analytics.agma.accounts.0.publisher_id", "publisher-id", cfg.Analytics.Agma.Accounts[0].PublisherId)
+	cmpStrings(t, "analytics.agma.accounts.0.code", "agma-code", cfg.Analytics.Agma.Accounts[0].Code)
+	cmpStrings(t, "analytics.agma.accounts.0.site_app_id", "site-or-app-id", cfg.Analytics.Agma.Accounts[0].SiteAppId)
 }
 
 func TestValidateConfig(t *testing.T) {
@@ -900,7 +933,6 @@ func TestUserSyncFromEnv(t *testing.T) {
 	assert.Equal(t, "http://somedifferent.url/sync?redirect={{.RedirectURL}}", cfg.BidderInfos["bidder2"].Syncer.IFrame.URL)
 	assert.Nil(t, cfg.BidderInfos["bidder2"].Syncer.Redirect)
 	assert.Nil(t, cfg.BidderInfos["bidder2"].Syncer.SupportCORS)
-
 }
 
 func TestBidderInfoFromEnv(t *testing.T) {
