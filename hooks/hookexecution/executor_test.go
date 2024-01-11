@@ -26,7 +26,6 @@ import (
 
 func TestEmptyHookExecutor(t *testing.T) {
 	executor := EmptyHookExecutor{}
-	executor.SetAccount(&config.Account{})
 
 	body := []byte(`{"foo": "bar"}`)
 	reader := bytes.NewReader(body)
