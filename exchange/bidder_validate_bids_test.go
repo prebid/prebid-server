@@ -130,10 +130,11 @@ func TestAllBadBids(t *testing.T) {
 	}
 	bidAdjustments := map[string]float64{string(openrtb_ext.BidderAppnexus): 1.0}
 	bidReqOptions := bidRequestOptions{
-		accountDebugAllowed: true,
-		headerDebugAllowed:  false,
-		addCallSignHeader:   false,
-		bidAdjustments:      bidAdjustments,
+		accountDebugAllowed:  true,
+		headerDebugAllowed:   false,
+		addCallSignHeader:    false,
+		bidAdjustments:       bidAdjustments,
+		responseDebugAllowed: true,
 	}
 	seatBids, _, errs := bidder.requestBid(context.Background(), bidderReq, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
 	assert.Len(t, seatBids, 1)
@@ -211,15 +212,16 @@ func TestMixedBids(t *testing.T) {
 	}
 	bidAdjustments := map[string]float64{string(openrtb_ext.BidderAppnexus): 1.0}
 	bidReqOptions := bidRequestOptions{
-		accountDebugAllowed: true,
-		headerDebugAllowed:  false,
-		addCallSignHeader:   false,
-		bidAdjustments:      bidAdjustments,
+		accountDebugAllowed:  true,
+		headerDebugAllowed:   false,
+		addCallSignHeader:    false,
+		bidAdjustments:       bidAdjustments,
+		responseDebugAllowed: false,
 	}
 	seatBids, _, errs := bidder.requestBid(context.Background(), bidderReq, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
 	assert.Len(t, seatBids, 1)
 	assert.Len(t, seatBids[0].Bids, 3)
-	assert.Len(t, errs, 5)
+	assert.Len(t, errs, 4)
 }
 
 func TestCurrencyBids(t *testing.T) {
