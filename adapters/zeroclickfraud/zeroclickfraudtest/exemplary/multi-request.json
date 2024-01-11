@@ -106,7 +106,8 @@
                 },
                 "at": 1,
                 "tmax": 500
-            }
+            },
+            "impIDs":["some-impression-id","some-impression-id2"]
         },
         "mockResponse":
         {
