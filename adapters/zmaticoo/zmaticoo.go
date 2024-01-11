@@ -60,7 +60,6 @@ func transform(request *openrtb2.BidRequest) error {
 			var nativeRequest map[string]interface{}
 			nativeCopyRequest := make(map[string]interface{})
 			err := json.Unmarshal([]byte(request.Imp[i].Native.Request), &nativeRequest)
-			//just ignore the bad native request
 			if err == nil {
 				_, exists := nativeRequest["native"]
 				if exists {
