@@ -68,7 +68,6 @@ func transform(request *openrtb2.BidRequest) error {
 				}
 				nativeCopyRequest["native"] = nativeRequest
 				nativeReqByte, err := json.Marshal(nativeCopyRequest)
-				//just ignore the bad native request
 				if err != nil {
 					return err
 				}
