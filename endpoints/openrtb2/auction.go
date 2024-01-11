@@ -2153,10 +2153,11 @@ func setSecBrowsingTopcisImplicitly(httpReq *http.Request, r *openrtb_ext.Reques
 		}
 
 		// merge segment ids if segtax, segclass and name are the same
-		merged := false
 		if _, ok := userData[ext.Segtax]; ok {
 			if _, ok := userData[ext.Segtax][ext.Segclass]; ok {
 				if _, ok := userData[ext.Segtax][ext.Segclass][data.Name]; ok {
+
+					// segtax-segclass-domain matched, merge unique segment ids
 					for segId := range userData[ext.Segtax][ext.Segclass][data.Name] {
 						if _, ok := requestUserData[ext.Segtax][ext.Segclass][data.Name][segId]; !ok {
 							r.User.Data[i].Segment = append(r.User.Data[i].Segment, openrtb2.Segment{
@@ -2168,10 +2169,6 @@ func setSecBrowsingTopcisImplicitly(httpReq *http.Request, r *openrtb_ext.Reques
 					delete(userData[ext.Segtax][ext.Segclass], data.Name)
 				}
 			}
-		}
-
-		if !merged {
-			continue
 		}
 	}
 

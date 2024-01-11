@@ -6891,6 +6891,65 @@ func Test_setSecBrowsingTopcisImplicitly(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Sec-Browsing-Topics and request.user.data with same segtax, segclass and domain but each field with duplicate and unique segIds, merge header and req.user.data with unique segIds",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{
+						"Sec-Browsing-Topics": []string{"(1 3 4);v=chrome.1:1:2, (2 3);v=chrome.1:1:2, ();p=P0000000000"},
+					},
+				},
+				r: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						User: &openrtb2.User{
+							Data: []openrtb2.Data{
+								{
+									Name: "TOPICS_DOMAIN",
+									Segment: []openrtb2.Segment{
+										{
+											ID: "3",
+										},
+										{
+											ID: "4",
+										},
+										{
+											ID: "5",
+										},
+									},
+									Ext: json.RawMessage(`{"segtax": 600, "segclass": "2"}`),
+								},
+							},
+						},
+					},
+				},
+				cfg: &config.Configuration{Auction: config.Auction{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "TOPICS_DOMAIN"}}},
+			},
+			wantUser: &openrtb2.User{
+				Data: []openrtb2.Data{
+					{
+						Name: "TOPICS_DOMAIN",
+						Segment: []openrtb2.Segment{
+							{
+								ID: "1",
+							},
+							{
+								ID: "2",
+							},
+							{
+								ID: "3",
+							},
+							{
+								ID: "4",
+							},
+							{
+								ID: "5",
+							},
+						},
+						Ext: json.RawMessage(`{"segtax": 600, "segclass": "2"}`),
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
