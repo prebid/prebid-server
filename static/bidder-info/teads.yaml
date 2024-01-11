@@ -1,6 +1,6 @@
 endpoint: "https://psrv.teads.tv/prebid-server/bid-request"
 maintainer:
-  email: "support-sdk@teads.com"
+  email: "innov-ssp@teads.tv"
 gvlVendorID: 132
 capabilities:
   app:
