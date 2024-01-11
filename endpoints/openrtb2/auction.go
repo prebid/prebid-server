@@ -2035,14 +2035,14 @@ func setAuctionTypeImplicitly(r *openrtb_ext.RequestWrapper) {
 
 // (100);v=chrome.1:1:20, (200);v=chrome.1:1:40, (300);v=chrome.1:1:60, ();p=P
 func setSecBrowsingTopcisImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper, cfg *config.Configuration) {
-	topicsDomain := "TOPICS_DOMAIN"
-	if cfg != nil {
-		topicsDomain = cfg.Auction.PrivacySandbox.TopicsDomain
-	}
-
 	secBrowsingTopics := httpReq.Header.Get("Sec-Browsing-Topics")
 	if secBrowsingTopics == "" {
 		return
+	}
+
+	topicsDomain := "TOPICS_DOMAIN"
+	if cfg != nil {
+		topicsDomain = cfg.Auction.PrivacySandbox.TopicsDomain
 	}
 
 	// segtax-segclass-name-segIds
