@@ -2014,7 +2014,7 @@ func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, r *openrtb_
 
 	setAuctionTypeImplicitly(r)
 
-	setSecBrowsingTopcisImplicitly(httpReq, r)
+	setSecBrowsingTopcisImplicitly(httpReq, r, deps.cfg)
 }
 
 // setDeviceImplicitly uses implicit info from httpReq to populate bidReq.Device
@@ -2034,9 +2034,14 @@ func setAuctionTypeImplicitly(r *openrtb_ext.RequestWrapper) {
 }
 
 // (100);v=chrome.1:1:20, (200);v=chrome.1:1:40, (300);v=chrome.1:1:60, ();p=P
-func setSecBrowsingTopcisImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {
+func setSecBrowsingTopcisImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper, cfg *config.Configuration) {
 	if r.User == nil {
 		r.User = &openrtb2.User{}
+	}
+
+	topicsDomain := "TOPICS_DOMAIN"
+	if cfg != nil {
+		topicsDomain = cfg.Auction.PrivacySandbox.TopicsDomain
 	}
 
 	secBrowsingTopics := httpReq.Header.Get("Sec-Browsing-Topics")
@@ -2049,7 +2054,7 @@ func setSecBrowsingTopcisImplicitly(httpReq *http.Request, r *openrtb_ext.Reques
 	secBrowsingTopicsArr := strings.Split(secBrowsingTopics, ",")
 	c := 0
 	for _, seg := range secBrowsingTopicsArr {
-		if c > 10 {
+		if c >= 10 {
 			break
 		}
 
@@ -2090,15 +2095,7 @@ func setSecBrowsingTopcisImplicitly(httpReq *http.Request, r *openrtb_ext.Reques
 		}
 		segtax := 600 + (taxanomy - 1)
 		segclass := strings.TrimSpace(taxanomyModel[2])
-		// modelVer := strings.TrimSpace(taxanomyModel[2])
-		// segclass, err := strconv.Atoi(modelVer)
-		// if err != nil {
-		// 	continue
-		// }
 
-		// if _, ok := userData["TOPICS_DOMAIN"]; !ok {
-		// 	userData["TOPICS_DOMAIN"] = map[int]map[int][]string{}
-		// }
 		if _, ok := userData[segtax]; !ok {
 			userData[segtax] = map[string]map[string]map[string]struct{}{}
 		}
@@ -2107,14 +2104,14 @@ func setSecBrowsingTopcisImplicitly(httpReq *http.Request, r *openrtb_ext.Reques
 			userData[segtax][segclass] = map[string]map[string]struct{}{}
 		}
 
-		if _, ok := userData[segtax][segclass]["TOPICS_DOMAIN"]; !ok {
-			userData[segtax][segclass]["TOPICS_DOMAIN"] = map[string]struct{}{}
+		if _, ok := userData[segtax][segclass][topicsDomain]; !ok {
+			userData[segtax][segclass][topicsDomain] = map[string]struct{}{}
 		}
 
 		for _, segId := range segmentsIdArr {
 			segId = strings.TrimSpace(segId)
 			if segid, err := strconv.Atoi(segId); err == nil && segid > 0 {
-				userData[segtax][segclass]["TOPICS_DOMAIN"][segId] = struct{}{}
+				userData[segtax][segclass][topicsDomain][segId] = struct{}{}
 			}
 		}
 
@@ -2127,12 +2124,10 @@ func setSecBrowsingTopcisImplicitly(httpReq *http.Request, r *openrtb_ext.Reques
 	}
 
 	requestUserData := map[int]map[string]map[string]map[string]struct{}{}
-	for _, data := range r.User.Data {
+	for i, data := range r.User.Data {
 		ext := &extData{}
-		if err := json.Unmarshal(data.Ext, ext); err != nil {
-			continue
-		}
 
+		_ = json.Unmarshal(data.Ext, ext)
 		if ext.Segtax == 0 || ext.Segclass == "" {
 			continue
 		}
@@ -2160,7 +2155,7 @@ func setSecBrowsingTopcisImplicitly(httpReq *http.Request, r *openrtb_ext.Reques
 				if _, ok := userData[ext.Segtax][ext.Segclass][data.Name]; ok {
 					for segId := range userData[ext.Segtax][ext.Segclass][data.Name] {
 						if _, ok := requestUserData[ext.Segtax][ext.Segclass][data.Name][segId]; !ok {
-							data.Segment = append(data.Segment, openrtb2.Segment{
+							r.User.Data[i].Segment = append(r.User.Data[i].Segment, openrtb2.Segment{
 								ID: segId,
 							})
 						}
@@ -2174,22 +2169,6 @@ func setSecBrowsingTopcisImplicitly(httpReq *http.Request, r *openrtb_ext.Reques
 		if !merged {
 			continue
 		}
-
-		// if _, ok := userData[ext.Segtax]; !ok {
-		// 	userData[ext.Segtax] = map[string]map[string]map[string]struct{}{}
-		// }
-
-		// if _, ok := userData[ext.Segtax][ext.Segclass]; !ok {
-		// 	userData[ext.Segtax][ext.Segclass] = map[string]map[string]struct{}{}
-		// }
-
-		// if _, ok := userData[ext.Segtax][ext.Segclass][data.Name]; !ok {
-		// 	userData[ext.Segtax][ext.Segclass][data.Name] = map[string]struct{}{}
-		// }
-
-		// for _, segId := range data.Segment {
-		// 	userData[ext.Segtax][ext.Segclass][data.Name][segId.ID] = struct{}{}
-		// }
 	}
 
 	for segtax, SegclassSegName := range userData {
@@ -2207,8 +2186,6 @@ func setSecBrowsingTopcisImplicitly(httpReq *http.Request, r *openrtb_ext.Reques
 			}
 		}
 	}
-
-	// r.User.Ext = json.RawMessage(fmt.Sprintf(`{"consent": "%s"}`, secBrowsingTopic))
 }
 
 func setSiteImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {

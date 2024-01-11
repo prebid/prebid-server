@@ -100,6 +100,8 @@ type Configuration struct {
 	Hooks       Hooks       `mapstructure:"hooks"`
 	Validations Validations `mapstructure:"validations"`
 	PriceFloors PriceFloors `mapstructure:"price_floors"`
+
+	Auction Auction `mapstructure:"auction"`
 }
 
 type PriceFloors struct {
@@ -1286,7 +1288,12 @@ type TmaxAdjustments struct {
 	BidderResponseDurationMin uint `mapstructure:"bidder_response_duration_min_ms"`
 }
 
-type AuctionPrivacy struct {
-	TopicsDomain   string         `mapstructure:"topicsdomain"`
+type Auction struct {
 	PrivacySandbox PrivacySandbox `mapstructure:"privacysandbox" json:"privacysandbox"`
+}
+
+type PrivacySandbox struct {
+	TopicsDomain                   string `mapstructure:"topicsdomain"`
+	CookieDeprecation              bool   `mapstructure:"cookiedeprecation"`
+	CookieDeprecationExpirationSec int    `mapstructure:"cookiedeprecationexpirationsec"`
 }
