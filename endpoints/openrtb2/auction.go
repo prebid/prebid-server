@@ -2035,10 +2035,6 @@ func setAuctionTypeImplicitly(r *openrtb_ext.RequestWrapper) {
 
 // (100);v=chrome.1:1:20, (200);v=chrome.1:1:40, (300);v=chrome.1:1:60, ();p=P
 func setSecBrowsingTopcisImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper, cfg *config.Configuration) {
-	if r.User == nil {
-		r.User = &openrtb2.User{}
-	}
-
 	topicsDomain := "TOPICS_DOMAIN"
 	if cfg != nil {
 		topicsDomain = cfg.Auction.PrivacySandbox.TopicsDomain
@@ -2052,9 +2048,9 @@ func setSecBrowsingTopcisImplicitly(httpReq *http.Request, r *openrtb_ext.Reques
 	// segtax-segclass-name-segIds
 	userData := map[int]map[string]map[string]map[string]struct{}{}
 	secBrowsingTopicsArr := strings.Split(secBrowsingTopics, ",")
-	c := 0
+	selectedFields := 0
 	for _, seg := range secBrowsingTopicsArr {
-		if c >= 10 {
+		if selectedFields >= 10 {
 			break
 		}
 
@@ -2115,7 +2111,15 @@ func setSecBrowsingTopcisImplicitly(httpReq *http.Request, r *openrtb_ext.Reques
 			}
 		}
 
-		c++
+		selectedFields++
+	}
+
+	if selectedFields == 0 {
+		return
+	}
+
+	if r.User == nil {
+		r.User = &openrtb2.User{}
 	}
 
 	type extData struct {

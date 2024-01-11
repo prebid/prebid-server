@@ -6203,7 +6203,7 @@ func Test_setSecBrowsingTopcisImplicitly(t *testing.T) {
 				r:       &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
 				cfg:     &config.Configuration{Auction: config.Auction{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "TOPICS_DOMAIN"}}},
 			},
-			wantUser: &openrtb2.User{},
+			wantUser: nil,
 		},
 		{
 			name: "Sec-Browsing-Topics with empty value, request.user.data empty, no change in user data",
@@ -6216,7 +6216,7 @@ func Test_setSecBrowsingTopcisImplicitly(t *testing.T) {
 				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
 				cfg: &config.Configuration{Auction: config.Auction{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "TOPICS_DOMAIN"}}},
 			},
-			wantUser: &openrtb2.User{},
+			wantUser: nil,
 		},
 		{
 			name: "Sec-Browsing-Topics with invalid value, request.user.data empty, no change in user data",
@@ -6229,7 +6229,7 @@ func Test_setSecBrowsingTopcisImplicitly(t *testing.T) {
 				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
 				cfg: &config.Configuration{Auction: config.Auction{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "TOPICS_DOMAIN"}}},
 			},
-			wantUser: &openrtb2.User{},
+			wantUser: nil,
 		},
 		{
 			name: "Sec-Browsing-Topics with finish padding, request.user.data empty, no change in user data",
@@ -6242,7 +6242,7 @@ func Test_setSecBrowsingTopcisImplicitly(t *testing.T) {
 				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
 				cfg: &config.Configuration{Auction: config.Auction{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "TOPICS_DOMAIN"}}},
 			},
-			wantUser: &openrtb2.User{},
+			wantUser: nil,
 		},
 		{
 			name: "Sec-Browsing-Topics with one valid field, request.user.data empty, valid field data added to req.user.data",
@@ -6897,7 +6897,7 @@ func Test_setSecBrowsingTopcisImplicitly(t *testing.T) {
 			setSecBrowsingTopcisImplicitly(tt.args.httpReq, tt.args.r, tt.args.cfg)
 
 			// sequence is not garunteed in request.user.data as we're using a map
-			if tt.wantUser.Data != nil {
+			if tt.wantUser != nil && tt.wantUser.Data != nil {
 				sort.Slice(tt.wantUser.Data, func(i, j int) bool {
 					return string(tt.wantUser.Data[i].Ext) < string(tt.wantUser.Data[j].Ext)
 				})
@@ -6908,7 +6908,7 @@ func Test_setSecBrowsingTopcisImplicitly(t *testing.T) {
 					})
 				}
 			}
-			if tt.args.r.User.Data != nil {
+			if tt.args.r.User != nil && tt.args.r.User.Data != nil {
 				sort.Slice(tt.args.r.User.Data, func(i, j int) bool {
 					return string(tt.args.r.User.Data[i].Ext) < string(tt.args.r.User.Data[j].Ext)
 				})
