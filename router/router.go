@@ -100,6 +100,9 @@ func newJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.Bidder
 	}
 
 	return func(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
+		enc := json.NewEncoder(w)
+		enc.SetEscapeHTML(false)
+
 		w.Header().Add("Content-Type", "application/json")
 		w.Write(response)
 	}
