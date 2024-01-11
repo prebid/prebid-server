@@ -33,6 +33,7 @@
         "body": {
           "id": "testid",
           "ext": {
+            "nextMillennium": {},
             "prebid": {
               "storedrequest": {
                 "id": "7819"
@@ -56,6 +57,7 @@
                 "w": 320
               },
               "ext": {
+                "nextMillennium": {},
                 "prebid": {
                   "storedrequest": {
                     "id": "7819"

@@ -106,7 +106,8 @@
               "width": 468,
               "height": 60,
               "ad": "advert",
-              "crid": "wasd"
+              "crid": "wasd",
+              "mtype": "banner"
             }
           ]
         }
@@ -124,7 +125,8 @@
           "adm": "advert",
           "w": 468,
           "h": 60,
-          "crid": "wasd"
+          "crid": "wasd",
+          "mtype": 1
         },
         "type": "banner"
       }]
