@@ -1,6 +1,6 @@
 # Configuration
 
-Prebid Server can be configured uaing environment variables and several configuration file formats. The most commonly used formats are `yaml` and `json`, which are used as examples in this guide. Other supported formats include `toml`, `hcl`, `tfvars`, `ini`, `properities` (Java), and `env`.
+Prebid Server can be configured uaing environment variables and supports several configuration file formats. The most commonly used formats are `yaml` and `json`, which are used as examples in this guide. Other supported formats include `toml`, `hcl`, `tfvars`, `ini`, `properities` (Java), and `env`.
 
 - describe hunt path and file name
 
