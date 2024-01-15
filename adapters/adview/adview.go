@@ -143,7 +143,6 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	for _, seatBid := range response.SeatBid {
 		for i, bid := range seatBid.Bid {
 			bidType, err := getMediaTypeForBid(bid, request.Imp)
-			//bidType, err := getMediaTypeForImp(bid.ImpID, request.Imp)
 			if err != nil {
 				errors = append(errors, err)
 				continue
@@ -206,10 +205,8 @@ func getBidType(bidExt *adviewBidExt) openrtb_ext.BidType {
 		switch bidExt.BidType {
 		case 0:
 			bidType = openrtb_ext.BidTypeBanner
-			//fmt.Println("==== [adview] getBidType(): ==> banner ===")
 		case 1:
 			bidType = openrtb_ext.BidTypeVideo
-			//fmt.Println("==== [adview] getBidType(): ==> video ===")
 		case 2:
 			bidType = openrtb_ext.BidTypeNative
 		default:
