@@ -11,7 +11,11 @@
         },
         "seatId": {
             "type": "string",
-            "description": "Seat ID"
+            "description": "Deprecated, please use accountId"
+        },
+        "accountId": {
+            "type": "string",
+            "description": "Account ID of partner"
         }
     },
     "required": [
