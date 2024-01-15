@@ -30,6 +30,7 @@
             "domain": "www.example.com"
           },
           "ext": {
+            "nextMillennium": {},
             "prebid": {
               "storedrequest": {
                 "id": "g7819;320x250;www.example.com"
@@ -43,6 +44,7 @@
                 "w": 320
               },
               "ext": {
+                "nextMillennium": {},
                 "prebid": {
                   "storedrequest": {
                     "id": "g7819;320x250;www.example.com"

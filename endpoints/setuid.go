@@ -362,7 +362,7 @@ func getResponseFormat(query url.Values, syncer usersync.Syncer) (string, error)
 	formatEmpty := len(format) == 0 || format[0] == ""
 
 	if !formatProvided || formatEmpty {
-		switch syncer.DefaultSyncType() {
+		switch syncer.DefaultResponseFormat() {
 		case usersync.SyncTypeIFrame:
 			return "b", nil
 		case usersync.SyncTypeRedirect:
