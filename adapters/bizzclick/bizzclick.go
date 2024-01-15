@@ -108,7 +108,11 @@ func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtBizzclick) (string, er
 	if params.Host != "" {
 		host = params.Host
 	}
-	endpointParams := macros.EndpointTemplateParams{AccountID: params.AccountID, SourceId: params.SourceID, Host: host}
+	sourceId := params.SourceID
+	if params.SourceID == "" {
+		sourceId = params.PlacementID
+	}
+	endpointParams := macros.EndpointTemplateParams{AccountID: params.AccountID, SourceId: sourceId, Host: host}
 	return macros.ResolveMacros(a.endpoint, endpointParams)
 }
 

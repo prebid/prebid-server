@@ -18,10 +18,25 @@
       "type": "string",
       "description": "Server region",
       "minLength": 1
+    },
+    "placementId": {
+      "type": "string",
+      "description": "Deprecated, use sourceId instead",
+      "minLength": 1
     }
   },
-  "required": [
-    "accountId",
-    "sourceId"
+  "oneOf": [
+    {
+      "required": [
+        "accountId",
+        "placementId"
+      ]
+    },
+    {
+      "required": [
+        "accountId",
+        "sourceId"
+      ]
+    }
   ]
 }
