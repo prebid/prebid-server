@@ -1,6 +1,6 @@
 package openrtb_ext
 
-type ExtImpAIDEM struct {
+type ExtImpAidem struct {
 	PlacementId string `json:"placementId"`
 	SiteId      string `json:"siteId"`
 	PublisherId string `json:"publisherId"`

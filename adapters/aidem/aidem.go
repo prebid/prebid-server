@@ -14,11 +14,11 @@ import (
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
-type AIDEMAdapter struct {
+type adapter struct {
 	EndpointTemplate *template.Template
 }
 
-func (a *AIDEMAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
 	reqJson, err := json.Marshal(request)
 	if err != nil {
@@ -46,7 +46,7 @@ func (a *AIDEMAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 	}}, nil
 }
 
-func (a *AIDEMAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var errs []error
 
 	if adapters.IsResponseStatusCodeNoContent(response) {
@@ -98,7 +98,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
 
-	bidder := &AIDEMAdapter{
+	bidder := &adapter{
 		EndpointTemplate: urlTemplate,
 	}
 	return bidder, nil
@@ -119,14 +119,14 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 	}
 }
 
-func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpAIDEM, error) {
+func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpAidem, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
-	var AIDEMExt openrtb_ext.ExtImpAIDEM
+	var AIDEMExt openrtb_ext.ExtImpAidem
 	if err := json.Unmarshal(bidderExt.Bidder, &AIDEMExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: err.Error(),
@@ -136,7 +136,7 @@ func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpAIDEM, error) {
 }
 
 // Builds enpoint url based on adapter-specific pub settings from imp.ext
-func (a *AIDEMAdapter) buildEndpointURL(params *openrtb_ext.ExtImpAIDEM) (string, error) {
+func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtImpAidem) (string, error) {
 	endpointParams := macros.EndpointTemplateParams{PublisherID: params.PublisherId}
 	return macros.ResolveMacros(a.EndpointTemplate, endpointParams)
 }
