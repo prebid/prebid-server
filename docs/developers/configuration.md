@@ -2,7 +2,7 @@
 
 Prebid Server is configured using environment variables, a `pbs.json` file, or a `pbs.yaml` file, in that order of precedence. Configuration files are read from either the application directory or `/etc/config`. 
 
-Upon starting, Prebid Server logs the resolved configuration to standard out with passwords and sercrets redacted. If there's an error in the configuration, the application will log the error and exit.
+Upon starting, Prebid Server logs the resolved configuration to standard out with passwords and secrets redacted. If there's an error in the configuration, the application will log the error and exit.
 
 # Sections
 > [!IMPORTANT]
