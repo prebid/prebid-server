@@ -1204,6 +1204,7 @@ func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.Bid
 		mockFetcher,
 		&adscert.NilSigner{},
 		macros.NewStringIndexBasedReplacer(),
+		nil,
 	)
 
 	testExchange = &exchangeTestWrapper{
@@ -1578,7 +1579,7 @@ var entryPointHookUpdate = hooks.HookWrapper[hookstage.Entrypoint]{
 
 			ch := hookstage.ChangeSet[hookstage.EntrypointPayload]{}
 			ch.AddMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
-				body, err := jsonpatch.MergePatch(payload.Body, []byte(`{"tmax":50}`))
+				body, err := jsonpatch.MergePatch(payload.Body, []byte(`{"tmax":600}`))
 				if err == nil {
 					payload.Body = body
 				}

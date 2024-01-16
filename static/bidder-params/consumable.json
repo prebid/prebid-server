@@ -24,7 +24,15 @@
       "type": "string",
       "description": "The unit name from Consumable (expected to be a valid CSS class name)",
       "pattern": "^-?[_a-zA-Z]+[_a-zA-Z0-9-]*$"
+    },
+    "placementId": {
+      "type": "string",
+      "description": "The placementID from Consumable, Required for non-site requests",
+      "pattern": "^[a-zA-Z0-9]+$"
     }
   },
-  "required": ["siteId", "networkId","unitId"]
+  "oneOf": [
+    {"required": ["siteId", "networkId","unitId"] },
+    {"required": ["placementId"] }
+  ]
 }

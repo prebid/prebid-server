@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -174,6 +175,14 @@ func TestDefaults(t *testing.T) {
 
 	//Assert the price floor default values
 	cmpBools(t, "price_floors.enabled", false, cfg.PriceFloors.Enabled)
+	cmpInts(t, "price_floors.fetcher.worker", 20, cfg.PriceFloors.Fetcher.Worker)
+	cmpInts(t, "price_floors.fetcher.capacity", 20000, cfg.PriceFloors.Fetcher.Capacity)
+	cmpInts(t, "price_floors.fetcher.cache_size_mb", 64, cfg.PriceFloors.Fetcher.CacheSize)
+	cmpInts(t, "price_floors.fetcher.http_client.max_connections_per_host", 0, cfg.PriceFloors.Fetcher.HttpClient.MaxConnsPerHost)
+	cmpInts(t, "price_floors.fetcher.http_client.max_idle_connections", 40, cfg.PriceFloors.Fetcher.HttpClient.MaxIdleConns)
+	cmpInts(t, "price_floors.fetcher.http_client.max_idle_connections_per_host", 2, cfg.PriceFloors.Fetcher.HttpClient.MaxIdleConnsPerHost)
+	cmpInts(t, "price_floors.fetcher.http_client.idle_connection_timeout_seconds", 60, cfg.PriceFloors.Fetcher.HttpClient.IdleConnTimeout)
+	cmpInts(t, "price_floors.fetcher.max_retries", 10, cfg.PriceFloors.Fetcher.MaxRetries)
 
 	// Assert compression related defaults
 	cmpBools(t, "compression.request.enable_gzip", false, cfg.Compression.Request.GZIP)
@@ -186,6 +195,15 @@ func TestDefaults(t *testing.T) {
 	cmpBools(t, "account_defaults.price_floors.use_dynamic_data", false, cfg.AccountDefaults.PriceFloors.UseDynamicData)
 	cmpInts(t, "account_defaults.price_floors.max_rules", 100, cfg.AccountDefaults.PriceFloors.MaxRule)
 	cmpInts(t, "account_defaults.price_floors.max_schema_dims", 3, cfg.AccountDefaults.PriceFloors.MaxSchemaDims)
+	cmpBools(t, "account_defaults.price_floors.fetch.enabled", false, cfg.AccountDefaults.PriceFloors.Fetcher.Enabled)
+	cmpStrings(t, "account_defaults.price_floors.fetch.url", "", cfg.AccountDefaults.PriceFloors.Fetcher.URL)
+	cmpInts(t, "account_defaults.price_floors.fetch.timeout_ms", 3000, cfg.AccountDefaults.PriceFloors.Fetcher.Timeout)
+	cmpInts(t, "account_defaults.price_floors.fetch.max_file_size_kb", 100, cfg.AccountDefaults.PriceFloors.Fetcher.MaxFileSizeKB)
+	cmpInts(t, "account_defaults.price_floors.fetch.max_rules", 1000, cfg.AccountDefaults.PriceFloors.Fetcher.MaxRules)
+	cmpInts(t, "account_defaults.price_floors.fetch.period_sec", 3600, cfg.AccountDefaults.PriceFloors.Fetcher.Period)
+	cmpInts(t, "account_defaults.price_floors.fetch.max_age_sec", 86400, cfg.AccountDefaults.PriceFloors.Fetcher.MaxAge)
+	cmpInts(t, "account_defaults.price_floors.fetch.max_schema_dims", 0, cfg.AccountDefaults.PriceFloors.Fetcher.MaxSchemaDims)
+
 	cmpBools(t, "account_defaults.events.enabled", false, cfg.AccountDefaults.Events.Enabled)
 
 	cmpBools(t, "hooks.enabled", false, cfg.Hooks.Enabled)
@@ -450,6 +468,16 @@ hooks:
     enabled: true
 price_floors:
     enabled: true
+    fetcher:
+      worker: 20
+      capacity: 20000
+      cache_size_mb: 8
+      http_client:
+        max_connections_per_host: 5
+        max_idle_connections: 1
+        max_idle_connections_per_host: 2
+        idle_connection_timeout_seconds: 10
+      max_retries: 5
 account_defaults:
     events:
         enabled: true
@@ -461,6 +489,15 @@ account_defaults:
         use_dynamic_data: true
         max_rules: 120
         max_schema_dims: 5
+        fetch:
+          enabled: true
+          url: http://test.com/floors
+          timeout_ms: 500
+          max_file_size_kb: 200
+          max_rules: 500
+          period_sec: 2000
+          max_age_sec: 6000
+          max_schema_dims: 10
     privacy:
         ipv6:
             anon_keep_bits: 50
@@ -556,6 +593,14 @@ func TestFullConfig(t *testing.T) {
 
 	//Assert the price floor values
 	cmpBools(t, "price_floors.enabled", true, cfg.PriceFloors.Enabled)
+	cmpInts(t, "price_floors.fetcher.worker", 20, cfg.PriceFloors.Fetcher.Worker)
+	cmpInts(t, "price_floors.fetcher.capacity", 20000, cfg.PriceFloors.Fetcher.Capacity)
+	cmpInts(t, "price_floors.fetcher.cache_size_mb", 8, cfg.PriceFloors.Fetcher.CacheSize)
+	cmpInts(t, "price_floors.fetcher.http_client.max_connections_per_host", 5, cfg.PriceFloors.Fetcher.HttpClient.MaxConnsPerHost)
+	cmpInts(t, "price_floors.fetcher.http_client.max_idle_connections", 1, cfg.PriceFloors.Fetcher.HttpClient.MaxIdleConns)
+	cmpInts(t, "price_floors.fetcher.http_client.max_idle_connections_per_host", 2, cfg.PriceFloors.Fetcher.HttpClient.MaxIdleConnsPerHost)
+	cmpInts(t, "price_floors.fetcher.http_client.idle_connection_timeout_seconds", 10, cfg.PriceFloors.Fetcher.HttpClient.IdleConnTimeout)
+	cmpInts(t, "price_floors.fetcher.max_retries", 5, cfg.PriceFloors.Fetcher.MaxRetries)
 	cmpBools(t, "account_defaults.price_floors.enabled", true, cfg.AccountDefaults.PriceFloors.Enabled)
 	cmpInts(t, "account_defaults.price_floors.enforce_floors_rate", 50, cfg.AccountDefaults.PriceFloors.EnforceFloorsRate)
 	cmpBools(t, "account_defaults.price_floors.adjust_for_bid_adjustment", false, cfg.AccountDefaults.PriceFloors.AdjustForBidAdjustment)
@@ -563,6 +608,15 @@ func TestFullConfig(t *testing.T) {
 	cmpBools(t, "account_defaults.price_floors.use_dynamic_data", true, cfg.AccountDefaults.PriceFloors.UseDynamicData)
 	cmpInts(t, "account_defaults.price_floors.max_rules", 120, cfg.AccountDefaults.PriceFloors.MaxRule)
 	cmpInts(t, "account_defaults.price_floors.max_schema_dims", 5, cfg.AccountDefaults.PriceFloors.MaxSchemaDims)
+	cmpBools(t, "account_defaults.price_floors.fetch.enabled", true, cfg.AccountDefaults.PriceFloors.Fetcher.Enabled)
+	cmpStrings(t, "account_defaults.price_floors.fetch.url", "http://test.com/floors", cfg.AccountDefaults.PriceFloors.Fetcher.URL)
+	cmpInts(t, "account_defaults.price_floors.fetch.timeout_ms", 500, cfg.AccountDefaults.PriceFloors.Fetcher.Timeout)
+	cmpInts(t, "account_defaults.price_floors.fetch.max_file_size_kb", 200, cfg.AccountDefaults.PriceFloors.Fetcher.MaxFileSizeKB)
+	cmpInts(t, "account_defaults.price_floors.fetch.max_rules", 500, cfg.AccountDefaults.PriceFloors.Fetcher.MaxRules)
+	cmpInts(t, "account_defaults.price_floors.fetch.period_sec", 2000, cfg.AccountDefaults.PriceFloors.Fetcher.Period)
+	cmpInts(t, "account_defaults.price_floors.fetch.max_age_sec", 6000, cfg.AccountDefaults.PriceFloors.Fetcher.MaxAge)
+	cmpInts(t, "account_defaults.price_floors.fetch.max_schema_dims", 10, cfg.AccountDefaults.PriceFloors.Fetcher.MaxSchemaDims)
+
 	cmpBools(t, "account_defaults.events.enabled", true, cfg.AccountDefaults.Events.Enabled)
 
 	cmpInts(t, "account_defaults.privacy.ipv6.anon_keep_bits", 50, cfg.AccountDefaults.Privacy.IPv6Config.AnonKeepBits)
@@ -770,6 +824,15 @@ func TestValidateConfig(t *testing.T) {
 		Accounts: StoredRequests{
 			Files:         FileFetcherConfig{Enabled: true},
 			InMemoryCache: InMemoryCache{Type: "none"},
+		},
+		AccountDefaults: Account{
+			PriceFloors: AccountPriceFloors{
+				Fetcher: AccountFloorFetch{
+					Timeout: 100,
+					Period:  300,
+					MaxAge:  600,
+				},
+			},
 		},
 	}
 
@@ -1291,6 +1354,155 @@ func TestSpecialFeature1VendorExceptionMap(t *testing.T) {
 
 		assert.Equal(t, tt.wantVendorExceptions, cfg.GDPR.TCF2.SpecialFeature1.VendorExceptions, tt.description)
 		assert.Equal(t, tt.wantVendorExceptionsMap, cfg.GDPR.TCF2.SpecialFeature1.VendorExceptionMap, tt.description)
+	}
+}
+
+func TestSetConfigBidderInfoNillableFields(t *testing.T) {
+	falseValue := false
+	trueValue := true
+
+	bidder1ConfigFalses := []byte(`
+    adapters:
+      bidder1:
+        disabled: false
+        modifyingVastXmlAllowed: false`)
+	bidder1ConfigTrues := []byte(`
+    adapters:
+      bidder1:
+        disabled: true
+        modifyingVastXmlAllowed: true`)
+	bidder1ConfigNils := []byte(`
+    adapters:
+      bidder1:
+        disabled: null
+        modifyingVastXmlAllowed: null`)
+	bidder1Bidder2ConfigMixed := []byte(`
+    adapters:
+      bidder1:
+        disabled: true
+        modifyingVastXmlAllowed: false
+      bidder2:
+        disabled: false
+        modifyingVastXmlAllowed: true`)
+
+	tests := []struct {
+		name        string
+		rawConfig   []byte
+		bidderInfos BidderInfos
+		expected    nillableFieldBidderInfos
+		expectError bool
+	}{
+		{
+			name:     "viper and bidder infos are nil",
+			expected: nil,
+		},
+		{
+			name:        "viper is nil",
+			bidderInfos: map[string]BidderInfo{},
+			expected:    nil,
+		},
+		{
+			name:      "bidder infos is nil",
+			rawConfig: []byte{},
+			expected:  nil,
+		},
+		{
+			name:        "bidder infos is empty",
+			bidderInfos: map[string]BidderInfo{},
+			expected:    nil,
+		},
+		{
+			name: "one: bidder info has nillable fields as false, viper has as nil",
+			bidderInfos: map[string]BidderInfo{
+				"bidder1": {Disabled: false, ModifyingVastXmlAllowed: false},
+			},
+			rawConfig: bidder1ConfigNils,
+			expected: nillableFieldBidderInfos{
+				"bidder1": nillableFieldBidderInfo{
+					nillableFields: bidderInfoNillableFields{
+						Disabled:                nil,
+						ModifyingVastXmlAllowed: nil,
+					},
+					bidderInfo: BidderInfo{Disabled: false, ModifyingVastXmlAllowed: false},
+				},
+			},
+		},
+		{
+			name: "one: bidder info has nillable fields as false, viper has as false",
+			bidderInfos: map[string]BidderInfo{
+				"bidder1": {Disabled: false, ModifyingVastXmlAllowed: false},
+			},
+			rawConfig: bidder1ConfigFalses,
+			expected: nillableFieldBidderInfos{
+				"bidder1": nillableFieldBidderInfo{
+					nillableFields: bidderInfoNillableFields{
+						Disabled:                &falseValue,
+						ModifyingVastXmlAllowed: &falseValue,
+					},
+					bidderInfo: BidderInfo{Disabled: false, ModifyingVastXmlAllowed: false},
+				},
+			},
+		},
+		{
+			name: "one: bidder info has nillable fields as false, viper has as true",
+			bidderInfos: map[string]BidderInfo{
+				"bidder1": {Disabled: false, ModifyingVastXmlAllowed: false},
+			},
+			rawConfig: bidder1ConfigTrues,
+			expected: nillableFieldBidderInfos{
+				"bidder1": nillableFieldBidderInfo{
+					nillableFields: bidderInfoNillableFields{
+						Disabled:                &trueValue,
+						ModifyingVastXmlAllowed: &trueValue,
+					},
+					bidderInfo: BidderInfo{Disabled: false, ModifyingVastXmlAllowed: false},
+				},
+			},
+		},
+		{
+			name: "many with extra info: bidder infos have nillable fields as false and true, viper has as true and false",
+			bidderInfos: map[string]BidderInfo{
+				"bidder1": {Disabled: false, ModifyingVastXmlAllowed: true, Endpoint: "endpoint a"},
+				"bidder2": {Disabled: true, ModifyingVastXmlAllowed: false, Endpoint: "endpoint b"},
+			},
+			rawConfig: bidder1Bidder2ConfigMixed,
+			expected: nillableFieldBidderInfos{
+				"bidder1": nillableFieldBidderInfo{
+					nillableFields: bidderInfoNillableFields{
+						Disabled:                &trueValue,
+						ModifyingVastXmlAllowed: &falseValue,
+					},
+					bidderInfo: BidderInfo{Disabled: false, ModifyingVastXmlAllowed: true, Endpoint: "endpoint a"},
+				},
+				"bidder2": nillableFieldBidderInfo{
+					nillableFields: bidderInfoNillableFields{
+						Disabled:                &falseValue,
+						ModifyingVastXmlAllowed: &trueValue,
+					},
+					bidderInfo: BidderInfo{Disabled: true, ModifyingVastXmlAllowed: false, Endpoint: "endpoint b"},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := viper.New()
+			v.SetConfigType("yaml")
+			for bidderName := range tt.bidderInfos {
+				setBidderDefaults(v, strings.ToLower(bidderName))
+			}
+			v.ReadConfig(bytes.NewBuffer(tt.rawConfig))
+
+			result, err := setConfigBidderInfoNillableFields(v, tt.bidderInfos)
+
+			assert.Equal(t, tt.expected, result)
+			if tt.expectError {
+				assert.NotNil(t, err)
+			} else {
+				assert.Nil(t, err)
+			}
+		})
 	}
 }
 
