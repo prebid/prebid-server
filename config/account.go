@@ -42,7 +42,6 @@ type Account struct {
 	DefaultBidLimit         int                                         `mapstructure:"default_bid_limit" json:"default_bid_limit"`
 	BidAdjustments          *openrtb_ext.ExtRequestPrebidBidAdjustments `mapstructure:"bidadjustments" json:"bidadjustments"`
 	Privacy                 AccountPrivacy                              `mapstructure:"privacy" json:"privacy"`
-	Auction                 Auction                                     `mapstructure:"auction" json:"auction"`
 }
 
 // CookieSync represents the account-level defaults for the cookie sync endpoint.

@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
@@ -98,13 +97,6 @@ func (c *cookieSyncEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ ht
 	cookie := usersync.ReadCookie(r, decoder, &c.config.HostCookie)
 	usersync.SyncHostCookie(r, cookie, &c.config.HostCookie)
 
-	setCookieDeprecationHeader := request.SetCookieDeprecationHeader
-	if setCookieDeprecationHeader {
-		if rcd, err := r.Cookie("receive-cookie-deprecation"); err == nil && rcd != nil {
-			setCookieDeprecationHeader = false
-		}
-	}
-
 	result := c.chooser.Choose(request, cookie)
 
 	switch result.Status {
@@ -113,11 +105,11 @@ func (c *cookieSyncEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ ht
 		c.handleError(w, errCookieSyncOptOut, http.StatusUnauthorized)
 	case usersync.StatusBlockedByPrivacy:
 		c.metrics.RecordCookieSync(metrics.CookieSyncGDPRHostCookieBlocked)
-		c.handleResponse(w, request.SyncTypeFilter, cookie, privacyMacros, nil, result.BiddersEvaluated, request.Debug, setCookieDeprecationHeader, request.CookieDeprecationExpirationSec)
+		c.handleResponse(w, request.SyncTypeFilter, cookie, privacyMacros, nil, result.BiddersEvaluated, request.Debug)
 	case usersync.StatusOK:
 		c.metrics.RecordCookieSync(metrics.CookieSyncOK)
 		c.writeSyncerMetrics(result.BiddersEvaluated)
-		c.handleResponse(w, request.SyncTypeFilter, cookie, privacyMacros, result.SyncersChosen, result.BiddersEvaluated, request.Debug, setCookieDeprecationHeader, request.CookieDeprecationExpirationSec)
+		c.handleResponse(w, request.SyncTypeFilter, cookie, privacyMacros, result.SyncersChosen, result.BiddersEvaluated, request.Debug)
 	}
 }
 
@@ -190,10 +182,8 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, ma
 			activityRequest:  privacy.NewRequestFromPolicies(privacyPolicies),
 			gdprSignal:       gdprSignal,
 		},
-		SyncTypeFilter:                 syncTypeFilter,
-		GPPSID:                         request.GPPSID,
-		SetCookieDeprecationHeader:     account.Auction.PrivacySandbox.CookieDeprecation,
-		CookieDeprecationExpirationSec: account.Auction.PrivacySandbox.CookieDeprecationExpirationSec,
+		SyncTypeFilter: syncTypeFilter,
+		GPPSID:         request.GPPSID,
 	}
 	return rx, privacyMacros, nil
 }
@@ -411,7 +401,7 @@ func (c *cookieSyncEndpoint) writeSyncerMetrics(biddersEvaluated []usersync.Bidd
 	}
 }
 
-func (c *cookieSyncEndpoint) handleResponse(w http.ResponseWriter, tf usersync.SyncTypeFilter, co *usersync.Cookie, m macros.UserSyncPrivacy, s []usersync.SyncerChoice, biddersEvaluated []usersync.BidderEvaluation, debug, setCookieDeprecationHeader bool, cookieDeprecationExpirationSec int) {
+func (c *cookieSyncEndpoint) handleResponse(w http.ResponseWriter, tf usersync.SyncTypeFilter, co *usersync.Cookie, m macros.UserSyncPrivacy, s []usersync.SyncerChoice, biddersEvaluated []usersync.BidderEvaluation, debug bool) {
 	status := "no_cookie"
 	if co.HasAnyLiveSyncs() {
 		status = "ok"
@@ -465,20 +455,6 @@ func (c *cookieSyncEndpoint) handleResponse(w http.ResponseWriter, tf usersync.S
 	})
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-
-	if setCookieDeprecationHeader {
-		http.SetCookie(w, &http.Cookie{
-			Name:     "receive-cookie-deprecation",
-			Value:    "1",
-			Secure:   true,
-			HttpOnly: true,
-			Path:     "/",
-			SameSite: http.SameSiteNoneMode,
-			// Partition: "",
-			Expires: time.Now().Add(time.Second * time.Duration(cookieDeprecationExpirationSec)),
-		})
-	}
-
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
 	enc.Encode(response)

@@ -34,15 +34,13 @@ func NewChooser(bidderSyncerLookup map[string]Syncer, biddersKnown map[string]st
 
 // Request specifies a user sync request.
 type Request struct {
-	Bidders                        []string
-	Cooperative                    Cooperative
-	Limit                          int
-	Privacy                        Privacy
-	SyncTypeFilter                 SyncTypeFilter
-	GPPSID                         string
-	Debug                          bool
-	SetCookieDeprecationHeader     bool
-	CookieDeprecationExpirationSec int
+	Bidders        []string
+	Cooperative    Cooperative
+	Limit          int
+	Privacy        Privacy
+	SyncTypeFilter SyncTypeFilter
+	GPPSID         string
+	Debug          bool
 }
 
 // Cooperative specifies the settings for cooperative syncing for a given request, where bidders

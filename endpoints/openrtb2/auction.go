@@ -2022,7 +2022,6 @@ func setDeviceImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper, i
 	setIPImplicitly(httpReq, r, ipValidtor)
 	setUAImplicitly(httpReq, r)
 	setDoNotTrackImplicitly(httpReq, r)
-	secCookieDeprecation(httpReq, r)
 }
 
 // setAuctionTypeImplicitly sets the auction type to 1 if it wasn't on the request,
@@ -2526,33 +2525,6 @@ func setDoNotTrackImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrappe
 				r.Device.DNT = &dntEnabled
 			}
 		}
-	}
-}
-
-func secCookieDeprecation(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {
-	secCookieDeprecation := httpReq.Header.Get("Sec-Cookie-Deprecation")
-	if secCookieDeprecation == "" {
-		return
-	}
-
-	if r.Device == nil {
-		r.Device = &openrtb2.Device{}
-	}
-
-	updated := false
-	deviceExt := map[string]interface{}{}
-	if r.Device.Ext == nil {
-		updated = true
-		deviceExt["cdep"] = secCookieDeprecation
-	} else {
-		if err := json.Unmarshal(r.Device.Ext, &deviceExt); err == nil && deviceExt["cdep"] == nil {
-			updated = true
-			deviceExt["cdep"] = secCookieDeprecation
-		}
-	}
-
-	if updated {
-		r.Device.Ext, _ = json.Marshal(deviceExt)
 	}
 }
 
