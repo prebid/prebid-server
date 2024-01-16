@@ -1,6 +1,6 @@
 # Configuration
 
-Prebid Server can be configured uaing environment variables and supports several configuration file formats. The most commonly used formats are `yaml` and `json`, which are used as examples in this guide. Other supported formats include `toml`, `hcl`, `tfvars`, `ini`, `properities` (Java), and `env`.
+Prebid Server can be configured uaing environment variables and supports several configuration file formats. The most commonly used formats are `yaml` and `json`, which are used as examples in this guide.
 
 - describe hunt path and file name
 
@@ -8,7 +8,7 @@ Prebid Server can be configured uaing environment variables and supports several
 
 Configuration is logged to standard out as Prebid Server starts up. If a validation error is detected, the application will immediately exit and report the problem.
 
-# Contents
+# Sections
 > [!IMPORTANT]
 > As we are still developing this guide, please refer to the [configuration structures in code](../../config/config.go) for a complete definition of the options.
 
