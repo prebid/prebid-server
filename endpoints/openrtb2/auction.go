@@ -2033,23 +2033,26 @@ func setAuctionTypeImplicitly(r *openrtb_ext.RequestWrapper) {
 	}
 }
 
-// (100);v=chrome.1:1:20, (200);v=chrome.1:1:40, (300);v=chrome.1:1:60, ();p=P
+// (100);v=chrome.1:1:20, (200 400);v=chrome.1:1:40, (300);v=chrome.1:1:60, ();p=P000000000
 func setSecBrowsingTopcisImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper, cfg *config.Configuration) {
 	secBrowsingTopics := httpReq.Header.Get("Sec-Browsing-Topics")
 	if secBrowsingTopics == "" {
 		return
 	}
 
+	// host configurable topics domain
 	topicsDomain := "TOPICS_DOMAIN"
 	if cfg != nil {
 		topicsDomain = cfg.Auction.PrivacySandbox.TopicsDomain
 	}
 
-	// segtax-segclass-name-segIds
-	userData := map[int]map[string]map[string]map[string]struct{}{}
+	// segtax-segclass-name-segIds for each lookup against data in request.user.data
+	headerUserData := map[int]map[string]map[string]map[string]struct{}{}
+	// each field is seperated by ,
 	secBrowsingTopicsArr := strings.Split(secBrowsingTopics, ",")
 	selectedFields := 0
 	for _, seg := range secBrowsingTopicsArr {
+		// max 10 fields allowed in header value
 		if selectedFields >= 10 {
 			break
 		}
@@ -2059,15 +2062,19 @@ func setSecBrowsingTopcisImplicitly(httpReq *http.Request, r *openrtb_ext.Reques
 			continue
 		}
 
+		// ();p= is a field to indicated end
 		if strings.HasPrefix(seg, "();p=") {
 			continue
 		}
 
+		// each field has format (segIds);v=browser_version:taxanomy:model_version
 		segment := strings.Split(seg, ";")
 		if len(segment) != 2 {
 			continue
 		}
 
+		// segment[0] is (segIds)
+		// all segIds for a fields should be in () and there should be atleast be one valid segId
 		segmentsIds := strings.TrimSpace(segment[0])
 		if len(segmentsIds) < 3 || segmentsIds[0] != '(' || segmentsIds[len(segmentsIds)-1] != ')' {
 			continue
@@ -2079,45 +2086,53 @@ func setSecBrowsingTopcisImplicitly(httpReq *http.Request, r *openrtb_ext.Reques
 			continue
 		}
 
+		// segment[1] is v=browser_version:taxanomy:model_version
 		taxanomyModel := strings.Split(segment[1], ":")
 		if len(taxanomyModel) != 3 {
 			continue
 		}
 
+		// taxanomyModel[0] is v=browser_version, we don't need it
+		// taxanomyModel[1] is taxanomy which should be a valid number from 1 to 10 inclusive,
 		taxanomyVer := strings.TrimSpace(taxanomyModel[1])
 		taxanomy, err := strconv.Atoi(taxanomyVer)
 		if err != nil || taxanomy < 1 || taxanomy > 10 {
 			continue
 		}
+		// segtax is 600 + (taxanomy - 1)
 		segtax := 600 + (taxanomy - 1)
+		// taxanomyModel[2] is model_version which is also segclass
 		segclass := strings.TrimSpace(taxanomyModel[2])
 
-		if _, ok := userData[segtax]; !ok {
-			userData[segtax] = map[string]map[string]map[string]struct{}{}
+		// map segtax-segclass-name-segIds for each lookup against data in request.user.data and to filter unique segIds per segtax-segclass-name
+		if _, ok := headerUserData[segtax]; !ok {
+			headerUserData[segtax] = map[string]map[string]map[string]struct{}{}
 		}
 
-		if _, ok := userData[segtax][segclass]; !ok {
-			userData[segtax][segclass] = map[string]map[string]struct{}{}
+		if _, ok := headerUserData[segtax][segclass]; !ok {
+			headerUserData[segtax][segclass] = map[string]map[string]struct{}{}
 		}
 
-		if _, ok := userData[segtax][segclass][topicsDomain]; !ok {
-			userData[segtax][segclass][topicsDomain] = map[string]struct{}{}
+		if _, ok := headerUserData[segtax][segclass][topicsDomain]; !ok {
+			headerUserData[segtax][segclass][topicsDomain] = map[string]struct{}{}
 		}
 
 		for _, segId := range segmentsIdArr {
 			segId = strings.TrimSpace(segId)
 			if segid, err := strconv.Atoi(segId); err == nil && segid > 0 {
-				userData[segtax][segclass][topicsDomain][segId] = struct{}{}
+				headerUserData[segtax][segclass][topicsDomain][segId] = struct{}{}
 			}
 		}
 
 		selectedFields++
 	}
 
+	// no valid fields found in header value
 	if selectedFields == 0 {
 		return
 	}
 
+	// update empty request.user.data only if there is atleast one valid field in header value
 	if r.User == nil {
 		r.User = &openrtb2.User{}
 	}
@@ -2127,6 +2142,7 @@ func setSecBrowsingTopcisImplicitly(httpReq *http.Request, r *openrtb_ext.Reques
 		Segclass string
 	}
 
+	// map segtax-segclass-name-segIds for each lookup against data in request.user.data and to filter unique segIds per segtax-segclass-name
 	requestUserData := map[int]map[string]map[string]map[string]struct{}{}
 	for i, data := range r.User.Data {
 		ext := &extData{}
@@ -2153,12 +2169,13 @@ func setSecBrowsingTopcisImplicitly(httpReq *http.Request, r *openrtb_ext.Reques
 		}
 
 		// merge segment ids if segtax, segclass and name are the same
-		if _, ok := userData[ext.Segtax]; ok {
-			if _, ok := userData[ext.Segtax][ext.Segclass]; ok {
-				if _, ok := userData[ext.Segtax][ext.Segclass][data.Name]; ok {
+		if _, ok := headerUserData[ext.Segtax]; ok {
+			if _, ok := headerUserData[ext.Segtax][ext.Segclass]; ok {
+				if _, ok := headerUserData[ext.Segtax][ext.Segclass][data.Name]; ok {
 
 					// segtax-segclass-domain matched, merge unique segment ids
-					for segId := range userData[ext.Segtax][ext.Segclass][data.Name] {
+					for segId := range headerUserData[ext.Segtax][ext.Segclass][data.Name] {
+						// add only if not already present
 						if _, ok := requestUserData[ext.Segtax][ext.Segclass][data.Name][segId]; !ok {
 							r.User.Data[i].Segment = append(r.User.Data[i].Segment, openrtb2.Segment{
 								ID: segId,
@@ -2166,14 +2183,16 @@ func setSecBrowsingTopcisImplicitly(httpReq *http.Request, r *openrtb_ext.Reques
 						}
 					}
 
-					delete(userData[ext.Segtax][ext.Segclass], data.Name)
+					// delete segtax-segclass-name from headerUserData as it is already merged to avoid duplicate entry later below
+					delete(headerUserData[ext.Segtax][ext.Segclass], data.Name)
 				}
 			}
 		}
 	}
 
-	for segtax, SegclassSegName := range userData {
-		for segclass, segName := range SegclassSegName {
+	// add remaining segtax-segclass-name-segIds from headerUserData to requestUserData
+	for segtax, segClassSegName := range headerUserData {
+		for segclass, segName := range segClassSegName {
 			for segName, segIds := range segName {
 				r.User.Data = append(r.User.Data, openrtb2.Data{
 					Name: segName,
