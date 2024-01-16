@@ -1,7 +1,6 @@
 package gdpr
 
 import (
-	"encoding/json"
 	"testing"
 
 	"github.com/prebid/go-gdpr/consentconstants"
@@ -9,7 +8,8 @@ import (
 	tcf2 "github.com/prebid/go-gdpr/vendorconsent/tcf2"
 	"github.com/prebid/go-gdpr/vendorlist"
 	"github.com/prebid/go-gdpr/vendorlist2"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -898,10 +898,70 @@ func TestLegalBasisWithPubRestrictionRequireLI(t *testing.T) {
 	}
 }
 
+func TestLegalBasisWithoutVendor(t *testing.T) {
+	P1P2P3PurposeConsent := "CPfCRQAPfCRQAAAAAAENCgCAAOAAAAAAAAAAAAAAAAAA"
+	tests := []struct {
+		name       string
+		config     purposeConfig
+		wantResult bool
+	}{
+		{
+			name: "enforce_purpose_&_vendors_off",
+			config: purposeConfig{
+				EnforcePurpose: false,
+				EnforceVendors: false,
+			},
+			wantResult: true,
+		},
+		{
+			name: "enforce_purpose_on,_bidder_is_a_vendor_exception",
+			config: purposeConfig{
+				EnforcePurpose:     true,
+				EnforceVendors:     false,
+				VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderAppnexus: {}},
+			},
+			wantResult: true,
+		},
+		{
+			name: "enforce_purpose_on",
+			config: purposeConfig{
+				EnforcePurpose: true,
+				EnforceVendors: false,
+			},
+			wantResult: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// convert consent string to TCF2 object
+			parsedConsent, err := vendorconsent.ParseString(P1P2P3PurposeConsent)
+			if err != nil {
+				t.Fatalf("Failed to parse consent %s\n", P1P2P3PurposeConsent)
+			}
+			consentMeta, ok := parsedConsent.(tcf2.ConsentMetadata)
+			if !ok {
+				t.Fatalf("Failed to convert consent %s\n", P1P2P3PurposeConsent)
+			}
+
+			vendorInfo := VendorInfo{
+				vendorID: 32,
+				vendor:   nil,
+			}
+
+			enforcer := FullEnforcement{cfg: tt.config}
+			enforcer.cfg.PurposeID = consentconstants.Purpose(3)
+
+			result := enforcer.LegalBasis(vendorInfo, openrtb_ext.BidderAppnexus, consentMeta, Overrides{})
+			assert.Equal(t, tt.wantResult, result)
+		})
+	}
+}
+
 func getVendorList(t *testing.T) vendorlist.VendorList {
 	GVL := makeVendorList()
 
-	marshaledGVL, err := json.Marshal(GVL)
+	marshaledGVL, err := jsonutil.Marshal(GVL)
 	if err != nil {
 		t.Fatalf("Failed to marshal GVL")
 	}

@@ -2,196 +2,156 @@ package privacy
 
 import (
 	"encoding/json"
-	"strings"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"net"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/iputil"
 )
 
-// ScrubStrategyIPV4 defines the approach to scrub PII from an IPV4 address.
-type ScrubStrategyIPV4 int
-
-const (
-	// ScrubStrategyIPV4None does not remove any part of an IPV4 address.
-	ScrubStrategyIPV4None ScrubStrategyIPV4 = iota
-
-	// ScrubStrategyIPV4Lowest8 zeroes out the last 8 bits of an IPV4 address.
-	ScrubStrategyIPV4Lowest8
-)
-
-// ScrubStrategyIPV6 defines the approach to scrub PII from an IPV6 address.
-type ScrubStrategyIPV6 int
-
-const (
-	// ScrubStrategyIPV6None does not remove any part of an IPV6 address.
-	ScrubStrategyIPV6None ScrubStrategyIPV6 = iota
-
-	// ScrubStrategyIPV6Lowest16 zeroes out the last 16 bits of an IPV6 address.
-	ScrubStrategyIPV6Lowest16
-
-	// ScrubStrategyIPV6Lowest32 zeroes out the last 32 bits of an IPV6 address.
-	ScrubStrategyIPV6Lowest32
-)
-
-// ScrubStrategyGeo defines the approach to scrub PII from geographical data.
-type ScrubStrategyGeo int
-
-const (
-	// ScrubStrategyGeoNone does not remove any geographical data.
-	ScrubStrategyGeoNone ScrubStrategyGeo = iota
-
-	// ScrubStrategyGeoFull removes all geographical data.
-	ScrubStrategyGeoFull
-
-	// ScrubStrategyGeoReducedPrecision anonymizes geographical data with rounding.
-	ScrubStrategyGeoReducedPrecision
-)
-
-// ScrubStrategyUser defines the approach to scrub PII from user data.
-type ScrubStrategyUser int
-
-const (
-	// ScrubStrategyUserNone does not remove non-location data.
-	ScrubStrategyUserNone ScrubStrategyUser = iota
-
-	// ScrubStrategyUserIDAndDemographic removes the user's buyer id, exchange id year of birth, and gender.
-	ScrubStrategyUserIDAndDemographic
-)
-
-// ScrubStrategyDeviceID defines the approach to remove hardware id and device id data.
-type ScrubStrategyDeviceID int
-
-const (
-	// ScrubStrategyDeviceIDNone does not remove hardware id and device id data.
-	ScrubStrategyDeviceIDNone ScrubStrategyDeviceID = iota
-
-	// ScrubStrategyDeviceIDAll removes all hardware and device id data (ifa, mac hashes device id hashes)
-	ScrubStrategyDeviceIDAll
-)
-
-// Scrubber removes PII from parts of an OpenRTB request.
-type Scrubber interface {
-	ScrubDevice(device *openrtb2.Device, id ScrubStrategyDeviceID, ipv4 ScrubStrategyIPV4, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb2.Device
-	ScrubUser(user *openrtb2.User, strategy ScrubStrategyUser, geo ScrubStrategyGeo) *openrtb2.User
+type IPConf struct {
+	IPV6 config.IPv6
+	IPV4 config.IPv4
 }
 
-type scrubber struct{}
-
-// NewScrubber returns an OpenRTB scrubber.
-func NewScrubber() Scrubber {
-	return scrubber{}
+func scrubDeviceIDs(reqWrapper *openrtb_ext.RequestWrapper) {
+	if reqWrapper.Device != nil {
+		reqWrapper.Device.DIDMD5 = ""
+		reqWrapper.Device.DIDSHA1 = ""
+		reqWrapper.Device.DPIDMD5 = ""
+		reqWrapper.Device.DPIDSHA1 = ""
+		reqWrapper.Device.IFA = ""
+		reqWrapper.Device.MACMD5 = ""
+		reqWrapper.Device.MACSHA1 = ""
+	}
 }
 
-func (scrubber) ScrubDevice(device *openrtb2.Device, id ScrubStrategyDeviceID, ipv4 ScrubStrategyIPV4, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb2.Device {
-	if device == nil {
-		return nil
+func scrubUserIDs(reqWrapper *openrtb_ext.RequestWrapper) {
+	if reqWrapper.User != nil {
+		reqWrapper.User.Data = nil
+		reqWrapper.User.ID = ""
+		reqWrapper.User.BuyerUID = ""
+		reqWrapper.User.Yob = 0
+		reqWrapper.User.Gender = ""
+		reqWrapper.User.Keywords = ""
+		reqWrapper.User.KwArray = nil
 	}
-
-	deviceCopy := *device
-
-	switch id {
-	case ScrubStrategyDeviceIDAll:
-		deviceCopy.DIDMD5 = ""
-		deviceCopy.DIDSHA1 = ""
-		deviceCopy.DPIDMD5 = ""
-		deviceCopy.DPIDSHA1 = ""
-		deviceCopy.IFA = ""
-		deviceCopy.MACMD5 = ""
-		deviceCopy.MACSHA1 = ""
-	}
-
-	switch ipv4 {
-	case ScrubStrategyIPV4Lowest8:
-		deviceCopy.IP = scrubIPV4Lowest8(device.IP)
-	}
-
-	switch ipv6 {
-	case ScrubStrategyIPV6Lowest16:
-		deviceCopy.IPv6 = scrubIPV6Lowest16Bits(device.IPv6)
-	case ScrubStrategyIPV6Lowest32:
-		deviceCopy.IPv6 = scrubIPV6Lowest32Bits(device.IPv6)
-	}
-
-	switch geo {
-	case ScrubStrategyGeoFull:
-		deviceCopy.Geo = scrubGeoFull(device.Geo)
-	case ScrubStrategyGeoReducedPrecision:
-		deviceCopy.Geo = scrubGeoPrecision(device.Geo)
-	}
-
-	return &deviceCopy
 }
 
-func (scrubber) ScrubUser(user *openrtb2.User, strategy ScrubStrategyUser, geo ScrubStrategyGeo) *openrtb2.User {
-	if user == nil {
-		return nil
+func scrubUserDemographics(reqWrapper *openrtb_ext.RequestWrapper) {
+	if reqWrapper.User != nil {
+		reqWrapper.User.BuyerUID = ""
+		reqWrapper.User.ID = ""
+		reqWrapper.User.Yob = 0
+		reqWrapper.User.Gender = ""
 	}
-
-	userCopy := *user
-
-	if strategy == ScrubStrategyUserIDAndDemographic {
-		userCopy.BuyerUID = ""
-		userCopy.ID = ""
-		userCopy.Ext = scrubUserExtIDs(userCopy.Ext)
-		userCopy.Yob = 0
-		userCopy.Gender = ""
-	}
-
-	switch geo {
-	case ScrubStrategyGeoFull:
-		userCopy.Geo = scrubGeoFull(user.Geo)
-	case ScrubStrategyGeoReducedPrecision:
-		userCopy.Geo = scrubGeoPrecision(user.Geo)
-	}
-
-	return &userCopy
 }
 
-func scrubIPV4Lowest8(ip string) string {
-	i := strings.LastIndex(ip, ".")
-	if i == -1 {
+func scrubUserExt(reqWrapper *openrtb_ext.RequestWrapper, fieldName string) error {
+	if reqWrapper.User != nil {
+		userExt, err := reqWrapper.GetUserExt()
+		if err != nil {
+			return err
+		}
+		ext := userExt.GetExt()
+		_, hasField := ext[fieldName]
+		if hasField {
+			delete(ext, fieldName)
+			userExt.SetExt(ext)
+		}
+	}
+	return nil
+}
+
+func ScrubEIDs(reqWrapper *openrtb_ext.RequestWrapper) error {
+	//transmitEids removes user.eids and user.ext.eids
+	if reqWrapper.User != nil {
+		reqWrapper.User.EIDs = nil
+	}
+	return scrubUserExt(reqWrapper, "eids")
+}
+
+func ScrubTID(reqWrapper *openrtb_ext.RequestWrapper) {
+	if reqWrapper.Source != nil {
+		reqWrapper.Source.TID = ""
+	}
+	impWrapper := reqWrapper.GetImp()
+	for ind, imp := range impWrapper {
+		impExt := scrubExtIDs(imp.Ext, "tid")
+		impWrapper[ind].Ext = impExt
+	}
+	reqWrapper.SetImp(impWrapper)
+}
+
+func scrubGEO(reqWrapper *openrtb_ext.RequestWrapper) {
+	//round user's geographic location by rounding off IP address and lat/lng data.
+	//this applies to both device.geo and user.geo
+	if reqWrapper.User != nil && reqWrapper.User.Geo != nil {
+		reqWrapper.User.Geo = scrubGeoPrecision(reqWrapper.User.Geo)
+	}
+
+	if reqWrapper.Device != nil && reqWrapper.Device.Geo != nil {
+		reqWrapper.Device.Geo = scrubGeoPrecision(reqWrapper.Device.Geo)
+	}
+}
+
+func scrubGeoFull(reqWrapper *openrtb_ext.RequestWrapper) {
+	if reqWrapper.User != nil && reqWrapper.User.Geo != nil {
+		reqWrapper.User.Geo = &openrtb2.Geo{}
+	}
+	if reqWrapper.Device != nil && reqWrapper.Device.Geo != nil {
+		reqWrapper.Device.Geo = &openrtb2.Geo{}
+	}
+
+}
+
+func scrubDeviceIP(reqWrapper *openrtb_ext.RequestWrapper, ipConf IPConf) {
+	if reqWrapper.Device != nil {
+		reqWrapper.Device.IP = scrubIP(reqWrapper.Device.IP, ipConf.IPV4.AnonKeepBits, iputil.IPv4BitSize)
+		reqWrapper.Device.IPv6 = scrubIP(reqWrapper.Device.IPv6, ipConf.IPV6.AnonKeepBits, iputil.IPv6BitSize)
+	}
+}
+
+func ScrubDeviceIDsIPsUserDemoExt(reqWrapper *openrtb_ext.RequestWrapper, ipConf IPConf, fieldName string, scrubFullGeo bool) {
+	scrubDeviceIDs(reqWrapper)
+	scrubDeviceIP(reqWrapper, ipConf)
+	scrubUserDemographics(reqWrapper)
+	scrubUserExt(reqWrapper, fieldName)
+
+	if scrubFullGeo {
+		scrubGeoFull(reqWrapper)
+	} else {
+		scrubGEO(reqWrapper)
+	}
+}
+
+func ScrubUserFPD(reqWrapper *openrtb_ext.RequestWrapper) {
+	scrubDeviceIDs(reqWrapper)
+	scrubUserIDs(reqWrapper)
+	scrubUserExt(reqWrapper, "data")
+	reqWrapper.User.EIDs = nil
+}
+
+func ScrubGdprID(reqWrapper *openrtb_ext.RequestWrapper) {
+	scrubDeviceIDs(reqWrapper)
+	scrubUserDemographics(reqWrapper)
+	scrubUserExt(reqWrapper, "eids")
+}
+
+func ScrubGeoAndDeviceIP(reqWrapper *openrtb_ext.RequestWrapper, ipConf IPConf) {
+	scrubDeviceIP(reqWrapper, ipConf)
+	scrubGEO(reqWrapper)
+}
+
+func scrubIP(ip string, ones, bits int) string {
+	if ip == "" {
 		return ""
 	}
-
-	return ip[0:i] + ".0"
-}
-
-func scrubIPV6Lowest16Bits(ip string) string {
-	ip = removeLowestIPV6Segment(ip)
-
-	if ip != "" {
-		ip += ":0"
-	}
-
-	return ip
-}
-
-func scrubIPV6Lowest32Bits(ip string) string {
-	ip = removeLowestIPV6Segment(ip)
-	ip = removeLowestIPV6Segment(ip)
-
-	if ip != "" {
-		ip += ":0:0"
-	}
-
-	return ip
-}
-
-func removeLowestIPV6Segment(ip string) string {
-	i := strings.LastIndex(ip, ":")
-
-	if i == -1 {
-		return ""
-	}
-
-	return ip[0:i]
-}
-
-func scrubGeoFull(geo *openrtb2.Geo) *openrtb2.Geo {
-	if geo == nil {
-		return nil
-	}
-
-	return &openrtb2.Geo{}
+	ipMask := net.CIDRMask(ones, bits)
+	ipMasked := net.ParseIP(ip).Mask(ipMask)
+	return ipMasked.String()
 }
 
 func scrubGeoPrecision(geo *openrtb2.Geo) *openrtb2.Geo {
@@ -205,25 +165,25 @@ func scrubGeoPrecision(geo *openrtb2.Geo) *openrtb2.Geo {
 	return &geoCopy
 }
 
-func scrubUserExtIDs(userExt json.RawMessage) json.RawMessage {
-	if len(userExt) == 0 {
-		return userExt
+func scrubExtIDs(ext json.RawMessage, fieldName string) json.RawMessage {
+	if len(ext) == 0 {
+		return ext
 	}
 
 	var userExtParsed map[string]json.RawMessage
-	err := json.Unmarshal(userExt, &userExtParsed)
+	err := jsonutil.Unmarshal(ext, &userExtParsed)
 	if err != nil {
-		return userExt
+		return ext
 	}
 
-	_, hasEids := userExtParsed["eids"]
-	if hasEids {
-		delete(userExtParsed, "eids")
-		result, err := json.Marshal(userExtParsed)
+	_, hasField := userExtParsed[fieldName]
+	if hasField {
+		delete(userExtParsed, fieldName)
+		result, err := jsonutil.Marshal(userExtParsed)
 		if err == nil {
 			return result
 		}
 	}
 
-	return userExt
+	return ext
 }

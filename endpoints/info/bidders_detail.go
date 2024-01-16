@@ -8,8 +8,9 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
 const (
@@ -27,7 +28,11 @@ func NewBiddersDetailEndpoint(bidders config.BidderInfos, aliases map[string]str
 	return func(w http.ResponseWriter, _ *http.Request, ps httprouter.Params) {
 		bidder := ps.ByName("bidderName")
 
-		if response, ok := responses[bidder]; ok {
+		coreBidderName, found := getNormalisedBidderName(bidder, aliases)
+		if !found {
+			w.WriteHeader(http.StatusNotFound)
+		}
+		if response, ok := responses[coreBidderName]; ok {
 			w.Header().Set("Content-Type", "application/json")
 			if _, err := w.Write(response); err != nil {
 				glog.Errorf("error writing response to /info/bidders/%s: %v", bidder, err)
@@ -36,6 +41,20 @@ func NewBiddersDetailEndpoint(bidders config.BidderInfos, aliases map[string]str
 			w.WriteHeader(http.StatusNotFound)
 		}
 	}
+}
+
+func getNormalisedBidderName(bidderName string, aliases map[string]string) (string, bool) {
+	if strings.ToLower(bidderName) == "all" {
+		return "all", true
+	}
+	coreBidderName, ok := openrtb_ext.NormalizeBidderName(bidderName)
+	if !ok { //check default aliases if not found in coreBidders
+		if _, isDefaultAlias := aliases[bidderName]; isDefaultAlias {
+			return bidderName, true
+		}
+		return "", false
+	}
+	return coreBidderName.String(), true
 }
 
 func prepareBiddersDetailResponse(bidders config.BidderInfos, aliases map[string]string) (map[string][]byte, error) {
@@ -83,7 +102,7 @@ func marshalDetailsResponse(details map[string]bidderDetail) (map[string][]byte,
 	responses := map[string][]byte{}
 
 	for bidder, detail := range details {
-		json, err := json.Marshal(detail)
+		json, err := jsonutil.Marshal(detail)
 		if err != nil {
 			return nil, fmt.Errorf("unable to marshal info for bidder %s: %v", bidder, err)
 		}
@@ -100,7 +119,7 @@ func marshalAllResponse(responses map[string][]byte) ([]byte, error) {
 		responsesJSON[k] = json.RawMessage(v)
 	}
 
-	json, err := json.Marshal(responsesJSON)
+	json, err := jsonutil.Marshal(responsesJSON)
 	if err != nil {
 		return nil, fmt.Errorf("unable to marshal info for bidder all: %v", err)
 	}
@@ -122,6 +141,7 @@ type maintainer struct {
 type capabilities struct {
 	App  *platform `json:"app,omitempty"`
 	Site *platform `json:"site,omitempty"`
+	DOOH *platform `json:"dooh,omitempty"`
 }
 
 type platform struct {
@@ -155,6 +175,12 @@ func mapDetailFromConfig(c config.BidderInfo) bidderDetail {
 			if c.Capabilities.Site != nil {
 				bidderDetail.Capabilities.Site = &platform{
 					MediaTypes: mapMediaTypes(c.Capabilities.Site.MediaTypes),
+				}
+			}
+
+			if c.Capabilities.DOOH != nil {
+				bidderDetail.Capabilities.DOOH = &platform{
+					MediaTypes: mapMediaTypes(c.Capabilities.DOOH.MediaTypes),
 				}
 			}
 		}

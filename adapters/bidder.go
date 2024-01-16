@@ -4,13 +4,12 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"net/http"
-	"time"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/currency"
-	"github.com/prebid/prebid-server/metrics"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/currency"
+	"github.com/prebid/prebid-server/v2/metrics"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 // Bidder describes how to connect to external demand.
@@ -146,15 +145,8 @@ func (r *RequestData) SetBasicAuth(username string, password string) {
 
 type ExtraRequestInfo struct {
 	PbsEntryPoint              metrics.RequestType
-	BidderRequestStartTime     time.Time
 	GlobalPrivacyControlHeader string
 	CurrencyConversions        currency.Conversions
-	MakeBidsTimeInfo           MakeBidsTimeInfo
-}
-
-type MakeBidsTimeInfo struct {
-	AfterMakeBidsStartTime time.Time
-	Durations              []time.Duration
 }
 
 func NewExtraRequestInfo(c currency.Conversions) ExtraRequestInfo {

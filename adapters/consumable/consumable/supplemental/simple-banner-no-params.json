@@ -1,0 +1,43 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 728,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+
+          }
+        }
+      }
+    ],
+    "device": {
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.91 Safari/537.36",
+      "ip": "123.123.123.123",
+      "geo": {
+        "country": "USA",
+        "region": "IL",
+        "city": "Elgin",
+        "zip": "60123"
+      }
+    },
+    "site": {
+      "domain": "www.some.com",
+      "page": "http://www.some.com/page-where-ad-will-be-shown"
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "SiteId, NetworkId and UnitId are all required for site requests",
+      "comparison": "literal"
+    }
+  ]
+}

@@ -21,17 +21,18 @@ import (
 	nativeRequests "github.com/prebid/openrtb/v19/native1/request"
 	nativeResponse "github.com/prebid/openrtb/v19/native1/response"
 	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/currency"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/exchange/entities"
-	"github.com/prebid/prebid-server/experiment/adscert"
-	"github.com/prebid/prebid-server/hooks/hookexecution"
-	"github.com/prebid/prebid-server/metrics"
-	metricsConfig "github.com/prebid/prebid-server/metrics/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/version"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/currency"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/exchange/entities"
+	"github.com/prebid/prebid-server/v2/experiment/adscert"
+	"github.com/prebid/prebid-server/v2/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v2/metrics"
+	metricsConfig "github.com/prebid/prebid-server/v2/metrics/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v2/version"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -110,11 +111,10 @@ func TestSingleBidder(t *testing.T) {
 			bidAdjustments:      bidAdjustments,
 		}
 		extraInfo := &adapters.ExtraRequestInfo{}
-		seatBids, errs := bidder.requestBid(ctx, bidderReq, currencyConverter.Rates(), extraInfo, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
-		assert.NotEmpty(t, extraInfo.MakeBidsTimeInfo.Durations)
-		assert.False(t, extraInfo.MakeBidsTimeInfo.AfterMakeBidsStartTime.IsZero())
+		seatBids, extraBidderRespInfo, errs := bidder.requestBid(ctx, bidderReq, currencyConverter.Rates(), extraInfo, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
 
 		assert.Len(t, seatBids, 1)
+		assert.False(t, extraBidderRespInfo.respProcessingStartTime.IsZero())
 		seatBid := seatBids[0]
 
 		// Make sure the goodSingleBidder was called with the expected arguments.
@@ -236,10 +236,9 @@ func TestSingleBidderGzip(t *testing.T) {
 			bidAdjustments:      bidAdjustments,
 		}
 		extraInfo := &adapters.ExtraRequestInfo{}
-		seatBids, errs := bidder.requestBid(ctx, bidderReq, currencyConverter.Rates(), extraInfo, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
-		assert.NotEmpty(t, extraInfo.MakeBidsTimeInfo.Durations)
-		assert.False(t, extraInfo.MakeBidsTimeInfo.AfterMakeBidsStartTime.IsZero())
+		seatBids, extraBidderRespInfo, errs := bidder.requestBid(ctx, bidderReq, currencyConverter.Rates(), extraInfo, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
 		assert.Len(t, seatBids, 1)
+		assert.False(t, extraBidderRespInfo.respProcessingStartTime.IsZero())
 		seatBid := seatBids[0]
 
 		// Make sure the goodSingleBidder was called with the expected arguments.
@@ -339,7 +338,7 @@ func TestRequestBidRemovesSensitiveHeaders(t *testing.T) {
 		bidAdjustments:      bidAdjustments,
 	}
 	extraInfo := &adapters.ExtraRequestInfo{}
-	seatBids, errs := bidder.requestBid(ctx, bidderReq, currencyConverter.Rates(), extraInfo, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
+	seatBids, extraBidderRespInfo, errs := bidder.requestBid(ctx, bidderReq, currencyConverter.Rates(), extraInfo, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
 	expectedHttpCalls := []*openrtb_ext.ExtHttpCall{
 		{
 			Uri:            server.URL,
@@ -352,8 +351,7 @@ func TestRequestBidRemovesSensitiveHeaders(t *testing.T) {
 
 	assert.Empty(t, errs)
 	assert.Len(t, seatBids, 1)
-	assert.NotEmpty(t, extraInfo.MakeBidsTimeInfo.Durations)
-	assert.False(t, extraInfo.MakeBidsTimeInfo.AfterMakeBidsStartTime.IsZero())
+	assert.False(t, extraBidderRespInfo.respProcessingStartTime.IsZero())
 	assert.ElementsMatch(t, seatBids[0].HttpCalls, expectedHttpCalls)
 }
 
@@ -393,7 +391,7 @@ func TestSetGPCHeader(t *testing.T) {
 		bidAdjustments:      bidAdjustments,
 	}
 	extraInfo := &adapters.ExtraRequestInfo{GlobalPrivacyControlHeader: "1"}
-	seatBids, errs := bidder.requestBid(ctx, bidderReq, currencyConverter.Rates(), extraInfo, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
+	seatBids, extraBidderRespInfo, errs := bidder.requestBid(ctx, bidderReq, currencyConverter.Rates(), extraInfo, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
 
 	expectedHttpCall := []*openrtb_ext.ExtHttpCall{
 		{
@@ -407,8 +405,7 @@ func TestSetGPCHeader(t *testing.T) {
 
 	assert.Empty(t, errs)
 	assert.Len(t, seatBids, 1)
-	assert.NotEmpty(t, extraInfo.MakeBidsTimeInfo.Durations)
-	assert.False(t, extraInfo.MakeBidsTimeInfo.AfterMakeBidsStartTime.IsZero())
+	assert.False(t, extraBidderRespInfo.respProcessingStartTime.IsZero())
 	assert.ElementsMatch(t, seatBids[0].HttpCalls, expectedHttpCall)
 }
 
@@ -446,7 +443,7 @@ func TestSetGPCHeaderNil(t *testing.T) {
 		bidAdjustments:      bidAdjustments,
 	}
 	extraInfo := &adapters.ExtraRequestInfo{GlobalPrivacyControlHeader: "1"}
-	seatBids, errs := bidder.requestBid(ctx, bidderReq, currencyConverter.Rates(), extraInfo, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
+	seatBids, extraBidderRespInfo, errs := bidder.requestBid(ctx, bidderReq, currencyConverter.Rates(), extraInfo, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
 
 	expectedHttpCall := []*openrtb_ext.ExtHttpCall{
 		{
@@ -459,9 +456,8 @@ func TestSetGPCHeaderNil(t *testing.T) {
 	}
 
 	assert.Empty(t, errs)
-	assert.NotEmpty(t, extraInfo.MakeBidsTimeInfo.Durations)
-	assert.False(t, extraInfo.MakeBidsTimeInfo.AfterMakeBidsStartTime.IsZero())
 	assert.Len(t, seatBids, 1)
+	assert.False(t, extraBidderRespInfo.respProcessingStartTime.IsZero())
 	assert.ElementsMatch(t, seatBids[0].HttpCalls, expectedHttpCall)
 }
 
@@ -518,7 +514,7 @@ func TestMultiBidder(t *testing.T) {
 		addCallSignHeader:   false,
 		bidAdjustments:      bidAdjustments,
 	}
-	seatBids, errs := bidder.requestBid(context.Background(), bidderReq, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
+	seatBids, extraBidderRespInfo, errs := bidder.requestBid(context.Background(), bidderReq, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
 
 	if len(seatBids) != 1 {
 		t.Fatalf("SeatBid should exist, because bids exist.")
@@ -530,6 +526,7 @@ func TestMultiBidder(t *testing.T) {
 	if len(seatBids[0].Bids) != len(bidderImpl.httpResponses)*len(mockBidderResponse.Bids) {
 		t.Errorf("Expected %d bids. Got %d", len(bidderImpl.httpResponses)*len(mockBidderResponse.Bids), len(seatBids[0].Bids))
 	}
+	assert.False(t, extraBidderRespInfo.respProcessingStartTime.IsZero())
 
 }
 
@@ -559,11 +556,11 @@ func TestBidderTimeout(t *testing.T) {
 		Client:     server.Client(),
 		me:         &metricsConfig.NilMetricsEngine{},
 	}
-
+	tmaxAdjustments := &TmaxAdjustmentsPreprocessed{}
 	callInfo := bidder.doRequest(ctx, &adapters.RequestData{
 		Method: "POST",
 		Uri:    server.URL,
-	}, time.Now())
+	}, time.Now(), tmaxAdjustments)
 	if callInfo.err == nil {
 		t.Errorf("The bidder should report an error if the context has expired already.")
 	}
@@ -579,10 +576,10 @@ func TestInvalidRequest(t *testing.T) {
 		Bidder: &mixedMultiBidder{},
 		Client: server.Client(),
 	}
-
+	tmaxAdjustments := &TmaxAdjustmentsPreprocessed{}
 	callInfo := bidder.doRequest(context.Background(), &adapters.RequestData{
 		Method: "\"", // force http.NewRequest() to fail
-	}, time.Now())
+	}, time.Now(), tmaxAdjustments)
 	if callInfo.err == nil {
 		t.Errorf("bidderAdapter.doRequest should return an error if the request data is malformed.")
 	}
@@ -602,11 +599,11 @@ func TestConnectionClose(t *testing.T) {
 		BidderName: openrtb_ext.BidderAppnexus,
 		me:         &metricsConfig.NilMetricsEngine{},
 	}
-
+	tmaxAdjustments := &TmaxAdjustmentsPreprocessed{}
 	callInfo := bidder.doRequest(context.Background(), &adapters.RequestData{
 		Method: "POST",
 		Uri:    server.URL,
-	}, time.Now())
+	}, time.Now(), tmaxAdjustments)
 	if callInfo.err == nil {
 		t.Errorf("bidderAdapter.doRequest should return an error if the connection closes unexpectedly.")
 	}
@@ -860,7 +857,7 @@ func TestMultiCurrencies(t *testing.T) {
 
 		mockedHTTPServer := httptest.NewServer(http.HandlerFunc(
 			func(rw http.ResponseWriter, req *http.Request) {
-				b, err := json.Marshal(tc.rates)
+				b, err := jsonutil.Marshal(tc.rates)
 				if err == nil {
 					rw.WriteHeader(http.StatusOK)
 					rw.Write(b)
@@ -885,7 +882,7 @@ func TestMultiCurrencies(t *testing.T) {
 			BidderName: openrtb_ext.BidderAppnexus,
 		}
 		bidAdjustments := map[string]float64{string(openrtb_ext.BidderAppnexus): 1}
-		seatBids, errs := bidder.requestBid(
+		seatBids, extraBidderRespInfo, errs := bidder.requestBid(
 			context.Background(),
 			bidderReq,
 			currencyConverter.Rates(),
@@ -903,6 +900,7 @@ func TestMultiCurrencies(t *testing.T) {
 		)
 		assert.Len(t, seatBids, 1)
 		seatBid := seatBids[0]
+		assert.False(t, extraBidderRespInfo.respProcessingStartTime.IsZero())
 
 		// Verify:
 		resultLightBids := make([]bid, len(seatBid.Bids))
@@ -1045,7 +1043,7 @@ func TestMultiCurrencies_RateConverterNotSet(t *testing.T) {
 			BidderName: "test",
 		}
 		bidAdjustments := map[string]float64{"test": 1}
-		seatBids, errs := bidder.requestBid(
+		seatBids, extraBidderRespInfo, errs := bidder.requestBid(
 			context.Background(),
 			bidderReq,
 			currencyConverter.Rates(),
@@ -1068,6 +1066,7 @@ func TestMultiCurrencies_RateConverterNotSet(t *testing.T) {
 		assert.Equal(t, false, (seatBid == nil && tc.expectedBidsCount != 0), tc.description)
 		assert.Equal(t, tc.expectedBidsCount, uint(len(seatBid.Bids)), tc.description)
 		assert.ElementsMatch(t, tc.expectedBadCurrencyErrors, errs, tc.description)
+		assert.False(t, extraBidderRespInfo.respProcessingStartTime.IsZero())
 	}
 }
 
@@ -1179,7 +1178,7 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 
 		mockedHTTPServer := httptest.NewServer(http.HandlerFunc(
 			func(rw http.ResponseWriter, req *http.Request) {
-				b, err := json.Marshal(tc.rates)
+				b, err := jsonutil.Marshal(tc.rates)
 				if err == nil {
 					rw.WriteHeader(http.StatusOK)
 					rw.Write(b)
@@ -1224,7 +1223,7 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			BidderName: "test",
 		}
 		bidAdjustments := map[string]float64{"test": 1}
-		seatBids, errs := bidder.requestBid(
+		seatBids, extraBidderRespInfo, errs := bidder.requestBid(
 			context.Background(),
 			bidderReq,
 			currencyConverter.Rates(),
@@ -1249,6 +1248,7 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 		} else {
 			assert.Nil(t, errs, tc.description)
 			assert.Equal(t, tc.expectedPickedCurrency, seatBid.Currency, tc.description)
+			assert.False(t, extraBidderRespInfo.respProcessingStartTime.IsZero())
 		}
 	}
 }
@@ -1542,7 +1542,7 @@ func TestMobileNativeTypes(t *testing.T) {
 			BidderName: "test",
 		}
 		bidAdjustments := map[string]float64{"test": 1.0}
-		seatBids, _ := bidder.requestBid(
+		seatBids, extraBidderRespInfo, _ := bidder.requestBid(
 			context.Background(),
 			bidderReq,
 			currencyConverter.Rates(),
@@ -1559,12 +1559,52 @@ func TestMobileNativeTypes(t *testing.T) {
 			nil,
 		)
 		assert.Len(t, seatBids, 1)
-
+		assert.False(t, extraBidderRespInfo.respProcessingStartTime.IsZero())
 		var actualValue string
 		for _, bid := range seatBids[0].Bids {
 			actualValue = bid.Bid.AdM
 			assert.JSONEq(t, tc.expectedValue, actualValue, tc.description)
 		}
+	}
+}
+
+func TestAddNativeTypes(t *testing.T) {
+	testCases := []struct {
+		description      string
+		bidderRequest    *openrtb2.BidRequest
+		bid              *openrtb2.Bid
+		expectedResponse *nativeResponse.Response
+		expectedErrors   []error
+	}{
+		{
+			description: "Null in bid.Adm in response",
+			bidderRequest: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{
+						ID: "some-imp-id",
+						Native: &openrtb2.Native{
+							Request: "{\"ver\":\"1.1\",\"context\":1,\"contextsubtype\":11,\"plcmttype\":4,\"plcmtcnt\":1,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":500}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1,\"hmin\":1}},{\"id\":3,\"required\":0,\"data\":{\"type\":1,\"len\":200}},{\"id\":4,\"required\":0,\"data\":{\"type\":2,\"len\":15000}},{\"id\":5,\"required\":0,\"data\":{\"type\":6,\"len\":40}}]}",
+						},
+					},
+				},
+				App: &openrtb2.App{},
+			},
+			bid: &openrtb2.Bid{
+				ImpID: "some-imp-id",
+				AdM:   "null",
+				Price: 10,
+			},
+			expectedResponse: nil,
+			expectedErrors:   nil,
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.description, func(t *testing.T) {
+			resp, errs := addNativeTypes(tt.bid, tt.bidderRequest)
+			assert.Equal(t, tt.expectedResponse, resp, "response")
+			assert.Equal(t, tt.expectedErrors, errs, "errors")
+		})
 	}
 }
 
@@ -1662,7 +1702,7 @@ func TestRequestBidsStoredBidResponses(t *testing.T) {
 			ImpReplaceImpId:       tc.impReplaceImpId,
 		}
 		bidAdjustments := map[string]float64{string(openrtb_ext.BidderAppnexus): 1.0}
-		seatBids, _ := bidder.requestBid(
+		seatBids, extraBidderRespInfo, _ := bidder.requestBid(
 			context.Background(),
 			bidderReq,
 			currencyConverter.Rates(),
@@ -1679,6 +1719,7 @@ func TestRequestBidsStoredBidResponses(t *testing.T) {
 			nil,
 		)
 		assert.Len(t, seatBids, 1)
+		assert.False(t, extraBidderRespInfo.respProcessingStartTime.IsZero())
 
 		assert.Len(t, seatBids[0].Bids, len(tc.expectedBidIds), "Incorrect bids number for test case ", tc.description)
 		for _, bid := range seatBids[0].Bids {
@@ -1777,7 +1818,7 @@ func TestFledge(t *testing.T) {
 			},
 			BidderName: "openx",
 		}
-		seatBids, _ := bidder.requestBid(
+		seatBids, extraBidderRespInfo, _ := bidder.requestBid(
 			context.Background(),
 			bidderReq,
 			currencyConverter.Rates(),
@@ -1798,6 +1839,7 @@ func TestFledge(t *testing.T) {
 		assert.Len(t, seatBids[0].FledgeAuctionConfigs, len(tc.expectedFledge))
 
 		assert.ElementsMatch(t, seatBids[0].FledgeAuctionConfigs, tc.expectedFledge)
+		assert.False(t, extraBidderRespInfo.respProcessingStartTime.IsZero())
 	}
 }
 
@@ -1815,7 +1857,7 @@ func TestErrorReporting(t *testing.T) {
 		addCallSignHeader:   false,
 		bidAdjustments:      bidAdjustments,
 	}
-	bids, errs := bidder.requestBid(context.Background(), bidderReq, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
+	bids, extraBidderRespInfo, errs := bidder.requestBid(context.Background(), bidderReq, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
 	if bids != nil {
 		t.Errorf("There should be no seatbid if no http requests are returned.")
 	}
@@ -1825,6 +1867,7 @@ func TestErrorReporting(t *testing.T) {
 	if errs[0].Error() != "Invalid params on BidRequest." {
 		t.Errorf(`Error message was mutated. Expected "%s", Got "%s"`, "Invalid params on BidRequest.", errs[0].Error())
 	}
+	assert.True(t, extraBidderRespInfo.respProcessingStartTime.IsZero())
 }
 
 func TestSetAssetTypes(t *testing.T) {
@@ -2049,7 +2092,7 @@ func TestCallRecordAdapterConnections(t *testing.T) {
 		addCallSignHeader:   false,
 		bidAdjustments:      bidAdjustments,
 	}
-	_, errs := bidder.requestBid(context.Background(), bidderReq, currencyConverter.Rates(), &adapters.ExtraRequestInfo{PbsEntryPoint: metrics.ReqTypeORTB2Web}, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
+	_, _, errs := bidder.requestBid(context.Background(), bidderReq, currencyConverter.Rates(), &adapters.ExtraRequestInfo{PbsEntryPoint: metrics.ReqTypeORTB2Web}, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
 
 	// Assert no errors
 	assert.Equal(t, 0, len(errs), "bidder.requestBid returned errors %v \n", errs)
@@ -2105,9 +2148,10 @@ func TestCallRecordDNSTime(t *testing.T) {
 		Client: &http.Client{Transport: DNSDoneTripper{}},
 		me:     metricsMock,
 	}
+	tmaxAdjustments := &TmaxAdjustmentsPreprocessed{}
 
 	// Run test
-	bidder.doRequest(context.Background(), &adapters.RequestData{Method: "POST", Uri: "http://www.example.com/"}, time.Now())
+	bidder.doRequest(context.Background(), &adapters.RequestData{Method: "POST", Uri: "http://www.example.com/"}, time.Now(), tmaxAdjustments)
 
 	// Tried one or another, none seem to work without panicking
 	metricsMock.AssertExpectations(t)
@@ -2128,9 +2172,10 @@ func TestCallRecordTLSHandshakeTime(t *testing.T) {
 		Client: &http.Client{Transport: TLSHandshakeTripper{}},
 		me:     metricsMock,
 	}
+	tmaxAdjustments := &TmaxAdjustmentsPreprocessed{}
 
 	// Run test
-	bidder.doRequest(context.Background(), &adapters.RequestData{Method: "POST", Uri: "http://www.example.com/"}, time.Now())
+	bidder.doRequest(context.Background(), &adapters.RequestData{Method: "POST", Uri: "http://www.example.com/"}, time.Now(), tmaxAdjustments)
 
 	// Tried one or another, none seem to work without panicking
 	metricsMock.AssertExpectations(t)
@@ -2217,8 +2262,8 @@ func TestTimeoutNotificationOn(t *testing.T) {
 	logger := func(msg string, args ...interface{}) {
 		loggerBuffer.WriteString(fmt.Sprintf(fmt.Sprintln(msg), args...))
 	}
-
-	bidderAdapter.doRequestImpl(ctx, &bidRequest, logger, time.Now())
+	tmaxAdjustments := &TmaxAdjustmentsPreprocessed{}
+	bidderAdapter.doRequestImpl(ctx, &bidRequest, logger, time.Now(), tmaxAdjustments)
 
 	// Wait a little longer than the 205ms mock server sleep.
 	time.Sleep(210 * time.Millisecond)
@@ -2296,7 +2341,7 @@ func TestRequestBidsWithAdsCertsSigner(t *testing.T) {
 		addCallSignHeader:   true,
 		bidAdjustments:      bidAdjustments,
 	}
-	_, errs := bidder.requestBid(ctx, bidderReq, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, &MockSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
+	_, _, errs := bidder.requestBid(ctx, bidderReq, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, &MockSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
 
 	assert.Empty(t, errs, "no errors should be returned")
 }
@@ -2340,7 +2385,7 @@ func (bidder *goodSingleBidderWithStoredBidResp) MakeRequests(request *openrtb2.
 
 func (bidder *goodSingleBidderWithStoredBidResp) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.UnmarshalValid(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
@@ -2475,7 +2520,6 @@ func TestExtraBid(t *testing.T) {
 				DealPriority:   5,
 				BidType:        openrtb_ext.BidTypeVideo,
 				OriginalBidCur: "USD",
-				BidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: string(openrtb_ext.BidderPubmatic)},
 			}},
 			Seat:     "groupm",
 			Currency: "USD",
@@ -2487,7 +2531,6 @@ func TestExtraBid(t *testing.T) {
 				DealPriority:   4,
 				BidType:        openrtb_ext.BidTypeBanner,
 				OriginalBidCur: "USD",
-				BidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: string(openrtb_ext.BidderPubmatic)},
 			}},
 			Seat:     string(openrtb_ext.BidderPubmatic),
 			Currency: "USD",
@@ -2510,7 +2553,7 @@ func TestExtraBid(t *testing.T) {
 		bidAdjustments:      bidAdjustments,
 	}
 
-	seatBids, errs := bidder.requestBid(context.Background(), bidderReq, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, &MockSigner{}, bidReqOptions,
+	seatBids, extraBidderRespInfo, errs := bidder.requestBid(context.Background(), bidderReq, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, &MockSigner{}, bidReqOptions,
 		openrtb_ext.ExtAlternateBidderCodes{
 			Enabled: true,
 			Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
@@ -2528,6 +2571,7 @@ func TestExtraBid(t *testing.T) {
 		return len(seatBids[i].Seat) < len(seatBids[j].Seat)
 	})
 	assert.Equal(t, wantSeatBids, seatBids)
+	assert.False(t, extraBidderRespInfo.respProcessingStartTime.IsZero())
 }
 
 func TestExtraBidWithAlternateBidderCodeDisabled(t *testing.T) {
@@ -2584,7 +2628,6 @@ func TestExtraBidWithAlternateBidderCodeDisabled(t *testing.T) {
 				DealPriority:   5,
 				BidType:        openrtb_ext.BidTypeVideo,
 				OriginalBidCur: "USD",
-				BidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: string(openrtb_ext.BidderPubmatic)},
 			}},
 			Seat:     "groupm-allowed",
 			Currency: "USD",
@@ -2596,7 +2639,6 @@ func TestExtraBidWithAlternateBidderCodeDisabled(t *testing.T) {
 				DealPriority:   4,
 				BidType:        openrtb_ext.BidTypeBanner,
 				OriginalBidCur: "USD",
-				BidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: string(openrtb_ext.BidderPubmatic)},
 			}},
 			Seat:     string(openrtb_ext.BidderPubmatic),
 			Currency: "USD",
@@ -2624,7 +2666,7 @@ func TestExtraBidWithAlternateBidderCodeDisabled(t *testing.T) {
 		bidAdjustments:      bidAdjustments,
 	}
 
-	seatBids, errs := bidder.requestBid(context.Background(), bidderReq, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, &MockSigner{}, bidReqOptions,
+	seatBids, extraBidderRespInfo, errs := bidder.requestBid(context.Background(), bidderReq, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, &MockSigner{}, bidReqOptions,
 		openrtb_ext.ExtAlternateBidderCodes{
 			Enabled: true,
 			Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
@@ -2639,6 +2681,7 @@ func TestExtraBidWithAlternateBidderCodeDisabled(t *testing.T) {
 	assert.Equal(t, wantErrs, errs)
 	assert.Len(t, seatBids, 2)
 	assert.ElementsMatch(t, wantSeatBids, seatBids)
+	assert.False(t, extraBidderRespInfo.respProcessingStartTime.IsZero())
 }
 
 func TestExtraBidWithBidAdjustments(t *testing.T) {
@@ -2666,7 +2709,7 @@ func TestExtraBidWithBidAdjustments(t *testing.T) {
 					},
 					BidType:      openrtb_ext.BidTypeBanner,
 					DealPriority: 4,
-					Seat:         "pubmatic",
+					Seat:         "PUBMATIC",
 				},
 				{
 					Bid: &openrtb2.Bid{
@@ -2693,7 +2736,6 @@ func TestExtraBidWithBidAdjustments(t *testing.T) {
 				BidType:        openrtb_ext.BidTypeVideo,
 				OriginalBidCPM: 7,
 				OriginalBidCur: "USD",
-				BidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: string(openrtb_ext.BidderPubmatic)},
 			}},
 			Seat:     "groupm",
 			Currency: "USD",
@@ -2709,9 +2751,8 @@ func TestExtraBidWithBidAdjustments(t *testing.T) {
 				BidType:        openrtb_ext.BidTypeBanner,
 				OriginalBidCur: "USD",
 				OriginalBidCPM: 3,
-				BidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: string(openrtb_ext.BidderPubmatic)},
 			}},
-			Seat:     string(openrtb_ext.BidderPubmatic),
+			Seat:     "PUBMATIC",
 			Currency: "USD",
 		},
 	}
@@ -2721,10 +2762,10 @@ func TestExtraBidWithBidAdjustments(t *testing.T) {
 
 	bidderReq := BidderRequest{
 		BidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "impId"}}},
-		BidderName: openrtb_ext.BidderPubmatic,
+		BidderName: "PUBMATIC",
 	}
 	bidAdjustments := map[string]float64{
-		string(openrtb_ext.BidderPubmatic): 2,
+		string(openrtb_ext.BidderPubmatic): 2, // All lowercase value in bid adjustments to simulate it being case insensitive
 		"groupm":                           3,
 	}
 
@@ -2735,11 +2776,11 @@ func TestExtraBidWithBidAdjustments(t *testing.T) {
 		bidAdjustments:      bidAdjustments,
 	}
 
-	seatBids, errs := bidder.requestBid(context.Background(), bidderReq, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, &MockSigner{}, bidReqOptions,
+	seatBids, extraBidderRespInfo, errs := bidder.requestBid(context.Background(), bidderReq, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, &MockSigner{}, bidReqOptions,
 		openrtb_ext.ExtAlternateBidderCodes{
 			Enabled: true,
 			Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
-				string(openrtb_ext.BidderPubmatic): {
+				"PUBMATIC": {
 					Enabled:            true,
 					AllowedBidderCodes: []string{"groupm"},
 				},
@@ -2753,6 +2794,7 @@ func TestExtraBidWithBidAdjustments(t *testing.T) {
 		return len(seatBids[i].Seat) < len(seatBids[j].Seat)
 	})
 	assert.Equal(t, wantSeatBids, seatBids)
+	assert.False(t, extraBidderRespInfo.respProcessingStartTime.IsZero())
 }
 
 func TestExtraBidWithBidAdjustmentsUsingAdapterCode(t *testing.T) {
@@ -2807,7 +2849,6 @@ func TestExtraBidWithBidAdjustmentsUsingAdapterCode(t *testing.T) {
 				BidType:        openrtb_ext.BidTypeVideo,
 				OriginalBidCPM: 7,
 				OriginalBidCur: "USD",
-				BidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: string(openrtb_ext.BidderPubmatic)},
 			}},
 			Seat:     "groupm",
 			Currency: "USD",
@@ -2823,7 +2864,6 @@ func TestExtraBidWithBidAdjustmentsUsingAdapterCode(t *testing.T) {
 				BidType:        openrtb_ext.BidTypeBanner,
 				OriginalBidCur: "USD",
 				OriginalBidCPM: 3,
-				BidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: string(openrtb_ext.BidderPubmatic)},
 			}},
 			Seat:     string(openrtb_ext.BidderPubmatic),
 			Currency: "USD",
@@ -2848,7 +2888,7 @@ func TestExtraBidWithBidAdjustmentsUsingAdapterCode(t *testing.T) {
 		bidAdjustments:      bidAdjustments,
 	}
 
-	seatBids, errs := bidder.requestBid(context.Background(), bidderReq, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, &MockSigner{}, bidReqOptions,
+	seatBids, extraBidderRespInfo, errs := bidder.requestBid(context.Background(), bidderReq, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, &MockSigner{}, bidReqOptions,
 		openrtb_ext.ExtAlternateBidderCodes{
 			Enabled: true,
 			Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
@@ -2866,6 +2906,7 @@ func TestExtraBidWithBidAdjustmentsUsingAdapterCode(t *testing.T) {
 		return len(seatBids[i].Seat) < len(seatBids[j].Seat)
 	})
 	assert.Equal(t, wantSeatBids, seatBids)
+	assert.False(t, extraBidderRespInfo.respProcessingStartTime.IsZero())
 }
 
 func TestExtraBidWithMultiCurrencies(t *testing.T) {
@@ -2920,7 +2961,6 @@ func TestExtraBidWithMultiCurrencies(t *testing.T) {
 				BidType:        openrtb_ext.BidTypeVideo,
 				OriginalBidCPM: 7,
 				OriginalBidCur: "USD",
-				BidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: string(openrtb_ext.BidderPubmatic)},
 			}},
 			Seat:     "groupm",
 			Currency: "INR",
@@ -2936,7 +2976,6 @@ func TestExtraBidWithMultiCurrencies(t *testing.T) {
 				BidType:        openrtb_ext.BidTypeBanner,
 				OriginalBidCPM: 3,
 				OriginalBidCur: "USD",
-				BidMeta:        &openrtb_ext.ExtBidPrebidMeta{AdapterCode: string(openrtb_ext.BidderPubmatic)},
 			}},
 			Seat:     string(openrtb_ext.BidderPubmatic),
 			Currency: "INR",
@@ -2973,7 +3012,7 @@ func TestExtraBidWithMultiCurrencies(t *testing.T) {
 		bidAdjustments:      bidAdjustments,
 	}
 
-	seatBids, errs := bidder.requestBid(context.Background(), bidderReq, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, &MockSigner{}, bidReqOptions,
+	seatBids, extraBidderRespInfo, errs := bidder.requestBid(context.Background(), bidderReq, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, &MockSigner{}, bidReqOptions,
 		openrtb_ext.ExtAlternateBidderCodes{
 			Enabled: true,
 			Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
@@ -2991,6 +3030,7 @@ func TestExtraBidWithMultiCurrencies(t *testing.T) {
 		return len(seatBids[i].Seat) < len(seatBids[j].Seat)
 	})
 	assert.Equal(t, wantSeatBids, seatBids)
+	assert.False(t, extraBidderRespInfo.respProcessingStartTime.IsZero())
 }
 
 func TestGetBidType(t *testing.T) {
@@ -3054,5 +3094,256 @@ func TestGetBidType(t *testing.T) {
 			actual := getBidTypeForAdjustments(test.givenBidType, test.givenImpId, test.givenImp)
 			assert.Equal(t, test.expected, actual, "Bid type doesn't match")
 		})
+	}
+}
+
+type mockBidderTmaxCtx struct {
+	startTime, deadline, now time.Time
+	ok                       bool
+}
+
+func (m *mockBidderTmaxCtx) Deadline() (deadline time.Time, _ bool) {
+	return m.deadline, m.ok
+}
+func (m *mockBidderTmaxCtx) RemainingDurationMS(deadline time.Time) int64 {
+	return deadline.Sub(m.startTime).Milliseconds()
+}
+
+func (m *mockBidderTmaxCtx) Until(t time.Time) time.Duration {
+	return t.Sub(m.now)
+}
+
+func TestUpdateBidderTmax(t *testing.T) {
+	respStatus := 200
+	respBody := "{\"bid\":false}"
+	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
+	defer server.Close()
+
+	requestHeaders := http.Header{}
+	requestHeaders.Add("Content-Type", "application/json")
+
+	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	var requestTmax int64 = 700
+
+	bidderReq := BidderRequest{
+		BidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "impId"}}, TMax: requestTmax},
+		BidderName: "test",
+	}
+	extraInfo := &adapters.ExtraRequestInfo{}
+
+	tests := []struct {
+		description     string
+		requestTmax     int64
+		tmaxAdjustments *TmaxAdjustmentsPreprocessed
+		assertFn        func(actualTmax int64) bool
+	}{
+		{
+			description:     "tmax-is-not-enabled",
+			requestTmax:     requestTmax,
+			tmaxAdjustments: &TmaxAdjustmentsPreprocessed{IsEnforced: false},
+			assertFn: func(actualTmax int64) bool {
+				return requestTmax == actualTmax
+			},
+		},
+		{
+			description:     "updates-bidder-tmax",
+			requestTmax:     requestTmax,
+			tmaxAdjustments: &TmaxAdjustmentsPreprocessed{IsEnforced: true, BidderResponseDurationMin: 100, BidderNetworkLatencyBuffer: 50, PBSResponsePreparationDuration: 50},
+			assertFn: func(actualTmax int64) bool {
+				return requestTmax > actualTmax
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			bidderImpl := &goodSingleBidder{
+				httpRequest: &adapters.RequestData{
+					Method:  "POST",
+					Uri:     server.URL,
+					Body:    []byte("{\"key\":\"val\"}"),
+					Headers: http.Header{},
+				},
+				bidResponse: &adapters.BidderResponse{},
+			}
+
+			now := time.Now()
+			ctx, cancel := context.WithDeadline(context.Background(), now.Add(500*time.Millisecond))
+			defer cancel()
+			bidReqOptions := bidRequestOptions{bidderRequestStartTime: now, tmaxAdjustments: test.tmaxAdjustments}
+			bidder := AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, &config.DebugInfo{Allow: false}, "")
+			_, _, errs := bidder.requestBid(ctx, bidderReq, currencyConverter.Rates(), extraInfo, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
+			assert.Empty(t, errs)
+			assert.True(t, test.assertFn(bidderImpl.bidRequest.TMax))
+		})
+	}
+}
+
+func TestHasShorterDurationThanTmax(t *testing.T) {
+	var requestTmaxMS int64 = 700
+	requestTmaxNS := requestTmaxMS * int64(time.Millisecond)
+	startTime := time.Date(2023, 5, 30, 1, 0, 0, 0, time.UTC)
+	now := time.Date(2023, 5, 30, 1, 0, 0, int(200*time.Millisecond), time.UTC)
+	deadline := time.Date(2023, 5, 30, 1, 0, 0, int(requestTmaxNS), time.UTC)
+	ctx := &mockBidderTmaxCtx{startTime: startTime, deadline: deadline, now: now, ok: true}
+
+	tests := []struct {
+		description     string
+		ctx             bidderTmaxContext
+		requestTmax     int64
+		tmaxAdjustments TmaxAdjustmentsPreprocessed
+		expected        bool
+	}{
+		{
+			description:     "tmax-disabled",
+			ctx:             ctx,
+			requestTmax:     requestTmaxMS,
+			tmaxAdjustments: TmaxAdjustmentsPreprocessed{IsEnforced: false},
+			expected:        false,
+		},
+		{
+			description:     "remaing-duration-greater-than-bidder-response-min",
+			ctx:             ctx,
+			requestTmax:     requestTmaxMS,
+			tmaxAdjustments: TmaxAdjustmentsPreprocessed{IsEnforced: true, PBSResponsePreparationDuration: 50, BidderNetworkLatencyBuffer: 10, BidderResponseDurationMin: 40},
+			expected:        false,
+		},
+		{
+			description:     "remaing-duration-less-than-bidder-response-min",
+			ctx:             ctx,
+			requestTmax:     requestTmaxMS,
+			tmaxAdjustments: TmaxAdjustmentsPreprocessed{IsEnforced: true, PBSResponsePreparationDuration: 100, BidderNetworkLatencyBuffer: 10, BidderResponseDurationMin: 500},
+			expected:        true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			assert.Equal(t, test.expected, hasShorterDurationThanTmax(test.ctx, test.tmaxAdjustments))
+		})
+	}
+}
+
+func TestDoRequestImplWithTmax(t *testing.T) {
+	respStatus := 200
+	respBody := "{\"bid\":false}"
+	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
+	defer server.Close()
+	requestStartTime := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	bidRequest := adapters.RequestData{
+		Method: "POST",
+		Uri:    server.URL,
+		Body:   []byte(`{"id":"this-id","app":{"publisher":{"id":"pub-id"}}}`),
+	}
+
+	bidderAdapter := bidderAdapter{
+		me:     &metricsConfig.NilMetricsEngine{},
+		Client: server.Client(),
+	}
+	logger := func(msg string, args ...interface{}) {}
+
+	tests := []struct {
+		ctxDeadline     time.Time
+		description     string
+		tmaxAdjustments *TmaxAdjustmentsPreprocessed
+		assertFn        func(err error)
+	}{
+		{
+			ctxDeadline:     time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+			description:     "returns-tmax-timeout-error",
+			tmaxAdjustments: &TmaxAdjustmentsPreprocessed{IsEnforced: true, PBSResponsePreparationDuration: 100, BidderNetworkLatencyBuffer: 10, BidderResponseDurationMin: 5000},
+			assertFn:        func(err error) { assert.Equal(t, &errortypes.TmaxTimeout{Message: "exceeded tmax duration"}, err) },
+		},
+		{
+			ctxDeadline:     time.Now().Add(5 * time.Second),
+			description:     "remaining-duration-greater-than-tmax-min",
+			tmaxAdjustments: &TmaxAdjustmentsPreprocessed{IsEnforced: true, PBSResponsePreparationDuration: 100, BidderNetworkLatencyBuffer: 10, BidderResponseDurationMin: 100},
+			assertFn:        func(err error) { assert.Nil(t, err) },
+		},
+		{
+			description:     "tmax-disabled",
+			tmaxAdjustments: &TmaxAdjustmentsPreprocessed{IsEnforced: false},
+			assertFn:        func(err error) { assert.Nil(t, err) },
+		},
+		{
+			description:     "tmax-BidderResponseDurationMin-not-set",
+			tmaxAdjustments: &TmaxAdjustmentsPreprocessed{IsEnforced: true, BidderResponseDurationMin: 0},
+			assertFn:        func(err error) { assert.Nil(t, err) },
+		},
+		{
+			description:     "tmax-is-nil",
+			tmaxAdjustments: nil,
+			assertFn:        func(err error) { assert.Nil(t, err) },
+		},
+	}
+	for _, test := range tests {
+		var (
+			ctx      context.Context
+			cancelFn context.CancelFunc
+		)
+
+		if test.ctxDeadline.IsZero() {
+			ctx = context.Background()
+		} else {
+			ctx, cancelFn = context.WithDeadline(context.Background(), test.ctxDeadline)
+			defer cancelFn()
+		}
+
+		httpCallInfo := bidderAdapter.doRequestImpl(ctx, &bidRequest, logger, requestStartTime, test.tmaxAdjustments)
+		test.assertFn(httpCallInfo.err)
+	}
+}
+
+func TestDoRequestImplWithTmaxTimeout(t *testing.T) {
+	respStatus := 200
+	respBody := "{\"bid\":false}"
+	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
+	defer server.Close()
+	requestStartTime := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	bidRequest := adapters.RequestData{
+		Method: "POST",
+		Uri:    server.URL,
+		Body:   []byte(`{"id":"this-id","app":{"publisher":{"id":"pub-id"}}}`),
+	}
+
+	metricsMock := &metrics.MetricsEngineMock{}
+	metricsMock.On("RecordOverheadTime", metrics.PreBidder, mock.Anything).Once()
+	metricsMock.On("RecordTMaxTimeout").Once()
+
+	bidderAdapter := bidderAdapter{
+		me:     metricsMock,
+		Client: server.Client(),
+	}
+	logger := func(msg string, args ...interface{}) {}
+
+	tests := []struct {
+		ctxDeadline     time.Time
+		description     string
+		tmaxAdjustments *TmaxAdjustmentsPreprocessed
+		assertFn        func(err error)
+	}{
+		{
+			ctxDeadline:     time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+			description:     "returns-tmax-timeout-error",
+			tmaxAdjustments: &TmaxAdjustmentsPreprocessed{IsEnforced: true, PBSResponsePreparationDuration: 100, BidderNetworkLatencyBuffer: 10, BidderResponseDurationMin: 5000},
+			assertFn:        func(err error) { assert.Equal(t, &errortypes.TmaxTimeout{Message: "exceeded tmax duration"}, err) },
+		},
+	}
+	for _, test := range tests {
+		var (
+			ctx      context.Context
+			cancelFn context.CancelFunc
+		)
+
+		if test.ctxDeadline.IsZero() {
+			ctx = context.Background()
+		} else {
+			ctx, cancelFn = context.WithDeadline(context.Background(), test.ctxDeadline)
+			defer cancelFn()
+		}
+
+		httpCallInfo := bidderAdapter.doRequestImpl(ctx, &bidRequest, logger, requestStartTime, test.tmaxAdjustments)
+		test.assertFn(httpCallInfo.err)
 	}
 }

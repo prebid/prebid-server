@@ -30,7 +30,6 @@
                                 "creativeType": "NativeX",
                                 "siteId": 1243066,
                                 "zoneIds": [285431],
-                                "ip": "123.123.123.124",
                                 "options": {
                                    "startCompact": true,
                                    "contentCode": "publisher-test-2"
@@ -46,7 +45,7 @@
             "expectedRequest": {
                 "uri": "http://example.com/pserver",
                 "body": {
-                    "ip":"123.123.123.124",
+                    "ip":"123.123.123.123",
                     "keywords":[
                        ""
                     ],

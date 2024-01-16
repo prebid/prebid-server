@@ -1,0 +1,13 @@
+endpoint: https://bidder2.adquery.io/prebid/bid
+maintainer:
+  email: prebid@adquery.io
+gvlVendorID: 902
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+userSync:
+  iframe:
+    url: https://api.adquery.io/storage?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&ccpa_consent={{.USPrivacy}}&redirect={{.RedirectURL}}
+    userMacro: $UID
+    

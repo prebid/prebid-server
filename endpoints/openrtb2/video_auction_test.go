@@ -11,18 +11,20 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/prebid/prebid-server/analytics"
-	analyticsConf "github.com/prebid/prebid-server/analytics/config"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/exchange"
-	"github.com/prebid/prebid-server/hooks"
-	"github.com/prebid/prebid-server/metrics"
-	metricsConfig "github.com/prebid/prebid-server/metrics/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/prebid_cache_client"
-	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
-	"github.com/prebid/prebid-server/util/ptrutil"
+	"github.com/prebid/prebid-server/v2/analytics"
+	analyticsBuild "github.com/prebid/prebid-server/v2/analytics/build"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/exchange"
+	"github.com/prebid/prebid-server/v2/hooks"
+	"github.com/prebid/prebid-server/v2/metrics"
+	metricsConfig "github.com/prebid/prebid-server/v2/metrics/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/prebid_cache_client"
+	"github.com/prebid/prebid-server/v2/privacy"
+	"github.com/prebid/prebid-server/v2/stored_requests/backends/empty_fetcher"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 
 	"github.com/prebid/openrtb/v19/adcom1"
 	"github.com/prebid/openrtb/v19/openrtb2"
@@ -46,7 +48,7 @@ func TestVideoEndpointImpressionsNumber(t *testing.T) {
 
 	respBytes := recorder.Body.Bytes()
 	resp := &openrtb_ext.BidResponseVideo{}
-	if err := json.Unmarshal(respBytes, resp); err != nil {
+	if err := jsonutil.UnmarshalValid(respBytes, resp); err != nil {
 		t.Fatalf("Unable to unmarshal response.")
 	}
 
@@ -79,7 +81,7 @@ func TestVideoEndpointImpressionsDuration(t *testing.T) {
 	}
 
 	var extData openrtb_ext.ExtRequest
-	json.Unmarshal(ex.lastRequest.Ext, &extData)
+	jsonutil.UnmarshalValid(ex.lastRequest.Ext, &extData)
 	assert.NotNil(t, extData.Prebid.Targeting.IncludeBidderKeys, "Request ext incorrect: IncludeBidderKeys should be true ")
 	assert.True(t, *extData.Prebid.Targeting.IncludeBidderKeys, "Request ext incorrect: IncludeBidderKeys should be true ")
 
@@ -134,7 +136,7 @@ func TestCreateBidExtension(t *testing.T) {
 
 	resExt := &openrtb_ext.ExtRequest{}
 
-	if err := json.Unmarshal(res, &resExt); err != nil {
+	if err := jsonutil.UnmarshalValid(res, &resExt); err != nil {
 		assert.Fail(t, "Unable to unmarshal bid extension")
 	}
 	assert.Equal(t, resExt.Prebid.Targeting.DurationRangeSec, durationRange, "Duration range seconds is incorrect")
@@ -177,7 +179,7 @@ func TestVideoEndpointDebugQueryTrue(t *testing.T) {
 
 	respBytes := recorder.Body.Bytes()
 	resp := &openrtb_ext.BidResponseVideo{}
-	if err := json.Unmarshal(respBytes, resp); err != nil {
+	if err := jsonutil.UnmarshalValid(respBytes, resp); err != nil {
 		t.Fatalf("Unable to unmarshal response.")
 	}
 
@@ -215,7 +217,7 @@ func TestVideoEndpointDebugQueryFalse(t *testing.T) {
 
 	respBytes := recorder.Body.Bytes()
 	resp := &openrtb_ext.BidResponseVideo{}
-	if err := json.Unmarshal(respBytes, resp); err != nil {
+	if err := jsonutil.UnmarshalValid(respBytes, resp); err != nil {
 		t.Fatalf("Unable to unmarshal response.")
 	}
 
@@ -271,7 +273,7 @@ func TestVideoEndpointDebugNoAdPods(t *testing.T) {
 
 	respBytes := recorder.Body.Bytes()
 	resp := &openrtb_ext.BidResponseVideo{}
-	if err := json.Unmarshal(respBytes, resp); err != nil {
+	if err := jsonutil.UnmarshalValid(respBytes, resp); err != nil {
 		t.Fatalf("Unable to unmarshal response.")
 	}
 
@@ -292,7 +294,7 @@ func TestVideoEndpointNoPods(t *testing.T) {
 	deps := mockDeps(t, ex)
 	deps.VideoAuctionEndpoint(recorder, req, nil)
 
-	errorMessage := string(recorder.Body.Bytes())
+	errorMessage := recorder.Body.String()
 
 	assert.Equal(t, recorder.Code, 500, "Should catch error in request")
 	assert.Equal(t, "Critical error while running the video endpoint:  request missing required field: PodConfig.DurationRangeSec request missing required field: PodConfig.Pods", errorMessage, "Incorrect request validation message")
@@ -739,7 +741,7 @@ func TestVideoBuildVideoResponsePodErrors(t *testing.T) {
 
 func TestVideoBuildVideoResponseNoBids(t *testing.T) {
 	openRtbBidResp := openrtb2.BidResponse{}
-	podErrors := make([]PodError, 0, 0)
+	podErrors := make([]PodError, 0)
 	openRtbBidResp.SeatBid = make([]openrtb2.SeatBid, 0)
 	bidRespVideo, err := buildVideoResponse(&openRtbBidResp, podErrors)
 	assert.NoError(t, err, "Error should be nil")
@@ -808,7 +810,7 @@ func TestHandleError(t *testing.T) {
 		{
 			description: "Blocked account - return 503 with blocked metrics status",
 			giveErrors: []error{
-				&errortypes.BlacklistedAcct{},
+				&errortypes.AccountDisabled{},
 			},
 			wantCode:          503,
 			wantMetricsStatus: metrics.RequestStatusBlacklisted,
@@ -1090,7 +1092,7 @@ func TestCCPA(t *testing.T) {
 			t.Fatalf("%s: The request never made it into the exchange.", test.description)
 		}
 		extRegs := &openrtb_ext.ExtRegs{}
-		if err := json.Unmarshal(ex.lastRequest.Regs.Ext, extRegs); err != nil {
+		if err := jsonutil.UnmarshalValid(ex.lastRequest.Regs.Ext, extRegs); err != nil {
 			t.Fatalf("%s: Failed to unmarshal reg.ext in request to the exchange: %v", test.description, err)
 		}
 		if test.expectConsentString {
@@ -1102,7 +1104,7 @@ func TestCCPA(t *testing.T) {
 		// Validate HTTP Response
 		responseBytes := httpResponseRecorder.Body.Bytes()
 		response := &openrtb_ext.BidResponseVideo{}
-		if err := json.Unmarshal(responseBytes, response); err != nil {
+		if err := jsonutil.UnmarshalValid(responseBytes, response); err != nil {
 			t.Fatalf("%s: Unable to unmarshal response.", test.description)
 		}
 		assert.Len(t, ex.lastRequest.Imp, 11, test.description+":imps")
@@ -1124,12 +1126,12 @@ func TestVideoEndpointAppendBidderNames(t *testing.T) {
 	}
 
 	var extData openrtb_ext.ExtRequest
-	json.Unmarshal(ex.lastRequest.Ext, &extData)
+	jsonutil.UnmarshalValid(ex.lastRequest.Ext, &extData)
 	assert.True(t, extData.Prebid.Targeting.AppendBidderNames, "Request ext incorrect: AppendBidderNames should be true ")
 
 	respBytes := recorder.Body.Bytes()
 	resp := &openrtb_ext.BidResponseVideo{}
-	if err := json.Unmarshal(respBytes, resp); err != nil {
+	if err := jsonutil.UnmarshalValid(respBytes, resp); err != nil {
 		t.Fatalf("Unable to unmarshal response.")
 	}
 
@@ -1225,6 +1227,8 @@ func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *m
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
+		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 	return deps, metrics, mockModule
 }
@@ -1234,11 +1238,11 @@ type mockAnalyticsModule struct {
 	videoObjects   []*analytics.VideoObject
 }
 
-func (m *mockAnalyticsModule) LogAuctionObject(ao *analytics.AuctionObject) {
+func (m *mockAnalyticsModule) LogAuctionObject(ao *analytics.AuctionObject, _ privacy.ActivityControl) {
 	m.auctionObjects = append(m.auctionObjects, ao)
 }
 
-func (m *mockAnalyticsModule) LogVideoObject(vo *analytics.VideoObject) {
+func (m *mockAnalyticsModule) LogVideoObject(vo *analytics.VideoObject, _ privacy.ActivityControl) {
 	m.videoObjects = append(m.videoObjects, vo)
 }
 
@@ -1246,9 +1250,10 @@ func (m *mockAnalyticsModule) LogCookieSyncObject(cso *analytics.CookieSyncObjec
 
 func (m *mockAnalyticsModule) LogSetUIDObject(so *analytics.SetUIDObject) {}
 
-func (m *mockAnalyticsModule) LogAmpObject(ao *analytics.AmpObject) {}
+func (m *mockAnalyticsModule) LogAmpObject(ao *analytics.AmpObject, _ privacy.ActivityControl) {}
 
-func (m *mockAnalyticsModule) LogNotificationEventObject(ne *analytics.NotificationEvent) {}
+func (m *mockAnalyticsModule) LogNotificationEventObject(ne *analytics.NotificationEvent, _ privacy.ActivityControl) {
+}
 
 func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 	return &endpointDeps{
@@ -1260,7 +1265,7 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 		&mockAccountFetcher{data: mockVideoAccountData},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -1270,6 +1275,8 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
+		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 }
 
@@ -1283,7 +1290,7 @@ func mockDepsAppendBidderNames(t *testing.T, ex *mockExchangeAppendBidderNames) 
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -1293,6 +1300,8 @@ func mockDepsAppendBidderNames(t *testing.T, ex *mockExchangeAppendBidderNames) 
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
+		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	return deps
@@ -1308,7 +1317,7 @@ func mockDepsNoBids(t *testing.T, ex *mockExchangeVideoNoBids) *endpointDeps {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -1318,6 +1327,8 @@ func mockDepsNoBids(t *testing.T, ex *mockExchangeVideoNoBids) *endpointDeps {
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
+		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	return edep

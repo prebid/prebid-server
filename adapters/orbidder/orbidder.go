@@ -8,10 +8,10 @@ import (
 
 	"github.com/prebid/openrtb/v19/openrtb2"
 
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type OrbidderAdapter struct {
@@ -125,19 +125,51 @@ func (rcv OrbidderAdapter) MakeBids(_ *openrtb2.BidRequest, _ *adapters.RequestD
 		return nil, []error{err}
 	}
 
+	var bidErrs []error
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
 	for _, seatBid := range bidResp.SeatBid {
-		for _, bid := range seatBid.Bid {
+		for i := range seatBid.Bid {
+			// later we have to add the bid as a pointer,
+			// because of this we need a variable that only exists at this loop iteration.
+			// otherwise there will be issues with multibid and pointer behavior.
+			bid := seatBid.Bid[i]
+			bidType, err := getBidType(bid)
+			if err != nil {
+				// could not determinate media type, append an error and continue with the next bid.
+				bidErrs = append(bidErrs, err)
+				continue
+			}
+
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &bid,
-				BidType: openrtb_ext.BidTypeBanner,
+				BidType: bidType,
 			})
 		}
 	}
 	if bidResp.Cur != "" {
 		bidResponse.Currency = bidResp.Cur
 	}
-	return bidResponse, nil
+
+	return bidResponse, bidErrs
+}
+
+func getBidType(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+
+	// determinate media type by bid response field mtype
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
+	case openrtb2.MarkupAudio:
+		return openrtb_ext.BidTypeAudio, nil
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative, nil
+	}
+
+	return "", &errortypes.BadInput{
+		Message: fmt.Sprintf("Could not define media type for impression: %s", bid.ImpID),
+	}
 }
 
 // Builder builds a new instance of the Orbidder adapter for the given bidder with the given config.

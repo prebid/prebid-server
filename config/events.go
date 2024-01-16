@@ -61,14 +61,14 @@ type VASTEvent struct {
 // within the VAST XML
 // Don't enable this feature. It is still under developmment. Please follow https://github.com/prebid/prebid-server/issues/1725 for more updates
 type Events struct {
-	Enabled    *bool       `mapstructure:"enabled" json:"enabled"`
+	Enabled    bool        `mapstructure:"enabled" json:"enabled"`
 	DefaultURL string      `mapstructure:"default_url" json:"default_url"`
 	VASTEvents []VASTEvent `mapstructure:"vast_events" json:"vast_events,omitempty"`
 }
 
 // validate verifies the events object  and returns error if at least one is invalid.
 func (e Events) validate(errs []error) []error {
-	if e.IsEnabled() {
+	if e.Enabled {
 		if !isValidURL(e.DefaultURL) {
 			return append(errs, errors.New("Invalid events.default_url"))
 		}
@@ -146,9 +146,4 @@ func isValidURL(eventURL string) bool {
 // isTrackingEvent returns true if event object contains event.CreateElement == "tracking"
 func (e VASTEvent) isTrackingEvent() bool {
 	return e.CreateElement == TrackingVASTElement
-}
-
-// IsEnabled function returns the value of events.enabled field
-func (e Events) IsEnabled() bool {
-	return e.Enabled != nil && *e.Enabled
 }

@@ -7,8 +7,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -37,14 +38,15 @@ func ensureHasKey(t *testing.T, data map[string]json.RawMessage, key string) {
 }
 
 func TestNewJsonDirectoryServer(t *testing.T) {
-	alias := map[string]string{"aliastest": "appnexus"}
-	handler := NewJsonDirectoryServer("../static/bidder-params", &testValidator{}, alias)
+	defaultAlias := map[string]string{"aliastest": "appnexus"}
+	yamlAlias := map[openrtb_ext.BidderName]openrtb_ext.BidderName{openrtb_ext.BidderName("alias"): openrtb_ext.BidderName("parentAlias")}
+	handler := newJsonDirectoryServer("../static/bidder-params", &testValidator{}, defaultAlias, yamlAlias)
 	recorder := httptest.NewRecorder()
 	request, _ := http.NewRequest("GET", "/whatever", nil)
 	handler(recorder, request, nil)
 
 	var data map[string]json.RawMessage
-	json.Unmarshal(recorder.Body.Bytes(), &data)
+	jsonutil.UnmarshalValid(recorder.Body.Bytes(), &data)
 
 	// Make sure that every adapter has a json schema by the same name associated with it.
 	adapterFiles, err := os.ReadDir(adapterDirectory)
@@ -59,6 +61,7 @@ func TestNewJsonDirectoryServer(t *testing.T) {
 	}
 
 	ensureHasKey(t, data, "aliastest")
+	ensureHasKey(t, data, "alias")
 }
 
 func TestCheckSupportedUserSyncEndpoints(t *testing.T) {

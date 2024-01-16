@@ -1,0 +1,107 @@
+name: Adapter code coverage
+on:
+  pull_request_target:
+    paths: ["adapters/*/*.go"]
+permissions:
+  pull-requests: write
+  contents: write
+jobs:
+  run-coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.20.5
+
+      - name: Checkout pull request branch
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ref: ${{github.event.pull_request.head.ref}}
+          repository: ${{github.event.pull_request.head.repo.full_name}}
+
+      - name: Get adapter directories
+        id: get_directories
+        uses: actions/github-script@v6
+        with:
+          result-encoding: string
+          script: |
+            const utils = require('./.github/workflows/helpers/pull-request-utils.js')            
+            function directoryExtractor(filepath, status) {
+              // extract directory name only if file is not removed and file is in adapters directory
+              if (status != "removed" && filepath.startsWith("adapters/") && filepath.split("/").length > 2) {
+                return filepath.split("/")[1]
+              }
+              return ""
+            }
+            const helper = utils.diffHelper({github, context})
+            const files = await helper.getDirectories(directoryExtractor)
+            return files.length == 0 ? "" : JSON.stringify(files);
+
+      - name: Run coverage tests
+        id: run_coverage
+        if: steps.get_directories.outputs.result != ''
+        run: |
+          directories=$(echo '${{ steps.get_directories.outputs.result }}' | jq -r '.[]')
+          go mod download
+
+          # create a temporary directory to store the coverage output
+          temp_dir=$(mktemp -d)
+          touch ${temp_dir}/coverage_output.txt
+
+          # generate coverage for adapter
+          cd ./adapters
+          for directory in $directories; do 
+            cd $directory
+            coverage_profile_path="${PWD}/${directory}.out"
+            go test -coverprofile="${coverage_profile_path}"
+            go tool cover -html="${coverage_profile_path}" -o "${temp_dir}/${directory}.html"
+            go tool cover -func="${coverage_profile_path}" -o "${temp_dir}/${directory}.txt"
+            cd ..
+          done
+          echo "coverage_dir=${temp_dir}" >> $GITHUB_OUTPUT
+
+          # remove pull request branch files
+          cd ..
+          rm -f -r ./*
+
+      - name: Checkout coverage-preview branch
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ref: coverage-preview
+          repository: prebid/prebid-server
+
+      - name: Commit coverage files to coverage-preview branch
+        if: steps.run_coverage.outputs.coverage_dir != ''
+        id: commit_coverage
+        run: |
+          directory=.github/preview/${{ github.run_id }}_$(date +%s)
+          mkdir -p $directory
+          cp -r ${{ steps.run_coverage.outputs.coverage_dir }}/*.html ./$directory
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add $directory/*
+          git commit -m 'Add coverage files'
+          git push origin coverage-preview
+          echo "remote_coverage_preview_dir=${directory}" >> $GITHUB_OUTPUT
+
+      - name: Checkout master branch
+        if: steps.get_directories.outputs.result != ''
+        run: git checkout master
+
+      - name: Add coverage summary to pull request
+        if: steps.run_coverage.outputs.coverage_dir != '' && steps.commit_coverage.outputs.remote_coverage_preview_dir != ''
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const utils = require('./.github/workflows/helpers/pull-request-utils.js')
+            const helper = utils.coverageHelper({
+              github, context,
+              headSha: '${{ github.event.pull_request.head.sha }}', 
+              tmpCoverageDir: '${{ steps.run_coverage.outputs.coverage_dir }}', 
+              remoteCoverageDir: '${{ steps.commit_coverage.outputs.remote_coverage_preview_dir }}'
+            })
+            const adapterDirectories = JSON.parse('${{ steps.get_directories.outputs.result }}')
+            await helper.AddCoverageSummary(adapterDirectories)

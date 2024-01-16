@@ -6,13 +6,14 @@ import (
 	"testing"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/adapters/appnexus"
-	"github.com/prebid/prebid-server/adapters/rubicon"
-	"github.com/prebid/prebid-server/config"
-	metrics "github.com/prebid/prebid-server/metrics/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/adapters/appnexus"
+	"github.com/prebid/prebid-server/v2/adapters/rubicon"
+	"github.com/prebid/prebid-server/v2/config"
+	metrics "github.com/prebid/prebid-server/v2/metrics/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -163,6 +164,55 @@ func TestBuildBidders(t *testing.T) {
 	}
 }
 
+func TestSetAliasBuilder(t *testing.T) {
+	rubiconBidder := fakeBidder{"b"}
+	ixBidder := fakeBidder{"ix"}
+	rubiconBuilder := fakeBuilder{rubiconBidder, nil}.Builder
+	ixBuilder := fakeBuilder{ixBidder, nil}.Builder
+
+	testCases := []struct {
+		description      string
+		bidderInfo       config.BidderInfo
+		builders         map[openrtb_ext.BidderName]adapters.Builder
+		bidderName       openrtb_ext.BidderName
+		expectedBuilders map[openrtb_ext.BidderName]adapters.Builder
+		expectedError    error
+	}{
+		{
+			description:      "Success - Alias builder",
+			bidderInfo:       config.BidderInfo{Disabled: false, AliasOf: "rubicon"},
+			bidderName:       openrtb_ext.BidderName("appnexus"),
+			builders:         map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderRubicon: rubiconBuilder},
+			expectedBuilders: map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderRubicon: rubiconBuilder, openrtb_ext.BidderAppnexus: rubiconBuilder},
+		},
+		{
+			description:   "Failure - Invalid parent bidder builder",
+			bidderInfo:    config.BidderInfo{Disabled: false, AliasOf: "rubicon"},
+			bidderName:    openrtb_ext.BidderName("appnexus"),
+			builders:      map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderIx: ixBuilder},
+			expectedError: errors.New("rubicon: parent builder not registered"),
+		},
+		{
+			description:   "Failure - Invalid parent for alias",
+			bidderInfo:    config.BidderInfo{Disabled: false, AliasOf: "unknown"},
+			bidderName:    openrtb_ext.BidderName("appnexus"),
+			builders:      map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderIx: ixBuilder},
+			expectedError: errors.New("unknown parent bidder: unknown for alias: appnexus"),
+		},
+	}
+
+	for _, test := range testCases {
+		err := setAliasBuilder(test.bidderInfo, test.builders, test.bidderName)
+
+		if test.expectedBuilders != nil {
+			assert.ObjectsAreEqual(test.builders, test.expectedBuilders)
+		}
+		if test.expectedError != nil {
+			assert.EqualError(t, test.expectedError, err.Error(), test.description+":errors")
+		}
+	}
+}
+
 func TestGetActiveBidders(t *testing.T) {
 	testCases := []struct {
 		description string
@@ -197,75 +247,71 @@ func TestGetActiveBidders(t *testing.T) {
 	}
 }
 
-func TestGetDisabledBiddersErrorMessages(t *testing.T) {
+func TestGetDisabledBidderWarningMessages(t *testing.T) {
+	t.Run("removed", func(t *testing.T) {
+		result := GetDisabledBidderWarningMessages(nil)
+
+		// test proper construction by verifying one expected bidder is in the list
+		require.Contains(t, result, "groupm")
+		assert.Equal(t, result["groupm"], `Bidder "groupm" is no longer available in Prebid Server. Please update your configuration.`)
+	})
+
+	t.Run("removed-and-disabled", func(t *testing.T) {
+		result := GetDisabledBidderWarningMessages(map[string]config.BidderInfo{"bidderA": infoDisabled})
+
+		// test proper construction by verifying one expected bidder is in the list with the disabled bidder
+		require.Contains(t, result, "groupm")
+		assert.Equal(t, result["groupm"], `Bidder "groupm" is no longer available in Prebid Server. Please update your configuration.`)
+
+		require.Contains(t, result, "bidderA")
+		assert.Equal(t, result["bidderA"], `Bidder "bidderA" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.`)
+	})
+}
+
+func TestMergeRemovedAndDisabledBidderWarningMessages(t *testing.T) {
 	testCases := []struct {
-		description string
-		bidderInfos map[string]config.BidderInfo
-		expected    map[string]string
+		name             string
+		givenRemoved     map[string]string
+		givenBidderInfos map[string]config.BidderInfo
+		expected         map[string]string
 	}{
 		{
-			description: "None",
-			bidderInfos: map[string]config.BidderInfo{},
-			expected: map[string]string{
-				"lifestreet":     `Bidder "lifestreet" is no longer available in Prebid Server. Please update your configuration.`,
-				"adagio":         `Bidder "adagio" is no longer available in Prebid Server. Please update your configuration.`,
-				"somoaudience":   `Bidder "somoaudience" is no longer available in Prebid Server. Please update your configuration.`,
-				"yssp":           `Bidder "yssp" is no longer available in Prebid Server. If you're looking to use the Yahoo SSP adapter, please rename it to "yahooAdvertising" in your configuration.`,
-				"andbeyondmedia": `Bidder "andbeyondmedia" is no longer available in Prebid Server. If you're looking to use the AndBeyond.Media SSP adapter, please rename it to "beyondmedia" in your configuration.`,
-				"oftmedia":       `Bidder "oftmedia" is no longer available in Prebid Server. Please update your configuration.`,
-				"groupm":         `Bidder "groupm" is no longer available in Prebid Server. Please update your configuration.`,
-				"verizonmedia":   `Bidder "verizonmedia" is no longer available in Prebid Server. Please update your configuration.`,
-			},
+			name:             "none",
+			givenRemoved:     map[string]string{},
+			givenBidderInfos: map[string]config.BidderInfo{},
+			expected:         map[string]string{},
 		},
 		{
-			description: "Enabled",
-			bidderInfos: map[string]config.BidderInfo{"appnexus": infoEnabled},
-			expected: map[string]string{
-				"lifestreet":     `Bidder "lifestreet" is no longer available in Prebid Server. Please update your configuration.`,
-				"adagio":         `Bidder "adagio" is no longer available in Prebid Server. Please update your configuration.`,
-				"somoaudience":   `Bidder "somoaudience" is no longer available in Prebid Server. Please update your configuration.`,
-				"yssp":           `Bidder "yssp" is no longer available in Prebid Server. If you're looking to use the Yahoo SSP adapter, please rename it to "yahooAdvertising" in your configuration.`,
-				"andbeyondmedia": `Bidder "andbeyondmedia" is no longer available in Prebid Server. If you're looking to use the AndBeyond.Media SSP adapter, please rename it to "beyondmedia" in your configuration.`,
-				"oftmedia":       `Bidder "oftmedia" is no longer available in Prebid Server. Please update your configuration.`,
-				"groupm":         `Bidder "groupm" is no longer available in Prebid Server. Please update your configuration.`,
-				"verizonmedia":   `Bidder "verizonmedia" is no longer available in Prebid Server. Please update your configuration.`,
-			},
+			name:             "removed",
+			givenRemoved:     map[string]string{"bidderA": `Bidder A Message`},
+			givenBidderInfos: map[string]config.BidderInfo{},
+			expected:         map[string]string{"bidderA": `Bidder A Message`},
 		},
 		{
-			description: "Disabled",
-			bidderInfos: map[string]config.BidderInfo{"appnexus": infoDisabled},
-			expected: map[string]string{
-				"lifestreet":     `Bidder "lifestreet" is no longer available in Prebid Server. Please update your configuration.`,
-				"adagio":         `Bidder "adagio" is no longer available in Prebid Server. Please update your configuration.`,
-				"somoaudience":   `Bidder "somoaudience" is no longer available in Prebid Server. Please update your configuration.`,
-				"yssp":           `Bidder "yssp" is no longer available in Prebid Server. If you're looking to use the Yahoo SSP adapter, please rename it to "yahooAdvertising" in your configuration.`,
-				"appnexus":       `Bidder "appnexus" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.`,
-				"andbeyondmedia": `Bidder "andbeyondmedia" is no longer available in Prebid Server. If you're looking to use the AndBeyond.Media SSP adapter, please rename it to "beyondmedia" in your configuration.`,
-				"oftmedia":       `Bidder "oftmedia" is no longer available in Prebid Server. Please update your configuration.`,
-				"groupm":         `Bidder "groupm" is no longer available in Prebid Server. Please update your configuration.`,
-				"verizonmedia":   `Bidder "verizonmedia" is no longer available in Prebid Server. Please update your configuration.`,
-			},
+			name:             "enabled",
+			givenRemoved:     map[string]string{},
+			givenBidderInfos: map[string]config.BidderInfo{"bidderA": infoEnabled},
+			expected:         map[string]string{},
 		},
 		{
-			description: "Mixed",
-			bidderInfos: map[string]config.BidderInfo{"appnexus": infoDisabled, "openx": infoEnabled},
-			expected: map[string]string{
-				"lifestreet":     `Bidder "lifestreet" is no longer available in Prebid Server. Please update your configuration.`,
-				"adagio":         `Bidder "adagio" is no longer available in Prebid Server. Please update your configuration.`,
-				"somoaudience":   `Bidder "somoaudience" is no longer available in Prebid Server. Please update your configuration.`,
-				"yssp":           `Bidder "yssp" is no longer available in Prebid Server. If you're looking to use the Yahoo SSP adapter, please rename it to "yahooAdvertising" in your configuration.`,
-				"appnexus":       `Bidder "appnexus" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.`,
-				"andbeyondmedia": `Bidder "andbeyondmedia" is no longer available in Prebid Server. If you're looking to use the AndBeyond.Media SSP adapter, please rename it to "beyondmedia" in your configuration.`,
-				"oftmedia":       `Bidder "oftmedia" is no longer available in Prebid Server. Please update your configuration.`,
-				"groupm":         `Bidder "groupm" is no longer available in Prebid Server. Please update your configuration.`,
-				"verizonmedia":   `Bidder "verizonmedia" is no longer available in Prebid Server. Please update your configuration.`,
-			},
+			name:             "disabled",
+			givenRemoved:     map[string]string{},
+			givenBidderInfos: map[string]config.BidderInfo{"bidderA": infoDisabled},
+			expected:         map[string]string{"bidderA": `Bidder "bidderA" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.`},
+		},
+		{
+			name:             "mixed",
+			givenRemoved:     map[string]string{"bidderA": `Bidder A Message`},
+			givenBidderInfos: map[string]config.BidderInfo{"bidderB": infoEnabled, "bidderC": infoDisabled},
+			expected:         map[string]string{"bidderA": `Bidder A Message`, "bidderC": `Bidder "bidderC" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.`},
 		},
 	}
 
 	for _, test := range testCases {
-		result := GetDisabledBiddersErrorMessages(test.bidderInfos)
-		assert.Equal(t, test.expected, result, test.description)
+		t.Run(test.name, func(t *testing.T) {
+			result := mergeRemovedAndDisabledBidderWarningMessages(test.givenRemoved, test.givenBidderInfos)
+			assert.Equal(t, test.expected, result, test.name)
+		})
 	}
 }
 

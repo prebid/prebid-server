@@ -138,7 +138,8 @@
               "width": 468,
               "height": 60,
               "ad": "advert",
-              "crid": "qwert"
+              "crid": "qwert",
+              "mtype": "banner"
             },
             {
               "id": "3929239282-02",
@@ -147,7 +148,8 @@
               "width": 770,
               "height": 250,
               "ad": "another advert",
-              "crid": "wasd"
+              "crid": "wasd",
+              "mtype": "banner"
             }
           ]
         }
@@ -166,7 +168,8 @@
             "adm": "advert",
             "w": 468,
             "h": 60,
-            "crid": "qwert"
+            "crid": "qwert",
+            "mtype": 1
           },
           "type": "banner"
         },
@@ -178,7 +181,8 @@
             "adm": "another advert",
             "w": 770,
             "h": 250,
-            "crid": "wasd"
+            "crid": "wasd",
+            "mtype": 1
           },
           "type": "banner"
         }

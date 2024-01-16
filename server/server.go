@@ -13,14 +13,14 @@ import (
 
 	"github.com/NYTimes/gziphandler"
 	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/metrics"
-	metricsconfig "github.com/prebid/prebid-server/metrics/config"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/metrics"
+	metricsconfig "github.com/prebid/prebid-server/v2/metrics/config"
 )
 
 // Listen blocks forever, serving PBS requests on the given port. This will block forever, until the process is shut down.
 func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.Handler, metrics *metricsconfig.DetailedMetricsEngine) (err error) {
-	stopSignals := make(chan os.Signal)
+	stopSignals := make(chan os.Signal, 1)
 	signal.Notify(stopSignals, syscall.SIGTERM, syscall.SIGINT)
 
 	// Run the servers. Fan any process-stopper signals out to each server for graceful shutdowns.
