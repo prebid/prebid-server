@@ -27,7 +27,6 @@ func TestNewSyncer(t *testing.T) {
 		givenIFrameConfig   *config.SyncerEndpoint
 		givenRedirectConfig *config.SyncerEndpoint
 		givenExternalURL    string
-		givenForceType      string
 		expectedError       string
 		expectedDefault     SyncType
 		expectedIFrame      string
@@ -323,7 +322,7 @@ func TestBuildTemplate(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		result, err := buildTemplate(key, syncTypeValue, hostConfig, test.givenSyncerExternalURL, test.givenSyncerEndpoint, "")
+		result, err := buildTemplate(key, syncTypeValue, hostConfig, test.givenSyncerExternalURL, test.givenSyncerEndpoint)
 
 		if test.expectedError == "" {
 			assert.NoError(t, err, test.description+":err")
@@ -481,36 +480,7 @@ func TestSyncerKey(t *testing.T) {
 
 func TestSyncerDefaultSyncType(t *testing.T) {
 	syncer := standardSyncer{defaultSyncType: SyncTypeRedirect}
-	assert.Equal(t, SyncTypeRedirect, syncer.DefaultResponseFormat())
-}
-
-func TestSyncerDefaultResponseFormat(t *testing.T) {
-	testCases := []struct {
-		description      string
-		givenSyncer      standardSyncer
-		expectedSyncType SyncType
-	}{
-		{
-			description:      "IFrame",
-			givenSyncer:      standardSyncer{formatOverride: config.SyncResponseFormatIFrame},
-			expectedSyncType: SyncTypeIFrame,
-		},
-		{
-			description:      "Default with Redirect Override",
-			givenSyncer:      standardSyncer{defaultSyncType: SyncTypeIFrame, formatOverride: config.SyncResponseFormatRedirect},
-			expectedSyncType: SyncTypeRedirect,
-		},
-		{
-			description:      "Default with no override",
-			givenSyncer:      standardSyncer{defaultSyncType: SyncTypeRedirect},
-			expectedSyncType: SyncTypeRedirect,
-		},
-	}
-
-	for _, test := range testCases {
-		syncType := test.givenSyncer.DefaultResponseFormat()
-		assert.Equal(t, test.expectedSyncType, syncType, test.description)
-	}
+	assert.Equal(t, SyncTypeRedirect, syncer.DefaultSyncType())
 }
 
 func TestSyncerSupportsType(t *testing.T) {
