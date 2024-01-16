@@ -27,17 +27,32 @@
       {
         "id": "test-imp-video-id",
         "video": {
-          "mimes": ["video/mp4"],
+          "mimes": [
+            "video/mp4"
+          ],
           "minduration": 1,
           "maxduration": 2,
-          "protocols": [1, 2, 5],
+          "protocols": [
+            1,
+            2,
+            5
+          ],
           "w": 1020,
           "h": 780,
           "startdelay": 1,
           "placement": 1,
-          "playbackmethod": [2],
-          "delivery": [1],
-          "api": [1, 2, 3, 4]
+          "playbackmethod": [
+            2
+          ],
+          "delivery": [
+            1
+          ],
+          "api": [
+            1,
+            2,
+            3,
+            4
+          ]
         },
         "ext": {
           "bidder": {
@@ -50,18 +65,22 @@
     ],
     "site": {
       "id": "102855",
-      "cat": ["IAB3-1"],
+      "cat": [
+        "IAB3-1"
+      ],
       "domain": "www.foobar.com",
       "page": "http://www.foobar.com/1234.html ",
       "publisher": {
         "id": "8953",
         "name": "foobar.com",
-        "cat": ["IAB3-1"],
+        "cat": [
+          "IAB3-1"
+        ],
         "domain": "foobar.com"
       }
     },
     "device": {
-      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/537.13 (KHTML, like Gecko) Version / 5.1 .7 Safari / 534.57 .2",
+      "ua": "Fake Test User Agent/6.0",
       "ip": "123.145.167.10"
     }
   },
@@ -97,17 +116,32 @@
             {
               "id": "test-imp-video-id",
               "video": {
-                "mimes": ["video/mp4"],
+                "mimes": [
+                  "video/mp4"
+                ],
                 "minduration": 1,
                 "maxduration": 2,
-                "protocols": [1, 2, 5],
+                "protocols": [
+                  1,
+                  2,
+                  5
+                ],
                 "w": 1020,
                 "h": 780,
                 "startdelay": 1,
                 "placement": 1,
-                "playbackmethod": [2],
-                "delivery": [1],
-                "api": [1, 2, 3, 4]
+                "playbackmethod": [
+                  2
+                ],
+                "delivery": [
+                  1
+                ],
+                "api": [
+                  1,
+                  2,
+                  3,
+                  4
+                ]
               },
               "ext": {
                 "bidder": {
@@ -120,18 +154,22 @@
           ],
           "site": {
             "id": "102855",
-            "cat": ["IAB3-1"],
+            "cat": [
+              "IAB3-1"
+            ],
             "domain": "www.foobar.com",
             "page": "http://www.foobar.com/1234.html ",
             "publisher": {
               "id": "8953",
               "name": "foobar.com",
-              "cat": ["IAB3-1"],
+              "cat": [
+                "IAB3-1"
+              ],
               "domain": "foobar.com"
             }
           },
           "device": {
-            "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/537.13 (KHTML, like Gecko) Version / 5.1 .7 Safari / 534.57 .2",
+            "ua": "Fake Test User Agent/6.0",
             "ip": "123.145.167.10"
           }
         }
@@ -150,7 +188,9 @@
                   "price": 0.5,
                   "adid": "29681110",
                   "adm": "some-test-ad",
-                  "adomain": ["yahoo.com"],
+                  "adomain": [
+                    "yahoo.com"
+                  ],
                   "cid": "958",
                   "crid": "29681110",
                   "h": 576,
@@ -166,25 +206,28 @@
       }
     }
   ],
-
   "expectedBidResponses": [
     {
-      "bids": [{
-        "bid": {
-          "id": "7706636740145184841",
-          "impid": "test-imp-video-id",
-          "price": 0.5,
-          "adm": "some-test-ad",
-          "adid": "29681110",
-          "adomain": ["yahoo.com"],
-          "cid": "958",
-          "crid": "29681110",
-          "w": 1024,
-          "h": 576,
-          "mtype": 2
-        },
-        "type": "video"
-      }]
+      "bids": [
+        {
+          "bid": {
+            "id": "7706636740145184841",
+            "impid": "test-imp-video-id",
+            "price": 0.5,
+            "adm": "some-test-ad",
+            "adid": "29681110",
+            "adomain": [
+              "yahoo.com"
+            ],
+            "cid": "958",
+            "crid": "29681110",
+            "w": 1024,
+            "h": 576,
+            "mtype": 2
+          },
+          "type": "video"
+        }
+      ]
     }
   ]
 }

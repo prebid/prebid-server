@@ -6,7 +6,8 @@
   "properties": {
     "org": {
       "type": "string",
-      "description": "The organization ID."
+      "description": "The organization ID.",
+      "minLength": 1
     }
   },
   "required": ["org"]

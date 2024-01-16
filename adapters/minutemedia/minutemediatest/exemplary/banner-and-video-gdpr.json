@@ -27,17 +27,32 @@
       {
         "id": "test-imp-video-id",
         "video": {
-          "mimes": ["video/mp4"],
+          "mimes": [
+            "video/mp4"
+          ],
           "minduration": 1,
           "maxduration": 2,
-          "protocols": [1, 2, 5],
+          "protocols": [
+            1,
+            2,
+            5
+          ],
           "w": 1020,
           "h": 780,
           "startdelay": 1,
           "placement": 1,
-          "playbackmethod": [2],
-          "delivery": [1],
-          "api": [1, 2, 3, 4]
+          "playbackmethod": [
+            2
+          ],
+          "delivery": [
+            1
+          ],
+          "api": [
+            1,
+            2,
+            3,
+            4
+          ]
         },
         "ext": {
           "bidder": {
@@ -92,17 +107,32 @@
             {
               "id": "test-imp-video-id",
               "video": {
-                "mimes": ["video/mp4"],
+                "mimes": [
+                  "video/mp4"
+                ],
                 "minduration": 1,
                 "maxduration": 2,
-                "protocols": [1, 2, 5],
+                "protocols": [
+                  1,
+                  2,
+                  5
+                ],
                 "w": 1020,
                 "h": 780,
                 "startdelay": 1,
                 "placement": 1,
-                "playbackmethod": [2],
-                "delivery": [1],
-                "api": [1, 2, 3, 4]
+                "playbackmethod": [
+                  2
+                ],
+                "delivery": [
+                  1
+                ],
+                "api": [
+                  1,
+                  2,
+                  3,
+                  4
+                ]
               },
               "ext": {
                 "bidder": {
@@ -140,7 +170,9 @@
                   "price": 0.5,
                   "adid": "29681110",
                   "adm": "some-test-ad",
-                  "adomain": ["yahoo.com"],
+                  "adomain": [
+                    "yahoo.com"
+                  ],
                   "cid": "958",
                   "crid": "29681110",
                   "h": 576,
@@ -156,7 +188,6 @@
       }
     }
   ],
-
   "expectedBidResponses": [
     {
       "bids": [
@@ -167,7 +198,9 @@
             "price": 0.5,
             "adm": "some-test-ad",
             "adid": "29681110",
-            "adomain": ["yahoo.com"],
+            "adomain": [
+              "yahoo.com"
+            ],
             "cid": "958",
             "crid": "29681110",
             "w": 1024,

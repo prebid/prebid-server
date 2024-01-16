@@ -5,12 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
 
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
@@ -29,7 +31,7 @@ func Builder(_ openrtb_ext.BidderName, config config.Adapter, _ config.Server) (
 func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) (requestsToBidder []*adapters.RequestData, errs []error) {
 	org, err := extractOrg(openRTBRequest)
 	if err != nil {
-		errs = append(errs, fmt.Errorf("extractOrg: %w", err))
+		errs = append(errs, fmt.Errorf("failed to extract org: %w", err))
 		return nil, errs
 	}
 
@@ -44,7 +46,7 @@ func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest, _ *adapters.
 
 	return append(requestsToBidder, &adapters.RequestData{
 		Method:  http.MethodPost,
-		Uri:     a.endpointURL + "?publisher_id=" + org,
+		Uri:     a.endpointURL + "?publisher_id=" + url.QueryEscape(org),
 		Body:    openRTBRequestJSON,
 		Headers: headers,
 	}), nil
@@ -93,20 +95,18 @@ func extractOrg(openRTBRequest *openrtb2.BidRequest) (string, error) {
 	for _, imp := range openRTBRequest.Imp {
 		var bidderExt adapters.ExtImpBidder
 		if err = json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-			return "", fmt.Errorf("unmarshal bidderExt: %w", err)
+			return "", fmt.Errorf("failed to unmarshal bidderExt: %w", err)
 		}
 
 		var impExt openrtb_ext.ImpExtMinuteMedia
 		if err = json.Unmarshal(bidderExt.Bidder, &impExt); err != nil {
-			return "", fmt.Errorf("unmarshal ImpExtMinuteMedia: %w", err)
+			return "", fmt.Errorf("failed to unmarshal ImpExtMinuteMedia: %w", err)
 		}
 
-		if impExt.Org != "" {
-			return strings.TrimSpace(impExt.Org), nil
-		}
+		return strings.TrimSpace(impExt.Org), nil
 	}
 
-	return "", errors.New("no org supplied")
+	return "", errors.New("no imps in bid request")
 }
 
 func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
@@ -116,6 +116,8 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 	case openrtb2.MarkupVideo:
 		return openrtb_ext.BidTypeVideo, nil
 	default:
-		return "", fmt.Errorf("unsupported MType %d", bid.MType)
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("unsupported MType %d", bid.MType),
+		}
 	}
 }

@@ -13,21 +13,34 @@
           "maxextended": 30,
           "minbitrate": 300,
           "maxbitrate": 1500,
-          "protocols": [1,2,5],
+          "protocols": [
+            1,
+            2,
+            5
+          ],
           "w": 1020,
           "h": 780,
           "startdelay": 1,
           "placement": 1,
-          "playbackmethod": [2],
-          "delivery": [1],
-          "api": [1,2,3,4]
+          "playbackmethod": [
+            2
+          ],
+          "delivery": [
+            1
+          ],
+          "api": [
+            1,
+            2,
+            3,
+            4
+          ]
         }
       }
     ]
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "extractOrg: unmarshal bidderExt: unexpected end of JSON input",
+      "value": "failed to extract org: failed to unmarshal bidderExt: unexpected end of JSON input",
       "comparison": "literal"
     }
   ]

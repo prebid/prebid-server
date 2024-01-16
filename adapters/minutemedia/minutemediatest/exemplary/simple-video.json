@@ -10,14 +10,27 @@
           ],
           "minduration": 1,
           "maxduration": 2,
-          "protocols": [1,3,5],
+          "protocols": [
+            1,
+            3,
+            5
+          ],
           "w": 1020,
           "h": 780,
           "startdelay": 1,
           "placement": 1,
-          "playbackmethod": [2],
-          "delivery": [1],
-          "api": [1,2,3,4]
+          "playbackmethod": [
+            2
+          ],
+          "delivery": [
+            1
+          ],
+          "api": [
+            1,
+            2,
+            3,
+            4
+          ]
         },
         "ext": {
           "bidder": {
@@ -44,14 +57,27 @@
                 ],
                 "minduration": 1,
                 "maxduration": 2,
-                "protocols": [1,3,5],
+                "protocols": [
+                  1,
+                  3,
+                  5
+                ],
                 "w": 1020,
                 "h": 780,
                 "startdelay": 1,
                 "placement": 1,
-                "playbackmethod": [2],
-                "delivery": [1],
-                "api": [1,2,3,4]
+                "playbackmethod": [
+                  2
+                ],
+                "delivery": [
+                  1
+                ],
+                "api": [
+                  1,
+                  2,
+                  3,
+                  4
+                ]
               },
               "ext": {
                 "bidder": {
@@ -92,19 +118,21 @@
   ],
   "expectedBidResponses": [
     {
-      "bids": [{
-        "bid": {
-          "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
-          "impid": "test-imp-id",
-          "price": 0.5,
-          "adm": "some-test-ad",
-          "crid": "crid_10",
-          "w": 1024,
-          "h": 576,
-          "mtype": 2
-        },
-        "type": "video"
-      }]
+      "bids": [
+        {
+          "bid": {
+            "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+            "impid": "test-imp-id",
+            "price": 0.5,
+            "adm": "some-test-ad",
+            "crid": "crid_10",
+            "w": 1024,
+            "h": 576,
+            "mtype": 2
+          },
+          "type": "video"
+        }
+      ]
     }
   ]
 }
