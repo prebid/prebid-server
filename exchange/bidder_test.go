@@ -2,6 +2,7 @@ package exchange
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"crypto/tls"
 	"encoding/json"
@@ -13,6 +14,7 @@ import (
 	"net/http/httptrace"
 	"sort"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -3346,4 +3348,105 @@ func TestDoRequestImplWithTmaxTimeout(t *testing.T) {
 		httpCallInfo := bidderAdapter.doRequestImpl(ctx, &bidRequest, logger, requestStartTime, test.tmaxAdjustments)
 		test.assertFn(httpCallInfo.err)
 	}
+}
+
+func BenchmarkCompressToGZIPNotOptimized(b *testing.B) {
+	// Setup the mock server
+	respBody := "{\"bid\":false}"
+	respStatus := 200
+	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
+	defer server.Close()
+
+	// Prepare the request data
+	req := &adapters.RequestData{
+		Method:  "POST",
+		Uri:     server.URL,
+		Body:    []byte("{\"key\":\"val\"}"),
+		Headers: http.Header{},
+	}
+	endpointCompression := "GZIP"
+
+	// Run the benchmark
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		// Reset the request body
+		var requestBody []byte
+
+		// Mimic the switch case logic
+		switch strings.ToUpper(endpointCompression) {
+		case Gzip:
+			requestBody = compressToGZIP(req.Body)
+			req.Headers.Set("Content-Encoding", "gzip")
+		default:
+			requestBody = req.Body
+		}
+
+		// Create the HTTP request
+		httpReq, err := http.NewRequest(req.Method, req.Uri, bytes.NewBuffer(requestBody))
+		if err != nil {
+			b.Fatal(err)
+		}
+		httpReq.Header = req.Headers
+	}
+}
+
+var gzipWriterPoolBenchmark = sync.Pool{
+	New: func() interface{} {
+		return gzip.NewWriter(nil)
+	},
+}
+
+func BenchmarkCompressToGZIPOptimize(b *testing.B) {
+	// Setup the mock server
+	respBody := "{\"bid\":false}"
+	respStatus := 200
+	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
+	defer server.Close()
+
+	// Prepare the request data
+	req := &adapters.RequestData{
+		Method:  "POST",
+		Uri:     server.URL,
+		Body:    []byte("{\"key\":\"val\"}"),
+		Headers: http.Header{},
+	}
+	endpointCompression := "GZIP"
+
+	// Run the benchmark
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		// Reset the request body
+		var requestBody []byte
+
+		// Mimic the switch case logic
+		switch strings.ToUpper(endpointCompression) {
+		case Gzip:
+			var b bytes.Buffer
+			w := getGzipWriter(&b)
+			w.Write([]byte(req.Body))
+			w.Close()
+			requestBody = b.Bytes()
+			req.Headers.Set("Content-Encoding", "gzip")
+			gzipWriterPool.Put(w)
+		default:
+			requestBody = req.Body
+		}
+
+		// Create the HTTP request
+		httpReq, err := http.NewRequest(req.Method, req.Uri, bytes.NewBuffer(requestBody))
+		if err != nil {
+			b.Fatal(err)
+		}
+		httpReq.Header = req.Headers
+	}
+}
+
+func getGzipWriter(w io.Writer) *gzip.Writer {
+	gw := gzipWriterPoolBenchmark.Get().(*gzip.Writer)
+	gw.Reset(w)
+	return gw
+}
+
+func putGzipWriter(gw *gzip.Writer) {
+	gzipWriterPoolBenchmark.Put(gw)
 }

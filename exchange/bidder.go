@@ -13,6 +13,7 @@ import (
 	"net/http/httptrace"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/golang/glog"
@@ -525,8 +526,19 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 
 	switch strings.ToUpper(bidder.config.EndpointCompression) {
 	case Gzip:
-		requestBody = compressToGZIP(req.Body)
+		// Compress to GZIP
+		var b bytes.Buffer
+		w := gzipWriterPool.Get().(*gzip.Writer) // Utilize Sync Pool
+		w.Reset(&b)
+		w.Write([]byte(requestBody))
+		w.Close()
+		requestBody = b.Bytes()
+
+		// Set Header
 		req.Headers.Set("Content-Encoding", "gzip")
+
+		// Return Writer To Pool
+		gzipWriterPool.Put(w)
 	default:
 		requestBody = req.Body
 	}
@@ -716,9 +728,17 @@ func prepareStoredResponse(impId string, bidResp json.RawMessage) *httpCallInfo 
 	return respData
 }
 
+var gzipWriterPool = sync.Pool{
+	New: func() interface{} {
+		return gzip.NewWriter(nil)
+	},
+}
+
 func compressToGZIP(requestBody []byte) []byte {
 	var b bytes.Buffer
-	w := gzip.NewWriter(&b)
+	w := gzipWriterPool.Get().(*gzip.Writer) // Utilize Sync Pool
+
+	w.Reset(&b)
 	w.Write([]byte(requestBody))
 	w.Close()
 	return b.Bytes()
