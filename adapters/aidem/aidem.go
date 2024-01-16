@@ -3,7 +3,6 @@ package aidem
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/v2/macros"
 	"net/http"
 	"text/template"
 
@@ -11,6 +10,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/macros"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
