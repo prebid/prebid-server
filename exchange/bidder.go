@@ -523,6 +523,11 @@ func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.Reques
 
 func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.RequestData, logger util.LogMsg, bidderRequestStartTime time.Time, tmaxAdjustments *TmaxAdjustmentsPreprocessed) *httpCallInfo {
 	var requestBody []byte
+	var gzipWriterPool = sync.Pool{
+		New: func() interface{} {
+			return gzip.NewWriter(nil)
+		},
+	}
 
 	switch strings.ToUpper(bidder.config.EndpointCompression) {
 	case Gzip:
@@ -726,22 +731,6 @@ func prepareStoredResponse(impId string, bidResp json.RawMessage) *httpCallInfo 
 		err: nil,
 	}
 	return respData
-}
-
-var gzipWriterPool = sync.Pool{
-	New: func() interface{} {
-		return gzip.NewWriter(nil)
-	},
-}
-
-func compressToGZIP(requestBody []byte) []byte {
-	var b bytes.Buffer
-	w := gzipWriterPool.Get().(*gzip.Writer) // Utilize Sync Pool
-
-	w.Reset(&b)
-	w.Write([]byte(requestBody))
-	w.Close()
-	return b.Bytes()
 }
 
 func getBidTypeForAdjustments(bidType openrtb_ext.BidType, impID string, imp []openrtb2.Imp) string {

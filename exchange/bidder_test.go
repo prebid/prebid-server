@@ -3375,7 +3375,12 @@ func BenchmarkCompressToGZIPNotOptimized(b *testing.B) {
 		// Mimic the switch case logic
 		switch strings.ToUpper(endpointCompression) {
 		case Gzip:
-			requestBody = compressToGZIP(req.Body)
+			// Non-Optimized Compress to GZIP
+			var b bytes.Buffer
+			w := gzip.NewWriter(&b)
+			w.Write([]byte(requestBody))
+			w.Close()
+			requestBody = b.Bytes()
 			req.Headers.Set("Content-Encoding", "gzip")
 		default:
 			requestBody = req.Body
@@ -3390,13 +3395,13 @@ func BenchmarkCompressToGZIPNotOptimized(b *testing.B) {
 	}
 }
 
-var gzipWriterPoolBenchmark = sync.Pool{
-	New: func() interface{} {
-		return gzip.NewWriter(nil)
-	},
-}
+func BenchmarkCompressToGZIPOptimized(b *testing.B) {
+	var gzipWriterPoolBenchmark = sync.Pool{
+		New: func() interface{} {
+			return gzip.NewWriter(nil)
+		},
+	}
 
-func BenchmarkCompressToGZIPOptimize(b *testing.B) {
 	// Setup the mock server
 	respBody := "{\"bid\":false}"
 	respStatus := 200
@@ -3421,13 +3426,19 @@ func BenchmarkCompressToGZIPOptimize(b *testing.B) {
 		// Mimic the switch case logic
 		switch strings.ToUpper(endpointCompression) {
 		case Gzip:
+			// Optimized Compress to GZIP
 			var b bytes.Buffer
-			w := getGzipWriter(&b)
+			w := gzipWriterPoolBenchmark.Get().(*gzip.Writer) // Utilize Sync Pool
+			w.Reset(&b)
 			w.Write([]byte(req.Body))
 			w.Close()
 			requestBody = b.Bytes()
+
+			// Set Header
 			req.Headers.Set("Content-Encoding", "gzip")
-			gzipWriterPool.Put(w)
+
+			// Return Writer to Pool
+			gzipWriterPoolBenchmark.Put(w)
 		default:
 			requestBody = req.Body
 		}
@@ -3439,14 +3450,4 @@ func BenchmarkCompressToGZIPOptimize(b *testing.B) {
 		}
 		httpReq.Header = req.Headers
 	}
-}
-
-func getGzipWriter(w io.Writer) *gzip.Writer {
-	gw := gzipWriterPoolBenchmark.Get().(*gzip.Writer)
-	gw.Reset(w)
-	return gw
-}
-
-func putGzipWriter(gw *gzip.Writer) {
-	gzipWriterPoolBenchmark.Put(gw)
 }
