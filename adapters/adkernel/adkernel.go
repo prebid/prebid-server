@@ -87,9 +87,6 @@ func validateImpression(imp *openrtb2.Imp, impExt *openrtb_ext.ExtImpAdkernel) e
 	if impExt.ZoneId < 1 {
 		return newBadInputError(fmt.Sprintf("Invalid zoneId value: %d. Ignoring imp id=%s", impExt.ZoneId, imp.ID))
 	}
-	if imp.Video == nil && imp.Banner == nil && imp.Native == nil && imp.Audio == nil {
-		return newBadInputError(fmt.Sprintf("Invalid imp id=%s. Expected imp.banner / imp.video / imp.native / imp.audio", imp.ID))
-	}
 	return nil
 }
 
@@ -132,7 +129,7 @@ func isMultiFormatImp(imp *openrtb2.Imp) bool {
 }
 
 func splitMultiFormatImp(imp *openrtb2.Imp) []openrtb2.Imp {
-	splitImps := make([]openrtb2.Imp, 0)
+	splitImps := make([]openrtb2.Imp, 0, 4)
 	if imp.Banner != nil {
 		impCopy := *imp
 		impCopy.Video = nil
