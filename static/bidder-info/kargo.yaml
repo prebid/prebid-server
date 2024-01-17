@@ -16,4 +16,3 @@ userSync:
 endpointCompression: "GZIP"
 openrtb:
   gpp-supported: true
-  multiformat_supported: true
