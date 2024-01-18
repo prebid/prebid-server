@@ -100,6 +100,8 @@ type Configuration struct {
 	Hooks       Hooks       `mapstructure:"hooks"`
 	Validations Validations `mapstructure:"validations"`
 	PriceFloors PriceFloors `mapstructure:"price_floors"`
+
+	Auction Auction `mapstructure:"auction"`
 }
 
 type PriceFloors struct {
@@ -1284,4 +1286,14 @@ type TmaxAdjustments struct {
 	// BidderResponseDurationMin is the minimum amount of time expected to get a response from a bidder request.
 	// PBS won't send a request to the bidder if the bidder tmax calculated is less than the BidderResponseDurationMin value
 	BidderResponseDurationMin uint `mapstructure:"bidder_response_duration_min_ms"`
+}
+
+type Auction struct {
+	PrivacySandbox PrivacySandbox `mapstructure:"privacysandbox" json:"privacysandbox"`
+}
+
+type PrivacySandbox struct {
+	TopicsDomain                   string `mapstructure:"topicsdomain"`
+	CookieDeprecation              bool   `mapstructure:"cookiedeprecation"`
+	CookieDeprecationExpirationSec int    `mapstructure:"cookiedeprecationexpirationsec"`
 }
