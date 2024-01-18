@@ -3,7 +3,7 @@
     "id": "testid",
     "imp": [
       {
-        "id": "testimpid",
+        "id": "123654",
         "banner": {
           "w": 320,
           "h": 250
@@ -51,7 +51,7 @@
                   }
                 }
               },
-              "id": "testimpid"
+              "id": "123654"
             }
           ]
         }

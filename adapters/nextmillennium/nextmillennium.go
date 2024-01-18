@@ -161,16 +161,21 @@ func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
-
+	errors := []error{}
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
+			bidType, err := getBidType(sb.Bid[i].ImpID, internalRequest.Imp)
+			if err != nil {
+				errors = append(errors, err)
+				continue
+			}
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &sb.Bid[i],
-				BidType: getBidType(sb.Bid[i].ImpID, internalRequest.Imp),
+				BidType: bidType,
 			})
 		}
 	}
-	return bidResponse, nil
+	return bidResponse, errors
 }
 
 // Builder builds a new instance of the NextMillennium adapter for the given bidder with the given config.
@@ -188,15 +193,15 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	}, nil
 }
 
-func getBidType(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
+func getBidType(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
 	for _, imp := range imps {
 		if imp.ID == impID {
 			if imp.Banner != nil {
-				return openrtb_ext.BidTypeBanner
+				return openrtb_ext.BidTypeBanner, nil
 			} else if imp.Video != nil {
-				return openrtb_ext.BidTypeVideo
+				return openrtb_ext.BidTypeVideo, nil
 			}
 		}
 	}
-	return openrtb_ext.BidTypeBanner
+	return openrtb_ext.BidTypeBanner, fmt.Errorf("unable to detect media type for imp %s", impID)
 }
