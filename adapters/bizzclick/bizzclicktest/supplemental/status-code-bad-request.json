@@ -1,4 +1,3 @@
-
 {
   "mockBidRequest": {
     "id": "some-request-id",
@@ -34,55 +33,57 @@
         "ext": {
           "bidder": {
             "accountId": "accountId",
-            "placementId": "placementId"
+            "sourceId": "sourceId",
+            "host": "host"
           }
         }
       }
     ]
   },
-
-  "httpCalls": [{
-    "expectedRequest": {
-      "uri": "http://us.example.com/bid?rtb_seat_id=placementId&secret_key=accountId",
-      "body": {
-        "id": "some-request-id",
-        "imp": [
-          {
-            "id": "some-impression-id",
-            "video": {
-              "mimes": [
-                "video/mp4"
-              ],
-              "minduration": 120,
-              "maxduration": 150,
-              "w": 640,
-              "h": 480
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://host.bizzclick.com/bid?rtb_seat_id=sourceId&secret_key=accountId",
+        "body": {
+          "id": "some-request-id",
+          "imp": [
+            {
+              "id": "some-impression-id",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "minduration": 120,
+                "maxduration": 150,
+                "w": 640,
+                "h": 480
+              },
+              "tagid": "ogTAGID"
+            }
+          ],
+          "app": {
+            "publisher": {
+              "id": "123456789"
             },
-            "tagid": "ogTAGID"
-          }
-        ],
-        "app":  {
-          "publisher": {
+            "cat": [
+              "IAB22-1"
+            ],
+            "bundle": "com.app.awesome",
+            "name": "Awesome App",
+            "domain": "awesomeapp.com",
             "id": "123456789"
           },
-          "cat": [
-            "IAB22-1"
-          ],
-          "bundle": "com.app.awesome",
-          "name": "Awesome App",
-          "domain": "awesomeapp.com",
-          "id": "123456789"
-        },
-        "user": {
-          "buyeruid": "awesome-user"
-        },
-        "tmax": 1000
+          "user": {
+            "buyeruid": "awesome-user"
+          },
+          "tmax": 1000
+        }
+      },
+      "mockResponse": {
+        "status": 400
       }
-    },
-    "mockResponse": {
-      "status": 400
     }
-  }],
+  ],
   "expectedBidResponses": [],
   "expectedMakeBidsErrors": [
     {
