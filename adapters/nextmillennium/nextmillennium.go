@@ -166,7 +166,7 @@ func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 		for i := range sb.Bid {
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &sb.Bid[i],
-				BidType: openrtb_ext.BidTypeBanner,
+				BidType: getBidType(sb.Bid[i].ImpID, internalRequest.Imp),
 			})
 		}
 	}
@@ -186,4 +186,17 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 		endpoint: config.Endpoint,
 		nmmFlags: info.NmmFlags,
 	}, nil
+}
+
+func getBidType(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
+	for _, imp := range imps {
+		if imp.ID == impID {
+			if imp.Banner != nil {
+				return openrtb_ext.BidTypeBanner
+			} else if imp.Video != nil {
+				return openrtb_ext.BidTypeVideo
+			}
+		}
+	}
+	return openrtb_ext.BidTypeBanner
 }
