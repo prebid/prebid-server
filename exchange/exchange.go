@@ -246,7 +246,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 	}
 
 	// seatNonBid will store nonbids collected inside HoldAuction function, it will not contain the nonbids from stageOutcomes
-	seatNonBid := &openrtb_ext.NonBidsWrapper{}
+	seatNonBid := openrtb_ext.NonBidsWrapper{}
 
 	// ensure prebid object always exists
 	requestExtPrebid := requestExt.GetPrebid()
@@ -407,7 +407,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 		//If includebrandcategory is present in ext then CE feature is on.
 		if requestExtPrebid.Targeting != nil && requestExtPrebid.Targeting.IncludeBrandCategory != nil {
 			var rejections []string
-			bidCategory, adapterBids, rejections, err = applyCategoryMapping(ctx, *requestExtPrebid.Targeting, adapterBids, e.categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, seatNonBid)
+			bidCategory, adapterBids, rejections, err = applyCategoryMapping(ctx, *requestExtPrebid.Targeting, adapterBids, e.categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &seatNonBid)
 			if err != nil {
 				return nil, fmt.Errorf("Error in category mapping : %s", err.Error())
 			}
@@ -507,7 +507,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 	return &AuctionResponse{
 		BidResponse:    bidResponse,
 		ExtBidResponse: bidResponseExt,
-		SeatNonBid:     *seatNonBid,
+		SeatNonBid:     seatNonBid,
 	}, nil
 }
 

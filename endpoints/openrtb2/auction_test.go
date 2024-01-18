@@ -6511,6 +6511,8 @@ func TestSeatNonBidInAuction(t *testing.T) {
 		bidRequest                openrtb2.BidRequest
 		seatNonBidFromHoldAuction openrtb_ext.NonBidsWrapper
 		errorFromHoldAuction      error
+		rejectRawAuctionHook      bool
+		errorFromHook             error
 	}
 	type want struct {
 		statusCode int
@@ -6649,9 +6651,10 @@ func TestSeatNonBidInAuction(t *testing.T) {
 			},
 		},
 		{
-			description: "holdAuction returns other than hookRejection error, seatNonBid should be present in auctionObject",
+			description: "hookexecutor returns hook-reject error after parseRequest, seatNonBid should be present in auctionObject and bidResponseExt",
 			args: args{
-				errorFromHoldAuction: errors.New("fatal-error"),
+				rejectRawAuctionHook: true,
+				errorFromHook:        &hookexecution.RejectError{Stage: hooks.StageEntrypoint.String(), NBR: 5},
 				bidRequest: openrtb2.BidRequest{
 					ID: "id",
 					Site: &openrtb2.Site{
@@ -6671,8 +6674,9 @@ func TestSeatNonBidInAuction(t *testing.T) {
 				},
 			},
 			want: want{
-				statusCode: 500,
-				body:       "Critical error while running the auction: fatal-error",
+				statusCode: 200,
+				body: `{"id":"id","nbr":10,"ext":{"prebid":{"seatnonbid":[{"nonbid":[{"impid":"imp","statuscode":100,` +
+					`"ext":{"prebid":{"bid":{}}}}],"seat":"pubmatic","ext":null}]}}}` + "\n",
 				seatNonBid: []openrtb_ext.SeatNonBid{
 					{
 						Seat: "pubmatic",
@@ -6724,6 +6728,44 @@ func TestSeatNonBidInAuction(t *testing.T) {
 				},
 			},
 		},
+		{
+			description: "holdAuction returns non-hookRejection error, seatNonBid should be present in auctionObject",
+			args: args{
+				errorFromHoldAuction: errors.New("any-error"),
+				bidRequest: openrtb2.BidRequest{
+					ID: "id",
+					Site: &openrtb2.Site{
+						ID: "site-1",
+					},
+					Imp: []openrtb2.Imp{
+						{
+							ID: "imp1",
+							Banner: &openrtb2.Banner{
+								W: openrtb2.Int64Ptr(100),
+								H: openrtb2.Int64Ptr(100),
+							},
+							Ext: json.RawMessage(`{"prebid": {"bidder":{"pubmatic":{"publisherid":1234}}}}`),
+						},
+					},
+					Ext: json.RawMessage(`{"prebid": {"returnallbidstatus": true}}`),
+				},
+			},
+			want: want{
+				statusCode: 500,
+				body:       `Critical error while running the auction: any-error`,
+				seatNonBid: []openrtb_ext.SeatNonBid{
+					{
+						Seat: "pubmatic",
+						NonBid: []openrtb_ext.NonBid{
+							{
+								ImpId:      "imp",
+								StatusCode: 100,
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
@@ -6731,7 +6773,7 @@ func TestSeatNonBidInAuction(t *testing.T) {
 			mockAnalytics := mockAnalyticsModule{}
 			deps := &endpointDeps{
 				fakeUUIDGenerator{},
-				&mockExchange{seatNonBid: test.args.seatNonBidFromHoldAuction, error: test.args.errorFromHoldAuction},
+				&mockExchange{seatNonBid: test.args.seatNonBidFromHoldAuction, returnError: test.args.errorFromHoldAuction},
 				mockBidderParamValidator{},
 				&mockStoredReqFetcher{},
 				empty_fetcher.EmptyFetcher{},
@@ -6749,6 +6791,12 @@ func TestSeatNonBidInAuction(t *testing.T) {
 				empty_fetcher.EmptyFetcher{},
 				mockPlanBuilder{
 					entrypointPlan: makePlan[hookstage.Entrypoint](mockSeatNonBidHook{}),
+					rawAuctionPlan: makePlan[hookstage.RawAuctionRequest](
+						mockSeatNonBidHook{
+							rejectRawAuctionHook: test.args.rejectRawAuctionHook,
+							returnError:          test.args.errorFromHook,
+						},
+					),
 				},
 				nil,
 				openrtb_ext.NormalizeBidderName,
@@ -6762,6 +6810,96 @@ func TestSeatNonBidInAuction(t *testing.T) {
 			assert.Equal(t, test.want.statusCode, recorder.Result().StatusCode, "mismatched status code.")
 			assert.Equal(t, test.want.body, recorder.Body.String(), "mismatched response body.")
 			assert.ElementsMatch(t, test.want.seatNonBid, mockAnalytics.auctionObjects[0].SeatNonBid, "mismatched seat-non-bids.")
+		})
+	}
+}
+
+func TestSetSeatNonBid(t *testing.T) {
+	type args struct {
+		finalExtBidResponse *openrtb_ext.ExtBidResponse
+		seatNonBid          []openrtb_ext.SeatNonBid
+	}
+	type want struct {
+		setSeatNonBid       bool
+		finalExtBidResponse *openrtb_ext.ExtBidResponse
+	}
+	tests := []struct {
+		name string
+		args args
+		want want
+	}{
+		{
+			name: "nil seatNonBid",
+			args: args{seatNonBid: nil, finalExtBidResponse: &openrtb_ext.ExtBidResponse{}},
+			want: want{
+				setSeatNonBid:       false,
+				finalExtBidResponse: &openrtb_ext.ExtBidResponse{},
+			},
+		},
+		{
+			name: "empty seatNonBid",
+			args: args{seatNonBid: []openrtb_ext.SeatNonBid{}, finalExtBidResponse: &openrtb_ext.ExtBidResponse{}},
+			want: want{
+				setSeatNonBid:       false,
+				finalExtBidResponse: &openrtb_ext.ExtBidResponse{},
+			},
+		},
+		{
+			name: "finalExtBidResponse is nil",
+			args: args{finalExtBidResponse: nil},
+			want: want{
+				setSeatNonBid:       false,
+				finalExtBidResponse: nil,
+			},
+		},
+		{
+			name: "finalExtBidResponse prebid is non-nil",
+			args: args{seatNonBid: []openrtb_ext.SeatNonBid{{Seat: "pubmatic", NonBid: []openrtb_ext.NonBid{{ImpId: "imp1", StatusCode: 100}}}},
+				finalExtBidResponse: &openrtb_ext.ExtBidResponse{Prebid: &openrtb_ext.ExtResponsePrebid{}}},
+			want: want{
+				setSeatNonBid: true,
+				finalExtBidResponse: &openrtb_ext.ExtBidResponse{Prebid: &openrtb_ext.ExtResponsePrebid{
+					SeatNonBid: []openrtb_ext.SeatNonBid{
+						{
+							NonBid: []openrtb_ext.NonBid{
+								{
+									ImpId:      "imp1",
+									StatusCode: 100,
+								},
+							},
+							Seat: "pubmatic",
+						},
+					},
+				}},
+			},
+		},
+		{
+			name: "finalExtBidResponse prebid is nil",
+			args: args{finalExtBidResponse: &openrtb_ext.ExtBidResponse{Prebid: nil}, seatNonBid: []openrtb_ext.SeatNonBid{{Seat: "pubmatic", NonBid: []openrtb_ext.NonBid{{ImpId: "imp1", StatusCode: 100}}}}},
+			want: want{
+				setSeatNonBid: true,
+				finalExtBidResponse: &openrtb_ext.ExtBidResponse{Prebid: &openrtb_ext.ExtResponsePrebid{
+					SeatNonBid: []openrtb_ext.SeatNonBid{
+						{
+							NonBid: []openrtb_ext.NonBid{
+								{
+									ImpId:      "imp1",
+									StatusCode: 100,
+								},
+							},
+							Seat: "pubmatic",
+						},
+					},
+				}},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := setSeatNonBid(tt.args.finalExtBidResponse, tt.args.seatNonBid)
+			assert.Equal(t, tt.want.setSeatNonBid, got, "setSeatNonBid returned invalid value")
+			assert.Equal(t, tt.want.finalExtBidResponse, tt.args.finalExtBidResponse, "setSeatNonBid incorrectly updated finalExtBidResponse")
 		})
 	}
 }

@@ -48,16 +48,16 @@ func (snb *NonBidsWrapper) AddBid(bidParams NonBidParams) {
 	snb.seatNonBidsMap[bidParams.Seat] = append(snb.seatNonBidsMap[bidParams.Seat], nonBid)
 }
 
-// MergeNonBids merges NonBids from the input instance into the current instance's seatNonBidsMap, creating the map if needed.
+// Append functions appends the NonBids from the input instance into the current instance's seatNonBidsMap, creating the map if needed.
 // Note: This function is not a thread safe.
-func (snb *NonBidsWrapper) MergeNonBids(input NonBidsWrapper) {
-	if snb == nil || len(input.seatNonBidsMap) == 0 {
+func (snb *NonBidsWrapper) Append(nonbid NonBidsWrapper) {
+	if snb == nil || len(nonbid.seatNonBidsMap) == 0 {
 		return
 	}
 	if snb.seatNonBidsMap == nil {
-		snb.seatNonBidsMap = make(map[string][]NonBid, len(input.seatNonBidsMap))
+		snb.seatNonBidsMap = make(map[string][]NonBid, len(nonbid.seatNonBidsMap))
 	}
-	for seat, nonBids := range input.seatNonBidsMap {
+	for seat, nonBids := range nonbid.seatNonBidsMap {
 		snb.seatNonBidsMap[seat] = append(snb.seatNonBidsMap[seat], nonBids...)
 	}
 }

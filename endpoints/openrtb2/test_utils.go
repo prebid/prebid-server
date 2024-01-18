@@ -847,10 +847,14 @@ func (cf mockStoredReqFetcher) FetchResponses(ctx context.Context, ids []string)
 type mockExchange struct {
 	lastRequest *openrtb2.BidRequest
 	seatNonBid  openrtb_ext.NonBidsWrapper
-	error       error
+	returnError error
 }
 
 func (m *mockExchange) HoldAuction(ctx context.Context, auctionRequest *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*exchange.AuctionResponse, error) {
+	if m.returnError != nil {
+		return nil, m.returnError
+	}
+
 	r := auctionRequest.BidRequestWrapper
 	m.lastRequest = r.BidRequest
 	return &exchange.AuctionResponse{
@@ -862,7 +866,7 @@ func (m *mockExchange) HoldAuction(ctx context.Context, auctionRequest *exchange
 			}},
 		},
 		SeatNonBid: m.seatNonBid,
-	}, m.error
+	}, nil
 }
 
 // hardcodedResponseIPValidator implements the IPValidator interface.
@@ -1521,6 +1525,12 @@ func (m mockRejectionHook) HandleRawBidderResponseHook(
 
 // mockSeatNonBidHook can be used to return seatNonBid from hook stage
 type mockSeatNonBidHook struct {
+	rejectEntrypointHook        bool
+	rejectRawAuctionHook        bool
+	rejectProcessedAuctionHook  bool
+	rejectBidderRequestHook     bool
+	rejectRawBidderResponseHook bool
+	returnError                 error
 }
 
 func (m mockSeatNonBidHook) HandleEntrypointHook(
@@ -1528,10 +1538,14 @@ func (m mockSeatNonBidHook) HandleEntrypointHook(
 	_ hookstage.ModuleInvocationContext,
 	_ hookstage.EntrypointPayload,
 ) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+	if m.rejectEntrypointHook {
+		return hookstage.HookResult[hookstage.EntrypointPayload]{NbrCode: 10, Reject: true}, m.returnError
+	}
 	result := hookstage.HookResult[hookstage.EntrypointPayload]{}
 	result.SeatNonBid = openrtb_ext.NonBidsWrapper{}
 	result.SeatNonBid.AddBid(openrtb_ext.NonBidParams{Bid: &openrtb2.Bid{ImpID: "imp"}, Seat: "pubmatic", NonBidReason: 100})
-	return result, nil
+
+	return result, m.returnError
 }
 
 func (m mockSeatNonBidHook) HandleRawAuctionHook(
@@ -1539,7 +1553,10 @@ func (m mockSeatNonBidHook) HandleRawAuctionHook(
 	_ hookstage.ModuleInvocationContext,
 	_ hookstage.RawAuctionRequestPayload,
 ) (hookstage.HookResult[hookstage.RawAuctionRequestPayload], error) {
-	return hookstage.HookResult[hookstage.RawAuctionRequestPayload]{Reject: false, NbrCode: 0}, nil
+	if m.rejectRawAuctionHook {
+		return hookstage.HookResult[hookstage.RawAuctionRequestPayload]{NbrCode: 10, Reject: true}, m.returnError
+	}
+	return hookstage.HookResult[hookstage.RawAuctionRequestPayload]{Reject: false, NbrCode: 0}, m.returnError
 }
 
 func (m mockSeatNonBidHook) HandleProcessedAuctionHook(
@@ -1547,7 +1564,10 @@ func (m mockSeatNonBidHook) HandleProcessedAuctionHook(
 	_ hookstage.ModuleInvocationContext,
 	_ hookstage.ProcessedAuctionRequestPayload,
 ) (hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload], error) {
-	return hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload]{Reject: true, NbrCode: 0}, fmt.Errorf("any error")
+	if m.rejectProcessedAuctionHook {
+		return hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload]{NbrCode: 10, Reject: true}, m.returnError
+	}
+	return hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload]{Reject: true, NbrCode: 0}, m.returnError
 }
 
 func (m mockSeatNonBidHook) HandleBidderRequestHook(
@@ -1555,7 +1575,10 @@ func (m mockSeatNonBidHook) HandleBidderRequestHook(
 	_ hookstage.ModuleInvocationContext,
 	payload hookstage.BidderRequestPayload,
 ) (hookstage.HookResult[hookstage.BidderRequestPayload], error) {
-	return hookstage.HookResult[hookstage.BidderRequestPayload]{}, nil
+	if m.rejectBidderRequestHook {
+		return hookstage.HookResult[hookstage.BidderRequestPayload]{NbrCode: 10, Reject: true}, m.returnError
+	}
+	return hookstage.HookResult[hookstage.BidderRequestPayload]{}, m.returnError
 }
 
 func (m mockSeatNonBidHook) HandleRawBidderResponseHook(
@@ -1563,7 +1586,10 @@ func (m mockSeatNonBidHook) HandleRawBidderResponseHook(
 	_ hookstage.ModuleInvocationContext,
 	payload hookstage.RawBidderResponsePayload,
 ) (hookstage.HookResult[hookstage.RawBidderResponsePayload], error) {
-	return hookstage.HookResult[hookstage.RawBidderResponsePayload]{}, nil
+	if m.rejectRawBidderResponseHook {
+		return hookstage.HookResult[hookstage.RawBidderResponsePayload]{NbrCode: 10, Reject: true}, m.returnError
+	}
+	return hookstage.HookResult[hookstage.RawBidderResponsePayload]{}, m.returnError
 }
 
 var entryPointHookUpdateWithErrors = hooks.HookWrapper[hookstage.Entrypoint]{

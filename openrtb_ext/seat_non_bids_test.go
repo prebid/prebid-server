@@ -12,7 +12,7 @@ func TestSeatNonBidsAdd(t *testing.T) {
 		seatNonBidsMap map[string][]NonBid
 	}
 	type args struct {
-		nonBidparams NonBidParams
+		nonBidParam NonBidParams
 	}
 	tests := []struct {
 		name   string
@@ -21,40 +21,22 @@ func TestSeatNonBidsAdd(t *testing.T) {
 		want   map[string][]NonBid
 	}{
 		{
-			name:   "nil seatNonBidsMap",
+			name:   "nil-seatNonBidsMap",
 			fields: fields{seatNonBidsMap: nil},
 			args:   args{},
 			want:   nil,
 		},
 		{
-			name: "add nil bid object",
-			fields: fields{seatNonBidsMap: map[string][]NonBid{
-				"bidder1": {{ImpId: "imp", StatusCode: 100}},
-			}},
-			args: args{nonBidparams: NonBidParams{Bid: nil}},
-			want: map[string][]NonBid{
-				"bidder1": {{ImpId: "imp", StatusCode: 100}},
-			},
-		},
-		{
-			name:   "nil seatNonBidsMap with bid object",
+			name:   "nil-seatNonBidsMap-with-bid-object",
 			fields: fields{seatNonBidsMap: nil},
-			args:   args{nonBidparams: NonBidParams{Bid: &openrtb2.Bid{ImpID: "imp"}, Seat: "bidder1"}},
-			want: map[string][]NonBid{
-				"bidder1": {{ImpId: "imp"}},
-			},
+			args:   args{nonBidParam: NonBidParams{Bid: &openrtb2.Bid{}, Seat: "bidder1"}},
+			want:   sampleSeatNonBidMap("bidder1", 1),
 		},
 		{
-			name: "multiple-nonbids-for-same-seat",
-			fields: fields{
-				seatNonBidsMap: map[string][]NonBid{
-					"bidder2": {{ImpId: "imp1"}},
-				},
-			},
-			args: args{nonBidparams: NonBidParams{Bid: &openrtb2.Bid{ImpID: "imp2"}, Seat: "bidder2"}},
-			want: map[string][]NonBid{
-				"bidder2": {{ImpId: "imp1"}, {ImpId: "imp2"}},
-			},
+			name:   "multiple-nonbids-for-same-seat",
+			fields: fields{seatNonBidsMap: sampleSeatNonBidMap("bidder2", 1)},
+			args:   args{nonBidParam: NonBidParams{Bid: &openrtb2.Bid{}, Seat: "bidder2"}},
+			want:   sampleSeatNonBidMap("bidder2", 2),
 		},
 	}
 	for _, tt := range tests {
@@ -62,7 +44,7 @@ func TestSeatNonBidsAdd(t *testing.T) {
 			snb := &NonBidsWrapper{
 				seatNonBidsMap: tt.fields.seatNonBidsMap,
 			}
-			snb.AddBid(tt.args.nonBidparams)
+			snb.AddBid(tt.args.nonBidParam)
 			assert.Equalf(t, tt.want, snb.seatNonBidsMap, "expected seatNonBidsMap not nil")
 		})
 	}
@@ -78,56 +60,49 @@ func TestSeatNonBidsGet(t *testing.T) {
 		want   []SeatNonBid
 	}{
 		{
-			name:   "nil seat nonbids",
-			fields: fields{nil},
+			name:   "get-seat-nonbids",
+			fields: fields{&NonBidsWrapper{sampleSeatNonBidMap("bidder1", 2)}},
+			want:   sampleSeatBids("bidder1", 2),
 		},
 		{
-			name: "get seat nonbids",
-			fields: fields{&NonBidsWrapper{
-				seatNonBidsMap: map[string][]NonBid{
-					"bidder1": {
-						{
-							ImpId:      "imp1",
-							StatusCode: 100,
-						},
-					},
-					"bidder2": {
-						{
-							ImpId:      "imp2",
-							StatusCode: 200,
-						},
-					},
-				},
-			}},
-			want: []SeatNonBid{
-				{
-					Seat: "bidder1",
-					NonBid: []NonBid{
-						{
-							ImpId:      "imp1",
-							StatusCode: 100,
-						},
-					},
-				},
-				{
-					Seat: "bidder2",
-					NonBid: []NonBid{
-						{
-							ImpId:      "imp2",
-							StatusCode: 200,
-						},
-					},
-				},
-			},
+			name:   "nil-seat-nonbids",
+			fields: fields{nil},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.fields.snb.Get(); !assert.ElementsMatch(t, tt.want, got) {
-				t.Errorf("seatNonBids.Get() = %v, want %v", got, tt.want)
+			if got := tt.fields.snb.Get(); !assert.Equal(t, tt.want, got) {
+				t.Errorf("seatNonBids.get() = %v, want %v", got, tt.want)
 			}
 		})
 	}
+}
+
+var sampleSeatNonBidMap = func(seat string, nonBidCount int) map[string][]NonBid {
+	nonBids := make([]NonBid, 0)
+	for i := 0; i < nonBidCount; i++ {
+		nonBids = append(nonBids, NonBid{
+			Ext: NonBidExt{Prebid: ExtResponseNonBidPrebid{Bid: NonBidObject{}}},
+		})
+	}
+	return map[string][]NonBid{
+		seat: nonBids,
+	}
+}
+
+var sampleSeatBids = func(seat string, nonBidCount int) []SeatNonBid {
+	seatNonBids := make([]SeatNonBid, 0)
+	seatNonBid := SeatNonBid{
+		Seat:   seat,
+		NonBid: make([]NonBid, 0),
+	}
+	for i := 0; i < nonBidCount; i++ {
+		seatNonBid.NonBid = append(seatNonBid.NonBid, NonBid{
+			Ext: NonBidExt{Prebid: ExtResponseNonBidPrebid{Bid: NonBidObject{}}},
+		})
+	}
+	seatNonBids = append(seatNonBids, seatNonBid)
+	return seatNonBids
 }
 
 func TestSeatNonBidsMerge(t *testing.T) {
@@ -141,100 +116,49 @@ func TestSeatNonBidsMerge(t *testing.T) {
 		want   *NonBidsWrapper
 	}{
 		{
-			name:   "target NonBidsWrapper is nil",
+			name:   "target-NonBidsWrapper-is-nil",
 			fields: target{nil},
 			want:   nil,
 		},
 		{
-			name:   "input NonBidsWrapper contains nil map",
+			name:   "input-NonBidsWrapper-contains-nil-map",
 			fields: target{&NonBidsWrapper{}},
 			input:  NonBidsWrapper{seatNonBidsMap: nil},
 			want:   &NonBidsWrapper{},
 		},
 		{
-			name:   "input NonBidsWrapper contains empty nonBids",
+			name:   "input-NonBidsWrapper-contains-empty-nonBids",
 			fields: target{&NonBidsWrapper{}},
 			input:  NonBidsWrapper{seatNonBidsMap: make(map[string][]NonBid)},
 			want:   &NonBidsWrapper{},
 		},
 		{
-			name:   "merge nonbids in empty target NonBidsWrapper",
+			name:   "append-nonbids-in-empty-target-NonBidsWrapper",
 			fields: target{&NonBidsWrapper{}},
 			input: NonBidsWrapper{
-				seatNonBidsMap: map[string][]NonBid{
-					"pubmatic": {
-						{
-							ImpId:      "imp1",
-							StatusCode: 100,
-						},
-					},
-				},
+				seatNonBidsMap: sampleSeatNonBidMap("pubmatic", 1),
 			},
 			want: &NonBidsWrapper{
-				seatNonBidsMap: map[string][]NonBid{
-					"pubmatic": {
-						{
-							ImpId:      "imp1",
-							StatusCode: 100,
-						},
-					},
-				},
+				seatNonBidsMap: sampleSeatNonBidMap("pubmatic", 1),
 			},
 		},
 		{
-			name: "merge multiple nonbids in non-empty target NonBidsWrapper",
+			name: "merge-multiple-nonbids-in-non-empty-target-NonBidsWrapper",
 			fields: target{&NonBidsWrapper{
-				seatNonBidsMap: map[string][]NonBid{
-					"pubmatic": {
-						{
-							ImpId:      "imp1",
-							StatusCode: 100,
-						},
-					},
-				},
+				seatNonBidsMap: sampleSeatNonBidMap("pubmatic", 1),
 			}},
 			input: NonBidsWrapper{
-				seatNonBidsMap: map[string][]NonBid{
-					"pubmatic": {
-						{
-							ImpId:      "imp2",
-							StatusCode: 100,
-						},
-					},
-					"appnexus": {
-						{
-							ImpId:      "imp3",
-							StatusCode: 200,
-						},
-					},
-				},
+				seatNonBidsMap: sampleSeatNonBidMap("pubmatic", 1),
 			},
 			want: &NonBidsWrapper{
-				seatNonBidsMap: map[string][]NonBid{
-					"pubmatic": {
-						{
-							ImpId:      "imp1",
-							StatusCode: 100,
-						},
-						{
-							ImpId:      "imp2",
-							StatusCode: 100,
-						},
-					},
-					"appnexus": {
-						{
-							ImpId:      "imp3",
-							StatusCode: 200,
-						},
-					},
-				},
+				seatNonBidsMap: sampleSeatNonBidMap("pubmatic", 2),
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.fields.snb.MergeNonBids(tt.input)
-			assert.Equal(t, tt.want, tt.fields.snb, "incorrect NonBidsWrapper generated by MergeNonBids")
+			tt.fields.snb.Append(tt.input)
+			assert.Equal(t, tt.want, tt.fields.snb, "incorrect NonBidsWrapper generated by Append")
 		})
 	}
 }

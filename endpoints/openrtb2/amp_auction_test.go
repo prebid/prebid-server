@@ -2562,96 +2562,6 @@ func (e errorResponseWriter) Write(bytes []byte) (int, error) {
 
 func (e errorResponseWriter) WriteHeader(statusCode int) {}
 
-func TestSetSeatNonBid(t *testing.T) {
-	type args struct {
-		finalExtBidResponse *openrtb_ext.ExtBidResponse
-		seatNonBid          []openrtb_ext.SeatNonBid
-	}
-	type want struct {
-		setSeatNonBid       bool
-		finalExtBidResponse *openrtb_ext.ExtBidResponse
-	}
-	tests := []struct {
-		name string
-		args args
-		want want
-	}{
-		{
-			name: "nil seatNonBid",
-			args: args{seatNonBid: nil, finalExtBidResponse: &openrtb_ext.ExtBidResponse{}},
-			want: want{
-				setSeatNonBid:       false,
-				finalExtBidResponse: &openrtb_ext.ExtBidResponse{},
-			},
-		},
-		{
-			name: "empty seatNonBid",
-			args: args{seatNonBid: []openrtb_ext.SeatNonBid{}, finalExtBidResponse: &openrtb_ext.ExtBidResponse{}},
-			want: want{
-				setSeatNonBid:       false,
-				finalExtBidResponse: &openrtb_ext.ExtBidResponse{},
-			},
-		},
-		{
-			name: "finalExtBidResponse is nil",
-			args: args{finalExtBidResponse: nil},
-			want: want{
-				setSeatNonBid:       false,
-				finalExtBidResponse: nil,
-			},
-		},
-		{
-			name: "finalExtBidResponse prebid is non-nil",
-			args: args{seatNonBid: []openrtb_ext.SeatNonBid{{Seat: "pubmatic", NonBid: []openrtb_ext.NonBid{{ImpId: "imp1", StatusCode: 100}}}},
-				finalExtBidResponse: &openrtb_ext.ExtBidResponse{Prebid: &openrtb_ext.ExtResponsePrebid{}}},
-			want: want{
-				setSeatNonBid: true,
-				finalExtBidResponse: &openrtb_ext.ExtBidResponse{Prebid: &openrtb_ext.ExtResponsePrebid{
-					SeatNonBid: []openrtb_ext.SeatNonBid{
-						{
-							NonBid: []openrtb_ext.NonBid{
-								{
-									ImpId:      "imp1",
-									StatusCode: 100,
-								},
-							},
-							Seat: "pubmatic",
-						},
-					},
-				}},
-			},
-		},
-		{
-			name: "finalExtBidResponse prebid is nil",
-			args: args{finalExtBidResponse: &openrtb_ext.ExtBidResponse{Prebid: nil}, seatNonBid: []openrtb_ext.SeatNonBid{{Seat: "pubmatic", NonBid: []openrtb_ext.NonBid{{ImpId: "imp1", StatusCode: 100}}}}},
-			want: want{
-				setSeatNonBid: true,
-				finalExtBidResponse: &openrtb_ext.ExtBidResponse{Prebid: &openrtb_ext.ExtResponsePrebid{
-					SeatNonBid: []openrtb_ext.SeatNonBid{
-						{
-							NonBid: []openrtb_ext.NonBid{
-								{
-									ImpId:      "imp1",
-									StatusCode: 100,
-								},
-							},
-							Seat: "pubmatic",
-						},
-					},
-				}},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := setSeatNonBid(tt.args.finalExtBidResponse, tt.args.seatNonBid)
-			assert.Equal(t, tt.want.setSeatNonBid, got, "setSeatNonBid returned invalid value")
-			assert.Equal(t, tt.want.finalExtBidResponse, tt.args.finalExtBidResponse, "setSeatNonBid incorrectly updated finalExtBidResponse")
-		})
-	}
-}
-
 func TestGetExtBidResponse(t *testing.T) {
 	type args struct {
 		hookExecutor    hookexecution.HookStageExecutor
@@ -2817,7 +2727,7 @@ func TestGetExtBidResponse(t *testing.T) {
 			},
 		},
 		{
-			name: "seatNonBid: reqWrapper is nil and seatNonBid is present then AmpObject should contain seatnonbid",
+			name: "seatNonBid: reqWrapper is nil and nonBids is present then AmpObject should contain seatnonbid",
 			args: args{
 				hookExecutor: mockStageExecutor{
 					outcomes: []hookexecution.StageOutcome{},

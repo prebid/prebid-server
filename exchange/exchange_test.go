@@ -3064,6 +3064,7 @@ func TestBidRejectionErrors(t *testing.T) {
 		duration           int
 		expectedRejections []string
 		expectedCatDur     string
+		expectedSeatNonBid openrtb_ext.NonBidsWrapper
 	}{
 		{
 			description: "Bid should be rejected due to not containing a category",
@@ -3075,6 +3076,17 @@ func TestBidRejectionErrors(t *testing.T) {
 			expectedRejections: []string{
 				"bid rejected [bid ID: bid_id1] reason: Bid did not contain a category",
 			},
+			expectedSeatNonBid: func() openrtb_ext.NonBidsWrapper {
+				seatNonBid := openrtb_ext.NonBidsWrapper{}
+				seatNonBid.AddBid(openrtb_ext.NonBidParams{
+					Bid:            &openrtb2.Bid{ImpID: "imp_id1", Price: 10, W: 1, H: 1, Cat: []string{}},
+					NonBidReason:   303,
+					Seat:           "appnexus",
+					OriginalBidCPM: 10,
+					OriginalBidCur: "USD",
+				})
+				return seatNonBid
+			}(),
 		},
 		{
 			description: "Bid should be rejected due to missing category mapping file",
@@ -3086,6 +3098,9 @@ func TestBidRejectionErrors(t *testing.T) {
 			expectedRejections: []string{
 				"bid rejected [bid ID: bid_id1] reason: Category mapping file for primary ad server: 'dfp', publisher: 'some_publisher' not found",
 			},
+			expectedSeatNonBid: func() openrtb_ext.NonBidsWrapper {
+				return openrtb_ext.NonBidsWrapper{}
+			}(),
 		},
 		{
 			description: "Bid should be rejected due to duration exceeding maximum",
@@ -3097,6 +3112,9 @@ func TestBidRejectionErrors(t *testing.T) {
 			expectedRejections: []string{
 				"bid rejected [bid ID: bid_id1] reason: bid duration exceeds maximum allowed",
 			},
+			expectedSeatNonBid: func() openrtb_ext.NonBidsWrapper {
+				return openrtb_ext.NonBidsWrapper{}
+			}(),
 		},
 		{
 			description: "Bid should be rejected due to duplicate bid",
@@ -3110,6 +3128,9 @@ func TestBidRejectionErrors(t *testing.T) {
 				"bid rejected [bid ID: bid_id1] reason: Bid was deduplicated",
 			},
 			expectedCatDur: "10.00_VideoGames_30s",
+			expectedSeatNonBid: func() openrtb_ext.NonBidsWrapper {
+				return openrtb_ext.NonBidsWrapper{}
+			}(),
 		},
 	}
 
@@ -3124,8 +3145,8 @@ func TestBidRejectionErrors(t *testing.T) {
 		seatBid := entities.PbsOrtbSeatBid{Bids: innerBids, Currency: "USD"}
 
 		adapterBids[bidderName] = &seatBid
-
-		bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, *test.reqExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &openrtb_ext.NonBidsWrapper{})
+		seatNonBid := openrtb_ext.NonBidsWrapper{}
+		bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, *test.reqExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &seatNonBid)
 
 		if len(test.expectedCatDur) > 0 {
 			// Bid deduplication case
@@ -3139,6 +3160,7 @@ func TestBidRejectionErrors(t *testing.T) {
 
 		assert.Empty(t, err, "Category mapping error should be empty")
 		assert.Equal(t, test.expectedRejections, rejections, test.description)
+		assert.Equal(t, test.expectedSeatNonBid, seatNonBid, "SeatNonBid doesn't match")
 	}
 }
 
