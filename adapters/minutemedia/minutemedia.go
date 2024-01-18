@@ -31,14 +31,12 @@ func Builder(_ openrtb_ext.BidderName, config config.Adapter, _ config.Server) (
 func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) (requestsToBidder []*adapters.RequestData, errs []error) {
 	org, err := extractOrg(openRTBRequest)
 	if err != nil {
-		errs = append(errs, fmt.Errorf("failed to extract org: %w", err))
-		return nil, errs
+		return nil, append(errs, fmt.Errorf("failed to extract org: %w", err))
 	}
 
 	openRTBRequestJSON, err := json.Marshal(openRTBRequest)
 	if err != nil {
-		errs = append(errs, fmt.Errorf("marshal bidRequest: %w", err))
-		return nil, errs
+		return nil, append(errs, err)
 	}
 
 	headers := http.Header{}
