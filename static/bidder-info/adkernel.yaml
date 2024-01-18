@@ -1,4 +1,4 @@
-endpoint: "https://pbs.adksrv.com/hb?zone={{.ZoneID}}"
+endpoint: "http://pbs.adksrv.com/hb?zone={{.ZoneID}}"
 maintainer:
   email: "prebid-dev@adkernel.com"
 gvlVendorID: 14
