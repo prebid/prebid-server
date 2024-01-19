@@ -6157,6 +6157,19 @@ func Test_setSecBrowsingTopcisImplicitly(t *testing.T) {
 			wantUser: nil,
 		},
 		{
+			name: "Sec-Browsing-Topics present but topicsdomain not configured by host, no change in user data",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{
+						"Sec-Browsing-Topics": []string{"some-sec-cookie-value"},
+					},
+				},
+				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
+				cfg: &config.Configuration{},
+			},
+			wantUser: nil,
+		},
+		{
 			name: "Sec-Browsing-Topics with finish padding, request.user.data empty, no change in user data",
 			args: args{
 				httpReq: &http.Request{

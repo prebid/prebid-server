@@ -2039,11 +2039,11 @@ func setSecBrowsingTopcisImplicitly(httpReq *http.Request, r *openrtb_ext.Reques
 		return
 	}
 
-	// host configurable topics domain
-	topicsDomain := "TOPICS_DOMAIN"
-	if cfg != nil {
-		topicsDomain = cfg.Auction.PrivacySandbox.TopicsDomain
+	// host must configure privacy sandbox
+	if cfg == nil || cfg.Auction.PrivacySandbox.TopicsDomain == "" {
+		return
 	}
+	topicsDomain := cfg.Auction.PrivacySandbox.TopicsDomain
 
 	// segtax-segclass-name-segIds for each lookup against data in request.user.data
 	headerUserData := map[int]map[string]map[string]map[string]struct{}{}
