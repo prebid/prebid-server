@@ -7,12 +7,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/prebid/prebid-server/v2/ortb"
-
+	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/hooks"
 	"github.com/prebid/prebid-server/v2/hooks/hookstage"
 	"github.com/prebid/prebid-server/v2/metrics"
+	"github.com/prebid/prebid-server/v2/ortb"
 	"github.com/prebid/prebid-server/v2/privacy"
+	"github.com/prebid/prebid-server/v2/util/iputil"
 )
 
 type hookResponse[T any] struct {
@@ -69,7 +70,7 @@ func executeGroup[H any, P any](
 
 	for _, hook := range group.Hooks {
 		mCtx := executionCtx.getModuleContext(hook.Module)
-		newPayload := handleModuleActivities(hook.Code, executionCtx.activityControl, payload)
+		newPayload := handleModuleActivities(hook.Code, executionCtx.activityControl, payload, executionCtx.account)
 		wg.Add(1)
 		go func(hw hooks.HookWrapper[H], moduleCtx hookstage.ModuleInvocationContext) {
 			defer wg.Done()
@@ -317,7 +318,7 @@ func handleHookMutations[P any](
 	return payload
 }
 
-func handleModuleActivities[P any](hookCode string, activityControl privacy.ActivityControl, payload P) P {
+func handleModuleActivities[P any](hookCode string, activityControl privacy.ActivityControl, payload P, account *config.Account) P {
 	payloadData, ok := any(&payload).(hookstage.RequestUpdater)
 	if !ok {
 		return payload
@@ -325,20 +326,36 @@ func handleModuleActivities[P any](hookCode string, activityControl privacy.Acti
 
 	scopeGeneral := privacy.Component{Type: privacy.ComponentTypeGeneral, Name: hookCode}
 	transmitUserFPDActivityAllowed := activityControl.Allow(privacy.ActivityTransmitUserFPD, scopeGeneral, privacy.ActivityRequest{})
+	transmitPreciseGeoActivityAllowed := activityControl.Allow(privacy.ActivityTransmitPreciseGeo, scopeGeneral, privacy.ActivityRequest{})
 
-	if !transmitUserFPDActivityAllowed {
-		// changes need to be applied to new payload and leave original payload unchanged
-		bidderReq := payloadData.GetBidderRequestPayload()
-
-		bidderReqCopy := ortb.CloneBidderReq(bidderReq.BidRequest)
-
-		privacy.ScrubUserFPD(bidderReqCopy)
-
-		var newPayload = payload
-		var np = any(&newPayload).(hookstage.RequestUpdater)
-		np.SetBidderRequestPayload(bidderReqCopy)
-		return newPayload
+	if transmitUserFPDActivityAllowed && transmitPreciseGeoActivityAllowed {
+		return payload
 	}
 
-	return payload
+	// changes need to be applied to new payload and leave original payload unchanged
+	bidderReq := payloadData.GetBidderRequestPayload()
+
+	bidderReqCopy := ortb.CloneBidderReq(bidderReq.BidRequest)
+
+	if !transmitUserFPDActivityAllowed {
+		privacy.ScrubUserFPD(bidderReqCopy)
+	}
+	if !transmitPreciseGeoActivityAllowed {
+		ipConf := privacy.IPConf{}
+		if account != nil {
+			ipConf = privacy.IPConf{IPV6: account.Privacy.IPv6Config, IPV4: account.Privacy.IPv4Config}
+		} else {
+			ipConf = privacy.IPConf{
+				IPV6: config.IPv6{AnonKeepBits: iputil.IPv6DefaultMaskingBitSize},
+				IPV4: config.IPv4{AnonKeepBits: iputil.IPv4DefaultMaskingBitSize}}
+		}
+
+		privacy.ScrubGeoAndDeviceIP(bidderReqCopy, ipConf)
+	}
+
+	var newPayload = payload
+	var np = any(&newPayload).(hookstage.RequestUpdater)
+	np.SetBidderRequestPayload(bidderReqCopy)
+	return newPayload
+
 }

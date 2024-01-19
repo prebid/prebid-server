@@ -8,7 +8,7 @@ import (
 )
 
 var validParams = []string{
-	`{  "accountId": "hash",  "placementId": "hash"}`,
+	`{ "host": "ep1", "sourceId": "partner", "accountId": "hash" }`,
 }
 
 func TestValidParams(t *testing.T) {
