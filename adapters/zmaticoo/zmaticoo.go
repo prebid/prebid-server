@@ -32,7 +32,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 }
 
 func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, []error) {
-	errs := getZmaticooExt(request)
+	errs := validateZmaticooExt(request)
 	if errs != nil {
 		return nil, errs
 	}
@@ -79,7 +79,7 @@ func transform(request *openrtb2.BidRequest) error {
 	return nil
 }
 
-func getZmaticooExt(request *openrtb2.BidRequest) []error {
+func validateZmaticooExt(request *openrtb2.BidRequest) []error {
 	var extImpZmaticoo openrtb_ext.ExtImpZmaticoo
 	var errs []error
 	for _, imp := range request.Imp {
