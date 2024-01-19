@@ -6108,3 +6108,72 @@ func TestValidateAliases(t *testing.T) {
 func fakeNormalizeBidderName(name string) (openrtb_ext.BidderName, bool) {
 	return openrtb_ext.BidderName(strings.ToLower(name)), true
 }
+
+func Test_secCookieDeprecation(t *testing.T) {
+	type args struct {
+		httpReq *http.Request
+		r       *openrtb_ext.RequestWrapper
+	}
+	tests := []struct {
+		name          string
+		args          args
+		wantDeviceExt json.RawMessage
+	}{
+		{
+			name: "Sec-Cookie-Deprecation not present in request",
+			args: args{
+				httpReq: &http.Request{},
+			},
+		},
+		{
+			name: "Sec-Cookie-Deprecation present in request where request.device is nil",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{"Sec-Cookie-Deprecation": []string{"example_label_1"}},
+				},
+				r: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{},
+				},
+			},
+			wantDeviceExt: json.RawMessage(`{"cdep":"example_label_1"}`),
+		},
+		{
+			name: "Sec-Cookie-Deprecation present in request where request.device.ext is nil",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{"Sec-Cookie-Deprecation": []string{"example_label_1"}},
+				},
+				r: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						Device: &openrtb2.Device{},
+					},
+				},
+			},
+			wantDeviceExt: json.RawMessage(`{"cdep":"example_label_1"}`),
+		},
+		{
+			name: "Sec-Cookie-Deprecation present in request where request.device.ext is not nil",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{"Sec-Cookie-Deprecation": []string{"example_label_1"}},
+				},
+				r: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						Device: &openrtb2.Device{
+							Ext: json.RawMessage(`{"foo":"bar"}`),
+						},
+					},
+				},
+			},
+			wantDeviceExt: json.RawMessage(`{"foo":"bar","cdep":"example_label_1"}`),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			secCookieDeprecation(tt.args.httpReq, tt.args.r)
+			if tt.wantDeviceExt != nil {
+				assert.JSONEq(t, string(tt.wantDeviceExt), string(tt.args.r.BidRequest.Device.Ext), tt.name)
+			}
+		})
+	}
+}
