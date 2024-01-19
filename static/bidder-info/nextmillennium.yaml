@@ -1,6 +1,7 @@
 endpoint: "https://pbs.nextmillmedia.com/openrtb2/auction"
 maintainer:
   email: "accountmanagers@nextmillennium.io"
+gvlVendorID: 1060
 capabilities:
   app:
     mediaTypes:

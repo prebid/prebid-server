@@ -38,6 +38,11 @@
             "prebid": {
               "storedrequest": {
                 "id": "g7819;320x250;"
+              },
+              "server": {
+                "datacenter": "2",
+                "externalurl": "http://hosturl.com",
+               "gvlid": 1
               }
             }
           },
