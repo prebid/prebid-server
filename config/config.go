@@ -1289,11 +1289,15 @@ type TmaxAdjustments struct {
 }
 
 type Auction struct {
-	PrivacySandbox PrivacySandbox `mapstructure:"privacysandbox" json:"privacysandbox"`
+	PrivacySandbox PrivacySandbox `mapstructure:"privacysandbox"`
 }
 
 type PrivacySandbox struct {
-	TopicsDomain                   string `mapstructure:"topicsdomain"`
-	CookieDeprecation              bool   `mapstructure:"cookiedeprecation"`
-	CookieDeprecationExpirationSec int    `mapstructure:"cookiedeprecationexpirationsec"`
+	TopicsDomain      string            `mapstructure:"topicsdomain"`
+	CookieDeprecation CookieDeprecation `mapstructure:"cookiedeprecation"`
+}
+
+type CookieDeprecation struct {
+	Enabled bool `mapstructure:"enabled"`
+	TTLSec  int  `mapstructure:"ttlsec"`
 }

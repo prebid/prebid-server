@@ -111,14 +111,17 @@ func TestCookieSyncHandle(t *testing.T) {
 	cookieWithSyncs.Sync("foo", "anyID")
 
 	testCases := []struct {
-		description              string
-		givenCookie              *usersync.Cookie
-		givenBody                io.Reader
-		givenChooserResult       usersync.Result
-		expectedStatusCode       int
-		expectedBody             string
-		setMetricsExpectations   func(*metrics.MetricsEngineMock)
-		setAnalyticsExpectations func(*MockAnalyticsRunner)
+		description                     string
+		givenCookie                     *usersync.Cookie
+		givenChromeDeprecationCookie    bool
+		givenBody                       io.Reader
+		givenChooserResult              usersync.Result
+		givenAccountData                map[string]json.RawMessage
+		expectedStatusCode              int
+		expectedBody                    string
+		expectedCookieDeprecationHeader bool
+		setMetricsExpectations          func(*metrics.MetricsEngineMock)
+		setAnalyticsExpectations        func(*MockAnalyticsRunner)
 	}{
 		{
 			description: "Request With Cookie",
@@ -285,6 +288,79 @@ func TestCookieSyncHandle(t *testing.T) {
 				a.On("LogCookieSyncObject", &expected).Once()
 			},
 		},
+		{
+			description: "CookieDeprecation enabled for account, receive-cookie-deprecation cookie not present in request, expect cookie deprecation header set in response",
+			givenCookie: cookieWithSyncs,
+			givenBody:   strings.NewReader(`{"account": "testAccount"}`),
+			givenChooserResult: usersync.Result{
+				Status:           usersync.StatusOK,
+				BiddersEvaluated: []usersync.BidderEvaluation{{Bidder: "a", SyncerKey: "aSyncer", Status: usersync.StatusAlreadySynced}},
+				SyncersChosen:    []usersync.SyncerChoice{{Bidder: "a", Syncer: &syncer}},
+			},
+			givenAccountData: map[string]json.RawMessage{
+				"testAccount": json.RawMessage(`{"id":"1","auctionprivacy":{"privacysandbox":{"cookiedeprecation":{"enabled":true,"ttlsec":86400}}}}`),
+			},
+			expectedStatusCode: 200,
+			expectedBody: `{"status":"ok","bidder_status":[` +
+				`{"bidder":"a","no_cookie":true,"usersync":{"url":"aURL","type":"redirect","supportCORS":true}}` +
+				`]}` + "\n",
+			expectedCookieDeprecationHeader: true,
+			setMetricsExpectations: func(m *metrics.MetricsEngineMock) {
+				m.On("RecordCookieSync", metrics.CookieSyncOK).Once()
+				m.On("RecordSyncerRequest", "aSyncer", metrics.SyncerCookieSyncAlreadySynced).Once()
+			},
+			setAnalyticsExpectations: func(a *MockAnalyticsRunner) {
+				expected := analytics.CookieSyncObject{
+					Status: 200,
+					Errors: nil,
+					BidderStatus: []*analytics.CookieSyncBidder{
+						{
+							BidderCode:   "a",
+							NoCookie:     true,
+							UsersyncInfo: &analytics.UsersyncInfo{URL: "aURL", Type: "redirect", SupportCORS: true},
+						},
+					},
+				}
+				a.On("LogCookieSyncObject", &expected).Once()
+			},
+		},
+		{
+			description:                  "CookieDeprecation enabled for account, receive-cookie-deprecation cookie present in request, cookie deprecation header not set in response",
+			givenCookie:                  cookieWithSyncs,
+			givenChromeDeprecationCookie: true,
+			givenBody:                    strings.NewReader(`{"account": "testAccount"}`),
+			givenChooserResult: usersync.Result{
+				Status:           usersync.StatusOK,
+				BiddersEvaluated: []usersync.BidderEvaluation{{Bidder: "a", SyncerKey: "aSyncer", Status: usersync.StatusAlreadySynced}},
+				SyncersChosen:    []usersync.SyncerChoice{{Bidder: "a", Syncer: &syncer}},
+			},
+			givenAccountData: map[string]json.RawMessage{
+				"testAccount": json.RawMessage(`{"id":"1","auctionprivacy":{"privacysandbox":{"cookiedeprecation":{"enabled":true,"ttlsec":86400}}}}`),
+			},
+			expectedStatusCode: 200,
+			expectedBody: `{"status":"ok","bidder_status":[` +
+				`{"bidder":"a","no_cookie":true,"usersync":{"url":"aURL","type":"redirect","supportCORS":true}}` +
+				`]}` + "\n",
+			expectedCookieDeprecationHeader: false,
+			setMetricsExpectations: func(m *metrics.MetricsEngineMock) {
+				m.On("RecordCookieSync", metrics.CookieSyncOK).Once()
+				m.On("RecordSyncerRequest", "aSyncer", metrics.SyncerCookieSyncAlreadySynced).Once()
+			},
+			setAnalyticsExpectations: func(a *MockAnalyticsRunner) {
+				expected := analytics.CookieSyncObject{
+					Status: 200,
+					Errors: nil,
+					BidderStatus: []*analytics.CookieSyncBidder{
+						{
+							BidderCode:   "a",
+							NoCookie:     true,
+							UsersyncInfo: &analytics.UsersyncInfo{URL: "aURL", Type: "redirect", SupportCORS: true},
+						},
+					},
+				}
+				a.On("LogCookieSyncObject", &expected).Once()
+			},
+		},
 	}
 
 	for _, test := range testCases {
@@ -294,7 +370,9 @@ func TestCookieSyncHandle(t *testing.T) {
 		mockAnalytics := MockAnalyticsRunner{}
 		test.setAnalyticsExpectations(&mockAnalytics)
 
-		fakeAccountFetcher := FakeAccountsFetcher{}
+		fakeAccountFetcher := FakeAccountsFetcher{
+			AccountData: test.givenAccountData,
+		}
 
 		gdprPermsBuilder := fakePermissionsBuilder{
 			permissions: &fakePermissions{},
@@ -308,6 +386,10 @@ func TestCookieSyncHandle(t *testing.T) {
 			httpCookie, err := ToHTTPCookie(test.givenCookie)
 			assert.NoError(t, err)
 			request.AddCookie(httpCookie)
+		}
+
+		if test.givenChromeDeprecationCookie {
+			request.AddCookie(&http.Cookie{Name: "receive-cookie-deprecation", Value: "1"})
 		}
 
 		writer := httptest.NewRecorder()
@@ -336,6 +418,15 @@ func TestCookieSyncHandle(t *testing.T) {
 
 		assert.Equal(t, test.expectedStatusCode, writer.Code, test.description+":status_code")
 		assert.Equal(t, test.expectedBody, writer.Body.String(), test.description+":body")
+
+		// -receive-cookie-deprecation=1; Path=/; Expires=Sat, 20 Jan 2024 06:06:49 GMT; HttpOnly; Secure; SameSite=None
+		// +receive-cookie-deprecation=1; Path=/; Expires=Sat, 20 Jan 2024 06:36:49 GMT; HttpOnly; Secure; SameSite=None
+		setCookie := writer.Header().Get("Set-Cookie")
+		assert.Equal(t, test.expectedCookieDeprecationHeader,
+			strings.Contains(setCookie, "receive-cookie-deprecation=1; Path=/; Expires="), test.description)
+		assert.Equal(t, test.expectedCookieDeprecationHeader,
+			strings.Contains(setCookie, "; HttpOnly; Secure; SameSite=None"), test.description)
+
 		mockMetrics.AssertExpectations(t)
 		mockAnalytics.AssertExpectations(t)
 	}
@@ -1645,12 +1736,14 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 	}
 
 	testCases := []struct {
-		description         string
-		givenCookieHasSyncs bool
-		givenSyncersChosen  []usersync.SyncerChoice
-		givenDebug          bool
-		expectedJSON        string
-		expectedAnalytics   analytics.CookieSyncObject
+		description                     string
+		givenCookieHasSyncs             bool
+		givenSyncersChosen              []usersync.SyncerChoice
+		givenDebug                      bool
+		givenSetCookieDeprecationHeader bool
+		givenCookieDeprecationTTLSec    int
+		expectedJSON                    string
+		expectedAnalytics               analytics.CookieSyncObject
 	}{
 		{
 			description:         "None",
@@ -1734,6 +1827,16 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 			expectedJSON:        `{"status":"ok","bidder_status":[],"debug":[{"bidder":"Bidder1","error":"Already in sync"},{"bidder":"Bidder2","error":"Unsupported bidder"},{"bidder":"Bidder3","error":"No sync config"},{"bidder":"Bidder4","error":"Rejected by privacy"},{"bidder":"Bidder5","error":"Type not supported"},{"bidder":"Bidder6","error":"Status blocked by user opt out"},{"bidder":"Bidder7","error":"Sync disabled by config"},{"bidder":"BidderA","error":"Duplicate bidder synced as syncerB"}]}` + "\n",
 			expectedAnalytics:   analytics.CookieSyncObject{Status: 200, BidderStatus: []*analytics.CookieSyncBidder{}},
 		},
+		{
+			description:                     "SetCookieDeprecationHeader is true, should see receive-cookie-deprecation header in response",
+			givenCookieHasSyncs:             true,
+			givenDebug:                      true,
+			givenSyncersChosen:              []usersync.SyncerChoice{},
+			givenSetCookieDeprecationHeader: true,
+			givenCookieDeprecationTTLSec:    86400,
+			expectedJSON:                    `{"status":"ok","bidder_status":[],"debug":[{"bidder":"Bidder1","error":"Already in sync"},{"bidder":"Bidder2","error":"Unsupported bidder"},{"bidder":"Bidder3","error":"No sync config"},{"bidder":"Bidder4","error":"Rejected by privacy"},{"bidder":"Bidder5","error":"Type not supported"},{"bidder":"Bidder6","error":"Status blocked by user opt out"},{"bidder":"Bidder7","error":"Sync disabled by config"},{"bidder":"BidderA","error":"Duplicate bidder synced as syncerB"}]}` + "\n",
+			expectedAnalytics:               analytics.CookieSyncObject{Status: 200, BidderStatus: []*analytics.CookieSyncBidder{}},
+		},
 	}
 
 	for _, test := range testCases {
@@ -1756,12 +1859,22 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 		} else {
 			bidderEval = []usersync.BidderEvaluation{}
 		}
-		endpoint.handleResponse(writer, syncTypeFilter, cookie, privacyMacros, test.givenSyncersChosen, bidderEval, test.givenDebug, false, 0)
+		endpoint.handleResponse(writer, syncTypeFilter, cookie, privacyMacros, test.givenSyncersChosen, bidderEval, test.givenDebug, test.givenSetCookieDeprecationHeader, test.givenCookieDeprecationTTLSec)
 
 		if assert.Equal(t, writer.Code, http.StatusOK, test.description+":http_status") {
 			assert.Equal(t, writer.Header().Get("Content-Type"), "application/json; charset=utf-8", test.description+":http_header")
 			assert.Equal(t, test.expectedJSON, writer.Body.String(), test.description+":http_response")
 		}
+
+		// assert.Equal(t, writer.Header().Get("Set-Cookie"), "receive-cookie-deprecation=1; Path=/; Expires="+time.Now().Add(time.Second*time.Duration(test.givenCookieDeprecationTTLSec)).Format("Mon, 02 Jan 2006 15:04:05 GMT")+"; HttpOnly; Secure; SameSite=None", test.description+":set_cookie_deprecation_header")
+		// -receive-cookie-deprecation=1; Path=/; Expires=Sat, 20 Jan 2024 06:06:49 GMT; HttpOnly; Secure; SameSite=None
+		// +receive-cookie-deprecation=1; Path=/; Expires=Sat, 20 Jan 2024 11:36:49 GMT; HttpOnly; Secure; SameSite=None
+		setCookie := writer.Header().Get("Set-Cookie")
+		assert.Equal(t, test.givenSetCookieDeprecationHeader,
+			strings.Contains(setCookie, "receive-cookie-deprecation=1; Path=/; Expires="), test.description)
+		assert.Equal(t, test.givenSetCookieDeprecationHeader,
+			strings.Contains(setCookie, "; HttpOnly; Secure; SameSite=None"), test.description)
+
 		mockAnalytics.AssertExpectations(t)
 	}
 }
