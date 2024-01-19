@@ -14,7 +14,6 @@ import (
 	"net/http/httptrace"
 	"sort"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -3364,44 +3363,15 @@ func BenchmarkCompressToGZIPNotOptimized(b *testing.B) {
 		Body:    []byte("{\"key\":\"val\"}"),
 		Headers: http.Header{},
 	}
-	endpointCompression := "GZIP"
 
 	// Run the benchmark
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		// Reset the request body
-		var requestBody []byte
-
-		// Mimic the switch case logic
-		switch strings.ToUpper(endpointCompression) {
-		case Gzip:
-			// Non-Optimized Compress to GZIP
-			var b bytes.Buffer
-			w := gzip.NewWriter(&b)
-			w.Write([]byte(requestBody))
-			w.Close()
-			requestBody = b.Bytes()
-			req.Headers.Set("Content-Encoding", "gzip")
-		default:
-			requestBody = req.Body
-		}
-
-		// Create the HTTP request
-		httpReq, err := http.NewRequest(req.Method, req.Uri, bytes.NewBuffer(requestBody))
-		if err != nil {
-			b.Fatal(err)
-		}
-		httpReq.Header = req.Headers
+		setRequestBodyNotOptimized(req.Body)
 	}
 }
 
 func BenchmarkCompressToGZIPOptimized(b *testing.B) {
-	var gzipWriterPoolBenchmark = sync.Pool{
-		New: func() interface{} {
-			return gzip.NewWriter(nil)
-		},
-	}
-
 	// Setup the mock server
 	respBody := "{\"bid\":false}"
 	respStatus := 200
@@ -3415,39 +3385,24 @@ func BenchmarkCompressToGZIPOptimized(b *testing.B) {
 		Body:    []byte("{\"key\":\"val\"}"),
 		Headers: http.Header{},
 	}
-	endpointCompression := "GZIP"
 
 	// Run the benchmark
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		// Reset the request body
-		var requestBody []byte
-
-		// Mimic the switch case logic
-		switch strings.ToUpper(endpointCompression) {
-		case Gzip:
-			// Optimized Compress to GZIP
-			var b bytes.Buffer
-			w := gzipWriterPoolBenchmark.Get().(*gzip.Writer) // Utilize Sync Pool
-			w.Reset(&b)
-			w.Write([]byte(req.Body))
-			w.Close()
-			requestBody = b.Bytes()
-
-			// Set Header
-			req.Headers.Set("Content-Encoding", "gzip")
-
-			// Return Writer to Pool
-			gzipWriterPoolBenchmark.Put(w)
-		default:
-			requestBody = req.Body
-		}
-
-		// Create the HTTP request
-		httpReq, err := http.NewRequest(req.Method, req.Uri, bytes.NewBuffer(requestBody))
-		if err != nil {
-			b.Fatal(err)
-		}
-		httpReq.Header = req.Headers
+		setRequestBody(req, "GZIP")
 	}
+}
+
+func setRequestBodyNotOptimized(requestBody []byte) ([]byte, error) {
+	var b bytes.Buffer
+	w := gzip.NewWriter(&b)
+	_, err := w.Write([]byte(requestBody))
+	if err != nil {
+		return nil, err
+	}
+	err = w.Close()
+	if err != nil {
+		return nil, err
+	}
+	return b.Bytes(), nil
 }
