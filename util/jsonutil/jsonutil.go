@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"io"
 	"strings"
+	"unsafe"
 
 	jsoniter "github.com/json-iterator/go"
+	"github.com/modern-go/reflect2"
 	"github.com/prebid/prebid-server/v2/errortypes"
 )
 
@@ -210,4 +212,35 @@ func tryExtractErrorMessage(err error) string {
 // that the caller clearly understands the context, where the structure name is not needed.
 func isLikelyDetailedErrorMessage(msg string) bool {
 	return !strings.HasPrefix(msg, "request.")
+}
+
+type decorateExtension struct {
+	jsoniter.DummyExtension
+}
+
+type decorateCodec struct {
+	originEncoder jsoniter.ValEncoder
+}
+
+func (codec *decorateCodec) IsEmpty(ptr unsafe.Pointer) bool {
+	return codec.originEncoder.IsEmpty(unsafe.Pointer(&ptr))
+}
+
+func (codec *decorateCodec) Encode(ptr unsafe.Pointer, stream *jsoniter.Stream) {
+	jsonRawMsg := *(*[]byte)(ptr)
+
+	var dst *bytes.Buffer
+	json.Compact(dst, jsonRawMsg)
+	json.HTMLEscape(dst, jsonRawMsg)
+
+	codec.originEncoder.Encode(unsafe.Pointer(&jsonRawMsg), stream)
+}
+
+func (e *decorateExtension) DecorateEncoder(typ reflect2.Type, encoder jsoniter.ValEncoder) jsoniter.ValEncoder {
+	switch typ.String() {
+	case "jsonRawMessage", "[]uint8":
+		return &decorateCodec{encoder}
+	}
+
+	return nil
 }
