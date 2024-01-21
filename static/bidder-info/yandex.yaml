@@ -1,0 +1,13 @@
+endpoint: "https://bs-metadsp.yandex.ru/prebid/{{.PublisherID}}?ssp-id=10500"
+endpointCompression: gzip
+maintainer:
+  email: "prebid@yandex-team.ru"
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - native
+userSync:
+  redirect:
+    url: https://an.yandex.ru/mapuid/yandex/?ssp-id=10500&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&location={{.RedirectURL}}
+    userMacro: "{YANDEXUID}"
