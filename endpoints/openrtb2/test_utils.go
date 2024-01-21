@@ -846,7 +846,7 @@ func (cf mockStoredReqFetcher) FetchResponses(ctx context.Context, ids []string)
 // mockExchange implements the Exchange interface
 type mockExchange struct {
 	lastRequest *openrtb2.BidRequest
-	seatNonBid  openrtb_ext.NonBidsWrapper
+	seatNonBid  openrtb_ext.NonBidCollection
 	returnError error
 }
 
@@ -1542,7 +1542,7 @@ func (m mockSeatNonBidHook) HandleEntrypointHook(
 		return hookstage.HookResult[hookstage.EntrypointPayload]{NbrCode: 10, Reject: true}, m.returnError
 	}
 	result := hookstage.HookResult[hookstage.EntrypointPayload]{}
-	result.SeatNonBid = openrtb_ext.NonBidsWrapper{}
+	result.SeatNonBid = openrtb_ext.NonBidCollection{}
 	result.SeatNonBid.AddBid(openrtb_ext.NonBidParams{Bid: &openrtb2.Bid{ImpID: "imp"}, Seat: "pubmatic", NonBidReason: 100})
 
 	return result, m.returnError

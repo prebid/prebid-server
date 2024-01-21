@@ -78,15 +78,15 @@ type GroupOutcome struct {
 type HookOutcome struct {
 	// ExecutionTime is the execution time of a specific hook without applying its result.
 	ExecutionTime
-	AnalyticsTags hookanalytics.Analytics    `json:"analytics_tags"`
-	HookID        HookID                     `json:"hook_id"`
-	Status        Status                     `json:"status"`
-	Action        Action                     `json:"action"`
-	Message       string                     `json:"message"` // arbitrary string value returned from hook execution
-	DebugMessages []string                   `json:"debug_messages,omitempty"`
-	Errors        []string                   `json:"-"`
-	Warnings      []string                   `json:"-"`
-	SeatNonBid    openrtb_ext.NonBidsWrapper `json:"-"`
+	AnalyticsTags hookanalytics.Analytics      `json:"analytics_tags"`
+	HookID        HookID                       `json:"hook_id"`
+	Status        Status                       `json:"status"`
+	Action        Action                       `json:"action"`
+	Message       string                       `json:"message"` // arbitrary string value returned from hook execution
+	DebugMessages []string                     `json:"debug_messages,omitempty"`
+	Errors        []string                     `json:"-"`
+	Warnings      []string                     `json:"-"`
+	SeatNonBid    openrtb_ext.NonBidCollection `json:"-"`
 }
 
 // HookID points to the specific hook defined by the hook execution plan.

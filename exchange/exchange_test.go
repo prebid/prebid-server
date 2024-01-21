@@ -2569,7 +2569,7 @@ func TestCategoryMapping(t *testing.T) {
 
 	adapterBids[bidderName1] = &seatBid
 
-	bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &openrtb_ext.NonBidsWrapper{})
+	bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &openrtb_ext.NonBidCollection{})
 
 	assert.Equal(t, nil, err, "Category mapping error should be empty")
 	assert.Equal(t, 1, len(rejections), "There should be 1 bid rejection message")
@@ -2624,7 +2624,7 @@ func TestCategoryMappingNoIncludeBrandCategory(t *testing.T) {
 
 	adapterBids[bidderName1] = &seatBid
 
-	bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &openrtb_ext.NonBidsWrapper{})
+	bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &openrtb_ext.NonBidCollection{})
 
 	assert.Equal(t, nil, err, "Category mapping error should be empty")
 	assert.Empty(t, rejections, "There should be no bid rejection messages")
@@ -2676,7 +2676,7 @@ func TestCategoryMappingTranslateCategoriesNil(t *testing.T) {
 
 	adapterBids[bidderName1] = &seatBid
 
-	bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &openrtb_ext.NonBidsWrapper{})
+	bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &openrtb_ext.NonBidCollection{})
 
 	assert.Equal(t, nil, err, "Category mapping error should be empty")
 	assert.Equal(t, 1, len(rejections), "There should be 1 bid rejection message")
@@ -2758,7 +2758,7 @@ func TestCategoryMappingTranslateCategoriesFalse(t *testing.T) {
 
 	adapterBids[bidderName1] = &seatBid
 
-	bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &openrtb_ext.NonBidsWrapper{})
+	bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &openrtb_ext.NonBidCollection{})
 
 	assert.Equal(t, nil, err, "Category mapping error should be empty")
 	assert.Empty(t, rejections, "There should be no bid rejection messages")
@@ -2836,7 +2836,7 @@ func TestCategoryDedupe(t *testing.T) {
 				},
 			}
 			deduplicateGenerator := fakeRandomDeduplicateBidBooleanGenerator{returnValue: tt.dedupeGeneratorValue}
-			bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &deduplicateGenerator, &openrtb_ext.NonBidsWrapper{})
+			bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &deduplicateGenerator, &openrtb_ext.NonBidCollection{})
 
 			assert.Nil(t, err)
 			assert.Equal(t, 3, len(rejections))
@@ -2905,7 +2905,7 @@ func TestNoCategoryDedupe(t *testing.T) {
 
 		adapterBids[bidderName1] = &seatBid
 
-		bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &openrtb_ext.NonBidsWrapper{})
+		bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &openrtb_ext.NonBidCollection{})
 
 		assert.Equal(t, nil, err, "Category mapping error should be empty")
 		assert.Equal(t, 2, len(rejections), "There should be 2 bid rejection messages")
@@ -2970,7 +2970,7 @@ func TestCategoryMappingBidderName(t *testing.T) {
 	adapterBids[bidderName1] = &seatBid1
 	adapterBids[bidderName2] = &seatBid2
 
-	bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &openrtb_ext.NonBidsWrapper{})
+	bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &openrtb_ext.NonBidCollection{})
 
 	assert.NoError(t, err, "Category mapping error should be empty")
 	assert.Empty(t, rejections, "There should be 0 bid rejection messages")
@@ -3024,7 +3024,7 @@ func TestCategoryMappingBidderNameNoCategories(t *testing.T) {
 	adapterBids[bidderName1] = &seatBid1
 	adapterBids[bidderName2] = &seatBid2
 
-	bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &openrtb_ext.NonBidsWrapper{})
+	bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &openrtb_ext.NonBidCollection{})
 
 	assert.NoError(t, err, "Category mapping error should be empty")
 	assert.Empty(t, rejections, "There should be 0 bid rejection messages")
@@ -3064,7 +3064,7 @@ func TestBidRejectionErrors(t *testing.T) {
 		duration           int
 		expectedRejections []string
 		expectedCatDur     string
-		expectedSeatNonBid openrtb_ext.NonBidsWrapper
+		expectedSeatNonBid openrtb_ext.NonBidCollection
 	}{
 		{
 			description: "Bid should be rejected due to not containing a category",
@@ -3076,8 +3076,8 @@ func TestBidRejectionErrors(t *testing.T) {
 			expectedRejections: []string{
 				"bid rejected [bid ID: bid_id1] reason: Bid did not contain a category",
 			},
-			expectedSeatNonBid: func() openrtb_ext.NonBidsWrapper {
-				seatNonBid := openrtb_ext.NonBidsWrapper{}
+			expectedSeatNonBid: func() openrtb_ext.NonBidCollection {
+				seatNonBid := openrtb_ext.NonBidCollection{}
 				seatNonBid.AddBid(openrtb_ext.NonBidParams{
 					Bid:            &openrtb2.Bid{ImpID: "imp_id1", Price: 10, W: 1, H: 1, Cat: []string{}},
 					NonBidReason:   303,
@@ -3098,8 +3098,8 @@ func TestBidRejectionErrors(t *testing.T) {
 			expectedRejections: []string{
 				"bid rejected [bid ID: bid_id1] reason: Category mapping file for primary ad server: 'dfp', publisher: 'some_publisher' not found",
 			},
-			expectedSeatNonBid: func() openrtb_ext.NonBidsWrapper {
-				return openrtb_ext.NonBidsWrapper{}
+			expectedSeatNonBid: func() openrtb_ext.NonBidCollection {
+				return openrtb_ext.NonBidCollection{}
 			}(),
 		},
 		{
@@ -3112,8 +3112,8 @@ func TestBidRejectionErrors(t *testing.T) {
 			expectedRejections: []string{
 				"bid rejected [bid ID: bid_id1] reason: bid duration exceeds maximum allowed",
 			},
-			expectedSeatNonBid: func() openrtb_ext.NonBidsWrapper {
-				return openrtb_ext.NonBidsWrapper{}
+			expectedSeatNonBid: func() openrtb_ext.NonBidCollection {
+				return openrtb_ext.NonBidCollection{}
 			}(),
 		},
 		{
@@ -3128,8 +3128,8 @@ func TestBidRejectionErrors(t *testing.T) {
 				"bid rejected [bid ID: bid_id1] reason: Bid was deduplicated",
 			},
 			expectedCatDur: "10.00_VideoGames_30s",
-			expectedSeatNonBid: func() openrtb_ext.NonBidsWrapper {
-				return openrtb_ext.NonBidsWrapper{}
+			expectedSeatNonBid: func() openrtb_ext.NonBidCollection {
+				return openrtb_ext.NonBidCollection{}
 			}(),
 		},
 	}
@@ -3145,7 +3145,7 @@ func TestBidRejectionErrors(t *testing.T) {
 		seatBid := entities.PbsOrtbSeatBid{Bids: innerBids, Currency: "USD"}
 
 		adapterBids[bidderName] = &seatBid
-		seatNonBid := openrtb_ext.NonBidsWrapper{}
+		seatNonBid := openrtb_ext.NonBidCollection{}
 		bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, *test.reqExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &seatNonBid)
 
 		if len(test.expectedCatDur) > 0 {
@@ -3210,7 +3210,7 @@ func TestCategoryMappingTwoBiddersOneBidEachNoCategorySamePrice(t *testing.T) {
 		adapterBids[bidderNameApn1] = &seatBidApn1
 		adapterBids[bidderNameApn2] = &seatBidApn2
 
-		bidCategory, _, rejections, err := applyCategoryMapping(nil, *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &openrtb_ext.NonBidsWrapper{})
+		bidCategory, _, rejections, err := applyCategoryMapping(nil, *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &openrtb_ext.NonBidCollection{})
 
 		assert.NoError(t, err, "Category mapping error should be empty")
 		assert.Len(t, rejections, 1, "There should be 1 bid rejection message")
@@ -3294,7 +3294,7 @@ func TestCategoryMappingTwoBiddersManyBidsEachNoCategorySamePrice(t *testing.T) 
 	adapterBids[bidderNameApn1] = &seatBidApn1
 	adapterBids[bidderNameApn2] = &seatBidApn2
 
-	_, adapterBids, rejections, err := applyCategoryMapping(nil, *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &fakeRandomDeduplicateBidBooleanGenerator{true}, &openrtb_ext.NonBidsWrapper{})
+	_, adapterBids, rejections, err := applyCategoryMapping(nil, *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &fakeRandomDeduplicateBidBooleanGenerator{true}, &openrtb_ext.NonBidCollection{})
 
 	assert.NoError(t, err, "Category mapping error should be empty")
 

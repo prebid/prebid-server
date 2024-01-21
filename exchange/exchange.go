@@ -246,7 +246,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 	}
 
 	// seatNonBid will store nonbids collected inside HoldAuction function, it will not contain the nonbids from stageOutcomes
-	seatNonBid := openrtb_ext.NonBidsWrapper{}
+	seatNonBid := openrtb_ext.NonBidCollection{}
 
 	// ensure prebid object always exists
 	requestExtPrebid := requestExt.GetPrebid()
@@ -924,7 +924,7 @@ func encodeBidResponseExt(bidResponseExt *openrtb_ext.ExtBidResponse) ([]byte, e
 	return buffer.Bytes(), err
 }
 
-func applyCategoryMapping(ctx context.Context, targeting openrtb_ext.ExtRequestTargeting, seatBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, categoriesFetcher stored_requests.CategoryFetcher, targData *targetData, booleanGenerator deduplicateChanceGenerator, seatNonBid *openrtb_ext.NonBidsWrapper) (map[string]string, map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, []string, error) {
+func applyCategoryMapping(ctx context.Context, targeting openrtb_ext.ExtRequestTargeting, seatBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, categoriesFetcher stored_requests.CategoryFetcher, targData *targetData, booleanGenerator deduplicateChanceGenerator, seatNonBid *openrtb_ext.NonBidCollection) (map[string]string, map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, []string, error) {
 	res := make(map[string]string)
 
 	type bidDedupe struct {

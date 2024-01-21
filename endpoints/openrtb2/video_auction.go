@@ -122,7 +122,7 @@ func NewVideoEndpoint(
 func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	start := time.Now()
 
-	seatNonBid := &openrtb_ext.NonBidsWrapper{}
+	seatNonBid := &openrtb_ext.NonBidCollection{}
 	vo := analytics.VideoObject{
 		Status:    http.StatusOK,
 		Errors:    make([]error, 0),

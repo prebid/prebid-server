@@ -1363,7 +1363,7 @@ func (cf mockVideoStoredReqFetcher) FetchResponses(ctx context.Context, ids []st
 type mockExchangeVideo struct {
 	lastRequest *openrtb2.BidRequest
 	cache       *mockCacheClient
-	seatNonBid  openrtb_ext.NonBidsWrapper
+	seatNonBid  openrtb_ext.NonBidCollection
 }
 
 func (m *mockExchangeVideo) HoldAuction(ctx context.Context, r *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*exchange.AuctionResponse, error) {
@@ -1495,7 +1495,7 @@ func TestSeatNonBidInVideoAuction(t *testing.T) {
 	}
 
 	type args struct {
-		nonBidsFromHoldAuction openrtb_ext.NonBidsWrapper
+		nonBidsFromHoldAuction openrtb_ext.NonBidCollection
 	}
 	type want struct {
 		seatNonBid []openrtb_ext.SeatNonBid
@@ -1533,7 +1533,7 @@ func TestSeatNonBidInVideoAuction(t *testing.T) {
 		{
 			description: "holdAuction does not return seatNonBid",
 			args: args{
-				nonBidsFromHoldAuction: openrtb_ext.NonBidsWrapper{},
+				nonBidsFromHoldAuction: openrtb_ext.NonBidCollection{},
 			},
 			want: want{
 				seatNonBid: nil,
