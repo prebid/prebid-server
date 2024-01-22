@@ -309,7 +309,7 @@ func TestCookieSyncHandle(t *testing.T) {
 				SyncersChosen:    []usersync.SyncerChoice{{Bidder: "a", Syncer: &syncer}},
 			},
 			givenAccountData: map[string]json.RawMessage{
-				"testAccount": json.RawMessage(`{"id":"1","auctionprivacy":{"privacysandbox":{"cookiedeprecation":{"enabled":true,"ttlsec":86400}}}}`),
+				"testAccount": json.RawMessage(`{"id":"1","auction":{"privacysandbox":{"cookiedeprecation":{"enabled":true,"ttlsec":86400}}}}`),
 			},
 			expectedStatusCode: 200,
 			expectedBody: `{"status":"ok","bidder_status":[` +
@@ -346,7 +346,7 @@ func TestCookieSyncHandle(t *testing.T) {
 				SyncersChosen:    []usersync.SyncerChoice{{Bidder: "a", Syncer: &syncer}},
 			},
 			givenAccountData: map[string]json.RawMessage{
-				"testAccount": json.RawMessage(`{"id":"1","auctionprivacy":{"privacysandbox":{"cookiedeprecation":{"enabled":true,"ttlsec":86400}}}}`),
+				"testAccount": json.RawMessage(`{"id":"1","auction":{"privacysandbox":{"cookiedeprecation":{"enabled":true,"ttlsec":86400}}}}`),
 			},
 			expectedStatusCode: 200,
 			expectedBody: `{"status":"ok","bidder_status":[` +
