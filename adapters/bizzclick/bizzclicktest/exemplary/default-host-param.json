@@ -34,8 +34,7 @@
         "ext": {
           "bidder": {
             "accountId": "accountId",
-            "sourceId": "sourceId",
-            "host": "host"
+            "placementId": "placementId"
           }
         }
       }
@@ -61,7 +60,7 @@
             "123.123.123.123"
           ]
         },
-        "uri": "http://host.bizzclick.com/bid?rtb_seat_id=sourceId&secret_key=accountId",
+        "uri": "http://us-e-node1.bizzclick.com/bid?rtb_seat_id=placementId&secret_key=accountId",
         "body": {
           "id": "some-request-id",
           "device": {
