@@ -6127,7 +6127,7 @@ func TestSetCookieDeprecation(t *testing.T) {
 			name: "cookie deprecation not enabled",
 			args: args{
 				httpReq: &http.Request{
-					Header: http.Header{"Sec-Cookie-Deprecation": []string{"example_label_1"}},
+					Header: http.Header{secCookieDeprecation: []string{"example_label_1"}},
 				},
 				r: &openrtb_ext.RequestWrapper{
 					BidRequest: &openrtb2.BidRequest{},
@@ -6139,7 +6139,7 @@ func TestSetCookieDeprecation(t *testing.T) {
 			name: "cookie deprecation disabled explicitly",
 			args: args{
 				httpReq: &http.Request{
-					Header: http.Header{"Sec-Cookie-Deprecation": []string{"example_label_1"}},
+					Header: http.Header{secCookieDeprecation: []string{"example_label_1"}},
 				},
 				r: &openrtb_ext.RequestWrapper{
 					BidRequest: &openrtb2.BidRequest{},
@@ -6176,7 +6176,7 @@ func TestSetCookieDeprecation(t *testing.T) {
 			name: "Sec-Cookie-Deprecation present in request where request.device.ext is nil",
 			args: args{
 				httpReq: &http.Request{
-					Header: http.Header{"Sec-Cookie-Deprecation": []string{"example_label_1"}},
+					Header: http.Header{secCookieDeprecation: []string{"example_label_1"}},
 				},
 				r: &openrtb_ext.RequestWrapper{
 					BidRequest: &openrtb2.BidRequest{},
@@ -6197,7 +6197,7 @@ func TestSetCookieDeprecation(t *testing.T) {
 			name: "Sec-Cookie-Deprecation present in request where request.device.ext is nil",
 			args: args{
 				httpReq: &http.Request{
-					Header: http.Header{"Sec-Cookie-Deprecation": []string{"example_label_1"}},
+					Header: http.Header{secCookieDeprecation: []string{"example_label_1"}},
 				},
 				r: &openrtb_ext.RequestWrapper{
 					BidRequest: &openrtb2.BidRequest{
@@ -6222,7 +6222,7 @@ func TestSetCookieDeprecation(t *testing.T) {
 			name: "Sec-Cookie-Deprecation present in request where request.device.ext is not nil",
 			args: args{
 				httpReq: &http.Request{
-					Header: http.Header{"Sec-Cookie-Deprecation": []string{"example_label_1"}},
+					Header: http.Header{secCookieDeprecation: []string{"example_label_1"}},
 				},
 				r: &openrtb_ext.RequestWrapper{
 					BidRequest: &openrtb2.BidRequest{

@@ -34,14 +34,13 @@ func NewChooser(bidderSyncerLookup map[string]Syncer, biddersKnown map[string]st
 
 // Request specifies a user sync request.
 type Request struct {
-	Bidders           []string
-	Cooperative       Cooperative
-	Limit             int
-	Privacy           Privacy
-	SyncTypeFilter    SyncTypeFilter
-	GPPSID            string
-	Debug             bool
-	CookieDeprecation CookieDeprecation
+	Bidders        []string
+	Cooperative    Cooperative
+	Limit          int
+	Privacy        Privacy
+	SyncTypeFilter SyncTypeFilter
+	GPPSID         string
+	Debug          bool
 }
 
 // Cooperative specifies the settings for cooperative syncing for a given request, where bidders
@@ -69,12 +68,6 @@ type BidderEvaluation struct {
 type SyncerChoice struct {
 	Bidder string
 	Syncer Syncer
-}
-
-// CookieDeprecation defines reponse header
-type CookieDeprecation struct {
-	SetHeader bool
-	TTLSec    int
 }
 
 // Status specifies the result of a sync evaluation.

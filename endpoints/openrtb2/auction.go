@@ -60,6 +60,7 @@ import (
 const storedRequestTimeoutMillis = 50
 const ampChannel = "amp"
 const appChannel = "app"
+const secCookieDeprecation = "Sec-Cookie-Deprecation"
 
 var (
 	dntKey      string = http.CanonicalHeaderKey("DNT")
@@ -2361,7 +2362,7 @@ func setCookieDeprecation(httpReq *http.Request, r *openrtb_ext.RequestWrapper, 
 		return
 	}
 
-	secCookieDeprecation := httpReq.Header.Get("Sec-Cookie-Deprecation")
+	secCookieDeprecation := httpReq.Header.Get(secCookieDeprecation)
 	if secCookieDeprecation == "" {
 		return
 	}
