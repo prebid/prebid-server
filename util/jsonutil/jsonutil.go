@@ -214,33 +214,64 @@ func isLikelyDetailedErrorMessage(msg string) bool {
 	return !strings.HasPrefix(msg, "request.")
 }
 
-type decorateExtension struct {
+type wrapCodec struct {
+	encodeFunc  func(ptr unsafe.Pointer, stream *jsoniter.Stream)
+	isEmptyFunc func(ptr unsafe.Pointer) bool
+	decodeFunc  func(ptr unsafe.Pointer, iter *jsoniter.Iterator)
+}
+
+func (codec *wrapCodec) Encode(ptr unsafe.Pointer, stream *jsoniter.Stream) {
+	codec.encodeFunc(ptr, stream)
+}
+
+func (codec *wrapCodec) IsEmpty(ptr unsafe.Pointer) bool {
+	if codec.isEmptyFunc == nil {
+		return false
+	}
+
+	return codec.isEmptyFunc(ptr)
+}
+
+func (codec *wrapCodec) Decode(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
+	codec.decodeFunc(ptr, iter)
+}
+
+type SampleExtension struct {
 	jsoniter.DummyExtension
 }
 
-type decorateCodec struct {
-	originEncoder jsoniter.ValEncoder
+func (e *SampleExtension) CreateDecoder(typ reflect2.Type) jsoniter.ValDecoder {
+	//if typ.String() == "json.RawMessage" {
+	//	return &wrapCodec{
+	//		decodeFunc: func(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
+	//			jsonRawMsg := *(*[]byte)(ptr)
+
+	//			var dst *bytes.Buffer
+	//			json.Compact(dst, jsonRawMsg)
+
+	//			//i := iter.ReadInt()
+	//			//*(*int)(ptr) = i - 1000
+	//		},
+	//	}
+	//}
+	return nil
 }
 
-func (codec *decorateCodec) IsEmpty(ptr unsafe.Pointer) bool {
-	return codec.originEncoder.IsEmpty(unsafe.Pointer(&ptr))
-}
+func (e *SampleExtension) CreateEncoder(typ reflect2.Type) jsoniter.ValEncoder {
+	if typ.String() == "json.RawMessage" {
+		return &wrapCodec{
+			encodeFunc: func(ptr unsafe.Pointer, stream *jsoniter.Stream) {
+				jsonRawMsg := *(*[]byte)(ptr)
 
-func (codec *decorateCodec) Encode(ptr unsafe.Pointer, stream *jsoniter.Stream) {
-	jsonRawMsg := *(*[]byte)(ptr)
+				var dst *bytes.Buffer
+				json.Compact(dst, jsonRawMsg)
+				stream.WriteStringWithHTMLEscaped(dst.String())
 
-	var dst *bytes.Buffer
-	json.Compact(dst, jsonRawMsg)
-	json.HTMLEscape(dst, jsonRawMsg)
-
-	codec.originEncoder.Encode(unsafe.Pointer(&jsonRawMsg), stream)
-}
-
-func (e *decorateExtension) DecorateEncoder(typ reflect2.Type, encoder jsoniter.ValEncoder) jsoniter.ValEncoder {
-	switch typ.String() {
-	case "jsonRawMessage", "[]uint8":
-		return &decorateCodec{encoder}
+			},
+			isEmptyFunc: func(ptr unsafe.Pointer) bool {
+				return *((*string)(ptr)) == ""
+			},
+		}
 	}
-
 	return nil
 }

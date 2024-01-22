@@ -8,11 +8,13 @@ import (
 	"runtime"
 	"time"
 
+	jsoniter "github.com/json-iterator/go"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/currency"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/prebid/prebid-server/v2/router"
 	"github.com/prebid/prebid-server/v2/server"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 	"github.com/prebid/prebid-server/v2/util/task"
 
 	"github.com/golang/glog"
@@ -48,6 +50,7 @@ func main() {
 	garbageCollectionThreshold := make([]byte, cfg.GarbageCollectorThreshold)
 	defer runtime.KeepAlive(garbageCollectionThreshold)
 
+	jsoniter.RegisterExtension(&jsonutil.SampleExtension{})
 	err = serve(cfg)
 	if err != nil {
 		glog.Exitf("prebid-server failed: %v", err)
