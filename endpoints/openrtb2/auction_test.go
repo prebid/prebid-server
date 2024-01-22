@@ -6109,10 +6109,11 @@ func fakeNormalizeBidderName(name string) (openrtb_ext.BidderName, bool) {
 	return openrtb_ext.BidderName(strings.ToLower(name)), true
 }
 
-func Test_secCookieDeprecation(t *testing.T) {
+func TestSetCookieDeprecation(t *testing.T) {
 	type args struct {
 		httpReq *http.Request
 		r       *openrtb_ext.RequestWrapper
+		account config.Account
 	}
 	tests := []struct {
 		name          string
@@ -6120,19 +6121,74 @@ func Test_secCookieDeprecation(t *testing.T) {
 		wantDeviceExt json.RawMessage
 	}{
 		{
-			name: "Sec-Cookie-Deprecation not present in request",
-			args: args{
-				httpReq: &http.Request{},
-			},
+			name: "account nil",
 		},
 		{
-			name: "Sec-Cookie-Deprecation present in request where request.device is nil",
+			name: "cookie deprecation not enabled",
 			args: args{
 				httpReq: &http.Request{
 					Header: http.Header{"Sec-Cookie-Deprecation": []string{"example_label_1"}},
 				},
 				r: &openrtb_ext.RequestWrapper{
 					BidRequest: &openrtb2.BidRequest{},
+				},
+			},
+			wantDeviceExt: nil,
+		},
+		{
+			name: "cookie deprecation disabled explicitly",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{"Sec-Cookie-Deprecation": []string{"example_label_1"}},
+				},
+				r: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{},
+				},
+				account: config.Account{
+					Auction: config.Auction{
+						PrivacySandbox: config.PrivacySandbox{
+							CookieDeprecation: config.CookieDeprecation{
+								Enabled: false,
+							},
+						},
+					},
+				},
+			},
+			wantDeviceExt: nil,
+		},
+		{
+			name: "Sec-Cookie-Deprecation not present in request",
+			args: args{
+				httpReq: &http.Request{},
+				account: config.Account{
+					Auction: config.Auction{
+						PrivacySandbox: config.PrivacySandbox{
+							CookieDeprecation: config.CookieDeprecation{
+								Enabled: true,
+							},
+						},
+					},
+				},
+			},
+			wantDeviceExt: nil,
+		},
+		{
+			name: "Sec-Cookie-Deprecation present in request where request.device.ext is nil",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{"Sec-Cookie-Deprecation": []string{"example_label_1"}},
+				},
+				r: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{},
+				},
+				account: config.Account{
+					Auction: config.Auction{
+						PrivacySandbox: config.PrivacySandbox{
+							CookieDeprecation: config.CookieDeprecation{
+								Enabled: true,
+							},
+						},
+					},
 				},
 			},
 			wantDeviceExt: json.RawMessage(`{"cdep":"example_label_1"}`),
@@ -6145,7 +6201,18 @@ func Test_secCookieDeprecation(t *testing.T) {
 				},
 				r: &openrtb_ext.RequestWrapper{
 					BidRequest: &openrtb2.BidRequest{
-						Device: &openrtb2.Device{},
+						Device: &openrtb2.Device{
+							Ext: nil,
+						},
+					},
+				},
+				account: config.Account{
+					Auction: config.Auction{
+						PrivacySandbox: config.PrivacySandbox{
+							CookieDeprecation: config.CookieDeprecation{
+								Enabled: true,
+							},
+						},
 					},
 				},
 			},
@@ -6164,15 +6231,26 @@ func Test_secCookieDeprecation(t *testing.T) {
 						},
 					},
 				},
+				account: config.Account{
+					Auction: config.Auction{
+						PrivacySandbox: config.PrivacySandbox{
+							CookieDeprecation: config.CookieDeprecation{
+								Enabled: true,
+							},
+						},
+					},
+				},
 			},
 			wantDeviceExt: json.RawMessage(`{"foo":"bar","cdep":"example_label_1"}`),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			secCookieDeprecation(tt.args.httpReq, tt.args.r)
+			setCookieDeprecation(tt.args.httpReq, tt.args.r, &tt.args.account)
 			if tt.wantDeviceExt != nil {
-				assert.JSONEq(t, string(tt.wantDeviceExt), string(tt.args.r.BidRequest.Device.Ext), tt.name)
+				err := tt.args.r.RebuildRequest()
+				assert.NoError(t, err)
+				assert.JSONEq(t, string(tt.wantDeviceExt), string(tt.args.r.Device.Ext), tt.name)
 			}
 		})
 	}

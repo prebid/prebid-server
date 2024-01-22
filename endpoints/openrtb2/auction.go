@@ -530,7 +530,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	}
 
 	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
-	deps.setFieldsImplicitly(httpRequest, req)
+	deps.setFieldsImplicitly(httpRequest, req, account)
 
 	if err := ortb.SetDefaults(req); err != nil {
 		errs = []error{err}
@@ -1917,6 +1917,10 @@ func validateDevice(device *openrtb2.Device) error {
 		return errors.New("request.device.geo.accuracy must be a positive number")
 	}
 
+	if cdep, err := jsonparser.GetString(device.Ext, "cdep"); err == nil && len(cdep) > 100 {
+		return errors.New("request.device.ext.cdep must be less than 100 characters")
+	}
+
 	return nil
 }
 
@@ -2001,10 +2005,10 @@ func sanitizeRequest(r *openrtb_ext.RequestWrapper, ipValidator iputil.IPValidat
 // OpenRTB properties from the headers and other implicit info.
 //
 // This function _should not_ override any fields which were defined explicitly by the caller in the request.
-func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {
+func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper, account *config.Account) {
 	sanitizeRequest(r, deps.privateNetworkIPValidator)
 
-	setDeviceImplicitly(httpReq, r, deps.privateNetworkIPValidator)
+	setDeviceImplicitly(httpReq, r, deps.privateNetworkIPValidator, account)
 
 	// Per the OpenRTB spec: A bid request must not contain more than one of Site|App|DOOH
 	// Assume it's a site request if it's not declared as one of the other values
@@ -2016,11 +2020,11 @@ func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, r *openrtb_
 }
 
 // setDeviceImplicitly uses implicit info from httpReq to populate bidReq.Device
-func setDeviceImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper, ipValidtor iputil.IPValidator) {
+func setDeviceImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper, ipValidtor iputil.IPValidator, account *config.Account) {
 	setIPImplicitly(httpReq, r, ipValidtor)
 	setUAImplicitly(httpReq, r)
 	setDoNotTrackImplicitly(httpReq, r)
-	secCookieDeprecation(httpReq, r)
+	setCookieDeprecation(httpReq, r, account)
 }
 
 // setAuctionTypeImplicitly sets the auction type to 1 if it wasn't on the request,
@@ -2352,7 +2356,11 @@ func setDoNotTrackImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrappe
 	}
 }
 
-func secCookieDeprecation(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {
+func setCookieDeprecation(httpReq *http.Request, r *openrtb_ext.RequestWrapper, account *config.Account) {
+	if account == nil || !account.Auction.PrivacySandbox.CookieDeprecation.Enabled {
+		return
+	}
+
 	secCookieDeprecation := httpReq.Header.Get("Sec-Cookie-Deprecation")
 	if secCookieDeprecation == "" {
 		return
@@ -2362,20 +2370,12 @@ func secCookieDeprecation(httpReq *http.Request, r *openrtb_ext.RequestWrapper) 
 		r.Device = &openrtb2.Device{}
 	}
 
-	updated := false
-	deviceExt := map[string]interface{}{}
-	if r.Device.Ext == nil {
-		updated = true
-		deviceExt["cdep"] = secCookieDeprecation
-	} else {
-		if err := json.Unmarshal(r.Device.Ext, &deviceExt); err == nil && deviceExt["cdep"] == nil {
-			updated = true
-			deviceExt["cdep"] = secCookieDeprecation
+	if deviceExt, err := r.GetDeviceExt(); err == nil {
+		ext := deviceExt.GetExt()
+		if ext["cdep"] == nil {
+			ext["cdep"] = json.RawMessage(fmt.Sprintf(`"%s"`, secCookieDeprecation))
+			deviceExt.SetExt(ext)
 		}
-	}
-
-	if updated {
-		r.Device.Ext, _ = json.Marshal(deviceExt)
 	}
 }
 

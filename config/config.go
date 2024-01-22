@@ -100,8 +100,6 @@ type Configuration struct {
 	Hooks       Hooks       `mapstructure:"hooks"`
 	Validations Validations `mapstructure:"validations"`
 	PriceFloors PriceFloors `mapstructure:"price_floors"`
-
-	Auction Auction `mapstructure:"auction"`
 }
 
 type PriceFloors struct {
@@ -1293,7 +1291,6 @@ type Auction struct {
 }
 
 type PrivacySandbox struct {
-	TopicsDomain      string            `mapstructure:"topicsdomain"`
 	CookieDeprecation CookieDeprecation `mapstructure:"cookiedeprecation"`
 }
 
