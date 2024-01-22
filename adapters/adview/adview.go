@@ -186,7 +186,7 @@ func getMediaTypeForBid(bid openrtb2.Bid, reqImps []openrtb2.Imp) (openrtb_ext.B
 				var bidExt *adviewBidExt
 				err := json.Unmarshal(bid.Ext, &bidExt)
 				if err == nil {
-					return getBidType(bidExt), nil
+					return getBidType(bidExt)
 				} else {
 					return mediaType, err
 				}
@@ -198,7 +198,7 @@ func getMediaTypeForBid(bid openrtb2.Bid, reqImps []openrtb2.Imp) (openrtb_ext.B
 }
 
 // getBidType returns the bid type specified in the response bid.ext
-func getBidType(bidExt *adviewBidExt) openrtb_ext.BidType {
+func getBidType(bidExt *adviewBidExt) (openrtb_ext.BidType, error) {
 	// setting "banner" as the default bid type
 	bidType := openrtb_ext.BidTypeBanner
 	if bidExt != nil {
@@ -210,9 +210,8 @@ func getBidType(bidExt *adviewBidExt) openrtb_ext.BidType {
 		case 2:
 			bidType = openrtb_ext.BidTypeNative
 		default:
-			// default is banner
-			bidType = openrtb_ext.BidTypeBanner
+			return "", fmt.Errorf("invalid BidType: %d", bidExt.BidType)
 		}
 	}
-	return bidType
+	return bidType, nil
 }
