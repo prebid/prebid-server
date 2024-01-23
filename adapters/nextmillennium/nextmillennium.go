@@ -22,14 +22,14 @@ type nmExtPrebidStoredRequest struct {
 	ID string `json:"id"`
 }
 
-type serverOverloader struct {
+type server struct {
 	ExternalUrl string `json:"externalurl"`
 	GvlID       int    `json:"gvlid"`
 	DataCenter  string `json:"datacenter"`
 }
 type nmExtPrebid struct {
 	StoredRequest nmExtPrebidStoredRequest `json:"storedrequest"`
-	Server        *serverOverloader        `json:"server,omitempty"`
+	Server        *server        `json:"server,omitempty"`
 }
 type nmExtNMM struct {
 	NmmFlags []string `json:"nmmFlags,omitempty"`
@@ -142,7 +142,7 @@ func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext
 		return prebidBidRequest
 	}
 	bidRequest.Imp[0].Ext = jsonExtCommon
-	ext.Prebid.Server = &serverOverloader{
+	ext.Prebid.Server = &server{
 		GvlID:       serverParams.GvlID,
 		DataCenter:  serverParams.DataCenter,
 		ExternalUrl: serverParams.ExternalUrl,
@@ -178,7 +178,7 @@ func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
-	errors := []error{}
+	var errors []error
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
 			bidType, err := getBidType(sb.Bid[i].ImpID, internalRequest.Imp)
