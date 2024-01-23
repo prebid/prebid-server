@@ -16,7 +16,10 @@
       "bundle": "com.prebid"
     },
     "device": {
-      "ifa": "87857b31-8942-4646-ae80-ab9c95bf3fab"
+      "ua": "test-user-agent",
+      "ip": "123.123.123.123",
+      "language": "en",
+      "dnt": 0
     },
     "id": "test-native-request",
     "ext": {},
@@ -47,7 +50,10 @@
             "bundle": "com.prebid"
           },
           "device": {
-            "ifa": "87857b31-8942-4646-ae80-ab9c95bf3fab"
+            "ua": "test-user-agent",
+            "ip": "123.123.123.123",
+            "language": "en",
+            "dnt": 0
           },
           "ext": {}
         }
