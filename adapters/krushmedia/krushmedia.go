@@ -104,7 +104,7 @@ func (a *KrushmediaAdapter) MakeRequests(
 		Body:    reqJSON,
 		Uri:     url,
 		Headers: *getHeaders(&request),
-		ImpIDs:  []string{request.Imp[0].ID},
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, nil
 }
 

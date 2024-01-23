@@ -89,7 +89,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		Method: http.MethodPost,
 		Body:   reqJSON,
 		Uri:    url,
-		ImpIDs: []string{imp.ID},
+		ImpIDs: openrtb_ext.GetImpIDs(request.Imp),
 	}}, nil
 }
 

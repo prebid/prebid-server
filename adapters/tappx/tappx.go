@@ -113,7 +113,7 @@ func (a *TappxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 		Uri:     url,
 		Body:    reqJSON,
 		Headers: headers,
-		ImpIDs:  []string{request.Imp[0].ID},
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, []error{}
 }
 

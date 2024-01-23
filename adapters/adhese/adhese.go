@@ -124,7 +124,7 @@ func (a *AdheseAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adap
 	return []*adapters.RequestData{{
 		Method: "GET",
 		Uri:    complete_url,
-		ImpIDs: []string{imp.ID},
+		ImpIDs: openrtb_ext.GetImpIDs(request.Imp),
 	}}, errs
 }
 

@@ -99,7 +99,7 @@ func (a *adapter) MakeRequests(
 		Body:    reqJSON,
 		Uri:     url,
 		Headers: headers,
-		ImpIDs:  []string{openRTBRequest.Imp[0].ID},
+		ImpIDs:  openrtb_ext.GetImpIDs(openRTBRequest.Imp),
 	}}, nil
 }
 

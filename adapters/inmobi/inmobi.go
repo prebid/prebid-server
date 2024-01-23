@@ -53,7 +53,7 @@ func (a *InMobiAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adap
 		Uri:     a.endPoint,
 		Body:    reqJson,
 		Headers: headers,
-		ImpIDs:  []string{request.Imp[0].ID},
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, errs
 }
 

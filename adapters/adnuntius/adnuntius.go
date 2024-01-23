@@ -193,7 +193,6 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 	networkAdunitMap := make(map[string][]adnAdunit)
 	headers := setHeaders(ortbRequest)
 	var noCookies bool = false
-	networkImpIds := make(map[string][]string)
 
 	for _, imp := range ortbRequest.Imp {
 		if imp.Banner == nil {
@@ -233,10 +232,6 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 		if adnuntiusExt.MaxDeals > 0 {
 			adUnit.MaxDeals = adnuntiusExt.MaxDeals
 		}
-		networkImpIds[network] = append(
-			networkImpIds[network],
-			imp.ID)
-
 		networkAdunitMap[network] = append(
 			networkAdunitMap[network],
 			adUnit)
