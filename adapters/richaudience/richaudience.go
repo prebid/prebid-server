@@ -178,7 +178,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 				bidType := getMediaType(seatBid.Bid[i].ImpID, reqBid)
 
-				if bidType == "video" && reqBid.Video != nil {
+				if bidType == "video" {
 					seatBid.Bid[i].W = *reqBid.Video.W
 					seatBid.Bid[i].H = *reqBid.Video.H
 				}
