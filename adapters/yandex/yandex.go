@@ -156,11 +156,9 @@ func modifyImp(imp *openrtb2.Imp) error {
 }
 
 func modifyBanner(banner openrtb2.Banner) (*openrtb2.Banner, error) {
-	height := banner.H
-	width := banner.W
 	format := banner.Format
 
-	if width == nil || height == nil || *width == 0 || *height == 0 {
+	if banner.W == nil || banner.H == nil || *banner.W == 0 || *banner.H == 0 {
 		if len(format) == 0 {
 			return nil, &errortypes.BadInput{
 				Message: "Invalid size provided for Banner",
