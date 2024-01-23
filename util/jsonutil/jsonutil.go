@@ -241,19 +241,28 @@ type SampleExtension struct {
 }
 
 func (e *SampleExtension) CreateDecoder(typ reflect2.Type) jsoniter.ValDecoder {
-	//if typ.String() == "json.RawMessage" {
-	//	return &wrapCodec{
-	//		decodeFunc: func(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
-	//			jsonRawMsg := *(*[]byte)(ptr)
+	if t, ok := typ.(*reflect2.UnsafePtrType); ok {
+		decoder := jsonConfigValidationOn.DecoderOf(t)
+		return &wrapCodec{
+			decodeFunc: decoder.Decode,
+		}
+	}
+	if _, ok := typ.(*reflect2.UnsafeStructType); ok {
+		//return jsonConfigValidationOn.DecoderOf(typ)
+		//jsonConfigValidationOn
+		return &wrapCodec{
+			decodeFunc: func(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
+				//pObj := (*interface{})(ptr)
+				//obj := *pObj
+				//iter.ReadVal(obj)
 
-	//			var dst *bytes.Buffer
-	//			json.Compact(dst, jsonRawMsg)
-
-	//			//i := iter.ReadInt()
-	//			//*(*int)(ptr) = i - 1000
-	//		},
-	//	}
-	//}
+				str := *((*string)(ptr))
+				r := strings.NewReader(str)
+				decoder := jsonConfigValidationOn.NewDecoder(r)
+				decoder.Decode(ptr)
+			},
+		}
+	}
 	return nil
 }
 
@@ -261,12 +270,13 @@ func (e *SampleExtension) CreateEncoder(typ reflect2.Type) jsoniter.ValEncoder {
 	if typ.String() == "json.RawMessage" {
 		return &wrapCodec{
 			encodeFunc: func(ptr unsafe.Pointer, stream *jsoniter.Stream) {
-				jsonRawMsg := *(*[]byte)(ptr)
+				if ptr != nil {
+					jsonRawMsg := *(*[]byte)(ptr)
 
-				var dst *bytes.Buffer
-				json.Compact(dst, jsonRawMsg)
-				stream.WriteStringWithHTMLEscaped(dst.String())
-
+					dst := &bytes.Buffer{}
+					json.Compact(dst, jsonRawMsg)
+					stream.WriteStringWithHTMLEscaped(dst.String())
+				}
 			},
 			isEmptyFunc: func(ptr unsafe.Pointer) bool {
 				return *((*string)(ptr)) == ""

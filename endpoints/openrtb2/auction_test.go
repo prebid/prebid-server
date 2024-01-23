@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/openrtb/v19/native1"
 	nativeRequests "github.com/prebid/openrtb/v19/native1/request"
@@ -122,6 +123,7 @@ func TestJsonSampleRequests(t *testing.T) {
 		},
 	}
 
+	jsoniter.RegisterExtension(&jsonutil.SampleExtension{})
 	for _, tc := range testSuites {
 		err := filepath.WalkDir(filepath.Join("sample-requests", tc.sampleRequestsSubDir), func(path string, info fs.DirEntry, err error) error {
 			// According to documentation, needed to avoid panics
@@ -140,6 +142,11 @@ func TestJsonSampleRequests(t *testing.T) {
 		})
 		assert.NoError(t, err, "Test case %s. Error reading files from directory %s \n", tc.description, tc.sampleRequestsSubDir)
 	}
+}
+
+func TestSingleJSONTest(t *testing.T) {
+	jsoniter.RegisterExtension(&jsonutil.SampleExtension{})
+	runJsonBasedTest(t, "sample-requests/valid-whole/exemplary/simple.json", "")
 }
 
 func runJsonBasedTest(t *testing.T, filename, desc string) {
