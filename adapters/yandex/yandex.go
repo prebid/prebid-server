@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"text/template"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
@@ -21,6 +22,12 @@ const (
 	currencyQueryKey = "ssp-cur"
 	impIdQueryKey    = "imp-id"
 )
+
+// Composite id of an ad placement
+type yandexPlacementID struct {
+	PageID string
+	ImpID  string
+}
 
 type adapter struct {
 	endpoint *template.Template
@@ -50,9 +57,9 @@ func (a *adapter) MakeRequests(requestData *openrtb2.BidRequest, requestInfo *ad
 
 	for i := range requestData.Imp {
 		imp := requestData.Imp[i]
-		var yandexExt openrtb_ext.ExtImpYandex
 
-		if err := getYandexImpExt(imp, &yandexExt); err != nil {
+		placementId, err := getYandexPlacementId(imp)
+		if err != nil {
 			errors = append(errors, err)
 			continue
 		}
@@ -62,7 +69,7 @@ func (a *adapter) MakeRequests(requestData *openrtb2.BidRequest, requestInfo *ad
 			continue
 		}
 
-		var resolvedUrl, err = a.resolveUrl(yandexExt, referer, currency)
+		resolvedUrl, err := a.resolveUrl(*placementId, referer, currency)
 		if err != nil {
 			errors = append(errors, err)
 			continue
@@ -120,21 +127,58 @@ func splitRequestDataByImp(request *openrtb2.BidRequest, imp openrtb2.Imp) openr
 	return requestCopy
 }
 
-func getYandexImpExt(imp openrtb2.Imp, yandexExt *openrtb_ext.ExtImpYandex) error {
+func getYandexPlacementId(imp openrtb2.Imp) (*yandexPlacementID, error) {
 	var ext adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
-		return &errortypes.BadInput{
+		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("imp %s: unable to unmarshal ext", imp.ID),
 		}
 	}
 
-	if err := json.Unmarshal(ext.Bidder, yandexExt); err != nil {
-		return &errortypes.BadInput{
-			Message: fmt.Sprintf("imp %s: unable to unmarshal ext.bidder", imp.ID),
+	var yandexExt openrtb_ext.ExtImpYandex
+	if err := json.Unmarshal(ext.Bidder, &yandexExt); err != nil {
+		return nil, &errortypes.BadInput{
+			Message: fmt.Sprintf("imp %s: unable to unmarshal ext.bidder: %v", imp.ID, err),
 		}
 	}
 
-	return nil
+	placementID, err := mapExtToPlacementID(yandexExt)
+	if err != nil {
+		return nil, err
+	}
+
+	return placementID, nil
+}
+
+func mapExtToPlacementID(yandexExt openrtb_ext.ExtImpYandex) (*yandexPlacementID, error) {
+	var placementID yandexPlacementID
+
+	if len(yandexExt.PlacementID) == 0 {
+		placementID.ImpID = strconv.Itoa(int(yandexExt.ImpID))
+		placementID.PageID = strconv.Itoa(int(yandexExt.PageID))
+		return &placementID, nil
+	}
+
+	idParts := strings.Split(yandexExt.PlacementID, "-")
+
+	numericIdParts := []string{}
+
+	for _, idPart := range idParts {
+		if _, err := strconv.Atoi(idPart); err == nil {
+			numericIdParts = append(numericIdParts, idPart)
+		}
+	}
+
+	if len(numericIdParts) < 2 {
+		return nil, &errortypes.BadInput{
+			Message: fmt.Sprintf("invalid placement id, it must contain two parts: %s", yandexExt.PlacementID),
+		}
+	}
+
+	placementID.ImpID = numericIdParts[len(numericIdParts)-1]
+	placementID.PageID = numericIdParts[len(numericIdParts)-2]
+
+	return &placementID, nil
 }
 
 func modifyImp(imp *openrtb2.Imp) error {
@@ -174,10 +218,8 @@ func modifyBanner(banner openrtb2.Banner) (*openrtb2.Banner, error) {
 }
 
 // "Un-templates" the endpoint by replacing macroses and adding the required query parameters
-func (a *adapter) resolveUrl(yandexExt openrtb_ext.ExtImpYandex, referer string, currency string) (string, error) {
-	pageID := strconv.Itoa(int(yandexExt.PageID))
-	impID := strconv.Itoa(int(yandexExt.ImpID))
-	params := macros.EndpointTemplateParams{PageID: pageID}
+func (a *adapter) resolveUrl(placementID yandexPlacementID, referer string, currency string) (string, error) {
+	params := macros.EndpointTemplateParams{PageID: placementID.PageID}
 
 	endpointStr, err := macros.ResolveMacros(a.endpoint, params)
 	if err != nil {
@@ -192,7 +234,7 @@ func (a *adapter) resolveUrl(yandexExt openrtb_ext.ExtImpYandex, referer string,
 	addNonEmptyQueryParams(parsedUrl, map[string]string{
 		refererQueryKey:  referer,
 		currencyQueryKey: currency,
-		impIdQueryKey:    impID,
+		impIdQueryKey:    placementID.ImpID,
 	})
 
 	return parsedUrl.String(), nil

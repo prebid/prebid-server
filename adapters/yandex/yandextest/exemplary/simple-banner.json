@@ -10,8 +10,7 @@
         },
         "ext": {
           "bidder": {
-            "page_id": 134001,
-            "imp_id": 1
+            "placement_id": "134001-1"
           }
         }
       }
@@ -65,8 +64,7 @@
               },
               "ext": {
                 "bidder": {
-                  "page_id": 134001,
-                  "imp_id": 1
+                  "placement_id": "134001-1"
                 }
               }
             }

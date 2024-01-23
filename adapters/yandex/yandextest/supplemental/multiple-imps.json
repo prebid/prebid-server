@@ -23,8 +23,7 @@
         },
         "ext": {
           "bidder": {
-            "page_id": 222,
-            "imp_id": 2
+            "placement_id": "222-2"
           }
         }
       }
@@ -149,8 +148,7 @@
               },
               "ext": {
                 "bidder": {
-                  "page_id": 222,
-                  "imp_id": 2
+                  "placement_id": "222-2"
                 }
               }
             }
