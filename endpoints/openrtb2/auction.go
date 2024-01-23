@@ -844,10 +844,11 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 	}
 	var gpp gpplib.GppContainer
 	if req.BidRequest.Regs != nil && len(req.BidRequest.Regs.GPP) > 0 {
-		gpp, err = gpplib.Parse(req.BidRequest.Regs.GPP)
-		if err != nil {
+		var errs []error
+		gpp, errs = gpplib.Parse(req.BidRequest.Regs.GPP)
+		if len(errs) > 0 {
 			errL = append(errL, &errortypes.Warning{
-				Message:     fmt.Sprintf("GPP consent string is invalid and will be ignored. (%v)", err),
+				Message:     fmt.Sprintf("GPP consent string is invalid and will be ignored. (%v)", errs[0]),
 				WarningCode: errortypes.InvalidPrivacyConsentWarningCode})
 		}
 	}

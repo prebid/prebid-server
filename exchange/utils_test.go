@@ -3685,6 +3685,10 @@ func (gs GPPMockSection) GetValue() string {
 	return gs.value
 }
 
+func (gs GPPMockSection) Encode(bool) []byte {
+	return nil
+}
+
 func TestGdprFromGPP(t *testing.T) {
 	testCases := []struct {
 		name            string

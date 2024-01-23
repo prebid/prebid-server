@@ -22,7 +22,7 @@ require (
 	github.com/mitchellh/copystructure v1.2.0
 	github.com/pkg/errors v0.9.1
 	github.com/prebid/go-gdpr v1.12.0
-	github.com/prebid/go-gpp v0.1.1
+	github.com/prebid/go-gpp v0.2.0
 	github.com/prebid/openrtb/v19 v19.0.0
 	github.com/prometheus/client_golang v1.12.1
 	github.com/prometheus/client_model v0.2.0
