@@ -579,8 +579,9 @@ func applyDealSupport(bidRequest *openrtb2.BidRequest, auc *auction, bidCategory
 		for bidder, topBidsPerBidder := range topBidsPerImp {
 			bidderNormalized, bidderFound := openrtb_ext.NormalizeBidderName(bidder.String())
 			if !bidderFound {
-				continue
+				bidderNormalized = bidder
 			}
+
 			maxBid := bidsToUpdate(multiBid, bidderNormalized.String())
 			for i, topBid := range topBidsPerBidder {
 				if i == maxBid {

@@ -30,7 +30,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://pbs.adksrv.com/hb?zone=101",
+        "uri": "http://pbs.adksrv.com/hb?zone=101",
         "body": {
           "id": "0000000000001",
           "imp": [
