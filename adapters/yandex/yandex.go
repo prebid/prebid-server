@@ -177,9 +177,9 @@ func modifyBanner(banner openrtb2.Banner) (*openrtb2.Banner, error) {
 
 // "Un-templates" the endpoint by replacing macroses and adding the required query parameters
 func (a *adapter) resolveUrl(yandexExt openrtb_ext.ExtImpYandex, referer string, currency string) (string, error) {
-	publisherID := strconv.Itoa(int(yandexExt.PageID))
+	pageID := strconv.Itoa(int(yandexExt.PageID))
 	impID := strconv.Itoa(int(yandexExt.ImpID))
-	params := macros.EndpointTemplateParams{PublisherID: publisherID}
+	params := macros.EndpointTemplateParams{PageID: pageID}
 
 	endpointStr, err := macros.ResolveMacros(a.endpoint, params)
 	if err != nil {

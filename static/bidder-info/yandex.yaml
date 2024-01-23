@@ -1,4 +1,4 @@
-endpoint: "https://bs-metadsp.yandex.ru/prebid/{{.PublisherID}}?ssp-id=10500"
+endpoint: "https://bs-metadsp.yandex.ru/prebid/{{.PageID}}?ssp-id=10500"
 endpointCompression: gzip
 maintainer:
   email: "prebid@yandex-team.ru"
