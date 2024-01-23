@@ -228,10 +228,6 @@ func SetAliasBidderName(aliasBidderName string, parentBidderName BidderName) err
 	return nil
 }
 
-func (name BidderName) MarshalJSON() ([]byte, error) {
-	return []byte(name), nil
-}
-
 func (name *BidderName) String() string {
 	if name == nil {
 		return ""
