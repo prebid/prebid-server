@@ -754,7 +754,7 @@ func setRequestBody(req *adapters.RequestData, endpointCompression string) ([]by
 		var b bytes.Buffer
 		w := gzipWriterPool.Get().(*gzip.Writer)
 		w.Reset(&b)
-		_, err := w.Write([]byte(requestBody))
+		_, err := w.Write([]byte(req.Body))
 		if err != nil {
 			return nil, err
 		}
@@ -768,7 +768,7 @@ func setRequestBody(req *adapters.RequestData, endpointCompression string) ([]by
 		req.Headers.Set("Content-Encoding", "gzip")
 
 		// Return Writer To Pool
-		gzipWriterPool.Put(w)
+		defer gzipWriterPool.Put(w)
 
 		return requestBody, nil
 	default:
