@@ -11,7 +11,6 @@ import (
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
 )
 
 type adapter struct {
@@ -179,9 +178,9 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 				bidType := getMediaType(seatBid.Bid[i].ImpID, reqBid)
 
-				if bidType == "video" {
-					seatBid.Bid[i].W = ptrutil.ValueOrDefault(reqBid.Video.W)
-					seatBid.Bid[i].H = ptrutil.ValueOrDefault(reqBid.Video.H)
+				if bidType == "video" && reqBid.Video != nil {
+					seatBid.Bid[i].W = *reqBid.Video.W
+					seatBid.Bid[i].H = *reqBid.Video.H
 				}
 
 				b := &adapters.TypedBid{
