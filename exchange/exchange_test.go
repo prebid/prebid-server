@@ -5699,13 +5699,22 @@ func TestModulesCanBeExecutedForMultipleBiddersSimultaneously(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(noBidServer))
 	defer server.Close()
 
-	bidderImpl := &goodSingleBidder{
-		httpRequest: &adapters.RequestData{
-			Method:  "POST",
-			Uri:     server.URL,
-			Body:    []byte(`{"key":"val"}`),
-			Headers: http.Header{},
-		},
+	reqBdy := []byte(`{"key":"val"}`)
+
+	bidderImplAppnexus := &goodSingleBidder{
+		httpRequest: &adapters.RequestData{Method: http.MethodPost, Uri: server.URL, Body: reqBdy, Headers: http.Header{}},
+		bidResponse: &adapters.BidderResponse{},
+	}
+	bidderImplTelaria := &goodSingleBidder{
+		httpRequest: &adapters.RequestData{Method: http.MethodPost, Uri: server.URL, Body: reqBdy, Headers: http.Header{}},
+		bidResponse: &adapters.BidderResponse{},
+	}
+	bidderImpl33Across := &goodSingleBidder{
+		httpRequest: &adapters.RequestData{Method: http.MethodPost, Uri: server.URL, Body: reqBdy, Headers: http.Header{}},
+		bidResponse: &adapters.BidderResponse{},
+	}
+	bidderImplAax := &goodSingleBidder{
+		httpRequest: &adapters.RequestData{Method: http.MethodPost, Uri: server.URL, Body: reqBdy, Headers: http.Header{}},
 		bidResponse: &adapters.BidderResponse{},
 	}
 
@@ -5744,10 +5753,10 @@ func TestModulesCanBeExecutedForMultipleBiddersSimultaneously(t *testing.T) {
 	}
 
 	e.adapterMap = map[openrtb_ext.BidderName]AdaptedBidder{
-		openrtb_ext.BidderAppnexus: AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, &config.DebugInfo{}, ""),
-		openrtb_ext.BidderTelaria:  AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, &config.DebugInfo{}, ""),
-		openrtb_ext.Bidder33Across: AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.Bidder33Across, &config.DebugInfo{}, ""),
-		openrtb_ext.BidderAax:      AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAax, &config.DebugInfo{}, ""),
+		openrtb_ext.BidderAppnexus: AdaptBidder(bidderImplAppnexus, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, &config.DebugInfo{}, ""),
+		openrtb_ext.BidderTelaria:  AdaptBidder(bidderImplTelaria, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderTelaria, &config.DebugInfo{}, ""),
+		openrtb_ext.Bidder33Across: AdaptBidder(bidderImpl33Across, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.Bidder33Across, &config.DebugInfo{}, ""),
+		openrtb_ext.BidderAax:      AdaptBidder(bidderImplAax, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAax, &config.DebugInfo{}, ""),
 	}
 	// Run test
 	_, err := e.HoldAuction(context.Background(), auctionRequest, &DebugLog{})
