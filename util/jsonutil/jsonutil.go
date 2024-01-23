@@ -248,18 +248,16 @@ func (e *SampleExtension) CreateDecoder(typ reflect2.Type) jsoniter.ValDecoder {
 		}
 	}
 	if _, ok := typ.(*reflect2.UnsafeStructType); ok {
-		//return jsonConfigValidationOn.DecoderOf(typ)
-		//jsonConfigValidationOn
 		return &wrapCodec{
 			decodeFunc: func(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
-				//pObj := (*interface{})(ptr)
-				//obj := *pObj
-				//iter.ReadVal(obj)
+				pObj := (*interface{})(ptr)
+				obj := *pObj
+				iter.ReadVal(&obj)
 
-				str := *((*string)(ptr))
-				r := strings.NewReader(str)
-				decoder := jsonConfigValidationOn.NewDecoder(r)
-				decoder.Decode(ptr)
+				//str := *((*string)(ptr))
+				//r := strings.NewReader(str)
+				//decoder := jsonConfigValidationOn.NewDecoder(r)
+				//decoder.Decode(ptr)
 			},
 		}
 	}
