@@ -6135,7 +6135,7 @@ func Test_setSecBrowsingTopcisImplicitly(t *testing.T) {
 			args: args{
 				httpReq: &http.Request{
 					Header: http.Header{
-						"Sec-Browsing-Topics": []string{"  "},
+						secBrowsingTopics: []string{"  "},
 					},
 				},
 				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
@@ -6148,7 +6148,7 @@ func Test_setSecBrowsingTopcisImplicitly(t *testing.T) {
 			args: args{
 				httpReq: &http.Request{
 					Header: http.Header{
-						"Sec-Browsing-Topics": []string{"some-sec-cookie-value"},
+						secBrowsingTopics: []string{"some-sec-cookie-value"},
 					},
 				},
 				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
@@ -6161,7 +6161,7 @@ func Test_setSecBrowsingTopcisImplicitly(t *testing.T) {
 			args: args{
 				httpReq: &http.Request{
 					Header: http.Header{
-						"Sec-Browsing-Topics": []string{"some-sec-cookie-value"},
+						secBrowsingTopics: []string{"some-sec-cookie-value"},
 					},
 				},
 				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
@@ -6174,7 +6174,7 @@ func Test_setSecBrowsingTopcisImplicitly(t *testing.T) {
 			args: args{
 				httpReq: &http.Request{
 					Header: http.Header{
-						"Sec-Browsing-Topics": []string{"();p=P0000000000000000000000000000000"},
+						secBrowsingTopics: []string{"();p=P0000000000000000000000000000000"},
 					},
 				},
 				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
@@ -6187,7 +6187,7 @@ func Test_setSecBrowsingTopcisImplicitly(t *testing.T) {
 			args: args{
 				httpReq: &http.Request{
 					Header: http.Header{
-						"Sec-Browsing-Topics": []string{"(1);v=chrome.1:1:2, ();p=P00000000000"},
+						secBrowsingTopics: []string{"(1);v=chrome.1:1:2, ();p=P00000000000"},
 					},
 				},
 				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
@@ -6212,7 +6212,7 @@ func Test_setSecBrowsingTopcisImplicitly(t *testing.T) {
 			args: args{
 				httpReq: &http.Request{
 					Header: http.Header{
-						"Sec-Browsing-Topics": []string{"(1);v=chrome.1:1:2, (2);v=chrome.1:1:2, (3);v=chrome.1:1:2,  (4);v=chrome.1:1:2,  (5);v=chrome.1:1:2,  (6);v=chrome.1:1:2,  (7);v=chrome.1:1:2,  (8);v=chrome.1:1:2,  (9);v=chrome.1:1:2,  (10);v=chrome.1:1:2,  (11);v=chrome.1:1:2,  (12);v=chrome.1:1:2, ();p=P00000000000"},
+						secBrowsingTopics: []string{"(1);v=chrome.1:1:2, (2);v=chrome.1:1:2, (3);v=chrome.1:1:2,  (4);v=chrome.1:1:2,  (5);v=chrome.1:1:2,  (6);v=chrome.1:1:2,  (7);v=chrome.1:1:2,  (8);v=chrome.1:1:2,  (9);v=chrome.1:1:2,  (10);v=chrome.1:1:2,  (11);v=chrome.1:1:2,  (12);v=chrome.1:1:2, ();p=P00000000000"},
 					},
 				},
 				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
@@ -6264,7 +6264,7 @@ func Test_setSecBrowsingTopcisImplicitly(t *testing.T) {
 			args: args{
 				httpReq: &http.Request{
 					Header: http.Header{
-						"Sec-Browsing-Topics": []string{"(1);v=chrome.1:1:2, (4);v=chrome.1, 5);v=chrome.1, (6;v=chrome.1, ();v=chrome.1, (	);v=chrome.1, ();p=P0000000000"},
+						secBrowsingTopics: []string{"(1);v=chrome.1:1:2, (4);v=chrome.1, 5);v=chrome.1, (6;v=chrome.1, ();v=chrome.1, (	);v=chrome.1, ();p=P0000000000"},
 					},
 				},
 				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
@@ -6289,7 +6289,7 @@ func Test_setSecBrowsingTopcisImplicitly(t *testing.T) {
 			args: args{
 				httpReq: &http.Request{
 					Header: http.Header{
-						"Sec-Browsing-Topics": []string{"(1 2);v=chrome.1:1:2, ();p=P00000000000"},
+						secBrowsingTopics: []string{"(1 2);v=chrome.1:1:2, ();p=P00000000000"},
 					},
 				},
 				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
@@ -6317,7 +6317,7 @@ func Test_setSecBrowsingTopcisImplicitly(t *testing.T) {
 			args: args{
 				httpReq: &http.Request{
 					Header: http.Header{
-						"Sec-Browsing-Topics": []string{"(1);v=chrome.1:1:2, (1);v=chrome.1:1:1, ();p=P0000000000"},
+						secBrowsingTopics: []string{"(1);v=chrome.1:1:2, (1);v=chrome.1:1:1, ();p=P0000000000"},
 					},
 				},
 				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
@@ -6351,7 +6351,7 @@ func Test_setSecBrowsingTopcisImplicitly(t *testing.T) {
 			args: args{
 				httpReq: &http.Request{
 					Header: http.Header{
-						"Sec-Browsing-Topics": []string{"(1);v=chrome.1:11:2, (1);v=chrome.1:1:4, (1);v=chrome.1:0:2, ();p=P0000000000"},
+						secBrowsingTopics: []string{"(1);v=chrome.1:11:2, (1);v=chrome.1:1:4, (1);v=chrome.1:0:2, ();p=P0000000000"},
 					},
 				},
 				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
@@ -6376,7 +6376,7 @@ func Test_setSecBrowsingTopcisImplicitly(t *testing.T) {
 			args: args{
 				httpReq: &http.Request{
 					Header: http.Header{
-						"Sec-Browsing-Topics": []string{"(100);v=chrome.1:111111111111111111:20, (200);v=chrome.1:2:40, (200 300);v=chrome.1:2:40, ();p=P"},
+						secBrowsingTopics: []string{"(100);v=chrome.1:111111111111111111:20, (200);v=chrome.1:2:40, (200 300);v=chrome.1:2:40, ();p=P"},
 					},
 				},
 				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
@@ -6404,7 +6404,7 @@ func Test_setSecBrowsingTopcisImplicitly(t *testing.T) {
 			args: args{
 				httpReq: &http.Request{
 					Header: http.Header{
-						"Sec-Browsing-Topics": []string{"(1);v=chrome.1:1:2, (1);v=chrome.1:1:2, ();p=P0000000000"},
+						secBrowsingTopics: []string{"(1);v=chrome.1:1:2, (1);v=chrome.1:1:2, ();p=P0000000000"},
 					},
 				},
 				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
@@ -6429,7 +6429,7 @@ func Test_setSecBrowsingTopcisImplicitly(t *testing.T) {
 			args: args{
 				httpReq: &http.Request{
 					Header: http.Header{
-						"Sec-Browsing-Topics": []string{"(1);v=chrome.1:1:2, (2);v=chrome.1:1:2, ();p=P0000000000"},
+						secBrowsingTopics: []string{"(1);v=chrome.1:1:2, (2);v=chrome.1:1:2, ();p=P0000000000"},
 					},
 				},
 				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
@@ -6457,7 +6457,7 @@ func Test_setSecBrowsingTopcisImplicitly(t *testing.T) {
 			args: args{
 				httpReq: &http.Request{
 					Header: http.Header{
-						"Sec-Browsing-Topics": []string{"(1);v=chrome.1:1:2, (2);v=chrome.1:1:2, ();p=P0000000000"},
+						secBrowsingTopics: []string{"(1);v=chrome.1:1:2, (2);v=chrome.1:1:2, ();p=P0000000000"},
 					},
 				},
 				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
@@ -6485,7 +6485,7 @@ func Test_setSecBrowsingTopcisImplicitly(t *testing.T) {
 			args: args{
 				httpReq: &http.Request{
 					Header: http.Header{
-						"Sec-Browsing-Topics": []string{"(1 2 4		6 7			4567	  ) ; v=chrome.1: 1 : 2, (1);v=chrome.1, ();p=P0000000000"},
+						secBrowsingTopics: []string{"(1 2 4		6 7			4567	  ) ; v=chrome.1: 1 : 2, (1);v=chrome.1, ();p=P0000000000"},
 					},
 				},
 				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
@@ -6525,7 +6525,7 @@ func Test_setSecBrowsingTopcisImplicitly(t *testing.T) {
 			args: args{
 				httpReq: &http.Request{
 					Header: http.Header{
-						"Sec-Browsing-Topics": []string{"(1 -2 4		6 7			4567	  ) ; v=chrome.1: 1 : 2, (1);v=chrome.1, ();p=P0000000000"},
+						secBrowsingTopics: []string{"(1 -2 4		6 7			4567	  ) ; v=chrome.1: 1 : 2, (1);v=chrome.1, ();p=P0000000000"},
 					},
 				},
 				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
@@ -6562,7 +6562,7 @@ func Test_setSecBrowsingTopcisImplicitly(t *testing.T) {
 			args: args{
 				httpReq: &http.Request{
 					Header: http.Header{
-						"Sec-Browsing-Topics": []string{"(1);v=chrome.1:1:4,();p=P0000000000,(2);v=chrome.1:1:4,();p=P000000000"},
+						secBrowsingTopics: []string{"(1);v=chrome.1:1:4,();p=P0000000000,(2);v=chrome.1:1:4,();p=P000000000"},
 					},
 				},
 				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
@@ -6590,7 +6590,7 @@ func Test_setSecBrowsingTopcisImplicitly(t *testing.T) {
 			args: args{
 				httpReq: &http.Request{
 					Header: http.Header{
-						"Sec-Browsing-Topics": []string{"(100);v=chrome.1:2:20"},
+						secBrowsingTopics: []string{"(100);v=chrome.1:2:20"},
 					},
 				},
 				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
@@ -6615,7 +6615,7 @@ func Test_setSecBrowsingTopcisImplicitly(t *testing.T) {
 			args: args{
 				httpReq: &http.Request{
 					Header: http.Header{
-						"Sec-Browsing-Topics": []string{"(1);v=chrome.1:1:2, (2);v=chrome.1:1:2, ();p=P0000000000"},
+						secBrowsingTopics: []string{"(1);v=chrome.1:1:2, (2);v=chrome.1:1:2, ();p=P0000000000"},
 					},
 				},
 				r: &openrtb_ext.RequestWrapper{
@@ -6674,7 +6674,7 @@ func Test_setSecBrowsingTopcisImplicitly(t *testing.T) {
 			args: args{
 				httpReq: &http.Request{
 					Header: http.Header{
-						"Sec-Browsing-Topics": []string{"(1);v=chrome.1:1:2, (2);v=chrome.1:1:2, ();p=P0000000000"},
+						secBrowsingTopics: []string{"(1);v=chrome.1:1:2, (2);v=chrome.1:1:2, ();p=P0000000000"},
 					},
 				},
 				r: &openrtb_ext.RequestWrapper{
@@ -6721,7 +6721,7 @@ func Test_setSecBrowsingTopcisImplicitly(t *testing.T) {
 			args: args{
 				httpReq: &http.Request{
 					Header: http.Header{
-						"Sec-Browsing-Topics": []string{"(1);v=chrome.1:1:2, (2);v=chrome.1:1:2, ();p=P0000000000"},
+						secBrowsingTopics: []string{"(1);v=chrome.1:1:2, (2);v=chrome.1:1:2, ();p=P0000000000"},
 					},
 				},
 				r: &openrtb_ext.RequestWrapper{
@@ -6774,7 +6774,7 @@ func Test_setSecBrowsingTopcisImplicitly(t *testing.T) {
 			args: args{
 				httpReq: &http.Request{
 					Header: http.Header{
-						"Sec-Browsing-Topics": []string{"(1);v=chrome.1:1:2, (2);v=chrome.1:1:2, ();p=P0000000000"},
+						secBrowsingTopics: []string{"(1);v=chrome.1:1:2, (2);v=chrome.1:1:2, ();p=P0000000000"},
 					},
 				},
 				r: &openrtb_ext.RequestWrapper{
@@ -6834,7 +6834,7 @@ func Test_setSecBrowsingTopcisImplicitly(t *testing.T) {
 			args: args{
 				httpReq: &http.Request{
 					Header: http.Header{
-						"Sec-Browsing-Topics": []string{"(1 3 4);v=chrome.1:1:2, (2 3);v=chrome.1:1:2, ();p=P0000000000"},
+						secBrowsingTopics: []string{"(1 3 4);v=chrome.1:1:2, (2 3);v=chrome.1:1:2, ();p=P0000000000"},
 					},
 				},
 				r: &openrtb_ext.RequestWrapper{

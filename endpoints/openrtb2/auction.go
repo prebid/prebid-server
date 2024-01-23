@@ -60,6 +60,9 @@ import (
 const storedRequestTimeoutMillis = 50
 const ampChannel = "amp"
 const appChannel = "app"
+const secBrowsingTopics = "Sec-Browsing-Topics"
+const observeBrowsingTopics = "Observe-Browsing-Topics"
+const observeBrowsingTopicsValue = "?1"
 
 var (
 	dntKey      string = http.CanonicalHeaderKey("DNT")
@@ -189,6 +192,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}()
 
 	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
+	setBrowsingTopicsHeader(w, r)
 
 	req, impExtInfoMap, storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, account, errL := deps.parseRequest(r, &labels, hookExecutor)
 	if errortypes.ContainsFatalError(errL) && writeError(errL, w, &labels) {
@@ -389,6 +393,13 @@ func sendAuctionResponse(
 	}
 
 	return labels, ao
+}
+
+// setBrowsingTopicsHeader always set the Observe-Browsing-Topics header to a value of ?1 if the Sec-Browsing-Topics is present in request
+func setBrowsingTopicsHeader(w http.ResponseWriter, r *http.Request) {
+	if value := r.Header.Get(secBrowsingTopics); value != "" {
+		w.Header().Set(observeBrowsingTopics, observeBrowsingTopicsValue)
+	}
 }
 
 // parseRequest turns the HTTP request into an OpenRTB request. This is guaranteed to return:
