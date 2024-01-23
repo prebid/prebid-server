@@ -7,12 +7,38 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestNewNonBid(t *testing.T) {
+	tests := []struct {
+		name           string
+		bidParams      NonBidParams
+		expectedNonBid NonBid
+	}{
+		{
+			name:           "nil-bid-present-in-bidparams",
+			bidParams:      NonBidParams{Bid: nil},
+			expectedNonBid: NonBid{},
+		},
+		{
+			name:           "non-nil-bid-present-in-bidparams",
+			bidParams:      NonBidParams{Bid: &openrtb2.Bid{ImpID: "imp1"}, NonBidReason: 100},
+			expectedNonBid: NonBid{ImpId: "imp1", StatusCode: 100},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			nonBid := NewNonBid(tt.bidParams)
+			assert.Equal(t, tt.expectedNonBid, nonBid, "found incorrect nonBid")
+		})
+	}
+}
+
 func TestSeatNonBidsAdd(t *testing.T) {
 	type fields struct {
 		seatNonBidsMap map[string][]NonBid
 	}
 	type args struct {
-		nonBidParam NonBidParams
+		nonbid NonBid
+		seat   string
 	}
 	tests := []struct {
 		name   string
@@ -23,20 +49,21 @@ func TestSeatNonBidsAdd(t *testing.T) {
 		{
 			name:   "nil-seatNonBidsMap",
 			fields: fields{seatNonBidsMap: nil},
-			args:   args{},
-			want:   nil,
+			args: args{
+				nonbid: NonBid{},
+				seat:   "bidder1",
+			},
+			want: sampleSeatNonBidMap("bidder1", 1),
 		},
 		{
-			name:   "nil-seatNonBidsMap-with-bid-object",
+			name:   "non-nil-seatNonBidsMap",
 			fields: fields{seatNonBidsMap: nil},
-			args:   args{nonBidParam: NonBidParams{Bid: &openrtb2.Bid{}, Seat: "bidder1"}},
-			want:   sampleSeatNonBidMap("bidder1", 1),
-		},
-		{
-			name:   "multiple-nonbids-for-same-seat",
-			fields: fields{seatNonBidsMap: sampleSeatNonBidMap("bidder2", 1)},
-			args:   args{nonBidParam: NonBidParams{Bid: &openrtb2.Bid{}, Seat: "bidder2"}},
-			want:   sampleSeatNonBidMap("bidder2", 2),
+			args: args{
+
+				nonbid: NonBid{},
+				seat:   "bidder1",
+			},
+			want: sampleSeatNonBidMap("bidder1", 1),
 		},
 	}
 	for _, tt := range tests {
@@ -44,8 +71,8 @@ func TestSeatNonBidsAdd(t *testing.T) {
 			snb := &NonBidCollection{
 				seatNonBidsMap: tt.fields.seatNonBidsMap,
 			}
-			snb.AddBid(tt.args.nonBidParam)
-			assert.Equalf(t, tt.want, snb.seatNonBidsMap, "expected seatNonBidsMap not nil")
+			snb.AddBid(tt.args.nonbid, tt.args.seat)
+			assert.Equalf(t, tt.want, snb.seatNonBidsMap, "found incorrect seatNonBidsMap")
 		})
 	}
 }

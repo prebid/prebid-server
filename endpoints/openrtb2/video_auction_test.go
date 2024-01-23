@@ -1508,11 +1508,12 @@ func TestSeatNonBidInVideoAuction(t *testing.T) {
 		{
 			description: "holdAuction returns seatNonBid",
 			args: args{
-				nonBidsFromHoldAuction: getNonBids([]openrtb_ext.NonBidParams{
-					{
-						Bid:          &openrtb2.Bid{ImpID: "imp"},
-						Seat:         "pubmatic",
-						NonBidReason: 100,
+				nonBidsFromHoldAuction: getNonBids(map[string][]openrtb_ext.NonBidParams{
+					"pubmatic": {
+						{
+							Bid:          &openrtb2.Bid{ImpID: "imp"},
+							NonBidReason: 100,
+						},
 					},
 				}),
 			},

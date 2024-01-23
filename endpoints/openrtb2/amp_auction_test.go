@@ -1786,7 +1786,7 @@ func TestBuildAmpObject(t *testing.T) {
 			inStoredRequest:           json.RawMessage(`{"id":"some-request-id","site":{"page":"prebid.org"},"imp":[{"id":"some-impression-id","banner":{"format":[{"w":300,"h":250}]},"ext":{"prebid":{"bidder":{"appnexus":{"placementId":12883451}}}}}],"tmax":500}`),
 			planBuilder:               mockPlanBuilder{entrypointPlan: makePlan[hookstage.Entrypoint](mockSeatNonBidHook{})},
 			setRequestToNil:           true,
-			seatNonBidFromHoldAuction: getNonBids([]openrtb_ext.NonBidParams{{Bid: &openrtb2.Bid{ImpID: "imp1"}, Seat: "pubmatic", NonBidReason: 100}}),
+			seatNonBidFromHoldAuction: getNonBids(map[string][]openrtb_ext.NonBidParams{"pubmatic": {{Bid: &openrtb2.Bid{ImpID: "imp1"}, NonBidReason: 100}}}),
 			expectedAmpObject: &analytics.AmpObject{
 				Status: http.StatusInternalServerError,
 				Errors: []error{
@@ -2461,7 +2461,7 @@ func TestSendAmpResponse(t *testing.T) {
 								InvocationResults: []hookexecution.HookOutcome{
 									{
 										Status:     hookexecution.StatusSuccess,
-										SeatNonBid: getNonBids([]openrtb_ext.NonBidParams{{Bid: &openrtb2.Bid{ImpID: "imp"}, Seat: "pubmatic", NonBidReason: 100}}),
+										SeatNonBid: getNonBids(map[string][]openrtb_ext.NonBidParams{"pubmatic": {{Bid: &openrtb2.Bid{ImpID: "imp"}, NonBidReason: 100}}}),
 									},
 								},
 							},
@@ -2570,8 +2570,7 @@ func TestGetExtBidResponse(t *testing.T) {
 		account         *config.Account
 		ao              analytics.AmpObject
 		errs            []error
-		getNonBids      func() openrtb_ext.NonBidCollection
-		nonBidParams    []openrtb_ext.NonBidParams
+		seatNonBid      openrtb_ext.NonBidCollection
 	}
 	type want struct {
 		respExt openrtb_ext.ExtBidResponse
@@ -2619,7 +2618,7 @@ func TestGetExtBidResponse(t *testing.T) {
 									InvocationResults: []hookexecution.HookOutcome{
 										{
 											Status:     hookexecution.StatusSuccess,
-											SeatNonBid: getNonBids([]openrtb_ext.NonBidParams{{Bid: &openrtb2.Bid{ImpID: "imp"}, Seat: "pubmatic", NonBidReason: 100}}),
+											SeatNonBid: getNonBids(map[string][]openrtb_ext.NonBidParams{"pubmatic": {{Bid: &openrtb2.Bid{ImpID: "imp"}, NonBidReason: 100}}}),
 										},
 									},
 								},
@@ -2638,9 +2637,9 @@ func TestGetExtBidResponse(t *testing.T) {
 					},
 				},
 				ao: analytics.AmpObject{},
-				nonBidParams: []openrtb_ext.NonBidParams{
-					{Bid: &openrtb2.Bid{ImpID: "imp1"}, NonBidReason: 100, Seat: "pubmatic"},
-				},
+				seatNonBid: getNonBids(map[string][]openrtb_ext.NonBidParams{
+					"pubmatic": {{Bid: &openrtb2.Bid{ImpID: "imp1"}, NonBidReason: 100}},
+				}),
 			},
 			want: want{
 				respExt: openrtb_ext.ExtBidResponse{
@@ -2697,9 +2696,9 @@ func TestGetExtBidResponse(t *testing.T) {
 					},
 				},
 				ao: analytics.AmpObject{},
-				nonBidParams: []openrtb_ext.NonBidParams{
-					{Bid: &openrtb2.Bid{ImpID: "imp1"}, NonBidReason: 100, Seat: "pubmatic"},
-				},
+				seatNonBid: getNonBids(map[string][]openrtb_ext.NonBidParams{
+					"pubmatic": {{Bid: &openrtb2.Bid{ImpID: "imp1"}, NonBidReason: 100}},
+				}),
 			},
 			want: want{
 				respExt: openrtb_ext.ExtBidResponse{
@@ -2732,9 +2731,9 @@ func TestGetExtBidResponse(t *testing.T) {
 					},
 				},
 				reqWrapper: nil,
-				nonBidParams: []openrtb_ext.NonBidParams{
-					{Bid: &openrtb2.Bid{ImpID: "imp1"}, NonBidReason: 100, Seat: "pubmatic"},
-				},
+				seatNonBid: getNonBids(map[string][]openrtb_ext.NonBidParams{
+					"pubmatic": {{Bid: &openrtb2.Bid{ImpID: "imp1"}, NonBidReason: 100}},
+				}),
 				ao: analytics.AmpObject{},
 			},
 			want: want{
@@ -2759,7 +2758,7 @@ func TestGetExtBidResponse(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ao, ext := getExtBidResponse(tt.args.hookExecutor, tt.args.auctionResponse, tt.args.reqWrapper, tt.args.account, tt.args.ao, tt.args.errs, getNonBids(tt.args.nonBidParams))
+			ao, ext := getExtBidResponse(tt.args.hookExecutor, tt.args.auctionResponse, tt.args.reqWrapper, tt.args.account, tt.args.ao, tt.args.errs, tt.args.seatNonBid)
 			assert.Equal(t, tt.want.respExt, ext, "Found invalid bidResponseExt")
 			assert.Equal(t, tt.want.ao.SeatNonBid, ao.SeatNonBid, "Found invalid seatNonBid in ampObject")
 		})

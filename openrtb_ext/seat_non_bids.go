@@ -11,13 +11,15 @@ type NonBidCollection struct {
 type NonBidParams struct {
 	Bid            *openrtb2.Bid
 	NonBidReason   int
-	Seat           string
 	OriginalBidCPM float64
 	OriginalBidCur string
 }
 
-// NewNonBid creates the NonBid object from NonBidParams object and returns it
+// NewNonBid creates the NonBid object from NonBidParams and return it
 func NewNonBid(bidParams NonBidParams) NonBid {
+	if bidParams.Bid == nil {
+		bidParams.Bid = &openrtb2.Bid{}
+	}
 	return NonBid{
 		ImpId:      bidParams.Bid.ImpID,
 		StatusCode: bidParams.NonBidReason,
@@ -41,34 +43,11 @@ func NewNonBid(bidParams NonBidParams) NonBid {
 
 // AddBid adds the nonBid into the map against the respective seat.
 // Note: This function is not a thread safe.
-func (snb *NonBidCollection) AddBid(bidParams NonBidParams) {
-	if bidParams.Bid == nil {
-		return
-	}
+func (snb *NonBidCollection) AddBid(nonBid NonBid, seat string) {
 	if snb.seatNonBidsMap == nil {
 		snb.seatNonBidsMap = make(map[string][]NonBid)
 	}
-	nonBid := NonBid{
-		ImpId:      bidParams.Bid.ImpID,
-		StatusCode: bidParams.NonBidReason,
-		Ext: ExtNonBid{
-			Prebid: ExtNonBidPrebid{Bid: ExtNonBidPrebidBid{
-				Price:          bidParams.Bid.Price,
-				ADomain:        bidParams.Bid.ADomain,
-				CatTax:         bidParams.Bid.CatTax,
-				Cat:            bidParams.Bid.Cat,
-				DealID:         bidParams.Bid.DealID,
-				W:              bidParams.Bid.W,
-				H:              bidParams.Bid.H,
-				Dur:            bidParams.Bid.Dur,
-				MType:          bidParams.Bid.MType,
-				OriginalBidCPM: bidParams.OriginalBidCPM,
-				OriginalBidCur: bidParams.OriginalBidCur,
-			}},
-		},
-	}
-
-	snb.seatNonBidsMap[bidParams.Seat] = append(snb.seatNonBidsMap[bidParams.Seat], nonBid)
+	snb.seatNonBidsMap[seat] = append(snb.seatNonBidsMap[seat], nonBid)
 }
 
 // Append functions appends the NonBids from the input instance into the current instance's seatNonBidsMap, creating the map if needed.

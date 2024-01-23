@@ -1543,7 +1543,8 @@ func (m mockSeatNonBidHook) HandleEntrypointHook(
 	}
 	result := hookstage.HookResult[hookstage.EntrypointPayload]{}
 	result.SeatNonBid = openrtb_ext.NonBidCollection{}
-	result.SeatNonBid.AddBid(openrtb_ext.NonBidParams{Bid: &openrtb2.Bid{ImpID: "imp"}, Seat: "pubmatic", NonBidReason: 100})
+	nonBid := openrtb_ext.NewNonBid(openrtb_ext.NonBidParams{Bid: &openrtb2.Bid{ImpID: "imp"}, NonBidReason: 100})
+	result.SeatNonBid.AddBid(nonBid, "pubmatic")
 
 	return result, m.returnError
 }

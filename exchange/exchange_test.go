@@ -3078,13 +3078,13 @@ func TestBidRejectionErrors(t *testing.T) {
 			},
 			expectedSeatNonBid: func() openrtb_ext.NonBidCollection {
 				seatNonBid := openrtb_ext.NonBidCollection{}
-				seatNonBid.AddBid(openrtb_ext.NonBidParams{
+				nonBid := openrtb_ext.NewNonBid(openrtb_ext.NonBidParams{
 					Bid:            &openrtb2.Bid{ImpID: "imp_id1", Price: 10, W: 1, H: 1, Cat: []string{}},
 					NonBidReason:   303,
-					Seat:           "appnexus",
 					OriginalBidCPM: 10,
 					OriginalBidCur: "USD",
 				})
+				seatNonBid.AddBid(nonBid, "appnexus")
 				return seatNonBid
 			}(),
 		},
