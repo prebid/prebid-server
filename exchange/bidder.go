@@ -524,7 +524,7 @@ func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.Reques
 func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.RequestData, logger util.LogMsg, bidderRequestStartTime time.Time, tmaxAdjustments *TmaxAdjustmentsPreprocessed) *httpCallInfo {
 	var requestBody []byte
 
-	requestBody, err := setRequestBody(req, bidder.config.EndpointCompression)
+	requestBody, err := getRequestBody(req, bidder.config.EndpointCompression)
 	if err != nil {
 		return &httpCallInfo{
 			request: req,
@@ -745,16 +745,19 @@ func hasShorterDurationThanTmax(ctx bidderTmaxContext, tmaxAdjustments TmaxAdjus
 	return false
 }
 
-func setRequestBody(req *adapters.RequestData, endpointCompression string) ([]byte, error) {
+func getRequestBody(req *adapters.RequestData, endpointCompression string) ([]byte, error) {
 	var requestBody []byte
 
 	switch strings.ToUpper(endpointCompression) {
 	case Gzip:
 		// Compress to GZIP
 		var b bytes.Buffer
+
 		w := gzipWriterPool.Get().(*gzip.Writer)
+		defer gzipWriterPool.Put(w)
+
 		w.Reset(&b)
-		_, err := w.Write([]byte(req.Body))
+		_, err := w.Write(req.Body)
 		if err != nil {
 			return nil, err
 		}
@@ -766,9 +769,6 @@ func setRequestBody(req *adapters.RequestData, endpointCompression string) ([]by
 
 		// Set Header
 		req.Headers.Set("Content-Encoding", "gzip")
-
-		// Return Writer To Pool
-		defer gzipWriterPool.Put(w)
 
 		return requestBody, nil
 	default:

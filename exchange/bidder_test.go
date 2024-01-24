@@ -3349,7 +3349,7 @@ func TestDoRequestImplWithTmaxTimeout(t *testing.T) {
 	}
 }
 
-func TestSetRequestBody(t *testing.T) {
+func TestGetRequestBody(t *testing.T) {
 	tests := []struct {
 		name                string
 		endpointCompression string
@@ -3370,7 +3370,7 @@ func TestSetRequestBody(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			req := &adapters.RequestData{Body: test.givenReqBody, Headers: http.Header{}}
-			requestBody, err := setRequestBody(req, test.endpointCompression)
+			requestBody, err := getRequestBody(req, test.endpointCompression)
 			assert.NoError(t, err)
 
 			if test.endpointCompression == "GZIP" {
@@ -3419,6 +3419,6 @@ func BenchmarkCompressToGZIPOptimized(b *testing.B) {
 	// Run the benchmark
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		setRequestBody(req, "GZIP")
+		getRequestBody(req, "GZIP")
 	}
 }
