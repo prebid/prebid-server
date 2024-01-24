@@ -82,7 +82,8 @@
                     "adid": "96846035",
                     "adomain": ["test.addomain.com"],
                     "w": 300,
-                    "h": 250
+                    "h": 250,
+                    "mtype":2
                   }
                 ]
               }
@@ -106,7 +107,8 @@
               "adid": "96846035",
               "adomain": ["test.addomain.com"],
               "w": 300,
-              "h": 250
+              "h": 250,
+              "mtype":2
             },
             "type": "video"
           }
