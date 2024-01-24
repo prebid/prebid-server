@@ -29,7 +29,7 @@ type server struct {
 }
 type nmExtPrebid struct {
 	StoredRequest nmExtPrebidStoredRequest `json:"storedrequest"`
-	Server        *server        `json:"server,omitempty"`
+	Server        *server                  `json:"server,omitempty"`
 }
 type nmExtNMM struct {
 	NmmFlags []string `json:"nmmFlags,omitempty"`
@@ -181,7 +181,7 @@ func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 	var errors []error
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
-			bidType, err := getBidType(sb.Bid[i].ImpID, internalRequest.Imp)
+			bidType, err := getBidType(sb.Bid[i].MType)
 			if err != nil {
 				errors = append(errors, err)
 				continue
@@ -211,15 +211,13 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	}, nil
 }
 
-func getBidType(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
-	for _, imp := range imps {
-		if imp.ID == impID {
-			if imp.Banner != nil {
-				return openrtb_ext.BidTypeBanner, nil
-			} else if imp.Video != nil {
-				return openrtb_ext.BidTypeVideo, nil
-			}
-		}
+func getBidType(mType openrtb2.MarkupType) (openrtb_ext.BidType, error) {
+	switch mType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
+	default:
+		return "", &errortypes.BadServerResponse{Message: "Unsupported return type"}
 	}
-	return openrtb_ext.BidTypeBanner, fmt.Errorf("unable to detect media type for imp %s", impID)
 }
