@@ -2212,8 +2212,10 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 
 	aucResponse, err := ex.HoldAuction(ctx, auctionRequest, debugLog)
 	var bid *openrtb2.BidResponse
+	var bidExt *openrtb_ext.ExtBidResponse
 	if aucResponse != nil {
 		bid = aucResponse.BidResponse
+		bidExt = aucResponse.ExtBidResponse
 	}
 	if len(spec.Response.Error) > 0 && spec.Response.Bids == nil {
 		if err.Error() != spec.Response.Error {
@@ -2296,19 +2298,23 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		assert.JSONEq(t, string(spec.Response.Ext), string(bid.Ext), "ext mismatch")
 	}
 
+	expectedBidRespExt := &openrtb_ext.ExtBidResponse{}
+	if spec.Response.Ext != nil {
+		if err := jsonutil.UnmarshalValid(spec.Response.Ext, expectedBidRespExt); err != nil {
+			assert.NoError(t, err, fmt.Sprintf("Error when unmarshalling: %s", err))
+		}
+	}
 	if spec.HostConfigBidValidation.BannerCreativeMaxSize == config.ValidationEnforce || spec.HostConfigBidValidation.SecureMarkup == config.ValidationEnforce {
 		actualBidRespExt := &openrtb_ext.ExtBidResponse{}
-		expectedBidRespExt := &openrtb_ext.ExtBidResponse{}
 		if bid.Ext != nil {
 			if err := jsonutil.UnmarshalValid(bid.Ext, actualBidRespExt); err != nil {
 				assert.NoError(t, err, fmt.Sprintf("Error when unmarshalling: %s", err))
 			}
 		}
-		if err := jsonutil.UnmarshalValid(spec.Response.Ext, expectedBidRespExt); err != nil {
-			assert.NoError(t, err, fmt.Sprintf("Error when unmarshalling: %s", err))
-		}
-
 		assert.Equal(t, expectedBidRespExt.Errors, actualBidRespExt.Errors, "Expected errors from response ext do not match")
+	}
+	if expectedBidRespExt.Prebid != nil {
+		assert.Equal(t, expectedBidRespExt.Prebid.SeatNonBid, bidExt.Prebid.SeatNonBid, "Expected seatNonBids from response ext do not match")
 	}
 }
 
