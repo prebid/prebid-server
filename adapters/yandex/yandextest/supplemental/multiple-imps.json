@@ -58,6 +58,9 @@
           "Content-Type": [
             "application/json;charset=utf-8"
           ],
+          "Referer": [
+            "http://www.example.com"
+          ],
           "Accept": [
             "application/json"
           ]
@@ -132,6 +135,9 @@
           ],
           "Content-Type": [
             "application/json;charset=utf-8"
+          ],
+          "Referer": [
+            "http://www.example.com"
           ],
           "Accept": [
             "application/json"

@@ -97,8 +97,9 @@ func (a *adapter) MakeRequests(requestData *openrtb2.BidRequest, requestInfo *ad
 func getHeaders(request *openrtb2.BidRequest) http.Header {
 	headers := http.Header{}
 
-	if request.Device != nil {
+	if request.Device != nil && request.Site != nil {
 		addNonEmptyHeaders(&headers, map[string]string{
+			"Referer":         request.Site.Page,
 			"Accept-Language": request.Device.Language,
 			"User-Agent":      request.Device.UA,
 			"X-Forwarded-For": request.Device.IP,
