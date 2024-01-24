@@ -151,7 +151,6 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	debugLog.DebugEnabledOrOverridden = debugLog.Enabled || debugLog.DebugOverride
 
 	activityControl := privacy.ActivityControl{}
-	accPrivacy := config.AccountPrivacy{}
 
 	defer func() {
 		if len(debugLog.CacheKey) > 0 && vo.VideoResponse == nil {
@@ -162,7 +161,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		}
 		deps.metricsEngine.RecordRequest(labels)
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
-		deps.analytics.LogVideoObject(&vo, activityControl, accPrivacy)
+		deps.analytics.LogVideoObject(&vo, activityControl)
 	}()
 
 	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
@@ -308,7 +307,6 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	}
 
 	activityControl = privacy.NewActivityControl(&account.Privacy)
-	accPrivacy = account.Privacy
 
 	secGPC := r.Header.Get("Sec-GPC")
 	auctionRequest := &exchange.AuctionRequest{

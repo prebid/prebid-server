@@ -46,9 +46,9 @@ func New(analytics *config.Analytics) analytics.Runner {
 // Collection of all the correctly configured analytics modules - implements the PBSAnalyticsModule interface
 type enabledAnalytics map[string]analytics.Module
 
-func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac privacy.ActivityControl, ap config.AccountPrivacy) {
+func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac privacy.ActivityControl) {
 	for name, module := range ea {
-		if isAllowed, cloneBidderReq := evaluateActivities(ao.RequestWrapper, ac, ap, name); isAllowed {
+		if isAllowed, cloneBidderReq := evaluateActivities(ao.RequestWrapper, ac, name); isAllowed {
 			if cloneBidderReq != nil {
 				ao.RequestWrapper = cloneBidderReq
 			}
@@ -57,9 +57,9 @@ func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac priv
 	}
 }
 
-func (ea enabledAnalytics) LogVideoObject(vo *analytics.VideoObject, ac privacy.ActivityControl, ap config.AccountPrivacy) {
+func (ea enabledAnalytics) LogVideoObject(vo *analytics.VideoObject, ac privacy.ActivityControl) {
 	for name, module := range ea {
-		if isAllowed, cloneBidderReq := evaluateActivities(vo.RequestWrapper, ac, ap, name); isAllowed {
+		if isAllowed, cloneBidderReq := evaluateActivities(vo.RequestWrapper, ac, name); isAllowed {
 			if cloneBidderReq != nil {
 				vo.RequestWrapper = cloneBidderReq
 			}
@@ -81,9 +81,9 @@ func (ea enabledAnalytics) LogSetUIDObject(so *analytics.SetUIDObject) {
 	}
 }
 
-func (ea enabledAnalytics) LogAmpObject(ao *analytics.AmpObject, ac privacy.ActivityControl, ap config.AccountPrivacy) {
+func (ea enabledAnalytics) LogAmpObject(ao *analytics.AmpObject, ac privacy.ActivityControl) {
 	for name, module := range ea {
-		if isAllowed, cloneBidderReq := evaluateActivities(ao.RequestWrapper, ac, ap, name); isAllowed {
+		if isAllowed, cloneBidderReq := evaluateActivities(ao.RequestWrapper, ac, name); isAllowed {
 			if cloneBidderReq != nil {
 				ao.RequestWrapper = cloneBidderReq
 			}
@@ -101,7 +101,7 @@ func (ea enabledAnalytics) LogNotificationEventObject(ne *analytics.Notification
 	}
 }
 
-func evaluateActivities(rw *openrtb_ext.RequestWrapper, ac privacy.ActivityControl, ap config.AccountPrivacy, componentName string) (bool, *openrtb_ext.RequestWrapper) {
+func evaluateActivities(rw *openrtb_ext.RequestWrapper, ac privacy.ActivityControl, componentName string) (bool, *openrtb_ext.RequestWrapper) {
 	// returned nil request wrapper means that request wrapper was not modified by activities and doesn't have to be changed in analytics object
 	// it is needed in order to use one function for all analytics objects with RequestWrapper
 	component := privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: componentName}
@@ -121,7 +121,7 @@ func evaluateActivities(rw *openrtb_ext.RequestWrapper, ac privacy.ActivityContr
 		privacy.ScrubUserFPD(cloneReq)
 	}
 	if blockPreciseGeo {
-		ipConf := privacy.IPConf{IPV6: ap.IPv6Config, IPV4: ap.IPv4Config}
+		ipConf := privacy.IPConf{IPV6: ac.IPv6Config, IPV4: ac.IPv4Config}
 		privacy.ScrubGeoAndDeviceIP(cloneReq, ipConf)
 	}
 

@@ -1238,11 +1238,11 @@ type mockAnalyticsModule struct {
 	videoObjects   []*analytics.VideoObject
 }
 
-func (m *mockAnalyticsModule) LogAuctionObject(ao *analytics.AuctionObject, _ privacy.ActivityControl, _ config.AccountPrivacy) {
+func (m *mockAnalyticsModule) LogAuctionObject(ao *analytics.AuctionObject, _ privacy.ActivityControl) {
 	m.auctionObjects = append(m.auctionObjects, ao)
 }
 
-func (m *mockAnalyticsModule) LogVideoObject(vo *analytics.VideoObject, _ privacy.ActivityControl, _ config.AccountPrivacy) {
+func (m *mockAnalyticsModule) LogVideoObject(vo *analytics.VideoObject, _ privacy.ActivityControl) {
 	m.videoObjects = append(m.videoObjects, vo)
 }
 
@@ -1250,7 +1250,7 @@ func (m *mockAnalyticsModule) LogCookieSyncObject(cso *analytics.CookieSyncObjec
 
 func (m *mockAnalyticsModule) LogSetUIDObject(so *analytics.SetUIDObject) {}
 
-func (m *mockAnalyticsModule) LogAmpObject(ao *analytics.AmpObject, _ privacy.ActivityControl, _ config.AccountPrivacy) {
+func (m *mockAnalyticsModule) LogAmpObject(ao *analytics.AmpObject, _ privacy.ActivityControl) {
 }
 
 func (m *mockAnalyticsModule) LogNotificationEventObject(ne *analytics.NotificationEvent, _ privacy.ActivityControl) {

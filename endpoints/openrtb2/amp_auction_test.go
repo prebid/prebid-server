@@ -1643,10 +1643,10 @@ func newMockLogger(ao *analytics.AmpObject, aucObj *analytics.AuctionObject) ana
 	}
 }
 
-func (logger mockLogger) LogAuctionObject(ao *analytics.AuctionObject, _ privacy.ActivityControl, _ config.AccountPrivacy) {
+func (logger mockLogger) LogAuctionObject(ao *analytics.AuctionObject, _ privacy.ActivityControl) {
 	*logger.auctionObject = *ao
 }
-func (logger mockLogger) LogVideoObject(vo *analytics.VideoObject, _ privacy.ActivityControl, _ config.AccountPrivacy) {
+func (logger mockLogger) LogVideoObject(vo *analytics.VideoObject, _ privacy.ActivityControl) {
 }
 func (logger mockLogger) LogCookieSyncObject(cookieObject *analytics.CookieSyncObject) {
 }
@@ -1654,7 +1654,7 @@ func (logger mockLogger) LogSetUIDObject(uuidObj *analytics.SetUIDObject) {
 }
 func (logger mockLogger) LogNotificationEventObject(uuidObj *analytics.NotificationEvent, _ privacy.ActivityControl) {
 }
-func (logger mockLogger) LogAmpObject(ao *analytics.AmpObject, _ privacy.ActivityControl, _ config.AccountPrivacy) {
+func (logger mockLogger) LogAmpObject(ao *analytics.AmpObject, _ privacy.ActivityControl) {
 	*logger.ampObject = *ao
 }
 

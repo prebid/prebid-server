@@ -2113,12 +2113,12 @@ type MockAnalyticsRunner struct {
 	mock.Mock
 }
 
-func (m *MockAnalyticsRunner) LogAuctionObject(obj *analytics.AuctionObject, ac privacy.ActivityControl, ap config.AccountPrivacy) {
-	m.Called(obj, ac, ap)
+func (m *MockAnalyticsRunner) LogAuctionObject(obj *analytics.AuctionObject, ac privacy.ActivityControl) {
+	m.Called(obj, ac)
 }
 
-func (m *MockAnalyticsRunner) LogVideoObject(obj *analytics.VideoObject, ac privacy.ActivityControl, ap config.AccountPrivacy) {
-	m.Called(obj, ac, ap)
+func (m *MockAnalyticsRunner) LogVideoObject(obj *analytics.VideoObject, ac privacy.ActivityControl) {
+	m.Called(obj, ac)
 }
 
 func (m *MockAnalyticsRunner) LogCookieSyncObject(obj *analytics.CookieSyncObject) {
@@ -2129,7 +2129,7 @@ func (m *MockAnalyticsRunner) LogSetUIDObject(obj *analytics.SetUIDObject) {
 	m.Called(obj)
 }
 
-func (m *MockAnalyticsRunner) LogAmpObject(obj *analytics.AmpObject, ac privacy.ActivityControl, ap config.AccountPrivacy) {
+func (m *MockAnalyticsRunner) LogAmpObject(obj *analytics.AmpObject, ac privacy.ActivityControl) {
 	m.Called(obj, ac)
 }
 

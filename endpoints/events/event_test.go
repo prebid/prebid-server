@@ -27,13 +27,13 @@ type eventsMockAnalyticsModule struct {
 	Invoked bool
 }
 
-func (e *eventsMockAnalyticsModule) LogAuctionObject(ao *analytics.AuctionObject, _ privacy.ActivityControl, _ config.AccountPrivacy) {
+func (e *eventsMockAnalyticsModule) LogAuctionObject(ao *analytics.AuctionObject, _ privacy.ActivityControl) {
 	if e.Fail {
 		panic(e.Error)
 	}
 }
 
-func (e *eventsMockAnalyticsModule) LogVideoObject(vo *analytics.VideoObject, _ privacy.ActivityControl, _ config.AccountPrivacy) {
+func (e *eventsMockAnalyticsModule) LogVideoObject(vo *analytics.VideoObject, _ privacy.ActivityControl) {
 	if e.Fail {
 		panic(e.Error)
 	}
@@ -51,7 +51,7 @@ func (e *eventsMockAnalyticsModule) LogSetUIDObject(so *analytics.SetUIDObject) 
 	}
 }
 
-func (e *eventsMockAnalyticsModule) LogAmpObject(ao *analytics.AmpObject, _ privacy.ActivityControl, _ config.AccountPrivacy) {
+func (e *eventsMockAnalyticsModule) LogAmpObject(ao *analytics.AmpObject, _ privacy.ActivityControl) {
 	if e.Fail {
 		panic(e.Error)
 	}

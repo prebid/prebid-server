@@ -2,6 +2,7 @@ package build
 
 import (
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/iputil"
 
 	"net/http"
 	"os"
@@ -24,7 +25,7 @@ func TestSampleModule(t *testing.T) {
 		Status:   http.StatusOK,
 		Errors:   nil,
 		Response: &openrtb2.BidResponse{},
-	}, privacy.ActivityControl{}, config.AccountPrivacy{})
+	}, privacy.ActivityControl{})
 	if count != 1 {
 		t.Errorf("PBSAnalyticsModule failed at LogAuctionObject")
 	}
@@ -45,12 +46,12 @@ func TestSampleModule(t *testing.T) {
 		t.Errorf("PBSAnalyticsModule failed at LogCookieSyncObject")
 	}
 
-	am.LogAmpObject(&analytics.AmpObject{}, privacy.ActivityControl{}, config.AccountPrivacy{})
+	am.LogAmpObject(&analytics.AmpObject{}, privacy.ActivityControl{})
 	if count != 4 {
 		t.Errorf("PBSAnalyticsModule failed at LogAmpObject")
 	}
 
-	am.LogVideoObject(&analytics.VideoObject{}, privacy.ActivityControl{}, config.AccountPrivacy{})
+	am.LogVideoObject(&analytics.VideoObject{}, privacy.ActivityControl{})
 	if count != 5 {
 		t.Errorf("PBSAnalyticsModule failed at LogVideoObject")
 	}
@@ -153,17 +154,17 @@ func TestSampleModuleActivitiesAllowed(t *testing.T) {
 		Response: &openrtb2.BidResponse{},
 	}
 
-	am.LogAuctionObject(ao, acAllowed, config.AccountPrivacy{})
+	am.LogAuctionObject(ao, acAllowed)
 	if count != 1 {
 		t.Errorf("PBSAnalyticsModule failed at LogAuctionObject")
 	}
 
-	am.LogAmpObject(&analytics.AmpObject{}, acAllowed, config.AccountPrivacy{})
+	am.LogAmpObject(&analytics.AmpObject{}, acAllowed)
 	if count != 2 {
 		t.Errorf("PBSAnalyticsModule failed at LogAmpObject")
 	}
 
-	am.LogVideoObject(&analytics.VideoObject{}, acAllowed, config.AccountPrivacy{})
+	am.LogVideoObject(&analytics.VideoObject{}, acAllowed)
 	if count != 3 {
 		t.Errorf("PBSAnalyticsModule failed at LogVideoObject")
 	}
@@ -188,17 +189,17 @@ func TestSampleModuleActivitiesAllowedAndDenied(t *testing.T) {
 		Response:       &openrtb2.BidResponse{},
 	}
 
-	am.LogAuctionObject(ao, acAllowed, config.AccountPrivacy{})
+	am.LogAuctionObject(ao, acAllowed)
 	if count != 1 {
 		t.Errorf("PBSAnalyticsModule failed at LogAuctionObject")
 	}
 
-	am.LogAmpObject(&analytics.AmpObject{RequestWrapper: rw}, acAllowed, config.AccountPrivacy{})
+	am.LogAmpObject(&analytics.AmpObject{RequestWrapper: rw}, acAllowed)
 	if count != 2 {
 		t.Errorf("PBSAnalyticsModule failed at LogAmpObject")
 	}
 
-	am.LogVideoObject(&analytics.VideoObject{RequestWrapper: rw}, acAllowed, config.AccountPrivacy{})
+	am.LogVideoObject(&analytics.VideoObject{RequestWrapper: rw}, acAllowed)
 	if count != 3 {
 		t.Errorf("PBSAnalyticsModule failed at LogVideoObject")
 	}
@@ -221,17 +222,17 @@ func TestSampleModuleActivitiesDenied(t *testing.T) {
 		Response: &openrtb2.BidResponse{},
 	}
 
-	am.LogAuctionObject(ao, acDenied, config.AccountPrivacy{})
+	am.LogAuctionObject(ao, acDenied)
 	if count != 0 {
 		t.Errorf("PBSAnalyticsModule failed at LogAuctionObject")
 	}
 
-	am.LogAmpObject(&analytics.AmpObject{}, acDenied, config.AccountPrivacy{})
+	am.LogAmpObject(&analytics.AmpObject{}, acDenied)
 	if count != 0 {
 		t.Errorf("PBSAnalyticsModule failed at LogAmpObject")
 	}
 
-	am.LogVideoObject(&analytics.VideoObject{}, acDenied, config.AccountPrivacy{})
+	am.LogVideoObject(&analytics.VideoObject{}, acDenied)
 	if count != 0 {
 		t.Errorf("PBSAnalyticsModule failed at LogVideoObject")
 	}
@@ -282,9 +283,8 @@ func TestEvaluateActivities(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
-			accountPrivacy := config.AccountPrivacy{IPv4Config: config.IPv4{AnonKeepBits: 8}}
 			rw := &openrtb_ext.RequestWrapper{BidRequest: getDefaultBidRequest()}
-			resActivityAllowed, resRequest := evaluateActivities(rw, test.givenActivityControl, accountPrivacy, "sampleModule")
+			resActivityAllowed, resRequest := evaluateActivities(rw, test.givenActivityControl, "sampleModule")
 			assert.Equal(t, test.expectedAllowActivities, resActivityAllowed)
 			if test.expectedRequest != nil {
 				assert.Equal(t, test.expectedRequest.User.ID, resRequest.User.ID)
@@ -346,6 +346,12 @@ func getActivityConfig(componentName string, allowReportAnalytics, allowTransmit
 					},
 				},
 			},
+		},
+		IPv4Config: config.IPv4{
+			AnonKeepBits: iputil.IPv4DefaultMaskingBitSize,
+		},
+		IPv6Config: config.IPv6{
+			AnonKeepBits: iputil.IPv6DefaultMaskingBitSize,
 		},
 	}
 }
