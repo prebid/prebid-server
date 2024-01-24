@@ -288,13 +288,22 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 
 	var errors []error
 
+	impMap := map[string]*openrtb2.Imp{}
+	for i := range request.Imp {
+		imp := request.Imp[i]
+
+		impMap[imp.ID] = &imp
+	}
+
 	for _, seatBid := range bidResponse.SeatBid {
 		for i := range seatBid.Bid {
 			bid := seatBid.Bid[i]
 
-			imp, err := lookupImpById(bid.ImpID, request.Imp)
-			if err != nil {
-				errors = append(errors, err)
+			imp, exists := impMap[bid.ImpID]
+			if !exists {
+				errors = append(errors, &errortypes.BadInput{
+					Message: fmt.Sprintf("Invalid bid imp ID #%s does not match any imp IDs from the original bid request", bid.ImpID),
+				})
 				continue
 			}
 
@@ -312,18 +321,6 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 	}
 
 	return bidResponseWithCapacity, errors
-}
-
-func lookupImpById(impID string, imps []openrtb2.Imp) (*openrtb2.Imp, error) {
-	for _, imp := range imps {
-		if impID == imp.ID {
-			return &imp, nil
-		}
-	}
-
-	return nil, &errortypes.BadInput{
-		Message: fmt.Sprintf("Invalid bid imp ID #%s does not match any imp IDs from the original bid request", impID),
-	}
 }
 
 func getBidType(imp openrtb2.Imp) (openrtb_ext.BidType, error) {
