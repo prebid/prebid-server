@@ -59,7 +59,12 @@ func TestReadDealTiersFromImp(t *testing.T) {
 		{
 			description:    "imp.ext.prebid.bidder_one_but_not_found_in_the_adapter_bidder_list",
 			impExt:         json.RawMessage(`{"prebid": {"bidder": {"unknown": {"dealTier": {"minDealTier": 5, "prefix": "anyPrefix"}, "placementId": 12345}}}}`),
-			expectedResult: DealTierBidderMap{},
+			expectedResult: DealTierBidderMap{"unknown": {Prefix: "anyPrefix", MinDealTier: 5}},
+		},
+		{
+			description:    "imp.ext.prebid.bidder_one_but_not_found_in_the_adapter_bidder_list_with_case_insensitive",
+			impExt:         json.RawMessage(`{"prebid": {"bidder": {"UnKnOwn": {"dealTier": {"minDealTier": 5, "prefix": "anyPrefix"}, "placementId": 12345}}}}`),
+			expectedResult: DealTierBidderMap{"UnKnOwn": {Prefix: "anyPrefix", MinDealTier: 5}},
 		},
 		{
 			description:    "imp.ext.prebid.bidder_one_but_case_is_different_from_the_adapter_bidder_list",
