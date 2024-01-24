@@ -432,7 +432,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	return bidder, nil
 }
 
-func (fa *adapter) MakeTimeoutNotification(req *adapters.RequestData) (*adapters.RequestData, []error) {
+func (a *adapter) MakeTimeoutNotification(req *adapters.RequestData) (*adapters.RequestData, []error) {
 	var (
 		rID   string
 		pubID string
@@ -455,7 +455,7 @@ func (fa *adapter) MakeTimeoutNotification(req *adapters.RequestData) (*adapters
 		}
 	}
 
-	uri := fmt.Sprintf("https://www.facebook.com/audiencenetwork/nurl/?partner=%s&app=%s&auction=%s&ortb_loss_code=2", fa.platformID, pubID, rID)
+	uri := fmt.Sprintf("https://www.facebook.com/audiencenetwork/nurl/?partner=%s&app=%s&auction=%s&ortb_loss_code=2", a.platformID, pubID, rID)
 	timeoutReq := adapters.RequestData{
 		Method:  "GET",
 		Uri:     uri,
