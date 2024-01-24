@@ -204,6 +204,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, account.GDPR)
 
 	activityControl = privacy.NewActivityControl(&account.Privacy)
+
 	hookExecutor.SetActivityControl(activityControl)
 
 	ctx := context.Background()

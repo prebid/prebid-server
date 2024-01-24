@@ -136,6 +136,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		RequestStatus: metrics.RequestStatusOK,
 	}
 	activityControl := privacy.ActivityControl{}
+
 	defer func() {
 		deps.metricsEngine.RecordRequest(labels)
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
@@ -232,6 +233,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, account.GDPR)
 
 	activityControl = privacy.NewActivityControl(&account.Privacy)
+
 	hookExecutor.SetActivityControl(activityControl)
 
 	secGPC := r.Header.Get("Sec-GPC")
