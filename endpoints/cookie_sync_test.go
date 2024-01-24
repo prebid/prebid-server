@@ -2137,6 +2137,10 @@ func (m *MockAnalyticsRunner) LogNotificationEventObject(obj *analytics.Notifica
 	m.Called(obj, ac)
 }
 
+func (m *MockAnalyticsRunner) Shutdown() {
+	m.Called()
+}
+
 type MockGDPRPerms struct {
 	mock.Mock
 }
