@@ -104,6 +104,7 @@
                     "awesome.com"
                   ],
                   "crid": "20",
+                  "mtype": 4,
                   "ext": {
                     "formattype": 2
                   }
@@ -135,6 +136,7 @@
             "price": 3.5,
             "adm": "awesome-markup",
             "crid": "20",
+            "mtype": 4,
             "adomain": [
               "awesome.com"
             ],
