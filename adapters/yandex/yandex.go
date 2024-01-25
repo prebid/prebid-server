@@ -333,14 +333,6 @@ func getBidType(imp openrtb2.Imp) (openrtb_ext.BidType, error) {
 		return openrtb_ext.BidTypeBanner, nil
 	}
 
-	if imp.Audio != nil {
-		return openrtb_ext.BidTypeAudio, nil
-	}
-
-	if imp.Video != nil {
-		return openrtb_ext.BidTypeVideo, nil
-	}
-
 	return "", &errortypes.BadInput{
 		Message: fmt.Sprintf("Processing an invalid impression; cannot resolve impression type for imp #%s", imp.ID),
 	}
