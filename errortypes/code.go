@@ -31,6 +31,7 @@ const (
 	AdServerTargetingWarningCode
 	BidAdjustmentWarningCode
 	FloorBidRejectionWarningCode
+	SecCookieDeprecationLenWarningCode
 )
 
 // Coder provides an error or warning code with severity.

@@ -1925,7 +1925,10 @@ func validateDeviceExt(req *openrtb_ext.RequestWrapper) error {
 	if deviceExt, err := req.GetDeviceExt(); err == nil {
 		if ext := deviceExt.GetExt(); ext != nil {
 			if value, ok := ext["cdep"]; ok && len(string(value)) > 100 {
-				return errors.New("request.device.ext.cdep must be less than 100 characters")
+				return &errortypes.Warning{
+					Message:     "request.device.ext.cdep must be less than 100 characters",
+					WarningCode: errortypes.SecCookieDeprecationLenWarningCode,
+				}
 			}
 		}
 	}
