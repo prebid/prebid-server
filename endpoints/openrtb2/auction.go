@@ -29,6 +29,7 @@ import (
 	"github.com/prebid/prebid-server/v2/hooks"
 	"github.com/prebid/prebid-server/v2/ortb"
 	"github.com/prebid/prebid-server/v2/privacy"
+	"github.com/prebid/prebid-server/v2/privacysandbox"
 	"golang.org/x/net/publicsuffix"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
@@ -2054,91 +2055,9 @@ func setSecBrowsingTopcisImplicitly(httpReq *http.Request, r *openrtb_ext.Reques
 	if cfg == nil || cfg.Auction.PrivacySandbox.TopicsDomain == "" {
 		return
 	}
-	topicsDomain := cfg.Auction.PrivacySandbox.TopicsDomain
 
-	// segtax-segclass-name-segIds for each lookup against data in request.user.data
-	headerUserData := map[int]map[string]map[string]map[string]struct{}{}
-	// each field is seperated by ,
-	secBrowsingTopicsArr := strings.Split(secBrowsingTopics, ",")
-	selectedFields := 0
-	for _, seg := range secBrowsingTopicsArr {
-		// max 10 fields allowed in header value
-		if selectedFields >= 10 {
-			break
-		}
-
-		seg = strings.TrimSpace(seg)
-		if seg == "" {
-			continue
-		}
-
-		// ();p= is a field to indicated end
-		if strings.HasPrefix(seg, "();p=") {
-			continue
-		}
-
-		// each field has format (segIds);v=browser_version:taxanomy:model_version
-		segment := strings.Split(seg, ";")
-		if len(segment) != 2 {
-			continue
-		}
-
-		// segment[0] is (segIds)
-		// all segIds for a fields should be in () and there should be atleast be one valid segId
-		segmentsIds := strings.TrimSpace(segment[0])
-		if len(segmentsIds) < 3 || segmentsIds[0] != '(' || segmentsIds[len(segmentsIds)-1] != ')' {
-			continue
-		}
-		segmentsIds = strings.TrimLeft(segmentsIds, "(")
-		segmentsIds = strings.TrimRight(segmentsIds, ")")
-		segmentsIdArr := strings.Fields(segmentsIds)
-		if len(segmentsIdArr) < 1 {
-			continue
-		}
-
-		// segment[1] is v=browser_version:taxanomy:model_version
-		taxanomyModel := strings.Split(segment[1], ":")
-		if len(taxanomyModel) != 3 {
-			continue
-		}
-
-		// taxanomyModel[0] is v=browser_version, we don't need it
-		// taxanomyModel[1] is taxanomy which should be a valid number from 1 to 10 inclusive,
-		taxanomyVer := strings.TrimSpace(taxanomyModel[1])
-		taxanomy, err := strconv.Atoi(taxanomyVer)
-		if err != nil || taxanomy < 1 || taxanomy > 10 {
-			continue
-		}
-		// segtax is 600 + (taxanomy - 1)
-		segtax := 600 + (taxanomy - 1)
-		// taxanomyModel[2] is model_version which is also segclass
-		segclass := strings.TrimSpace(taxanomyModel[2])
-
-		// map segtax-segclass-name-segIds for each lookup against data in request.user.data and to filter unique segIds per segtax-segclass-name
-		if _, ok := headerUserData[segtax]; !ok {
-			headerUserData[segtax] = map[string]map[string]map[string]struct{}{}
-		}
-
-		if _, ok := headerUserData[segtax][segclass]; !ok {
-			headerUserData[segtax][segclass] = map[string]map[string]struct{}{}
-		}
-
-		if _, ok := headerUserData[segtax][segclass][topicsDomain]; !ok {
-			headerUserData[segtax][segclass][topicsDomain] = map[string]struct{}{}
-		}
-
-		for _, segId := range segmentsIdArr {
-			segId = strings.TrimSpace(segId)
-			if segid, err := strconv.Atoi(segId); err == nil && segid > 0 {
-				headerUserData[segtax][segclass][topicsDomain][segId] = struct{}{}
-			}
-		}
-
-		selectedFields++
-	}
-
-	// no valid fields found in header value
-	if selectedFields == 0 {
+	topics := privacysandbox.ParseTopicsFromHeader(secBrowsingTopics)
+	if len(topics) == 0 {
 		return
 	}
 
@@ -2147,75 +2066,7 @@ func setSecBrowsingTopcisImplicitly(httpReq *http.Request, r *openrtb_ext.Reques
 		r.User = &openrtb2.User{}
 	}
 
-	type extData struct {
-		Segtax   int
-		Segclass string
-	}
-
-	// map segtax-segclass-name-segIds for each lookup against data in request.user.data and to filter unique segIds per segtax-segclass-name
-	requestUserData := map[int]map[string]map[string]map[string]struct{}{}
-	for i, data := range r.User.Data {
-		ext := &extData{}
-
-		_ = json.Unmarshal(data.Ext, ext)
-		if ext.Segtax == 0 || ext.Segclass == "" {
-			continue
-		}
-
-		if _, ok := requestUserData[ext.Segtax]; !ok {
-			requestUserData[ext.Segtax] = map[string]map[string]map[string]struct{}{}
-		}
-
-		if _, ok := requestUserData[ext.Segtax][ext.Segclass]; !ok {
-			requestUserData[ext.Segtax][ext.Segclass] = map[string]map[string]struct{}{}
-		}
-
-		if _, ok := requestUserData[ext.Segtax][ext.Segclass][data.Name]; !ok {
-			requestUserData[ext.Segtax][ext.Segclass][data.Name] = map[string]struct{}{}
-		}
-
-		for _, segId := range data.Segment {
-			requestUserData[ext.Segtax][ext.Segclass][data.Name][segId.ID] = struct{}{}
-		}
-
-		// merge segment ids if segtax, segclass and name are the same
-		if _, ok := headerUserData[ext.Segtax]; ok {
-			if _, ok := headerUserData[ext.Segtax][ext.Segclass]; ok {
-				if _, ok := headerUserData[ext.Segtax][ext.Segclass][data.Name]; ok {
-
-					// segtax-segclass-domain matched, merge unique segment ids
-					for segId := range headerUserData[ext.Segtax][ext.Segclass][data.Name] {
-						// add only if not already present
-						if _, ok := requestUserData[ext.Segtax][ext.Segclass][data.Name][segId]; !ok {
-							r.User.Data[i].Segment = append(r.User.Data[i].Segment, openrtb2.Segment{
-								ID: segId,
-							})
-						}
-					}
-
-					// delete segtax-segclass-name from headerUserData as it is already merged to avoid duplicate entry later below
-					delete(headerUserData[ext.Segtax][ext.Segclass], data.Name)
-				}
-			}
-		}
-	}
-
-	// add remaining segtax-segclass-name-segIds from headerUserData to requestUserData
-	for segtax, segClassSegName := range headerUserData {
-		for segclass, segName := range segClassSegName {
-			for segName, segIds := range segName {
-				r.User.Data = append(r.User.Data, openrtb2.Data{
-					Name: segName,
-					Ext:  json.RawMessage(fmt.Sprintf(`{"segtax": %d, "segclass": "%s"}`, segtax, segclass)),
-				})
-				for segId := range segIds {
-					r.User.Data[len(r.User.Data)-1].Segment = append(r.User.Data[len(r.User.Data)-1].Segment, openrtb2.Segment{
-						ID: segId,
-					})
-				}
-			}
-		}
-	}
+	r.User.Data = privacysandbox.UpdateUserDataWithTopics(r.User.Data, topics, cfg.Auction.PrivacySandbox.TopicsDomain)
 }
 
 func setSiteImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {

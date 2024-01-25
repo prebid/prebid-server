@@ -4724,13 +4724,13 @@ func TestValidateNativeAssetData(t *testing.T) {
 func TestAuctionResponseHeaders(t *testing.T) {
 	testCases := []struct {
 		description     string
-		requestBody     string
+		httpRequest     *http.Request
 		expectedStatus  int
 		expectedHeaders func(http.Header)
 	}{
 		{
 			description:    "Success Response",
-			requestBody:    validRequest(t, "site.json"),
+			httpRequest:    httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json"))),
 			expectedStatus: 200,
 			expectedHeaders: func(h http.Header) {
 				h.Set("X-Prebid", "pbs-go/unknown")
@@ -4739,10 +4739,37 @@ func TestAuctionResponseHeaders(t *testing.T) {
 		},
 		{
 			description:    "Failure Response",
-			requestBody:    "{}",
+			httpRequest:    httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader("{}")),
 			expectedStatus: 400,
 			expectedHeaders: func(h http.Header) {
 				h.Set("X-Prebid", "pbs-go/unknown")
+			},
+		},
+		{
+			description: "Success Response with Chrome BrowsingTopicsHeader",
+			httpRequest: func() *http.Request {
+				httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
+				httpReq.Header.Add(secBrowsingTopics, "sample-value")
+				return httpReq
+			}(),
+			expectedStatus: 200,
+			expectedHeaders: func(h http.Header) {
+				h.Set("X-Prebid", "pbs-go/unknown")
+				h.Set("Content-Type", "application/json")
+				h.Set("Observe-Browsing-Topics", "?1")
+			},
+		},
+		{
+			description: "Failure Response with Chrome BrowsingTopicsHeader",
+			httpRequest: func() *http.Request {
+				httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader("{}"))
+				httpReq.Header.Add(secBrowsingTopics, "sample-value")
+				return httpReq
+			}(),
+			expectedStatus: 400,
+			expectedHeaders: func(h http.Header) {
+				h.Set("X-Prebid", "pbs-go/unknown")
+				h.Set("Observe-Browsing-Topics", "?1")
 			},
 		},
 	}
@@ -4766,10 +4793,9 @@ func TestAuctionResponseHeaders(t *testing.T) {
 	)
 
 	for _, test := range testCases {
-		httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.requestBody))
 		recorder := httptest.NewRecorder()
 
-		endpoint(recorder, httpReq, nil)
+		endpoint(recorder, test.httpRequest, nil)
 
 		expectedHeaders := http.Header{}
 		test.expectedHeaders(expectedHeaders)
@@ -6110,7 +6136,7 @@ func fakeNormalizeBidderName(name string) (openrtb_ext.BidderName, bool) {
 	return openrtb_ext.BidderName(strings.ToLower(name)), true
 }
 
-func Test_setSecBrowsingTopcisImplicitly(t *testing.T) {
+func TestSetSecBrowsingTopcisImplicitly(t *testing.T) {
 	type args struct {
 		httpReq *http.Request
 		r       *openrtb_ext.RequestWrapper
@@ -6122,68 +6148,16 @@ func Test_setSecBrowsingTopcisImplicitly(t *testing.T) {
 		wantUser *openrtb2.User
 	}{
 		{
-			name: "Empty HTTP request",
+			name: "empty HTTP request, no change in user data",
 			args: args{
 				httpReq: &http.Request{},
 				r:       &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
-				cfg:     &config.Configuration{Auction: config.Auction{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "TOPICS_DOMAIN"}}},
+				cfg:     &config.Configuration{Auction: config.Auction{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "ads.pubmatic.com"}}},
 			},
 			wantUser: nil,
 		},
 		{
-			name: "Sec-Browsing-Topics with empty value, request.user.data empty, no change in user data",
-			args: args{
-				httpReq: &http.Request{
-					Header: http.Header{
-						secBrowsingTopics: []string{"  "},
-					},
-				},
-				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
-				cfg: &config.Configuration{Auction: config.Auction{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "TOPICS_DOMAIN"}}},
-			},
-			wantUser: nil,
-		},
-		{
-			name: "Sec-Browsing-Topics with invalid value, request.user.data empty, no change in user data",
-			args: args{
-				httpReq: &http.Request{
-					Header: http.Header{
-						secBrowsingTopics: []string{"some-sec-cookie-value"},
-					},
-				},
-				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
-				cfg: &config.Configuration{Auction: config.Auction{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "TOPICS_DOMAIN"}}},
-			},
-			wantUser: nil,
-		},
-		{
-			name: "Sec-Browsing-Topics present but topicsdomain not configured by host, no change in user data",
-			args: args{
-				httpReq: &http.Request{
-					Header: http.Header{
-						secBrowsingTopics: []string{"some-sec-cookie-value"},
-					},
-				},
-				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
-				cfg: &config.Configuration{},
-			},
-			wantUser: nil,
-		},
-		{
-			name: "Sec-Browsing-Topics with finish padding, request.user.data empty, no change in user data",
-			args: args{
-				httpReq: &http.Request{
-					Header: http.Header{
-						secBrowsingTopics: []string{"();p=P0000000000000000000000000000000"},
-					},
-				},
-				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
-				cfg: &config.Configuration{Auction: config.Auction{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "TOPICS_DOMAIN"}}},
-			},
-			wantUser: nil,
-		},
-		{
-			name: "Sec-Browsing-Topics with one valid field, request.user.data empty, valid field data added to req.user.data",
+			name: "valid topic in request but topicsdomain not configured by host, no change in user data",
 			args: args{
 				httpReq: &http.Request{
 					Header: http.Header{
@@ -6191,12 +6165,25 @@ func Test_setSecBrowsingTopcisImplicitly(t *testing.T) {
 					},
 				},
 				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
-				cfg: &config.Configuration{Auction: config.Auction{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "TOPICS_DOMAIN"}}},
+				cfg: &config.Configuration{Auction: config.Auction{PrivacySandbox: config.PrivacySandbox{TopicsDomain: ""}}},
+			},
+			wantUser: nil,
+		},
+		{
+			name: "valid topic in request and topicsdomain configured by host, topics copied to user data",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{
+						secBrowsingTopics: []string{"(1);v=chrome.1:1:2, ();p=P00000000000"},
+					},
+				},
+				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
+				cfg: &config.Configuration{Auction: config.Auction{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "ads.pubmatic.com"}}},
 			},
 			wantUser: &openrtb2.User{
 				Data: []openrtb2.Data{
 					{
-						Name: "TOPICS_DOMAIN",
+						Name: "ads.pubmatic.com",
 						Segment: []openrtb2.Segment{
 							{
 								ID: "1",
@@ -6208,682 +6195,79 @@ func Test_setSecBrowsingTopcisImplicitly(t *testing.T) {
 			},
 		},
 		{
-			name: "Sec-Browsing-Topics with more than 10 valid fields, request.user.data empty, only 10 valid fields added to req.user.data",
+			name: "valid empty topic in request, no change in user data",
 			args: args{
 				httpReq: &http.Request{
 					Header: http.Header{
-						secBrowsingTopics: []string{"(1);v=chrome.1:1:2, (2);v=chrome.1:1:2, (3);v=chrome.1:1:2,  (4);v=chrome.1:1:2,  (5);v=chrome.1:1:2,  (6);v=chrome.1:1:2,  (7);v=chrome.1:1:2,  (8);v=chrome.1:1:2,  (9);v=chrome.1:1:2,  (10);v=chrome.1:1:2,  (11);v=chrome.1:1:2,  (12);v=chrome.1:1:2, ();p=P00000000000"},
+						secBrowsingTopics: []string{"();p=P0000000000000000000000000000000"},
 					},
 				},
 				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
-				cfg: &config.Configuration{Auction: config.Auction{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "TOPICS_DOMAIN"}}},
+				cfg: &config.Configuration{Auction: config.Auction{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "ads.pubmatic.com"}}},
 			},
-			wantUser: &openrtb2.User{
-				Data: []openrtb2.Data{
-					{
-						Name: "TOPICS_DOMAIN",
-						Segment: []openrtb2.Segment{
-							{
-								ID: "1",
-							},
-							{
-								ID: "2",
-							},
-							{
-								ID: "3",
-							},
-							{
-								ID: "4",
-							},
-							{
-								ID: "5",
-							},
-							{
-								ID: "6",
-							},
-							{
-								ID: "7",
-							},
-							{
-								ID: "8",
-							},
-							{
-								ID: "9",
-							},
-							{
-								ID: "10",
-							},
-						},
-						Ext: json.RawMessage(`{"segtax": 600, "segclass": "2"}`),
-					},
-				},
-			},
+			wantUser: nil,
 		},
 		{
-			name: "Sec-Browsing-Topics with one valid field and others different invalid scenarios, request.user.data empty, valid field data added to req.user.data",
+			name: "request with a few valid topics (including duplicate topics, segIDs, matching segtax, segclass, etc) and a few invalid topics(different invalid format), only valid and unique topics copied/merged to/with user data",
 			args: args{
 				httpReq: &http.Request{
 					Header: http.Header{
-						secBrowsingTopics: []string{"(1);v=chrome.1:1:2, (4);v=chrome.1, 5);v=chrome.1, (6;v=chrome.1, ();v=chrome.1, (	);v=chrome.1, ();p=P0000000000"},
+						secBrowsingTopics: []string{"(1);v=chrome.1:1:2, (1 2);v=chrome.1:1:2,(4);v=chrome.1:1:2,();p=P0000000000,(4);v=chrome.1, 5);v=chrome.1, (6;v=chrome.1, ();v=chrome.1, (	);v=chrome.1, (1);v=chrome.1:1:2, (1 2 4		6 7			4567	  ) ; v=chrome.1: 2 : 3,();p=P0000000000"},
 					},
 				},
-				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
-				cfg: &config.Configuration{Auction: config.Auction{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "TOPICS_DOMAIN"}}},
-			},
-			wantUser: &openrtb2.User{
-				Data: []openrtb2.Data{
-					{
-						Name: "TOPICS_DOMAIN",
-						Segment: []openrtb2.Segment{
+				r: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+					User: &openrtb2.User{
+						Data: []openrtb2.Data{
 							{
-								ID: "1",
-							},
-						},
-						Ext: json.RawMessage(`{"segtax": 600, "segclass": "2"}`),
-					},
-				},
-			},
-		},
-		{
-			name: "Sec-Browsing-Topics with one valid field having multiple segIds, request.user.data empty, valid field data added to req.user.data",
-			args: args{
-				httpReq: &http.Request{
-					Header: http.Header{
-						secBrowsingTopics: []string{"(1 2);v=chrome.1:1:2, ();p=P00000000000"},
-					},
-				},
-				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
-				cfg: &config.Configuration{Auction: config.Auction{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "TOPICS_DOMAIN"}}},
-			},
-			wantUser: &openrtb2.User{
-				Data: []openrtb2.Data{
-					{
-						Name: "TOPICS_DOMAIN",
-						Segment: []openrtb2.Segment{
-							{
-								ID: "1",
-							},
-							{
-								ID: "2",
-							},
-						},
-						Ext: json.RawMessage(`{"segtax": 600, "segclass": "2"}`),
-					},
-				},
-			},
-		},
-		{
-			name: "Sec-Browsing-Topics with two valid field with different segclass, request.user.data empty, valid field data added to req.user.data",
-			args: args{
-				httpReq: &http.Request{
-					Header: http.Header{
-						secBrowsingTopics: []string{"(1);v=chrome.1:1:2, (1);v=chrome.1:1:1, ();p=P0000000000"},
-					},
-				},
-				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
-				cfg: &config.Configuration{Auction: config.Auction{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "TOPICS_DOMAIN"}}},
-			},
-			wantUser: &openrtb2.User{
-				Data: []openrtb2.Data{
-					{
-						Name: "TOPICS_DOMAIN",
-						Segment: []openrtb2.Segment{
-							{
-								ID: "1",
-							},
-						},
-						Ext: json.RawMessage(`{"segtax": 600, "segclass": "2"}`),
-					},
-					{
-						Name: "TOPICS_DOMAIN",
-						Segment: []openrtb2.Segment{
-							{
-								ID: "1",
-							},
-						},
-						Ext: json.RawMessage(`{"segtax": 600, "segclass": "1"}`),
-					},
-				},
-			},
-		},
-		{
-			name: "Sec-Browsing-Topics with three fields one valid, one with invalid segtax > 10 and last with invalid segtax < 1, request.user.data empty, valid field data added to req.user.data",
-			args: args{
-				httpReq: &http.Request{
-					Header: http.Header{
-						secBrowsingTopics: []string{"(1);v=chrome.1:11:2, (1);v=chrome.1:1:4, (1);v=chrome.1:0:2, ();p=P0000000000"},
-					},
-				},
-				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
-				cfg: &config.Configuration{Auction: config.Auction{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "TOPICS_DOMAIN"}}},
-			},
-			wantUser: &openrtb2.User{
-				Data: []openrtb2.Data{
-					{
-						Name: "TOPICS_DOMAIN",
-						Segment: []openrtb2.Segment{
-							{
-								ID: "1",
-							},
-						},
-						Ext: json.RawMessage(`{"segtax": 600, "segclass": "4"}`),
-					},
-				},
-			},
-		},
-		{
-			name: "Sec-Browsing-Topics with three fields one invalid, two with same segtax and segclass, request.user.data empty, common valid fields merged in req.user.data",
-			args: args{
-				httpReq: &http.Request{
-					Header: http.Header{
-						secBrowsingTopics: []string{"(100);v=chrome.1:111111111111111111:20, (200);v=chrome.1:2:40, (200 300);v=chrome.1:2:40, ();p=P"},
-					},
-				},
-				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
-				cfg: &config.Configuration{Auction: config.Auction{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "TOPICS_DOMAIN"}}},
-			},
-			wantUser: &openrtb2.User{
-				Data: []openrtb2.Data{
-					{
-						Name: "TOPICS_DOMAIN",
-						Segment: []openrtb2.Segment{
-							{
-								ID: "200",
-							},
-							{
-								ID: "300",
-							},
-						},
-						Ext: json.RawMessage(`{"segtax": 601, "segclass": "40"}`),
-					},
-				},
-			},
-		},
-		{
-			name: "Sec-Browsing-Topics with two fields both matching segtax, segclass and segIds, request.user.data empty, data merged and added in req.user.data",
-			args: args{
-				httpReq: &http.Request{
-					Header: http.Header{
-						secBrowsingTopics: []string{"(1);v=chrome.1:1:2, (1);v=chrome.1:1:2, ();p=P0000000000"},
-					},
-				},
-				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
-				cfg: &config.Configuration{Auction: config.Auction{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "TOPICS_DOMAIN"}}},
-			},
-			wantUser: &openrtb2.User{
-				Data: []openrtb2.Data{
-					{
-						Name: "TOPICS_DOMAIN",
-						Segment: []openrtb2.Segment{
-							{
-								ID: "1",
-							},
-						},
-						Ext: json.RawMessage(`{"segtax": 600, "segclass": "2"}`),
-					},
-				},
-			},
-		},
-		{
-			name: "Sec-Browsing-Topics with two fields both matching segtax and segclass and different segIds, request.user.data empty, data merged and added in req.user.data",
-			args: args{
-				httpReq: &http.Request{
-					Header: http.Header{
-						secBrowsingTopics: []string{"(1);v=chrome.1:1:2, (2);v=chrome.1:1:2, ();p=P0000000000"},
-					},
-				},
-				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
-				cfg: &config.Configuration{Auction: config.Auction{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "TOPICS_DOMAIN"}}},
-			},
-			wantUser: &openrtb2.User{
-				Data: []openrtb2.Data{
-					{
-						Name: "TOPICS_DOMAIN",
-						Segment: []openrtb2.Segment{
-							{
-								ID: "1",
-							},
-							{
-								ID: "2",
-							},
-						},
-						Ext: json.RawMessage(`{"segtax": 600, "segclass": "2"}`),
-					},
-				},
-			},
-		},
-		{
-			name: "Sec-Browsing-Topics with two fields both matching segtax and segclass and different segIds, request.user.data empty, data merged and added in req.user.data",
-			args: args{
-				httpReq: &http.Request{
-					Header: http.Header{
-						secBrowsingTopics: []string{"(1);v=chrome.1:1:2, (2);v=chrome.1:1:2, ();p=P0000000000"},
-					},
-				},
-				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
-				cfg: &config.Configuration{Auction: config.Auction{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "TOPICS_DOMAIN"}}},
-			},
-			wantUser: &openrtb2.User{
-				Data: []openrtb2.Data{
-					{
-						Name: "TOPICS_DOMAIN",
-						Segment: []openrtb2.Segment{
-							{
-								ID: "1",
-							},
-							{
-								ID: "2",
-							},
-						},
-						Ext: json.RawMessage(`{"segtax": 600, "segclass": "2"}`),
-					},
-				},
-			},
-		},
-		{
-			name: "Sec-Browsing-Topics with valid fields having special characters (whitespaces, etc), request.user.data empty, valid data filtered and added in req.user.data",
-			args: args{
-				httpReq: &http.Request{
-					Header: http.Header{
-						secBrowsingTopics: []string{"(1 2 4		6 7			4567	  ) ; v=chrome.1: 1 : 2, (1);v=chrome.1, ();p=P0000000000"},
-					},
-				},
-				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
-				cfg: &config.Configuration{Auction: config.Auction{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "TOPICS_DOMAIN"}}},
-			},
-			wantUser: &openrtb2.User{
-				Data: []openrtb2.Data{
-					{
-						Name: "TOPICS_DOMAIN",
-						Segment: []openrtb2.Segment{
-							{
-								ID: "1",
-							},
-							{
-								ID: "2",
-							},
-							{
-								ID: "4",
-							},
-							{
-								ID: "6",
-							},
-							{
-								ID: "7",
-							},
-							{
-								ID: "4567",
-							},
-						},
-						Ext: json.RawMessage(`{"segtax": 600, "segclass": "2"}`),
-					},
-				},
-			},
-		},
-		{
-			name: "Sec-Browsing-Topics with valid fields having special characters (whitespaces, etc), request.user.data empty, valid data filtered and added in req.user.data",
-			args: args{
-				httpReq: &http.Request{
-					Header: http.Header{
-						secBrowsingTopics: []string{"(1 -2 4		6 7			4567	  ) ; v=chrome.1: 1 : 2, (1);v=chrome.1, ();p=P0000000000"},
-					},
-				},
-				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
-				cfg: &config.Configuration{Auction: config.Auction{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "TOPICS_DOMAIN"}}},
-			},
-			wantUser: &openrtb2.User{
-				Data: []openrtb2.Data{
-					{
-						Name: "TOPICS_DOMAIN",
-						Segment: []openrtb2.Segment{
-							{
-								ID: "1",
-							},
-							{
-								ID: "4",
-							},
-							{
-								ID: "6",
-							},
-							{
-								ID: "7",
-							},
-							{
-								ID: "4567",
-							},
-						},
-						Ext: json.RawMessage(`{"segtax": 600, "segclass": "2"}`),
-					},
-				},
-			},
-		},
-		{
-			name: "Sec-Browsing-Topics with valid fields but finish padding in between, request.user.data empty, valid data filtered and added in req.user.data",
-			args: args{
-				httpReq: &http.Request{
-					Header: http.Header{
-						secBrowsingTopics: []string{"(1);v=chrome.1:1:4,();p=P0000000000,(2);v=chrome.1:1:4,();p=P000000000"},
-					},
-				},
-				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
-				cfg: &config.Configuration{Auction: config.Auction{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "TOPICS_DOMAIN"}}},
-			},
-			wantUser: &openrtb2.User{
-				Data: []openrtb2.Data{
-					{
-						Name: "TOPICS_DOMAIN",
-						Segment: []openrtb2.Segment{
-							{
-								ID: "1",
-							},
-							{
-								ID: "2",
-							},
-						},
-						Ext: json.RawMessage(`{"segtax": 600, "segclass": "4"}`),
-					},
-				},
-			},
-		},
-		{
-			name: "Sec-Browsing-Topics with valid fields but no finish padding, request.user.data empty, valid data added in req.user.data",
-			args: args{
-				httpReq: &http.Request{
-					Header: http.Header{
-						secBrowsingTopics: []string{"(100);v=chrome.1:2:20"},
-					},
-				},
-				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
-				cfg: &config.Configuration{Auction: config.Auction{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "TOPICS_DOMAIN"}}},
-			},
-			wantUser: &openrtb2.User{
-				Data: []openrtb2.Data{
-					{
-						Name: "TOPICS_DOMAIN",
-						Segment: []openrtb2.Segment{
-							{
-								ID: "100",
-							},
-						},
-						Ext: json.RawMessage(`{"segtax": 601, "segclass": "20"}`),
-					},
-				},
-			},
-		},
-		{
-			name: "Sec-Browsing-Topics with two fields both matching segtax and segclass and different segIds, request.user.data has non matching user data, header data merged and added in req.user.data",
-			args: args{
-				httpReq: &http.Request{
-					Header: http.Header{
-						secBrowsingTopics: []string{"(1);v=chrome.1:1:2, (2);v=chrome.1:1:2, ();p=P0000000000"},
-					},
-				},
-				r: &openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
-						User: &openrtb2.User{
-							Data: []openrtb2.Data{
-								{
-									Name: "ABC",
-									Segment: []openrtb2.Segment{
-										{
-											ID: "1",
-										},
-										{
-											ID: "2",
-										},
-									},
-									Ext: json.RawMessage(`{"segtax": 600, "segclass": "2"}`),
+								Name: "chrome.com",
+								Segment: []openrtb2.Segment{
+									{ID: "1"},
 								},
-							},
-						},
-					},
-				},
-				cfg: &config.Configuration{Auction: config.Auction{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "TOPICS_DOMAIN"}}},
-			},
-			wantUser: &openrtb2.User{
-				Data: []openrtb2.Data{
-					{
-						Name: "ABC",
-						Segment: []openrtb2.Segment{
-							{
-								ID: "1",
+								Ext: json.RawMessage(`{"segtax": 603, "segclass": "4"}`),
 							},
 							{
-								ID: "2",
-							},
-						},
-						Ext: json.RawMessage(`{"segtax": 600, "segclass": "2"}`),
-					},
-					{
-						Name: "TOPICS_DOMAIN",
-						Segment: []openrtb2.Segment{
-							{
-								ID: "1",
-							},
-							{
-								ID: "2",
-							},
-						},
-						Ext: json.RawMessage(`{"segtax": 600, "segclass": "2"}`),
-					},
-				},
-			},
-		},
-		{
-			name: "Sec-Browsing-Topics with two fields both matching segtax and segclass and different segIds, request.user.data also with same segclass, segtax and same segIds, duplicate header data not added to req.user.data",
-			args: args{
-				httpReq: &http.Request{
-					Header: http.Header{
-						secBrowsingTopics: []string{"(1);v=chrome.1:1:2, (2);v=chrome.1:1:2, ();p=P0000000000"},
-					},
-				},
-				r: &openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
-						User: &openrtb2.User{
-							Data: []openrtb2.Data{
-								{
-									Name: "TOPICS_DOMAIN",
-									Segment: []openrtb2.Segment{
-										{
-											ID: "1",
-										},
-										{
-											ID: "2",
-										},
-									},
-									Ext: json.RawMessage(`{"segtax": 600, "segclass": "2"}`),
+								Name: "ads.pubmatic.com",
+								Segment: []openrtb2.Segment{
+									{ID: "1"},
+									{ID: "3"},
 								},
+								Ext: json.RawMessage(`{"segtax": 600, "segclass": "2"}`),
 							},
 						},
 					},
-				},
-				cfg: &config.Configuration{Auction: config.Auction{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "TOPICS_DOMAIN"}}},
+				}},
+				cfg: &config.Configuration{Auction: config.Auction{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "ads.pubmatic.com"}}},
 			},
 			wantUser: &openrtb2.User{
 				Data: []openrtb2.Data{
 					{
-						Name: "TOPICS_DOMAIN",
+						Name: "chrome.com",
 						Segment: []openrtb2.Segment{
-							{
-								ID: "1",
-							},
-							{
-								ID: "2",
-							},
+							{ID: "1"},
+						},
+						Ext: json.RawMessage(`{"segtax": 603, "segclass": "4"}`),
+					},
+					{
+						Name: "ads.pubmatic.com",
+						Segment: []openrtb2.Segment{
+							{ID: "1"},
+							{ID: "2"},
+							{ID: "3"},
+							{ID: "4"},
 						},
 						Ext: json.RawMessage(`{"segtax": 600, "segclass": "2"}`),
 					},
-				},
-			},
-		},
-		{
-			name: "Sec-Browsing-Topics with two fields both matching segtax and segclass and different segIds, request.user.data also with same segclass, segtax and domain but different segIds, merge header and req.user.data",
-			args: args{
-				httpReq: &http.Request{
-					Header: http.Header{
-						secBrowsingTopics: []string{"(1);v=chrome.1:1:2, (2);v=chrome.1:1:2, ();p=P0000000000"},
-					},
-				},
-				r: &openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
-						User: &openrtb2.User{
-							Data: []openrtb2.Data{
-								{
-									Name: "TOPICS_DOMAIN",
-									Segment: []openrtb2.Segment{
-										{
-											ID: "3",
-										},
-										{
-											ID: "4",
-										},
-									},
-									Ext: json.RawMessage(`{"segtax": 600, "segclass": "2"}`),
-								},
-							},
-						},
-					},
-				},
-				cfg: &config.Configuration{Auction: config.Auction{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "TOPICS_DOMAIN"}}},
-			},
-			wantUser: &openrtb2.User{
-				Data: []openrtb2.Data{
 					{
-						Name: "TOPICS_DOMAIN",
+						Name: "ads.pubmatic.com",
 						Segment: []openrtb2.Segment{
-							{
-								ID: "1",
-							},
-							{
-								ID: "2",
-							},
-							{
-								ID: "3",
-							},
-							{
-								ID: "4",
-							},
+							{ID: "1"},
+							{ID: "2"},
+							{ID: "4"},
+							{ID: "6"},
+							{ID: "7"},
+							{ID: "4567"},
 						},
-						Ext: json.RawMessage(`{"segtax": 600, "segclass": "2"}`),
-					},
-				},
-			},
-		},
-		{
-			name: "Sec-Browsing-Topics with two fields both matching segtax and segclass and different segIds, request.user.data with invalid segclass, add header data to req.user.data, keep invalid req.user.data as is",
-			args: args{
-				httpReq: &http.Request{
-					Header: http.Header{
-						secBrowsingTopics: []string{"(1);v=chrome.1:1:2, (2);v=chrome.1:1:2, ();p=P0000000000"},
-					},
-				},
-				r: &openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
-						User: &openrtb2.User{
-							Data: []openrtb2.Data{
-								{
-									Name: "TOPICS_DOMAIN",
-									Segment: []openrtb2.Segment{
-										{
-											ID: "3",
-										},
-										{
-											ID: "4",
-										},
-									},
-									Ext: json.RawMessage(`{"segtax": 0, "segclass": "0"}`),
-								},
-							},
-						},
-					},
-				},
-				cfg: &config.Configuration{Auction: config.Auction{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "TOPICS_DOMAIN"}}},
-			},
-			wantUser: &openrtb2.User{
-				Data: []openrtb2.Data{
-					{
-						Name: "TOPICS_DOMAIN",
-						Segment: []openrtb2.Segment{
-							{
-								ID: "3",
-							},
-							{
-								ID: "4",
-							},
-						},
-						Ext: json.RawMessage(`{"segtax": 0, "segclass": "0"}`),
-					},
-
-					{
-						Name: "TOPICS_DOMAIN",
-						Segment: []openrtb2.Segment{
-							{
-								ID: "1",
-							},
-							{
-								ID: "2",
-							},
-						},
-						Ext: json.RawMessage(`{"segtax": 600, "segclass": "2"}`),
-					},
-				},
-			},
-		},
-		{
-			name: "Sec-Browsing-Topics and request.user.data with same segtax, segclass and domain but each field with duplicate and unique segIds, merge header and req.user.data with unique segIds",
-			args: args{
-				httpReq: &http.Request{
-					Header: http.Header{
-						secBrowsingTopics: []string{"(1 3 4);v=chrome.1:1:2, (2 3);v=chrome.1:1:2, ();p=P0000000000"},
-					},
-				},
-				r: &openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
-						User: &openrtb2.User{
-							Data: []openrtb2.Data{
-								{
-									Name: "TOPICS_DOMAIN",
-									Segment: []openrtb2.Segment{
-										{
-											ID: "3",
-										},
-										{
-											ID: "4",
-										},
-										{
-											ID: "5",
-										},
-									},
-									Ext: json.RawMessage(`{"segtax": 600, "segclass": "2"}`),
-								},
-							},
-						},
-					},
-				},
-				cfg: &config.Configuration{Auction: config.Auction{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "TOPICS_DOMAIN"}}},
-			},
-			wantUser: &openrtb2.User{
-				Data: []openrtb2.Data{
-					{
-						Name: "TOPICS_DOMAIN",
-						Segment: []openrtb2.Segment{
-							{
-								ID: "1",
-							},
-							{
-								ID: "2",
-							},
-							{
-								ID: "3",
-							},
-							{
-								ID: "4",
-							},
-							{
-								ID: "5",
-							},
-						},
-						Ext: json.RawMessage(`{"segtax": 600, "segclass": "2"}`),
+						Ext: json.RawMessage(`{"segtax": 601, "segclass": "3"}`),
 					},
 				},
 			},
@@ -6893,31 +6277,26 @@ func Test_setSecBrowsingTopcisImplicitly(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			setSecBrowsingTopcisImplicitly(tt.args.httpReq, tt.args.r, tt.args.cfg)
 
-			// sequence is not garunteed in request.user.data as we're using a map
-			if tt.wantUser != nil && tt.wantUser.Data != nil {
-				sort.Slice(tt.wantUser.Data, func(i, j int) bool {
-					return string(tt.wantUser.Data[i].Ext) < string(tt.wantUser.Data[j].Ext)
-				})
-
-				for _, data := range tt.wantUser.Data {
-					sort.Slice(data.Segment, func(i, j int) bool {
-						return data.Segment[i].ID < data.Segment[j].ID
-					})
-				}
-			}
-			if tt.args.r.User != nil && tt.args.r.User.Data != nil {
-				sort.Slice(tt.args.r.User.Data, func(i, j int) bool {
-					return string(tt.args.r.User.Data[i].Ext) < string(tt.args.r.User.Data[j].Ext)
-				})
-
-				for _, data := range tt.args.r.User.Data {
-					sort.Slice(data.Segment, func(i, j int) bool {
-						return data.Segment[i].ID < data.Segment[j].ID
-					})
-				}
-			}
-
-			assert.Equal(t, tt.wantUser, tt.args.r.User)
+			// sequence is not garunteed we're using a map to filter segids
+			sortUserData(tt.wantUser)
+			sortUserData(tt.args.r.User)
+			assert.Equal(t, tt.wantUser, tt.args.r.User, tt.name)
 		})
+	}
+}
+
+func sortUserData(user *openrtb2.User) {
+	if user != nil {
+		sort.Slice(user.Data, func(i, j int) bool {
+			if user.Data[i].Name == user.Data[j].Name {
+				return string(user.Data[i].Ext) < string(user.Data[j].Ext)
+			}
+			return user.Data[i].Name < user.Data[j].Name
+		})
+		for g := range user.Data {
+			sort.Slice(user.Data[g].Segment, func(i, j int) bool {
+				return user.Data[g].Segment[i].ID < user.Data[g].Segment[j].ID
+			})
+		}
 	}
 }
