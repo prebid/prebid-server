@@ -6255,3 +6255,106 @@ func TestSetCookieDeprecation(t *testing.T) {
 		})
 	}
 }
+
+func TestParseRequestCookieDeprecation(t *testing.T) {
+	testCases :=
+		[]struct {
+			name             string
+			httpReq          *http.Request
+			givenAccountData map[string]json.RawMessage
+			expectedErr      string
+		}{
+			{
+				name:        "Request without Sec-Cookie-Deprecation header (cookiedeprecation not enabled for account)",
+				httpReq:     httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader([]byte(validRequest(t, "site.json")))),
+				expectedErr: "",
+			},
+			{
+				name: "Request with Sec-Cookie-Deprecation header having length less than 100 (cookiedeprecation not enabled for account)",
+				httpReq: func() *http.Request {
+					req := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader([]byte(validRequest(t, "site.json"))))
+					req.Header.Set(secCookieDeprecation, "sample-value")
+					return req
+				}(),
+				expectedErr: "",
+			},
+			{
+				name: "Request with Sec-Cookie-Deprecation header having length more than 100 (cookiedeprecation not enabled for account)",
+				httpReq: func() *http.Request {
+					req := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader([]byte(validRequest(t, "site.json"))))
+					req.Header.Set(secCookieDeprecation, "zjfXqGxXFI8yura8AhQl1DK2EMMmryrC8haEpAlwjoerrFfEo2MQTXUq6cSmLohI8gjsnkGU4oAzvXd4TTAESzEKsoYjRJ2zKxmEa")
+					return req
+				}(),
+				expectedErr: "",
+			},
+			{
+				name:    "Request without Sec-Cookie-Deprecation header (cookiedeprecation enabled for account)",
+				httpReq: httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader([]byte(validRequest(t, "site.json")))),
+				givenAccountData: map[string]json.RawMessage{
+					"some-test-account-id": json.RawMessage(`{"id":"1","auction":{"privacysandbox":{"cookiedeprecation":{"enabled":true,"ttlsec":86400}}}}`),
+				},
+				expectedErr: "",
+			},
+			{
+				name: "Request with Sec-Cookie-Deprecation header having length less than 100 (cookiedeprecation not enabled for account)",
+				httpReq: func() *http.Request {
+					req := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader([]byte(validRequest(t, "site.json"))))
+					req.Header.Set(secCookieDeprecation, "sample-value")
+					return req
+				}(),
+				givenAccountData: map[string]json.RawMessage{
+					"some-test-account-id": json.RawMessage(`{"id":"1","auction":{"privacysandbox":{"cookiedeprecation":{"enabled":true,"ttlsec":86400}}}}`),
+				},
+				expectedErr: "",
+			},
+			{
+				name: "Request with Sec-Cookie-Deprecation header having length more than 100 (cookiedeprecation not enabled for account)",
+				httpReq: func() *http.Request {
+					req := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader([]byte(validRequest(t, "site.json"))))
+					req.Header.Set(secCookieDeprecation, "zjfXqGxXFI8yura8AhQl1DK2EMMmryrC8haEpAlwjoerrFfEo2MQTXUq6cSmLohI8gjsnkGU4oAzvXd4TTAESzEKsoYjRJ2zKxmEa")
+					return req
+				}(),
+				givenAccountData: map[string]json.RawMessage{
+					"some-test-account-id": json.RawMessage(`{"id":"1","auction":{"privacysandbox":{"cookiedeprecation":{"enabled":true,"ttlsec":86400}}}}`),
+				},
+				expectedErr: "request.device.ext.cdep must be less than 100 characters",
+			},
+		}
+
+	deps := &endpointDeps{
+		fakeUUIDGenerator{},
+		&warningsCheckExchange{},
+		mockBidderParamValidator{},
+		&mockStoredReqFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		&mockAccountFetcher{},
+		&config.Configuration{MaxRequestSize: int64(1000)},
+		&metricsConfig.NilMetricsEngine{},
+		analyticsBuild.New(&config.Analytics{}),
+		map[string]string{},
+		false,
+		[]byte{},
+		openrtb_ext.BuildBidderMap(),
+		nil,
+		nil,
+		hardcodedResponseIPValidator{response: true},
+		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
+		nil,
+		openrtb_ext.NormalizeBidderName,
+	}
+
+	hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
+	for _, test := range testCases {
+		deps.accounts = &mockAccountFetcher{data: test.givenAccountData}
+		resReq, _, _, _, _, _, errL := deps.parseRequest(test.httpReq, &metrics.Labels{}, hookExecutor)
+
+		assert.NotNil(t, resReq, "Result request should not be nil", test.name)
+		if test.expectedErr == "" {
+			assert.Nil(t, errL, "Error list should be nil", test.name)
+		} else {
+			assert.Len(t, errL, 1, "One error should be returned", test.name)
+			assert.Contains(t, errL[0].Error(), test.expectedErr, "Incorrect error message", test.name)
+		}
+	}
+}

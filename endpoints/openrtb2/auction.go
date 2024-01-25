@@ -870,7 +870,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 		}
 	}
 
-	if err := validateDevice(req.Device); err != nil {
+	if err := validateDevice(req); err != nil {
 		return append(errL, err)
 	}
 
@@ -1898,28 +1898,36 @@ func validateRegs(req *openrtb_ext.RequestWrapper, gpp gpplib.GppContainer) []er
 	return errL
 }
 
-func validateDevice(device *openrtb2.Device) error {
-	if device == nil {
+func validateDevice(req *openrtb_ext.RequestWrapper) error {
+	if req.Device == nil {
 		return nil
 	}
 
 	// The following fields were previously uints in the OpenRTB library we use, but have
 	// since been changed to ints. We decided to maintain the non-negative check.
-	if device.W < 0 {
+	if req.Device.W < 0 {
 		return errors.New("request.device.w must be a positive number")
 	}
-	if device.H < 0 {
+	if req.Device.H < 0 {
 		return errors.New("request.device.h must be a positive number")
 	}
-	if device.PPI < 0 {
+	if req.Device.PPI < 0 {
 		return errors.New("request.device.ppi must be a positive number")
 	}
-	if device.Geo != nil && device.Geo.Accuracy < 0 {
+	if req.Device.Geo != nil && req.Device.Geo.Accuracy < 0 {
 		return errors.New("request.device.geo.accuracy must be a positive number")
 	}
 
-	if cdep, err := jsonparser.GetString(device.Ext, "cdep"); err == nil && len(cdep) > 100 {
-		return errors.New("request.device.ext.cdep must be less than 100 characters")
+	return validateDeviceExt(req)
+}
+
+func validateDeviceExt(req *openrtb_ext.RequestWrapper) error {
+	if deviceExt, err := req.GetDeviceExt(); err == nil {
+		if ext := deviceExt.GetExt(); ext != nil {
+			if value, ok := ext["cdep"]; ok && len(string(value)) > 100 {
+				return errors.New("request.device.ext.cdep must be less than 100 characters")
+			}
+		}
 	}
 
 	return nil
