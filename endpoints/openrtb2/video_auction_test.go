@@ -297,7 +297,7 @@ func TestVideoEndpointNoPods(t *testing.T) {
 	errorMessage := recorder.Body.String()
 
 	assert.Equal(t, 500, recorder.Code, "Should catch error in request")
-	assert.Equal(t, errorMessage, "Critical error while running the video endpoint:  request missing required field: PodConfig.DurationRangeSec request missing required field: PodConfig.Pods", "Incorrect request validation message")
+	assert.Equal(t, "Critical error while running the video endpoint:  request missing required field: PodConfig.DurationRangeSec request missing required field: PodConfig.Pods", errorMessage, "Incorrect request validation message")
 }
 
 func TestVideoEndpointValidationsPositive(t *testing.T) {
@@ -784,20 +784,20 @@ func TestMergeOpenRTBToVideoRequest(t *testing.T) {
 
 	mergeData(videoReq, bidReq)
 
-	assert.Equal(t, bidReq.BCat, videoReq.BCat, "BCat is incorrect")
-	assert.Equal(t, bidReq.BAdv, videoReq.BAdv, "BAdv is incorrect")
+	assert.Equal(t, videoReq.BCat, bidReq.BCat, "BCat is incorrect")
+	assert.Equal(t, videoReq.BAdv, bidReq.BAdv, "BAdv is incorrect")
 
-	assert.Equal(t, bidReq.App.Domain, videoReq.App.Domain, "App.Domain is incorrect")
-	assert.Equal(t, bidReq.App.Bundle, videoReq.App.Bundle, "App.Bundle is incorrect")
+	assert.Equal(t, videoReq.App.Domain, bidReq.App.Domain, "App.Domain is incorrect")
+	assert.Equal(t, videoReq.App.Bundle, bidReq.App.Bundle, "App.Bundle is incorrect")
 
-	assert.Equal(t, bidReq.Device.Lmt, videoReq.Device.Lmt, "Device.Lmt is incorrect")
-	assert.Equal(t, bidReq.Device.DNT, videoReq.Device.DNT, "Device.DNT is incorrect")
+	assert.Equal(t, videoReq.Device.Lmt, bidReq.Device.Lmt, "Device.Lmt is incorrect")
+	assert.Equal(t, videoReq.Device.DNT, bidReq.Device.DNT, "Device.DNT is incorrect")
 
-	assert.Equal(t, bidReq.Site.Page, videoReq.Site.Page, "Device.Site.Page is incorrect")
+	assert.Equal(t, videoReq.Site.Page, bidReq.Site.Page, "Device.Site.Page is incorrect")
 
-	assert.Equal(t, bidReq.Regs, videoReq.Regs, "Regs is incorrect")
+	assert.Equal(t, videoReq.Regs, bidReq.Regs, "Regs is incorrect")
 
-	assert.Equal(t, bidReq.User, videoReq.User, "User is incorrect")
+	assert.Equal(t, videoReq.User, bidReq.User, "User is incorrect")
 }
 
 func TestHandleError(t *testing.T) {
