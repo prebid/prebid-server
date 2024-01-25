@@ -186,6 +186,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/vrtcal"
 	"github.com/prebid/prebid-server/v2/adapters/xeworks"
 	"github.com/prebid/prebid-server/v2/adapters/yahooAds"
+	"github.com/prebid/prebid-server/v2/adapters/yandex"
 	"github.com/prebid/prebid-server/v2/adapters/yeahmobi"
 	"github.com/prebid/prebid-server/v2/adapters/yieldlab"
 	"github.com/prebid/prebid-server/v2/adapters/yieldmo"
@@ -387,6 +388,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderVrtcal:            vrtcal.Builder,
 		openrtb_ext.BidderXeworks:           xeworks.Builder,
 		openrtb_ext.BidderYahooAds:          yahooAds.Builder,
+		openrtb_ext.BidderYandex:            yandex.Builder,
 		openrtb_ext.BidderYeahmobi:          yeahmobi.Builder,
 		openrtb_ext.BidderYieldlab:          yieldlab.Builder,
 		openrtb_ext.BidderYieldmo:           yieldmo.Builder,
