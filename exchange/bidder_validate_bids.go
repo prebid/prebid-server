@@ -122,7 +122,10 @@ func validateBid(bid *entities.PbsOrtbBid, debug bool) (bool, error) {
 		return false, nil
 	}
 	if bid.Bid.Price == 0.0 && bid.Bid.DealID == "" {
-		return false, fmt.Errorf("Bid \"%s\" does not contain positive 'price' which is required since there is no deal set for this bid", bid.Bid.ID)
+		if debug {
+			return false, fmt.Errorf("Bid \"%s\" does not contain positive 'price' which is required since there is no deal set for this bid", bid.Bid.ID)
+		}
+		return false, nil
 	}
 	if bid.Bid.CrID == "" {
 		return false, fmt.Errorf("Bid \"%s\" missing creative ID", bid.Bid.ID)
