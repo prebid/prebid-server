@@ -218,6 +218,6 @@ func getBidType(mType openrtb2.MarkupType) (openrtb_ext.BidType, error) {
 	case openrtb2.MarkupVideo:
 		return openrtb_ext.BidTypeVideo, nil
 	default:
-		return "", &errortypes.BadServerResponse{Message: "Unsupported return type"}
+		return "", &errortypes.BadServerResponse{Message: fmt.Sprintf("Unsupported return mType: %v", mType)}
 	}
 }
