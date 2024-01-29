@@ -13,6 +13,7 @@ import (
 	"net/http/httptrace"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/golang/glog"
@@ -523,12 +524,12 @@ func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.Reques
 func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.RequestData, logger util.LogMsg, bidderRequestStartTime time.Time, tmaxAdjustments *TmaxAdjustmentsPreprocessed) *httpCallInfo {
 	var requestBody []byte
 
-	switch strings.ToUpper(bidder.config.EndpointCompression) {
-	case Gzip:
-		requestBody = compressToGZIP(req.Body)
-		req.Headers.Set("Content-Encoding", "gzip")
-	default:
-		requestBody = req.Body
+	requestBody, err := getRequestBody(req, bidder.config.EndpointCompression)
+	if err != nil {
+		return &httpCallInfo{
+			request: req,
+			err:     err,
+		}
 	}
 	httpReq, err := http.NewRequest(req.Method, req.Uri, bytes.NewBuffer(requestBody))
 	if err != nil {
@@ -716,14 +717,6 @@ func prepareStoredResponse(impId string, bidResp json.RawMessage) *httpCallInfo 
 	return respData
 }
 
-func compressToGZIP(requestBody []byte) []byte {
-	var b bytes.Buffer
-	w := gzip.NewWriter(&b)
-	w.Write([]byte(requestBody))
-	w.Close()
-	return b.Bytes()
-}
-
 func getBidTypeForAdjustments(bidType openrtb_ext.BidType, impID string, imp []openrtb2.Imp) string {
 	if bidType == openrtb_ext.BidTypeVideo {
 		for _, imp := range imp {
@@ -750,4 +743,41 @@ func hasShorterDurationThanTmax(ctx bidderTmaxContext, tmaxAdjustments TmaxAdjus
 		}
 	}
 	return false
+}
+
+func getRequestBody(req *adapters.RequestData, endpointCompression string) ([]byte, error) {
+	var requestBody []byte
+
+	switch strings.ToUpper(endpointCompression) {
+	case Gzip:
+		// Compress to GZIP
+		var b bytes.Buffer
+
+		w := gzipWriterPool.Get().(*gzip.Writer)
+		defer gzipWriterPool.Put(w)
+
+		w.Reset(&b)
+		_, err := w.Write(req.Body)
+		if err != nil {
+			return nil, err
+		}
+		err = w.Close()
+		if err != nil {
+			return nil, err
+		}
+		requestBody = b.Bytes()
+
+		// Set Header
+		req.Headers.Set("Content-Encoding", "gzip")
+
+		return requestBody, nil
+	default:
+		return req.Body, nil
+	}
+}
+
+var gzipWriterPool = sync.Pool{
+	New: func() interface{} {
+		return gzip.NewWriter(nil)
+	},
 }
