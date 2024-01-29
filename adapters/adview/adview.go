@@ -163,21 +163,6 @@ func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtImpAdView) (string, er
 	return macros.ResolveMacros(a.endpoint, endpointParams)
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
-	mediaType := openrtb_ext.BidTypeBanner
-	for _, imp := range imps {
-		if imp.ID == impID {
-			if imp.Video != nil {
-				mediaType = openrtb_ext.BidTypeVideo
-			} else if imp.Native != nil {
-				mediaType = openrtb_ext.BidTypeNative
-			}
-			return mediaType, nil
-		}
-	}
-	return mediaType, nil
-}
-
 func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 	switch bid.MType {
 	case openrtb2.MarkupBanner:
@@ -189,25 +174,7 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 	case openrtb2.MarkupNative:
 		return openrtb_ext.BidTypeNative, nil
 	default:
-		return "", fmt.Errorf("Unable to fetch mediaType in multi-format: %s", bid.ImpID)
+		return "", fmt.Errorf("Unable to fetch mediaType in impID: %s, mType: %d", bid.ImpID, bid.MType)
 	}
 }
 
-// getBidType returns the bid type specified in the response bid.ext
-func getBidType(bidExt *adviewBidExt) (openrtb_ext.BidType, error) {
-	// setting "banner" as the default bid type
-	bidType := openrtb_ext.BidTypeBanner
-	if bidExt != nil {
-		switch bidExt.BidType {
-		case 0:
-			bidType = openrtb_ext.BidTypeBanner
-		case 1:
-			bidType = openrtb_ext.BidTypeVideo
-		case 2:
-			bidType = openrtb_ext.BidTypeNative
-		default:
-			return "", fmt.Errorf("invalid BidType: %d", bidExt.BidType)
-		}
-	}
-	return bidType, nil
-}
