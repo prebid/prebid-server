@@ -71,6 +71,7 @@ type bidRequestOptions struct {
 	bidAdjustments         map[string]float64
 	tmaxAdjustments        *TmaxAdjustmentsPreprocessed
 	bidderRequestStartTime time.Time
+	responseDebugAllowed   bool
 }
 
 type extraBidderRespInfo struct {
