@@ -115,7 +115,9 @@ func evaluateActivities(rw *openrtb_ext.RequestWrapper, ac privacy.ActivityContr
 		return true, nil
 	}
 
-	cloneReq := ortb.CloneBidderReq(rw.BidRequest)
+	cloneReq := &openrtb_ext.RequestWrapper{
+		BidRequest: ortb.CloneBidRequestPartial(rw.BidRequest),
+	}
 
 	if blockUserFPD {
 		privacy.ScrubUserFPD(cloneReq)
