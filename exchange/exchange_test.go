@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/currency"
@@ -1892,8 +1892,8 @@ func getTestBuildRequest(t *testing.T) *openrtb2.BidRequest {
 				MIMEs:       []string{"video/mp4"},
 				MinDuration: 1,
 				MaxDuration: 300,
-				W:           300,
-				H:           600,
+				W:           ptrutil.ToPtr[int64](300),
+				H:           ptrutil.ToPtr[int64](600),
 			},
 			Ext: json.RawMessage(`{"prebid":{"bidder":{"appnexus": {"placementId": 1}}}}`),
 		}},
@@ -4109,7 +4109,7 @@ func TestStoredAuctionResponses(t *testing.T) {
 		ID: "request-id",
 		Imp: []openrtb2.Imp{{
 			ID:    "impression-id",
-			Video: &openrtb2.Video{W: 400, H: 300},
+			Video: &openrtb2.Video{W: ptrutil.ToPtr[int64](400), H: ptrutil.ToPtr[int64](300)},
 		}},
 	}
 
@@ -5699,13 +5699,22 @@ func TestModulesCanBeExecutedForMultipleBiddersSimultaneously(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(noBidServer))
 	defer server.Close()
 
-	bidderImpl := &goodSingleBidder{
-		httpRequest: &adapters.RequestData{
-			Method:  "POST",
-			Uri:     server.URL,
-			Body:    []byte(`{"key":"val"}`),
-			Headers: http.Header{},
-		},
+	reqBdy := []byte(`{"key":"val"}`)
+
+	bidderImplAppnexus := &goodSingleBidder{
+		httpRequest: &adapters.RequestData{Method: http.MethodPost, Uri: server.URL, Body: reqBdy, Headers: http.Header{}},
+		bidResponse: &adapters.BidderResponse{},
+	}
+	bidderImplTelaria := &goodSingleBidder{
+		httpRequest: &adapters.RequestData{Method: http.MethodPost, Uri: server.URL, Body: reqBdy, Headers: http.Header{}},
+		bidResponse: &adapters.BidderResponse{},
+	}
+	bidderImpl33Across := &goodSingleBidder{
+		httpRequest: &adapters.RequestData{Method: http.MethodPost, Uri: server.URL, Body: reqBdy, Headers: http.Header{}},
+		bidResponse: &adapters.BidderResponse{},
+	}
+	bidderImplAax := &goodSingleBidder{
+		httpRequest: &adapters.RequestData{Method: http.MethodPost, Uri: server.URL, Body: reqBdy, Headers: http.Header{}},
 		bidResponse: &adapters.BidderResponse{},
 	}
 
@@ -5744,10 +5753,10 @@ func TestModulesCanBeExecutedForMultipleBiddersSimultaneously(t *testing.T) {
 	}
 
 	e.adapterMap = map[openrtb_ext.BidderName]AdaptedBidder{
-		openrtb_ext.BidderAppnexus: AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, &config.DebugInfo{}, ""),
-		openrtb_ext.BidderTelaria:  AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, &config.DebugInfo{}, ""),
-		openrtb_ext.Bidder33Across: AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.Bidder33Across, &config.DebugInfo{}, ""),
-		openrtb_ext.BidderAax:      AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAax, &config.DebugInfo{}, ""),
+		openrtb_ext.BidderAppnexus: AdaptBidder(bidderImplAppnexus, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, &config.DebugInfo{}, ""),
+		openrtb_ext.BidderTelaria:  AdaptBidder(bidderImplTelaria, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderTelaria, &config.DebugInfo{}, ""),
+		openrtb_ext.Bidder33Across: AdaptBidder(bidderImpl33Across, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.Bidder33Across, &config.DebugInfo{}, ""),
+		openrtb_ext.BidderAax:      AdaptBidder(bidderImplAax, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAax, &config.DebugInfo{}, ""),
 	}
 	// Run test
 	_, err := e.HoldAuction(context.Background(), auctionRequest, &DebugLog{})
@@ -5805,12 +5814,16 @@ func (e mockUpdateBidRequestHook) HandleBidderRequestHook(_ context.Context, mct
 	c := hookstage.ChangeSet[hookstage.BidderRequestPayload]{}
 	c.AddMutation(
 		func(payload hookstage.BidderRequestPayload) (hookstage.BidderRequestPayload, error) {
-			payload.Request.Site.Name = "test"
+			site := ptrutil.Clone(payload.Request.Site)
+			site.Name = "test"
+			payload.Request.Site = site
 			return payload, nil
 		}, hookstage.MutationUpdate, "bidRequest", "site.name",
 	).AddMutation(
 		func(payload hookstage.BidderRequestPayload) (hookstage.BidderRequestPayload, error) {
-			payload.Request.Site.Domain = "test.com"
+			site := ptrutil.Clone(payload.Request.Site)
+			site.Domain = "test.com"
+			payload.Request.Site = site
 			return payload, nil
 		}, hookstage.MutationUpdate, "bidRequest", "site.domain",
 	)

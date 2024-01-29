@@ -15,7 +15,7 @@ import (
 	"github.com/prebid/go-gdpr/vendorconsent"
 	gpplib "github.com/prebid/go-gpp"
 	gppConstants "github.com/prebid/go-gpp/constants"
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
@@ -183,7 +183,9 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		// FPD should be applied before policies, otherwise it overrides policies and activities restricted data
 		applyFPD(auctionReq.FirstPartyData, bidderRequest)
 
-		reqWrapper := ortb.CloneBidderReq(bidderRequest.BidRequest)
+		reqWrapper := &openrtb_ext.RequestWrapper{
+			BidRequest: ortb.CloneBidRequestPartial(bidderRequest.BidRequest),
+		}
 
 		passIDActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitUserFPD, scopedName, privacy.NewRequestFromBidRequest(*req))
 		if !passIDActivityAllowed {
