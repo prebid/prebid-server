@@ -141,6 +141,9 @@ func (a *AdheseAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 		return nil, []error{err, WrapServerError(fmt.Sprintf("Response %v could not be parsed as generic Adhese bid.", string(response.Body)))}
 	}
 
+	if len(adheseBidResponseArray) == 0 {
+		return nil, nil
+	}
 	var adheseBid = adheseBidResponseArray[0]
 
 	if adheseBid.Origin == "JERLICIA" {

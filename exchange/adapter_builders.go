@@ -115,12 +115,13 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/logan"
 	"github.com/prebid/prebid-server/v2/adapters/logicad"
 	"github.com/prebid/prebid-server/v2/adapters/lunamedia"
-	mabidder "github.com/prebid/prebid-server/v2/adapters/mabidder"
+	"github.com/prebid/prebid-server/v2/adapters/mabidder"
 	"github.com/prebid/prebid-server/v2/adapters/madvertise"
 	"github.com/prebid/prebid-server/v2/adapters/marsmedia"
 	"github.com/prebid/prebid-server/v2/adapters/medianet"
 	"github.com/prebid/prebid-server/v2/adapters/mgid"
 	"github.com/prebid/prebid-server/v2/adapters/mgidX"
+	"github.com/prebid/prebid-server/v2/adapters/minutemedia"
 	"github.com/prebid/prebid-server/v2/adapters/mobfoxpb"
 	"github.com/prebid/prebid-server/v2/adapters/mobilefuse"
 	"github.com/prebid/prebid-server/v2/adapters/motorik"
@@ -140,6 +141,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/pubnative"
 	"github.com/prebid/prebid-server/v2/adapters/pulsepoint"
 	"github.com/prebid/prebid-server/v2/adapters/pwbid"
+	"github.com/prebid/prebid-server/v2/adapters/relevantdigital"
 	"github.com/prebid/prebid-server/v2/adapters/revcontent"
 	"github.com/prebid/prebid-server/v2/adapters/richaudience"
 	"github.com/prebid/prebid-server/v2/adapters/rise"
@@ -160,9 +162,9 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/smilewanted"
 	"github.com/prebid/prebid-server/v2/adapters/sonobi"
 	"github.com/prebid/prebid-server/v2/adapters/sovrn"
+	"github.com/prebid/prebid-server/v2/adapters/sovrnXsp"
 	"github.com/prebid/prebid-server/v2/adapters/sspBC"
 	"github.com/prebid/prebid-server/v2/adapters/stroeerCore"
-	"github.com/prebid/prebid-server/v2/adapters/suntContent"
 	"github.com/prebid/prebid-server/v2/adapters/taboola"
 	"github.com/prebid/prebid-server/v2/adapters/tappx"
 	"github.com/prebid/prebid-server/v2/adapters/teads"
@@ -184,12 +186,14 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/vrtcal"
 	"github.com/prebid/prebid-server/v2/adapters/xeworks"
 	"github.com/prebid/prebid-server/v2/adapters/yahooAds"
+	"github.com/prebid/prebid-server/v2/adapters/yandex"
 	"github.com/prebid/prebid-server/v2/adapters/yeahmobi"
 	"github.com/prebid/prebid-server/v2/adapters/yieldlab"
 	"github.com/prebid/prebid-server/v2/adapters/yieldmo"
 	"github.com/prebid/prebid-server/v2/adapters/yieldone"
 	"github.com/prebid/prebid-server/v2/adapters/zeroclickfraud"
 	"github.com/prebid/prebid-server/v2/adapters/zeta_global_ssp"
+	"github.com/prebid/prebid-server/v2/adapters/zmaticoo"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
@@ -280,7 +284,6 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderEVolution:         evolution.Builder,
 		openrtb_ext.BidderFlipp:             flipp.Builder,
 		openrtb_ext.BidderFreewheelSSP:      freewheelssp.Builder,
-		openrtb_ext.BidderFreewheelSSPOld:   freewheelssp.Builder,
 		openrtb_ext.BidderFRVRAdNetwork:     frvradn.Builder,
 		openrtb_ext.BidderGamma:             gamma.Builder,
 		openrtb_ext.BidderGamoshi:           gamoshi.Builder,
@@ -320,6 +323,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderMedianet:          medianet.Builder,
 		openrtb_ext.BidderMgid:              mgid.Builder,
 		openrtb_ext.BidderMgidX:             mgidX.Builder,
+		openrtb_ext.BidderMinuteMedia:       minutemedia.Builder,
 		openrtb_ext.BidderMobfoxpb:          mobfoxpb.Builder,
 		openrtb_ext.BidderMobileFuse:        mobilefuse.Builder,
 		openrtb_ext.BidderMotorik:           motorik.Builder,
@@ -339,6 +343,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderPubnative:         pubnative.Builder,
 		openrtb_ext.BidderPulsepoint:        pulsepoint.Builder,
 		openrtb_ext.BidderPWBid:             pwbid.Builder,
+		openrtb_ext.BidderRelevantDigital:   relevantdigital.Builder,
 		openrtb_ext.BidderRevcontent:        revcontent.Builder,
 		openrtb_ext.BidderRichaudience:      richaudience.Builder,
 		openrtb_ext.BidderRise:              rise.Builder,
@@ -359,8 +364,8 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderSmileWanted:       smilewanted.Builder,
 		openrtb_ext.BidderSonobi:            sonobi.Builder,
 		openrtb_ext.BidderSovrn:             sovrn.Builder,
+		openrtb_ext.BidderSovrnXsp:          sovrnXsp.Builder,
 		openrtb_ext.BidderSspBC:             sspBC.Builder,
-		openrtb_ext.BidderSuntContent:       suntContent.Builder,
 		openrtb_ext.BidderStroeerCore:       stroeerCore.Builder,
 		openrtb_ext.BidderTaboola:           taboola.Builder,
 		openrtb_ext.BidderTappx:             tappx.Builder,
@@ -370,7 +375,6 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderTrafficGate:       trafficgate.Builder,
 		openrtb_ext.BidderTriplelift:        triplelift.Builder,
 		openrtb_ext.BidderTripleliftNative:  triplelift_native.Builder,
-		openrtb_ext.BidderTrustX:            grid.Builder,
 		openrtb_ext.BidderUcfunnel:          ucfunnel.Builder,
 		openrtb_ext.BidderUndertone:         undertone.Builder,
 		openrtb_ext.BidderUnicorn:           unicorn.Builder,
@@ -384,12 +388,13 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderVrtcal:            vrtcal.Builder,
 		openrtb_ext.BidderXeworks:           xeworks.Builder,
 		openrtb_ext.BidderYahooAds:          yahooAds.Builder,
-		openrtb_ext.BidderYahooSSP:          yahooAds.Builder,
+		openrtb_ext.BidderYandex:            yandex.Builder,
 		openrtb_ext.BidderYeahmobi:          yeahmobi.Builder,
 		openrtb_ext.BidderYieldlab:          yieldlab.Builder,
 		openrtb_ext.BidderYieldmo:           yieldmo.Builder,
 		openrtb_ext.BidderYieldone:          yieldone.Builder,
 		openrtb_ext.BidderZeroClickFraud:    zeroclickfraud.Builder,
 		openrtb_ext.BidderZetaGlobalSsp:     zeta_global_ssp.Builder,
+		openrtb_ext.BidderZmaticoo:          zmaticoo.Builder,
 	}
 }

@@ -3,6 +3,7 @@ package usersync
 import (
 	"strings"
 
+	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
@@ -14,7 +15,7 @@ type Chooser interface {
 }
 
 // NewChooser returns a new instance of the standard chooser implementation.
-func NewChooser(bidderSyncerLookup map[string]Syncer, biddersKnown map[string]struct{}) Chooser {
+func NewChooser(bidderSyncerLookup map[string]Syncer, biddersKnown map[string]struct{}, bidderInfo map[string]config.BidderInfo) Chooser {
 	bidders := make([]string, 0, len(bidderSyncerLookup))
 
 	for k := range bidderSyncerLookup {
@@ -27,6 +28,7 @@ func NewChooser(bidderSyncerLookup map[string]Syncer, biddersKnown map[string]st
 		bidderChooser:            standardBidderChooser{shuffler: randomShuffler{}},
 		normalizeValidBidderName: openrtb_ext.NormalizeBidderName,
 		biddersKnown:             biddersKnown,
+		bidderInfo:               bidderInfo,
 	}
 }
 
@@ -37,6 +39,7 @@ type Request struct {
 	Limit          int
 	Privacy        Privacy
 	SyncTypeFilter SyncTypeFilter
+	GPPSID         string
 	Debug          bool
 }
 
@@ -92,13 +95,20 @@ const (
 	// StatusBlockedByPrivacy specifies a bidder sync url is not allowed by privacy activities
 	StatusBlockedByPrivacy
 
+	// StatusBlockedByRegulationScope specifies the bidder chose to not sync given GDPR being in scope or because of a GPPSID
+	StatusBlockedByRegulationScope
+
 	// StatusUnconfiguredBidder refers to a bidder who hasn't been configured to have a syncer key, but is known by Prebid Server
 	StatusUnconfiguredBidder
+
+	// StatusBlockedByDisabledUsersync refers to a bidder who won't be synced because it's been disabled in its config by the host
+	StatusBlockedByDisabledUsersync
 )
 
 // Privacy determines which privacy policies will be enforced for a user sync request.
 type Privacy interface {
 	GDPRAllowsHostCookie() bool
+	GDPRInScope() bool
 	GDPRAllowsBidderSync(bidder string) bool
 	CCPAAllowsBidderSync(bidder string) bool
 	ActivityAllowsUserSync(bidder string) bool
@@ -111,6 +121,7 @@ type standardChooser struct {
 	bidderChooser            bidderChooser
 	normalizeValidBidderName func(name string) (openrtb_ext.BidderName, bool)
 	biddersKnown             map[string]struct{}
+	bidderInfo               map[string]config.BidderInfo
 }
 
 // Choose randomly selects user syncers which are permitted by the user's privacy settings and
@@ -136,7 +147,7 @@ func (c standardChooser) Choose(request Request, cookie *Cookie) Result {
 		if _, ok := biddersSeen[bidders[i]]; ok {
 			continue
 		}
-		syncer, evaluation := c.evaluate(bidders[i], syncersSeen, request.SyncTypeFilter, request.Privacy, cookie)
+		syncer, evaluation := c.evaluate(bidders[i], syncersSeen, request.SyncTypeFilter, request.Privacy, cookie, request.GPPSID)
 
 		biddersEvaluated = append(biddersEvaluated, evaluation)
 		if evaluation.Status == StatusOK {
@@ -148,7 +159,7 @@ func (c standardChooser) Choose(request Request, cookie *Cookie) Result {
 	return Result{Status: StatusOK, BiddersEvaluated: biddersEvaluated, SyncersChosen: syncersChosen}
 }
 
-func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}, syncTypeFilter SyncTypeFilter, privacy Privacy, cookie *Cookie) (Syncer, BidderEvaluation) {
+func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}, syncTypeFilter SyncTypeFilter, privacy Privacy, cookie *Cookie, GPPSID string) (Syncer, BidderEvaluation) {
 	bidderNormalized, exists := c.normalizeValidBidderName(bidder)
 	if !exists {
 		return nil, BidderEvaluation{Status: StatusUnknownBidder, Bidder: bidder}
@@ -184,6 +195,22 @@ func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}
 
 	if !privacy.GDPRAllowsBidderSync(bidderNormalized.String()) {
 		return nil, BidderEvaluation{Status: StatusBlockedByPrivacy, Bidder: bidder, SyncerKey: syncer.Key()}
+	}
+
+	if c.bidderInfo[bidder].Syncer != nil && c.bidderInfo[bidder].Syncer.Enabled != nil && !*c.bidderInfo[bidder].Syncer.Enabled {
+		return nil, BidderEvaluation{Status: StatusBlockedByDisabledUsersync, Bidder: bidder, SyncerKey: syncer.Key()}
+	}
+
+	if privacy.GDPRInScope() && c.bidderInfo[bidder].Syncer != nil && c.bidderInfo[bidder].Syncer.SkipWhen != nil && c.bidderInfo[bidder].Syncer.SkipWhen.GDPR {
+		return nil, BidderEvaluation{Status: StatusBlockedByRegulationScope, Bidder: bidder, SyncerKey: syncer.Key()}
+	}
+
+	if c.bidderInfo[bidder].Syncer != nil && c.bidderInfo[bidder].Syncer.SkipWhen != nil {
+		for _, gppSID := range c.bidderInfo[bidder].Syncer.SkipWhen.GPPSID {
+			if gppSID == GPPSID {
+				return nil, BidderEvaluation{Status: StatusBlockedByRegulationScope, Bidder: bidder, SyncerKey: syncer.Key()}
+			}
+		}
 	}
 
 	return syncer, BidderEvaluation{Status: StatusOK, Bidder: bidder, SyncerKey: syncer.Key()}

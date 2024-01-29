@@ -579,8 +579,9 @@ func applyDealSupport(bidRequest *openrtb2.BidRequest, auc *auction, bidCategory
 		for bidder, topBidsPerBidder := range topBidsPerImp {
 			bidderNormalized, bidderFound := openrtb_ext.NormalizeBidderName(bidder.String())
 			if !bidderFound {
-				continue
+				bidderNormalized = bidder
 			}
+
 			maxBid := bidsToUpdate(multiBid, bidderNormalized.String())
 			for i, topBid := range topBidsPerBidder {
 				if i == maxBid {
@@ -762,6 +763,7 @@ func (e *exchange) getAllBids(
 					} else {
 						adapterBids[bidderName] = seatBid
 					}
+					extraRespInfo.bidsFound = true
 				}
 				// collect fledgeAuctionConfigs separately from bids, as empty seatBids may be discarded
 				extraRespInfo.fledge = collectFledgeFromSeatBid(extraRespInfo.fledge, bidderName, brw.adapter, seatBid)
@@ -769,10 +771,6 @@ func (e *exchange) getAllBids(
 		}
 		//but we need to add all bidders data to adapterExtra to have metrics and other metadata
 		adapterExtra[brw.bidder] = brw.adapterExtra
-
-		if !extraRespInfo.bidsFound && adapterBids[brw.bidder] != nil && len(adapterBids[brw.bidder].Bids) > 0 {
-			extraRespInfo.bidsFound = true
-		}
 	}
 
 	return adapterBids, adapterExtra, extraRespInfo
