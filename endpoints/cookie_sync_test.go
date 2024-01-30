@@ -309,7 +309,7 @@ func TestCookieSyncHandle(t *testing.T) {
 				SyncersChosen:    []usersync.SyncerChoice{{Bidder: "a", Syncer: &syncer}},
 			},
 			givenAccountData: map[string]json.RawMessage{
-				"testAccount": json.RawMessage(`{"id":"1","auction":{"privacysandbox":{"cookiedeprecation":{"enabled":true,"ttlsec":86400}}}}`),
+				"testAccount": json.RawMessage(`{"id":"1","privacy":{"privacysandbox":{"cookiedeprecation":{"enabled":true,"ttlsec":86400}}}}`),
 			},
 			expectedStatusCode: 200,
 			expectedBody: `{"status":"ok","bidder_status":[` +
@@ -346,7 +346,7 @@ func TestCookieSyncHandle(t *testing.T) {
 				SyncersChosen:    []usersync.SyncerChoice{{Bidder: "a", Syncer: &syncer}},
 			},
 			givenAccountData: map[string]json.RawMessage{
-				"testAccount": json.RawMessage(`{"id":"1","auction":{"privacysandbox":{"cookiedeprecation":{"enabled":true,"ttlsec":86400}}}}`),
+				"testAccount": json.RawMessage(`{"id":"1","privacy":{"privacysandbox":{"cookiedeprecation":{"enabled":true,"ttlsec":86400}}}}`),
 			},
 			expectedStatusCode: 200,
 			expectedBody: `{"status":"ok","bidder_status":[` +
@@ -1410,7 +1410,7 @@ func TestWriteParseRequestErrorMetrics(t *testing.T) {
 	writer := httptest.NewRecorder()
 
 	endpoint := cookieSyncEndpoint{pbsAnalytics: &mockAnalytics}
-	endpoint.handleError(writer, err, 418, cookieDeprecation{})
+	endpoint.handleError(writer, err, 418)
 
 	assert.Equal(t, writer.Code, 418)
 	assert.Equal(t, writer.Body.String(), "anyError\n")
@@ -1633,7 +1633,7 @@ func TestCookieSyncHandleError(t *testing.T) {
 	writer := httptest.NewRecorder()
 
 	endpoint := cookieSyncEndpoint{pbsAnalytics: &mockAnalytics}
-	endpoint.handleError(writer, err, 418, cookieDeprecation{})
+	endpoint.handleError(writer, err, 418)
 
 	assert.Equal(t, writer.Code, 418)
 	assert.Equal(t, writer.Body.String(), "anyError\n")
@@ -1749,13 +1749,12 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 	}
 
 	testCases := []struct {
-		description            string
-		givenCookieHasSyncs    bool
-		givenSyncersChosen     []usersync.SyncerChoice
-		givenDebug             bool
-		givenCookieDeprecation cookieDeprecation
-		expectedJSON           string
-		expectedAnalytics      analytics.CookieSyncObject
+		description         string
+		givenCookieHasSyncs bool
+		givenSyncersChosen  []usersync.SyncerChoice
+		givenDebug          bool
+		expectedJSON        string
+		expectedAnalytics   analytics.CookieSyncObject
 	}{
 		{
 			description:         "None",
@@ -1839,18 +1838,6 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 			expectedJSON:        `{"status":"ok","bidder_status":[],"debug":[{"bidder":"Bidder1","error":"Already in sync"},{"bidder":"Bidder2","error":"Unsupported bidder"},{"bidder":"Bidder3","error":"No sync config"},{"bidder":"Bidder4","error":"Rejected by privacy"},{"bidder":"Bidder5","error":"Type not supported"},{"bidder":"Bidder6","error":"Status blocked by user opt out"},{"bidder":"Bidder7","error":"Sync disabled by config"},{"bidder":"BidderA","error":"Duplicate bidder synced as syncerB"}]}` + "\n",
 			expectedAnalytics:   analytics.CookieSyncObject{Status: 200, BidderStatus: []*analytics.CookieSyncBidder{}},
 		},
-		{
-			description:         "SetCookieDeprecationHeader is true, should see receive-cookie-deprecation header in response",
-			givenCookieHasSyncs: true,
-			givenDebug:          true,
-			givenSyncersChosen:  []usersync.SyncerChoice{},
-			givenCookieDeprecation: cookieDeprecation{
-				SetHeader: true,
-				TTLSec:    86400,
-			},
-			expectedJSON:      `{"status":"ok","bidder_status":[],"debug":[{"bidder":"Bidder1","error":"Already in sync"},{"bidder":"Bidder2","error":"Unsupported bidder"},{"bidder":"Bidder3","error":"No sync config"},{"bidder":"Bidder4","error":"Rejected by privacy"},{"bidder":"Bidder5","error":"Type not supported"},{"bidder":"Bidder6","error":"Status blocked by user opt out"},{"bidder":"Bidder7","error":"Sync disabled by config"},{"bidder":"BidderA","error":"Duplicate bidder synced as syncerB"}]}` + "\n",
-			expectedAnalytics: analytics.CookieSyncObject{Status: 200, BidderStatus: []*analytics.CookieSyncBidder{}},
-		},
 	}
 
 	for _, test := range testCases {
@@ -1873,22 +1860,7 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 		} else {
 			bidderEval = []usersync.BidderEvaluation{}
 		}
-		endpoint.handleResponse(writer, syncTypeFilter, cookie, privacyMacros, test.givenSyncersChosen, bidderEval, test.givenDebug, test.givenCookieDeprecation)
-
-		if assert.Equal(t, writer.Code, http.StatusOK, test.description+":http_status") {
-			assert.Equal(t, writer.Header().Get("Content-Type"), "application/json; charset=utf-8", test.description+":http_header")
-			assert.Equal(t, test.expectedJSON, writer.Body.String(), test.description+":http_response")
-		}
-
-		gotCookie := writer.Header().Get("Set-Cookie")
-		if test.givenCookieDeprecation.SetHeader {
-			wantCookieTTL := endpoint.time.Now().Add(time.Second * time.Duration(test.givenCookieDeprecation.TTLSec)).UTC().Format(http.TimeFormat)
-			wantCookie := fmt.Sprintf("receive-cookie-deprecation=1; Path=/; Expires=%v; HttpOnly; Secure; SameSite=None", wantCookieTTL)
-			assert.Equal(t, wantCookie, gotCookie, ":set_cookie_deprecation_header")
-		} else {
-			assert.Equal(t, gotCookie, "")
-		}
-
+		endpoint.handleResponse(writer, syncTypeFilter, cookie, privacyMacros, test.givenSyncersChosen, bidderEval, test.givenDebug)
 		mockAnalytics.AssertExpectations(t)
 	}
 }

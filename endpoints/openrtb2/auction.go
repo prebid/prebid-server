@@ -61,6 +61,8 @@ const storedRequestTimeoutMillis = 50
 const ampChannel = "amp"
 const appChannel = "app"
 const secCookieDeprecation = "Sec-Cookie-Deprecation"
+const cdep = "cdep"
+const cdepLen = 100
 
 var (
 	dntKey      string = http.CanonicalHeaderKey("DNT")
@@ -1923,16 +1925,13 @@ func validateDevice(req *openrtb_ext.RequestWrapper) error {
 
 func validateDeviceExt(req *openrtb_ext.RequestWrapper) error {
 	if deviceExt, err := req.GetDeviceExt(); err == nil {
-		if ext := deviceExt.GetExt(); ext != nil {
-			if value, ok := ext["cdep"]; ok && len(string(value)) > 100 {
-				return &errortypes.Warning{
-					Message:     "request.device.ext.cdep must be less than 100 characters",
-					WarningCode: errortypes.SecCookieDeprecationLenWarningCode,
-				}
+		if cdep := deviceExt.GetCDep(); len(cdep) > cdepLen {
+			return &errortypes.Warning{
+				Message:     "request.device.ext.cdep must be less than 100 characters",
+				WarningCode: errortypes.SecCookieDeprecationLenWarningCode,
 			}
 		}
 	}
-
 	return nil
 }
 
@@ -2369,24 +2368,19 @@ func setDoNotTrackImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrappe
 }
 
 func setCookieDeprecation(httpReq *http.Request, r *openrtb_ext.RequestWrapper, account *config.Account) {
-	if account == nil || !account.Auction.PrivacySandbox.CookieDeprecation.Enabled {
+	if account == nil || !account.Privacy.PrivacySandbox.CookieDeprecation.Enabled {
 		return
 	}
-
 	secCookieDeprecation := httpReq.Header.Get(secCookieDeprecation)
 	if secCookieDeprecation == "" {
 		return
 	}
-
 	if r.Device == nil {
 		r.Device = &openrtb2.Device{}
 	}
-
 	if deviceExt, err := r.GetDeviceExt(); err == nil {
-		ext := deviceExt.GetExt()
-		if ext["cdep"] == nil {
-			ext["cdep"] = json.RawMessage(fmt.Sprintf(`"%s"`, secCookieDeprecation))
-			deviceExt.SetExt(ext)
+		if cdep := deviceExt.GetCDep(); cdep == "" {
+			deviceExt.SetCDep(secCookieDeprecation)
 		}
 	}
 }

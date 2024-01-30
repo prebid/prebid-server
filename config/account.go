@@ -42,7 +42,6 @@ type Account struct {
 	DefaultBidLimit         int                                         `mapstructure:"default_bid_limit" json:"default_bid_limit"`
 	BidAdjustments          *openrtb_ext.ExtRequestPrebidBidAdjustments `mapstructure:"bidadjustments" json:"bidadjustments"`
 	Privacy                 AccountPrivacy                              `mapstructure:"privacy" json:"privacy"`
-	Auction                 Auction                                     `mapstructure:"auction" json:"auction"`
 }
 
 // CookieSync represents the account-level defaults for the cookie sync endpoint.
@@ -338,6 +337,7 @@ type AccountPrivacy struct {
 	AllowActivities *AllowActivities `mapstructure:"allowactivities" json:"allowactivities"`
 	IPv6Config      IPv6             `mapstructure:"ipv6" json:"ipv6"`
 	IPv4Config      IPv4             `mapstructure:"ipv4" json:"ipv4"`
+	PrivacySandbox  PrivacySandbox   `mapstructure:"auction" json:"privacysandbox"`
 }
 
 type IPv6 struct {

@@ -6145,7 +6145,7 @@ func TestSetCookieDeprecation(t *testing.T) {
 					BidRequest: &openrtb2.BidRequest{},
 				},
 				account: config.Account{
-					Auction: config.Auction{
+					Privacy: config.AccountPrivacy{
 						PrivacySandbox: config.PrivacySandbox{
 							CookieDeprecation: config.CookieDeprecation{
 								Enabled: false,
@@ -6161,7 +6161,7 @@ func TestSetCookieDeprecation(t *testing.T) {
 			args: args{
 				httpReq: &http.Request{},
 				account: config.Account{
-					Auction: config.Auction{
+					Privacy: config.AccountPrivacy{
 						PrivacySandbox: config.PrivacySandbox{
 							CookieDeprecation: config.CookieDeprecation{
 								Enabled: true,
@@ -6182,7 +6182,7 @@ func TestSetCookieDeprecation(t *testing.T) {
 					BidRequest: &openrtb2.BidRequest{},
 				},
 				account: config.Account{
-					Auction: config.Auction{
+					Privacy: config.AccountPrivacy{
 						PrivacySandbox: config.PrivacySandbox{
 							CookieDeprecation: config.CookieDeprecation{
 								Enabled: true,
@@ -6207,7 +6207,7 @@ func TestSetCookieDeprecation(t *testing.T) {
 					},
 				},
 				account: config.Account{
-					Auction: config.Auction{
+					Privacy: config.AccountPrivacy{
 						PrivacySandbox: config.PrivacySandbox{
 							CookieDeprecation: config.CookieDeprecation{
 								Enabled: true,
@@ -6232,7 +6232,7 @@ func TestSetCookieDeprecation(t *testing.T) {
 					},
 				},
 				account: config.Account{
-					Auction: config.Auction{
+					Privacy: config.AccountPrivacy{
 						PrivacySandbox: config.PrivacySandbox{
 							CookieDeprecation: config.CookieDeprecation{
 								Enabled: true,
@@ -6291,31 +6291,31 @@ func TestParseRequestCookieDeprecation(t *testing.T) {
 				name:    "Request without Sec-Cookie-Deprecation header (cookiedeprecation enabled for account)",
 				httpReq: httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader([]byte(validRequest(t, "site.json")))),
 				givenAccountData: map[string]json.RawMessage{
-					"some-test-account-id": json.RawMessage(`{"id":"1","auction":{"privacysandbox":{"cookiedeprecation":{"enabled":true,"ttlsec":86400}}}}`),
+					"some-test-account-id": json.RawMessage(`{"id":"1","privacy":{"privacysandbox":{"cookiedeprecation":{"enabled":true,"ttlsec":86400}}}}`),
 				},
 				expectedErr: "",
 			},
 			{
-				name: "Request with Sec-Cookie-Deprecation header having length less than 100 (cookiedeprecation not enabled for account)",
+				name: "Request with Sec-Cookie-Deprecation header having length less than 100 (cookiedeprecation enabled for account)",
 				httpReq: func() *http.Request {
 					req := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader([]byte(validRequest(t, "site.json"))))
 					req.Header.Set(secCookieDeprecation, "sample-value")
 					return req
 				}(),
 				givenAccountData: map[string]json.RawMessage{
-					"some-test-account-id": json.RawMessage(`{"id":"1","auction":{"privacysandbox":{"cookiedeprecation":{"enabled":true,"ttlsec":86400}}}}`),
+					"some-test-account-id": json.RawMessage(`{"id":"1","privacy":{"privacysandbox":{"cookiedeprecation":{"enabled":true,"ttlsec":86400}}}}`),
 				},
 				expectedErr: "",
 			},
 			{
-				name: "Request with Sec-Cookie-Deprecation header having length more than 100 (cookiedeprecation not enabled for account)",
+				name: "Request with Sec-Cookie-Deprecation header having length more than 100 (cookiedeprecation enabled for account)",
 				httpReq: func() *http.Request {
 					req := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader([]byte(validRequest(t, "site.json"))))
 					req.Header.Set(secCookieDeprecation, "zjfXqGxXFI8yura8AhQl1DK2EMMmryrC8haEpAlwjoerrFfEo2MQTXUq6cSmLohI8gjsnkGU4oAzvXd4TTAESzEKsoYjRJ2zKxmEa")
 					return req
 				}(),
 				givenAccountData: map[string]json.RawMessage{
-					"some-test-account-id": json.RawMessage(`{"id":"1","auction":{"privacysandbox":{"cookiedeprecation":{"enabled":true,"ttlsec":86400}}}}`),
+					"some-test-account-id": json.RawMessage(`{"id":"1","privacy":{"privacysandbox":{"cookiedeprecation":{"enabled":true,"ttlsec":86400}}}}`),
 				},
 				expectedErr: "request.device.ext.cdep must be less than 100 characters",
 			},
