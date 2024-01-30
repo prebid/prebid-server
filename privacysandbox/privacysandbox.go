@@ -146,6 +146,8 @@ func UpdateUserDataWithTopics(userData []openrtb2.Data, headerData []Topic, topi
 	return userData
 }
 
+// createHeaderDataMap creates a map of header data (segtax-segclass-segIds) for faster lookup
+// topicsdomain is not needed as we are only interested data from one domain configured in host config
 func createHeaderDataMap(headerData []Topic) map[int]map[string]map[int]struct{} {
 	headerDataMap := make(map[int]map[string]map[int]struct{})
 
