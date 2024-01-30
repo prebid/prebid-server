@@ -16,7 +16,7 @@ analytics:
           site_app_id: "openrtb2-site.id-or-app.id" # optional: scope to the publisher with an openrtb2 Site object id or App object id
         # Optional properties (advanced configuration)
         endpoint: 
-            url: "https://go.pbs.agma-analytics.de/v1/prebid-server" # Check with agma with you need a extra url
+            url: "https://go.pbs.agma-analytics.de/v1/prebid-server" # Check with agma if your site needs an extra url
             timeout: "2s"
             gzip: true
         buffer: # Flush events when (first condition reached)
