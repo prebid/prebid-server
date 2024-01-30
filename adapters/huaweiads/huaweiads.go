@@ -16,14 +16,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/prebid/openrtb/v19/native1"
-	nativeRequests "github.com/prebid/openrtb/v19/native1/request"
-	nativeResponse "github.com/prebid/openrtb/v19/native1/response"
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/native1"
+	nativeRequests "github.com/prebid/openrtb/v20/native1/request"
+	nativeResponse "github.com/prebid/openrtb/v20/native1/response"
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 )
 
 const huaweiAdxApiVersion = "3.4"
@@ -566,9 +567,13 @@ func getNativeFormat(adslot30 *adslot30, openRTBImp *openrtb2.Imp) error {
 		if asset.Video != nil {
 			numVideo++
 			formats = popularSizes
-			_, ok := sizeMap[format{W: asset.Video.W, H: asset.Video.H}]
-			if (asset.Video.W != 0 && asset.Video.H != 0) && !ok {
-				formats = append(formats, format{asset.Video.W, asset.Video.H})
+
+			w := ptrutil.ValueOrDefault(asset.Video.W)
+			h := ptrutil.ValueOrDefault(asset.Video.H)
+
+			_, ok := sizeMap[format{W: w, H: h}]
+			if (w != 0 && h != 0) && !ok {
+				formats = append(formats, format{w, h})
 			}
 		}
 		// every image has the same W, H.
@@ -624,8 +629,8 @@ func filterPopularSizes(sizes []format, width int64, height int64, byWhat string
 
 // roll ad need TotalDuration
 func getVideoFormat(adslot30 *adslot30, adtype int32, openRTBImp *openrtb2.Imp) error {
-	adslot30.W = openRTBImp.Video.W
-	adslot30.H = openRTBImp.Video.H
+	adslot30.W = ptrutil.ValueOrDefault(openRTBImp.Video.W)
+	adslot30.H = ptrutil.ValueOrDefault(openRTBImp.Video.H)
 
 	if adtype == roll {
 		if openRTBImp.Video.MaxDuration == 0 {
@@ -935,12 +940,12 @@ func getReqRegsInfo(request *huaweiAdsRequest, openRTBRequest *openrtb2.BidReque
 // getReqGeoInfo: get geo information for HuaweiAds request, include Lon, Lat, Accuracy, Lastfix
 func getReqGeoInfo(request *huaweiAdsRequest, openRTBRequest *openrtb2.BidRequest) {
 	if openRTBRequest.Device != nil && openRTBRequest.Device.Geo != nil {
-		var geo geo
-		geo.Lon = float32(openRTBRequest.Device.Geo.Lon)
-		geo.Lat = float32(openRTBRequest.Device.Geo.Lat)
-		geo.Accuracy = int32(openRTBRequest.Device.Geo.Accuracy)
-		geo.Lastfix = int32(openRTBRequest.Device.Geo.LastFix)
-		request.Geo = geo
+		request.Geo = geo{
+			Lon:      float32(ptrutil.ValueOrDefault(openRTBRequest.Device.Geo.Lon)),
+			Lat:      float32(ptrutil.ValueOrDefault(openRTBRequest.Device.Geo.Lat)),
+			Accuracy: int32(openRTBRequest.Device.Geo.Accuracy),
+			Lastfix:  int32(openRTBRequest.Device.Geo.LastFix),
+		}
 	}
 }
 
@@ -1444,9 +1449,9 @@ func (a *adapter) extractAdmVideo(adType int32, content *content, bidType openrt
 			adWidth = int64(content.MetaData.VideoInfo.Width)
 			adHeight = int64(content.MetaData.VideoInfo.Height)
 		} else if bidType == openrtb_ext.BidTypeVideo {
-			if opentrb2Imp.Video != nil && opentrb2Imp.Video.W != 0 && opentrb2Imp.Video.H != 0 {
-				adWidth = opentrb2Imp.Video.W
-				adHeight = opentrb2Imp.Video.H
+			if opentrb2Imp.Video != nil && opentrb2Imp.Video.W != nil && *opentrb2Imp.Video.W != 0 && opentrb2Imp.Video.H != nil && *opentrb2Imp.Video.H != 0 {
+				adWidth = *opentrb2Imp.Video.W
+				adHeight = *opentrb2Imp.Video.H
 			}
 		} else {
 			return "", 0, 0, errors.New("extract Adm for video failed: cannot get video width, height")

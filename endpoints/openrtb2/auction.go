@@ -20,11 +20,11 @@ import (
 	"github.com/julienschmidt/httprouter"
 	gpplib "github.com/prebid/go-gpp"
 	"github.com/prebid/go-gpp/constants"
-	"github.com/prebid/openrtb/v19/adcom1"
-	"github.com/prebid/openrtb/v19/native1"
-	nativeRequests "github.com/prebid/openrtb/v19/native1/request"
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/openrtb/v19/openrtb3"
+	"github.com/prebid/openrtb/v20/adcom1"
+	"github.com/prebid/openrtb/v20/native1"
+	nativeRequests "github.com/prebid/openrtb/v20/native1/request"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb3"
 	"github.com/prebid/prebid-server/v2/bidadjustment"
 	"github.com/prebid/prebid-server/v2/hooks"
 	"github.com/prebid/prebid-server/v2/ortb"
@@ -1146,10 +1146,10 @@ func validateVideo(video *openrtb2.Video, impIndex int) error {
 
 	// The following fields were previously uints in the OpenRTB library we use, but have
 	// since been changed to ints. We decided to maintain the non-negative check.
-	if video.W < 0 {
+	if video.W != nil && *video.W < 0 {
 		return fmt.Errorf("request.imp[%d].video.w must be a positive number", impIndex)
 	}
-	if video.H < 0 {
+	if video.H != nil && *video.H < 0 {
 		return fmt.Errorf("request.imp[%d].video.h must be a positive number", impIndex)
 	}
 	if video.MinBitRate < 0 {
