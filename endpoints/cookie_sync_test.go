@@ -1861,6 +1861,11 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 			bidderEval = []usersync.BidderEvaluation{}
 		}
 		endpoint.handleResponse(writer, syncTypeFilter, cookie, privacyMacros, test.givenSyncersChosen, bidderEval, test.givenDebug)
+
+		if assert.Equal(t, writer.Code, http.StatusOK, test.description+":http_status") {
+			assert.Equal(t, writer.Header().Get("Content-Type"), "application/json; charset=utf-8", test.description+":http_header")
+			assert.Equal(t, test.expectedJSON, writer.Body.String(), test.description+":http_response")
+		}
 		mockAnalytics.AssertExpectations(t)
 	}
 }
