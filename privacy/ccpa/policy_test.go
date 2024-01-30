@@ -922,3 +922,7 @@ func (ms mockGPPSection) GetID() gppConstants.SectionID {
 func (ms mockGPPSection) GetValue() string {
 	return ms.value
 }
+
+func (ms mockGPPSection) Encode(bool) []byte {
+	return nil
+}
