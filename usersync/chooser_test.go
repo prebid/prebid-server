@@ -720,13 +720,14 @@ type fakeSyncer struct {
 	key              string
 	supportsIFrame   bool
 	supportsRedirect bool
+	formatOverride   string
 }
 
 func (s fakeSyncer) Key() string {
 	return s.key
 }
 
-func (s fakeSyncer) DefaultSyncType() SyncType {
+func (s fakeSyncer) DefaultResponseFormat() SyncType {
 	return SyncTypeIFrame
 }
 

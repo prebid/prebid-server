@@ -41,8 +41,8 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/gofrs/uuid"
 	"github.com/golang/glog"
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/openrtb/v19/openrtb3"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb3"
 )
 
 type extCacheInstructions struct {
@@ -374,7 +374,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 			alternateBidderCodes = *r.Account.AlternateBidderCodes
 		}
 		var extraRespInfo extraAuctionResponseInfo
-		adapterBids, adapterExtra, extraRespInfo = e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, accountDebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride, alternateBidderCodes, requestExtLegacy.Prebid.Experiment, r.HookExecutor, r.StartTime, bidAdjustmentRules, r.TmaxAdjustments)
+		adapterBids, adapterExtra, extraRespInfo = e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, accountDebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride, alternateBidderCodes, requestExtLegacy.Prebid.Experiment, r.HookExecutor, r.StartTime, bidAdjustmentRules, r.TmaxAdjustments, responseDebugAllow)
 		fledge = extraRespInfo.fledge
 		anyBidsReturned = extraRespInfo.bidsFound
 		r.BidderResponseStartTime = extraRespInfo.bidderResponseStartTime
@@ -579,8 +579,9 @@ func applyDealSupport(bidRequest *openrtb2.BidRequest, auc *auction, bidCategory
 		for bidder, topBidsPerBidder := range topBidsPerImp {
 			bidderNormalized, bidderFound := openrtb_ext.NormalizeBidderName(bidder.String())
 			if !bidderFound {
-				continue
+				bidderNormalized = bidder
 			}
+
 			maxBid := bidsToUpdate(multiBid, bidderNormalized.String())
 			for i, topBid := range topBidsPerBidder {
 				if i == maxBid {
@@ -671,7 +672,8 @@ func (e *exchange) getAllBids(
 	hookExecutor hookexecution.StageExecutor,
 	pbsRequestStartTime time.Time,
 	bidAdjustmentRules map[string][]openrtb_ext.Adjustment,
-	tmaxAdjustments *TmaxAdjustmentsPreprocessed) (
+	tmaxAdjustments *TmaxAdjustmentsPreprocessed,
+	responseDebugAllowed bool) (
 	map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid,
 	map[openrtb_ext.BidderName]*seatResponseExtra,
 	extraAuctionResponseInfo) {
@@ -711,6 +713,7 @@ func (e *exchange) getAllBids(
 				bidAdjustments:         bidAdjustments,
 				tmaxAdjustments:        tmaxAdjustments,
 				bidderRequestStartTime: start,
+				responseDebugAllowed:   responseDebugAllowed,
 			}
 			seatBids, extraBidderRespInfo, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest, conversions, &reqInfo, e.adsCertSigner, bidReqOptions, alternateBidderCodes, hookExecutor, bidAdjustmentRules)
 			brw.bidderResponseStartTime = extraBidderRespInfo.respProcessingStartTime

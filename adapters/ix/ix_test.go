@@ -8,11 +8,12 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/adapterstest"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 	"github.com/prebid/prebid-server/v2/version"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/prebid/openrtb/v19/adcom1"
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/adcom1"
+	"github.com/prebid/openrtb/v20/openrtb2"
 )
 
 const endpoint string = "http://host/endpoint"
@@ -32,8 +33,8 @@ func TestIxMakeBidsWithCategoryDuration(t *testing.T) {
 		Imp: []openrtb2.Imp{{
 			ID: "1_1",
 			Video: &openrtb2.Video{
-				W:           640,
-				H:           360,
+				W:           ptrutil.ToPtr[int64](640),
+				H:           ptrutil.ToPtr[int64](360),
 				MIMEs:       []string{"video/mp4"},
 				MaxDuration: 60,
 				Protocols:   []adcom1.MediaCreativeSubtype{2, 3, 5, 6},
@@ -111,8 +112,8 @@ func TestIxMakeRequestWithGppString(t *testing.T) {
 		Imp: []openrtb2.Imp{{
 			ID: "1_1",
 			Video: &openrtb2.Video{
-				W:           640,
-				H:           360,
+				W:           ptrutil.ToPtr[int64](640),
+				H:           ptrutil.ToPtr[int64](360),
 				MIMEs:       []string{"video/mp4"},
 				MaxDuration: 60,
 				Protocols:   []adcom1.MediaCreativeSubtype{2, 3, 5, 6},

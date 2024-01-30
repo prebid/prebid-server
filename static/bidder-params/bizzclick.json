@@ -9,11 +9,34 @@
       "description": "Account id",
       "minLength": 1
     },
+    "sourceId": {
+      "type": "string",
+      "description": "Source id",
+      "minLength": 1
+    },
+    "host": {
+      "type": "string",
+      "description": "Server region",
+      "minLength": 1
+    },
     "placementId": {
       "type": "string",
-      "description": "PlacementId id",
+      "description": "Deprecated, use sourceId instead",
       "minLength": 1
     }
   },
-  "required": ["accountId", "placementId"]
+  "oneOf": [
+    {
+      "required": [
+        "accountId",
+        "placementId"
+      ]
+    },
+    {
+      "required": [
+        "accountId",
+        "sourceId"
+      ]
+    }
+  ]
 }
