@@ -337,7 +337,7 @@ type AccountPrivacy struct {
 	AllowActivities *AllowActivities `mapstructure:"allowactivities" json:"allowactivities"`
 	IPv6Config      IPv6             `mapstructure:"ipv6" json:"ipv6"`
 	IPv4Config      IPv4             `mapstructure:"ipv4" json:"ipv4"`
-	PrivacySandbox  PrivacySandbox   `mapstructure:"auction" json:"privacysandbox"`
+	PrivacySandbox  PrivacySandbox   `mapstructure:"privacysandbox" json:"privacysandbox"`
 }
 
 type IPv6 struct {

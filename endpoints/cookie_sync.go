@@ -35,12 +35,6 @@ import (
 
 const receiveCookieDeprecation = "receive-cookie-deprecation"
 
-// cookieDeprecation defines reponse header
-type cookieDeprecation struct {
-	SetHeader bool
-	TTLSec    int
-}
-
 var (
 	errCookieSyncOptOut                            = errors.New("User has opted out")
 	errCookieSyncBody                              = errors.New("Failed to read request body")
@@ -143,7 +137,7 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, ma
 	}
 	account, fetchErrs := accountService.GetAccount(context.Background(), c.config, c.accountsFetcher, request.Account, c.metrics)
 	if len(fetchErrs) > 0 {
-		return usersync.Request{}, macros.UserSyncPrivacy{}, account, combineErrors(fetchErrs)
+		return usersync.Request{}, macros.UserSyncPrivacy{}, nil, combineErrors(fetchErrs)
 	}
 
 	request = c.setLimit(request, account.CookieSync)

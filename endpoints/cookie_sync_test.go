@@ -1852,7 +1852,7 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 		}
 
 		writer := httptest.NewRecorder()
-		endpoint := cookieSyncEndpoint{pbsAnalytics: &mockAnalytics, time: &fakeTime{time: time.Now()}}
+		endpoint := cookieSyncEndpoint{pbsAnalytics: &mockAnalytics}
 
 		var bidderEval []usersync.BidderEvaluation
 		if test.givenDebug {
