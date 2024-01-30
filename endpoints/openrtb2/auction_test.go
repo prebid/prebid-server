@@ -6140,7 +6140,7 @@ func TestSetSecBrowsingTopcisImplicitly(t *testing.T) {
 	type args struct {
 		httpReq *http.Request
 		r       *openrtb_ext.RequestWrapper
-		cfg     *config.Configuration
+		account *config.Account
 	}
 	tests := []struct {
 		name     string
@@ -6152,7 +6152,7 @@ func TestSetSecBrowsingTopcisImplicitly(t *testing.T) {
 			args: args{
 				httpReq: &http.Request{},
 				r:       &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
-				cfg:     &config.Configuration{Auction: config.Auction{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "ads.pubmatic.com"}}},
+				account: &config.Account{Privacy: config.AccountPrivacy{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "ads.pubmatic.com"}}},
 			},
 			wantUser: nil,
 		},
@@ -6164,8 +6164,8 @@ func TestSetSecBrowsingTopcisImplicitly(t *testing.T) {
 						secBrowsingTopics: []string{"(1);v=chrome.1:1:2, ();p=P00000000000"},
 					},
 				},
-				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
-				cfg: &config.Configuration{Auction: config.Auction{PrivacySandbox: config.PrivacySandbox{TopicsDomain: ""}}},
+				r:       &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
+				account: &config.Account{Privacy: config.AccountPrivacy{PrivacySandbox: config.PrivacySandbox{TopicsDomain: ""}}},
 			},
 			wantUser: nil,
 		},
@@ -6177,8 +6177,8 @@ func TestSetSecBrowsingTopcisImplicitly(t *testing.T) {
 						secBrowsingTopics: []string{"(1);v=chrome.1:1:2, ();p=P00000000000"},
 					},
 				},
-				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
-				cfg: &config.Configuration{Auction: config.Auction{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "ads.pubmatic.com"}}},
+				r:       &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
+				account: &config.Account{Privacy: config.AccountPrivacy{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "ads.pubmatic.com"}}},
 			},
 			wantUser: &openrtb2.User{
 				Data: []openrtb2.Data{
@@ -6202,8 +6202,8 @@ func TestSetSecBrowsingTopcisImplicitly(t *testing.T) {
 						secBrowsingTopics: []string{"();p=P0000000000000000000000000000000"},
 					},
 				},
-				r:   &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
-				cfg: &config.Configuration{Auction: config.Auction{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "ads.pubmatic.com"}}},
+				r:       &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
+				account: &config.Account{Privacy: config.AccountPrivacy{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "ads.pubmatic.com"}}},
 			},
 			wantUser: nil,
 		},
@@ -6236,7 +6236,7 @@ func TestSetSecBrowsingTopcisImplicitly(t *testing.T) {
 						},
 					},
 				}},
-				cfg: &config.Configuration{Auction: config.Auction{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "ads.pubmatic.com"}}},
+				account: &config.Account{Privacy: config.AccountPrivacy{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "ads.pubmatic.com"}}},
 			},
 			wantUser: &openrtb2.User{
 				Data: []openrtb2.Data{
@@ -6275,7 +6275,7 @@ func TestSetSecBrowsingTopcisImplicitly(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			setSecBrowsingTopcisImplicitly(tt.args.httpReq, tt.args.r, tt.args.cfg)
+			setSecBrowsingTopcisImplicitly(tt.args.httpReq, tt.args.r, tt.args.account)
 
 			// sequence is not garunteed we're using a map to filter segids
 			sortUserData(tt.wantUser)

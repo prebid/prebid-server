@@ -231,6 +231,22 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		return
 	}
 
+	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
+	deps.setFieldsImplicitly(r, reqWrapper, account)
+
+	hasStoredResponses := len(storedAuctionResponses) > 0
+	errs := deps.validateRequest(reqWrapper, true, hasStoredResponses, storedBidResponses, false)
+	errL = append(errL, errs...)
+	ao.Errors = append(ao.Errors, errs...)
+	if errortypes.ContainsFatalError(errs) {
+		w.WriteHeader(http.StatusBadRequest)
+		for _, err := range errortypes.FatalOnly(errs) {
+			w.Write([]byte(fmt.Sprintf("Invalid request: %s\n", err.Error())))
+		}
+		labels.RequestStatus = metrics.RequestStatusBadInput
+		return
+	}
+
 	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, account.GDPR)
 
 	activityControl = privacy.NewActivityControl(&account.Privacy)
@@ -483,9 +499,6 @@ func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openr
 	// move to using the request wrapper
 	req = &openrtb_ext.RequestWrapper{BidRequest: reqNormal}
 
-	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
-	deps.setFieldsImplicitly(httpRequest, req)
-
 	// Need to ensure cache and targeting are turned on
 	e = initAmpTargetingAndCache(req)
 	if errs = append(errs, e...); errortypes.ContainsFatalError(errs) {
@@ -496,10 +509,6 @@ func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openr
 		errs = append(errs, err)
 		return
 	}
-
-	hasStoredResponses := len(storedAuctionResponses) > 0
-	e = deps.validateRequest(req, true, hasStoredResponses, storedBidResponses, false)
-	errs = append(errs, e...)
 
 	return
 }

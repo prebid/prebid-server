@@ -542,7 +542,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	}
 
 	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
-	deps.setFieldsImplicitly(httpRequest, req)
+	deps.setFieldsImplicitly(httpRequest, req, account)
 
 	if err := ortb.SetDefaults(req); err != nil {
 		errs = []error{err}
@@ -2013,7 +2013,7 @@ func sanitizeRequest(r *openrtb_ext.RequestWrapper, ipValidator iputil.IPValidat
 // OpenRTB properties from the headers and other implicit info.
 //
 // This function _should not_ override any fields which were defined explicitly by the caller in the request.
-func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {
+func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper, account *config.Account) {
 	sanitizeRequest(r, deps.privateNetworkIPValidator)
 
 	setDeviceImplicitly(httpReq, r, deps.privateNetworkIPValidator)
@@ -2026,7 +2026,7 @@ func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, r *openrtb_
 
 	setAuctionTypeImplicitly(r)
 
-	setSecBrowsingTopcisImplicitly(httpReq, r, deps.cfg)
+	setSecBrowsingTopcisImplicitly(httpReq, r, account)
 }
 
 // setDeviceImplicitly uses implicit info from httpReq to populate bidReq.Device
@@ -2045,14 +2045,14 @@ func setAuctionTypeImplicitly(r *openrtb_ext.RequestWrapper) {
 }
 
 // (100);v=chrome.1:1:20, (200 400);v=chrome.1:1:40, (300);v=chrome.1:1:60, ();p=P000000000
-func setSecBrowsingTopcisImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper, cfg *config.Configuration) {
+func setSecBrowsingTopcisImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper, account *config.Account) {
 	secBrowsingTopics := httpReq.Header.Get("Sec-Browsing-Topics")
 	if secBrowsingTopics == "" {
 		return
 	}
 
 	// host must configure privacy sandbox
-	if cfg == nil || cfg.Auction.PrivacySandbox.TopicsDomain == "" {
+	if account == nil || account.Privacy.PrivacySandbox.TopicsDomain == "" {
 		return
 	}
 
@@ -2066,7 +2066,7 @@ func setSecBrowsingTopcisImplicitly(httpReq *http.Request, r *openrtb_ext.Reques
 		r.User = &openrtb2.User{}
 	}
 
-	r.User.Data = privacysandbox.UpdateUserDataWithTopics(r.User.Data, topics, cfg.Auction.PrivacySandbox.TopicsDomain)
+	r.User.Data = privacysandbox.UpdateUserDataWithTopics(r.User.Data, topics, account.Privacy.PrivacySandbox.TopicsDomain)
 }
 
 func setSiteImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {
