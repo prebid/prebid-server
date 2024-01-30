@@ -1073,7 +1073,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("analytics.pubstack.buffers.count", 100)
 	v.SetDefault("analytics.pubstack.buffers.timeout", "900s")
 	v.SetDefault("analytics.agma.enabled", false)
-	v.SetDefault("analytics.agma.endpoint.url", "https://pbs-go.agma-analytics.de/v1/prebid-server")
+	v.SetDefault("analytics.agma.endpoint.url", "https://go.pbs.agma-analytics.de/v1/prebid-server")
 	v.SetDefault("analytics.agma.endpoint.timeout", "2s")
 	v.SetDefault("analytics.agma.endpoint.gzip", false)
 	v.SetDefault("analytics.agma.buffers.size", "2MB")

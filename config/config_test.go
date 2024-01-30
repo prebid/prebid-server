@@ -225,7 +225,7 @@ func TestDefaults(t *testing.T) {
 	cmpBools(t, "analytics.agma.enabled", false, cfg.Analytics.Agma.Enabled)
 	cmpStrings(t, "analytics.agma.endpoint.timeout", "2s", cfg.Analytics.Agma.Endpoint.Timeout)
 	cmpBools(t, "analytics.agma.endpoint.gzip", false, cfg.Analytics.Agma.Endpoint.Gzip)
-	cmpStrings(t, "analytics.agma.endppoint.url", "https://pbs-go.agma-analytics.de/v1/prebid-server", cfg.Analytics.Agma.Endpoint.Url)
+	cmpStrings(t, "analytics.agma.endppoint.url", "https://go.pbs.agma-analytics.de/v1/prebid-server", cfg.Analytics.Agma.Endpoint.Url)
 	cmpStrings(t, "analytics.agma.buffers.size", "2MB", cfg.Analytics.Agma.Buffers.BufferSize)
 	cmpInts(t, "analytics.agma.buffers.count", 100, cfg.Analytics.Agma.Buffers.EventCount)
 	cmpStrings(t, "analytics.agma.buffers.timeout", "15m", cfg.Analytics.Agma.Buffers.Timeout)

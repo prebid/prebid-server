@@ -1,6 +1,6 @@
 # agma Analytics
 
-In order to use the Agma Analytics Adapter, please adjust the accounts with the data provided by agma (https://www.agma-mmc.de).
+In order to use the Agma Analytics Adapter, please adjust the accounts / endpoint with the data provided by agma (https://www.agma-mmc.de).
 
 ## Configuration
 
@@ -16,7 +16,7 @@ analytics:
           site_app_id: "openrtb2-site.id-or-app.id" # optional: scope to the publisher with an openrtb2 Site object id or App object id
         # Optional properties (advanced configuration)
         endpoint: 
-            url: "https://pbs-go.agma-analytics.de/v1/prebid-server"
+            url: "https://go.pbs.agma-analytics.de/v1/prebid-server" # Check with agma with you need a extra url
             timeout: "2s"
             gzip: true
         buffer: # Flush events when (first condition reached)
