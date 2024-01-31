@@ -22,6 +22,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderAax,
 	BidderAceex,
 	BidderAcuityAds,
+	BidderAdelement,
 	BidderAdf,
 	BidderAdgeneration,
 	BidderAdhese,
@@ -139,6 +140,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderMedianet,
 	BidderMgid,
 	BidderMgidX,
+	BidderMinuteMedia,
 	BidderMobfoxpb,
 	BidderMobileFuse,
 	BidderMotorik,
@@ -203,12 +205,14 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderVrtcal,
 	BidderXeworks,
 	BidderYahooAds,
+	BidderYandex,
 	BidderYeahmobi,
 	BidderYieldlab,
 	BidderYieldmo,
 	BidderYieldone,
 	BidderZeroClickFraud,
 	BidderZetaGlobalSsp,
+	BidderZmaticoo,
 }
 
 func GetAliasBidderToParent() map[BidderName]BidderName {
@@ -224,10 +228,6 @@ func SetAliasBidderName(aliasBidderName string, parentBidderName BidderName) err
 	aliasBidderToParent[aliasBidder] = parentBidderName
 	bidderNameLookup[strings.ToLower(aliasBidderName)] = aliasBidder
 	return nil
-}
-
-func (name BidderName) MarshalJSON() ([]byte, error) {
-	return []byte(name), nil
 }
 
 func (name *BidderName) String() string {
@@ -301,6 +301,7 @@ const (
 	BidderAax               BidderName = "aax"
 	BidderAceex             BidderName = "aceex"
 	BidderAcuityAds         BidderName = "acuityads"
+	BidderAdelement         BidderName = "adelement"
 	BidderAdf               BidderName = "adf"
 	BidderAdgeneration      BidderName = "adgeneration"
 	BidderAdhese            BidderName = "adhese"
@@ -418,6 +419,7 @@ const (
 	BidderMedianet          BidderName = "medianet"
 	BidderMgid              BidderName = "mgid"
 	BidderMgidX             BidderName = "mgidX"
+	BidderMinuteMedia       BidderName = "minutemedia"
 	BidderMobfoxpb          BidderName = "mobfoxpb"
 	BidderMobileFuse        BidderName = "mobilefuse"
 	BidderMotorik           BidderName = "motorik"
@@ -482,12 +484,14 @@ const (
 	BidderVrtcal            BidderName = "vrtcal"
 	BidderXeworks           BidderName = "xeworks"
 	BidderYahooAds          BidderName = "yahooAds"
+	BidderYandex            BidderName = "yandex"
 	BidderYeahmobi          BidderName = "yeahmobi"
 	BidderYieldlab          BidderName = "yieldlab"
 	BidderYieldmo           BidderName = "yieldmo"
 	BidderYieldone          BidderName = "yieldone"
 	BidderZeroClickFraud    BidderName = "zeroclickfraud"
 	BidderZetaGlobalSsp     BidderName = "zeta_global_ssp"
+	BidderZmaticoo          BidderName = "zmaticoo"
 )
 
 // CoreBidderNames returns a slice of all core bidders.

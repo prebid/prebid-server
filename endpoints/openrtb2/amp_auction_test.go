@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 

@@ -1,7 +1,7 @@
 package openrtb_ext
 
 import (
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
@@ -40,6 +40,8 @@ func ReadDealTiersFromImp(imp openrtb2.Imp) (DealTierBidderMap, error) {
 		if param.DealTier != nil {
 			if bidderNormalized, bidderFound := NormalizeBidderName(bidder); bidderFound {
 				dealTiers[bidderNormalized] = *param.DealTier
+			} else {
+				dealTiers[BidderName(bidder)] = *param.DealTier
 			}
 		}
 	}

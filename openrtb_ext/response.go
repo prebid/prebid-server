@@ -3,8 +3,8 @@ package openrtb_ext
 import (
 	"encoding/json"
 
-	"github.com/prebid/openrtb/v19/adcom1"
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/adcom1"
+	"github.com/prebid/openrtb/v20/openrtb2"
 )
 
 // ExtBidResponse defines the contract for bidresponse.ext
@@ -116,6 +116,7 @@ type ExtNonBidPrebidBid struct {
 	Dur     int64                   `json:"dur,omitempty"`
 	MType   openrtb2.MarkupType     `json:"mtype,omitempty"`
 
+	// Custom Fields
 	OriginalBidCPM float64 `json:"origbidcpm,omitempty"`
 	OriginalBidCur string  `json:"origbidcur,omitempty"`
 }
