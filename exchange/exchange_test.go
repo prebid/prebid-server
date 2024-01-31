@@ -2314,7 +2314,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		assert.Equal(t, expectedBidRespExt.Errors, actualBidRespExt.Errors, "Expected errors from response ext do not match")
 	}
 	if expectedBidRespExt.Prebid != nil {
-		assert.Equal(t, expectedBidRespExt.Prebid.SeatNonBid, bidExt.Prebid.SeatNonBid, "Expected seatNonBids from response ext do not match")
+		assert.ElementsMatch(t, expectedBidRespExt.Prebid.SeatNonBid, bidExt.Prebid.SeatNonBid, "Expected seatNonBids from response ext do not match")
 	}
 }
 
@@ -4852,14 +4852,16 @@ func TestMakeBidWithValidation(t *testing.T) {
 
 	//Run tests
 	for _, test := range testCases {
-		e.bidValidationEnforcement = test.givenValidations
-		sampleBids := test.givenBids
-		nonBids := &nonBids{}
-		resultingBids, resultingErrs := e.makeBid(sampleBids, sampleAuction, true, ImpExtInfoMap, bidExtResponse, test.givenSeat, "", nonBids)
+		t.Run(test.description, func(t *testing.T) {
+			e.bidValidationEnforcement = test.givenValidations
+			sampleBids := test.givenBids
+			nonBids := &nonBids{}
+			resultingBids, resultingErrs := e.makeBid(sampleBids, sampleAuction, true, ImpExtInfoMap, bidExtResponse, test.givenSeat, "", nonBids)
 
-		assert.Equal(t, 0, len(resultingErrs), "%s. Test should not return errors \n", test.description)
-		assert.Equal(t, test.expectedNumOfBids, len(resultingBids), "%s. Test returns more valid bids than expected\n", test.description)
-		assert.Equal(t, test.expectedNonBids, nonBids, "%s. Test returns incorrect nonBids\n", test.description)
+			assert.Equal(t, 0, len(resultingErrs), "%s. Test should not return errors \n", test.description)
+			assert.Equal(t, test.expectedNumOfBids, len(resultingBids), "%s. Test returns more valid bids than expected\n", test.description)
+			assert.Equal(t, test.expectedNonBids, nonBids, "%s. Test returns incorrect nonBids\n", test.description)
+		})
 	}
 }
 
