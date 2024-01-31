@@ -1,13 +1,16 @@
 endpoint: "https://pbs.nextmillmedia.com/openrtb2/auction"
 maintainer:
   email: "accountmanagers@nextmillennium.io"
+gvlVendorID: 1060
 capabilities:
   app:
     mediaTypes:
       - banner
+      - video
   site:
     mediaTypes:
       - banner
+      - video
 userSync:
   iframe:
     url: "https://cookies.nextmillmedia.com/sync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"

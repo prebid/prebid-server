@@ -202,10 +202,10 @@ func extractPrivacyPolicies(request cookieSyncRequest, usersyncDefaultGDPRValue 
 
 	var gpp gpplib.GppContainer
 	if len(request.GPP) > 0 {
-		var err error
-		gpp, err = gpplib.Parse(request.GPP)
-		if err != nil {
-			return macros.UserSyncPrivacy{}, gdpr.SignalNo, privacy.Policies{}, err
+		var errs []error
+		gpp, errs = gpplib.Parse(request.GPP)
+		if len(errs) > 0 {
+			return macros.UserSyncPrivacy{}, gdpr.SignalNo, privacy.Policies{}, errs[0]
 		}
 	}
 
