@@ -878,6 +878,7 @@ func getExtTargetData(requestExtPrebid *openrtb_ext.ExtRequestPrebid, cacheInstr
 			priceGranularity:          *requestExtPrebid.Targeting.PriceGranularity,
 			mediaTypePriceGranularity: requestExtPrebid.Targeting.MediaTypePriceGranularity,
 			preferDeals:               requestExtPrebid.Targeting.PreferDeals,
+			alwaysIncludeDeals:        requestExtPrebid.Targeting.AlwaysIncludeDeals,
 		}
 	}
 

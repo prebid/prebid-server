@@ -27,8 +27,9 @@ type targetData struct {
 	includeFormat             bool
 	preferDeals               bool
 	// cacheHost and cachePath exist to supply cache host and path as targeting parameters
-	cacheHost string
-	cachePath string
+	cacheHost          string
+	cachePath          string
+	alwaysIncludeDeals bool
 }
 
 // setTargeting writes all the targeting params into the bids.
@@ -86,7 +87,9 @@ func (targData *targetData) setTargeting(auc *auction, isApp bool, categoryMappi
 					targData.addKeys(targets, openrtb_ext.HbConstantCachePathKey, targData.cachePath, targetingBidderCode, isOverallWinner, truncateTargetAttr)
 				}
 
-				if deal := topBid.Bid.DealID; len(deal) > 0 {
+				// TODO: Remove Comments
+				// If alwaysincludedeals is true, PBS should generate KVPs for all bids with dealID
+				if deal := topBid.Bid.DealID; len(deal) > 0 && targData.alwaysIncludeDeals {
 					targData.addKeys(targets, openrtb_ext.HbDealIDConstantKey, deal, targetingBidderCode, isOverallWinner, truncateTargetAttr)
 				}
 
