@@ -8,7 +8,14 @@
       "TagID": {
         "type": "string",
         "description": "An ID which identifies the colossus ad tag"
+      },
+      "groupId": {
+        "type": "string",
+        "description": "An ID which identifies the colossus group"
       }
     },
-    "required" : [ "TagID" ]
+    "oneOf": [
+      { "required": ["TagID"] },
+      { "required": ["groupId"] }
+    ]
   }

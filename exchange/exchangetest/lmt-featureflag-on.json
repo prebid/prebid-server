@@ -6,17 +6,25 @@
             "site": {
                 "page": "test.somepage.com"
             },
-            "imp": [{
-                "id": "my-imp-id",
-                "video": {
-                    "mimes": ["video/mp4"]
-                },
-                "ext": {
-                    "appnexus": {
-                        "placementId": 1
+            "imp": [
+                {
+                    "id": "my-imp-id",
+                    "video": {
+                        "mimes": [
+                            "video/mp4"
+                        ]
+                    },
+                    "ext": {
+                        "prebid": {
+                            "bidder": {
+                                "appnexus": {
+                                    "placementId": 1
+                                }
+                            }
+                        }
                     }
                 }
-            }],
+            ],
             "device": {
                 "lmt": 1
             },
@@ -34,27 +42,31 @@
                     "site": {
                         "page": "test.somepage.com"
                     },
-                    "imp": [{
-                        "id": "my-imp-id",
-                        "video": {
-                            "mimes": ["video/mp4"]
-                        },
-                        "ext": {
-                            "bidder": {
-                                "placementId": 1
+                    "imp": [
+                        {
+                            "id": "my-imp-id",
+                            "video": {
+                                "mimes": [
+                                    "video/mp4"
+                                ]
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "placementId": 1
+                                }
                             }
                         }
-                    }],
+                    ],
                     "device": {
                         "lmt": 1
                     },
-                    "user": {
-                    }
-                },
-                "bidAdjustment": 1.0
+                    "user": {}
+                }
             },
             "mockResponse": {
-                "errors": ["appnexus-error"]
+                "errors": [
+                    "appnexus-error"
+                ]
             }
         }
     }

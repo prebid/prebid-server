@@ -1,6 +1,11 @@
 package openrtb_ext
 
-import "github.com/mxmCherry/openrtb/v15/openrtb2"
+import (
+	"encoding/json"
+
+	"github.com/prebid/openrtb/v20/adcom1"
+	"github.com/prebid/openrtb/v20/openrtb2"
+)
 
 // ExtBidResponse defines the contract for bidresponse.ext
 type ExtBidResponse struct {
@@ -25,7 +30,7 @@ type ExtResponseDebug struct {
 	// HttpCalls defines the contract for bidresponse.ext.debug.httpcalls
 	HttpCalls map[BidderName][]*ExtHttpCall `json:"httpcalls,omitempty"`
 	// Request after resolution of stored requests and debug overrides
-	ResolvedRequest *openrtb2.BidRequest `json:"resolvedrequest,omitempty"`
+	ResolvedRequest json.RawMessage `json:"resolvedrequest,omitempty"`
 }
 
 // ExtResponseSyncData defines the contract for bidresponse.ext.usersync.{bidder}
@@ -37,7 +42,26 @@ type ExtResponseSyncData struct {
 
 // ExtResponsePrebid defines the contract for bidresponse.ext.prebid
 type ExtResponsePrebid struct {
-	AuctionTimestamp int64 `json:"auctiontimestamp,omitempty"`
+	AuctionTimestamp int64             `json:"auctiontimestamp,omitempty"`
+	Passthrough      json.RawMessage   `json:"passthrough,omitempty"`
+	Modules          json.RawMessage   `json:"modules,omitempty"`
+	Fledge           *Fledge           `json:"fledge,omitempty"`
+	Targeting        map[string]string `json:"targeting,omitempty"`
+	// SeatNonBid holds the array of Bids which are either rejected, no bids inside bidresponse.ext.prebid.seatnonbid
+	SeatNonBid []SeatNonBid `json:"seatnonbid,omitempty"`
+}
+
+// FledgeResponse defines the contract for bidresponse.ext.fledge
+type Fledge struct {
+	AuctionConfigs []*FledgeAuctionConfig `json:"auctionconfigs,omitempty"`
+}
+
+// FledgeAuctionConfig defines the container for bidresponse.ext.fledge.auctionconfigs[]
+type FledgeAuctionConfig struct {
+	ImpId   string          `json:"impid"`
+	Bidder  string          `json:"bidder,omitempty"`
+	Adapter string          `json:"adapter,omitempty"`
+	Config  json.RawMessage `json:"config"`
 }
 
 // ExtUserSync defines the contract for bidresponse.ext.usersync.{bidder}.syncs[i]
@@ -77,3 +101,45 @@ const (
 	UserSyncIframe UserSyncType = "iframe"
 	UserSyncPixel  UserSyncType = "pixel"
 )
+
+// NonBidObject is subset of Bid object with exact json signature
+// It also contains the custom fields
+type NonBidObject struct {
+	// SubSet
+	Price   float64                 `json:"price,omitempty"`
+	ADomain []string                `json:"adomain,omitempty"`
+	CatTax  adcom1.CategoryTaxonomy `json:"cattax,omitempty"`
+	Cat     []string                `json:"cat,omitempty"`
+	DealID  string                  `json:"dealid,omitempty"`
+	W       int64                   `json:"w,omitempty"`
+	H       int64                   `json:"h,omitempty"`
+	Dur     int64                   `json:"dur,omitempty"`
+	MType   openrtb2.MarkupType     `json:"mtype,omitempty"`
+
+	// Custom Fields
+	OriginalBidCPM float64 `json:"origbidcpm,omitempty"`
+	OriginalBidCur string  `json:"origbidcur,omitempty"`
+}
+
+// ExtResponseNonBidPrebid represents bidresponse.ext.prebid.seatnonbid[].nonbid[].ext
+type ExtResponseNonBidPrebid struct {
+	Bid NonBidObject `json:"bid"`
+}
+
+type NonBidExt struct {
+	Prebid ExtResponseNonBidPrebid `json:"prebid"`
+}
+
+// NonBid represnts the Non Bid Reason (statusCode) for given impression ID
+type NonBid struct {
+	ImpId      string    `json:"impid"`
+	StatusCode int       `json:"statuscode"`
+	Ext        NonBidExt `json:"ext"`
+}
+
+// SeatNonBid is collection of NonBid objects with seat information
+type SeatNonBid struct {
+	NonBid []NonBid        `json:"nonbid"`
+	Seat   string          `json:"seat"`
+	Ext    json.RawMessage `json:"ext"`
+}

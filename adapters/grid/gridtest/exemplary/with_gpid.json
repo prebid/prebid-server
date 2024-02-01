@@ -16,6 +16,10 @@
                 "bidder": {
                     "uid": 1
                 },
+                "skadn": {
+                    "versions": ["2.0", "2.1"],
+                    "sourceapp": "880047117"
+                },
                 "data": {
                     "adserver": {
                         "name": "some_name",
@@ -46,6 +50,10 @@
                         "bidder": {
                             "uid": 1
                         },
+                        "skadn": {
+                            "versions": ["2.0", "2.1"],
+                            "sourceapp": "880047117"
+                        },
                         "data": {
                             "adserver": {
                                 "name": "some_name",
@@ -72,8 +80,14 @@
                         "cid": "987",
                         "crid": "12345678",
                         "h": 250,
-                        "w": 300
-                    }]
+                        "w": 300,
+                        "ext": {
+                            "skadn": {
+                                "version": "2.0",
+                                "sourceapp": "880047117"
+                            }
+                        }
+            }]
                 }],
                 "cur": "USD"
             }
@@ -92,7 +106,13 @@
                 "cid": "987",
                 "crid": "12345678",
                 "w": 300,
-                "h": 250
+                "h": 250,
+                "ext": {
+                    "skadn": {
+                        "version": "2.0",
+                        "sourceapp": "880047117"
+                    }
+                }
             },
             "type": "banner"
         }]

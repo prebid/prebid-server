@@ -1,3 +1,4 @@
+endpoint: "https://apex.go.sonobi.com/prebid?partnerid=71d9d3d8af"
 maintainer:
   email: "apex.prebid@sonobi.com"
 gvlVendorID: 104

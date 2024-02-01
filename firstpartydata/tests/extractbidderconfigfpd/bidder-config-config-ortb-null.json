@@ -1,0 +1,20 @@
+{
+  "description": "Bidder config.ortb2 for bidder is null - expected bidder fpd with no data",
+  "inputRequestData": {
+    "data": {},
+    "bidderconfig": [
+      {
+        "bidders": [
+          "appnexus"
+        ],
+        "config": {
+          "ortb2": null
+        }
+      }
+    ]
+  },
+  "outputRequestData": {},
+  "bidderConfigFPD": {
+    "appnexus": {}
+  }
+}

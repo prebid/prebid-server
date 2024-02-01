@@ -1,0 +1,12 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id"
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "No impression in the bid request",
+      "comparison": "literal"
+    }
+  ]
+}

@@ -5,13 +5,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/metrics"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/metrics"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
 )
+
+var modulesStages = map[string][]string{"foobar": {"entry", "raw"}, "another_module": {"raw", "auction"}}
 
 func createMetricsForTesting() *Metrics {
 	syncerKeys := []string{}
@@ -19,14 +21,14 @@ func createMetricsForTesting() *Metrics {
 		Port:      8080,
 		Namespace: "prebid",
 		Subsystem: "server",
-	}, config.DisabledMetrics{}, syncerKeys)
+	}, config.DisabledMetrics{}, syncerKeys, modulesStages)
 }
 
 func TestMetricCountGatekeeping(t *testing.T) {
 	m := createMetricsForTesting()
 
 	// Gather All Metrics
-	metricFamilies, err := m.Registry.Gather()
+	metricFamilies, err := m.Gatherer.Gather()
 	assert.NoError(t, err, "gather metics")
 
 	// Summarize By Adapter Cardinality
@@ -53,7 +55,6 @@ func TestMetricCountGatekeeping(t *testing.T) {
 	// Calculate Per-Adapter Cardinality
 	adapterCount := len(openrtb_ext.CoreBidderNames())
 	perAdapterCardinalityCount := adapterCardinalityCount / adapterCount
-
 	// Verify General Cardinality
 	// - This assertion provides a warning for newly added high-cardinality non-adapter specific metrics. The hardcoded limit
 	//   is an arbitrary soft ceiling. Thought should be given as to the value of the new metrics if you find yourself
@@ -63,7 +64,7 @@ func TestMetricCountGatekeeping(t *testing.T) {
 	// Verify Per-Adapter Cardinality
 	// - This assertion provides a warning for newly added adapter metrics. Threre are 40+ adapters which makes the
 	//   cost of new per-adapter metrics rather expensive. Thought should be given when adding new per-adapter metrics.
-	assert.True(t, perAdapterCardinalityCount <= 27, "Per-Adapter Cardinality count equals %d \n", perAdapterCardinalityCount)
+	assert.True(t, perAdapterCardinalityCount <= 30, "Per-Adapter Cardinality count equals %d \n", perAdapterCardinalityCount)
 }
 
 func TestConnectionMetrics(t *testing.T) {
@@ -154,6 +155,129 @@ func TestRequestMetric(t *testing.T) {
 			requestTypeLabel:   string(requestType),
 			requestStatusLabel: string(requestStatus),
 		})
+}
+
+func TestDebugRequestMetric(t *testing.T) {
+	testCases := []struct {
+		description                      string
+		givenDebugEnabledFlag            bool
+		givenAccountDebugMetricsDisabled bool
+		expectedAccountDebugCount        float64
+		expectedDebugCount               float64
+	}{
+		{
+			description:                      "Debug is enabled and account debug is enabled, both metrics should be updated",
+			givenDebugEnabledFlag:            true,
+			givenAccountDebugMetricsDisabled: false,
+			expectedDebugCount:               1,
+			expectedAccountDebugCount:        1,
+		},
+		{
+			description:                      "Debug and account debug are disabled, niether metrics should be updated",
+			givenDebugEnabledFlag:            false,
+			givenAccountDebugMetricsDisabled: true,
+			expectedDebugCount:               0,
+			expectedAccountDebugCount:        0,
+		},
+		{
+			description:                      "Debug is enabled but account debug is disabled, only non-account debug count should increment",
+			givenDebugEnabledFlag:            true,
+			givenAccountDebugMetricsDisabled: true,
+			expectedDebugCount:               1,
+			expectedAccountDebugCount:        0,
+		},
+		{
+			description:                      "Debug is disabled and account debug is enabled, niether metrics should increment",
+			givenDebugEnabledFlag:            false,
+			givenAccountDebugMetricsDisabled: false,
+			expectedDebugCount:               0,
+			expectedAccountDebugCount:        0,
+		},
+	}
+
+	for _, test := range testCases {
+		m := createMetricsForTesting()
+		m.metricsDisabled.AccountDebug = test.givenAccountDebugMetricsDisabled
+		m.RecordDebugRequest(test.givenDebugEnabledFlag, "acct-id")
+
+		assertCounterVecValue(t, "", "account debug requests", m.accountDebugRequests, test.expectedAccountDebugCount, prometheus.Labels{accountLabel: "acct-id"})
+		assertCounterValue(t, "", "debug requests", m.debugRequests, test.expectedDebugCount)
+	}
+}
+
+func TestBidValidationCreativeSizeMetric(t *testing.T) {
+	testCases := []struct {
+		description                        string
+		givenDebugEnabledFlag              bool
+		givenAccountAdapterMetricsDisabled bool
+		expectedAdapterCount               float64
+		expectedAccountCount               float64
+	}{
+		{
+			description:                        "Account Metric isn't disabled, so both metrics should be incremented",
+			givenAccountAdapterMetricsDisabled: false,
+			expectedAdapterCount:               1,
+			expectedAccountCount:               1,
+		},
+		{
+			description:                        "Account Metric is disabled, so only adapter metric should be incremented",
+			givenAccountAdapterMetricsDisabled: true,
+			expectedAdapterCount:               1,
+			expectedAccountCount:               0,
+		},
+	}
+	adapterName := openrtb_ext.BidderName("AnyName")
+	lowerCasedAdapterName := "anyname"
+	for _, test := range testCases {
+		m := createMetricsForTesting()
+		m.metricsDisabled.AccountAdapterDetails = test.givenAccountAdapterMetricsDisabled
+		m.RecordBidValidationCreativeSizeError(adapterName, "acct-id")
+		m.RecordBidValidationCreativeSizeWarn(adapterName, "acct-id")
+
+		assertCounterVecValue(t, "", "account bid validation", m.accountBidResponseValidationSizeError, test.expectedAccountCount, prometheus.Labels{accountLabel: "acct-id", successLabel: successLabel})
+		assertCounterVecValue(t, "", "adapter bid validation", m.adapterBidResponseValidationSizeError, test.expectedAdapterCount, prometheus.Labels{adapterLabel: lowerCasedAdapterName, successLabel: successLabel})
+
+		assertCounterVecValue(t, "", "account bid validation", m.accountBidResponseValidationSizeWarn, test.expectedAccountCount, prometheus.Labels{accountLabel: "acct-id", successLabel: successLabel})
+		assertCounterVecValue(t, "", "adapter bid validation", m.adapterBidResponseValidationSizeWarn, test.expectedAdapterCount, prometheus.Labels{adapterLabel: lowerCasedAdapterName, successLabel: successLabel})
+	}
+}
+
+func TestBidValidationSecureMarkupMetric(t *testing.T) {
+	testCases := []struct {
+		description                        string
+		givenDebugEnabledFlag              bool
+		givenAccountAdapterMetricsDisabled bool
+		expectedAdapterCount               float64
+		expectedAccountCount               float64
+	}{
+		{
+			description:                        "Account Metric isn't disabled, so both metrics should be incremented",
+			givenAccountAdapterMetricsDisabled: false,
+			expectedAdapterCount:               1,
+			expectedAccountCount:               1,
+		},
+		{
+			description:                        "Account Metric is disabled, so only adapter metric should be incremented",
+			givenAccountAdapterMetricsDisabled: true,
+			expectedAdapterCount:               1,
+			expectedAccountCount:               0,
+		},
+	}
+
+	adapterName := openrtb_ext.BidderName("AnyName")
+	lowerCasedAdapterName := "anyname"
+	for _, test := range testCases {
+		m := createMetricsForTesting()
+		m.metricsDisabled.AccountAdapterDetails = test.givenAccountAdapterMetricsDisabled
+		m.RecordBidValidationSecureMarkupError(adapterName, "acct-id")
+		m.RecordBidValidationSecureMarkupWarn(adapterName, "acct-id")
+
+		assertCounterVecValue(t, "", "Account Secure Markup Error", m.accountBidResponseSecureMarkupError, test.expectedAccountCount, prometheus.Labels{accountLabel: "acct-id", successLabel: successLabel})
+		assertCounterVecValue(t, "", "Adapter Secure Markup Error", m.adapterBidResponseSecureMarkupError, test.expectedAdapterCount, prometheus.Labels{adapterLabel: lowerCasedAdapterName, successLabel: successLabel})
+
+		assertCounterVecValue(t, "", "Account Secure Markup Warn", m.accountBidResponseSecureMarkupWarn, test.expectedAccountCount, prometheus.Labels{accountLabel: "acct-id", successLabel: successLabel})
+		assertCounterVecValue(t, "", "Adapter Secure Markup Warn", m.adapterBidResponseSecureMarkupWarn, test.expectedAdapterCount, prometheus.Labels{adapterLabel: lowerCasedAdapterName, successLabel: successLabel})
+	}
 }
 
 func TestRequestMetricWithoutCookie(t *testing.T) {
@@ -355,16 +479,6 @@ func TestImpressionsMetric(t *testing.T) {
 	}
 }
 
-func TestLegacyImpressionsMetric(t *testing.T) {
-	m := createMetricsForTesting()
-
-	m.RecordLegacyImps(metrics.Labels{}, 42)
-
-	expectedCount := float64(42)
-	assertCounterValue(t, "", "impressionsLegacy", m.impressionsLegacy,
-		expectedCount)
-}
-
 func TestRequestTimeMetric(t *testing.T) {
 	requestType := metrics.ReqTypeORTB2Web
 	performTest := func(m *Metrics, requestStatus metrics.RequestStatus, timeInMs float64) {
@@ -405,6 +519,52 @@ func TestRequestTimeMetric(t *testing.T) {
 
 		result := getHistogramFromHistogramVec(m.requestsTimer, requestTypeLabel, string(requestType))
 		assertHistogram(t, test.description, result, test.expectedCount, test.expectedSum)
+	}
+}
+
+func TestRecordOverheadTimeMetric(t *testing.T) {
+	testCases := []struct {
+		description   string
+		overheadType  metrics.OverheadType
+		timeInMs      float64
+		expectedCount uint64
+		expectedSum   float64
+	}{
+		{
+			description:   "record-pre-bidder-overhead-time-1",
+			overheadType:  metrics.PreBidder,
+			timeInMs:      500,
+			expectedCount: 1,
+			expectedSum:   0.5,
+		},
+		{
+			description:   "record-pre-bidder-overhead-time-2",
+			overheadType:  metrics.PreBidder,
+			timeInMs:      400,
+			expectedCount: 2,
+			expectedSum:   0.9,
+		},
+		{
+			description:   "record-auction-response-overhead-time",
+			overheadType:  metrics.MakeAuctionResponse,
+			timeInMs:      500,
+			expectedCount: 1,
+			expectedSum:   0.5,
+		},
+		{
+			description:   "record-make-bidder-requests-overhead-time",
+			overheadType:  metrics.MakeBidderRequests,
+			timeInMs:      500,
+			expectedCount: 1,
+			expectedSum:   0.5,
+		},
+	}
+
+	metric := createMetricsForTesting()
+	for _, test := range testCases {
+		metric.RecordOverheadTime(test.overheadType, time.Duration(test.timeInMs)*time.Millisecond)
+		resultingHistogram := getHistogramFromHistogramVec(metric.overheadTimer, overheadTypeLabel, test.overheadType.String())
+		assertHistogram(t, test.description, resultingHistogram, test.expectedCount, test.expectedSum)
 	}
 }
 
@@ -464,6 +624,11 @@ func TestRecordStoredDataFetchTime(t *testing.T) {
 			dataType:    metrics.VideoDataType,
 			fetchType:   metrics.FetchDelta,
 		},
+		{
+			description: "Update stored responses histogram with delta label",
+			dataType:    metrics.ResponseDataType,
+			fetchType:   metrics.FetchDelta,
+		},
 	}
 
 	for _, tt := range tests {
@@ -487,6 +652,8 @@ func TestRecordStoredDataFetchTime(t *testing.T) {
 			metricsTimer = m.storedRequestFetchTimer
 		case metrics.VideoDataType:
 			metricsTimer = m.storedVideoFetchTimer
+		case metrics.ResponseDataType:
+			metricsTimer = m.storedResponsesFetchTimer
 		}
 
 		result := getHistogramFromHistogramVec(
@@ -564,6 +731,12 @@ func TestRecordStoredDataError(t *testing.T) {
 			errorType:   metrics.StoredDataErrorUndefined,
 			metricName:  "stored_video_errors",
 		},
+		{
+			description: "Update stored_response_errors counter with network label",
+			dataType:    metrics.ResponseDataType,
+			errorType:   metrics.StoredDataErrorNetwork,
+			metricName:  "stored_response_errors",
+		},
 	}
 
 	for _, tt := range tests {
@@ -585,6 +758,8 @@ func TestRecordStoredDataError(t *testing.T) {
 			metricsCounter = m.storedRequestErrors
 		case metrics.VideoDataType:
 			metricsCounter = m.storedVideoErrors
+		case metrics.ResponseDataType:
+			metricsCounter = m.storedResponsesErrors
 		}
 
 		assertCounterVecValue(t, tt.description, tt.metricName, metricsCounter,
@@ -596,10 +771,11 @@ func TestRecordStoredDataError(t *testing.T) {
 }
 
 func TestAdapterBidReceivedMetric(t *testing.T) {
-	adapterName := "anyName"
+	adapterName := openrtb_ext.BidderName("anyName")
+	lowerCasedAdapterName := "anyname"
 	performTest := func(m *Metrics, hasAdm bool) {
 		labels := metrics.AdapterLabels{
-			Adapter: openrtb_ext.BidderName(adapterName),
+			Adapter: adapterName,
 		}
 		bidType := openrtb_ext.BidTypeBanner
 		m.RecordAdapterBidReceived(labels, bidType, hasAdm)
@@ -637,13 +813,13 @@ func TestAdapterBidReceivedMetric(t *testing.T) {
 		assertCounterVecValue(t, test.description, "adapterBids[adm]", m.adapterBids,
 			test.expectedAdmCount,
 			prometheus.Labels{
-				adapterLabel:        adapterName,
+				adapterLabel:        lowerCasedAdapterName,
 				markupDeliveryLabel: markupDeliveryAdm,
 			})
 		assertCounterVecValue(t, test.description, "adapterBids[nurl]", m.adapterBids,
 			test.expectedNurlCount,
 			prometheus.Labels{
-				adapterLabel:        adapterName,
+				adapterLabel:        lowerCasedAdapterName,
 				markupDeliveryLabel: markupDeliveryNurl,
 			})
 	}
@@ -652,6 +828,7 @@ func TestAdapterBidReceivedMetric(t *testing.T) {
 func TestRecordAdapterPriceMetric(t *testing.T) {
 	m := createMetricsForTesting()
 	adapterName := "anyName"
+	lowerCasedAdapterName := "anyname"
 	cpm := float64(42)
 
 	m.RecordAdapterPrice(metrics.AdapterLabels{
@@ -660,12 +837,13 @@ func TestRecordAdapterPriceMetric(t *testing.T) {
 
 	expectedCount := uint64(1)
 	expectedSum := cpm
-	result := getHistogramFromHistogramVec(m.adapterPrices, adapterLabel, adapterName)
+	result := getHistogramFromHistogramVec(m.adapterPrices, adapterLabel, lowerCasedAdapterName)
 	assertHistogram(t, "adapterPrices", result, expectedCount, expectedSum)
 }
 
 func TestAdapterRequestMetrics(t *testing.T) {
 	adapterName := "anyName"
+	lowerCasedAdapterName := "anyname"
 	performTest := func(m *Metrics, cookieFlag metrics.CookieFlag, adapterBids metrics.AdapterBid) {
 		labels := metrics.AdapterLabels{
 			Adapter:     openrtb_ext.BidderName(adapterName),
@@ -765,7 +943,7 @@ func TestAdapterRequestMetrics(t *testing.T) {
 		processMetrics(m.adapterRequests, func(m dto.Metric) {
 			isMetricForAdapter := false
 			for _, label := range m.GetLabel() {
-				if label.GetName() == adapterLabel && label.GetValue() == adapterName {
+				if label.GetName() == adapterLabel && label.GetValue() == lowerCasedAdapterName {
 					isMetricForAdapter = true
 				}
 			}
@@ -802,6 +980,7 @@ func TestAdapterRequestMetrics(t *testing.T) {
 
 func TestAdapterRequestErrorMetrics(t *testing.T) {
 	adapterName := "anyName"
+	lowerCasedAdapterName := "anyname"
 	performTest := func(m *Metrics, adapterErrors map[metrics.AdapterError]struct{}) {
 		labels := metrics.AdapterLabels{
 			Adapter:       openrtb_ext.BidderName(adapterName),
@@ -858,7 +1037,7 @@ func TestAdapterRequestErrorMetrics(t *testing.T) {
 		processMetrics(m.adapterErrors, func(m dto.Metric) {
 			isMetricForAdapter := false
 			for _, label := range m.GetLabel() {
-				if label.GetName() == adapterLabel && label.GetValue() == adapterName {
+				if label.GetName() == adapterLabel && label.GetValue() == lowerCasedAdapterName {
 					isMetricForAdapter = true
 				}
 			}
@@ -880,6 +1059,7 @@ func TestAdapterRequestErrorMetrics(t *testing.T) {
 
 func TestAdapterTimeMetric(t *testing.T) {
 	adapterName := "anyName"
+	lowerCasedAdapterName := "anyname"
 	performTest := func(m *Metrics, timeInMs float64, adapterErrors map[metrics.AdapterError]struct{}) {
 		m.RecordAdapterTime(metrics.AdapterLabels{
 			Adapter:       openrtb_ext.BidderName(adapterName),
@@ -918,24 +1098,24 @@ func TestAdapterTimeMetric(t *testing.T) {
 
 		test.testCase(m)
 
-		result := getHistogramFromHistogramVec(m.adapterRequestsTimer, adapterLabel, adapterName)
+		result := getHistogramFromHistogramVec(m.adapterRequestsTimer, adapterLabel, lowerCasedAdapterName)
 		assertHistogram(t, test.description, result, test.expectedCount, test.expectedSum)
 	}
 }
 
 func TestAdapterPanicMetric(t *testing.T) {
 	m := createMetricsForTesting()
-	adapterName := "anyName"
-
+	adapterName := openrtb_ext.BidderName("anyName")
+	lowerCasedAdapterName := "anyname"
 	m.RecordAdapterPanic(metrics.AdapterLabels{
-		Adapter: openrtb_ext.BidderName(adapterName),
+		Adapter: adapterName,
 	})
 
 	expectedCount := float64(1)
 	assertCounterVecValue(t, "", "adapterPanics", m.adapterPanics,
 		expectedCount,
 		prometheus.Labels{
-			adapterLabel: adapterName,
+			adapterLabel: lowerCasedAdapterName,
 		})
 }
 
@@ -1162,18 +1342,6 @@ func TestPrebidCacheRequestTimeMetric(t *testing.T) {
 	assertHistogram(t, "Error", errorResult, errorExpectedCount, errorExpectedSum)
 }
 
-func TestMetricAccumulationSpotCheck(t *testing.T) {
-	m := createMetricsForTesting()
-
-	m.RecordLegacyImps(metrics.Labels{}, 1)
-	m.RecordLegacyImps(metrics.Labels{}, 2)
-	m.RecordLegacyImps(metrics.Labels{}, 3)
-
-	expectedValue := float64(1 + 2 + 3)
-	assertCounterValue(t, "", "impressionsLegacy", m.impressionsLegacy,
-		expectedValue)
-}
-
 func TestRecordRequestQueueTimeMetric(t *testing.T) {
 	performTest := func(m *Metrics, requestStatus bool, requestType metrics.RequestType, timeInSec float64) {
 		m.RecordRequestQueueTime(requestStatus, requestType, time.Duration(timeInSec*float64(time.Second)))
@@ -1315,7 +1483,42 @@ func TestRecordTLSHandshakeTime(t *testing.T) {
 	}
 }
 
+func TestRecordBidderServerResponseTime(t *testing.T) {
+	testCases := []struct {
+		description   string
+		timeInMs      float64
+		expectedCount uint64
+		expectedSum   float64
+	}{
+		{
+			description:   "record-bidder-server-response-time-1",
+			timeInMs:      500,
+			expectedCount: 1,
+			expectedSum:   0.5,
+		},
+		{
+			description:   "record-bidder-server-response-time-2",
+			timeInMs:      400,
+			expectedCount: 1,
+			expectedSum:   0.4,
+		},
+	}
+	for _, test := range testCases {
+		pm := createMetricsForTesting()
+		pm.RecordBidderServerResponseTime(time.Duration(test.timeInMs) * time.Millisecond)
+
+		m := dto.Metric{}
+		pm.bidderServerResponseTimer.Write(&m)
+		histogram := *m.GetHistogram()
+
+		assert.Equal(t, test.expectedCount, histogram.GetSampleCount())
+		assert.Equal(t, test.expectedSum, histogram.GetSampleSum())
+	}
+}
+
 func TestRecordAdapterConnections(t *testing.T) {
+	adapterName := openrtb_ext.BidderName("Adapter")
+	lowerCasedAdapterName := "adapter"
 
 	type testIn struct {
 		adapterName   openrtb_ext.BidderName
@@ -1338,7 +1541,7 @@ func TestRecordAdapterConnections(t *testing.T) {
 		{
 			description: "[1] Successful, new connection created, was idle, has connection wait",
 			in: testIn{
-				adapterName:   openrtb_ext.BidderAppnexus,
+				adapterName:   adapterName,
 				connWasReused: false,
 				connWait:      time.Second * 5,
 			},
@@ -1352,7 +1555,7 @@ func TestRecordAdapterConnections(t *testing.T) {
 		{
 			description: "[2] Successful, new connection created, not idle, has connection wait",
 			in: testIn{
-				adapterName:   openrtb_ext.BidderAppnexus,
+				adapterName:   adapterName,
 				connWasReused: false,
 				connWait:      time.Second * 4,
 			},
@@ -1366,7 +1569,7 @@ func TestRecordAdapterConnections(t *testing.T) {
 		{
 			description: "[3] Successful, was reused, was idle, no connection wait",
 			in: testIn{
-				adapterName:   openrtb_ext.BidderAppnexus,
+				adapterName:   adapterName,
 				connWasReused: true,
 			},
 			out: testOut{
@@ -1379,7 +1582,7 @@ func TestRecordAdapterConnections(t *testing.T) {
 		{
 			description: "[4] Successful, was reused, not idle, has connection wait",
 			in: testIn{
-				adapterName:   openrtb_ext.BidderAppnexus,
+				adapterName:   adapterName,
 				connWasReused: true,
 				connWait:      time.Second * 5,
 			},
@@ -1409,7 +1612,7 @@ func TestRecordAdapterConnections(t *testing.T) {
 			"adapter_connection_reused",
 			m.adapterReusedConnections,
 			float64(test.out.expectedConnReusedCount),
-			prometheus.Labels{adapterLabel: string(test.in.adapterName)})
+			prometheus.Labels{adapterLabel: lowerCasedAdapterName})
 
 		// Assert number of new created connections
 		assertCounterVecValue(t,
@@ -1417,10 +1620,10 @@ func TestRecordAdapterConnections(t *testing.T) {
 			"adapter_connection_created",
 			m.adapterCreatedConnections,
 			float64(test.out.expectedConnCreatedCount),
-			prometheus.Labels{adapterLabel: string(test.in.adapterName)})
+			prometheus.Labels{adapterLabel: lowerCasedAdapterName})
 
 		// Assert connection wait time
-		histogram := getHistogramFromHistogramVec(m.adapterConnectionWaitTime, adapterLabel, string(test.in.adapterName))
+		histogram := getHistogramFromHistogramVec(m.adapterConnectionWaitTime, adapterLabel, lowerCasedAdapterName)
 		assert.Equal(t, test.out.expectedConnWaitCount, histogram.GetSampleCount(), assertDesciptions[2])
 		assert.Equal(t, test.out.expectedConnWaitTime, histogram.GetSampleSum(), assertDesciptions[3])
 	}
@@ -1435,7 +1638,7 @@ func TestDisabledMetrics(t *testing.T) {
 		AdapterConnectionMetrics:  true,
 		AdapterGDPRRequestBlocked: true,
 	},
-		nil)
+		nil, nil)
 
 	// Assert counter vector was not initialized
 	assert.Nil(t, prometheusMetrics.adapterReusedConnections, "Counter Vector adapterReusedConnections should be nil")
@@ -1588,8 +1791,9 @@ func assertHistogram(t *testing.T, name string, histogram dto.Histogram, expecte
 
 func TestRecordAdapterGDPRRequestBlocked(t *testing.T) {
 	m := createMetricsForTesting()
-
-	m.RecordAdapterGDPRRequestBlocked(openrtb_ext.BidderAppnexus)
+	adapterName := openrtb_ext.BidderName("AnyName")
+	lowerCasedAdapterName := "anyname"
+	m.RecordAdapterGDPRRequestBlocked(adapterName)
 
 	assertCounterVecValue(t,
 		"Increment adapter GDPR request blocked counter",
@@ -1597,6 +1801,189 @@ func TestRecordAdapterGDPRRequestBlocked(t *testing.T) {
 		m.adapterGDPRBlockedRequests,
 		1,
 		prometheus.Labels{
-			adapterLabel: string(openrtb_ext.BidderAppnexus),
+			adapterLabel: lowerCasedAdapterName,
 		})
+}
+
+func TestStoredResponsesMetric(t *testing.T) {
+	testCases := []struct {
+		description                           string
+		publisherId                           string
+		accountStoredResponsesMetricsDisabled bool
+		expectedAccountStoredResponsesCount   float64
+		expectedStoredResponsesCount          float64
+	}{
+
+		{
+			description:                           "Publisher id is given, account stored responses enabled, expected both account stored responses and stored responses counter to have a record",
+			publisherId:                           "acct-id",
+			accountStoredResponsesMetricsDisabled: false,
+			expectedAccountStoredResponsesCount:   1,
+			expectedStoredResponsesCount:          1,
+		},
+		{
+			description:                           "Publisher id is given, account stored responses disabled, expected stored responses counter only to have a record",
+			publisherId:                           "acct-id",
+			accountStoredResponsesMetricsDisabled: true,
+			expectedAccountStoredResponsesCount:   0,
+			expectedStoredResponsesCount:          1,
+		},
+		{
+			description:                           "Publisher id is unknown, account stored responses enabled, expected stored responses counter only to have a record",
+			publisherId:                           metrics.PublisherUnknown,
+			accountStoredResponsesMetricsDisabled: true,
+			expectedAccountStoredResponsesCount:   0,
+			expectedStoredResponsesCount:          1,
+		},
+		{
+			description:                           "Publisher id is unknown, account stored responses disabled, expected stored responses counter only to have a record",
+			publisherId:                           metrics.PublisherUnknown,
+			accountStoredResponsesMetricsDisabled: false,
+			expectedAccountStoredResponsesCount:   0,
+			expectedStoredResponsesCount:          1,
+		},
+	}
+
+	for _, test := range testCases {
+		m := createMetricsForTesting()
+		m.metricsDisabled.AccountStoredResponses = test.accountStoredResponsesMetricsDisabled
+		m.RecordStoredResponse(test.publisherId)
+
+		assertCounterVecValue(t, "", "account stored responses", m.accountStoredResponses, test.expectedAccountStoredResponsesCount, prometheus.Labels{accountLabel: "acct-id"})
+		assertCounterValue(t, "", "stored responses", m.storedResponses, test.expectedStoredResponsesCount)
+	}
+}
+
+func TestRecordAdsCertReqMetric(t *testing.T) {
+	testCases := []struct {
+		description                  string
+		requestSuccess               bool
+		expectedSuccessRequestsCount float64
+		expectedFailedRequestsCount  float64
+	}{
+		{
+			description:                  "Record failed request, expected success request count is 0 and failed request count is 1",
+			requestSuccess:               false,
+			expectedSuccessRequestsCount: 0,
+			expectedFailedRequestsCount:  1,
+		},
+		{
+			description:                  "Record successful request, expected success request count is 1 and failed request count is 0",
+			requestSuccess:               true,
+			expectedSuccessRequestsCount: 1,
+			expectedFailedRequestsCount:  0,
+		},
+	}
+
+	for _, test := range testCases {
+		m := createMetricsForTesting()
+		m.RecordAdsCertReq(test.requestSuccess)
+		assertCounterVecValue(t, test.description, "successfully signed requests", m.adsCertRequests, test.expectedSuccessRequestsCount, prometheus.Labels{successLabel: requestSuccessful})
+		assertCounterVecValue(t, test.description, "unsuccessfully signed requests", m.adsCertRequests, test.expectedFailedRequestsCount, prometheus.Labels{successLabel: requestFailed})
+	}
+}
+
+func TestRecordAdsCertSignTime(t *testing.T) {
+	type testIn struct {
+		adsCertSignDuration time.Duration
+	}
+	type testOut struct {
+		expDuration float64
+		expCount    uint64
+	}
+	testCases := []struct {
+		description string
+		in          testIn
+		out         testOut
+	}{
+		{
+			description: "Five second AdsCert sign time",
+			in: testIn{
+				adsCertSignDuration: time.Second * 5,
+			},
+			out: testOut{
+				expDuration: 5,
+				expCount:    1,
+			},
+		},
+		{
+			description: "Five millisecond AdsCert sign time",
+			in: testIn{
+				adsCertSignDuration: time.Millisecond * 5,
+			},
+			out: testOut{
+				expDuration: 0.005,
+				expCount:    1,
+			},
+		},
+		{
+			description: "Zero AdsCert sign time",
+			in:          testIn{},
+			out: testOut{
+				expDuration: 0,
+				expCount:    1,
+			},
+		},
+	}
+	for i, test := range testCases {
+		pm := createMetricsForTesting()
+		pm.RecordAdsCertSignTime(test.in.adsCertSignDuration)
+
+		m := dto.Metric{}
+		pm.adsCertSignTimer.Write(&m)
+		histogram := *m.GetHistogram()
+
+		assert.Equal(t, test.out.expCount, histogram.GetSampleCount(), "[%d] Incorrect number of histogram entries. Desc: %s\n", i, test.description)
+		assert.Equal(t, test.out.expDuration, histogram.GetSampleSum(), "[%d] Incorrect number of histogram cumulative values. Desc: %s\n", i, test.description)
+	}
+}
+
+func TestRecordModuleMetrics(t *testing.T) {
+	m := createMetricsForTesting()
+
+	// check that each module has its own metric recorded with correct stage labels
+	for module, stages := range modulesStages {
+		for _, stage := range stages {
+			// first record the metrics
+			m.RecordModuleCalled(metrics.ModuleLabels{
+				Module: module,
+				Stage:  stage,
+			}, time.Millisecond*1)
+			m.RecordModuleFailed(metrics.ModuleLabels{
+				Module: module,
+				Stage:  stage,
+			})
+			m.RecordModuleSuccessNooped(metrics.ModuleLabels{
+				Module: module,
+				Stage:  stage,
+			})
+			m.RecordModuleSuccessUpdated(metrics.ModuleLabels{
+				Module: module,
+				Stage:  stage,
+			})
+			m.RecordModuleSuccessRejected(metrics.ModuleLabels{
+				Module: module,
+				Stage:  stage,
+			})
+			m.RecordModuleExecutionError(metrics.ModuleLabels{
+				Module: module,
+				Stage:  stage,
+			})
+			m.RecordModuleTimeout(metrics.ModuleLabels{
+				Module: module,
+				Stage:  stage,
+			})
+
+			// now check that the values are correct
+			result := getHistogramFromHistogramVec(m.moduleDuration[module], stageLabel, stage)
+			assertHistogram(t, fmt.Sprintf("module_%s_duration", module), result, 1, 0.001)
+			assertCounterVecValue(t, "Module calls performed", fmt.Sprintf("%s metric recorded during %s stage", module, stage), m.moduleCalls[module], 1, prometheus.Labels{stageLabel: stage})
+			assertCounterVecValue(t, "Module calls failed", fmt.Sprintf("%s metric recorded during %s stage", module, stage), m.moduleFailures[module], 1, prometheus.Labels{stageLabel: stage})
+			assertCounterVecValue(t, "Module success noop action", fmt.Sprintf("%s metric recorded during %s stage", module, stage), m.moduleSuccessNoops[module], 1, prometheus.Labels{stageLabel: stage})
+			assertCounterVecValue(t, "Module success update action", fmt.Sprintf("%s metric recorded during %s stage", module, stage), m.moduleSuccessUpdates[module], 1, prometheus.Labels{stageLabel: stage})
+			assertCounterVecValue(t, "Module success reject action", fmt.Sprintf("%s metric recorded during %s stage", module, stage), m.moduleSuccessRejects[module], 1, prometheus.Labels{stageLabel: stage})
+			assertCounterVecValue(t, "Module execution error", fmt.Sprintf("%s metric recorded during %s stage", module, stage), m.moduleExecutionErrors[module], 1, prometheus.Labels{stageLabel: stage})
+			assertCounterVecValue(t, "Module timeout", fmt.Sprintf("%s metric recorded during %s stage", module, stage), m.moduleTimeouts[module], 1, prometheus.Labels{stageLabel: stage})
+		}
+	}
 }

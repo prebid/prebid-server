@@ -47,7 +47,7 @@
   },
   "httpCalls": [{
     "expectedRequest": {
-      "uri": "http://pbs-dev.amxrtb.com/auction/openrtb?v=pbs1.1",
+      "uri": "http://pbs-dev.amxrtb.com/auction/openrtb?v=pbs1.2",
       "body": {
         "device": {
           "dnt": 0,

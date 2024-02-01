@@ -1,3 +1,4 @@
+endpoint: "https://g2.gumgum.com/providers/prbds2s/bid"
 maintainer:
   email: "prebid@gumgum.com"
 gvlVendorID: 61

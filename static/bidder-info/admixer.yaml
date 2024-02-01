@@ -1,3 +1,4 @@
+endpoint: "http://inv-nets.admixer.net/pbs.aspx"
 maintainer:
   email: "prebid@admixer.net"
 gvlVendorID: 511

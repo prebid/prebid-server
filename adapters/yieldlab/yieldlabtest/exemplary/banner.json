@@ -9,6 +9,10 @@
             {
               "w": 728,
               "h": 90
+            },
+            {
+              "w": 800,
+              "h": 300
             }
           ]
         },
@@ -16,7 +20,6 @@
           "bidder": {
             "adslotId": "12345",
             "supplyId": "123456789",
-            "adSize": "728x90",
             "targeting": {
               "key1": "value1",
               "key2": "value2"
@@ -70,7 +73,7 @@
             "169.254.13.37"
           ]
         },
-        "uri": "https://ad.yieldlab.net/testing/12345?content=json&ids=ylid%3A34a53e82-0dc3-4815-8b7e-b725ede0361c&lat=51.499488&lon=-0.128953&pvid=true&t=key1%3Dvalue1%26key2%3Dvalue2&ts=testing&yl_rtb_connectiontype=6&yl_rtb_devicetype=4&yl_rtb_ifa=hello-ads"
+        "uri": "https://ad.yieldlab.net/testing/12345?content=json&ids=ylid%3A34a53e82-0dc3-4815-8b7e-b725ede0361c&lat=51.499488&lon=-0.128953&pvid=true&sizes=12345%3A728x90%7C800x300&t=key1%3Dvalue1%26key2%3Dvalue2&ts=testing&yl_rtb_connectiontype=6&yl_rtb_devicetype=4&yl_rtb_ifa=hello-ads"
       },
       "mockResponse": {
         "status": 200,

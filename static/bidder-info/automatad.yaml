@@ -1,0 +1,10 @@
+endpoint: "https://s2s.atmtd.com"
+maintainer:
+  email: "tech@automatad.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner

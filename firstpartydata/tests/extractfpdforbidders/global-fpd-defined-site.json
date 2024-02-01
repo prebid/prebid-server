@@ -1,0 +1,69 @@
+{
+  "description": "req.site defined; req.ext.prebid.data.bidders contains appnexus and contains site configuration; expect bidder config with site data to be included in the resolved FPD for appnexus and to have been extracted from the original request",
+  "inputRequestData": {
+    "id": "bid_id",
+    "site": {
+      "id": "reqSiteId",
+      "page": "http://www.foobar.com/1234.html",
+      "publisher": {
+        "id": "1"
+      }
+    },
+    "test": 1,
+    "ext": {
+      "prebid": {
+        "data": {
+          "bidders": [
+            "appnexus"
+          ]
+        },
+        "bidderconfig": [
+          {
+            "bidders": [
+              "appnexus"
+            ],
+            "config": {
+              "ortb2": {
+                "site": {
+                  "id": "apnSiteId",
+                  "keywords": "apnKeywords",
+                  "sectioncat": ["books"],
+                  "search": "books",
+                  "pagecat": ["magazines"],
+                  "page": "http://www.foobar.com/testurl.html"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "outputRequestData": {
+    "id": "bid_id",
+    "site": {
+      "id": "reqSiteId",
+      "page": "http://www.foobar.com/1234.html",
+      "publisher": {
+        "id": "1"
+      }
+    },
+    "test": 1
+  },
+  "biddersFPDResolved": {
+    "appnexus": {
+      "site": {
+        "id": "apnSiteId",
+        "keywords": "apnKeywords",
+        "sectioncat": ["books"],
+        "pagecat": ["magazines"],
+        "search": "books",
+        "page": "http://www.foobar.com/testurl.html",
+        "publisher": {
+          "id": "1"
+        }
+      }
+    }
+  },
+  "validationErrors": []
+}

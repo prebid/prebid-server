@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Bidstack Adapter Params",
+  "description": "A schema which validates params accepted by the Bidstack adapter",
+  "type": "object",
+  "properties": {
+    "publisherId": {
+      "type": "string",
+      "format": "uuid",
+      "minLength": 1,
+      "description": "An ID which identifies the publisher in Bidstack system"
+    },
+    "placementId": {
+      "type": "string",
+      "description": "An ID which identifies the placement in Bidstack system"
+    },
+    "consent": {
+      "type": "boolean",
+      "description": "User consent"
+    }
+  },
+  "required" : [ "publisherId" ]
+}

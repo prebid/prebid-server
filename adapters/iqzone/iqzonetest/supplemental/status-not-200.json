@@ -18,7 +18,7 @@
                 },
                 "ext": {
                     "bidder": {
-                        "TagID": "test"
+                        "placementId": "test"
                     }
                 }
             }
@@ -54,7 +54,8 @@
                         },
                         "ext": {
                             "bidder": {
-                                "TagID": "test"
+                                "placementId": "test",
+                                "type": "publisher"
                             }
                         }
                     }

@@ -1,6 +1,6 @@
 package openrtb_ext
 
-// ExtImpMgid defines the contract for bidrequest.imp[i].ext.mgid
+// ExtImpMgid defines the contract for bidrequest.imp[i].ext.prebid.bidder.mgid
 type ExtImpMgid struct {
 	AccountId   string  `json:"accountId"`
 	PlacementId string  `json:"placementId,omitempty"`

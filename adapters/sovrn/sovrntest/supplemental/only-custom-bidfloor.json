@@ -19,7 +19,7 @@
         "ext": {
           "bidder": {
             "tagid": "123456",
-            "bidfloor": 4.20
+            "bidfloor": 4.2
           }
         }
       }
@@ -60,11 +60,11 @@
                 ]
               },
               "tagid": "123456",
-              "bidfloor": 4.20,
+              "bidfloor": 4.2,
               "ext": {
                 "bidder": {
                   "tagid": "123456",
-                  "bidfloor": 4.20
+                  "bidfloor": 4.2
                 }
               }
             }

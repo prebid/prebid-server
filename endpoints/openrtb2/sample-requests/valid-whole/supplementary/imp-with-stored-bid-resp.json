@@ -1,0 +1,34 @@
+{
+  "description": "request with impression with stored bid response",
+  "mockBidRequest": {
+    "id": "request-with-stored-resp",
+    "site": {
+      "page": "test.somepage.com"
+    },
+    "imp": [
+      {
+        "id": "imp-id1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "telaria": {},
+          "prebid": {
+            "storedbidresponse": [
+              {"bidder":"telaria", "id": "bidResponseId1"}
+            ]
+          }
+        }
+      }
+    ],
+    "user": {
+      "yob": 1989
+    }
+  },
+  "expectedReturnCode": 200
+}

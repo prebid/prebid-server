@@ -1,13 +1,16 @@
 package yieldlab
 
 import (
+	"encoding/json"
+	"strconv"
 	"testing"
 
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/prebid/prebid-server/adapters/adapterstest"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/adapters/adapterstest"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 const testURL = "https://ad.yieldlab.net/testing/"
@@ -30,7 +33,7 @@ func newTestYieldlabBidder(endpoint string) *YieldlabAdapter {
 
 func TestNewYieldlabBidder(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderYieldlab, config.Adapter{
-		Endpoint: testURL})
+		Endpoint: testURL}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	assert.NoError(t, buildErr)
 	assert.NotNil(t, bidder)
@@ -128,9 +131,135 @@ func Test_splitSize(t *testing.T) {
 	}
 }
 
+func Test_makeNodeValue(t *testing.T) {
+	int8TestCase := int8(8)
+	tests := []struct {
+		name      string
+		nodeParam interface{}
+		expected  string
+	}{
+		{
+			name:      "string with special characters",
+			nodeParam: "AZ09-._~:/?#[]@!$%&'()*+,;=",
+			expected:  "AZ09-._~%3A%2F%3F%23%5B%5D%40%21%24%25%26%27%28%29%2A%2B%2C%3B%3D",
+		},
+		{
+			name:      "int8 pointer",
+			nodeParam: &int8TestCase,
+			expected:  "8",
+		},
+		{
+			name:      "int",
+			nodeParam: 8,
+			expected:  "8",
+		},
+		{
+			name:      "free form data",
+			nodeParam: json.RawMessage(`{"foo":"bar"}`),
+			expected:  "%7B%22foo%22%3A%22bar%22%7D",
+		},
+		{
+			name:      "unknown type (bool)",
+			nodeParam: true,
+			expected:  "",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			actual := makeNodeValue(test.nodeParam)
+			assert.Equal(t, test.expected, actual)
+		})
+	}
+}
+
+func Test_makeSupplyChain(t *testing.T) {
+	hp := int8(1)
+	tests := []struct {
+		name     string
+		param    openrtb2.SupplyChain
+		expected string
+	}{
+		{
+			name: "No nodes",
+			param: openrtb2.SupplyChain{
+				Ver:      "1.0",
+				Complete: 1,
+			},
+			expected: "",
+		},
+		{
+			name: "Not all fields",
+			param: openrtb2.SupplyChain{
+				Ver:      "1.0",
+				Complete: 1,
+				Nodes: []openrtb2.SupplyChainNode{
+					{
+						ASI: "exchange1.com",
+						SID: "12345",
+						HP:  &hp,
+					},
+				},
+			},
+
+			expected: "1.0,1!exchange1.com,12345,1,,,,",
+		},
+		{
+			name: "All fields handled in correct order",
+			param: openrtb2.SupplyChain{
+				Ver:      "1.0",
+				Complete: 1,
+				Nodes: []openrtb2.SupplyChainNode{
+					{
+						ASI:    "exchange1.com",
+						SID:    "12345",
+						HP:     &hp,
+						RID:    "bid-request-1",
+						Name:   "publisher",
+						Domain: "publisher.com",
+						Ext:    []byte("{\"ext\":\"test\"}"),
+					},
+				},
+			},
+			expected: "1.0,1!exchange1.com,12345,1,bid-request-1,publisher,publisher.com,%7B%22ext%22%3A%22test%22%7D",
+		},
+		{
+			name: "handle simple node.ext type (string)",
+			param: openrtb2.SupplyChain{
+				Ver:      "1.0",
+				Complete: 1,
+				Nodes: []openrtb2.SupplyChainNode{
+					{
+						Ext: []byte("\"ext\""),
+					},
+				},
+			},
+			expected: "1.0,1!,,,,,,%22ext%22",
+		},
+		{
+			name: "handle simple node.ext type (int)",
+			param: openrtb2.SupplyChain{
+				Ver:      "1.0",
+				Complete: 1,
+				Nodes: []openrtb2.SupplyChainNode{
+					{
+						Ext: []byte(strconv.Itoa(1)),
+					},
+				},
+			},
+			expected: "1.0,1!,,,,,,1",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			actual := makeSupplyChain(test.param)
+			assert.Equal(t, test.expected, actual)
+		})
+	}
+}
+
 func TestYieldlabAdapter_makeEndpointURL_invalidEndpoint(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderYieldlab, config.Adapter{
-		Endpoint: "test$:/something§"})
+		Endpoint: "test$:/something§"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)

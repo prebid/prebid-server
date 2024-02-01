@@ -8,16 +8,17 @@ import (
 	"strings"
 
 	"github.com/buger/jsonparser"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/metrics"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/util/timeutil"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/metrics"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v2/util/timeutil"
 )
 
-const clientVersion = "prebid_server_0.4"
+const clientVersion = "prebid_server_0.6"
 
 type adMarkupType string
 
@@ -25,6 +26,7 @@ const (
 	smtAdTypeImg       adMarkupType = "Img"
 	smtAdTypeRichmedia adMarkupType = "Richmedia"
 	smtAdTypeVideo     adMarkupType = "Video"
+	smtAdTypeNative    adMarkupType = "Native"
 )
 
 // adapter describes a Smaato prebid server adapter.
@@ -65,7 +67,7 @@ type videoExt struct {
 }
 
 // Builder builds a new instance of the Smaato adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		clock:    &timeutil.RealTime{},
 		endpoint: config.Endpoint,
@@ -187,20 +189,29 @@ func (adapter *adapter) makeIndividualRequests(request *openrtb2.BidRequest) ([]
 }
 
 func splitImpressionsByMediaType(imp *openrtb2.Imp) ([]openrtb2.Imp, error) {
-	if imp.Banner == nil && imp.Video == nil {
-		return nil, &errortypes.BadInput{Message: "Invalid MediaType. Smaato only supports Banner and Video."}
+	if imp.Banner == nil && imp.Video == nil && imp.Native == nil {
+		return nil, &errortypes.BadInput{Message: "Invalid MediaType. Smaato only supports Banner, Video and Native."}
 	}
 
-	imps := make([]openrtb2.Imp, 0, 2)
+	imps := make([]openrtb2.Imp, 0, 3)
 
 	if imp.Banner != nil {
 		impCopy := *imp
 		impCopy.Video = nil
+		impCopy.Native = nil
 		imps = append(imps, impCopy)
 	}
 
 	if imp.Video != nil {
+		impCopy := *imp
+		impCopy.Banner = nil
+		impCopy.Native = nil
+		imps = append(imps, impCopy)
+	}
+
+	if imp.Native != nil {
 		imp.Banner = nil
+		imp.Video = nil
 		imps = append(imps, *imp)
 	}
 
@@ -258,6 +269,8 @@ func getAdMarkupType(response *adapters.ResponseData, adMarkup string) (adMarkup
 		return smtAdTypeRichmedia, nil
 	} else if strings.HasPrefix(adMarkup, `<?xml`) {
 		return smtAdTypeVideo, nil
+	} else if strings.HasPrefix(adMarkup, `{"native":`) {
+		return smtAdTypeNative, nil
 	} else {
 		return "", &errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Invalid ad markup %s.", adMarkup),
@@ -287,6 +300,8 @@ func renderAdMarkup(adMarkupType adMarkupType, adMarkup string) (string, error) 
 		return extractAdmRichMedia(adMarkup)
 	case smtAdTypeVideo:
 		return adMarkup, nil
+	case smtAdTypeNative:
+		return extractAdmNative(adMarkup)
 	default:
 		return "", &errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Unknown markup type %s.", adMarkupType),
@@ -302,6 +317,8 @@ func convertAdMarkupTypeToMediaType(adMarkupType adMarkupType) (openrtb_ext.BidT
 		return openrtb_ext.BidTypeBanner, nil
 	case smtAdTypeVideo:
 		return openrtb_ext.BidTypeVideo, nil
+	case smtAdTypeNative:
+		return openrtb_ext.BidTypeNative, nil
 	default:
 		return "", &errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Unknown markup type %s.", adMarkupType),
@@ -448,6 +465,11 @@ func setImpForAdspace(imp *openrtb2.Imp) error {
 		return &errortypes.BadInput{Message: "Missing adspaceId parameter."}
 	}
 
+	impExt, err := makeImpExt(&imp.Ext)
+	if err != nil {
+		return err
+	}
+
 	if imp.Banner != nil {
 		bannerCopy, err := setBannerDimension(imp.Banner)
 		if err != nil {
@@ -455,13 +477,13 @@ func setImpForAdspace(imp *openrtb2.Imp) error {
 		}
 		imp.Banner = bannerCopy
 		imp.TagID = adSpaceID
-		imp.Ext = nil
+		imp.Ext = impExt
 		return nil
 	}
 
-	if imp.Video != nil {
+	if imp.Video != nil || imp.Native != nil {
 		imp.TagID = adSpaceID
-		imp.Ext = nil
+		imp.Ext = impExt
 		return nil
 	}
 
@@ -478,6 +500,11 @@ func setImpForAdBreak(imps []openrtb2.Imp) error {
 		return &errortypes.BadInput{Message: "Missing adbreakId parameter."}
 	}
 
+	impExt, err := makeImpExt(&imps[0].Ext)
+	if err != nil {
+		return err
+	}
+
 	for i := range imps {
 		imps[i].TagID = adBreakID
 		imps[i].Ext = nil
@@ -490,7 +517,31 @@ func setImpForAdBreak(imps []openrtb2.Imp) error {
 		imps[i].Video = &videoCopy
 	}
 
+	imps[0].Ext = impExt
+
 	return nil
+}
+
+func makeImpExt(impExtRaw *json.RawMessage) (json.RawMessage, error) {
+	var impExt openrtb_ext.ExtImpExtraDataSmaato
+
+	if err := json.Unmarshal(*impExtRaw, &impExt); err != nil {
+		return nil, &errortypes.BadInput{Message: "Invalid imp.ext."}
+	}
+
+	if impExtSkadnRaw := impExt.Skadn; impExtSkadnRaw != nil {
+		var impExtSkadn map[string]json.RawMessage
+
+		if err := json.Unmarshal(impExtSkadnRaw, &impExtSkadn); err != nil {
+			return nil, &errortypes.BadInput{Message: "Invalid imp.ext.skadn."}
+		}
+	}
+
+	if impExtJson, err := json.Marshal(impExt); string(impExtJson) != "{}" {
+		return impExtJson, err
+	} else {
+		return nil, nil
+	}
 }
 
 func setBannerDimension(banner *openrtb2.Banner) (*openrtb2.Banner, error) {
@@ -501,8 +552,8 @@ func setBannerDimension(banner *openrtb2.Banner) (*openrtb2.Banner, error) {
 		return banner, &errortypes.BadInput{Message: "No sizes provided for Banner."}
 	}
 	bannerCopy := *banner
-	bannerCopy.W = openrtb2.Int64Ptr(banner.Format[0].W)
-	bannerCopy.H = openrtb2.Int64Ptr(banner.Format[0].H)
+	bannerCopy.W = ptrutil.ToPtr(banner.Format[0].W)
+	bannerCopy.H = ptrutil.ToPtr(banner.Format[0].H)
 
 	return &bannerCopy, nil
 }

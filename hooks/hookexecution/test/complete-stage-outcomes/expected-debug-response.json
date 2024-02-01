@@ -1,0 +1,30 @@
+{
+  "prebid": {
+    "foo": "bar",
+    "modules": {
+      "errors": {
+        "foobar": {
+          "foo": [
+            "error 1"
+          ],
+          "bar": [
+            "error 2",
+            "error 4"
+          ]
+        },
+        "foobaz": {
+          "baz": [
+            "error 3"
+          ]
+        }
+      },
+      "warnings": {
+        "foobaz": {
+          "baz": [
+            "warning 1"
+          ]
+        }
+      }
+    }
+  }
+}

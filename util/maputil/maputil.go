@@ -20,11 +20,44 @@ func ReadEmbeddedSlice(m map[string]interface{}, k string) ([]interface{}, bool)
 	return nil, false
 }
 
-// ReadEmbeddedString reads element k from the map m as a string
+// ReadEmbeddedString reads element k from the map m as a string.
 func ReadEmbeddedString(m map[string]interface{}, k string) (string, bool) {
 	if v, ok := m[k]; ok {
 		vCasted, ok := v.(string)
 		return vCasted, ok
 	}
 	return "", false
+}
+
+// HasElement returns true if nested element k exists.
+func HasElement(m map[string]interface{}, k ...string) bool {
+	exists := false
+	kLastIndex := len(k) - 1
+
+	for i, k := range k {
+		isLastKey := i == kLastIndex
+
+		if isLastKey {
+			_, exists = m[k]
+		} else {
+			if m, exists = ReadEmbeddedMap(m, k); !exists {
+				break
+			}
+		}
+	}
+
+	return exists
+}
+
+// Clone creates an indepent copy of a map,
+func Clone[K comparable, V any](m map[K]V) map[K]V {
+	if m == nil {
+		return nil
+	}
+	clone := make(map[K]V, len(m))
+	for key, value := range m {
+		clone[key] = value
+	}
+
+	return clone
 }

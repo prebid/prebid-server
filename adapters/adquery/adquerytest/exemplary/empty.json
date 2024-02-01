@@ -1,0 +1,19 @@
+{
+  "mockBidRequest": {
+    "id": "22e26bd9a702bc",
+    "user": {
+      "id": "xyz"
+    },
+    "site": {
+      "page": "https://www.example.com"
+    },
+    "device": {
+      "ip": "104.28.131.104",
+      "ua": "PostmanRuntime/7.26.8"
+    },
+    "imp": [],
+    "bidder": "adquery"
+  },
+  "httpCalls": [],
+  "expectedBidResponses": []
+}

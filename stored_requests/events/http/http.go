@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	httpCore "net/http"
 	"net/url"
 	"time"
@@ -12,7 +12,8 @@ import (
 	"golang.org/x/net/context/ctxhttp"
 
 	"github.com/buger/jsonparser"
-	"github.com/prebid/prebid-server/stored_requests/events"
+	"github.com/prebid/prebid-server/v2/stored_requests/events"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 
 	"github.com/golang/glog"
 )
@@ -23,36 +24,44 @@ import (
 // It expects the following endpoint to exist remotely:
 //
 // GET {endpoint}
-//   -- Returns all the known Stored Requests and Stored Imps.
+//
+//	-- Returns all the known Stored Requests and Stored Imps.
+//
 // GET {endpoint}?last-modified={timestamp}
-//   -- Returns the Stored Requests and Stored Imps which have been updated since the last timestamp.
-//      This timestamp will be sent in the rfc3339 format, using UTC and no timezone shift.
-//      For more info, see: https://tools.ietf.org/html/rfc3339
+//
+//	-- Returns the Stored Requests and Stored Imps which have been updated since the last timestamp.
+//	   This timestamp will be sent in the rfc3339 format, using UTC and no timezone shift.
+//	   For more info, see: https://tools.ietf.org/html/rfc3339
 //
 // The responses should be JSON like this:
 //
-// {
-//   "requests": {
-//     "request1": { ... stored request data ... },
-//     "request2": { ... stored request data ... },
-//     "request3": { ... stored request data ... },
-//   },
-//   "imps": {
-//     "imp1": { ... stored data for imp1 ... },
-//     "imp2": { ... stored data for imp2 ... },
-//   }
-// }
+//	{
+//	  "requests": {
+//	    "request1": { ... stored request data ... },
+//	    "request2": { ... stored request data ... },
+//	    "request3": { ... stored request data ... },
+//	  },
+//	  "imps": {
+//	    "imp1": { ... stored data for imp1 ... },
+//	    "imp2": { ... stored data for imp2 ... },
+//	  },
+//	  "responses": {
+//	    "resp1": { ... stored data for resp1 ... },
+//	    "resp2": { ... stored data for resp2 ... },
+//	  }
+//	}
+//
 // or
-// {
-//   "accounts": {
-//     "acc1": { ... config data for acc1 ... },
-//     "acc2": { ... config data for acc2 ... },
-//   },
-// }
+//
+//	{
+//	  "accounts": {
+//	    "acc1": { ... config data for acc1 ... },
+//	    "acc2": { ... config data for acc2 ... },
+//	  },
+//	}
 //
 // To signal deletions, the endpoint may return { "deleted": true }
 // in place of the Stored Data if the "last-modified" param existed.
-//
 func NewHTTPEvents(client *httpCore.Client, endpoint string, ctxProducer func() (ctx context.Context, canceller func()), refreshRate time.Duration) *HTTPEvents {
 	// If we're not given a function to produce Contexts, use the Background one.
 	if ctxProducer == nil {
@@ -89,11 +98,12 @@ func (e *HTTPEvents) fetchAll() {
 	defer cancel()
 	resp, err := ctxhttp.Get(ctx, e.client, e.Endpoint)
 	if respObj, ok := e.parse(e.Endpoint, resp, err); ok &&
-		(len(respObj.StoredRequests) > 0 || len(respObj.StoredImps) > 0 || len(respObj.Accounts) > 0) {
+		(len(respObj.StoredRequests) > 0 || len(respObj.StoredImps) > 0 || len(respObj.StoredResponses) > 0 || len(respObj.Accounts) > 0) {
 		e.saves <- events.Save{
-			Requests: respObj.StoredRequests,
-			Imps:     respObj.StoredImps,
-			Accounts: respObj.Accounts,
+			Requests:  respObj.StoredRequests,
+			Imps:      respObj.StoredImps,
+			Responses: respObj.StoredResponses,
+			Accounts:  respObj.Accounts,
 		}
 	}
 }
@@ -131,18 +141,20 @@ func (e *HTTPEvents) refresh(ticker <-chan time.Time) {
 			resp, err := ctxhttp.Get(ctx, e.client, endpoint)
 			if respObj, ok := e.parse(endpoint, resp, err); ok {
 				invalidations := events.Invalidation{
-					Requests: extractInvalidations(respObj.StoredRequests),
-					Imps:     extractInvalidations(respObj.StoredImps),
-					Accounts: extractInvalidations(respObj.Accounts),
+					Requests:  extractInvalidations(respObj.StoredRequests),
+					Imps:      extractInvalidations(respObj.StoredImps),
+					Responses: extractInvalidations(respObj.StoredResponses),
+					Accounts:  extractInvalidations(respObj.Accounts),
 				}
-				if len(respObj.StoredRequests) > 0 || len(respObj.StoredImps) > 0 || len(respObj.Accounts) > 0 {
+				if len(respObj.StoredRequests) > 0 || len(respObj.StoredImps) > 0 || len(respObj.StoredResponses) > 0 || len(respObj.Accounts) > 0 {
 					e.saves <- events.Save{
-						Requests: respObj.StoredRequests,
-						Imps:     respObj.StoredImps,
-						Accounts: respObj.Accounts,
+						Requests:  respObj.StoredRequests,
+						Imps:      respObj.StoredImps,
+						Responses: respObj.StoredResponses,
+						Accounts:  respObj.Accounts,
 					}
 				}
-				if len(invalidations.Requests) > 0 || len(invalidations.Imps) > 0 || len(invalidations.Accounts) > 0 {
+				if len(invalidations.Requests) > 0 || len(invalidations.Imps) > 0 || len(invalidations.Responses) > 0 || len(invalidations.Accounts) > 0 {
 					e.invalidations <- invalidations
 				}
 				e.lastUpdate = thisTimeInUTC
@@ -161,7 +173,7 @@ func (e *HTTPEvents) parse(endpoint string, resp *httpCore.Response, err error) 
 	}
 	defer resp.Body.Close()
 
-	respBytes, err := ioutil.ReadAll(resp.Body)
+	respBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		glog.Errorf("Failed to read body of GET %s for Stored Requests: %v", endpoint, err)
 		return nil, false
@@ -173,7 +185,7 @@ func (e *HTTPEvents) parse(endpoint string, resp *httpCore.Response, err error) 
 	}
 
 	var respObj responseContract
-	if err := json.Unmarshal(respBytes, &respObj); err != nil {
+	if err := jsonutil.UnmarshalValid(respBytes, &respObj); err != nil {
 		glog.Errorf("Failed to unmarshal body of GET %s for Stored Requests: %v", endpoint, err)
 		return nil, false
 	}
@@ -201,7 +213,8 @@ func (e *HTTPEvents) Invalidations() <-chan events.Invalidation {
 }
 
 type responseContract struct {
-	StoredRequests map[string]json.RawMessage `json:"requests"`
-	StoredImps     map[string]json.RawMessage `json:"imps"`
-	Accounts       map[string]json.RawMessage `json:"accounts"`
+	StoredRequests  map[string]json.RawMessage `json:"requests"`
+	StoredImps      map[string]json.RawMessage `json:"imps"`
+	StoredResponses map[string]json.RawMessage `json:"responses"`
+	Accounts        map[string]json.RawMessage `json:"accounts"`
 }

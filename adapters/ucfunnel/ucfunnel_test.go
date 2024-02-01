@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 func TestMakeRequests(t *testing.T) {
@@ -47,7 +47,7 @@ func TestMakeRequests(t *testing.T) {
 	internalRequest03.Imp[4].Ext = []byte(`{"bidder": {"adunitid": "aa","partnerid": ""}}`)
 
 	bidder, buildErr := Builder(openrtb_ext.BidderUcfunnel, config.Adapter{
-		Endpoint: "http://localhost/bid"})
+		Endpoint: "http://localhost/bid"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -119,7 +119,7 @@ func TestMakeBids(t *testing.T) {
 	RequestData02 := adapters.RequestData{Method: "POST", Body: []byte(`{"imp":[{"id":"1234","banne"1235","video":{}},{"id":"1236","audio":{}},{"id":"1237","native":{}}]}`)}
 
 	bidder, buildErr := Builder(openrtb_ext.BidderUcfunnel, config.Adapter{
-		Endpoint: "http://localhost/bid"})
+		Endpoint: "http://localhost/bid"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
