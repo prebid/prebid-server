@@ -4,6 +4,10 @@ maintainer:
 endpointCompression: gzip
 gvlVendorID: 16
 capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - native
   site:
     mediaTypes:
       - banner

@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prebid/openrtb/v19/adcom1"
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/adcom1"
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -61,11 +62,21 @@ func TestConvertDownTo25(t *testing.T) {
 			name: "2.6-202303-dropped", // integration with clear202303Fields
 			givenRequest: openrtb2.BidRequest{
 				ID:  "anyID",
-				Imp: []openrtb2.Imp{{ID: "1", Refresh: &openrtb2.Refresh{Count: 1}}},
+				Imp: []openrtb2.Imp{{ID: "1", Refresh: &openrtb2.Refresh{Count: ptrutil.ToPtr(1)}}},
 			},
 			expectedRequest: openrtb2.BidRequest{
 				ID:  "anyID",
 				Imp: []openrtb2.Imp{{ID: "1"}},
+			},
+		},
+		{
+			name: "2.6-202309-dropped", // integration with clear202309Fields
+			givenRequest: openrtb2.BidRequest{
+				ID:   "anyID",
+				ACat: []string{"anyACat"},
+			},
+			expectedRequest: openrtb2.BidRequest{
+				ID: "anyID",
 			},
 		},
 		{
@@ -683,7 +694,7 @@ func TestClear202303Fields(t *testing.T) {
 			{
 				ID:      "imp1",
 				Video:   &openrtb2.Video{PodID: "1", Plcmt: adcom1.VideoPlcmtInstream},
-				Refresh: &openrtb2.Refresh{Count: 1},
+				Refresh: &openrtb2.Refresh{Count: ptrutil.ToPtr(1)},
 			},
 		},
 	}
@@ -700,5 +711,52 @@ func TestClear202303Fields(t *testing.T) {
 
 	r := &RequestWrapper{BidRequest: &given}
 	clear202303Fields(r)
+	assert.Equal(t, expected, given)
+}
+
+func TestClear202309Fields(t *testing.T) {
+	givenDurFloors := []openrtb2.DurFloors{{MinDur: 15, MaxDur: 30, BidFloor: 100}}
+
+	given := openrtb2.BidRequest{
+		ID:   "anyID",
+		ACat: []string{"acat1", "acat2"},
+		Imp: []openrtb2.Imp{
+			{
+				ID:    "imp1",
+				Audio: &openrtb2.Audio{PodID: "1", DurFloors: givenDurFloors},
+			},
+			{
+				ID:    "imp2",
+				Video: &openrtb2.Video{PodID: "2", DurFloors: givenDurFloors},
+				PMP: &openrtb2.PMP{
+					PrivateAuction: 1,
+					Deals: []openrtb2.Deal{
+						{ID: "deal1", BidFloor: 200, Guar: 1, MinCPMPerSec: 2, DurFloors: givenDurFloors}},
+				},
+			},
+		},
+	}
+
+	expected := openrtb2.BidRequest{
+		ID: "anyID",
+		Imp: []openrtb2.Imp{
+			{
+				ID:    "imp1",
+				Audio: &openrtb2.Audio{PodID: "1"},
+			},
+			{
+				ID:    "imp2",
+				Video: &openrtb2.Video{PodID: "2"},
+				PMP: &openrtb2.PMP{
+					PrivateAuction: 1,
+					Deals: []openrtb2.Deal{
+						{ID: "deal1", BidFloor: 200}},
+				},
+			},
+		},
+	}
+
+	r := &RequestWrapper{BidRequest: &given}
+	clear202309Fields(r)
 	assert.Equal(t, expected, given)
 }
