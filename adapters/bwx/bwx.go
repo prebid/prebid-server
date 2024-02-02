@@ -133,7 +133,7 @@ func prepareBidResponse(seats []openrtb2.SeatBid) (*adapters.BidderResponse, []e
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(seats))
 
 	for _, seatBid := range seats {
-		for bidId, bid := range seatBid.Bid {
+		for idx, bid := range seatBid.Bid {
 			bidType, err := getMediaTypeForBid(bid)
 			if err != nil {
 				errs = append(errs, err)
@@ -141,7 +141,7 @@ func prepareBidResponse(seats []openrtb2.SeatBid) (*adapters.BidderResponse, []e
 			}
 
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     &seatBid.Bid[bidId],
+				Bid:     &seatBid.Bid[idx],
 				BidType: bidType,
 			})
 		}
@@ -159,6 +159,6 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 	case openrtb2.MarkupNative:
 		return openrtb_ext.BidTypeNative, nil
 	default:
-		return "", fmt.Errorf("failed to parse bid mtype for impression id \"%s\"", bid.ImpID)
+		return "", fmt.Errorf("failed to parse bid mtype (%d) for impression id \"%s\"", bid.MType, bid.ImpID)
 	}
 }

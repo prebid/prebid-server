@@ -150,7 +150,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "failed to parse bid mtype for impression id \"2\"",
+      "value": "failed to parse bid mtype (0) for impression id \"2\"",
       "comparison": "literal"
     }
   ],
