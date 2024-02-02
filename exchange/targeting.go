@@ -62,42 +62,42 @@ func (targData *targetData) setTargeting(auc *auction, isApp bool, categoryMappi
 
 				isOverallWinner := overallWinner == topBid
 
+				bidHasDeal := len(topBid.Bid.DealID) > 0
+
 				targets := make(map[string]string, 10)
 				if cpm, ok := auc.roundedPrices[topBid]; ok {
-					targData.addKeys(targets, openrtb_ext.HbpbConstantKey, cpm, targetingBidderCode, isOverallWinner, truncateTargetAttr)
+					targData.addKeys(targets, openrtb_ext.HbpbConstantKey, cpm, targetingBidderCode, isOverallWinner, truncateTargetAttr, bidHasDeal)
 				}
-				targData.addKeys(targets, openrtb_ext.HbBidderConstantKey, string(targetingBidderCode), targetingBidderCode, isOverallWinner, truncateTargetAttr)
+				targData.addKeys(targets, openrtb_ext.HbBidderConstantKey, string(targetingBidderCode), targetingBidderCode, isOverallWinner, truncateTargetAttr, bidHasDeal)
 				if hbSize := makeHbSize(topBid.Bid); hbSize != "" {
-					targData.addKeys(targets, openrtb_ext.HbSizeConstantKey, hbSize, targetingBidderCode, isOverallWinner, truncateTargetAttr)
+					targData.addKeys(targets, openrtb_ext.HbSizeConstantKey, hbSize, targetingBidderCode, isOverallWinner, truncateTargetAttr, bidHasDeal)
 				}
 				if cacheID, ok := auc.cacheIds[topBid.Bid]; ok {
-					targData.addKeys(targets, openrtb_ext.HbCacheKey, cacheID, targetingBidderCode, isOverallWinner, truncateTargetAttr)
+					targData.addKeys(targets, openrtb_ext.HbCacheKey, cacheID, targetingBidderCode, isOverallWinner, truncateTargetAttr, bidHasDeal)
 				}
 				if vastID, ok := auc.vastCacheIds[topBid.Bid]; ok {
-					targData.addKeys(targets, openrtb_ext.HbVastCacheKey, vastID, targetingBidderCode, isOverallWinner, truncateTargetAttr)
+					targData.addKeys(targets, openrtb_ext.HbVastCacheKey, vastID, targetingBidderCode, isOverallWinner, truncateTargetAttr, bidHasDeal)
 				}
 				if targData.includeFormat {
-					targData.addKeys(targets, openrtb_ext.HbFormatKey, string(topBid.BidType), targetingBidderCode, isOverallWinner, truncateTargetAttr)
+					targData.addKeys(targets, openrtb_ext.HbFormatKey, string(topBid.BidType), targetingBidderCode, isOverallWinner, truncateTargetAttr, bidHasDeal)
 				}
 
 				if targData.cacheHost != "" {
-					targData.addKeys(targets, openrtb_ext.HbConstantCacheHostKey, targData.cacheHost, targetingBidderCode, isOverallWinner, truncateTargetAttr)
+					targData.addKeys(targets, openrtb_ext.HbConstantCacheHostKey, targData.cacheHost, targetingBidderCode, isOverallWinner, truncateTargetAttr, bidHasDeal)
 				}
 				if targData.cachePath != "" {
-					targData.addKeys(targets, openrtb_ext.HbConstantCachePathKey, targData.cachePath, targetingBidderCode, isOverallWinner, truncateTargetAttr)
+					targData.addKeys(targets, openrtb_ext.HbConstantCachePathKey, targData.cachePath, targetingBidderCode, isOverallWinner, truncateTargetAttr, bidHasDeal)
 				}
 
-				// TODO: Remove Comments
-				// If alwaysincludedeals is true, PBS should generate KVPs for all bids with dealID
-				if deal := topBid.Bid.DealID; len(deal) > 0 && targData.alwaysIncludeDeals {
-					targData.addKeys(targets, openrtb_ext.HbDealIDConstantKey, deal, targetingBidderCode, isOverallWinner, truncateTargetAttr)
+				if bidHasDeal {
+					targData.addKeys(targets, openrtb_ext.HbDealIDConstantKey, topBid.Bid.DealID, targetingBidderCode, isOverallWinner, truncateTargetAttr, bidHasDeal)
 				}
 
 				if isApp {
-					targData.addKeys(targets, openrtb_ext.HbEnvKey, openrtb_ext.HbEnvKeyApp, targetingBidderCode, isOverallWinner, truncateTargetAttr)
+					targData.addKeys(targets, openrtb_ext.HbEnvKey, openrtb_ext.HbEnvKeyApp, targetingBidderCode, isOverallWinner, truncateTargetAttr, bidHasDeal)
 				}
 				if len(categoryMapping) > 0 {
-					targData.addKeys(targets, openrtb_ext.HbCategoryDurationKey, categoryMapping[topBid.Bid.ID], targetingBidderCode, isOverallWinner, truncateTargetAttr)
+					targData.addKeys(targets, openrtb_ext.HbCategoryDurationKey, categoryMapping[topBid.Bid.ID], targetingBidderCode, isOverallWinner, truncateTargetAttr, bidHasDeal)
 				}
 				topBid.BidTargets = targets
 			}
@@ -105,7 +105,7 @@ func (targData *targetData) setTargeting(auc *auction, isApp bool, categoryMappi
 	}
 }
 
-func (targData *targetData) addKeys(keys map[string]string, key openrtb_ext.TargetingKey, value string, bidderName openrtb_ext.BidderName, overallWinner bool, truncateTargetAttr *int) {
+func (targData *targetData) addKeys(keys map[string]string, key openrtb_ext.TargetingKey, value string, bidderName openrtb_ext.BidderName, overallWinner bool, truncateTargetAttr *int, bidHasDeal bool) {
 	var maxLength int
 	if truncateTargetAttr != nil {
 		maxLength = *truncateTargetAttr
@@ -115,7 +115,7 @@ func (targData *targetData) addKeys(keys map[string]string, key openrtb_ext.Targ
 	} else {
 		maxLength = MaxKeyLength
 	}
-	if targData.includeBidderKeys {
+	if targData.includeBidderKeys || (targData.alwaysIncludeDeals && bidHasDeal) {
 		keys[key.BidderKey(bidderName, maxLength)] = value
 	}
 	if targData.includeWinners && overallWinner {

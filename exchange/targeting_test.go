@@ -319,6 +319,11 @@ var bid2p166 *openrtb2.Bid = &openrtb2.Bid{
 	Price: 1.66,
 }
 
+var bid175 *openrtb2.Bid = &openrtb2.Bid{
+	Price:  1.75,
+	DealID: "mydeal2",
+}
+
 var (
 	truncateTargetAttrValue10       int = 10
 	truncateTargetAttrValue5        int = 5
@@ -402,6 +407,54 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 						BidTargets: map[string]string{
 							"hb_bidder_rubicon": "rubicon",
 							"hb_pb_rubicon":     "0.80",
+						},
+					},
+				},
+			},
+		},
+		TruncateTargetAttr: nil,
+	},
+	{
+		Description: "Targeting with alwaysIncludeDeals",
+		TargetData: targetData{
+			priceGranularity:   lookupPriceGranularity("med"),
+			alwaysIncludeDeals: true,
+		},
+		Auction: auction{
+			winningBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
+				"ImpId-1": {
+					openrtb_ext.BidderAppnexus: {{
+						Bid:     bid111,
+						BidType: openrtb_ext.BidTypeBanner,
+					}},
+					openrtb_ext.BidderRubicon: {{
+						Bid:     bid175,
+						BidType: openrtb_ext.BidTypeBanner,
+					}},
+					openrtb_ext.BidderPubmatic: {{
+						Bid:     bid123,
+						BidType: openrtb_ext.BidTypeBanner,
+					}},
+				},
+			},
+		},
+		ExpectedPbsBids: map[string]map[openrtb_ext.BidderName][]ExpectedPbsBid{
+			"ImpId-1": {
+				openrtb_ext.BidderAppnexus: []ExpectedPbsBid{
+					{
+						BidTargets: map[string]string{
+							"hb_bidder_appnexus": "appnexus",
+							"hb_pb_appnexus":     "1.10",
+							"hb_deal_appnexus":   "mydeal",
+						},
+					},
+				},
+				openrtb_ext.BidderRubicon: []ExpectedPbsBid{
+					{
+						BidTargets: map[string]string{
+							"hb_bidder_rubicon": "rubicon",
+							"hb_pb_rubicon":     "1.70",
+							"hb_deal_rubicon":   "mydeal2",
 						},
 					},
 				},
