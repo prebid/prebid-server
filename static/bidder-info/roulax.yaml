@@ -1,0 +1,14 @@
+endpoint: "http://dsp.rcoreads.com/api/{PUBLISHER_PATH}?pid={PID}"
+maintainer:
+  email: "tech@aceex.io"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native

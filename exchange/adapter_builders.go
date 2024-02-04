@@ -1,6 +1,7 @@
 package exchange
 
 import (
+	"github.com/prebid/prebid-server/v2/adapters/roulax"
 	"github.com/prebid/prebid-server/v2/adapters"
 	ttx "github.com/prebid/prebid-server/v2/adapters/33across"
 	"github.com/prebid/prebid-server/v2/adapters/aax"
@@ -349,6 +350,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderRevcontent:        revcontent.Builder,
 		openrtb_ext.BidderRichaudience:      richaudience.Builder,
 		openrtb_ext.BidderRise:              rise.Builder,
+		openrtb_ext.BidderRoulax:            roulax.Builder,
 		openrtb_ext.BidderRTBHouse:          rtbhouse.Builder,
 		openrtb_ext.BidderRubicon:           rubicon.Builder,
 		openrtb_ext.BidderSeedingAlliance:   seedingAlliance.Builder,

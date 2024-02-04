@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Foo Adapter Params",
+  "description": "A schema which validates params accepted by the Foo adapter",
+  "type": "object",
+
+  "properties": {
+    "placementId": {
+      "type": "string",
+      "description": "Placement ID"
+    }
+  },
+
+  "properties": {
+    "PId": {
+      "type": "string",
+      "description": "PID"
+    }
+  },
+
+  "properties": {
+    "PublisherPath": {
+      "type": "string",
+      "description": "PublisherPath"
+    }
+  },
+
+
+
+
+  "required": ["Pid","PublisherPath"]
+}
