@@ -67,7 +67,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	a.endpoint = strings.Replace(a.endpoint, "{PUBLISHER_PATH}", roulaxExt.PublisherPath, -1)
 	a.endpoint = strings.Replace(a.endpoint, "{PID}", roulaxExt.Pid, -1)
 
-	fmt.Println("------------------roulax111-------------",string(reqJson), a.endpoint)
+	//fmt.Println("------------------roulax111-------------",string(reqJson), a.endpoint)
 
 	return []*adapters.RequestData{{
 		Method:  "POST",

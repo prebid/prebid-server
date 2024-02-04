@@ -9,13 +9,13 @@ import (
 )
 
 const testsDir = "roulaxtest"
-const testsBidderEndpoint = "http://localhost/prebid_server"
+const testsBidderEndpoint = "http://dsp.rcoreads.com/api/vidmate?pid=vidmate_android_banner"
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(
-		openrtb_ext.BidderRise,
+		openrtb_ext.BidderRoulax,
 		config.Adapter{Endpoint: testsBidderEndpoint},
-		config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+		config.Server{ExternalUrl: "http://dsp.rcoreads.com/api/vidmate?pid=vidmate_android_banner", GvlID: 1, DataCenter: "2"})
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
