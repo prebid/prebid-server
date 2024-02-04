@@ -29,7 +29,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://localhost/prebid_server?publisher_id=72721",
+        "uri": "http://dsp.rcoreads.com/api/vidmate?pid=vidmate_android_banner",
         "body": {
           "id": "test-request-id",
           "imp": [
