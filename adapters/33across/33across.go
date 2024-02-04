@@ -1,6 +1,5 @@
 package ttx
 
-
 import (
 	"encoding/json"
 	"fmt"
