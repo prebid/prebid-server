@@ -104,12 +104,6 @@ func (a *adapter) MakeBids(openRTBRequest *openrtb2.BidRequest, requestToBidder 
 		return nil, nil
 	}
 
-	if bidderRawResponse.StatusCode == http.StatusServiceUnavailable {
-		return nil, []error{&errortypes.BadInput{
-			Message: "Bidder BoldwinX is unavailable. Please contact the bidder support.",
-		}}
-	}
-
 	if err := adapters.CheckResponseStatusCodeForErrors(bidderRawResponse); err != nil {
 		return nil, []error{err}
 	}

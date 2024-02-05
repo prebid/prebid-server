@@ -97,7 +97,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "Bidder BoldwinX is unavailable. Please contact the bidder support.",
+      "value": "Unexpected status code: 503. Run with request.debug = 1 for more info",
       "comparison": "literal"
     }
   ],
