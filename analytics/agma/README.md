@@ -19,7 +19,7 @@ analytics:
             url: "https://go.pbs.agma-analytics.de/v1/prebid-server" # Check with agma if your site needs an extra url
             timeout: "2s"
             gzip: true
-        buffer: # Flush events when (first condition reached)
+        buffers: # Flush events when (first condition reached)
             # Size of the buffer in bytes
             size: "2MB" # greater than 2MB (size using SI standard eg. "44kB", "17MB")
             count : 100 # greater than 100 events
