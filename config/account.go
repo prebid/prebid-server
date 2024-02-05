@@ -340,6 +340,15 @@ type AccountPrivacy struct {
 	PrivacySandbox  PrivacySandbox   `mapstructure:"privacysandbox" json:"privacysandbox"`
 }
 
+type PrivacySandbox struct {
+	CookieDeprecation CookieDeprecation `mapstructure:"cookiedeprecation"`
+}
+
+type CookieDeprecation struct {
+	Enabled bool `mapstructure:"enabled"`
+	TTLSec  int  `mapstructure:"ttl_sec"`
+}
+
 type IPv6 struct {
 	AnonKeepBits int `mapstructure:"anon_keep_bits" json:"anon_keep_bits"`
 }

@@ -912,9 +912,9 @@ func (de *DeviceExt) unmarshal(extJson json.RawMessage) error {
 		}
 	}
 
-	cdep, hasCDep := de.ext[cdepKey]
-	if hasCDep && cdep != nil {
-		if err := jsonutil.Unmarshal(cdep, &de.cdep); err != nil {
+	cdepJson, hasCDep := de.ext[cdepKey]
+	if hasCDep && cdepJson != nil {
+		if err := jsonutil.Unmarshal(cdepJson, &de.cdep); err != nil {
 			return err
 		}
 	}

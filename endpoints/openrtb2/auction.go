@@ -61,8 +61,6 @@ const storedRequestTimeoutMillis = 50
 const ampChannel = "amp"
 const appChannel = "app"
 const secCookieDeprecation = "Sec-Cookie-Deprecation"
-const cdep = "cdep"
-const cdepLen = 100
 
 var (
 	dntKey      string = http.CanonicalHeaderKey("DNT")
@@ -1925,7 +1923,7 @@ func validateDevice(req *openrtb_ext.RequestWrapper) error {
 
 func validateDeviceExt(req *openrtb_ext.RequestWrapper) error {
 	if deviceExt, err := req.GetDeviceExt(); err == nil {
-		if cdep := deviceExt.GetCDep(); len(cdep) > cdepLen {
+		if cdep := deviceExt.GetCDep(); len(cdep) > 100 {
 			return &errortypes.Warning{
 				Message:     "request.device.ext.cdep must be less than 100 characters",
 				WarningCode: errortypes.SecCookieDeprecationLenWarningCode,
@@ -2374,9 +2372,6 @@ func setCookieDeprecation(httpReq *http.Request, r *openrtb_ext.RequestWrapper, 
 	secCookieDeprecation := httpReq.Header.Get(secCookieDeprecation)
 	if secCookieDeprecation == "" {
 		return
-	}
-	if r.Device == nil {
-		r.Device = &openrtb2.Device{}
 	}
 	if deviceExt, err := r.GetDeviceExt(); err == nil {
 		if cdep := deviceExt.GetCDep(); cdep == "" {
