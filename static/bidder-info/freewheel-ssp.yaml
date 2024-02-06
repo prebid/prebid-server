@@ -1,5 +1,1 @@
 aliasOf: freewheelssp
-userSync:
-  iframe:
-    url: "https://ads.stickyadstv.com/pbs-user-sync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&r={{.RedirectURL}}"
-    userMacro: "{viewerid}"
