@@ -105,7 +105,8 @@
                   "price": 0.61,
                   "w": 300,
                   "h": 500,
-                  "crid": "creative-3"
+                  "crid": "creative-3",
+                  "dealid": "deal-3"
                 },
                 "bidType": "video"
               }
@@ -129,6 +130,17 @@
                   "h": 250,
                   "crid": "creative-4",
                   "dealid": "deal-4"
+                },
+                "bidType": "video"
+              },
+              {
+                "ortbBid": {
+                  "id": "losing-bid-aN",
+                  "impid": "imp-id-2",
+                  "price": 0.40,
+                  "w": 200,
+                  "h": 250,
+                  "crid": "creative-5"
                 },
                 "bidType": "video"
               }
@@ -169,6 +181,23 @@
                     "hb_pb_audienceNetwor": "0.50",
                     "hb_size_audienceNetw": "200x250"
                   }
+                }
+              }
+            },
+            {
+              "id": "losing-bid-aN",
+              "impid": "imp-id-2",
+              "price": 0.40,
+              "w": 200,
+              "h": 250,
+              "crid": "creative-5",
+              "ext": {
+                "origbidcpm": 0.40,
+                "prebid": {
+                  "meta": {
+                    "adaptercode": "audienceNetwork"
+                  },
+                  "type": "video"
                 }
               }
             }
