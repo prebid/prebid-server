@@ -276,7 +276,7 @@ func (a *ImprovedigitalAdapter) getAdditionalConsentProvidersUserExt(request ope
 	}
 
 	// Check key exist user.ext.ConsentedProvidersSettings.consented_providers
-	var cpMap = make(map[string]json.RawMessage)
+	var cpMap = make(map[string]interface{})
 	if err := json.Unmarshal(cpsMapValue, &cpMap); err != nil {
 		return nil, err
 	}
@@ -288,12 +288,16 @@ func (a *ImprovedigitalAdapter) getAdditionalConsentProvidersUserExt(request ope
 	// End validating additional consent
 
 	// Check if string contain ~, then substring after ~ to end of string
-	consentStr := string(cpMapValue)
-	var tildaPosition int
-	if tildaPosition = strings.Index(consentStr, "~"); tildaPosition == -1 {
+	consentStr := cpMapValue.(string)
+	var consentStrParts = strings.Split(consentStr, "~")
+	if len(consentStrParts) < 2 {
 		return nil, nil
 	}
-	cpStr = consentStr[tildaPosition+1 : len(consentStr)-1]
+	cpStr = strings.TrimSpace(consentStrParts[1])
+	if len(cpStr) == 0 {
+		return nil, nil
+	}
+	//cpStr = consentStr[:len(consentStr)-1]
 
 	// Prepare consent providers string
 	cpStr = fmt.Sprintf("[%s]", strings.Replace(cpStr, ".", ",", -1))
