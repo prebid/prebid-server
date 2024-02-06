@@ -50,7 +50,8 @@ func main() {
 	garbageCollectionThreshold := make([]byte, cfg.GarbageCollectorThreshold)
 	defer runtime.KeepAlive(garbageCollectionThreshold)
 
-	jsoniter.RegisterExtension(&jsonutil.SampleExtension{})
+	//jsoniter.RegisterExtension(&jsonutil.SampleExtension{})
+	jsoniter.RegisterTypeEncoder("json.RawMessage", &jsonutil.JsonCompactEncoder{})
 	err = serve(cfg)
 	if err != nil {
 		glog.Exitf("prebid-server failed: %v", err)

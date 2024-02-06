@@ -8,7 +8,6 @@ import (
 	"unsafe"
 
 	jsoniter "github.com/json-iterator/go"
-	"github.com/modern-go/reflect2"
 	"github.com/prebid/prebid-server/v2/errortypes"
 )
 
@@ -214,88 +213,17 @@ func isLikelyDetailedErrorMessage(msg string) bool {
 	return !strings.HasPrefix(msg, "request.")
 }
 
-type wrapCodec struct {
-	encodeFunc  func(ptr unsafe.Pointer, stream *jsoniter.Stream)
-	isEmptyFunc func(ptr unsafe.Pointer) bool
-	decodeFunc  func(ptr unsafe.Pointer, iter *jsoniter.Iterator)
+type JsonCompactEncoder struct{}
+
+func (encoder *JsonCompactEncoder) Encode(ptr unsafe.Pointer, stream *jsoniter.Stream) {
+	jsonRawMsg := *(*[]byte)(ptr)
+
+	dst := &bytes.Buffer{}
+	json.Compact(dst, jsonRawMsg)
+	stream.WriteStringWithHTMLEscaped(dst.String())
 }
 
-func (codec *wrapCodec) Encode(ptr unsafe.Pointer, stream *jsoniter.Stream) {
-	codec.encodeFunc(ptr, stream)
-}
-
-func (codec *wrapCodec) IsEmpty(ptr unsafe.Pointer) bool {
-	if codec.isEmptyFunc == nil {
-		return false
-	}
-
-	return codec.isEmptyFunc(ptr)
-}
-
-func (codec *wrapCodec) Decode(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
-	codec.decodeFunc(ptr, iter)
-}
-
-type SampleExtension struct {
-	jsoniter.DummyExtension
-}
-
-func (e *SampleExtension) CreateDecoder(typ reflect2.Type) jsoniter.ValDecoder {
-	if t, ok := typ.(*reflect2.UnsafePtrType); ok {
-		decoder := jsonConfigValidationOn.DecoderOf(t)
-		return &wrapCodec{
-			decodeFunc: decoder.Decode,
-		}
-	}
-	//if typ.Kind() == reflect.Ptr {
-	//	decoder := jsonConfigValidationOn.DecoderOf(typ)
-
-	//	return &wrapCodec{
-	//		decodeFunc: decoder.Decode,
-	//	}
-	//}
-
-	//if unsafeStruct, ok := typ.(*reflect2.UnsafeStructType); ok {
-	//	return &wrapCodec{
-	//		decodeFunc: func(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
-	//			//var unsafePtr *reflect2.UnsafePtrType = *reflect2.UnsafePtrType(unsafeStruct)
-	//			var unsafePtr *reflect2.UnsafePtrType
-
-	//			unsafePtr = unsafeStruct.Indirect(unsafePtr)
-
-	//			decoder := jsonConfigValidationOn.DecoderOf(unsafePtr)
-
-	//			return &wrapCodec{
-	//				decodeFunc: decoder.Decode,
-	//			}
-
-	//			//str := *((*string)(ptr))
-	//			//r := strings.NewReader(str)
-	//			//decoder := jsonConfigValidationOn.NewDecoder(r)
-	//			//decoder.Decode(ptr)
-	//		},
-	//	}
-	//}
-	return nil
-	//return jsonConfigValidationOn.DecoderOf(typ)
-}
-
-func (e *SampleExtension) CreateEncoder(typ reflect2.Type) jsoniter.ValEncoder {
-	if typ.String() == "json.RawMessage" {
-		return &wrapCodec{
-			encodeFunc: func(ptr unsafe.Pointer, stream *jsoniter.Stream) {
-				if ptr != nil {
-					jsonRawMsg := *(*[]byte)(ptr)
-
-					dst := &bytes.Buffer{}
-					json.Compact(dst, jsonRawMsg)
-					stream.WriteStringWithHTMLEscaped(dst.String())
-				}
-			},
-			isEmptyFunc: func(ptr unsafe.Pointer) bool {
-				return *((*string)(ptr)) == ""
-			},
-		}
-	}
-	return nil
+func (encoder *JsonCompactEncoder) IsEmpty(ptr unsafe.Pointer) bool {
+	jsonRawMsg := *(*[]byte)(ptr)
+	return len(jsonRawMsg) == 0
 }
