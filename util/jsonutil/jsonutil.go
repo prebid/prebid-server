@@ -247,21 +247,37 @@ func (e *SampleExtension) CreateDecoder(typ reflect2.Type) jsoniter.ValDecoder {
 			decodeFunc: decoder.Decode,
 		}
 	}
-	if _, ok := typ.(*reflect2.UnsafeStructType); ok {
-		return &wrapCodec{
-			decodeFunc: func(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
-				pObj := (*interface{})(ptr)
-				obj := *pObj
-				iter.ReadVal(&obj)
+	//if typ.Kind() == reflect.Ptr {
+	//	decoder := jsonConfigValidationOn.DecoderOf(typ)
 
-				//str := *((*string)(ptr))
-				//r := strings.NewReader(str)
-				//decoder := jsonConfigValidationOn.NewDecoder(r)
-				//decoder.Decode(ptr)
-			},
-		}
-	}
+	//	return &wrapCodec{
+	//		decodeFunc: decoder.Decode,
+	//	}
+	//}
+
+	//if unsafeStruct, ok := typ.(*reflect2.UnsafeStructType); ok {
+	//	return &wrapCodec{
+	//		decodeFunc: func(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
+	//			//var unsafePtr *reflect2.UnsafePtrType = *reflect2.UnsafePtrType(unsafeStruct)
+	//			var unsafePtr *reflect2.UnsafePtrType
+
+	//			unsafePtr = unsafeStruct.Indirect(unsafePtr)
+
+	//			decoder := jsonConfigValidationOn.DecoderOf(unsafePtr)
+
+	//			return &wrapCodec{
+	//				decodeFunc: decoder.Decode,
+	//			}
+
+	//			//str := *((*string)(ptr))
+	//			//r := strings.NewReader(str)
+	//			//decoder := jsonConfigValidationOn.NewDecoder(r)
+	//			//decoder.Decode(ptr)
+	//		},
+	//	}
+	//}
 	return nil
+	//return jsonConfigValidationOn.DecoderOf(typ)
 }
 
 func (e *SampleExtension) CreateEncoder(typ reflect2.Type) jsoniter.ValEncoder {
