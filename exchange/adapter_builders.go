@@ -6,6 +6,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/aax"
 	"github.com/prebid/prebid-server/v2/adapters/aceex"
 	"github.com/prebid/prebid-server/v2/adapters/acuityads"
+	"github.com/prebid/prebid-server/v2/adapters/adelement"
 	"github.com/prebid/prebid-server/v2/adapters/adf"
 	"github.com/prebid/prebid-server/v2/adapters/adgeneration"
 	"github.com/prebid/prebid-server/v2/adapters/adhese"
@@ -115,12 +116,13 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/logan"
 	"github.com/prebid/prebid-server/v2/adapters/logicad"
 	"github.com/prebid/prebid-server/v2/adapters/lunamedia"
-	mabidder "github.com/prebid/prebid-server/v2/adapters/mabidder"
+	"github.com/prebid/prebid-server/v2/adapters/mabidder"
 	"github.com/prebid/prebid-server/v2/adapters/madvertise"
 	"github.com/prebid/prebid-server/v2/adapters/marsmedia"
 	"github.com/prebid/prebid-server/v2/adapters/medianet"
 	"github.com/prebid/prebid-server/v2/adapters/mgid"
 	"github.com/prebid/prebid-server/v2/adapters/mgidX"
+	"github.com/prebid/prebid-server/v2/adapters/minutemedia"
 	"github.com/prebid/prebid-server/v2/adapters/mobfoxpb"
 	"github.com/prebid/prebid-server/v2/adapters/mobilefuse"
 	"github.com/prebid/prebid-server/v2/adapters/motorik"
@@ -185,12 +187,14 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/vrtcal"
 	"github.com/prebid/prebid-server/v2/adapters/xeworks"
 	"github.com/prebid/prebid-server/v2/adapters/yahooAds"
+	"github.com/prebid/prebid-server/v2/adapters/yandex"
 	"github.com/prebid/prebid-server/v2/adapters/yeahmobi"
 	"github.com/prebid/prebid-server/v2/adapters/yieldlab"
 	"github.com/prebid/prebid-server/v2/adapters/yieldmo"
 	"github.com/prebid/prebid-server/v2/adapters/yieldone"
 	"github.com/prebid/prebid-server/v2/adapters/zeroclickfraud"
 	"github.com/prebid/prebid-server/v2/adapters/zeta_global_ssp"
+	"github.com/prebid/prebid-server/v2/adapters/zmaticoo"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
@@ -203,6 +207,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderAax:               aax.Builder,
 		openrtb_ext.BidderAceex:             aceex.Builder,
 		openrtb_ext.BidderAcuityAds:         acuityads.Builder,
+		openrtb_ext.BidderAdelement:         adelement.Builder,
 		openrtb_ext.BidderAdf:               adf.Builder,
 		openrtb_ext.BidderAdgeneration:      adgeneration.Builder,
 		openrtb_ext.BidderAdhese:            adhese.Builder,
@@ -320,6 +325,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderMedianet:          medianet.Builder,
 		openrtb_ext.BidderMgid:              mgid.Builder,
 		openrtb_ext.BidderMgidX:             mgidX.Builder,
+		openrtb_ext.BidderMinuteMedia:       minutemedia.Builder,
 		openrtb_ext.BidderMobfoxpb:          mobfoxpb.Builder,
 		openrtb_ext.BidderMobileFuse:        mobilefuse.Builder,
 		openrtb_ext.BidderMotorik:           motorik.Builder,
@@ -384,11 +390,13 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderVrtcal:            vrtcal.Builder,
 		openrtb_ext.BidderXeworks:           xeworks.Builder,
 		openrtb_ext.BidderYahooAds:          yahooAds.Builder,
+		openrtb_ext.BidderYandex:            yandex.Builder,
 		openrtb_ext.BidderYeahmobi:          yeahmobi.Builder,
 		openrtb_ext.BidderYieldlab:          yieldlab.Builder,
 		openrtb_ext.BidderYieldmo:           yieldmo.Builder,
 		openrtb_ext.BidderYieldone:          yieldone.Builder,
 		openrtb_ext.BidderZeroClickFraud:    zeroclickfraud.Builder,
 		openrtb_ext.BidderZetaGlobalSsp:     zeta_global_ssp.Builder,
+		openrtb_ext.BidderZmaticoo:          zmaticoo.Builder,
 	}
 }

@@ -1,0 +1,35 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "minduration": 1,
+          "maxduration": 2,
+          "protocols": [
+            1,
+            2
+          ],
+          "startdelay": 1,
+          "placement": 1,
+          "linearity": 1
+        },
+        "ext": {
+          "bidder": {
+            "zone": "ggumtest"
+          }
+        }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Invalid or missing video field(s)",
+      "comparison": "literal"
+    }
+  ]
+}
