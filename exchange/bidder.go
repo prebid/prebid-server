@@ -332,6 +332,10 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 				if err == nil {
 					// Conversion rate found, using it for conversion
 					for i := 0; i < len(bidResponse.Bids); i++ {
+						if bidResponse.Bids[i].BidMeta == nil {
+							bidResponse.Bids[i].BidMeta = &openrtb_ext.ExtBidPrebidMeta{}
+						}
+						bidResponse.Bids[i].BidMeta.AdapterCode = bidderRequest.BidderName.String()
 
 						bidderName := bidderRequest.BidderName
 						if bidResponse.Bids[i].Seat != "" {
