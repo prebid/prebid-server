@@ -1,8 +1,1 @@
 aliasOf: "apacdex"
-userSync:
-  iframe:
-    url: https://sync.quantumdex.io/usersync/pbs?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&r={{.RedirectURL}}
-    userMacro: "[UID]"
-  redirect:
-    url: "https://sync.quantumdex.io/getuid?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&r={{.RedirectURL}}"
-    userMacro: "[UID]"
