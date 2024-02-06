@@ -79,9 +79,6 @@
               "ext": {
                 "origbidcpm": 0.71,
                 "prebid": {
-                  "meta": {
-                    "adaptercode": "appnexus"
-                  },
                   "type": "banner"
                 }
               }
@@ -96,9 +93,6 @@
               "ext": {
                 "origbidcpm": 0.21,
                 "prebid": {
-                  "meta": {
-                    "adaptercode": "appnexus"
-                  },
                   "type": "banner"
                 }
               }

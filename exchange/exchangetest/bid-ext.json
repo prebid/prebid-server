@@ -96,9 +96,6 @@
                                 "origbidcpm": 0.3,
                                 "someField": "someValue",
                                 "prebid": {
-                                    "meta": {
-                                        "adaptercode":"appnexus"
-                                    },
                                     "type": "video"
                                 }
                             }

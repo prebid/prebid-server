@@ -109,9 +109,6 @@
                             "ext": {
                                 "origbidcpm": 0.3,
                                 "prebid": {
-                                    "meta": {
-                                        "adaptercode":"appnexus"
-                                    },
                                     "bidid": "mock_uuid",
                                     "type": "video",
                                     "targeting": {

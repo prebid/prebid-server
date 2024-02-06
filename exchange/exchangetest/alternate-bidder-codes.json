@@ -206,7 +206,7 @@
                 "origbidcpm": 0.51,
                 "prebid": {
                   "meta": {
-                    "adaptercode": "groupm"
+                    "adaptercode": "pubmatic"
                   },
                   "type": "video"
                 }
@@ -220,7 +220,7 @@
                 "origbidcpm": 0.3,
                 "prebid": {
                   "meta": {
-                    "adaptercode": "groupm"
+                    "adaptercode": "appnexus"
                   },
                   "type": "banner"
                 }

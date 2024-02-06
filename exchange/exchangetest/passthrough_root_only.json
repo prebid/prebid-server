@@ -101,9 +101,6 @@
                             "crid": "creative-1",
                             "ext": {
                                 "prebid": {
-                                    "meta": {
-                                        "adaptercode": "appnexus"
-                                    },
                                     "type": "video"
                                 },
                                 "someField": "someValue",
