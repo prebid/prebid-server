@@ -728,7 +728,7 @@ func TestSetRegsImplicitly(t *testing.T) {
 			gpcHeader:     "1",
 			regs:          &openrtb2.Regs{Ext: json.RawMessage(`malformed`)},
 			expectedRegs:  &openrtb2.Regs{Ext: json.RawMessage(`malformed`)},
-			expectedError: "request.regs.ext is invalid: invalid character 'm' looking for beginning of value",
+			expectedError: "request.regs.ext is invalid: expect { or n, but found m",
 		},
 	}
 
