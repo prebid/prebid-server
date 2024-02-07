@@ -27,6 +27,7 @@ import (
 	gppPrivacy "github.com/prebid/prebid-server/v2/privacy/gpp"
 	"github.com/prebid/prebid-server/v2/stored_requests"
 	"github.com/prebid/prebid-server/v2/usersync"
+	"github.com/prebid/prebid-server/v2/util/httputil"
 	"github.com/prebid/prebid-server/v2/util/jsonutil"
 	stringutil "github.com/prebid/prebid-server/v2/util/stringutil"
 )
@@ -240,7 +241,7 @@ func extractPrivacyPolicies(request cookieSyncRequest, header http.Header, users
 
 	privacyPolicies := privacy.Policies{
 		GPPSID: gppSID,
-		GPC:    header.Get("Sec-GPC"),
+		GPC:    header.Get(httputil.HeaderGPC),
 	}
 
 	return privacyMacros, gdprSignal, privacyPolicies, nil

@@ -34,6 +34,7 @@ import (
 	"github.com/prebid/prebid-server/v2/stored_requests"
 	"github.com/prebid/prebid-server/v2/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/v2/usersync"
+	"github.com/prebid/prebid-server/v2/util/httputil"
 	"github.com/prebid/prebid-server/v2/util/iputil"
 	"github.com/prebid/prebid-server/v2/util/jsonutil"
 	"github.com/prebid/prebid-server/v2/util/ptrutil"
@@ -312,16 +313,17 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	activityControl = privacy.NewActivityControl(&account.Privacy)
 
 	auctionRequest := &exchange.AuctionRequest{
-		BidRequestWrapper: bidReqWrapper,
-		Account:           *account,
-		UserSyncs:         usersyncs,
-		RequestType:       labels.RType,
-		StartTime:         start,
-		LegacyLabels:      labels,
-		PubID:             labels.PubID,
-		HookExecutor:      hookexecution.EmptyHookExecutor{},
-		TmaxAdjustments:   deps.tmaxAdjustments,
-		Activities:        activityControl,
+		BidRequestWrapper:          bidReqWrapper,
+		Account:                    *account,
+		UserSyncs:                  usersyncs,
+		RequestType:                labels.RType,
+		StartTime:                  start,
+		LegacyLabels:               labels,
+		GlobalPrivacyControlHeader: r.Header.Get(httputil.HeaderGPC),
+		PubID:                      labels.PubID,
+		HookExecutor:               hookexecution.EmptyHookExecutor{},
+		TmaxAdjustments:            deps.tmaxAdjustments,
+		Activities:                 activityControl,
 	}
 
 	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, &debugLog)

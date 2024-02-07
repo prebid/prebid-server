@@ -190,16 +190,17 @@ type ImpExtInfo struct {
 // AuctionRequest holds the bid request for the auction
 // and all other information needed to process that request
 type AuctionRequest struct {
-	BidRequestWrapper  *openrtb_ext.RequestWrapper
-	ResolvedBidRequest json.RawMessage
-	Account            config.Account
-	UserSyncs          IdFetcher
-	RequestType        metrics.RequestType
-	StartTime          time.Time
-	Warnings           []error
-	ImpExtInfoMap      map[string]ImpExtInfo
-	TCF2Config         gdpr.TCF2ConfigReader
-	Activities         privacy.ActivityControl
+	BidRequestWrapper          *openrtb_ext.RequestWrapper
+	ResolvedBidRequest         json.RawMessage
+	Account                    config.Account
+	UserSyncs                  IdFetcher
+	RequestType                metrics.RequestType
+	StartTime                  time.Time
+	Warnings                   []error
+	GlobalPrivacyControlHeader string
+	ImpExtInfoMap              map[string]ImpExtInfo
+	TCF2Config                 gdpr.TCF2ConfigReader
+	Activities                 privacy.ActivityControl
 
 	// LegacyLabels is included here for temporary compatibility with cleanOpenRTBRequests
 	// in HoldAuction until we get to factoring it away. Do not use for anything new.

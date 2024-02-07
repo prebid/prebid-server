@@ -241,22 +241,23 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	warnings := errortypes.WarningOnly(errL)
 
 	auctionRequest := &exchange.AuctionRequest{
-		BidRequestWrapper:      req,
-		Account:                *account,
-		UserSyncs:              usersyncs,
-		RequestType:            labels.RType,
-		StartTime:              start,
-		LegacyLabels:           labels,
-		Warnings:               warnings,
-		ImpExtInfoMap:          impExtInfoMap,
-		StoredAuctionResponses: storedAuctionResponses,
-		StoredBidResponses:     storedBidResponses,
-		BidderImpReplaceImpID:  bidderImpReplaceImp,
-		PubID:                  labels.PubID,
-		HookExecutor:           hookExecutor,
-		TCF2Config:             tcf2Config,
-		Activities:             activityControl,
-		TmaxAdjustments:        deps.tmaxAdjustments,
+		BidRequestWrapper:          req,
+		Account:                    *account,
+		UserSyncs:                  usersyncs,
+		RequestType:                labels.RType,
+		StartTime:                  start,
+		LegacyLabels:               labels,
+		GlobalPrivacyControlHeader: r.Header.Get(httputil.HeaderGPC),
+		Warnings:                   warnings,
+		ImpExtInfoMap:              impExtInfoMap,
+		StoredAuctionResponses:     storedAuctionResponses,
+		StoredBidResponses:         storedBidResponses,
+		BidderImpReplaceImpID:      bidderImpReplaceImp,
+		PubID:                      labels.PubID,
+		HookExecutor:               hookExecutor,
+		TCF2Config:                 tcf2Config,
+		Activities:                 activityControl,
+		TmaxAdjustments:            deps.tmaxAdjustments,
 	}
 	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
 	defer func() {
@@ -2045,7 +2046,7 @@ func setRegsImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) err
 	}
 
 	if len(regExt.GetGPC()) == 0 {
-		secGPC := httpReq.Header.Get("Sec-GPC")
+		secGPC := httpReq.Header.Get(httputil.HeaderGPC)
 		regExt.SetGPC(secGPC)
 	}
 	return nil

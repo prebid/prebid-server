@@ -16,7 +16,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/buger/jsonparser"
 	"github.com/golang/glog"
 	"github.com/prebid/openrtb/v20/adcom1"
 	nativeRequests "github.com/prebid/openrtb/v20/native1/request"
@@ -35,6 +34,7 @@ import (
 	"github.com/prebid/prebid-server/v2/hooks/hookexecution"
 	"github.com/prebid/prebid-server/v2/metrics"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/httputil"
 	"github.com/prebid/prebid-server/v2/util/jsonutil"
 	"github.com/prebid/prebid-server/v2/version"
 )
@@ -178,11 +178,8 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 			}
 			reqData[i].Headers.Add("X-Prebid", xPrebidHeader)
 
-			if bidderRequest.BidRequest.Regs != nil && len(bidderRequest.BidRequest.Regs.Ext) > 0 {
-				gpc, err := jsonparser.GetString(bidderRequest.BidRequest.Regs.Ext, "gpc")
-				if err == nil && gpc == "1" {
-					reqData[i].Headers.Add("Sec-GPC", gpc)
-				}
+			if reqInfo.GlobalPrivacyControlHeader == "1" {
+				reqData[i].Headers.Add(httputil.HeaderGPC, reqInfo.GlobalPrivacyControlHeader)
 			}
 
 			if bidRequestOptions.addCallSignHeader {

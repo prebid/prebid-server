@@ -144,8 +144,9 @@ func (r *RequestData) SetBasicAuth(username string, password string) {
 }
 
 type ExtraRequestInfo struct {
-	PbsEntryPoint       metrics.RequestType
-	CurrencyConversions currency.Conversions
+	PbsEntryPoint              metrics.RequestType
+	GlobalPrivacyControlHeader string
+	CurrencyConversions        currency.Conversions
 }
 
 func NewExtraRequestInfo(c currency.Conversions) ExtraRequestInfo {

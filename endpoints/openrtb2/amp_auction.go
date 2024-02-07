@@ -18,6 +18,7 @@ import (
 	"github.com/prebid/openrtb/v20/openrtb3"
 	"github.com/prebid/prebid-server/v2/hooks/hookexecution"
 	"github.com/prebid/prebid-server/v2/ortb"
+	"github.com/prebid/prebid-server/v2/util/httputil"
 	"github.com/prebid/prebid-server/v2/util/uuidutil"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
@@ -238,21 +239,22 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	hookExecutor.SetAccount(account)
 
 	auctionRequest := &exchange.AuctionRequest{
-		BidRequestWrapper:      reqWrapper,
-		Account:                *account,
-		UserSyncs:              usersyncs,
-		RequestType:            labels.RType,
-		StartTime:              start,
-		LegacyLabels:           labels,
-		StoredAuctionResponses: storedAuctionResponses,
-		StoredBidResponses:     storedBidResponses,
-		BidderImpReplaceImpID:  bidderImpReplaceImp,
-		PubID:                  labels.PubID,
-		HookExecutor:           hookExecutor,
-		QueryParams:            r.URL.Query(),
-		TCF2Config:             tcf2Config,
-		Activities:             activityControl,
-		TmaxAdjustments:        deps.tmaxAdjustments,
+		BidRequestWrapper:          reqWrapper,
+		Account:                    *account,
+		UserSyncs:                  usersyncs,
+		RequestType:                labels.RType,
+		StartTime:                  start,
+		LegacyLabels:               labels,
+		GlobalPrivacyControlHeader: r.Header.Get(httputil.HeaderGPC),
+		StoredAuctionResponses:     storedAuctionResponses,
+		StoredBidResponses:         storedBidResponses,
+		BidderImpReplaceImpID:      bidderImpReplaceImp,
+		PubID:                      labels.PubID,
+		HookExecutor:               hookExecutor,
+		QueryParams:                r.URL.Query(),
+		TCF2Config:                 tcf2Config,
+		Activities:                 activityControl,
+		TmaxAdjustments:            deps.tmaxAdjustments,
 	}
 
 	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
