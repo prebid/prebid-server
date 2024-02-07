@@ -2045,9 +2045,10 @@ func setRegsImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) err
 		return fmt.Errorf("request.regs.ext is invalid: %v", err)
 	}
 
-	if len(regExt.GetGPC()) == 0 {
-		secGPC := httpReq.Header.Get(httputil.HeaderSecGPC)
-		regExt.SetGPC(secGPC)
+	if regExt.GetGPC() == nil {
+		if secGPC := httpReq.Header.Get(httputil.HeaderSecGPC); len(secGPC) > 0 {
+			regExt.SetGPC(&secGPC)
+		}
 	}
 	return nil
 }

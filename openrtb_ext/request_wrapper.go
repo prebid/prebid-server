@@ -1168,7 +1168,7 @@ type RegExt struct {
 	extDirty       bool
 	gdpr           *int8
 	gdprDirty      bool
-	gpc            string
+	gpc            *string
 	gpcDirty       bool
 	usPrivacy      string
 	usPrivacyDirty bool
@@ -1228,8 +1228,8 @@ func (re *RegExt) marshal() (json.RawMessage, error) {
 	}
 
 	if re.gpcDirty {
-		if len(re.gpc) > 0 {
-			rawjson, err := json.Marshal(re.gpc)
+		if re.gpc != nil {
+			rawjson, err := json.Marshal(*re.gpc)
 			if err != nil {
 				return nil, err
 			}
@@ -1287,12 +1287,12 @@ func (re *RegExt) SetGDPR(gdpr *int8) {
 	re.gdprDirty = true
 }
 
-func (re *RegExt) GetGPC() string {
+func (re *RegExt) GetGPC() *string {
 	gpc := re.gpc
 	return gpc
 }
 
-func (re *RegExt) SetGPC(gpc string) {
+func (re *RegExt) SetGPC(gpc *string) {
 	re.gpc = gpc
 	re.gpcDirty = true
 }

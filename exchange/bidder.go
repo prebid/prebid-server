@@ -16,13 +16,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/glog"
-	"github.com/prebid/openrtb/v20/adcom1"
-	nativeRequests "github.com/prebid/openrtb/v20/native1/request"
-	nativeResponse "github.com/prebid/openrtb/v20/native1/response"
-	"github.com/prebid/openrtb/v20/openrtb2"
-	"golang.org/x/net/context/ctxhttp"
-
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/bidadjustment"
 	"github.com/prebid/prebid-server/v2/config"
@@ -37,6 +30,13 @@ import (
 	"github.com/prebid/prebid-server/v2/util/httputil"
 	"github.com/prebid/prebid-server/v2/util/jsonutil"
 	"github.com/prebid/prebid-server/v2/version"
+
+	"github.com/golang/glog"
+	"github.com/prebid/openrtb/v20/adcom1"
+	nativeRequests "github.com/prebid/openrtb/v20/native1/request"
+	nativeResponse "github.com/prebid/openrtb/v20/native1/response"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"golang.org/x/net/context/ctxhttp"
 )
 
 // AdaptedBidder defines the contract needed to participate in an Auction within an Exchange.

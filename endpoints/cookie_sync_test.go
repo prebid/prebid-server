@@ -427,6 +427,7 @@ func TestExtractGDPRSignal(t *testing.T) {
 	}
 }
 
+// todo
 func TestExtractPrivacyPolicies(t *testing.T) {
 	type testInput struct {
 		request                  cookieSyncRequest

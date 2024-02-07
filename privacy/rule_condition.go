@@ -102,8 +102,11 @@ func getGPC(request ActivityRequest) string {
 	}
 
 	if request.IsBidRequest() && request.bidRequest.Regs != nil {
-		regExt, _ := request.bidRequest.GetRegExt()
-		return regExt.GetGPC()
+		if regExt, err := request.bidRequest.GetRegExt(); err == nil {
+			if v := regExt.GetGPC(); v != nil {
+				return *v
+			}
+		}
 	}
 
 	return ""

@@ -442,6 +442,16 @@ func TestGetGPC(t *testing.T) {
 			expected: "1",
 		},
 		{
+			name:     "request-regs-missing",
+			request:  ActivityRequest{bidRequest: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{}`)}}}},
+			expected: "",
+		},
+		{
+			name:     "request-regs-malformed",
+			request:  ActivityRequest{bidRequest: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`malformed`)}}}},
+			expected: "",
+		},
+		{
 			name:     "request-regs-nil",
 			request:  ActivityRequest{bidRequest: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Regs: nil}}},
 			expected: "",

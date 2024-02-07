@@ -1366,7 +1366,7 @@ func TestCloneRegExt(t *testing.T) {
 				ext:            map[string]json.RawMessage{"A": json.RawMessage(`X`), "B": json.RawMessage(`Y`)},
 				extDirty:       true,
 				gdpr:           ptrutil.ToPtr[int8](1),
-				gpc:            "anyGPC",
+				gpc:            ptrutil.ToPtr("anyGPC"),
 				gpcDirty:       true,
 				usPrivacy:      "priv",
 				usPrivacyDirty: true,
@@ -1375,7 +1375,7 @@ func TestCloneRegExt(t *testing.T) {
 				ext:            map[string]json.RawMessage{"A": json.RawMessage(`X`), "B": json.RawMessage(`Y`)},
 				extDirty:       true,
 				gdpr:           ptrutil.ToPtr[int8](1),
-				gpc:            "anyGPC",
+				gpc:            ptrutil.ToPtr("anyGPC"),
 				gpcDirty:       true,
 				usPrivacy:      "priv",
 				usPrivacyDirty: true,
@@ -1388,7 +1388,7 @@ func TestCloneRegExt(t *testing.T) {
 				ext:            map[string]json.RawMessage{"A": json.RawMessage(`X`), "B": json.RawMessage(`Y`)},
 				extDirty:       true,
 				gdpr:           ptrutil.ToPtr[int8](1),
-				gpc:            "anyGPC",
+				gpc:            ptrutil.ToPtr("anyGPC"),
 				gpcDirty:       true,
 				usPrivacy:      "priv",
 				usPrivacyDirty: true,
@@ -1397,7 +1397,7 @@ func TestCloneRegExt(t *testing.T) {
 				ext:            map[string]json.RawMessage{"A": json.RawMessage(`X`), "B": json.RawMessage(`Y`)},
 				extDirty:       true,
 				gdpr:           ptrutil.ToPtr[int8](1),
-				gpc:            "anyGPC",
+				gpc:            ptrutil.ToPtr("anyGPC"),
 				gpcDirty:       true,
 				usPrivacy:      "priv",
 				usPrivacyDirty: true,
@@ -1408,7 +1408,7 @@ func TestCloneRegExt(t *testing.T) {
 				regExt.extDirty = false
 				regExt.gdpr = nil
 				regExt.gdprDirty = true
-				regExt.gpc = "mutated"
+				regExt.gpc = ptrutil.ToPtr("mutated")
 				regExt.gpcDirty = false
 				regExt.usPrivacy = "Other"
 			},

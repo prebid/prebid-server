@@ -682,28 +682,28 @@ func TestSetRegsImplicitly(t *testing.T) {
 		expectedError string
 	}{
 		{
-			name:          "nil",
+			name:          "regs-nil",
 			gpcHeader:     "",
 			regs:          nil,
 			expectedRegs:  nil,
 			expectedError: "",
 		},
 		{
-			name:          "nil-gpc",
+			name:          "regs-nil-fromheader",
 			gpcHeader:     "1",
 			regs:          nil,
 			expectedRegs:  &openrtb2.Regs{Ext: json.RawMessage(`{"gpc":"1"}`)},
 			expectedError: "",
 		},
 		{
-			name:          "empty",
+			name:          "regs-empty",
 			gpcHeader:     "",
 			regs:          &openrtb2.Regs{},
 			expectedRegs:  &openrtb2.Regs{},
 			expectedError: "",
 		},
 		{
-			name:          "empty-gpc",
+			name:          "regs-empty-fromheader",
 			gpcHeader:     "1",
 			regs:          &openrtb2.Regs{},
 			expectedRegs:  &openrtb2.Regs{Ext: json.RawMessage(`{"gpc":"1"}`)},
@@ -711,9 +711,16 @@ func TestSetRegsImplicitly(t *testing.T) {
 		},
 		{
 			name:          "existing",
-			gpcHeader:     "",
+			gpcHeader:     "1",
 			regs:          &openrtb2.Regs{Ext: json.RawMessage(`{"gpc":"0"}`)},
 			expectedRegs:  &openrtb2.Regs{Ext: json.RawMessage(`{"gpc":"0"}`)},
+			expectedError: "",
+		},
+		{
+			name:          "existing-empty",
+			gpcHeader:     "1",
+			regs:          &openrtb2.Regs{Ext: json.RawMessage(`{"gpc":""}`)},
+			expectedRegs:  &openrtb2.Regs{Ext: json.RawMessage(`{"gpc":""}`)},
 			expectedError: "",
 		},
 		{
