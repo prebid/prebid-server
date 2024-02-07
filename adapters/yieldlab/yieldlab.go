@@ -96,9 +96,69 @@ func (a *YieldlabAdapter) makeEndpointURL(req *openrtb2.BidRequest, params *open
 		}
 	}
 
+	dsa, err := getDSA(req)
+	if err != nil {
+		return "", err
+	}
+	if dsa != nil {
+		q.Set("dsarequired", strconv.Itoa(dsa.Required))
+		q.Set("dsapubrender", strconv.Itoa(dsa.PubRender))
+		q.Set("datatopub", strconv.Itoa(dsa.DataToPub))
+		if len(dsa.Transparency) != 0 {
+			q.Set("transparency", makeDSATransparencyUrlParam(dsa.Transparency))
+		}
+	}
+
 	uri.RawQuery = q.Encode()
 
 	return uri.String(), nil
+}
+
+// getDSA extracts the Digital Service Act (DSA) properties from the request.
+func getDSA(req *openrtb2.BidRequest) (*openRTBDSAExt, error) {
+	if req.Regs == nil || req.Regs.Ext == nil {
+		return nil, nil
+	}
+
+	var extRegs openRTBExtRegsWithDSA
+	err := json.Unmarshal(req.Regs.Ext, &extRegs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse Regs.Ext object from Yieldlab response: %v", err)
+	}
+
+	return extRegs.DSA, nil
+}
+
+// makeDSATransparencyUrlParam creates the transparency url parameter
+// as specified by the OpenRTB 2.X DSA Transparency community extension.
+//
+// Example result: platform1domain.com~1~~SSP2domain.com~1_2
+func makeDSATransparencyUrlParam(transparencyObject []openRTBDSATransparency) string {
+	valueSeparator, itemSeparator, objectSeparator := "_", "~", "~~"
+
+	arrayItoa := func(ints []int) []string {
+		result := make([]string, len(ints))
+		for i, v := range ints {
+			result[i] = strconv.Itoa(v)
+		}
+
+		return result
+	}
+
+	objectStrings := make([]string, len(transparencyObject))
+	for i, obj := range transparencyObject {
+		objectString := obj.Domain
+
+		params := obj.Params
+		if len(obj.Params) != 0 {
+			paramValues := strings.Join(arrayItoa(params), valueSeparator)
+			objectString += itemSeparator + paramValues
+		}
+
+		objectStrings[i] = objectString
+	}
+
+	return strings.Join(objectStrings, objectSeparator)
 }
 
 func (a *YieldlabAdapter) makeFormats(req *openrtb2.BidRequest) (bool, string) {
@@ -290,6 +350,20 @@ func (a *YieldlabAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 			} else {
 				// Yieldlab adapter currently doesn't support Audio and Native ads
 				continue
+			}
+
+			if dsa := bid.DSA; dsa != nil {
+				dsaJson, err := json.Marshal(responseWithDSA{openRTBDSAExt{
+					Transparency: dsa.Transparency,
+					Behalf:       dsa.Behalf,
+					Paid:         dsa.Paid,
+				}})
+				if err != nil {
+					return nil, []error{
+						fmt.Errorf("failed to add Yieldlab DSA object for adslotID %v. This is most likely a programming issue", bid.ID),
+					}
+				}
+				responseBid.Ext = dsaJson
 			}
 
 			bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{

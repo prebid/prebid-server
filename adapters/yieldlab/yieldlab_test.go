@@ -257,6 +257,75 @@ func Test_makeSupplyChain(t *testing.T) {
 	}
 }
 
+func Test_makeDSATransparencyUrlParam(t *testing.T) {
+	tests := []struct {
+		name           string
+		transparencies []openRTBDSATransparency
+		expected       string
+	}{
+		{
+			name:           "No transparency objects",
+			transparencies: []openRTBDSATransparency{},
+			expected:       "",
+		},
+		{
+			name: "One object; No Params",
+			transparencies: []openRTBDSATransparency{
+				{
+					Domain: "domain.com",
+					Params: []int{},
+				},
+			},
+			expected: "domain.com",
+		},
+		{
+			name: "One object; One Param",
+			transparencies: []openRTBDSATransparency{
+				{
+					Domain: "domain.com",
+					Params: []int{1},
+				},
+			},
+			expected: "domain.com~1",
+		},
+		{
+			name: "Three domain objects",
+			transparencies: []openRTBDSATransparency{
+				{
+					Domain: "domain1.com",
+					Params: []int{1, 2},
+				},
+				{
+					Domain: "domain2.com",
+					Params: []int{3, 4},
+				},
+				{
+					Domain: "domain3.com",
+					Params: []int{5, 6},
+				},
+			},
+			expected: "domain1.com~1_2~~domain2.com~3_4~~domain3.com~5_6",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			actual := makeDSATransparencyUrlParam(test.transparencies)
+			assert.Equal(t, test.expected, actual)
+		})
+	}
+}
+
+func Test_getDSA_invalidRequestExt(t *testing.T) {
+	req := &openrtb2.BidRequest{
+		Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"DSA":"wrongValueType"}`)},
+	}
+
+	dsa, err := getDSA(req)
+
+	assert.NotNil(t, err)
+	assert.Nil(t, dsa)
+}
+
 func TestYieldlabAdapter_makeEndpointURL_invalidEndpoint(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderYieldlab, config.Adapter{
 		Endpoint: "test$:/something§"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
