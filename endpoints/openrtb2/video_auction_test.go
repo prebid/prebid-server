@@ -1162,6 +1162,7 @@ func TestVideoAuctionResponseHeaders(t *testing.T) {
 	testCases := []struct {
 		description     string
 		givenTestFile   string
+		givenHeader     map[string]string
 		expectedStatus  int
 		expectedHeaders func(http.Header)
 	}{
@@ -1173,12 +1174,34 @@ func TestVideoAuctionResponseHeaders(t *testing.T) {
 				h.Set("X-Prebid", "pbs-go/unknown")
 				h.Set("Content-Type", "application/json")
 			},
-		}, {
+		},
+		{
 			description:    "Failure Response",
 			givenTestFile:  "sample-requests/video/video_invalid_sample.json",
 			expectedStatus: 500,
 			expectedHeaders: func(h http.Header) {
 				h.Set("X-Prebid", "pbs-go/unknown")
+			},
+		},
+		{
+			description:    "Success Response with header Observe-Browsing-Topics",
+			givenTestFile:  "sample-requests/video/video_valid_sample.json",
+			givenHeader:    map[string]string{secBrowsingTopics: "test_value"},
+			expectedStatus: 200,
+			expectedHeaders: func(h http.Header) {
+				h.Set("X-Prebid", "pbs-go/unknown")
+				h.Set("Content-Type", "application/json")
+				h.Set("Observe-Browsing-Topics", "?1")
+			},
+		},
+		{
+			description:    "Failure Response with header Observe-Browsing-Topics",
+			givenTestFile:  "sample-requests/video/video_invalid_sample.json",
+			givenHeader:    map[string]string{secBrowsingTopics: "test_value"},
+			expectedStatus: 500,
+			expectedHeaders: func(h http.Header) {
+				h.Set("X-Prebid", "pbs-go/unknown")
+				h.Set("Observe-Browsing-Topics", "?1")
 			},
 		},
 	}
@@ -1190,6 +1213,9 @@ func TestVideoAuctionResponseHeaders(t *testing.T) {
 		requestBody := readVideoTestFile(t, test.givenTestFile)
 
 		httpReq := httptest.NewRequest("POST", "/openrtb2/video", strings.NewReader(requestBody))
+		for k, v := range test.givenHeader {
+			httpReq.Header.Add(k, v)
+		}
 		recorder := httptest.NewRecorder()
 
 		endpoint.VideoAuctionEndpoint(recorder, httpReq, nil)
@@ -1471,4 +1497,19 @@ func readVideoTestFile(t *testing.T, filename string) string {
 	}
 
 	return string(getRequestPayload(t, requestData))
+}
+
+func TestVideoRequestValidationFailed(t *testing.T) {
+	ex := &mockExchangeVideo{}
+	reqBody := readVideoTestFile(t, "sample-requests/video/video_invalid_sample_negative_tmax.json")
+	req := httptest.NewRequest("POST", "/openrtb2/video", strings.NewReader(reqBody))
+	recorder := httptest.NewRecorder()
+
+	deps := mockDeps(t, ex)
+	deps.VideoAuctionEndpoint(recorder, req, nil)
+
+	errorMessage := recorder.Body.String()
+
+	assert.Equal(t, 500, recorder.Code, "Should catch error in request")
+	assert.Equal(t, "Critical error while running the video endpoint:  request.tmax must be nonnegative. Got -2", errorMessage, "Incorrect request validation message")
 }
