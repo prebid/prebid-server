@@ -241,7 +241,7 @@ func extractPrivacyPolicies(request cookieSyncRequest, header http.Header, users
 
 	privacyPolicies := privacy.Policies{
 		GPPSID: gppSID,
-		GPC:    header.Get(httputil.HeaderGPC),
+		GPC:    header.Get(httputil.HeaderSecGPC),
 	}
 
 	return privacyMacros, gdprSignal, privacyPolicies, nil

@@ -1,5 +1,5 @@
 package httputil
 
 const (
-	HeaderGPC = "Sec-GPC"
+	HeaderSecGPC = "Sec-GPC"
 )

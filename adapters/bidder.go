@@ -149,12 +149,6 @@ type ExtraRequestInfo struct {
 	CurrencyConversions        currency.Conversions
 }
 
-func NewExtraRequestInfo(c currency.Conversions) ExtraRequestInfo {
-	return ExtraRequestInfo{
-		CurrencyConversions: c,
-	}
-}
-
 // ConvertCurrency converts a given amount from one currency to another, or returns:
 //   - Error if the `from` or `to` arguments are malformed or unknown ISO-4217 codes.
 //   - ConversionNotFoundError if the conversion mapping is unknown to Prebid Server

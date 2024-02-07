@@ -176,10 +176,11 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 			} else {
 				reqData[i].Headers = http.Header{}
 			}
+
 			reqData[i].Headers.Add("X-Prebid", xPrebidHeader)
 
 			if reqInfo.GlobalPrivacyControlHeader == "1" {
-				reqData[i].Headers.Add(httputil.HeaderGPC, reqInfo.GlobalPrivacyControlHeader)
+				reqData[i].Headers.Add(httputil.HeaderSecGPC, reqInfo.GlobalPrivacyControlHeader)
 			}
 
 			if bidRequestOptions.addCallSignHeader {

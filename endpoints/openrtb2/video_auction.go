@@ -319,7 +319,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		RequestType:                labels.RType,
 		StartTime:                  start,
 		LegacyLabels:               labels,
-		GlobalPrivacyControlHeader: r.Header.Get(httputil.HeaderGPC),
+		GlobalPrivacyControlHeader: r.Header.Get(httputil.HeaderSecGPC),
 		PubID:                      labels.PubID,
 		HookExecutor:               hookexecution.EmptyHookExecutor{},
 		TmaxAdjustments:            deps.tmaxAdjustments,

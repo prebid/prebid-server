@@ -210,7 +210,7 @@ func TestGetAndApply(t *testing.T) {
 			if test.setMock != nil {
 				mockConversions := &mockConversions{}
 				test.setMock(&mockConversions.Mock)
-				reqInfo = adapters.NewExtraRequestInfo(mockConversions)
+				reqInfo = adapters.ExtraRequestInfo{CurrencyConversions: mockConversions}
 			}
 			bidPrice, currencyAfterAdjustment := Apply(test.givenRuleToAdjustments, test.givenBidInfo, test.givenBidderName, bidCur, &reqInfo, test.givenBidType)
 			assert.Equal(t, test.expectedBidPrice, bidPrice)
@@ -287,7 +287,7 @@ func TestApply(t *testing.T) {
 			if test.setMock != nil {
 				mockConversions := &mockConversions{}
 				test.setMock(&mockConversions.Mock)
-				reqInfo = adapters.NewExtraRequestInfo(mockConversions)
+				reqInfo = adapters.ExtraRequestInfo{CurrencyConversions: mockConversions}
 			}
 
 			bidPrice, currencyAfterAdjustment := apply(test.givenAdjustments, test.givenBidPrice, bidCur, &reqInfo)

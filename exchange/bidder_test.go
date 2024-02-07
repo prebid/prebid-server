@@ -358,7 +358,7 @@ func TestRequestBidRemovesSensitiveHeaders(t *testing.T) {
 }
 
 func TestSetGPCHeader(t *testing.T) {
-	server := httptest.NewServer(mockHandler(200, "requestJson", "responseJson"))
+	server := httptest.NewServer(mockHandler(200, "getBody", "postBody"))
 	defer server.Close()
 
 	requestHeaders := http.Header{}
@@ -400,7 +400,7 @@ func TestSetGPCHeader(t *testing.T) {
 			Uri:            server.URL,
 			RequestBody:    "requestJson",
 			RequestHeaders: map[string][]string{"Content-Type": {"application/json"}, "X-Prebid": {"pbs-go/unknown"}, "Sec-Gpc": {"1"}},
-			ResponseBody:   "responseJson",
+			ResponseBody:   "postBody",
 			Status:         200,
 		},
 	}
@@ -412,7 +412,7 @@ func TestSetGPCHeader(t *testing.T) {
 }
 
 func TestSetGPCHeaderNil(t *testing.T) {
-	server := httptest.NewServer(mockHandler(200, "getBody", "responseJson"))
+	server := httptest.NewServer(mockHandler(200, "getBody", "postBody"))
 	defer server.Close()
 
 	bidderImpl := &goodSingleBidder{
@@ -452,7 +452,7 @@ func TestSetGPCHeaderNil(t *testing.T) {
 			Uri:            server.URL,
 			RequestBody:    "requestJson",
 			RequestHeaders: map[string][]string{"X-Prebid": {"pbs-go/unknown"}, "Sec-Gpc": {"1"}},
-			ResponseBody:   "responseJson",
+			ResponseBody:   "postBody",
 			Status:         200,
 		},
 	}

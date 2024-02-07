@@ -108,7 +108,7 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 
 		policies := privacy.Policies{
 			GPPSID: gppSID,
-			GPC:    r.Header.Get(httputil.HeaderGPC),
+			GPC:    r.Header.Get(httputil.HeaderSecGPC),
 		}
 
 		userSyncActivityAllowed := activityControl.Allow(privacy.ActivitySyncUser,

@@ -245,7 +245,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		RequestType:                labels.RType,
 		StartTime:                  start,
 		LegacyLabels:               labels,
-		GlobalPrivacyControlHeader: r.Header.Get(httputil.HeaderGPC),
+		GlobalPrivacyControlHeader: r.Header.Get(httputil.HeaderSecGPC),
 		StoredAuctionResponses:     storedAuctionResponses,
 		StoredBidResponses:         storedBidResponses,
 		BidderImpReplaceImpID:      bidderImpReplaceImp,

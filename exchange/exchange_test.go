@@ -5092,18 +5092,19 @@ func TestGetAllBids(t *testing.T) {
 	defer server.Close()
 
 	type testIn struct {
-		bidderRequests       []BidderRequest
-		bidAdjustments       map[string]float64
-		conversions          currency.Conversions
-		accountDebugAllowed  bool
-		headerDebugAllowed   bool
-		alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes
-		experiment           *openrtb_ext.Experiment
-		hookExecutor         hookexecution.StageExecutor
-		pbsRequestStartTime  time.Time
-		bidAdjustmentRules   map[string][]openrtb_ext.Adjustment
-		tmaxAdjustments      *TmaxAdjustmentsPreprocessed
-		adapterMap           map[openrtb_ext.BidderName]AdaptedBidder
+		bidderRequests             []BidderRequest
+		bidAdjustments             map[string]float64
+		conversions                currency.Conversions
+		accountDebugAllowed        bool
+		globalPrivacyControlHeader string
+		headerDebugAllowed         bool
+		alternateBidderCodes       openrtb_ext.ExtAlternateBidderCodes
+		experiment                 *openrtb_ext.Experiment
+		hookExecutor               hookexecution.StageExecutor
+		pbsRequestStartTime        time.Time
+		bidAdjustmentRules         map[string][]openrtb_ext.Adjustment
+		tmaxAdjustments            *TmaxAdjustmentsPreprocessed
+		adapterMap                 map[openrtb_ext.BidderName]AdaptedBidder
 	}
 	type testResults struct {
 		adapterBids   map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid
@@ -5391,8 +5392,8 @@ func TestGetAllBids(t *testing.T) {
 			}
 
 			adapterBids, adapterExtra, extraRespInfo := e.getAllBids(context.Background(), test.in.bidderRequests, test.in.bidAdjustments,
-				test.in.conversions, test.in.accountDebugAllowed, test.in.headerDebugAllowed, test.in.alternateBidderCodes, test.in.experiment,
-				test.in.hookExecutor, test.in.pbsRequestStartTime, test.in.bidAdjustmentRules, test.in.tmaxAdjustments, false)
+				test.in.conversions, test.in.accountDebugAllowed, test.in.headerDebugAllowed, test.in.globalPrivacyControlHeader, test.in.alternateBidderCodes,
+				test.in.experiment, test.in.hookExecutor, test.in.pbsRequestStartTime, test.in.bidAdjustmentRules, test.in.tmaxAdjustments, false)
 
 			assert.Equalf(t, test.expected.extraRespInfo.bidsFound, extraRespInfo.bidsFound, "extraRespInfo.bidsFound mismatch")
 			assert.Equalf(t, test.expected.adapterBids, adapterBids, "adapterBids mismatch")

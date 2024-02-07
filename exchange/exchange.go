@@ -374,7 +374,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 			alternateBidderCodes = *r.Account.AlternateBidderCodes
 		}
 		var extraRespInfo extraAuctionResponseInfo
-		adapterBids, adapterExtra, extraRespInfo = e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, accountDebugAllow, debugLog.DebugOverride, alternateBidderCodes, requestExtLegacy.Prebid.Experiment, r.HookExecutor, r.StartTime, bidAdjustmentRules, r.TmaxAdjustments, responseDebugAllow)
+		adapterBids, adapterExtra, extraRespInfo = e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, accountDebugAllow, debugLog.DebugOverride, r.GlobalPrivacyControlHeader, alternateBidderCodes, requestExtLegacy.Prebid.Experiment, r.HookExecutor, r.StartTime, bidAdjustmentRules, r.TmaxAdjustments, responseDebugAllow)
 		fledge = extraRespInfo.fledge
 		anyBidsReturned = extraRespInfo.bidsFound
 		r.BidderResponseStartTime = extraRespInfo.bidderResponseStartTime
@@ -666,6 +666,7 @@ func (e *exchange) getAllBids(
 	conversions currency.Conversions,
 	accountDebugAllowed bool,
 	headerDebugAllowed bool,
+	globalPrivacyControlHeader string,
 	alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes,
 	experiment *openrtb_ext.Experiment,
 	hookExecutor hookexecution.StageExecutor,
@@ -701,8 +702,11 @@ func (e *exchange) getAllBids(
 			}()
 			start := time.Now()
 
-			reqInfo := adapters.NewExtraRequestInfo(conversions)
-			reqInfo.PbsEntryPoint = bidderRequest.BidderLabels.RType
+			reqInfo := adapters.ExtraRequestInfo{
+				PbsEntryPoint:              bidderRequest.BidderLabels.RType,
+				GlobalPrivacyControlHeader: globalPrivacyControlHeader,
+				CurrencyConversions:        conversions,
+			}
 
 			bidReqOptions := bidRequestOptions{
 				accountDebugAllowed:    accountDebugAllowed,

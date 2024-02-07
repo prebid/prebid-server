@@ -247,8 +247,8 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		RequestType:                labels.RType,
 		StartTime:                  start,
 		LegacyLabels:               labels,
-		GlobalPrivacyControlHeader: r.Header.Get(httputil.HeaderGPC),
 		Warnings:                   warnings,
+		GlobalPrivacyControlHeader: r.Header.Get(httputil.HeaderSecGPC),
 		ImpExtInfoMap:              impExtInfoMap,
 		StoredAuctionResponses:     storedAuctionResponses,
 		StoredBidResponses:         storedBidResponses,
@@ -2038,7 +2038,7 @@ func setAuctionTypeImplicitly(r *openrtb_ext.RequestWrapper) {
 	}
 }
 
-// setRegsImplicitly sets the gpc set from the header value if it wasn't provided in the request.
+// setRegsImplicitly sets the gpc set from the header if not provided in the request.
 func setRegsImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) error {
 	regExt, err := r.GetRegExt()
 	if err != nil {
@@ -2046,7 +2046,7 @@ func setRegsImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) err
 	}
 
 	if len(regExt.GetGPC()) == 0 {
-		secGPC := httpReq.Header.Get(httputil.HeaderGPC)
+		secGPC := httpReq.Header.Get(httputil.HeaderSecGPC)
 		regExt.SetGPC(secGPC)
 	}
 	return nil
