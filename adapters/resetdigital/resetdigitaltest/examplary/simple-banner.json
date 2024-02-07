@@ -10,7 +10,7 @@
         },
         "ext": {
           "bidder": {
-            "placement_id": "111"
+            "placement_id": "test"
           }
         }
       }
@@ -38,6 +38,7 @@
       },
       "imps": [
         {
+          "force_bid" : 1,
           "zone_id": {
             "placementId": "test"
           },
