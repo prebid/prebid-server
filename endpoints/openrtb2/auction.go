@@ -2027,7 +2027,7 @@ func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, r *openrtb_
 
 	setAuctionTypeImplicitly(r)
 
-	setSecBrowsingTopcisImplicitly(httpReq, r, account)
+	setSecBrowsingTopicsImplicitly(httpReq, r, account)
 }
 
 // setDeviceImplicitly uses implicit info from httpReq to populate bidReq.Device
@@ -2045,8 +2045,8 @@ func setAuctionTypeImplicitly(r *openrtb_ext.RequestWrapper) {
 	}
 }
 
-// (100);v=chrome.1:1:20, (200 400);v=chrome.1:1:40, (300);v=chrome.1:1:60, ();p=P000000000
-func setSecBrowsingTopcisImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper, account *config.Account) {
+// setSecBrowsingTopicsImplicitly updates user.data with data from request header 'Sec-Browsing-Topics'
+func setSecBrowsingTopicsImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper, account *config.Account) {
 	secBrowsingTopics := httpReq.Header.Get("Sec-Browsing-Topics")
 	if secBrowsingTopics == "" {
 		return

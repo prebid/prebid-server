@@ -6275,7 +6275,7 @@ func TestSetSecBrowsingTopcisImplicitly(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			setSecBrowsingTopcisImplicitly(tt.args.httpReq, tt.args.r, tt.args.account)
+			setSecBrowsingTopicsImplicitly(tt.args.httpReq, tt.args.r, tt.args.account)
 
 			// sequence is not garunteed we're using a map to filter segids
 			sortUserData(tt.wantUser)
