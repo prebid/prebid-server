@@ -34,7 +34,8 @@ type resetDigitalRequestSite struct {
 }
 
 type resetDigitalRequesImps struct {
-	ZoneID struct {
+	ForceBid bool `json:"force_bid"`
+	ZoneID   struct {
 		PlacementID string `json:"placementId"`
 	} `json:"zone_id"`
 	BidID string `json:"bid_id"`
@@ -157,6 +158,8 @@ func processDataFromRequest(requestData *openrtb2.BidRequest, imp openrtb2.Imp, 
 	resetDigitalRequestData.Imps[0].BidID = requestData.ID
 	resetDigitalRequestData.Imps[0].ImpID = imp.ID
 
+	var err error
+
 	if bidType == openrtb_ext.BidTypeBanner {
 		resetDigitalRequestData.Imps[0].MediaTypes.Banner.Sizes = append(resetDigitalRequestData.Imps[0].MediaTypes.Banner.Sizes, []int64{imp.Banner.Format[0].W, imp.Banner.Format[0].H})
 	}
@@ -164,6 +167,18 @@ func processDataFromRequest(requestData *openrtb2.BidRequest, imp openrtb2.Imp, 
 		resetDigitalRequestData.Imps[0].MediaTypes.Video.Sizes = append(resetDigitalRequestData.Imps[0].MediaTypes.Banner.Sizes, []int64{*imp.Video.W, *imp.Video.H})
 	}
 
+	var extData = make(map[string]interface{})
+	err = json.Unmarshal(imp.Ext, &extData)
+	if err != nil {
+
+	} else {
+
+		resetDigitalRequestData.Imps[0].ZoneID.PlacementID = extData["bidder"].(map[string]interface{})["placement_id"].(string)
+		if resetDigitalRequestData.Imps[0].ZoneID.PlacementID == "test" {
+			resetDigitalRequestData.Imps[0].ForceBid = true
+		}
+
+	}
 	return resetDigitalRequestData
 
 }

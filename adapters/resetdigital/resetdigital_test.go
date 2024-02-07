@@ -18,13 +18,13 @@ func TestMakeRequests(t *testing.T) {
 
 		Imp: []openrtb2.Imp{{
 			ID: "001",
-
 			Banner: &openrtb2.Banner{
 				Format: []openrtb2.Format{
 					{W: 300, H: 250},
 				},
 			},
-			Ext: json.RawMessage(``),
+
+			Ext: json.RawMessage(`{"bidder": {"placement_id": "test"}}`), //Placement_id test is used to get the force bid true
 		}},
 		Site: &openrtb2.Site{
 			Domain: "https://test.com",
