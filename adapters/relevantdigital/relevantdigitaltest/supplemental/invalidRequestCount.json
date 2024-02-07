@@ -1,0 +1,39 @@
+{
+    "mockBidRequest": {
+        "id": "3621f78b-abdf-4562-8eca-1c5e893387d0",
+        "imp": [
+            {
+                "id": "div-1",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        }
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "accountId": "620523ae7f4bbe1691bbb815",
+                        "pbsHost": "fakeHost",
+                        "placementId": "620525862d7518bfd4bbb81e_620523b5d1dbed6b0fbbb817"
+                    }
+                }
+            }
+        ],
+        "ext": {
+            "relevant": {
+                "adapterType": "server",
+                "count": 10
+            }
+        },
+        "tmax": 750
+    },
+    "expectedMakeRequestsErrors": [
+        {
+            "value": "failed to create bidRequest, error: too many requests",
+            "comparison": "literal"
+        }
+    ],
+    "expectedBidResponses": []
+}

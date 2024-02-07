@@ -152,6 +152,9 @@
               "ext": {
                 "origbidcpm": 0.51,
                 "prebid": {
+                  "meta": {
+                    "adaptercode": "audienceNetwork"
+                  },
                   "type": "video",
                   "targeting": {
                     "hb_bidder_audienceNe": "audienceNetwork",
@@ -178,6 +181,9 @@
               "ext": {
                 "origbidcpm": 0.71,
                 "prebid": {
+                  "meta": {
+                    "adaptercode": "appnexus"
+                  },
                   "type": "video",
                   "targeting": {
                     "hb_bidder": "appnexus",
@@ -204,6 +210,9 @@
               "ext": {
                 "origbidcpm": 0.21,
                 "prebid": {
+                  "meta": {
+                    "adaptercode": "appnexus"
+                  },
                   "type": "video"
                 }
               }
@@ -218,6 +227,9 @@
               "ext": {
                 "origbidcpm": 0.61,
                 "prebid": {
+                  "meta": {
+                    "adaptercode": "appnexus"
+                  },
                   "type": "video",
                   "targeting": {
                     "hb_bidder": "appnexus",

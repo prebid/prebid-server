@@ -5,22 +5,22 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/prebid/openrtb/v19/adcom1"
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/hooks/hookexecution"
-	"github.com/prebid/prebid-server/hooks/hookstage"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/adcom1"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v2/hooks/hookstage"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 func handleBidderRequestHook(
 	cfg config,
 	payload hookstage.BidderRequestPayload,
 ) (result hookstage.HookResult[hookstage.BidderRequestPayload], err error) {
-	if payload.BidRequest == nil {
-		return result, hookexecution.NewFailure("empty BidRequest provided")
+	if payload.Request == nil || payload.Request.BidRequest == nil {
+		return result, hookexecution.NewFailure("payload contains a nil bid request")
 	}
 
-	mediaTypes := mediaTypesFrom(payload.BidRequest)
+	mediaTypes := mediaTypesFrom(payload.Request.BidRequest)
 	changeSet := hookstage.ChangeSet[hookstage.BidderRequestPayload]{}
 	blockingAttributes := blockingAttributes{}
 
@@ -60,7 +60,7 @@ func updateBAdv(
 	result *hookstage.HookResult[hookstage.BidderRequestPayload],
 	changeSet *hookstage.ChangeSet[hookstage.BidderRequestPayload],
 ) (err error) {
-	if len(payload.BidRequest.BAdv) > 0 {
+	if len(payload.Request.BAdv) > 0 {
 		return nil
 	}
 
@@ -87,7 +87,7 @@ func updateBApp(
 	result *hookstage.HookResult[hookstage.BidderRequestPayload],
 	changeSet *hookstage.ChangeSet[hookstage.BidderRequestPayload],
 ) (err error) {
-	if len(payload.BidRequest.BApp) > 0 {
+	if len(payload.Request.BApp) > 0 {
 		return nil
 	}
 
@@ -114,7 +114,7 @@ func updateBCat(
 	result *hookstage.HookResult[hookstage.BidderRequestPayload],
 	changeSet *hookstage.ChangeSet[hookstage.BidderRequestPayload],
 ) (err error) {
-	if len(payload.BidRequest.BCat) > 0 {
+	if len(payload.Request.BCat) > 0 {
 		return nil
 	}
 
@@ -191,7 +191,7 @@ func updateCatTax(
 	attributes *blockingAttributes,
 	changeSet *hookstage.ChangeSet[hookstage.BidderRequestPayload],
 ) {
-	if payload.BidRequest.CatTax > 0 {
+	if payload.Request.CatTax > 0 {
 		return
 	}
 
@@ -226,7 +226,7 @@ func mutationForImp(
 	impUpdater impUpdateFunc,
 ) hookstage.MutationFunc[hookstage.BidderRequestPayload] {
 	return func(payload hookstage.BidderRequestPayload) (hookstage.BidderRequestPayload, error) {
-		for i, imp := range payload.BidRequest.Imp {
+		for i, imp := range payload.Request.Imp {
 			if values, ok := valuesByImp[imp.ID]; ok {
 				if len(values) == 0 {
 					continue
@@ -236,7 +236,7 @@ func mutationForImp(
 					imp.Banner = &openrtb2.Banner{}
 				}
 
-				payload.BidRequest.Imp[i] = impUpdater(imp, values)
+				payload.Request.Imp[i] = impUpdater(imp, values)
 			}
 		}
 		return payload, nil
@@ -310,7 +310,7 @@ func findImpressionOverrides(
 	overrides := map[string][]int{}
 	messages := []string{}
 
-	for _, imp := range payload.BidRequest.Imp {
+	for _, imp := range payload.Request.Imp {
 		// do not add override for attribute if it already exists in request
 		if isAttrPresent(imp) {
 			continue

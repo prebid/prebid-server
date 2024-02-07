@@ -28,20 +28,21 @@ jobs:
           result-encoding: string
           script: |
             const utils = require('./.github/workflows/helpers/pull-request-utils.js')            
-            function directoryExtractor(filepath) {
-              // extract directory name from filepath of the form adapters/<adapter-name>/*.go
-              if (filepath.startsWith("adapters/") && filepath.split("/").length > 2) {
+            function directoryExtractor(filepath, status) {
+              // extract directory name only if file is not removed and file is in adapters directory
+              if (status != "removed" && filepath.startsWith("adapters/") && filepath.split("/").length > 2) {
                 return filepath.split("/")[1]
               }
               return ""
             }
             const helper = utils.diffHelper({github, context})
-            const files = await helper.getDirectories(directoryExtractor)
-            return files.length == 0 ? "" : JSON.stringify(files);
+            const directories = await helper.getDirectories(directoryExtractor)
+            // run coverage for maximum of 2 directories
+            return (directories.length == 0 || directories.length > 2) ? "" : JSON.stringify(directories)
 
       - name: Run coverage tests
         id: run_coverage
-        if: ${{ steps.get_directories.outputs.result }} != ""
+        if: steps.get_directories.outputs.result != ''
         run: |
           directories=$(echo '${{ steps.get_directories.outputs.result }}' | jq -r '.[]')
           go mod download
@@ -74,7 +75,7 @@ jobs:
           repository: prebid/prebid-server
 
       - name: Commit coverage files to coverage-preview branch
-        if: ${{ steps.run_coverage.outputs.coverage_dir }} != ""
+        if: steps.run_coverage.outputs.coverage_dir != ''
         id: commit_coverage
         run: |
           directory=.github/preview/${{ github.run_id }}_$(date +%s)
@@ -88,11 +89,11 @@ jobs:
           echo "remote_coverage_preview_dir=${directory}" >> $GITHUB_OUTPUT
 
       - name: Checkout master branch
-        if: ${{ steps.get_directories.outputs.result }} != ""
+        if: steps.get_directories.outputs.result != ''
         run: git checkout master
 
       - name: Add coverage summary to pull request
-        if: ${{ steps.run_coverage.outputs.coverage_dir }} != "" && ${{ steps.commit_coverage.outputs.remote_coverage_preview_dir }} != ""
+        if: steps.run_coverage.outputs.coverage_dir != '' && steps.commit_coverage.outputs.remote_coverage_preview_dir != ''
         uses: actions/github-script@v6
         with:
           script: |

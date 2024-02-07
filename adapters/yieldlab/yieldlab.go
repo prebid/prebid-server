@@ -11,11 +11,12 @@ import (
 
 	"golang.org/x/text/currency"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 )
 
 // YieldlabAdapter connects the Yieldlab API to prebid server
@@ -66,8 +67,8 @@ func (a *YieldlabAdapter) makeEndpointURL(req *openrtb2.BidRequest, params *open
 		}
 
 		if req.Device.Geo != nil {
-			q.Set("lat", fmt.Sprintf("%v", req.Device.Geo.Lat))
-			q.Set("lon", fmt.Sprintf("%v", req.Device.Geo.Lon))
+			q.Set("lat", fmt.Sprintf("%v", ptrutil.ValueOrDefault(req.Device.Geo.Lat)))
+			q.Set("lon", fmt.Sprintf("%v", ptrutil.ValueOrDefault(req.Device.Geo.Lon)))
 		}
 	}
 

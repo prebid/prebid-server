@@ -1,6 +1,6 @@
 endpoint: "https://{{.Host}}/prebid/bid"
 maintainer:
-  email: "junping.zhao@yeahmobi.com"
+  email: "developer@yeahmobi.com"
 capabilities:
   app:
     mediaTypes:

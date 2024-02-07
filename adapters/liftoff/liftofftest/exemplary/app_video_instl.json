@@ -144,7 +144,8 @@
             "w": 300,
             "h": 250
           },
-          "type": "video"
+          "type": "video",
+          "seat": "seat-id"
         }
       ]
     }
