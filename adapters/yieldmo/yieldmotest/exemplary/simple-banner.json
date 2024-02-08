@@ -21,6 +21,15 @@
     ],
     "site": {
       "id": "fake-site-id"
+    },
+    "regs": {
+      "coppa": 1,
+      "ext": {
+        "gdpr": 1,
+        "us_privacy": "uspConsentString",
+        "gpp": "gppString",
+        "gpp_sid": [6]
+      }
     }
   },
   "httpCalls": [
@@ -47,6 +56,15 @@
           ],
           "site": {
             "id": "fake-site-id"
+          },
+          "regs": {
+            "coppa": 1,
+            "ext": {
+              "gdpr": 1,
+              "us_privacy": "uspConsentString",
+              "gpp": "gppString",
+              "gpp_sid": [6]
+            }
           }
         }
       },
