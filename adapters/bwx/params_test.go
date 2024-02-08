@@ -9,6 +9,7 @@ import (
 
 var validParams = []string{
 	`{"env":"boldwinx-stage", "pid":"123456"}`,
+	`{"pid":"123456"}`,
 }
 
 func TestValidParams(t *testing.T) {
@@ -33,10 +34,10 @@ var invalidParams = []string{
 	`{}`,
 	`{"some": "param"}`,
 	`{"env":"boldwinx-stage"}`,
-	`{"pid":"1234"}`,
 	`{"othervalue":"Lorem ipsum"}`,
 	`{"env":"boldwinx-stage", pid:""}`,
-	`{"env":"", pid:"1234"}`,
+	`{pid:101010}`,
+	`{pid:"valid-pid", env: 0}`,
 }
 
 func TestInvalidParams(t *testing.T) {

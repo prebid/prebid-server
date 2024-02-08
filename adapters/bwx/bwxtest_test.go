@@ -23,5 +23,12 @@ func TestJsonSamples(t *testing.T) {
 	)
 
 	assert.NoError(t, buildErr)
-	adapterstest.RunJSONBidderTest(t, "boldwinxtest", bidder)
+	adapterstest.RunJSONBidderTest(t, "bwxtest", bidder)
+}
+
+func TestEndpointTemplateMalformed(t *testing.T) {
+	_, buildErr := Builder(openrtb_ext.BidderBWX, config.Adapter{
+		Endpoint: "{{Malformed}}"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+
+	assert.Error(t, buildErr)
 }
