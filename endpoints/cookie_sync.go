@@ -475,16 +475,24 @@ func (c *cookieSyncEndpoint) setCookieDeprecationHeader(w http.ResponseWriter, r
 	if account == nil || !account.Privacy.PrivacySandbox.CookieDeprecation.Enabled {
 		return
 	}
-	http.SetCookie(w, &http.Cookie{
+	cookie := &http.Cookie{
 		Name:     receiveCookieDeprecation,
 		Value:    "1",
 		Secure:   true,
 		HttpOnly: true,
 		Path:     "/",
 		SameSite: http.SameSiteNoneMode,
-		// Partition: "",
+		// Partition: true,
 		Expires: c.time.Now().Add(time.Second * time.Duration(account.Privacy.PrivacySandbox.CookieDeprecation.TTLSec)),
-	})
+	}
+	setCookie(w, cookie)
+}
+
+// setCookie temporary substitute for http.SetCookie(w, cookie) until it supports Partitioned cookie type. Refer https://github.com/golang/go/issues/62490
+func setCookie(w http.ResponseWriter, cookie *http.Cookie) {
+	if v := cookie.String(); v != "" {
+		w.Header().Add("Set-Cookie", v+"; Partitioned;")
+	}
 }
 
 func mapBidderStatusToAnalytics(from []cookieSyncResponseBidder) []*analytics.CookieSyncBidder {

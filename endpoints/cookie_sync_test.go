@@ -434,7 +434,7 @@ func TestCookieSyncHandle(t *testing.T) {
 		gotCookie := writer.Header().Get("Set-Cookie")
 		if test.expectedCookieDeprecationHeader {
 			wantCookieTTL := endpoint.time.Now().Add(time.Second * time.Duration(86400)).UTC().Format(http.TimeFormat)
-			wantCookie := fmt.Sprintf("receive-cookie-deprecation=1; Path=/; Expires=%v; HttpOnly; Secure; SameSite=None", wantCookieTTL)
+			wantCookie := fmt.Sprintf("receive-cookie-deprecation=1; Path=/; Expires=%v; HttpOnly; Secure; SameSite=None; Partitioned;", wantCookieTTL)
 			assert.Equal(t, wantCookie, gotCookie, ":set_cookie_deprecation_header")
 		} else {
 			assert.Equal(t, gotCookie, "")
