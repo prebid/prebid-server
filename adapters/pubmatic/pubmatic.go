@@ -9,12 +9,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/buger/jsonparser"
-	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
+
+	"github.com/buger/jsonparser"
+	"github.com/prebid/openrtb/v20/openrtb2"
 )
 
 const MAX_IMPRESSIONS_PUBMATIC = 30
@@ -236,8 +238,8 @@ func assignBannerSize(banner *openrtb2.Banner) (*openrtb2.Banner, error) {
 
 func assignBannerWidthAndHeight(banner *openrtb2.Banner, w, h int64) *openrtb2.Banner {
 	bannerCopy := *banner
-	bannerCopy.W = openrtb2.Int64Ptr(w)
-	bannerCopy.H = openrtb2.Int64Ptr(h)
+	bannerCopy.W = ptrutil.ToPtr(w)
+	bannerCopy.H = ptrutil.ToPtr(h)
 	return &bannerCopy
 }
 

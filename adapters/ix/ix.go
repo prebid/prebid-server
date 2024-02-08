@@ -11,11 +11,12 @@ import (
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 	"github.com/prebid/prebid-server/v2/version"
 
-	"github.com/prebid/openrtb/v19/native1"
-	native1response "github.com/prebid/openrtb/v19/native1/response"
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/native1"
+	native1response "github.com/prebid/openrtb/v20/native1/response"
+	"github.com/prebid/openrtb/v20/openrtb2"
 )
 
 type IxAdapter struct {
@@ -83,8 +84,8 @@ func (a *IxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters
 			}
 
 			if len(bannerCopy.Format) == 1 {
-				bannerCopy.W = openrtb2.Int64Ptr(bannerCopy.Format[0].W)
-				bannerCopy.H = openrtb2.Int64Ptr(bannerCopy.Format[0].H)
+				bannerCopy.W = ptrutil.ToPtr(bannerCopy.Format[0].W)
+				bannerCopy.H = ptrutil.ToPtr(bannerCopy.Format[0].H)
 			}
 			imp.Banner = &bannerCopy
 		}

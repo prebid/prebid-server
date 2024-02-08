@@ -29,7 +29,7 @@ The quickest way to host Prebid Server is to deploy our [official Docker image](
 
 For deploying a fork, you can create a custom Docker container using the command:
 ``` bash
-docker build -t prebid-server .
+docker build --platform linux/amd64 -t prebid-server .
 ```
 or compile a standalone binary using the command:
 ``` bash

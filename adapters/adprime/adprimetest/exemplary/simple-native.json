@@ -76,6 +76,7 @@
                                     "dealid": "test_dealid",
                                     "w": 300,
                                     "h": 250,
+                                    "mtype": 4,
                                     "ext": {
                                         "prebid": {
                                             "type": "native"
@@ -105,6 +106,7 @@
                         "dealid": "test_dealid",
                         "w": 300,
                         "h": 250,
+                        "mtype": 4,
                         "ext": {
                             "prebid": {
                                 "type": "native"

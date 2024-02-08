@@ -6,6 +6,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/aax"
 	"github.com/prebid/prebid-server/v2/adapters/aceex"
 	"github.com/prebid/prebid-server/v2/adapters/acuityads"
+	"github.com/prebid/prebid-server/v2/adapters/adelement"
 	"github.com/prebid/prebid-server/v2/adapters/adf"
 	"github.com/prebid/prebid-server/v2/adapters/adgeneration"
 	"github.com/prebid/prebid-server/v2/adapters/adhese"
@@ -186,6 +187,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/vrtcal"
 	"github.com/prebid/prebid-server/v2/adapters/xeworks"
 	"github.com/prebid/prebid-server/v2/adapters/yahooAds"
+	"github.com/prebid/prebid-server/v2/adapters/yandex"
 	"github.com/prebid/prebid-server/v2/adapters/yeahmobi"
 	"github.com/prebid/prebid-server/v2/adapters/yieldlab"
 	"github.com/prebid/prebid-server/v2/adapters/yieldmo"
@@ -205,6 +207,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderAax:               aax.Builder,
 		openrtb_ext.BidderAceex:             aceex.Builder,
 		openrtb_ext.BidderAcuityAds:         acuityads.Builder,
+		openrtb_ext.BidderAdelement:         adelement.Builder,
 		openrtb_ext.BidderAdf:               adf.Builder,
 		openrtb_ext.BidderAdgeneration:      adgeneration.Builder,
 		openrtb_ext.BidderAdhese:            adhese.Builder,
@@ -387,6 +390,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderVrtcal:            vrtcal.Builder,
 		openrtb_ext.BidderXeworks:           xeworks.Builder,
 		openrtb_ext.BidderYahooAds:          yahooAds.Builder,
+		openrtb_ext.BidderYandex:            yandex.Builder,
 		openrtb_ext.BidderYeahmobi:          yeahmobi.Builder,
 		openrtb_ext.BidderYieldlab:          yieldlab.Builder,
 		openrtb_ext.BidderYieldmo:           yieldmo.Builder,

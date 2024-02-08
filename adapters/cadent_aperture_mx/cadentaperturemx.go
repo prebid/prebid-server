@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/prebid/openrtb/v19/adcom1"
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/adcom1"
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
@@ -148,7 +148,7 @@ func buildImpVideo(imp *openrtb2.Imp) error {
 		}
 	}
 
-	if imp.Video.H == 0 && imp.Video.W == 0 {
+	if (imp.Video.H == nil || *imp.Video.H == 0) && (imp.Video.W == nil || *imp.Video.W == 0) {
 		return &errortypes.BadInput{
 			Message: fmt.Sprintf("Video: Need at least one size to build request"),
 		}
