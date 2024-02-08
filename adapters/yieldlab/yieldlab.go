@@ -115,7 +115,7 @@ func (a *YieldlabAdapter) makeEndpointURL(req *openrtb2.BidRequest, params *open
 }
 
 // getDSA extracts the Digital Service Act (DSA) properties from the request.
-func getDSA(req *openrtb2.BidRequest) (*openRTBDSAExt, error) {
+func getDSA(req *openrtb2.BidRequest) (*dsaRequest, error) {
 	if req.Regs == nil || req.Regs.Ext == nil {
 		return nil, nil
 	}
@@ -133,7 +133,7 @@ func getDSA(req *openrtb2.BidRequest) (*openRTBDSAExt, error) {
 // as specified by the OpenRTB 2.X DSA Transparency community extension.
 //
 // Example result: platform1domain.com~1~~SSP2domain.com~1_2
-func makeDSATransparencyUrlParam(transparencyObject []openRTBDSATransparency) string {
+func makeDSATransparencyUrlParam(transparencyObject []dsaTransparency) string {
 	valueSeparator, itemSeparator, objectSeparator := "_", "~", "~~"
 
 	arrayItoa := func(ints []int) []string {
@@ -352,12 +352,8 @@ func (a *YieldlabAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 				continue
 			}
 
-			if dsa := bid.DSA; dsa != nil {
-				dsaJson, err := json.Marshal(responseWithDSA{openRTBDSAExt{
-					Transparency: dsa.Transparency,
-					Behalf:       dsa.Behalf,
-					Paid:         dsa.Paid,
-				}})
+			if bid.DSA != nil {
+				dsaJson, err := json.Marshal(responseWithDSA{*bid.DSA})
 				if err != nil {
 					return nil, []error{
 						fmt.Errorf("failed to add Yieldlab DSA object for adslotID %v. This is most likely a programming issue", bid.ID),

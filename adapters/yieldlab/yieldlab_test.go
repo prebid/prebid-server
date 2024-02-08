@@ -260,17 +260,17 @@ func Test_makeSupplyChain(t *testing.T) {
 func Test_makeDSATransparencyUrlParam(t *testing.T) {
 	tests := []struct {
 		name           string
-		transparencies []openRTBDSATransparency
+		transparencies []dsaTransparency
 		expected       string
 	}{
 		{
 			name:           "No transparency objects",
-			transparencies: []openRTBDSATransparency{},
+			transparencies: []dsaTransparency{},
 			expected:       "",
 		},
 		{
 			name: "One object; No Params",
-			transparencies: []openRTBDSATransparency{
+			transparencies: []dsaTransparency{
 				{
 					Domain: "domain.com",
 					Params: []int{},
@@ -280,7 +280,7 @@ func Test_makeDSATransparencyUrlParam(t *testing.T) {
 		},
 		{
 			name: "One object; One Param",
-			transparencies: []openRTBDSATransparency{
+			transparencies: []dsaTransparency{
 				{
 					Domain: "domain.com",
 					Params: []int{1},
@@ -290,7 +290,7 @@ func Test_makeDSATransparencyUrlParam(t *testing.T) {
 		},
 		{
 			name: "Three domain objects",
-			transparencies: []openRTBDSATransparency{
+			transparencies: []dsaTransparency{
 				{
 					Domain: "domain1.com",
 					Params: []int{1, 2},

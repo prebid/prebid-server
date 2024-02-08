@@ -48,13 +48,13 @@
           "transparency": [
             {
               "domain": "platform1domain.com",
-              "params": [
+              "dsaparams": [
                 1
               ]
             },
             {
               "domain": "SSP2domain.com",
-              "params": [
+              "dsaparams": [
                 1,
                 2
               ]
@@ -117,13 +117,12 @@
               "transparency": [
                 {
                   "domain": "yieldlab.de",
-                  "params": [
+                  "dsaparams": [
                     1,
                     2
                   ]
                 }
-              ],
-              "adrender": 1
+              ]
             }
           }
         ]
@@ -141,10 +140,11 @@
             "dealid": "1234",
             "ext": {
               "dsa": {
+                "adrender": 0,
                 "transparency": [
                   {
                     "domain": "yieldlab.de",
-                    "params": [
+                    "dsaparams": [
                       1,
                       2
                     ]
