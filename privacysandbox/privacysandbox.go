@@ -9,11 +9,6 @@ import (
 	"github.com/prebid/openrtb/v20/openrtb2"
 )
 
-const (
-	topicSegmentSeparator = ","
-	topicMaxLength        = 10
-)
-
 type Topic struct {
 	SegTax   int
 	SegClass string
@@ -24,12 +19,12 @@ type Topic struct {
 func ParseTopicsFromHeader(secBrowsingTopics string) []Topic {
 	var topics []Topic
 
-	for _, seg := range strings.Split(secBrowsingTopics, topicSegmentSeparator) {
+	for _, seg := range strings.Split(secBrowsingTopics, ",") {
 		if topic, ok := parseTopicSegment(seg); ok {
 			topics = append(topics, topic)
 		}
 
-		if len(topics) == topicMaxLength {
+		if len(topics) == 10 {
 			break
 		}
 	}
@@ -49,8 +44,8 @@ func parseTopicSegment(seg string) (Topic, bool) {
 		return Topic{}, false
 	}
 
-	segmentsIds := strings.TrimSpace(segment[0])
-	if len(segmentsIds) < 3 || segmentsIds[0] != '(' || segmentsIds[len(segmentsIds)-1] != ')' {
+	segmentsIDs := strings.TrimSpace(segment[0])
+	if len(segmentsIDs) < 3 || segmentsIDs[0] != '(' || segmentsIDs[len(segmentsIDs)-1] != ')' {
 		return Topic{}, false
 	}
 
@@ -62,7 +57,7 @@ func parseTopicSegment(seg string) (Topic, bool) {
 	return Topic{
 		SegTax:   segtax,
 		SegClass: segclass,
-		SegIDs:   parseSegmentIDs(segmentsIds[1 : len(segmentsIds)-1]),
+		SegIDs:   parseSegmentIDs(segmentsIDs[1 : len(segmentsIDs)-1]),
 	}, true
 }
 
@@ -85,16 +80,16 @@ func parseSegTaxSegClass(seg string) (int, string) {
 }
 
 // parseSegmentIDs parses the segment ids from the header string into int array
-func parseSegmentIDs(segmentsIds string) []int {
-	var segIDs []int
-	for _, segId := range strings.Fields(segmentsIds) {
-		segId = strings.TrimSpace(segId)
-		if segid, err := strconv.Atoi(segId); err == nil && segid > 0 {
-			segIDs = append(segIDs, segid)
+func parseSegmentIDs(segmentsIDs string) []int {
+	var selectedSegmentIDs []int
+	for _, segmentID := range strings.Fields(segmentsIDs) {
+		segmentID = strings.TrimSpace(segmentID)
+		if selectedSegmentID, err := strconv.Atoi(segmentID); err == nil && selectedSegmentID > 0 {
+			selectedSegmentIDs = append(selectedSegmentIDs, selectedSegmentID)
 		}
 	}
 
-	return segIDs
+	return selectedSegmentIDs
 }
 
 func UpdateUserDataWithTopics(userData []openrtb2.Data, headerData []Topic, topicsDomain string) []openrtb2.Data {
@@ -116,25 +111,25 @@ func UpdateUserDataWithTopics(userData []openrtb2.Data, headerData []Topic, topi
 		}
 
 		if newSegIDs := mergeSegIDs(data.Name, topicsDomain, *ext, data.Segment, headerDataMap); newSegIDs != nil {
-			for _, segId := range newSegIDs {
-				userData[i].Segment = append(userData[i].Segment, openrtb2.Segment{ID: strconv.Itoa(segId)})
+			for _, segID := range newSegIDs {
+				userData[i].Segment = append(userData[i].Segment, openrtb2.Segment{ID: strconv.Itoa(segID)})
 			}
 
 			delete(headerDataMap[ext.SegTax], ext.SegClass)
 		}
 	}
 
-	for segtax, segClassMap := range headerDataMap {
-		for segclass, segIds := range segClassMap {
-			if len(segIds) != 0 {
+	for segTax, segClassMap := range headerDataMap {
+		for segClass, segIDs := range segClassMap {
+			if len(segIDs) != 0 {
 				data := openrtb2.Data{
 					Name: topicsDomain,
-					Ext:  json.RawMessage(fmt.Sprintf(`{"segtax": %d, "segclass": "%s"}`, segtax, segclass)),
+					Ext:  json.RawMessage(fmt.Sprintf(`{"segtax": %d, "segclass": "%s"}`, segTax, segClass)),
 				}
 
-				for segId := range segIds {
+				for segID := range segIDs {
 					data.Segment = append(data.Segment, openrtb2.Segment{
-						ID: strconv.Itoa(segId),
+						ID: strconv.Itoa(segID),
 					})
 				}
 
@@ -146,7 +141,7 @@ func UpdateUserDataWithTopics(userData []openrtb2.Data, headerData []Topic, topi
 	return userData
 }
 
-// createHeaderDataMap creates a map of header data (segtax-segclass-segIds) for faster lookup
+// createHeaderDataMap creates a map of header data (segtax-segclass-segIDs) for faster lookup
 // topicsdomain is not needed as we are only interested data from one domain configured in host config
 func createHeaderDataMap(headerData []Topic) map[int]map[string]map[int]struct{} {
 	headerDataMap := make(map[int]map[string]map[int]struct{})
@@ -178,11 +173,11 @@ func mergeSegIDs(dataName, topicsDomain string, userData Topic, userDataSegments
 					}
 				}
 
-				var segIds []int
+				var segIDs []int
 				for segID := range headerDataMap[userData.SegTax][userData.SegClass] {
-					segIds = append(segIds, segID)
+					segIDs = append(segIDs, segID)
 				}
-				return segIds
+				return segIDs
 			}
 		}
 	}
