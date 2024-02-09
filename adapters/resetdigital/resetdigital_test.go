@@ -46,30 +46,35 @@ func TestMakeRequests(t *testing.T) {
 
 func TestMakeBids(t *testing.T) {
 	request := &openrtb2.BidRequest{
-		ID: "test-request-id",
+		ID: "12345",
+
 		Imp: []openrtb2.Imp{{
-			ID: "test-imp-id",
+			ID: "001",
 			Banner: &openrtb2.Banner{
-				Format: []openrtb2.Format{{
-					W: 320,
-					H: 250,
-				}},
+				Format: []openrtb2.Format{
+					{W: 300, H: 250},
+				},
 			},
-			Ext: json.RawMessage(`{"bidder": {
-				"accountId": 2763,
-				"siteId": 68780,
-				"zoneId": 327642
-			}}`),
+
+			Ext: json.RawMessage(`{"bidder": {"placement_id": "test"}}`), //Placement_id test is used to get the force bid true
 		}},
-		Ext: json.RawMessage(``),
+		Site: &openrtb2.Site{
+			Domain: "https://test.com",
+			Page:   "https://test.com/2016/06/12",
+		},
+		Cur: []string{"USD"},
+		Device: &openrtb2.Device{
+			UA:       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36",
+			IP:       "127.0.0.1",
+			Language: "EN",
+		},
 	}
 
 	requestJson, _ := json.Marshal(request)
 	reqData := &adapters.RequestData{
-		Method:  "POST",
-		Uri:     "test-uri",
-		Body:    requestJson,
-		Headers: nil,
+		Method: "POST",
+		Uri:    "test-uri",
+		Body:   requestJson,
 	}
 
 	httpResp := &adapters.ResponseData{

@@ -188,10 +188,10 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 		return nil, nil
 	}
 	if response.StatusCode == http.StatusBadRequest {
-		return nil, []error{fmt.Errorf("bad request")}
+		return nil, nil
 	}
 	if response.StatusCode != http.StatusOK {
-		return nil, []error{fmt.Errorf("unexpected status code: %d", response.StatusCode)}
+		return nil, nil
 	}
 
 	if err := json.Unmarshal(response.Body, &response); err != nil {
@@ -221,7 +221,6 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 
 func getBidFromResponse(requestData map[string]interface{}) *openrtb2.Bid {
 	processData := requestData["bids"].([]interface{})[0].(map[string]interface{})
-	fmt.Printf("jsonData: %v\n", processData)
 
 	bid := &openrtb2.Bid{
 		ID:    processData["bid_id"].(string),
