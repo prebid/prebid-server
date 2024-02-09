@@ -269,6 +269,15 @@ func Test_makeDSATransparencyUrlParam(t *testing.T) {
 			expected:       "",
 		},
 		{
+			name: "Params without a domain",
+			transparencies: []dsaTransparency{
+				{
+					Params: []int{1, 2},
+				},
+			},
+			expected: "",
+		},
+		{
 			name: "One object; No Params",
 			transparencies: []dsaTransparency{
 				{
@@ -309,7 +318,7 @@ func Test_makeDSATransparencyUrlParam(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			actual := makeDSATransparencyUrlParam(test.transparencies)
+			actual := makeDSATransparencyURLParam(test.transparencies)
 			assert.Equal(t, test.expected, actual)
 		})
 	}

@@ -111,7 +111,7 @@ func (a *YieldlabAdapter) makeEndpointURL(req *openrtb2.BidRequest, params *open
 			q.Set("dsadatatopub", strconv.Itoa(*dsa.DataToPub))
 		}
 		if len(dsa.Transparency) != 0 {
-			q.Set("dsatransparency", makeDSATransparencyUrlParam(dsa.Transparency))
+			q.Set("dsatransparency", makeDSATransparencyURLParam(dsa.Transparency))
 		}
 	}
 
@@ -135,36 +135,50 @@ func getDSA(req *openrtb2.BidRequest) (*dsaRequest, error) {
 	return extRegs.DSA, nil
 }
 
-// makeDSATransparencyUrlParam creates the transparency url parameter
+// makeDSATransparencyURLParam creates the transparency url parameter
 // as specified by the OpenRTB 2.X DSA Transparency community extension.
 //
 // Example result: platform1domain.com~1~~SSP2domain.com~1_2
-func makeDSATransparencyUrlParam(transparencyObject []dsaTransparency) string {
+func makeDSATransparencyURLParam(transparencyObjects []dsaTransparency) string {
 	valueSeparator, itemSeparator, objectSeparator := "_", "~", "~~"
 
-	arrayItoa := func(ints []int) []string {
-		result := make([]string, len(ints))
-		for i, v := range ints {
-			result[i] = strconv.Itoa(v)
-		}
+	var b strings.Builder
 
-		return result
+	concatParams := func(params []int) {
+		b.WriteString(strconv.Itoa(params[0]))
+		for _, param := range params[1:] {
+			b.WriteString(valueSeparator)
+			b.WriteString(strconv.Itoa(param))
+		}
 	}
 
-	objectStrings := make([]string, len(transparencyObject))
-	for i, obj := range transparencyObject {
-		objectString := obj.Domain
-
-		params := obj.Params
-		if len(obj.Params) != 0 {
-			paramValues := strings.Join(arrayItoa(params), valueSeparator)
-			objectString += itemSeparator + paramValues
+	concatTransparency := func(object dsaTransparency) {
+		if len(object.Domain) == 0 {
+			return
 		}
 
-		objectStrings[i] = objectString
+		b.WriteString(object.Domain)
+		if len(object.Params) != 0 {
+			b.WriteString(itemSeparator)
+			concatParams(object.Params)
+		}
 	}
 
-	return strings.Join(objectStrings, objectSeparator)
+	concatTransparencies := func(objects []dsaTransparency) {
+		if len(objects) == 0 {
+			return
+		}
+
+		concatTransparency(objects[0])
+		for _, obj := range objects[1:] {
+			b.WriteString(objectSeparator)
+			concatTransparency(obj)
+		}
+	}
+
+	concatTransparencies(transparencyObjects)
+
+	return b.String()
 }
 
 func (a *YieldlabAdapter) makeFormats(req *openrtb2.BidRequest) (bool, string) {
