@@ -44,9 +44,9 @@ type responseWithDSA struct {
 // Should rather come from openrtb_ext package but will be defined here until DSA has been
 // implemented by the prebid server team (https://github.com/prebid/prebid-server/issues/3424).
 type dsaRequest struct {
-	Required     int               `json:"dsarequired"`
-	PubRender    int               `json:"pubrender"`
-	DataToPub    int               `json:"datatopub"`
+	Required     *int              `json:"dsarequired"`
+	PubRender    *int              `json:"pubrender"`
+	DataToPub    *int              `json:"datatopub"`
 	Transparency []dsaTransparency `json:"transparency"`
 }
 

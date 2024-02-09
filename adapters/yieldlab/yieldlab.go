@@ -101,9 +101,15 @@ func (a *YieldlabAdapter) makeEndpointURL(req *openrtb2.BidRequest, params *open
 		return "", err
 	}
 	if dsa != nil {
-		q.Set("dsarequired", strconv.Itoa(dsa.Required))
-		q.Set("dsapubrender", strconv.Itoa(dsa.PubRender))
-		q.Set("dsadatatopub", strconv.Itoa(dsa.DataToPub))
+		if dsa.Required != nil {
+			q.Set("dsarequired", strconv.Itoa(*dsa.Required))
+		}
+		if dsa.PubRender != nil {
+			q.Set("dsapubrender", strconv.Itoa(*dsa.PubRender))
+		}
+		if dsa.DataToPub != nil {
+			q.Set("dsadatatopub", strconv.Itoa(*dsa.DataToPub))
+		}
 		if len(dsa.Transparency) != 0 {
 			q.Set("dsatransparency", makeDSATransparencyUrlParam(dsa.Transparency))
 		}

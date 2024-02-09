@@ -43,7 +43,7 @@
         "gdpr": 1,
         "dsa": {
           "dsarequired": 3,
-          "dsapubrender": 0,
+          "pubrender": 0,
           "datatopub": 2,
           "transparency": [
             {
