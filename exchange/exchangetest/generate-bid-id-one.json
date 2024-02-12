@@ -112,7 +112,7 @@
                   "meta": {
                     "adaptercode": "appnexus"
                   },
-                  "bidid": "mock_uuid",
+                  "bidid": "bid1",
                   "type": "video",
                   "targeting": {
                     "hb_bidder": "appnexus",
