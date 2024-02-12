@@ -216,6 +216,8 @@ func isLikelyDetailedErrorMessage(msg string) bool {
 
 var jsonRawMessageType = reflect2.TypeOfPtr(&json.RawMessage{}).Elem()
 
+// RawMessageExtension was created to call json.Compact() on every json.RawMessage field when getting marshalled.
+// All other types will be marshalled as usual
 type RawMessageExtension struct {
 	jsoniter.DummyExtension
 }

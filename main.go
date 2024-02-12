@@ -23,6 +23,7 @@ import (
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
+	jsoniter.RegisterExtension(&jsonutil.RawMessageExtension{})
 }
 
 func main() {
@@ -50,7 +51,6 @@ func main() {
 	garbageCollectionThreshold := make([]byte, cfg.GarbageCollectorThreshold)
 	defer runtime.KeepAlive(garbageCollectionThreshold)
 
-	jsoniter.RegisterExtension(&jsonutil.RawMessageExtension{})
 	err = serve(cfg)
 	if err != nil {
 		glog.Exitf("prebid-server failed: %v", err)
