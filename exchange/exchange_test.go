@@ -144,18 +144,20 @@ func TestCharacterEscape(t *testing.T) {
 	adapterBids["appnexus"] = &entities.PbsOrtbSeatBid{Currency: "USD"}
 
 	//An openrtb2.BidRequest struct as specified in https://github.com/prebid/prebid-server/issues/465
-	bidRequest := &openrtb2.BidRequest{
-		ID: "some-request-id",
-		Imp: []openrtb2.Imp{{
-			ID:     "some-impression-id",
-			Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}, {W: 300, H: 600}}},
-			Ext:    json.RawMessage(`{"appnexus": {"placementId": 1}}`),
-		}},
-		Site:   &openrtb2.Site{Page: "prebid.org", Ext: json.RawMessage(`{"amp":0}`)},
-		Device: &openrtb2.Device{UA: "curl/7.54.0", IP: "::1"},
-		AT:     1,
-		TMax:   500,
-		Ext:    json.RawMessage(`{"id": "some-request-id","site": {"page": "prebid.org"},"imp": [{"id": "some-impression-id","banner": {"format": [{"w": 300,"h": 250},{"w": 300,"h": 600}]},"ext": {"appnexus": {"placementId": 1}}}],"tmax": 500}`),
+	bidRequest := &openrtb_ext.RequestWrapper{
+		BidRequest: &openrtb2.BidRequest{
+			ID: "some-request-id",
+			Imp: []openrtb2.Imp{{
+				ID:     "some-impression-id",
+				Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}, {W: 300, H: 600}}},
+				Ext:    json.RawMessage(`{"appnexus": {"placementId": 1}}`),
+			}},
+			Site:   &openrtb2.Site{Page: "prebid.org", Ext: json.RawMessage(`{"amp":0}`)},
+			Device: &openrtb2.Device{UA: "curl/7.54.0", IP: "::1"},
+			AT:     1,
+			TMax:   500,
+			Ext:    json.RawMessage(`{"id": "some-request-id","site": {"page": "prebid.org"},"imp": [{"id": "some-impression-id","banner": {"format": [{"w": 300,"h": 250},{"w": 300,"h": 600}]},"ext": {"appnexus": {"placementId": 1}}}],"tmax": 500}`),
+		},
 	}
 
 	//adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra,
@@ -1303,34 +1305,36 @@ func TestGetBidCacheInfoEndToEnd(t *testing.T) {
 			},
 		},
 	}
-	bidRequest := &openrtb2.BidRequest{
-		ID:   "some-request-id",
-		TMax: 1000,
-		Imp: []openrtb2.Imp{
-			{
-				ID:     "test-div",
-				Secure: openrtb2.Int8Ptr(0),
-				Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}},
-				Ext: json.RawMessage(` {
-    "rubicon": {
-        "accountId": 1001,
-        "siteId": 113932,
-        "zoneId": 535510
-    },
-    "appnexus": { "placementId": 1 },
-    "pubmatic": { "publisherId": "156209", "adSlot": "pubmatic_test2@300x250" },
-    "pulsepoint": { "cf": "300X250", "cp": 512379, "ct": 486653 },
-    "conversant": { "site_id": "108060" },
-    "ix": { "siteId": "287415" }
-}`),
+	bidRequest := &openrtb_ext.RequestWrapper{
+		BidRequest: &openrtb2.BidRequest{
+			ID:   "some-request-id",
+			TMax: 1000,
+			Imp: []openrtb2.Imp{
+				{
+					ID:     "test-div",
+					Secure: openrtb2.Int8Ptr(0),
+					Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}},
+					Ext: json.RawMessage(` {
+						"rubicon": {
+							"accountId": 1001,
+							"siteId": 113932,
+							"zoneId": 535510
+						},
+						"appnexus": { "placementId": 1 },
+						"pubmatic": { "publisherId": "156209", "adSlot": "pubmatic_test2@300x250" },
+						"pulsepoint": { "cf": "300X250", "cp": 512379, "ct": 486653 },
+						"conversant": { "site_id": "108060" },
+						"ix": { "siteId": "287415" }
+					}`),
+				},
 			},
+			Site: &openrtb2.Site{
+				Page:      "http://rubitest.com/index.html",
+				Publisher: &openrtb2.Publisher{ID: "1001"},
+			},
+			Test: 1,
+			Ext:  json.RawMessage(`{"prebid": { "cache": { "bids": {}, "vastxml": {} }, "targeting": { "pricegranularity": "med", "includewinners": true, "includebidderkeys": false } }}`),
 		},
-		Site: &openrtb2.Site{
-			Page:      "http://rubitest.com/index.html",
-			Publisher: &openrtb2.Publisher{ID: "1001"},
-		},
-		Test: 1,
-		Ext:  json.RawMessage(`{"prebid": { "cache": { "bids": {}, "vastxml": {} }, "targeting": { "pricegranularity": "med", "includewinners": true, "includebidderkeys": false } }}`),
 	}
 
 	var errList []error
@@ -1426,7 +1430,7 @@ func TestBidReturnsCreative(t *testing.T) {
 
 	//Run tests
 	for _, test := range testCases {
-		resultingBids, resultingErrs := e.makeBid(sampleBids, sampleAuction, test.inReturnCreative, nil, nil, "", "")
+		resultingBids, resultingErrs := e.makeBid(sampleBids, sampleAuction, test.inReturnCreative, nil, &openrtb_ext.RequestWrapper{}, nil, "", "")
 
 		assert.Equal(t, 0, len(resultingErrs), "%s. Test should not return errors \n", test.description)
 		assert.Equal(t, test.expectedCreativeMarkup, resultingBids[0].AdM, "%s. Ad markup string doesn't match expected \n", test.description)
@@ -1594,18 +1598,20 @@ func TestBidResponseCurrency(t *testing.T) {
 	liveAdapters := make([]openrtb_ext.BidderName, 1)
 	liveAdapters[0] = "appnexus"
 
-	bidRequest := &openrtb2.BidRequest{
-		ID: "some-request-id",
-		Imp: []openrtb2.Imp{{
-			ID:     "some-impression-id",
-			Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}, {W: 300, H: 600}}},
-			Ext:    json.RawMessage(`{"appnexus": {"placementId": 10433394}}`),
-		}},
-		Site:   &openrtb2.Site{Page: "prebid.org", Ext: json.RawMessage(`{"amp":0}`)},
-		Device: &openrtb2.Device{UA: "curl/7.54.0", IP: "::1"},
-		AT:     1,
-		TMax:   500,
-		Ext:    json.RawMessage(`{"id": "some-request-id","site": {"page": "prebid.org"},"imp": [{"id": "some-impression-id","banner": {"format": [{"w": 300,"h": 250},{"w": 300,"h": 600}]},"ext": {"appnexus": {"placementId": 10433394}}}],"tmax": 500}`),
+	bidRequest := &openrtb_ext.RequestWrapper{
+		BidRequest: &openrtb2.BidRequest{
+			ID: "some-request-id",
+			Imp: []openrtb2.Imp{{
+				ID:     "some-impression-id",
+				Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}, {W: 300, H: 600}}},
+				Ext:    json.RawMessage(`{"appnexus": {"placementId": 10433394}}`),
+			}},
+			Site:   &openrtb2.Site{Page: "prebid.org", Ext: json.RawMessage(`{"amp":0}`)},
+			Device: &openrtb2.Device{UA: "curl/7.54.0", IP: "::1"},
+			AT:     1,
+			TMax:   500,
+			Ext:    json.RawMessage(`{"id": "some-request-id","site": {"page": "prebid.org"},"imp": [{"id": "some-impression-id","banner": {"format": [{"w": 300,"h": 250},{"w": 300,"h": 600}]},"ext": {"appnexus": {"placementId": 10433394}}}],"tmax": 500}`),
+		},
 	}
 
 	adapterExtra := map[openrtb_ext.BidderName]*seatResponseExtra{
@@ -1740,14 +1746,16 @@ func TestBidResponseImpExtInfo(t *testing.T) {
 	liveAdapters := make([]openrtb_ext.BidderName, 1)
 	liveAdapters[0] = "appnexus"
 
-	bidRequest := &openrtb2.BidRequest{
-		ID: "some-request-id",
-		Imp: []openrtb2.Imp{{
-			ID:    "some-impression-id",
-			Video: &openrtb2.Video{},
-			Ext:   json.RawMessage(`{"appnexus": {"placementId": 10433394}}`),
-		}},
-		Ext: json.RawMessage(``),
+	bidRequest := &openrtb_ext.RequestWrapper{
+		BidRequest: &openrtb2.BidRequest{
+			ID: "some-request-id",
+			Imp: []openrtb2.Imp{{
+				ID:    "some-impression-id",
+				Video: &openrtb2.Video{},
+				Ext:   json.RawMessage(`{"appnexus": {"placementId": 10433394}}`),
+			}},
+			Ext: json.RawMessage(``),
+		},
 	}
 
 	var errList []error
@@ -4731,11 +4739,19 @@ func TestMakeBidWithValidation(t *testing.T) {
 
 	// Define test cases
 	testCases := []struct {
-		description       string
-		givenValidations  config.Validations
-		givenBids         []*entities.PbsOrtbBid
-		expectedNumOfBids int
+		description        string
+		givenBidRequestExt json.RawMessage
+		givenValidations   config.Validations
+		givenBids          []*entities.PbsOrtbBid
+		expectedNumOfBids  int
 	}{
+		{
+			description:        "Validation is enforced, and one bid out of two is invalid based on DSA object presence",
+			givenBidRequestExt: json.RawMessage(`{"dsa": {"dsarequired": 2}}`),
+			givenValidations:   config.Validations{},
+			givenBids:          []*entities.PbsOrtbBid{{Bid: &openrtb2.Bid{Ext: json.RawMessage(`{"dsa": {}}`)}}, {Bid: &openrtb2.Bid{}}},
+			expectedNumOfBids:  1,
+		},
 		{
 			description:       "Validation is enforced, and one bid out of the two is invalid based on dimensions",
 			givenValidations:  config.Validations{BannerCreativeMaxSize: config.ValidationEnforce, MaxCreativeWidth: 100, MaxCreativeHeight: 100},
@@ -4807,9 +4823,16 @@ func TestMakeBidWithValidation(t *testing.T) {
 
 	//Run tests
 	for _, test := range testCases {
+		bidRequest := &openrtb_ext.RequestWrapper{
+			BidRequest: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{
+					Ext: test.givenBidRequestExt,
+				},
+			},
+		}
 		e.bidValidationEnforcement = test.givenValidations
 		sampleBids := test.givenBids
-		resultingBids, resultingErrs := e.makeBid(sampleBids, sampleAuction, true, ImpExtInfoMap, bidExtResponse, "", "")
+		resultingBids, resultingErrs := e.makeBid(sampleBids, sampleAuction, true, ImpExtInfoMap, bidRequest, bidExtResponse, "", "")
 
 		assert.Equal(t, 0, len(resultingErrs), "%s. Test should not return errors \n", test.description)
 		assert.Equal(t, test.expectedNumOfBids, len(resultingBids), "%s. Test returns more valid bids than expected\n", test.description)

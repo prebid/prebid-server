@@ -17,6 +17,9 @@
                         "bidder": {
                             "appnexus": {
                                 "placementId": 1
+                            },
+                            "audienceNetwork": {
+                                "placementId": "some-placement"
                             }
                         }
                     }
@@ -25,7 +28,7 @@
             "regs": {
                 "ext": {
                     "dsa": {
-                        "dsarequired": 3,
+                        "dsarequired": 2,
                         "pubrender": 0,
                         "datatopub": 2,
                         "transparency": [{
@@ -66,7 +69,77 @@
                     "regs": {
                         "ext": {
                             "dsa": {
-                                "dsarequired": 3,
+                                "dsarequired": 2,
+                                "pubrender": 0,
+                                "datatopub": 2,
+                                "transparency": [{
+                                        "domain": "platform1domain.com",
+                                        "dsaparams": [1]
+                                    },
+                                    {
+                                        "domain": "SSP2domain.com",
+                                        "dsaparams": [1, 2]
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            },
+            "mockResponse": {
+                "pbsSeatBids": [{
+                    "pbsBids": [{
+                        "ortbBid": {
+                            "id": "apn-bid",
+                            "impid": "my-imp-id",
+                            "price": 0.3,
+                            "w": 200,
+                            "h": 250,
+                            "crid": "creative-1",
+                            "ext": {
+                                "someField": "someValue",
+                                "origbidcpm": 0.3,
+                                "dsa": {
+                                    "behalf": "Advertiser",
+                                    "paid": "Advertiser",
+                                    "transparency": [{
+                                        "domain": "dsp1domain.com",
+                                        "dsaparams": [1, 2]
+                                    }],
+                                    "adrender": 1
+                                }
+                            }
+                        },
+                        "bidType": "video"
+                    }],
+                    "seat": "appnexus"
+                }]
+            }
+        },
+        "audienceNetwork": {
+            "expectRequest": {
+                "ortbRequest": {
+                    "id": "some-request-id",
+                    "site": {
+                        "page": "test.somepage.com"
+                    },
+                    "imp": [{
+                        "id": "my-imp-id",
+                        "video": {
+                            "mimes": [
+                                "video/mp4"
+                            ]
+                        },
+                        "ext": {
+                            "bidder": {
+                                "placementId": "some-placement"
+                            }
+                        }
+                    }],
+                    "regs": {
+                        "ext": {
+                            "dsa": {
+                                "dsarequired": 2,
                                 "pubrender": 0,
                                 "datatopub": 2,
                                 "transparency": [{
@@ -100,7 +173,7 @@
                         },
                         "bidType": "video"
                     }],
-                    "seat": "appnexus"
+                    "seat": "audienceNetwork"
                 }]
             }
         }
@@ -125,9 +198,21 @@
                                 "adaptercode": "appnexus"
                             },
                             "type": "video"
+                        },
+                        "dsa": {
+                            "behalf": "Advertiser",
+                            "paid": "Advertiser",
+                            "transparency": [{
+                                "domain": "dsp1domain.com",
+                                "dsaparams": [1, 2]
+                            }],
+                            "adrender": 1
                         }
                     }
                 }]
+            },{
+                "seat": "audienceNetwork",
+                "bid": []
             }]
         }
     }
