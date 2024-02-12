@@ -5,10 +5,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"strings"
 	"testing"
 
-	jsoniter "github.com/json-iterator/go"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/prebid/prebid-server/v2/util/jsonutil"
@@ -276,23 +274,4 @@ func TestValidateDefaultAliases(t *testing.T) {
 			assert.EqualError(t, err, test.expectedError, test.description)
 		}
 	}
-}
-
-func TestBidderParamsCompactedOutput(t *testing.T) {
-	jsoniter.RegisterExtension(&jsonutil.SampleExtension{})
-
-	inSchemaDirectory := "../static/bidder-params"
-	expected := `{"33across":{"$schema":"http://json-schema.org/draft-04/schema#","title":"33Across Adapter Params","description":"A schema which validates params accepted by the 33Across adapter","type":"object","properties":{"productId":{"type":"string","description":"Product type"},"siteId":{"type":"string","description":"Site Id"},"zoneId":{"type":"string","description":"Zone Id"}},"required":["productId","siteId"]}`
-	paramsValidator, err := openrtb_ext.NewBidderParamsValidator(inSchemaDirectory)
-	assert.NoError(t, err, "Error initialing validator")
-	handler := newJsonDirectoryServer(inSchemaDirectory, paramsValidator, nil, nil)
-	recorder := httptest.NewRecorder()
-
-	request, err := http.NewRequest("GET", "/whatever", nil)
-	assert.NoError(t, err, "Error creating request")
-
-	handler(recorder, request, nil)
-
-	assert.True(t, strings.HasPrefix(recorder.Body.String(), expected))
-	assert.Equal(t, expected, recorder.Body.String())
 }

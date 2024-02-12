@@ -123,7 +123,7 @@ func TestJsonSampleRequests(t *testing.T) {
 		},
 	}
 
-	jsoniter.RegisterTypeEncoder("json.RawMessage", &jsonutil.JsonCompactEncoder{})
+	jsoniter.RegisterExtension(&jsonutil.RawMessageExtension{})
 	for _, tc := range testSuites {
 		err := filepath.WalkDir(filepath.Join("sample-requests", tc.sampleRequestsSubDir), func(path string, info fs.DirEntry, err error) error {
 			// According to documentation, needed to avoid panics
@@ -145,7 +145,7 @@ func TestJsonSampleRequests(t *testing.T) {
 }
 
 func TestSingleJSONTest(t *testing.T) {
-	jsoniter.RegisterTypeEncoder("json.RawMessage", &jsonutil.JsonCompactEncoder{})
+	jsoniter.RegisterExtension(&jsonutil.RawMessageExtension{})
 	runJsonBasedTest(t, "sample-requests/valid-whole/exemplary/simple.json", "")
 }
 

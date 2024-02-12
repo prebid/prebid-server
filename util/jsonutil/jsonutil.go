@@ -8,6 +8,7 @@ import (
 	"unsafe"
 
 	jsoniter "github.com/json-iterator/go"
+	"github.com/modern-go/reflect2"
 	"github.com/prebid/prebid-server/v2/errortypes"
 )
 
@@ -213,17 +214,31 @@ func isLikelyDetailedErrorMessage(msg string) bool {
 	return !strings.HasPrefix(msg, "request.")
 }
 
-type JsonCompactEncoder struct{}
+var jsonRawMessageType = reflect2.TypeOfPtr(&json.RawMessage{}).Elem()
 
-func (encoder *JsonCompactEncoder) Encode(ptr unsafe.Pointer, stream *jsoniter.Stream) {
-	jsonRawMsg := *(*[]byte)(ptr)
-
-	dst := &bytes.Buffer{}
-	json.Compact(dst, jsonRawMsg)
-	stream.WriteStringWithHTMLEscaped(dst.String())
+type RawMessageExtension struct {
+	jsoniter.DummyExtension
 }
 
-func (encoder *JsonCompactEncoder) IsEmpty(ptr unsafe.Pointer) bool {
-	jsonRawMsg := *(*[]byte)(ptr)
-	return len(jsonRawMsg) == 0
+func (e *RawMessageExtension) CreateEncoder(typ reflect2.Type) jsoniter.ValEncoder {
+	if typ == jsonRawMessageType {
+		return &rawMessageCodec{}
+	}
+	return nil
+}
+
+type rawMessageCodec struct{}
+
+func (codec *rawMessageCodec) Encode(ptr unsafe.Pointer, stream *jsoniter.Stream) {
+	if ptr != nil {
+		jsonRawMsg := *(*[]byte)(ptr)
+
+		dst := bytes.NewBuffer(make([]byte, 0, len(jsonRawMsg)))
+		json.Compact(dst, jsonRawMsg)
+		stream.Write(dst.Bytes())
+	}
+}
+
+func (codec *rawMessageCodec) IsEmpty(ptr unsafe.Pointer) bool {
+	return *((*string)(ptr)) == ""
 }
