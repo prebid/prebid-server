@@ -1,9 +1,10 @@
 package injector
 
 import (
+	"fmt"
 	"testing"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/exchange/entities"
 	"github.com/prebid/prebid-server/v2/macros"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
@@ -117,6 +118,14 @@ func TestInjectTracker(t *testing.T) {
 			want: `<VAST version="4.2" xmlns="http://www.iab.com/VAST"><Ad id="20011" sequence="1"><Wrapper followAdditionalWrappers="0" allowMultipleAds="1" fallbackOnNoAd="0"><AdSystem version="4.0"><![CDATA[iabtechlab]]></AdSystem><Error><![CDATA[https://example.com/error]]></Error><Error><![CDATA[http://errortracker.com?macro1=bid123&macro2=testbundle&macro3=testbundle&macro4=publishertestdomain&macro5=pageurltest&macro6=testpublisherID&macro6=1&macro7=1&macro8=1&macro9=&macro10=]]></Error><Impression id="Impression-ID"><![CDATA[https://example.com/track/impression]]></Impression><Impression><![CDATA[http://impressiontracker.com?macro1=bid123&macro2=testbundle&macro3=testbundle&macro4=publishertestdomain&macro5=pageurltest&macro6=testpublisherID&macro6=1&macro7=1&macro8=1&macro9=&macro10=]]></Impression><Creatives><Creative id="5480" sequence="1" adId="2447226"><CompanionAds><Companion id="1232" width="100" height="150" assetWidth="250" assetHeight="200" expandedWidth="350" expandedHeight="250" apiFramework="SIMID" adSlotId="3214" pxratio="1400"><StaticResource creativeType="image/png"><![CDATA[https://www.iab.com/wp-content/uploads/2014/09/iab-tech-lab-6-644x290.png]]></StaticResource><CompanionClickThrough><![CDATA[https://iabtechlab.com]]></CompanionClickThrough><CompanionClickThrough><![CDATA[http://companionclicktracker.com?macro1=bid123&macro2=testbundle&macro3=testbundle&macro4=publishertestdomain&macro5=pageurltest&macro6=testpublisherID&macro6=1&macro7=1&macro8=1&macro9=&macro10=]]></CompanionClickThrough></Companion></CompanionAds></Creative></Creatives><VASTAdTagURI><![CDATA[https://raw.githubusercontent.com/InteractiveAdvertisingBureau/VAST_Samples/master/VAST%204.2%20Samples/Inline_Companion_Tag-test.xml]]></VASTAdTagURI></Wrapper></Ad></VAST>`,
 		},
 		{
+			name: "Wapper no companion vastXML",
+			args: args{
+				NURL:    "",
+				vastXML: `<VAST version="4.2" xmlns="http://www.iab.com/VAST"><Ad id="20011" sequence="1" ><Wrapper followAdditionalWrappers="0" allowMultipleAds="1" fallbackOnNoAd="0"><AdSystem version="4.0">iabtechlab</AdSystem><Error><![CDATA[https://example.com/error]]></Error><Impression id="Impression-ID"><![CDATA[https://example.com/track/impression]]></Impression><Creatives><Creative id="5480" sequence="1" adId="2447226"><CompanionAds></CompanionAds></Creative></Creatives><VASTAdTagURI><![CDATA[https://raw.githubusercontent.com/InteractiveAdvertisingBureau/VAST_Samples/master/VAST%204.2%20Samples/Inline_Companion_Tag-test.xml]]></VASTAdTagURI></Wrapper></Ad></VAST>`,
+			},
+			want: `<VAST version="4.2" xmlns="http://www.iab.com/VAST"><Ad id="20011" sequence="1"><Wrapper followAdditionalWrappers="0" allowMultipleAds="1" fallbackOnNoAd="0"><AdSystem version="4.0"><![CDATA[iabtechlab]]></AdSystem><Error><![CDATA[https://example.com/error]]></Error><Error><![CDATA[http://errortracker.com?macro1=bid123&macro2=testbundle&macro3=testbundle&macro4=publishertestdomain&macro5=pageurltest&macro6=testpublisherID&macro6=1&macro7=1&macro8=1&macro9=&macro10=]]></Error><Impression id="Impression-ID"><![CDATA[https://example.com/track/impression]]></Impression><Impression><![CDATA[http://impressiontracker.com?macro1=bid123&macro2=testbundle&macro3=testbundle&macro4=publishertestdomain&macro5=pageurltest&macro6=testpublisherID&macro6=1&macro7=1&macro8=1&macro9=&macro10=]]></Impression><Creatives><Creative id="5480" sequence="1" adId="2447226"><CompanionAds><Companion><CompanionClickThrough><![CDATA[http://companionclicktracker.com?macro1=bid123&macro2=testbundle&macro3=testbundle&macro4=publishertestdomain&macro5=pageurltest&macro6=testpublisherID&macro6=1&macro7=1&macro8=1&macro9=&macro10=]]></CompanionClickThrough></Companion></CompanionAds></Creative></Creatives><VASTAdTagURI><![CDATA[https://raw.githubusercontent.com/InteractiveAdvertisingBureau/VAST_Samples/master/VAST%204.2%20Samples/Inline_Companion_Tag-test.xml]]></VASTAdTagURI></Wrapper></Ad></VAST>`,
+		},
+		{
 			name: "Inline Non Linear empty",
 			args: args{
 				NURL:    "",
@@ -136,6 +145,7 @@ func TestInjectTracker(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := ti.InjectTracker(tt.args.vastXML, tt.args.NURL)
+			fmt.Println(got)
 			assert.Equal(t, tt.want, got, tt.name)
 		})
 	}
