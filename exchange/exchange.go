@@ -414,6 +414,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 			}
 		}
 
+		// ERROR
 		if e.bidIDGenerator.Enabled() {
 			for _, seatBid := range adapterBids {
 				for _, pbsBid := range seatBid.Bids {
