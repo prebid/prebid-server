@@ -414,7 +414,6 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 			}
 		}
 
-		// fine when random number generator, indetermind between bidders otherwise
 		if e.bidIDGenerator.Enabled() {
 			for bidder, seatBid := range adapterBids {
 				for i := range seatBid.Bids {
