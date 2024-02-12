@@ -39,7 +39,8 @@
         "ext": {
           "bidder": {
             "accountId": "accountId",
-            "placementId": "placementId"
+            "sourceId": "sourceId",
+            "host": "host"
           }
         }
       }
@@ -65,7 +66,7 @@
             "123.123.123.123"
           ]
         },
-        "uri": "http://us.example.com/bid?rtb_seat_id=placementId&secret_key=accountId",
+        "uri": "http://host.bizzclick.com/bid?rtb_seat_id=sourceId&secret_key=accountId",
         "body": {
           "id": "some-request-id",
           "device": {
@@ -111,17 +112,16 @@
         "status": 200,
         "body": {
           "id": "awesome-resp-id",
-          "seatbid": [
-          ],
+          "seatbid": [],
           "cur": "USD"
         }
       }
     }
   ],
-    "mockResponse": {
-      "status": 200,
-      "body": "invalid response"
-    },
+  "mockResponse": {
+    "status": 200,
+    "body": "invalid response"
+  },
   "expectedMakeBidsErrors": [
     {
       "value": "Empty SeatBid array",

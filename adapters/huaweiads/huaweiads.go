@@ -16,14 +16,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/prebid/openrtb/v19/native1"
-	nativeRequests "github.com/prebid/openrtb/v19/native1/request"
-	nativeResponse "github.com/prebid/openrtb/v19/native1/response"
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/native1"
+	nativeRequests "github.com/prebid/openrtb/v20/native1/request"
+	nativeResponse "github.com/prebid/openrtb/v20/native1/response"
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 )
 
 const huaweiAdxApiVersion = "3.4"
@@ -535,7 +536,7 @@ func getNativeFormat(adslot30 *adslot30, openRTBImp *openrtb2.Imp) error {
 	}
 
 	//popular size for native ads
-	popularSizes := []map[string]int64{{"w": 225, "h": 150}, {"w": 300, "h": 250}, {"w": 320, "h": 250}, {"w": 640, "h": 360}, {"w": 1080, "h": 170}, {"w": 1080, "h": 430}, {"w": 1080, "h": 432}, {"w": 1080, "h": 504}, {"w": 1080, "h": 607}, {"w": 1080, "h": 1620}, {"w": 1200, "h": 627}, {"w": 1280, "h": 720}, {"w": 1312, "h": 768}, {"w": 1920, "h": 1080}}
+	popularSizes := []format{{W: 225, H: 150}, {W: 1080, H: 607}, {W: 300, H: 250}, {W: 1080, H: 1620}, {W: 1280, H: 720}, {W: 640, H: 360}, {W: 1080, H: 1920}, {W: 720, H: 1280}}
 
 	// only compute the main image number, type = native1.ImageAssetTypeMain
 	var numMainImage = 0
@@ -555,11 +556,25 @@ func getNativeFormat(adslot30 *adslot30, openRTBImp *openrtb2.Imp) error {
 			}
 		}
 	}
+
+	sizeMap := make(map[format]struct{})
+	for _, size := range popularSizes {
+		sizeMap[size] = struct{}{}
+	}
+
 	for _, asset := range nativePayload.Assets {
 		// Only one of the {title,img,video,data} objects should be present in each object.
 		if asset.Video != nil {
 			numVideo++
-			continue
+			formats = popularSizes
+
+			w := ptrutil.ValueOrDefault(asset.Video.W)
+			h := ptrutil.ValueOrDefault(asset.Video.H)
+
+			_, ok := sizeMap[format{W: w, H: h}]
+			if (w != 0 && h != 0) && !ok {
+				formats = append(formats, format{w, h})
+			}
 		}
 		// every image has the same W, H.
 		if asset.Img != nil {
@@ -570,37 +585,38 @@ func getNativeFormat(adslot30 *adslot30, openRTBImp *openrtb2.Imp) error {
 				}
 				if numFormat == 1 && asset.Img.H != 0 && asset.Img.W != 0 && asset.Img.WMin != 0 && asset.Img.HMin != 0 {
 					result := filterPopularSizes(popularSizes, asset.Img.W, asset.Img.H, "ratio")
-					for i := 0; i < len(result); i++ {
-						formats = append(formats, format{result[i]["w"], result[i]["h"]})
-					}
+					formats = append(formats, result...)
 				}
 				if numFormat == 1 && asset.Img.H == 0 && asset.Img.W == 0 && asset.Img.WMin != 0 && asset.Img.HMin != 0 {
-					result := filterPopularSizes(popularSizes, asset.Img.W, asset.Img.H, "range")
-					for i := 0; i < len(result); i++ {
-						formats = append(formats, format{result[i]["w"], result[i]["h"]})
-					}
+					result := filterPopularSizes(popularSizes, asset.Img.WMin, asset.Img.HMin, "range")
+					formats = append(formats, result...)
 				}
 			}
 		}
 		adslot30.Format = formats
 	}
-	detailedCreativeTypeList = append(detailedCreativeTypeList, "901", "905")
+	if numVideo >= 1 {
+		detailedCreativeTypeList = append(detailedCreativeTypeList, "903")
+	}
+	if numMainImage >= 1 {
+		detailedCreativeTypeList = append(detailedCreativeTypeList, "901", "904", "905")
+	}
 	adslot30.DetailedCreativeTypeList = detailedCreativeTypeList
 	return nil
 }
 
 // filter popular size by range or ratio to append format array
-func filterPopularSizes(sizes []map[string]int64, width int64, height int64, byWhat string) []map[string]int64 {
+func filterPopularSizes(sizes []format, width int64, height int64, byWhat string) []format {
 
-	filtered := []map[string]int64{}
+	filtered := []format{}
 	for _, size := range sizes {
-		w := size["w"]
-		h := size["h"]
+		w := size.W
+		h := size.H
 
 		if byWhat == "ratio" {
 			ratio := float64(width) / float64(height)
 			diff := math.Abs(float64(w)/float64(h) - ratio)
-			if diff <= 0.3 {
+			if diff <= 0.5 {
 				filtered = append(filtered, size)
 			}
 		}
@@ -613,8 +629,8 @@ func filterPopularSizes(sizes []map[string]int64, width int64, height int64, byW
 
 // roll ad need TotalDuration
 func getVideoFormat(adslot30 *adslot30, adtype int32, openRTBImp *openrtb2.Imp) error {
-	adslot30.W = openRTBImp.Video.W
-	adslot30.H = openRTBImp.Video.H
+	adslot30.W = ptrutil.ValueOrDefault(openRTBImp.Video.W)
+	adslot30.H = ptrutil.ValueOrDefault(openRTBImp.Video.H)
 
 	if adtype == roll {
 		if openRTBImp.Video.MaxDuration == 0 {
@@ -924,12 +940,12 @@ func getReqRegsInfo(request *huaweiAdsRequest, openRTBRequest *openrtb2.BidReque
 // getReqGeoInfo: get geo information for HuaweiAds request, include Lon, Lat, Accuracy, Lastfix
 func getReqGeoInfo(request *huaweiAdsRequest, openRTBRequest *openrtb2.BidRequest) {
 	if openRTBRequest.Device != nil && openRTBRequest.Device.Geo != nil {
-		var geo geo
-		geo.Lon = float32(openRTBRequest.Device.Geo.Lon)
-		geo.Lat = float32(openRTBRequest.Device.Geo.Lat)
-		geo.Accuracy = int32(openRTBRequest.Device.Geo.Accuracy)
-		geo.Lastfix = int32(openRTBRequest.Device.Geo.LastFix)
-		request.Geo = geo
+		request.Geo = geo{
+			Lon:      float32(ptrutil.ValueOrDefault(openRTBRequest.Device.Geo.Lon)),
+			Lat:      float32(ptrutil.ValueOrDefault(openRTBRequest.Device.Geo.Lat)),
+			Accuracy: int32(openRTBRequest.Device.Geo.Accuracy),
+			Lastfix:  int32(openRTBRequest.Device.Geo.LastFix),
+		}
 	}
 }
 
@@ -1433,9 +1449,9 @@ func (a *adapter) extractAdmVideo(adType int32, content *content, bidType openrt
 			adWidth = int64(content.MetaData.VideoInfo.Width)
 			adHeight = int64(content.MetaData.VideoInfo.Height)
 		} else if bidType == openrtb_ext.BidTypeVideo {
-			if opentrb2Imp.Video != nil && opentrb2Imp.Video.W != 0 && opentrb2Imp.Video.H != 0 {
-				adWidth = opentrb2Imp.Video.W
-				adHeight = opentrb2Imp.Video.H
+			if opentrb2Imp.Video != nil && opentrb2Imp.Video.W != nil && *opentrb2Imp.Video.W != 0 && opentrb2Imp.Video.H != nil && *opentrb2Imp.Video.H != 0 {
+				adWidth = *opentrb2Imp.Video.W
+				adHeight = *opentrb2Imp.Video.H
 			}
 		} else {
 			return "", 0, 0, errors.New("extract Adm for video failed: cannot get video width, height")

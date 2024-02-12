@@ -9,11 +9,13 @@ import (
 	"math/rand"
 	"strings"
 
+	"github.com/prebid/prebid-server/v2/ortb"
+
 	"github.com/buger/jsonparser"
 	"github.com/prebid/go-gdpr/vendorconsent"
 	gpplib "github.com/prebid/go-gpp"
 	gppConstants "github.com/prebid/go-gpp/constants"
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
@@ -21,7 +23,6 @@ import (
 	"github.com/prebid/prebid-server/v2/gdpr"
 	"github.com/prebid/prebid-server/v2/metrics"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/ortb"
 	"github.com/prebid/prebid-server/v2/privacy"
 	"github.com/prebid/prebid-server/v2/privacy/ccpa"
 	"github.com/prebid/prebid-server/v2/privacy/lmt"
@@ -90,9 +91,10 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 
 	var gpp gpplib.GppContainer
 	if req.BidRequest.Regs != nil && len(req.BidRequest.Regs.GPP) > 0 {
-		gpp, err = gpplib.Parse(req.BidRequest.Regs.GPP)
-		if err != nil {
-			errs = append(errs, err)
+		var gppErrs []error
+		gpp, gppErrs = gpplib.Parse(req.BidRequest.Regs.GPP)
+		if len(gppErrs) > 0 {
+			errs = append(errs, gppErrs[0])
 		}
 	}
 
@@ -181,7 +183,9 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		// FPD should be applied before policies, otherwise it overrides policies and activities restricted data
 		applyFPD(auctionReq.FirstPartyData, bidderRequest)
 
-		reqWrapper := cloneBidderReq(bidderRequest.BidRequest)
+		reqWrapper := &openrtb_ext.RequestWrapper{
+			BidRequest: ortb.CloneBidRequestPartial(bidderRequest.BidRequest),
+		}
 
 		passIDActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitUserFPD, scopedName, privacy.NewRequestFromBidRequest(*req))
 		if !passIDActivityAllowed {
@@ -236,34 +240,6 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 	}
 
 	return
-}
-
-// cloneBidderReq - clones bidder request and replaces req.User and req.Device with new copies
-func cloneBidderReq(req *openrtb2.BidRequest) *openrtb_ext.RequestWrapper {
-
-	// bidder request may be modified differently per bidder based on privacy configs
-	// new request should be created for each bidder request
-	// pointer fields like User and Device should be cloned and set back to the request copy
-	var newReq *openrtb2.BidRequest
-	newReq = ptrutil.Clone(req)
-
-	if req.User != nil {
-		userCopy := ortb.CloneUser(req.User)
-		newReq.User = userCopy
-	}
-
-	if req.Device != nil {
-		deviceCopy := ortb.CloneDevice(req.Device)
-		newReq.Device = deviceCopy
-	}
-
-	if req.Source != nil {
-		sourceCopy := ortb.CloneSource(req.Source)
-		newReq.Source = sourceCopy
-	}
-
-	reqWrapper := &openrtb_ext.RequestWrapper{BidRequest: newReq}
-	return reqWrapper
 }
 
 func shouldSetLegacyPrivacy(bidderInfo config.BidderInfos, bidder string) bool {
