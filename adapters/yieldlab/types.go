@@ -19,10 +19,10 @@ type bidResponse struct {
 
 // dsaResponse defines Digital Service Act (DSA) parameters from Yieldlab yieldprobe response.
 type dsaResponse struct {
-	Behalf       string            `json:"behalf"`
-	Paid         string            `json:"paid"`
-	Adrender     int               `json:"adrender"`
-	Transparency []dsaTransparency `json:"transparency"`
+	Behalf       string            `json:"behalf,omitempty"`
+	Paid         string            `json:"paid,omitempty"`
+	Adrender     *int              `json:"adrender,omitempty"`
+	Transparency []dsaTransparency `json:"transparency,omitempty"`
 }
 
 // openRTBExtRegsWithDSA defines the contract for bidrequest.regs.ext with the missing DSA property.
@@ -52,8 +52,8 @@ type dsaRequest struct {
 
 // dsaTransparency Digital Service Act (DSA) transparency object
 type dsaTransparency struct {
-	Domain string `json:"domain"`
-	Params []int  `json:"dsaparams"`
+	Domain string `json:"domain,omitempty"`
+	Params []int  `json:"dsaparams,omitempty"`
 }
 
 type cacheBuster func() string

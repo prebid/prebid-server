@@ -111,7 +111,10 @@ func (a *YieldlabAdapter) makeEndpointURL(req *openrtb2.BidRequest, params *open
 			q.Set("dsadatatopub", strconv.Itoa(*dsa.DataToPub))
 		}
 		if len(dsa.Transparency) != 0 {
-			q.Set("dsatransparency", makeDSATransparencyURLParam(dsa.Transparency))
+			transparencyParam := makeDSATransparencyURLParam(dsa.Transparency)
+			if len(transparencyParam) != 0 {
+				q.Set("dsatransparency", transparencyParam)
+			}
 		}
 	}
 

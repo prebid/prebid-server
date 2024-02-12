@@ -1,6 +1,6 @@
 {
   "mockBidRequest": {
-    "id": "test-request-with-DSA",
+    "id": "test-request-with-empty-DSA-transparency",
     "imp": [
       {
         "id": "test-imp-id",
@@ -42,22 +42,8 @@
       "ext": {
         "gdpr": 1,
         "dsa": {
-          "dsarequired": 3,
-          "pubrender": 0,
-          "datatopub": 2,
           "transparency": [
             {
-              "domain": "platform1domain.com",
-              "dsaparams": [
-                1
-              ]
-            },
-            {
-              "domain": "SSP2domain.com",
-              "dsaparams": [
-                1,
-                2
-              ]
             }
           ]
         }
@@ -97,7 +83,7 @@
             "169.254.13.37"
           ]
         },
-        "uri": "https://ad.yieldlab.net/testing/12345?consent=BOlOrv1OlOr2EAAABADECg-AAAApp7v______9______9uz_Ov_v_f__33e8__9v_l_7_-___u_-3zd4u_1vf99yfm1-7etr3tp_87ues2_Xur__79__3z3_9phP78k89r7337Ew-v02&content=json&dsadatatopub=2&dsapubrender=0&dsarequired=3&dsatransparency=platform1domain.com~1~~SSP2domain.com~1_2&gdpr=1&ids=ylid%3A34a53e82-0dc3-4815-8b7e-b725ede0361c&lat=51.499488&lon=-0.128953&pvid=true&sizes=12345%3A728x90&t=key1%3Dvalue1%26key2%3Dvalue2&ts=testing&yl_rtb_connectiontype=6&yl_rtb_devicetype=4&yl_rtb_ifa=hello-ads"
+        "uri": "https://ad.yieldlab.net/testing/12345?consent=BOlOrv1OlOr2EAAABADECg-AAAApp7v______9______9uz_Ov_v_f__33e8__9v_l_7_-___u_-3zd4u_1vf99yfm1-7etr3tp_87ues2_Xur__79__3z3_9phP78k89r7337Ew-v02&content=json&gdpr=1&ids=ylid%3A34a53e82-0dc3-4815-8b7e-b725ede0361c&lat=51.499488&lon=-0.128953&pvid=true&sizes=12345%3A728x90&t=key1%3Dvalue1%26key2%3Dvalue2&ts=testing&yl_rtb_connectiontype=6&yl_rtb_devicetype=4&yl_rtb_ifa=hello-ads"
       },
       "mockResponse": {
         "status": 200,
@@ -111,22 +97,14 @@
             "did": 5678,
             "pvid": "40cb3251-1e1e-4cfd-8edc-7d32dc1a21e5",
             "dsa": {
-              "required": 3,
-              "behalf": "on behalf of yieldlab",
-              "paid": "by yieldlab",
               "transparency": [
                 {
-                  "domain": "yieldlab.de",
-                  "dsaparams": [
-                    1,
-                    2
-                  ]
                 }
-              ],
-              "adrender": 0
+              ]
             }
           }
         ]
+
       }
     }
   ],
@@ -141,18 +119,10 @@
             "dealid": "1234",
             "ext": {
               "dsa": {
-                "adrender": 0,
                 "transparency": [
                   {
-                    "domain": "yieldlab.de",
-                    "dsaparams": [
-                      1,
-                      2
-                    ]
                   }
-                ],
-                "behalf": "on behalf of yieldlab",
-                "paid": "by yieldlab"
+                ]
               }
             },
             "id": "12345",
