@@ -1,6 +1,7 @@
 package macros
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/prebid/openrtb/v19/openrtb2"
@@ -32,8 +33,7 @@ func TestStringIndexBasedReplace(t *testing.T) {
 					return macroProvider
 				},
 			},
-			want:    "http://tracker.com?macro1=bidId123&macro2=testbundle&macro3=testdomain&macro4=publishertestdomain&macro5=pageurltest&macro6=testpublisherID&macro7=10&macro8=yes&macro9=value1&macro10=test&macro11=&macro12=123&macro15=123&macro16=test1&macro17=vast&macro18=firstQuartile",
-			wantErr: false,
+			want: "http://tracker.com?macro1=bidId123&macro2=testbundle&macro3=testdomain&macro4=publishertestdomain&macro5=pageurltest&macro6=testpublisherID&macro7=10&macro8=yes&macro9=value1&macro10=test&macro11=&macro12=123&macro15=123&macro16=test1&macro17=vast&macro18=firstQuartile",
 		},
 		{
 			name: "url does not have macro",
@@ -46,8 +46,7 @@ func TestStringIndexBasedReplace(t *testing.T) {
 					return macroProvider
 				},
 			},
-			want:    "http://tracker.com",
-			wantErr: false,
+			want: "http://tracker.com",
 		},
 		{
 			name: "macro not found",
@@ -60,8 +59,7 @@ func TestStringIndexBasedReplace(t *testing.T) {
 					return macroProvider
 				},
 			},
-			want:    "http://tracker.com?macro1=",
-			wantErr: false,
+			want: "http://tracker.com?macro1=",
 		},
 		{
 			name: "tracker url is empty",
@@ -74,20 +72,15 @@ func TestStringIndexBasedReplace(t *testing.T) {
 					return macroProvider
 				},
 			},
-			want:    "",
-			wantErr: false,
+			want: "",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			replacer := NewStringIndexBasedReplacer()
-			got, err := replacer.Replace(tt.args.url, tt.args.getMacroProvider())
-			if tt.wantErr {
-				assert.Error(t, err, tt.name)
-			} else {
-				assert.NoError(t, err, tt.name)
-				assert.Equal(t, tt.want, got, tt.name)
-			}
+			builder := strings.Builder{}
+			replacer.Replace(&builder, tt.args.url, tt.args.getMacroProvider())
+			assert.Equal(t, tt.want, builder.String(), tt.name)
 		})
 	}
 }
@@ -132,15 +125,13 @@ var bid *openrtb2.Bid = &openrtb2.Bid{ID: "bidId123", CID: "campaign_1", CrID: "
 
 func BenchmarkStringIndexBasedReplacer(b *testing.B) {
 	replacer := NewStringIndexBasedReplacer()
+	builder := &strings.Builder{}
 	for n := 0; n < b.N; n++ {
 		for _, url := range benchmarkURL {
 			macroProvider := NewProvider(req)
 			macroProvider.PopulateBidMacros(&entities.PbsOrtbBid{Bid: bid}, "test")
 			macroProvider.PopulateEventMacros("123", "vast", "firstQuartile")
-			_, err := replacer.Replace(url, macroProvider)
-			if err != nil {
-				b.Errorf("Fail to replace macro in tracker")
-			}
+			replacer.Replace(builder, url, macroProvider)
 		}
 	}
 }
