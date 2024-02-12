@@ -44,10 +44,10 @@ import (
 
 const jsonFileExtension string = ".json"
 
-//func TestMain(m *testing.M) {
-//	jsoniter.RegisterExtension(&jsonutil.RawMessageExtension{})
-//	m.Run()
-//}
+func TestMain(m *testing.M) {
+	jsoniter.RegisterExtension(&jsonutil.RawMessageExtension{})
+	m.Run()
+}
 
 func TestJsonSampleRequests(t *testing.T) {
 	testSuites := []struct {
@@ -128,7 +128,6 @@ func TestJsonSampleRequests(t *testing.T) {
 		},
 	}
 
-	//jsoniter.RegisterExtension(&jsonutil.RawMessageExtension{})
 	for _, tc := range testSuites {
 		err := filepath.WalkDir(filepath.Join("sample-requests", tc.sampleRequestsSubDir), func(path string, info fs.DirEntry, err error) error {
 			// According to documentation, needed to avoid panics
@@ -150,7 +149,6 @@ func TestJsonSampleRequests(t *testing.T) {
 }
 
 func TestSingleJSONTest(t *testing.T) {
-	jsoniter.RegisterExtension(&jsonutil.RawMessageExtension{})
 	runJsonBasedTest(t, "sample-requests/valid-whole/exemplary/simple.json", "")
 }
 

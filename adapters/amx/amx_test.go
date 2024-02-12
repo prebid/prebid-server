@@ -5,12 +5,10 @@ import (
 	"fmt"
 	"testing"
 
-	jsoniter "github.com/json-iterator/go"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/prebid/prebid-server/v2/adapters/adapterstest"
@@ -47,10 +45,6 @@ func TestEndpointQueryStringMalformed(t *testing.T) {
 	assert.Error(t, buildErr)
 }
 
-func TestMain(m *testing.M) {
-	jsoniter.RegisterExtension(&jsonutil.RawMessageExtension{})
-	m.Run()
-}
 func TestMakeRequestsTagID(t *testing.T) {
 	var w, h int = 300, 250
 	var width, height int64 = int64(w), int64(h)
@@ -109,7 +103,7 @@ func TestMakeRequestsTagID(t *testing.T) {
 		assert.Len(t, actualAdapterRequests, 1)
 		assert.Empty(t, err)
 		var body openrtb2.BidRequest
-		assert.Nil(t, jsonutil.Unmarshal(actualAdapterRequests[0].Body, &body))
+		assert.Nil(t, json.Unmarshal(actualAdapterRequests[0].Body, &body))
 		assert.Equal(t, tc.expectedTagID, body.Imp[0].TagID)
 	}
 }
