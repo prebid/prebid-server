@@ -18,10 +18,10 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/prebid/openrtb/v19/adcom1"
-	nativeRequests "github.com/prebid/openrtb/v19/native1/request"
-	nativeResponse "github.com/prebid/openrtb/v19/native1/response"
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/adcom1"
+	nativeRequests "github.com/prebid/openrtb/v20/native1/request"
+	nativeResponse "github.com/prebid/openrtb/v20/native1/response"
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/currency"
@@ -33,6 +33,7 @@ import (
 	metricsConfig "github.com/prebid/prebid-server/v2/metrics/config"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 	"github.com/prebid/prebid-server/v2/version"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -1880,7 +1881,7 @@ func TestSetAssetTypes(t *testing.T) {
 	}{
 		{
 			respAsset: nativeResponse.Asset{
-				ID: openrtb2.Int64Ptr(1),
+				ID: ptrutil.ToPtr[int64](1),
 				Img: &nativeResponse.Image{
 					URL: "http://some-url",
 				},
@@ -1906,7 +1907,7 @@ func TestSetAssetTypes(t *testing.T) {
 		},
 		{
 			respAsset: nativeResponse.Asset{
-				ID: openrtb2.Int64Ptr(2),
+				ID: ptrutil.ToPtr[int64](2),
 				Data: &nativeResponse.Data{
 					Label: "some label",
 				},
@@ -1932,7 +1933,7 @@ func TestSetAssetTypes(t *testing.T) {
 		},
 		{
 			respAsset: nativeResponse.Asset{
-				ID: openrtb2.Int64Ptr(1),
+				ID: ptrutil.ToPtr[int64](1),
 				Img: &nativeResponse.Image{
 					URL: "http://some-url",
 				},
@@ -1952,7 +1953,7 @@ func TestSetAssetTypes(t *testing.T) {
 		},
 		{
 			respAsset: nativeResponse.Asset{
-				ID: openrtb2.Int64Ptr(2),
+				ID: ptrutil.ToPtr[int64](2),
 				Data: &nativeResponse.Data{
 					Label: "some label",
 				},
@@ -1972,7 +1973,7 @@ func TestSetAssetTypes(t *testing.T) {
 		},
 		{
 			respAsset: nativeResponse.Asset{
-				ID: openrtb2.Int64Ptr(1),
+				ID: ptrutil.ToPtr[int64](1),
 				Img: &nativeResponse.Image{
 					URL: "http://some-url",
 				},

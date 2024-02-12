@@ -25,10 +25,10 @@ import (
 	"github.com/prebid/prebid-server/v2/hooks/hookexecution"
 	"github.com/prebid/prebid-server/v2/version"
 
-	"github.com/prebid/openrtb/v19/adcom1"
-	nativeRequests "github.com/prebid/openrtb/v19/native1/request"
-	nativeResponse "github.com/prebid/openrtb/v19/native1/response"
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/adcom1"
+	nativeRequests "github.com/prebid/openrtb/v20/native1/request"
+	nativeResponse "github.com/prebid/openrtb/v20/native1/response"
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
@@ -71,6 +71,7 @@ type bidRequestOptions struct {
 	bidAdjustments         map[string]float64
 	tmaxAdjustments        *TmaxAdjustmentsPreprocessed
 	bidderRequestStartTime time.Time
+	responseDebugAllowed   bool
 }
 
 type extraBidderRespInfo struct {
