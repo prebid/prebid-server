@@ -1,10 +1,15 @@
 package jsonutil
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
+	"unsafe"
 
+	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -237,6 +242,121 @@ func TestTryExtractErrorMessage(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			result := tryExtractErrorMessage(errors.New(test.givenErr))
 			assert.Equal(t, test.expectedMsg, result)
+		})
+	}
+}
+
+func TestCreateEncoder(t *testing.T) {
+	formatted := `{
+  "properties": {
+    "string": "Blanks spaces in between words to not be removed if compacted",
+    "integer": 5,
+    "string_array": [
+      "string array elem one",
+      "string array elem two"
+    ]
+  }
+}`
+	compacted := `{"properties":{"string":"Blanks spaces in between words to not be removed if compacted","integer":5,"string_array":["string array elem one","string array elem two"]}}`
+
+	type testCase struct {
+		desc string
+		test func(t *testing.T)
+	}
+	testGroup := []struct {
+		desc  string
+		tests []testCase
+	}{
+		{
+			desc: "Extension registered",
+			tests: []testCase{
+				{
+					desc: "JSON inside a string field is passed to Marshal(), don't expect the output to be compacted",
+					test: func(t *testing.T) {
+						jsoniter.RegisterExtension(&RawMessageExtension{})
+						out, err := Marshal(formatted)
+						assert.NoError(t, err)
+						assert.NotEqual(t, compacted, string(out))
+					},
+				},
+				{
+					desc: "json.RawMessage is passed to Marshal(), expect inner JSON blob to be line-break-free, tab-free, spaces only found inside strings, and compacted into one line",
+					test: func(t *testing.T) {
+						jsoniter.RegisterExtension(&RawMessageExtension{})
+						out, err := Marshal(json.RawMessage(formatted))
+						assert.NoError(t, err)
+						assert.Equal(t, compacted, string(out))
+					},
+				},
+			},
+		},
+		{
+			desc: "Extension not registered, json.RawMessage won't get compacted",
+			tests: []testCase{
+				{
+					desc: "json.RawMessage not cleared of line breaks, tabs, nor compacted into one line",
+					test: func(t *testing.T) {
+						jsoniter.RegisterExtension(&RawMessageExtension{})
+						out, err := Marshal(json.RawMessage(formatted))
+						assert.NoError(t, err)
+						assert.Equal(t, compacted, string(out))
+					},
+				},
+			},
+		},
+	}
+
+	for _, group := range testGroup {
+		for _, tc := range group.tests {
+			t.Run(fmt.Sprintf("%s - %s", group.desc, tc.desc), tc.test)
+		}
+	}
+}
+
+func TestEncode(t *testing.T) {
+	jsonBlob := json.RawMessage(`{
+  "properties": {
+    "string": "Blanks spaces in between words to not be removed if compacted",
+    "integer": 5,
+    "string_array": [
+      "string array elem one",
+      "string array elem two"
+    ]
+  }
+}`)
+
+	testCases := []struct {
+		desc            string
+		inPtr           unsafe.Pointer
+		expectedBuffer  string
+		expectedIsEmpty bool
+	}{
+		{
+			desc:            "Nil pointer, expect encoder to not write anything to buffer",
+			inPtr:           nil,
+			expectedIsEmpty: true,
+			expectedBuffer:  "",
+		},
+		{
+			desc:            "json.RawMessage passed, expect encoder to write the corresponding compacted json data",
+			inPtr:           unsafe.Pointer(&jsonBlob),
+			expectedIsEmpty: false,
+			expectedBuffer:  `{"properties":{"string":"Blanks spaces in between words to not be removed if compacted","integer":5,"string_array":["string array elem one","string array elem two"]}}`,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			// set test
+			encoder := &rawMessageCodec{}
+			output := bytes.NewBuffer([]byte{})
+			stream := jsoniter.NewStream(jsonConfigValidationOn, output, len(jsonBlob))
+
+			// run
+			encoder.Encode(tc.inPtr, stream)
+
+			// assertions
+			assert.Equal(t, tc.expectedBuffer, output.String())
+			assert.Equal(t, tc.expectedIsEmpty, encoder.IsEmpty(tc.inPtr))
 		})
 	}
 }

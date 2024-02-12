@@ -214,14 +214,14 @@ func isLikelyDetailedErrorMessage(msg string) bool {
 	return !strings.HasPrefix(msg, "request.")
 }
 
-var jsonRawMessageType = reflect2.TypeOfPtr(&json.RawMessage{}).Elem()
-
-// RawMessageExtension was created to call json.Compact() on every json.RawMessage field when getting marshalled.
+// RawMessageExtension will call json.Compact() on every json.RawMessage field when getting marshalled.
 // All other types will be marshalled as usual
 type RawMessageExtension struct {
 	jsoniter.DummyExtension
 }
 
+// CreateEncoder substitutes the default jsoniter encoder of the json.RawMessage type with ours, that
+// calls json.Compact() before writting to the stream
 func (e *RawMessageExtension) CreateEncoder(typ reflect2.Type) jsoniter.ValEncoder {
 	if typ == jsonRawMessageType {
 		return &rawMessageCodec{}
@@ -229,8 +229,14 @@ func (e *RawMessageExtension) CreateEncoder(typ reflect2.Type) jsoniter.ValEncod
 	return nil
 }
 
+// jsonRawMessageType is declared here so we don't have to call TypeOfPtr(&json.RawMessage{}).Elem() everytime we encode
+var jsonRawMessageType = reflect2.TypeOfPtr(&json.RawMessage{}).Elem()
+
+// rawMessageCodec implements jsoniter.ValEncoder interface so we can overshadow the default json.RawMessage Encode()
+// function with our implementation
 type rawMessageCodec struct{}
 
+// Encode is intended to bahave as de default json.RawMessage Encode() with the addition of the json.Compact() call
 func (codec *rawMessageCodec) Encode(ptr unsafe.Pointer, stream *jsoniter.Stream) {
 	if ptr != nil {
 		jsonRawMsg := *(*[]byte)(ptr)
@@ -241,6 +247,10 @@ func (codec *rawMessageCodec) Encode(ptr unsafe.Pointer, stream *jsoniter.Stream
 	}
 }
 
+// IsEmpty is the second method of the jsoniter.ValEncoder interface
 func (codec *rawMessageCodec) IsEmpty(ptr unsafe.Pointer) bool {
+	if ptr == nil {
+		return true
+	}
 	return *((*string)(ptr)) == ""
 }
