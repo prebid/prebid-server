@@ -38,7 +38,24 @@
             "pbsBids": [
               {
                 "ortbBid": {
-                  "id": "apn-bid",
+                  "id": "apn-bid-1",
+                  "impid": "imp-id-1",
+                  "price": 0.3,
+                  "w": 200,
+                  "h": 250,
+                  "crid": "creative-1",
+                  "cat": [
+                    "IAB1-1"
+                  ]
+                },
+                "bidType": "video",
+                "bidVideo": {
+                  "duration": 30
+                }
+              },
+              {
+                "ortbBid": {
+                  "id": "apn-bid-2",
                   "impid": "imp-id-1",
                   "price": 0.3,
                   "w": 200,
@@ -68,7 +85,7 @@
           "seat": "appnexus",
           "bid": [
             {
-              "id": "apn-bid",
+              "id": "apn-bid-1",
               "impid": "imp-id-1",
               "price": 0.3,
               "w": 200,
@@ -84,6 +101,27 @@
                     "adaptercode": "appnexus"
                   },
                   "bidid": "bid-appnexus-1",
+                  "type": "video"
+                }
+              }
+            },
+            {
+              "id": "apn-bid-2",
+              "impid": "imp-id-1",
+              "price": 0.3,
+              "w": 200,
+              "h": 250,
+              "crid": "creative-1",
+              "cat": [
+                "IAB1-1"
+              ],
+              "ext": {
+                "origbidcpm": 0.3,
+                "prebid": {
+                  "meta": {
+                    "adaptercode": "appnexus"
+                  },
+                  "bidid": "bid-appnexus-2",
                   "type": "video"
                 }
               }

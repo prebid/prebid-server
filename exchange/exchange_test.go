@@ -2452,20 +2452,24 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 type fakeBidIDGenerator struct {
 	GenerateBidID bool `json:"generateBidID"`
 	ReturnError   bool `json:"returnError"`
-	bidCount      int
+	bidCount      map[string]int
 }
 
 func (m *fakeBidIDGenerator) Enabled() bool {
 	return m.GenerateBidID
 }
 
-func (m *fakeBidIDGenerator) New() (string, error) {
+func (m *fakeBidIDGenerator) New(bidder string) (string, error) {
 	if m.ReturnError {
 		return "", errors.New("Test error generating bid.ext.prebid.bidid")
 	}
 
-	m.bidCount += 1
-	return fmt.Sprintf("bid%v", m.bidCount), nil
+	if m.bidCount == nil {
+		m.bidCount = make(map[string]int)
+	}
+
+	m.bidCount[bidder] += 1
+	return fmt.Sprintf("bid-%v-%v", bidder, m.bidCount[bidder]), nil
 }
 
 type fakeBooleanGenerator struct {
