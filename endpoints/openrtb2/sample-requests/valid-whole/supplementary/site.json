@@ -3,10 +3,7 @@
   "mockBidRequest": {
     "id": "some-request-id",
     "site": {
-      "page": "test.somepage.com",
-      "publisher": {
-        "id": "some-test-account-id"
-      }
+      "page": "test.somepage.com"
     },
     "imp": [
       {

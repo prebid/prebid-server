@@ -1204,7 +1204,7 @@ func TestInitAmpTargetingAndCache(t *testing.T) {
 
 func TestQueryParamOverrides(t *testing.T) {
 	requests := map[string]json.RawMessage{
-		"1": json.RawMessage(validRequest(t, "site-amp.json")),
+		"1": json.RawMessage(validRequest(t, "site.json")),
 	}
 
 	endpoint, _ := NewAmpEndpoint(

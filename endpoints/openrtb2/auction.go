@@ -531,7 +531,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	}
 
 	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
-	deps.setFieldsImplicitly(httpRequest, req, account)
+	deps.setFieldsImplicitly(httpRequest, req)
 
 	if err := ortb.SetDefaults(req); err != nil {
 		errs = []error{err}
@@ -552,7 +552,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	}
 
 	hasStoredResponses := len(storedAuctionResponses) > 0
-	errL := deps.validateRequest(req, false, hasStoredResponses, storedBidResponses, hasStoredBidRequest)
+	errL := deps.validateRequest(account, httpRequest, req, false, hasStoredResponses, storedBidResponses, hasStoredBidRequest)
 	if len(errL) > 0 {
 		errs = append(errs, errL...)
 	}
@@ -746,7 +746,7 @@ func mergeBidderParamsImpExtPrebid(impExt *openrtb_ext.ImpExt, reqExtParams map[
 	return nil
 }
 
-func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp bool, hasStoredResponses bool, storedBidResp stored_responses.ImpBidderStoredResp, hasStoredBidRequest bool) []error {
+func (deps *endpointDeps) validateRequest(account *config.Account, httpReq *http.Request, req *openrtb_ext.RequestWrapper, isAmp bool, hasStoredResponses bool, storedBidResp stored_responses.ImpBidderStoredResp, hasStoredBidRequest bool) []error {
 	errL := []error{}
 	if req.ID == "" {
 		return []error{errors.New("request missing required field: \"id\"")}
@@ -870,7 +870,11 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 		}
 	}
 
-	if err := validateDevice(req); err != nil {
+	if err := validateDevice(req.Device); err != nil {
+		return append(errL, err)
+	}
+
+	if err := validateOrFillCDep(httpReq, req, account); err != nil {
 		return append(errL, err)
 	}
 
@@ -1898,37 +1902,47 @@ func validateRegs(req *openrtb_ext.RequestWrapper, gpp gpplib.GppContainer) []er
 	return errL
 }
 
-func validateDevice(req *openrtb_ext.RequestWrapper) error {
-	if req.Device == nil {
+func validateDevice(device *openrtb2.Device) error {
+	if device == nil {
 		return nil
 	}
 
 	// The following fields were previously uints in the OpenRTB library we use, but have
 	// since been changed to ints. We decided to maintain the non-negative check.
-	if req.Device.W < 0 {
+	if device.W < 0 {
 		return errors.New("request.device.w must be a positive number")
 	}
-	if req.Device.H < 0 {
+	if device.H < 0 {
 		return errors.New("request.device.h must be a positive number")
 	}
-	if req.Device.PPI < 0 {
+	if device.PPI < 0 {
 		return errors.New("request.device.ppi must be a positive number")
 	}
-	if req.Device.Geo != nil && req.Device.Geo.Accuracy < 0 {
+	if device.Geo != nil && device.Geo.Accuracy < 0 {
 		return errors.New("request.device.geo.accuracy must be a positive number")
 	}
 
-	return validateDeviceExt(req)
+	return nil
 }
 
-func validateDeviceExt(req *openrtb_ext.RequestWrapper) error {
-	if deviceExt, err := req.GetDeviceExt(); err == nil {
-		if cdep := deviceExt.GetCDep(); len(cdep) > 100 {
-			return &errortypes.Warning{
-				Message:     "request.device.ext.cdep must be less than 100 characters",
-				WarningCode: errortypes.SecCookieDeprecationLenWarningCode,
-			}
+func validateOrFillCDep(httpReq *http.Request, req *openrtb_ext.RequestWrapper, account *config.Account) error {
+	if account == nil || !account.Privacy.PrivacySandbox.CookieDeprecation.Enabled {
+		return nil
+	}
+
+	secCookieDeprecation := httpReq.Header.Get(secCookieDeprecation)
+	if secCookieDeprecation == "" {
+		return nil
+	}
+	if len(secCookieDeprecation) > 100 {
+		return &errortypes.Warning{
+			Message:     "request.device.ext.cdep must be less than 100 characters",
+			WarningCode: errortypes.SecCookieDeprecationLenWarningCode,
 		}
+	}
+
+	if deviceExt, err := req.GetDeviceExt(); err == nil {
+		deviceExt.SetCDep(secCookieDeprecation)
 	}
 	return nil
 }
@@ -2014,10 +2028,10 @@ func sanitizeRequest(r *openrtb_ext.RequestWrapper, ipValidator iputil.IPValidat
 // OpenRTB properties from the headers and other implicit info.
 //
 // This function _should not_ override any fields which were defined explicitly by the caller in the request.
-func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper, account *config.Account) {
+func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {
 	sanitizeRequest(r, deps.privateNetworkIPValidator)
 
-	setDeviceImplicitly(httpReq, r, deps.privateNetworkIPValidator, account)
+	setDeviceImplicitly(httpReq, r, deps.privateNetworkIPValidator)
 
 	// Per the OpenRTB spec: A bid request must not contain more than one of Site|App|DOOH
 	// Assume it's a site request if it's not declared as one of the other values
@@ -2029,11 +2043,10 @@ func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, r *openrtb_
 }
 
 // setDeviceImplicitly uses implicit info from httpReq to populate bidReq.Device
-func setDeviceImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper, ipValidtor iputil.IPValidator, account *config.Account) {
+func setDeviceImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper, ipValidtor iputil.IPValidator) {
 	setIPImplicitly(httpReq, r, ipValidtor)
 	setUAImplicitly(httpReq, r)
 	setDoNotTrackImplicitly(httpReq, r)
-	setCookieDeprecation(httpReq, r, account)
 }
 
 // setAuctionTypeImplicitly sets the auction type to 1 if it wasn't on the request,
@@ -2361,21 +2374,6 @@ func setDoNotTrackImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrappe
 			case "1":
 				r.Device.DNT = &dntEnabled
 			}
-		}
-	}
-}
-
-func setCookieDeprecation(httpReq *http.Request, r *openrtb_ext.RequestWrapper, account *config.Account) {
-	if account == nil || !account.Privacy.PrivacySandbox.CookieDeprecation.Enabled {
-		return
-	}
-	secCookieDeprecation := httpReq.Header.Get(secCookieDeprecation)
-	if secCookieDeprecation == "" {
-		return
-	}
-	if deviceExt, err := r.GetDeviceExt(); err == nil {
-		if cdep := deviceExt.GetCDep(); cdep == "" {
-			deviceExt.SetCDep(secCookieDeprecation)
 		}
 	}
 }

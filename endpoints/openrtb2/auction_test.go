@@ -1644,6 +1644,8 @@ func TestValidateRequest(t *testing.T) {
 		description           string
 		givenIsAmp            bool
 		givenRequestWrapper   *openrtb_ext.RequestWrapper
+		givenHttpRequest      *http.Request
+		givenAccount          *config.Account
 		expectedErrorList     []error
 		expectedChannelObject *openrtb_ext.ExtRequestPrebidChannel
 	}{
@@ -1864,7 +1866,7 @@ func TestValidateRequest(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		errorList := deps.validateRequest(test.givenRequestWrapper, test.givenIsAmp, false, nil, false)
+		errorList := deps.validateRequest(test.givenAccount, test.givenHttpRequest, test.givenRequestWrapper, test.givenIsAmp, false, nil, false)
 		assert.Equalf(t, test.expectedErrorList, errorList, "Error doesn't match: %s\n", test.description)
 
 		if len(errorList) == 0 {
@@ -3047,7 +3049,7 @@ func TestCurrencyTrunc(t *testing.T) {
 		Cur: []string{"USD", "EUR"},
 	}
 
-	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
+	errL := deps.validateRequest(nil, nil, &openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
 
 	expectedError := errortypes.Warning{Message: "A prebid request can only process one currency. Taking the first currency in the list, USD, as the active currency"}
 	assert.ElementsMatch(t, errL, []error{&expectedError})
@@ -3098,7 +3100,7 @@ func TestCCPAInvalid(t *testing.T) {
 		},
 	}
 
-	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
+	errL := deps.validateRequest(nil, nil, &openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
 
 	expectedWarning := errortypes.Warning{
 		Message:     "CCPA consent is invalid and will be ignored. (request.regs.ext.us_privacy must contain 4 characters)",
@@ -3152,7 +3154,7 @@ func TestNoSaleInvalid(t *testing.T) {
 		Ext: json.RawMessage(`{"prebid": {"nosale": ["*", "appnexus"]} }`),
 	}
 
-	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
+	errL := deps.validateRequest(nil, nil, &openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
 
 	expectedError := errors.New("request.ext.prebid.nosale is invalid: can only specify all bidders if no other bidders are provided")
 	assert.ElementsMatch(t, errL, []error{expectedError})
@@ -3204,7 +3206,7 @@ func TestValidateSourceTID(t *testing.T) {
 		},
 	}
 
-	deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
+	deps.validateRequest(nil, nil, &openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
 	assert.NotEmpty(t, req.Source.TID, "Expected req.Source.TID to be filled with a randomly generated UID")
 }
 
@@ -3251,7 +3253,7 @@ func TestSChainInvalid(t *testing.T) {
 		Ext: json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller1.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}, {"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller2.com","sid":"00002","rid":"BidRequest2","hp":1}],"ver":"1.0"}}]}}`),
 	}
 
-	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
+	errL := deps.validateRequest(nil, nil, &openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
 
 	expectedError := errors.New("request.ext.prebid.schains contains multiple schains for bidder appnexus; it must contain no more than one per bidder.")
 	assert.ElementsMatch(t, errL, []error{expectedError})
@@ -3820,7 +3822,7 @@ func TestEidPermissionsInvalid(t *testing.T) {
 		Ext: json.RawMessage(`{"prebid": {"data": {"eidpermissions": [{"source":"a", "bidders":[]}]} } }`),
 	}
 
-	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
+	errL := deps.validateRequest(nil, nil, &openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
 
 	expectedError := errors.New(`request.ext.prebid.data.eidpermissions[0] missing or empty required field: "bidders"`)
 	assert.ElementsMatch(t, errL, []error{expectedError})
@@ -5128,6 +5130,8 @@ func TestValidateStoredResp(t *testing.T) {
 	testCases := []struct {
 		description               string
 		givenRequestWrapper       *openrtb_ext.RequestWrapper
+		givenHttpRequest          *http.Request
+		givenAccount              *config.Account
 		expectedErrorList         []error
 		hasStoredAuctionResponses bool
 		storedBidResponses        stored_responses.ImpBidderStoredResp
@@ -5669,7 +5673,7 @@ func TestValidateStoredResp(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
-			errorList := deps.validateRequest(test.givenRequestWrapper, false, test.hasStoredAuctionResponses, test.storedBidResponses, false)
+			errorList := deps.validateRequest(test.givenAccount, test.givenHttpRequest, test.givenRequestWrapper, false, test.hasStoredAuctionResponses, test.storedBidResponses, false)
 			assert.Equalf(t, test.expectedErrorList, errorList, "Error doesn't match: %s\n", test.description)
 		})
 	}
@@ -6109,19 +6113,22 @@ func fakeNormalizeBidderName(name string) (openrtb_ext.BidderName, bool) {
 	return openrtb_ext.BidderName(strings.ToLower(name)), true
 }
 
-func TestSetCookieDeprecation(t *testing.T) {
+func TestValidateOrFillCDep(t *testing.T) {
 	type args struct {
 		httpReq *http.Request
-		r       *openrtb_ext.RequestWrapper
+		req     *openrtb_ext.RequestWrapper
 		account config.Account
 	}
 	tests := []struct {
 		name          string
 		args          args
 		wantDeviceExt json.RawMessage
+		wantErr       error
 	}{
 		{
-			name: "account nil",
+			name:          "account nil",
+			wantDeviceExt: nil,
+			wantErr:       nil,
 		},
 		{
 			name: "cookie deprecation not enabled",
@@ -6129,11 +6136,12 @@ func TestSetCookieDeprecation(t *testing.T) {
 				httpReq: &http.Request{
 					Header: http.Header{secCookieDeprecation: []string{"example_label_1"}},
 				},
-				r: &openrtb_ext.RequestWrapper{
+				req: &openrtb_ext.RequestWrapper{
 					BidRequest: &openrtb2.BidRequest{},
 				},
 			},
 			wantDeviceExt: nil,
+			wantErr:       nil,
 		},
 		{
 			name: "cookie deprecation disabled explicitly",
@@ -6141,7 +6149,7 @@ func TestSetCookieDeprecation(t *testing.T) {
 				httpReq: &http.Request{
 					Header: http.Header{secCookieDeprecation: []string{"example_label_1"}},
 				},
-				r: &openrtb_ext.RequestWrapper{
+				req: &openrtb_ext.RequestWrapper{
 					BidRequest: &openrtb2.BidRequest{},
 				},
 				account: config.Account{
@@ -6155,6 +6163,7 @@ func TestSetCookieDeprecation(t *testing.T) {
 				},
 			},
 			wantDeviceExt: nil,
+			wantErr:       nil,
 		},
 		{
 			name: "Sec-Cookie-Deprecation not present in request",
@@ -6171,6 +6180,7 @@ func TestSetCookieDeprecation(t *testing.T) {
 				},
 			},
 			wantDeviceExt: nil,
+			wantErr:       nil,
 		},
 		{
 			name: "Sec-Cookie-Deprecation present in request where request.device.ext is nil",
@@ -6178,7 +6188,7 @@ func TestSetCookieDeprecation(t *testing.T) {
 				httpReq: &http.Request{
 					Header: http.Header{secCookieDeprecation: []string{"example_label_1"}},
 				},
-				r: &openrtb_ext.RequestWrapper{
+				req: &openrtb_ext.RequestWrapper{
 					BidRequest: &openrtb2.BidRequest{},
 				},
 				account: config.Account{
@@ -6192,6 +6202,7 @@ func TestSetCookieDeprecation(t *testing.T) {
 				},
 			},
 			wantDeviceExt: json.RawMessage(`{"cdep":"example_label_1"}`),
+			wantErr:       nil,
 		},
 		{
 			name: "Sec-Cookie-Deprecation present in request where request.device.ext is nil",
@@ -6199,7 +6210,7 @@ func TestSetCookieDeprecation(t *testing.T) {
 				httpReq: &http.Request{
 					Header: http.Header{secCookieDeprecation: []string{"example_label_1"}},
 				},
-				r: &openrtb_ext.RequestWrapper{
+				req: &openrtb_ext.RequestWrapper{
 					BidRequest: &openrtb2.BidRequest{
 						Device: &openrtb2.Device{
 							Ext: nil,
@@ -6217,6 +6228,7 @@ func TestSetCookieDeprecation(t *testing.T) {
 				},
 			},
 			wantDeviceExt: json.RawMessage(`{"cdep":"example_label_1"}`),
+			wantErr:       nil,
 		},
 		{
 			name: "Sec-Cookie-Deprecation present in request where request.device.ext is not nil",
@@ -6224,7 +6236,7 @@ func TestSetCookieDeprecation(t *testing.T) {
 				httpReq: &http.Request{
 					Header: http.Header{secCookieDeprecation: []string{"example_label_1"}},
 				},
-				r: &openrtb_ext.RequestWrapper{
+				req: &openrtb_ext.RequestWrapper{
 					BidRequest: &openrtb2.BidRequest{
 						Device: &openrtb2.Device{
 							Ext: json.RawMessage(`{"foo":"bar"}`),
@@ -6242,15 +6254,46 @@ func TestSetCookieDeprecation(t *testing.T) {
 				},
 			},
 			wantDeviceExt: json.RawMessage(`{"foo":"bar","cdep":"example_label_1"}`),
+			wantErr:       nil,
+		},
+		{
+			name: "Sec-Cookie-Deprecation present in request with length more than 100",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{secCookieDeprecation: []string{"zjfXqGxXFI8yura8AhQl1DK2EMMmryrC8haEpAlwjoerrFfEo2MQTXUq6cSmLohI8gjsnkGU4oAzvXd4TTAESzEKsoYjRJ2zKxmEa"}},
+				},
+				req: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						Device: &openrtb2.Device{
+							Ext: json.RawMessage(`{"foo":"bar"}`),
+						},
+					},
+				},
+				account: config.Account{
+					Privacy: config.AccountPrivacy{
+						PrivacySandbox: config.PrivacySandbox{
+							CookieDeprecation: config.CookieDeprecation{
+								Enabled: true,
+							},
+						},
+					},
+				},
+			},
+			wantDeviceExt: json.RawMessage(`{"foo":"bar"}`),
+			wantErr: &errortypes.Warning{
+				Message:     "request.device.ext.cdep must be less than 100 characters",
+				WarningCode: errortypes.SecCookieDeprecationLenWarningCode,
+			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			setCookieDeprecation(tt.args.httpReq, tt.args.r, &tt.args.account)
+			err := validateOrFillCDep(tt.args.httpReq, tt.args.req, &tt.args.account)
+			assert.Equal(t, tt.wantErr, err)
 			if tt.wantDeviceExt != nil {
-				err := tt.args.r.RebuildRequest()
+				err := tt.args.req.RebuildRequest()
 				assert.NoError(t, err)
-				assert.JSONEq(t, string(tt.wantDeviceExt), string(tt.args.r.Device.Ext), tt.name)
+				assert.JSONEq(t, string(tt.wantDeviceExt), string(tt.args.req.Device.Ext), tt.name)
 			}
 		})
 	}
@@ -6259,65 +6302,279 @@ func TestSetCookieDeprecation(t *testing.T) {
 func TestParseRequestCookieDeprecation(t *testing.T) {
 	testCases :=
 		[]struct {
-			name             string
-			httpReq          *http.Request
-			givenAccountData map[string]json.RawMessage
-			expectedErr      string
+			name         string
+			givenAccount *config.Account
+			httpReq      *http.Request
+			reqWrapper   *openrtb_ext.RequestWrapper
+			wantErrs     []error
+			wantCDep     string
 		}{
 			{
-				name:        "Request without Sec-Cookie-Deprecation header (cookiedeprecation not enabled for account)",
-				httpReq:     httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader([]byte(validRequest(t, "site.json")))),
-				expectedErr: "",
+				name:    "Request without Sec-Cookie-Deprecation header (cookiedeprecation not enabled for account)",
+				httpReq: httptest.NewRequest("POST", "/openrtb2/auction", nil),
+				givenAccount: &config.Account{
+					ID: "1",
+					Privacy: config.AccountPrivacy{
+						PrivacySandbox: config.PrivacySandbox{
+							CookieDeprecation: config.CookieDeprecation{
+								Enabled: false,
+								TTLSec:  86400,
+							},
+						},
+					},
+				},
+				reqWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						ID:  "Some-ID",
+						App: &openrtb2.App{},
+						Imp: []openrtb2.Imp{
+							{
+								ID: "Some-Imp-ID",
+								Banner: &openrtb2.Banner{
+									Format: []openrtb2.Format{
+										{
+											W: 600,
+											H: 500,
+										},
+										{
+											W: 300,
+											H: 600,
+										},
+									},
+								},
+								Ext: []byte(`{"pubmatic":{"publisherId": 12345678}}`),
+							},
+						},
+					},
+				},
+				wantErrs: []error{},
+				wantCDep: "",
 			},
 			{
 				name: "Request with Sec-Cookie-Deprecation header having length less than 100 (cookiedeprecation not enabled for account)",
 				httpReq: func() *http.Request {
-					req := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader([]byte(validRequest(t, "site.json"))))
+					req := httptest.NewRequest("POST", "/openrtb2/auction", nil)
 					req.Header.Set(secCookieDeprecation, "sample-value")
 					return req
 				}(),
-				expectedErr: "",
+				givenAccount: &config.Account{
+					ID: "1",
+					Privacy: config.AccountPrivacy{
+						PrivacySandbox: config.PrivacySandbox{
+							CookieDeprecation: config.CookieDeprecation{
+								Enabled: false,
+								TTLSec:  86400,
+							},
+						},
+					},
+				},
+				reqWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						ID:  "Some-ID",
+						App: &openrtb2.App{},
+						Imp: []openrtb2.Imp{
+							{
+								ID: "Some-Imp-ID",
+								Banner: &openrtb2.Banner{
+									Format: []openrtb2.Format{
+										{
+											W: 600,
+											H: 500,
+										},
+										{
+											W: 300,
+											H: 600,
+										},
+									},
+								},
+								Ext: []byte(`{"pubmatic":{"publisherId": 12345678}}`),
+							},
+						},
+					},
+				},
+				wantErrs: []error{},
+				wantCDep: "",
 			},
 			{
 				name: "Request with Sec-Cookie-Deprecation header having length more than 100 (cookiedeprecation not enabled for account)",
 				httpReq: func() *http.Request {
-					req := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader([]byte(validRequest(t, "site.json"))))
+					req := httptest.NewRequest("POST", "/openrtb2/auction", nil)
 					req.Header.Set(secCookieDeprecation, "zjfXqGxXFI8yura8AhQl1DK2EMMmryrC8haEpAlwjoerrFfEo2MQTXUq6cSmLohI8gjsnkGU4oAzvXd4TTAESzEKsoYjRJ2zKxmEa")
 					return req
 				}(),
-				expectedErr: "",
+				givenAccount: &config.Account{
+					ID: "1",
+					Privacy: config.AccountPrivacy{
+						PrivacySandbox: config.PrivacySandbox{
+							CookieDeprecation: config.CookieDeprecation{
+								Enabled: false,
+								TTLSec:  86400,
+							},
+						},
+					},
+				},
+				reqWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						ID:  "Some-ID",
+						App: &openrtb2.App{},
+						Imp: []openrtb2.Imp{
+							{
+								ID: "Some-Imp-ID",
+								Banner: &openrtb2.Banner{
+									Format: []openrtb2.Format{
+										{
+											W: 600,
+											H: 500,
+										},
+										{
+											W: 300,
+											H: 600,
+										},
+									},
+								},
+								Ext: []byte(`{"pubmatic":{"publisherId": 12345678}}`),
+							},
+						},
+					},
+				},
+				wantErrs: []error{},
+				wantCDep: "",
 			},
 			{
 				name:    "Request without Sec-Cookie-Deprecation header (cookiedeprecation enabled for account)",
-				httpReq: httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader([]byte(validRequest(t, "site.json")))),
-				givenAccountData: map[string]json.RawMessage{
-					"some-test-account-id": json.RawMessage(`{"id":"1","privacy":{"privacysandbox":{"cookiedeprecation":{"enabled":true,"ttlsec":86400}}}}`),
+				httpReq: httptest.NewRequest("POST", "/openrtb2/auction", nil),
+				givenAccount: &config.Account{
+					ID: "1",
+					Privacy: config.AccountPrivacy{
+						PrivacySandbox: config.PrivacySandbox{
+							CookieDeprecation: config.CookieDeprecation{
+								Enabled: true,
+								TTLSec:  86400,
+							},
+						},
+					},
 				},
-				expectedErr: "",
+				reqWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						ID:  "Some-ID",
+						App: &openrtb2.App{},
+						Imp: []openrtb2.Imp{
+							{
+								ID: "Some-Imp-ID",
+								Banner: &openrtb2.Banner{
+									Format: []openrtb2.Format{
+										{
+											W: 600,
+											H: 500,
+										},
+										{
+											W: 300,
+											H: 600,
+										},
+									},
+								},
+								Ext: []byte(`{"pubmatic":{"publisherId": 12345678}}`),
+							},
+						},
+					},
+				},
+				wantErrs: []error{},
+				wantCDep: "",
 			},
 			{
 				name: "Request with Sec-Cookie-Deprecation header having length less than 100 (cookiedeprecation enabled for account)",
 				httpReq: func() *http.Request {
-					req := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader([]byte(validRequest(t, "site.json"))))
+					req := httptest.NewRequest("POST", "/openrtb2/auction", nil)
 					req.Header.Set(secCookieDeprecation, "sample-value")
 					return req
 				}(),
-				givenAccountData: map[string]json.RawMessage{
-					"some-test-account-id": json.RawMessage(`{"id":"1","privacy":{"privacysandbox":{"cookiedeprecation":{"enabled":true,"ttlsec":86400}}}}`),
+				givenAccount: &config.Account{
+					ID: "1",
+					Privacy: config.AccountPrivacy{
+						PrivacySandbox: config.PrivacySandbox{
+							CookieDeprecation: config.CookieDeprecation{
+								Enabled: true,
+								TTLSec:  86400,
+							},
+						},
+					},
 				},
-				expectedErr: "",
+				reqWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						ID:  "Some-ID",
+						App: &openrtb2.App{},
+						Imp: []openrtb2.Imp{
+							{
+								ID: "Some-Imp-ID",
+								Banner: &openrtb2.Banner{
+									Format: []openrtb2.Format{
+										{
+											W: 600,
+											H: 500,
+										},
+										{
+											W: 300,
+											H: 600,
+										},
+									},
+								},
+								Ext: []byte(`{"pubmatic":{"publisherId": 12345678}}`),
+							},
+						},
+					},
+				},
+				wantErrs: []error{},
+				wantCDep: "sample-value",
 			},
 			{
 				name: "Request with Sec-Cookie-Deprecation header having length more than 100 (cookiedeprecation enabled for account)",
 				httpReq: func() *http.Request {
-					req := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader([]byte(validRequest(t, "site.json"))))
+					req := httptest.NewRequest("POST", "/openrtb2/auction", nil)
 					req.Header.Set(secCookieDeprecation, "zjfXqGxXFI8yura8AhQl1DK2EMMmryrC8haEpAlwjoerrFfEo2MQTXUq6cSmLohI8gjsnkGU4oAzvXd4TTAESzEKsoYjRJ2zKxmEa")
 					return req
 				}(),
-				givenAccountData: map[string]json.RawMessage{
-					"some-test-account-id": json.RawMessage(`{"id":"1","privacy":{"privacysandbox":{"cookiedeprecation":{"enabled":true,"ttlsec":86400}}}}`),
+				givenAccount: &config.Account{
+					ID: "1",
+					Privacy: config.AccountPrivacy{
+						PrivacySandbox: config.PrivacySandbox{
+							CookieDeprecation: config.CookieDeprecation{
+								Enabled: true,
+								TTLSec:  86400,
+							},
+						},
+					},
 				},
-				expectedErr: "request.device.ext.cdep must be less than 100 characters",
+				reqWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						ID:  "Some-ID",
+						App: &openrtb2.App{},
+						Imp: []openrtb2.Imp{
+							{
+								ID: "Some-Imp-ID",
+								Banner: &openrtb2.Banner{
+									Format: []openrtb2.Format{
+										{
+											W: 600,
+											H: 500,
+										},
+										{
+											W: 300,
+											H: 600,
+										},
+									},
+								},
+								Ext: []byte(`{"pubmatic":{"publisherId": 12345678}}`),
+							},
+						},
+					},
+				},
+				wantErrs: []error{
+					&errortypes.Warning{
+						Message:     "request.device.ext.cdep must be less than 100 characters",
+						WarningCode: errortypes.SecCookieDeprecationLenWarningCode,
+					},
+				},
+				wantCDep: "",
 			},
 		}
 
@@ -6328,7 +6585,7 @@ func TestParseRequestCookieDeprecation(t *testing.T) {
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&mockAccountFetcher{},
-		&config.Configuration{MaxRequestSize: int64(1000)},
+		&config.Configuration{},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
@@ -6344,17 +6601,12 @@ func TestParseRequestCookieDeprecation(t *testing.T) {
 		openrtb_ext.NormalizeBidderName,
 	}
 
-	hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
 	for _, test := range testCases {
-		deps.accounts = &mockAccountFetcher{data: test.givenAccountData}
-		resReq, _, _, _, _, _, errL := deps.parseRequest(test.httpReq, &metrics.Labels{}, hookExecutor)
-
-		assert.NotNil(t, resReq, "Result request should not be nil", test.name)
-		if test.expectedErr == "" {
-			assert.Nil(t, errL, "Error list should be nil", test.name)
-		} else {
-			assert.Len(t, errL, 1, "One error should be returned", test.name)
-			assert.Contains(t, errL[0].Error(), test.expectedErr, "Incorrect error message", test.name)
-		}
+		errs := deps.validateRequest(test.givenAccount, test.httpReq, test.reqWrapper, false, false, stored_responses.ImpBidderStoredResp{}, false)
+		assert.Equal(t, test.wantErrs, errs, test.name)
+		test.reqWrapper.RebuildRequest()
+		deviceExt, err := test.reqWrapper.GetDeviceExt()
+		assert.NoError(t, err)
+		assert.Equal(t, test.wantCDep, deviceExt.GetCDep())
 	}
 }
