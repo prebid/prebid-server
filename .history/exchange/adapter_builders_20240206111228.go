@@ -1,6 +1,7 @@
 package exchange
 
 import (
+	"github.com/prebid/prebid-server/adapters/theadx"
 	"github.com/prebid/prebid-server/v2/adapters"
 	ttx "github.com/prebid/prebid-server/v2/adapters/33across"
 	"github.com/prebid/prebid-server/v2/adapters/aax"
@@ -170,7 +171,6 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/tappx"
 	"github.com/prebid/prebid-server/v2/adapters/teads"
 	"github.com/prebid/prebid-server/v2/adapters/telaria"
-	"github.com/prebid/prebid-server/v2/adapters/theadx"
 	"github.com/prebid/prebid-server/v2/adapters/tpmn"
 	"github.com/prebid/prebid-server/v2/adapters/trafficgate"
 	"github.com/prebid/prebid-server/v2/adapters/triplelift"
