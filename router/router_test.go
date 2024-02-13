@@ -299,6 +299,5 @@ func TestBidderParamsCompactedOutput(t *testing.T) {
 	handler(recorder, request, nil)
 
 	// Assertions
-	assert.True(t, strings.HasPrefix(recorder.Body.String(), expected))
-	//assert.Equal(t, expected, recorder.Body.String())
+	assert.True(t, strings.HasPrefix(recorder.Body.String(), expectedPrefix))
 }
