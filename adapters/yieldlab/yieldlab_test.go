@@ -269,6 +269,11 @@ func Test_makeDSATransparencyUrlParam(t *testing.T) {
 			expected:       "",
 		},
 		{
+			name:           "Nil transparency",
+			transparencies: nil,
+			expected:       "",
+		},
+		{
 			name: "Params without a domain",
 			transparencies: []dsaTransparency{
 				{
@@ -276,6 +281,15 @@ func Test_makeDSATransparencyUrlParam(t *testing.T) {
 				},
 			},
 			expected: "",
+		},
+		{
+			name: "Params without a params",
+			transparencies: []dsaTransparency{
+				{
+					Domain: "domain.com",
+				},
+			},
+			expected: "domain.com",
 		},
 		{
 			name: "One object; No Params",
