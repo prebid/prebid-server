@@ -16,11 +16,6 @@ type adapter struct {
 	endpoint string
 }
 
-type theadxRequestExt struct {
-	openrtb_ext.ExtRequest
-	PriceType string `json:"pt"`
-}
-
 // Builder builds a new instance of the theadx adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
@@ -54,7 +49,6 @@ func getHeaders(request *openrtb2.BidRequest) http.Header {
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errors []error
 	var validImps = make([]openrtb2.Imp, 0, len(request.Imp))
-	priceType := ""
 
 	for _, imp := range request.Imp {
 		var bidderExt adapters.ExtImpBidder
@@ -73,32 +67,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			continue
 		}
 
-		imp.TagID = theadxImpExt.MasterTagID.String()
+		imp.TagID = theadxImpExt.TagID.String()
 		validImps = append(validImps, imp)
-
-		// If imps specify priceType they should all be the same. If they differ, only the first one will be used
-		if theadxImpExt.PriceType != "" && priceType == "" {
-			priceType = theadxImpExt.PriceType
-		}
-	}
-
-	if priceType != "" {
-		requestExt := theadxRequestExt{}
-		var err error
-
-		if len(request.Ext) > 0 {
-			if err = json.Unmarshal(request.Ext, &requestExt); err != nil {
-				errors = append(errors, err)
-			}
-		}
-
-		if err == nil {
-			requestExt.PriceType = priceType
-
-			if request.Ext, err = json.Marshal(&requestExt); err != nil {
-				errors = append(errors, err)
-			}
-		}
 	}
 
 	request.Imp = validImps

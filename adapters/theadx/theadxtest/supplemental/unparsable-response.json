@@ -8,7 +8,7 @@
         },
         "ext": {
           "bidder": {
-            "mid": 12345
+            "tagid": 123
           }
         }
       }]
@@ -22,14 +22,14 @@
           "imp": [{
             "ext": {
               "bidder": {
-                "mid": 12345
+                "tagid": 123
               }
             },
             "id": "test-imp-id",
             "native": {
               "request": ""
             },
-            "tagid": "12345"
+            "tagid": "123"
           }]
         }
       },

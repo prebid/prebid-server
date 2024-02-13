@@ -5,8 +5,8 @@ import (
 )
 
 type ExtImpTheadx struct {
-	MasterTagID       json.Number `json:"tagid,omitempty"`
-	InventorySourceID int         `json:"inv,omitempty"`
-	PlacementName     string      `json:"mname,omitempty"`
-	PriceType         string      `json:"priceType,omitempty"`
+	TagID             json.Number `json:"tagid,omitempty"`
+	InventorySourceID int         `json:"wid,omitempty"`
+	MemberID          int         `json:"pid,optional,omitempty"`
+	PlacementName     string      `json:"pname,optional,omitempty"`
 }

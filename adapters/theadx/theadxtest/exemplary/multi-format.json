@@ -5,7 +5,7 @@
       "id": "test-imp-id-1",
       "ext": {
         "bidder": {
-          "mid": "828782"
+          "tagid": "123"
         }
       },
       "video": {
@@ -24,7 +24,7 @@
       "id": "test-imp-id-2",
       "ext": {
         "bidder": {
-          "mid": "828783"
+          "tagid": "123"
         }
       },
       "video": {
@@ -50,7 +50,7 @@
           "id": "test-imp-id-1",
           "ext": {
             "bidder": {
-              "mid": "828782"
+              "tagid": "123"
             }
           },
           "video": {
@@ -65,12 +65,12 @@
               "h": 250
             }]
           },
-          "tagid": "828782"
+          "tagid": "123"
         }, {
           "id": "test-imp-id-2",
           "ext": {
             "bidder": {
-              "mid": "828783"
+              "tagid": "123"
             }
           },
           "video": {
@@ -85,7 +85,7 @@
               "h": 250
             }]
           },
-          "tagid": "828783"
+          "tagid": "123"
         }]
       }
     },
@@ -122,12 +122,12 @@
             }
           }]
         }],
-        "cur": "EUR"
+        "cur": "TRY"
       }
     }
   }],
   "expectedBidResponses": [{
-    "currency": "EUR",
+    "currency": "TRY",
     "bids": [{
       "bid": {
         "id": "test-bid-id-1",

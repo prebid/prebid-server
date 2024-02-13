@@ -5,8 +5,8 @@
       "id": "test-imp-id",
       "ext": {
         "bidder": {
-          "inv": 1234,
-          "mname": "placement"
+          "tagid": "123",
+          "pname": "placement"
         }
       },
       "banner": {
@@ -19,9 +19,9 @@
       "id": "test-imp-id2",
       "ext": {
         "bidder": {
-          "mid": 1111,
-          "inv": 4321,
-          "mname": "placement1"
+          "tagid": "123",
+          "wid": 456,
+          "pname": "placement1"
         }
       },
       "banner": {
@@ -49,10 +49,11 @@
         "id": "test-request-id",
         "imp": [{
           "id": "test-imp-id",
+          "tagid": "123",
           "ext": {
             "bidder": {
-              "inv": 1234,
-              "mname": "placement"
+              "tagid": "123",
+              "pname": "placement"
             }
           },
           "banner": {
@@ -63,12 +64,12 @@
           }
         }, {
           "id": "test-imp-id2",
-          "tagid": "1111",
+          "tagid": "123",
           "ext": {
             "bidder": {
-              "mid": 1111,
-              "inv": 4321,
-              "mname": "placement1"
+              "tagid": "123",
+              "wid": 456,
+              "pname": "placement1"
             }
           },
           "banner": {

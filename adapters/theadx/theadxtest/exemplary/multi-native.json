@@ -5,7 +5,7 @@
       "id": "test-imp-id-1",
       "ext": {
         "bidder": {
-          "mid": "828782"
+          "tagid": "123"
         }
       },
       "native": {
@@ -16,7 +16,7 @@
       "id": "test-imp-id-2",
       "ext": {
         "bidder": {
-          "mid": "828783"
+          "tagid": "124"
         }
       },
       "native": {
@@ -34,26 +34,26 @@
           "id": "test-imp-id-1",
           "ext": {
             "bidder": {
-              "mid": "828782"
+              "tagid": "123"
             }
           },
           "native": {
             "request": "{json string 1}",
             "ver": "1.2"
           },
-          "tagid": "828782"
+          "tagid": "123"
         }, {
           "id": "test-imp-id-2",
           "ext": {
             "bidder": {
-              "mid": "828783"
+              "tagid": "124"
             }
           },
           "native": {
             "request": "{json string 2}",
             "ver": "1.2"
           },
-          "tagid": "828783"
+          "tagid": "124"
         }]
       }
     },

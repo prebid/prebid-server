@@ -5,7 +5,7 @@
       "id": "test-imp-id",
       "ext": {
         "bidder": {
-          "mid": "828782"
+          "tagid": "123"
         }
       },
       "native": {
@@ -33,14 +33,14 @@
           "id": "test-imp-id",
           "ext": {
             "bidder": {
-              "mid": "828782"
+              "tagid": "123"
             }
           },
           "native": {
             "request": "{json string}",
             "ver": "1.2"
           },
-          "tagid": "828782"
+          "tagid": "123"
         }],
         "site": {
           "publisher": {
