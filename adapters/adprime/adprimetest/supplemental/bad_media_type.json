@@ -85,7 +85,7 @@
     "expectedBidResponses": [{"currency":"USD","bids":[]}],
     "expectedMakeBidsErrors": [
         {
-            "value": "Failed to find impression \"test-imp-id\"",
+            "value": "Unable to fetch mediaType in multi-format: test-imp-id",
             "comparison": "literal"
         }
     ]
