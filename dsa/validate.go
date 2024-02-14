@@ -7,6 +7,13 @@ import (
 	"github.com/buger/jsonparser"
 )
 
+const (
+	// Required - bid responses without DSA object will not be accepted
+	Required = 2
+	// RequiredOnlinePlatform - bid responses without DSA object will not be accepted, Publisher is an Online Platform
+	RequiredOnlinePlatform = 3
+)
+
 // Validate determines whether a given bid is valid from a DSA perspective.
 // A bid is considered valid unless the bid request indicates that a DSA object is required
 // in bid responses and it the object happens to be missing from the specified bid.
@@ -37,7 +44,7 @@ func dsaRequired(req *openrtb_ext.RequestWrapper) bool {
 	if regsDSA == nil {
 		return false
 	}
-	if regsDSA.DSARequired == 2 || regsDSA.DSARequired == 3 {
+	if regsDSA.Required == Required || regsDSA.Required == RequiredOnlinePlatform {
 		return true
 	}
 	return false
