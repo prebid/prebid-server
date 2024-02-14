@@ -34,7 +34,8 @@ type openRTBExtRegsWithDSA struct {
 	DSA *dsaRequest `json:"dsa,omitempty"`
 }
 
-type responseWithDSA struct {
+// responseExtWithDSA defines seatbid.bid.ext with the DSA object.
+type responseExtWithDSA struct {
 	DSA dsaResponse `json:"dsa"`
 }
 

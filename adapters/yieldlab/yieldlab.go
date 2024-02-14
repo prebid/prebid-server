@@ -336,6 +336,7 @@ func (a *YieldlabAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 		}
 	}
 
+	var bidErrors []error
 	for _, bid := range bids {
 		width, height, err := splitSize(bid.Adsize)
 		if err != nil {
@@ -352,7 +353,13 @@ func (a *YieldlabAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 		if imp, exists := adslotToImpMap[strconv.FormatUint(bid.ID, 10)]; !exists {
 			continue
 		} else {
-			var bidType openrtb_ext.BidType
+			extJson, err := makeResponseExt(bid)
+			if err != nil {
+				bidErrors = append(bidErrors, err)
+				// skip as bids with missing ext.dsa will be discarded anyway
+				continue
+			}
+
 			responseBid := &openrtb2.Bid{
 				ID:     strconv.FormatUint(bid.ID, 10),
 				Price:  float64(bid.Price) / 100,
@@ -361,8 +368,10 @@ func (a *YieldlabAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 				DealID: strconv.FormatUint(bid.Pid, 10),
 				W:      int64(width),
 				H:      int64(height),
+				Ext:    extJson,
 			}
 
+			var bidType openrtb_ext.BidType
 			if imp.Video != nil {
 				bidType = openrtb_ext.BidTypeVideo
 				responseBid.NURL = a.makeAdSourceURL(internalRequest, req, bid)
@@ -375,16 +384,6 @@ func (a *YieldlabAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 				continue
 			}
 
-			if bid.DSA != nil {
-				dsaJson, err := json.Marshal(responseWithDSA{*bid.DSA})
-				if err != nil {
-					return nil, []error{
-						fmt.Errorf("failed to add Yieldlab DSA object for adslotID %v. This is most likely a programming issue", bid.ID),
-					}
-				}
-				responseBid.Ext = dsaJson
-			}
-
 			bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
 				BidType: bidType,
 				Bid:     responseBid,
@@ -392,7 +391,18 @@ func (a *YieldlabAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 		}
 	}
 
-	return bidderResponse, nil
+	return bidderResponse, bidErrors
+}
+
+func makeResponseExt(bid *bidResponse) (json.RawMessage, error) {
+	if bid.DSA != nil {
+		extJson, err := json.Marshal(responseExtWithDSA{*bid.DSA})
+		if err != nil {
+			return nil, fmt.Errorf("failed to make JSON for seatbid.bid.ext for adslotID %v. This is most likely a programming issue", bid.ID)
+		}
+		return extJson, nil
+	}
+	return nil, nil
 }
 
 func (a *YieldlabAdapter) findBidReq(adslotID uint64, params []*openrtb_ext.ExtImpYieldlab) *openrtb_ext.ExtImpYieldlab {
