@@ -3,6 +3,7 @@ extra_info: "https://medianet.golang.pbs.com"
 maintainer:
   email: "prebid-support@media.net"
 gvlVendorID: 142
+endpointCompression: gzip
 modifyingVastXmlAllowed: true
 capabilities:
   app:
@@ -17,5 +18,5 @@ capabilities:
       - native
 userSync:
   redirect:
-    url: https://hbx.media.net/cksync.php?cs=1&type=pbs&ovsid=setstatuscode&bidder=medianet&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
+    url: https://hbx.media.net/cksync.php?cs=1&type=pbs&ovsid=setstatuscode&bidder=medianet&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}
     userMacro: "<vsid>"
