@@ -18,7 +18,7 @@ func TestValidate(t *testing.T) {
 		wantValid   bool
 	}{
 		{
-			name: "dsa not required",
+			name: "not_required",
 			giveRequest: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					Regs: &openrtb2.Regs{
@@ -30,7 +30,7 @@ func TestValidate(t *testing.T) {
 			wantValid: true,
 		},
 		{
-			name: "dsa required and bid is nil",
+			name: "required_and_bid_is_nil",
 			giveRequest: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					Regs: &openrtb2.Regs{
@@ -42,7 +42,7 @@ func TestValidate(t *testing.T) {
 			wantValid: false,
 		},
 		{
-			name: "dsa required and bid.bid is nil",
+			name: "required_and_bid.bid_is_nil",
 			giveRequest: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					Regs: &openrtb2.Regs{
@@ -54,7 +54,7 @@ func TestValidate(t *testing.T) {
 			wantValid: false,
 		},
 		{
-			name: "dsa required and bid.ext.dsa not present",
+			name: "required_and_bid.ext.dsa_not_present",
 			giveRequest: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					Regs: &openrtb2.Regs{
@@ -70,7 +70,7 @@ func TestValidate(t *testing.T) {
 			wantValid: false,
 		},
 		{
-			name: "dsa required and bid.ext.dsa present",
+			name: "required_and_bid.ext.dsa_present",
 			giveRequest: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					Regs: &openrtb2.Regs{
@@ -102,7 +102,7 @@ func TestDSARequired(t *testing.T) {
 		wantRequired bool
 	}{
 		{
-			name: "dsa not required, reg.ext.dsa is nil",
+			name: "not_required_and_reg.ext.dsa_is_nil",
 			giveRequest: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					Regs: &openrtb2.Regs{
@@ -113,7 +113,7 @@ func TestDSARequired(t *testing.T) {
 			wantRequired: false,
 		},
 		{
-			name: "dsa not required, reg.ext.dsa is empty",
+			name: "not_required_and_reg.ext.dsa_is_empty",
 			giveRequest: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					Regs: &openrtb2.Regs{
@@ -124,7 +124,7 @@ func TestDSARequired(t *testing.T) {
 			wantRequired: false,
 		},
 		{
-			name: "dsa required, reg.ext.dsa is 0",
+			name: "required_and_reg.ext.dsa_is_0",
 			giveRequest: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					Regs: &openrtb2.Regs{
@@ -135,7 +135,7 @@ func TestDSARequired(t *testing.T) {
 			wantRequired: false,
 		},
 		{
-			name: "dsa required, reg.ext.dsa is 1",
+			name: "required_and_reg.ext.dsa_is_1",
 			giveRequest: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					Regs: &openrtb2.Regs{
@@ -146,7 +146,7 @@ func TestDSARequired(t *testing.T) {
 			wantRequired: false,
 		},
 		{
-			name: "dsa required, reg.ext.dsa is 2",
+			name: "required_and_reg.ext.dsa_is_2",
 			giveRequest: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					Regs: &openrtb2.Regs{
@@ -157,7 +157,7 @@ func TestDSARequired(t *testing.T) {
 			wantRequired: true,
 		},
 		{
-			name: "dsa required, reg.ext.dsa is 3",
+			name: "required_and_reg.ext.dsa_is_3",
 			giveRequest: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					Regs: &openrtb2.Regs{

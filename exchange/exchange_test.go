@@ -4743,9 +4743,8 @@ func TestMakeBidWithValidation(t *testing.T) {
 	sampleAd := "<?xml version=\"1.0\" encoding=\"UTF-8\"?><VAST ...></VAST>"
 	sampleOpenrtbBid := &openrtb2.Bid{ID: "some-bid-id", AdM: sampleAd}
 
-	// Define test cases
 	testCases := []struct {
-		description              string
+		name                     string
 		givenBidRequestExt       json.RawMessage
 		givenValidations         config.Validations
 		givenBids                []*entities.PbsOrtbBid
@@ -4756,7 +4755,7 @@ func TestMakeBidWithValidation(t *testing.T) {
 		expectedNumDebugWarnings int
 	}{
 		{
-			description:        "One bid out of two is invalid based on DSA object presence",
+			name:               "One_of_two_bids_is_invalid_based_on_DSA_object_presence",
 			givenBidRequestExt: json.RawMessage(`{"dsa": {"dsarequired": 2}}`),
 			givenValidations:   config.Validations{},
 			givenBids:          []*entities.PbsOrtbBid{{Bid: &openrtb2.Bid{Ext: json.RawMessage(`{"dsa": {}}`)}}, {Bid: &openrtb2.Bid{}}},
@@ -4779,7 +4778,7 @@ func TestMakeBidWithValidation(t *testing.T) {
 			expectedNumDebugWarnings: 1,
 		},
 		{
-			description:       "Creative size validation enforced, one of two bids has invalid dimensions",
+			name:              "Creative_size_validation_enforced,_one_of_two_bids_has_invalid_dimensions",
 			givenValidations:  config.Validations{BannerCreativeMaxSize: config.ValidationEnforce, MaxCreativeWidth: 100, MaxCreativeHeight: 100},
 			givenBids:         []*entities.PbsOrtbBid{{Bid: &openrtb2.Bid{W: 200, H: 200}, BidType: openrtb_ext.BidTypeBanner}, {Bid: &openrtb2.Bid{W: 50, H: 50}, BidType: openrtb_ext.BidTypeBanner}},
 			givenSeat:         "pubmatic",
@@ -4804,7 +4803,7 @@ func TestMakeBidWithValidation(t *testing.T) {
 			expectedNumDebugErrors: 1,
 		},
 		{
-			description:            "Creative size validation warned, one of two bids has invalid dimensions",
+			name:                   "Creative_size_validation_warned,_one_of_two_bids_has_invalid_dimensions",
 			givenValidations:       config.Validations{BannerCreativeMaxSize: config.ValidationWarn, MaxCreativeWidth: 100, MaxCreativeHeight: 100},
 			givenBids:              []*entities.PbsOrtbBid{{Bid: &openrtb2.Bid{W: 200, H: 200}, BidType: openrtb_ext.BidTypeBanner}, {Bid: &openrtb2.Bid{W: 50, H: 50}, BidType: openrtb_ext.BidTypeBanner}},
 			givenSeat:              "pubmatic",
@@ -4813,7 +4812,7 @@ func TestMakeBidWithValidation(t *testing.T) {
 			expectedNumDebugErrors: 1,
 		},
 		{
-			description:       "AdM validation enforced, one of two bids has invalid AdM",
+			name:              "AdM_validation_enforced,_one_of_two_bids_has_invalid_AdM",
 			givenValidations:  config.Validations{SecureMarkup: config.ValidationEnforce},
 			givenBids:         []*entities.PbsOrtbBid{{Bid: &openrtb2.Bid{AdM: "http://domain.com/invalid", ImpID: "1"}, BidType: openrtb_ext.BidTypeBanner}, {Bid: &openrtb2.Bid{AdM: "https://domain.com/valid", ImpID: "2"}, BidType: openrtb_ext.BidTypeBanner}},
 			givenSeat:         "pubmatic",
@@ -4831,7 +4830,7 @@ func TestMakeBidWithValidation(t *testing.T) {
 			expectedNumDebugErrors: 1,
 		},
 		{
-			description:            "AdM validation warned, one of two bids has invalid AdM",
+			name:                   "AdM_validation_warned,_one_of_two_bids_has_invalid_AdM",
 			givenValidations:       config.Validations{SecureMarkup: config.ValidationWarn},
 			givenBids:              []*entities.PbsOrtbBid{{Bid: &openrtb2.Bid{AdM: "http://domain.com/invalid", ImpID: "1"}, BidType: openrtb_ext.BidTypeBanner}, {Bid: &openrtb2.Bid{AdM: "https://domain.com/valid", ImpID: "2"}, BidType: openrtb_ext.BidTypeBanner}},
 			givenSeat:              "pubmatic",
@@ -4840,7 +4839,7 @@ func TestMakeBidWithValidation(t *testing.T) {
 			expectedNumDebugErrors: 1,
 		},
 		{
-			description:       "Adm validation skipped, creative size validation enforced, one of two bids has invalid AdM",
+			name:              "Adm_validation_skipped,_creative_size_validation_enforced,_one_of_two_bids_has_invalid_AdM",
 			givenValidations:  config.Validations{SecureMarkup: config.ValidationSkip, BannerCreativeMaxSize: config.ValidationEnforce},
 			givenBids:         []*entities.PbsOrtbBid{{Bid: &openrtb2.Bid{AdM: "http://domain.com/invalid"}, BidType: openrtb_ext.BidTypeBanner}, {Bid: &openrtb2.Bid{AdM: "https://domain.com/valid"}, BidType: openrtb_ext.BidTypeBanner}},
 			givenSeat:         "pubmatic",
@@ -4848,7 +4847,7 @@ func TestMakeBidWithValidation(t *testing.T) {
 			expectedNonBids:   &nonBids{},
 		},
 		{
-			description:       "Creative size validation skipped, Adm Validation enforced, one of two bids has invalid dimensions",
+			name:              "Creative_size_validation_skipped,_Adm_Validation_enforced,_one_of_two_bids_has_invalid_dimensions",
 			givenValidations:  config.Validations{BannerCreativeMaxSize: config.ValidationSkip, MaxCreativeWidth: 100, MaxCreativeHeight: 100},
 			givenBids:         []*entities.PbsOrtbBid{{Bid: &openrtb2.Bid{W: 200, H: 200}, BidType: openrtb_ext.BidTypeBanner}, {Bid: &openrtb2.Bid{W: 50, H: 50}, BidType: openrtb_ext.BidTypeBanner}},
 			givenSeat:         "pubmatic",
@@ -4888,7 +4887,7 @@ func TestMakeBidWithValidation(t *testing.T) {
 
 	//Run tests
 	for _, test := range testCases {
-		t.Run(test.description, func(t *testing.T) {
+		t.Run(test.name, func(t *testing.T) {
 			bidExtResponse := &openrtb_ext.ExtBidResponse{
 				Errors:   make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage),
 				Warnings: make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage),
@@ -4905,9 +4904,9 @@ func TestMakeBidWithValidation(t *testing.T) {
 			nonBids := &nonBids{}
 			resultingBids, resultingErrs := e.makeBid(sampleBids, sampleAuction, true, ImpExtInfoMap, bidRequest, bidExtResponse, test.givenSeat, "", nonBids)
 
-			assert.Equal(t, 0, len(resultingErrs), "%s. Test should not return errors \n", test.description)
-			assert.Equal(t, test.expectedNumOfBids, len(resultingBids), "%s. Test returns more valid bids than expected\n", test.description)
-			assert.Equal(t, test.expectedNonBids, nonBids, "%s. Test returns incorrect nonBids\n", test.description)
+			assert.Equal(t, 0, len(resultingErrs))
+			assert.Equal(t, test.expectedNumOfBids, len(resultingBids))
+			assert.Equal(t, test.expectedNonBids, nonBids)
 			assert.Equal(t, test.expectedNumDebugErrors, len(bidExtResponse.Errors))
 			assert.Equal(t, test.expectedNumDebugWarnings, len(bidExtResponse.Warnings))
 		})
