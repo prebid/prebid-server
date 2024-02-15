@@ -70,7 +70,6 @@ jobs:
   publish-tag:
     name: Publish tag
     needs: build-master
-    if: contains(needs.check-permission.outputs.hasWritePermission, true)
     permissions:
       contents: write
     runs-on: ubuntu-latest
