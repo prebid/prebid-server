@@ -426,7 +426,8 @@ class userHelper {
       repo: this.repo,
       username: this.owner,
     })
-    return data.permission === adminPermission || data.permission === writePermission
+    console.log(JSON.stringify(data))
+    return data.permission === writePermission || data.permission === adminPermission
   }
 }
 
