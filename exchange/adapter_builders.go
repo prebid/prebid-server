@@ -374,6 +374,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderTappx:             tappx.Builder,
 		openrtb_ext.BidderTeads:             teads.Builder,
 		openrtb_ext.BidderTelaria:           telaria.Builder,
+		openrtb_ext.BidderTheadx:            theadx.Builder,
 		openrtb_ext.BidderTpmn:              tpmn.Builder,
 		openrtb_ext.BidderTrafficGate:       trafficgate.Builder,
 		openrtb_ext.BidderTriplelift:        triplelift.Builder,
@@ -399,6 +400,5 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderZeroClickFraud:    zeroclickfraud.Builder,
 		openrtb_ext.BidderZetaGlobalSsp:     zeta_global_ssp.Builder,
 		openrtb_ext.BidderZmaticoo:          zmaticoo.Builder,
-		openrtb_ext.BidderTheadx:            theadx.Builder,
 	}
 }
