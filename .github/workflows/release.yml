@@ -44,13 +44,6 @@ jobs:
             return hasPermission
     outputs:
       hasWritePermission: ${{ steps.check.outputs.result }}
-  
-  debug-step:
-    name: Debug step
-    runs-on: ubuntu-latest
-    steps:
-      - name: Debug
-        run: echo ${{ needs.check-permission.outputs.hasWritePermission }}
 
   build-master:
     name: Build master
