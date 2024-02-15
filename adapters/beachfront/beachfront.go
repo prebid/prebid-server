@@ -153,7 +153,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 				Uri:     a.bannerEndpoint,
 				Body:    bytes,
 				Headers: headers,
-				ImpIDs:  getBannerImpds(beachfrontRequests.Banner.Slots),
+				ImpIDs:  getBannerImpIDs(beachfrontRequests.Banner.Slots),
 			}
 
 			nurlBump++
@@ -800,7 +800,7 @@ func getDefaultExtraInfo() ExtraInfo {
 	}
 }
 
-func getBannerImpds(bfs []beachfrontSlot) []string {
+func getBannerImpIDs(bfs []beachfrontSlot) []string {
 	impIDs := []string{}
 	for _, bfSlot := range bfs {
 		impIDs = append(impIDs, bfSlot.Slot)
