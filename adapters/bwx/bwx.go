@@ -123,7 +123,7 @@ func (a *adapter) MakeBids(openRTBRequest *openrtb2.BidRequest, requestToBidder 
 }
 
 func prepareBidResponse(seats []openrtb2.SeatBid) (*adapters.BidderResponse, []error) {
-	errs := []error{}
+	var errs []error
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(seats))
 
 	for _, seatBid := range seats {
