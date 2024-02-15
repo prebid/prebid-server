@@ -185,7 +185,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	defer func() {
 		deps.metricsEngine.RecordRequest(labels)
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
-		deps.analytics.LogAuctionObject(&ao, activityControl)
+		deps.analytics.LogAuctionObject(&ao, activityControl) // TODO: Within LogAuctionObject is to remove the releveant adapter information from the request so that it's not logged
 	}()
 
 	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))

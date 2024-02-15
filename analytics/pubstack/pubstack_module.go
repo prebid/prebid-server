@@ -107,6 +107,7 @@ func NewModuleWithConfigTask(client *http.Client, scope, endpoint string, maxEve
 	return &pb, nil
 }
 
+// TODO: Does the issue need to be addressed here too?
 func (p *PubstackModule) LogAuctionObject(ao *analytics.AuctionObject) {
 	p.muxConfig.RLock()
 	defer p.muxConfig.RUnlock()

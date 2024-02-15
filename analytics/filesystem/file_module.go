@@ -27,6 +27,7 @@ type FileLogger struct {
 }
 
 // Writes AuctionObject to file
+// TODO: It will also be here that remove the relevant adapter information from the request so that it's not logged?
 func (f *FileLogger) LogAuctionObject(ao *analytics.AuctionObject) {
 	var b bytes.Buffer
 	b.WriteString(jsonifyAuctionObject(ao))

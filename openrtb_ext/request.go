@@ -42,31 +42,32 @@ type ExtRequest struct {
 
 // ExtRequestPrebid defines the contract for bidrequest.ext.prebid
 type ExtRequestPrebid struct {
-	AdServerTargeting    []AdServerTarget                `json:"adservertargeting,omitempty"`
-	Aliases              map[string]string               `json:"aliases,omitempty"`
-	AliasGVLIDs          map[string]uint16               `json:"aliasgvlids,omitempty"`
-	BidAdjustmentFactors map[string]float64              `json:"bidadjustmentfactors,omitempty"`
-	BidAdjustments       *ExtRequestPrebidBidAdjustments `json:"bidadjustments,omitempty"`
-	BidderConfigs        []BidderConfig                  `json:"bidderconfig,omitempty"`
-	BidderParams         json.RawMessage                 `json:"bidderparams,omitempty"`
-	Cache                *ExtRequestPrebidCache          `json:"cache,omitempty"`
-	Channel              *ExtRequestPrebidChannel        `json:"channel,omitempty"`
-	CurrencyConversions  *ExtRequestCurrency             `json:"currency,omitempty"`
-	Data                 *ExtRequestPrebidData           `json:"data,omitempty"`
-	Debug                bool                            `json:"debug,omitempty"`
-	Events               json.RawMessage                 `json:"events,omitempty"`
-	Experiment           *Experiment                     `json:"experiment,omitempty"`
-	Floors               *PriceFloorRules                `json:"floors,omitempty"`
-	Integration          string                          `json:"integration,omitempty"`
-	MultiBid             []*ExtMultiBid                  `json:"multibid,omitempty"`
-	MultiBidMap          map[string]ExtMultiBid          `json:"-"`
-	Passthrough          json.RawMessage                 `json:"passthrough,omitempty"`
-	SChains              []*ExtRequestPrebidSChain       `json:"schains,omitempty"`
-	Sdk                  *ExtRequestSdk                  `json:"sdk,omitempty"`
-	Server               *ExtRequestPrebidServer         `json:"server,omitempty"`
-	StoredRequest        *ExtStoredRequest               `json:"storedrequest,omitempty"`
-	SupportDeals         bool                            `json:"supportdeals,omitempty"`
-	Targeting            *ExtRequestTargeting            `json:"targeting,omitempty"`
+	AdServerTargeting    []AdServerTarget                      `json:"adservertargeting,omitempty"`
+	Aliases              map[string]string                     `json:"aliases,omitempty"`
+	AliasGVLIDs          map[string]uint16                     `json:"aliasgvlids,omitempty"`
+	Analytics            map[string]*ExtRequestPrebidAnalytics `json:"analytics,omitempty"` // TODO: Validate?
+	BidAdjustmentFactors map[string]float64                    `json:"bidadjustmentfactors,omitempty"`
+	BidAdjustments       *ExtRequestPrebidBidAdjustments       `json:"bidadjustments,omitempty"`
+	BidderConfigs        []BidderConfig                        `json:"bidderconfig,omitempty"`
+	BidderParams         json.RawMessage                       `json:"bidderparams,omitempty"`
+	Cache                *ExtRequestPrebidCache                `json:"cache,omitempty"`
+	Channel              *ExtRequestPrebidChannel              `json:"channel,omitempty"`
+	CurrencyConversions  *ExtRequestCurrency                   `json:"currency,omitempty"`
+	Data                 *ExtRequestPrebidData                 `json:"data,omitempty"`
+	Debug                bool                                  `json:"debug,omitempty"`
+	Events               json.RawMessage                       `json:"events,omitempty"`
+	Experiment           *Experiment                           `json:"experiment,omitempty"`
+	Floors               *PriceFloorRules                      `json:"floors,omitempty"`
+	Integration          string                                `json:"integration,omitempty"`
+	MultiBid             []*ExtMultiBid                        `json:"multibid,omitempty"`
+	MultiBidMap          map[string]ExtMultiBid                `json:"-"`
+	Passthrough          json.RawMessage                       `json:"passthrough,omitempty"`
+	SChains              []*ExtRequestPrebidSChain             `json:"schains,omitempty"`
+	Sdk                  *ExtRequestSdk                        `json:"sdk,omitempty"`
+	Server               *ExtRequestPrebidServer               `json:"server,omitempty"`
+	StoredRequest        *ExtStoredRequest                     `json:"storedrequest,omitempty"`
+	SupportDeals         bool                                  `json:"supportdeals,omitempty"`
+	Targeting            *ExtRequestTargeting                  `json:"targeting,omitempty"`
 
 	//AlternateBidderCodes is populated with host's AlternateBidderCodes config if not defined in request
 	AlternateBidderCodes *ExtAlternateBidderCodes `json:"alternatebiddercodes,omitempty"`
@@ -229,6 +230,10 @@ type GranularityRange struct {
 	Min       float64 `json:"min"`
 	Max       float64 `json:"max"`
 	Increment float64 `json:"increment"`
+}
+
+type ExtRequestPrebidAnalytics struct {
+	ClientAnalytics bool `json:"client-analytics,omitempty"`
 }
 
 func (pg *PriceGranularity) UnmarshalJSON(b []byte) error {
