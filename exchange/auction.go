@@ -394,7 +394,7 @@ func defTTL(bidType openrtb_ext.BidType, defaultTTLs *config.DefaultTTLs) (ttl i
 type auction struct {
 	// winningBids is a map from imp.id to the highest overall CPM bid in that imp.
 	winningBids map[string]*entities.PbsOrtbBid
-	// allBidsByBidder stores the highest bid on each imp by each bidder.
+	// allBidsByBidder is map from ImpID to another map that maps bidderName to all bids from that bidder.
 	allBidsByBidder map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid
 	// roundedPrices stores the price strings rounded for each bid according to the price granularity.
 	roundedPrices map[*entities.PbsOrtbBid]string
