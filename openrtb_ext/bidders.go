@@ -188,6 +188,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderTappx,
 	BidderTeads,
 	BidderTelaria,
+	BidderTheadx,
 	BidderTpmn,
 	BidderTrafficGate,
 	BidderTriplelift,
@@ -213,7 +214,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderZeroClickFraud,
 	BidderZetaGlobalSsp,
 	BidderZmaticoo,
-	BidderTheadx,
 }
 
 func GetAliasBidderToParent() map[BidderName]BidderName {
