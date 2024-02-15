@@ -45,7 +45,7 @@ type Bidder interface {
 type TimeoutBidder interface {
 	Bidder
 
-	// MakeTimeoutNotice functions much the same as MakeRequests, except it is fed the bidder request that timed out,
+	// MakeTimeoutNotification functions much the same as MakeRequests, except it is fed the bidder request that timed out,
 	// and expects that only one notification "request" will be generated. A use case for multiple timeout notifications
 	// has not been anticipated.
 	//
