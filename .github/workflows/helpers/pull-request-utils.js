@@ -409,31 +409,8 @@ class coverageHelper {
   }
 }
 
-class userHelper {
-  constructor(input) {
-    this.owner = input.context.repo.owner
-    this.repo = input.context.repo.repo
-    this.github = input.github
-  }
-
-  /*
-    Checks if the user has write permissions for the repository
-    @returns {boolean} - returns true if the user has write permissions, otherwise false
-  */
-  async hasWritePermissions() {
-    const { data } = await this.github.rest.repos.getCollaboratorPermissionLevel({
-      owner: this.owner,
-      repo: this.repo,
-      username: this.owner,
-    })
-    console.log(JSON.stringify(data))
-    return data.permission === writePermission || data.permission === adminPermission
-  }
-}
-
 module.exports = {
   diffHelper: (input) => new diffHelper(input),
   semgrepHelper: (input) => new semgrepHelper(input),
   coverageHelper: (input) => new coverageHelper(input),
-  userHelper: (input) => new userHelper(input),
 }

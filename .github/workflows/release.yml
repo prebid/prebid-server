@@ -31,31 +31,30 @@ jobs:
           fetch-depth: 0
           repository: ${{ github.repository }}
           ref: master
-      - name: Check user permission
-        uses: actions/github-script@v7
+     
+      - name: check user permission
         id: check
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          result-encoding: string
-          script: |
-            const utils = require('./.github/workflows/helpers/pull-request-utils.js')
-            const helper = utils.userHelper({github, context})
-            const hasPermission = await helper.hasWritePermissions()
-            return hasPermission
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          collaboratorPermission=$(gh api \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            /repos/perbid/prebid-server/collaborators/${{ github.actor }}/permission)          
+          user_permission=$(echo $collaboratorPermission | jq '.permission')
+        
+          if [ $user_permission == "\"write\"" ] || [ $user_permission == "\"admin\"" ]; then
+            echo "hasWritePermission=true" >> $GITHUB_OUTPUT
+          else
+          echo "hasWritePermission=false" >> $GITHUB_OUTPUT
+          fi
     outputs:
-      hasWritePermission: ${{ steps.check.outputs.result }}
-  
-  debug-step:
-    name: Debug step
-    runs-on: ubuntu-latest
-    steps:
-      - name: Debug
-        run: echo ${{ needs.check-permission.outputs.hasWritePermission }}
+      hasWritePermission: ${{ steps.check.outputs.hasWritePermission }}
 
   build-master:
     name: Build master
     needs: check-permission
-    if: contains(needs.check-permission.outputs.hasWritePermission, 'true')
+    if: contains(needs.check-permission.outputs.hasWritePermission, true)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -71,7 +70,7 @@ jobs:
   publish-tag:
     name: Publish tag
     needs: build-master
-    if: contains(needs.check-permission.outputs.hasWritePermission, 'true')
+    if: contains(needs.check-permission.outputs.hasWritePermission, true)
     permissions:
       contents: write
     runs-on: ubuntu-latest
