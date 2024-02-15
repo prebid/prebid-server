@@ -46,7 +46,7 @@ func (adapter *adapter) getRequestData(bidRequest *openrtb2.BidRequest, impExt *
 		Uri:     url,
 		Body:    reqJSON,
 		Headers: headers,
-		ImpIDs:  openrtb_ext.GetImpIDs(imps)}, nil
+		ImpIDs:  openrtb_ext.GetImpIDs(pbidRequest.Imp)}, nil
 
 }
 func createBidRequest(rtbBidRequest *openrtb2.BidRequest, imps []openrtb2.Imp) *openrtb2.BidRequest {
