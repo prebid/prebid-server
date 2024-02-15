@@ -414,6 +414,7 @@ class userHelper {
     this.owner = input.context.repo.owner
     this.repo = input.context.repo.repo
     this.github = input.github
+    this.user = input.user
   }
 
   /*
@@ -424,7 +425,7 @@ class userHelper {
     const { data } = await this.github.rest.repos.getCollaboratorPermissionLevel({
       owner: this.owner,
       repo: this.repo,
-      username: this.owner,
+      username: this.user,
     })
     return data.permission === writePermission || data.permission === adminPermission
   }
