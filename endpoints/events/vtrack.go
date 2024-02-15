@@ -74,7 +74,7 @@ func (v *vtrackEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httpro
 	// account id is required
 	if accountId == "" {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprintf("Account '%s' is required query parameter and can't be empty", AccountParameter)))
+		fmt.Fprintf(w, "Account '%s' is required query parameter and can't be empty", AccountParameter)
 		return
 	}
 
@@ -82,7 +82,7 @@ func (v *vtrackEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httpro
 	integrationType, err := getIntegrationType(r)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprintf("Invalid integration type: %s\n", err.Error())))
+		fmt.Fprintf(w, "Invalid integration type: %s\n", err.Error())
 		return
 	}
 
@@ -92,7 +92,7 @@ func (v *vtrackEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httpro
 	// check if there was any error while parsing puts request
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprintf("Invalid request: %s\n", err.Error())))
+		fmt.Fprintf(w, "Invalid request: %s\n", err.Error())
 		return
 	}
 
@@ -106,7 +106,7 @@ func (v *vtrackEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httpro
 		w.WriteHeader(status)
 
 		for _, message := range messages {
-			w.Write([]byte(fmt.Sprintf("Invalid request: %s\n", message)))
+			fmt.Fprintf(w, "Invalid request: %s\n", message)
 		}
 		return
 	}
@@ -118,7 +118,7 @@ func (v *vtrackEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httpro
 		if len(errs) > 0 {
 			w.WriteHeader(http.StatusInternalServerError)
 			for _, err := range errs {
-				w.Write([]byte(fmt.Sprintf("Error(s) updating vast: %s\n", err.Error())))
+				fmt.Fprintf(w, "Error(s) updating vast: %s\n", err.Error())
 
 				return
 			}
@@ -128,7 +128,7 @@ func (v *vtrackEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httpro
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(fmt.Sprintf("Error serializing pbs cache response: %s\n", err.Error())))
+			fmt.Fprintf(w, "Error serializing pbs cache response: %s\n", err.Error())
 
 			return
 		}
