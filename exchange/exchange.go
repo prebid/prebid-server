@@ -574,7 +574,7 @@ func applyDealSupport(bidRequest *openrtb2.BidRequest, auc *auction, bidCategory
 	errs := []error{}
 	impDealMap := getDealTiers(bidRequest)
 
-	for impID, topBidsPerImp := range auc.winningBidsByBidder {
+	for impID, topBidsPerImp := range auc.allBidsByBidder {
 		impDeal := impDealMap[impID]
 		for bidder, topBidsPerBidder := range topBidsPerImp {
 			bidderNormalized, bidderFound := openrtb_ext.NormalizeBidderName(bidder.String())
