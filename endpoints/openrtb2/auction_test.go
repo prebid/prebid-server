@@ -6183,7 +6183,7 @@ func TestValidateOrFillCDep(t *testing.T) {
 			wantErr:       nil,
 		},
 		{
-			name: "Sec-Cookie-Deprecation present in request where request.device.ext is nil",
+			name: "Sec-Cookie-Deprecation present in request where request.device is nil",
 			args: args{
 				httpReq: &http.Request{
 					Header: http.Header{secCookieDeprecation: []string{"example_label_1"}},

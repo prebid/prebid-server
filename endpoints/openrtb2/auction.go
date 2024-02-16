@@ -2047,6 +2047,7 @@ func setDeviceImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper, i
 	setIPImplicitly(httpReq, r, ipValidtor)
 	setUAImplicitly(httpReq, r)
 	setDoNotTrackImplicitly(httpReq, r)
+
 }
 
 // setAuctionTypeImplicitly sets the auction type to 1 if it wasn't on the request,
