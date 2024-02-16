@@ -231,25 +231,25 @@ func (ti *TrackerInjector) addClickTrackingEvent(outputXML *strings.Builder, cre
 	if addParentTag {
 		outputXML.WriteString("<VideoClicks>")
 	}
-	ti.writeTrackingEvent(ti.events.VideoClicks, outputXML, "<ClickTracking><![CDATA[", "]]></ClickTracking>", creativeId, "", "")
+	ti.writeTrackingEvent(ti.events.VideoClicks, outputXML, "<ClickTracking><![CDATA[", "]]></ClickTracking>", creativeId, "", "clicktracking")
 	if addParentTag {
 		outputXML.WriteString("</VideoClicks>")
 	}
 }
 
 func (ti *TrackerInjector) addImpressionTrackingEvent(outputXML *strings.Builder) {
-	ti.writeTrackingEvent(ti.events.Impressions, outputXML, "<Impression><![CDATA[", "]]></Impression>", "", "", "")
+	ti.writeTrackingEvent(ti.events.Impressions, outputXML, "<Impression><![CDATA[", "]]></Impression>", "", "", "impression")
 }
 
 func (ti *TrackerInjector) addErrorTrackingEvent(outputXML *strings.Builder) {
-	ti.writeTrackingEvent(ti.events.Errors, outputXML, "<Error><![CDATA[", "]]></Error>", "", "", "")
+	ti.writeTrackingEvent(ti.events.Errors, outputXML, "<Error><![CDATA[", "]]></Error>", "", "", "error")
 }
 
 func (ti *TrackerInjector) addNonLinearClickTrackingEvent(outputXML *strings.Builder, creativeId string, addParentTag bool) {
 	if addParentTag {
 		outputXML.WriteString("<NonLinear>")
 	}
-	ti.writeTrackingEvent(ti.events.NonLinearClickTracking, outputXML, "<NonLinearClickTracking><![CDATA[", "]]></NonLinearClickTracking>", creativeId, "", "")
+	ti.writeTrackingEvent(ti.events.NonLinearClickTracking, outputXML, "<NonLinearClickTracking><![CDATA[", "]]></NonLinearClickTracking>", creativeId, "", "nonlinearclicktracking")
 	if addParentTag {
 		outputXML.WriteString("</NonLinear>")
 	}
@@ -259,7 +259,7 @@ func (ti *TrackerInjector) addCompanionClickThroughEvent(outputXML *strings.Buil
 	if addParentTag {
 		outputXML.WriteString("<Companion>")
 	}
-	ti.writeTrackingEvent(ti.events.CompanionClickThrough, outputXML, "<CompanionClickThrough><![CDATA[", "]]></CompanionClickThrough>", creativeId, "", "")
+	ti.writeTrackingEvent(ti.events.CompanionClickThrough, outputXML, "<CompanionClickThrough><![CDATA[", "]]></CompanionClickThrough>", creativeId, "", "companionclickthrough")
 	if addParentTag {
 		outputXML.WriteString("</Companion>")
 	}
