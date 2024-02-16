@@ -6289,17 +6289,23 @@ func TestValidateOrFillCDep(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := validateOrFillCDep(tt.args.httpReq, tt.args.req, &tt.args.account)
-			assert.Equal(t, tt.wantErr, err)
-			if tt.wantDeviceExt != nil {
+			assert.Equal(t, tt.wantErr, err, tt.name)
+			if tt.args.req != nil {
 				err := tt.args.req.RebuildRequest()
-				assert.NoError(t, err)
+				assert.NoError(t, err, tt.name)
+			}
+			if tt.wantDeviceExt == nil {
+				if tt.args.req != nil && tt.args.req.Device != nil {
+					assert.Nil(t, tt.args.req.Device.Ext, tt.name)
+				}
+			} else {
 				assert.JSONEq(t, string(tt.wantDeviceExt), string(tt.args.req.Device.Ext), tt.name)
 			}
 		})
 	}
 }
 
-func TestParseRequestCookieDeprecation(t *testing.T) {
+func TestValidateRequestCookieDeprecation(t *testing.T) {
 	testCases :=
 		[]struct {
 			name         string
@@ -6309,178 +6315,6 @@ func TestParseRequestCookieDeprecation(t *testing.T) {
 			wantErrs     []error
 			wantCDep     string
 		}{
-			{
-				name:    "Request without Sec-Cookie-Deprecation header (cookiedeprecation not enabled for account)",
-				httpReq: httptest.NewRequest("POST", "/openrtb2/auction", nil),
-				givenAccount: &config.Account{
-					ID: "1",
-					Privacy: config.AccountPrivacy{
-						PrivacySandbox: config.PrivacySandbox{
-							CookieDeprecation: config.CookieDeprecation{
-								Enabled: false,
-								TTLSec:  86400,
-							},
-						},
-					},
-				},
-				reqWrapper: &openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
-						ID:  "Some-ID",
-						App: &openrtb2.App{},
-						Imp: []openrtb2.Imp{
-							{
-								ID: "Some-Imp-ID",
-								Banner: &openrtb2.Banner{
-									Format: []openrtb2.Format{
-										{
-											W: 600,
-											H: 500,
-										},
-										{
-											W: 300,
-											H: 600,
-										},
-									},
-								},
-								Ext: []byte(`{"pubmatic":{"publisherId": 12345678}}`),
-							},
-						},
-					},
-				},
-				wantErrs: []error{},
-				wantCDep: "",
-			},
-			{
-				name: "Request with Sec-Cookie-Deprecation header having length less than 100 (cookiedeprecation not enabled for account)",
-				httpReq: func() *http.Request {
-					req := httptest.NewRequest("POST", "/openrtb2/auction", nil)
-					req.Header.Set(secCookieDeprecation, "sample-value")
-					return req
-				}(),
-				givenAccount: &config.Account{
-					ID: "1",
-					Privacy: config.AccountPrivacy{
-						PrivacySandbox: config.PrivacySandbox{
-							CookieDeprecation: config.CookieDeprecation{
-								Enabled: false,
-								TTLSec:  86400,
-							},
-						},
-					},
-				},
-				reqWrapper: &openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
-						ID:  "Some-ID",
-						App: &openrtb2.App{},
-						Imp: []openrtb2.Imp{
-							{
-								ID: "Some-Imp-ID",
-								Banner: &openrtb2.Banner{
-									Format: []openrtb2.Format{
-										{
-											W: 600,
-											H: 500,
-										},
-										{
-											W: 300,
-											H: 600,
-										},
-									},
-								},
-								Ext: []byte(`{"pubmatic":{"publisherId": 12345678}}`),
-							},
-						},
-					},
-				},
-				wantErrs: []error{},
-				wantCDep: "",
-			},
-			{
-				name: "Request with Sec-Cookie-Deprecation header having length more than 100 (cookiedeprecation not enabled for account)",
-				httpReq: func() *http.Request {
-					req := httptest.NewRequest("POST", "/openrtb2/auction", nil)
-					req.Header.Set(secCookieDeprecation, "zjfXqGxXFI8yura8AhQl1DK2EMMmryrC8haEpAlwjoerrFfEo2MQTXUq6cSmLohI8gjsnkGU4oAzvXd4TTAESzEKsoYjRJ2zKxmEa")
-					return req
-				}(),
-				givenAccount: &config.Account{
-					ID: "1",
-					Privacy: config.AccountPrivacy{
-						PrivacySandbox: config.PrivacySandbox{
-							CookieDeprecation: config.CookieDeprecation{
-								Enabled: false,
-								TTLSec:  86400,
-							},
-						},
-					},
-				},
-				reqWrapper: &openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
-						ID:  "Some-ID",
-						App: &openrtb2.App{},
-						Imp: []openrtb2.Imp{
-							{
-								ID: "Some-Imp-ID",
-								Banner: &openrtb2.Banner{
-									Format: []openrtb2.Format{
-										{
-											W: 600,
-											H: 500,
-										},
-										{
-											W: 300,
-											H: 600,
-										},
-									},
-								},
-								Ext: []byte(`{"pubmatic":{"publisherId": 12345678}}`),
-							},
-						},
-					},
-				},
-				wantErrs: []error{},
-				wantCDep: "",
-			},
-			{
-				name:    "Request without Sec-Cookie-Deprecation header (cookiedeprecation enabled for account)",
-				httpReq: httptest.NewRequest("POST", "/openrtb2/auction", nil),
-				givenAccount: &config.Account{
-					ID: "1",
-					Privacy: config.AccountPrivacy{
-						PrivacySandbox: config.PrivacySandbox{
-							CookieDeprecation: config.CookieDeprecation{
-								Enabled: true,
-								TTLSec:  86400,
-							},
-						},
-					},
-				},
-				reqWrapper: &openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
-						ID:  "Some-ID",
-						App: &openrtb2.App{},
-						Imp: []openrtb2.Imp{
-							{
-								ID: "Some-Imp-ID",
-								Banner: &openrtb2.Banner{
-									Format: []openrtb2.Format{
-										{
-											W: 600,
-											H: 500,
-										},
-										{
-											W: 300,
-											H: 600,
-										},
-									},
-								},
-								Ext: []byte(`{"pubmatic":{"publisherId": 12345678}}`),
-							},
-						},
-					},
-				},
-				wantErrs: []error{},
-				wantCDep: "",
-			},
 			{
 				name: "Request with Sec-Cookie-Deprecation header having length less than 100 (cookiedeprecation enabled for account)",
 				httpReq: func() *http.Request {

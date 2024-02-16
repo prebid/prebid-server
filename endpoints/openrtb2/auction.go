@@ -875,7 +875,7 @@ func (deps *endpointDeps) validateRequest(account *config.Account, httpReq *http
 	}
 
 	if err := validateOrFillCDep(httpReq, req, account); err != nil {
-		return append(errL, err)
+		errL = append(errL, err)
 	}
 
 	if ccpaPolicy, err := ccpa.ReadFromRequestWrapper(req, gpp); err != nil {
