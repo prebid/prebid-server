@@ -9,7 +9,6 @@ import (
 	mainConfig "github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/metrics"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
-
 	gometrics "github.com/rcrowley/go-metrics"
 )
 
@@ -20,7 +19,7 @@ func TestNilMetricsEngine(t *testing.T) {
 	cfg := mainConfig.Configuration{}
 	adapterList := make([]openrtb_ext.BidderName, 0, 2)
 	syncerKeys := []string{"keyA", "keyB"}
-	testEngine := NewMetricsEngine(&cfg, adapterList, syncerKeys, modulesStages)
+	testEngine := NewMetricsEngine(&cfg, adapterList, syncerKeys, modulesStages, nil)
 	_, ok := testEngine.MetricsEngine.(*NilMetricsEngine)
 	if !ok {
 		t.Error("Expected a NilMetricsEngine, but didn't get it")
@@ -32,7 +31,7 @@ func TestGoMetricsEngine(t *testing.T) {
 	cfg.Metrics.Influxdb.Host = "localhost"
 	adapterList := make([]openrtb_ext.BidderName, 0, 2)
 	syncerKeys := []string{"keyA", "keyB"}
-	testEngine := NewMetricsEngine(&cfg, adapterList, syncerKeys, modulesStages)
+	testEngine := NewMetricsEngine(&cfg, adapterList, syncerKeys, modulesStages, nil)
 	_, ok := testEngine.MetricsEngine.(*metrics.Metrics)
 	if !ok {
 		t.Error("Expected a Metrics as MetricsEngine, but didn't get it")

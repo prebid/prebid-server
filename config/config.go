@@ -565,6 +565,10 @@ func (cfg *PrometheusMetrics) validate(errs []error) []error {
 	return errs
 }
 
+func (cfg *PrometheusMetrics) Enabled() bool {
+	return cfg.Port > 0
+}
+
 func (m *PrometheusMetrics) Timeout() time.Duration {
 	return time.Duration(m.TimeoutMillisRaw) * time.Millisecond
 }

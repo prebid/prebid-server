@@ -38,6 +38,7 @@ import (
 	"github.com/prebid/prebid-server/v2/util/jsonutil"
 	"github.com/prebid/prebid-server/v2/util/uuidutil"
 	"github.com/prebid/prebid-server/v2/version"
+	"github.com/prometheus/client_golang/prometheus"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/golang/glog"
@@ -192,13 +193,16 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	}
 
 	moduleDeps := moduledeps.ModuleDeps{HTTPClient: generalHttpClient, RateConvertor: rateConvertor}
+	if cfg.Metrics.Prometheus.Enabled() {
+		moduleDeps.PrometheusGatherer = prometheus.NewRegistry()
+	}
 	repo, moduleStageNames, err := modules.NewBuilder().Build(cfg.Hooks.Modules, moduleDeps)
 	if err != nil {
 		glog.Fatalf("Failed to init hook modules: %v", err)
 	}
 
 	// Metrics engine
-	r.MetricsEngine = metricsConf.NewMetricsEngine(cfg, openrtb_ext.CoreBidderNames(), syncerKeys, moduleStageNames)
+	r.MetricsEngine = metricsConf.NewMetricsEngine(cfg, openrtb_ext.CoreBidderNames(), syncerKeys, moduleStageNames, moduleDeps.PrometheusGatherer)
 	shutdown, fetcher, ampFetcher, accounts, categoriesFetcher, videoFetcher, storedRespFetcher := storedRequestsConf.NewStoredRequests(cfg, r.MetricsEngine, generalHttpClient, r.Router)
 	// todo(zachbadgett): better shutdown
 	r.Shutdown = shutdown

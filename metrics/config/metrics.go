@@ -7,13 +7,14 @@ import (
 	"github.com/prebid/prebid-server/v2/metrics"
 	prometheusmetrics "github.com/prebid/prebid-server/v2/metrics/prometheus"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prometheus/client_golang/prometheus"
 	gometrics "github.com/rcrowley/go-metrics"
 	influxdb "github.com/vrischmann/go-metrics-influxdb"
 )
 
 // NewMetricsEngine reads the configuration and returns the appropriate metrics engine
 // for this instance.
-func NewMetricsEngine(cfg *config.Configuration, adapterList []openrtb_ext.BidderName, syncerKeys []string, moduleStageNames map[string][]string) *DetailedMetricsEngine {
+func NewMetricsEngine(cfg *config.Configuration, adapterList []openrtb_ext.BidderName, syncerKeys []string, moduleStageNames map[string][]string, registry *prometheus.Registry) *DetailedMetricsEngine {
 	// Create a list of metrics engines to use.
 	// Capacity of 2, as unlikely to have more than 2 metrics backends, and in the case
 	// of 1 we won't use the list so it will be garbage collected.
@@ -40,7 +41,7 @@ func NewMetricsEngine(cfg *config.Configuration, adapterList []openrtb_ext.Bidde
 	}
 	if cfg.Metrics.Prometheus.Port != 0 {
 		// Set up the Prometheus metrics.
-		returnEngine.PrometheusMetrics = prometheusmetrics.NewMetrics(cfg.Metrics.Prometheus, cfg.Metrics.Disabled, syncerKeys, moduleStageNames)
+		returnEngine.PrometheusMetrics = prometheusmetrics.NewMetrics(cfg.Metrics.Prometheus, cfg.Metrics.Disabled, syncerKeys, moduleStageNames, registry)
 		engineList = append(engineList, returnEngine.PrometheusMetrics)
 	}
 

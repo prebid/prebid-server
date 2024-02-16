@@ -63,7 +63,7 @@ func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.H
 	}
 	go runServer(adminServer, "Admin", adminListener)
 
-	if cfg.Metrics.Prometheus.Port != 0 {
+	if cfg.Metrics.Prometheus.Enabled() {
 		var (
 			prometheusListener net.Listener
 			prometheusServer   = newPrometheusServer(cfg, metrics)
