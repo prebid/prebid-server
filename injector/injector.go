@@ -102,7 +102,7 @@ func (ti *TrackerInjector) InjectTracker(vastXML string, NURL string) string {
 				encoder.Flush()
 				encoder.EncodeToken(tt)
 				encoder.Flush()
-				ti.addClickTrackingEvent(&outputXML, creativeId)
+				ti.addClickTrackingEvent(&outputXML, creativeId, false)
 
 				continue
 			case "NonLinearAds":
@@ -113,7 +113,7 @@ func (ti *TrackerInjector) InjectTracker(vastXML string, NURL string) string {
 					encoder.Flush()
 					encoder.EncodeToken(tt)
 					encoder.Flush()
-					ti.addTrackingEvent(&outputXML, creativeId)
+					ti.addTrackingEvent(&outputXML, creativeId, false)
 					continue
 				}
 			}
@@ -142,13 +142,9 @@ func (ti *TrackerInjector) InjectTracker(vastXML string, NURL string) string {
 				if injectTracker {
 					injectTracker = false
 					encoder.Flush()
-					outputXML.WriteString("<TrackingEvents>")
-					ti.addTrackingEvent(&outputXML, creativeId)
-					outputXML.WriteString("</TrackingEvents>")
+					ti.addTrackingEvent(&outputXML, creativeId, true)
 					if !nonLinearTagFound && wrapperTagFound {
-						outputXML.WriteString("<NonLinear>")
-						ti.addNonLinearClickTrackingEvent(&outputXML, creativeId)
-						outputXML.WriteString("</NonLinear>")
+						ti.addNonLinearClickTrackingEvent(&outputXML, creativeId, true)
 					}
 					encoder.EncodeToken(tt)
 				}
@@ -156,16 +152,12 @@ func (ti *TrackerInjector) InjectTracker(vastXML string, NURL string) string {
 				if injectVideoClicks {
 					injectVideoClicks = false
 					encoder.Flush()
-					outputXML.WriteString("<VideoClicks>")
-					ti.addClickTrackingEvent(&outputXML, creativeId)
-					outputXML.WriteString("</VideoClicks>")
+					ti.addClickTrackingEvent(&outputXML, creativeId, true)
 				}
 				if injectTracker {
 					injectTracker = false
 					encoder.Flush()
-					outputXML.WriteString("<TrackingEvents>")
-					ti.addTrackingEvent(&outputXML, creativeId)
-					outputXML.WriteString("</TrackingEvents>")
+					ti.addTrackingEvent(&outputXML, creativeId, true)
 				}
 				encoder.EncodeToken(tt)
 				continue
@@ -177,7 +169,6 @@ func (ti *TrackerInjector) InjectTracker(vastXML string, NURL string) string {
 					ti.addImpressionTrackingEvent(&outputXML)
 				}
 				impressionTagFound = false
-
 				if !errorTagFound {
 					ti.addErrorTrackingEvent(&outputXML)
 				}
@@ -185,25 +176,22 @@ func (ti *TrackerInjector) InjectTracker(vastXML string, NURL string) string {
 				encoder.EncodeToken(tt)
 			case "NonLinear":
 				encoder.Flush()
-				ti.addNonLinearClickTrackingEvent(&outputXML, creativeId)
+				ti.addNonLinearClickTrackingEvent(&outputXML, creativeId, false)
 				nonLinearTagFound = true
 				encoder.EncodeToken(tt)
 			case "Companion":
 				companionTagFound = true
 				encoder.Flush()
-				ti.addCompanionClickThroughEvent(&outputXML, creativeId)
+				ti.addCompanionClickThroughEvent(&outputXML, creativeId, false)
 				encoder.EncodeToken(tt)
 			case "Creative":
 				isCreative = false
 			case "CompanionAds":
 				if !companionTagFound && wrapperTagFound {
 					encoder.Flush()
-					outputXML.WriteString("<Companion>")
-					ti.addCompanionClickThroughEvent(&outputXML, creativeId)
-					outputXML.WriteString("</Companion>")
+					ti.addCompanionClickThroughEvent(&outputXML, creativeId, true)
 				}
 			}
-
 		case xml.CharData:
 			tt2 := strings.Trim(string(tt), trimRunes)
 			if len(tt2) != 0 {
@@ -227,59 +215,61 @@ func (ti *TrackerInjector) InjectTracker(vastXML string, NURL string) string {
 	return outputXML.String()
 }
 
-func (ti *TrackerInjector) addTrackingEvent(outputXML *strings.Builder, creativeId string) {
+func (ti *TrackerInjector) addTrackingEvent(outputXML *strings.Builder, creativeId string, addParentTag bool) {
+	if addParentTag {
+		outputXML.WriteString("<TrackingEvents>")
+	}
 	for typ, urls := range ti.events.LinearTrackingEvents {
-		ti.provider.PopulateEventMacros(creativeId, "tracking", typ)
-		for _, url := range urls {
-			outputXML.WriteString("<Tracking event=\"")
-			outputXML.WriteString(string(typ))
-			outputXML.WriteString("\"><![CDATA[")
-			ti.replacer.Replace(outputXML, url, ti.provider)
-			outputXML.WriteString("]]></Tracking>")
-		}
+		ti.writeTrackingEvent(urls, outputXML, "<Tracking event=\""+string(typ)+"\"><![CDATA[", "]]></Tracking>", creativeId, typ, "tracking")
+	}
+	if addParentTag {
+		outputXML.WriteString("</TrackingEvents>")
 	}
 }
 
-func (ti *TrackerInjector) addClickTrackingEvent(outputXML *strings.Builder, creativeId string) {
-	ti.provider.PopulateEventMacros(creativeId, "", "")
-	for _, url := range ti.events.VideoClicks {
-		outputXML.WriteString("<ClickTracking><![CDATA[")
-		ti.replacer.Replace(outputXML, url, ti.provider)
-		outputXML.WriteString("]]></ClickTracking>")
+func (ti *TrackerInjector) addClickTrackingEvent(outputXML *strings.Builder, creativeId string, addParentTag bool) {
+	if addParentTag {
+		outputXML.WriteString("<VideoClicks>")
+	}
+	ti.writeTrackingEvent(ti.events.VideoClicks, outputXML, "<ClickTracking><![CDATA[", "]]></ClickTracking>", creativeId, "", "")
+	if addParentTag {
+		outputXML.WriteString("</VideoClicks>")
 	}
 }
 
 func (ti *TrackerInjector) addImpressionTrackingEvent(outputXML *strings.Builder) {
-	for _, url := range ti.events.Impressions {
-		outputXML.WriteString("<Impression><![CDATA[")
-		ti.replacer.Replace(outputXML, url, ti.provider)
-		outputXML.WriteString("]]></Impression>")
-	}
+	ti.writeTrackingEvent(ti.events.Impressions, outputXML, "<Impression><![CDATA[", "]]></Impression>", "", "", "")
 }
 
 func (ti *TrackerInjector) addErrorTrackingEvent(outputXML *strings.Builder) {
-	for _, url := range ti.events.Errors {
-		outputXML.WriteString("<Error><![CDATA[")
-		ti.replacer.Replace(outputXML, url, ti.provider)
-		outputXML.WriteString("]]></Error>")
+	ti.writeTrackingEvent(ti.events.Errors, outputXML, "<Error><![CDATA[", "]]></Error>", "", "", "")
+}
 
+func (ti *TrackerInjector) addNonLinearClickTrackingEvent(outputXML *strings.Builder, creativeId string, addParentTag bool) {
+	if addParentTag {
+		outputXML.WriteString("<NonLinear>")
+	}
+	ti.writeTrackingEvent(ti.events.NonLinearClickTracking, outputXML, "<NonLinearClickTracking><![CDATA[", "]]></NonLinearClickTracking>", creativeId, "", "")
+	if addParentTag {
+		outputXML.WriteString("</NonLinear>")
 	}
 }
 
-func (ti *TrackerInjector) addNonLinearClickTrackingEvent(outputXML *strings.Builder, creativeId string) {
-	ti.provider.PopulateEventMacros(creativeId, "", "")
-	for _, url := range ti.events.NonLinearClickTracking {
-		outputXML.WriteString("<NonLinearClickTracking><![CDATA[")
-		ti.replacer.Replace(outputXML, url, ti.provider)
-		outputXML.WriteString("]]></NonLinearClickTracking>")
+func (ti *TrackerInjector) addCompanionClickThroughEvent(outputXML *strings.Builder, creativeId string, addParentTag bool) {
+	if addParentTag {
+		outputXML.WriteString("<Companion>")
+	}
+	ti.writeTrackingEvent(ti.events.CompanionClickThrough, outputXML, "<CompanionClickThrough><![CDATA[", "]]></CompanionClickThrough>", creativeId, "", "")
+	if addParentTag {
+		outputXML.WriteString("</Companion>")
 	}
 }
 
-func (ti *TrackerInjector) addCompanionClickThroughEvent(outputXML *strings.Builder, creativeId string) {
-	ti.provider.PopulateEventMacros(creativeId, "", "")
-	for _, url := range ti.events.CompanionClickThrough {
-		outputXML.WriteString("<CompanionClickThrough><![CDATA[")
+func (ti *TrackerInjector) writeTrackingEvent(urls []string, outputXML *strings.Builder, startTag, endTag, creativeId, eventType, vastEvent string) {
+	ti.provider.PopulateEventMacros(creativeId, eventType, vastEvent)
+	for _, url := range urls {
+		outputXML.WriteString(startTag)
 		ti.replacer.Replace(outputXML, url, ti.provider)
-		outputXML.WriteString("]]></CompanionClickThrough>")
+		outputXML.WriteString(endTag)
 	}
 }
