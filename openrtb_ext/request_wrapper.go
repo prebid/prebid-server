@@ -1294,8 +1294,11 @@ func (re *RegExt) SetDSA(dsa *ExtRegsDSA) {
 }
 
 func (re *RegExt) GetGDPR() *int8 {
-	gdpr := re.gdpr
-	return gdpr
+	if re.gdpr == nil {
+		return nil
+	}
+	gdpr := *re.gdpr
+	return &gdpr
 }
 
 func (re *RegExt) SetGDPR(gdpr *int8) {
