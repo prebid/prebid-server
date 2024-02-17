@@ -55,6 +55,7 @@ func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac priv
 			if cloneBidderReq != nil {
 				ao.RequestWrapper = cloneBidderReq
 			}
+			ao.RequestWrapper = updateReqWrapperForAnalytics(ao.RequestWrapper)
 			module.LogAuctionObject(ao)
 		}
 	}
@@ -66,6 +67,7 @@ func (ea enabledAnalytics) LogVideoObject(vo *analytics.VideoObject, ac privacy.
 			if cloneBidderReq != nil {
 				vo.RequestWrapper = cloneBidderReq
 			}
+			vo.RequestWrapper = updateReqWrapperForAnalytics(vo.RequestWrapper)
 			module.LogVideoObject(vo)
 		}
 
@@ -90,6 +92,7 @@ func (ea enabledAnalytics) LogAmpObject(ao *analytics.AmpObject, ac privacy.Acti
 			if cloneBidderReq != nil {
 				ao.RequestWrapper = cloneBidderReq
 			}
+			ao.RequestWrapper = updateReqWrapperForAnalytics(ao.RequestWrapper)
 			module.LogAmpObject(ao)
 		}
 	}
