@@ -3,6 +3,7 @@ package roulax
 import (
 	"encoding/json"
 	"fmt"
+	"gitlab.salmonads.com/rlx/prebid-server/macros"
 	"net/http"
 	"strings"
 
@@ -17,42 +18,36 @@ type adapter struct {
 }
 
 
-type ExtImpRoulax struct {
-	Pid   string `json:"Pid,omitempty"`
-	PublisherPath string `json:"publisherPath,omitempty"`
-}
 
 
 
-// Builder builds a new instance of the Adot adapter for the given bidder with the given config.
+// Builder builds a new instance of the Roulax adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,
 	}
-	fmt.Println(config.Endpoint)
 	return bidder, nil
 }
 
 
 
 // getImpAdotExt parses and return first imp ext or nil
-func getImpRoulaxExt(imp *openrtb2.Imp) *ExtImpRoulax {
-	var extImpRoulax ExtImpRoulax
+func getImpRoulaxExt(imp *openrtb2.Imp) (ExtImpRoulax, error) {
 	var extBidder adapters.ExtImpBidder
-	err := json.Unmarshal(imp.Ext, &extBidder)
-	if err != nil {
-		return nil
+	if err := json.Unmarshal(imp.Ext, &extBidder); err != nil {
+		return ExtImpRoulax{}, err
 	}
-	err = json.Unmarshal(extBidder.Bidder, &extImpRoulax)
-	if err != nil {
-		return nil
+
+	var extImpRoulax ExtImpRoulax
+	if err = json.Unmarshal(extBidder.Bidder, &extImpRoulax); err != nil {
+		return ExtImpRoulax{}, err
 	}
-	return &extImpRoulax
+
+	return extImpRoulax, nil
 }
 
 // MakeRequests makes the HTTP requests which should be made to fetch bids.
-func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var errs []error
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) (res []*adapters.RequestData, errs []error) {
 	reqJson, err := json.Marshal(request)
 	if err != nil {
 		errs = append(errs, err)
@@ -64,10 +59,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 	roulaxExt := getImpRoulaxExt(&request.Imp[0])
 
-	a.endpoint = strings.Replace(a.endpoint, "{PUBLISHER_PATH}", roulaxExt.PublisherPath, -1)
-	a.endpoint = strings.Replace(a.endpoint, "{PID}", roulaxExt.Pid, -1)
 
-	//fmt.Println("------------------roulax111-------------",string(reqJson), a.endpoint)
+	a.endpoint = macros.ResolveMacros(a.endpoint, "{PUBLISHER_PATH}", roulaxExt.PublisherPath, -1)
+	a.endpoint = macros.ResolveMacros(a.endpoint, "{PID}", roulaxExt.Pid, -1)
+
 
 	return []*adapters.RequestData{{
 		Method:  "POST",
@@ -96,9 +91,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
 	bidResponse.Currency = response.Cur
-
 	var errs []error
-
 	for _, seatBid := range response.SeatBid {
 		for i, bid := range seatBid.Bid {
 			bidType, err := getMediaTypeForImp(bid,request.Imp)
@@ -139,6 +132,6 @@ func getMediaTypeForImp(bid openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidT
 	if typeCnt == 1 {
 		return mediaType, nil
 	}
-	return mediaType, fmt.Errorf("unable to fetch mediaType in multi-format: %s", bid.ImpID)
+	return penrtb_ext.BidTypeBanner,nil
 }
 
