@@ -4,7 +4,7 @@
     "imp": [
       {
         "id": "test-imp-id",
-        "banner": {
+        "native": {
           "format": [
             {
               "w": 300,
