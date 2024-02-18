@@ -32,15 +32,15 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 
 
 // getImpAdotExt parses and return first imp ext or nil
-func getImpRoulaxExt(imp *openrtb2.Imp) (ExtImpRoulax, error) {
+func getImpRoulaxExt(imp *openrtb2.Imp) (openrtb_ext.ExtImpRoulax, error) {
 	var extBidder adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &extBidder); err != nil {
-		return ExtImpRoulax{}, err
+		return openrtb_ext.ExtImpRoulax{}, err
 	}
 
-	var extImpRoulax ExtImpRoulax
-	if err = json.Unmarshal(extBidder.Bidder, &extImpRoulax); err != nil {
-		return ExtImpRoulax{}, err
+	var extImpRoulax openrtb_ext.ExtImpRoulax
+	if err := json.Unmarshal(extBidder.Bidder, &extImpRoulax); err != nil {
+		return openrtb_ext.ExtImpRoulax{}, err
 	}
 
 	return extImpRoulax, nil
@@ -132,6 +132,6 @@ func getMediaTypeForImp(bid openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidT
 	if typeCnt == 1 {
 		return mediaType, nil
 	}
-	return penrtb_ext.BidTypeBanner,nil
+	return openrtb_ext.BidTypeBanner,nil
 }
 
