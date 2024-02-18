@@ -17,8 +17,10 @@
           ]
         },
         "ext": {
-          "roulax": {
-            "PublisherPath":"vidmate","Pid":"vidmate_android_banner"
+          "bidder": {
+            "PublisherPath": "72721",
+            "Pid": "mvo",
+            "zone": "1r"
           }
         }
       }
@@ -46,8 +48,10 @@
                 ]
               },
               "ext": {
-                "roulax": {
-                  "PublisherPath":"vidmate","Pid":"vidmate_android_banner"
+                "bidder": {
+                  "PublisherPath": "72721",
+                  "Pid": "mvo",
+                  "zone": "1r"
                 }
               }
             }

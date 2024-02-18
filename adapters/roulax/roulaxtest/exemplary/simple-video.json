@@ -17,8 +17,10 @@
           ]
         },
         "ext": {
-          "roulax": {
-            "PublisherPath":"vidmate","Pid":"vidmate_android_banner"
+          "bidder": {
+            "PublisherPath": "72721",
+            "Pid": "mvo",
+            "zone": "1r"
           }
         }
       }
@@ -46,8 +48,10 @@
                 ]
               },
               "ext": {
-                "roulax": {
-                  "PublisherPath":"vidmate","Pid":"vidmate_android_banner"
+                "bidder": {
+                  "PublisherPath": "72721",
+                  "Pid": "mvo",
+                  "zone": "1r"
                 }
               }
             }
@@ -69,7 +73,7 @@
                   "adid": "29681110",
                   "adm": "some-test-ad",
                   "adomain": [
-                    "roulax.io"
+                    "yahoo.com"
                   ],
                   "cid": "958",
                   "crid": "29681110",
