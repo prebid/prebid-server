@@ -2,15 +2,12 @@ package roulax
 
 import (
 	"encoding/json"
-	"fmt"
-	"github.com/prebid/prebid-server/v2/macros"
 	"net/http"
-	"strings"
-
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"strings"
 )
 
 type adapter struct {
@@ -60,8 +57,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	roulaxExt := getImpRoulaxExt(&request.Imp[0])
 
 
-	a.endpoint = macros.ResolveMacros(a.endpoint, "{PUBLISHER_PATH}", roulaxExt.PublisherPath, -1)
-	a.endpoint = macros.ResolveMacros(a.endpoint, "{PID}", roulaxExt.Pid, -1)
+	a.endpoint = strings.Replace(a.endpoint, "{PUBLISHER_PATH}", roulaxExt.PublisherPath, -1)
+	a.endpoint = strings.Replace(a.endpoint, "{PID}", roulaxExt.Pid, -1)
+
 
 
 	return []*adapters.RequestData{{
