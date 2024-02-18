@@ -54,8 +54,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 
-	roulaxExt := getImpRoulaxExt(&request.Imp[0])
-
+	roulaxExt,err := getImpRoulaxExt(&request.Imp[0])
+	if err != nil {
+		errs = append(errs, err)
+		return nil, errs
+	}
 
 	a.endpoint = strings.Replace(a.endpoint, "{PUBLISHER_PATH}", roulaxExt.PublisherPath, -1)
 	a.endpoint = strings.Replace(a.endpoint, "{PID}", roulaxExt.Pid, -1)
