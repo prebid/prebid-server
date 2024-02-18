@@ -1,0 +1,68 @@
+{
+  "id": "b7065c04-d988-4d51-b28e-5a2e1db9545e",
+  "seatbid": [
+      {
+          "bid": [
+              {
+                  "id": "7237162049270875106",
+                  "impid": "/19968336/header-bid-tag-0",
+                  "price": 1.5,
+                  "adm": "\u003cscript src=\"https://sin3-ib.adnxs.com/ab?an_audit=0\u0026referrer=http%3A%2F%2Fpubxai.com%3A8080%2F\u0026e=wqT_3QK6DKA6BgAAAwDWAAUBCPHot64GEKfssrmT2-_OcRih1rK3odXWngUqNgkAAAECCPg_EQEHNAAA-D8ZAAAAwPUo-D8hERIAKREJADERG6gwsqKiBjjtSEDtSEgCUNOBly5YnPFbYABotc95eMDRBYABAYoBA1VTRJIBAQbwSZgBrAKgAfoBqAEBsAEAuAECwAEDyAEC0AEA2AEA4AEA8AEAigIpdWYoJ2EnLCAyNTI5ODg1LCAwKTt1ZigncicsIDk2ODQ2MDM1BRX0BQGSAoUEIVRsWHlud2l1c0s0S0VOT0JseTRZQUNDYzhWc3dBRGdBUUFSSTdVaFFzcUtpQmxnQVlQX19fXzhQYUFCd0FYZ0JnQUVCaUFFQmtBRUJtQUVCb0FFQnFBRURzQUVBdVFHLTBFekZBQUQ0UDhFQnZ0Qk14UUFBLURfSkFkN2UzYU1ZcV9BXzJRRUFBQUFBQUFEd1AtQUJBUFVCQUFBQUFKZ0NBS0FDQUxVQ0FBQUFBTDBDQUFBQUFNQUNBY2dDQWRBQ0FkZ0NBZUFDQU9nQ0FQZ0NBSUFEQVpnREFib0RDVk5KVGpNNk5EY3pPZUFEMlVXSUJBQ1FCQUNZQkFIQkJBQUFBDXoIeVFRDQokQUFBTmdFQVBFRQELCQEgQ0lCWU1scVFVCQ8YQUR3UDdFRg0NFEFBQURCQh0_AHkVKAFMMigAAFouKAC4NEFYd2t3bndCZTM4MmdMNEJkMjBtZ0dDQmdOVlUwU0lCZ0NRQmdHWUJnQ2hCZ0EBTjRBQVBnX3FBWUJzZ1lrQx10AEUdDABHHQwASR0MFHVBWUtnURFJTEFBQUlnSUFBLi6aApUBIUtoQ1J3OgkCJG5QRmJJQVFvQUQxDFhENFB6b0pVMGxPTXpvME56TTVRTmxGUxFlDFBBX1URDAxBQUFXHQwAWR0MAGEdDABjHQwQZUFDSkEdEPA-wgIvaHR0cDovL3ByZWJpZC5vcmcvZGV2LWRvY3MvZ2V0dGluZy1zdGFydGVkLmh0bWzYAvfpA-ACrZhI6gIXETx4dWJ4YWkuY29tOjgwODAv8gIRCgZBRFZfSUQSBzI1MmEmBRQIQ1BHBRQUNTY4NDg0BRQIBUNQARM0CDIxNzMxMzc08gINCggBPBhGUkVREgEwBRAcUkVNX1VTRVIFEAAMCSAYQ09ERRIA8gEPAVcRDxALCgdDUBUOEAkKBUlPAWAEAPIBGgRJTxUaOBMKD0NVU1RPTV9NT0RFTA0kCBoKFjIWABxMRUFGX05BTQVqCB4KGjYdAAhBU1QBPhBJRklFRAFiHA0KCFNQTElUAU3wgQEwgAMAiAMBkAMAmAMUoAMBqgMAwAPYBMgDANgDAOADAOgDAPgDA4AEAJIECS9vcGVucnRiMpgEAKgEALIEDAgAEAAYACAAMAA4ArgEAMAEgNq4IsgEANIEDjkzMjUjU0lOMzo0NzM52gQCCAHgBADwBNOBly6IBQGYBQCgBf____8FBLABqgUkYjcwNjVjMDQtZDk4OC00ZDUxLWIyOGUtNWEyZTFkYjk1NDVlwAUAyQWpPxTwP9IFCQkJDDQAANgFAeAFAfAFAfoFBAGVKJAGAJgGALgGAMEGCSMo8D_QBvUv2gYWChAJERkBAcNg4AYB8gYCCACABwGIBwCgBwHIB8DRBdIHDRViASYI2gcGAV24GADgBwDqBwIIAPAHAIoIAhAAlQgAAIA_mAgBwAgA0ggOCIGChIiQoMCAARABGAA.\u0026s=3fd7a7ac1fead247b7997becf92273631f5a858c\u0026pp=${AUCTION_PRICE}\"\u003e\u003c/script\u003e",
+                  "adid": "96846035",
+                  "adomain": [
+                      "prebid.org"
+                  ],
+                  "iurl": "https://sin3-ib.adnxs.com/cr?id=96846035",
+                  "cid": "9325",
+                  "crid": "96846035",
+                  "w": 300,
+                  "h": 250,
+                  "ext": {
+                      "appnexus": {
+                          "auction_id": 8186909537772288000,
+                          "bid_ad_type": 0,
+                          "bidder_id": 2,
+                          "brand_id": 1
+                      },
+                      "origbidcpm": 1.5,
+                      "origbidcur": "USD",
+                      "prebid": {
+                          "meta": {
+                              "adaptercode": "appnexus"
+                          },
+                          "targeting": {
+                              "hb_bidder": "appnexus",
+                              "hb_pb": "1.50",
+                              "hb_size": "300x250"
+                          },
+                          "type": "banner",
+                          "video": {
+                              "duration": 0,
+                              "primary_category": ""
+                          }
+                      }
+                  }
+              }
+          ],
+          "seat": "appnexus"
+      }
+  ],
+  "cur": "USD",
+  "ext": {
+      "warnings": {
+          "general": [
+              {
+                  "code": 10002,
+                  "message": "debug turned off for account"
+              }
+          ]
+      },
+      "responsetimemillis": {
+          "appnexus": 148
+      },
+      "tmaxrequest": 1000,
+      "prebid": {
+          "auctiontimestamp": 1707996273474
+      }
+  }
+}
