@@ -46,10 +46,8 @@
                 ]
               },
               "ext": {
-                "bidder": {
-                  "publisher_id": "72721",
-                  "zone": "1r",
-                  "path": "mvo"
+                "roulax": {
+                  "PublisherPath":"vidmate","Pid":"vidmate_android_banner"
                 }
               }
             }
