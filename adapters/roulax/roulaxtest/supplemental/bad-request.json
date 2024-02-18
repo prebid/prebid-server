@@ -54,11 +54,12 @@
           "bidid": "5778926625248726496",
           "cur": "USD"
         }
-      }
-    }
-  ],
-  "expectedBidResponses": [
+      },
+
+  "expectedMakeBidsErrors": [
     {
-  "value": "Invalid request: request.imp[0].ext.prebid.bidder.roulax failed validation.(root): Pid is required",
-  "comparison": "literal"
+      "value": "Invalid request: request.imp[0].ext.prebid.bidder.roulax failed validation.(root): Pid is required",
+      "comparison": "literal"
+    }
+  ]
 }

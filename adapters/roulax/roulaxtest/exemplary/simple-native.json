@@ -5,16 +5,7 @@
       {
         "id": "test-imp-id",
         "native": {
-          "format": [
-            {
-              "w": 300,
-              "h": 250
-            },
-            {
-              "w": 300,
-              "h": 300
-            }
-          ]
+          "request": "test-native-request"
         },
         "ext": {
           "bidder": {
@@ -36,16 +27,7 @@
             {
               "id": "test-imp-id",
               "native": {
-                "format": [
-                  {
-                    "w": 300,
-                    "h": 250
-                  },
-                  {
-                    "w": 300,
-                    "h": 300
-                  }
-                ]
+                "request": "test-native-request"
               },
               "ext": {
                 "bidder": {
