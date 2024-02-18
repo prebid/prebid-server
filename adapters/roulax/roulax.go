@@ -3,7 +3,7 @@ package roulax
 import (
 	"encoding/json"
 	"fmt"
-	"gitlab.salmonads.com/rlx/prebid-server/macros"
+	"github.com/prebid/prebid-server/v2/macros"
 	"net/http"
 	"strings"
 
