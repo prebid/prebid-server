@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type adapter struct {
@@ -30,6 +30,18 @@ type bidResponse struct {
 	Height int64   `json:"height"`
 	Ad     string  `json:"ad"`
 	CrID   string  `json:"crid"`
+	Mtype  string  `json:"mtype"`
+}
+
+func (b bidResponse) resolveMediaType() (mt openrtb2.MarkupType, bt openrtb_ext.BidType, err error) {
+	switch b.Mtype {
+	case "banner":
+		return openrtb2.MarkupBanner, openrtb_ext.BidTypeBanner, nil
+	case "video":
+		return openrtb2.MarkupVideo, openrtb_ext.BidTypeVideo, nil
+	default:
+		return mt, bt, fmt.Errorf("unable to determine media type for bid with id \"%s\"", b.BidID)
+	}
 }
 
 func (a *adapter) MakeBids(bidRequest *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
@@ -51,6 +63,14 @@ func (a *adapter) MakeBids(bidRequest *openrtb2.BidRequest, requestData *adapter
 	bidderResponse.Currency = "EUR"
 
 	for _, bid := range stroeerResponse.Bids {
+		markupType, bidType, err := bid.resolveMediaType()
+		if err != nil {
+			errors = append(errors, &errortypes.BadServerResponse{
+				Message: fmt.Sprintf("Bid media type error: %s", err.Error()),
+			})
+			continue
+		}
+
 		openRtbBid := openrtb2.Bid{
 			ID:    bid.ID,
 			ImpID: bid.BidID,
@@ -59,11 +79,12 @@ func (a *adapter) MakeBids(bidRequest *openrtb2.BidRequest, requestData *adapter
 			Price: bid.CPM,
 			AdM:   bid.Ad,
 			CrID:  bid.CrID,
+			MType: markupType,
 		}
 
 		bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
 			Bid:     &openRtbBid,
-			BidType: openrtb_ext.BidTypeBanner,
+			BidType: bidType,
 		})
 	}
 

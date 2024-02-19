@@ -24,9 +24,6 @@ var validator BidderParamValidator
 // returns valid JSON for all known CoreBidderNames.
 func TestBidderParamSchemas(t *testing.T) {
 	for _, bidderName := range CoreBidderNames() {
-		if _, ok := GetAliasBidderNamesSet()[bidderName]; ok {
-			continue
-		}
 		schema := validator.Schema(bidderName)
 		if schema == "" {
 			t.Errorf("No schema exists for bidder %s. Does static/bidder-params/%s.json exist?", bidderName, bidderName)
@@ -53,7 +50,7 @@ func TestBidderUniquenessGatekeeping(t *testing.T) {
 	// - Exclude duplicates of adapters for the same bidder, as it's unlikely a publisher will use both.
 	var bidders []string
 	for _, bidder := range CoreBidderNames() {
-		if bidder != BidderSilverPush && bidder != BidderTripleliftNative && bidder != BidderAdkernelAdn && bidder != BidderFreewheelSSPOld && bidder != BidderYahooAdvertising {
+		if bidder != BidderSilverPush && bidder != BidderTripleliftNative && bidder != BidderAdkernelAdn && bidder != "freewheel-ssp" && bidder != "yahooAdvertising" {
 			bidders = append(bidders, string(bidder))
 		}
 	}

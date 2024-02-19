@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/util/maputil"
-	"github.com/prebid/prebid-server/util/ptrutil"
-	"github.com/prebid/prebid-server/util/sliceutil"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v2/util/maputil"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v2/util/sliceutil"
 )
 
 // FirstPartyDataExtKey defines a field name within request.ext and request.imp.ext reserved for first party data.
@@ -198,6 +199,7 @@ type ExtRequestTargeting struct {
 	DurationRangeSec          []int                     `json:"durationrangesec,omitempty"`
 	PreferDeals               bool                      `json:"preferdeals,omitempty"`
 	AppendBidderNames         bool                      `json:"appendbiddernames,omitempty"`
+	AlwaysIncludeDeals        bool                      `json:"alwaysincludedeals,omitempty"`
 }
 
 type ExtIncludeBrandCategory struct {
@@ -234,7 +236,7 @@ func (pg *PriceGranularity) UnmarshalJSON(b []byte) error {
 	// price granularity used to be a string referencing a predefined value, try to parse
 	// and map the legacy string before falling back to the modern custom model.
 	legacyID := ""
-	if err := json.Unmarshal(b, &legacyID); err == nil {
+	if err := jsonutil.Unmarshal(b, &legacyID); err == nil {
 		if legacyValue, ok := NewPriceGranularityFromLegacyID(legacyID); ok {
 			*pg = legacyValue
 			return nil
@@ -243,7 +245,7 @@ func (pg *PriceGranularity) UnmarshalJSON(b []byte) error {
 
 	// use a type-alias to avoid calling back into this UnmarshalJSON implementation
 	modernValue := PriceGranularityRaw{}
-	err := json.Unmarshal(b, &modernValue)
+	err := jsonutil.Unmarshal(b, &modernValue)
 	if err == nil {
 		*pg = (PriceGranularity)(modernValue)
 	}
@@ -352,8 +354,9 @@ type ExtRequestSdk struct {
 }
 
 type ExtRequestSdkRenderer struct {
-	Name    string `json:"name,omitempty"`
-	Version string `json:"version,omitempty"`
+	Name    string          `json:"name,omitempty"`
+	Version string          `json:"version,omitempty"`
+	Data    json.RawMessage `json:"data,omitempty"`
 }
 
 type ExtMultiBid struct {

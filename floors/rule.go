@@ -8,9 +8,10 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/currency"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/currency"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 )
 
 const (
@@ -38,8 +39,7 @@ const (
 // getFloorCurrency returns floors currency provided in floors JSON,
 // if currency is not provided then defaults to USD
 func getFloorCurrency(floorExt *openrtb_ext.PriceFloorRules) string {
-	var floorCur string
-
+	floorCur := defaultCurrency
 	if floorExt != nil && floorExt.Data != nil {
 		if floorExt.Data.Currency != "" {
 			floorCur = floorExt.Data.Currency
@@ -48,10 +48,6 @@ func getFloorCurrency(floorExt *openrtb_ext.PriceFloorRules) string {
 		if len(floorExt.Data.ModelGroups) > 0 && floorExt.Data.ModelGroups[0].Currency != "" {
 			floorCur = floorExt.Data.ModelGroups[0].Currency
 		}
-	}
-
-	if len(floorCur) == 0 {
-		floorCur = defaultCurrency
 	}
 
 	return floorCur
@@ -296,8 +292,8 @@ func getSizeValue(imp *openrtb2.Imp) string {
 	if imp.Banner != nil {
 		width, height = getBannerSize(imp)
 	} else if imp.Video != nil {
-		width = imp.Video.W
-		height = imp.Video.H
+		width = ptrutil.ValueOrDefault(imp.Video.W)
+		height = ptrutil.ValueOrDefault(imp.Video.H)
 	}
 
 	if width != 0 && height != 0 {

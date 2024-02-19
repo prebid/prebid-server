@@ -5,9 +5,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/prebid/openrtb/v19/adcom1"
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/util/ptrutil"
+	"github.com/prebid/openrtb/v20/adcom1"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -36,8 +36,8 @@ func TestCloneApp(t *testing.T) {
 			SectionCat:             []string{"sectionCat1"},
 			PageCat:                []string{"pageCat1"},
 			Ver:                    "anyVer",
-			PrivacyPolicy:          1,
-			Paid:                   2,
+			PrivacyPolicy:          ptrutil.ToPtr[int8](1),
+			Paid:                   ptrutil.ToPtr[int8](2),
 			Publisher:              &openrtb2.Publisher{ID: "anyPublisher", Ext: json.RawMessage(`{"publisher":1}`)},
 			Content:                &openrtb2.Content{ID: "anyContent", Ext: json.RawMessage(`{"content":1}`)},
 			Keywords:               "anyKeywords",
@@ -51,6 +51,8 @@ func TestCloneApp(t *testing.T) {
 		assert.NotSame(t, given.Cat, result.Cat, "cat")
 		assert.NotSame(t, given.SectionCat, result.SectionCat, "sectioncat")
 		assert.NotSame(t, given.PageCat, result.PageCat, "pagecat")
+		assert.NotSame(t, given.PrivacyPolicy, result.PrivacyPolicy, "privacypolicy")
+		assert.NotSame(t, given.Paid, result.Paid, "paid")
 		assert.NotSame(t, given.Publisher, result.Publisher, "publisher")
 		assert.NotSame(t, given.Publisher.Ext, result.Publisher.Ext, "publisher-ext")
 		assert.NotSame(t, given.Content, result.Content, "content")
@@ -65,6 +67,8 @@ func TestCloneApp(t *testing.T) {
 				"Cat",
 				"SectionCat",
 				"PageCat",
+				"PrivacyPolicy",
+				"Paid",
 				"Publisher",
 				"Content",
 				"KwArray",
@@ -147,12 +151,12 @@ func TestCloneContent(t *testing.T) {
 			QAGMediaRating:     adcom1.MediaRatingAll,
 			Keywords:           "anyKeywords",
 			KwArray:            []string{"key1"},
-			LiveStream:         2,
-			SourceRelationship: 3,
+			LiveStream:         ptrutil.ToPtr[int8](2),
+			SourceRelationship: ptrutil.ToPtr[int8](3),
 			Len:                4,
 			Language:           "anyLanguage",
 			LangB:              "anyLangB",
-			Embeddable:         5,
+			Embeddable:         ptrutil.ToPtr[int8](5),
 			Data:               []openrtb2.Data{{ID: "1", Ext: json.RawMessage(`{"data":1}`)}},
 			Network:            &openrtb2.Network{ID: "anyNetwork", Ext: json.RawMessage(`{"network":1}`)},
 			Channel:            &openrtb2.Channel{ID: "anyChannel", Ext: json.RawMessage(`{"channel":1}`)},
@@ -167,6 +171,9 @@ func TestCloneContent(t *testing.T) {
 		assert.NotSame(t, given.ProdQ, result.ProdQ, "prodq")
 		assert.NotSame(t, given.VideoQuality, result.VideoQuality, "videoquality")
 		assert.NotSame(t, given.KwArray, result.KwArray, "kwarray")
+		assert.NotSame(t, given.LiveStream, result.LiveStream, "livestream")
+		assert.NotSame(t, given.SourceRelationship, result.SourceRelationship, "sourcerelationship")
+		assert.NotSame(t, given.Embeddable, result.Embeddable, "embeddable")
 		assert.NotSame(t, given.Data, result.Data, "data")
 		assert.NotSame(t, given.Data[0], result.Data[0], "data-item")
 		assert.NotSame(t, given.Data[0].Ext, result.Data[0].Ext, "data-item-ext")
@@ -185,6 +192,9 @@ func TestCloneContent(t *testing.T) {
 				"ProdQ",
 				"VideoQuality",
 				"KwArray",
+				"LiveStream",
+				"SourceRelationship",
+				"Embeddable",
 				"Data",
 				"Network",
 				"Channel",
@@ -446,8 +456,8 @@ func TestCloneSite(t *testing.T) {
 			Page:                   "anyPage",
 			Ref:                    "anyRef",
 			Search:                 "anySearch",
-			Mobile:                 1,
-			PrivacyPolicy:          2,
+			Mobile:                 ptrutil.ToPtr[int8](1),
+			PrivacyPolicy:          ptrutil.ToPtr[int8](2),
 			Publisher:              &openrtb2.Publisher{ID: "anyPublisher", Ext: json.RawMessage(`{"publisher":1}`)},
 			Content:                &openrtb2.Content{ID: "anyContent", Ext: json.RawMessage(`{"content":1}`)},
 			Keywords:               "anyKeywords",
@@ -461,6 +471,8 @@ func TestCloneSite(t *testing.T) {
 		assert.NotSame(t, given.Cat, result.Cat, "cat")
 		assert.NotSame(t, given.SectionCat, result.SectionCat, "sectioncat")
 		assert.NotSame(t, given.PageCat, result.PageCat, "pagecat")
+		assert.NotSame(t, given.Mobile, result.Mobile, "mobile")
+		assert.NotSame(t, given.PrivacyPolicy, result.PrivacyPolicy, "privacypolicy")
 		assert.NotSame(t, given.Publisher, result.Publisher, "publisher")
 		assert.NotSame(t, given.Publisher.Ext, result.Publisher.Ext, "publisher-ext")
 		assert.NotSame(t, given.Content, result.Content, "content")
@@ -475,6 +487,8 @@ func TestCloneSite(t *testing.T) {
 				"Cat",
 				"SectionCat",
 				"PageCat",
+				"Mobile",
+				"PrivacyPolicy",
 				"Publisher",
 				"Content",
 				"KwArray",
@@ -505,7 +519,7 @@ func TestCloneUser(t *testing.T) {
 			Keywords:   "anyKeywords",
 			KwArray:    []string{"key1"},
 			CustomData: "anyCustomData",
-			Geo:        &openrtb2.Geo{Lat: 1.2, Lon: 2.3, Ext: json.RawMessage(`{"geo":1}`)},
+			Geo:        &openrtb2.Geo{Lat: ptrutil.ToPtr(1.2), Lon: ptrutil.ToPtr(2.3), Ext: json.RawMessage(`{"geo":1}`)},
 			Data:       []openrtb2.Data{{ID: "1", Ext: json.RawMessage(`{"data":1}`)}},
 			Consent:    "anyConsent",
 			EIDs:       []openrtb2.EID{{Source: "1", Ext: json.RawMessage(`{"eid":1}`)}},
@@ -536,6 +550,368 @@ func TestCloneUser(t *testing.T) {
 	})
 }
 
+func TestCloneDevice(t *testing.T) {
+	t.Run("nil", func(t *testing.T) {
+		result := CloneDevice(nil)
+		assert.Nil(t, result)
+	})
+
+	t.Run("empty", func(t *testing.T) {
+		given := &openrtb2.Device{}
+		result := CloneDevice(given)
+		assert.Empty(t, result)
+		assert.NotSame(t, given, result)
+	})
+
+	t.Run("populated", func(t *testing.T) {
+		var n int8 = 1
+		np := &n
+		ct := adcom1.ConnectionWIFI
+
+		given := &openrtb2.Device{
+			Geo:            &openrtb2.Geo{Lat: ptrutil.ToPtr(1.2), Lon: ptrutil.ToPtr(2.3), Ext: json.RawMessage(`{"geo":1}`)},
+			DNT:            np,
+			Lmt:            np,
+			UA:             "UserAgent",
+			SUA:            &openrtb2.UserAgent{Mobile: np, Model: "iPad"},
+			IP:             "127.0.0.1",
+			IPv6:           "2001::",
+			DeviceType:     adcom1.DeviceTablet,
+			Make:           "Apple",
+			Model:          "iPad",
+			OS:             "macOS",
+			OSV:            "1.2.3",
+			HWV:            "mini",
+			H:              20,
+			W:              30,
+			PPI:            100,
+			PxRatio:        200,
+			JS:             ptrutil.ToPtr[int8](2),
+			GeoFetch:       ptrutil.ToPtr[int8](4),
+			FlashVer:       "1.22.33",
+			Language:       "En",
+			LangB:          "ENG",
+			Carrier:        "AT&T",
+			MCCMNC:         "111-222",
+			ConnectionType: &ct,
+			IFA:            "IFA",
+			DIDSHA1:        "DIDSHA1",
+			DIDMD5:         "DIDMD5",
+			DPIDSHA1:       "DPIDSHA1",
+			DPIDMD5:        "DPIDMD5",
+			MACSHA1:        "MACSHA1",
+			MACMD5:         "MACMD5",
+			Ext:            json.RawMessage(`{"anyField":1}`),
+		}
+		result := CloneDevice(given)
+		assert.Equal(t, given, result, "equality")
+		assert.NotSame(t, given, result, "pointer")
+		assert.NotSame(t, given.Geo, result.Geo, "geo")
+		assert.NotSame(t, given.Geo.Ext, result.Geo.Ext, "geo-ext")
+		assert.NotSame(t, given.DNT, result.DNT, "dnt")
+		assert.NotSame(t, given.Lmt, result.Lmt, "lmt")
+		assert.NotSame(t, given.SUA, result.SUA, "sua")
+		assert.NotSame(t, given.JS, result.JS, "js")
+		assert.NotSame(t, given.GeoFetch, result.GeoFetch, "geofetch")
+		assert.NotSame(t, given.ConnectionType, result.ConnectionType, "connectionType")
+		assert.NotSame(t, given.Ext, result.Ext, "ext")
+	})
+
+	t.Run("assumptions", func(t *testing.T) {
+		assert.ElementsMatch(t, discoverPointerFields(reflect.TypeOf(openrtb2.Device{})),
+			[]string{
+				"Geo",
+				"DNT",
+				"Lmt",
+				"SUA",
+				"JS",
+				"GeoFetch",
+				"ConnectionType",
+				"Ext",
+			})
+	})
+}
+
+func TestCloneUserAgent(t *testing.T) {
+	t.Run("nil", func(t *testing.T) {
+		result := CloneUserAgent(nil)
+		assert.Nil(t, result)
+	})
+
+	t.Run("empty", func(t *testing.T) {
+		given := &openrtb2.UserAgent{}
+		result := CloneUserAgent(given)
+		assert.Empty(t, result)
+		assert.NotSame(t, given, result)
+	})
+
+	t.Run("populated", func(t *testing.T) {
+		var n int8 = 1
+		np := &n
+
+		given := &openrtb2.UserAgent{
+			Browsers:     []openrtb2.BrandVersion{{Brand: "Apple"}},
+			Platform:     &openrtb2.BrandVersion{Brand: "Apple"},
+			Mobile:       np,
+			Architecture: "X86",
+			Bitness:      "64",
+			Model:        "iPad",
+			Source:       adcom1.UASourceLowEntropy,
+			Ext:          json.RawMessage(`{"anyField":1}`),
+		}
+		result := CloneUserAgent(given)
+		assert.Equal(t, given, result, "equality")
+		assert.NotSame(t, given, result, "pointer")
+		assert.NotSame(t, given.Browsers, result.Browsers, "browsers")
+		assert.NotSame(t, given.Platform, result.Platform, "platform")
+		assert.NotSame(t, given.Mobile, result.Mobile, "mobile")
+		assert.NotSame(t, given.Architecture, result.Architecture, "architecture")
+		assert.NotSame(t, given.Ext, result.Ext, "ext")
+	})
+
+	t.Run("assumptions", func(t *testing.T) {
+		assert.ElementsMatch(t, discoverPointerFields(reflect.TypeOf(openrtb2.UserAgent{})),
+			[]string{
+				"Browsers",
+				"Platform",
+				"Mobile",
+				"Ext",
+			})
+	})
+}
+
+func TestCloneBrandVersionSlice(t *testing.T) {
+	t.Run("nil", func(t *testing.T) {
+		result := CloneBrandVersionSlice(nil)
+		assert.Nil(t, result)
+	})
+
+	t.Run("empty", func(t *testing.T) {
+		given := []openrtb2.BrandVersion{}
+		result := CloneBrandVersionSlice(given)
+		assert.Empty(t, result)
+		assert.NotSame(t, given, result)
+	})
+
+	t.Run("one", func(t *testing.T) {
+		given := []openrtb2.BrandVersion{
+			{Brand: "1", Version: []string{"s1", "s2"}, Ext: json.RawMessage(`{"anyField":1}`)},
+		}
+		result := CloneBrandVersionSlice(given)
+		assert.Equal(t, given, result, "equality")
+		assert.NotSame(t, given[0], result[0], "item-pointer")
+		assert.NotSame(t, given[0].Ext, result[0].Ext, "item-pointer-ext")
+	})
+
+	t.Run("many", func(t *testing.T) {
+		given := []openrtb2.BrandVersion{
+			{Brand: "1", Version: []string{"s1", "s2"}, Ext: json.RawMessage(`{"anyField":1}`)},
+			{Brand: "2", Version: []string{"s3", "s4"}, Ext: json.RawMessage(`{"anyField":1}`)},
+			{Brand: "3", Version: []string{"s5", "s6"}, Ext: json.RawMessage(`{"anyField":1}`)},
+		}
+		result := CloneBrandVersionSlice(given)
+		assert.Equal(t, given, result, "equality")
+		assert.NotSame(t, given[0], result[0], "item0-pointer")
+		assert.NotSame(t, given[0].Ext, result[0].Ext, "item0-pointer-ext")
+		assert.NotSame(t, given[1], result[1], "item1-pointer")
+		assert.NotSame(t, given[1].Ext, result[1].Ext, "item1-pointer-ext")
+		assert.NotSame(t, given[2], result[2], "item1-pointer")
+		assert.NotSame(t, given[2].Ext, result[2].Ext, "item1-pointer-ext")
+	})
+}
+
+func TestCloneBrandVersion(t *testing.T) {
+	t.Run("nil", func(t *testing.T) {
+		result := CloneBrandVersion(nil)
+		assert.Nil(t, result)
+	})
+
+	t.Run("empty", func(t *testing.T) {
+		given := &openrtb2.BrandVersion{}
+		result := CloneBrandVersion(given)
+		assert.Empty(t, result)
+		assert.NotSame(t, given, result)
+	})
+
+	t.Run("populated", func(t *testing.T) {
+		given := &openrtb2.BrandVersion{
+			Brand:   "Apple",
+			Version: []string{"s1"},
+			Ext:     json.RawMessage(`{"anyField":1}`),
+		}
+		result := CloneBrandVersion(given)
+		assert.Equal(t, given, result, "equality")
+		assert.NotSame(t, given, result, "pointer")
+		assert.NotSame(t, given.Ext, result.Ext, "ext")
+	})
+
+	t.Run("assumptions", func(t *testing.T) {
+		assert.ElementsMatch(t, discoverPointerFields(reflect.TypeOf(openrtb2.BrandVersion{})),
+			[]string{
+				"Version",
+				"Ext",
+			})
+	})
+}
+
+func TestCloneSource(t *testing.T) {
+	t.Run("nil", func(t *testing.T) {
+		result := CloneSource(nil)
+		assert.Nil(t, result)
+	})
+
+	t.Run("empty", func(t *testing.T) {
+		given := &openrtb2.Source{}
+		result := CloneSource(given)
+		assert.Empty(t, result)
+		assert.NotSame(t, given, result)
+	})
+
+	t.Run("populated", func(t *testing.T) {
+
+		given := &openrtb2.Source{
+			FD:     ptrutil.ToPtr[int8](1),
+			TID:    "Tid",
+			PChain: "PChain",
+			SChain: &openrtb2.SupplyChain{
+				Complete: 1,
+				Nodes: []openrtb2.SupplyChainNode{
+					{ASI: "asi", Ext: json.RawMessage(`{"anyField":1}`)},
+				},
+				Ext: json.RawMessage(`{"anyField":2}`),
+			},
+			Ext: json.RawMessage(`{"anyField":1}`),
+		}
+		result := CloneSource(given)
+		assert.Equal(t, given, result, "equality")
+		assert.NotSame(t, given, result, "pointer")
+		assert.NotSame(t, given.FD, result.FD, "fd")
+		assert.NotSame(t, given.SChain, result.SChain, "schain")
+		assert.NotSame(t, given.SChain.Ext, result.SChain.Ext, "schain.ext")
+		assert.NotSame(t, given.Ext, result.Ext, "ext")
+		assert.NotSame(t, given.SChain.Nodes[0].Ext, result.SChain.Nodes[0].Ext, "schain.nodes.ext")
+	})
+
+	t.Run("assumptions", func(t *testing.T) {
+		assert.ElementsMatch(t, discoverPointerFields(reflect.TypeOf(openrtb2.Source{})),
+			[]string{
+				"FD",
+				"SChain",
+				"Ext",
+			})
+	})
+}
+
+func TestCloneSChain(t *testing.T) {
+	t.Run("nil", func(t *testing.T) {
+		result := CloneSource(nil)
+		assert.Nil(t, result)
+	})
+
+	t.Run("empty", func(t *testing.T) {
+		given := &openrtb2.SupplyChain{}
+		result := CloneSChain(given)
+		assert.Empty(t, result)
+		assert.NotSame(t, given, result)
+	})
+
+	t.Run("populated", func(t *testing.T) {
+		given := &openrtb2.SupplyChain{
+			Complete: 1,
+			Nodes: []openrtb2.SupplyChainNode{
+				{ASI: "asi", Ext: json.RawMessage(`{"anyField":1}`)},
+			},
+			Ext: json.RawMessage(`{"anyField":1}`),
+		}
+		result := CloneSChain(given)
+		assert.Equal(t, given, result, "equality")
+		assert.NotSame(t, given, result, "pointer")
+		assert.NotSame(t, given.Nodes, result.Nodes, "nodes")
+		assert.NotSame(t, given.Nodes[0].Ext, result.Nodes[0].Ext, "nodes.ext")
+		assert.NotSame(t, given.Ext, result.Ext, "ext")
+	})
+
+	t.Run("assumptions", func(t *testing.T) {
+		assert.ElementsMatch(t, discoverPointerFields(reflect.TypeOf(openrtb2.SupplyChain{})),
+			[]string{
+				"Nodes",
+				"Ext",
+			})
+	})
+}
+
+func TestCloneSupplyChainNodes(t *testing.T) {
+	var n int8 = 1
+	np := &n
+	t.Run("nil", func(t *testing.T) {
+		result := CloneSupplyChainNodes(nil)
+		assert.Nil(t, result)
+	})
+
+	t.Run("empty", func(t *testing.T) {
+		given := []openrtb2.SupplyChainNode{}
+		result := CloneSupplyChainNodes(given)
+		assert.Empty(t, result)
+		assert.NotSame(t, given, result)
+	})
+
+	t.Run("one", func(t *testing.T) {
+		given := []openrtb2.SupplyChainNode{
+			{ASI: "asi", HP: np, Ext: json.RawMessage(`{"anyField":1}`)},
+		}
+		result := CloneSupplyChainNodes(given)
+		assert.Equal(t, given, result, "equality")
+		assert.NotSame(t, given[0], result[0], "item-pointer")
+		assert.NotSame(t, given[0].HP, result[0].HP, "item-pointer-hp")
+		assert.NotSame(t, given[0].Ext, result[0].Ext, "item-pointer-ext")
+	})
+
+	t.Run("many", func(t *testing.T) {
+		given := []openrtb2.SupplyChainNode{
+			{ASI: "asi", HP: np, Ext: json.RawMessage(`{"anyField":1}`)},
+			{ASI: "asi", HP: np, Ext: json.RawMessage(`{"anyField":1}`)},
+			{ASI: "asi", HP: np, Ext: json.RawMessage(`{"anyField":1}`)},
+		}
+		result := CloneSupplyChainNodes(given)
+		assert.Equal(t, given, result, "equality")
+		assert.NotSame(t, given[0], result[0], "item0-pointer")
+		assert.NotSame(t, given[0].Ext, result[0].Ext, "item0-pointer-ext")
+		assert.NotSame(t, given[0].HP, result[0].HP, "item0-pointer-hp")
+		assert.NotSame(t, given[1], result[1], "item1-pointer")
+		assert.NotSame(t, given[1].Ext, result[1].Ext, "item1-pointer-ext")
+		assert.NotSame(t, given[1].HP, result[1].HP, "item1-pointer-hp")
+		assert.NotSame(t, given[2], result[2], "item2-pointer")
+		assert.NotSame(t, given[2].Ext, result[2].Ext, "item2-pointer-ext")
+		assert.NotSame(t, given[2].HP, result[2].HP, "item2-pointer-hp")
+	})
+}
+
+func TestCloneSupplyChainNode(t *testing.T) {
+	t.Run("populated", func(t *testing.T) {
+		var n int8 = 1
+		np := &n
+
+		given := openrtb2.SupplyChainNode{
+			ASI: "asi",
+			HP:  np,
+			Ext: json.RawMessage(`{"anyField":1}`),
+		}
+		result := CloneSupplyChainNode(given)
+		assert.Equal(t, given, result, "equality")
+		assert.NotSame(t, given, result, "pointer")
+		assert.NotSame(t, given.Ext, result.Ext, "ext")
+		assert.NotSame(t, given.HP, result.HP, "hp")
+	})
+
+	t.Run("assumptions", func(t *testing.T) {
+		assert.ElementsMatch(t, discoverPointerFields(reflect.TypeOf(openrtb2.SupplyChainNode{})),
+			[]string{
+				"HP",
+				"Ext",
+			})
+	})
+}
+
 func TestCloneGeo(t *testing.T) {
 	t.Run("nil", func(t *testing.T) {
 		result := CloneGeo(nil)
@@ -551,8 +927,8 @@ func TestCloneGeo(t *testing.T) {
 
 	t.Run("populated", func(t *testing.T) {
 		given := &openrtb2.Geo{
-			Lat:           1.234,
-			Lon:           5.678,
+			Lat:           ptrutil.ToPtr(1.234),
+			Lon:           ptrutil.ToPtr(5.678),
 			Type:          adcom1.LocationGPS,
 			Accuracy:      1,
 			LastFix:       2,
@@ -569,12 +945,16 @@ func TestCloneGeo(t *testing.T) {
 		result := CloneGeo(given)
 		assert.Equal(t, given, result, "equality")
 		assert.NotSame(t, given, result, "pointer")
+		assert.NotSame(t, given.Lat, result.Lat, "lat")
+		assert.NotSame(t, given.Lon, result.Lon, "lon")
 		assert.NotSame(t, given.Ext, result.Ext, "ext")
 	})
 
 	t.Run("assumptions", func(t *testing.T) {
 		assert.ElementsMatch(t, discoverPointerFields(reflect.TypeOf(openrtb2.Geo{})),
 			[]string{
+				"Lat",
+				"Lon",
 				"Ext",
 			})
 	})
@@ -747,6 +1127,37 @@ func TestCloneDOOH(t *testing.T) {
 				"Ext",
 			})
 	})
+}
+
+func TestCloneBidderReq(t *testing.T) {
+	t.Run("nil", func(t *testing.T) {
+		result := CloneBidRequestPartial(nil)
+		assert.Nil(t, result)
+	})
+
+	t.Run("empty", func(t *testing.T) {
+		given := &openrtb2.BidRequest{}
+		result := CloneBidRequestPartial(given)
+		assert.Equal(t, given, result)
+		assert.NotSame(t, given, result)
+	})
+
+	t.Run("populated", func(t *testing.T) {
+		given := &openrtb2.BidRequest{
+			ID:     "anyID",
+			User:   &openrtb2.User{ID: "testUserId"},
+			Device: &openrtb2.Device{Carrier: "testCarrier"},
+			Source: &openrtb2.Source{TID: "testTID"},
+		}
+		result := CloneBidRequestPartial(given)
+		assert.Equal(t, given, result)
+		assert.NotSame(t, given, result, "pointer")
+		assert.NotSame(t, given.Device, result.Device, "device")
+		assert.NotSame(t, given.User, result.User, "user")
+		assert.NotSame(t, given.Source, result.Source, "source")
+	})
+
+	// TODO: Implement a full bid request clone and track changes using an 'assumptions' test.
 }
 
 // discoverPointerFields returns the names of all fields of an object that are

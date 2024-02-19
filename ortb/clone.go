@@ -1,9 +1,9 @@
 package ortb
 
 import (
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/util/ptrutil"
-	"github.com/prebid/prebid-server/util/sliceutil"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v2/util/sliceutil"
 )
 
 func CloneApp(s *openrtb2.App) *openrtb2.App {
@@ -18,6 +18,8 @@ func CloneApp(s *openrtb2.App) *openrtb2.App {
 	c.Cat = sliceutil.Clone(s.Cat)
 	c.SectionCat = sliceutil.Clone(s.SectionCat)
 	c.PageCat = sliceutil.Clone(s.PageCat)
+	c.PrivacyPolicy = ptrutil.Clone(s.PrivacyPolicy)
+	c.Paid = ptrutil.Clone(s.Paid)
 	c.Publisher = ClonePublisher(s.Publisher)
 	c.Content = CloneContent(s.Content)
 	c.KwArray = sliceutil.Clone(s.KwArray)
@@ -55,6 +57,9 @@ func CloneContent(s *openrtb2.Content) *openrtb2.Content {
 	c.ProdQ = ptrutil.Clone(s.ProdQ)
 	c.VideoQuality = ptrutil.Clone(s.VideoQuality)
 	c.KwArray = sliceutil.Clone(s.KwArray)
+	c.LiveStream = ptrutil.Clone(s.LiveStream)
+	c.SourceRelationship = ptrutil.Clone(s.SourceRelationship)
+	c.Embeddable = ptrutil.Clone(s.Embeddable)
 	c.Data = CloneDataSlice(s.Data)
 	c.Network = CloneNetwork(s.Network)
 	c.Channel = CloneChannel(s.Channel)
@@ -93,6 +98,7 @@ func CloneDataSlice(s []openrtb2.Data) []openrtb2.Data {
 
 func CloneData(s openrtb2.Data) openrtb2.Data {
 	// Shallow Copy (Value Fields) Occurred By Passing Argument By Value
+	// - Implicitly created by the cloned array.
 
 	// Deep Copy (Pointers)
 	s.Segment = CloneSegmentSlice(s.Segment)
@@ -116,6 +122,7 @@ func CloneSegmentSlice(s []openrtb2.Segment) []openrtb2.Segment {
 
 func CloneSegment(s openrtb2.Segment) openrtb2.Segment {
 	// Shallow Copy (Value Fields) Occurred By Passing Argument By Value
+	// - Implicitly created by the cloned array.
 
 	// Deep Copy (Pointers)
 	s.Ext = sliceutil.Clone(s.Ext)
@@ -163,6 +170,8 @@ func CloneSite(s *openrtb2.Site) *openrtb2.Site {
 	c.Cat = sliceutil.Clone(s.Cat)
 	c.SectionCat = sliceutil.Clone(s.SectionCat)
 	c.PageCat = sliceutil.Clone(s.PageCat)
+	c.Mobile = ptrutil.Clone(s.Mobile)
+	c.PrivacyPolicy = ptrutil.Clone(s.PrivacyPolicy)
 	c.Publisher = ClonePublisher(s.Publisher)
 	c.Content = CloneContent(s.Content)
 	c.KwArray = sliceutil.Clone(s.KwArray)
@@ -189,6 +198,132 @@ func CloneUser(s *openrtb2.User) *openrtb2.User {
 	return &c
 }
 
+func CloneDevice(s *openrtb2.Device) *openrtb2.Device {
+	if s == nil {
+		return nil
+	}
+
+	// Shallow Copy (Value Fields)
+	c := *s
+
+	// Deep Copy (Pointers)
+	c.Geo = CloneGeo(s.Geo)
+	c.DNT = ptrutil.Clone(s.DNT)
+	c.Lmt = ptrutil.Clone(s.Lmt)
+	c.SUA = CloneUserAgent(s.SUA)
+	c.JS = ptrutil.Clone(s.JS)
+	c.GeoFetch = ptrutil.Clone(s.GeoFetch)
+	c.ConnectionType = ptrutil.Clone(s.ConnectionType)
+	c.Ext = sliceutil.Clone(s.Ext)
+
+	return &c
+}
+
+func CloneUserAgent(s *openrtb2.UserAgent) *openrtb2.UserAgent {
+	if s == nil {
+		return nil
+	}
+
+	// Shallow Copy (Value Fields)
+	c := *s
+
+	// Deep Copy (Pointers)
+	c.Browsers = CloneBrandVersionSlice(s.Browsers)
+	c.Platform = CloneBrandVersion(s.Platform)
+
+	if s.Mobile != nil {
+		mobileCopy := *s.Mobile
+		c.Mobile = &mobileCopy
+	}
+	s.Ext = sliceutil.Clone(s.Ext)
+
+	return &c
+}
+
+func CloneBrandVersionSlice(s []openrtb2.BrandVersion) []openrtb2.BrandVersion {
+	if s == nil {
+		return nil
+	}
+
+	c := make([]openrtb2.BrandVersion, len(s))
+	for i, d := range s {
+		bv := CloneBrandVersion(&d)
+		c[i] = *bv
+	}
+
+	return c
+}
+
+func CloneBrandVersion(s *openrtb2.BrandVersion) *openrtb2.BrandVersion {
+	if s == nil {
+		return nil
+	}
+
+	// Shallow Copy (Value Fields) Occurred By Passing Argument By Value
+	c := *s
+
+	// Deep Copy (Pointers)
+	c.Version = sliceutil.Clone(s.Version)
+	c.Ext = sliceutil.Clone(s.Ext)
+
+	return &c
+}
+
+func CloneSource(s *openrtb2.Source) *openrtb2.Source {
+	if s == nil {
+		return nil
+	}
+
+	// Shallow Copy (Value Fields)
+	c := *s
+
+	// Deep Copy (Pointers)
+	c.FD = ptrutil.Clone(s.FD)
+	c.SChain = CloneSChain(s.SChain)
+	c.Ext = sliceutil.Clone(s.Ext)
+
+	return &c
+}
+
+func CloneSChain(s *openrtb2.SupplyChain) *openrtb2.SupplyChain {
+	if s == nil {
+		return nil
+	}
+
+	// Shallow Copy (Value Fields)
+	c := *s
+
+	// Deep Copy (Pointers)
+	c.Nodes = CloneSupplyChainNodes(s.Nodes)
+	c.Ext = sliceutil.Clone(s.Ext)
+
+	return &c
+}
+
+func CloneSupplyChainNodes(s []openrtb2.SupplyChainNode) []openrtb2.SupplyChainNode {
+	if s == nil {
+		return nil
+	}
+
+	c := make([]openrtb2.SupplyChainNode, len(s))
+	for i, d := range s {
+		c[i] = CloneSupplyChainNode(d)
+	}
+
+	return c
+}
+
+func CloneSupplyChainNode(s openrtb2.SupplyChainNode) openrtb2.SupplyChainNode {
+	// Shallow Copy (Value Fields) Occurred By Passing Argument By Value
+	// - Implicitly created by the cloned array.
+
+	// Deep Copy (Pointers)
+	s.HP = ptrutil.Clone(s.HP)
+	s.Ext = sliceutil.Clone(s.Ext)
+
+	return s
+}
+
 func CloneGeo(s *openrtb2.Geo) *openrtb2.Geo {
 	if s == nil {
 		return nil
@@ -198,6 +333,8 @@ func CloneGeo(s *openrtb2.Geo) *openrtb2.Geo {
 	c := *s
 
 	// Deep Copy (Pointers)
+	c.Lat = ptrutil.Clone(s.Lat)
+	c.Lon = ptrutil.Clone(s.Lon)
 	c.Ext = sliceutil.Clone(s.Ext)
 
 	return &c
@@ -218,6 +355,7 @@ func CloneEIDSlice(s []openrtb2.EID) []openrtb2.EID {
 
 func CloneEID(s openrtb2.EID) openrtb2.EID {
 	// Shallow Copy (Value Fields) Occurred By Passing Argument By Value
+	// - Implicitly created by the cloned array.
 
 	// Deep Copy (Pointers)
 	s.UIDs = CloneUIDSlice(s.UIDs)
@@ -241,6 +379,7 @@ func CloneUIDSlice(s []openrtb2.UID) []openrtb2.UID {
 
 func CloneUID(s openrtb2.UID) openrtb2.UID {
 	// Shallow Copy (Value Fields) Occurred By Passing Argument By Value
+	// - Implicitly created by the cloned array.
 
 	// Deep Copy (Pointers)
 	s.Ext = sliceutil.Clone(s.Ext)
@@ -262,6 +401,23 @@ func CloneDOOH(s *openrtb2.DOOH) *openrtb2.DOOH {
 	c.Publisher = ClonePublisher(s.Publisher)
 	c.Content = CloneContent(s.Content)
 	c.Ext = sliceutil.Clone(s.Ext)
+
+	return &c
+}
+
+// CloneBidRequestPartial performs a deep clone of just the bid request device, user, and source fields.
+func CloneBidRequestPartial(s *openrtb2.BidRequest) *openrtb2.BidRequest {
+	if s == nil {
+		return nil
+	}
+
+	// Shallow Copy (Value Fields)
+	c := *s
+
+	// Deep Copy (Pointers) - PARTIAL CLONE
+	c.Device = CloneDevice(s.Device)
+	c.User = CloneUser(s.User)
+	c.Source = CloneSource(s.Source)
 
 	return &c
 }

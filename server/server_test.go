@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/config"
-	metricsconfig "github.com/prebid/prebid-server/metrics/config"
+	"github.com/prebid/prebid-server/v2/config"
+	metricsconfig "github.com/prebid/prebid-server/v2/metrics/config"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -192,7 +192,6 @@ func TestListen(t *testing.T) {
 			Port:             8000,
 			UnixSocketEnable: false,
 			UnixSocketName:   "prebid_socket",
-			EnableGzip:       false,
 		}
 	)
 

@@ -15,6 +15,8 @@ capabilities:
       - video
       - native
 userSync:
+  # This bidder does not sync when GDPR is in-scope. Please consider removing the usersync
+  # block when deploying to European datacenters
   redirect:
     url: "https://s.ad.smaato.net/c/?adExInit=p&redir={{.RedirectURL}}&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}"
     userMacro: "$UID"

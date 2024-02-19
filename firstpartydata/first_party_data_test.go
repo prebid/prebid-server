@@ -3,12 +3,15 @@ package firstpartydata
 import (
 	"encoding/json"
 	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -474,13 +477,13 @@ func TestExtractBidderConfigFPD(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.Name(), func(t *testing.T) {
-			filePath := testPath + "/" + test.Name()
+			path := filepath.Join(testPath, test.Name())
 
-			fpdFile, err := loadFpdFile(filePath)
-			require.NoError(t, err, "Cannot Load Test")
+			testFile, err := loadTestFile[fpdFile](path)
+			require.NoError(t, err, "Load Test File")
 
 			givenRequestExtPrebid := &openrtb_ext.ExtRequestPrebid{}
-			err = json.Unmarshal(fpdFile.InputRequestData, givenRequestExtPrebid)
+			err = jsonutil.UnmarshalValid(testFile.InputRequestData, givenRequestExtPrebid)
 			require.NoError(t, err, "Cannot Load Test Conditions")
 
 			testRequest := &openrtb_ext.RequestExt{}
@@ -490,15 +493,17 @@ func TestExtractBidderConfigFPD(t *testing.T) {
 			results, err := ExtractBidderConfigFPD(testRequest)
 
 			// assert errors
-			if len(fpdFile.ValidationErrors) > 0 {
-				require.EqualError(t, err, fpdFile.ValidationErrors[0].Message, "Expected Error Not Received")
+			if len(testFile.ValidationErrors) > 0 {
+				require.EqualError(t, err, testFile.ValidationErrors[0].Message, "Expected Error Not Received")
 			} else {
 				require.NoError(t, err, "Error Not Expected")
 				assert.Nil(t, testRequest.GetPrebid().BidderConfigs, "Bidder specific FPD config should be removed from request")
 			}
 
 			// assert fpd (with normalization for nicer looking tests)
-			for bidderName, expectedFPD := range fpdFile.BidderConfigFPD {
+			for bidderName, expectedFPD := range testFile.BidderConfigFPD {
+				require.Contains(t, results, bidderName)
+
 				if expectedFPD.App != nil {
 					assert.JSONEq(t, string(expectedFPD.App), string(results[bidderName].App), "app is incorrect")
 				} else {
@@ -520,7 +525,6 @@ func TestExtractBidderConfigFPD(t *testing.T) {
 		})
 	}
 }
-
 func TestResolveFPD(t *testing.T) {
 	testPath := "tests/resolvefpd"
 
@@ -529,141 +533,137 @@ func TestResolveFPD(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.Name(), func(t *testing.T) {
-			filePath := testPath + "/" + test.Name()
+			path := filepath.Join(testPath, test.Name())
 
-			fpdFile, err := loadFpdFile(filePath)
-			require.NoError(t, err, "Cannot Load Test")
+			testFile, err := loadTestFile[fpdFileForResolveFPD](path)
+			require.NoError(t, err, "Load Test File")
 
 			request := &openrtb2.BidRequest{}
-			err = json.Unmarshal(fpdFile.InputRequestData, &request)
+			err = jsonutil.UnmarshalValid(testFile.InputRequestData, &request)
 			require.NoError(t, err, "Cannot Load Request")
 
 			originalRequest := &openrtb2.BidRequest{}
-			err = json.Unmarshal(fpdFile.InputRequestData, &originalRequest)
+			err = jsonutil.UnmarshalValid(testFile.InputRequestData, &originalRequest)
 			require.NoError(t, err, "Cannot Load Request")
 
-			outputReq := &openrtb2.BidRequest{}
-			err = json.Unmarshal(fpdFile.OutputRequestData, &outputReq)
-			require.NoError(t, err, "Cannot Load Output Request")
-
 			reqExtFPD := make(map[string][]byte)
-			reqExtFPD["site"] = fpdFile.GlobalFPD["site"]
-			reqExtFPD["app"] = fpdFile.GlobalFPD["app"]
-			reqExtFPD["user"] = fpdFile.GlobalFPD["user"]
+			reqExtFPD["site"] = testFile.GlobalFPD["site"]
+			reqExtFPD["app"] = testFile.GlobalFPD["app"]
+			reqExtFPD["user"] = testFile.GlobalFPD["user"]
 
 			reqFPD := make(map[string][]openrtb2.Data, 3)
 
-			reqFPDSiteContentData := fpdFile.GlobalFPD[siteContentDataKey]
+			reqFPDSiteContentData := testFile.GlobalFPD[siteContentDataKey]
 			if len(reqFPDSiteContentData) > 0 {
 				var siteConData []openrtb2.Data
-				err = json.Unmarshal(reqFPDSiteContentData, &siteConData)
+				err = jsonutil.UnmarshalValid(reqFPDSiteContentData, &siteConData)
 				if err != nil {
 					t.Errorf("Unable to unmarshal site.content.data:")
 				}
 				reqFPD[siteContentDataKey] = siteConData
 			}
 
-			reqFPDAppContentData := fpdFile.GlobalFPD[appContentDataKey]
+			reqFPDAppContentData := testFile.GlobalFPD[appContentDataKey]
 			if len(reqFPDAppContentData) > 0 {
 				var appConData []openrtb2.Data
-				err = json.Unmarshal(reqFPDAppContentData, &appConData)
+				err = jsonutil.UnmarshalValid(reqFPDAppContentData, &appConData)
 				if err != nil {
 					t.Errorf("Unable to unmarshal app.content.data: ")
 				}
 				reqFPD[appContentDataKey] = appConData
 			}
 
-			reqFPDUserData := fpdFile.GlobalFPD[userDataKey]
+			reqFPDUserData := testFile.GlobalFPD[userDataKey]
 			if len(reqFPDUserData) > 0 {
 				var userData []openrtb2.Data
-				err = json.Unmarshal(reqFPDUserData, &userData)
+				err = jsonutil.UnmarshalValid(reqFPDUserData, &userData)
 				if err != nil {
 					t.Errorf("Unable to unmarshal app.content.data: ")
 				}
 				reqFPD[userDataKey] = userData
 			}
-			if fpdFile.BidderConfigFPD == nil {
-				fpdFile.BidderConfigFPD = make(map[openrtb_ext.BidderName]*openrtb_ext.ORTB2)
-				fpdFile.BidderConfigFPD["appnexus"] = &openrtb_ext.ORTB2{}
-			}
 
 			// run test
-			resultFPD, errL := ResolveFPD(request, fpdFile.BidderConfigFPD, reqExtFPD, reqFPD, []string{"appnexus"})
+			resultFPD, errL := ResolveFPD(request, testFile.BidderConfigFPD, reqExtFPD, reqFPD, testFile.BiddersWithGlobalFPD)
 
 			if len(errL) == 0 {
 				assert.Equal(t, request, originalRequest, "Original request should not be modified")
 
-				bidderFPD := resultFPD["appnexus"]
-
-				if outputReq.Site != nil && len(outputReq.Site.Ext) > 0 {
-					resSiteExt := bidderFPD.Site.Ext
-					expectedSiteExt := outputReq.Site.Ext
-					bidderFPD.Site.Ext = nil
-					outputReq.Site.Ext = nil
-					assert.JSONEq(t, string(expectedSiteExt), string(resSiteExt), "site.ext is incorrect")
-
-					assert.Equal(t, outputReq.Site, bidderFPD.Site, "Site is incorrect")
+				expectedResultKeys := []string{}
+				for k := range testFile.OutputRequestData {
+					expectedResultKeys = append(expectedResultKeys, k.String())
 				}
-				if outputReq.App != nil && len(outputReq.App.Ext) > 0 {
-					resAppExt := bidderFPD.App.Ext
-					expectedAppExt := outputReq.App.Ext
-					bidderFPD.App.Ext = nil
-					outputReq.App.Ext = nil
-
-					assert.JSONEq(t, string(expectedAppExt), string(resAppExt), "app.ext is incorrect")
-
-					assert.Equal(t, outputReq.App, bidderFPD.App, "App is incorrect")
+				actualResultKeys := []string{}
+				for k := range resultFPD {
+					actualResultKeys = append(actualResultKeys, k.String())
 				}
-				if outputReq.User != nil && len(outputReq.User.Ext) > 0 {
-					resUserExt := bidderFPD.User.Ext
-					expectedUserExt := outputReq.User.Ext
-					bidderFPD.User.Ext = nil
-					outputReq.User.Ext = nil
-					assert.JSONEq(t, string(expectedUserExt), string(resUserExt), "user.ext is incorrect")
+				require.ElementsMatch(t, expectedResultKeys, actualResultKeys)
 
-					assert.Equal(t, outputReq.User, bidderFPD.User, "User is incorrect")
+				for k, outputReq := range testFile.OutputRequestData {
+					bidderFPD := resultFPD[k]
+
+					if outputReq.Site != nil && len(outputReq.Site.Ext) > 0 {
+						resSiteExt := bidderFPD.Site.Ext
+						expectedSiteExt := outputReq.Site.Ext
+						bidderFPD.Site.Ext = nil
+						outputReq.Site.Ext = nil
+						assert.JSONEq(t, string(expectedSiteExt), string(resSiteExt), "site.ext is incorrect")
+						assert.Equal(t, outputReq.Site, bidderFPD.Site, "Site is incorrect")
+					}
+					if outputReq.App != nil && len(outputReq.App.Ext) > 0 {
+						resAppExt := bidderFPD.App.Ext
+						expectedAppExt := outputReq.App.Ext
+						bidderFPD.App.Ext = nil
+						outputReq.App.Ext = nil
+						assert.JSONEq(t, string(expectedAppExt), string(resAppExt), "app.ext is incorrect")
+						assert.Equal(t, outputReq.App, bidderFPD.App, "App is incorrect")
+					}
+					if outputReq.User != nil && len(outputReq.User.Ext) > 0 {
+						resUserExt := bidderFPD.User.Ext
+						expectedUserExt := outputReq.User.Ext
+						bidderFPD.User.Ext = nil
+						outputReq.User.Ext = nil
+						assert.JSONEq(t, string(expectedUserExt), string(resUserExt), "user.ext is incorrect")
+						assert.Equal(t, outputReq.User, bidderFPD.User, "User is incorrect")
+					}
 				}
 			} else {
-				assert.ElementsMatch(t, errL, fpdFile.ValidationErrors, "Incorrect first party data warning message")
+				assert.ElementsMatch(t, errL, testFile.ValidationErrors, "Incorrect first party data warning message")
 			}
 		})
 	}
 }
-
 func TestExtractFPDForBidders(t *testing.T) {
 	if specFiles, err := os.ReadDir("./tests/extractfpdforbidders"); err == nil {
 		for _, specFile := range specFiles {
-			fileName := "./tests/extractfpdforbidders/" + specFile.Name()
+			path := filepath.Join("./tests/extractfpdforbidders/", specFile.Name())
 
-			fpdFile, err := loadFpdFile(fileName)
-
-			if err != nil {
-				t.Errorf("Unable to load file: %s", fileName)
-			}
+			testFile, err := loadTestFile[fpdFile](path)
+			require.NoError(t, err, "Load Test File")
 
 			var expectedRequest openrtb2.BidRequest
-			err = json.Unmarshal(fpdFile.OutputRequestData, &expectedRequest)
+			err = jsonutil.UnmarshalValid(testFile.OutputRequestData, &expectedRequest)
 			if err != nil {
-				t.Errorf("Unable to unmarshal input request: %s", fileName)
+				t.Errorf("Unable to unmarshal input request: %s", path)
 			}
 
 			resultRequest := &openrtb_ext.RequestWrapper{}
 			resultRequest.BidRequest = &openrtb2.BidRequest{}
-			err = json.Unmarshal(fpdFile.InputRequestData, resultRequest.BidRequest)
+			err = jsonutil.UnmarshalValid(testFile.InputRequestData, resultRequest.BidRequest)
 			assert.NoError(t, err, "Error should be nil")
 
 			resultFPD, errL := ExtractFPDForBidders(resultRequest)
 
-			if len(fpdFile.ValidationErrors) > 0 {
-				assert.Equal(t, len(fpdFile.ValidationErrors), len(errL), "Incorrect number of errors was returned")
-				assert.ElementsMatch(t, errL, fpdFile.ValidationErrors, "Incorrect errors were returned")
+			if len(testFile.ValidationErrors) > 0 {
+				assert.Equal(t, len(testFile.ValidationErrors), len(errL), "Incorrect number of errors was returned")
+				assert.ElementsMatch(t, errL, testFile.ValidationErrors, "Incorrect errors were returned")
 				//in case or error no further assertions needed
 				continue
 			}
 			assert.Empty(t, errL, "Error should be empty")
-			assert.Equal(t, len(resultFPD), len(fpdFile.BiddersFPDResolved))
+			assert.Equal(t, len(resultFPD), len(testFile.BiddersFPDResolved))
 
-			for bidderName, expectedValue := range fpdFile.BiddersFPDResolved {
+			for bidderName, expectedValue := range testFile.BiddersFPDResolved {
 				actualValue := resultFPD[bidderName]
 				if expectedValue.Site != nil {
 					if len(expectedValue.Site.Ext) > 0 {
@@ -715,32 +715,8 @@ func TestExtractFPDForBidders(t *testing.T) {
 				}
 				assert.Equal(t, expectedRequest.User, resultRequest.BidRequest.User, "Incorrect user in request")
 			}
-
 		}
 	}
-}
-
-func loadFpdFile(filename string) (fpdFile, error) {
-	var fileData fpdFile
-	fileContents, err := os.ReadFile(filename)
-	if err != nil {
-		return fileData, err
-	}
-	err = json.Unmarshal(fileContents, &fileData)
-	if err != nil {
-		return fileData, err
-	}
-
-	return fileData, nil
-}
-
-type fpdFile struct {
-	InputRequestData   json.RawMessage                                    `json:"inputRequestData,omitempty"`
-	OutputRequestData  json.RawMessage                                    `json:"outputRequestData,omitempty"`
-	BidderConfigFPD    map[openrtb_ext.BidderName]*openrtb_ext.ORTB2      `json:"bidderConfigFPD,omitempty"`
-	BiddersFPDResolved map[openrtb_ext.BidderName]*ResolvedFirstPartyData `json:"biddersFPDResolved,omitempty"`
-	GlobalFPD          map[string]json.RawMessage                         `json:"globalFPD,omitempty"`
-	ValidationErrors   []*errortypes.BadInput                             `json:"validationErrors,omitempty"`
 }
 
 func TestResolveUser(t *testing.T) {
@@ -751,7 +727,7 @@ func TestResolveUser(t *testing.T) {
 		globalFPD        map[string][]byte
 		openRtbGlobalFPD map[string][]openrtb2.Data
 		expectedUser     *openrtb2.User
-		expectedError    string
+		expectError      bool
 	}{
 		{
 			description:  "FPD config and bid request user are not specified",
@@ -794,7 +770,7 @@ func TestResolveUser(t *testing.T) {
 			fpdConfig:      &openrtb_ext.ORTB2{User: json.RawMessage(`{"id": "test1"}`)},
 			bidRequestUser: &openrtb2.User{ID: "test2", Ext: json.RawMessage(`{"data":{"inputFPDUserData":"inputFPDUserDataValue"}}`)},
 			globalFPD:      map[string][]byte{userKey: []byte(`malformed`)},
-			expectedError:  "Invalid JSON Patch",
+			expectError:    true,
 		},
 		{
 			description:    "bid request and openrtb global fpd user are specified, no input user ext",
@@ -863,18 +839,18 @@ func TestResolveUser(t *testing.T) {
 			},
 				Ext: json.RawMessage(`{"key":"value","test":1}`),
 			},
-			expectedError: "invalid character 'm' looking for beginning of object key string",
+			expectError: true,
 		},
 	}
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
 			resultUser, err := resolveUser(test.fpdConfig, test.bidRequestUser, test.globalFPD, test.openRtbGlobalFPD, "bidderA")
 
-			if test.expectedError == "" {
+			if test.expectError {
+				assert.Error(t, err, "expected error incorrect")
+			} else {
 				assert.NoError(t, err, "unexpected error returned")
 				assert.Equal(t, test.expectedUser, resultUser, "Result user is incorrect")
-			} else {
-				assert.EqualError(t, err, test.expectedError, "expected error incorrect")
 			}
 		})
 	}
@@ -888,16 +864,16 @@ func TestResolveSite(t *testing.T) {
 		globalFPD        map[string][]byte
 		openRtbGlobalFPD map[string][]openrtb2.Data
 		expectedSite     *openrtb2.Site
-		expectedError    string
+		expectError      bool
 	}{
 		{
 			description:  "FPD config and bid request site are not specified",
 			expectedSite: nil,
 		},
 		{
-			description:   "FPD config site only is specified",
-			fpdConfig:     &openrtb_ext.ORTB2{Site: json.RawMessage(`{"id": "test"}`)},
-			expectedError: "incorrect First Party Data for bidder bidderA: Site object is not defined in request, but defined in FPD config",
+			description: "FPD config site only is specified",
+			fpdConfig:   &openrtb_ext.ORTB2{Site: json.RawMessage(`{"id": "test"}`)},
+			expectError: true,
 		},
 		{
 			description:    "FPD config and bid request site are specified",
@@ -931,7 +907,7 @@ func TestResolveSite(t *testing.T) {
 			fpdConfig:      &openrtb_ext.ORTB2{Site: json.RawMessage(`{"id": "test1"}`)},
 			bidRequestSite: &openrtb2.Site{ID: "test2", Ext: json.RawMessage(`{"data":{"inputFPDSiteData":"inputFPDSiteDataValue"}}`)},
 			globalFPD:      map[string][]byte{siteKey: []byte(`malformed`)},
-			expectedError:  "Invalid JSON Patch",
+			expectError:    true,
 		},
 		{
 			description:    "bid request and openrtb global fpd site are specified, no input site ext",
@@ -1023,18 +999,18 @@ func TestResolveSite(t *testing.T) {
 			}},
 				Ext: json.RawMessage(`{"key":"value","test":1}`),
 			},
-			expectedError: "invalid character 'm' looking for beginning of object key string",
+			expectError: true,
 		},
 	}
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
 			resultSite, err := resolveSite(test.fpdConfig, test.bidRequestSite, test.globalFPD, test.openRtbGlobalFPD, "bidderA")
 
-			if test.expectedError == "" {
+			if test.expectError {
+				assert.Error(t, err)
+			} else {
 				assert.NoError(t, err, "unexpected error returned")
 				assert.Equal(t, test.expectedSite, resultSite, "Result site is incorrect")
-			} else {
-				assert.EqualError(t, err, test.expectedError, "expected error incorrect")
 			}
 		})
 	}
@@ -1048,16 +1024,16 @@ func TestResolveApp(t *testing.T) {
 		globalFPD        map[string][]byte
 		openRtbGlobalFPD map[string][]openrtb2.Data
 		expectedApp      *openrtb2.App
-		expectedError    string
+		expectError      bool
 	}{
 		{
 			description: "FPD config and bid request app are not specified",
 			expectedApp: nil,
 		},
 		{
-			description:   "FPD config app only is specified",
-			fpdConfig:     &openrtb_ext.ORTB2{App: json.RawMessage(`{"id": "test"}`)},
-			expectedError: "incorrect First Party Data for bidder bidderA: App object is not defined in request, but defined in FPD config",
+			description: "FPD config app only is specified",
+			fpdConfig:   &openrtb_ext.ORTB2{App: json.RawMessage(`{"id": "test"}`)},
+			expectError: true,
 		},
 		{
 			description:   "FPD config and bid request app are specified",
@@ -1091,7 +1067,7 @@ func TestResolveApp(t *testing.T) {
 			fpdConfig:     &openrtb_ext.ORTB2{App: json.RawMessage(`{"id": "test1"}`)},
 			bidRequestApp: &openrtb2.App{ID: "test2", Ext: json.RawMessage(`{"data":{"inputFPDAppData":"inputFPDAppDataValue"}}`)},
 			globalFPD:     map[string][]byte{appKey: []byte(`malformed`)},
-			expectedError: "Invalid JSON Patch",
+			expectError:   true,
 		},
 		{
 			description:   "bid request and openrtb global fpd app are specified, no input app ext",
@@ -1183,18 +1159,18 @@ func TestResolveApp(t *testing.T) {
 			}},
 				Ext: json.RawMessage(`{"key":"value","test":1}`),
 			},
-			expectedError: "invalid character 'm' looking for beginning of object key string",
+			expectError: true,
 		},
 	}
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
 			resultApp, err := resolveApp(test.fpdConfig, test.bidRequestApp, test.globalFPD, test.openRtbGlobalFPD, "bidderA")
 
-			if test.expectedError == "" {
-				assert.NoError(t, err, "unexpected error returned")
-				assert.Equal(t, test.expectedApp, resultApp, "Result app is incorrect")
+			if test.expectError {
+				assert.Error(t, err)
 			} else {
-				assert.EqualError(t, err, test.expectedError, "expected error incorrect")
+				assert.NoError(t, err)
+				assert.Equal(t, test.expectedApp, resultApp, "Result app is incorrect")
 			}
 		})
 	}
@@ -1245,7 +1221,7 @@ func TestMergeUser(t *testing.T) {
 		givenUser    openrtb2.User
 		givenFPD     json.RawMessage
 		expectedUser openrtb2.User
-		expectedErr  string
+		expectError  bool
 	}{
 		{
 			name:         "empty",
@@ -1269,13 +1245,13 @@ func TestMergeUser(t *testing.T) {
 			name:        "toplevel-ext-err",
 			givenUser:   openrtb2.User{ID: "1", Ext: []byte(`malformed`)},
 			givenFPD:    []byte(`{"id":"2"}`),
-			expectedErr: "invalid request ext",
+			expectError: true,
 		},
 		{
 			name:         "nested-geo",
-			givenUser:    openrtb2.User{Geo: &openrtb2.Geo{Lat: 1}},
+			givenUser:    openrtb2.User{Geo: &openrtb2.Geo{Lat: ptrutil.ToPtr(1.0)}},
 			givenFPD:     []byte(`{"geo":{"lat": 2}}`),
-			expectedUser: openrtb2.User{Geo: &openrtb2.Geo{Lat: 2}},
+			expectedUser: openrtb2.User{Geo: &openrtb2.Geo{Lat: ptrutil.ToPtr(2.0)}},
 		},
 		{
 			name:         "nested-geo-ext",
@@ -1293,13 +1269,13 @@ func TestMergeUser(t *testing.T) {
 			name:        "nested-geo-ext-err",
 			givenUser:   openrtb2.User{Geo: &openrtb2.Geo{Ext: []byte(`malformed`)}},
 			givenFPD:    []byte(`{"geo":{"ext":{"b":100,"c":3}}}`),
-			expectedErr: "invalid request ext",
+			expectError: true,
 		},
 		{
 			name:        "fpd-err",
 			givenUser:   openrtb2.User{ID: "1", Ext: []byte(`{"a":1}`)},
 			givenFPD:    []byte(`malformed`),
-			expectedErr: "invalid character 'm' looking for beginning of value",
+			expectError: true,
 		},
 	}
 
@@ -1307,11 +1283,11 @@ func TestMergeUser(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			err := mergeUser(&test.givenUser, test.givenFPD)
 
-			if test.expectedErr == "" {
-				assert.NoError(t, err, "unexpected error returned")
-				assert.Equal(t, test.expectedUser, test.givenUser, "result user is incorrect")
+			if test.expectError {
+				assert.Error(t, err)
 			} else {
-				assert.EqualError(t, err, test.expectedErr, "expected error incorrect")
+				assert.NoError(t, err)
+				assert.Equal(t, test.expectedUser, test.givenUser, "result user is incorrect")
 			}
 		})
 	}
@@ -1323,7 +1299,7 @@ func TestMergeApp(t *testing.T) {
 		givenApp    openrtb2.App
 		givenFPD    json.RawMessage
 		expectedApp openrtb2.App
-		expectedErr string
+		expectError bool
 	}{
 		{
 			name:        "empty",
@@ -1347,7 +1323,7 @@ func TestMergeApp(t *testing.T) {
 			name:        "toplevel-ext-err",
 			givenApp:    openrtb2.App{ID: "1", Ext: []byte(`malformed`)},
 			givenFPD:    []byte(`{"id":"2"}`),
-			expectedErr: "invalid request ext",
+			expectError: true,
 		},
 		{
 			name:        "nested-publisher",
@@ -1443,37 +1419,37 @@ func TestMergeApp(t *testing.T) {
 			name:        "nested-publisher-ext-err",
 			givenApp:    openrtb2.App{Publisher: &openrtb2.Publisher{Ext: []byte(`malformed`)}},
 			givenFPD:    []byte(`{"publisher":{"ext":{"b":100,"c":3}}}`),
-			expectedErr: "invalid request ext",
+			expectError: true,
 		},
 		{
 			name:        "nested-content-ext-err",
 			givenApp:    openrtb2.App{Content: &openrtb2.Content{Ext: []byte(`malformed`)}},
 			givenFPD:    []byte(`{"content":{"ext":{"b":100,"c":3}}}`),
-			expectedErr: "invalid request ext",
+			expectError: true,
 		},
 		{
 			name:        "nested-content-producer-ext-err",
 			givenApp:    openrtb2.App{Content: &openrtb2.Content{Producer: &openrtb2.Producer{Ext: []byte(`malformed`)}}},
 			givenFPD:    []byte(`{"content":{"producer": {"ext":{"b":100,"c":3}}}}`),
-			expectedErr: "invalid request ext",
+			expectError: true,
 		},
 		{
 			name:        "nested-content-network-ext-err",
 			givenApp:    openrtb2.App{Content: &openrtb2.Content{Network: &openrtb2.Network{Ext: []byte(`malformed`)}}},
 			givenFPD:    []byte(`{"content":{"network": {"ext":{"b":100,"c":3}}}}`),
-			expectedErr: "invalid request ext",
+			expectError: true,
 		},
 		{
 			name:        "nested-content-channel-ext-err",
 			givenApp:    openrtb2.App{Content: &openrtb2.Content{Channel: &openrtb2.Channel{Ext: []byte(`malformed`)}}},
 			givenFPD:    []byte(`{"content":{"channelx": {"ext":{"b":100,"c":3}}}}`),
-			expectedErr: "invalid request ext",
+			expectError: true,
 		},
 		{
 			name:        "fpd-err",
 			givenApp:    openrtb2.App{ID: "1", Ext: []byte(`{"a":1}`)},
 			givenFPD:    []byte(`malformed`),
-			expectedErr: "invalid character 'm' looking for beginning of value",
+			expectError: true,
 		},
 	}
 
@@ -1481,11 +1457,11 @@ func TestMergeApp(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			err := mergeApp(&test.givenApp, test.givenFPD)
 
-			if test.expectedErr == "" {
-				assert.NoError(t, err, "unexpected error returned")
-				assert.Equal(t, test.expectedApp, test.givenApp, " result app is incorrect")
+			if test.expectError {
+				assert.Error(t, err)
 			} else {
-				assert.EqualError(t, err, test.expectedErr, "expected error incorrect")
+				assert.NoError(t, err)
+				assert.Equal(t, test.expectedApp, test.givenApp, " result app is incorrect")
 			}
 		})
 	}
@@ -1497,13 +1473,13 @@ func TestMergeSite(t *testing.T) {
 		givenSite    openrtb2.Site
 		givenFPD     json.RawMessage
 		expectedSite openrtb2.Site
-		expectedErr  string
+		expectError  bool
 	}{
 		{
 			name:        "empty",
 			givenSite:   openrtb2.Site{},
 			givenFPD:    []byte(`{}`),
-			expectedErr: "incorrect First Party Data for bidder BidderA: Site object cannot set empty page if req.site.id is empty",
+			expectError: true,
 		},
 		{
 			name:         "toplevel",
@@ -1521,7 +1497,7 @@ func TestMergeSite(t *testing.T) {
 			name:        "toplevel-ext-err",
 			givenSite:   openrtb2.Site{ID: "1", Ext: []byte(`malformed`)},
 			givenFPD:    []byte(`{"id":"2"}`),
-			expectedErr: "invalid request ext",
+			expectError: true,
 		},
 		{
 			name:         "nested-publisher",
@@ -1617,37 +1593,37 @@ func TestMergeSite(t *testing.T) {
 			name:        "nested-publisher-ext-err",
 			givenSite:   openrtb2.Site{ID: "1", Publisher: &openrtb2.Publisher{Ext: []byte(`malformed`)}},
 			givenFPD:    []byte(`{"publisher":{"ext":{"b":100,"c":3}}}`),
-			expectedErr: "invalid request ext",
+			expectError: true,
 		},
 		{
 			name:        "nested-content-ext-err",
 			givenSite:   openrtb2.Site{ID: "1", Content: &openrtb2.Content{Ext: []byte(`malformed`)}},
 			givenFPD:    []byte(`{"content":{"ext":{"b":100,"c":3}}}`),
-			expectedErr: "invalid request ext",
+			expectError: true,
 		},
 		{
 			name:        "nested-content-producer-ext-err",
 			givenSite:   openrtb2.Site{ID: "1", Content: &openrtb2.Content{Producer: &openrtb2.Producer{Ext: []byte(`malformed`)}}},
 			givenFPD:    []byte(`{"content":{"producer": {"ext":{"b":100,"c":3}}}}`),
-			expectedErr: "invalid request ext",
+			expectError: true,
 		},
 		{
 			name:        "nested-content-network-ext-err",
 			givenSite:   openrtb2.Site{ID: "1", Content: &openrtb2.Content{Network: &openrtb2.Network{Ext: []byte(`malformed`)}}},
 			givenFPD:    []byte(`{"content":{"network": {"ext":{"b":100,"c":3}}}}`),
-			expectedErr: "invalid request ext",
+			expectError: true,
 		},
 		{
 			name:        "nested-content-channel-ext-err",
 			givenSite:   openrtb2.Site{ID: "1", Content: &openrtb2.Content{Channel: &openrtb2.Channel{Ext: []byte(`malformed`)}}},
 			givenFPD:    []byte(`{"content":{"channelx": {"ext":{"b":100,"c":3}}}}`),
-			expectedErr: "invalid request ext",
+			expectError: true,
 		},
 		{
 			name:        "fpd-err",
 			givenSite:   openrtb2.Site{ID: "1", Ext: []byte(`{"a":1}`)},
 			givenFPD:    []byte(`malformed`),
-			expectedErr: "invalid character 'm' looking for beginning of value",
+			expectError: true,
 		},
 	}
 
@@ -1655,11 +1631,11 @@ func TestMergeSite(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			err := mergeSite(&test.givenSite, test.givenFPD, "BidderA")
 
-			if test.expectedErr == "" {
-				assert.NoError(t, err, "unexpected error returned")
-				assert.Equal(t, test.expectedSite, test.givenSite, " result Site is incorrect")
+			if test.expectError {
+				assert.Error(t, err)
 			} else {
-				assert.EqualError(t, err, test.expectedErr, "expected error incorrect")
+				assert.NoError(t, err)
+				assert.Equal(t, test.expectedSite, test.givenSite, " result Site is incorrect")
 			}
 		})
 	}
@@ -1912,18 +1888,38 @@ var (
   }
 }
 `)
-
-	user = []byte(`
-{
-  "id": "2",
-  "yob": 2000,
-  "geo": {
-    "city": "LA",
-    "ext": {
-      "b": 100,
-      "c": 3
-    }
-  }
-}
-`)
 )
+
+func loadTestFile[T any](filename string) (T, error) {
+	var testFile T
+
+	b, err := os.ReadFile(filename)
+	if err != nil {
+		return testFile, err
+	}
+
+	err = json.Unmarshal(b, &testFile)
+	if err != nil {
+		return testFile, err
+	}
+
+	return testFile, nil
+}
+
+type fpdFile struct {
+	InputRequestData   json.RawMessage                                    `json:"inputRequestData,omitempty"`
+	OutputRequestData  json.RawMessage                                    `json:"outputRequestData,omitempty"`
+	BidderConfigFPD    map[openrtb_ext.BidderName]*openrtb_ext.ORTB2      `json:"bidderConfigFPD,omitempty"`
+	BiddersFPDResolved map[openrtb_ext.BidderName]*ResolvedFirstPartyData `json:"biddersFPDResolved,omitempty"`
+	GlobalFPD          map[string]json.RawMessage                         `json:"globalFPD,omitempty"`
+	ValidationErrors   []*errortypes.BadInput                             `json:"validationErrors,omitempty"`
+}
+
+type fpdFileForResolveFPD struct {
+	InputRequestData     json.RawMessage                                `json:"inputRequestData,omitempty"`
+	OutputRequestData    map[openrtb_ext.BidderName]openrtb2.BidRequest `json:"outputRequestData,omitempty"`
+	BiddersWithGlobalFPD []string                                       `json:"biddersWithGlobalFPD,omitempty"`
+	BidderConfigFPD      map[openrtb_ext.BidderName]*openrtb_ext.ORTB2  `json:"bidderConfigFPD,omitempty"`
+	GlobalFPD            map[string]json.RawMessage                     `json:"globalFPD,omitempty"`
+	ValidationErrors     []*errortypes.BadInput                         `json:"validationErrors,omitempty"`
+}

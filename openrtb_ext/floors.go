@@ -1,5 +1,11 @@
 package openrtb_ext
 
+import (
+	"github.com/prebid/prebid-server/v2/util/maputil"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v2/util/sliceutil"
+)
+
 // Defines strings for FetchStatus
 const (
 	FetchSuccess    = "success"
@@ -82,6 +88,7 @@ type PriceFloorData struct {
 	ModelTimestamp      int                    `json:"modeltimestamp,omitempty"`
 	ModelGroups         []PriceFloorModelGroup `json:"modelgroups,omitempty"`
 	FloorProvider       string                 `json:"floorprovider,omitempty"`
+	FetchRate           *int                   `json:"fetchrate,omitempty"`
 }
 
 type PriceFloorModelGroup struct {
@@ -144,4 +151,60 @@ type ExtImp struct {
 
 type ImpExtPrebid struct {
 	Floors Price `json:"floors,omitempty"`
+}
+
+func (pf *PriceFloorRules) DeepCopy() *PriceFloorRules {
+	if pf == nil {
+		return nil
+	}
+
+	newRules := *pf
+	newRules.Enabled = ptrutil.Clone(pf.Enabled)
+	newRules.Skipped = ptrutil.Clone(pf.Skipped)
+	newRules.Location = ptrutil.Clone(pf.Location)
+	newRules.Data = pf.Data.DeepCopy()
+	newRules.Enforcement = pf.Enforcement.DeepCopy()
+
+	return &newRules
+}
+
+func (data *PriceFloorData) DeepCopy() *PriceFloorData {
+	if data == nil {
+		return nil
+	}
+
+	newData := *data
+	newModelGroups := make([]PriceFloorModelGroup, len(data.ModelGroups))
+
+	for i := range data.ModelGroups {
+		var eachGroup PriceFloorModelGroup
+		eachGroup.Currency = data.ModelGroups[i].Currency
+		eachGroup.ModelWeight = ptrutil.Clone(data.ModelGroups[i].ModelWeight)
+		eachGroup.ModelVersion = data.ModelGroups[i].ModelVersion
+		eachGroup.SkipRate = data.ModelGroups[i].SkipRate
+		eachGroup.Values = maputil.Clone(data.ModelGroups[i].Values)
+		eachGroup.Default = data.ModelGroups[i].Default
+		eachGroup.Schema = PriceFloorSchema{
+			Fields:    sliceutil.Clone(data.ModelGroups[i].Schema.Fields),
+			Delimiter: data.ModelGroups[i].Schema.Delimiter,
+		}
+		newModelGroups[i] = eachGroup
+	}
+	newData.ModelGroups = newModelGroups
+
+	return &newData
+}
+
+func (enforcement *PriceFloorEnforcement) DeepCopy() *PriceFloorEnforcement {
+	if enforcement == nil {
+		return nil
+	}
+
+	newEnforcement := *enforcement
+	newEnforcement.EnforceJS = ptrutil.Clone(enforcement.EnforceJS)
+	newEnforcement.EnforcePBS = ptrutil.Clone(enforcement.EnforcePBS)
+	newEnforcement.FloorDeals = ptrutil.Clone(enforcement.FloorDeals)
+	newEnforcement.BidAdjustment = ptrutil.Clone(enforcement.BidAdjustment)
+
+	return &newEnforcement
 }

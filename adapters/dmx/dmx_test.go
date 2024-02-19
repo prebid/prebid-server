@@ -5,12 +5,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 
-	"github.com/prebid/prebid-server/adapters/adapterstest"
+	"github.com/prebid/prebid-server/v2/adapters/adapterstest"
 )
 
 func TestFetchParams(t *testing.T) {
@@ -377,8 +377,8 @@ func TestMakeBidVideo(t *testing.T) {
 		ID:  "imp1",
 		Ext: json.RawMessage("{\"bidder\":{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}}"),
 		Video: &openrtb2.Video{
-			W:     width,
-			H:     height,
+			W:     &width,
+			H:     &height,
 			MIMEs: []string{"video/mp4"},
 		}}
 
