@@ -27,6 +27,7 @@ import (
 	gppPrivacy "github.com/prebid/prebid-server/v2/privacy/gpp"
 	"github.com/prebid/prebid-server/v2/stored_requests"
 	"github.com/prebid/prebid-server/v2/usersync"
+	"github.com/prebid/prebid-server/v2/util/httputil"
 	"github.com/prebid/prebid-server/v2/util/jsonutil"
 	stringutil "github.com/prebid/prebid-server/v2/util/stringutil"
 )
@@ -136,7 +137,7 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, ma
 	request = c.setLimit(request, account.CookieSync)
 	request = c.setCooperativeSync(request, account.CookieSync)
 
-	privacyMacros, gdprSignal, privacyPolicies, err := extractPrivacyPolicies(request, c.privacyConfig.gdprConfig.DefaultValue)
+	privacyMacros, gdprSignal, privacyPolicies, err := extractPrivacyPolicies(request, r.Header, c.privacyConfig.gdprConfig.DefaultValue)
 	if err != nil {
 		return usersync.Request{}, macros.UserSyncPrivacy{}, err
 	}
@@ -188,7 +189,7 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, ma
 	return rx, privacyMacros, nil
 }
 
-func extractPrivacyPolicies(request cookieSyncRequest, usersyncDefaultGDPRValue string) (macros.UserSyncPrivacy, gdpr.Signal, privacy.Policies, error) {
+func extractPrivacyPolicies(request cookieSyncRequest, header http.Header, usersyncDefaultGDPRValue string) (macros.UserSyncPrivacy, gdpr.Signal, privacy.Policies, error) {
 	// GDPR
 	gppSID, err := stringutil.StrToInt8Slice(request.GPPSID)
 	if err != nil {
@@ -240,6 +241,7 @@ func extractPrivacyPolicies(request cookieSyncRequest, usersyncDefaultGDPRValue 
 
 	privacyPolicies := privacy.Policies{
 		GPPSID: gppSID,
+		GPC:    header.Get(httputil.HeaderSecGPC),
 	}
 
 	return privacyMacros, gdprSignal, privacyPolicies, nil

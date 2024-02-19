@@ -237,7 +237,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		writeError(errL, w, &labels)
 		return
 	}
-	secGPC := r.Header.Get("Sec-GPC")
 
 	warnings := errortypes.WarningOnly(errL)
 
@@ -249,7 +248,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		StartTime:                  start,
 		LegacyLabels:               labels,
 		Warnings:                   warnings,
-		GlobalPrivacyControlHeader: secGPC,
+		GlobalPrivacyControlHeader: r.Header.Get(httputil.HeaderSecGPC),
 		ImpExtInfoMap:              impExtInfoMap,
 		StoredAuctionResponses:     storedAuctionResponses,
 		StoredBidResponses:         storedBidResponses,
@@ -531,7 +530,11 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	}
 
 	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
-	deps.setFieldsImplicitly(httpRequest, req)
+	if err := deps.setFieldsImplicitly(httpRequest, req); err != nil {
+		if errs = append(errs, err); errortypes.ContainsFatalError(errs) {
+			return
+		}
+	}
 
 	if err := ortb.SetDefaults(req); err != nil {
 		errs = []error{err}
@@ -2003,7 +2006,7 @@ func sanitizeRequest(r *openrtb_ext.RequestWrapper, ipValidator iputil.IPValidat
 // OpenRTB properties from the headers and other implicit info.
 //
 // This function _should not_ override any fields which were defined explicitly by the caller in the request.
-func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {
+func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) error {
 	sanitizeRequest(r, deps.privateNetworkIPValidator)
 
 	setDeviceImplicitly(httpReq, r, deps.privateNetworkIPValidator)
@@ -2015,6 +2018,8 @@ func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, r *openrtb_
 	}
 
 	setAuctionTypeImplicitly(r)
+
+	return setRegsImplicitly(httpReq, r)
 }
 
 // setDeviceImplicitly uses implicit info from httpReq to populate bidReq.Device
@@ -2031,6 +2036,21 @@ func setAuctionTypeImplicitly(r *openrtb_ext.RequestWrapper) {
 	if r.AT == 0 {
 		r.AT = 1
 	}
+}
+
+// setRegsImplicitly sets the gpc set from the header if not provided in the request.
+func setRegsImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) error {
+	regExt, err := r.GetRegExt()
+	if err != nil {
+		return fmt.Errorf("request.regs.ext is invalid: %v", err)
+	}
+
+	if regExt.GetGPC() == nil {
+		if secGPC := httpReq.Header.Get(httputil.HeaderSecGPC); len(secGPC) > 0 {
+			regExt.SetGPC(&secGPC)
+		}
+	}
+	return nil
 }
 
 func setSiteImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {

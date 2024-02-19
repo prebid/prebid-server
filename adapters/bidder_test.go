@@ -39,7 +39,7 @@ func TestExtraRequestInfoConvertCurrency(t *testing.T) {
 		mockConversions := &mockConversions{}
 		test.setMock(&mockConversions.Mock)
 
-		extraRequestInfo := NewExtraRequestInfo(mockConversions)
+		extraRequestInfo := ExtraRequestInfo{CurrencyConversions: mockConversions}
 		result, err := extraRequestInfo.ConvertCurrency(givenValue, givenFrom, givenTo)
 
 		mockConversions.AssertExpectations(t)

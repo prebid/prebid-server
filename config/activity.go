@@ -24,4 +24,6 @@ type ActivityRule struct {
 type ActivityCondition struct {
 	ComponentName []string `mapstructure:"componentName" json:"componentName"`
 	ComponentType []string `mapstructure:"componentType" json:"componentType"`
+	GPPSID        []int8   `mapstructure:"gppSid" json:"gppSid"`
+	GPC           string   `mapstructure:"gpc" json:"gpc"`
 }

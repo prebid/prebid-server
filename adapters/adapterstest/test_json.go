@@ -150,7 +150,7 @@ func getTestExtraRequestInfo(t *testing.T, filename string, spec *testSpec, isAm
 		conversions := currency.NewRates(reqPrebid.CurrencyConversions.ConversionRates)
 
 		// Create return adapters.ExtraRequestInfo object
-		reqInfo = adapters.NewExtraRequestInfo(conversions)
+		reqInfo = adapters.ExtraRequestInfo{CurrencyConversions: conversions}
 	} else {
 		reqInfo = adapters.ExtraRequestInfo{}
 	}

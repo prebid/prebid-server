@@ -16,25 +16,26 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/glog"
+	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/bidadjustment"
+	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/config/util"
 	"github.com/prebid/prebid-server/v2/currency"
+	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/exchange/entities"
 	"github.com/prebid/prebid-server/v2/experiment/adscert"
 	"github.com/prebid/prebid-server/v2/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v2/metrics"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/httputil"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 	"github.com/prebid/prebid-server/v2/version"
 
+	"github.com/golang/glog"
 	"github.com/prebid/openrtb/v20/adcom1"
 	nativeRequests "github.com/prebid/openrtb/v20/native1/request"
 	nativeResponse "github.com/prebid/openrtb/v20/native1/response"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/metrics"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
 	"golang.org/x/net/context/ctxhttp"
 )
 
@@ -175,10 +176,13 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 			} else {
 				reqData[i].Headers = http.Header{}
 			}
+
 			reqData[i].Headers.Add("X-Prebid", xPrebidHeader)
+
 			if reqInfo.GlobalPrivacyControlHeader == "1" {
-				reqData[i].Headers.Add("Sec-GPC", reqInfo.GlobalPrivacyControlHeader)
+				reqData[i].Headers.Add(httputil.HeaderSecGPC, reqInfo.GlobalPrivacyControlHeader)
 			}
+
 			if bidRequestOptions.addCallSignHeader {
 				startSignRequestTime := time.Now()
 				signatureMessage, err := adsCertSigner.Sign(reqData[i].Uri, reqData[i].Body)

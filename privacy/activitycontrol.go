@@ -86,6 +86,8 @@ func cfgToRules(rules []config.ActivityRule) []Rule {
 			result:        result,
 			componentName: r.Condition.ComponentName,
 			componentType: r.Condition.ComponentType,
+			gppSID:        r.Condition.GPPSID,
+			gpc:           r.Condition.GPC,
 		}
 		enfRules = append(enfRules, er)
 	}

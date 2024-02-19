@@ -34,6 +34,7 @@ import (
 	"github.com/prebid/prebid-server/v2/stored_requests"
 	"github.com/prebid/prebid-server/v2/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/v2/usersync"
+	"github.com/prebid/prebid-server/v2/util/httputil"
 	"github.com/prebid/prebid-server/v2/util/iputil"
 	"github.com/prebid/prebid-server/v2/util/jsonutil"
 	"github.com/prebid/prebid-server/v2/util/ptrutil"
@@ -260,7 +261,10 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	bidReqWrapper := &openrtb_ext.RequestWrapper{BidRequest: bidReq}
 
 	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
-	deps.setFieldsImplicitly(r, bidReqWrapper)
+	if err := deps.setFieldsImplicitly(r, bidReqWrapper); err != nil {
+		handleError(&labels, w, errL, &vo, &debugLog)
+		return
+	}
 
 	if err := ortb.SetDefaults(bidReqWrapper); err != nil {
 		handleError(&labels, w, errL, &vo, &debugLog)
@@ -308,7 +312,6 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 
 	activityControl = privacy.NewActivityControl(&account.Privacy)
 
-	secGPC := r.Header.Get("Sec-GPC")
 	auctionRequest := &exchange.AuctionRequest{
 		BidRequestWrapper:          bidReqWrapper,
 		Account:                    *account,
@@ -316,7 +319,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		RequestType:                labels.RType,
 		StartTime:                  start,
 		LegacyLabels:               labels,
-		GlobalPrivacyControlHeader: secGPC,
+		GlobalPrivacyControlHeader: r.Header.Get(httputil.HeaderSecGPC),
 		PubID:                      labels.PubID,
 		HookExecutor:               hookexecution.EmptyHookExecutor{},
 		TmaxAdjustments:            deps.tmaxAdjustments,

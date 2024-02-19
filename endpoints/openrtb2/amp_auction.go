@@ -18,6 +18,7 @@ import (
 	"github.com/prebid/openrtb/v20/openrtb3"
 	"github.com/prebid/prebid-server/v2/hooks/hookexecution"
 	"github.com/prebid/prebid-server/v2/ortb"
+	"github.com/prebid/prebid-server/v2/util/httputil"
 	"github.com/prebid/prebid-server/v2/util/uuidutil"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
@@ -237,8 +238,6 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	hookExecutor.SetActivityControl(activityControl)
 	hookExecutor.SetAccount(account)
 
-	secGPC := r.Header.Get("Sec-GPC")
-
 	auctionRequest := &exchange.AuctionRequest{
 		BidRequestWrapper:          reqWrapper,
 		Account:                    *account,
@@ -246,7 +245,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		RequestType:                labels.RType,
 		StartTime:                  start,
 		LegacyLabels:               labels,
-		GlobalPrivacyControlHeader: secGPC,
+		GlobalPrivacyControlHeader: r.Header.Get(httputil.HeaderSecGPC),
 		StoredAuctionResponses:     storedAuctionResponses,
 		StoredBidResponses:         storedBidResponses,
 		BidderImpReplaceImpID:      bidderImpReplaceImp,
@@ -484,7 +483,11 @@ func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openr
 	req = &openrtb_ext.RequestWrapper{BidRequest: reqNormal}
 
 	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
-	deps.setFieldsImplicitly(httpRequest, req)
+	if err := deps.setFieldsImplicitly(httpRequest, req); err != nil {
+		if errs = append(errs, err); errortypes.ContainsFatalError(errs) {
+			return
+		}
+	}
 
 	// Need to ensure cache and targeting are turned on
 	e = initAmpTargetingAndCache(req)
