@@ -354,7 +354,8 @@ func TestPrivacyReader(t *testing.T) {
 				{
 					desc: "Unrecognized consent type, valid CCPA consent string and gdpr_applies set to true: expect a CCPA consent writer and a warning",
 					in: testInput{
-						ampParams: Params{ConsentType: 101,
+						ampParams: Params{
+							ConsentType: 101,
 							Consent:     "1YYY",
 							GdprApplies: &boolTrue,
 						},
@@ -502,7 +503,9 @@ func TestPrivacyReader(t *testing.T) {
 				{
 					desc: "Valid CCPA consent string, gdpr_applies is set to true: return a valid GDPR writer and warn about the gdpr_applies value.",
 					in: testInput{
-						ampParams: Params{Consent: "1YYY", ConsentType: ConsentUSPrivacy,
+						ampParams: Params{
+							Consent:     "1YYY",
+							ConsentType: ConsentUSPrivacy,
 							GdprApplies: &boolTrue,
 						},
 					},
