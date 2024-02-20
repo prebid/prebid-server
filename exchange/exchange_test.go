@@ -4758,7 +4758,7 @@ func TestMakeBidWithValidation(t *testing.T) {
 			name:               "One_of_two_bids_is_invalid_based_on_DSA_object_presence",
 			givenBidRequestExt: json.RawMessage(`{"dsa": {"dsarequired": 2}}`),
 			givenValidations:   config.Validations{},
-			givenBids:          []*entities.PbsOrtbBid{{Bid: &openrtb2.Bid{Ext: json.RawMessage(`{"dsa": {}}`)}}, {Bid: &openrtb2.Bid{}}},
+			givenBids:          []*entities.PbsOrtbBid{{Bid: &openrtb2.Bid{Ext: json.RawMessage(`{"dsa": {"adrender":1}}`)}}, {Bid: &openrtb2.Bid{}}},
 			givenSeat:          "pubmatic",
 			expectedNumOfBids:  1,
 			expectedNonBids: &nonBids{

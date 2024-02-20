@@ -1245,10 +1245,10 @@ func (e *exchange) makeBid(bids []*entities.PbsOrtbBid, auc *auction, returnCrea
 	errs := make([]error, 0, 1)
 
 	for _, bid := range bids {
-		if !dsa.Validate(bidRequest, bid) {
+		if err := dsa.Validate(bidRequest, bid); err != nil {
 			RequiredError := openrtb_ext.ExtBidderMessage{
 				Code:    errortypes.BadServerResponseErrorCode,
-				Message: "bidResponse rejected: DSA object missing when required",
+				Message: fmt.Sprintf("bidResponse rejected: %s", err.Error()), //TODO
 			}
 			bidResponseExt.Warnings[adapter] = append(bidResponseExt.Warnings[adapter], RequiredError)
 
