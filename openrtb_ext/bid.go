@@ -84,7 +84,7 @@ type ExtBidPrebidEvents struct {
 	Imp string `json:"imp,omitempty"`
 }
 
-// ExtBidDSA defines the constract for bidresponse.seatbid.bid[i].ext.dsa
+// ExtBidDSA defines the contract for bidresponse.seatbid.bid[i].ext.dsa
 type ExtBidDSA struct {
 	Behalf   string `json:"behalf,omitempty"`
 	Paid     string `json:"paid,omitempty"`

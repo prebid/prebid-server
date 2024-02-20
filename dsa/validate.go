@@ -22,8 +22,8 @@ const (
 
 // Validate determines whether a given bid is valid from a DSA perspective.
 // A bid is considered valid unless the bid request indicates that a DSA object is required
-// in bid responses and the object happens to be missing from the specified bid, or, if the bid
-// DSA object exists, its contents are valid
+// in bid responses and the object happens to be missing from the specified bid, or if the bid
+// DSA object contents are invalid
 func Validate(req *openrtb_ext.RequestWrapper, bid *entities.PbsOrtbBid) error {
 	reqDSA := getReqDSA(req)
 	bidDSA := getBidDSA(bid)
