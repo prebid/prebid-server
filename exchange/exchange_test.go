@@ -4765,7 +4765,7 @@ func TestMakeBidWithValidation(t *testing.T) {
 				seatNonBidsMap: map[string][]openrtb_ext.NonBid{
 					"pubmatic": {
 						{
-							StatusCode: 300,
+							StatusCode: 305,
 							Ext: openrtb_ext.NonBidExt{
 								Prebid: openrtb_ext.ExtResponseNonBidPrebid{
 									Bid: openrtb_ext.NonBidObject{},
