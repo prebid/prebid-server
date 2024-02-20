@@ -194,14 +194,14 @@ func TestCookieSyncHandle(t *testing.T) {
 				SyncersChosen:    []usersync.SyncerChoice{{Bidder: "a", Syncer: &syncer}},
 			},
 			expectedStatusCode: 400,
-			expectedBody:       `JSON parsing failed: expect { or n, but found m` + "\n",
+			expectedBody:       `request JSON is invalid` + "\n",
 			setMetricsExpectations: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordCookieSync", metrics.CookieSyncBadRequest).Once()
 			},
 			setAnalyticsExpectations: func(a *MockAnalyticsRunner) {
 				expected := analytics.CookieSyncObject{
 					Status:       400,
-					Errors:       []error{errors.New("JSON parsing failed: expect { or n, but found m")},
+					Errors:       []error{errors.New("request JSON is invalid")},
 					BidderStatus: []*analytics.CookieSyncBidder{},
 				}
 				a.On("LogCookieSyncObject", &expected).Once()
@@ -853,7 +853,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			givenBody:        strings.NewReader(`malformed`),
 			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
-			expectedError:    "JSON parsing failed: expect { or n, but found m",
+			expectedError:    "request JSON is invalid",
 		},
 		{
 			description:      "Invalid Type Filter",
