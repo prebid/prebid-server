@@ -2273,7 +2273,7 @@ func TestRegExtUnmarshal(t *testing.T) {
 	}
 }
 
-func TestRegExtGetSetExt(t *testing.T) {
+func TestRegExtGetExtSetExt(t *testing.T) {
 	regExt := &RegExt{}
 	regExtJSON := regExt.GetExt()
 	assert.Equal(t, regExtJSON, map[string]json.RawMessage{})
