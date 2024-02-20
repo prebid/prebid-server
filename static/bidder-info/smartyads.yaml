@@ -1,6 +1,7 @@
 endpoint: "http://{{.Host}}.smartyads.com/bid?rtb_seat_id={{.SourceId}}&secret_key={{.AccountID}}"
 maintainer:
   email: "support@smartyads.com"
+gvlVendorID: 534
 capabilities:
   app:
     mediaTypes:

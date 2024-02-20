@@ -2161,7 +2161,7 @@ func (m *MockSyncer) Key() string {
 	return args.String(0)
 }
 
-func (m *MockSyncer) DefaultSyncType() usersync.SyncType {
+func (m *MockSyncer) DefaultResponseFormat() usersync.SyncType {
 	args := m.Called()
 	return args.Get(0).(usersync.SyncType)
 }

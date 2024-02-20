@@ -1,6 +1,6 @@
 package openrtb_ext
 
-import "github.com/prebid/openrtb/v19/openrtb2"
+import "github.com/prebid/openrtb/v20/openrtb2"
 
 type BidRequestVideo struct {
 	// Attribute:

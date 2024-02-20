@@ -16,8 +16,8 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/julienschmidt/httprouter"
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/openrtb/v19/openrtb3"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb3"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/analytics"
 	analyticsBuild "github.com/prebid/prebid-server/v2/analytics/build"
@@ -1579,7 +1579,7 @@ var entryPointHookUpdate = hooks.HookWrapper[hookstage.Entrypoint]{
 
 			ch := hookstage.ChangeSet[hookstage.EntrypointPayload]{}
 			ch.AddMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
-				body, err := jsonpatch.MergePatch(payload.Body, []byte(`{"tmax":50}`))
+				body, err := jsonpatch.MergePatch(payload.Body, []byte(`{"tmax":600}`))
 				if err == nil {
 					payload.Body = body
 				}

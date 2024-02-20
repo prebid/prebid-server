@@ -1,0 +1,18 @@
+endpoint: "https://amp.adelement.com/openrtb2/auction?supply_id={{.SupplyId}}"
+endpointCompression: gzip
+maintainer:
+  email: "tech@adelement.com"
+gvlVendorID: 196
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - native
+      - video
+      - audio
+  site:
+    mediaTypes:
+      - banner
+      - native
+      - video
+      - audio
