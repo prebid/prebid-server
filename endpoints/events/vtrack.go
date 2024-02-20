@@ -189,7 +189,7 @@ func ParseVTrackRequest(httpRequest *http.Request, maxRequestSize int64) (req *B
 	}
 
 	if err := jsonutil.UnmarshalValid(requestJson, req); err != nil {
-		return req, err
+		return req, &errortypes.BadInput{Message: "request JSON is invalid"}
 	}
 
 	for _, bcr := range req.Puts {
