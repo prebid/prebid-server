@@ -7,8 +7,8 @@ import (
 
 // ExtBid defines the contract for bidresponse.seatbid.bid[i].ext
 type ExtBid struct {
-	Prebid *ExtBidPrebid `json:"prebid,omitempty"`
 	DSA    *ExtBidDSA    `json:"dsa,omitempty"`
+	Prebid *ExtBidPrebid `json:"prebid,omitempty"`
 }
 
 // ExtBidPrebid defines the contract for bidresponse.seatbid.bid[i].ext.prebid

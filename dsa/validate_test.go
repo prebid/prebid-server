@@ -2,6 +2,7 @@ package dsa
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -11,10 +12,10 @@ import (
 )
 
 func TestValidate(t *testing.T) {
-	validBehalf := "123456789|123456789|123456789|123456789|123456789|123456789|123456789|123456789|123456789|123456789|"
-	invalidBehalf := "123456789|123456789|123456789|123456789|123456789|123456789|123456789|123456789|123456789|123456789|1"
-	validPaid := "123456789|123456789|123456789|123456789|123456789|123456789|123456789|123456789|123456789|123456789|"
-	invalidPaid := "123456789|123456789|123456789|123456789|123456789|123456789|123456789|123456789|123456789|123456789|1"
+	validBehalf := strings.Repeat("a", 100)
+	invalidBehalf := strings.Repeat("a", 101)
+	validPaid := strings.Repeat("a", 100)
+	invalidPaid := strings.Repeat("a", 101)
 
 	tests := []struct {
 		name        string
