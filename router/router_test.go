@@ -5,10 +5,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"strings"
 	"testing"
 
-	jsoniter "github.com/json-iterator/go"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/prebid/prebid-server/v2/util/jsonutil"
@@ -20,10 +18,10 @@ const adapterDirectory = "../adapters"
 
 type testValidator struct{}
 
-func TestMain(m *testing.M) {
-	jsoniter.RegisterExtension(&jsonutil.RawMessageExtension{})
-	m.Run()
-}
+//func TestMain(m *testing.M) {
+//	jsoniter.RegisterExtension(&jsonutil.RawMessageExtension{})
+//	os.Exit(m.Run())
+//}
 
 func (validator *testValidator) Validate(name openrtb_ext.BidderName, ext json.RawMessage) error {
 	return nil
@@ -284,20 +282,30 @@ func TestValidateDefaultAliases(t *testing.T) {
 }
 
 func TestBidderParamsCompactedOutput(t *testing.T) {
-	expectedPrefix := `{"33across":{"$schema":"http://json-schema.org/draft-04/schema#","title":"33Across Adapter Params","description":"A schema which validates params accepted by the 33Across adapter","type":"object","properties":{"productId":{"type":"string","description":"Product type"},"siteId":{"type":"string","description":"Site Id"},"zoneId":{"type":"string","description":"Zone Id"}},"required":["productId","siteId"]}`
+	//expectedPrefix := `{"33across":{"$schema":"http://json-schema.org/draft-04/schema#","title":"33Across Adapter Params","description":"A schema which validates params accepted by the 33Across adapter","type":"object","properties":{"productId":{"type":"string","description":"Product type"},"siteId":{"type":"string","description":"Site Id"},"zoneId":{"type":"string","description":"Zone Id"}},"required":["productId","siteId"]}`
+	//	formattedJSON := `{
+	//  "integer": 5,
+	//  "string_array": [
+	//    "blanks in between",
+	//    "no_blanks_in_between"
+	//  ]
+	//}`
+	expectedResponse := `{"$schema":"http://json-schema.org/draft-04/schema#","title":"Sample schema","description":"A sample schema to test the bidder/params endpoint","type":"object","properties":{"integer_param":{"type":"integer","minimum":1,"description":"The customer id provided by AAX."},"string_param_1":{"type":"string","minLength":1,"description":"Description blanks in between"},"string_param_2":{"type":"string","minLength":1,"description":"Description_with_no_blanks_in_between"}},"required":["integer_param","string_param_2"]}`
 
 	// Setup
-	inSchemaDirectory := "../static/bidder-params"
+	inSchemaDirectory := "unit_test_files"
 	paramsValidator, err := openrtb_ext.NewBidderParamsValidator(inSchemaDirectory)
+
 	assert.NoError(t, err, "Error initialing validator")
 	handler := newJsonDirectoryServer(inSchemaDirectory, paramsValidator, nil, nil)
 	recorder := httptest.NewRecorder()
-	request, err := http.NewRequest("GET", "/whatever", nil)
+	request, err := http.NewRequest("GET", "/bidder/params", nil)
 	assert.NoError(t, err, "Error creating request")
 
 	// Run
 	handler(recorder, request, nil)
 
 	// Assertions
-	assert.True(t, strings.HasPrefix(recorder.Body.String(), expectedPrefix))
+	//assert.True(t, strings.HasPrefix(recorder.Body.String(), expectedResponse))
+	assert.Equal(t, expectedResponse, recorder.Body.String())
 }

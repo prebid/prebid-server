@@ -246,69 +246,153 @@ func TestTryExtractErrorMessage(t *testing.T) {
 	}
 }
 
+//func TestCreateEncoder(t *testing.T) {
+//	formatted := `{
+//  "properties": {
+//    "string": "Blanks spaces in between words to not be removed if compacted",
+//    "integer": 5,
+//    "string_array": [
+//      "string array elem one",
+//      "string array elem two"
+//    ]
+//  }
+//}`
+//	compacted := `{"properties":{"string":"Blanks spaces in between words to not be removed if compacted","integer":5,"string_array":["string array elem one","string array elem two"]}}`
+//
+//	type testCase struct {
+//		desc string
+//		test func(t *testing.T)
+//	}
+//	testGroup := []struct {
+//		desc  string
+//		tests []testCase
+//	}{
+//		{
+//			desc: "Extension registered",
+//			tests: []testCase{
+//				{
+//					desc: "JSON inside a string field is passed to Marshal(), don't expect the output to be compacted",
+//					test: func(t *testing.T) {
+//						jsoniter.RegisterExtension(&RawMessageExtension{})
+//						out, err := Marshal(formatted)
+//						assert.NoError(t, err)
+//						assert.NotEqual(t, compacted, string(out))
+//					},
+//				},
+//				{
+//					desc: "json.RawMessage is passed to Marshal(), expect inner JSON blob to be line-break-free, tab-free, spaces only found inside strings, and compacted into one line",
+//					test: func(t *testing.T) {
+//						jsoniter.RegisterExtension(&RawMessageExtension{})
+//						out, err := Marshal(json.RawMessage(formatted))
+//						assert.NoError(t, err)
+//						assert.Equal(t, compacted, string(out))
+//					},
+//				},
+//			},
+//		},
+//		{
+//			desc: "Extension not registered, json.RawMessage won't get compacted",
+//			tests: []testCase{
+//				{
+//					desc: "json.RawMessage not cleared of line breaks, tabs, nor compacted into one line",
+//					test: func(t *testing.T) {
+//						jsoniter.RegisterExtension(&RawMessageExtension{})
+//						out, err := Marshal(json.RawMessage(formatted))
+//						assert.NoError(t, err)
+//						assert.Equal(t, compacted, string(out))
+//					},
+//				},
+//			},
+//		},
+//	}
+//
+//	for _, group := range testGroup {
+//		for _, tc := range group.tests {
+//			t.Run(fmt.Sprintf("%s - %s", group.desc, tc.desc), tc.test)
+//		}
+//	}
+//}
+
 func TestCreateEncoder(t *testing.T) {
-	formatted := `{
-  "properties": {
-    "string": "Blanks spaces in between words to not be removed if compacted",
-    "integer": 5,
-    "string_array": [
-      "string array elem one",
-      "string array elem two"
-    ]
-  }
-}`
-	compacted := `{"properties":{"string":"Blanks spaces in between words to not be removed if compacted","integer":5,"string_array":["string array elem one","string array elem two"]}}`
+	formattedJSON := json.RawMessage(`{
+  "integer": 5,
+  "string_array": [
+    "blanks in between",
+    "no_blanks_in_between"
+  ]
+}`)
+	compacted := []byte(`{"integer":5,"string_array":["blanks in between","no_blanks_in_between"]}`)
 
 	type testCase struct {
-		desc string
-		test func(t *testing.T)
+		desc             string
+		dataIsStringType bool
+		expectCompacted  bool
+		tests            []testCase
 	}
+
 	testGroup := []struct {
-		desc  string
-		tests []testCase
+		desc                   string
+		useRawMessageExtension bool
+		tests                  []testCase
 	}{
 		{
-			desc: "Extension registered",
+			desc:                   "Not using Extension",
+			useRawMessageExtension: false,
 			tests: []testCase{
 				{
-					desc: "JSON inside a string field is passed to Marshal(), don't expect the output to be compacted",
-					test: func(t *testing.T) {
-						jsoniter.RegisterExtension(&RawMessageExtension{})
-						out, err := Marshal(formatted)
-						assert.NoError(t, err)
-						assert.NotEqual(t, compacted, string(out))
-					},
+					desc:             "string type",
+					dataIsStringType: true,
+					expectCompacted:  false,
 				},
 				{
-					desc: "json.RawMessage is passed to Marshal(), expect inner JSON blob to be line-break-free, tab-free, spaces only found inside strings, and compacted into one line",
-					test: func(t *testing.T) {
-						jsoniter.RegisterExtension(&RawMessageExtension{})
-						out, err := Marshal(json.RawMessage(formatted))
-						assert.NoError(t, err)
-						assert.Equal(t, compacted, string(out))
-					},
+					desc:             "json.RawMessage type",
+					dataIsStringType: false,
+					expectCompacted:  false,
 				},
 			},
 		},
 		{
-			desc: "Extension not registered, json.RawMessage won't get compacted",
+			desc:                   "Using Extension",
+			useRawMessageExtension: true,
 			tests: []testCase{
 				{
-					desc: "json.RawMessage not cleared of line breaks, tabs, nor compacted into one line",
-					test: func(t *testing.T) {
-						jsoniter.RegisterExtension(&RawMessageExtension{})
-						out, err := Marshal(json.RawMessage(formatted))
-						assert.NoError(t, err)
-						assert.Equal(t, compacted, string(out))
-					},
+					desc:             "string type",
+					dataIsStringType: true,
+					expectCompacted:  false,
+				},
+				{
+					desc:             "json.RawMessage type",
+					dataIsStringType: false,
+					expectCompacted:  true,
 				},
 			},
 		},
 	}
 
 	for _, group := range testGroup {
+		if group.useRawMessageExtension {
+			jsoniter.RegisterExtension(&RawMessageExtension{})
+		}
 		for _, tc := range group.tests {
-			t.Run(fmt.Sprintf("%s - %s", group.desc, tc.desc), tc.test)
+			t.Run(fmt.Sprintf("%s - %s", group.desc, tc.desc), func(t *testing.T) {
+				var out []byte
+				var err error
+				//w := http.ResponseWriter{}
+
+				if tc.dataIsStringType {
+					out, err = Marshal(string(formattedJSON))
+					assert.NoError(t, err)
+				} else {
+					out, err = Marshal(formattedJSON)
+				}
+
+				if tc.expectCompacted {
+					//w.Write(out)
+					assert.Equal(t, compacted, out)
+				} else {
+					assert.Equal(t, []byte(formattedJSON), out)
+				}
+			})
 		}
 	}
 }

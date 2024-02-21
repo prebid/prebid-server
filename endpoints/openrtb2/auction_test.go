@@ -46,7 +46,7 @@ const jsonFileExtension string = ".json"
 
 func TestMain(m *testing.M) {
 	jsoniter.RegisterExtension(&jsonutil.RawMessageExtension{})
-	m.Run()
+	os.Exit(m.Run())
 }
 
 func TestJsonSampleRequests(t *testing.T) {
