@@ -3377,11 +3377,11 @@ func TestGetRequestBody(t *testing.T) {
 			if test.endpointCompression == "GZIP" {
 				assert.Equal(t, "gzip", req.Headers.Get("Content-Encoding"))
 
-				decompressedReqBody, err := decompressGzip(requestBody)
+				decompressedReqBody, err := decompressGzip(requestBody.Bytes())
 				assert.NoError(t, err)
 				assert.Equal(t, test.givenReqBody, decompressedReqBody)
 			} else {
-				assert.Equal(t, test.givenReqBody, requestBody)
+				assert.Equal(t, test.givenReqBody, requestBody.Bytes())
 			}
 		})
 	}

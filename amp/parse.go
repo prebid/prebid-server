@@ -73,7 +73,7 @@ func ReadPolicy(ampParams Params, pbsConfigGDPREnabled bool) (privacy.PolicyWrit
 			warningMsg = validateTCf2ConsentString(ampParams.Consent)
 		}
 	case ConsentUSPrivacy:
-		rv = ccpa.ConsentWriter{ampParams.Consent}
+		rv = ccpa.ConsentWriter{Consent: ampParams.Consent}
 		if ccpa.ValidateConsent(ampParams.Consent) {
 			if parseGdprApplies(ampParams.GdprApplies) == 1 {
 				// Log warning because AMP request comes with both a valid CCPA string and gdpr_applies set to true
@@ -85,7 +85,7 @@ func ReadPolicy(ampParams Params, pbsConfigGDPREnabled bool) (privacy.PolicyWrit
 		}
 	default:
 		if ccpa.ValidateConsent(ampParams.Consent) {
-			rv = ccpa.ConsentWriter{ampParams.Consent}
+			rv = ccpa.ConsentWriter{Consent: ampParams.Consent}
 			if parseGdprApplies(ampParams.GdprApplies) == 1 {
 				warningMsg = "AMP request gdpr_applies value was ignored because provided consent string is a CCPA consent string"
 			}
