@@ -17,7 +17,7 @@ func mspLoadBidderAdapterPlugins(cfg config.BidderInfos) map[openrtb_ext.BidderN
 	plugins := make(map[openrtb_ext.BidderName]adapters.Builder)
 
 	for name, bidderInfo := range cfg {
-		if bidderInfo.MspSoPath != "" && bidderInfo.Disabled == false {
+		if bidderInfo.MspSoPath != "" {
 			builder, err := mspPlugin.LoadBuilderFromPath[PluginBuilder](name, bidderInfo.MspSoPath)
 
 			if err != nil {
