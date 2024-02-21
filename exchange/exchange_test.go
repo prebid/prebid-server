@@ -2566,7 +2566,6 @@ func TestCategoryMapping(t *testing.T) {
 	bid3 := openrtb2.Bid{ID: "bid_id3", ImpID: "imp_id3", Price: 30.0000, Cat: cats3, W: 1, H: 1}
 	bid4 := openrtb2.Bid{ID: "bid_id4", ImpID: "imp_id4", Price: 40.0000, Cat: cats4, W: 1, H: 1}
 
-	// bid1_1 := entities.PbsOrtbBid{Bid: &bid1, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 10.0000, OriginalBidCur: "USD", TargetBidderCode: ""}
 	bid1_1 := entities.PbsOrtbBid{
 		Bid:               &bid1,
 		BidMeta:           nil,
