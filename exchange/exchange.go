@@ -1248,7 +1248,7 @@ func (e *exchange) makeBid(bids []*entities.PbsOrtbBid, auc *auction, returnCrea
 		if !dsa.Validate(bidRequest, bid) {
 			RequiredError := openrtb_ext.ExtBidderMessage{
 				Code:    errortypes.InvalidBidResponseDSAWarningCode,
-				Message: "bid response rejected: object missing when required",
+				Message: "bid response rejected: DSA object missing when required",
 			}
 			bidResponseExt.Warnings[adapter] = append(bidResponseExt.Warnings[adapter], RequiredError)
 
