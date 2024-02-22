@@ -29,6 +29,7 @@ type FileLogger struct {
 
 // Writes AuctionObject to file
 // TODO: It will also be here that remove the relevant adapter information from the request so that it's not logged?
+// TODO: Is fileLogger only used for testing purposes?
 func (f *FileLogger) LogAuctionObject(ao *analytics.AuctionObject) {
 	var b bytes.Buffer
 	ao.RequestWrapper = updateReqWrapperForAnalytics(ao.RequestWrapper)

@@ -55,7 +55,7 @@ func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac priv
 			if cloneBidderReq != nil {
 				ao.RequestWrapper = cloneBidderReq
 			}
-			ao.RequestWrapper = updateReqWrapperForAnalytics(ao.RequestWrapper)
+			updateReqWrapperForAnalytics(ao.RequestWrapper, name)
 			module.LogAuctionObject(ao)
 		}
 	}
@@ -67,7 +67,7 @@ func (ea enabledAnalytics) LogVideoObject(vo *analytics.VideoObject, ac privacy.
 			if cloneBidderReq != nil {
 				vo.RequestWrapper = cloneBidderReq
 			}
-			vo.RequestWrapper = updateReqWrapperForAnalytics(vo.RequestWrapper)
+			updateReqWrapperForAnalytics(vo.RequestWrapper, name)
 			module.LogVideoObject(vo)
 		}
 
@@ -92,7 +92,7 @@ func (ea enabledAnalytics) LogAmpObject(ao *analytics.AmpObject, ac privacy.Acti
 			if cloneBidderReq != nil {
 				ao.RequestWrapper = cloneBidderReq
 			}
-			ao.RequestWrapper = updateReqWrapperForAnalytics(ao.RequestWrapper)
+			updateReqWrapperForAnalytics(ao.RequestWrapper, name)
 			module.LogAmpObject(ao)
 		}
 	}
@@ -135,4 +135,21 @@ func evaluateActivities(rw *openrtb_ext.RequestWrapper, ac privacy.ActivityContr
 
 	cloneReq.RebuildRequest()
 	return true, cloneReq
+}
+
+func updateReqWrapperForAnalytics(reqWrapper *openrtb_ext.RequestWrapper, adapterName string) {
+	reqExt, _ := reqWrapper.GetRequestExt()
+	reqExtPrebid := reqExt.GetPrebid()
+	extPrebidAnalytics := reqExtPrebid.Analytics
+
+	for name, _ := range extPrebidAnalytics {
+		if name == adapterName {
+			delete(extPrebidAnalytics, name)
+			reqExtPrebid.Analytics = extPrebidAnalytics
+			reqExt.SetPrebid(reqExtPrebid)
+			reqWrapper.Ext = reqExt // TODO: Properly set the ext
+			reqWrapper.RebuildRequest()
+			break
+		}
+	}
 }

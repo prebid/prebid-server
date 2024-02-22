@@ -41,6 +41,8 @@ type ExtRequest struct {
 }
 
 // ExtRequestPrebid defines the contract for bidrequest.ext.prebid
+// TODO: Add analytics here
+// ADding hooks to get analytics stuff will be a little complicated (Veronika knows current state of anayltics adapters)
 type ExtRequestPrebid struct {
 	AdServerTargeting    []AdServerTarget                      `json:"adservertargeting,omitempty"`
 	Aliases              map[string]string                     `json:"aliases,omitempty"`
