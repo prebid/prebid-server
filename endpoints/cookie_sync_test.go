@@ -299,7 +299,7 @@ func TestCookieSyncHandle(t *testing.T) {
 			},
 		},
 		{
-			description:                  "CookieDeprecation enabled for account, receive-cookie-deprecation cookie present in request, cookie deprecation header not set in response",
+			description:                 "CookieDeprecation not set in repsonse" // CookieDeprecation enabled for account, receive-cookie-deprecation cookie present in request, cookie deprecation header not set in response
 			givenCookie:                  cookieWithSyncs,
 			givenChromeDeprecationCookie: true,
 			givenBody:                    strings.NewReader(`{"account": "testAccount"}`),
