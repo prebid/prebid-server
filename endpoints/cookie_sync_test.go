@@ -2292,13 +2292,13 @@ func TestSetCookieDeprecationHeader(t *testing.T) {
 		expectedCookieDeprecationHeader bool
 	}{
 		{
-			name:                            "receive-cookie-deprecation not present in request but account is nil",
+			name:                            "not-present-account-nil", // receive-cookie-deprecation not present in request but account is nil
 			request:                         getTestRequest(false),
 			responseWriter:                  httptest.NewRecorder(),
 			expectedCookieDeprecationHeader: false,
 		},
 		{
-			name:           "receive-cookie-deprecation not present in request but CookieDeprecation is disabled",
+			name:           "not-present-cookiedeprecation-disabled", // receive-cookie-deprecation not present in request but CookieDeprecation is disabled
 			request:        getTestRequest(false),
 			responseWriter: httptest.NewRecorder(),
 			account: &config.Account{
@@ -2313,7 +2313,7 @@ func TestSetCookieDeprecationHeader(t *testing.T) {
 			expectedCookieDeprecationHeader: false,
 		},
 		{
-			name:           "receive-cookie-deprecation present in request and CookieDeprecation is disabled",
+			name:           "present-cookiedeprecation-disabled", // receive-cookie-deprecation present in request and CookieDeprecation is disabled
 			request:        getTestRequest(true),
 			responseWriter: httptest.NewRecorder(),
 			account: &config.Account{
@@ -2328,7 +2328,7 @@ func TestSetCookieDeprecationHeader(t *testing.T) {
 			expectedCookieDeprecationHeader: false,
 		},
 		{
-			name:           "receive-cookie-deprecation present in request and CookieDeprecation is enabled",
+			name:           "present-cookiedeprecation-enabled", // receive-cookie-deprecation present in request and CookieDeprecation is enabled
 			request:        getTestRequest(true),
 			responseWriter: httptest.NewRecorder(),
 			account: &config.Account{
@@ -2345,13 +2345,13 @@ func TestSetCookieDeprecationHeader(t *testing.T) {
 			expectedCookieDeprecationHeader: false,
 		},
 		{
-			name:                            "receive-cookie-deprecation present in request and account is nil",
+			name:                            "present-account-nil", // receive-cookie-deprecation present in request and account is nil
 			request:                         getTestRequest(true),
 			responseWriter:                  httptest.NewRecorder(),
 			expectedCookieDeprecationHeader: false,
 		},
 		{
-			name:           "receive-cookie-deprecation not present in request and CookieDeprecation is enabled for account",
+			name:           "not-present-cookiedeprecation-enabled", // receive-cookie-deprecation not present in request and CookieDeprecation is enabled for account
 			request:        getTestRequest(false),
 			responseWriter: httptest.NewRecorder(),
 			account: &config.Account{
@@ -2367,8 +2367,8 @@ func TestSetCookieDeprecationHeader(t *testing.T) {
 			expectedCookieDeprecationHeader: true,
 		},
 		{
-			name:           "failed to read receive-cookie-deprecation from request but CookieDeprecation is enabled",
-			request:        &http.Request{}, // nil cookie. error: http: named cookie not present
+			name:           "failed-to-read-cookiedeprecation-enabled", // failed to read receive-cookie-deprecation from request but CookieDeprecation is enabled
+			request:        &http.Request{},                            // nil cookie. error: http: named cookie not present
 			responseWriter: httptest.NewRecorder(),
 			account: &config.Account{
 				Privacy: config.AccountPrivacy{
