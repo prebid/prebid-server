@@ -9,36 +9,36 @@ import (
 )
 
 // ObjectSignal represents publisher DSA object required statuses
-type ObjectSignal int
+type ObjectSignal int8
 
 const (
-	ObjectSignalRequired               = 2 // bid responses without DSA object will not be accepted
-	ObjectSignalRequiredOnlinePlatform = 3 // bid responses without DSA object will not be accepted, Publisher is Online Platform
+	ObjectSignalRequired               ObjectSignal = 2 // bid responses without DSA object will not be accepted
+	ObjectSignalRequiredOnlinePlatform ObjectSignal = 3 // bid responses without DSA object will not be accepted, Publisher is Online Platform
 )
 
 // PubSignal represents publisher rendering intentions
-type PubSignal int
+type PubSignal int8
 
 const (
-	PubSignalCannotRender = 0 // publisher can't render
-	PubSignalCanRender    = 1 // publisher could render depending on adrender
-	PubSignalWillRender   = 2 // publisher will render
+	PubSignalCannotRender PubSignal = 0 // publisher can't render
+	PubSignalCanRender    PubSignal = 1 // publisher could render depending on adrender
+	PubSignalWillRender   PubSignal = 2 // publisher will render
 )
 
 // BuyerSignal represents buyer/advertiser rendering intentions
-type BuyerSignal int
+type BuyerSignal int8
 
 const (
-	BuyerSignalWontRender = 0 // buyer/advertiser will not render
-	BuyerSignalWillRender = 1 // buyer/advertiser will render
+	BuyerSignalWontRender BuyerSignal = 0 // buyer/advertiser will not render
+	BuyerSignalWillRender BuyerSignal = 1 // buyer/advertiser will render
 )
 
-const (
-	ErrDsaMissing        = "object missing when required"
-	ErrBehalfTooLong     = "behalf exceeds limit of 100 chars"
-	ErrPaidTooLong       = "paid exceeds limit of 100 chars"
-	ErrNeitherWillRender = "publisher and buyer both signal will not render"
-	ErrBothWillRender    = "publisher and buyer both signal will render"
+var (
+	ErrDsaMissing        = errors.New("object missing when required")
+	ErrBehalfTooLong     = errors.New("behalf exceeds limit of 100 chars")
+	ErrPaidTooLong       = errors.New("paid exceeds limit of 100 chars")
+	ErrNeitherWillRender = errors.New("publisher and buyer both signal will not render")
+	ErrBothWillRender    = errors.New("publisher and buyer both signal will render")
 )
 
 // Validate determines whether a given bid is valid from a DSA perspective.
@@ -50,22 +50,22 @@ func Validate(req *openrtb_ext.RequestWrapper, bid *entities.PbsOrtbBid) error {
 	bidDSA := getBidDSA(bid)
 
 	if dsaRequired(reqDSA) && bidDSA == nil {
-		return errors.New(ErrDsaMissing)
+		return ErrDsaMissing
 	}
 	if bidDSA == nil {
 		return nil
 	}
 	if len(bidDSA.Behalf) > 100 {
-		return errors.New(ErrBehalfTooLong)
+		return ErrBehalfTooLong
 	}
 	if len(bidDSA.Paid) > 100 {
-		return errors.New(ErrPaidTooLong)
+		return ErrPaidTooLong
 	}
-	if reqDSA.PubRender == PubSignalCannotRender && bidDSA.AdRender != BuyerSignalWillRender {
-		return errors.New(ErrNeitherWillRender)
+	if reqDSA.PubRender == int8(PubSignalCannotRender) && bidDSA.AdRender != int8(BuyerSignalWillRender) {
+		return ErrNeitherWillRender
 	}
-	if reqDSA.PubRender == PubSignalWillRender && bidDSA.AdRender == BuyerSignalWillRender {
-		return errors.New(ErrBothWillRender)
+	if reqDSA.PubRender == int8(PubSignalWillRender) && bidDSA.AdRender == int8(BuyerSignalWillRender) {
+		return ErrBothWillRender
 	}
 	return nil
 }
@@ -76,7 +76,7 @@ func dsaRequired(dsa *openrtb_ext.ExtRegsDSA) bool {
 	if dsa == nil {
 		return false
 	}
-	return dsa.Required == ObjectSignalRequired || dsa.Required == ObjectSignalRequiredOnlinePlatform
+	return dsa.Required == int8(ObjectSignalRequired) || dsa.Required == int8(ObjectSignalRequiredOnlinePlatform)
 }
 
 // getReqDSA retrieves the DSA object from the request
