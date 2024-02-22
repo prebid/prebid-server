@@ -253,12 +253,12 @@ func TestCreateEncoder(t *testing.T) {
 		expectedValEncoder jsoniter.ValEncoder
 	}{
 		{
-			desc:               "Extension registered",
+			desc:               "With_extension",
 			inType:             reflect2.TypeOfPtr((*jsoniter.Any)(nil)).Elem(),
 			expectedValEncoder: nil,
 		},
 		{
-			desc:               "Extension not registered, json.RawMessage won't get compacted",
+			desc:               "No_extension",
 			inType:             reflect2.TypeOfPtr(&json.RawMessage{}).Elem(),
 			expectedValEncoder: &rawMessageCodec{},
 		},
@@ -285,38 +285,40 @@ func TestEncode(t *testing.T) {
   }
 }`)
 
-	testCases := []struct {
-		desc            string
-		inPtr           unsafe.Pointer
-		expectedBuffer  string
-		expectedIsEmpty bool
-	}{
-		{
-			desc:            "Nil pointer, expect encoder to not write anything to buffer",
-			inPtr:           nil,
-			expectedIsEmpty: true,
-			expectedBuffer:  "",
-		},
-		{
-			desc:            "json.RawMessage passed, expect encoder to write the corresponding compacted json data",
-			inPtr:           unsafe.Pointer(&jsonBlob),
-			expectedIsEmpty: false,
-			expectedBuffer:  `{"properties":{"string":"Blanks spaces in between words to not be removed if compacted","integer":5,"string_array":["string array elem one","string array elem two"]}}`,
-		},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.desc, func(t *testing.T) {
+	t.Run(
+		"Nil_pointer",
+		func(t *testing.T) {
 			// set test
 			encoder := &rawMessageCodec{}
 			output := bytes.NewBuffer([]byte{})
 			stream := jsoniter.NewStream(jsonConfigValidationOn, output, len(jsonBlob))
 
 			// run
-			encoder.Encode(tc.inPtr, stream)
+			encoder.Encode(nil, stream)
 
 			// assertions
-			assert.Equal(t, tc.expectedBuffer, output.String())
-			assert.Equal(t, tc.expectedIsEmpty, encoder.IsEmpty(tc.inPtr))
-		})
-	}
+			assert.Equal(t, "", output.String())
+			assert.Equal(t, true, encoder.IsEmpty(nil))
+		},
+	)
+	t.Run(
+		"json.RawMessage_compact_JSON",
+		func(t *testing.T) {
+			// set test
+			encoder := &rawMessageCodec{}
+			output := bytes.NewBuffer([]byte{})
+			stream := jsoniter.NewStream(jsonConfigValidationOn, output, len(jsonBlob))
+
+			// run
+			encoder.Encode(unsafe.Pointer(&jsonBlob), stream)
+
+			// assertions
+			assert.Equal(
+				t,
+				`{"properties":{"string":"Blanks spaces in between words to not be removed if compacted","integer":5,"string_array":["string array elem one","string array elem two"]}}`,
+				output.String(),
+			)
+			assert.Equal(t, false, encoder.IsEmpty(unsafe.Pointer(&jsonBlob)))
+		},
+	)
 }

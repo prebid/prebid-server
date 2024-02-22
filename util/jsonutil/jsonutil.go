@@ -239,8 +239,9 @@ func (codec *rawMessageCodec) Encode(ptr unsafe.Pointer, stream *jsoniter.Stream
 		jsonRawMsg := *(*[]byte)(ptr)
 
 		dst := bytes.NewBuffer(make([]byte, 0, len(jsonRawMsg)))
-		json.Compact(dst, jsonRawMsg)
-		stream.Write(dst.Bytes())
+		if err := json.Compact(dst, jsonRawMsg); err == nil {
+			stream.Write(dst.Bytes())
+		}
 	}
 }
 
