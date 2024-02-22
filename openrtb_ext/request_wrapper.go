@@ -53,6 +53,7 @@ const (
 	consentedProvidersSettingsListKey   = "consented_providers_settings"
 	consentKey                          = "consent"
 	ampKey                              = "amp"
+	dsaKey                              = "dsa"
 	eidsKey                             = "eids"
 	gdprKey                             = "gdpr"
 	prebidKey                           = "prebid"
@@ -1197,6 +1198,8 @@ func (de *DOOHExt) Clone() *DOOHExt {
 type RegExt struct {
 	ext            map[string]json.RawMessage
 	extDirty       bool
+	dsa            *ExtRegsDSA
+	dsaDirty       bool
 	gdpr           *int8
 	gdprDirty      bool
 	usPrivacy      string
@@ -1218,6 +1221,16 @@ func (re *RegExt) unmarshal(extJson json.RawMessage) error {
 		return err
 	}
 
+	dsaJson, hasDSA := re.ext[dsaKey]
+	if hasDSA {
+		re.dsa = &ExtRegsDSA{}
+	}
+	if dsaJson != nil {
+		if err := jsonutil.Unmarshal(dsaJson, re.dsa); err != nil {
+			return err
+		}
+	}
+
 	gdprJson, hasGDPR := re.ext[gdprKey]
 	if hasGDPR && gdprJson != nil {
 		if err := jsonutil.Unmarshal(gdprJson, &re.gdpr); err != nil {
@@ -1236,6 +1249,19 @@ func (re *RegExt) unmarshal(extJson json.RawMessage) error {
 }
 
 func (re *RegExt) marshal() (json.RawMessage, error) {
+	if re.dsaDirty {
+		if re.dsa != nil {
+			rawjson, err := jsonutil.Marshal(re.dsa)
+			if err != nil {
+				return nil, err
+			}
+			re.ext[dsaKey] = rawjson
+		} else {
+			delete(re.ext, dsaKey)
+		}
+		re.dsaDirty = false
+	}
+
 	if re.gdprDirty {
 		if re.gdpr != nil {
 			rawjson, err := jsonutil.Marshal(re.gdpr)
@@ -1270,7 +1296,7 @@ func (re *RegExt) marshal() (json.RawMessage, error) {
 }
 
 func (re *RegExt) Dirty() bool {
-	return re.extDirty || re.gdprDirty || re.usPrivacyDirty
+	return re.extDirty || re.dsaDirty || re.gdprDirty || re.usPrivacyDirty
 }
 
 func (re *RegExt) GetExt() map[string]json.RawMessage {
@@ -1286,9 +1312,25 @@ func (re *RegExt) SetExt(ext map[string]json.RawMessage) {
 	re.extDirty = true
 }
 
+func (re *RegExt) GetDSA() *ExtRegsDSA {
+	if re.dsa == nil {
+		return nil
+	}
+	dsa := *re.dsa
+	return &dsa
+}
+
+func (re *RegExt) SetDSA(dsa *ExtRegsDSA) {
+	re.dsa = dsa
+	re.dsaDirty = true
+}
+
 func (re *RegExt) GetGDPR() *int8 {
-	gdpr := re.gdpr
-	return gdpr
+	if re.gdpr == nil {
+		return nil
+	}
+	gdpr := *re.gdpr
+	return &gdpr
 }
 
 func (re *RegExt) SetGDPR(gdpr *int8) {

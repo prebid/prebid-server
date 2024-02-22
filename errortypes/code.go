@@ -31,6 +31,7 @@ const (
 	AdServerTargetingWarningCode
 	BidAdjustmentWarningCode
 	FloorBidRejectionWarningCode
+	InvalidBidResponseDSAWarningCode
 	SecCookieDeprecationLenWarningCode
 )
 
