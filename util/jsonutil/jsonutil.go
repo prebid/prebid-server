@@ -245,8 +245,5 @@ func (codec *rawMessageCodec) Encode(ptr unsafe.Pointer, stream *jsoniter.Stream
 }
 
 func (codec *rawMessageCodec) IsEmpty(ptr unsafe.Pointer) bool {
-	if ptr == nil {
-		return true
-	}
-	return *((*string)(ptr)) == ""
+	return ptr == nil || len(*((*json.RawMessage)(ptr))) == 0
 }
