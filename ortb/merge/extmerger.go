@@ -1,10 +1,10 @@
 package merge
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 
+	"github.com/prebid/prebid-server/v2/util/sliceutil"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 )
 
@@ -25,7 +25,7 @@ type extMerger struct {
 // object for comparison later in the Merge call.
 func (e *extMerger) Track(ext *json.RawMessage) {
 	e.ext = ext
-	e.snapshot = bytes.Clone(*ext)
+	e.snapshot = sliceutil.Clone(*ext)
 }
 
 // Merge applies a JSON merge of the stored extension snapshot on top of the current
