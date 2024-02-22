@@ -6253,7 +6253,7 @@ func TestValidateOrFillCDep(t *testing.T) {
 					},
 				},
 			},
-			wantDeviceExt: json.RawMessage(`{"foo":"bar","cdep":"example_label_1"}`),
+			wantDeviceExt: json.RawMessage(`{"cdep":"example_label_1","foo":"bar"}`),
 			wantErr:       nil,
 		},
 		{
@@ -6285,6 +6285,34 @@ func TestValidateOrFillCDep(t *testing.T) {
 				WarningCode: errortypes.SecCookieDeprecationLenWarningCode,
 			},
 		},
+		{
+			name: "Sec-Cookie-Deprecation valid but invalid request.device.ext",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{secCookieDeprecation: []string{"example_label_1"}},
+				},
+				req: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						Device: &openrtb2.Device{
+							Ext: json.RawMessage(`{`),
+						},
+					},
+				},
+				account: config.Account{
+					Privacy: config.AccountPrivacy{
+						PrivacySandbox: config.PrivacySandbox{
+							CookieDeprecation: config.CookieDeprecation{
+								Enabled: true,
+							},
+						},
+					},
+				},
+			},
+			wantDeviceExt: json.RawMessage(`{`),
+			wantErr: &errortypes.FailedToUnmarshal{
+				Message: "expects \" or n, but found \x00",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -6299,7 +6327,7 @@ func TestValidateOrFillCDep(t *testing.T) {
 					assert.Nil(t, tt.args.req.Device.Ext, tt.name)
 				}
 			} else {
-				assert.JSONEq(t, string(tt.wantDeviceExt), string(tt.args.req.Device.Ext), tt.name)
+				assert.Equal(t, string(tt.wantDeviceExt), string(tt.args.req.Device.Ext), tt.name)
 			}
 		})
 	}

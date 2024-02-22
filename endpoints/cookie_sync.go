@@ -482,8 +482,7 @@ func (c *cookieSyncEndpoint) setCookieDeprecationHeader(w http.ResponseWriter, r
 		HttpOnly: true,
 		Path:     "/",
 		SameSite: http.SameSiteNoneMode,
-		// Partition: true,
-		Expires: c.time.Now().Add(time.Second * time.Duration(account.Privacy.PrivacySandbox.CookieDeprecation.TTLSec)),
+		Expires:  c.time.Now().Add(time.Second * time.Duration(account.Privacy.PrivacySandbox.CookieDeprecation.TTLSec)),
 	}
 	setCookie(w, cookie)
 }

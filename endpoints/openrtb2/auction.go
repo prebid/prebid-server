@@ -1943,9 +1943,12 @@ func validateOrFillCDep(httpReq *http.Request, req *openrtb_ext.RequestWrapper, 
 		}
 	}
 
-	if deviceExt, err := req.GetDeviceExt(); err == nil {
-		deviceExt.SetCDep(secCookieDeprecation)
+	deviceExt, err := req.GetDeviceExt()
+	if err != nil {
+		return err
 	}
+
+	deviceExt.SetCDep(secCookieDeprecation)
 	return nil
 }
 
