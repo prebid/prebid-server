@@ -1252,7 +1252,7 @@ func (e *exchange) makeBid(bids []*entities.PbsOrtbBid, auc *auction, returnCrea
 			}
 			bidResponseExt.Warnings[adapter] = append(bidResponseExt.Warnings[adapter], DSAMessage)
 
-			seatNonBids.addBid(bid, int(ResponseRejectedPrivacy), adapter.String())
+			seatNonBids.addBid(bid, int(ResponseRejectedGeneral), adapter.String())
 			continue // Don't add bid to result
 		}
 		if e.bidValidationEnforcement.BannerCreativeMaxSize == config.ValidationEnforce && bid.BidType == openrtb_ext.BidTypeBanner {
