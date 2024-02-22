@@ -199,11 +199,13 @@ func resolveUser(fpdConfig *openrtb_ext.ORTB2, bidRequestUser *openrtb2.User, gl
 		newUser.Data = openRtbGlobalFPD[userDataKey]
 	}
 	if fpdConfigUser != nil {
-		if err := merge.User(newUser, fpdConfigUser); err != nil {
+		if mergedUser, err := merge.User(newUser, fpdConfigUser); err != nil {
 			if err == merge.ErrBadOverride {
 				return nil, ErrBadFPD
 			}
 			return nil, err
+		} else {
+			newUser = mergedUser
 		}
 	}
 
@@ -256,12 +258,14 @@ func resolveSite(fpdConfig *openrtb_ext.ORTB2, bidRequestSite *openrtb2.Site, gl
 		}
 		newSite.Content.Data = openRtbGlobalFPD[siteContentDataKey]
 	}
-	if fpdConfigSite != nil { // todo: translate error and add site revalidation
-		if err := merge.Site(newSite, fpdConfigSite, bidderName); err != nil {
+	if fpdConfigSite != nil {
+		if mergedSite, err := merge.Site(newSite, fpdConfigSite, bidderName); err != nil {
 			if err == merge.ErrBadOverride {
 				return nil, ErrBadFPD
 			}
 			return nil, err
+		} else {
+			newSite = mergedSite
 		}
 
 		// Re-Validate Site
@@ -324,11 +328,13 @@ func resolveApp(fpdConfig *openrtb_ext.ORTB2, bidRequestApp *openrtb2.App, globa
 	}
 
 	if fpdConfigApp != nil {
-		if err := merge.App(newApp, fpdConfigApp); err != nil {
+		if mergedApp, err := merge.App(newApp, fpdConfigApp); err != nil {
 			if err == merge.ErrBadOverride {
 				return nil, ErrBadFPD
 			}
 			return nil, err
+		} else {
+			newApp = mergedApp
 		}
 	}
 

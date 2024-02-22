@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/ortb"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -171,13 +172,16 @@ func TestSite(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			err := Site(&test.givenSite, test.givenJson, "BidderA")
+			originalSite := ortb.CloneSite(&test.givenSite)
+			merged, err := Site(&test.givenSite, test.givenJson, "BidderA")
+
+			assert.Equal(t, &test.givenSite, originalSite)
 
 			if test.expectError {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, test.expectedSite, test.givenSite, " result Site is incorrect")
+				assert.Equal(t, &test.expectedSite, merged, " result Site is incorrect")
 			}
 		})
 	}

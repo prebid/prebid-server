@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/ortb"
 	"github.com/prebid/prebid-server/v2/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
@@ -76,13 +77,16 @@ func TestUser(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			err := User(&test.givenUser, test.givenJson)
+			originalUser := ortb.CloneUser(&test.givenUser)
+			merged, err := User(&test.givenUser, test.givenJson)
+
+			assert.Equal(t, &test.givenUser, originalUser)
 
 			if test.expectError {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, test.expectedUser, test.givenUser, "result user is incorrect")
+				assert.Equal(t, &test.expectedUser, merged, "result user is incorrect")
 			}
 		})
 	}

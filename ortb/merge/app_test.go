@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/ortb"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -171,13 +172,16 @@ func TestApp(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			err := App(&test.givenApp, test.givenJson)
+			originalApp := ortb.CloneApp(&test.givenApp)
+			merged, err := App(&test.givenApp, test.givenJson)
+
+			assert.Equal(t, &test.givenApp, originalApp)
 
 			if test.expectError {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, test.expectedApp, test.givenApp, " result app is incorrect")
+				assert.Equal(t, &test.expectedApp, merged)
 			}
 		})
 	}
