@@ -34,11 +34,11 @@ const (
 )
 
 var (
-	ErrDsaMissing        = errors.New("object missing when required")
-	ErrBehalfTooLong     = errors.New("behalf exceeds limit of 100 chars")
-	ErrPaidTooLong       = errors.New("paid exceeds limit of 100 chars")
-	ErrNeitherWillRender = errors.New("publisher and buyer both signal will not render")
-	ErrBothWillRender    = errors.New("publisher and buyer both signal will render")
+	ErrDsaMissing        = errors.New("DSA object missing when required")
+	ErrBehalfTooLong     = errors.New("DSA behalf exceeds limit of 100 chars")
+	ErrPaidTooLong       = errors.New("DSA paid exceeds limit of 100 chars")
+	ErrNeitherWillRender = errors.New("DSA publisher and buyer both signal will not render")
+	ErrBothWillRender    = errors.New("DSA publisher and buyer both signal will render")
 )
 
 // Validate determines whether a given bid is valid from a DSA perspective.
