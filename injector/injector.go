@@ -41,6 +41,21 @@ const (
 	clicktracking                  = "clicktracking"
 )
 
+const (
+	inlineCase         = "InLine"
+	wrapperCase        = "Wrapper"
+	creativeCase       = "Creative"
+	linearCase         = "Linear"
+	nonLinearCase      = "NonLinear"
+	videoClicksCase    = "VideoClicks"
+	nonLinearAdsCase   = "NonLinearAds"
+	trackingEventsCase = "TrackingEvents"
+	impressionCase     = "Impression"
+	errorCase          = "Error"
+	companionCase      = "Companion"
+	companionAdsCase   = "CompanionAds"
+)
+
 type Injector interface {
 	InjectTracker(vastXML string, NURL string) string
 }
@@ -153,10 +168,10 @@ func (ti *TrackerInjector) InjectTracker(vastXML string, NURL string) string {
 
 func (ti *TrackerInjector) handleStartElement(tt xml.StartElement, st *InjectionState, outputXML *strings.Builder, encoder *xml.Encoder) {
 	switch tt.Name.Local {
-	case "Wrapper":
+	case wrapperCase:
 		st.wrapperTagFound = true
 		encoder.EncodeToken(tt)
-	case "Creative":
+	case creativeCase:
 		st.isCreative = true
 		for _, attr := range tt.Attr {
 			if strings.ToLower(attr.Name.Local) == "adid" {
@@ -164,20 +179,20 @@ func (ti *TrackerInjector) handleStartElement(tt xml.StartElement, st *Injection
 			}
 		}
 		encoder.EncodeToken(tt)
-	case "Linear":
+	case linearCase:
 		st.injectVideoClicks = true
 		st.injectTracker = true
 		encoder.EncodeToken(tt)
-	case "VideoClicks":
+	case videoClicksCase:
 		st.injectVideoClicks = false
 		encoder.Flush()
 		encoder.EncodeToken(tt)
 		encoder.Flush()
 		ti.addClickTrackingEvent(outputXML, st.creativeId, false)
-	case "NonLinearAds":
+	case nonLinearAdsCase:
 		st.injectTracker = true
 		encoder.EncodeToken(tt)
-	case "TrackingEvents":
+	case trackingEventsCase:
 		if st.isCreative {
 			st.injectTracker = false
 			encoder.Flush()
@@ -192,7 +207,7 @@ func (ti *TrackerInjector) handleStartElement(tt xml.StartElement, st *Injection
 
 func (ti *TrackerInjector) handleEndElement(tt xml.EndElement, st *InjectionState, outputXML *strings.Builder, encoder *xml.Encoder) {
 	switch tt.Name.Local {
-	case "Impression":
+	case impressionCase:
 		encoder.Flush()
 		encoder.EncodeToken(tt)
 		encoder.Flush()
@@ -200,7 +215,7 @@ func (ti *TrackerInjector) handleEndElement(tt xml.EndElement, st *InjectionStat
 			ti.addImpressionTrackingEvent(outputXML)
 			st.impressionTagFound = true
 		}
-	case "Error":
+	case errorCase:
 		encoder.Flush()
 		encoder.EncodeToken(tt)
 		encoder.Flush()
@@ -208,7 +223,7 @@ func (ti *TrackerInjector) handleEndElement(tt xml.EndElement, st *InjectionStat
 			ti.addErrorTrackingEvent(outputXML)
 			st.errorTagFound = true
 		}
-	case "NonLinearAds":
+	case nonLinearAdsCase:
 		if st.injectTracker {
 			st.injectTracker = false
 			encoder.Flush()
@@ -218,7 +233,7 @@ func (ti *TrackerInjector) handleEndElement(tt xml.EndElement, st *InjectionStat
 			}
 			encoder.EncodeToken(tt)
 		}
-	case "Linear":
+	case linearCase:
 		if st.injectVideoClicks {
 			st.injectVideoClicks = false
 			encoder.Flush()
@@ -230,7 +245,7 @@ func (ti *TrackerInjector) handleEndElement(tt xml.EndElement, st *InjectionStat
 			ti.addTrackingEvent(outputXML, st.creativeId, true)
 		}
 		encoder.EncodeToken(tt)
-	case "InLine", "Wrapper":
+	case inlineCase, wrapperCase:
 		st.wrapperTagFound = false
 		st.inlineWrapperTagFound = true
 		encoder.Flush()
@@ -243,20 +258,20 @@ func (ti *TrackerInjector) handleEndElement(tt xml.EndElement, st *InjectionStat
 		}
 		st.errorTagFound = false
 		encoder.EncodeToken(tt)
-	case "NonLinear":
+	case nonLinearCase:
 		encoder.Flush()
 		ti.addNonLinearClickTrackingEvent(outputXML, st.creativeId, false)
 		st.nonLinearTagFound = true
 		encoder.EncodeToken(tt)
-	case "Companion":
+	case companionCase:
 		st.companionTagFound = true
 		encoder.Flush()
 		ti.addCompanionClickThroughEvent(outputXML, st.creativeId, false)
 		encoder.EncodeToken(tt)
-	case "Creative":
+	case creativeCase:
 		st.isCreative = false
 		encoder.EncodeToken(tt)
-	case "CompanionAds":
+	case companionAdsCase:
 		if !st.companionTagFound && st.wrapperTagFound {
 			encoder.Flush()
 			ti.addCompanionClickThroughEvent(outputXML, st.creativeId, true)
