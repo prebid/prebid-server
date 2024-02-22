@@ -1,17 +1,16 @@
-package firstpartydata
+package merge
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 
-	"github.com/prebid/prebid-server/v2/util/sliceutil"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 )
 
 var (
-	ErrBadRequest = fmt.Errorf("invalid request ext")
-	ErrBadFPD     = fmt.Errorf("invalid first party data ext")
+	ErrBadRequest  = errors.New("invalid request ext")
+	ErrBadOverride = errors.New("invalid override ext")
 )
 
 // extMerger tracks a JSON `ext` field within an OpenRTB request. The value of the
@@ -26,7 +25,7 @@ type extMerger struct {
 // object for comparison later in the Merge call.
 func (e *extMerger) Track(ext *json.RawMessage) {
 	e.ext = ext
-	e.snapshot = sliceutil.Clone(*ext)
+	e.snapshot = bytes.Clone(*ext)
 }
 
 // Merge applies a JSON merge of the stored extension snapshot on top of the current
@@ -50,7 +49,7 @@ func (e extMerger) Merge() error {
 		if errors.Is(err, jsonpatch.ErrBadJSONDoc) {
 			return ErrBadRequest
 		} else if errors.Is(err, jsonpatch.ErrBadJSONPatch) {
-			return ErrBadFPD
+			return ErrBadOverride
 		}
 		return err
 	}

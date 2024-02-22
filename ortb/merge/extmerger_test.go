@@ -1,4 +1,4 @@
-package firstpartydata
+package merge
 
 import (
 	"encoding/json"
@@ -18,62 +18,62 @@ func TestExtMerger(t *testing.T) {
 	testCases := []struct {
 		name          string
 		givenOriginal json.RawMessage
-		givenFPD      json.RawMessage
+		givenJson     json.RawMessage
 		expectedExt   json.RawMessage
 		expectedErr   string
 	}{
 		{
 			name:          "both-populated",
 			givenOriginal: json.RawMessage(`{"a":1,"b":2}`),
-			givenFPD:      json.RawMessage(`{"b":200,"c":3}`),
+			givenJson:     json.RawMessage(`{"b":200,"c":3}`),
 			expectedExt:   json.RawMessage(`{"a":1,"b":200,"c":3}`),
 		},
 		{
 			name:          "both-nil",
-			givenFPD:      nil,
+			givenJson:     nil,
 			givenOriginal: nil,
 			expectedExt:   nil,
 		},
 		{
 			name:          "both-empty",
 			givenOriginal: json.RawMessage(`{}`),
-			givenFPD:      json.RawMessage(`{}`),
+			givenJson:     json.RawMessage(`{}`),
 			expectedExt:   json.RawMessage(`{}`),
 		},
 		{
 			name:          "ext-nil",
 			givenOriginal: json.RawMessage(`{"b":2}`),
-			givenFPD:      nil,
+			givenJson:     nil,
 			expectedExt:   json.RawMessage(`{"b":2}`),
 		},
 		{
 			name:          "ext-empty",
 			givenOriginal: json.RawMessage(`{"b":2}`),
-			givenFPD:      json.RawMessage(`{}`),
+			givenJson:     json.RawMessage(`{}`),
 			expectedExt:   json.RawMessage(`{"b":2}`),
 		},
 		{
 			name:          "ext-malformed",
 			givenOriginal: json.RawMessage(`{"b":2}`),
-			givenFPD:      json.RawMessage(`malformed`),
-			expectedErr:   "invalid first party data ext",
+			givenJson:     json.RawMessage(`malformed`),
+			expectedErr:   "invalid override ext",
 		},
 		{
 			name:          "snapshot-nil",
 			givenOriginal: nil,
-			givenFPD:      json.RawMessage(`{"a":1}`),
+			givenJson:     json.RawMessage(`{"a":1}`),
 			expectedExt:   json.RawMessage(`{"a":1}`),
 		},
 		{
 			name:          "snapshot-empty",
 			givenOriginal: json.RawMessage(`{}`),
-			givenFPD:      json.RawMessage(`{"a":1}`),
+			givenJson:     json.RawMessage(`{"a":1}`),
 			expectedExt:   json.RawMessage(`{"a":1}`),
 		},
 		{
 			name:          "snapshot-malformed",
 			givenOriginal: json.RawMessage(`malformed`),
-			givenFPD:      json.RawMessage(`{"a":1}`),
+			givenJson:     json.RawMessage(`{"a":1}`),
 			expectedErr:   "invalid request ext",
 		},
 	}
@@ -88,7 +88,7 @@ func TestExtMerger(t *testing.T) {
 			merger.Track(&simulatedExt)
 
 			// Unmarshal
-			simulatedExt.UnmarshalJSON(test.givenFPD)
+			simulatedExt.UnmarshalJSON(test.givenJson)
 
 			// Merge
 			actualErr := merger.Merge()
