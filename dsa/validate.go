@@ -8,29 +8,23 @@ import (
 	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
-// ObjectSignal represents publisher DSA object required statuses
-type ObjectSignal int8
-
+// Required values representing whether a DSA object is required
 const (
-	ObjectSignalRequired               ObjectSignal = 2 // bid responses without DSA object will not be accepted
-	ObjectSignalRequiredOnlinePlatform ObjectSignal = 3 // bid responses without DSA object will not be accepted, Publisher is Online Platform
+	Required               int8 = 2 // bid responses without DSA object will not be accepted
+	RequiredOnlinePlatform int8 = 3 // bid responses without DSA object will not be accepted, Publisher is Online Platform
 )
 
-// PubSignal represents publisher rendering intentions
-type PubSignal int8
-
+// PubRender values representing publisher rendering intentions
 const (
-	PubSignalCannotRender PubSignal = 0 // publisher can't render
-	PubSignalCanRender    PubSignal = 1 // publisher could render depending on adrender
-	PubSignalWillRender   PubSignal = 2 // publisher will render
+	PubRenderCannotRender int8 = 0 // publisher can't render
+	PubRenderCanRender    int8 = 1 // publisher could render depending on adrender
+	PubRenderWillRender   int8 = 2 // publisher will render
 )
 
-// BuyerSignal represents buyer/advertiser rendering intentions
-type BuyerSignal int8
-
+// AdRender values representing buyer/advertiser rendering intentions
 const (
-	BuyerSignalWontRender BuyerSignal = 0 // buyer/advertiser will not render
-	BuyerSignalWillRender BuyerSignal = 1 // buyer/advertiser will render
+	AdRenderWontRender int8 = 0 // buyer/advertiser will not render
+	AdRenderWillRender int8 = 1 // buyer/advertiser will render
 )
 
 var (
@@ -61,10 +55,10 @@ func Validate(req *openrtb_ext.RequestWrapper, bid *entities.PbsOrtbBid) error {
 	if len(bidDSA.Paid) > 100 {
 		return ErrPaidTooLong
 	}
-	if reqDSA.PubRender == int8(PubSignalCannotRender) && bidDSA.AdRender != int8(BuyerSignalWillRender) {
+	if reqDSA.PubRender == PubRenderCannotRender && bidDSA.AdRender != AdRenderWillRender {
 		return ErrNeitherWillRender
 	}
-	if reqDSA.PubRender == int8(PubSignalWillRender) && bidDSA.AdRender == int8(BuyerSignalWillRender) {
+	if reqDSA.PubRender == PubRenderWillRender && bidDSA.AdRender == AdRenderWillRender {
 		return ErrBothWillRender
 	}
 	return nil
@@ -76,7 +70,7 @@ func dsaRequired(dsa *openrtb_ext.ExtRegsDSA) bool {
 	if dsa == nil {
 		return false
 	}
-	return dsa.Required == int8(ObjectSignalRequired) || dsa.Required == int8(ObjectSignalRequiredOnlinePlatform)
+	return dsa.Required == Required || dsa.Required == RequiredOnlinePlatform
 }
 
 // getReqDSA retrieves the DSA object from the request
