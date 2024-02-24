@@ -335,8 +335,15 @@ func (m AccountModules) ModuleConfig(id string) (json.RawMessage, error) {
 
 type AccountPrivacy struct {
 	AllowActivities *AllowActivities `mapstructure:"allowactivities" json:"allowactivities"`
+	DSA             *AccountDSA      `mapstructure:"dsa" json:"dsa"`
 	IPv6Config      IPv6             `mapstructure:"ipv6" json:"ipv6"`
 	IPv4Config      IPv4             `mapstructure:"ipv4" json:"ipv4"`
+}
+
+// AccountDSA represents DSA configuration
+type AccountDSA struct {
+	Default  *openrtb_ext.ExtRegsDSA `mapstructure:"default" json:"default"`
+	GDPROnly bool                    `mapstructure:"gdpr_only" json:"gdpr_only"`
 }
 
 type IPv6 struct {
