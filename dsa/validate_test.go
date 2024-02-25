@@ -37,7 +37,7 @@ func TestValidate(t *testing.T) {
 					Ext: json.RawMessage(`{"dsa":{"behalf":"` + validBehalf + `","paid":"` + validPaid + `","adrender":1}}`),
 				},
 			},
-			wantError:   false,
+			wantError: false,
 		},
 		{
 			name: "not_required_and_bid_is_nil",
