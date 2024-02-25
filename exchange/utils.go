@@ -18,6 +18,7 @@ import (
 	"github.com/prebid/openrtb/v20/openrtb2"
 
 	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/dsa"
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/firstpartydata"
 	"github.com/prebid/prebid-server/v2/gdpr"
@@ -154,6 +155,11 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		gdprPerms = rs.gdprPermsBuilder(auctionReq.TCF2Config, gdprRequestInfo)
 	}
 
+	DSAWriter := dsa.DSAWriter{
+		Config:      auctionReq.Account.Privacy.DSA,
+		GDPRInScope: gdprEnforced,
+	}
+
 	// bidder level privacy policies
 	for _, bidderRequest := range allBidderRequests {
 		// fetchBids activity
@@ -225,6 +231,10 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		passTIDAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitTIDs, scopedName, privacy.NewRequestFromBidRequest(*req))
 		if !passTIDAllowed {
 			privacy.ScrubTID(reqWrapper)
+		}
+
+		if err := DSAWriter.Write(reqWrapper); err != nil {
+			errs = append(errs, err)
 		}
 
 		reqWrapper.RebuildRequest()
