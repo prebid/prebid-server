@@ -2181,6 +2181,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 			},
 			DebugAllow:  true,
 			PriceFloors: config.AccountPriceFloors{Enabled: spec.AccountFloorsEnabled},
+			Privacy:     *spec.AccountPrivacy,
 			Validations: spec.AccountConfigBidValidation,
 		},
 		UserSyncs:     mockIdFetcher(spec.IncomingRequest.Usersyncs),
