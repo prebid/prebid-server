@@ -30,6 +30,16 @@ func TestValidate(t *testing.T) {
 			wantError:   false,
 		},
 		{
+			name:        "request_nil_bid_not_nil",
+			giveRequest: nil,
+			giveBid: &entities.PbsOrtbBid{
+				Bid: &openrtb2.Bid{
+					Ext: json.RawMessage(`{"dsa":{"behalf":"` + validBehalf + `","paid":"` + validPaid + `","adrender":1}}`),
+				},
+			},
+			wantError:   false,
+		},
+		{
 			name: "not_required_and_bid_is_nil",
 			giveRequest: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
@@ -208,6 +218,78 @@ func TestDSARequired(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			required := dsaRequired(tt.giveReqDSA)
 			assert.Equal(t, tt.wantRequired, required)
+		})
+	}
+}
+
+func TestGetReqDSA(t *testing.T) {
+	tests := []struct {
+		name        string
+		giveRequest *openrtb_ext.RequestWrapper
+		expectedDSA *openrtb_ext.ExtRegsDSA
+	}{
+		{
+			name:        "req_is_nil",
+			giveRequest: nil,
+			expectedDSA: nil,
+		},
+		{
+			name: "bidrequest_is_nil",
+			giveRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: nil,
+			},
+			expectedDSA: nil,
+		},
+		{
+			name: "req.regs_is_nil",
+			giveRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: nil,
+				},
+			},
+			expectedDSA: nil,
+		},
+		{
+			name: "req.regs.ext_is_nil",
+			giveRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						Ext: nil,
+					},
+				},
+			},
+			expectedDSA: nil,
+		},
+		{
+			name: "req.regs.ext_is_empty",
+			giveRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						Ext: json.RawMessage(`{}`),
+					},
+				},
+			},
+			expectedDSA: nil,
+		},
+		{
+			name: "req.regs.ext_dsa_is_populated",
+			giveRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						Ext: json.RawMessage(`{"dsa": {"dsarequired": 2}}`),
+					},
+				},
+			},
+			expectedDSA: &openrtb_ext.ExtRegsDSA{
+				Required: 2,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dsa := getReqDSA(tt.giveRequest)
+			assert.Equal(t, tt.expectedDSA, dsa)
 		})
 	}
 }

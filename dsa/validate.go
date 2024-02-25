@@ -55,11 +55,13 @@ func Validate(req *openrtb_ext.RequestWrapper, bid *entities.PbsOrtbBid) error {
 	if len(bidDSA.Paid) > 100 {
 		return ErrPaidTooLong
 	}
-	if reqDSA.PubRender == PubRenderCannotRender && bidDSA.AdRender != AdRenderWillRender {
-		return ErrNeitherWillRender
-	}
-	if reqDSA.PubRender == PubRenderWillRender && bidDSA.AdRender == AdRenderWillRender {
-		return ErrBothWillRender
+	if reqDSA != nil {
+		if reqDSA.PubRender == PubRenderCannotRender && bidDSA.AdRender != AdRenderWillRender {
+			return ErrNeitherWillRender
+		}
+		if reqDSA.PubRender == PubRenderWillRender && bidDSA.AdRender == AdRenderWillRender {
+			return ErrBothWillRender
+		}
 	}
 	return nil
 }
