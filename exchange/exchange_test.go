@@ -978,6 +978,7 @@ func TestFloorsSignalling(t *testing.T) {
 			Account:           config.Account{DebugAllow: true, PriceFloors: config.AccountPriceFloors{Enabled: test.floorsEnable, MaxRule: 100, MaxSchemaDims: 5}},
 			UserSyncs:         &emptyUsersync{},
 			HookExecutor:      &hookexecution.EmptyHookExecutor{},
+			TCF2Config:        gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 		}
 		outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, &DebugLog{})
 
@@ -2170,7 +2171,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		impExtInfoMap[impID] = ImpExtInfo{}
 	}
 
-	activityControl := privacy.NewActivityControl(spec.AccountPrivacy)
+	activityControl := privacy.NewActivityControl(&spec.AccountPrivacy)
 
 	auctionRequest := &AuctionRequest{
 		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: &spec.IncomingRequest.OrtbRequest},
@@ -2181,7 +2182,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 			},
 			DebugAllow:  true,
 			PriceFloors: config.AccountPriceFloors{Enabled: spec.AccountFloorsEnabled},
-			Privacy:     *spec.AccountPrivacy,
+			Privacy:     spec.AccountPrivacy,
 			Validations: spec.AccountConfigBidValidation,
 		},
 		UserSyncs:     mockIdFetcher(spec.IncomingRequest.Usersyncs),
@@ -5485,7 +5486,7 @@ type exchangeSpec struct {
 	FledgeEnabled              bool                   `json:"fledge_enabled,omitempty"`
 	MultiBid                   *multiBidSpec          `json:"multiBid,omitempty"`
 	Server                     exchangeServer         `json:"server,omitempty"`
-	AccountPrivacy             *config.AccountPrivacy `json:"accountPrivacy,omitempty"`
+	AccountPrivacy             config.AccountPrivacy  `json:"accountPrivacy,omitempty"`
 }
 
 type multiBidSpec struct {
