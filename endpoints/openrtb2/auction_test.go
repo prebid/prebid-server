@@ -6317,17 +6317,17 @@ func TestValidateOrFillCDep(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := validateOrFillCDep(tt.args.httpReq, tt.args.req, &tt.args.account)
-			assert.Equal(t, tt.wantErr, err, tt.name)
+			assert.Equal(t, tt.wantErr, err)
 			if tt.args.req != nil {
 				err := tt.args.req.RebuildRequest()
-				assert.NoError(t, err, tt.name)
+				assert.NoError(t, err)
 			}
 			if tt.wantDeviceExt == nil {
 				if tt.args.req != nil && tt.args.req.Device != nil {
-					assert.Nil(t, tt.args.req.Device.Ext, tt.name)
+					assert.Nil(t, tt.args.req.Device.Ext)
 				}
 			} else {
-				assert.Equal(t, string(tt.wantDeviceExt), string(tt.args.req.Device.Ext), tt.name)
+				assert.Equal(t, string(tt.wantDeviceExt), string(tt.args.req.Device.Ext))
 			}
 		})
 	}
@@ -6344,7 +6344,7 @@ func TestValidateRequestCookieDeprecation(t *testing.T) {
 			wantCDep     string
 		}{
 			{
-				name: "Request with Sec-Cookie-Deprecation header having length less than 100 (cookiedeprecation enabled for account)",
+				name: "header-with-length-less-than-100",
 				httpReq: func() *http.Request {
 					req := httptest.NewRequest("POST", "/openrtb2/auction", nil)
 					req.Header.Set(secCookieDeprecation, "sample-value")
@@ -6389,7 +6389,7 @@ func TestValidateRequestCookieDeprecation(t *testing.T) {
 				wantCDep: "sample-value",
 			},
 			{
-				name: "Request with Sec-Cookie-Deprecation header having length more than 100 (cookiedeprecation enabled for account)",
+				name: "header-with-length-more-than-100",
 				httpReq: func() *http.Request {
 					req := httptest.NewRequest("POST", "/openrtb2/auction", nil)
 					req.Header.Set(secCookieDeprecation, "zjfXqGxXFI8yura8AhQl1DK2EMMmryrC8haEpAlwjoerrFfEo2MQTXUq6cSmLohI8gjsnkGU4oAzvXd4TTAESzEKsoYjRJ2zKxmEa")
@@ -6465,7 +6465,7 @@ func TestValidateRequestCookieDeprecation(t *testing.T) {
 
 	for _, test := range testCases {
 		errs := deps.validateRequest(test.givenAccount, test.httpReq, test.reqWrapper, false, false, stored_responses.ImpBidderStoredResp{}, false)
-		assert.Equal(t, test.wantErrs, errs, test.name)
+		assert.Equal(t, test.wantErrs, errs)
 		test.reqWrapper.RebuildRequest()
 		deviceExt, err := test.reqWrapper.GetDeviceExt()
 		assert.NoError(t, err)

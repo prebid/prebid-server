@@ -123,15 +123,14 @@ func TestCookieSyncHandle(t *testing.T) {
 	testCases := []struct {
 		description                     string
 		givenCookie                     *usersync.Cookie
-		givenChromeDeprecationCookie    bool
 		givenBody                       io.Reader
 		givenChooserResult              usersync.Result
 		givenAccountData                map[string]json.RawMessage
 		expectedStatusCode              int
 		expectedBody                    string
-		expectedCookieDeprecationHeader bool
 		setMetricsExpectations          func(*metrics.MetricsEngineMock)
 		setAnalyticsExpectations        func(*MockAnalyticsRunner)
+		expectedCookieDeprecationHeader bool
 	}{
 		{
 			description: "Request With Cookie",
@@ -299,10 +298,9 @@ func TestCookieSyncHandle(t *testing.T) {
 			},
 		},
 		{
-			description:                  "CookieDeprecation not set in repsonse", // CookieDeprecation enabled for account, receive-cookie-deprecation cookie present in request, cookie deprecation header not set in response
-			givenCookie:                  cookieWithSyncs,
-			givenChromeDeprecationCookie: true,
-			givenBody:                    strings.NewReader(`{"account": "testAccount"}`),
+			description: "CookieDeprecation-Set",
+			givenCookie: cookieWithSyncs,
+			givenBody:   strings.NewReader(`{"account": "testAccount"}`),
 			givenChooserResult: usersync.Result{
 				Status:           usersync.StatusOK,
 				BiddersEvaluated: []usersync.BidderEvaluation{{Bidder: "a", SyncerKey: "aSyncer", Status: usersync.StatusAlreadySynced}},
@@ -311,11 +309,11 @@ func TestCookieSyncHandle(t *testing.T) {
 			givenAccountData: map[string]json.RawMessage{
 				"testAccount": json.RawMessage(`{"id":"1","privacy":{"privacysandbox":{"cookiedeprecation":{"enabled":true,"ttlsec":86400}}}}`),
 			},
-			expectedStatusCode: 200,
+			expectedStatusCode:              200,
+			expectedCookieDeprecationHeader: true,
 			expectedBody: `{"status":"ok","bidder_status":[` +
 				`{"bidder":"a","no_cookie":true,"usersync":{"url":"aURL","type":"redirect","supportCORS":true}}` +
 				`]}` + "\n",
-			expectedCookieDeprecationHeader: false,
 			setMetricsExpectations: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordCookieSync", metrics.CookieSyncOK).Once()
 				m.On("RecordSyncerRequest", "aSyncer", metrics.SyncerCookieSyncAlreadySynced).Once()
@@ -360,10 +358,6 @@ func TestCookieSyncHandle(t *testing.T) {
 			httpCookie, err := ToHTTPCookie(test.givenCookie)
 			assert.NoError(t, err)
 			request.AddCookie(httpCookie)
-		}
-
-		if test.givenChromeDeprecationCookie {
-			request.AddCookie(&http.Cookie{Name: receiveCookieDeprecation, Value: "1"})
 		}
 
 		writer := httptest.NewRecorder()
@@ -2292,13 +2286,13 @@ func TestSetCookieDeprecationHeader(t *testing.T) {
 		expectedCookieDeprecationHeader bool
 	}{
 		{
-			name:                            "not-present-account-nil", // receive-cookie-deprecation not present in request but account is nil
+			name:                            "not-present-account-nil",
 			request:                         getTestRequest(false),
 			responseWriter:                  httptest.NewRecorder(),
 			expectedCookieDeprecationHeader: false,
 		},
 		{
-			name:           "not-present-cookiedeprecation-disabled", // receive-cookie-deprecation not present in request but CookieDeprecation is disabled
+			name:           "not-present-cookiedeprecation-disabled",
 			request:        getTestRequest(false),
 			responseWriter: httptest.NewRecorder(),
 			account: &config.Account{
@@ -2313,7 +2307,7 @@ func TestSetCookieDeprecationHeader(t *testing.T) {
 			expectedCookieDeprecationHeader: false,
 		},
 		{
-			name:           "present-cookiedeprecation-disabled", // receive-cookie-deprecation present in request and CookieDeprecation is disabled
+			name:           "present-cookiedeprecation-disabled",
 			request:        getTestRequest(true),
 			responseWriter: httptest.NewRecorder(),
 			account: &config.Account{
@@ -2328,7 +2322,7 @@ func TestSetCookieDeprecationHeader(t *testing.T) {
 			expectedCookieDeprecationHeader: false,
 		},
 		{
-			name:           "present-cookiedeprecation-enabled", // receive-cookie-deprecation present in request and CookieDeprecation is enabled
+			name:           "present-cookiedeprecation-enabled",
 			request:        getTestRequest(true),
 			responseWriter: httptest.NewRecorder(),
 			account: &config.Account{
@@ -2345,13 +2339,13 @@ func TestSetCookieDeprecationHeader(t *testing.T) {
 			expectedCookieDeprecationHeader: false,
 		},
 		{
-			name:                            "present-account-nil", // receive-cookie-deprecation present in request and account is nil
+			name:                            "present-account-nil",
 			request:                         getTestRequest(true),
 			responseWriter:                  httptest.NewRecorder(),
 			expectedCookieDeprecationHeader: false,
 		},
 		{
-			name:           "not-present-cookiedeprecation-enabled", // receive-cookie-deprecation not present in request and CookieDeprecation is enabled for account
+			name:           "not-present-cookiedeprecation-enabled",
 			request:        getTestRequest(false),
 			responseWriter: httptest.NewRecorder(),
 			account: &config.Account{
@@ -2367,8 +2361,8 @@ func TestSetCookieDeprecationHeader(t *testing.T) {
 			expectedCookieDeprecationHeader: true,
 		},
 		{
-			name:           "failed-to-read-cookiedeprecation-enabled", // failed to read receive-cookie-deprecation from request but CookieDeprecation is enabled
-			request:        &http.Request{},                            // nil cookie. error: http: named cookie not present
+			name:           "failed-to-read-cookiedeprecation-enabled",
+			request:        &http.Request{}, // nil cookie. error: http: named cookie not present
 			responseWriter: httptest.NewRecorder(),
 			account: &config.Account{
 				Privacy: config.AccountPrivacy{
