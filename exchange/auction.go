@@ -108,7 +108,7 @@ func (d *DebugLog) PutDebugLogError(cache prebid_cache_client.Client, timeout in
 
 func newAuction(seatBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, numImps int, preferDeals bool) *auction {
 	winningBids := make(map[string]*entities.PbsOrtbBid, numImps)
-	winningBidsByBidder := make(map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid, numImps)
+	allBidsByBidder := make(map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid, numImps)
 
 	for bidderName, seatBid := range seatBids {
 		if seatBid != nil {
@@ -118,10 +118,10 @@ func newAuction(seatBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, nu
 					winningBids[bid.Bid.ImpID] = bid
 				}
 
-				if bidMap, ok := winningBidsByBidder[bid.Bid.ImpID]; ok {
+				if bidMap, ok := allBidsByBidder[bid.Bid.ImpID]; ok {
 					bidMap[bidderName] = append(bidMap[bidderName], bid)
 				} else {
-					winningBidsByBidder[bid.Bid.ImpID] = map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
+					allBidsByBidder[bid.Bid.ImpID] = map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
 						bidderName: {bid},
 					}
 				}
@@ -130,8 +130,8 @@ func newAuction(seatBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, nu
 	}
 
 	return &auction{
-		winningBids:         winningBids,
-		winningBidsByBidder: winningBidsByBidder,
+		winningBids:     winningBids,
+		allBidsByBidder: allBidsByBidder,
 	}
 }
 
@@ -151,7 +151,7 @@ func isNewWinningBid(bid, wbid *openrtb2.Bid, preferDeals bool) bool {
 func (a *auction) validateAndUpdateMultiBid(adapterBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, preferDeals bool, accountDefaultBidLimit int) {
 	bidsSnipped := false
 	// sort bids for multibid targeting
-	for _, topBidsPerBidder := range a.winningBidsByBidder {
+	for _, topBidsPerBidder := range a.allBidsByBidder {
 		for bidder, topBids := range topBidsPerBidder {
 			sort.Slice(topBids, func(i, j int) bool {
 				return isNewWinningBid(topBids[i].Bid, topBids[j].Bid, preferDeals)
@@ -187,7 +187,7 @@ func (a *auction) validateAndUpdateMultiBid(adapterBids map[openrtb_ext.BidderNa
 
 func (a *auction) setRoundedPrices(targetingData targetData) {
 	roundedPrices := make(map[*entities.PbsOrtbBid]string, 5*len(a.winningBids))
-	for _, topBidsPerImp := range a.winningBidsByBidder {
+	for _, topBidsPerImp := range a.allBidsByBidder {
 		for _, topBidsPerBidder := range topBidsPerImp {
 			for _, topBid := range topBidsPerBidder {
 				roundedPrices[topBid] = GetPriceBucket(*topBid.Bid, targetingData)
@@ -225,7 +225,7 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 	for _, imp := range bidRequest.Imp {
 		expByImp[imp.ID] = imp.Exp
 	}
-	for impID, topBidsPerImp := range a.winningBidsByBidder {
+	for impID, topBidsPerImp := range a.allBidsByBidder {
 		for bidderName, topBidsPerBidder := range topBidsPerImp {
 			for _, topBid := range topBidsPerBidder {
 				isOverallWinner := a.winningBids[impID] == topBid
@@ -394,8 +394,8 @@ func defTTL(bidType openrtb_ext.BidType, defaultTTLs *config.DefaultTTLs) (ttl i
 type auction struct {
 	// winningBids is a map from imp.id to the highest overall CPM bid in that imp.
 	winningBids map[string]*entities.PbsOrtbBid
-	// winningBidsByBidder stores the highest bid on each imp by each bidder.
-	winningBidsByBidder map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid
+	// allBidsByBidder is map from ImpID to another map that maps bidderName to all bids from that bidder.
+	allBidsByBidder map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid
 	// roundedPrices stores the price strings rounded for each bid according to the price granularity.
 	roundedPrices map[*entities.PbsOrtbBid]string
 	// cacheIds stores the UUIDs from Prebid Cache for fetching the full bid JSON.

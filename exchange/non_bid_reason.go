@@ -8,6 +8,7 @@ type NonBidReason int
 const (
 	NoBidUnknownError                      NonBidReason = 0   // No Bid - General
 	ResponseRejectedCategoryMappingInvalid NonBidReason = 303 // Response Rejected - Category Mapping Invalid
+	ResponseRejectedPrivacy                NonBidReason = 305
 	ResponseRejectedCreativeSizeNotAllowed NonBidReason = 351 // Response Rejected - Invalid Creative (Size Not Allowed)
 	ResponseRejectedCreativeNotSecure      NonBidReason = 352 // Response Rejected - Invalid Creative (Not Secure)
 )
