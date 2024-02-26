@@ -6126,12 +6126,12 @@ func TestValidateOrFillCDep(t *testing.T) {
 		wantErr       error
 	}{
 		{
-			name:          "account nil",
+			name:          "account-nil",
 			wantDeviceExt: nil,
 			wantErr:       nil,
 		},
 		{
-			name: "cookie deprecation not enabled",
+			name: "cookie-deprecation-not-enabled",
 			args: args{
 				httpReq: &http.Request{
 					Header: http.Header{secCookieDeprecation: []string{"example_label_1"}},
@@ -6144,7 +6144,7 @@ func TestValidateOrFillCDep(t *testing.T) {
 			wantErr:       nil,
 		},
 		{
-			name: "cookie deprecation disabled explicitly",
+			name: "cookie-deprecation-disabled-explicitly",
 			args: args{
 				httpReq: &http.Request{
 					Header: http.Header{secCookieDeprecation: []string{"example_label_1"}},
@@ -6166,7 +6166,7 @@ func TestValidateOrFillCDep(t *testing.T) {
 			wantErr:       nil,
 		},
 		{
-			name: "Sec-Cookie-Deprecation not present in request",
+			name: "header-not-present-in-request",
 			args: args{
 				httpReq: &http.Request{},
 				account: config.Account{
@@ -6183,7 +6183,7 @@ func TestValidateOrFillCDep(t *testing.T) {
 			wantErr:       nil,
 		},
 		{
-			name: "Sec-Cookie-Deprecation present in request where request.device is nil",
+			name: "header-present-request-device-nil",
 			args: args{
 				httpReq: &http.Request{
 					Header: http.Header{secCookieDeprecation: []string{"example_label_1"}},
@@ -6205,7 +6205,7 @@ func TestValidateOrFillCDep(t *testing.T) {
 			wantErr:       nil,
 		},
 		{
-			name: "Sec-Cookie-Deprecation present in request where request.device.ext is nil",
+			name: "header-present-request-device-ext-nil",
 			args: args{
 				httpReq: &http.Request{
 					Header: http.Header{secCookieDeprecation: []string{"example_label_1"}},
@@ -6231,7 +6231,7 @@ func TestValidateOrFillCDep(t *testing.T) {
 			wantErr:       nil,
 		},
 		{
-			name: "Sec-Cookie-Deprecation present in request where request.device.ext is not nil",
+			name: "header-present-request-device-ext-not-nil",
 			args: args{
 				httpReq: &http.Request{
 					Header: http.Header{secCookieDeprecation: []string{"example_label_1"}},
@@ -6257,7 +6257,7 @@ func TestValidateOrFillCDep(t *testing.T) {
 			wantErr:       nil,
 		},
 		{
-			name: "Sec-Cookie-Deprecation present in request with length more than 100",
+			name: "header-present-with-length-more-than-100",
 			args: args{
 				httpReq: &http.Request{
 					Header: http.Header{secCookieDeprecation: []string{"zjfXqGxXFI8yura8AhQl1DK2EMMmryrC8haEpAlwjoerrFfEo2MQTXUq6cSmLohI8gjsnkGU4oAzvXd4TTAESzEKsoYjRJ2zKxmEa"}},
@@ -6286,7 +6286,7 @@ func TestValidateOrFillCDep(t *testing.T) {
 			},
 		},
 		{
-			name: "Sec-Cookie-Deprecation valid but invalid request.device.ext",
+			name: "header-present-request-device-ext-invalid",
 			args: args{
 				httpReq: &http.Request{
 					Header: http.Header{secCookieDeprecation: []string{"example_label_1"}},
