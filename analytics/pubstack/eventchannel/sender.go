@@ -27,7 +27,6 @@ func NewHttpSender(client *http.Client, endpoint string) Sender {
 		if err != nil {
 			return err
 		}
-
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
