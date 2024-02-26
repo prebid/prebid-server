@@ -8,6 +8,7 @@ import (
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/exchange/entities"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -56,7 +57,7 @@ func TestValidate(t *testing.T) {
 			giveRequest: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					Regs: &openrtb2.Regs{
-						Ext: json.RawMessage(`{"dsa": {"dsarequired": 0}}`),
+						Ext: json.RawMessage(`{"dsa": {"dsarequired": 0,"pubrender":0}}`),
 					},
 				},
 			},
@@ -116,13 +117,13 @@ func TestValidate(t *testing.T) {
 			giveRequest: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					Regs: &openrtb2.Regs{
-						Ext: json.RawMessage(`{"dsa": {"dsarequired": 2,"pubrender":0}}`),
+						Ext: json.RawMessage(`{"dsa": {"dsarequired": 2,"pubrender": 0}}`),
 					},
 				},
 			},
 			giveBid: &entities.PbsOrtbBid{
 				Bid: &openrtb2.Bid{
-					Ext: json.RawMessage(`{"dsa":{"adrender":0}}`),
+					Ext: json.RawMessage(`{"dsa":{"adrender": 0}}`),
 				},
 			},
 			wantError: true,
@@ -132,13 +133,13 @@ func TestValidate(t *testing.T) {
 			giveRequest: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					Regs: &openrtb2.Regs{
-						Ext: json.RawMessage(`{"dsa": {"dsarequired": 2,"pubrender":2}}`),
+						Ext: json.RawMessage(`{"dsa": {"dsarequired": 2,"pubrender": 2}}`),
 					},
 				},
 			},
 			giveBid: &entities.PbsOrtbBid{
 				Bid: &openrtb2.Bid{
-					Ext: json.RawMessage(`{"dsa":{"adrender":1}}`),
+					Ext: json.RawMessage(`{"dsa":{"adrender": 1}}`),
 				},
 			},
 			wantError: true,
@@ -148,13 +149,45 @@ func TestValidate(t *testing.T) {
 			giveRequest: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					Regs: &openrtb2.Regs{
-						Ext: json.RawMessage(`{"dsa": {"dsarequired": 2}}`),
+						Ext: json.RawMessage(`{"dsa": {"dsarequired": 2,"pubrender": 0}}`),
 					},
 				},
 			},
 			giveBid: &entities.PbsOrtbBid{
 				Bid: &openrtb2.Bid{
 					Ext: json.RawMessage(`{"dsa":{"behalf":"` + validBehalf + `","paid":"` + validPaid + `","adrender":1}}`),
+				},
+			},
+			wantError: false,
+		},
+		{
+			name: "required_and_bid_dsa_is_valid_no_pubrender",
+			giveRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						Ext: json.RawMessage(`{"dsa": {"dsarequired": 2}}`),
+					},
+				},
+			},
+			giveBid: &entities.PbsOrtbBid{
+				Bid: &openrtb2.Bid{
+					Ext: json.RawMessage(`{"dsa":{"behalf":"` + validBehalf + `","paid":"` + validPaid + `","adrender":2}}`),
+				},
+			},
+			wantError: false,
+		},
+		{
+			name: "required_and_bid_dsa_is_valid_no_adrender",
+			giveRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						Ext: json.RawMessage(`{"dsa": {"dsarequired": 2, "pubrender": 0}}`),
+					},
+				},
+			},
+			giveBid: &entities.PbsOrtbBid{
+				Bid: &openrtb2.Bid{
+					Ext: json.RawMessage(`{"dsa":{"behalf":"` + validBehalf + `","paid":"` + validPaid + `"}}`),
 				},
 			},
 			wantError: false,
@@ -185,30 +218,37 @@ func TestDSARequired(t *testing.T) {
 			wantRequired: false,
 		},
 		{
+			name: "nil_required",
+			giveReqDSA: &openrtb_ext.ExtRegsDSA{
+				Required: nil,
+			},
+			wantRequired: false,
+		},
+		{
 			name: "not_required_0",
 			giveReqDSA: &openrtb_ext.ExtRegsDSA{
-				Required: 0,
+				Required: ptrutil.ToPtr[int8](0),
 			},
 			wantRequired: false,
 		},
 		{
 			name: "not_required_1",
 			giveReqDSA: &openrtb_ext.ExtRegsDSA{
-				Required: 0,
+				Required: ptrutil.ToPtr[int8](1),
 			},
 			wantRequired: false,
 		},
 		{
 			name: "required_2",
 			giveReqDSA: &openrtb_ext.ExtRegsDSA{
-				Required: 2,
+				Required: ptrutil.ToPtr[int8](2),
 			},
 			wantRequired: true,
 		},
 		{
 			name: "required_3",
 			giveReqDSA: &openrtb_ext.ExtRegsDSA{
-				Required: 3,
+				Required: ptrutil.ToPtr[int8](3),
 			},
 			wantRequired: true,
 		},
@@ -281,7 +321,7 @@ func TestGetReqDSA(t *testing.T) {
 				},
 			},
 			expectedDSA: &openrtb_ext.ExtRegsDSA{
-				Required: 2,
+				Required: ptrutil.ToPtr[int8](2),
 			},
 		},
 	}
@@ -340,7 +380,7 @@ func TestGetBidDSA(t *testing.T) {
 			expectedDSA: &openrtb_ext.ExtBidDSA{
 				Behalf:   "test1",
 				Paid:     "test2",
-				AdRender: 1,
+				AdRender: ptrutil.ToPtr[int8](1),
 			},
 		},
 	}

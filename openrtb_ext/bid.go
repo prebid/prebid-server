@@ -86,7 +86,7 @@ type ExtBidPrebidEvents struct {
 
 // ExtBidDSA defines the contract for bidresponse.seatbid.bid[i].ext.dsa
 type ExtBidDSA struct {
-	AdRender int8   `json:"adrender,omitempty"`
+	AdRender *int8  `json:"adrender,omitempty"`
 	Behalf   string `json:"behalf,omitempty"`
 	Paid     string `json:"paid,omitempty"`
 }

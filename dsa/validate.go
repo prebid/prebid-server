@@ -55,11 +55,11 @@ func Validate(req *openrtb_ext.RequestWrapper, bid *entities.PbsOrtbBid) error {
 	if len(bidDSA.Paid) > 100 {
 		return ErrPaidTooLong
 	}
-	if reqDSA != nil {
-		if reqDSA.PubRender == PubRenderCannotRender && bidDSA.AdRender != AdRenderWillRender {
+	if reqDSA != nil && reqDSA.PubRender != nil && bidDSA.AdRender != nil {
+		if *reqDSA.PubRender == PubRenderCannotRender && *bidDSA.AdRender != AdRenderWillRender {
 			return ErrNeitherWillRender
 		}
-		if reqDSA.PubRender == PubRenderWillRender && bidDSA.AdRender == AdRenderWillRender {
+		if *reqDSA.PubRender == PubRenderWillRender && *bidDSA.AdRender == AdRenderWillRender {
 			return ErrBothWillRender
 		}
 	}
@@ -69,10 +69,10 @@ func Validate(req *openrtb_ext.RequestWrapper, bid *entities.PbsOrtbBid) error {
 // dsaRequired examines the bid request to determine if the dsarequired field indicates
 // that bid responses include a dsa object
 func dsaRequired(dsa *openrtb_ext.ExtRegsDSA) bool {
-	if dsa == nil {
+	if dsa == nil || dsa.Required == nil {
 		return false
 	}
-	return dsa.Required == Required || dsa.Required == RequiredOnlinePlatform
+	return *dsa.Required == Required || *dsa.Required == RequiredOnlinePlatform
 }
 
 // getReqDSA retrieves the DSA object from the request
