@@ -6166,7 +6166,7 @@ func TestValidateOrFillCDep(t *testing.T) {
 			wantErr:       nil,
 		},
 		{
-			name: "header-not-present-in-request",
+			name: "cookie-deprecation-enabled-header-not-present-in-request",
 			args: args{
 				httpReq: &http.Request{},
 				account: config.Account{
