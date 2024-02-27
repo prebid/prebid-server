@@ -27,7 +27,7 @@ func NewHttpSender(client *http.Client, endpoint string) Sender {
 		if err != nil {
 			return err
 		}
-		defer resp.Body.Close()
+		resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
 			glog.Errorf("[pubstack] Wrong code received %d instead of %d", resp.StatusCode, http.StatusOK)
