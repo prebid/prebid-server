@@ -2069,7 +2069,7 @@ func TestRebuildRegExt(t *testing.T) {
 		{
 			name:    "req_regs_nil_-_dirty_and_different_-_change",
 			request: openrtb2.BidRequest{},
-			regExt:  RegExt{dsa: &ExtRegsDSA{Required: 1}, dsaDirty: true, gdpr: ptrutil.ToPtr[int8](1), gdprDirty: true, usPrivacy: strA, usPrivacyDirty: true},
+			regExt:  RegExt{dsa: &ExtRegsDSA{Required: ptrutil.ToPtr[int8](1)}, dsaDirty: true, gdpr: ptrutil.ToPtr[int8](1), gdprDirty: true, usPrivacy: strA, usPrivacyDirty: true},
 			expectedRequest: openrtb2.BidRequest{
 				Regs: &openrtb2.Regs{
 					Ext: json.RawMessage(`{"dsa":{"dsarequired":1},"gdpr":1,"us_privacy":"a"}`),
@@ -2085,7 +2085,7 @@ func TestRebuildRegExt(t *testing.T) {
 		{
 			name:    "req_regs_ext_nil_-_dirty_and_different_-_change",
 			request: openrtb2.BidRequest{Regs: &openrtb2.Regs{}},
-			regExt:  RegExt{dsa: &ExtRegsDSA{Required: 1}, dsaDirty: true, gdpr: ptrutil.ToPtr[int8](1), gdprDirty: true, usPrivacy: strA, usPrivacyDirty: true},
+			regExt:  RegExt{dsa: &ExtRegsDSA{Required: ptrutil.ToPtr[int8](1)}, dsaDirty: true, gdpr: ptrutil.ToPtr[int8](1), gdprDirty: true, usPrivacy: strA, usPrivacyDirty: true},
 			expectedRequest: openrtb2.BidRequest{
 				Regs: &openrtb2.Regs{
 					Ext: json.RawMessage(`{"dsa":{"dsarequired":1},"gdpr":1,"us_privacy":"a"}`),
@@ -2101,13 +2101,13 @@ func TestRebuildRegExt(t *testing.T) {
 		{
 			name:            "req_regs_dsa_populated_-_dirty_and_different-_change",
 			request:         openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"dsa":{"dsarequired":1}}`)}},
-			regExt:          RegExt{dsa: &ExtRegsDSA{Required: 2}, dsaDirty: true},
+			regExt:          RegExt{dsa: &ExtRegsDSA{Required: ptrutil.ToPtr[int8](2)}, dsaDirty: true},
 			expectedRequest: openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"dsa":{"dsarequired":2}}`)}},
 		},
 		{
 			name:            "req_regs_dsa_populated_-_dirty_and_same_-_no_change",
 			request:         openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"dsa":{"dsarequired":1}}`)}},
-			regExt:          RegExt{dsa: &ExtRegsDSA{Required: 1}, dsaDirty: true},
+			regExt:          RegExt{dsa: &ExtRegsDSA{Required: ptrutil.ToPtr[int8](1)}, dsaDirty: true},
 			expectedRequest: openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"dsa":{"dsarequired":1}}`)}},
 		},
 		{
@@ -2215,7 +2215,7 @@ func TestRegExtUnmarshal(t *testing.T) {
 			regExt:  &RegExt{},
 			extJson: json.RawMessage(`{"dsa":{"dsarequired":1}}`),
 			expectDSA: &ExtRegsDSA{
-				Required: 1,
+				Required: ptrutil.ToPtr[int8](1),
 			},
 			expectError: false,
 		},
@@ -2224,7 +2224,7 @@ func TestRegExtUnmarshal(t *testing.T) {
 			regExt:  &RegExt{},
 			extJson: json.RawMessage(`{"dsa":{"dsarequired":""}}`),
 			expectDSA: &ExtRegsDSA{
-				Required: 0,
+				Required: ptrutil.ToPtr[int8](0),
 			},
 			expectError: true,
 		},
@@ -2299,7 +2299,7 @@ func TestRegExtGetDSASetDSA(t *testing.T) {
 	assert.False(t, regExt.Dirty())
 
 	dsa := &ExtRegsDSA{
-		Required: 2,
+		Required: ptrutil.ToPtr[int8](2),
 	}
 	regExt.SetDSA(dsa)
 	assert.True(t, regExt.Dirty())
