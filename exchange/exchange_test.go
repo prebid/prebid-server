@@ -2455,29 +2455,29 @@ type fakeBidIDGenerator struct {
 	bidCount      map[string]int
 }
 
-func (m *fakeBidIDGenerator) Enabled() bool {
-	return m.GenerateBidID
+func (f *fakeBidIDGenerator) Enabled() bool {
+	return f.GenerateBidID
 }
 
-func (m *fakeBidIDGenerator) New(bidder string) (string, error) {
-	if m.ReturnError {
+func (f *fakeBidIDGenerator) New(bidder string) (string, error) {
+	if f.ReturnError {
 		return "", errors.New("Test error generating bid.ext.prebid.bidid")
 	}
 
-	if m.bidCount == nil {
-		m.bidCount = make(map[string]int)
+	if f.bidCount == nil {
+		f.bidCount = make(map[string]int)
 	}
 
-	m.bidCount[bidder] += 1
-	return fmt.Sprintf("bid-%v-%v", bidder, m.bidCount[bidder]), nil
+	f.bidCount[bidder] += 1
+	return fmt.Sprintf("bid-%v-%v", bidder, f.bidCount[bidder]), nil
 }
 
 type fakeBooleanGenerator struct {
 	value bool
 }
 
-func (m *fakeBooleanGenerator) Generate() bool {
-	return m.value
+func (f *fakeBooleanGenerator) Generate() bool {
+	return f.value
 }
 
 func newExtRequest() openrtb_ext.ExtRequest {
