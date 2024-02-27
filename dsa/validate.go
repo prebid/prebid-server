@@ -33,6 +33,11 @@ var (
 	ErrBothWillRender    = errors.New("DSA publisher and buyer both signal will render")
 )
 
+const (
+	behalfMaxLength = 100
+	paidMaxLength   = 100
+)
+
 // Validate determines whether a given bid is valid from a DSA perspective.
 // A bid is considered valid unless the bid request indicates that a DSA object is required
 // in bid responses and the object happens to be missing from the specified bid, or if the bid
@@ -47,10 +52,10 @@ func Validate(req *openrtb_ext.RequestWrapper, bid *entities.PbsOrtbBid) error {
 	if bidDSA == nil {
 		return nil
 	}
-	if len(bidDSA.Behalf) > 100 {
+	if len(bidDSA.Behalf) > behalfMaxLength {
 		return ErrBehalfTooLong
 	}
-	if len(bidDSA.Paid) > 100 {
+	if len(bidDSA.Paid) > paidMaxLength {
 		return ErrPaidTooLong
 	}
 	if reqDSA != nil && reqDSA.PubRender != nil && bidDSA.AdRender != nil {

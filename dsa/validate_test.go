@@ -200,9 +200,9 @@ func TestValidate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			err := Validate(tt.giveRequest, tt.giveBid)
 			if tt.wantError != nil {
-				assert.IsType(t, err, tt.wantError)
+				assert.Equal(t, err, tt.wantError)
 			} else {
-				assert.Nil(t, err)
+				assert.NoError(t, err)
 			}
 		})
 	}
