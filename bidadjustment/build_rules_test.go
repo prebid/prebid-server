@@ -445,6 +445,31 @@ func TestMerge(t *testing.T) {
 					},
 				},
 			},
+		}, {
+			name: "AcctEmptyPrebidExt",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid":{}}`)},
+			},
+			givenAccount: &config.Account{
+				BidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+					MediaType: openrtb_ext.MediaType{
+						WildCard: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+							"bidderB": {
+								"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.5}},
+							},
+						},
+					},
+				},
+			},
+			expectedBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+				MediaType: openrtb_ext.MediaType{
+					WildCard: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+						"bidderB": {
+							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.5}},
+						},
+					},
+				},
+			},
 		},
 	}
 
