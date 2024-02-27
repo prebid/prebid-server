@@ -89,11 +89,11 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 	}
 	channelEnabled := auctionReq.TCF2Config.ChannelEnabled(channelTypeMap[auctionReq.LegacyLabels.RType])
 	gdprEnforced := enforceGDPR(gdprSignal, gdprDefaultValue, channelEnabled)
-	DSAWriter := dsa.DSAWriter{
+	dsaWriter := dsa.DSAWriter{
 		Config:      auctionReq.Account.Privacy.DSA,
 		GDPRInScope: gdprEnforced,
 	}
-	if err := DSAWriter.Write(req); err != nil {
+	if err := dsaWriter.Write(req); err != nil {
 		errs = append(errs, err)
 	}
 	req.RebuildRequest()
