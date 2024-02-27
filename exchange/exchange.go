@@ -1246,11 +1246,11 @@ func (e *exchange) makeBid(bids []*entities.PbsOrtbBid, auc *auction, returnCrea
 
 	for _, bid := range bids {
 		if err := dsa.Validate(bidRequest, bid); err != nil {
-			DSAMessage := openrtb_ext.ExtBidderMessage{
+			dsaMessage := openrtb_ext.ExtBidderMessage{
 				Code:    errortypes.InvalidBidResponseDSAWarningCode,
 				Message: fmt.Sprintf("bid rejected: %s", err.Error()),
 			}
-			bidResponseExt.Warnings[adapter] = append(bidResponseExt.Warnings[adapter], DSAMessage)
+			bidResponseExt.Warnings[adapter] = append(bidResponseExt.Warnings[adapter], dsaMessage)
 
 			seatNonBids.addBid(bid, int(ResponseRejectedGeneral), adapter.String())
 			continue // Don't add bid to result

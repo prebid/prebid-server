@@ -17,13 +17,11 @@ const (
 // PubRender values representing publisher rendering intentions
 const (
 	PubRenderCannotRender int8 = 0 // publisher can't render
-	PubRenderCanRender    int8 = 1 // publisher could render depending on adrender
 	PubRenderWillRender   int8 = 2 // publisher will render
 )
 
 // AdRender values representing buyer/advertiser rendering intentions
 const (
-	AdRenderWontRender int8 = 0 // buyer/advertiser will not render
 	AdRenderWillRender int8 = 1 // buyer/advertiser will render
 )
 

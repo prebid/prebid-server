@@ -13,32 +13,34 @@ import (
 )
 
 func TestValidate(t *testing.T) {
-	validBehalf := strings.Repeat("a", 100)
-	invalidBehalf := strings.Repeat("a", 101)
-	validPaid := strings.Repeat("a", 100)
-	invalidPaid := strings.Repeat("a", 101)
+	var (
+		validBehalf   = strings.Repeat("a", 100)
+		invalidBehalf = strings.Repeat("a", 101)
+		validPaid     = strings.Repeat("a", 100)
+		invalidPaid   = strings.Repeat("a", 101)
+	)
 
 	tests := []struct {
 		name        string
 		giveRequest *openrtb_ext.RequestWrapper
 		giveBid     *entities.PbsOrtbBid
-		wantError   bool
+		wantError   error
 	}{
 		{
 			name:        "nil",
 			giveRequest: nil,
 			giveBid:     nil,
-			wantError:   false,
+			wantError:   nil,
 		},
 		{
-			name:        "request_nil_bid_not_nil",
+			name:        "request_nil",
 			giveRequest: nil,
 			giveBid: &entities.PbsOrtbBid{
 				Bid: &openrtb2.Bid{
 					Ext: json.RawMessage(`{"dsa":{"behalf":"` + validBehalf + `","paid":"` + validPaid + `","adrender":1}}`),
 				},
 			},
-			wantError: false,
+			wantError: nil,
 		},
 		{
 			name: "not_required_and_bid_is_nil",
@@ -50,7 +52,7 @@ func TestValidate(t *testing.T) {
 				},
 			},
 			giveBid:   nil,
-			wantError: false,
+			wantError: nil,
 		},
 		{
 			name: "not_required_and_bid_dsa_is_valid",
@@ -66,7 +68,7 @@ func TestValidate(t *testing.T) {
 					Ext: json.RawMessage(`{"dsa":{"behalf":"` + validBehalf + `","paid":"` + validPaid + `","adrender":1}}`),
 				},
 			},
-			wantError: false,
+			wantError: nil,
 		},
 		{
 			name: "required_and_bid_is_nil",
@@ -78,7 +80,7 @@ func TestValidate(t *testing.T) {
 				},
 			},
 			giveBid:   nil,
-			wantError: true,
+			wantError: ErrDsaMissing,
 		},
 		{
 			name: "required_and_bid_dsa_has_invalid_behalf",
@@ -94,7 +96,7 @@ func TestValidate(t *testing.T) {
 					Ext: json.RawMessage(`{"dsa":{"behalf":"` + invalidBehalf + `"}}`),
 				},
 			},
-			wantError: true,
+			wantError: ErrBehalfTooLong,
 		},
 		{
 			name: "required_and_bid_dsa_has_invalid_paid",
@@ -110,7 +112,7 @@ func TestValidate(t *testing.T) {
 					Ext: json.RawMessage(`{"dsa":{"paid":"` + invalidPaid + `"}}`),
 				},
 			},
-			wantError: true,
+			wantError: ErrPaidTooLong,
 		},
 		{
 			name: "required_and_neither_will_render",
@@ -126,7 +128,7 @@ func TestValidate(t *testing.T) {
 					Ext: json.RawMessage(`{"dsa":{"adrender": 0}}`),
 				},
 			},
-			wantError: true,
+			wantError: ErrNeitherWillRender,
 		},
 		{
 			name: "required_and_both_will_render",
@@ -142,7 +144,7 @@ func TestValidate(t *testing.T) {
 					Ext: json.RawMessage(`{"dsa":{"adrender": 1}}`),
 				},
 			},
-			wantError: true,
+			wantError: ErrBothWillRender,
 		},
 		{
 			name: "required_and_bid_dsa_is_valid",
@@ -158,7 +160,7 @@ func TestValidate(t *testing.T) {
 					Ext: json.RawMessage(`{"dsa":{"behalf":"` + validBehalf + `","paid":"` + validPaid + `","adrender":1}}`),
 				},
 			},
-			wantError: false,
+			wantError: nil,
 		},
 		{
 			name: "required_and_bid_dsa_is_valid_no_pubrender",
@@ -174,7 +176,7 @@ func TestValidate(t *testing.T) {
 					Ext: json.RawMessage(`{"dsa":{"behalf":"` + validBehalf + `","paid":"` + validPaid + `","adrender":2}}`),
 				},
 			},
-			wantError: false,
+			wantError: nil,
 		},
 		{
 			name: "required_and_bid_dsa_is_valid_no_adrender",
@@ -190,15 +192,15 @@ func TestValidate(t *testing.T) {
 					Ext: json.RawMessage(`{"dsa":{"behalf":"` + validBehalf + `","paid":"` + validPaid + `"}}`),
 				},
 			},
-			wantError: false,
+			wantError: nil,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := Validate(tt.giveRequest, tt.giveBid)
-			if tt.wantError {
-				assert.Error(t, err)
+			if tt.wantError != nil {
+				assert.IsType(t, err, tt.wantError)
 			} else {
 				assert.Nil(t, err)
 			}
@@ -225,28 +227,28 @@ func TestDSARequired(t *testing.T) {
 			wantRequired: false,
 		},
 		{
-			name: "not_required_0",
+			name: "not_required",
 			giveReqDSA: &openrtb_ext.ExtRegsDSA{
 				Required: ptrutil.ToPtr[int8](0),
 			},
 			wantRequired: false,
 		},
 		{
-			name: "not_required_1",
+			name: "not_required_supported",
 			giveReqDSA: &openrtb_ext.ExtRegsDSA{
 				Required: ptrutil.ToPtr[int8](1),
 			},
 			wantRequired: false,
 		},
 		{
-			name: "required_2",
+			name: "required",
 			giveReqDSA: &openrtb_ext.ExtRegsDSA{
 				Required: ptrutil.ToPtr[int8](2),
 			},
 			wantRequired: true,
 		},
 		{
-			name: "required_3",
+			name: "required_online_platform",
 			giveReqDSA: &openrtb_ext.ExtRegsDSA{
 				Required: ptrutil.ToPtr[int8](3),
 			},
