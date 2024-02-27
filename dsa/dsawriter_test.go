@@ -7,6 +7,7 @@ import (
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -14,9 +15,9 @@ func TestWrite(t *testing.T) {
 	requestDSAJSON := json.RawMessage(`{"dsa":{"datatopub":1,"dsarequired":2,"pubrender":1,"transparency":[{"domain":"example1.com","dsaparams":[1,2,3]}]}}`)
 	defaultDSAJSON := json.RawMessage(`{"dsa":{"datatopub":2,"dsarequired":3,"pubrender":2,"transparency":[{"domain":"example2.com","dsaparams":[4,5,6]}]}}`)
 	defaultDSA := &openrtb_ext.ExtRegsDSA{
-		DataToPub: 2,
-		Required:  3,
-		PubRender: 2,
+		DataToPub: ptrutil.ToPtr[int8](2),
+		Required:  ptrutil.ToPtr[int8](3),
+		PubRender: ptrutil.ToPtr[int8](2),
 		Transparency: []openrtb_ext.ExtBidDSATransparency{
 			{
 				Domain: "example2.com",
@@ -33,7 +34,9 @@ func TestWrite(t *testing.T) {
 		expectRequest *openrtb_ext.RequestWrapper
 	}{
 		{
-			name: "request_nil",
+			name:          "request_nil",
+			giveRequest:   nil,
+			expectRequest: nil,
 		},
 		{
 			name:       "config_nil",

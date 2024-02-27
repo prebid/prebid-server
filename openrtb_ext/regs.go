@@ -16,7 +16,7 @@ type ExtRegs struct {
 // ExtRegsDSA defines the contract for bidrequest.regs.ext.dsa
 type ExtRegsDSA struct {
 	// DataToPub should be between 0 and 2 inclusive, see https://github.com/InteractiveAdvertisingBureau/openrtb/blob/main/extensions/community_extensions/dsa_transparency.md
-	DataToPub int8 `json:"datatopub,omitempty"`
+	DataToPub *int8 `json:"datatopub,omitempty"`
 	// Required should be a between 0 and 3 inclusive, see https://github.com/InteractiveAdvertisingBureau/openrtb/blob/main/extensions/community_extensions/dsa_transparency.md
 	Required *int8 `json:"dsarequired,omitempty"`
 	// PubRender should be between 0 and 2 inclusive, see https://github.com/InteractiveAdvertisingBureau/openrtb/blob/main/extensions/community_extensions/dsa_transparency.md
