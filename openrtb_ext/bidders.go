@@ -636,10 +636,14 @@ func NewBidderParamsValidator(schemaDirectory string) (BidderParamValidator, err
 		schemaContents[alias] = parentSchemaContents
 	}
 
+	return InitBidderParamsValidator(schemaContents, schemas), nil
+}
+
+func InitBidderParamsValidator(schemaContents map[BidderName]string, schemas map[BidderName]*gojsonschema.Schema) *bidderParamValidator {
 	return &bidderParamValidator{
 		schemaContents: schemaContents,
 		parsedSchemas:  schemas,
-	}, nil
+	}
 }
 
 func LoadSchema(schemaDirectory, filename string) (*gojsonschema.Schema, error) {
