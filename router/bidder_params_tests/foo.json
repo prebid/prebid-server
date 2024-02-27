@@ -7,17 +7,17 @@
         "integer_param": {
             "type": "integer",
             "minimum": 1,
-            "description": "The customer id provided by AAX."
+            "description": "A customer id"
         },
         "string_param_1": {
             "type": "string",
             "minLength": 1,
-            "description": "Description blanks in between"
+            "description": "Text with blanks in between"
         },
         "string_param_2": {
             "type": "string",
             "minLength": 1,
-            "description": "Description_with_no_blanks_in_between"
+            "description": "Text_with_no_blanks_in_between"
         }
     },
     "required": [

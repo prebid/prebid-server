@@ -57,17 +57,16 @@ import (
 // This function stores the file contents in memory, and should not be used on large directories.
 // If the root directory, or any of the files in it, cannot be read, then the program will exit.
 func NewJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.BidderParamValidator, aliases map[string]string) httprouter.Handle {
-	return newJsonDirectoryServer(schemaDirectory, validator, aliases, openrtb_ext.GetAliasBidderToParent())
+	bidderMap := openrtb_ext.BuildBidderMap()
+	return newJsonDirectoryServer(schemaDirectory, validator, aliases, openrtb_ext.GetAliasBidderToParent(), bidderMap)
 }
 
-func newJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.BidderParamValidator, aliases map[string]string, yamlAliases map[openrtb_ext.BidderName]openrtb_ext.BidderName) httprouter.Handle {
+func newJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.BidderParamValidator, aliases map[string]string, yamlAliases map[openrtb_ext.BidderName]openrtb_ext.BidderName, bidderMap map[string]openrtb_ext.BidderName) httprouter.Handle {
 	// Slurp the files into memory first, since they're small and it minimizes request latency.
 	files, err := os.ReadDir(schemaDirectory)
 	if err != nil {
 		glog.Fatalf("Failed to read directory %s: %v", schemaDirectory, err)
 	}
-
-	bidderMap := openrtb_ext.BuildBidderMap()
 
 	data := make(map[string]json.RawMessage, len(files))
 	for _, file := range files {
