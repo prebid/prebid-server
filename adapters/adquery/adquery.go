@@ -41,7 +41,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 	for _, imp := range request.Imp {
 		ext, err := parseExt(imp.Ext)
 		if err != nil {
-			errs = append(errs, &errortypes.BadInput{err.Error()})
+			errs = append(errs, &errortypes.BadInput{Message: err.Error()})
 			continue
 		}
 

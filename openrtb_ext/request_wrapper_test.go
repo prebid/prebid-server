@@ -2049,3 +2049,292 @@ func TestCloneImpExt(t *testing.T) {
 		})
 	}
 }
+
+func TestRebuildRegExt(t *testing.T) {
+	strA := "a"
+	strB := "b"
+
+	tests := []struct {
+		name            string
+		request         openrtb2.BidRequest
+		regExt          RegExt
+		expectedRequest openrtb2.BidRequest
+	}{
+		{
+			name:            "req_regs_nil_-_not_dirty_-_no_change",
+			request:         openrtb2.BidRequest{},
+			regExt:          RegExt{},
+			expectedRequest: openrtb2.BidRequest{},
+		},
+		{
+			name:    "req_regs_nil_-_dirty_and_different_-_change",
+			request: openrtb2.BidRequest{},
+			regExt:  RegExt{dsa: &ExtRegsDSA{Required: ptrutil.ToPtr[int8](1)}, dsaDirty: true, gdpr: ptrutil.ToPtr[int8](1), gdprDirty: true, usPrivacy: strA, usPrivacyDirty: true},
+			expectedRequest: openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{
+					Ext: json.RawMessage(`{"dsa":{"dsarequired":1},"gdpr":1,"us_privacy":"a"}`),
+				},
+			},
+		},
+		{
+			name:            "req_regs_ext_nil_-_not_dirty_-_no_change",
+			request:         openrtb2.BidRequest{Regs: &openrtb2.Regs{}},
+			regExt:          RegExt{},
+			expectedRequest: openrtb2.BidRequest{Regs: &openrtb2.Regs{}},
+		},
+		{
+			name:    "req_regs_ext_nil_-_dirty_and_different_-_change",
+			request: openrtb2.BidRequest{Regs: &openrtb2.Regs{}},
+			regExt:  RegExt{dsa: &ExtRegsDSA{Required: ptrutil.ToPtr[int8](1)}, dsaDirty: true, gdpr: ptrutil.ToPtr[int8](1), gdprDirty: true, usPrivacy: strA, usPrivacyDirty: true},
+			expectedRequest: openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{
+					Ext: json.RawMessage(`{"dsa":{"dsarequired":1},"gdpr":1,"us_privacy":"a"}`),
+				},
+			},
+		},
+		{
+			name:            "req_regs_dsa_populated_-_not_dirty_-_no_change",
+			request:         openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"dsa":{"dsarequired":1}}`)}},
+			regExt:          RegExt{},
+			expectedRequest: openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"dsa":{"dsarequired":1}}`)}},
+		},
+		{
+			name:            "req_regs_dsa_populated_-_dirty_and_different-_change",
+			request:         openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"dsa":{"dsarequired":1}}`)}},
+			regExt:          RegExt{dsa: &ExtRegsDSA{Required: ptrutil.ToPtr[int8](2)}, dsaDirty: true},
+			expectedRequest: openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"dsa":{"dsarequired":2}}`)}},
+		},
+		{
+			name:            "req_regs_dsa_populated_-_dirty_and_same_-_no_change",
+			request:         openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"dsa":{"dsarequired":1}}`)}},
+			regExt:          RegExt{dsa: &ExtRegsDSA{Required: ptrutil.ToPtr[int8](1)}, dsaDirty: true},
+			expectedRequest: openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"dsa":{"dsarequired":1}}`)}},
+		},
+		{
+			name:            "req_regs_dsa_populated_-_dirty_and_nil_-_cleared",
+			request:         openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{}`)}},
+			regExt:          RegExt{dsa: nil, dsaDirty: true},
+			expectedRequest: openrtb2.BidRequest{Regs: &openrtb2.Regs{}},
+		},
+		{
+			name:            "req_regs_gdpr_populated_-_not_dirty_-_no_change",
+			request:         openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"gdpr":1}`)}},
+			regExt:          RegExt{},
+			expectedRequest: openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"gdpr":1}`)}},
+		},
+		{
+			name:            "req_regs_gdpr_populated_-_dirty_and_different-_change",
+			request:         openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"gdpr":1}`)}},
+			regExt:          RegExt{gdpr: ptrutil.ToPtr[int8](0), gdprDirty: true},
+			expectedRequest: openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"gdpr":0}`)}},
+		},
+		{
+			name:            "req_regs_gdpr_populated_-_dirty_and_same_-_no_change",
+			request:         openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"gdpr":1}`)}},
+			regExt:          RegExt{gdpr: ptrutil.ToPtr[int8](1), gdprDirty: true},
+			expectedRequest: openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"gdpr":1}`)}},
+		},
+		{
+			name:            "req_regs_gdpr_populated_-_dirty_and_nil_-_cleared",
+			request:         openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{}`)}},
+			regExt:          RegExt{gdpr: nil, gdprDirty: true},
+			expectedRequest: openrtb2.BidRequest{Regs: &openrtb2.Regs{}},
+		},
+		{
+			name:            "req_regs_usprivacy_populated_-_not_dirty_-_no_change",
+			request:         openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":"a"}`)}},
+			regExt:          RegExt{},
+			expectedRequest: openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":"a"}`)}},
+		},
+		{
+			name:            "req_regs_usprivacy_populated_-_dirty_and_different-_change",
+			request:         openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":"a"}`)}},
+			regExt:          RegExt{usPrivacy: strB, usPrivacyDirty: true},
+			expectedRequest: openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":"b"}`)}},
+		},
+		{
+			name:            "req_regs_usprivacy_populated_-_dirty_and_same_-_no_change",
+			request:         openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":"a"}`)}},
+			regExt:          RegExt{usPrivacy: strA, usPrivacyDirty: true},
+			expectedRequest: openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":"a"}`)}},
+		},
+		{
+			name:            "req_regs_usprivacy_populated_-_dirty_and_nil_-_cleared",
+			request:         openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":"a"}`)}},
+			regExt:          RegExt{usPrivacy: "", usPrivacyDirty: true},
+			expectedRequest: openrtb2.BidRequest{Regs: &openrtb2.Regs{}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.regExt.ext = make(map[string]json.RawMessage)
+
+			w := RequestWrapper{BidRequest: &tt.request, regExt: &tt.regExt}
+			w.RebuildRequest()
+			assert.Equal(t, tt.expectedRequest, *w.BidRequest)
+		})
+	}
+}
+
+func TestRegExtUnmarshal(t *testing.T) {
+	tests := []struct {
+		name            string
+		regExt          *RegExt
+		extJson         json.RawMessage
+		expectDSA       *ExtRegsDSA
+		expectGDPR      *int8
+		expectUSPrivacy string
+		expectError     bool
+	}{
+		{
+			name: "RegExt.ext_not_empty_and_not_dirtyr",
+			regExt: &RegExt{
+				ext: map[string]json.RawMessage{"dsa": json.RawMessage(`{}`)},
+			},
+			extJson:     json.RawMessage{},
+			expectError: false,
+		},
+		{
+			name:        "RegExt.ext_empty_and_dirty",
+			regExt:      &RegExt{extDirty: true},
+			extJson:     json.RawMessage(`{"dsa":{"dsarequired":1}}`),
+			expectError: false,
+		},
+		{
+			name: "nothing_to_unmarshal",
+			regExt: &RegExt{
+				ext: map[string]json.RawMessage{},
+			},
+			extJson:     json.RawMessage{},
+			expectError: false,
+		},
+		// DSA
+		{
+			name:    "valid_dsa_json",
+			regExt:  &RegExt{},
+			extJson: json.RawMessage(`{"dsa":{"dsarequired":1}}`),
+			expectDSA: &ExtRegsDSA{
+				Required: ptrutil.ToPtr[int8](1),
+			},
+			expectError: false,
+		},
+		{
+			name:    "malformed_dsa_json",
+			regExt:  &RegExt{},
+			extJson: json.RawMessage(`{"dsa":{"dsarequired":""}}`),
+			expectDSA: &ExtRegsDSA{
+				Required: ptrutil.ToPtr[int8](0),
+			},
+			expectError: true,
+		},
+		// GDPR
+		{
+			name:        "valid_gdpr_json",
+			regExt:      &RegExt{},
+			extJson:     json.RawMessage(`{"gdpr":1}`),
+			expectGDPR:  ptrutil.ToPtr[int8](1),
+			expectError: false,
+		},
+		{
+			name:        "malformed_gdpr_json",
+			regExt:      &RegExt{},
+			extJson:     json.RawMessage(`{"gdpr":""}`),
+			expectGDPR:  ptrutil.ToPtr[int8](0),
+			expectError: true,
+		},
+		// us_privacy
+		{
+			name:            "valid_usprivacy_json",
+			regExt:          &RegExt{},
+			extJson:         json.RawMessage(`{"us_privacy":"consent"}`),
+			expectUSPrivacy: "consent",
+			expectError:     false,
+		},
+		{
+			name:        "malformed_usprivacy_json",
+			regExt:      &RegExt{},
+			extJson:     json.RawMessage(`{"us_privacy":1}`),
+			expectError: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.regExt.unmarshal(tt.extJson)
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, tt.expectDSA, tt.regExt.dsa)
+			assert.Equal(t, tt.expectGDPR, tt.regExt.gdpr)
+			assert.Equal(t, tt.expectUSPrivacy, tt.regExt.usPrivacy)
+		})
+	}
+}
+
+func TestRegExtGetExtSetExt(t *testing.T) {
+	regExt := &RegExt{}
+	regExtJSON := regExt.GetExt()
+	assert.Equal(t, regExtJSON, map[string]json.RawMessage{})
+	assert.False(t, regExt.Dirty())
+
+	rawJSON := map[string]json.RawMessage{
+		"dsa":       json.RawMessage(`{}`),
+		"gdpr":      json.RawMessage(`1`),
+		"usprivacy": json.RawMessage(`"consent"`),
+	}
+	regExt.SetExt(rawJSON)
+	assert.True(t, regExt.Dirty())
+
+	regExtJSON = regExt.GetExt()
+	assert.Equal(t, regExtJSON, rawJSON)
+	assert.NotSame(t, regExtJSON, rawJSON)
+}
+
+func TestRegExtGetDSASetDSA(t *testing.T) {
+	regExt := &RegExt{}
+	regExtDSA := regExt.GetDSA()
+	assert.Nil(t, regExtDSA)
+	assert.False(t, regExt.Dirty())
+
+	dsa := &ExtRegsDSA{
+		Required: ptrutil.ToPtr[int8](2),
+	}
+	regExt.SetDSA(dsa)
+	assert.True(t, regExt.Dirty())
+
+	regExtDSA = regExt.GetDSA()
+	assert.Equal(t, regExtDSA, dsa)
+	assert.NotSame(t, regExtDSA, dsa)
+}
+
+func TestRegExtGetUSPrivacySetUSPrivacy(t *testing.T) {
+	regExt := &RegExt{}
+	regExtUSPrivacy := regExt.GetUSPrivacy()
+	assert.Equal(t, regExtUSPrivacy, "")
+	assert.False(t, regExt.Dirty())
+
+	usprivacy := "consent"
+	regExt.SetUSPrivacy(usprivacy)
+	assert.True(t, regExt.Dirty())
+
+	regExtUSPrivacy = regExt.GetUSPrivacy()
+	assert.Equal(t, regExtUSPrivacy, usprivacy)
+	assert.NotSame(t, regExtUSPrivacy, usprivacy)
+}
+
+func TestRegExtGetGDPRSetGDPR(t *testing.T) {
+	regExt := &RegExt{}
+	regExtGDPR := regExt.GetGDPR()
+	assert.Nil(t, regExtGDPR)
+	assert.False(t, regExt.Dirty())
+
+	gdpr := ptrutil.ToPtr[int8](1)
+	regExt.SetGDPR(gdpr)
+	assert.True(t, regExt.Dirty())
+
+	regExtGDPR = regExt.GetGDPR()
+	assert.Equal(t, regExtGDPR, gdpr)
+	assert.NotSame(t, regExtGDPR, gdpr)
+}
