@@ -613,9 +613,14 @@ func NewBidderParamsValidator(schemaDirectory string) (BidderParamValidator, err
 			return nil, fmt.Errorf("File %s/%s does not match a valid BidderName.", schemaDirectory, fileInfo.Name())
 		}
 
-		loadedSchema, err := LoadSchema(schemaDirectory, fileInfo.Name())
+		toOpen, err := paramsValidator.abs(filepath.Join(schemaDirectory, fileInfo.Name()))
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("Failed to get an absolute representation of the path: %s, %v", toOpen, err)
+		}
+		schemaLoader := paramsValidator.newReferenceLoader("file:///" + filepath.ToSlash(toOpen))
+		loadedSchema, err := paramsValidator.newSchema(schemaLoader)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to load json schema at %s: %v", toOpen, err)
 		}
 
 		fileBytes, err := paramsValidator.readFile(fmt.Sprintf("%s/%s", schemaDirectory, fileInfo.Name()))
@@ -636,27 +641,10 @@ func NewBidderParamsValidator(schemaDirectory string) (BidderParamValidator, err
 		schemaContents[alias] = parentSchemaContents
 	}
 
-	return InitBidderParamsValidator(schemaContents, schemas), nil
-}
-
-func InitBidderParamsValidator(schemaContents map[BidderName]string, schemas map[BidderName]*gojsonschema.Schema) *bidderParamValidator {
 	return &bidderParamValidator{
 		schemaContents: schemaContents,
 		parsedSchemas:  schemas,
-	}
-}
-
-func LoadSchema(schemaDirectory, filename string) (*gojsonschema.Schema, error) {
-	toOpen, err := paramsValidator.abs(filepath.Join(schemaDirectory, filename))
-	if err != nil {
-		return nil, fmt.Errorf("Failed to get an absolute representation of the path: %s, %v", toOpen, err)
-	}
-	schemaLoader := paramsValidator.newReferenceLoader("file:///" + filepath.ToSlash(toOpen))
-	loadedSchema, err := paramsValidator.newSchema(schemaLoader)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to load json schema at %s: %v", toOpen, err)
-	}
-	return loadedSchema, nil
+	}, nil
 }
 
 type bidderParamValidator struct {

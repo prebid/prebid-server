@@ -11,7 +11,6 @@ import (
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/prebid/prebid-server/v2/util/jsonutil"
-	"github.com/xeipuuv/gojsonschema"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -47,8 +46,7 @@ func ensureHasKey(t *testing.T, data map[string]json.RawMessage, key string) {
 func TestNewJsonDirectoryServer(t *testing.T) {
 	defaultAlias := map[string]string{"aliastest": "appnexus"}
 	yamlAlias := map[openrtb_ext.BidderName]openrtb_ext.BidderName{openrtb_ext.BidderName("alias"): openrtb_ext.BidderName("parentAlias")}
-	bidderMap := openrtb_ext.BuildBidderMap()
-	handler := newJsonDirectoryServer("../static/bidder-params", &testValidator{}, defaultAlias, yamlAlias, bidderMap)
+	handler := newJsonDirectoryServer("../static/bidder-params", &testValidator{}, defaultAlias, yamlAlias)
 	recorder := httptest.NewRecorder()
 	request, _ := http.NewRequest("GET", "/whatever", nil)
 	handler(recorder, request, nil)
@@ -285,27 +283,14 @@ func TestValidateDefaultAliases(t *testing.T) {
 }
 
 func TestBidderParamsCompactedOutput(t *testing.T) {
-	expectedFormattedResponse := `{"foo":{"$schema":"http://json-schema.org/draft-04/schema#","title":"Sample schema","description":"A sample schema to test the bidder/params endpoint","type":"object","properties":{"integer_param":{"type":"integer","minimum":1,"description":"A customer id"},"string_param_1":{"type":"string","minLength":1,"description":"Text with blanks in between"},"string_param_2":{"type":"string","minLength":1,"description":"Text_with_no_blanks_in_between"}},"required":["integer_param","string_param_2"]}}`
-	inSchemaDirectory := "bidder_params_tests"
-	inSchemaFile := "foo.json"
+	expectedFormattedResponse := `{"appnexus":{"$schema":"http://json-schema.org/draft-04/schema#","title":"Sample schema","description":"A sample schema to test the bidder/params endpoint","type":"object","properties":{"integer_param":{"type":"integer","minimum":1,"description":"A customer id"},"string_param_1":{"type":"string","minLength":1,"description":"Text with blanks in between"},"string_param_2":{"type":"string","minLength":1,"description":"Text_with_no_blanks_in_between"}},"required":["integer_param","string_param_2"]}}`
 
 	// Setup
-	biddermap := map[string]openrtb_ext.BidderName{
-		"foo": openrtb_ext.BidderName("foo"),
-	}
+	inSchemaDirectory := "bidder_params_tests"
+	paramsValidator, err := openrtb_ext.NewBidderParamsValidator(inSchemaDirectory)
+	assert.NoError(t, err, "Error initialing validator")
 
-	fooSchema, err := openrtb_ext.LoadSchema(inSchemaDirectory, inSchemaFile)
-	assert.NoError(t, err, "Error loading schema for %s/%s: %v", inSchemaDirectory, inSchemaFile)
-
-	fileBytes, err := os.ReadFile("bidder_params_tests/foo.json")
-	assert.NoError(t, err, "Error reading test schema file %s", inSchemaDirectory, inSchemaFile)
-
-	testParamsValidator := openrtb_ext.InitBidderParamsValidator(
-		map[openrtb_ext.BidderName]string{openrtb_ext.BidderName("foo"): string(fileBytes)},
-		map[openrtb_ext.BidderName]*gojsonschema.Schema{openrtb_ext.BidderName("foo"): fooSchema},
-	)
-
-	handler := newJsonDirectoryServer(inSchemaDirectory, testParamsValidator, nil, nil, biddermap)
+	handler := newJsonDirectoryServer(inSchemaDirectory, paramsValidator, nil, nil)
 	recorder := httptest.NewRecorder()
 	request, err := http.NewRequest("GET", "/bidder/params", nil)
 	assert.NoError(t, err, "Error creating request")
