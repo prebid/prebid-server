@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/prebid/prebid-server/v2/dchain"
 	"github.com/prebid/prebid-server/v2/privacy"
 
 	"github.com/prebid/prebid-server/v2/adapters"
@@ -1332,6 +1333,10 @@ func makeBidExtJSON(ext json.RawMessage, prebid *openrtb_ext.ExtBidPrebid, impEx
 
 	if prebid.Meta == nil {
 		prebid.Meta = &openrtb_ext.ExtBidPrebidMeta{}
+	}
+
+	if prebid.Meta.DChain != nil {
+		dchain.AddDchainNode(prebid.Meta)
 	}
 
 	prebid.Meta.AdapterCode = adapter.String()
