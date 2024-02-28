@@ -12,8 +12,8 @@ import (
 )
 
 func TestWrite(t *testing.T) {
-	requestDSAJSON := json.RawMessage(`{"dsa":{"datatopub":1,"dsarequired":2,"pubrender":1,"transparency":[{"domain":"example1.com","dsaparams":[1,2,3]}]}}`)
-	defaultDSAJSON := json.RawMessage(`{"dsa":{"datatopub":2,"dsarequired":3,"pubrender":2,"transparency":[{"domain":"example2.com","dsaparams":[4,5,6]}]}}`)
+	requestDSAJSON := json.RawMessage(`{"dsa":{"dsarequired":2,"pubrender":1,"datatopub":1,"transparency":[{"domain":"example1.com","dsaparams":[1,2,3]}]}}`)
+	defaultDSAJSON := json.RawMessage(`{"dsa":{"dsarequired":3,"pubrender":2,"datatopub":2,"transparency":[{"domain":"example2.com","dsaparams":[4,5,6]}]}}`)
 	defaultDSA := &openrtb_ext.ExtRegsDSA{
 		DataToPub: ptrutil.ToPtr[int8](2),
 		Required:  ptrutil.ToPtr[int8](3),
@@ -168,7 +168,7 @@ func TestWrite(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			writer := DSAWriter{
+			writer := Writer{
 				Config:      tt.giveConfig,
 				GDPRInScope: tt.giveGDPR,
 			}

@@ -89,7 +89,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 	}
 	channelEnabled := auctionReq.TCF2Config.ChannelEnabled(channelTypeMap[auctionReq.LegacyLabels.RType])
 	gdprEnforced := enforceGDPR(gdprSignal, gdprDefaultValue, channelEnabled)
-	dsaWriter := dsa.DSAWriter{
+	dsaWriter := dsa.Writer{
 		Config:      auctionReq.Account.Privacy.DSA,
 		GDPRInScope: gdprEnforced,
 	}
@@ -236,7 +236,10 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 			privacy.ScrubTID(reqWrapper)
 		}
 
-		reqWrapper.RebuildRequest()
+		err := reqWrapper.RebuildRequest()
+		if err != nil {
+			errs = append(errs, err)
+		}
 		bidderRequest.BidRequest = reqWrapper.BidRequest
 
 		allowedBidderRequests = append(allowedBidderRequests, bidderRequest)
