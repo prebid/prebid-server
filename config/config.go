@@ -1107,6 +1107,8 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("account_defaults.price_floors.fetch.max_age_sec", 86400)
 	v.SetDefault("account_defaults.price_floors.fetch.period_sec", 3600)
 	v.SetDefault("account_defaults.price_floors.fetch.max_schema_dims", 0)
+	v.SetDefault("account_defaults.privacy.privacysandbox.cookiedeprecation.enabled", false)
+	v.SetDefault("account_defaults.privacy.privacysandbox.cookiedeprecation.ttl_sec", 604800)
 
 	v.SetDefault("account_defaults.events_enabled", false)
 	v.SetDefault("account_defaults.privacy.ipv6.anon_keep_bits", 56)

@@ -1932,6 +1932,15 @@ func validateOrFillCDep(httpReq *http.Request, req *openrtb_ext.RequestWrapper, 
 		return nil
 	}
 
+	deviceExt, err := req.GetDeviceExt()
+	if err != nil {
+		return err
+	}
+
+	if deviceExt.GetCDep() != "" {
+		return nil
+	}
+
 	secCookieDeprecation := httpReq.Header.Get(secCookieDeprecation)
 	if secCookieDeprecation == "" {
 		return nil
@@ -1941,11 +1950,6 @@ func validateOrFillCDep(httpReq *http.Request, req *openrtb_ext.RequestWrapper, 
 			Message:     "request.device.ext.cdep must be less than 100 characters",
 			WarningCode: errortypes.SecCookieDeprecationLenWarningCode,
 		}
-	}
-
-	deviceExt, err := req.GetDeviceExt()
-	if err != nil {
-		return err
 	}
 
 	deviceExt.SetCDep(secCookieDeprecation)

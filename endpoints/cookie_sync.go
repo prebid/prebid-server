@@ -484,11 +484,11 @@ func (c *cookieSyncEndpoint) setCookieDeprecationHeader(w http.ResponseWriter, r
 		SameSite: http.SameSiteNoneMode,
 		Expires:  c.time.Now().Add(time.Second * time.Duration(account.Privacy.PrivacySandbox.CookieDeprecation.TTLSec)),
 	}
-	setCookie(w, cookie)
+	setCookiePartitioned(w, cookie)
 }
 
-// setCookie temporary substitute for http.SetCookie(w, cookie) until it supports Partitioned cookie type. Refer https://github.com/golang/go/issues/62490
-func setCookie(w http.ResponseWriter, cookie *http.Cookie) {
+// setCookiePartitioned temporary substitute for http.SetCookie(w, cookie) until it supports Partitioned cookie type. Refer https://github.com/golang/go/issues/62490
+func setCookiePartitioned(w http.ResponseWriter, cookie *http.Cookie) {
 	if v := cookie.String(); v != "" {
 		w.Header().Add("Set-Cookie", v+"; Partitioned;")
 	}

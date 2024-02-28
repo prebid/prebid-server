@@ -6169,6 +6169,9 @@ func TestValidateOrFillCDep(t *testing.T) {
 			name: "cookie-deprecation-enabled-header-not-present-in-request",
 			args: args{
 				httpReq: &http.Request{},
+				req: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{},
+				},
 				account: config.Account{
 					Privacy: config.AccountPrivacy{
 						PrivacySandbox: config.PrivacySandbox{
@@ -6284,6 +6287,32 @@ func TestValidateOrFillCDep(t *testing.T) {
 				Message:     "request.device.ext.cdep must be less than 100 characters",
 				WarningCode: errortypes.SecCookieDeprecationLenWarningCode,
 			},
+		},
+		{
+			name: "header-present-request-device-ext-cdep-present",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{secCookieDeprecation: []string{"example_label_1"}},
+				},
+				req: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						Device: &openrtb2.Device{
+							Ext: json.RawMessage(`{"foo":"bar","cdep":"example_label_2"}`),
+						},
+					},
+				},
+				account: config.Account{
+					Privacy: config.AccountPrivacy{
+						PrivacySandbox: config.PrivacySandbox{
+							CookieDeprecation: config.CookieDeprecation{
+								Enabled: true,
+							},
+						},
+					},
+				},
+			},
+			wantDeviceExt: json.RawMessage(`{"foo":"bar","cdep":"example_label_2"}`),
+			wantErr:       nil,
 		},
 		{
 			name: "header-present-request-device-ext-invalid",

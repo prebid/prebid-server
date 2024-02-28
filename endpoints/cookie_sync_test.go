@@ -2289,6 +2289,7 @@ func TestSetCookieDeprecationHeader(t *testing.T) {
 			name:                            "not-present-account-nil",
 			request:                         getTestRequest(false),
 			responseWriter:                  httptest.NewRecorder(),
+			account:                         nil,
 			expectedCookieDeprecationHeader: false,
 		},
 		{
@@ -2342,6 +2343,7 @@ func TestSetCookieDeprecationHeader(t *testing.T) {
 			name:                            "present-account-nil",
 			request:                         getTestRequest(true),
 			responseWriter:                  httptest.NewRecorder(),
+			account:                         nil,
 			expectedCookieDeprecationHeader: false,
 		},
 		{
