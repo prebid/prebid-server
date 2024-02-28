@@ -7,7 +7,6 @@ import (
 	"github.com/chasex/glog"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/analytics"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
@@ -28,11 +27,8 @@ type FileLogger struct {
 }
 
 // Writes AuctionObject to file
-// TODO: It will also be here that remove the relevant adapter information from the request so that it's not logged?
-// TODO: Is fileLogger only used for testing purposes?
 func (f *FileLogger) LogAuctionObject(ao *analytics.AuctionObject) {
 	var b bytes.Buffer
-	ao.RequestWrapper = updateReqWrapperForAnalytics(ao.RequestWrapper)
 
 	b.WriteString(jsonifyAuctionObject(ao))
 	f.Logger.Debug(b.String())
@@ -43,7 +39,6 @@ func (f *FileLogger) LogAuctionObject(ao *analytics.AuctionObject) {
 func (f *FileLogger) LogVideoObject(vo *analytics.VideoObject) {
 	//Code to parse the object and log in a way required
 	var b bytes.Buffer
-	vo.RequestWrapper = updateReqWrapperForAnalytics(vo.RequestWrapper)
 
 	b.WriteString(jsonifyVideoObject(vo))
 	f.Logger.Debug(b.String())
@@ -75,8 +70,6 @@ func (f *FileLogger) LogAmpObject(ao *analytics.AmpObject) {
 	}
 	//Code to parse the object and log in a way required
 	var b bytes.Buffer
-
-	ao.RequestWrapper = updateReqWrapperForAnalytics(ao.RequestWrapper)
 
 	b.WriteString(jsonifyAmpObject(ao))
 	f.Logger.Debug(b.String())
@@ -285,17 +278,5 @@ func jsonifyNotificationEventObject(ne *analytics.NotificationEvent) string {
 		return string(b)
 	} else {
 		return fmt.Sprintf("Transactional Logs Error: NotificationEvent object badly formed %v", err)
-	}
-}
-
-func updateReqWrapperForAnalytics(reqWrapper *openrtb_ext.RequestWrapper) *openrtb_ext.RequestWrapper {
-	reqExt, _ := reqWrapper.GetRequestExt()
-	reqPrebid := reqExt.GetPrebid()
-	extPrebidAnalytics := reqPrebid.Analytics
-
-	for adapterName, analytics := range extPrebidAnalytics {
-		if analytics.ClientAnalytics == true {
-			// Remove the adapter from the request
-		}
 	}
 }

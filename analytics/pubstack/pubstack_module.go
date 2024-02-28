@@ -107,7 +107,6 @@ func NewModuleWithConfigTask(client *http.Client, scope, endpoint string, maxEve
 	return &pb, nil
 }
 
-// TODO: Does the issue need to be addressed here too?
 func (p *PubstackModule) LogAuctionObject(ao *analytics.AuctionObject) {
 	p.muxConfig.RLock()
 	defer p.muxConfig.RUnlock()
@@ -115,8 +114,6 @@ func (p *PubstackModule) LogAuctionObject(ao *analytics.AuctionObject) {
 	if !p.isFeatureEnable(auction) {
 		return
 	}
-
-	ao.RequestWrapper = updateReqWrapperForAnalytics(ao.RequestWrapper)
 
 	// serialize event
 	payload, err := helpers.JsonifyAuctionObject(ao, p.scope)
@@ -138,8 +135,6 @@ func (p *PubstackModule) LogVideoObject(vo *analytics.VideoObject) {
 	if !p.isFeatureEnable(video) {
 		return
 	}
-
-	vo.RequestWrapper = updateReqWrapperForAnalytics(vo.RequestWrapper)
 
 	// serialize event
 	payload, err := helpers.JsonifyVideoObject(vo, p.scope)
@@ -194,8 +189,6 @@ func (p *PubstackModule) LogAmpObject(ao *analytics.AmpObject) {
 	if !p.isFeatureEnable(amp) {
 		return
 	}
-
-	ao.RequestWrapper = updateReqWrapperForAnalytics(ao.RequestWrapper)
 
 	// serialize event
 	payload, err := helpers.JsonifyAmpObject(ao, p.scope)

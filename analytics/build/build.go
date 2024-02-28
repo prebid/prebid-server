@@ -46,10 +46,9 @@ func New(analytics *config.Analytics) analytics.Runner {
 // Collection of all the correctly configured analytics modules - implements the PBSAnalyticsModule interface
 type enabledAnalytics map[string]analytics.Module
 
-// TODO: It will be here that remove the relevant adapter information from the request so that it's not logged?
+// TODO: Write test to verify implementation
 func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac privacy.ActivityControl) {
-	// What is name here?
-	// We have acess to the requestWrapper which is where we can check ext.prebid.analytics
+	originalReqWrapper := ao.RequestWrapper
 	for name, module := range ea {
 		if isAllowed, cloneBidderReq := evaluateActivities(ao.RequestWrapper, ac, name); isAllowed {
 			if cloneBidderReq != nil {
@@ -57,6 +56,7 @@ func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac priv
 			}
 			updateReqWrapperForAnalytics(ao.RequestWrapper, name)
 			module.LogAuctionObject(ao)
+			ao.RequestWrapper = originalReqWrapper
 		}
 	}
 }
@@ -137,19 +137,31 @@ func evaluateActivities(rw *openrtb_ext.RequestWrapper, ac privacy.ActivityContr
 	return true, cloneReq
 }
 
-func updateReqWrapperForAnalytics(reqWrapper *openrtb_ext.RequestWrapper, adapterName string) {
-	reqExt, _ := reqWrapper.GetRequestExt()
+func updateReqWrapperForAnalytics(rw *openrtb_ext.RequestWrapper, adapterName string) {
+	reqExt, _ := rw.GetRequestExt()
 	reqExtPrebid := reqExt.GetPrebid()
 	extPrebidAnalytics := reqExtPrebid.Analytics
 
+	// Create new map, and copy elements from reqWrapper
+	copyPrebidAnalytics := make(map[string]*openrtb_ext.ExtRequestPrebidAnalytics)
+	for k, v := range extPrebidAnalytics {
+		copyPrebidAnalytics[k] = v
+	}
+
 	for name, _ := range extPrebidAnalytics {
 		if name == adapterName {
-			delete(extPrebidAnalytics, name)
-			reqExtPrebid.Analytics = extPrebidAnalytics
+			reqExtPrebid.Analytics = updatePrebidAnalyticsMap(copyPrebidAnalytics, adapterName)
 			reqExt.SetPrebid(reqExtPrebid)
-			reqWrapper.Ext = reqExt // TODO: Properly set the ext
-			reqWrapper.RebuildRequest()
+			rw.RebuildRequest()
 			break
 		}
 	}
+}
+
+func updatePrebidAnalyticsMap(extPrebidAnalytics map[string]*openrtb_ext.ExtRequestPrebidAnalytics, adapterName string) map[string]*openrtb_ext.ExtRequestPrebidAnalytics {
+	newMap := make(map[string]*openrtb_ext.ExtRequestPrebidAnalytics)
+	if val, ok := extPrebidAnalytics[adapterName]; ok {
+		newMap[adapterName] = val
+	}
+	return newMap
 }
