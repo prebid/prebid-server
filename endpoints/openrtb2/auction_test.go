@@ -6284,7 +6284,7 @@ func TestValidateOrFillCDep(t *testing.T) {
 			},
 			wantDeviceExt: json.RawMessage(`{"foo":"bar"}`),
 			wantErr: &errortypes.Warning{
-				Message:     "request.device.ext.cdep must be less than 100 characters",
+				Message:     "request.device.ext.cdep must not exceed 100 characters",
 				WarningCode: errortypes.SecCookieDeprecationLenWarningCode,
 			},
 		},
@@ -6461,7 +6461,7 @@ func TestValidateRequestCookieDeprecation(t *testing.T) {
 				},
 				wantErrs: []error{
 					&errortypes.Warning{
-						Message:     "request.device.ext.cdep must be less than 100 characters",
+						Message:     "request.device.ext.cdep must not exceed 100 characters",
 						WarningCode: errortypes.SecCookieDeprecationLenWarningCode,
 					},
 				},

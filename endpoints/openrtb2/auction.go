@@ -1947,7 +1947,7 @@ func validateOrFillCDep(httpReq *http.Request, req *openrtb_ext.RequestWrapper, 
 	}
 	if len(secCookieDeprecation) > 100 {
 		return &errortypes.Warning{
-			Message:     "request.device.ext.cdep must be less than 100 characters",
+			Message:     "request.device.ext.cdep must not exceed 100 characters",
 			WarningCode: errortypes.SecCookieDeprecationLenWarningCode,
 		}
 	}
