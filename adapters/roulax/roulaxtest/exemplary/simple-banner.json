@@ -18,8 +18,8 @@
         },
         "ext": {
           "bidder": {
-            "PublisherPath": "72721",
-            "Pid": "mvo",
+            "PublisherPath": "vidmate",
+            "Pid": "vidmate_android_banner",
             "zone": "1r"
           }
         }
@@ -29,7 +29,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://dsp.rcoreads.com/api/vidmate?pid=vidmate_android_banner",
+        "uri": "http://dsp.rcoreads.com/api/",
         "body": {
           "id": "test-request-id",
           "imp": [
