@@ -8,7 +8,6 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"strings"
 )
 
 type adapter struct {
@@ -48,11 +47,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	if err != nil {
 		return nil, append(errs, err)
 	}
-	a.endpoint = strings.Replace(a.endpoint, "{PUBLISHER_PATH}", roulaxExt.PublisherPath, -1)
-	a.endpoint = strings.Replace(a.endpoint, "{PID}", roulaxExt.Pid, -1)
 	return []*adapters.RequestData{{
 		Method:  "POST",
-		Uri:     a.endpoint,
+		Uri:     a.endpoint+roulaxExt.PublisherPath+"?pid="+roulaxExt.Pid,
 		Body:    reqJson,
 		Headers: headers,
 	}}, errs

@@ -1,6 +1,6 @@
-endpoint: "http://dsp.rcoreads.com/api/{PUBLISHER_PATH}?pid={PID}"
+endpoint: "http://dsp.rcoreads.com/api/"
 maintainer:
-  email: "tech@roulax.io"
+  email: "bussiness@roulax.io"
 capabilities:
   app:
     mediaTypes:
