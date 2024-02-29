@@ -4,20 +4,27 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"text/template"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/macros"
 )
 
 type adapter struct {
-	endpoint string
+	endpoint *template.Template
 }
 
 // Builder builds a new instance of the Roulax adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
+	}
+
 	bidder := &adapter{
-		endpoint: config.Endpoint,
+		endpoint: template,
 	}
 	return bidder, nil
 }
@@ -47,9 +54,16 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	if err != nil {
 		return nil, append(errs, err)
 	}
+
+	endpointParams := macros.EndpointTemplateParams{AccountID: roulaxExt.Pid,PublisherID: roulaxExt.PublisherPath}
+	url,err := macros.ResolveMacros(a.endpoint, endpointParams)
+	if err != nil {
+		return nil, append(errs, err)
+	}
+
 	return []*adapters.RequestData{{
 		Method:  "POST",
-		Uri:     a.endpoint+roulaxExt.PublisherPath+"?pid="+roulaxExt.Pid,
+		Uri:     url,
 		Body:    reqJson,
 		Headers: headers,
 	}}, errs

@@ -32,7 +32,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://dsp.rcoreads.com/api/",
+        "uri": "http://dsp.rcoreads.com/api/vidmate?pid=vidmate_android_banner",
         "body": {
           "id": "test-request-id",
           "imp": [

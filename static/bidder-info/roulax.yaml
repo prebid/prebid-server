@@ -1,4 +1,4 @@
-endpoint: "http://dsp.rcoreads.com/api/"
+endpoint: "http://dsp.rcoreads.com/api/{{.PublisherID}}?pid={{.AccountID}}"
 maintainer:
   email: "bussiness@roulax.io"
 capabilities:
