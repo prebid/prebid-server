@@ -39,6 +39,9 @@ const (
 	impression                     = "impression"
 	err                            = "error"
 	clicktracking                  = "clicktracking"
+	adId                           = "adid"
+	trackingStartTag               = `<Tracking event="%s"><![CDATA[`
+	trackingEndTag                 = "]]></Tracking>"
 )
 
 const (
@@ -61,14 +64,12 @@ type Injector interface {
 }
 
 type VASTEvents struct {
-	Errors                  []string
-	Impressions             []string
-	VideoClicks             []string
-	NonLinearClickTracking  []string
-	CompanionClickThrough   []string
-	LinearTrackingEvents    map[string][]string
-	NonLinearTrackingEvents map[string][]string
-	CompanionTrackingEvents map[string][]string
+	Errors                 []string
+	Impressions            []string
+	VideoClicks            []string
+	NonLinearClickTracking []string
+	CompanionClickThrough  []string
+	TrackingEvents         map[string][]string
 }
 
 type InjectionState struct {
@@ -160,7 +161,7 @@ func (ti *TrackerInjector) InjectTracker(vastXML string, NURL string) string {
 	encoder.Flush()
 
 	if !st.inlineWrapperTagFound {
-		// 	// Todo log adapter.<bidder-name>.requests.badserverresponse metrics
+		// Todo log adapter.<bidder-name>.requests.badserverresponse metrics
 		return vastXML
 	}
 	return outputXML.String()
@@ -174,7 +175,7 @@ func (ti *TrackerInjector) handleStartElement(tt xml.StartElement, st *Injection
 	case creativeCase:
 		st.isCreative = true
 		for _, attr := range tt.Attr {
-			if strings.ToLower(attr.Name.Local) == "adid" {
+			if strings.ToLower(attr.Name.Local) == adId {
 				st.creativeId = attr.Value
 			}
 		}
@@ -286,8 +287,8 @@ func (ti *TrackerInjector) addTrackingEvent(outputXML *strings.Builder, creative
 	if addParentTag {
 		outputXML.WriteString(trackingEventStartTag)
 	}
-	for typ, urls := range ti.events.LinearTrackingEvents {
-		ti.writeTrackingEvent(urls, outputXML, "<Tracking event=\""+string(typ)+"\"><![CDATA[", "]]></Tracking>", creativeId, typ, tracking)
+	for typ, urls := range ti.events.TrackingEvents {
+		ti.writeTrackingEvent(urls, outputXML, fmt.Sprintf(trackingStartTag, typ), trackingEndTag, creativeId, typ, tracking)
 	}
 	if addParentTag {
 		outputXML.WriteString(trackingEventEndTag)

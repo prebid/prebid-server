@@ -1,7 +1,7 @@
 package injector
 
 import (
-	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -50,14 +50,12 @@ func TestInjectTracker(t *testing.T) {
 		macros.NewStringIndexBasedReplacer(),
 		b,
 		VASTEvents{
-			Errors:                  []string{"http://errortracker.com?macro1=##PBS-BIDID##&macro2=##PBS-APPBUNDLE##&macro3=##PBS-APPBUNDLE##&macro4=##PBS-PUBDOMAIN##&macro5=##PBS-PAGEURL##&macro6=##PBS-ACCOUNTID##&macro6=##PBS-LIMITADTRACKING##&macro7=##PBS-GDPRCONSENT##&macro8=##PBS-GDPRCONSENT##&macro9=##PBS-MACRO-CUSTOMMACR1CUST1##&macro10=##PBS-MACRO-CUSTOMMACR1CUST2##"},
-			Impressions:             []string{"http://impressiontracker.com?macro1=##PBS-BIDID##&macro2=##PBS-APPBUNDLE##&macro3=##PBS-APPBUNDLE##&macro4=##PBS-PUBDOMAIN##&macro5=##PBS-PAGEURL##&macro6=##PBS-ACCOUNTID##&macro6=##PBS-LIMITADTRACKING##&macro7=##PBS-GDPRCONSENT##&macro8=##PBS-GDPRCONSENT##&macro9=##PBS-MACRO-CUSTOMMACR1CUST1##&macro10=##PBS-MACRO-CUSTOMMACR1CUST2##"},
-			VideoClicks:             []string{"http://videoclicktracker.com?macro1=##PBS-BIDID##&macro2=##PBS-APPBUNDLE##&macro3=##PBS-APPBUNDLE##&macro4=##PBS-PUBDOMAIN##&macro5=##PBS-PAGEURL##&macro6=##PBS-ACCOUNTID##&macro6=##PBS-LIMITADTRACKING##&macro7=##PBS-GDPRCONSENT##&macro8=##PBS-GDPRCONSENT##&macro9=##PBS-MACRO-CUSTOMMACR1CUST1##&macro10=##PBS-MACRO-CUSTOMMACR1CUST2##"},
-			NonLinearClickTracking:  []string{"http://nonlinearclicktracker.com?macro1=##PBS-BIDID##&macro2=##PBS-APPBUNDLE##&macro3=##PBS-APPBUNDLE##&macro4=##PBS-PUBDOMAIN##&macro5=##PBS-PAGEURL##&macro6=##PBS-ACCOUNTID##&macro6=##PBS-LIMITADTRACKING##&macro7=##PBS-GDPRCONSENT##&macro8=##PBS-GDPRCONSENT##&macro9=##PBS-MACRO-CUSTOMMACR1CUST1##&macro10=##PBS-MACRO-CUSTOMMACR1CUST2##"},
-			CompanionClickThrough:   []string{"http://companionclicktracker.com?macro1=##PBS-BIDID##&macro2=##PBS-APPBUNDLE##&macro3=##PBS-APPBUNDLE##&macro4=##PBS-PUBDOMAIN##&macro5=##PBS-PAGEURL##&macro6=##PBS-ACCOUNTID##&macro6=##PBS-LIMITADTRACKING##&macro7=##PBS-GDPRCONSENT##&macro8=##PBS-GDPRCONSENT##&macro9=##PBS-MACRO-CUSTOMMACR1CUST1##&macro10=##PBS-MACRO-CUSTOMMACR1CUST2##"},
-			LinearTrackingEvents:    map[string][]string{"firstQuartile": {"http://eventracker1.com?macro1=##PBS-BIDID##&macro2=##PBS-APPBUNDLE##&macro3=##PBS-APPBUNDLE##&macro4=##PBS-PUBDOMAIN##&macro5=##PBS-PAGEURL##&macro6=##PBS-ACCOUNTID##&macro6=##PBS-LIMITADTRACKING##&macro7=##PBS-GDPRCONSENT##&macro8=##PBS-GDPRCONSENT##&macro9=##PBS-MACRO-CUSTOMMACR1CUST1##&macro10=##PBS-MACRO-CUSTOMMACR1CUST2##"}},
-			NonLinearTrackingEvents: map[string][]string{"complete": {"http://eventtracker2.com?macro1=##PBS-BIDID##&macro2=##PBS-APPBUNDLE##&macro3=##PBS-APPBUNDLE##&macro4=##PBS-PUBDOMAIN##&macro5=##PBS-PAGEURL##&macro6=##PBS-ACCOUNTID##&macro6=##PBS-LIMITADTRACKING##&macro7=##PBS-GDPRCONSENT##&macro8=##PBS-GDPRCONSENT##&macro9=##PBS-MACRO-CUSTOMMACR1CUST1##&macro10=##PBS-MACRO-CUSTOMMACR1CUST2##"}},
-			CompanionTrackingEvents: map[string][]string{"skip": {"http://eventtracker3.com?macro1=##PBS-BIDID##&macro2=##PBS-APPBUNDLE##&macro3=##PBS-APPBUNDLE##&macro4=##PBS-PUBDOMAIN##&macro5=##PBS-PAGEURL##&macro6=##PBS-ACCOUNTID##&macro6=##PBS-LIMITADTRACKING##&macro7=##PBS-GDPRCONSENT##&macro8=##PBS-GDPRCONSENT##&macro9=##PBS-MACRO-CUSTOMMACR1CUST1##&macro10=##PBS-MACRO-CUSTOMMACR1CUST2##"}},
+			Errors:                 []string{"http://errortracker.com?macro1=##PBS-BIDID##&macro2=##PBS-APPBUNDLE##&macro3=##PBS-APPBUNDLE##&macro4=##PBS-PUBDOMAIN##&macro5=##PBS-PAGEURL##&macro6=##PBS-ACCOUNTID##&macro6=##PBS-LIMITADTRACKING##&macro7=##PBS-GDPRCONSENT##&macro8=##PBS-GDPRCONSENT##&macro9=##PBS-MACRO-CUSTOMMACR1CUST1##&macro10=##PBS-MACRO-CUSTOMMACR1CUST2##"},
+			Impressions:            []string{"http://impressiontracker.com?macro1=##PBS-BIDID##&macro2=##PBS-APPBUNDLE##&macro3=##PBS-APPBUNDLE##&macro4=##PBS-PUBDOMAIN##&macro5=##PBS-PAGEURL##&macro6=##PBS-ACCOUNTID##&macro6=##PBS-LIMITADTRACKING##&macro7=##PBS-GDPRCONSENT##&macro8=##PBS-GDPRCONSENT##&macro9=##PBS-MACRO-CUSTOMMACR1CUST1##&macro10=##PBS-MACRO-CUSTOMMACR1CUST2##"},
+			VideoClicks:            []string{"http://videoclicktracker.com?macro1=##PBS-BIDID##&macro2=##PBS-APPBUNDLE##&macro3=##PBS-APPBUNDLE##&macro4=##PBS-PUBDOMAIN##&macro5=##PBS-PAGEURL##&macro6=##PBS-ACCOUNTID##&macro6=##PBS-LIMITADTRACKING##&macro7=##PBS-GDPRCONSENT##&macro8=##PBS-GDPRCONSENT##&macro9=##PBS-MACRO-CUSTOMMACR1CUST1##&macro10=##PBS-MACRO-CUSTOMMACR1CUST2##"},
+			NonLinearClickTracking: []string{"http://nonlinearclicktracker.com?macro1=##PBS-BIDID##&macro2=##PBS-APPBUNDLE##&macro3=##PBS-APPBUNDLE##&macro4=##PBS-PUBDOMAIN##&macro5=##PBS-PAGEURL##&macro6=##PBS-ACCOUNTID##&macro6=##PBS-LIMITADTRACKING##&macro7=##PBS-GDPRCONSENT##&macro8=##PBS-GDPRCONSENT##&macro9=##PBS-MACRO-CUSTOMMACR1CUST1##&macro10=##PBS-MACRO-CUSTOMMACR1CUST2##"},
+			CompanionClickThrough:  []string{"http://companionclicktracker.com?macro1=##PBS-BIDID##&macro2=##PBS-APPBUNDLE##&macro3=##PBS-APPBUNDLE##&macro4=##PBS-PUBDOMAIN##&macro5=##PBS-PAGEURL##&macro6=##PBS-ACCOUNTID##&macro6=##PBS-LIMITADTRACKING##&macro7=##PBS-GDPRCONSENT##&macro8=##PBS-GDPRCONSENT##&macro9=##PBS-MACRO-CUSTOMMACR1CUST1##&macro10=##PBS-MACRO-CUSTOMMACR1CUST2##"},
+			TrackingEvents:         map[string][]string{"firstQuartile": {"http://eventracker1.com?macro1=##PBS-BIDID##&macro2=##PBS-APPBUNDLE##&macro3=##PBS-APPBUNDLE##&macro4=##PBS-PUBDOMAIN##&macro5=##PBS-PAGEURL##&macro6=##PBS-ACCOUNTID##&macro6=##PBS-LIMITADTRACKING##&macro7=##PBS-GDPRCONSENT##&macro8=##PBS-GDPRCONSENT##&macro9=##PBS-MACRO-CUSTOMMACR1CUST1##&macro10=##PBS-MACRO-CUSTOMMACR1CUST2##"}},
 		},
 	)
 	type args struct {
@@ -145,8 +143,288 @@ func TestInjectTracker(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := ti.InjectTracker(tt.args.vastXML, tt.args.NURL)
-			fmt.Println(got)
 			assert.Equal(t, tt.want, got, tt.name)
+		})
+	}
+}
+
+func TestAddClickTrackingEvent(t *testing.T) {
+	tests := []struct {
+		name         string
+		addParentTag bool
+		expected     string
+	}{
+		{
+			name:         "With Parent Tag",
+			addParentTag: true,
+			expected:     "<VideoClicks><ClickTracking><![CDATA[http://videoclicktracker.com?macro1=bid123&macro2=testbundle&macro3=testbundle&macro4=publishertestdomain&macro5=pageurltest&macro6=testpublisherID&macro6=1&macro7=1&macro8=1&macro9=&macro10=]]></ClickTracking></VideoClicks>",
+		},
+		{
+			name:         "Without Parent Tag",
+			addParentTag: false,
+			expected:     "<ClickTracking><![CDATA[http://videoclicktracker.com?macro1=bid123&macro2=testbundle&macro3=testbundle&macro4=publishertestdomain&macro5=pageurltest&macro6=testpublisherID&macro6=1&macro7=1&macro8=1&macro9=&macro10=]]></ClickTracking>",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var outputXML strings.Builder
+			b := macros.NewProvider(reqWrapper)
+			b.PopulateBidMacros(&entities.PbsOrtbBid{
+				Bid: &openrtb2.Bid{
+					ID: "bid123",
+				},
+			}, "testSeat")
+			ti := NewTrackerInjector(
+				macros.NewStringIndexBasedReplacer(),
+				b,
+				VASTEvents{
+					VideoClicks: []string{"http://videoclicktracker.com?macro1=##PBS-BIDID##&macro2=##PBS-APPBUNDLE##&macro3=##PBS-APPBUNDLE##&macro4=##PBS-PUBDOMAIN##&macro5=##PBS-PAGEURL##&macro6=##PBS-ACCOUNTID##&macro6=##PBS-LIMITADTRACKING##&macro7=##PBS-GDPRCONSENT##&macro8=##PBS-GDPRCONSENT##&macro9=##PBS-MACRO-CUSTOMMACR1CUST1##&macro10=##PBS-MACRO-CUSTOMMACR1CUST2##"},
+				},
+			)
+			ti.addClickTrackingEvent(&outputXML, "testCreativeId", tt.addParentTag)
+			assert.Equal(t, tt.expected, outputXML.String(), tt.name)
+		})
+	}
+}
+
+func TestAddImpressionTrackingEvent(t *testing.T) {
+	tests := []struct {
+		name         string
+		addParentTag bool
+		expected     string
+	}{
+		{
+			name:         "Add impression tag",
+			addParentTag: true,
+			expected:     "<Impression><![CDATA[http://impressiontracker.com?macro1=bid123&macro2=testbundle&macro3=testbundle&macro4=publishertestdomain&macro5=pageurltest&macro6=testpublisherID&macro6=1&macro7=1&macro8=1&macro9=&macro10=]]></Impression>",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var outputXML strings.Builder
+			b := macros.NewProvider(reqWrapper)
+			b.PopulateBidMacros(&entities.PbsOrtbBid{
+				Bid: &openrtb2.Bid{
+					ID: "bid123",
+				},
+			}, "testSeat")
+			ti := NewTrackerInjector(
+				macros.NewStringIndexBasedReplacer(),
+				b,
+				VASTEvents{
+					Impressions: []string{"http://impressiontracker.com?macro1=##PBS-BIDID##&macro2=##PBS-APPBUNDLE##&macro3=##PBS-APPBUNDLE##&macro4=##PBS-PUBDOMAIN##&macro5=##PBS-PAGEURL##&macro6=##PBS-ACCOUNTID##&macro6=##PBS-LIMITADTRACKING##&macro7=##PBS-GDPRCONSENT##&macro8=##PBS-GDPRCONSENT##&macro9=##PBS-MACRO-CUSTOMMACR1CUST1##&macro10=##PBS-MACRO-CUSTOMMACR1CUST2##"},
+				},
+			)
+			ti.addImpressionTrackingEvent(&outputXML)
+			assert.Equal(t, tt.expected, outputXML.String(), tt.name)
+		})
+	}
+}
+
+func TestAddErrorTrackingEvent(t *testing.T) {
+	tests := []struct {
+		name         string
+		addParentTag bool
+		expected     string
+	}{
+		{
+			name:         "Add impression tag",
+			addParentTag: true,
+			expected:     "<Error><![CDATA[http://errortracker.com?macro1=bid123&macro2=testbundle&macro3=testbundle&macro4=publishertestdomain&macro5=pageurltest&macro6=testpublisherID&macro6=1&macro7=1&macro8=1&macro9=&macro10=]]></Error>",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var outputXML strings.Builder
+			b := macros.NewProvider(reqWrapper)
+			b.PopulateBidMacros(&entities.PbsOrtbBid{
+				Bid: &openrtb2.Bid{
+					ID: "bid123",
+				},
+			}, "testSeat")
+			ti := NewTrackerInjector(
+				macros.NewStringIndexBasedReplacer(),
+				b,
+				VASTEvents{
+					Errors: []string{"http://errortracker.com?macro1=##PBS-BIDID##&macro2=##PBS-APPBUNDLE##&macro3=##PBS-APPBUNDLE##&macro4=##PBS-PUBDOMAIN##&macro5=##PBS-PAGEURL##&macro6=##PBS-ACCOUNTID##&macro6=##PBS-LIMITADTRACKING##&macro7=##PBS-GDPRCONSENT##&macro8=##PBS-GDPRCONSENT##&macro9=##PBS-MACRO-CUSTOMMACR1CUST1##&macro10=##PBS-MACRO-CUSTOMMACR1CUST2##"},
+				},
+			)
+			ti.addErrorTrackingEvent(&outputXML)
+			assert.Equal(t, tt.expected, outputXML.String(), tt.name)
+		})
+	}
+}
+
+func TestAddNonLinearClickTrackingEvent(t *testing.T) {
+	tests := []struct {
+		name         string
+		addParentTag bool
+		expected     string
+	}{
+		{
+			name:         "With Parent Tag",
+			addParentTag: true,
+			expected:     "<NonLinear><NonLinearClickTracking><![CDATA[http://nonlinearclicktracker.com?macro1=bid123&macro2=testbundle&macro3=testbundle&macro4=publishertestdomain&macro5=pageurltest&macro6=testpublisherID&macro6=1&macro7=1&macro8=1&macro9=&macro10=]]></NonLinearClickTracking></NonLinear>",
+		},
+		{
+			name:         "Without Parent Tag",
+			addParentTag: false,
+			expected:     "<NonLinearClickTracking><![CDATA[http://nonlinearclicktracker.com?macro1=bid123&macro2=testbundle&macro3=testbundle&macro4=publishertestdomain&macro5=pageurltest&macro6=testpublisherID&macro6=1&macro7=1&macro8=1&macro9=&macro10=]]></NonLinearClickTracking>",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var outputXML strings.Builder
+			b := macros.NewProvider(reqWrapper)
+			b.PopulateBidMacros(&entities.PbsOrtbBid{
+				Bid: &openrtb2.Bid{
+					ID: "bid123",
+				},
+			}, "testSeat")
+			ti := NewTrackerInjector(
+				macros.NewStringIndexBasedReplacer(),
+				b,
+				VASTEvents{
+					NonLinearClickTracking: []string{"http://nonlinearclicktracker.com?macro1=##PBS-BIDID##&macro2=##PBS-APPBUNDLE##&macro3=##PBS-APPBUNDLE##&macro4=##PBS-PUBDOMAIN##&macro5=##PBS-PAGEURL##&macro6=##PBS-ACCOUNTID##&macro6=##PBS-LIMITADTRACKING##&macro7=##PBS-GDPRCONSENT##&macro8=##PBS-GDPRCONSENT##&macro9=##PBS-MACRO-CUSTOMMACR1CUST1##&macro10=##PBS-MACRO-CUSTOMMACR1CUST2##"},
+				},
+			)
+			ti.addNonLinearClickTrackingEvent(&outputXML, "testCreativeId", tt.addParentTag)
+			assert.Equal(t, tt.expected, outputXML.String(), tt.name)
+		})
+	}
+}
+
+func TestAddCompanionClickThroughEvent(t *testing.T) {
+	tests := []struct {
+		name         string
+		addParentTag bool
+		expected     string
+	}{
+		{
+			name:         "With Parent Tag",
+			addParentTag: true,
+			expected:     "<Companion><CompanionClickThrough><![CDATA[http://companionclicktracker.com?macro1=bid123&macro2=testbundle&macro3=testbundle&macro4=publishertestdomain&macro5=pageurltest&macro6=testpublisherID&macro6=1&macro7=1&macro8=1&macro9=&macro10=]]></CompanionClickThrough></Companion>",
+		},
+		{
+			name:         "Without Parent Tag",
+			addParentTag: false,
+			expected:     "<CompanionClickThrough><![CDATA[http://companionclicktracker.com?macro1=bid123&macro2=testbundle&macro3=testbundle&macro4=publishertestdomain&macro5=pageurltest&macro6=testpublisherID&macro6=1&macro7=1&macro8=1&macro9=&macro10=]]></CompanionClickThrough>",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var outputXML strings.Builder
+			b := macros.NewProvider(reqWrapper)
+			b.PopulateBidMacros(&entities.PbsOrtbBid{
+				Bid: &openrtb2.Bid{
+					ID: "bid123",
+				},
+			}, "testSeat")
+			ti := NewTrackerInjector(
+				macros.NewStringIndexBasedReplacer(),
+				b,
+				VASTEvents{
+					CompanionClickThrough: []string{"http://companionclicktracker.com?macro1=##PBS-BIDID##&macro2=##PBS-APPBUNDLE##&macro3=##PBS-APPBUNDLE##&macro4=##PBS-PUBDOMAIN##&macro5=##PBS-PAGEURL##&macro6=##PBS-ACCOUNTID##&macro6=##PBS-LIMITADTRACKING##&macro7=##PBS-GDPRCONSENT##&macro8=##PBS-GDPRCONSENT##&macro9=##PBS-MACRO-CUSTOMMACR1CUST1##&macro10=##PBS-MACRO-CUSTOMMACR1CUST2##"},
+				},
+			)
+			ti.addCompanionClickThroughEvent(&outputXML, "testCreativeId", tt.addParentTag)
+			assert.Equal(t, tt.expected, outputXML.String(), tt.name)
+		})
+	}
+}
+
+func TestAddTrackingEvent(t *testing.T) {
+	tests := []struct {
+		name         string
+		addParentTag bool
+		expected     string
+	}{
+		{
+			name:         "With Parent Tag",
+			addParentTag: true,
+			expected:     "<TrackingEvents><Tracking event=\"firstQuartile\"><![CDATA[http://eventracker1.com?macro1=bid123&macro2=testbundle&macro3=testbundle&macro4=publishertestdomain&macro5=pageurltest&macro6=testpublisherID&macro6=1&macro7=1&macro8=1&macro9=&macro10=]]></Tracking></TrackingEvents>",
+		},
+		{
+			name:         "Without Parent Tag",
+			addParentTag: false,
+			expected:     "<Tracking event=\"firstQuartile\"><![CDATA[http://eventracker1.com?macro1=bid123&macro2=testbundle&macro3=testbundle&macro4=publishertestdomain&macro5=pageurltest&macro6=testpublisherID&macro6=1&macro7=1&macro8=1&macro9=&macro10=]]></Tracking>",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var outputXML strings.Builder
+			b := macros.NewProvider(reqWrapper)
+			b.PopulateBidMacros(&entities.PbsOrtbBid{
+				Bid: &openrtb2.Bid{
+					ID: "bid123",
+				},
+			}, "testSeat")
+			ti := NewTrackerInjector(
+				macros.NewStringIndexBasedReplacer(),
+				b,
+				VASTEvents{
+					TrackingEvents: map[string][]string{"firstQuartile": {"http://eventracker1.com?macro1=##PBS-BIDID##&macro2=##PBS-APPBUNDLE##&macro3=##PBS-APPBUNDLE##&macro4=##PBS-PUBDOMAIN##&macro5=##PBS-PAGEURL##&macro6=##PBS-ACCOUNTID##&macro6=##PBS-LIMITADTRACKING##&macro7=##PBS-GDPRCONSENT##&macro8=##PBS-GDPRCONSENT##&macro9=##PBS-MACRO-CUSTOMMACR1CUST1##&macro10=##PBS-MACRO-CUSTOMMACR1CUST2##"}},
+				},
+			)
+			ti.addTrackingEvent(&outputXML, "testCreativeId", tt.addParentTag)
+			assert.Equal(t, tt.expected, outputXML.String(), tt.name)
+		})
+	}
+}
+
+func TestWriteTrackingEvent(t *testing.T) {
+	tests := []struct {
+		name        string
+		urls        []string
+		startTag    string
+		endTag      string
+		creativeId  string
+		eventType   string
+		vastEvent   string
+		expectedXML string
+	}{
+		{
+			name:        "Single URL",
+			urls:        []string{"http://tracker.com"},
+			startTag:    "<Tracking>",
+			endTag:      "</Tracking>",
+			creativeId:  "123",
+			eventType:   "start",
+			vastEvent:   "tracking",
+			expectedXML: "<Tracking>http://tracker.com</Tracking>",
+		},
+		{
+			name:        "Multiple URL",
+			urls:        []string{"http://tracker1.com", "http://tracker2.com"},
+			startTag:    "<Tracking>",
+			endTag:      "</Tracking>",
+			creativeId:  "123",
+			eventType:   "start",
+			vastEvent:   "tracking",
+			expectedXML: "<Tracking>http://tracker1.com</Tracking><Tracking>http://tracker2.com</Tracking>",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var outputXML strings.Builder
+			b := macros.NewProvider(reqWrapper)
+			b.PopulateBidMacros(&entities.PbsOrtbBid{
+				Bid: &openrtb2.Bid{
+					ID: "bid123",
+				},
+			}, "testSeat")
+			ti := NewTrackerInjector(
+				macros.NewStringIndexBasedReplacer(),
+				b,
+				VASTEvents{
+					TrackingEvents: map[string][]string{"firstQuartile": {"http://eventracker1.com?macro1=##PBS-BIDID##&macro2=##PBS-APPBUNDLE##&macro3=##PBS-APPBUNDLE##&macro4=##PBS-PUBDOMAIN##&macro5=##PBS-PAGEURL##&macro6=##PBS-ACCOUNTID##&macro6=##PBS-LIMITADTRACKING##&macro7=##PBS-GDPRCONSENT##&macro8=##PBS-GDPRCONSENT##&macro9=##PBS-MACRO-CUSTOMMACR1CUST1##&macro10=##PBS-MACRO-CUSTOMMACR1CUST2##"}},
+				},
+			)
+			ti.writeTrackingEvent(tt.urls, &outputXML, tt.startTag, tt.endTag, tt.creativeId, tt.eventType, tt.vastEvent)
+			assert.Equal(t, tt.expectedXML, outputXML.String(), tt.name)
 		})
 	}
 }
