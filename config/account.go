@@ -342,8 +342,9 @@ type AccountPrivacy struct {
 
 // AccountDSA represents DSA configuration
 type AccountDSA struct {
-	Default  *openrtb_ext.ExtRegsDSA `mapstructure:"default" json:"default"`
-	GDPROnly bool                    `mapstructure:"gdpr_only" json:"gdpr_only"`
+	Default string  `mapstructure:"default" json:"default"`
+	DefaultUnpacked *openrtb_ext.ExtRegsDSA
+	GDPROnly bool   `mapstructure:"gdpr_only" json:"gdpr_only"`
 }
 
 type IPv6 struct {

@@ -691,6 +691,10 @@ func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName func(strin
 		return nil, err
 	}
 
+	if err := c.UnpackDSADefault(); err != nil {
+		return nil, err
+	}
+
 	// Update account defaults and generate base json for patch
 	c.AccountDefaults.CacheTTL = c.CacheURL.DefaultTTLs // comment this out to set explicitly in config
 
@@ -819,6 +823,17 @@ func (cfg *Configuration) MarshalAccountDefaults() error {
 		glog.Warningf("converting %+v to json: %v", cfg.AccountDefaults, err)
 	}
 	return err
+}
+
+// UnpackDSADefault validates the JSON DSA default object string by unmarshaling and maps it to a struct
+func (cfg *Configuration) UnpackDSADefault() error {
+	dsaConfig := cfg.AccountDefaults.Privacy.DSA
+	if dsaConfig != nil && len(dsaConfig.Default) > 0 {
+		if err := jsonutil.Unmarshal([]byte(dsaConfig.Default), &dsaConfig.DefaultUnpacked); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // AccountDefaultsJSON returns the precompiled JSON form of account_defaults
