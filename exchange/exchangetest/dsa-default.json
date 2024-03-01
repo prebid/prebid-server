@@ -1,20 +1,7 @@
 {
     "accountPrivacy": {
         "dsa": {
-            "default": {
-                "dsarequired": 2,
-                "pubrender": 1,
-                "datatopub": 2,
-                "transparency": [{
-                        "domain": "platform1domain.com",
-                        "dsaparams": [1]
-                    },
-                    {
-                        "domain": "SSP2domain.com",
-                        "dsaparams": [1, 2]
-                    }
-                ]
-            }
+            "default": "{\"dsarequired\":2,\"pubrender\":1,\"datatopub\":2,\"transparency\":[{\"domain\":\"platform1domain.com\",\"dsaparams\":[1]},{\"domain\":\"SSP2domain.com\",\"dsaparams\":[1,2]}]}"
         }
     },
     "incomingRequest": {

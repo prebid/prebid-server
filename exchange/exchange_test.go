@@ -2171,6 +2171,12 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		impExtInfoMap[impID] = ImpExtInfo{}
 	}
 
+	if spec.AccountPrivacy.DSA != nil && len(spec.AccountPrivacy.DSA.Default) > 0  {
+		if err := jsonutil.Unmarshal([]byte(spec.AccountPrivacy.DSA.Default), &spec.AccountPrivacy.DSA.DefaultUnpacked); err != nil { 
+			t.Errorf("%s: Exchange returned an unexpected error. Got %s", filename, err.Error())
+		}
+	}
+
 	activityControl := privacy.NewActivityControl(&spec.AccountPrivacy)
 
 	auctionRequest := &AuctionRequest{
