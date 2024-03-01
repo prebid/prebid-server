@@ -59,7 +59,7 @@ func TestWrite(t *testing.T) {
 		{
 			name: "config_default_nil",
 			giveConfig: &config.AccountDSA{
-				Default: nil,
+				DefaultUnpacked: nil,
 			},
 			giveRequest: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
@@ -79,7 +79,7 @@ func TestWrite(t *testing.T) {
 		{
 			name: "request_dsa_present",
 			giveConfig: &config.AccountDSA{
-				Default: defaultDSA,
+				DefaultUnpacked: defaultDSA,
 			},
 			giveRequest: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
@@ -99,8 +99,8 @@ func TestWrite(t *testing.T) {
 		{
 			name: "config_default_present_with_gdpr_only_set_and_gdpr_in_scope",
 			giveConfig: &config.AccountDSA{
-				Default:  defaultDSA,
-				GDPROnly: true,
+				DefaultUnpacked: defaultDSA,
+				GDPROnly:        true,
 			},
 			giveGDPR: true,
 			giveRequest: &openrtb_ext.RequestWrapper{
@@ -117,8 +117,8 @@ func TestWrite(t *testing.T) {
 		{
 			name: "config_default_present_with_gdpr_only_set_and_gdpr_not_in_scope",
 			giveConfig: &config.AccountDSA{
-				Default:  defaultDSA,
-				GDPROnly: true,
+				DefaultUnpacked: defaultDSA,
+				GDPROnly:        true,
 			},
 			giveGDPR: false,
 			giveRequest: &openrtb_ext.RequestWrapper{
@@ -131,8 +131,8 @@ func TestWrite(t *testing.T) {
 		{
 			name: "config_default_present_with_gdpr_only_not_set_and_gdpr_in_scope",
 			giveConfig: &config.AccountDSA{
-				Default:  defaultDSA,
-				GDPROnly: false,
+				DefaultUnpacked: defaultDSA,
+				GDPROnly:        false,
 			},
 			giveGDPR: true,
 			giveRequest: &openrtb_ext.RequestWrapper{
@@ -149,8 +149,8 @@ func TestWrite(t *testing.T) {
 		{
 			name: "config_default_present_with_gdpr_only_not_set_and_gdpr_not_in_scope",
 			giveConfig: &config.AccountDSA{
-				Default:  defaultDSA,
-				GDPROnly: false,
+				DefaultUnpacked: defaultDSA,
+				GDPROnly:        false,
 			},
 			giveGDPR: false,
 			giveRequest: &openrtb_ext.RequestWrapper{

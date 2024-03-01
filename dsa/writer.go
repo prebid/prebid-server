@@ -20,7 +20,7 @@ func (dw Writer) Write(req *openrtb_ext.RequestWrapper) error {
 	if getReqDSA(req) != nil {
 		return nil
 	}
-	if dw.Config == nil || dw.Config.Default == nil {
+	if dw.Config == nil || dw.Config.DefaultUnpacked == nil {
 		return nil
 	}
 	if dw.Config.GDPROnly && !dw.GDPRInScope {
@@ -30,6 +30,6 @@ func (dw Writer) Write(req *openrtb_ext.RequestWrapper) error {
 	if err != nil {
 		return err
 	}
-	regExt.SetDSA(dw.Config.Default)
+	regExt.SetDSA(dw.Config.DefaultUnpacked)
 	return nil
 }
