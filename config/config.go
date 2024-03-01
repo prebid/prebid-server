@@ -691,7 +691,7 @@ func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName func(strin
 		return nil, err
 	}
 
-	if err := c.UnpackDSADefault(); err != nil {
+	if err := UnpackDSADefault(c.AccountDefaults.Privacy.DSA); err != nil {
 		return nil, err
 	}
 
@@ -826,10 +826,9 @@ func (cfg *Configuration) MarshalAccountDefaults() error {
 }
 
 // UnpackDSADefault validates the JSON DSA default object string by unmarshaling and maps it to a struct
-func (cfg *Configuration) UnpackDSADefault() error {
-	dsaConfig := cfg.AccountDefaults.Privacy.DSA
-	if dsaConfig != nil && len(dsaConfig.Default) > 0 {
-		if err := jsonutil.Unmarshal([]byte(dsaConfig.Default), &dsaConfig.DefaultUnpacked); err != nil {
+func UnpackDSADefault(dsa *AccountDSA) error {
+	if dsa != nil && len(dsa.Default) > 0 {
+		if err := jsonutil.Unmarshal([]byte(dsa.Default), &dsa.DefaultUnpacked); err != nil {
 			return err
 		}
 	}

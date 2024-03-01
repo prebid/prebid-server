@@ -625,7 +625,7 @@ func TestFullConfig(t *testing.T) {
 	expectedDSA := AccountDSA{
 		Default: "{\"dsarequired\":3,\"pubrender\":1,\"datatopub\":2,\"transparency\":[{\"domain\":\"domain.com\",\"dsaparams\":[1]}]}",
 		DefaultUnpacked: &openrtb_ext.ExtRegsDSA{
-			Required: ptrutil.ToPtr[int8](3),
+			Required:  ptrutil.ToPtr[int8](3),
 			PubRender: ptrutil.ToPtr[int8](1),
 			DataToPub: ptrutil.ToPtr[int8](2),
 			Transparency: []openrtb_ext.ExtBidDSATransparency{
@@ -1806,14 +1806,14 @@ func TestTCF2FeatureOneVendorException(t *testing.T) {
 }
 
 func TestUnpackDSADefault(t *testing.T) {
-	tests := []struct{
+	tests := []struct {
 		name      string
 		giveDSA   *AccountDSA
 		wantError bool
 	}{
 		{
-			name: "nil",
-			giveDSA: nil,
+			name:      "nil",
+			giveDSA:   nil,
 			wantError: false,
 		},
 		{
@@ -1862,14 +1862,7 @@ func TestUnpackDSADefault(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := Configuration{
-				AccountDefaults: Account{
-					Privacy: AccountPrivacy{
-						DSA: tt.giveDSA,
-					},
-				},
-			}
-			err := cfg.UnpackDSADefault()
+			err := UnpackDSADefault(tt.giveDSA)
 			if tt.wantError {
 				assert.Error(t, err)
 			} else {
