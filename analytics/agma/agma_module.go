@@ -132,16 +132,10 @@ func (l *AgmaLogger) flush() {
 
 	// Close the json array, remove last ,
 	l.buffer.Truncate(l.buffer.Len() - 1)
-	_, err := l.buffer.Write([]byte("]"))
-	if err != nil {
-		l.reset()
-		l.mux.Unlock()
-		glog.Warning("[AgmaAnalytics] fail to close the json array")
-		return
-	}
+	l.buffer.Write([]byte("]"))
 
 	payload := make([]byte, l.buffer.Len())
-	_, err = l.buffer.Read(payload)
+	_, err := l.buffer.Read(payload)
 	if err != nil {
 		l.reset()
 		l.mux.Unlock()
