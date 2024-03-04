@@ -114,3 +114,20 @@ func TestCreateHttpSender(t *testing.T) {
 		})
 	}
 }
+
+func TestSenderErrorReponse(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+	}))
+	defer ts.Close()
+
+	client := &http.Client{}
+	sender, err := createHttpSender(client, config.AgmaAnalyticsHttpEndpoint{
+		Url:     ts.URL,
+		Timeout: "1s",
+		Gzip:    false,
+	})
+	testBody := []byte("[{ \"type\": \"test\" }]")
+	err = sender([]byte(testBody))
+	assert.Error(t, err)
+}
