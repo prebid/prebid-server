@@ -155,6 +155,24 @@ func (l *AgmaLogger) reset() {
 	l.eventCount = 0
 }
 
+func (l *AgmaLogger) extractPublisherAndSite(requestWrapper *openrtb_ext.RequestWrapper) (string, string) {
+	publisherId := ""
+	appSiteId := ""
+	if requestWrapper.Site != nil {
+		if requestWrapper.Site.Publisher != nil {
+			publisherId = requestWrapper.Site.Publisher.ID
+		}
+		appSiteId = requestWrapper.Site.ID
+	}
+	if requestWrapper.App != nil {
+		if requestWrapper.App.Publisher != nil {
+			publisherId = requestWrapper.App.Publisher.ID
+		}
+		appSiteId = requestWrapper.App.ID
+	}
+	return publisherId, appSiteId
+}
+
 func (l *AgmaLogger) shouldTrackEvent(requestWrapper *openrtb_ext.RequestWrapper) (bool, string) {
 	userExt, err := requestWrapper.GetUserExt()
 	if err != nil || userExt == nil {
@@ -175,21 +193,8 @@ func (l *AgmaLogger) shouldTrackEvent(requestWrapper *openrtb_ext.RequestWrapper
 	if !p9Allowed || !agmaAllowed {
 		return false, ""
 	}
-	publisherId := ""
-	appSiteId := ""
-	if requestWrapper.Site != nil {
-		if requestWrapper.Site.Publisher != nil {
-			publisherId = requestWrapper.Site.Publisher.ID
-		}
-		appSiteId = requestWrapper.Site.ID
-	}
-	if requestWrapper.App != nil {
-		if requestWrapper.App.Publisher != nil {
-			publisherId = requestWrapper.App.Publisher.ID
-		}
-		appSiteId = requestWrapper.App.ID
-	}
 
+	publisherId, appSiteId := l.extractPublisherAndSite(requestWrapper)
 	if publisherId == "" && appSiteId == "" {
 		return false, ""
 	}

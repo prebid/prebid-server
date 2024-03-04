@@ -265,6 +265,24 @@ func TestShouldTrackEvent(t *testing.T) {
 
 	assert.False(t, shouldTrack)
 	assert.Equal(t, "", code)
+
+	// No valid sites / apps / empty publisher app
+	shouldTrack, code = logger.shouldTrackEvent(&openrtb_ext.RequestWrapper{
+		BidRequest: &openrtb2.BidRequest{
+			App: &openrtb2.App{
+				ID: "",
+				Publisher: &openrtb2.Publisher{
+					ID: "",
+				},
+			},
+			User: &openrtb2.User{
+				Ext: json.RawMessage(`{"consent": "` + agmaConsent + `"}`),
+			},
+		},
+	})
+
+	assert.False(t, shouldTrack)
+	assert.Equal(t, "", code)
 }
 
 func TestShouldTrackMultipleAccounts(t *testing.T) {
