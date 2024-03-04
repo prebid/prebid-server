@@ -3,13 +3,13 @@ package roulax
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"text/template"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/prebid/prebid-server/v2/macros"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"net/http"
+	"text/template"
 )
 
 type adapter struct {
@@ -50,13 +50,13 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	}
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
-	roulaxExt,err := getImpRoulaxExt(&request.Imp[0])
+	roulaxExt, err := getImpRoulaxExt(&request.Imp[0])
 	if err != nil {
 		return nil, append(errs, err)
 	}
 
-	endpointParams := macros.EndpointTemplateParams{AccountID: roulaxExt.Pid,PublisherID: roulaxExt.PublisherPath}
-	url,err := macros.ResolveMacros(a.endpoint, endpointParams)
+	endpointParams := macros.EndpointTemplateParams{AccountID: roulaxExt.Pid, PublisherID: roulaxExt.PublisherPath}
+	url, err := macros.ResolveMacros(a.endpoint, endpointParams)
 	if err != nil {
 		return nil, append(errs, err)
 	}
@@ -113,4 +113,3 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 		return "", fmt.Errorf("Unable to fetch mediaType in impID: %s, mType: %d", bid.ImpID, bid.MType)
 	}
 }
-

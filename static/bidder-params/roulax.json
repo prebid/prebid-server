@@ -3,30 +3,17 @@
   "title": "Roulax Adapter Params",
   "description": "A schema which validates params accepted by the Roulax adapter",
   "type": "object",
-
-  "properties": {
-    "placementId": {
-      "type": "string",
-      "description": "Placement ID"
-    }
-  },
-
   "properties": {
     "PId": {
       "type": "string",
+      "minLength": 1,
       "description": "PID"
-    }
-  },
-
-  "properties": {
+    },
     "PublisherPath": {
       "type": "string",
+      "minLength": 1,
       "description": "PublisherPath"
     }
   },
-
-
-
-
-  "required": ["Pid","PublisherPath"]
+  "required": ["Pid", "PublisherPath"]
 }
