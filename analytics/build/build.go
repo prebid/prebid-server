@@ -1,6 +1,8 @@
 package build
 
 import (
+	"fmt"
+
 	"github.com/benbjohnson/clock"
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/v2/analytics"
@@ -47,7 +49,9 @@ func New(analytics *config.Analytics) analytics.Runner {
 type enabledAnalytics map[string]analytics.Module
 
 // TODO: Write test to verify implementation
+// TODO: Update response as well?
 func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac privacy.ActivityControl) {
+	fmt.Println("In here")
 	originalReqWrapper := ao.RequestWrapper
 	for name, module := range ea {
 		if isAllowed, cloneBidderReq := evaluateActivities(ao.RequestWrapper, ac, name); isAllowed {
@@ -138,7 +142,10 @@ func evaluateActivities(rw *openrtb_ext.RequestWrapper, ac privacy.ActivityContr
 }
 
 func updateReqWrapperForAnalytics(rw *openrtb_ext.RequestWrapper, adapterName string) {
-	reqExt, _ := rw.GetRequestExt()
+	reqExt, err := rw.GetRequestExt()
+	if err != nil {
+		fmt.Println(err) // TODO: Error handling
+	}
 	reqExtPrebid := reqExt.GetPrebid()
 	extPrebidAnalytics := reqExtPrebid.Analytics
 

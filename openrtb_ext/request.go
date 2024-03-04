@@ -233,7 +233,7 @@ type GranularityRange struct {
 }
 
 type ExtRequestPrebidAnalytics struct {
-	ClientAnalytics bool `json:"client-analytics,omitempty"`
+	ClientAnalytics bool `json:"client-analytics"`
 }
 
 func (pg *PriceGranularity) UnmarshalJSON(b []byte) error {

@@ -355,3 +355,42 @@ func getActivityConfig(componentName string, allowReportAnalytics, allowTransmit
 		},
 	}
 }
+
+func TestUpdateReqWrapperForAnalytics(t *testing.T) {
+	tests := []struct {
+		description      string
+		givenReqWrapper  *openrtb_ext.RequestWrapper
+		givenAdapterName string
+		expected         *openrtb2.BidRequest
+	}{
+		{
+			description: "Test case 1",
+			givenReqWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Ext: []byte(`{"prebid":{"analytics":{"adapter1":{"client-analytics":true},"adapter2":{"client-analytics":false}}}}`)},
+			},
+			givenAdapterName: "adapter1",
+			expected: &openrtb2.BidRequest{
+				Ext: []byte(`{"prebid":{"analytics":{"adapter1":{"client-analytics":true}}}}`),
+			},
+		},
+		{
+			description: "Test case 2",
+			givenReqWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Ext: []byte(`{"prebid":{"analytics":{"adapter1":{"client-analytics":true},"adapter2":{"client-analytics":false}}}}`)},
+			},
+			givenAdapterName: "adapter2",
+			expected: &openrtb2.BidRequest{
+				Ext: []byte(`{"prebid":{"analytics":{"adapter2":{"client-analytics":false}}}}`),
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			updateReqWrapperForAnalytics(test.givenReqWrapper, test.givenAdapterName)
+			assert.Equal(t, test.expected, test.givenReqWrapper.BidRequest)
+		})
+	}
+}
