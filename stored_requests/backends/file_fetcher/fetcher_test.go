@@ -36,7 +36,7 @@ func TestAccountFetcher(t *testing.T) {
 	_, errs = fetcher.FetchAccount(context.Background(), json.RawMessage(`{"events_enabled":true}`), "nonexistent")
 	assertErrorCount(t, 1, errs)
 	assert.Error(t, errs[0])
-	assert.Equal(t, stored_requests.NotFoundError{"nonexistent", "Account"}, errs[0])
+	assert.Equal(t, stored_requests.NotFoundError{ID: "nonexistent", DataType: "Account"}, errs[0])
 
 	_, errs = fetcher.FetchAccount(context.Background(), json.RawMessage(`{"events_enabled"}`), "valid")
 	assertErrorCount(t, 1, errs)

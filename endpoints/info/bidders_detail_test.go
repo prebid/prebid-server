@@ -453,7 +453,10 @@ func TestBiddersDetailHandler(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
 			responseRecorder := httptest.NewRecorder()
-			handler(responseRecorder, nil, httprouter.Params{{"bidderName", test.givenBidder}})
+			handler(responseRecorder, nil, httprouter.Params{{
+				Key:   "bidderName",
+				Value: test.givenBidder,
+			}})
 
 			result := responseRecorder.Result()
 			assert.Equal(t, result.StatusCode, test.expectedStatus, test.description+":statuscode")
