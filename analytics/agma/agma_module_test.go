@@ -19,7 +19,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-var agmaConsent = "CP4LywcP4LywcLRAAAENCZCAAAIAAAIAAAAAIxQAQIxAAAAA.II7Nd_X__bX9n-_7_6ft0eY1f9_r37uQzDhfNs-8F3L_W_LwX32E7NF36tq4KmR4ku1bBIQNtHMnUDUmxaolVrzHsak2cpyNKJ_JkknsZe2dYGF9Pn9lD-YKZ7_5_9_f52T_9_9_-39z3_9f___dv_-__-vjf_599n_v9fV_78_Kf9______-____________8A"
+var agmaConsent = "CP6-v9RP6-v9RNlAAAENCZCAAICAAAAAAAAAIxQAQIxAAAAA.II7Nd_X__bX9n-_7_6ft0eY1f9_r37uQzDhfNs-8F3L_W_LwX32E7NF36tq4KmR4ku1bBIQNtHMnUDUmxaolVrzHsak2cpyNKJ_JkknsZe2dYGF9Pn9lD-YKZ7_5_9_f52T_9_9_-39z3_9f___dv_-__-vjf_599n_v9fV_78_Kf9______-____________8A"
 
 var mockValidAuctionObject = analytics.AuctionObject{
 	Status:    http.StatusOK,
@@ -248,7 +248,7 @@ func TestShouldTrackEvent(t *testing.T) {
 	assert.False(t, shouldTrack)
 	assert.Equal(t, "", code)
 
-	// Constent: No Prupose 7
+	// Constent: No Purpose 9
 	shouldTrack, code = logger.shouldTrackEvent(&openrtb_ext.RequestWrapper{
 		BidRequest: &openrtb2.BidRequest{
 			App: &openrtb2.App{
@@ -638,7 +638,7 @@ func TestRaceEnd2End(t *testing.T) {
 
 	time.Sleep(250 * time.Millisecond)
 
-	expected := "[{\"type\":\"amp\",\"id\":\"some-id\",\"code\":\"abcd\",\"site\":{\"id\":\"track-me-site\",\"publisher\":{\"id\":\"track-me\"}},\"device\":{\"ua\":\"ua\"},\"user\":{\"ext\":{\"consent\": \"CP4LywcP4LywcLRAAAENCZCAAAIAAAIAAAAAIxQAQIxAAAAA.II7Nd_X__bX9n-_7_6ft0eY1f9_r37uQzDhfNs-8F3L_W_LwX32E7NF36tq4KmR4ku1bBIQNtHMnUDUmxaolVrzHsak2cpyNKJ_JkknsZe2dYGF9Pn9lD-YKZ7_5_9_f52T_9_9_-39z3_9f___dv_-__-vjf_599n_v9fV_78_Kf9______-____________8A\"}},\"created_at\":\"2023-02-01T00:00:00Z\"},{\"type\":\"amp\",\"id\":\"some-id\",\"code\":\"abcd\",\"site\":{\"id\":\"track-me-site\",\"publisher\":{\"id\":\"track-me\"}},\"device\":{\"ua\":\"ua\"},\"user\":{\"ext\":{\"consent\": \"CP4LywcP4LywcLRAAAENCZCAAAIAAAIAAAAAIxQAQIxAAAAA.II7Nd_X__bX9n-_7_6ft0eY1f9_r37uQzDhfNs-8F3L_W_LwX32E7NF36tq4KmR4ku1bBIQNtHMnUDUmxaolVrzHsak2cpyNKJ_JkknsZe2dYGF9Pn9lD-YKZ7_5_9_f52T_9_9_-39z3_9f___dv_-__-vjf_599n_v9fV_78_Kf9______-____________8A\"}},\"created_at\":\"2023-02-01T00:00:00Z\"}]"
+	expected := "[{\"type\":\"amp\",\"id\":\"some-id\",\"code\":\"abcd\",\"site\":{\"id\":\"track-me-site\",\"publisher\":{\"id\":\"track-me\"}},\"device\":{\"ua\":\"ua\"},\"user\":{\"ext\":{\"consent\": \"" + agmaConsent + "\"}},\"created_at\":\"2023-02-01T00:00:00Z\"},{\"type\":\"amp\",\"id\":\"some-id\",\"code\":\"abcd\",\"site\":{\"id\":\"track-me-site\",\"publisher\":{\"id\":\"track-me\"}},\"device\":{\"ua\":\"ua\"},\"user\":{\"ext\":{\"consent\": \"" + agmaConsent + "\"}},\"created_at\":\"2023-02-01T00:00:00Z\"}]"
 
 	mu.Lock()
 	actual := requestBodyAsString

@@ -22,8 +22,8 @@ import (
 type httpSender = func(payload []byte) error
 
 const (
-	agmaGVLID        = 1122
-	analyticsPurpose = 7
+	agmaGVLID = 1122
+	p9        = 9
 )
 
 type AgamLogger struct {
@@ -176,9 +176,9 @@ func (l *AgamLogger) shouldTrackEvent(requestWrapper *openrtb_ext.RequestWrapper
 		return false, ""
 	}
 
-	analyticsAllowed := parsedConsent.PurposeAllowed(analyticsPurpose)
+	p9Allowed := parsedConsent.PurposeAllowed(p9)
 	agmaAllowed := parsedConsent.VendorConsent(agmaGVLID)
-	if !analyticsAllowed || !agmaAllowed {
+	if !p9Allowed || !agmaAllowed {
 		return false, ""
 	}
 	publisherId := ""
