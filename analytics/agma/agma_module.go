@@ -26,7 +26,7 @@ const (
 	p9        = 9
 )
 
-type AgamLogger struct {
+type AgmaLogger struct {
 	sender            httpSender
 	clock             clock.Clock
 	accounts          []config.AgmaAnalyticsAccount
@@ -40,7 +40,7 @@ type AgamLogger struct {
 	bufferCh          chan []byte
 }
 
-func newAgmaLogger(cfg config.AgmaAnalytics, sender httpSender, clock clock.Clock) (*AgamLogger, error) {
+func newAgmaLogger(cfg config.AgmaAnalytics, sender httpSender, clock clock.Clock) (*AgmaLogger, error) {
 	pSize, err := units.FromHumanSize(cfg.Buffers.BufferSize)
 	if err != nil {
 		return nil, err
@@ -56,7 +56,7 @@ func newAgmaLogger(cfg config.AgmaAnalytics, sender httpSender, clock clock.Cloc
 	buffer := bytes.Buffer{}
 	buffer.Write([]byte("["))
 
-	return &AgamLogger{
+	return &AgmaLogger{
 		sender:            sender,
 		clock:             clock,
 		accounts:          cfg.Accounts,
@@ -88,7 +88,7 @@ func NewModule(httpClient *http.Client, cfg config.AgmaAnalytics, clock clock.Cl
 	return m, nil
 }
 
-func (l *AgamLogger) start() {
+func (l *AgmaLogger) start() {
 	ticker := l.clock.Ticker(l.maxDuration)
 	for {
 		select {
@@ -107,7 +107,7 @@ func (l *AgamLogger) start() {
 	}
 }
 
-func (l *AgamLogger) bufferEvent(data []byte) {
+func (l *AgmaLogger) bufferEvent(data []byte) {
 	l.mux.Lock()
 	defer l.mux.Unlock()
 
@@ -116,13 +116,13 @@ func (l *AgamLogger) bufferEvent(data []byte) {
 	l.eventCount++
 }
 
-func (l *AgamLogger) isFull() bool {
+func (l *AgmaLogger) isFull() bool {
 	l.mux.RLock()
 	defer l.mux.RUnlock()
 	return l.eventCount >= l.maxEventCount || int64(l.buffer.Len()) >= l.maxBufferByteSize
 }
 
-func (l *AgamLogger) flush() {
+func (l *AgmaLogger) flush() {
 	l.mux.Lock()
 
 	if l.eventCount == 0 || l.buffer.Len() == 0 {
@@ -155,13 +155,13 @@ func (l *AgamLogger) flush() {
 	l.mux.Unlock()
 }
 
-func (l *AgamLogger) reset() {
+func (l *AgmaLogger) reset() {
 	l.buffer.Reset()
 	l.buffer.Write([]byte("["))
 	l.eventCount = 0
 }
 
-func (l *AgamLogger) shouldTrackEvent(requestWrapper *openrtb_ext.RequestWrapper) (bool, string) {
+func (l *AgmaLogger) shouldTrackEvent(requestWrapper *openrtb_ext.RequestWrapper) (bool, string) {
 	userExt, err := requestWrapper.GetUserExt()
 	if err != nil || userExt == nil {
 		return false, ""
@@ -214,7 +214,7 @@ func (l *AgamLogger) shouldTrackEvent(requestWrapper *openrtb_ext.RequestWrapper
 	return false, ""
 }
 
-func (l *AgamLogger) LogAuctionObject(event *analytics.AuctionObject) {
+func (l *AgmaLogger) LogAuctionObject(event *analytics.AuctionObject) {
 	if event == nil || event.Status != http.StatusOK || event.RequestWrapper == nil {
 		return
 	}
@@ -230,7 +230,7 @@ func (l *AgamLogger) LogAuctionObject(event *analytics.AuctionObject) {
 	l.bufferCh <- data
 }
 
-func (l *AgamLogger) LogAmpObject(event *analytics.AmpObject) {
+func (l *AgmaLogger) LogAmpObject(event *analytics.AmpObject) {
 	if event == nil || event.Status != http.StatusOK || event.RequestWrapper == nil {
 		return
 	}
@@ -246,7 +246,7 @@ func (l *AgamLogger) LogAmpObject(event *analytics.AmpObject) {
 	l.bufferCh <- data
 }
 
-func (l *AgamLogger) LogVideoObject(event *analytics.VideoObject) {
+func (l *AgmaLogger) LogVideoObject(event *analytics.VideoObject) {
 	if event == nil || event.Status != http.StatusOK || event.RequestWrapper == nil {
 		return
 	}
@@ -262,6 +262,6 @@ func (l *AgamLogger) LogVideoObject(event *analytics.VideoObject) {
 	l.bufferCh <- data
 }
 
-func (l *AgamLogger) LogCookieSyncObject(event *analytics.CookieSyncObject)         {}
-func (l *AgamLogger) LogNotificationEventObject(event *analytics.NotificationEvent) {}
-func (l *AgamLogger) LogSetUIDObject(event *analytics.SetUIDObject)                 {}
+func (l *AgmaLogger) LogCookieSyncObject(event *analytics.CookieSyncObject)         {}
+func (l *AgmaLogger) LogNotificationEventObject(event *analytics.NotificationEvent) {}
+func (l *AgmaLogger) LogSetUIDObject(event *analytics.SetUIDObject)                 {}
