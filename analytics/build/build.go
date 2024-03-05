@@ -1,8 +1,6 @@
 package build
 
 import (
-	"fmt"
-
 	"github.com/benbjohnson/clock"
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/v2/analytics"
@@ -48,11 +46,8 @@ func New(analytics *config.Analytics) analytics.Runner {
 // Collection of all the correctly configured analytics modules - implements the PBSAnalyticsModule interface
 type enabledAnalytics map[string]analytics.Module
 
-// TODO: Write test to verify implementation
 // TODO: Update response as well?
 func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac privacy.ActivityControl) {
-	fmt.Println("In here")
-	originalReqWrapper := ao.RequestWrapper
 	for name, module := range ea {
 		if isAllowed, cloneBidderReq := evaluateActivities(ao.RequestWrapper, ac, name); isAllowed {
 			if cloneBidderReq != nil {
@@ -60,7 +55,6 @@ func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac priv
 			}
 			updateReqWrapperForAnalytics(ao.RequestWrapper, name)
 			module.LogAuctionObject(ao)
-			ao.RequestWrapper = originalReqWrapper
 		}
 	}
 }
@@ -142,22 +136,24 @@ func evaluateActivities(rw *openrtb_ext.RequestWrapper, ac privacy.ActivityContr
 }
 
 func updateReqWrapperForAnalytics(rw *openrtb_ext.RequestWrapper, adapterName string) {
-	reqExt, err := rw.GetRequestExt()
-	if err != nil {
-		fmt.Println(err) // TODO: Error handling
-	}
+	reqExt, _ := rw.GetRequestExt() // TODO: Handle error
 	reqExtPrebid := reqExt.GetPrebid()
+	if reqExtPrebid == nil {
+		return
+	}
 	extPrebidAnalytics := reqExtPrebid.Analytics
 
-	// Create new map, and copy elements from reqWrapper
-	copyPrebidAnalytics := make(map[string]*openrtb_ext.ExtRequestPrebidAnalytics)
-	for k, v := range extPrebidAnalytics {
-		copyPrebidAnalytics[k] = v
+	// Given analytics adapter module is not present in ext.prebid.analytics, remove the entire analytics object from request for logging
+	if _, ok := extPrebidAnalytics[adapterName]; !ok {
+		reqExtPrebid.Analytics = nil
+		reqExt.SetPrebid(reqExtPrebid)
+		rw.RebuildRequest()
+		return
 	}
 
-	for name, _ := range extPrebidAnalytics {
+	for name := range extPrebidAnalytics {
 		if name == adapterName {
-			reqExtPrebid.Analytics = updatePrebidAnalyticsMap(copyPrebidAnalytics, adapterName)
+			reqExtPrebid.Analytics = updatePrebidAnalyticsMap(reqExtPrebid.Analytics, adapterName)
 			reqExt.SetPrebid(reqExtPrebid)
 			rw.RebuildRequest()
 			break

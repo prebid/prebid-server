@@ -1,8 +1,6 @@
 package ortb
 
 import (
-	"encoding/json"
-
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/util/ptrutil"
 	"github.com/prebid/prebid-server/v2/util/sliceutil"
@@ -407,17 +405,6 @@ func CloneDOOH(s *openrtb2.DOOH) *openrtb2.DOOH {
 	return &c
 }
 
-// TODO: Verify this clone
-func CloneExt(s json.RawMessage) json.RawMessage {
-	if s == nil {
-		return nil
-	}
-
-	c := make(json.RawMessage, len(s))
-	copy(c, s)
-	return c
-}
-
 // CloneBidRequestPartial performs a deep clone of just the bid request device, user, source, and ext fields.
 func CloneBidRequestPartial(s *openrtb2.BidRequest) *openrtb2.BidRequest {
 	if s == nil {
@@ -431,7 +418,6 @@ func CloneBidRequestPartial(s *openrtb2.BidRequest) *openrtb2.BidRequest {
 	c.Device = CloneDevice(s.Device)
 	c.User = CloneUser(s.User)
 	c.Source = CloneSource(s.Source)
-	c.Ext = CloneExt(s.Ext)
 
 	return &c
 }

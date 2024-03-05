@@ -22,9 +22,10 @@ func TestSampleModule(t *testing.T) {
 	var count int
 	am := initAnalytics(&count)
 	am.LogAuctionObject(&analytics.AuctionObject{
-		Status:   http.StatusOK,
-		Errors:   nil,
-		Response: &openrtb2.BidResponse{},
+		Status:         http.StatusOK,
+		RequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: getDefaultBidRequest()},
+		Errors:         nil,
+		Response:       &openrtb2.BidResponse{},
 	}, privacy.ActivityControl{})
 	if count != 1 {
 		t.Errorf("PBSAnalyticsModule failed at LogAuctionObject")
@@ -46,12 +47,12 @@ func TestSampleModule(t *testing.T) {
 		t.Errorf("PBSAnalyticsModule failed at LogCookieSyncObject")
 	}
 
-	am.LogAmpObject(&analytics.AmpObject{}, privacy.ActivityControl{})
+	am.LogAmpObject(&analytics.AmpObject{RequestWrapper: &openrtb_ext.RequestWrapper{}}, privacy.ActivityControl{})
 	if count != 4 {
 		t.Errorf("PBSAnalyticsModule failed at LogAmpObject")
 	}
 
-	am.LogVideoObject(&analytics.VideoObject{}, privacy.ActivityControl{})
+	am.LogVideoObject(&analytics.VideoObject{RequestWrapper: &openrtb_ext.RequestWrapper{}}, privacy.ActivityControl{})
 	if count != 5 {
 		t.Errorf("PBSAnalyticsModule failed at LogVideoObject")
 	}
@@ -149,9 +150,10 @@ func TestSampleModuleActivitiesAllowed(t *testing.T) {
 	acAllowed := privacy.NewActivityControl(getActivityConfig("sampleModule", true, true, true))
 
 	ao := &analytics.AuctionObject{
-		Status:   http.StatusOK,
-		Errors:   nil,
-		Response: &openrtb2.BidResponse{},
+		Status:         http.StatusOK,
+		RequestWrapper: &openrtb_ext.RequestWrapper{},
+		Errors:         nil,
+		Response:       &openrtb2.BidResponse{},
 	}
 
 	am.LogAuctionObject(ao, acAllowed)
@@ -159,12 +161,12 @@ func TestSampleModuleActivitiesAllowed(t *testing.T) {
 		t.Errorf("PBSAnalyticsModule failed at LogAuctionObject")
 	}
 
-	am.LogAmpObject(&analytics.AmpObject{}, acAllowed)
+	am.LogAmpObject(&analytics.AmpObject{RequestWrapper: &openrtb_ext.RequestWrapper{}}, acAllowed)
 	if count != 2 {
 		t.Errorf("PBSAnalyticsModule failed at LogAmpObject")
 	}
 
-	am.LogVideoObject(&analytics.VideoObject{}, acAllowed)
+	am.LogVideoObject(&analytics.VideoObject{RequestWrapper: &openrtb_ext.RequestWrapper{}}, acAllowed)
 	if count != 3 {
 		t.Errorf("PBSAnalyticsModule failed at LogVideoObject")
 	}
@@ -303,8 +305,8 @@ func getDefaultBidRequest() *openrtb2.BidRequest {
 	return &openrtb2.BidRequest{
 		ID:     "test_request",
 		User:   &openrtb2.User{ID: "user-id"},
-		Device: &openrtb2.Device{IFA: "device-ifa", IP: "127.0.0.1"}}
-
+		Device: &openrtb2.Device{IFA: "device-ifa", IP: "127.0.0.1"},
+	}
 }
 
 func getActivityConfig(componentName string, allowReportAnalytics, allowTransmitUserFPD, allowTransmitPreciseGeo bool) *config.AccountPrivacy {
@@ -356,6 +358,128 @@ func getActivityConfig(componentName string, allowReportAnalytics, allowTransmit
 	}
 }
 
+type mockAnalytics struct {
+	lastLoggedAuctionObject    *analytics.AuctionObject
+	lastLoggedAmpObject        *analytics.AmpObject
+	lastLoggedCookieSyncObject *analytics.CookieSyncObject
+	lastLoggedSetUIDObject     *analytics.SetUIDObject
+	lastLoggedVideoObject      *analytics.VideoObject
+	lastLoggedEventObject      *analytics.NotificationEvent
+}
+
+func (m *mockAnalytics) LogAuctionObject(ao *analytics.AuctionObject) {
+	m.lastLoggedAuctionObject = ao
+}
+
+func (m *mockAnalytics) LogAmpObject(ao *analytics.AmpObject) {
+	m.lastLoggedAmpObject = ao
+}
+
+func (m *mockAnalytics) LogCookieSyncObject(ao *analytics.CookieSyncObject) {
+	m.lastLoggedCookieSyncObject = ao
+}
+
+func (m *mockAnalytics) LogSetUIDObject(ao *analytics.SetUIDObject) {
+	m.lastLoggedSetUIDObject = ao
+}
+
+func (m *mockAnalytics) LogVideoObject(ao *analytics.VideoObject) {
+	m.lastLoggedVideoObject = ao
+}
+
+func (m *mockAnalytics) LogNotificationEventObject(ao *analytics.NotificationEvent) {
+	m.lastLoggedEventObject = ao
+}
+
+func TestLogAnalyticsObjectExtRequestPrebidAnalytics(t *testing.T) {
+	tests := []struct {
+		description         string
+		givenRequestWrapper *openrtb_ext.RequestWrapper
+		givenAdapterName    string
+		expectedBidRequest  *openrtb2.BidRequest
+	}{
+		{
+			description: "Adapter1 so Adapter2 info should be removed from ext.prebid.analytics",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID:  "test_request",
+					Ext: []byte(`{"prebid":{"analytics":{"adapter1":{"client-analytics":true},"adapter2":{"client-analytics":false}}}}`)},
+			},
+			givenAdapterName: "adapter1",
+			expectedBidRequest: &openrtb2.BidRequest{
+				ID:  "test_request",
+				Ext: []byte(`{"prebid":{"analytics":{"adapter1":{"client-analytics":true}}}}`)},
+		},
+		{
+			description: "Adapter 2 so Adapter1 info should be removed from ext.prebid.analytics",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID:  "test_request",
+					Ext: []byte(`{"prebid":{"analytics":{"adapter1":{"client-analytics":true},"adapter2":{"client-analytics":false}}}}`)},
+			},
+			givenAdapterName: "adapter2",
+			expectedBidRequest: &openrtb2.BidRequest{
+				ID:  "test_request",
+				Ext: []byte(`{"prebid":{"analytics":{"adapter2":{"client-analytics":false}}}}`)},
+		},
+		{
+			description: "Given adapter not found in ext.prebid.analytics so remove entire object",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID:  "test_request",
+					Ext: []byte(`{"prebid":{"analytics":{"adapter1":{"client-analytics":true},"adapter2":{"client-analytics":false}}}}`)},
+			},
+			givenAdapterName: "adapterNotFound",
+			expectedBidRequest: &openrtb2.BidRequest{
+				ID:  "test_request",
+				Ext: nil,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			ea := enabledAnalytics{test.givenAdapterName: &mockAnalytics{}}
+
+			ac := privacy.NewActivityControl(getActivityConfig("sampleModule", true, true, true))
+
+			ao := &analytics.AuctionObject{
+				Status:         http.StatusOK,
+				Errors:         nil,
+				Response:       &openrtb2.BidResponse{},
+				RequestWrapper: test.givenRequestWrapper,
+			}
+
+			amp := &analytics.AmpObject{
+				Status:          http.StatusOK,
+				Errors:          nil,
+				AuctionResponse: &openrtb2.BidResponse{},
+				RequestWrapper:  test.givenRequestWrapper,
+			}
+
+			video := &analytics.VideoObject{
+				Status:         http.StatusOK,
+				Errors:         nil,
+				Response:       &openrtb2.BidResponse{},
+				RequestWrapper: test.givenRequestWrapper,
+			}
+
+			ea.LogAuctionObject(ao, ac)
+			ea.LogAmpObject(amp, ac)
+			ea.LogVideoObject(video, ac)
+
+			// Retrieve the logged analytics from the mockAnalytics module, and assert that the logged object was properly altered
+			loggedAo := ea[test.givenAdapterName].(*mockAnalytics).lastLoggedAuctionObject
+			loggedAmp := ea[test.givenAdapterName].(*mockAnalytics).lastLoggedAmpObject
+			loggedVideo := ea[test.givenAdapterName].(*mockAnalytics).lastLoggedVideoObject
+
+			assert.Equal(t, test.expectedBidRequest, loggedAo.RequestWrapper.BidRequest)
+			assert.Equal(t, test.expectedBidRequest, loggedAmp.RequestWrapper.BidRequest)
+			assert.Equal(t, test.expectedBidRequest, loggedVideo.RequestWrapper.BidRequest)
+		})
+	}
+}
+
 func TestUpdateReqWrapperForAnalytics(t *testing.T) {
 	tests := []struct {
 		description      string
@@ -364,7 +488,7 @@ func TestUpdateReqWrapperForAnalytics(t *testing.T) {
 		expected         *openrtb2.BidRequest
 	}{
 		{
-			description: "Test case 1",
+			description: "Adapter1 so Adapter2 info should be removed from ext.prebid.analytics",
 			givenReqWrapper: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					Ext: []byte(`{"prebid":{"analytics":{"adapter1":{"client-analytics":true},"adapter2":{"client-analytics":false}}}}`)},
@@ -375,7 +499,7 @@ func TestUpdateReqWrapperForAnalytics(t *testing.T) {
 			},
 		},
 		{
-			description: "Test case 2",
+			description: "Adapter2 so Adapter1 info should be removed from ext.prebid.analytics",
 			givenReqWrapper: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					Ext: []byte(`{"prebid":{"analytics":{"adapter1":{"client-analytics":true},"adapter2":{"client-analytics":false}}}}`)},
@@ -384,6 +508,26 @@ func TestUpdateReqWrapperForAnalytics(t *testing.T) {
 			expected: &openrtb2.BidRequest{
 				Ext: []byte(`{"prebid":{"analytics":{"adapter2":{"client-analytics":false}}}}`),
 			},
+		},
+		{
+			description: "Adapter2 so Adapter1 info should be removed from ext.prebid.analytics",
+			givenReqWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Ext: []byte(`{"prebid":{"analytics":{"adapter1":{"client-analytics":true},"adapter2":{"client-analytics":false}}}}`)},
+			},
+			givenAdapterName: "adapter2",
+			expected: &openrtb2.BidRequest{
+				Ext: []byte(`{"prebid":{"analytics":{"adapter2":{"client-analytics":false}}}}`),
+			},
+		},
+		{
+			description: "Given adapter not found in ext.prebid.analytics so remove entire object",
+			givenReqWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Ext: []byte(`{"prebid":{"analytics":{"adapter1":{"client-analytics":true},"adapter2":{"client-analytics":false}}}}`)},
+			},
+			givenAdapterName: "adapterNotFound",
+			expected:         &openrtb2.BidRequest{},
 		},
 	}
 
