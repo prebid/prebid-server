@@ -96,7 +96,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 	if responseData.StatusCode == http.StatusBadRequest {
 		err := &errortypes.BadInput{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", responseData.StatusCode), 
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", responseData.StatusCode),
 		}
 		return nil, []error{err}
 	}
