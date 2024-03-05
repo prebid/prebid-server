@@ -1,7 +1,6 @@
 package exchange
 
 import (
-	"github.com/prebid/prebid-server/v2/adapters/roulax"
 	"github.com/prebid/prebid-server/v2/adapters"
 	ttx "github.com/prebid/prebid-server/v2/adapters/33across"
 	"github.com/prebid/prebid-server/v2/adapters/aax"
@@ -147,6 +146,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/revcontent"
 	"github.com/prebid/prebid-server/v2/adapters/richaudience"
 	"github.com/prebid/prebid-server/v2/adapters/rise"
+	"github.com/prebid/prebid-server/v2/adapters/roulax"
 	"github.com/prebid/prebid-server/v2/adapters/rtbhouse"
 	"github.com/prebid/prebid-server/v2/adapters/rubicon"
 	salunamedia "github.com/prebid/prebid-server/v2/adapters/sa_lunamedia"
