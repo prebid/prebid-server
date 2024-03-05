@@ -1346,11 +1346,11 @@ func makeBidExtJSON(ext json.RawMessage, prebid *openrtb_ext.ExtBidPrebid, impEx
 		prebid.Meta = &openrtb_ext.ExtBidPrebidMeta{}
 	}
 
+	prebid.Meta.AdapterCode = adapter.String()
+
 	if prebid.Meta.DChain != nil {
 		dchain.AddDchainNode(prebid.Meta)
 	}
-
-	prebid.Meta.AdapterCode = adapter.String()
 
 	// ext.prebid.storedrequestattributes and ext.prebid.passthrough
 	if impExtInfo, ok := impExtInfoMap[impId]; ok {

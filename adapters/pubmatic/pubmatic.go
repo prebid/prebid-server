@@ -450,6 +450,12 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 				BidVideo: &openrtb_ext.ExtBidPrebidVideo{},
 			}
 
+			if dchain, _, _, err := jsonparser.Get(bid.Ext, "dchain"); err == nil && len(dchain) > 0 {
+				typedBid.BidMeta = &openrtb_ext.ExtBidPrebidMeta{
+					DChain: dchain,
+				}
+			}
+
 			var bidExt *pubmaticBidExt
 			err := json.Unmarshal(bid.Ext, &bidExt)
 			if err != nil {
