@@ -663,7 +663,7 @@ func TestOverrideWithCustomCurrency(t *testing.T) {
 	}.Builder
 	e.currencyConverter = mockCurrencyConverter
 	e.categoriesFetcher = categoriesFetcher
-	e.bidIDGenerator = &mockBidIDGenerator{false, false}
+	e.bidIDGenerator = &fakeBidIDGenerator{GenerateBidID: false, ReturnError: false}
 	e.requestSplitter = requestSplitter{
 		me:               e.me,
 		gdprPermsBuilder: e.gdprPermsBuilder,
@@ -768,7 +768,7 @@ func TestAdapterCurrency(t *testing.T) {
 		}.Builder,
 		currencyConverter: currencyConverter,
 		categoriesFetcher: nilCategoryFetcher{},
-		bidIDGenerator:    &mockBidIDGenerator{false, false},
+		bidIDGenerator:    &fakeBidIDGenerator{GenerateBidID: false, ReturnError: false},
 		adapterMap: map[openrtb_ext.BidderName]AdaptedBidder{
 			openrtb_ext.BidderName("appnexus"): AdaptBidder(mockBidder, nil, &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderName("appnexus"), nil, ""),
 		},
@@ -846,7 +846,7 @@ func TestFloorsSignalling(t *testing.T) {
 		}.Builder,
 		currencyConverter: currencyConverter,
 		categoriesFetcher: nilCategoryFetcher{},
-		bidIDGenerator:    &mockBidIDGenerator{false, false},
+		bidIDGenerator:    &fakeBidIDGenerator{GenerateBidID: false, ReturnError: false},
 		priceFloorEnabled: true,
 		priceFloorFetcher: &mockPriceFloorFetcher{},
 	}
@@ -1129,7 +1129,7 @@ func TestReturnCreativeEndToEnd(t *testing.T) {
 	}.Builder
 	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	e.categoriesFetcher = categoriesFetcher
-	e.bidIDGenerator = &mockBidIDGenerator{false, false}
+	e.bidIDGenerator = &fakeBidIDGenerator{GenerateBidID: false, ReturnError: false}
 	e.requestSplitter = requestSplitter{
 		me:               e.me,
 		gdprPermsBuilder: e.gdprPermsBuilder,
@@ -2139,9 +2139,9 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 			},
 		},
 	}
-	bidIdGenerator := &mockBidIDGenerator{}
+	bidIdGenerator := &fakeBidIDGenerator{}
 	if spec.BidIDGenerator != nil {
-		*bidIdGenerator = *spec.BidIDGenerator
+		bidIdGenerator = spec.BidIDGenerator
 	}
 	ex := newExchangeForTests(t, filename, spec.OutgoingRequests, aliases, privacyConfig, bidIdGenerator, spec.HostSChainFlag, spec.FloorsEnabled, spec.HostConfigBidValidation, spec.Server)
 	biddersInAuction := findBiddersInAuction(t, filename, &spec.IncomingRequest.OrtbRequest)
@@ -2457,31 +2457,35 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 	}
 }
 
-type mockBidIDGenerator struct {
+type fakeBidIDGenerator struct {
 	GenerateBidID bool `json:"generateBidID"`
 	ReturnError   bool `json:"returnError"`
+	bidCount      map[string]int
 }
 
-func (big *mockBidIDGenerator) Enabled() bool {
-	return big.GenerateBidID
+func (f *fakeBidIDGenerator) Enabled() bool {
+	return f.GenerateBidID
 }
 
-func (big *mockBidIDGenerator) New() (string, error) {
-
-	if big.ReturnError {
-		err := errors.New("Test error generating bid.ext.prebid.bidid")
-		return "", err
+func (f *fakeBidIDGenerator) New(bidder string) (string, error) {
+	if f.ReturnError {
+		return "", errors.New("Test error generating bid.ext.prebid.bidid")
 	}
-	return "mock_uuid", nil
 
+	if f.bidCount == nil {
+		f.bidCount = make(map[string]int)
+	}
+
+	f.bidCount[bidder] += 1
+	return fmt.Sprintf("bid-%v-%v", bidder, f.bidCount[bidder]), nil
 }
 
-type fakeRandomDeduplicateBidBooleanGenerator struct {
-	returnValue bool
+type fakeBooleanGenerator struct {
+	value bool
 }
 
-func (m *fakeRandomDeduplicateBidBooleanGenerator) Generate() bool {
-	return m.returnValue
+func (f *fakeBooleanGenerator) Generate() bool {
+	return f.value
 }
 
 func newExtRequest() openrtb_ext.ExtRequest {
@@ -2849,7 +2853,7 @@ func TestCategoryDedupe(t *testing.T) {
 					Currency: "USD",
 				},
 			}
-			deduplicateGenerator := fakeRandomDeduplicateBidBooleanGenerator{returnValue: tt.dedupeGeneratorValue}
+			deduplicateGenerator := fakeBooleanGenerator{value: tt.dedupeGeneratorValue}
 			bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &deduplicateGenerator, &nonBids{})
 
 			assert.Nil(t, err)
@@ -3286,7 +3290,7 @@ func TestCategoryMappingTwoBiddersManyBidsEachNoCategorySamePrice(t *testing.T) 
 	adapterBids[bidderNameApn1] = &seatBidApn1
 	adapterBids[bidderNameApn2] = &seatBidApn2
 
-	_, adapterBids, rejections, err := applyCategoryMapping(nil, *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &fakeRandomDeduplicateBidBooleanGenerator{true}, &nonBids{})
+	_, adapterBids, rejections, err := applyCategoryMapping(nil, *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &fakeBooleanGenerator{value: true}, &nonBids{})
 
 	assert.NoError(t, err, "Category mapping error should be empty")
 
@@ -4110,7 +4114,7 @@ func TestStoredAuctionResponses(t *testing.T) {
 	e.cache = &wellBehavedCache{}
 	e.me = &metricsConf.NilMetricsEngine{}
 	e.categoriesFetcher = categoriesFetcher
-	e.bidIDGenerator = &mockBidIDGenerator{false, false}
+	e.bidIDGenerator = &fakeBidIDGenerator{GenerateBidID: false, ReturnError: false}
 	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	e.gdprPermsBuilder = fakePermissionsBuilder{
 		permissions: &permissionsMock{
@@ -4476,7 +4480,7 @@ func TestAuctionDebugEnabled(t *testing.T) {
 	e.cache = &wellBehavedCache{}
 	e.me = &metricsConf.NilMetricsEngine{}
 	e.categoriesFetcher = categoriesFetcher
-	e.bidIDGenerator = &mockBidIDGenerator{false, false}
+	e.bidIDGenerator = &fakeBidIDGenerator{GenerateBidID: false, ReturnError: false}
 	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	e.gdprPermsBuilder = fakePermissionsBuilder{
 		permissions: &permissionsMock{
@@ -5077,7 +5081,7 @@ func TestOverrideConfigAlternateBidderCodesWithRequestValues(t *testing.T) {
 	}.Builder
 	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	e.categoriesFetcher = categoriesFetcher
-	e.bidIDGenerator = &mockBidIDGenerator{false, false}
+	e.bidIDGenerator = &fakeBidIDGenerator{GenerateBidID: false, ReturnError: false}
 	e.requestSplitter = requestSplitter{
 		me:               e.me,
 		gdprPermsBuilder: e.gdprPermsBuilder,
@@ -5474,7 +5478,7 @@ type exchangeSpec struct {
 	DebugLog                   *DebugLog              `json:"debuglog,omitempty"`
 	EventsEnabled              bool                   `json:"events_enabled,omitempty"`
 	StartTime                  int64                  `json:"start_time_ms,omitempty"`
-	BidIDGenerator             *mockBidIDGenerator    `json:"bidIDGenerator,omitempty"`
+	BidIDGenerator             *fakeBidIDGenerator    `json:"bidIDGenerator,omitempty"`
 	RequestType                *metrics.RequestType   `json:"requestType,omitempty"`
 	PassthroughFlag            bool                   `json:"passthrough_flag,omitempty"`
 	HostSChainFlag             bool                   `json:"host_schain_flag,omitempty"`
