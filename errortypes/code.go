@@ -31,6 +31,7 @@ const (
 	AdServerTargetingWarningCode
 	BidAdjustmentWarningCode
 	FloorBidRejectionWarningCode
+	InvalidBidResponseDSAWarningCode
 )
 
 // Coder provides an error or warning code with severity.

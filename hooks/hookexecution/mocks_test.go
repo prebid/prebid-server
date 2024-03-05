@@ -7,6 +7,7 @@ import (
 
 	"github.com/prebid/prebid-server/v2/hooks/hookstage"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 )
 
 type mockUpdateHeaderEntrypointHook struct{}
@@ -330,12 +331,16 @@ func (e mockUpdateBidRequestHook) HandleBidderRequestHook(_ context.Context, _ h
 	c := hookstage.ChangeSet[hookstage.BidderRequestPayload]{}
 	c.AddMutation(
 		func(payload hookstage.BidderRequestPayload) (hookstage.BidderRequestPayload, error) {
-			payload.Request.User.Yob = 2000
+			user := ptrutil.Clone(payload.Request.User)
+			user.Yob = 2000
+			payload.Request.User = user
 			return payload, nil
 		}, hookstage.MutationUpdate, "bidRequest", "user.yob",
 	).AddMutation(
 		func(payload hookstage.BidderRequestPayload) (hookstage.BidderRequestPayload, error) {
-			payload.Request.User.Consent = "true"
+			user := ptrutil.Clone(payload.Request.User)
+			user.Consent = "true"
+			payload.Request.User = user
 			return payload, nil
 		}, hookstage.MutationUpdate, "bidRequest", "user.consent",
 	)

@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 )
 
 var isValidMobile = regexp.MustCompile(`(ios|ipod|ipad|iphone|android)`)

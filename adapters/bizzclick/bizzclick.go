@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"text/template"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
@@ -104,7 +104,15 @@ func (a *adapter) getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtBizzclick
 }
 
 func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtBizzclick) (string, error) {
-	endpointParams := macros.EndpointTemplateParams{AccountID: params.AccountID, SourceId: params.PlacementID}
+	host := "us-e-node1"
+	if params.Host != "" {
+		host = params.Host
+	}
+	sourceId := params.SourceID
+	if params.SourceID == "" {
+		sourceId = params.PlacementID
+	}
+	endpointParams := macros.EndpointTemplateParams{AccountID: params.AccountID, SourceId: sourceId, Host: host}
 	return macros.ResolveMacros(a.endpoint, endpointParams)
 }
 

@@ -101,7 +101,7 @@ func ExecuteAspectRequest(t *testing.T, timeInQueue string, reqTimeout string, s
 		req.Header.Set(reqTimeoutHeaderName, reqTimeout)
 	}
 
-	customHeaders := config.RequestTimeoutHeaders{reqTimeInQueueHeaderName, reqTimeoutHeaderName}
+	customHeaders := config.RequestTimeoutHeaders{RequestTimeInQueue: reqTimeInQueueHeaderName, RequestTimeoutInQueue: reqTimeoutHeaderName}
 
 	metrics := &metrics.MetricsEngineMock{}
 

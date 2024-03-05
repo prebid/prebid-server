@@ -18,10 +18,11 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/julienschmidt/httprouter"
-	"github.com/prebid/openrtb/v19/native1"
-	nativeRequests "github.com/prebid/openrtb/v19/native1/request"
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/native1"
+	nativeRequests "github.com/prebid/openrtb/v20/native1/request"
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/analytics"
 	analyticsBuild "github.com/prebid/prebid-server/v2/analytics/build"
 	"github.com/prebid/prebid-server/v2/config"
@@ -42,6 +43,11 @@ import (
 )
 
 const jsonFileExtension string = ".json"
+
+func TestMain(m *testing.M) {
+	jsoniter.RegisterExtension(&jsonutil.RawMessageExtension{})
+	os.Exit(m.Run())
+}
 
 func TestJsonSampleRequests(t *testing.T) {
 	testSuites := []struct {
