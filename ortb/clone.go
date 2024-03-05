@@ -405,7 +405,7 @@ func CloneDOOH(s *openrtb2.DOOH) *openrtb2.DOOH {
 	return &c
 }
 
-// CloneBidRequestPartial performs a deep clone of just the bid request device, user, source, and ext fields.
+// CloneBidRequestPartial performs a deep clone of just the bid request device, user, and source fields.
 func CloneBidRequestPartial(s *openrtb2.BidRequest) *openrtb2.BidRequest {
 	if s == nil {
 		return nil
