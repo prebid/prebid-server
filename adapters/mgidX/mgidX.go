@@ -30,7 +30,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	bidder := &adapter{
 		endpoint: config.Endpoint,
 	}
-
 	return bidder, nil
 }
 
