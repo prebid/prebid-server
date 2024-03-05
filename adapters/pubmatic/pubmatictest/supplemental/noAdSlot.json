@@ -55,7 +55,7 @@
                         "h": 250
                     },
                     "ext": {
-                        "pmZoneID": "Zone1,Zone2",
+                        "pmZoneId": "Zone1,Zone2",
                         "preference": "sports,movies"
                     }
                 }],
@@ -72,7 +72,8 @@
                     "wrapper": {
                         "profile": 5123,
                         "version": 1
-                    }
+                    },
+                    "prebid": {}
                 }
             }
         },

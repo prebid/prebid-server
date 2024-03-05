@@ -1,0 +1,58 @@
+{
+  "description": "req.site is present; req.ext.prebid.data.bidders has appnexus and telaria bidders; req.ext.prebid.bidderconfig is defined for both of them; req.ext.prebid.bidderconfig for appnexus contains app and user; req.ext.prebid.bidderconfig for telaria contains app; expected to have error for appnexus: app is not present in request, user is not present in request; expect to have error for telaria: app is not present in request",
+  "inputRequestData": {
+    "id": "bid_id",
+    "site": {
+      "id": "reqSiteId",
+      "page": "http://www.foobar.com/1234.html",
+      "publisher": {
+        "id": "1"
+      }
+    },
+    "test": 1,
+    "ext": {
+      "prebid": {
+        "data": {
+          "bidders": [
+            "appnexus", "telaria"
+          ]
+        },
+        "bidderconfig": [
+          {
+            "bidders": [
+              "appnexus"
+            ],
+            "config": {
+              "ortb2": {
+                "app": {
+                  "id": "apnAppId"
+                },
+                "user": {
+                  "id": "apnUserId"
+                }
+              }
+            }
+          },
+          {
+            "bidders": [
+              "telaria"
+            ],
+            "config": {
+              "ortb2": {
+                "app": {
+                  "id": "telariaAppId"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "outputRequestData":{},
+  "biddersFPDResolved": {},
+  "validationErrors": [
+    {"Message": "incorrect First Party Data for bidder appnexus: App object is not defined in request, but defined in FPD config"},
+    {"Message": "incorrect First Party Data for bidder telaria: App object is not defined in request, but defined in FPD config"}
+  ]
+}

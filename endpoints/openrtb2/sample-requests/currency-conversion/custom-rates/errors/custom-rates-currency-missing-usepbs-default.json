@@ -1,0 +1,81 @@
+{
+  "description": "currency in request.cur cannot be converted because conversion rate not found in either custom currency rates nor server rates. usepbsrates defaults to true",
+  "config": {
+    "currencyRates":{
+      "USD": {
+        "MXN": 2.00
+      }
+    },
+    "mockBidders": [
+      {
+        "bidderName": "appnexus",
+        "currency": "USD",
+        "price": 1.00
+      }
+    ]
+  },
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "test.somepage.com"
+    },
+    "imp": [
+      {
+        "id": "my-imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          }
+        }
+      }
+    ],
+    "cur": ["GBP"],
+    "ext": {
+      "prebid": {
+        "aliases": {
+          "unknown": "appnexus"
+        },
+        "currency": {
+          "rates": {
+            "USD": {
+              "MXN": 5.00
+            }
+          }
+        }
+      }
+    }
+  },
+  "expectedBidResponse": {
+    "id": "some-request-id",
+    "ext": {
+      "errors": {
+        "appnexus": [
+          {
+            "code": 999,
+            "message": "Currency conversion rate not found: 'USD' => 'GBP'"
+          }
+        ]
+      },
+      "warnings": {
+        "general": [
+          {
+            "code": 10002,
+            "message": "debug turned off for account"
+          }
+        ]
+      },
+      "responsetimemillis": {
+        "appnexus": 0
+      },
+      "prebid": {
+        "auctiontimestamp": 1643437745495
+      }
+    }
+  },
+  "expectedReturnCode": 200
+}

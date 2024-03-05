@@ -12,15 +12,6 @@
     "publisher_id": {
       "type": "string",
       "description": "Publisher ID from Between Exchange control panel"
-    },
-    "bid_floor": {
-      "type": "number",
-      "description": "The minimum price acceptable for a bid"
-    },
-    "bid_floor_cur": {
-      "type": "string",
-      "description": "Currency of bid floor",
-      "enum": ["USD", "EUR", "RUB"]
     }
   },
   "required": ["host", "publisher_id"]

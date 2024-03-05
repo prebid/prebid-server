@@ -1,0 +1,85 @@
+{
+  "description": "Amp request rejected",
+  "query": "tag_id=101",
+  "config": {
+    "mockBidders": [
+      {"bidderName": "appnexus", "currency": "USD", "price": 2}
+    ]
+  },
+  "mockBidRequest": {
+    "id": "my-req-id",
+    "site": {
+      "page": "test.somepage.com"
+    },
+    "imp": [
+      {
+        "id": "my-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "prebid": {
+            "bidder": {
+              "appnexus": {
+                "placementId": 12883451
+              }
+            }
+          }
+        }
+      }
+    ],
+    "ext": {
+      "prebid": {
+        "trace": "verbose",
+        "aliases": {
+          "unknown": "appnexus"
+        }
+      }
+    }
+  },
+  "expectedAmpResponse": {
+    "targeting": {},
+    "ortb2": {
+      "ext": {
+        "prebid": {
+          "modules": {
+            "trace": {
+              "stages": [
+                {
+                  "stage": "processed_auction_request",
+                  "outcomes": [
+                    {
+                      "entity": "auction-request",
+                      "groups": [
+                        {
+                          "invocation_results": [
+                            {
+                              "analytics_tags": {},
+                              "hook_id": {
+                                "module_code": "foobar",
+                                "hook_impl_code": "foo"
+                              },
+                              "status": "success",
+                              "action": "reject",
+                              "message": ""
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "expectedReturnCode": 200
+}

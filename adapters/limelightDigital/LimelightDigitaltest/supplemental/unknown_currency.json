@@ -1,0 +1,44 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-banner-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "bidfloor": 1.2,
+        "bidfloorcur": "EUR",
+        "ext": {
+          "bidder": {
+            "host": "banner.ortb.net",
+            "publisherId": 123456
+          }
+        }
+      }
+    ],
+    "ext": {
+      "prebid": {
+        "currency": {
+          "rates": {
+            "GBP": {
+              "USD": 2.2
+            }
+          },
+          "usepbsrates": false
+        }
+      }
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Currency conversion rate not found: 'EUR' => 'USD'",
+      "comparison": "literal"
+    }
+  ]
+}

@@ -8,21 +8,17 @@ import (
 	"strconv"
 	"text/template"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/macros"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type BetweenAdapter struct {
-	EndpointTemplate template.Template
+	EndpointTemplate *template.Template
 }
-
-// BetweenSSP requires bidfloor > 0.
-// If BidFloor of openrtb_ext.ExtImpBetween is zero, set it to defaultBidFloor value, see addImpProps
-const defaultBidfloor = 0.00001
 
 func (a *BetweenAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errors []error
@@ -129,14 +125,6 @@ func buildImpBanner(imp *openrtb2.Imp) error {
 // Add Between required properties to Imp object
 func addImpProps(imp *openrtb2.Imp, secure *int8, betweenExt *openrtb_ext.ExtImpBetween) {
 	imp.Secure = secure
-	if betweenExt.BidFloor <= 0 {
-		imp.BidFloor = defaultBidfloor
-	} else {
-		imp.BidFloor = betweenExt.BidFloor
-	}
-	if betweenExt.BidFloorCur != "" {
-		imp.BidFloorCur = betweenExt.BidFloorCur
-	}
 }
 
 // Adding header fields to request header
@@ -213,14 +201,14 @@ func (a *BetweenAdapter) MakeBids(internalRequest *openrtb2.BidRequest, external
 }
 
 // Builder builds a new instance of the Between adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
 
 	bidder := BetweenAdapter{
-		EndpointTemplate: *template,
+		EndpointTemplate: template,
 	}
 	return &bidder, nil
 }

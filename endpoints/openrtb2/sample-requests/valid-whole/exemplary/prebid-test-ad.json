@@ -36,14 +36,15 @@
         "bid": [
           {
             "id": "appnexus-bid",
-            "impid": "",
+            "impid": "some-impression-id",
             "price": 0
           }
         ],
-        "seat": "appnexus-bids"
+        "seat": "appnexus"
       }
     ],
     "bidid": "test bid id",
+    "cur":"USD",
     "nbr": 0
   },
   "expectedReturnCode": 200

@@ -1,0 +1,9 @@
+{
+  "description": "Bidder config is null - no bidder fpd expected",
+  "inputRequestData": {
+    "data": {},
+    "bidderconfig": null
+  },
+  "outputRequestData": {},
+  "bidderConfigFPD": {}
+}

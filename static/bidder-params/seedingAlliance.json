@@ -1,0 +1,24 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Seeding Alliance Adapter Params",
+    "description": "A schema which validates params accepted by the Seeding Alliance adapter",
+    "type": "object",
+    "properties": {
+        "adUnitId": {
+            "type": "string",
+            "description": "Ad Unit ID",
+            "minLength": 1
+        },
+        "seatId": {
+            "type": "string",
+            "description": "Deprecated, please use accountId"
+        },
+        "accountId": {
+            "type": "string",
+            "description": "Account ID of partner"
+        }
+    },
+    "required": [
+        "adUnitId"
+    ]
+}

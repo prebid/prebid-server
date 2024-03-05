@@ -27,19 +27,20 @@
   "expectedBidResponse": {
     "id":"some-request-id",
     "bidid":"test bid id",
+    "cur": "USD",
     "nbr":0,
-     "seatbid": [
-       {
-         "bid": [
-           {
-             "id": "alias1-bid",
-             "impid": "",
-             "price": 0
-           }
-         ],
-        "seat": "alias1-bids"
-       }
-     ]
+    "seatbid": [
+      {
+        "bid": [
+          {
+            "id": "appnexus-bid",
+            "impid": "my-imp-id",
+            "price": 0
+          }
+        ],
+       "seat": "alias1"
+      }
+    ]
   },
   "expectedReturnCode": 200
 }

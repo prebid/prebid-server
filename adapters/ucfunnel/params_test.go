@@ -2,13 +2,14 @@ package ucfunnel
 
 import (
 	"encoding/json"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"testing"
+
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 // This file actually intends to test static/bidder-params/ucfunnel.json
 //
-// These also validate the format of the external API: request.imp[i].ext.ucfunnel
+// These also validate the format of the external API: request.imp[i].ext.prebid.bidder.ucfunnel
 
 // TestValidParams makes sure that the ucfunnel schema accepts all imp.ext fields which we intend to support.
 func TestValidParams(t *testing.T) {

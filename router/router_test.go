@@ -2,14 +2,15 @@ package router
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
 
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	jsoniter "github.com/json-iterator/go"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -17,6 +18,11 @@ import (
 const adapterDirectory = "../adapters"
 
 type testValidator struct{}
+
+func TestMain(m *testing.M) {
+	jsoniter.RegisterExtension(&jsonutil.RawMessageExtension{})
+	os.Exit(m.Run())
+}
 
 func (validator *testValidator) Validate(name openrtb_ext.BidderName, ext json.RawMessage) error {
 	return nil
@@ -38,17 +44,18 @@ func ensureHasKey(t *testing.T, data map[string]json.RawMessage, key string) {
 }
 
 func TestNewJsonDirectoryServer(t *testing.T) {
-	alias := map[string]string{"aliastest": "appnexus"}
-	handler := NewJsonDirectoryServer("../static/bidder-params", &testValidator{}, alias)
+	defaultAlias := map[string]string{"aliastest": "appnexus"}
+	yamlAlias := map[openrtb_ext.BidderName]openrtb_ext.BidderName{openrtb_ext.BidderName("alias"): openrtb_ext.BidderName("parentAlias")}
+	handler := newJsonDirectoryServer("../static/bidder-params", &testValidator{}, defaultAlias, yamlAlias)
 	recorder := httptest.NewRecorder()
 	request, _ := http.NewRequest("GET", "/whatever", nil)
 	handler(recorder, request, nil)
 
 	var data map[string]json.RawMessage
-	json.Unmarshal(recorder.Body.Bytes(), &data)
+	jsonutil.UnmarshalValid(recorder.Body.Bytes(), &data)
 
 	// Make sure that every adapter has a json schema by the same name associated with it.
-	adapterFiles, err := ioutil.ReadDir(adapterDirectory)
+	adapterFiles, err := os.ReadDir(adapterDirectory)
 	if err != nil {
 		t.Fatalf("Failed to open the adapters directory: %v", err)
 	}
@@ -60,16 +67,102 @@ func TestNewJsonDirectoryServer(t *testing.T) {
 	}
 
 	ensureHasKey(t, data, "aliastest")
+	ensureHasKey(t, data, "alias")
 }
 
-func TestExchangeMap(t *testing.T) {
-	exchanges := newExchangeMap(&config.Configuration{})
-	bidderMap := openrtb_ext.BuildBidderMap()
-	for bidderName := range exchanges {
-		// OpenRTB doesn't support hardcoded aliases... so this test skips districtm,
-		// which was the only alias in the legacy adapter map.
-		if _, ok := bidderMap[bidderName]; bidderName != "districtm" && !ok {
-			t.Errorf("Bidder %s exists in exchange, but is not a part of the BidderMap.", bidderName)
+func TestCheckSupportedUserSyncEndpoints(t *testing.T) {
+	anyEndpoint := &config.SyncerEndpoint{URL: "anyURL"}
+
+	var testCases = []struct {
+		description      string
+		givenBidderInfos config.BidderInfos
+		expectedError    string
+	}{
+		{
+			description:      "None",
+			givenBidderInfos: config.BidderInfos{},
+			expectedError:    "",
+		},
+		{
+			description: "One - No Syncer",
+			givenBidderInfos: config.BidderInfos{
+				"a": config.BidderInfo{Syncer: nil},
+			},
+			expectedError: "",
+		},
+		{
+			description: "One - Invalid Supported Endpoint",
+			givenBidderInfos: config.BidderInfos{
+				"a": config.BidderInfo{Syncer: &config.Syncer{Supports: []string{"invalid"}}},
+			},
+			expectedError: "failed to load bidder info for a, user sync supported endpoint 'invalid' is unrecognized",
+		},
+		{
+			description: "One - IFrame Supported - Not Specified",
+			givenBidderInfos: config.BidderInfos{
+				"a": config.BidderInfo{Syncer: &config.Syncer{Supports: []string{"iframe"}, IFrame: nil}},
+			},
+			expectedError: "",
+		},
+		{
+			description: "One - IFrame Supported - Specified",
+			givenBidderInfos: config.BidderInfos{
+				"a": config.BidderInfo{Syncer: &config.Syncer{Supports: []string{"iframe"}, IFrame: anyEndpoint}},
+			},
+			expectedError: "",
+		},
+		{
+			description: "One - Redirect Supported - Not Specified",
+			givenBidderInfos: config.BidderInfos{
+				"a": config.BidderInfo{Syncer: &config.Syncer{Supports: []string{"redirect"}, Redirect: nil}},
+			},
+			expectedError: "",
+		},
+		{
+			description: "One - IFrame Supported - Specified",
+			givenBidderInfos: config.BidderInfos{
+				"a": config.BidderInfo{Syncer: &config.Syncer{Supports: []string{"redirect"}, Redirect: anyEndpoint}},
+			},
+			expectedError: "",
+		},
+		{
+			description: "One - IFrame + Redirect Supported - Not Specified",
+			givenBidderInfos: config.BidderInfos{
+				"a": config.BidderInfo{Syncer: &config.Syncer{Supports: []string{"iframe", "redirect"}, IFrame: nil, Redirect: nil}},
+			},
+			expectedError: "",
+		},
+		{
+			description: "One - IFrame + Redirect Supported - Specified",
+			givenBidderInfos: config.BidderInfos{
+				"a": config.BidderInfo{Syncer: &config.Syncer{Supports: []string{"iframe", "redirect"}, IFrame: anyEndpoint, Redirect: anyEndpoint}},
+			},
+			expectedError: "",
+		},
+		{
+			description: "Many - With Invalid Supported Endpoint",
+			givenBidderInfos: config.BidderInfos{
+				"a": config.BidderInfo{},
+				"b": config.BidderInfo{Syncer: &config.Syncer{Supports: []string{"invalid"}}},
+			},
+			expectedError: "failed to load bidder info for b, user sync supported endpoint 'invalid' is unrecognized",
+		},
+		{
+			description: "Many - Specified + Not Specified",
+			givenBidderInfos: config.BidderInfos{
+				"a": config.BidderInfo{Syncer: &config.Syncer{Supports: []string{"iframe"}, IFrame: anyEndpoint}},
+				"b": config.BidderInfo{Syncer: &config.Syncer{Supports: []string{"redirect"}, Redirect: nil}},
+			},
+			expectedError: "",
+		},
+	}
+
+	for _, test := range testCases {
+		resultErr := checkSupportedUserSyncEndpoints(test.givenBidderInfos)
+		if test.expectedError == "" {
+			assert.NoError(t, resultErr, test.description)
+		} else {
+			assert.EqualError(t, resultErr, test.expectedError, test.description)
 		}
 	}
 }
@@ -115,38 +208,6 @@ func TestNoCache(t *testing.T) {
 	}
 	if expected := ""; expected != h.Get("ETag") {
 		t.Errorf("invalid etag header: expected: %s got: %s", expected, h.Get("ETag"))
-	}
-}
-
-func TestLoadDataCache(t *testing.T) {
-	// Test dummy
-	if err := loadDataCache(&config.Configuration{
-		DataCache: config.DataCache{
-			Type: "dummy",
-		},
-	}, nil); err != nil {
-		t.Errorf("data cache: dummy: %s", err)
-	}
-	// Test postgres error
-	if err := loadDataCache(&config.Configuration{
-		DataCache: config.DataCache{
-			Type: "postgres",
-		},
-	}, nil); err == nil {
-		t.Errorf("data cache: postgres: db nil should return error")
-	}
-	// Test file
-	d, _ := ioutil.TempDir("", "pbs-filecache")
-	defer os.RemoveAll(d)
-	f, _ := ioutil.TempFile(d, "file")
-	defer f.Close()
-	if err := loadDataCache(&config.Configuration{
-		DataCache: config.DataCache{
-			Type:     "filecache",
-			Filename: f.Name(),
-		},
-	}, nil); err != nil {
-		t.Errorf("data cache: filecache: %s", err)
 	}
 }
 
@@ -219,4 +280,24 @@ func TestValidateDefaultAliases(t *testing.T) {
 			assert.EqualError(t, err, test.expectedError, test.description)
 		}
 	}
+}
+
+func TestBidderParamsCompactedOutput(t *testing.T) {
+	expectedFormattedResponse := `{"appnexus":{"$schema":"http://json-schema.org/draft-04/schema#","title":"Sample schema","description":"A sample schema to test the bidder/params endpoint","type":"object","properties":{"integer_param":{"type":"integer","minimum":1,"description":"A customer id"},"string_param_1":{"type":"string","minLength":1,"description":"Text with blanks in between"},"string_param_2":{"type":"string","minLength":1,"description":"Text_with_no_blanks_in_between"}},"required":["integer_param","string_param_2"]}}`
+
+	// Setup
+	inSchemaDirectory := "bidder_params_tests"
+	paramsValidator, err := openrtb_ext.NewBidderParamsValidator(inSchemaDirectory)
+	assert.NoError(t, err, "Error initialing validator")
+
+	handler := newJsonDirectoryServer(inSchemaDirectory, paramsValidator, nil, nil)
+	recorder := httptest.NewRecorder()
+	request, err := http.NewRequest("GET", "/bidder/params", nil)
+	assert.NoError(t, err, "Error creating request")
+
+	// Run
+	handler(recorder, request, nil)
+
+	// Assertions
+	assert.Equal(t, expectedFormattedResponse, recorder.Body.String())
 }

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 func TestValidParams(t *testing.T) {
@@ -34,10 +34,42 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
-	`{"appId":"11bc5dd5-7421-4dd8-c926-40fa653bec76", "bidfloor":0.01}`,
+	`{"appId":"eitherBannerOrVideoAppId", "bidfloor":9.21}`,
+	`{"appId":"eitherBannerOrVideoAppId", "bidfloor":9.23129837662781}`,
+	`{"appId":"eitherBannerOrVideoAppId", "bidfloor":0.01}`,
+	`{"appId":"eitherBannerOrVideoAppId", "bidfloor":0}`,
+	`{"appId":"eitherBannerOrVideoAppId"}`,
+	`{"appIds": {
+		"banner":"aBannerAppId"
+		}
+	}`,
+	`{"appIds": {
+		"video":"aVideoAppId"
+		}
+	}`,
+	`{"appIds": {
+		"video":"aVideoAppId",
+		"banner":"aBannerAppId"
+		}
+	}`,
+	`{"bidfloor":2.50,
+		"appIds": {
+			"video":"aVideoAppId",
+			"banner":"aBannerAppId"
+		},
+		"videoResponseType":"nurl"
+	}`,
 }
 
 var invalidParams = []string{
 	`{"appId":1176, "bidfloor":0.01}`,
-	`{"appId":"11bc5dd5-7421-4dd8-c926-40fa653bec76"}`,
+	`{"appIds":"eitherBannerOrVideoAppId"}`,
+	`{"appIds":{"cerebralUplink":"cerebralUplinkAppId"}}`,
+	`{"appId":"eitherBannerOrVideoAppId",
+		"appIds": {
+			"video":"aVideoAppId",
+			"banner":"aBannerAppId"
+		}
+	}`,
+	`{}`,
 }

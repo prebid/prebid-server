@@ -5,8 +5,9 @@ type EventType string
 
 // Possible values of events Prebid Server can receive for an ad.
 const (
-	Win EventType = "win"
-	Imp EventType = "imp"
+	Win  EventType = "win"
+	Imp  EventType = "imp"
+	Vast EventType = "vast"
 )
 
 // ResponseFormat enumerates the values of a Prebid Server event.
@@ -19,6 +20,18 @@ const (
 	Image ResponseFormat = "i"
 )
 
+// VastType enumerates the values of vast type events Prebid Server can receive
+type VastType string
+
+// Possible value of VastType event prebid server can receive.
+const (
+	Start         VastType = "start"
+	FirstQuartile VastType = "firstQuartile"
+	MidPoint      VastType = "midPoint"
+	ThirdQuartile VastType = "thirdQuartile"
+	Complete      VastType = "complete"
+)
+
 // Analytics indicates if the notification event should be handled or not
 type Analytics string
 
@@ -28,11 +41,13 @@ const (
 )
 
 type EventRequest struct {
-	Type      EventType      `json:"type,omitempty"`
-	Format    ResponseFormat `json:"format,omitempty"`
-	Analytics Analytics      `json:"analytics,omitempty"`
-	BidID     string         `json:"bidid,omitempty"`
-	AccountID string         `json:"account_id,omitempty"`
-	Bidder    string         `json:"bidder,omitempty"`
-	Timestamp int64          `json:"timestamp,omitempty"`
+	Type        EventType      `json:"type,omitempty"`
+	Format      ResponseFormat `json:"format,omitempty"`
+	Analytics   Analytics      `json:"analytics,omitempty"`
+	BidID       string         `json:"bidid,omitempty"`
+	AccountID   string         `json:"account_id,omitempty"`
+	Bidder      string         `json:"bidder,omitempty"`
+	Timestamp   int64          `json:"timestamp,omitempty"`
+	Integration string         `json:"integration,omitempty"`
+	VType       VastType       `json:"vtype,omitempty"`
 }

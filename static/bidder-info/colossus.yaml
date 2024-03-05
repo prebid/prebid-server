@@ -1,5 +1,6 @@
+endpoint: "http://colossusssp.com/?c=o&m=rtb"
 maintainer:
-  email: "support@huddledmasses.com"
+  email: "support@colossusmediassp.com"
 capabilities:
   app:
     mediaTypes:
@@ -9,3 +10,7 @@ capabilities:
     mediaTypes:
       - banner
       - video
+userSync:
+  redirect:
+    url: "https://sync.colossusssp.com/pbs.gif?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir={{.RedirectURL}}"
+    userMacro: "[UID]"

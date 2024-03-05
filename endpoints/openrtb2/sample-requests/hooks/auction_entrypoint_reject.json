@@ -1,0 +1,77 @@
+{
+  "description": "Auction request rejected",
+  "config": {
+    "mockBidders": [
+      {"bidderName": "appnexus", "currency": "USD", "price": 0.00}
+    ]
+  },
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "prebid.org"
+    },
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          }
+        }
+      }
+    ],
+    "tmax": 500,
+    "ext": {
+      "prebid": {
+        "trace": "verbose"
+      }
+    }
+  },
+  "expectedBidResponse": {
+    "id": "some-request-id",
+    "nbr": 123,
+    "ext": {
+      "prebid": {
+        "modules": {
+          "trace": {
+            "stages": [
+              {
+                "stage": "entrypoint",
+                "outcomes": [
+                  {
+                    "entity": "http-request",
+                    "groups": [
+                      {
+                        "invocation_results": [
+                          {
+                            "analytics_tags": {},
+                            "hook_id": {
+                              "module_code": "foobar",
+                              "hook_impl_code": "foo"
+                            },
+                            "status": "success",
+                            "action": "reject",
+                            "message": ""
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "expectedReturnCode": 200
+}

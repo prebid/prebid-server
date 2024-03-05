@@ -13,13 +13,14 @@ import (
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/julienschmidt/httprouter"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/metrics"
-	"github.com/prebid/prebid-server/stored_requests"
-	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
-	"github.com/prebid/prebid-server/stored_requests/backends/http_fetcher"
-	"github.com/prebid/prebid-server/stored_requests/events"
-	httpEvents "github.com/prebid/prebid-server/stored_requests/events/http"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/metrics"
+	"github.com/prebid/prebid-server/v2/stored_requests"
+	"github.com/prebid/prebid-server/v2/stored_requests/backends/db_provider"
+	"github.com/prebid/prebid-server/v2/stored_requests/backends/empty_fetcher"
+	"github.com/prebid/prebid-server/v2/stored_requests/backends/http_fetcher"
+	"github.com/prebid/prebid-server/v2/stored_requests/events"
+	httpEvents "github.com/prebid/prebid-server/v2/stored_requests/events/http"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -41,12 +42,88 @@ func isMemoryCacheType(cache stored_requests.CacheJSON) bool {
 }
 
 func TestNewEmptyFetcher(t *testing.T) {
-	fetcher := newFetcher(&config.StoredRequests{}, nil, nil)
-	if fetcher == nil {
-		t.Errorf("The fetcher should be non-nil, even with an empty config.")
+
+	type testCase struct {
+		config       *config.StoredRequests
+		emptyFetcher bool
+		description  string
 	}
-	if _, ok := fetcher.(empty_fetcher.EmptyFetcher); !ok {
-		t.Errorf("If the config is empty, and EmptyFetcher should be returned")
+	testCases := []testCase{
+		{
+			config:       &config.StoredRequests{},
+			emptyFetcher: true,
+			description:  "If the config is empty, an EmptyFetcher should be returned",
+		},
+		{
+			config: &config.StoredRequests{
+				Database: config.DatabaseConfig{
+					ConnectionInfo: config.DatabaseConnection{
+						Driver: "postgres",
+					},
+					CacheInitialization: config.DatabaseCacheInitializer{
+						Query: "test query",
+					},
+					PollUpdates: config.DatabaseUpdatePolling{
+						Query: "test poll query",
+					},
+					FetcherQueries: config.DatabaseFetcherQueries{
+						QueryTemplate: "",
+					},
+				},
+			},
+			emptyFetcher: true,
+			description:  "If Database fetcher query is not defined, but Database Cache init query and Database update polling query are defined EmptyFetcher should be returned",
+		},
+		{
+			config: &config.StoredRequests{
+				Database: config.DatabaseConfig{
+					ConnectionInfo: config.DatabaseConnection{
+						Driver: "postgres",
+					},
+					CacheInitialization: config.DatabaseCacheInitializer{
+						Query: "",
+					},
+					PollUpdates: config.DatabaseUpdatePolling{
+						Query: "",
+					},
+					FetcherQueries: config.DatabaseFetcherQueries{
+						QueryTemplate: "test fetcher query",
+					},
+				},
+			},
+			emptyFetcher: false,
+			description:  "If Database fetcher query is defined, but Database Cache init query and Database update polling query are not defined not EmptyFetcher (DBFetcher) should be returned",
+		},
+		{
+			config: &config.StoredRequests{
+				Database: config.DatabaseConfig{
+					ConnectionInfo: config.DatabaseConnection{
+						Driver: "postgres",
+					},
+					CacheInitialization: config.DatabaseCacheInitializer{
+						Query: "test cache query",
+					},
+					PollUpdates: config.DatabaseUpdatePolling{
+						Query: "test poll query",
+					},
+					FetcherQueries: config.DatabaseFetcherQueries{
+						QueryTemplate: "test fetcher query",
+					},
+				},
+			},
+			emptyFetcher: false,
+			description:  "If Database fetcher query is defined and Database Cache init query and Database update polling query are defined not EmptyFetcher (DBFetcher) should be returned",
+		},
+	}
+
+	for _, test := range testCases {
+		fetcher := newFetcher(test.config, nil, db_provider.DbProviderMock{})
+		assert.NotNil(t, fetcher, "The fetcher should be non-nil.")
+		if test.emptyFetcher {
+			assert.Equal(t, empty_fetcher.EmptyFetcher{}, fetcher, "Empty fetcher should be returned")
+		} else {
+			assert.NotEqual(t, empty_fetcher.EmptyFetcher{}, fetcher)
+		}
 	}
 }
 
@@ -90,6 +167,7 @@ func TestNewEmptyCache(t *testing.T) {
 	cache := newCache(&config.StoredRequests{InMemoryCache: config.InMemoryCache{Type: "none"}})
 	assert.True(t, isEmptyCacheType(cache.Requests), "The newCache method should return an empty Request cache")
 	assert.True(t, isEmptyCacheType(cache.Imps), "The newCache method should return an empty Imp cache")
+	assert.True(t, isEmptyCacheType(cache.Responses), "The newCache method should return an empty Responses cache")
 	assert.True(t, isEmptyCacheType(cache.Accounts), "The newCache method should return an empty Account cache")
 }
 
@@ -99,10 +177,12 @@ func TestNewInMemoryCache(t *testing.T) {
 			TTL:              60,
 			RequestCacheSize: 100,
 			ImpCacheSize:     100,
+			RespCacheSize:    100,
 		},
 	})
 	assert.True(t, isMemoryCacheType(cache.Requests), "The newCache method should return an in-memory Request cache for StoredRequests config")
 	assert.True(t, isMemoryCacheType(cache.Imps), "The newCache method should return an in-memory Imp cache for StoredRequests config")
+	assert.True(t, isMemoryCacheType(cache.Responses), "The newCache method should return an in-memory Responses cache for StoredResponses config")
 	assert.True(t, isEmptyCacheType(cache.Accounts), "The newCache method should return an empty Account cache for StoredRequests config")
 }
 
@@ -116,20 +196,21 @@ func TestNewInMemoryAccountCache(t *testing.T) {
 	assert.True(t, isMemoryCacheType(cache.Accounts), "The newCache method should return an in-memory Account cache for Accounts config")
 	assert.True(t, isEmptyCacheType(cache.Requests), "The newCache method should return an empty Request cache for Accounts config")
 	assert.True(t, isEmptyCacheType(cache.Imps), "The newCache method should return an empty Imp cache for Accounts config")
+	assert.True(t, isEmptyCacheType(cache.Responses), "The newCache method should return an empty Responses cache for Accounts config")
 }
 
-func TestNewPostgresEventProducers(t *testing.T) {
+func TestNewDatabaseEventProducers(t *testing.T) {
 	metricsMock := &metrics.MetricsEngineMock{}
 	metricsMock.Mock.On("RecordStoredDataFetchTime", mock.Anything, mock.Anything).Return()
 	metricsMock.Mock.On("RecordStoredDataError", mock.Anything).Return()
 
 	cfg := &config.StoredRequests{
-		Postgres: config.PostgresConfig{
-			CacheInitialization: config.PostgresCacheInitializer{
+		Database: config.DatabaseConfig{
+			CacheInitialization: config.DatabaseCacheInitializer{
 				Timeout: 50,
 				Query:   "SELECT id, requestData, type FROM stored_data",
 			},
-			PollUpdates: config.PostgresUpdatePolling{
+			PollUpdates: config.DatabaseUpdatePolling{
 				RefreshRate: 20,
 				Timeout:     50,
 				Query:       "SELECT id, requestData, type FROM stored_data WHERE last_updated > $1",
@@ -137,13 +218,13 @@ func TestNewPostgresEventProducers(t *testing.T) {
 		},
 	}
 	client := &http.Client{}
-	db, mock, err := sqlmock.New()
+	provider, mock, err := db_provider.NewDbProviderMock()
 	if err != nil {
 		t.Fatalf("Failed to create mock: %v", err)
 	}
-	mock.ExpectQuery("^" + regexp.QuoteMeta(cfg.Postgres.CacheInitialization.Query) + "$").WillReturnError(errors.New("Query failed"))
+	mock.ExpectQuery("^" + regexp.QuoteMeta(cfg.Database.CacheInitialization.Query) + "$").WillReturnError(errors.New("Query failed"))
 
-	evProducers := newEventProducers(cfg, client, db, metricsMock, nil)
+	evProducers := newEventProducers(cfg, client, provider, metricsMock, nil)
 	assertProducerLength(t, evProducers, 1)
 
 	assertExpectationsMet(t, mock)

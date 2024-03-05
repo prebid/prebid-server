@@ -1,0 +1,18 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "ext": {
+      "bidder": {
+        "appId": "impactify.io",
+        "format": "screen",
+        "style": "impact"
+      }
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "No valid impressions in the bid request",
+      "comparison": "literal"
+    }
+  ]
+}

@@ -23,6 +23,7 @@
             "uri": "http://localhost/prebid_server",
             "body": {
                 "id": "test-request-id",
+                "cur": ["USD"],
                 "site": {
                     "page": "https://good.site/url"
                 },
@@ -55,7 +56,8 @@
                         "cid": "987",
                         "crid": "12345678",
                         "h": 250,
-                        "w": 300
+                        "w": 300,
+                        "mtype": 1
                     }]
                 }],
                 "cur": "USD"
@@ -75,7 +77,8 @@
                 "cid": "987",
                 "crid": "12345678",
                 "w": 300,
-                "h": 250
+                "h": 250,
+                "mtype": 1
             },
             "type": "banner"
         }]

@@ -1,0 +1,16 @@
+endpoint: "http://smartssp-us-east.iqzone.com/pserver"
+maintainer:
+  email: "adops@iqzone.com"
+capabilities:
+  site:
+    mediaTypes:
+    - banner
+    - video
+    - native
+    
+  app:
+    mediaTypes:
+    - banner
+    - video
+    - native
+

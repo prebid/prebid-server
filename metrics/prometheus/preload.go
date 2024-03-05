@@ -1,29 +1,43 @@
 package prometheusmetrics
 
 import (
-	"github.com/prebid/prebid-server/metrics"
+	"github.com/prebid/prebid-server/v2/metrics"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-func preloadLabelValues(m *Metrics) {
+func preloadLabelValues(m *Metrics, syncerKeys []string, moduleStageNames map[string][]string) {
 	var (
-		actionValues              = actionsAsString()
-		adapterErrorValues        = adapterErrorsAsString()
-		adapterValues             = adaptersAsString()
+		adapterErrorValues        = enumAsString(metrics.AdapterErrors())
+		adapterValues             = enumAsLowerCaseString(openrtb_ext.CoreBidderNames())
 		bidTypeValues             = []string{markupDeliveryAdm, markupDeliveryNurl}
 		boolValues                = boolValuesAsString()
-		cacheResultValues         = cacheResultsAsString()
+		cacheResultValues         = enumAsString(metrics.CacheResults())
 		connectionErrorValues     = []string{connectionAcceptError, connectionCloseError}
-		cookieValues              = cookieTypesAsString()
-		requestStatusValues       = requestStatusesAsString()
-		requestTypeValues         = requestTypesAsString()
-		storedDataFetchTypeValues = storedDataFetchTypesAsString()
-		storedDataErrorValues     = storedDataErrorsAsString()
+		cookieSyncStatusValues    = enumAsString(metrics.CookieSyncStatuses())
+		cookieValues              = enumAsString(metrics.CookieTypes())
+		overheadTypes             = enumAsString(metrics.OverheadTypes())
+		requestStatusValues       = enumAsString(metrics.RequestStatuses())
+		requestTypeValues         = enumAsString(metrics.RequestTypes())
+		setUidStatusValues        = enumAsString(metrics.SetUidStatuses())
 		sourceValues              = []string{sourceRequest}
+		storedDataErrorValues     = enumAsString(metrics.StoredDataErrors())
+		storedDataFetchTypeValues = enumAsString(metrics.StoredDataFetchTypes())
+		syncerRequestStatusValues = enumAsString(metrics.SyncerRequestStatuses())
+		syncerSetsStatusValues    = enumAsString(metrics.SyncerSetUidStatuses())
+		tcfVersionValues          = enumAsString(metrics.TCFVersions())
 	)
 
 	preloadLabelValuesForCounter(m.connectionsError, map[string][]string{
 		connectionErrorLabel: connectionErrorValues,
+	})
+
+	preloadLabelValuesForCounter(m.cookieSync, map[string][]string{
+		statusLabel: cookieSyncStatusValues,
+	})
+
+	preloadLabelValuesForCounter(m.setUid, map[string][]string{
+		statusLabel: setUidStatusValues,
 	})
 
 	preloadLabelValuesForCounter(m.impressions, map[string][]string{
@@ -66,6 +80,10 @@ func preloadLabelValues(m *Metrics) {
 		storedDataFetchTypeLabel: storedDataFetchTypeValues,
 	})
 
+	preloadLabelValuesForHistogram(m.storedResponsesFetchTimer, map[string][]string{
+		storedDataFetchTypeLabel: storedDataFetchTypeValues,
+	})
+
 	preloadLabelValuesForCounter(m.storedAccountErrors, map[string][]string{
 		storedDataErrorLabel: storedDataErrorValues,
 	})
@@ -83,6 +101,10 @@ func preloadLabelValues(m *Metrics) {
 	})
 
 	preloadLabelValuesForCounter(m.storedVideoErrors, map[string][]string{
+		storedDataErrorLabel: storedDataErrorValues,
+	})
+
+	preloadLabelValuesForCounter(m.storedResponsesErrors, map[string][]string{
 		storedDataErrorLabel: storedDataErrorValues,
 	})
 
@@ -107,11 +129,6 @@ func preloadLabelValues(m *Metrics) {
 		markupDeliveryLabel: bidTypeValues,
 	})
 
-	preloadLabelValuesForCounter(m.adapterCookieSync, map[string][]string{
-		adapterLabel:        adapterValues,
-		privacyBlockedLabel: boolValues,
-	})
-
 	preloadLabelValuesForCounter(m.adapterErrors, map[string][]string{
 		adapterLabel:      adapterValues,
 		adapterErrorLabel: adapterErrorValues,
@@ -119,6 +136,26 @@ func preloadLabelValues(m *Metrics) {
 
 	preloadLabelValuesForCounter(m.adapterPanics, map[string][]string{
 		adapterLabel: adapterValues,
+	})
+
+	preloadLabelValuesForCounter(m.adapterBidResponseSecureMarkupError, map[string][]string{
+		adapterLabel: adapterValues,
+		successLabel: boolValues,
+	})
+
+	preloadLabelValuesForCounter(m.adapterBidResponseSecureMarkupWarn, map[string][]string{
+		adapterLabel: adapterValues,
+		successLabel: boolValues,
+	})
+
+	preloadLabelValuesForCounter(m.adapterBidResponseValidationSizeError, map[string][]string{
+		adapterLabel: adapterValues,
+		successLabel: boolValues,
+	})
+
+	preloadLabelValuesForCounter(m.adapterBidResponseValidationSizeWarn, map[string][]string{
+		adapterLabel: adapterValues,
+		successLabel: boolValues,
 	})
 
 	preloadLabelValuesForHistogram(m.adapterPrices, map[string][]string{
@@ -129,6 +166,10 @@ func preloadLabelValues(m *Metrics) {
 		adapterLabel: adapterValues,
 		cookieLabel:  cookieValues,
 		hasBidsLabel: boolValues,
+	})
+
+	preloadLabelValuesForCounter(m.adsCertRequests, map[string][]string{
+		successLabel: boolValues,
 	})
 
 	if !m.metricsDisabled.AdapterConnectionMetrics {
@@ -149,9 +190,18 @@ func preloadLabelValues(m *Metrics) {
 		adapterLabel: adapterValues,
 	})
 
-	preloadLabelValuesForCounter(m.adapterUserSync, map[string][]string{
-		adapterLabel: adapterValues,
-		actionLabel:  actionValues,
+	preloadLabelValuesForHistogram(m.overheadTimer, map[string][]string{
+		overheadTypeLabel: overheadTypes,
+	})
+
+	preloadLabelValuesForCounter(m.syncerRequests, map[string][]string{
+		syncerLabel: syncerKeys,
+		statusLabel: syncerRequestStatusValues,
+	})
+
+	preloadLabelValuesForCounter(m.syncerSets, map[string][]string{
+		syncerLabel: syncerKeys,
+		statusLabel: syncerSetsStatusValues,
 	})
 
 	//to minimize memory usage, queuedTimeout metric is now supported for video endpoint only
@@ -176,8 +226,48 @@ func preloadLabelValues(m *Metrics) {
 
 	preloadLabelValuesForCounter(m.privacyTCF, map[string][]string{
 		sourceLabel:  sourceValues,
-		versionLabel: tcfVersionsAsString(),
+		versionLabel: tcfVersionValues,
 	})
+
+	if !m.metricsDisabled.AdapterGDPRRequestBlocked {
+		preloadLabelValuesForCounter(m.adapterGDPRBlockedRequests, map[string][]string{
+			adapterLabel: adapterValues,
+		})
+	}
+
+	for module, stageValues := range moduleStageNames {
+		preloadLabelValuesForHistogram(m.moduleDuration[module], map[string][]string{
+			stageLabel: stageValues,
+		})
+
+		preloadLabelValuesForCounter(m.moduleCalls[module], map[string][]string{
+			stageLabel: stageValues,
+		})
+
+		preloadLabelValuesForCounter(m.moduleFailures[module], map[string][]string{
+			stageLabel: stageValues,
+		})
+
+		preloadLabelValuesForCounter(m.moduleSuccessNoops[module], map[string][]string{
+			stageLabel: stageValues,
+		})
+
+		preloadLabelValuesForCounter(m.moduleSuccessUpdates[module], map[string][]string{
+			stageLabel: stageValues,
+		})
+
+		preloadLabelValuesForCounter(m.moduleSuccessRejects[module], map[string][]string{
+			stageLabel: stageValues,
+		})
+
+		preloadLabelValuesForCounter(m.moduleExecutionErrors[module], map[string][]string{
+			stageLabel: stageValues,
+		})
+
+		preloadLabelValuesForCounter(m.moduleTimeouts[module], map[string][]string{
+			stageLabel: stageValues,
+		})
+	}
 }
 
 func preloadLabelValuesForCounter(counter *prometheus.CounterVec, labelsWithValues map[string][]string) {

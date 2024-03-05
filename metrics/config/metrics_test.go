@@ -1,23 +1,29 @@
 package config
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
-	mainConfig "github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/metrics"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	mainConfig "github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/metrics"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+
 	gometrics "github.com/rcrowley/go-metrics"
 )
 
+var modulesStages = map[string][]string{"foobar": {"entry", "raw"}, "another_module": {"raw", "auction"}}
+
 // Start a simple test to insure we get valid MetricsEngines for various configurations
-func TestDummyMetricsEngine(t *testing.T) {
+func TestNilMetricsEngine(t *testing.T) {
 	cfg := mainConfig.Configuration{}
 	adapterList := make([]openrtb_ext.BidderName, 0, 2)
-	testEngine := NewMetricsEngine(&cfg, adapterList)
-	_, ok := testEngine.MetricsEngine.(*DummyMetricsEngine)
+	syncerKeys := []string{"keyA", "keyB"}
+	testEngine := NewMetricsEngine(&cfg, adapterList, syncerKeys, modulesStages)
+	_, ok := testEngine.MetricsEngine.(*NilMetricsEngine)
 	if !ok {
-		t.Error("Expected a DummyMetricsEngine, but didn't get it")
+		t.Error("Expected a NilMetricsEngine, but didn't get it")
 	}
 }
 
@@ -25,10 +31,11 @@ func TestGoMetricsEngine(t *testing.T) {
 	cfg := mainConfig.Configuration{}
 	cfg.Metrics.Influxdb.Host = "localhost"
 	adapterList := make([]openrtb_ext.BidderName, 0, 2)
-	testEngine := NewMetricsEngine(&cfg, adapterList)
+	syncerKeys := []string{"keyA", "keyB"}
+	testEngine := NewMetricsEngine(&cfg, adapterList, syncerKeys, modulesStages)
 	_, ok := testEngine.MetricsEngine.(*metrics.Metrics)
 	if !ok {
-		t.Error("Expected a legacy Metrics as MetricsEngine, but didn't get it")
+		t.Error("Expected a Metrics as MetricsEngine, but didn't get it")
 	}
 }
 
@@ -37,10 +44,10 @@ func TestMultiMetricsEngine(t *testing.T) {
 	cfg := mainConfig.Configuration{}
 	cfg.Metrics.Influxdb.Host = "localhost"
 	adapterList := openrtb_ext.CoreBidderNames()
-	goEngine := metrics.NewMetrics(gometrics.NewPrefixedRegistry("prebidserver."), adapterList, mainConfig.DisabledMetrics{})
+	goEngine := metrics.NewMetrics(gometrics.NewPrefixedRegistry("prebidserver."), adapterList, mainConfig.DisabledMetrics{}, nil, modulesStages)
 	engineList := make(MultiMetricsEngine, 2)
 	engineList[0] = goEngine
-	engineList[1] = &DummyMetricsEngine{}
+	engineList[1] = &NilMetricsEngine{}
 	var metricsEngine metrics.MetricsEngine
 	metricsEngine = &engineList
 	labels := metrics.Labels{
@@ -72,10 +79,19 @@ func TestMultiMetricsEngine(t *testing.T) {
 		AudioImps:  true,
 		NativeImps: true,
 	}
+	moduleLabels := make([]metrics.ModuleLabels, 0)
+	for module, stages := range modulesStages {
+		for _, stage := range stages {
+			moduleLabels = append(moduleLabels, metrics.ModuleLabels{
+				Module:    module,
+				Stage:     stage,
+				AccountID: "test1",
+			})
+		}
+	}
 	for i := 0; i < 5; i++ {
 		metricsEngine.RecordRequest(labels)
 		metricsEngine.RecordImps(impTypeLabels)
-		metricsEngine.RecordLegacyImps(labels, 2)
 		metricsEngine.RecordRequestTime(labels, time.Millisecond*20)
 		metricsEngine.RecordAdapterRequest(pubLabels)
 		metricsEngine.RecordAdapterRequest(apnLabels)
@@ -83,6 +99,15 @@ func TestMultiMetricsEngine(t *testing.T) {
 		metricsEngine.RecordAdapterBidReceived(pubLabels, openrtb_ext.BidTypeBanner, true)
 		metricsEngine.RecordAdapterTime(pubLabels, time.Millisecond*20)
 		metricsEngine.RecordPrebidCacheRequestTime(true, time.Millisecond*20)
+	}
+	for _, module := range moduleLabels {
+		metricsEngine.RecordModuleCalled(module, time.Millisecond*1)
+		metricsEngine.RecordModuleFailed(module)
+		metricsEngine.RecordModuleSuccessNooped(module)
+		metricsEngine.RecordModuleSuccessUpdated(module)
+		metricsEngine.RecordModuleSuccessRejected(module)
+		metricsEngine.RecordModuleExecutionError(module)
+		metricsEngine.RecordModuleTimeout(module)
 	}
 	labelsBlacklist := []metrics.Labels{
 		{
@@ -118,11 +143,12 @@ func TestMultiMetricsEngine(t *testing.T) {
 	metricsEngine.RecordStoredImpCacheResult(metrics.CacheHit, 5)
 	metricsEngine.RecordAccountCacheResult(metrics.CacheHit, 6)
 
+	metricsEngine.RecordAdapterGDPRRequestBlocked(openrtb_ext.BidderAppnexus)
+
 	metricsEngine.RecordRequestQueueTime(false, metrics.ReqTypeVideo, time.Duration(1))
 
 	//Make the metrics engine, instantiated here with goEngine, fill its RequestStatuses[RequestType][metrics.RequestStatusXX] with the new boolean values added to metrics.Labels
 	VerifyMetrics(t, "RequestStatuses.OpenRTB2.OK", goEngine.RequestStatuses[metrics.ReqTypeORTB2Web][metrics.RequestStatusOK].Count(), 5)
-	VerifyMetrics(t, "RequestStatuses.Legacy.OK", goEngine.RequestStatuses[metrics.ReqTypeLegacy][metrics.RequestStatusOK].Count(), 0)
 	VerifyMetrics(t, "RequestStatuses.AMP.OK", goEngine.RequestStatuses[metrics.ReqTypeAMP][metrics.RequestStatusOK].Count(), 0)
 	VerifyMetrics(t, "RequestStatuses.AMP.BlacklistedAcctOrApp", goEngine.RequestStatuses[metrics.ReqTypeAMP][metrics.RequestStatusBlacklisted].Count(), 1)
 	VerifyMetrics(t, "RequestStatuses.Video.OK", goEngine.RequestStatuses[metrics.ReqTypeVideo][metrics.RequestStatusOK].Count(), 0)
@@ -142,15 +168,15 @@ func TestMultiMetricsEngine(t *testing.T) {
 
 	VerifyMetrics(t, "Request", goEngine.RequestStatuses[metrics.ReqTypeORTB2Web][metrics.RequestStatusOK].Count(), 5)
 	VerifyMetrics(t, "ImpMeter", goEngine.ImpMeter.Count(), 8)
-	VerifyMetrics(t, "LegacyImpMeter", goEngine.LegacyImpMeter.Count(), 10)
 	VerifyMetrics(t, "NoCookieMeter", goEngine.NoCookieMeter.Count(), 0)
-	VerifyMetrics(t, "AdapterMetrics.Pubmatic.GotBidsMeter", goEngine.AdapterMetrics[openrtb_ext.BidderPubmatic].GotBidsMeter.Count(), 5)
-	VerifyMetrics(t, "AdapterMetrics.Pubmatic.NoBidMeter", goEngine.AdapterMetrics[openrtb_ext.BidderPubmatic].NoBidMeter.Count(), 0)
+
+	VerifyMetrics(t, "AdapterMetrics.pubmatic.GotBidsMeter", goEngine.AdapterMetrics[strings.ToLower(string(openrtb_ext.BidderPubmatic))].GotBidsMeter.Count(), 5)
+	VerifyMetrics(t, "AdapterMetrics.pubmatic.NoBidMeter", goEngine.AdapterMetrics[strings.ToLower(string(openrtb_ext.BidderPubmatic))].NoBidMeter.Count(), 0)
 	for _, err := range metrics.AdapterErrors() {
-		VerifyMetrics(t, "AdapterMetrics.Pubmatic.Request.ErrorMeter."+string(err), goEngine.AdapterMetrics[openrtb_ext.BidderPubmatic].ErrorMeters[err].Count(), 0)
+		VerifyMetrics(t, "AdapterMetrics.pubmatic.Request.ErrorMeter."+string(err), goEngine.AdapterMetrics[strings.ToLower(string(openrtb_ext.BidderPubmatic))].ErrorMeters[err].Count(), 0)
 	}
-	VerifyMetrics(t, "AdapterMetrics.AppNexus.GotBidsMeter", goEngine.AdapterMetrics[openrtb_ext.BidderAppnexus].GotBidsMeter.Count(), 0)
-	VerifyMetrics(t, "AdapterMetrics.AppNexus.NoBidMeter", goEngine.AdapterMetrics[openrtb_ext.BidderAppnexus].NoBidMeter.Count(), 5)
+	VerifyMetrics(t, "AdapterMetrics.appnexus.GotBidsMeter", goEngine.AdapterMetrics[strings.ToLower(string(openrtb_ext.BidderAppnexus))].GotBidsMeter.Count(), 0)
+	VerifyMetrics(t, "AdapterMetrics.appnexus.NoBidMeter", goEngine.AdapterMetrics[strings.ToLower(string(openrtb_ext.BidderAppnexus))].NoBidMeter.Count(), 5)
 
 	VerifyMetrics(t, "RecordRequestQueueTime.Video.Rejected", goEngine.RequestsQueueTimer[metrics.ReqTypeVideo][false].Count(), 1)
 	VerifyMetrics(t, "RecordRequestQueueTime.Video.Accepted", goEngine.RequestsQueueTimer[metrics.ReqTypeVideo][true].Count(), 0)
@@ -161,6 +187,22 @@ func TestMultiMetricsEngine(t *testing.T) {
 	VerifyMetrics(t, "StoredReqCache.Hit", goEngine.StoredReqCacheMeter[metrics.CacheHit].Count(), 4)
 	VerifyMetrics(t, "StoredImpCache.Hit", goEngine.StoredImpCacheMeter[metrics.CacheHit].Count(), 5)
 	VerifyMetrics(t, "AccountCache.Hit", goEngine.AccountCacheMeter[metrics.CacheHit].Count(), 6)
+
+	VerifyMetrics(t, "AdapterMetrics.appNexus.GDPRRequestBlocked", goEngine.AdapterMetrics[strings.ToLower(string(openrtb_ext.BidderAppnexus))].GDPRRequestBlocked.Count(), 1)
+
+	// verify that each module has its own metric recorded
+	for module, stages := range modulesStages {
+		for _, stage := range stages {
+			VerifyMetrics(t, fmt.Sprintf("ModuleMetrics.%s.%s.Duration", module, stage), goEngine.ModuleMetrics[module][stage].DurationTimer.Count(), 1)
+			VerifyMetrics(t, fmt.Sprintf("ModuleMetrics.%s.%s.Call", module, stage), goEngine.ModuleMetrics[module][stage].CallCounter.Count(), 1)
+			VerifyMetrics(t, fmt.Sprintf("ModuleMetrics.%s.%s.Fail", module, stage), goEngine.ModuleMetrics[module][stage].FailureCounter.Count(), 1)
+			VerifyMetrics(t, fmt.Sprintf("ModuleMetrics.%s.%s.SuccessNoop", module, stage), goEngine.ModuleMetrics[module][stage].SuccessNoopCounter.Count(), 1)
+			VerifyMetrics(t, fmt.Sprintf("ModuleMetrics.%s.%s.SuccessUpdate", module, stage), goEngine.ModuleMetrics[module][stage].SuccessUpdateCounter.Count(), 1)
+			VerifyMetrics(t, fmt.Sprintf("ModuleMetrics.%s.%s.SuccessReject", module, stage), goEngine.ModuleMetrics[module][stage].SuccessRejectCounter.Count(), 1)
+			VerifyMetrics(t, fmt.Sprintf("ModuleMetrics.%s.%s.ExecutionError", module, stage), goEngine.ModuleMetrics[module][stage].ExecutionErrorCounter.Count(), 1)
+			VerifyMetrics(t, fmt.Sprintf("ModuleMetrics.%s.%s.Timeout", module, stage), goEngine.ModuleMetrics[module][stage].TimeoutCounter.Count(), 1)
+		}
+	}
 }
 
 func VerifyMetrics(t *testing.T, name string, actual int64, expected int64) {

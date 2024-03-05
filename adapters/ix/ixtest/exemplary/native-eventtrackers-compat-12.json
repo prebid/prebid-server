@@ -1,0 +1,104 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "imp": [
+            {
+                "id": "test-imp-id",
+                "native": {
+                    "request": "{}",
+                    "ver": "1.1"
+                },
+                "ext": {
+                    "bidder": {
+                        "siteId": "569749"
+                    }
+                }
+            }
+        ]
+    },
+    "httpcalls": [
+        {
+            "expectedRequest": {
+                "uri": "http://host/endpoint",
+                "body": {
+                    "id": "test-request-id",
+                    "imp": [
+                        {
+                            "id": "test-imp-id",
+                            "native": {
+                                "request": "{}",
+                                "ver": "1.1"
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "siteId": "569749"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "test-request-id",
+                    "seatbid": [
+                        {
+                            "seat": "958",
+                            "bid": [
+                                {
+                                    "id": "7706636740145184841",
+                                    "impid": "test-imp-id",
+                                    "price": 0.5,
+                                    "adid": "29681110",
+                                    "adm": "{\"assets\":[{\"id\":123,\"required\":1,\"title\":{\"text\":\"Learn about this awesome thing\"}},{\"id\":124,\"required\":1,\"img\":{\"url\":\"http://www.myads.com/thumbnail1.png\"}},{\"id\":128,\"required\":1,\"img\":{\"url\":\"http://www.myads.com/largethumb1.png\"}},{\"id\":126,\"required\":1,\"data\":{\"value\":\"My Brand\"}},{\"id\":127,\"required\":1,\"data\":{\"value\":\"Learn all about this awesome story of someone using my product.\"}}],\"link\":{\"url\":\"http: //i.am.a/URL\"},\"eventtrackers\":[{\"url\":\"https://example.com/imp-2.gif\",\"event\":1,\"method\":1},{\"url\":\"https://x123.casalemedia.com/ifnotify?a=123&b=<DCC3C8BE>&c=741efbc7-f28b-5301-a18d-372a4c4226c3&d=0.123\",\"event\":1,\"method\":1}],\"imptrackers\":[\"https://example.com/imp-1.gif\",\"https://example.com/imp-2.gif\"]}",
+                                    "adomain": [
+                                        "https://advertiser.example.com"
+                                    ],
+                                    "cid": "958",
+                                    "crid": "29681110",
+                                    "cat": [
+                                        "IAB3-1"
+                                    ],
+                                    "ext": {
+                                        "ix": {}
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "bidid": "5778926625248726496",
+                    "cur": "USD"
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "currency": "USD",
+            "bids": [
+                {
+                    "bid": {
+                        "id": "7706636740145184841",
+                        "impid": "test-imp-id",
+                        "price": 0.5,
+                        "adid": "29681110",
+                        "adm": "{\"assets\":[{\"id\":123,\"required\":1,\"title\":{\"text\":\"Learn about this awesome thing\"}},{\"id\":124,\"required\":1,\"img\":{\"url\":\"http://www.myads.com/thumbnail1.png\"}},{\"id\":128,\"required\":1,\"img\":{\"url\":\"http://www.myads.com/largethumb1.png\"}},{\"id\":126,\"required\":1,\"data\":{\"value\":\"My Brand\"}},{\"id\":127,\"required\":1,\"data\":{\"value\":\"Learn all about this awesome story of someone using my product.\"}}],\"link\":{\"url\":\"http: //i.am.a/URL\"},\"imptrackers\":[\"https://example.com/imp-1.gif\",\"https://example.com/imp-2.gif\",\"https://x123.casalemedia.com/ifnotify?a=123&b=<DCC3C8BE>&c=741efbc7-f28b-5301-a18d-372a4c4226c3&d=0.123\"],\"eventtrackers\":[{\"event\":1,\"method\":1,\"url\":\"https://example.com/imp-2.gif\"},{\"event\":1,\"method\":1,\"url\":\"https://x123.casalemedia.com/ifnotify?a=123&b=<DCC3C8BE>&c=741efbc7-f28b-5301-a18d-372a4c4226c3&d=0.123\"}]}",
+                        "adomain": [
+                            "https://advertiser.example.com"
+                        ],
+                        "cid": "958",
+                        "crid": "29681110",
+                        "cat": [
+                            "IAB3-1"
+                        ],
+                        "ext": {
+                            "ix": {}
+                        }
+                    },
+                    "type": "native"
+                }
+            ]
+        }
+    ]
+}

@@ -3,7 +3,7 @@ package metrics
 import (
 	"time"
 
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 // Labels defines the labels that can be attached to the metrics.
@@ -24,6 +24,26 @@ type AdapterLabels struct {
 	CookieFlag    CookieFlag
 	AdapterBids   AdapterBid
 	AdapterErrors map[AdapterError]struct{}
+}
+
+// OverheadType: overhead type enumeration
+type OverheadType string
+
+const (
+	// PreBidder - measures the time needed to execute the adapter's MakeRequests() implementation, build Prebid headers and apply GZip compression if needed
+	PreBidder OverheadType = "pre-bidder"
+	// MakeAuctionResponse - measures the amount of time spent doing all the MakeBids() calls as well as preparing PBS's response
+	MakeAuctionResponse OverheadType = "make-auction-response"
+	// MakeBidderRequests - measures the time needed to fetch a stored request (if needed), parse, unmarshal, and validate the OpenRTB request, interpret its privacy policies, and split it into multiple requests sanitized for each bidder
+	MakeBidderRequests OverheadType = "make-bidder-requests"
+)
+
+func (t OverheadType) String() string {
+	return string(t)
+}
+
+func OverheadTypes() []OverheadType {
+	return []OverheadType{PreBidder, MakeAuctionResponse, MakeBidderRequests}
 }
 
 // ImpLabels defines metric labels describing the impression type.
@@ -49,6 +69,12 @@ type PrivacyLabels struct {
 	LMTEnforced    bool
 }
 
+type ModuleLabels struct {
+	Module    string
+	Stage     string
+	AccountID string
+}
+
 type StoredDataType string
 
 const (
@@ -57,6 +83,7 @@ const (
 	CategoryDataType StoredDataType = "category"
 	RequestDataType  StoredDataType = "request"
 	VideoDataType    StoredDataType = "video"
+	ResponseDataType StoredDataType = "response"
 )
 
 func StoredDataTypes() []StoredDataType {
@@ -66,6 +93,7 @@ func StoredDataTypes() []StoredDataType {
 		CategoryDataType,
 		RequestDataType,
 		VideoDataType,
+		ResponseDataType,
 	}
 }
 
@@ -136,6 +164,7 @@ const PublisherUnknown = "unknown"
 const (
 	DemandWeb     DemandSource = "web"
 	DemandApp     DemandSource = "app"
+	DemandDOOH    DemandSource = "dooh"
 	DemandUnknown DemandSource = "unknown"
 )
 
@@ -143,18 +172,29 @@ func DemandTypes() []DemandSource {
 	return []DemandSource{
 		DemandWeb,
 		DemandApp,
+		DemandDOOH,
 		DemandUnknown,
 	}
 }
 
 // The request types (endpoints)
 const (
-	ReqTypeLegacy   RequestType = "legacy"
-	ReqTypeORTB2Web RequestType = "openrtb2-web"
-	ReqTypeORTB2App RequestType = "openrtb2-app"
-	ReqTypeAMP      RequestType = "amp"
-	ReqTypeVideo    RequestType = "video"
+	ReqTypeORTB2Web  RequestType = "openrtb2-web"
+	ReqTypeORTB2App  RequestType = "openrtb2-app"
+	ReqTypeORTB2DOOH RequestType = "openrtb2-dooh"
+	ReqTypeAMP       RequestType = "amp"
+	ReqTypeVideo     RequestType = "video"
 )
+
+func RequestTypes() []RequestType {
+	return []RequestType{
+		ReqTypeORTB2Web,
+		ReqTypeORTB2App,
+		ReqTypeORTB2DOOH,
+		ReqTypeAMP,
+		ReqTypeVideo,
+	}
+}
 
 // The media types described in the "imp" json objects
 const (
@@ -163,16 +203,6 @@ const (
 	ImpTypeAudio  ImpMediaType = "audio"
 	ImpTypeNative ImpMediaType = "native"
 )
-
-func RequestTypes() []RequestType {
-	return []RequestType{
-		ReqTypeLegacy,
-		ReqTypeORTB2Web,
-		ReqTypeORTB2App,
-		ReqTypeAMP,
-		ReqTypeVideo,
-	}
-}
 
 func ImpTypes() []ImpMediaType {
 	return []ImpMediaType{
@@ -200,12 +230,13 @@ func CookieTypes() []CookieFlag {
 
 // Request/return status
 const (
-	RequestStatusOK           RequestStatus = "ok"
-	RequestStatusBadInput     RequestStatus = "badinput"
-	RequestStatusErr          RequestStatus = "err"
-	RequestStatusNetworkErr   RequestStatus = "networkerr"
-	RequestStatusBlacklisted  RequestStatus = "blacklistedacctorapp"
-	RequestStatusQueueTimeout RequestStatus = "queuetimeout"
+	RequestStatusOK               RequestStatus = "ok"
+	RequestStatusBadInput         RequestStatus = "badinput"
+	RequestStatusErr              RequestStatus = "err"
+	RequestStatusNetworkErr       RequestStatus = "networkerr"
+	RequestStatusBlacklisted      RequestStatus = "blacklistedacctorapp"
+	RequestStatusQueueTimeout     RequestStatus = "queuetimeout"
+	RequestStatusAccountConfigErr RequestStatus = "acctconfigerr"
 )
 
 func RequestStatuses() []RequestStatus {
@@ -216,6 +247,7 @@ func RequestStatuses() []RequestStatus {
 		RequestStatusNetworkErr,
 		RequestStatusBlacklisted,
 		RequestStatusQueueTimeout,
+		RequestStatusAccountConfigErr,
 	}
 }
 
@@ -238,6 +270,8 @@ const (
 	AdapterErrorBadServerResponse   AdapterError = "badserverresponse"
 	AdapterErrorTimeout             AdapterError = "timeout"
 	AdapterErrorFailedToRequestBids AdapterError = "failedtorequestbid"
+	AdapterErrorValidation          AdapterError = "validation"
+	AdapterErrorTmaxTimeout         AdapterError = "tmaxtimeout"
 	AdapterErrorUnknown             AdapterError = "unknown_error"
 )
 
@@ -247,6 +281,8 @@ func AdapterErrors() []AdapterError {
 		AdapterErrorBadServerResponse,
 		AdapterErrorTimeout,
 		AdapterErrorFailedToRequestBids,
+		AdapterErrorValidation,
+		AdapterErrorTmaxTimeout,
 		AdapterErrorUnknown,
 	}
 }
@@ -267,39 +303,11 @@ func CacheResults() []CacheResult {
 	}
 }
 
-// UserLabels : Labels for /setuid endpoint
-type UserLabels struct {
-	Action RequestAction
-	Bidder openrtb_ext.BidderName
-}
-
-// RequestAction : The setuid request result
-type RequestAction string
-
-// /setuid action labels
-const (
-	RequestActionSet    RequestAction = "set"
-	RequestActionOptOut RequestAction = "opt_out"
-	RequestActionGDPR   RequestAction = "gdpr"
-	RequestActionErr    RequestAction = "err"
-)
-
-// RequestActions returns possible setuid action labels
-func RequestActions() []RequestAction {
-	return []RequestAction{
-		RequestActionSet,
-		RequestActionOptOut,
-		RequestActionGDPR,
-		RequestActionErr,
-	}
-}
-
 // TCFVersionValue : The possible values for TCF versions
 type TCFVersionValue string
 
 const (
 	TCFVersionErr TCFVersionValue = "err"
-	TCFVersionV1  TCFVersionValue = "v1"
 	TCFVersionV2  TCFVersionValue = "v2"
 )
 
@@ -307,7 +315,6 @@ const (
 func TCFVersions() []TCFVersionValue {
 	return []TCFVersionValue{
 		TCFVersionErr,
-		TCFVersionV1,
 		TCFVersionV2,
 	}
 }
@@ -315,12 +322,101 @@ func TCFVersions() []TCFVersionValue {
 // TCFVersionToValue takes an integer TCF version and returns the corresponding TCFVersionValue
 func TCFVersionToValue(version int) TCFVersionValue {
 	switch {
-	case version == 1:
-		return TCFVersionV1
 	case version == 2:
 		return TCFVersionV2
 	}
 	return TCFVersionErr
+}
+
+// CookieSyncStatus is a status code resulting from a call to the /cookie_sync endpoint.
+type CookieSyncStatus string
+
+const (
+	CookieSyncOK                     CookieSyncStatus = "ok"
+	CookieSyncBadRequest             CookieSyncStatus = "bad_request"
+	CookieSyncOptOut                 CookieSyncStatus = "opt_out"
+	CookieSyncGDPRHostCookieBlocked  CookieSyncStatus = "gdpr_blocked_host_cookie"
+	CookieSyncAccountBlocked         CookieSyncStatus = "acct_blocked"
+	CookieSyncAccountConfigMalformed CookieSyncStatus = "acct_config_malformed"
+	CookieSyncAccountInvalid         CookieSyncStatus = "acct_invalid"
+)
+
+// CookieSyncStatuses returns possible cookie sync statuses.
+func CookieSyncStatuses() []CookieSyncStatus {
+	return []CookieSyncStatus{
+		CookieSyncOK,
+		CookieSyncBadRequest,
+		CookieSyncOptOut,
+		CookieSyncGDPRHostCookieBlocked,
+		CookieSyncAccountBlocked,
+		CookieSyncAccountConfigMalformed,
+		CookieSyncAccountInvalid,
+	}
+}
+
+// SyncerCookieSyncStatus is a status code from an invocation of a syncer resulting from a call to the /cookie_sync endpoint.
+type SyncerCookieSyncStatus string
+
+const (
+	SyncerCookieSyncOK               SyncerCookieSyncStatus = "ok"
+	SyncerCookieSyncPrivacyBlocked   SyncerCookieSyncStatus = "privacy_blocked"
+	SyncerCookieSyncAlreadySynced    SyncerCookieSyncStatus = "already_synced"
+	SyncerCookieSyncTypeNotSupported SyncerCookieSyncStatus = "type_not_supported"
+)
+
+// SyncerRequestStatuses returns possible syncer statuses.
+func SyncerRequestStatuses() []SyncerCookieSyncStatus {
+	return []SyncerCookieSyncStatus{
+		SyncerCookieSyncOK,
+		SyncerCookieSyncPrivacyBlocked,
+		SyncerCookieSyncAlreadySynced,
+		SyncerCookieSyncTypeNotSupported,
+	}
+}
+
+// SetUidStatus is a status code resulting from a call to the /setuid endpoint.
+type SetUidStatus string
+
+// /setuid action labels
+const (
+	SetUidOK                     SetUidStatus = "ok"
+	SetUidBadRequest             SetUidStatus = "bad_request"
+	SetUidOptOut                 SetUidStatus = "opt_out"
+	SetUidGDPRHostCookieBlocked  SetUidStatus = "gdpr_blocked_host_cookie"
+	SetUidAccountBlocked         SetUidStatus = "acct_blocked"
+	SetUidAccountConfigMalformed SetUidStatus = "acct_config_malformed"
+	SetUidAccountInvalid         SetUidStatus = "acct_invalid"
+	SetUidSyncerUnknown          SetUidStatus = "syncer_unknown"
+)
+
+// SetUidStatuses returns possible setuid statuses.
+func SetUidStatuses() []SetUidStatus {
+	return []SetUidStatus{
+		SetUidOK,
+		SetUidBadRequest,
+		SetUidOptOut,
+		SetUidGDPRHostCookieBlocked,
+		SetUidAccountBlocked,
+		SetUidAccountConfigMalformed,
+		SetUidAccountInvalid,
+		SetUidSyncerUnknown,
+	}
+}
+
+// SyncerSetUidStatus is a status code from an invocation of a syncer resulting from a call to the /setuid endpoint.
+type SyncerSetUidStatus string
+
+const (
+	SyncerSetUidOK      SyncerSetUidStatus = "ok"
+	SyncerSetUidCleared SyncerSetUidStatus = "cleared"
+)
+
+// SyncerSetUidStatuses returns possible syncer set statuses.
+func SyncerSetUidStatuses() []SyncerSetUidStatus {
+	return []SyncerSetUidStatus{
+		SyncerSetUidOK,
+		SyncerSetUidCleared,
+	}
 }
 
 // MetricsEngine is a generic interface to record PBS metrics into the desired backend
@@ -331,24 +427,25 @@ func TCFVersionToValue(version int) TCFVersionValue {
 // is generally not useful.
 type MetricsEngine interface {
 	RecordConnectionAccept(success bool)
+	RecordTMaxTimeout()
 	RecordConnectionClose(success bool)
 	RecordRequest(labels Labels)                           // ignores adapter. only statusOk and statusErr fom status
 	RecordImps(labels ImpLabels)                           // RecordImps across openRTB2 engines that support the 'Native' Imp Type
-	RecordLegacyImps(labels Labels, numImps int)           // RecordImps for the legacy engine
 	RecordRequestTime(labels Labels, length time.Duration) // ignores adapter. only statusOk and statusErr fom status
+	RecordOverheadTime(overHead OverheadType, length time.Duration)
 	RecordAdapterRequest(labels AdapterLabels)
 	RecordAdapterConnections(adapterName openrtb_ext.BidderName, connWasReused bool, connWaitTime time.Duration)
 	RecordDNSTime(dnsLookupTime time.Duration)
 	RecordTLSHandshakeTime(tlsHandshakeTime time.Duration)
+	RecordBidderServerResponseTime(bidderServerResponseTime time.Duration)
 	RecordAdapterPanic(labels AdapterLabels)
-	// This records whether or not a bid of a particular type uses `adm` or `nurl`.
-	// Since the legacy endpoints don't have a bid type, it can only count bids from OpenRTB and AMP.
 	RecordAdapterBidReceived(labels AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool)
 	RecordAdapterPrice(labels AdapterLabels, cpm float64)
 	RecordAdapterTime(labels AdapterLabels, length time.Duration)
-	RecordCookieSync()
-	RecordAdapterCookieSync(adapter openrtb_ext.BidderName, gdprBlocked bool)
-	RecordUserIDSet(userLabels UserLabels) // Function should verify bidder values
+	RecordCookieSync(status CookieSyncStatus)
+	RecordSyncerRequest(key string, status SyncerCookieSyncStatus)
+	RecordSetUid(status SetUidStatus)
+	RecordSyncerSet(key string, status SyncerSetUidStatus)
 	RecordStoredReqCacheResult(cacheResult CacheResult, inc int)
 	RecordStoredImpCacheResult(cacheResult CacheResult, inc int)
 	RecordAccountCacheResult(cacheResult CacheResult, inc int)
@@ -356,6 +453,22 @@ type MetricsEngine interface {
 	RecordStoredDataError(labels StoredDataLabels)
 	RecordPrebidCacheRequestTime(success bool, length time.Duration)
 	RecordRequestQueueTime(success bool, requestType RequestType, length time.Duration)
-	RecordTimeoutNotice(sucess bool)
+	RecordTimeoutNotice(success bool)
 	RecordRequestPrivacy(privacy PrivacyLabels)
+	RecordAdapterGDPRRequestBlocked(adapterName openrtb_ext.BidderName)
+	RecordDebugRequest(debugEnabled bool, pubId string)
+	RecordStoredResponse(pubId string)
+	RecordAdsCertReq(success bool)
+	RecordAdsCertSignTime(adsCertSignTime time.Duration)
+	RecordBidValidationCreativeSizeError(adapter openrtb_ext.BidderName, account string)
+	RecordBidValidationCreativeSizeWarn(adapter openrtb_ext.BidderName, account string)
+	RecordBidValidationSecureMarkupError(adapter openrtb_ext.BidderName, account string)
+	RecordBidValidationSecureMarkupWarn(adapter openrtb_ext.BidderName, account string)
+	RecordModuleCalled(labels ModuleLabels, duration time.Duration)
+	RecordModuleFailed(labels ModuleLabels)
+	RecordModuleSuccessNooped(labels ModuleLabels)
+	RecordModuleSuccessUpdated(labels ModuleLabels)
+	RecordModuleSuccessRejected(labels ModuleLabels)
+	RecordModuleExecutionError(labels ModuleLabels)
+	RecordModuleTimeout(labels ModuleLabels)
 }

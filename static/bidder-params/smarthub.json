@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "SmartHub Adapter Params",
+  "description": "A schema which validates params accepted by the SmartHub adapter",
+  "type": "object",
+  "properties": {
+    "partnerName": {
+      "type": "string",
+      "description": "SmartHub unique partner name",
+      "minLength": 1
+    },
+    "seat": {
+      "type": "string",
+      "description": "Seat",
+      "minLength": 1
+    },
+    "token": {
+      "type": "string",
+      "description": "Token",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "partnerName",
+    "seat",
+    "token"
+  ]
+}

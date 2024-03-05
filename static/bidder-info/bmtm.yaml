@@ -1,0 +1,18 @@
+endpoint: "https://one.elitebidder.com/api/pbs"
+maintainer:
+  email: product@brightmountainmedia.com
+modifyingVastXmlAllowed: false
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  # bmtm supports user syncing, but requires configuration by the host. contact this
+  # bidder directly at the email address in this file to ask about enabling user sync.
+  supports:
+    - redirect

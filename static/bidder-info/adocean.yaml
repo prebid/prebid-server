@@ -1,3 +1,4 @@
+endpoint: "https://{{.Host}}.adocean.pl"
 maintainer:
   email: "aoteam@gemius.com"
 gvlVendorID: 328
@@ -8,3 +9,8 @@ capabilities:
   site:
     mediaTypes:
       - banner
+userSync:
+  # adocean supports user syncing, but requires configuration by the host. contact this
+  # bidder directly at the email address in this file to ask about enabling user sync.
+  supports:
+    - redirect

@@ -9,13 +9,13 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/metrics"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/macros"
+	"github.com/prebid/prebid-server/v2/metrics"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 const adapterVersion = "prebid_1.0.0"
@@ -70,18 +70,18 @@ func (a *InvibesInternalParams) IsTestRequest() bool {
 }
 
 type InvibesAdapter struct {
-	EndpointTemplate template.Template
+	EndpointTemplate *template.Template
 }
 
 // Builder builds a new instance of the Invibes adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
 
 	bidder := InvibesAdapter{
-		EndpointTemplate: *template,
+		EndpointTemplate: template,
 	}
 	return &bidder, nil
 }
@@ -279,19 +279,17 @@ func (a *InvibesAdapter) makeParameter(invibesParams InvibesInternalParams, requ
 }
 
 func (a *InvibesAdapter) makeURL(request *openrtb2.BidRequest, domainID int) (string, error) {
-	host := "bid.videostep.com"
-	if domainID == 1 {
-		host = "adweb.videostepstage.com"
-	} else if domainID == 2 {
-		host = "adweb.invibesstage.com"
-	} else if domainID == 1001 {
-		host = "bid.videostep.com"
-	} else if domainID >= 1002 {
-		host = "bid" + strconv.Itoa(domainID-1000) + ".videostep.com"
+	var subdomain string
+	if domainID == 0 || domainID == 1 || domainID == 1001 {
+		subdomain = "bid"
+	} else if domainID < 1002 {
+		subdomain = "bid" + strconv.Itoa(domainID)
+	} else {
+		subdomain = "bid" + strconv.Itoa(domainID-1000)
 	}
 
 	var endpointURL *url.URL
-	endpointParams := macros.EndpointTemplateParams{Host: host}
+	endpointParams := macros.EndpointTemplateParams{ZoneID: subdomain}
 	host, err := macros.ResolveMacros(a.EndpointTemplate, endpointParams)
 
 	if err == nil {

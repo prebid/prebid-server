@@ -1,3 +1,4 @@
+endpoint: "http://nep.advangelists.com/xp/get?pubid={{.PublisherID}}"
 maintainer:
   email: "prebid@advangelists.com"
 capabilities:
@@ -10,4 +11,8 @@ capabilities:
     mediaTypes:
     - banner
     - video
-   
+userSync:
+  iframe:
+    url: "https://nep.advangelists.com/xp/user-sync?acctid={aid}&&redirect={{.RedirectURL}}"
+    userMacro: "$UID"
+

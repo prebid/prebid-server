@@ -1,0 +1,10 @@
+endpoint: "https://z.cdn.adtarget.market/ssp"
+maintainer:
+  email: "info@adtarget.me"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner

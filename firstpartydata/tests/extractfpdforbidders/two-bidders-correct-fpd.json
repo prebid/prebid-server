@@ -1,0 +1,88 @@
+{
+  "description": "req.site is present; req.ext.prebid.data.bidders has two bidders; req.ext.prebid.bidderconfig is defined for two bidders from req.ext.prebid.data.bidders; expect to see both bidders in resolved bidder FPD",
+  "inputRequestData": {
+    "id": "bid_id",
+    "site": {
+      "id": "reqSiteId",
+      "page": "http://www.foobar.com/1234.html",
+      "publisher": {
+        "id": "1"
+      }
+    },
+    "user": {
+      "id": "reqUserId"
+    },
+    "test": 1,
+    "ext": {
+      "prebid": {
+        "data": {
+          "bidders": [
+            "appnexus",
+            "telaria"
+          ]
+        },
+        "bidderconfig": [
+          {
+            "bidders": [
+              "appnexus"
+            ],
+            "config": {
+              "ortb2": {
+                "site": {
+                  "id": "apnSiteId"
+                },
+                "user": {
+                  "id": "apnUserId"
+                }
+              }
+            }
+          },
+          {
+            "bidders": [
+              "telaria"
+            ],
+            "config": {
+              "ortb2": {
+                "user": {
+                  "keywords": "telariaUserKeywords"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "outputRequestData": {
+    "id": "bid_id",
+    "site": {
+      "id": "reqSiteId",
+      "page": "http://www.foobar.com/1234.html",
+      "publisher": {
+        "id": "1"
+      }
+    },
+    "test": 1
+  },
+  "biddersFPDResolved": {
+    "appnexus": {
+      "site": {
+        "id": "apnSiteId",
+        "page": "http://www.foobar.com/1234.html",
+        "publisher": {
+          "id": "1"
+        }
+      },
+      "user": {
+        "id": "apnUserId"
+      }
+    },
+    "telaria": {
+      "user": {
+        "id": "reqUserId",
+        "keywords": "telariaUserKeywords"
+      }
+    }
+  },
+  "validationErrors": []
+}

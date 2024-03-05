@@ -5,19 +5,33 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type YieldmoAdapter struct {
 	endpoint string
 }
 
+type ExtImpBidderYieldmo struct {
+	adapters.ExtImpBidder
+	Data *ExtData `json:"data,omitempty"`
+}
+
+type ExtData struct {
+	PbAdslot string `json:"pbadslot"`
+}
+
 type Ext struct {
 	PlacementId string `json:"placement_id"`
+	Gpid        string `json:"gpid,omitempty"`
+}
+
+type ExtBid struct {
+	MediaType string `json:"mediatype,omitempty"`
 }
 
 func (a *YieldmoAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -62,7 +76,7 @@ func (a *YieldmoAdapter) makeRequest(request *openrtb2.BidRequest) (*adapters.Re
 func preprocess(request *openrtb2.BidRequest) error {
 	for i := 0; i < len(request.Imp); i++ {
 		var imp = request.Imp[i]
-		var bidderExt adapters.ExtImpBidder
+		var bidderExt ExtImpBidderYieldmo
 
 		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			return &errortypes.BadInput{
@@ -80,6 +94,12 @@ func preprocess(request *openrtb2.BidRequest) error {
 
 		var impExt Ext
 		impExt.PlacementId = yieldmoExt.PlacementId
+
+		if bidderExt.Data != nil {
+			if bidderExt.Data.PbAdslot != "" {
+				impExt.Gpid = bidderExt.Data.PbAdslot
+			}
+		}
 
 		impExtJSON, err := json.Marshal(impExt)
 		if err != nil {
@@ -122,30 +142,43 @@ func (a *YieldmoAdapter) MakeBids(internalRequest *openrtb2.BidRequest, external
 
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
+			bidType, err := getMediaTypeForImp(sb.Bid[i])
+			if err != nil {
+				continue
+			}
+
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &sb.Bid[i],
-				BidType: getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp),
+				BidType: bidType,
 			})
 		}
 	}
 	return bidResponse, nil
-
 }
 
 // Builder builds a new instance of the Yieldmo adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &YieldmoAdapter{
 		endpoint: config.Endpoint,
 	}
 	return bidder, nil
 }
 
-func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
-	//default to video unless banner exists in impression
-	for _, imp := range imps {
-		if imp.ID == impId && imp.Banner != nil {
-			return openrtb_ext.BidTypeBanner
-		}
+// Retrieve the media type corresponding to the bid from the bid.ext object
+func getMediaTypeForImp(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	var bidExt ExtBid
+	if err := json.Unmarshal(bid.Ext, &bidExt); err != nil {
+		return "", &errortypes.BadInput{Message: err.Error()}
 	}
-	return openrtb_ext.BidTypeVideo
+
+	switch bidExt.MediaType {
+	case "banner":
+		return openrtb_ext.BidTypeBanner, nil
+	case "video":
+		return openrtb_ext.BidTypeVideo, nil
+	case "native":
+		return openrtb_ext.BidTypeNative, nil
+	default:
+		return "", fmt.Errorf("invalid BidType: %s", bidExt.MediaType)
+	}
 }

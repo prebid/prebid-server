@@ -1,0 +1,69 @@
+{
+  "description": "Despite being more expensive, custom conversion rate overrides that of the currency conversion service. usepbsrates was true",
+  "config": {
+    "currencyRates":{
+      "USD": {
+        "MXN": 2.00
+      }
+    },
+    "mockBidders": [
+      {"bidderName": "appnexus", "currency": "USD", "price": 1.00}
+    ]
+  },
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "test.somepage.com"
+    },
+    "imp": [
+      {
+        "id": "my-imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          }
+        }
+      }
+    ],
+    "cur": ["MXN"],
+    "ext": {
+      "prebid": {
+        "aliases": {
+          "unknown": "appnexus"
+        },
+        "currency": {
+          "rates": {
+            "USD": {
+              "CAD": 5.00
+            }
+          },
+          "usepbsrates": true
+        }
+      }
+    }
+  },
+  "expectedBidResponse": {
+      "id":"some-request-id",
+      "bidid":"test bid id",
+      "cur": "MXN",
+      "nbr":0,
+      "seatbid": [
+        {
+          "bid": [
+            {
+              "id": "appnexus-bid",
+              "impid": "my-imp-id",
+              "price": 2.00
+            }
+          ],
+          "seat": "appnexus"
+        }
+      ]
+  },
+  "expectedReturnCode": 200
+}

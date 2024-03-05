@@ -4,54 +4,69 @@ import (
 	"flag"
 	"math/rand"
 	"net/http"
+	"path/filepath"
+	"runtime"
 	"time"
 
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/currency"
-	pbc "github.com/prebid/prebid-server/prebid_cache_client"
-	"github.com/prebid/prebid-server/router"
-	"github.com/prebid/prebid-server/server"
-	"github.com/prebid/prebid-server/util/task"
+	jsoniter "github.com/json-iterator/go"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/currency"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/router"
+	"github.com/prebid/prebid-server/v2/server"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v2/util/task"
 
 	"github.com/golang/glog"
 	"github.com/spf13/viper"
 )
 
-// Rev holds binary revision string
-// Set manually at build time using:
-//    go build -ldflags "-X main.Rev=`git rev-parse --short HEAD`"
-// Populated automatically at build / releases
-//   `gox -os="linux" -arch="386" -output="{{.Dir}}_{{.OS}}_{{.Arch}}" -ldflags "-X main.Rev=`git rev-parse --short HEAD`" -verbose ./...;`
-// See issue #559
-var Rev string
-
 func init() {
 	rand.Seed(time.Now().UnixNano())
+	jsoniter.RegisterExtension(&jsonutil.RawMessageExtension{})
 }
 
 func main() {
 	flag.Parse() // required for glog flags and testing package flags
 
-	cfg, err := loadConfig()
+	bidderInfoPath, err := filepath.Abs(infoDirectory)
 	if err != nil {
-		glog.Fatalf("Configuration could not be loaded or did not pass validation: %v", err)
+		glog.Exitf("Unable to build configuration directory path: %v", err)
 	}
 
-	err = serve(Rev, cfg)
+	bidderInfos, err := config.LoadBidderInfoFromDisk(bidderInfoPath)
 	if err != nil {
-		glog.Errorf("prebid-server failed: %v", err)
+		glog.Exitf("Unable to load bidder configurations: %v", err)
+	}
+	cfg, err := loadConfig(bidderInfos)
+	if err != nil {
+		glog.Exitf("Configuration could not be loaded or did not pass validation: %v", err)
+	}
+
+	// Create a soft memory limit on the total amount of memory that PBS uses to tune the behavior
+	// of the Go garbage collector. In summary, `cfg.GarbageCollectorThreshold` serves as a fixed cost
+	// of memory that is going to be held garbage before a garbage collection cycle is triggered.
+	// This amount of virtual memory won’t translate into physical memory allocation unless we attempt
+	// to read or write to the slice below, which PBS will not do.
+	garbageCollectionThreshold := make([]byte, cfg.GarbageCollectorThreshold)
+	defer runtime.KeepAlive(garbageCollectionThreshold)
+
+	err = serve(cfg)
+	if err != nil {
+		glog.Exitf("prebid-server failed: %v", err)
 	}
 }
 
 const configFileName = "pbs"
+const infoDirectory = "./static/bidder-info"
 
-func loadConfig() (*config.Configuration, error) {
+func loadConfig(bidderInfos config.BidderInfos) (*config.Configuration, error) {
 	v := viper.New()
-	config.SetupViper(v, configFileName)
-	return config.New(v)
+	config.SetupViper(v, configFileName, bidderInfos)
+	return config.New(v, bidderInfos, openrtb_ext.NormalizeBidderName)
 }
 
-func serve(revision string, cfg *config.Configuration) error {
+func serve(cfg *config.Configuration) error {
 	fetchingInterval := time.Duration(cfg.CurrencyConverter.FetchIntervalSeconds) * time.Second
 	staleRatesThreshold := time.Duration(cfg.CurrencyConverter.StaleRatesSeconds) * time.Second
 	currencyConverter := currency.NewRateConverter(&http.Client{}, cfg.CurrencyConverter.FetchURL, staleRatesThreshold)
@@ -64,10 +79,8 @@ func serve(revision string, cfg *config.Configuration) error {
 		return err
 	}
 
-	pbc.InitPrebidCache(cfg.CacheURL.GetBaseURL())
-
 	corsRouter := router.SupportCORS(r)
-	server.Listen(cfg, router.NoCache{Handler: corsRouter}, router.Admin(revision, currencyConverter, fetchingInterval), r.MetricsEngine)
+	server.Listen(cfg, router.NoCache{Handler: corsRouter}, router.Admin(currencyConverter, fetchingInterval), r.MetricsEngine)
 
 	r.Shutdown()
 	return nil

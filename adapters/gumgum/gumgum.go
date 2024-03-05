@@ -7,20 +7,20 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
-// GumGumAdapter implements Bidder interface.
-type GumGumAdapter struct {
+// adapter implements Bidder interface.
+type adapter struct {
 	URI string
 }
 
 // MakeRequests makes the HTTP requests which should be made to fetch bids.
-func (g *GumGumAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (g *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var validImps []openrtb2.Imp
 	var siteCopy openrtb2.Site
 	if request.Site != nil {
@@ -80,7 +80,7 @@ func (g *GumGumAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adap
 }
 
 // MakeBids unpacks the server's response into Bids.
-func (g *GumGumAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (g *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -146,6 +146,16 @@ func preprocess(imp *openrtb2.Imp) (*openrtb_ext.ExtImpGumGum, error) {
 		format := bannerCopy.Format[0]
 		bannerCopy.W = &(format.W)
 		bannerCopy.H = &(format.H)
+
+		if gumgumExt.Slot != 0 {
+			var err error
+			bannerExt := getBiggerFormat(bannerCopy.Format, gumgumExt.Slot)
+			bannerCopy.Ext, err = json.Marshal(&bannerExt)
+			if err != nil {
+				return nil, err
+			}
+		}
+
 		imp.Banner = &bannerCopy
 	}
 
@@ -166,7 +176,39 @@ func preprocess(imp *openrtb2.Imp) (*openrtb_ext.ExtImpGumGum, error) {
 		}
 	}
 
+	if gumgumExt.Product != "" {
+		var err error
+		imp.Ext, err = json.Marshal(map[string]string{"product": gumgumExt.Product})
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &gumgumExt, nil
+}
+
+func getBiggerFormat(formatList []openrtb2.Format, slot float64) openrtb_ext.ExtImpGumGumBanner {
+	maxw := int64(0)
+	maxh := int64(0)
+	greatestVal := int64(0)
+	for _, size := range formatList {
+		var biggerSide int64
+		if size.W > size.H {
+			biggerSide = size.W
+		} else {
+			biggerSide = size.H
+		}
+
+		if biggerSide > greatestVal || (biggerSide == greatestVal && size.W >= maxw && size.H >= maxh) {
+			greatestVal = biggerSide
+			maxh = size.H
+			maxw = size.W
+		}
+	}
+
+	bannerExt := openrtb_ext.ExtImpGumGumBanner{Si: slot, MaxW: float64(maxw), MaxH: float64(maxh)}
+
+	return bannerExt
 }
 
 func getMediaTypeForImpID(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
@@ -179,7 +221,7 @@ func getMediaTypeForImpID(impID string, imps []openrtb2.Imp) openrtb_ext.BidType
 }
 
 func validateVideoParams(video *openrtb2.Video) (err error) {
-	if video.W == 0 || video.H == 0 || video.MinDuration == 0 || video.MaxDuration == 0 || video.Placement == 0 || video.Linearity == 0 {
+	if video.W == nil || *video.W == 0 || video.H == nil || *video.H == 0 || video.MinDuration == 0 || video.MaxDuration == 0 || video.Placement == 0 || video.Linearity == 0 {
 		return &errortypes.BadInput{
 			Message: "Invalid or missing video field(s)",
 		}
@@ -188,8 +230,8 @@ func validateVideoParams(video *openrtb2.Video) (err error) {
 }
 
 // Builder builds a new instance of the GumGum adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &GumGumAdapter{
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	bidder := &adapter{
 		URI: config.Endpoint,
 	}
 	return bidder, nil

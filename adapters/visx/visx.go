@@ -5,27 +5,40 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type VisxAdapter struct {
 	endpoint string
 }
 
+type visxBidExtPrebidMeta struct {
+	MediaType openrtb_ext.BidType `json:"mediaType"`
+}
+
+type visxBidExtPrebid struct {
+	Meta visxBidExtPrebidMeta `json:"meta"`
+}
+
+type visxBidExt struct {
+	Prebid visxBidExtPrebid `json:"prebid"`
+}
+
 type visxBid struct {
-	ImpID   string   `json:"impid"`
-	Price   float64  `json:"price"`
-	UID     int      `json:"auid"`
-	CrID    string   `json:"crid,omitempty"`
-	AdM     string   `json:"adm,omitempty"`
-	ADomain []string `json:"adomain,omitempty"`
-	DealID  string   `json:"dealid,omitempty"`
-	W       uint64   `json:"w,omitempty"`
-	H       uint64   `json:"h,omitempty"`
+	ImpID   string          `json:"impid"`
+	Price   float64         `json:"price"`
+	UID     int             `json:"auid"`
+	CrID    string          `json:"crid,omitempty"`
+	AdM     string          `json:"adm,omitempty"`
+	ADomain []string        `json:"adomain,omitempty"`
+	DealID  string          `json:"dealid,omitempty"`
+	W       uint64          `json:"w,omitempty"`
+	H       uint64          `json:"h,omitempty"`
+	Ext     json.RawMessage `json:"ext,omitempty"`
 }
 
 type visxSeatBid struct {
@@ -55,6 +68,16 @@ func (a *VisxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapte
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
+
+	if request.Device != nil {
+		if request.Device.IP != "" {
+			headers.Add("X-Forwarded-For", request.Device.IP)
+		}
+
+		if request.Device.IPv6 != "" {
+			headers.Add("X-Forwarded-For", request.Device.IPv6)
+		}
+	}
 
 	return []*adapters.RequestData{{
 		Method:  "POST",
@@ -101,10 +124,16 @@ func (a *VisxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReq
 			bid.H = int64(sb.Bid[i].H)
 			bid.ADomain = sb.Bid[i].ADomain
 			bid.DealID = sb.Bid[i].DealID
+			bid.Ext = sb.Bid[i].Ext
+
+			bidType, err := getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp, sb.Bid[i])
+			if err != nil {
+				return nil, []error{err}
+			}
 
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &bid,
-				BidType: "banner",
+				BidType: bidType,
 			})
 		}
 	}
@@ -112,8 +141,41 @@ func (a *VisxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReq
 
 }
 
+func getMediaTypeForImp(impID string, imps []openrtb2.Imp, bid visxBid) (openrtb_ext.BidType, error) {
+	for _, imp := range imps {
+		if imp.ID == impID {
+			var ext visxBidExt
+			if err := json.Unmarshal(bid.Ext, &ext); err == nil {
+				if ext.Prebid.Meta.MediaType == openrtb_ext.BidTypeBanner {
+					return openrtb_ext.BidTypeBanner, nil
+				}
+				if ext.Prebid.Meta.MediaType == openrtb_ext.BidTypeVideo {
+					return openrtb_ext.BidTypeVideo, nil
+				}
+			}
+
+			if imp.Banner != nil {
+				return openrtb_ext.BidTypeBanner, nil
+			}
+
+			if imp.Video != nil {
+				return openrtb_ext.BidTypeVideo, nil
+			}
+
+			return "", &errortypes.BadServerResponse{
+				Message: fmt.Sprintf("Unknown impression type for ID: \"%s\"", impID),
+			}
+		}
+	}
+
+	// This shouldnt happen. Lets handle it just incase by returning an error.
+	return "", &errortypes.BadServerResponse{
+		Message: fmt.Sprintf("Failed to find impression for ID: \"%s\"", impID),
+	}
+}
+
 // Builder builds a new instance of the Visx adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &VisxAdapter{
 		endpoint: config.Endpoint,
 	}

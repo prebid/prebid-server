@@ -2,16 +2,21 @@ package ccpa
 
 import (
 	"encoding/json"
+	"errors"
 	"testing"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	gpplib "github.com/prebid/go-gpp"
+	gppConstants "github.com/prebid/go-gpp/constants"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestReadFromRequest(t *testing.T) {
+func TestReadFromRequestWrapper(t *testing.T) {
 	testCases := []struct {
 		description    string
 		request        *openrtb2.BidRequest
+		giveGPP        gpplib.GppContainer
 		expectedPolicy Policy
 		expectedError  bool
 	}{
@@ -152,12 +157,180 @@ func TestReadFromRequest(t *testing.T) {
 				Consent: "1YYY\"},\"oops\":\"malicious\",\"p\":{\"p\":\"",
 			},
 		},
+		{
+			description: "GPP Success",
+			request: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{GPP: "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~present",
+					GPPSID: []int8{6}},
+				Ext: json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
+			},
+			giveGPP: gpplib.GppContainer{Version: 1, SectionTypes: []gppConstants.SectionID{6}, Sections: []gpplib.Section{&upsv1Section}},
+			expectedPolicy: Policy{
+				Consent:       "gppContainerConsent",
+				NoSaleBidders: []string{"a", "b"},
+			},
+		},
+		{
+			description: "GPP Success, has Regs.ext",
+			request: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{GPP: "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~present",
+					GPPSID: []int8{6},
+					Ext:    json.RawMessage(`{"us_privacy":"ABC"}`)},
+				Ext: json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
+			},
+			giveGPP: gpplib.GppContainer{Version: 1, SectionTypes: []gppConstants.SectionID{6}, Sections: []gpplib.Section{&upsv1Section}},
+			expectedPolicy: Policy{
+				Consent:       "gppContainerConsent",
+				NoSaleBidders: []string{"a", "b"},
+			},
+		},
+		{
+			description: "GPP Success, has regs.us_privacy",
+			request: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{GPP: "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~present",
+					GPPSID:    []int8{6},
+					USPrivacy: "conflicting"},
+				Ext: json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
+			},
+			giveGPP: gpplib.GppContainer{Version: 1, SectionTypes: []gppConstants.SectionID{6}, Sections: []gpplib.Section{&upsv1Section}},
+			expectedPolicy: Policy{
+				Consent:       "gppContainerConsent",
+				NoSaleBidders: []string{"a", "b"},
+			},
+			expectedError: true,
+		},
+		{
+			description: "Has regs.us_privacy",
+			request: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{USPrivacy: "present"},
+				Ext:  json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
+			},
+			expectedPolicy: Policy{
+				Consent:       "present",
+				NoSaleBidders: []string{"a", "b"},
+			},
+			expectedError: false,
+		},
+		{
+			description: "GPP Success, no USPV1",
+			request: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{GPP: "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+					GPPSID: []int8{6}},
+			},
+			giveGPP: gpplib.GppContainer{Version: 1, SectionTypes: []gppConstants.SectionID{2}, Sections: []gpplib.Section{&tcf1Section}},
+			expectedPolicy: Policy{
+				Consent: "",
+			},
+		},
 	}
 
 	for _, test := range testCases {
-		result, err := ReadFromRequest(test.request)
-		assertError(t, test.expectedError, err, test.description)
-		assert.Equal(t, test.expectedPolicy, result, test.description)
+		t.Run(test.description, func(t *testing.T) {
+			reqWrapper := &openrtb_ext.RequestWrapper{BidRequest: test.request}
+			result, err := ReadFromRequestWrapper(reqWrapper, test.giveGPP)
+			assertError(t, test.expectedError, err, test.description)
+			assert.Equal(t, test.expectedPolicy, result)
+		})
+	}
+}
+
+func TestReadFromRequest(t *testing.T) {
+	testCases := []struct {
+		description    string
+		request        *openrtb2.BidRequest
+		expectedPolicy Policy
+		expectedError  bool
+	}{
+		{
+			description: "Success",
+			request: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":"ABC"}`)},
+				Ext:  json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
+			},
+			expectedPolicy: Policy{
+				Consent:       "ABC",
+				NoSaleBidders: []string{"a", "b"},
+			},
+		},
+		{
+			description: "Nil Request",
+			request:     nil,
+			expectedPolicy: Policy{
+				Consent:       "",
+				NoSaleBidders: nil,
+			},
+		},
+		{
+			description: "Nil Regs",
+			request: &openrtb2.BidRequest{
+				Regs: nil,
+				Ext:  json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
+			},
+			expectedPolicy: Policy{
+				Consent:       "",
+				NoSaleBidders: []string{"a", "b"},
+			},
+		},
+		{
+			description: "GPP Success",
+			request: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{GPP: "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN",
+					GPPSID: []int8{6}},
+				Ext: json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
+			},
+			expectedPolicy: Policy{
+				Consent:       "1YNN",
+				NoSaleBidders: []string{"a", "b"},
+			},
+		},
+		{
+			description: "GPP Success, has Regs.ext",
+			request: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{GPP: "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN",
+					GPPSID: []int8{6},
+					Ext:    json.RawMessage(`{"us_privacy":"ABC"}`)},
+				Ext: json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
+			},
+			expectedPolicy: Policy{
+				Consent:       "1YNN",
+				NoSaleBidders: []string{"a", "b"},
+			},
+		},
+		{
+			description: "GPP Success, no USPV1",
+			request: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{GPP: "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+					GPPSID: []int8{6}}},
+			expectedPolicy: Policy{
+				Consent: "",
+			},
+		},
+		{
+			description: "GPP Success, no signal",
+			request: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{GPP: "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN",
+					GPPSID: []int8{}}},
+			expectedPolicy: Policy{
+				Consent: "",
+			},
+		},
+		{
+			description: "GPP Success, wrong signal",
+			request: &openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{GPP: "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN",
+					GPPSID: []int8{2}}},
+			expectedPolicy: Policy{
+				Consent: "",
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.description, func(t *testing.T) {
+			result, err := ReadFromRequest(test.request)
+			assertError(t, test.expectedError, err, test.description)
+			assert.Equal(t, test.expectedPolicy, result)
+		})
 	}
 }
 
@@ -209,9 +382,20 @@ func TestWrite(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		err := test.policy.Write(test.request)
+		reqWrapper := &openrtb_ext.RequestWrapper{BidRequest: test.request}
+		var err error
+		_, err = reqWrapper.GetRegExt()
+		if err == nil {
+			_, err = reqWrapper.GetRequestExt()
+			if err == nil {
+				err = test.policy.Write(reqWrapper)
+				if err == nil && reqWrapper.BidRequest != nil {
+					err = reqWrapper.RebuildRequest()
+				}
+			}
+		}
 		assertError(t, test.expectedError, err, test.description)
-		assert.Equal(t, test.expected, test.request, test.description)
+		assert.Equal(t, test.expected, reqWrapper.BidRequest, test.description)
 	}
 }
 
@@ -237,6 +421,9 @@ func TestBuildRegs(t *testing.T) {
 			regs: &openrtb2.Regs{
 				Ext: json.RawMessage(`malformed`),
 			},
+			expected: &openrtb2.Regs{
+				Ext: json.RawMessage(`malformed`),
+			},
 			expectedError: true,
 		},
 		{
@@ -253,14 +440,22 @@ func TestBuildRegs(t *testing.T) {
 			regs: &openrtb2.Regs{
 				Ext: json.RawMessage(`malformed`),
 			},
+			expected: &openrtb2.Regs{
+				Ext: json.RawMessage(`malformed`),
+			},
 			expectedError: true,
 		},
 	}
 
 	for _, test := range testCases {
-		result, err := buildRegs(test.consent, test.regs)
+		request := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Regs: test.regs}}
+		regsExt, err := request.GetRegExt()
+		if err == nil {
+			regsExt.SetUSPrivacy(test.consent)
+			request.RebuildRequest()
+		}
 		assertError(t, test.expectedError, err, test.description)
-		assert.Equal(t, test.expected, result, test.description)
+		assert.Equal(t, test.expected, request.Regs, test.description)
 	}
 }
 
@@ -297,21 +492,28 @@ func TestBuildRegsClear(t *testing.T) {
 			expected:    &openrtb2.Regs{Ext: json.RawMessage(`{"other":"any"}`)},
 		},
 		{
-			description: "Invalid Regs.Ext Type - Still Cleared",
-			regs:        &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":123}`)},
-			expected:    &openrtb2.Regs{},
+			description:   "Invalid Regs.Ext Type - Returns Error, doesn't clear",
+			regs:          &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":123}`)},
+			expected:      &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":123}`)},
+			expectedError: true,
 		},
 		{
 			description:   "Malformed Regs.Ext",
 			regs:          &openrtb2.Regs{Ext: json.RawMessage(`malformed`)},
+			expected:      &openrtb2.Regs{Ext: json.RawMessage(`malformed`)},
 			expectedError: true,
 		},
 	}
 
 	for _, test := range testCases {
-		result, err := buildRegsClear(test.regs)
+		request := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Regs: test.regs}}
+		regsExt, err := request.GetRegExt()
+		if err == nil {
+			regsExt.SetUSPrivacy("")
+			request.RebuildRequest()
+		}
 		assertError(t, test.expectedError, err, test.description)
-		assert.Equal(t, test.expected, result, test.description)
+		assert.Equal(t, test.expected, request.Regs, test.description)
 	}
 }
 
@@ -354,23 +556,30 @@ func TestBuildRegsWrite(t *testing.T) {
 			expected:    &openrtb2.Regs{Ext: json.RawMessage(`{"other":"any","us_privacy":"anyConsent"}`)},
 		},
 		{
-			description: "Invalid Regs.Ext Type - Still Overwrites",
-			consent:     "anyConsent",
-			regs:        &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":123}`)},
-			expected:    &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":"anyConsent"}`)},
+			description:   "Invalid Regs.Ext Type - Doesn't Overwrite",
+			consent:       "anyConsent",
+			regs:          &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":123}`)},
+			expected:      &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":123}`)},
+			expectedError: true,
 		},
 		{
 			description:   "Malformed Regs.Ext",
 			consent:       "anyConsent",
 			regs:          &openrtb2.Regs{Ext: json.RawMessage(`malformed`)},
+			expected:      &openrtb2.Regs{Ext: json.RawMessage(`malformed`)},
 			expectedError: true,
 		},
 	}
 
 	for _, test := range testCases {
-		result, err := buildRegsWrite(test.consent, test.regs)
+		request := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Regs: test.regs}}
+		regsExt, err := request.GetRegExt()
+		if err == nil {
+			regsExt.SetUSPrivacy(test.consent)
+			request.RebuildRequest()
+		}
 		assertError(t, test.expectedError, err, test.description)
-		assert.Equal(t, test.expected, result, test.description)
+		assert.Equal(t, test.expected, request.Regs, test.description)
 	}
 }
 
@@ -415,7 +624,14 @@ func TestBuildExt(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		result, err := buildExt(test.noSaleBidders, test.ext)
+		request := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: test.ext}}
+		reqExt, err := request.GetRequestExt()
+		var result json.RawMessage
+		if err == nil {
+			setPrebidNoSale(test.noSaleBidders, reqExt)
+			err = request.RebuildRequest()
+			result = request.Ext
+		}
 		assertError(t, test.expectedError, err, test.description)
 		assert.Equal(t, test.expected, result, test.description)
 	}
@@ -460,13 +676,13 @@ func TestBuildExtClear(t *testing.T) {
 		},
 		{
 			description: "Leaves Other Ext.Prebid Values",
-			ext:         json.RawMessage(`{"prebid":{"nosale":["a","b"],"other":"any"}}`),
-			expected:    json.RawMessage(`{"prebid":{"other":"any"}}`),
+			ext:         json.RawMessage(`{"prebid":{"nosale":["a","b"],"aliases":{"a":"b"}}}`),
+			expected:    json.RawMessage(`{"prebid":{"aliases":{"a":"b"}}}`),
 		},
 		{
 			description: "Leaves All Other Values",
-			ext:         json.RawMessage(`{"other":"ABC","prebid":{"nosale":["a","b"],"other":"123"}}`),
-			expected:    json.RawMessage(`{"other":"ABC","prebid":{"other":"123"}}`),
+			ext:         json.RawMessage(`{"other":"ABC","prebid":{"nosale":["a","b"],"supportdeals":true}}`),
+			expected:    json.RawMessage(`{"other":"ABC","prebid":{"supportdeals":true}}`),
 		},
 		{
 			description:   "Malformed Ext",
@@ -486,7 +702,14 @@ func TestBuildExtClear(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		result, err := buildExtClear(test.ext)
+		request := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: test.ext}}
+		reqExt, err := request.GetRequestExt()
+		var result json.RawMessage
+		if err == nil {
+			setPrebidNoSaleClear(reqExt)
+			err = request.RebuildRequest()
+			result = request.Ext
+		}
 		assertError(t, test.expectedError, err, test.description)
 		assert.Equal(t, test.expected, result, test.description)
 	}
@@ -539,45 +762,139 @@ func TestBuildExtWrite(t *testing.T) {
 		{
 			description:   "Leaves Other Ext.Prebid Values",
 			noSaleBidders: []string{"a", "b"},
-			ext:           json.RawMessage(`{"prebid":{"other":"any"}}`),
-			expected:      json.RawMessage(`{"prebid":{"nosale":["a","b"],"other":"any"}}`),
+			ext:           json.RawMessage(`{"prebid":{"supportdeals":true}}`),
+			expected:      json.RawMessage(`{"prebid":{"supportdeals":true,"nosale":["a","b"]}}`),
 		},
 		{
 			description:   "Leaves All Other Values",
 			noSaleBidders: []string{"a", "b"},
-			ext:           json.RawMessage(`{"other":"ABC","prebid":{"other":"123"}}`),
-			expected:      json.RawMessage(`{"other":"ABC","prebid":{"nosale":["a","b"],"other":"123"}}`),
+			ext:           json.RawMessage(`{"other":"ABC","prebid":{"aliases":{"a":"b"}}}`),
+			expected:      json.RawMessage(`{"other":"ABC","prebid":{"aliases":{"a":"b"},"nosale":["a","b"]}}`),
 		},
 		{
 			description:   "Invalid Ext.Prebid No Sale Type - Still Overrides",
 			noSaleBidders: []string{"a", "b"},
 			ext:           json.RawMessage(`{"prebid":{"nosale":123}}`),
-			expected:      json.RawMessage(`{"prebid":{"nosale":["a","b"]}}`),
+			expected:      json.RawMessage(`{"prebid":{"nosale":123}}`),
+			expectedError: true,
 		},
 		{
 			description:   "Invalid Ext.Prebid Type ",
 			noSaleBidders: []string{"a", "b"},
 			ext:           json.RawMessage(`{"prebid":"wrongtype"}`),
+			expected:      json.RawMessage(`{"prebid":"wrongtype"}`),
 			expectedError: true,
 		},
 		{
 			description:   "Malformed Ext",
 			noSaleBidders: []string{"a", "b"},
 			ext:           json.RawMessage(`{malformed`),
+			expected:      json.RawMessage(`{malformed`),
 			expectedError: true,
 		},
 		{
 			description:   "Malformed Ext.Prebid",
 			noSaleBidders: []string{"a", "b"},
 			ext:           json.RawMessage(`{"prebid":malformed}`),
+			expected:      json.RawMessage(`{"prebid":malformed}`),
 			expectedError: true,
 		},
 	}
 
 	for _, test := range testCases {
-		result, err := buildExtWrite(test.noSaleBidders, test.ext)
+		request := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: test.ext}}
+		reqExt, err := request.GetRequestExt()
+		var result json.RawMessage
+		if err == nil {
+			setPrebidNoSaleWrite(test.noSaleBidders, reqExt)
+			err = request.RebuildRequest()
+			result = request.Ext
+		} else {
+			result = test.ext
+		}
 		assertError(t, test.expectedError, err, test.description)
 		assert.Equal(t, test.expected, result, test.description)
+	}
+}
+
+func TestSelectCCPAConsent(t *testing.T) {
+	type testInput struct {
+		requestUSPrivacy string
+		gpp              gpplib.GppContainer
+		gppSIDs          []int8
+	}
+	testCases := []struct {
+		desc         string
+		in           testInput
+		expectedCCPA string
+		expectedErr  error
+	}{
+		{
+			desc: "SectionUSPV1 in both GPP_SID and GPP container. Consent equal to request US_Privacy. Expect valid string and nil error",
+			in: testInput{
+				requestUSPrivacy: "gppContainerConsent",
+				gpp:              gpplib.GppContainer{Version: 1, SectionTypes: []gppConstants.SectionID{gppConstants.SectionUSPV1}, Sections: []gpplib.Section{upsv1Section}},
+				gppSIDs:          []int8{int8(6)},
+			},
+			expectedCCPA: "gppContainerConsent",
+			expectedErr:  nil,
+		},
+		{
+			desc: "No SectionUSPV1 in GPP_SID array expect request US_Privacy",
+			in: testInput{
+				requestUSPrivacy: "requestConsent",
+				gpp:              gpplib.GppContainer{Version: 1, SectionTypes: []gppConstants.SectionID{gppConstants.SectionUSPV1}, Sections: []gpplib.Section{upsv1Section}},
+				gppSIDs:          []int8{int8(2), int8(4)},
+			},
+			expectedCCPA: "requestConsent",
+			expectedErr:  nil,
+		},
+		{
+			desc: "No SectionUSPV1 in gpp.SectionTypes array expect request US_Privacy",
+			in: testInput{
+				requestUSPrivacy: "requestConsent",
+				gpp:              gpplib.GppContainer{Version: 1, SectionTypes: []gppConstants.SectionID{}, Sections: []gpplib.Section{upsv1Section}},
+				gppSIDs:          []int8{int8(6)},
+			},
+			expectedCCPA: "requestConsent",
+			expectedErr:  nil,
+		},
+		{
+			desc: "No SectionUSPV1 in GPP_SID array, blank request US_Privacy, expect blank consent",
+			in: testInput{
+				requestUSPrivacy: "",
+				gpp:              gpplib.GppContainer{Version: 1, SectionTypes: []gppConstants.SectionID{gppConstants.SectionUSPV1}, Sections: []gpplib.Section{upsv1Section}},
+				gppSIDs:          []int8{int8(2), int8(4)},
+			},
+			expectedCCPA: "",
+			expectedErr:  nil,
+		},
+		{
+			desc: "No SectionUSPV1 in gpp.SectionTypes array, blank request US_Privacy, expect blank consent",
+			in: testInput{
+				requestUSPrivacy: "",
+				gpp:              gpplib.GppContainer{Version: 1, SectionTypes: []gppConstants.SectionID{}, Sections: []gpplib.Section{upsv1Section}},
+				gppSIDs:          []int8{int8(6)},
+			},
+			expectedCCPA: "",
+			expectedErr:  nil,
+		},
+		{
+			desc: "SectionUSPV1 in both GPP_SID and GPP container. Consent equal to request US_Privacy. Expect valid string and nil error",
+			in: testInput{
+				requestUSPrivacy: "requestConsent",
+				gpp:              gpplib.GppContainer{Version: 1, SectionTypes: []gppConstants.SectionID{gppConstants.SectionUSPV1}, Sections: []gpplib.Section{upsv1Section}},
+				gppSIDs:          []int8{int8(6)},
+			},
+			expectedCCPA: "gppContainerConsent",
+			expectedErr:  errors.New("request.us_privacy consent does not match uspv1"),
+		},
+	}
+	for _, tc := range testCases {
+		out, outErr := SelectCCPAConsent(tc.in.requestUSPrivacy, tc.in.gpp, tc.in.gppSIDs)
+
+		assert.Equal(t, tc.expectedCCPA, out, tc.desc)
+		assert.Equal(t, tc.expectedErr, outErr, tc.desc)
 	}
 }
 
@@ -588,4 +905,24 @@ func assertError(t *testing.T, expectError bool, err error, description string) 
 	} else {
 		assert.NoError(t, err, description)
 	}
+}
+
+var upsv1Section mockGPPSection = mockGPPSection{sectionID: 6, value: "gppContainerConsent"}
+var tcf1Section mockGPPSection = mockGPPSection{sectionID: 2, value: "BOS2bx5OS2bx5ABABBAAABoAAAAAFA"}
+
+type mockGPPSection struct {
+	sectionID gppConstants.SectionID
+	value     string
+}
+
+func (ms mockGPPSection) GetID() gppConstants.SectionID {
+	return ms.sectionID
+}
+
+func (ms mockGPPSection) GetValue() string {
+	return ms.value
+}
+
+func (ms mockGPPSection) Encode(bool) []byte {
+	return nil
 }

@@ -1,6 +1,6 @@
 package openrtb_ext
 
-// ExtImpAdtarget defines the contract for bidrequest.imp[i].ext.adtarget
+// ExtImpAdtarget defines the contract for bidrequest.imp[i].ext.prebid.bidder.adtarget
 type ExtImpAdtarget struct {
 	SourceId    int     `json:"aid"`
 	PlacementId int     `json:"placementId,omitempty"`

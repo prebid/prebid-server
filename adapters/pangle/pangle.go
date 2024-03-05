@@ -5,20 +5,27 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type adapter struct {
 	Endpoint string
 }
 
+type NetworkIDs struct {
+	AppID       string `json:"appid,omitempty"`
+	PlacementID string `json:"placementid,omitempty"`
+}
+
 type wrappedExtImpBidder struct {
 	*adapters.ExtImpBidder
-	AdType int `json:"adtype,omitempty"`
+	AdType     int         `json:"adtype,omitempty"`
+	IsPrebid   bool        `json:"is_prebid,omitempty"`
+	NetworkIDs *NetworkIDs `json:"networkids,omitempty"`
 }
 
 type pangleBidExt struct {
@@ -31,7 +38,7 @@ type bidExt struct {
 
 /* Builder */
 
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		Endpoint: config.Endpoint,
 	}
@@ -44,7 +51,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 func getAdType(imp openrtb2.Imp, parsedImpExt *wrappedExtImpBidder) int {
 	// video
 	if imp.Video != nil {
-		if parsedImpExt != nil && parsedImpExt.Prebid != nil && parsedImpExt.Prebid.IsRewardedInventory == 1 {
+		if parsedImpExt != nil && parsedImpExt.Prebid != nil && parsedImpExt.Prebid.IsRewardedInventory != nil && *parsedImpExt.Prebid.IsRewardedInventory == 1 {
 			return 7
 		}
 		if imp.Instl == 1 {
@@ -78,23 +85,34 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			errs = append(errs, fmt.Errorf("failed unmarshalling imp ext (err)%s", err.Error()))
 			continue
 		}
-		// detect and fill adtype
-		if adType := getAdType(imp, &impExt); adType == -1 {
-			errs = append(errs, &errortypes.BadInput{Message: "not a supported adtype"})
-			continue
-		} else {
-			impExt.AdType = adType
-			if newImpExt, err := json.Marshal(impExt); err == nil {
-				imp.Ext = newImpExt
-			} else {
-				errs = append(errs, fmt.Errorf("failed re-marshalling imp ext with adtype"))
-				continue
-			}
-		}
-		// for setting token
+		// get token & networkIDs
 		var bidderImpExt openrtb_ext.ImpExtPangle
 		if err := json.Unmarshal(impExt.Bidder, &bidderImpExt); err != nil {
 			errs = append(errs, fmt.Errorf("failed unmarshalling bidder imp ext (err)%s", err.Error()))
+			continue
+		}
+		// detect and fill adtype
+		adType := getAdType(imp, &impExt)
+		if adType == -1 {
+			errs = append(errs, &errortypes.BadInput{Message: "not a supported adtype"})
+			continue
+		}
+		// remarshal imp.ext
+		impExt.AdType = adType
+		impExt.IsPrebid = true
+		if len(bidderImpExt.AppID) > 0 && len(bidderImpExt.PlacementID) > 0 {
+			impExt.NetworkIDs = &NetworkIDs{
+				AppID:       bidderImpExt.AppID,
+				PlacementID: bidderImpExt.PlacementID,
+			}
+		} else if len(bidderImpExt.AppID) > 0 || len(bidderImpExt.PlacementID) > 0 {
+			errs = append(errs, &errortypes.BadInput{Message: "only one of appid or placementid is provided"})
+			continue
+		}
+		if newImpExt, err := json.Marshal(impExt); err == nil {
+			imp.Ext = newImpExt
+		} else {
+			errs = append(errs, fmt.Errorf("failed re-marshalling imp ext"))
 			continue
 		}
 

@@ -4,30 +4,54 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"text/template"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/macros"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type adapter struct {
-	endpoint string
+	endpoint *template.Template
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	var errors []error
+	var bidderExt adapters.ExtImpBidder
+	if err := json.Unmarshal(request.Imp[0].Ext, &bidderExt); err != nil {
+		errors = append(errors, &errortypes.BadInput{
+			Message: err.Error(),
+		})
+		return nil, errors
+	}
+	var ioExt *openrtb_ext.ExtImpInteractiveoffers
+	if err := json.Unmarshal(bidderExt.Bidder, &ioExt); err != nil {
+		errors = append(errors, &errortypes.BadInput{
+			Message: err.Error(),
+		})
+		return nil, errors
+	}
 	requestJSON, err := json.Marshal(request)
 	if err != nil {
 		return nil, []error{err}
 	}
 
-	requestData := &adapters.RequestData{
-		Method: "POST",
-		Uri:    a.endpoint,
-		Body:   requestJSON,
+	url, err := a.buildEndpointURL(ioExt)
+	if err != nil {
+		return nil, []error{err}
 	}
-
+	headers := http.Header{}
+	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
+	requestData := &adapters.RequestData{
+		Method:  "POST",
+		Uri:     url,
+		Body:    requestJSON,
+		Headers: headers,
+	}
 	return []*adapters.RequestData{requestData}, nil
 }
 
@@ -71,9 +95,18 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 }
 
 // Builder builds a new instance of the Interactiveoffers adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
+	}
 	bidder := &adapter{
-		endpoint: config.Endpoint,
+		endpoint: template,
 	}
 	return bidder, nil
+}
+
+func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtImpInteractiveoffers) (string, error) {
+	endpointParams := macros.EndpointTemplateParams{AccountID: params.PartnerId}
+	return macros.ResolveMacros(a.endpoint, endpointParams)
 }

@@ -1,24 +1,33 @@
 package currency
 
 import (
-	"encoding/json"
+	"errors"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
 func TestUnMarshallRates(t *testing.T) {
-
 	// Setup:
 	testCases := []struct {
+		desc          string
 		ratesJSON     string
 		expectedRates Rates
 		expectsError  bool
+		expectedError error
 	}{
 		{
+			desc:          "malformed JSON object, return error",
+			ratesJSON:     `malformed`,
+			expectedRates: Rates{},
+			expectsError:  true,
+			expectedError: errors.New("expect { or n, but found m"),
+		},
+		{
+			desc: "Valid JSON field defining valid conversion object. Expect no error",
 			ratesJSON: `{
-				"dataAsOf":"2018-09-12",
 				"conversions":{
 					"USD":{
 						"GBP":0.7662523901
@@ -29,7 +38,6 @@ func TestUnMarshallRates(t *testing.T) {
 				}
 			}`,
 			expectedRates: Rates{
-				DataAsOf: time.Date(2018, time.September, 12, 0, 0, 0, 0, time.UTC),
 				Conversions: map[string]map[string]float64{
 					"USD": {
 						"GBP": 0.7662523901,
@@ -39,90 +47,52 @@ func TestUnMarshallRates(t *testing.T) {
 					},
 				},
 			},
-			expectsError: false,
+			expectsError:  false,
+			expectedError: nil,
 		},
 		{
+			desc: "Valid JSON field defines a conversions map with repeated entries, last one wins",
 			ratesJSON: `{
-				"dataAsOf":"",
-				"conversions":{
-					"USD":{
-						"GBP":0.7662523901
-					},
-					"GBP":{
-						"USD":1.3050530256
-					}
-				}
-			}`,
-			expectedRates: Rates{
-				DataAsOf: time.Time{},
-				Conversions: map[string]map[string]float64{
-					"USD": {
-						"GBP": 0.7662523901,
-					},
-					"GBP": {
-						"USD": 1.3050530256,
-					},
-				},
-			},
-			expectsError: false,
-		},
-		{
-			ratesJSON: `{
-				"dataAsOf":"blabla",
-				"conversions":{
-					"USD":{
-						"GBP":0.7662523901
-					},
-					"GBP":{
-						"USD":1.3050530256
-					}
-				}
-			}`,
-			expectedRates: Rates{
-				DataAsOf: time.Time{},
-				Conversions: map[string]map[string]float64{
-					"USD": {
-						"GBP": 0.7662523901,
-					},
-					"GBP": {
-						"USD": 1.3050530256,
-					},
-				},
-			},
-			expectsError: false,
-		},
-		{
-			ratesJSON: `{
-				"dataAsOf":"blabla",
 				"conversions":{
 					"USD":{
 						"GBP":0.7662523901,
+						"MXN":20.00
 					},
-					"GBP":{
-						"USD":1.3050530256,
+					"USD":{
+						"GBP":0.4815162342
 					}
 				}
 			}`,
-			expectedRates: Rates{},
-			expectsError:  true,
+			expectedRates: Rates{
+				Conversions: map[string]map[string]float64{
+					"USD": {
+						"GBP": 0.4815162342,
+					},
+				},
+			},
+			expectsError:  false,
+			expectedError: nil,
 		},
 	}
 
 	for _, tc := range testCases {
 		// Execute:
 		updatedRates := Rates{}
-		err := json.Unmarshal([]byte(tc.ratesJSON), &updatedRates)
+		err := jsonutil.UnmarshalValid([]byte(tc.ratesJSON), &updatedRates)
 
 		// Verify:
-		assert.Equal(t, err != nil, tc.expectsError)
-		assert.Equal(t, tc.expectedRates, updatedRates, "Rates weren't the expected ones")
+		assert.Equal(t, err != nil, tc.expectsError, tc.desc)
+		if tc.expectsError {
+			assert.Equal(t, tc.expectedError.Error(), err.Error(), tc.desc)
+		}
+		assert.Equal(t, tc.expectedRates, updatedRates, tc.desc)
 	}
 }
 
 func TestGetRate(t *testing.T) {
 
 	// Setup:
-	rates := NewRates(time.Now(), map[string]map[string]float64{
+	rates := NewRates(map[string]map[string]float64{
 		"USD": {
 			"GBP": 0.77208,
 		},
@@ -165,7 +135,7 @@ func TestGetRate(t *testing.T) {
 func TestGetRate_ReverseConversion(t *testing.T) {
 
 	// Setup:
-	rates := NewRates(time.Now(), map[string]map[string]float64{
+	rates := NewRates(map[string]map[string]float64{
 		"USD": {
 			"GBP": 0.77208,
 		},
@@ -219,7 +189,7 @@ func TestGetRate_ReverseConversion(t *testing.T) {
 func TestGetRate_EmptyRates(t *testing.T) {
 
 	// Setup:
-	rates := NewRates(time.Time{}, nil)
+	rates := NewRates(nil)
 
 	// Execute:
 	rate, err := rates.GetRate("USD", "EUR")
@@ -232,7 +202,7 @@ func TestGetRate_EmptyRates(t *testing.T) {
 func TestGetRate_NotValidISOCurrency(t *testing.T) {
 
 	// Setup:
-	rates := NewRates(time.Time{}, nil)
+	rates := NewRates(nil)
 
 	testCases := []struct {
 		from         string

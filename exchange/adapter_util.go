@@ -4,72 +4,46 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/prebid/prebid-server/metrics"
-
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/adapters/lifestreet"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/metrics"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
-func BuildAdapters(client *http.Client, cfg *config.Configuration, infos config.BidderInfos, me metrics.MetricsEngine) (map[openrtb_ext.BidderName]adaptedBidder, []error) {
-	exchangeBidders := buildExchangeBiddersLegacy(cfg.Adapters, infos)
+func BuildAdapters(client *http.Client, cfg *config.Configuration, infos config.BidderInfos, me metrics.MetricsEngine) (map[openrtb_ext.BidderName]AdaptedBidder, []error) {
+	server := config.Server{ExternalUrl: cfg.ExternalURL, GvlID: cfg.GDPR.HostVendorID, DataCenter: cfg.DataCenter}
+	bidders, errs := buildBidders(infos, newAdapterBuilders(), server)
 
-	exchangeBiddersModern, errs := buildExchangeBidders(cfg, infos, client, me)
 	if len(errs) > 0 {
 		return nil, errs
 	}
 
-	// Merge legacy and modern bidders, giving priority to the modern bidders.
-	for bidderName, bidder := range exchangeBiddersModern {
-		exchangeBidders[bidderName] = bidder
-	}
-
-	wrapWithMiddleware(exchangeBidders)
-
-	return exchangeBidders, nil
-}
-
-func buildExchangeBidders(cfg *config.Configuration, infos config.BidderInfos, client *http.Client, me metrics.MetricsEngine) (map[openrtb_ext.BidderName]adaptedBidder, []error) {
-	bidders, errs := buildBidders(cfg.Adapters, infos, newAdapterBuilders())
-	if len(errs) > 0 {
-		return nil, errs
-	}
-
-	exchangeBidders := make(map[openrtb_ext.BidderName]adaptedBidder, len(bidders))
+	exchangeBidders := make(map[openrtb_ext.BidderName]AdaptedBidder, len(bidders))
 	for bidderName, bidder := range bidders {
-		info, infoFound := infos[string(bidderName)]
-		if !infoFound {
-			errs = append(errs, fmt.Errorf("%v: bidder info not found", bidder))
-			continue
-		}
-		exchangeBidders[bidderName] = adaptBidder(bidder, client, cfg, me, bidderName, info.Debug)
+		info := infos[string(bidderName)]
+		exchangeBidder := AdaptBidder(bidder, client, cfg, me, bidderName, info.Debug, info.EndpointCompression)
+		exchangeBidder = addValidatedBidderMiddleware(exchangeBidder)
+		exchangeBidders[bidderName] = exchangeBidder
 	}
-
 	return exchangeBidders, nil
-
 }
 
-func buildBidders(adapterConfig map[string]config.Adapter, infos config.BidderInfos, builders map[openrtb_ext.BidderName]adapters.Builder) (map[openrtb_ext.BidderName]adapters.Bidder, []error) {
+func buildBidders(infos config.BidderInfos, builders map[openrtb_ext.BidderName]adapters.Builder, server config.Server) (map[openrtb_ext.BidderName]adapters.Bidder, []error) {
 	bidders := make(map[openrtb_ext.BidderName]adapters.Bidder)
 	var errs []error
 
-	for bidder, cfg := range adapterConfig {
+	for bidder, info := range infos {
 		bidderName, bidderNameFound := openrtb_ext.NormalizeBidderName(bidder)
 		if !bidderNameFound {
 			errs = append(errs, fmt.Errorf("%v: unknown bidder", bidder))
 			continue
 		}
 
-		// Ignore Legacy Bidders
-		if bidderName == openrtb_ext.BidderLifestreet {
-			continue
-		}
-
-		info, infoFound := infos[string(bidderName)]
-		if !infoFound {
-			errs = append(errs, fmt.Errorf("%v: bidder info not found", bidder))
-			continue
+		if len(info.AliasOf) > 0 {
+			if err := setAliasBuilder(info, builders, bidderName); err != nil {
+				errs = append(errs, fmt.Errorf("%v: failed to set alias builder: %v", bidder, err))
+				continue
+			}
 		}
 
 		builder, builderFound := builders[bidderName]
@@ -78,38 +52,42 @@ func buildBidders(adapterConfig map[string]config.Adapter, infos config.BidderIn
 			continue
 		}
 
-		if info.Enabled {
-			bidderInstance, builderErr := builder(bidderName, cfg)
+		if info.IsEnabled() {
+			adapterInfo := buildAdapterInfo(info)
+			bidderInstance, builderErr := builder(bidderName, adapterInfo, server)
+
 			if builderErr != nil {
 				errs = append(errs, fmt.Errorf("%v: %v", bidder, builderErr))
 				continue
 			}
-
-			bidderWithInfoEnforcement := adapters.BuildInfoAwareBidder(bidderInstance, info)
-
-			bidders[bidderName] = bidderWithInfoEnforcement
+			bidders[bidderName] = adapters.BuildInfoAwareBidder(bidderInstance, info)
 		}
 	}
-
 	return bidders, errs
 }
 
-func buildExchangeBiddersLegacy(adapterConfig map[string]config.Adapter, infos config.BidderInfos) map[openrtb_ext.BidderName]adaptedBidder {
-	bidders := make(map[openrtb_ext.BidderName]adaptedBidder, 2)
-
-	// Lifestreet
-	if infos[string(openrtb_ext.BidderLifestreet)].Enabled {
-		adapter := lifestreet.NewLifestreetLegacyAdapter(adapters.DefaultHTTPAdapterConfig, adapterConfig[string(openrtb_ext.BidderLifestreet)].Endpoint)
-		bidders[openrtb_ext.BidderLifestreet] = adaptLegacyAdapter(adapter)
+func setAliasBuilder(info config.BidderInfo, builders map[openrtb_ext.BidderName]adapters.Builder, bidderName openrtb_ext.BidderName) error {
+	parentBidderName, parentBidderFound := openrtb_ext.NormalizeBidderName(info.AliasOf)
+	if !parentBidderFound {
+		return fmt.Errorf("unknown parent bidder: %v for alias: %v", info.AliasOf, bidderName)
 	}
 
-	return bidders
+	builder, builderFound := builders[parentBidderName]
+	if !builderFound {
+		return fmt.Errorf("%v: parent builder not registered", parentBidderName)
+	}
+	builders[bidderName] = builder
+	return nil
 }
 
-func wrapWithMiddleware(bidders map[openrtb_ext.BidderName]adaptedBidder) {
-	for name, bidder := range bidders {
-		bidders[name] = addValidatedBidderMiddleware(bidder)
-	}
+func buildAdapterInfo(bidderInfo config.BidderInfo) config.Adapter {
+	adapter := config.Adapter{}
+	adapter.Endpoint = bidderInfo.Endpoint
+	adapter.ExtraAdapterInfo = bidderInfo.ExtraAdapterInfo
+	adapter.PlatformID = bidderInfo.PlatformID
+	adapter.AppSecret = bidderInfo.AppSecret
+	adapter.XAPI = bidderInfo.XAPI
+	return adapter
 }
 
 // GetActiveBidders returns a map of all active bidder names.
@@ -117,7 +95,7 @@ func GetActiveBidders(infos config.BidderInfos) map[string]openrtb_ext.BidderNam
 	activeBidders := make(map[string]openrtb_ext.BidderName)
 
 	for name, info := range infos {
-		if info.Enabled {
+		if info.IsEnabled() {
 			activeBidders[name] = openrtb_ext.BidderName(name)
 		}
 	}
@@ -125,12 +103,33 @@ func GetActiveBidders(infos config.BidderInfos) map[string]openrtb_ext.BidderNam
 	return activeBidders
 }
 
-// GetDisabledBiddersErrorMessages returns a map of error messages for disabled bidders.
-func GetDisabledBiddersErrorMessages(infos config.BidderInfos) map[string]string {
-	disabledBidders := make(map[string]string)
+func GetDisabledBidderWarningMessages(infos config.BidderInfos) map[string]string {
+	removed := map[string]string{
+		"lifestreet":      `Bidder "lifestreet" is no longer available in Prebid Server. Please update your configuration.`,
+		"adagio":          `Bidder "adagio" is no longer available in Prebid Server. Please update your configuration.`,
+		"somoaudience":    `Bidder "somoaudience" is no longer available in Prebid Server. Please update your configuration.`,
+		"yssp":            `Bidder "yssp" is no longer available in Prebid Server. If you're looking to use the Yahoo SSP adapter, please rename it to "yahooAds" in your configuration.`,
+		"andbeyondmedia":  `Bidder "andbeyondmedia" is no longer available in Prebid Server. If you're looking to use the AndBeyond.Media SSP adapter, please rename it to "beyondmedia" in your configuration.`,
+		"oftmedia":        `Bidder "oftmedia" is no longer available in Prebid Server. Please update your configuration.`,
+		"groupm":          `Bidder "groupm" is no longer available in Prebid Server. Please update your configuration.`,
+		"verizonmedia":    `Bidder "verizonmedia" is no longer available in Prebid Server. Please update your configuration.`,
+		"brightroll":      `Bidder "brightroll" is no longer available in Prebid Server. Please update your configuration.`,
+		"engagebdr":       `Bidder "engagebdr" is no longer available in Prebid Server. Please update your configuration.`,
+		"ninthdecimal":    `Bidder "ninthdecimal" is no longer available in Prebid Server. Please update your configuration.`,
+		"kubient":         `Bidder "kubient" is no longer available in Prebid Server. Please update your configuration.`,
+		"applogy":         `Bidder "applogy" is no longer available in Prebid Server. Please update your configuration.`,
+		"rhythmone":       `Bidder "rhythmone" is no longer available in Prebid Server. Please update your configuration.`,
+		"nanointeractive": `Bidder "nanointeractive" is no longer available in Prebid Server. Please update your configuration.`,
+	}
+
+	return mergeRemovedAndDisabledBidderWarningMessages(removed, infos)
+}
+
+func mergeRemovedAndDisabledBidderWarningMessages(removed map[string]string, infos config.BidderInfos) map[string]string {
+	disabledBidders := removed
 
 	for name, info := range infos {
-		if !info.Enabled {
+		if info.Disabled {
 			msg := fmt.Sprintf(`Bidder "%s" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.`, name)
 			disabledBidders[name] = msg
 		}

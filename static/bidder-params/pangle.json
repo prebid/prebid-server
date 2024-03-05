@@ -8,9 +8,27 @@
       "type": "string",
       "description": "Access Token",
       "pattern": ".+"
+    },
+    "appid": {
+      "type": "string",
+      "description": "App ID",
+      "pattern": "[0-9]+"
+    },
+    "placementid": {
+      "type": "string",
+      "description": "Placement ID",
+      "pattern": "[0-9]+"
     }
   },
   "required": [
     "token"
-  ]
+  ],
+  "dependencies": {
+    "placementid": [
+      "appid"
+    ],
+    "appid": [
+      "placementid"
+    ]
+  }
 }

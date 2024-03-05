@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 var validParams = []string{
 	`{"token": "SomeAccessToken"}`,
+	`{"token": "SomeAccessToken", "appid": "12345", "placementid": "12345"}`,
 }
 
 var invalidParams = []string{
@@ -16,6 +17,12 @@ var invalidParams = []string{
 	`{"token": 42}`,
 	`{"token": null}`,
 	`{}`,
+	// appid & placementid
+	`{"appid": "12345", "placementid": "12345"}`,
+	`{"token": "SomeAccessToken", "appid": "12345"}`,
+	`{"token": "SomeAccessToken", "placementid": "12345"}`,
+	`{"token": "SomeAccessToken", "appid": 12345, "placementid": 12345}`,
+	`{"token": "SomeAccessToken", "appid": null, "placementid": null}`,
 }
 
 func TestValidParams(t *testing.T) {

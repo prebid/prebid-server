@@ -1,0 +1,28 @@
+{
+  "mockBidRequest": {
+    "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
+    "site": {
+      "page": "http://localhost:3000/server.html?pbjs_debug=true&endpoint=http://localhost:3000/bidder"
+    },
+    "imp": [
+      {
+        "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
+        "banner": {
+          "format": []
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "1100042525",
+            "adspaceId": "130563103"
+          }
+        }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "No sizes provided for Banner.",
+      "comparison": "literal"
+    }
+  ]
+}

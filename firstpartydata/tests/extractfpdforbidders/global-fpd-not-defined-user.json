@@ -1,0 +1,39 @@
+{
+  "description": "req.user.ext.data is present but req.ext.prebid is not defined; expect req.user.ext.data remains the same and no FPD data for bidders",
+  "inputRequestData": {
+    "id": "bid_id",
+    "user": {
+      "id": "reqUserId",
+      "keywords": "userKeywords",
+      "publisher": {
+        "id": "1"
+      },
+      "ext": {
+        "amp": 1,
+        "data": {
+          "someuserfpd": "userfpdDataTest"
+        }
+      }
+    },
+    "test": 1
+  },
+  "outputRequestData":  {
+    "id": "bid_id",
+    "user": {
+      "id": "reqUserId",
+      "keywords": "userKeywords",
+      "publisher": {
+        "id": "1"
+      },
+      "ext": {
+        "amp":1,
+        "data": {
+          "someuserfpd": "userfpdDataTest"
+        }
+      }
+    },
+    "test": 1
+  },
+  "biddersFPDResolved": {},
+  "validationErrors": []
+}

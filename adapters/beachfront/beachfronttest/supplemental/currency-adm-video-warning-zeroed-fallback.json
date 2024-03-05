@@ -1,0 +1,55 @@
+{
+  "mockBidRequest": {
+    "id": "adm-video",
+    "imp": [
+      {
+        "id": "video1",
+        "bidfloor": 1.90,
+        "bidfloorcur": "XYZ",
+        "ext": {
+          "bidder": {
+            "appId": "videoAppId1"
+          }
+        },
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "context": "instream",
+          "w": 300,
+          "h": 250
+        }
+      }
+    ],
+    "site": {
+      "page": "https://some.domain.us/some/page.html"
+    },
+    "device":{
+      "ip":"192.168.168.168"
+    },
+    "ext": {
+      "prebid": {
+        "currency": {
+          "rates": {
+            "MXN":{
+              "USD": 0.05,
+              "EUR": 0.03
+            },
+            "EUR": {
+              "USD": 1.20
+            }
+          },
+          "usepbsrates": false
+        }
+      }
+    }
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "The following error was recieved from the currency converter while attempting to convert the imp.bidfloor value of 1.90 from XYZ to USD:\ncurrency: tag is not a recognized currency\nA value of imp.ext.beachfront.bidfloor was not provided. The bid is being skipped.",
+      "comparison": "literal"
+    }
+  ]
+
+}

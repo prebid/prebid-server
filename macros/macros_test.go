@@ -10,27 +10,37 @@ import (
 const validEndpointTemplate = "http://{{.Host}}/publisher/{{.PublisherID}}"
 
 func TestResolveMacros(t *testing.T) {
-	endpointTemplate, _ := template.New("endpointTemplate").Parse(validEndpointTemplate)
+	endpointTemplate := template.Must(template.New("endpointTemplate").Parse(validEndpointTemplate))
 
 	testCases := []struct {
-		aTemplate template.Template
-		params    interface{}
-		result    string
-		hasError  bool
+		givenTemplate  *template.Template
+		givenParams    interface{}
+		expectedResult string
+		expectedError  bool
 	}{
-		{aTemplate: *endpointTemplate, params: EndpointTemplateParams{Host: "SomeHost", PublisherID: "1"}, result: "http://SomeHost/publisher/1", hasError: false},
-		{aTemplate: *endpointTemplate, params: UserSyncTemplateParams{GDPR: "SomeGDPR", GDPRConsent: "SomeGDPRConsent"}, result: "", hasError: true},
+		{
+			givenTemplate:  endpointTemplate,
+			givenParams:    EndpointTemplateParams{Host: "SomeHost", PublisherID: "1"},
+			expectedResult: "http://SomeHost/publisher/1",
+			expectedError:  false,
+		},
+		{
+			givenTemplate:  endpointTemplate,
+			givenParams:    UserSyncPrivacy{GDPR: "SomeGDPR", GDPRConsent: "SomeGDPRConsent"},
+			expectedResult: "",
+			expectedError:  true,
+		},
 	}
 
 	for _, test := range testCases {
-		res, err := ResolveMacros(test.aTemplate, test.params)
+		result, err := ResolveMacros(test.givenTemplate, test.givenParams)
 
-		if test.hasError {
+		if test.expectedError {
 			assert.NotNil(t, err, "Error shouldn't be nil")
-			assert.Empty(t, res, "Result should be empty")
+			assert.Empty(t, result, "Result should be empty")
 		} else {
 			assert.Nil(t, err, "Err should be nil")
-			assert.Equal(t, res, test.result, "String after resolving macros should be %s", test.result)
+			assert.Equal(t, result, test.expectedResult, "String after resolving macros should be %s", test.expectedResult)
 		}
 	}
 }

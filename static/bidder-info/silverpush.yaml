@@ -1,0 +1,12 @@
+endpoint: "https://prebid.chocolateplatform.co/bidder/?identifier=prebidchoc" 
+maintainer:
+  email: "prebid@silverpush.co"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video

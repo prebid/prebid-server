@@ -1,0 +1,40 @@
+{
+  "description": "Bidder FPD defined only for user",
+  "inputRequestData": {
+    "user": {
+      "id": "reqUserID",
+      "yob": 1982,
+      "gender": "M"
+    }
+  },
+  "biddersWithGlobalFPD": [
+    "appnexus"
+  ],
+  "bidderConfigFPD": {
+    "appnexus": {
+      "user": {
+        "id": "apnUserId",
+        "yob": 1982,
+        "ext": {
+          "data": {
+            "other": "data"
+          }
+        }
+      }
+    }
+  },
+  "outputRequestData": {
+    "appnexus": {
+      "user": {
+        "id": "apnUserId",
+        "yob": 1982,
+        "gender": "M",
+        "ext": {
+          "data": {
+            "other": "data"
+          }
+        }
+      }
+    }
+  }
+}

@@ -7,7 +7,6 @@
         "ext": {
           "bidder": {
             "videoResponseType": "adm",
-            "bidfloor": 3.01,
             "appId": "videoAppId1"
           }
         },
@@ -44,7 +43,6 @@
                   "video/mp4"
                 ]
               },
-              "bidfloor": 3.01,
               "id": "video1",
               "secure": 1
             }
@@ -80,6 +78,7 @@
                   ],
                   "cid": "277",
                   "crid": "532",
+                  "cat":["IAB2"],
                   "w": 300,
                   "h": 250,
                   "ext": {
@@ -110,6 +109,7 @@
             ],
             "cid": "277",
             "crid": "532",
+            "cat":["IAB2"],
             "w": 300,
             "h": 250,
             "ext": {

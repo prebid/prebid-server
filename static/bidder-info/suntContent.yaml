@@ -1,0 +1,7 @@
+endpoint: "https://b.suntcontent.se/cds/rtb/bid?ssp={{.AccountID}}"
+aliasOf: "seedingAlliance"
+gvlVendorID: 1097
+userSync:
+  redirect:
+    url: "https://dmp.suntcontent.se/set-uuid?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&redirect_url={{.RedirectURL}}"
+    userMacro: "$UID"

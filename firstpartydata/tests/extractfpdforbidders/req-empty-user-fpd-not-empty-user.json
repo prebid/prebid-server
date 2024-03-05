@@ -1,0 +1,76 @@
+{
+  "description": "req.user is not present but req.ext.prebid.bidderconfig contains user for bidder; expect req.user to present in the resolved bidders FPD",
+  "inputRequestData": {
+    "id": "bid_id",
+    "test": 1,
+    "ext": {
+      "prebid": {
+        "data": {
+          "bidders": ["appnexus"]
+        },
+        "bidderconfig": [
+          {
+            "bidders": [
+              "appnexus"
+            ],
+            "config": {
+              "ortb2": {
+                "user": {
+                  "id": "appnexusFpdUser",
+                  "yob": 2011,
+                  "gender": "F",
+                  "keywords": "fpd keywords",
+                  "data": [
+                    {
+                      "id": "FpdUserDataId1",
+                      "name": "FpdUserDataName1"
+                    },
+                    {
+                      "id": "FpdUserDataId2",
+                      "name": "FpdUserDataName2"
+                    }
+                  ],
+                  "ext": {
+                    "data": {
+                      "userdata": "appnexusFpdUserExtData"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "outputRequestData":  {
+    "id": "bid_id",
+    "test": 1
+  },
+  "biddersFPDResolved": {
+    "appnexus": {
+      "user": {
+        "id": "appnexusFpdUser",
+        "yob": 2011,
+        "gender": "F",
+        "keywords": "fpd keywords",
+        "data": [
+          {
+            "id": "FpdUserDataId1",
+            "name": "FpdUserDataName1"
+          },
+          {
+            "id": "FpdUserDataId2",
+            "name": "FpdUserDataName2"
+          }
+        ],
+        "ext": {
+          "data": {
+            "userdata": "appnexusFpdUserExtData"
+          }
+        }
+      }
+    }
+  },
+  "validationErrors": []
+}

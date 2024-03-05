@@ -62,6 +62,7 @@
                 "bidder": {
                   "token": "123"
                 },
+                "is_prebid": true,
                 "prebid": null
               }
             }
@@ -97,7 +98,7 @@
       }
     }
   ],
-  "expectedBidResponses": [],
+  "expectedBidResponses": [{"currency":"USD","bids":[]}],
   "expectedMakeBidsErrors": [
     {
       "value": "missing pangleExt/adtype in bid ext",

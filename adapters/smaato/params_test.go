@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 // This file intends to test static/bidder-params/smaato.json
@@ -41,6 +41,8 @@ func TestInvalidParams(t *testing.T) {
 
 var validParams = []string{
 	`{"publisherId":"test-id-1234-smaato","adspaceId": "1123581321"}`,
+	`{"publisherId":"test-id-1234-smaato","adbreakId": "4123581321"}`,
+	`{"publisherId":"test-id-1234-smaato","adspaceId": "1123581321","adbreakId": "4123581321"}`,
 }
 
 var invalidParams = []string{

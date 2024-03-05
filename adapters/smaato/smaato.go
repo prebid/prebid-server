@@ -4,17 +4,21 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/buger/jsonparser"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/metrics"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v2/util/timeutil"
 )
 
-const clientVersion = "prebid_server_0.2"
+const clientVersion = "prebid_server_0.6"
 
 type adMarkupType string
 
@@ -22,25 +26,23 @@ const (
 	smtAdTypeImg       adMarkupType = "Img"
 	smtAdTypeRichmedia adMarkupType = "Richmedia"
 	smtAdTypeVideo     adMarkupType = "Video"
+	smtAdTypeNative    adMarkupType = "Native"
 )
 
-// SmaatoAdapter describes a Smaato prebid server adapter.
-type SmaatoAdapter struct {
-	URI string
+// adapter describes a Smaato prebid server adapter.
+type adapter struct {
+	clock    timeutil.Time
+	endpoint string
 }
 
-//userExt defines User.Ext object for Smaato
-type userExt struct {
-	Data userExtData `json:"data"`
-}
-
+// userExtData defines User.Ext.Data object for Smaato
 type userExtData struct {
 	Keywords string `json:"keywords"`
 	Gender   string `json:"gender"`
 	Yob      int64  `json:"yob"`
 }
 
-//userExt defines Site.Ext object for Smaato
+// siteExt defines Site.Ext object for Smaato
 type siteExt struct {
 	Data siteExtData `json:"data"`
 }
@@ -49,133 +51,60 @@ type siteExtData struct {
 	Keywords string `json:"keywords"`
 }
 
+// bidRequestExt defines BidRequest.Ext object for Smaato
+type bidRequestExt struct {
+	Client string `json:"client"`
+}
+
+// bidExt defines Bid.Ext object for Smaato
+type bidExt struct {
+	Duration int `json:"duration"`
+}
+
+// videoExt defines Video.Ext object for Smaato
+type videoExt struct {
+	Context string `json:"context,omitempty"`
+}
+
 // Builder builds a new instance of the Smaato adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &SmaatoAdapter{
-		URI: config.Endpoint,
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	bidder := &adapter{
+		clock:    &timeutil.RealTime{},
+		endpoint: config.Endpoint,
 	}
 	return bidder, nil
 }
 
 // MakeRequests makes the HTTP requests which should be made to fetch bids.
-func (a *SmaatoAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	errs := make([]error, 0, len(request.Imp))
+func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	if len(request.Imp) == 0 {
-		errs = append(errs, &errortypes.BadInput{Message: "no impressions in bid request"})
-		return nil, errs
+		return nil, []error{&errortypes.BadInput{Message: "No impressions in bid request."}}
 	}
 
-	// Use bidRequestExt of first imp to retrieve params which are valid for all imps, e.g. publisherId
-	publisherID, err := jsonparser.GetString(request.Imp[0].Ext, "bidder", "publisherId")
-	if err != nil {
-		errs = append(errs, err)
-		return nil, errs
+	// set data in request that is common for all requests
+	if err := prepareCommonRequest(request); err != nil {
+		return nil, []error{err}
 	}
 
-	for i := 0; i < len(request.Imp); i++ {
-		err := parseImpressionObject(&request.Imp[i])
-		// If the parsing is failed, remove imp and add the error.
-		if err != nil {
-			errs = append(errs, err)
-			request.Imp = append(request.Imp[:i], request.Imp[i+1:]...)
-			i--
-		}
+	isVideoEntryPoint := reqInfo.PbsEntryPoint == metrics.ReqTypeVideo
+
+	if isVideoEntryPoint {
+		return adapter.makePodRequests(request)
+	} else {
+		return adapter.makeIndividualRequests(request)
 	}
-
-	if request.Site != nil {
-		siteCopy := *request.Site
-		siteCopy.Publisher = &openrtb2.Publisher{ID: publisherID}
-
-		if request.Site.Ext != nil {
-			var siteExt siteExt
-			err := json.Unmarshal([]byte(request.Site.Ext), &siteExt)
-			if err != nil {
-				errs = append(errs, err)
-				return nil, errs
-			}
-			siteCopy.Keywords = siteExt.Data.Keywords
-			siteCopy.Ext = nil
-		}
-		request.Site = &siteCopy
-	}
-
-	if request.App != nil {
-		appCopy := *request.App
-		appCopy.Publisher = &openrtb2.Publisher{ID: publisherID}
-
-		request.App = &appCopy
-	}
-
-	if request.User != nil && request.User.Ext != nil {
-		var userExt userExt
-		var userExtRaw map[string]json.RawMessage
-
-		rawExtErr := json.Unmarshal(request.User.Ext, &userExtRaw)
-		if rawExtErr != nil {
-			errs = append(errs, rawExtErr)
-			return nil, errs
-		}
-
-		userExtErr := json.Unmarshal([]byte(request.User.Ext), &userExt)
-		if userExtErr != nil {
-			errs = append(errs, userExtErr)
-			return nil, errs
-		}
-
-		userCopy := *request.User
-		extractUserExtAttributes(userExt, &userCopy)
-		delete(userExtRaw, "data")
-		userCopy.Ext, err = json.Marshal(userExtRaw)
-		if err != nil {
-			errs = append(errs, err)
-			return nil, errs
-		}
-		request.User = &userCopy
-	}
-
-	// Setting ext client info
-	type bidRequestExt struct {
-		Client string `json:"client"`
-	}
-	request.Ext, err = json.Marshal(bidRequestExt{Client: clientVersion})
-	if err != nil {
-		errs = append(errs, err)
-		return nil, errs
-	}
-	reqJSON, err := json.Marshal(request)
-	if err != nil {
-		errs = append(errs, err)
-		return nil, errs
-	}
-
-	uri := a.URI
-
-	headers := http.Header{}
-	headers.Add("Content-Type", "application/json;charset=utf-8")
-	headers.Add("Accept", "application/json")
-
-	return []*adapters.RequestData{{
-		Method:  "POST",
-		Uri:     uri,
-		Body:    reqJSON,
-		Headers: headers,
-	}}, errs
 }
 
 // MakeBids unpacks the server's response into Bids.
-func (a *SmaatoAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
 
-	if response.StatusCode == http.StatusBadRequest {
-		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
-		}}
-	}
-
 	if response.StatusCode != http.StatusOK {
-		return nil, []error{fmt.Errorf("unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info.", response.StatusCode),
+		}}
 	}
 
 	var bidResp openrtb2.BidResponse
@@ -185,135 +114,491 @@ func (a *SmaatoAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
 
-	for _, sb := range bidResp.SeatBid {
-		for i := 0; i < len(sb.Bid); i++ {
-			bid := sb.Bid[i]
+	var errors []error
+	for _, seatBid := range bidResp.SeatBid {
+		for i := 0; i < len(seatBid.Bid); i++ {
+			bid := seatBid.Bid[i]
 
-			markupType, markupTypeErr := getAdMarkupType(response, bid.AdM)
-			if markupTypeErr != nil {
-				return nil, []error{markupTypeErr}
+			adMarkupType, err := getAdMarkupType(response, bid.AdM)
+			if err != nil {
+				errors = append(errors, err)
+				continue
 			}
 
-			var markupError error
-			bid.AdM, markupError = renderAdMarkup(markupType, bid.AdM)
-			if markupError != nil {
-				return nil, []error{markupError}
+			bid.AdM, err = renderAdMarkup(adMarkupType, bid.AdM)
+			if err != nil {
+				errors = append(errors, err)
+				continue
 			}
 
-			bidType, bidTypeErr := markupTypeToBidType(markupType)
-			if bidTypeErr != nil {
-				return nil, []error{bidTypeErr}
+			bidType, err := convertAdMarkupTypeToMediaType(adMarkupType)
+			if err != nil {
+				errors = append(errors, err)
+				continue
 			}
+
+			bidVideo, err := buildBidVideo(&bid, bidType)
+			if err != nil {
+				errors = append(errors, err)
+				continue
+			}
+
+			bid.Exp = adapter.getTTLFromHeaderOrDefault(response)
 
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     &bid,
-				BidType: bidType,
+				Bid:      &bid,
+				BidType:  bidType,
+				BidVideo: bidVideo,
 			})
 		}
 	}
-	return bidResponse, nil
+	return bidResponse, errors
+}
+
+func (adapter *adapter) makeIndividualRequests(request *openrtb2.BidRequest) ([]*adapters.RequestData, []error) {
+	imps := request.Imp
+
+	requests := make([]*adapters.RequestData, 0, len(imps))
+	errors := make([]error, 0, len(imps))
+
+	for _, imp := range imps {
+		impsByMediaType, err := splitImpressionsByMediaType(&imp)
+		if err != nil {
+			errors = append(errors, err)
+			continue
+		}
+
+		for _, impByMediaType := range impsByMediaType {
+			request.Imp = []openrtb2.Imp{impByMediaType}
+			if err := prepareIndividualRequest(request); err != nil {
+				errors = append(errors, err)
+				continue
+			}
+
+			requestData, err := adapter.makeRequest(request)
+			if err != nil {
+				errors = append(errors, err)
+				continue
+			}
+
+			requests = append(requests, requestData)
+		}
+	}
+
+	return requests, errors
+}
+
+func splitImpressionsByMediaType(imp *openrtb2.Imp) ([]openrtb2.Imp, error) {
+	if imp.Banner == nil && imp.Video == nil && imp.Native == nil {
+		return nil, &errortypes.BadInput{Message: "Invalid MediaType. Smaato only supports Banner, Video and Native."}
+	}
+
+	imps := make([]openrtb2.Imp, 0, 3)
+
+	if imp.Banner != nil {
+		impCopy := *imp
+		impCopy.Video = nil
+		impCopy.Native = nil
+		imps = append(imps, impCopy)
+	}
+
+	if imp.Video != nil {
+		impCopy := *imp
+		impCopy.Banner = nil
+		impCopy.Native = nil
+		imps = append(imps, impCopy)
+	}
+
+	if imp.Native != nil {
+		imp.Banner = nil
+		imp.Video = nil
+		imps = append(imps, *imp)
+	}
+
+	return imps, nil
+}
+
+func (adapter *adapter) makePodRequests(request *openrtb2.BidRequest) ([]*adapters.RequestData, []error) {
+	pods, orderedKeys, errors := groupImpressionsByPod(request.Imp)
+	requests := make([]*adapters.RequestData, 0, len(pods))
+
+	for _, key := range orderedKeys {
+		request.Imp = pods[key]
+
+		if err := preparePodRequest(request); err != nil {
+			errors = append(errors, err)
+			continue
+		}
+
+		requestData, err := adapter.makeRequest(request)
+		if err != nil {
+			errors = append(errors, err)
+			continue
+		}
+
+		requests = append(requests, requestData)
+	}
+
+	return requests, errors
+}
+
+func (adapter *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, error) {
+	reqJSON, err := json.Marshal(request)
+	if err != nil {
+		return nil, err
+	}
+
+	headers := http.Header{}
+	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
+
+	return &adapters.RequestData{
+		Method:  "POST",
+		Uri:     adapter.endpoint,
+		Body:    reqJSON,
+		Headers: headers,
+	}, nil
+}
+
+func getAdMarkupType(response *adapters.ResponseData, adMarkup string) (adMarkupType, error) {
+	if admType := adMarkupType(response.Headers.Get("X-Smt-Adtype")); admType != "" {
+		return admType, nil
+	} else if strings.HasPrefix(adMarkup, `{"image":`) {
+		return smtAdTypeImg, nil
+	} else if strings.HasPrefix(adMarkup, `{"richmedia":`) {
+		return smtAdTypeRichmedia, nil
+	} else if strings.HasPrefix(adMarkup, `<?xml`) {
+		return smtAdTypeVideo, nil
+	} else if strings.HasPrefix(adMarkup, `{"native":`) {
+		return smtAdTypeNative, nil
+	} else {
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Invalid ad markup %s.", adMarkup),
+		}
+	}
+}
+
+func (adapter *adapter) getTTLFromHeaderOrDefault(response *adapters.ResponseData) int64 {
+	ttl := int64(300)
+
+	if expiresAtMillis, err := strconv.ParseInt(response.Headers.Get("X-Smt-Expires"), 10, 64); err == nil {
+		nowMillis := adapter.clock.Now().UnixNano() / 1000000
+		ttl = (expiresAtMillis - nowMillis) / 1000
+		if ttl < 0 {
+			ttl = 0
+		}
+	}
+
+	return ttl
 }
 
 func renderAdMarkup(adMarkupType adMarkupType, adMarkup string) (string, error) {
-	var markupError error
-	var adm string
 	switch adMarkupType {
 	case smtAdTypeImg:
-		adm, markupError = extractAdmImage(adMarkup)
+		return extractAdmImage(adMarkup)
 	case smtAdTypeRichmedia:
-		adm, markupError = extractAdmRichMedia(adMarkup)
+		return extractAdmRichMedia(adMarkup)
 	case smtAdTypeVideo:
-		adm, markupError = adMarkup, nil
+		return adMarkup, nil
+	case smtAdTypeNative:
+		return extractAdmNative(adMarkup)
 	default:
-		return "", fmt.Errorf("Unknown markup type %s", adMarkupType)
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Unknown markup type %s.", adMarkupType),
+		}
 	}
-	return adm, markupError
 }
 
-func markupTypeToBidType(markupType adMarkupType) (openrtb_ext.BidType, error) {
-	switch markupType {
+func convertAdMarkupTypeToMediaType(adMarkupType adMarkupType) (openrtb_ext.BidType, error) {
+	switch adMarkupType {
 	case smtAdTypeImg:
 		return openrtb_ext.BidTypeBanner, nil
 	case smtAdTypeRichmedia:
 		return openrtb_ext.BidTypeBanner, nil
 	case smtAdTypeVideo:
 		return openrtb_ext.BidTypeVideo, nil
+	case smtAdTypeNative:
+		return openrtb_ext.BidTypeNative, nil
 	default:
-		return "", fmt.Errorf("Invalid markupType %s", markupType)
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Unknown markup type %s.", adMarkupType),
+		}
 	}
 }
 
-func getAdMarkupType(response *adapters.ResponseData, adMarkup string) (adMarkupType, error) {
-	if admType := adMarkupType(response.Headers.Get("X-SMT-ADTYPE")); admType != "" {
-		return admType, nil
+func prepareCommonRequest(request *openrtb2.BidRequest) error {
+	if err := setUser(request); err != nil {
+		return err
 	}
-	if strings.HasPrefix(adMarkup, `{"image":`) {
-		return smtAdTypeImg, nil
+
+	if err := setSite(request); err != nil {
+		return err
 	}
-	if strings.HasPrefix(adMarkup, `{"richmedia":`) {
-		return smtAdTypeRichmedia, nil
-	}
-	if strings.HasPrefix(adMarkup, `<?xml`) {
-		return smtAdTypeVideo, nil
-	}
-	return "", fmt.Errorf("Invalid ad markup %s", adMarkup)
+
+	setApp(request)
+
+	return setExt(request)
 }
 
-func assignBannerSize(banner *openrtb2.Banner) (*openrtb2.Banner, error) {
-	if banner.W != nil && banner.H != nil {
-		return banner, nil
-	}
-	if len(banner.Format) == 0 {
-		return banner, fmt.Errorf("No sizes provided for Banner %v", banner.Format)
-	}
-	bannerCopy := *banner
-	bannerCopy.W = openrtb2.Int64Ptr(banner.Format[0].W)
-	bannerCopy.H = openrtb2.Int64Ptr(banner.Format[0].H)
+func prepareIndividualRequest(request *openrtb2.BidRequest) error {
+	imp := &request.Imp[0]
 
-	return &bannerCopy, nil
+	if err := setPublisherId(request, imp); err != nil {
+		return err
+	}
+
+	return setImpForAdspace(imp)
 }
 
-// parseImpressionObject parse the imp to get it ready to send to smaato
-func parseImpressionObject(imp *openrtb2.Imp) error {
+func preparePodRequest(request *openrtb2.BidRequest) error {
+	if len(request.Imp) < 1 {
+		return &errortypes.BadInput{Message: "No impressions in bid request."}
+	}
+
+	if err := setPublisherId(request, &request.Imp[0]); err != nil {
+		return err
+	}
+
+	return setImpForAdBreak(request.Imp)
+}
+
+func setUser(request *openrtb2.BidRequest) error {
+	if request.User != nil && request.User.Ext != nil {
+		var userExtRaw map[string]json.RawMessage
+
+		if err := json.Unmarshal(request.User.Ext, &userExtRaw); err != nil {
+			return &errortypes.BadInput{Message: "Invalid user.ext."}
+		}
+
+		if userExtDataRaw, present := userExtRaw["data"]; present {
+			var err error
+			var userExtData userExtData
+
+			if err = json.Unmarshal(userExtDataRaw, &userExtData); err != nil {
+				return &errortypes.BadInput{Message: "Invalid user.ext.data."}
+			}
+
+			userCopy := *request.User
+
+			if userExtData.Gender != "" {
+				userCopy.Gender = userExtData.Gender
+			}
+
+			if userExtData.Yob != 0 {
+				userCopy.Yob = userExtData.Yob
+			}
+
+			if userExtData.Keywords != "" {
+				userCopy.Keywords = userExtData.Keywords
+			}
+
+			delete(userExtRaw, "data")
+
+			if userCopy.Ext, err = json.Marshal(userExtRaw); err != nil {
+				return err
+			}
+
+			request.User = &userCopy
+		}
+	}
+
+	return nil
+}
+
+func setExt(request *openrtb2.BidRequest) error {
+	var err error
+
+	request.Ext, err = json.Marshal(bidRequestExt{Client: clientVersion})
+
+	return err
+}
+
+func setSite(request *openrtb2.BidRequest) error {
+	if request.Site != nil {
+		siteCopy := *request.Site
+
+		if request.Site.Ext != nil {
+			var siteExt siteExt
+
+			if err := json.Unmarshal(request.Site.Ext, &siteExt); err != nil {
+				return &errortypes.BadInput{Message: "Invalid site.ext."}
+			}
+
+			siteCopy.Keywords = siteExt.Data.Keywords
+			siteCopy.Ext = nil
+		}
+		request.Site = &siteCopy
+	}
+
+	return nil
+}
+
+func setApp(request *openrtb2.BidRequest) {
+	if request.App != nil {
+		appCopy := *request.App
+		request.App = &appCopy
+	}
+}
+
+func setPublisherId(request *openrtb2.BidRequest, imp *openrtb2.Imp) error {
+	publisherID, err := jsonparser.GetString(imp.Ext, "bidder", "publisherId")
+	if err != nil {
+		return &errortypes.BadInput{Message: "Missing publisherId parameter."}
+	}
+
+	if request.Site != nil {
+		// Site is already a copy
+		request.Site.Publisher = &openrtb2.Publisher{ID: publisherID}
+		return nil
+	} else if request.App != nil {
+		// App is already a copy
+		request.App.Publisher = &openrtb2.Publisher{ID: publisherID}
+		return nil
+	} else {
+		return &errortypes.BadInput{Message: "Missing Site/App."}
+	}
+}
+
+func setImpForAdspace(imp *openrtb2.Imp) error {
 	adSpaceID, err := jsonparser.GetString(imp.Ext, "bidder", "adspaceId")
+	if err != nil {
+		return &errortypes.BadInput{Message: "Missing adspaceId parameter."}
+	}
+
+	impExt, err := makeImpExt(&imp.Ext)
 	if err != nil {
 		return err
 	}
 
-	// SMAATO supports banner impressions.
 	if imp.Banner != nil {
-		bannerCopy, err := assignBannerSize(imp.Banner)
+		bannerCopy, err := setBannerDimension(imp.Banner)
 		if err != nil {
 			return err
 		}
 		imp.Banner = bannerCopy
 		imp.TagID = adSpaceID
-		imp.Ext = nil
+		imp.Ext = impExt
 		return nil
 	}
 
-	if imp.Video != nil {
+	if imp.Video != nil || imp.Native != nil {
 		imp.TagID = adSpaceID
-		imp.Ext = nil
+		imp.Ext = impExt
 		return nil
 	}
 
-	return fmt.Errorf("invalid MediaType. SMAATO only supports Banner and Video. Ignoring ImpID=%s", imp.ID)
+	return nil
 }
 
-func extractUserExtAttributes(userExt userExt, userCopy *openrtb2.User) {
-	gender := userExt.Data.Gender
-	if gender != "" {
-		userCopy.Gender = gender
+func setImpForAdBreak(imps []openrtb2.Imp) error {
+	if len(imps) < 1 {
+		return &errortypes.BadInput{Message: "No impressions in bid request."}
 	}
 
-	yob := userExt.Data.Yob
-	if yob != 0 {
-		userCopy.Yob = yob
+	adBreakID, err := jsonparser.GetString(imps[0].Ext, "bidder", "adbreakId")
+	if err != nil {
+		return &errortypes.BadInput{Message: "Missing adbreakId parameter."}
 	}
 
-	keywords := userExt.Data.Keywords
-	if keywords != "" {
-		userCopy.Keywords = keywords
+	impExt, err := makeImpExt(&imps[0].Ext)
+	if err != nil {
+		return err
 	}
+
+	for i := range imps {
+		imps[i].TagID = adBreakID
+		imps[i].Ext = nil
+
+		videoCopy := *(imps[i].Video)
+
+		videoCopy.Sequence = int8(i + 1)
+		videoCopy.Ext, _ = json.Marshal(&videoExt{Context: "adpod"})
+
+		imps[i].Video = &videoCopy
+	}
+
+	imps[0].Ext = impExt
+
+	return nil
+}
+
+func makeImpExt(impExtRaw *json.RawMessage) (json.RawMessage, error) {
+	var impExt openrtb_ext.ExtImpExtraDataSmaato
+
+	if err := json.Unmarshal(*impExtRaw, &impExt); err != nil {
+		return nil, &errortypes.BadInput{Message: "Invalid imp.ext."}
+	}
+
+	if impExtSkadnRaw := impExt.Skadn; impExtSkadnRaw != nil {
+		var impExtSkadn map[string]json.RawMessage
+
+		if err := json.Unmarshal(impExtSkadnRaw, &impExtSkadn); err != nil {
+			return nil, &errortypes.BadInput{Message: "Invalid imp.ext.skadn."}
+		}
+	}
+
+	if impExtJson, err := json.Marshal(impExt); string(impExtJson) != "{}" {
+		return impExtJson, err
+	} else {
+		return nil, nil
+	}
+}
+
+func setBannerDimension(banner *openrtb2.Banner) (*openrtb2.Banner, error) {
+	if banner.W != nil && banner.H != nil {
+		return banner, nil
+	}
+	if len(banner.Format) == 0 {
+		return banner, &errortypes.BadInput{Message: "No sizes provided for Banner."}
+	}
+	bannerCopy := *banner
+	bannerCopy.W = ptrutil.ToPtr(banner.Format[0].W)
+	bannerCopy.H = ptrutil.ToPtr(banner.Format[0].H)
+
+	return &bannerCopy, nil
+}
+
+func groupImpressionsByPod(imps []openrtb2.Imp) (map[string]([]openrtb2.Imp), []string, []error) {
+	pods := make(map[string][]openrtb2.Imp)
+	orderKeys := make([]string, 0)
+	errors := make([]error, 0, len(imps))
+
+	for _, imp := range imps {
+		if imp.Video == nil {
+			errors = append(errors, &errortypes.BadInput{Message: "Invalid MediaType. Smaato only supports Video for AdPod."})
+			continue
+		}
+
+		pod := strings.Split(imp.ID, "_")[0]
+		if _, present := pods[pod]; !present {
+			orderKeys = append(orderKeys, pod)
+		}
+		pods[pod] = append(pods[pod], imp)
+	}
+	return pods, orderKeys, errors
+}
+
+func buildBidVideo(bid *openrtb2.Bid, bidType openrtb_ext.BidType) (*openrtb_ext.ExtBidPrebidVideo, error) {
+	if bidType != openrtb_ext.BidTypeVideo {
+		return nil, nil
+	}
+
+	if bid.Ext == nil {
+		return nil, nil
+	}
+
+	var primaryCategory string
+	if len(bid.Cat) > 0 {
+		primaryCategory = bid.Cat[0]
+	}
+
+	var bidExt bidExt
+	if err := json.Unmarshal(bid.Ext, &bidExt); err != nil {
+		return nil, &errortypes.BadServerResponse{Message: "Invalid bid.ext."}
+	}
+
+	return &openrtb_ext.ExtBidPrebidVideo{
+		Duration:        bidExt.Duration,
+		PrimaryCategory: primaryCategory,
+	}, nil
 }

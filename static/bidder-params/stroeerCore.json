@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "StroeerCore Adapter Params",
+  "description": "A schema which validates params accepted by the StroeerCore adapter",
+
+  "type": "object",
+  "properties": {
+    "sid": {
+      "type": "string",
+      "description": "Slot Id"
+    }
+  },
+  "required": ["sid"]
+}

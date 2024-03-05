@@ -2,8 +2,9 @@ package visx
 
 import (
 	"encoding/json"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"testing"
+
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 func TestValidParams(t *testing.T) {
@@ -34,6 +35,7 @@ func TestInvalidParams(t *testing.T) {
 
 var validParams = []string{
 	`{"uid":13245}`,
+	`{"uid":"13245"}`,
 	`{"uid":13245, "size": [10,5]}`,
 	`{"uid":13245, "other_optional": true}`,
 }
@@ -47,7 +49,10 @@ var invalidParams = []string{
 	`2`,
 	`{"size":12345678}`,
 	`{"size":""}`,
-	`{"uid": "1"}`,
+	`{"uid": "-1"}`,
+	`{"uid": "232af"}`,
+	`{"uid": "af213"}`,
+	`{"uid": "af"}`,
 	`{"size": true}`,
 	`{"uid": true, "size":"1234567"}`,
 }

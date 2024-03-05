@@ -6,11 +6,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/v2/analytics"
+	"github.com/prebid/prebid-server/v2/config"
 
-	"github.com/prebid/prebid-server/analytics"
-	"github.com/prebid/prebid-server/usersync"
+	"github.com/prebid/openrtb/v20/openrtb2"
 )
 
 const TEST_DIR string = "testFiles"
@@ -59,7 +58,7 @@ func TestSetUIDObject_ToJson(t *testing.T) {
 func TestCookieSyncObject_ToJson(t *testing.T) {
 	cso := &analytics.CookieSyncObject{
 		Status:       http.StatusOK,
-		BidderStatus: []*usersync.CookieSyncBidders{},
+		BidderStatus: []*analytics.CookieSyncBidder{},
 	}
 	if csoJson := jsonifyCookieSync(cso); strings.Contains(csoJson, "Transactional Logs Error") {
 		t.Fatalf("CookieSyncObject failed to convert to json")

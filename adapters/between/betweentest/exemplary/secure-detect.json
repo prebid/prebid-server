@@ -46,7 +46,6 @@
                   "w": 728,
                   "h": 90
                 },
-                "bidfloor": 1e-05,
                 "secure": 1,
                 "ext": {
                   "bidder": {

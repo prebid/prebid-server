@@ -22,7 +22,7 @@
 
   "httpCalls": [{
     "expectedRequest": {
-      "uri": "https://rtb.ioadx.com/bidRequest/?partnerId=d9e56d418c4825d466ee96c7a31bf1da6b62fa04",
+      "uri": "https://prebid-server.ioadx.com/bidRequest/?partnerId=d9e56d418c4825d466ee96c7a31bf1da6b62fa04",
       "body": {
         "id": "test-request-id",
         "site": {

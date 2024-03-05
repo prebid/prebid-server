@@ -4,7 +4,7 @@
   "description": "A schema which validates params accepted by the Beachfront adapter",
   "type": "object",
   "properties": {
-    "appId" : {
+    "appId": {
       "type": "string",
       "description": "The id of an inventory target. This can only be used in requests that contain one media type. It will be applied to all imps in the request."
     },
@@ -14,17 +14,23 @@
       "properties": {
         "video" : {
           "type": "string",
+          "title": "Video appId",
           "description": "An appId string that will be applied to video requests in this imp."
         },
         "banner" : {
           "type": "string",
+          "title": "Banner appId",
           "description": "An appId string that will be applied to banner requests in this imp."
         }
-      }
+      },
+      "anyOf":[
+        {"required":["video"]},
+        {"required":["banner"]}
+      ] 
     },
     "bidfloor": {
       "type": "number",
-      "description": "The price floor for the bid."
+      "description": "The price floor for the bid. Will override the bidfloor set for the impression. Always in USD, regardless of the value of the currency set for the impression."
     },
     "videoResponseType": {
       "type": "string",
@@ -32,9 +38,8 @@
     }
   },
 
-  "required": ["bidfloor"],
-  "oneOf": [{
-      "required": ["appId"] }, {
-      "required": ["appIds"]
-    }]
+  "oneOf": [
+    { "required": ["appIds"] },
+    { "required": ["appId"] }
+  ]
 }

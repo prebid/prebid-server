@@ -1,16 +1,16 @@
 package currency
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"sync/atomic"
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/util/timeutil"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v2/util/timeutil"
 )
 
 // RateConverter holds the currencies conversion rates dictionary
@@ -60,13 +60,13 @@ func (rc *RateConverter) fetch() (*Rates, error) {
 
 	defer response.Body.Close()
 
-	bytesJSON, err := ioutil.ReadAll(response.Body)
+	bytesJSON, err := io.ReadAll(response.Body)
 	if err != nil {
 		return nil, err
 	}
 
 	updatedRates := &Rates{}
-	err = json.Unmarshal(bytesJSON, updatedRates)
+	err = jsonutil.UnmarshalValid(bytesJSON, updatedRates)
 	if err != nil {
 		return nil, err
 	}

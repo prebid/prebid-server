@@ -6,11 +6,11 @@
   "type": "object",
   "properties": {
     "placement_id": {
-      "type": "integer",
+      "type": ["integer", "string"],
       "description": "An ID which identifies this placement of the impression"
     },
     "placementId": {
-      "type": "integer",
+      "type": ["integer", "string"],
       "description": "Deprecated, use placement_id instead."
     },
     "inv_code": {
@@ -26,25 +26,42 @@
       "description": "An ID which identifies the member selling the impression."
     },
     "keywords": {
-      "type": "array",
-      "minItems": 1,
-      "items": {
-        "type": "object",
-        "description": "A key with one or more values associated with it. These are used in buy-side segment targeting.",
-        "properties": {
-          "key": {
-            "type": "string"
-          },
-          "value": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "description": "A key with one or more values associated with it. These are used in buy-side segment targeting.",
+            "properties": {
+              "key": {
+                "type": "string"
+              },
+              "value": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": ["key"]
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
             "type": "array",
-            "minItems": 1,
             "items": {
               "type": "string"
             }
           }
-        },
-        "required": ["key"]
-      }
+        }
+      ]
     },
     "traffic_source_code": {
       "type": "string",
@@ -67,6 +84,14 @@
       "type": "boolean",
       "description": "Boolean to signal AppNexus to apply the relevant payment rule"
     },
+    "use_payment_rule": {
+      "type": "boolean",
+      "description": "Deprecated, Boolean to signal AppNexus to apply the relevant payment rule. use_pmt_rule will get precedence over usePaymentRule."
+    },
+    "generate_ad_pod_id": {
+      "type": "boolean",
+      "description": "Boolean to signal AppNexus to add ad pod id to each request"
+    },
     "private_sizes" :{
       "type": "array",
       "items": {
@@ -78,6 +103,14 @@
         "required": [ "w", "h"]
       },
       "description": "Private sizes (ex: [{\"w\": 300, \"h\": 250},{...}]), experimental, may not be supported."
+    },
+    "ext_inv_code" : {
+      "type": "string",
+      "description": "Specifies predefined value passed on the query string that can be used in reporting"
+    },
+    "external_imp_id" : {
+      "type": "string",
+      "description": "Unique identifier of an externally generated auction"
     }
   },
 
