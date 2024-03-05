@@ -14,12 +14,6 @@
         "type": "string",
         "minLength": 1,
         "description": "Endpoint ID"
-      },
-      "region": {
-        "type": "string",
-        "minLength": 1,
-        "description": "Region",
-        "enum": ["us-east", "eu"]
       }
     },
     "oneOf": [

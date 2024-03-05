@@ -5,17 +5,15 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/macros"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type adapter struct {
-	endpoint *template.Template
+	endpoint string
 }
 
 type reqBodyExt struct {
@@ -29,13 +27,8 @@ type reqBodyExtBidder struct {
 }
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
-	}
-
 	bidder := &adapter{
-		endpoint: template,
+		endpoint: config.Endpoint,
 	}
 
 	return bidder, nil
@@ -95,44 +88,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	return adapterRequests, nil
 }
 
-func (a *adapter) getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ImpExtMgidX, error) {
-	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return nil, fmt.Errorf("Bidder extension not provided or can't be unmarshalled")
-	}
-
-	var mgidXExt openrtb_ext.ImpExtMgidX
-	if err := json.Unmarshal(bidderExt.Bidder, &mgidXExt); err != nil {
-		return nil, fmt.Errorf("Error while unmarshaling bidder extension")
-	}
-
-	return &mgidXExt, nil
-}
-
-func (a *adapter) buildEndpointURL(params *openrtb_ext.ImpExtMgidX) (string, error) {
-	var endpointParams macros.EndpointTemplateParams
-
-	if params.Region == "eu" {
-		endpointParams = macros.EndpointTemplateParams{Host: "eu"}
-	} else {
-		endpointParams = macros.EndpointTemplateParams{Host: "us-east-x"}
-	}
-
-	return macros.ResolveMacros(a.endpoint, endpointParams)
-}
-
 func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, error) {
-	var mgidXExt *openrtb_ext.ImpExtMgidX
-	mgidXExt, err := a.getImpressionExt(&(request.Imp[0]))
-	if err != nil {
-		return nil, err
-	}
-
-	url, err := a.buildEndpointURL(mgidXExt)
-	if err != nil {
-		return nil, err
-	}
-
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
 		return nil, err
@@ -143,7 +99,7 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestDa
 	headers.Add("Accept", "application/json")
 	return &adapters.RequestData{
 		Method:  "POST",
-		Uri:     url,
+		Uri:     a.endpoint,
 		Body:    reqJSON,
 		Headers: headers,
 	}, nil
