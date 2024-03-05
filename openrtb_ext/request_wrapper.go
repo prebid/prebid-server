@@ -60,6 +60,7 @@ const (
 	dataKey                             = "data"
 	schainKey                           = "schain"
 	us_privacyKey                       = "us_privacy"
+	cdepKey                             = "cdep"
 )
 
 // LenImp returns the number of impressions without causing the creation of ImpWrapper objects.
@@ -883,6 +884,8 @@ type DeviceExt struct {
 	extDirty    bool
 	prebid      *ExtDevicePrebid
 	prebidDirty bool
+	cdep        string
+	cdepDirty   bool
 }
 
 func (de *DeviceExt) unmarshal(extJson json.RawMessage) error {
@@ -910,6 +913,13 @@ func (de *DeviceExt) unmarshal(extJson json.RawMessage) error {
 		}
 	}
 
+	cdepJson, hasCDep := de.ext[cdepKey]
+	if hasCDep && cdepJson != nil {
+		if err := jsonutil.Unmarshal(cdepJson, &de.cdep); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -931,6 +941,19 @@ func (de *DeviceExt) marshal() (json.RawMessage, error) {
 		de.prebidDirty = false
 	}
 
+	if de.cdepDirty {
+		if len(de.cdep) > 0 {
+			rawjson, err := jsonutil.Marshal(de.cdep)
+			if err != nil {
+				return nil, err
+			}
+			de.ext[cdepKey] = rawjson
+		} else {
+			delete(de.ext, cdepKey)
+		}
+		de.cdepDirty = false
+	}
+
 	de.extDirty = false
 	if len(de.ext) == 0 {
 		return nil, nil
@@ -939,7 +962,7 @@ func (de *DeviceExt) marshal() (json.RawMessage, error) {
 }
 
 func (de *DeviceExt) Dirty() bool {
-	return de.extDirty || de.prebidDirty
+	return de.extDirty || de.prebidDirty || de.cdepDirty
 }
 
 func (de *DeviceExt) GetExt() map[string]json.RawMessage {
@@ -966,6 +989,15 @@ func (de *DeviceExt) GetPrebid() *ExtDevicePrebid {
 func (de *DeviceExt) SetPrebid(prebid *ExtDevicePrebid) {
 	de.prebid = prebid
 	de.prebidDirty = true
+}
+
+func (de *DeviceExt) GetCDep() string {
+	return de.cdep
+}
+
+func (de *DeviceExt) SetCDep(cdep string) {
+	de.cdep = cdep
+	de.cdepDirty = true
 }
 
 func (de *DeviceExt) Clone() *DeviceExt {
