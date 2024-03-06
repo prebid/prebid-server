@@ -122,7 +122,7 @@ func TestGetAccount(t *testing.T) {
 func TestSetDerivedConfig(t *testing.T) {
 	tests := []struct {
 		description              string
-		purpose1VendorExceptions []openrtb_ext.BidderName
+		purpose1VendorExceptions []string
 		feature1VendorExceptions []openrtb_ext.BidderName
 		basicEnforcementVendors  []string
 		enforceAlgo              string
@@ -134,11 +134,11 @@ func TestSetDerivedConfig(t *testing.T) {
 		},
 		{
 			description:              "One purpose 1 vendor exception",
-			purpose1VendorExceptions: []openrtb_ext.BidderName{"appnexus"},
+			purpose1VendorExceptions: []string{"appnexus"},
 		},
 		{
 			description:              "Multiple purpose 1 vendor exceptions",
-			purpose1VendorExceptions: []openrtb_ext.BidderName{"appnexus", "rubicon"},
+			purpose1VendorExceptions: []string{"appnexus", "rubicon"},
 		},
 		{
 			description:              "Nil feature 1 vendor exceptions",
@@ -192,7 +192,7 @@ func TestSetDerivedConfig(t *testing.T) {
 
 		setDerivedConfig(&account)
 
-		purpose1ExceptionMapKeys := make([]openrtb_ext.BidderName, 0)
+		purpose1ExceptionMapKeys := make([]string, 0)
 		for k := range account.GDPR.Purpose1.VendorExceptionMap {
 			purpose1ExceptionMapKeys = append(purpose1ExceptionMapKeys, k)
 		}

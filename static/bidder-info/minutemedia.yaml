@@ -14,5 +14,5 @@ capabilities:
       - video
 userSync:
   iframe:
-    url: https://pbs-cs.minutemedia-prebid.com/pbs-iframe?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
+    url: https://pbs-cs.minutemedia-prebid.com/pbs-iframe?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirect={{.RedirectURL}}
     userMacro: "[PBS_UID]"

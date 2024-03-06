@@ -15,13 +15,21 @@ import (
 type adapter struct {
 	endpoint string
 	nmmFlags []string
+	server   config.Server
 }
 
 type nmExtPrebidStoredRequest struct {
 	ID string `json:"id"`
 }
+
+type server struct {
+	ExternalUrl string `json:"externalurl"`
+	GvlID       int    `json:"gvlid"`
+	DataCenter  string `json:"datacenter"`
+}
 type nmExtPrebid struct {
 	StoredRequest nmExtPrebidStoredRequest `json:"storedrequest"`
+	Server        *server                  `json:"server,omitempty"`
 }
 type nmExtNMM struct {
 	NmmFlags []string `json:"nmmFlags,omitempty"`
@@ -82,7 +90,7 @@ func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ImpExtNextMillennium, err
 }
 
 func (adapter *adapter) buildAdapterRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ImpExtNextMillennium) (*adapters.RequestData, error) {
-	newBidRequest := createBidRequest(prebidBidRequest, params, adapter.nmmFlags)
+	newBidRequest := createBidRequest(prebidBidRequest, params, adapter.nmmFlags, adapter.server)
 
 	reqJSON, err := json.Marshal(newBidRequest)
 	if err != nil {
@@ -101,7 +109,7 @@ func (adapter *adapter) buildAdapterRequest(prebidBidRequest *openrtb2.BidReques
 		Headers: headers}, nil
 }
 
-func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ImpExtNextMillennium, flags []string) *openrtb2.BidRequest {
+func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ImpExtNextMillennium, flags []string, serverParams config.Server) *openrtb2.BidRequest {
 	placementID := params.PlacementID
 
 	if params.GroupID != "" {
@@ -128,13 +136,22 @@ func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext
 	ext := nextMillJsonExt{}
 	ext.Prebid.StoredRequest.ID = placementID
 	ext.NextMillennium.NmmFlags = flags
-	jsonExt, err := json.Marshal(ext)
+	bidRequest := *prebidBidRequest
+	jsonExtCommon, err := json.Marshal(ext)
 	if err != nil {
 		return prebidBidRequest
 	}
-	bidRequest := *prebidBidRequest
+	bidRequest.Imp[0].Ext = jsonExtCommon
+	ext.Prebid.Server = &server{
+		GvlID:       serverParams.GvlID,
+		DataCenter:  serverParams.DataCenter,
+		ExternalUrl: serverParams.ExternalUrl,
+	}
+	jsonExt, err := json.Marshal(ext)
+	if err != nil {
+		return &bidRequest
+	}
 	bidRequest.Ext = jsonExt
-	bidRequest.Imp[0].Ext = jsonExt
 	return &bidRequest
 }
 
@@ -161,16 +178,21 @@ func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
-
+	var errors []error
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
+			bidType, err := getBidType(sb.Bid[i].MType)
+			if err != nil {
+				errors = append(errors, err)
+				continue
+			}
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &sb.Bid[i],
-				BidType: openrtb_ext.BidTypeBanner,
+				BidType: bidType,
 			})
 		}
 	}
-	return bidResponse, nil
+	return bidResponse, errors
 }
 
 // Builder builds a new instance of the NextMillennium adapter for the given bidder with the given config.
@@ -185,5 +207,17 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	return &adapter{
 		endpoint: config.Endpoint,
 		nmmFlags: info.NmmFlags,
+		server:   server,
 	}, nil
+}
+
+func getBidType(mType openrtb2.MarkupType) (openrtb_ext.BidType, error) {
+	switch mType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
+	default:
+		return "", &errortypes.BadServerResponse{Message: fmt.Sprintf("Unsupported return mType: %v", mType)}
+	}
 }

@@ -375,13 +375,13 @@ func (t *TCF2) PurposeEnforcingVendors(purpose consentconstants.Purpose) (enforc
 
 // PurposeVendorExceptions returns the vendor exception map for a given purpose if it exists, otherwise it returns
 // an empty map of vendor exceptions
-func (t *TCF2) PurposeVendorExceptions(purpose consentconstants.Purpose) (vendorExceptions map[openrtb_ext.BidderName]struct{}) {
+func (t *TCF2) PurposeVendorExceptions(purpose consentconstants.Purpose) (vendorExceptions map[string]struct{}) {
 	c, exists := t.PurposeConfigs[purpose]
 
 	if exists && c.VendorExceptionMap != nil {
 		return c.VendorExceptionMap
 	}
-	return make(map[openrtb_ext.BidderName]struct{}, 0)
+	return make(map[string]struct{}, 0)
 }
 
 // FeatureOneEnforced checks if special feature one is enforced. If it is enforced, PBS will determine whether geo
@@ -417,8 +417,8 @@ type TCF2Purpose struct {
 	EnforcePurpose bool `mapstructure:"enforce_purpose"`
 	EnforceVendors bool `mapstructure:"enforce_vendors"`
 	// Array of vendor exceptions that is used to create the hash table VendorExceptionMap so vendor names can be instantly accessed
-	VendorExceptions   []openrtb_ext.BidderName `mapstructure:"vendor_exceptions"`
-	VendorExceptionMap map[openrtb_ext.BidderName]struct{}
+	VendorExceptions   []string `mapstructure:"vendor_exceptions"`
+	VendorExceptionMap map[string]struct{}
 }
 
 type TCF2SpecialFeature struct {
@@ -735,13 +735,13 @@ func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName func(strin
 		}
 	}
 
-	// To look for a purpose's vendor exceptions in O(1) time, for each purpose we fill this hash table with bidders
-	// located in the VendorExceptions field of the GDPR.TCF2.PurposeX struct defined in this file
+	// To look for a purpose's vendor exceptions in O(1) time, for each purpose we fill this hash table with bidders/analytics
+	// adapters located in the VendorExceptions field of the GDPR.TCF2.PurposeX struct defined in this file
 	for _, pc := range c.GDPR.TCF2.PurposeConfigs {
-		pc.VendorExceptionMap = make(map[openrtb_ext.BidderName]struct{})
+		pc.VendorExceptionMap = make(map[string]struct{})
 		for v := 0; v < len(pc.VendorExceptions); v++ {
-			bidderName := pc.VendorExceptions[v]
-			pc.VendorExceptionMap[bidderName] = struct{}{}
+			adapterName := pc.VendorExceptions[v]
+			pc.VendorExceptionMap[adapterName] = struct{}{}
 		}
 	}
 
@@ -1064,16 +1064,16 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("gdpr.tcf2.purpose8.enforce_vendors", true)
 	v.SetDefault("gdpr.tcf2.purpose9.enforce_vendors", true)
 	v.SetDefault("gdpr.tcf2.purpose10.enforce_vendors", true)
-	v.SetDefault("gdpr.tcf2.purpose1.vendor_exceptions", []openrtb_ext.BidderName{})
-	v.SetDefault("gdpr.tcf2.purpose2.vendor_exceptions", []openrtb_ext.BidderName{})
-	v.SetDefault("gdpr.tcf2.purpose3.vendor_exceptions", []openrtb_ext.BidderName{})
-	v.SetDefault("gdpr.tcf2.purpose4.vendor_exceptions", []openrtb_ext.BidderName{})
-	v.SetDefault("gdpr.tcf2.purpose5.vendor_exceptions", []openrtb_ext.BidderName{})
-	v.SetDefault("gdpr.tcf2.purpose6.vendor_exceptions", []openrtb_ext.BidderName{})
-	v.SetDefault("gdpr.tcf2.purpose7.vendor_exceptions", []openrtb_ext.BidderName{})
-	v.SetDefault("gdpr.tcf2.purpose8.vendor_exceptions", []openrtb_ext.BidderName{})
-	v.SetDefault("gdpr.tcf2.purpose9.vendor_exceptions", []openrtb_ext.BidderName{})
-	v.SetDefault("gdpr.tcf2.purpose10.vendor_exceptions", []openrtb_ext.BidderName{})
+	v.SetDefault("gdpr.tcf2.purpose1.vendor_exceptions", []string{})
+	v.SetDefault("gdpr.tcf2.purpose2.vendor_exceptions", []string{})
+	v.SetDefault("gdpr.tcf2.purpose3.vendor_exceptions", []string{})
+	v.SetDefault("gdpr.tcf2.purpose4.vendor_exceptions", []string{})
+	v.SetDefault("gdpr.tcf2.purpose5.vendor_exceptions", []string{})
+	v.SetDefault("gdpr.tcf2.purpose6.vendor_exceptions", []string{})
+	v.SetDefault("gdpr.tcf2.purpose7.vendor_exceptions", []string{})
+	v.SetDefault("gdpr.tcf2.purpose8.vendor_exceptions", []string{})
+	v.SetDefault("gdpr.tcf2.purpose9.vendor_exceptions", []string{})
+	v.SetDefault("gdpr.tcf2.purpose10.vendor_exceptions", []string{})
 	v.SetDefault("gdpr.amp_exception", false)
 	v.SetDefault("gdpr.eea_countries", []string{"ALA", "AUT", "BEL", "BGR", "HRV", "CYP", "CZE", "DNK", "EST",
 		"FIN", "FRA", "GUF", "DEU", "GIB", "GRC", "GLP", "GGY", "HUN", "ISL", "IRL", "IMN", "ITA", "JEY", "LVA",
@@ -1107,6 +1107,8 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("account_defaults.price_floors.fetch.max_age_sec", 86400)
 	v.SetDefault("account_defaults.price_floors.fetch.period_sec", 3600)
 	v.SetDefault("account_defaults.price_floors.fetch.max_schema_dims", 0)
+	v.SetDefault("account_defaults.privacy.privacysandbox.cookiedeprecation.enabled", false)
+	v.SetDefault("account_defaults.privacy.privacysandbox.cookiedeprecation.ttl_sec", 604800)
 
 	v.SetDefault("account_defaults.events_enabled", false)
 	v.SetDefault("account_defaults.privacy.ipv6.anon_keep_bits", 56)
@@ -1284,8 +1286,4 @@ type TmaxAdjustments struct {
 	// BidderResponseDurationMin is the minimum amount of time expected to get a response from a bidder request.
 	// PBS won't send a request to the bidder if the bidder tmax calculated is less than the BidderResponseDurationMin value
 	BidderResponseDurationMin uint `mapstructure:"bidder_response_duration_min_ms"`
-}
-
-type PrivacySandbox struct {
-	TopicsDomain string `mapstructure:"topicsdomain"`
 }

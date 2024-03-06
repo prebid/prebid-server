@@ -400,8 +400,8 @@ github.com/posener/complete v1.1.1/go.mod h1:em0nMJCgc9GFtwrmVmEMR/ZL6WyhyjMBndr
 github.com/posener/complete v1.2.3/go.mod h1:WZIdtGGp+qx0sLrYKtIRAruyNpv6hFCicSgv7Sy7s/s=
 github.com/prebid/go-gdpr v1.12.0 h1:OrjQ7Uc+lCRYaOirQ48jjG/PBMvZsKNAaRTgzxN6iZ0=
 github.com/prebid/go-gdpr v1.12.0/go.mod h1:mPZAdkRxn+iuSjaUuJAi9+0SppBOdM1PCzv/55UH3pY=
-github.com/prebid/go-gpp v0.1.1 h1:uTMJ+eHmKWL9WvDuxFT4LDoOeJW1yOsfWITqi49ZuY0=
-github.com/prebid/go-gpp v0.1.1/go.mod h1:b0TLoVln+HXFD9L9xeimxIH3FN8WDKPJ42auslxEkow=
+github.com/prebid/go-gpp v0.2.0 h1:41Ssxd4Zxr50WgwG1q/1+6awGU3pFnwV7FR4XCLQSuM=
+github.com/prebid/go-gpp v0.2.0/go.mod h1:b0TLoVln+HXFD9L9xeimxIH3FN8WDKPJ42auslxEkow=
 github.com/prebid/openrtb/v20 v20.1.0 h1:Rb+Z3H3UxiqqnjgJK3R9Wt73ibrh7HPzG7ikBckQNqc=
 github.com/prebid/openrtb/v20 v20.1.0/go.mod h1:hLBrA/APkSrxs5MaW639l+y/EAHivDfRagO2TX/wbSc=
 github.com/prometheus/client_golang v0.9.1/go.mod h1:7SWBe2y4D6OKWSNQJUaRYU/AaXPKyh/dDVn+NZz0KFw=

@@ -235,7 +235,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	deps.setFieldsImplicitly(r, reqWrapper, account)
 
 	hasStoredResponses := len(storedAuctionResponses) > 0
-	errs := deps.validateRequest(reqWrapper, true, hasStoredResponses, storedBidResponses, false)
+	errs := deps.validateRequest(account, r, reqWrapper, true, hasStoredResponses, storedBidResponses, false)
 	errL = append(errL, errs...)
 	ao.Errors = append(ao.Errors, errs...)
 	if errortypes.ContainsFatalError(errs) {

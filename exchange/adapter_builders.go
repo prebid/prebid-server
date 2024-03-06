@@ -6,6 +6,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/aax"
 	"github.com/prebid/prebid-server/v2/adapters/aceex"
 	"github.com/prebid/prebid-server/v2/adapters/acuityads"
+	"github.com/prebid/prebid-server/v2/adapters/adelement"
 	"github.com/prebid/prebid-server/v2/adapters/adf"
 	"github.com/prebid/prebid-server/v2/adapters/adgeneration"
 	"github.com/prebid/prebid-server/v2/adapters/adhese"
@@ -58,6 +59,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/bmtm"
 	"github.com/prebid/prebid-server/v2/adapters/boldwin"
 	"github.com/prebid/prebid-server/v2/adapters/brave"
+	"github.com/prebid/prebid-server/v2/adapters/bwx"
 	cadentaperturemx "github.com/prebid/prebid-server/v2/adapters/cadent_aperture_mx"
 	"github.com/prebid/prebid-server/v2/adapters/ccx"
 	"github.com/prebid/prebid-server/v2/adapters/coinzilla"
@@ -206,6 +208,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderAax:               aax.Builder,
 		openrtb_ext.BidderAceex:             aceex.Builder,
 		openrtb_ext.BidderAcuityAds:         acuityads.Builder,
+		openrtb_ext.BidderAdelement:         adelement.Builder,
 		openrtb_ext.BidderAdf:               adf.Builder,
 		openrtb_ext.BidderAdgeneration:      adgeneration.Builder,
 		openrtb_ext.BidderAdhese:            adhese.Builder,
@@ -258,6 +261,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderBmtm:              bmtm.Builder,
 		openrtb_ext.BidderBoldwin:           boldwin.Builder,
 		openrtb_ext.BidderBrave:             brave.Builder,
+		openrtb_ext.BidderBWX:               bwx.Builder,
 		openrtb_ext.BidderCadentApertureMX:  cadentaperturemx.Builder,
 		openrtb_ext.BidderCcx:               ccx.Builder,
 		openrtb_ext.BidderCoinzilla:         coinzilla.Builder,

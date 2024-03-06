@@ -16,6 +16,7 @@ type EndpointTemplateParams struct {
 	MediaType   string
 	GvlID       string
 	PageID      string
+	SupplyId    string
 }
 
 // UserSyncPrivacy specifies privacy policy macros, represented as strings, for user sync urls.

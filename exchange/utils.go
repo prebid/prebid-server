@@ -91,9 +91,10 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 
 	var gpp gpplib.GppContainer
 	if req.BidRequest.Regs != nil && len(req.BidRequest.Regs.GPP) > 0 {
-		gpp, err = gpplib.Parse(req.BidRequest.Regs.GPP)
-		if err != nil {
-			errs = append(errs, err)
+		var gppErrs []error
+		gpp, gppErrs = gpplib.Parse(req.BidRequest.Regs.GPP)
+		if len(gppErrs) > 0 {
+			errs = append(errs, gppErrs[0])
 		}
 	}
 
@@ -878,6 +879,7 @@ func getExtTargetData(requestExtPrebid *openrtb_ext.ExtRequestPrebid, cacheInstr
 			priceGranularity:          *requestExtPrebid.Targeting.PriceGranularity,
 			mediaTypePriceGranularity: requestExtPrebid.Targeting.MediaTypePriceGranularity,
 			preferDeals:               requestExtPrebid.Targeting.PreferDeals,
+			alwaysIncludeDeals:        requestExtPrebid.Targeting.AlwaysIncludeDeals,
 		}
 	}
 

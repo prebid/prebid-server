@@ -227,7 +227,7 @@ func (a *AccountGDPR) PurposeEnforcingVendors(purpose consentconstants.Purpose) 
 }
 
 // PurposeVendorExceptions returns the vendor exception map for a given purpose.
-func (a *AccountGDPR) PurposeVendorExceptions(purpose consentconstants.Purpose) (value map[openrtb_ext.BidderName]struct{}, exists bool) {
+func (a *AccountGDPR) PurposeVendorExceptions(purpose consentconstants.Purpose) (value map[string]struct{}, exists bool) {
 	c, exists := a.PurposeConfigs[purpose]
 
 	if exists && c.VendorExceptionMap != nil {
@@ -262,8 +262,8 @@ type AccountGDPRPurpose struct {
 	EnforcePurpose *bool `mapstructure:"enforce_purpose" json:"enforce_purpose,omitempty"`
 	EnforceVendors *bool `mapstructure:"enforce_vendors" json:"enforce_vendors,omitempty"`
 	// Array of vendor exceptions that is used to create the hash table VendorExceptionMap so vendor names can be instantly accessed
-	VendorExceptions   []openrtb_ext.BidderName `mapstructure:"vendor_exceptions" json:"vendor_exceptions"`
-	VendorExceptionMap map[openrtb_ext.BidderName]struct{}
+	VendorExceptions   []string `mapstructure:"vendor_exceptions" json:"vendor_exceptions"`
+	VendorExceptionMap map[string]struct{}
 }
 
 // AccountGDPRSpecialFeature represents account-specific GDPR special feature configuration
@@ -338,6 +338,16 @@ type AccountPrivacy struct {
 	IPv6Config      IPv6             `mapstructure:"ipv6" json:"ipv6"`
 	IPv4Config      IPv4             `mapstructure:"ipv4" json:"ipv4"`
 	PrivacySandbox  PrivacySandbox   `mapstructure:"privacysandbox" json:"privacysandbox"`
+}
+
+type PrivacySandbox struct {
+	TopicsDomain      string            `mapstructure:"topicsdomain"`
+	CookieDeprecation CookieDeprecation `mapstructure:"cookiedeprecation"`
+}
+
+type CookieDeprecation struct {
+	Enabled bool `mapstructure:"enabled"`
+	TTLSec  int  `mapstructure:"ttl_sec"`
 }
 
 type IPv6 struct {

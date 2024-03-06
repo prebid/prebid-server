@@ -22,6 +22,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderAax,
 	BidderAceex,
 	BidderAcuityAds,
+	BidderAdelement,
 	BidderAdf,
 	BidderAdgeneration,
 	BidderAdhese,
@@ -74,6 +75,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderBmtm,
 	BidderBoldwin,
 	BidderBrave,
+	BidderBWX,
 	BidderCadentApertureMX,
 	BidderCcx,
 	BidderCoinzilla,
@@ -300,6 +302,7 @@ const (
 	BidderAax               BidderName = "aax"
 	BidderAceex             BidderName = "aceex"
 	BidderAcuityAds         BidderName = "acuityads"
+	BidderAdelement         BidderName = "adelement"
 	BidderAdf               BidderName = "adf"
 	BidderAdgeneration      BidderName = "adgeneration"
 	BidderAdhese            BidderName = "adhese"
@@ -352,6 +355,7 @@ const (
 	BidderBmtm              BidderName = "bmtm"
 	BidderBoldwin           BidderName = "boldwin"
 	BidderBrave             BidderName = "brave"
+	BidderBWX               BidderName = "bwx"
 	BidderCadentApertureMX  BidderName = "cadent_aperture_mx"
 	BidderCcx               BidderName = "ccx"
 	BidderCoinzilla         BidderName = "coinzilla"
@@ -608,6 +612,7 @@ func NewBidderParamsValidator(schemaDirectory string) (BidderParamValidator, err
 		if _, ok := bidderMap[bidderName]; !ok {
 			return nil, fmt.Errorf("File %s/%s does not match a valid BidderName.", schemaDirectory, fileInfo.Name())
 		}
+
 		toOpen, err := paramsValidator.abs(filepath.Join(schemaDirectory, fileInfo.Name()))
 		if err != nil {
 			return nil, fmt.Errorf("Failed to get an absolute representation of the path: %s, %v", toOpen, err)

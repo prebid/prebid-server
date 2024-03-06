@@ -203,6 +203,8 @@ func TestDefaults(t *testing.T) {
 	cmpInts(t, "account_defaults.price_floors.fetch.period_sec", 3600, cfg.AccountDefaults.PriceFloors.Fetcher.Period)
 	cmpInts(t, "account_defaults.price_floors.fetch.max_age_sec", 86400, cfg.AccountDefaults.PriceFloors.Fetcher.MaxAge)
 	cmpInts(t, "account_defaults.price_floors.fetch.max_schema_dims", 0, cfg.AccountDefaults.PriceFloors.Fetcher.MaxSchemaDims)
+	cmpBools(t, "account_defaults.privacy.privacysandbox.cookiedeprecation.enabled", false, cfg.AccountDefaults.Privacy.PrivacySandbox.CookieDeprecation.Enabled)
+	cmpInts(t, "account_defaults.privacy.privacysandbox.cookiedeprecation.ttl_sec", 604800, cfg.AccountDefaults.Privacy.PrivacySandbox.CookieDeprecation.TTLSec)
 
 	cmpBools(t, "account_defaults.events.enabled", false, cfg.AccountDefaults.Events.Enabled)
 
@@ -229,80 +231,80 @@ func TestDefaults(t *testing.T) {
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
-			VendorExceptions:   []openrtb_ext.BidderName{},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			VendorExceptions:   []string{},
+			VendorExceptionMap: map[string]struct{}{},
 		},
 		Purpose2: TCF2Purpose{
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
-			VendorExceptions:   []openrtb_ext.BidderName{},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			VendorExceptions:   []string{},
+			VendorExceptionMap: map[string]struct{}{},
 		},
 		Purpose3: TCF2Purpose{
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
-			VendorExceptions:   []openrtb_ext.BidderName{},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			VendorExceptions:   []string{},
+			VendorExceptionMap: map[string]struct{}{},
 		},
 		Purpose4: TCF2Purpose{
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
-			VendorExceptions:   []openrtb_ext.BidderName{},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			VendorExceptions:   []string{},
+			VendorExceptionMap: map[string]struct{}{},
 		},
 		Purpose5: TCF2Purpose{
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
-			VendorExceptions:   []openrtb_ext.BidderName{},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			VendorExceptions:   []string{},
+			VendorExceptionMap: map[string]struct{}{},
 		},
 		Purpose6: TCF2Purpose{
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
-			VendorExceptions:   []openrtb_ext.BidderName{},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			VendorExceptions:   []string{},
+			VendorExceptionMap: map[string]struct{}{},
 		},
 		Purpose7: TCF2Purpose{
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
-			VendorExceptions:   []openrtb_ext.BidderName{},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			VendorExceptions:   []string{},
+			VendorExceptionMap: map[string]struct{}{},
 		},
 		Purpose8: TCF2Purpose{
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
-			VendorExceptions:   []openrtb_ext.BidderName{},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			VendorExceptions:   []string{},
+			VendorExceptionMap: map[string]struct{}{},
 		},
 		Purpose9: TCF2Purpose{
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
-			VendorExceptions:   []openrtb_ext.BidderName{},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			VendorExceptions:   []string{},
+			VendorExceptionMap: map[string]struct{}{},
 		},
 		Purpose10: TCF2Purpose{
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
-			VendorExceptions:   []openrtb_ext.BidderName{},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			VendorExceptions:   []string{},
+			VendorExceptionMap: map[string]struct{}{},
 		},
 		SpecialFeature1: TCF2SpecialFeature{
 			Enforce:            true,
@@ -503,6 +505,10 @@ account_defaults:
             anon_keep_bits: 50
         ipv4:
             anon_keep_bits: 20
+        privacysandbox:
+            cookiedeprecation:
+                enabled: true
+                ttl_sec: 86400
 tmax_adjustments:
   enabled: true
   bidder_response_duration_min_ms: 700
@@ -622,6 +628,9 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "account_defaults.privacy.ipv6.anon_keep_bits", 50, cfg.AccountDefaults.Privacy.IPv6Config.AnonKeepBits)
 	cmpInts(t, "account_defaults.privacy.ipv4.anon_keep_bits", 20, cfg.AccountDefaults.Privacy.IPv4Config.AnonKeepBits)
 
+	cmpBools(t, "account_defaults.privacy.cookiedeprecation.enabled", true, cfg.AccountDefaults.Privacy.PrivacySandbox.CookieDeprecation.Enabled)
+	cmpInts(t, "account_defaults.privacy.cookiedeprecation.ttl_sec", 86400, cfg.AccountDefaults.Privacy.PrivacySandbox.CookieDeprecation.TTLSec)
+
 	// Assert compression related defaults
 	cmpBools(t, "compression.request.enable_gzip", true, cfg.Compression.Request.GZIP)
 	cmpBools(t, "compression.response.enable_gzip", false, cfg.Compression.Response.GZIP)
@@ -654,80 +663,80 @@ func TestFullConfig(t *testing.T) {
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
-			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo1a"), openrtb_ext.BidderName("foo1b")},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo1a"): {}, openrtb_ext.BidderName("foo1b"): {}},
+			VendorExceptions:   []string{"foo1a", "foo1b"},
+			VendorExceptionMap: map[string]struct{}{"foo1a": {}, "foo1b": {}},
 		},
 		Purpose2: TCF2Purpose{
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     false,
 			EnforceVendors:     false,
-			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo2")},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo2"): {}},
+			VendorExceptions:   []string{"foo2"},
+			VendorExceptionMap: map[string]struct{}{"foo2": {}},
 		},
 		Purpose3: TCF2Purpose{
 			EnforceAlgo:        TCF2EnforceAlgoBasic,
 			EnforceAlgoID:      TCF2BasicEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
-			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo3")},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo3"): {}},
+			VendorExceptions:   []string{"foo3"},
+			VendorExceptionMap: map[string]struct{}{"foo3": {}},
 		},
 		Purpose4: TCF2Purpose{
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
-			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo4")},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo4"): {}},
+			VendorExceptions:   []string{"foo4"},
+			VendorExceptionMap: map[string]struct{}{"foo4": {}},
 		},
 		Purpose5: TCF2Purpose{
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
-			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo5")},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo5"): {}},
+			VendorExceptions:   []string{"foo5"},
+			VendorExceptionMap: map[string]struct{}{"foo5": {}},
 		},
 		Purpose6: TCF2Purpose{
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
-			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo6")},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo6"): {}},
+			VendorExceptions:   []string{"foo6"},
+			VendorExceptionMap: map[string]struct{}{"foo6": {}},
 		},
 		Purpose7: TCF2Purpose{
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
-			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo7")},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo7"): {}},
+			VendorExceptions:   []string{"foo7"},
+			VendorExceptionMap: map[string]struct{}{"foo7": {}},
 		},
 		Purpose8: TCF2Purpose{
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
-			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo8")},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo8"): {}},
+			VendorExceptions:   []string{"foo8"},
+			VendorExceptionMap: map[string]struct{}{"foo8": {}},
 		},
 		Purpose9: TCF2Purpose{
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
-			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo9")},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo9"): {}},
+			VendorExceptions:   []string{"foo9"},
+			VendorExceptionMap: map[string]struct{}{"foo9": {}},
 		},
 		Purpose10: TCF2Purpose{
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
-			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo10")},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo10"): {}},
+			VendorExceptions:   []string{"foo10"},
+			VendorExceptionMap: map[string]struct{}{"foo10": {}},
 		},
 		SpecialFeature1: TCF2SpecialFeature{
 			Enforce:            true, // true by default
@@ -1675,40 +1684,40 @@ func TestTCF2PurposeVendorExceptions(t *testing.T) {
 	tests := []struct {
 		description              string
 		givePurposeConfigNil     bool
-		givePurpose1ExceptionMap map[openrtb_ext.BidderName]struct{}
-		givePurpose2ExceptionMap map[openrtb_ext.BidderName]struct{}
+		givePurpose1ExceptionMap map[string]struct{}
+		givePurpose2ExceptionMap map[string]struct{}
 		givePurpose              consentconstants.Purpose
-		wantExceptionMap         map[openrtb_ext.BidderName]struct{}
+		wantExceptionMap         map[string]struct{}
 	}{
 		{
 			description:          "Purpose config is nil",
 			givePurposeConfigNil: true,
 			givePurpose:          1,
-			wantExceptionMap:     map[openrtb_ext.BidderName]struct{}{},
+			wantExceptionMap:     map[string]struct{}{},
 		},
 		{
 			description:      "Nil - exception map not defined for purpose",
 			givePurpose:      1,
-			wantExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			wantExceptionMap: map[string]struct{}{},
 		},
 		{
 			description:              "Empty - exception map empty for purpose",
 			givePurpose:              1,
-			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{},
-			wantExceptionMap:         map[openrtb_ext.BidderName]struct{}{},
+			givePurpose1ExceptionMap: map[string]struct{}{},
+			wantExceptionMap:         map[string]struct{}{},
 		},
 		{
 			description:              "Nonempty - exception map with multiple entries for purpose",
 			givePurpose:              1,
-			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
-			wantExceptionMap:         map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
+			givePurpose1ExceptionMap: map[string]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
+			wantExceptionMap:         map[string]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
 		},
 		{
 			description:              "Nonempty - exception map with multiple entries for different purpose",
 			givePurpose:              2,
-			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
-			givePurpose2ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "openx": {}},
-			wantExceptionMap:         map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "openx": {}},
+			givePurpose1ExceptionMap: map[string]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
+			givePurpose2ExceptionMap: map[string]struct{}{"rubicon": {}, "appnexus": {}, "openx": {}},
+			wantExceptionMap:         map[string]struct{}{"rubicon": {}, "appnexus": {}, "openx": {}},
 		},
 	}
 
