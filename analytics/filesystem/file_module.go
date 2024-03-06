@@ -29,7 +29,6 @@ type FileLogger struct {
 // Writes AuctionObject to file
 func (f *FileLogger) LogAuctionObject(ao *analytics.AuctionObject) {
 	var b bytes.Buffer
-
 	b.WriteString(jsonifyAuctionObject(ao))
 	f.Logger.Debug(b.String())
 	f.Logger.Flush()
@@ -39,7 +38,6 @@ func (f *FileLogger) LogAuctionObject(ao *analytics.AuctionObject) {
 func (f *FileLogger) LogVideoObject(vo *analytics.VideoObject) {
 	//Code to parse the object and log in a way required
 	var b bytes.Buffer
-
 	b.WriteString(jsonifyVideoObject(vo))
 	f.Logger.Debug(b.String())
 	f.Logger.Flush()
@@ -70,7 +68,6 @@ func (f *FileLogger) LogAmpObject(ao *analytics.AmpObject) {
 	}
 	//Code to parse the object and log in a way required
 	var b bytes.Buffer
-
 	b.WriteString(jsonifyAmpObject(ao))
 	f.Logger.Debug(b.String())
 	f.Logger.Flush()

@@ -46,7 +46,6 @@ func New(analytics *config.Analytics) analytics.Runner {
 // Collection of all the correctly configured analytics modules - implements the PBSAnalyticsModule interface
 type enabledAnalytics map[string]analytics.Module
 
-// TODO: Update response as well?
 func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac privacy.ActivityControl) {
 	for name, module := range ea {
 		if isAllowed, cloneBidderReq := evaluateActivities(ao.RequestWrapper, ac, name); isAllowed {

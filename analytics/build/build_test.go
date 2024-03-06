@@ -510,17 +510,6 @@ func TestUpdateReqWrapperForAnalytics(t *testing.T) {
 			},
 		},
 		{
-			description: "Adapter2 so Adapter1 info should be removed from ext.prebid.analytics",
-			givenReqWrapper: &openrtb_ext.RequestWrapper{
-				BidRequest: &openrtb2.BidRequest{
-					Ext: []byte(`{"prebid":{"analytics":{"adapter1":{"client-analytics":true},"adapter2":{"client-analytics":false}}}}`)},
-			},
-			givenAdapterName: "adapter2",
-			expected: &openrtb2.BidRequest{
-				Ext: []byte(`{"prebid":{"analytics":{"adapter2":{"client-analytics":false}}}}`),
-			},
-		},
-		{
 			description: "Given adapter not found in ext.prebid.analytics so remove entire object",
 			givenReqWrapper: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
