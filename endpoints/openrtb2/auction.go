@@ -888,7 +888,7 @@ func (deps *endpointDeps) validateRequest(account *config.Account, httpReq *http
 		return append(errL, err)
 	}
 
-	if err := validateOrFillCDep(httpReq, req, account); err != nil {
+	if err := validateOrFillCookieDeprecation(httpReq, req, account); err != nil {
 		errL = append(errL, err)
 	}
 
@@ -1939,7 +1939,7 @@ func validateDevice(device *openrtb2.Device) error {
 	return nil
 }
 
-func validateOrFillCDep(httpReq *http.Request, req *openrtb_ext.RequestWrapper, account *config.Account) error {
+func validateOrFillCookieDeprecation(httpReq *http.Request, req *openrtb_ext.RequestWrapper, account *config.Account) error {
 	if account == nil || !account.Privacy.PrivacySandbox.CookieDeprecation.Enabled {
 		return nil
 	}

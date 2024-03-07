@@ -6146,7 +6146,7 @@ func fakeNormalizeBidderName(name string) (openrtb_ext.BidderName, bool) {
 	return openrtb_ext.BidderName(strings.ToLower(name)), true
 }
 
-func TestValidateOrFillCDep(t *testing.T) {
+func TestValidateOrFillCookieDeprecation(t *testing.T) {
 	type args struct {
 		httpReq *http.Request
 		req     *openrtb_ext.RequestWrapper
@@ -6378,7 +6378,7 @@ func TestValidateOrFillCDep(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validateOrFillCDep(tt.args.httpReq, tt.args.req, &tt.args.account)
+			err := validateOrFillCookieDeprecation(tt.args.httpReq, tt.args.req, &tt.args.account)
 			assert.Equal(t, tt.wantErr, err)
 			if tt.args.req != nil {
 				err := tt.args.req.RebuildRequest()
