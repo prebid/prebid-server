@@ -4,6 +4,7 @@ import (
 	"github.com/benbjohnson/clock"
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/v2/analytics"
+	"github.com/prebid/prebid-server/v2/analytics/agma"
 	"github.com/prebid/prebid-server/v2/analytics/clients"
 	"github.com/prebid/prebid-server/v2/analytics/filesystem"
 	"github.com/prebid/prebid-server/v2/analytics/pubstack"
@@ -40,6 +41,19 @@ func New(analytics *config.Analytics) analytics.Runner {
 			glog.Errorf("Could not initialize PubstackModule: %v", err)
 		}
 	}
+
+	if analytics.Agma.Enabled {
+		agmaModule, err := agma.NewModule(
+			clients.GetDefaultHttpInstance(),
+			analytics.Agma,
+			clock.New())
+		if err == nil {
+			modules["agma"] = agmaModule
+		} else {
+			glog.Errorf("Could not initialize Agma Anayltics: %v", err)
+		}
+	}
+
 	return modules
 }
 
