@@ -86,14 +86,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if responseData.StatusCode == http.StatusNoContent {
+	if adapters.IsResponseStatusCodeNoContent(responseData) {
 		return nil, nil
 	}
 
-	if responseData.StatusCode != http.StatusOK {
-		err := &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d", responseData.StatusCode),
-		}
+	if err := adapters.CheckResponseStatusCodeForErrors(responseData); err != nil {
 		return nil, []error{err}
 	}
 
@@ -106,24 +103,22 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	bidResponse.Currency = response.Cur
 
 	var errors []error
-	for _, seatBid := range response.SeatBid {
-		for _, bid := range seatBid.Bid {
-			bid := bid
-			resolveMacros(&bid)
+	for i, seatBid := range response.SeatBid {
+		bid := seatBid.Bid[i]
+		resolveMacros(&bid)
 
-			bidType, err := getMediaType(bid)
-			if err != nil {
-				errors = append(errors, err)
-				continue
-			}
-
-			b := &adapters.TypedBid{
-				Bid:     &bid,
-				BidType: bidType,
-			}
-
-			bidResponse.Bids = append(bidResponse.Bids, b)
+		bidType, err := getMediaType(bid)
+		if err != nil {
+			errors = append(errors, err)
+			continue
 		}
+
+		b := &adapters.TypedBid{
+			Bid:     &bid,
+			BidType: bidType,
+		}
+
+		bidResponse.Bids = append(bidResponse.Bids, b)
 	}
 
 	return bidResponse, errors
