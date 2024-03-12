@@ -167,58 +167,55 @@ func (trackerinjector *TrackerInjector) InjectTracker(vastXML string, NURL strin
 	return outputXML.String()
 }
 
-func (trackerinjector *TrackerInjector) handleStartElement(tt xml.StartElement, state *InjectionState, outputXML *strings.Builder, encoder *xml.Encoder) {
-	switch tt.Name.Local {
+func (trackerinjector *TrackerInjector) handleStartElement(token xml.StartElement, state *InjectionState, outputXML *strings.Builder, encoder *xml.Encoder) {
+	switch token.Name.Local {
 	case wrapperCase:
 		state.wrapperTagFound = true
-		encoder.EncodeToken(tt)
+		encoder.EncodeToken(token)
 	case creativeCase:
 		state.isCreative = true
-		for _, attr := range tt.Attr {
+		for _, attr := range token.Attr {
 			if strings.ToLower(attr.Name.Local) == adId {
 				state.creativeId = attr.Value
 			}
 		}
-		encoder.EncodeToken(tt)
+		encoder.EncodeToken(token)
 	case linearCase:
 		state.injectVideoClicks = true
 		state.injectTracker = true
-		encoder.EncodeToken(tt)
+		encoder.EncodeToken(token)
 	case videoClicksCase:
 		state.injectVideoClicks = false
-		encoder.Flush()
-		encoder.EncodeToken(tt)
+		encoder.EncodeToken(token)
 		encoder.Flush()
 		trackerinjector.addClickTrackingEvent(outputXML, state.creativeId, false)
 	case nonLinearAdsCase:
 		state.injectTracker = true
-		encoder.EncodeToken(tt)
+		encoder.EncodeToken(token)
 	case trackingEventsCase:
 		if state.isCreative {
 			state.injectTracker = false
-			encoder.Flush()
-			encoder.EncodeToken(tt)
+			encoder.EncodeToken(token)
 			encoder.Flush()
 			trackerinjector.addTrackingEvent(outputXML, state.creativeId, false)
 		}
 	default:
-		encoder.EncodeToken(tt)
+		encoder.EncodeToken(token)
 	}
 }
 
-func (trackerinjector *TrackerInjector) handleEndElement(tt xml.EndElement, state *InjectionState, outputXML *strings.Builder, encoder *xml.Encoder) {
-	switch tt.Name.Local {
+func (trackerinjector *TrackerInjector) handleEndElement(token xml.EndElement, state *InjectionState, outputXML *strings.Builder, encoder *xml.Encoder) {
+	switch token.Name.Local {
 	case impressionCase:
-		encoder.Flush()
-		encoder.EncodeToken(tt)
+		fmt.Println(outputXML.String())
+		encoder.EncodeToken(token)
 		encoder.Flush()
 		if !state.impressionTagFound {
 			trackerinjector.addImpressionTrackingEvent(outputXML)
 			state.impressionTagFound = true
 		}
 	case errorCase:
-		encoder.Flush()
-		encoder.EncodeToken(tt)
+		encoder.EncodeToken(token)
 		encoder.Flush()
 		if !state.errorTagFound {
 			trackerinjector.addErrorTrackingEvent(outputXML)
@@ -232,7 +229,7 @@ func (trackerinjector *TrackerInjector) handleEndElement(tt xml.EndElement, stat
 			if !state.nonLinearTagFound && state.wrapperTagFound {
 				trackerinjector.addNonLinearClickTrackingEvent(outputXML, state.creativeId, true)
 			}
-			encoder.EncodeToken(tt)
+			encoder.EncodeToken(token)
 		}
 	case linearCase:
 		if state.injectVideoClicks {
@@ -245,7 +242,7 @@ func (trackerinjector *TrackerInjector) handleEndElement(tt xml.EndElement, stat
 			encoder.Flush()
 			trackerinjector.addTrackingEvent(outputXML, state.creativeId, true)
 		}
-		encoder.EncodeToken(tt)
+		encoder.EncodeToken(token)
 	case inlineCase, wrapperCase:
 		state.wrapperTagFound = false
 		state.inlineWrapperTagFound = true
@@ -258,28 +255,28 @@ func (trackerinjector *TrackerInjector) handleEndElement(tt xml.EndElement, stat
 			trackerinjector.addErrorTrackingEvent(outputXML)
 		}
 		state.errorTagFound = false
-		encoder.EncodeToken(tt)
+		encoder.EncodeToken(token)
 	case nonLinearCase:
 		encoder.Flush()
 		trackerinjector.addNonLinearClickTrackingEvent(outputXML, state.creativeId, false)
 		state.nonLinearTagFound = true
-		encoder.EncodeToken(tt)
+		encoder.EncodeToken(token)
 	case companionCase:
 		state.companionTagFound = true
 		encoder.Flush()
 		trackerinjector.addCompanionClickThroughEvent(outputXML, state.creativeId, false)
-		encoder.EncodeToken(tt)
+		encoder.EncodeToken(token)
 	case creativeCase:
 		state.isCreative = false
-		encoder.EncodeToken(tt)
+		encoder.EncodeToken(token)
 	case companionAdsCase:
 		if !state.companionTagFound && state.wrapperTagFound {
 			encoder.Flush()
 			trackerinjector.addCompanionClickThroughEvent(outputXML, state.creativeId, true)
 		}
-		encoder.EncodeToken(tt)
+		encoder.EncodeToken(token)
 	default:
-		encoder.EncodeToken(tt)
+		encoder.EncodeToken(token)
 	}
 }
 
