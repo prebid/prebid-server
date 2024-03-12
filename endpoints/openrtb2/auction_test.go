@@ -1987,14 +1987,14 @@ func TestValidateTargeting(t *testing.T) {
 		{
 			name:           "empty",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{},
-			expectedError:  errors.New("ext.prebid.targeting: At least one of includewinners or includebidderkeys must be enabled to enable targeting support"),
+			expectedError:  nil,
 		},
 		{
 			name: "includewinners nil, includebidderkeys false",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
 				IncludeBidderKeys: ptrutil.ToPtr(false),
 			},
-			expectedError: errors.New("ext.prebid.targeting: At least one of includewinners or includebidderkeys must be enabled to enable targeting support"),
+			expectedError: nil,
 		},
 		{
 			name: "includewinners nil, includebidderkeys true",
@@ -2008,7 +2008,7 @@ func TestValidateTargeting(t *testing.T) {
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
 				IncludeWinners: ptrutil.ToPtr(false),
 			},
-			expectedError: errors.New("ext.prebid.targeting: At least one of includewinners or includebidderkeys must be enabled to enable targeting support"),
+			expectedError: nil,
 		},
 		{
 			name: "includewinners true, includebidderkeys nil",
@@ -2023,7 +2023,7 @@ func TestValidateTargeting(t *testing.T) {
 				IncludeWinners:    ptrutil.ToPtr(false),
 				IncludeBidderKeys: ptrutil.ToPtr(false),
 			},
-			expectedError: errors.New("ext.prebid.targeting: At least one of includewinners or includebidderkeys must be enabled to enable targeting support"),
+			expectedError: nil,
 		},
 		{
 			name: "includewinners false, includebidderkeys true",
