@@ -57,7 +57,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		}
 
 		requestCopy.Imp = []openrtb2.Imp{imp}
-
 		endpoint, err := a.buildEndpointURL(&impExt)
 
 		if err != nil {
