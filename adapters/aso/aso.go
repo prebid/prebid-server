@@ -103,22 +103,21 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	bidResponse.Currency = response.Cur
 
 	var errors []error
-	for i, seatBid := range response.SeatBid {
-		bid := seatBid.Bid[i]
-		resolveMacros(&bid)
+	for _, seatBid := range response.SeatBid {
+		for i, bid := range seatBid.Bid {
+			resolveMacros(&seatBid.Bid[i])
 
-		bidType, err := getMediaType(bid)
-		if err != nil {
-			errors = append(errors, err)
-			continue
+			bidType, err := getMediaType(bid)
+			if err != nil {
+				errors = append(errors, err)
+				continue
+			}
+
+			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+				Bid:     &seatBid.Bid[i],
+				BidType: bidType,
+			})
 		}
-
-		b := &adapters.TypedBid{
-			Bid:     &bid,
-			BidType: bidType,
-		}
-
-		bidResponse.Bids = append(bidResponse.Bids, b)
 	}
 
 	return bidResponse, errors
