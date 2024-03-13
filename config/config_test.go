@@ -508,6 +508,20 @@ account_defaults:
           period_sec: 2000
           max_age_sec: 6000
           max_schema_dims: 10
+    bidadjustments:
+        mediatype:
+            '*':
+                '*':
+                    '*':
+                        - adjtype: multiplier
+                          value: 1.01
+                          currency: USD
+            video-instream:
+                bidder:
+                    deal_id:
+                        - adjtype: cpm
+                          value: 1.02
+                          currency: EUR
     privacy:
         ipv6:
             anon_keep_bits: 50
@@ -783,7 +797,23 @@ func TestFullConfig(t *testing.T) {
 		9:  &expectedTCF2.Purpose9,
 		10: &expectedTCF2.Purpose10,
 	}
+
+	expectedBidAdjustments := &openrtb_ext.ExtRequestPrebidBidAdjustments{
+		MediaType: openrtb_ext.MediaType{
+			WildCard: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+				"*": {
+					"*": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.01, Currency: "USD"}},
+				},
+			},
+			VideoInstream: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+				"bidder": {
+					"deal_id": []openrtb_ext.Adjustment{{Type: "cpm", Value: 1.02, Currency: "EUR"}},
+				},
+			},
+		},
+	}
 	assert.Equal(t, expectedTCF2, cfg.GDPR.TCF2, "gdpr.tcf2")
+	assert.Equal(t, expectedBidAdjustments, cfg.AccountDefaults.BidAdjustments)
 
 	cmpStrings(t, "currency_converter.fetch_url", "https://currency.prebid.org", cfg.CurrencyConverter.FetchURL)
 	cmpInts(t, "currency_converter.fetch_interval_seconds", 1800, cfg.CurrencyConverter.FetchIntervalSeconds)
