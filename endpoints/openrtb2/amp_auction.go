@@ -400,6 +400,10 @@ func sendAmpResponse(
 	// Fixes #231
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
+	// Explicitly set content type to text/plain, which had previously been
+	// the implied behavior from the time the project was launched.
+	// It's unclear why text/plain was chosen or if it was an oversight,
+	// nevertheless we will keep it as such for compatibility reasons.
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 
 	// If an error happens when encoding the response, there isn't much we can do.
