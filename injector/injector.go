@@ -207,7 +207,6 @@ func (trackerinjector *TrackerInjector) handleStartElement(token xml.StartElemen
 func (trackerinjector *TrackerInjector) handleEndElement(token xml.EndElement, state *InjectionState, outputXML *strings.Builder, encoder *xml.Encoder) {
 	switch token.Name.Local {
 	case impressionCase:
-		fmt.Println(outputXML.String())
 		encoder.EncodeToken(token)
 		encoder.Flush()
 		if !state.impressionTagFound {
