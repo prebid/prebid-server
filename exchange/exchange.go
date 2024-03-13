@@ -460,8 +460,8 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 				errs = append(errs, cacheErrs...)
 			}
 
-			// If all targeting is disabled, you can drop targeting from the bid and the response
-			if !(!targData.includeWinners && !targData.includeBidderKeys && !targData.includeFormat) {
+			// If all targeting is false, then skip setTargeting
+			if targData.includeWinners || targData.includeBidderKeys || targData.includeFormat {
 				targData.setTargeting(auc, r.BidRequestWrapper.BidRequest.App != nil, bidCategory, r.Account.TruncateTargetAttribute, multiBidMap)
 			}
 		}

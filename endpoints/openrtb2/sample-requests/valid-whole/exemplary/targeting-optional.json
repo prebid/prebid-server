@@ -1,5 +1,5 @@
 {
-    "description": "Simple request - targeting",
+    "description": "Targeting flags are all set to false, request is still valid, but not targeting data should be present in bids",
     "config": {
       "mockBidders": [
         {
@@ -40,8 +40,9 @@
       "ext": {
         "prebid": {
           "targeting": {
-            "includewinners": "false",
-            "includebidderkeys": "false"
+            "includewinners": false,
+            "includebidderkeys": false,
+            "includeformat": false
           }
         }
       }

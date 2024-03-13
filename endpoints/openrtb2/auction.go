@@ -1701,11 +1701,6 @@ func validateTargeting(t *openrtb_ext.ExtRequestTargeting) error {
 		return nil
 	}
 
-	// If includeWinners and BidderKeys are both false or nil, then errorr
-	// if (t.IncludeWinners == nil || !*t.IncludeWinners) && (t.IncludeBidderKeys == nil || !*t.IncludeBidderKeys) {
-	// 	return errors.New("ext.prebid.targeting: At least one of includewinners or includebidderkeys must be enabled to enable targeting support")
-	// }
-
 	if t.PriceGranularity != nil {
 		if err := validatePriceGranularity(t.PriceGranularity); err != nil {
 			return err
