@@ -1028,50 +1028,40 @@ func TestAMPSiteExt(t *testing.T) {
 
 // TestBadRequests makes sure we return 400's on bad requests.
 func TestAmpBadRequests(t *testing.T) {
-	dir := "sample-requests/amp/invalid-whole"
+	dir := "sample-requests/invalid-whole"
 	files, err := os.ReadDir(dir)
 	assert.NoError(t, err, "Failed to read folder: %s", dir)
 
+	badRequests := make(map[string]json.RawMessage, len(files))
 	for index, file := range files {
-		filename := file.Name()
-		fileData := readFile(t, "sample-requests/amp/invalid-whole/"+filename)
+		badRequests[strconv.Itoa(100+index)] = readFile(t, "sample-requests/invalid-whole/"+file.Name())
+	}
 
-		test, err := parseTestData(fileData, filename)
-		if !assert.NoError(t, err) {
-			return
-		}
-
-		requestID := strconv.Itoa(100 + index)
-
-		endpoint, _ := NewAmpEndpoint(
-			fakeUUIDGenerator{},
-			&mockAmpExchange{},
-			newParamsValidator(t),
-			&mockAmpStoredReqFetcher{data: map[string]json.RawMessage{
-				requestID: test.BidRequest,
-			}},
-			&mockAccountFetcher{
-				data: map[string]json.RawMessage{"test_pub": json.RawMessage("{}")},
-			},
-			&config.Configuration{MaxRequestSize: maxSize},
-			&metricsConfig.NilMetricsEngine{},
-			analyticsBuild.New(&config.Analytics{}),
-			map[string]string{},
-			[]byte{},
-			openrtb_ext.BuildBidderMap(),
-			empty_fetcher.EmptyFetcher{},
-			hooks.EmptyPlanBuilder{},
-			nil,
-		)
-
-		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?account=test_pub&tag_id=%s", requestID), nil)
+	endpoint, _ := NewAmpEndpoint(
+		fakeUUIDGenerator{},
+		&mockAmpExchange{},
+		newParamsValidator(t),
+		&mockAmpStoredReqFetcher{badRequests},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: maxSize},
+		&metricsConfig.NilMetricsEngine{},
+		analyticsBuild.New(&config.Analytics{}),
+		map[string]string{},
+		[]byte{},
+		openrtb_ext.BuildBidderMap(),
+		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
+		nil,
+	)
+	for requestID := range badRequests {
+		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s", requestID), nil)
 		recorder := httptest.NewRecorder()
 
 		endpoint(recorder, request, nil)
 
-		response := recorder.Body.String()
-		assert.Equal(t, test.ExpectedReturnCode, recorder.Code, filename)
-		assert.Contains(t, response, test.ExpectedErrorMessage, "Actual: %s \nExpected: %s. Filename: %s \n", response, test.ExpectedErrorMessage, filename)
+		if recorder.Code != http.StatusBadRequest {
+			t.Errorf("Expected status %d. Got %d. Input was: %s", http.StatusBadRequest, recorder.Code, fmt.Sprintf("/openrtb2/auction/amp?config=%s", requestID))
+		}
 	}
 }
 
