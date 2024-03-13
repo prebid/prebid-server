@@ -1186,7 +1186,7 @@ func TestVideoAuctionResponseHeaders(t *testing.T) {
 		{
 			description:    "Success Response with header Observe-Browsing-Topics",
 			givenTestFile:  "sample-requests/video/video_valid_sample.json",
-			givenHeader:    map[string]string{secBrowsingTopics: "test_value"},
+			givenHeader:    map[string]string{secBrowsingTopics: "anyValue"},
 			expectedStatus: 200,
 			expectedHeaders: func(h http.Header) {
 				h.Set("X-Prebid", "pbs-go/unknown")
@@ -1197,7 +1197,7 @@ func TestVideoAuctionResponseHeaders(t *testing.T) {
 		{
 			description:    "Failure Response with header Observe-Browsing-Topics",
 			givenTestFile:  "sample-requests/video/video_invalid_sample.json",
-			givenHeader:    map[string]string{secBrowsingTopics: "test_value"},
+			givenHeader:    map[string]string{secBrowsingTopics: "anyValue"},
 			expectedStatus: 500,
 			expectedHeaders: func(h http.Header) {
 				h.Set("X-Prebid", "pbs-go/unknown")

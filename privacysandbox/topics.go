@@ -152,14 +152,20 @@ func createHeaderDataMap(headerData []Topic) map[int]map[string]map[int]struct{}
 	headerDataMap := make(map[int]map[string]map[int]struct{})
 
 	for _, topic := range headerData {
-		if _, ok := headerDataMap[topic.SegTax]; !ok {
-			headerDataMap[topic.SegTax] = make(map[string]map[int]struct{})
+		segClassMap, ok := headerDataMap[topic.SegTax]
+		if !ok {
+			segClassMap = make(map[string]map[int]struct{})
+			headerDataMap[topic.SegTax] = segClassMap
 		}
-		if _, ok := headerDataMap[topic.SegTax][topic.SegClass]; !ok {
-			headerDataMap[topic.SegTax][topic.SegClass] = make(map[int]struct{})
+
+		segIDsMap, ok := segClassMap[topic.SegClass]
+		if !ok {
+			segIDsMap = make(map[int]struct{})
+			segClassMap[topic.SegClass] = segIDsMap
 		}
+
 		for _, segID := range topic.SegIDs {
-			headerDataMap[topic.SegTax][topic.SegClass][segID] = struct{}{}
+			segIDsMap[segID] = struct{}{}
 		}
 	}
 

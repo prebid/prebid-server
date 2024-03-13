@@ -2097,7 +2097,6 @@ func setSecBrowsingTopicsImplicitly(httpReq *http.Request, r *openrtb_ext.Reques
 		return
 	}
 
-	// update empty request.user.data only if there is atleast one valid field in header value
 	if r.User == nil {
 		r.User = &openrtb2.User{}
 	}

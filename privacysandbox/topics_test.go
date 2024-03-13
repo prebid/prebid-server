@@ -189,7 +189,7 @@ func TestParseTopicsFromHeader(t *testing.T) {
 		},
 		{
 			name: "header with one valid field having a few invalid segIds, should filter valid segIDs",
-			args: args{secBrowsingTopics: "(1 -3 0);v=chrome.1:1:2, ();p=P00000000000"},
+			args: args{secBrowsingTopics: "(1 -3 9223372036854775808 0);v=chrome.1:1:2, ();p=P00000000000"},
 			want: []Topic{
 				{
 					SegTax:   600,
@@ -570,6 +570,19 @@ func TestUpdateUserDataWithTopics(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := UpdateUserDataWithTopics(tt.args.userData, tt.args.headerData, tt.args.topicsDomain)
+			sort.Slice(got, func(i, j int) bool {
+				if got[i].Name == got[j].Name {
+					return string(got[i].Ext) < string(got[j].Ext)
+				}
+				return got[i].Name < got[j].Name
+			})
+			sort.Slice(tt.want, func(i, j int) bool {
+				if tt.want[i].Name == tt.want[j].Name {
+					return string(tt.want[i].Ext) < string(tt.want[j].Ext)
+				}
+				return tt.want[i].Name < tt.want[j].Name
+			})
+
 			for g := range got {
 				sort.Slice(got[g].Segment, func(i, j int) bool {
 					return got[g].Segment[i].ID < got[g].Segment[j].ID

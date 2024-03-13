@@ -6676,7 +6676,7 @@ func TestSetSecBrowsingTopcisImplicitly(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			setSecBrowsingTopicsImplicitly(tt.args.httpReq, tt.args.r, tt.args.account)
 
-			// sequence is not garunteed we're using a map to filter segids
+			// sequence is not guaranteed we're using a map to filter segids
 			sortUserData(tt.wantUser)
 			sortUserData(tt.args.r.User)
 			assert.Equal(t, tt.wantUser, tt.args.r.User, tt.name)
