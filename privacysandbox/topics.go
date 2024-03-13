@@ -2,17 +2,17 @@ package privacysandbox
 
 import (
 	"encoding/json"
-	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
 type Topic struct {
-	SegTax   int
-	SegClass string
-	SegIDs   []int
+	SegTax   int    `json:"segtax,omitempty"`
+	SegClass string `json:"segclass,omitempty"`
+	SegIDs   []int  `json:"segids,omitempty"`
 }
 
 // ParseTopicsFromHeader parses the Sec-Browsing-Topics header data into Topics object
@@ -110,7 +110,7 @@ func UpdateUserDataWithTopics(userData []openrtb2.Data, headerData []Topic, topi
 			continue
 		}
 
-		if newSegIDs := mergeSegIDs(data.Name, topicsDomain, *ext, data.Segment, headerDataMap); newSegIDs != nil {
+		if newSegIDs := findNewSegIDs(data.Name, topicsDomain, *ext, data.Segment, headerDataMap); newSegIDs != nil {
 			for _, segID := range newSegIDs {
 				userData[i].Segment = append(userData[i].Segment, openrtb2.Segment{ID: strconv.Itoa(segID)})
 			}
@@ -124,7 +124,12 @@ func UpdateUserDataWithTopics(userData []openrtb2.Data, headerData []Topic, topi
 			if len(segIDs) != 0 {
 				data := openrtb2.Data{
 					Name: topicsDomain,
-					Ext:  json.RawMessage(fmt.Sprintf(`{"segtax": %d, "segclass": "%s"}`, segTax, segClass)),
+				}
+
+				var err error
+				data.Ext, err = jsonutil.Marshal(Topic{SegTax: segTax, SegClass: segClass})
+				if err != nil {
+					continue
 				}
 
 				for segID := range segIDs {
@@ -161,26 +166,34 @@ func createHeaderDataMap(headerData []Topic) map[int]map[string]map[int]struct{}
 	return headerDataMap
 }
 
-// mergeSegIDs merge unique segIDs in single user.data if request.user.data and header data match. i.e. segclass, segtax and topicsdomain match
-func mergeSegIDs(dataName, topicsDomain string, userData Topic, userDataSegments []openrtb2.Segment, headerDataMap map[int]map[string]map[int]struct{}) []int {
-	if dataName == topicsDomain {
-		if _, ok := headerDataMap[userData.SegTax]; ok {
-			if _, ok := headerDataMap[userData.SegTax][userData.SegClass]; ok {
+// findNewSegIDs merge unique segIDs in single user.data if request.user.data and header data match. i.e. segclass, segtax and topicsdomain match
+func findNewSegIDs(dataName, topicsDomain string, userData Topic, userDataSegments []openrtb2.Segment, headerDataMap map[int]map[string]map[int]struct{}) []int {
+	if dataName != topicsDomain {
+		return nil
+	}
 
-				for _, segID := range userDataSegments {
-					if id, err := strconv.Atoi(segID.ID); err == nil {
-						delete(headerDataMap[userData.SegTax][userData.SegClass], id)
-					}
-				}
+	segClassMap, exists := headerDataMap[userData.SegTax]
+	if !exists {
+		return nil
+	}
 
-				var segIDs []int
-				for segID := range headerDataMap[userData.SegTax][userData.SegClass] {
-					segIDs = append(segIDs, segID)
-				}
-				return segIDs
-			}
+	segIDsMap, exists := segClassMap[userData.SegClass]
+	if !exists {
+		return nil
+	}
+
+	// remove existing segIDs entries
+	for _, segID := range userDataSegments {
+		if id, err := strconv.Atoi(segID.ID); err == nil {
+			delete(segIDsMap, id)
 		}
 	}
 
-	return nil
+	// collect remaining segIDs
+	segIDs := make([]int, 0, len(segIDsMap))
+	for segID := range segIDsMap {
+		segIDs = append(segIDs, segID)
+	}
+
+	return segIDs
 }

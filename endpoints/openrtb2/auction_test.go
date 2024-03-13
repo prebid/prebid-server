@@ -6588,7 +6588,7 @@ func TestSetSecBrowsingTopcisImplicitly(t *testing.T) {
 								ID: "1",
 							},
 						},
-						Ext: json.RawMessage(`{"segtax": 600, "segclass": "2"}`),
+						Ext: json.RawMessage(`{"segtax":600,"segclass":"2"}`),
 					},
 				},
 			},
@@ -6622,7 +6622,7 @@ func TestSetSecBrowsingTopcisImplicitly(t *testing.T) {
 								Segment: []openrtb2.Segment{
 									{ID: "1"},
 								},
-								Ext: json.RawMessage(`{"segtax": 603, "segclass": "4"}`),
+								Ext: json.RawMessage(`{"segtax":603,"segclass":"4"}`),
 							},
 							{
 								Name: "ads.pubmatic.com",
@@ -6630,7 +6630,7 @@ func TestSetSecBrowsingTopcisImplicitly(t *testing.T) {
 									{ID: "1"},
 									{ID: "3"},
 								},
-								Ext: json.RawMessage(`{"segtax": 600, "segclass": "2"}`),
+								Ext: json.RawMessage(`{"segtax":600,"segclass":"2"}`),
 							},
 						},
 					},
@@ -6644,7 +6644,7 @@ func TestSetSecBrowsingTopcisImplicitly(t *testing.T) {
 						Segment: []openrtb2.Segment{
 							{ID: "1"},
 						},
-						Ext: json.RawMessage(`{"segtax": 603, "segclass": "4"}`),
+						Ext: json.RawMessage(`{"segtax":603,"segclass":"4"}`),
 					},
 					{
 						Name: "ads.pubmatic.com",
@@ -6654,7 +6654,7 @@ func TestSetSecBrowsingTopcisImplicitly(t *testing.T) {
 							{ID: "3"},
 							{ID: "4"},
 						},
-						Ext: json.RawMessage(`{"segtax": 600, "segclass": "2"}`),
+						Ext: json.RawMessage(`{"segtax":600,"segclass":"2"}`),
 					},
 					{
 						Name: "ads.pubmatic.com",
@@ -6666,7 +6666,7 @@ func TestSetSecBrowsingTopcisImplicitly(t *testing.T) {
 							{ID: "7"},
 							{ID: "4567"},
 						},
-						Ext: json.RawMessage(`{"segtax": 601, "segclass": "3"}`),
+						Ext: json.RawMessage(`{"segtax":601,"segclass":"3"}`),
 					},
 				},
 			},
