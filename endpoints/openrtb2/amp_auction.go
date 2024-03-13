@@ -237,7 +237,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	if errortypes.ContainsFatalError(errs) {
 		w.WriteHeader(http.StatusBadRequest)
 		for _, err := range errortypes.FatalOnly(errs) {
-			w.Write([]byte(fmt.Sprintf("Invalid request: %s\n", err.Error())))
+			fmt.Fprintf(w, "Invalid request: %s\n", err.Error())
 		}
 		labels.RequestStatus = metrics.RequestStatusBadInput
 		return
@@ -398,7 +398,7 @@ func sendAmpResponse(
 	ao.AmpTargetingValues = targets
 
 	// Fixes #231
-	enc := json.NewEncoder(w)
+	enc := json.NewEncoder(w) // nosemgrep: json-encoder-needs-type
 	enc.SetEscapeHTML(false)
 	// Explicitly set content type to text/plain, which had previously been
 	// the implied behavior from the time the project was launched.
