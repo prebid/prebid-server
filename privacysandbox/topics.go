@@ -97,6 +97,9 @@ func UpdateUserDataWithTopics(userData []openrtb2.Data, headerData []Topic, topi
 		return userData
 	}
 
+	// headerDataMap groups segIDs by segtax and segclass for faster lookup and tracking of new segIDs yet to be added to user.data
+	// tracking is done by removing segIDs from segIDsMap once they are added to user.data, ensuring that headerDataMap will always have unique segtax-segclass-segIDs
+	// the only drawback of tracking via deleting segtax-segclass from headerDataMap is that this would not track duplicate entries within user.data which is fine because we are only merging header data with the provided user.data
 	headerDataMap := createHeaderDataMap(headerData)
 
 	for i, data := range userData {
@@ -146,7 +149,7 @@ func UpdateUserDataWithTopics(userData []openrtb2.Data, headerData []Topic, topi
 	return userData
 }
 
-// createHeaderDataMap creates a map of header data (segtax-segclass-segIDs) for faster lookup
+// createHeaderDataMap creates a map of header data (segtax-segclass-segIDs) for faster lookup,
 // topicsdomain is not needed as we are only interested data from one domain configured in host config
 func createHeaderDataMap(headerData []Topic) map[int]map[string]map[int]struct{} {
 	headerDataMap := make(map[int]map[string]map[int]struct{})

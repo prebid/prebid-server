@@ -566,6 +566,64 @@ func TestUpdateUserDataWithTopics(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "non-empty topics, user data with duplicate topic details (matching segtax and segclass and segIDs), topics from header merged with user data (filter unqiue segIDs), user.data will not be deduped",
+			args: args{
+				userData: []openrtb2.Data{
+					{
+						ID:   "1",
+						Name: "ads.pubmatic.com",
+						Segment: []openrtb2.Segment{
+							{ID: "1"},
+							{ID: "2"},
+							{ID: "3"},
+						},
+						Ext: json.RawMessage(`{"segtax":600,"segclass":"2"}`),
+					},
+					{
+						ID:   "1",
+						Name: "ads.pubmatic.com",
+						Segment: []openrtb2.Segment{
+							{ID: "1"},
+							{ID: "2"},
+							{ID: "3"},
+						},
+						Ext: json.RawMessage(`{"segtax":600,"segclass":"2"}`),
+					},
+				},
+				headerData: []Topic{
+					{
+						SegTax:   600,
+						SegClass: "2",
+						SegIDs:   []int{2, 3, 4},
+					},
+				},
+				topicsDomain: "ads.pubmatic.com",
+			},
+			want: []openrtb2.Data{
+				{
+					ID:   "1",
+					Name: "ads.pubmatic.com",
+					Segment: []openrtb2.Segment{
+						{ID: "1"},
+						{ID: "2"},
+						{ID: "3"},
+						{ID: "4"},
+					},
+					Ext: json.RawMessage(`{"segtax":600,"segclass":"2"}`),
+				},
+				{
+					ID:   "1",
+					Name: "ads.pubmatic.com",
+					Segment: []openrtb2.Segment{
+						{ID: "1"},
+						{ID: "2"},
+						{ID: "3"},
+					},
+					Ext: json.RawMessage(`{"segtax":600,"segclass":"2"}`),
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
