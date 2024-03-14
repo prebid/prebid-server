@@ -17,7 +17,7 @@ type Topic struct {
 
 // ParseTopicsFromHeader parses the Sec-Browsing-Topics header data into Topics object
 func ParseTopicsFromHeader(secBrowsingTopics string) []Topic {
-	var topics []Topic
+	topics := make([]Topic, 0, 10)
 
 	for _, seg := range strings.Split(secBrowsingTopics, ",") {
 		if topic, ok := parseTopicSegment(seg); ok {

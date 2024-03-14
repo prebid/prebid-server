@@ -253,7 +253,7 @@ func TestUpdateUserDataWithTopics(t *testing.T) {
 			},
 		},
 		{
-			name: "topicsdomain empty, no change in user data",
+			name: "topicsDomain empty, no change in user data",
 			args: args{
 				userData: []openrtb2.Data{
 					{
