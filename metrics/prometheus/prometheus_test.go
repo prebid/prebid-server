@@ -1235,7 +1235,7 @@ func TestRecordSyncerRequestMetric(t *testing.T) {
 			label:  "already_synced",
 		},
 		{
-			status: metrics.SyncerCookieSyncTypeNotSupported,
+			status: metrics.SyncerCookieSyncRejectedByFilter,
 			label:  "type_not_supported",
 		},
 	}
