@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -1028,51 +1029,86 @@ func TestAMPSiteExt(t *testing.T) {
 
 // TestBadRequests makes sure we return 400's on bad requests.
 func TestAmpBadRequests(t *testing.T) {
-	dir := "sample-requests/amp/invalid-whole"
+	dir := "sample-requests/invalid-whole/"
 	files, err := os.ReadDir(dir)
 	assert.NoError(t, err, "Failed to read folder: %s", dir)
 
+	mockAmpStoredReq := make(map[string]json.RawMessage, len(files))
+	badRequests := make(map[string]testCase, len(files))
 	for index, file := range files {
 		filename := file.Name()
-		fileData := readFile(t, "sample-requests/amp/invalid-whole/"+filename)
+		fileData := readFile(t, dir+filename)
 
 		test, err := parseTestData(fileData, filename)
 		if !assert.NoError(t, err) {
 			return
 		}
 
+		if skipAmpTest(test) {
+			continue
+		}
+
 		requestID := strconv.Itoa(100 + index)
 
-		endpoint, _ := NewAmpEndpoint(
-			fakeUUIDGenerator{},
-			&mockAmpExchange{},
-			newParamsValidator(t),
-			&mockAmpStoredReqFetcher{data: map[string]json.RawMessage{
-				requestID: test.BidRequest,
-			}},
-			&mockAccountFetcher{
-				data: map[string]json.RawMessage{"test_pub": json.RawMessage("{}")},
-			},
-			&config.Configuration{MaxRequestSize: maxSize},
-			&metricsConfig.NilMetricsEngine{},
-			analyticsBuild.New(&config.Analytics{}),
-			map[string]string{},
-			[]byte{},
-			openrtb_ext.BuildBidderMap(),
-			empty_fetcher.EmptyFetcher{},
-			hooks.EmptyPlanBuilder{},
-			nil,
-		)
+		badRequests[requestID] = test
+		mockAmpStoredReq[requestID] = test.BidRequest
+	}
 
+	endpoint, _ := NewAmpEndpoint(
+		fakeUUIDGenerator{},
+		&mockAmpExchange{},
+		newParamsValidator(t),
+		&mockAmpStoredReqFetcher{data: mockAmpStoredReq},
+		&empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: maxSize},
+		&metricsConfig.NilMetricsEngine{},
+		analyticsBuild.New(&config.Analytics{}),
+		map[string]string{},
+		[]byte{},
+		openrtb_ext.BuildBidderMap(),
+		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
+		nil,
+	)
+
+	for requestID, test := range badRequests {
 		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?account=test_pub&tag_id=%s", requestID), nil)
 		recorder := httptest.NewRecorder()
 
 		endpoint(recorder, request, nil)
 
 		response := recorder.Body.String()
-		assert.Equal(t, test.ExpectedReturnCode, recorder.Code, filename)
-		assert.Contains(t, response, test.ExpectedErrorMessage, "Actual: %s \nExpected: %s. Filename: %s \n", response, test.ExpectedErrorMessage, filename)
+		assert.Equal(t, test.ExpectedReturnCode, recorder.Code, test.Description)
+		assert.Contains(t, response, test.ExpectedErrorMessage, "Actual: %s \nExpected: %s. Filename: %s \n", response, test.ExpectedErrorMessage, test.Description)
 	}
+}
+
+func skipAmpTest(test testCase) bool {
+	bidRequest := openrtb2.BidRequest{}
+	if err := json.Unmarshal(test.BidRequest, &bidRequest); err == nil {
+		// request.app must not exist in AMP
+		if bidRequest.App != nil {
+			return true
+		}
+
+		// data for tag_id='%s' does not define the required imp array
+		// Invalid request: data for tag_id '%s' includes %d imp elements. Only one is allowed
+		if len(bidRequest.Imp) == 0 || len(bidRequest.Imp) > 1 {
+			return true
+		}
+
+		if bidRequest.Device != nil && strings.Contains(string(bidRequest.Device.Ext), "interstitial") {
+			return true
+		}
+	}
+
+	// request.ext.prebid.cache is initialised in AMP if it is not present in request
+	if strings.Contains(test.ExpectedErrorMessage, `Invalid request: request.ext is invalid: request.ext.prebid.cache requires one of the "bids" or "vastxml" properties`) ||
+		strings.Contains(test.ExpectedErrorMessage, `Invalid request: ext.prebid.storedrequest.id must be a string`) {
+		return true
+	}
+
+	return false
 }
 
 // TestAmpDebug makes sure we get debug information back when requested
