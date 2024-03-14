@@ -115,7 +115,6 @@ func TestNewPBSAnalytics_FileLogger(t *testing.T) {
 }
 
 func TestNewPBSAnalytics_Pubstack(t *testing.T) {
-
 	pbsAnalyticsWithoutError := New(&config.Analytics{
 		Pubstack: config.Pubstack{
 			Enabled:   true,
@@ -139,6 +138,40 @@ func TestNewPBSAnalytics_Pubstack(t *testing.T) {
 		},
 	})
 	instanceWithError := pbsAnalyticsWithError.(enabledAnalytics)
+	assert.Equal(t, len(instanceWithError), 0)
+}
+
+func TestNewModuleHttp(t *testing.T) {
+	agmaAnalyticsWithoutError := New(&config.Analytics{
+		Agma: config.AgmaAnalytics{
+			Enabled: true,
+			Endpoint: config.AgmaAnalyticsHttpEndpoint{
+				Url:     "http://localhost:8080",
+				Timeout: "1s",
+			},
+			Buffers: config.AgmaAnalyticsBuffer{
+				BufferSize: "100KB",
+				EventCount: 50,
+				Timeout:    "30s",
+			},
+			Accounts: []config.AgmaAnalyticsAccount{
+				{
+					PublisherId: "123",
+					Code:        "abc",
+				},
+			},
+		},
+	})
+	instanceWithoutError := agmaAnalyticsWithoutError.(enabledAnalytics)
+
+	assert.Equal(t, len(instanceWithoutError), 1)
+
+	agmaAnalyticsWithError := New(&config.Analytics{
+		Agma: config.AgmaAnalytics{
+			Enabled: true,
+		},
+	})
+	instanceWithError := agmaAnalyticsWithError.(enabledAnalytics)
 	assert.Equal(t, len(instanceWithError), 0)
 }
 

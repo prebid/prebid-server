@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"io"
 	"strings"
+	"unsafe"
 
 	jsoniter "github.com/json-iterator/go"
+	"github.com/modern-go/reflect2"
 	"github.com/prebid/prebid-server/v2/errortypes"
 )
 
@@ -210,4 +212,39 @@ func tryExtractErrorMessage(err error) string {
 // that the caller clearly understands the context, where the structure name is not needed.
 func isLikelyDetailedErrorMessage(msg string) bool {
 	return !strings.HasPrefix(msg, "request.")
+}
+
+// RawMessageExtension will call json.Compact() on every json.RawMessage field when getting marshalled.
+type RawMessageExtension struct {
+	jsoniter.DummyExtension
+}
+
+// CreateEncoder substitutes the default jsoniter encoder of the json.RawMessage type with ours, that
+// calls json.Compact() before writting to the stream
+func (e *RawMessageExtension) CreateEncoder(typ reflect2.Type) jsoniter.ValEncoder {
+	if typ == jsonRawMessageType {
+		return &rawMessageCodec{}
+	}
+	return nil
+}
+
+var jsonRawMessageType = reflect2.TypeOfPtr(&json.RawMessage{}).Elem()
+
+// rawMessageCodec implements jsoniter.ValEncoder interface so we can override the default json.RawMessage Encode()
+// function with our implementation
+type rawMessageCodec struct{}
+
+func (codec *rawMessageCodec) Encode(ptr unsafe.Pointer, stream *jsoniter.Stream) {
+	if ptr != nil {
+		jsonRawMsg := *(*[]byte)(ptr)
+
+		dst := bytes.NewBuffer(make([]byte, 0, len(jsonRawMsg)))
+		if err := json.Compact(dst, jsonRawMsg); err == nil {
+			stream.Write(dst.Bytes())
+		}
+	}
+}
+
+func (codec *rawMessageCodec) IsEmpty(ptr unsafe.Pointer) bool {
+	return ptr == nil || len(*((*json.RawMessage)(ptr))) == 0
 }
