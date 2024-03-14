@@ -21,17 +21,17 @@ func TestParseTopicsFromHeader(t *testing.T) {
 		{
 			name: "empty header",
 			args: args{secBrowsingTopics: "	 "},
-			want: nil,
+			want: []Topic{},
 		},
 		{
 			name: "invalid header value",
 			args: args{secBrowsingTopics: "some-sec-cookie-value"},
-			want: nil,
+			want: []Topic{},
 		},
 		{
 			name: "header with only finish padding",
 			args: args{secBrowsingTopics: "();p=P0000000000000000000000000000000"},
-			want: nil,
+			want: []Topic{},
 		},
 		{
 			name: "header with one valid field",
