@@ -1111,6 +1111,90 @@ func skipAmpTest(test testCase) bool {
 	return false
 }
 
+func TestAmpBadRequestTagID(t *testing.T) {
+	endpoint, _ := NewAmpEndpoint(
+		fakeUUIDGenerator{},
+		&mockAmpExchange{},
+		newParamsValidator(t),
+		&mockAmpStoredReqFetcher{data: map[string]json.RawMessage{}},
+		&empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: maxSize},
+		&metricsConfig.NilMetricsEngine{},
+		analyticsBuild.New(&config.Analytics{}),
+		map[string]string{},
+		[]byte{},
+		openrtb_ext.BuildBidderMap(),
+		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
+		nil,
+	)
+
+	request := httptest.NewRequest("GET", "/openrtb2/auction/amp?account=test_pub", nil)
+	recorder := httptest.NewRecorder()
+
+	endpoint(recorder, request, nil)
+
+	response := recorder.Body.String()
+	assert.Equal(t, 400, recorder.Code)
+	assert.Equal(t, "Invalid request: AMP requests require an AMP tag_id\n", response)
+}
+
+func TestAmpBadRequestImp(t *testing.T) {
+	endpoint, _ := NewAmpEndpoint(
+		fakeUUIDGenerator{},
+		&mockAmpExchange{},
+		newParamsValidator(t),
+		&mockAmpStoredReqFetcher{data: map[string]json.RawMessage{"123": json.RawMessage(`{"imp":[{},{}]}`)}},
+		&empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: maxSize},
+		&metricsConfig.NilMetricsEngine{},
+		analyticsBuild.New(&config.Analytics{}),
+		map[string]string{},
+		[]byte{},
+		openrtb_ext.BuildBidderMap(),
+		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
+		nil,
+	)
+
+	request := httptest.NewRequest("GET", "/openrtb2/auction/amp?account=test_pub&tag_id=123", nil)
+	recorder := httptest.NewRecorder()
+
+	endpoint(recorder, request, nil)
+
+	response := recorder.Body.String()
+	assert.Equal(t, 400, recorder.Code)
+	assert.Equal(t, "Invalid request: data for tag_id '123' includes 2 imp elements. Only one is allowed\n", response)
+}
+
+func TestAmpBadRequestApp(t *testing.T) {
+	endpoint, _ := NewAmpEndpoint(
+		fakeUUIDGenerator{},
+		&mockAmpExchange{},
+		newParamsValidator(t),
+		&mockAmpStoredReqFetcher{data: map[string]json.RawMessage{"123": json.RawMessage(`{"imp":[{}],"app":{}}`)}},
+		&empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: maxSize},
+		&metricsConfig.NilMetricsEngine{},
+		analyticsBuild.New(&config.Analytics{}),
+		map[string]string{},
+		[]byte{},
+		openrtb_ext.BuildBidderMap(),
+		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
+		nil,
+	)
+
+	request := httptest.NewRequest("GET", "/openrtb2/auction/amp?account=test_pub&tag_id=123", nil)
+	recorder := httptest.NewRecorder()
+
+	endpoint(recorder, request, nil)
+
+	response := recorder.Body.String()
+	assert.Equal(t, 400, recorder.Code)
+	assert.Equal(t, "Invalid request: request.app must not exist in AMP stored requests.\n", response)
+}
+
 // TestAmpDebug makes sure we get debug information back when requested
 func TestAmpDebug(t *testing.T) {
 	requests := map[string]json.RawMessage{
