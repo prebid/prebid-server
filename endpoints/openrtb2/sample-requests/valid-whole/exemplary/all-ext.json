@@ -83,6 +83,8 @@
           "name": "video",
           "version": "1.0"
         },
+        "debug": true,
+        "integration": "managed",
         "targeting": {
           "includewinners": false,
           "pricegranularity": {
