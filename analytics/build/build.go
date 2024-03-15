@@ -1,6 +1,8 @@
 package build
 
 import (
+	"encoding/json"
+
 	"github.com/benbjohnson/clock"
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/v2/analytics"
@@ -135,7 +137,7 @@ func evaluateActivities(rw *openrtb_ext.RequestWrapper, ac privacy.ActivityContr
 }
 
 func updateReqWrapperForAnalytics(rw *openrtb_ext.RequestWrapper, adapterName string) {
-	reqExt, _ := rw.GetRequestExt() // TODO: Handle error
+	reqExt, _ := rw.GetRequestExt()
 	reqExtPrebid := reqExt.GetPrebid()
 	if reqExtPrebid == nil {
 		return
@@ -160,8 +162,8 @@ func updateReqWrapperForAnalytics(rw *openrtb_ext.RequestWrapper, adapterName st
 	}
 }
 
-func updatePrebidAnalyticsMap(extPrebidAnalytics map[string]*openrtb_ext.ExtRequestPrebidAnalytics, adapterName string) map[string]*openrtb_ext.ExtRequestPrebidAnalytics {
-	newMap := make(map[string]*openrtb_ext.ExtRequestPrebidAnalytics)
+func updatePrebidAnalyticsMap(extPrebidAnalytics map[string]json.RawMessage, adapterName string) map[string]json.RawMessage {
+	newMap := make(map[string]json.RawMessage)
 	if val, ok := extPrebidAnalytics[adapterName]; ok {
 		newMap[adapterName] = val
 	}
