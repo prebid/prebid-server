@@ -529,7 +529,7 @@ func TestUpdateUserDataWithTopics(t *testing.T) {
 			},
 		},
 		{
-			name: "non-empty topics, user data with same topic details (matching segtax and segclass), topics from header merged with user data (filter unqiue segIDs)",
+			name: "non-empty topics, user data with same topic details (matching segtax and segclass), topics from header merged with user data (filter unique segIDs)",
 			args: args{
 				userData: []openrtb2.Data{
 					{
@@ -567,7 +567,7 @@ func TestUpdateUserDataWithTopics(t *testing.T) {
 			},
 		},
 		{
-			name: "non-empty topics, user data with duplicate topic details (matching segtax and segclass and segIDs), topics from header merged with user data (filter unqiue segIDs), user.data will not be deduped",
+			name: "non-empty topics, user data with duplicate topic details (matching segtax and segclass and segIDs), topics from header merged with user data (filter unique segIDs), user.data will not be deduped",
 			args: args{
 				userData: []openrtb2.Data{
 					{
