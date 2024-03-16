@@ -231,21 +231,15 @@ func TestMerge(t *testing.T) {
 			acctBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
 					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
-						"bidderB": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.5}},
-						},
+						"bidderB": {"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.5}}},
 					},
 				},
 			},
 			expectedBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
 					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
-						"bidderA": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}},
-						},
-						"bidderB": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.5}},
-						},
+						"bidderA": {"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}}},
+						"bidderB": {"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.5}}},
 					},
 				},
 			},
@@ -258,18 +252,14 @@ func TestMerge(t *testing.T) {
 			acctBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
 					Audio: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
-						"bidderA": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.5}},
-						},
+						"bidderA": {"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.5}}},
 					},
 				},
 			},
 			expectedBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
 					Audio: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
-						"bidderA": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}},
-						},
+						"bidderA": {"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}}},
 					},
 				},
 			},
@@ -282,9 +272,7 @@ func TestMerge(t *testing.T) {
 			acctBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
 					VideoInstream: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
-						"bidderA": {
-							"diffDealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.5}},
-						},
+						"bidderA": {"diffDealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.5}}},
 					},
 				},
 			},
@@ -307,21 +295,15 @@ func TestMerge(t *testing.T) {
 			acctBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
 					Native: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
-						"bidderB": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.5}},
-						},
+						"bidderB": {"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.5}}},
 					},
 				},
 			},
 			expectedBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
 					Native: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
-						"bidderA": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 0.18, Currency: "USD"}},
-						},
-						"bidderB": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.5}},
-						},
+						"bidderA": {"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 0.18, Currency: "USD"}}},
+						"bidderB": {"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.5}}},
 					},
 				},
 			},
@@ -334,23 +316,17 @@ func TestMerge(t *testing.T) {
 			acctBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
 					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
-						"bidderB": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.5}},
-						},
+						"bidderB": {"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.5}}},
 					},
 				},
 			},
 			expectedBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
 					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
-						"bidderB": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.5}},
-						},
+						"bidderB": {"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.5}}},
 					},
 					VideoOutstream: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
-						"bidderA": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}},
-						},
+						"bidderA": {"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}}},
 					},
 				},
 			},
@@ -363,18 +339,14 @@ func TestMerge(t *testing.T) {
 			acctBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
 					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
-						"bidderB": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.5}},
-						},
+						"bidderB": {"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.5}}},
 					},
 				},
 			},
 			expectedBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
 					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
-						"bidderB": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.5}},
-						},
+						"bidderB": {"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.5}}},
 					},
 				},
 			},
@@ -387,23 +359,17 @@ func TestMerge(t *testing.T) {
 			acctBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
 					WildCard: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
-						"bidderB": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.5}},
-						},
+						"bidderB": {"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.5}}},
 					},
 				},
 			},
 			expectedBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
 					WildCard: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
-						"bidderB": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.5}},
-						},
+						"bidderB": {"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.5}}},
 					},
 					VideoInstream: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
-						"bidderA": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}},
-						},
+						"bidderA": {"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}}},
 					},
 				},
 			},
@@ -425,9 +391,7 @@ func TestMerge(t *testing.T) {
 			expectedBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
 					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
-						"bidderA": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}},
-						},
+						"bidderA": {"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}}},
 					},
 				},
 			},
@@ -449,18 +413,14 @@ func TestMerge(t *testing.T) {
 			acctBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
 					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
-						"bidderA": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}},
-						},
+						"bidderA": {"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}}},
 					},
 				},
 			},
 			expectedBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
 					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
-						"bidderA": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}},
-						},
+						"bidderA": {"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}}},
 					},
 				},
 			},
@@ -481,18 +441,14 @@ func TestMerge(t *testing.T) {
 			acctBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
 					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
-						"bidderA": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}},
-						},
+						"bidderA": {"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}}},
 					},
 				},
 			},
 			expectedBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
 					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
-						"bidderA": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}},
-						},
+						"bidderA": {"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}}},
 					},
 				},
 			},
@@ -506,9 +462,7 @@ func TestMerge(t *testing.T) {
 			expectedBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
 					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
-						"bidderA": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}},
-						},
+						"bidderA": {"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}}},
 					},
 				},
 			},
@@ -521,63 +475,41 @@ func TestMerge(t *testing.T) {
 			acctBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
 					VideoInstream: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
-						"bidderB": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3}},
-						},
+						"bidderB": {"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3}}},
 					},
 					VideoOutstream: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
-						"bidderC": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3}},
-						},
+						"bidderC": {"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3}}},
 					},
 					Audio: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
-						"bidderD": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3}},
-						},
+						"bidderD": {"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3}}},
 					},
 					Native: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
-						"bidderE": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3}},
-						},
+						"bidderE": {"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3}}},
 					},
 					WildCard: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
-						"bidderF": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3}},
-						},
+						"bidderF": {"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3}}},
 					},
 				},
 			},
 			expectedBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
 				MediaType: openrtb_ext.MediaType{
 					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
-						"bidderA": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}},
-						},
+						"bidderA": {"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}}},
 					},
 					VideoInstream: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
-						"bidderB": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3}},
-						},
+						"bidderB": {"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3}}},
 					},
 					VideoOutstream: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
-						"bidderC": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3}},
-						},
+						"bidderC": {"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3}}},
 					},
 					Audio: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
-						"bidderD": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3}},
-						},
+						"bidderD": {"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3}}},
 					},
 					Native: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
-						"bidderE": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3}},
-						},
+						"bidderE": {"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3}}},
 					},
 					WildCard: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
-						"bidderF": {
-							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3}},
-						},
+						"bidderF": {"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3}}},
 					},
 				},
 			},
