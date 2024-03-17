@@ -391,6 +391,7 @@ func (m *mockAnalytics) LogNotificationEventObject(ao *analytics.NotificationEve
 	m.lastLoggedEventObject = ao
 }
 
+// TODO: Change test structure so that we're calling multiple modules at once where evaluateActivites didn't make a clone
 func TestLogAnalyticsObjectExtRequestPrebidAnalytics(t *testing.T) {
 	tests := []struct {
 		description         string
@@ -439,7 +440,7 @@ func TestLogAnalyticsObjectExtRequestPrebidAnalytics(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			ea := enabledAnalytics{test.givenAdapterName: &mockAnalytics{}}
+			ea := enabledAnalytics{test.givenAdapterName: &mockAnalytics{}, "testAdapter": &mockAnalytics{}}
 
 			ac := privacy.NewActivityControl(getActivityConfig("sampleModule", true, true, true))
 

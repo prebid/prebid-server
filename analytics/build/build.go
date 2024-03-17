@@ -49,6 +49,7 @@ func New(analytics *config.Analytics) analytics.Runner {
 type enabledAnalytics map[string]analytics.Module
 
 func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac privacy.ActivityControl) {
+	// originalReqWrapper := ao.RequestWrapper
 	for name, module := range ea {
 		if isAllowed, cloneBidderReq := evaluateActivities(ao.RequestWrapper, ac, name); isAllowed {
 			if cloneBidderReq != nil {
@@ -56,6 +57,9 @@ func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac priv
 			}
 			updateReqWrapperForAnalytics(ao.RequestWrapper, name)
 			module.LogAuctionObject(ao)
+			// if cloneBidderReq == nil {
+			// 	ao.RequestWrapper = originalReqWrapper
+			// }
 		}
 	}
 }
