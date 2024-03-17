@@ -105,7 +105,7 @@ type bidResponseWrapper struct {
 }
 
 type BidIDGenerator interface {
-	New() (string, error)
+	New(bidder string) (string, error)
 	Enabled() bool
 }
 
@@ -117,7 +117,7 @@ func (big *bidIDGenerator) Enabled() bool {
 	return big.enabled
 }
 
-func (big *bidIDGenerator) New() (string, error) {
+func (big *bidIDGenerator) New(bidder string) (string, error) {
 	rawUuid, err := uuid.NewV4()
 	return rawUuid.String(), err
 }
@@ -416,10 +416,11 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 		}
 
 		if e.bidIDGenerator.Enabled() {
-			for _, seatBid := range adapterBids {
-				for _, pbsBid := range seatBid.Bids {
-					pbsBid.GeneratedBidID, err = e.bidIDGenerator.New()
-					if err != nil {
+			for bidder, seatBid := range adapterBids {
+				for i := range seatBid.Bids {
+					if bidID, err := e.bidIDGenerator.New(bidder.String()); err == nil {
+						seatBid.Bids[i].GeneratedBidID = bidID
+					} else {
 						errs = append(errs, errors.New("Error generating bid.ext.prebid.bidid"))
 					}
 				}
@@ -1245,14 +1246,14 @@ func (e *exchange) makeBid(bids []*entities.PbsOrtbBid, auc *auction, returnCrea
 	errs := make([]error, 0, 1)
 
 	for _, bid := range bids {
-		if !dsa.Validate(bidRequest, bid) {
-			RequiredError := openrtb_ext.ExtBidderMessage{
-				Code:    errortypes.BadServerResponseErrorCode,
-				Message: "bidResponse rejected: DSA object missing when required",
+		if err := dsa.Validate(bidRequest, bid); err != nil {
+			dsaMessage := openrtb_ext.ExtBidderMessage{
+				Code:    errortypes.InvalidBidResponseDSAWarningCode,
+				Message: fmt.Sprintf("bid rejected: %s", err.Error()),
 			}
-			bidResponseExt.Warnings[adapter] = append(bidResponseExt.Warnings[adapter], RequiredError)
+			bidResponseExt.Warnings[adapter] = append(bidResponseExt.Warnings[adapter], dsaMessage)
 
-			seatNonBids.addBid(bid, int(ResponseRejectedPrivacy), adapter.String())
+			seatNonBids.addBid(bid, int(ResponseRejectedGeneral), adapter.String())
 			continue // Don't add bid to result
 		}
 		if e.bidValidationEnforcement.BannerCreativeMaxSize == config.ValidationEnforce && bid.BidType == openrtb_ext.BidTypeBanner {

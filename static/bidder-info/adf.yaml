@@ -1,4 +1,12 @@
+# Please uncomment the appropriate endpoint URL for your datacenter
+# Europe
 endpoint: "https://adx.adform.net/adx/openrtb"
+# North/South America
+# endpoint: "https://adx2.adform.net/adx/openrtb"
+# APAC
+# endpoint: "https://adx3.adform.net/adx/openrtb"
+geoscope:
+  - global
 maintainer:
   email: "scope.sspp@adform.com"
 gvlVendorID: 50
