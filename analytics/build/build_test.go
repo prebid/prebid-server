@@ -440,7 +440,7 @@ func TestLogAnalyticsObjectExtRequestPrebidAnalytics(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			ea := enabledAnalytics{test.givenAdapterName: &mockAnalytics{}, "testAdapter": &mockAnalytics{}}
+			ea := enabledAnalytics{test.givenAdapterName: &mockAnalytics{}}
 
 			ac := privacy.NewActivityControl(getActivityConfig("sampleModule", true, true, true))
 
