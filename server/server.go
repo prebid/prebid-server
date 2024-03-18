@@ -53,7 +53,7 @@ func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.H
 		go runServer(mainServer, "Main", mainListener)
 	}
 
-	if cfg.AdminEnabled {
+	if cfg.Admin.Enabled {
 		adminServer := newAdminServer(cfg, adminHandler)
 		go shutdownAfterSignals(adminServer, stopAdmin, done)
 
