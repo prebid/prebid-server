@@ -9,7 +9,6 @@ import (
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
@@ -54,18 +53,6 @@ type resetDigitalRequesImps struct {
 	} `json:"media_types"`
 }
 
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
-	}
-
-	bidder := &adapter{
-		endpoint: template,
-	}
-
-	return bidder, nil
-}
 func getHeaders(request *openrtb2.BidRequest) http.Header {
 	headers := http.Header{}
 
