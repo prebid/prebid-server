@@ -49,17 +49,16 @@ func New(analytics *config.Analytics) analytics.Runner {
 type enabledAnalytics map[string]analytics.Module
 
 func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac privacy.ActivityControl) {
-	// originalReqWrapper := ao.RequestWrapper
 	for name, module := range ea {
 		if isAllowed, cloneBidderReq := evaluateActivities(ao.RequestWrapper, ac, name); isAllowed {
 			if cloneBidderReq != nil {
 				ao.RequestWrapper = cloneBidderReq
 			}
-			updateReqWrapperForAnalytics(ao.RequestWrapper, name)
+			cloneReq := updateReqWrapperForAnalytics(ao.RequestWrapper, name, cloneBidderReq != nil)
 			module.LogAuctionObject(ao)
-			// if cloneBidderReq == nil {
-			// 	ao.RequestWrapper = originalReqWrapper
-			// }
+			if cloneReq != nil {
+				ao.RequestWrapper = cloneReq
+			}
 		}
 	}
 }
@@ -70,8 +69,11 @@ func (ea enabledAnalytics) LogVideoObject(vo *analytics.VideoObject, ac privacy.
 			if cloneBidderReq != nil {
 				vo.RequestWrapper = cloneBidderReq
 			}
-			updateReqWrapperForAnalytics(vo.RequestWrapper, name)
+			cloneReq := updateReqWrapperForAnalytics(vo.RequestWrapper, name, cloneBidderReq != nil)
 			module.LogVideoObject(vo)
+			if cloneReq != nil {
+				vo.RequestWrapper = cloneReq
+			}
 		}
 
 	}
@@ -95,8 +97,11 @@ func (ea enabledAnalytics) LogAmpObject(ao *analytics.AmpObject, ac privacy.Acti
 			if cloneBidderReq != nil {
 				ao.RequestWrapper = cloneBidderReq
 			}
-			updateReqWrapperForAnalytics(ao.RequestWrapper, name)
+			cloneReq := updateReqWrapperForAnalytics(ao.RequestWrapper, name, cloneBidderReq != nil)
 			module.LogAmpObject(ao)
+			if cloneReq != nil {
+				ao.RequestWrapper = cloneReq
+			}
 		}
 	}
 }
@@ -140,11 +145,17 @@ func evaluateActivities(rw *openrtb_ext.RequestWrapper, ac privacy.ActivityContr
 	return true, cloneReq
 }
 
-func updateReqWrapperForAnalytics(rw *openrtb_ext.RequestWrapper, adapterName string) {
+func updateReqWrapperForAnalytics(rw *openrtb_ext.RequestWrapper, adapterName string, isCloned bool) *openrtb_ext.RequestWrapper {
 	reqExt, _ := rw.GetRequestExt()
 	reqExtPrebid := reqExt.GetPrebid()
 	if reqExtPrebid == nil {
-		return
+		return nil
+	}
+	cloneReq := &openrtb_ext.RequestWrapper{}
+	if !isCloned {
+		cloneReq = &openrtb_ext.RequestWrapper{
+			BidRequest: ortb.CloneBidRequestPartial(rw.BidRequest),
+		}
 	}
 	extPrebidAnalytics := reqExtPrebid.Analytics
 
@@ -153,7 +164,7 @@ func updateReqWrapperForAnalytics(rw *openrtb_ext.RequestWrapper, adapterName st
 		reqExtPrebid.Analytics = nil
 		reqExt.SetPrebid(reqExtPrebid)
 		rw.RebuildRequest()
-		return
+		return nil
 	}
 
 	for name := range extPrebidAnalytics {
@@ -164,6 +175,10 @@ func updateReqWrapperForAnalytics(rw *openrtb_ext.RequestWrapper, adapterName st
 			break
 		}
 	}
+
+	cloneReq.RebuildRequest()
+	return cloneReq
+
 }
 
 func updatePrebidAnalyticsMap(extPrebidAnalytics map[string]json.RawMessage, adapterName string) map[string]json.RawMessage {
