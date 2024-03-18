@@ -1664,27 +1664,8 @@ func validateRequestExt(req *openrtb_ext.RequestWrapper) []error {
 		}
 	}
 
-	if prebid.Targeting != nil {
-		if prebid.Targeting.PriceGranularity != nil {
-			if err := validatePriceGranularity(prebid.Targeting.PriceGranularity); err != nil {
-				return []error{err}
-			}
-		}
-		if prebid.Targeting.MediaTypePriceGranularity.Video != nil {
-			if err := validatePriceGranularity(prebid.Targeting.MediaTypePriceGranularity.Video); err != nil {
-				return []error{err}
-			}
-		}
-		if prebid.Targeting.MediaTypePriceGranularity.Banner != nil {
-			if err := validatePriceGranularity(prebid.Targeting.MediaTypePriceGranularity.Banner); err != nil {
-				return []error{err}
-			}
-		}
-		if prebid.Targeting.MediaTypePriceGranularity.Native != nil {
-			if err := validatePriceGranularity(prebid.Targeting.MediaTypePriceGranularity.Native); err != nil {
-				return []error{err}
-			}
-		}
+	if err := validateTargeting(prebid.Targeting); err != nil {
+		return []error{err}
 	}
 
 	var errs []error
@@ -1713,6 +1694,32 @@ func validateRequestExt(req *openrtb_ext.RequestWrapper) []error {
 	}
 
 	return errs
+}
+
+func validateTargeting(t *openrtb_ext.ExtRequestTargeting) error {
+	if t != nil {
+		if t.PriceGranularity != nil {
+			if err := validatePriceGranularity(t.PriceGranularity); err != nil {
+				return err
+			}
+		}
+		if t.MediaTypePriceGranularity.Video != nil {
+			if err := validatePriceGranularity(t.MediaTypePriceGranularity.Video); err != nil {
+				return err
+			}
+		}
+		if t.MediaTypePriceGranularity.Banner != nil {
+			if err := validatePriceGranularity(t.MediaTypePriceGranularity.Banner); err != nil {
+				return err
+			}
+		}
+		if t.MediaTypePriceGranularity.Native != nil {
+			if err := validatePriceGranularity(t.MediaTypePriceGranularity.Native); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func validatePriceGranularity(pg *openrtb_ext.PriceGranularity) error {

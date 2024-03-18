@@ -1,5 +1,5 @@
 {
-    "description": "Targeting flags are all set to false, request is still valid, but not targeting data should be present in bids",
+    "description": "Targeting flags are all set to false, request is still valid, but no targeting data should be present in bids",
     "config": {
       "mockBidders": [
         {
