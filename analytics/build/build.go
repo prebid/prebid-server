@@ -151,34 +151,32 @@ func updateReqWrapperForAnalytics(rw *openrtb_ext.RequestWrapper, adapterName st
 	if reqExtPrebid == nil {
 		return nil
 	}
-	cloneReq := &openrtb_ext.RequestWrapper{}
+
+	var cloneReq *openrtb_ext.RequestWrapper
 	if !isCloned {
-		cloneReq = &openrtb_ext.RequestWrapper{
-			BidRequest: ortb.CloneBidRequestPartial(rw.BidRequest),
-		}
+		cloneReq = &openrtb_ext.RequestWrapper{BidRequest: ortb.CloneBidRequestPartial(rw.BidRequest)}
+	} else {
+		cloneReq = nil
 	}
-	extPrebidAnalytics := reqExtPrebid.Analytics
 
-	// Given analytics adapter module is not present in ext.prebid.analytics, remove the entire analytics object from request for logging
-	if _, ok := extPrebidAnalytics[adapterName]; !ok {
+	if len(reqExtPrebid.Analytics) == 0 {
+		return cloneReq
+	}
+
+	// Remove the entire analytics object if the adapter module is not present
+	if _, ok := reqExtPrebid.Analytics[adapterName]; !ok {
 		reqExtPrebid.Analytics = nil
-		reqExt.SetPrebid(reqExtPrebid)
-		rw.RebuildRequest()
-		return nil
+	} else {
+		reqExtPrebid.Analytics = updatePrebidAnalyticsMap(reqExtPrebid.Analytics, adapterName)
+	}
+	reqExt.SetPrebid(reqExtPrebid)
+	rw.RebuildRequest()
+
+	if cloneReq != nil {
+		cloneReq.RebuildRequest()
 	}
 
-	for name := range extPrebidAnalytics {
-		if name == adapterName {
-			reqExtPrebid.Analytics = updatePrebidAnalyticsMap(reqExtPrebid.Analytics, adapterName)
-			reqExt.SetPrebid(reqExtPrebid)
-			rw.RebuildRequest()
-			break
-		}
-	}
-
-	cloneReq.RebuildRequest()
 	return cloneReq
-
 }
 
 func updatePrebidAnalyticsMap(extPrebidAnalytics map[string]json.RawMessage, adapterName string) map[string]json.RawMessage {

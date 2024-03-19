@@ -382,96 +382,6 @@ func (m *mockAnalytics) LogSetUIDObject(ao *analytics.SetUIDObject) {}
 
 func (m *mockAnalytics) LogNotificationEventObject(ao *analytics.NotificationEvent) {}
 
-// TODO: Consolidate tests, add eval activities bool change
-func TestLogAnalyticsObjectExtRequestPrebidAnalytics(t *testing.T) {
-	tests := []struct {
-		description         string
-		givenRequestWrapper *openrtb_ext.RequestWrapper
-		givenAdapterName    string
-		expectedBidRequest  *openrtb2.BidRequest
-	}{
-		{
-			description: "Adapter1 so Adapter2 info should be removed from ext.prebid.analytics",
-			givenRequestWrapper: &openrtb_ext.RequestWrapper{
-				BidRequest: &openrtb2.BidRequest{
-					ID:  "test_request",
-					Ext: []byte(`{"prebid":{"analytics":{"adapter1":{"client-analytics":true},"adapter2":{"client-analytics":false}}}}`)},
-			},
-			givenAdapterName: "adapter1",
-			expectedBidRequest: &openrtb2.BidRequest{
-				ID:  "test_request",
-				Ext: []byte(`{"prebid":{"analytics":{"adapter1":{"client-analytics":true}}}}`)},
-		},
-		{
-			description: "Adapter 2 so Adapter1 info should be removed from ext.prebid.analytics",
-			givenRequestWrapper: &openrtb_ext.RequestWrapper{
-				BidRequest: &openrtb2.BidRequest{
-					ID:  "test_request",
-					Ext: []byte(`{"prebid":{"analytics":{"adapter1":{"client-analytics":true},"adapter2":{"client-analytics":false}}}}`)},
-			},
-			givenAdapterName: "adapter2",
-			expectedBidRequest: &openrtb2.BidRequest{
-				ID:  "test_request",
-				Ext: []byte(`{"prebid":{"analytics":{"adapter2":{"client-analytics":false}}}}`)},
-		},
-		{
-			description: "Given adapter not found in ext.prebid.analytics so remove entire object",
-			givenRequestWrapper: &openrtb_ext.RequestWrapper{
-				BidRequest: &openrtb2.BidRequest{
-					ID:  "test_request",
-					Ext: []byte(`{"prebid":{"analytics":{"adapter1":{"client-analytics":true},"adapter2":{"client-analytics":false}}}}`)},
-			},
-			givenAdapterName: "adapterNotFound",
-			expectedBidRequest: &openrtb2.BidRequest{
-				ID:  "test_request",
-				Ext: nil,
-			},
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			ea := enabledAnalytics{test.givenAdapterName: &mockAnalytics{}}
-
-			ac := privacy.NewActivityControl(getActivityConfig("sampleModule", true, true, true))
-
-			ao := &analytics.AuctionObject{
-				Status:         http.StatusOK,
-				Errors:         nil,
-				Response:       &openrtb2.BidResponse{},
-				RequestWrapper: test.givenRequestWrapper,
-			}
-
-			amp := &analytics.AmpObject{
-				Status:          http.StatusOK,
-				Errors:          nil,
-				AuctionResponse: &openrtb2.BidResponse{},
-				RequestWrapper:  test.givenRequestWrapper,
-			}
-
-			video := &analytics.VideoObject{
-				Status:         http.StatusOK,
-				Errors:         nil,
-				Response:       &openrtb2.BidResponse{},
-				RequestWrapper: test.givenRequestWrapper,
-			}
-
-			ea.LogAuctionObject(ao, ac)
-			ea.LogAmpObject(amp, ac)
-			ea.LogVideoObject(video, ac)
-
-			// Retrieve the logged analytics from the mockAnalytics module, and assert that the logged object was properly altered
-			loggedAuctionBidRequest := ea[test.givenAdapterName].(*mockAnalytics).lastLoggedAuctionBidRequest
-			loggedAmpBidRequest := ea[test.givenAdapterName].(*mockAnalytics).lastLoggedAmpBidRequest
-			loggedVideoBidRequest := ea[test.givenAdapterName].(*mockAnalytics).lastLoggedVideoBidRequest
-
-			assert.Equal(t, test.expectedBidRequest, loggedAuctionBidRequest)
-			assert.Equal(t, test.expectedBidRequest, loggedAmpBidRequest)
-			assert.Equal(t, test.expectedBidRequest, loggedVideoBidRequest)
-		})
-	}
-}
-
 type secondMockAnalytics struct {
 	lastLoggedAuctionBidRequest *openrtb2.BidRequest
 	lastLoggedAmpBidRequest     *openrtb2.BidRequest
@@ -496,22 +406,22 @@ func (m *secondMockAnalytics) LogSetUIDObject(ao *analytics.SetUIDObject) {}
 
 func (m *secondMockAnalytics) LogNotificationEventObject(ao *analytics.NotificationEvent) {}
 
-func TestLogObjectMultipleModules(t *testing.T) {
+func TestLogObject(t *testing.T) {
 	tests := []struct {
-		description         string
-		givenRequestWrapper *openrtb_ext.RequestWrapper
-		givenAdapterName1   string
-		givenAdapterName2   string
-		givenAuctionObject  *analytics.AuctionObject
-		givenAmpObject      *analytics.AmpObject
-		givenVideoObject    *analytics.VideoObject
-		expectedBidRequest1 *openrtb2.BidRequest
-		expectedBidRequest2 *openrtb2.BidRequest
+		description           string
+		givenRequestWrapper   *openrtb_ext.RequestWrapper
+		givenEnabledAnalytics enabledAnalytics
+		givenActivityControl  bool
+		givenAuctionObject    *analytics.AuctionObject
+		givenAmpObject        *analytics.AmpObject
+		givenVideoObject      *analytics.VideoObject
+		expectedBidRequest1   *openrtb2.BidRequest
+		expectedBidRequest2   *openrtb2.BidRequest
 	}{
 		{
-			description:       "Multiple analytics modules, no clone from evaluate activities, should expect both to have their information to be logged only -- auction",
-			givenAdapterName1: "adapter1",
-			givenAdapterName2: "adapter2",
+			description:           "Multiple analytics modules, clone from evaluate activities, should expect both to have their information to be logged only -- auction",
+			givenEnabledAnalytics: enabledAnalytics{"adapter1": &mockAnalytics{}, "adapter2": &secondMockAnalytics{}},
+			givenActivityControl:  true,
 			givenAuctionObject: &analytics.AuctionObject{
 				Status:   http.StatusOK,
 				Errors:   nil,
@@ -530,9 +440,9 @@ func TestLogObjectMultipleModules(t *testing.T) {
 				Ext: []byte(`{"prebid":{"analytics":{"adapter2":{"client-analytics":false}}}}`)},
 		},
 		{
-			description:       "Multiple analytics modules, should expect both to have their information to be logged only -- amp",
-			givenAdapterName1: "adapter1",
-			givenAdapterName2: "adapter2",
+			description:           "Multiple analytics modules, no clone from evaluate activities, should expect both to have their information to be logged only -- amp",
+			givenEnabledAnalytics: enabledAnalytics{"adapter1": &mockAnalytics{}, "adapter2": &secondMockAnalytics{}},
+			givenActivityControl:  false,
 			givenAmpObject: &analytics.AmpObject{
 				Status:          http.StatusOK,
 				Errors:          nil,
@@ -551,10 +461,10 @@ func TestLogObjectMultipleModules(t *testing.T) {
 				Ext: []byte(`{"prebid":{"analytics":{"adapter2":{"client-analytics":false}}}}`)},
 		},
 		{
-			description:       "Multiple analytics modules, should expect both to have their information to be logged only -- video",
-			givenAdapterName1: "adapter1",
-			givenAdapterName2: "adapter2",
-			givenVideoObject: &analytics.VideoObject{
+			description:           "Single analytics module, clone from evaluate activities, should expect both to have their information to be logged only -- amp",
+			givenEnabledAnalytics: enabledAnalytics{"adapter1": &mockAnalytics{}},
+			givenActivityControl:  true,
+			givenAuctionObject: &analytics.AuctionObject{
 				Status:   http.StatusOK,
 				Errors:   nil,
 				Response: &openrtb2.BidResponse{},
@@ -567,55 +477,67 @@ func TestLogObjectMultipleModules(t *testing.T) {
 			expectedBidRequest1: &openrtb2.BidRequest{
 				ID:  "test_request",
 				Ext: []byte(`{"prebid":{"analytics":{"adapter1":{"client-analytics":true}}}}`)},
-			expectedBidRequest2: &openrtb2.BidRequest{
+		},
+		{
+			description:           "Single analytics module, adapter name not found, expect entire analytics object to be nil -- video",
+			givenEnabledAnalytics: enabledAnalytics{"unknownAdapter": &mockAnalytics{}},
+			givenActivityControl:  true,
+			givenVideoObject: &analytics.VideoObject{
+				Status:   http.StatusOK,
+				Errors:   nil,
+				Response: &openrtb2.BidResponse{},
+				RequestWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						ID:  "test_request",
+						Ext: []byte(`{"prebid":{"analytics":{"adapter1":{"client-analytics":true},"adapter2":{"client-analytics":false}}}}`)},
+				},
+			},
+			expectedBidRequest1: &openrtb2.BidRequest{
 				ID:  "test_request",
-				Ext: []byte(`{"prebid":{"analytics":{"adapter2":{"client-analytics":false}}}}`)},
+				Ext: nil,
+			},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			ea := enabledAnalytics{test.givenAdapterName1: &mockAnalytics{}, test.givenAdapterName2: &secondMockAnalytics{}}
+			ac := privacy.NewActivityControl(getActivityConfig("sampleModule", test.givenActivityControl, test.givenActivityControl, test.givenActivityControl))
 
-			ac := privacy.NewActivityControl(getActivityConfig("sampleModule", false, false, false))
+			var loggedBidReq1, loggedBidReq2 *openrtb2.BidRequest
+			switch {
+			case test.givenAuctionObject != nil:
+				test.givenEnabledAnalytics.LogAuctionObject(test.givenAuctionObject, ac)
+				loggedBidReq1 = test.givenEnabledAnalytics["adapter1"].(*mockAnalytics).lastLoggedAuctionBidRequest
+				if len(test.givenEnabledAnalytics) == 2 {
+					loggedBidReq2 = test.givenEnabledAnalytics["adapter2"].(*secondMockAnalytics).lastLoggedAuctionBidRequest
+				}
+			case test.givenAmpObject != nil:
+				test.givenEnabledAnalytics.LogAmpObject(test.givenAmpObject, ac)
+				loggedBidReq1 = test.givenEnabledAnalytics["adapter1"].(*mockAnalytics).lastLoggedAmpBidRequest
+				if len(test.givenEnabledAnalytics) == 2 {
+					loggedBidReq2 = test.givenEnabledAnalytics["adapter2"].(*secondMockAnalytics).lastLoggedAmpBidRequest
+				}
+			case test.givenVideoObject != nil:
+				test.givenEnabledAnalytics.LogVideoObject(test.givenVideoObject, ac)
+				loggedBidReq1 = test.givenEnabledAnalytics["unknownAdapter"].(*mockAnalytics).lastLoggedVideoBidRequest
+			}
 
-			// Retrieve the logged analytics from the mockAnalytics module, and assert that the logged object was properly altered
-			if test.givenAuctionObject != nil {
-				ea.LogAuctionObject(test.givenAuctionObject, ac)
-
-				loggedAucBidReq := ea[test.givenAdapterName1].(*mockAnalytics).lastLoggedAuctionBidRequest
-				secondLoggedAucBidReq := ea[test.givenAdapterName2].(*secondMockAnalytics).lastLoggedAuctionBidRequest
-
-				assert.Equal(t, test.expectedBidRequest1, loggedAucBidReq)
-				assert.Equal(t, test.expectedBidRequest2, secondLoggedAucBidReq)
-			} else if test.givenAmpObject != nil {
-				ea.LogAmpObject(test.givenAmpObject, ac)
-
-				loggedAmpBidReq := ea[test.givenAdapterName1].(*mockAnalytics).lastLoggedAmpBidRequest
-				secondLoggedAmpBidReq := ea[test.givenAdapterName2].(*secondMockAnalytics).lastLoggedAmpBidRequest
-
-				assert.Equal(t, test.expectedBidRequest1, loggedAmpBidReq)
-				assert.Equal(t, test.expectedBidRequest2, secondLoggedAmpBidReq)
-			} else if test.givenVideoObject != nil {
-				ea.LogVideoObject(test.givenVideoObject, ac)
-
-				loggedVideoBidReq := ea[test.givenAdapterName1].(*mockAnalytics).lastLoggedVideoBidRequest
-				secondLoggedVideoBidReq := ea[test.givenAdapterName2].(*secondMockAnalytics).lastLoggedVideoBidRequest
-
-				assert.Equal(t, test.expectedBidRequest1, loggedVideoBidReq)
-				assert.Equal(t, test.expectedBidRequest2, secondLoggedVideoBidReq)
+			assert.Equal(t, test.expectedBidRequest1, loggedBidReq1)
+			if test.expectedBidRequest2 != nil {
+				assert.Equal(t, test.expectedBidRequest2, loggedBidReq2)
 			}
 		})
 	}
 }
 
-// TODO: Assert request being returned
 func TestUpdateReqWrapperForAnalytics(t *testing.T) {
 	tests := []struct {
-		description      string
-		givenReqWrapper  *openrtb_ext.RequestWrapper
-		givenAdapterName string
-		expected         *openrtb2.BidRequest
+		description               string
+		givenReqWrapper           *openrtb_ext.RequestWrapper
+		givenAdapterName          string
+		givenIsCloned             bool
+		expectedUpdatedBidRequest *openrtb2.BidRequest
+		expectedCloneRequest      *openrtb_ext.RequestWrapper
 	}{
 		{
 			description: "Adapter1 so Adapter2 info should be removed from ext.prebid.analytics",
@@ -624,8 +546,13 @@ func TestUpdateReqWrapperForAnalytics(t *testing.T) {
 					Ext: []byte(`{"prebid":{"analytics":{"adapter1":{"client-analytics":true},"adapter2":{"client-analytics":false}}}}`)},
 			},
 			givenAdapterName: "adapter1",
-			expected: &openrtb2.BidRequest{
+			givenIsCloned:    false,
+			expectedUpdatedBidRequest: &openrtb2.BidRequest{
 				Ext: []byte(`{"prebid":{"analytics":{"adapter1":{"client-analytics":true}}}}`),
+			},
+			expectedCloneRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Ext: []byte(`{"prebid":{"analytics":{"adapter1":{"client-analytics":true},"adapter2":{"client-analytics":false}}}}`)},
 			},
 		},
 		{
@@ -635,9 +562,11 @@ func TestUpdateReqWrapperForAnalytics(t *testing.T) {
 					Ext: []byte(`{"prebid":{"analytics":{"adapter1":{"client-analytics":true},"adapter2":{"client-analytics":false}}}}`)},
 			},
 			givenAdapterName: "adapter2",
-			expected: &openrtb2.BidRequest{
+			givenIsCloned:    true,
+			expectedUpdatedBidRequest: &openrtb2.BidRequest{
 				Ext: []byte(`{"prebid":{"analytics":{"adapter2":{"client-analytics":false}}}}`),
 			},
+			expectedCloneRequest: nil,
 		},
 		{
 			description: "Given adapter not found in ext.prebid.analytics so remove entire object",
@@ -645,15 +574,21 @@ func TestUpdateReqWrapperForAnalytics(t *testing.T) {
 				BidRequest: &openrtb2.BidRequest{
 					Ext: []byte(`{"prebid":{"analytics":{"adapter1":{"client-analytics":true},"adapter2":{"client-analytics":false}}}}`)},
 			},
-			givenAdapterName: "adapterNotFound",
-			expected:         &openrtb2.BidRequest{},
+			givenAdapterName:          "adapterNotFound",
+			givenIsCloned:             false,
+			expectedUpdatedBidRequest: &openrtb2.BidRequest{},
+			expectedCloneRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Ext: []byte(`{"prebid":{"analytics":{"adapter1":{"client-analytics":true},"adapter2":{"client-analytics":false}}}}`)},
+			},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			updateReqWrapperForAnalytics(test.givenReqWrapper, test.givenAdapterName, false)
-			assert.Equal(t, test.expected, test.givenReqWrapper.BidRequest)
+			cloneReq := updateReqWrapperForAnalytics(test.givenReqWrapper, test.givenAdapterName, test.givenIsCloned)
+			assert.Equal(t, test.expectedUpdatedBidRequest, test.givenReqWrapper.BidRequest)
+			assert.Equal(t, test.expectedCloneRequest, cloneReq)
 		})
 	}
 }
