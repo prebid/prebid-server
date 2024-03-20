@@ -47,6 +47,10 @@ type moduleContexts struct {
 }
 
 func (mc *moduleContexts) put(moduleName string, mCtx hookstage.ModuleContext) {
+	if mCtx == nil {
+		return
+	}
+
 	mc.Lock()
 	defer mc.Unlock()
 
