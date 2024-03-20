@@ -1,6 +1,7 @@
 package hookexecution
 
 import (
+	"maps"
 	"sync"
 
 	"github.com/golang/glog"
@@ -51,10 +52,10 @@ func (mc *moduleContexts) put(moduleName string, mCtx hookstage.ModuleContext) {
 
 	newCtx := mCtx
 	if existingCtx, ok := mc.ctxs[moduleName]; ok && existingCtx != nil {
+		newCtx = maps.Clone(existingCtx)
 		for k, v := range mCtx {
-			existingCtx[k] = v
+			newCtx[k] = v
 		}
-		newCtx = existingCtx
 	}
 	mc.ctxs[moduleName] = newCtx
 }
