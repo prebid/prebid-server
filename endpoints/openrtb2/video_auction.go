@@ -299,15 +299,20 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	}
 
 	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
-	deps.setFieldsImplicitly(r, bidReqWrapper, account)
+	if errs := deps.setFieldsImplicitly(r, bidReqWrapper, account); len(errs) > 0 {
+		errL = append(errL, errs...)
+	}
 
-	errL = deps.validateRequest(account, r, bidReqWrapper, false, false, nil, false)
+	errs := deps.validateRequest(account, r, bidReqWrapper, false, false, nil, false)
+	errL = append(errL, errs...)
 	if errortypes.ContainsFatalError(errL) {
 		handleError(&labels, w, errL, &vo, &debugLog)
 		return
 	}
 
 	activityControl = privacy.NewActivityControl(&account.Privacy)
+
+	warnings := errortypes.DebugWarningOnly(errL)
 
 	secGPC := r.Header.Get("Sec-GPC")
 	auctionRequest := &exchange.AuctionRequest{
@@ -317,6 +322,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		RequestType:                labels.RType,
 		StartTime:                  start,
 		LegacyLabels:               labels,
+		Warnings:                   warnings,
 		GlobalPrivacyControlHeader: secGPC,
 		PubID:                      labels.PubID,
 		HookExecutor:               hookexecution.EmptyHookExecutor{},

@@ -13,6 +13,10 @@ const (
 	// SeverityWarning represents a non-fatal bid processing error where invalid or ambiguous
 	// data in the bid request was ignored.
 	SeverityWarning
+
+	// SeverityDebugWarning represents a non-fatal bid processing error where invalid or ambiguous
+	// data in the bid request was ignored and to be logged in debug mode.
+	SeverityDebugWarning
 )
 
 func isFatal(err error) bool {
@@ -26,6 +30,14 @@ func isFatal(err error) bool {
 func IsWarning(err error) bool {
 	s, ok := err.(Coder)
 	return ok && s.Severity() == SeverityWarning
+}
+
+// IsDebugWarning returns true if an error is labeled with a Severity of SeverityDebugWarning
+// Throughout the codebase, errors with SeverityDebugWarning are of the type Warning
+// defined in this package
+func IsDebugWarning(err error) bool {
+	_, ok := err.(*DebugWarning)
+	return ok
 }
 
 // ContainsFatalError checks if the error list contains a fatal error.
@@ -63,4 +75,17 @@ func WarningOnly(errs []error) []error {
 	}
 
 	return errsWarning
+}
+
+// DebugWarningOnly returns a new error list with only the debug warning severity errors.
+func DebugWarningOnly(errs []error) []error {
+	errsDebugWarning := make([]error, 0, len(errs))
+
+	for _, err := range errs {
+		if _, ok := err.(*DebugWarning); ok {
+			errsDebugWarning = append(errsDebugWarning, err)
+		}
+	}
+
+	return errsDebugWarning
 }

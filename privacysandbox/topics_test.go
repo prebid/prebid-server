@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -14,51 +15,62 @@ func TestParseTopicsFromHeader(t *testing.T) {
 		secBrowsingTopics string
 	}
 	tests := []struct {
-		name string
-		args args
-		want []Topic
+		name      string
+		args      args
+		wantTopic []Topic
+		wantError []error
 	}{
 		{
-			name: "empty header",
-			args: args{secBrowsingTopics: "	 "},
-			want: []Topic{},
+			name:      "empty header",
+			args:      args{secBrowsingTopics: "	 "},
+			wantTopic: []Topic{},
+			wantError: []error{},
 		},
 		{
-			name: "invalid header value",
-			args: args{secBrowsingTopics: "some-sec-cookie-value"},
-			want: []Topic{},
+			name:      "invalid header value",
+			args:      args{secBrowsingTopics: "some-sec-cookie-value"},
+			wantTopic: []Topic{},
+			wantError: []error{
+				&errortypes.DebugWarning{
+					Message:     "Invalid field in Sec-Browsing-Topics header: some-sec-cookie-value",
+					WarningCode: errortypes.SecBrowsingTopicsWarningCode,
+				},
+			},
 		},
 		{
-			name: "header with only finish padding",
-			args: args{secBrowsingTopics: "();p=P0000000000000000000000000000000"},
-			want: []Topic{},
+			name:      "header with only finish padding",
+			args:      args{secBrowsingTopics: "();p=P0000000000000000000000000000000"},
+			wantTopic: []Topic{},
+			wantError: []error{},
 		},
 		{
 			name: "header with one valid field",
 			args: args{secBrowsingTopics: "(1);v=chrome.1:1:2, ();p=P00000000000"},
-			want: []Topic{
+			wantTopic: []Topic{
 				{
 					SegTax:   600,
 					SegClass: "2",
 					SegIDs:   []int{1},
 				},
 			},
+			wantError: []error{},
 		},
 		{
 			name: "header without finish padding",
 			args: args{secBrowsingTopics: "(1);v=chrome.1:1:2"},
-			want: []Topic{
+			wantTopic: []Topic{
 				{
 					SegTax:   600,
 					SegClass: "2",
 					SegIDs:   []int{1},
 				},
 			},
+			wantError: []error{},
 		},
 		{
 			name: "header with more than 10 valid field, should return only 10",
 			args: args{secBrowsingTopics: "(1);v=chrome.1:1:2, (2);v=chrome.1:1:2, (3);v=chrome.1:1:2,  (4);v=chrome.1:1:2,  (5);v=chrome.1:1:2,  (6);v=chrome.1:1:2,  (7);v=chrome.1:1:2,  (8);v=chrome.1:1:2,  (9);v=chrome.1:1:2,  (10);v=chrome.1:1:2,  (11);v=chrome.1:1:2,  (12);v=chrome.1:1:2, ();p=P00000000000"},
-			want: []Topic{
+			wantTopic: []Topic{
 				{
 					SegTax:   600,
 					SegClass: "2",
@@ -110,22 +122,33 @@ func TestParseTopicsFromHeader(t *testing.T) {
 					SegIDs:   []int{10},
 				},
 			},
+			wantError: []error{
+				&errortypes.DebugWarning{
+					Message:     "Invalid field in Sec-Browsing-Topics header: (11);v=chrome.1:1:2 discarded due to limit reached.",
+					WarningCode: errortypes.SecBrowsingTopicsWarningCode,
+				},
+				&errortypes.DebugWarning{
+					Message:     "Invalid field in Sec-Browsing-Topics header: (12);v=chrome.1:1:2 discarded due to limit reached.",
+					WarningCode: errortypes.SecBrowsingTopicsWarningCode,
+				},
+			},
 		},
 		{
 			name: "header with one valid field having multiple segIDs",
 			args: args{secBrowsingTopics: "(1 2);v=chrome.1:1:2, ();p=P00000000000"},
-			want: []Topic{
+			wantTopic: []Topic{
 				{
 					SegTax:   600,
 					SegClass: "2",
 					SegIDs:   []int{1, 2},
 				},
 			},
+			wantError: []error{},
 		},
 		{
 			name: "header with two valid fields having different taxonomies",
 			args: args{secBrowsingTopics: "(1);v=chrome.1:1:2, (1);v=chrome.1:2:2, ();p=P0000000000"},
-			want: []Topic{
+			wantTopic: []Topic{
 				{
 					SegTax:   600,
 					SegClass: "2",
@@ -137,22 +160,29 @@ func TestParseTopicsFromHeader(t *testing.T) {
 					SegIDs:   []int{1},
 				},
 			},
+			wantError: []error{},
 		},
 		{
 			name: "header with one valid field and another invalid field (w/o segIDs), should return only one valid field",
 			args: args{secBrowsingTopics: "(1);v=chrome.1:2:3, ();v=chrome.1:2:3, ();p=P0000000000"},
-			want: []Topic{
+			wantTopic: []Topic{
 				{
 					SegTax:   601,
 					SegClass: "3",
 					SegIDs:   []int{1},
 				},
 			},
+			wantError: []error{
+				&errortypes.DebugWarning{
+					Message:     "Invalid field in Sec-Browsing-Topics header: ();v=chrome.1:2:3",
+					WarningCode: errortypes.SecBrowsingTopicsWarningCode,
+				},
+			},
 		},
 		{
 			name: "header with two valid fields having different model version",
 			args: args{secBrowsingTopics: "(1);v=chrome.1:2:3, (2);v=chrome.1:2:3, ();p=P0000000000"},
-			want: []Topic{
+			wantTopic: []Topic{
 				{
 					SegTax:   601,
 					SegClass: "3",
@@ -164,45 +194,85 @@ func TestParseTopicsFromHeader(t *testing.T) {
 					SegIDs:   []int{2},
 				},
 			},
+			wantError: []error{},
 		},
 		{
 			name: "header with one valid fields and two invalid fields (one with taxanomy < 0 and another with taxanomy > 10), should return only one valid field",
 			args: args{secBrowsingTopics: "(1);v=chrome.1:11:2, (1);v=chrome.1:5:6, (1);v=chrome.1:0:2, ();p=P0000000000"},
-			want: []Topic{
+			wantTopic: []Topic{
 				{
 					SegTax:   604,
 					SegClass: "6",
 					SegIDs:   []int{1},
 				},
 			},
+			wantError: []error{
+				&errortypes.DebugWarning{
+					Message:     "Invalid field in Sec-Browsing-Topics header: (1);v=chrome.1:11:2",
+					WarningCode: errortypes.SecBrowsingTopicsWarningCode,
+				},
+				&errortypes.DebugWarning{
+					Message:     "Invalid field in Sec-Browsing-Topics header: (1);v=chrome.1:0:2",
+					WarningCode: errortypes.SecBrowsingTopicsWarningCode,
+				},
+			},
 		},
 		{
 			name: "header with with valid fields having special characters (whitespaces, etc)",
 			args: args{secBrowsingTopics: "(1 2 4		6 7			4567	  ) ; v=chrome.1: 1 : 2, (1);v=chrome.1, ();p=P0000000000"},
-			want: []Topic{
+			wantTopic: []Topic{
 				{
 					SegTax:   600,
 					SegClass: "2",
 					SegIDs:   []int{1, 2, 4, 6, 7, 4567},
 				},
 			},
+			wantError: []error{
+				&errortypes.DebugWarning{
+					Message:     "Invalid field in Sec-Browsing-Topics header: (1);v=chrome.1",
+					WarningCode: errortypes.SecBrowsingTopicsWarningCode,
+				},
+			},
 		},
 		{
-			name: "header with one valid field having a few invalid segIds, should filter valid segIDs",
-			args: args{secBrowsingTopics: "(1 -3 9223372036854775808 0);v=chrome.1:1:2, ();p=P00000000000"},
-			want: []Topic{
-				{
-					SegTax:   600,
-					SegClass: "2",
-					SegIDs:   []int{1},
+			name:      "header with one valid field having a negative segId, drop field",
+			args:      args{secBrowsingTopics: "(1 -3);v=chrome.1:1:2, ();p=P00000000000"},
+			wantTopic: []Topic{},
+			wantError: []error{
+				&errortypes.DebugWarning{
+					Message:     "Invalid field in Sec-Browsing-Topics header: (1 -3);v=chrome.1:1:2",
+					WarningCode: errortypes.SecBrowsingTopicsWarningCode,
+				},
+			},
+		},
+		{
+			name:      "header with one valid field having a segId=0, drop field",
+			args:      args{secBrowsingTopics: "(1 0);v=chrome.1:1:2, ();p=P00000000000"},
+			wantTopic: []Topic{},
+			wantError: []error{
+				&errortypes.DebugWarning{
+					Message:     "Invalid field in Sec-Browsing-Topics header: (1 0);v=chrome.1:1:2",
+					WarningCode: errortypes.SecBrowsingTopicsWarningCode,
+				},
+			},
+		},
+		{
+			name:      "header with one valid field having a segId value more than MaxInt, drop field",
+			args:      args{secBrowsingTopics: "(1 9223372036854775808);v=chrome.1:1:2, ();p=P00000000000"},
+			wantTopic: []Topic{},
+			wantError: []error{
+				&errortypes.DebugWarning{
+					Message:     "Invalid field in Sec-Browsing-Topics header: (1 9223372036854775808);v=chrome.1:1:2",
+					WarningCode: errortypes.SecBrowsingTopicsWarningCode,
 				},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := ParseTopicsFromHeader(tt.args.secBrowsingTopics)
-			assert.Equal(t, tt.want, got, tt.name)
+			gotTopic, gotError := ParseTopicsFromHeader(tt.args.secBrowsingTopics)
+			assert.Equal(t, tt.wantTopic, gotTopic)
+			assert.Equal(t, tt.wantError, gotError)
 		})
 	}
 }

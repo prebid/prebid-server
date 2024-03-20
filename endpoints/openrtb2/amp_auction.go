@@ -232,7 +232,9 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	}
 
 	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
-	deps.setFieldsImplicitly(r, reqWrapper, account)
+	if errs := deps.setFieldsImplicitly(r, reqWrapper, account); len(errs) > 0 {
+		errL = append(errL, errs...)
+	}
 
 	hasStoredResponses := len(storedAuctionResponses) > 0
 	errs := deps.validateRequest(account, r, reqWrapper, true, hasStoredResponses, storedBidResponses, false)

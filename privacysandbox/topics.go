@@ -2,10 +2,13 @@ package privacysandbox
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
@@ -16,30 +19,33 @@ type Topic struct {
 }
 
 // ParseTopicsFromHeader parses the Sec-Browsing-Topics header data into Topics object
-func ParseTopicsFromHeader(secBrowsingTopics string) []Topic {
+func ParseTopicsFromHeader(secBrowsingTopics string) ([]Topic, []error) {
 	topics := make([]Topic, 0, 10)
+	warnings := make([]error, 0)
 
-	for _, seg := range strings.Split(secBrowsingTopics, ",") {
-		if topic, ok := parseTopicSegment(seg); ok {
-			topics = append(topics, topic)
+	for _, field := range strings.Split(secBrowsingTopics, ",") {
+		field = strings.TrimSpace(field)
+		if field == "" || strings.HasPrefix(field, "();p=") {
+			continue
 		}
 
-		if len(topics) == 10 {
-			break
+		if len(topics) < 10 {
+			if topic, ok := parseTopicSegment(field); ok {
+				topics = append(topics, topic)
+			} else {
+				warnings = addWarning(warnings, field)
+			}
+		} else {
+			warnings = addWarning(warnings, field+" discarded due to limit reached.")
 		}
 	}
 
-	return topics
+	return topics, warnings
 }
 
 // parseTopicSegment parses a single topic segment from the header into Topics object
-func parseTopicSegment(seg string) (Topic, bool) {
-	seg = strings.TrimSpace(seg)
-	if seg == "" || strings.HasPrefix(seg, "();p=") {
-		return Topic{}, false
-	}
-
-	segment := strings.Split(seg, ";")
+func parseTopicSegment(field string) (Topic, bool) {
+	segment := strings.Split(field, ";")
 	if len(segment) != 2 {
 		return Topic{}, false
 	}
@@ -54,10 +60,15 @@ func parseTopicSegment(seg string) (Topic, bool) {
 		return Topic{}, false
 	}
 
+	segIDs, err := parseSegmentIDs(segmentsIDs[1 : len(segmentsIDs)-1])
+	if err != nil {
+		return Topic{}, false
+	}
+
 	return Topic{
 		SegTax:   segtax,
 		SegClass: segclass,
-		SegIDs:   parseSegmentIDs(segmentsIDs[1 : len(segmentsIDs)-1]),
+		SegIDs:   segIDs,
 	}, true
 }
 
@@ -80,16 +91,18 @@ func parseSegTaxSegClass(seg string) (int, string) {
 }
 
 // parseSegmentIDs parses the segment ids from the header string into int array
-func parseSegmentIDs(segmentsIDs string) []int {
+func parseSegmentIDs(segmentsIDs string) ([]int, error) {
 	var selectedSegmentIDs []int
 	for _, segmentID := range strings.Fields(segmentsIDs) {
 		segmentID = strings.TrimSpace(segmentID)
-		if selectedSegmentID, err := strconv.Atoi(segmentID); err == nil && selectedSegmentID > 0 {
-			selectedSegmentIDs = append(selectedSegmentIDs, selectedSegmentID)
+		selectedSegmentID, err := strconv.Atoi(segmentID)
+		if err != nil || selectedSegmentID <= 0 {
+			return selectedSegmentIDs, errors.New("invalid segment id")
 		}
+		selectedSegmentIDs = append(selectedSegmentIDs, selectedSegmentID)
 	}
 
-	return selectedSegmentIDs
+	return selectedSegmentIDs, nil
 }
 
 func UpdateUserDataWithTopics(userData []openrtb2.Data, headerData []Topic, topicsDomain string) []openrtb2.Data {
@@ -205,4 +218,11 @@ func findNewSegIDs(dataName, topicsDomain string, userData Topic, userDataSegmen
 	}
 
 	return segIDs
+}
+
+func addWarning(warnings []error, msg string) []error {
+	return append(warnings, &errortypes.DebugWarning{
+		WarningCode: errortypes.SecBrowsingTopicsWarningCode,
+		Message:     fmt.Sprintf("Invalid field in Sec-Browsing-Topics header: %s", msg),
+	})
 }

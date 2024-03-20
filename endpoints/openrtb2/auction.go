@@ -418,6 +418,7 @@ func setBrowsingTopicsHeader(w http.ResponseWriter, r *http.Request) {
 func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metrics.Labels, hookExecutor hookexecution.HookStageExecutor) (req *openrtb_ext.RequestWrapper, impExtInfoMap map[string]exchange.ImpExtInfo, storedAuctionResponses stored_responses.ImpsWithBidResponses, storedBidResponses stored_responses.ImpBidderStoredResp, bidderImpReplaceImpId stored_responses.BidderImpReplaceImpID, account *config.Account, errs []error) {
 	errs = nil
 	var err error
+	var errL []error
 	var r io.ReadCloser = httpRequest.Body
 	reqContentEncoding := httputil.ContentEncoding(httpRequest.Header.Get("Content-Encoding"))
 	if reqContentEncoding != "" {
@@ -544,7 +545,9 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	}
 
 	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
-	deps.setFieldsImplicitly(httpRequest, req, account)
+	if errsL := deps.setFieldsImplicitly(httpRequest, req, account); len(errsL) > 0 {
+		errs = append(errs, errsL...)
+	}
 
 	if err := ortb.SetDefaults(req); err != nil {
 		errs = []error{err}
@@ -559,13 +562,14 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	lmt.ModifyForIOS(req.BidRequest)
 
 	//Stored auction responses should be processed after stored requests due to possible impression modification
-	storedAuctionResponses, storedBidResponses, bidderImpReplaceImpId, errs = stored_responses.ProcessStoredResponses(ctx, req, deps.storedRespFetcher)
-	if len(errs) > 0 {
+	storedAuctionResponses, storedBidResponses, bidderImpReplaceImpId, errL = stored_responses.ProcessStoredResponses(ctx, req, deps.storedRespFetcher)
+	if len(errL) > 0 {
+		errs = append(errs, errL...)
 		return nil, nil, nil, nil, nil, nil, errs
 	}
 
 	hasStoredResponses := len(storedAuctionResponses) > 0
-	errL := deps.validateRequest(account, httpRequest, req, false, hasStoredResponses, storedBidResponses, hasStoredBidRequest)
+	errL = deps.validateRequest(account, httpRequest, req, false, hasStoredResponses, storedBidResponses, hasStoredBidRequest)
 	if len(errL) > 0 {
 		errs = append(errs, errL...)
 	}
@@ -2049,7 +2053,7 @@ func sanitizeRequest(r *openrtb_ext.RequestWrapper, ipValidator iputil.IPValidat
 // OpenRTB properties from the headers and other implicit info.
 //
 // This function _should not_ override any fields which were defined explicitly by the caller in the request.
-func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper, account *config.Account) {
+func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper, account *config.Account) []error {
 	sanitizeRequest(r, deps.privateNetworkIPValidator)
 
 	setDeviceImplicitly(httpReq, r, deps.privateNetworkIPValidator)
@@ -2062,7 +2066,8 @@ func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, r *openrtb_
 
 	setAuctionTypeImplicitly(r)
 
-	setSecBrowsingTopicsImplicitly(httpReq, r, account)
+	errs := setSecBrowsingTopicsImplicitly(httpReq, r, account)
+	return errs
 }
 
 // setDeviceImplicitly uses implicit info from httpReq to populate bidReq.Device
@@ -2081,20 +2086,20 @@ func setAuctionTypeImplicitly(r *openrtb_ext.RequestWrapper) {
 }
 
 // setSecBrowsingTopicsImplicitly updates user.data with data from request header 'Sec-Browsing-Topics'
-func setSecBrowsingTopicsImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper, account *config.Account) {
-	secBrowsingTopics := httpReq.Header.Get("Sec-Browsing-Topics")
+func setSecBrowsingTopicsImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper, account *config.Account) []error {
+	secBrowsingTopics := httpReq.Header.Get(secBrowsingTopics)
 	if secBrowsingTopics == "" {
-		return
+		return nil
 	}
 
 	// host must configure privacy sandbox
 	if account == nil || account.Privacy.PrivacySandbox.TopicsDomain == "" {
-		return
+		return nil
 	}
 
-	topics := privacysandbox.ParseTopicsFromHeader(secBrowsingTopics)
+	topics, errs := privacysandbox.ParseTopicsFromHeader(secBrowsingTopics)
 	if len(topics) == 0 {
-		return
+		return errs
 	}
 
 	if r.User == nil {
@@ -2102,6 +2107,7 @@ func setSecBrowsingTopicsImplicitly(httpReq *http.Request, r *openrtb_ext.Reques
 	}
 
 	r.User.Data = privacysandbox.UpdateUserDataWithTopics(r.User.Data, topics, account.Privacy.PrivacySandbox.TopicsDomain)
+	return errs
 }
 
 func setSiteImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {
