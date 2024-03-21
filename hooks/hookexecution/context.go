@@ -57,7 +57,7 @@ func (mc *moduleContexts) put(moduleName string, mCtx hookstage.ModuleContext) {
 	if existingCtx, ok := mc.ctxs[moduleName]; ok && existingCtx != nil {
 		maps.Copy(existingCtx, mCtx)
 	} else {
-		mc.ctxs[moduleName] = mCtx
+		mc.ctxs[moduleName] = maps.Clone(mCtx)
 	}
 }
 
