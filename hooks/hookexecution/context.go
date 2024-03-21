@@ -54,11 +54,10 @@ func (mc *moduleContexts) put(moduleName string, mCtx hookstage.ModuleContext) {
 	mc.Lock()
 	defer mc.Unlock()
 
-	newCtx := mCtx
 	if existingCtx, ok := mc.ctxs[moduleName]; ok && existingCtx != nil {
 		maps.Copy(existingCtx, mCtx)
 	} else {
-		mc.ctxs[moduleName] = newCtx
+		mc.ctxs[moduleName] = mCtx
 	}
 }
 
