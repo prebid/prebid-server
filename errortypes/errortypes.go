@@ -270,3 +270,7 @@ func (err *DebugWarning) Code() int {
 func (err *DebugWarning) Severity() Severity {
 	return SeverityWarning
 }
+
+func (err *DebugWarning) Scope() Scope {
+	return ScopeDebug
+}

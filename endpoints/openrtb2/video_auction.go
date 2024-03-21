@@ -312,7 +312,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 
 	activityControl = privacy.NewActivityControl(&account.Privacy)
 
-	warnings := errortypes.DebugWarningOnly(errL)
+	warnings := errortypes.WarningOnly(errL)
 
 	secGPC := r.Header.Get("Sec-GPC")
 	auctionRequest := &exchange.AuctionRequest{

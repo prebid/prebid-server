@@ -486,7 +486,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 	}
 
 	for _, warning := range r.Warnings {
-		if errortypes.IsDebugWarning(warning) && !responseDebugAllow {
+		if errortypes.ReadScope(warning) == errortypes.ScopeDebug && !responseDebugAllow {
 			continue
 		}
 		generalWarning := openrtb_ext.ExtBidderMessage{
