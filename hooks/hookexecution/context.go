@@ -56,12 +56,10 @@ func (mc *moduleContexts) put(moduleName string, mCtx hookstage.ModuleContext) {
 
 	newCtx := mCtx
 	if existingCtx, ok := mc.ctxs[moduleName]; ok && existingCtx != nil {
-		newCtx = maps.Clone(existingCtx)
-		for k, v := range mCtx {
-			newCtx[k] = v
-		}
+		maps.Copy(existingCtx, mCtx)
+	} else {
+		mc.ctxs[moduleName] = newCtx
 	}
-	mc.ctxs[moduleName] = newCtx
 }
 
 func (mc *moduleContexts) get(moduleName string) (hookstage.ModuleContext, bool) {
@@ -69,7 +67,7 @@ func (mc *moduleContexts) get(moduleName string) (hookstage.ModuleContext, bool)
 	defer mc.RUnlock()
 	mCtx, ok := mc.ctxs[moduleName]
 
-	return mCtx, ok
+	return maps.Clone(mCtx), ok
 }
 
 type stageModuleContext struct {
