@@ -38,6 +38,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/apacdex"
 	"github.com/prebid/prebid-server/v2/adapters/appnexus"
 	"github.com/prebid/prebid-server/v2/adapters/appush"
+	"github.com/prebid/prebid-server/v2/adapters/aso"
 	"github.com/prebid/prebid-server/v2/adapters/audienceNetwork"
 	"github.com/prebid/prebid-server/v2/adapters/automatad"
 	"github.com/prebid/prebid-server/v2/adapters/avocet"
@@ -59,6 +60,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/bmtm"
 	"github.com/prebid/prebid-server/v2/adapters/boldwin"
 	"github.com/prebid/prebid-server/v2/adapters/brave"
+	"github.com/prebid/prebid-server/v2/adapters/bwx"
 	cadentaperturemx "github.com/prebid/prebid-server/v2/adapters/cadent_aperture_mx"
 	"github.com/prebid/prebid-server/v2/adapters/ccx"
 	"github.com/prebid/prebid-server/v2/adapters/coinzilla"
@@ -146,6 +148,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/revcontent"
 	"github.com/prebid/prebid-server/v2/adapters/richaudience"
 	"github.com/prebid/prebid-server/v2/adapters/rise"
+	"github.com/prebid/prebid-server/v2/adapters/roulax"
 	"github.com/prebid/prebid-server/v2/adapters/rtbhouse"
 	"github.com/prebid/prebid-server/v2/adapters/rubicon"
 	salunamedia "github.com/prebid/prebid-server/v2/adapters/sa_lunamedia"
@@ -170,6 +173,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/tappx"
 	"github.com/prebid/prebid-server/v2/adapters/teads"
 	"github.com/prebid/prebid-server/v2/adapters/telaria"
+	"github.com/prebid/prebid-server/v2/adapters/theadx"
 	"github.com/prebid/prebid-server/v2/adapters/tpmn"
 	"github.com/prebid/prebid-server/v2/adapters/trafficgate"
 	"github.com/prebid/prebid-server/v2/adapters/triplelift"
@@ -239,6 +243,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderApacdex:           apacdex.Builder,
 		openrtb_ext.BidderAppnexus:          appnexus.Builder,
 		openrtb_ext.BidderAppush:            appush.Builder,
+		openrtb_ext.BidderAso:               aso.Builder,
 		openrtb_ext.BidderAudienceNetwork:   audienceNetwork.Builder,
 		openrtb_ext.BidderAutomatad:         automatad.Builder,
 		openrtb_ext.BidderAvocet:            avocet.Builder,
@@ -260,6 +265,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderBmtm:              bmtm.Builder,
 		openrtb_ext.BidderBoldwin:           boldwin.Builder,
 		openrtb_ext.BidderBrave:             brave.Builder,
+		openrtb_ext.BidderBWX:               bwx.Builder,
 		openrtb_ext.BidderCadentApertureMX:  cadentaperturemx.Builder,
 		openrtb_ext.BidderCcx:               ccx.Builder,
 		openrtb_ext.BidderCoinzilla:         coinzilla.Builder,
@@ -349,6 +355,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderRevcontent:        revcontent.Builder,
 		openrtb_ext.BidderRichaudience:      richaudience.Builder,
 		openrtb_ext.BidderRise:              rise.Builder,
+		openrtb_ext.BidderRoulax:            roulax.Builder,
 		openrtb_ext.BidderRTBHouse:          rtbhouse.Builder,
 		openrtb_ext.BidderRubicon:           rubicon.Builder,
 		openrtb_ext.BidderSeedingAlliance:   seedingAlliance.Builder,
@@ -373,6 +380,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderTappx:             tappx.Builder,
 		openrtb_ext.BidderTeads:             teads.Builder,
 		openrtb_ext.BidderTelaria:           telaria.Builder,
+		openrtb_ext.BidderTheadx:            theadx.Builder,
 		openrtb_ext.BidderTpmn:              tpmn.Builder,
 		openrtb_ext.BidderTrafficGate:       trafficgate.Builder,
 		openrtb_ext.BidderTriplelift:        triplelift.Builder,

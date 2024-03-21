@@ -164,7 +164,7 @@ type ExtRequestPrebidCacheVAST struct {
 
 // ExtRequestPrebidBidAdjustments defines the contract for bidrequest.ext.prebid.bidadjustments
 type ExtRequestPrebidBidAdjustments struct {
-	MediaType MediaType `json:"mediatype,omitempty"`
+	MediaType MediaType `mapstructure:"mediatype" json:"mediatype,omitempty"`
 }
 
 // AdjustmentsByDealID maps a dealID to a slice of bid adjustments
@@ -173,19 +173,19 @@ type AdjustmentsByDealID map[string][]Adjustment
 // MediaType defines contract for bidrequest.ext.prebid.bidadjustments.mediatype
 // BidderName will map to a DealID that will map to a slice of bid adjustments
 type MediaType struct {
-	Banner         map[BidderName]AdjustmentsByDealID `json:"banner,omitempty"`
-	VideoInstream  map[BidderName]AdjustmentsByDealID `json:"video-instream,omitempty"`
-	VideoOutstream map[BidderName]AdjustmentsByDealID `json:"video-outstream,omitempty"`
-	Audio          map[BidderName]AdjustmentsByDealID `json:"audio,omitempty"`
-	Native         map[BidderName]AdjustmentsByDealID `json:"native,omitempty"`
-	WildCard       map[BidderName]AdjustmentsByDealID `json:"*,omitempty"`
+	Banner         map[BidderName]AdjustmentsByDealID `mapstructure:"banner" json:"banner,omitempty"`
+	VideoInstream  map[BidderName]AdjustmentsByDealID `mapstructure:"video-instream" json:"video-instream,omitempty"`
+	VideoOutstream map[BidderName]AdjustmentsByDealID `mapstructure:"video-outstream" json:"video-outstream,omitempty"`
+	Audio          map[BidderName]AdjustmentsByDealID `mapstructure:"audio" json:"audio,omitempty"`
+	Native         map[BidderName]AdjustmentsByDealID `mapstructure:"native" json:"native,omitempty"`
+	WildCard       map[BidderName]AdjustmentsByDealID `mapstructure:"*" json:"*,omitempty"`
 }
 
 // Adjustment defines the object that will be present in the slice of bid adjustments found from MediaType map
 type Adjustment struct {
-	Type     string  `json:"adjtype,omitempty"`
-	Value    float64 `json:"value,omitempty"`
-	Currency string  `json:"currency,omitempty"`
+	Type     string  `mapstructure:"adjtype" json:"adjtype,omitempty"`
+	Value    float64 `mapstructure:"value" json:"value,omitempty"`
+	Currency string  `mapstructure:"currency" json:"currency,omitempty"`
 }
 
 // ExtRequestTargeting defines the contract for bidrequest.ext.prebid.targeting
@@ -199,6 +199,7 @@ type ExtRequestTargeting struct {
 	DurationRangeSec          []int                     `json:"durationrangesec,omitempty"`
 	PreferDeals               bool                      `json:"preferdeals,omitempty"`
 	AppendBidderNames         bool                      `json:"appendbiddernames,omitempty"`
+	AlwaysIncludeDeals        bool                      `json:"alwaysincludedeals,omitempty"`
 }
 
 type ExtIncludeBrandCategory struct {

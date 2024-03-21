@@ -176,7 +176,7 @@ func TestHandleModuleActivitiesProcessedAuctionRequestPayload(t *testing.T) {
 			//check input payload didn't change
 			origInPayloadData := test.inPayloadData
 			activityControl := privacy.NewActivityControl(test.privacyConfig)
-			account := &config.Account{Privacy: config.AccountPrivacy{IPv6Config: config.IPv6{testIPv6ScrubBytes}}}
+			account := &config.Account{Privacy: config.AccountPrivacy{IPv6Config: config.IPv6{AnonKeepBits: testIPv6ScrubBytes}}}
 			newPayload := handleModuleActivities(test.hookCode, activityControl, test.inPayloadData, account)
 			assert.Equal(t, test.expectedPayloadData.Request.BidRequest, newPayload.Request.BidRequest)
 			assert.Equal(t, origInPayloadData, test.inPayloadData)
