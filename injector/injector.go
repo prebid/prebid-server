@@ -102,14 +102,14 @@ func NewTrackerInjector(replacer macros.Replacer, provider *macros.MacroProvider
 	}
 }
 
-func (trackerinjector *TrackerInjector) InjectTracker(vastXML string, NURL string) string {
+func (trackerinjector *TrackerInjector) InjectTracker(vastXML string, NURL string) (string, error) {
 	if vastXML == "" && NURL == "" {
 		// TODO Log a adapter.<bidder-name>.requests.badserverresponse
-		return vastXML
+		return vastXML, fmt.Errorf("invalid Vast XML")
 	}
 
 	if vastXML == "" {
-		return fmt.Sprintf(emptyAdmResponse, NURL)
+		return fmt.Sprintf(emptyAdmResponse, NURL), nil
 	}
 
 	var outputXML strings.Builder
@@ -135,43 +135,50 @@ func (trackerinjector *TrackerInjector) InjectTracker(vastXML string, NURL strin
 		if err != nil {
 			if err == io.EOF {
 				break
+			} else {
+				return "", fmt.Errorf("XML processing error: %w", err)
 			}
-			return ""
 		}
 
 		switch token := rawToken.(type) {
 		case xml.StartElement:
-			trackerinjector.handleStartElement(token, state, &outputXML, encoder)
+			err = trackerinjector.handleStartElement(token, state, &outputXML, encoder)
 		case xml.EndElement:
-			trackerinjector.handleEndElement(token, state, &outputXML, encoder)
+			err = trackerinjector.handleEndElement(token, state, &outputXML, encoder)
 		case xml.CharData:
 			charData := strings.Trim(string(token), trimRunes)
 			if len(charData) != 0 {
-				encoder.Flush()
-				outputXML.WriteString("<![CDATA[")
-				outputXML.WriteString(charData)
-				outputXML.WriteString("]]>")
-				continue
+				err = encoder.Flush()
+				outputXML.WriteString("<![CDATA[" + charData + "]]>")
 			}
 		default:
-			encoder.EncodeToken(rawToken)
+			err = encoder.EncodeToken(rawToken)
+		}
+
+		if err != nil {
+			return "", fmt.Errorf("XML processing error: %w", err)
 		}
 	}
 
-	encoder.Flush()
+	if err := encoder.Flush(); err != nil {
+		return "", fmt.Errorf("XML processing error: %w", err)
+	}
 
 	if !state.inlineWrapperTagFound {
 		// Todo log adapter.<bidder-name>.requests.badserverresponse metrics
-		return vastXML
+		return vastXML, fmt.Errorf("invalid VastXML")
 	}
-	return outputXML.String()
+	return outputXML.String(), nil
 }
 
-func (trackerinjector *TrackerInjector) handleStartElement(token xml.StartElement, state *InjectionState, outputXML *strings.Builder, encoder *xml.Encoder) {
+func (trackerinjector *TrackerInjector) handleStartElement(token xml.StartElement, state *InjectionState, outputXML *strings.Builder, encoder *xml.Encoder) error {
+	var err error
 	switch token.Name.Local {
 	case wrapperCase:
 		state.wrapperTagFound = true
-		encoder.EncodeToken(token)
+		if err = encoder.EncodeToken(token); err != nil {
+			return err
+		}
 	case creativeCase:
 		state.isCreative = true
 		for _, attr := range token.Attr {
@@ -179,43 +186,69 @@ func (trackerinjector *TrackerInjector) handleStartElement(token xml.StartElemen
 				state.creativeId = attr.Value
 			}
 		}
-		encoder.EncodeToken(token)
+		if err = encoder.EncodeToken(token); err != nil {
+			return err
+		}
 	case linearCase:
 		state.injectVideoClicks = true
 		state.injectTracker = true
-		encoder.EncodeToken(token)
+		if err = encoder.EncodeToken(token); err != nil {
+			return err
+		}
 	case videoClicksCase:
 		state.injectVideoClicks = false
-		encoder.EncodeToken(token)
-		encoder.Flush()
+		if err = encoder.EncodeToken(token); err != nil {
+			return err
+		}
+		if err = encoder.Flush(); err != nil {
+			return err
+		}
 		trackerinjector.addClickTrackingEvent(outputXML, state.creativeId, false)
 	case nonLinearAdsCase:
 		state.injectTracker = true
-		encoder.EncodeToken(token)
+		if err = encoder.EncodeToken(token); err != nil {
+			return err
+		}
 	case trackingEventsCase:
 		if state.isCreative {
 			state.injectTracker = false
-			encoder.EncodeToken(token)
-			encoder.Flush()
+			if err = encoder.EncodeToken(token); err != nil {
+				return err
+			}
+			if err = encoder.Flush(); err != nil {
+				return err
+			}
 			trackerinjector.addTrackingEvent(outputXML, state.creativeId, false)
 		}
 	default:
-		encoder.EncodeToken(token)
+		if err = encoder.EncodeToken(token); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func (trackerinjector *TrackerInjector) handleEndElement(token xml.EndElement, state *InjectionState, outputXML *strings.Builder, encoder *xml.Encoder) {
+func (trackerinjector *TrackerInjector) handleEndElement(token xml.EndElement, state *InjectionState, outputXML *strings.Builder, encoder *xml.Encoder) error {
+	var err error
 	switch token.Name.Local {
 	case impressionCase:
-		encoder.EncodeToken(token)
-		encoder.Flush()
+		if err = encoder.EncodeToken(token); err != nil {
+			return err
+		}
+		if err = encoder.Flush(); err != nil {
+			return err
+		}
 		if !state.impressionTagFound {
 			trackerinjector.addImpressionTrackingEvent(outputXML)
 			state.impressionTagFound = true
 		}
 	case errorCase:
-		encoder.EncodeToken(token)
-		encoder.Flush()
+		if err = encoder.EncodeToken(token); err != nil {
+			return err
+		}
+		if err = encoder.Flush(); err != nil {
+			return err
+		}
 		if !state.errorTagFound {
 			trackerinjector.addErrorTrackingEvent(outputXML)
 			state.errorTagFound = true
@@ -223,29 +256,39 @@ func (trackerinjector *TrackerInjector) handleEndElement(token xml.EndElement, s
 	case nonLinearAdsCase:
 		if state.injectTracker {
 			state.injectTracker = false
-			encoder.Flush()
+			if err = encoder.Flush(); err != nil {
+				return err
+			}
 			trackerinjector.addTrackingEvent(outputXML, state.creativeId, true)
 			if !state.nonLinearTagFound && state.wrapperTagFound {
 				trackerinjector.addNonLinearClickTrackingEvent(outputXML, state.creativeId, true)
 			}
-			encoder.EncodeToken(token)
+			if err = encoder.EncodeToken(token); err != nil {
+				return err
+			}
 		}
 	case linearCase:
 		if state.injectVideoClicks {
 			state.injectVideoClicks = false
-			encoder.Flush()
+			if err = encoder.Flush(); err != nil {
+				return err
+			}
 			trackerinjector.addClickTrackingEvent(outputXML, state.creativeId, true)
 		}
 		if state.injectTracker {
 			state.injectTracker = false
-			encoder.Flush()
+			if err = encoder.Flush(); err != nil {
+				return err
+			}
 			trackerinjector.addTrackingEvent(outputXML, state.creativeId, true)
 		}
 		encoder.EncodeToken(token)
 	case inlineCase, wrapperCase:
 		state.wrapperTagFound = false
 		state.inlineWrapperTagFound = true
-		encoder.Flush()
+		if err = encoder.Flush(); err != nil {
+			return err
+		}
 		if !state.impressionTagFound {
 			trackerinjector.addImpressionTrackingEvent(outputXML)
 		}
@@ -254,29 +297,48 @@ func (trackerinjector *TrackerInjector) handleEndElement(token xml.EndElement, s
 			trackerinjector.addErrorTrackingEvent(outputXML)
 		}
 		state.errorTagFound = false
-		encoder.EncodeToken(token)
+		if err = encoder.EncodeToken(token); err != nil {
+			return err
+		}
 	case nonLinearCase:
-		encoder.Flush()
+		if err = encoder.Flush(); err != nil {
+			return err
+		}
 		trackerinjector.addNonLinearClickTrackingEvent(outputXML, state.creativeId, false)
 		state.nonLinearTagFound = true
-		encoder.EncodeToken(token)
+		if err = encoder.EncodeToken(token); err != nil {
+			return err
+		}
 	case companionCase:
 		state.companionTagFound = true
-		encoder.Flush()
+		if err = encoder.Flush(); err != nil {
+			return err
+		}
 		trackerinjector.addCompanionClickThroughEvent(outputXML, state.creativeId, false)
-		encoder.EncodeToken(token)
+		if err = encoder.EncodeToken(token); err != nil {
+			return err
+		}
 	case creativeCase:
 		state.isCreative = false
-		encoder.EncodeToken(token)
+		if err = encoder.EncodeToken(token); err != nil {
+			return err
+		}
 	case companionAdsCase:
 		if !state.companionTagFound && state.wrapperTagFound {
-			encoder.Flush()
+			if err = encoder.Flush(); err != nil {
+				return err
+			}
 			trackerinjector.addCompanionClickThroughEvent(outputXML, state.creativeId, true)
 		}
-		encoder.EncodeToken(token)
+		if err = encoder.EncodeToken(token); err != nil {
+			return err
+		}
 	default:
-		encoder.EncodeToken(token)
+		if err = encoder.EncodeToken(token); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 func (trackerinjector *TrackerInjector) addTrackingEvent(outputXML *strings.Builder, creativeId string, addParentTag bool) {
