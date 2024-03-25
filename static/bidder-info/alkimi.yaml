@@ -13,3 +13,7 @@ capabilities:
       - banner
       - video
       - audio
+userSync:
+  redirect:
+    url: "https://user-sync.alkimi-onboarding.com/ssp-sync?gdpr={{.GDPR}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
+    userMacro: "${UID}"

@@ -16,7 +16,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/hooks"
 	"github.com/prebid/prebid-server/v2/hooks/hookexecution"
 	"github.com/prebid/prebid-server/v2/ortb"
@@ -267,12 +267,6 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	errL = deps.validateRequest(bidReqWrapper, false, false, nil, false)
-	if errortypes.ContainsFatalError(errL) {
-		handleError(&labels, w, errL, &vo, &debugLog)
-		return
-	}
-
 	ctx := context.Background()
 	timeout := deps.cfg.AuctionTimeouts.LimitAuctionTimeout(time.Duration(bidReqWrapper.TMax) * time.Millisecond)
 	if timeout > 0 {
@@ -303,6 +297,12 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	account, acctIDErrs := accountService.GetAccount(ctx, deps.cfg, deps.accounts, labels.PubID, deps.metricsEngine)
 	if len(acctIDErrs) > 0 {
 		handleError(&labels, w, acctIDErrs, &vo, &debugLog)
+		return
+	}
+
+	errL = deps.validateRequest(account, r, bidReqWrapper, false, false, nil, false)
+	if errortypes.ContainsFatalError(errL) {
+		handleError(&labels, w, errL, &vo, &debugLog)
 		return
 	}
 

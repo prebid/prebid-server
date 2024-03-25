@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -11,6 +12,7 @@ import (
 	"strings"
 	"testing"
 	"testing/iotest"
+	"time"
 
 	"github.com/prebid/prebid-server/v2/analytics"
 	"github.com/prebid/prebid-server/v2/config"
@@ -23,10 +25,18 @@ import (
 	"github.com/prebid/prebid-server/v2/privacy/ccpa"
 	"github.com/prebid/prebid-server/v2/usersync"
 	"github.com/prebid/prebid-server/v2/util/ptrutil"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
+
+// fakeTime implements the Time interface
+type fakeTime struct {
+	time time.Time
+}
+
+func (ft *fakeTime) Now() time.Time {
+	return ft.time
+}
 
 func TestNewCookieSyncEndpoint(t *testing.T) {
 	var (
@@ -111,14 +121,16 @@ func TestCookieSyncHandle(t *testing.T) {
 	cookieWithSyncs.Sync("foo", "anyID")
 
 	testCases := []struct {
-		description              string
-		givenCookie              *usersync.Cookie
-		givenBody                io.Reader
-		givenChooserResult       usersync.Result
-		expectedStatusCode       int
-		expectedBody             string
-		setMetricsExpectations   func(*metrics.MetricsEngineMock)
-		setAnalyticsExpectations func(*MockAnalyticsRunner)
+		description                     string
+		givenCookie                     *usersync.Cookie
+		givenBody                       io.Reader
+		givenChooserResult              usersync.Result
+		givenAccountData                map[string]json.RawMessage
+		expectedStatusCode              int
+		expectedBody                    string
+		setMetricsExpectations          func(*metrics.MetricsEngineMock)
+		setAnalyticsExpectations        func(*MockAnalyticsRunner)
+		expectedCookieDeprecationHeader bool
 	}{
 		{
 			description: "Request With Cookie",
@@ -285,6 +297,42 @@ func TestCookieSyncHandle(t *testing.T) {
 				a.On("LogCookieSyncObject", &expected).Once()
 			},
 		},
+		{
+			description: "CookieDeprecation-Set",
+			givenCookie: cookieWithSyncs,
+			givenBody:   strings.NewReader(`{"account": "testAccount"}`),
+			givenChooserResult: usersync.Result{
+				Status:           usersync.StatusOK,
+				BiddersEvaluated: []usersync.BidderEvaluation{{Bidder: "a", SyncerKey: "aSyncer", Status: usersync.StatusAlreadySynced}},
+				SyncersChosen:    []usersync.SyncerChoice{{Bidder: "a", Syncer: &syncer}},
+			},
+			givenAccountData: map[string]json.RawMessage{
+				"testAccount": json.RawMessage(`{"id":"1","privacy":{"privacysandbox":{"cookiedeprecation":{"enabled":true,"ttlsec":86400}}}}`),
+			},
+			expectedStatusCode:              200,
+			expectedCookieDeprecationHeader: true,
+			expectedBody: `{"status":"ok","bidder_status":[` +
+				`{"bidder":"a","no_cookie":true,"usersync":{"url":"aURL","type":"redirect","supportCORS":true}}` +
+				`]}` + "\n",
+			setMetricsExpectations: func(m *metrics.MetricsEngineMock) {
+				m.On("RecordCookieSync", metrics.CookieSyncOK).Once()
+				m.On("RecordSyncerRequest", "aSyncer", metrics.SyncerCookieSyncAlreadySynced).Once()
+			},
+			setAnalyticsExpectations: func(a *MockAnalyticsRunner) {
+				expected := analytics.CookieSyncObject{
+					Status: 200,
+					Errors: nil,
+					BidderStatus: []*analytics.CookieSyncBidder{
+						{
+							BidderCode:   "a",
+							NoCookie:     true,
+							UsersyncInfo: &analytics.UsersyncInfo{URL: "aURL", Type: "redirect", SupportCORS: true},
+						},
+					},
+				}
+				a.On("LogCookieSyncObject", &expected).Once()
+			},
+		},
 	}
 
 	for _, test := range testCases {
@@ -294,7 +342,9 @@ func TestCookieSyncHandle(t *testing.T) {
 		mockAnalytics := MockAnalyticsRunner{}
 		test.setAnalyticsExpectations(&mockAnalytics)
 
-		fakeAccountFetcher := FakeAccountsFetcher{}
+		fakeAccountFetcher := FakeAccountsFetcher{
+			AccountData: test.givenAccountData,
+		}
 
 		gdprPermsBuilder := fakePermissionsBuilder{
 			permissions: &fakePermissions{},
@@ -329,6 +379,7 @@ func TestCookieSyncHandle(t *testing.T) {
 			metrics:         &mockMetrics,
 			pbsAnalytics:    &mockAnalytics,
 			accountsFetcher: &fakeAccountFetcher,
+			time:            &fakeTime{time: time.Date(2024, 2, 22, 9, 42, 4, 13, time.UTC)},
 		}
 		assert.NoError(t, endpoint.config.MarshalAccountDefaults())
 
@@ -336,6 +387,16 @@ func TestCookieSyncHandle(t *testing.T) {
 
 		assert.Equal(t, test.expectedStatusCode, writer.Code, test.description+":status_code")
 		assert.Equal(t, test.expectedBody, writer.Body.String(), test.description+":body")
+
+		gotCookie := writer.Header().Get("Set-Cookie")
+		if test.expectedCookieDeprecationHeader {
+			wantCookieTTL := endpoint.time.Now().Add(time.Second * time.Duration(86400)).UTC().Format(http.TimeFormat)
+			wantCookie := fmt.Sprintf("receive-cookie-deprecation=1; Path=/; Expires=%v; HttpOnly; Secure; SameSite=None; Partitioned;", wantCookieTTL)
+			assert.Equal(t, wantCookie, gotCookie, test.description)
+		} else {
+			assert.Empty(t, gotCookie, test.description)
+		}
+
 		mockMetrics.AssertExpectations(t)
 		mockAnalytics.AssertExpectations(t)
 	}
@@ -1060,7 +1121,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			}},
 		}
 		assert.NoError(t, endpoint.config.MarshalAccountDefaults())
-		request, privacyPolicies, err := endpoint.parseRequest(httpRequest)
+		request, privacyPolicies, _, err := endpoint.parseRequest(httpRequest)
 
 		if test.expectedError == "" {
 			assert.NoError(t, err, test.description+":err")
@@ -2094,7 +2155,7 @@ func (m *MockSyncer) Key() string {
 	return args.String(0)
 }
 
-func (m *MockSyncer) DefaultSyncType() usersync.SyncType {
+func (m *MockSyncer) DefaultResponseFormat() usersync.SyncType {
 	args := m.Called()
 	return args.Get(0).(usersync.SyncType)
 }
@@ -2205,5 +2266,133 @@ func getDefaultActivityConfig(componentName string, allow bool) *config.AccountP
 				},
 			},
 		},
+	}
+}
+
+func TestSetCookieDeprecationHeader(t *testing.T) {
+	getTestRequest := func(addCookie bool) *http.Request {
+		r := httptest.NewRequest("POST", "/cookie_sync", nil)
+		if addCookie {
+			r.AddCookie(&http.Cookie{Name: receiveCookieDeprecation, Value: "1"})
+		}
+		return r
+	}
+
+	tests := []struct {
+		name                            string
+		responseWriter                  http.ResponseWriter
+		request                         *http.Request
+		account                         *config.Account
+		expectedCookieDeprecationHeader bool
+	}{
+		{
+			name:                            "not-present-account-nil",
+			request:                         getTestRequest(false),
+			responseWriter:                  httptest.NewRecorder(),
+			account:                         nil,
+			expectedCookieDeprecationHeader: false,
+		},
+		{
+			name:           "not-present-cookiedeprecation-disabled",
+			request:        getTestRequest(false),
+			responseWriter: httptest.NewRecorder(),
+			account: &config.Account{
+				Privacy: config.AccountPrivacy{
+					PrivacySandbox: config.PrivacySandbox{
+						CookieDeprecation: config.CookieDeprecation{
+							Enabled: false,
+						},
+					},
+				},
+			},
+			expectedCookieDeprecationHeader: false,
+		},
+		{
+			name:           "present-cookiedeprecation-disabled",
+			request:        getTestRequest(true),
+			responseWriter: httptest.NewRecorder(),
+			account: &config.Account{
+				Privacy: config.AccountPrivacy{
+					PrivacySandbox: config.PrivacySandbox{
+						CookieDeprecation: config.CookieDeprecation{
+							Enabled: false,
+						},
+					},
+				},
+			},
+			expectedCookieDeprecationHeader: false,
+		},
+		{
+			name:           "present-cookiedeprecation-enabled",
+			request:        getTestRequest(true),
+			responseWriter: httptest.NewRecorder(),
+			account: &config.Account{
+				Privacy: config.AccountPrivacy{
+					PrivacySandbox: config.PrivacySandbox{
+						CookieDeprecation: config.CookieDeprecation{
+							Enabled: true,
+							TTLSec:  86400,
+						},
+					},
+				},
+			},
+
+			expectedCookieDeprecationHeader: false,
+		},
+		{
+			name:                            "present-account-nil",
+			request:                         getTestRequest(true),
+			responseWriter:                  httptest.NewRecorder(),
+			account:                         nil,
+			expectedCookieDeprecationHeader: false,
+		},
+		{
+			name:           "not-present-cookiedeprecation-enabled",
+			request:        getTestRequest(false),
+			responseWriter: httptest.NewRecorder(),
+			account: &config.Account{
+				Privacy: config.AccountPrivacy{
+					PrivacySandbox: config.PrivacySandbox{
+						CookieDeprecation: config.CookieDeprecation{
+							Enabled: true,
+							TTLSec:  86400,
+						},
+					},
+				},
+			},
+			expectedCookieDeprecationHeader: true,
+		},
+		{
+			name:           "failed-to-read-cookiedeprecation-enabled",
+			request:        &http.Request{}, // nil cookie. error: http: named cookie not present
+			responseWriter: httptest.NewRecorder(),
+			account: &config.Account{
+				Privacy: config.AccountPrivacy{
+					PrivacySandbox: config.PrivacySandbox{
+						CookieDeprecation: config.CookieDeprecation{
+							Enabled: true,
+							TTLSec:  86400,
+						},
+					},
+				},
+			},
+			expectedCookieDeprecationHeader: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := &cookieSyncEndpoint{
+				time: &fakeTime{time: time.Date(2024, 2, 22, 9, 42, 4, 13, time.UTC)},
+			}
+			c.setCookieDeprecationHeader(tt.responseWriter, tt.request, tt.account)
+			gotCookie := tt.responseWriter.Header().Get("Set-Cookie")
+			if tt.expectedCookieDeprecationHeader {
+				wantCookieTTL := c.time.Now().Add(time.Second * time.Duration(86400)).UTC().Format(http.TimeFormat)
+				wantCookie := fmt.Sprintf("receive-cookie-deprecation=1; Path=/; Expires=%v; HttpOnly; Secure; SameSite=None; Partitioned;", wantCookieTTL)
+				assert.Equal(t, wantCookie, gotCookie, ":set_cookie_deprecation_header")
+			} else {
+				assert.Empty(t, gotCookie, ":set_cookie_deprecation_header")
+			}
+		})
 	}
 }

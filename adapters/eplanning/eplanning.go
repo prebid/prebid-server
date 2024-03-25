@@ -11,8 +11,8 @@ import (
 
 	"fmt"
 
-	"github.com/prebid/openrtb/v19/adcom1"
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/adcom1"
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
@@ -310,8 +310,8 @@ func searchSizePriority(hashedFormats map[string]int, format []openrtb2.Format, 
 
 func getSizeFromImp(imp *openrtb2.Imp, isMobile bool) (int64, int64) {
 
-	if imp.Video != nil && imp.Video.W > 0 && imp.Video.H > 0 {
-		return imp.Video.W, imp.Video.H
+	if imp.Video != nil && imp.Video.W != nil && *imp.Video.W > 0 && imp.Video.H != nil && *imp.Video.H > 0 {
+		return *imp.Video.W, *imp.Video.H
 	}
 
 	if imp.Banner != nil {

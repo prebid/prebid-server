@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/util/jsonutil"
 	"github.com/prebid/prebid-server/v2/util/maputil"
 	"github.com/prebid/prebid-server/v2/util/ptrutil"
@@ -53,12 +53,14 @@ const (
 	consentedProvidersSettingsListKey   = "consented_providers_settings"
 	consentKey                          = "consent"
 	ampKey                              = "amp"
+	dsaKey                              = "dsa"
 	eidsKey                             = "eids"
 	gdprKey                             = "gdpr"
 	prebidKey                           = "prebid"
 	dataKey                             = "data"
 	schainKey                           = "schain"
 	us_privacyKey                       = "us_privacy"
+	cdepKey                             = "cdep"
 )
 
 // LenImp returns the number of impressions without causing the creation of ImpWrapper objects.
@@ -882,6 +884,8 @@ type DeviceExt struct {
 	extDirty    bool
 	prebid      *ExtDevicePrebid
 	prebidDirty bool
+	cdep        string
+	cdepDirty   bool
 }
 
 func (de *DeviceExt) unmarshal(extJson json.RawMessage) error {
@@ -909,6 +913,13 @@ func (de *DeviceExt) unmarshal(extJson json.RawMessage) error {
 		}
 	}
 
+	cdepJson, hasCDep := de.ext[cdepKey]
+	if hasCDep && cdepJson != nil {
+		if err := jsonutil.Unmarshal(cdepJson, &de.cdep); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -930,6 +941,19 @@ func (de *DeviceExt) marshal() (json.RawMessage, error) {
 		de.prebidDirty = false
 	}
 
+	if de.cdepDirty {
+		if len(de.cdep) > 0 {
+			rawjson, err := jsonutil.Marshal(de.cdep)
+			if err != nil {
+				return nil, err
+			}
+			de.ext[cdepKey] = rawjson
+		} else {
+			delete(de.ext, cdepKey)
+		}
+		de.cdepDirty = false
+	}
+
 	de.extDirty = false
 	if len(de.ext) == 0 {
 		return nil, nil
@@ -938,7 +962,7 @@ func (de *DeviceExt) marshal() (json.RawMessage, error) {
 }
 
 func (de *DeviceExt) Dirty() bool {
-	return de.extDirty || de.prebidDirty
+	return de.extDirty || de.prebidDirty || de.cdepDirty
 }
 
 func (de *DeviceExt) GetExt() map[string]json.RawMessage {
@@ -965,6 +989,15 @@ func (de *DeviceExt) GetPrebid() *ExtDevicePrebid {
 func (de *DeviceExt) SetPrebid(prebid *ExtDevicePrebid) {
 	de.prebid = prebid
 	de.prebidDirty = true
+}
+
+func (de *DeviceExt) GetCDep() string {
+	return de.cdep
+}
+
+func (de *DeviceExt) SetCDep(cdep string) {
+	de.cdep = cdep
+	de.cdepDirty = true
 }
 
 func (de *DeviceExt) Clone() *DeviceExt {
@@ -1165,6 +1198,8 @@ func (de *DOOHExt) Clone() *DOOHExt {
 type RegExt struct {
 	ext            map[string]json.RawMessage
 	extDirty       bool
+	dsa            *ExtRegsDSA
+	dsaDirty       bool
 	gdpr           *int8
 	gdprDirty      bool
 	usPrivacy      string
@@ -1186,6 +1221,16 @@ func (re *RegExt) unmarshal(extJson json.RawMessage) error {
 		return err
 	}
 
+	dsaJson, hasDSA := re.ext[dsaKey]
+	if hasDSA {
+		re.dsa = &ExtRegsDSA{}
+	}
+	if dsaJson != nil {
+		if err := jsonutil.Unmarshal(dsaJson, re.dsa); err != nil {
+			return err
+		}
+	}
+
 	gdprJson, hasGDPR := re.ext[gdprKey]
 	if hasGDPR && gdprJson != nil {
 		if err := jsonutil.Unmarshal(gdprJson, &re.gdpr); err != nil {
@@ -1204,6 +1249,19 @@ func (re *RegExt) unmarshal(extJson json.RawMessage) error {
 }
 
 func (re *RegExt) marshal() (json.RawMessage, error) {
+	if re.dsaDirty {
+		if re.dsa != nil {
+			rawjson, err := jsonutil.Marshal(re.dsa)
+			if err != nil {
+				return nil, err
+			}
+			re.ext[dsaKey] = rawjson
+		} else {
+			delete(re.ext, dsaKey)
+		}
+		re.dsaDirty = false
+	}
+
 	if re.gdprDirty {
 		if re.gdpr != nil {
 			rawjson, err := jsonutil.Marshal(re.gdpr)
@@ -1238,7 +1296,7 @@ func (re *RegExt) marshal() (json.RawMessage, error) {
 }
 
 func (re *RegExt) Dirty() bool {
-	return re.extDirty || re.gdprDirty || re.usPrivacyDirty
+	return re.extDirty || re.dsaDirty || re.gdprDirty || re.usPrivacyDirty
 }
 
 func (re *RegExt) GetExt() map[string]json.RawMessage {
@@ -1254,9 +1312,25 @@ func (re *RegExt) SetExt(ext map[string]json.RawMessage) {
 	re.extDirty = true
 }
 
+func (re *RegExt) GetDSA() *ExtRegsDSA {
+	if re.dsa == nil {
+		return nil
+	}
+	dsa := *re.dsa
+	return &dsa
+}
+
+func (re *RegExt) SetDSA(dsa *ExtRegsDSA) {
+	re.dsa = dsa
+	re.dsaDirty = true
+}
+
 func (re *RegExt) GetGDPR() *int8 {
-	gdpr := re.gdpr
-	return gdpr
+	if re.gdpr == nil {
+		return nil
+	}
+	gdpr := *re.gdpr
+	return &gdpr
 }
 
 func (re *RegExt) SetGDPR(gdpr *int8) {

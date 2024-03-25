@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
@@ -287,13 +287,17 @@ func (a *ImprovedigitalAdapter) getAdditionalConsentProvidersUserExt(request ope
 	}
 	// End validating additional consent
 
-	// Check if string contain ~, then substring after ~ to end of string
-	consentStr := string(cpMapValue)
-	var tildaPosition int
-	if tildaPosition = strings.Index(consentStr, "~"); tildaPosition == -1 {
+	// Trim enclosing quotes after casting json.RawMessage to string
+	consentStr := strings.Trim((string)(cpMapValue), "\"")
+	// Split by ~ and take only the second string (if exists) as the consented providers spec
+	var consentStrParts = strings.Split(consentStr, "~")
+	if len(consentStrParts) < 2 {
 		return nil, nil
 	}
-	cpStr = consentStr[tildaPosition+1 : len(consentStr)-1]
+	cpStr = strings.TrimSpace(consentStrParts[1])
+	if len(cpStr) == 0 {
+		return nil, nil
+	}
 
 	// Prepare consent providers string
 	cpStr = fmt.Sprintf("[%s]", strings.Replace(cpStr, ".", ",", -1))

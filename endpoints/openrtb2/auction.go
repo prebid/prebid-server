@@ -20,11 +20,11 @@ import (
 	"github.com/julienschmidt/httprouter"
 	gpplib "github.com/prebid/go-gpp"
 	"github.com/prebid/go-gpp/constants"
-	"github.com/prebid/openrtb/v19/adcom1"
-	"github.com/prebid/openrtb/v19/native1"
-	nativeRequests "github.com/prebid/openrtb/v19/native1/request"
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/openrtb/v19/openrtb3"
+	"github.com/prebid/openrtb/v20/adcom1"
+	"github.com/prebid/openrtb/v20/native1"
+	nativeRequests "github.com/prebid/openrtb/v20/native1/request"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb3"
 	"github.com/prebid/prebid-server/v2/bidadjustment"
 	"github.com/prebid/prebid-server/v2/hooks"
 	"github.com/prebid/prebid-server/v2/ortb"
@@ -60,6 +60,7 @@ import (
 const storedRequestTimeoutMillis = 50
 const ampChannel = "amp"
 const appChannel = "app"
+const secCookieDeprecation = "Sec-Cookie-Deprecation"
 
 var (
 	dntKey      string = http.CanonicalHeaderKey("DNT")
@@ -206,6 +207,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	activityControl = privacy.NewActivityControl(&account.Privacy)
 
 	hookExecutor.SetActivityControl(activityControl)
+	hookExecutor.SetAccount(account)
 
 	ctx := context.Background()
 
@@ -551,7 +553,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	}
 
 	hasStoredResponses := len(storedAuctionResponses) > 0
-	errL := deps.validateRequest(req, false, hasStoredResponses, storedBidResponses, hasStoredBidRequest)
+	errL := deps.validateRequest(account, httpRequest, req, false, hasStoredResponses, storedBidResponses, hasStoredBidRequest)
 	if len(errL) > 0 {
 		errs = append(errs, errL...)
 	}
@@ -745,7 +747,7 @@ func mergeBidderParamsImpExtPrebid(impExt *openrtb_ext.ImpExt, reqExtParams map[
 	return nil
 }
 
-func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp bool, hasStoredResponses bool, storedBidResp stored_responses.ImpBidderStoredResp, hasStoredBidRequest bool) []error {
+func (deps *endpointDeps) validateRequest(account *config.Account, httpReq *http.Request, req *openrtb_ext.RequestWrapper, isAmp bool, hasStoredResponses bool, storedBidResp stored_responses.ImpBidderStoredResp, hasStoredBidRequest bool) []error {
 	errL := []error{}
 	if req.ID == "" {
 		return []error{errors.New("request missing required field: \"id\"")}
@@ -843,10 +845,11 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 	}
 	var gpp gpplib.GppContainer
 	if req.BidRequest.Regs != nil && len(req.BidRequest.Regs.GPP) > 0 {
-		gpp, err = gpplib.Parse(req.BidRequest.Regs.GPP)
-		if err != nil {
+		var errs []error
+		gpp, errs = gpplib.Parse(req.BidRequest.Regs.GPP)
+		if len(errs) > 0 {
 			errL = append(errL, &errortypes.Warning{
-				Message:     fmt.Sprintf("GPP consent string is invalid and will be ignored. (%v)", err),
+				Message:     fmt.Sprintf("GPP consent string is invalid and will be ignored. (%v)", errs[0]),
 				WarningCode: errortypes.InvalidPrivacyConsentWarningCode})
 		}
 	}
@@ -871,6 +874,10 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 
 	if err := validateDevice(req.Device); err != nil {
 		return append(errL, err)
+	}
+
+	if err := validateOrFillCDep(httpReq, req, account); err != nil {
+		errL = append(errL, err)
 	}
 
 	if ccpaPolicy, err := ccpa.ReadFromRequestWrapper(req, gpp); err != nil {
@@ -1145,10 +1152,10 @@ func validateVideo(video *openrtb2.Video, impIndex int) error {
 
 	// The following fields were previously uints in the OpenRTB library we use, but have
 	// since been changed to ints. We decided to maintain the non-negative check.
-	if video.W < 0 {
+	if video.W != nil && *video.W < 0 {
 		return fmt.Errorf("request.imp[%d].video.w must be a positive number", impIndex)
 	}
-	if video.H < 0 {
+	if video.H != nil && *video.H < 0 {
 		return fmt.Errorf("request.imp[%d].video.h must be a positive number", impIndex)
 	}
 	if video.MinBitRate < 0 {
@@ -1917,6 +1924,35 @@ func validateDevice(device *openrtb2.Device) error {
 		return errors.New("request.device.geo.accuracy must be a positive number")
 	}
 
+	return nil
+}
+
+func validateOrFillCDep(httpReq *http.Request, req *openrtb_ext.RequestWrapper, account *config.Account) error {
+	if account == nil || !account.Privacy.PrivacySandbox.CookieDeprecation.Enabled {
+		return nil
+	}
+
+	deviceExt, err := req.GetDeviceExt()
+	if err != nil {
+		return err
+	}
+
+	if deviceExt.GetCDep() != "" {
+		return nil
+	}
+
+	secCookieDeprecation := httpReq.Header.Get(secCookieDeprecation)
+	if secCookieDeprecation == "" {
+		return nil
+	}
+	if len(secCookieDeprecation) > 100 {
+		return &errortypes.Warning{
+			Message:     "request.device.ext.cdep must not exceed 100 characters",
+			WarningCode: errortypes.SecCookieDeprecationLenWarningCode,
+		}
+	}
+
+	deviceExt.SetCDep(secCookieDeprecation)
 	return nil
 }
 

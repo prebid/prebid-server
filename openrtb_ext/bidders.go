@@ -22,6 +22,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderAax,
 	BidderAceex,
 	BidderAcuityAds,
+	BidderAdelement,
 	BidderAdf,
 	BidderAdgeneration,
 	BidderAdhese,
@@ -53,6 +54,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderApacdex,
 	BidderAppnexus,
 	BidderAppush,
+	BidderAso,
 	BidderAudienceNetwork,
 	BidderAutomatad,
 	BidderAvocet,
@@ -74,6 +76,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderBmtm,
 	BidderBoldwin,
 	BidderBrave,
+	BidderBWX,
 	BidderCadentApertureMX,
 	BidderCcx,
 	BidderCoinzilla,
@@ -139,6 +142,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderMedianet,
 	BidderMgid,
 	BidderMgidX,
+	BidderMinuteMedia,
 	BidderMobfoxpb,
 	BidderMobileFuse,
 	BidderMotorik,
@@ -162,6 +166,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderRevcontent,
 	BidderRichaudience,
 	BidderRise,
+	BidderRoulax,
 	BidderRTBHouse,
 	BidderRubicon,
 	BidderSeedingAlliance,
@@ -186,6 +191,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderTappx,
 	BidderTeads,
 	BidderTelaria,
+	BidderTheadx,
 	BidderTpmn,
 	BidderTrafficGate,
 	BidderTriplelift,
@@ -203,12 +209,14 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderVrtcal,
 	BidderXeworks,
 	BidderYahooAds,
+	BidderYandex,
 	BidderYeahmobi,
 	BidderYieldlab,
 	BidderYieldmo,
 	BidderYieldone,
 	BidderZeroClickFraud,
 	BidderZetaGlobalSsp,
+	BidderZmaticoo,
 }
 
 func GetAliasBidderToParent() map[BidderName]BidderName {
@@ -224,10 +232,6 @@ func SetAliasBidderName(aliasBidderName string, parentBidderName BidderName) err
 	aliasBidderToParent[aliasBidder] = parentBidderName
 	bidderNameLookup[strings.ToLower(aliasBidderName)] = aliasBidder
 	return nil
-}
-
-func (name BidderName) MarshalJSON() ([]byte, error) {
-	return []byte(name), nil
 }
 
 func (name *BidderName) String() string {
@@ -301,6 +305,7 @@ const (
 	BidderAax               BidderName = "aax"
 	BidderAceex             BidderName = "aceex"
 	BidderAcuityAds         BidderName = "acuityads"
+	BidderAdelement         BidderName = "adelement"
 	BidderAdf               BidderName = "adf"
 	BidderAdgeneration      BidderName = "adgeneration"
 	BidderAdhese            BidderName = "adhese"
@@ -332,6 +337,7 @@ const (
 	BidderApacdex           BidderName = "apacdex"
 	BidderAppnexus          BidderName = "appnexus"
 	BidderAppush            BidderName = "appush"
+	BidderAso               BidderName = "aso"
 	BidderAudienceNetwork   BidderName = "audienceNetwork"
 	BidderAutomatad         BidderName = "automatad"
 	BidderAvocet            BidderName = "avocet"
@@ -353,6 +359,7 @@ const (
 	BidderBmtm              BidderName = "bmtm"
 	BidderBoldwin           BidderName = "boldwin"
 	BidderBrave             BidderName = "brave"
+	BidderBWX               BidderName = "bwx"
 	BidderCadentApertureMX  BidderName = "cadent_aperture_mx"
 	BidderCcx               BidderName = "ccx"
 	BidderCoinzilla         BidderName = "coinzilla"
@@ -418,6 +425,7 @@ const (
 	BidderMedianet          BidderName = "medianet"
 	BidderMgid              BidderName = "mgid"
 	BidderMgidX             BidderName = "mgidX"
+	BidderMinuteMedia       BidderName = "minutemedia"
 	BidderMobfoxpb          BidderName = "mobfoxpb"
 	BidderMobileFuse        BidderName = "mobilefuse"
 	BidderMotorik           BidderName = "motorik"
@@ -441,6 +449,7 @@ const (
 	BidderRevcontent        BidderName = "revcontent"
 	BidderRichaudience      BidderName = "richaudience"
 	BidderRise              BidderName = "rise"
+	BidderRoulax            BidderName = "roulax"
 	BidderRTBHouse          BidderName = "rtbhouse"
 	BidderRubicon           BidderName = "rubicon"
 	BidderSeedingAlliance   BidderName = "seedingAlliance"
@@ -465,6 +474,7 @@ const (
 	BidderTappx             BidderName = "tappx"
 	BidderTeads             BidderName = "teads"
 	BidderTelaria           BidderName = "telaria"
+	BidderTheadx            BidderName = "theadx"
 	BidderTpmn              BidderName = "tpmn"
 	BidderTrafficGate       BidderName = "trafficgate"
 	BidderTriplelift        BidderName = "triplelift"
@@ -482,12 +492,14 @@ const (
 	BidderVrtcal            BidderName = "vrtcal"
 	BidderXeworks           BidderName = "xeworks"
 	BidderYahooAds          BidderName = "yahooAds"
+	BidderYandex            BidderName = "yandex"
 	BidderYeahmobi          BidderName = "yeahmobi"
 	BidderYieldlab          BidderName = "yieldlab"
 	BidderYieldmo           BidderName = "yieldmo"
 	BidderYieldone          BidderName = "yieldone"
 	BidderZeroClickFraud    BidderName = "zeroclickfraud"
 	BidderZetaGlobalSsp     BidderName = "zeta_global_ssp"
+	BidderZmaticoo          BidderName = "zmaticoo"
 )
 
 // CoreBidderNames returns a slice of all core bidders.
@@ -606,6 +618,7 @@ func NewBidderParamsValidator(schemaDirectory string) (BidderParamValidator, err
 		if _, ok := bidderMap[bidderName]; !ok {
 			return nil, fmt.Errorf("File %s/%s does not match a valid BidderName.", schemaDirectory, fileInfo.Name())
 		}
+
 		toOpen, err := paramsValidator.abs(filepath.Join(schemaDirectory, fileInfo.Name()))
 		if err != nil {
 			return nil, fmt.Errorf("Failed to get an absolute representation of the path: %s, %v", toOpen, err)

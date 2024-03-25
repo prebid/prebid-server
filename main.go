@@ -8,11 +8,13 @@ import (
 	"runtime"
 	"time"
 
+	jsoniter "github.com/json-iterator/go"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/currency"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/prebid/prebid-server/v2/router"
 	"github.com/prebid/prebid-server/v2/server"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 	"github.com/prebid/prebid-server/v2/util/task"
 
 	"github.com/golang/glog"
@@ -21,6 +23,7 @@ import (
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
+	jsoniter.RegisterExtension(&jsonutil.RawMessageExtension{})
 }
 
 func main() {
