@@ -2409,7 +2409,7 @@ func writeError(errs []error, w http.ResponseWriter, labels *metrics.Labels) boo
 		w.WriteHeader(httpStatus)
 		labels.RequestStatus = metricsStatus
 		for _, err := range errs {
-			w.Write([]byte(fmt.Sprintf("Invalid request: %s\n", err.Error())))
+			fmt.Fprintf(w, "Invalid request: %s\n", err.Error())
 		}
 		rc = true
 	}
