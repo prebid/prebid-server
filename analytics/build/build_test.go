@@ -382,30 +382,6 @@ func (m *mockAnalytics) LogSetUIDObject(ao *analytics.SetUIDObject) {}
 
 func (m *mockAnalytics) LogNotificationEventObject(ao *analytics.NotificationEvent) {}
 
-type secondMockAnalytics struct {
-	lastLoggedAuctionBidRequest *openrtb2.BidRequest
-	lastLoggedAmpBidRequest     *openrtb2.BidRequest
-	lastLoggedVideoBidRequest   *openrtb2.BidRequest
-}
-
-func (m *secondMockAnalytics) LogAuctionObject(ao *analytics.AuctionObject) {
-	m.lastLoggedAuctionBidRequest = ao.RequestWrapper.BidRequest
-}
-
-func (m *secondMockAnalytics) LogAmpObject(ao *analytics.AmpObject) {
-	m.lastLoggedAmpBidRequest = ao.RequestWrapper.BidRequest
-}
-
-func (m *secondMockAnalytics) LogVideoObject(vo *analytics.VideoObject) {
-	m.lastLoggedVideoBidRequest = vo.RequestWrapper.BidRequest
-}
-
-func (m *secondMockAnalytics) LogCookieSyncObject(ao *analytics.CookieSyncObject) {}
-
-func (m *secondMockAnalytics) LogSetUIDObject(ao *analytics.SetUIDObject) {}
-
-func (m *secondMockAnalytics) LogNotificationEventObject(ao *analytics.NotificationEvent) {}
-
 func TestLogObject(t *testing.T) {
 	tests := []struct {
 		description           string
@@ -420,7 +396,7 @@ func TestLogObject(t *testing.T) {
 	}{
 		{
 			description:           "Multiple analytics modules, clone from evaluate activities, should expect both to have their information to be logged only -- auction",
-			givenEnabledAnalytics: enabledAnalytics{"adapter1": &mockAnalytics{}, "adapter2": &secondMockAnalytics{}},
+			givenEnabledAnalytics: enabledAnalytics{"adapter1": &mockAnalytics{}, "adapter2": &mockAnalytics{}},
 			givenActivityControl:  true,
 			givenAuctionObject: &analytics.AuctionObject{
 				Status:   http.StatusOK,
@@ -441,7 +417,7 @@ func TestLogObject(t *testing.T) {
 		},
 		{
 			description:           "Multiple analytics modules, no clone from evaluate activities, should expect both to have their information to be logged only -- amp",
-			givenEnabledAnalytics: enabledAnalytics{"adapter1": &mockAnalytics{}, "adapter2": &secondMockAnalytics{}},
+			givenEnabledAnalytics: enabledAnalytics{"adapter1": &mockAnalytics{}, "adapter2": &mockAnalytics{}},
 			givenActivityControl:  false,
 			givenAmpObject: &analytics.AmpObject{
 				Status:          http.StatusOK,
@@ -509,13 +485,13 @@ func TestLogObject(t *testing.T) {
 				test.givenEnabledAnalytics.LogAuctionObject(test.givenAuctionObject, ac)
 				loggedBidReq1 = test.givenEnabledAnalytics["adapter1"].(*mockAnalytics).lastLoggedAuctionBidRequest
 				if len(test.givenEnabledAnalytics) == 2 {
-					loggedBidReq2 = test.givenEnabledAnalytics["adapter2"].(*secondMockAnalytics).lastLoggedAuctionBidRequest
+					loggedBidReq2 = test.givenEnabledAnalytics["adapter2"].(*mockAnalytics).lastLoggedAuctionBidRequest
 				}
 			case test.givenAmpObject != nil:
 				test.givenEnabledAnalytics.LogAmpObject(test.givenAmpObject, ac)
 				loggedBidReq1 = test.givenEnabledAnalytics["adapter1"].(*mockAnalytics).lastLoggedAmpBidRequest
 				if len(test.givenEnabledAnalytics) == 2 {
-					loggedBidReq2 = test.givenEnabledAnalytics["adapter2"].(*secondMockAnalytics).lastLoggedAmpBidRequest
+					loggedBidReq2 = test.givenEnabledAnalytics["adapter2"].(*mockAnalytics).lastLoggedAmpBidRequest
 				}
 			case test.givenVideoObject != nil:
 				test.givenEnabledAnalytics.LogVideoObject(test.givenVideoObject, ac)
