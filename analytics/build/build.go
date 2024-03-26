@@ -1,6 +1,8 @@
 package build
 
 import (
+	"encoding/json"
+
 	"github.com/benbjohnson/clock"
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/v2/analytics"
@@ -66,7 +68,11 @@ func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac priv
 			if cloneBidderReq != nil {
 				ao.RequestWrapper = cloneBidderReq
 			}
+			cloneReq := updateReqWrapperForAnalytics(ao.RequestWrapper, name, cloneBidderReq != nil)
 			module.LogAuctionObject(ao)
+			if cloneReq != nil {
+				ao.RequestWrapper = cloneReq
+			}
 		}
 	}
 }
@@ -77,7 +83,11 @@ func (ea enabledAnalytics) LogVideoObject(vo *analytics.VideoObject, ac privacy.
 			if cloneBidderReq != nil {
 				vo.RequestWrapper = cloneBidderReq
 			}
+			cloneReq := updateReqWrapperForAnalytics(vo.RequestWrapper, name, cloneBidderReq != nil)
 			module.LogVideoObject(vo)
+			if cloneReq != nil {
+				vo.RequestWrapper = cloneReq
+			}
 		}
 
 	}
@@ -101,7 +111,11 @@ func (ea enabledAnalytics) LogAmpObject(ao *analytics.AmpObject, ac privacy.Acti
 			if cloneBidderReq != nil {
 				ao.RequestWrapper = cloneBidderReq
 			}
+			cloneReq := updateReqWrapperForAnalytics(ao.RequestWrapper, name, cloneBidderReq != nil)
 			module.LogAmpObject(ao)
+			if cloneReq != nil {
+				ao.RequestWrapper = cloneReq
+			}
 		}
 	}
 }
@@ -143,4 +157,46 @@ func evaluateActivities(rw *openrtb_ext.RequestWrapper, ac privacy.ActivityContr
 
 	cloneReq.RebuildRequest()
 	return true, cloneReq
+}
+
+func updateReqWrapperForAnalytics(rw *openrtb_ext.RequestWrapper, adapterName string, isCloned bool) *openrtb_ext.RequestWrapper {
+	reqExt, _ := rw.GetRequestExt()
+	reqExtPrebid := reqExt.GetPrebid()
+	if reqExtPrebid == nil {
+		return nil
+	}
+
+	var cloneReq *openrtb_ext.RequestWrapper
+	if !isCloned {
+		cloneReq = &openrtb_ext.RequestWrapper{BidRequest: ortb.CloneBidRequestPartial(rw.BidRequest)}
+	} else {
+		cloneReq = nil
+	}
+
+	if len(reqExtPrebid.Analytics) == 0 {
+		return cloneReq
+	}
+
+	// Remove the entire analytics object if the adapter module is not present
+	if _, ok := reqExtPrebid.Analytics[adapterName]; !ok {
+		reqExtPrebid.Analytics = nil
+	} else {
+		reqExtPrebid.Analytics = updatePrebidAnalyticsMap(reqExtPrebid.Analytics, adapterName)
+	}
+	reqExt.SetPrebid(reqExtPrebid)
+	rw.RebuildRequest()
+
+	if cloneReq != nil {
+		cloneReq.RebuildRequest()
+	}
+
+	return cloneReq
+}
+
+func updatePrebidAnalyticsMap(extPrebidAnalytics map[string]json.RawMessage, adapterName string) map[string]json.RawMessage {
+	newMap := make(map[string]json.RawMessage)
+	if val, ok := extPrebidAnalytics[adapterName]; ok {
+		newMap[adapterName] = val
+	}
+	return newMap
 }

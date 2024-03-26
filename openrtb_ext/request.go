@@ -45,6 +45,7 @@ type ExtRequestPrebid struct {
 	AdServerTargeting    []AdServerTarget                `json:"adservertargeting,omitempty"`
 	Aliases              map[string]string               `json:"aliases,omitempty"`
 	AliasGVLIDs          map[string]uint16               `json:"aliasgvlids,omitempty"`
+	Analytics            map[string]json.RawMessage      `json:"analytics,omitempty"`
 	BidAdjustmentFactors map[string]float64              `json:"bidadjustmentfactors,omitempty"`
 	BidAdjustments       *ExtRequestPrebidBidAdjustments `json:"bidadjustments,omitempty"`
 	BidderConfigs        []BidderConfig                  `json:"bidderconfig,omitempty"`
