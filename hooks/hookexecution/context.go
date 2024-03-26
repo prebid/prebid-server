@@ -1,6 +1,7 @@
 package hookexecution
 
 import (
+	"maps"
 	"sync"
 
 	"github.com/golang/glog"
@@ -46,17 +47,18 @@ type moduleContexts struct {
 }
 
 func (mc *moduleContexts) put(moduleName string, mCtx hookstage.ModuleContext) {
+	if mCtx == nil {
+		return
+	}
+
 	mc.Lock()
 	defer mc.Unlock()
 
-	newCtx := mCtx
 	if existingCtx, ok := mc.ctxs[moduleName]; ok && existingCtx != nil {
-		for k, v := range mCtx {
-			existingCtx[k] = v
-		}
-		newCtx = existingCtx
+		maps.Copy(existingCtx, mCtx)
+	} else {
+		mc.ctxs[moduleName] = maps.Clone(mCtx)
 	}
-	mc.ctxs[moduleName] = newCtx
 }
 
 func (mc *moduleContexts) get(moduleName string) (hookstage.ModuleContext, bool) {
@@ -64,7 +66,7 @@ func (mc *moduleContexts) get(moduleName string) (hookstage.ModuleContext, bool)
 	defer mc.RUnlock()
 	mCtx, ok := mc.ctxs[moduleName]
 
-	return mCtx, ok
+	return maps.Clone(mCtx), ok
 }
 
 type stageModuleContext struct {
