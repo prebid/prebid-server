@@ -140,6 +140,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/ownadx"
 	"github.com/prebid/prebid-server/v2/adapters/pangle"
 	"github.com/prebid/prebid-server/v2/adapters/pgamssp"
+	"github.com/prebid/prebid-server/v2/adapters/pixad"
 	"github.com/prebid/prebid-server/v2/adapters/pubmatic"
 	"github.com/prebid/prebid-server/v2/adapters/pubnative"
 	"github.com/prebid/prebid-server/v2/adapters/pulsepoint"
@@ -406,5 +407,6 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderZeroClickFraud:    zeroclickfraud.Builder,
 		openrtb_ext.BidderZetaGlobalSsp:     zeta_global_ssp.Builder,
 		openrtb_ext.BidderZmaticoo:          zmaticoo.Builder,
+		openrtb_ext.BidderPixad:             pixad.Builder,
 	}
 }
