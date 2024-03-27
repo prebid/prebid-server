@@ -198,6 +198,7 @@ func (a *adapter) buildAdapterRequest(prebidBidRequest *openrtb2.BidRequest, par
 		Uri:     url,
 		Body:    reqJSON,
 		Headers: getHeaders(prebidBidRequest),
+		ImpIDs:  openrtb_ext.GetImpIDs(prebidBidRequest.Imp),
 	}, nil
 }
 

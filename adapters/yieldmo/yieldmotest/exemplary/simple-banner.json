@@ -66,7 +66,8 @@
               "gpp_sid": [6]
             }
           }
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,

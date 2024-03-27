@@ -146,7 +146,8 @@
                     "ext": {
                         "client": "prebid_server_0.6"
                     }
-                }
+                },
+                "impIDs":["postbid_iframe"]
             },
             "mockResponse": {
                 "status": 200,

@@ -230,6 +230,7 @@ func (a *InvibesAdapter) makeRequest(invibesParams InvibesInternalParams, reqInf
 		Uri:     url,
 		Headers: headers,
 		Body:    body,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}, nil
 }
 

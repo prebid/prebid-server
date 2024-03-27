@@ -69,6 +69,7 @@ func (c *ConversantAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 		Uri:     c.URI,
 		Body:    data,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, nil
 }
 

@@ -54,7 +54,8 @@
             "buyeruid": "test-uid"
           },
           "tmax": 500
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,
@@ -98,7 +99,8 @@
             "buyeruid": "test-uid"
           },
           "tmax": 500
-        }
+        },
+        "impIDs":["test-imp-id2"]
       },
       "mockResponse": {
         "status": 200,

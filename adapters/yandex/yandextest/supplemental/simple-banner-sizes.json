@@ -162,7 +162,8 @@
             "ip": "127.0.0.1"
           },
           "tmax": 500
-        }
+        },
+        "impIDs":["no_size_but_valid_formats"]
       },
       "mockResponse": {
         "status": 200,

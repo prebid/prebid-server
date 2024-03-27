@@ -59,7 +59,8 @@
             "devicetype": 2,
             "ip":"255.255.255.255"
           }
-        }
+        },
+        "impIDs":["video1"]
       },
       "mockResponse": {
         "status": 200,

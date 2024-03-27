@@ -3,6 +3,9 @@
       "id": "5f4d1e01",
       "at": 1,
       "imp": [
+        {
+          "id":"test-imp-id"
+        }
       ],
       "tmax": 200
     },
@@ -14,9 +17,13 @@
             "id": "5f4d1e01",
             "at": 1,
             "imp": [
+              {
+                "id":"test-imp-id"
+              }
             ],
             "tmax": 200
-          }
+          },
+          "impIDs":["test-imp-id"]
         },
         "mockResponse": {
           "status": 400,

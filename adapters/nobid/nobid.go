@@ -48,6 +48,7 @@ func (a *NoBidAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 		Uri:     a.endpoint,
 		Body:    data,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, []error{}
 }
 

@@ -363,6 +363,7 @@ func (a *GridAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapte
 		Uri:     a.endpoint,
 		Body:    fixedReqJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, errors
 }
 

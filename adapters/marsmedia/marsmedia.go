@@ -103,6 +103,7 @@ func (a *MarsmediaAdapter) MakeRequests(requestIn *openrtb2.BidRequest, reqInfo 
 		Uri:     uri,
 		Body:    reqJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, []error{}
 }
 

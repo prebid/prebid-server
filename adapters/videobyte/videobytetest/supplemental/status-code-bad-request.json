@@ -99,7 +99,8 @@
             "page": "http://example.com/page-1",
             "ref": "http://referer.com/page-2"
           }
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 400

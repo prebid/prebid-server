@@ -63,7 +63,8 @@
             "ip": "123.123.123.123",
             "ifa": "zxcjbzxmc-zxcbmz-zxbcz-zxczx"
           }
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,

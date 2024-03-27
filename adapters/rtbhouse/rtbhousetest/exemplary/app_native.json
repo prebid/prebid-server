@@ -56,7 +56,8 @@
             "dnt": 0
           },
           "ext": {}
-        }
+        },
+        "impIDs":["test-native-imp"]
       },
       "mockResponse": {
         "status": 200,

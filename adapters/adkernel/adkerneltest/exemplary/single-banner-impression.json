@@ -48,7 +48,8 @@
             "buyeruid": "A-38327932832"
           },
           "cur": ["TYR"]
-        }
+        },
+        "impIDs":["adunit-1"]
       },
       "mockResponse": {
         "status": 200,

@@ -51,7 +51,8 @@
           "app": {
             "id": "fake-app-id"
           }
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,

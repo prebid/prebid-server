@@ -136,7 +136,8 @@
           "user": {
             "id": "super-user-id"
           }
-        }
+        },
+        "impIDs":["super-bid-id"]
       },
       "mockResponse": {
         "status": 200,
@@ -220,7 +221,8 @@
           "user": {
             "id": "super-user-id"
           }
-        }
+        },
+        "impIDs":["incredible-bid-id"]
       },
       "mockResponse": {
         "status": 200,
@@ -304,7 +306,8 @@
           "user": {
             "id": "super-user-id"
           }
-        }
+        },
+        "impIDs":["amazing-bid-id"]
       },
       "mockResponse": {
         "status": 200,

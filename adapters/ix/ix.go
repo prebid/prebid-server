@@ -184,6 +184,7 @@ func createRequestData(a *IxAdapter, request *openrtb2.BidRequest, headers *http
 		Uri:     a.URI,
 		Body:    body,
 		Headers: *headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}, err
 }
 

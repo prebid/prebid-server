@@ -83,7 +83,8 @@
           }
         }],
         "tmax": 1000
-      }
+      },
+      "impIDs":["test-imp-id-video"]
     },
     "mockResponse": {
       "status": 200,

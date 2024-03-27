@@ -153,6 +153,7 @@ func (a *adapter) processImp(request *openrtb2.BidRequest, imp openrtb2.Imp) (*a
 	}
 
 	adapterReq, err := a.makeRequest(request, campaignRequestBody)
+	adapterReq.ImpIDs = []string{imp.ID}
 	if err != nil {
 		return nil, fmt.Errorf("make request failed with err %v", err)
 	}

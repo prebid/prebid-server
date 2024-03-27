@@ -74,7 +74,8 @@
               "tappxkey": "pub-12345-site-9876"
             }
           }
-        }
+        },
+        "impIDs":["adunit-1"]
       },
       "mockResponse": {
         "status": 200,

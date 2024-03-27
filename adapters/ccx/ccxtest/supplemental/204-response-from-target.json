@@ -41,7 +41,8 @@
             "site": {
                 "page": "somepage.com"
             }
-          }
+          },
+          "impIDs":["test-imp-id"]
         },
         "mockResponse": {
           "status": 204

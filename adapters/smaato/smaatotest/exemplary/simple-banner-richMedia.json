@@ -131,7 +131,8 @@
           "ext": {
             "client": "prebid_server_0.6"
           }
-        }
+        },
+        "impIDs":["1C86242D-9535-47D6-9576-7B1FE87F282C"]
       },
       "mockResponse": {
         "status": 200,

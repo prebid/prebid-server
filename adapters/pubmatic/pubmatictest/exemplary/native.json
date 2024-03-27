@@ -59,7 +59,8 @@
                       },
                       "prebid": {}
                   }
-              }
+              },
+              "impIDs":["test-native-imp"]
           },
           "mockResponse": {
               "status": 200,

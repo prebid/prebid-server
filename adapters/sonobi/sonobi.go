@@ -84,6 +84,7 @@ func (a *SonobiAdapter) makeRequest(request *openrtb2.BidRequest) (*adapters.Req
 		Uri:     a.URI,
 		Body:    reqJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}, errs
 }
 

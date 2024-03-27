@@ -121,7 +121,8 @@
             "ver": ""
           }
 
-        }
+        },
+        "impIDs":["ComboADMVideoWithBannerImp1","ComboNurlVideoWithBannerImp2"]
       },
       "mockResponse": {
         "status": 200,
@@ -177,7 +178,8 @@
           "cur":[
             "USD"
           ]
-        }
+        },
+        "impIDs":["ComboADMVideoWithBannerImp1"]
       },
       "mockResponse": {
         "status": 200,
@@ -247,7 +249,8 @@
           "cur":[
             "USD"
           ]
-        }
+        },
+        "impIDs":["ComboNurlVideoWithBannerImp2"]
       },
       "mockResponse": {
         "status": 200,

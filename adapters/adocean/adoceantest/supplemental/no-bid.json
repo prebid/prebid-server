@@ -83,7 +83,8 @@
   },
   "httpCalls": [{
     "expectedRequest": {
-      "uri": "https://myao.adocean.pl/_10000000/ad.json?aid=adoceanmyaozpniqismex%3Aao-test&aid=adoceanmyaowafpdwlrks%3Aao-test-two&aosspsizes=myaowafpdwlrks~300x250-myaozpniqismex~300x250&devmake=&devmodel=&devos=&devosv=&dpidmd5=&gdpr=1&gdpr_consent=COwK6gaOwK6gaFmAAAENAPCAAAAAAAAAAAAAAAAAAAAA.IFoEUQQgAIQwgIwQABAEAAAAOIAACAIAAAAQAIAgEAACEAAAAAgAQBAAAAAAAGBAAgAAAAAAAFAAECAAAgAAQARAEQAAAAAJAAIAAgAAAYQEAAAQmAgBC3ZAYzUw&id=tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7&nc=1&nosecure=1&pbsrv_v=1.3.0"
+      "uri": "https://myao.adocean.pl/_10000000/ad.json?aid=adoceanmyaozpniqismex%3Aao-test&aid=adoceanmyaowafpdwlrks%3Aao-test-two&aosspsizes=myaowafpdwlrks~300x250-myaozpniqismex~300x250&devmake=&devmodel=&devos=&devosv=&dpidmd5=&gdpr=1&gdpr_consent=COwK6gaOwK6gaFmAAAENAPCAAAAAAAAAAAAAAAAAAAAA.IFoEUQQgAIQwgIwQABAEAAAAOIAACAIAAAAQAIAgEAACEAAAAAgAQBAAAAAAAGBAAgAAAAAAAFAAECAAAgAAQARAEQAAAAAJAAIAAgAAAYQEAAAQmAgBC3ZAYzUw&id=tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7&nc=1&nosecure=1&pbsrv_v=1.3.0",
+      "impIDs":["ao-test","ao-test-two"]
     },
     "mockResponse": {
       "status": 200,
@@ -108,7 +109,8 @@
     }
   }, {
     "expectedRequest": {
-      "uri": "https://myao.adocean.pl/_10000000/ad.json?aid=adoceanmyaowafpdwlrks%3Aao-test-three&aosspsizes=myaowafpdwlrks~300x250&devmake=&devmodel=&devos=&devosv=&dpidmd5=&gdpr=1&gdpr_consent=COwK6gaOwK6gaFmAAAENAPCAAAAAAAAAAAAAAAAAAAAA.IFoEUQQgAIQwgIwQABAEAAAAOIAACAIAAAAQAIAgEAACEAAAAAgAQBAAAAAAAGBAAgAAAAAAAFAAECAAAgAAQARAEQAAAAAJAAIAAgAAAYQEAAAQmAgBC3ZAYzUw&id=tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7&nc=1&nosecure=1&pbsrv_v=1.3.0"
+      "uri": "https://myao.adocean.pl/_10000000/ad.json?aid=adoceanmyaowafpdwlrks%3Aao-test-three&aosspsizes=myaowafpdwlrks~300x250&devmake=&devmodel=&devos=&devosv=&dpidmd5=&gdpr=1&gdpr_consent=COwK6gaOwK6gaFmAAAENAPCAAAAAAAAAAAAAAAAAAAAA.IFoEUQQgAIQwgIwQABAEAAAAOIAACAIAAAAQAIAgEAACEAAAAAgAQBAAAAAAAGBAAgAAAAAAAFAAECAAAgAAQARAEQAAAAAJAAIAAgAAAYQEAAAQmAgBC3ZAYzUw&id=tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7&nc=1&nosecure=1&pbsrv_v=1.3.0",
+      "impIDs":["ao-test-three"]
     },
     "mockResponse": {
       "status": 200,

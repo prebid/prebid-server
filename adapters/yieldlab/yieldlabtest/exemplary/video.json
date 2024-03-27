@@ -86,7 +86,8 @@
             "169.254.13.37"
           ]
         },
-        "uri": "https://ad.yieldlab.net/testing/12345?content=json&ids=ylid%3A34a53e82-0dc3-4815-8b7e-b725ede0361c&lat=51.499488&lon=-0.128953&pvid=true&t=key1%3Dvalue1%26key2%3Dvalue2&ts=testing&yl_rtb_connectiontype=6&yl_rtb_devicetype=4&yl_rtb_ifa=hello-ads"
+        "uri": "https://ad.yieldlab.net/testing/12345?content=json&ids=ylid%3A34a53e82-0dc3-4815-8b7e-b725ede0361c&lat=51.499488&lon=-0.128953&pvid=true&t=key1%3Dvalue1%26key2%3Dvalue2&ts=testing&yl_rtb_connectiontype=6&yl_rtb_devicetype=4&yl_rtb_ifa=hello-ads",
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,

@@ -168,7 +168,8 @@
           "user": {
             "gender": "O"
           }
-        }
+        },
+        "impIDs":["29D2F33E-F865-40DA-9320-16EF77935254"]
       },
       "mockResponse": {
         "url": "https://ds.uncn.jp",

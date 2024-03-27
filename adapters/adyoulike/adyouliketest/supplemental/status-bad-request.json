@@ -46,7 +46,8 @@
                 "tagid": "12345"
               }
             ]
-          }
+          },
+          "impIDs":["banner-imp-id"]
         },
       "mockResponse": {
         "status": 400,

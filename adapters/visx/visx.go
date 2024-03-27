@@ -84,6 +84,7 @@ func (a *VisxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapte
 		Uri:     a.endpoint,
 		Body:    reqJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(requestCopy.Imp),
 	}}, errors
 }
 

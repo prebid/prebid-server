@@ -94,7 +94,8 @@
             "ip": "127.0.0.1"
           },
           "tmax": 500
-        }
+        },
+        "impIDs":["imp_id1"]
       },
       "mockResponse": {
         "status": 200,
@@ -171,7 +172,8 @@
             "ip": "127.0.0.1"
           },
           "tmax": 500
-        }
+        },
+        "impIDs":["imp_id2"]
       },
       "mockResponse": {
         "status": 200,

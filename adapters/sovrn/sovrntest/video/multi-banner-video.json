@@ -136,7 +136,8 @@
             "dnt": 0,
             "language": "en"
           }
-        }
+        },
+        "impIDs":["test-imp-id1","test-imp-id2"]
       },
       "mockResponse": {
         "status": 200,

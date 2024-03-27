@@ -105,6 +105,7 @@ func (adapter *AMXAdapter) MakeRequests(request *openrtb2.BidRequest, req *adapt
 		Uri:     adapter.endpoint,
 		Body:    encoded,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(reqCopy.Imp),
 	}
 	reqsBidder = append(reqsBidder, reqBidder)
 	return

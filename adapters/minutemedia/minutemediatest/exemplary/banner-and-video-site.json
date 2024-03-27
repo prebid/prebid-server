@@ -172,7 +172,8 @@
             "ua": "Fake Test User Agent/6.0",
             "ip": "123.145.167.10"
           }
-        }
+        },
+        "impIDs":["test-imp-id", "test-imp-video-id"]
       },
       "mockResponse": {
         "status": 200,

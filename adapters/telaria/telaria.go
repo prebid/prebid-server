@@ -228,6 +228,7 @@ func (a *TelariaAdapter) MakeRequests(requestIn *openrtb2.BidRequest, reqInfo *a
 		Uri:     a.FetchEndpoint(),
 		Body:    reqJSON,
 		Headers: *GetHeaders(&request),
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, nil
 }
 

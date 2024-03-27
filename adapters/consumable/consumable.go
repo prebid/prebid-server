@@ -44,6 +44,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 				Uri:     "https://e.serverbid.com/sb/rtb",
 				Body:    bodyBytes,
 				Headers: headers,
+				ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 			},
 		}
 		return requests, errs
@@ -65,6 +66,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 				Uri:     "https://e.serverbid.com/rtb/bid?s=" + consumableExt.PlacementId,
 				Body:    bodyBytes,
 				Headers: headers,
+				ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 			},
 		}
 		return requests, errs

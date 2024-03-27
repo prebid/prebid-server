@@ -40,7 +40,8 @@
             "bc": "hb_pbs_1.0.0",
             "delDomain": "se-demo-d.openx.net"
           }
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,

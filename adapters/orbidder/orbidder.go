@@ -42,6 +42,7 @@ func (rcv *OrbidderAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 		Uri:     rcv.endpoint,
 		Body:    requestBodyJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, errs
 }
 

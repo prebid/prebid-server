@@ -62,7 +62,8 @@
               "tagid": "ac7fa772-d7be-48cc-820b-e21728e434fe"
             }
           ]
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,

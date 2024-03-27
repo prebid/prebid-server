@@ -46,7 +46,8 @@
 							}
 						}
 					]
-				}
+				},
+				"impIDs":["test-impression-id-0"]
 			},
 			"mockResponse": {
 				"status": 200,

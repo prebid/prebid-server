@@ -115,7 +115,8 @@
               "id": "1234"
             }
           }
-        }
+        },
+        "impIDs":["test-video-imp:opa:video"]
       },
       "mockResponse": {
         "status": 200,
