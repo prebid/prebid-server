@@ -6535,7 +6535,7 @@ func TestValidateRequestCookieDeprecation(t *testing.T) {
 	}
 }
 
-func TestSetSecBrowsingTopcisImplicitly(t *testing.T) {
+func TestSetSecBrowsingTopicsImplicitly(t *testing.T) {
 	type args struct {
 		httpReq *http.Request
 		r       *openrtb_ext.RequestWrapper
