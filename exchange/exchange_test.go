@@ -2570,10 +2570,10 @@ func TestCategoryMapping(t *testing.T) {
 	bid3 := openrtb2.Bid{ID: "bid_id3", ImpID: "imp_id3", Price: 30.0000, Cat: cats3, W: 1, H: 1}
 	bid4 := openrtb2.Bid{ID: "bid_id4", ImpID: "imp_id4", Price: 40.0000, Cat: cats4, W: 1, H: 1}
 
-	bid1_1 := entities.PbsOrtbBid{Bid: &bid1, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 10.0000, OriginalBidCur: "USD", TargetBidderCode: ""}
-	bid1_2 := entities.PbsOrtbBid{Bid: &bid2, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 40}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 20.0000, OriginalBidCur: "USD", TargetBidderCode: ""}
-	bid1_3 := entities.PbsOrtbBid{Bid: &bid3, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30, PrimaryCategory: "AdapterOverride"}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 30.0000, OriginalBidCur: "USD", TargetBidderCode: ""}
-	bid1_4 := entities.PbsOrtbBid{Bid: &bid4, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 40.0000, OriginalBidCur: "USD", TargetBidderCode: ""}
+	bid1_1 := entities.PbsOrtbBid{Bid: &bid1, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 10.0000, OriginalBidCur: "USD", TargetBidderCode: "", AlternateBidderCode: ""}
+	bid1_2 := entities.PbsOrtbBid{Bid: &bid2, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 40}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 20.0000, OriginalBidCur: "USD", TargetBidderCode: "", AlternateBidderCode: ""}
+	bid1_3 := entities.PbsOrtbBid{Bid: &bid3, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30, PrimaryCategory: "AdapterOverride"}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 30.0000, OriginalBidCur: "USD", TargetBidderCode: "", AlternateBidderCode: ""}
+	bid1_4 := entities.PbsOrtbBid{Bid: &bid4, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 40.0000, OriginalBidCur: "USD", TargetBidderCode: "", AlternateBidderCode: ""}
 
 	innerBids := []*entities.PbsOrtbBid{
 		&bid1_1,
@@ -2625,10 +2625,10 @@ func TestCategoryMappingNoIncludeBrandCategory(t *testing.T) {
 	bid3 := openrtb2.Bid{ID: "bid_id3", ImpID: "imp_id3", Price: 30.0000, Cat: cats3, W: 1, H: 1}
 	bid4 := openrtb2.Bid{ID: "bid_id4", ImpID: "imp_id4", Price: 40.0000, Cat: cats4, W: 1, H: 1}
 
-	bid1_1 := entities.PbsOrtbBid{Bid: &bid1, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 10.0000, OriginalBidCur: "USD", TargetBidderCode: ""}
-	bid1_2 := entities.PbsOrtbBid{Bid: &bid2, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 40}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 20.0000, OriginalBidCur: "USD", TargetBidderCode: ""}
-	bid1_3 := entities.PbsOrtbBid{Bid: &bid3, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30, PrimaryCategory: "AdapterOverride"}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 30.0000, OriginalBidCur: "USD", TargetBidderCode: ""}
-	bid1_4 := entities.PbsOrtbBid{Bid: &bid4, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 50}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 40.0000, OriginalBidCur: "USD", TargetBidderCode: ""}
+	bid1_1 := entities.PbsOrtbBid{Bid: &bid1, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 10.0000, OriginalBidCur: "USD", TargetBidderCode: "", AlternateBidderCode: ""}
+	bid1_2 := entities.PbsOrtbBid{Bid: &bid2, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 40}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 20.0000, OriginalBidCur: "USD", TargetBidderCode: "", AlternateBidderCode: ""}
+	bid1_3 := entities.PbsOrtbBid{Bid: &bid3, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30, PrimaryCategory: "AdapterOverride"}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 30.0000, OriginalBidCur: "USD", TargetBidderCode: "", AlternateBidderCode: ""}
+	bid1_4 := entities.PbsOrtbBid{Bid: &bid4, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 50}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 40.0000, OriginalBidCur: "USD", TargetBidderCode: "", AlternateBidderCode: ""}
 
 	innerBids := []*entities.PbsOrtbBid{
 		&bid1_1,
@@ -2679,9 +2679,9 @@ func TestCategoryMappingTranslateCategoriesNil(t *testing.T) {
 	bid2 := openrtb2.Bid{ID: "bid_id2", ImpID: "imp_id2", Price: 20.0000, Cat: cats2, W: 1, H: 1}
 	bid3 := openrtb2.Bid{ID: "bid_id3", ImpID: "imp_id3", Price: 30.0000, Cat: cats3, W: 1, H: 1}
 
-	bid1_1 := entities.PbsOrtbBid{Bid: &bid1, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 10.0000, OriginalBidCur: "USD", TargetBidderCode: ""}
-	bid1_2 := entities.PbsOrtbBid{Bid: &bid2, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 40}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 20.0000, OriginalBidCur: "USD", TargetBidderCode: ""}
-	bid1_3 := entities.PbsOrtbBid{Bid: &bid3, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 30.0000, OriginalBidCur: "USD", TargetBidderCode: ""}
+	bid1_1 := entities.PbsOrtbBid{Bid: &bid1, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 10.0000, OriginalBidCur: "USD", TargetBidderCode: "", AlternateBidderCode: ""}
+	bid1_2 := entities.PbsOrtbBid{Bid: &bid2, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 40}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 20.0000, OriginalBidCur: "USD", TargetBidderCode: "", AlternateBidderCode: ""}
+	bid1_3 := entities.PbsOrtbBid{Bid: &bid3, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 30.0000, OriginalBidCur: "USD", TargetBidderCode: "", AlternateBidderCode: ""}
 
 	innerBids := []*entities.PbsOrtbBid{
 		&bid1_1,
@@ -2761,9 +2761,9 @@ func TestCategoryMappingTranslateCategoriesFalse(t *testing.T) {
 	bid2 := openrtb2.Bid{ID: "bid_id2", ImpID: "imp_id2", Price: 20.0000, Cat: cats2, W: 1, H: 1}
 	bid3 := openrtb2.Bid{ID: "bid_id3", ImpID: "imp_id3", Price: 30.0000, Cat: cats3, W: 1, H: 1}
 
-	bid1_1 := entities.PbsOrtbBid{Bid: &bid1, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 10.0000, OriginalBidCur: "USD", TargetBidderCode: ""}
-	bid1_2 := entities.PbsOrtbBid{Bid: &bid2, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 40}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 20.0000, OriginalBidCur: "USD", TargetBidderCode: ""}
-	bid1_3 := entities.PbsOrtbBid{Bid: &bid3, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 30.0000, OriginalBidCur: "USD", TargetBidderCode: ""}
+	bid1_1 := entities.PbsOrtbBid{Bid: &bid1, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 10.0000, OriginalBidCur: "USD", TargetBidderCode: "", AlternateBidderCode: ""}
+	bid1_2 := entities.PbsOrtbBid{Bid: &bid2, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 40}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 20.0000, OriginalBidCur: "USD", TargetBidderCode: "", AlternateBidderCode: ""}
+	bid1_3 := entities.PbsOrtbBid{Bid: &bid3, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 30.0000, OriginalBidCur: "USD", TargetBidderCode: "", AlternateBidderCode: ""}
 
 	innerBids := []*entities.PbsOrtbBid{
 		&bid1_1,
@@ -2889,11 +2889,11 @@ func TestNoCategoryDedupe(t *testing.T) {
 	bid4 := openrtb2.Bid{ID: "bid_id4", ImpID: "imp_id4", Price: 20.0000, Cat: cats4, W: 1, H: 1}
 	bid5 := openrtb2.Bid{ID: "bid_id5", ImpID: "imp_id5", Price: 10.0000, Cat: cats1, W: 1, H: 1}
 
-	bid1_1 := entities.PbsOrtbBid{Bid: &bid1, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 14.0000, OriginalBidCur: "USD", TargetBidderCode: ""}
-	bid1_2 := entities.PbsOrtbBid{Bid: &bid2, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 14.0000, OriginalBidCur: "USD", TargetBidderCode: ""}
-	bid1_3 := entities.PbsOrtbBid{Bid: &bid3, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 20.0000, OriginalBidCur: "USD", TargetBidderCode: ""}
-	bid1_4 := entities.PbsOrtbBid{Bid: &bid4, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 20.0000, OriginalBidCur: "USD", TargetBidderCode: ""}
-	bid1_5 := entities.PbsOrtbBid{Bid: &bid5, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 10.0000, OriginalBidCur: "USD", TargetBidderCode: ""}
+	bid1_1 := entities.PbsOrtbBid{Bid: &bid1, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 14.0000, OriginalBidCur: "USD", TargetBidderCode: "", AlternateBidderCode: ""}
+	bid1_2 := entities.PbsOrtbBid{Bid: &bid2, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 14.0000, OriginalBidCur: "USD", TargetBidderCode: "", AlternateBidderCode: ""}
+	bid1_3 := entities.PbsOrtbBid{Bid: &bid3, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 20.0000, OriginalBidCur: "USD", TargetBidderCode: "", AlternateBidderCode: ""}
+	bid1_4 := entities.PbsOrtbBid{Bid: &bid4, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 20.0000, OriginalBidCur: "USD", TargetBidderCode: "", AlternateBidderCode: ""}
+	bid1_5 := entities.PbsOrtbBid{Bid: &bid5, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 10.0000, OriginalBidCur: "USD", TargetBidderCode: "", AlternateBidderCode: ""}
 
 	selectedBids := make(map[string]int)
 	expectedCategories := map[string]string{
@@ -2969,8 +2969,8 @@ func TestCategoryMappingBidderName(t *testing.T) {
 	bid1 := openrtb2.Bid{ID: "bid_id1", ImpID: "imp_id1", Price: 10.0000, Cat: cats1, W: 1, H: 1}
 	bid2 := openrtb2.Bid{ID: "bid_id2", ImpID: "imp_id2", Price: 10.0000, Cat: cats2, W: 1, H: 1}
 
-	bid1_1 := entities.PbsOrtbBid{Bid: &bid1, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 10.0000, OriginalBidCur: "USD", TargetBidderCode: ""}
-	bid1_2 := entities.PbsOrtbBid{Bid: &bid2, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 10.0000, OriginalBidCur: "USD", TargetBidderCode: ""}
+	bid1_1 := entities.PbsOrtbBid{Bid: &bid1, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 10.0000, OriginalBidCur: "USD", TargetBidderCode: "", AlternateBidderCode: ""}
+	bid1_2 := entities.PbsOrtbBid{Bid: &bid2, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 10.0000, OriginalBidCur: "USD", TargetBidderCode: "", AlternateBidderCode: ""}
 
 	innerBids1 := []*entities.PbsOrtbBid{
 		&bid1_1,
@@ -3023,8 +3023,8 @@ func TestCategoryMappingBidderNameNoCategories(t *testing.T) {
 	bid1 := openrtb2.Bid{ID: "bid_id1", ImpID: "imp_id1", Price: 10.0000, Cat: cats1, W: 1, H: 1}
 	bid2 := openrtb2.Bid{ID: "bid_id2", ImpID: "imp_id2", Price: 12.0000, Cat: cats2, W: 1, H: 1}
 
-	bid1_1 := entities.PbsOrtbBid{Bid: &bid1, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 17}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 10.0000, OriginalBidCur: "USD", TargetBidderCode: ""}
-	bid1_2 := entities.PbsOrtbBid{Bid: &bid2, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 8}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 12.0000, OriginalBidCur: "USD", TargetBidderCode: ""}
+	bid1_1 := entities.PbsOrtbBid{Bid: &bid1, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 17}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 10.0000, OriginalBidCur: "USD", TargetBidderCode: "", AlternateBidderCode: ""}
+	bid1_2 := entities.PbsOrtbBid{Bid: &bid2, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 8}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 12.0000, OriginalBidCur: "USD", TargetBidderCode: "", AlternateBidderCode: ""}
 
 	innerBids1 := []*entities.PbsOrtbBid{
 		&bid1_1,
@@ -3135,7 +3135,7 @@ func TestBidRejectionErrors(t *testing.T) {
 		innerBids := []*entities.PbsOrtbBid{}
 		for _, bid := range test.bids {
 			currentBid := entities.PbsOrtbBid{
-				Bid: bid, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: test.duration}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 10.0000, OriginalBidCur: "USD", TargetBidderCode: ""}
+				Bid: bid, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: test.duration}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 10.0000, OriginalBidCur: "USD", TargetBidderCode: "", AlternateBidderCode: ""}
 			innerBids = append(innerBids, &currentBid)
 		}
 
@@ -3183,8 +3183,8 @@ func TestCategoryMappingTwoBiddersOneBidEachNoCategorySamePrice(t *testing.T) {
 	bidApn1 := openrtb2.Bid{ID: "bid_idApn1", ImpID: "imp_idApn1", Price: 10.0000, Cat: cats1, W: 1, H: 1}
 	bidApn2 := openrtb2.Bid{ID: "bid_idApn2", ImpID: "imp_idApn2", Price: 10.0000, Cat: cats2, W: 1, H: 1}
 
-	bid1_Apn1 := entities.PbsOrtbBid{Bid: &bidApn1, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 10.0000, OriginalBidCur: "USD", TargetBidderCode: ""}
-	bid1_Apn2 := entities.PbsOrtbBid{Bid: &bidApn2, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 10.0000, OriginalBidCur: "USD", TargetBidderCode: ""}
+	bid1_Apn1 := entities.PbsOrtbBid{Bid: &bidApn1, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 10.0000, OriginalBidCur: "USD", TargetBidderCode: "", AlternateBidderCode: ""}
+	bid1_Apn2 := entities.PbsOrtbBid{Bid: &bidApn2, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 10.0000, OriginalBidCur: "USD", TargetBidderCode: "", AlternateBidderCode: ""}
 
 	innerBidsApn1 := []*entities.PbsOrtbBid{
 		&bid1_Apn1,
@@ -3263,11 +3263,11 @@ func TestCategoryMappingTwoBiddersManyBidsEachNoCategorySamePrice(t *testing.T) 
 	bidApn2_1 := openrtb2.Bid{ID: "bid_idApn2_1", ImpID: "imp_idApn2_1", Price: 10.0000, Cat: cats2, W: 1, H: 1}
 	bidApn2_2 := openrtb2.Bid{ID: "bid_idApn2_2", ImpID: "imp_idApn2_2", Price: 20.0000, Cat: cats2, W: 1, H: 1}
 
-	bid1_Apn1_1 := entities.PbsOrtbBid{Bid: &bidApn1_1, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 10.0000, OriginalBidCur: "USD", TargetBidderCode: ""}
-	bid1_Apn1_2 := entities.PbsOrtbBid{Bid: &bidApn1_2, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 20.0000, OriginalBidCur: "USD", TargetBidderCode: ""}
+	bid1_Apn1_1 := entities.PbsOrtbBid{Bid: &bidApn1_1, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 10.0000, OriginalBidCur: "USD", TargetBidderCode: "", AlternateBidderCode: ""}
+	bid1_Apn1_2 := entities.PbsOrtbBid{Bid: &bidApn1_2, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 20.0000, OriginalBidCur: "USD", TargetBidderCode: "", AlternateBidderCode: ""}
 
-	bid1_Apn2_1 := entities.PbsOrtbBid{Bid: &bidApn2_1, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 10.0000, OriginalBidCur: "USD", TargetBidderCode: ""}
-	bid1_Apn2_2 := entities.PbsOrtbBid{Bid: &bidApn2_2, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 20.0000, OriginalBidCur: "USD", TargetBidderCode: ""}
+	bid1_Apn2_1 := entities.PbsOrtbBid{Bid: &bidApn2_1, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 10.0000, OriginalBidCur: "USD", TargetBidderCode: "", AlternateBidderCode: ""}
+	bid1_Apn2_2 := entities.PbsOrtbBid{Bid: &bidApn2_2, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 20.0000, OriginalBidCur: "USD", TargetBidderCode: "", AlternateBidderCode: ""}
 
 	innerBidsApn1 := []*entities.PbsOrtbBid{
 		&bid1_Apn1_1,
@@ -3345,9 +3345,9 @@ func TestRemoveBidById(t *testing.T) {
 	bidApn1_2 := openrtb2.Bid{ID: "bid_idApn1_2", ImpID: "imp_idApn1_2", Price: 20.0000, Cat: cats1, W: 1, H: 1}
 	bidApn1_3 := openrtb2.Bid{ID: "bid_idApn1_3", ImpID: "imp_idApn1_3", Price: 10.0000, Cat: cats1, W: 1, H: 1}
 
-	bid1_Apn1_1 := entities.PbsOrtbBid{Bid: &bidApn1_1, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 10.0000, OriginalBidCur: "USD", TargetBidderCode: ""}
-	bid1_Apn1_2 := entities.PbsOrtbBid{Bid: &bidApn1_2, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 20.0000, OriginalBidCur: "USD", TargetBidderCode: ""}
-	bid1_Apn1_3 := entities.PbsOrtbBid{Bid: &bidApn1_3, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 10.0000, OriginalBidCur: "USD", TargetBidderCode: ""}
+	bid1_Apn1_1 := entities.PbsOrtbBid{Bid: &bidApn1_1, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 10.0000, OriginalBidCur: "USD", TargetBidderCode: "", AlternateBidderCode: ""}
+	bid1_Apn1_2 := entities.PbsOrtbBid{Bid: &bidApn1_2, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 20.0000, OriginalBidCur: "USD", TargetBidderCode: "", AlternateBidderCode: ""}
+	bid1_Apn1_3 := entities.PbsOrtbBid{Bid: &bidApn1_3, BidMeta: nil, BidType: "video", BidTargets: nil, BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, BidEvents: nil, BidFloors: nil, DealPriority: 0, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 10.0000, OriginalBidCur: "USD", TargetBidderCode: "", AlternateBidderCode: ""}
 
 	type aTest struct {
 		desc      string
@@ -3548,7 +3548,7 @@ func TestApplyDealSupport(t *testing.T) {
 			},
 		}
 
-		bid := entities.PbsOrtbBid{Bid: &openrtb2.Bid{ID: "123456"}, BidMeta: nil, BidType: "video", BidTargets: map[string]string{}, BidVideo: &openrtb_ext.ExtBidPrebidVideo{}, BidEvents: nil, BidFloors: nil, DealPriority: test.in.dealPriority, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 0, OriginalBidCur: "USD", TargetBidderCode: ""}
+		bid := entities.PbsOrtbBid{Bid: &openrtb2.Bid{ID: "123456"}, BidMeta: nil, BidType: "video", BidTargets: map[string]string{}, BidVideo: &openrtb_ext.ExtBidPrebidVideo{}, BidEvents: nil, BidFloors: nil, DealPriority: test.in.dealPriority, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 0, OriginalBidCur: "USD", TargetBidderCode: "", AlternateBidderCode: ""}
 		bidCategory := map[string]string{
 			bid.Bid.ID: test.in.targ["hb_pb_cat_dur"],
 		}
@@ -3608,8 +3608,8 @@ func TestApplyDealSupportMultiBid(t *testing.T) {
 					allBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
 						"imp_id1": {
 							openrtb_ext.BidderName("appnexus"): {
-								&entities.PbsOrtbBid{Bid: &openrtb2.Bid{ID: "123456"}, BidMeta: nil, BidType: "video", BidTargets: map[string]string{}, BidVideo: &openrtb_ext.ExtBidPrebidVideo{}, BidEvents: nil, BidFloors: nil, DealPriority: 5, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 0, OriginalBidCur: "USD", TargetBidderCode: ""},
-								&entities.PbsOrtbBid{Bid: &openrtb2.Bid{ID: "789101"}, BidMeta: nil, BidType: "video", BidTargets: map[string]string{}, BidVideo: &openrtb_ext.ExtBidPrebidVideo{}, BidEvents: nil, BidFloors: nil, DealPriority: 5, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 0, OriginalBidCur: "USD", TargetBidderCode: ""},
+								&entities.PbsOrtbBid{Bid: &openrtb2.Bid{ID: "123456"}, BidMeta: nil, BidType: "video", BidTargets: map[string]string{}, BidVideo: &openrtb_ext.ExtBidPrebidVideo{}, BidEvents: nil, BidFloors: nil, DealPriority: 5, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 0, OriginalBidCur: "USD", TargetBidderCode: "", AlternateBidderCode: ""},
+								&entities.PbsOrtbBid{Bid: &openrtb2.Bid{ID: "789101"}, BidMeta: nil, BidType: "video", BidTargets: map[string]string{}, BidVideo: &openrtb_ext.ExtBidPrebidVideo{}, BidEvents: nil, BidFloors: nil, DealPriority: 5, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 0, OriginalBidCur: "USD", TargetBidderCode: "", AlternateBidderCode: ""},
 							},
 						},
 					},
@@ -3654,8 +3654,8 @@ func TestApplyDealSupportMultiBid(t *testing.T) {
 					allBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
 						"imp_id1": {
 							openrtb_ext.BidderName("appnexus"): {
-								&entities.PbsOrtbBid{Bid: &openrtb2.Bid{ID: "123456"}, BidMeta: nil, BidType: "video", BidTargets: map[string]string{}, BidVideo: &openrtb_ext.ExtBidPrebidVideo{}, BidEvents: nil, BidFloors: nil, DealPriority: 5, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 0, OriginalBidCur: "USD", TargetBidderCode: ""},
-								&entities.PbsOrtbBid{Bid: &openrtb2.Bid{ID: "789101"}, BidMeta: nil, BidType: "video", BidTargets: map[string]string{}, BidVideo: &openrtb_ext.ExtBidPrebidVideo{}, BidEvents: nil, BidFloors: nil, DealPriority: 5, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 0, OriginalBidCur: "USD", TargetBidderCode: ""},
+								&entities.PbsOrtbBid{Bid: &openrtb2.Bid{ID: "123456"}, BidMeta: nil, BidType: "video", BidTargets: map[string]string{}, BidVideo: &openrtb_ext.ExtBidPrebidVideo{}, BidEvents: nil, BidFloors: nil, DealPriority: 5, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 0, OriginalBidCur: "USD", TargetBidderCode: "", AlternateBidderCode: ""},
+								&entities.PbsOrtbBid{Bid: &openrtb2.Bid{ID: "789101"}, BidMeta: nil, BidType: "video", BidTargets: map[string]string{}, BidVideo: &openrtb_ext.ExtBidPrebidVideo{}, BidEvents: nil, BidFloors: nil, DealPriority: 5, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 0, OriginalBidCur: "USD", TargetBidderCode: "", AlternateBidderCode: ""},
 							},
 						},
 					},
@@ -3705,8 +3705,8 @@ func TestApplyDealSupportMultiBid(t *testing.T) {
 					allBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
 						"imp_id1": {
 							openrtb_ext.BidderName("appnexus"): {
-								&entities.PbsOrtbBid{Bid: &openrtb2.Bid{ID: "123456"}, BidMeta: nil, BidType: "video", BidTargets: map[string]string{}, BidVideo: &openrtb_ext.ExtBidPrebidVideo{}, BidEvents: nil, BidFloors: nil, DealPriority: 5, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 0, OriginalBidCur: "USD", TargetBidderCode: ""},
-								&entities.PbsOrtbBid{Bid: &openrtb2.Bid{ID: "789101"}, BidMeta: nil, BidType: "video", BidTargets: map[string]string{}, BidVideo: &openrtb_ext.ExtBidPrebidVideo{}, BidEvents: nil, BidFloors: nil, DealPriority: 5, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 0, OriginalBidCur: "USD", TargetBidderCode: ""},
+								&entities.PbsOrtbBid{Bid: &openrtb2.Bid{ID: "123456"}, BidMeta: nil, BidType: "video", BidTargets: map[string]string{}, BidVideo: &openrtb_ext.ExtBidPrebidVideo{}, BidEvents: nil, BidFloors: nil, DealPriority: 5, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 0, OriginalBidCur: "USD", TargetBidderCode: "", AlternateBidderCode: ""},
+								&entities.PbsOrtbBid{Bid: &openrtb2.Bid{ID: "789101"}, BidMeta: nil, BidType: "video", BidTargets: map[string]string{}, BidVideo: &openrtb_ext.ExtBidPrebidVideo{}, BidEvents: nil, BidFloors: nil, DealPriority: 5, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 0, OriginalBidCur: "USD", TargetBidderCode: "", AlternateBidderCode: ""},
 							},
 						},
 					},
@@ -3897,7 +3897,7 @@ func TestUpdateHbPbCatDur(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		bid := entities.PbsOrtbBid{Bid: &openrtb2.Bid{ID: "123456"}, BidMeta: nil, BidType: "video", BidTargets: map[string]string{}, BidVideo: &openrtb_ext.ExtBidPrebidVideo{}, BidEvents: nil, BidFloors: nil, DealPriority: test.dealPriority, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 0, OriginalBidCur: "USD", TargetBidderCode: ""}
+		bid := entities.PbsOrtbBid{Bid: &openrtb2.Bid{ID: "123456"}, BidMeta: nil, BidType: "video", BidTargets: map[string]string{}, BidVideo: &openrtb_ext.ExtBidPrebidVideo{}, BidEvents: nil, BidFloors: nil, DealPriority: test.dealPriority, DealTierSatisfied: false, GeneratedBidID: "", OriginalBidCPM: 0, OriginalBidCur: "USD", TargetBidderCode: "", AlternateBidderCode: ""}
 		bidCategory := map[string]string{
 			bid.Bid.ID: test.targ["hb_pb_cat_dur"],
 		}
@@ -5303,7 +5303,8 @@ func TestGetAllBids(t *testing.T) {
 								Bid: &openrtb2.Bid{
 									ID: "2",
 								},
-								OriginalBidCur: "USD",
+								OriginalBidCur:      "USD",
+								AlternateBidderCode: "pubmatic",
 							},
 						},
 						Currency:  "USD",
@@ -5370,7 +5371,8 @@ func TestGetAllBids(t *testing.T) {
 								Bid: &openrtb2.Bid{
 									ID: "2",
 								},
-								OriginalBidCur: "USD",
+								OriginalBidCur:      "USD",
+								AlternateBidderCode: "pubmatic",
 							},
 						},
 						Currency:  "USD",
