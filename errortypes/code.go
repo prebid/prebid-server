@@ -33,6 +33,7 @@ const (
 	FloorBidRejectionWarningCode
 	InvalidBidResponseDSAWarningCode
 	SecCookieDeprecationLenWarningCode
+	SecBrowsingTopicsWarningCode
 )
 
 // Coder provides an error or warning code with severity.

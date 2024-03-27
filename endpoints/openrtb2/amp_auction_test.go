@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -2402,5 +2403,78 @@ func TestSetSeatNonBid(t *testing.T) {
 				t.Errorf("setSeatNonBid() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestAmpAuctionDebugWarningsOnly(t *testing.T) {
+	testCases := []struct {
+		description         string
+		requestURLArguments string
+		addRequestHeaders   func(r *http.Request)
+		expectedStatus      int
+		expectedWarnings    []string
+	}{
+		{
+			description:         "debug_enabled_request_with_invalid_Sec-Browsing-Topics_header",
+			requestURLArguments: "?tag_id=1&debug=1",
+			addRequestHeaders: func(r *http.Request) {
+				r.Header.Add("Sec-Browsing-Topics", "foo")
+			},
+			expectedStatus:   200,
+			expectedWarnings: []string{"Invalid field in Sec-Browsing-Topics header: foo"},
+		},
+		{
+			description:         "debug_disabled_request_with_invalid_Sec-Browsing-Topics_header",
+			requestURLArguments: "?tag_id=1",
+			addRequestHeaders: func(r *http.Request) {
+				r.Header.Add("Sec-Browsing-Topics", "foo")
+			},
+			expectedStatus:   200,
+			expectedWarnings: nil,
+		},
+	}
+
+	storedRequests := map[string]json.RawMessage{
+		"1": json.RawMessage(validRequest(t, "site.json")),
+	}
+	exchange := &nobidExchange{}
+	endpoint, _ := NewAmpEndpoint(
+		fakeUUIDGenerator{},
+		exchange,
+		newParamsValidator(t),
+		&mockAmpStoredReqFetcher{storedRequests},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{
+			MaxRequestSize: maxSize,
+			AccountDefaults: config.Account{
+				Privacy: config.AccountPrivacy{
+					PrivacySandbox: config.PrivacySandbox{
+						TopicsDomain: "abc",
+					},
+				},
+			},
+		},
+		&metricsConfig.NilMetricsEngine{},
+		analyticsBuild.New(&config.Analytics{}),
+		map[string]string{},
+		[]byte{},
+		openrtb_ext.BuildBidderMap(),
+		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
+		nil,
+	)
+
+	for _, test := range testCases {
+		httpReq := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp"+test.requestURLArguments), nil)
+		test.addRequestHeaders(httpReq)
+		recorder := httptest.NewRecorder()
+
+		endpoint(recorder, httpReq, nil)
+
+		assert.Equal(t, test.expectedStatus, recorder.Result().StatusCode)
+		respBody := recorder.Body.String()
+		for _, warning := range test.expectedWarnings {
+			assert.True(t, strings.Contains(respBody, warning), respBody)
+		}
 	}
 }
