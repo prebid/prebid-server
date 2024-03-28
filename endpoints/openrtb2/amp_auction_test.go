@@ -1062,7 +1062,7 @@ func TestAmpBadRequests(t *testing.T) {
 		&mockAmpExchange{},
 		newParamsValidator(t),
 		&mockAmpStoredReqFetcher{data: mockAmpStoredReq},
-		&empty_fetcher.EmptyFetcher{},
+		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
