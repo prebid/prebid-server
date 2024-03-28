@@ -1941,9 +1941,13 @@ func TestValidateRequestExt(t *testing.T) {
 			givenRequestExt: json.RawMessage(`{"prebid":{"cache":{"bids":{},"vastxml":{}}}}`),
 		},
 		{
-			description:     "prebid targeting", // test integration with validateTargeting
-			givenRequestExt: json.RawMessage(`{"prebid":{"targeting":{}}}`),
-			expectedErrors:  []string{"ext.prebid.targeting: At least one of includewinners or includebidderkeys must be enabled to enable targeting support"},
+			description:     "prebid price granularity invalid",
+			givenRequestExt: json.RawMessage(`{"prebid":{"targeting":{"pricegranularity":{"precision":-1,"ranges":[{"min":0,"max":20,"increment":0.1}]}}}}`),
+			expectedErrors:  []string{"Price granularity error: precision must be non-negative"},
+		},
+		{
+			description:     "prebid native media type price granualrity valid",
+			givenRequestExt: json.RawMessage(`{"prebid":{"targeting":{"mediatypepricegranularity":{"native":{"precision":3,"ranges":[{"max":20,"increment":4.5}]}}}}}`),
 		},
 		{
 			description:     "valid multibid",
@@ -1985,74 +1989,8 @@ func TestValidateTargeting(t *testing.T) {
 			expectedError:  nil,
 		},
 		{
-			name:           "empty",
-			givenTargeting: &openrtb_ext.ExtRequestTargeting{},
-			expectedError:  errors.New("ext.prebid.targeting: At least one of includewinners or includebidderkeys must be enabled to enable targeting support"),
-		},
-		{
-			name: "includewinners nil, includebidderkeys false",
-			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeBidderKeys: ptrutil.ToPtr(false),
-			},
-			expectedError: errors.New("ext.prebid.targeting: At least one of includewinners or includebidderkeys must be enabled to enable targeting support"),
-		},
-		{
-			name: "includewinners nil, includebidderkeys true",
-			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeBidderKeys: ptrutil.ToPtr(true),
-			},
-			expectedError: nil,
-		},
-		{
-			name: "includewinners false, includebidderkeys nil",
-			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners: ptrutil.ToPtr(false),
-			},
-			expectedError: errors.New("ext.prebid.targeting: At least one of includewinners or includebidderkeys must be enabled to enable targeting support"),
-		},
-		{
-			name: "includewinners true, includebidderkeys nil",
-			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners: ptrutil.ToPtr(true),
-			},
-			expectedError: nil,
-		},
-		{
-			name: "all false",
-			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners:    ptrutil.ToPtr(false),
-				IncludeBidderKeys: ptrutil.ToPtr(false),
-			},
-			expectedError: errors.New("ext.prebid.targeting: At least one of includewinners or includebidderkeys must be enabled to enable targeting support"),
-		},
-		{
-			name: "includewinners false, includebidderkeys true",
-			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners:    ptrutil.ToPtr(false),
-				IncludeBidderKeys: ptrutil.ToPtr(true),
-			},
-			expectedError: nil,
-		},
-		{
-			name: "includewinners false, includebidderkeys true",
-			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners:    ptrutil.ToPtr(true),
-				IncludeBidderKeys: ptrutil.ToPtr(false),
-			},
-			expectedError: nil,
-		},
-		{
-			name: "includewinners true, includebidderkeys true",
-			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners:    ptrutil.ToPtr(true),
-				IncludeBidderKeys: ptrutil.ToPtr(true),
-			},
-			expectedError: nil,
-		},
-		{
 			name: "price granularity ranges out of order",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners: ptrutil.ToPtr(true),
 				PriceGranularity: &openrtb_ext.PriceGranularity{
 					Precision: ptrutil.ToPtr(2),
 					Ranges: []openrtb_ext.GranularityRange{
@@ -2066,7 +2004,6 @@ func TestValidateTargeting(t *testing.T) {
 		{
 			name: "media type price granularity video correct",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners: ptrutil.ToPtr(true),
 				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
 					Video: &openrtb_ext.PriceGranularity{
 						Precision: ptrutil.ToPtr(2),
@@ -2081,7 +2018,6 @@ func TestValidateTargeting(t *testing.T) {
 		{
 			name: "media type price granularity banner correct",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners: ptrutil.ToPtr(true),
 				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
 					Banner: &openrtb_ext.PriceGranularity{
 						Precision: ptrutil.ToPtr(2),
@@ -2096,7 +2032,6 @@ func TestValidateTargeting(t *testing.T) {
 		{
 			name: "media type price granularity native correct",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners: ptrutil.ToPtr(true),
 				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
 					Native: &openrtb_ext.PriceGranularity{
 						Precision: ptrutil.ToPtr(2),
@@ -2111,7 +2046,6 @@ func TestValidateTargeting(t *testing.T) {
 		{
 			name: "media type price granularity video and banner correct",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners: ptrutil.ToPtr(true),
 				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
 					Banner: &openrtb_ext.PriceGranularity{
 						Precision: ptrutil.ToPtr(2),
@@ -2132,7 +2066,6 @@ func TestValidateTargeting(t *testing.T) {
 		{
 			name: "media type price granularity video incorrect",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners: ptrutil.ToPtr(true),
 				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
 					Video: &openrtb_ext.PriceGranularity{
 						Precision: ptrutil.ToPtr(2),
@@ -2147,7 +2080,6 @@ func TestValidateTargeting(t *testing.T) {
 		{
 			name: "media type price granularity banner incorrect",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners: ptrutil.ToPtr(true),
 				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
 					Banner: &openrtb_ext.PriceGranularity{
 						Precision: ptrutil.ToPtr(2),
@@ -2162,7 +2094,6 @@ func TestValidateTargeting(t *testing.T) {
 		{
 			name: "media type price granularity native incorrect",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners: ptrutil.ToPtr(true),
 				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
 					Native: &openrtb_ext.PriceGranularity{
 						Precision: ptrutil.ToPtr(2),
@@ -2177,7 +2108,6 @@ func TestValidateTargeting(t *testing.T) {
 		{
 			name: "media type price granularity video correct and banner incorrect",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners: ptrutil.ToPtr(true),
 				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
 					Banner: &openrtb_ext.PriceGranularity{
 						Precision: ptrutil.ToPtr(2),
@@ -2198,7 +2128,6 @@ func TestValidateTargeting(t *testing.T) {
 		{
 			name: "media type price granularity native incorrect and banner correct",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners: ptrutil.ToPtr(true),
 				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
 					Native: &openrtb_ext.PriceGranularity{
 						Precision: ptrutil.ToPtr(2),

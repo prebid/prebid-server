@@ -1697,36 +1697,28 @@ func validateRequestExt(req *openrtb_ext.RequestWrapper) []error {
 }
 
 func validateTargeting(t *openrtb_ext.ExtRequestTargeting) error {
-	if t == nil {
-		return nil
-	}
-
-	if (t.IncludeWinners == nil || !*t.IncludeWinners) && (t.IncludeBidderKeys == nil || !*t.IncludeBidderKeys) {
-		return errors.New("ext.prebid.targeting: At least one of includewinners or includebidderkeys must be enabled to enable targeting support")
-	}
-
-	if t.PriceGranularity != nil {
-		if err := validatePriceGranularity(t.PriceGranularity); err != nil {
-			return err
+	if t != nil {
+		if t.PriceGranularity != nil {
+			if err := validatePriceGranularity(t.PriceGranularity); err != nil {
+				return err
+			}
+		}
+		if t.MediaTypePriceGranularity.Video != nil {
+			if err := validatePriceGranularity(t.MediaTypePriceGranularity.Video); err != nil {
+				return err
+			}
+		}
+		if t.MediaTypePriceGranularity.Banner != nil {
+			if err := validatePriceGranularity(t.MediaTypePriceGranularity.Banner); err != nil {
+				return err
+			}
+		}
+		if t.MediaTypePriceGranularity.Native != nil {
+			if err := validatePriceGranularity(t.MediaTypePriceGranularity.Native); err != nil {
+				return err
+			}
 		}
 	}
-
-	if t.MediaTypePriceGranularity.Video != nil {
-		if err := validatePriceGranularity(t.MediaTypePriceGranularity.Video); err != nil {
-			return err
-		}
-	}
-	if t.MediaTypePriceGranularity.Banner != nil {
-		if err := validatePriceGranularity(t.MediaTypePriceGranularity.Banner); err != nil {
-			return err
-		}
-	}
-	if t.MediaTypePriceGranularity.Native != nil {
-		if err := validatePriceGranularity(t.MediaTypePriceGranularity.Native); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
@@ -2409,7 +2401,7 @@ func writeError(errs []error, w http.ResponseWriter, labels *metrics.Labels) boo
 		w.WriteHeader(httpStatus)
 		labels.RequestStatus = metricsStatus
 		for _, err := range errs {
-			w.Write([]byte(fmt.Sprintf("Invalid request: %s\n", err.Error())))
+			fmt.Fprintf(w, "Invalid request: %s\n", err.Error())
 		}
 		rc = true
 	}

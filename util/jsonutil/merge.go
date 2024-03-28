@@ -58,7 +58,7 @@ func (e *mergeCloneExtension) DecorateDecoder(typ reflect2.Type, decoder jsonite
 
 	// don't use json.RawMessage on fields handled by extMergeDecoder
 	if typ.Kind() == reflect.Slice && typ != jsonRawMessageType {
-		return &sliceCloneDecoder{valueDecoder: decoder, sliceType: s}
+		return &sliceCloneDecoder{valueDecoder: decoder, sliceType: typ.(*reflect2.UnsafeSliceType)}
 	}
 
 	if typ.Kind() == reflect.Map {

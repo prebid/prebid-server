@@ -27,6 +27,7 @@ type Configuration struct {
 	UnixSocketName   string      `mapstructure:"unix_socket_name"`
 	Client           HTTPClient  `mapstructure:"http_client"`
 	CacheClient      HTTPClient  `mapstructure:"http_client_cache"`
+	Admin            Admin       `mapstructure:"admin"`
 	AdminPort        int         `mapstructure:"admin_port"`
 	Compression      Compression `mapstructure:"compression"`
 	// GarbageCollectorThreshold allocates virtual memory (in bytes) which is not used by PBS but
@@ -102,6 +103,9 @@ type Configuration struct {
 	PriceFloors PriceFloors `mapstructure:"price_floors"`
 }
 
+type Admin struct {
+	Enabled bool `mapstructure:"enabled"`
+}
 type PriceFloors struct {
 	Enabled bool              `mapstructure:"enabled"`
 	Fetcher PriceFloorFetcher `mapstructure:"fetcher"`
@@ -442,8 +446,9 @@ type LMT struct {
 }
 
 type Analytics struct {
-	File     FileLogs `mapstructure:"file"`
-	Pubstack Pubstack `mapstructure:"pubstack"`
+	File     FileLogs      `mapstructure:"file"`
+	Agma     AgmaAnalytics `mapstructure:"agma"`
+	Pubstack Pubstack      `mapstructure:"pubstack"`
 }
 
 type CurrencyConverter struct {
@@ -457,6 +462,31 @@ func (cfg *CurrencyConverter) validate(errs []error) []error {
 		errs = append(errs, fmt.Errorf("currency_converter.fetch_interval_seconds must be in the range [0, %d]. Got %d", 0xffff, cfg.FetchIntervalSeconds))
 	}
 	return errs
+}
+
+type AgmaAnalytics struct {
+	Enabled  bool                      `mapstructure:"enabled"`
+	Endpoint AgmaAnalyticsHttpEndpoint `mapstructure:"endpoint"`
+	Buffers  AgmaAnalyticsBuffer       `mapstructure:"buffers"`
+	Accounts []AgmaAnalyticsAccount    `mapstructure:"accounts"`
+}
+
+type AgmaAnalyticsHttpEndpoint struct {
+	Url     string `mapstructure:"url"`
+	Timeout string `mapstructure:"timeout"`
+	Gzip    bool   `mapstructure:"gzip"`
+}
+
+type AgmaAnalyticsBuffer struct {
+	BufferSize string `mapstructure:"size"`
+	EventCount int    `mapstructure:"count"`
+	Timeout    string `mapstructure:"timeout"`
+}
+
+type AgmaAnalyticsAccount struct {
+	Code        string `mapstructure:"code"`
+	PublisherId string `mapstructure:"publisher_id"`
+	SiteAppId   string `mapstructure:"site_app_id"`
 }
 
 // FileLogs Corresponding config for FileLogger as a PBS Analytics Module
@@ -858,6 +888,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("unix_socket_enable", false)              // boolean which decide if the socket-server will be started.
 	v.SetDefault("unix_socket_name", "prebid-server.sock") // path of the socket's file which must be listened.
 	v.SetDefault("admin_port", 6060)
+	v.SetDefault("admin.enabled", true) // boolean to determine if admin listener will be started.
 	v.SetDefault("garbage_collector_threshold", 0)
 	v.SetDefault("status_response", "")
 	v.SetDefault("datacenter", "")
@@ -1046,6 +1077,14 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("analytics.pubstack.buffers.size", "2MB")
 	v.SetDefault("analytics.pubstack.buffers.count", 100)
 	v.SetDefault("analytics.pubstack.buffers.timeout", "900s")
+	v.SetDefault("analytics.agma.enabled", false)
+	v.SetDefault("analytics.agma.endpoint.url", "https://go.pbs.agma-analytics.de/v1/prebid-server")
+	v.SetDefault("analytics.agma.endpoint.timeout", "2s")
+	v.SetDefault("analytics.agma.endpoint.gzip", false)
+	v.SetDefault("analytics.agma.buffers.size", "2MB")
+	v.SetDefault("analytics.agma.buffers.count", 100)
+	v.SetDefault("analytics.agma.buffers.timeout", "15m")
+	v.SetDefault("analytics.agma.accounts", []AgmaAnalyticsAccount{})
 	v.SetDefault("amp_timeout_adjustment_ms", 0)
 	v.BindEnv("gdpr.default_value")
 	v.SetDefault("gdpr.enabled", true)

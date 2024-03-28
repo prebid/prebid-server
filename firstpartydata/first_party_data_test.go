@@ -14,6 +14,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// todo: fpd error formatting in resolve methods
+
 func TestExtractGlobalFPD(t *testing.T) {
 	testCases := []struct {
 		description string
@@ -1001,6 +1003,42 @@ func TestResolveSite(t *testing.T) {
 			},
 			expectError: "invalid first party data ext",
 		},
+		{
+			description:    "valid-id",
+			bidRequestSite: &openrtb2.Site{ID: "1"},
+			fpdConfig:      &openrtb_ext.ORTB2{Site: json.RawMessage(`{"id":"2"}`)},
+			expectedSite:   &openrtb2.Site{ID: "2"},
+		},
+		{
+			description:    "valid-page",
+			bidRequestSite: &openrtb2.Site{Page: "1"},
+			fpdConfig:      &openrtb_ext.ORTB2{Site: json.RawMessage(`{"page":"2"}`)},
+			expectedSite:   &openrtb2.Site{Page: "2"},
+		},
+		{
+			description:    "invalid-id",
+			bidRequestSite: &openrtb2.Site{ID: "1"},
+			fpdConfig:      &openrtb_ext.ORTB2{Site: json.RawMessage(`{"id":null}`)},
+			expectError:    "incorrect First Party Data for bidder bidderA: Site object cannot set empty page if req.site.id is empty",
+		},
+		{
+			description:    "invalid-page",
+			bidRequestSite: &openrtb2.Site{Page: "1"},
+			fpdConfig:      &openrtb_ext.ORTB2{Site: json.RawMessage(`{"page":null}`)},
+			expectError:    "incorrect First Party Data for bidder bidderA: Site object cannot set empty page if req.site.id is empty",
+		},
+		{
+			description:    "existing-err",
+			bidRequestSite: &openrtb2.Site{ID: "1", Ext: []byte(`malformed`)},
+			fpdConfig:      &openrtb_ext.ORTB2{Site: json.RawMessage(`{"ext":{"a":1}}`)},
+			expectError:    "invalid request ext",
+		},
+		{
+			description:    "fpd-err",
+			bidRequestSite: &openrtb2.Site{ID: "1", Ext: []byte(`{"a":1}`)},
+			fpdConfig:      &openrtb_ext.ORTB2{Site: json.RawMessage(`malformed`)},
+			expectError:    "invalid first party data ext",
+		},
 	}
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
@@ -1009,7 +1047,7 @@ func TestResolveSite(t *testing.T) {
 			if len(test.expectError) > 0 {
 				assert.EqualError(t, err, test.expectError)
 			} else {
-				assert.NoError(t, err, "unexpected error returned")
+				require.NoError(t, err, "unexpected error returned")
 				assert.Equal(t, test.expectedSite, resultSite, "Result site is incorrect")
 			}
 		})
@@ -1212,66 +1250,6 @@ func TestBuildExtData(t *testing.T) {
 	for _, test := range testCases {
 		actualRes := buildExtData(test.input)
 		assert.JSONEq(t, test.expectedRes, string(actualRes), "Incorrect result data")
-	}
-}
-
-func TestMergeSite(t *testing.T) {
-	testCases := []struct {
-		name         string
-		givenSite    openrtb2.Site
-		givenFPD     json.RawMessage
-		expectedSite openrtb2.Site
-		expectError  string
-	}{
-		{
-			name:         "valid-id",
-			givenSite:    openrtb2.Site{ID: "1"},
-			givenFPD:     []byte(`{"id":"2"}`),
-			expectedSite: openrtb2.Site{ID: "2"},
-		},
-		{
-			name:         "valid-page",
-			givenSite:    openrtb2.Site{Page: "1"},
-			givenFPD:     []byte(`{"page":"2"}`),
-			expectedSite: openrtb2.Site{Page: "2"},
-		},
-		{
-			name:        "invalid-id",
-			givenSite:   openrtb2.Site{ID: "a"},
-			givenFPD:    []byte(`{"id":null}`),
-			expectError: "incorrect First Party Data for bidder BidderA: Site object cannot set empty page if req.site.id is empty",
-		},
-		{
-			name:        "invalid-page",
-			givenSite:   openrtb2.Site{Page: "a"},
-			givenFPD:    []byte(`{"page":null}`),
-			expectError: "incorrect First Party Data for bidder BidderA: Site object cannot set empty page if req.site.id is empty",
-		},
-		{
-			name:        "existing-err",
-			givenSite:   openrtb2.Site{ID: "1", Ext: []byte(`malformed`)},
-			givenFPD:    []byte(`{"ext":{"a":1}}`),
-			expectError: "invalid request ext",
-		},
-		{
-			name:        "fpd-err",
-			givenSite:   openrtb2.Site{ID: "1", Ext: []byte(`{"a":1}`)},
-			givenFPD:    []byte(`malformed`),
-			expectError: "invalid first party data ext",
-		},
-	}
-
-	for _, test := range testCases {
-		t.Run(test.name, func(t *testing.T) {
-			err := mergeSite(&test.givenSite, test.givenFPD, "BidderA")
-
-			if len(test.expectError) > 0 {
-				assert.EqualError(t, err, test.expectError)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, test.expectedSite, test.givenSite, " result Site is incorrect")
-			}
-		})
 	}
 }
 

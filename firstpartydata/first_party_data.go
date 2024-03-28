@@ -16,8 +16,8 @@ import (
 )
 
 var (
-	ErrBadRequest = fmt.Errorf("invalid request ext")
-	ErrBadFPD     = fmt.Errorf("invalid first party data ext")
+	ErrBadRequest = errors.New("invalid request ext")
+	ErrBadFPD     = errors.New("invalid first party data ext")
 )
 
 const (
@@ -256,26 +256,18 @@ func resolveSite(fpdConfig *openrtb_ext.ORTB2, bidRequestSite *openrtb2.Site, gl
 		newSite.Content.Data = openRtbGlobalFPD[siteContentDataKey]
 	}
 	if fpdConfigSite != nil {
-		if err := mergeSite(newSite, fpdConfigSite, bidderName); err != nil {
-			return nil, err
+		if err := jsonutil.MergeClone(newSite, fpdConfigSite); err != nil {
+			return nil, formatMergeCloneError(err)
+		}
+
+		// Re-Validate Site
+		if newSite.ID == "" && newSite.Page == "" {
+			return nil, &errortypes.BadInput{
+				Message: fmt.Sprintf("incorrect First Party Data for bidder %s: Site object cannot set empty page if req.site.id is empty", bidderName),
+			}
 		}
 	}
 	return newSite, nil
-}
-
-func mergeSite(v *openrtb2.Site, overrideJSON json.RawMessage, bidderName string) error {
-	if err := jsonutil.MergeClone(v, overrideJSON); err != nil {
-		return formatMergeCloneError(err)
-	}
-
-	// Re-Validate Site
-	if v.ID == "" && v.Page == "" {
-		return &errortypes.BadInput{
-			Message: fmt.Sprintf("incorrect First Party Data for bidder %s: Site object cannot set empty page if req.site.id is empty", bidderName),
-		}
-	}
-
-	return nil
 }
 
 func formatMergePatchError(err error) error {
