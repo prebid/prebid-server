@@ -50,8 +50,6 @@ func (e *mergeCloneExtension) CreateDecoder(typ reflect2.Type) jsoniter.ValDecod
 	return nil
 }
 
-var extMergeDecoderType = reflect2.TypeOf(extMergeDecoder{})
-
 func (e *mergeCloneExtension) DecorateDecoder(typ reflect2.Type, decoder jsoniter.ValDecoder) jsoniter.ValDecoder {
 	if typ.Kind() == reflect.Ptr {
 		ptrType := typ.(*reflect2.UnsafePtrType)
@@ -59,8 +57,8 @@ func (e *mergeCloneExtension) DecorateDecoder(typ reflect2.Type, decoder jsonite
 	}
 
 	// don't use json.RawMessage on fields handled by extMergeDecoder
-	if typ.Kind() == reflect.Slice && reflect2.TypeOfPtr(decoder).Elem() != extMergeDecoderType {
-		return &sliceCloneDecoder{valueDecoder: decoder, sliceType: typ.(*reflect2.UnsafeSliceType)}
+	if typ.Kind() == reflect.Slice && typ != jsonRawMessageType {
+		return &sliceCloneDecoder{valueDecoder: decoder, sliceType: s}
 	}
 
 	if typ.Kind() == reflect.Map {
