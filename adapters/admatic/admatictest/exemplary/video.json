@@ -11,7 +11,7 @@
         },
         "ext": {
           "bidder": {
-            "host": "admatic"
+            "host": "admatic.rtb.admatic.com.tr"
           }
         }
       }
@@ -20,7 +20,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://admatic.rtb.pixad.com.tr",
+        "uri": "http://admatic.rtb.admatic.com.tr",
         "body": {
           "id": "test-request-id",
           "imp": [
@@ -33,7 +33,7 @@
               },
               "ext": {
                 "bidder": {
-                  "host": "admatic"
+                  "host": "admatic.rtb.admatic.com.tr"
                 }
               }
             }

@@ -1,4 +1,4 @@
-endpoint: "http://{{.Host}}.rtb.pixad.com.tr/"
+endpoint: "http://{{.Host}}"
 endpointCompression: gzip
 maintainer:
   email: "abdulbaki.cam@admatic.com.tr"

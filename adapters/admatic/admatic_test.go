@@ -1,4 +1,4 @@
-package pixad
+package admatic
 
 import (
 	"testing"
@@ -9,13 +9,13 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderPixad, config.Adapter{
-		Endpoint: "http://admatic.rtb.pixad.com.tr"},
+	bidder, buildErr := Builder(openrtb_ext.BidderAdmatic, config.Adapter{
+		Endpoint: "http://admatic.rtb.admatic.com.tr"},
 		config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1281, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	adapterstest.RunJSONBidderTest(t, "pixadtest", bidder)
+	adapterstest.RunJSONBidderTest(t, "admatictest", bidder)
 }

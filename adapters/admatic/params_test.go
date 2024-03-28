@@ -1,4 +1,4 @@
-package pixad
+package admatic
 
 import (
 	"encoding/json"
@@ -14,7 +14,7 @@ func TestValidParams(t *testing.T) {
 	}
 
 	for _, p := range validParams {
-		if err := validator.Validate(openrtb_ext.BidderOneTag, json.RawMessage(p)); err != nil {
+		if err := validator.Validate(openrtb_ext.BidderAdmatic, json.RawMessage(p)); err != nil {
 			t.Errorf("Schema rejected valid params: %s", p)
 		}
 	}
@@ -27,20 +27,20 @@ func TestInvalidParams(t *testing.T) {
 	}
 
 	for _, p := range invalidParams {
-		if err := validator.Validate(openrtb_ext.BidderOneTag, json.RawMessage(p)); err == nil {
+		if err := validator.Validate(openrtb_ext.BidderAdmatic, json.RawMessage(p)); err == nil {
 			t.Errorf("Schema allowed invalid params: %s", p)
 		}
 	}
 }
 
 var validParams = []string{
-	`{	"host": "hostname",
+	`{	"host": "admatic.rtb.admatic.com.tr",
 		"ext": {
 			"key1": "value1",
 			"key2": "value2"
 		}
 	}`,
-	`{"host": "hostname"}`,
+	`{"host": "admatic.rtb.admatic.com.tr"}`,
 }
 
 var invalidParams = []string{

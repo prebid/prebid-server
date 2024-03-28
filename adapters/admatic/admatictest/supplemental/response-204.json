@@ -9,7 +9,7 @@
         },
         "ext": {
           "bidder": {
-            "host": "admatic"
+            "host": "admatic.rtb.admatic.com.tr"
           }
         }
       }
@@ -19,7 +19,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://admatic.rtb.pixad.com.tr",
+        "uri": "http://admatic.rtb.admatic.com.tr",
         "body": {
           "id": "test-request-id",
           "imp": [
@@ -30,7 +30,7 @@
               },
               "ext": {
                 "bidder": {
-                  "host": "admatic"
+                  "host": "admatic.rtb.admatic.com.tr"
                 }
               }
             }
@@ -38,14 +38,9 @@
         }
       },
       "mockResponse": {
-        "status": 500
+        "status": 204
       }
     }
   ],
-  "expectedMakeBidsErrors": [
-    {
-      "value": "Unexpected status code: 500. Run with request.debug = 1 for more info",
-      "comparison": "literal"
-    }
-  ]
+  "expectedBidResponses": []
 }

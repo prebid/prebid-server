@@ -14,7 +14,7 @@
         },
         "ext": {
           "bidder": {
-            "host": "admatic",
+            "host": "admatic.rtb.admatic.com.tr",
             "bidFloor": 0.10,
             "isTest": false
           }
@@ -25,7 +25,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://admatic.rtb.pixad.com.tr",
+        "uri": "http://admatic.rtb.admatic.com.tr",
         "body": {
           "id": "test-request-id-banner",
           "imp": [
@@ -41,7 +41,7 @@
               },
               "ext": {
                 "bidder": {
-                  "host": "admatic",
+                  "host": "admatic.rtb.admatic.com.tr",
                   "bidFloor": 0.10,
                   "isTest": false
                 }
@@ -56,7 +56,7 @@
           "id": "test-request-id-banner",
           "seatbid": [
             {
-              "seat": "pixad",
+              "seat": "admatic",
               "bid": [
                 {
                   "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",

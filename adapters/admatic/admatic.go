@@ -1,4 +1,4 @@
-package pixad
+package admatic
 
 import (
 	"encoding/json"
@@ -37,14 +37,14 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	Host := ""
 
 	for _, imp := range request.Imp {
-		pixadExt, err := getImpressionExt(imp)
+		admaticExt, err := getImpressionExt(imp)
 		if err != nil {
 			return nil, []error{err}
 		}
-		if pixadExt.Host != "" {
+		if admaticExt.Host != "" {
 			if Host == "" {
-				Host = pixadExt.Host
-			} else if Host != pixadExt.Host {
+				Host = admaticExt.Host
+			} else if Host != admaticExt.Host {
 				return nil, []error{&errortypes.BadInput{
 					Message: "There must be only one Hos",
 				}}
@@ -73,7 +73,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	return []*adapters.RequestData{requestData}, nil
 }
 
-func getImpressionExt(imp openrtb2.Imp) (*openrtb_ext.ImpExtPixad, error) {
+func getImpressionExt(imp openrtb2.Imp) (*openrtb_ext.ImpExtAdmatic, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
@@ -81,14 +81,14 @@ func getImpressionExt(imp openrtb2.Imp) (*openrtb_ext.ImpExtPixad, error) {
 		}
 	}
 
-	var pixadExt openrtb_ext.ImpExtPixad
-	if err := json.Unmarshal(bidderExt.Bidder, &pixadExt); err != nil {
+	var admaticExt openrtb_ext.ImpExtAdmatic
+	if err := json.Unmarshal(bidderExt.Bidder, &admaticExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: "Error while unmarshaling bidder extension",
 		}
 	}
 
-	return &pixadExt, nil
+	return &admaticExt, nil
 }
 
 // "Un-templates" the endpoint by replacing macroses and adding the required query parameters

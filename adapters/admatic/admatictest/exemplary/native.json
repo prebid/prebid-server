@@ -9,7 +9,7 @@
         },
         "ext": {
           "bidder": {
-            "host": "admatic"
+            "host": "admatic.rtb.admatic.com.tr"
           }
         }
       }
@@ -18,7 +18,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://admatic.rtb.pixad.com.tr",
+        "uri": "http://admatic.rtb.admatic.com.tr",
         "body": {
           "id": "test-request-id-native",
           "imp": [
@@ -29,7 +29,7 @@
               },
               "ext": {
                 "bidder": {
-                  "host": "admatic"
+                  "host": "admatic.rtb.admatic.com.tr"
                 }
               }
             }
@@ -42,7 +42,7 @@
           "id": "test-request-id-native",
           "seatbid": [
             {
-              "seat": "pixad",
+              "seat": "admatic",
               "bid": [{
                 "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
                 "impid": "test-imp-id-native",
