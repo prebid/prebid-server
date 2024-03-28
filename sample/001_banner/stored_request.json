@@ -1,0 +1,28 @@
+{
+    "id": "test-imp-id",
+    "banner": {
+        "format": [
+            {
+                "w": 300,
+                "h": 250
+            },
+            {
+                "w": 300,
+                "h": 600
+            }
+        ]
+    },
+    "ext": {
+        "prebid": {
+            "bidder": {
+                "pubmatic": {
+                    "publisherId": "111111",
+                    "adSlot": "test"
+                }
+            },
+            "storedbidresponse": [
+               { "bidder": "pubmatic", "id": "test-bid-id" }
+            ]
+        }
+    }
+}

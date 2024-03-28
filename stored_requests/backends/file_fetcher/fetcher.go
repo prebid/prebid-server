@@ -36,7 +36,9 @@ func (fetcher *eagerFetcher) FetchRequests(ctx context.Context, requestIDs []str
 }
 
 func (fetcher *eagerFetcher) FetchResponses(ctx context.Context, ids []string) (data map[string]json.RawMessage, errs []error) {
-	return nil, nil
+	storedResponses := fetcher.FileSystem.Directories["stored_responses"].Files
+	errs = appendErrors("Response", ids, storedResponses, nil)
+	return storedResponses, errs
 }
 
 // FetchAccount fetches the host account configuration for a publisher
