@@ -5,7 +5,7 @@ func Clone[T any](s []T) []T {
 		return nil
 	}
 
-	c := make([]T, len(s))
+	c := make([]T, len(s), cap(s))
 	copy(c, s)
 
 	return c
