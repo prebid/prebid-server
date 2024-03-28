@@ -134,6 +134,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderLockerDome,
 	BidderLogan,
 	BidderLogicad,
+	BidderLoyal,
 	BidderLunaMedia,
 	BidderMabidder,
 	BidderMadvertise,
@@ -417,6 +418,7 @@ const (
 	BidderLockerDome        BidderName = "lockerdome"
 	BidderLogan             BidderName = "logan"
 	BidderLogicad           BidderName = "logicad"
+	BidderLoyal             BidderName = "loyal"
 	BidderLunaMedia         BidderName = "lunamedia"
 	BidderMabidder          BidderName = "mabidder"
 	BidderMadvertise        BidderName = "madvertise"
