@@ -14,8 +14,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// todo: fpd error formatting in resolve methods
-
 func TestExtractGlobalFPD(t *testing.T) {
 	testCases := []struct {
 		description string
