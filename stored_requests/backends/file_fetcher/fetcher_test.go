@@ -12,17 +12,50 @@ import (
 )
 
 func TestFileFetcher(t *testing.T) {
+	// Load the test input files for testing
 	fetcher, err := NewFileFetcher("./test")
 	if err != nil {
 		t.Errorf("Failed to create a Fetcher: %v", err)
 	}
 
+	// Test stored request and stored imps
 	storedReqs, storedImps, errs := fetcher.FetchRequests(context.Background(), []string{"1", "2"}, []string{"some-imp"})
 	assertErrorCount(t, 0, errs)
 
 	validateStoredReqOne(t, storedReqs)
 	validateStoredReqTwo(t, storedReqs)
 	validateImp(t, storedImps)
+
+	// Test stored responses
+	storedResps, errs := fetcher.FetchResponses(context.Background(), []string{"bar", "escaped", "does_not_exist"})
+	// expect 1 error since we do not have "does_not_exist" stored response file from ./test
+	assertErrorCount(t, 1, errs)
+
+	validateStoredResponse[map[string]string](t, storedResps, "bar", func(val map[string]string) error {
+		if len(val) != 1 {
+			return fmt.Errorf("Unexpected value length. Expected %d, Got %d", 1, len(val))
+		}
+
+		data, hadKey := val["test"]
+		if !hadKey {
+			return fmt.Errorf(`missing key "test" in the value`)
+		}
+
+		expectedVal := "bar"
+		if data != expectedVal {
+			return fmt.Errorf(`Bad value for key "test". Expected "%s", Got "%s"`, expectedVal, data)
+		}
+		return nil
+	})
+
+	validateStoredResponse[string](t, storedResps, "escaped", func(val string) error {
+		expectedVal := `esca"ped`
+		if val != expectedVal {
+			return fmt.Errorf(`Bad data. Expected "%v", Got "%s"`, expectedVal, val)
+		}
+		return nil
+	})
+
 }
 
 func TestAccountFetcher(t *testing.T) {
@@ -178,4 +211,20 @@ func TestCategoriesFetcherNoCategoriesFile(t *testing.T) {
 	_, fetchingErr := fetcher.FetchCategories(nil, "test", "not_exists", "IAB1-100")
 	assert.Equal(t, fmt.Errorf("Unable to find mapping file for adserver: 'test', publisherId: 'not_exists'"),
 		fetchingErr, "Categories were loaded incorrectly")
+}
+
+func validateStoredResponse[T any](t *testing.T, storedInfo map[string]json.RawMessage, id string, verifyFunc func(outputVal T) error) {
+	storedValue, hasID := storedInfo[id]
+	if !hasID {
+		t.Fatalf(`Expected stored response data to have id: "%s"`, id)
+	}
+
+	var unmarshalledValue T
+	if err := jsonutil.UnmarshalValid(storedValue, &unmarshalledValue); err != nil {
+		t.Errorf(`Failed to unmarshal stored response data of id "%s": %v`, id, err)
+	}
+
+	if err := verifyFunc(unmarshalledValue); err != nil {
+		t.Errorf(`Bad data in stored response of id: "%s": %v`, id, err)
+	}
 }
