@@ -591,12 +591,22 @@ func TestUpdateReqWrapperForAnalytics(t *testing.T) {
 					Ext: []byte(`{"prebid":{"analytics":{"adapter1":{"client-analytics":true},"adapter2":{"client-analytics":false}}}}`)},
 			},
 		},
+		{
+			description:               "Given request is nil, check there are no exceptions",
+			givenReqWrapper:           nil,
+			givenAdapterName:          "adapter1",
+			givenIsCloned:             false,
+			expectedUpdatedBidRequest: nil,
+			expectedCloneRequest:      nil,
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			cloneReq := updateReqWrapperForAnalytics(test.givenReqWrapper, test.givenAdapterName, test.givenIsCloned)
-			assert.Equal(t, test.expectedUpdatedBidRequest, test.givenReqWrapper.BidRequest)
+			if test.givenReqWrapper != nil {
+				assert.Equal(t, test.expectedUpdatedBidRequest, test.givenReqWrapper.BidRequest)
+			}
 			assert.Equal(t, test.expectedCloneRequest, cloneReq)
 		})
 	}

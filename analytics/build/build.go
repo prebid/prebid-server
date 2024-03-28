@@ -160,6 +160,9 @@ func evaluateActivities(rw *openrtb_ext.RequestWrapper, ac privacy.ActivityContr
 }
 
 func updateReqWrapperForAnalytics(rw *openrtb_ext.RequestWrapper, adapterName string, isCloned bool) *openrtb_ext.RequestWrapper {
+	if rw == nil {
+		return nil
+	}
 	reqExt, _ := rw.GetRequestExt()
 	reqExtPrebid := reqExt.GetPrebid()
 	if reqExtPrebid == nil {
