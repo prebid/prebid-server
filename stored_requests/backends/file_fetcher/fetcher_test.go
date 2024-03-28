@@ -213,6 +213,7 @@ func TestCategoriesFetcherNoCategoriesFile(t *testing.T) {
 		fetchingErr, "Categories were loaded incorrectly")
 }
 
+// validateStoredResponse - reusable function in the stored response test to verify the actual data read from the fetcher
 func validateStoredResponse[T any](t *testing.T, storedInfo map[string]json.RawMessage, id string, verifyFunc func(outputVal T) error) {
 	storedValue, hasID := storedInfo[id]
 	if !hasID {
