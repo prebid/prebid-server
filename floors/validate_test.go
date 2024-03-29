@@ -56,13 +56,12 @@ func TestValidateFloorParams(t *testing.T) {
 			Err:      errors.New("Invalid FloorMin = '-10', value should be >= 0"),
 		},
 		{
-			name: "Invalid FloorSchemaVersion",
+			name: "Invalid FloorSchemaVersion 2",
 			floorExt: &openrtb_ext.PriceFloorRules{Data: &openrtb_ext.PriceFloorData{
 				FloorsSchemaVersion: 1,
 				ModelGroups: []openrtb_ext.PriceFloorModelGroup{{
 					ModelVersion: "Version 1",
-
-					Schema: openrtb_ext.PriceFloorSchema{Fields: []string{"mediaType", "size", "domain"}, Delimiter: "|"},
+					Schema:       openrtb_ext.PriceFloorSchema{Fields: []string{"mediaType", "size", "domain"}, Delimiter: "|"},
 					Values: map[string]float64{
 						"banner|300x250|www.website.com": 1.01,
 						"banner|300x600|*":               4.01,
@@ -71,7 +70,34 @@ func TestValidateFloorParams(t *testing.T) {
 			Err: errors.New("Invalid FloorsSchemaVersion = '1', supported version 2"),
 		},
 		{
-			name: "Valid FloorSchemaVersion",
+			name: "Invalid FloorSchemaVersion -2",
+			floorExt: &openrtb_ext.PriceFloorRules{Data: &openrtb_ext.PriceFloorData{
+				FloorsSchemaVersion: -2,
+				ModelGroups: []openrtb_ext.PriceFloorModelGroup{{
+					ModelVersion: "Version 1",
+					Schema:       openrtb_ext.PriceFloorSchema{Fields: []string{"mediaType", "size", "domain"}, Delimiter: "|"},
+					Values: map[string]float64{
+						"banner|300x250|www.website.com": 1.01,
+						"banner|300x600|*":               4.01,
+					}, Default: 0.01},
+				}}},
+			Err: errors.New("Invalid FloorsSchemaVersion = '-2', supported version 2"),
+		},
+		{
+			name: "Valid FloorSchemaVersion 0",
+			floorExt: &openrtb_ext.PriceFloorRules{Data: &openrtb_ext.PriceFloorData{
+				FloorsSchemaVersion: 0,
+				ModelGroups: []openrtb_ext.PriceFloorModelGroup{{
+					ModelVersion: "Version 1",
+					Schema:       openrtb_ext.PriceFloorSchema{Fields: []string{"mediaType", "size", "domain"}, Delimiter: "|"},
+					Values: map[string]float64{
+						"banner|300x250|www.website.com": 1.01,
+						"banner|300x600|*":               4.01,
+					}, Default: 0.01},
+				}}},
+		},
+		{
+			name: "Valid FloorSchemaVersion 2",
 			floorExt: &openrtb_ext.PriceFloorRules{Data: &openrtb_ext.PriceFloorData{
 				FloorsSchemaVersion: 2,
 				ModelGroups: []openrtb_ext.PriceFloorModelGroup{{
