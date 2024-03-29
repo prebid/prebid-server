@@ -528,7 +528,7 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 		return nil, nil, nil, nil, []error{err}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(storedRequestTimeoutMillis)*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(deps.cfg.StoredRequests.Timeout)*time.Millisecond)
 	defer cancel()
 
 	storedRequests, _, errs := deps.storedReqFetcher.FetchRequests(ctx, []string{ampParams.StoredRequestID}, nil)

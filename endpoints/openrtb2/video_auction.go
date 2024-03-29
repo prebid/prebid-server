@@ -496,7 +496,7 @@ func createImpressionTemplate(imp openrtb2.Imp, video *openrtb2.Video) openrtb2.
 }
 
 func (deps *endpointDeps) loadStoredImp(storedImpId string) (openrtb2.Imp, []error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(storedRequestTimeoutMillis)*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(deps.cfg.StoredRequests.Timeout)*time.Millisecond)
 	defer cancel()
 
 	impr := openrtb2.Imp{}
