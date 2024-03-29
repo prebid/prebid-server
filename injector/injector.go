@@ -166,7 +166,7 @@ func (trackerinjector *TrackerInjector) InjectTracker(vastXML string, NURL strin
 
 	if !state.inlineWrapperTagFound {
 		// Todo log adapter.<bidder-name>.requests.badserverresponse metrics
-		return vastXML, fmt.Errorf("invalid VastXML")
+		return vastXML, fmt.Errorf("invalid VastXML, inline/wrapper tag not found")
 	}
 	return outputXML.String(), nil
 }

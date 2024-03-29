@@ -1,6 +1,7 @@
 package injector
 
 import (
+	"errors"
 	"strings"
 	"testing"
 
@@ -63,9 +64,10 @@ func TestInjectTracker(t *testing.T) {
 		NURL    string
 	}
 	tests := []struct {
-		name string
-		args args
-		want string
+		name      string
+		args      args
+		want      string
+		wantError error
 	}{
 		{
 			name: "Empty vastXML and NURL present",
@@ -73,7 +75,8 @@ func TestInjectTracker(t *testing.T) {
 				vastXML: "",
 				NURL:    "www.nurl.com",
 			},
-			want: `<VAST version="3.0"><Ad><Wrapper><AdSystem>prebid.org wrapper</AdSystem><VASTAdTagURI><![CDATA[www.nurl.com]]></VASTAdTagURI><Creatives></Creatives></Wrapper></Ad></VAST>`,
+			want:      `<VAST version="3.0"><Ad><Wrapper><AdSystem>prebid.org wrapper</AdSystem><VASTAdTagURI><![CDATA[www.nurl.com]]></VASTAdTagURI><Creatives></Creatives></Wrapper></Ad></VAST>`,
+			wantError: nil,
 		},
 		{
 			name: "Empty vastXML and empty NURL",
@@ -81,7 +84,26 @@ func TestInjectTracker(t *testing.T) {
 				vastXML: "",
 				NURL:    "",
 			},
-			want: "",
+			want:      "",
+			wantError: errors.New("invalid Vast XML"),
+		},
+		{
+			name: "No Inline/Wrapper tag present",
+			args: args{
+				vastXML: `<VAST version="4.0" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://www.iab.com/VAST"><Ad id="20001" sequence="1" conditionalAd="false"></Ad></VAST>`,
+				NURL:    "",
+			},
+			want:      `<VAST version="4.0" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://www.iab.com/VAST"><Ad id="20001" sequence="1" conditionalAd="false"></Ad></VAST>`,
+			wantError: errors.New("invalid VastXML, inline/wrapper tag not found"),
+		},
+		{
+			name: "Invalid Vast XML, parsing error",
+			args: args{
+				vastXML: `<VAST version="4.0" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://www.iab.com/VAST"><Ad id="20001" sequence="1" conditionalAd="false"><InLine><AdSystem version="4.0">iabtechlab</AdSystem><Error>http://example.com/error<Impression id="Impression-ID">http://example.com/track/impression</Impression><Pricing model="cpm" currency="USD"><![CDATA[ 25.00 ]]></Pricing><AdTitle>Inline Simple Ad</AdTitle><AdVerifications></AdVerifications><Advertiser>IAB Sample Company</Advertiser><Category authority="http://www.iabtechlab.com/categoryauthority">AD CONTENT description category</Category><Creatives><Creative id="5480" sequence="1" adId="2447226"><UniversalAdId idRegistry="Ad-ID" idValue="8465">8465</UniversalAdId><Linear><Duration>00:00:16</Duration><MediaFiles><MediaFile id="5241" delivery="progressive" type="video/mp4" bitrate="2000" width="1280" height="720" minBitrate="1500" maxBitrate="2500" scalable="1" maintainAspectRatio="1" codec="H.264"><![CDATA[https://iab-publicfiles.s3.amazonaws.com/vast/VAST-4.0-Short-Intro.mp4]]></MediaFile><MediaFile id="5244" delivery="progressive" type="video/mp4" bitrate="1000" width="854" height="480" minBitrate="700" maxBitrate="1500" scalable="1" maintainAspectRatio="1" codec="H.264"><![CDATA[https://iab-publicfiles.s3.amazonaws.com/vast/VAST-4.0-Short-Intro-mid-resolution.mp4]]></MediaFile><MediaFile id="5246" delivery="progressive" type="video/mp4" bitrate="600" width="640" height="360" minBitrate="500" maxBitrate="700" scalable="1" maintainAspectRatio="1" codec="H.264"><![CDATA[https://iab-publicfiles.s3.amazonaws.com/vast/VAST-4.0-Short-Intro-low-resolution.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>`,
+				NURL:    "",
+			},
+			want:      ``,
+			wantError: errors.New("XML processing error: xml: end tag </InLine> does not match start tag <Error>"),
 		},
 		{
 			name: "Inline Linear vastXML, no existing event tracker",
@@ -142,8 +164,11 @@ func TestInjectTracker(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, _ := ti.InjectTracker(tt.args.vastXML, tt.args.NURL)
+			got, err := ti.InjectTracker(tt.args.vastXML, tt.args.NURL)
 			assert.Equal(t, tt.want, got, tt.name)
+			if tt.wantError != nil {
+				assert.EqualError(t, err, tt.wantError.Error())
+			}
 		})
 	}
 }
