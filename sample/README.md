@@ -35,14 +35,16 @@ The following files will be present for every example and are exclusively catere
 ## Common steps 
 
 ### Steps
-1. Bring up an instance by running `docker-compose up <number>_<name>` in the `sample` folder.
+1. Ensure `pbs.yaml` config file neither exists in `/etc/config` directory nor in the root directory of the repo, otherwise the `pbs.yaml` will overwrite `app.yaml`.
 
-2. Wait patiently until you see ` Admin server starting on: :6060` and `Main server starting on: :8000` in the command line output. This marks the Prebid Server instance finishing its initialization and is ready to serve the auction traffic.
+2. Bring up an instance by running `docker-compose up <number>_<name>` in the `sample` folder.
 
-3. you can copy the URL `http://localhost:8000/status` and paste it into your browser. You should see `ok` in the response which is another way to tell the Prebid Server that the main auction server is up and running.
+3. Wait patiently until you see ` Admin server starting on: :6060` and `Main server starting on: :8000` in the command line output. This marks the Prebid Server instance finishing its initialization and is ready to serve the auction traffic.
 
-4. Open a new tab in your browser and turn on the console UI. If you are using Chrome, you can right-click on the page and click `inspect`. Once the console UI is on, click on the `Network` tab to inspect the traffic later.
+4. you can copy the URL `http://localhost:8000/status` and paste it into your browser. You should see `ok` in the response which is another way to tell the Prebid Server that the main auction server is up and running.
 
-5. Copy the URL `http://localhost:8000/static/pbjs.html?pbjs_debug=true` into your browser. It starts the example immediately with debugging information from `Prebid JS`, and you can inspect the request and response between `Prebid JS` and `Prebid Server`.
+5. Open a new tab in your browser and turn on the console UI. If you are using Chrome, you can right-click on the page and click `inspect`. Once the console UI is on, click on the `Network` tab to inspect the traffic later.
 
-6. After playing with the example, type `docker-compose down`. This is to shut down the existing Sample so you can start the next one you want to select.
+6. Copy the URL `http://localhost:8000/static/pbjs.html?pbjs_debug=true` into your browser. It starts the example immediately with debugging information from `Prebid JS`, and you can inspect the request and response between `Prebid JS` and `Prebid Server`.
+
+7. After playing with the example, type `docker-compose down`. This is to shut down the existing Sample so you can start the next one you want to select.
