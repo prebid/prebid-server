@@ -25,8 +25,27 @@ func TestFileFetcher(t *testing.T) {
 	validateStoredReqOne(t, storedReqs)
 	validateStoredReqTwo(t, storedReqs)
 	validateImp(t, storedImps)
+}
 
-	// Test stored responses
+func TestStoredResponseFileFetcher(t *testing.T) {
+
+	// grab the fetcher that do not have /test/stored_responses/stored_responses FS directory
+	directoryNotExistfetcher, err := NewFileFetcher("./test/stored_responses")
+	if err != nil {
+		t.Errorf("Failed to create a Fetcher: %v", err)
+	}
+
+	// we should receive 1 error since we do not have "stored_responses" directory in ./test/stored_responses
+	_, errs := directoryNotExistfetcher.FetchResponses(context.Background(), []string{})
+	assertErrorCount(t, 1, errs)
+
+	// grab the fetcher that has /test/stored_responses FS directory
+	fetcher, err := NewFileFetcher("./test")
+	if err != nil {
+		t.Errorf("Failed to create a Fetcher: %v", err)
+	}
+
+	// Test stored responses, we have 3 stored responses in ./test/stored_responses
 	storedResps, errs := fetcher.FetchResponses(context.Background(), []string{"bar", "escaped", "does_not_exist"})
 	// expect 1 error since we do not have "does_not_exist" stored response file from ./test
 	assertErrorCount(t, 1, errs)
@@ -55,7 +74,6 @@ func TestFileFetcher(t *testing.T) {
 		}
 		return nil
 	})
-
 }
 
 func TestAccountFetcher(t *testing.T) {
