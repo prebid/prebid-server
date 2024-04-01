@@ -35,7 +35,8 @@ The following files will be present for every example and are exclusively catere
 ## Common steps 
 
 ### Steps
-1. Ensure `pbs.yaml` config file neither exists in `/etc/config` directory nor in the root directory of the repo, otherwise the `pbs.yaml` will overwrite `app.yaml`.
+1. To prevent `app.yaml` from being overwritten by other config files. Ensure that `pbs.yaml` or `pbs.json` config file **MUST NOT** present in the root directory of the repository.
+
 
 2. Bring up an instance by running `docker-compose up <number>_<name>` in the `sample` folder.
 
