@@ -40,7 +40,7 @@ func (fetcher *eagerFetcher) FetchRequests(ctx context.Context, requestIDs []str
 func (fetcher *eagerFetcher) FetchResponses(ctx context.Context, ids []string) (data map[string]json.RawMessage, errs []error) {
 	storedRespFS, found := fetcher.FileSystem.Directories["stored_responses"]
 	if !found {
-		return nil, append(errs, errors.New(`no "stored_response" directory found`))
+		return nil, append(errs, errors.New(`no "stored_responses" directory found`))
 	}
 
 	data = storedRespFS.Files
