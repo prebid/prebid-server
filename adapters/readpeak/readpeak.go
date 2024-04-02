@@ -112,7 +112,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	var errors []error
 	for _, seatBid := range response.SeatBid {
 		for i, bid := range seatBid.Bid {
-			bidType, err := getMediaType((seatBid.Bid[i].ImpID, request.Imp))
+			bidType, err := getMediaType(seatBid.Bid[i].ImpID, request.Imp)
 			if err != nil {
 				errors = append(errors, err)
 				continue
@@ -154,8 +154,7 @@ func getMediaType(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error
 }
 
 func getBidMeta(bid *adapters.TypedBid) *openrtb_ext.ExtBidPrebidMeta {
-	// This example includes all fields for demonstration purposes.
 	return &openrtb_ext.ExtBidPrebidMeta {
-		AdvertiserDomains:    []string{bid.Adomain}
+		AdvertiserDomains:    []string{bid.Adomain},
 	}
 }
