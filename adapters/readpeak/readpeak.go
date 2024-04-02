@@ -82,3 +82,80 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
   
 	return []*adapters.RequestData{requestData}, errors
 }
+
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	if responseData.StatusCode == http.StatusNoContent {
+		return nil, nil
+	}
+
+	if responseData.StatusCode == http.StatusBadRequest {
+		err := &errortypes.BadInput{
+			Message: "Unexpected status code: 400. Bad request from publisher.",
+		}
+		return nil, []error{err}
+	}
+
+	if responseData.StatusCode != http.StatusOK {
+		err := &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Unexpected status code: %d.", responseData.StatusCode),
+		}
+		return nil, []error{err}
+	}
+
+	var response openrtb2.BidResponse
+	if err := json.Unmarshal(responseData.Body, &response); err != nil {
+		return nil, []error{err}
+	}
+
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
+	bidResponse.Currency = response.Cur
+	var errors []error
+	for _, seatBid := range response.SeatBid {
+		for i, bid := range seatBid.Bid {
+			bidType, err := getMediaType((seatBid.Bid[i].ImpID, request.Imp))
+			if err != nil {
+				errors = append(errors, err)
+				continue
+			}
+			resolveMacros(&seatBid.Bid[i])
+			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+				Bid:     &seatBid.Bid[i],
+				BidType: bidType,
+				BidMeta: getBidMeta(bid),
+			})
+		}
+	}
+	return bidResponse, errors
+}
+
+func resolveMacros(bid *openrtb2.Bid) {
+	if bid != nil {
+		price := strconv.FormatFloat(bid.Price, 'f', -1, 64)
+		bid.NURL = strings.Replace(bid.NURL, "${AUCTION_PRICE}", price, -1)
+		bid.AdM = strings.Replace(bid.AdM, "${AUCTION_PRICE}", price, -1)
+		bid.BURL = strings.Replace(bid.BURL, "${AUCTION_PRICE}", price, -1)
+	}
+}
+
+func getMediaType(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
+	for _, imp := range imps {
+		if imp.ID == impID {
+			if imp.Banner != nil {
+				return openrtb_ext.BidTypeBanner, nil
+			} else if imp.Native != nil {
+				return openrtb_ext.BidTypeNative, nil
+			}
+		}
+	}
+
+	return "", &errortypes.BadInput{
+		Message: fmt.Sprintf("Failed to find impression type \"%s\" ", bid.ImpID),
+	}
+}
+
+func getBidMeta(bid *adapters.TypedBid) *openrtb_ext.ExtBidPrebidMeta {
+	// This example includes all fields for demonstration purposes.
+	return &openrtb_ext.ExtBidPrebidMeta {
+		AdvertiserDomains:    []string{bid.Adomain}
+	}
+}
