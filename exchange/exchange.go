@@ -105,7 +105,7 @@ type bidResponseWrapper struct {
 }
 
 type BidIDGenerator interface {
-	New() (string, error)
+	New(bidder string) (string, error)
 	Enabled() bool
 }
 
@@ -117,7 +117,7 @@ func (big *bidIDGenerator) Enabled() bool {
 	return big.enabled
 }
 
-func (big *bidIDGenerator) New() (string, error) {
+func (big *bidIDGenerator) New(bidder string) (string, error) {
 	rawUuid, err := uuid.NewV4()
 	return rawUuid.String(), err
 }
@@ -416,10 +416,11 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 		}
 
 		if e.bidIDGenerator.Enabled() {
-			for _, seatBid := range adapterBids {
-				for _, pbsBid := range seatBid.Bids {
-					pbsBid.GeneratedBidID, err = e.bidIDGenerator.New()
-					if err != nil {
+			for bidder, seatBid := range adapterBids {
+				for i := range seatBid.Bids {
+					if bidID, err := e.bidIDGenerator.New(bidder.String()); err == nil {
+						seatBid.Bids[i].GeneratedBidID = bidID
+					} else {
 						errs = append(errs, errors.New("Error generating bid.ext.prebid.bidid"))
 					}
 				}
@@ -459,7 +460,9 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 				errs = append(errs, cacheErrs...)
 			}
 
-			targData.setTargeting(auc, r.BidRequestWrapper.BidRequest.App != nil, bidCategory, r.Account.TruncateTargetAttribute, multiBidMap)
+			if targData.includeWinners || targData.includeBidderKeys || targData.includeFormat {
+				targData.setTargeting(auc, r.BidRequestWrapper.BidRequest.App != nil, bidCategory, r.Account.TruncateTargetAttribute, multiBidMap)
+			}
 		}
 		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, *r, responseDebugAllow, requestExtPrebid.Passthrough, fledge, errs)
 	} else {

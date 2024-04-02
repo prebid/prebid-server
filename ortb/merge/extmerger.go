@@ -1,17 +1,16 @@
-package firstpartydata
+package merge
 
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 
 	"github.com/prebid/prebid-server/v2/util/sliceutil"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 )
 
 var (
-	ErrBadRequest = fmt.Errorf("invalid request ext")
-	ErrBadFPD     = fmt.Errorf("invalid first party data ext")
+	ErrBadRequest  = errors.New("invalid request ext")
+	ErrBadOverride = errors.New("invalid override ext")
 )
 
 // extMerger tracks a JSON `ext` field within an OpenRTB request. The value of the
@@ -50,7 +49,7 @@ func (e extMerger) Merge() error {
 		if errors.Is(err, jsonpatch.ErrBadJSONDoc) {
 			return ErrBadRequest
 		} else if errors.Is(err, jsonpatch.ErrBadJSONPatch) {
-			return ErrBadFPD
+			return ErrBadOverride
 		}
 		return err
 	}

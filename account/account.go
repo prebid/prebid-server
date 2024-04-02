@@ -116,7 +116,7 @@ func setDerivedConfig(account *config.Account) {
 		if pc.VendorExceptions == nil {
 			continue
 		}
-		pc.VendorExceptionMap = make(map[openrtb_ext.BidderName]struct{})
+		pc.VendorExceptionMap = make(map[string]struct{})
 		for _, v := range pc.VendorExceptions {
 			pc.VendorExceptionMap[v] = struct{}{}
 		}

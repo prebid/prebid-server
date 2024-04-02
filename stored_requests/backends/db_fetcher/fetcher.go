@@ -152,7 +152,7 @@ func (fetcher *dbFetcher) FetchResponses(ctx context.Context, ids []string) (dat
 }
 
 func (fetcher *dbFetcher) FetchAccount(ctx context.Context, accountDefaultsJSON json.RawMessage, accountID string) (json.RawMessage, []error) {
-	return nil, []error{stored_requests.NotFoundError{accountID, "Account"}}
+	return nil, []error{stored_requests.NotFoundError{ID: accountID, DataType: "Account"}}
 }
 
 func (fetcher *dbFetcher) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {

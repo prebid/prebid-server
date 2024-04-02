@@ -3177,7 +3177,7 @@ func TestCleanOpenRTBRequestsBidAdjustment(t *testing.T) {
 			}},
 		},
 		{
-			description:        "bidAjustement Not provided",
+			description:        "bidAdjustment Not provided",
 			gdprAccountEnabled: &falseValue,
 			gdprHostEnabled:    true,
 			gdpr:               "1",

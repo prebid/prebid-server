@@ -27,6 +27,7 @@ type Configuration struct {
 	UnixSocketName   string      `mapstructure:"unix_socket_name"`
 	Client           HTTPClient  `mapstructure:"http_client"`
 	CacheClient      HTTPClient  `mapstructure:"http_client_cache"`
+	Admin            Admin       `mapstructure:"admin"`
 	AdminPort        int         `mapstructure:"admin_port"`
 	Compression      Compression `mapstructure:"compression"`
 	// GarbageCollectorThreshold allocates virtual memory (in bytes) which is not used by PBS but
@@ -102,6 +103,9 @@ type Configuration struct {
 	PriceFloors PriceFloors `mapstructure:"price_floors"`
 }
 
+type Admin struct {
+	Enabled bool `mapstructure:"enabled"`
+}
 type PriceFloors struct {
 	Enabled bool              `mapstructure:"enabled"`
 	Fetcher PriceFloorFetcher `mapstructure:"fetcher"`
@@ -375,13 +379,13 @@ func (t *TCF2) PurposeEnforcingVendors(purpose consentconstants.Purpose) (enforc
 
 // PurposeVendorExceptions returns the vendor exception map for a given purpose if it exists, otherwise it returns
 // an empty map of vendor exceptions
-func (t *TCF2) PurposeVendorExceptions(purpose consentconstants.Purpose) (vendorExceptions map[openrtb_ext.BidderName]struct{}) {
+func (t *TCF2) PurposeVendorExceptions(purpose consentconstants.Purpose) (vendorExceptions map[string]struct{}) {
 	c, exists := t.PurposeConfigs[purpose]
 
 	if exists && c.VendorExceptionMap != nil {
 		return c.VendorExceptionMap
 	}
-	return make(map[openrtb_ext.BidderName]struct{}, 0)
+	return make(map[string]struct{}, 0)
 }
 
 // FeatureOneEnforced checks if special feature one is enforced. If it is enforced, PBS will determine whether geo
@@ -417,8 +421,8 @@ type TCF2Purpose struct {
 	EnforcePurpose bool `mapstructure:"enforce_purpose"`
 	EnforceVendors bool `mapstructure:"enforce_vendors"`
 	// Array of vendor exceptions that is used to create the hash table VendorExceptionMap so vendor names can be instantly accessed
-	VendorExceptions   []openrtb_ext.BidderName `mapstructure:"vendor_exceptions"`
-	VendorExceptionMap map[openrtb_ext.BidderName]struct{}
+	VendorExceptions   []string `mapstructure:"vendor_exceptions"`
+	VendorExceptionMap map[string]struct{}
 }
 
 type TCF2SpecialFeature struct {
@@ -442,8 +446,9 @@ type LMT struct {
 }
 
 type Analytics struct {
-	File     FileLogs `mapstructure:"file"`
-	Pubstack Pubstack `mapstructure:"pubstack"`
+	File     FileLogs      `mapstructure:"file"`
+	Agma     AgmaAnalytics `mapstructure:"agma"`
+	Pubstack Pubstack      `mapstructure:"pubstack"`
 }
 
 type CurrencyConverter struct {
@@ -457,6 +462,31 @@ func (cfg *CurrencyConverter) validate(errs []error) []error {
 		errs = append(errs, fmt.Errorf("currency_converter.fetch_interval_seconds must be in the range [0, %d]. Got %d", 0xffff, cfg.FetchIntervalSeconds))
 	}
 	return errs
+}
+
+type AgmaAnalytics struct {
+	Enabled  bool                      `mapstructure:"enabled"`
+	Endpoint AgmaAnalyticsHttpEndpoint `mapstructure:"endpoint"`
+	Buffers  AgmaAnalyticsBuffer       `mapstructure:"buffers"`
+	Accounts []AgmaAnalyticsAccount    `mapstructure:"accounts"`
+}
+
+type AgmaAnalyticsHttpEndpoint struct {
+	Url     string `mapstructure:"url"`
+	Timeout string `mapstructure:"timeout"`
+	Gzip    bool   `mapstructure:"gzip"`
+}
+
+type AgmaAnalyticsBuffer struct {
+	BufferSize string `mapstructure:"size"`
+	EventCount int    `mapstructure:"count"`
+	Timeout    string `mapstructure:"timeout"`
+}
+
+type AgmaAnalyticsAccount struct {
+	Code        string `mapstructure:"code"`
+	PublisherId string `mapstructure:"publisher_id"`
+	SiteAppId   string `mapstructure:"site_app_id"`
 }
 
 // FileLogs Corresponding config for FileLogger as a PBS Analytics Module
@@ -739,13 +769,13 @@ func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName func(strin
 		}
 	}
 
-	// To look for a purpose's vendor exceptions in O(1) time, for each purpose we fill this hash table with bidders
-	// located in the VendorExceptions field of the GDPR.TCF2.PurposeX struct defined in this file
+	// To look for a purpose's vendor exceptions in O(1) time, for each purpose we fill this hash table with bidders/analytics
+	// adapters located in the VendorExceptions field of the GDPR.TCF2.PurposeX struct defined in this file
 	for _, pc := range c.GDPR.TCF2.PurposeConfigs {
-		pc.VendorExceptionMap = make(map[openrtb_ext.BidderName]struct{})
+		pc.VendorExceptionMap = make(map[string]struct{})
 		for v := 0; v < len(pc.VendorExceptions); v++ {
-			bidderName := pc.VendorExceptions[v]
-			pc.VendorExceptionMap[bidderName] = struct{}{}
+			adapterName := pc.VendorExceptions[v]
+			pc.VendorExceptionMap[adapterName] = struct{}{}
 		}
 	}
 
@@ -872,6 +902,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("unix_socket_enable", false)              // boolean which decide if the socket-server will be started.
 	v.SetDefault("unix_socket_name", "prebid-server.sock") // path of the socket's file which must be listened.
 	v.SetDefault("admin_port", 6060)
+	v.SetDefault("admin.enabled", true) // boolean to determine if admin listener will be started.
 	v.SetDefault("garbage_collector_threshold", 0)
 	v.SetDefault("status_response", "")
 	v.SetDefault("datacenter", "")
@@ -1060,6 +1091,14 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("analytics.pubstack.buffers.size", "2MB")
 	v.SetDefault("analytics.pubstack.buffers.count", 100)
 	v.SetDefault("analytics.pubstack.buffers.timeout", "900s")
+	v.SetDefault("analytics.agma.enabled", false)
+	v.SetDefault("analytics.agma.endpoint.url", "https://go.pbs.agma-analytics.de/v1/prebid-server")
+	v.SetDefault("analytics.agma.endpoint.timeout", "2s")
+	v.SetDefault("analytics.agma.endpoint.gzip", false)
+	v.SetDefault("analytics.agma.buffers.size", "2MB")
+	v.SetDefault("analytics.agma.buffers.count", 100)
+	v.SetDefault("analytics.agma.buffers.timeout", "15m")
+	v.SetDefault("analytics.agma.accounts", []AgmaAnalyticsAccount{})
 	v.SetDefault("amp_timeout_adjustment_ms", 0)
 	v.BindEnv("gdpr.default_value")
 	v.SetDefault("gdpr.enabled", true)
@@ -1078,16 +1117,16 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("gdpr.tcf2.purpose8.enforce_vendors", true)
 	v.SetDefault("gdpr.tcf2.purpose9.enforce_vendors", true)
 	v.SetDefault("gdpr.tcf2.purpose10.enforce_vendors", true)
-	v.SetDefault("gdpr.tcf2.purpose1.vendor_exceptions", []openrtb_ext.BidderName{})
-	v.SetDefault("gdpr.tcf2.purpose2.vendor_exceptions", []openrtb_ext.BidderName{})
-	v.SetDefault("gdpr.tcf2.purpose3.vendor_exceptions", []openrtb_ext.BidderName{})
-	v.SetDefault("gdpr.tcf2.purpose4.vendor_exceptions", []openrtb_ext.BidderName{})
-	v.SetDefault("gdpr.tcf2.purpose5.vendor_exceptions", []openrtb_ext.BidderName{})
-	v.SetDefault("gdpr.tcf2.purpose6.vendor_exceptions", []openrtb_ext.BidderName{})
-	v.SetDefault("gdpr.tcf2.purpose7.vendor_exceptions", []openrtb_ext.BidderName{})
-	v.SetDefault("gdpr.tcf2.purpose8.vendor_exceptions", []openrtb_ext.BidderName{})
-	v.SetDefault("gdpr.tcf2.purpose9.vendor_exceptions", []openrtb_ext.BidderName{})
-	v.SetDefault("gdpr.tcf2.purpose10.vendor_exceptions", []openrtb_ext.BidderName{})
+	v.SetDefault("gdpr.tcf2.purpose1.vendor_exceptions", []string{})
+	v.SetDefault("gdpr.tcf2.purpose2.vendor_exceptions", []string{})
+	v.SetDefault("gdpr.tcf2.purpose3.vendor_exceptions", []string{})
+	v.SetDefault("gdpr.tcf2.purpose4.vendor_exceptions", []string{})
+	v.SetDefault("gdpr.tcf2.purpose5.vendor_exceptions", []string{})
+	v.SetDefault("gdpr.tcf2.purpose6.vendor_exceptions", []string{})
+	v.SetDefault("gdpr.tcf2.purpose7.vendor_exceptions", []string{})
+	v.SetDefault("gdpr.tcf2.purpose8.vendor_exceptions", []string{})
+	v.SetDefault("gdpr.tcf2.purpose9.vendor_exceptions", []string{})
+	v.SetDefault("gdpr.tcf2.purpose10.vendor_exceptions", []string{})
 	v.SetDefault("gdpr.amp_exception", false)
 	v.SetDefault("gdpr.eea_countries", []string{"ALA", "AUT", "BEL", "BGR", "HRV", "CYP", "CZE", "DNK", "EST",
 		"FIN", "FRA", "GUF", "DEU", "GIB", "GRC", "GLP", "GGY", "HUN", "ISL", "IRL", "IMN", "ITA", "JEY", "LVA",
@@ -1121,6 +1160,8 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("account_defaults.price_floors.fetch.max_age_sec", 86400)
 	v.SetDefault("account_defaults.price_floors.fetch.period_sec", 3600)
 	v.SetDefault("account_defaults.price_floors.fetch.max_schema_dims", 0)
+	v.SetDefault("account_defaults.privacy.privacysandbox.cookiedeprecation.enabled", false)
+	v.SetDefault("account_defaults.privacy.privacysandbox.cookiedeprecation.ttl_sec", 604800)
 
 	v.SetDefault("account_defaults.events_enabled", false)
 	v.SetDefault("account_defaults.privacy.ipv6.anon_keep_bits", 56)

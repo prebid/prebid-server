@@ -60,6 +60,7 @@ import (
 const storedRequestTimeoutMillis = 50
 const ampChannel = "amp"
 const appChannel = "app"
+const secCookieDeprecation = "Sec-Cookie-Deprecation"
 
 var (
 	dntKey      string = http.CanonicalHeaderKey("DNT")
@@ -552,7 +553,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	}
 
 	hasStoredResponses := len(storedAuctionResponses) > 0
-	errL := deps.validateRequest(req, false, hasStoredResponses, storedBidResponses, hasStoredBidRequest)
+	errL := deps.validateRequest(account, httpRequest, req, false, hasStoredResponses, storedBidResponses, hasStoredBidRequest)
 	if len(errL) > 0 {
 		errs = append(errs, errL...)
 	}
@@ -746,7 +747,7 @@ func mergeBidderParamsImpExtPrebid(impExt *openrtb_ext.ImpExt, reqExtParams map[
 	return nil
 }
 
-func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp bool, hasStoredResponses bool, storedBidResp stored_responses.ImpBidderStoredResp, hasStoredBidRequest bool) []error {
+func (deps *endpointDeps) validateRequest(account *config.Account, httpReq *http.Request, req *openrtb_ext.RequestWrapper, isAmp bool, hasStoredResponses bool, storedBidResp stored_responses.ImpBidderStoredResp, hasStoredBidRequest bool) []error {
 	errL := []error{}
 	if req.ID == "" {
 		return []error{errors.New("request missing required field: \"id\"")}
@@ -873,6 +874,10 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 
 	if err := validateDevice(req.Device); err != nil {
 		return append(errL, err)
+	}
+
+	if err := validateOrFillCDep(httpReq, req, account); err != nil {
+		errL = append(errL, err)
 	}
 
 	if ccpaPolicy, err := ccpa.ReadFromRequestWrapper(req, gpp); err != nil {
@@ -1692,36 +1697,28 @@ func validateRequestExt(req *openrtb_ext.RequestWrapper) []error {
 }
 
 func validateTargeting(t *openrtb_ext.ExtRequestTargeting) error {
-	if t == nil {
-		return nil
-	}
-
-	if (t.IncludeWinners == nil || !*t.IncludeWinners) && (t.IncludeBidderKeys == nil || !*t.IncludeBidderKeys) {
-		return errors.New("ext.prebid.targeting: At least one of includewinners or includebidderkeys must be enabled to enable targeting support")
-	}
-
-	if t.PriceGranularity != nil {
-		if err := validatePriceGranularity(t.PriceGranularity); err != nil {
-			return err
+	if t != nil {
+		if t.PriceGranularity != nil {
+			if err := validatePriceGranularity(t.PriceGranularity); err != nil {
+				return err
+			}
+		}
+		if t.MediaTypePriceGranularity.Video != nil {
+			if err := validatePriceGranularity(t.MediaTypePriceGranularity.Video); err != nil {
+				return err
+			}
+		}
+		if t.MediaTypePriceGranularity.Banner != nil {
+			if err := validatePriceGranularity(t.MediaTypePriceGranularity.Banner); err != nil {
+				return err
+			}
+		}
+		if t.MediaTypePriceGranularity.Native != nil {
+			if err := validatePriceGranularity(t.MediaTypePriceGranularity.Native); err != nil {
+				return err
+			}
 		}
 	}
-
-	if t.MediaTypePriceGranularity.Video != nil {
-		if err := validatePriceGranularity(t.MediaTypePriceGranularity.Video); err != nil {
-			return err
-		}
-	}
-	if t.MediaTypePriceGranularity.Banner != nil {
-		if err := validatePriceGranularity(t.MediaTypePriceGranularity.Banner); err != nil {
-			return err
-		}
-	}
-	if t.MediaTypePriceGranularity.Native != nil {
-		if err := validatePriceGranularity(t.MediaTypePriceGranularity.Native); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
@@ -1919,6 +1916,35 @@ func validateDevice(device *openrtb2.Device) error {
 		return errors.New("request.device.geo.accuracy must be a positive number")
 	}
 
+	return nil
+}
+
+func validateOrFillCDep(httpReq *http.Request, req *openrtb_ext.RequestWrapper, account *config.Account) error {
+	if account == nil || !account.Privacy.PrivacySandbox.CookieDeprecation.Enabled {
+		return nil
+	}
+
+	deviceExt, err := req.GetDeviceExt()
+	if err != nil {
+		return err
+	}
+
+	if deviceExt.GetCDep() != "" {
+		return nil
+	}
+
+	secCookieDeprecation := httpReq.Header.Get(secCookieDeprecation)
+	if secCookieDeprecation == "" {
+		return nil
+	}
+	if len(secCookieDeprecation) > 100 {
+		return &errortypes.Warning{
+			Message:     "request.device.ext.cdep must not exceed 100 characters",
+			WarningCode: errortypes.SecCookieDeprecationLenWarningCode,
+		}
+	}
+
+	deviceExt.SetCDep(secCookieDeprecation)
 	return nil
 }
 
@@ -2375,7 +2401,7 @@ func writeError(errs []error, w http.ResponseWriter, labels *metrics.Labels) boo
 		w.WriteHeader(httpStatus)
 		labels.RequestStatus = metricsStatus
 		for _, err := range errs {
-			w.Write([]byte(fmt.Sprintf("Invalid request: %s\n", err.Error())))
+			fmt.Fprintf(w, "Invalid request: %s\n", err.Error())
 		}
 		rc = true
 	}

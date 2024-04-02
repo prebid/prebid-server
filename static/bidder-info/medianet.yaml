@@ -4,6 +4,8 @@ maintainer:
   email: "prebid-support@media.net"
 gvlVendorID: 142
 endpointCompression: gzip
+openrtb:
+  version: 2.6
 modifyingVastXmlAllowed: true
 capabilities:
   app:

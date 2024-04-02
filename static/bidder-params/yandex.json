@@ -3,41 +3,31 @@
   "title": "Yandex Adapter Params",
   "description": "A schema which validates params accepted by the Yandex adapter",
   "type": "object",
+  "properties": {
+    "page_id": {
+      "type": "integer",
+      "minLength": 1,
+      "minimum": 1,
+      "description": "Special Page Id provided by Yandex Manager"
+    },
+    "imp_id": {
+      "type": "integer",
+      "minLength": 1,
+      "minimum": 1,
+      "description": "Special identifier provided by Yandex Manager"
+    },
+    "placement_id": {
+      "type": "string",
+      "description": "Ad placement identifier",
+      "pattern": "(\\S+-)?\\d+-\\d+"
+    }
+  },
   "oneOf": [
     {
-      "type": "object",
-      "description": "Deprecated composite ad placement identifier",
-      "properties": {
-        "page_id": {
-          "type": "integer",
-          "minLength": 1,
-          "minimum": 1,
-          "description": "Special Page Id provided by Yandex Manager"
-        },
-        "imp_id": {
-          "type": "integer",
-          "minLength": 1,
-          "minimum": 1,
-          "description": "Special identifier provided by Yandex Manager"
-        }
-      },
-      "required": [
-        "page_id",
-        "imp_id"
-      ]
+      "required": [ "page_id", "imp_id" ]
     },
     {
-      "type": "object",
-      "properties": {
-        "placement_id": {
-          "type": "string",
-          "description": "Ad placement identifier",
-          "pattern": "(\\S+-)?\\d+-\\d+"
-        }
-      },
-      "required": [
-        "placement_id"
-      ]
+      "required": [ "placement_id" ]
     }
   ]
 }
