@@ -96,7 +96,9 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 	if err := dsaWriter.Write(req); err != nil {
 		errs = append(errs, err)
 	}
-	req.RebuildRequest()
+	if err := req.RebuildRequest(); err != nil {
+		errs = append(errs, err)
+	}
 
 	var allBidderRequests []BidderRequest
 	var allBidderRequestErrs []error
