@@ -34,7 +34,10 @@ func TestWrite(t *testing.T) {
 		expectRequest *openrtb_ext.RequestWrapper
 	}{
 		{
-			name:          "request_nil",
+			name: "request_nil",
+			giveConfig: &config.AccountDSA{
+				DefaultUnpacked: defaultDSA,
+			},
 			giveRequest:   nil,
 			expectRequest: nil,
 		},

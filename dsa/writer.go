@@ -14,10 +14,7 @@ type Writer struct {
 // Write sets the default DSA object on the request at regs.ext.dsa if it is
 // defined in the account config and it is not already present on the request
 func (dw Writer) Write(req *openrtb_ext.RequestWrapper) error {
-	if req == nil {
-		return nil
-	}
-	if getReqDSA(req) != nil {
+	if req == nil || getReqDSA(req) != nil {
 		return nil
 	}
 	if dw.Config == nil || dw.Config.DefaultUnpacked == nil {
