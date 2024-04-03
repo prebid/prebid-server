@@ -53,17 +53,24 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		requestCopy.Imp[i] = imp
 	}
 
+	publisher := &openrtb2.Publisher{
+		ID: rpExt.PublisherId,
+	}
+
 	if requestCopy.Site != nil {
+		siteCopy := *request.Site
 		if rpExt.SiteId != "" {
-			requestCopy.Site.ID = rpExt.SiteId
+			siteCopy.ID = rpExt.SiteId
 		}
-		if rpExt.PublisherId != "" {
-			requestCopy.Site.Publisher.ID = rpExt.PublisherId
-		}
+		siteCopy.Publisher = publisher
+		requestCopy.Site = &siteCopy
 	} else if requestCopy.App != nil {
-		if rpExt.PublisherId != "" {
-			requestCopy.App.Publisher.ID = rpExt.PublisherId
+		appCopy := *request.App
+		if rpExt.SiteId != "" {
+			appCopy.ID = rpExt.SiteId
 		}
+		appCopy.Publisher = publisher
+		requestCopy.App = &appCopy
 	}
 	
 	requestJSON, err := json.Marshal(requestCopy)

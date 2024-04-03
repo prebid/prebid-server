@@ -26,12 +26,12 @@
         }
       }
     ],
-    "site": {
-      "domain": "http://test.com",
-      "page": "http://test.com/test"
-    },
-    "device": {
-      "ua": "test-ua"
+    "app": {
+      "id": "some-app-id-b",
+      "domain": "app.test.com",
+      "publisher": {
+        "id": "some-pub-id-b"
+      }
     }
   },
   "httpCalls": [
@@ -43,6 +43,8 @@
           "imp": [
             {
               "id": "imp-id-banner",
+              "tagid": "tag-id-b",
+              "bidfloor": 5.0,
               "banner": {
                 "format": [
                   {
@@ -65,13 +67,12 @@
               }
             }
           ],
-          "site": {
-            "siteId": "site-id-b",
+          "app": {
+            "id": "site-id-b",
             "publisher": {
-              "id": "publisher-id"
+              "id": "publisher-id-b"
             },
-            "domain": "http://test.com",
-            "page": "http://test.com/test"
+            "domain": "app.test.com"
           }
         }
       },
@@ -87,10 +88,11 @@
                   "id": "test-bid-id-banner",
                   "impid": "imp-id-banner",
                   "price": 0.500000,
-                  "adm": "<html><body>some-test-ad-banner</body></html>",
+                  "adm": "<html><body>some-test-ad-banner<img src='http://test.com/burl?p=${AUCTION_PRICE}'></body></html>",
                   "crid": "123",
                   "w": 640,
-                  "h": 400
+                  "h": 400,
+                  "burl": "http://test.com/burl?p=${AUCTION_PRICE}"
                 }
               ]
             }
@@ -109,10 +111,11 @@
             "id": "test-bid-id-banner",
             "impid": "imp-id-banner",
             "price": 0.5,
-            "adm": "<html><body>some-test-ad-banner</body></html>",
+            "adm": "<html><body>some-test-ad-banner<img src='http://test.com/burl?p=0.5'></body></html>",
             "crid": "123",
             "w": 640,
-            "h": 400
+            "h": 400,
+            "burl": "http://test.com/burl?p=0.5"
           },
           "type": "banner"
         }
