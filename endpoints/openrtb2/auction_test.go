@@ -3834,7 +3834,7 @@ func TestValidateEidPermissions(t *testing.T) {
 				{Source: "sourceA", Bidders: []string{"a"}},
 				{Source: "sourceA", Bidders: []string{"a"}},
 			}}}},
-			expectedError: errors.New("request.ext.prebid.data.eidpermissions[1] duplicate entry with field: \"source\""),
+			expectedError: errors.New(`request.ext.prebid.data.eidpermissions[1] duplicate entry with field: "source"`),
 		},
 		{
 			name: "invalid-missing-bidders-nil",
