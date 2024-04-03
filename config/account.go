@@ -341,6 +341,7 @@ type AccountPrivacy struct {
 }
 
 type PrivacySandbox struct {
+	TopicsDomain      string            `mapstructure:"topicsdomain"`
 	CookieDeprecation CookieDeprecation `mapstructure:"cookiedeprecation"`
 }
 
