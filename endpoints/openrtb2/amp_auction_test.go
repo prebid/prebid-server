@@ -10,7 +10,6 @@ import (
 	"net/url"
 	"os"
 	"strconv"
-	"strings"
 	"testing"
 	"time"
 
@@ -1978,7 +1977,7 @@ func TestAmpAuctionResponseHeaders(t *testing.T) {
 	)
 
 	for _, test := range testCases {
-		httpReq := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp"+test.requestURLArguments), nil)
+		httpReq := httptest.NewRequest("GET", "/openrtb2/auction/amp"+test.requestURLArguments, nil)
 		recorder := httptest.NewRecorder()
 
 		endpoint(recorder, httpReq, nil)
@@ -2412,7 +2411,7 @@ func TestAmpAuctionDebugWarningsOnly(t *testing.T) {
 		requestURLArguments string
 		addRequestHeaders   func(r *http.Request)
 		expectedStatus      int
-		expectedWarnings    []string
+		expectedWarnings    map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage
 	}{
 		{
 			description:         "debug_enabled_request_with_invalid_Sec-Browsing-Topics_header",
@@ -2420,8 +2419,15 @@ func TestAmpAuctionDebugWarningsOnly(t *testing.T) {
 			addRequestHeaders: func(r *http.Request) {
 				r.Header.Add("Sec-Browsing-Topics", "foo")
 			},
-			expectedStatus:   200,
-			expectedWarnings: []string{"Invalid field in Sec-Browsing-Topics header: foo"},
+			expectedStatus: 200,
+			expectedWarnings: map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage{
+				"general": {
+					{
+						Code:    10012,
+						Message: "Invalid field in Sec-Browsing-Topics header: foo",
+					},
+				},
+			},
 		},
 		{
 			description:         "debug_disabled_request_with_invalid_Sec-Browsing-Topics_header",
@@ -2472,9 +2478,13 @@ func TestAmpAuctionDebugWarningsOnly(t *testing.T) {
 		endpoint(recorder, httpReq, nil)
 
 		assert.Equal(t, test.expectedStatus, recorder.Result().StatusCode)
-		respBody := recorder.Body.String()
-		for _, warning := range test.expectedWarnings {
-			assert.True(t, strings.Contains(respBody, warning), respBody)
+
+		// Parse Response
+		var response AmpResponse
+		if err := jsonutil.UnmarshalValid(recorder.Body.Bytes(), &response); err != nil {
+			t.Fatalf("Error unmarshalling response: %s", err.Error())
 		}
+
+		assert.Equal(t, test.expectedWarnings, response.ORTB2.Ext.Warnings)
 	}
 }

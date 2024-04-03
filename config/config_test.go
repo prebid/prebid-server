@@ -203,6 +203,7 @@ func TestDefaults(t *testing.T) {
 	cmpInts(t, "account_defaults.price_floors.fetch.period_sec", 3600, cfg.AccountDefaults.PriceFloors.Fetcher.Period)
 	cmpInts(t, "account_defaults.price_floors.fetch.max_age_sec", 86400, cfg.AccountDefaults.PriceFloors.Fetcher.MaxAge)
 	cmpInts(t, "account_defaults.price_floors.fetch.max_schema_dims", 0, cfg.AccountDefaults.PriceFloors.Fetcher.MaxSchemaDims)
+	cmpStrings(t, "account_defaults.privacy.topicsdomain", "", cfg.AccountDefaults.Privacy.PrivacySandbox.TopicsDomain)
 	cmpBools(t, "account_defaults.privacy.privacysandbox.cookiedeprecation.enabled", false, cfg.AccountDefaults.Privacy.PrivacySandbox.CookieDeprecation.Enabled)
 	cmpInts(t, "account_defaults.privacy.privacysandbox.cookiedeprecation.ttl_sec", 604800, cfg.AccountDefaults.Privacy.PrivacySandbox.CookieDeprecation.TTLSec)
 
@@ -506,6 +507,7 @@ account_defaults:
         ipv4:
             anon_keep_bits: 20
         privacysandbox:
+            topicsdomain: "test.com"
             cookiedeprecation:
                 enabled: true
                 ttl_sec: 86400
@@ -628,6 +630,7 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "account_defaults.privacy.ipv6.anon_keep_bits", 50, cfg.AccountDefaults.Privacy.IPv6Config.AnonKeepBits)
 	cmpInts(t, "account_defaults.privacy.ipv4.anon_keep_bits", 20, cfg.AccountDefaults.Privacy.IPv4Config.AnonKeepBits)
 
+	cmpStrings(t, "account_defaults.privacy.topicsdomain", "test.com", cfg.AccountDefaults.Privacy.PrivacySandbox.TopicsDomain)
 	cmpBools(t, "account_defaults.privacy.cookiedeprecation.enabled", true, cfg.AccountDefaults.Privacy.PrivacySandbox.CookieDeprecation.Enabled)
 	cmpInts(t, "account_defaults.privacy.cookiedeprecation.ttl_sec", 86400, cfg.AccountDefaults.Privacy.PrivacySandbox.CookieDeprecation.TTLSec)
 

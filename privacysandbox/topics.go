@@ -21,7 +21,7 @@ type Topic struct {
 // ParseTopicsFromHeader parses the Sec-Browsing-Topics header data into Topics object
 func ParseTopicsFromHeader(secBrowsingTopics string) ([]Topic, []error) {
 	topics := make([]Topic, 0, 10)
-	warnings := make([]error, 0)
+	var warnings []error
 
 	for _, field := range strings.Split(secBrowsingTopics, ",") {
 		field = strings.TrimSpace(field)
@@ -33,10 +33,10 @@ func ParseTopicsFromHeader(secBrowsingTopics string) ([]Topic, []error) {
 			if topic, ok := parseTopicSegment(field); ok {
 				topics = append(topics, topic)
 			} else {
-				warnings = addWarning(warnings, field)
+				warnings = append(warnings, formatWarning(field))
 			}
 		} else {
-			warnings = addWarning(warnings, field+" discarded due to limit reached.")
+			warnings = append(warnings, formatWarning(field+" discarded due to limit reached."))
 		}
 	}
 
@@ -220,9 +220,9 @@ func findNewSegIDs(dataName, topicsDomain string, userData Topic, userDataSegmen
 	return segIDs
 }
 
-func addWarning(warnings []error, msg string) []error {
-	return append(warnings, &errortypes.DebugWarning{
+func formatWarning(msg string) error {
+	return &errortypes.DebugWarning{
 		WarningCode: errortypes.SecBrowsingTopicsWarningCode,
 		Message:     fmt.Sprintf("Invalid field in Sec-Browsing-Topics header: %s", msg),
-	})
+	}
 }

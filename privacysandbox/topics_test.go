@@ -24,7 +24,7 @@ func TestParseTopicsFromHeader(t *testing.T) {
 			name:      "empty header",
 			args:      args{secBrowsingTopics: "	 "},
 			wantTopic: []Topic{},
-			wantError: []error{},
+			wantError: nil,
 		},
 		{
 			name:      "invalid header value",
@@ -41,7 +41,7 @@ func TestParseTopicsFromHeader(t *testing.T) {
 			name:      "header with only finish padding",
 			args:      args{secBrowsingTopics: "();p=P0000000000000000000000000000000"},
 			wantTopic: []Topic{},
-			wantError: []error{},
+			wantError: nil,
 		},
 		{
 			name: "header with one valid field",
@@ -53,7 +53,7 @@ func TestParseTopicsFromHeader(t *testing.T) {
 					SegIDs:   []int{1},
 				},
 			},
-			wantError: []error{},
+			wantError: nil,
 		},
 		{
 			name: "header without finish padding",
@@ -65,7 +65,7 @@ func TestParseTopicsFromHeader(t *testing.T) {
 					SegIDs:   []int{1},
 				},
 			},
-			wantError: []error{},
+			wantError: nil,
 		},
 		{
 			name: "header with more than 10 valid field, should return only 10",
@@ -143,7 +143,7 @@ func TestParseTopicsFromHeader(t *testing.T) {
 					SegIDs:   []int{1, 2},
 				},
 			},
-			wantError: []error{},
+			wantError: nil,
 		},
 		{
 			name: "header with two valid fields having different taxonomies",
@@ -160,7 +160,7 @@ func TestParseTopicsFromHeader(t *testing.T) {
 					SegIDs:   []int{1},
 				},
 			},
-			wantError: []error{},
+			wantError: nil,
 		},
 		{
 			name: "header with one valid field and another invalid field (w/o segIDs), should return only one valid field",
@@ -194,7 +194,7 @@ func TestParseTopicsFromHeader(t *testing.T) {
 					SegIDs:   []int{2},
 				},
 			},
-			wantError: []error{},
+			wantError: nil,
 		},
 		{
 			name: "header with one valid fields and two invalid fields (one with taxanomy < 0 and another with taxanomy > 10), should return only one valid field",
