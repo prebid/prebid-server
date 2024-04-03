@@ -3829,6 +3829,14 @@ func TestValidateEidPermissions(t *testing.T) {
 			expectedError: errors.New(`request.ext.prebid.data.eidpermissions[1] missing required field: "source"`),
 		},
 		{
+			name: "invalid-duplicate-source",
+			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+				{Source: "sourceA", Bidders: []string{"a"}},
+				{Source: "sourceA", Bidders: []string{"a"}},
+			}}}},
+			expectedError: errors.New("request.ext.prebid.data.eidpermissions[1] duplicate entry with field: \"source\""),
+		},
+		{
 			name: "invalid-missing-bidders-nil",
 			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "sourceA", Bidders: []string{"a"}},
@@ -3851,14 +3859,6 @@ func TestValidateEidPermissions(t *testing.T) {
 				{Source: "sourceB", Bidders: []string{"z"}},
 			}}}},
 			expectedError: errors.New(`request.ext.prebid.data.eidpermissions[1] contains unrecognized bidder "z"`),
-		},
-		{
-			name: "invalid-duplicate-source",
-			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
-				{Source: "sourceA", Bidders: []string{"a"}},
-				{Source: "sourceA", Bidders: []string{"a"}},
-			}}}},
-			expectedError: errors.New("request.ext.prebid.data.eidpermissions[1] duplicate entry with field: \"source\""),
 		},
 		{
 			name: "invalid-alias-case-sensitive",
