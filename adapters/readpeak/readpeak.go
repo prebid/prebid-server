@@ -4,13 +4,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
   
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
-  )
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+)
   
 type adapter struct {
 	endpoint string
@@ -28,45 +30,40 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	var errors []error
 
 	requestCopy := *request
-	requestCopy.id = requestCopy[0].bidderRequestId
 	var rpExt openrtb_ext.ImpExtReadpeak
 	for i := 0; i < len(requestCopy.Imp); i++ {		
 		var impExt adapters.ExtImpBidder
-		err := json.Unmarshal(jsonData, &impExt)
+		err := json.Unmarshal(requestCopy.Imp[i].Ext, &impExt)
 		if err != nil {
 			errors = append(errors, err)
 			continue
 		}
-		err := json.Unmarshal(impExt.Bidder, &rpExt)
-		if err != nil {
-			errors = append(errors, err)
+		err2 := json.Unmarshal(impExt.Bidder, &rpExt)
+		if err2 != nil {
+			errors = append(errors, err2)
 			continue
 		}
 		imp := requestCopy.Imp[i]
 		if rpExt.TagId != "" {
-			imp.tagid = rpExt.TagId
+			imp.TagID = rpExt.TagId
 		}
 		if rpExt.Bidfloor != 0 {
-			imp.bidfloor = rpExt.Bidfloor
+			imp.BidFloor = rpExt.Bidfloor
 		}
 		requestCopy.Imp[i] = imp
 	}
 
 	if requestCopy.Site != nil {
-		site := *requestCopy.Site
 		if rpExt.SiteId != "" {
-			site.Id = rpExt.SiteId
+			requestCopy.Site.ID = rpExt.SiteId
 		}
 		if rpExt.PublisherId != "" {
-			site.publisher.id = rpExt.PublisherId
+			requestCopy.Site.Publisher.ID = rpExt.PublisherId
 		}
-		requestCopy.Site = site
 	} else if requestCopy.App != nil {
-		app := *requestCopy.App
 		if rpExt.PublisherId != "" {
-			app.publisher.id = rpExt.PublisherId
+			requestCopy.App.Publisher.ID = rpExt.PublisherId
 		}
-		requestCopy.App = app
 	}
 	
 	requestJSON, err := json.Marshal(requestCopy)
@@ -111,7 +108,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	bidResponse.Currency = response.Cur
 	var errors []error
 	for _, seatBid := range response.SeatBid {
-		for i, bid := range seatBid.Bid {
+		for i := range seatBid.Bid {
 			bidType, err := getMediaType(seatBid.Bid[i].ImpID, request.Imp)
 			if err != nil {
 				errors = append(errors, err)
@@ -121,7 +118,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &seatBid.Bid[i],
 				BidType: bidType,
-				BidMeta: getBidMeta(bid),
+				BidMeta: getBidMeta(&seatBid.Bid[i]),
 			})
 		}
 	}
@@ -149,12 +146,12 @@ func getMediaType(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error
 	}
 
 	return "", &errortypes.BadInput{
-		Message: fmt.Sprintf("Failed to find impression type \"%s\" ", bid.ImpID),
+		Message: fmt.Sprintf("Failed to find impression type \"%s\" ", impID),
 	}
 }
 
-func getBidMeta(bid *adapters.TypedBid) *openrtb_ext.ExtBidPrebidMeta {
+func getBidMeta(bid *openrtb2.Bid) *openrtb_ext.ExtBidPrebidMeta {
 	return &openrtb_ext.ExtBidPrebidMeta {
-		AdvertiserDomains:    []string{bid.Adomain},
+		AdvertiserDomains: bid.ADomain,
 	}
 }
