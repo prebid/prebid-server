@@ -27,6 +27,7 @@ func (dw Writer) Write(req *openrtb_ext.RequestWrapper) error {
 	if err != nil {
 		return err
 	}
-	regExt.SetDSA(dw.Config.DefaultUnpacked)
+	clonedDefaultUnpacked := dw.Config.DefaultUnpacked.Clone()
+	regExt.SetDSA(clonedDefaultUnpacked)
 	return nil
 }
