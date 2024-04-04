@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -18,6 +19,11 @@ type ConversantAdapter struct {
 }
 
 func (c *ConversantAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	cnvrRequest := *request
+	//Backend needs USD or it will reject the request
+	if cnvrRequest.Cur != nil && len(cnvrRequest.Cur) > 0 && cnvrRequest.Cur[0] != "USD" {
+		cnvrRequest.Cur = []string{"USD"}
+	}
 	for i := 0; i < len(request.Imp); i++ {
 		var bidderExt adapters.ExtImpBidder
 		if err := json.Unmarshal(request.Imp[i].Ext, &bidderExt); err != nil {
@@ -42,19 +48,22 @@ func (c *ConversantAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 		if i == 0 {
 			if request.Site != nil {
 				tmpSite := *request.Site
-				request.Site = &tmpSite
-				request.Site.ID = cnvrExt.SiteID
+				cnvrRequest.Site = &tmpSite
+				cnvrRequest.Site.ID = cnvrExt.SiteID
 			} else if request.App != nil {
 				tmpApp := *request.App
-				request.App = &tmpApp
-				request.App.ID = cnvrExt.SiteID
+				cnvrRequest.App = &tmpApp
+				cnvrRequest.App.ID = cnvrExt.SiteID
 			}
 		}
-		parseCnvrParams(&request.Imp[i], cnvrExt)
+		err := parseCnvrParams(&cnvrRequest.Imp[i], cnvrExt, reqInfo)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	//create the request body
-	data, err := json.Marshal(request)
+	data, err := json.Marshal(cnvrRequest)
 	if err != nil {
 		return nil, []error{&errortypes.BadInput{
 			Message: "Error in packaging request to JSON",
@@ -72,7 +81,7 @@ func (c *ConversantAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 	}}, nil
 }
 
-func parseCnvrParams(imp *openrtb2.Imp, cnvrExt openrtb_ext.ExtImpConversant) {
+func parseCnvrParams(imp *openrtb2.Imp, cnvrExt openrtb_ext.ExtImpConversant, reqInfo *adapters.ExtraRequestInfo) []error {
 	imp.DisplayManager = "prebid-s2s"
 	imp.DisplayManagerVer = "2.0.0"
 
@@ -130,6 +139,18 @@ func parseCnvrParams(imp *openrtb2.Imp, cnvrExt openrtb_ext.ExtImpConversant) {
 			imp.Video.MaxDuration = *cnvrExt.MaxDuration
 		}
 	}
+	if imp.BidFloor > 0 && imp.BidFloorCur != "" && strings.ToUpper(imp.BidFloorCur) != "USD" {
+		floor, err := reqInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, "USD")
+		if err != nil {
+			return []error{&errortypes.BadInput{
+				Message: fmt.Sprintf("Unable to convert provided bid floor currency from %s to USD", imp.BidFloorCur),
+			}}
+		} else if floor > 0 {
+			imp.BidFloorCur = "USD"
+			imp.BidFloor = floor
+		}
+	}
+	return nil
 }
 
 func (c *ConversantAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
