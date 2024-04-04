@@ -31,7 +31,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	requestCopy := *request
 	var rpExt openrtb_ext.ImpExtReadpeak
-	for i := 0; i < len(requestCopy.Imp); i++ {		
+	var imps []openrtb2.Imp
+	for i := 0; i < len(requestCopy.Imp); i++ {
+		if requestCopy.Imp[i].Native == nil && requestCopy.Imp[i].Banner == nil {
+			continue
+		}
 		var impExt adapters.ExtImpBidder
 		err := json.Unmarshal(requestCopy.Imp[i].Ext, &impExt)
 		if err != nil {
@@ -50,9 +54,16 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		if rpExt.Bidfloor != 0 {
 			imp.BidFloor = rpExt.Bidfloor
 		}
-		requestCopy.Imp[i] = imp
+		imps = append(imps, imp)
 	}
 
+	if len(imps) == 0 {
+		err := &errortypes.BadInput{
+			Message: fmt.Sprintf("Failed to find compatible impressions for request %s", requestCopy.ID),
+		}
+		return nil, []error{err}
+	}
+	requestCopy.Imp = imps
 	publisher := &openrtb2.Publisher{
 		ID: rpExt.PublisherId,
 	}
@@ -153,7 +164,7 @@ func getMediaType(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error
 	}
 
 	return "", &errortypes.BadInput{
-		Message: fmt.Sprintf("Failed to find impression type \"%s\" ", impID),
+		Message: fmt.Sprintf("Failed to find impression type \"%s\"", impID),
 	}
 }
 
