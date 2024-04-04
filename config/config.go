@@ -722,7 +722,7 @@ func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName func(strin
 	}
 
 	if err := UnpackDSADefault(c.AccountDefaults.Privacy.DSA); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("invalid default account DSA: %v", err)
 	}
 
 	// Update account defaults and generate base json for patch
@@ -857,12 +857,10 @@ func (cfg *Configuration) MarshalAccountDefaults() error {
 
 // UnpackDSADefault validates the JSON DSA default object string by unmarshaling and maps it to a struct
 func UnpackDSADefault(dsa *AccountDSA) error {
-	if dsa != nil && len(dsa.Default) > 0 {
-		if err := jsonutil.Unmarshal([]byte(dsa.Default), &dsa.DefaultUnpacked); err != nil {
-			return err
-		}
+	if dsa == nil || len(dsa.Default) == 0 {
+		return nil
 	}
-	return nil
+	return jsonutil.Unmarshal([]byte(dsa.Default), &dsa.DefaultUnpacked)
 }
 
 // AccountDefaultsJSON returns the precompiled JSON form of account_defaults
@@ -1164,6 +1162,8 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("account_defaults.privacy.privacysandbox.cookiedeprecation.ttl_sec", 604800)
 
 	v.SetDefault("account_defaults.events_enabled", false)
+	v.BindEnv("account_defaults.privacy.dsa.default")
+	v.BindEnv("account_defaults.privacy.dsa.gdpr_only")
 	v.SetDefault("account_defaults.privacy.ipv6.anon_keep_bits", 56)
 	v.SetDefault("account_defaults.privacy.ipv4.anon_keep_bits", 24)
 

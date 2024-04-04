@@ -5,7 +5,7 @@ import (
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
-// DSAWriter is used to write the default DSA to the request (req.regs.ext.dsa)
+// Writer is used to write the default DSA to the request (req.regs.ext.dsa)
 type Writer struct {
 	Config      *config.AccountDSA
 	GDPRInScope bool
