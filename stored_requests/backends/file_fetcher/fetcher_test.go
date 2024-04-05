@@ -28,7 +28,6 @@ func TestFileFetcher(t *testing.T) {
 }
 
 func TestStoredResponseFileFetcher(t *testing.T) {
-
 	// grab the fetcher that do not have /test/stored_responses/stored_responses FS directory
 	directoryNotExistfetcher, err := NewFileFetcher("./test/stored_responses")
 	if err != nil {
