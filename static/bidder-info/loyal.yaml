@@ -1,4 +1,6 @@
 endpoint: "https://us-east-1.loyal.app/pserver"
+geoscope:
+  - USA
 maintainer:
   email: "hello@loyal.app"
 capabilities:

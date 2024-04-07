@@ -35,6 +35,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var err error
+	var errs []error
 	var adapterRequests []*adapters.RequestData
 
 	reqCopy := *request
@@ -44,11 +45,13 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		var bidderExt adapters.ExtImpBidder
 		var loyalExt openrtb_ext.ImpExtLoyal
 
-		if err = json.Unmarshal(reqCopy.Imp[0].Ext, &bidderExt); err != nil {
-			return nil, []error{err}
+		if err = json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+			errs = append(errs, err)
+			continue
 		}
 		if err = json.Unmarshal(bidderExt.Bidder, &loyalExt); err != nil {
-			return nil, []error{err}
+			errs = append(errs, err)
+			continue
 		}
 
 		impExt := reqBodyExt{LoyalBidderExt: reqBodyExtBidder{}}
@@ -59,20 +62,20 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		} else if loyalExt.EndpointID != "" {
 			impExt.LoyalBidderExt.EndpointID = loyalExt.EndpointID
 			impExt.LoyalBidderExt.Type = "network"
-		} else {
-			continue
 		}
 
 		finalyImpExt, err := json.Marshal(impExt)
 		if err != nil {
-			return nil, []error{err}
+			errs = append(errs, err)
+			continue
 		}
 
 		reqCopy.Imp[0].Ext = finalyImpExt
 
 		adapterReq, err := a.makeRequest(&reqCopy)
 		if err != nil {
-			return nil, []error{err}
+			errs = append(errs, err)
+			continue
 		}
 
 		if adapterReq != nil {
@@ -81,7 +84,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	}
 
 	if len(adapterRequests) == 0 {
-		return nil, []error{errors.New("found no valid impressions")}
+		errs = append(errs, errors.New("found no valid impressions"))
+		return nil, errs
 	}
 
 	return adapterRequests, nil
@@ -119,11 +123,8 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
-	bidResponse.Currency = response.Cur
-
-	impsMappedByID := make(map[string]openrtb2.Imp, len(request.Imp))
-	for i, imp := range request.Imp {
-		impsMappedByID[request.Imp[i].ID] = imp
+	if len(response.Cur) != 0 {
+		bidResponse.Currency = response.Cur
 	}
 
 	for _, seatBid := range response.SeatBid {
