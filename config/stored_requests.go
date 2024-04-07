@@ -71,7 +71,7 @@ type StoredRequests struct {
 	// HTTPEvents configures an instance of stored_requests/events/http/http.go.
 	// If non-nil, the server will use those endpoints to populate and update the cache.
 	HTTPEvents HTTPEventsConfig `mapstructure:"http_events"`
-	// TODO: Timeout Description
+	// Timeout defines the number of milliseconds before a timeout occurs with stored requests
 	Timeout int `mapstructure:"timeout_ms"`
 }
 

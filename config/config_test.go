@@ -159,6 +159,7 @@ func TestDefaults(t *testing.T) {
 	cmpBools(t, "adapter_connections_metrics", true, cfg.Metrics.Disabled.AdapterConnectionMetrics)
 	cmpBools(t, "adapter_gdpr_request_blocked", false, cfg.Metrics.Disabled.AdapterGDPRRequestBlocked)
 	cmpStrings(t, "certificates_file", "", cfg.PemCertsFile)
+	cmpInts(t, "stored_requests.timeout_ms", 50, cfg.StoredRequests.Timeout)
 	cmpBools(t, "stored_requests.filesystem.enabled", false, cfg.StoredRequests.Files.Enabled)
 	cmpStrings(t, "stored_requests.filesystem.directorypath", "./stored_requests/data/by_id", cfg.StoredRequests.Files.Path)
 	cmpBools(t, "auto_gen_source_tid", true, cfg.AutoGenSourceTID)
