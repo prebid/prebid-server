@@ -39,18 +39,11 @@ jobs:
           result-encoding: string
           script: |
             const utils = require('./.github/workflows/helpers/pull-request-utils.js')
-            const helper = utils.userHelper({github, context})
+            const helper = utils.userHelper({github, context, user: '${{ github.actor }}'})
             const hasPermission = await helper.hasWritePermissions()
             return hasPermission
     outputs:
       hasWritePermission: ${{ steps.check.outputs.result }}
-  
-  debug-step:
-    name: Debug step
-    runs-on: ubuntu-latest
-    steps:
-      - name: Debug
-        run: echo ${{ needs.check-permission.outputs.hasWritePermission }}
 
   build-master:
     name: Build master
@@ -71,7 +64,6 @@ jobs:
   publish-tag:
     name: Publish tag
     needs: build-master
-    if: contains(needs.check-permission.outputs.hasWritePermission, 'true')
     permissions:
       contents: write
     runs-on: ubuntu-latest
