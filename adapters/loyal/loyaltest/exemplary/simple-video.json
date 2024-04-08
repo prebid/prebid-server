@@ -35,7 +35,7 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "http://example.com/pserver",
+                "uri": "https://us-east-1.loyal.app/pserver",
                 "body": {
                     "id": "test-request-id",
                     "device": {

@@ -34,7 +34,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var err error
 	var errs []error
 	var adapterRequests []*adapters.RequestData
 
@@ -45,11 +44,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		var bidderExt adapters.ExtImpBidder
 		var loyalExt openrtb_ext.ImpExtLoyal
 
-		if err = json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			errs = append(errs, err)
 			continue
 		}
-		if err = json.Unmarshal(bidderExt.Bidder, &loyalExt); err != nil {
+		if err := json.Unmarshal(bidderExt.Bidder, &loyalExt); err != nil {
 			errs = append(errs, err)
 			continue
 		}
