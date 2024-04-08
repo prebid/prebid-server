@@ -98,6 +98,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 	}
 	if err := req.RebuildRequest(); err != nil {
 		errs = append(errs, err)
+		return
 	}
 
 	var allBidderRequests []BidderRequest
