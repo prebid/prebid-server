@@ -88,10 +88,10 @@ type Options struct {
 }
 
 // GetImpIDs returns slice of all impression Ids from impList
-func GetImpIDs(impList []openrtb2.Imp) []string {
-	impIDs := []string{}
-	for _, imp := range impList {
-		impIDs = append(impIDs, imp.ID)
+func GetImpIDs(imps []openrtb2.Imp) []string {
+	impIDs := make([]string, len(imps))
+	for i := range imps {
+		impIDs[i] = imps[i].ID
 	}
 	return impIDs
 }
