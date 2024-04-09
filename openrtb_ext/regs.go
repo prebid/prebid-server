@@ -1,5 +1,9 @@
 package openrtb_ext
 
+import (
+	"github.com/prebid/prebid-server/v2/util/sliceutil"
+)
+
 // ExtRegs defines the contract for bidrequest.regs.ext
 type ExtRegs struct {
 	// DSA is an object containing DSA transparency information, see https://github.com/InteractiveAdvertisingBureau/openrtb/blob/main/extensions/community_extensions/dsa_transparency.md
@@ -15,8 +19,45 @@ type ExtRegs struct {
 
 // ExtRegsDSA defines the contract for bidrequest.regs.ext.dsa
 type ExtRegsDSA struct {
-	// Required should be a between 0 and 3 inclusive, see https://github.com/InteractiveAdvertisingBureau/openrtb/blob/main/extensions/community_extensions/dsa_transparency.md
-	Required *int8 `json:"dsarequired,omitempty"`
-	// PubRender should be between 0 and 2 inclusive, see https://github.com/InteractiveAdvertisingBureau/openrtb/blob/main/extensions/community_extensions/dsa_transparency.md
-	PubRender *int8 `json:"pubrender,omitempty"`
+	Required     *int8                   `json:"dsarequired,omitempty"`
+	PubRender    *int8                   `json:"pubrender,omitempty"`
+	DataToPub    *int8                   `json:"datatopub,omitempty"`
+	Transparency []ExtBidDSATransparency `json:"transparency,omitempty"`
+}
+
+// Clone creates a deep copy of ExtRegsDSA
+func (erd *ExtRegsDSA) Clone() *ExtRegsDSA {
+	if erd == nil {
+		return nil
+	}
+	clone := *erd
+
+	if erd.Required != nil {
+		clonedRequired := *erd.Required
+		clone.Required = &clonedRequired
+	}
+	if erd.PubRender != nil {
+		clonedPubRender := *erd.PubRender
+		clone.PubRender = &clonedPubRender
+	}
+	if erd.DataToPub != nil {
+		clonedDataToPub := *erd.DataToPub
+		clone.DataToPub = &clonedDataToPub
+	}
+	if erd.Transparency != nil {
+		clonedTransparency := make([]ExtBidDSATransparency, len(erd.Transparency))
+		for i, transparency := range erd.Transparency {
+			newTransparency := transparency
+			newTransparency.Params = sliceutil.Clone(transparency.Params)
+			clonedTransparency[i] = newTransparency
+		}
+		clone.Transparency = clonedTransparency
+	}
+	return &clone
+}
+
+// ExtBidDSATransparency defines the contract for bidrequest.regs.ext.dsa.transparency
+type ExtBidDSATransparency struct {
+	Domain string `json:"domain,omitempty"`
+	Params []int  `json:"dsaparams,omitempty"`
 }
