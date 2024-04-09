@@ -85,8 +85,11 @@ func (f *FileLogger) LogNotificationEventObject(ne *analytics.NotificationEvent)
 	f.Logger.Flush()
 }
 
-// Shutdown the logger - No-op Implementation
-func (f *FileLogger) Shutdown() {}
+// Shutdown the logger
+func (f *FileLogger) Shutdown() {
+	// clear all pending buffered data in case there is any
+	f.Logger.Flush()
+}
 
 // Method to initialize the analytic module
 func NewFileLogger(filename string) (analytics.Module, error) {

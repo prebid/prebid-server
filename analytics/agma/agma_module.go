@@ -261,7 +261,11 @@ func (l *AgmaLogger) LogVideoObject(event *analytics.VideoObject) {
 	l.bufferCh <- data
 }
 
+func (l *AgmaLogger) Shutdown() {
+	glog.Infof("[AgmaAnalytics] Shutdown, trying to flush buffer")
+	l.flush() // mutex safe
+}
+
 func (l *AgmaLogger) LogCookieSyncObject(event *analytics.CookieSyncObject)         {}
 func (l *AgmaLogger) LogNotificationEventObject(event *analytics.NotificationEvent) {}
 func (l *AgmaLogger) LogSetUIDObject(event *analytics.SetUIDObject)                 {}
-func (l *AgmaLogger) Shutdown()                                                     {}
