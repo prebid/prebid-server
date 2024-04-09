@@ -3387,7 +3387,7 @@ func TestApplyFPD(t *testing.T) {
 	}
 }
 
-func Test_parseAliasesGVLIDs(t *testing.T) {
+func TestGetRequestAliasesGVLIDs(t *testing.T) {
 	type args struct {
 		orig *openrtb2.BidRequest
 	}
@@ -3440,7 +3440,7 @@ func Test_parseAliasesGVLIDs(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := parseAliasesGVLIDs(tt.args.orig)
+			got, err := getRequestAliasesGVLIDs(tt.args.orig)
 			assert.Equal(t, tt.want, got, "parseAliasesGVLIDs() got = %v, want %v", got, tt.want)
 			if !tt.wantError && err != nil {
 				t.Errorf("parseAliasesGVLIDs() expected error got nil")
