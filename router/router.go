@@ -93,7 +93,7 @@ func newJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.Bidder
 		data[aliasName] = bidderData
 	}
 
-	response, err := json.Marshal(data)
+	response, err := jsonutil.Marshal(data)
 	if err != nil {
 		glog.Fatalf("Failed to marshal bidder param JSON-schema: %v", err)
 	}

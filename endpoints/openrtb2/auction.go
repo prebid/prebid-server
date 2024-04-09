@@ -20,15 +20,16 @@ import (
 	"github.com/julienschmidt/httprouter"
 	gpplib "github.com/prebid/go-gpp"
 	"github.com/prebid/go-gpp/constants"
-	"github.com/prebid/openrtb/v19/adcom1"
-	"github.com/prebid/openrtb/v19/native1"
-	nativeRequests "github.com/prebid/openrtb/v19/native1/request"
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/openrtb/v19/openrtb3"
+	"github.com/prebid/openrtb/v20/adcom1"
+	"github.com/prebid/openrtb/v20/native1"
+	nativeRequests "github.com/prebid/openrtb/v20/native1/request"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb3"
 	"github.com/prebid/prebid-server/v2/bidadjustment"
 	"github.com/prebid/prebid-server/v2/hooks"
 	"github.com/prebid/prebid-server/v2/ortb"
 	"github.com/prebid/prebid-server/v2/privacy"
+	"github.com/prebid/prebid-server/v2/privacysandbox"
 	"golang.org/x/net/publicsuffix"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
@@ -60,6 +61,10 @@ import (
 const storedRequestTimeoutMillis = 50
 const ampChannel = "amp"
 const appChannel = "app"
+const secCookieDeprecation = "Sec-Cookie-Deprecation"
+const secBrowsingTopics = "Sec-Browsing-Topics"
+const observeBrowsingTopics = "Observe-Browsing-Topics"
+const observeBrowsingTopicsValue = "?1"
 
 var (
 	dntKey      string = http.CanonicalHeaderKey("DNT")
@@ -189,6 +194,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}()
 
 	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
+	setBrowsingTopicsHeader(w, r)
 
 	req, impExtInfoMap, storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, account, errL := deps.parseRequest(r, &labels, hookExecutor)
 	if errortypes.ContainsFatalError(errL) && writeError(errL, w, &labels) {
@@ -204,6 +210,9 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, account.GDPR)
 
 	activityControl = privacy.NewActivityControl(&account.Privacy)
+
+	hookExecutor.SetActivityControl(activityControl)
+	hookExecutor.SetAccount(account)
 
 	ctx := context.Background()
 
@@ -389,6 +398,13 @@ func sendAuctionResponse(
 	return labels, ao
 }
 
+// setBrowsingTopicsHeader always set the Observe-Browsing-Topics header to a value of ?1 if the Sec-Browsing-Topics is present in request
+func setBrowsingTopicsHeader(w http.ResponseWriter, r *http.Request) {
+	if value := r.Header.Get(secBrowsingTopics); value != "" {
+		w.Header().Set(observeBrowsingTopics, observeBrowsingTopicsValue)
+	}
+}
+
 // parseRequest turns the HTTP request into an OpenRTB request. This is guaranteed to return:
 //
 //   - A context which times out appropriately, given the request.
@@ -402,6 +418,7 @@ func sendAuctionResponse(
 func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metrics.Labels, hookExecutor hookexecution.HookStageExecutor) (req *openrtb_ext.RequestWrapper, impExtInfoMap map[string]exchange.ImpExtInfo, storedAuctionResponses stored_responses.ImpsWithBidResponses, storedBidResponses stored_responses.ImpBidderStoredResp, bidderImpReplaceImpId stored_responses.BidderImpReplaceImpID, account *config.Account, errs []error) {
 	errs = nil
 	var err error
+	var errL []error
 	var r io.ReadCloser = httpRequest.Body
 	reqContentEncoding := httputil.ContentEncoding(httpRequest.Header.Get("Content-Encoding"))
 	if reqContentEncoding != "" {
@@ -528,7 +545,9 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	}
 
 	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
-	deps.setFieldsImplicitly(httpRequest, req)
+	if errsL := deps.setFieldsImplicitly(httpRequest, req, account); len(errsL) > 0 {
+		errs = append(errs, errsL...)
+	}
 
 	if err := ortb.SetDefaults(req); err != nil {
 		errs = []error{err}
@@ -543,13 +562,14 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	lmt.ModifyForIOS(req.BidRequest)
 
 	//Stored auction responses should be processed after stored requests due to possible impression modification
-	storedAuctionResponses, storedBidResponses, bidderImpReplaceImpId, errs = stored_responses.ProcessStoredResponses(ctx, req, deps.storedRespFetcher)
-	if len(errs) > 0 {
+	storedAuctionResponses, storedBidResponses, bidderImpReplaceImpId, errL = stored_responses.ProcessStoredResponses(ctx, req, deps.storedRespFetcher)
+	if len(errL) > 0 {
+		errs = append(errs, errL...)
 		return nil, nil, nil, nil, nil, nil, errs
 	}
 
 	hasStoredResponses := len(storedAuctionResponses) > 0
-	errL := deps.validateRequest(req, false, hasStoredResponses, storedBidResponses, hasStoredBidRequest)
+	errL = deps.validateRequest(account, httpRequest, req, false, hasStoredResponses, storedBidResponses, hasStoredBidRequest)
 	if len(errL) > 0 {
 		errs = append(errs, errL...)
 	}
@@ -743,7 +763,7 @@ func mergeBidderParamsImpExtPrebid(impExt *openrtb_ext.ImpExt, reqExtParams map[
 	return nil
 }
 
-func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp bool, hasStoredResponses bool, storedBidResp stored_responses.ImpBidderStoredResp, hasStoredBidRequest bool) []error {
+func (deps *endpointDeps) validateRequest(account *config.Account, httpReq *http.Request, req *openrtb_ext.RequestWrapper, isAmp bool, hasStoredResponses bool, storedBidResp stored_responses.ImpBidderStoredResp, hasStoredBidRequest bool) []error {
 	errL := []error{}
 	if req.ID == "" {
 		return []error{errors.New("request missing required field: \"id\"")}
@@ -841,10 +861,11 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 	}
 	var gpp gpplib.GppContainer
 	if req.BidRequest.Regs != nil && len(req.BidRequest.Regs.GPP) > 0 {
-		gpp, err = gpplib.Parse(req.BidRequest.Regs.GPP)
-		if err != nil {
+		var errs []error
+		gpp, errs = gpplib.Parse(req.BidRequest.Regs.GPP)
+		if len(errs) > 0 {
 			errL = append(errL, &errortypes.Warning{
-				Message:     fmt.Sprintf("GPP consent string is invalid and will be ignored. (%v)", err),
+				Message:     fmt.Sprintf("GPP consent string is invalid and will be ignored. (%v)", errs[0]),
 				WarningCode: errortypes.InvalidPrivacyConsentWarningCode})
 		}
 	}
@@ -869,6 +890,10 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 
 	if err := validateDevice(req.Device); err != nil {
 		return append(errL, err)
+	}
+
+	if err := validateOrFillCookieDeprecation(httpReq, req, account); err != nil {
+		errL = append(errL, err)
 	}
 
 	if ccpaPolicy, err := ccpa.ReadFromRequestWrapper(req, gpp); err != nil {
@@ -1143,10 +1168,10 @@ func validateVideo(video *openrtb2.Video, impIndex int) error {
 
 	// The following fields were previously uints in the OpenRTB library we use, but have
 	// since been changed to ints. We decided to maintain the non-negative check.
-	if video.W < 0 {
+	if video.W != nil && *video.W < 0 {
 		return fmt.Errorf("request.imp[%d].video.w must be a positive number", impIndex)
 	}
-	if video.H < 0 {
+	if video.H != nil && *video.H < 0 {
 		return fmt.Errorf("request.imp[%d].video.h must be a positive number", impIndex)
 	}
 	if video.MinBitRate < 0 {
@@ -1688,36 +1713,28 @@ func validateRequestExt(req *openrtb_ext.RequestWrapper) []error {
 }
 
 func validateTargeting(t *openrtb_ext.ExtRequestTargeting) error {
-	if t == nil {
-		return nil
-	}
-
-	if (t.IncludeWinners == nil || !*t.IncludeWinners) && (t.IncludeBidderKeys == nil || !*t.IncludeBidderKeys) {
-		return errors.New("ext.prebid.targeting: At least one of includewinners or includebidderkeys must be enabled to enable targeting support")
-	}
-
-	if t.PriceGranularity != nil {
-		if err := validatePriceGranularity(t.PriceGranularity); err != nil {
-			return err
+	if t != nil {
+		if t.PriceGranularity != nil {
+			if err := validatePriceGranularity(t.PriceGranularity); err != nil {
+				return err
+			}
+		}
+		if t.MediaTypePriceGranularity.Video != nil {
+			if err := validatePriceGranularity(t.MediaTypePriceGranularity.Video); err != nil {
+				return err
+			}
+		}
+		if t.MediaTypePriceGranularity.Banner != nil {
+			if err := validatePriceGranularity(t.MediaTypePriceGranularity.Banner); err != nil {
+				return err
+			}
+		}
+		if t.MediaTypePriceGranularity.Native != nil {
+			if err := validatePriceGranularity(t.MediaTypePriceGranularity.Native); err != nil {
+				return err
+			}
 		}
 	}
-
-	if t.MediaTypePriceGranularity.Video != nil {
-		if err := validatePriceGranularity(t.MediaTypePriceGranularity.Video); err != nil {
-			return err
-		}
-	}
-	if t.MediaTypePriceGranularity.Banner != nil {
-		if err := validatePriceGranularity(t.MediaTypePriceGranularity.Banner); err != nil {
-			return err
-		}
-	}
-	if t.MediaTypePriceGranularity.Native != nil {
-		if err := validatePriceGranularity(t.MediaTypePriceGranularity.Native); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
@@ -1918,6 +1935,35 @@ func validateDevice(device *openrtb2.Device) error {
 	return nil
 }
 
+func validateOrFillCookieDeprecation(httpReq *http.Request, req *openrtb_ext.RequestWrapper, account *config.Account) error {
+	if account == nil || !account.Privacy.PrivacySandbox.CookieDeprecation.Enabled {
+		return nil
+	}
+
+	deviceExt, err := req.GetDeviceExt()
+	if err != nil {
+		return err
+	}
+
+	if deviceExt.GetCDep() != "" {
+		return nil
+	}
+
+	secCookieDeprecation := httpReq.Header.Get(secCookieDeprecation)
+	if secCookieDeprecation == "" {
+		return nil
+	}
+	if len(secCookieDeprecation) > 100 {
+		return &errortypes.Warning{
+			Message:     "request.device.ext.cdep must not exceed 100 characters",
+			WarningCode: errortypes.SecCookieDeprecationLenWarningCode,
+		}
+	}
+
+	deviceExt.SetCDep(secCookieDeprecation)
+	return nil
+}
+
 func validateExactlyOneInventoryType(reqWrapper *openrtb_ext.RequestWrapper) error {
 
 	// Prep for mutual exclusion check
@@ -1999,7 +2045,7 @@ func sanitizeRequest(r *openrtb_ext.RequestWrapper, ipValidator iputil.IPValidat
 // OpenRTB properties from the headers and other implicit info.
 //
 // This function _should not_ override any fields which were defined explicitly by the caller in the request.
-func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {
+func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper, account *config.Account) []error {
 	sanitizeRequest(r, deps.privateNetworkIPValidator)
 
 	setDeviceImplicitly(httpReq, r, deps.privateNetworkIPValidator)
@@ -2011,6 +2057,9 @@ func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, r *openrtb_
 	}
 
 	setAuctionTypeImplicitly(r)
+
+	errs := setSecBrowsingTopicsImplicitly(httpReq, r, account)
+	return errs
 }
 
 // setDeviceImplicitly uses implicit info from httpReq to populate bidReq.Device
@@ -2018,7 +2067,6 @@ func setDeviceImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper, i
 	setIPImplicitly(httpReq, r, ipValidtor)
 	setUAImplicitly(httpReq, r)
 	setDoNotTrackImplicitly(httpReq, r)
-
 }
 
 // setAuctionTypeImplicitly sets the auction type to 1 if it wasn't on the request,
@@ -2027,6 +2075,31 @@ func setAuctionTypeImplicitly(r *openrtb_ext.RequestWrapper) {
 	if r.AT == 0 {
 		r.AT = 1
 	}
+}
+
+// setSecBrowsingTopicsImplicitly updates user.data with data from request header 'Sec-Browsing-Topics'
+func setSecBrowsingTopicsImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper, account *config.Account) []error {
+	secBrowsingTopics := httpReq.Header.Get(secBrowsingTopics)
+	if secBrowsingTopics == "" {
+		return nil
+	}
+
+	// host must configure privacy sandbox
+	if account == nil || account.Privacy.PrivacySandbox.TopicsDomain == "" {
+		return nil
+	}
+
+	topics, errs := privacysandbox.ParseTopicsFromHeader(secBrowsingTopics)
+	if len(topics) == 0 {
+		return errs
+	}
+
+	if r.User == nil {
+		r.User = &openrtb2.User{}
+	}
+
+	r.User.Data = privacysandbox.UpdateUserDataWithTopics(r.User.Data, topics, account.Privacy.PrivacySandbox.TopicsDomain)
+	return errs
 }
 
 func setSiteImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {
@@ -2371,7 +2444,7 @@ func writeError(errs []error, w http.ResponseWriter, labels *metrics.Labels) boo
 		w.WriteHeader(httpStatus)
 		labels.RequestStatus = metricsStatus
 		for _, err := range errs {
-			w.Write([]byte(fmt.Sprintf("Invalid request: %s\n", err.Error())))
+			fmt.Fprintf(w, "Invalid request: %s\n", err.Error())
 		}
 		rc = true
 	}

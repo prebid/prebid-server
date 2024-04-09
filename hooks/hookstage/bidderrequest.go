@@ -27,3 +27,17 @@ type BidderRequestPayload struct {
 	Request *openrtb_ext.RequestWrapper
 	Bidder  string
 }
+
+func (brp *BidderRequestPayload) GetBidderRequestPayload() *openrtb_ext.RequestWrapper {
+	return brp.Request
+}
+
+func (brp *BidderRequestPayload) SetBidderRequestPayload(br *openrtb_ext.RequestWrapper) {
+	brp.Request = br
+}
+
+// RequestUpdater allows reading and writing a bid request
+type RequestUpdater interface {
+	GetBidderRequestPayload() *openrtb_ext.RequestWrapper
+	SetBidderRequestPayload(br *openrtb_ext.RequestWrapper)
+}

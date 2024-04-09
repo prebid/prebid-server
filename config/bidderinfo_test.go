@@ -593,6 +593,7 @@ func TestBidderInfoValidationPositive(t *testing.T) {
 					URL:       "http://bidderB.com/usersync",
 					UserMacro: "UID",
 				},
+				FormatOverride: SyncResponseFormatRedirect,
 			},
 		},
 		"bidderC": BidderInfo{
@@ -626,6 +627,9 @@ func TestBidderInfoValidationPositive(t *testing.T) {
 						openrtb_ext.BidTypeBanner,
 					},
 				},
+			},
+			Syncer: &Syncer{
+				FormatOverride: SyncResponseFormatIFrame,
 			},
 		},
 	}
@@ -1316,6 +1320,37 @@ func TestBidderInfoValidationNegative(t *testing.T) {
 			},
 			[]error{
 				errors.New("parent bidder: bidderC not found for an alias: bidderB"),
+			},
+		},
+		{
+			"Invalid format override value",
+			BidderInfos{
+				"bidderB": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeBanner,
+								openrtb_ext.BidTypeNative,
+							},
+						},
+						Site: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeBanner,
+								openrtb_ext.BidTypeNative,
+							},
+						},
+					},
+					Syncer: &Syncer{
+						FormatOverride: "x",
+					},
+				},
+			},
+			[]error{
+				errors.New("syncer could not be created, invalid format override value: x"),
 			},
 		},
 	}

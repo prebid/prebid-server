@@ -125,6 +125,12 @@ type Syncer struct {
 	// SupportCORS identifies if CORS is supported for the user syncing endpoints.
 	SupportCORS *bool `yaml:"supportCors" mapstructure:"support_cors"`
 
+	// FormatOverride allows a bidder to override their callback type "b" for iframe, "i" for redirect
+	FormatOverride string `yaml:"formatOverride" mapstructure:"format_override"`
+
+	// Enabled signifies whether a bidder is enabled/disabled for user sync
+	Enabled *bool `yaml:"enabled" mapstructure:"enabled"`
+
 	// SkipWhen allows bidders to specify when they don't want to sync
 	SkipWhen *SkipWhen `yaml:"skipwhen" mapstructure:"skipwhen"`
 }
@@ -202,6 +208,11 @@ type InfoReader interface {
 type InfoReaderFromDisk struct {
 	Path string
 }
+
+const (
+	SyncResponseFormatIFrame   = "b" // b = blank HTML response
+	SyncResponseFormatRedirect = "i" // i = image response
+)
 
 func (r InfoReaderFromDisk) Read() (map[string][]byte, error) {
 	bidderConfigs, err := os.ReadDir(r.Path)
@@ -557,6 +568,10 @@ func validatePlatformInfo(info *PlatformInfo) error {
 func validateSyncer(bidderInfo BidderInfo) error {
 	if bidderInfo.Syncer == nil {
 		return nil
+	}
+
+	if bidderInfo.Syncer.FormatOverride != SyncResponseFormatIFrame && bidderInfo.Syncer.FormatOverride != SyncResponseFormatRedirect && bidderInfo.Syncer.FormatOverride != "" {
+		return fmt.Errorf("syncer could not be created, invalid format override value: %s", bidderInfo.Syncer.FormatOverride)
 	}
 
 	for _, supports := range bidderInfo.Syncer.Supports {

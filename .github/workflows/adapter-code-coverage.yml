@@ -10,12 +10,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Install Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: 1.20.5
 
       - name: Checkout pull request branch
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
           ref: ${{github.event.pull_request.head.ref}}
@@ -23,7 +23,7 @@ jobs:
 
       - name: Get adapter directories
         id: get_directories
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           result-encoding: string
           script: |
@@ -36,8 +36,9 @@ jobs:
               return ""
             }
             const helper = utils.diffHelper({github, context})
-            const files = await helper.getDirectories(directoryExtractor)
-            return files.length == 0 ? "" : JSON.stringify(files);
+            const directories = await helper.getDirectories(directoryExtractor)
+            // run coverage for maximum of 2 directories
+            return (directories.length == 0 || directories.length > 2) ? "" : JSON.stringify(directories)
 
       - name: Run coverage tests
         id: run_coverage
@@ -67,7 +68,7 @@ jobs:
           rm -f -r ./*
 
       - name: Checkout coverage-preview branch
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
           ref: coverage-preview
@@ -93,7 +94,7 @@ jobs:
 
       - name: Add coverage summary to pull request
         if: steps.run_coverage.outputs.coverage_dir != '' && steps.commit_coverage.outputs.remote_coverage_preview_dir != ''
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           script: |
             const utils = require('./.github/workflows/helpers/pull-request-utils.js')

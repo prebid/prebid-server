@@ -6,6 +6,7 @@ import (
 
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
@@ -65,9 +66,12 @@ func TestChooserChoose(t *testing.T) {
 
 	syncTypeFilter := SyncTypeFilter{
 		IFrame:   NewUniformBidderFilter(BidderFilterModeInclude),
-		Redirect: NewUniformBidderFilter(BidderFilterModeExclude)}
+		Redirect: NewUniformBidderFilter(BidderFilterModeExclude),
+	}
 
 	cooperativeConfig := Cooperative{Enabled: true}
+
+	usersyncDisabled := ptrutil.ToPtr(false)
 
 	testCases := []struct {
 		description        string
@@ -344,6 +348,28 @@ func TestChooserChoose(t *testing.T) {
 			},
 		},
 		{
+			description: "Disabled Usersync",
+			givenRequest: Request{
+				Privacy: &fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
+				Limit:   0,
+			},
+			givenChosenBidders: []string{"a"},
+			givenCookie:        Cookie{},
+			givenBidderInfo: map[string]config.BidderInfo{
+				"a": {
+					Syncer: &config.Syncer{
+						Enabled: usersyncDisabled,
+					},
+				},
+			},
+			bidderNamesLookup: normalizedBidderNamesLookup,
+			expected: Result{
+				Status:           StatusOK,
+				BiddersEvaluated: []BidderEvaluation{{Bidder: "a", SyncerKey: "keyA", Status: StatusBlockedByDisabledUsersync}},
+				SyncersChosen:    []SyncerChoice{},
+			},
+		},
+		{
 			description: "Regulation Scope GDPR",
 			givenRequest: Request{
 				Privacy: &fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true, gdprInScope: true},
@@ -430,17 +456,20 @@ func TestChooserEvaluate(t *testing.T) {
 	fakeSyncerB := fakeSyncer{key: "keyB", supportsIFrame: false}
 
 	biddersKnown := map[string]struct{}{"a": {}, "b": {}, "unconfigured": {}}
-	bidderSyncerLookup := map[string]Syncer{"a": fakeSyncerA, "b": fakeSyncerB, "appnexus": fakeSyncerA, "suntContent": fakeSyncerA}
+	bidderSyncerLookup := map[string]Syncer{"a": fakeSyncerA, "b": fakeSyncerB, "appnexus": fakeSyncerA, "seedingAlliance": fakeSyncerA}
 
 	syncTypeFilter := SyncTypeFilter{
 		IFrame:   NewUniformBidderFilter(BidderFilterModeInclude),
-		Redirect: NewUniformBidderFilter(BidderFilterModeExclude)}
+		Redirect: NewUniformBidderFilter(BidderFilterModeExclude),
+	}
 	normalizedBidderNamesLookup := func(name string) (openrtb_ext.BidderName, bool) {
 		return openrtb_ext.BidderName(name), true
 	}
 	cookieNeedsSync := Cookie{}
 	cookieAlreadyHasSyncForA := Cookie{uids: map[string]UIDEntry{"keyA": {Expires: time.Now().Add(time.Duration(24) * time.Hour)}}}
 	cookieAlreadyHasSyncForB := Cookie{uids: map[string]UIDEntry{"keyB": {Expires: time.Now().Add(time.Duration(24) * time.Hour)}}}
+
+	usersyncDisabled := ptrutil.ToPtr(false)
 
 	testCases := []struct {
 		description                 string
@@ -566,17 +595,18 @@ func TestChooserEvaluate(t *testing.T) {
 		},
 		{
 			description:          "Case insensitivity check for sync type filter",
-			givenBidder:          "SuntContent",
-			normalisedBidderName: "suntContent",
+			givenBidder:          "SeedingAlliance",
+			normalisedBidderName: "seedingAlliance",
 			givenSyncersSeen:     map[string]struct{}{},
 			givenPrivacy:         fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
 			givenCookie:          cookieNeedsSync,
 			givenSyncTypeFilter: SyncTypeFilter{
-				IFrame:   NewSpecificBidderFilter([]string{"SuntContent"}, BidderFilterModeInclude),
-				Redirect: NewSpecificBidderFilter([]string{"SuntContent"}, BidderFilterModeExclude)},
+				IFrame:   NewSpecificBidderFilter([]string{"SeedingAlliance"}, BidderFilterModeInclude),
+				Redirect: NewSpecificBidderFilter([]string{"SeedingAlliance"}, BidderFilterModeExclude),
+			},
 			normalizedBidderNamesLookup: openrtb_ext.NormalizeBidderName,
 			expectedSyncer:              fakeSyncerA,
-			expectedEvaluation:          BidderEvaluation{Bidder: "SuntContent", SyncerKey: "keyA", Status: StatusOK},
+			expectedEvaluation:          BidderEvaluation{Bidder: "SeedingAlliance", SyncerKey: "keyA", Status: StatusOK},
 		},
 		{
 			description:                 "Case Insensitivity Check For Blocked By GDPR",
@@ -599,6 +629,25 @@ func TestChooserEvaluate(t *testing.T) {
 			givenCookie:                 cookieNeedsSync,
 			expectedSyncer:              nil,
 			expectedEvaluation:          BidderEvaluation{Bidder: "unconfigured", Status: StatusUnconfiguredBidder},
+		},
+		{
+			description:          "Disabled Usersync",
+			givenBidder:          "a",
+			normalisedBidderName: "a",
+			givenSyncersSeen:     map[string]struct{}{},
+			givenPrivacy:         fakePrivacy{gdprAllowsHostCookie: true, gdprAllowsBidderSync: true, ccpaAllowsBidderSync: true, activityAllowUserSync: true},
+			givenCookie:          cookieNeedsSync,
+			givenBidderInfo: map[string]config.BidderInfo{
+				"a": {
+					Syncer: &config.Syncer{
+						Enabled: usersyncDisabled,
+					},
+				},
+			},
+			givenSyncTypeFilter:         syncTypeFilter,
+			normalizedBidderNamesLookup: normalizedBidderNamesLookup,
+			expectedSyncer:              nil,
+			expectedEvaluation:          BidderEvaluation{Bidder: "a", SyncerKey: "keyA", Status: StatusBlockedByDisabledUsersync},
 		},
 		{
 			description:      "Blocked By Regulation Scope - GDPR",
@@ -671,13 +720,14 @@ type fakeSyncer struct {
 	key              string
 	supportsIFrame   bool
 	supportsRedirect bool
+	formatOverride   string
 }
 
 func (s fakeSyncer) Key() string {
 	return s.key
 }
 
-func (s fakeSyncer) DefaultSyncType() SyncType {
+func (s fakeSyncer) DefaultResponseFormat() SyncType {
 	return SyncTypeIFrame
 }
 

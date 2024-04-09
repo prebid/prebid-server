@@ -126,7 +126,6 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 				handleBadStatus(w, http.StatusBadRequest, metrics.SetUidBadRequest, err, metricsEngine, &so)
 				return
 			}
-			w.Write([]byte("Warning: " + err.Error()))
 		}
 
 		tcf2Cfg := tcf2CfgBuilder(cfg.GDPR.TCF2, account.GDPR)
@@ -223,18 +222,14 @@ func extractGDPRInfo(query url.Values) (reqInfo gdpr.RequestInfo, err error) {
 
 // parseGDPRFromGPP parses and validates the "gpp_sid" and "gpp" query fields.
 func parseGDPRFromGPP(query url.Values) (gdpr.RequestInfo, error) {
-	var gdprSignal gdpr.Signal = gdpr.SignalAmbiguous
-	var gdprConsent string = ""
-	var err error
-
-	gdprSignal, err = parseSignalFromGppSidStr(query.Get("gpp_sid"))
+	gdprSignal, err := parseSignalFromGppSidStr(query.Get("gpp_sid"))
 	if err != nil {
 		return gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous}, err
 	}
 
-	gdprConsent, err = parseConsentFromGppStr(query.Get("gpp"))
-	if err != nil {
-		return gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous}, err
+	gdprConsent, errs := parseConsentFromGppStr(query.Get("gpp"))
+	if len(errs) > 0 {
+		return gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous}, errs[0]
 	}
 
 	return gdpr.RequestInfo{
@@ -306,13 +301,13 @@ func parseSignalFromGppSidStr(strSID string) (gdpr.Signal, error) {
 	return gdprSignal, nil
 }
 
-func parseConsentFromGppStr(gppQueryValue string) (string, error) {
+func parseConsentFromGppStr(gppQueryValue string) (string, []error) {
 	var gdprConsent string
 
 	if len(gppQueryValue) > 0 {
-		gpp, err := gpplib.Parse(gppQueryValue)
-		if err != nil {
-			return "", err
+		gpp, errs := gpplib.Parse(gppQueryValue)
+		if len(errs) > 0 {
+			return "", errs
 		}
 
 		if i := gppPrivacy.IndexOfSID(gpp, gppConstants.SectionTCFEU2); i >= 0 {
@@ -363,7 +358,7 @@ func getResponseFormat(query url.Values, syncer usersync.Syncer) (string, error)
 	formatEmpty := len(format) == 0 || format[0] == ""
 
 	if !formatProvided || formatEmpty {
-		switch syncer.DefaultSyncType() {
+		switch syncer.DefaultResponseFormat() {
 		case usersync.SyncTypeIFrame:
 			return "b", nil
 		case usersync.SyncTypeRedirect:

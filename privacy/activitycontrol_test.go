@@ -33,17 +33,23 @@ func TestNewActivityControl(t *testing.T) {
 					TransmitUniqueRequestIds: getTestActivityConfig(true),
 					TransmitTids:             getTestActivityConfig(true),
 				},
+				IPv6Config: config.IPv6{AnonKeepBits: 32},
+				IPv4Config: config.IPv4{AnonKeepBits: 16},
 			},
-			activityControl: ActivityControl{plans: map[Activity]ActivityPlan{
-				ActivitySyncUser:                 getTestActivityPlan(ActivityAllow),
-				ActivityFetchBids:                getTestActivityPlan(ActivityAllow),
-				ActivityEnrichUserFPD:            getTestActivityPlan(ActivityAllow),
-				ActivityReportAnalytics:          getTestActivityPlan(ActivityAllow),
-				ActivityTransmitUserFPD:          getTestActivityPlan(ActivityAllow),
-				ActivityTransmitPreciseGeo:       getTestActivityPlan(ActivityDeny),
-				ActivityTransmitUniqueRequestIDs: getTestActivityPlan(ActivityAllow),
-				ActivityTransmitTIDs:             getTestActivityPlan(ActivityAllow),
-			}},
+			activityControl: ActivityControl{
+				plans: map[Activity]ActivityPlan{
+					ActivitySyncUser:                 getTestActivityPlan(ActivityAllow),
+					ActivityFetchBids:                getTestActivityPlan(ActivityAllow),
+					ActivityEnrichUserFPD:            getTestActivityPlan(ActivityAllow),
+					ActivityReportAnalytics:          getTestActivityPlan(ActivityAllow),
+					ActivityTransmitUserFPD:          getTestActivityPlan(ActivityAllow),
+					ActivityTransmitPreciseGeo:       getTestActivityPlan(ActivityDeny),
+					ActivityTransmitUniqueRequestIDs: getTestActivityPlan(ActivityAllow),
+					ActivityTransmitTIDs:             getTestActivityPlan(ActivityAllow),
+				},
+				IPv6Config: config.IPv6{AnonKeepBits: 32},
+				IPv4Config: config.IPv4{AnonKeepBits: 16},
+			},
 		},
 	}
 
