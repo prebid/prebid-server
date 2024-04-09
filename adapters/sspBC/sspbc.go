@@ -398,11 +398,11 @@ func formatSspBcRequest(request *openrtb2.BidRequest) (*openrtb2.BidRequest, err
 	return request, nil
 }
 
-// used imp.TagID instead of imp.ID as formattedRequest stores imp.ID in imp.TagID
-func getImpIDs(impList []openrtb2.Imp) []string {
-	impIDs := []string{}
-	for _, imp := range impList {
-		impIDs = append(impIDs, imp.TagID)
+// getImpIDs uses imp.TagID instead of imp.ID as formattedRequest stores imp.ID in imp.TagID
+func getImpIDs(imps []openrtb2.Imp) []string {
+	impIDs := make([]string, len(imps))
+	for i := range imps {
+		impIDs[i] = imps[i].TagID
 	}
 	return impIDs
 }

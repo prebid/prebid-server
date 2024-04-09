@@ -801,9 +801,9 @@ func getDefaultExtraInfo() ExtraInfo {
 }
 
 func getBannerImpIDs(bfs []beachfrontSlot) []string {
-	impIDs := []string{}
-	for _, bfSlot := range bfs {
-		impIDs = append(impIDs, bfSlot.Slot)
+	impIDs := make([]string, len(bfs))
+	for i := range bfs {
+		impIDs[i] = bfs[i].Slot
 	}
 	return impIDs
 }

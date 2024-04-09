@@ -82,12 +82,12 @@ func TestMakeRequests(t *testing.T) {
 
 	for _, tc := range testCases {
 		RequestData, err := bidder.MakeRequests(&tc.giveRequest, nil)
-		if tc.wantErr == true {
+		if tc.wantErr {
 			assert.Len(t, err, 1)
 		} else {
 			assert.Len(t, err, 0)
 		}
-		if tc.wantRequest == true {
+		if tc.wantRequest {
 			assert.Len(t, RequestData, 1)
 			assert.ElementsMatch(t, tc.wantImpIDs, RequestData[0].ImpIDs)
 		} else {
