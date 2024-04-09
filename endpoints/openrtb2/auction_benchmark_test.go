@@ -149,8 +149,8 @@ func BenchmarkValidWholeExemplary(b *testing.B) {
 
 			cfg := &config.Configuration{
 				MaxRequestSize:    maxSize,
-				BlacklistedApps:   test.Config.BlacklistedApps,
-				BlacklistedAppMap: test.Config.getBlacklistedAppMap(),
+				BlockedApps:       test.Config.BlockedApps,
+				BlockedAppsLookup: test.Config.getBlockedAppLookup(),
 				AccountRequired:   test.Config.AccountRequired,
 			}
 

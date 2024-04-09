@@ -85,7 +85,7 @@ type testCase struct {
 type testConfigValues struct {
 	AccountRequired     bool                          `json:"accountRequired"`
 	AliasJSON           string                        `json:"aliases"`
-	BlacklistedApps     []string                      `json:"blacklistedApps"`
+	BlockedApps         []string                      `json:"blockedApps"`
 	DisabledAdapters    []string                      `json:"disabledAdapters"`
 	CurrencyRates       map[string]map[string]float64 `json:"currencyRates"`
 	MockBidders         []mockBidderHandler           `json:"mockBidders"`
@@ -1140,16 +1140,16 @@ func parseTestData(fileData []byte, testFile string) (testCase, error) {
 	return parsedTestData, nil
 }
 
-func (tc *testConfigValues) getBlacklistedAppMap() map[string]bool {
-	var blacklistedAppMap map[string]bool
+func (tc *testConfigValues) getBlockedAppLookup() map[string]bool {
+	var blockedAppLookup map[string]bool
 
-	if len(tc.BlacklistedApps) > 0 {
-		blacklistedAppMap = make(map[string]bool, len(tc.BlacklistedApps))
-		for _, app := range tc.BlacklistedApps {
-			blacklistedAppMap[app] = true
+	if len(tc.BlockedApps) > 0 {
+		blockedAppLookup = make(map[string]bool, len(tc.BlockedApps))
+		for _, app := range tc.BlockedApps {
+			blockedAppLookup[app] = true
 		}
 	}
-	return blacklistedAppMap
+	return blockedAppLookup
 }
 
 // exchangeTestWrapper is a wrapper that asserts the openrtb2 bid request just before the HoldAuction call
