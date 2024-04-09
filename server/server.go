@@ -21,7 +21,7 @@ import (
 // Listen blocks forever, serving PBS requests on the given port. This will block forever, until the process is shut down.
 func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.Handler, metrics *metricsconfig.DetailedMetricsEngine) (err error) {
 	stopSignals := make(chan os.Signal, 1)
-	signal.Notify(stopSignals, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
+	signal.Notify(stopSignals, syscall.SIGTERM, syscall.SIGINT)
 
 	// Run the servers. Fan any process-stopper signals out to each server for graceful shutdowns.
 	stopAdmin := make(chan os.Signal)
