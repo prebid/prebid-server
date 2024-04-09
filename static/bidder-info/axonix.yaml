@@ -16,5 +16,5 @@ capabilities:
       - native
 userSync:
   redirect:
-    url: "https://openrtb-us-east-1.axonix.com/syn?supply={{.AccountID}}&redirect={{.RedirectURL}}"
+    url: "https://openrtb-us-east-1.axonix.com/syn?redirect={{.RedirectURL}}"
     userMacro: xxEMODO_IDxx
