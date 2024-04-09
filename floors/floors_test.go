@@ -91,7 +91,7 @@ func TestEnrichWithPriceFloors(t *testing.T) {
 		expFloorVal       float64
 		expFloorCur       string
 		expPriceFlrLoc    string
-		expSchemaVersion  string
+		expSchemaVersion  int
 	}{
 		{
 			name: "Floors disabled in account config",
@@ -178,7 +178,7 @@ func TestEnrichWithPriceFloors(t *testing.T) {
 						Publisher: &openrtb2.Publisher{Domain: "www.website.com"},
 					},
 					Imp: []openrtb2.Imp{{ID: "1234", Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}}}},
-					Ext: json.RawMessage(`{"prebid":{"floors":{"floormin":11,"floormincur":"USD","data":{"currency":"USD","floorsschemaversion":"2","modelgroups":[{"modelweight":50,"modelversion":"version2","schema":{"fields":["mediaType","size","domain"],"delimiter":"|"},"values":{"*|*|*":11.01,"*|*|www.website1.com":17.01},"default":21},{"modelweight":50,"modelversion":"version11","skiprate":110,"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"},"values":{"*|300x250|*":11.01,"*|300x250|www.website1.com":100.01},"default":21}]},"enforcement":{"enforcepbs":true,"floordeals":true},"enabled":true}}}`),
+					Ext: json.RawMessage(`{"prebid":{"floors":{"floormin":11,"floormincur":"USD","data":{"currency":"USD","floorsschemaversion":2,"modelgroups":[{"modelweight":50,"modelversion":"version2","schema":{"fields":["mediaType","size","domain"],"delimiter":"|"},"values":{"*|*|*":11.01,"*|*|www.website1.com":17.01},"default":21},{"modelweight":50,"modelversion":"version11","skiprate":110,"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"},"values":{"*|300x250|*":11.01,"*|300x250|www.website1.com":100.01},"default":21}]},"enforcement":{"enforcepbs":true,"floordeals":true},"enabled":true}}}`),
 				},
 			},
 			account:          testAccountConfig,
@@ -186,7 +186,7 @@ func TestEnrichWithPriceFloors(t *testing.T) {
 			expFloorVal:      11.01,
 			expFloorCur:      "USD",
 			expPriceFlrLoc:   openrtb_ext.RequestLocation,
-			expSchemaVersion: "2",
+			expSchemaVersion: 2,
 		},
 		{
 			name: "Rule selection with Site object, banner|300x600|www.website.com",
@@ -385,7 +385,7 @@ func TestEnrichWithPriceFloors(t *testing.T) {
 						assert.Equal(t, *requestExt.GetPrebid().Floors.Skipped, tc.Skipped, tc.name)
 					} else {
 						assert.Equal(t, requestExt.GetPrebid().Floors.PriceFloorLocation, tc.expPriceFlrLoc, tc.name)
-						if tc.expSchemaVersion != "" {
+						if tc.expSchemaVersion != 0 {
 							assert.Equal(t, requestExt.GetPrebid().Floors.Data.FloorsSchemaVersion, tc.expSchemaVersion, tc.name)
 						}
 					}
