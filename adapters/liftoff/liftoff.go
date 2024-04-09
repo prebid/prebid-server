@@ -138,7 +138,6 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 			b := &adapters.TypedBid{
 				Bid:     &seatBid.Bid[i],
 				BidType: openrtb_ext.BidTypeVideo,
-				Seat:    openrtb_ext.BidderName(seatBid.Seat),
 			}
 
 			bidResponse.Bids = append(bidResponse.Bids, b)
