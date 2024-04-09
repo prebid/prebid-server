@@ -11,7 +11,6 @@ import (
 
 	"github.com/prebid/prebid-server/v2/ortb"
 
-	"github.com/buger/jsonparser"
 	"github.com/prebid/go-gdpr/vendorconsent"
 	gpplib "github.com/prebid/go-gpp"
 	gppConstants "github.com/prebid/go-gpp/constants"
@@ -32,6 +31,8 @@ import (
 	"github.com/prebid/prebid-server/v2/util/jsonutil"
 	"github.com/prebid/prebid-server/v2/util/ptrutil"
 )
+
+var errInvalidRequestExt = errors.New("request.ext is invalid")
 
 var channelTypeMap = map[metrics.RequestType]config.ChannelType{
 	metrics.ReqTypeAMP:       config.ChannelAMP,
@@ -64,7 +65,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 ) (allowedBidderRequests []BidderRequest, privacyLabels metrics.PrivacyLabels, errs []error) {
 	req := auctionReq.BidRequestWrapper
 
-	requestAliases, errs := getRequestAliases(req.BidRequest)
+	requestAliases, requestAliasesGVLIDs, errs := getRequestAliases(req)
 	if len(errs) > 0 {
 		return
 	}
@@ -76,11 +77,6 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 	impsByBidder, err := splitImps(req.BidRequest.Imp)
 	if err != nil {
 		errs = []error{err}
-		return
-	}
-
-	requestAliasesGVLIDs, errs := getRequestAliasesGVLIDs(req.BidRequest)
-	if len(errs) > 0 {
 		return
 	}
 
@@ -806,28 +802,17 @@ func resolveBidder(bidder string, requestAliases map[string]string) (openrtb_ext
 	return normalisedBidderName, false
 }
 
-func getRequestAliases(orig *openrtb2.BidRequest) (map[string]string, []error) {
-	var aliases map[string]string
-	if value, dataType, _, err := jsonparser.Get(orig.Ext, openrtb_ext.PrebidExtKey, "aliases"); dataType == jsonparser.Object && err == nil {
-		if err := jsonutil.Unmarshal(value, &aliases); err != nil {
-			return nil, []error{err}
-		}
-	} else if dataType != jsonparser.NotExist && err != jsonparser.KeyPathNotFoundError {
-		return nil, []error{err}
+func getRequestAliases(req *openrtb_ext.RequestWrapper) (map[string]string, map[string]uint16, []error) {
+	reqExt, err := req.GetRequestExt()
+	if err != nil {
+		return nil, nil, []error{errInvalidRequestExt}
 	}
-	return aliases, nil
-}
 
-func getRequestAliasesGVLIDs(orig *openrtb2.BidRequest) (map[string]uint16, []error) {
-	var aliasesGVLIDs map[string]uint16
-	if value, dataType, _, err := jsonparser.Get(orig.Ext, openrtb_ext.PrebidExtKey, "aliasgvlids"); dataType == jsonparser.Object && err == nil {
-		if err := jsonutil.Unmarshal(value, &aliasesGVLIDs); err != nil {
-			return nil, []error{err}
-		}
-	} else if dataType != jsonparser.NotExist && err != jsonparser.KeyPathNotFoundError {
-		return nil, []error{err}
+	if prebid := reqExt.GetPrebid(); prebid != nil {
+		return prebid.Aliases, prebid.AliasGVLIDs, nil
 	}
-	return aliasesGVLIDs, nil
+
+	return nil, nil, nil
 }
 
 func GetValidBidders(requestAliases map[string]string) map[string]struct{} {
