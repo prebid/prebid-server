@@ -417,6 +417,8 @@ func (m *mockAnalytics) LogSetUIDObject(ao *analytics.SetUIDObject) {}
 
 func (m *mockAnalytics) LogNotificationEventObject(ao *analytics.NotificationEvent) {}
 
+func (m *mockAnalytics) Shutdown() {}
+
 func TestLogObject(t *testing.T) {
 	tests := []struct {
 		description           string

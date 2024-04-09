@@ -264,3 +264,4 @@ func (l *AgmaLogger) LogVideoObject(event *analytics.VideoObject) {
 func (l *AgmaLogger) LogCookieSyncObject(event *analytics.CookieSyncObject)         {}
 func (l *AgmaLogger) LogNotificationEventObject(event *analytics.NotificationEvent) {}
 func (l *AgmaLogger) LogSetUIDObject(event *analytics.SetUIDObject)                 {}
+func (l *AgmaLogger) Shutdown()                                                     {}
