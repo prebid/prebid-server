@@ -79,7 +79,7 @@ func (m *sampleModule) LogAmpObject(ao *analytics.AmpObject) { *m.count++ }
 
 func (m *sampleModule) LogNotificationEventObject(ne *analytics.NotificationEvent) { *m.count++ }
 
-func (m *sampleModule) Shutdown() {}
+func (m *sampleModule) Shutdown() { *m.count++ }
 
 func initAnalytics(count *int) analytics.Runner {
 	modules := make(enabledAnalytics, 0)
@@ -92,6 +92,19 @@ func TestNewPBSAnalytics(t *testing.T) {
 	instance := pbsAnalytics.(enabledAnalytics)
 
 	assert.Equal(t, len(instance), 0)
+}
+
+func TestPBSAnalyticsShutdown(t *testing.T) {
+	countA := 0
+	countB := 0
+	modules := make(enabledAnalytics, 0)
+	modules["sampleModuleA"] = &sampleModule{count: &countA}
+	modules["sampleModuleB"] = &sampleModule{count: &countB}
+
+	modules.Shutdown()
+
+	assert.Equal(t, 1, countA, "sampleModuleA should have been shutdown")
+	assert.Equal(t, 1, countB, "sampleModuleB should have been shutdown")
 }
 
 func TestNewPBSAnalytics_FileLogger(t *testing.T) {
@@ -210,6 +223,7 @@ func TestSampleModuleActivitiesAllowed(t *testing.T) {
 	if count != 4 {
 		t.Errorf("PBSAnalyticsModule failed at LogNotificationEventObject")
 	}
+
 }
 
 func TestSampleModuleActivitiesAllowedAndDenied(t *testing.T) {

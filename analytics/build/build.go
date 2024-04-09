@@ -129,6 +129,7 @@ func (ea enabledAnalytics) LogNotificationEventObject(ne *analytics.Notification
 	}
 }
 
+// Shutdown - correctly shutdown all analytics modules and wait for them to finish
 func (ea enabledAnalytics) Shutdown() {
 	for _, module := range ea {
 		module.Shutdown()
