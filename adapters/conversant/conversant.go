@@ -21,7 +21,7 @@ type ConversantAdapter struct {
 func (c *ConversantAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	cnvrRequest := *request
 	//Backend needs USD or it will reject the request
-	if cnvrRequest.Cur != nil && len(cnvrRequest.Cur) > 0 && cnvrRequest.Cur[0] != "USD" {
+	if len(cnvrRequest.Cur) > 0 && cnvrRequest.Cur[0] != "USD" {
 		cnvrRequest.Cur = []string{"USD"}
 	}
 	for i := 0; i < len(request.Imp); i++ {
@@ -145,10 +145,9 @@ func parseCnvrParams(imp *openrtb2.Imp, cnvrExt openrtb_ext.ExtImpConversant, re
 			return []error{&errortypes.BadInput{
 				Message: fmt.Sprintf("Unable to convert provided bid floor currency from %s to USD", imp.BidFloorCur),
 			}}
-		} else if floor > 0 {
-			imp.BidFloorCur = "USD"
-			imp.BidFloor = floor
 		}
+		imp.BidFloorCur = "USD"
+		imp.BidFloor = floor
 	}
 	return nil
 }
