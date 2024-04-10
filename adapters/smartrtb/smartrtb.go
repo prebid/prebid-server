@@ -31,9 +31,9 @@ type bidRequestExt struct {
 // bidExt.CreativeType values.
 const (
 	creativeTypeBanner string = "BANNER"
-	creativeTypeVideo         = "VIDEO"
-	creativeTypeNative        = "NATIVE"
-	creativeTypeAudio         = "AUDIO"
+	creativeTypeVideo  string = "VIDEO"
+	creativeTypeNative string = "NATIVE"
+	creativeTypeAudio  string = "AUDIO"
 )
 
 // Bid response extension from downstream.

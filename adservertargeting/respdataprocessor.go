@@ -82,13 +82,14 @@ func buildBidExt(targetingData map[string]string,
 	}
 	bidExtTargeting, err := jsonutil.Marshal(bidExtTargetingData)
 	if err != nil {
-		warnings = append(warnings, createWarning(err.Error()))
+		// TODO: figure out the intended usage of warnings, here and several lines below
+		// warnings = append(warnings, createWarning(err.Error()))
 		return nil
 	}
 
 	newExt, err := jsonpatch.MergePatch(bid.Ext, bidExtTargeting)
 	if err != nil {
-		warnings = append(warnings, createWarning(err.Error()))
+		// warnings = append(warnings, createWarning(err.Error()))
 		return nil
 	}
 	return newExt

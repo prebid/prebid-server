@@ -103,7 +103,7 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb2.BidRequest, req *adapt
 		if dmxReq.App.ID != "" {
 			anyHasId = true
 		}
-		if anyHasId == false {
+		if !anyHasId {
 			if idfa, valid := getIdfa(request); valid {
 				dmxReq.App.ID = idfa
 				anyHasId = true
@@ -190,7 +190,7 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb2.BidRequest, req *adapt
 
 	dmxReq.Imp = imps
 
-	if anyHasId == false {
+	if !anyHasId {
 		return nil, []error{errors.New("This request contained no identifier")}
 	}
 
@@ -264,8 +264,7 @@ func (adapter *DmxAdapter) MakeBids(request *openrtb2.BidRequest, externalReques
 }
 
 func fetchParams(params dmxExt, inst openrtb2.Imp, ins openrtb2.Imp, imps []openrtb2.Imp, banner *openrtb2.Banner, video *openrtb2.Video, intVal int8) []openrtb2.Imp {
-	var tempimp openrtb2.Imp
-	tempimp = inst
+	var tempimp openrtb2.Imp = inst
 	if params.Bidder.Bidfloor != 0 {
 		tempimp.BidFloor = params.Bidder.Bidfloor
 	}

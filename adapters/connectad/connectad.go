@@ -146,8 +146,6 @@ func addImpInfo(imp *openrtb2.Imp, secure *int8, cadExt *openrtb_ext.ExtImpConne
 		imp.BidFloor = cadExt.Bidfloor
 		imp.BidFloorCur = "USD"
 	}
-
-	return
 }
 
 func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue string) {

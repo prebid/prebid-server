@@ -75,7 +75,7 @@ func TestNewSocketServer(t *testing.T) {
 	ret := newSocketServer(cfg, nil)
 	assert.NotEqual(t, nil, ret, "ret : isNil()")
 	assert.Equal(t, mockServer.Addr, ret.Addr, fmt.Sprintf("Addr invalide: %v != %v",
-		ret.Addr, mockServer.Addr))
+		ret.Addr, mockServer.Addr)) //nolint:staticcheck // non-nil ret is ensures by the assert above
 	assert.Equal(t, mockServer.ReadTimeout, ret.ReadTimeout, fmt.Sprintf("ReadTimeout invalide: %v != %v",
 		ret.ReadTimeout, mockServer.ReadTimeout))
 	assert.Equal(t, mockServer.WriteTimeout, ret.WriteTimeout, fmt.Sprintf("WriteTimeout invalide: %v != %v",

@@ -706,6 +706,7 @@ func TestCloneUserExt(t *testing.T) {
 				eids[1].UIDs[0].AType = 0
 				eids[0].UIDs = append(eids[0].UIDs, openrtb2.UID{ID: "Z", AType: 2})
 				eids = append(eids, openrtb2.EID{Source: "Blank"})
+				// TODO: double-check why we fill eids but don't use it
 				userExt.eids = nil
 			},
 		},

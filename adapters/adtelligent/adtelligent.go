@@ -172,7 +172,8 @@ func validateImpression(imp *openrtb2.Imp) (int, error) {
 	// common extension for all impressions
 	var impExtBuffer []byte
 
-	impExtBuffer, err = json.Marshal(&adtelligentImpExt{
+	// TODO: confirm the missing error handling is intended
+	impExtBuffer, _ /* err */ = json.Marshal(&adtelligentImpExt{
 		Adtelligent: impExt,
 	})
 

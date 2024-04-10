@@ -150,7 +150,7 @@ func (a *GammaAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 		errs = append(errs, err)
 		return nil, errs
 	}
-	var invalidImpIndex = make([]int, 0, 0)
+	var invalidImpIndex = make([]int, 0)
 
 	for i := 0; i < len(request.Imp); i++ {
 		if request.Imp[i].Banner != nil {
@@ -182,7 +182,7 @@ func (a *GammaAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 	} else if len(request.Imp) == len(invalidImpIndex) {
 		//only true if every Imp was not a Banner or a Video
 		err := &errortypes.BadInput{
-			Message: fmt.Sprintf("No valid impression in the bid request"),
+			Message: "No valid impression in the bid request",
 		}
 		errs = append(errs, err)
 		return nil, errs
@@ -205,8 +205,7 @@ func (a *GammaAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 }
 
 func convertBid(gBid gammaBid, mediaType openrtb_ext.BidType) *openrtb2.Bid {
-	var bid openrtb2.Bid
-	bid = gBid.Bid
+	var bid openrtb2.Bid = gBid.Bid
 
 	if mediaType == openrtb_ext.BidTypeVideo {
 		//Return inline VAST XML Document (Section 6.4.2)

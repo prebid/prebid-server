@@ -194,12 +194,12 @@ func ParseVTrackRequest(httpRequest *http.Request, maxRequestSize int64) (req *B
 
 	for _, bcr := range req.Puts {
 		if bcr.BidID == "" {
-			err = error(&errortypes.BadInput{Message: fmt.Sprint("'bidid' is required field and can't be empty")})
+			err = error(&errortypes.BadInput{Message: "'bidid' is required field and can't be empty"})
 			return req, err
 		}
 
 		if bcr.Bidder == "" {
-			err = error(&errortypes.BadInput{Message: fmt.Sprint("'bidder' is required field and can't be empty")})
+			err = error(&errortypes.BadInput{Message: "'bidder' is required field and can't be empty"})
 			return req, err
 		}
 	}
@@ -271,12 +271,14 @@ func getBiddersAllowingVastUpdate(req *BidCacheRequest, bidderInfos *config.Bidd
 
 // isAllowVastForBidder checks if a bidder is active and allowed to modify vast xml data
 func isAllowVastForBidder(bidder string, bidderInfos *config.BidderInfos, allowUnknownBidder bool, normalizeBidderName normalizeBidderName) bool {
-	//if bidder is active and isModifyingVastXmlAllowed is true
+	// if bidder is active and isModifyingVastXmlAllowed is true
 	// check if bidder is configured
 	if normalizedBidder, ok := normalizeBidderName(bidder); ok {
-		if b, ok := (*bidderInfos)[normalizedBidder.String()]; bidderInfos != nil && ok {
-			// check if bidder is enabled
-			return b.IsEnabled() && b.ModifyingVastXmlAllowed
+		if bidderInfos != nil {
+			if b, ok := (*bidderInfos)[normalizedBidder.String()]; ok {
+				// check if bidder is enabled
+				return b.IsEnabled() && b.ModifyingVastXmlAllowed
+			}
 		}
 	}
 

@@ -86,6 +86,7 @@ func (a *AvocetAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 			if len(br.SeatBid[i].Bid[j].Ext) > 0 {
 				err := json.Unmarshal(br.SeatBid[i].Bid[j].Ext, &ext)
 				if err != nil {
+					// TODO: find out why we are not using errs
 					errs = append(errs, err)
 					continue
 				}
