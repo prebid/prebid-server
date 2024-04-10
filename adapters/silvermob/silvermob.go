@@ -100,6 +100,7 @@ func (a *SilverMobAdapter) MakeRequests(
 			Body:    reqJSON,
 			Uri:     url,
 			Headers: *GetHeaders(&requestCopy),
+			ImpIDs:  openrtb_ext.GetImpIDs(requestCopy.Imp),
 		}
 
 		requestData = append(requestData, reqData)

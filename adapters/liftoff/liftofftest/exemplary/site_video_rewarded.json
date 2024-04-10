@@ -93,7 +93,8 @@
           "user": {
             "buyeruid": "123"
           }
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,

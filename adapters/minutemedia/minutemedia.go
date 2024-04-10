@@ -47,6 +47,7 @@ func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest, _ *adapters.
 		Uri:     a.endpointURL + "?publisher_id=" + url.QueryEscape(org),
 		Body:    openRTBRequestJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(openRTBRequest.Imp),
 	}), nil
 }
 

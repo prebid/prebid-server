@@ -18,6 +18,7 @@ import (
 	"github.com/prebid/openrtb/v20/openrtb2"
 
 	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/dsa"
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/firstpartydata"
 	"github.com/prebid/prebid-server/v2/gdpr"
@@ -82,8 +83,30 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		return
 	}
 
+	gdprSignal, err := getGDPR(req)
+	if err != nil {
+		errs = append(errs, err)
+	}
+	channelEnabled := auctionReq.TCF2Config.ChannelEnabled(channelTypeMap[auctionReq.LegacyLabels.RType])
+	gdprEnforced := enforceGDPR(gdprSignal, gdprDefaultValue, channelEnabled)
+	dsaWriter := dsa.Writer{
+		Config:      auctionReq.Account.Privacy.DSA,
+		GDPRInScope: gdprEnforced,
+	}
+	if err := dsaWriter.Write(req); err != nil {
+		errs = append(errs, err)
+	}
+	if err := req.RebuildRequest(); err != nil {
+		errs = append(errs, err)
+		return
+	}
+
 	var allBidderRequests []BidderRequest
-	allBidderRequests, errs = getAuctionBidderRequests(auctionReq, requestExt, rs.bidderToSyncerKey, impsByBidder, aliases, rs.hostSChainNode)
+	var allBidderRequestErrs []error
+	allBidderRequests, allBidderRequestErrs = getAuctionBidderRequests(auctionReq, requestExt, rs.bidderToSyncerKey, impsByBidder, aliases, rs.hostSChainNode)
+	if allBidderRequestErrs != nil {
+		errs = append(errs, allBidderRequestErrs...)
+	}
 
 	bidderNameToBidderReq := buildBidResponseRequest(req.BidRequest, bidderImpWithBidResp, aliases, auctionReq.BidderImpReplaceImpID)
 	//this function should be executed after getAuctionBidderRequests
@@ -103,16 +126,10 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		applyBidAdjustmentToFloor(allBidderRequests, bidAdjustmentFactors)
 	}
 
-	gdprSignal, err := getGDPR(req)
-	if err != nil {
-		errs = append(errs, err)
-	}
-
 	consent, err := getConsent(req, gpp)
 	if err != nil {
 		errs = append(errs, err)
 	}
-	gdprApplies := gdprSignal == gdpr.SignalYes || (gdprSignal == gdpr.SignalAmbiguous && gdprDefaultValue == gdpr.SignalYes)
 
 	ccpaEnforcer, err := extractCCPA(req.BidRequest, rs.privacyConfig, &auctionReq.Account, aliases, channelTypeMap[auctionReq.LegacyLabels.RType], gpp)
 	if err != nil {
@@ -130,12 +147,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 	privacyLabels.COPPAEnforced = coppa
 	privacyLabels.LMTEnforced = lmt
 
-	var gdprEnforced bool
 	var gdprPerms gdpr.Permissions = &gdpr.AlwaysAllow{}
-
-	if gdprApplies {
-		gdprEnforced = auctionReq.TCF2Config.ChannelEnabled(channelTypeMap[auctionReq.LegacyLabels.RType])
-	}
 
 	if gdprEnforced {
 		privacyLabels.GDPREnforced = true
@@ -227,7 +239,10 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 			privacy.ScrubTID(reqWrapper)
 		}
 
-		reqWrapper.RebuildRequest()
+		err := reqWrapper.RebuildRequest()
+		if err != nil {
+			errs = append(errs, err)
+		}
 		bidderRequest.BidRequest = reqWrapper.BidRequest
 
 		allowedBidderRequests = append(allowedBidderRequests, bidderRequest)
