@@ -67,6 +67,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			Uri:     fmt.Sprintf("%s?%s", a.endpoint, queryString),
 			Body:    reqJson,
 			Headers: headers,
+			ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 		}
 		requestDatas = append(requestDatas, requestData)
 	}

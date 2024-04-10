@@ -29,7 +29,8 @@
                     "secure": 0,
                     "tagid": "654321"
                 }]
-            }
+            },
+            "impIDs":["some_test_ad"]
         },
         "mockResponse": {
             "status": 200,
