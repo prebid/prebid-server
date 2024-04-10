@@ -80,7 +80,8 @@
                   "burl": "http://test.com/burl?p=${AUCTION_PRICE}",
                   "adomain": [
                     "test-readpeak.com"
-                  ]
+                  ],
+                  "mtype": 4
                 }
               ]
             }
@@ -105,7 +106,8 @@
             "burl": "http://test.com/burl?p=0.5",
             "adomain": [
               "test-readpeak.com"
-            ]
+            ],
+            "mtype": 4
           },
           "type": "native"
         }

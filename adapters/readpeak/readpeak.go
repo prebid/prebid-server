@@ -132,7 +132,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	var errors []error
 	for _, seatBid := range response.SeatBid {
 		for i := range seatBid.Bid {
-			bidType, err := getMediaType(seatBid.Bid[i].ImpID, request.Imp)
+			bidType, err := getMediaTypeForBid(seatBid.Bid[i])
 			if err != nil {
 				errors = append(errors, err)
 				continue
@@ -156,20 +156,14 @@ func resolveMacros(bid *openrtb2.Bid) {
 		bid.BURL = strings.Replace(bid.BURL, "${AUCTION_PRICE}", price, -1)
 	}
 }
-
-func getMediaType(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
-	for _, imp := range imps {
-		if imp.ID == impID {
-			if imp.Banner != nil {
-				return openrtb_ext.BidTypeBanner, nil
-			} else if imp.Native != nil {
-				return openrtb_ext.BidTypeNative, nil
-			}
-		}
-	}
-
-	return "", &errortypes.BadInput{
-		Message: fmt.Sprintf("Failed to find impression type \"%s\"", impID),
+func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative, nil
+	default:
+		return "", fmt.Errorf("Failed to find impression type \"%s\"", bid.ImpID)
 	}
 }
 

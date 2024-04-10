@@ -92,7 +92,8 @@
                   "crid": "123",
                   "w": 640,
                   "h": 400,
-                  "burl": "http://test.com/burl?p=${AUCTION_PRICE}"
+                  "burl": "http://test.com/burl?p=${AUCTION_PRICE}",
+                  "mtype": 1
                 }
               ]
             }
@@ -115,7 +116,8 @@
             "crid": "123",
             "w": 640,
             "h": 400,
-            "burl": "http://test.com/burl?p=0.5"
+            "burl": "http://test.com/burl?p=0.5",
+            "mtype": 1
           },
           "type": "banner"
         }

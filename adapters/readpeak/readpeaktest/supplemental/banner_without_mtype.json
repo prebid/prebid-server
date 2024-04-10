@@ -94,8 +94,7 @@
                   "crid": "123",
                   "w": 640,
                   "h": 400,
-                  "burl": "http://test.com/burl?p=${AUCTION_PRICE}",
-                  "mtype": 1
+                  "burl": "http://test.com/burl?p=${AUCTION_PRICE}"
                 }
               ]
             }
@@ -105,25 +104,11 @@
       }
     }
   ],
-  "expectedBidResponses": [
+  "expectedBidResponses": [{"currency":"USD","bids":[]}],
+  "expectedMakeBidsErrors": [
     {
-      "currency": "USD",
-      "bids": [
-        {
-          "bid": {
-            "id": "test-bid-id-banner",
-            "impid": "imp-id-banner",
-            "price": 0.5,
-            "adm": "<html><body>some-test-ad-banner<img src='http://test.com/burl?p=0.5'></body></html>",
-            "crid": "123",
-            "w": 640,
-            "h": 400,
-            "burl": "http://test.com/burl?p=0.5",
-            "mtype": 1
-          },
-          "type": "banner"
-        }
-      ]
+      "value": "Failed to find impression type \"imp-id-banner\"",
+      "comparison": "literal"
     }
   ]
 }
