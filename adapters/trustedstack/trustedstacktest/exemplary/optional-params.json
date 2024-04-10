@@ -26,7 +26,7 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "https://example.trustedstack.com/rtb/prebid?src=http%3A%2F%2Flocalhost%3A8080%2Fextrnal_url",
+                "uri": "https://example.trustedstack.com/rtb/prebid?src=http%3A%2F%2Fhosturl.com",
                 "body": {
                     "id": "test-request-id",
                     "imp": [
