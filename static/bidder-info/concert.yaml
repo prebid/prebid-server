@@ -1,7 +1,7 @@
 endpoint: "https://bids.concert.io/bids/openrtb"
 endpointCompression: gzip
 geoscope:
-  - USA
+  - global
 maintainer:
   email: prebid-maintainer@example.com
 modifyingVastXmlAllowed: true
@@ -13,12 +13,6 @@ capabilities:
       - audio
       - native
   site:
-    mediaTypes:
-      - banner
-      - video
-      - audio
-      - native
-  dooh:
     mediaTypes:
       - banner
       - video
