@@ -1792,19 +1792,42 @@ func assertHistogram(t *testing.T, name string, histogram dto.Histogram, expecte
 }
 
 func TestRecordAdapterBuyerUIDScrubbed(t *testing.T) {
-	m := createMetricsForTesting()
-	adapterName := openrtb_ext.BidderName("AnyName")
-	lowerCasedAdapterName := "anyname"
-	m.RecordAdapterBuyerUIDScrubbed(adapterName)
 
-	assertCounterVecValue(t,
-		"Increment adapter buyeruid scrubbed counter",
-		"adapter_buyeruids_scrubbed",
-		m.adapterScrubbedBuyerUIDs,
-		1,
-		prometheus.Labels{
-			adapterLabel: lowerCasedAdapterName,
+	tests := []struct{
+		name          string
+		disabled      bool
+		expectedCount float64
+	}{
+		{
+			name: "enabled",
+			disabled: false,
+			expectedCount: 1,
+		},
+		{
+			name: "disabled",
+			disabled: true,
+			expectedCount: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func (t *testing.T)  {
+			m := createMetricsForTesting()
+			m.metricsDisabled.AdapterBuyerUIDScrubbed = tt.disabled
+			adapterName := openrtb_ext.BidderName("AnyName")
+			lowerCasedAdapterName := "anyname"
+			m.RecordAdapterBuyerUIDScrubbed(adapterName)
+
+			assertCounterVecValue(t,
+				"Increment adapter buyeruid scrubbed counter",
+				"adapter_buyeruids_scrubbed",
+				m.adapterScrubbedBuyerUIDs,
+				tt.expectedCount,
+				prometheus.Labels{
+					adapterLabel: lowerCasedAdapterName,
+			})		
 		})
+	}
 }
 
 func TestRecordAdapterGDPRRequestBlocked(t *testing.T) {

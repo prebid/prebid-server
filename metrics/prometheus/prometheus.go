@@ -960,7 +960,7 @@ func (m *Metrics) RecordRequestPrivacy(privacy metrics.PrivacyLabels) {
 }
 
 func (m *Metrics) RecordAdapterBuyerUIDScrubbed(adapterName openrtb_ext.BidderName) {
-	if m.metricsDisabled.AdapterGDPRRequestBlocked {
+	if m.metricsDisabled.AdapterBuyerUIDScrubbed {
 		return
 	}
 
