@@ -188,8 +188,11 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		}
 
 		passIDActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitUserFPD, scopedName, privacy.NewRequestFromBidRequest(*req))
+		buyerUIDSet := false
+		if reqWrapper.User != nil && reqWrapper.User.BuyerUID != "" {
+			buyerUIDSet = true
+		}
 		if !passIDActivityAllowed {
-			//UFPD
 			privacy.ScrubUserFPD(reqWrapper)
 		} else {
 			// run existing policies (GDPR, CCPA, COPPA, LMT)
@@ -201,6 +204,9 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 			if ccpaEnforcer.ShouldEnforce(bidderRequest.BidderName.String()) {
 				privacy.ScrubDeviceIDsIPsUserDemoExt(reqWrapper, ipConf, "eids", false)
 			}
+		}
+		if buyerUIDSet && reqWrapper.User.BuyerUID == "" {
+			rs.me.RecordAdapterBuyerUIDScrubbed(bidderRequest.BidderCoreName)
 		}
 
 		passGeoActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitPreciseGeo, scopedName, privacy.NewRequestFromBidRequest(*req))

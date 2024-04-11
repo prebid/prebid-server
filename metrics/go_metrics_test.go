@@ -790,6 +790,46 @@ func TestRecordRequestPrivacy(t *testing.T) {
 	assert.Equal(t, m.PrivacyTCFRequestVersion[TCFVersionV2].Count(), int64(1), "TCF V2")
 }
 
+func TestRecordAdapterBuyerUIDScrubbed(t *testing.T) {
+	var fakeBidder openrtb_ext.BidderName = "fooAdvertising"
+	adapter := "AnyName"
+	lowerCaseAdapterName := "anyname"
+
+	tests := []struct {
+		description     string
+		metricsDisabled bool
+		adapterName     openrtb_ext.BidderName
+		expectedCount   int64
+	}{
+		{	
+			description:     "",
+			metricsDisabled: false,
+			adapterName:     openrtb_ext.BidderName(adapter),
+			expectedCount:   1,
+		},
+		{
+			description:     "",
+			metricsDisabled: false,
+			adapterName:     fakeBidder,
+			expectedCount:   0,
+		},
+		{
+			description:     "",
+			metricsDisabled: true,
+			adapterName:     openrtb_ext.BidderName(adapter),
+			expectedCount:   0,
+		},
+	}
+	for _, tt := range tests {
+		registry := metrics.NewRegistry()
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderName(adapter)}, config.DisabledMetrics{AdapterBuyerUIDScrubbed: tt.metricsDisabled}, nil, nil)
+
+		m.RecordAdapterBuyerUIDScrubbed(tt.adapterName)
+
+		assert.Equal(t, tt.expectedCount, m.AdapterMetrics[lowerCaseAdapterName].BuyerUIDScrubbed.Count(), tt.description)
+	}
+}
+
 func TestRecordAdapterGDPRRequestBlocked(t *testing.T) {
 	var fakeBidder openrtb_ext.BidderName = "fooAdvertising"
 	adapter := "AnyName"

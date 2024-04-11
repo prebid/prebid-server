@@ -70,6 +70,7 @@ type Metrics struct {
 	adapterReusedConnections              *prometheus.CounterVec
 	adapterCreatedConnections             *prometheus.CounterVec
 	adapterConnectionWaitTime             *prometheus.HistogramVec
+	adapterScrubbedBuyerUIDs              *prometheus.CounterVec
 	adapterGDPRBlockedRequests            *prometheus.CounterVec
 	adapterBidResponseValidationSizeError *prometheus.CounterVec
 	adapterBidResponseValidationSizeWarn  *prometheus.CounterVec
@@ -334,6 +335,12 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"Count of total requests to Prebid Server where the LMT flag was set by source",
 		[]string{sourceLabel})
 
+	if !metrics.metricsDisabled.AdapterBuyerUIDScrubbed {
+		metrics.adapterScrubbedBuyerUIDs = newCounter(cfg, reg,
+			"adapter_buyeruids_scrubbed",
+			"Count of total bidder requests with a scrubbed buyeruid due to a privacy policy",
+			[]string{adapterLabel})
+	}
 	if !metrics.metricsDisabled.AdapterGDPRRequestBlocked {
 		metrics.adapterGDPRBlockedRequests = newCounter(cfg, reg,
 			"adapter_gdpr_requests_blocked",
@@ -950,6 +957,16 @@ func (m *Metrics) RecordRequestPrivacy(privacy metrics.PrivacyLabels) {
 			sourceLabel: sourceRequest,
 		}).Inc()
 	}
+}
+
+func (m *Metrics) RecordAdapterBuyerUIDScrubbed(adapterName openrtb_ext.BidderName) {
+	if m.metricsDisabled.AdapterGDPRRequestBlocked {
+		return
+	}
+
+	m.adapterScrubbedBuyerUIDs.With(prometheus.Labels{
+		adapterLabel: strings.ToLower(string(adapterName)),
+	}).Inc()
 }
 
 func (m *Metrics) RecordAdapterGDPRRequestBlocked(adapterName openrtb_ext.BidderName) {

@@ -560,6 +560,9 @@ type DisabledMetrics struct {
 	// that were created or reused.
 	AdapterConnectionMetrics bool `mapstructure:"adapter_connections_metrics"`
 
+	// True if we don't want to collect the per adapter buyer UID scrubbed metric
+	AdapterBuyerUIDScrubbed bool `mapstructure:"adapter_buyeruid_scrubbed"`
+
 	// True if we don't want to collect the per adapter GDPR request blocked metric
 	AdapterGDPRRequestBlocked bool `mapstructure:"adapter_gdpr_request_blocked"`
 
