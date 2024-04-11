@@ -11,13 +11,11 @@ capabilities:
       - banner
       - video
       - audio
-      - native
   site:
     mediaTypes:
       - banner
       - video
       - audio
-      - native
 userSync:
   redirect:
     url: https://bids.concert.io/sync?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
