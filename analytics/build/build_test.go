@@ -223,7 +223,6 @@ func TestSampleModuleActivitiesAllowed(t *testing.T) {
 	if count != 4 {
 		t.Errorf("PBSAnalyticsModule failed at LogNotificationEventObject")
 	}
-
 }
 
 func TestSampleModuleActivitiesAllowedAndDenied(t *testing.T) {
