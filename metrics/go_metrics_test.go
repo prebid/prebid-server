@@ -801,7 +801,7 @@ func TestRecordAdapterBuyerUIDScrubbed(t *testing.T) {
 		adapterName     openrtb_ext.BidderName
 		expectedCount   int64
 	}{
-		{	
+		{
 			description:     "",
 			metricsDisabled: false,
 			adapterName:     openrtb_ext.BidderName(adapter),
