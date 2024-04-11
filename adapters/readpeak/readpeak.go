@@ -6,24 +6,23 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-  
+
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
-  
+
 type adapter struct {
 	endpoint string
 }
 
 // Builder builds a new instance of the Readpeak adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	bidder := &adapter{
-	  endpoint: config.Endpoint,
-	}
-	return bidder, nil
+	return &adapter{
+		endpoint: config.Endpoint,
+	}, nil
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -37,14 +36,12 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			continue
 		}
 		var impExt adapters.ExtImpBidder
-		err := json.Unmarshal(requestCopy.Imp[i].Ext, &impExt)
-		if err != nil {
+		if err := json.Unmarshal(requestCopy.Imp[i].Ext, &impExt); err != nil {
 			errors = append(errors, err)
 			continue
 		}
-		err2 := json.Unmarshal(impExt.Bidder, &rpExt)
-		if err2 != nil {
-			errors = append(errors, err2)
+		if err := json.Unmarshal(impExt.Bidder, &rpExt); err != nil {
+			errors = append(errors, err)
 			continue
 		}
 		imp := requestCopy.Imp[i]
@@ -83,23 +80,23 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		appCopy.Publisher = publisher
 		requestCopy.App = &appCopy
 	}
-	
+
 	requestJSON, err := json.Marshal(requestCopy)
 	if err != nil {
-	  return nil, []error{err}
+		return nil, []error{err}
 	}
-  
+
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 
 	requestData := &adapters.RequestData{
-	  Method:  "POST",
-	  Uri:     a.endpoint,
-	  Body:    requestJSON,
-	  Headers: headers,
+		Method:  "POST",
+		Uri:     a.endpoint,
+		Body:    requestJSON,
+		Headers: headers,
 	}
-  
+
 	return []*adapters.RequestData{requestData}, errors
 }
 
@@ -108,17 +105,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		return nil, nil
 	}
 
-	if responseData.StatusCode == http.StatusBadRequest {
-		err := &errortypes.BadInput{
-			Message: "Unexpected status code: 400. Bad request from publisher.",
-		}
-		return nil, []error{err}
-	}
-
-	if responseData.StatusCode != http.StatusOK {
-		err := &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d.", responseData.StatusCode),
-		}
+	if err := adapters.CheckResponseStatusCodeForErrors(responseData); err != nil {
 		return nil, []error{err}
 	}
 
@@ -128,7 +115,9 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
-	bidResponse.Currency = response.Cur
+	if len(response.Cur) != 0 {
+		bidResponse.Currency = response.Cur
+	}
 	var errors []error
 	for _, seatBid := range response.SeatBid {
 		for i := range seatBid.Bid {
@@ -168,7 +157,7 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 }
 
 func getBidMeta(bid *openrtb2.Bid) *openrtb_ext.ExtBidPrebidMeta {
-	return &openrtb_ext.ExtBidPrebidMeta {
+	return &openrtb_ext.ExtBidPrebidMeta{
 		AdvertiserDomains: bid.ADomain,
 	}
 }

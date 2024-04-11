@@ -37,7 +37,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://readpeaktest.com/bidder",
+        "uri": "https://dsp.readpeak.com/header/prebid",
         "body": {
           "id": "req-id-banner",
           "imp": [
