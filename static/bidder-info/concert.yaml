@@ -3,7 +3,7 @@ endpointCompression: gzip
 geoscope:
   - global
 maintainer:
-  email: prebid-maintainer@example.com
+  email: support@concert.io
 modifyingVastXmlAllowed: true
 capabilities:
   app:
