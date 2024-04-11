@@ -2,10 +2,8 @@ endpoint: "https://bids.concert.io/bids/openrtb"
 endpointCompression: gzip
 geoscope:
   - USA
-  - CAN
 maintainer:
   email: prebid-maintainer@example.com
-gvlVendorID: 42
 modifyingVastXmlAllowed: true
 capabilities:
   app:
