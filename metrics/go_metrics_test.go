@@ -796,37 +796,39 @@ func TestRecordAdapterBuyerUIDScrubbed(t *testing.T) {
 	lowerCaseAdapterName := "anyname"
 
 	tests := []struct {
-		description     string
+		name            string
 		metricsDisabled bool
 		adapterName     openrtb_ext.BidderName
 		expectedCount   int64
 	}{
 		{
-			description:     "",
+			name:            "enabled_bidder_found",
 			metricsDisabled: false,
 			adapterName:     openrtb_ext.BidderName(adapter),
 			expectedCount:   1,
 		},
 		{
-			description:     "",
+			name:            "enabled_bidder_not_found",
 			metricsDisabled: false,
 			adapterName:     fakeBidder,
 			expectedCount:   0,
 		},
 		{
-			description:     "",
+			name:            "disabled",
 			metricsDisabled: true,
 			adapterName:     openrtb_ext.BidderName(adapter),
 			expectedCount:   0,
 		},
 	}
 	for _, tt := range tests {
-		registry := metrics.NewRegistry()
-		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderName(adapter)}, config.DisabledMetrics{AdapterBuyerUIDScrubbed: tt.metricsDisabled}, nil, nil)
+		t.Run(tt.name, func(t *testing.T) {
+			registry := metrics.NewRegistry()
+			m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderName(adapter)}, config.DisabledMetrics{AdapterBuyerUIDScrubbed: tt.metricsDisabled}, nil, nil)
 
-		m.RecordAdapterBuyerUIDScrubbed(tt.adapterName)
+			m.RecordAdapterBuyerUIDScrubbed(tt.adapterName)
 
-		assert.Equal(t, tt.expectedCount, m.AdapterMetrics[lowerCaseAdapterName].BuyerUIDScrubbed.Count(), tt.description)
+			assert.Equal(t, tt.expectedCount, m.AdapterMetrics[lowerCaseAdapterName].BuyerUIDScrubbed.Count())
+		})
 	}
 }
 
@@ -836,37 +838,39 @@ func TestRecordAdapterGDPRRequestBlocked(t *testing.T) {
 	lowerCaseAdapterName := "anyname"
 
 	tests := []struct {
-		description     string
+		name            string
 		metricsDisabled bool
 		adapterName     openrtb_ext.BidderName
 		expectedCount   int64
 	}{
 		{
-			description:     "",
+			name:            "enabled_bidder_found",
 			metricsDisabled: false,
 			adapterName:     openrtb_ext.BidderName(adapter),
 			expectedCount:   1,
 		},
 		{
-			description:     "",
+			name:            "enabled_bidder_not_found",
 			metricsDisabled: false,
 			adapterName:     fakeBidder,
 			expectedCount:   0,
 		},
 		{
-			description:     "",
+			name:            "disabled",
 			metricsDisabled: true,
 			adapterName:     openrtb_ext.BidderName(adapter),
 			expectedCount:   0,
 		},
 	}
 	for _, tt := range tests {
-		registry := metrics.NewRegistry()
-		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderName(adapter)}, config.DisabledMetrics{AdapterGDPRRequestBlocked: tt.metricsDisabled}, nil, nil)
+		t.Run(tt.name, func(t *testing.T) {
+			registry := metrics.NewRegistry()
+			m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderName(adapter)}, config.DisabledMetrics{AdapterGDPRRequestBlocked: tt.metricsDisabled}, nil, nil)
 
-		m.RecordAdapterGDPRRequestBlocked(tt.adapterName)
+			m.RecordAdapterGDPRRequestBlocked(tt.adapterName)
 
-		assert.Equal(t, tt.expectedCount, m.AdapterMetrics[lowerCaseAdapterName].GDPRRequestBlocked.Count(), tt.description)
+			assert.Equal(t, tt.expectedCount, m.AdapterMetrics[lowerCaseAdapterName].GDPRRequestBlocked.Count())
+		})
 	}
 }
 

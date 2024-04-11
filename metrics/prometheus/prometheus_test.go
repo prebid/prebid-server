@@ -1793,25 +1793,25 @@ func assertHistogram(t *testing.T, name string, histogram dto.Histogram, expecte
 
 func TestRecordAdapterBuyerUIDScrubbed(t *testing.T) {
 
-	tests := []struct{
+	tests := []struct {
 		name          string
 		disabled      bool
 		expectedCount float64
 	}{
 		{
-			name: "enabled",
-			disabled: false,
+			name:          "enabled",
+			disabled:      false,
 			expectedCount: 1,
 		},
 		{
-			name: "disabled",
-			disabled: true,
+			name:          "disabled",
+			disabled:      true,
 			expectedCount: 0,
 		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func (t *testing.T)  {
+		t.Run(tt.name, func(t *testing.T) {
 			m := createMetricsForTesting()
 			m.metricsDisabled.AdapterBuyerUIDScrubbed = tt.disabled
 			adapterName := openrtb_ext.BidderName("AnyName")
@@ -1825,7 +1825,7 @@ func TestRecordAdapterBuyerUIDScrubbed(t *testing.T) {
 				tt.expectedCount,
 				prometheus.Labels{
 					adapterLabel: lowerCasedAdapterName,
-			})		
+				})
 		})
 	}
 }
