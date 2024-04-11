@@ -303,9 +303,11 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 
 // Shutdown closes any dependencies of the router that may need closing
 func (r *Router) Shutdown() {
+	glog.Info("[PBS Router] shutting down")
 	for _, shutdown := range r.shutdowns {
 		shutdown()
 	}
+	glog.Info("[PBS Router] shut down")
 }
 
 func checkSupportedUserSyncEndpoints(bidderInfos config.BidderInfos) error {
