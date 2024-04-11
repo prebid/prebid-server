@@ -4,4 +4,4 @@
     "description": "A schema which validates params accepted by the Concert adapter",
     "type": "object",
     "properties": {}
-  }
+  } 

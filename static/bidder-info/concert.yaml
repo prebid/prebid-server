@@ -1,0 +1,32 @@
+endpoint: "https://bids.concert.io/bids/openrtb"
+endpointCompression: gzip
+geoscope:
+  - USA
+  - CAN
+maintainer:
+  email: prebid-maintainer@example.com
+gvlVendorID: 42
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - audio
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - audio
+      - native
+  dooh:
+    mediaTypes:
+      - banner
+      - video
+      - audio
+      - native
+userSync:
+  redirect:
+    url: https://bids.concert.io/sync?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
+    userMacro: $UID
