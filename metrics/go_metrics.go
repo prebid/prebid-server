@@ -932,7 +932,7 @@ func (me *Metrics) RecordRequestPrivacy(privacy PrivacyLabels) {
 }
 
 func (me *Metrics) RecordAdapterBuyerUIDScrubbed(adapterName openrtb_ext.BidderName) {
-	adapterStr := string(adapterName)
+	adapterStr := adapterName.String()
 	if me.MetricsDisabled.AdapterBuyerUIDScrubbed {
 		return
 	}

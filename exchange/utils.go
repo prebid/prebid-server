@@ -188,10 +188,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		}
 
 		passIDActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitUserFPD, scopedName, privacy.NewRequestFromBidRequest(*req))
-		buyerUIDSet := false
-		if reqWrapper.User != nil && reqWrapper.User.BuyerUID != "" {
-			buyerUIDSet = true
-		}
+		buyerUIDSet := reqWrapper.User != nil && reqWrapper.User.BuyerUID != ""
 		if !passIDActivityAllowed {
 			privacy.ScrubUserFPD(reqWrapper)
 		} else {
