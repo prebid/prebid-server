@@ -3,6 +3,5 @@
     "title": "Relevant Digital Adapter Params",
     "description": "A schema which validates params accepted by the Relevant Digital adapter",
     "type": "object",
-    "properties": {},
-    "required": []
+    "properties": {}
 }
