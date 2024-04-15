@@ -19,10 +19,9 @@ type ConversantAdapter struct {
 }
 
 func (c *ConversantAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	cnvrRequest := *request
 	//Backend needs USD or it will reject the request
-	if len(cnvrRequest.Cur) > 0 && cnvrRequest.Cur[0] != "USD" {
-		cnvrRequest.Cur = []string{"USD"}
+	if len(request.Cur) > 0 && request.Cur[0] != "USD" {
+		request.Cur = []string{"USD"}
 	}
 	for i := 0; i < len(request.Imp); i++ {
 		var bidderExt adapters.ExtImpBidder
@@ -48,22 +47,22 @@ func (c *ConversantAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 		if i == 0 {
 			if request.Site != nil {
 				tmpSite := *request.Site
-				cnvrRequest.Site = &tmpSite
-				cnvrRequest.Site.ID = cnvrExt.SiteID
+				request.Site = &tmpSite
+				request.Site.ID = cnvrExt.SiteID
 			} else if request.App != nil {
 				tmpApp := *request.App
-				cnvrRequest.App = &tmpApp
-				cnvrRequest.App.ID = cnvrExt.SiteID
+				request.App = &tmpApp
+				request.App.ID = cnvrExt.SiteID
 			}
 		}
-		err := parseCnvrParams(&cnvrRequest.Imp[i], cnvrExt, reqInfo)
+		err := parseCnvrParams(&request.Imp[i], cnvrExt, reqInfo)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	//create the request body
-	data, err := json.Marshal(cnvrRequest)
+	data, err := json.Marshal(request)
 	if err != nil {
 		return nil, []error{&errortypes.BadInput{
 			Message: "Error in packaging request to JSON",
