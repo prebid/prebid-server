@@ -147,12 +147,17 @@ func getBidMediaType(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 	var extBid openrtb_ext.ExtBid
 	err := json.Unmarshal(bid.Ext, &extBid)
 	if err != nil {
-		return "", fmt.Errorf("unable to deserialize imp %v bid.ext", bid.ImpID)
+		return "", fmt.Errorf("unable to deserialize imp %v bid.ext, error: %v", bid.ImpID, err)
 	}
 
 	if extBid.Prebid == nil {
 		return "", fmt.Errorf("imp %v with unknown media type", bid.ImpID)
 	}
 
-	return extBid.Prebid.Type, nil
+	switch extBid.Prebid.Type {
+	case openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo, openrtb_ext.BidTypeNative:
+		return extBid.Prebid.Type, nil
+	default:
+		return "", fmt.Errorf("invalid BidType: %s", extBid.Prebid.Type)
+	}
 }
