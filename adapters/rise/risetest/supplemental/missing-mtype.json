@@ -62,7 +62,8 @@
               }
             }
           ]
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,
@@ -71,7 +72,7 @@
           "cur": "USD",
           "seatbid": [
             {
-              "seat": "Rhythmone",
+              "seat": "958",
               "bid": [
                 {
                   "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
@@ -85,7 +86,7 @@
               ]
             },
             {
-              "seat": "Rhythmone",
+              "seat": "958",
               "bid": [
                 {
                   "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",

@@ -1,0 +1,339 @@
+{
+  "mockBidRequest": {
+    "id": "test-req-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "video": {
+          "mimes": [
+            "video\/mp4"
+          ],
+          "playbackmethod": [
+            2
+          ],
+          "protocols": [
+            2
+          ],
+          "w": 0,
+          "h": 0,
+          "placement": 2,
+          "linearity": 1
+        },
+        "ext": {
+          "bidder": {
+            "slotid": "m8x9x3roll",
+            "adtype": "interstitial",
+            "publisherid": "123123123",
+            "signkey": "signkey",
+            "keyid": "41",
+            "isTestAuthorization": "true"
+          }
+        }
+      }
+    ],
+    "app": {
+      "bundle": "com.wavehk.android",
+      "name": "Huawei Browser",
+      "ver": "9.1.0.301"
+    },
+    "device": {
+      "ua": "useragent",
+      "h": 1920,
+      "language": "en",
+      "model": "COL-TEST",
+      "os": "android",
+      "osv": "10.0.0",
+      "devicetype": 4,
+      "make": "huawei",
+      "w": 1080,
+      "ip": "ip",
+      "pxratio": 23.01,
+      "geo": {
+        "country": "ATA"
+      }
+    },
+    "user": {
+      "ext": {
+        "data": {
+          "gaid": [
+            "gaid"
+          ],
+          "oaid": [
+            "oaid"
+          ],
+          "clientTime": [
+            "2018-08-10 20:01:11.214+0200"
+          ]
+        }
+      }
+    },
+    "ext": {
+    }
+  },
+  "httpcalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://adx-dre.op.hicloud.com/ppsadx/getResult",
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "User-Agent": [
+            "useragent"
+          ],
+          "Authorization": [
+            "Digest username=123123123,realm=ppsadx/getResult,nonce=1629473330823,response=6fdc975d3adac426cbe607eec736f40ad3db8413312457431e391580e1b475c4,algorithm=HmacSHA256,usertype=1,keyid=41"
+          ]
+        },
+        "body": {
+          "app": {
+            "lang": "en",
+            "country": "AT",
+            "name": "Huawei Browser",
+            "pkgname": "com.wavehk.android",
+            "version": "9.1.0.301"
+          },
+          "multislot": [
+            {
+              "adtype": 12,
+              "slotid": "m8x9x3roll",
+              "test": 1
+            }
+          ],
+          "device": {
+            "height": 1920,
+            "language": "en",
+            "oaid": "oaid",
+            "os": "android",
+            "type": 4,
+            "ip": "ip",
+            "localeCountry": "AT",
+            "pxratio": 23.01,
+            "width": 1080,
+            "model": "COL-TEST",
+            "clientTime": "2018-08-10 20:01:11.214+0200",
+            "gaid": "gaid",
+            "useragent": "useragent",
+            "version": "10.0.0",
+            "maker": "huawei",
+            "belongCountry": "AT"
+          },
+          "geo": {
+          },
+          "network": {
+            "type": 0
+          },
+          "regs": {
+          },
+          "version": "3.4",
+          "clientAdRequestId": "test-req-id"
+        },
+        "impIDs": ["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "multiad": [
+            {
+              "adtype": 60,
+              "brsetting": "Y",
+              "content": [
+                {
+                  "contentid": "58001445",
+                  "creativetype": 106,
+                  "endtime": 1621344684645,
+                  "interactiontype": 1,
+                  "landingTitle": 1,
+                  "metaData": {
+                    "adSign": "2",
+                    "mediaFile": {
+                      "mime": "video/mp4",
+                      "width": 720,
+                      "height": 1280,
+                      "fileSize": 10000,
+                      "url": "https://test.png",
+                      "sha256": ""
+                    },
+                    "apkInfo": {
+                      "appIcon": "https://pps-icon.png",
+                      "appName": "%E6%89%8B%E6%9C%BA%E6%B7%98%E5%AE%9D",
+                      "fileSize": 118902470,
+                      "packageName": "com.demo.package",
+                      "permPromptForCard": "0",
+                      "popNotify": 1,
+                      "popUpAfterInstallNew": 1,
+                      "priorInstallWay": "2",
+                      "sha256": "sha256",
+                      "url": "https://test/apkurl",
+                      "versionCode": "284",
+                      "versionName": "9.6.1.9"
+                    },
+                    "appId": "101219405",
+                    "appPromotionChannel": "401721412",
+                    "clickUrl": "https://ads.huawei.com/usermgtportal/home/index.html#/",
+                    "cta": "%e5%ae%89%e8%a3%85",
+                    "duration": 6038,
+                    "icon": [
+                      {
+                        "checkSha256Flag": 1,
+                        "fileSize": 10797,
+                        "height": 160,
+                        "imageType": "img",
+                        "sha256": "042479eccbda9a8d7d3aa3da73c42486854407835623a30ffff875cb578242d0",
+                        "url": "https://pps-icon.png",
+                        "width": 160
+                      }
+                    ],
+                    "imageInfo": [
+                      {
+                        "checkSha256Flag": 0,
+                        "height": 350,
+                        "imageType": "img",
+                        "sha256": "8baa56fdb2702b9fb044d95b328936160cd245764375cdb25a4ab504f4ae2e19",
+                        "url": "http://image1.jpg",
+                        "width": 400
+                      },
+                      {
+                        "checkSha256Flag": 0,
+                        "height": 300,
+                        "imageType": "img",
+                        "sha256": "8baa56fdb2702b9fb044d95b328936160cd245764375cdb25a4ab504f4ae2e19",
+                        "url": "http://image2.jpg",
+                        "width": 400
+                      }
+                    ],
+                    "label": "%E6%89%8B%E6%9C%BA%E6%B7%98%E5%AE%9D",
+                    "landingPageType": "3",
+                    "marketAppId": "C101219405",
+                    "title": "%2Ftest%2F",
+                    "description": "this is a test ad",
+                    "videoInfo": {
+                      "autoPlayAreaRatio": 100,
+                      "autoStopPlayAreaRatio": 10,
+                      "checkSha256Flag": 1,
+                      "sha256": "aa08c8ffce82bbcd37cabefd6c8972b407de48f0b4e332e06d4cc18d25377d77",
+                      "timeBeforeVideoAutoPlay": 50,
+                      "videoAutoPlayOnWifi": "y",
+                      "videoAutoPlayWithSound": "n",
+                      "videoDownloadUrl": "https://video.mp4",
+                      "videoDuration": 6038,
+                      "videoFileSize": 949951,
+                      "videoPlayMode": 2,
+                      "videoRatio": 0.5625,
+                      "width": 600,
+                      "height": 500
+                    }
+                  },
+                  "monitor": [
+                    {
+                      "eventType": "vastError",
+                      "url": [
+                        "http://test/vastError"
+                      ]
+                    },
+                    {
+                      "eventType": "click",
+                      "url": [
+                        "http://test/click",
+                        "http://test/dspclick"
+                      ]
+                    },
+                    {
+                      "eventType": "imp",
+                      "url": [
+                        "http://test/imp",
+                        "http://test/dspimp"
+                      ]
+                    },
+                    {
+                      "eventType": "userclose",
+                      "url": [
+                        "http://test/userclose"
+                      ]
+                    },
+                    {
+                      "eventType": "playStart",
+                      "url": [
+                        "http://test/playStart"
+                      ]
+                    },
+                    {
+                      "eventType": "playEnd",
+                      "url": [
+                        "http://test/playEnd1",
+                        "http://test/playEnd2"
+                      ]
+                    },
+                    {
+                      "eventType": "playResume",
+                      "url": [
+                        "http://test/playResume"
+                      ]
+                    },
+                    {
+                      "eventType": "playPause",
+                      "url": [
+                        "http://test/playPause"
+                      ]
+                    },
+                    {
+                      "eventType": "appOpen",
+                      "url": [
+                        "http://test/appOpen"
+                      ]
+                    }
+                  ],
+                  "paramfromserver": {
+                    "a": "1||test",
+                    "sig": "",
+                    "t": "99990101235959"
+                  },
+                  "price": 2.8,
+                  "starttime": 1620230400000,
+                  "taskid": "48016632"
+                }
+              ],
+              "retcode30": 200,
+              "slotid": "m8x9x3roll"
+            }
+          ],
+          "noReportAdTypeEventList": [
+            {
+              "adType": 8,
+              "eventTypeList": [
+                "exception_6"
+              ]
+            }
+          ],
+          "retcode": 200,
+          "totalCacheSize": 300
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><VAST version=\"3.0\"><Ad id=\"58001445\"><InLine><AdSystem>HuaweiAds</AdSystem><AdTitle>/test/</AdTitle><Error><![CDATA[http://test/vastError&et=[ERRORCODE]]]></Error><Impression><![CDATA[http://test/imp]]></Impression><Impression><![CDATA[http://test/dspimp]]></Impression><Creatives><Creative adId=\"58001445\" id=\"58001445\"><Linear><Duration>00:00:06.038</Duration><TrackingEvents><Tracking event=\"skip\"><![CDATA[http://test/userclose]]></Tracking><Tracking event=\"closeLinear\"><![CDATA[http://test/userclose]]></Tracking><Tracking event=\"start\"><![CDATA[http://test/playStart]]></Tracking><Tracking event=\"complete\"><![CDATA[http://test/playEnd1]]></Tracking><Tracking event=\"complete\"><![CDATA[http://test/playEnd2]]></Tracking><Tracking event=\"resume\"><![CDATA[http://test/playResume]]></Tracking><Tracking event=\"pause\"><![CDATA[http://test/playPause]]></Tracking></TrackingEvents><VideoClicks><ClickThrough><![CDATA[https://ads.huawei.com/usermgtportal/home/index.html#/]]></ClickThrough><ClickTracking><![CDATA[http://test/click]]></ClickTracking><ClickTracking><![CDATA[http://test/dspclick]]></ClickTracking></VideoClicks><MediaFiles><MediaFile delivery=\"progressive\" type=\"video/mp4\" width=\"720\" height=\"1280\" scalable=\"true\" maintainAspectRatio=\"true\"> <![CDATA[https://test.png]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
+            "adomain": [
+              "huaweiads"
+            ],
+            "h": 1280,
+            "w": 720,
+            "crid": "58001445",
+            "id": "test-imp-id",
+            "impid": "test-imp-id",
+            "price": 2.8
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

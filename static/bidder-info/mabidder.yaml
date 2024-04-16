@@ -1,0 +1,11 @@
+endpoint: "https://prebid.ecdrsvc.com/pbs"
+maintainer:
+  email: lmprebidadapter@loblaw.ca
+endpointCompression: gzip
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner

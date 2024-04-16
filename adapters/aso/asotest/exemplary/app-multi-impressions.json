@@ -1,0 +1,249 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "banner-imp",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 250,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "zone": 123456
+          }
+        }
+      },
+      {
+        "id": "video-imp",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 640,
+          "h": 480
+        },
+        "ext": {
+          "bidder": {
+            "zone": 123457
+          }
+        }
+      }
+    ],
+    "app": {
+        "bundle": "com.prebid"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://srv.aso1.net/pbs/bidder?zid=123456",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "banner-imp",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  },
+                  {
+                    "w": 250,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "zone": 123456
+                }
+              }
+            }
+          ],
+          "app": {
+            "bundle": "com.prebid"
+          }
+        },
+        "impIDs":["banner-imp"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "1",
+                  "impid": "banner-imp",
+                  "price": 1.0,
+                  "cid": "1",
+                  "crid": "11",
+                  "adid": "11",
+                  "adm": "html code",
+                  "ext": {
+                    "prebid": {
+                      "type": "banner"
+                    }
+                  },
+                  "h": 250,
+                  "w": 300
+                },
+                {
+                  "id": "2",
+                  "impid": "banner-imp",
+                  "price": 1.5,
+                  "cid": "11",
+                  "crid": "111",
+                  "adid": "111",
+                  "adm": "html code",
+                  "ext": {
+                    "prebid": {
+                      "type": "banner"
+                    }
+                  },
+                  "h": 250,
+                  "w": 250
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "https://srv.aso1.net/pbs/bidder?zid=123457",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "video-imp",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 640,
+                "h": 480
+              },
+              "ext": {
+                "bidder": {
+                  "zone": 123457
+                }
+              }
+            }
+          ],
+          "app": {
+            "bundle": "com.prebid"
+          }
+        },
+        "impIDs":["video-imp"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "2",
+                  "impid": "video-imp",
+                  "price": 2.0,
+                  "cid": "2",
+                  "crid": "22",
+                  "adid": "22",
+                  "adm": "vast xml ${AUCTION_PRICE}",
+                  "nurl": "${AUCTION_PRICE}",
+                  "ext": {
+                    "prebid": {
+                      "type": "video"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "1",
+            "impid": "banner-imp",
+            "price": 1.0,
+            "cid": "1",
+            "crid": "11",
+            "adid": "11",
+            "adm": "html code",
+            "ext": {
+              "prebid": {
+                "type": "banner"
+              }
+            },
+            "h": 250,
+            "w": 300
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "2",
+            "impid": "banner-imp",
+            "price": 1.5,
+            "cid": "11",
+            "crid": "111",
+            "adid": "111",
+            "adm": "html code",
+            "ext": {
+              "prebid": {
+                "type": "banner"
+              }
+            },
+            "h": 250,
+            "w": 250
+          },
+          "type": "banner"
+        }
+      ]
+    },
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "2",
+            "impid": "video-imp",
+            "price": 2.0,
+            "cid": "2",
+            "crid": "22",
+            "adid": "22",
+            "adm": "vast xml 2",
+            "nurl": "2",
+            "ext": {
+              "prebid": {
+                "type": "video"
+              }
+            }
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

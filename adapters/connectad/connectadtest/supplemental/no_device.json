@@ -54,7 +54,8 @@
               "domain": "connectad.io",
               "page": "http://connectad.io/"
             }
-          }
+          },
+          "impIDs":["test-banner-imp-id"]
         },
         "mockResponse": {
             "status": 204,

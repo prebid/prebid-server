@@ -17,7 +17,11 @@
     "imp": [
       {
         "id": "native",
-        "ext": { "improvedigital": { "placementId": 1234 } },
+        "ext": {
+          "bidder": {
+            "placementId": 1234
+          }
+        },
         "native": {
           "request": "{\"context\":1,\"plcmttype\":1,\"eventtrackers\":[{\"event\":1,\"methods\":[1]}],\"assets\":[{\"required\":1,\"title\":{\"len\":80}},{\"required\":1,\"data\":{\"type\":2}},{\"required\":0,\"data\":{\"type\":12}},{\"required\":0,\"img\":{\"type\":3,\"wmin\":300,\"hmin\":225,\"ext\":{\"aspectratios\":[\"4:3\"]}}},{\"required\":0,\"img\":{\"type\":1,\"w\":128,\"h\":128}},{\"required\":0,\"data\":{\"type\":3}},{\"required\":0,\"data\":{\"type\":6}}]}",
           "ver": "1.2"
@@ -57,7 +61,11 @@
                 "request": "{\"context\":1,\"plcmttype\":1,\"eventtrackers\":[{\"event\":1,\"methods\":[1]}],\"assets\":[{\"required\":1,\"title\":{\"len\":80}},{\"required\":1,\"data\":{\"type\":2}},{\"required\":0,\"data\":{\"type\":12}},{\"required\":0,\"img\":{\"type\":3,\"wmin\":300,\"hmin\":225,\"ext\":{\"aspectratios\":[\"4:3\"]}}},{\"required\":0,\"img\":{\"type\":1,\"w\":128,\"h\":128}},{\"required\":0,\"data\":{\"type\":3}},{\"required\":0,\"data\":{\"type\":6}}]}",
                 "ver": "1.2"
               },
-              "ext": { "improvedigital": { "placementId": 1234 } }
+              "ext": {
+                "bidder": {
+                  "placementId": 1234
+                }
+              }
             }
           ],
           "site": {
@@ -100,7 +108,8 @@
               }
             }
           }
-        }
+        },
+        "impIDs":["native"]
       },
       "mockResponse": {
         "status": 200,

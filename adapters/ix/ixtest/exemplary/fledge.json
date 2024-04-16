@@ -1,0 +1,172 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "imp": [
+            {
+                "id": "test-imp-id",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        },
+                        {
+                            "w": 300,
+                            "h": 600
+                        },
+                        {
+                            "w": 600,
+                            "h": 800
+                        }
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "siteId": "569749"
+                    },
+                    "ae": 1
+                }
+            }
+        ],
+        "site": {
+            "page": "https://www.example.com/"
+        }
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "http://host/endpoint",
+                "body": {
+                    "id": "test-request-id",
+                    "imp": [
+                        {
+                            "id": "test-imp-id",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 300,
+                                        "h": 250
+                                    },
+                                    {
+                                        "w": 300,
+                                        "h": 600
+                                    },
+                                    {
+                                        "w": 600,
+                                        "h": 800
+                                    }
+                                ]
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "siteId": "569749"
+                                },
+                                "ae": 1
+                            }
+                        }
+                    ],
+                    "site": {
+                        "page": "https://www.example.com/",
+                        "publisher": {
+                            "id": "569749"
+                        }
+                    }
+                },
+                "impIDs":["test-imp-id"]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "test-request-id",
+                    "seatbid": [
+                        {
+                            "seat": "958",
+                            "bid": [
+                                {
+                                    "id": "7706636740145184841",
+                                    "impid": "test-imp-id",
+                                    "price": 0.5,
+                                    "adid": "29681110",
+                                    "adm": "some-test-ad",
+                                    "adomain": [
+                                        "https://advertiser.example.com"
+                                    ],
+                                    "cid": "958",
+                                    "crid": "29681110",
+                                    "h": 250,
+                                    "w": 300,
+                                    "ext": {
+                                        "ix": {}
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "bidid": "5778926625248726496",
+                    "cur": "USD",
+                    "ext": {
+                        "protectedAudienceAuctionConfigs": [{
+                            "bidId": "test-imp-id",
+                            "config": {
+                                "seller": "https://seller.com",
+                                "decisionLogicUrl": "https://ssp.com/decision-logic.js",
+                                "interestGroupBuyers": [
+                                    "https://buyer.com"
+                                ],
+                                "sellerSignals": {
+                                    "callbackURL": "https://callbackurl.com"
+                                },
+                                "perBuyerSignals": {
+                                    "https://buyer.com": []
+                                }
+                            }
+                        }]
+                    }
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "currency": "USD",
+            "bids": [
+                {
+                    "bid": {
+                        "id": "7706636740145184841",
+                        "impid": "test-imp-id",
+                        "price": 0.5,
+                        "adm": "some-test-ad",
+                        "adid": "29681110",
+                        "adomain": [
+                            "https://advertiser.example.com"
+                        ],
+                        "cid": "958",
+                        "crid": "29681110",
+                        "w": 300,
+                        "h": 250,
+                        "ext": {
+                            "ix": {}
+                        }
+                    },
+                    "type": "banner"
+                }
+            ],
+            "fledgeauctionconfigs": [{
+                "impid": "test-imp-id",
+                "config": {
+                    "seller": "https://seller.com",
+                    "decisionLogicUrl": "https://ssp.com/decision-logic.js",
+                    "interestGroupBuyers": [
+                        "https://buyer.com"
+                    ],
+                    "sellerSignals": {
+                        "callbackURL": "https://callbackurl.com"
+                    },
+                    "perBuyerSignals": {
+                        "https://buyer.com": []
+                    }
+                }
+            }]
+        }
+    ]
+}

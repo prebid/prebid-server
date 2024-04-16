@@ -1,20 +1,21 @@
 package modules
-
-{{if .}}
 import (
-    {{- range .}}
-    {{.Vendor}}{{.Module | Title}} "github.com/prebid/prebid-server/modules/{{.Vendor}}/{{.Module}}"
+{{- range $vendor, $modules := .}}
+    {{- range $module := $modules}}
+        {{$vendor}}{{$module | Title}} "github.com/prebid/prebid-server/v2/modules/{{$vendor}}/{{$module}}"
     {{- end}}
+{{- end}}
 )
-{{end}}
 
 // builders returns mapping between module name and its builder
 // vendor and module names are chosen based on the module directory name
 func builders() ModuleBuilders {
     return ModuleBuilders{
-        {{- range .}}
-        "{{.Vendor}}": {
-            "{{.Module}}": {{.Vendor}}{{.Module | Title}}.Builder,
+        {{- range $vendor, $modules := .}}
+        "{{$vendor}}": {
+            {{- range $module := $modules}}
+            "{{$module}}": {{$vendor}}{{$module | Title}}.Builder,
+            {{- end}}
         },
         {{- end}}
     }

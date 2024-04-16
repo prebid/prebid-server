@@ -1,0 +1,207 @@
+{
+    "mockBidRequest": {
+        "id": "3621f78b-abdf-4562-8eca-1c5e893387d0",
+        "imp": [
+            {
+                "id": "div-1",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        },
+                        {
+                            "w": 300,
+                            "h": 600
+                        },
+                        {
+                            "w": 320,
+                            "h": 320
+                        }
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "accountId": "620523ae7f4bbe1691bbb815",
+                        "pbsHost": "fakeHost",
+                        "placementId": "620525862d7518bfd4bbb81e_620523b5d1dbed6b0fbbb817"
+                    }
+                }
+            }
+        ],
+        "site": {
+            "domain": "somedomain.com",
+            "page": "https://somedomain.com",
+            "publisher": {
+                "id": "1001",
+                "domain": "somepub.com"
+            },
+            "ext": {
+                "amp": 0
+            }
+        },
+        "device": {
+            "ua": "userAgent",
+            "ip": "193.168.244.1"
+        }
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "https://fakeHost.relevant-digital.com/openrtb2/auction",
+                "body": {
+                    "id": "3621f78b-abdf-4562-8eca-1c5e893387d0",
+                    "imp": [
+                        {
+                            "id": "div-1",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 300,
+                                        "h": 250
+                                    },
+                                    {
+                                        "w": 300,
+                                        "h": 600
+                                    },
+                                    {
+                                        "w": 320,
+                                        "h": 320
+                                    }
+                                ]
+                            },
+                            "ext": {
+                                "prebid": {
+                                    "storedrequest": {
+                                        "id": "620525862d7518bfd4bbb81e_620523b5d1dbed6b0fbbb817"
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    "site": {
+                        "domain": "somedomain.com",
+                        "page": "https://somedomain.com",
+                        "publisher": {
+                            "id": "1001",
+                            "domain": "somepub.com"
+                        },
+                        "ext": {
+                            "amp": 0
+                        }
+                    },
+                    "device": {
+                        "ua": "userAgent",
+                        "ip": "193.168.244.1"
+                    },
+                    "ext": {
+                        "prebid": {
+                            "debug" : false,
+                            "storedrequest": {
+                                "id": "620523ae7f4bbe1691bbb815"
+                            }
+                        },
+                        "relevant": {
+                            "adapterType": "server",
+                            "count": 1
+                        }
+                    },
+                    "tmax": 750
+                },
+                "impIDs":["div-1"]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "3621f78b-abdf-4562-8eca-1c5e893387d0",
+                    "seatbid": [
+                        {
+                            "seat": "relevantdigital",
+                            "bid": [
+                                {
+                                    "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                                    "impid": "div-1",
+                                    "price": 0.500000,
+                                    "adm": "<html><a href=\"http://www.pubmatic.com\" target=\"_blank\"><img src =\"https://stagingva.pubmatic.com:8443/image/300x250.jpg\" /></a></html>",
+                                    "crid": "crid_10",
+                                    "w": 728,
+                                    "h": 90,
+                                    "mtype": 1,
+                                    "ext": {
+                                        "bidtype": 0,
+                                        "dspid": 6,
+                                        "origbidcpm": 11.13998874085194,
+                                        "origbidcur": "USD",
+                                        "prebid": {
+                                            "bidid": "09abd496-5706-4311-a356-d559629a1d17",
+                                            "events": {
+                                                "win": "https://fakeHost.relevant-digital.com/event?t=win\u0026b=09abd496-5706-4311-a356-d559629a1d17\u0026a=1001\u0026bidder=providerA\u0026ts=1694939785078",
+                                                "imp": "https://fakeHost.relevant-digital.com/event?t=imp\u0026b=09abd496-5706-4311-a356-d559629a1d17\u0026a=1001\u0026bidder=providerA\u0026ts=1694939785078"
+                                            },
+                                            "meta": {
+                                                "adaptercode": "relevantdigital"
+                                            },
+                                            "targeting": {
+                                                "hb_bidder": "relevantdigital",
+                                                "hb_cache_host": "somedomain.com",
+                                                "hb_cache_path": "/analytics_cache/read",
+                                                "hb_pb": "11.10",
+                                                "hb_size": "300x250"
+                                            },
+                                            "type": "banner"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "cur": "USD"
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "currency": "USD",
+            "bids": [
+                {
+                    "bid": {
+                        "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                        "impid": "div-1",
+                        "price": 0.5,
+                        "adm": "<html><a href=\"http://www.pubmatic.com\" target=\"_blank\"><img src =\"https://stagingva.pubmatic.com:8443/image/300x250.jpg\" /></a></html>",
+                        "crid": "crid_10",
+                        "w": 728,
+                        "h": 90,
+                        "mtype": 1,
+                        "ext": {
+                            "bidtype": 0,
+                            "dspid": 6,
+                            "origbidcpm": 11.13998874085194,
+                            "origbidcur": "USD",
+                            "prebid": {
+                                "bidid": "09abd496-5706-4311-a356-d559629a1d17",
+                                "events": {
+                                    "win": "https://fakeHost.relevant-digital.com/event?t=win\u0026b=09abd496-5706-4311-a356-d559629a1d17\u0026a=1001\u0026bidder=providerA\u0026ts=1694939785078",
+                                    "imp": "https://fakeHost.relevant-digital.com/event?t=imp\u0026b=09abd496-5706-4311-a356-d559629a1d17\u0026a=1001\u0026bidder=providerA\u0026ts=1694939785078"
+                                },
+                                "meta": {
+                                    "adaptercode": "relevantdigital"
+                                },
+                                "targeting": {
+                                    "hb_bidder": "relevantdigital",
+                                    "hb_cache_host": "somedomain.com",
+                                    "hb_cache_path": "/analytics_cache/read",
+                                    "hb_pb": "11.10",
+                                    "hb_size": "300x250"
+                                },
+                                "type": "banner"
+                            }
+                        }
+                    },
+                    "type": "banner"
+                }
+            ]
+        }
+    ]
+}

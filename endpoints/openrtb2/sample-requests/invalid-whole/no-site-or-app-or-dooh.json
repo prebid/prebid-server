@@ -1,0 +1,23 @@
+{
+  "description": "Request does not come with site nor app nor dooh field",
+  "mockBidRequest": {
+    "id": "req-id",
+    "imp": [
+      {
+        "id": "imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+            ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          }
+        }
+      }
+    ]
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: request.site should include at least one of request.site.id or request.site.page.\n"
+}

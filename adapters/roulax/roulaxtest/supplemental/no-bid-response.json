@@ -1,0 +1,80 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "minduration": 1,
+          "maxduration": 2,
+          "protocols": [1,3,5],
+          "w": 1020,
+          "h": 780,
+          "startdelay": 1,
+          "placement": 1,
+          "playbackmethod": [2],
+          "delivery": [1],
+          "api": [1,2,3,4]
+        },
+        "ext": {
+          "bidder": {
+            "PublisherPath": "72721",
+            "Pid": "mvo",
+            "zone": "1r"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://dsp.rcoreads.com/api/vidmate?pid=vidmate_android_banner",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "minduration": 1,
+                "maxduration": 2,
+                "protocols": [1,3,5],
+                "w": 1020,
+                "h": 780,
+                "startdelay": 1,
+                "placement": 1,
+                "playbackmethod": [2],
+                "delivery": [1],
+                "api": [1,2,3,4]
+              },
+              "ext": {
+                "bidder": {
+                  "PublisherPath": "72721",
+                  "Pid": "mvo",
+                  "zone": "1r"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": []
+    }
+  ]
+}

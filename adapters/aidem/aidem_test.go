@@ -5,14 +5,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/prebid/prebid-server/adapters/adapterstest"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/adapters/adapterstest"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAidem, config.Adapter{
-		Endpoint: "https://fakezero.aidemsrv.com/ortb/v2.6/bid/request",
+		Endpoint: "https://fakezero.aidemsrv.com/ortb/v2.6/bid/request?billing_id={{.PublisherID}}",
 	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
@@ -26,5 +26,5 @@ func TestEndpointTemplateMalformed(t *testing.T) {
 	_, buildErr := Builder(openrtb_ext.BidderAidem, config.Adapter{
 		Endpoint: "{{Malformed}}"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
-	assert.Nil(t, buildErr)
+	assert.Error(t, buildErr)
 }

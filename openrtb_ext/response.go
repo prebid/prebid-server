@@ -3,8 +3,8 @@ package openrtb_ext
 import (
 	"encoding/json"
 
-	"github.com/prebid/openrtb/v19/adcom1"
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/adcom1"
+	"github.com/prebid/openrtb/v20/openrtb2"
 )
 
 // ExtBidResponse defines the contract for bidresponse.ext
@@ -103,9 +103,9 @@ const (
 )
 
 // NonBidObject is subset of Bid object with exact json signature
-// defined at https://github.com/prebid/openrtb/blob/v19.0.0/openrtb2/bid.go
 // It also contains the custom fields
 type NonBidObject struct {
+	// SubSet
 	Price   float64                 `json:"price,omitempty"`
 	ADomain []string                `json:"adomain,omitempty"`
 	CatTax  adcom1.CategoryTaxonomy `json:"cattax,omitempty"`
@@ -116,6 +116,7 @@ type NonBidObject struct {
 	Dur     int64                   `json:"dur,omitempty"`
 	MType   openrtb2.MarkupType     `json:"mtype,omitempty"`
 
+	// Custom Fields
 	OriginalBidCPM float64 `json:"origbidcpm,omitempty"`
 	OriginalBidCur string  `json:"origbidcur,omitempty"`
 }

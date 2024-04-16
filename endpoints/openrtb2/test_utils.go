@@ -16,29 +16,30 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/julienschmidt/httprouter"
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/openrtb/v19/openrtb3"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/analytics"
-	analyticsConf "github.com/prebid/prebid-server/analytics/config"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/currency"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/exchange"
-	"github.com/prebid/prebid-server/experiment/adscert"
-	"github.com/prebid/prebid-server/gdpr"
-	"github.com/prebid/prebid-server/hooks"
-	"github.com/prebid/prebid-server/hooks/hookexecution"
-	"github.com/prebid/prebid-server/hooks/hookstage"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/metrics"
-	metricsConfig "github.com/prebid/prebid-server/metrics/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	pbc "github.com/prebid/prebid-server/prebid_cache_client"
-	"github.com/prebid/prebid-server/stored_requests"
-	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
-	"github.com/prebid/prebid-server/util/iputil"
-	"github.com/prebid/prebid-server/util/uuidutil"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb3"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/analytics"
+	analyticsBuild "github.com/prebid/prebid-server/v2/analytics/build"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/currency"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/exchange"
+	"github.com/prebid/prebid-server/v2/experiment/adscert"
+	"github.com/prebid/prebid-server/v2/gdpr"
+	"github.com/prebid/prebid-server/v2/hooks"
+	"github.com/prebid/prebid-server/v2/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v2/hooks/hookstage"
+	"github.com/prebid/prebid-server/v2/macros"
+	"github.com/prebid/prebid-server/v2/metrics"
+	metricsConfig "github.com/prebid/prebid-server/v2/metrics/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	pbc "github.com/prebid/prebid-server/v2/prebid_cache_client"
+	"github.com/prebid/prebid-server/v2/stored_requests"
+	"github.com/prebid/prebid-server/v2/stored_requests/backends/empty_fetcher"
+	"github.com/prebid/prebid-server/v2/util/iputil"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v2/util/uuidutil"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 )
 
@@ -84,7 +85,6 @@ type testCase struct {
 type testConfigValues struct {
 	AccountRequired     bool                          `json:"accountRequired"`
 	AliasJSON           string                        `json:"aliases"`
-	BlacklistedAccounts []string                      `json:"blacklistedAccts"`
 	BlacklistedApps     []string                      `json:"blacklistedApps"`
 	DisabledAdapters    []string                      `json:"disabledAdapters"`
 	CurrencyRates       map[string]map[string]float64 `json:"currencyRates"`
@@ -926,13 +926,12 @@ func (s mockCurrencyRatesClient) handle(w http.ResponseWriter, req *http.Request
 	s.data.DataAsOfRaw = "2018-09-12"
 
 	// Marshal the response and http write it
-	currencyServerJsonResponse, err := json.Marshal(&s.data)
+	currencyServerJsonResponse, err := jsonutil.Marshal(&s.data)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.Write(currencyServerJsonResponse)
-	return
 }
 
 // mockBidderHandler carries mock bidder server information that will be read from JSON test files
@@ -951,13 +950,13 @@ func (b mockBidderHandler) bid(w http.ResponseWriter, req *http.Request) {
 
 	// Unmarshal exit if error
 	var openrtb2Request openrtb2.BidRequest
-	if err := json.Unmarshal(buf.Bytes(), &openrtb2Request); err != nil {
+	if err := jsonutil.UnmarshalValid(buf.Bytes(), &openrtb2Request); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	var openrtb2ImpExt map[string]json.RawMessage
-	if err := json.Unmarshal(openrtb2Request.Imp[0].Ext, &openrtb2ImpExt); err != nil {
+	if err := jsonutil.UnmarshalValid(openrtb2Request.Imp[0].Ext, &openrtb2ImpExt); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -988,13 +987,12 @@ func (b mockBidderHandler) bid(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Marshal the response and http write it
-	serverJsonResponse, err := json.Marshal(&serverResponseObject)
+	serverJsonResponse, err := jsonutil.Marshal(&serverResponseObject)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.Write(serverJsonResponse)
-	return
 }
 
 // mockAdapter is a mock impression-splitting adapter
@@ -1019,7 +1017,7 @@ func (a mockAdapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *ada
 	for _, imp := range request.Imp {
 		requestCopy.Imp = []openrtb2.Imp{imp}
 
-		requestJSON, err := json.Marshal(request)
+		requestJSON, err := jsonutil.Marshal(request)
 		if err != nil {
 			errors = append(errors, err)
 			continue
@@ -1052,7 +1050,7 @@ func (a mockAdapter) MakeBids(request *openrtb2.BidRequest, requestData *adapter
 	}
 
 	var publisherResponse openrtb2.BidResponse
-	if err := json.Unmarshal(responseData.Body, &publisherResponse); err != nil {
+	if err := jsonutil.UnmarshalValid(responseData.Body, &publisherResponse); err != nil {
 		return nil, []error{err}
 	}
 
@@ -1116,7 +1114,7 @@ func parseTestData(fileData []byte, testFile string) (testCase, error) {
 
 	jsonTestConfig, _, _, err = jsonparser.Get(fileData, "config")
 	if err == nil {
-		if err = json.Unmarshal(jsonTestConfig, parsedTestData.Config); err != nil {
+		if err = jsonutil.UnmarshalValid(jsonTestConfig, parsedTestData.Config); err != nil {
 			return parsedTestData, fmt.Errorf("Error unmarshaling root.config from file %s. Desc: %v.", testFile, err)
 		}
 	}
@@ -1152,18 +1150,6 @@ func (tc *testConfigValues) getBlacklistedAppMap() map[string]bool {
 		}
 	}
 	return blacklistedAppMap
-}
-
-func (tc *testConfigValues) getBlackListedAccountMap() map[string]bool {
-	var blacklistedAccountMap map[string]bool
-
-	if len(tc.BlacklistedAccounts) > 0 {
-		blacklistedAccountMap = make(map[string]bool, len(tc.BlacklistedAccounts))
-		for _, account := range tc.BlacklistedAccounts {
-			blacklistedAccountMap[account] = true
-		}
-	}
-	return blacklistedAccountMap
 }
 
 // exchangeTestWrapper is a wrapper that asserts the openrtb2 bid request just before the HoldAuction call
@@ -1218,6 +1204,7 @@ func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.Bid
 		mockFetcher,
 		&adscert.NilSigner{},
 		macros.NewStringIndexBasedReplacer(),
+		nil,
 	)
 
 	testExchange = &exchangeTestWrapper{
@@ -1278,10 +1265,10 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 		storedResponseFetcher = empty_fetcher.EmptyFetcher{}
 	}
 
-	var accountFetcher stored_requests.AccountFetcher
-	accountFetcher = &mockAccountFetcher{
+	accountFetcher := &mockAccountFetcher{
 		data: map[string]json.RawMessage{
 			"malformed_acct": json.RawMessage(`{"disabled":"invalid type"}`),
+			"disabled_acct":  json.RawMessage(`{"disabled":true}`),
 		},
 	}
 
@@ -1290,7 +1277,7 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 		planBuilder = hooks.EmptyPlanBuilder{}
 	}
 
-	var endpointBuilder func(uuidutil.UUIDGenerator, exchange.Exchange, openrtb_ext.BidderParamValidator, stored_requests.Fetcher, stored_requests.AccountFetcher, *config.Configuration, metrics.MetricsEngine, analytics.PBSAnalyticsModule, map[string]string, []byte, map[string]openrtb_ext.BidderName, stored_requests.Fetcher, hooks.ExecutionPlanBuilder, *exchange.TmaxAdjustmentsPreprocessed) (httprouter.Handle, error)
+	var endpointBuilder func(uuidutil.UUIDGenerator, exchange.Exchange, openrtb_ext.BidderParamValidator, stored_requests.Fetcher, stored_requests.AccountFetcher, *config.Configuration, metrics.MetricsEngine, analytics.Runner, map[string]string, []byte, map[string]openrtb_ext.BidderName, stored_requests.Fetcher, hooks.ExecutionPlanBuilder, *exchange.TmaxAdjustmentsPreprocessed) (httprouter.Handle, error)
 
 	switch test.endpointType {
 	case AMP_ENDPOINT:
@@ -1307,7 +1294,7 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 		accountFetcher,
 		cfg,
 		met,
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		disabledBidders,
 		[]byte(test.Config.AliasJSON),
 		bidderMap,
@@ -1592,7 +1579,7 @@ var entryPointHookUpdate = hooks.HookWrapper[hookstage.Entrypoint]{
 
 			ch := hookstage.ChangeSet[hookstage.EntrypointPayload]{}
 			ch.AddMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
-				body, err := jsonpatch.MergePatch(payload.Body, []byte(`{"tmax":50}`))
+				body, err := jsonpatch.MergePatch(payload.Body, []byte(`{"tmax":600}`))
 				if err == nil {
 					payload.Body = body
 				}

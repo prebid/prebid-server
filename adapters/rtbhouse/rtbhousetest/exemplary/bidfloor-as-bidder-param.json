@@ -1,0 +1,134 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "cur": [
+      "EUR"
+    ],
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "12345",
+            "bidfloor": 2
+          }
+        }
+      }
+    ],
+    "ext": {
+      "prebid": {
+        "currency": {
+          "rates": {
+            "EUR": {
+              "USD": 0.05
+            }
+          },
+          "usepbsrates": false
+        }
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://localhost/prebid_server",
+        "body": {
+          "id": "test-request-id",
+          "cur": [
+            "USD"
+          ],
+          "imp": [
+            {
+              "banner": {
+                "format": [
+                  {
+                    "h": 250,
+                    "w": 300
+                  }
+                ]
+              },
+              "bidfloor": 0.1,
+              "bidfloorcur": "USD",
+              "ext": {
+                "bidder": {
+                  "publisherId": "12345",
+                  "bidfloor": 2
+                }
+              },
+              "id": "test-imp-id"
+            }
+          ],
+          "ext": {
+            "prebid": {
+              "currency": {
+                "rates": {
+                  "EUR": {
+                    "USD": 0.05
+                  }
+                },
+                "usepbsrates": false
+              }
+            }
+          }
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-response-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "rtbhouse",
+              "bid": [
+                {
+                  "id": "randomid",
+                  "impid": "test-imp-id",
+                  "price": 300,
+                  "adid": "12345678",
+                  "adm": "some-test-ad",
+                  "cid": "987",
+                  "crid": "12345678",
+                  "h": 250,
+                  "w": 300,
+                  "mtype": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "randomid",
+            "impid": "test-imp-id",
+            "price": 300,
+            "adid": "12345678",
+            "adm": "some-test-ad",
+            "cid": "987",
+            "crid": "12345678",
+            "h": 250,
+            "w": 300,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

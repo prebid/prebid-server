@@ -4,11 +4,11 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/privacy"
-	"github.com/prebid/prebid-server/privacy/ccpa"
-	"github.com/prebid/prebid-server/privacy/gdpr"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/privacy"
+	"github.com/prebid/prebid-server/v2/privacy/ccpa"
+	"github.com/prebid/prebid-server/v2/privacy/gdpr"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -284,18 +284,24 @@ func TestPrivacyReader(t *testing.T) {
 						ampParams: Params{Consent: "1YYY"},
 					},
 					expected: expectedResults{
-						policyWriter: ccpa.ConsentWriter{"1YYY"},
+						policyWriter: ccpa.ConsentWriter{Consent: "1YYY"},
 						warning:      nil,
 					},
 				},
 				{
 					desc: "No consent type, valid CCPA consent string and gdpr_applies set to true: expect a CCPA consent writer and a warning",
 					in: testInput{
-						ampParams: Params{Consent: "1YYY", GdprApplies: &boolTrue},
+						ampParams: Params{
+							Consent:     "1YYY",
+							GdprApplies: &boolTrue,
+						},
 					},
 					expected: expectedResults{
-						policyWriter: ccpa.ConsentWriter{"1YYY"},
-						warning:      &errortypes.Warning{Message: "AMP request gdpr_applies value was ignored because provided consent string is a CCPA consent string", WarningCode: errortypes.InvalidPrivacyConsentWarningCode},
+						policyWriter: ccpa.ConsentWriter{Consent: "1YYY"},
+						warning: &errortypes.Warning{
+							Message:     "AMP request gdpr_applies value was ignored because provided consent string is a CCPA consent string",
+							WarningCode: errortypes.InvalidPrivacyConsentWarningCode,
+						},
 					},
 				},
 				{
@@ -304,8 +310,11 @@ func TestPrivacyReader(t *testing.T) {
 						ampParams: Params{Consent: "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA"},
 					},
 					expected: expectedResults{
-						policyWriter: gdpr.ConsentWriter{"CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA", &int8One},
-						warning:      nil,
+						policyWriter: gdpr.ConsentWriter{
+							Consent:    "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA",
+							RegExtGDPR: &int8One,
+						},
+						warning: nil,
 					},
 				},
 			},
@@ -316,41 +325,63 @@ func TestPrivacyReader(t *testing.T) {
 				{
 					desc: "Unrecognized consent type was specified and invalid consent string provided: expect nil policy writer and a warning",
 					in: testInput{
-						ampParams: Params{ConsentType: 101, Consent: "NOT_CCPA_NOR_GDPR_TCF2"},
+						ampParams: Params{
+							ConsentType: 101,
+							Consent:     "NOT_CCPA_NOR_GDPR_TCF2",
+						},
 					},
 					expected: expectedResults{
 						policyWriter: privacy.NilPolicyWriter{},
-						warning:      &errortypes.Warning{Message: "Consent string 'NOT_CCPA_NOR_GDPR_TCF2' is not recognized as one of the supported formats CCPA or TCF2.", WarningCode: errortypes.InvalidPrivacyConsentWarningCode},
+						warning: &errortypes.Warning{
+							Message:     "Consent string 'NOT_CCPA_NOR_GDPR_TCF2' is not recognized as one of the supported formats CCPA or TCF2.",
+							WarningCode: errortypes.InvalidPrivacyConsentWarningCode,
+						},
 					},
 				},
 				{
 					desc: "Unrecognized consent type specified but query params come with a valid CCPA consent string: expect a CCPA consent writer and no error nor warning",
 					in: testInput{
-						ampParams: Params{ConsentType: 101, Consent: "1YYY"},
+						ampParams: Params{
+							ConsentType: 101,
+							Consent:     "1YYY",
+						},
 					},
 					expected: expectedResults{
-						policyWriter: ccpa.ConsentWriter{"1YYY"},
+						policyWriter: ccpa.ConsentWriter{Consent: "1YYY"},
 						warning:      nil,
 					},
 				},
 				{
 					desc: "Unrecognized consent type, valid CCPA consent string and gdpr_applies set to true: expect a CCPA consent writer and a warning",
 					in: testInput{
-						ampParams: Params{ConsentType: 101, Consent: "1YYY", GdprApplies: &boolTrue},
+						ampParams: Params{
+							ConsentType: 101,
+							Consent:     "1YYY",
+							GdprApplies: &boolTrue,
+						},
 					},
 					expected: expectedResults{
-						policyWriter: ccpa.ConsentWriter{"1YYY"},
-						warning:      &errortypes.Warning{Message: "AMP request gdpr_applies value was ignored because provided consent string is a CCPA consent string", WarningCode: errortypes.InvalidPrivacyConsentWarningCode},
+						policyWriter: ccpa.ConsentWriter{Consent: "1YYY"},
+						warning: &errortypes.Warning{
+							Message:     "AMP request gdpr_applies value was ignored because provided consent string is a CCPA consent string",
+							WarningCode: errortypes.InvalidPrivacyConsentWarningCode,
+						},
 					},
 				},
 				{
 					desc: "Unrecognized consent type, valid TCF2 consent string and gdpr_applies not set: expect GDPR consent writer and no error nor warning",
 					in: testInput{
-						ampParams: Params{ConsentType: 101, Consent: "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA"},
+						ampParams: Params{
+							ConsentType: 101,
+							Consent:     "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA",
+						},
 					},
 					expected: expectedResults{
-						policyWriter: gdpr.ConsentWriter{"CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA", &int8One},
-						warning:      nil,
+						policyWriter: gdpr.ConsentWriter{
+							Consent:    "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA",
+							RegExtGDPR: &int8One,
+						},
+						warning: nil,
 					},
 				},
 			},
@@ -361,51 +392,91 @@ func TestPrivacyReader(t *testing.T) {
 				{
 					desc: "GDPR consent string is invalid, but consent type is TCF2: return a valid GDPR writer and warn about the GDPR string being invalid",
 					in: testInput{
-						ampParams: Params{Consent: "INVALID_GDPR", ConsentType: ConsentTCF2, GdprApplies: nil},
+						ampParams: Params{
+							Consent:     "INVALID_GDPR",
+							ConsentType: ConsentTCF2,
+							GdprApplies: nil,
+						},
 					},
 					expected: expectedResults{
-						policyWriter: gdpr.ConsentWriter{"INVALID_GDPR", &int8One},
-						warning:      &errortypes.Warning{Message: "Consent string 'INVALID_GDPR' is not a valid TCF2 consent string.", WarningCode: errortypes.InvalidPrivacyConsentWarningCode},
+						policyWriter: gdpr.ConsentWriter{
+							Consent:    "INVALID_GDPR",
+							RegExtGDPR: &int8One,
+						},
+						warning: &errortypes.Warning{
+							Message:     "Consent string 'INVALID_GDPR' is not a valid TCF2 consent string.",
+							WarningCode: errortypes.InvalidPrivacyConsentWarningCode,
+						},
 					},
 				},
 				{
 					desc: "GDPR consent string is invalid, consent type is TCF2, gdpr_applies is set to true: return a valid GDPR writer and warn about the GDPR string being invalid",
 					in: testInput{
-						ampParams: Params{Consent: "INVALID_GDPR", ConsentType: ConsentTCF2, GdprApplies: &boolFalse},
+						ampParams: Params{
+							Consent:     "INVALID_GDPR",
+							ConsentType: ConsentTCF2,
+							GdprApplies: &boolFalse,
+						},
 					},
 					expected: expectedResults{
-						policyWriter: gdpr.ConsentWriter{"INVALID_GDPR", &int8Zero},
-						warning:      &errortypes.Warning{Message: "Consent string 'INVALID_GDPR' is not a valid TCF2 consent string.", WarningCode: errortypes.InvalidPrivacyConsentWarningCode},
+						policyWriter: gdpr.ConsentWriter{
+							Consent:    "INVALID_GDPR",
+							RegExtGDPR: &int8Zero,
+						},
+						warning: &errortypes.Warning{
+							Message:     "Consent string 'INVALID_GDPR' is not a valid TCF2 consent string.",
+							WarningCode: errortypes.InvalidPrivacyConsentWarningCode,
+						},
 					},
 				},
 				{
 					desc: "Valid GDPR consent string, gdpr_applies is set to false, return a valid GDPR writer, no warning",
 					in: testInput{
-						ampParams: Params{Consent: "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA", ConsentType: ConsentTCF2, GdprApplies: &boolFalse},
+						ampParams: Params{
+							Consent:     "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA",
+							ConsentType: ConsentTCF2,
+							GdprApplies: &boolFalse,
+						},
 					},
 					expected: expectedResults{
-						policyWriter: gdpr.ConsentWriter{"CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA", &int8Zero},
-						warning:      nil,
+						policyWriter: gdpr.ConsentWriter{
+							Consent:    "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA",
+							RegExtGDPR: &int8Zero,
+						},
+						warning: nil,
 					},
 				},
 				{
 					desc: "Valid GDPR consent string, gdpr_applies is set to true, return a valid GDPR writer and no warning",
 					in: testInput{
-						ampParams: Params{Consent: "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA", ConsentType: ConsentTCF2, GdprApplies: &boolTrue},
+						ampParams: Params{
+							Consent:     "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA",
+							ConsentType: ConsentTCF2,
+							GdprApplies: &boolTrue,
+						},
 					},
 					expected: expectedResults{
-						policyWriter: gdpr.ConsentWriter{"CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA", &int8One},
-						warning:      nil,
+						policyWriter: gdpr.ConsentWriter{
+							Consent:    "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA",
+							RegExtGDPR: &int8One,
+						},
+						warning: nil,
 					},
 				},
 				{
 					desc: "Valid GDPR consent string, return a valid GDPR writer and no warning",
 					in: testInput{
-						ampParams: Params{Consent: "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA", ConsentType: ConsentTCF2},
+						ampParams: Params{
+							Consent:     "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA",
+							ConsentType: ConsentTCF2,
+						},
 					},
 					expected: expectedResults{
-						policyWriter: gdpr.ConsentWriter{"CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA", &int8One},
-						warning:      nil,
+						policyWriter: gdpr.ConsentWriter{
+							Consent:    "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA",
+							RegExtGDPR: &int8One,
+						},
+						warning: nil,
 					},
 				},
 			},
@@ -416,30 +487,46 @@ func TestPrivacyReader(t *testing.T) {
 				{
 					desc: "CCPA consent string is invalid: return a valid writer a warning about the string being invalid",
 					in: testInput{
-						ampParams: Params{Consent: "XXXX", ConsentType: ConsentUSPrivacy},
+						ampParams: Params{
+							Consent:     "XXXX",
+							ConsentType: ConsentUSPrivacy,
+						},
 					},
 					expected: expectedResults{
-						policyWriter: ccpa.ConsentWriter{"XXXX"},
-						warning:      &errortypes.Warning{Message: "Consent string 'XXXX' is not a valid CCPA consent string.", WarningCode: errortypes.InvalidPrivacyConsentWarningCode},
+						policyWriter: ccpa.ConsentWriter{Consent: "XXXX"},
+						warning: &errortypes.Warning{
+							Message:     "Consent string 'XXXX' is not a valid CCPA consent string.",
+							WarningCode: errortypes.InvalidPrivacyConsentWarningCode,
+						},
 					},
 				},
 				{
 					desc: "Valid CCPA consent string, gdpr_applies is set to true: return a valid GDPR writer and warn about the gdpr_applies value.",
 					in: testInput{
-						ampParams: Params{Consent: "1YYY", ConsentType: ConsentUSPrivacy, GdprApplies: &boolTrue},
+						ampParams: Params{
+							Consent:     "1YYY",
+							ConsentType: ConsentUSPrivacy,
+							GdprApplies: &boolTrue,
+						},
 					},
 					expected: expectedResults{
-						policyWriter: ccpa.ConsentWriter{"1YYY"},
-						warning:      &errortypes.Warning{Message: "AMP request gdpr_applies value was ignored because provided consent string is a CCPA consent string", WarningCode: errortypes.InvalidPrivacyConsentWarningCode},
+						policyWriter: ccpa.ConsentWriter{Consent: "1YYY"},
+						warning: &errortypes.Warning{
+							Message:     "AMP request gdpr_applies value was ignored because provided consent string is a CCPA consent string",
+							WarningCode: errortypes.InvalidPrivacyConsentWarningCode,
+						},
 					},
 				},
 				{
 					desc: "Valid CCPA consent string, return a valid GDPR writer and no warning",
 					in: testInput{
-						ampParams: Params{Consent: "1YYY", ConsentType: ConsentUSPrivacy},
+						ampParams: Params{
+							Consent:     "1YYY",
+							ConsentType: ConsentUSPrivacy,
+						},
 					},
 					expected: expectedResults{
-						policyWriter: ccpa.ConsentWriter{"1YYY"},
+						policyWriter: ccpa.ConsentWriter{Consent: "1YYY"},
 						warning:      nil,
 					},
 				},
@@ -469,19 +556,34 @@ func TestBuildGdprTCF2ConsentWriter(t *testing.T) {
 		expectedWriter gdpr.ConsentWriter
 	}{
 		{
-			desc:           "gdpr_applies not set",
-			inParams:       Params{Consent: consentString},
-			expectedWriter: gdpr.ConsentWriter{consentString, &int8One},
+			desc:     "gdpr_applies not set",
+			inParams: Params{Consent: consentString},
+			expectedWriter: gdpr.ConsentWriter{
+				Consent:    consentString,
+				RegExtGDPR: &int8One,
+			},
 		},
 		{
-			desc:           "gdpr_applies set to false",
-			inParams:       Params{Consent: consentString, GdprApplies: &boolFalse},
-			expectedWriter: gdpr.ConsentWriter{consentString, &int8Zero},
+			desc: "gdpr_applies set to false",
+			inParams: Params{
+				Consent:     consentString,
+				GdprApplies: &boolFalse,
+			},
+			expectedWriter: gdpr.ConsentWriter{
+				Consent:    consentString,
+				RegExtGDPR: &int8Zero,
+			},
 		},
 		{
-			desc:           "gdpr_applies set to true",
-			inParams:       Params{Consent: consentString, GdprApplies: &boolTrue},
-			expectedWriter: gdpr.ConsentWriter{consentString, &int8One},
+			desc: "gdpr_applies set to true",
+			inParams: Params{
+				Consent:     consentString,
+				GdprApplies: &boolTrue,
+			},
+			expectedWriter: gdpr.ConsentWriter{
+				Consent:    consentString,
+				RegExtGDPR: &int8One,
+			},
 		},
 	}
 	for _, tc := range testCases {

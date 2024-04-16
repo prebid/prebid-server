@@ -89,7 +89,8 @@
           "user": {
             "buyeruid": "123"
           }
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,
@@ -132,7 +133,8 @@
             "h": 250,
             "w": 300
           },
-          "type": "video"
+          "type": "video",
+          "seat": "seat-id"
         }
       ]
     }

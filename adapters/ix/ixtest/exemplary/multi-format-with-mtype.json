@@ -76,7 +76,8 @@
                             }
                         }
                     ]
-                }
+                },
+                "impIDs":["multi-format-test-imp-id"]
             },
             "mockResponse": {
                 "status": 200,

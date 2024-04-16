@@ -1,0 +1,106 @@
+{
+  "mockBidRequest": {
+    "id": "request_id",
+    "imp": [
+      {
+        "id": "imp_id",
+        "banner": {
+          "w": 300,
+          "h": 600
+        },
+        "ext": {
+          "bidder": {
+            "page_id": 134001,
+            "imp_id": 1
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "www.example.com",
+      "page": "http://www.example.com"
+    },
+    "cur": [
+      "USD"
+    ],
+    "device": {
+      "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36",
+      "ip": "127.0.0.1"
+    },
+    "tmax": 500
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bs-metadsp.yandex.ru/prebid/134001?imp-id=1&ssp-cur=USD&ssp-id=10500&target-ref=www.example.com",
+        "headers": {
+          "User-Agent": [
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36"
+          ],
+          "X-Forwarded-For": [
+            "127.0.0.1"
+          ],
+          "X-Real-Ip": [
+            "127.0.0.1"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Referer": [
+            "http://www.example.com"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
+        "body": {
+          "id": "request_id",
+          "imp": [
+            {
+              "id": "imp_id",
+              "banner": {
+                "w": 300,
+                "h": 600
+              },
+              "ext": {
+                "bidder": {
+                  "page_id": 134001,
+                  "imp_id": 1
+                }
+              }
+            }
+          ],
+          "site": {
+            "domain": "www.example.com",
+            "page": "http://www.example.com"
+          },
+          "cur": [
+            "USD"
+          ],
+          "device": {
+            "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36",
+            "ip": "127.0.0.1"
+          },
+          "tmax": 500
+        },
+        "impIDs":["imp_id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "headers": {},
+        "body": {
+          "id": "request_id",
+          "seatbid": null,
+          "bidid": "bid_id",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": []
+    }
+  ],
+  "expectedMakeBidsErrors": []
+}

@@ -6,16 +6,20 @@ import (
 	"net/http"
 	"text/template"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/macros"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type SilverMobAdapter struct {
 	endpoint *template.Template
+}
+
+func isValidHost(host string) bool {
+	return host == "eu" || host == "us" || host == "apac"
 }
 
 // Builder builds a new instance of the SilverMob adapter for the given bidder with the given config.
@@ -96,6 +100,7 @@ func (a *SilverMobAdapter) MakeRequests(
 			Body:    reqJSON,
 			Uri:     url,
 			Headers: *GetHeaders(&requestCopy),
+			ImpIDs:  openrtb_ext.GetImpIDs(requestCopy.Imp),
 		}
 
 		requestData = append(requestData, reqData)
@@ -121,8 +126,14 @@ func (a *SilverMobAdapter) getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.Ext
 }
 
 func (a *SilverMobAdapter) buildEndpointURL(params *openrtb_ext.ExtSilverMob) (string, error) {
-	endpointParams := macros.EndpointTemplateParams{ZoneID: params.ZoneID, Host: params.Host}
-	return macros.ResolveMacros(a.endpoint, endpointParams)
+	if isValidHost(params.Host) {
+		endpointParams := macros.EndpointTemplateParams{ZoneID: params.ZoneID, Host: params.Host}
+		return macros.ResolveMacros(a.endpoint, endpointParams)
+	} else {
+		return "", &errortypes.BadInput{
+			Message: fmt.Sprintf("invalid host %s", params.Host),
+		}
+	}
 }
 
 func (a *SilverMobAdapter) MakeBids(
