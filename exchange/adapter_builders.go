@@ -350,7 +350,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderPubnative:         pubnative.Builder,
 		openrtb_ext.BidderPulsepoint:        pulsepoint.Builder,
 		openrtb_ext.BidderPWBid:             pwbid.Builder,
-		openrtb_ext.BidderReadpeak:			 readpeak.Builder,
+		openrtb_ext.BidderReadpeak:          readpeak.Builder,
 		openrtb_ext.BidderRelevantDigital:   relevantdigital.Builder,
 		openrtb_ext.BidderRevcontent:        revcontent.Builder,
 		openrtb_ext.BidderRichaudience:      richaudience.Builder,
