@@ -3,13 +3,14 @@ package roulax
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"text/template"
+
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/macros"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"net/http"
-	"text/template"
 )
 
 type adapter struct {
@@ -66,6 +67,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		Uri:     url,
 		Body:    reqJson,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, errs
 }
 

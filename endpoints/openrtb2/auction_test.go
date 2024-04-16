@@ -3769,51 +3769,51 @@ func TestValidateEidPermissions(t *testing.T) {
 	knownAliases := map[string]string{"b": "b"}
 
 	testCases := []struct {
-		description   string
+		name          string
 		request       *openrtb_ext.ExtRequest
 		expectedError error
 	}{
 		{
-			description:   "Valid - Empty ext",
+			name:          "valid-empty-ext",
 			request:       &openrtb_ext.ExtRequest{},
 			expectedError: nil,
 		},
 		{
-			description:   "Valid - Nil ext.prebid.data",
+			name:          "valid-nil-ext.prebid.data",
 			request:       &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{}},
 			expectedError: nil,
 		},
 		{
-			description:   "Valid - Empty ext.prebid.data",
+			name:          "valid-empty-ext.prebid.data",
 			request:       &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{}}},
 			expectedError: nil,
 		},
 		{
-			description:   "Valid - Nil ext.prebid.data.eidpermissions",
+			name:          "valid-nil-ext.prebid.data.eidpermissions",
 			request:       &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: nil}}},
 			expectedError: nil,
 		},
 		{
-			description:   "Valid - None",
+			name:          "valid-none",
 			request:       &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{}}}},
 			expectedError: nil,
 		},
 		{
-			description: "Valid - One",
+			name: "valid-one",
 			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "sourceA", Bidders: []string{"a"}},
 			}}}},
 			expectedError: nil,
 		},
 		{
-			description: "Valid - One - Case Insensitive",
+			name: "valid-one-case-insensitive",
 			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "sourceA", Bidders: []string{"A"}},
 			}}}},
 			expectedError: nil,
 		},
 		{
-			description: "Valid - Many",
+			name: "valid-many",
 			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "sourceA", Bidders: []string{"a"}},
 				{Source: "sourceB", Bidders: []string{"a"}},
@@ -3821,7 +3821,7 @@ func TestValidateEidPermissions(t *testing.T) {
 			expectedError: nil,
 		},
 		{
-			description: "Invalid - Missing Source",
+			name: "invalid-missing-source",
 			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "sourceA", Bidders: []string{"a"}},
 				{Bidders: []string{"a"}},
@@ -3829,7 +3829,7 @@ func TestValidateEidPermissions(t *testing.T) {
 			expectedError: errors.New(`request.ext.prebid.data.eidpermissions[1] missing required field: "source"`),
 		},
 		{
-			description: "Invalid - Duplicate Source",
+			name: "invalid-duplicate-source",
 			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "sourceA", Bidders: []string{"a"}},
 				{Source: "sourceA", Bidders: []string{"a"}},
@@ -3837,7 +3837,7 @@ func TestValidateEidPermissions(t *testing.T) {
 			expectedError: errors.New(`request.ext.prebid.data.eidpermissions[1] duplicate entry with field: "source"`),
 		},
 		{
-			description: "Invalid - Missing Bidders - Nil",
+			name: "invalid-missing-bidders-nil",
 			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "sourceA", Bidders: []string{"a"}},
 				{Source: "sourceB"},
@@ -3845,7 +3845,7 @@ func TestValidateEidPermissions(t *testing.T) {
 			expectedError: errors.New(`request.ext.prebid.data.eidpermissions[1] missing or empty required field: "bidders"`),
 		},
 		{
-			description: "Invalid - Missing Bidders - Empty",
+			name: "invalid-missing-bidders-empty",
 			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "sourceA", Bidders: []string{"a"}},
 				{Source: "sourceB", Bidders: []string{}},
@@ -3853,7 +3853,7 @@ func TestValidateEidPermissions(t *testing.T) {
 			expectedError: errors.New(`request.ext.prebid.data.eidpermissions[1] missing or empty required field: "bidders"`),
 		},
 		{
-			description: "Invalid - Invalid Bidders",
+			name: "invalid-invalid-bidders",
 			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "sourceA", Bidders: []string{"a"}},
 				{Source: "sourceB", Bidders: []string{"z"}},
@@ -3861,7 +3861,7 @@ func TestValidateEidPermissions(t *testing.T) {
 			expectedError: errors.New(`request.ext.prebid.data.eidpermissions[1] contains unrecognized bidder "z"`),
 		},
 		{
-			description: "Valid - Alias Case Sensitive",
+			name: "invalid-alias-case-sensitive",
 			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "sourceA", Bidders: []string{"B"}},
 			}}}},
@@ -3871,8 +3871,10 @@ func TestValidateEidPermissions(t *testing.T) {
 
 	endpoint := &endpointDeps{bidderMap: knownBidders, normalizeBidderName: fakeNormalizeBidderName}
 	for _, test := range testCases {
-		result := endpoint.validateEidPermissions(test.request.Prebid.Data, knownAliases)
-		assert.Equal(t, test.expectedError, result, test.description)
+		t.Run(test.name, func(t *testing.T) {
+			result := endpoint.validateEidPermissions(test.request.Prebid.Data, knownAliases)
+			assert.Equal(t, test.expectedError, result)
+		})
 	}
 }
 
