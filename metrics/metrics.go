@@ -455,6 +455,7 @@ type MetricsEngine interface {
 	RecordRequestQueueTime(success bool, requestType RequestType, length time.Duration)
 	RecordTimeoutNotice(success bool)
 	RecordRequestPrivacy(privacy PrivacyLabels)
+	RecordAdapterBuyerUIDScrubbed(adapterName openrtb_ext.BidderName)
 	RecordAdapterGDPRRequestBlocked(adapterName openrtb_ext.BidderName)
 	RecordDebugRequest(debugEnabled bool, pubId string)
 	RecordStoredResponse(pubId string)
