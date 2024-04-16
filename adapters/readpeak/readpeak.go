@@ -32,9 +32,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	var rpExt openrtb_ext.ImpExtReadpeak
 	var imps []openrtb2.Imp
 	for i := 0; i < len(requestCopy.Imp); i++ {
-		if requestCopy.Imp[i].Native == nil && requestCopy.Imp[i].Banner == nil {
-			continue
-		}
 		var impExt adapters.ExtImpBidder
 		if err := json.Unmarshal(requestCopy.Imp[i].Ext, &impExt); err != nil {
 			errors = append(errors, err)
@@ -101,7 +98,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if responseData.StatusCode == http.StatusNoContent {
+	if adapters.IsResponseStatusCodeNoContent(responseData) {
 		return nil, nil
 	}
 
