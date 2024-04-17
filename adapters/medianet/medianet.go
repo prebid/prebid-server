@@ -13,11 +13,34 @@ import (
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
-type adapter struct {
-	endpoint string
+type MedianetAdapter struct {
+	bidderName string
+	endpoint   string
 }
 
-func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+type interestGroupAuctionBuyer struct {
+	Origin          string          `json:"origin"`
+	MaxBid          float64         `json:"maxbid"`
+	Currency        string          `json:"cur"`
+	BuyerSignals    string          `json:"pbs"`
+	PrioritySignals json.RawMessage `json:"ps"`
+}
+
+type interestGroupAuctionSeller struct {
+	ImpId  string          `json:"impid"`
+	Config json.RawMessage `json:"config"`
+}
+
+type interestGroupIntent struct {
+	Igb []interestGroupAuctionBuyer  `json:"igb,omitempty"`
+	Igs []interestGroupAuctionSeller `json:"igs,omitempty"`
+}
+
+type medianetRespExt struct {
+	Igi []interestGroupIntent `json:"igi,omitempty"`
+}
+
+func (a *MedianetAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 
 	reqJson, err := json.Marshal(request)
@@ -38,7 +61,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	}}, errs
 }
 
-func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *MedianetAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var errs []error
 
 	if response.StatusCode == http.StatusNoContent {
@@ -58,7 +81,6 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	}
 
 	var bidResp openrtb2.BidResponse
-
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
@@ -79,14 +101,18 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 			}
 		}
 	}
+
+	bidResponse.FledgeAuctionConfigs = extractFledge(a, bidResp)
+
 	return bidResponse, errs
 }
 
 // Builder builds a new instance of the Medianet adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	url := buildEndpoint(config.Endpoint, config.ExtraAdapterInfo)
-	return &adapter{
-		endpoint: url,
+	return &MedianetAdapter{
+		bidderName: string(bidderName),
+		endpoint:   url,
 	}, nil
 }
 
@@ -104,6 +130,31 @@ func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType,
 	return "", &errortypes.BadInput{
 		Message: fmt.Sprintf("Failed to find impression \"%s\" ", impID),
 	}
+}
+
+func extractFledge(a *MedianetAdapter, bidResp openrtb2.BidResponse) []*openrtb_ext.FledgeAuctionConfig {
+	var fledgeAuctionConfigs []*openrtb_ext.FledgeAuctionConfig
+
+	var bidRespExt medianetRespExt
+	if err := json.Unmarshal(bidResp.Ext, &bidRespExt); err != nil {
+		return nil
+	}
+
+	for _, igi := range bidRespExt.Igi {
+		for _, igs := range igi.Igs {
+			if fledgeAuctionConfigs == nil {
+				fledgeAuctionConfigs = make([]*openrtb_ext.FledgeAuctionConfig, 0)
+			}
+			fledgeConfig := &openrtb_ext.FledgeAuctionConfig{
+				ImpId:  igs.ImpId,
+				Bidder: a.bidderName,
+				Config: igs.Config,
+			}
+			fledgeAuctionConfigs = append(fledgeAuctionConfigs, fledgeConfig)
+		}
+	}
+
+	return fledgeAuctionConfigs
 }
 
 func buildEndpoint(mnetUrl, hostUrl string) string {
