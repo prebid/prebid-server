@@ -64,7 +64,6 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb2.BidRequest, req *adapt
 	var publisherId string
 	var sellerId string
 	var userExt openrtb_ext.ExtUser
-	var anyHasId = false
 	var reqCopy openrtb2.BidRequest = *request
 	var dmxReq *openrtb2.BidRequest = &reqCopy
 	var dmxRawPubId dmxPubExt
@@ -85,6 +84,7 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb2.BidRequest, req *adapt
 		}
 	}
 
+	hasNoID := true
 	if request.App != nil {
 		appCopy := *request.App
 		appPublisherCopy := *request.App.Publisher
@@ -101,12 +101,12 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb2.BidRequest, req *adapt
 		}
 		dmxReq.App.Publisher.Ext = ext
 		if dmxReq.App.ID != "" {
-			anyHasId = true
+			hasNoID = false
 		}
-		if !anyHasId {
+		if hasNoID {
 			if idfa, valid := getIdfa(request); valid {
 				dmxReq.App.ID = idfa
-				anyHasId = true
+				hasNoID = false
 			}
 		}
 	} else {
@@ -145,12 +145,12 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb2.BidRequest, req *adapt
 
 	if dmxReq.User != nil {
 		if dmxReq.User.ID != "" {
-			anyHasId = true
+			hasNoID = false
 		}
 		if dmxReq.User.Ext != nil {
 			if err := json.Unmarshal(dmxReq.User.Ext, &userExt); err == nil {
 				if len(userExt.Eids) > 0 {
-					anyHasId = true
+					hasNoID = false
 				}
 			}
 		}
@@ -190,7 +190,7 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb2.BidRequest, req *adapt
 
 	dmxReq.Imp = imps
 
-	if !anyHasId {
+	if hasNoID {
 		return nil, []error{errors.New("This request contained no identifier")}
 	}
 
@@ -264,7 +264,7 @@ func (adapter *DmxAdapter) MakeBids(request *openrtb2.BidRequest, externalReques
 }
 
 func fetchParams(params dmxExt, inst openrtb2.Imp, ins openrtb2.Imp, imps []openrtb2.Imp, banner *openrtb2.Banner, video *openrtb2.Video, intVal int8) []openrtb2.Imp {
-	var tempimp openrtb2.Imp = inst
+	tempimp := inst
 	if params.Bidder.Bidfloor != 0 {
 		tempimp.BidFloor = params.Bidder.Bidfloor
 	}
