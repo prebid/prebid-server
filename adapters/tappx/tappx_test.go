@@ -8,6 +8,7 @@ import (
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestJsonSamples(t *testing.T) {
@@ -38,14 +39,14 @@ func TestTsValue(t *testing.T) {
 
 	bidderTappx := bidder.(*TappxAdapter)
 
-	var test int = 0
+	test := 0
 	var tappxExt openrtb_ext.ExtImpTappx
 	tappxExt.Endpoint = "DUMMYENDPOINT"
 	tappxExt.TappxKey = "dummy-tappx-key"
 
 	url, err := bidderTappx.buildEndpointURL(&tappxExt, test)
 	if err != nil {
-		t.Errorf("Error in buildEndpointURL: %s", err.Error())
+		require.NoError(t, err, "buildEndpointURL")
 		return
 	}
 

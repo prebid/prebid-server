@@ -102,9 +102,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 			}
 			bidResponse.Bids = append(bidResponse.Bids, b)
 		}
-		// golangci-lint staticheck SA4004: the surrounding loop is unconditionally terminated
-		// TODO: confirm the break is intended and add '// nosemgrep: SA4004'
-		break
+		break //nolint: staticcheck // break is intended, exempt from staticcheck SA4004
 	}
 
 	return bidResponse, nil

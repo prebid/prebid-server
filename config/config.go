@@ -182,7 +182,7 @@ func (data *ExternalCache) validate(errs []error) []error {
 	}
 
 	if data.Scheme != "" && data.Scheme != "http" && data.Scheme != "https" {
-		return append(errs, errors.New("external cache Scheme must be http or https if specified"))
+		return append(errs, errors.New("External cache Scheme must be http or https if specified"))
 	}
 
 	// Either host or path or both not empty, validate.

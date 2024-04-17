@@ -79,7 +79,7 @@ func serve(cfg *config.Configuration) error {
 
 	corsRouter := router.SupportCORS(r)
 	if err := server.Listen(cfg, router.NoCache{Handler: corsRouter}, router.Admin(currencyConverter, fetchingInterval), r.MetricsEngine); err != nil {
-		glog.Errorf("prebid-server returned an error: %v", err)
+		glog.Fatalf("prebid-server returned an error: %v", err)
 	}
 
 	r.Shutdown()

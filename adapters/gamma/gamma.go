@@ -205,7 +205,7 @@ func (a *GammaAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 }
 
 func convertBid(gBid gammaBid, mediaType openrtb_ext.BidType) *openrtb2.Bid {
-	var bid openrtb2.Bid = gBid.Bid
+	bid := gBid.Bid
 
 	if mediaType == openrtb_ext.BidTypeVideo {
 		//Return inline VAST XML Document (Section 6.4.2)

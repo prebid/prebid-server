@@ -29,11 +29,12 @@ type bidRequestExt struct {
 }
 
 // bidExt.CreativeType values.
+// nolint: staticcheck // staticcheck SA9004: only the first constant in this group has an explicit type
 const (
 	creativeTypeBanner string = "BANNER"
-	creativeTypeVideo  string = "VIDEO"
-	creativeTypeNative string = "NATIVE"
-	creativeTypeAudio  string = "AUDIO"
+	creativeTypeVideo         = "VIDEO"
+	creativeTypeNative        = "NATIVE"
+	creativeTypeAudio         = "AUDIO"
 )
 
 // Bid response extension from downstream.
