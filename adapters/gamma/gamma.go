@@ -150,7 +150,7 @@ func (a *GammaAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 		errs = append(errs, err)
 		return nil, errs
 	}
-	var invalidImpIndex = make([]int, 0)
+	var invalidImpIndex []int
 
 	for i := 0; i < len(request.Imp); i++ {
 		if request.Imp[i].Banner != nil {
