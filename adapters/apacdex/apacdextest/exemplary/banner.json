@@ -48,7 +48,8 @@
           "site": {
             "id": "fake-site-id"
           }
-        }
+        },
+        "impIDs":["test-banner-imp-id"]
       },
       "mockResponse": {
         "status": 200,

@@ -185,7 +185,7 @@
                 "origbidcpm": 0.71,
                 "prebid": {
                   "meta": {
-                    "adaptercode": "groupm"
+                    "adaptercode": "pmbidder"
                   },
                   "type": "video",
                   "targeting": {
@@ -214,7 +214,7 @@
                 "origbidcpm": 0.21,
                 "prebid": {
                   "meta": {
-                    "adaptercode": "groupm"
+                    "adaptercode": "pmbidder"
                   },
                   "type": "video"
                 }
@@ -231,7 +231,7 @@
                 "origbidcpm": 0.61,
                 "prebid": {
                   "meta": {
-                    "adaptercode": "groupm"
+                    "adaptercode": "pmbidder"
                   },
                   "type": "video",
                   "targeting": {

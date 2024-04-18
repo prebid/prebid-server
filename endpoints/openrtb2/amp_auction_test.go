@@ -2052,7 +2052,7 @@ func TestAmpAuctionResponseHeaders(t *testing.T) {
 	)
 
 	for _, test := range testCases {
-		httpReq := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp"+test.requestURLArguments), nil)
+		httpReq := httptest.NewRequest("GET", "/openrtb2/auction/amp"+test.requestURLArguments, nil)
 		recorder := httptest.NewRecorder()
 
 		endpoint(recorder, httpReq, nil)
@@ -2477,5 +2477,89 @@ func TestSetSeatNonBid(t *testing.T) {
 				t.Errorf("setSeatNonBid() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestAmpAuctionDebugWarningsOnly(t *testing.T) {
+	testCases := []struct {
+		description         string
+		requestURLArguments string
+		addRequestHeaders   func(r *http.Request)
+		expectedStatus      int
+		expectedWarnings    map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage
+	}{
+		{
+			description:         "debug_enabled_request_with_invalid_Sec-Browsing-Topics_header",
+			requestURLArguments: "?tag_id=1&debug=1",
+			addRequestHeaders: func(r *http.Request) {
+				r.Header.Add("Sec-Browsing-Topics", "foo")
+			},
+			expectedStatus: 200,
+			expectedWarnings: map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage{
+				"general": {
+					{
+						Code:    10012,
+						Message: "Invalid field in Sec-Browsing-Topics header: foo",
+					},
+				},
+			},
+		},
+		{
+			description:         "debug_disabled_request_with_invalid_Sec-Browsing-Topics_header",
+			requestURLArguments: "?tag_id=1",
+			addRequestHeaders: func(r *http.Request) {
+				r.Header.Add("Sec-Browsing-Topics", "foo")
+			},
+			expectedStatus:   200,
+			expectedWarnings: nil,
+		},
+	}
+
+	storedRequests := map[string]json.RawMessage{
+		"1": json.RawMessage(validRequest(t, "site.json")),
+	}
+	exchange := &nobidExchange{}
+	endpoint, _ := NewAmpEndpoint(
+		fakeUUIDGenerator{},
+		exchange,
+		newParamsValidator(t),
+		&mockAmpStoredReqFetcher{storedRequests},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{
+			MaxRequestSize: maxSize,
+			AccountDefaults: config.Account{
+				Privacy: config.AccountPrivacy{
+					PrivacySandbox: config.PrivacySandbox{
+						TopicsDomain: "abc",
+					},
+				},
+			},
+		},
+		&metricsConfig.NilMetricsEngine{},
+		analyticsBuild.New(&config.Analytics{}),
+		map[string]string{},
+		[]byte{},
+		openrtb_ext.BuildBidderMap(),
+		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
+		nil,
+	)
+
+	for _, test := range testCases {
+		httpReq := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp"+test.requestURLArguments), nil)
+		test.addRequestHeaders(httpReq)
+		recorder := httptest.NewRecorder()
+
+		endpoint(recorder, httpReq, nil)
+
+		assert.Equal(t, test.expectedStatus, recorder.Result().StatusCode)
+
+		// Parse Response
+		var response AmpResponse
+		if err := jsonutil.UnmarshalValid(recorder.Body.Bytes(), &response); err != nil {
+			t.Fatalf("Error unmarshalling response: %s", err.Error())
+		}
+
+		assert.Equal(t, test.expectedWarnings, response.ORTB2.Ext.Warnings)
 	}
 }
