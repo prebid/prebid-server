@@ -2187,7 +2187,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 				Enabled: spec.EventsEnabled,
 			},
 			DebugAllow:  true,
-			PriceFloors: config.AccountPriceFloors{Enabled: spec.AccountFloorsEnabled},
+			PriceFloors: config.AccountPriceFloors{Enabled: spec.AccountFloorsEnabled, EnforceDealFloors: spec.AccountEnforceDealFloors},
 			Privacy:     spec.AccountPrivacy,
 			Validations: spec.AccountConfigBidValidation,
 		},
@@ -5493,6 +5493,7 @@ type exchangeSpec struct {
 	HostConfigBidValidation    config.Validations     `json:"host_bid_validations"`
 	AccountConfigBidValidation config.Validations     `json:"account_bid_validations"`
 	AccountFloorsEnabled       bool                   `json:"account_floors_enabled"`
+	AccountEnforceDealFloors   bool                   `json:"account_enforce_deal_floors"`
 	FledgeEnabled              bool                   `json:"fledge_enabled,omitempty"`
 	MultiBid                   *multiBidSpec          `json:"multiBid,omitempty"`
 	Server                     exchangeServer         `json:"server,omitempty"`
