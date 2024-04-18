@@ -60,7 +60,8 @@
                   "impid": "1",
                   "price": 2.50,
                   "adm": "some-test-ad",
-                  "crid": "test-crid"
+                  "crid": "test-crid",
+                  "mtype": 3
                 }
               ]
             }
@@ -79,7 +80,8 @@
             "impid": "1",
             "price": 2.50,
             "adm": "some-test-ad",
-            "crid": "test-crid"
+            "crid": "test-crid",
+            "mtype": 3
           },
           "type": "audio"
         }

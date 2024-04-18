@@ -94,14 +94,15 @@
             "bid": [
               {
                 "id": "randomid",
-                "impid": "wrong-imp-id",
+                "impid": "test-imp-id",
                 "price": 0.500000,
                 "adid": "12345678",
                 "adm": "some-test-ad",
                 "cid": "987",
                 "crid": "12345678",
                 "h": 250,
-                "w": 300
+                "w": 300,
+                "mtype": 5
               }
             ]
           }
@@ -117,7 +118,7 @@
   }],
   "expectedMakeBidsErrors": [
     {
-      "value": "Failed to find impression \"wrong-imp-id\"",
+      "value": "unable to fetch mediaType for imp: test-imp-id",
       "comparison": "literal"
     }
   ]

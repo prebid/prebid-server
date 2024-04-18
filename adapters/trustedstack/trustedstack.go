@@ -82,31 +82,12 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 
 func getMediaTypeForImp(bid *openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
 	mediaType, err := getBidMediaTypeFromMtype(bid)
-	if err == nil {
-		return mediaType, nil
-	}
-
-	for _, imp := range imps {
-		if imp.ID == bid.ImpID {
-			switch {
-			case imp.Banner != nil && imp.Video == nil && imp.Audio == nil && imp.Native == nil:
-				mediaType = openrtb_ext.BidTypeBanner
-			case imp.Banner == nil && imp.Video != nil && imp.Audio == nil && imp.Native == nil:
-				mediaType = openrtb_ext.BidTypeVideo
-			case imp.Banner == nil && imp.Video == nil && imp.Audio != nil && imp.Native == nil:
-				mediaType = openrtb_ext.BidTypeAudio
-			case imp.Banner == nil && imp.Video == nil && imp.Audio == nil && imp.Native != nil:
-				mediaType = openrtb_ext.BidTypeNative
-			}
+	if err != nil {
+		return "", &errortypes.BadInput{
+			Message: err.Error(),
 		}
 	}
-
-	if mediaType != "" {
-		return mediaType, nil
-	}
-	return "", &errortypes.BadInput{
-		Message: fmt.Sprintf("Failed to find impression \"%s\"", bid.ImpID),
-	}
+	return mediaType, nil
 }
 
 func getBidMediaTypeFromMtype(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
