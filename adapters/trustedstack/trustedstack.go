@@ -18,12 +18,10 @@ type adapter struct {
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var errs []error
 
 	reqJson, err := json.Marshal(request)
 	if err != nil {
-		errs = append(errs, err)
-		return nil, errs
+		return nil, []error{err}
 	}
 
 	headers := http.Header{}
@@ -35,7 +33,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		Body:    reqJson,
 		Headers: headers,
 		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
-	}}, errs
+	}}, nil
 }
 
 func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
@@ -87,10 +85,12 @@ func getMediaTypeForImp(bid *openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.Bid
 	if err == nil {
 		return mediaType, nil
 	}
-	mediaType = openrtb_ext.BidTypeBanner
+
 	for _, imp := range imps {
 		if imp.ID == bid.ImpID {
 			switch {
+			case imp.Banner != nil && imp.Video == nil && imp.Audio == nil && imp.Native == nil:
+				mediaType = openrtb_ext.BidTypeBanner
 			case imp.Banner == nil && imp.Video != nil && imp.Audio == nil && imp.Native == nil:
 				mediaType = openrtb_ext.BidTypeVideo
 			case imp.Banner == nil && imp.Video == nil && imp.Audio != nil && imp.Native == nil:
@@ -98,10 +98,12 @@ func getMediaTypeForImp(bid *openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.Bid
 			case imp.Banner == nil && imp.Video == nil && imp.Audio == nil && imp.Native != nil:
 				mediaType = openrtb_ext.BidTypeNative
 			}
-			return mediaType, nil
 		}
 	}
 
+	if mediaType != "" {
+		return mediaType, nil
+	}
 	return "", &errortypes.BadInput{
 		Message: fmt.Sprintf("Failed to find impression \"%s\"", bid.ImpID),
 	}
