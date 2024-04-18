@@ -64,6 +64,7 @@
                   "adid": "19005",
                   "adm": "<!-- admarkup -->",
                   "cat": ["IAB2"],
+                  "mtype": 1,
                   "adomain": ["test.com"],
                   "h": 250,
                   "w": 300

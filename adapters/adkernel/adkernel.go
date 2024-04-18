@@ -259,48 +259,32 @@ func (adapter *adkernelAdapter) MakeBids(internalRequest *openrtb2.BidRequest, e
 	bidResponse.Currency = bidResp.Cur
 	for i := 0; i < len(seatBid.Bid); i++ {
 		bid := seatBid.Bid[i]
-		origImpId := bid.ImpID
-		typeSuffix := ""
-		if strings.HasSuffix(origImpId, mf_suffix) {
-			sfxStart := len(origImpId) - len(mf_suffix) - 1
-			typeSuffix = origImpId[sfxStart:]
-			bid.ImpID = origImpId[:sfxStart]
+		if strings.HasSuffix(bid.ImpID, mf_suffix) {
+			sfxStart := len(bid.ImpID) - len(mf_suffix) - 1
+			bid.ImpID = bid.ImpID[:sfxStart]
 		}
 		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 			Bid:     &bid,
-			BidType: getMediaTypeForImpID(bid.ImpID, typeSuffix, internalRequest.Imp),
+			BidType: getMediaTypeForBid(&bid),
 		})
 	}
 	return bidResponse, nil
 }
 
 // getMediaTypeForImp figures out which media type this bid is for
-func getMediaTypeForImpID(impID string, typeSuffix string, imps []openrtb2.Imp) openrtb_ext.BidType {
-	if len(typeSuffix) > 0 {
-		if typeSuffix == mf_suffix_banner {
-			return openrtb_ext.BidTypeBanner
-		} else if typeSuffix == mf_suffix_video {
-			return openrtb_ext.BidTypeVideo
-		} else if typeSuffix == mf_suffix_audio {
-			return openrtb_ext.BidTypeAudio
-		} else if typeSuffix == mf_suffix_native {
-			return openrtb_ext.BidTypeNative
-		}
+func getMediaTypeForBid(bid *openrtb2.Bid) openrtb_ext.BidType {
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner
+	case openrtb2.MarkupAudio:
+		return openrtb_ext.BidTypeAudio
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo
+	default:
+		return openrtb_ext.BidTypeBanner
 	}
-	for _, imp := range imps {
-		if imp.ID == impID {
-			if imp.Banner != nil {
-				return openrtb_ext.BidTypeBanner
-			} else if imp.Video != nil {
-				return openrtb_ext.BidTypeVideo
-			} else if imp.Audio != nil {
-				return openrtb_ext.BidTypeAudio
-			} else if imp.Native != nil {
-				return openrtb_ext.BidTypeNative
-			}
-		}
-	}
-	return openrtb_ext.BidTypeVideo
 }
 
 func newBadInputError(message string) error {

@@ -75,6 +75,7 @@
                   "cat": [
                     "IAB2"
                   ],
+                  "mtype": 2,
                   "adomain": [
                     "video-example.com"
                   ]

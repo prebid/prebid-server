@@ -90,6 +90,7 @@
                   "crid": "2002",
                   "adid": "2002",
                   "adm": "<!-- admarkup -->",
+                  "mtype": 1,
                   "adomain": [
                     "tag-example.com"
                   ]
@@ -102,6 +103,7 @@
                   "crid": "702",
                   "adid": "702",
                   "adm": "<!-- native response -->",
+                  "mtype": 4,
                   "adomain": [
                     "tag-example.com"
                   ]
@@ -114,6 +116,7 @@
                   "crid": "172",
                   "adid": "172",
                   "nurl": "http://adkernel.com/win?f=nurl",
+                  "mtype": 3,
                   "adomain": [
                     "tag-example.com"
                   ]
