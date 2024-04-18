@@ -36,7 +36,8 @@
     {
       "expectedRequest": {
         "uri": "http://rtb.e-planning.net/pbs/1/12345/1/FILE/ROS?e=970x250%3A970x250&ncb=1&ur=FILE",
-        "body": {}
+        "body": {},
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,

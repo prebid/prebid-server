@@ -87,7 +87,8 @@
           },
           "badv": ["ford.com"],
           "bcat": ["IAB-1", "IAB-2"]
-        }
+        },
+        "impIDs":["video-imp-id"]
       },
       "mockResponse": {
         "status": 200,

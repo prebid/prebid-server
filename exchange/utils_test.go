@@ -1015,10 +1015,13 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 			},
 		}.Builder
 
+		metricsMock := metrics.MetricsEngineMock{}
+		metricsMock.Mock.On("RecordAdapterBuyerUIDScrubbed", mock.Anything).Return()
+
 		bidderToSyncerKey := map[string]string{}
 		reqSplitter := &requestSplitter{
 			bidderToSyncerKey: bidderToSyncerKey,
-			me:                &metrics.MetricsEngineMock{},
+			me:                &metricsMock,
 			privacyConfig:     privacyConfig,
 			gdprPermsBuilder:  gdprPermissionsBuilder,
 			hostSChainNode:    nil,
@@ -1032,9 +1035,11 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 		if test.expectDataScrub {
 			assert.Equal(t, result.BidRequest.User.BuyerUID, "", test.description+":User.BuyerUID")
 			assert.Equal(t, result.BidRequest.Device.DIDMD5, "", test.description+":Device.DIDMD5")
+			metricsMock.AssertCalled(t, "RecordAdapterBuyerUIDScrubbed", openrtb_ext.BidderAppnexus)
 		} else {
 			assert.NotEqual(t, result.BidRequest.User.BuyerUID, "", test.description+":User.BuyerUID")
 			assert.NotEqual(t, result.BidRequest.Device.DIDMD5, "", test.description+":Device.DIDMD5")
+			metricsMock.AssertNotCalled(t, "RecordAdapterBuyerUIDScrubbed", openrtb_ext.BidderAppnexus)
 		}
 		assert.Equal(t, test.expectPrivacyLabels, privacyLabels, test.description+":PrivacyLabels")
 	}
@@ -2141,9 +2146,12 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			gdprDefaultValue = gdpr.SignalNo
 		}
 
+		metricsMock := metrics.MetricsEngineMock{}
+		metricsMock.Mock.On("RecordAdapterBuyerUIDScrubbed", mock.Anything).Return()
+
 		reqSplitter := &requestSplitter{
 			bidderToSyncerKey: map[string]string{},
-			me:                &metrics.MetricsEngineMock{},
+			me:                &metricsMock,
 			privacyConfig:     privacyConfig,
 			gdprPermsBuilder:  gdprPermissionsBuilder,
 			hostSChainNode:    nil,
@@ -2162,9 +2170,11 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 		if test.gdprScrub {
 			assert.Equal(t, result.BidRequest.User.BuyerUID, "", test.description+":User.BuyerUID")
 			assert.Equal(t, result.BidRequest.Device.DIDMD5, "", test.description+":Device.DIDMD5")
+			metricsMock.AssertCalled(t, "RecordAdapterBuyerUIDScrubbed", openrtb_ext.BidderAppnexus)
 		} else {
 			assert.NotEqual(t, result.BidRequest.User.BuyerUID, "", test.description+":User.BuyerUID")
 			assert.NotEqual(t, result.BidRequest.Device.DIDMD5, "", test.description+":Device.DIDMD5")
+			metricsMock.AssertNotCalled(t, "RecordAdapterBuyerUIDScrubbed", openrtb_ext.BidderAppnexus)
 		}
 		assert.Equal(t, test.expectPrivacyLabels, privacyLabels, test.description+":PrivacyLabels")
 	}
@@ -3177,7 +3187,7 @@ func TestCleanOpenRTBRequestsBidAdjustment(t *testing.T) {
 			}},
 		},
 		{
-			description:        "bidAjustement Not provided",
+			description:        "bidAdjustment Not provided",
 			gdprAccountEnabled: &falseValue,
 			gdprHostEnabled:    true,
 			gdpr:               "1",
@@ -3219,6 +3229,7 @@ func TestCleanOpenRTBRequestsBidAdjustment(t *testing.T) {
 			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
 			UserSyncs:         &emptyUsersync{},
 			Account:           accountConfig,
+			TCF2Config:        gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 		}
 		gdprPermissionsBuilder := fakePermissionsBuilder{
 			permissions: &permissionsMock{
@@ -4522,6 +4533,7 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 		allow             bool
 		expectedReqNumber int
 		expectedUser      openrtb2.User
+		expectUserScrub   bool
 		expectedDevice    openrtb2.Device
 		expectedSource    openrtb2.Source
 		expectedImpExt    json.RawMessage
@@ -4569,6 +4581,7 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 				Ext:      json.RawMessage(`{"test":2}`),
 				Data:     nil,
 			},
+			expectUserScrub: true,
 			expectedDevice: openrtb2.Device{
 				UA:       deviceUA,
 				Language: "EN",
@@ -4666,12 +4679,16 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 						AnonKeepBits: 16,
 					},
 				}},
+				TCF2Config: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 			}
+
+			metricsMock := metrics.MetricsEngineMock{}
+			metricsMock.Mock.On("RecordAdapterBuyerUIDScrubbed", mock.Anything).Return()
 
 			bidderToSyncerKey := map[string]string{}
 			reqSplitter := &requestSplitter{
 				bidderToSyncerKey: bidderToSyncerKey,
-				me:                &metrics.MetricsEngineMock{},
+				me:                &metricsMock,
 				hostSChainNode:    nil,
 				bidderInfo:        config.BidderInfos{},
 			}
@@ -4687,6 +4704,11 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 
 				if len(test.expectedImpExt) > 0 {
 					assert.JSONEq(t, string(test.expectedImpExt), string(bidderRequests[0].BidRequest.Imp[0].Ext))
+				}
+				if test.expectUserScrub {
+					metricsMock.AssertCalled(t, "RecordAdapterBuyerUIDScrubbed", openrtb_ext.BidderAppnexus)
+				} else {
+					metricsMock.AssertNotCalled(t, "RecordAdapterBuyerUIDScrubbed", openrtb_ext.BidderAppnexus)
 				}
 			}
 		})

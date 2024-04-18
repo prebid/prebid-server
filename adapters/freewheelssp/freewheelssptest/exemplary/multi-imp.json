@@ -72,7 +72,8 @@
           "Componentid": [
             "prebid-go"
           ]
-        }
+        },
+        "impIDs":["imp-1","imp-2"]
       },
       "mockResponse": {
         "status": 200,
