@@ -93,7 +93,8 @@
             "crid": "19005",
             "w": 300,
             "h": 250,
-            "cat": ["IAB2"]
+            "cat": ["IAB2"],
+            "mtype": 1
           },
           "type": "banner"
         }

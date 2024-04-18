@@ -106,7 +106,8 @@
                 "crid": "2002",
                 "cat": [
                   "IAB2"
-                ]
+                ],
+                "mtype": 2
               },
               "type": "video"
             }
