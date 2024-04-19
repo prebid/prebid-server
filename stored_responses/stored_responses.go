@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/prebid/prebid-server/v2/stored_requests"
 )
@@ -21,21 +20,25 @@ type ImpBidderStoredResp map[string]map[string]json.RawMessage
 type ImpBidderReplaceImpID map[string]map[string]bool
 type BidderImpReplaceImpID map[string]map[string]bool
 
-func InitStoredBidResponses(req *openrtb2.BidRequest, storedBidResponses ImpBidderStoredResp) BidderImpsWithBidResponses {
-	removeImpsWithStoredResponses(req, storedBidResponses)
+func InitStoredBidResponses(reqWrapper *openrtb_ext.RequestWrapper, storedBidResponses ImpBidderStoredResp) BidderImpsWithBidResponses {
+	removeImpsWithStoredResponses(reqWrapper, storedBidResponses)
 	return buildStoredResp(storedBidResponses)
 }
 
 // removeImpsWithStoredResponses deletes imps with stored bid resp
-func removeImpsWithStoredResponses(req *openrtb2.BidRequest, storedBidResponses ImpBidderStoredResp) {
-	imps := req.Imp
-	req.Imp = nil //to indicate this bidder doesn't have real requests
+func removeImpsWithStoredResponses(reqWrapper *openrtb_ext.RequestWrapper, storedBidResponses ImpBidderStoredResp) {
+	imps := reqWrapper.BidRequest.Imp
+	reqWrapper.Imp = nil //to indicate this bidder doesn't have real requests
+
+	//remove imps with stored bid responses from reqWrapper.BidRequest.Imp
 	for _, imp := range imps {
 		if _, ok := storedBidResponses[imp.ID]; !ok {
 			//add real imp back to request
-			req.Imp = append(req.Imp, imp)
+			reqWrapper.BidRequest.Imp = append(reqWrapper.Imp, imp)
 		}
 	}
+
+	reqWrapper.SyncImps() // sync updated reqWrapper.BidRequest.Imp with reqWrapper impWrappers
 }
 
 func buildStoredResp(storedBidResponses ImpBidderStoredResp) BidderImpsWithBidResponses {

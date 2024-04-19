@@ -18,6 +18,7 @@ func TestRemoveImpsWithStoredResponses(t *testing.T) {
 		reqIn              *openrtb2.BidRequest
 		storedBidResponses ImpBidderStoredResp
 		expectedImps       []openrtb2.Imp
+		expectedImpWrapper []*openrtb_ext.ImpWrapper
 	}{
 		{
 			description: "request with imps and stored bid response for this imp",
@@ -27,7 +28,8 @@ func TestRemoveImpsWithStoredResponses(t *testing.T) {
 			storedBidResponses: ImpBidderStoredResp{
 				"imp-id1": {"appnexus": bidRespId1},
 			},
-			expectedImps: nil,
+			expectedImps:       nil,
+			expectedImpWrapper: []*openrtb_ext.ImpWrapper(nil),
 		},
 		{
 			description: "request with imps and stored bid response for one of these imp",
@@ -39,9 +41,10 @@ func TestRemoveImpsWithStoredResponses(t *testing.T) {
 				"imp-id1": {"appnexus": bidRespId1},
 			},
 			expectedImps: []openrtb2.Imp{
-				{
-					ID: "imp-id2",
-				},
+				{ID: "imp-id2"},
+			},
+			expectedImpWrapper: []*openrtb_ext.ImpWrapper{
+				{Imp: &openrtb2.Imp{ID: "imp-id2"}},
 			},
 		},
 		{
@@ -54,7 +57,8 @@ func TestRemoveImpsWithStoredResponses(t *testing.T) {
 				"imp-id1": {"appnexus": bidRespId1},
 				"imp-id2": {"appnexus": bidRespId1},
 			},
-			expectedImps: nil,
+			expectedImps:       nil,
+			expectedImpWrapper: []*openrtb_ext.ImpWrapper(nil),
 		},
 		{
 			description: "request with imps and no stored bid responses",
@@ -63,17 +67,26 @@ func TestRemoveImpsWithStoredResponses(t *testing.T) {
 				{ID: "imp-id2"},
 			}},
 			storedBidResponses: nil,
-
 			expectedImps: []openrtb2.Imp{
 				{ID: "imp-id1"},
 				{ID: "imp-id2"},
 			},
+			expectedImpWrapper: []*openrtb_ext.ImpWrapper{
+				{Imp: &openrtb2.Imp{ID: "imp-id1"}},
+				{Imp: &openrtb2.Imp{ID: "imp-id2"}},
+			},
 		},
 	}
 	for _, testCase := range testCases {
-		request := testCase.reqIn
-		removeImpsWithStoredResponses(request, testCase.storedBidResponses)
-		assert.Equal(t, testCase.expectedImps, request.Imp, "incorrect Impressions for testCase %s", testCase.description)
+		t.Run(testCase.description, func(t *testing.T) {
+			reqWrapper := &openrtb_ext.RequestWrapper{}
+			reqWrapper.BidRequest = testCase.reqIn
+			//reqWrapper.GetImp() //init rqWrapper.impWrapper with original impressions
+
+			removeImpsWithStoredResponses(reqWrapper, testCase.storedBidResponses)
+			assert.Equal(t, testCase.expectedImps, reqWrapper.Imp, "incorrect bid request Impressions")
+			assert.Equal(t, testCase.expectedImpWrapper, reqWrapper.GetImp(), "incorrect Impression Wrapper")
+		})
 	}
 }
 

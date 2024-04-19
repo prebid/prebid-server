@@ -72,6 +72,18 @@ func (rw *RequestWrapper) LenImp() int {
 	return len(rw.Imp)
 }
 
+// SyncImps synchronizes impWrappers with reqWrapper.BidRequest.Imp using the last one as a source of truth
+func (rw *RequestWrapper) SyncImps() {
+	if len(rw.Imp) > 0 {
+		rw.impWrappers = make([]*ImpWrapper, len(rw.Imp))
+		for i := range rw.Imp {
+			rw.impWrappers[i] = &ImpWrapper{Imp: &rw.Imp[i]}
+		}
+	} else {
+		rw.impWrappers = nil
+	}
+}
+
 func (rw *RequestWrapper) GetImp() []*ImpWrapper {
 	if rw.impWrappersAccessed {
 		return rw.impWrappers
