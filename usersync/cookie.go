@@ -225,7 +225,7 @@ type cookieJson struct {
 	OptOut bool                `json:"optout,omitempty"`
 }
 
-func (cookie *Cookie) MarshalJSON() ([]byte, error) {
+func (cookie *Cookie) MarshalJSON() ([]byte, error) { // nosemgrep: marshal-json-pointer-receiver
 	return jsonutil.Marshal(cookieJson{
 		UIDs:   cookie.uids,
 		OptOut: cookie.optOut,

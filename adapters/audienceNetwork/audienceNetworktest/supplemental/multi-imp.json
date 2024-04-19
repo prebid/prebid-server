@@ -100,7 +100,8 @@
                         "authentication_id": "dfecd103a45daeb2a01728afb8ce78f6738f6007ecfebe1ca616b196e22b43e9",
                         "platformid": "test-platform-id"
                     }
-                }
+                },
+                "impIDs":["test-imp-1"]
             },
             "mockResponse": {
                 "status": 200,
@@ -171,7 +172,8 @@
                         "authentication_id": "a5fead11a4db86d0f62f57c3d8001640227120c8ef236549f0db010c1dbab399",
                         "platformid": "test-platform-id"
                     }
-                }
+                },
+                "impIDs":["test-imp-2"]
             },
             "mockResponse": {
                 "status": 200,

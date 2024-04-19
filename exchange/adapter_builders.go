@@ -38,6 +38,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/apacdex"
 	"github.com/prebid/prebid-server/v2/adapters/appnexus"
 	"github.com/prebid/prebid-server/v2/adapters/appush"
+	"github.com/prebid/prebid-server/v2/adapters/aso"
 	"github.com/prebid/prebid-server/v2/adapters/audienceNetwork"
 	"github.com/prebid/prebid-server/v2/adapters/automatad"
 	"github.com/prebid/prebid-server/v2/adapters/avocet"
@@ -164,6 +165,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/smartx"
 	"github.com/prebid/prebid-server/v2/adapters/smartyads"
 	"github.com/prebid/prebid-server/v2/adapters/smilewanted"
+	"github.com/prebid/prebid-server/v2/adapters/smrtconnect"
 	"github.com/prebid/prebid-server/v2/adapters/sonobi"
 	"github.com/prebid/prebid-server/v2/adapters/sovrn"
 	"github.com/prebid/prebid-server/v2/adapters/sovrnXsp"
@@ -243,6 +245,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderApacdex:           apacdex.Builder,
 		openrtb_ext.BidderAppnexus:          appnexus.Builder,
 		openrtb_ext.BidderAppush:            appush.Builder,
+		openrtb_ext.BidderAso:               aso.Builder,
 		openrtb_ext.BidderAudienceNetwork:   audienceNetwork.Builder,
 		openrtb_ext.BidderAutomatad:         automatad.Builder,
 		openrtb_ext.BidderAvocet:            avocet.Builder,
@@ -371,6 +374,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderSmartx:            smartx.Builder,
 		openrtb_ext.BidderSmartyAds:         smartyads.Builder,
 		openrtb_ext.BidderSmileWanted:       smilewanted.Builder,
+		openrtb_ext.BidderSmrtconnect:       smrtconnect.Builder,
 		openrtb_ext.BidderSonobi:            sonobi.Builder,
 		openrtb_ext.BidderSovrn:             sovrn.Builder,
 		openrtb_ext.BidderSovrnXsp:          sovrnXsp.Builder,
