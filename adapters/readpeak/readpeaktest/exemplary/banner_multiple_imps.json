@@ -116,7 +116,8 @@
             "domain": "http://test.com",
             "page": "http://test.com/test"
           }
-        }
+        },
+        "impIDs":["imp-id-banner-1", "imp-id-banner-2"]
       },
       "mockResponse": {
         "status": 200,

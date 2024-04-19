@@ -60,7 +60,8 @@
             "domain": "http://test.com",
             "page": "http://test.com/test"
           }
-        }
+        },
+        "impIDs":["imp-id-native"]
       },
       "mockResponse": {
         "status": 204

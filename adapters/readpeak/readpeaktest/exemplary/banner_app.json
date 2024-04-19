@@ -74,7 +74,8 @@
             },
             "domain": "app.test.com"
           }
-        }
+        },
+        "impIDs":["imp-id-banner"]
       },
       "mockResponse": {
         "status": 200,
