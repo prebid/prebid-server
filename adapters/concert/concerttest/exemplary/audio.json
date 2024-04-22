@@ -34,7 +34,7 @@
     "httpCalls": [
       {
         "expectedRequest": {
-          "uri": "http://bidder-url.com/api/bid",
+          "uri": "https://bids.concert.io/bids/openrtb",
           "body": {
             "id": "test-request-id",
             "imp": [
