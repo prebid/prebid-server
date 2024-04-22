@@ -1,5 +1,36 @@
 {
-    "mockBidRequest": {},
+    "mockBidRequest": {
+        "id": "some-request-id",
+        "imp": [
+            {
+                "id": "some-imp-id",
+                "audio": {
+                    "mimes": ["audio/mp3"],
+                    "minduration": 5,
+                    "maxduration": 30
+                },
+                "ext": {
+                    "bidder": {
+                        "partnerId": "partner_name",
+                        "placementId": 1234567,
+                        "site": "site_name",
+                        "slot": "slot_name",
+                        "sizes": [[1030, 590]]
+                    }
+                }
+            }
+        ],
+        "site": {
+            "page": "http://www.example.com"
+        },
+        "device": {
+            "ua": "test-user-agent",
+            "ip": "123.123.123.123"
+        },
+        "user": {
+            "buyeruid": "some-buyer-uid"
+        }
+    },
     "httpCalls": [],
     "expectedBidResponses": []
 }
