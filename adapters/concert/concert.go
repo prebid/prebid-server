@@ -17,84 +17,82 @@ type adapter struct {
 	endpoint string
 }
 
+// Builder builds a new instance of the Concert adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
-		endpoint: config.Endpoint,
+	endpoint: config.Endpoint,
 	}
 	return bidder, nil
 }
 
-func (adapter *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) (requestsToBidder []*adapters.RequestData, errs []error) {
-	jsonBody, err := json.Marshal(openRTBRequest)
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	requestJSON, err := json.Marshal(request)
 	if err != nil {
-		errs = append(errs, err)
-		return nil, errs
+		return nil, []error{err}
 	}
 
-	headers := http.Header{}
-	headers.Add("Content-Type", "application/json;charset=utf-8")
-
-	request := &adapters.RequestData{
+	requestData := &adapters.RequestData{
 		Method:  "POST",
-		Uri:     adapter.endpoint,
-		Body:    jsonBody,
-		Headers: headers,
+		Uri:     a.endpoint,
+		Body:    requestJSON,
 	}
 
-	requestsToBidder = append(requestsToBidder, request)
+	return []*adapters.RequestData{requestData}, nil
+}
+  
+func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	if bid.Ext != nil {
+		var bidExt openrtb_ext.ExtBid
+		err := json.Unmarshal(bid.Ext, &bidExt)
+		if err == nil && bidExt.Prebid != nil {
+		return openrtb_ext.ParseBidType(string(bidExt.Prebid.Type))
+		}
+	}
 
-	return requestsToBidder, errs
+	return "", &errortypes.BadServerResponse{
+		Message: fmt.Sprintf("Failed to parse impression \"%s\" mediatype", bid.ImpID),
+	}
 }
 
-func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if response.StatusCode == http.StatusNoContent {
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	if responseData.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
 
-	if response.StatusCode == http.StatusBadRequest {
-		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
-		}}
+	if responseData.StatusCode == http.StatusBadRequest {
+		err := &errortypes.BadInput{
+		Message: "Unexpected status code: 400. Bad request from publisher. Run with request.debug = 1 for more info.",
+		}
+		return nil, []error{err}
 	}
 
-	bidResponse := new(openrtb2.BidResponse)
-	if err := json.Unmarshal(response.Body, bidResponse); err != nil {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Bad server response: %s", err),
-		}}
+	if responseData.StatusCode != http.StatusOK {
+		err := &errortypes.BadServerResponse{
+		Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info.", responseData.StatusCode),
+		}
+		return nil, []error{err}
 	}
 
-	bidderResponse := adapters.NewBidderResponseWithBidsCapacity(5)
+	var response openrtb2.BidResponse
+	if err := json.Unmarshal(responseData.Body, &response); err != nil {
+		return nil, []error{err}
+	}
 
-	for _, sb := range bidResponse.SeatBid {
-		for i := range sb.Bid {
-			bidType, err := getBidType(sb.Bid[i].ImpID, internalRequest.Imp)
-			if err != nil {
-				return nil, []error{err}
-			}
-			bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
-				Bid:     &sb.Bid[i],
-				BidType: bidType,
-			})
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
+	bidResponse.Currency = response.Cur
+	var errors []error
+	for _, seatBid := range response.SeatBid {
+		for i, bid := range seatBid.Bid {
+		bidType, err := getMediaTypeForBid(bid)
+		if err != nil {
+			errors = append(errors, err)
+			continue
+		}
+		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+			Bid:     &seatBid.Bid[i],
+			BidType: bidType,
+		})
 		}
 	}
-
-	return bidderResponse, nil
-}
-
-func getBidType(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
-	for _, imp := range imps {
-		if imp.ID == impID {
-			if imp.Banner != nil {
-				return openrtb_ext.BidTypeBanner, nil
-			}
-			if imp.Video != nil {
-				return openrtb_ext.BidTypeVideo, nil
-			}
-			if imp.Audio != nil {
-				return openrtb_ext.BidTypeAudio, nil
-			}
-		}
-	}
-	return "", fmt.Errorf("Unknown impression type for ID %s", impID)
+	return bidResponse, nil
 }

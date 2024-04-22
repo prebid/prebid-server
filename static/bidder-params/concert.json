@@ -7,30 +7,6 @@
       "partnerId": {
           "type": "string",
           "description": "The partner id assigned by concert."
-      },
-      "placementId": {
-          "type": "integer",
-          "description": "The placement id."
-      },
-      "site": {
-          "type": "string",
-          "description": "The site name."
-      },
-      "slot": {
-          "type": "string",
-          "description": "The slot name."
-      },
-      "sizes": {
-          "type": "array",
-          "items": {
-              "type": "array",
-              "items": {
-                  "type": "integer"
-              },
-              "minItems": 2,
-              "maxItems": 2
-          },
-          "description": "All sizes this ad unit accepts."
       }
   },
   "required": ["partnerId"]
