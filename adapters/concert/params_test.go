@@ -34,17 +34,17 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
-    `{"partnerId": "partner_name"}`,
-    `{"partnerId": "partner_name", "placementId": 1234567}`,
-    `{"partnerId": "partner_name", "placementId": 1234567, "site": "site_name"}`,
-    `{"partnerId": "partner_name", "placementId": 1234567, "site": "site_name", "slot": "slot_name"}`,
-    `{"partnerId": "partner_name", "placementId": 1234567, "site": "site_name", "slot": "slot_name", "sizes": [[1030, 590]]}`,
+	`{"partnerId": "partner_name"}`,
+	`{"partnerId": "partner_name", "placementId": 1234567}`,
+	`{"partnerId": "partner_name", "placementId": 1234567, "site": "site_name"}`,
+	`{"partnerId": "partner_name", "placementId": 1234567, "site": "site_name", "slot": "slot_name"}`,
+	`{"partnerId": "partner_name", "placementId": 1234567, "site": "site_name", "slot": "slot_name", "sizes": [[1030, 590]]}`,
 }
 
 var invalidParams = []string{
-    `{"partnerId": ""}`,
-    `{"placementId": 1234567}`,
-    `{"site": "site_name"}`,
-    `{"slot": "slot_name"}`,
-    `{"sizes": [[1030, 590]]}`,
+	`{"partnerId": ""}`,
+	`{"placementId": 1234567}`,
+	`{"site": "site_name"}`,
+	`{"slot": "slot_name"}`,
+	`{"sizes": [[1030, 590]]}`,
 }
