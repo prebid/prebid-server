@@ -1,39 +1,91 @@
 {
     "mockBidRequest": {
-        "id": "some-request-id",
-        "imp": [
-            {
-                "id": "some-imp-id",
+      "id": "some-request-id",
+      "imp": [
+        {
+          "id": "some-imp-id",
+          "banner": {
+            "format": [
+              {
+                "w": 1030,
+                "h": 590
+              }
+            ]
+          },
+          "ext": {
+            "bidder": {
+              "partnerId": "partner_name",
+              "placementId": 1234567,
+              "site": "site_name",
+              "slot": "slot_name",
+              "sizes": [[1030, 590]]
+            }
+          }
+        }
+      ],
+      "site": {
+        "page": "http://www.example.com"
+      },
+      "device": {
+        "ua": "test-user-agent",
+        "ip": "123.123.123.123"
+      },
+      "user": {
+        "buyeruid": "some-buyer-uid"
+      }
+    },
+    "httpCalls": [
+      {
+        "expectedRequest": {
+          "uri": "http://bidder-url.com/api/bid",
+          "body": {
+            "id": "test-request-id",
+            "imp": [
+              {
+                "id": "test-imp-id",
                 "banner": {
-                    "format": [
-                        {
-                            "w": 1030,
-                            "h": 590
-                        }
-                    ]
+                  "format": [
+                    {
+                      "w": 1030,
+                      "h": 590
+                    }
+                  ]
                 },
                 "ext": {
-                    "bidder": {
-                        "partnerId": "partner_name",
-                        "placementId": 1234567,
-                        "site": "site_name",
-                        "slot": "slot_name",
-                        "sizes": [[1030, 590]]
-                    }
+                  "bidder": {
+                    "partnerId": "partner_name",
+                    "placementId": 1234567,
+                    "site": "site_name",
+                    "slot": "slot_name",
+                    "sizes": [[1030, 590]]
+                  }
                 }
-            }
-        ],
-        "site": {
-            "page": "http://www.example.com"
+              }
+            ]
+          }
         },
-        "device": {
-            "ua": "test-user-agent",
-            "ip": "123.123.123.123"
-        },
-        "user": {
-            "buyeruid": "some-buyer-uid"
+        "mockResponse": {
+          "status": 200,
+          "body": {
+            "id": "test-response-id",
+            "seatbid": [
+              {
+                "bid": [
+                  {
+                    "id": "test-bid-id",
+                    "impid": "test-imp-id",
+                    "price": 1.23,
+                    "adm": "<div style='width:1030px; height:590px; background-color:#000; color:#fff;'><h1>Banner Ad</h1><p>This is a mock banner ad</p></div>",
+                    "crid": "test-creative-id",
+                    "w": 1030,
+                    "h": 590
+                  }
+                ]
+              }
+            ]
+          }
         }
-    },
-    "httpCalls": [],
+      }
+    ],
     "expectedBidResponses": []
-}
+  }
