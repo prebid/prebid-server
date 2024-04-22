@@ -107,6 +107,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 				"Accept":            []string{"application/json"},
 				"X-OpenRTB-Version": []string{"2.5"},
 			},
+			ImpIDs: openrtb_ext.GetImpIDs(requestCopy.Imp),
 		}
 
 		requests = append(requests, requestData)

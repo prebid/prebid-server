@@ -343,6 +343,7 @@ func splitRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, requestExt
 			Uri:     uri,
 			Body:    reqJSON,
 			Headers: headers,
+			ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 		})
 		startInd = endInd
 	}

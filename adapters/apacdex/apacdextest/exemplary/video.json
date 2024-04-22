@@ -43,7 +43,8 @@
               }
             }
           ]
-        }
+        },
+        "impIDs":["test-video-imp-id"]
       },
       "mockResponse": {
         "status": 204

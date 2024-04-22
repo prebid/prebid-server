@@ -74,7 +74,8 @@
           "user": {
             "buyeruid": "azk-user-id"
           }
-        }
+        },
+        "impIDs":["test-no-impUrl-id"]
       },
       "mockResponse": {
         "status": 200,

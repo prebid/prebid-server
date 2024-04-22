@@ -156,6 +156,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	w.Header().Set("AMP-Access-Control-Allow-Source-Origin", origin)
 	w.Header().Set("Access-Control-Expose-Headers", "AMP-Access-Control-Allow-Source-Origin")
 	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
+	setBrowsingTopicsHeader(w, r)
 
 	// There is no body for AMP requests, so we pass a nil body and ignore the return value.
 	_, rejectErr := hookExecutor.ExecuteEntrypointStage(r, nilBody)
@@ -228,6 +229,11 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		}
 		ao.Errors = append(ao.Errors, acctIDErrs...)
 		return
+	}
+
+	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
+	if errs := deps.setFieldsImplicitly(r, reqWrapper, account); len(errs) > 0 {
+		errL = append(errL, errs...)
 	}
 
 	hasStoredResponses := len(storedAuctionResponses) > 0
@@ -441,6 +447,9 @@ func getExtBidResponse(
 		warnings = make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage)
 	}
 	for _, v := range errortypes.WarningOnly(errs) {
+		if errortypes.ReadScope(v) == errortypes.ScopeDebug && !(reqWrapper != nil && reqWrapper.Test == 1) {
+			continue
+		}
 		bidderErr := openrtb_ext.ExtBidderMessage{
 			Code:    errortypes.ReadCode(v),
 			Message: v.Error(),
@@ -500,9 +509,6 @@ func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openr
 
 	// move to using the request wrapper
 	req = &openrtb_ext.RequestWrapper{BidRequest: reqNormal}
-
-	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
-	deps.setFieldsImplicitly(httpRequest, req)
 
 	// Need to ensure cache and targeting are turned on
 	e = initAmpTargetingAndCache(req)

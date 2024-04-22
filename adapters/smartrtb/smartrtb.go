@@ -140,6 +140,7 @@ func (s *SmartRTBAdapter) MakeRequests(brq *openrtb2.BidRequest, reqInfo *adapte
 		Uri:     url,
 		Body:    rq,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(brq.Imp),
 	}}, errs
 }
 

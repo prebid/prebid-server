@@ -95,7 +95,8 @@
               "str": "10.0"
             }
           }
-        }
+        },
+        "impIDs":["banner-imp-id-1"]
       },
       "mockResponse": {
         "status": 200,
@@ -171,7 +172,8 @@
               "str": "10.0"
             }
           }
-        }
+        },
+        "impIDs":["banner-imp-id-2"]
       },
       "mockResponse": {
         "status": 200,
