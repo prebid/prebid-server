@@ -31,16 +31,16 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	}
 
 	if request.Site != nil {
-        if request.Site.Publisher == nil {
-            request.Site.Publisher = &openrtb2.Publisher{}
-        }
-        request.Site.Publisher.ID = partnerId
-    }
+		if request.Site.Publisher == nil {
+			request.Site.Publisher = &openrtb2.Publisher{}
+		}
+		request.Site.Publisher.ID = partnerId
+	}
 
 	requestJSON, err := json.Marshal(request)
 	if err != nil {
-        return nil, []error{err}
-    }
+		return nil, []error{err}
+	}
 
 	requestData := &adapters.RequestData{
 		Method: "POST",
@@ -109,15 +109,15 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 }
 
 func extractPartnerId(request *openrtb2.BidRequest) (string, error) {
-    if len(request.Imp) > 0 {
-        var extBidders openrtb_ext.ImpExtConcert
-        err := json.Unmarshal(request.Imp[0].Ext, &extBidders)
-        if err != nil {
-            return "", err
-        }
+	if len(request.Imp) > 0 {
+		var extBidders openrtb_ext.ImpExtConcert
+		err := json.Unmarshal(request.Imp[0].Ext, &extBidders)
+		if err != nil {
+			return "", err
+		}
 
-        return extBidders.PartnerId, nil
-    }
+		return extBidders.PartnerId, nil
+	}
 
-    return "", nil
+	return "", nil
 }
