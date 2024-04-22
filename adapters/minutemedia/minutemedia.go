@@ -102,8 +102,7 @@ func extractOrg(openRTBRequest *openrtb2.BidRequest) (string, error) {
 			return "", fmt.Errorf("failed to unmarshal ImpExtMinuteMedia: %w", err)
 		}
 
-		// golangci-lint staticcheck SA4004: the surrounding loop is unconditionally terminated
-		// TODO: confirm this is intended and add '// nosemgrep: SA4004'
+		//nolint: staticcheck // SA4004: the surrounding loop is unconditionally terminated
 		return strings.TrimSpace(impExt.Org), nil
 	}
 
