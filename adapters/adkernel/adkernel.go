@@ -263,27 +263,33 @@ func (adapter *adkernelAdapter) MakeBids(internalRequest *openrtb2.BidRequest, e
 			sfxStart := len(bid.ImpID) - len(mf_suffix) - 1
 			bid.ImpID = bid.ImpID[:sfxStart]
 		}
+		bidType, err := getMediaTypeForBid(&bid)
+		if err != nil {
+			return nil, []error{err}
+		}
 		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 			Bid:     &bid,
-			BidType: getMediaTypeForBid(&bid),
+			BidType: bidType,
 		})
 	}
 	return bidResponse, nil
 }
 
 // getMediaTypeForImp figures out which media type this bid is for
-func getMediaTypeForBid(bid *openrtb2.Bid) openrtb_ext.BidType {
+func getMediaTypeForBid(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 	switch bid.MType {
 	case openrtb2.MarkupBanner:
-		return openrtb_ext.BidTypeBanner
+		return openrtb_ext.BidTypeBanner, nil
 	case openrtb2.MarkupAudio:
-		return openrtb_ext.BidTypeAudio
+		return openrtb_ext.BidTypeAudio, nil
 	case openrtb2.MarkupNative:
-		return openrtb_ext.BidTypeNative
+		return openrtb_ext.BidTypeNative, nil
 	case openrtb2.MarkupVideo:
-		return openrtb_ext.BidTypeVideo
+		return openrtb_ext.BidTypeVideo, nil
 	default:
-		return openrtb_ext.BidTypeBanner
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Unsupported MType %d", bid.MType),
+		}
 	}
 }
 
