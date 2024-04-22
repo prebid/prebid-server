@@ -49,6 +49,11 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 				Message: fmt.Sprintf("The prebid-server account config for account id \"%s\" is malformed. Please reach out to the prebid server host.", accountID),
 			}}
 		}
+		if err := config.UnpackDSADefault(account.Privacy.DSA); err != nil {
+			return nil, []error{&errortypes.MalformedAcct{
+				Message: fmt.Sprintf("The prebid-server account config DSA for account id \"%s\" is malformed. Please reach out to the prebid server host.", accountID),
+			}}
+		}
 
 		// Fill in ID if needed, so it can be left out of account definition
 		if len(account.ID) == 0 {
@@ -111,7 +116,7 @@ func setDerivedConfig(account *config.Account) {
 		if pc.VendorExceptions == nil {
 			continue
 		}
-		pc.VendorExceptionMap = make(map[openrtb_ext.BidderName]struct{})
+		pc.VendorExceptionMap = make(map[string]struct{})
 		for _, v := range pc.VendorExceptions {
 			pc.VendorExceptionMap[v] = struct{}{}
 		}

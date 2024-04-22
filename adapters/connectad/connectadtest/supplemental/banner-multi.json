@@ -99,7 +99,8 @@
               "ip": "111.111.111.111",
               "dnt": 1
             }
-          }
+          },
+          "impIDs":["test-banner-imp-id","test-banner-imp-id2"]
         },
         "mockResponse": {
           "status": 200,

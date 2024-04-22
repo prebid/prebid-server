@@ -88,6 +88,7 @@ func (a *adapter) MakeRequests(requestData *openrtb2.BidRequest, requestInfo *ad
 			Uri:     resolvedUrl,
 			Body:    requestBody,
 			Headers: getHeaders(&splittedRequestData),
+			ImpIDs:  openrtb_ext.GetImpIDs(splittedRequestData.Imp),
 		})
 	}
 

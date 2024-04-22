@@ -3177,7 +3177,7 @@ func TestCleanOpenRTBRequestsBidAdjustment(t *testing.T) {
 			}},
 		},
 		{
-			description:        "bidAjustement Not provided",
+			description:        "bidAdjustment Not provided",
 			gdprAccountEnabled: &falseValue,
 			gdprHostEnabled:    true,
 			gdpr:               "1",
@@ -3219,6 +3219,7 @@ func TestCleanOpenRTBRequestsBidAdjustment(t *testing.T) {
 			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
 			UserSyncs:         &emptyUsersync{},
 			Account:           accountConfig,
+			TCF2Config:        gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 		}
 		gdprPermissionsBuilder := fakePermissionsBuilder{
 			permissions: &permissionsMock{
@@ -4666,6 +4667,7 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 						AnonKeepBits: 16,
 					},
 				}},
+				TCF2Config: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 			}
 
 			bidderToSyncerKey := map[string]string{}

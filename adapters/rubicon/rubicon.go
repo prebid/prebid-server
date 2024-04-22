@@ -556,6 +556,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			Uri:     a.URI,
 			Body:    reqJSON,
 			Headers: headers,
+			ImpIDs:  openrtb_ext.GetImpIDs(rubiconRequest.Imp),
 		}
 		reqData.SetBasicAuth(a.XAPIUsername, a.XAPIPassword)
 		requestData = append(requestData, reqData)
@@ -938,7 +939,7 @@ func isVideo(imp openrtb2.Imp) bool {
 
 func isFullyPopulatedVideo(video *openrtb2.Video) bool {
 	// These are just recommended video fields for XAPI
-	return video.MIMEs != nil && video.Protocols != nil && video.MaxDuration != 0 && video.Linearity != 0 && video.API != nil
+	return video.MIMEs != nil && video.Protocols != nil && video.MaxDuration != 0 && video.Linearity != 0
 }
 
 func resolveNativeObject(native *openrtb2.Native, target map[string]interface{}) (*openrtb2.Native, error) {

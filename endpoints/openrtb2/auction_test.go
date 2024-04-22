@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/openrtb/v20/native1"
 	nativeRequests "github.com/prebid/openrtb/v20/native1/request"
@@ -42,6 +43,11 @@ import (
 )
 
 const jsonFileExtension string = ".json"
+
+func TestMain(m *testing.M) {
+	jsoniter.RegisterExtension(&jsonutil.RawMessageExtension{})
+	os.Exit(m.Run())
+}
 
 func TestJsonSampleRequests(t *testing.T) {
 	testSuites := []struct {
@@ -1644,6 +1650,8 @@ func TestValidateRequest(t *testing.T) {
 		description           string
 		givenIsAmp            bool
 		givenRequestWrapper   *openrtb_ext.RequestWrapper
+		givenHttpRequest      *http.Request
+		givenAccount          *config.Account
 		expectedErrorList     []error
 		expectedChannelObject *openrtb_ext.ExtRequestPrebidChannel
 	}{
@@ -1864,7 +1872,7 @@ func TestValidateRequest(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		errorList := deps.validateRequest(test.givenRequestWrapper, test.givenIsAmp, false, nil, false)
+		errorList := deps.validateRequest(test.givenAccount, test.givenHttpRequest, test.givenRequestWrapper, test.givenIsAmp, false, nil, false)
 		assert.Equalf(t, test.expectedErrorList, errorList, "Error doesn't match: %s\n", test.description)
 
 		if len(errorList) == 0 {
@@ -1933,9 +1941,13 @@ func TestValidateRequestExt(t *testing.T) {
 			givenRequestExt: json.RawMessage(`{"prebid":{"cache":{"bids":{},"vastxml":{}}}}`),
 		},
 		{
-			description:     "prebid targeting", // test integration with validateTargeting
-			givenRequestExt: json.RawMessage(`{"prebid":{"targeting":{}}}`),
-			expectedErrors:  []string{"ext.prebid.targeting: At least one of includewinners or includebidderkeys must be enabled to enable targeting support"},
+			description:     "prebid price granularity invalid",
+			givenRequestExt: json.RawMessage(`{"prebid":{"targeting":{"pricegranularity":{"precision":-1,"ranges":[{"min":0,"max":20,"increment":0.1}]}}}}`),
+			expectedErrors:  []string{"Price granularity error: precision must be non-negative"},
+		},
+		{
+			description:     "prebid native media type price granualrity valid",
+			givenRequestExt: json.RawMessage(`{"prebid":{"targeting":{"mediatypepricegranularity":{"native":{"precision":3,"ranges":[{"max":20,"increment":4.5}]}}}}}`),
 		},
 		{
 			description:     "valid multibid",
@@ -1977,74 +1989,8 @@ func TestValidateTargeting(t *testing.T) {
 			expectedError:  nil,
 		},
 		{
-			name:           "empty",
-			givenTargeting: &openrtb_ext.ExtRequestTargeting{},
-			expectedError:  errors.New("ext.prebid.targeting: At least one of includewinners or includebidderkeys must be enabled to enable targeting support"),
-		},
-		{
-			name: "includewinners nil, includebidderkeys false",
-			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeBidderKeys: ptrutil.ToPtr(false),
-			},
-			expectedError: errors.New("ext.prebid.targeting: At least one of includewinners or includebidderkeys must be enabled to enable targeting support"),
-		},
-		{
-			name: "includewinners nil, includebidderkeys true",
-			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeBidderKeys: ptrutil.ToPtr(true),
-			},
-			expectedError: nil,
-		},
-		{
-			name: "includewinners false, includebidderkeys nil",
-			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners: ptrutil.ToPtr(false),
-			},
-			expectedError: errors.New("ext.prebid.targeting: At least one of includewinners or includebidderkeys must be enabled to enable targeting support"),
-		},
-		{
-			name: "includewinners true, includebidderkeys nil",
-			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners: ptrutil.ToPtr(true),
-			},
-			expectedError: nil,
-		},
-		{
-			name: "all false",
-			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners:    ptrutil.ToPtr(false),
-				IncludeBidderKeys: ptrutil.ToPtr(false),
-			},
-			expectedError: errors.New("ext.prebid.targeting: At least one of includewinners or includebidderkeys must be enabled to enable targeting support"),
-		},
-		{
-			name: "includewinners false, includebidderkeys true",
-			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners:    ptrutil.ToPtr(false),
-				IncludeBidderKeys: ptrutil.ToPtr(true),
-			},
-			expectedError: nil,
-		},
-		{
-			name: "includewinners false, includebidderkeys true",
-			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners:    ptrutil.ToPtr(true),
-				IncludeBidderKeys: ptrutil.ToPtr(false),
-			},
-			expectedError: nil,
-		},
-		{
-			name: "includewinners true, includebidderkeys true",
-			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners:    ptrutil.ToPtr(true),
-				IncludeBidderKeys: ptrutil.ToPtr(true),
-			},
-			expectedError: nil,
-		},
-		{
 			name: "price granularity ranges out of order",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners: ptrutil.ToPtr(true),
 				PriceGranularity: &openrtb_ext.PriceGranularity{
 					Precision: ptrutil.ToPtr(2),
 					Ranges: []openrtb_ext.GranularityRange{
@@ -2058,7 +2004,6 @@ func TestValidateTargeting(t *testing.T) {
 		{
 			name: "media type price granularity video correct",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners: ptrutil.ToPtr(true),
 				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
 					Video: &openrtb_ext.PriceGranularity{
 						Precision: ptrutil.ToPtr(2),
@@ -2073,7 +2018,6 @@ func TestValidateTargeting(t *testing.T) {
 		{
 			name: "media type price granularity banner correct",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners: ptrutil.ToPtr(true),
 				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
 					Banner: &openrtb_ext.PriceGranularity{
 						Precision: ptrutil.ToPtr(2),
@@ -2088,7 +2032,6 @@ func TestValidateTargeting(t *testing.T) {
 		{
 			name: "media type price granularity native correct",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners: ptrutil.ToPtr(true),
 				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
 					Native: &openrtb_ext.PriceGranularity{
 						Precision: ptrutil.ToPtr(2),
@@ -2103,7 +2046,6 @@ func TestValidateTargeting(t *testing.T) {
 		{
 			name: "media type price granularity video and banner correct",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners: ptrutil.ToPtr(true),
 				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
 					Banner: &openrtb_ext.PriceGranularity{
 						Precision: ptrutil.ToPtr(2),
@@ -2124,7 +2066,6 @@ func TestValidateTargeting(t *testing.T) {
 		{
 			name: "media type price granularity video incorrect",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners: ptrutil.ToPtr(true),
 				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
 					Video: &openrtb_ext.PriceGranularity{
 						Precision: ptrutil.ToPtr(2),
@@ -2139,7 +2080,6 @@ func TestValidateTargeting(t *testing.T) {
 		{
 			name: "media type price granularity banner incorrect",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners: ptrutil.ToPtr(true),
 				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
 					Banner: &openrtb_ext.PriceGranularity{
 						Precision: ptrutil.ToPtr(2),
@@ -2154,7 +2094,6 @@ func TestValidateTargeting(t *testing.T) {
 		{
 			name: "media type price granularity native incorrect",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners: ptrutil.ToPtr(true),
 				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
 					Native: &openrtb_ext.PriceGranularity{
 						Precision: ptrutil.ToPtr(2),
@@ -2169,7 +2108,6 @@ func TestValidateTargeting(t *testing.T) {
 		{
 			name: "media type price granularity video correct and banner incorrect",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners: ptrutil.ToPtr(true),
 				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
 					Banner: &openrtb_ext.PriceGranularity{
 						Precision: ptrutil.ToPtr(2),
@@ -2190,7 +2128,6 @@ func TestValidateTargeting(t *testing.T) {
 		{
 			name: "media type price granularity native incorrect and banner correct",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners: ptrutil.ToPtr(true),
 				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
 					Native: &openrtb_ext.PriceGranularity{
 						Precision: ptrutil.ToPtr(2),
@@ -3047,7 +2984,7 @@ func TestCurrencyTrunc(t *testing.T) {
 		Cur: []string{"USD", "EUR"},
 	}
 
-	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
+	errL := deps.validateRequest(nil, nil, &openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
 
 	expectedError := errortypes.Warning{Message: "A prebid request can only process one currency. Taking the first currency in the list, USD, as the active currency"}
 	assert.ElementsMatch(t, errL, []error{&expectedError})
@@ -3098,7 +3035,7 @@ func TestCCPAInvalid(t *testing.T) {
 		},
 	}
 
-	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
+	errL := deps.validateRequest(nil, nil, &openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
 
 	expectedWarning := errortypes.Warning{
 		Message:     "CCPA consent is invalid and will be ignored. (request.regs.ext.us_privacy must contain 4 characters)",
@@ -3152,7 +3089,7 @@ func TestNoSaleInvalid(t *testing.T) {
 		Ext: json.RawMessage(`{"prebid": {"nosale": ["*", "appnexus"]} }`),
 	}
 
-	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
+	errL := deps.validateRequest(nil, nil, &openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
 
 	expectedError := errors.New("request.ext.prebid.nosale is invalid: can only specify all bidders if no other bidders are provided")
 	assert.ElementsMatch(t, errL, []error{expectedError})
@@ -3204,7 +3141,7 @@ func TestValidateSourceTID(t *testing.T) {
 		},
 	}
 
-	deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
+	deps.validateRequest(nil, nil, &openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
 	assert.NotEmpty(t, req.Source.TID, "Expected req.Source.TID to be filled with a randomly generated UID")
 }
 
@@ -3251,7 +3188,7 @@ func TestSChainInvalid(t *testing.T) {
 		Ext: json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller1.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}, {"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller2.com","sid":"00002","rid":"BidRequest2","hp":1}],"ver":"1.0"}}]}}`),
 	}
 
-	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
+	errL := deps.validateRequest(nil, nil, &openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
 
 	expectedError := errors.New("request.ext.prebid.schains contains multiple schains for bidder appnexus; it must contain no more than one per bidder.")
 	assert.ElementsMatch(t, errL, []error{expectedError})
@@ -3820,7 +3757,7 @@ func TestEidPermissionsInvalid(t *testing.T) {
 		Ext: json.RawMessage(`{"prebid": {"data": {"eidpermissions": [{"source":"a", "bidders":[]}]} } }`),
 	}
 
-	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
+	errL := deps.validateRequest(nil, nil, &openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
 
 	expectedError := errors.New(`request.ext.prebid.data.eidpermissions[0] missing or empty required field: "bidders"`)
 	assert.ElementsMatch(t, errL, []error{expectedError})
@@ -3831,51 +3768,51 @@ func TestValidateEidPermissions(t *testing.T) {
 	knownAliases := map[string]string{"b": "b"}
 
 	testCases := []struct {
-		description   string
+		name          string
 		request       *openrtb_ext.ExtRequest
 		expectedError error
 	}{
 		{
-			description:   "Valid - Empty ext",
+			name:          "valid-empty-ext",
 			request:       &openrtb_ext.ExtRequest{},
 			expectedError: nil,
 		},
 		{
-			description:   "Valid - Nil ext.prebid.data",
+			name:          "valid-nil-ext.prebid.data",
 			request:       &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{}},
 			expectedError: nil,
 		},
 		{
-			description:   "Valid - Empty ext.prebid.data",
+			name:          "valid-empty-ext.prebid.data",
 			request:       &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{}}},
 			expectedError: nil,
 		},
 		{
-			description:   "Valid - Nil ext.prebid.data.eidpermissions",
+			name:          "valid-nil-ext.prebid.data.eidpermissions",
 			request:       &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: nil}}},
 			expectedError: nil,
 		},
 		{
-			description:   "Valid - None",
+			name:          "valid-none",
 			request:       &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{}}}},
 			expectedError: nil,
 		},
 		{
-			description: "Valid - One",
+			name: "valid-one",
 			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "sourceA", Bidders: []string{"a"}},
 			}}}},
 			expectedError: nil,
 		},
 		{
-			description: "Valid - One - Case Insensitive",
+			name: "valid-one-case-insensitive",
 			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "sourceA", Bidders: []string{"A"}},
 			}}}},
 			expectedError: nil,
 		},
 		{
-			description: "Valid - Many",
+			name: "valid-many",
 			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "sourceA", Bidders: []string{"a"}},
 				{Source: "sourceB", Bidders: []string{"a"}},
@@ -3883,7 +3820,7 @@ func TestValidateEidPermissions(t *testing.T) {
 			expectedError: nil,
 		},
 		{
-			description: "Invalid - Missing Source",
+			name: "invalid-missing-source",
 			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "sourceA", Bidders: []string{"a"}},
 				{Bidders: []string{"a"}},
@@ -3891,7 +3828,7 @@ func TestValidateEidPermissions(t *testing.T) {
 			expectedError: errors.New(`request.ext.prebid.data.eidpermissions[1] missing required field: "source"`),
 		},
 		{
-			description: "Invalid - Duplicate Source",
+			name: "invalid-duplicate-source",
 			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "sourceA", Bidders: []string{"a"}},
 				{Source: "sourceA", Bidders: []string{"a"}},
@@ -3899,7 +3836,7 @@ func TestValidateEidPermissions(t *testing.T) {
 			expectedError: errors.New(`request.ext.prebid.data.eidpermissions[1] duplicate entry with field: "source"`),
 		},
 		{
-			description: "Invalid - Missing Bidders - Nil",
+			name: "invalid-missing-bidders-nil",
 			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "sourceA", Bidders: []string{"a"}},
 				{Source: "sourceB"},
@@ -3907,7 +3844,7 @@ func TestValidateEidPermissions(t *testing.T) {
 			expectedError: errors.New(`request.ext.prebid.data.eidpermissions[1] missing or empty required field: "bidders"`),
 		},
 		{
-			description: "Invalid - Missing Bidders - Empty",
+			name: "invalid-missing-bidders-empty",
 			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "sourceA", Bidders: []string{"a"}},
 				{Source: "sourceB", Bidders: []string{}},
@@ -3915,7 +3852,7 @@ func TestValidateEidPermissions(t *testing.T) {
 			expectedError: errors.New(`request.ext.prebid.data.eidpermissions[1] missing or empty required field: "bidders"`),
 		},
 		{
-			description: "Invalid - Invalid Bidders",
+			name: "invalid-invalid-bidders",
 			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "sourceA", Bidders: []string{"a"}},
 				{Source: "sourceB", Bidders: []string{"z"}},
@@ -3923,7 +3860,7 @@ func TestValidateEidPermissions(t *testing.T) {
 			expectedError: errors.New(`request.ext.prebid.data.eidpermissions[1] contains unrecognized bidder "z"`),
 		},
 		{
-			description: "Valid - Alias Case Sensitive",
+			name: "invalid-alias-case-sensitive",
 			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "sourceA", Bidders: []string{"B"}},
 			}}}},
@@ -3933,8 +3870,10 @@ func TestValidateEidPermissions(t *testing.T) {
 
 	endpoint := &endpointDeps{bidderMap: knownBidders, normalizeBidderName: fakeNormalizeBidderName}
 	for _, test := range testCases {
-		result := endpoint.validateEidPermissions(test.request.Prebid.Data, knownAliases)
-		assert.Equal(t, test.expectedError, result, test.description)
+		t.Run(test.name, func(t *testing.T) {
+			result := endpoint.validateEidPermissions(test.request.Prebid.Data, knownAliases)
+			assert.Equal(t, test.expectedError, result)
+		})
 	}
 }
 
@@ -4723,13 +4662,13 @@ func TestValidateNativeAssetData(t *testing.T) {
 func TestAuctionResponseHeaders(t *testing.T) {
 	testCases := []struct {
 		description     string
-		requestBody     string
+		httpRequest     *http.Request
 		expectedStatus  int
 		expectedHeaders func(http.Header)
 	}{
 		{
 			description:    "Success Response",
-			requestBody:    validRequest(t, "site.json"),
+			httpRequest:    httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json"))),
 			expectedStatus: 200,
 			expectedHeaders: func(h http.Header) {
 				h.Set("X-Prebid", "pbs-go/unknown")
@@ -4738,10 +4677,37 @@ func TestAuctionResponseHeaders(t *testing.T) {
 		},
 		{
 			description:    "Failure Response",
-			requestBody:    "{}",
+			httpRequest:    httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader("{}")),
 			expectedStatus: 400,
 			expectedHeaders: func(h http.Header) {
 				h.Set("X-Prebid", "pbs-go/unknown")
+			},
+		},
+		{
+			description: "Success Response with Chrome BrowsingTopicsHeader",
+			httpRequest: func() *http.Request {
+				httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
+				httpReq.Header.Add(secBrowsingTopics, "sample-value")
+				return httpReq
+			}(),
+			expectedStatus: 200,
+			expectedHeaders: func(h http.Header) {
+				h.Set("X-Prebid", "pbs-go/unknown")
+				h.Set("Content-Type", "application/json")
+				h.Set("Observe-Browsing-Topics", "?1")
+			},
+		},
+		{
+			description: "Failure Response with Chrome BrowsingTopicsHeader",
+			httpRequest: func() *http.Request {
+				httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader("{}"))
+				httpReq.Header.Add(secBrowsingTopics, "sample-value")
+				return httpReq
+			}(),
+			expectedStatus: 400,
+			expectedHeaders: func(h http.Header) {
+				h.Set("X-Prebid", "pbs-go/unknown")
+				h.Set("Observe-Browsing-Topics", "?1")
 			},
 		},
 	}
@@ -4765,10 +4731,9 @@ func TestAuctionResponseHeaders(t *testing.T) {
 	)
 
 	for _, test := range testCases {
-		httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.requestBody))
 		recorder := httptest.NewRecorder()
 
-		endpoint(recorder, httpReq, nil)
+		endpoint(recorder, test.httpRequest, nil)
 
 		expectedHeaders := http.Header{}
 		test.expectedHeaders(expectedHeaders)
@@ -5128,6 +5093,8 @@ func TestValidateStoredResp(t *testing.T) {
 	testCases := []struct {
 		description               string
 		givenRequestWrapper       *openrtb_ext.RequestWrapper
+		givenHttpRequest          *http.Request
+		givenAccount              *config.Account
 		expectedErrorList         []error
 		hasStoredAuctionResponses bool
 		storedBidResponses        stored_responses.ImpBidderStoredResp
@@ -5669,7 +5636,7 @@ func TestValidateStoredResp(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
-			errorList := deps.validateRequest(test.givenRequestWrapper, false, test.hasStoredAuctionResponses, test.storedBidResponses, false)
+			errorList := deps.validateRequest(test.givenAccount, test.givenHttpRequest, test.givenRequestWrapper, false, test.hasStoredAuctionResponses, test.storedBidResponses, false)
 			assert.Equalf(t, test.expectedErrorList, errorList, "Error doesn't match: %s\n", test.description)
 		})
 	}
@@ -6265,6 +6232,18 @@ func TestValidateAliases(t *testing.T) {
 
 func fakeNormalizeBidderName(name string) (openrtb_ext.BidderName, bool) {
 	return openrtb_ext.BidderName(strings.ToLower(name)), true
+}
+
+func TestValidateOrFillCookieDeprecation(t *testing.T) {
+}
+
+func TestValidateRequestCookieDeprecation(t *testing.T) {
+}
+
+func TestSetSecBrowsingTopicsImplicitly(t *testing.T) {
+}
+
+func sortUserData(user *openrtb2.User) {
 }
 
 func TestGetNonBidsFromStageOutcomes(t *testing.T) {
