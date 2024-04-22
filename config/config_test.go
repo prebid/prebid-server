@@ -401,6 +401,8 @@ external_url: http://prebid-server.prebid.org/
 host: prebid-server.prebid.org
 port: 1234
 admin_port: 5678
+stored_requests:
+  timeout_ms: 75
 compression:
     request:
         enable_gzip: true
@@ -613,6 +615,7 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "garbage_collector_threshold", 1, cfg.GarbageCollectorThreshold)
 	cmpInts(t, "auction_timeouts_ms.default", 50, int(cfg.AuctionTimeouts.Default))
 	cmpInts(t, "auction_timeouts_ms.max", 123, int(cfg.AuctionTimeouts.Max))
+	cmpInts(t, "stored_requests.timeout_ms", 75, cfg.StoredRequests.Timeout)
 	cmpStrings(t, "cache.scheme", "http", cfg.CacheURL.Scheme)
 	cmpStrings(t, "cache.host", "prebidcache.net", cfg.CacheURL.Host)
 	cmpStrings(t, "cache.query", "uuid=%PBS_CACHE_UUID%", cfg.CacheURL.Query)
