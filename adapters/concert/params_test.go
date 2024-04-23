@@ -47,4 +47,5 @@ var invalidParams = []string{
 	`{"site": "site_name"}`,
 	`{"slot": "slot_name"}`,
 	`{"sizes": [[1030, 590]]}`,
+	`{"placementId": 1234567, "site": "site_name", "slot": "slot_name", "sizes": [[1030, 590]]}`,
 }
