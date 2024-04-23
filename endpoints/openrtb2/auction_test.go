@@ -13,6 +13,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -6235,15 +6236,557 @@ func fakeNormalizeBidderName(name string) (openrtb_ext.BidderName, bool) {
 }
 
 func TestValidateOrFillCookieDeprecation(t *testing.T) {
+	type args struct {
+		httpReq *http.Request
+		req     *openrtb_ext.RequestWrapper
+		account config.Account
+	}
+	tests := []struct {
+		name          string
+		args          args
+		wantDeviceExt json.RawMessage
+		wantErr       error
+	}{
+		{
+			name:          "account-nil",
+			wantDeviceExt: nil,
+			wantErr:       nil,
+		},
+		{
+			name: "cookie-deprecation-not-enabled",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{secCookieDeprecation: []string{"example_label_1"}},
+				},
+				req: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{},
+				},
+			},
+			wantDeviceExt: nil,
+			wantErr:       nil,
+		},
+		{
+			name: "cookie-deprecation-disabled-explicitly",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{secCookieDeprecation: []string{"example_label_1"}},
+				},
+				req: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{},
+				},
+				account: config.Account{
+					Privacy: config.AccountPrivacy{
+						PrivacySandbox: config.PrivacySandbox{
+							CookieDeprecation: config.CookieDeprecation{
+								Enabled: false,
+							},
+						},
+					},
+				},
+			},
+			wantDeviceExt: nil,
+			wantErr:       nil,
+		},
+		{
+			name: "cookie-deprecation-enabled-header-not-present-in-request",
+			args: args{
+				httpReq: &http.Request{},
+				req: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{},
+				},
+				account: config.Account{
+					Privacy: config.AccountPrivacy{
+						PrivacySandbox: config.PrivacySandbox{
+							CookieDeprecation: config.CookieDeprecation{
+								Enabled: true,
+							},
+						},
+					},
+				},
+			},
+			wantDeviceExt: nil,
+			wantErr:       nil,
+		},
+		{
+			name: "header-present-request-device-nil",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{secCookieDeprecation: []string{"example_label_1"}},
+				},
+				req: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{},
+				},
+				account: config.Account{
+					Privacy: config.AccountPrivacy{
+						PrivacySandbox: config.PrivacySandbox{
+							CookieDeprecation: config.CookieDeprecation{
+								Enabled: true,
+							},
+						},
+					},
+				},
+			},
+			wantDeviceExt: json.RawMessage(`{"cdep":"example_label_1"}`),
+			wantErr:       nil,
+		},
+		{
+			name: "header-present-request-device-ext-nil",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{secCookieDeprecation: []string{"example_label_1"}},
+				},
+				req: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						Device: &openrtb2.Device{
+							Ext: nil,
+						},
+					},
+				},
+				account: config.Account{
+					Privacy: config.AccountPrivacy{
+						PrivacySandbox: config.PrivacySandbox{
+							CookieDeprecation: config.CookieDeprecation{
+								Enabled: true,
+							},
+						},
+					},
+				},
+			},
+			wantDeviceExt: json.RawMessage(`{"cdep":"example_label_1"}`),
+			wantErr:       nil,
+		},
+		{
+			name: "header-present-request-device-ext-not-nil",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{secCookieDeprecation: []string{"example_label_1"}},
+				},
+				req: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						Device: &openrtb2.Device{
+							Ext: json.RawMessage(`{"foo":"bar"}`),
+						},
+					},
+				},
+				account: config.Account{
+					Privacy: config.AccountPrivacy{
+						PrivacySandbox: config.PrivacySandbox{
+							CookieDeprecation: config.CookieDeprecation{
+								Enabled: true,
+							},
+						},
+					},
+				},
+			},
+			wantDeviceExt: json.RawMessage(`{"cdep":"example_label_1","foo":"bar"}`),
+			wantErr:       nil,
+		},
+		{
+			name: "header-present-with-length-more-than-100",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{secCookieDeprecation: []string{"zjfXqGxXFI8yura8AhQl1DK2EMMmryrC8haEpAlwjoerrFfEo2MQTXUq6cSmLohI8gjsnkGU4oAzvXd4TTAESzEKsoYjRJ2zKxmEa"}},
+				},
+				req: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						Device: &openrtb2.Device{
+							Ext: json.RawMessage(`{"foo":"bar"}`),
+						},
+					},
+				},
+				account: config.Account{
+					Privacy: config.AccountPrivacy{
+						PrivacySandbox: config.PrivacySandbox{
+							CookieDeprecation: config.CookieDeprecation{
+								Enabled: true,
+							},
+						},
+					},
+				},
+			},
+			wantDeviceExt: json.RawMessage(`{"foo":"bar"}`),
+			wantErr: &errortypes.Warning{
+				Message:     "request.device.ext.cdep must not exceed 100 characters",
+				WarningCode: errortypes.SecCookieDeprecationLenWarningCode,
+			},
+		},
+		{
+			name: "header-present-request-device-ext-cdep-present",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{secCookieDeprecation: []string{"example_label_1"}},
+				},
+				req: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						Device: &openrtb2.Device{
+							Ext: json.RawMessage(`{"foo":"bar","cdep":"example_label_2"}`),
+						},
+					},
+				},
+				account: config.Account{
+					Privacy: config.AccountPrivacy{
+						PrivacySandbox: config.PrivacySandbox{
+							CookieDeprecation: config.CookieDeprecation{
+								Enabled: true,
+							},
+						},
+					},
+				},
+			},
+			wantDeviceExt: json.RawMessage(`{"foo":"bar","cdep":"example_label_2"}`),
+			wantErr:       nil,
+		},
+		{
+			name: "header-present-request-device-ext-invalid",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{secCookieDeprecation: []string{"example_label_1"}},
+				},
+				req: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						Device: &openrtb2.Device{
+							Ext: json.RawMessage(`{`),
+						},
+					},
+				},
+				account: config.Account{
+					Privacy: config.AccountPrivacy{
+						PrivacySandbox: config.PrivacySandbox{
+							CookieDeprecation: config.CookieDeprecation{
+								Enabled: true,
+							},
+						},
+					},
+				},
+			},
+			wantDeviceExt: json.RawMessage(`{`),
+			wantErr: &errortypes.FailedToUnmarshal{
+				Message: "expects \" or n, but found \x00",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateOrFillCookieDeprecation(tt.args.httpReq, tt.args.req, &tt.args.account)
+			assert.Equal(t, tt.wantErr, err)
+			if tt.args.req != nil {
+				err := tt.args.req.RebuildRequest()
+				assert.NoError(t, err)
+			}
+			if tt.wantDeviceExt == nil {
+				if tt.args.req != nil && tt.args.req.Device != nil {
+					assert.Nil(t, tt.args.req.Device.Ext)
+				}
+			} else {
+				assert.Equal(t, string(tt.wantDeviceExt), string(tt.args.req.Device.Ext))
+			}
+		})
+	}
 }
 
 func TestValidateRequestCookieDeprecation(t *testing.T) {
+	testCases :=
+		[]struct {
+			name         string
+			givenAccount *config.Account
+			httpReq      *http.Request
+			reqWrapper   *openrtb_ext.RequestWrapper
+			wantErrs     []error
+			wantCDep     string
+		}{
+			{
+				name: "header-with-length-less-than-100",
+				httpReq: func() *http.Request {
+					req := httptest.NewRequest("POST", "/openrtb2/auction", nil)
+					req.Header.Set(secCookieDeprecation, "sample-value")
+					return req
+				}(),
+				givenAccount: &config.Account{
+					ID: "1",
+					Privacy: config.AccountPrivacy{
+						PrivacySandbox: config.PrivacySandbox{
+							CookieDeprecation: config.CookieDeprecation{
+								Enabled: true,
+								TTLSec:  86400,
+							},
+						},
+					},
+				},
+				reqWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						ID:  "Some-ID",
+						App: &openrtb2.App{},
+						Imp: []openrtb2.Imp{
+							{
+								ID: "Some-Imp-ID",
+								Banner: &openrtb2.Banner{
+									Format: []openrtb2.Format{
+										{
+											W: 600,
+											H: 500,
+										},
+										{
+											W: 300,
+											H: 600,
+										},
+									},
+								},
+								Ext: []byte(`{"pubmatic":{"publisherId": 12345678}}`),
+							},
+						},
+					},
+				},
+				wantErrs: []error{},
+				wantCDep: "sample-value",
+			},
+			{
+				name: "header-with-length-more-than-100",
+				httpReq: func() *http.Request {
+					req := httptest.NewRequest("POST", "/openrtb2/auction", nil)
+					req.Header.Set(secCookieDeprecation, "zjfXqGxXFI8yura8AhQl1DK2EMMmryrC8haEpAlwjoerrFfEo2MQTXUq6cSmLohI8gjsnkGU4oAzvXd4TTAESzEKsoYjRJ2zKxmEa")
+					return req
+				}(),
+				givenAccount: &config.Account{
+					ID: "1",
+					Privacy: config.AccountPrivacy{
+						PrivacySandbox: config.PrivacySandbox{
+							CookieDeprecation: config.CookieDeprecation{
+								Enabled: true,
+								TTLSec:  86400,
+							},
+						},
+					},
+				},
+				reqWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						ID:  "Some-ID",
+						App: &openrtb2.App{},
+						Imp: []openrtb2.Imp{
+							{
+								ID: "Some-Imp-ID",
+								Banner: &openrtb2.Banner{
+									Format: []openrtb2.Format{
+										{
+											W: 600,
+											H: 500,
+										},
+										{
+											W: 300,
+											H: 600,
+										},
+									},
+								},
+								Ext: []byte(`{"pubmatic":{"publisherId": 12345678}}`),
+							},
+						},
+					},
+				},
+				wantErrs: []error{
+					&errortypes.Warning{
+						Message:     "request.device.ext.cdep must not exceed 100 characters",
+						WarningCode: errortypes.SecCookieDeprecationLenWarningCode,
+					},
+				},
+				wantCDep: "",
+			},
+		}
+
+	deps := &endpointDeps{
+		fakeUUIDGenerator{},
+		&warningsCheckExchange{},
+		mockBidderParamValidator{},
+		&mockStoredReqFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		&mockAccountFetcher{},
+		&config.Configuration{},
+		&metricsConfig.NilMetricsEngine{},
+		analyticsBuild.New(&config.Analytics{}),
+		map[string]string{},
+		false,
+		[]byte{},
+		openrtb_ext.BuildBidderMap(),
+		nil,
+		nil,
+		hardcodedResponseIPValidator{response: true},
+		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
+		nil,
+		openrtb_ext.NormalizeBidderName,
+	}
+
+	for _, test := range testCases {
+		errs := deps.validateRequest(test.givenAccount, test.httpReq, test.reqWrapper, false, false, stored_responses.ImpBidderStoredResp{}, false)
+		assert.Equal(t, test.wantErrs, errs)
+		test.reqWrapper.RebuildRequest()
+		deviceExt, err := test.reqWrapper.GetDeviceExt()
+		assert.NoError(t, err)
+		assert.Equal(t, test.wantCDep, deviceExt.GetCDep())
+	}
 }
 
 func TestSetSecBrowsingTopicsImplicitly(t *testing.T) {
+	type args struct {
+		httpReq *http.Request
+		r       *openrtb_ext.RequestWrapper
+		account *config.Account
+	}
+	tests := []struct {
+		name     string
+		args     args
+		wantUser *openrtb2.User
+	}{
+		{
+			name: "empty HTTP request, no change in user data",
+			args: args{
+				httpReq: &http.Request{},
+				r:       &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
+				account: &config.Account{Privacy: config.AccountPrivacy{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "ads.pubmatic.com"}}},
+			},
+			wantUser: nil,
+		},
+		{
+			name: "valid topic in request but topicsdomain not configured by host, no change in user data",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{
+						secBrowsingTopics: []string{"(1);v=chrome.1:1:2, ();p=P00000000000"},
+					},
+				},
+				r:       &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
+				account: &config.Account{Privacy: config.AccountPrivacy{PrivacySandbox: config.PrivacySandbox{TopicsDomain: ""}}},
+			},
+			wantUser: nil,
+		},
+		{
+			name: "valid topic in request and topicsdomain configured by host, topics copied to user data",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{
+						secBrowsingTopics: []string{"(1);v=chrome.1:1:2, ();p=P00000000000"},
+					},
+				},
+				r:       &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
+				account: &config.Account{Privacy: config.AccountPrivacy{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "ads.pubmatic.com"}}},
+			},
+			wantUser: &openrtb2.User{
+				Data: []openrtb2.Data{
+					{
+						Name: "ads.pubmatic.com",
+						Segment: []openrtb2.Segment{
+							{
+								ID: "1",
+							},
+						},
+						Ext: json.RawMessage(`{"segtax":600,"segclass":"2"}`),
+					},
+				},
+			},
+		},
+		{
+			name: "valid empty topic in request, no change in user data",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{
+						secBrowsingTopics: []string{"();p=P0000000000000000000000000000000"},
+					},
+				},
+				r:       &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
+				account: &config.Account{Privacy: config.AccountPrivacy{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "ads.pubmatic.com"}}},
+			},
+			wantUser: nil,
+		},
+		{
+			name: "request with a few valid topics (including duplicate topics, segIDs, matching segtax, segclass, etc) and a few invalid topics(different invalid format), only valid and unique topics copied/merged to/with user data",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{
+						secBrowsingTopics: []string{"(1);v=chrome.1:1:2, (1 2);v=chrome.1:1:2,(4);v=chrome.1:1:2,();p=P0000000000,(4);v=chrome.1, 5);v=chrome.1, (6;v=chrome.1, ();v=chrome.1, (	);v=chrome.1, (1);v=chrome.1:1:2, (1 2 4		6 7			4567	  ) ; v=chrome.1: 2 : 3,();p=P0000000000"},
+					},
+				},
+				r: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+					User: &openrtb2.User{
+						Data: []openrtb2.Data{
+							{
+								Name: "chrome.com",
+								Segment: []openrtb2.Segment{
+									{ID: "1"},
+								},
+								Ext: json.RawMessage(`{"segtax":603,"segclass":"4"}`),
+							},
+							{
+								Name: "ads.pubmatic.com",
+								Segment: []openrtb2.Segment{
+									{ID: "1"},
+									{ID: "3"},
+								},
+								Ext: json.RawMessage(`{"segtax":600,"segclass":"2"}`),
+							},
+						},
+					},
+				}},
+				account: &config.Account{Privacy: config.AccountPrivacy{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "ads.pubmatic.com"}}},
+			},
+			wantUser: &openrtb2.User{
+				Data: []openrtb2.Data{
+					{
+						Name: "chrome.com",
+						Segment: []openrtb2.Segment{
+							{ID: "1"},
+						},
+						Ext: json.RawMessage(`{"segtax":603,"segclass":"4"}`),
+					},
+					{
+						Name: "ads.pubmatic.com",
+						Segment: []openrtb2.Segment{
+							{ID: "1"},
+							{ID: "2"},
+							{ID: "3"},
+							{ID: "4"},
+						},
+						Ext: json.RawMessage(`{"segtax":600,"segclass":"2"}`),
+					},
+					{
+						Name: "ads.pubmatic.com",
+						Segment: []openrtb2.Segment{
+							{ID: "1"},
+							{ID: "2"},
+							{ID: "4"},
+							{ID: "6"},
+							{ID: "7"},
+							{ID: "4567"},
+						},
+						Ext: json.RawMessage(`{"segtax":601,"segclass":"3"}`),
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			setSecBrowsingTopicsImplicitly(tt.args.httpReq, tt.args.r, tt.args.account)
+
+			// sequence is not guaranteed we're using a map to filter segids
+			sortUserData(tt.wantUser)
+			sortUserData(tt.args.r.User)
+			assert.Equal(t, tt.wantUser, tt.args.r.User, tt.name)
+		})
+	}
 }
 
 func sortUserData(user *openrtb2.User) {
+	if user != nil {
+		sort.Slice(user.Data, func(i, j int) bool {
+			if user.Data[i].Name == user.Data[j].Name {
+				return string(user.Data[i].Ext) < string(user.Data[j].Ext)
+			}
+			return user.Data[i].Name < user.Data[j].Name
+		})
+		for g := range user.Data {
+			sort.Slice(user.Data[g].Segment, func(i, j int) bool {
+				return user.Data[g].Segment[i].ID < user.Data[g].Segment[j].ID
+			})
+		}
+	}
 }
 
 func TestGetNonBidsFromStageOutcomes(t *testing.T) {

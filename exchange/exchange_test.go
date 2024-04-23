@@ -2079,8 +2079,6 @@ func TestExchangeJSON(t *testing.T) {
 
 			fileName := "./exchangetest/" + specFile.Name()
 			fileDisplayName := "exchange/exchangetest/" + specFile.Name()
-			// fileName := "./exchangetest/bid_response_validation_enforce_one_bid_rejected.json"
-			// fileDisplayName := fileName
 
 			t.Run(fileDisplayName, func(t *testing.T) {
 				specData, err := loadFile(fileName)
@@ -2088,7 +2086,6 @@ func TestExchangeJSON(t *testing.T) {
 					assert.NotPanics(t, func() { runSpec(t, fileDisplayName, specData) }, fileDisplayName)
 				}
 			})
-			// break
 		}
 	}
 }
@@ -2333,11 +2330,8 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		}
 		assert.Equal(t, expectedBidRespExt.Errors, actualBidRespExt.Errors, "Expected errors from response ext do not match")
 	}
-	// if expectedBidRespExt.Prebid != nil {
-	// 	assert.ElementsMatch(t, expectedBidRespExt.Prebid.SeatNonBid, bidExt.Prebid.SeatNonBid, "Expected seatNonBids from response ext do not match")
-	// }
 	if len(spec.Response.SeatNonBids) > 0 {
-		assert.Equal(t, seatnonbid.Get(), spec.Response.SeatNonBids, "Expected seatNonBids from response ext do not match")
+		assert.ElementsMatch(t, seatnonbid.Get(), spec.Response.SeatNonBids, "Expected seatNonBids from response ext do not match")
 	}
 
 }
@@ -4781,179 +4775,166 @@ func TestValidateBidAdM(t *testing.T) {
 	}
 }
 
-// func TestMakeBidWithValidation(t *testing.T) {
-// 	sampleAd := "<?xml version=\"1.0\" encoding=\"UTF-8\"?><VAST ...></VAST>"
-// 	sampleOpenrtbBid := &openrtb2.Bid{ID: "some-bid-id", AdM: sampleAd}
+func TestMakeBidWithValidation(t *testing.T) {
+	sampleAd := "<?xml version=\"1.0\" encoding=\"UTF-8\"?><VAST ...></VAST>"
+	sampleOpenrtbBid := &openrtb2.Bid{ID: "some-bid-id", AdM: sampleAd}
 
-// 	testCases := []struct {
-// 		name                     string
-// 		givenBidRequestExt       json.RawMessage
-// 		givenValidations         config.Validations
-// 		givenBids                []*entities.PbsOrtbBid
-// 		givenSeat                openrtb_ext.BidderName
-// 		expectedNumOfBids        int
-// 		expectedNonBids          *openrtb_ext.NonBidCollection
-// 		expectedNumDebugErrors   int
-// 		expectedNumDebugWarnings int
-// 	}{
-// 		{
-// 			name:               "One_of_two_bids_is_invalid_based_on_DSA_object_presence",
-// 			givenBidRequestExt: json.RawMessage(`{"dsa": {"dsarequired": 2}}`),
-// 			givenValidations:   config.Validations{},
-// 			givenBids:          []*entities.PbsOrtbBid{{Bid: &openrtb2.Bid{Ext: json.RawMessage(`{"dsa": {"adrender":1}}`)}}, {Bid: &openrtb2.Bid{}}},
-// 			givenSeat:          "pubmatic",
-// 			expectedNumOfBids:  1,
-// 			expectedNonBids: &openrtb_ext.NonBidCollection{
-// 				seatNonBidsMap: map[string][]openrtb_ext.NonBid{
-// 					"pubmatic": {
-// 						{
-// 							StatusCode: 300,
-// 							Ext: openrtb_ext.NonBidExt{
-// 								Prebid: openrtb_ext.ExtResponseNonBidPrebid{
-// 									Bid: openrtb_ext.NonBidObject{},
-// 								},
-// 							},
-// 						},
-// 					},
-// 				},
-// 			},
-// 			expectedNumDebugWarnings: 1,
-// 		},
-// 		{
-// 			name:              "Creative_size_validation_enforced,_one_of_two_bids_has_invalid_dimensions",
-// 			givenValidations:  config.Validations{BannerCreativeMaxSize: config.ValidationEnforce, MaxCreativeWidth: 100, MaxCreativeHeight: 100},
-// 			givenBids:         []*entities.PbsOrtbBid{{Bid: &openrtb2.Bid{W: 200, H: 200}, BidType: openrtb_ext.BidTypeBanner}, {Bid: &openrtb2.Bid{W: 50, H: 50}, BidType: openrtb_ext.BidTypeBanner}},
-// 			givenSeat:         "pubmatic",
-// 			expectedNumOfBids: 1,
-// 			expectedNonBids: &nonBids{
-// 				seatNonBidsMap: map[string][]openrtb_ext.NonBid{
-// 					"pubmatic": {
-// 						{
-// 							StatusCode: 351,
-// 							Ext: openrtb_ext.NonBidExt{
-// 								Prebid: openrtb_ext.ExtResponseNonBidPrebid{
-// 									Bid: openrtb_ext.NonBidObject{
-// 										W: 200,
-// 										H: 200,
-// 									},
-// 								},
-// 							},
-// 						},
-// 					},
-// 				},
-// 			},
-// 			expectedNumDebugErrors: 1,
-// 		},
-// 		{
-// 			name:                   "Creative_size_validation_warned,_one_of_two_bids_has_invalid_dimensions",
-// 			givenValidations:       config.Validations{BannerCreativeMaxSize: config.ValidationWarn, MaxCreativeWidth: 100, MaxCreativeHeight: 100},
-// 			givenBids:              []*entities.PbsOrtbBid{{Bid: &openrtb2.Bid{W: 200, H: 200}, BidType: openrtb_ext.BidTypeBanner}, {Bid: &openrtb2.Bid{W: 50, H: 50}, BidType: openrtb_ext.BidTypeBanner}},
-// 			givenSeat:              "pubmatic",
-// 			expectedNumOfBids:      2,
-// 			expectedNonBids:        &nonBids{},
-// 			expectedNumDebugErrors: 1,
-// 		},
-// 		{
-// 			name:              "AdM_validation_enforced,_one_of_two_bids_has_invalid_AdM",
-// 			givenValidations:  config.Validations{SecureMarkup: config.ValidationEnforce},
-// 			givenBids:         []*entities.PbsOrtbBid{{Bid: &openrtb2.Bid{AdM: "http://domain.com/invalid", ImpID: "1"}, BidType: openrtb_ext.BidTypeBanner}, {Bid: &openrtb2.Bid{AdM: "https://domain.com/valid", ImpID: "2"}, BidType: openrtb_ext.BidTypeBanner}},
-// 			givenSeat:         "pubmatic",
-// 			expectedNumOfBids: 1,
-// 			expectedNonBids: &nonBids{
-// 				seatNonBidsMap: map[string][]openrtb_ext.NonBid{
-// 					"pubmatic": {
-// 						{
-// 							ImpId:      "1",
-// 							StatusCode: 352,
-// 						},
-// 					},
-// 				},
-// 			},
-// 			expectedNumDebugErrors: 1,
-// 		},
-// 		{
-// 			name:                   "AdM_validation_warned,_one_of_two_bids_has_invalid_AdM",
-// 			givenValidations:       config.Validations{SecureMarkup: config.ValidationWarn},
-// 			givenBids:              []*entities.PbsOrtbBid{{Bid: &openrtb2.Bid{AdM: "http://domain.com/invalid", ImpID: "1"}, BidType: openrtb_ext.BidTypeBanner}, {Bid: &openrtb2.Bid{AdM: "https://domain.com/valid", ImpID: "2"}, BidType: openrtb_ext.BidTypeBanner}},
-// 			givenSeat:              "pubmatic",
-// 			expectedNumOfBids:      2,
-// 			expectedNonBids:        &nonBids{},
-// 			expectedNumDebugErrors: 1,
-// 		},
-// 		{
-// 			name:              "Adm_validation_skipped,_creative_size_validation_enforced,_one_of_two_bids_has_invalid_AdM",
-// 			givenValidations:  config.Validations{SecureMarkup: config.ValidationSkip, BannerCreativeMaxSize: config.ValidationEnforce},
-// 			givenBids:         []*entities.PbsOrtbBid{{Bid: &openrtb2.Bid{AdM: "http://domain.com/invalid"}, BidType: openrtb_ext.BidTypeBanner}, {Bid: &openrtb2.Bid{AdM: "https://domain.com/valid"}, BidType: openrtb_ext.BidTypeBanner}},
-// 			givenSeat:         "pubmatic",
-// 			expectedNumOfBids: 2,
-// 			expectedNonBids:   &nonBids{},
-// 		},
-// 		{
-// 			name:              "Creative_size_validation_skipped,_Adm_Validation_enforced,_one_of_two_bids_has_invalid_dimensions",
-// 			givenValidations:  config.Validations{BannerCreativeMaxSize: config.ValidationSkip, MaxCreativeWidth: 100, MaxCreativeHeight: 100},
-// 			givenBids:         []*entities.PbsOrtbBid{{Bid: &openrtb2.Bid{W: 200, H: 200}, BidType: openrtb_ext.BidTypeBanner}, {Bid: &openrtb2.Bid{W: 50, H: 50}, BidType: openrtb_ext.BidTypeBanner}},
-// 			givenSeat:         "pubmatic",
-// 			expectedNumOfBids: 2,
-// 			expectedNonBids:   &nonBids{},
-// 		},
-// 	}
+	testCases := []struct {
+		name                     string
+		givenBidRequestExt       json.RawMessage
+		givenValidations         config.Validations
+		givenBids                []*entities.PbsOrtbBid
+		givenSeat                openrtb_ext.BidderName
+		expectedNumOfBids        int
+		expectedNonBids          *openrtb_ext.NonBidCollection
+		expectedNumDebugErrors   int
+		expectedNumDebugWarnings int
+	}{
+		{
+			name:               "One_of_two_bids_is_invalid_based_on_DSA_object_presence",
+			givenBidRequestExt: json.RawMessage(`{"dsa": {"dsarequired": 2}}`),
+			givenValidations:   config.Validations{},
+			givenBids:          []*entities.PbsOrtbBid{{Bid: &openrtb2.Bid{Ext: json.RawMessage(`{"dsa": {"adrender":1}}`)}}, {Bid: &openrtb2.Bid{}}},
+			givenSeat:          "pubmatic",
+			expectedNumOfBids:  1,
+			expectedNonBids: func() *openrtb_ext.NonBidCollection {
+				seatNonBid := openrtb_ext.NonBidCollection{}
+				nonBid := openrtb_ext.NewNonBid(openrtb_ext.NonBidParams{
+					Bid:          &openrtb2.Bid{},
+					NonBidReason: 300,
+				})
+				seatNonBid.AddBid(nonBid, "pubmatic")
+				return &seatNonBid
+			}(),
 
-// 	// Test set up
-// 	sampleAuction := &auction{cacheIds: map[*openrtb2.Bid]string{sampleOpenrtbBid: "CACHE_UUID_1234"}}
+			expectedNumDebugWarnings: 1,
+		},
+		{
+			name:              "Creative_size_validation_enforced,_one_of_two_bids_has_invalid_dimensions",
+			givenValidations:  config.Validations{BannerCreativeMaxSize: config.ValidationEnforce, MaxCreativeWidth: 100, MaxCreativeHeight: 100},
+			givenBids:         []*entities.PbsOrtbBid{{Bid: &openrtb2.Bid{W: 200, H: 200}, BidType: openrtb_ext.BidTypeBanner}, {Bid: &openrtb2.Bid{W: 50, H: 50}, BidType: openrtb_ext.BidTypeBanner}},
+			givenSeat:         "pubmatic",
+			expectedNumOfBids: 1,
+			expectedNonBids: func() *openrtb_ext.NonBidCollection {
+				seatNonBid := openrtb_ext.NonBidCollection{}
+				nonBid := openrtb_ext.NewNonBid(openrtb_ext.NonBidParams{
+					Bid:          &openrtb2.Bid{W: 200, H: 200},
+					NonBidReason: 351,
+				})
+				seatNonBid.AddBid(nonBid, "pubmatic")
+				return &seatNonBid
+			}(),
+			expectedNumDebugErrors: 1,
+		},
+		{
+			name:                   "Creative_size_validation_warned,_one_of_two_bids_has_invalid_dimensions",
+			givenValidations:       config.Validations{BannerCreativeMaxSize: config.ValidationWarn, MaxCreativeWidth: 100, MaxCreativeHeight: 100},
+			givenBids:              []*entities.PbsOrtbBid{{Bid: &openrtb2.Bid{W: 200, H: 200}, BidType: openrtb_ext.BidTypeBanner}, {Bid: &openrtb2.Bid{W: 50, H: 50}, BidType: openrtb_ext.BidTypeBanner}},
+			givenSeat:              "pubmatic",
+			expectedNumOfBids:      2,
+			expectedNonBids:        &openrtb_ext.NonBidCollection{},
+			expectedNumDebugErrors: 1,
+		},
+		{
+			name:              "AdM_validation_enforced,_one_of_two_bids_has_invalid_AdM",
+			givenValidations:  config.Validations{SecureMarkup: config.ValidationEnforce},
+			givenBids:         []*entities.PbsOrtbBid{{Bid: &openrtb2.Bid{AdM: "http://domain.com/invalid", ImpID: "1"}, BidType: openrtb_ext.BidTypeBanner}, {Bid: &openrtb2.Bid{AdM: "https://domain.com/valid", ImpID: "2"}, BidType: openrtb_ext.BidTypeBanner}},
+			givenSeat:         "pubmatic",
+			expectedNumOfBids: 1,
+			expectedNonBids: func() *openrtb_ext.NonBidCollection {
+				seatNonBid := openrtb_ext.NonBidCollection{}
+				nonBid := openrtb_ext.NewNonBid(openrtb_ext.NonBidParams{
+					Bid:          &openrtb2.Bid{ImpID: "1"},
+					NonBidReason: 352,
+				})
+				seatNonBid.AddBid(nonBid, "pubmatic")
+				return &seatNonBid
+			}(),
+			expectedNumDebugErrors: 1,
+		},
+		{
+			name:                   "AdM_validation_warned,_one_of_two_bids_has_invalid_AdM",
+			givenValidations:       config.Validations{SecureMarkup: config.ValidationWarn},
+			givenBids:              []*entities.PbsOrtbBid{{Bid: &openrtb2.Bid{AdM: "http://domain.com/invalid", ImpID: "1"}, BidType: openrtb_ext.BidTypeBanner}, {Bid: &openrtb2.Bid{AdM: "https://domain.com/valid", ImpID: "2"}, BidType: openrtb_ext.BidTypeBanner}},
+			givenSeat:              "pubmatic",
+			expectedNumOfBids:      2,
+			expectedNonBids:        &openrtb_ext.NonBidCollection{},
+			expectedNumDebugErrors: 1,
+		},
+		{
+			name:              "Adm_validation_skipped,_creative_size_validation_enforced,_one_of_two_bids_has_invalid_AdM",
+			givenValidations:  config.Validations{SecureMarkup: config.ValidationSkip, BannerCreativeMaxSize: config.ValidationEnforce},
+			givenBids:         []*entities.PbsOrtbBid{{Bid: &openrtb2.Bid{AdM: "http://domain.com/invalid"}, BidType: openrtb_ext.BidTypeBanner}, {Bid: &openrtb2.Bid{AdM: "https://domain.com/valid"}, BidType: openrtb_ext.BidTypeBanner}},
+			givenSeat:         "pubmatic",
+			expectedNumOfBids: 2,
+			expectedNonBids:   &openrtb_ext.NonBidCollection{},
+		},
+		{
+			name:              "Creative_size_validation_skipped,_Adm_Validation_enforced,_one_of_two_bids_has_invalid_dimensions",
+			givenValidations:  config.Validations{BannerCreativeMaxSize: config.ValidationSkip, MaxCreativeWidth: 100, MaxCreativeHeight: 100},
+			givenBids:         []*entities.PbsOrtbBid{{Bid: &openrtb2.Bid{W: 200, H: 200}, BidType: openrtb_ext.BidTypeBanner}, {Bid: &openrtb2.Bid{W: 50, H: 50}, BidType: openrtb_ext.BidTypeBanner}},
+			givenSeat:         "pubmatic",
+			expectedNumOfBids: 2,
+			expectedNonBids:   &openrtb_ext.NonBidCollection{},
+		},
+	}
 
-// 	noBidHandler := func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(204) }
-// 	server := httptest.NewServer(http.HandlerFunc(noBidHandler))
-// 	defer server.Close()
+	// Test set up
+	sampleAuction := &auction{cacheIds: map[*openrtb2.Bid]string{sampleOpenrtbBid: "CACHE_UUID_1234"}}
 
-// 	bidderImpl := &goodSingleBidder{
-// 		httpRequest: &adapters.RequestData{
-// 			Method:  "POST",
-// 			Uri:     server.URL,
-// 			Body:    []byte("{\"key\":\"val\"}"),
-// 			Headers: http.Header{},
-// 		},
-// 		bidResponse: &adapters.BidderResponse{},
-// 	}
-// 	e := new(exchange)
-// 	e.adapterMap = map[openrtb_ext.BidderName]AdaptedBidder{
-// 		openrtb_ext.BidderAppnexus: AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil, ""),
-// 	}
-// 	e.cache = &wellBehavedCache{}
-// 	e.me = &metricsConf.NilMetricsEngine{}
+	noBidHandler := func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(204) }
+	server := httptest.NewServer(http.HandlerFunc(noBidHandler))
+	defer server.Close()
 
-// 	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	bidderImpl := &goodSingleBidder{
+		httpRequest: &adapters.RequestData{
+			Method:  "POST",
+			Uri:     server.URL,
+			Body:    []byte("{\"key\":\"val\"}"),
+			Headers: http.Header{},
+		},
+		bidResponse: &adapters.BidderResponse{},
+	}
+	e := new(exchange)
+	e.adapterMap = map[openrtb_ext.BidderName]AdaptedBidder{
+		openrtb_ext.BidderAppnexus: AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil, ""),
+	}
+	e.cache = &wellBehavedCache{}
+	e.me = &metricsConf.NilMetricsEngine{}
 
-// 	ImpExtInfoMap := make(map[string]ImpExtInfo)
-// 	ImpExtInfoMap["1"] = ImpExtInfo{}
-// 	ImpExtInfoMap["2"] = ImpExtInfo{}
+	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 
-// 	//Run tests
-// 	for _, test := range testCases {
-// 		t.Run(test.name, func(t *testing.T) {
-// 			bidExtResponse := &openrtb_ext.ExtBidResponse{
-// 				Errors:   make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage),
-// 				Warnings: make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage),
-// 			}
-// 			bidRequest := &openrtb_ext.RequestWrapper{
-// 				BidRequest: &openrtb2.BidRequest{
-// 					Regs: &openrtb2.Regs{
-// 						Ext: test.givenBidRequestExt,
-// 					},
-// 				},
-// 			}
-// 			e.bidValidationEnforcement = test.givenValidations
-// 			sampleBids := test.givenBids
-// 			nonBids := &nonBids{}
-// 			resultingBids, resultingErrs := e.makeBid(sampleBids, sampleAuction, true, ImpExtInfoMap, bidRequest, bidExtResponse, test.givenSeat, "", nonBids)
+	ImpExtInfoMap := make(map[string]ImpExtInfo)
+	ImpExtInfoMap["1"] = ImpExtInfo{}
+	ImpExtInfoMap["2"] = ImpExtInfo{}
 
-// 			assert.Equal(t, 0, len(resultingErrs))
-// 			assert.Equal(t, test.expectedNumOfBids, len(resultingBids))
-// 			assert.Equal(t, test.expectedNonBids, nonBids)
-// 			assert.Equal(t, test.expectedNumDebugErrors, len(bidExtResponse.Errors))
-// 			assert.Equal(t, test.expectedNumDebugWarnings, len(bidExtResponse.Warnings))
-// 		})
-// 	}
-// }
+	//Run tests
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			bidExtResponse := &openrtb_ext.ExtBidResponse{
+				Errors:   make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage),
+				Warnings: make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage),
+			}
+			bidRequest := &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						Ext: test.givenBidRequestExt,
+					},
+				},
+			}
+			e.bidValidationEnforcement = test.givenValidations
+			sampleBids := test.givenBids
+			nonBids := &openrtb_ext.NonBidCollection{}
+			resultingBids, resultingErrs := e.makeBid(sampleBids, sampleAuction, true, ImpExtInfoMap, bidRequest, bidExtResponse, test.givenSeat, "", nonBids)
+
+			assert.Equal(t, 0, len(resultingErrs))
+			assert.Equal(t, test.expectedNumOfBids, len(resultingBids))
+			assert.Equal(t, test.expectedNonBids, nonBids)
+			assert.Equal(t, test.expectedNumDebugErrors, len(bidExtResponse.Errors))
+			assert.Equal(t, test.expectedNumDebugWarnings, len(bidExtResponse.Warnings))
+		})
+	}
+}
 
 func TestSetBidValidationStatus(t *testing.T) {
 	testCases := []struct {
