@@ -86,5 +86,22 @@
         }
       }
     ],
-    "expectedBidResponses": []
+    "expectedBidResponses": [
+      {
+        "bids": [
+          {
+            "bid": {
+              "id": "test-bid-id",
+              "impid": "test-imp-id",
+              "price": 1.23,
+              "adm": "<VAST version=\"3.0\"><Ad><Wrapper>...</Wrapper></Ad></VAST>",
+              "crid": "test-creative-id",
+              "w": 640,
+              "h": 480
+            },
+            "type": "video"
+          }
+        ]
+      }
+    ]
   }

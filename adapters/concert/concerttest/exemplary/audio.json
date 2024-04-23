@@ -14,8 +14,7 @@
               "partnerId": "partner_name",
               "placementId": 1234567,
               "site": "site_name",
-              "slot": "slot_name",
-              "sizes": [[1030, 590]]
+              "slot": "slot_name"
             }
           }
         }
@@ -50,8 +49,7 @@
                     "partnerId": "partner_name",
                     "placementId": 1234567,
                     "site": "site_name",
-                    "slot": "slot_name",
-                    "sizes": [[1030, 590]]
+                    "slot": "slot_name"
                   }
                 }
               }
@@ -70,9 +68,7 @@
                     "impid": "test-imp-id",
                     "price": 1.23,
                     "adm": "<VAST version=\"3.0\"><Ad><Wrapper>...</Wrapper></Ad></VAST>",
-                    "crid": "test-creative-id",
-                    "w": 1030,
-                    "h": 590
+                    "crid": "test-creative-id"
                   }
                 ]
               }
@@ -81,5 +77,20 @@
         }
       }
     ],
-    "expectedBidResponses": []
+    "expectedBidResponses": [
+      {
+        "bids": [
+          {
+            "bid": {
+              "id": "test-bid-id",
+              "impid": "test-imp-id",
+              "price": 1.23,
+              "adm": "<VAST version=\"3.0\"><Ad><Wrapper>...</Wrapper></Ad></VAST>",
+              "crid": "test-creative-id"
+            },
+            "type": "audio"
+          }
+        ]
+      }
+    ]
   }

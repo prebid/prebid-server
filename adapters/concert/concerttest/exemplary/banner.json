@@ -18,7 +18,12 @@
               "placementId": 1234567,
               "site": "site_name",
               "slot": "slot_name",
-              "sizes": [[1030, 590]]
+              "sizes": [
+                [
+                  1030,
+                  590
+                ]
+              ]
             }
           }
         }
@@ -57,7 +62,12 @@
                     "placementId": 1234567,
                     "site": "site_name",
                     "slot": "slot_name",
-                    "sizes": [[1030, 590]]
+                    "sizes": [
+                      [
+                        1030,
+                        590
+                      ]
+                    ]
                   }
                 }
               }
@@ -87,5 +97,22 @@
         }
       }
     ],
-    "expectedBidResponses": []
+    "expectedBidResponses": [
+      {
+        "bids": [
+          {
+            "bid": {
+              "id": "test-bid-id",
+              "impid": "test-imp-id",
+              "price": 1.23,
+              "adm": "<div style='width:1030px; height:590px; background-color:#000; color:#fff;'><h1>Banner Ad</h1><p>This is a mock banner ad</p></div>",
+              "crid": "test-creative-id",
+              "w": 1030,
+              "h": 590
+            },
+            "type": "banner"
+          }
+        ]
+      }
+    ]
   }
