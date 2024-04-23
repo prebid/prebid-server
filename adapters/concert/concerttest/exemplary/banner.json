@@ -1,9 +1,9 @@
 {
     "mockBidRequest": {
-      "id": "some-request-id",
+      "id": "test-request-id",
       "imp": [
         {
-          "id": "some-imp-id",
+          "id": "test-imp-id",
           "banner": {
             "format": [
               {
@@ -71,7 +71,17 @@
                   }
                 }
               }
-            ]
+            ],
+            "device": {
+              "ua": "test-user-agent",
+              "ip": "123.123.123.123"
+            },
+            "site": {
+              "page": "http://www.example.com"
+            },
+            "user": {
+              "buyeruid": "some-buyer-uid"
+            }
           }
         },
         "mockResponse": {
@@ -109,7 +119,8 @@
               "crid": "test-creative-id",
               "w": 1030,
               "h": 590
-            }
+            },
+            "type": "banner"
           }
         ]
       }

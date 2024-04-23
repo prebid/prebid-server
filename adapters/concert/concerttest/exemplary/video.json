@@ -1,9 +1,9 @@
 {
   "mockBidRequest": {
-    "id": "some-request-id",
+    "id": "test-request-id",
     "imp": [
       {
-        "id": "some-imp-id",
+        "id": "test-imp-id",
         "video": {
           "mimes": ["video/mp4"],
           "minduration": 5,
@@ -46,9 +46,10 @@
               "video": {
                 "w": 640,
                 "h": 480,
+                "minduration": 5,
+                "maxduration": 30,
                 "protocols": [1, 2],
-                "playbackmethod": [1],
-                "mimes": ["video/mp4", "video/webm"]
+                "mimes": ["video/mp4"]
               },
               "ext": {
                 "bidder": {
@@ -62,10 +63,14 @@
             }
           ],
           "site": {
-            "page": "http://www.example.com",
-            "publisher": {
-              "id": "partner_name"
-            }
+            "page": "http://www.example.com"
+          },
+          "device": {
+            "ua": "test-user-agent",
+            "ip": "123.123.123.123"
+          },
+          "user": {
+            "buyeruid": "some-buyer-uid"
           }
         }
       },
@@ -104,7 +109,8 @@
             "crid": "test-creative-id",
             "w": 640,
             "h": 480
-          }
+          },
+          "type": "video"
         }
       ]
     }

@@ -3,13 +3,13 @@ package concert
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
-
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"log"
+	"net/http"
 )
 
 type adapter struct {
@@ -25,19 +25,19 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-    requestJSON, err := json.Marshal(request)
-    if err != nil {
-	  return nil, []error{err}
+	requestJSON, err := json.Marshal(request)
+	if err != nil {
+		return nil, []error{err}
 	}
-  
+
 	requestData := &adapters.RequestData{
-	  Method:  "POST",
-	  Uri:     a.endpoint,
-	  Body:    requestJSON,
+		Method: "POST",
+		Uri:    a.endpoint,
+		Body:   requestJSON,
 	}
-  
+
 	return []*adapters.RequestData{requestData}, nil
-  }
+}
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if responseData.StatusCode == http.StatusNoContent {
@@ -80,6 +80,12 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 			})
 		}
 	}
+
+	// Check if bidResponse.Bids is empty
+	if len(bidResponse.Bids) == 0 {
+		return nil, []error{fmt.Errorf("No bids returned")}
+	}
+
 	return bidResponse, nil
 }
 

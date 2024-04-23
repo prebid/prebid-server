@@ -1,9 +1,9 @@
 {
     "mockBidRequest": {
-      "id": "some-request-id",
+      "id": "test-request-id",
       "imp": [
         {
-          "id": "some-imp-id",
+          "id": "test-imp-id",
           "audio": {
             "mimes": ["audio/mp3"],
             "minduration": 5,
@@ -35,21 +35,23 @@
         "expectedRequest": {
           "uri": "https://bids.concert.io/bids/openrtb",
           "body": {
-            "id": "some-request-id",
+            "id": "test-request-id",
             "imp": [
               {
-                "id": "some-imp-id",
+                "id": "test-imp-id",
                 "audio": {
-                  "mimes": ["audio/mp3"],
+                  "mimes": ["audio/mpeg"],
                   "minduration": 5,
-                  "maxduration": 30
+                  "maxduration": 30,
+                  "protocols": [1, 2]
                 },
                 "ext": {
                   "bidder": {
                     "partnerId": "partner_name",
                     "placementId": 1234567,
                     "site": "site_name",
-                    "slot": "slot_name"
+                    "slot": "slot_name",
+                    "sizes": [[300, 250]]
                   }
                 }
               }
@@ -59,8 +61,7 @@
               "ua": "test-user-agent"
             },
             "site": {
-              "page": "http://www.example.com",
-              "publisher": {}
+              "page": "http://www.example.com"
             },
             "user": {
               "buyeruid": "some-buyer-uid"
@@ -98,7 +99,8 @@
               "price": 1.23,
               "adm": "<VAST version=\"3.0\"><Ad><Wrapper>...</Wrapper></Ad></VAST>",
               "crid": "test-creative-id"
-            }
+            },
+            "type": "audio"
           }
         ]
       }
