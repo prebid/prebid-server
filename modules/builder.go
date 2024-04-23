@@ -1,6 +1,7 @@
 package modules
 
 import (
+	"github.com/prebid/prebid-server/v2/modules/fiftyone_degrees/device_detection"
 	prebidOrtb2blocking "github.com/prebid/prebid-server/v2/modules/prebid/ortb2blocking"
 )
 
@@ -10,6 +11,9 @@ func builders() ModuleBuilders {
 	return ModuleBuilders{
 		"prebid": {
 			"ortb2blocking": prebidOrtb2blocking.Builder,
+		},
+		"fiftyone_degrees": {
+			"device_detection": device_detection.Builder,
 		},
 	}
 }
