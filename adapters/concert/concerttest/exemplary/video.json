@@ -1,107 +1,112 @@
 {
-    "mockBidRequest": {
-      "id": "some-request-id",
-      "imp": [
-        {
-          "id": "some-imp-id",
-          "video": {
-            "mimes": ["video/mp4"],
-            "minduration": 5,
-            "maxduration": 30,
-            "protocols": [1, 2],
-            "w": 640,
-            "h": 480
-          },
-          "ext": {
-            "bidder": {
-              "partnerId": "partner_name",
-              "placementId": 1234567,
-              "site": "site_name",
-              "slot": "slot_name",
-              "sizes": [[640, 480]]
-            }
-          }
-        }
-      ],
-      "site": {
-        "page": "http://www.example.com"
-      },
-      "device": {
-        "ua": "test-user-agent",
-        "ip": "123.123.123.123"
-      },
-      "user": {
-        "buyeruid": "some-buyer-uid"
-      }
-    },
-    "httpCalls": [
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "imp": [
       {
-        "expectedRequest": {
-          "uri": "https://bids.concert.io/bids/openrtb",
-          "body": {
-            "id": "test-request-id",
-            "imp": [
-              {
-                "id": "test-imp-id",
-                "video": {
-                  "w": 640,
-                  "h": 480,
-                  "protocols": [1, 2],
-                  "playbackmethod": [1],
-                  "mimes": ["video/mp4", "video/webm"]
-                },
-                "ext": {
-                  "bidder": {
-                    "partnerId": "partner_name",
-                    "placementId": 1234567,
-                    "site": "site_name",
-                    "slot": "slot_name",
-                    "sizes": [[640, 480]]
-                  }
-                }
-              }
-            ]
-          }
+        "id": "some-imp-id",
+        "video": {
+          "mimes": ["video/mp4"],
+          "minduration": 5,
+          "maxduration": 30,
+          "protocols": [1, 2],
+          "w": 640,
+          "h": 480
         },
-        "mockResponse": {
-          "status": 200,
-          "body": {
-            "id": "test-response-id",
-            "seatbid": [
-              {
-                "bid": [
-                  {
-                    "id": "test-bid-id",
-                    "impid": "test-imp-id",
-                    "price": 1.23,
-                    "adm": "<VAST version=\"3.0\"><Ad><Wrapper>...</Wrapper></Ad></VAST>",
-                    "crid": "test-creative-id",
-                    "w": 640,
-                    "h": 480
-                  }
-                ]
-              }
-            ]
+        "ext": {
+          "bidder": {
+            "partnerId": "partner_name",
+            "placementId": 1234567,
+            "site": "site_name",
+            "slot": "slot_name",
+            "sizes": [[640, 480]]
           }
         }
       }
     ],
-    "expectedBidResponses": [
-      {
-        "bids": [
-          {
-            "bid": {
-              "id": "test-bid-id",
-              "impid": "test-imp-id",
-              "price": 1.23,
-              "adm": "<VAST version=\"3.0\"><Ad><Wrapper>...</Wrapper></Ad></VAST>",
-              "crid": "test-creative-id",
-              "w": 640,
-              "h": 480
-            },
-            "type": "video"
+    "site": {
+      "page": "http://www.example.com"
+    },
+    "device": {
+      "ua": "test-user-agent",
+      "ip": "123.123.123.123"
+    },
+    "user": {
+      "buyeruid": "some-buyer-uid"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bids.concert.io/bids/openrtb",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "video": {
+                "w": 640,
+                "h": 480,
+                "protocols": [1, 2],
+                "playbackmethod": [1],
+                "mimes": ["video/mp4", "video/webm"]
+              },
+              "ext": {
+                "bidder": {
+                  "partnerId": "partner_name",
+                  "placementId": 1234567,
+                  "site": "site_name",
+                  "slot": "slot_name",
+                  "sizes": [[640, 480]]
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "http://www.example.com",
+            "publisher": {
+              "id": "partner_name"
+            }
           }
-        ]
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-response-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "test-bid-id",
+                  "impid": "test-imp-id",
+                  "price": 1.23,
+                  "adm": "<VAST version=\"3.0\"><Ad><Wrapper>...</Wrapper></Ad></VAST>",
+                  "crid": "test-creative-id",
+                  "w": 640,
+                  "h": 480
+                }
+              ]
+            }
+          ]
+        }
       }
-    ]
-  }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "test-bid-id",
+            "impid": "test-imp-id",
+            "price": 1.23,
+            "adm": "<VAST version=\"3.0\"><Ad><Wrapper>...</Wrapper></Ad></VAST>",
+            "crid": "test-creative-id",
+            "w": 640,
+            "h": 480
+          }
+        }
+      ]
+    }
+  ]
+}

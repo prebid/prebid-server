@@ -6,7 +6,8 @@
   "properties": {
     "partnerId": {
         "type": "string",
-        "description": "The partner id assigned by concert."
+        "description": "The partner id assigned by concert.",
+        "minLength": 1
     },
     "placementId": {
         "type": "integer",

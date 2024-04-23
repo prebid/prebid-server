@@ -8,16 +8,13 @@ import (
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
-const testsDir = "concerttest"
-const testsBidderEndpoint = "http://test-request.com/prebid"
-
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderConcert, config.Adapter{
-		Endpoint: testsBidderEndpoint}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+		Endpoint: "https://bids.concert.io/bids/openrtb"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	adapterstest.RunJSONBidderTest(t, testsDir, bidder)
+	adapterstest.RunJSONBidderTest(t, "concerttest", bidder)
 }
