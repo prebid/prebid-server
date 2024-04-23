@@ -7,7 +7,8 @@
           "audio": {
             "mimes": ["audio/mp3"],
             "minduration": 5,
-            "maxduration": 30
+            "maxduration": 30,
+            "protocols": [1, 2]
           },
           "ext": {
             "bidder": {
@@ -40,7 +41,7 @@
               {
                 "id": "test-imp-id",
                 "audio": {
-                  "mimes": ["audio/mpeg"],
+                  "mimes": ["audio/mp3"],
                   "minduration": 5,
                   "maxduration": 30,
                   "protocols": [1, 2]
@@ -50,8 +51,7 @@
                     "partnerId": "partner_name",
                     "placementId": 1234567,
                     "site": "site_name",
-                    "slot": "slot_name",
-                    "sizes": [[300, 250]]
+                    "slot": "slot_name"
                   }
                 }
               }
