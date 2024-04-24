@@ -253,6 +253,9 @@ func TestBuildIxDiag(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
+			// save and later restore the value of the global variable to avoid side-effecting other tests
+			oldVersionVer := version.Ver
+			defer func() { version.Ver = oldVersionVer }()
 			version.Ver = test.pbsVersion
 			ixDiag := &IxDiag{}
 			err := setIxDiagIntoExtRequest(test.request, ixDiag)
