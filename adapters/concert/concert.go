@@ -9,7 +9,6 @@ import (
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"net/http"
-	"log"
 )
 
 type adapter struct {
