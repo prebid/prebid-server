@@ -9,6 +9,7 @@ import (
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"net/http"
+	"log"
 )
 
 type adapter struct {
@@ -29,10 +30,14 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		return nil, []error{err}
 	}
 
+
 	requestData := &adapters.RequestData{
 		Method: "POST",
 		Uri:    a.endpoint,
 		Body:   requestJSON,
+		Headers: http.Header{
+            "Content-Type": []string{"application/json"},
+        },
 	}
 
 	return []*adapters.RequestData{requestData}, nil
