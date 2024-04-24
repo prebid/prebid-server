@@ -468,7 +468,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		return
 	}
 
-	timeout := parseTimeout(requestJson, time.Duration(deps.cfg.StoredRequests.Timeout)*time.Millisecond)
+	timeout := parseTimeout(requestJson, time.Duration(deps.cfg.StoredRequestsTimeout)*time.Millisecond)
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 

@@ -161,7 +161,7 @@ func TestDefaults(t *testing.T) {
 	cmpBools(t, "adapter_buyeruid_scrubbed", true, cfg.Metrics.Disabled.AdapterBuyerUIDScrubbed)
 	cmpBools(t, "adapter_gdpr_request_blocked", false, cfg.Metrics.Disabled.AdapterGDPRRequestBlocked)
 	cmpStrings(t, "certificates_file", "", cfg.PemCertsFile)
-	cmpInts(t, "stored_requests.timeout_ms", 50, cfg.StoredRequests.Timeout)
+	cmpInts(t, "stored_requests_timeout_ms", 50, cfg.StoredRequestsTimeout)
 	cmpBools(t, "stored_requests.filesystem.enabled", false, cfg.StoredRequests.Files.Enabled)
 	cmpStrings(t, "stored_requests.filesystem.directorypath", "./stored_requests/data/by_id", cfg.StoredRequests.Files.Path)
 	cmpBools(t, "auto_gen_source_tid", true, cfg.AutoGenSourceTID)
@@ -401,8 +401,7 @@ external_url: http://prebid-server.prebid.org/
 host: prebid-server.prebid.org
 port: 1234
 admin_port: 5678
-stored_requests:
-  timeout_ms: 75
+stored_requests_timeout_ms: 75
 compression:
     request:
         enable_gzip: true
@@ -615,7 +614,7 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "garbage_collector_threshold", 1, cfg.GarbageCollectorThreshold)
 	cmpInts(t, "auction_timeouts_ms.default", 50, int(cfg.AuctionTimeouts.Default))
 	cmpInts(t, "auction_timeouts_ms.max", 123, int(cfg.AuctionTimeouts.Max))
-	cmpInts(t, "stored_requests.timeout_ms", 75, cfg.StoredRequests.Timeout)
+	cmpInts(t, "stored_request_timeout_ms", 75, cfg.StoredRequestsTimeout)
 	cmpStrings(t, "cache.scheme", "http", cfg.CacheURL.Scheme)
 	cmpStrings(t, "cache.host", "prebidcache.net", cfg.CacheURL.Host)
 	cmpStrings(t, "cache.query", "uuid=%PBS_CACHE_UUID%", cfg.CacheURL.Query)
@@ -916,6 +915,7 @@ func TestValidateConfig(t *testing.T) {
 				Type: "none",
 			},
 		},
+		StoredRequestsTimeout: 50,
 		StoredVideo: StoredRequests{
 			Files: FileFetcherConfig{Enabled: true},
 			InMemoryCache: InMemoryCache{
@@ -1175,6 +1175,16 @@ func TestIsConfigInfoPresent(t *testing.T) {
 		result := isConfigInfoPresent(v, tt.keyPrefix, tt.fields)
 		assert.Equal(t, tt.wantResult, result, tt.description)
 	}
+}
+
+func TestNegativeOrZeroStoredRequestsTimeout(t *testing.T) {
+	cfg, v := newDefaultConfig(t)
+
+	cfg.StoredRequestsTimeout = -1
+	assertOneError(t, cfg.validate(v), "cfg.stored_requests_timeout_ms must be > 0. Got -1")
+
+	cfg.StoredRequestsTimeout = 0
+	assertOneError(t, cfg.validate(v), "cfg.stored_requests_timeout_ms must be > 0. Got 0")
 }
 
 func TestNegativeRequestSize(t *testing.T) {
