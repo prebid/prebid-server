@@ -117,6 +117,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/lockerdome"
 	"github.com/prebid/prebid-server/v2/adapters/logan"
 	"github.com/prebid/prebid-server/v2/adapters/logicad"
+	"github.com/prebid/prebid-server/v2/adapters/loyal"
 	"github.com/prebid/prebid-server/v2/adapters/lunamedia"
 	"github.com/prebid/prebid-server/v2/adapters/mabidder"
 	"github.com/prebid/prebid-server/v2/adapters/madvertise"
@@ -145,6 +146,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/pubnative"
 	"github.com/prebid/prebid-server/v2/adapters/pulsepoint"
 	"github.com/prebid/prebid-server/v2/adapters/pwbid"
+	"github.com/prebid/prebid-server/v2/adapters/readpeak"
 	"github.com/prebid/prebid-server/v2/adapters/relevantdigital"
 	"github.com/prebid/prebid-server/v2/adapters/revcontent"
 	"github.com/prebid/prebid-server/v2/adapters/richaudience"
@@ -325,6 +327,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderLockerDome:        lockerdome.Builder,
 		openrtb_ext.BidderLogan:             logan.Builder,
 		openrtb_ext.BidderLogicad:           logicad.Builder,
+		openrtb_ext.BidderLoyal:             loyal.Builder,
 		openrtb_ext.BidderLunaMedia:         lunamedia.Builder,
 		openrtb_ext.BidderMabidder:          mabidder.Builder,
 		openrtb_ext.BidderMadvertise:        madvertise.Builder,
@@ -354,6 +357,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderPubnative:         pubnative.Builder,
 		openrtb_ext.BidderPulsepoint:        pulsepoint.Builder,
 		openrtb_ext.BidderPWBid:             pwbid.Builder,
+		openrtb_ext.BidderReadpeak:          readpeak.Builder,
 		openrtb_ext.BidderRelevantDigital:   relevantdigital.Builder,
 		openrtb_ext.BidderRevcontent:        revcontent.Builder,
 		openrtb_ext.BidderRichaudience:      richaudience.Builder,
