@@ -24,6 +24,7 @@
         },
         "ext": {
           "bidder": {
+            "org": "",
             "publisher_id": ""
           }}
       }
@@ -31,7 +32,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "extractPublisherID: no publisherID supplied",
+      "value": "extractOrg: no org or publisher_id supplied",
       "comparison": "literal"
     }
   ]
