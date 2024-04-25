@@ -264,36 +264,36 @@ func (adapter *DmxAdapter) MakeBids(request *openrtb2.BidRequest, externalReques
 }
 
 func fetchParams(params dmxExt, inst openrtb2.Imp, ins openrtb2.Imp, imps []openrtb2.Imp, banner *openrtb2.Banner, video *openrtb2.Video, intVal int8) []openrtb2.Imp {
-	tempimp := inst
+	tempImp := inst
 	if params.Bidder.Bidfloor != 0 {
-		tempimp.BidFloor = params.Bidder.Bidfloor
+		tempImp.BidFloor = params.Bidder.Bidfloor
 	}
 	if params.Bidder.TagId != "" {
-		tempimp.TagID = params.Bidder.TagId
-		tempimp.Secure = &intVal
+		tempImp.TagID = params.Bidder.TagId
+		tempImp.Secure = &intVal
 	}
 
 	if params.Bidder.DmxId != "" {
-		tempimp.TagID = params.Bidder.DmxId
-		tempimp.Secure = &intVal
+		tempImp.TagID = params.Bidder.DmxId
+		tempImp.Secure = &intVal
 	}
 	if banner != nil {
 		if banner.H == nil || banner.W == nil {
 			banner.H = &banner.Format[0].H
 			banner.W = &banner.Format[0].W
 		}
-		tempimp.Banner = banner
+		tempImp.Banner = banner
 	}
 
 	if video != nil {
 		video.Protocols = checkProtocols(video)
-		tempimp.Video = video
+		tempImp.Video = video
 	}
 
-	if tempimp.TagID == "" {
+	if tempImp.TagID == "" {
 		return imps
 	}
-	imps = append(imps, tempimp)
+	imps = append(imps, tempImp)
 	return imps
 }
 
