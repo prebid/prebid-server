@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Readpeak Adapter Params",
+  "description": "A schema which validates params accepted by the Readpeak adapter",
+  "type": "object",
+  "properties": {
+      "publisherId": {
+          "type": "string",
+          "description": "Publisher ID provided by Readpeak"
+      },
+      "siteId": {
+          "type": "string",
+          "description": "Site/Media ID provided by Readpeak"
+      },
+      "bidfloor": {
+          "type": "number",
+          "description": "CPM Bid Floor"
+      },
+      "tagId": {
+          "type": "string",
+          "description": "Ad placement identifier"
+      }
+  },
+  "required": ["publisherId"]
+}
