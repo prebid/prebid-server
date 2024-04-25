@@ -12,11 +12,11 @@ import (
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
-type adapter struct {
-	endpoint string
+type FreewheelAdapter struct {
+	Endpoint string
 }
 
-func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *FreewheelAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	for i := 0; i < len(request.Imp); i++ {
 		imp := &request.Imp[i]
 		var bidderExt adapters.ExtImpBidder
@@ -53,7 +53,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 	requestData := &adapters.RequestData{
 		Method:  "POST",
-		Uri:     a.endpoint,
+		Uri:     a.Endpoint,
 		Body:    requestJSON,
 		Headers: headers,
 		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
@@ -61,7 +61,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	return []*adapters.RequestData{requestData}, nil
 }
 
-func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *FreewheelAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -87,18 +87,27 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 
 	for _, seatBid := range bidResp.SeatBid {
 		for i := range seatBid.Bid {
-			b := &adapters.TypedBid{
-				Bid:     &seatBid.Bid[i],
-				BidType: bidType,
+			bid := seatBid.Bid[i]
+			bidVideo := openrtb_ext.ExtBidPrebidVideo{}
+			if bid.Cat != nil && len(bid.Cat) > 0 {
+				bidVideo.PrimaryCategory = bid.Cat[0]
 			}
-			bidResponse.Bids = append(bidResponse.Bids, b)
+			if bid.Dur > 0 {
+				bidVideo.Duration = int(bid.Dur)
+			}
+			adTypeBid := &adapters.TypedBid{
+				Bid:      &bid,
+				BidType:  bidType,
+				BidVideo: &bidVideo,
+			}
+			bidResponse.Bids = append(bidResponse.Bids, adTypeBid)
 		}
 	}
 	return bidResponse, nil
 }
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	bidder := &adapter{
+	bidder := &FreewheelAdapter{
 		config.Endpoint,
 	}
 	return bidder, nil
