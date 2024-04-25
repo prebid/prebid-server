@@ -13,7 +13,7 @@ import (
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
-type MedianetAdapter struct {
+type adapter struct {
 	bidderName string
 	endpoint   string
 }
@@ -40,7 +40,7 @@ type medianetRespExt struct {
 	Igi []interestGroupIntent `json:"igi,omitempty"`
 }
 
-func (a *MedianetAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 
 	reqJson, err := json.Marshal(request)
@@ -61,7 +61,7 @@ func (a *MedianetAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ad
 	}}, errs
 }
 
-func (a *MedianetAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var errs []error
 
 	if response.StatusCode == http.StatusNoContent {
@@ -110,7 +110,7 @@ func (a *MedianetAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 // Builder builds a new instance of the Medianet adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	url := buildEndpoint(config.Endpoint, config.ExtraAdapterInfo)
-	return &MedianetAdapter{
+	return &adapter{
 		bidderName: string(bidderName),
 		endpoint:   url,
 	}, nil
@@ -132,7 +132,7 @@ func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType,
 	}
 }
 
-func extractFledge(a *MedianetAdapter, bidResp openrtb2.BidResponse) []*openrtb_ext.FledgeAuctionConfig {
+func extractFledge(a *adapter, bidResp openrtb2.BidResponse) []*openrtb_ext.FledgeAuctionConfig {
 	var fledgeAuctionConfigs []*openrtb_ext.FledgeAuctionConfig
 
 	var bidRespExt medianetRespExt
