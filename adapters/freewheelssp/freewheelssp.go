@@ -12,11 +12,11 @@ import (
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
-type Adapter struct {
+type adapter struct {
 	Endpoint string
 }
 
-func (a *Adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	for i := 0; i < len(request.Imp); i++ {
 		imp := &request.Imp[i]
 		var bidderExt adapters.ExtImpBidder
@@ -61,7 +61,7 @@ func (a *Adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	return []*adapters.RequestData{requestData}, nil
 }
 
-func (a *Adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -89,7 +89,7 @@ func (a *Adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 		for i := range seatBid.Bid {
 			bid := seatBid.Bid[i]
 			bidVideo := openrtb_ext.ExtBidPrebidVideo{}
-			if bid.Cat != nil && len(bid.Cat) > 0 {
+			if len(bid.Cat) > 0 {
 				bidVideo.PrimaryCategory = bid.Cat[0]
 			}
 			if bid.Dur > 0 {
@@ -107,7 +107,7 @@ func (a *Adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 }
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	bidder := &Adapter{
+	bidder := &adapter{
 		config.Endpoint,
 	}
 	return bidder, nil

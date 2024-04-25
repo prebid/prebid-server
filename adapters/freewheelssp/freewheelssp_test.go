@@ -44,7 +44,8 @@ func TestFreewheelAdapter_MakeBids(t *testing.T) {
 			args: args{
 				response: &adapters.ResponseData{
 					StatusCode: http.StatusOK,
-					Body:       []byte(`{"id": "test-request-id", "seatbid":[{"seat": "StickyAdsTv", "bid":[{"id": "7706636740145184841", "impid": "test-imp-id", "price": 0.500000, "adid": "29681110", "adm": "some-test-ad", "adomain":["freewheel.com"], "crid": "29681110", "dealid": "testdeal", "cat": ["IAB10"], "dur": 14 }]}], "bidid": "5778926625248726496", "cur": "USD"}`),
+					Body: []byte(`{"id": "test-request-id", "seatbid":[{"seat": "StickyAdsTv", "bid":[{"id": "7706636740145184841", "impid": "test-imp-id", "price": 0.500000, "adid": "29681110", "adm": "some-test-ad", "adomain":["freewheel.com"], "crid": "29681110", "dealid": "testdeal", "cat": ["IAB10"], "dur": 14 },
+{"id": "7706636740145184841", "impid": "test-imp-id", "price": 0.500000, "adid": "29681110", "adm": "some-test-ad", "adomain":["freewheel.com"], "crid": "29681110", "dealid": "testdeal", "Dur":10}]}], "bidid": "5778926625248726496", "cur": "USD"}`),
 				},
 			},
 			wantErr: nil,
@@ -66,6 +67,21 @@ func TestFreewheelAdapter_MakeBids(t *testing.T) {
 						BidType:  openrtb_ext.BidTypeVideo,
 						BidVideo: &openrtb_ext.ExtBidPrebidVideo{PrimaryCategory: "IAB10", Duration: 14},
 					},
+					{
+						Bid: &openrtb2.Bid{
+							ID:      "7706636740145184841",
+							ImpID:   "test-imp-id",
+							Price:   0.500000,
+							AdID:    "29681110",
+							AdM:     "some-test-ad",
+							ADomain: []string{"freewheel.com"},
+							CrID:    "29681110",
+							DealID:  "testdeal",
+							Dur:     10,
+						},
+						BidType:  openrtb_ext.BidTypeVideo,
+						BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 10},
+					},
 				},
 				Currency: "USD",
 			},
@@ -73,7 +89,7 @@ func TestFreewheelAdapter_MakeBids(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			a := &Adapter{
+			a := &adapter{
 				Endpoint: tt.fields.URI,
 			}
 			gotResp, gotErr := a.MakeBids(tt.args.internalRequest, tt.args.externalRequest, tt.args.response)
