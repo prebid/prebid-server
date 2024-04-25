@@ -73,7 +73,7 @@ func TestFreewheelAdapter_MakeBids(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			a := &FreewheelAdapter{
+			a := &Adapter{
 				Endpoint: tt.fields.URI,
 			}
 			gotResp, gotErr := a.MakeBids(tt.args.internalRequest, tt.args.externalRequest, tt.args.response)

@@ -12,11 +12,11 @@ import (
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
-type FreewheelAdapter struct {
+type Adapter struct {
 	Endpoint string
 }
 
-func (a *FreewheelAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *Adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	for i := 0; i < len(request.Imp); i++ {
 		imp := &request.Imp[i]
 		var bidderExt adapters.ExtImpBidder
@@ -61,7 +61,7 @@ func (a *FreewheelAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 	return []*adapters.RequestData{requestData}, nil
 }
 
-func (a *FreewheelAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *Adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -107,7 +107,7 @@ func (a *FreewheelAdapter) MakeBids(internalRequest *openrtb2.BidRequest, extern
 }
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	bidder := &FreewheelAdapter{
+	bidder := &Adapter{
 		config.Endpoint,
 	}
 	return bidder, nil
