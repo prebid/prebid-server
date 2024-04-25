@@ -117,6 +117,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/lockerdome"
 	"github.com/prebid/prebid-server/v2/adapters/logan"
 	"github.com/prebid/prebid-server/v2/adapters/logicad"
+	"github.com/prebid/prebid-server/v2/adapters/loyal"
 	"github.com/prebid/prebid-server/v2/adapters/lunamedia"
 	"github.com/prebid/prebid-server/v2/adapters/mabidder"
 	"github.com/prebid/prebid-server/v2/adapters/madvertise"
@@ -324,6 +325,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderLockerDome:        lockerdome.Builder,
 		openrtb_ext.BidderLogan:             logan.Builder,
 		openrtb_ext.BidderLogicad:           logicad.Builder,
+		openrtb_ext.BidderLoyal:             loyal.Builder,
 		openrtb_ext.BidderLunaMedia:         lunamedia.Builder,
 		openrtb_ext.BidderMabidder:          mabidder.Builder,
 		openrtb_ext.BidderMadvertise:        madvertise.Builder,
