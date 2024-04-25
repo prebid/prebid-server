@@ -89,6 +89,7 @@
                                     "cid": "test_cid",
                                     "crid": "test_crid",
                                     "dealid": "test_dealid",
+                                    "mtype": 1,
                                     "w": 300,
                                     "h": 250,
                                     "ext": {
@@ -118,6 +119,7 @@
                         "cid": "test_cid",
                         "crid": "test_crid",
                         "dealid": "test_dealid",
+                        "mtype": 1,
                         "w": 300,
                         "h": 250,
                         "ext": {

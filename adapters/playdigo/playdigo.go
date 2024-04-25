@@ -77,9 +77,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			continue
 		}
 
-		if adapterReq != nil {
-			adapterRequests = append(adapterRequests, adapterReq)
-		}
+		adapterRequests = append(adapterRequests, adapterReq)
 	}
 
 	if len(adapterRequests) == 0 {
@@ -129,7 +127,8 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 	for _, seatBid := range response.SeatBid {
 		for i := range seatBid.Bid {
-			bidType, err := getBidMediaType(&seatBid.Bid[i])
+			bid := seatBid.Bid[i]
+			bidType, err := getBidType(bid)
 			if err != nil {
 				return nil, []error{err}
 			}
@@ -144,21 +143,18 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	return bidResponse, nil
 }
 
-func getBidMediaType(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
-	var extBid openrtb_ext.ExtBid
-	err := json.Unmarshal(bid.Ext, &extBid)
-	if err != nil {
-		return "", fmt.Errorf("unable to deserialize imp %v bid.ext, error: %v", bid.ImpID, err)
+func getBidType(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	// determinate media type by bid response field mtype
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
+	case openrtb2.MarkupAudio:
+		return openrtb_ext.BidTypeAudio, nil
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative, nil
 	}
 
-	if extBid.Prebid == nil {
-		return "", fmt.Errorf("imp %v with unknown media type", bid.ImpID)
-	}
-
-	switch extBid.Prebid.Type {
-	case openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo, openrtb_ext.BidTypeNative:
-		return extBid.Prebid.Type, nil
-	default:
-		return "", fmt.Errorf("invalid BidType: %s", extBid.Prebid.Type)
-	}
+	return "", fmt.Errorf("could not define media type for impression: %s", bid.ImpID)
 }
