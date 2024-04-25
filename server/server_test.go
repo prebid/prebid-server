@@ -178,8 +178,6 @@ func TestRunServer(t *testing.T) {
 }
 
 func TestListen(t *testing.T) {
-	// TODO(dmitris): check if the unused const 'name' can be deleted [PR3621]
-	const name = "TestListen"
 	var (
 		handler, adminHandler http.Handler
 
