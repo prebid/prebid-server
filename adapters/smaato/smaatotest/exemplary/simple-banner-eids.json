@@ -48,6 +48,17 @@
       "dnt": 0
     },
     "user": {
+      "eids": [
+        {
+          "source": "adserver.org",
+          "uids": [
+            {
+              "id": "1234",
+              "atype": 1
+            }
+          ]
+        }
+      ],
       "ext": {
         "consent": "gdprConsentString",
         "data": {
@@ -101,6 +112,17 @@
             }
           ],
           "user": {
+            "eids": [
+              {
+                "source": "adserver.org",
+                "uids": [
+                  {
+                    "id": "1234",
+                    "atype": 1
+                  }
+                ]
+              }
+            ],
             "ext": {
               "consent": "gdprConsentString"
             },
