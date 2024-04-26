@@ -9,7 +9,6 @@ import (
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
@@ -57,7 +56,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
-			bidType, err := getMediaTypeForImp(&sb.Bid[i], internalRequest.Imp)
+			bidType, err := getBidMediaTypeFromMtype(&sb.Bid[i])
 			if err != nil {
 				errs = append(errs, err)
 			} else {
@@ -78,16 +77,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	return &adapter{
 		endpoint: url,
 	}, nil
-}
-
-func getMediaTypeForImp(bid *openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
-	mediaType, err := getBidMediaTypeFromMtype(bid)
-	if err != nil {
-		return "", &errortypes.BadInput{
-			Message: err.Error(),
-		}
-	}
-	return mediaType, nil
 }
 
 func getBidMediaTypeFromMtype(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
