@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Cointraffic Adapter Params",
+  "description": "A schema which validates params accepted by the Cointraffic adapter",
+  "type": "object",
+  "properties": {
+    "placementId": {
+      "type": "string",
+      "description": "Ad placement identifier"
+    }
+  },
+  "required": ["placementId", "userId"]
+}

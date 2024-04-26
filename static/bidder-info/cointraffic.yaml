@@ -1,0 +1,20 @@
+endpoint: "http://localhost:3555/api/v1/rtb" # todo: static load balancer
+geoscope:
+  - EUU
+  - CAN
+maintainer:
+  email: prebid-maintainer@example.com
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - native
+#userSync:
+#  redirect:
+#    url: https://foo.com/sync?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
+#    userMacro: $UID

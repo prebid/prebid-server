@@ -1,0 +1,121 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "imp": [
+            {
+                "id": "1",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 320,
+                            "h": 50
+                        }
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "placementId": "placementId-test"
+                    }
+                }
+            }
+        ],
+        "device": {
+            "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36",
+            "ip": "111.111.111.111"
+        },
+        "user": {
+            "id": "userid",
+            "customData": "customdata"
+        }
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "headers": {
+                    "Accept": [
+                        "application/json"
+                    ],
+                    "Content-Type": [
+                        "application/json"
+                    ],
+                    "X-Forwarded-For": [
+                        "111.111.111.111"
+                    ],
+                    "User-Agent": [
+                        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36"
+                    ]
+                },
+                "uri": "http://localhost:3555/api/v1/rtb",
+                "body": {
+                    "id": "test-request-id",
+                    "imp": [
+                        {
+                            "id": "1",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 320,
+                                        "h": 50
+                                    }
+                                ]
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "placementId": "placementId-test"
+                                }
+                            }
+                        }
+                    ],
+                    "device":{"ua":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36","ip":"111.111.111.111"},
+                    "user": {
+                        "id": "userid",
+                        "customdata": "customdata"
+                    }
+                },
+                "impIDs":["1"]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "test-request-id",
+                    "seatbid": [
+                        {
+                            "seat": "cointraffic",
+                            "bid": [
+                                {
+                                    "id": "test-bid-id",
+                                    "impid": "1",
+                                    "price": 1.50,
+                                    "adm": "some-test-ad",
+                                    "crid": "test-crid",
+                                    "h": 50,
+                                    "w": 320
+                                }
+                            ]
+                        }
+                    ],
+                    "cur": "USD"
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "currency": "USD",
+            "bids": [
+                {
+                    "bid": {
+                        "id": "test-bid-id",
+                        "impid": "1",
+                        "price": 1.50,
+                        "adm": "some-test-ad",
+                        "crid": "test-crid",
+                        "w": 320,
+                        "h": 50
+                    },
+                    "type": "banner"
+                }
+            ]
+        }
+    ]
+}
