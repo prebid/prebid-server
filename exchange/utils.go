@@ -69,8 +69,6 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		return
 	}
 
-	allowedBidderRequests = make([]BidderRequest, 0)
-
 	bidderImpWithBidResp := stored_responses.InitStoredBidResponses(req.BidRequest, auctionReq.StoredBidResponses)
 
 	impsByBidder, err := splitImps(req.BidRequest.Imp)
@@ -149,102 +147,110 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		gdprPerms = rs.gdprPermsBuilder(auctionReq.TCF2Config, gdprRequestInfo)
 	}
 
-	// bidder level privacy policies
+	allowedBidderRequests = make([]BidderRequest, 0, len(allBidderRequests))
+
 	for _, bidderRequest := range allBidderRequests {
-		// fetchBids activity
-		scopedName := privacy.Component{Type: privacy.ComponentTypeBidder, Name: bidderRequest.BidderName.String()}
-		fetchBidsActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityFetchBids, scopedName, privacy.NewRequestFromBidRequest(*req))
-		if !fetchBidsActivityAllowed {
-			// skip the call to a bidder if fetchBids activity is not allowed
-			// do not add this bidder to allowedBidderRequests
+		auctionPermissions := gdprPerms.AuctionActivitiesAllowed(ctx, bidderRequest.BidderCoreName, bidderRequest.BidderName)
+
+		// privacy blocking
+		if rs.isBidderBlockedByPrivacy(req, auctionReq.Activities, auctionPermissions, bidderRequest.BidderCoreName, bidderRequest.BidderName) {
 			continue
 		}
 
-		var auctionPermissions gdpr.AuctionPermissions
-		var gdprErr error
-
-		if gdprEnforced {
-			auctionPermissions, gdprErr = gdprPerms.AuctionActivitiesAllowed(ctx, bidderRequest.BidderCoreName, bidderRequest.BidderName)
-			if !auctionPermissions.AllowBidRequest {
-				// auction request is not permitted by GDPR
-				// do not add this bidder to allowedBidderRequests
-				rs.me.RecordAdapterGDPRRequestBlocked(bidderRequest.BidderCoreName)
-				continue
-			}
-		}
-
-		ipConf := privacy.IPConf{IPV6: auctionReq.Account.Privacy.IPv6Config, IPV4: auctionReq.Account.Privacy.IPv4Config}
-
-		// FPD should be applied before policies, otherwise it overrides policies and activities restricted data
+		// fpd
 		applyFPD(auctionReq.FirstPartyData, bidderRequest)
 
-		reqWrapper := &openrtb_ext.RequestWrapper{
-			BidRequest: ortb.CloneBidRequestPartial(bidderRequest.BidRequest),
-		}
-
-		passIDActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitUserFPD, scopedName, privacy.NewRequestFromBidRequest(*req))
-		buyerUIDSet := reqWrapper.User != nil && reqWrapper.User.BuyerUID != ""
-		buyerUIDRemoved := false
-		if !passIDActivityAllowed {
-			privacy.ScrubUserFPD(reqWrapper)
-			buyerUIDRemoved = true
-		} else {
-			// run existing policies (GDPR, CCPA, COPPA, LMT)
-			// potentially block passing IDs based on GDPR
-			if gdprEnforced && (gdprErr != nil || !auctionPermissions.PassID) {
-				privacy.ScrubGdprID(reqWrapper)
-				buyerUIDRemoved = true
-			}
-			// potentially block passing IDs based on CCPA
-			if ccpaEnforcer.ShouldEnforce(bidderRequest.BidderName.String()) {
-				privacy.ScrubDeviceIDsIPsUserDemoExt(reqWrapper, ipConf, "eids", false)
-				buyerUIDRemoved = true
-			}
-		}
-		if buyerUIDSet && buyerUIDRemoved {
-			rs.me.RecordAdapterBuyerUIDScrubbed(bidderRequest.BidderCoreName)
-		}
-
-		passGeoActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitPreciseGeo, scopedName, privacy.NewRequestFromBidRequest(*req))
-		if !passGeoActivityAllowed {
-			privacy.ScrubGeoAndDeviceIP(reqWrapper, ipConf)
-		} else {
-			// run existing policies (GDPR, CCPA, COPPA, LMT)
-			// potentially block passing geo based on GDPR
-			if gdprEnforced && (gdprErr != nil || !auctionPermissions.PassGeo) {
-				privacy.ScrubGeoAndDeviceIP(reqWrapper, ipConf)
-			}
-			// potentially block passing geo based on CCPA
-			if ccpaEnforcer.ShouldEnforce(bidderRequest.BidderName.String()) {
-				privacy.ScrubDeviceIDsIPsUserDemoExt(reqWrapper, ipConf, "eids", false)
-			}
-		}
-
-		if lmt || coppa {
-			privacy.ScrubDeviceIDsIPsUserDemoExt(reqWrapper, ipConf, "eids", coppa)
-		}
-
-		passTIDAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitTIDs, scopedName, privacy.NewRequestFromBidRequest(*req))
-		if !passTIDAllowed {
-			privacy.ScrubTID(reqWrapper)
-		}
-
-		err := reqWrapper.RebuildRequest()
-		if err != nil {
+		// privacy scrubbing
+		if err := rs.applyPrivacy(&bidderRequest, auctionReq, auctionPermissions, ccpaEnforcer, lmt, coppa); err != nil {
 			errs = append(errs, err)
+			continue
 		}
-		bidderRequest.BidRequest = reqWrapper.BidRequest
-
-		allowedBidderRequests = append(allowedBidderRequests, bidderRequest)
 
 		// GPP downgrade: always downgrade unless we can confirm GPP is supported
 		if shouldSetLegacyPrivacy(rs.bidderInfo, string(bidderRequest.BidderCoreName)) {
 			setLegacyGDPRFromGPP(bidderRequest.BidRequest, gpp)
 			setLegacyUSPFromGPP(bidderRequest.BidRequest, gpp)
 		}
+
+		allowedBidderRequests = append(allowedBidderRequests, bidderRequest)
 	}
 
 	return
+}
+
+func (rs *requestSplitter) isBidderBlockedByPrivacy(r *openrtb_ext.RequestWrapper, activities privacy.ActivityControl, auctionPermissions gdpr.AuctionPermissions, coreBidder, bidderName openrtb_ext.BidderName) bool {
+	// activities control
+	scope := privacy.Component{Type: privacy.ComponentTypeBidder, Name: bidderName.String()}
+	fetchBidsActivityAllowed := activities.Allow(privacy.ActivityFetchBids, scope, privacy.NewRequestFromBidRequest(*r))
+	if !fetchBidsActivityAllowed {
+		return true
+	}
+
+	// gdpr
+	if !auctionPermissions.AllowBidRequest {
+		rs.me.RecordAdapterGDPRRequestBlocked(coreBidder)
+		return true
+	}
+
+	return false
+}
+
+func (rs *requestSplitter) applyPrivacy(bidderRequest *BidderRequest, auctionReq AuctionRequest, auctionPermissions gdpr.AuctionPermissions, ccpaEnforcer privacy.PolicyEnforcer, lmt bool, coppa bool) error {
+	scope := privacy.Component{Type: privacy.ComponentTypeBidder, Name: bidderRequest.BidderName.String()}
+	ipConf := privacy.IPConf{IPV6: auctionReq.Account.Privacy.IPv6Config, IPV4: auctionReq.Account.Privacy.IPv4Config}
+
+	reqWrapper := &openrtb_ext.RequestWrapper{
+		BidRequest: ortb.CloneBidRequestPartial(bidderRequest.BidRequest),
+	}
+
+	passIDActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitUserFPD, scope, privacy.NewRequestFromBidRequest(*reqWrapper))
+	buyerUIDSet := reqWrapper.User != nil && reqWrapper.User.BuyerUID != ""
+	buyerUIDRemoved := false
+	if !passIDActivityAllowed {
+		privacy.ScrubUserFPD(reqWrapper)
+		buyerUIDRemoved = true
+	} else {
+		if !auctionPermissions.PassID {
+			privacy.ScrubGdprID(reqWrapper)
+			buyerUIDRemoved = true
+		}
+
+		if ccpaEnforcer.ShouldEnforce(bidderRequest.BidderName.String()) {
+			privacy.ScrubDeviceIDsIPsUserDemoExt(reqWrapper, ipConf, "eids", false)
+			buyerUIDRemoved = true
+		}
+	}
+	if buyerUIDSet && buyerUIDRemoved {
+		rs.me.RecordAdapterBuyerUIDScrubbed(bidderRequest.BidderCoreName)
+	}
+
+	passGeoActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitPreciseGeo, scope, privacy.NewRequestFromBidRequest(*reqWrapper))
+	if !passGeoActivityAllowed {
+		privacy.ScrubGeoAndDeviceIP(reqWrapper, ipConf)
+	} else {
+		if !auctionPermissions.PassGeo {
+			privacy.ScrubGeoAndDeviceIP(reqWrapper, ipConf)
+		}
+		if ccpaEnforcer.ShouldEnforce(bidderRequest.BidderName.String()) {
+			privacy.ScrubDeviceIDsIPsUserDemoExt(reqWrapper, ipConf, "eids", false)
+		}
+	}
+
+	if lmt || coppa {
+		privacy.ScrubDeviceIDsIPsUserDemoExt(reqWrapper, ipConf, "eids", coppa)
+	}
+
+	passTIDAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitTIDs, scope, privacy.NewRequestFromBidRequest(*reqWrapper))
+	if !passTIDAllowed {
+		privacy.ScrubTID(reqWrapper)
+	}
+
+	if err := reqWrapper.RebuildRequest(); err != nil {
+		return err
+	}
+
+	bidderRequest.BidRequest = reqWrapper.BidRequest
+	return nil
 }
 
 func shouldSetLegacyPrivacy(bidderInfo config.BidderInfos, bidder string) bool {
@@ -457,7 +463,6 @@ func buildRequestExtForBidder(bidder string, requestExt json.RawMessage, request
 }
 
 func buildRequestExtAlternateBidderCodes(bidder string, accABC *openrtb_ext.ExtAlternateBidderCodes, reqABC *openrtb_ext.ExtAlternateBidderCodes) *openrtb_ext.ExtAlternateBidderCodes {
-
 	if altBidderCodes := copyExtAlternateBidderCodes(bidder, reqABC); altBidderCodes != nil {
 		return altBidderCodes
 	}
