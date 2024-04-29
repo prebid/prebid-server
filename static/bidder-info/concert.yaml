@@ -16,7 +16,3 @@ capabilities:
       - banner
       - video
       - audio
-userSync:
-  redirect:
-    url: https://bids.concert.io/sync?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
-    userMacro: $UID
