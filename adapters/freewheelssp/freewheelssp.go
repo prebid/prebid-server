@@ -13,7 +13,7 @@ import (
 )
 
 type adapter struct {
-	Endpoint string
+	endpoint string
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -53,7 +53,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 	requestData := &adapters.RequestData{
 		Method:  "POST",
-		Uri:     a.Endpoint,
+		Uri:     a.endpoint,
 		Body:    requestJSON,
 		Headers: headers,
 		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
