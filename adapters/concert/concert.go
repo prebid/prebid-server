@@ -31,7 +31,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		return nil, []error{err}
 	}
 
-	// Unmarshal the request into a map
 	var requestMap map[string]interface{}
 	err = json.Unmarshal(requestJSON, &requestMap)
 	if err != nil {
@@ -43,7 +42,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	}
 	requestMap["ext"].(map[string]interface{})["adapterVersion"] = adapterVersion
 
-	// Marshal the map back into JSON
 	requestJSON, err = json.Marshal(requestMap)
 	if err != nil {
 		return nil, []error{err}
