@@ -2319,7 +2319,6 @@ func (deps *endpointDeps) processStoredRequests(requestJson []byte, impInfo []Im
 
 // parseImpInfo parses the request JSON and returns impression and unmarshalled imp.ext.prebid
 func parseImpInfo(requestJson []byte) (impData []ImpExtPrebidData, errs []error) {
-	// ignore the error such as '&errors.errorString{s:"Unknown value type"}'
 	if impArray, dataType, _, err := jsonparser.Get(requestJson, "imp"); err == nil && dataType == jsonparser.Array {
 		_, _ = jsonparser.ArrayEach(impArray, func(imp []byte, _ jsonparser.ValueType, _ int, _ error) {
 			impExtData, _, _, _ := jsonparser.Get(imp, "ext", "prebid")
