@@ -103,9 +103,12 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		}
 	}
 
-	// Check if bidResponse.Bids is empty
+	if len(errors) > 0 {
+		return nil, errors
+	}
+
 	if len(bidResponse.Bids) == 0 {
-		return nil, []error{fmt.Errorf("No bids returned")}
+		return nil, []error{fmt.Errorf("no bids returned")}
 	}
 
 	return bidResponse, nil
