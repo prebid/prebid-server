@@ -132,7 +132,6 @@ func getMediaTypeForBid(bid openrtb2.Bid, imp *openrtb2.Imp) (openrtb_ext.BidTyp
 		}
 	}
 
-	// Infer media type from imp object
 	if imp != nil {
 		if imp.Video != nil {
 			return openrtb_ext.BidTypeVideo, nil
