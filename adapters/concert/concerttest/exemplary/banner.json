@@ -37,6 +37,9 @@
       },
       "user": {
         "buyeruid": "some-buyer-uid"
+      },
+      "ext": {
+        "adapterVersion": "1.0.0"
       }
     },
     "httpCalls": [
@@ -81,6 +84,9 @@
             },
             "user": {
               "buyeruid": "some-buyer-uid"
+            },
+            "ext": {
+              "adapterVersion": "1.0.0"
             }
           }
         },

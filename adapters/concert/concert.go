@@ -15,6 +15,8 @@ type adapter struct {
 	endpoint string
 }
 
+const adapterVersion = "1.0.0"
+
 // Builder builds a new instance of the Concert adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
@@ -29,14 +31,31 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		return nil, []error{err}
 	}
 
+	// Unmarshal the request into a map
+	var requestMap map[string]interface{}
+	err = json.Unmarshal(requestJSON, &requestMap)
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	if requestMap["ext"] == nil {
+		requestMap["ext"] = make(map[string]interface{})
+	}
+	requestMap["ext"].(map[string]interface{})["adapterVersion"] = adapterVersion
+
+	// Marshal the map back into JSON
+	requestJSON, err = json.Marshal(requestMap)
+	if err != nil {
+		return nil, []error{err}
+	}
 
 	requestData := &adapters.RequestData{
 		Method: "POST",
 		Uri:    a.endpoint,
 		Body:   requestJSON,
 		Headers: http.Header{
-            "Content-Type": []string{"application/json"},
-        },
+			"Content-Type": []string{"application/json"},
+		},
 	}
 
 	return []*adapters.RequestData{requestData}, nil
