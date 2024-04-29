@@ -2322,7 +2322,6 @@ func parseImpInfo(requestJson []byte) (impData []ImpExtPrebidData, errs []error)
 	// ignore the error such as '&errors.errorString{s:"Unknown value type"}'
 	if impArray, dataType, _, err := jsonparser.Get(requestJson, "imp"); err == nil && dataType == jsonparser.Array {
 		_, _ = jsonparser.ArrayEach(impArray, func(imp []byte, _ jsonparser.ValueType, _ int, _ error) {
-			// ignore possible errors if there is no ext.prebid key
 			impExtData, _, _, _ := jsonparser.Get(imp, "ext", "prebid")
 			var impExtPrebid openrtb_ext.ExtImpPrebid
 			if impExtData != nil {
