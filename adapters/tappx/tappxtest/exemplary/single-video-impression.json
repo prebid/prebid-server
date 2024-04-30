@@ -71,7 +71,8 @@
               "tappxkey": "pub-12345-android-9876"
             }
           }
-        }
+        },
+        "impIDs":["video-adunit-2"]
       },
       "mockResponse": {
         "status": 200,

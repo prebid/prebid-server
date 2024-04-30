@@ -17,7 +17,6 @@ import (
 	"github.com/prebid/openrtb/v20/openrtb2"
 
 	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/dsa"
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/firstpartydata"
 	"github.com/prebid/prebid-server/v2/gdpr"
@@ -61,7 +60,9 @@ type requestSplitter struct {
 func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 	auctionReq AuctionRequest,
 	requestExt *openrtb_ext.ExtRequest,
-	gdprDefaultValue gdpr.Signal, bidAdjustmentFactors map[string]float64,
+	gdprSignal gdpr.Signal,
+	gdprEnforced bool,
+	bidAdjustmentFactors map[string]float64,
 ) (allowedBidderRequests []BidderRequest, privacyLabels metrics.PrivacyLabels, errs []error) {
 	req := auctionReq.BidRequestWrapper
 
@@ -77,24 +78,6 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 	impsByBidder, err := splitImps(req.BidRequest.Imp)
 	if err != nil {
 		errs = []error{err}
-		return
-	}
-
-	gdprSignal, err := getGDPR(req)
-	if err != nil {
-		errs = append(errs, err)
-	}
-	channelEnabled := auctionReq.TCF2Config.ChannelEnabled(channelTypeMap[auctionReq.LegacyLabels.RType])
-	gdprEnforced := enforceGDPR(gdprSignal, gdprDefaultValue, channelEnabled)
-	dsaWriter := dsa.Writer{
-		Config:      auctionReq.Account.Privacy.DSA,
-		GDPRInScope: gdprEnforced,
-	}
-	if err := dsaWriter.Write(req); err != nil {
-		errs = append(errs, err)
-	}
-	if err := req.RebuildRequest(); err != nil {
-		errs = append(errs, err)
 		return
 	}
 
@@ -197,19 +180,26 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		}
 
 		passIDActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitUserFPD, scopedName, privacy.NewRequestFromBidRequest(*req))
+		buyerUIDSet := reqWrapper.User != nil && reqWrapper.User.BuyerUID != ""
+		buyerUIDRemoved := false
 		if !passIDActivityAllowed {
-			//UFPD
 			privacy.ScrubUserFPD(reqWrapper)
+			buyerUIDRemoved = true
 		} else {
 			// run existing policies (GDPR, CCPA, COPPA, LMT)
 			// potentially block passing IDs based on GDPR
 			if gdprEnforced && (gdprErr != nil || !auctionPermissions.PassID) {
 				privacy.ScrubGdprID(reqWrapper)
+				buyerUIDRemoved = true
 			}
 			// potentially block passing IDs based on CCPA
 			if ccpaEnforcer.ShouldEnforce(bidderRequest.BidderName.String()) {
 				privacy.ScrubDeviceIDsIPsUserDemoExt(reqWrapper, ipConf, "eids", false)
+				buyerUIDRemoved = true
 			}
+		}
+		if buyerUIDSet && buyerUIDRemoved {
+			rs.me.RecordAdapterBuyerUIDScrubbed(bidderRequest.BidderCoreName)
 		}
 
 		passGeoActivityAllowed := auctionReq.Activities.Allow(privacy.ActivityTransmitPreciseGeo, scopedName, privacy.NewRequestFromBidRequest(*req))

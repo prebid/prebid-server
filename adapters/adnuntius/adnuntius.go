@@ -299,6 +299,7 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 			Uri:     endpoint,
 			Body:    adnJson,
 			Headers: headers,
+			ImpIDs:  openrtb_ext.GetImpIDs(ortbRequest.Imp),
 		})
 
 	}

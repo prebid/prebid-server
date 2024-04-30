@@ -236,7 +236,8 @@
                     "ext": {
                         "client": "prebid_server_0.6"
                     }
-                }
+                },
+                "impIDs":["1_1","1_2"]
             },
             "mockResponse": {
                 "status": 200,
@@ -388,7 +389,8 @@
                     "ext": {
                         "client": "prebid_server_0.6"
                     }
-                }
+                },
+                "impIDs":["2_1","2_2"]
             },
             "mockResponse": {
                 "status": 200,

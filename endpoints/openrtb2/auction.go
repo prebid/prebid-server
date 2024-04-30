@@ -58,7 +58,6 @@ import (
 	"github.com/prebid/prebid-server/v2/version"
 )
 
-const storedRequestTimeoutMillis = 50
 const ampChannel = "amp"
 const appChannel = "app"
 const secCookieDeprecation = "Sec-Cookie-Deprecation"
@@ -469,7 +468,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		return
 	}
 
-	timeout := parseTimeout(requestJson, time.Duration(storedRequestTimeoutMillis)*time.Millisecond)
+	timeout := parseTimeout(requestJson, time.Duration(deps.cfg.StoredRequestsTimeout)*time.Millisecond)
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
@@ -1833,6 +1832,7 @@ func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases 
 	if err != nil {
 		return append(errL, fmt.Errorf("request.user.ext object is not valid: %v", err))
 	}
+
 	// Check if the buyeruids are valid
 	prebid := userExt.GetPrebid()
 	if prebid != nil {
@@ -1849,19 +1849,15 @@ func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases 
 			}
 		}
 	}
+
 	// Check Universal User ID
 	eids := userExt.GetEid()
 	if eids != nil {
 		eidsValue := *eids
-		uniqueSources := make(map[string]struct{}, len(eidsValue))
 		for eidIndex, eid := range eidsValue {
 			if eid.Source == "" {
 				return append(errL, fmt.Errorf("request.user.ext.eids[%d] missing required field: \"source\"", eidIndex))
 			}
-			if _, ok := uniqueSources[eid.Source]; ok {
-				return append(errL, errors.New("request.user.ext.eids must contain unique sources"))
-			}
-			uniqueSources[eid.Source] = struct{}{}
 
 			if len(eid.UIDs) == 0 {
 				return append(errL, fmt.Errorf("request.user.ext.eids[%d].uids must contain at least one element or be undefined", eidIndex))

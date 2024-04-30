@@ -140,6 +140,7 @@ func (a *adapter) buildRequest(request *openrtb2.BidRequest) (*adapters.RequestD
 		Method: "POST",
 		Uri:    url,
 		Body:   requestJSON,
+		ImpIDs: openrtb_ext.GetImpIDs(request.Imp),
 	}
 
 	return requestData, nil
