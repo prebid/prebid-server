@@ -2106,8 +2106,8 @@ func loadFile(filename string) (*exchangeSpec, error) {
 }
 
 func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
-	aliases, errs := parseAliases(&spec.IncomingRequest.OrtbRequest)
-	if len(errs) != 0 {
+	aliases, err := parseRequestAliases(spec.IncomingRequest.OrtbRequest)
+	if err != nil {
 		t.Fatalf("%s: Failed to parse aliases", filename)
 	}
 
@@ -5780,6 +5780,24 @@ func (m *mockBidder) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapter
 func (m *mockBidder) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	args := m.Called(internalRequest, externalRequest, response)
 	return args.Get(0).(*adapters.BidderResponse), args.Get(1).([]error)
+}
+
+func parseRequestAliases(r openrtb2.BidRequest) (map[string]string, error) {
+	if len(r.Ext) == 0 {
+		return nil, nil
+	}
+
+	ext := struct {
+		Prebid struct {
+			Aliases map[string]string `json:"aliases"`
+		} `json:"prebid"`
+	}{}
+
+	if err := jsonutil.Unmarshal(r.Ext, &ext); err != nil {
+		return nil, err
+	}
+
+	return ext.Prebid.Aliases, nil
 }
 
 func getInfoFromImp(req *openrtb_ext.RequestWrapper) (json.RawMessage, string, error) {
