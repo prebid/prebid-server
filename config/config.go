@@ -54,6 +54,8 @@ type Configuration struct {
 	// Note that StoredVideo refers to stored video requests, and has nothing to do with caching video creatives.
 	StoredVideo     StoredRequests `mapstructure:"stored_video_req"`
 	StoredResponses StoredRequests `mapstructure:"stored_responses"`
+	// StoredRequestsTimeout defines the number of milliseconds before a timeout occurs with stored requests fetch
+	StoredRequestsTimeout int `mapstructure:"stored_requests_timeout_ms"`
 
 	MaxRequestSize       int64             `mapstructure:"max_request_size"`
 	Analytics            Analytics         `mapstructure:"analytics"`
@@ -132,6 +134,9 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 	var errs []error
 	errs = cfg.AuctionTimeouts.validate(errs)
 	errs = cfg.StoredRequests.validate(errs)
+	if cfg.StoredRequestsTimeout <= 0 {
+		errs = append(errs, fmt.Errorf("cfg.stored_requests_timeout_ms must be > 0. Got %d", cfg.StoredRequestsTimeout))
+	}
 	errs = cfg.StoredRequestsAMP.validate(errs)
 	errs = cfg.Accounts.validate(errs)
 	errs = cfg.CategoryMapping.validate(errs)
@@ -964,6 +969,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("category_mapping.filesystem.enabled", true)
 	v.SetDefault("category_mapping.filesystem.directorypath", "./static/category-mapping")
 	v.SetDefault("category_mapping.http.endpoint", "")
+	v.SetDefault("stored_requests_timeout_ms", 50)
 	v.SetDefault("stored_requests.database.connection.driver", "")
 	v.SetDefault("stored_requests.database.connection.dbname", "")
 	v.SetDefault("stored_requests.database.connection.host", "")
