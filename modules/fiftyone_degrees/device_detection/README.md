@@ -151,6 +151,10 @@ cp modules/fiftyone_degrees/device_detection/sample/pbs.json pbs.json
 
 3. Download `51Degrees-LiteV4.1.hash` from [[GitHub](https://github.com/51Degrees/device-detection-data/blob/main/51Degrees-LiteV4.1.hash)] and put it in the project root directory.
 
+```bash
+curl -o 51Degrees-LiteV4.1.hash -L https://github.com/51Degrees/device-detection-data/raw/main/51Degrees-LiteV4.1.hash
+```
+
 4. Create a directory for sample stored requests (needed for the server to run):
 ```bash
 mkdir -p sample/stored

@@ -1,15 +1,16 @@
 package device_detection
 
 import (
-	"github.com/51Degrees/device-detection-go/v4/dd"
-	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
+
+	"github.com/51Degrees/device-detection-go/v4/dd"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestParseConfig(t *testing.T) {
 	cfgRaw := []byte(`{ 
-"enabled": true,
+		  "enabled": true,
           "data_file": {
             "path": "path/to/51Degrees-LiteV4.1.hash",
             "update": {
