@@ -140,7 +140,16 @@ func hydrateFields(fiftyOneDd *DeviceInfo, deviceMapper deviceMapper, payload ho
 		errs = append(errs, fmt.Errorf("error signing device data %s", err))
 	}
 
-	return newPayload, errors.Join(errs...)
+	return newPayload, joinErrors(errs)
+}
+
+func joinErrors(errs []error) error {
+	msg := ""
+	for _, err := range errs {
+		msg += err.Error() + "\n"
+	}
+
+	return errors.New(msg)
 }
 
 // signDeviceData signs the device data with the device information in the ext map of the raw auction request payload
