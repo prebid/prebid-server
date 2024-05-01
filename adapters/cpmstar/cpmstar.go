@@ -126,11 +126,11 @@ func (a *Adapter) MakeBids(bidRequest *openrtb2.BidRequest, unused *adapters.Req
 	var errors []error
 
 	for _, seatbid := range bidResponse.SeatBid {
-		for _, bid := range seatbid.Bid {
+		for i := range seatbid.Bid {
 			foundMatchingBid := false
 			bidType := openrtb_ext.BidTypeBanner
 			for _, imp := range bidRequest.Imp {
-				if imp.ID == bid.ImpID {
+				if imp.ID == seatbid.Bid[i].ImpID {
 					foundMatchingBid = true
 					if imp.Banner != nil {
 						bidType = openrtb_ext.BidTypeBanner
@@ -143,12 +143,12 @@ func (a *Adapter) MakeBids(bidRequest *openrtb2.BidRequest, unused *adapters.Req
 
 			if foundMatchingBid {
 				rv.Bids = append(rv.Bids, &adapters.TypedBid{
-					Bid:     &bid,
+					Bid:     &seatbid.Bid[i],
 					BidType: bidType,
 				})
 			} else {
 				errors = append(errors, &errortypes.BadServerResponse{
-					Message: fmt.Sprintf("bid id='%s' could not find valid impid='%s'", bid.ID, bid.ImpID),
+					Message: fmt.Sprintf("bid id='%s' could not find valid impid='%s'", seatbid.Bid[i].ID, seatbid.Bid[i].ImpID),
 				})
 			}
 		}
