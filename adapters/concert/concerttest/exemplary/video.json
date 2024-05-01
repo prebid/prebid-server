@@ -34,7 +34,8 @@
       "buyeruid": "some-buyer-uid"
     },
     "ext": {
-      "adapterVersion": "1.0.0"
+      "adapterVersion": "1.0.0",
+      "partnerId": "partner_name"
     }
   },
   "httpCalls": [
@@ -76,7 +77,8 @@
             "buyeruid": "some-buyer-uid"
           },
           "ext": {
-            "adapterVersion": "1.0.0"
+            "adapterVersion": "1.0.0",
+            "partnerId": "partner_name"
           }
         }
       },

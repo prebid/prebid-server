@@ -58,7 +58,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		Uri:    a.endpoint,
 		Body:   requestJSON,
 		Headers: http.Header{
-			"Content-Type": []string{"application/json"},
+			"Content-Type":  []string{"application/json"},
 			"Authorization": []string{"Bearer " + bidderImpExt.PartnerId},
 		},
 	}
