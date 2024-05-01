@@ -3,7 +3,7 @@ module github.com/prebid/prebid-server/v2
 go 1.20
 
 require (
-	github.com/51Degrees/device-detection-go/v4 v4.4.20
+	github.com/51Degrees/device-detection-go/v4 v4.4.21
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/IABTechLab/adscert v0.34.0
 	github.com/NYTimes/gziphandler v1.1.1
