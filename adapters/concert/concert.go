@@ -59,7 +59,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		Body:   requestJSON,
 		Headers: http.Header{
 			"Content-Type":  []string{"application/json"},
-			"Authorization": []string{"Bearer " + bidderImpExt.PartnerId},
+			"Authorization": []string{"concert-prebid-server"},
 		},
 	}
 
