@@ -26,6 +26,11 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	bidderImpExt, err := getBidderExt(request.Imp[0])
+	if err != nil {
+		return nil, []error{fmt.Errorf("get bidder ext: %v", err)}
+	}
+
 	requestJSON, err := json.Marshal(request)
 	if err != nil {
 		return nil, []error{err}
@@ -41,6 +46,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		requestMap["ext"] = make(map[string]interface{})
 	}
 	requestMap["ext"].(map[string]interface{})["adapterVersion"] = adapterVersion
+	requestMap["ext"].(map[string]interface{})["partnerId"] = bidderImpExt.PartnerId
 
 	requestJSON, err = json.Marshal(requestMap)
 	if err != nil {
@@ -53,6 +59,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		Body:   requestJSON,
 		Headers: http.Header{
 			"Content-Type": []string{"application/json"},
+			"Authorization": []string{"Bearer " + bidderImpExt.PartnerId},
 		},
 	}
 
@@ -143,4 +150,15 @@ func getMediaTypeForBid(bid openrtb2.Bid, imp *openrtb2.Imp) (openrtb_ext.BidTyp
 	return "", &errortypes.BadServerResponse{
 		Message: fmt.Sprintf("Failed to parse impression \"%s\" mediatype", bid.ImpID),
 	}
+}
+
+func getBidderExt(imp openrtb2.Imp) (bidderImpExt openrtb_ext.ImpExtConcert, err error) {
+	var impExt adapters.ExtImpBidder
+	if err = json.Unmarshal(imp.Ext, &impExt); err != nil {
+		return bidderImpExt, fmt.Errorf("imp ext: %v", err)
+	}
+	if err = json.Unmarshal(impExt.Bidder, &bidderImpExt); err != nil {
+		return bidderImpExt, fmt.Errorf("bidder ext: %v", err)
+	}
+	return bidderImpExt, nil
 }
