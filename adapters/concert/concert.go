@@ -53,15 +53,16 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		return nil, []error{err}
 	}
 
-	requestData := &adapters.RequestData{
-		Method: "POST",
-		Uri:    a.endpoint,
-		Body:   requestJSON,
-		Headers: http.Header{
-			"Content-Type":  []string{"application/json"},
-			"Authorization": []string{"concert-prebid-server"},
-		},
-	}
+	headers := http.Header{}
+	headers.Add("Content-Type", "application/json")
+	headers.Add("Authorization", "concert-prebid-server")
+	return []*adapters.RequestData{{
+		Method:  "POST",
+		Uri:     a.endpoint,
+		Body:    requestJSON,
+		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
+	}}, errs
 
 	return []*adapters.RequestData{requestData}, nil
 }
