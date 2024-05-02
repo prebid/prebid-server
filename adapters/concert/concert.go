@@ -55,14 +55,15 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json")
+	headers.Add("Accept", "application/json")
 	headers.Add("Authorization", "concert-prebid-server")
-	return []*adapters.RequestData{{
+	requestData := &adapters.RequestData{
 		Method:  "POST",
 		Uri:     a.endpoint,
 		Body:    requestJSON,
 		Headers: headers,
 		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
-	}}, errs
+	}
 
 	return []*adapters.RequestData{requestData}, nil
 }
