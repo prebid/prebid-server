@@ -55,10 +55,12 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	if err != nil {
 		return nil, []error{err}
 	}
+
 	requestJSON, err := json.Marshal(request)
 	if err != nil {
 		return nil, []error{err}
 	}
+
 	requestData := &adapters.RequestData{
 		Method: "POST",
 		Uri:    resolvedUrl,
