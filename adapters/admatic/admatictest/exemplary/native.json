@@ -43,15 +43,17 @@
           "seatbid": [
             {
               "seat": "admatic",
-              "bid": [{
-                "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
-                "impid": "test-imp-id-native",
-                "price": 0.500000,
-                "adm": "some-test-ad-native",
-                "crid": "crid_10",
-                "w": 728,
-                "h": 90
-              }]
+              "bid": [
+                {
+                  "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                  "impid": "test-imp-id-native",
+                  "price": 0.5,
+                  "adm": "some-test-ad-native",
+                  "crid": "crid_10",
+                  "w": 728,
+                  "h": 90
+                }
+              ]
             }
           ],
           "cur": "USD"

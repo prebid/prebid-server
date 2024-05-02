@@ -15,7 +15,7 @@
         "ext": {
           "bidder": {
             "host": "admatic.rtb.admatic.com.tr",
-            "bidFloor": 0.10,
+            "bidFloor": 0.1,
             "isTest": false
           }
         }
@@ -42,7 +42,7 @@
               "ext": {
                 "bidder": {
                   "host": "admatic.rtb.admatic.com.tr",
-                  "bidFloor": 0.10,
+                  "bidFloor": 0.1,
                   "isTest": false
                 }
               }
@@ -61,7 +61,7 @@
                 {
                   "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
                   "impid": "test-imp-id-banner",
-                  "price": 0.500000,
+                  "price": 0.5,
                   "adm": "some-test-ad-banner",
                   "crid": "crid_10",
                   "w": 728,
