@@ -56,7 +56,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json")
 	headers.Add("Accept", "application/json")
-	headers.Add("Authorization", "concert-prebid-server")
 	requestData := &adapters.RequestData{
 		Method:  "POST",
 		Uri:     a.endpoint,
