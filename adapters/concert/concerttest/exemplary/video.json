@@ -80,7 +80,8 @@
             "adapterVersion": "1.0.0",
             "partnerId": "partner_name"
           }
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,
