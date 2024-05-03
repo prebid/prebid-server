@@ -100,6 +100,7 @@ func (adapter *LockerDomeAdapter) MakeRequests(openRTBRequest *openrtb2.BidReque
 		Uri:     adapter.endpoint,
 		Body:    openRTBRequestJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(openRTBRequest.Imp),
 	}
 
 	requestsToBidder = append(requestsToBidder, requestToBidder)

@@ -1,0 +1,63 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "imp": [
+            {
+                "id": "1",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        }
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "cid": "8CUTSTCID",
+                        "crid": "999999999",
+                        "tagid_src": "ext"
+                    }
+                }
+            }
+        ]
+    },
+
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "https://example.trustedstack.com/rtb/prebid?src=http%3A%2F%2Fhosturl.com",
+                "body": {
+                    "id": "test-request-id",
+                    "imp": [
+                        {
+                            "id": "1",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 300,
+                                        "h": 250
+                                    }
+                                ]
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "cid": "8CUTSTCID",
+                                    "crid": "999999999",
+                                    "tagid_src": "ext"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "impIDs":["1"]
+            },
+            "mockResponse": {
+                "status": 204,
+                "body": {}
+            }
+        }
+    ],
+
+    "expectedBidResponses": []
+}

@@ -109,6 +109,7 @@ func (a *adapter) buildRequests(request *openrtb2.BidRequest) ([]*adapters.Reque
 			Uri:     a.uri,
 			Body:    body,
 			Headers: headers,
+			ImpIDs:  openrtb_ext.GetImpIDs(fbreq.Imp),
 		})
 	}
 

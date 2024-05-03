@@ -59,7 +59,8 @@
             "domain": "www.some.com",
             "page": "http://www.some.com/page-where-ad-will-be-shown"
           }
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,

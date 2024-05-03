@@ -102,7 +102,8 @@ func (adapter *LogicadAdapter) buildAdapterRequest(prebidBidRequest *openrtb2.Bi
 		Method:  "POST",
 		Uri:     adapter.endpoint,
 		Body:    reqJSON,
-		Headers: headers}, nil
+		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(imps)}, nil
 }
 
 func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ExtImpLogicad, imps []openrtb2.Imp) *openrtb2.BidRequest {
