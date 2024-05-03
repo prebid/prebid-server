@@ -11,6 +11,6 @@ capabilities:
       - banner
       - video
 userSync:
-  redirect:
-    url: "https://server.cpmstar.com/usersync.aspx?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
+  iframe:
+    url: "https://server.cpmstar.com/usersync.aspx?ifr=1&gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
     userMacro: "$UID"
