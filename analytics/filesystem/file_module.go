@@ -21,9 +21,14 @@ const (
 	NOTIFICATION_EVENT RequestType = "/event"
 )
 
+type Logger interface {
+	Debug(v ...interface{})
+	Flush()
+}
+
 // Module that can perform transactional logging
 type FileLogger struct {
-	Logger *glog.Logger
+	Logger Logger
 }
 
 // Writes AuctionObject to file
