@@ -387,6 +387,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 							DealPriority:   bidResponse.Bids[i].DealPriority,
 							OriginalBidCPM: originalBidCpm,
 							OriginalBidCur: bidResponse.Currency,
+							AdapterCode:    bidderRequest.BidderCoreName,
 						})
 						seatBidMap[bidderName].Currency = currencyAfterAdjustments
 					}
