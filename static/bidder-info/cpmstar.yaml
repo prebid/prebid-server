@@ -14,3 +14,6 @@ userSync:
   iframe:
     url: "https://server.cpmstar.com/usersync.aspx?ifr=1&gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
     userMacro: "$UID"
+  redirect:
+    url: "https://server.cpmstar.com/usersync.aspx?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
+    userMacro: "$UID"    
