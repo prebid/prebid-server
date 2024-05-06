@@ -28,7 +28,7 @@ func (a *BetweenAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 		}}
 	}
 	ext, errors := preprocess(request)
-	if errors != nil && len(errors) > 0 {
+	if len(errors) > 0 {
 		return nil, errors
 	}
 	endpoint, err := a.buildEndpointURL(ext)
