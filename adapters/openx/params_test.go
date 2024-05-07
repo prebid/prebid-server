@@ -40,6 +40,7 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
+	`{"unit": 123, "delDomain": "foo.ba"}`,
 	`{"unit": "123", "delDomain": "foo.ba"}`,
 	`{"unit": "123", "delDomain": "foo.bar"}`,
 	`{"unit": "123", "delDomain": "foo.bar", "customFloor": 0.1}`,
@@ -49,6 +50,7 @@ var validParams = []string{
 }
 
 var invalidParams = []string{
+	`{"unit": "", "delDomain": "foo.bar"}`,
 	`{"unit": "123"}`,
 	`{"delDomain": "foo.bar"}`,
 	`{"unit": "", "delDomain": "foo.bar"}`,

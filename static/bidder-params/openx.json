@@ -6,7 +6,7 @@
   "type": "object",
   "properties": {
     "unit": {
-      "type": "string",
+      "type": ["number", "string"],
       "description": "The ad unit id.",
       "pattern": "^[0-9]+$"
     },
