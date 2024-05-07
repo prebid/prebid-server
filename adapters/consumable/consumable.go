@@ -116,7 +116,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 			})
 		}
 	}
-	return bidResponse, nil
+	return bidResponse, errors
 }
 
 func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {

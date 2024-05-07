@@ -395,7 +395,13 @@ func (a *GridAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReq
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
 			bidMeta, err := getBidMeta(sb.Bid[i].Ext)
+			if err != nil {
+				return nil, []error{err}
+			}
 			bidType, err := getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp, sb.Bid[i])
+			if err != nil {
+				return nil, []error{err}
+			}
 			if sb.Bid[i].AdmNative != nil && sb.Bid[i].AdM == "" {
 				if bytes, err := json.Marshal(sb.Bid[i].AdmNative); err == nil {
 					sb.Bid[i].AdM = string(bytes)
