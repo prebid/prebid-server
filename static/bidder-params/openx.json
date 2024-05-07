@@ -22,9 +22,10 @@
       "format": "uuid"
     },
     "customFloor": {
-      "type": "number",
+      "type": ["number", "string"],
       "description": "The minimum CPM price in USD.",
-      "minimum": 0
+      "minimum": 0,
+      "pattern": "^[0-9]+(\\.[0-9]+)?$"
     },
     "customParams": {
       "type": "object",
