@@ -17,4 +17,6 @@ userSync:
   redirect:
     url: "https://sync.e-volution.ai/pbserver?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ccpa={{.USPrivacy}}&redirect={{.RedirectURL}}"
     userMacro: "[UID]"
-
+  iframe:
+    url: "https://sync.e-volution.ai/pbserverIframe?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ccpa={{.USPrivacy}}&pbserverUrl={{.RedirectURL}}"
+    userMacro: "[UID]"

@@ -29,7 +29,7 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "http://prebid.axis-marketplace.com/000000?token=000000",
+                "uri": "http://prebid.axis-marketplace.com/pbserver",
                 "body": {
                     "id": "test-request-id",
                     "imp": [
@@ -56,7 +56,8 @@
                         "ip": "123.123.123.123",
                         "ua": "iPad"
                     }
-                }
+                },
+                "impIDs":["test-imp-id"]
             },
             "mockResponse": {
                 "status": 200,

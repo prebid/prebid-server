@@ -3,7 +3,7 @@
   "config": {
     "mockBidders": [
       {"bidderName": "appnexus", "currency": "USD", "price": 0.00},
-      {"bidderName": "applogy", "currency": "USD", "price": 0.00}
+      {"bidderName": "rubicon", "currency": "USD", "price": 0.00}
     ]
   },
   "mockBidRequest": {
@@ -26,13 +26,13 @@
           "appnexus": {
             "placementId": 12883451
           },
-          "applogy": {
+          "rubicon": {
             "placementId": 12883451
           }
         }
       }
     ],
-    "tmax": 50,
+    "tmax": 500,
     "test": 1,
     "ext": {
       "prebid": {
@@ -49,12 +49,12 @@
       {
         "bid": [
           {
-            "id": "applogy-bid",
+            "id": "rubicon-bid",
             "impid": "some-impression-id",
             "price": 0
           }
         ],
-        "seat": "applogy"
+        "seat": "rubicon"
       }
     ],
     "ext": {
@@ -99,7 +99,7 @@
                     ]
                   },
                   {
-                    "entity": "applogy",
+                    "entity": "rubicon",
                     "groups": [
                       {
                         "invocation_results": [

@@ -7,12 +7,12 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/openrtb/v19/openrtb3"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb3"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type GammaAdapter struct {
@@ -138,6 +138,7 @@ func (a *GammaAdapter) makeRequest(request *openrtb2.BidRequest, imp openrtb2.Im
 		Method:  "GET",
 		Uri:     thisURI,
 		Headers: headers,
+		ImpIDs:  []string{imp.ID},
 	}, errors
 }
 func (a *GammaAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {

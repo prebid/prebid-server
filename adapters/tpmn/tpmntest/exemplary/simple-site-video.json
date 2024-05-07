@@ -1,0 +1,129 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "page": "prebid.org"
+    },
+    "device": {
+      "ip":"123.123.123.123"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "protocols": [
+            2,
+            3,
+            5,
+            6
+          ],
+          "w": 1024,
+          "h": 576
+        },
+        "ext": {
+          "bidder": {
+            "inventoryId": 10000001
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://gat.tpmn.io/ortb/pbs_bidder",
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ]
+        },
+        "body": {
+          "id": "test-request-id",
+          "site": {
+            "page": "prebid.org"
+          },
+          "device": {
+            "ip":"123.123.123.123"
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "protocols": [
+                  2,
+                  3,
+                  5,
+                  6
+                ],
+                "w": 1024,
+                "h": 576
+              },
+              "bidfloorcur": "USD",
+              "ext": {
+                "bidder": {
+                  "inventoryId": 10000001
+                }
+              }
+            }
+          ]
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "tpmn",
+              "bid": [
+                {
+                  "id": "1",
+                  "impid": "test-imp-id",
+                  "price": 0.500000,
+                  "adm": "some-test-adm",
+                  "crid": "test-crid",
+                  "w": 1024,
+                  "h": 576,
+                  "mtype": 2
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "1",
+            "impid": "test-imp-id",
+            "price": 0.5,
+            "adm": "some-test-adm",
+            "crid": "test-crid",
+            "w": 1024,
+            "h": 576,
+            "mtype": 2
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

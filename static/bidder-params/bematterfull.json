@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Bematterfull Adapter Params",
+  "description": "A schema which validates params accepted by the bematterfull adapter",
+  "type": "object",
+  "properties": {
+    "env": {
+      "type": "string",
+      "description": "bematterfull environment",
+      "minLength": 1
+    },
+    "pid": {
+      "type": "string",
+      "description": "Uniq placement ID",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "env",
+    "pid"
+  ]
+}

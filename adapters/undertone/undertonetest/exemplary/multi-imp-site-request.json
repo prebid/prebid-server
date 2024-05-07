@@ -20,7 +20,8 @@
           "bidder": {
             "publisherId": 1234,
             "placementId": 12345
-          }
+          },
+          "gpid": "gpid-value"
         }
       },
       {
@@ -87,7 +88,10 @@
                   }
                 ]
               },
-              "tagid": "12345"
+              "tagid": "12345",
+              "ext": {
+                "gpid": "gpid-value"
+              }
             },
             {
               "id": "test-imp-video-id",
@@ -131,7 +135,8 @@
             "id": 4,
             "version": "1.0.0"
           }
-        }
+        },
+        "impIDs":["test-imp-banner-id","test-imp-video-id"]
       },
       "mockResponse": {
         "status": 200,

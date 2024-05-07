@@ -6,28 +6,38 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"text/template"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/macros"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type adapter struct {
-	endpoint string
+	endpoint *template.Template
 }
 
 func Builder(_ openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
+	}
+
 	bidder := &adapter{
-		endpoint: config.Endpoint,
+		endpoint: template,
 	}
 	return bidder, nil
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, extraRequestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	var accountId string
+	var err error
+
 	for i := range request.Imp {
-		if err := addTagID(&request.Imp[i]); err != nil {
+		if accountId, err = getExtInfo(&request.Imp[i]); err != nil {
 			return nil, []error{err}
 		}
 	}
@@ -41,10 +51,16 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, extraRequestInfo *a
 		return nil, []error{err}
 	}
 
+	url, err := macros.ResolveMacros(a.endpoint, macros.EndpointTemplateParams{AccountID: accountId})
+	if err != nil {
+		return nil, []error{err}
+	}
+
 	requestData := &adapters.RequestData{
 		Method: http.MethodPost,
-		Uri:    a.endpoint,
+		Uri:    url,
 		Body:   requestJSON,
+		ImpIDs: openrtb_ext.GetImpIDs(request.Imp),
 	}
 
 	return []*adapters.RequestData{requestData}, nil
@@ -127,19 +143,29 @@ func curExists(allowedCurrencies []string, newCurrency string) bool {
 	return false
 }
 
-func addTagID(imp *openrtb2.Imp) error {
+func getExtInfo(imp *openrtb2.Imp) (string, error) {
 	var ext adapters.ExtImpBidder
 	var extSA openrtb_ext.ImpExtSeedingAlliance
 
+	accountId := "pbs"
+
 	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
-		return fmt.Errorf("could not unmarshal adapters.ExtImpBidder: %w", err)
+		return "", fmt.Errorf("could not unmarshal adapters.ExtImpBidder: %w", err)
 	}
 
 	if err := json.Unmarshal(ext.Bidder, &extSA); err != nil {
-		return fmt.Errorf("could not unmarshal openrtb_ext.ImpExtSeedingAlliance: %w", err)
+		return "", fmt.Errorf("could not unmarshal openrtb_ext.ImpExtSeedingAlliance: %w", err)
 	}
 
 	imp.TagID = extSA.AdUnitID
 
-	return nil
+	if extSA.SeatID != "" {
+		accountId = extSA.SeatID
+	}
+
+	if extSA.AccountID != "" {
+		accountId = extSA.AccountID
+	}
+
+	return accountId, nil
 }

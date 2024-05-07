@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/v2/config"
 )
 
 type namedSyncerConfig struct {
@@ -59,17 +59,16 @@ func BuildSyncers(hostConfig *config.Configuration, bidderInfos config.BidderInf
 			continue
 		}
 
-		syncer, err := NewSyncer(hostUserSyncConfig, primaryCfg.cfg)
-		if err != nil {
-			errs = append(errs, SyncerBuildError{
-				Bidder:    primaryCfg.name,
-				SyncerKey: key,
-				Err:       err,
-			})
-			continue
-		}
-
 		for _, bidder := range cfgGroup {
+			syncer, err := NewSyncer(hostUserSyncConfig, primaryCfg.cfg, bidder.name)
+			if err != nil {
+				errs = append(errs, SyncerBuildError{
+					Bidder:    primaryCfg.name,
+					SyncerKey: key,
+					Err:       err,
+				})
+				continue
+			}
 			syncers[bidder.name] = syncer
 		}
 	}

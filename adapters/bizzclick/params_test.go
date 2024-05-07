@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 var validParams = []string{
-	`{  "accountId": "hash",  "placementId": "hash"}`,
+	`{ "host": "ep1", "sourceId": "partner", "accountId": "hash" }`,
 }
 
 func TestValidParams(t *testing.T) {

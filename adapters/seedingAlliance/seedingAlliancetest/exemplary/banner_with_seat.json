@@ -1,0 +1,143 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "site": {
+            "publisher": {
+                "id": "foo",
+                "name": "foo"
+            }
+        },
+        "imp": [
+            {
+                "id": "test-imp-id",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        },
+                        {
+                            "w": 300,
+                            "h": 600
+                        }
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "adUnitId": "example-tag-id",
+                        "seatId": "123"
+                    }
+                }
+            }
+        ]
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "https://mockup.seeding-alliance.de/?ssp=123",
+                "body": {
+                    "cur": [
+                        "EUR"
+                    ],
+                    "id": "test-request-id",
+                    "imp": [
+                        {
+                            "id": "test-imp-id",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 300,
+                                        "h": 250
+                                    },
+                                    {
+                                        "w": 300,
+                                        "h": 600
+                                    }
+                                ]
+                            },
+                            "tagid": "example-tag-id",
+                            "ext": {
+                                "bidder": {
+                                    "adUnitId": "example-tag-id",
+                                    "seatId": "123"
+                                }
+                            }
+                        }
+                    ],
+                    "site": {
+                        "publisher": {
+                            "id": "foo",
+                            "name": "foo"
+                        }
+                    }
+                },
+                "impIDs":["test-imp-id"]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "test-request-id",
+                    "seatbid": [
+                        {
+                            "seat": "123",
+                            "bid": [
+                                {
+                                    "id": "7706636740145184841",
+                                    "impid": "test-imp-id",
+                                    "price": 0.5,
+                                    "adid": "12341234",
+                                    "adm": "some-test-ad",
+                                    "adomain": [
+                                        "domain.com"
+                                    ],
+                                    "iurl": "http://abc.com/cr?id=12341234",
+                                    "cid": "123",
+                                    "crid": "12341234",
+                                    "h": 250,
+                                    "w": 300,
+                                    "ext": {
+                                        "prebid": {
+                                            "type": "banner"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "bidid": "5778926625248726496",
+                    "cur": "EUR"
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "currency": "EUR",
+            "bids": [
+                {
+                    "bid": {
+                        "id": "7706636740145184841",
+                        "impid": "test-imp-id",
+                        "price": 0.5,
+                        "adm": "some-test-ad",
+                        "adid": "12341234",
+                        "adomain": [
+                            "domain.com"
+                        ],
+                        "iurl": "http://abc.com/cr?id=12341234",
+                        "cid": "123",
+                        "crid": "12341234",
+                        "w": 300,
+                        "h": 250,
+                        "ext": {
+                            "prebid": {
+                                "type": "banner"
+                            }
+                        }
+                    },
+                    "type": "banner"
+                }
+            ]
+        }
+    ]
+}

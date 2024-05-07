@@ -5,7 +5,7 @@
       {
         "id": "test-imp-id",
         "native": {
-          "request": "{\"context\":2,\"contextsubtype\":20,\"plcmttype\":1,\"plcmtcnt\":1,\"seq\":0,\"aurlsupport\":0,\"durlsupport\":0,\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]}],\"privacy\":0,\"assets\":[{\"id\":100,\"title\":{\"len\":90},\"required\":1},{\"id\":101,\"img\":{\"type\":3,\"wmin\":200,\"hmin\":200},\"required\":1},{\"id\":102,\"img\":{\"type\":3,\"w\":200,\"h\":200},\"required\":1},{\"id\":103,\"img\":{\"type\":3,\"wmin\":200,\"hmin\":200},\"required\":1},{\"id\":105,\"data\":{\"type\":2,\"len\":90},\"required\":1}],\"ver\":\"1.2\"}",
+          "request": "{\"context\":2,\"contextsubtype\":20,\"plcmttype\":1,\"plcmtcnt\":1,\"seq\":0,\"aurlsupport\":0,\"durlsupport\":0,\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]}],\"privacy\":0,\"assets\":[{\"id\":100,\"title\":{\"len\":90},\"required\":1},{\"id\":101,\"img\":{\"type\":3,\"w\":200,\"h\":300,\"wmin\":300,\"hmin\":200},\"required\":1},{\"id\":102,\"img\":{\"type\":3,\"w\":400,\"h\":500,\"wmin\":400,\"hmin\":500},\"required\":1},{\"id\":103,\"img\":{\"type\":3,\"w\":300,\"h\":250,\"wmin\":300,\"hmin\":250},\"required\":1},{\"id\":105,\"data\":{\"type\":2,\"len\":90},\"required\":1}],\"ver\":\"1.2\"}",
           "ver": "1.2"
         },
         "ext": {
@@ -90,11 +90,25 @@
               "adtype": 3,
               "slotid": "u42ohmaufh",
               "detailedCreativeTypeList": [
-                "904"
+                "901",
+                "904",
+                "905"
               ],
-              "h": 200,
-              "test": 1,
-              "w": 200
+              "format": [
+                {
+                    "w": 200,
+                    "h": 300
+                },
+                {
+                    "w": 400,
+                    "h": 500
+                },
+                {
+                    "w": 300,
+                    "h": 250
+                }
+            ],
+              "test": 1
             }
           ],
           "device": {
@@ -124,7 +138,8 @@
           },
           "version": "3.4",
           "clientAdRequestId": "test-req-id"
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,

@@ -8,13 +8,14 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/macros"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 )
 
 type adapter struct {
@@ -135,6 +136,7 @@ func flatImp(requestCopy openrtb2.BidRequest, impCopy openrtb2.Imp, headers http
 		Uri:     endpoint,
 		Body:    reqJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(requestCopy.Imp),
 	}, nil
 }
 
@@ -184,8 +186,8 @@ func convertBanner(banner *openrtb2.Banner) (*openrtb2.Banner, error) {
 		if len(banner.Format) > 0 {
 			f := banner.Format[0]
 			bannerCopy := *banner
-			bannerCopy.W = openrtb2.Int64Ptr(f.W)
-			bannerCopy.H = openrtb2.Int64Ptr(f.H)
+			bannerCopy.W = ptrutil.ToPtr(f.W)
+			bannerCopy.H = ptrutil.ToPtr(f.H)
 			return &bannerCopy, nil
 		} else {
 			return nil, errBannerFormatMiss

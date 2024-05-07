@@ -1,0 +1,135 @@
+{
+  "mockBidRequest": {
+    "id": "request_id",
+    "imp": [
+      {
+        "id": "imp_id",
+        "native": {
+          "request": "{}",
+          "ver": "1"
+        },
+        "ext": {
+          "bidder": {
+            "placement_id": "R-134001-1"
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "www.example.com",
+      "page": "http://www.example.com"
+    },
+    "cur": [
+      "USD"
+    ],
+    "device": {
+      "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36",
+      "ip": "127.0.0.1",
+      "language": "EN"
+    },
+    "tmax": 500
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bs-metadsp.yandex.ru/prebid/134001?imp-id=1&ssp-cur=USD&ssp-id=10500&target-ref=www.example.com",
+        "headers": {
+          "User-Agent": [
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36"
+          ],
+          "X-Forwarded-For": [
+            "127.0.0.1"
+          ],
+          "X-Real-Ip": [
+            "127.0.0.1"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Referer": [
+            "http://www.example.com"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "Accept-Language": [
+            "EN"
+          ]
+        },
+        "body": {
+          "id": "request_id",
+          "imp": [
+            {
+              "id": "imp_id",
+              "native": {
+                "request": "{}",
+                "ver": "1"
+              },
+              "ext": {
+                "bidder": {
+                  "placement_id": "R-134001-1"
+                }
+              }
+            }
+          ],
+          "site": {
+            "domain": "www.example.com",
+            "page": "http://www.example.com"
+          },
+          "cur": [
+            "USD"
+          ],
+          "device": {
+            "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36",
+            "ip": "127.0.0.1",
+            "language": "EN"
+          },
+          "tmax": 500
+        },
+        "impIDs":["imp_id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "headers": {},
+        "body": {
+          "id": "request_id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid_id",
+                  "impid": "imp_id",
+                  "price": 1.25,
+                  "crid": "crid",
+                  "adm": "adm_content",
+                  "h": 600,
+                  "w": 300
+                }
+              ]
+            }
+          ],
+          "bidid": "bid_id",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "bid_id",
+            "impid": "imp_id",
+            "price": 1.25,
+            "adm": "adm_content",
+            "crid": "crid",
+            "w": 300,
+            "h": 600
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}

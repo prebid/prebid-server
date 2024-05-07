@@ -8,15 +8,15 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/util/maputil"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/maputil"
 
 	"github.com/buger/jsonparser"
-	"github.com/prebid/openrtb/v19/adcom1"
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/adcom1"
+	"github.com/prebid/openrtb/v20/openrtb2"
 )
 
 const badvLimitSize = 50
@@ -98,11 +98,10 @@ type rubiconDataExt struct {
 }
 
 type rubiconUserExt struct {
-	Eids        []openrtb2.EID   `json:"eids,omitempty"`
-	RP          rubiconUserExtRP `json:"rp"`
-	LiverampIdl string           `json:"liveramp_idl,omitempty"`
-	Data        json.RawMessage  `json:"data,omitempty"`
-	Consent     string           `json:"consent,omitempty"`
+	Eids    []openrtb2.EID   `json:"eids,omitempty"`
+	RP      rubiconUserExtRP `json:"rp"`
+	Data    json.RawMessage  `json:"data,omitempty"`
+	Consent string           `json:"consent,omitempty"`
 }
 
 type rubiconSiteExtRP struct {
@@ -174,12 +173,6 @@ type extPrebid struct {
 // defines the contract for bidrequest.user.ext.eids[i].ext
 type rubiconUserExtEidExt struct {
 	Segments []string `json:"segments,omitempty"`
-}
-
-// defines the contract for bidrequest.user.ext.eids[i].uids[j].ext
-type rubiconUserExtEidUidExt struct {
-	RtiPartner string `json:"rtiPartner,omitempty"`
-	Stype      string `json:"stype"`
 }
 
 type mappedRubiconUidsParam struct {
@@ -346,19 +339,6 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 				if userBuyerUID == "" {
 					userBuyerUID = extractUserBuyerUID(userExtRP.Eids)
 				}
-
-				mappedRubiconUidsParam, errors := getSegments(userExtRP.Eids)
-				if len(errors) > 0 {
-					errs = append(errs, errors...)
-					continue
-				}
-
-				if err := updateUserExtWithSegments(&userExtRP, mappedRubiconUidsParam); err != nil {
-					errs = append(errs, err)
-					continue
-				}
-
-				userExtRP.LiverampIdl = mappedRubiconUidsParam.liverampIdl
 			}
 
 			if userCopy.Consent != "" {
@@ -576,6 +556,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			Uri:     a.URI,
 			Body:    reqJSON,
 			Headers: headers,
+			ImpIDs:  openrtb_ext.GetImpIDs(rubiconRequest.Imp),
 		}
 		reqData.SetBasicAuth(a.XAPIUsername, a.XAPIPassword)
 		requestData = append(requestData, reqData)
@@ -940,79 +921,11 @@ func extractUserBuyerUID(eids []openrtb2.EID) string {
 		}
 
 		for _, uid := range eid.UIDs {
-			var uidExt rubiconUserExtEidUidExt
-			err := json.Unmarshal(uid.Ext, &uidExt)
-			if err != nil {
-				continue
-			}
-
-			if uidExt.Stype == "ppuid" || uidExt.Stype == "other" {
-				return uid.ID
-			}
+			return uid.ID
 		}
 	}
 
 	return ""
-}
-
-func getSegments(eids []openrtb2.EID) (mappedRubiconUidsParam, []error) {
-	rubiconUidsParam := mappedRubiconUidsParam{
-		segments: make([]string, 0),
-	}
-	errs := make([]error, 0)
-
-	for _, eid := range eids {
-		switch eid.Source {
-		case "liveintent.com":
-			uids := eid.UIDs
-			if len(uids) > 0 {
-				if eid.Ext != nil {
-					var eidExt rubiconUserExtEidExt
-					if err := json.Unmarshal(eid.Ext, &eidExt); err != nil {
-						errs = append(errs, &errortypes.BadInput{
-							Message: err.Error(),
-						})
-						continue
-					}
-					rubiconUidsParam.segments = eidExt.Segments
-				}
-			}
-		case "liveramp.com":
-			uids := eid.UIDs
-			if len(uids) > 0 {
-				uidId := uids[0].ID
-				if uidId != "" && rubiconUidsParam.liverampIdl == "" {
-					rubiconUidsParam.liverampIdl = uidId
-				}
-			}
-		}
-	}
-
-	return rubiconUidsParam, errs
-}
-
-func updateUserExtWithSegments(userExtRP *rubiconUserExt, rubiconUidsParam mappedRubiconUidsParam) error {
-	if len(rubiconUidsParam.segments) > 0 {
-
-		if rubiconUidsParam.segments != nil {
-			userExtRPTarget := make(map[string]interface{})
-
-			if userExtRP.RP.Target != nil {
-				if err := json.Unmarshal(userExtRP.RP.Target, &userExtRPTarget); err != nil {
-					return &errortypes.BadInput{Message: err.Error()}
-				}
-			}
-
-			userExtRPTarget["LIseg"] = rubiconUidsParam.segments
-
-			if target, err := json.Marshal(&userExtRPTarget); err != nil {
-				return &errortypes.BadInput{Message: err.Error()}
-			} else {
-				userExtRP.RP.Target = target
-			}
-		}
-	}
-	return nil
 }
 
 func isVideo(imp openrtb2.Imp) bool {
@@ -1026,7 +939,7 @@ func isVideo(imp openrtb2.Imp) bool {
 
 func isFullyPopulatedVideo(video *openrtb2.Video) bool {
 	// These are just recommended video fields for XAPI
-	return video.MIMEs != nil && video.Protocols != nil && video.MaxDuration != 0 && video.Linearity != 0 && video.API != nil
+	return video.MIMEs != nil && video.Protocols != nil && video.MaxDuration != 0 && video.Linearity != 0
 }
 
 func resolveNativeObject(native *openrtb2.Native, target map[string]interface{}) (*openrtb2.Native, error) {
@@ -1047,8 +960,11 @@ func resolveNativeObject(native *openrtb2.Native, target map[string]interface{})
 		return nil, fmt.Errorf("Eventtrackers are not present or not of array type")
 	}
 
-	if _, ok := target["context"].(float64); !ok {
-		return nil, fmt.Errorf("Context is not present or not of int type")
+	context := target["context"]
+	if context != nil {
+		if _, ok := context.(float64); !ok {
+			return nil, fmt.Errorf("Context is not of int type")
+		}
 	}
 
 	if _, ok := target["plcmttype"].(float64); !ok {

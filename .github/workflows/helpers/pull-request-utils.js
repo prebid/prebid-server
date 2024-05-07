@@ -1,7 +1,9 @@
 const synchronizeEvent = "synchronize",
   openedEvent = "opened",
   completedStatus = "completed",
-  resultSize = 100
+  resultSize = 100,
+  adminPermission = "admin",
+  writePermission = "write"
 
 class diffHelper {
   constructor(input) {
@@ -198,6 +200,29 @@ class diffHelper {
     }
     return nonScannedCommitsDiff
   }
+
+  /*
+    Retrieves a list of directories from GitHub pull request files
+    @param {Function} directoryExtractor - The function used to extract the directory name from the filename
+    @returns {Array} An array of unique directory names
+  */
+  async getDirectories(directoryExtractor = () => "") {
+    const { data } = await this.github.rest.pulls.listFiles({
+      owner: this.owner,
+      repo: this.repo,
+      pull_number: this.pullRequestNumber,
+      per_page: resultSize,
+    })
+
+    const directories = []
+    for (const { filename, status } of data) {
+      const directory = directoryExtractor(filename, status)
+      if (directory != "" && !directories.includes(directory)) {
+        directories.push(directory)
+      }
+    }
+    return directories
+  }
 }
 
 class semgrepHelper {
@@ -331,7 +356,84 @@ class semgrepHelper {
   }
 }
 
+class coverageHelper {
+  constructor(input) {
+    this.owner = input.context.repo.owner
+    this.repo = input.context.repo.repo
+    this.github = input.github
+    this.pullRequestNumber = input.context.payload.pull_request.number
+    this.headSha = input.headSha
+    this.previewBaseURL = `https://htmlpreview.github.io/?https://github.com/${this.owner}/${this.repo}/coverage-preview/${input.remoteCoverageDir}`
+    this.tmpCoverDir = input.tmpCoverageDir
+  }
+
+  /*
+    Adds a code coverage summary along with heatmap links and coverage data on pull request as comment
+    @param {Array} directories - directory for which coverage summary will be added
+   */
+  async AddCoverageSummary(directories = []) {
+    const fs = require("fs")
+    const path = require("path")
+    const { promisify } = require("util")
+    const readFileAsync = promisify(fs.readFile)
+
+    let body = "## Code coverage summary \n"
+    body += "Note: \n"
+    body +=
+      "- Prebid team doesn't anticipate tests covering code paths that might result in marshal and unmarshal errors \n"
+    body += `- Coverage summary encompasses all commits leading up to the latest one, ${this.headSha} \n`
+
+    for (const directory of directories) {
+      let url = `${this.previewBaseURL}/${directory}.html`
+      try {
+        const textFilePath = path.join(this.tmpCoverDir, `${directory}.txt`)
+        const data = await readFileAsync(textFilePath, "utf8")
+
+        body += `#### ${directory} \n`
+        body += `Refer [here](${url}) for heat map coverage report \n`
+        body += "\`\`\` \n"
+        body += data
+        body += "\n \`\`\` \n"
+      } catch (err) {
+        console.error(err)
+        return
+      }
+    }
+
+    await this.github.rest.issues.createComment({
+      owner: this.owner,
+      repo: this.repo,
+      issue_number: this.pullRequestNumber,
+      body: body,
+    })
+  }
+}
+
+class userHelper {
+  constructor(input) {
+    this.owner = input.context.repo.owner
+    this.repo = input.context.repo.repo
+    this.github = input.github
+    this.user = input.user
+  }
+
+  /*
+    Checks if the user has write permissions for the repository
+    @returns {boolean} - returns true if the user has write permissions, otherwise false
+  */
+  async hasWritePermissions() {
+    const { data } = await this.github.rest.repos.getCollaboratorPermissionLevel({
+      owner: this.owner,
+      repo: this.repo,
+      username: this.user,
+    })
+    return data.permission === writePermission || data.permission === adminPermission
+  }
+}
+
 module.exports = {
   diffHelper: (input) => new diffHelper(input),
   semgrepHelper: (input) => new semgrepHelper(input),
+  coverageHelper: (input) => new coverageHelper(input),
+  userHelper: (input) => new userHelper(input),
 }

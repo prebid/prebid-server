@@ -1,0 +1,74 @@
+{
+  "mockBidRequest": {
+    "id": "22e26bd9a702bc",
+    "user": {
+      "id": "d93f2a0e5f0fe2cc3a6e"
+    },
+    "imp": [
+      {
+        "id": "1",
+        "tagid": "test-banner-imp-id",
+        "bidder": "adquery",
+        "banner": {
+          "format": [
+            {
+              "w": 320,
+              "h": 100
+            },
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "6d93f2a0e5f0fe2cc3a6e9e3ade964b43b07f897",
+            "type": "banner"
+          }
+        }
+      }
+    ],
+    "bidder": "adquery"
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bidder2.adquery.io/prebid/bid",
+        "headers": {
+          "Accept": ["application/json"],
+          "Content-Type": ["application/json;charset=utf-8"],
+          "X-Openrtb-Version": ["2.5"]
+        },
+        "body": {
+          "adUnitCode": "test-banner-imp-id",
+          "bidder": "adquery",
+          "bidderRequestId": "22e26bd9a702bc",
+          "bidderRequestsCount": 1,
+          "bidId": "22e26bd9a702bc1",
+          "bidIp": "",
+          "bidIpv6": "",
+          "bidPageUrl": "",
+          "bidQid": "d93f2a0e5f0fe2cc3a6e",
+          "bidRequestsCount": 1,
+          "bidUa": "",
+          "placementCode": "6d93f2a0e5f0fe2cc3a6e9e3ade964b43b07f897",
+          "sizes": "320x100,300x250",
+          "type": "banner",
+          "v": "server"
+        },
+        "impIDs":["1"]
+      },
+      "mockResponse": {
+        "status": 400,
+        "headers": {}
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 400. Run with request.debug = 1 for more info",
+      "comparison": "literal"
+    }
+  ]
+}

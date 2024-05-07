@@ -1,0 +1,143 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "id": "site-id",
+      "page": "oms.com"
+    },
+    "device": {
+      "os": "android",
+      "ipv6": "fd36:ce97:0fa1:dec0:0000:0000:0000:0000",
+      "ua": "random user agent"
+    },
+    "user": {
+      "ext": {
+        "eids": [
+          {
+            "source": "oms.com",
+            "uids": [
+              {
+                "id": "oms-eid"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "pid": "12345"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://rt.marphezis.com/pbs",
+        "headers": {},
+        "body": {
+          "id": "test-request-id",
+          "site": {
+            "id": "site-id",
+            "page": "oms.com"
+          },
+          "device": {
+            "os": "android",
+            "ipv6": "fd36:ce97:0fa1:dec0:0000:0000:0000:0000",
+            "ua": "random user agent"
+          },
+          "user": {
+            "ext": {
+              "eids": [
+                {
+                  "source": "oms.com",
+                  "uids": [
+                    {
+                      "id": "oms-eid"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "w": 300,
+                "h": 250
+              },
+              "ext": {
+                "bidder": {
+                  "pid": "12345"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "currency": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "test-slot-id",
+                  "impid": "test-imp-id",
+                  "price": 0.1,
+                  "crid": "creative-123",
+                  "adm": "<iframe id='789abc' name='789abc' src='http://creative-url.oms.com'></iframe>",
+                  "w": 300,
+                  "h": 250,
+                  "ext": {
+                    "prebid": {
+                      "type": "banner"
+                    }
+                  }
+                }
+              ] 
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-slot-id",
+            "impid": "test-imp-id",
+            "price": 0.1,
+            "crid": "creative-123",
+            "adm": "<iframe id='789abc' name='789abc' src='http://creative-url.oms.com'></iframe>",
+            "w": 300,
+            "h": 250,
+            "ext": {
+              "prebid": {
+                "type": "banner"
+              }
+            }
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
+

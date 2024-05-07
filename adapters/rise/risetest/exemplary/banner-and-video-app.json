@@ -18,7 +18,7 @@
         },
         "ext": {
           "bidder": {
-            "publisher_id": "72721",
+            "org": "72721",
             "path": "mvo",
             "zone": "1r"
           }
@@ -41,7 +41,7 @@
         },
         "ext": {
           "bidder": {
-            "publisher_id": "72721",
+            "org": "72721",
             "path": "mvo",
             "zone": "1r"
           }
@@ -98,7 +98,7 @@
               },
               "ext": {
                 "bidder": {
-                  "publisher_id": "72721",
+                  "org": "72721",
                   "zone": "1r",
                   "path": "mvo"
                 }
@@ -121,7 +121,7 @@
               },
               "ext": {
                 "bidder": {
-                  "publisher_id": "72721",
+                  "org": "72721",
                   "zone": "1r",
                   "path": "mvo"
                 }
@@ -154,7 +154,8 @@
             "connectiontype": 3,
             "ifa": "AA000DFE74168477C70D291f574D344790E0BB11"
           }
-        }
+        },
+        "impIDs":["test-imp-id","test-imp-video-id"]
       },
       "mockResponse": {
         "status": 200,

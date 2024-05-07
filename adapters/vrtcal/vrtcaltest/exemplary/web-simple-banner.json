@@ -53,7 +53,8 @@
             "id": "fake-site-id",
             "page": "http://www.vrtcal.com"
           }
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,
@@ -70,7 +71,8 @@
                   "adm": "some-test-ad",
                   "crid": "crid_10",
                   "h": 250,
-                  "w": 300
+                  "w": 300,
+		  "mtype":1
                 }
               ]
             }
@@ -92,7 +94,8 @@
             "adm": "some-test-ad",
             "crid": "crid_10",
             "w": 300,
-            "h": 250
+            "h": 250,
+	    "mtype":1
           },
           "type": "banner"
         }

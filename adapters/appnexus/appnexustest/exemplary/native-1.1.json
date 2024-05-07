@@ -51,8 +51,7 @@
           "ext": {
             "appnexus": {
               "hb_source": 5
-            },
-            "prebid": {}
+            }
           },
           "site": {
             "domain": "prebid.org",
@@ -66,7 +65,8 @@
             "buyeruid": "8299345306627569435"
           },
           "tmax": 500
-        }
+        },
+        "impIDs":["some-imp-id"]
       },
       "mockResponse": {
         "status": 200,

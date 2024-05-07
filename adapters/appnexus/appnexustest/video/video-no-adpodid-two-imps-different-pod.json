@@ -46,8 +46,7 @@
 			"ext": {
 				"appnexus": {
 				  "hb_source": 6
-				},
-				"prebid": {}
+				}
 			},
 			"imp": [
 			  {
@@ -83,7 +82,8 @@
 				}
 			  }
 			]
-		  }
+		  },
+		  "impIDs":["1_1","2_1"]
 		},
 		"mockResponse": {
 		  "status": 200,

@@ -8,13 +8,14 @@ import (
 	"strings"
 
 	"github.com/buger/jsonparser"
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/metrics"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/util/timeutil"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/metrics"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v2/util/timeutil"
 )
 
 const clientVersion = "prebid_server_0.6"
@@ -256,6 +257,7 @@ func (adapter *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.Req
 		Uri:     adapter.endpoint,
 		Body:    reqJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}, nil
 }
 
@@ -551,8 +553,8 @@ func setBannerDimension(banner *openrtb2.Banner) (*openrtb2.Banner, error) {
 		return banner, &errortypes.BadInput{Message: "No sizes provided for Banner."}
 	}
 	bannerCopy := *banner
-	bannerCopy.W = openrtb2.Int64Ptr(banner.Format[0].W)
-	bannerCopy.H = openrtb2.Int64Ptr(banner.Format[0].H)
+	bannerCopy.W = ptrutil.ToPtr(banner.Format[0].W)
+	bannerCopy.H = ptrutil.ToPtr(banner.Format[0].H)
 
 	return &bannerCopy, nil
 }

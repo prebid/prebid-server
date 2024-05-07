@@ -37,8 +37,7 @@
           "ext": {
             "appnexus": {
               "hb_source": 5
-            },
-            "prebid": {}
+            }
           },
           "imp": [
             {
@@ -67,7 +66,8 @@
               "tagid": "abc123"
             }
           ]
-        }
+        },
+        "impIDs":["test-imp-id-1"]
       },
       "mockResponse": {
         "status": 200,
