@@ -1,8 +1,5 @@
 {
     "description": "Imp extension references valid bidder alias of appnexus defined in the request ext.prebid.aliases field.",
-    "config": {
-      
-    },
     "mockBidRequest": {
       "id": "some-request-id",
       "site": {
