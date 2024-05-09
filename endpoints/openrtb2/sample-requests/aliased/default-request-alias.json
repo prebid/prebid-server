@@ -35,7 +35,17 @@
           {
             "id": "appnexus-bid",
             "impid": "my-imp-id",
-            "price": 0
+            "price": 0,
+            "ext": {
+              "origbidcpm": 0,
+              "origbidcur": "USD",
+              "prebid": {
+                "meta": {
+                  "adaptercode": "appnexus"
+                },
+                "type": "banner"
+              }
+            }
           }
         ],
        "seat": "alias1"
