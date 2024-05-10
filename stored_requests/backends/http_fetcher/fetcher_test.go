@@ -105,7 +105,7 @@ func TestFetchAccountsNoIDsProvided(t *testing.T) {
 	fetcher, close := newTestAccountFetcher(t, []string{"acc-1", "acc-2"})
 	defer close()
 
-	accData, errs := fetcher.FetchAccounts(nil, []string{})
+	accData, errs := fetcher.FetchAccounts(context.TODO(), []string{})
 	assert.Empty(t, errs, "Unexpected error fetching empty account list")
 	assert.Nil(t, accData, "Fetching empty account list should return nil")
 }
@@ -115,7 +115,7 @@ func TestFetchAccountsFailedBuildRequest(t *testing.T) {
 	fetcher, close := newTestAccountFetcher(t, []string{"acc-1", "acc-2"})
 	defer close()
 
-	accData, errs := fetcher.FetchAccounts(nil, []string{"acc-1"})
+	accData, errs := fetcher.FetchAccounts(context.TODO(), []string{"acc-1"})
 	assert.Len(t, errs, 1, "Fetching accounts without context should result in error ")
 	assert.Nil(t, accData, "Fetching accounts without context should return nil")
 }
