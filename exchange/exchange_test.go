@@ -365,7 +365,7 @@ func TestDebugBehaviour(t *testing.T) {
 		if test.generateWarnings {
 			var errL []error
 			errL = append(errL, &errortypes.Warning{
-				Message:     fmt.Sprintf("CCPA consent test warning."),
+				Message:     "CCPA consent test warning.",
 				WarningCode: errortypes.InvalidPrivacyConsentWarningCode})
 			auctionRequest.Warnings = errL
 		}

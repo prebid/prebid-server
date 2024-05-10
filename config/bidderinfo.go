@@ -637,7 +637,7 @@ func applyBidderInfoConfigOverrides(configBidderInfos nillableFieldBidderInfos, 
 		if configBidderInfo.nillableFields.ModifyingVastXmlAllowed != nil {
 			mergedBidderInfo.ModifyingVastXmlAllowed = configBidderInfo.bidderInfo.ModifyingVastXmlAllowed
 		}
-		if configBidderInfo.bidderInfo.Experiment.AdsCert.Enabled == true {
+		if configBidderInfo.bidderInfo.Experiment.AdsCert.Enabled {
 			mergedBidderInfo.Experiment.AdsCert.Enabled = true
 		}
 		if configBidderInfo.bidderInfo.EndpointCompression != "" {
