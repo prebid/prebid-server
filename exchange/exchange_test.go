@@ -1638,7 +1638,7 @@ func TestBidResponseCurrency(t *testing.T) {
 					Price: 9.517803,
 					W:     300,
 					H:     250,
-					Ext:   json.RawMessage(`{"origbidcpm":9.517803,"prebid":{"meta":{"adaptercode":"appnexus"},"type":"banner"}}`),
+					Ext:   json.RawMessage(`{"origbidcpm":9.517803,"prebid":{"meta":{},"type":"banner"}}`),
 				},
 			},
 		},
@@ -1768,7 +1768,7 @@ func TestBidResponseImpExtInfo(t *testing.T) {
 		H:     250,
 		Ext:   nil,
 	}
-	aPbsOrtbBidArr := []*entities.PbsOrtbBid{{Bid: sampleBid, BidType: openrtb_ext.BidTypeVideo}}
+	aPbsOrtbBidArr := []*entities.PbsOrtbBid{{Bid: sampleBid, BidType: openrtb_ext.BidTypeVideo, AdapterCode: openrtb_ext.BidderAppnexus}}
 
 	adapterBids := map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid{
 		openrtb_ext.BidderName("appnexus"): {
@@ -2187,7 +2187,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 				Enabled: spec.EventsEnabled,
 			},
 			DebugAllow:  true,
-			PriceFloors: config.AccountPriceFloors{Enabled: spec.AccountFloorsEnabled},
+			PriceFloors: config.AccountPriceFloors{Enabled: spec.AccountFloorsEnabled, EnforceDealFloors: spec.AccountEnforceDealFloors},
 			Privacy:     spec.AccountPrivacy,
 			Validations: spec.AccountConfigBidValidation,
 		},
@@ -4144,7 +4144,7 @@ func TestStoredAuctionResponses(t *testing.T) {
 		SeatBid: []openrtb2.SeatBid{
 			{
 				Bid: []openrtb2.Bid{
-					{ID: "bid_id", ImpID: "impression-id", Ext: json.RawMessage(`{"origbidcpm":0,"prebid":{"meta":{"adaptercode":"appnexus"},"type":"video"}}`)},
+					{ID: "bid_id", ImpID: "impression-id", Ext: json.RawMessage(`{"origbidcpm":0,"prebid":{"meta":{},"type":"video"}}`)},
 				},
 				Seat: "appnexus",
 			},
@@ -5231,6 +5231,7 @@ func TestGetAllBids(t *testing.T) {
 									ID: "1",
 								},
 								OriginalBidCur: "USD",
+								AdapterCode:    openrtb_ext.BidderPubmatic,
 							},
 						},
 						Currency:  "USD",
@@ -5299,6 +5300,7 @@ func TestGetAllBids(t *testing.T) {
 									ID: "1",
 								},
 								OriginalBidCur: "USD",
+								AdapterCode:    openrtb_ext.BidderPubmatic,
 							},
 						},
 						Currency:  "USD",
@@ -5312,6 +5314,7 @@ func TestGetAllBids(t *testing.T) {
 									ID: "2",
 								},
 								OriginalBidCur: "USD",
+								AdapterCode:    openrtb_ext.BidderPubmatic,
 							},
 						},
 						Currency:  "USD",
@@ -5379,6 +5382,7 @@ func TestGetAllBids(t *testing.T) {
 									ID: "2",
 								},
 								OriginalBidCur: "USD",
+								AdapterCode:    openrtb_ext.BidderPubmatic,
 							},
 						},
 						Currency:  "USD",
@@ -5493,6 +5497,7 @@ type exchangeSpec struct {
 	HostConfigBidValidation    config.Validations     `json:"host_bid_validations"`
 	AccountConfigBidValidation config.Validations     `json:"account_bid_validations"`
 	AccountFloorsEnabled       bool                   `json:"account_floors_enabled"`
+	AccountEnforceDealFloors   bool                   `json:"account_enforce_deal_floors"`
 	FledgeEnabled              bool                   `json:"fledge_enabled,omitempty"`
 	MultiBid                   *multiBidSpec          `json:"multiBid,omitempty"`
 	Server                     exchangeServer         `json:"server,omitempty"`

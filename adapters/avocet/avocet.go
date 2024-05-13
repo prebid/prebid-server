@@ -103,6 +103,9 @@ func (a *AvocetAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 			bidResponse.Bids = append(bidResponse.Bids, tbid)
 		}
 	}
+	if len(errs) > 0 {
+		return nil, errs
+	}
 	return bidResponse, nil
 }
 

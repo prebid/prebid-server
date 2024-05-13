@@ -94,15 +94,14 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	if len(response.Cur) > 0 {
 		bidResponse.Currency = response.Cur
 	}
-	for _, seatBid := range response.SeatBid {
-		for i := range seatBid.Bid {
+	if len(response.SeatBid) > 0 {
+		for i := range response.SeatBid[0].Bid {
 			b := &adapters.TypedBid{
-				Bid:     &seatBid.Bid[i],
+				Bid:     &response.SeatBid[0].Bid[i],
 				BidType: bidType,
 			}
 			bidResponse.Bids = append(bidResponse.Bids, b)
 		}
-		break
 	}
 
 	return bidResponse, nil
