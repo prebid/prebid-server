@@ -18,6 +18,12 @@ import (
 type adapter struct {
 	EndpointTemplate *template.Template
 }
+type yeahmobiBidExt struct {
+	VideoCreativeInfo *yeahmobiBidExtVideo `json:"video,omitempty"`
+}
+type yeahmobiBidExtVideo struct {
+	Duration *int `json:"duration,omitempty"`
+}
 
 // Builder builds a new instance of the Yeahmobi adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
@@ -134,34 +140,42 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
-
 	if response.StatusCode == http.StatusBadRequest {
 		return nil, []error{&errortypes.BadInput{
 			Message: fmt.Sprintf("Unexpected status code: %d.", response.StatusCode),
 		}}
 	}
-
 	if response.StatusCode != http.StatusOK {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Unexpected status code: %d.", response.StatusCode),
 		}}
 	}
-
 	var bidResp openrtb2.BidResponse
-
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
-
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
-
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
 			var mediaType = getBidType(sb.Bid[i].ImpID, internalRequest.Imp)
-			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     &sb.Bid[i],
-				BidType: mediaType,
-			})
+			bid := sb.Bid[i]
+			typedBid := &adapters.TypedBid{
+				Bid:      &bid,
+				BidType:  mediaType,
+				BidVideo: &openrtb_ext.ExtBidPrebidVideo{},
+			}
+			if bid.Ext != nil {
+				var bidExt *yeahmobiBidExt
+				err := json.Unmarshal(bid.Ext, &bidExt)
+				if err != nil {
+					return nil, []error{err}
+				} else if bidExt != nil {
+					if bidExt.VideoCreativeInfo != nil && bidExt.VideoCreativeInfo.Duration != nil {
+						typedBid.BidVideo.Duration = *bidExt.VideoCreativeInfo.Duration
+					}
+				}
+			}
+			bidResponse.Bids = append(bidResponse.Bids, typedBid)
 		}
 	}
 	return bidResponse, nil
