@@ -115,7 +115,7 @@ func TestFetchAccountsFailedBuildRequest(t *testing.T) {
 	fetcher, close := newTestAccountFetcher(t, []string{"acc-1", "acc-2"})
 	defer close()
 
-	accData, errs := fetcher.FetchAccounts(context.TODO(), []string{"acc-1"})
+	accData, errs := fetcher.FetchAccounts(nil, []string{"acc-1"}) //nolint: staticcheck // test handling of a nil context
 	assert.Len(t, errs, 1, "Fetching accounts without context should result in error ")
 	assert.Nil(t, accData, "Fetching accounts without context should return nil")
 }
