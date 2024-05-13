@@ -113,8 +113,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 		}}
 	}
 
-	count := getBidCount(bidResp)
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(count)
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(internalRequest.Imp))
 
 	var errs []error
 	for _, sb := range bidResp.SeatBid {
@@ -132,14 +131,6 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	}
 
 	return bidResponse, errs
-}
-
-func getBidCount(bidResponse openrtb2.BidResponse) int {
-	c := 0
-	for _, sb := range bidResponse.SeatBid {
-		c = c + len(sb.Bid)
-	}
-	return c
 }
 
 func getMediaTypeForImp(impId string, imps []openrtb2.Imp) (openrtb_ext.BidType, []error) {
