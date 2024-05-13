@@ -50,4 +50,5 @@ type PbsOrtbBid struct {
 	OriginalBidCPM    float64
 	OriginalBidCur    string
 	TargetBidderCode  string
+	AdapterCode       openrtb_ext.BidderName
 }

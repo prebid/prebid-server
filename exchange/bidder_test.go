@@ -2414,10 +2414,7 @@ type goodMultiHTTPCallsBidder struct {
 func (bidder *goodMultiHTTPCallsBidder) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	bidder.bidRequest = request
 	response := make([]*adapters.RequestData, len(bidder.httpRequest))
-
-	for i, r := range bidder.httpRequest {
-		response[i] = r
-	}
+	copy(response, bidder.httpRequest)
 	return response, nil
 }
 

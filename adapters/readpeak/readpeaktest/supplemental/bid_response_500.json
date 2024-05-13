@@ -1,0 +1,100 @@
+{
+  "mockBidRequest": {
+    "id": "req-id-native",
+    "imp": [
+      {
+        "id": "imp-id-native",
+        "native": {
+          "request": "{\"ver\":\"1.1\",\"context\":1,\"contextsubtype\":11,\"plcmttype\":4,\"plcmtc nt\":8,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":500}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":100,\"hmin\":100}},{\"id\":3,\"required\":0,\"data\":{\"type\":1,\"len\":200}},{\"id\":4,\"required\":0,\"data\":{\"type\":2,\"len\":400}},{\"id\":5,\"required\":0,\"data\":{\"type\":6,\"len\":40}},{\"id\":6,\"required\":0,\" data\":{\"type\":500}}]}",
+          "ver": "1.1"
+        },
+        "ext": {
+          "bidder": {
+            "siteId": "site-id-n",
+            "publisherId": "publisher-id-n",
+            "tagId": "tag-id-n",
+            "bidfloor": 5.0
+          }
+        }
+      }
+    ],
+    "site": {
+      "id": "some-site-id-n",
+      "domain": "http://test.com",
+      "page": "http://test.com/test",
+      "publisher": {
+        "id": "some-pub-id-n"
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://dsp.readpeak.com/header/prebid",
+        "body": {
+          "id": "req-id-native",
+          "imp": [
+            {
+              "id": "imp-id-native",
+              "tagid": "tag-id-n",
+              "bidfloor": 5.0,
+              "native": {
+                "request": "{\"ver\":\"1.1\",\"context\":1,\"contextsubtype\":11,\"plcmttype\":4,\"plcmtc nt\":8,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":500}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":100,\"hmin\":100}},{\"id\":3,\"required\":0,\"data\":{\"type\":1,\"len\":200}},{\"id\":4,\"required\":0,\"data\":{\"type\":2,\"len\":400}},{\"id\":5,\"required\":0,\"data\":{\"type\":6,\"len\":40}},{\"id\":6,\"required\":0,\" data\":{\"type\":500}}]}",
+                "ver": "1.1"
+              },
+              "ext": {
+                "bidder": {
+                  "siteId": "site-id-n",
+                  "publisherId": "publisher-id-n",
+                  "tagId": "tag-id-n",
+                  "bidfloor": 5.0
+                }
+              }
+            }
+          ],
+          "site": {
+            "id": "site-id-n",
+            "publisher": {
+              "id": "publisher-id-n"
+            },
+            "domain": "http://test.com",
+            "page": "http://test.com/test"
+          }
+        },
+        "impIDs":["imp-id-native"]
+      },
+      "mockResponse": {
+        "status": 500,
+        "body": {
+          "id": "req-id-native",
+          "seatbid": [
+            {
+              "seat": "bid",
+              "bid": [
+                {
+                  "id": "test-bid-id-native",
+                  "impid": "imp-id-native",
+                  "price": 0.500000,
+                  "adm": "{\"assets\":[{\"id\":1,\"title\":{\"text\":\"Test title\"}},{\"id\":2,\"img\":{\"url\":\"http://test.image.jpg\",\"w\":550,\"h\":288}},{\"id\":3,\"data\":{\"value\":\"Test title\"}},{\"id\":4,\"data\":{\"value\":\"Test summary here\"}}],\"link\":{\"url\":\"https://test-click.url\"},\"imptrackers\":[]}",
+                  "cid": "12",
+                  "crid": "123",
+                  "burl": "http://test.com/burl?p=${AUCTION_PRICE}",
+                  "adomain": [
+                    "test-readpeak.com"
+                  ]
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 500. Run with request.debug = 1 for more info",
+      "comparison": "literal"
+    }
+  ]
+}
