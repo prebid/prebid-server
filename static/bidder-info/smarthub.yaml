@@ -1,4 +1,4 @@
-endpoint: "http://{{.Host}}-prebid.smart-hub.io/?seat={{.AccountID}}&token={{.SourceId}}"
+endpoint: "http://prebid.smart-hub.io/pbserver?partnerName={{.Host}}&seat={{.AccountID}}&token={{.SourceId}}"
 maintainer:
   email: "support@smart-hub.io"
 capabilities:
