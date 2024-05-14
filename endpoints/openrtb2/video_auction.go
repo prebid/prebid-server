@@ -122,6 +122,7 @@ func NewVideoEndpoint(
 func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	start := time.Now()
 
+	seatNonBid := &openrtb_ext.NonBidCollection{}
 	vo := analytics.VideoObject{
 		Status:    http.StatusOK,
 		Errors:    make([]error, 0),
@@ -340,9 +341,10 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	var response *openrtb2.BidResponse
 	if auctionResponse != nil {
 		response = auctionResponse.BidResponse
+		seatNonBid.Append(auctionResponse.SeatNonBid)
 	}
 	vo.Response = response
-	vo.SeatNonBid = auctionResponse.GetSeatNonBid()
+	vo.SeatNonBid = seatNonBid.Get()
 	if err != nil {
 		errL := []error{err}
 		handleError(&labels, w, errL, &vo, &debugLog)
@@ -357,7 +359,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 	if bidReq.Test == 1 {
-		err = setSeatNonBidRaw(bidReqWrapper, auctionResponse)
+		err = setSeatNonBidRaw(bidReqWrapper, response, vo.SeatNonBid)
 		if err != nil {
 			glog.Errorf("Error setting seat non-bid: %v", err)
 		}
