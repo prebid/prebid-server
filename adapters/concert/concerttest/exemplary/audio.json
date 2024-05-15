@@ -89,7 +89,8 @@
                     "impid": "test-imp-id",
                     "price": 1.23,
                     "adm": "<VAST version=\"3.0\"><Ad><Wrapper>...</Wrapper></Ad></VAST>",
-                    "crid": "test-creative-id"
+                    "crid": "test-creative-id",
+                    "mtype": 3
                   }
                 ]
               }
@@ -107,7 +108,8 @@
               "impid": "test-imp-id",
               "price": 1.23,
               "adm": "<VAST version=\"3.0\"><Ad><Wrapper>...</Wrapper></Ad></VAST>",
-              "crid": "test-creative-id"
+              "crid": "test-creative-id",
+              "mtype": 3
             },
             "type": "audio"
           }

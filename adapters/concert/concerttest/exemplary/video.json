@@ -97,7 +97,8 @@
                   "adm": "<VAST version=\"3.0\"><Ad><Wrapper>...</Wrapper></Ad></VAST>",
                   "crid": "test-creative-id",
                   "w": 640,
-                  "h": 480
+                  "h": 480,
+                  "mtype": 2
                 }
               ]
             }
@@ -117,7 +118,8 @@
             "adm": "<VAST version=\"3.0\"><Ad><Wrapper>...</Wrapper></Ad></VAST>",
             "crid": "test-creative-id",
             "w": 640,
-            "h": 480
+            "h": 480,
+            "mtype": 2
           },
           "type": "video"
         }

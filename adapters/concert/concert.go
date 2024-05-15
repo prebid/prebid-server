@@ -3,12 +3,13 @@ package concert
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"net/http"
 )
 
 type adapter struct {
@@ -96,8 +97,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	var errors []error
 	for _, seatBid := range response.SeatBid {
 		for i, bid := range seatBid.Bid {
-			imp, _ := getImpByID(bid.ImpID, request.Imp)
-			bidType, err := getMediaTypeForBid(bid, imp)
+			bidType, err := getMediaTypeForBid(bid)
 			if err != nil {
 				errors = append(errors, err)
 				continue
@@ -120,16 +120,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	return bidResponse, nil
 }
 
-func getImpByID(impID string, imps []openrtb2.Imp) (*openrtb2.Imp, error) {
-	for _, imp := range imps {
-		if imp.ID == impID {
-			return &imp, nil
-		}
-	}
-	return nil, fmt.Errorf("no matching imp found for id %s", impID)
-}
-
-func getMediaTypeForBid(bid openrtb2.Bid, imp *openrtb2.Imp) (openrtb_ext.BidType, error) {
+func getMediaTypeForBidFromExt(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 	if bid.Ext != nil {
 		var bidExt openrtb_ext.ExtBid
 		err := json.Unmarshal(bid.Ext, &bidExt)
@@ -138,18 +129,23 @@ func getMediaTypeForBid(bid openrtb2.Bid, imp *openrtb2.Imp) (openrtb_ext.BidTyp
 		}
 	}
 
-	if imp != nil {
-		if imp.Video != nil {
-			return openrtb_ext.BidTypeVideo, nil
-		} else if imp.Banner != nil {
-			return openrtb_ext.BidTypeBanner, nil
-		} else if imp.Audio != nil {
-			return openrtb_ext.BidTypeAudio, nil
-		}
-	}
-
 	return "", &errortypes.BadServerResponse{
-		Message: fmt.Sprintf("Failed to parse impression \"%s\" mediatype", bid.ImpID),
+		Message: fmt.Sprintf("Failed to parse media type for bid: \"%s\"", bid.ImpID),
+	}
+}
+
+func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
+	case openrtb2.MarkupAudio:
+		return openrtb_ext.BidTypeAudio, nil
+	case openrtb2.MarkupNative:
+		return "", fmt.Errorf("native media types are not yet supported")
+	default:
+		return getMediaTypeForBidFromExt(bid)
 	}
 }
 
