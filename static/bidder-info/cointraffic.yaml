@@ -1,4 +1,4 @@
-endpoint: "https://apps.adsgravity.io/prebid-server/v1/rtb"
+endpoint: "https://apps.adsgravity.io/pbs/v1/request"
 maintainer:
   email: tech@cointraffic.io
 capabilities:
