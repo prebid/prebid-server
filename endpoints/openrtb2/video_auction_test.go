@@ -20,6 +20,7 @@ import (
 	"github.com/prebid/prebid-server/v2/metrics"
 	metricsConfig "github.com/prebid/prebid-server/v2/metrics/config"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/ortb"
 	"github.com/prebid/prebid-server/v2/prebid_cache_client"
 	"github.com/prebid/prebid-server/v2/privacy"
 	"github.com/prebid/prebid-server/v2/stored_requests/backends/empty_fetcher"
@@ -1237,6 +1238,7 @@ func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *m
 		fakeUUIDGenerator{},
 		ex,
 		mockBidderParamValidator{},
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockVideoStoredReqFetcher{},
 		&mockVideoStoredReqFetcher{},
 		&mockAccountFetcher{data: mockVideoAccountData},
@@ -1286,6 +1288,7 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 		fakeUUIDGenerator{},
 		ex,
 		mockBidderParamValidator{},
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockVideoStoredReqFetcher{},
 		&mockVideoStoredReqFetcher{},
 		&mockAccountFetcher{data: mockVideoAccountData},
@@ -1311,6 +1314,7 @@ func mockDepsAppendBidderNames(t *testing.T, ex *mockExchangeAppendBidderNames) 
 		fakeUUIDGenerator{},
 		ex,
 		mockBidderParamValidator{},
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockVideoStoredReqFetcher{},
 		&mockVideoStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -1338,6 +1342,7 @@ func mockDepsNoBids(t *testing.T, ex *mockExchangeVideoNoBids) *endpointDeps {
 		fakeUUIDGenerator{},
 		ex,
 		mockBidderParamValidator{},
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockVideoStoredReqFetcher{},
 		&mockVideoStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
