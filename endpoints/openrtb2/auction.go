@@ -86,6 +86,7 @@ func NewEndpoint(
 	uuidGenerator uuidutil.UUIDGenerator,
 	ex exchange.Exchange,
 	validator openrtb_ext.BidderParamValidator,
+	requestValidator *ortb.RequestValidator,
 	requestsById stored_requests.Fetcher,
 	accounts stored_requests.AccountFetcher,
 	cfg *config.Configuration,
@@ -113,6 +114,7 @@ func NewEndpoint(
 		uuidGenerator,
 		ex,
 		validator,
+		requestValidator,
 		requestsById,
 		empty_fetcher.EmptyFetcher{},
 		accounts,
@@ -138,6 +140,7 @@ type endpointDeps struct {
 	uuidGenerator             uuidutil.UUIDGenerator
 	ex                        exchange.Exchange
 	paramsValidator           openrtb_ext.BidderParamValidator
+	requestValidator          *ortb.RequestValidator
 	storedReqFetcher          stored_requests.Fetcher
 	videoFetcher              stored_requests.Fetcher
 	accounts                  stored_requests.AccountFetcher
@@ -920,8 +923,7 @@ func (deps *endpointDeps) validateRequest(account *config.Account, httpReq *http
 		}
 		impIDs[imp.ID] = i
 
-		reqValidator := ortb.NewRequestValidator(deps.bidderMap, deps.disabledBidders, deps.paramsValidator)
-		errs := reqValidator.ValidateImp(imp, i, requestAliases, hasStoredResponses, storedBidResp)
+		errs := deps.requestValidator.ValidateImp(imp, i, requestAliases, hasStoredResponses, storedBidResp)
 		if len(errs) > 0 {
 			errL = append(errL, errs...)
 		}
