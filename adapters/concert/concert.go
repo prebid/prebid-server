@@ -130,10 +130,10 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 		return openrtb_ext.BidTypeAudio, nil
 	case openrtb2.MarkupNative:
 		return "", fmt.Errorf("native media types are not yet supported")
-    default:
-        return "", &errortypes.BadServerResponse{
-            Message: fmt.Sprintf("Failed to parse media type for bid: \"%s\"", bid.ImpID),
-        }
+	default:
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Failed to parse media type for bid: \"%s\"", bid.ImpID),
+		}
 	}
 }
 
