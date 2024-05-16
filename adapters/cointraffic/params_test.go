@@ -7,7 +7,7 @@ import (
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
-// This file actually intends to test static/bidder-params/aax.json
+// This file actually intends to test static/bidder-params/cointraffic.json
 func TestValidParams(t *testing.T) {
 	validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
 	if err != nil {
@@ -35,7 +35,7 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
-	`{"placementId":"123"}`,
+	`{"placementId": "123"}`,
 }
 
 var invalidParams = []string{
@@ -46,9 +46,6 @@ var invalidParams = []string{
 	`4.2`,
 	`[]`,
 	`{}`,
-	`{"cid":"", "crid":""}`,
-	`{"cid":"only cid is present"}`,
-	`{"crid":"only crid is present"}`,
-	`{"ccid":"123","ccrid":"123"}`,
-	`{"aid":123, "siteId":"321"}`,
+	`{"placementId": 42}`,
+	`{"placementId": ""}`,
 }

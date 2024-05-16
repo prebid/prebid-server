@@ -6,8 +6,11 @@
   "properties": {
     "placementId": {
       "type": "string",
+      "minLength": 1,
       "description": "Ad placement identifier"
     }
   },
-  "required": ["placementId", "userId"]
+  "required": [
+    "placementId"
+  ]
 }

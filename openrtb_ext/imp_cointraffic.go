@@ -1,5 +1,5 @@
 package openrtb_ext
 
 type ExtImpCointraffic struct {
-	PlacementId string `json:"PlacementId"`
+	PlacementId string `json:"placementId"`
 }

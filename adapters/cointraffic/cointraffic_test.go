@@ -10,22 +10,42 @@ import (
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
+const testsDir = "cointraffictest"
+const testsBidderEndpoint = "http://test-request.com/prebid"
+
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderCointraffic, config.Adapter{
-		Endpoint:         "http://localhost:3555/api/v1/rtb",
+	ac := config.Adapter{
+		Endpoint:         testsBidderEndpoint,
 		ExtraAdapterInfo: "",
-	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+	}
+
+	sc := config.Server{
+		ExternalUrl: "http://hosturl.com",
+		GvlID:       1,
+		DataCenter:  "2",
+	}
+
+	bidder, buildErr := Builder(openrtb_ext.BidderCointraffic, ac, sc)
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	adapterstest.RunJSONBidderTest(t, "cointraffictest", bidder)
+	adapterstest.RunJSONBidderTest(t, testsDir, bidder)
 }
 
 func TestEndpointTemplateMalformed(t *testing.T) {
-	_, buildErr := Builder(openrtb_ext.BidderCointraffic, config.Adapter{
-		Endpoint: "{{Malformed}}"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+	ac := config.Adapter{
+		Endpoint: "{{Malformed}}",
+	}
+
+	sc := config.Server{
+		ExternalUrl: "http://hosturl.com",
+		GvlID:       1,
+		DataCenter:  "2",
+	}
+
+	_, buildErr := Builder(openrtb_ext.BidderCointraffic, ac, sc)
 
 	assert.Nil(t, buildErr)
 }

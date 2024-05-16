@@ -1,20 +1,10 @@
-endpoint: "http://localhost:3555/api/v1/rtb" # todo: static load balancer
-geoscope:
-  - EUU
-  - CAN
+endpoint: "https://apps.adsgravity.io/prebid-server/v1/rtb"
 maintainer:
-  email: prebid-maintainer@example.com
-modifyingVastXmlAllowed: true
+  email: tech@cointraffic.io
 capabilities:
   app:
     mediaTypes:
       - banner
-      - native
   site:
     mediaTypes:
       - banner
-      - native
-#userSync:
-#  redirect:
-#    url: https://foo.com/sync?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
-#    userMacro: $UID
