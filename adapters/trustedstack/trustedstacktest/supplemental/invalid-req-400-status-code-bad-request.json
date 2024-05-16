@@ -1,0 +1,97 @@
+{
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "tmax": 1000,
+    "user": {
+      "buyeruid": "0000-000-000-0000"
+    },
+    "app": {
+      "publisher": {
+        "id": "123456789"
+      },
+      "cat": [
+        "IAB22-1"
+      ],
+      "bundle": "com.app.awesome",
+      "name": "Awesome App",
+      "domain": "awesomeapp.com",
+      "id": "123456789"
+    },
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 640,
+          "h": 480,
+          "minduration": 120,
+          "maxduration": 150
+        },
+        "ext": {
+          "bidder": {
+            "cid": "8CUTSTCID",
+            "crid": "999999999"
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [{
+    "expectedRequest": {
+      "uri": "https://example.trustedstack.com/rtb/prebid?src=http%3A%2F%2Fhosturl.com",
+      "body": {
+        "id": "some-request-id",
+        "imp": [
+          {
+            "id": "some-impression-id",
+            "video": {
+              "mimes": [
+                "video/mp4"
+              ],
+              "w": 640,
+              "h": 480,
+              "minduration": 120,
+              "maxduration": 150
+            },
+            "ext": {
+              "bidder": {
+                "cid": "8CUTSTCID",
+                "crid": "999999999"
+              }
+            }
+          }
+        ],
+        "app":  {
+          "publisher": {
+            "id": "123456789"
+          },
+          "cat": [
+            "IAB22-1"
+          ],
+          "bundle": "com.app.awesome",
+          "name": "Awesome App",
+          "domain": "awesomeapp.com",
+          "id": "123456789"
+        },
+        "user": {
+          "buyeruid": "0000-000-000-0000"
+        },
+        "tmax": 1000
+      },
+      "impIDs": ["some-impression-id"]
+    },
+    "mockResponse": {
+      "status": 400
+    }
+  }],
+  "expectedBidResponses": [],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 400. Run with request.debug = 1 for more info",
+      "comparison": "literal"
+    }
+  ]
+}
