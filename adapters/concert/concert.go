@@ -120,20 +120,6 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	return bidResponse, nil
 }
 
-func getMediaTypeForBidFromExt(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
-	if bid.Ext != nil {
-		var bidExt openrtb_ext.ExtBid
-		err := json.Unmarshal(bid.Ext, &bidExt)
-		if err == nil && bidExt.Prebid != nil {
-			return openrtb_ext.ParseBidType(string(bidExt.Prebid.Type))
-		}
-	}
-
-	return "", &errortypes.BadServerResponse{
-		Message: fmt.Sprintf("Failed to parse media type for bid: \"%s\"", bid.ImpID),
-	}
-}
-
 func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 	switch bid.MType {
 	case openrtb2.MarkupBanner:
@@ -144,8 +130,10 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 		return openrtb_ext.BidTypeAudio, nil
 	case openrtb2.MarkupNative:
 		return "", fmt.Errorf("native media types are not yet supported")
-	default:
-		return getMediaTypeForBidFromExt(bid)
+    default:
+        return "", &errortypes.BadServerResponse{
+            Message: fmt.Sprintf("Failed to parse media type for bid: \"%s\"", bid.ImpID),
+        }
 	}
 }
 
