@@ -132,8 +132,6 @@ func NewEndpoint(
 		openrtb_ext.NormalizeBidderName}).Auction), nil
 }
 
-type normalizeBidderName func(name string) (openrtb_ext.BidderName, bool)
-
 type endpointDeps struct {
 	uuidGenerator             uuidutil.UUIDGenerator
 	ex                        exchange.Exchange
@@ -154,7 +152,7 @@ type endpointDeps struct {
 	storedRespFetcher         stored_requests.Fetcher
 	hookExecutionPlanBuilder  hooks.ExecutionPlanBuilder
 	tmaxAdjustments           *exchange.TmaxAdjustmentsPreprocessed
-	normalizeBidderName       normalizeBidderName
+	normalizeBidderName       openrtb_ext.NameNormalizer
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {

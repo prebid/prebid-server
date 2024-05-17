@@ -245,7 +245,7 @@ func LoadBidderInfo(reader InfoReader) (BidderInfos, error) {
 	return processBidderInfos(reader, openrtb_ext.NormalizeBidderName)
 }
 
-func processBidderInfos(reader InfoReader, normalizeBidderName func(string) (openrtb_ext.BidderName, bool)) (BidderInfos, error) {
+func processBidderInfos(reader InfoReader, normalizeBidderName openrtb_ext.NameNormalizer) (BidderInfos, error) {
 	bidderConfigs, err := reader.Read()
 	if err != nil {
 		return nil, fmt.Errorf("error loading bidders data")
@@ -583,7 +583,7 @@ func validateSyncer(bidderInfo BidderInfo) error {
 	return nil
 }
 
-func applyBidderInfoConfigOverrides(configBidderInfos nillableFieldBidderInfos, fsBidderInfos BidderInfos, normalizeBidderName func(string) (openrtb_ext.BidderName, bool)) (BidderInfos, error) {
+func applyBidderInfoConfigOverrides(configBidderInfos nillableFieldBidderInfos, fsBidderInfos BidderInfos, normalizeBidderName openrtb_ext.NameNormalizer) (BidderInfos, error) {
 	mergedBidderInfos := make(map[string]BidderInfo, len(fsBidderInfos))
 
 	for bidderName, configBidderInfo := range configBidderInfos {

@@ -471,7 +471,7 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastAllowed(t
 
 	recorder := httptest.NewRecorder()
 
-	var mockNormalizeBidderName normalizeBidderName = func(name string) (openrtb_ext.BidderName, bool) {
+	var mockNormalizeBidderName openrtb_ext.NameNormalizer = func(name string) (openrtb_ext.BidderName, bool) {
 		return openrtb_ext.BidderName(name), true
 	}
 	e := vtrackEndpoint{
