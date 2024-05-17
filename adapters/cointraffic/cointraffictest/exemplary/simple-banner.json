@@ -90,7 +90,8 @@
                   "adm": "iframe-content",
                   "crid": "creativeUniqueId",
                   "w": 300,
-                  "h": 250
+                  "h": 250,
+                  "nurl": "http://test-request.com/prebid/confirm"
                 }
               ]
             }
@@ -113,7 +114,8 @@
             "adid": "advertiserUniqueId",
             "crid": "creativeUniqueId",
             "w": 300,
-            "h": 250
+            "h": 250,
+            "nurl": "http://test-request.com/prebid/confirm"
           },
           "type": "banner"
         }
