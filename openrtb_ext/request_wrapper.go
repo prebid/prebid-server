@@ -3,10 +3,10 @@ package openrtb_ext
 import (
 	"encoding/json"
 	"errors"
+	"maps"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/util/jsonutil"
-	"github.com/prebid/prebid-server/v2/util/maputil"
 	"github.com/prebid/prebid-server/v2/util/ptrutil"
 	"github.com/prebid/prebid-server/v2/util/sliceutil"
 )
@@ -682,7 +682,7 @@ func (ue *UserExt) Clone() *UserExt {
 		return nil
 	}
 	clone := *ue
-	clone.ext = maputil.Clone(ue.ext)
+	clone.ext = maps.Clone(ue.ext)
 
 	if ue.consent != nil {
 		clonedConsent := *ue.consent
@@ -691,7 +691,7 @@ func (ue *UserExt) Clone() *UserExt {
 
 	if ue.prebid != nil {
 		clone.prebid = &ExtUserPrebid{}
-		clone.prebid.BuyerUIDs = maputil.Clone(ue.prebid.BuyerUIDs)
+		clone.prebid.BuyerUIDs = maps.Clone(ue.prebid.BuyerUIDs)
 	}
 
 	if ue.eids != nil {
@@ -859,7 +859,7 @@ func (re *RequestExt) Clone() *RequestExt {
 	}
 
 	clone := *re
-	clone.ext = maputil.Clone(re.ext)
+	clone.ext = maps.Clone(re.ext)
 
 	if re.prebid != nil {
 		clone.prebid = re.prebid.Clone()
@@ -1005,7 +1005,7 @@ func (de *DeviceExt) Clone() *DeviceExt {
 	}
 
 	clone := *de
-	clone.ext = maputil.Clone(de.ext)
+	clone.ext = maps.Clone(de.ext)
 
 	if de.prebid != nil {
 		clonedPrebid := *de.prebid
@@ -1119,7 +1119,7 @@ func (ae *AppExt) Clone() *AppExt {
 	}
 
 	clone := *ae
-	clone.ext = maputil.Clone(ae.ext)
+	clone.ext = maps.Clone(ae.ext)
 
 	clone.prebid = ptrutil.Clone(ae.prebid)
 
@@ -1185,7 +1185,7 @@ func (de *DOOHExt) Clone() *DOOHExt {
 	}
 
 	clone := *de
-	clone.ext = maputil.Clone(de.ext)
+	clone.ext = maps.Clone(de.ext)
 
 	return &clone
 }
@@ -1353,7 +1353,7 @@ func (re *RegExt) Clone() *RegExt {
 	}
 
 	clone := *re
-	clone.ext = maputil.Clone(re.ext)
+	clone.ext = maps.Clone(re.ext)
 
 	clone.gdpr = ptrutil.Clone(re.gdpr)
 
@@ -1449,7 +1449,7 @@ func (se *SiteExt) Clone() *SiteExt {
 	}
 
 	clone := *se
-	clone.ext = maputil.Clone(se.ext)
+	clone.ext = maps.Clone(se.ext)
 	clone.amp = ptrutil.Clone(se.amp)
 
 	return &clone
@@ -1552,7 +1552,7 @@ func (se *SourceExt) Clone() *SourceExt {
 	}
 
 	clone := *se
-	clone.ext = maputil.Clone(se.ext)
+	clone.ext = maps.Clone(se.ext)
 
 	clone.schain = cloneSupplyChain(se.schain)
 
@@ -1791,7 +1791,7 @@ func (e *ImpExt) Clone() *ImpExt {
 	}
 
 	clone := *e
-	clone.ext = maputil.Clone(e.ext)
+	clone.ext = maps.Clone(e.ext)
 
 	if e.prebid != nil {
 		clonedPrebid := *e.prebid
@@ -1805,7 +1805,7 @@ func (e *ImpExt) Clone() *ImpExt {
 			}
 		}
 		clonedPrebid.IsRewardedInventory = ptrutil.Clone(e.prebid.IsRewardedInventory)
-		clonedPrebid.Bidder = maputil.Clone(e.prebid.Bidder)
+		clonedPrebid.Bidder = maps.Clone(e.prebid.Bidder)
 		clonedPrebid.Options = ptrutil.Clone(e.prebid.Options)
 		clonedPrebid.Floors = ptrutil.Clone(e.prebid.Floors)
 		clone.prebid = &clonedPrebid

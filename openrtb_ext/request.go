@@ -3,10 +3,10 @@ package openrtb_ext
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/util/jsonutil"
-	"github.com/prebid/prebid-server/v2/util/maputil"
 	"github.com/prebid/prebid-server/v2/util/ptrutil"
 	"github.com/prebid/prebid-server/v2/util/sliceutil"
 )
@@ -381,9 +381,9 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 	}
 
 	clone := *erp
-	clone.Aliases = maputil.Clone(erp.Aliases)
-	clone.AliasGVLIDs = maputil.Clone(erp.AliasGVLIDs)
-	clone.BidAdjustmentFactors = maputil.Clone(erp.BidAdjustmentFactors)
+	clone.Aliases = maps.Clone(erp.Aliases)
+	clone.AliasGVLIDs = maps.Clone(erp.AliasGVLIDs)
+	clone.BidAdjustmentFactors = maps.Clone(erp.BidAdjustmentFactors)
 
 	if erp.BidderConfigs != nil {
 		clone.BidderConfigs = make([]BidderConfig, len(erp.BidderConfigs))
@@ -417,7 +417,7 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 	if erp.CurrencyConversions != nil {
 		newConvRates := make(map[string]map[string]float64, len(erp.CurrencyConversions.ConversionRates))
 		for key, val := range erp.CurrencyConversions.ConversionRates {
-			newConvRates[key] = maputil.Clone(val)
+			newConvRates[key] = maps.Clone(val)
 		}
 		clone.CurrencyConversions = &ExtRequestCurrency{ConversionRates: newConvRates}
 		if erp.CurrencyConversions.UsePBSRates != nil {
@@ -532,7 +532,7 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 					clonedData.ModelGroups[i] = pfmg
 					clonedData.ModelGroups[i].ModelWeight = ptrutil.Clone(pfmg.ModelWeight)
 					clonedData.ModelGroups[i].Schema.Fields = sliceutil.Clone(pfmg.Schema.Fields)
-					clonedData.ModelGroups[i].Values = maputil.Clone(pfmg.Values)
+					clonedData.ModelGroups[i].Values = maps.Clone(pfmg.Values)
 				}
 			}
 			clonedFloors.Data = &clonedData

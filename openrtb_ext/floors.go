@@ -1,7 +1,8 @@
 package openrtb_ext
 
 import (
-	"github.com/prebid/prebid-server/v2/util/maputil"
+	"maps"
+
 	"github.com/prebid/prebid-server/v2/util/ptrutil"
 	"github.com/prebid/prebid-server/v2/util/sliceutil"
 )
@@ -182,7 +183,7 @@ func (data *PriceFloorData) DeepCopy() *PriceFloorData {
 		eachGroup.ModelWeight = ptrutil.Clone(data.ModelGroups[i].ModelWeight)
 		eachGroup.ModelVersion = data.ModelGroups[i].ModelVersion
 		eachGroup.SkipRate = data.ModelGroups[i].SkipRate
-		eachGroup.Values = maputil.Clone(data.ModelGroups[i].Values)
+		eachGroup.Values = maps.Clone(data.ModelGroups[i].Values)
 		eachGroup.Default = data.ModelGroups[i].Default
 		eachGroup.Schema = PriceFloorSchema{
 			Fields:    sliceutil.Clone(data.ModelGroups[i].Schema.Fields),
