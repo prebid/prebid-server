@@ -498,20 +498,20 @@ func makeSupplyChain(openRtbSchain openrtb2.SupplyChain) string {
 
 // makeNodeValue converts any known value type from a schain node to a string and does URL encoding if necessary.
 func makeNodeValue(nodeParam any) string {
-	switch nodeParam.(type) {
+	switch nodeParam := nodeParam.(type) {
 	case string:
-		return url.QueryEscape(nodeParam.(string))
+		return url.QueryEscape(nodeParam)
 	case *int8:
-		pointer := nodeParam.(*int8)
+		pointer := nodeParam
 		if pointer == nil {
 			return ""
 		}
 		return makeNodeValue(int(*pointer))
 	case int:
-		return strconv.Itoa(nodeParam.(int))
+		return strconv.Itoa(nodeParam)
 	case json.RawMessage:
-		if freeFormData := nodeParam.(json.RawMessage); freeFormData != nil {
-			freeFormJson, err := json.Marshal(freeFormData)
+		if nodeParam != nil {
+			freeFormJson, err := json.Marshal(nodeParam)
 			if err != nil {
 				return ""
 			}

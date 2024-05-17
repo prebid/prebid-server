@@ -104,13 +104,10 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 			switch bidType {
 			case openrtb_ext.BidTypeAudio:
 				seatBid.Bid[i].MType = openrtb2.MarkupAudio
-				break
 			case openrtb_ext.BidTypeVideo:
 				seatBid.Bid[i].MType = openrtb2.MarkupVideo
-				break
 			case openrtb_ext.BidTypeBanner:
 				seatBid.Bid[i].MType = openrtb2.MarkupBanner
-				break
 			}
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:      &seatBid.Bid[i],

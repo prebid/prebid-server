@@ -137,7 +137,6 @@
                   "origbidcpm": 12,
                   "prebid": {
                     "meta": {
-                      "adaptercode": "appnexus"
                     },
                     "floors": {
                       "floorCurrency": "USD",
