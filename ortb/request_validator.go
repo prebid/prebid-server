@@ -86,7 +86,7 @@ func (rv *RequestValidator) validateImpExt(imp *openrtb_ext.ImpWrapper, aliases 
 
 	// promote imp[].ext.BIDDER to newer imp[].ext.prebid.bidder.BIDDER location, with the later taking precedence
 	for k, v := range ext {
-		if isPossibleBidder(k) {
+		if openrtb_ext.IsPotentialBidder(k) {
 			if _, exists := prebid.Bidder[k]; !exists {
 				prebid.Bidder[k] = v
 				prebidModified = true
@@ -169,27 +169,4 @@ func (rv *RequestValidator) validateStoredBidResponses(prebid *openrtb_ext.ExtIm
 
 func generateStoredBidResponseValidationError(impID string) error {
 	return fmt.Errorf("request validation failed. Stored bid responses are specified for imp %s. Bidders specified in imp.ext should match with bidders specified in imp.ext.prebid.storedbidresponse", impID)
-}
-
-// TODO: move this outside of this package
-// isPossibleBidder determines if a bidder name is a potential real bidder.
-func isPossibleBidder(bidder string) bool {
-	switch openrtb_ext.BidderName(bidder) {
-	case openrtb_ext.BidderReservedContext:
-		return false
-	case openrtb_ext.BidderReservedData:
-		return false
-	case openrtb_ext.BidderReservedGPID:
-		return false
-	case openrtb_ext.BidderReservedPrebid:
-		return false
-	case openrtb_ext.BidderReservedSKAdN:
-		return false
-	case openrtb_ext.BidderReservedTID:
-		return false
-	case openrtb_ext.BidderReservedAE:
-		return false
-	default:
-		return true
-	}
 }

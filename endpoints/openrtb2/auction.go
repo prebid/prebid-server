@@ -673,7 +673,7 @@ func mergeBidderParamsImpExt(impExt *openrtb_ext.ImpExt, reqExtParams map[string
 	extMapModified := false
 
 	for bidder, params := range reqExtParams {
-		if !isPossibleBidder(bidder) {
+		if !openrtb_ext.IsPotentialBidder(bidder) {
 			continue
 		}
 
@@ -1066,28 +1066,6 @@ func (deps *endpointDeps) validateBidders(bidders []string, knownBidders map[str
 		}
 	}
 	return nil
-}
-
-// isPossibleBidder determines if a bidder name is a potential real bidder.
-func isPossibleBidder(bidder string) bool {
-	switch openrtb_ext.BidderName(bidder) {
-	case openrtb_ext.BidderReservedContext:
-		return false
-	case openrtb_ext.BidderReservedData:
-		return false
-	case openrtb_ext.BidderReservedGPID:
-		return false
-	case openrtb_ext.BidderReservedPrebid:
-		return false
-	case openrtb_ext.BidderReservedSKAdN:
-		return false
-	case openrtb_ext.BidderReservedTID:
-		return false
-	case openrtb_ext.BidderReservedAE:
-		return false
-	default:
-		return true
-	}
 }
 
 func (deps *endpointDeps) parseBidExt(req *openrtb_ext.RequestWrapper) error {
