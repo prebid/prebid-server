@@ -90,10 +90,10 @@ func TestValidatePMP(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := validatePmp(tt.pmp, 1)
-			if tt.wantError {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result := validatePmp(test.pmp, 1)
+			if test.wantError {
 				assert.Error(t, result)
 			} else {
 				assert.NoError(t, result)

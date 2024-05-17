@@ -98,10 +98,10 @@ func TestValidateVideo(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := validateVideo(tt.video, 1)
-			if tt.wantError {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result := validateVideo(test.video, 1)
+			if test.wantError {
 				assert.Error(t, result)
 			} else {
 				assert.NoError(t, result)

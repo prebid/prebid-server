@@ -129,10 +129,10 @@ func TestValidateBanner(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := validateBanner(tt.banner, 1, tt.interstitial)
-			if tt.wantError {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result := validateBanner(test.banner, 1, test.interstitial)
+			if test.wantError {
 				assert.Error(t, result)
 			} else {
 				assert.NoError(t, result)
@@ -275,10 +275,10 @@ func TestValidateFormat(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := validateFormat(tt.format, 1, 1)
-			if tt.wantError {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result := validateFormat(test.format, 1, 1)
+			if test.wantError {
 				assert.Error(t, result)
 			} else {
 				assert.NoError(t, result)
