@@ -1,4 +1,4 @@
-package bizzclick
+package blasto
 
 import (
 	"encoding/json"
@@ -18,8 +18,8 @@ func TestValidParams(t *testing.T) {
 	}
 
 	for _, validParam := range validParams {
-		if err := validator.Validate(openrtb_ext.BidderBizzclick, json.RawMessage(validParam)); err != nil {
-			t.Errorf("Schema rejected Bizzclick params: %s", validParam)
+		if err := validator.Validate(openrtb_ext.BidderBlasto, json.RawMessage(validParam)); err != nil {
+			t.Errorf("Schema rejected Blasto params: %s", validParam)
 		}
 	}
 }
@@ -43,7 +43,7 @@ func TestInvalidParams(t *testing.T) {
 	}
 
 	for _, invalidParam := range invalidParams {
-		if err := validator.Validate(openrtb_ext.BidderBizzclick, json.RawMessage(invalidParam)); err == nil {
+		if err := validator.Validate(openrtb_ext.BidderBlasto, json.RawMessage(invalidParam)); err == nil {
 			t.Errorf("Schema allowed unexpected params: %s", invalidParam)
 		}
 	}

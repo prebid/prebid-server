@@ -1,14 +1,14 @@
-# Contact support@bizzclick.com to connect with Bizzclick exchange.
+# Contact support@blasto.ai to connect with Blasto exchange.
 # We have the following regional endpoint sub-domains: US East - us-e-node1, EU: n1, APAC: n3
 # Use Host macro to resolve the endpoint based on the datacenter.
 # By default, we will use the US East sub-domain.
 # Please deploy this config in each of your datacenters with the appropriate regional subdomain
-endpoint: 'http://{{.Host}}.bizzclick.com/bid?rtb_seat_id={{.SourceId}}&secret_key={{.AccountID}}'
+endpoint: 'http://{{.Host}}.blasto.ai/bid?rtb_seat_id={{.SourceId}}&secret_key={{.AccountID}}'
 maintainer:
-  email: 'support@bizzclick.com'
+  email: 'support@blasto.ai'
 geoscope:
   - global
-endpointCompression: "GZIP"
+endpointCompression: 'GZIP'
 capabilities:
   app:
     mediaTypes:

@@ -1,4 +1,4 @@
-package bizzclick
+package blasto
 
 import (
 	"testing"
@@ -10,18 +10,18 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderBizzclick, config.Adapter{
-		Endpoint: "http://{{.Host}}.bizzclick.com/bid?rtb_seat_id={{.SourceId}}&secret_key={{.AccountID}}"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+	bidder, buildErr := Builder(openrtb_ext.BidderBlasto, config.Adapter{
+		Endpoint: "http://{{.Host}}.blasto.com/bid?rtb_seat_id={{.SourceId}}&secret_key={{.AccountID}}"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	adapterstest.RunJSONBidderTest(t, "bizzclicktest", bidder)
+	adapterstest.RunJSONBidderTest(t, "blastotest", bidder)
 }
 
 func TestEndpointTemplateMalformed(t *testing.T) {
-	_, buildErr := Builder(openrtb_ext.BidderBizzclick, config.Adapter{
+	_, buildErr := Builder(openrtb_ext.BidderBlasto, config.Adapter{
 		Endpoint: "{{Malformed}}"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	assert.Error(t, buildErr)

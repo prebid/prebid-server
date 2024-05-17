@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "title": "Bizzclick Adapter Params",
-  "description": "A schema which validates params accepted by the Bizzclick adapter",
+  "title": "Blasto Adapter Params",
+  "description": "A schema which validates params accepted by the Blasto adapter",
   "type": "object",
   "properties": {
     "accountId": {

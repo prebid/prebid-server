@@ -1,6 +1,6 @@
 package openrtb_ext
 
-type ExtBizzclick struct {
+type ExtBlasto struct {
 	AccountID   string `json:"accountId"`
 	SourceID    string `json:"sourceId"`
 	Host        string `json:"host"`

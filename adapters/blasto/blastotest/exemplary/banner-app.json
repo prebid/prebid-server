@@ -61,7 +61,7 @@
             "123.123.123.123"
           ]
         },
-        "uri": "http://host.bizzclick.com/bid?rtb_seat_id=sourceId&secret_key=accountId",
+        "uri": "http://host.blasto.ai/bid?rtb_seat_id=sourceId&secret_key=accountId",
         "body": {
           "id": "some-request-id",
           "device": {
@@ -97,18 +97,58 @@
           },
           "tmax": 1000
         },
-        "impIDs":["some-impression-id"]
+        "impIDs": [
+          "some-impression-id"
+        ]
       },
       "mockResponse": {
         "status": 200,
-        "body": "invalid response"
+        "body": {
+          "id": "awesome-resp-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "a3ae1b4e2fc24a4fb45540082e98e161",
+                  "impid": "1",
+                  "price": 3.5,
+                  "adm": "awesome-markup",
+                  "adomain": [
+                    "awesome.com"
+                  ],
+                  "crid": "20",
+                  "w": 320,
+                  "h": 50
+                }
+              ],
+              "type": "banner",
+              "seat": "blasto"
+            }
+          ],
+          "cur": "USD"
+        }
       }
     }
   ],
-  "expectedMakeBidsErrors": [
+  "expectedBidResponses": [
     {
-      "value": "Bad Server Response",
-      "comparison": "literal"
+      "bids": [
+        {
+          "bid": {
+            "id": "a3ae1b4e2fc24a4fb45540082e98e161",
+            "impid": "1",
+            "price": 3.5,
+            "adm": "awesome-markup",
+            "adomain": [
+              "awesome.com"
+            ],
+            "crid": "20",
+            "w": 320,
+            "h": 50
+          },
+          "type": "banner"
+        }
+      ]
     }
   ]
 }
