@@ -1219,6 +1219,7 @@ func TestPriceFloorFetcherSubmitFailed(t *testing.T) {
 }
 
 func getRandomNumber() int {
+	//nolint: staticcheck // SA1019: rand.Seed has been deprecated since Go 1.20 and an alternative has been available since Go 1.0: As of Go 1.20 there is no reason to call Seed with a random value.
 	rand.Seed(time.Now().UnixNano())
 	min := 1
 	max := 10

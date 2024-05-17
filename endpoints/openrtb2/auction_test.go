@@ -72,8 +72,12 @@ func TestJsonSampleRequests(t *testing.T) {
 			"invalid-native",
 		},
 		{
-			"Makes sure we handle (default) aliased bidders properly",
+			"Makes sure we handle aliased bidders properly",
 			"aliased",
+		},
+		{
+			"Makes sure we handle alternate bidder codes properly",
+			"alternate-bidder-code",
 		},
 		{
 			"Asserts we return 500s on requests referencing accounts with malformed configs.",
