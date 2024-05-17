@@ -2,9 +2,9 @@ package openrtb_ext
 
 import (
 	"maps"
+	"slices"
 
 	"github.com/prebid/prebid-server/v2/util/ptrutil"
-	"github.com/prebid/prebid-server/v2/util/sliceutil"
 )
 
 // Defines strings for FetchStatus
@@ -186,7 +186,7 @@ func (data *PriceFloorData) DeepCopy() *PriceFloorData {
 		eachGroup.Values = maps.Clone(data.ModelGroups[i].Values)
 		eachGroup.Default = data.ModelGroups[i].Default
 		eachGroup.Schema = PriceFloorSchema{
-			Fields:    sliceutil.Clone(data.ModelGroups[i].Schema.Fields),
+			Fields:    slices.Clone(data.ModelGroups[i].Schema.Fields),
 			Delimiter: data.ModelGroups[i].Schema.Delimiter,
 		}
 		newModelGroups[i] = eachGroup

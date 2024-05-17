@@ -2,9 +2,8 @@ package jsonutil
 
 import (
 	"encoding/json"
+	"slices"
 	"testing"
-
-	"github.com/prebid/prebid-server/v2/util/sliceutil"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/stretchr/testify/assert"
@@ -337,8 +336,8 @@ func TestMergeCloneExt(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			// copy original values to check at the end for no modification
-			originalExisting := sliceutil.Clone(test.givenExisting)
-			originalIncoming := sliceutil.Clone(test.givenIncoming)
+			originalExisting := slices.Clone(test.givenExisting)
+			originalIncoming := slices.Clone(test.givenIncoming)
 
 			// build request
 			request := &openrtb2.BidRequest{Ext: test.givenExisting}
@@ -372,8 +371,8 @@ func TestMergeCloneExt(t *testing.T) {
 			// assert no modifications
 			// - can't use `assert.Same`` comparison checks since that's expected if
 			//   either existing or incoming are nil / omitted / empty.
-			assert.Equal(t, originalExisting, []byte(test.givenExisting), "existing")
-			assert.Equal(t, originalIncoming, []byte(test.givenIncoming), "incoming")
+			assert.Equal(t, originalExisting, test.givenExisting, "existing")
+			assert.Equal(t, originalIncoming, test.givenIncoming, "incoming")
 		})
 	}
 }

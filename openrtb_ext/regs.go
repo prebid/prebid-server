@@ -1,8 +1,6 @@
 package openrtb_ext
 
-import (
-	"github.com/prebid/prebid-server/v2/util/sliceutil"
-)
+import "slices"
 
 // ExtRegs defines the contract for bidrequest.regs.ext
 type ExtRegs struct {
@@ -48,7 +46,7 @@ func (erd *ExtRegsDSA) Clone() *ExtRegsDSA {
 		clonedTransparency := make([]ExtBidDSATransparency, len(erd.Transparency))
 		for i, transparency := range erd.Transparency {
 			newTransparency := transparency
-			newTransparency.Params = sliceutil.Clone(transparency.Params)
+			newTransparency.Params = slices.Clone(transparency.Params)
 			clonedTransparency[i] = newTransparency
 		}
 		clone.Transparency = clonedTransparency

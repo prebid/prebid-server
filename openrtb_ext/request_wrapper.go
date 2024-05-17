@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"maps"
+	"slices"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/util/jsonutil"
 	"github.com/prebid/prebid-server/v2/util/ptrutil"
-	"github.com/prebid/prebid-server/v2/util/sliceutil"
 )
 
 // RequestWrapper wraps the OpenRTB request to provide a storage location for unmarshalled ext fields, so they
@@ -698,7 +698,7 @@ func (ue *UserExt) Clone() *UserExt {
 		clonedEids := make([]openrtb2.EID, len(*ue.eids))
 		for i, eid := range *ue.eids {
 			newEid := eid
-			newEid.UIDs = sliceutil.Clone(eid.UIDs)
+			newEid.UIDs = slices.Clone(eid.UIDs)
 			clonedEids[i] = newEid
 		}
 		clone.eids = &clonedEids
@@ -708,7 +708,7 @@ func (ue *UserExt) Clone() *UserExt {
 		clone.consentedProvidersSettingsIn = &ConsentedProvidersSettingsIn{ConsentedProvidersString: ue.consentedProvidersSettingsIn.ConsentedProvidersString}
 	}
 	if ue.consentedProvidersSettingsOut != nil {
-		clone.consentedProvidersSettingsOut = &ConsentedProvidersSettingsOut{ConsentedProvidersList: sliceutil.Clone(ue.consentedProvidersSettingsOut.ConsentedProvidersList)}
+		clone.consentedProvidersSettingsOut = &ConsentedProvidersSettingsOut{ConsentedProvidersList: slices.Clone(ue.consentedProvidersSettingsOut.ConsentedProvidersList)}
 	}
 
 	return &clone

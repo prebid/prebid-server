@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"maps"
+	"slices"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/util/jsonutil"
 	"github.com/prebid/prebid-server/v2/util/ptrutil"
-	"github.com/prebid/prebid-server/v2/util/sliceutil"
 )
 
 // FirstPartyDataExtKey defines a field name within request.ext and request.imp.ext reserved for first party data.
@@ -388,7 +388,7 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 	if erp.BidderConfigs != nil {
 		clone.BidderConfigs = make([]BidderConfig, len(erp.BidderConfigs))
 		for i, bc := range erp.BidderConfigs {
-			clonedBidderConfig := BidderConfig{Bidders: sliceutil.Clone(bc.Bidders)}
+			clonedBidderConfig := BidderConfig{Bidders: slices.Clone(bc.Bidders)}
 			if bc.Config != nil {
 				config := &Config{ORTB2: ptrutil.Clone(bc.Config.ORTB2)}
 				clonedBidderConfig.Config = config
@@ -426,13 +426,13 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 	}
 
 	if erp.Data != nil {
-		clone.Data = &ExtRequestPrebidData{Bidders: sliceutil.Clone(erp.Data.Bidders)}
+		clone.Data = &ExtRequestPrebidData{Bidders: slices.Clone(erp.Data.Bidders)}
 		if erp.Data.EidPermissions != nil {
 			newEidPermissions := make([]ExtRequestPrebidDataEidPermission, len(erp.Data.EidPermissions))
 			for i, eidp := range erp.Data.EidPermissions {
 				newEidPermissions[i] = ExtRequestPrebidDataEidPermission{
 					Source:  eidp.Source,
-					Bidders: sliceutil.Clone(eidp.Bidders),
+					Bidders: slices.Clone(eidp.Bidders),
 				}
 			}
 			clone.Data.EidPermissions = newEidPermissions
@@ -451,7 +451,7 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 		for i, mulBid := range erp.MultiBid {
 			newMulBid := &ExtMultiBid{
 				Bidder:                 mulBid.Bidder,
-				Bidders:                sliceutil.Clone(mulBid.Bidders),
+				Bidders:                slices.Clone(mulBid.Bidders),
 				TargetBidderCodePrefix: mulBid.TargetBidderCodePrefix,
 			}
 			if mulBid.MaxBids != nil {
@@ -465,7 +465,7 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 		clone.SChains = make([]*ExtRequestPrebidSChain, len(erp.SChains))
 		for i, schain := range erp.SChains {
 			newChain := *schain
-			newNodes := sliceutil.Clone(schain.SChain.Nodes)
+			newNodes := slices.Clone(schain.SChain.Nodes)
 			for j, node := range newNodes {
 				if node.HP != nil {
 					newNodes[j].HP = ptrutil.ToPtr(*newNodes[j].HP)
@@ -483,13 +483,13 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 	if erp.Targeting != nil {
 		newTargeting := &ExtRequestTargeting{
 			IncludeFormat:     erp.Targeting.IncludeFormat,
-			DurationRangeSec:  sliceutil.Clone(erp.Targeting.DurationRangeSec),
+			DurationRangeSec:  slices.Clone(erp.Targeting.DurationRangeSec),
 			PreferDeals:       erp.Targeting.PreferDeals,
 			AppendBidderNames: erp.Targeting.AppendBidderNames,
 		}
 		if erp.Targeting.PriceGranularity != nil {
 			newPriceGranularity := &PriceGranularity{
-				Ranges: sliceutil.Clone(erp.Targeting.PriceGranularity.Ranges),
+				Ranges: slices.Clone(erp.Targeting.PriceGranularity.Ranges),
 			}
 			newPriceGranularity.Precision = ptrutil.Clone(erp.Targeting.PriceGranularity.Precision)
 			newTargeting.PriceGranularity = newPriceGranularity
@@ -504,7 +504,7 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 		clone.Targeting = newTargeting
 	}
 
-	clone.NoSale = sliceutil.Clone(erp.NoSale)
+	clone.NoSale = slices.Clone(erp.NoSale)
 
 	if erp.AlternateBidderCodes != nil {
 		newAlternateBidderCodes := ExtAlternateBidderCodes{Enabled: erp.AlternateBidderCodes.Enabled}
@@ -513,7 +513,7 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 			for key, val := range erp.AlternateBidderCodes.Bidders {
 				newBidders[key] = ExtAdapterAlternateBidderCodes{
 					Enabled:            val.Enabled,
-					AllowedBidderCodes: sliceutil.Clone(val.AllowedBidderCodes),
+					AllowedBidderCodes: slices.Clone(val.AllowedBidderCodes),
 				}
 			}
 			newAlternateBidderCodes.Bidders = newBidders
@@ -531,7 +531,7 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 				for i, pfmg := range erp.Floors.Data.ModelGroups {
 					clonedData.ModelGroups[i] = pfmg
 					clonedData.ModelGroups[i].ModelWeight = ptrutil.Clone(pfmg.ModelWeight)
-					clonedData.ModelGroups[i].Schema.Fields = sliceutil.Clone(pfmg.Schema.Fields)
+					clonedData.ModelGroups[i].Schema.Fields = slices.Clone(pfmg.Schema.Fields)
 					clonedData.ModelGroups[i].Values = maps.Clone(pfmg.Values)
 				}
 			}
@@ -554,12 +554,12 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 		clone.MultiBidMap = make(map[string]ExtMultiBid, len(erp.MultiBidMap))
 		for k, v := range erp.MultiBidMap {
 			// Make v a deep copy of the ExtMultiBid struct
-			v.Bidders = sliceutil.Clone(v.Bidders)
+			v.Bidders = slices.Clone(v.Bidders)
 			v.MaxBids = ptrutil.Clone(v.MaxBids)
 			clone.MultiBidMap[k] = v
 		}
 	}
-	clone.AdServerTargeting = sliceutil.Clone(erp.AdServerTargeting)
+	clone.AdServerTargeting = slices.Clone(erp.AdServerTargeting)
 
 	return &clone
 }
