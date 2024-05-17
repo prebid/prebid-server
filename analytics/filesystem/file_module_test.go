@@ -19,12 +19,12 @@ type MockLogger struct {
 	mock.Mock
 }
 
-func (mw *MockLogger) Debug(v ...interface{}) {
-	mw.Called(v)
+func (ml *MockLogger) Debug(v ...interface{}) {
+	ml.Called(v)
 }
 
-func (mw *MockLogger) Flush() {
-	mw.Called()
+func (ml *MockLogger) Flush() {
+	ml.Called()
 }
 
 func TestAmpObject_ToJson(t *testing.T) {
