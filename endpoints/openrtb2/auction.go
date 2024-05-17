@@ -85,7 +85,6 @@ var accountIdSearchPath = [...]struct {
 func NewEndpoint(
 	uuidGenerator uuidutil.UUIDGenerator,
 	ex exchange.Exchange,
-	validator openrtb_ext.BidderParamValidator,
 	requestValidator *ortb.RequestValidator,
 	requestsById stored_requests.Fetcher,
 	accounts stored_requests.AccountFetcher,
@@ -99,7 +98,7 @@ func NewEndpoint(
 	hookExecutionPlanBuilder hooks.ExecutionPlanBuilder,
 	tmaxAdjustments *exchange.TmaxAdjustmentsPreprocessed,
 ) (httprouter.Handle, error) {
-	if ex == nil || validator == nil || requestsById == nil || accounts == nil || cfg == nil || metricsEngine == nil {
+	if ex == nil || requestsById == nil || accounts == nil || cfg == nil || metricsEngine == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
 	}
 
@@ -113,7 +112,6 @@ func NewEndpoint(
 	return httprouter.Handle((&endpointDeps{
 		uuidGenerator,
 		ex,
-		validator,
 		requestValidator,
 		requestsById,
 		empty_fetcher.EmptyFetcher{},
@@ -139,7 +137,6 @@ type normalizeBidderName func(name string) (openrtb_ext.BidderName, bool)
 type endpointDeps struct {
 	uuidGenerator             uuidutil.UUIDGenerator
 	ex                        exchange.Exchange
-	paramsValidator           openrtb_ext.BidderParamValidator
 	requestValidator          *ortb.RequestValidator
 	storedReqFetcher          stored_requests.Fetcher
 	videoFetcher              stored_requests.Fetcher

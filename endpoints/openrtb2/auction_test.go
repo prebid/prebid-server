@@ -453,7 +453,6 @@ func TestExplicitUserId(t *testing.T) {
 	endpoint, _ := NewEndpoint(
 		fakeUUIDGenerator{},
 		ex,
-		mockBidderParamValidator{},
 		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -512,7 +511,6 @@ func doBadAliasRequest(t *testing.T, filename string, expectMsg string) {
 	endpoint, _ := NewEndpoint(
 		fakeUUIDGenerator{},
 		&nobidExchange{},
-		mockBidderParamValidator{},
 		ortb.NewRequestValidator(bidderMap, disabledBidders, mockBidderParamValidator{}),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -568,7 +566,6 @@ func TestNilExchange(t *testing.T) {
 	_, err := NewEndpoint(
 		fakeUUIDGenerator{},
 		nil,
-		mockBidderParamValidator{},
 		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -588,33 +585,6 @@ func TestNilExchange(t *testing.T) {
 	}
 }
 
-// TestNilValidator makes sure we fail when given nil for the BidderParamValidator.
-func TestNilValidator(t *testing.T) {
-	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
-	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
-	_, err := NewEndpoint(
-		fakeUUIDGenerator{},
-		&nobidExchange{},
-		nil,
-		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
-		empty_fetcher.EmptyFetcher{},
-		empty_fetcher.EmptyFetcher{},
-		&config.Configuration{MaxRequestSize: maxSize},
-		&metricsConfig.NilMetricsEngine{},
-		analyticsBuild.New(&config.Analytics{}),
-		map[string]string{},
-		[]byte{},
-		openrtb_ext.BuildBidderMap(),
-		empty_fetcher.EmptyFetcher{},
-		hooks.EmptyPlanBuilder{},
-		nil,
-	)
-
-	if err == nil {
-		t.Errorf("NewEndpoint should return an error when given a nil BidderParamValidator.")
-	}
-}
-
 // TestExchangeError makes sure we return a 500 if the exchange auction fails.
 func TestExchangeError(t *testing.T) {
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
@@ -622,7 +592,6 @@ func TestExchangeError(t *testing.T) {
 	endpoint, _ := NewEndpoint(
 		fakeUUIDGenerator{},
 		&brokenExchange{},
-		mockBidderParamValidator{},
 		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -750,7 +719,6 @@ func TestImplicitIPsEndToEnd(t *testing.T) {
 		endpoint, _ := NewEndpoint(
 			fakeUUIDGenerator{},
 			exchange,
-			mockBidderParamValidator{},
 			ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 			&mockStoredReqFetcher{},
 			empty_fetcher.EmptyFetcher{},
@@ -951,7 +919,6 @@ func TestImplicitDNTEndToEnd(t *testing.T) {
 		endpoint, _ := NewEndpoint(
 			fakeUUIDGenerator{},
 			exchange,
-			mockBidderParamValidator{},
 			ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 			&mockStoredReqFetcher{},
 			empty_fetcher.EmptyFetcher{},
@@ -1188,7 +1155,6 @@ func TestStoredRequests(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&nobidExchange{},
-		mockBidderParamValidator{},
 		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -1639,7 +1605,6 @@ func TestValidateRequest(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&nobidExchange{},
-		mockBidderParamValidator{},
 		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -2351,7 +2316,6 @@ func TestSetIntegrationType(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&nobidExchange{},
-		mockBidderParamValidator{},
 		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -2419,7 +2383,6 @@ func TestStoredRequestGenerateUuid(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{id: "foo", err: nil},
 		&nobidExchange{},
-		mockBidderParamValidator{},
 		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -2525,7 +2488,6 @@ func TestOversizedRequest(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&nobidExchange{},
-		mockBidderParamValidator{},
 		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -2566,7 +2528,6 @@ func TestRequestSizeEdgeCase(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&nobidExchange{},
-		mockBidderParamValidator{},
 		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -2606,7 +2567,6 @@ func TestNoEncoding(t *testing.T) {
 	endpoint, _ := NewEndpoint(
 		fakeUUIDGenerator{},
 		&mockExchange{},
-		mockBidderParamValidator{},
 		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -2692,7 +2652,6 @@ func TestContentType(t *testing.T) {
 	endpoint, _ := NewEndpoint(
 		fakeUUIDGenerator{},
 		&mockExchange{},
-		mockBidderParamValidator{},
 		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -2730,7 +2689,6 @@ func TestCurrencyTrunc(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&nobidExchange{},
-		mockBidderParamValidator{},
 		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -2780,7 +2738,6 @@ func TestCCPAInvalid(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&nobidExchange{},
-		mockBidderParamValidator{},
 		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -2834,7 +2791,6 @@ func TestNoSaleInvalid(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&nobidExchange{},
-		mockBidderParamValidator{},
 		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -2891,7 +2847,6 @@ func TestValidateSourceTID(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&nobidExchange{},
-		mockBidderParamValidator{},
 		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -2938,7 +2893,6 @@ func TestSChainInvalid(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&nobidExchange{},
-		mockBidderParamValidator{},
 		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -3508,7 +3462,6 @@ func TestEidPermissionsInvalid(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&nobidExchange{},
-		mockBidderParamValidator{},
 		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -3789,7 +3742,6 @@ func TestIOS14EndToEnd(t *testing.T) {
 	endpoint, _ := NewEndpoint(
 		fakeUUIDGenerator{},
 		exchange,
-		mockBidderParamValidator{},
 		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -3852,7 +3804,6 @@ func TestAuctionWarnings(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&warningsCheckExchange{},
-		mockBidderParamValidator{},
 		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -3900,7 +3851,6 @@ func TestParseRequestParseImpInfoError(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&warningsCheckExchange{},
-		mockBidderParamValidator{},
 		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -3982,7 +3932,6 @@ func TestParseGzipedRequest(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&warningsCheckExchange{},
-		mockBidderParamValidator{},
 		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -4092,7 +4041,6 @@ func TestAuctionResponseHeaders(t *testing.T) {
 	endpoint, _ := NewEndpoint(
 		fakeUUIDGenerator{},
 		exchange,
-		mockBidderParamValidator{},
 		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -4160,7 +4108,6 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 			deps := &endpointDeps{
 				fakeUUIDGenerator{},
 				&warningsCheckExchange{},
-				mockBidderParamValidator{},
 				ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 				&mockStoredReqFetcher{},
 				empty_fetcher.EmptyFetcher{},
@@ -4265,7 +4212,6 @@ func TestParseRequestStoredResponses(t *testing.T) {
 			deps := &endpointDeps{
 				fakeUUIDGenerator{},
 				&warningsCheckExchange{},
-				mockBidderParamValidator{},
 				ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 				&mockStoredReqFetcher{},
 				empty_fetcher.EmptyFetcher{},
@@ -4379,7 +4325,6 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 			deps := &endpointDeps{
 				fakeUUIDGenerator{},
 				&warningsCheckExchange{},
-				mockBidderParamValidator{},
 				ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 				&mockStoredReqFetcher{},
 				empty_fetcher.EmptyFetcher{},
@@ -4418,7 +4363,6 @@ func TestValidateStoredResp(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&nobidExchange{},
-		mockBidderParamValidator{},
 		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -5237,7 +5181,6 @@ func TestParseRequestMultiBid(t *testing.T) {
 			deps := &endpointDeps{
 				fakeUUIDGenerator{},
 				&warningsCheckExchange{},
-				mockBidderParamValidator{},
 				ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 				&mockStoredReqFetcher{},
 				empty_fetcher.EmptyFetcher{},
@@ -5785,7 +5728,6 @@ func TestValidateRequestCookieDeprecation(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&warningsCheckExchange{},
-		mockBidderParamValidator{},
 		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},

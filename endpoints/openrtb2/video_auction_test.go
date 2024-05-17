@@ -1237,7 +1237,6 @@ func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *m
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		ex,
-		mockBidderParamValidator{},
 		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockVideoStoredReqFetcher{},
 		&mockVideoStoredReqFetcher{},
@@ -1287,7 +1286,6 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 	return &endpointDeps{
 		fakeUUIDGenerator{},
 		ex,
-		mockBidderParamValidator{},
 		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockVideoStoredReqFetcher{},
 		&mockVideoStoredReqFetcher{},
@@ -1313,7 +1311,6 @@ func mockDepsAppendBidderNames(t *testing.T, ex *mockExchangeAppendBidderNames) 
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		ex,
-		mockBidderParamValidator{},
 		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockVideoStoredReqFetcher{},
 		&mockVideoStoredReqFetcher{},
@@ -1341,7 +1338,6 @@ func mockDepsNoBids(t *testing.T, ex *mockExchangeVideoNoBids) *endpointDeps {
 	edep := &endpointDeps{
 		fakeUUIDGenerator{},
 		ex,
-		mockBidderParamValidator{},
 		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockVideoStoredReqFetcher{},
 		&mockVideoStoredReqFetcher{},

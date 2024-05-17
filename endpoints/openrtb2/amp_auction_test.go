@@ -199,13 +199,11 @@ func TestAMPPageInfo(t *testing.T) {
 		"1": json.RawMessage(validRequest(t, "site.json")),
 	}
 	exchange := &mockAmpExchange{}
-	paramsValidator := newParamsValidator(t)
 
 	endpoint, _ := NewAmpEndpoint(
 		fakeUUIDGenerator{},
 		exchange,
-		paramsValidator,
-		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, paramsValidator),
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 		&mockAmpStoredReqFetcher{stored},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
@@ -303,13 +301,11 @@ func TestGDPRConsent(t *testing.T) {
 
 		// Build Exchange Endpoint
 		mockExchange := &mockAmpExchange{}
-		paramsValidator := newParamsValidator(t)
 
 		endpoint, _ := NewAmpEndpoint(
 			fakeUUIDGenerator{},
 			mockExchange,
-			paramsValidator,
-			ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, paramsValidator),
+			ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 			&mockAmpStoredReqFetcher{stored},
 			empty_fetcher.EmptyFetcher{},
 			&config.Configuration{
@@ -733,12 +729,10 @@ func TestCCPAConsent(t *testing.T) {
 
 		// Build Exchange Endpoint
 		mockExchange := &mockAmpExchange{}
-		paramsValidator := newParamsValidator(t)
 		endpoint, _ := NewAmpEndpoint(
 			fakeUUIDGenerator{},
 			mockExchange,
-			paramsValidator,
-			ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, paramsValidator),
+			ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 			&mockAmpStoredReqFetcher{stored},
 			empty_fetcher.EmptyFetcher{},
 			&config.Configuration{MaxRequestSize: maxSize},
@@ -849,12 +843,10 @@ func TestConsentWarnings(t *testing.T) {
 		} else {
 			mockExchange = &mockAmpExchange{}
 		}
-		paramsValidator := newParamsValidator(t)
 		endpoint, _ := NewAmpEndpoint(
 			fakeUUIDGenerator{},
 			mockExchange,
-			paramsValidator,
-			ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, paramsValidator),
+			ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 			&mockAmpStoredReqFetcher{stored},
 			empty_fetcher.EmptyFetcher{},
 			&config.Configuration{MaxRequestSize: maxSize},
@@ -947,12 +939,10 @@ func TestNewAndLegacyConsentBothProvided(t *testing.T) {
 
 		// Build Exchange Endpoint
 		mockExchange := &mockAmpExchange{}
-		paramsValidator := newParamsValidator(t)
 		endpoint, _ := NewAmpEndpoint(
 			fakeUUIDGenerator{},
 			mockExchange,
-			paramsValidator,
-			ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, paramsValidator),
+			ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 			&mockAmpStoredReqFetcher{stored},
 			empty_fetcher.EmptyFetcher{},
 			&config.Configuration{
@@ -1007,12 +997,10 @@ func TestAMPSiteExt(t *testing.T) {
 		"1": json.RawMessage(validRequest(t, "site.json")),
 	}
 	exchange := &mockAmpExchange{}
-	paramsValidator := newParamsValidator(t)
 	endpoint, _ := NewAmpEndpoint(
 		fakeUUIDGenerator{},
 		exchange,
-		paramsValidator,
-		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, paramsValidator),
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 		&mockAmpStoredReqFetcher{stored},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
@@ -1071,12 +1059,10 @@ func TestAmpBadRequests(t *testing.T) {
 
 	addAmpBadRequests(badRequests, mockAmpStoredReq)
 
-	paramsValidator := newParamsValidator(t)
 	endpoint, _ := NewAmpEndpoint(
 		fakeUUIDGenerator{},
 		&mockAmpExchange{},
-		paramsValidator,
-		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, paramsValidator),
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 		&mockAmpStoredReqFetcher{data: mockAmpStoredReq},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
@@ -1162,12 +1148,10 @@ func TestAmpDebug(t *testing.T) {
 		"2": json.RawMessage(validRequest(t, "site.json")),
 	}
 
-	paramsValidator := newParamsValidator(t)
 	endpoint, _ := NewAmpEndpoint(
 		fakeUUIDGenerator{},
 		&mockAmpExchange{},
-		paramsValidator,
-		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, paramsValidator),
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 		&mockAmpStoredReqFetcher{requests},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
@@ -1300,12 +1284,10 @@ func TestQueryParamOverrides(t *testing.T) {
 		"1": json.RawMessage(validRequest(t, "site.json")),
 	}
 
-	paramsValidator := newParamsValidator(t)
 	endpoint, _ := NewAmpEndpoint(
 		fakeUUIDGenerator{},
 		&mockAmpExchange{},
-		paramsValidator,
-		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, paramsValidator),
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 		&mockAmpStoredReqFetcher{requests},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
@@ -1460,12 +1442,10 @@ func (s formatOverrideSpec) execute(t *testing.T) {
 		"1": json.RawMessage(validRequest(t, "site.json")),
 	}
 
-	paramsValidator := newParamsValidator(t)
 	endpoint, _ := NewAmpEndpoint(
 		fakeUUIDGenerator{},
 		&mockAmpExchange{},
-		paramsValidator,
-		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, paramsValidator),
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 		&mockAmpStoredReqFetcher{requests},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
@@ -2003,12 +1983,10 @@ func ampObjectTestSetup(t *testing.T, inTagId string, inStoredRequest json.RawMe
 		},
 	}
 
-	paramsValidator := newParamsValidator(t)
 	endpoint, _ := NewAmpEndpoint(
 		fakeUUIDGenerator{id: "foo", err: nil},
 		exchange,
-		paramsValidator,
-		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, paramsValidator),
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 		mockAmpFetcher,
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize, GenerateRequestID: generateRequestID},
@@ -2058,12 +2036,10 @@ func TestAmpAuctionResponseHeaders(t *testing.T) {
 		"1": json.RawMessage(validRequest(t, "site.json")),
 	}
 	exchange := &nobidExchange{}
-	paramsValidator := newParamsValidator(t)
 	endpoint, _ := NewAmpEndpoint(
 		fakeUUIDGenerator{},
 		exchange,
-		paramsValidator,
-		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, paramsValidator),
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 		&mockAmpStoredReqFetcher{storedRequests},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
@@ -2096,12 +2072,10 @@ func TestRequestWithTargeting(t *testing.T) {
 		"1": json.RawMessage(validRequest(t, "site.json")),
 	}
 	exchange := &mockAmpExchange{}
-	paramsValidator := newParamsValidator(t)
 	endpoint, _ := NewAmpEndpoint(
 		fakeUUIDGenerator{},
 		exchange,
-		paramsValidator,
-		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, paramsValidator),
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 		&mockAmpStoredReqFetcher{stored},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
@@ -2547,12 +2521,10 @@ func TestAmpAuctionDebugWarningsOnly(t *testing.T) {
 		"1": json.RawMessage(validRequest(t, "site.json")),
 	}
 	exchange := &nobidExchange{}
-	paramsValidator := newParamsValidator(t)
 	endpoint, _ := NewAmpEndpoint(
 		fakeUUIDGenerator{},
 		exchange,
-		paramsValidator,
-		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, paramsValidator),
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 		&mockAmpStoredReqFetcher{storedRequests},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{
