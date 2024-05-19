@@ -51,6 +51,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		Uri:     a.endpoint + cid,
 		Body:    openRTBRequestJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}
 
 	return []*adapters.RequestData{requestData}, nil
@@ -80,7 +81,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 	if responseData.StatusCode == http.StatusBadRequest {
 		err := &errortypes.BadInput{
-			Message: fmt.Sprintf("unexpected status code: %d. Run with request.debug = 1 for more info", responseData.StatusCode),
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info.", responseData.StatusCode),
 		}
 		return nil, []error{err}
 	}
@@ -126,7 +127,7 @@ func extractCid(openRTBRequest *openrtb2.BidRequest) (string, error) {
 			return "", fmt.Errorf("unmarshal bidderExt: %w", err)
 		}
 
-		var impExt openrtb_ext.ImpExtVidzoo
+		var impExt openrtb_ext.ImpExtVidazoo
 		if err := json.Unmarshal(bidderExt.Bidder, &impExt); err != nil {
 			return "", fmt.Errorf("unmarshal ImpExtVidazoo: %w", err)
 		}
@@ -135,5 +136,5 @@ func extractCid(openRTBRequest *openrtb2.BidRequest) (string, error) {
 			return strings.TrimSpace(impExt.ConnectionId), nil
 		}
 	}
-	return "", errors.New("no org or publisher_id supplied")
+	return "", errors.New("no cid found in request")
 }
