@@ -208,6 +208,81 @@ func TestSplitImps(t *testing.T) {
 			},
 			expectedError: "invalid json for imp[0]: do not know how to skip: 109",
 		},
+		{
+			description: "Malformed imp.ext.prebid.imp",
+			givenImps: []openrtb2.Imp{
+				{ID: "imp1", Ext: json.RawMessage(`{"prebid": {"imp": malformed}}`)},
+			},
+			expectedError: "invalid json for imp[0]: do not know how to skip: 109",
+		},
+		{
+			description: "valid FPD at imp.ext.prebid.imp for valid bidder",
+			givenImps: []openrtb2.Imp{
+				{
+					ID: "imp1",
+					Banner: &openrtb2.Banner{
+						Format: []openrtb2.Format{
+							{
+								W: 10,
+								H: 20,
+							},
+						},
+					},
+					Ext: json.RawMessage(`{"prebid":{"bidder":{"bidderA":{"imp1paramA":"imp1valueA"}},"imp":{"bidderA":{"id":"impFPD", "banner":{"format":[{"h":30}]}}}}}`),
+				},
+			},
+			expectedImps: map[string][]openrtb2.Imp{
+				"bidderA": {
+					{
+						ID: "impFPD",
+						Banner: &openrtb2.Banner{
+							Format: []openrtb2.Format{
+								{
+									W: 10,
+									H: 30,
+								},
+							},
+						},
+						Ext: json.RawMessage(`{"bidder":{"imp1paramA":"imp1valueA"}}`),
+					},
+				},
+			},
+			expectedError: "",
+		},
+		{
+			description: "valid FPD at imp.ext.prebid.imp for unknown bidder",
+			givenImps: []openrtb2.Imp{
+				{
+					ID: "imp1",
+					Banner: &openrtb2.Banner{
+						Format: []openrtb2.Format{
+							{
+								W: 10,
+								H: 20,
+							},
+						},
+					},
+					Ext: json.RawMessage(`{"prebid":{"bidder":{"bidderB":{"imp1paramB":"imp1valueB"}},"imp":{"bidderA":{"id":"impFPD", "banner":{"format":[{"h":30}]}}}}}`),
+				},
+			},
+			expectedImps: map[string][]openrtb2.Imp{
+				"bidderB": {
+					{
+						ID: "imp1",
+						Banner: &openrtb2.Banner{
+							Format: []openrtb2.Format{
+								{
+									W: 10,
+									H: 20,
+								},
+							},
+						},
+						Ext: json.RawMessage(`{"bidder":{"imp1paramB":"imp1valueB"}}`),
+					},
+				},
+			},
+			expectedError: "",
+		},
 	}
 
 	for _, test := range testCases {
@@ -220,6 +295,201 @@ func TestSplitImps(t *testing.T) {
 		}
 
 		assert.Equal(t, test.expectedImps, imps, test.description+":imps")
+	}
+}
+
+func TestMergeImpFPD(t *testing.T) {
+	imp1 := &openrtb2.Imp{
+		ID: "imp1",
+		Banner: &openrtb2.Banner{
+			W: ptrutil.ToPtr[int64](200),
+			H: ptrutil.ToPtr[int64](400),
+		},
+	}
+
+	tests := []struct{
+		description string
+		imp         *openrtb2.Imp
+		fpd         json.RawMessage
+		wantImp     *openrtb2.Imp
+		wantError   bool
+	}{
+		{
+			description: "nil",
+			imp:         nil,
+			fpd:         nil,
+			wantImp:     nil,
+			wantError:   true,
+		},
+		{
+			description: "nil_fpd",
+			imp:         imp1,
+			fpd:         nil,
+			wantImp:     imp1,
+			wantError:   true,
+		},
+		{
+			description: "empty_fpd",
+			imp:         imp1,
+			fpd:         json.RawMessage(`{}`),
+			wantImp:     imp1,
+			wantError:   false,
+		},
+		{
+			description: "nil_imp",
+			imp:         nil,
+			fpd:         json.RawMessage(`{}`),
+			wantImp:     nil,
+			wantError:   true,
+		},
+		{
+			description: "zero_value_imp",
+			imp:         &openrtb2.Imp{},
+			fpd:         json.RawMessage(`{}`),
+			wantImp:     &openrtb2.Imp{},
+			wantError:   false,
+		},
+		{
+			description: "invalid_json_on_existing_imp",
+			imp:         &openrtb2.Imp{
+				Ext: json.RawMessage(`malformed`),
+			},
+			fpd:         json.RawMessage(`{"ext": {"a":1}}`),
+			wantImp:     &openrtb2.Imp{
+				Ext: json.RawMessage(`malformed`),
+			},
+			wantError:   true,
+		},
+		{
+			description: "invalid_json_in_fpd",
+			imp:         &openrtb2.Imp{
+				Ext: json.RawMessage(`{"ext": {"a":1}}`),
+			},
+			fpd:         json.RawMessage(`malformed`),
+			wantImp:     &openrtb2.Imp{
+				Ext: json.RawMessage(`{"ext": {"a":1}}`),
+			},
+			wantError:   true,
+		},
+		{
+			description: "override_everything",
+			imp: &openrtb2.Imp{
+				ID: "id1",
+				Metric: []openrtb2.Metric{{Type: "type1", Value: 1, Vendor: "vendor1"}},
+				Banner: &openrtb2.Banner{
+					W: ptrutil.ToPtr[int64](1),
+					H: ptrutil.ToPtr[int64](2),
+					Format: []openrtb2.Format{
+						{
+							W: 10,
+							H: 20,
+							Ext: json.RawMessage(`{"formatkey1":"formatval1"}`),
+						},
+					},
+				},
+				Instl: 1,
+				BidFloor: 1,
+				Ext: json.RawMessage(`{"cool":"test"}`),
+			},
+			fpd: json.RawMessage(`{"id": "id2", "metric": [{"type":"type2", "value":2, "vendor":"vendor2"}], "banner": {"w":100, "h": 200, "format": [{"w":1000, "h":2000, "ext":{"formatkey1":"formatval2"}}]}, "instl":2, "bidfloor":2, "ext":{"cool":"test2"} }`),
+			wantImp: &openrtb2.Imp{
+				ID: "id2",
+				Metric: []openrtb2.Metric{{Type: "type2", Value: 2, Vendor: "vendor2"}},
+				Banner: &openrtb2.Banner{
+					W: ptrutil.ToPtr[int64](100),
+					H: ptrutil.ToPtr[int64](200),
+					Format: []openrtb2.Format{
+						{
+							W: 1000,
+							H: 2000,
+							Ext: json.RawMessage(`{"formatkey1":"formatval2"}`),
+						},
+					},
+				},
+				Instl: 2,
+				BidFloor: 2,
+				Ext: json.RawMessage(`{"cool":"test2"}`),
+			},
+		},
+		{
+			description: "override_partial_simple",
+			imp: imp1,
+			fpd: json.RawMessage(`{"id": "456", "banner": {"format": [{"w":1, "h":2}]} }`),
+			wantImp: &openrtb2.Imp{
+				ID: "456",
+				Banner: &openrtb2.Banner{
+					W: ptrutil.ToPtr[int64](200),
+					H: ptrutil.ToPtr[int64](400),
+					Format: []openrtb2.Format{
+						{
+							W: 1,
+							H: 2,
+						},
+					},
+				},
+			},
+		},
+		{
+			description: "override_partial_complex",
+			imp: &openrtb2.Imp{
+				ID: "id1",
+				Metric: []openrtb2.Metric{{Type: "type1", Value: 1, Vendor: "vendor1"}},
+				Banner: &openrtb2.Banner{
+					W: ptrutil.ToPtr[int64](1),
+					H: ptrutil.ToPtr[int64](2),
+					Format: []openrtb2.Format{
+						{
+							W: 10,
+							H: 20,
+							Ext: json.RawMessage(`{"formatkey1":"formatval1", "formatkey2":"formatval2"}`),
+						},
+					},
+				},
+				Instl: 1,
+				TagID: "tag1",
+				BidFloor: 1,
+				Rwdd: 1,
+				DT: 1,
+				IframeBuster: []string{"buster1", "buster2"},
+				Ext: json.RawMessage(`{"cool1":"test1", "cool2":"test2"}`),
+			},
+			fpd: json.RawMessage(`{"id": "id2", "metric": [{"type":"type2", "value":2, "vendor":"vendor2"}], "banner": {"w":100, "format": [{"w":1000, "ext":{"formatkey1":"formatval11"}}]}, "instl":2, "bidfloor":2, "ext":{"cool1":"test11"} }`),
+			wantImp: &openrtb2.Imp{
+				ID: "id2",
+				Metric: []openrtb2.Metric{{Type: "type2", Value: 2, Vendor: "vendor2"}},
+				Banner: &openrtb2.Banner{
+					W: ptrutil.ToPtr[int64](100),
+					H: ptrutil.ToPtr[int64](2),
+					Format: []openrtb2.Format{
+						{
+							W: 1000,
+							H: 20,
+							Ext: json.RawMessage(`{"formatkey1":"formatval11","formatkey2":"formatval2"}`),
+						},
+					},
+				},
+				Instl: 2,
+				TagID: "tag1",
+				BidFloor: 2,
+				Rwdd: 1,
+				DT: 1,
+				IframeBuster: []string{"buster1", "buster2"},
+				Ext: json.RawMessage(`{"cool1":"test11","cool2":"test2"}`),
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			err := mergeImpFPD(test.imp, test.fpd, 1)
+			assert.Equal(t, test.wantImp, test.imp)
+
+			if test.wantError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
 	}
 }
 

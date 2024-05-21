@@ -23,6 +23,7 @@ import (
 	"github.com/prebid/prebid-server/v2/gdpr"
 	"github.com/prebid/prebid-server/v2/metrics"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	// "github.com/prebid/prebid-server/v2/ortb/validation"
 	"github.com/prebid/prebid-server/v2/privacy"
 	"github.com/prebid/prebid-server/v2/privacy/ccpa"
 	"github.com/prebid/prebid-server/v2/privacy/lmt"
@@ -590,6 +591,11 @@ func splitImps(imps []openrtb2.Imp) (map[string][]openrtb2.Imp, error) {
 			jsonutil.Unmarshal(impExtPrebidBidderJSON, &impExtPrebidBidder)
 		}
 
+		var impExtPrebidImp map[string]json.RawMessage
+		if impExtPrebidImpJSON, exists := impExtPrebid["imp"]; exists {
+			jsonutil.Unmarshal(impExtPrebidImpJSON, &impExtPrebidImp)
+		}
+
 		sanitizedImpExt, err := createSanitizedImpExt(impExt, impExtPrebid)
 		if err != nil {
 			return nil, fmt.Errorf("unable to remove other bidder fields for imp[%d]: %v", i, err)
@@ -597,6 +603,12 @@ func splitImps(imps []openrtb2.Imp) (map[string][]openrtb2.Imp, error) {
 
 		for bidder, bidderExt := range impExtPrebidBidder {
 			impCopy := imp
+
+			if impBidderFPD, exists := impExtPrebidImp[bidder]; exists {
+				if err := mergeImpFPD(&impCopy, impBidderFPD, i); err != nil {
+					return nil, err
+				}
+			}
 
 			sanitizedImpExt[openrtb_ext.PrebidExtBidderKey] = bidderExt
 
@@ -611,6 +623,20 @@ func splitImps(imps []openrtb2.Imp) (map[string][]openrtb2.Imp, error) {
 	}
 
 	return bidderImps, nil
+}
+
+func mergeImpFPD(imp *openrtb2.Imp, fpd json.RawMessage, index int) error {
+	if err := jsonutil.MergeClone(imp, fpd); err != nil {
+		if strings.Contains(err.Error(), "invalid json on existing object") {
+			return fmt.Errorf("invalid imp ext for imp[%d]", index)
+		}
+		return fmt.Errorf("invalid first party data for imp[%d]", index)
+	}
+	// impWrapper := openrtb_ext.ImpWrapper{Imp: imp}
+	// if err := validation.ValidateImp(&impWrapper, index); err != nil {
+	// 	return fmt.Errorf("merging bidder imp first party data for imp %s results in an invalid imp: %v", imp.ID, err)
+	// }
+	return nil
 }
 
 var allowedImpExtFields = map[string]interface{}{
