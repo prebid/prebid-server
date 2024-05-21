@@ -152,7 +152,7 @@ type endpointDeps struct {
 	storedRespFetcher         stored_requests.Fetcher
 	hookExecutionPlanBuilder  hooks.ExecutionPlanBuilder
 	tmaxAdjustments           *exchange.TmaxAdjustmentsPreprocessed
-	normalizeBidderName       openrtb_ext.NameNormalizer
+	normalizeBidderName       openrtb_ext.BidderNameNormalizer
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {

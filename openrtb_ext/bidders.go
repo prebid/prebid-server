@@ -577,7 +577,7 @@ var bidderNameLookup = func() map[string]BidderName {
 	return lookup
 }()
 
-type NameNormalizer func(name string) (BidderName, bool)
+type BidderNameNormalizer func(name string) (BidderName, bool)
 
 func NormalizeBidderName(name string) (BidderName, bool) {
 	nameLower := strings.ToLower(name)
