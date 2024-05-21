@@ -85,7 +85,7 @@ var accountIdSearchPath = [...]struct {
 func NewEndpoint(
 	uuidGenerator uuidutil.UUIDGenerator,
 	ex exchange.Exchange,
-	requestValidator *ortb.RequestValidator,
+	requestValidator ortb.RequestValidator,
 	requestsById stored_requests.Fetcher,
 	accounts stored_requests.AccountFetcher,
 	cfg *config.Configuration,
@@ -135,7 +135,7 @@ func NewEndpoint(
 type endpointDeps struct {
 	uuidGenerator             uuidutil.UUIDGenerator
 	ex                        exchange.Exchange
-	requestValidator          *ortb.RequestValidator
+	requestValidator          ortb.RequestValidator
 	storedReqFetcher          stored_requests.Fetcher
 	videoFetcher              stored_requests.Fetcher
 	accounts                  stored_requests.AccountFetcher

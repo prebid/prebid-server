@@ -209,7 +209,11 @@ func TestValidateImpExt(t *testing.T) {
 				impWrapper := &openrtb_ext.ImpWrapper{Imp: imp}
 
 				disabledBidders := map[string]string{"disabledbidder": "The bidder 'disabledbidder' has been disabled."}
-				rv := NewRequestValidator(openrtb_ext.BuildBidderMap(), disabledBidders, mockBidderParamValidator{})
+				rv := standardRequestValidator{
+					bidderMap:       openrtb_ext.BuildBidderMap(),
+					disabledBidders: disabledBidders,
+					paramsValidator: mockBidderParamValidator{},
+				}
 				errs := rv.validateImpExt(impWrapper, nil, 0, false, nil)
 
 				assert.NoError(t, impWrapper.RebuildImp(), test.description+":rebuild_imp")
