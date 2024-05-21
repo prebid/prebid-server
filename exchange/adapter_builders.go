@@ -77,6 +77,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/deepintent"
 	"github.com/prebid/prebid-server/v2/adapters/definemedia"
 	"github.com/prebid/prebid-server/v2/adapters/dianomi"
+	"github.com/prebid/prebid-server/v2/adapters/displayio"
 	"github.com/prebid/prebid-server/v2/adapters/dmx"
 	"github.com/prebid/prebid-server/v2/adapters/dxkulture"
 	evolution "github.com/prebid/prebid-server/v2/adapters/e_volution"
@@ -287,6 +288,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderDeepintent:        deepintent.Builder,
 		openrtb_ext.BidderDefinemedia:       definemedia.Builder,
 		openrtb_ext.BidderDianomi:           dianomi.Builder,
+		openrtb_ext.BidderDisplayio:         displayio.Builder,
 		openrtb_ext.BidderEdge226:           edge226.Builder,
 		openrtb_ext.BidderDmx:               dmx.Builder,
 		openrtb_ext.BidderDXKulture:         dxkulture.Builder,

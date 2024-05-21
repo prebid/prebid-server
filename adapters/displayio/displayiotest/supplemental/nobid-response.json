@@ -1,0 +1,80 @@
+{
+  "mockBidRequest": {
+    "id": "testid",
+    "imp": [
+      {
+        "id": "testimpid",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 320,
+              "h": 50
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "1101",
+            "inventoryId": "1101",
+            "publisherId": "101"
+          }
+        },
+        "bidfloor": 0.5,
+        "bidfloorcur": "USD"
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://101.prebid.display.io",
+        "body": {
+          "id": "testid",
+          "imp": [
+            {
+              "id": "testimpid",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  },
+                  {
+                    "w": 320,
+                    "h": 50
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": "1101",
+                  "inventoryId": "1101",
+                  "publisherId": "101"
+                }
+              },
+              "bidfloor": 0.5,
+              "bidfloorcur": "USD"
+            }
+          ],
+          "ext": {
+            "displayio": {
+              "placementId": "1101",
+              "inventoryId": "1101"
+            }
+          }
+        },
+        "impIDs": [
+          "testimpid"
+        ]
+      },
+      "mockResponse": {
+        "status": 204
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}
