@@ -13,7 +13,7 @@
         },
         "ext": {
           "bidder": {
-            "cid": "test_cid_123"
+            "cId": "test_cid_123"
           }
         }
       }
@@ -38,7 +38,7 @@
               },
               "ext": {
                 "bidder": {
-                  "cid": "test_cid_123"
+                  "cId": "test_cid_123"
                 }
               }
             }

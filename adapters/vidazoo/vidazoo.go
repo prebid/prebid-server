@@ -37,9 +37,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	}
 
 	// Extract CID from the request
-	cid, err := extractCid(request)
+	cId, err := extractCid(request)
 	if err != nil {
-		errs = append(errs, fmt.Errorf("extract cid: %w", err))
+		errs = append(errs, fmt.Errorf("extract cId: %w", err))
 		return nil, errs
 	}
 
@@ -48,7 +48,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	requestData := &adapters.RequestData{
 		Method:  "POST",
-		Uri:     a.endpoint + cid,
+		Uri:     a.endpoint + cId,
 		Body:    openRTBRequestJSON,
 		Headers: headers,
 		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
@@ -136,5 +136,5 @@ func extractCid(openRTBRequest *openrtb2.BidRequest) (string, error) {
 			return strings.TrimSpace(impExt.ConnectionId), nil
 		}
 	}
-	return "", errors.New("no cid found in request")
+	return "", errors.New("no cId found in request")
 }
