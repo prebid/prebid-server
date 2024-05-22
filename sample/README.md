@@ -18,8 +18,25 @@ $ brew install podman docker-compose
 $ podman machine init
 $ podman machine set --rootful
 $ podman machine start
-$ cd sample
+```
+
+## General Steps
+
+```sh
+#1 - To get to the sample folder if you are on the root repository directory.
+$ cd sample 
+
+#2a - This command builds a new image, you should execute this command whenever the repository source code changes.
+$ docker-compose build
+
+#2b - Optionally you could run `docker-compose build --no-cache` if you want to build an completely new image without using cache but results in slower time to build it.
+$ docker-compose build --no-cache
+
+#3a - Spin up a corresponding sample in a container - see example sections for details.
 $ docker-compose up <number>_<name>
+
+#3b - Optionally you could use `--force-recreate` flag if you want to recreate the container every time you spin up the container.
+$ docker-compose up <number>_<name> --force-recreate
 ```
 
 # Examples
@@ -36,7 +53,6 @@ The following files will be present for every example and are exclusively catere
 
 ### Steps
 1. To prevent `app.yaml` from being overwritten by other config files. Ensure that `pbs.yaml` or `pbs.json` config file **MUST NOT** be present in the root directory of the repository.
-
 
 2. Bring up an instance by running `docker-compose up <number>_<name>` in the `sample` folder.
 
