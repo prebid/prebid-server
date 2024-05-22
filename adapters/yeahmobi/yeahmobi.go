@@ -168,7 +168,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 				var bidExt *yeahmobiBidExt
 				err := json.Unmarshal(bid.Ext, &bidExt)
 				if err != nil {
-					return nil, []error{err}
+					return nil, []error{fmt.Errorf("bid.ext json unmarshal error")}
 				} else if bidExt != nil {
 					if bidExt.VideoCreativeInfo != nil && bidExt.VideoCreativeInfo.Duration != nil {
 						typedBid.BidVideo.Duration = *bidExt.VideoCreativeInfo.Duration
