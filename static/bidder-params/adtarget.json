@@ -10,14 +10,14 @@
       "description": "An ID which identifies this placement of the impression"
     },
     "siteId": {
+      "type": "integer",
+      "description": "An ID which identifies the site selling the impression"
+    },
+    "aid": {
       "type": [
         "integer",
         "string"
       ],
-      "description": "An ID which identifies the site selling the impression"
-    },
-    "aid": {
-      "type": "integer",
       "description": "An ID which identifies the channel"
     },
     "bidFloor": {
