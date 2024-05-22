@@ -396,11 +396,7 @@ func (a *GridAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReq
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
 			bidMeta, err := getBidMeta(sb.Bid[i].Ext) //nolint: ineffassign,staticcheck // ineffectual assignment to err
-			// TODO(dmitris) - find out why uncommenting the error handling below causes unit tests to fail with:
-			//     test_json.go:130: gridtest/exemplary/multitype-banner.json: MakeBids had wrong error count. Expected 0, got 1 ([nil json.RawMessage passed to getBidMeta])
-			// if err != nil {
-			//     return nil, []error{err}
-			// }
+
 			bidType, err := getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp, sb.Bid[i])
 			if err != nil {
 				return nil, []error{err}

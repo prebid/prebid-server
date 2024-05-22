@@ -89,14 +89,10 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
 	bidResponse.Currency = response.Cur
-	// var errors []error // TODO(dmitris) - see below, find out why we need to collect these errors
 	for _, seatBid := range response.SeatBid {
 		for i, bid := range seatBid.Bid {
 			bidType, err := getMediaTypeForBid(bid)
 			if err != nil {
-				// golangci-lint: SA4010: this result of append is never used, except maybe in other appends (staticcheck)
-				// TODO(dmitris) - confirm if we need to collect these errors and if yes, find out why
-				// errors = append(errors, err)
 				continue
 			}
 			var bidVideo *openrtb_ext.ExtBidPrebidVideo
@@ -118,9 +114,6 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 			})
 		}
 	}
-	// TODO(dmitris) find out why `return bidResponse, errors` leads to failing unit tests:
-	// === RUN   TestJsonSamples
-	// test_json.go:130: consumable/supplemental/app-video-no-media-type.json: MakeBids had wrong error count. Expected 0, got 1 ([Failed to parse impression "test-imp-id" mediatype])
 	return bidResponse, nil
 }
 
