@@ -42,7 +42,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		}}
 	}
 
-	if errs := preprocess(request); errs != nil && len(errs) > 0 {
+	if errs := preprocess(request); len(errs) > 0 {
 		return nil, append(errs, &errortypes.BadInput{
 			Message: fmt.Sprintf("Error in preprocess of Imp, err: %s", errs),
 		})
@@ -192,8 +192,6 @@ func addImpProps(imp *openrtb2.Imp, secure *int8, cadentExt *openrtb_ext.ExtImpC
 			imp.BidFloorCur = "USD"
 		}
 	}
-
-	return
 }
 
 // Adding header fields to request header

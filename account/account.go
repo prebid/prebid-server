@@ -19,7 +19,7 @@ import (
 func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_requests.AccountFetcher, accountID string, me metrics.MetricsEngine) (account *config.Account, errs []error) {
 	if cfg.AccountRequired && accountID == metrics.PublisherUnknown {
 		return nil, []error{&errortypes.AcctRequired{
-			Message: fmt.Sprintf("Prebid-server has been configured to discard requests without a valid Account ID. Please reach out to the prebid server host."),
+			Message: "Prebid-server has been configured to discard requests without a valid Account ID. Please reach out to the prebid server host.",
 		}}
 	}
 
@@ -32,7 +32,7 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 		}
 		if cfg.AccountRequired && cfg.AccountDefaults.Disabled {
 			errs = append(errs, &errortypes.AcctRequired{
-				Message: fmt.Sprintf("Prebid-server could not verify the Account ID. Please reach out to the prebid server host."),
+				Message: "Prebid-server could not verify the Account ID. Please reach out to the prebid server host.",
 			})
 			return nil, errs
 		}
