@@ -202,7 +202,9 @@ func (p *PubstackModule) LogAmpObject(ao *analytics.AmpObject) {
 
 // Shutdown - no op since the analytic module already implements system signal handling
 // and trying to close a closed channel will cause panic
-func (p *PubstackModule) Shutdown() {}
+func (p *PubstackModule) Shutdown() {
+	glog.Info("[PubstackModule] Shutdown")
+}
 
 func (p *PubstackModule) start(c <-chan *Configuration) {
 	for {
