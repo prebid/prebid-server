@@ -87,7 +87,12 @@
             "impid": "test-imp-id",
             "price": 1.2,
             "adm": "some-ads",
-            "crid": "crid_testid"
+            "crid": "crid_testid",
+            "ext": {
+              "video": {
+                "duration": 300
+              }
+            }
           },
           "type": "video",
           "video": {
