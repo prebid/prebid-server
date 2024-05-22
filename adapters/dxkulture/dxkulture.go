@@ -11,7 +11,7 @@ import (
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 )
 
 var markupTypeToBidType = map[openrtb2.MarkupType]openrtb_ext.BidType{
@@ -64,6 +64,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			Uri:     a.endpoint + "?" + params.Encode(),
 			Body:    body,
 			Headers: getHeaders(request),
+			ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 		})
 	}
 

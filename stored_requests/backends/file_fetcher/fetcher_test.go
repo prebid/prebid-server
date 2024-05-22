@@ -12,17 +12,67 @@ import (
 )
 
 func TestFileFetcher(t *testing.T) {
+	// Load the test input files for testing
 	fetcher, err := NewFileFetcher("./test")
 	if err != nil {
 		t.Errorf("Failed to create a Fetcher: %v", err)
 	}
 
+	// Test stored request and stored imps
 	storedReqs, storedImps, errs := fetcher.FetchRequests(context.Background(), []string{"1", "2"}, []string{"some-imp"})
 	assertErrorCount(t, 0, errs)
 
 	validateStoredReqOne(t, storedReqs)
 	validateStoredReqTwo(t, storedReqs)
 	validateImp(t, storedImps)
+}
+
+func TestStoredResponseFileFetcher(t *testing.T) {
+	// grab the fetcher that do not have /test/stored_responses/stored_responses FS directory
+	directoryNotExistfetcher, err := NewFileFetcher("./test/stored_responses")
+	if err != nil {
+		t.Errorf("Failed to create a Fetcher: %v", err)
+	}
+
+	// we should receive 1 error since we do not have "stored_responses" directory in ./test/stored_responses
+	_, errs := directoryNotExistfetcher.FetchResponses(context.Background(), []string{})
+	assertErrorCount(t, 1, errs)
+
+	// grab the fetcher that has /test/stored_responses FS directory
+	fetcher, err := NewFileFetcher("./test")
+	if err != nil {
+		t.Errorf("Failed to create a Fetcher: %v", err)
+	}
+
+	// Test stored responses, we have 3 stored responses in ./test/stored_responses
+	storedResps, errs := fetcher.FetchResponses(context.Background(), []string{"bar", "escaped", "does_not_exist"})
+	// expect 1 error since we do not have "does_not_exist" stored response file from ./test
+	assertErrorCount(t, 1, errs)
+
+	validateStoredResponse[map[string]string](t, storedResps, "bar", func(val map[string]string) error {
+		if len(val) != 1 {
+			return fmt.Errorf("Unexpected value length. Expected %d, Got %d", 1, len(val))
+		}
+
+		data, hadKey := val["test"]
+		if !hadKey {
+			return fmt.Errorf(`missing key "test" in the value`)
+		}
+
+		expectedVal := "bar"
+		if data != expectedVal {
+			return fmt.Errorf(`Bad value for key "test". Expected "%s", Got "%s"`, expectedVal, data)
+		}
+		return nil
+	})
+
+	validateStoredResponse[string](t, storedResps, "escaped", func(val string) error {
+		expectedVal := `esca"ped`
+		if val != expectedVal {
+			return fmt.Errorf(`Bad data. Expected "%v", Got "%s"`, expectedVal, val)
+		}
+		return nil
+	})
 }
 
 func TestAccountFetcher(t *testing.T) {
@@ -36,7 +86,7 @@ func TestAccountFetcher(t *testing.T) {
 	_, errs = fetcher.FetchAccount(context.Background(), json.RawMessage(`{"events_enabled":true}`), "nonexistent")
 	assertErrorCount(t, 1, errs)
 	assert.Error(t, errs[0])
-	assert.Equal(t, stored_requests.NotFoundError{"nonexistent", "Account"}, errs[0])
+	assert.Equal(t, stored_requests.NotFoundError{ID: "nonexistent", DataType: "Account"}, errs[0])
 
 	_, errs = fetcher.FetchAccount(context.Background(), json.RawMessage(`{"events_enabled"}`), "valid")
 	assertErrorCount(t, 1, errs)
@@ -178,4 +228,21 @@ func TestCategoriesFetcherNoCategoriesFile(t *testing.T) {
 	_, fetchingErr := fetcher.FetchCategories(nil, "test", "not_exists", "IAB1-100")
 	assert.Equal(t, fmt.Errorf("Unable to find mapping file for adserver: 'test', publisherId: 'not_exists'"),
 		fetchingErr, "Categories were loaded incorrectly")
+}
+
+// validateStoredResponse - reusable function in the stored response test to verify the actual data read from the fetcher
+func validateStoredResponse[T any](t *testing.T, storedInfo map[string]json.RawMessage, id string, verifyFunc func(outputVal T) error) {
+	storedValue, hasID := storedInfo[id]
+	if !hasID {
+		t.Fatalf(`Expected stored response data to have id: "%s"`, id)
+	}
+
+	var unmarshalledValue T
+	if err := jsonutil.UnmarshalValid(storedValue, &unmarshalledValue); err != nil {
+		t.Errorf(`Failed to unmarshal stored response data of id "%s": %v`, id, err)
+	}
+
+	if err := verifyFunc(unmarshalledValue); err != nil {
+		t.Errorf(`Bad data in stored response of id: "%s": %v`, id, err)
+	}
 }

@@ -1,0 +1,52 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "native": {
+          "request": ""
+        },
+        "ext": {
+          "bidder": {
+            "zone": 12345
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://srv.aso1.net/pbs/bidder?zid=12345",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "ext": {
+                "bidder": {
+                  "zone": 12345
+                }
+              },
+              "id": "test-imp-id",
+              "native": {
+                "request": ""
+              }
+            }
+          ]
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 400
+      }
+    }
+  ],
+  "expectedBidResponses": [],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 400. Run with request.debug = 1 for more info",
+      "comparison": "literal"
+    }
+  ]
+}

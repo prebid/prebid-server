@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
@@ -228,6 +228,7 @@ func (a *TelariaAdapter) MakeRequests(requestIn *openrtb2.BidRequest, reqInfo *a
 		Uri:     a.FetchEndpoint(),
 		Body:    reqJSON,
 		Headers: *GetHeaders(&request),
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, nil
 }
 

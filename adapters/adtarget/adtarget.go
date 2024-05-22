@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
@@ -74,6 +74,7 @@ func (a *AdtargetAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ad
 			Uri:     a.endpoint + fmt.Sprintf("?aid=%d", sourceId),
 			Body:    body,
 			Headers: headers,
+			ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 		})
 	}
 

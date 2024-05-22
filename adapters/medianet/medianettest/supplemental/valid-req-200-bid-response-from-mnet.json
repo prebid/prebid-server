@@ -36,9 +36,7 @@
       "USD"
     ],
     "regs": {
-      "ext": {
-        "gdpr": 0
-      }
+      "gdpr": 0
     }
   },
   "httpCalls": [{
@@ -81,11 +79,10 @@
           "USD"
         ],
         "regs": {
-          "ext": {
-            "gdpr": 0
-          }
+          "gdpr": 0
         }
-      }
+      },
+      "impIDs":["test-imp-id"]
     },
     "mockResponse": {
       "status": 200,

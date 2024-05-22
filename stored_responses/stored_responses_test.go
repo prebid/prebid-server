@@ -6,7 +6,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
@@ -258,7 +258,7 @@ func TestProcessStoredAuctionAndBidResponsesErrors(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
 			rw := &openrtb_ext.RequestWrapper{BidRequest: &test.request}
-			_, _, _, errorList := ProcessStoredResponses(nil, rw, nil)
+			_, _, _, errorList := ProcessStoredResponses(context.TODO(), rw, nil)
 			assert.Equalf(t, test.expectedErrorList, errorList, "Error doesn't match: %s\n", test.description)
 		})
 	}
@@ -663,7 +663,7 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
 			rw := openrtb_ext.RequestWrapper{BidRequest: &test.request}
-			storedAuctionResponses, storedBidResponses, bidderImpReplaceImpId, errorList := ProcessStoredResponses(nil, &rw, fetcher)
+			storedAuctionResponses, storedBidResponses, bidderImpReplaceImpId, errorList := ProcessStoredResponses(context.TODO(), &rw, fetcher)
 			assert.Equal(t, test.expectedStoredAuctionResponses, storedAuctionResponses)
 			assert.Equal(t, test.expectedStoredBidResponses, storedBidResponses)
 			assert.Equal(t, test.expectedBidderImpReplaceImpID, bidderImpReplaceImpId)
@@ -866,7 +866,7 @@ func TestProcessStoredResponsesNotFoundResponse(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
 			rw := openrtb_ext.RequestWrapper{BidRequest: &test.request}
-			_, _, _, errorList := ProcessStoredResponses(nil, &rw, fetcher)
+			_, _, _, errorList := ProcessStoredResponses(context.TODO(), &rw, fetcher)
 			for _, err := range test.expectedErrors {
 				assert.Contains(t, errorList, err)
 			}

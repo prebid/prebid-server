@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
@@ -47,6 +47,7 @@ func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest, _ *adapters.
 		Uri:     a.endpointURL + "?publisher_id=" + org,
 		Body:    openRTBRequestJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(openRTBRequest.Imp),
 	}), nil
 }
 

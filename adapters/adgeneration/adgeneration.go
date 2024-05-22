@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
@@ -77,6 +77,7 @@ func (adg *AdgenerationAdapter) MakeRequests(request *openrtb2.BidRequest, reqIn
 			Uri:     bidRequestUri,
 			Body:    nil,
 			Headers: headers,
+			ImpIDs:  []string{request.Imp[index].ID},
 		}
 		bidRequestArray = append(bidRequestArray, bidRequest)
 	}

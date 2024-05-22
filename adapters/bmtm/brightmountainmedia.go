@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
@@ -75,6 +75,7 @@ func (a *adapter) makeRequest(ortbRequest openrtb2.BidRequest, ortbImp openrtb2.
 		Uri:     a.endpoint,
 		Body:    requestJSON,
 		Headers: setHeaders(ortbRequest),
+		ImpIDs:  openrtb_ext.GetImpIDs(ortbRequest.Imp),
 	}
 	return requestData, nil
 }

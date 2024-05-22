@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"text/template"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
@@ -104,6 +104,7 @@ func (a *KrushmediaAdapter) MakeRequests(
 		Body:    reqJSON,
 		Uri:     url,
 		Headers: *getHeaders(&request),
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, nil
 }
 

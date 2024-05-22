@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
@@ -42,6 +42,7 @@ func (rcv *OrbidderAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 		Uri:     rcv.endpoint,
 		Body:    requestBodyJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, errs
 }
 

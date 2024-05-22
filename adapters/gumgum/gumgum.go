@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
@@ -76,6 +76,7 @@ func (g *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		Uri:     g.URI,
 		Body:    reqJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, errs
 }
 
@@ -221,7 +222,7 @@ func getMediaTypeForImpID(impID string, imps []openrtb2.Imp) openrtb_ext.BidType
 }
 
 func validateVideoParams(video *openrtb2.Video) (err error) {
-	if video.W == 0 || video.H == 0 || video.MinDuration == 0 || video.MaxDuration == 0 || video.Placement == 0 || video.Linearity == 0 {
+	if video.W == nil || *video.W == 0 || video.H == nil || *video.H == 0 || video.MinDuration == 0 || video.MaxDuration == 0 || video.Placement == 0 || video.Linearity == 0 {
 		return &errortypes.BadInput{
 			Message: "Invalid or missing video field(s)",
 		}

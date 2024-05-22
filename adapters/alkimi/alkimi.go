@@ -3,14 +3,15 @@ package alkimi
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/floors"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/floors"
+
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
@@ -53,7 +54,7 @@ func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, req *adapters
 	if err != nil {
 		errs = append(errs, err)
 	} else {
-		reqBidder := buildBidderRequest(adapter, encoded)
+		reqBidder := buildBidderRequest(adapter, encoded, openrtb_ext.GetImpIDs(reqCopy.Imp))
 		reqsBidder = append(reqsBidder, reqBidder)
 	}
 	return
@@ -105,7 +106,7 @@ func updateImps(bidRequest openrtb2.BidRequest) ([]openrtb2.Imp, []error) {
 	return updatedImps, errs
 }
 
-func buildBidderRequest(adapter *adapter, encoded []byte) *adapters.RequestData {
+func buildBidderRequest(adapter *adapter, encoded []byte, impIDs []string) *adapters.RequestData {
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
@@ -115,6 +116,7 @@ func buildBidderRequest(adapter *adapter, encoded []byte) *adapters.RequestData 
 		Uri:     adapter.endpoint,
 		Body:    encoded,
 		Headers: headers,
+		ImpIDs:  impIDs,
 	}
 	return reqBidder
 }

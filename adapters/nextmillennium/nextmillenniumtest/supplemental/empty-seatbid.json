@@ -37,6 +37,11 @@
             "prebid": {
               "storedrequest": {
                 "id": "7819"
+              },
+              "server": {
+                "datacenter": "2",
+                "externalurl": "http://hosturl.com",
+               "gvlid": 1
               }
             }
           },
@@ -67,7 +72,8 @@
               "id": "testimpid"
             }
           ]
-        }
+        },
+        "impIDs":["testimpid"]
       },
       "mockResponse": {
         "status": 200,

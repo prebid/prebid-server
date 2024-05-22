@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/buger/jsonparser"
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
@@ -83,6 +83,7 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestDa
 		Uri:     a.endpoint,
 		Body:    reqJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}, err
 }
 

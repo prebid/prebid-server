@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
@@ -27,7 +27,7 @@ func (a *BeintooAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 		}}
 	}
 
-	if errors := preprocess(request); errors != nil && len(errors) > 0 {
+	if errors := preprocess(request); len(errors) > 0 {
 		return nil, append(errors, &errortypes.BadInput{
 			Message: fmt.Sprintf("Error in preprocess of Imp, err: %s", errors),
 		})
@@ -61,6 +61,7 @@ func (a *BeintooAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 		Uri:     a.endpoint,
 		Body:    data,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, errors
 }
 
@@ -132,8 +133,6 @@ func addImpProps(imp *openrtb2.Imp, secure *int8, BeintooExt *openrtb_ext.ExtImp
 			imp.BidFloor = bidFloor
 		}
 	}
-
-	return
 }
 
 // Adding header fields to request header

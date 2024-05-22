@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/prebid/openrtb/v19/adcom1"
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/adcom1"
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/adapters/adapterstest"
 	"github.com/prebid/prebid-server/v2/config"
@@ -68,6 +68,7 @@ func TestAvocetAdapter_MakeRequests(t *testing.T) {
 						"Accept":       {"application/json"},
 						"Content-Type": {"application/json;charset=utf-8"},
 					},
+					ImpIDs: []string{""},
 				},
 			},
 			wantErrs: nil,

@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"text/template"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
@@ -57,7 +57,8 @@ func (a *DatablocksAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 			Method:  "POST",
 			Uri:     url,
 			Body:    reqJson,
-			Headers: headers}
+			Headers: headers,
+			ImpIDs:  openrtb_ext.GetImpIDs(request.Imp)}
 
 		requests = append(requests, &request)
 	}

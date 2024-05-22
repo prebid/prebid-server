@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
@@ -35,16 +35,8 @@ type ExtBid struct {
 }
 
 func (a *YieldmoAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var errs []error
-	var adapterRequests []*adapters.RequestData
-
-	adapterReq, errors := a.makeRequest(request)
-	if adapterReq != nil {
-		adapterRequests = append(adapterRequests, adapterReq)
-	}
-	errs = append(errs, errors...)
-
-	return adapterRequests, errors
+	reqData, errors := a.makeRequest(request)
+	return []*adapters.RequestData{reqData}, errors
 }
 
 func (a *YieldmoAdapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, []error) {
@@ -69,6 +61,7 @@ func (a *YieldmoAdapter) makeRequest(request *openrtb2.BidRequest) (*adapters.Re
 		Uri:     a.endpoint,
 		Body:    reqJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}, errs
 }
 

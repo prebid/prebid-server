@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
@@ -33,6 +33,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		Method: "POST",
 		Uri:    a.endpoint,
 		Body:   requestJSON,
+		ImpIDs: openrtb_ext.GetImpIDs(request.Imp),
 	}
 
 	return []*adapters.RequestData{requestData}, nil

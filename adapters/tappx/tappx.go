@@ -10,7 +10,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
@@ -86,8 +86,7 @@ func (a *TappxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 		}}
 	}
 
-	var test int
-	test = int(request.Test)
+	test := int(request.Test)
 
 	url, err := a.buildEndpointURL(&tappxExt, test)
 	if url == "" {
@@ -113,6 +112,7 @@ func (a *TappxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 		Uri:     url,
 		Body:    reqJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, []error{}
 }
 
@@ -133,6 +133,11 @@ func (a *TappxAdapter) buildEndpointURL(params *openrtb_ext.ExtImpTappx, test in
 
 	tappxHost := "tappx.com"
 	isNewEndpoint, err := regexp.Match(`^(zz|vz)[0-9]{3,}([a-z]{2,3}|test)$`, []byte(params.Endpoint))
+	if err != nil {
+		return "", &errortypes.BadInput{
+			Message: "Unable to match params.Endpoint " + string(params.Endpoint) + "): " + err.Error(),
+		}
+	}
 	if isNewEndpoint {
 		tappxHost = params.Endpoint + ".pub.tappx.com/rtb/"
 	} else {

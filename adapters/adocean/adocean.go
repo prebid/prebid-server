@@ -13,7 +13,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
@@ -57,6 +57,7 @@ type requestData struct {
 	Url        *url.URL
 	Headers    *http.Header
 	SlaveSizes map[string]string
+	ImpIDs     []string
 }
 
 // Builder builds a new instance of the AdOcean adapter for the given bidder with the given config.
@@ -111,6 +112,7 @@ func (a *AdOceanAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			Method:  "GET",
 			Uri:     requestData.Url.String(),
 			Headers: *requestData.Headers,
+			ImpIDs:  requestData.ImpIDs,
 		})
 	}
 
@@ -160,6 +162,7 @@ func (a *AdOceanAdapter) addNewBid(
 		Url:        url,
 		Headers:    a.formHeaders(request),
 		SlaveSizes: slaveSizes,
+		ImpIDs:     []string{imp.ID},
 	})
 
 	return requestsData, nil
@@ -185,6 +188,7 @@ func addToExistingRequest(requestsData []*requestData, newParams *openrtb_ext.Ex
 			newUrl.RawQuery = queryParams.Encode()
 			if len(newUrl.String()) < maxUriLength {
 				requestData.Url = &newUrl
+				requestData.ImpIDs = append(requestData.ImpIDs, auctionID)
 				return true
 			}
 

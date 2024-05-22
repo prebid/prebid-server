@@ -135,6 +135,7 @@
             "content": {
               "url": "https://play.google.com/store/apps/details?id\u003djp.gocro.smartnews.android",
               "userrating": "4.2",
+              "livestream": 0,
               "language": "en"
             },
             "storeurl": "https://play.google.com/store/apps/details?id\u003djp.gocro.smartnews.android",
@@ -200,7 +201,8 @@
               "id": "73"
             }
           }
-        }
+        },
+        "impIDs":["1"]
       },
       "mockResponse": {
         "status": 200,
