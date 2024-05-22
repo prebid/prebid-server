@@ -91,7 +91,7 @@
           },
           "type": "video",
           "video": {
-            "duration": 5
+            "duration": 300
           }
         }
       ]
