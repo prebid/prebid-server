@@ -175,6 +175,11 @@ func validateImpression(imp *openrtb2.Imp) (int, error) {
 	impExtBuffer, err = json.Marshal(&adtelligentImpExt{
 		Adtelligent: impExt,
 	})
+	if err != nil {
+		return 0, &errortypes.BadInput{
+			Message: fmt.Sprintf("ignoring imp id=%s, error while marshaling impExt, err: %s", imp.ID, err),
+		}
+	}
 
 	if impExt.BidFloor > 0 {
 		imp.BidFloor = impExt.BidFloor

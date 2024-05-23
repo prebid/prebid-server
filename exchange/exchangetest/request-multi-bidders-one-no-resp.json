@@ -127,7 +127,6 @@
                 "origbidcpm": 12.00,
                 "prebid": {
                   "meta": {
-                    "adaptercode": "appnexus"
                   },
                   "targeting": {
                     "hb_bidder": "appnexus",
