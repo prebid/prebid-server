@@ -32,7 +32,8 @@
                             "rugby",
                             "cricket"
                         ]
-                    }
+                    },
+                    "gpid":"/1111/home"
                 }
             }
         ],
@@ -68,7 +69,8 @@
                             },
                             "ext": {
                                 "dfp_ad_unit_code": "/1111/home",
-                                "key_val": "k1=v1|k2=v2|sport=rugby,cricket"
+                                "key_val": "k1=v1|k2=v2|sport=rugby,cricket",
+                                "gpid":"/1111/home"
                             }
                         }
                     ],
