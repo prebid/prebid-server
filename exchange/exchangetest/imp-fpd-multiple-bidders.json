@@ -169,9 +169,7 @@
                             "ext": {
                                 "origbidcpm": 0.3,
                                 "prebid": {
-                                    "meta": {
-                                        "adaptercode": "appnexus"
-                                    },
+                                    "meta": {},
                                     "type": "banner"
                                 }
                             }
@@ -191,9 +189,7 @@
                             "ext": {
                                 "origbidcpm": 0.3,
                                 "prebid": {
-                                    "meta": {
-                                        "adaptercode": "audiencenetwork"
-                                    },
+                                    "meta": {},
                                     "type": "banner"
                                 }
                             }
