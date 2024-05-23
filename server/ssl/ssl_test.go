@@ -47,7 +47,7 @@ func TestAppendPEMFileToRootCAPoolFail(t *testing.T) {
 
 	// In this test we are going to pass a file that does not exist as value of second argument
 	fakeCertificatesFile := "mockcertificates/NO-FILE.pem"
-	certPool, err := AppendPEMFileToRootCAPool(certPool, fakeCertificatesFile)
+	_, err := AppendPEMFileToRootCAPool(certPool, fakeCertificatesFile)
 
 	// Assert AppendPEMFileToRootCAPool correctly throws an error when trying to load an nonexisting file
 	assert.Errorf(t, err, "AppendPEMFileToRootCAPool should throw an error by while loading fake file %s \n", fakeCertificatesFile)

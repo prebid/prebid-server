@@ -54,8 +54,7 @@ func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, req *adapters
 	if err != nil {
 		errs = append(errs, err)
 	} else {
-		reqBidder := buildBidderRequest(adapter, encoded)
-		reqBidder.ImpIDs = openrtb_ext.GetImpIDs(reqCopy.Imp)
+		reqBidder := buildBidderRequest(adapter, encoded, openrtb_ext.GetImpIDs(reqCopy.Imp))
 		reqsBidder = append(reqsBidder, reqBidder)
 	}
 	return
@@ -107,7 +106,7 @@ func updateImps(bidRequest openrtb2.BidRequest) ([]openrtb2.Imp, []error) {
 	return updatedImps, errs
 }
 
-func buildBidderRequest(adapter *adapter, encoded []byte) *adapters.RequestData {
+func buildBidderRequest(adapter *adapter, encoded []byte, impIDs []string) *adapters.RequestData {
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
@@ -117,6 +116,7 @@ func buildBidderRequest(adapter *adapter, encoded []byte) *adapters.RequestData 
 		Uri:     adapter.endpoint,
 		Body:    encoded,
 		Headers: headers,
+		ImpIDs:  impIDs,
 	}
 	return reqBidder
 }

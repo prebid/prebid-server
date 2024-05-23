@@ -137,7 +137,6 @@
                   "origbidcpm": 12,
                   "prebid": {
                     "meta": {
-                      "adaptercode": "appnexus"
                     },
                     "floors": {
                       "floorCurrency": "USD",
@@ -151,6 +150,35 @@
             ]
           }
         ]
+      },
+      "ext": {
+        "prebid": {
+          "seatnonbid": [
+           {
+            "nonbid": [
+              {
+                "impid": "my-imp-id",
+                "statuscode": 301,
+                "ext": {
+                  "prebid": {
+                    "bid": {
+                      "price": 7,
+                      "w": 200,
+                      "h": 250,
+                      "origbidcpm": 7,
+                      "cat": [
+                        "IAB1-1"
+                      ]
+                    }
+                  }
+                }
+              }
+            ],
+            "seat": "audienceNetwork",
+            "ext": null
+          }
+        ]
       }
+     }
     }
   }

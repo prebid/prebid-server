@@ -58,7 +58,6 @@ import (
 	"github.com/prebid/prebid-server/v2/version"
 )
 
-const storedRequestTimeoutMillis = 50
 const ampChannel = "amp"
 const appChannel = "app"
 const secCookieDeprecation = "Sec-Cookie-Deprecation"
@@ -469,7 +468,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		return
 	}
 
-	timeout := parseTimeout(requestJson, time.Duration(storedRequestTimeoutMillis)*time.Millisecond)
+	timeout := parseTimeout(requestJson, time.Duration(deps.cfg.StoredRequestsTimeout)*time.Millisecond)
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
@@ -2320,8 +2319,8 @@ func (deps *endpointDeps) processStoredRequests(requestJson []byte, impInfo []Im
 // parseImpInfo parses the request JSON and returns impression and unmarshalled imp.ext.prebid
 func parseImpInfo(requestJson []byte) (impData []ImpExtPrebidData, errs []error) {
 	if impArray, dataType, _, err := jsonparser.Get(requestJson, "imp"); err == nil && dataType == jsonparser.Array {
-		_, err = jsonparser.ArrayEach(impArray, func(imp []byte, _ jsonparser.ValueType, _ int, err error) {
-			impExtData, _, _, err := jsonparser.Get(imp, "ext", "prebid")
+		_, _ = jsonparser.ArrayEach(impArray, func(imp []byte, _ jsonparser.ValueType, _ int, _ error) {
+			impExtData, _, _, _ := jsonparser.Get(imp, "ext", "prebid")
 			var impExtPrebid openrtb_ext.ExtImpPrebid
 			if impExtData != nil {
 				if err := jsonutil.Unmarshal(impExtData, &impExtPrebid); err != nil {
