@@ -18,6 +18,14 @@ type adapter struct {
 	endpointTemplate *template.Template
 }
 
+type ExtTargetsAdhese map[string][]string
+type ExtImpAdheseWrapper map[string]ExtTargetsAdhese
+type wrappedBidExt map[string]map[string]string
+
+func makeSlot(params openrtb_ext.ExtImpAdhese) string {
+	return fmt.Sprintf("%s-%s", params.Location, params.Format)
+}
+
 func (a *adapter) MakeRequests(
 	request *openrtb2.BidRequest,
 	requestInfo *adapters.ExtraRequestInfo,
@@ -25,27 +33,61 @@ func (a *adapter) MakeRequests(
 	[]*adapters.RequestData,
 	[]error,
 ) {
+	if len(request.Imp) == 0 {
+		return nil, []error{&errortypes.BadInput{
+			Message: "No impression in the bid request",
+		}}
+	}
+	imp := &request.Imp[0]
 
-	var imp = &request.Imp[0]
 	var bidderExt adapters.ExtImpBidder
-
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return nil, []error{err}
+		return nil, []error{&errortypes.BadInput{Message: fmt.Sprintf("Error unmarshalling imp.ext: %v", err)}}
 	}
 
 	var params openrtb_ext.ExtImpAdhese
 	if err := json.Unmarshal(bidderExt.Bidder, &params); err != nil {
-		return nil, []error{err}
+		return nil, []error{&errortypes.BadInput{Message: fmt.Sprintf("Error unmarshalling bidder ext: %v", err)}}
 	}
 
+	if params.Account == "" || params.Location == "" {
+		return nil, []error{&errortypes.BadInput{
+			Message: "Missing required params: location, account",
+		}}
+	}
+
+	// define a map of targets[] and pre-fill it with the slot
+	targets := ExtTargetsAdhese{
+		"SL": []string{makeSlot(params)},
+	}
+	// add any additional targets to the map from the params
+	for k, v := range params.Targets {
+		targets[k] = v
+	}
+
+	// marshal the ext.adhese.bidder object into the ext field
+	modifiedExt, err := json.Marshal(ExtImpAdheseWrapper{
+		"adhese": targets,
+	})
+	if err != nil {
+		return nil, []error{&errortypes.BadInput{Message: fmt.Sprintf("Error marshalling modified ext: %v", err)}}
+	}
+
+	// copy the request and dereference any pointers* and override the ext of the
+	modifiedRequest := *request
+	modifiedRequest.Imp[0].Ext = modifiedExt
+
+	// create a map of macros to resolve
 	endpointParams := macros.EndpointTemplateParams{AccountID: params.Account}
 
-	host, err := macros.ResolveMacros(a.endpointTemplate, endpointParams)
+	// resolve the macros in the endpoint template
+	endpoint, err := macros.ResolveMacros(a.endpointTemplate, endpointParams)
 	if err != nil {
-		return nil, []error{err}
+		return nil, []error{&errortypes.BadServerResponse{Message: fmt.Sprintf("Error resolving macros: %v", err)}}
 	}
 
-	requestJSON, err := json.Marshal(request)
+	// marshal the request body
+	requestJSON, err := json.Marshal(modifiedRequest)
 
 	if err != nil {
 		return nil, []error{err}
@@ -53,7 +95,7 @@ func (a *adapter) MakeRequests(
 
 	requestData := &adapters.RequestData{
 		Method: "POST",
-		Uri:    host,
+		Uri:    endpoint,
 		Body:   requestJSON,
 		ImpIDs: openrtb_ext.GetImpIDs(request.Imp),
 	}
@@ -61,18 +103,21 @@ func (a *adapter) MakeRequests(
 	return []*adapters.RequestData{requestData}, nil
 }
 
-func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
-	if bid.Ext != nil {
-		var bidExt openrtb_ext.ExtBid
-		err := json.Unmarshal(bid.Ext, &bidExt)
+func inferBidType(bid openrtb2.Imp) (openrtb_ext.BidType, []error) {
+	if bid.Banner != nil {
+		return openrtb_ext.BidTypeBanner, nil
+	}
+	if bid.Video != nil {
+		return openrtb_ext.BidTypeVideo, nil
+	}
+	if bid.Native != nil {
+		return openrtb_ext.BidTypeNative, nil
+	}
+	if bid.Audio != nil {
+		return openrtb_ext.BidTypeAudio, nil
+	}
 
-		if err != nil && bidExt.Prebid != nil {
-			return openrtb_ext.ParseBidType(string(bidExt.Prebid.Type))
-		}
-	}
-	return "", &errortypes.BadServerResponse{
-		Message: fmt.Sprintf("Failed to parse impression \"%s\" mediatype", bid.ImpID),
-	}
+	return "", []error{&errortypes.BadServerResponse{Message: "Could not infer bid type from imp"}}
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
@@ -95,39 +140,71 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		return nil, []error{err}
 	}
 
+	// early return when there are no impressions found in the request
+	if len(request.Imp) == 0 {
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: "No impression in the bid request",
+		}}
+	}
+
 	var response openrtb2.BidResponse
 	if err := json.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}
-
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
+	// create a new bidResponse with a capacity of 1 because we only expect 1 bid
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
 	bidResponse.Currency = response.Cur
-	var errors []error
-	for _, seatBid := range response.SeatBid {
-		for i, bid := range seatBid.Bid {
-			bidType, err := getMediaTypeForBid(bid)
-			if err != nil {
-				errors = append(errors, err)
-				continue
-			}
-			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     &seatBid.Bid[i],
-				BidType: bidType,
-			})
-		}
+
+	if (len(response.SeatBid)) == 0 {
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: "Empty SeatBid",
+		}}
 	}
 
-	return bidResponse, errors
+	bids := response.SeatBid[0].Bid
+	if len(bids) == 0 {
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: "Empty SeatBid.Bids",
+		}}
+	}
+	bid := bids[0]
+
+	var wrappedBidExt wrappedBidExt
+	if err := json.Unmarshal(bid.Ext, &wrappedBidExt); err != nil {
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: fmt.Sprintf("BidExt parsing error. %s", err.Error()),
+		}}
+	}
+
+	bidType, bidTypeErr := inferBidType(request.Imp[0])
+	if bidTypeErr != nil {
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: fmt.Sprintf("BidType error: %s", bidTypeErr),
+		}}
+	}
+
+	marshalledBidExt, err := json.Marshal(wrappedBidExt["adhese"])
+	if err != nil {
+		return nil, []error{err}
+	}
+	bid.Ext = marshalledBidExt
+
+	bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+		Bid:     &bid,
+		BidType: bidType,
+	})
+
+	return bidResponse, nil
 }
 
 func Builder(name openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
+	templ, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
 
 	bidder := &adapter{
-		endpointTemplate: template,
+		endpointTemplate: templ,
 	}
 
 	return bidder, nil
