@@ -460,13 +460,11 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			appCopy.Ext, err = json.Marshal(rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: int(siteId)}})
 			if err != nil {
 				errs = append(errs, &errortypes.BadInput{Message: err.Error()})
-				// TODO(dmitris) - should we 'continue' to go to the next loop iteration on error?
 			}
 			appCopy.Publisher = &openrtb2.Publisher{}
 			appCopy.Publisher.Ext, err = json.Marshal(&pubExt)
 			if err != nil {
 				errs = append(errs, &errortypes.BadInput{Message: err.Error()})
-				// TODO(dmitris) - should we 'continue' to go to the next loop iteration on error?
 			}
 			rubiconRequest.App = &appCopy
 		}
