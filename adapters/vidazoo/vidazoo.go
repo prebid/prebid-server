@@ -2,9 +2,9 @@ package vidazoo
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -18,7 +18,7 @@ type adapter struct {
 	endpoint string
 }
 
-// Builder builds a new instance of the Foo adapter for the given bidder with the given config.
+// Builder builds a new instance of the Vidazoo for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,
@@ -27,70 +27,70 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var errs []error
+	var requests []*adapters.RequestData
+	var errors []error
 
-	// Marshal the OpenRTB request to JSON
-	openRTBRequestJSON, err := json.Marshal(request)
-	if err != nil {
-		errs = append(errs, fmt.Errorf("marshal bidRequest: %w", err))
-		return nil, errs
+	requestCopy := *request
+
+	for _, imp := range request.Imp {
+		requestCopy.Imp = []openrtb2.Imp{imp}
+
+		requestJSON, err := json.Marshal(&requestCopy)
+		if err != nil {
+			errors = append(errors, fmt.Errorf("marshal bidRequest: %w", err))
+			continue
+		}
+
+		cId, err := extractCid(&imp)
+		if err != nil {
+			errors = append(errors, fmt.Errorf("extract cId: %w", err))
+			continue
+		}
+
+		headers := http.Header{}
+		headers.Add("Content-Type", "application/json;charset=utf-8")
+
+		requestData := &adapters.RequestData{
+			Method:  "POST",
+			Uri:     fmt.Sprintf("%s%s", a.endpoint, url.QueryEscape(cId)),
+			Body:    requestJSON,
+			Headers: headers,
+			ImpIDs:  []string{imp.ID},
+		}
+
+		requests = append(requests, requestData)
 	}
 
-	// Extract CID from the request
-	cId, err := extractCid(request)
-	if err != nil {
-		errs = append(errs, fmt.Errorf("extract cId: %w", err))
-		return nil, errs
-	}
-
-	headers := http.Header{}
-	headers.Add("Content-Type", "application/json;charset=utf-8")
-
-	requestData := &adapters.RequestData{
-		Method:  "POST",
-		Uri:     a.endpoint + cId,
-		Body:    openRTBRequestJSON,
-		Headers: headers,
-		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
-	}
-
-	return []*adapters.RequestData{requestData}, nil
+	return requests, errors
 }
 
-func getMediaTypeForBid(bid openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
-	for _, imp := range imps {
-		if imp.ID == bid.ImpID {
-			if imp.Banner != nil {
-				return openrtb_ext.BidTypeBanner, nil
-			}
-			if imp.Video != nil {
-				return openrtb_ext.BidTypeVideo, nil
-			}
-			return "", fmt.Errorf("unknown impression type for imp ID: %s", imp.ID)
-		}
+func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
+	case openrtb2.MarkupAudio:
+		return openrtb_ext.BidTypeAudio, nil
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative, nil
 	}
-	return "", fmt.Errorf("no impression found for bid ID: %s", bid.ID)
+	return "", &errortypes.BadInput{
+		Message: fmt.Sprintf("Could not define bid type for imp: %s", bid.ImpID),
+	}
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var errs []error
 
-	if responseData.StatusCode == http.StatusNoContent {
+	if adapters.IsResponseStatusCodeNoContent(responseData) {
 		return nil, nil
 	}
 
-	if responseData.StatusCode == http.StatusBadRequest {
-		err := &errortypes.BadInput{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info.", responseData.StatusCode),
-		}
-		return nil, []error{err}
-	}
-
-	if responseData.StatusCode != http.StatusOK {
-		err := &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info.", responseData.StatusCode),
-		}
-		return nil, []error{err}
+	if err := adapters.CheckResponseStatusCodeForErrors(responseData); err != nil {
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", responseData.StatusCode),
+		}}
 	}
 
 	var response openrtb2.BidResponse
@@ -105,7 +105,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 	for _, seatBid := range response.SeatBid {
 		for i, bid := range seatBid.Bid {
-			bidType, err := getMediaTypeForBid(bid, request.Imp)
+			bidType, err := getMediaTypeForBid(bid)
 			if err != nil {
 				errs = append(errs, err)
 				continue
@@ -120,21 +120,15 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	return bidResponse, errs
 }
 
-func extractCid(openRTBRequest *openrtb2.BidRequest) (string, error) {
-	for _, imp := range openRTBRequest.Imp {
-		var bidderExt adapters.ExtImpBidder
-		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-			return "", fmt.Errorf("unmarshal bidderExt: %w", err)
-		}
-
-		var impExt openrtb_ext.ImpExtVidazoo
-		if err := json.Unmarshal(bidderExt.Bidder, &impExt); err != nil {
-			return "", fmt.Errorf("unmarshal ImpExtVidazoo: %w", err)
-		}
-
-		if impExt.ConnectionId != "" {
-			return strings.TrimSpace(impExt.ConnectionId), nil
-		}
+func extractCid(imp *openrtb2.Imp) (string, error) {
+	var bidderExt adapters.ExtImpBidder
+	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		return "", fmt.Errorf("unmarshal bidderExt: %w", err)
 	}
-	return "", errors.New("no cId found in request")
+
+	var impExt openrtb_ext.ImpExtVidazoo
+	if err := json.Unmarshal(bidderExt.Bidder, &impExt); err != nil {
+		return "", fmt.Errorf("unmarshal ImpExtVidazoo: %w", err)
+	}
+	return strings.TrimSpace(impExt.ConnectionId), nil
 }

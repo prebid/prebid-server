@@ -86,7 +86,7 @@
                   "qagmediarating": 0,
                   "tactic": "",
                   "wratio": 0,
-                  "mtype": 1
+                  "mtype": 8
                 }
               ]
             }
@@ -97,31 +97,13 @@
   ],
   "expectedBidResponses": [
     {
-      "bids": [
-        {
-          "bid": {
-            "id": "some-bid-id",
-            "impid": "some-impression-id",
-            "price": 1,
-            "adm": "<div>Some creative</div>",
-            "adid": "some-ad-id",
-            "cid": "test",
-            "iurl": "http://prebid-server.cootlogix.com/creative.jpg",
-            "crid": "some-creative-id",
-            "adomain": [
-              "test.com"
-            ],
-            "dealid": "deal123",
-            "w": 240,
-            "h": 400,
-            "exp": 60,
-            "ext": {},
-            "mtype": 1
-          },
-          "type": "banner"
-        }
-      ]
+      "bids": []
     }
   ],
-  "expectedMakeBidsErrors": []
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Could not define bid type for imp: some-impression-id",
+      "comparison": "literal"
+    }
+  ]
 }

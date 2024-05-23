@@ -50,16 +50,11 @@
         ]
       },
       "mockResponse": {
-        "status": 400,
+        "status": 204,
         "body": {}
       }
     }
   ],
   "expectedBidResponses": [],
-  "expectedMakeBidsErrors": [
-    {
-      "value": "Unexpected status code: 400. Run with request.debug = 1 for more info",
-      "comparison": "literal"
-    }
-  ]
+  "expectedMakeBidsErrors": []
 }
