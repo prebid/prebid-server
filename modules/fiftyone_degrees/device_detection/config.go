@@ -16,8 +16,9 @@ type Config struct {
 }
 
 type DataFile struct {
-	Path   string         `json:"path"`
-	Update DataFileUpdate `json:"update"`
+	Path         string         `json:"path"`
+	Update       DataFileUpdate `json:"update"`
+	MakeTempCopy *bool          `json:"make_temp_copy"`
 }
 
 type DataFileUpdate struct {
@@ -26,6 +27,7 @@ type DataFileUpdate struct {
 	License         string `json:"license_key"`
 	PollingInterval int    `json:"polling_interval"`
 	Product         string `json:"product"`
+	WatchFileSystem *bool  `json:"watch_file_system"`
 }
 
 type AccountFilter struct {
@@ -41,12 +43,12 @@ type Performance struct {
 }
 
 var performanceProfileMap = map[string]dd.PerformanceProfile{
-	"default":          dd.Default,
-	"low_memory":       dd.LowMemory,
-	"balanced_temp":    dd.BalancedTemp,
-	"balanced":         dd.Balanced,
-	"high_performance": dd.HighPerformance,
-	"in_memory":        dd.InMemory,
+	"Default":         dd.Default,
+	"LowMemory":       dd.LowMemory,
+	"BalancedTemp":    dd.BalancedTemp,
+	"Balanced":        dd.Balanced,
+	"HighPerformance": dd.HighPerformance,
+	"InMemory":        dd.InMemory,
 }
 
 func (c *Config) GetPerformanceProfile() dd.PerformanceProfile {

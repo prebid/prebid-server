@@ -10,71 +10,73 @@ The 51Degrees module operates using a data file. You can get started with a free
 
 ## Configuration
 
-To use this module set the module's enable flag to true and add 
+To use this module set the module's enable flag to true and add
 
-```fiftyone-devicedetection-entrypoint-hook``` 
+```fiftyone-devicedetection-entrypoint-hook```
 
-and 
+and
 
-```fiftyone-devicedetection-raw-auction-request-hook``` 
+```fiftyone-devicedetection-raw-auction-request-hook```
 
 into hooks execution plan inside your yaml file:
 
 ```json
 {
-  "hooks": {
-    "modules": {
-      "fiftyone_degrees": {
-        "device_detection": {
-          "enabled": true,
-          "data_file": {
-            "path": "path/to/51Degrees-LiteV4.1.hash",
-            "update": {
-              "auto": true,
-              "url": "https://my.datafile.com/datafile.gz",
-              "polling_interval": 3600,
-              "license_key": "your_license_key",
-              "product": "V4Enterprise"
-            }
-          }
-        }
-      },
-      "host_execution_plan": {
-        "endpoints": {
-          "/openrtb2/auction": {
-            "stages": {
-              "entrypoint": {
-                "groups": [
-                  {
-                    "timeout": 100,
-                    "hook_sequence": [
-                      {
-                        "module_code": "fiftyone-devicedetection",
-                        "hook_impl_code": "fiftyone-devicedetection-entrypoint-hook"
-                      }
-                    ]
+   "hooks": {
+      "modules": {
+         "fiftyone_degrees": {
+            "device_detection": {
+               "enabled": true,
+               "data_file": {
+                  "path": "path/to/51Degrees-LiteV4.1.hash",
+                  "make_temp_copy": true,
+                  "update": {
+                     "auto": true,
+                     "url": "https://my.datafile.com/datafile.gz",
+                     "polling_interval": 3600,
+                     "license_key": "your_license_key",
+                     "product": "V4Enterprise",
+                     "watch_file_system": true
                   }
-                ]
-              },
-              "raw_auction_request": {
-                "groups": [
-                  {
-                    "timeout": 100,
-                    "hook_sequence": [
-                      {
-                        "module_code": "fiftyone-devicedetection",
-                        "hook_impl_code": "fiftyone-devicedetection-raw-auction-request-hook"
-                      }
-                    ]
-                  }
-                ]
-              }
+               }
             }
-          }
-        }
+         },
+         "host_execution_plan": {
+            "endpoints": {
+               "/openrtb2/auction": {
+                  "stages": {
+                     "entrypoint": {
+                        "groups": [
+                           {
+                              "timeout": 100,
+                              "hook_sequence": [
+                                 {
+                                    "module_code": "fiftyone-devicedetection",
+                                    "hook_impl_code": "fiftyone-devicedetection-entrypoint-hook"
+                                 }
+                              ]
+                           }
+                        ]
+                     },
+                     "raw_auction_request": {
+                        "groups": [
+                           {
+                              "timeout": 100,
+                              "hook_sequence": [
+                                 {
+                                    "module_code": "fiftyone-devicedetection",
+                                    "hook_impl_code": "fiftyone-devicedetection-raw-auction-request-hook"
+                                 }
+                              ]
+                           }
+                        ]
+                     }
+                  }
+               }
+            }
+         }
       }
-    }
-  }
+   }
 }
 ```
 
@@ -91,12 +93,14 @@ hooks:
           allow_list: [] # string, list of account ids for enabled publishers, or empty for all
         data_file:
           path: ~ # string, REQUIRED
+          make_temp_copy: ~ # boolean
           update:
             auto: ~ # boolean
             url: ~ # string
             polling_interval: ~ # int
             license_key: ~ # string
             product: ~ # string
+            watch_file_system: ~ # boolean
         performance:
           profile: ~ # string, one of [default,low_memory,balanced_temp,balanced,high_performance, in_memory]
           concurrency: ~ # int
@@ -117,25 +121,27 @@ Minimal sample (only required):
 ```
 
 ``account_filter``
- * ``allow-list`` - (list of strings) - A list of account IDs that this module will be applied for.  If empty, it will apply to all accounts. Full-string match is performed (whitespaces and capitalization matter). Defaults to empty.
+* ``allow-list`` - (list of strings) - A list of account IDs that this module will be applied for.  If empty, it will apply to all accounts. Full-string match is performed (whitespaces and capitalization matter). Defaults to empty.
 
 ``data-file``
- * ``path`` - (string, REQUIRED) - The full path to the device detection data file. Lite data file can be downloaded from [data repo on GitHub].
+* ``path`` - (string, REQUIRED) - The full path to the device detection data file. Lite data file can be downloaded from [data repo on GitHub].
+* ``make_temp_copy`` - (boolean) - If true, the engine will create a temporary copy of the data file rather than using the data file directly. Should be false only for `InMemory` performance profile. Defaults to true.
 
- * ``update``
+* ``update``
    * ``auto`` - (boolean) - Enable/Disable auto update. Defaults to enabled. If enabled, the auto update system will automatically download and apply new data files for device detection.
    * ``url`` - (string) - Configure the engine to use the specified URL when looking for an updated data file. Default is the 51Degrees update URL.
    * ``license-key`` - (string) - Set the License Key used when checking for new device detection data files. A License Key is exclusive to the 51Degrees paid service. Defaults to null.
    * ``product`` - (string) - Set the Product used when checking for new device detection data files. A Product is exclusive to the 51Degrees paid service. By default it is `V4Enterprise`.  Please see options [here](https://51degrees.com/documentation/_info__distributor.html).
+   * ``watch-file-system`` - (boolean) - The DataUpdateService has the ability to watch a file on disk and refresh the engine as soon as that file is updated. This setting enables/disables that feature. Defaults to true.
    * ``polling-interval`` - (int, seconds) - Set the time between checks for a new data file made by the DataUpdateService in seconds. Default = 30 minutes.
 
 ``performance``
-  * ``profile`` - (string) - Set the performance profile for the device detection engine. Must be one of: LowMemory, MaxPerformance, HighPerformance, Balanced, BalancedTemp. Defaults to Balanced.
-  * `concurrency` - _(int)_ - Set the expected number of concurrent operations using the engine. This sets the concurrency of the internal caches to avoid excessive locking. Default: 10.
-  * `difference` - _(int)_ - Set the maximum difference to allow when processing HTTP headers. The meaning of difference depends on the Device Detection API being used. The difference is the difference in hash value between the hash that was found, and the hash that is being searched for. By default this is 0. For more information see [51Degrees documentation](https://51degrees.com/documentation/_device_detection__hash.html).
-  * `allow-unmatched` - _(boolean)_ - If set to false, a non-matching User-Agent will result in properties without set values.
+* ``profile`` - (string) - Set the performance profile for the device detection engine. Must be one of: `LowMemory`, `MaxPerformance`, `HighPerformance`, `Balanced`, `BalancedTemp`, `InMemory`. Defaults to `Balanced`.
+* `concurrency` - _(int)_ - Set the expected number of concurrent operations using the engine. This sets the concurrency of the internal caches to avoid excessive locking. Default: 10.
+* `difference` - _(int)_ - Set the maximum difference to allow when processing HTTP headers. The meaning of difference depends on the Device Detection API being used. The difference is the difference in hash value between the hash that was found, and the hash that is being searched for. By default this is 0. For more information see [51Degrees documentation](https://51degrees.com/documentation/_device_detection__hash.html).
+* `allow-unmatched` - _(boolean)_ - If set to false, a non-matching User-Agent will result in properties without set values.
   If set to true, a non-matching User-Agent will cause the 'default profiles' to be returned. This means that properties will always have values (i.e. no need to check .hasValue) but some may be inaccurate. By default, this is false.
-  * `drift` - _(int)_ - Set the maximum drift to allow when matching hashes. If the drift is exceeded, the result is considered invalid and values will not be returned. By default this is 0. For more information see [51Degrees documentation](https://51degrees.com/documentation/_device_detection__hash.html).
+* `drift` - _(int)_ - Set the maximum drift to allow when matching hashes. If the drift is exceeded, the result is considered invalid and values will not be returned. By default this is 0. For more information see [51Degrees documentation](https://51degrees.com/documentation/_device_detection__hash.html).
 
 ## Running the demo
 
@@ -144,7 +150,7 @@ Minimal sample (only required):
 go mod download
 ```
 
-2. Replace the original config file `pbs.json` (placed in the repository root or in `/etc/config`) with the sample [config file](sample/pbs.json): 
+2. Replace the original config file `pbs.json` (placed in the repository root or in `/etc/config`) with the sample [config file](sample/pbs.json):
 ```
 cp modules/fiftyone_degrees/device_detection/sample/pbs.json pbs.json
 ```

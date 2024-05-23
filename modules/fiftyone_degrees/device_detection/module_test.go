@@ -559,7 +559,7 @@ func TestConfigHashFromConfig(t *testing.T) {
 
 	cfg = Config{
 		Performance: Performance{
-			Profile:        "balanced",
+			Profile:        "Balanced",
 			Concurrency:    &concurrency,
 			Difference:     &difference,
 			AllowUnmatched: &allowUnmatched,
@@ -573,6 +573,22 @@ func TestConfigHashFromConfig(t *testing.T) {
 	assert.Equal(t, result.Difference(), int32(1))
 	assert.Equal(t, result.AllowUnmatched(), true)
 	assert.Equal(t, result.Drift(), int32(1))
+
+	cfg = Config{
+		Performance: Performance{
+			Profile: "InMemory",
+		},
+	}
+	result = configHashFromConfig(&cfg)
+	assert.Equal(t, result.PerformanceProfile(), dd.InMemory)
+
+	cfg = Config{
+		Performance: Performance{
+			Profile: "HighPerformance",
+		},
+	}
+	result = configHashFromConfig(&cfg)
+	assert.Equal(t, result.PerformanceProfile(), dd.HighPerformance)
 }
 
 func TestSignDeviceData(t *testing.T) {

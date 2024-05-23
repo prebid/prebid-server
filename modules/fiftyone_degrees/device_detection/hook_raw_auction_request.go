@@ -148,7 +148,9 @@ func joinErrors(errs []error) error {
 	for _, err := range errs {
 		msg += err.Error() + "\n"
 	}
-
+	if msg == "" {
+		return nil
+	}
 	return errors.New(msg)
 }
 

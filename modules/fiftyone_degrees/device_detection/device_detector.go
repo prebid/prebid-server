@@ -25,12 +25,9 @@ func NewDeviceDetector(
 	cfg *dd.ConfigHash,
 	moduleConfig *Config,
 ) (*DeviceDetector, error) {
-	cfg.SetUseUpperPrefixHeaders(false)
-
-	engineOptions := buildEngineOptions(moduleConfig)
+	engineOptions := buildEngineOptions(moduleConfig, cfg)
 
 	ddEngine, err := onpremise.New(
-		cfg,
 		engineOptions...,
 	)
 	if err != nil {
@@ -46,50 +43,99 @@ func NewDeviceDetector(
 	return deviceDetector, nil
 }
 
-func buildEngineOptions(moduleConfig *Config) []onpremise.EngineOptions {
+func buildEngineOptions(moduleConfig *Config, configHash *dd.ConfigHash) []onpremise.EngineOptions {
 	options := []onpremise.EngineOptions{
 		onpremise.WithDataFile(moduleConfig.DataFile.Path),
 	}
 
-	if moduleConfig.DataFile.Update.Auto {
-		dataUpdateOptions := []onpremise.EngineOptions{}
+	options = append(
+		options,
+		onpremise.WithProperties([]string{"HardwareVendor",
+			"HardwareName",
+			"DeviceType",
+			"PlatformVendor",
+			"PlatformName",
+			"PlatformVersion",
+			"BrowserVendor",
+			"BrowserName",
+			"BrowserVersion",
+			"ScreenPixelsWidth",
+			"ScreenPixelsHeight",
+			"PixelRatio",
+			"Javascript",
+			"GeoLocation",
+			"HardwareModel",
+			"HardwareFamily",
+			"HardwareModelVariants",
+			"ScreenInchesHeight",
+			"IsCrawler",
+		}),
+	)
 
-		if moduleConfig.DataFile.Update.Url != "" {
-			dataUpdateOptions = append(
-				dataUpdateOptions,
-				onpremise.WithDataUpdateUrl(
-					moduleConfig.DataFile.Update.Url,
-					moduleConfig.DataFile.Update.PollingInterval,
-				),
-			)
-		}
+	options = append(
+		options,
+		onpremise.WithConfigHash(configHash),
+	)
 
-		if moduleConfig.DataFile.Update.License != "" {
-			dataUpdateOptions = append(
-				dataUpdateOptions,
-				onpremise.SetLicenceKey(moduleConfig.DataFile.Update.License),
-			)
-		}
-
-		if moduleConfig.DataFile.Update.Product != "" {
-			dataUpdateOptions = append(
-				dataUpdateOptions,
-				onpremise.SetProduct(moduleConfig.DataFile.Update.Product),
-			)
-		}
-
-		if moduleConfig.DataFile.Update.PollingInterval > 0 {
-			dataUpdateOptions = append(
-				dataUpdateOptions,
-				onpremise.SetPollingInterval(moduleConfig.DataFile.Update.PollingInterval),
-			)
-		}
-
+	if moduleConfig.DataFile.MakeTempCopy != nil {
 		options = append(
 			options,
-			dataUpdateOptions...,
+			onpremise.WithTempDataCopy(*moduleConfig.DataFile.MakeTempCopy),
 		)
 	}
+
+	dataUpdateOptions := []onpremise.EngineOptions{}
+
+	dataUpdateOptions = append(
+		dataUpdateOptions,
+		onpremise.WithAutoUpdate(moduleConfig.DataFile.Update.Auto),
+	)
+
+	if moduleConfig.DataFile.Update.Url != "" {
+		dataUpdateOptions = append(
+			dataUpdateOptions,
+			onpremise.WithDataUpdateUrl(
+				moduleConfig.DataFile.Update.Url,
+			),
+		)
+	}
+
+	if moduleConfig.DataFile.Update.PollingInterval > 0 {
+		dataUpdateOptions = append(
+			dataUpdateOptions,
+			onpremise.WithPollingInterval(
+				moduleConfig.DataFile.Update.PollingInterval,
+			),
+		)
+	}
+
+	if moduleConfig.DataFile.Update.License != "" {
+		dataUpdateOptions = append(
+			dataUpdateOptions,
+			onpremise.WithLicenseKey(moduleConfig.DataFile.Update.License),
+		)
+	}
+
+	if moduleConfig.DataFile.Update.Product != "" {
+		dataUpdateOptions = append(
+			dataUpdateOptions,
+			onpremise.WithProduct(moduleConfig.DataFile.Update.Product),
+		)
+	}
+
+	if moduleConfig.DataFile.Update.WatchFileSystem != nil {
+		dataUpdateOptions = append(
+			dataUpdateOptions,
+			onpremise.WithFileWatch(
+				*moduleConfig.DataFile.Update.WatchFileSystem,
+			),
+		)
+	}
+
+	options = append(
+		options,
+		dataUpdateOptions...,
+	)
 
 	return options
 }

@@ -53,6 +53,9 @@
                             "license_key": "YOUR_LICENSE_KEY",
                             "product": "V4Enterprise"
                         }
+                    },
+                    "performance": {
+                        "profile": "InMemory"
                     }
                 }
             }
