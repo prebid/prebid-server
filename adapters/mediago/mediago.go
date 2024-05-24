@@ -173,38 +173,50 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 }
 
 func getBidType(bid openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
-	var bidExt mediagoResponseBidExt
-	err := json.Unmarshal(bid.Ext, &bidExt)
-	if err == nil {
-		switch bidExt.MediaType {
-		case "banner":
-			return openrtb_ext.BidTypeBanner, nil
-		case "native":
-			return openrtb_ext.BidTypeNative, nil
-		case "video":
-			return openrtb_ext.BidTypeVideo, nil
-		}
-	}
-	var mediaType openrtb_ext.BidType
-	var typeCnt = 0
-	for _, imp := range imps {
-		if imp.ID == bid.ImpID {
-			if imp.Banner != nil {
-				typeCnt += 1
-				mediaType = openrtb_ext.BidTypeBanner
-			}
-			if imp.Native != nil {
-				typeCnt += 1
-				mediaType = openrtb_ext.BidTypeNative
-			}
-			if imp.Video != nil {
-				typeCnt += 1
-				mediaType = openrtb_ext.BidTypeVideo
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupAudio:
+		return openrtb_ext.BidTypeAudio, nil
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative, nil
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
+	default:
+		var bidExt mediagoResponseBidExt
+		err := json.Unmarshal(bid.Ext, &bidExt)
+		if err == nil {
+			switch bidExt.MediaType {
+			case "banner":
+				return openrtb_ext.BidTypeBanner, nil
+			case "native":
+				return openrtb_ext.BidTypeNative, nil
+			case "video":
+				return openrtb_ext.BidTypeVideo, nil
 			}
 		}
+		var mediaType openrtb_ext.BidType
+		var typeCnt = 0
+		for _, imp := range imps {
+			if imp.ID == bid.ImpID {
+				if imp.Banner != nil {
+					typeCnt += 1
+					mediaType = openrtb_ext.BidTypeBanner
+				}
+				if imp.Native != nil {
+					typeCnt += 1
+					mediaType = openrtb_ext.BidTypeNative
+				}
+				if imp.Video != nil {
+					typeCnt += 1
+					mediaType = openrtb_ext.BidTypeVideo
+				}
+			}
+		}
+		if typeCnt == 1 {
+			return mediaType, nil
+		}
+		return mediaType, fmt.Errorf("unable to fetch mediaType in multi-format: %s", bid.ImpID)
 	}
-	if typeCnt == 1 {
-		return mediaType, nil
-	}
-	return mediaType, fmt.Errorf("unable to fetch mediaType in multi-format: %s", bid.ImpID)
+
 }
