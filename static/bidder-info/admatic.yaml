@@ -1,9 +1,7 @@
 endpoint: "http://pbs.admatic.com.tr?host={{.Host}}"
-endpointCompression: gzip
 maintainer:
   email: "prebid@admatic.com.tr"
 gvlVendorID: 1281
-modifyingVastXmlAllowed: true
 capabilities:
   app:
     mediaTypes:
