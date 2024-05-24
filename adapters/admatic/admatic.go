@@ -122,27 +122,36 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	for _, seatBid := range response.SeatBid {
-		for i := range seatBid.Bid {
+		for _, bid := range seatBid.Bid {
+			bidMediaType, err := getMediaTypeForBid(request.Imp, bid)
+			if err != nil {
+				return nil, []error{err}
+			}
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     &seatBid.Bid[i],
-				BidType: getMediaTypeForBid(seatBid.Bid[i].ImpID, request.Imp),
+				Bid:     &bid,
+				BidType: bidMediaType,
 			})
 		}
 	}
 	return bidResponse, nil
 }
 
-func getMediaTypeForBid(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
-	for _, imp := range imps {
-		if imp.ID == impID {
-			if imp.Banner != nil {
-				return openrtb_ext.BidTypeBanner
-			} else if imp.Video != nil {
-				return openrtb_ext.BidTypeVideo
-			} else if imp.Native != nil {
-				return openrtb_ext.BidTypeNative
+func getMediaTypeForBid(impressions []openrtb2.Imp, bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	for _, impression := range impressions {
+		if impression.ID == bid.ImpID {
+			if impression.Banner != nil {
+				return openrtb_ext.BidTypeBanner, nil
+			}
+			if impression.Video != nil {
+				return openrtb_ext.BidTypeVideo, nil
+			}
+			if impression.Native != nil {
+				return openrtb_ext.BidTypeNative, nil
 			}
 		}
 	}
-	return ""
+
+	return "", &errortypes.BadServerResponse{
+		Message: fmt.Sprintf("The impression with ID %s is not present into the request", bid.ImpID),
+	}
 }
