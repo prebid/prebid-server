@@ -111,13 +111,6 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		return nil, nil
 	}
 
-	if responseData.StatusCode != http.StatusOK {
-		err := &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info.", responseData.StatusCode),
-		}
-		return nil, []error{err}
-	}
-
 	var response openrtb2.BidResponse
 	if err := json.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
@@ -127,38 +120,36 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	if len(response.Cur) != 0 {
 		bidResponse.Currency = response.Cur
 	}
+
 	for _, seatBid := range response.SeatBid {
-		for _, bid := range seatBid.Bid {
-			bidMediaType, err := getMediaTypeForBid(request.Imp, bid)
+		for i := range seatBid.Bid {
+
+			bidMediaType, err := getMediaTypeForBid(seatBid.Bid[i].ImpID, request.Imp)
 			if err != nil {
 				return nil, []error{err}
 			}
-			b := &adapters.TypedBid{
-				Bid:     &bid,
+			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+				Bid:     &seatBid.Bid[i],
 				BidType: bidMediaType,
-			}
-			bidResponse.Bids = append(bidResponse.Bids, b)
+			})
 		}
 	}
 	return bidResponse, nil
 }
 
-func getMediaTypeForBid(impressions []openrtb2.Imp, bid openrtb2.Bid) (openrtb_ext.BidType, error) {
-	for _, impression := range impressions {
-		if impression.ID == bid.ImpID {
-			if impression.Banner != nil {
+func getMediaTypeForBid(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
+	for _, imp := range imps {
+		if imp.ID == impID {
+			if imp.Banner != nil {
 				return openrtb_ext.BidTypeBanner, nil
-			}
-			if impression.Video != nil {
+			} else if imp.Video != nil {
 				return openrtb_ext.BidTypeVideo, nil
-			}
-			if impression.Native != nil {
+			} else if imp.Native != nil {
 				return openrtb_ext.BidTypeNative, nil
 			}
 		}
 	}
-
 	return "", &errortypes.BadServerResponse{
-		Message: fmt.Sprintf("The impression with ID %s is not present into the request", bid.ImpID),
+		Message: fmt.Sprintf("The impression with ID %s is not present into the request", impID),
 	}
 }
