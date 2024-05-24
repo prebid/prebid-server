@@ -1,0 +1,23 @@
+endpoint: "https://rtb-{{.Host}}.mediago.io/api/bid?tn={{.AccountID}}"
+endpointCompression: gzip
+geoscope:
+  - USA
+  - DEU
+  - JPN
+  - GBR
+  - KOR
+  - CAN
+  - FRA
+  - ITA
+maintainer:
+  email: "ext_mediago_cm@baidu.com"
+gvlVendorID: 1020
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - native
+userSync:
+  redirect:
+    url:  https://trace.mediago.io/ju/cs/prebid?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
+    userMacro: $UID
