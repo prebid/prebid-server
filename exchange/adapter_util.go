@@ -120,6 +120,7 @@ func GetDisabledBidderWarningMessages(infos config.BidderInfos) map[string]strin
 		"applogy":         `Bidder "applogy" is no longer available in Prebid Server. Please update your configuration.`,
 		"rhythmone":       `Bidder "rhythmone" is no longer available in Prebid Server. Please update your configuration.`,
 		"nanointeractive": `Bidder "nanointeractive" is no longer available in Prebid Server. Please update your configuration.`,
+		"bizzclick":       `Bidder "bizzclick" is no longer available in Prebid Server. Please update your configuration. "bizzclick" has been renamed to "blasto".`,
 	}
 
 	return mergeRemovedAndDisabledBidderWarningMessages(removed, infos)
