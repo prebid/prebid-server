@@ -14,7 +14,8 @@
         },
         "ext": {
           "bidder": {
-            "org": ""
+            "org": "",
+            "placementId": "1"
           }
         }
       }

@@ -18,7 +18,8 @@
         },
         "ext": {
           "bidder": {
-            "org": "777"
+            "org": "777",
+            "placementId": "1"
           }
         }
       },
@@ -38,7 +39,8 @@
         },
         "ext": {
           "bidder": {
-            "org": "777"
+            "org": "777",
+            "placementId": "1"
           }
         }
       }
@@ -67,7 +69,8 @@
               },
               "ext": {
                 "bidder": {
-                  "org": "777"
+                  "org": "777",
+                  "placementId": "1"
                 }
               }
             },
@@ -87,7 +90,8 @@
               },
               "ext": {
                 "bidder": {
-                  "org": "777"
+                  "org": "777",
+                  "placementId": "1"
                 }
               }
             }

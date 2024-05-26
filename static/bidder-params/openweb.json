@@ -6,7 +6,8 @@
   "properties": {
     "placementId": {
       "type": "string",
-      "description": "An ID which identifies this placement of the impression"
+      "description": "An ID which identifies this placement of the impression",
+      "minLength": 1
     },
     "aid": {
       "type": "integer",
@@ -18,6 +19,7 @@
       "minLength": 1
     }
   },
+  "required": [ "placementId" ],
   "oneOf": [
     {
       "required": [
