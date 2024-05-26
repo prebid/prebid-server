@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -60,9 +61,13 @@ func extractOrg(request *openrtb2.BidRequest) (string, error) {
 		if impExt.Org != "" {
 			return strings.TrimSpace(impExt.Org), nil
 		}
+
+		if impExt.Aid != 0 {
+			return strconv.Itoa(impExt.Aid), nil
+		}
 	}
 
-	return "", errors.New("no org supplied")
+	return "", errors.New("no org or aid supplied")
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
@@ -80,7 +85,9 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
-	bidResponse.Currency = response.Cur
+	if response.Cur != "" {
+		bidResponse.Currency = response.Cur
+	}
 
 	var errs []error
 

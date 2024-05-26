@@ -8,13 +8,26 @@
       "type": "string",
       "description": "An ID which identifies this placement of the impression"
     },
+    "aid": {
+      "type": "integer",
+      "description": "Deprecated: An ID which identifies the channel"
+    },
     "org": {
       "type": "string",
       "description": "The organization ID.",
       "minLength": 1
     }
   },
-  "required": [
-    "org"
+  "oneOf": [
+    {
+      "required": [
+        "aid"
+      ]
+    },
+    {
+      "required": [
+        "org"
+      ]
+    }
   ]
 }

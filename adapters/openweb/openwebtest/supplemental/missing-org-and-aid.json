@@ -22,7 +22,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "no org supplied",
+      "value": "no org or aid supplied",
       "comparison": "regex"
     }
   ]
