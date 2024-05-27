@@ -14,7 +14,7 @@ import (
 	"text/template"
 )
 
-type Adapter struct {
+type adapter struct {
 	endpoint *template.Template
 }
 
@@ -24,7 +24,7 @@ type reqDioExt struct {
 	InventoryId string `json:"inventoryId"`
 }
 
-func (adapter *Adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
@@ -129,7 +129,7 @@ func (adapter *Adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *
 }
 
 // MakeBids translates Displayio bid response to prebid-server specific format
-func (adapter *Adapter) MakeBids(internalRequest *openrtb2.BidRequest, _ *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, _ *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
 	if adapters.IsResponseStatusCodeNoContent(responseData) {
 		return nil, nil
@@ -178,7 +178,7 @@ func Builder(_ openrtb_ext.BidderName, config config.Adapter, _ config.Server) (
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
 
-	bidder := &Adapter{
+	bidder := &adapter{
 		endpoint: endpoint,
 	}
 	return bidder, nil
@@ -195,7 +195,7 @@ func getBidMediaTypeFromMtype(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 	}
 }
 
-func (adapter *Adapter) buildEndpointURL(params *openrtb_ext.ExtImpDisplayio) (string, error) {
+func (adapter *adapter) buildEndpointURL(params *openrtb_ext.ExtImpDisplayio) (string, error) {
 	endpointParams := macros.EndpointTemplateParams{PublisherID: params.PublisherId}
 	return macros.ResolveMacros(adapter.endpoint, endpointParams)
 }
