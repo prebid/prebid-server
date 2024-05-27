@@ -43,7 +43,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://101.prebid.display.io",
+        "uri": "https://prebid.display.io/?publisher=101",
         "body": {
           "id": "testid",
           "imp": [

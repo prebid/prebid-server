@@ -1,4 +1,4 @@
-endpoint: "https://{{.PublisherID}}.prebid.display.io/"
+endpoint: "https://prebid.display.io/?publisher={{.PublisherID}}"
 endpointCompression: gzip
 geoscope:
   - global

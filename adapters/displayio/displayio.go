@@ -14,7 +14,7 @@ import (
 	"text/template"
 )
 
-type DisplayioAdapter struct {
+type Adapter struct {
 	endpoint *template.Template
 }
 
@@ -24,7 +24,7 @@ type reqDioExt struct {
 	InventoryId string `json:"inventoryId"`
 }
 
-func (adapter *DisplayioAdapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (adapter *Adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
@@ -33,15 +33,11 @@ func (adapter *DisplayioAdapter) MakeRequests(request *openrtb2.BidRequest, requ
 	var requestExt map[string]interface{}
 	var dioExt reqDioExt
 
-	if len(request.Imp) == 0 {
-		return nil, []error{&errortypes.BadInput{Message: "No impression in the bid request"}}
-	}
-
 	impressions := request.Imp
 	result := make([]*adapters.RequestData, 0, len(impressions))
 	errs := make([]error, 0, len(impressions))
 
-	for i, impression := range impressions {
+	for _, impression := range impressions {
 		if impression.BidFloor == 0 {
 			errs = append(errs, &errortypes.BadInput{
 				Message: "BidFloor should be defined",
@@ -88,21 +84,19 @@ func (adapter *DisplayioAdapter) MakeRequests(request *openrtb2.BidRequest, requ
 			continue
 		}
 
-		if i == 0 {
-			dioExt = reqDioExt{PlacementId: impressionExt.PlacementId, InventoryId: impressionExt.InventoryId}
+		dioExt = reqDioExt{PlacementId: impressionExt.PlacementId, InventoryId: impressionExt.InventoryId}
 
-			err = json.Unmarshal(request.Ext, &requestExt)
-			if err != nil {
-				requestExt = make(map[string]interface{})
-			}
+		err = json.Unmarshal(request.Ext, &requestExt)
+		if err != nil {
+			requestExt = make(map[string]interface{})
+		}
 
-			requestExt["displayio"] = dioExt
+		requestExt["displayio"] = dioExt
 
-			request.Ext, err = json.Marshal(requestExt)
-			if err != nil {
-				errs = append(errs, err)
-				continue
-			}
+		request.Ext, err = json.Marshal(requestExt)
+		if err != nil {
+			errs = append(errs, err)
+			continue
 		}
 
 		request.Imp = []openrtb2.Imp{impression}
@@ -135,7 +129,7 @@ func (adapter *DisplayioAdapter) MakeRequests(request *openrtb2.BidRequest, requ
 }
 
 // MakeBids translates Displayio bid response to prebid-server specific format
-func (adapter *DisplayioAdapter) MakeBids(internalRequest *openrtb2.BidRequest, _ *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (adapter *Adapter) MakeBids(internalRequest *openrtb2.BidRequest, _ *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
 	if adapters.IsResponseStatusCodeNoContent(responseData) {
 		return nil, nil
@@ -184,7 +178,7 @@ func Builder(_ openrtb_ext.BidderName, config config.Adapter, _ config.Server) (
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
 
-	bidder := &DisplayioAdapter{
+	bidder := &Adapter{
 		endpoint: endpoint,
 	}
 	return bidder, nil
@@ -201,7 +195,7 @@ func getBidMediaTypeFromMtype(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 	}
 }
 
-func (adapter *DisplayioAdapter) buildEndpointURL(params *openrtb_ext.ExtImpDisplayio) (string, error) {
+func (adapter *Adapter) buildEndpointURL(params *openrtb_ext.ExtImpDisplayio) (string, error) {
 	endpointParams := macros.EndpointTemplateParams{PublisherID: params.PublisherId}
 	return macros.ResolveMacros(adapter.endpoint, endpointParams)
 }
