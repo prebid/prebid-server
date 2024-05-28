@@ -10,7 +10,7 @@ geoscope:
   - FRA
   - ITA
 maintainer:
-  email: "ext_mediago_cm@baidu.com"
+  email: ext_mediago_cm@baidu.com
 gvlVendorID: 1020
 capabilities:
   site:

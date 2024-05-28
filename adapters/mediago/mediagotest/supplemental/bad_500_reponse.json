@@ -18,16 +18,6 @@
     "site": {
       "id": "test-site-id",
       "page": "https://www.example.com/"
-    },
-    "ext": {
-      "prebid": {
-        "bidderparams": {
-          "bidder": {
-            "token": "f9f2b1ef23fe2759c2cad0953029a94b",
-            "region": "US"
-          }
-        }
-      }
     }
   },
 
@@ -56,57 +46,21 @@
           "site": {
             "id": "test-site-id",
             "page": "https://www.example.com/"
-          },
-          "ext": {
-            "prebid": {
-              "bidderparams": {
-                "bidder": {
-                  "token": "f9f2b1ef23fe2759c2cad0953029a94b",
-                  "region": "US"
-                }
-              }
-            }
           }
         },
         "impIDs":["test-imp-id"]
       },
       "mockResponse": {
-        "status": 200,
-        "body": {
-          "id": "test-request-id",
-          "seatbid": [
-            {
-              "seat": "mediago",
-              "bid": [{
-                "id": "test-imp-id",
-                "impid": "test-imp-id",
-                "price": 0.5,
-                "adm": "some-ads",
-                "crid": "crid_testid"
-              }]
-            }
-          ],
-          "cur": "USD"
-        }
+        "status": 500
       }
     }
   ],
-
-  "expectedBidResponses": [
+  "expectedBidResponses": [],
+  "expectedMakeBidsErrors": [
     {
-      "currency": "USD",
-      "bids": [
-        {
-          "bid": {
-            "id": "test-imp-id",
-            "impid": "test-imp-id",
-            "price": 0.5,
-            "adm": "some-ads",
-            "crid": "crid_testid"
-          },
-          "type": "banner"
-        }
-      ]
+      "value": "Unexpected status code: 500. Run with request.debug = 1 for more info",
+      "comparison": "literal"
     }
   ]
+
 }

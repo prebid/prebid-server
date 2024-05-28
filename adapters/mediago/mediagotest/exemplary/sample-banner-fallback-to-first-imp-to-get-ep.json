@@ -10,7 +10,8 @@
         "ext": {
           "bidder": {
             "token": "f9f2b1ef23fe2759c2cad0953029a94b",
-            "placementId": "testPlacementId"
+            "placementId": "testPlacementId",
+            "region": "US"
           }
         }
       }
@@ -18,16 +19,6 @@
     "site": {
       "id": "test-site-id",
       "page": "https://www.example.com/"
-    },
-    "ext": {
-      "prebid": {
-        "bidderparams": {
-          "bidder": {
-            "token": "f9f2b1ef23fe2759c2cad0953029a94b",
-            "region": "US"
-          }
-        }
-      }
     }
   },
 
@@ -48,6 +39,7 @@
               "ext": {
                 "bidder": {
                   "token": "f9f2b1ef23fe2759c2cad0953029a94b",
+                  "region": "US",
                   "placementId": "testPlacementId"
                 }
               }
@@ -56,16 +48,6 @@
           "site": {
             "id": "test-site-id",
             "page": "https://www.example.com/"
-          },
-          "ext": {
-            "prebid": {
-              "bidderparams": {
-                "bidder": {
-                  "token": "f9f2b1ef23fe2759c2cad0953029a94b",
-                  "region": "US"
-                }
-              }
-            }
           }
         },
         "impIDs":["test-imp-id"]

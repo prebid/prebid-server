@@ -11,12 +11,16 @@
           "bidder": "badBidder"
         }
       }
-    ]
+    ],
+    "site": {
+      "id": "test-site-id",
+      "page": "https://www.example.com/"
+    }
   },
 
   "expectedMakeRequestsErrors": [
     {
-      "value": "Invalid ExtImpMediaGo value",
+      "value": "json: cannot unmarshal string into Go value of type openrtb_ext.ExtImpMediaGo",
       "comparison": "literal"
     }
   ]

@@ -9,12 +9,16 @@
         },
         "ext": "badExt"
       }
-    ]
+    ],
+    "site": {
+      "id": "test-site-id",
+      "page": "https://www.example.com/"
+    }
   },
 
   "expectedMakeRequestsErrors": [
     {
-      "value": "Invalid ExtImpMediaGo value",
+      "value": "json: cannot unmarshal string into Go value of type adapters.ExtImpBidder",
       "comparison": "literal"
     }
   ]

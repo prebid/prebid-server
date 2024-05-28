@@ -6,3 +6,8 @@ type ExtImpMediaGo struct {
 	Region      string `json:"region"`
 	PlacementId string `json:"placementId"`
 }
+
+type ExtMediaGo struct {
+	Token  string `json:"token"`
+	Region string `json:"region"`
+}

@@ -10,7 +10,8 @@
         "ext": {
           "bidder": {
             "token": "f9f2b1ef23fe2759c2cad0953029a94b",
-            "placementId": "testPlacementId"
+            "placementId": "testPlacementId",
+            "region": "APAC"
           }
         }
       }
@@ -24,7 +25,7 @@
         "bidderparams": {
           "bidder": {
             "token": "f9f2b1ef23fe2759c2cad0953029a94b",
-            "region": "US"
+            "region": "APAC"
           }
         }
       }
@@ -34,7 +35,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://rtb-us.mediago.io/api/bid?tn=f9f2b1ef23fe2759c2cad0953029a94b",
+        "uri": "https://rtb-jp.mediago.io/api/bid?tn=f9f2b1ef23fe2759c2cad0953029a94b",
         "body": {
           "id": "test-request-id",
           "imp": [
@@ -48,6 +49,7 @@
               "ext": {
                 "bidder": {
                   "token": "f9f2b1ef23fe2759c2cad0953029a94b",
+                  "region": "APAC",
                   "placementId": "testPlacementId"
                 }
               }
@@ -62,7 +64,7 @@
               "bidderparams": {
                 "bidder": {
                   "token": "f9f2b1ef23fe2759c2cad0953029a94b",
-                  "region": "US"
+                  "region": "APAC"
                 }
               }
             }

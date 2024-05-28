@@ -14,7 +14,11 @@
           }
         }
       }
-    ]
+    ],
+    "site": {
+      "id": "test-site-id",
+      "page": "https://www.example.com/"
+    }
   },
 
   "httpCalls": [
@@ -38,7 +42,11 @@
                 }
               }
             }
-          ]
+          ],
+          "site": {
+            "id": "test-site-id",
+            "page": "https://www.example.com/"
+          }
         },
         "impIDs":["test-imp-id"]
       },

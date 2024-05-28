@@ -2,6 +2,7 @@ package mediago
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -49,12 +50,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 }
 
 func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, error) {
-	mediagoExt, err := getImpMediaGoExt(&request.Imp[0])
 
+	mediagoExt, err := getMediaGoExt(request)
 	if err != nil {
-		return nil, &errortypes.BadInput{Message: "Invalid ExtImpMediaGo value"}
+		return nil, err
 	}
-
 	endPoint, err := a.getEndPoint(mediagoExt)
 	if err != nil {
 		return nil, err
@@ -80,19 +80,41 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestDa
 	}, nil
 }
 
-// get ImpMediaGoExt From First Imp. Only check and get first Imp.Ext.Bidder to ExtImpMediago
-func getImpMediaGoExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpMediaGo, error) {
-	var extImpMediaGo openrtb_ext.ExtImpMediaGo
+// get MediaGoExt From ext.bidderparams or ext of First Imp. Only check and get first Imp.Ext.Bidder to ExtImpMediago
+func getMediaGoExt(request *openrtb2.BidRequest) (*openrtb_ext.ExtMediaGo, error) {
+	var extMediaGo openrtb_ext.ExtMediaGo
 	var extBidder adapters.ExtImpBidder
-	err := json.Unmarshal(imp.Ext, &extBidder)
+
+	// first get the mediago ext from ext.bidderparams
+	reqExt := &openrtb_ext.ExtRequest{}
+	err := json.Unmarshal(request.Ext, &reqExt)
+	if err != nil {
+		err = json.Unmarshal(reqExt.Prebid.BidderParams, &extMediaGo)
+		if err != nil && extMediaGo.Token != "" {
+			return &extMediaGo, nil
+		}
+	}
+
+	// fallback to get token and region from first imp
+	imp := request.Imp[0]
+	err = json.Unmarshal(imp.Ext, &extBidder)
 	if err != nil {
 		return nil, err
 	}
+
+	var extImpMediaGo openrtb_ext.ExtImpMediaGo
 	err = json.Unmarshal(extBidder.Bidder, &extImpMediaGo)
 	if err != nil {
 		return nil, err
 	}
-	return &extImpMediaGo, nil
+	if extImpMediaGo.Token != "" {
+		extMediaGo.Token = extImpMediaGo.Token
+		extMediaGo.Region = extImpMediaGo.Region
+
+		return &extMediaGo, nil
+	}
+	return nil, errors.New("mediago token not found")
+
 }
 
 func getRegionInfo(region string) string {
@@ -108,7 +130,7 @@ func getRegionInfo(region string) string {
 	}
 }
 
-func (a *adapter) getEndPoint(ext *openrtb_ext.ExtImpMediaGo) (string, error) {
+func (a *adapter) getEndPoint(ext *openrtb_ext.ExtMediaGo) (string, error) {
 	endPointParams := macros.EndpointTemplateParams{
 		AccountID: url.PathEscape(ext.Token),
 		Host:      url.PathEscape(getRegionInfo(ext.Region)),
@@ -131,20 +153,11 @@ func preProcess(request *openrtb2.BidRequest) {
 }
 
 func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if response.StatusCode == http.StatusNoContent {
+	if adapters.IsResponseStatusCodeNoContent(response) {
 		return nil, nil
 	}
-
-	if response.StatusCode == http.StatusBadRequest {
-		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Unexpected status code: %d.", response.StatusCode),
-		}}
-	}
-
-	if response.StatusCode != http.StatusOK {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d.", response.StatusCode),
-		}}
+	if err := adapters.CheckResponseStatusCodeForErrors(response); err != nil {
+		return nil, []error{err}
 	}
 
 	var bidResp openrtb2.BidResponse
@@ -176,47 +189,26 @@ func getBidType(bid openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, err
 	switch bid.MType {
 	case openrtb2.MarkupBanner:
 		return openrtb_ext.BidTypeBanner, nil
-	case openrtb2.MarkupAudio:
-		return openrtb_ext.BidTypeAudio, nil
 	case openrtb2.MarkupNative:
 		return openrtb_ext.BidTypeNative, nil
-	case openrtb2.MarkupVideo:
-		return openrtb_ext.BidTypeVideo, nil
+	// case openrtb2.MarkupAudio:
+	// 	return openrtb_ext.BidTypeAudio, nil
+	// case openrtb2.MarkupVideo:
+	// 	return openrtb_ext.BidTypeVideo, nil
 	default:
-		var bidExt mediagoResponseBidExt
-		err := json.Unmarshal(bid.Ext, &bidExt)
-		if err == nil {
-			switch bidExt.MediaType {
-			case "banner":
-				return openrtb_ext.BidTypeBanner, nil
-			case "native":
-				return openrtb_ext.BidTypeNative, nil
-			case "video":
-				return openrtb_ext.BidTypeVideo, nil
-			}
-		}
-		var mediaType openrtb_ext.BidType
-		var typeCnt = 0
 		for _, imp := range imps {
 			if imp.ID == bid.ImpID {
 				if imp.Banner != nil {
-					typeCnt += 1
-					mediaType = openrtb_ext.BidTypeBanner
+					return openrtb_ext.BidTypeBanner, nil
 				}
 				if imp.Native != nil {
-					typeCnt += 1
-					mediaType = openrtb_ext.BidTypeNative
-				}
-				if imp.Video != nil {
-					typeCnt += 1
-					mediaType = openrtb_ext.BidTypeVideo
+					return openrtb_ext.BidTypeNative, nil
 				}
 			}
 		}
-		if typeCnt == 1 {
-			return mediaType, nil
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Unsupported MType %d", bid.MType),
 		}
-		return mediaType, fmt.Errorf("unable to fetch mediaType in multi-format: %s", bid.ImpID)
 	}
 
 }
