@@ -98,7 +98,7 @@ func NewEndpoint(
 	hookExecutionPlanBuilder hooks.ExecutionPlanBuilder,
 	tmaxAdjustments *exchange.TmaxAdjustmentsPreprocessed,
 ) (httprouter.Handle, error) {
-	if ex == nil || requestsById == nil || accounts == nil || cfg == nil || metricsEngine == nil {
+	if ex == nil || requestValidator == nil || requestsById == nil || accounts == nil || cfg == nil || metricsEngine == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
 	}
 
