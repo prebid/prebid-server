@@ -151,7 +151,7 @@ func TestMergeCloneSlice(t *testing.T) {
 		err := MergeClone(test, []byte(`{"imps":[{"tagid":"2"}]}`))
 		require.NoError(t, err)
 
-		impExpected := &openrtb2.Imp{TagID: "2"}
+		impExpected := &openrtb2.Imp{TagID: "2"} // ensure original id is no longer present
 		assert.Equal(t, []*openrtb2.Imp{impExpected}, test.Imps)
 	})
 
