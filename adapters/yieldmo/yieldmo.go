@@ -38,9 +38,9 @@ type ExtBid struct {
 func (a *YieldmoAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 
-	if err := preprocess(request, reqInfo); err != nil {
-		errs = append(errs, err)
-	}
+	preprocessErrors := preprocess(request, reqInfo)
+
+	errs = append(errs, preprocessErrors...)
 
 	// Last Step
 	reqJSON, err := json.Marshal(request)
@@ -62,7 +62,9 @@ func (a *YieldmoAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 }
 
 // Mutate the request to get it ready to send to yieldmo.
-func preprocess(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) error {
+func preprocess(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) []error {
+	var errs []error
+
 	for i := 0; i < len(request.Imp); i++ {
 		var imp = request.Imp[i]
 		var bidderExt ExtImpBidderYieldmo
@@ -70,26 +72,27 @@ func preprocess(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo
 		if imp.BidFloor > 0 && imp.BidFloorCur != "" && strings.ToUpper(imp.BidFloorCur) != "USD" {
 			floor, err := reqInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, "USD")
 			if err != nil {
-				return &errortypes.BadInput{
+				errs = append(errs, &errortypes.BadInput{
 					Message: fmt.Sprintf("Unable to convert provided bid floor currency from %s to USD", imp.BidFloorCur),
-				}
+				})
+			} else {
+				request.Imp[i].BidFloorCur = "USD"
+				request.Imp[i].BidFloor = floor
 			}
-			imp.BidFloorCur = "USD"
-			imp.BidFloor = floor
 		}
 
 		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-			return &errortypes.BadInput{
+			errs = append(errs, &errortypes.BadInput{
 				Message: err.Error(),
-			}
+			})
 		}
 
 		var yieldmoExt openrtb_ext.ExtImpYieldmo
 
 		if err := json.Unmarshal(bidderExt.Bidder, &yieldmoExt); err != nil {
-			return &errortypes.BadInput{
+			errs = append(errs, &errortypes.BadInput{
 				Message: err.Error(),
-			}
+			})
 		}
 
 		var impExt Ext
@@ -103,15 +106,15 @@ func preprocess(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo
 
 		impExtJSON, err := json.Marshal(impExt)
 		if err != nil {
-			return &errortypes.BadInput{
+			errs = append(errs, &errortypes.BadInput{
 				Message: err.Error(),
-			}
+			})
 		}
 
 		request.Imp[i].Ext = impExtJSON
 	}
 
-	return nil
+	return errs
 }
 
 // MakeBids make the bids for the bid response.
