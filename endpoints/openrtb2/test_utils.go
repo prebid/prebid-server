@@ -34,6 +34,7 @@ import (
 	"github.com/prebid/prebid-server/v2/metrics"
 	metricsConfig "github.com/prebid/prebid-server/v2/metrics/config"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/ortb"
 	pbc "github.com/prebid/prebid-server/v2/prebid_cache_client"
 	"github.com/prebid/prebid-server/v2/stored_requests"
 	"github.com/prebid/prebid-server/v2/stored_requests/backends/empty_fetcher"
@@ -1259,6 +1260,7 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 	disableBidders(test.Config.DisabledAdapters, bidderInfos)
 	bidderMap := exchange.GetActiveBidders(bidderInfos)
 	disabledBidders := exchange.GetDisabledBidderWarningMessages(bidderInfos)
+	requestValidator := ortb.NewRequestValidator(bidderMap, disabledBidders, paramValidator)
 	met := &metricsConfig.NilMetricsEngine{}
 	mockFetcher := empty_fetcher.EmptyFetcher{}
 
@@ -1303,7 +1305,7 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 		planBuilder = hooks.EmptyPlanBuilder{}
 	}
 
-	var endpointBuilder func(uuidutil.UUIDGenerator, exchange.Exchange, openrtb_ext.BidderParamValidator, stored_requests.Fetcher, stored_requests.AccountFetcher, *config.Configuration, metrics.MetricsEngine, analytics.Runner, map[string]string, []byte, map[string]openrtb_ext.BidderName, stored_requests.Fetcher, hooks.ExecutionPlanBuilder, *exchange.TmaxAdjustmentsPreprocessed) (httprouter.Handle, error)
+	var endpointBuilder func(uuidutil.UUIDGenerator, exchange.Exchange, ortb.RequestValidator, stored_requests.Fetcher, stored_requests.AccountFetcher, *config.Configuration, metrics.MetricsEngine, analytics.Runner, map[string]string, []byte, map[string]openrtb_ext.BidderName, stored_requests.Fetcher, hooks.ExecutionPlanBuilder, *exchange.TmaxAdjustmentsPreprocessed) (httprouter.Handle, error)
 
 	switch test.endpointType {
 	case AMP_ENDPOINT:
@@ -1315,7 +1317,7 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 	endpoint, err := endpointBuilder(
 		fakeUUIDGenerator{},
 		testExchange,
-		paramValidator,
+		requestValidator,
 		storedRequestFetcher,
 		accountFetcher,
 		cfg,

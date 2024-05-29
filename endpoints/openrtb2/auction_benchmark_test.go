@@ -19,6 +19,7 @@ import (
 	"github.com/prebid/prebid-server/v2/macros"
 	metricsConfig "github.com/prebid/prebid-server/v2/metrics/config"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/ortb"
 	"github.com/prebid/prebid-server/v2/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/v2/usersync"
 )
@@ -101,7 +102,7 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 	endpoint, _ := NewEndpoint(
 		fakeUUIDGenerator{},
 		exchange,
-		paramValidator,
+		ortb.NewRequestValidator(nil, map[string]string{}, paramValidator),
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
