@@ -53,7 +53,7 @@ func (p *permissionsMock) AuctionActivitiesAllowed(ctx context.Context, bidderCo
 
 	if p.allowAllBidders {
 		permissions.AllowBidRequest = true
-		return permissions // might need  a tweak
+		return permissions
 	}
 
 	for _, allowedBidder := range p.allowedBidders {
