@@ -301,6 +301,28 @@ func IsBidderNameReserved(name string) bool {
 	return false
 }
 
+// IsPotentialBidder returns true if the name is not reserved witbin the imp[].ext context
+func IsPotentialBidder(name string) bool {
+	switch BidderName(name) {
+	case BidderReservedContext:
+		return false
+	case BidderReservedData:
+		return false
+	case BidderReservedGPID:
+		return false
+	case BidderReservedPrebid:
+		return false
+	case BidderReservedSKAdN:
+		return false
+	case BidderReservedTID:
+		return false
+	case BidderReservedAE:
+		return false
+	default:
+		return true
+	}
+}
+
 // Names of core bidders. These names *must* match the bidder code in Prebid.js if an adapter also exists in that
 // project. You may *not* use the name 'general' as that is reserved for general error messages nor 'context' as
 // that is reserved for first party data.
@@ -556,6 +578,8 @@ var bidderNameLookup = func() map[string]BidderName {
 	}
 	return lookup
 }()
+
+type BidderNameNormalizer func(name string) (BidderName, bool)
 
 func NormalizeBidderName(name string) (BidderName, bool) {
 	nameLower := strings.ToLower(name)
