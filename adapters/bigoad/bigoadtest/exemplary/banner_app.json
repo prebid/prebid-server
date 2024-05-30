@@ -123,6 +123,7 @@
                   "id": "test-imp-id",
                   "impid": "test-imp-id",
                   "adid": "11110126",
+                  "mtype": 1,
                   "price": 0.42632559,
                   "adm": "some-test-ad",
                   "adomain": [
@@ -161,6 +162,7 @@
             "adid": "11110126",
             "price": 0.42632559,
             "adm": "some-test-ad",
+            "mtype": 1,
             "adomain": [
               "www.lazada.com"
             ],

@@ -113,7 +113,8 @@
                                     "adomain": [
                                         "awesome.com"
                                     ],
-                                    "crid": "20"
+                                    "crid": "20",
+                                    "mtype": 4
                                 }
                             ],
                             "type": "native",
@@ -135,6 +136,7 @@
                         "price": 3.5,
                         "adm": "awesome-markup",
                         "crid": "20",
+                        "mtype": 4,
                         "adomain": [
                             "awesome.com"
                         ]

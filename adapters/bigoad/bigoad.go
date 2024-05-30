@@ -122,23 +122,11 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 
 	bidResponseWithCapacity := adapters.NewBidderResponseWithBidsCapacity(len(bidResponse.SeatBid[0].Bid))
 
-	// impMap := map[string]*openrtb2.Imp{}
-	// for i := range request.Imp {
-	// 	imp := request.Imp[i]
-	// 	impMap[imp.ID] = &imp
-	// }
-
 	var errors []error
 	seatBid := bidResponse.SeatBid[0]
-	for _, bid := range seatBid.Bid {
-		// imp, exists := impMap[bid.ImpID]
-		// if !exists {
-		// 	errors = append(errors, &errortypes.BadInput{
-		// 		Message: fmt.Sprintf("Invalid bid imp ID #%s does not match any imp IDs from the original bid request", bid.ImpID),
-		// 	})
-		// 	continue
-		// }
-		bidType, err := getBidType(request.Imp[0])
+	for i := range seatBid.Bid {
+		bid := seatBid.Bid[i]
+		bidType, err := getBidType(request.Imp[0], bid)
 		if err != nil {
 			errors = append(errors, err)
 			continue
@@ -152,7 +140,15 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 	return bidResponseWithCapacity, errors
 }
 
-func getBidType(imp openrtb2.Imp) (openrtb_ext.BidType, error) {
+func getBidType(imp openrtb2.Imp, bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative, nil
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
+	}
 	if imp.Native != nil {
 		return openrtb_ext.BidTypeNative, nil
 	} else if imp.Banner != nil {
@@ -162,6 +158,6 @@ func getBidType(imp openrtb2.Imp) (openrtb_ext.BidType, error) {
 	}
 
 	return "", &errortypes.BadInput{
-		Message: fmt.Sprintf("Processing an invalid impression; cannot resolve impression type for imp #%s", imp.ID),
+		Message: fmt.Sprintf("unrecognized bid type in response from bigoad %s", imp.ID),
 	}
 }

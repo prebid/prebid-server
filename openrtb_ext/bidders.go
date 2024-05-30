@@ -358,6 +358,7 @@ const (
 	BidderBidmyadz          BidderName = "bidmyadz"
 	BidderBidsCube          BidderName = "bidscube"
 	BidderBidstack          BidderName = "bidstack"
+	BidderBigoAd            BidderName = "bigoad"
 	BidderBizzclick         BidderName = "bizzclick"
 	BidderBliink            BidderName = "bliink"
 	BidderBlue              BidderName = "blue"
@@ -511,7 +512,6 @@ const (
 	BidderZeroClickFraud    BidderName = "zeroclickfraud"
 	BidderZetaGlobalSsp     BidderName = "zeta_global_ssp"
 	BidderZmaticoo          BidderName = "zmaticoo"
-	BidderBigoAd            BidderName = "bigoad"
 )
 
 // CoreBidderNames returns a slice of all core bidders.
