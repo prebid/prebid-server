@@ -20,11 +20,11 @@ import (
 
 const SupportedCurrency = "USD"
 
-type MetaxAdapter struct {
+type adapter struct {
 	template *template.Template
 }
 
-func (a *MetaxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 
 	if len(request.Imp) == 0 {
@@ -85,7 +85,7 @@ func (a *MetaxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 	return reqDatas, errs
 }
 
-func (a *MetaxAdapter) MakeBids(bidReq *openrtb2.BidRequest, reqData *adapters.RequestData, respData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(bidReq *openrtb2.BidRequest, reqData *adapters.RequestData, respData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if respData.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -125,7 +125,7 @@ func (a *MetaxAdapter) MakeBids(bidReq *openrtb2.BidRequest, reqData *adapters.R
 	return resp, nil
 }
 
-func (a *MetaxAdapter) getEndpoint(ext *openrtb_ext.ExtImpMetaX) (string, error) {
+func (a *adapter) getEndpoint(ext *openrtb_ext.ExtImpMetaX) (string, error) {
 	params := macros.EndpointTemplateParams{
 		PublisherID: url.PathEscape(ext.PublisherID),
 		AdUnit:      url.PathEscape(ext.Adunit),
@@ -229,7 +229,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 		return nil, fmt.Errorf("unable to parse endpoint: %v", err)
 	}
 
-	bidder := &MetaxAdapter{
+	bidder := &adapter{
 		template: templ,
 	}
 	return bidder, nil
