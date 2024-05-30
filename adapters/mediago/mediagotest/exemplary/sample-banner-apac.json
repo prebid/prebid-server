@@ -35,7 +35,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://rtb-jp.mediago.io/api/bid?tn=f9f2b1ef23fe2759c2cad0953029a94b",
+        "uri": "https://REGION.mediago.io/api/bid?tn=f9f2b1ef23fe2759c2cad0953029a94b",
         "body": {
           "id": "test-request-id",
           "imp": [
