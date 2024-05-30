@@ -1,0 +1,17 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "BigoAd Adapter Params",
+    "description": "A schema which validates params accepted by the BigoAd adapter",
+    "type": "object",
+    "properties": {
+      "host": {
+        "type": "string",
+        "description": "host"
+      },
+      "sspid": {
+        "type": "string",
+        "description": "Special id provided by BigoAd"
+      }
+    },
+    "required": ["host", "sspid"]
+  }

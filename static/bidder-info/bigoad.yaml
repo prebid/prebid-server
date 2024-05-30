@@ -1,0 +1,20 @@
+endpoint: "http://{{.Host}}/Ad/GetAdOut?sspid={{.SspId}}"
+endpointCompression: gzip
+geoscope:
+  - USA
+  - CHN
+  - RUS
+maintainer:
+  email: BigoAds@bigo.sg
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
