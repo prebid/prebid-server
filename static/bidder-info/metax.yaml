@@ -1,0 +1,13 @@
+endpoint: "https://hb.metaxads.com/prebid?sid={{.PublisherID}}&adunit={{.AdUnit}}&source=prebid-server"
+maintainer:
+  email: "prebid@metaxsoft.com"
+gvlVendorID: 1301
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video

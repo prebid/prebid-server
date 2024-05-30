@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "MetaX Adapter Params",
+  "description": "A schema which validates params accepted by the MetaX adapter",
+  "type": "object",
+  "properties": {
+    "publisherId": {
+      "type": "string",
+      "description": "An ID which identifies the publisher",
+      "minLength": 1
+    },
+    "adunit": {
+      "type": "string",
+      "description": "An ID which identifies the adunit",
+      "minLength": 1
+    }
+  },
+  "required": ["publisherId", "adunit"]
+}

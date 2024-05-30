@@ -1,0 +1,31 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "format": [{
+          "w": 728,
+          "h": 90
+        }],
+        "ext": {
+          "bidder": {
+            "publisherId": "10000000",
+            "adunit": "abc"
+          }
+        }
+      }
+    ],
+    "app": {
+      "bundle": "com.prebid"
+    },
+    "device": {
+      "ifa": "ec943cb9-61ec-460f-a925-6489c3fcc4e3"
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "invalid adunit",
+      "comparison": "literal"
+    }
+  ]
+}
