@@ -132,7 +132,6 @@
                 "origbidcpm": 0.51,
                 "prebid": {
                   "meta": {
-                    "adaptercode": "audienceNetwork"
                   },
                   "bidid": "bid-audienceNetwork-1",
                   "type": "video"
@@ -157,7 +156,6 @@
                 "origbidcpm": 0.71,
                 "prebid": {
                   "meta": {
-                    "adaptercode": "appnexus"
                   },
                   "bidid": "bid-appnexus-1",
                   "type": "video",
@@ -185,7 +183,6 @@
                 "origbidcpm": 0.21,
                 "prebid": {
                   "meta": {
-                    "adaptercode": "appnexus"
                   },
                   "bidid": "bid-appnexus-2",
                   "type": "video"
