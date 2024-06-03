@@ -93,10 +93,11 @@ func assertReq(t *testing.T, bidderRequests []BidderRequest,
 
 func TestSplitImps(t *testing.T) {
 	testCases := []struct {
-		description   string
-		givenImps     []openrtb2.Imp
-		expectedImps  map[string][]openrtb2.Imp
-		expectedError string
+		description     string
+		givenImps       []openrtb2.Imp
+		validatorErrors []error
+		expectedImps    map[string][]openrtb2.Imp
+		expectedError   string
 	}{
 		{
 			description:   "Nil",
@@ -284,10 +285,30 @@ func TestSplitImps(t *testing.T) {
 			},
 			expectedError: "",
 		},
+		{
+			description: "invalid FPD at imp.ext.prebid.imp for valid bidder",
+			givenImps: []openrtb2.Imp{
+				{
+					ID: "imp1",
+					Banner: &openrtb2.Banner{
+						Format: []openrtb2.Format{
+							{
+								W: 10,
+								H: 20,
+							},
+						},
+					},
+					Ext: json.RawMessage(`{"prebid":{"bidder":{"bidderA":{"imp1paramA":"imp1valueA"}},"imp":{"bidderA":{"id":"impFPD", "banner":{"format":[{"w":0,"h":0}]}}}}}`),
+				},
+			},
+			validatorErrors: []error{errors.New("some error")},
+			expectedImps:    nil,
+			expectedError:   "merging bidder imp first party data for imp imp1 results in an invalid imp: [some error]",
+		},
 	}
 
 	for _, test := range testCases {
-		imps, err := splitImps(test.givenImps)
+		imps, err := splitImps(test.givenImps, &mockRequestValidator{errors: test.validatorErrors}, nil, false, nil)
 
 		if test.expectedError == "" {
 			assert.NoError(t, err, test.description+":err")
