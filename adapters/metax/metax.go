@@ -175,8 +175,12 @@ func preprocessImp(imp *openrtb2.Imp) error {
 	switch {
 	case imp.Video != nil:
 		imp.Banner = nil
+		imp.Native = nil
+		imp.Audio = nil
 	case imp.Banner != nil:
 		imp.Video = nil
+		imp.Native = nil
+		imp.Audio = nil
 	default:
 	}
 
@@ -185,6 +189,10 @@ func preprocessImp(imp *openrtb2.Imp) error {
 
 func assignBannerSize(banner *openrtb2.Banner) (*openrtb2.Banner, error) {
 	if banner.W != nil && banner.H != nil {
+		return banner, nil
+	}
+
+	if len(banner.Format) == 0 {
 		return banner, nil
 	}
 
