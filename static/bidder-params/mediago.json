@@ -6,13 +6,13 @@
   "properties": {
     "token": {
       "type": "string",
-      "description": "Publisher token，communicate with MediaGo to obtain it.",
+      "description": "Publisher token，communicate with MediaGo to obtain it. This parameter expects all imps to be the same.",
       "minLength": 1
     },
     "region": {
       "type": "string",
       "enum": ["US", "EU", "APAC"],
-      "description": "Server region for PBS request: US for US Region, EU for EU Region, APAC for APAC Region, default is US"
+      "description": "Server region for PBS request: US for US Region, EU for EU Region, APAC for APAC Region, default is US. This parameter expects all imps to be the same"
     },
     "placementId": {
       "type": "string",
