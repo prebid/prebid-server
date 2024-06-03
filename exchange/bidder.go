@@ -201,6 +201,10 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 		// If the bidder only needs to make one, save some cycles by just using the current one.
 		dataLen = len(reqData) + len(bidderRequest.BidderStoredResponses)
 		responseChannel = make(chan *httpCallInfo, dataLen)
+		seatNonBids = &openrtb_ext.SeatNonBid{
+			Seat:   string(bidderRequest.BidderName),
+			NonBid: []openrtb_ext.NonBid{},
+		}
 		if len(reqData) == 1 {
 			responseChannel <- bidder.doRequest(ctx, reqData[0], bidRequestOptions.bidderRequestStartTime, bidRequestOptions.tmaxAdjustments)
 		} else {
@@ -400,18 +404,9 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 			}
 		} else {
 			errs = append(errs, httpInfo.err)
-			errorCode := errortypes.ReadCode(httpInfo.err)
-			nonBidReason := ErrorToNonBidReason(errorCode)
-			seatNonBids = &openrtb_ext.SeatNonBid{
-				Seat:   string(bidderRequest.BidderName),
-				NonBid: make([]openrtb_ext.NonBid, len(bidderRequest.BidRequest.Imp)),
-			}
-			for i, imp := range bidderRequest.BidRequest.Imp {
-				// assuming same non bid reason across multiple impressions
-				nonBid := newProxyNonBid(imp.ID, int(nonBidReason))
-				nonBid.Error = httpInfo.err.Error()
-				seatNonBids.NonBid[i] = nonBid
-			}
+			nonBidReason := HttpInfoToNonBidReason(httpInfo)
+			proxyNonBids := buildProxyNonBids(httpInfo.request.ImpIDs, nonBidReason, httpInfo.err)
+			seatNonBids.NonBid = append(seatNonBids.NonBid, proxyNonBids...)
 		}
 	}
 	seatBids := make([]*entities.PbsOrtbSeatBid, 0, len(seatBidMap))
