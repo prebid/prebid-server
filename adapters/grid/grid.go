@@ -433,7 +433,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 
 func getBidMeta(ext json.RawMessage) (*openrtb_ext.ExtBidPrebidMeta, error) {
 	if ext == nil {
-		return nil, errors.New("nil json.RawMessage passed to getBidMeta")
+		return nil, errors.New("nil ext passed to getBidMeta")
 	}
 	var bidExt GridBidExt
 

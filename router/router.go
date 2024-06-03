@@ -373,7 +373,7 @@ func readDefaultRequest(defReqConfig config.DefReqConfig) (map[string]string, []
 		}
 
 		if err := jsonutil.UnmarshalValid(defReqJSON, defReq); err != nil {
-			// we might not have aliases defined, but will atleast show that the JSON file is parsable.
+			// we might not have aliases defined, but will at least show that the JSON file is parsable.
 			glog.Fatalf("error parsing alias json in file %s: %v", defReqConfig.FileSystem.FileName, err)
 			return aliases, []byte{}
 		}

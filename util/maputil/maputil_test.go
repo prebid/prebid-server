@@ -251,7 +251,7 @@ func TestCloneMap(t *testing.T) {
 	t.Run("NilMap", func(t *testing.T) {
 		var testMap, copyMap map[string]string = nil, nil // copyMap is a manual copy of testMap
 		clone := Clone(testMap)
-		testMap = map[string]string{"foo": "bar"} //nolint: ineffassign
+		testMap = map[string]string{"foo": "bar"}
 		assert.Equal(t, copyMap, clone)
 	})
 	// Test a simple string map
