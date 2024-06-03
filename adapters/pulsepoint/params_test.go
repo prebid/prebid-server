@@ -37,6 +37,9 @@ func TestInvalidParams(t *testing.T) {
 var validParams = []string{
 	`{"cp":1000, "ct": 2000}`,
 	`{"cp":1001, "ct": 2001}`,
+	`{"cp":"1000", "ct": "2000"}`,
+	`{"cp":"1000", "ct": 2000}`,
+	`{"cp":1000, "ct": "2000"}`,
 	`{"cp":1001, "ct": 2001, "cf": "1x1"}`,
 }
 
