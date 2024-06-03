@@ -77,9 +77,9 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 
 	bidderImpWithBidResp := stored_responses.InitStoredBidResponses(req.BidRequest, auctionReq.StoredBidResponses)
 
-	hasStoredResponses := len(auctionReq.StoredAuctionResponses) > 0
+	hasStoredAuctionResponses := len(auctionReq.StoredAuctionResponses) > 0
 
-	impsByBidder, err := splitImps(req.BidRequest.Imp, rs.requestValidator, requestAliases, hasStoredResponses, auctionReq.StoredBidResponses)
+	impsByBidder, err := splitImps(req.BidRequest.Imp, rs.requestValidator, requestAliases, hasStoredAuctionResponses, auctionReq.StoredBidResponses)
 	if err != nil {
 		errs = []error{err}
 		return
@@ -570,7 +570,7 @@ func extractBuyerUIDs(user *openrtb2.User) (map[string]string, error) {
 // The "imp.ext" value of the rubicon Imp will only contain the "prebid" values, and "rubicon" value at the "bidder" key.
 //
 // The goal here is so that Bidders only get Imps and Imp.Ext values which are intended for them.
-func splitImps(imps []openrtb2.Imp, requestValidator ortb.RequestValidator, requestAliases map[string]string, hasStoredResponses bool, storedBidResponses stored_responses.ImpBidderStoredResp) (map[string][]openrtb2.Imp, error) {
+func splitImps(imps []openrtb2.Imp, requestValidator ortb.RequestValidator, requestAliases map[string]string, hasStoredAuctionResponses bool, storedBidResponses stored_responses.ImpBidderStoredResp) (map[string][]openrtb2.Imp, error) {
 	bidderImps := make(map[string][]openrtb2.Imp)
 
 	for i, imp := range imps {
@@ -609,7 +609,7 @@ func splitImps(imps []openrtb2.Imp, requestValidator ortb.RequestValidator, requ
 					return nil, err
 				}
 				impWrapper := openrtb_ext.ImpWrapper{Imp: &impCopy}
-				if err := requestValidator.ValidateImp(&impWrapper, i, requestAliases, hasStoredResponses, storedBidResponses); err != nil {
+				if err := requestValidator.ValidateImp(&impWrapper, i, requestAliases, hasStoredAuctionResponses, storedBidResponses); err != nil {
 					return nil, &errortypes.InvalidImpFirstPartyData{
 						Message: fmt.Sprintf("merging bidder imp first party data for imp %s results in an invalid imp: %v", imp.ID, err),
 					}
