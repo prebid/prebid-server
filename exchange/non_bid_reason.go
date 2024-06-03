@@ -1,6 +1,13 @@
 package exchange
 
-import "github.com/prebid/prebid-server/v2/errortypes"
+import (
+	"net"
+	"net/url"
+	"os"
+	"syscall"
+
+	"github.com/prebid/prebid-server/v2/errortypes"
+)
 
 // import "github.com/prebid/prebid-server/errortypes"
 
@@ -18,6 +25,8 @@ const (
 	ResponseRejectedCreativeSizeNotAllowed NonBidReason = 351 // Response Rejected - Invalid Creative (Size Not Allowed)
 	ResponseRejectedCreativeNotSecure      NonBidReason = 352 // Response Rejected - Invalid Creative (Not Secure)
 	ErrorTimeout                           NonBidReason = 101 // Error - Timeout
+	ErrorGeneral                           NonBidReason = 100
+	ErrorBidderUnreachable                 NonBidReason = 103 // Error - Bidder Unreachable
 )
 
 // Ptr returns pointer to own value.
@@ -33,10 +42,39 @@ func (n *NonBidReason) Val() NonBidReason {
 	return *n
 }
 
-func ErrorToNonBidReason(errorCode int) NonBidReason {
+func errorToNonBidReason(errorCode int) NonBidReason {
 	switch errorCode {
 	case errortypes.TimeoutErrorCode:
 		return ErrorTimeout
 	}
-	return 0
+	// return 0
+	return ErrorGeneral
+}
+
+func httpInfoToNonBidReason(httpInfo *httpCallInfo) NonBidReason {
+	if uError, ok := httpInfo.err.(*url.Error); ok {
+		if opError, ok := uError.Err.(*net.OpError); ok {
+			if sysCallErr, ok := opError.Err.(*os.SyscallError); ok {
+				// fmt.Println(sysCallErr.Err.(syscall.Errno))
+				// fmt.Println(uError.Unwrap())
+				// fmt.Println(sysCallErr.Err)
+				sysErr := sysCallErr.Err.(syscall.Errno)
+				switch sysErr {
+				case syscall.ECONNREFUSED:
+					return ErrorBidderUnreachable
+				}
+			}
+
+		}
+	}
+	return ErrorGeneral
+}
+
+func HttpInfoToNonBidReason(httpInfo *httpCallInfo) NonBidReason {
+	errorCode := errortypes.ReadCode(httpInfo.err)
+	nonBidReason := errorToNonBidReason(errorCode)
+	if nonBidReason == ErrorGeneral {
+		nonBidReason = httpInfoToNonBidReason(httpInfo)
+	}
+	return nonBidReason
 }
