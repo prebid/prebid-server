@@ -60,3 +60,13 @@ func newProxyNonBid(impId string, nonBidReason int) openrtb_ext.NonBid {
 		StatusCode: nonBidReason,
 	}
 }
+
+func buildProxyNonBids(impIds []string, nonBidReason NonBidReason, err error) []openrtb_ext.NonBid {
+	proxyNonBids := []openrtb_ext.NonBid{}
+	for _, impId := range impIds {
+		nonBid := newProxyNonBid(impId, int(nonBidReason))
+		nonBid.Error = err.Error()
+		proxyNonBids = append(proxyNonBids, nonBid)
+	}
+	return proxyNonBids
+}
