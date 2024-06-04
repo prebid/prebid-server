@@ -13,7 +13,7 @@
       "type": "integer",
       "description": "An ID which identifies the site selling the impression"
     },
-    "aid": {
+    "source": {
       "type": [
         "integer",
         "string"
@@ -25,5 +25,5 @@
       "description": "BidFloor, US Dollars"
     }
   },
-  "required": ["aid"]
+  "required": ["source"]
 }

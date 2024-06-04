@@ -16,7 +16,7 @@
         },
         "ext": {
           "bidder": {
-            "aid": 1000
+            "source": 1000
           }
         }
       }
@@ -43,7 +43,7 @@
               },
               "ext": {
                 "bidmatic": {
-                 "aid": 1000
+                 "source": 1000
                 }
               }
             }

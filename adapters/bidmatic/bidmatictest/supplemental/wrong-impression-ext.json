@@ -10,7 +10,7 @@
         },
         "ext": {
           "bidder": {
-            "aid": "some string instead of int"
+            "source": "some string instead of int"
           }
         }
       }
