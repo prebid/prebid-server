@@ -230,7 +230,7 @@ func TestSplitImps(t *testing.T) {
 							},
 						},
 					},
-					Ext: json.RawMessage(`{"prebid":{"bidder":{"bidderA":{"imp1paramA":"imp1valueA"}},"imp":{"bidderA":{"id":"impFPD", "banner":{"format":[{"h":30}]}}}}}`),
+					Ext: json.RawMessage(`{"prebid":{"bidder":{"bidderA":{"imp1paramA":"imp1valueA"}},"imp":{"bidderA":{"id":"impFPD", "banner":{"format":[{"w":30,"h":40}]}}}}}`),
 				},
 			},
 			expectedImps: map[string][]openrtb2.Imp{
@@ -240,8 +240,8 @@ func TestSplitImps(t *testing.T) {
 						Banner: &openrtb2.Banner{
 							Format: []openrtb2.Format{
 								{
-									W: 10,
-									H: 30,
+									W: 30,
+									H: 40,
 								},
 							},
 						},
@@ -264,7 +264,7 @@ func TestSplitImps(t *testing.T) {
 							},
 						},
 					},
-					Ext: json.RawMessage(`{"prebid":{"bidder":{"bidderB":{"imp1paramB":"imp1valueB"}},"imp":{"bidderA":{"id":"impFPD", "banner":{"format":[{"h":30}]}}}}}`),
+					Ext: json.RawMessage(`{"prebid":{"bidder":{"bidderB":{"imp1paramB":"imp1valueB"}},"imp":{"bidderA":{"id":"impFPD", "banner":{"format":[{"w":30,"h":40}]}}}}}`),
 				},
 			},
 			expectedImps: map[string][]openrtb2.Imp{
@@ -463,7 +463,7 @@ func TestMergeImpFPD(t *testing.T) {
 						{
 							W:   10,
 							H:   20,
-							Ext: json.RawMessage(`{"formatkey1":"formatval1", "formatkey2":"formatval2"}`),
+							Ext: json.RawMessage(`{"formatkey1":"formatval1"}`),
 						},
 					},
 				},
@@ -475,7 +475,7 @@ func TestMergeImpFPD(t *testing.T) {
 				IframeBuster: []string{"buster1", "buster2"},
 				Ext:          json.RawMessage(`{"cool1":"test1", "cool2":"test2"}`),
 			},
-			fpd: json.RawMessage(`{"id": "id2", "metric": [{"type":"type2", "value":2, "vendor":"vendor2"}], "banner": {"w":100, "format": [{"w":1000, "ext":{"formatkey1":"formatval11"}}]}, "instl":2, "bidfloor":2, "ext":{"cool1":"test11"} }`),
+			fpd: json.RawMessage(`{"id": "id2", "metric": [{"type":"type2", "value":2, "vendor":"vendor2"}], "banner": {"w":100, "format": [{"w":1000, "h":2000, "ext":{"formatkey1":"formatval11"}}]}, "instl":2, "bidfloor":2, "ext":{"cool1":"test11"} }`),
 			wantImp: &openrtb2.Imp{
 				ID:     "id2",
 				Metric: []openrtb2.Metric{{Type: "type2", Value: 2, Vendor: "vendor2"}},
@@ -485,8 +485,8 @@ func TestMergeImpFPD(t *testing.T) {
 					Format: []openrtb2.Format{
 						{
 							W:   1000,
-							H:   20,
-							Ext: json.RawMessage(`{"formatkey1":"formatval11","formatkey2":"formatval2"}`),
+							H:   2000,
+							Ext: json.RawMessage(`{"formatkey1":"formatval11"}`),
 						},
 					},
 				},
