@@ -72,6 +72,7 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 	if err != nil {
 		return
 	}
+	requestValidator := ortb.NewRequestValidator(nil, map[string]string{}, paramValidator)
 
 	nilMetrics := &metricsConfig.NilMetricsEngine{}
 
@@ -88,6 +89,7 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 		adapters,
 		nil,
 		&config.Configuration{},
+		requestValidator,
 		map[string]usersync.Syncer{},
 		nilMetrics,
 		infos,
@@ -102,7 +104,7 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 	endpoint, _ := NewEndpoint(
 		fakeUUIDGenerator{},
 		exchange,
-		ortb.NewRequestValidator(nil, map[string]string{}, paramValidator),
+		requestValidator,
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
