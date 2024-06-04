@@ -1,4 +1,4 @@
-endpoint: "https://{{.Host}}.lemmatechnologies.com/lemma/servad?pid={{.PublisherID}}&aid={{.AdUnit}}"
+endpoint: "https://{{.Host}}.ads.lemmatechnologies.com/lemma/servad?src=prebid&pid={{.PublisherID}}&aid={{.AdUnit}}"
 maintainer:
   email: support@lemmatechnologies.com
 endpointCompression: gzip
@@ -9,6 +9,10 @@ capabilities:
       - banner
       - video
   site:
+    mediaTypes:
+      - banner
+      - video
+  dooh:
     mediaTypes:
       - banner
       - video

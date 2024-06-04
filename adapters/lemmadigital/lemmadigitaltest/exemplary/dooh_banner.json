@@ -15,25 +15,28 @@
                 "bidder": {
                     "aid": 1,
                     "pid": 1,
-                    "host": "sg"
+                    "host": "doohsg"
                 }
+            },
+            "qty": {
+                "multiplier": 1,
+                "sourcetype": 3
             },
             "bidfloor": 0.1
         }],
         "device": {
             "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36"
         },
-        "site": {
-            "id": "siteID",
-            "publisher": {
-                "id": "1"
-            }
+        "dooh": {
+            "id": "1",
+            "name": "SCREEN_1",
+            "venuetype": ["retail.malls"]
         }
     },
 
     "httpCalls": [{
         "expectedRequest": {
-            "uri": "https://sg.ads.lemmatechnologies.com/lemma/servad?src=prebid&pid=1&aid=1",
+            "uri": "https://doohsg.ads.lemmatechnologies.com/lemma/servad?src=prebid&pid=1&aid=1",
             "body": {
                 "id": "test-request-id",
                 "imp": [{
@@ -50,19 +53,22 @@
                         "bidder": {
                             "aid": 1,
                             "pid": 1,
-                            "host": "sg"
+                            "host": "doohsg"
                         }
+                    },
+                    "qty": {
+                        "multiplier": 1,
+                        "sourcetype": 3
                     },
                     "bidfloor": 0.1
                 }],
                 "device": {
                     "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36"
                 },
-                "site": {
-                    "id": "siteID",
-                    "publisher": {
-                        "id": "1"
-                    }
+                "dooh": {
+                    "id": "1",
+                    "name": "SCREEN_1",
+                    "venuetype": ["retail.malls"]
                 }
             },
             "impIDs":["test-imp-id"]

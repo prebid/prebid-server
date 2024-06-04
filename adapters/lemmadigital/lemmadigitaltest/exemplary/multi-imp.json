@@ -15,7 +15,7 @@
                 "bidder": {
                     "aid": 1,
                     "pid": 1,
-                    "host": "sg.ads"
+                    "host": "sg"
                 }
             },
             "bidfloor": 0.1
@@ -33,7 +33,7 @@
                 "bidder": {
                     "aid": 1,
                     "pid": 1,
-                    "host": "sg.ads"
+                    "host": "sg"
                 }
             },
             "bidfloor": 0.12
@@ -51,7 +51,7 @@
 
     "httpCalls": [{
         "expectedRequest": {
-            "uri": "https://sg.ads.lemmatechnologies.com/lemma/servad?pid=1&aid=1",
+            "uri": "https://sg.ads.lemmatechnologies.com/lemma/servad?src=prebid&pid=1&aid=1",
             "body": {
                 "id": "test-request-id",
                 "imp": [{
@@ -68,7 +68,7 @@
                         "bidder": {
                             "aid": 1,
                             "pid": 1,
-                            "host": "sg.ads"
+                            "host": "sg"
                         }
                     },
                     "bidfloor": 0.1
@@ -86,7 +86,7 @@
                         "bidder": {
                             "aid": 1,
                             "pid": 1,
-                            "host": "sg.ads"
+                            "host": "sg"
                         }
                     },
                     "bidfloor": 0.12

@@ -16,7 +16,7 @@
         "host": {
             "type": "string",
             "description": "Network Host to request from",
-            "enum": ["uses.ads", "sg.ads"]
+            "enum": ["uses", "usws", "usct", "emea", "sg", "doohsg", "doohus"]
         }
     },
 
