@@ -50,6 +50,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/between"
 	"github.com/prebid/prebid-server/v2/adapters/beyondmedia"
 	"github.com/prebid/prebid-server/v2/adapters/bidmachine"
+	"github.com/prebid/prebid-server/v2/adapters/bidmatic"
 	"github.com/prebid/prebid-server/v2/adapters/bidmyadz"
 	"github.com/prebid/prebid-server/v2/adapters/bidscube"
 	"github.com/prebid/prebid-server/v2/adapters/bidstack"
@@ -416,5 +417,6 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderZeroClickFraud:    zeroclickfraud.Builder,
 		openrtb_ext.BidderZetaGlobalSsp:     zeta_global_ssp.Builder,
 		openrtb_ext.BidderZmaticoo:          zmaticoo.Builder,
+		openrtb_ext.BidderBidmatic:          bidmatic.Builder,
 	}
 }
