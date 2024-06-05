@@ -83,7 +83,7 @@
                         }]
                     },
                     "native": {
-                        "request": "{\"ver\":\"1.1\",\"layout\":1,\"adunit\":2,\"plcmtcnt\":6,\"plcmttype\":4,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":75}},{\"id\":2,\"required\":1,\"img\":{\"wmin\":492,\"hmin\":328,\"type\":3,\"mimes\":[\"image/jpeg\",\"image/jpg\",\"image/png\"]}},{\"id\":4,\"data\":{\"type\":6}},{\"id\":5,\"data\":{\"type\":7}},{\"id\":6,\"data\":{\"type\":1,\"len\":20}}]}",
+                        "request": "{\"ver\":\"1.1\",\"layout\":1,\"adunit\":2,\"plcmttype\":4,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":75}}]}",
                         "ver": "1.1"
                     },
                     "ext": {
@@ -173,7 +173,7 @@
                                 "poddur": 40
                             },
                             "native": {
-                                "request": "{\"ver\":\"1.1\",\"layout\":1,\"adunit\":2,\"plcmttype\":4,\"plcmtcnt\":6,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":75}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":492,\"hmin\":328,\"mimes\":[\"image/jpeg\",\"image/jpg\",\"image/png\"]}},{\"id\":4,\"data\":{\"type\":6}},{\"id\":5,\"data\":{\"type\":7}},{\"id\":6,\"data\":{\"type\":1,\"len\":20}}]}",
+                                "request": "{\"ver\":\"1.1\",\"layout\":1,\"adunit\":2,\"plcmttype\":4,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":75}}]}",
                                 "ver": "2.2",
                                 "ctype": 1
                             },
