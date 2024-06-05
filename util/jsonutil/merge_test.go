@@ -139,6 +139,22 @@ func TestMergeCloneSlice(t *testing.T) {
 		assert.Equal(t, []string{"b", "c"}, imp.IframeBuster, "new-val")
 	})
 
+	t.Run("replace-not-overlay", func(t *testing.T) {
+		var (
+			imp      = &openrtb2.Imp{ID: "1"}
+			impSlice = []*openrtb2.Imp{imp}
+			test     = &struct {
+				Imps []*openrtb2.Imp `json:"imps"`
+			}{Imps: impSlice}
+		)
+
+		err := MergeClone(test, []byte(`{"imps":[{"tagid":"2"}]}`))
+		require.NoError(t, err)
+
+		impExpected := &openrtb2.Imp{TagID: "2"} // ensure original id is no longer present
+		assert.Equal(t, []*openrtb2.Imp{impExpected}, test.Imps)
+	})
+
 	t.Run("invalid-null", func(t *testing.T) {
 		var (
 			iframeBuster = []string{"a"}

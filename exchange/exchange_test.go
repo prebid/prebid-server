@@ -6349,6 +6349,6 @@ type mockRequestValidator struct {
 	errors []error
 }
 
-func (mrv *mockRequestValidator) ValidateImp(imp *openrtb_ext.ImpWrapper, index int, aliases map[string]string, hasStoredResponses bool, storedBidResponses stored_responses.ImpBidderStoredResp) []error {
+func (mrv *mockRequestValidator) ValidateImp(imp *openrtb_ext.ImpWrapper, cfg ortb.ValidationConfig, index int, aliases map[string]string, hasStoredResponses bool, storedBidResponses stored_responses.ImpBidderStoredResp) []error {
 	return mrv.errors
 }

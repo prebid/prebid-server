@@ -918,7 +918,7 @@ func (deps *endpointDeps) validateRequest(account *config.Account, httpReq *http
 		}
 		impIDs[imp.ID] = i
 
-		errs := deps.requestValidator.ValidateImp(imp, i, requestAliases, hasStoredAuctionResponses, storedBidResp)
+		errs := deps.requestValidator.ValidateImp(imp, ortb.ValidationConfig{}, i, requestAliases, hasStoredAuctionResponses, storedBidResp)
 		if len(errs) > 0 {
 			errL = append(errL, errs...)
 		}
