@@ -1,4 +1,4 @@
-package liftoff
+package vungle
 
 import (
 	"encoding/json"
@@ -26,7 +26,7 @@ func TestValidParams(t *testing.T) {
 	}
 
 	for _, p := range validParams {
-		if err := validator.Validate(openrtb_ext.BidderLiftoff, json.RawMessage(p)); err != nil {
+		if err := validator.Validate(openrtb_ext.BidderVungle, json.RawMessage(p)); err != nil {
 			t.Errorf("Schema rejected valid params: %s", p)
 		}
 	}
@@ -39,7 +39,7 @@ func TestInvalidParams(t *testing.T) {
 	}
 
 	for _, p := range invalidParams {
-		if err := validator.Validate(openrtb_ext.BidderLiftoff, json.RawMessage(p)); err == nil {
+		if err := validator.Validate(openrtb_ext.BidderVungle, json.RawMessage(p)); err == nil {
 			t.Errorf("Schema allowed invalid params: %s", p)
 		}
 	}
