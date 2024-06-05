@@ -1,147 +1,176 @@
 ## Overview
 
-51Degrees module enriches an incoming OpenRTB request [51Degrees Device Data](https://51degrees.com/documentation/_device_detection__overview.html).
+The 51Degrees module enriches an incoming OpenRTB request with [51Degrees Device Data](https://51degrees.com/documentation/_device_detection__overview.html).
 
-51Degrees module sets the following fields of the device object: `make`, `model`, `os`, `osv`, `h`, `w`, `ppi`, `pxratio` - interested bidder adapters may use these fields as needed.  In addition the module sets `device.ext.fiftyonedegrees_deviceId` to a permanent device ID which can be rapidly looked up in on premise data exposing over 250 properties including the device age, chip set, codec support, and price, operating system and app/browser versions, age, and embedded features.
+The module sets the following fields of the device object: `make`, `model`, `os`, `osv`, `h`, `w`, `ppi`, `pxratio` - interested bidder adapters may use these fields as needed.  In addition the module sets `device.ext.fiftyonedegrees_deviceId` to a permanent device ID which can be rapidly looked up in on premise data exposing over 250 properties including the device age, chip set, codec support, and price, operating system and app/browser versions, age, and embedded features.
+
+## Operation Details
+
+### Evidence
+
+The module uses `device.ua` (User Agent) and `device.sua` (Structured User Agent) provided in the oRTB request payload as input (or 'evidence' in 51Degrees terminology).  There is a fallback to the corresponding HTTP request headers if any of these are not present in the oRTB payload - in particular: `User-Agent` and `Sec-CH-UA-*` (aka User-Agent Client Hints).  To make sure Prebid.js sends Structured User Agent in the oRTB payload - we strongly advice publishers to enable [First Party Data Enrichment module](dev-docs/modules/enrichmentFpdModule.html) for their wrappers and specify
+
+```js
+pbjs.setConfig({
+    firstPartyData: {
+        uaHints: [
+          'architecture',
+          'model',
+          'platform',
+          'platformVersion',
+          'fullVersionList',
+        ]
+    }
+})
+```
+
+### Data File Updates
+
+The module operates **fully autonomously and does not make any requests to any cloud services in real time to do device detection**. This is an [on-premise data](https://51degrees.com/developers/deployment-options/on-premise-data) deployment in 51Degrees terminology. The module operates using a local data file that is loaded into memory fully or partially during operation. The data file is occasionally updated to accomodate new devices, so it is recommended to enable automatic data updates in the module configuration. Alternatively `watch_file_system` option can be used and the file may be downloaded and replaced on disk manually. See the configuration options below.
 
 ## Setup
 
-The 51Degrees module operates using a data file. You can get started with a free Lite data file that can be downloaded [here](https://github.com/51Degrees/device-detection-data/blob/main/51Degrees-LiteV4.1.hash). The Lite file is capable of detecting limited device information, so if you need in-depth device data, please [contact 51Degrees](https://51degrees.com/contact-us?ContactReason=Free%20Trial) to obtain a license.
+The 51Degrees module operates using a data file. You can get started with a free Lite data file that can be downloaded here: [51Degrees-LiteV4.1.hash](https://github.com/51Degrees/device-detection-data/blob/main/51Degrees-LiteV4.1.hash).  The Lite file is capable of detecting limited device information, so if you need in-depth device data, please contact 51Degrees to obtain a license: [https://51degrees.com/contact-us](https://51degrees.com/contact-us?ContactReason=Free%20Trial).
 
-## Configuration
+Put the data file in a file system location writable by the system account that is running the Prebid Server module and specify that directory location in the configuration parameters. The location needs to be writable if you would like to enable [automatic data file updates](https://51degrees.com/documentation/_features__automatic_datafile_updates.html).
 
-To use this module set the module's enable flag to true and add
+### Execution Plan
 
-```fiftyone-devicedetection-entrypoint-hook```
+This module supports running at two stages:
 
-and
+* entrypoint: this is where incoming requests are parsed and device detection evidences are extracted.
+* raw-auction-request: this is where outgoing auction requests to each bidder are enriched with the device detection data
 
-```fiftyone-devicedetection-raw-auction-request-hook```
+We recommend defining the execution plan right in the account config
+so the module is only invoked for specific accounts. See below for an example.
 
-into hooks execution plan inside your yaml file:
+### Global Config
+
+There is no host-company level config for this module.
+
+### Account-Level Config
+
+To start using current module in PBS-Java you have to enable module and add `fiftyone-devicedetection-entrypoint-hook` and `fiftyone-devicedetection-raw-auction-request-hook` into hooks execution plan inside your config file:
+Here's a general template for the account config used in PBS-Go:
 
 ```json
 {
-   "hooks": {
-      "modules": {
-         "fiftyone_degrees": {
-            "device_detection": {
-               "enabled": true,
-               "data_file": {
-                  "path": "path/to/51Degrees-LiteV4.1.hash",
-                  "make_temp_copy": true,
-                  "update": {
-                     "auto": true,
-                     "url": "https://my.datafile.com/datafile.gz",
-                     "polling_interval": 3600,
-                     "license_key": "your_license_key",
-                     "product": "V4Enterprise",
-                     "watch_file_system": true
-                  }
-               }
+  "hooks": {
+    "modules": {
+      "fiftyone_degrees": {
+        "device_detection": {
+          "enabled": true,
+          "make_temp_copy": true,
+          "data_file": {
+            "path": "path/to/51Degrees-LiteV4.1.hash",
+            "update": {
+              "auto": true,
+              "url": "<optional custom URL>",
+              "polling_interval": 1800,
+              "license_key": "<your_license_key>",
+              "product": "V4Enterprise",
+              "watch_file_system": "true"
             }
-         },
-         "host_execution_plan": {
-            "endpoints": {
-               "/openrtb2/auction": {
-                  "stages": {
-                     "entrypoint": {
-                        "groups": [
-                           {
-                              "timeout": 100,
-                              "hook_sequence": [
-                                 {
-                                    "module_code": "fiftyone-devicedetection",
-                                    "hook_impl_code": "fiftyone-devicedetection-entrypoint-hook"
-                                 }
-                              ]
-                           }
-                        ]
-                     },
-                     "raw_auction_request": {
-                        "groups": [
-                           {
-                              "timeout": 100,
-                              "hook_sequence": [
-                                 {
-                                    "module_code": "fiftyone-devicedetection",
-                                    "hook_impl_code": "fiftyone-devicedetection-raw-auction-request-hook"
-                                 }
-                              ]
-                           }
-                        ]
-                     }
+          }
+        }
+      },
+      "host_execution_plan": {
+        "endpoints": {
+          "/openrtb2/auction": {
+            "stages": {
+              "entrypoint": {
+                "groups": [
+                  {
+                    "timeout": 10,
+                    "hook_sequence": [
+                      {
+                        "module_code": "fiftyone-devicedetection",
+                        "hook_impl_code": "fiftyone-devicedetection-entrypoint-hook"
+                      }
+                    ]
                   }
-               }
+                ]
+              },
+              "raw_auction_request": {
+                "groups": [
+                  {
+                    "timeout": 10,
+                    "hook_sequence": [
+                      {
+                        "module_code": "fiftyone-devicedetection",
+                        "hook_impl_code": "fiftyone-devicedetection-raw-auction-request-hook"
+                      }
+                    ]
+                  }
+                ]
+              }
             }
-         }
+          }
+        }
       }
-   }
+    }
+  }
 }
 ```
 
 Note that at a minimum you need to enable the module and specify a path to the data file in the configuration.
+Sample module enablement configuration in JSON and YAML formats:
 
-## Other configuration options
+```json
+{
+  "modules": {
+    "fiftyone_degrees": {
+      "device_detection": {
+        "enabled": true,
+        "data_file": {
+          "path": "path/to/51Degrees-LiteV4.1.hash"
+        }
+      }
+    }
+  }
+}
+```
 
 ```yaml
-hooks:
   modules:
     fiftyone_degrees:
-      device_detection:
-        account_filter:
-          allow_list: [] # string, list of account ids for enabled publishers, or empty for all
-        data_file:
-          path: ~ # string, REQUIRED
-          make_temp_copy: ~ # boolean
-          update:
-            auto: ~ # boolean
-            url: ~ # string
-            polling_interval: ~ # int
-            license_key: ~ # string
-            product: ~ # string
-            watch_file_system: ~ # boolean
-        performance:
-          profile: ~ # string, one of [default,low_memory,balanced_temp,balanced,high_performance, in_memory]
-          concurrency: ~ # int
-          difference: ~ # int
-          allow-unmatched: ~ # boolean
-          drift: ~ # int
-      
-
+      device_detection: 
+        enabled: true
+        data-file:
+          path: "/path/to/51Degrees-LiteV4.1.hash"
 ```
 
-Minimal sample (only required):
+## Module Configuration Parameters
 
-```yaml
-  modules:
-    fiftyone-devicedetection:
-      data-file:
-        path: "51Degrees-LiteV4.1.hash" # string, REQUIRED, download the sample from https://github.com/51Degrees/device-detection-data/blob/main/51Degrees-LiteV4.1.hash or Enterprise from https://51degrees.com/pricing
+The parameter names are specified with full path using dot-notation.  F.e. `section_name` .`sub_section` .`param_name` would result in this nesting in the JSON configuration:
+
+```json
+{
+  "section_name": {
+    "sub_section": {
+      "param_name": "param-value"
+    }
+  }
+}
 ```
 
-``account_filter``
-* ``allow-list`` - (list of strings) - A list of account IDs that this module will be applied for.  If empty, it will apply to all accounts. Full-string match is performed (whitespaces and capitalization matter). Defaults to empty.
-
-``data-file``
-* ``path`` - (string, REQUIRED) - The full path to the device detection data file. Lite data file can be downloaded from [data repo on GitHub].
-* ``make_temp_copy`` - (boolean) - If true, the engine will create a temporary copy of the data file rather than using the data file directly. Should be false only for `InMemory` performance profile. Defaults to true.
-
-* ``update``
-   * ``auto`` - (boolean) - Enable/Disable auto update. Defaults to enabled. If enabled, the auto update system will automatically download and apply new data files for device detection.
-   * ``url`` - (string) - Configure the engine to use the specified URL when looking for an updated data file. Default is the 51Degrees update URL.
-   * ``license-key`` - (string) - Set the License Key used when checking for new device detection data files. A License Key is exclusive to the 51Degrees paid service. Defaults to null.
-   * ``product`` - (string) - Set the Product used when checking for new device detection data files. A Product is exclusive to the 51Degrees paid service. By default it is `V4Enterprise`.  Please see options [here](https://51degrees.com/documentation/_info__distributor.html).
-   * ``watch-file-system`` - (boolean) - The DataUpdateService has the ability to watch a file on disk and refresh the engine as soon as that file is updated. This setting enables/disables that feature. Defaults to true.
-   * ``polling-interval`` - (int, seconds) - Set the time between checks for a new data file made by the DataUpdateService in seconds. Default = 30 minutes.
-
-``performance``
-* ``profile`` - (string) - Set the performance profile for the device detection engine. Must be one of: `LowMemory`, `MaxPerformance`, `HighPerformance`, `Balanced`, `BalancedTemp`, `InMemory`. Defaults to `Balanced`.
-* `concurrency` - _(int)_ - Set the expected number of concurrent operations using the engine. This sets the concurrency of the internal caches to avoid excessive locking. Default: 10.
-* `difference` - _(int)_ - Set the maximum difference to allow when processing HTTP headers. The meaning of difference depends on the Device Detection API being used. The difference is the difference in hash value between the hash that was found, and the hash that is being searched for. By default this is 0. For more information see [51Degrees documentation](https://51degrees.com/documentation/_device_detection__hash.html).
-* `allow-unmatched` - _(boolean)_ - If set to false, a non-matching User-Agent will result in properties without set values.
-  If set to true, a non-matching User-Agent will cause the 'default profiles' to be returned. This means that properties will always have values (i.e. no need to check .hasValue) but some may be inaccurate. By default, this is false.
-* `drift` - _(int)_ - Set the maximum drift to allow when matching hashes. If the drift is exceeded, the result is considered invalid and values will not be returned. By default this is 0. For more information see [51Degrees documentation](https://51degrees.com/documentation/_device_detection__hash.html).
+| Param Name | Required| Type | Default  value | Description |
+|:-------|:------|:------|:------|:---------------------------------------|
+| `account_filter` .`allow_list`  |  No | list of strings | [] (empty list) | A list of account IDs that are allowed to use this module - only relevant if enabled globally for the host. If empty, all accounts are allowed. Full-string match is performed (whitespaces and capitalization matter). |
+| `data_file` .`path`  |  **Yes** | string | null |The full path to the device detection data file. Sample file can be downloaded from [data repo on GitHub](https://github.com/51Degrees/device-detection-data/blob/main/51Degrees-LiteV4.1.hash), or get an Enterprise data file [here](https://51degrees.com/pricing). |
+| `data_file` .`make_temp_copy` | No | boolean | true | If true, the engine will create a temporary copy of the data file rather than using the data file directly. |
+| `data_file` .`update` .`auto` | No | boolean | true | If enabled, the engine will periodically (at predefined time intervals - see `polling-interval` parameter) check if new data file is available. When the new data file is available engine downloads it and switches to it for device detection. If custom `url` is not specified `license_key` param is required. |
+| `data_file` .`update` .`on_startup` | No | boolean | true | If enabled, engine will check for the updated data file right away without waiting for the defined time interval. |
+| `data_file` .`update` .`url` | No | string | null | Configure the engine to check the specified URL for the availability of the updated data file. If not specified the [51Degrees distributor service](https://51degrees.com/documentation/4.4/_info__distributor.html) URL will be used, which requires a License Key. |
+| `data_file` .`update` .`license_key` | No | string | null | Required if `auto` is true and custom `url` is not specified. Allows to download the data file from the [51Degrees distributor service](https://51degrees.com/documentation/4.4/_info__distributor.html). |
+| `data_file` .`update` .`watch_file_system` | No | boolean | true | If enabled the engine will watch the data file path for any changes, and automatically reload the data file from disk once it is updated. |
+| `data_file` .`update` .`polling_interval` | No | int | 1800 | The time interval in seconds between consequent attempts to download an updated data file. Default = 1800 seconds = 30 minutes. |
+| `data_file` .`update` .`product`| No | string | `V4Enterprise` | Set the Product used when checking for new device detection data files. A Product is exclusive to the 51Degrees paid service. Please see options [here](https://51degrees.com/documentation/_info__distributor.html). |
+| `performance` .`profile` | No | string | `Balanced` | `performance.*` parameters are related to the tradeoffs between speed of device detection and RAM consumption or accuracy. `profile` dictates the proportion between the use of the RAM (the more RAM used - the faster is the device detection) and reads from disk (less RAM but slower device detection). Must be one of: `LowMemory`, `MaxPerformance`, `HighPerformance`, `Balanced`, `BalancedTemp`, `InMemory`. Defaults to `Balanced`.  |
+| `performance` .`concurrency` | No | int | 10 |  Specify the expected number of concurrent operations that engine does. This sets the concurrency of the internal caches to avoid excessive locking. Default: 10.  |
+| `performance` .`difference` | No | int | 0 |  Set the maximum difference to allow when processing evidence (HTTP headers). The meaning is the difference in hash value between the hash that was found, and the hash that is being searched for. By default this is 0. For more information see [51Degrees documentation](https://51degrees.com/documentation/_device_detection__hash.html).  |
+| `performance` .`drift` | No | int | 0 |  Set the maximum drift to allow when matching hashes. If the drift is exceeded, the result is considered invalid and values will not be returned. By default this is 0. For more information see [51Degrees documentation](https://51degrees.com/documentation/_device_detection__hash.html).  |
+| `performance` .`allow_unmatched` | No | boolean | false |  If set to false, a non-matching evidence will result in properties with no values set. If set to true, a non-matching evidence will cause the 'default profiles' to be returned. This means that properties will always have values (i.e. no need to check .hasValue) but some may be inaccurate. By default, this is false. |
 
 ## Running the demo
 
