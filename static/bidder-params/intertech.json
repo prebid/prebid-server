@@ -1,22 +1,31 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "title": "Intertech Adapter Params",
-    "description": "A schema which validates params accepted by the Intertech adapter",
-    "type": "object",
-    "properties": {
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Intertech Adapter Params",
+  "description": "A schema which validates params accepted by the Intertech adapter",
+  "type": "object",
+  "properties": {
       "page_id": {
-        "type": "integer",
-        "minLength": 1,
-        "description": "Special Page Id provided by Intertech Manager"
+          "type": "integer",
+          "minLength": 1,
+          "description": "Special Page Id provided by Intertech Manager"
       },
       "imp_id": {
-        "type": "integer",
-        "minLength": 1,
-        "description": "Special identifier provided by Intertech Manager"
+          "type": "integer",
+          "minLength": 1,
+          "description": "Special identifier provided by Intertech Manager"
+      },
+      "placementid": {
+          "type": "string",
+          "pattern": "^[0-9]+-[0-9]+$",
+          "description": "Combined Page Id and Imp Id in the format 'pageid-impid'"
       }
-    },
-    "required": [
-      "page_id",
-      "imp_id"
-    ]
-  }
+  },
+  "oneOf": [
+      {
+          "required": ["page_id", "imp_id"]
+      },
+      {
+          "required": ["placementid"]
+      }
+  ]
+}

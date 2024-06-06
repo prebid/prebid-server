@@ -1,14 +1,18 @@
-endpoint: https://prebid.intertechsrvcs.com/prebid/{{page_id}}?imp-id={{imp_id}}&ssp-id=10500
-endpoint-compression: gzip
-meta-info:
-  maintainer-email: prebid@intertechsrvcs.com
-  site-media-types:
-    - banner
-    - native
-  vendor-id: 0
-usersync:
-  url: https://prebid.intertechsrvcs.com/mapuid/intertech/?ssp-id=10500&gdpr={{gdpr}}&gdpr_consent={{gdpr_consent}}&location=
-  redirect-url: /setuid?bidder=intertech&gdpr={{gdpr}}&gdpr_consent={{gdpr_consent}}&us_privacy={{us_privacy}}&uid={UID}
-  cookie-family-name: intertech
+# This adapter is ported from PBS-Java to PBS-Go for Prebid. Please open a GitHub issue instead of directly contacting the maintainer for technical issues.
+endpoint: https://prebid.intertechsrvcs.com/prebid/{{.PageID}}?imp-id={{.ImpID}}&ssp-id=10500
+endpointCompression: GZIP
+maintainer:
+  email: prebid@intertechsrvcs.com
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - native
+userSync:
+  redirect:
+    url: https://prebid.intertechsrvcs.com/mapuid/intertech/?ssp-id=10500&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}
+    userMacro: "UID"
+    redirect-url: /setuid?bidder=intertech&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&uid={{.UID}}
+  cookieFamilyName: intertech
   type: redirect
-  support-cors: false
+  supportCORS: false

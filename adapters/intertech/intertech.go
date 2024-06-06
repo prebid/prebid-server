@@ -23,7 +23,7 @@ const (
 	impIdQueryKey    = "imp-id"
 )
 
-// Composite id of an ad placement
+// intertechPlacementID is the composite id of an ad placement
 type intertechPlacementID struct {
 	PageID string
 	ImpID  string
@@ -99,29 +99,26 @@ func getHeaders(request *openrtb2.BidRequest) http.Header {
 	headers := http.Header{}
 
 	if request.Device != nil && request.Site != nil {
-		addNonEmptyHeaders(&headers, map[string]string{
-			"Referer":         request.Site.Page,
-			"Accept-Language": request.Device.Language,
-			"User-Agent":      request.Device.UA,
-			"X-Forwarded-For": request.Device.IP,
-			"X-Real-Ip":       request.Device.IP,
-			"Content-Type":    "application/json;charset=utf-8",
-			"Accept":          "application/json",
-		})
+		addNonEmptyHeader(&headers, "Referer", request.Site.Page)
+		addNonEmptyHeader(&headers, "Accept-Language", request.Device.Language)
+		addNonEmptyHeader(&headers, "User-Agent", request.Device.UA)
+		addNonEmptyHeader(&headers, "X-Forwarded-For", request.Device.IP)
+		addNonEmptyHeader(&headers, "X-Real-Ip", request.Device.IP)
+		addNonEmptyHeader(&headers, "X-Forwarded-For-IPv6", request.Device.IPv6)
+		headers.Add("Content-Type", "application/json;charset=utf-8")
+		headers.Add("Accept", "application/json")
 	}
 
 	return headers
 }
 
-func addNonEmptyHeaders(headers *http.Header, headerValues map[string]string) {
-	for key, value := range headerValues {
-		if len(value) > 0 {
-			headers.Add(key, value)
-		}
+func addNonEmptyHeader(headers *http.Header, key, value string) {
+	if len(value) > 0 {
+		headers.Add(key, value)
 	}
 }
 
-// Request is in shared memory, so we have to make a shallow copy for further modification (imp is already a shallow copy)
+// splitRequestDataByImp makes a shallow copy of the request for further modification (imp is already a shallow copy)
 func splitRequestDataByImp(request *openrtb2.BidRequest, imp openrtb2.Imp) openrtb2.BidRequest {
 	requestCopy := *request
 	requestCopy.Imp = []openrtb2.Imp{imp}
@@ -162,23 +159,8 @@ func mapExtToPlacementID(intertechExt openrtb_ext.ExtImpIntertech) (*intertechPl
 	}
 
 	idParts := strings.Split(intertechExt.PlacementID, "-")
-
-	numericIdParts := []string{}
-
-	for _, idPart := range idParts {
-		if _, err := strconv.Atoi(idPart); err == nil {
-			numericIdParts = append(numericIdParts, idPart)
-		}
-	}
-
-	if len(numericIdParts) < 2 {
-		return nil, &errortypes.BadInput{
-			Message: fmt.Sprintf("invalid placement id, it must contain two parts: %s", intertechExt.PlacementID),
-		}
-	}
-
-	placementID.ImpID = numericIdParts[len(numericIdParts)-1]
-	placementID.PageID = numericIdParts[len(numericIdParts)-2]
+	placementID.PageID = idParts[0]
+	placementID.ImpID = idParts[1]
 
 	return &placementID, nil
 }
@@ -192,19 +174,14 @@ func modifyImp(imp *openrtb2.Imp) error {
 		return err
 	}
 
-	if imp.Native != nil {
-		return nil
-	}
-
-	return &errortypes.BadInput{
-		Message: fmt.Sprintf("Unsupported format. Intertech only supports banner and native types. Ignoring imp id #%s", imp.ID),
-	}
+	return nil
 }
 
 func modifyBanner(banner openrtb2.Banner) (*openrtb2.Banner, error) {
-	format := banner.Format
+	bannerCopy := banner
+	format := bannerCopy.Format
 
-	if banner.W == nil || banner.H == nil || *banner.W == 0 || *banner.H == 0 {
+	if bannerCopy.W == nil || bannerCopy.H == nil || *bannerCopy.W == 0 || *bannerCopy.H == 0 {
 		if len(format) == 0 {
 			return nil, &errortypes.BadInput{
 				Message: "Invalid size provided for Banner",
@@ -212,14 +189,14 @@ func modifyBanner(banner openrtb2.Banner) (*openrtb2.Banner, error) {
 		}
 
 		firstFormat := format[0]
-		banner.H = &firstFormat.H
-		banner.W = &firstFormat.W
+		bannerCopy.H = &firstFormat.H
+		bannerCopy.W = &firstFormat.W
 	}
 
-	return &banner, nil
+	return &bannerCopy, nil
 }
 
-// "Un-templates" the endpoint by replacing macroses and adding the required query parameters
+// resolveUrl "un-templates" the endpoint by replacing macroses and adding the required query parameters
 func (a *adapter) resolveUrl(placementID intertechPlacementID, referer string, currency string) (string, error) {
 	params := macros.EndpointTemplateParams{PageID: placementID.PageID}
 
@@ -270,7 +247,6 @@ func getCurrency(request *openrtb2.BidRequest) string {
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-
 	if adapters.IsResponseStatusCodeNoContent(responseData) {
 		return nil, nil
 	}

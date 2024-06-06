@@ -11,7 +11,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderIntertech,
-		config.Adapter{Endpoint: "https://prebid.intertechsrvcs.com/prebid/{{page_id}}?imp-id={{imp_id}}&ssp-id=10500"},
+		config.Adapter{Endpoint: "https://prebid.intertechsrvcs.com/prebid/{{.PageID}}?ssp-id=10500"},
 		config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
