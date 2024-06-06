@@ -1,0 +1,21 @@
+endpoint: "https://direct.adsrvr.org/bid/bidder/{{.SupplyId}}"
+maintainer:
+  email: "Prebid-Maintainers@thetradedesk.com"
+gvlVendorID: 21
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  redirect:
+    url: https://match.adsrvr.org?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
+    userMacro: $UID
+openrtb:
+  gpp-supported: true
