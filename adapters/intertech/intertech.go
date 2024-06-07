@@ -174,7 +174,13 @@ func modifyImp(imp *openrtb2.Imp) error {
 		return err
 	}
 
-	return nil
+	if imp.Native != nil {
+		return nil
+	}
+
+	return &errortypes.BadInput{
+		Message: fmt.Sprintf("Unsupported format. Yandex only supports banner and native types. Ignoring imp id #%s", imp.ID),
+	}
 }
 
 func modifyBanner(banner openrtb2.Banner) (*openrtb2.Banner, error) {
@@ -198,7 +204,7 @@ func modifyBanner(banner openrtb2.Banner) (*openrtb2.Banner, error) {
 
 // resolveUrl "un-templates" the endpoint by replacing macroses and adding the required query parameters
 func (a *adapter) resolveUrl(placementID intertechPlacementID, referer string, currency string) (string, error) {
-	params := macros.EndpointTemplateParams{PageID: placementID.PageID}
+	params := macros.EndpointTemplateParams{PageID: placementID.PageID, ImpID: placementID.ImpID}
 
 	endpointStr, err := macros.ResolveMacros(a.endpoint, params)
 	if err != nil {
