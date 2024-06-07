@@ -9,11 +9,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/http/httptrace"
+	"net/url"
+	"os"
 	"sort"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 
@@ -3103,7 +3107,9 @@ func TestSeatNonBid(t *testing.T) {
 	type args struct {
 		BidRequest     *openrtb2.BidRequest
 		Seat           string
+		SeatRequests   []*adapters.RequestData
 		BidderResponse func() (*http.Response, error)
+		client         *http.Client
 	}
 	type expect struct {
 		seatBids    []*entities.PbsOrtbSeatBid
@@ -3116,17 +3122,19 @@ func TestSeatNonBid(t *testing.T) {
 		expect expect
 	}{
 		{
-			name: "101_timeout",
+			name: "NBR_101_timeout_for_context_deadline_exceeded",
 			args: args{
-				Seat: "someseat",
+				Seat: "pubmatic",
 				BidRequest: &openrtb2.BidRequest{
 					Imp: []openrtb2.Imp{{ID: "1234"}},
 				},
+				SeatRequests:   []*adapters.RequestData{{ImpIDs: []string{"1234"}}},
 				BidderResponse: func() (*http.Response, error) { return nil, context.DeadlineExceeded },
+				client:         &http.Client{Timeout: time.Second}, // for timeout
 			},
 			expect: expect{
 				seatNonBids: &openrtb_ext.SeatNonBid{
-					Seat: "someseat",
+					Seat: "pubmatic",
 					NonBid: []openrtb_ext.NonBid{{
 						ImpId:      "1234",
 						StatusCode: int(ErrorTimeout),
@@ -3134,29 +3142,68 @@ func TestSeatNonBid(t *testing.T) {
 						Ext:        openrtb_ext.NonBidExt{Prebid: openrtb_ext.ExtResponseNonBidPrebid{Bid: openrtb_ext.NonBidObject{Price: 0}}},
 					}}},
 				errors:   []error{&errortypes.Timeout{Message: context.DeadlineExceeded.Error()}},
-				seatBids: []*entities.PbsOrtbSeatBid{{Bids: []*entities.PbsOrtbBid{}, Currency: "USD", Seat: "someseat", HttpCalls: []*openrtb_ext.ExtHttpCall{}}},
+				seatBids: []*entities.PbsOrtbSeatBid{{Bids: []*entities.PbsOrtbBid{}, Currency: "USD", Seat: "pubmatic", HttpCalls: []*openrtb_ext.ExtHttpCall{}}},
+			},
+		}, {
+			name: "NBR_103_Bidder_Unreachable_Connection_Refused",
+			args: args{
+				Seat:         "appnexus",
+				SeatRequests: []*adapters.RequestData{{ImpIDs: []string{"1234", "4567"}}},
+				BidRequest:   &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "1234"}, {ID: "4567"}}},
+				BidderResponse: func() (*http.Response, error) {
+					return nil, &net.OpError{Err: os.NewSyscallError(syscall.ECONNREFUSED.Error(), syscall.ECONNREFUSED)}
+				},
+			},
+			expect: expect{
+				seatNonBids: &openrtb_ext.SeatNonBid{
+					Seat: "appnexus",
+					NonBid: []openrtb_ext.NonBid{
+						{ImpId: "1234", StatusCode: int(ErrorBidderUnreachable), Error: "Get \"\": : connection refused: connection refused"},
+						{ImpId: "4567", StatusCode: int(ErrorBidderUnreachable), Error: "Get \"\": : connection refused: connection refused"},
+					}},
+				seatBids: []*entities.PbsOrtbSeatBid{{Bids: []*entities.PbsOrtbBid{}, Currency: "USD", Seat: "appnexus", HttpCalls: []*openrtb_ext.ExtHttpCall{}}},
+				errors:   []error{&url.Error{Op: "Get", URL: "", Err: &net.OpError{Err: os.NewSyscallError(syscall.ECONNREFUSED.Error(), syscall.ECONNREFUSED)}}},
+			},
+		}, {
+			name: "no_impids_populated_in_request_data",
+			args: args{
+				SeatRequests: []*adapters.RequestData{{
+					ImpIDs: nil, // no imp ids
+				}},
+				BidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "1234"}}},
+				BidderResponse: func() (*http.Response, error) {
+					return nil, errors.New("some_error")
+				},
+			},
+			expect: expect{
+				seatNonBids: &openrtb_ext.SeatNonBid{NonBid: []openrtb_ext.NonBid{}},
+				seatBids:    []*entities.PbsOrtbSeatBid{{Bids: []*entities.PbsOrtbBid{}, Currency: "USD", HttpCalls: []*openrtb_ext.ExtHttpCall{}}},
+				errors:      []error{&url.Error{Op: "Get", URL: "", Err: errors.New("some_error")}},
 			},
 		},
 	}
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			mockBidder := &mockBidder{}
-			requests := []*adapters.RequestData(nil)
-			requests = append(requests, &adapters.RequestData{
-				Uri: "http://localhost",
-			})
-			mockBidder.On("MakeRequests", mock.Anything, mock.Anything).Return(requests, []error(nil))
+			mockBidder.On("MakeRequests", mock.Anything, mock.Anything).Return(test.args.SeatRequests, []error(nil))
 			mockMetricsEngine := &metrics.MetricsEngineMock{}
 			mockMetricsEngine.On("RecordOverheadTime", mock.Anything, mock.Anything).Return(nil)
 			mockMetricsEngine.On("RecordBidderServerResponseTime", mock.Anything).Return(nil)
 			roundTrip := &mockRoundTripper{}
 			roundTrip.On("RoundTrip", mock.Anything).Return(test.args.BidderResponse())
-			bidder := AdaptBidder(mockBidder, &http.Client{
+			client := &http.Client{
 				Transport: roundTrip,
-				Timeout:   time.Second,
-			}, &config.Configuration{}, mockMetricsEngine, openrtb_ext.BidderAppnexus, &config.DebugInfo{}, test.args.Seat)
+				Timeout:   0,
+			}
+			if test.args.client != nil {
+				client.Timeout = test.args.client.Timeout
+			}
+			bidder := AdaptBidder(mockBidder, client, &config.Configuration{}, mockMetricsEngine, openrtb_ext.BidderAppnexus, &config.DebugInfo{}, test.args.Seat)
 
 			ctxTimeout, cancel := context.WithTimeout(context.Background(), 0)
+			if client.Timeout == 0 { // no timeout expected so do not cancel context
+				ctxTimeout = context.WithoutCancel(ctxTimeout)
+			}
 			defer cancel()
 			seatBids, responseExtra, errors := bidder.requestBid(ctxTimeout, BidderRequest{
 				BidRequest: test.args.BidRequest,
