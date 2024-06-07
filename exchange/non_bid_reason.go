@@ -55,13 +55,11 @@ func httpInfoToNonBidReason(httpInfo *httpCallInfo) NonBidReason {
 	if uError, ok := httpInfo.err.(*url.Error); ok {
 		if opError, ok := uError.Err.(*net.OpError); ok {
 			if sysCallErr, ok := opError.Err.(*os.SyscallError); ok {
-				// fmt.Println(sysCallErr.Err.(syscall.Errno))
-				// fmt.Println(uError.Unwrap())
-				// fmt.Println(sysCallErr.Err)
-				sysErr := sysCallErr.Err.(syscall.Errno)
-				switch sysErr {
-				case syscall.ECONNREFUSED:
-					return ErrorBidderUnreachable
+				if sysErr, ok := sysCallErr.Err.(syscall.Errno); ok {
+					switch sysErr {
+					case syscall.ECONNREFUSED:
+						return ErrorBidderUnreachable
+					}
 				}
 			}
 

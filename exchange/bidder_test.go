@@ -3130,7 +3130,7 @@ func TestSeatNonBid(t *testing.T) {
 				},
 				SeatRequests:   []*adapters.RequestData{{ImpIDs: []string{"1234"}}},
 				BidderResponse: func() (*http.Response, error) { return nil, context.DeadlineExceeded },
-				client:         &http.Client{Timeout: time.Second}, // for timeout
+				client:         &http.Client{Timeout: time.Nanosecond}, // for timeout
 			},
 			expect: expect{
 				seatNonBids: &openrtb_ext.SeatNonBid{
@@ -3200,18 +3200,29 @@ func TestSeatNonBid(t *testing.T) {
 			}
 			bidder := AdaptBidder(mockBidder, client, &config.Configuration{}, mockMetricsEngine, openrtb_ext.BidderAppnexus, &config.DebugInfo{}, test.args.Seat)
 
-			ctxTimeout, cancel := context.WithTimeout(context.Background(), 0)
-			if client.Timeout == 0 { // no timeout expected so do not cancel context
-				ctxTimeout = context.WithoutCancel(ctxTimeout)
+			ctx := context.TODO()
+			if client.Timeout > 0 {
+				ctxTimeout, cancel := context.WithTimeout(ctx, client.Timeout)
+				ctx = ctxTimeout
+				defer cancel()
 			}
-			defer cancel()
-			seatBids, responseExtra, errors := bidder.requestBid(ctxTimeout, BidderRequest{
+			seatBids, responseExtra, errors := bidder.requestBid(ctx, BidderRequest{
 				BidRequest: test.args.BidRequest,
 				BidderName: openrtb_ext.BidderName(test.args.Seat),
 			}, nil, &adapters.ExtraRequestInfo{}, &MockSigner{}, bidRequestOptions{}, openrtb_ext.ExtAlternateBidderCodes{}, hookexecution.EmptyHookExecutor{}, nil)
 			assert.Equal(t, test.expect.seatBids, seatBids)
 			assert.Equal(t, test.expect.seatNonBids, responseExtra.adapterNonBids)
 			assert.Equal(t, test.expect.errors, errors)
+			for _, nonBid := range responseExtra.adapterNonBids.NonBid {
+				for _, seatBid := range seatBids {
+					for _, bid := range seatBid.Bids {
+						// ensure non bids are not present in seat bids
+						if nonBid.ImpId == bid.Bid.ImpID {
+							assert.Fail(t, "imp id [%s] present in both seat bid and non seat bid", nonBid.ImpId)
+						}
+					}
+				}
+			}
 		})
 	}
 }
