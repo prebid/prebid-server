@@ -15,14 +15,13 @@ metadata:
   name: "{{ .Values.metadata.prefix }}-ingress{{ .Values.metadata.suffix }}{{ .Values.metadata.regionSuffix }}"
   annotations:
     kubernetes.io/ingress.class: alb
-    alb.ingress.kubernetes.io/conditions.{{ .Values.metadata.servicename }}{{ .Values.metadata.suffix }}{{ .Values.metadata.regionSuffix }}: {{ .Values.ingress.rules.condition | toJson | quote}}
-    alb.ingress.kubernetes.io/group.name: {{ .Values.annotations.alb.loadBalancerName }}{{ .Values.metadata.regionSuffix }}{{ index .Values.versionSuffix .Values.metadata.region }}
-    alb.ingress.kubernetes.io/group.order: {{ .Values.ingress.order | default 1000 | quote }}
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
     alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=29
-    alb.ingress.kubernetes.io/load-balancer-name: {{ .Values.annotations.alb.loadBalancerName }}{{ .Values.metadata.regionSuffix }}{{ index .Values.versionSuffix .Values.metadata.region }}
+    {{- $nameParts := list }}
+    {{- range $v := (regexSplit "-" .Values.metadata.name -1) }}{{- $nameParts = append $nameParts (trunc 3 $v) }}{{- end }}
+    alb.ingress.kubernetes.io/load-balancer-name: {{ trunc 3 .Values.metadata.environment }}-{{ .Values.metadata.prefix }}{{ join "-" $nameParts }}{{ .Values.metadata.suffix }}
     alb.ingress.kubernetes.io/scheme: {{ .Values.annotations.alb.scheme }}
-    alb.ingress.kubernetes.io/tags: service=prebid-server,environment={{ .Values.environment.environment }},owner=ad-code-delivery,provisioner=aws-load-balancer-controller,kube_deployment={{ .Values.metadata.prefix }}-deployment{{ .Values.metadata.suffix }}{{ .Values.metadata.regionSuffix }}
+    alb.ingress.kubernetes.io/tags: service={{ .Values.metadata.name }},environment={{ .Values.environment.environment }},owner=ad-code-delivery,provisioner=aws-load-balancer-controller,kube_deployment={{ .Values.metadata.prefix }}{{ .Values.metadata.name }}{{ .Values.metadata.suffix }}{{ .Values.metadata.regionSuffix }}
     alb.ingress.kubernetes.io/target-type: {{ .Values.annotations.alb.targetType }}
     alb.ingress.kubernetes.io/target-group-attributes: slow_start.duration_seconds=30,deregistration_delay.timeout_seconds=90
   labels:
@@ -31,7 +30,7 @@ metadata:
     owner: adcode-delivery
     provisioner: helm
     region: {{ .Values.metadata.region }}
-    service: prebid-server-go
+    service: {{ .Values.metadata.name }}
 spec:
   rules:
     - host: {{ index .Values.host .Values.metadata.region | quote }}
@@ -41,6 +40,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: {{ .Values.metadata.servicename }}{{ .Values.metadata.suffix }}{{ .Values.metadata.regionSuffix }}
+                name: {{ .Values.metadata.prefix }}{{ .Values.metadata.name }}{{ .Values.metadata.suffix }}{{ .Values.metadata.regionSuffix }}
                 port:
                   number: {{ .Values.image.serviceport }}

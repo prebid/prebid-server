@@ -1,20 +1,20 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: {{ .Values.metadata.prefix }}{{ .Values.metadata.suffix }}{{ .Values.metadata.regionSuffix }}
+  name: {{ .Values.metadata.prefix }}{{ .Values.metadata.name }}{{ .Values.metadata.suffix }}{{ .Values.metadata.regionSuffix }}
   labels:
     environment: {{ .Values.metadata.environment }}
     owner: adcode-delivery
     provisioner: helm
     region: {{ .Values.metadata.region }}
-    service: prebid-server-go
+    service: {{ .Values.metadata.name }}
 spec:
   minReplicas: {{ .Values.spec.minReplicas }}
   maxReplicas: {{ .Values.spec.maxReplicas }}
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: {{ .Values.metadata.prefix }}-deployment{{ .Values.metadata.suffix }}{{ .Values.metadata.regionSuffix }}
+    name: {{ .Values.metadata.prefix }}{{ .Values.metadata.name }}{{ .Values.metadata.suffix }}{{ .Values.metadata.regionSuffix }}
   metrics:
   - type: Resource
     resource:

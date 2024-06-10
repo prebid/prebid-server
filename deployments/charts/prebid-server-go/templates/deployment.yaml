@@ -1,13 +1,13 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Values.metadata.prefix }}-deployment{{ .Values.metadata.suffix }}{{ .Values.metadata.regionSuffix }}
+  name: {{ .Values.metadata.prefix }}{{ .Values.metadata.name }}{{ .Values.metadata.suffix }}{{ .Values.metadata.regionSuffix }}
   labels:
     environment: {{ .Values.metadata.environment }}
     owner: adcode-delivery
     provisioner: helm
     region: {{ .Values.metadata.region }}
-    service: prebid-server-go
+    service: {{ .Values.metadata.name }}
 spec:
   strategy:
     rollingUpdate:
@@ -15,15 +15,17 @@ spec:
       maxUnavailable: 1
     type: RollingUpdate
   selector:
-    matchLabels: {{.Values.metadata.labels | toYaml | nindent 6}}{{ .Values.metadata.suffix }}{{ .Values.metadata.regionSuffix }}
+    matchLabels: 
+      app.kubernetes.io/name: {{ .Values.metadata.prefix }}{{ .Values.metadata.name }}{{ .Values.metadata.suffix }}{{ .Values.metadata.regionSuffix }}
   template:
     metadata:
-      labels: {{.Values.metadata.labels | toYaml | nindent 8}}{{ .Values.metadata.suffix }}{{ .Values.metadata.regionSuffix }}
+      labels:
+        app.kubernetes.io/name: {{ .Values.metadata.prefix }}{{ .Values.metadata.name }}{{ .Values.metadata.suffix }}{{ .Values.metadata.regionSuffix }}
         environment: {{ .Values.metadata.environment }}
         owner: adcode-delivery
         provisioner: helm
         region: {{ .Values.metadata.region }}
-        service: prebid-server-go
+        service: {{ .Values.metadata.name }}
       annotations:
         # prometheus.io/path: "/metrics"
         # prometheus.io/port: "8125"
@@ -34,7 +36,7 @@ spec:
         # prometheus.io/label-name: "{{ .Values.metadata.prefix }}-deployment{{ .Values.metadata.suffix }}{{ .Values.metadata.regionSuffix }}"
 
     spec:
-      nodeSelector: {{.Values.spec.nodeSelector | toYaml | nindent 8}}
+      nodeSelector: {{ .Values.spec.nodeSelector | toYaml | nindent 8 }}
       # The default termination grace period is 30 seconds. However, we added in a preStop lifecycle step to wait an additional 60 seconds (see below), so we must increase this.
       # See: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/
       terminationGracePeriodSeconds: 90
@@ -44,7 +46,7 @@ spec:
         operator: Equal
         effect: NoSchedule
       containers:
-        - name: "{{ .Values.metadata.prefix }}-container"
+        - name: {{ .Values.metadata.name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           ports:
             - name: main
