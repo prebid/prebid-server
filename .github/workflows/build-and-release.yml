@@ -4,19 +4,6 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-main:
-    name: Build main
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Set up Go
-        uses: actions/setup-go@v3
-
-      - name: Build Prebid Server
-        run: go build .
-
   create-and-push-docker-image:
     name: Publish docker image
     needs: build-main
