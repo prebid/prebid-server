@@ -2,11 +2,12 @@ package device_detection
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/51Degrees/device-detection-go/v4/dd"
 	"github.com/51Degrees/device-detection-go/v4/onpremise"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"testing"
 )
 
 func TestBuildEngineOptions(t *testing.T) {
@@ -24,7 +25,8 @@ func TestBuildEngineOptions(t *testing.T) {
               "url": "https://my.datafile.com/datafile.gz",
               "polling_interval": 3600,
               "license_key": "your_license_key",
-              "product": "V4Enterprise"
+              "product": "V4Enterprise",
+			  "on_startup" : true
             }
           },
           "account_filter": {"allow_list": ["123"]},
@@ -36,8 +38,9 @@ func TestBuildEngineOptions(t *testing.T) {
 					"drift": 1	
 				  }
 }`),
-			length: 8,
+			length: 9,
 			// data_file.path, data_file.update.auto:true, url, polling_interval, license_key, product, confighash, properties
+			// data_file.update.on_startup:true
 		},
 		{
 			cfgRaw: []byte(`{ 
@@ -54,7 +57,7 @@ func TestBuildEngineOptions(t *testing.T) {
 					"drift": 1	
 				  }
 }`),
-			length: 4, // data_file.update.auto:false, data_file.path, confighash, properties
+			length: 5, // data_file.update.auto:false, data_file.path, confighash, properties, data_file.update.on_startup:false
 		},
 	}
 

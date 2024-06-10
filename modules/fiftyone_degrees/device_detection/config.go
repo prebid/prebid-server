@@ -2,9 +2,10 @@ package device_detection
 
 import (
 	"encoding/json"
+	"os"
+
 	"github.com/51Degrees/device-detection-go/v4/dd"
 	"github.com/pkg/errors"
-	"os"
 
 	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
@@ -28,6 +29,7 @@ type DataFileUpdate struct {
 	PollingInterval int    `json:"polling_interval"`
 	Product         string `json:"product"`
 	WatchFileSystem *bool  `json:"watch_file_system"`
+	OnStartup       bool   `json:"on_startup"`
 }
 
 type AccountFilter struct {

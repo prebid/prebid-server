@@ -132,6 +132,11 @@ func buildEngineOptions(moduleConfig *Config, configHash *dd.ConfigHash) []onpre
 		)
 	}
 
+	dataUpdateOptions = append(
+		dataUpdateOptions,
+		onpremise.WithUpdateOnStart(moduleConfig.DataFile.Update.OnStartup),
+	)
+
 	options = append(
 		options,
 		dataUpdateOptions...,

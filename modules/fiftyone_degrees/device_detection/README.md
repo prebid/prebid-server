@@ -69,7 +69,8 @@ Here's a general template for the account config used in PBS-Go:
               "polling_interval": 1800,
               "license_key": "<your_license_key>",
               "product": "V4Enterprise",
-              "watch_file_system": "true"
+              "watch_file_system": "true",
+              "on_startup": true
             }
           }
         }
@@ -160,7 +161,7 @@ The parameter names are specified with full path using dot-notation.  F.e. `sect
 | `data_file` .`path`  |  **Yes** | string | null |The full path to the device detection data file. Sample file can be downloaded from [data repo on GitHub](https://github.com/51Degrees/device-detection-data/blob/main/51Degrees-LiteV4.1.hash), or get an Enterprise data file [here](https://51degrees.com/pricing). |
 | `data_file` .`make_temp_copy` | No | boolean | true | If true, the engine will create a temporary copy of the data file rather than using the data file directly. |
 | `data_file` .`update` .`auto` | No | boolean | true | If enabled, the engine will periodically (at predefined time intervals - see `polling-interval` parameter) check if new data file is available. When the new data file is available engine downloads it and switches to it for device detection. If custom `url` is not specified `license_key` param is required. |
-| `data_file` .`update` .`on_startup` | No | boolean | true | If enabled, engine will check for the updated data file right away without waiting for the defined time interval. |
+| `data_file` .`update` .`on_startup` | No | boolean | false | If enabled, engine will check for the updated data file right away without waiting for the defined time interval. |
 | `data_file` .`update` .`url` | No | string | null | Configure the engine to check the specified URL for the availability of the updated data file. If not specified the [51Degrees distributor service](https://51degrees.com/documentation/4.4/_info__distributor.html) URL will be used, which requires a License Key. |
 | `data_file` .`update` .`license_key` | No | string | null | Required if `auto` is true and custom `url` is not specified. Allows to download the data file from the [51Degrees distributor service](https://51degrees.com/documentation/4.4/_info__distributor.html). |
 | `data_file` .`update` .`watch_file_system` | No | boolean | true | If enabled the engine will watch the data file path for any changes, and automatically reload the data file from disk once it is updated. |

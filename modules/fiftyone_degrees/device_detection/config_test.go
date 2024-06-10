@@ -18,7 +18,8 @@ func TestParseConfig(t *testing.T) {
               "url": "https://my.datafile.com/datafile.gz",
               "polling_interval": 3600,
               "license_key": "your_license_key",
-              "product": "V4Enterprise"
+              "product": "V4Enterprise",
+			  "on_startup": true
             }
           },
           "account_filter": {"allow_list": ["123"]},
@@ -41,6 +42,7 @@ func TestParseConfig(t *testing.T) {
 	assert.Equal(t, cfg.DataFile.Update.PollingInterval, 3600)
 	assert.Equal(t, cfg.DataFile.Update.License, "your_license_key")
 	assert.Equal(t, cfg.DataFile.Update.Product, "V4Enterprise")
+	assert.True(t, cfg.DataFile.Update.OnStartup)
 	assert.Equal(t, cfg.AccountFilter.AllowList, []string{"123"})
 	assert.Equal(t, cfg.Performance.Profile, "default")
 	assert.Equal(t, *cfg.Performance.Concurrency, 1)
