@@ -3,11 +3,6 @@ name: Build and Release
 on:
   workflow_dispatch:
   workflow_call:
-    inputs:
-      PBS_VERSION:
-        description: "PBS Go Version"
-        required: true
-        type: string
     outputs:
       IMAGE_TAG:
         description: "tag of image just pushed to ecr"
@@ -26,10 +21,14 @@ jobs:
           fetch-depth: 0
 
       - name: Get Latest tag
-        id: get_latest_tag
+        id: get_latest_sha
         run: |
           sha=$(echo "${{ github.sha }}" | cut -c1-7)
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
+      
+      - name: Create tag
+        id: create_tag
+        run: ./helpers/tag.sh
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1.6.1
@@ -47,6 +46,6 @@ jobs:
         run: |
           docker build -t ${{ steps.login-ecr.outputs.registry }}/prebid-server-go:latest . 
           docker images 
-          docker tag ${{ steps.login-ecr.outputs.registry }}/prebid-server-go:latest ${{ steps.login-ecr.outputs.registry }}/prebid-server-go:${{ inputs.PBS_VERSION }}-${{ steps.get_latest_tag.outputs.sha }}
-          docker push ${{ steps.login-ecr.outputs.registry }}/prebid-server-go:${{ inputs.PBS_VERSION }}-${{ steps.get_latest_tag.outputs.sha }}
-          echo "IMAGE_TAG=${{ inputs.PBS_VERSION }}-${{ steps.get_latest_tag.outputs.sha }}" >> "$GITHUB_OUTPUT"
+          docker tag ${{ steps.login-ecr.outputs.registry }}/prebid-server-go:latest ${{ steps.login-ecr.outputs.registry }}/prebid-server-go:$${{ steps.create_tag.outputs.releaseTag }}-${{ steps.get_latest_sha.outputs.sha }}
+          docker push ${{ steps.login-ecr.outputs.registry }}/prebid-server-go:$${{ steps.create_tag.outputs.releaseTag }}-${{ steps.get_latest_sha.outputs.sha }}
+          echo "IMAGE_TAG=$${{ steps.create_tag.outputs.releaseTag }}-${{ steps.get_latest_sha.outputs.sha }}" >> "$GITHUB_OUTPUT"
