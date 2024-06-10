@@ -12,10 +12,6 @@ host:
 spec:
   minReplicas: 3
   env:
-    - name: DD_AGENT_HOST
-      valueFrom:
-        fieldRef:
-          fieldPath: status.hostIP
     - name: SERVER_HTTP_SERVER_INSTANCES
       value: "15"
     - name: SERVER_IDLE_TIMEOUT

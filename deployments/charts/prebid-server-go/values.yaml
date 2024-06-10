@@ -34,10 +34,6 @@ spec:
   # of the base values below -- even if you are not modifying them.
   # See: https://github.com/helm/helm/issues/3486 for more details.
   env:
-    - name: DD_AGENT_HOST
-      valueFrom:
-        fieldRef:
-          fieldPath: status.hostIP
     - name: SERVER_HTTP_SERVER_INSTANCES
       value: "15"
     - name: SERVER_IDLE_TIMEOUT

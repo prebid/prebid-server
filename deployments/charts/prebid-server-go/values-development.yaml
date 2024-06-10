@@ -25,11 +25,5 @@ spec:
       value: "7"
     - name: SERVER_IDLE_TIMEOUT
       value: "30"
-    - name: PBS_JVM_HEAP_OPTS
-      value: "-Xms4g -Xmx6g"
-    - name: DD_AGENT_HOST
-      valueFrom:
-        fieldRef:
-          fieldPath: status.hostIP
     - name: EXTERNAL_URL
       value: "https://prebid-go.development.adthrive.com"
