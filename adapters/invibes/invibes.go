@@ -24,13 +24,8 @@ const invibesBidVersion = "4"
 type InvibesAdRequest struct {
 	OpenRTBRequest string `json:"openrtb2.BidRequest"`
 	BidParamsJson  string `json:"BidParamsJson"`
-	Location       string `json:"Location"`
-	Lid            string `json:"Lid"`
 	IsTestBid      bool   `json:"IsTestBid"`
-	Kw             string `json:"Kw"`
 	IsAMP          bool   `json:"IsAmp"`
-	Width          string `json:"Width"`
-	Height         string `json:"Height"`
 	GDPRConsent    string `json:"GdprConsent"`
 	GDPR           bool   `json:"Gdpr"`
 	Bvid           string `json:"Bvid"`
@@ -210,21 +205,6 @@ func (a *InvibesAdapter) makeRequest(invibesParams InvibesInternalParams, reques
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 	headers.Add("X-Openrtb-Version", "2.6")
-
-	// if request.Device != nil {
-	// 	headers.Add("User-Agent", request.Device.UA)
-	// }
-
-	// if request.Device != nil {
-	// 	if request.Device.IP != "" {
-	// 		headers.Add("X-Forwarded-For", request.Device.IP)
-	// 	} else if request.Device.IPv6 != "" {
-	// 		headers.Add("X-Forwarded-For", request.Device.IPv6)
-	// 	}
-	// }
-	// if request.Site != nil {
-	// 	headers.Add("Referer", request.Site.Page)
-	// }
 
 	headers.Add("Aver", adapterVersion)
 
