@@ -28,4 +28,4 @@ jobs:
           fetch-depth: 0
       - name: Build image
         run: |
-          docker build -t docker.io/prebid/prebid-server:${{ needs.publish-tag.outputs.releaseTag }} .
+          docker build -t docker.io/prebid/prebid-server:test .
