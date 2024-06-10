@@ -6,12 +6,28 @@
     },
     "imp": [
       {
-        "id": "testImpressionId",
+        "id": "testImpressionId1",
         "banner": {
           "format": [
             {
               "w": 300,
               "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "testPlacementId"
+          }
+        }
+      },
+      {
+        "id": "testImpressionId2",
+        "banner": {
+          "format": [
+            {
+              "w": 320,
+              "h": 100
             }
           ]
         },
@@ -49,12 +65,28 @@
           },
           "imp": [
             {
-              "id": "testImpressionId",
+              "id": "testImpressionId1",
               "banner": {
                 "format": [
                   {
                     "w": 300,
                     "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": "testPlacementId"
+                }
+              }
+            },
+            {
+              "id": "testImpressionId2",
+              "banner": {
+                "format": [
+                  {
+                    "w": 320,
+                    "h": 100
                   }
                 ]
               },
@@ -71,7 +103,8 @@
           }
         },
         "impIDs": [
-          "testImpressionId"
+          "testImpressionId1",
+          "testImpressionId2"
         ]
       },
       "mockResponse": {
@@ -84,7 +117,7 @@
               "bid": [
                 {
                   "id": "uniqueId",
-                  "impid": "testImpressionId",
+                  "impid": "testImpressionId1",
                   "price": 1.50,
                   "adid": "advertiserUniqueId",
                   "adm": "iframe-content",
@@ -108,7 +141,7 @@
         {
           "bid": {
             "id": "uniqueId",
-            "impid": "testImpressionId",
+            "impid": "testImpressionId1",
             "price": 1.50,
             "adm": "iframe-content",
             "adid": "advertiserUniqueId",

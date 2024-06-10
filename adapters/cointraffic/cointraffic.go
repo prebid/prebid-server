@@ -2,11 +2,9 @@ package cointraffic
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"net/http"
 )
@@ -24,12 +22,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	if len(request.Imp) == 0 {
-		return nil, []error{&errortypes.BadInput{
-			Message: "No impression in the bid request",
-		}}
-	}
-
 	requestData, err := a.buildRequest(request)
 	if err != nil {
 		return nil, []error{err}
@@ -59,21 +51,11 @@ func (a *adapter) buildRequest(request *openrtb2.BidRequest) (*adapters.RequestD
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if responseData.StatusCode == http.StatusNoContent {
+	if adapters.IsResponseStatusCodeNoContent(responseData) {
 		return nil, nil
 	}
 
-	if responseData.StatusCode == http.StatusBadRequest {
-		err := &errortypes.BadInput{
-			Message: fmt.Sprintf("Unexpected code: %d. Run with request.debug = 1 for more info.", responseData.StatusCode),
-		}
-		return nil, []error{err}
-	}
-
-	if responseData.StatusCode != http.StatusOK {
-		err := &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info.", responseData.StatusCode),
-		}
+	if err := adapters.CheckResponseStatusCodeForErrors(responseData); err != nil {
 		return nil, []error{err}
 	}
 
@@ -83,7 +65,12 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(response.SeatBid[0].Bid))
-	bidResponse.Currency = response.Cur
+	if response.Cur != "" {
+		bidResponse.Currency = response.Cur
+	}
+
+	var errs []error
+
 	for _, seatBid := range response.SeatBid {
 		for i := range seatBid.Bid {
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
@@ -93,5 +80,5 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		}
 	}
 
-	return bidResponse, nil
+	return bidResponse, errs
 }
