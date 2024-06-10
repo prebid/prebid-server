@@ -1,0 +1,203 @@
+status-response: "ok"
+server:
+  max-initial-line-length: 8092
+  max-headers-size: 16384
+  ssl: false
+  jks-path:
+  jks-password:
+  unix-socket:
+    enabled: false
+    path:
+    server-instances: 1
+  http:
+    enabled: true
+    port: 8080
+adapters:
+  undertone:
+    enabled: true
+  gumgum:
+    enabled: true
+  appnexus:
+    enabled: true
+  adf:
+    enabled: true  
+  colossus:
+    enabled: true
+  ix:
+    enabled: true
+  kargo:
+    enabled: true
+  openx:
+    enabled: true
+  pubmatic:
+    enabled: true
+  rubicon:
+    enabled: false
+  triplelift:
+    enabled: true
+  33across:
+    enabled: true
+  conversant:
+    enabled: true
+  epsilon:
+    enabled: true
+  unruly:
+    enabled: true
+    endpoint: https://targeting.unrulymedia.com/unruly_prebid_server
+  yieldmo:
+    enabled: true
+  grid:
+    enabled: true
+  yahooAdvertising:
+    aliases:
+      yahoossp:
+        enabled: true
+  yahooAds:
+    aliases:
+      yahoossp:
+        enabled: true
+  improvedigital:
+    enabled: true
+  aidem:
+    enabled: true
+adapter-defaults:
+  enabled: false
+  ortb-version: "2.5"
+  pbs-enforces-ccpa: true
+  modifying-vast-xml-allowed: true
+  debug:
+    allow: true
+cache:
+  scheme: http
+  host: localhost
+  path: /cache
+  query: uuid=
+  cache.banner-ttl-seconds: 300
+  cache.video-ttl-seconds: 900
+auction:
+  ad-server-currency: USD
+  blacklisted-accounts:
+  blacklisted-apps:
+  biddertmax:
+    min: 50
+    max: 2000
+    percent: 100
+  tmax-upstream-response-time: 500
+  stored-requests-timeout-ms: 50
+  timeout-notification:
+    timeout-ms: 200
+    log-result: false
+    log-failure-only: false
+    log-sampling-rate: 0.0
+  max-request-size: 262144
+  generate-source-tid: true
+  generate-bid-id: false
+  cache:
+    expected-request-time-ms: 10
+    only-winning-bids: false
+  validations:
+    banner-creative-max-size: skip
+    secure-markup: skip
+  host-schain-node:
+  category-mapping-enabled: false
+settings:
+  generate-storedrequest-bidrequest-id: false
+  enforce-valid-account: false
+  filesystem:
+    settings-filename: app-setting.yaml
+    stored-requests-dir: sample/stored
+    stored-imps-dir: sample/stored
+    stored-responses-dir: sample/stored
+    categories-dir:
+  targeting:
+    truncate-attr-chars: 20
+  default-account-config: >
+    {
+      "auction": {
+        "price-floors": {
+          "enabled": true,
+          "fetch": {
+            "enabled": false,
+            "timeout-ms": 5000,
+            "max-rules": 0,
+            "max-file-size-kb": 200,
+            "max-age-sec": 86400,
+            "period-sec": 3600
+          },
+          "enforce-floors-rate": 100,
+          "adjust-for-bid-adjustment": true,
+          "enforce-deal-floors": true,
+          "use-dynamic-data": true
+        }
+      }
+    }
+gdpr:
+  enabled: true
+  default_value: 0
+  eea-countries: at,bg,be,cy,cz,dk,ee,fi,fr,de,gr,hu,ie,it,lv,lt,lu,mt,nl,pl,pt,ro,sk,si,es,se,gb,is,no,li,ai,aw,pt,bm,aq,io,vg,ic,ky,fk,re,mw,gp,gf,yt,pf,tf,gl,pt,ms,an,bq,cw,sx,nc,pn,sh,pm,gs,tc,uk,wf
+  vendorlist:
+    default-timeout-ms: 2000
+    v1:
+      http-endpoint-template: https://vendor-list.consensu.org/v-{VERSION}/vendorlist.json
+      refresh-missing-list-period-ms: 3600000
+      deprecated: false
+    v2:
+      http-endpoint-template: https://vendor-list.consensu.org/v2/archives/vendor-list-v{VERSION}.json
+      refresh-missing-list-period-ms: 3600000
+      deprecated: false
+      cache-dir: /home/ec2-user/prebid/cache
+    v3:
+      http-endpoint-template: https://vendor-list.consensu.org/v3/archives/vendor-list-v{VERSION}.json
+      refresh-missing-list-period-ms: 3600000
+      deprecated: false
+      cache-dir: /home/ec2-user/prebid/cache
+  purposes:
+    p1:
+      enforce-purpose: full
+      enforce-vendors: true
+    p2:
+      enforce-purpose: 'no'
+      enforce-vendors: false
+    p3:
+      enforce-purpose: full
+      enforce-vendors: true
+    p4:
+      enforce-purpose: full
+      enforce-vendors: true
+    p5:
+      enforce-purpose: full
+      enforce-vendors: true
+    p6:
+      enforce-purpose: full
+      enforce-vendors: true
+    p7:
+      enforce-purpose: full
+      enforce-vendors: true
+    p8:
+      enforce-purpose: full
+      enforce-vendors: true
+    p9:
+      enforce-purpose: full
+      enforce-vendors: true
+    p10:
+      enforce-purpose: full
+      enforce-vendors: true
+  special-features:
+    sf1:
+      enforce: true
+    sf2:
+      enforce: true
+  purpose-one-treatment-interpretation: ignore
+ccpa:
+  enforce: true
+lmt:
+  enforce: true
+price-floors:
+  enabled: false
+metrics:
+  prometheus:
+    enabled: true
+    port: 8125
+    namespace: prebid_server
+    custom-labels-enabled: true
+datacenter-region: us-east

@@ -35,7 +35,6 @@ prebid-server
 __debug_bin
 
 # config files
-pbs.*
 inventory_url.yaml
 
 # generated log files during tests
