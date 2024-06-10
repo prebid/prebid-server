@@ -1,0 +1,139 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.metadata.prefix }}-deployment{{ .Values.metadata.suffix }}{{ .Values.metadata.regionSuffix }}
+  labels:
+    environment: {{ .Values.metadata.environment }}
+    owner: adcode-delivery
+    provisioner: helm
+    region: {{ .Values.metadata.region }}
+    service: prebid-server-java
+    tags.datadoghq.com/env: {{ .Values.environment.environment }}
+    tags.datadoghq.com/service: prebid-server
+spec:
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 1
+    type: RollingUpdate
+  selector:
+    matchLabels: {{.Values.metadata.labels | toYaml | nindent 6}}{{ .Values.metadata.suffix }}{{ .Values.metadata.regionSuffix }}
+  template:
+    metadata:
+      labels: {{.Values.metadata.labels | toYaml | nindent 8}}{{ .Values.metadata.suffix }}{{ .Values.metadata.regionSuffix }}
+        environment: {{ .Values.metadata.environment }}
+        owner: adcode-delivery
+        provisioner: helm
+        region: {{ .Values.metadata.region }}
+        service: prebid-server-java
+        tags.datadoghq.com/env: {{ .Values.environment.environment }}
+        tags.datadoghq.com/service: prebid-server
+      annotations:
+        # prometheus.io/path: "/metrics"
+        # prometheus.io/port: "8125"
+        # prometheus.io/scheme: "http"
+        # prometheus.io/scrape: "true"
+        # prometheus.io/label-environment: {{ .Values.environment.environment | quote}}
+        # prometheus.io/label-service: "prebid-server"
+        # prometheus.io/label-name: "{{ .Values.metadata.prefix }}-deployment{{ .Values.metadata.suffix }}{{ .Values.metadata.regionSuffix }}"
+        "ad.datadoghq.com/{{ .Values.metadata.prefix }}-container.checks": |
+          {
+            "openmetrics": {
+              "init_config": {},
+              "instances": [
+                {
+                  "openmetrics_endpoint": "http://%%host%%:8125/metrics",
+                  "namespace": "raptive",
+                  "metrics": ["prebid_server_vertx_http_clients_(?!.*open_connections)", "prebid_server_vertx_http_servers_(?!.*open_connections)", "prebid_server_adapter*", "prebid_server_imps*", "prebid_server_request_time*", "prebid_server_app_requests", "prebid_server_connection_accept_errors", "prebid_server_cookie_sync_requests", "prebid_server_no_cookie_requests", "prebid_server_requests_status_type", "prebid_server_usersync_bad_requests"],
+                   "tags": ["environment:{{.Values.environment.environment}}", "region:{{.Values.metadata.region}}", "kube_cluster_name:{{.Values.metadata.clusterName}}" ]
+                }
+              ]
+            }
+          }
+
+    spec:
+      nodeSelector: {{.Values.spec.nodeSelector | toYaml | nindent 8}}
+      # The default termination grace period is 30 seconds. However, we added in a preStop lifecycle step to wait an additional 60 seconds (see below), so we must increase this.
+      # See: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/
+      terminationGracePeriodSeconds: 90
+      tolerations:
+      - key: karpenter.sh/provisioner-name
+        value: default
+        operator: Equal
+        effect: NoSchedule
+      containers:
+        - name: "{{ .Values.metadata.prefix }}-container"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          ports:
+            - name: main
+              containerPort: {{.Values.image.containerport}}
+            - name: admin
+              containerPort: 8060
+            - name: metrics
+              containerPort: 8125
+          imagePullPolicy: {{.Values.image.pullPolicy}}
+          # When a pod is marked for termination, the ALB immediately stops sending new traffic. However, existing requests may still be in-flight.
+          # To ensure we give those in-flight requests enough time to complete, we want to delay sending the TERM signal (which is normally sent immediately).
+          # Here, we introduce a delay of 60 seconds to ensure all in-flight requests have finished up.
+          # See: https://aws.github.io/aws-eks-best-practices/networking/loadbalancing/loadbalancing/#ensure-pods-are-deregistered-from-load-balancers-before-termination
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep 61"]
+          #
+          # Probes
+          # See: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+          #
+          ## livenessProbe
+          # Used to check if app is responsive; similar to readinessProbe, but higher failure threshold because it will restart the pod.
+          # On reaching failure threshold: will restart the pod.
+          livenessProbe:
+            httpGet:
+              path: /status
+              port: {{.Values.image.containerport}}
+            # Up to 5 probe failures (50 seconds) before reaching failure threshold (with 5 second delay on initial).
+            failureThreshold: 5
+            periodSeconds: 10
+            initialDelaySeconds: 5
+          ## readinessProbe
+          # Used to check if app is responsive and ready to receive traffic.
+          # On reaching failure threshold: will mark pod as not ready.
+          readinessProbe:
+            httpGet:
+              path: /status
+              port: {{.Values.image.containerport}}
+            # Up to 1 probe failure (10 seconds) before reaching failure threshold.
+            failureThreshold: 1
+            periodSeconds: 10
+          ## startupProbe
+          # Used to check if app has started; must succeed before liveness and readiness probes start. Quick and light check.
+          # On reaching failure threshold: will restart the pod.
+          startupProbe:
+            httpGet:
+              path: /
+              port: {{.Values.image.containerport}}
+            # Up to 30 probe failure (5 minutes) before reaching failure threshold.
+            failureThreshold: 30
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: {{ .Values.spec.requests.memory }}
+              cpu: {{ .Values.spec.requests.cpu }}
+            limits:
+              memory: {{ .Values.spec.limits.memory }}
+              cpu: {{ .Values.spec.limits.cpu }}
+          env: {{ .Values.spec.env | toYaml | nindent 12  }}
+            - name: ENVIRONMENT
+              value: {{.Values.environment.environment}}
+            {{- $externalUrlDefined := false }}
+            {{- range $env := $.Values.spec.env }}
+            {{- if eq $env.name "EXTERNAL_URL" }}
+            {{- $externalUrlDefined = true }}
+            {{- end }}
+            {{- end }}
+            {{- if not $externalUrlDefined }}
+            - name: EXTERNAL_URL
+              value: "https://{{index .Values.host .Values.metadata.region}}"
+            {{- end }}
+            - name: DD_TRACE_SAMPLE_RATE
+              value: "0.01"

@@ -1,0 +1,35 @@
+environment:
+  environment: stage
+versionSuffix:
+  us-west-2: -v2
+  us-east-1:
+sslCertArn:
+  us-west-2: arn:aws:acm:us-west-2:673670291312:certificate/8d8b4e9e-b317-42a1-9ef5-6fa0879ffdcf
+  us-east-1: arn:aws:acm:us-east-1:673670291312:certificate/ac3d1a0a-d1d5-4df6-b008-b194f9a5c521
+host:
+  us-west-2: prebid-west-java.stage.adthrive.com
+  us-east-1: prebid-east.stage.adthrive.com
+spec:
+  minReplicas: 1
+  requests:
+    memory: 7Gi
+    cpu: "7"
+  limits:
+    memory: 7Gi
+    cpu: "7"
+  nodeSelector:
+    # Allow Karpenter to self-select the appropriate node type
+    node.kubernetes.io/instance-type: null
+  env:
+    - name: SERVER_HTTP_SERVER_INSTANCES
+      value: "7"
+    - name: SERVER_IDLE_TIMEOUT
+      value: "30"
+    - name: PBS_JVM_HEAP_OPTS
+      value: "-Xms4g -Xmx6g"
+    - name: DD_AGENT_HOST
+      valueFrom:
+        fieldRef:
+          fieldPath: status.hostIP
+    - name: EXTERNAL_URL
+      value: "https://prebid-west.stage.adthrive.com"

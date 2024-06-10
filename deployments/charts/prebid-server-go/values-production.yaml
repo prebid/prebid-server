@@ -1,0 +1,24 @@
+environment:
+  environment: production
+versionSuffix:
+  us-west-2: -v2
+  us-east-1:
+sslCertArn:
+  us-west-2: arn:aws:acm:us-west-2:233585098807:certificate/0e16fc11-49d1-42af-b7ff-14ccd6210a73
+  us-east-1: arn:aws:acm:us-east-1:233585098807:certificate/5a1c26c5-c5ea-4099-b266-0a9f1fe1e27a
+host:
+  us-west-2: prebid-west-java.production.adthrive.com
+  us-east-1: prebid-east.production.adthrive.com
+spec:
+  minReplicas: 3
+  env:
+    - name: DD_AGENT_HOST
+      valueFrom:
+        fieldRef:
+          fieldPath: status.hostIP
+    - name: SERVER_HTTP_SERVER_INSTANCES
+      value: "15"
+    - name: SERVER_IDLE_TIMEOUT
+      value: "30"
+    - name: EXTERNAL_URL
+      value: "https://prebid-west.production.adthrive.com"

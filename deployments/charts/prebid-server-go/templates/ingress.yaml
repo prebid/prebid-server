@@ -1,0 +1,46 @@
+# Each helm release / deployment get its own Ingress
+# However, we use the 'alb.ingress.kubernetes.io/group.name' annotation so that the ALB controller only provisions a single ALB which is shared for the same '{{ .Values.annotations.alb.loadBalancerName }}' value.
+# Differing rules for each release / deployment get merged by the ALB controller for the same ALB.
+# See: https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.7/guide/ingress/annotations/
+#
+# To ensure a fall back behavior in case of no matches, the default case is:
+# - No conditional ('alb.ingress.kubernetes.io/conditions.{{ .Values.metadata.servicename }}{{ .Values.metadata.suffix }}' left as null)
+# - Evaluated last ('alb.ingress.kubernetes.io/group.order' at 1000)
+#
+# One release / deployment should always rely on the default case, then additional releases / deployments should vary relevant parameters as necessary. For example,
+# -  Adjust the condition (provide a query string config) and have a lower evaluation order ('alb.ingress.kubernetes.io/group.order' below 1000).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: "{{ .Values.metadata.prefix }}-ingress{{ .Values.metadata.suffix }}{{ .Values.metadata.regionSuffix }}"
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/conditions.{{ .Values.metadata.servicename }}{{ .Values.metadata.suffix }}{{ .Values.metadata.regionSuffix }}: {{ .Values.ingress.rules.condition | toJson | quote}}
+    alb.ingress.kubernetes.io/group.name: {{ .Values.annotations.alb.loadBalancerName }}{{ .Values.metadata.regionSuffix }}{{ index .Values.versionSuffix .Values.metadata.region }}
+    alb.ingress.kubernetes.io/group.order: {{ .Values.ingress.order | default 1000 | quote }}
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=29
+    alb.ingress.kubernetes.io/load-balancer-name: {{ .Values.annotations.alb.loadBalancerName }}{{ .Values.metadata.regionSuffix }}{{ index .Values.versionSuffix .Values.metadata.region }}
+    alb.ingress.kubernetes.io/scheme: {{ .Values.annotations.alb.scheme }}
+    alb.ingress.kubernetes.io/tags: service=prebid-server,environment={{ .Values.environment.environment }},owner=ad-code-delivery,provisioner=aws-load-balancer-controller,kube_deployment={{ .Values.metadata.prefix }}-deployment{{ .Values.metadata.suffix }}{{ .Values.metadata.regionSuffix }}
+    alb.ingress.kubernetes.io/target-type: {{ .Values.annotations.alb.targetType }}
+    alb.ingress.kubernetes.io/target-group-attributes: slow_start.duration_seconds=30,deregistration_delay.timeout_seconds=90
+  labels:
+    app: {{ .Values.metadata.name | quote }}
+    environment: {{ .Values.metadata.environment }}
+    owner: adcode-delivery
+    provisioner: helm
+    region: {{ .Values.metadata.region }}
+    service: prebid-server-java
+spec:
+  rules:
+    - host: {{ index .Values.host .Values.metadata.region | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.metadata.servicename }}{{ .Values.metadata.suffix }}{{ .Values.metadata.regionSuffix }}
+                port:
+                  number: {{ .Values.image.serviceport }}

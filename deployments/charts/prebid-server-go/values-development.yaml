@@ -1,0 +1,35 @@
+environment:
+  environment: development
+versionSuffix:
+  us-west-2: -v2
+  us-east-1:
+sslCertArn:
+  us-west-2: arn:aws:acm:us-west-2:312505582686:certificate/8d5444c2-4168-402d-8690-c0caec394d20
+  us-east-1: arn:aws:acm:us-east-1:312505582686:certificate/dce30ab3-fb6f-4abb-b181-9a7cc5ae8f77
+host:
+  us-west-2: prebid-west-go.development.adthrive.com
+  us-east-1: prebid-go.development.adthrive.com
+spec:
+  minReplicas: 1
+  requests:
+    memory: 7Gi
+    cpu: "7"
+  limits:
+    memory: 7Gi
+    cpu: "7"
+  nodeSelector:
+    # Allow Karpenter to self-select the appropriate node type
+    node.kubernetes.io/instance-type: null
+  env:
+    - name: SERVER_HTTP_SERVER_INSTANCES
+      value: "7"
+    - name: SERVER_IDLE_TIMEOUT
+      value: "30"
+    - name: PBS_JVM_HEAP_OPTS
+      value: "-Xms4g -Xmx6g"
+    - name: DD_AGENT_HOST
+      valueFrom:
+        fieldRef:
+          fieldPath: status.hostIP
+    - name: EXTERNAL_URL
+      value: "https://prebid-go.development.adthrive.com"

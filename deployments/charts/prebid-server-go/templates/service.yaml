@@ -1,0 +1,47 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.metadata.servicename }}{{ .Values.metadata.suffix }}{{ .Values.metadata.regionSuffix }}
+  labels:
+    environment: {{ .Values.metadata.environment }}
+    owner: adcode-delivery
+    provisioner: helm
+    region: {{ .Values.metadata.region }}
+    service: prebid-server-java
+spec:
+  ports:
+    - port: {{.Values.image.serviceport}}
+      targetPort: {{.Values.image.containerport}}
+      protocol: TCP
+  type: NodePort
+  selector: {{ .Values.metadata.labels | toYaml | nindent 4}}{{ .Values.metadata.suffix }}{{ .Values.metadata.regionSuffix }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.metadata.name }}{{ .Values.metadata.suffix }}{{ .Values.metadata.regionSuffix }}{{ index .Values.versionSuffix .Values.metadata.region }}
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
+    {{- $nameParts := list }}
+    {{- range $v := (regexSplit "-" .Values.metadata.name -1) }}{{- $nameParts = append $nameParts (trunc 3 $v) }}{{- end }}
+    service.beta.kubernetes.io/aws-load-balancer-name: {{ join "-" $nameParts }}{{ .Values.metadata.suffix }}{{ .Values.metadata.regionSuffix }}{{ index .Values.versionSuffix .Values.metadata.region }}
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-protocol: http
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-path: /status
+    service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags: service=prebid-server,environment={{ .Values.environment.environment }},owner=ad-code-delivery,provisioner=aws-load-balancer-controller,kube_deployment={{ .Values.metadata.prefix }}-deployment{{ .Values.metadata.suffix }}{{ .Values.metadata.regionSuffix }}
+    service.beta.kubernetes.io/aws-load-balancer-target-group-attributes: deregistration_delay.timeout_seconds=90,target_health_state.unhealthy.connection_termination.enabled=false,target_health_state.unhealthy.draining_interval_seconds=29
+    service.beta.kubernetes.io/aws-load-balancer-attributes: load_balancing.cross_zone.enabled=true,dns_record.client_routing_policy=availability_zone_affinity
+  labels:
+    environment: {{ .Values.metadata.environment }}
+    owner: adcode-delivery
+    provisioner: helm
+    region: {{ .Values.metadata.region }}
+    service: prebid-server-java
+spec:
+  ports:
+    - port: {{.Values.image.serviceport}}
+      targetPort: {{.Values.image.containerport}}
+      protocol: TCP
+  selector: {{ .Values.metadata.labels | toYaml | nindent 4}}{{ .Values.metadata.suffix }}{{ .Values.metadata.regionSuffix }}
+  type: LoadBalancer
+  loadBalancerClass: service.k8s.aws/nlb

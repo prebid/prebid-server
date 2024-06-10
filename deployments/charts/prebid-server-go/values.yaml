@@ -1,0 +1,55 @@
+metadata:
+  name: prebid-server-go
+  clusterName: ''
+  region: ''
+  servicename: service-prebid
+  prefix: prebid
+  labels:
+    app.kubernetes.io/name: prebid-service
+image:
+  repository: https://hub.docker.com/r/prebid/prebid-server
+  tag: v2.21.0
+  pullPolicy: Always
+  containerport: 8080
+  serviceport: 80
+ingress:
+  order: null
+  rules:
+    condition: null
+spec:
+  replicas: 2
+  minReplicas: 3
+  maxReplicas: 22
+  requests:
+    memory: 15Gi
+    cpu: "15"
+  limits:
+    memory: 15Gi
+    cpu: "15"
+  nodeSelector:
+    # Tell Karpenter to maintain set of nodes of this instance type
+    node.kubernetes.io/instance-type: c6i.4xlarge
+  # Please note that Helm will merge maps where there are multiple values files, but not lists!
+  # If you are overriding spec.env in a values-<env>.yaml file, you probably want to include all
+  # of the base values below -- even if you are not modifying them.
+  # See: https://github.com/helm/helm/issues/3486 for more details.
+  env:
+    - name: DD_AGENT_HOST
+      valueFrom:
+        fieldRef:
+          fieldPath: status.hostIP
+    - name: SERVER_HTTP_SERVER_INSTANCES
+      value: "15"
+    - name: SERVER_IDLE_TIMEOUT
+      value: "30"
+annotations:
+  alb:
+    scheme: internet-facing
+    subnets: subnet-0e29f66933d78d08d, subnet-0a51a9add8aae9f49
+    loadBalancerName: prebid-lb
+    targetType: ip
+
+serviceaccount:
+  name: aws-lb-prebid-server-use1-pbs
+  suffix: -prebid-server-use1-pbs
+  awsaccountid: "634658137083"

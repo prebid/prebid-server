@@ -1,0 +1,53 @@
+metadata:
+  name: prebid-global
+  servicename: prebid-global
+  prefix: prebid-global
+  labels:
+    app.kubernetes.io/name: prebid-global
+environment:
+  environment: stage
+annotations:
+  alb:
+    loadBalancerName: prebid-global
+versionSuffix:
+  us-west-2: -v2
+  us-east-1: -v2
+host:
+  us-west-2: prebid-global-west-java.stage.adthrive.com
+  us-east-1: prebid-global-east-java.stage.adthrive.com
+spec:
+  minReplicas: 1
+  requests:
+    memory: 7Gi
+    cpu: "7"
+  limits:
+    memory: 7Gi
+    cpu: "7"
+  nodeSelector:
+    # Allow Karpenter to self-select the appropriate node type
+    node.kubernetes.io/instance-type: null
+  env:
+    - name: SERVER_HTTP_SERVER_INSTANCES
+      value: "7"
+    - name: SERVER_IDLE_TIMEOUT
+      value: "30"
+    - name: PBS_JVM_HEAP_OPTS
+      value: "-Xms4g -Xmx6g"
+    - name: DD_AGENT_HOST
+      valueFrom:
+        fieldRef:
+          fieldPath: status.hostIP
+    - name: EXTERNAL_URL
+      value: "https://prebid.stage.adthrive.com"
+    - name: ADMIN_ENDPOINTS_LOGGING_HTTPINTERACTION_ENABLED
+      value: "true"
+    - name: ADMIN_ENDPOINTS_LOGGING_HTTPINTERACTION_PROTECTED
+      value: "false"
+    - name: ADMIN_ENDPOINTS_LOGGING_CHANGELEVEL_ENABLED
+      value: "true"
+    - name: ADMIN_ENDPOINTS_LOGGING_CHANGELEVEL_PROTECTED
+      value: "false"
+    - name: ADMIN_ENDPOINTS_TRACELOG_ENABLED
+      value: "true"
+    - name: ADMIN_ENDPOINTS_TRACELOG_PROTECTED
+      value: "false"
