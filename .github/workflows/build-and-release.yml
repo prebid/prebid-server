@@ -8,10 +8,6 @@ on:
         description: "PBS Go Version"
         required: true
         type: string
-      PBS_HASH:
-        description: "Raptive Prebid Server Go Hash"
-        required: true
-        type: string
     outputs:
       IMAGE_TAG:
         description: "tag of image just pushed to ecr"
@@ -51,6 +47,6 @@ jobs:
         run: |
           docker build -t ${{ steps.login-ecr.outputs.registry }}/prebid-server-go:latest . 
           docker images 
-          docker tag ${{ steps.login-ecr.outputs.registry }}/prebid-server-go:latest ${{ steps.login-ecr.outputs.registry }}/prebid-server-go:${{ inputs.PBS_VERSION }}-${{ steps.get_latest_tag.outputs.sha }}-${{ inputs.PBS_HASH }}
-          docker push ${{ steps.login-ecr.outputs.registry }}/prebid-server-go:${{ inputs.PBS_VERSION }}-${{ steps.get_latest_tag.outputs.sha }}-${{ inputs.PBS_HASH }}
-          echo "IMAGE_TAG=${{ inputs.PBS_VERSION }}-${{ steps.get_latest_tag.outputs.sha }}-${{ inputs.PBS_HASH }}" >> "$GITHUB_OUTPUT"
+          docker tag ${{ steps.login-ecr.outputs.registry }}/prebid-server-go:latest ${{ steps.login-ecr.outputs.registry }}/prebid-server-go:${{ inputs.PBS_VERSION }}-${{ steps.get_latest_tag.outputs.sha }}
+          docker push ${{ steps.login-ecr.outputs.registry }}/prebid-server-go:${{ inputs.PBS_VERSION }}-${{ steps.get_latest_tag.outputs.sha }}
+          echo "IMAGE_TAG=${{ inputs.PBS_VERSION }}-${{ steps.get_latest_tag.outputs.sha }}" >> "$GITHUB_OUTPUT"
