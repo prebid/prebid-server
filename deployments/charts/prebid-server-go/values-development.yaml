@@ -8,7 +8,7 @@ sslCertArn:
   us-east-1: arn:aws:acm:us-east-1:312505582686:certificate/dce30ab3-fb6f-4abb-b181-9a7cc5ae8f77
 host:
   us-west-2: prebid-west-go.development.adthrive.com
-  us-east-1: prebid-go.development.adthrive.com
+  us-east-1: prebid-east-go.development.adthrive.com
 spec:
   minReplicas: 1
   requests:

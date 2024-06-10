@@ -7,7 +7,7 @@ metadata:
     owner: adcode-delivery
     provisioner: helm
     region: {{ .Values.metadata.region }}
-    service: prebid-server-java
+    service: prebid-server-go
 spec:
   strategy:
     rollingUpdate:
@@ -23,7 +23,7 @@ spec:
         owner: adcode-delivery
         provisioner: helm
         region: {{ .Values.metadata.region }}
-        service: prebid-server-java
+        service: prebid-server-go
       annotations:
         # prometheus.io/path: "/metrics"
         # prometheus.io/port: "8125"

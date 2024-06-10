@@ -31,7 +31,7 @@ metadata:
     owner: adcode-delivery
     provisioner: helm
     region: {{ .Values.metadata.region }}
-    service: prebid-server-java
+    service: prebid-server-go
 spec:
   rules:
     - host: {{ index .Values.host .Values.metadata.region | quote }}

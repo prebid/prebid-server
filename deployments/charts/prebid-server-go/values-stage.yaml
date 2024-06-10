@@ -7,8 +7,8 @@ sslCertArn:
   us-west-2: arn:aws:acm:us-west-2:673670291312:certificate/8d8b4e9e-b317-42a1-9ef5-6fa0879ffdcf
   us-east-1: arn:aws:acm:us-east-1:673670291312:certificate/ac3d1a0a-d1d5-4df6-b008-b194f9a5c521
 host:
-  us-west-2: prebid-west-java.stage.adthrive.com
-  us-east-1: prebid-east.stage.adthrive.com
+  us-west-2: prebid-west-go.stage.adthrive.com
+  us-east-1: prebid-east-go.stage.adthrive.com
 spec:
   minReplicas: 1
   requests:
@@ -26,4 +26,4 @@ spec:
     - name: SERVER_IDLE_TIMEOUT
       value: "30"
     - name: EXTERNAL_URL
-      value: "https://prebid-west.stage.adthrive.com"
+      value: "https://prebid-go.stage.adthrive.com"
