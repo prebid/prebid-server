@@ -8,8 +8,6 @@ metadata:
     provisioner: helm
     region: {{ .Values.metadata.region }}
     service: prebid-server-java
-    tags.datadoghq.com/env: {{ .Values.environment.environment }}
-    tags.datadoghq.com/service: prebid-server
 spec:
   strategy:
     rollingUpdate:
@@ -26,8 +24,6 @@ spec:
         provisioner: helm
         region: {{ .Values.metadata.region }}
         service: prebid-server-java
-        tags.datadoghq.com/env: {{ .Values.environment.environment }}
-        tags.datadoghq.com/service: prebid-server
       annotations:
         # prometheus.io/path: "/metrics"
         # prometheus.io/port: "8125"
@@ -36,20 +32,6 @@ spec:
         # prometheus.io/label-environment: {{ .Values.environment.environment | quote}}
         # prometheus.io/label-service: "prebid-server"
         # prometheus.io/label-name: "{{ .Values.metadata.prefix }}-deployment{{ .Values.metadata.suffix }}{{ .Values.metadata.regionSuffix }}"
-        "ad.datadoghq.com/{{ .Values.metadata.prefix }}-container.checks": |
-          {
-            "openmetrics": {
-              "init_config": {},
-              "instances": [
-                {
-                  "openmetrics_endpoint": "http://%%host%%:8125/metrics",
-                  "namespace": "raptive",
-                  "metrics": ["prebid_server_vertx_http_clients_(?!.*open_connections)", "prebid_server_vertx_http_servers_(?!.*open_connections)", "prebid_server_adapter*", "prebid_server_imps*", "prebid_server_request_time*", "prebid_server_app_requests", "prebid_server_connection_accept_errors", "prebid_server_cookie_sync_requests", "prebid_server_no_cookie_requests", "prebid_server_requests_status_type", "prebid_server_usersync_bad_requests"],
-                   "tags": ["environment:{{.Values.environment.environment}}", "region:{{.Values.metadata.region}}", "kube_cluster_name:{{.Values.metadata.clusterName}}" ]
-                }
-              ]
-            }
-          }
 
     spec:
       nodeSelector: {{.Values.spec.nodeSelector | toYaml | nindent 8}}
@@ -135,5 +117,3 @@ spec:
             - name: EXTERNAL_URL
               value: "https://{{index .Values.host .Values.metadata.region}}"
             {{- end }}
-            - name: DD_TRACE_SAMPLE_RATE
-              value: "0.01"
