@@ -22,7 +22,7 @@ const adapterVersion = "prebid_1.0.0"
 const invibesBidVersion = "4"
 
 type InvibesAdRequest struct {
-	OpenRTBRequest string `json:"openrtb2.BidRequest"`
+	OpenRTBRequest string `json:"OpenRTBRequest"`
 	BidParamsJson  string `json:"BidParamsJson"`
 	IsTestBid      bool   `json:"IsTestBid"`
 	IsAMP          bool   `json:"IsAmp"`
