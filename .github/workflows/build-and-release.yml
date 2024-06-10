@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-master:
+  build-main:
     name: Build main
     runs-on: ubuntu-latest
     steps:
@@ -16,3 +16,16 @@ jobs:
 
       - name: Build Prebid Server
         run: go build .
+
+  create-docker-image:
+    name: Publish docker image
+    needs: build-main
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Prebid Server
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Build image
+        run: |
+          docker build -t docker.io/prebid/prebid-server:${{ needs.publish-tag.outputs.releaseTag }} .
