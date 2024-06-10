@@ -1,0 +1,52 @@
+{
+    "mockBidRequest": {
+      "id": "some_test_auction",
+      "imp": [
+        {
+          "id": "test-imp-id",
+          "banner": {
+            "w": 600,
+            "h": 300
+          },
+          "ext": {
+            "bidder": {
+              "tagid": "98765"
+            }
+          }
+        }
+      ]
+    },
+
+    "httpCalls": [
+      {
+        "expectedRequest": {
+          "uri": "https://hb.emxdgt.com?t=1000&ts=2060541160",
+          "body": {
+            "id": "some_test_auction",
+            "imp": [
+              {
+                "id": "test-imp-id",
+                "banner": {
+                  "w": 600,
+                  "h": 300
+                },
+                "secure": 0,
+                "ext": {
+                  "bidder": {
+                    "tagid": "98765"
+                  }
+                },
+                "tagid": "98765"
+              }
+            ]
+          },
+          "impIDs":["test-imp-id"]
+        },
+        "mockResponse": {
+          "status": 204,
+          "body": {}
+        }
+      }
+    ],
+    "expectedBidResponses": []
+  }

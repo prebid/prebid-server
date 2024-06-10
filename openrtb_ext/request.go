@@ -3,11 +3,12 @@ package openrtb_ext
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
+	"slices"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/util/maputil"
-	"github.com/prebid/prebid-server/util/ptrutil"
-	"github.com/prebid/prebid-server/util/sliceutil"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 )
 
 // FirstPartyDataExtKey defines a field name within request.ext and request.imp.ext reserved for first party data.
@@ -41,52 +42,55 @@ type ExtRequest struct {
 
 // ExtRequestPrebid defines the contract for bidrequest.ext.prebid
 type ExtRequestPrebid struct {
-	Aliases              map[string]string         `json:"aliases,omitempty"`
-	AliasGVLIDs          map[string]uint16         `json:"aliasgvlids,omitempty"`
-	BidAdjustmentFactors map[string]float64        `json:"bidadjustmentfactors,omitempty"`
-	BidderConfigs        []BidderConfig            `json:"bidderconfig,omitempty"`
-	BidderParams         json.RawMessage           `json:"bidderparams,omitempty"`
-	Cache                *ExtRequestPrebidCache    `json:"cache,omitempty"`
-	Channel              *ExtRequestPrebidChannel  `json:"channel,omitempty"`
-	CurrencyConversions  *ExtRequestCurrency       `json:"currency,omitempty"`
-	Data                 *ExtRequestPrebidData     `json:"data,omitempty"`
-	Debug                bool                      `json:"debug,omitempty"`
-	Events               json.RawMessage           `json:"events,omitempty"`
-	Experiment           *Experiment               `json:"experiment,omitempty"`
-	Integration          string                    `json:"integration,omitempty"`
-	MultiBid             []*ExtMultiBid            `json:"multibid,omitempty"`
-	Passthrough          json.RawMessage           `json:"passthrough,omitempty"`
-	SChains              []*ExtRequestPrebidSChain `json:"schains,omitempty"`
-	Server               *ExtRequestPrebidServer   `json:"server,omitempty"`
-	StoredRequest        *ExtStoredRequest         `json:"storedrequest,omitempty"`
-	SupportDeals         bool                      `json:"supportdeals,omitempty"`
-	Targeting            *ExtRequestTargeting      `json:"targeting,omitempty"`
+	AdServerTargeting    []AdServerTarget                `json:"adservertargeting,omitempty"`
+	Aliases              map[string]string               `json:"aliases,omitempty"`
+	AliasGVLIDs          map[string]uint16               `json:"aliasgvlids,omitempty"`
+	Analytics            map[string]json.RawMessage      `json:"analytics,omitempty"`
+	BidAdjustmentFactors map[string]float64              `json:"bidadjustmentfactors,omitempty"`
+	BidAdjustments       *ExtRequestPrebidBidAdjustments `json:"bidadjustments,omitempty"`
+	BidderConfigs        []BidderConfig                  `json:"bidderconfig,omitempty"`
+	BidderParams         json.RawMessage                 `json:"bidderparams,omitempty"`
+	Cache                *ExtRequestPrebidCache          `json:"cache,omitempty"`
+	Channel              *ExtRequestPrebidChannel        `json:"channel,omitempty"`
+	CurrencyConversions  *ExtRequestCurrency             `json:"currency,omitempty"`
+	Data                 *ExtRequestPrebidData           `json:"data,omitempty"`
+	Debug                bool                            `json:"debug,omitempty"`
+	Events               json.RawMessage                 `json:"events,omitempty"`
+	Experiment           *Experiment                     `json:"experiment,omitempty"`
+	Floors               *PriceFloorRules                `json:"floors,omitempty"`
+	Integration          string                          `json:"integration,omitempty"`
+	MultiBid             []*ExtMultiBid                  `json:"multibid,omitempty"`
+	MultiBidMap          map[string]ExtMultiBid          `json:"-"`
+	Passthrough          json.RawMessage                 `json:"passthrough,omitempty"`
+	SChains              []*ExtRequestPrebidSChain       `json:"schains,omitempty"`
+	Sdk                  *ExtRequestSdk                  `json:"sdk,omitempty"`
+	Server               *ExtRequestPrebidServer         `json:"server,omitempty"`
+	StoredRequest        *ExtStoredRequest               `json:"storedrequest,omitempty"`
+	SupportDeals         bool                            `json:"supportdeals,omitempty"`
+	Targeting            *ExtRequestTargeting            `json:"targeting,omitempty"`
+
+	//AlternateBidderCodes is populated with host's AlternateBidderCodes config if not defined in request
+	AlternateBidderCodes *ExtAlternateBidderCodes `json:"alternatebiddercodes,omitempty"`
+
+	// Macros specifies list of custom macros along with the values. This is used while forming
+	// the tracker URLs, where PBS will replace the Custom Macro with its value with url-encoding
+	Macros map[string]string `json:"macros,omitempty"`
 
 	// NoSale specifies bidders with whom the publisher has a legal relationship where the
 	// passing of personally identifiable information doesn't constitute a sale per CCPA law.
 	// The array may contain a single sstar ('*') entry to represent all bidders.
 	NoSale []string `json:"nosale,omitempty"`
 
-	//AlternateBidderCodes is populated with host's AlternateBidderCodes config if not defined in request
-	AlternateBidderCodes *ExtAlternateBidderCodes `json:"alternatebiddercodes,omitempty"`
+	// ReturnAllBidStatus if true populates bidresponse.ext.prebid.seatnonbid with all bids which was
+	// either rejected, nobid, input error
+	ReturnAllBidStatus bool `json:"returnallbidstatus,omitempty"`
 
-	Floors      *PriceFloorRules       `json:"floors,omitempty"`
-	MultiBidMap map[string]ExtMultiBid `json:"-"`
 	// Trace controls the level of detail in the output information returned from executing hooks.
 	// There are two options:
 	// - verbose: sets maximum level of output information
 	// - basic: excludes debugmessages and analytic_tags from output
 	// any other value or an empty string disables trace output at all.
 	Trace string `json:"trace,omitempty"`
-
-	// Macros specifies list of custom macros along with the values. This is used while forming
-	// the tracker URLs, where PBS will replace the Custom Macro with its value with url-encoding
-	Macros            map[string]string               `json:"macros,omitempty"`
-	AdServerTargeting []AdServerTarget                `json:"adservertargeting,omitempty"`
-	BidAdjustments    *ExtRequestPrebidBidAdjustments `json:"bidadjustments,omitempty"`
-	// ReturnAllBidStatus if true populates bidresponse.ext.prebid.seatnonbid with all bids which was
-	// either rejected, nobid, input error
-	ReturnAllBidStatus bool `json:"returnallbidstatus,omitempty"`
 }
 
 type AdServerTarget struct {
@@ -161,7 +165,7 @@ type ExtRequestPrebidCacheVAST struct {
 
 // ExtRequestPrebidBidAdjustments defines the contract for bidrequest.ext.prebid.bidadjustments
 type ExtRequestPrebidBidAdjustments struct {
-	MediaType MediaType `json:"mediatype,omitempty"`
+	MediaType MediaType `mapstructure:"mediatype" json:"mediatype,omitempty"`
 }
 
 // AdjustmentsByDealID maps a dealID to a slice of bid adjustments
@@ -170,19 +174,19 @@ type AdjustmentsByDealID map[string][]Adjustment
 // MediaType defines contract for bidrequest.ext.prebid.bidadjustments.mediatype
 // BidderName will map to a DealID that will map to a slice of bid adjustments
 type MediaType struct {
-	Banner         map[BidderName]AdjustmentsByDealID `json:"banner,omitempty"`
-	VideoInstream  map[BidderName]AdjustmentsByDealID `json:"video-instream,omitempty"`
-	VideoOutstream map[BidderName]AdjustmentsByDealID `json:"video-outstream,omitempty"`
-	Audio          map[BidderName]AdjustmentsByDealID `json:"audio,omitempty"`
-	Native         map[BidderName]AdjustmentsByDealID `json:"native,omitempty"`
-	WildCard       map[BidderName]AdjustmentsByDealID `json:"*,omitempty"`
+	Banner         map[BidderName]AdjustmentsByDealID `mapstructure:"banner" json:"banner,omitempty"`
+	VideoInstream  map[BidderName]AdjustmentsByDealID `mapstructure:"video-instream" json:"video-instream,omitempty"`
+	VideoOutstream map[BidderName]AdjustmentsByDealID `mapstructure:"video-outstream" json:"video-outstream,omitempty"`
+	Audio          map[BidderName]AdjustmentsByDealID `mapstructure:"audio" json:"audio,omitempty"`
+	Native         map[BidderName]AdjustmentsByDealID `mapstructure:"native" json:"native,omitempty"`
+	WildCard       map[BidderName]AdjustmentsByDealID `mapstructure:"*" json:"*,omitempty"`
 }
 
 // Adjustment defines the object that will be present in the slice of bid adjustments found from MediaType map
 type Adjustment struct {
-	Type     string  `json:"adjtype,omitempty"`
-	Value    float64 `json:"value,omitempty"`
-	Currency string  `json:"currency,omitempty"`
+	Type     string  `mapstructure:"adjtype" json:"adjtype,omitempty"`
+	Value    float64 `mapstructure:"value" json:"value,omitempty"`
+	Currency string  `mapstructure:"currency" json:"currency,omitempty"`
 }
 
 // ExtRequestTargeting defines the contract for bidrequest.ext.prebid.targeting
@@ -196,6 +200,7 @@ type ExtRequestTargeting struct {
 	DurationRangeSec          []int                     `json:"durationrangesec,omitempty"`
 	PreferDeals               bool                      `json:"preferdeals,omitempty"`
 	AppendBidderNames         bool                      `json:"appendbiddernames,omitempty"`
+	AlwaysIncludeDeals        bool                      `json:"alwaysincludedeals,omitempty"`
 }
 
 type ExtIncludeBrandCategory struct {
@@ -232,7 +237,7 @@ func (pg *PriceGranularity) UnmarshalJSON(b []byte) error {
 	// price granularity used to be a string referencing a predefined value, try to parse
 	// and map the legacy string before falling back to the modern custom model.
 	legacyID := ""
-	if err := json.Unmarshal(b, &legacyID); err == nil {
+	if err := jsonutil.Unmarshal(b, &legacyID); err == nil {
 		if legacyValue, ok := NewPriceGranularityFromLegacyID(legacyID); ok {
 			*pg = legacyValue
 			return nil
@@ -241,7 +246,7 @@ func (pg *PriceGranularity) UnmarshalJSON(b []byte) error {
 
 	// use a type-alias to avoid calling back into this UnmarshalJSON implementation
 	modernValue := PriceGranularityRaw{}
-	err := json.Unmarshal(b, &modernValue)
+	err := jsonutil.Unmarshal(b, &modernValue)
 	if err == nil {
 		*pg = (PriceGranularity)(modernValue)
 	}
@@ -345,6 +350,16 @@ type ExtRequestPrebidDataEidPermission struct {
 	Bidders []string `json:"bidders"`
 }
 
+type ExtRequestSdk struct {
+	Renderers []ExtRequestSdkRenderer `json:"renderers,omitempty"`
+}
+
+type ExtRequestSdkRenderer struct {
+	Name    string          `json:"name,omitempty"`
+	Version string          `json:"version,omitempty"`
+	Data    json.RawMessage `json:"data,omitempty"`
+}
+
 type ExtMultiBid struct {
 	Bidder                 string   `json:"bidder,omitempty"`
 	Bidders                []string `json:"bidders,omitempty"`
@@ -366,14 +381,14 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 	}
 
 	clone := *erp
-	clone.Aliases = maputil.Clone(erp.Aliases)
-	clone.AliasGVLIDs = maputil.Clone(erp.AliasGVLIDs)
-	clone.BidAdjustmentFactors = maputil.Clone(erp.BidAdjustmentFactors)
+	clone.Aliases = maps.Clone(erp.Aliases)
+	clone.AliasGVLIDs = maps.Clone(erp.AliasGVLIDs)
+	clone.BidAdjustmentFactors = maps.Clone(erp.BidAdjustmentFactors)
 
 	if erp.BidderConfigs != nil {
 		clone.BidderConfigs = make([]BidderConfig, len(erp.BidderConfigs))
 		for i, bc := range erp.BidderConfigs {
-			clonedBidderConfig := BidderConfig{Bidders: sliceutil.Clone(bc.Bidders)}
+			clonedBidderConfig := BidderConfig{Bidders: slices.Clone(bc.Bidders)}
 			if bc.Config != nil {
 				config := &Config{ORTB2: ptrutil.Clone(bc.Config.ORTB2)}
 				clonedBidderConfig.Config = config
@@ -402,7 +417,7 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 	if erp.CurrencyConversions != nil {
 		newConvRates := make(map[string]map[string]float64, len(erp.CurrencyConversions.ConversionRates))
 		for key, val := range erp.CurrencyConversions.ConversionRates {
-			newConvRates[key] = maputil.Clone(val)
+			newConvRates[key] = maps.Clone(val)
 		}
 		clone.CurrencyConversions = &ExtRequestCurrency{ConversionRates: newConvRates}
 		if erp.CurrencyConversions.UsePBSRates != nil {
@@ -411,13 +426,13 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 	}
 
 	if erp.Data != nil {
-		clone.Data = &ExtRequestPrebidData{Bidders: sliceutil.Clone(erp.Data.Bidders)}
+		clone.Data = &ExtRequestPrebidData{Bidders: slices.Clone(erp.Data.Bidders)}
 		if erp.Data.EidPermissions != nil {
 			newEidPermissions := make([]ExtRequestPrebidDataEidPermission, len(erp.Data.EidPermissions))
 			for i, eidp := range erp.Data.EidPermissions {
 				newEidPermissions[i] = ExtRequestPrebidDataEidPermission{
 					Source:  eidp.Source,
-					Bidders: sliceutil.Clone(eidp.Bidders),
+					Bidders: slices.Clone(eidp.Bidders),
 				}
 			}
 			clone.Data.EidPermissions = newEidPermissions
@@ -436,7 +451,7 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 		for i, mulBid := range erp.MultiBid {
 			newMulBid := &ExtMultiBid{
 				Bidder:                 mulBid.Bidder,
-				Bidders:                sliceutil.Clone(mulBid.Bidders),
+				Bidders:                slices.Clone(mulBid.Bidders),
 				TargetBidderCodePrefix: mulBid.TargetBidderCodePrefix,
 			}
 			if mulBid.MaxBids != nil {
@@ -450,7 +465,7 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 		clone.SChains = make([]*ExtRequestPrebidSChain, len(erp.SChains))
 		for i, schain := range erp.SChains {
 			newChain := *schain
-			newNodes := sliceutil.Clone(schain.SChain.Nodes)
+			newNodes := slices.Clone(schain.SChain.Nodes)
 			for j, node := range newNodes {
 				if node.HP != nil {
 					newNodes[j].HP = ptrutil.ToPtr(*newNodes[j].HP)
@@ -468,13 +483,13 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 	if erp.Targeting != nil {
 		newTargeting := &ExtRequestTargeting{
 			IncludeFormat:     erp.Targeting.IncludeFormat,
-			DurationRangeSec:  sliceutil.Clone(erp.Targeting.DurationRangeSec),
+			DurationRangeSec:  slices.Clone(erp.Targeting.DurationRangeSec),
 			PreferDeals:       erp.Targeting.PreferDeals,
 			AppendBidderNames: erp.Targeting.AppendBidderNames,
 		}
 		if erp.Targeting.PriceGranularity != nil {
 			newPriceGranularity := &PriceGranularity{
-				Ranges: sliceutil.Clone(erp.Targeting.PriceGranularity.Ranges),
+				Ranges: slices.Clone(erp.Targeting.PriceGranularity.Ranges),
 			}
 			newPriceGranularity.Precision = ptrutil.Clone(erp.Targeting.PriceGranularity.Precision)
 			newTargeting.PriceGranularity = newPriceGranularity
@@ -489,7 +504,7 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 		clone.Targeting = newTargeting
 	}
 
-	clone.NoSale = sliceutil.Clone(erp.NoSale)
+	clone.NoSale = slices.Clone(erp.NoSale)
 
 	if erp.AlternateBidderCodes != nil {
 		newAlternateBidderCodes := ExtAlternateBidderCodes{Enabled: erp.AlternateBidderCodes.Enabled}
@@ -498,7 +513,7 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 			for key, val := range erp.AlternateBidderCodes.Bidders {
 				newBidders[key] = ExtAdapterAlternateBidderCodes{
 					Enabled:            val.Enabled,
-					AllowedBidderCodes: sliceutil.Clone(val.AllowedBidderCodes),
+					AllowedBidderCodes: slices.Clone(val.AllowedBidderCodes),
 				}
 			}
 			newAlternateBidderCodes.Bidders = newBidders
@@ -516,8 +531,8 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 				for i, pfmg := range erp.Floors.Data.ModelGroups {
 					clonedData.ModelGroups[i] = pfmg
 					clonedData.ModelGroups[i].ModelWeight = ptrutil.Clone(pfmg.ModelWeight)
-					clonedData.ModelGroups[i].Schema.Fields = sliceutil.Clone(pfmg.Schema.Fields)
-					clonedData.ModelGroups[i].Values = maputil.Clone(pfmg.Values)
+					clonedData.ModelGroups[i].Schema.Fields = slices.Clone(pfmg.Schema.Fields)
+					clonedData.ModelGroups[i].Values = maps.Clone(pfmg.Values)
 				}
 			}
 			clonedFloors.Data = &clonedData
@@ -539,12 +554,12 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 		clone.MultiBidMap = make(map[string]ExtMultiBid, len(erp.MultiBidMap))
 		for k, v := range erp.MultiBidMap {
 			// Make v a deep copy of the ExtMultiBid struct
-			v.Bidders = sliceutil.Clone(v.Bidders)
+			v.Bidders = slices.Clone(v.Bidders)
 			v.MaxBids = ptrutil.Clone(v.MaxBids)
 			clone.MultiBidMap[k] = v
 		}
 	}
-	clone.AdServerTargeting = sliceutil.Clone(erp.AdServerTargeting)
+	clone.AdServerTargeting = slices.Clone(erp.AdServerTargeting)
 
 	return &clone
 }

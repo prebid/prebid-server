@@ -3,7 +3,7 @@ package metrics
 import (
 	"time"
 
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -20,6 +20,11 @@ func (me *MetricsEngineMock) RecordRequest(labels Labels) {
 // RecordConnectionAccept mock
 func (me *MetricsEngineMock) RecordConnectionAccept(success bool) {
 	me.Called(success)
+}
+
+// RecordTMaxTimeout mock
+func (me *MetricsEngineMock) RecordTMaxTimeout() {
+	me.Called()
 }
 
 // RecordConnectionClose mock
@@ -151,6 +156,11 @@ func (me *MetricsEngineMock) RecordRequestPrivacy(privacy PrivacyLabels) {
 	me.Called(privacy)
 }
 
+// RecordAdapterBuyerUIDScrubbed mock
+func (me *MetricsEngineMock) RecordAdapterBuyerUIDScrubbed(adapterName openrtb_ext.BidderName) {
+	me.Called(adapterName)
+}
+
 // RecordAdapterGDPRRequestBlocked mock
 func (me *MetricsEngineMock) RecordAdapterGDPRRequestBlocked(adapterName openrtb_ext.BidderName) {
 	me.Called(adapterName)
@@ -215,20 +225,4 @@ func (me *MetricsEngineMock) RecordModuleExecutionError(labels ModuleLabels) {
 
 func (me *MetricsEngineMock) RecordModuleTimeout(labels ModuleLabels) {
 	me.Called(labels)
-}
-
-func (me *MetricsEngineMock) RecordAccountGDPRPurposeWarning(account string, purposeName string) {
-	me.Called(account, purposeName)
-}
-
-func (me *MetricsEngineMock) RecordAccountGDPRChannelEnabledWarning(account string) {
-	me.Called(account)
-}
-
-func (me *MetricsEngineMock) RecordAccountCCPAChannelEnabledWarning(account string) {
-	me.Called(account)
-}
-
-func (me *MetricsEngineMock) RecordAccountUpgradeStatus(account string) {
-	me.Called(account)
 }

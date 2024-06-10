@@ -5,7 +5,7 @@
       {
         "id": "test-imp-id",
         "native": {
-          "request": "{\"context\":2,\"contextsubtype\":20,\"plcmttype\":1,\"plcmtcnt\":1,\"seq\":0,\"aurlsupport\":0,\"durlsupport\":0,\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]}],\"privacy\":0,\"assets\":[{\"id\":100,\"title\":{\"len\":90},\"required\":1},{\"id\":101,\"img\":{\"type\":3,\"wmin\":200,\"hmin\":200},\"required\":1},{\"id\":107,\"video\":{\"mimes\":[\"mp4\"],\"minduration\":100,\"maxduration\":100,\"protocols\":[1,2]},\"required\":1},{\"id\":105,\"data\":{\"type\":2,\"len\":90},\"required\":1}],\"ver\":\"1.2\"}",
+          "request": "{\"context\":2,\"contextsubtype\":20,\"plcmttype\":1,\"plcmtcnt\":1,\"seq\":0,\"aurlsupport\":0,\"durlsupport\":0,\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]}],\"privacy\":0,\"assets\":[{\"id\":100,\"title\":{\"len\":90},\"required\":1},{\"id\":101,\"img\":{\"type\":3,\"wmin\":1080,\"hmin\":607},\"required\":1},{\"id\":107,\"video\":{\"mimes\":[\"mp4\"],\"minduration\":100,\"maxduration\":100,\"protocols\":[1,2]},\"required\":1},{\"id\":105,\"data\":{\"type\":2,\"len\":90},\"required\":1}],\"ver\":\"1.2\"}",
           "ver": "1.2"
         },
         "ext": {
@@ -92,12 +92,9 @@
             {
               "adtype": 3,
               "slotid": "u42ohmaufh",
-              "detailedCreativeTypeList": [
-                "903"
-              ],
-              "h": 200,
-              "test": 1,
-              "w": 200
+              "detailedCreativeTypeList":["903","901","904","905"],
+              "format":[{"w":225,"h":150},{"w":1080,"h":607},{"w":300,"h":250},{"w":1080,"h":1620},{"w":1280,"h":720},{"w":640,"h":360},{"w":1080,"h":1920},{"w":720,"h":1280}],
+              "test": 1
             }
           ],
           "device": {
@@ -127,7 +124,8 @@
           },
           "version": "3.4",
           "clientAdRequestId": "test-req-id"
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,
@@ -178,19 +176,11 @@
                     "imageInfo": [
                       {
                         "checkSha256Flag": 0,
-                        "height": 350,
+                        "height": 607,
                         "imageType": "img",
                         "sha256": "8baa56fdb2702b9fb044d95b328936160cd245764375cdb25a4ab504f4ae2e19",
                         "url": "http://image1.jpg",
-                        "width": 400
-                      },
-                      {
-                        "checkSha256Flag": 0,
-                        "height": 300,
-                        "imageType": "img",
-                        "sha256": "8baa56fdb2702b9fb044d95b328936160cd245764375cdb25a4ab504f4ae2e19",
-                        "url": "http://image2.jpg",
-                        "width": 400
+                        "width": 1080
                       }
                     ],
                     "label": "%E6%89%8B%E6%9C%BA%E6%B7%98%E5%AE%9D",
@@ -312,7 +302,7 @@
               "huaweiads"
             ],
             "crid": "58022259",
-            "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":100,\"title\":{\"text\":\"/test/\",\"len\":6}},{\"id\":101,\"img\":{\"type\":3,\"url\":\"http://image1.jpg\",\"w\":400,\"h\":350}},{\"id\":107,\"video\":{\"vasttag\":\"<?xml version=\\\"1.0\\\" encoding=\\\"UTF-8\\\"?><VAST version=\\\"3.0\\\"><Ad id=\\\"58022259\\\"><InLine><AdSystem>HuaweiAds</AdSystem><AdTitle>/test/</AdTitle><Error><![CDATA[http://test/vastError&et=[ERRORCODE]]]></Error><Impression><![CDATA[http://test/imp]]></Impression><Impression><![CDATA[http://test/dspimp]]></Impression><Creatives><Creative adId=\\\"58022259\\\" id=\\\"58022259\\\"><Linear><Duration>00:00:06.038</Duration><TrackingEvents><Tracking event=\\\"skip\\\"><![CDATA[http://test/userclose]]></Tracking><Tracking event=\\\"closeLinear\\\"><![CDATA[http://test/userclose]]></Tracking><Tracking event=\\\"start\\\"><![CDATA[http://test/playStart]]></Tracking><Tracking event=\\\"complete\\\"><![CDATA[http://test/playEnd1]]></Tracking><Tracking event=\\\"complete\\\"><![CDATA[http://test/playEnd2]]></Tracking><Tracking event=\\\"resume\\\"><![CDATA[http://test/playResume]]></Tracking><Tracking event=\\\"pause\\\"><![CDATA[http://test/playPause]]></Tracking></TrackingEvents><VideoClicks><ClickThrough><![CDATA[https://ads.huawei.com/usermgtportal/home/index.html#/]]></ClickThrough><ClickTracking><![CDATA[http://test/click]]></ClickTracking><ClickTracking><![CDATA[http://test/dspclick]]></ClickTracking></VideoClicks><MediaFiles><MediaFile delivery=\\\"progressive\\\" type=\\\"video/mp4\\\" width=\\\"600\\\" height=\\\"500\\\" scalable=\\\"true\\\" maintainAspectRatio=\\\"true\\\"> <![CDATA[https://video.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>\"}},{\"id\":105,\"data\":{\"label\":\"desc\",\"value\":\"this is a test ad\"}}],\"link\":{\"url\":\"https://ads.huawei.com/usermgtportal/home/index.html#/\",\"clicktrackers\":[\"http://test/click\",\"http://test/dspclick\"]},\"eventtrackers\":[{\"event\":1,\"method\":1,\"url\":\"http://test/imp\"},{\"event\":1,\"method\":1,\"url\":\"http://test/dspimp\"}]}",
+            "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":100,\"title\":{\"text\":\"/test/\",\"len\":6}},{\"id\":101,\"img\":{\"type\":3,\"url\":\"http://image1.jpg\",\"w\":1080,\"h\":607}},{\"id\":107,\"video\":{\"vasttag\":\"<?xml version=\\\"1.0\\\" encoding=\\\"UTF-8\\\"?><VAST version=\\\"3.0\\\"><Ad id=\\\"58022259\\\"><InLine><AdSystem>HuaweiAds</AdSystem><AdTitle>/test/</AdTitle><Error><![CDATA[http://test/vastError&et=[ERRORCODE]]]></Error><Impression><![CDATA[http://test/imp]]></Impression><Impression><![CDATA[http://test/dspimp]]></Impression><Creatives><Creative adId=\\\"58022259\\\" id=\\\"58022259\\\"><Linear><Duration>00:00:06.038</Duration><TrackingEvents><Tracking event=\\\"skip\\\"><![CDATA[http://test/userclose]]></Tracking><Tracking event=\\\"closeLinear\\\"><![CDATA[http://test/userclose]]></Tracking><Tracking event=\\\"start\\\"><![CDATA[http://test/playStart]]></Tracking><Tracking event=\\\"complete\\\"><![CDATA[http://test/playEnd1]]></Tracking><Tracking event=\\\"complete\\\"><![CDATA[http://test/playEnd2]]></Tracking><Tracking event=\\\"resume\\\"><![CDATA[http://test/playResume]]></Tracking><Tracking event=\\\"pause\\\"><![CDATA[http://test/playPause]]></Tracking></TrackingEvents><VideoClicks><ClickThrough><![CDATA[https://ads.huawei.com/usermgtportal/home/index.html#/]]></ClickThrough><ClickTracking><![CDATA[http://test/click]]></ClickTracking><ClickTracking><![CDATA[http://test/dspclick]]></ClickTracking></VideoClicks><MediaFiles><MediaFile delivery=\\\"progressive\\\" type=\\\"video/mp4\\\" width=\\\"600\\\" height=\\\"500\\\" scalable=\\\"true\\\" maintainAspectRatio=\\\"true\\\"> <![CDATA[https://video.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>\"}},{\"id\":105,\"data\":{\"label\":\"desc\",\"value\":\"this is a test ad\"}}],\"link\":{\"url\":\"https://ads.huawei.com/usermgtportal/home/index.html#/\",\"clicktrackers\":[\"http://test/click\",\"http://test/dspclick\"]},\"eventtrackers\":[{\"event\":1,\"method\":1,\"url\":\"http://test/imp\"},{\"event\":1,\"method\":1,\"url\":\"http://test/dspimp\"}]}",
             "id": "test-imp-id",
             "impid": "test-imp-id",
             "price": 2.8,

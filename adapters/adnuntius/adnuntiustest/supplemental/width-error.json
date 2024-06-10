@@ -43,7 +43,8 @@
 					"metaData": {
 
 					}
-				}
+				},
+				"impIDs":["test-imp-id"]
 			},
 			"mockResponse": {
 				"status": 200,
@@ -81,7 +82,7 @@
 	],
 	"expectedMakeBidsErrors": [
 		{
-			"value": "json: cannot unmarshal number into Go struct field .AdUnits.Ads.CreativeWidth of type string",
+			"value": "json: cannot unmarshal number into Go struct field Ad.AdUnits.Ads.CreativeWidth of type string",
 			"comparison": "literal"
 		}
 	]

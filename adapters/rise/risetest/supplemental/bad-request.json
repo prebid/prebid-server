@@ -21,7 +21,7 @@
         },
         "ext": {
           "bidder": {
-            "publisher_id": "72721",
+            "org": "72721",
             "path": "mvo",
             "zone": "1r"
           }
@@ -55,14 +55,15 @@
               },
               "ext": {
                 "bidder": {
-                  "publisher_id": "72721",
+                  "org": "72721",
                   "zone": "1r",
                   "path": "mvo"
                 }
               }
             }
           ]
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 400,

@@ -54,7 +54,8 @@
           "bidder": {
             "publisherId": 1234,
             "placementId": 123456
-          }
+          },
+          "gpid": "gpid-value"
         }
       }
     ],
@@ -116,7 +117,10 @@
                   4
                 ]
               },
-              "tagid": "123456"
+              "tagid": "123456",
+              "ext": {
+                "gpid": "gpid-value"
+              }
             }
           ],
           "app": {
@@ -131,7 +135,8 @@
             "id": 4,
             "version": "1.0.0"
           }
-        }
+        },
+        "impIDs":["test-imp-banner-id","test-imp-video-id"]
       },
       "mockResponse": {
         "status": 200,

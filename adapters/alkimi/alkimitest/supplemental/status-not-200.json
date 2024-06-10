@@ -1,0 +1,102 @@
+{
+	"mockBidRequest": {
+        "id": "test-request-id",
+        "imp": [
+            {
+                "id": "test-imp-id",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        },
+                        {
+                            "w": 300,
+                            "h": 600
+                        }
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "token": "XXX",
+                        "bidFloor": 0.5
+                    }
+                }
+            }
+        ],
+        "site": {
+            "domain": "www.example.com",
+            "page": "http://www.example.com",
+            "publisher": {
+                "domain": "example.com"
+            },
+            "ext": {
+                "amp": 0
+            }
+        },
+        "device": {
+            "ip": "123.123.123.123",
+            "ifa": "test"
+        }
+    },
+	"httpCalls": [{
+		"expectedRequest": {
+			"uri": "https://exchange.alkimi-onboarding.com/server/bid",
+			"body": {
+                "id": "test-request-id",
+                "imp": [
+                    {
+                        "id": "test-imp-id",
+                        "banner": {
+                            "format": [
+                                {
+                                    "w": 300,
+                                    "h": 250
+                                },
+                                {
+                                    "w": 300,
+                                    "h": 600
+                                }
+                            ]
+                        },
+                        "bidfloor": 0.5,
+                        "ext": {
+                            "bidder": {
+                                "token": "XXX",
+                                "bidFloor": 0.5,
+                                "adUnitCode": "test-imp-id",
+                                "exp": 0,
+                                "instl": 0
+                            }
+                        }
+                    }
+                ],
+                "site": {
+                    "domain": "www.example.com",
+                    "page": "http://www.example.com",
+                    "publisher": {
+                        "domain": "example.com"
+                    },
+                    "ext": {
+                        "amp": 0
+                    }
+                },
+                "device": {
+                    "ip": "123.123.123.123",
+                    "ifa": "test"
+                }
+            },
+            "impIDs":["test-imp-id"]
+		},
+		"mockResponse": {
+			"status": 404,
+			"body": {}
+		}
+    }],
+    "expectedMakeBidsErrors": [
+        {
+          "value": "Unexpected status code: 404. Run with request.debug = 1 for more info",
+          "comparison": "literal"
+        }
+    ]
+}

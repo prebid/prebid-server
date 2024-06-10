@@ -12,7 +12,8 @@ import (
 	"golang.org/x/net/context/ctxhttp"
 
 	"github.com/buger/jsonparser"
-	"github.com/prebid/prebid-server/stored_requests/events"
+	"github.com/prebid/prebid-server/v2/stored_requests/events"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 
 	"github.com/golang/glog"
 )
@@ -108,58 +109,55 @@ func (e *HTTPEvents) fetchAll() {
 }
 
 func (e *HTTPEvents) refresh(ticker <-chan time.Time) {
-	for {
-		select {
-		case thisTime := <-ticker:
-			thisTimeInUTC := thisTime.UTC()
+	for thisTime := range ticker {
+		thisTimeInUTC := thisTime.UTC()
 
-			// Parse the endpoint url defined
-			endpointUrl, urlErr := url.Parse(e.Endpoint)
+		// Parse the endpoint url defined
+		endpointUrl, urlErr := url.Parse(e.Endpoint)
 
-			// Error with url parsing
-			if urlErr != nil {
-				glog.Errorf("Disabling refresh HTTP cache from GET '%s': %v", e.Endpoint, urlErr)
-				return
-			}
-
-			// Parse the url query string
-			urlQuery := endpointUrl.Query()
-
-			// See the last-modified query param
-			urlQuery.Set("last-modified", e.lastUpdate.Format(time.RFC3339))
-
-			// Rebuild
-			endpointUrl.RawQuery = urlQuery.Encode()
-
-			// Convert to string
-			endpoint := endpointUrl.String()
-
-			glog.Infof("Refreshing HTTP cache from GET '%s'", endpoint)
-
-			ctx, cancel := e.ctxProducer()
-			resp, err := ctxhttp.Get(ctx, e.client, endpoint)
-			if respObj, ok := e.parse(endpoint, resp, err); ok {
-				invalidations := events.Invalidation{
-					Requests:  extractInvalidations(respObj.StoredRequests),
-					Imps:      extractInvalidations(respObj.StoredImps),
-					Responses: extractInvalidations(respObj.StoredResponses),
-					Accounts:  extractInvalidations(respObj.Accounts),
-				}
-				if len(respObj.StoredRequests) > 0 || len(respObj.StoredImps) > 0 || len(respObj.StoredResponses) > 0 || len(respObj.Accounts) > 0 {
-					e.saves <- events.Save{
-						Requests:  respObj.StoredRequests,
-						Imps:      respObj.StoredImps,
-						Responses: respObj.StoredResponses,
-						Accounts:  respObj.Accounts,
-					}
-				}
-				if len(invalidations.Requests) > 0 || len(invalidations.Imps) > 0 || len(invalidations.Responses) > 0 || len(invalidations.Accounts) > 0 {
-					e.invalidations <- invalidations
-				}
-				e.lastUpdate = thisTimeInUTC
-			}
-			cancel()
+		// Error with url parsing
+		if urlErr != nil {
+			glog.Errorf("Disabling refresh HTTP cache from GET '%s': %v", e.Endpoint, urlErr)
+			return
 		}
+
+		// Parse the url query string
+		urlQuery := endpointUrl.Query()
+
+		// See the last-modified query param
+		urlQuery.Set("last-modified", e.lastUpdate.Format(time.RFC3339))
+
+		// Rebuild
+		endpointUrl.RawQuery = urlQuery.Encode()
+
+		// Convert to string
+		endpoint := endpointUrl.String()
+
+		glog.Infof("Refreshing HTTP cache from GET '%s'", endpoint)
+
+		ctx, cancel := e.ctxProducer()
+		resp, err := ctxhttp.Get(ctx, e.client, endpoint)
+		if respObj, ok := e.parse(endpoint, resp, err); ok {
+			invalidations := events.Invalidation{
+				Requests:  extractInvalidations(respObj.StoredRequests),
+				Imps:      extractInvalidations(respObj.StoredImps),
+				Responses: extractInvalidations(respObj.StoredResponses),
+				Accounts:  extractInvalidations(respObj.Accounts),
+			}
+			if len(respObj.StoredRequests) > 0 || len(respObj.StoredImps) > 0 || len(respObj.StoredResponses) > 0 || len(respObj.Accounts) > 0 {
+				e.saves <- events.Save{
+					Requests:  respObj.StoredRequests,
+					Imps:      respObj.StoredImps,
+					Responses: respObj.StoredResponses,
+					Accounts:  respObj.Accounts,
+				}
+			}
+			if len(invalidations.Requests) > 0 || len(invalidations.Imps) > 0 || len(invalidations.Responses) > 0 || len(invalidations.Accounts) > 0 {
+				e.invalidations <- invalidations
+			}
+			e.lastUpdate = thisTimeInUTC
+		}
+		cancel()
 	}
 }
 
@@ -184,7 +182,7 @@ func (e *HTTPEvents) parse(endpoint string, resp *httpCore.Response, err error) 
 	}
 
 	var respObj responseContract
-	if err := json.Unmarshal(respBytes, &respObj); err != nil {
+	if err := jsonutil.UnmarshalValid(respBytes, &respObj); err != nil {
 		glog.Errorf("Failed to unmarshal body of GET %s for Stored Requests: %v", endpoint, err)
 		return nil, false
 	}

@@ -81,6 +81,8 @@
               "ext": {
                 "origbidcpm": 0.71,
                 "prebid": {
+                  "meta": {
+                  },
                   "type": "banner",
                   "events": {
                     "imp": "http://localhost/event?t=imp&b=winning-bid&a=testaccount&bidder=appnexus&int=testIntegrationType&ts=1234567890",
@@ -99,6 +101,8 @@
               "ext": {
                 "origbidcpm": 0.21,
                 "prebid": {
+                  "meta": {
+                  },
                   "type": "banner",
                   "events": {
                     "imp": "http://localhost/event?t=imp&b=losing-bid&a=testaccount&bidder=appnexus&int=testIntegrationType&ts=1234567890",

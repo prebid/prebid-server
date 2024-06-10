@@ -33,7 +33,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://pbs.adksrv.com/hb?zone=102",
+        "uri": "http://pbs.adksrv.com/hb?zone=102",
         "body": {
           "id": "0000000000001",
           "imp": [
@@ -55,7 +55,8 @@
           "user": {
             "buyeruid": "A-38327932832"
           }
-        }
+        },
+        "impIDs":["video-adunit-2"]
       },
       "mockResponse": {
         "status": 200,
@@ -75,6 +76,7 @@
                   "cat": [
                     "IAB2"
                   ],
+                  "mtype": 2,
                   "adomain": [
                     "video-example.com"
                   ]
@@ -105,7 +107,8 @@
                 "crid": "2002",
                 "cat": [
                   "IAB2"
-                ]
+                ],
+                "mtype": 2
               },
               "type": "video"
             }

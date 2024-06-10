@@ -101,6 +101,8 @@
                             "crid": "creative-1",
                             "ext": {
                                 "prebid": {
+                                    "meta": {
+                                    },
                                     "type": "video"
                                 },
                                 "someField": "someValue",

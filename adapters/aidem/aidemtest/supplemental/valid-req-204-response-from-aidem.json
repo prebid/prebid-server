@@ -1,0 +1,67 @@
+{
+    "mockBidRequest": {
+        "app": {
+            "bundle": "com.example.app"
+        },
+        "id": "req-id",
+        "device": {
+            "ifa": "9d8fe0a9-c0dd-4482-b16b-5709b00c608d",
+            "ip": "1.1.1.1",
+            "ua": "Mozilla/5.0 (Linux; Android 8.0.0; SM-G960F Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.84 Mobile Safari/537.36"
+        },
+        "imp": [
+            {
+                "ext": {
+                    "bidder": {
+                        "siteId": "TCID",
+                        "publisherId": "1234"
+                    }
+                },
+                "banner": {
+                    "w": 320,
+                    "h": 50
+                },
+                "id": "imp-id"
+            }
+        ]
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "https://fakezero.aidemsrv.com/ortb/v2.6/bid/request?billing_id=1234",
+                "body": {
+                    "app": {
+                        "bundle": "com.example.app"
+                    },
+                    "id": "req-id",
+                    "device": {
+                        "ifa": "9d8fe0a9-c0dd-4482-b16b-5709b00c608d",
+                        "ip": "1.1.1.1",
+                        "ua": "Mozilla/5.0 (Linux; Android 8.0.0; SM-G960F Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.84 Mobile Safari/537.36"
+                    },
+                    "imp": [
+                        {
+                            "ext": {
+                                "bidder": {
+                                    "siteId": "TCID",
+                                    "publisherId": "1234"
+                                }
+                            },
+                            "banner": {
+                                "w": 320,
+                                "h": 50
+                            },
+                            "id": "imp-id"
+                        }
+                    ]
+                },
+                "impIDs":["imp-id"]
+            },
+            "mockResponse": {
+                "status": 204,
+                "body": {}
+            }
+        }
+    ],
+    "expectedBidResponses": []
+}

@@ -8,14 +8,14 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/prebid/openrtb/v19/adcom1"
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/adcom1"
+	"github.com/prebid/openrtb/v20/openrtb2"
 
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/macros"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type adapter struct {
@@ -140,6 +140,7 @@ func (a *adapter) buildRequest(request *openrtb2.BidRequest) (*adapters.RequestD
 		Method: "POST",
 		Uri:    url,
 		Body:   requestJSON,
+		ImpIDs: openrtb_ext.GetImpIDs(request.Imp),
 	}
 
 	return requestData, nil
@@ -253,8 +254,7 @@ func makeRequestExt(pageType string) (json.RawMessage, error) {
 
 	requestExtJson, err := json.Marshal(requestExt)
 	if err != nil {
-		fmt.Errorf("could not marshal %s", requestExt)
-		return nil, err
+		return nil, fmt.Errorf("could not marshal %s, err: %s", requestExt, err)
 	}
 	return requestExtJson, nil
 

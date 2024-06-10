@@ -69,7 +69,8 @@
               "authentication_id": "4e24a2b23fbfb5e41a9093b921d6cddf497c24dd5f63879038cec2ab2f27d174",
               "platformid": "test-platform-id"
           }
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,

@@ -23,13 +23,14 @@
     },
     "user": {
       "buyeruid": "A-38327932832"
-    }
+    },
+    "cur": ["TYR"]
   },
 
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://pbs.adksrv.com/hb?zone=101",
+        "uri": "http://pbs.adksrv.com/hb?zone=101",
         "body": {
           "id": "0000000000001",
           "imp": [
@@ -45,8 +46,10 @@
           },
           "user": {
             "buyeruid": "A-38327932832"
-          }
-        }
+          },
+          "cur": ["TYR"]
+        },
+        "impIDs":["adunit-1"]
       },
       "mockResponse": {
         "status": 200,
@@ -62,12 +65,14 @@
                   "adid": "19005",
                   "adm": "<!-- admarkup -->",
                   "cat": ["IAB2"],
+                  "mtype": 1,
                   "adomain": ["test.com"],
                   "h": 250,
                   "w": 300
               }]
           }],
-          "bidid": "wehM-93KGr0"
+          "bidid": "wehM-93KGr0",
+          "cur": "TYR"
         }
       }
     }
@@ -75,7 +80,7 @@
 
   "expectedBidResponses": [
     {
-      "currency": "USD",
+      "currency": "TYR",
       "bids": [
         {
           "bid": {
@@ -89,7 +94,8 @@
             "crid": "19005",
             "w": 300,
             "h": 250,
-            "cat": ["IAB2"]
+            "cat": ["IAB2"],
+            "mtype": 1
           },
           "type": "banner"
         }

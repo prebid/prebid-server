@@ -1,0 +1,106 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "app": {
+            "id": "1",
+            "bundle": "com.foo.bar"
+        },
+        "device": {
+            "ua": "Mozilla/5.0 (Windows NT 5.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.101 Safari/537.36",
+            "ip": "73.55.27.72"
+        },
+        "imp": [
+            {
+                "id": "test-imp-id",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 728,
+                            "h": 90
+                        }
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "placement_id": 329
+                    }
+                }
+            }
+        ]
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "https://example.com/api/pbs",
+                "body": {
+                    "id": "test-request-id",
+                    "app": {
+                        "id": "1",
+                        "bundle": "com.foo.bar"
+                    },
+                    "device": {
+                        "ua": "Mozilla/5.0 (Windows NT 5.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.101 Safari/537.36",
+                        "ip": "73.55.27.72"
+                    },
+                    "imp": [
+                        {
+                            "id": "test-imp-id",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 728,
+                                        "h": 90
+                                    }
+                                ]
+                            },
+                            "tagid": "329"
+                        }
+                    ]
+                },
+                "impIDs":["test-imp-id"]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "test-request-id",
+                    "seatbid": [
+                        {
+                            "seat": "bmtm",
+                            "bid": [
+                                {
+                                    "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                                    "impid": "test-imp-id",
+                                    "price": 0.500000,
+                                    "adm": "some-test-ad",
+                                    "crid": "crid_10",
+                                    "h": 90,
+                                    "w": 728
+                                }
+                            ]
+                        }
+                    ],
+                    "cur": "USD"
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "currency": "USD",
+            "bids": [
+                {
+                    "bid": {
+                        "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                        "impid": "test-imp-id",
+                        "price": 0.5,
+                        "adm": "some-test-ad",
+                        "crid": "crid_10",
+                        "w": 728,
+                        "h": 90
+                    },
+                    "type": "banner"
+                }
+            ]
+        }
+    ]
+}

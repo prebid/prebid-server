@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 var validSchemaDimensions = map[string]struct{}{
@@ -55,7 +55,7 @@ func validateFloorRulesAndLowerValidRuleKey(schema openrtb_ext.PriceFloorSchema,
 
 // validateFloorParams validates SchemaVersion, SkipRate and FloorMin
 func validateFloorParams(extFloorRules *openrtb_ext.PriceFloorRules) error {
-	if extFloorRules.Data != nil && len(extFloorRules.Data.FloorsSchemaVersion) > 0 && extFloorRules.Data.FloorsSchemaVersion != "2" {
+	if extFloorRules.Data != nil && extFloorRules.Data.FloorsSchemaVersion != 0 && extFloorRules.Data.FloorsSchemaVersion != 2 {
 		return fmt.Errorf("Invalid FloorsSchemaVersion = '%v', supported version 2", extFloorRules.Data.FloorsSchemaVersion)
 	}
 

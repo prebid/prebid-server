@@ -1,0 +1,146 @@
+{
+  "mockBidRequest": {
+    "id": "request_id",
+    "imp": [
+      {
+        "id": "imp_id1",
+        "banner": {
+          "w": 300,
+          "h": 600
+        },
+        "ext": {
+          "bidder": {
+            "page_id": 111,
+            "imp_id": 1
+          }
+        }
+      },
+      {
+        "id": "imp_id2",
+        "ext": {
+          "bidder": {
+            "page_id": 222,
+            "imp_id": 2
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "www.example.com",
+      "page": "http://www.example.com"
+    },
+    "cur": [
+      "USD"
+    ],
+    "device": {
+      "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36",
+      "ip": "127.0.0.1"
+    },
+    "tmax": 500
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bs-metadsp.yandex.ru/prebid/111?imp-id=1&ssp-cur=USD&ssp-id=10500&target-ref=www.example.com",
+        "headers": {
+          "User-Agent": [
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36"
+          ],
+          "X-Forwarded-For": [
+            "127.0.0.1"
+          ],
+          "X-Real-Ip": [
+            "127.0.0.1"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Referer": [
+            "http://www.example.com"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
+        "body": {
+          "id": "request_id",
+          "imp": [
+            {
+              "id": "imp_id1",
+              "banner": {
+                "w": 300,
+                "h": 600
+              },
+              "ext": {
+                "bidder": {
+                  "page_id": 111,
+                  "imp_id": 1
+                }
+              }
+            }
+          ],
+          "site": {
+            "domain": "www.example.com",
+            "page": "http://www.example.com"
+          },
+          "cur": [
+            "USD"
+          ],
+          "device": {
+            "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36",
+            "ip": "127.0.0.1"
+          },
+          "tmax": 500
+        },
+        "impIDs":["imp_id1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "headers": {},
+        "body": {
+          "id": "request_id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid_id1",
+                  "impid": "imp_id1",
+                  "price": 1.25,
+                  "crid": "crid",
+                  "adm": "adm001",
+                  "h": 600,
+                  "w": 300
+                }
+              ]
+            }
+          ],
+          "bidid": "bid_id"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "bid_id1",
+            "impid": "imp_id1",
+            "price": 1.25,
+            "adm": "adm001",
+            "crid": "crid",
+            "w": 300,
+            "h": 600
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Unsupported format",
+      "comparison": "regex"
+    }
+  ]
+}

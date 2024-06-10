@@ -3,9 +3,10 @@ package smaato
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/errortypes"
 	"net/url"
 	"strings"
+
+	"github.com/prebid/prebid-server/v2/errortypes"
 )
 
 type imageAd struct {

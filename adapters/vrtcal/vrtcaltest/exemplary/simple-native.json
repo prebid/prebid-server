@@ -1,0 +1,91 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+
+        "native": {
+          "ver": "1.2",
+          "request": "{\"assets\":[{\"id\":1,\"img\":{\"ext\":{\"image1\":\"image2\"},\"h\": 250,\"mimes\":[\"image\/gif\",\"image\/png\"],\"type\":3,\"w\":300},\"required\":1}]}"
+        },
+        "ext": {
+          "bidder": {
+            "Just_an_unused_vrtcal_param": "unused_data_for_this"
+          }
+        }
+      }
+    ],
+    "app": {
+      "id": "fake-app-id"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://rtb.vrtcal.com/bidder_prebid.vap?ssp=1804",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+            "native": {
+              "ver": "1.2",
+              "request": "{\"assets\":[{\"id\":1,\"img\":{\"ext\":{\"image1\":\"image2\"},\"h\": 250,\"mimes\":[\"image\/gif\",\"image\/png\"],\"type\":3,\"w\":300},\"required\":1}]}"
+            },
+            "ext": {
+              "bidder": {
+                "Just_an_unused_vrtcal_param": "unused_data_for_this"
+              }
+            }
+          }
+	  ],
+          "app": {
+            "id": "fake-app-id"
+          }
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "vrtcal",
+              "bid": [
+                {
+                  "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                  "impid": "test-imp-id",
+                  "price": 0.500000,
+                  "adm": "some-test-native-ad",
+                  "crid": "crid_10",
+		  "mtype":4
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+            "impid": "test-imp-id",
+            "price": 0.5,
+            "adm": "some-test-native-ad",
+            "crid": "crid_10",
+	    "mtype":4
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,119 @@
+{
+  "mockBidRequest": {
+    "id": "id",
+    "imp": [
+      {
+        "id": "id",
+        "secure": 1,
+        "bidfloor": 0.01,
+        "bidfloorcur": "USD",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "tokenId": "126151698247",
+            "sspId": "11",
+            "seatId": "2"
+          }
+        }
+      }
+    ],
+    "device": {
+      "ua": "UA",
+      "ip": "123.3.4.123"
+    },
+    "regs": {
+      "ext": {
+        "gdpr": 0
+      }
+    },
+    "user": {
+      "id": "userid"
+    },
+    "site": {
+      "id": "id",
+      "domain": "test,com",
+      "cat": [
+        "IAB12"
+      ],
+      "publisher": {
+        "id": "pubid"
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://pbs.prebid-ownadx.com/bidder/bid/2/11?token=126151698247",
+        "body": {
+          "id": "id",
+          "imp": [
+            {
+              "id": "id",
+              "secure": 1,
+              "bidfloor": 0.01,
+              "bidfloorcur": "USD",
+              "banner": {
+                "w": 300,
+                "h": 250
+              },
+              "ext": {
+                "bidder": {
+                  "tokenId": "126151698247",
+                  "sspId": "11",
+                  "seatId": "2"
+                }
+              }
+            }
+          ],
+          "device": {
+            "ua": "UA",
+            "ip": "123.3.4.123"
+          },
+          "regs": {
+            "ext": {
+              "gdpr": 0
+            }
+          },
+          "user": {
+            "id": "userid"
+          },
+          "site": {
+            "id": "id",
+            "domain": "test,com",
+            "cat": [
+              "IAB12"
+            ],
+            "publisher": {
+              "id": "pubid"
+            }
+          }
+        },
+        "impIDs":["id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "id",
+          "bidid": "id",
+          "seatbid": [
+            {
+              "seat": "seat"
+            }
+          ],
+          "cur": "USD"
+        }
+
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Bid cannot be empty ",
+      "comparison": "literal"
+    }
+  ],
+  "expectedBidResponses": []
+}

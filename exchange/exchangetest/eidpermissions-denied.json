@@ -10,7 +10,11 @@
                     "eids": [
                         {
                             "source": "source1",
-                            "id": "anyId"
+                            "uids": [
+                                {
+                                    "id": "id1"
+                                }
+                            ]
                         }
                     ]
                 }
@@ -115,6 +119,8 @@
                             "ext": {
                                 "origbidcpm": 0.3,
                                 "prebid": {
+                                    "meta": {
+                                    },
                                     "type": "video"
                                 }
                             }

@@ -22,27 +22,29 @@
         "id": "some-impression-id1",
         "tagid": "ogTAGID",
         "banner": {
-          "w":320,
-          "h":50
+          "w": 320,
+          "h": 50
         },
         "ext": {
           "bidder": {
             "accountId": "accountId",
-            "placementId": "placementId"
+            "sourceId": "sourceId",
+            "host": "host"
           }
         }
-      },     
-       {
+      },
+      {
         "id": "some-impression-id2",
         "tagid": "ogTAGID",
         "banner": {
-          "w":320,
-          "h":50
+          "w": 320,
+          "h": 50
         },
         "ext": {
           "bidder": {
             "accountId": "accountId",
-            "placementId": "placementId"
+            "sourceId": "sourceId",
+            "host": "host"
           }
         }
       }
@@ -68,7 +70,7 @@
             "123.123.123.123"
           ]
         },
-        "uri": "http://us.example.com/bid?rtb_seat_id=placementId&secret_key=accountId",
+        "uri": "http://host.bizzclick.com/bid?rtb_seat_id=sourceId&secret_key=accountId",
         "body": {
           "id": "some-request-id",
           "device": {
@@ -82,16 +84,16 @@
               "id": "some-impression-id1",
               "tagid": "ogTAGID",
               "banner": {
-                "w":320,
-                "h":50
+                "w": 320,
+                "h": 50
               }
             },
             {
               "id": "some-impression-id2",
               "tagid": "ogTAGID",
               "banner": {
-                "w":320,
-                "h":50
+                "w": 320,
+                "h": 50
               }
             }
           ],
@@ -105,7 +107,8 @@
             "buyeruid": "awesome-user"
           },
           "tmax": 1000
-        }
+        },
+        "impIDs":["some-impression-id1","some-impression-id2"]
       },
       "mockResponse": {
         "status": 200,
@@ -150,9 +153,9 @@
   ],
   "expectedBidResponses": [
     {
-      "bids":[
+      "bids": [
         {
-          "bid":  {
+          "bid": {
             "id": "a3ae1b4e2fc24a4fb45540082e98e161",
             "impid": "some-impression-id1",
             "price": 3.5,
@@ -167,7 +170,7 @@
           "type": "banner"
         },
         {
-          "bid":  {
+          "bid": {
             "id": "a3ae1b4e2fc24a4fb45540082e98e162",
             "impid": "some-impression-id2",
             "price": 3.5,

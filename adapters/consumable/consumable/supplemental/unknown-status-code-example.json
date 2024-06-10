@@ -1,0 +1,79 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app": {
+      "id": "1",
+      "bundle": "com.foo.bar"
+    },
+    "device": {
+      "ua": "Mozilla/5.0 (Windows NT 5.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.101 Safari/537.36",
+      "ip": "73.55.27.72"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 728,
+              "h": 90
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "0421008445828ceb46f496700a5fa65e"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://e.serverbid.com/rtb/bid?s=0421008445828ceb46f496700a5fa65e",
+        "body": {
+          "id": "test-request-id",
+          "app": {
+            "id": "1",
+            "bundle": "com.foo.bar"
+          },
+          "device": {
+            "ua": "Mozilla/5.0 (Windows NT 5.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.101 Safari/537.36",
+            "ip": "73.55.27.72"
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 728,
+                    "h": 90
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": "0421008445828ceb46f496700a5fa65e"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 301,
+        "body": {
+        }
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 301. Run with request.debug = 1 for more info",
+      "comparison": "literal"
+    }
+  ]
+}

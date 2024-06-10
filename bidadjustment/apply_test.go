@@ -3,9 +3,9 @@ package bidadjustment
 import (
 	"testing"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -223,12 +223,12 @@ type mockConversions struct {
 	mock.Mock
 }
 
-func (m mockConversions) GetRate(from string, to string) (float64, error) {
+func (m *mockConversions) GetRate(from string, to string) (float64, error) {
 	args := m.Called(from, to)
 	return args.Get(0).(float64), args.Error(1)
 }
 
-func (m mockConversions) GetRates() *map[string]map[string]float64 {
+func (m *mockConversions) GetRates() *map[string]map[string]float64 {
 	args := m.Called()
 	return args.Get(0).(*map[string]map[string]float64)
 }

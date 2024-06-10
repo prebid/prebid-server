@@ -8,16 +8,16 @@ import (
 	"strings"
 
 	"github.com/buger/jsonparser"
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/metrics"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/util/timeutil"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/metrics"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/timeutil"
 )
 
-const clientVersion = "prebid_server_0.6"
+const clientVersion = "prebid_server_0.7"
 
 type adMarkupType string
 
@@ -256,6 +256,7 @@ func (adapter *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.Req
 		Uri:     adapter.endpoint,
 		Body:    reqJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}, nil
 }
 
@@ -469,18 +470,7 @@ func setImpForAdspace(imp *openrtb2.Imp) error {
 		return err
 	}
 
-	if imp.Banner != nil {
-		bannerCopy, err := setBannerDimension(imp.Banner)
-		if err != nil {
-			return err
-		}
-		imp.Banner = bannerCopy
-		imp.TagID = adSpaceID
-		imp.Ext = impExt
-		return nil
-	}
-
-	if imp.Video != nil || imp.Native != nil {
+	if imp.Banner != nil || imp.Video != nil || imp.Native != nil {
 		imp.TagID = adSpaceID
 		imp.Ext = impExt
 		return nil
@@ -541,20 +531,6 @@ func makeImpExt(impExtRaw *json.RawMessage) (json.RawMessage, error) {
 	} else {
 		return nil, nil
 	}
-}
-
-func setBannerDimension(banner *openrtb2.Banner) (*openrtb2.Banner, error) {
-	if banner.W != nil && banner.H != nil {
-		return banner, nil
-	}
-	if len(banner.Format) == 0 {
-		return banner, &errortypes.BadInput{Message: "No sizes provided for Banner."}
-	}
-	bannerCopy := *banner
-	bannerCopy.W = openrtb2.Int64Ptr(banner.Format[0].W)
-	bannerCopy.H = openrtb2.Int64Ptr(banner.Format[0].H)
-
-	return &bannerCopy, nil
 }
 
 func groupImpressionsByPod(imps []openrtb2.Imp) (map[string]([]openrtb2.Imp), []string, []error) {

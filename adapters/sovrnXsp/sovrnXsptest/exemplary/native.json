@@ -1,0 +1,110 @@
+{
+  "mockBidRequest": {
+    "id": "abc",
+    "app": {
+      "id": "0jqCuiqHfPDHAHrdFfGG",
+      "bundle": "test",
+      "publisher": {
+        "id": "sovrn"
+      }
+    },
+    "imp": [
+      {
+        "id": "imp123",
+        "bidfloor": 1.0,
+        "native": {
+          "ver": "1.2",
+          "request": "{\"context\":1,\"plcmttype\":1,\"assets\":[{\"id\":0,\"required\":1,\"img\":{\"type\":3,\"w\":300,\"h\":250}},{\"id\":1,\"required\":1,\"title\":{\"len\":140}},{\"id\":2,\"data\":{\"type\":1}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1]}]}"
+        },
+        "ext": {
+          "bidder": {
+            "pub_id": "sovrn",
+            "med_id": "0jqCuiqHfPDHAHrdFfGG",
+            "zone_id": "FgUtQqop18uf1I2fwDie"
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://xsp.lijit.com/json/rtb/prebid/server",
+        "body":{
+          "id": "abc",
+          "app": {
+            "id": "0jqCuiqHfPDHAHrdFfGG",
+            "bundle": "test",
+            "publisher": {
+                "id": "sovrn"
+            }
+          },
+          "imp": [{
+            "id": "imp123",
+            "tagid": "FgUtQqop18uf1I2fwDie",
+            "bidfloor": 1.0,
+            "native": {
+              "ver": "1.2",
+              "request": "{\"context\":1,\"plcmttype\":1,\"assets\":[{\"id\":0,\"required\":1,\"img\":{\"type\":3,\"w\":300,\"h\":250}},{\"id\":1,\"required\":1,\"title\":{\"len\":140}},{\"id\":2,\"data\":{\"type\":1}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1]}]}"
+            },
+            "ext": {
+              "bidder": {
+                "pub_id": "sovrn",
+                "med_id": "0jqCuiqHfPDHAHrdFfGG",
+                "zone_id": "FgUtQqop18uf1I2fwDie"
+              }
+            }
+          }]
+        },
+        "impIDs":["imp123"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "abc",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "adm": "{\"ver\":\"1.2\",\"link\":{\"url\":\"https://sovrn.com\"},\"assets\":[{\"id\":0,\"img\":{\"w\":300,\"h\":250,\"url\":\"https://ads.smrtb.com/demo/ads/300x250.png\"}},{\"id\":1,\"title\":{\"text\":\"Test Ad\",\"len\":7}},{\"id\":2,\"data\":{\"value\":\"0\",\"len\":1}}]}",
+                  "crid": "test_native_crid",
+                  "cid": "test_cid",
+                  "impid": "imp123",
+                  "id": "1",
+                  "price": 1.0,
+                  "ext": {
+                    "creative_type": 2
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "adm": "{\"ver\":\"1.2\",\"link\":{\"url\":\"https://sovrn.com\"},\"assets\":[{\"id\":0,\"img\":{\"w\":300,\"h\":250,\"url\":\"https://ads.smrtb.com/demo/ads/300x250.png\"}},{\"id\":1,\"title\":{\"text\":\"Test Ad\",\"len\":7}},{\"id\":2,\"data\":{\"value\":\"0\",\"len\":1}}]}",
+            "crid": "test_native_crid",
+            "cid": "test_cid",
+            "impid": "imp123",
+            "price": 1.0,
+            "id": "1",
+            "mtype": 4,
+            "ext": {
+              "creative_type": 2
+            }
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}

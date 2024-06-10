@@ -9,8 +9,8 @@ import (
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/go-gdpr/vendorlist"
 	"github.com/prebid/go-gdpr/vendorlist2"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -339,6 +339,109 @@ func TestAllowActivities(t *testing.T) {
 
 		assert.Nil(t, err, tt.description)
 		assert.Equal(t, tt.passID, permissions.PassID, tt.description)
+	}
+}
+
+func TestAllowActivitiesBidderWithoutGVLID(t *testing.T) {
+	bidderWithoutGVLID := openrtb_ext.BidderPangle
+	purpose2Consent := "CPuDXznPuDXznMOAAAENCZCAAEAAAAAAAAAAAAAAAAAA"
+	noPurposeConsent := "CPuDXznPuDXznMOAAAENCZCAAAAAAAAAAAAAAAAAAAAA"
+
+	tests := []struct {
+		name                    string
+		enforceAlgoID           config.TCF2EnforcementAlgo
+		vendorExceptions        map[string]struct{}
+		basicEnforcementVendors map[string]struct{}
+		consent                 string
+		allowBidRequest         bool
+		passID                  bool
+	}{
+		{
+			name:          "full_enforcement_no_exceptions_user_consents_to_purpose_2",
+			enforceAlgoID: config.TCF2FullEnforcement,
+			consent:       purpose2Consent,
+		},
+		{
+			name:             "full_enforcement_vendor_exception_user_consents_to_purpose_2",
+			enforceAlgoID:    config.TCF2FullEnforcement,
+			vendorExceptions: map[string]struct{}{string(bidderWithoutGVLID): {}},
+			consent:          purpose2Consent,
+			allowBidRequest:  true,
+			passID:           true,
+		},
+		{
+			name:    "basic_enforcement_no_exceptions_user_consents_to_purpose_2",
+			consent: purpose2Consent,
+		},
+		{
+			name:             "basic_enforcement_vendor_exception_user_consents_to_purpose_2",
+			vendorExceptions: map[string]struct{}{string(bidderWithoutGVLID): {}},
+			consent:          purpose2Consent,
+			allowBidRequest:  true,
+			passID:           true,
+		},
+		{
+			name:                    "full_enforcement_soft_vendor_exception_user_consents_to_purpose_2", // allow bid request and pass ID
+			enforceAlgoID:           config.TCF2FullEnforcement,
+			basicEnforcementVendors: map[string]struct{}{string(bidderWithoutGVLID): {}},
+			consent:                 purpose2Consent,
+			allowBidRequest:         true,
+			passID:                  true,
+		},
+		{
+			name:                    "basic_enforcement_soft_vendor_exception_user_consents_to_purpose_2", // allow bid request and pass ID
+			enforceAlgoID:           config.TCF2BasicEnforcement,
+			basicEnforcementVendors: map[string]struct{}{string(bidderWithoutGVLID): {}},
+			consent:                 purpose2Consent,
+			allowBidRequest:         true,
+			passID:                  true,
+		},
+		{
+			name:                    "full_enforcement_soft_vendor_exception_user_consents_to_purpose_4",
+			enforceAlgoID:           config.TCF2FullEnforcement,
+			basicEnforcementVendors: map[string]struct{}{string(bidderWithoutGVLID): {}},
+			consent:                 noPurposeConsent,
+			allowBidRequest:         false,
+			passID:                  false,
+		},
+		{
+			name:                    "basic_enforcement_soft_vendor_exception_user_consents_to_purpose_4",
+			enforceAlgoID:           config.TCF2BasicEnforcement,
+			basicEnforcementVendors: map[string]struct{}{string(bidderWithoutGVLID): {}},
+			consent:                 noPurposeConsent,
+			allowBidRequest:         false,
+			passID:                  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tcf2AggConfig := allPurposesEnabledTCF2Config()
+			tcf2AggConfig.AccountConfig.BasicEnforcementVendorsMap = tt.basicEnforcementVendors
+			tcf2AggConfig.HostConfig.Purpose2.VendorExceptionMap = tt.vendorExceptions
+			tcf2AggConfig.HostConfig.Purpose2.EnforceAlgoID = tt.enforceAlgoID
+			tcf2AggConfig.HostConfig.PurposeConfigs[consentconstants.Purpose(2)] = &tcf2AggConfig.HostConfig.Purpose2
+
+			perms := permissionsImpl{
+				cfg:                   &tcf2AggConfig,
+				consent:               tt.consent,
+				gdprSignal:            SignalYes,
+				hostVendorID:          2,
+				nonStandardPublishers: map[string]struct{}{},
+				vendorIDs:             map[openrtb_ext.BidderName]uint16{},
+				fetchVendorList: listFetcher(map[uint16]map[uint16]vendorlist.VendorList{
+					2: {
+						153: parseVendorListDataV2(t, MarshalVendorList(vendorList{GVLSpecificationVersion: 2, VendorListVersion: 153, Vendors: map[string]*vendor{}})),
+					},
+				}),
+				purposeEnforcerBuilder: NewPurposeEnforcerBuilder(&tcf2AggConfig),
+			}
+
+			permissions, err := perms.AuctionActivitiesAllowed(context.Background(), bidderWithoutGVLID, bidderWithoutGVLID)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.allowBidRequest, permissions.AllowBidRequest)
+			assert.Equal(t, tt.passID, permissions.PassID)
+		})
 	}
 }
 
@@ -1006,35 +1109,14 @@ func TestAllowActivitiesBidRequests(t *testing.T) {
 	}
 }
 
-func TestTCF1Consent(t *testing.T) {
-	bidderAllowedByConsent := openrtb_ext.BidderAppnexus
-	tcf1Consent := "BOS2bx5OS2bx5ABABBAAABoAAAABBwAA"
-
-	perms := permissionsImpl{
-		cfg: &tcf2Config{},
-		vendorIDs: map[openrtb_ext.BidderName]uint16{
-			openrtb_ext.BidderAppnexus: 2,
-		},
-		aliasGVLIDs: map[string]uint16{},
-		consent:     tcf1Consent,
-		gdprSignal:  SignalYes,
-	}
-
-	permissions, err := perms.AuctionActivitiesAllowed(context.Background(), bidderAllowedByConsent, bidderAllowedByConsent)
-
-	assert.Nil(t, err, "TCF1 consent - no error returned")
-	assert.Equal(t, true, permissions.AllowBidRequest, "TCF1 consent - bid request not allowed")
-	assert.Equal(t, true, permissions.PassGeo, "TCF1 consent - passing geo not allowed")
-	assert.Equal(t, false, permissions.PassID, "TCF1 consent - passing id not allowed")
-}
-
 func TestAllowActivitiesVendorException(t *testing.T) {
+	appnexus := string(openrtb_ext.BidderAppnexus)
 	noPurposeOrVendorConsentAndPubRestrictsP2 := "CPF_61ePF_61eFxAAAENAiCAAAAAAAAAAAAAACEAAAACEAAgAgAA"
 	noPurposeOrVendorConsentAndPubRestrictsNone := "CPF_61ePF_61eFxAAAENAiCAAAAAAAAAAAAAACEAAAAA"
 
 	testDefs := []struct {
 		description           string
-		p2VendorExceptionMap  map[openrtb_ext.BidderName]struct{}
+		p2VendorExceptionMap  map[string]struct{}
 		sf1VendorExceptionMap map[openrtb_ext.BidderName]struct{}
 		bidder                openrtb_ext.BidderName
 		consent               string
@@ -1045,7 +1127,7 @@ func TestAllowActivitiesVendorException(t *testing.T) {
 	}{
 		{
 			description:          "Bid/ID blocked by publisher - p2 enabled with p2 vendor exception, pub restricts p2 for vendor",
-			p2VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderAppnexus: {}},
+			p2VendorExceptionMap: map[string]struct{}{appnexus: {}},
 			bidder:               openrtb_ext.BidderAppnexus,
 			bidderCoreName:       openrtb_ext.BidderAppnexus,
 			consent:              noPurposeOrVendorConsentAndPubRestrictsP2,
@@ -1055,7 +1137,7 @@ func TestAllowActivitiesVendorException(t *testing.T) {
 		},
 		{
 			description:           "Bid/ID allowed by vendor exception - p2 enabled with p2 vendor exception, pub restricts none",
-			p2VendorExceptionMap:  map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderAppnexus: {}},
+			p2VendorExceptionMap:  map[string]struct{}{appnexus: {}},
 			sf1VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 			bidder:                openrtb_ext.BidderAppnexus,
 			bidderCoreName:        openrtb_ext.BidderAppnexus,
@@ -1066,7 +1148,7 @@ func TestAllowActivitiesVendorException(t *testing.T) {
 		},
 		{
 			description:           "Geo blocked - sf1 enabled but no consent",
-			p2VendorExceptionMap:  map[openrtb_ext.BidderName]struct{}{},
+			p2VendorExceptionMap:  map[string]struct{}{},
 			sf1VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 			bidder:                openrtb_ext.BidderAppnexus,
 			bidderCoreName:        openrtb_ext.BidderAppnexus,
@@ -1077,7 +1159,7 @@ func TestAllowActivitiesVendorException(t *testing.T) {
 		},
 		{
 			description:           "Geo allowed by vendor exception - sf1 enabled with sf1 vendor exception",
-			p2VendorExceptionMap:  map[openrtb_ext.BidderName]struct{}{},
+			p2VendorExceptionMap:  map[string]struct{}{},
 			sf1VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderAppnexus: {}},
 			bidder:                openrtb_ext.BidderAppnexus,
 			bidderCoreName:        openrtb_ext.BidderAppnexus,
@@ -1123,33 +1205,34 @@ func TestAllowActivitiesVendorException(t *testing.T) {
 }
 
 func TestBidderSyncAllowedVendorException(t *testing.T) {
+	appnexus := string(openrtb_ext.BidderAppnexus)
 	noPurposeOrVendorConsentAndPubRestrictsP1 := "CPF_61ePF_61eFxAAAENAiCAAAAAAAAAAAAAAQAAAAAAAAAAIIACACA"
 	noPurposeOrVendorConsentAndPubRestrictsNone := "CPF_61ePF_61eFxAAAENAiCAAAAAAAAAAAAAACEAAAAA"
 
 	testDefs := []struct {
 		description          string
-		p1VendorExceptionMap map[openrtb_ext.BidderName]struct{}
+		p1VendorExceptionMap map[string]struct{}
 		bidder               openrtb_ext.BidderName
 		consent              string
 		allowSync            bool
 	}{
 		{
 			description:          "Sync blocked by no consent - p1 enabled, no p1 vendor exception, pub restricts none",
-			p1VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			p1VendorExceptionMap: map[string]struct{}{},
 			bidder:               openrtb_ext.BidderAppnexus,
 			consent:              noPurposeOrVendorConsentAndPubRestrictsNone,
 			allowSync:            false,
 		},
 		{
 			description:          "Sync blocked by publisher - p1 enabled with p1 vendor exception, pub restricts p1 for vendor",
-			p1VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderAppnexus: {}},
+			p1VendorExceptionMap: map[string]struct{}{appnexus: {}},
 			bidder:               openrtb_ext.BidderAppnexus,
 			consent:              noPurposeOrVendorConsentAndPubRestrictsP1,
 			allowSync:            false,
 		},
 		{
 			description:          "Sync allowed by vendor exception - p1 enabled with p1 vendor exception, pub restricts none",
-			p1VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderAppnexus: {}},
+			p1VendorExceptionMap: map[string]struct{}{appnexus: {}},
 			bidder:               openrtb_ext.BidderAppnexus,
 			consent:              noPurposeOrVendorConsentAndPubRestrictsNone,
 			allowSync:            true,
@@ -1244,53 +1327,9 @@ func TestDefaultPermissions(t *testing.T) {
 	}
 }
 
-func TestGetSpecVersion(t *testing.T) {
-	tests := []struct {
-		name                string
-		policyVersion       uint8
-		expectedSpecVersion uint16
-		expectedError       bool
-	}{
-		{
-			name:                "policy_version_0_gives_spec_version_2",
-			policyVersion:       0,
-			expectedSpecVersion: 2,
-		},
-		{
-			name:                "policy_version_3_gives_spec_version_2",
-			policyVersion:       3,
-			expectedSpecVersion: 2,
-		},
-		{
-			name:                "policy_version_4_spec_version_3",
-			policyVersion:       4,
-			expectedSpecVersion: 3,
-		},
-		{
-			name:                "policy_version_5_error",
-			policyVersion:       5,
-			expectedSpecVersion: 0,
-			expectedError:       true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			specVersion, err := getSpecVersion(tt.policyVersion)
-			assert.Equal(t, tt.expectedSpecVersion, specVersion)
-			if tt.expectedError {
-				assert.Error(t, err)
-			} else {
-				assert.Nil(t, err)
-			}
-		})
-	}
-}
-
 func TestVendorListSelection(t *testing.T) {
 	policyVersion3WithVendor2AndPurpose1Consent := "CPGWbY_PGWbY_GYAAAENABDAAIAAAAAAAAAAACEAAAAA"
 	policyVersion4WithVendor2AndPurpose1Consent := "CPGWbY_PGWbY_GYAAAENABEAAIAAAAAAAAAAACEAAAAA"
-	policyVersion5WithVendor2AndPurpose1Consent := "CPGWbY_PGWbY_GYAAAENABFAAIAAAAAAAAAAACEAAAAA"
 
 	specVersion2vendorListData := MarshalVendorList(vendorList{
 		GVLSpecificationVersion: 2,
@@ -1358,11 +1397,6 @@ func TestVendorListSelection(t *testing.T) {
 			name:              "consent_tcf_policy_version_4_uses_gvl_spec_version_3",
 			consent:           policyVersion4WithVendor2AndPurpose1Consent,
 			expectedAllowSync: true,
-		},
-		{
-			name:        "consent_tcf_policy_version_5_causes_error",
-			consent:     policyVersion5WithVendor2AndPurpose1Consent,
-			expectedErr: true,
 		},
 	}
 
