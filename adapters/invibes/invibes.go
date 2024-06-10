@@ -22,19 +22,20 @@ const adapterVersion = "prebid_1.0.0"
 const invibesBidVersion = "4"
 
 type InvibesAdRequest struct {
-	BidParamsJson string `json:"BidParamsJson"`
-	Location      string `json:"Location"`
-	Lid           string `json:"Lid"`
-	IsTestBid     bool   `json:"IsTestBid"`
-	Kw            string `json:"Kw"`
-	IsAMP         bool   `json:"IsAmp"`
-	Width         string `json:"Width"`
-	Height        string `json:"Height"`
-	GDPRConsent   string `json:"GdprConsent"`
-	GDPR          bool   `json:"Gdpr"`
-	Bvid          string `json:"Bvid"`
-	InvibBVLog    bool   `json:"InvibBVLog"`
-	VideoAdDebug  bool   `json:"VideoAdDebug"`
+	OpenRTBRequest string `json:"openrtb2.BidRequest"`
+	BidParamsJson  string `json:"BidParamsJson"`
+	Location       string `json:"Location"`
+	Lid            string `json:"Lid"`
+	IsTestBid      bool   `json:"IsTestBid"`
+	Kw             string `json:"Kw"`
+	IsAMP          bool   `json:"IsAmp"`
+	Width          string `json:"Width"`
+	Height         string `json:"Height"`
+	GDPRConsent    string `json:"GdprConsent"`
+	GDPR           bool   `json:"Gdpr"`
+	Bvid           string `json:"Bvid"`
+	InvibBVLog     bool   `json:"InvibBVLog"`
+	VideoAdDebug   bool   `json:"VideoAdDebug"`
 }
 type InvibesBidParams struct {
 	PlacementIDs []string                            `json:"PlacementIds"`
@@ -145,7 +146,7 @@ func (a *InvibesAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 	invibesInternalParams.GDPR = gdprApplies
 	invibesInternalParams.GDPRConsent = consentString
 
-	newHttpRequest, err := a.makeRequest(invibesInternalParams, reqInfo, httpRequests, request)
+	newHttpRequest, err := a.makeRequest(invibesInternalParams, request)
 	if err != nil {
 		finalErrors = append(finalErrors, err)
 	} else if newHttpRequest != nil {
@@ -190,9 +191,9 @@ func readAdFormats(currentBanner openrtb2.Banner) []openrtb2.Format {
 	return adFormats
 }
 
-func (a *InvibesAdapter) makeRequest(invibesParams InvibesInternalParams, reqInfo *adapters.ExtraRequestInfo, existingRequests []*adapters.RequestData, request *openrtb2.BidRequest) (*adapters.RequestData, error) {
+func (a *InvibesAdapter) makeRequest(invibesParams InvibesInternalParams, request *openrtb2.BidRequest) (*adapters.RequestData, error) {
 
-	url, err := a.makeURL(request, invibesParams.DomainID)
+	url, err := a.makeURL(invibesParams.DomainID)
 	if err != nil {
 		return nil, err
 	}
@@ -208,21 +209,23 @@ func (a *InvibesAdapter) makeRequest(invibesParams InvibesInternalParams, reqInf
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
+	headers.Add("X-Openrtb-Version", "2.6")
 
-	if request.Device != nil {
-		headers.Add("User-Agent", request.Device.UA)
-	}
+	// if request.Device != nil {
+	// 	headers.Add("User-Agent", request.Device.UA)
+	// }
 
-	if request.Device != nil {
-		if request.Device.IP != "" {
-			headers.Add("X-Forwarded-For", request.Device.IP)
-		} else if request.Device.IPv6 != "" {
-			headers.Add("X-Forwarded-For", request.Device.IPv6)
-		}
-	}
-	if request.Site != nil {
-		headers.Add("Referer", request.Site.Page)
-	}
+	// if request.Device != nil {
+	// 	if request.Device.IP != "" {
+	// 		headers.Add("X-Forwarded-For", request.Device.IP)
+	// 	} else if request.Device.IPv6 != "" {
+	// 		headers.Add("X-Forwarded-For", request.Device.IPv6)
+	// 	}
+	// }
+	// if request.Site != nil {
+	// 	headers.Add("Referer", request.Site.Page)
+	// }
+
 	headers.Add("Aver", adapterVersion)
 
 	return &adapters.RequestData{
@@ -235,51 +238,39 @@ func (a *InvibesAdapter) makeRequest(invibesParams InvibesInternalParams, reqInf
 }
 
 func (a *InvibesAdapter) makeParameter(invibesParams InvibesInternalParams, request *openrtb2.BidRequest) (*InvibesAdRequest, error) {
-	var lid string = ""
-	if request.User != nil && request.User.BuyerUID != "" {
-		lid = request.User.BuyerUID
-	}
+
 	if request.Site == nil {
 		return nil, &errortypes.BadInput{
 			Message: "Site not specified",
 		}
 	}
 
-	var width, height string
-	if request.Device != nil {
-		if request.Device.W > 0 {
-			width = strconv.FormatInt(request.Device.W, 10)
-		}
-
-		if request.Device.H > 0 {
-			height = strconv.FormatInt(request.Device.H, 10)
-		}
-	}
-
 	var invRequest InvibesAdRequest
 	bidParamsJson, err := json.Marshal(invibesParams.BidParams)
+
 	if err == nil {
-		invRequest = InvibesAdRequest{
-			IsTestBid:     invibesParams.IsTestRequest(),
-			BidParamsJson: string(bidParamsJson),
-			Location:      request.Site.Page,
-			Lid:           lid,
-			Kw:            request.Site.Keywords,
-			IsAMP:         invibesParams.IsAMP,
-			Width:         width,
-			Height:        height,
-			GDPRConsent:   invibesParams.GDPRConsent,
-			GDPR:          invibesParams.GDPR,
-			Bvid:          invibesParams.TestBvid,
-			InvibBVLog:    invibesParams.TestLog,
-			VideoAdDebug:  invibesParams.TestLog,
+
+		openRtbRequest, err := json.Marshal(request)
+
+		if err == nil {
+			invRequest = InvibesAdRequest{
+				OpenRTBRequest: string(openRtbRequest),
+				IsTestBid:      invibesParams.IsTestRequest(),
+				BidParamsJson:  string(bidParamsJson),
+				IsAMP:          invibesParams.IsAMP,
+				GDPRConsent:    invibesParams.GDPRConsent,
+				GDPR:           invibesParams.GDPR,
+				Bvid:           invibesParams.TestBvid,
+				InvibBVLog:     invibesParams.TestLog,
+				VideoAdDebug:   invibesParams.TestLog,
+			}
 		}
 	}
 
 	return &invRequest, err
 }
 
-func (a *InvibesAdapter) makeURL(request *openrtb2.BidRequest, domainID int) (string, error) {
+func (a *InvibesAdapter) makeURL(domainID int) (string, error) {
 	var subdomain string
 	if domainID == 0 || domainID == 1 || domainID == 1001 {
 		subdomain = "bid"
