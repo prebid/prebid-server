@@ -2,12 +2,27 @@ name: Build and Release
 
 on:
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      PBS_VERSION:
+        description: "PBS Go Version"
+        required: true
+        type: string
+      PBS_HASH:
+        description: "Raptive Prebid Server Go Hash"
+        required: true
+        type: string
+    outputs:
+      IMAGE_TAG:
+        description: "tag of image just pushed to ecr"
+        value: ${{ jobs.build-and-push.outputs.IMAGE_TAG}}
 
 jobs:
   create-and-push-docker-image:
     name: Publish docker image
-    needs: build-main
     runs-on: ubuntu-latest
+    outputs:
+      IMAGE_TAG: ${{ steps.build-tag-push.outputs.IMAGE_TAG }}
     steps:
       - name: Checkout Prebid Server
         uses: actions/checkout@v4
@@ -20,6 +35,22 @@ jobs:
           sha=$(echo "${{ github.sha }}" | cut -c1-7)
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
 
-      - name: Build image
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1.6.1
+        with:
+          aws-region: us-east-1
+          aws-access-key-id: "${{ secrets.AWS_ECR_PREBID_KEY }}"
+          aws-secret-access-key: "${{ secrets.AWS_ECR_PREBID_SECRET }}"
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build, tag, and push image to ECR
+        id: build-tag-push
         run: |
-          docker build -t docker.io/prebid/prebid-server:test .
+          docker build -t ${{ steps.login-ecr.outputs.registry }}/prebid-server-go:latest . 
+          docker images 
+          docker tag ${{ steps.login-ecr.outputs.registry }}/prebid-server-go:latest ${{ steps.login-ecr.outputs.registry }}/prebid-server-go:${{ inputs.PBS_VERSION }}-${{ steps.get_latest_tag.outputs.sha }}-${{ inputs.PBS_HASH }}
+          docker push ${{ steps.login-ecr.outputs.registry }}/prebid-server-go:${{ inputs.PBS_VERSION }}-${{ steps.get_latest_tag.outputs.sha }}-${{ inputs.PBS_HASH }}
+          echo "IMAGE_TAG=${{ inputs.PBS_VERSION }}-${{ steps.get_latest_tag.outputs.sha }}-${{ inputs.PBS_HASH }}" >> "$GITHUB_OUTPUT"
