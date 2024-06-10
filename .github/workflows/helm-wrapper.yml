@@ -1,0 +1,133 @@
+name: Helm Release Wrapper
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        default: 'development'
+        required: true
+        type: string
+      image-tag:
+        default: ''
+        required: false
+        type: string
+      region:
+        default: 'us-west-2'
+        required: true
+        type: string
+      regionSuffix:
+        default: '-west'
+        required: true
+        type: string
+      endpoint:
+        default: 'regional'
+        required: false
+        type: string
+      eks-cluster:
+        default: 'prebid-server-use1'
+        required: false
+        type: string
+      experiment-version:
+        default: ''
+        required: false
+        type: string
+
+    secrets:
+      aws-access-key-id:
+        required: true
+      aws-secret-access-key:
+        required: true
+      github-token:
+        required: true
+      dd-api-key:
+        required: false
+
+jobs:
+  helm-build-and-release:
+    name: Helm validation and Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2.5.0
+
+      - name: Configure AWS Credentials Action For GitHub Actions
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.aws-access-key-id }}
+          aws-secret-access-key: ${{ secrets.aws-secret-access-key }}
+          aws-region: us-east-1
+
+      - name: Configure GitHub Credentials
+        uses: de-vri-es/setup-git-credentials@v2
+        with:
+          credentials: https://apiuser-cm:${{ secrets.github-token }}@github.com/
+
+      - name: Set Kube config
+        run: |
+          aws eks --region ${{inputs.region}} update-kubeconfig --name ${{ inputs.eks-cluster }}
+
+      - name: Validate and Upgrade Helm Chart without experiment
+        if: ${{inputs.experiment-version == '' }}
+        run: |
+          set -eux -o pipefail
+          cd charts
+          case "${{ inputs.endpoint }}" in
+            regional)
+              helm install --debug --dry-run -f ./prebid-server/values.yaml -f ./prebid-server/values-${{inputs.environment}}.yaml pbs${{inputs.regionSuffix}} ./prebid-server --set image.tag=${{inputs.image-tag}} --set metadata.region=${{inputs.region}} --set metadata.clusterName=${{inputs.eks-cluster}} --set metadata.regionSuffix=${{inputs.regionSuffix}}
+              helm upgrade --install -f ./prebid-server/values.yaml -f ./prebid-server/values-${{inputs.environment}}.yaml pbs${{inputs.regionSuffix}} ./prebid-server --set image.tag=${{inputs.image-tag}} --set metadata.region=${{inputs.region}} --set metadata.clusterName=${{inputs.eks-cluster}} --set metadata.regionSuffix=${{inputs.regionSuffix}}
+              ;;
+            global)
+              helm install --debug --dry-run -f ./prebid-server/values.yaml -f ./prebid-server/values-${{inputs.environment}}-global.yaml ${{inputs.environment}}-global-${{ inputs.region }}-prebid-server-java ./prebid-server --set image.tag=${{inputs.image-tag}} --set metadata.clusterName=${{inputs.eks-cluster}} --set metadata.region=${{inputs.region}} --set metadata.regionSuffix=${{inputs.regionSuffix}}
+              helm upgrade --install -f ./prebid-server/values.yaml -f ./prebid-server/values-${{inputs.environment}}-global.yaml ${{inputs.environment}}-global-${{ inputs.region }}-prebid-server-java ./prebid-server --set image.tag=${{inputs.image-tag}} --set metadata.clusterName=${{inputs.eks-cluster}} --set metadata.region=${{inputs.region}} --set metadata.regionSuffix=${{inputs.regionSuffix}}
+              ;;
+            *)
+              echo "Unrecognized endpoint: ${{ inputs.endpoint }}; exiting" 2>&1
+              exit 1
+              ;;
+          esac
+
+      - name: Validate and Upgrade Helm Chart with experiment
+        if: ${{inputs.experiment-version != '' }}
+        run: |
+          set -eux -o pipefail
+          cd charts
+
+          case "${{ inputs.endpoint }}" in
+            regional)
+              helm install --debug --dry-run -f ./prebid-server/values.yaml -f ./prebid-server/values-${{inputs.environment}}.yaml pbs${{inputs.experiment-version}}${{inputs.regionSuffix}} ./prebid-server --set image.tag=${{inputs.image-tag}} --set metadata.clusterName=${{inputs.eks-cluster}} --set metadata.region=${{inputs.region}} --set metadata.suffix=-${{inputs.experiment-version}} --set ingress.order=1 --set ingress.rules.condition={} --set ingress.rules.condition[0].field=query-string --set ingress.rules.condition[0].queryStringConfig.values[0].key=version --set ingress.rules.condition[0].queryStringConfig.values[0].value=${{inputs.experiment-version}} --set spec.minReplicas=1 --set metadata.regionSuffix=${{inputs.regionSuffix}}
+              helm upgrade --install -f ./prebid-server/values.yaml -f ./prebid-server/values-${{inputs.environment}}.yaml pbs${{inputs.experiment-version}}${{inputs.regionSuffix}} ./prebid-server --set image.tag=${{inputs.image-tag}} --set metadata.clusterName=${{inputs.eks-cluster}} --set metadata.region=${{inputs.region}} --set metadata.suffix=-${{inputs.experiment-version}} --set ingress.order=1 --set ingress.rules.condition={} --set ingress.rules.condition[0].field=query-string --set ingress.rules.condition[0].queryStringConfig.values[0].key=version --set ingress.rules.condition[0].queryStringConfig.values[0].value=${{inputs.experiment-version}} --set spec.minReplicas=1 --set metadata.regionSuffix=${{inputs.regionSuffix}}
+              ;;
+            global)
+              echo "Unsupported endpoint type for experiment: ${{ inputs.endpoint }}; exiting" 2>&1
+              exit 1
+              ;;
+            *)
+              echo "Unrecognized endpoint: ${{ inputs.endpoint }}; exiting" 2>&1
+              exit 1
+              ;;
+          esac
+
+      - name: Emit Datadog Release Metric
+        continue-on-error: true
+        run: |
+          set -eu -o pipefail
+          curl -X POST "https://api.datadoghq.com/api/v2/series" \
+          -H "Accept: application/json" \
+          -H "Content-Type: application/json" \
+          -H "DD-API-KEY: ${{ secrets.dd-api-key }}" \
+          -d @- << EOF
+          {
+            "series": [
+              {
+                "metric": "raptive.github.action.run",
+                "type": 1,
+                "points": [
+                  {
+                    "timestamp": $(date +%s),
+                    "value": 1
+                  }
+                ],
+                "tags": ["environment:${{ inputs.environment }}", "service:prebid-server", "workflow:helm-install"]
+              }
+            ]
+          }
+          EOF

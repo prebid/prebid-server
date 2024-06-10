@@ -1,0 +1,107 @@
+name: CMI Stage Experiment Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      PBS_VERSION:
+        description: "PBS Version"
+        required: true
+        type: string
+      PBS_HASH:
+        description: "Raptive Prebid Server Hash"
+        required: true
+        type: string
+      DEPLOYMENT_REGION:
+        description: "Region"
+        default: 'us-west-2'
+        required: true
+        type: choice
+        options:
+          - 'us-west-2'
+          - 'us-east-1'
+      EXPERIMENT_VERSION:
+        description: "Experiment Version"
+        default: 'experiment-1'
+        required: true
+        type: choice
+        options:
+          - 'experiment-1'
+          - 'experiment-2'
+          - 'experiment-3'
+          - 'experiment-4'
+
+jobs:
+  image-action:
+    uses: ./.github/workflows/build-and-push-ecr.yml
+    secrets: inherit
+    with:
+      PBS_VERSION: ${{ inputs.PBS_VERSION }}
+      PBS_HASH: ${{ inputs.PBS_HASH }}
+
+  check-image-action:
+    runs-on: ubuntu-latest
+    needs: image-action 
+    steps:
+      - run: echo "${{ needs.image-action.outputs.IMAGE_TAG }}"
+
+  helm-action-with-tag:
+    needs: image-action
+   # if changed to push on a specific branch change `@main` to your branch
+    uses: ./.github/workflows/helm-wrapper.yml
+    with:
+      environment: 'stage'
+      image-tag: ${{ needs.image-action.outputs.IMAGE_TAG }}
+      region: ${{inputs.DEPLOYMENT_REGION}}
+      regionSuffix: >-
+        ${{ fromJSON('{
+          "us-west-2": "-west",
+          "us-east-1": "-east"
+        }')[inputs.DEPLOYMENT_REGION] }}
+      eks-cluster: >-
+        ${{ fromJSON('{
+          "us-west-2": "prebid-server-usw2-v2",
+          "us-east-1": "prebid-server-use1-v2"
+        }')[inputs.DEPLOYMENT_REGION] }}
+      suffix: '-experiment'
+    secrets:
+      aws-access-key-id: ${{ secrets.IAC_AWS_KEY_CMI_STAGE }}
+      aws-secret-access-key: ${{ secrets.IAC_AWS_SECRET_CMI_STAGE }}
+      github-token: ${{ secrets.CM_ORG_GH_PAT }}
+      dd-api-key: ${{ secrets.DD_API_KEY }}
+
+  notify-slack:
+    runs-on: ubuntu-latest
+    needs: helm-action-with-tag
+    steps:
+      - name: Notify Slack
+        env:
+          SLACK_WEBHOOK_URL: https://hooks.slack.com/services/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
+          PBS_VERSION: ${{ inputs.PBS_VERSION }}
+          PBS_HASH: ${{ inputs.PBS_HASH }}
+          EXPERIMENT_VERSION: ${{inputs.EXPERIMENT_VERSION}}
+        run: |
+          curl -X POST -H 'Content-type: application/json' --data "{
+            \"color\": \"good\",
+            \"fields\": [
+              {
+                \"title\": \"Environment\",
+                \"value\": \"Staging\",
+                \"short\": true,
+              },
+              {
+                \"title\": \"PBS Version\",
+                \"value\": \"<https://github.com/prebid/prebid-server-java/releases/tag/$PBS_VERSION|$PBS_VERSION>\",
+                \"short\": true,
+              },
+              {
+                \"title\": \"Commit\",
+                \"value\": \"<https://github.com/cafemedia/raptive-prebid-server-java/commit/$PBS_HASH|$PBS_HASH>\",
+                \"short\": true,
+              },
+              {
+                \"title\": \"Experiment\",
+                \"value\": \"$EXPERIMENT_VERSION\",
+                \"short\": true,
+              }
+            ]
+          }" $SLACK_WEBHOOK_URL

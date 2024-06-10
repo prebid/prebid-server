@@ -1,0 +1,105 @@
+name: CMI Terraform Run Consumer
+
+on:
+  # Trigger on pull requests
+  pull_request:
+    paths:
+    # Restricting to only when Terraform code changes
+      - '**.tf'
+  # Allow for manual triggering
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to run TF in."
+        default: development
+        required: true
+        type: choice
+        options:
+          - development
+          - stage
+          - production
+      terraform-path:
+        description: Terraform run code path
+        default: 'tf/'
+        required: true
+        type: string
+      terraform-run-type:
+        description: Terraform run type
+        default: plan
+        required: true
+        type: choice
+        options:
+          - plan
+          - apply
+          - apply_from_plan
+          - plan_destroy
+      terraform-version:
+        description: Terraform version
+        default: '1.5.7'
+        required: false
+        type: string
+      terraform-targets:
+        description: Terraform 'plan' targets (comma-separated)
+        default: ''
+        required: false
+        type: string
+      terraform-apply-artifact:
+        description: Terraform 'apply_from_plan' artifact
+        required: false
+        type: string
+jobs:
+  enumerate-terraform-dirs:
+    name: "Enumerate Terraform dirs"
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    outputs:
+      dirs: ${{ steps.terraform-dir-changes.outputs.dirs }}
+    steps:
+    - uses: actions/checkout@v4
+    - uses: dorny/paths-filter@v3
+      id: terraform-changes
+      with:
+        list-files: 'json'
+        filters: |
+          changed:
+            - '**.tf' 
+    - id: terraform-dir-changes
+      run: |
+        set -eux -o pipefail
+        dirs="$(echo '${{ steps.terraform-changes.outputs.changed_files }}' | jq -cr '[.[] | split("/")[0:-1] | join("/")] | unique')"
+        echo "dirs="${dirs}"" >> "$GITHUB_OUTPUT"
+  cmi-terraform-run-pr:
+    name:  "TF plan: ${{ matrix.environments }} in ${{ matrix.paths }}"
+    needs: enumerate-terraform-dirs
+    uses: cafemedia/techops-github-workflows/.github/workflows/cmi-terraform-run.yaml@v1
+    strategy:
+      matrix:
+        environments: ["development", "stage", "production"]
+        paths: ${{ fromJSON(needs.enumerate-terraform-dirs.outputs.dirs) }}
+    with:
+      environment: ${{ matrix.environments }}
+      terraform-path: ${{ matrix.paths }}
+      terraform-run-type: plan
+      pass-datadog-secrets: >-
+        ${{ fromJSON('{
+          "tf/eks-module": true,
+          "tf/ssl-cert": false
+        }')[matrix.paths] }}
+    secrets: inherit
+  cmi-terraform-run-dispatch:
+    name: "CMI Terraform Run: Workflow Dispatch => ${{ inputs.terraform-run-type }} on ${{ inputs.terraform-path }} in ${{ inputs.environment }}"
+    if: ${{ github.event_name == 'workflow_dispatch' }} 
+    uses: cafemedia/techops-github-workflows/.github/workflows/cmi-terraform-run.yaml@v1
+    with:
+      environment: ${{ inputs.environment }}
+      terraform-path: ${{ inputs.terraform-path }}
+      terraform-run-type: ${{ inputs.terraform-run-type }}
+      terraform-targets: ${{ inputs.terraform-targets }}
+      terraform-version: ${{ inputs.terraform-version }}
+      terraform-apply-artifact: ${{ inputs.terraform-apply-artifact }}
+      pass-datadog-secrets: >-
+        ${{ fromJSON('{
+          "tf/eks-module": true,
+          "tf/ssl-cert": false
+        }')[inputs.terraform-path] }}
+    secrets: inherit
