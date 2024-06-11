@@ -48,8 +48,7 @@ func TestMultiMetricsEngine(t *testing.T) {
 	engineList := make(MultiMetricsEngine, 2)
 	engineList[0] = goEngine
 	engineList[1] = &NilMetricsEngine{}
-	var metricsEngine metrics.MetricsEngine
-	metricsEngine = &engineList
+	var metricsEngine metrics.MetricsEngine = &engineList
 	labels := metrics.Labels{
 		Source:        metrics.DemandWeb,
 		RType:         metrics.ReqTypeORTB2Web,
