@@ -4,4 +4,5 @@ package openrtb_ext
 type ExtImpTriplelift struct {
 	InvCode string   `json:"inventoryCode"`
 	Floor   *float64 `json:"floor"`
+	TagCode string   `json:"tag_code"`
 }

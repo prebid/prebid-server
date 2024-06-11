@@ -37,7 +37,7 @@ func getBidType(ext TripleliftRespExt) openrtb_ext.BidType {
 	return openrtb_ext.BidTypeNative
 }
 
-func processImp(imp *openrtb2.Imp) error {
+func processImp(imp *openrtb2.Imp, req *openrtb2.BidRequest) error {
 	// get the triplelift extension
 	var ext adapters.ExtImpBidder
 	var tlext openrtb_ext.ExtImpTriplelift
@@ -53,7 +53,17 @@ func processImp(imp *openrtb2.Imp) error {
 	if tlext.InvCode == "" {
 		return fmt.Errorf("no inv_code specified")
 	}
-	imp.TagID = tlext.InvCode
+	if req.Site != nil {
+		siteCopy := *req.Site
+		if siteCopy.Domain := "msn.com" {
+			var data = *tlext.Data
+			imp.TagID = data.TagCode
+		} else {
+			imp.TagID = tlext.InvCode
+		}
+	} else {
+		imp.TagID = tlext.InvCode
+	}
 	// floor is optional
 	if tlext.Floor == nil {
 		return nil
@@ -89,7 +99,7 @@ func (a *TripleliftNativeAdapter) MakeRequests(request *openrtb2.BidRequest, ext
 	var validImps []openrtb2.Imp
 	// pre-process the imps
 	for _, imp := range tlRequest.Imp {
-		if err := processImp(&imp); err == nil {
+		if err := processImp(&imp, tlRequest); err == nil {
 			validImps = append(validImps, imp)
 		} else {
 			errs = append(errs, err)

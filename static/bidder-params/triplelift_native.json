@@ -9,6 +9,10 @@
       "type": "string",
       "description": "TripleLift inventory code for this ad unit (provided to you by your partner manager)"
     },
+    "tag_code": {
+      "type": "string",
+      "description": "TripleLift placement name for MSN"
+    },
     "floor" :  {"description" : "the bid floor, in usd", "type": "number" }
   },
   "required": ["inventoryCode"]
