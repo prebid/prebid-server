@@ -41,6 +41,7 @@ func processImp(imp *openrtb2.Imp, req *openrtb2.BidRequest) error {
 	// get the triplelift extension
 	var ext adapters.ExtImpBidder
 	var tlext openrtb_ext.ExtImpTriplelift
+
 	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
 		return err
 	}
@@ -56,8 +57,7 @@ func processImp(imp *openrtb2.Imp, req *openrtb2.BidRequest) error {
 	if req.Site != nil {
 		siteCopy := *req.Site
 		if siteCopy.Domain == "msn.com" {
-			data := *tlext.Data
-			imp.TagID = data.TagCode
+			imp.TagID = tlext.TagCode
 		} else {
 			imp.TagID = tlext.InvCode
 		}
@@ -99,7 +99,7 @@ func (a *TripleliftNativeAdapter) MakeRequests(request *openrtb2.BidRequest, ext
 	var validImps []openrtb2.Imp
 	// pre-process the imps
 	for _, imp := range tlRequest.Imp {
-		if err := processImp(&imp, tlRequest); err == nil {
+		if err := processImp(&imp, request); err == nil {
 			validImps = append(validImps, imp)
 		} else {
 			errs = append(errs, err)
