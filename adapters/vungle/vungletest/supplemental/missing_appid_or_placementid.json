@@ -25,9 +25,11 @@
           }
         },
         "ext": {
+          "prebid": {
+            "is_rewarded_inventory": 1
+          },
           "bidder": {
-            "app_store_id": "123",
-            "placement_reference_id": "123"
+            "placement_reference_id": "78910"
           }
         }
       }
@@ -39,7 +41,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://liftoff.io/bit/t",
+        "uri": "https://vungle.io/bit/t",
         "headers": {
           "Content-Type": ["application/json"],
           "Accept": ["application/json"],
@@ -48,7 +50,6 @@
         "body": {
           "id": "test-request-id",
           "app": {
-            "id": "123",
             "bundle": "com.prebid"
           },
           "device": {
@@ -57,7 +58,7 @@
           "imp": [
             {
               "id": "test-imp-id",
-              "tagid": "123",
+              "tagid": "78910",
               "video": {
                 "mimes": [
                   "video/mp4"
@@ -73,15 +74,16 @@
                 }
               },
               "ext": {
-                "prebid": null,
+                "prebid": {
+                  "is_rewarded_inventory": 1
+                },
                 "bidder": {
-                  "app_store_id": "123",
-                  "placement_reference_id": "123"
+                  "placement_reference_id": "78910"
                 },
                 "vungle": {
+                  "app_store_id": "",
                   "bid_token": "123",
-                  "app_store_id": "123",
-                  "placement_reference_id": "123"
+                  "placement_reference_id": "78910"
                 }
               }
             }
@@ -91,17 +93,13 @@
           }
         },
         "impIDs":["test-imp-id"]
-      },
-      "mockResponse": {
-        "status": 403,
-        "body": {}
       }
     }
   ],
   "expectedBidResponses": [],
   "expectedMakeBidsErrors": [
     {
-      "value": "Unexpected status code: 403.*",
+      "value": "Unexpected status code: 0*",
       "comparison": "regex"
     }
   ]

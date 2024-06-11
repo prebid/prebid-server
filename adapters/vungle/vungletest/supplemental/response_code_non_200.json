@@ -39,7 +39,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://liftoff.io/bit/t",
+        "uri": "https://vungle.io/bit/t",
         "headers": {
           "Content-Type": ["application/json"],
           "Accept": ["application/json"],
@@ -93,7 +93,7 @@
         "impIDs":["test-imp-id"]
       },
       "mockResponse": {
-        "status": 400,
+        "status": 403,
         "body": {}
       }
     }
@@ -101,7 +101,7 @@
   "expectedBidResponses": [],
   "expectedMakeBidsErrors": [
     {
-      "value": "Unexpected status code: 400.*",
+      "value": "Unexpected status code: 403.*",
       "comparison": "regex"
     }
   ]
