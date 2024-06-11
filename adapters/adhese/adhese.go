@@ -103,17 +103,17 @@ func (a *adapter) MakeRequests(
 	return []*adapters.RequestData{requestData}, nil
 }
 
-func inferBidType(bid openrtb2.Imp) (openrtb_ext.BidType, []error) {
-	if bid.Banner != nil {
+func inferBidTypeFromImp(i openrtb2.Imp) (openrtb_ext.BidType, []error) {
+	if i.Banner != nil {
 		return openrtb_ext.BidTypeBanner, nil
 	}
-	if bid.Video != nil {
+	if i.Video != nil {
 		return openrtb_ext.BidTypeVideo, nil
 	}
-	if bid.Native != nil {
+	if i.Native != nil {
 		return openrtb_ext.BidTypeNative, nil
 	}
-	if bid.Audio != nil {
+	if i.Audio != nil {
 		return openrtb_ext.BidTypeAudio, nil
 	}
 
@@ -140,7 +140,6 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		return nil, []error{err}
 	}
 
-	// early return when there are no impressions found in the request
 	if len(request.Imp) == 0 {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: "No impression in the bid request",
@@ -164,7 +163,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	bids := response.SeatBid[0].Bid
 	if len(bids) == 0 {
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: "Empty SeatBid.Bids",
+			Message: "Empty SeatBid.Bid",
 		}}
 	}
 	bid := bids[0]
@@ -176,7 +175,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		}}
 	}
 
-	bidType, bidTypeErr := inferBidType(request.Imp[0])
+	bidType, bidTypeErr := inferBidTypeFromImp(request.Imp[0])
 	if bidTypeErr != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("BidType error: %s", bidTypeErr),

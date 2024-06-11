@@ -1,29 +1,37 @@
 {
   "mockBidRequest": {
     "id": "test-req",
+    "user": {
+      "ext": {
+        "consent": "dummy"
+      }
+    },
     "imp": [
       {
         "id": "test-req",
         "banner": {
-          "format": [
-            {
-              "w": 300,
-              "h": 250
-            }
-          ]
+          "w": 300,
+          "h": 250
         },
         "ext": {
           "bidder": {
+            "location": "pbs_test",
+            "format": "pbs_mr",
             "account": "market",
-            "location": "_adhese_prebid_demo_",
-            "format": "leaderboard",
-            "targets": 
-            {
-              "ci": ["gent", "brussels"],
-              "ag": ["55"],
-              "tl": ["all"]
+            "targets": {
+              "ci": [
+                "gent",
+                "brussels"
+              ],
+              "ag": [
+                "55"
+              ],
+              "tl": [
+                "all"
+              ]
             }
-          }
+          },
+          "tid": "6811e2a1-3649-4e54-ba03-c9b1401ae728"
         }
       }
     ],
@@ -31,71 +39,124 @@
       "id": "test",
       "publisher": {
         "id": "123"
-      },
-      "page": "dummy"
+      }
     }
   },
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://ads-market.adhese.com/json/sl_adhese_prebid_demo_-leaderboard/ag55/cigent;brussels/tlall/xfdummy",
-        "impIDs":["test-req"]
+        "uri": "https://ads-market.adhese.com/openrtb2",
+        "impIDs": [
+          "test-req"
+        ],
+        "body": {
+          "id": "test-req",
+          "imp": [
+            {
+              "banner": {
+                "h": 250,
+                "w": 300
+              },
+              "ext": {
+                "adhese": {
+                  "SL": [
+                    "pbs_test-pbs_mr"
+                  ],
+                  "ag": [
+                    "55"
+                  ],
+                  "ci": [
+                    "gent",
+                    "brussels"
+                  ],
+                  "tl": [
+                    "all"
+                  ]
+                }
+              },
+              "id": "test-req"
+            }
+          ],
+          "site": {
+            "id": "test",
+            "publisher": {
+              "id": "123"
+            }
+          },
+          "user": {
+            "ext": {
+              "consent": "dummy"
+            }
+          }
+        }
       },
       "mockResponse": {
         "status": 200,
-        "body": [{
-          "origin": "APPNEXUS",
-          "originInstance": "",
-          "ext": "js",
-          "slotName": "_main_page_-leaderboard",
-          "adType": "leaderboard",
-          "originData": {
-            "seatbid": [
-              {
-                "bid": [
-                  {
-                    "crid": "60613369",
-                    "dealid": null
-                  }
-                ],
-                "seat": "958"
-              }
-            ]
-          },
-          "width": "728",
-          "height": "90",
-          "body": "<div style='background-color:red; height:250px; width:300px'></div>",
-          "tracker": "https://hosts-demo.adhese.com/rtb_gateway/handlers/client/track/?id=a2f39296-6dd0-4b3c-be85-7baa22e7ff4a",
-          "impressionCounter": "https://hosts-demo.adhese.com/rtb_gateway/handlers/client/track/?id=a2f39296-6dd0-4b3c-be85-7baa22e7ff4a",
-          "extension": {
-            "prebid": {
-              "cpm": {
-                "amount": "1",
-                "currency": "USD"
-              }
+        "body": {
+          "id": "test-req",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "price": 1.087,
+                  "adm": "<A TARGET='_blank' HREF='https://ads-demo.adhese.com/raylene//sl219/dtunknown/ogcontrol/II7504ab36-c269-4d5b-bf8d-c59c1867124f/tlall/A2127.68.78.84/ad2993-475/URhttps://test.com' TITLE=''><IMG SRC='https://pool-demo.adhese.com/pool/lib/475_0.jpg' WIDTH='300' HEIGHT='250' ALT='' BORDER='0' /></A><div style=\"position: absolute; left: 0px; top: 0px; visibility: hidden;\"><img src=\"https://ads-demo.adhese.com/track/2993//sl219/dtunknown/ogcontrol/II7504ab36-c269-4d5b-bf8d-c59c1867124f/tlall/A2127.68.78.84/?t=1717755902141\" border=\"0\" width=\"1\" height=\"1\" alt=\"\" style=\"display:none\"></div>",
+                  "w": 300,
+                  "h": 250,
+                  "crid": "demo-475",
+                  "dealid": "demo-234",
+                  "ext": {
+                    "adhese": {
+                      "id": "2993",
+                      "libId": "475",
+                      "orderId": "234",
+                      "adspaceId": "431",
+                      "priority": "0",
+                      "adType": "pbs_mr",
+                      "adFormat": "pbs_mr",
+                      "viewableImpressionCounter": "https://ads-demo.adhese.com/track/2993-Adhese_IABview/sl219/dtunknown/ogcontrol/II7504ab36-c269-4d5b-bf8d-c59c1867124f/tlall/A2127.68.78.84/?t=1717755902141",
+                      "orderProperty": ""
+                    }
+                  },
+                  "id": "a5ec99e8-aa6b-42f4-bf8b-b68dabf96caf",
+                  "impid": "imp_id"
+                }
+              ]
             }
-          }
-        }]
+          ],
+          "cur": "USD"
+        }
       }
     }
   ],
   "expectedBidResponses": [
     {
       "currency": "USD",
-        "bids": [
-          {
-            "bid": {
-              "adm": "<div style='background-color:red; height:250px; width:300px'></div>",
-              "w": 728,
-              "h": 90,
-              "id": "",
-              "impid": "",
-              "crid": "60613369",
-              "price": 1.000000
-            },
-            "type": "banner"
-          }
-        ]
+      "bids": [
+        {
+          "bid": {
+            "adm": "<A TARGET='_blank' HREF='https://ads-demo.adhese.com/raylene//sl219/dtunknown/ogcontrol/II7504ab36-c269-4d5b-bf8d-c59c1867124f/tlall/A2127.68.78.84/ad2993-475/URhttps://test.com' TITLE=''><IMG SRC='https://pool-demo.adhese.com/pool/lib/475_0.jpg' WIDTH='300' HEIGHT='250' ALT='' BORDER='0' /></A><div style=\"position: absolute; left: 0px; top: 0px; visibility: hidden;\"><img src=\"https://ads-demo.adhese.com/track/2993//sl219/dtunknown/ogcontrol/II7504ab36-c269-4d5b-bf8d-c59c1867124f/tlall/A2127.68.78.84/?t=1717755902141\" border=\"0\" width=\"1\" height=\"1\" alt=\"\" style=\"display:none\"></div>",
+            "w": 300,
+            "h": 250,
+            "id": "a5ec99e8-aa6b-42f4-bf8b-b68dabf96caf",
+            "impid": "imp_id",
+            "crid": "demo-475",
+            "dealid": "demo-234",
+            "price": 1.087,
+            "ext": {
+              "id": "2993",
+              "libId": "475",
+              "orderId": "234",
+              "adspaceId": "431",
+              "priority": "0",
+              "adType": "pbs_mr",
+              "adFormat": "pbs_mr",
+              "viewableImpressionCounter": "https://ads-demo.adhese.com/track/2993-Adhese_IABview/sl219/dtunknown/ogcontrol/II7504ab36-c269-4d5b-bf8d-c59c1867124f/tlall/A2127.68.78.84/?t=1717755902141",
+              "orderProperty": ""
+            }
+          },
+          "type": "banner"
+        }
+      ]
     }
   ]
 }

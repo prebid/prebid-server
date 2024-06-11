@@ -1,25 +1,25 @@
 {
-    "mockBidRequest": {
-      "id": "test-req",
-      "user": {
-        "ext": {
-          "consent" : "dummy"
-        }
-      },
-      "imp": [],
-      "site": {
-        "id": "test",
-        "publisher": {
-          "id": "123"
-        }
+  "mockBidRequest": {
+    "id": "test-req",
+    "user": {
+      "ext": {
+        "consent": "dummy"
       }
     },
-    "httpCalls": [],
-    "expectedBidResponses": [],
-    "expectedMakeRequestsErrors": [
-      {
-        "value": "Imp is empty",
-        "comparison": "literal"
+    "imp": [],
+    "site": {
+      "id": "test",
+      "publisher": {
+        "id": "123"
       }
-    ]
-  }
+    }
+  },
+  "httpCalls": [],
+  "expectedBidResponses": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "No impression in the bid request",
+      "comparison": "literal"
+    }
+  ]
+}
