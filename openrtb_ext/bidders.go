@@ -129,7 +129,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderLmKiviads,
 	BidderKrushmedia,
 	BidderLemmadigital,
-	BidderLiftoff,
 	BidderLimelightDigital,
 	BidderLockerDome,
 	BidderLogan,
@@ -212,6 +211,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderVisx,
 	BidderVox,
 	BidderVrtcal,
+	BidderVungle,
 	BidderXeworks,
 	BidderYahooAds,
 	BidderYandex,
@@ -439,7 +439,6 @@ const (
 	BidderLmKiviads         BidderName = "lm_kiviads"
 	BidderKrushmedia        BidderName = "krushmedia"
 	BidderLemmadigital      BidderName = "lemmadigital"
-	BidderLiftoff           BidderName = "liftoff"
 	BidderLimelightDigital  BidderName = "limelightDigital"
 	BidderLockerDome        BidderName = "lockerdome"
 	BidderLogan             BidderName = "logan"
@@ -522,6 +521,7 @@ const (
 	BidderVisx              BidderName = "visx"
 	BidderVox               BidderName = "vox"
 	BidderVrtcal            BidderName = "vrtcal"
+	BidderVungle            BidderName = "vungle"
 	BidderXeworks           BidderName = "xeworks"
 	BidderYahooAds          BidderName = "yahooAds"
 	BidderYandex            BidderName = "yandex"
