@@ -1,4 +1,4 @@
-package liftoff
+package vungle
 
 import (
 	"encoding/json"
@@ -19,18 +19,18 @@ type adapter struct {
 	Endpoint string
 }
 
-type liftoffImpressionExt struct {
+type vungleImpressionExt struct {
 	*adapters.ExtImpBidder
 	// Ext represents the vungle extension.
-	Ext openrtb_ext.ImpExtLiftoff `json:"vungle"`
+	Ext openrtb_ext.ImpExtVungle `json:"vungle"`
 }
 
-// Builder builds a new instance of the Liftoff adapter for the given bidder with the given config.
+// Builder builds a new instance of the Vungle adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	return &adapter{Endpoint: config.Endpoint}, nil
 }
 
-// MakeRequests split impressions into bid requests and change them into the form that liftoff can handle.
+// MakeRequests split impressions into bid requests and change them into the form that vungle can handle.
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var requests []*adapters.RequestData
 	var errs []error
@@ -51,14 +51,14 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			imp.BidFloor = convertedValue
 		}
 
-		var impExt liftoffImpressionExt
+		var impExt vungleImpressionExt
 		if err := json.Unmarshal(imp.Ext, &impExt); err != nil {
 			errs = append(errs, fmt.Errorf("failed unmarshalling imp ext (err)%s", err.Error()))
 			continue
 		}
 
 		// get placement_reference_id & pub_app_store_id
-		var bidderImpExt openrtb_ext.ImpExtLiftoff
+		var bidderImpExt openrtb_ext.ImpExtVungle
 		if err := json.Unmarshal(impExt.Bidder, &bidderImpExt); err != nil {
 			errs = append(errs, fmt.Errorf("failed unmarshalling bidder imp ext (err)%s", err.Error()))
 			continue
@@ -116,7 +116,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	return requests, errs
 }
 
-// MakeBids collect bid response from liftoff and change them into the form that Prebid Server can handle.
+// MakeBids collect bid response from vungle and change them into the form that Prebid Server can handle.
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if adapters.IsResponseStatusCodeNoContent(responseData) {
 		return nil, nil

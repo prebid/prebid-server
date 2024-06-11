@@ -24,6 +24,7 @@
             "foo": "bar"
           }
         },
+        "instl": 1,
         "ext": {
           "bidder": {
             "app_store_id": "123",
@@ -34,12 +35,17 @@
     ],
     "user": {
       "buyeruid": "123"
+    },
+    "ext": {
+      "prebid": {
+        "debug": true
+      }
     }
   },
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://liftoff.io/bit/t",
+        "uri": "https://vungle.io/bit/t",
         "headers": {
           "Content-Type": ["application/json"],
           "Accept": ["application/json"],
@@ -72,6 +78,7 @@
                   "foo": "bar"
                 }
               },
+              "instl": 1,
               "ext": {
                 "prebid": null,
                 "bidder": {
@@ -88,16 +95,60 @@
           ],
           "user": {
             "buyeruid": "123"
+          },
+          "ext": {
+            "prebid": {
+              "debug": true
+            }
           }
         },
         "impIDs":["test-imp-id"]
       },
       "mockResponse": {
-        "status": 204,
-        "body": {}
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "seat-id",
+              "bid": [
+                {
+                  "id": "1",
+                  "impid": "test-imp-id",
+                  "adid": "11110126",
+                  "price": 0.500000,
+                  "adm": "some-test-ad",
+                  "crid": "test-crid",
+                  "h": 250,
+                  "w": 300
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
       }
     }
   ],
-  "expectedBidResponses": [],
-  "expectedMakeBidsErrors": []
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "1",
+            "impid": "test-imp-id",
+            "adid": "11110126",
+            "price": 0.5,
+            "adm": "some-test-ad",
+            "crid": "test-crid",
+            "w": 300,
+            "h": 250
+          },
+          "type": "video",
+          "seat": "seat-id"
+        }
+      ]
+    }
+  ]
 }
