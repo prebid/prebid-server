@@ -11,7 +11,6 @@ import (
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
 	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/util/reflectutil"
 )
 
 // jsonConfigMergeClone uses the same configuration as the `ConfigCompatibleWithStandardLibrary` profile
@@ -98,18 +97,12 @@ type sliceCloneDecoder struct {
 }
 
 func (d *sliceCloneDecoder) Decode(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
-	// don't clone if field is being set to nil. checking for nil "consumes" the null
-	// token, so must be handled in this decoder.
-	if iter.ReadNil() {
-		d.sliceType.UnsafeSetNil(ptr)
-		return
-	}
+	// clear the field. a new slice will be created by the original decoder if needed.
+	d.sliceType.UnsafeSetNil(ptr)
 
-	// clone if there is an existing object. creation of new objects is handled by the
-	// original decoder.
-	if !d.sliceType.UnsafeIsNil(ptr) {
-		clone := reflectutil.UnsafeSliceClone(ptr, d.sliceType)
-		d.sliceType.UnsafeSet(ptr, clone)
+	// checking for nil "consumes" the null token, so must be handled in this decoder.
+	if iter.ReadNil() {
+		return
 	}
 
 	d.valueDecoder.Decode(ptr, iter)
