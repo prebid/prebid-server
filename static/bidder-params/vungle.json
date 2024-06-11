@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "title": "Liftoff Adapter Params",
-  "description": "A schema which validates params accepted by the Liftoff adapter",
+  "title": "Vungle Adapter Params",
+  "description": "A schema which validates params accepted by the Vungle adapter",
   "type": "object",
   "properties": {
     "app_store_id": {
