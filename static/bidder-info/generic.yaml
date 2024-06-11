@@ -1,0 +1,154 @@
+    endpoint: https://
+    aliases:
+      genericAlias:
+        enabled: false
+      adrino:
+        enabled: false
+        endpoint: https://prd-prebid-bidder.adrino.io/openrtb/bid
+        meta-info:
+          maintainer-email: dev@adrino.pl
+          app-media-types:
+          site-media-types:
+            - native
+          supported-vendors:
+          vendor-id: 1072
+      ccx:
+        enabled: false
+        endpoint: https://delivery.clickonometrics.pl/ortb/prebid/bid
+        meta-info:
+          maintainer-email: it@clickonometrics.pl
+          site-media-types:
+            - banner
+            - video
+          vendor-id: 773
+        usersync:
+          enabled: true
+          cookie-family-name: ccx
+          redirect:
+            url: https://sync.clickonometrics.pl/prebid/set-cookie?gdpr={{gdpr}}&gdpr_consent={{gdpr_consent}}&us_privacy={{us_privacy}}&cb={{redirect_url}}
+            support-cors: false
+            uid-macro: '${USER_ID}'
+      infytv:
+        enabled: false
+        endpoint: https://nxs.infy.tv/pbs/openrtb
+        meta-info:
+          maintainer-email: tech+hb@infy.tv
+          app-media-types:
+            - video
+          site-media-types:
+            - video
+          supported-vendors:
+          vendor-id: 0
+      loopme:
+        enabled: false
+        endpoint: http://prebid-eu.loopmertb.com
+        meta-info:
+          maintainer-email: support@loopme.com
+          app-media-types:
+            - banner
+            - video
+            - native
+          site-media-types:
+            - banner
+            - video
+            - native
+          supported-vendors:
+          vendor-id: 109
+      zeta_global_ssp:
+        enabled: false
+        endpoint: https://ssp.disqus.com/bid/prebid-server?sid=GET_SID_FROM_ZETA
+        endpoint-compression: gzip
+        meta-info:
+          maintainer-email: DL-Zeta-SSP@zetaglobal.com
+          app-media-types:
+            - banner
+            - video
+          site-media-types:
+            - banner
+            - video
+          supported-vendors:
+          vendor-id: 833
+        usersync:
+          enabled: true
+          cookie-family-name: zeta_global_ssp
+          redirect:
+            url: https://ssp.disqus.com/redirectuser?sid=GET_SID_FROM_ZETA&gdpr={{gdpr}}&gdpr_consent={{gdpr_consent}}&us_privacy={{us_privacy}}&r={{redirect_url}}
+            uid-macro: 'BUYERUID'
+            support-cors: false
+      blue:
+        enabled: false
+        endpoint: https://prebid-us-east-1.getblue.io/?src=prebid
+        meta-info:
+          maintainer-email: prebid@getblue.io
+          site-media-types:
+            - banner
+          app-media-types:
+            - banner
+          supported-vendors:
+          vendor-id: 620
+      cwire:
+        enabled: false
+        endpoint: https://ortb.cwi.re/v1/bid
+        modifying-vast-xml-allowed: false
+        endpoint-compression: gzip
+        meta-info:
+          maintainer-email: devs@cwire.com
+          app-media-types:
+          site-media-types:
+            - banner
+          supported-vendors:
+          vendor-id: 1081
+      adsinteractive:
+        enabled: false
+        endpoint: http://bid.adsinteractive.com/prebid
+        modifying-vast-xml-allowed: false
+        meta-info:
+          maintainer-email: it@adsinteractive.com
+          app-media-types:
+            - banner
+          site-media-types:
+            - banner
+          supported-vendors:
+          vendor-id: 1212
+        usersync:
+          cookie-family-name: adsinteractive
+          redirect:
+            url: https://sync.adsinteractive.com/getuid?{{redirect_url}}&gpp={{gpp}}&gpp_sid={{gpp_sid}}
+            support-cors: false
+            uid-macro: '$AUID'
+      nativo:
+        enabled: false
+        endpoint: https://exchange.postrelease.com/esi?ntv_epid=7
+        pbs-enforces-ccpa: false
+        meta-info:
+          maintainer-email: prebiddev@nativo.com
+          app-media-types:
+            - banner
+            - video
+            - native
+          site-media-types:
+           - banner
+           - video
+           - native
+          supported-vendors:
+          vendor-id: 263
+        usersync:
+          cookie-family-name: nativo
+          redirect:
+            url: http://jadserve.postrelease.com/suid/101787?gdpr={{gdpr}}&gdpr_consent={{gdpr_consent}}&us_privacy={{us_privacy}}&ntv_gpp_consent={{gpp}}&ntv_r={{redirect_url}}
+            support-cors: false
+            uid-macro: 'NTV_USER_ID'
+    meta-info:
+      maintainer-email: maintainer@example.com
+      app-media-types:
+        - banner
+        - video
+        - native
+        - audio
+      site-media-types:
+        - banner
+        - video
+        - native
+        - audio
+      supported-vendors:
+      vendor-id: 0
