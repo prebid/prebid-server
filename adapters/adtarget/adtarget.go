@@ -174,7 +174,11 @@ func validateImpressionAndSetExt(imp *openrtb2.Imp) (int, error) {
 	impExtBuffer, err = json.Marshal(&adtargetImpExt{
 		Adtarget: impExt,
 	})
-
+	if err != nil {
+		return 0, &errortypes.BadInput{
+			Message: fmt.Sprintf("ignoring imp id=%s, error while encoding impExt, err: %s", imp.ID, err),
+		}
+	}
 	if impExt.BidFloor > 0 {
 		imp.BidFloor = impExt.BidFloor
 	}

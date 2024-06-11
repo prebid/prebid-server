@@ -99,7 +99,7 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 				return openrtb_ext.ParseBidType(string(bidExt.Prebid.Type))
 			}
 			return "", &errortypes.BadServerResponse{
-				Message: fmt.Sprintf("Invalid mediatype in the impression"),
+				Message: "Invalid mediatype in the impression",
 			}
 		}
 	}

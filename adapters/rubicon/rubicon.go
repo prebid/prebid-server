@@ -452,8 +452,14 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 		} else {
 			appCopy := *request.App
 			appCopy.Ext, err = json.Marshal(rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: int(siteId)}})
+			if err != nil {
+				errs = append(errs, &errortypes.BadInput{Message: err.Error()})
+			}
 			appCopy.Publisher = &openrtb2.Publisher{}
 			appCopy.Publisher.Ext, err = json.Marshal(&pubExt)
+			if err != nil {
+				errs = append(errs, &errortypes.BadInput{Message: err.Error()})
+			}
 			rubiconRequest.App = &appCopy
 		}
 
@@ -581,7 +587,7 @@ func createImpsToExtMap(imps []openrtb2.Imp) (map[*openrtb2.Imp]rubiconExtImpBid
 func prepareImpsToExtMap(impsToExtMap map[*openrtb2.Imp]rubiconExtImpBidder) map[*openrtb2.Imp]rubiconExtImpBidder {
 	preparedImpsToExtMap := make(map[*openrtb2.Imp]rubiconExtImpBidder)
 	for imp, bidderExt := range impsToExtMap {
-		if bidderExt.Bidder.BidOnMultiformat == false { //nolint: staticcheck
+		if bidderExt.Bidder.BidOnMultiformat == false { //nolint: gosimple,staticcheck
 			impCopy := imp
 			preparedImpsToExtMap[impCopy] = bidderExt
 			continue
