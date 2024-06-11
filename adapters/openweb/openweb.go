@@ -21,9 +21,9 @@ type adapter struct {
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) (requestsToBidder []*adapters.RequestData, errs []error) {
-	org, err := extractOrg(request)
+	org, err := checkExtAndExtractOrg(request)
 	if err != nil {
-		errs = append(errs, fmt.Errorf("extractOrg: %w", err))
+		errs = append(errs, fmt.Errorf("checkExtAndExtractOrg: %w", err))
 		return nil, errs
 	}
 
@@ -45,7 +45,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 	}), nil
 }
 
-func extractOrg(request *openrtb2.BidRequest) (string, error) {
+// checkExtAndExtractOrg checks the presence of required parameters and extracts the Org ID string.
+func checkExtAndExtractOrg(request *openrtb2.BidRequest) (string, error) {
 	var err error
 	for _, imp := range request.Imp {
 		var bidderExt adapters.ExtImpBidder
@@ -56,6 +57,10 @@ func extractOrg(request *openrtb2.BidRequest) (string, error) {
 		var impExt openrtb_ext.ExtImpOpenWeb
 		if err = json.Unmarshal(bidderExt.Bidder, &impExt); err != nil {
 			return "", fmt.Errorf("unmarshal ExtImpOpenWeb: %w", err)
+		}
+
+		if impExt.PlacementID == "" {
+			return "", errors.New("no placement id supplied")
 		}
 
 		if impExt.Org != "" {
