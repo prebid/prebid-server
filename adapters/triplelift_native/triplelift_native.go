@@ -54,9 +54,9 @@ func processImp(imp *openrtb2.Imp, req *openrtb2.BidRequest) error {
 		return fmt.Errorf("no inv_code specified")
 	}
 	if req.Site != nil {
-		siteCopy = *req.Site
-		if siteCopy.Domain := "msn.com" {
-			var data = *tlext.Data
+		siteCopy := *req.Site
+		if siteCopy.Domain == "msn.com" {
+			data := *tlext.Data
 			imp.TagID = data.TagCode
 		} else {
 			imp.TagID = tlext.InvCode
