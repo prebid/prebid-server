@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -13,7 +14,6 @@ import (
 	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/util/maputil"
 	"github.com/prebid/prebid-server/v2/util/ptrutil"
 	"github.com/prebid/prebid-server/v2/util/randomutil"
 
@@ -315,7 +315,7 @@ func splitRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, requestExt
 		errs = append(errs, err)
 	}
 
-	requestExtClone := maputil.Clone(requestExt)
+	requestExtClone := maps.Clone(requestExt)
 	requestExtClone["appnexus"] = appnexusExtJson
 
 	request.Ext, err = json.Marshal(requestExtClone)
