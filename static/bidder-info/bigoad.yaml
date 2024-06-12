@@ -1,9 +1,15 @@
-endpoint: "http://{{.Host}}/Ad/GetAdOut?sspid={{.SspId}}"
+endpoint: "https://api.imotech.tech/Ad/GetAdOut?sspid={{.SspId}}"
 endpointCompression: gzip
 geoscope:
   - USA
-  - CHN
   - RUS
+  - JPN
+  - BRA
+  - KOR
+  - IDN
+  - TUR
+  - SAU
+  - MEX
 maintainer:
   email: BigoAds@bigo.sg
 modifyingVastXmlAllowed: true

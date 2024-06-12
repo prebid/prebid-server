@@ -27,7 +27,6 @@
                 },
                 "ext": {
                     "bidder": {
-                        "host": "host",
                         "sspid": "sspid"
                     }
                 }
@@ -48,7 +47,7 @@
                         "2.5"
                     ]
                 },
-                "uri": "https://host/Ad/GetAdOut?sspid=sspid",
+                "uri": "https://api.imotech.tech/Ad/GetAdOut?sspid=sspid",
                 "body": {
                     "id": "some-request-id",
                     "device": {
@@ -66,7 +65,6 @@
                                 "request": "{\"adunit\":2,\"assets\":[{\"id\":3,\"img\":{\"h\":120,\"hmin\":0,\"type\":3,\"w\":180,\"wmin\":0},\"required\":1},{\"id\":0,\"required\":1,\"title\":{\"len\":25}},{\"data\":{\"len\":25,\"type\":1},\"id\":4,\"required\":1},{\"data\":{\"len\":140,\"type\":2},\"id\":6,\"required\":1}],\"context\":1,\"layout\":1,\"contextsubtype\":11,\"plcmtcnt\":1,\"plcmttype\":2,\"ver\":\"1.1\",\"ext\":{\"banner\":{\"w\":320,\"h\":50}}}"
                             },
                             "ext": {
-                                "host": "host",
                                 "sspid": "sspid"
                             }
                         }
@@ -96,6 +94,7 @@
                                 {
                                     "id": "a3ae1b4e2fc24a4fb45540082e98e161",
                                     "impid": "some-impression-id",
+                                    "mtype": 4,
                                     "price": 3.5,
                                     "adm": "awesome-markup",
                                     "adomain": [
@@ -119,6 +118,7 @@
                     "bid": {
                         "id": "a3ae1b4e2fc24a4fb45540082e98e161",
                         "impid": "some-impression-id",
+                        "mtype": 4,
                         "price": 3.5,
                         "adm": "awesome-markup",
                         "crid": "20",

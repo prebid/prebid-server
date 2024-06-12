@@ -38,7 +38,6 @@
         },
         "ext": {
           "bidder": {
-            "host": "host",
             "sspid": "sspid"
           }
         }
@@ -49,7 +48,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://host/Ad/GetAdOut?sspid=sspid",
+        "uri": "https://api.imotech.tech/Ad/GetAdOut?sspid=sspid",
         "headers": {
           "Content-Type": [
             "application/json;charset=utf-8"
@@ -99,7 +98,6 @@
                 ]
               },
               "ext": {
-                "host": "host",
                 "sspid": "sspid"
               }
             }

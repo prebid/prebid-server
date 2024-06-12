@@ -33,7 +33,6 @@
                 },
                 "ext": {
                     "bidder": {
-                        "host": "host",
                         "sspid": "sspid"
                     }
                 }
@@ -54,7 +53,7 @@
                         "2.5"
                     ]
                 },
-                "uri": "https://host/Ad/GetAdOut?sspid=sspid",
+                "uri": "https://api.imotech.tech/Ad/GetAdOut?sspid=sspid",
                 "body": {
                     "id": "some-request-id",
                     "device": {
@@ -72,7 +71,6 @@
                             },
                             "tagid": "ogTAGID",
                             "ext": {
-                                "host": "host",
                                 "sspid": "sspid"
                             }
                         }

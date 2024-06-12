@@ -25,7 +25,6 @@
                 },
                 "ext": {
                     "bidder": {
-                        "host": "host",
                         "sspid": "sspid"
                     }
                 }
@@ -46,7 +45,7 @@
                         "2.5"
                     ]
                 },
-                "uri": "https://host/Ad/GetAdOut?sspid=sspid",
+                "uri": "https://api.imotech.tech/Ad/GetAdOut?sspid=sspid",
                 "body": {
                     "id": "some-request-id",
                     "device": {
@@ -64,7 +63,6 @@
                                 "h": 50
                             },
                             "ext": {
-                                "host": "host",
                                 "sspid": "sspid"
                             }
                         }
@@ -92,6 +90,7 @@
                                 {
                                     "id": "some-impression-id1",
                                     "impid": "some-impression-id1",
+                                    "mtype": 1,
                                     "price": 3.5,
                                     "adm": "test_adm",
                                     "adomain": [
@@ -118,6 +117,7 @@
                     "bid": {
                         "id": "some-impression-id1",
                         "impid": "some-impression-id1",
+                        "mtype": 1,
                         "price": 3.5,
                         "adm": "test_adm",
                         "crid": "20",

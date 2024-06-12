@@ -11,7 +11,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderBigoAd,
-		config.Adapter{Endpoint: "https://{{.Host}}/Ad/GetAdOut?sspid={{.SspId}}"},
+		config.Adapter{Endpoint: "https://api.imotech.tech/Ad/GetAdOut?sspid={{.SspId}}"},
 		config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {

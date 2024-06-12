@@ -38,7 +38,6 @@
                 },
                 "ext": {
                     "bidder": {
-                        "host": "host",
                         "sspid": "sspid"
                     }
                 }
@@ -59,7 +58,7 @@
                         "2.5"
                     ]
                 },
-                "uri": "https://host/Ad/GetAdOut?sspid=sspid",
+                "uri": "https://api.imotech.tech/Ad/GetAdOut?sspid=sspid",
                 "body": {
                     "id": "some-request-id",
                     "device": {
@@ -82,7 +81,6 @@
                             },
                             "tagid": "ogTAGID",
                             "ext": {
-                                "host": "host",
                                 "sspid": "sspid"
                             }
                         }
@@ -109,10 +107,19 @@
                 ]
             },
             "mockResponse": {
-                "status": 204
+                "status": 200,
+                "body": {
+                    "id": "test-request-id",
+                    "seatbid": []
+                }
             }
         }
     ],
     "expectedBidResponses": [],
-    "expectedMakeBidsErrors": []
+    "expectedMakeBidsErrors": [
+        {
+            "value": "Empty SeatBid array",
+            "comparison": "literal"
+        }
+    ]
 }

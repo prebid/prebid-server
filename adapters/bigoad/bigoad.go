@@ -149,13 +149,6 @@ func getBidType(imp openrtb2.Imp, bid openrtb2.Bid) (openrtb_ext.BidType, error)
 	case openrtb2.MarkupVideo:
 		return openrtb_ext.BidTypeVideo, nil
 	}
-	if imp.Native != nil {
-		return openrtb_ext.BidTypeNative, nil
-	} else if imp.Banner != nil {
-		return openrtb_ext.BidTypeBanner, nil
-	} else if imp.Video != nil {
-		return openrtb_ext.BidTypeVideo, nil
-	}
 
 	return "", &errortypes.BadInput{
 		Message: fmt.Sprintf("unrecognized bid type in response from bigoad %s", imp.ID),

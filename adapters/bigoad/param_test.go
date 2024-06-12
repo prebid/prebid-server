@@ -34,7 +34,7 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
-	`{"sspid": "123", "host": "baidu.com"}`,
+	`{"sspid": "123"}`,
 }
 
 var invalidParams = []string{
@@ -42,6 +42,5 @@ var invalidParams = []string{
 	`null`,
 	`[]`,
 	`{}`,
-	`{"sspid": "123"}`,
 	`{"host": "baidu.com"}`,
 }
