@@ -16,15 +16,14 @@
             },
             "ext": {
                 "bidder": {
-                    "cp": "1234",
-                    "ct": "ab1001"
+                    "cp": "1234"
                 }
             }
         }]
     },
     "httpCalls": [],
     "expectedMakeRequestsErrors": [{
-        "value": "expected int value for param - tagID, got value - ab1001",
+        "value": "param not found - tagID",
         "comparison": "literal"
     }],
     "expectedBidResponses": [],

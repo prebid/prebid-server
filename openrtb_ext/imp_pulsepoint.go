@@ -4,6 +4,6 @@ package openrtb_ext
 // PubId/TagId are mandatory params
 
 type ExtImpPulsePoint struct {
-	PubID int `json:"cp"`
-	TagID int `json:"ct"`
+	PubID interface{} `json:"cp"`
+	TagID interface{} `json:"ct"`
 }

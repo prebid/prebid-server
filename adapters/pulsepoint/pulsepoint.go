@@ -2,6 +2,7 @@ package pulsepoint
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -49,11 +50,25 @@ func (a *PulsePointAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 			continue
 		}
 		// parse pubid and keep it for reference
-		if pubID == "" && pulsepointExt.PubID > 0 {
-			pubID = strconv.Itoa(pulsepointExt.PubID)
+		if pubID == "" {
+			pubID, err = parseParam("pubID", pulsepointExt.PubID)
+			if err != nil {
+				errs = append(errs, &errortypes.BadInput{
+					Message: err.Error(),
+				})
+				continue
+			}
 		}
 		// tag id to be sent
-		imp.TagID = strconv.Itoa(pulsepointExt.TagID)
+		var tagID string
+		tagID, err = parseParam("tagID", pulsepointExt.TagID)
+		if err != nil {
+			errs = append(errs, &errortypes.BadInput{
+				Message: err.Error(),
+			})
+			continue
+		}
+		imp.TagID = tagID
 		imps = append(imps, imp)
 	}
 
@@ -162,4 +177,18 @@ func getBidType(imp openrtb2.Imp) openrtb_ext.BidType {
 		return openrtb_ext.BidTypeNative
 	}
 	return ""
+}
+
+func parseParam(paramName string, paramValue interface{}) (string, error) {
+	if paramValue != nil {
+		extractedValue := fmt.Sprint(paramValue)
+		_, err := strconv.Atoi(extractedValue)
+		if err != nil {
+			return "", errors.New("expected int value for param - " + paramName + ", got value - " + extractedValue)
+		} else {
+			return extractedValue, nil
+		}
+	} else {
+		return "", errors.New("param not found - " + paramName)
+	}
 }
