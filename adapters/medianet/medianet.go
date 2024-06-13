@@ -102,7 +102,9 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 		}
 	}
 
-	bidResponse.FledgeAuctionConfigs = extractFledge(a, bidResp)
+	if fledgeAuctionConfigs, err := extractFledge(a, bidResp); err == nil && fledgeAuctionConfigs != nil {
+		bidResponse.FledgeAuctionConfigs = fledgeAuctionConfigs
+	}
 
 	return bidResponse, errs
 }
@@ -132,12 +134,12 @@ func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType,
 	}
 }
 
-func extractFledge(a *adapter, bidResp openrtb2.BidResponse) []*openrtb_ext.FledgeAuctionConfig {
+func extractFledge(a *adapter, bidResp openrtb2.BidResponse) ([]*openrtb_ext.FledgeAuctionConfig, error) {
 	var fledgeAuctionConfigs []*openrtb_ext.FledgeAuctionConfig
 
 	var bidRespExt medianetRespExt
 	if err := json.Unmarshal(bidResp.Ext, &bidRespExt); err != nil {
-		return nil
+		return nil, err
 	}
 
 	for _, igi := range bidRespExt.Igi {
@@ -154,7 +156,7 @@ func extractFledge(a *adapter, bidResp openrtb2.BidResponse) []*openrtb_ext.Fled
 		}
 	}
 
-	return fledgeAuctionConfigs
+	return fledgeAuctionConfigs, nil
 }
 
 func buildEndpoint(mnetUrl, hostUrl string) string {
