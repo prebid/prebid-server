@@ -111,7 +111,6 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/kiviads"
 	"github.com/prebid/prebid-server/v2/adapters/krushmedia"
 	"github.com/prebid/prebid-server/v2/adapters/lemmadigital"
-	"github.com/prebid/prebid-server/v2/adapters/liftoff"
 	"github.com/prebid/prebid-server/v2/adapters/limelightDigital"
 	lmkiviads "github.com/prebid/prebid-server/v2/adapters/lm_kiviads"
 	"github.com/prebid/prebid-server/v2/adapters/lockerdome"
@@ -194,6 +193,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/visx"
 	"github.com/prebid/prebid-server/v2/adapters/vox"
 	"github.com/prebid/prebid-server/v2/adapters/vrtcal"
+	"github.com/prebid/prebid-server/v2/adapters/vungle"
 	"github.com/prebid/prebid-server/v2/adapters/xeworks"
 	"github.com/prebid/prebid-server/v2/adapters/yahooAds"
 	"github.com/prebid/prebid-server/v2/adapters/yandex"
@@ -323,7 +323,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderLmKiviads:         lmkiviads.Builder,
 		openrtb_ext.BidderKrushmedia:        krushmedia.Builder,
 		openrtb_ext.BidderLemmadigital:      lemmadigital.Builder,
-		openrtb_ext.BidderLiftoff:           liftoff.Builder,
+		openrtb_ext.BidderVungle:            vungle.Builder,
 		openrtb_ext.BidderLimelightDigital:  limelightDigital.Builder,
 		openrtb_ext.BidderLockerDome:        lockerdome.Builder,
 		openrtb_ext.BidderLogan:             logan.Builder,
