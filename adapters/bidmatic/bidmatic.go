@@ -12,7 +12,7 @@ import (
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
-type BidmaticAdapter struct {
+type Adapter struct {
 	endpoint string
 }
 
@@ -20,7 +20,7 @@ type bidmaticImpExt struct {
 	Bidmatic openrtb_ext.ExtImpBidmatic `json:"bidmatic"`
 }
 
-func (a *BidmaticAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *Adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
 	totalImps := len(request.Imp)
 	errors := make([]error, 0, totalImps)
@@ -86,7 +86,7 @@ func (a *BidmaticAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ad
 
 }
 
-func (a *BidmaticAdapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.RequestData, httpRes *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *Adapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.RequestData, httpRes *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
 	if httpRes.StatusCode == http.StatusNoContent {
 		return nil, nil
@@ -198,7 +198,7 @@ func validateImpression(imp *openrtb2.Imp) (int, error) {
 
 // Builder builds a new instance of the bidmatic adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	bidder := &BidmaticAdapter{
+	bidder := &Adapter{
 		endpoint: config.Endpoint,
 	}
 	return bidder, nil
