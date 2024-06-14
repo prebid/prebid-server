@@ -3,14 +3,18 @@
     "id": "test-request-id",
     "imp": [
       {
-        "format": [{
-          "w": 728,
-          "h": 90
-        }],
+        "banner": {
+          "format": [
+            {
+              "w": 728,
+              "h": 90
+            }
+          ]
+        },
         "ext": {
           "bidder": {
             "publisherId": "abc",
-            "adunit": "100000"
+            "adunit": 100000
           }
         }
       }
@@ -24,7 +28,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "invalid publisher ID",
+      "value": "Wrong MetaX bidder ext",
       "comparison": "literal"
     }
   ]

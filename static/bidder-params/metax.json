@@ -5,14 +5,14 @@
   "type": "object",
   "properties": {
     "publisherId": {
-      "type": "string",
+      "type": "integer",
       "description": "An ID which identifies the publisher",
-      "minLength": 1
+      "minimum": 1
     },
     "adunit": {
-      "type": "string",
+      "type": "integer",
       "description": "An ID which identifies the adunit",
-      "minLength": 1
+      "minimum": 1
     }
   },
   "required": ["publisherId", "adunit"]

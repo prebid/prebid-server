@@ -20,8 +20,8 @@
         },
         "ext": {
           "bidder": {
-            "publisherId": "10000000",
-            "adunit": "100000"
+            "publisherId": 10000000,
+            "adunit": 100000
           }
         }
       }
@@ -51,6 +51,12 @@
                 ],
                 "w": 728,
                 "h": 90
+              },
+              "ext": {
+                "bidder": {
+                  "publisherId": 10000000,
+                  "adunit": 100000
+                }
               }
             }
           ]

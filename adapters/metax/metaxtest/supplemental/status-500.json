@@ -61,18 +61,19 @@
             }
           ]
         },
-        "impIDs":["test-imp-id"]
+        "impIDs": [
+          "test-imp-id"
+        ]
       },
       "mockResponse": {
-        "status": 400,
-        "body": {
-        }
+        "status": 500,
+        "body": "Internal Server Error"
       }
     }
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "Unexpected status code: 400. Run with request.debug = 1 for more info",
+      "value": "Unexpected status code: 500. Run with request.debug = 1 for more info",
       "comparison": "literal"
     }
   ]

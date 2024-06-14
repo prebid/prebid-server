@@ -40,7 +40,7 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
-	`{"publisherId": "10000000", "adunit": "100000"}`,
+	`{"publisherId": 10000000, "adunit": 100000}`,
 }
 
 var invalidParams = []string{
@@ -49,7 +49,12 @@ var invalidParams = []string{
 	`undefined`,
 	`0`,
 	`{}`,
+	`[]`,
+	`{"publisherId": ""}`,
+	`{"adunit": ""}`,
 	`{"publisherId": "", "adunit": ""}`,
-	`{"publisherId": "10000000", "adunit": ""}`,
-	`{"publisherId": "", "adunit": "100000"}`,
+	`{"publisherId": "10000000", "adunit": "100000"}`,
+	`{"publisherId": 0, "adunit": 0}`,
+	`{"publisherId": 10000000, "adunit": 0}`,
+	`{"publisherId": 0, "adunit": 100000}`,
 }

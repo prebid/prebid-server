@@ -20,8 +20,8 @@
         },
         "ext": {
           "bidder": {
-            "publisherId": "10000000",
-            "adunit": "100000"
+            "publisherId": 10000000,
+            "adunit": 100000
           }
         }
       }
@@ -51,22 +51,29 @@
                 ],
                 "w": 728,
                 "h": 90
+              },
+              "ext": {
+                "bidder": {
+                  "publisherId": 10000000,
+                  "adunit": 100000
+                }
               }
             }
           ]
         },
-        "impIDs":["test-imp-id"]
+        "impIDs": [
+          "test-imp-id"
+        ]
       },
       "mockResponse": {
-        "status": 500,
-        "body": {
-        }
+        "status": 503,
+        "body": ""
       }
     }
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "Unexpected status code: 500",
+      "value": "Unexpected status code: 503. Run with request.debug = 1 for more info",
       "comparison": "literal"
     }
   ]

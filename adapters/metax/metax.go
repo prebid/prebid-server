@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
 	"strconv"
 	"text/template"
 
@@ -27,12 +26,6 @@ type adapter struct {
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 
-	if len(request.Imp) == 0 {
-		return nil, []error{&errortypes.BadInput{
-			Message: "No impressions in the request",
-		}}
-	}
-
 	// split impressions
 	reqDatas := make([]*adapters.RequestData, 0, len(request.Imp))
 	for i := range request.Imp {
@@ -42,11 +35,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 		metaxExt, err := parseBidderExt(imp)
 		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-
-		if err := validateParams(metaxExt); err != nil {
 			errs = append(errs, err)
 			continue
 		}
@@ -62,7 +50,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			continue
 		}
 
-		impCopy.Ext = nil
 		requestCopy.Imp = []openrtb2.Imp{impCopy}
 		reqJSON, err := json.Marshal(requestCopy)
 		if err != nil {
@@ -86,20 +73,12 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 }
 
 func (a *adapter) MakeBids(bidReq *openrtb2.BidRequest, reqData *adapters.RequestData, respData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if respData.StatusCode == http.StatusNoContent {
+	if adapters.IsResponseStatusCodeNoContent(respData) {
 		return nil, nil
 	}
 
-	if respData.StatusCode == http.StatusBadRequest {
-		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Unexpected status code: %d. Bad request", respData.StatusCode),
-		}}
-	}
-
-	if respData.StatusCode != http.StatusOK {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d", respData.StatusCode),
-		}}
+	if err := adapters.CheckResponseStatusCodeForErrors(respData); err != nil {
+		return nil, []error{err}
 	}
 
 	var bidResp openrtb2.BidResponse
@@ -116,9 +95,13 @@ func (a *adapter) MakeBids(bidReq *openrtb2.BidRequest, reqData *adapters.Reques
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
 			bid := &sb.Bid[i]
+			bidType, err := getBidType(bid)
+			if err != nil {
+				return nil, []error{err}
+			}
 			resp.Bids = append(resp.Bids, &adapters.TypedBid{
 				Bid:     bid,
-				BidType: getBidType(bidReq.Imp, bid.ImpID),
+				BidType: bidType,
 			})
 		}
 	}
@@ -127,8 +110,8 @@ func (a *adapter) MakeBids(bidReq *openrtb2.BidRequest, reqData *adapters.Reques
 
 func (a *adapter) getEndpoint(ext *openrtb_ext.ExtImpMetaX) (string, error) {
 	params := macros.EndpointTemplateParams{
-		PublisherID: url.PathEscape(ext.PublisherID),
-		AdUnit:      url.PathEscape(ext.Adunit),
+		PublisherID: strconv.Itoa(ext.PublisherID),
+		AdUnit:      strconv.Itoa(ext.Adunit),
 	}
 	return macros.ResolveMacros(a.template, params)
 }
@@ -147,17 +130,6 @@ func parseBidderExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpMetaX, error) {
 	return &metaxExt, nil
 }
 
-// publisher ID and adunit is numeric at this moment
-func validateParams(ext *openrtb_ext.ExtImpMetaX) error {
-	if _, err := strconv.Atoi(ext.PublisherID); err != nil {
-		return errors.New("invalid publisher ID")
-	}
-	if _, err := strconv.Atoi(ext.Adunit); err != nil {
-		return errors.New("invalid adunit")
-	}
-	return nil
-}
-
 func preprocessImp(imp *openrtb2.Imp) error {
 	if imp == nil {
 		return errors.New("imp is nil")
@@ -169,19 +141,6 @@ func preprocessImp(imp *openrtb2.Imp) error {
 			return err
 		}
 		imp.Banner = bannerCopy
-	}
-
-	// clean inventory
-	switch {
-	case imp.Video != nil:
-		imp.Banner = nil
-		imp.Native = nil
-		imp.Audio = nil
-	case imp.Banner != nil:
-		imp.Video = nil
-		imp.Native = nil
-		imp.Audio = nil
-	default:
 	}
 
 	return nil
@@ -206,24 +165,21 @@ func assignBannerWidthAndHeight(banner *openrtb2.Banner, w, h int64) *openrtb2.B
 	return &bannerCopy
 }
 
-func getBidType(imps []openrtb2.Imp, impID string) openrtb_ext.BidType {
-	for _, imp := range imps {
-		if imp.ID != impID {
-			continue
-		}
-		switch {
-		case imp.Banner != nil:
-			return openrtb_ext.BidTypeBanner
-		case imp.Video != nil:
-			return openrtb_ext.BidTypeVideo
-		case imp.Native != nil:
-			return openrtb_ext.BidTypeNative
-		case imp.Audio != nil:
-			return openrtb_ext.BidTypeAudio
-		default:
+func getBidType(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative, nil
+	case openrtb2.MarkupAudio:
+		return openrtb_ext.BidTypeAudio, nil
+	default:
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Unsupported MType %d", bid.MType),
 		}
 	}
-	return openrtb_ext.BidTypeBanner
 }
 
 // Builder builds a new instance of the MetaX adapter for the given bidder with the given config.

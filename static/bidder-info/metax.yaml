@@ -7,7 +7,11 @@ capabilities:
     mediaTypes:
       - banner
       - video
+      - native
+      - audio
   site:
     mediaTypes:
       - banner
       - video
+      - native
+      - audio

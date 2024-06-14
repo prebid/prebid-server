@@ -61,18 +61,39 @@
             }
           ]
         },
-        "impIDs":["test-imp-id"]
+        "impIDs": [
+          "test-imp-id"
+        ]
       },
       "mockResponse": {
-        "status": 400,
+        "status": 200,
         "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "metax",
+              "bid": [
+                {
+                  "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                  "impid": "test-imp-id",
+                  "price": 0.500000,
+                  "adm": "some-test-ad",
+                  "crid": "test-crid",
+                  "w": 728,
+                  "h": 90,
+                  "mtype": 0
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
         }
       }
     }
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "Unexpected status code: 400. Run with request.debug = 1 for more info",
+      "value": "Unsupported MType 0",
       "comparison": "literal"
     }
   ]

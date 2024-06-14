@@ -25,8 +25,8 @@
         },
         "ext": {
           "bidder": {
-            "publisherId": "10000000",
-            "adunit": "100000"
+            "publisherId": 10000000,
+            "adunit": 100000
           }
         }
       }
@@ -36,6 +36,14 @@
     {
       "expectedRequest": {
         "uri": "https://hb.metaxads.com/prebid?sid=10000000&adunit=100000&source=prebid-server",
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ]
+        },
         "body": {
           "id": "test-request-id",
           "app": {
@@ -59,6 +67,12 @@
                 ],
                 "w": 1024,
                 "h": 576
+              },
+              "ext": {
+                "bidder": {
+                  "publisherId": 10000000,
+                  "adunit": 100000
+                }
               }
             }
           ]
@@ -81,7 +95,8 @@
                   "adm": "some-test-ad",
                   "crid": "test-crid",
                   "w": 1024,
-                  "h": 576
+                  "h": 576,
+                  "mtype": 2
                 }
               ]
             }
@@ -102,7 +117,8 @@
             "adm": "some-test-ad",
             "crid": "test-crid",
             "w": 1024,
-            "h": 576
+            "h": 576,
+            "mtype": 2
           },
           "type": "video"
         }

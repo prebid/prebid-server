@@ -5,7 +5,7 @@
       "bundle": "com.prebid"
     },
     "device": {
-      "ifa":"ec943cb9-61ec-460f-a925-6489c3fcc4e3"
+      "ifa": "ec943cb9-61ec-460f-a925-6489c3fcc4e3"
     },
     "imp": [
       {
@@ -50,7 +50,7 @@
             "bundle": "com.prebid"
           },
           "device": {
-            "ifa":"ec943cb9-61ec-460f-a925-6489c3fcc4e3"
+            "ifa": "ec943cb9-61ec-460f-a925-6489c3fcc4e3"
           },
           "imp": [
             {
@@ -77,11 +77,15 @@
             }
           ]
         },
-        "impIDs":["test-imp-id"]
+        "impIDs": [
+          "test-imp-id"
+        ]
       },
       "mockResponse": {
         "status": 204,
         "body": {
+          "id": "test-request-id",
+          "seatbid": []
         }
       }
     }

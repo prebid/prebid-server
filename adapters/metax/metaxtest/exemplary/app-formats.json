@@ -1,11 +1,11 @@
 {
   "mockBidRequest": {
     "id": "test-request-id",
-    "site": {
-      "page": "prebid.org"
+    "app": {
+      "bundle": "com.prebid"
     },
-    "user": {
-      "buyeruid": "be5e209ad46927520000000000000000"
+    "device": {
+      "ifa":"ec943cb9-61ec-460f-a925-6489c3fcc4e3"
     },
     "imp": [
       {
@@ -17,6 +17,23 @@
               "h": 90
             }
           ]
+        },
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "protocols": [
+            2,
+            3,
+            5,
+            6
+          ],
+          "w": 1024,
+          "h": 576
+        },
+        "native": {
+          "request": "{json string 1}",
+          "ver": "1.2"
         },
         "ext": {
           "bidder": {
@@ -31,21 +48,13 @@
     {
       "expectedRequest": {
         "uri": "https://hb.metaxads.com/prebid?sid=10000000&adunit=100000&source=prebid-server",
-        "headers": {
-          "Accept": [
-            "application/json"
-          ],
-          "Content-Type": [
-            "application/json;charset=utf-8"
-          ]
-        },
         "body": {
           "id": "test-request-id",
-          "site": {
-            "page": "prebid.org"
+          "app": {
+            "bundle": "com.prebid"
           },
-          "user": {
-            "buyeruid": "be5e209ad46927520000000000000000"
+          "device": {
+            "ifa":"ec943cb9-61ec-460f-a925-6489c3fcc4e3"
           },
           "imp": [
             {
@@ -60,6 +69,23 @@
                 "w": 728,
                 "h": 90
               },
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "protocols": [
+                  2,
+                  3,
+                  5,
+                  6
+                ],
+                "w": 1024,
+                "h": 576
+              },
+              "native": {
+                "request": "{json string 1}",
+                "ver": "1.2"
+              },
               "ext": {
                 "bidder": {
                   "publisherId": 10000000,
@@ -73,6 +99,14 @@
       },
       "mockResponse": {
         "status": 200,
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ]
+        },
         "body": {
           "id": "test-request-id",
           "seatbid": [

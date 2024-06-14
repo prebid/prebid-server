@@ -36,8 +36,8 @@ func TestParseBidderExt(t *testing.T) {
 	data := `
 {
   "bidder": {
-    "publisherId": "1000",
-    "adunit": "200"
+    "publisherId": 1000,
+    "adunit": 200
   }
 }`
 	imp := &openrtb2.Imp{
@@ -45,57 +45,12 @@ func TestParseBidderExt(t *testing.T) {
 	}
 	metaxExt, err := parseBidderExt(imp)
 	assert.Nil(t, err)
-	assert.Equal(t, "1000", metaxExt.PublisherID)
-	assert.Equal(t, "200", metaxExt.Adunit)
-}
-
-func TestValidateParams(t *testing.T) {
-	tests := []struct {
-		ext      *openrtb_ext.ExtImpMetaX
-		errorMsg string
-	}{
-		{
-			ext: &openrtb_ext.ExtImpMetaX{
-				PublisherID: "1000",
-				Adunit:      "1",
-			},
-			errorMsg: "",
-		},
-		{
-			ext: &openrtb_ext.ExtImpMetaX{
-				PublisherID: "1000",
-				Adunit:      "abc",
-			},
-			errorMsg: "invalid adunit",
-		},
-		{
-			ext: &openrtb_ext.ExtImpMetaX{
-				PublisherID: "abc",
-				Adunit:      "1",
-			},
-			errorMsg: "invalid publisher ID",
-		},
-	}
-
-	for _, test := range tests {
-		errMsg := ""
-		err := validateParams(test.ext)
-		if err != nil {
-			errMsg = err.Error()
-		}
-		assert.Equal(t, test.errorMsg, errMsg)
-	}
+	assert.Equal(t, 1000, metaxExt.PublisherID)
+	assert.Equal(t, 200, metaxExt.Adunit)
 }
 
 func TestPreprocessImp(t *testing.T) {
 	assert.NotNil(t, preprocessImp(nil))
-
-	imp := &openrtb2.Imp{
-		Banner: &openrtb2.Banner{},
-		Video:  &openrtb2.Video{},
-	}
-	preprocessImp(imp)
-	assert.Nil(t, imp.Banner)
 }
 
 func TestAssignBannerSize(t *testing.T) {
@@ -109,6 +64,7 @@ func TestAssignBannerSize(t *testing.T) {
 	assert.Equal(t, b1n.W, ptrutil.ToPtr(int64(300)))
 	assert.Equal(t, b1n.H, ptrutil.ToPtr(int64(250)))
 	assert.Nil(t, err)
+	assert.NotSame(t, b1, b1n)
 
 	b2 := &openrtb2.Banner{
 		Format: []openrtb2.Format{
@@ -122,29 +78,37 @@ func TestAssignBannerSize(t *testing.T) {
 	assert.Equal(t, b2n.W, ptrutil.ToPtr(int64(1080)))
 	assert.Equal(t, b2n.H, ptrutil.ToPtr(int64(720)))
 	assert.Nil(t, err)
+	assert.Same(t, b2, b2n)
+
+	b3 := &openrtb2.Banner{
+		W: ptrutil.ToPtr(int64(1080)),
+		H: ptrutil.ToPtr(int64(720)),
+	}
+	b3n, err := assignBannerSize(b3)
+	assert.Equal(t, b3n.W, ptrutil.ToPtr(int64(1080)))
+	assert.Equal(t, b3n.H, ptrutil.ToPtr(int64(720)))
+	assert.Nil(t, err)
+	assert.Same(t, b3, b3n)
 }
 
 func TestGetBidType(t *testing.T) {
-	imps := []openrtb2.Imp{
-		{ID: "1", Banner: &openrtb2.Banner{}},
-		{ID: "2", Video: &openrtb2.Video{}},
-		{ID: "3", Native: &openrtb2.Native{}},
-		{ID: "4", Audio: &openrtb2.Audio{}},
-	}
-
 	tests := []struct {
-		id      string
+		bid     *openrtb2.Bid
 		bidtype openrtb_ext.BidType
 	}{
-		{"1", openrtb_ext.BidTypeBanner},
-		{"2", openrtb_ext.BidTypeVideo},
-		{"3", openrtb_ext.BidTypeNative},
-		{"4", openrtb_ext.BidTypeAudio},
-		{"unknown", openrtb_ext.BidTypeBanner},
+		{&openrtb2.Bid{AdM: "", MType: openrtb2.MarkupBanner}, openrtb_ext.BidTypeBanner},
+		{&openrtb2.Bid{AdM: "", MType: openrtb2.MarkupVideo}, openrtb_ext.BidTypeVideo},
+		{&openrtb2.Bid{AdM: "", MType: openrtb2.MarkupNative}, openrtb_ext.BidTypeNative},
+		{&openrtb2.Bid{AdM: "", MType: openrtb2.MarkupAudio}, openrtb_ext.BidTypeAudio},
+		{&openrtb2.Bid{AdM: "", MType: 0}, ""},
 	}
 
 	for _, test := range tests {
-		assert.Equal(t, test.bidtype, getBidType(imps, test.id))
+		bidType, err := getBidType(test.bid)
+		assert.Equal(t, test.bidtype, bidType)
+		if bidType == "" {
+			assert.NotNil(t, err)
+		}
 	}
 }
 
