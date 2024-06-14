@@ -201,7 +201,7 @@
             "keywords": "power tools"
           },
           "ext": {
-            "client": "prebid_server_1.0"
+            "client": "prebid_server_1.1"
           }
         },
         "impIDs":["1C86242D-9535-47D6-9576-7B1FE87F282C"]
@@ -350,7 +350,7 @@
             "keywords": "power tools"
           },
           "ext": {
-            "client": "prebid_server_1.0"
+            "client": "prebid_server_1.1"
           }
         },
         "impIDs":["postbid_iframe"]
@@ -421,7 +421,7 @@
       "bids": [
         {
           "bid": {
-            "adm": "<div style=\"cursor:pointer\" ><a rel=\"nofollow\" href=\"https://prebid.net/click\"><img src=\"https://prebid.net/images/image.png\" alt=\"\" width=\"480\" height=\"320\" /></a></div>",
+            "adm": "<a rel=\"nofollow\" href=\"https://prebid.net/click\"><img src=\"https://prebid.net/images/image.png\" alt=\"\" width=\"480\" height=\"320\" /></a>",
             "adomain": [
               "smaato.com"
             ],
