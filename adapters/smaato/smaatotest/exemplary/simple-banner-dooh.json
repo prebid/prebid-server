@@ -1,20 +1,27 @@
 {
   "mockBidRequest": {
     "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
-    "site": {
-      "publisher": {
-        "id": "1100042525"
+    "dooh": {
+      "id": "id",
+      "name": "name",
+      "domain": "domain",
+      "venuetypetax": 1,
+      "content": {
+        "id": "content-id",
+        "title": "content-title",
+        "series": "content-series",
+        "genre": "content-genre",
+        "producer": {
+          "id": "producer-id",
+          "name": "producer-name"
+        },
+        "cat": [
+              "IAB8-6"
+              ],
+        "livestream": 1,
+        "language": "en"
       },
-      "page": "http://localhost:3000/server.html?pbjs_debug=true&endpoint=http://localhost:3000/bidder",
-      "ext": {
-        "data": {
-          "keywords": "power tools",
-          "search": "drill",
-          "content": {
-            "userrating": 4
-          }
-        }
-      }
+      "keywords": "keywords"
     },
     "imp": [
       {
@@ -31,46 +38,10 @@
             }
           ]
         },
-        "bidfloor": 0.00123,
         "ext": {
           "bidder": {
             "publisherId": "1100042525",
             "adspaceId": "130563103"
-          }
-        }
-      },
-      {
-        "id": "postbid_iframe",
-        "video": {
-          "mimes": [
-            "video/mp4",
-            "video/quicktime",
-            "video/3gpp",
-            "video/x-m4v"
-          ],
-          "minduration": 5,
-          "maxduration": 30,
-          "protocols": [
-            7
-          ],
-          "w": 1024,
-          "h": 768,
-          "startdelay": 0,
-          "linearity": 1,
-          "skip": 1,
-          "skipmin": 5,
-          "api": [
-            7
-          ],
-          "ext": {
-            "rewarded": 0
-          }
-        },
-        "bidfloor": 0.00456,
-        "ext": {
-          "bidder": {
-            "publisherId": "1100042526",
-            "adspaceId": "130563104"
           }
         }
       }
@@ -116,7 +87,6 @@
             {
               "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
               "tagid": "130563103",
-              "bidfloor": 0.00123,
               "banner": {
                 "format": [
                   {
@@ -152,12 +122,30 @@
               "us_privacy": "uspConsentString"
             }
           },
-          "site": {
+          "dooh": {
             "publisher": {
               "id": "1100042525"
             },
-            "page": "http://localhost:3000/server.html?pbjs_debug=true&endpoint=http://localhost:3000/bidder",
-            "keywords": "power tools"
+            "id": "id",
+            "name": "name",
+            "domain": "domain",
+            "venuetypetax": 1,
+            "content": {
+              "id": "content-id",
+              "title": "content-title",
+              "series": "content-series",
+              "genre": "content-genre",
+              "producer": {
+                "id": "producer-id",
+                "name": "producer-name"
+              },
+              "cat": [
+                "IAB8-6"
+              ],
+              "livestream": 1,
+              "language": "en"
+            },
+            "keywords": "keywords"
           },
           "ext": {
             "client": "prebid_server_1.1"
@@ -199,116 +187,6 @@
           "cur": "USD"
         }
       }
-    },
-    {
-      "expectedRequest": {
-        "headers": {
-          "Content-Type": ["application/json;charset=utf-8"],
-          "Accept": ["application/json"]
-        },
-        "uri": "https://prebid/bidder",
-        "body": {
-          "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
-          "imp": [
-            {
-              "id": "postbid_iframe",
-              "tagid": "130563104",
-              "bidfloor": 0.00456,
-              "video": {
-                "w": 1024,
-                "h": 768,
-                "ext": {
-                  "rewarded": 0
-                },
-                "mimes": [
-                  "video/mp4",
-                  "video/quicktime",
-                  "video/3gpp",
-                  "video/x-m4v"
-                ],
-                "minduration": 5,
-                "startdelay": 0,
-                "linearity": 1,
-                "maxduration": 30,
-                "skip": 1,
-                "protocols": [
-                  7
-                ],
-                "skipmin": 5,
-                "api": [
-                  7
-                ]
-              }
-            }
-          ],
-          "user": {
-            "ext": {
-              "consent": "gdprConsentString"
-            },
-            "gender": "M",
-            "keywords": "a,b",
-            "yob": 1984
-          },
-          "device": {
-            "ua": "test-user-agent",
-            "ip": "123.123.123.123",
-            "language": "en",
-            "dnt": 0
-          },
-          "regs": {
-            "coppa": 1,
-            "ext": {
-              "gdpr": 1,
-              "us_privacy": "uspConsentString"
-            }
-          },
-          "site": {
-            "publisher": {
-              "id": "1100042526"
-            },
-            "page": "http://localhost:3000/server.html?pbjs_debug=true&endpoint=http://localhost:3000/bidder",
-            "keywords": "power tools"
-          },
-          "ext": {
-            "client": "prebid_server_1.1"
-          }
-        },
-        "impIDs":["postbid_iframe"]
-      },
-      "mockResponse": {
-        "status": 200,
-        "headers": {
-          "X-Smt-Adtype": ["Video"]
-        },
-        "body": {
-          "id": "5ebea288-f13a-4754-be6d-4ade66c68877",
-          "seatbid": [
-            {
-              "seat": "CM6523",
-              "bid": [
-                {
-                  "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?><VAST version=\"2.0\"></VAST>",
-                  "adomain": [
-                    "smaato.com"
-                  ],
-                  "bidderName": "smaato",
-                  "cid": "CM6524",
-                  "crid": "CR69382",
-                  "id": "6906aae8-7f74-4edd-9a4f-f49379a3cadd",
-                  "impid": "postbid_iframe",
-                  "iurl": "https://iurl",
-                  "nurl": "https://nurl",
-                  "price": 0.01,
-                  "w": 1024,
-                  "h": 768
-                }
-              ]
-            }
-          ],
-          "bidid": "04db8629-179d-4bcd-acce-e54722969006",
-          "cur": "USD"
-        }
-      }
     }
   ],
   "expectedBidResponses": [
@@ -333,30 +211,6 @@
             "exp": 300
           },
           "type": "banner"
-        }
-      ]
-    },
-    {
-      "currency": "USD",
-      "bids": [
-        {
-          "bid": {
-            "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?><VAST version=\"2.0\"></VAST>",
-            "adomain": [
-              "smaato.com"
-            ],
-            "cid": "CM6524",
-            "crid": "CR69382",
-            "id": "6906aae8-7f74-4edd-9a4f-f49379a3cadd",
-            "impid": "postbid_iframe",
-            "iurl": "https://iurl",
-            "nurl": "https://nurl",
-            "price": 0.01,
-            "w": 1024,
-            "h": 768,
-            "exp": 300
-          },
-          "type": "video"
         }
       ]
     }
