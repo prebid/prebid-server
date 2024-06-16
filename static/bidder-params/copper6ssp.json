@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "title": "Copper6SSPs Adapter Params",
-  "description": "A schema which validates params accepted by the QT adapter",
+  "description": "A schema which validates params accepted by the Copper6SSP adapter",
   "type": "object",
   "properties": {
     "placementId": {
