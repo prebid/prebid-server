@@ -151,7 +151,7 @@ func buildImpBanner(imp *openrtb2.Imp) error {
 
 	if imp.Banner == nil {
 		return &errortypes.BadInput{
-			Message: fmt.Sprintf("We need a Banner Object in the request"),
+			Message: "We need a Banner Object in the request",
 		}
 	}
 
@@ -161,7 +161,7 @@ func buildImpBanner(imp *openrtb2.Imp) error {
 
 		if len(banner.Format) == 0 {
 			return &errortypes.BadInput{
-				Message: fmt.Sprintf("At least one size is required"),
+				Message: "At least one size is required",
 			}
 		}
 		format := banner.Format[0]

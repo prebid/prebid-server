@@ -39,7 +39,7 @@ Ensure that you deploy the `/static` directory, as Prebid Server requires those 
 
 ## Developing
 
-Prebid Server requires [Go](https://go.dev) version 1.19 or newer. You can develop on any operating system that Go supports; however, please note that our helper scripts are written in bash.
+Prebid Server requires [Go](https://go.dev) version 1.21 or newer. You can develop on any operating system that Go supports; however, please note that our helper scripts are written in bash.
 
 1. Clone The Repository
 ``` bash
@@ -105,3 +105,9 @@ We welcome everyone to contribute to this project by implementing a specificatio
 
 ### Bug Fix
 Bug reports may be submitted by [opening a new issue](https://github.com/prebid/prebid-server/issues/new/choose) and describing the error in detail with the steps to reproduce and example data. A member of the core development team will validate the bug and discuss next steps. You're encouraged to open an exploratory draft pull request to either demonstrate the bug by adding a test or offering a potential fix.
+The quickest way to start developing Prebid Server in a reproducible environment isolated from your host OS
+is by using Visual Studio Code with [Remote Container Setup](devcontainer.md).
+
+## Learning Materials
+
+To understand more about how Prebid Server in Go works and quickly spins up sample instances, refer to the `sample` folder which describes various structured and integrated examples. The examples are designed to run on any platform that supports `docker` container.

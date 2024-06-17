@@ -113,7 +113,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 		}}
 	}
 
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(internalRequest.Imp))
 
 	var errs []error
 	for _, sb := range bidResp.SeatBid {

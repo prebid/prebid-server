@@ -139,7 +139,7 @@ func (a *PulsePointAdapter) MakeBids(internalRequest *openrtb2.BidRequest, exter
 			bid := sb.Bid[i]
 			imp := impsByID[bid.ImpID]
 			bidType := getBidType(imp)
-			if &imp != nil && bidType != "" {
+			if bidType != "" {
 				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 					Bid:     &bid,
 					BidType: bidType,
