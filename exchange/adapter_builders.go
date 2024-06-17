@@ -67,6 +67,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/coinzilla"
 	"github.com/prebid/prebid-server/v2/adapters/colossus"
 	"github.com/prebid/prebid-server/v2/adapters/compass"
+	"github.com/prebid/prebid-server/v2/adapters/concert"
 	"github.com/prebid/prebid-server/v2/adapters/connectad"
 	"github.com/prebid/prebid-server/v2/adapters/consumable"
 	"github.com/prebid/prebid-server/v2/adapters/conversant"
@@ -79,6 +80,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/definemedia"
 	"github.com/prebid/prebid-server/v2/adapters/dianomi"
 	"github.com/prebid/prebid-server/v2/adapters/dmx"
+	"github.com/prebid/prebid-server/v2/adapters/driftpixel"
 	"github.com/prebid/prebid-server/v2/adapters/dxkulture"
 	evolution "github.com/prebid/prebid-server/v2/adapters/e_volution"
 	"github.com/prebid/prebid-server/v2/adapters/edge226"
@@ -278,6 +280,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderCoinzilla:         coinzilla.Builder,
 		openrtb_ext.BidderColossus:          colossus.Builder,
 		openrtb_ext.BidderCompass:           compass.Builder,
+		openrtb_ext.BidderConcert:           concert.Builder,
 		openrtb_ext.BidderConnectAd:         connectad.Builder,
 		openrtb_ext.BidderConsumable:        consumable.Builder,
 		openrtb_ext.BidderConversant:        conversant.Builder,
@@ -292,6 +295,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderEdge226:           edge226.Builder,
 		openrtb_ext.BidderDmx:               dmx.Builder,
 		openrtb_ext.BidderDXKulture:         dxkulture.Builder,
+		openrtb_ext.BidderDriftPixel:        driftpixel.Builder,
 		openrtb_ext.BidderEmtv:              emtv.Builder,
 		openrtb_ext.BidderEmxDigital:        cadentaperturemx.Builder,
 		openrtb_ext.BidderEPlanning:         eplanning.Builder,

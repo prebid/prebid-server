@@ -83,6 +83,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderCoinzilla,
 	BidderColossus,
 	BidderCompass,
+	BidderConcert,
 	BidderConnectAd,
 	BidderConsumable,
 	BidderConversant,
@@ -97,6 +98,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderEdge226,
 	BidderDmx,
 	BidderDXKulture,
+	BidderDriftPixel,
 	BidderEmtv,
 	BidderEmxDigital,
 	BidderEPlanning,
@@ -394,6 +396,7 @@ const (
 	BidderCoinzilla         BidderName = "coinzilla"
 	BidderColossus          BidderName = "colossus"
 	BidderCompass           BidderName = "compass"
+	BidderConcert           BidderName = "concert"
 	BidderConnectAd         BidderName = "connectad"
 	BidderConsumable        BidderName = "consumable"
 	BidderConversant        BidderName = "conversant"
@@ -408,6 +411,7 @@ const (
 	BidderEdge226           BidderName = "edge226"
 	BidderDmx               BidderName = "dmx"
 	BidderDXKulture         BidderName = "dxkulture"
+	BidderDriftPixel        BidderName = "driftpixel"
 	BidderEmtv              BidderName = "emtv"
 	BidderEmxDigital        BidderName = "emx_digital"
 	BidderEPlanning         BidderName = "eplanning"
