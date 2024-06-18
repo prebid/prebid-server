@@ -6043,6 +6043,7 @@ func TestSetSeatNonBid(t *testing.T) {
 	type args struct {
 		bidResponseExt *openrtb_ext.ExtBidResponse
 		seatNonBids    nonBids
+		adapterNonBids []openrtb_ext.SeatNonBid
 	}
 	tests := []struct {
 		name string
@@ -6065,10 +6066,19 @@ func TestSetSeatNonBid(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "adapterNonBids-test",
+			args: args{adapterNonBids: sampleSeatBids("pubmatic", 2)},
+			want: &openrtb_ext.ExtBidResponse{
+				Prebid: &openrtb_ext.ExtResponsePrebid{
+					SeatNonBid: sampleSeatBids("pubmatic", 2),
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := setSeatNonBid(tt.args.bidResponseExt, tt.args.seatNonBids, nil); !reflect.DeepEqual(got, tt.want) {
+			if got := setSeatNonBid(tt.args.bidResponseExt, tt.args.seatNonBids, tt.args.adapterNonBids); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("setSeatNonBid() = %v, want %v", got, tt.want)
 			}
 		})

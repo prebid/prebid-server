@@ -3138,8 +3138,6 @@ func TestSeatNonBid(t *testing.T) {
 					NonBid: []openrtb_ext.NonBid{{
 						ImpId:      "1234",
 						StatusCode: int(ErrorTimeout),
-						Error:      context.DeadlineExceeded.Error(),
-						Ext:        openrtb_ext.NonBidExt{Prebid: openrtb_ext.ExtResponseNonBidPrebid{Bid: openrtb_ext.NonBidObject{Price: 0}}},
 					}}},
 				errors:   []error{&errortypes.Timeout{Message: context.DeadlineExceeded.Error()}},
 				seatBids: []*entities.PbsOrtbSeatBid{{Bids: []*entities.PbsOrtbBid{}, Currency: "USD", Seat: "pubmatic", HttpCalls: []*openrtb_ext.ExtHttpCall{}}},
@@ -3158,8 +3156,8 @@ func TestSeatNonBid(t *testing.T) {
 				seatNonBids: &openrtb_ext.SeatNonBid{
 					Seat: "appnexus",
 					NonBid: []openrtb_ext.NonBid{
-						{ImpId: "1234", StatusCode: int(ErrorBidderUnreachable), Error: "Get \"\": : connection refused: connection refused"},
-						{ImpId: "4567", StatusCode: int(ErrorBidderUnreachable), Error: "Get \"\": : connection refused: connection refused"},
+						{ImpId: "1234", StatusCode: int(ErrorBidderUnreachable)},
+						{ImpId: "4567", StatusCode: int(ErrorBidderUnreachable)},
 					}},
 				seatBids: []*entities.PbsOrtbSeatBid{{Bids: []*entities.PbsOrtbBid{}, Currency: "USD", Seat: "appnexus", HttpCalls: []*openrtb_ext.ExtHttpCall{}}},
 				errors:   []error{&url.Error{Op: "Get", URL: "", Err: &net.OpError{Err: os.NewSyscallError(syscall.ECONNREFUSED.Error(), syscall.ECONNREFUSED)}}},

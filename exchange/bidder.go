@@ -404,8 +404,8 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 			}
 		} else {
 			errs = append(errs, httpInfo.err)
-			nonBidReason := HttpInfoToNonBidReason(httpInfo)
-			proxyNonBids := buildProxyNonBids(httpInfo.request.ImpIDs, nonBidReason, httpInfo.err)
+			nonBidReason := httpInfoToNonBidReason(httpInfo)
+			proxyNonBids := buildProxyNonBids(httpInfo.request.ImpIDs, nonBidReason)
 			seatNonBids.NonBid = append(seatNonBids.NonBid, proxyNonBids...)
 		}
 	}
