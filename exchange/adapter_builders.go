@@ -127,6 +127,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/mgid"
 	"github.com/prebid/prebid-server/v2/adapters/mgidX"
 	"github.com/prebid/prebid-server/v2/adapters/minutemedia"
+	"github.com/prebid/prebid-server/v2/adapters/missena"
 	"github.com/prebid/prebid-server/v2/adapters/mobfoxpb"
 	"github.com/prebid/prebid-server/v2/adapters/mobilefuse"
 	"github.com/prebid/prebid-server/v2/adapters/motorik"
@@ -342,6 +343,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderMgid:              mgid.Builder,
 		openrtb_ext.BidderMgidX:             mgidX.Builder,
 		openrtb_ext.BidderMinuteMedia:       minutemedia.Builder,
+		openrtb_ext.BidderMissena:           missena.Builder,
 		openrtb_ext.BidderMobfoxpb:          mobfoxpb.Builder,
 		openrtb_ext.BidderMobileFuse:        mobilefuse.Builder,
 		openrtb_ext.BidderMotorik:           motorik.Builder,
