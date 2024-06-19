@@ -59,7 +59,7 @@ type ORTB2 struct {
 func NewAmpEndpoint(
 	uuidGenerator uuidutil.UUIDGenerator,
 	ex exchange.Exchange,
-	validator openrtb_ext.BidderParamValidator,
+	requestValidator ortb.RequestValidator,
 	requestsById stored_requests.Fetcher,
 	accounts stored_requests.AccountFetcher,
 	cfg *config.Configuration,
@@ -73,7 +73,7 @@ func NewAmpEndpoint(
 	tmaxAdjustments *exchange.TmaxAdjustmentsPreprocessed,
 ) (httprouter.Handle, error) {
 
-	if ex == nil || validator == nil || requestsById == nil || accounts == nil || cfg == nil || metricsEngine == nil {
+	if ex == nil || requestValidator == nil || requestsById == nil || accounts == nil || cfg == nil || metricsEngine == nil {
 		return nil, errors.New("NewAmpEndpoint requires non-nil arguments.")
 	}
 
@@ -87,7 +87,7 @@ func NewAmpEndpoint(
 	return httprouter.Handle((&endpointDeps{
 		uuidGenerator,
 		ex,
-		validator,
+		requestValidator,
 		requestsById,
 		empty_fetcher.EmptyFetcher{},
 		accounts,
@@ -156,6 +156,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	w.Header().Set("AMP-Access-Control-Allow-Source-Origin", origin)
 	w.Header().Set("Access-Control-Expose-Headers", "AMP-Access-Control-Allow-Source-Origin")
 	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
+	setBrowsingTopicsHeader(w, r)
 
 	// There is no body for AMP requests, so we pass a nil body and ignore the return value.
 	_, rejectErr := hookExecutor.ExecuteEntrypointStage(r, nilBody)
@@ -171,7 +172,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	if errortypes.ContainsFatalError(errL) {
 		w.WriteHeader(http.StatusBadRequest)
 		for _, err := range errortypes.FatalOnly(errL) {
-			w.Write([]byte(fmt.Sprintf("Invalid request: %s\n", err.Error())))
+			fmt.Fprintf(w, "Invalid request: %s\n", err.Error())
 		}
 		labels.RequestStatus = metrics.RequestStatusBadInput
 		return
@@ -224,9 +225,27 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		w.WriteHeader(httpStatus)
 		labels.RequestStatus = metricsStatus
 		for _, err := range errortypes.FatalOnly(errL) {
-			w.Write([]byte(fmt.Sprintf("Invalid request: %s\n", err.Error())))
+			fmt.Fprintf(w, "Invalid request: %s\n", err.Error())
 		}
 		ao.Errors = append(ao.Errors, acctIDErrs...)
+		return
+	}
+
+	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
+	if errs := deps.setFieldsImplicitly(r, reqWrapper, account); len(errs) > 0 {
+		errL = append(errL, errs...)
+	}
+
+	hasStoredAuctionResponses := len(storedAuctionResponses) > 0
+	errs := deps.validateRequest(account, r, reqWrapper, true, hasStoredAuctionResponses, storedBidResponses, false)
+	errL = append(errL, errs...)
+	ao.Errors = append(ao.Errors, errs...)
+	if errortypes.ContainsFatalError(errs) {
+		w.WriteHeader(http.StatusBadRequest)
+		for _, err := range errortypes.FatalOnly(errs) {
+			fmt.Fprintf(w, "Invalid request: %s\n", err.Error())
+		}
+		labels.RequestStatus = metrics.RequestStatusBadInput
 		return
 	}
 
@@ -385,8 +404,13 @@ func sendAmpResponse(
 	ao.AmpTargetingValues = targets
 
 	// Fixes #231
-	enc := json.NewEncoder(w)
+	enc := json.NewEncoder(w) // nosemgrep: json-encoder-needs-type
 	enc.SetEscapeHTML(false)
+	// Explicitly set content type to text/plain, which had previously been
+	// the implied behavior from the time the project was launched.
+	// It's unclear why text/plain was chosen or if it was an oversight,
+	// nevertheless we will keep it as such for compatibility reasons.
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 
 	// If an error happens when encoding the response, there isn't much we can do.
 	// If we've sent _any_ bytes, then Go would have sent the 200 status code first.
@@ -423,6 +447,9 @@ func getExtBidResponse(
 		warnings = make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage)
 	}
 	for _, v := range errortypes.WarningOnly(errs) {
+		if errortypes.ReadScope(v) == errortypes.ScopeDebug && !(reqWrapper != nil && reqWrapper.Test == 1) {
+			continue
+		}
 		bidderErr := openrtb_ext.ExtBidderMessage{
 			Code:    errortypes.ReadCode(v),
 			Message: v.Error(),
@@ -483,9 +510,6 @@ func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openr
 	// move to using the request wrapper
 	req = &openrtb_ext.RequestWrapper{BidRequest: reqNormal}
 
-	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
-	deps.setFieldsImplicitly(httpRequest, req)
-
 	// Need to ensure cache and targeting are turned on
 	e = initAmpTargetingAndCache(req)
 	if errs = append(errs, e...); errortypes.ContainsFatalError(errs) {
@@ -496,10 +520,6 @@ func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openr
 		errs = append(errs, err)
 		return
 	}
-
-	hasStoredResponses := len(storedAuctionResponses) > 0
-	e = deps.validateRequest(req, true, hasStoredResponses, storedBidResponses, false)
-	errs = append(errs, e...)
 
 	return
 }
@@ -514,7 +534,7 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 		return nil, nil, nil, nil, []error{err}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(storedRequestTimeoutMillis)*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(deps.cfg.StoredRequestsTimeout)*time.Millisecond)
 	defer cancel()
 
 	storedRequests, _, errs := deps.storedReqFetcher.FetchRequests(ctx, []string{ampParams.StoredRequestID}, nil)

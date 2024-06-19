@@ -41,7 +41,8 @@
           "site": {
             "page": "http://example.com/test.html"
           }
-        }
+        },
+        "impIDs":["adunit-1"]
       },
       "mockResponse": {
         "status": 404

@@ -124,7 +124,7 @@ func compatBannerImpression(imp *openrtb2.Imp) error {
 	//As banner.w/h are required fields for adkernelAdn platform - take the first format entry
 	if banner.W == nil && banner.H == nil {
 		if len(banner.Format) == 0 {
-			return newBadInputError(fmt.Sprintf("Expected at least one banner.format entry or explicit w/h"))
+			return newBadInputError("Expected at least one banner.format entry or explicit w/h")
 		}
 		format := banner.Format[0]
 		banner.Format = banner.Format[1:]
@@ -184,7 +184,8 @@ func (adapter *adkernelAdnAdapter) buildAdapterRequest(prebidBidRequest *openrtb
 		Method:  "POST",
 		Uri:     url,
 		Body:    reqJSON,
-		Headers: headers}, nil
+		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(imps)}, nil
 }
 
 func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ExtImpAdkernelAdn, imps []openrtb2.Imp) *openrtb2.BidRequest {

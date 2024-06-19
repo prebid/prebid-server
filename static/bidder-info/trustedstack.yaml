@@ -1,0 +1,24 @@
+endpoint: "https://prebid-adapter.trustedstack.com/rtb/pb/trustedstacks2s"
+extra_info: "https://trustedstack.golang.pbs.com"
+maintainer:
+  email: "product@trustedstack.com"
+gvlVendorID: 1288
+endpointCompression: gzip
+openrtb:
+  version: 2.6
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  redirect:
+    url: https://hb.trustedstack.com/cksync?cs=1&type=pbs&ovsid=setstatuscode&bidder=trustedstack&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}
+    userMacro: "<vsid>"

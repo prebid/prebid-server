@@ -23,17 +23,22 @@ type response struct {
 }
 
 type bidResponse struct {
-	ID     string  `json:"id"`
-	BidID  string  `json:"bidId"`
-	CPM    float64 `json:"cpm"`
-	Width  int64   `json:"width"`
-	Height int64   `json:"height"`
-	Ad     string  `json:"ad"`
-	CrID   string  `json:"crid"`
-	Mtype  string  `json:"mtype"`
+	ID     string          `json:"id"`
+	BidID  string          `json:"bidId"`
+	CPM    float64         `json:"cpm"`
+	Width  int64           `json:"width"`
+	Height int64           `json:"height"`
+	Ad     string          `json:"ad"`
+	CrID   string          `json:"crid"`
+	Mtype  string          `json:"mtype"`
+	DSA    json.RawMessage `json:"dsa"`
 }
 
-func (b bidResponse) resolveMediaType() (mt openrtb2.MarkupType, bt openrtb_ext.BidType, err error) {
+type bidExt struct {
+	DSA json.RawMessage `json:"dsa,omitempty"`
+}
+
+func (b *bidResponse) resolveMediaType() (mt openrtb2.MarkupType, bt openrtb_ext.BidType, err error) {
 	switch b.Mtype {
 	case "banner":
 		return openrtb2.MarkupBanner, openrtb_ext.BidTypeBanner, nil
@@ -82,6 +87,15 @@ func (a *adapter) MakeBids(bidRequest *openrtb2.BidRequest, requestData *adapter
 			MType: markupType,
 		}
 
+		if bid.DSA != nil {
+			dsaJson, err := json.Marshal(bidExt{bid.DSA})
+			if err != nil {
+				errors = append(errors, err)
+			} else {
+				openRtbBid.Ext = dsaJson
+			}
+		}
+
 		bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
 			Bid:     &openRtbBid,
 			BidType: bidType,
@@ -126,6 +140,7 @@ func (a *adapter) MakeRequests(bidRequest *openrtb2.BidRequest, extraRequestInfo
 		Uri:     a.URL,
 		Body:    reqJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(bidRequest.Imp),
 	}}, errors
 }
 

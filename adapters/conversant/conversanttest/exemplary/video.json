@@ -1,6 +1,7 @@
 {
   "mockBidRequest": {
     "id": "testauction",
+    "cur": ["EUR"],
     "imp": [
       {
         "id": "1",
@@ -8,10 +9,11 @@
           "w": 300,
           "h": 250
         },
+        "bidfloor": 2.00,
+        "bidfloorcur": "EUR",
         "ext": {
           "bidder": {
             "site_id": "108060",
-            "bidfloor": 0.01,
             "tag_id": "mytag",
             "secure": 1,
             "mimes": ["video/mp4", "video/x-flv"],
@@ -31,6 +33,15 @@
     },
     "site": {
       "domain": "www.mypage.com"
+    },
+    "ext": {
+      "prebid": {
+        "currency": {
+          "rates": {
+            "USD": {"EUR": 0.08}
+          }
+        }
+      }
     }
   },
   "httpCalls": [
@@ -39,6 +50,7 @@
         "uri": "",
         "body": {
           "id": "testauction",
+          "cur": ["USD"],
           "site": {
             "id": "108060",
             "domain": "www.mypage.com"
@@ -48,7 +60,8 @@
               "id": "1",
               "tagid": "mytag",
               "secure": 1,
-              "bidfloor": 0.01,
+              "bidfloor": 25.0,
+              "bidfloorcur":  "USD",
               "displaymanager": "prebid-s2s",
               "displaymanagerver": "2.0.0",
               "video": {
@@ -66,7 +79,6 @@
               "ext": {
                 "bidder": {
                   "site_id": "108060",
-                  "bidfloor": 0.01,
                   "tag_id": "mytag",
                   "secure": 1,
                   "mimes": [
@@ -86,8 +98,18 @@
             "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.91 Safari/537.36",
             "ip": "192.168.1.1",
             "dnt": 1
+          },
+          "ext": {
+            "prebid": {
+              "currency": {
+                "rates": {
+                  "USD": {"EUR": 0.08}
+                }
+              }
+            }
           }
-        }
+        },
+        "impIDs":["1"]
       },
       "mockResponse": {
         "status": 200,

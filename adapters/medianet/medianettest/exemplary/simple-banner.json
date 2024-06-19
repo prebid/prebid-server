@@ -47,7 +47,8 @@
                             }
                         }
                     ]
-                }
+                },
+                "impIDs":["1"]
             },
 
             "mockResponse": {
@@ -65,7 +66,8 @@
                                     "adm": "some-test-ad",
                                     "crid": "test-crid",
                                     "h": 50,
-                                    "w": 320
+                                    "w": 320,
+                                    "mtype": 1
                                 }
                             ]
                         }
@@ -88,7 +90,8 @@
                         "adm": "some-test-ad",
                         "crid": "test-crid",
                         "w": 320,
-                        "h": 50
+                        "h": 50,
+                        "mtype": 1
                     },
                     "type": "banner"
                 }

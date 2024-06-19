@@ -136,6 +136,7 @@ func flatImp(requestCopy openrtb2.BidRequest, impCopy openrtb2.Imp, headers http
 		Uri:     endpoint,
 		Body:    reqJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(requestCopy.Imp),
 	}, nil
 }
 

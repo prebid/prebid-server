@@ -229,6 +229,12 @@ func preloadLabelValues(m *Metrics, syncerKeys []string, moduleStageNames map[st
 		versionLabel: tcfVersionValues,
 	})
 
+	if !m.metricsDisabled.AdapterBuyerUIDScrubbed {
+		preloadLabelValuesForCounter(m.adapterScrubbedBuyerUIDs, map[string][]string{
+			adapterLabel: adapterValues,
+		})
+	}
+
 	if !m.metricsDisabled.AdapterGDPRRequestBlocked {
 		preloadLabelValuesForCounter(m.adapterGDPRBlockedRequests, map[string][]string{
 			adapterLabel: adapterValues,

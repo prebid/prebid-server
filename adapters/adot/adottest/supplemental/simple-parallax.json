@@ -48,7 +48,8 @@
               }
             }
           ]
-        }
+        },
+        "impIDs":["test-imp-parallax-id"]
       },
       "mockResponse": {
         "status": 200,
