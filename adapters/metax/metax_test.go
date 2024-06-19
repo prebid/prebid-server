@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/adapters/adapterstest"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
@@ -51,6 +52,26 @@ func TestParseBidderExt(t *testing.T) {
 
 func TestPreprocessImp(t *testing.T) {
 	assert.NotNil(t, preprocessImp(nil))
+
+	imp1 := &openrtb2.Imp{
+		Banner: &openrtb2.Banner{
+			Format: []openrtb2.Format{
+				{W: 300, H: 250},
+				{W: 728, H: 90},
+			},
+		},
+	}
+	err1 := preprocessImp(imp1)
+	assert.Nil(t, err1)
+
+	imp2 := &openrtb2.Imp{
+		Video: &openrtb2.Video{
+			W: ptrutil.ToPtr(int64(1920)),
+			H: ptrutil.ToPtr(int64(1920)),
+		},
+	}
+	err2 := preprocessImp(imp2)
+	assert.Nil(t, err2)
 }
 
 func TestAssignBannerSize(t *testing.T) {
@@ -71,24 +92,44 @@ func TestAssignBannerSize(t *testing.T) {
 			{W: 300, H: 250},
 			{W: 728, H: 90},
 		},
-		W: ptrutil.ToPtr(int64(1080)),
-		H: ptrutil.ToPtr(int64(720)),
+		W: ptrutil.ToPtr(int64(336)),
+		H: ptrutil.ToPtr(int64(280)),
 	}
 	b2n, err := assignBannerSize(b2)
-	assert.Equal(t, b2n.W, ptrutil.ToPtr(int64(1080)))
-	assert.Equal(t, b2n.H, ptrutil.ToPtr(int64(720)))
+	assert.Equal(t, b2n.W, ptrutil.ToPtr(int64(336)))
+	assert.Equal(t, b2n.H, ptrutil.ToPtr(int64(280)))
 	assert.Nil(t, err)
 	assert.Same(t, b2, b2n)
 
 	b3 := &openrtb2.Banner{
-		W: ptrutil.ToPtr(int64(1080)),
-		H: ptrutil.ToPtr(int64(720)),
+		W: ptrutil.ToPtr(int64(336)),
+		H: ptrutil.ToPtr(int64(280)),
 	}
 	b3n, err := assignBannerSize(b3)
-	assert.Equal(t, b3n.W, ptrutil.ToPtr(int64(1080)))
-	assert.Equal(t, b3n.H, ptrutil.ToPtr(int64(720)))
+	assert.Equal(t, b3n.W, ptrutil.ToPtr(int64(336)))
+	assert.Equal(t, b3n.H, ptrutil.ToPtr(int64(280)))
 	assert.Nil(t, err)
 	assert.Same(t, b3, b3n)
+
+	b4 := &openrtb2.Banner{
+		Format: []openrtb2.Format{
+			{W: 300, H: 250},
+			{W: 728, H: 90},
+		},
+		W: ptrutil.ToPtr(int64(336)),
+	}
+	b4n, err := assignBannerSize(b4)
+	assert.Equal(t, b4n.W, ptrutil.ToPtr(int64(300)))
+	assert.Equal(t, b4n.H, ptrutil.ToPtr(int64(250)))
+	assert.Nil(t, err)
+	assert.NotSame(t, b4, b4n)
+
+	b5 := &openrtb2.Banner{}
+	b5n, err := assignBannerSize(b5)
+	assert.Nil(t, b5n.W)
+	assert.Nil(t, b5n.H)
+	assert.Nil(t, err)
+	assert.Same(t, b5, b5n)
 }
 
 func TestGetBidType(t *testing.T) {
@@ -116,10 +157,63 @@ func TestBuilder(t *testing.T) {
 	serverCfg := config.Server{}
 
 	cfg1 := config.Adapter{Endpoint: "https://hb.metaxads.com/prebid"}
-	_, err1 := Builder("test", cfg1, serverCfg)
+	builder1, err1 := Builder("test", cfg1, serverCfg)
+	assert.NotNil(t, builder1)
 	assert.Nil(t, err1)
 
+	// empty endpoint
 	cfg2 := config.Adapter{Endpoint: ""}
-	_, err2 := Builder("test2", cfg2, serverCfg)
+	builder2, err2 := Builder("test2", cfg2, serverCfg)
+	assert.Nil(t, builder2)
 	assert.NotNil(t, err2)
+
+	// invalid endpoint
+	cfg3 := config.Adapter{Endpoint: "https://hb.metaxads.com/prebid?a={{}}"}
+	builder3, err3 := Builder("test3", cfg3, serverCfg)
+	assert.Nil(t, builder3)
+	assert.NotNil(t, err3)
+}
+
+func TestMakeRequests(t *testing.T) {
+	builder1, _ := Builder("metax", config.Adapter{Endpoint: "https://hb.metaxads.com/prebid?sid={{.PublisherId}}"}, config.Server{})
+	reqDatas1, err1 := builder1.MakeRequests(&openrtb2.BidRequest{
+		Imp: []openrtb2.Imp{
+			{
+				Ext: []byte(`
+					{
+						"bidder": {
+							"publisherId": 100,
+							"adunit": 2
+						}
+					}
+				`),
+			},
+		},
+		Ext: []byte(`{invalid json}`),
+	}, &adapters.ExtraRequestInfo{})
+	assert.Equal(t, 0, len(reqDatas1))
+	assert.Equal(t, 1, len(err1))
+
+	builder2, _ := Builder(
+		"metax",
+		config.Adapter{Endpoint: "https://hb.metaxads.com/prebid?sid={{.PublisherID}}&adunit={{.AdUnit}}&source=prebid-server"},
+		config.Server{},
+	)
+	reqDatas2, err2 := builder2.MakeRequests(&openrtb2.BidRequest{
+		Imp: []openrtb2.Imp{
+			{
+				Ext: []byte(`
+					{
+						"bidder": {
+							"publisherId": 100,
+							"adunit": 2
+						}
+					}
+				`),
+			},
+		},
+		Ext: []byte(`{invalid json}`),
+	}, &adapters.ExtraRequestInfo{})
+	assert.Equal(t, 0, len(reqDatas2))
+	assert.Equal(t, 1, len(err2))
 }

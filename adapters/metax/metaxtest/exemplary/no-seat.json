@@ -82,7 +82,7 @@
         ]
       },
       "mockResponse": {
-        "status": 204,
+        "status": 200,
         "body": {
           "id": "test-request-id",
           "seatbid": []

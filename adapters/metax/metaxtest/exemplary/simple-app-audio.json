@@ -10,30 +10,14 @@
     "imp": [
       {
         "id": "test-imp-id",
-        "banner": {
-          "format": [
-            {
-              "w": 728,
-              "h": 90
-            }
-          ]
-        },
-        "video": {
+        "audio": {
           "mimes": [
-            "video/mp4"
+            "audio/mp4"
           ],
           "protocols": [
-            2,
-            3,
-            5,
-            6
-          ],
-          "w": 1024,
-          "h": 576
-        },
-        "native": {
-          "request": "{json string 1}",
-          "ver": "1.2"
+            9,
+            10
+          ]
         },
         "ext": {
           "bidder": {
@@ -59,32 +43,14 @@
           "imp": [
             {
               "id": "test-imp-id",
-              "banner": {
-                "format": [
-                  {
-                    "w": 728,
-                    "h": 90
-                  }
-                ],
-                "w": 728,
-                "h": 90
-              },
-              "video": {
+              "audio": {
                 "mimes": [
-                  "video/mp4"
+                  "audio/mp4"
                 ],
                 "protocols": [
-                  2,
-                  3,
-                  5,
-                  6
-                ],
-                "w": 1024,
-                "h": 576
-              },
-              "native": {
-                "request": "{json string 1}",
-                "ver": "1.2"
+                  9,
+                  10
+                ]
               },
               "ext": {
                 "bidder": {
@@ -101,14 +67,6 @@
       },
       "mockResponse": {
         "status": 200,
-        "headers": {
-          "Accept": [
-            "application/json"
-          ],
-          "Content-Type": [
-            "application/json;charset=utf-8"
-          ]
-        },
         "body": {
           "id": "test-request-id",
           "seatbid": [
@@ -121,9 +79,7 @@
                   "price": 0.500000,
                   "adm": "some-test-ad",
                   "crid": "test-crid",
-                  "w": 728,
-                  "h": 90,
-                  "mtype": 1
+                  "mtype": 3
                 }
               ]
             }
@@ -144,11 +100,9 @@
             "price": 0.5,
             "adm": "some-test-ad",
             "crid": "test-crid",
-            "w": 728,
-            "h": 90,
-            "mtype": 1
+            "mtype": 3
           },
-          "type": "banner"
+          "type": "audio"
         }
       ]
     }

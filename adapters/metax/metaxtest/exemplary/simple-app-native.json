@@ -5,7 +5,7 @@
       "bundle": "com.prebid"
     },
     "device": {
-      "ifa":"ec943cb9-61ec-460f-a925-6489c3fcc4e3"
+      "ifa": "ec943cb9-61ec-460f-a925-6489c3fcc4e3"
     },
     "imp": [
       {
@@ -39,7 +39,7 @@
           "bundle": "com.prebid"
         },
         "device": {
-          "ifa":"ec943cb9-61ec-460f-a925-6489c3fcc4e3"
+          "ifa": "ec943cb9-61ec-460f-a925-6489c3fcc4e3"
         },
         "imp": [
           {

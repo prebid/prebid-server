@@ -4,8 +4,8 @@
     "site": {
       "page": "prebid.org"
     },
-    "device": {
-      "ifa":"ec943cb9-61ec-460f-a925-6489c3fcc4e3"
+    "user": {
+      "buyeruid": "be5e209ad46927520000000000000000"
     },
     "imp": [
       {
@@ -38,8 +38,8 @@
         "site": {
           "page": "prebid.org"
         },
-        "device": {
-          "ifa":"ec943cb9-61ec-460f-a925-6489c3fcc4e3"
+        "user": {
+          "buyeruid": "be5e209ad46927520000000000000000"
         },
         "imp": [
           {

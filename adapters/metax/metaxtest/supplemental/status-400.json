@@ -61,12 +61,13 @@
             }
           ]
         },
-        "impIDs":["test-imp-id"]
+        "impIDs": [
+          "test-imp-id"
+        ]
       },
       "mockResponse": {
         "status": 400,
-        "body": {
-        }
+        "body": "invalid params"
       }
     }
   ],

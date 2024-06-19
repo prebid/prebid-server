@@ -5,7 +5,7 @@
       "bundle": "com.prebid"
     },
     "device": {
-      "ifa":"ec943cb9-61ec-460f-a925-6489c3fcc4e3"
+      "ifa": "ec943cb9-61ec-460f-a925-6489c3fcc4e3"
     },
     "imp": [
       {
@@ -89,7 +89,7 @@
             "bundle": "com.prebid"
           },
           "device": {
-            "ifa":"ec943cb9-61ec-460f-a925-6489c3fcc4e3"
+            "ifa": "ec943cb9-61ec-460f-a925-6489c3fcc4e3"
           },
           "imp": [
             {
@@ -116,7 +116,9 @@
             }
           ]
         },
-        "impIDs":["imp-1"]
+        "impIDs": [
+          "imp-1"
+        ]
       },
       "mockResponse": {
         "status": 200,
@@ -160,7 +162,7 @@
             "bundle": "com.prebid"
           },
           "device": {
-            "ifa":"ec943cb9-61ec-460f-a925-6489c3fcc4e3"
+            "ifa": "ec943cb9-61ec-460f-a925-6489c3fcc4e3"
           },
           "imp": [
             {
@@ -187,7 +189,9 @@
             }
           ]
         },
-        "impIDs":["imp-2"]
+        "impIDs": [
+          "imp-2"
+        ]
       },
       "mockResponse": {
         "status": 200,
@@ -231,7 +235,7 @@
             "bundle": "com.prebid"
           },
           "device": {
-            "ifa":"ec943cb9-61ec-460f-a925-6489c3fcc4e3"
+            "ifa": "ec943cb9-61ec-460f-a925-6489c3fcc4e3"
           },
           "imp": [
             {
@@ -255,7 +259,9 @@
             }
           ]
         },
-        "impIDs":["imp-3"]
+        "impIDs": [
+          "imp-3"
+        ]
       },
       "mockResponse": {
         "status": 200,
