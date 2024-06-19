@@ -86,8 +86,8 @@ const (
 	// StatusUnknownBidder specifies a requested bidder is unknown to Prebid Server.
 	StatusUnknownBidder
 
-	// StatusTypeNotSupported specifies a requested sync type is not supported by a specific bidder.
-	StatusTypeNotSupported
+	// StatusRejectedByFilter specifies a requested sync type is not supported by a specific bidder.
+	StatusRejectedByFilter
 
 	// StatusDuplicate specifies the bidder is a duplicate or shared a syncer key with another bidder choice.
 	StatusDuplicate
@@ -181,7 +181,7 @@ func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}
 	syncersSeen[syncer.Key()] = struct{}{}
 
 	if !syncer.SupportsType(syncTypeFilter.ForBidder(strings.ToLower(bidder))) {
-		return nil, BidderEvaluation{Status: StatusTypeNotSupported, Bidder: bidder, SyncerKey: syncer.Key()}
+		return nil, BidderEvaluation{Status: StatusRejectedByFilter, Bidder: bidder, SyncerKey: syncer.Key()}
 	}
 
 	if cookie.HasLiveSync(syncer.Key()) {
