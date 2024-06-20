@@ -1,4 +1,5 @@
-# This adapter is ported from PBS-Java to PBS-Go for Prebid. Please open a GitHub issue instead of directly contacting the maintainer for technical issues.
+# This adapter is ported from PBS-Java to PBS-Go by Prebid. Please open a GitHub issue instead of 
+# directly contacting the maintainer for technical issues.
 endpoint: https://prebid.intertechsrvcs.com/prebid/{{.PageID}}?imp-id={{.ImpID}}&ssp-id=10500
 endpointCompression: GZIP
 maintainer:
@@ -10,9 +11,5 @@ capabilities:
       - native
 userSync:
   redirect:
-    url: https://prebid.intertechsrvcs.com/mapuid/intertech/?ssp-id=10500&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}
-    userMacro: "UID"
-    redirect-url: /setuid?bidder=intertech&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&uid={{.UID}}
-  cookieFamilyName: intertech
-  type: redirect
-  supportCORS: false
+    url: https://prebid.intertechsrvcs.com/mapuid/intertech/?ssp-id=10500&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&location={{.RedirectURL}}
+    userMacro: "{UID}"

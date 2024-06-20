@@ -186,9 +186,9 @@
                 {
                   "id": "bid_id2",
                   "impid": "imp_id2",
-                  "price": 1.25,
+                  "price": 2.50,
                   "crid": "crid",
-                  "adm": "adm001",
+                  "adm": "adm002",
                   "h": 800,
                   "w": 400
                 }
@@ -223,8 +223,8 @@
           "bid": {
             "id": "bid_id2",
             "impid": "imp_id2",
-            "price": 1.25,
-            "adm": "adm001",
+            "price": 2.50,
+            "adm": "adm002",
             "crid": "crid",
             "w": 400,
             "h": 800

@@ -187,13 +187,22 @@ func modifyBanner(banner openrtb2.Banner) (*openrtb2.Banner, error) {
 	bannerCopy := banner
 	format := bannerCopy.Format
 
-	if bannerCopy.W == nil || bannerCopy.H == nil || *bannerCopy.W == 0 || *bannerCopy.H == 0 {
-		if len(format) == 0 {
-			return nil, &errortypes.BadInput{
-				Message: "Invalid size provided for Banner",
-			}
+	hasRootSize := bannerCopy.W != nil && bannerCopy.H != nil && *bannerCopy.W > 0 && *bannerCopy.H > 0
+	if !hasRootSize && len(format) == 0 {
+		w := 0
+		h := 0
+		if bannerCopy.W != nil {
+			w = int(*bannerCopy.W)
 		}
+		if bannerCopy.H != nil {
+			h = int(*bannerCopy.H)
+		}
+		return nil, &errortypes.BadInput{
+			Message: fmt.Sprintf("Invalid sizes provided for Banner %dx%d", w, h),
+		}
+	}
 
+	if !hasRootSize {
 		firstFormat := format[0]
 		bannerCopy.H = &firstFormat.H
 		bannerCopy.W = &firstFormat.W
