@@ -113,7 +113,8 @@
                             "gdpr": 1
                         }
                     }
-                }
+                },
+                "impIDs":["slot-standard","slot-onecode"]
             },
             "mockResponse": {
                 "status": 200,

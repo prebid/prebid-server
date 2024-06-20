@@ -11,6 +11,7 @@ import (
 
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
@@ -157,8 +158,10 @@ func TestDefaults(t *testing.T) {
 	cmpBools(t, "account_debug", true, cfg.Metrics.Disabled.AccountDebug)
 	cmpBools(t, "account_stored_responses", true, cfg.Metrics.Disabled.AccountStoredResponses)
 	cmpBools(t, "adapter_connections_metrics", true, cfg.Metrics.Disabled.AdapterConnectionMetrics)
+	cmpBools(t, "adapter_buyeruid_scrubbed", true, cfg.Metrics.Disabled.AdapterBuyerUIDScrubbed)
 	cmpBools(t, "adapter_gdpr_request_blocked", false, cfg.Metrics.Disabled.AdapterGDPRRequestBlocked)
 	cmpStrings(t, "certificates_file", "", cfg.PemCertsFile)
+	cmpInts(t, "stored_requests_timeout_ms", 50, cfg.StoredRequestsTimeout)
 	cmpBools(t, "stored_requests.filesystem.enabled", false, cfg.StoredRequests.Files.Enabled)
 	cmpStrings(t, "stored_requests.filesystem.directorypath", "./stored_requests/data/by_id", cfg.StoredRequests.Files.Path)
 	cmpBools(t, "auto_gen_source_tid", true, cfg.AutoGenSourceTID)
@@ -203,6 +206,7 @@ func TestDefaults(t *testing.T) {
 	cmpInts(t, "account_defaults.price_floors.fetch.period_sec", 3600, cfg.AccountDefaults.PriceFloors.Fetcher.Period)
 	cmpInts(t, "account_defaults.price_floors.fetch.max_age_sec", 86400, cfg.AccountDefaults.PriceFloors.Fetcher.MaxAge)
 	cmpInts(t, "account_defaults.price_floors.fetch.max_schema_dims", 0, cfg.AccountDefaults.PriceFloors.Fetcher.MaxSchemaDims)
+	cmpStrings(t, "account_defaults.privacy.topicsdomain", "", cfg.AccountDefaults.Privacy.PrivacySandbox.TopicsDomain)
 	cmpBools(t, "account_defaults.privacy.privacysandbox.cookiedeprecation.enabled", false, cfg.AccountDefaults.Privacy.PrivacySandbox.CookieDeprecation.Enabled)
 	cmpInts(t, "account_defaults.privacy.privacysandbox.cookiedeprecation.ttl_sec", 604800, cfg.AccountDefaults.Privacy.PrivacySandbox.CookieDeprecation.TTLSec)
 
@@ -397,6 +401,7 @@ external_url: http://prebid-server.prebid.org/
 host: prebid-server.prebid.org
 port: 1234
 admin_port: 5678
+stored_requests_timeout_ms: 75
 compression:
     request:
         enable_gzip: true
@@ -443,6 +448,7 @@ metrics:
     account_debug: false
     account_stored_responses: false
     adapter_connections_metrics: true
+    adapter_buyeruid_scrubbed: false
     adapter_gdpr_request_blocked: true
     account_modules_metrics: true
 blacklisted_apps: ["spamAppID","sketchy-app-id"]
@@ -527,7 +533,11 @@ account_defaults:
             anon_keep_bits: 50
         ipv4:
             anon_keep_bits: 20
+        dsa:
+            default: "{\"dsarequired\":3,\"pubrender\":1,\"datatopub\":2,\"transparency\":[{\"domain\":\"domain.com\",\"dsaparams\":[1]}]}"
+            gdpr_only: true
         privacysandbox:
+            topicsdomain: "test.com"
             cookiedeprecation:
                 enabled: true
                 ttl_sec: 86400
@@ -604,6 +614,7 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "garbage_collector_threshold", 1, cfg.GarbageCollectorThreshold)
 	cmpInts(t, "auction_timeouts_ms.default", 50, int(cfg.AuctionTimeouts.Default))
 	cmpInts(t, "auction_timeouts_ms.max", 123, int(cfg.AuctionTimeouts.Max))
+	cmpInts(t, "stored_request_timeout_ms", 75, cfg.StoredRequestsTimeout)
 	cmpStrings(t, "cache.scheme", "http", cfg.CacheURL.Scheme)
 	cmpStrings(t, "cache.host", "prebidcache.net", cfg.CacheURL.Host)
 	cmpStrings(t, "cache.query", "uuid=%PBS_CACHE_UUID%", cfg.CacheURL.Query)
@@ -660,11 +671,30 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "account_defaults.price_floors.fetch.max_age_sec", 6000, cfg.AccountDefaults.PriceFloors.Fetcher.MaxAge)
 	cmpInts(t, "account_defaults.price_floors.fetch.max_schema_dims", 10, cfg.AccountDefaults.PriceFloors.Fetcher.MaxSchemaDims)
 
+	// Assert the DSA was correctly unmarshalled and DefaultUnpacked was built correctly
+	expectedDSA := AccountDSA{
+		Default: "{\"dsarequired\":3,\"pubrender\":1,\"datatopub\":2,\"transparency\":[{\"domain\":\"domain.com\",\"dsaparams\":[1]}]}",
+		DefaultUnpacked: &openrtb_ext.ExtRegsDSA{
+			Required:  ptrutil.ToPtr[int8](3),
+			PubRender: ptrutil.ToPtr[int8](1),
+			DataToPub: ptrutil.ToPtr[int8](2),
+			Transparency: []openrtb_ext.ExtBidDSATransparency{
+				{
+					Domain: "domain.com",
+					Params: []int{1},
+				},
+			},
+		},
+		GDPROnly: true,
+	}
+	assert.Equal(t, &expectedDSA, cfg.AccountDefaults.Privacy.DSA)
+
 	cmpBools(t, "account_defaults.events.enabled", true, cfg.AccountDefaults.Events.Enabled)
 
 	cmpInts(t, "account_defaults.privacy.ipv6.anon_keep_bits", 50, cfg.AccountDefaults.Privacy.IPv6Config.AnonKeepBits)
 	cmpInts(t, "account_defaults.privacy.ipv4.anon_keep_bits", 20, cfg.AccountDefaults.Privacy.IPv4Config.AnonKeepBits)
 
+	cmpStrings(t, "account_defaults.privacy.topicsdomain", "test.com", cfg.AccountDefaults.Privacy.PrivacySandbox.TopicsDomain)
 	cmpBools(t, "account_defaults.privacy.cookiedeprecation.enabled", true, cfg.AccountDefaults.Privacy.PrivacySandbox.CookieDeprecation.Enabled)
 	cmpInts(t, "account_defaults.privacy.cookiedeprecation.ttl_sec", 86400, cfg.AccountDefaults.Privacy.PrivacySandbox.CookieDeprecation.TTLSec)
 
@@ -833,6 +863,7 @@ func TestFullConfig(t *testing.T) {
 	cmpBools(t, "account_debug", false, cfg.Metrics.Disabled.AccountDebug)
 	cmpBools(t, "account_stored_responses", false, cfg.Metrics.Disabled.AccountStoredResponses)
 	cmpBools(t, "adapter_connections_metrics", true, cfg.Metrics.Disabled.AdapterConnectionMetrics)
+	cmpBools(t, "adapter_buyeruid_scrubbed", false, cfg.Metrics.Disabled.AdapterBuyerUIDScrubbed)
 	cmpBools(t, "adapter_gdpr_request_blocked", true, cfg.Metrics.Disabled.AdapterGDPRRequestBlocked)
 	cmpStrings(t, "certificates_file", "/etc/ssl/cert.pem", cfg.PemCertsFile)
 	cmpStrings(t, "request_validation.ipv4_private_networks", "1.1.1.0/24", cfg.RequestValidation.IPv4PrivateNetworks[0])
@@ -884,6 +915,7 @@ func TestValidateConfig(t *testing.T) {
 				Type: "none",
 			},
 		},
+		StoredRequestsTimeout: 50,
 		StoredVideo: StoredRequests{
 			Files: FileFetcherConfig{Enabled: true},
 			InMemoryCache: InMemoryCache{
@@ -1143,6 +1175,16 @@ func TestIsConfigInfoPresent(t *testing.T) {
 		result := isConfigInfoPresent(v, tt.keyPrefix, tt.fields)
 		assert.Equal(t, tt.wantResult, result, tt.description)
 	}
+}
+
+func TestNegativeOrZeroStoredRequestsTimeout(t *testing.T) {
+	cfg, v := newDefaultConfig(t)
+
+	cfg.StoredRequestsTimeout = -1
+	assertOneError(t, cfg.validate(v), "cfg.stored_requests_timeout_ms must be > 0. Got -1")
+
+	cfg.StoredRequestsTimeout = 0
+	assertOneError(t, cfg.validate(v), "cfg.stored_requests_timeout_ms must be > 0. Got 0")
 }
 
 func TestNegativeRequestSize(t *testing.T) {
@@ -1851,5 +1893,72 @@ func TestTCF2FeatureOneVendorException(t *testing.T) {
 		value := tcf2.FeatureOneVendorException(tt.giveBidder)
 
 		assert.Equal(t, tt.wantIsVendorException, value, tt.description)
+	}
+}
+
+func TestUnpackDSADefault(t *testing.T) {
+	tests := []struct {
+		name      string
+		giveDSA   *AccountDSA
+		wantError bool
+	}{
+		{
+			name:      "nil",
+			giveDSA:   nil,
+			wantError: false,
+		},
+		{
+			name: "empty",
+			giveDSA: &AccountDSA{
+				Default: "",
+			},
+			wantError: false,
+		},
+		{
+			name: "empty_json",
+			giveDSA: &AccountDSA{
+				Default: "{}",
+			},
+			wantError: false,
+		},
+		{
+			name: "well_formed",
+			giveDSA: &AccountDSA{
+				Default: "{\"dsarequired\":3,\"pubrender\":1,\"datatopub\":2,\"transparency\":[{\"domain\":\"domain.com\",\"dsaparams\":[1]}]}",
+			},
+			wantError: false,
+		},
+		{
+			name: "well_formed_with_extra_fields",
+			giveDSA: &AccountDSA{
+				Default: "{\"unmappedkey\":\"unmappedvalue\",\"dsarequired\":3,\"pubrender\":1,\"datatopub\":2,\"transparency\":[{\"domain\":\"domain.com\",\"dsaparams\":[1]}]}",
+			},
+			wantError: false,
+		},
+		{
+			name: "invalid_type",
+			giveDSA: &AccountDSA{
+				Default: "{\"dsarequired\":\"invalid\",\"pubrender\":1,\"datatopub\":2,\"transparency\":[{\"domain\":\"domain.com\",\"dsaparams\":[1]}]}",
+			},
+			wantError: true,
+		},
+		{
+			name: "invalid_malformed_missing_colon",
+			giveDSA: &AccountDSA{
+				Default: "{\"dsarequired\"3,\"pubrender\":1,\"datatopub\":2,\"transparency\":[{\"domain\":\"domain.com\",\"dsaparams\":[1]}]}",
+			},
+			wantError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := UnpackDSADefault(tt.giveDSA)
+			if tt.wantError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
 	}
 }

@@ -251,3 +251,44 @@ func (err *FailedToMarshal) Code() int {
 func (err *FailedToMarshal) Severity() Severity {
 	return SeverityFatal
 }
+
+// DebugWarning is a generic non-fatal error used in debug mode. Throughout the codebase, an error can
+// only be a warning if it's of the type defined below
+type DebugWarning struct {
+	Message     string
+	WarningCode int
+}
+
+func (err *DebugWarning) Error() string {
+	return err.Message
+}
+
+func (err *DebugWarning) Code() int {
+	return err.WarningCode
+}
+
+func (err *DebugWarning) Severity() Severity {
+	return SeverityWarning
+}
+
+func (err *DebugWarning) Scope() Scope {
+	return ScopeDebug
+}
+
+// InvalidImpFirstPartyData should be used when the retrieved account config cannot be unmarshaled
+// These errors will be written to http.ResponseWriter before canceling execution
+type InvalidImpFirstPartyData struct {
+	Message string
+}
+
+func (err *InvalidImpFirstPartyData) Error() string {
+	return err.Message
+}
+
+func (err *InvalidImpFirstPartyData) Code() int {
+	return InvalidImpFirstPartyDataErrorCode
+}
+
+func (err *InvalidImpFirstPartyData) Severity() Severity {
+	return SeverityFatal
+}

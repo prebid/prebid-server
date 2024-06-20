@@ -218,7 +218,7 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 			}}
 		}
 
-		if adnuntiusExt.NoCookies == true {
+		if adnuntiusExt.NoCookies {
 			noCookies = true
 		}
 
@@ -299,6 +299,7 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 			Uri:     endpoint,
 			Body:    adnJson,
 			Headers: headers,
+			ImpIDs:  openrtb_ext.GetImpIDs(ortbRequest.Imp),
 		})
 
 	}
@@ -462,7 +463,7 @@ func generateBidResponse(adnResponse *AdnResponse, request *openrtb2.BidRequest)
 			adBid, err := generateAdResponse(ad, imp, adunit.Html, request)
 			if err != nil {
 				return nil, []error{&errortypes.BadInput{
-					Message: fmt.Sprintf("Error at ad generation"),
+					Message: "Error at ad generation",
 				}}
 			}
 
@@ -475,7 +476,7 @@ func generateBidResponse(adnResponse *AdnResponse, request *openrtb2.BidRequest)
 				dealBid, err := generateAdResponse(deal, imp, deal.Html, request)
 				if err != nil {
 					return nil, []error{&errortypes.BadInput{
-						Message: fmt.Sprintf("Error at ad generation"),
+						Message: "Error at ad generation",
 					}}
 				}
 

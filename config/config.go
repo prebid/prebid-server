@@ -27,6 +27,7 @@ type Configuration struct {
 	UnixSocketName   string      `mapstructure:"unix_socket_name"`
 	Client           HTTPClient  `mapstructure:"http_client"`
 	CacheClient      HTTPClient  `mapstructure:"http_client_cache"`
+	Admin            Admin       `mapstructure:"admin"`
 	AdminPort        int         `mapstructure:"admin_port"`
 	Compression      Compression `mapstructure:"compression"`
 	// GarbageCollectorThreshold allocates virtual memory (in bytes) which is not used by PBS but
@@ -53,6 +54,8 @@ type Configuration struct {
 	// Note that StoredVideo refers to stored video requests, and has nothing to do with caching video creatives.
 	StoredVideo     StoredRequests `mapstructure:"stored_video_req"`
 	StoredResponses StoredRequests `mapstructure:"stored_responses"`
+	// StoredRequestsTimeout defines the number of milliseconds before a timeout occurs with stored requests fetch
+	StoredRequestsTimeout int `mapstructure:"stored_requests_timeout_ms"`
 
 	MaxRequestSize       int64             `mapstructure:"max_request_size"`
 	Analytics            Analytics         `mapstructure:"analytics"`
@@ -102,6 +105,9 @@ type Configuration struct {
 	PriceFloors PriceFloors `mapstructure:"price_floors"`
 }
 
+type Admin struct {
+	Enabled bool `mapstructure:"enabled"`
+}
 type PriceFloors struct {
 	Enabled bool              `mapstructure:"enabled"`
 	Fetcher PriceFloorFetcher `mapstructure:"fetcher"`
@@ -128,6 +134,9 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 	var errs []error
 	errs = cfg.AuctionTimeouts.validate(errs)
 	errs = cfg.StoredRequests.validate(errs)
+	if cfg.StoredRequestsTimeout <= 0 {
+		errs = append(errs, fmt.Errorf("cfg.stored_requests_timeout_ms must be > 0. Got %d", cfg.StoredRequestsTimeout))
+	}
 	errs = cfg.StoredRequestsAMP.validate(errs)
 	errs = cfg.Accounts.validate(errs)
 	errs = cfg.CategoryMapping.validate(errs)
@@ -183,27 +192,27 @@ func (data *ExternalCache) validate(errs []error) []error {
 
 	// Either host or path or both not empty, validate.
 	if data.Host == "" && data.Path != "" || data.Host != "" && data.Path == "" {
-		return append(errs, errors.New("External cache Host and Path must both be specified"))
+		return append(errs, errors.New("external cache Host and Path must both be specified"))
 	}
 	if strings.HasSuffix(data.Host, "/") {
-		return append(errs, errors.New(fmt.Sprintf("External cache Host '%s' must not end with a path separator", data.Host)))
+		return append(errs, fmt.Errorf("external cache Host '%s' must not end with a path separator", data.Host))
 	}
 	if strings.Contains(data.Host, "://") {
-		return append(errs, errors.New(fmt.Sprintf("External cache Host must not specify a protocol. '%s'", data.Host)))
+		return append(errs, fmt.Errorf("external cache Host must not specify a protocol. '%s'", data.Host))
 	}
 	if !strings.HasPrefix(data.Path, "/") {
-		return append(errs, errors.New(fmt.Sprintf("External cache Path '%s' must begin with a path separator", data.Path)))
+		return append(errs, fmt.Errorf("external cache Path '%s' must begin with a path separator", data.Path))
 	}
 
 	urlObj, err := url.Parse("https://" + data.Host + data.Path)
 	if err != nil {
-		return append(errs, errors.New(fmt.Sprintf("External cache Path validation error: %s ", err.Error())))
+		return append(errs, fmt.Errorf("external cache Path validation error: %s ", err.Error()))
 	}
 	if urlObj.Host != data.Host {
-		return append(errs, errors.New(fmt.Sprintf("External cache Host '%s' is invalid", data.Host)))
+		return append(errs, fmt.Errorf("external cache Host '%s' is invalid", data.Host))
 	}
 	if urlObj.Path != data.Path {
-		return append(errs, errors.New("External cache Path is invalid"))
+		return append(errs, fmt.Errorf("external cache Path is invalid"))
 	}
 
 	return errs
@@ -260,7 +269,7 @@ func (cfg *GDPR) validate(v *viper.Viper, errs []error) []error {
 	if cfg.HostVendorID == 0 {
 		glog.Warning("gdpr.host_vendor_id was not specified. Host company GDPR checks will be skipped.")
 	}
-	if cfg.AMPException == true {
+	if cfg.AMPException {
 		errs = append(errs, fmt.Errorf("gdpr.amp_exception has been discontinued and must be removed from your config. If you need to disable GDPR for AMP, you may do so per-account (gdpr.integration_enabled.amp) or at the host level for the default account (account_defaults.gdpr.integration_enabled.amp)"))
 	}
 	return cfg.validatePurposes(errs)
@@ -556,6 +565,9 @@ type DisabledMetrics struct {
 	// that were created or reused.
 	AdapterConnectionMetrics bool `mapstructure:"adapter_connections_metrics"`
 
+	// True if we don't want to collect the per adapter buyer UID scrubbed metric
+	AdapterBuyerUIDScrubbed bool `mapstructure:"adapter_buyeruid_scrubbed"`
+
 	// True if we don't want to collect the per adapter GDPR request blocked metric
 	AdapterGDPRRequestBlocked bool `mapstructure:"adapter_gdpr_request_blocked"`
 
@@ -702,7 +714,7 @@ func (cfg *TimeoutNotification) validate(errs []error) []error {
 }
 
 // New uses viper to get our server configurations.
-func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName func(string) (openrtb_ext.BidderName, bool)) (*Configuration, error) {
+func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName openrtb_ext.BidderNameNormalizer) (*Configuration, error) {
 	var c Configuration
 	if err := v.Unmarshal(&c); err != nil {
 		return nil, fmt.Errorf("viper failed to unmarshal app config: %v", err)
@@ -715,6 +727,10 @@ func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName func(strin
 	if err := isValidCookieSize(c.HostCookie.MaxCookieSizeBytes); err != nil {
 		glog.Fatal(fmt.Printf("Max cookie size %d cannot be less than %d \n", c.HostCookie.MaxCookieSizeBytes, MIN_COOKIE_SIZE_BYTES))
 		return nil, err
+	}
+
+	if err := UnpackDSADefault(c.AccountDefaults.Privacy.DSA); err != nil {
+		return nil, fmt.Errorf("invalid default account DSA: %v", err)
 	}
 
 	// Update account defaults and generate base json for patch
@@ -847,6 +863,14 @@ func (cfg *Configuration) MarshalAccountDefaults() error {
 	return err
 }
 
+// UnpackDSADefault validates the JSON DSA default object string by unmarshaling and maps it to a struct
+func UnpackDSADefault(dsa *AccountDSA) error {
+	if dsa == nil || len(dsa.Default) == 0 {
+		return nil
+	}
+	return jsonutil.Unmarshal([]byte(dsa.Default), &dsa.DefaultUnpacked)
+}
+
 // AccountDefaultsJSON returns the precompiled JSON form of account_defaults
 func (cfg *Configuration) AccountDefaultsJSON() json.RawMessage {
 	return cfg.accountDefaultsJSON
@@ -884,6 +908,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("unix_socket_enable", false)              // boolean which decide if the socket-server will be started.
 	v.SetDefault("unix_socket_name", "prebid-server.sock") // path of the socket's file which must be listened.
 	v.SetDefault("admin_port", 6060)
+	v.SetDefault("admin.enabled", true) // boolean to determine if admin listener will be started.
 	v.SetDefault("garbage_collector_threshold", 0)
 	v.SetDefault("status_response", "")
 	v.SetDefault("datacenter", "")
@@ -928,6 +953,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("metrics.disabled_metrics.account_debug", true)
 	v.SetDefault("metrics.disabled_metrics.account_stored_responses", true)
 	v.SetDefault("metrics.disabled_metrics.adapter_connections_metrics", true)
+	v.SetDefault("metrics.disabled_metrics.adapter_buyeruid_scrubbed", true)
 	v.SetDefault("metrics.disabled_metrics.adapter_gdpr_request_blocked", false)
 	v.SetDefault("metrics.influxdb.host", "")
 	v.SetDefault("metrics.influxdb.database", "")
@@ -943,6 +969,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("category_mapping.filesystem.enabled", true)
 	v.SetDefault("category_mapping.filesystem.directorypath", "./static/category-mapping")
 	v.SetDefault("category_mapping.http.endpoint", "")
+	v.SetDefault("stored_requests_timeout_ms", 50)
 	v.SetDefault("stored_requests.database.connection.driver", "")
 	v.SetDefault("stored_requests.database.connection.dbname", "")
 	v.SetDefault("stored_requests.database.connection.host", "")
@@ -1141,10 +1168,13 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("account_defaults.price_floors.fetch.max_age_sec", 86400)
 	v.SetDefault("account_defaults.price_floors.fetch.period_sec", 3600)
 	v.SetDefault("account_defaults.price_floors.fetch.max_schema_dims", 0)
+	v.SetDefault("account_defaults.privacy.privacysandbox.topicsdomain", "")
 	v.SetDefault("account_defaults.privacy.privacysandbox.cookiedeprecation.enabled", false)
 	v.SetDefault("account_defaults.privacy.privacysandbox.cookiedeprecation.ttl_sec", 604800)
 
 	v.SetDefault("account_defaults.events_enabled", false)
+	v.BindEnv("account_defaults.privacy.dsa.default")
+	v.BindEnv("account_defaults.privacy.dsa.gdpr_only")
 	v.SetDefault("account_defaults.privacy.ipv6.anon_keep_bits", 56)
 	v.SetDefault("account_defaults.privacy.ipv4.anon_keep_bits", 24)
 

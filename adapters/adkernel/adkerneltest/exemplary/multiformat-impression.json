@@ -73,7 +73,8 @@
           "user": {
             "buyeruid": "A-38327932832"
           }
-        }
+        },
+        "impIDs":["multi-adunitb__mf", "multi-adunitv__mf", "multi-adunitn__mf"]
       },
       "mockResponse": {
         "status": 200,
@@ -90,6 +91,7 @@
                   "crid": "2002",
                   "adid": "2002",
                   "adm": "<!-- admarkup -->",
+                  "mtype": 1,
                   "adomain": [
                     "tag-example.com"
                   ]
@@ -102,6 +104,7 @@
                   "crid": "702",
                   "adid": "702",
                   "adm": "<!-- native response -->",
+                  "mtype": 4,
                   "adomain": [
                     "tag-example.com"
                   ]
@@ -114,6 +117,7 @@
                   "crid": "172",
                   "adid": "172",
                   "nurl": "http://adkernel.com/win?f=nurl",
+                  "mtype": 3,
                   "adomain": [
                     "tag-example.com"
                   ]
@@ -141,7 +145,8 @@
             ],
             "cid": "1001",
             "adid": "2002",
-            "crid": "2002"
+            "crid": "2002",
+            "mtype": 1
           },
           "type": "banner"
         },
@@ -156,7 +161,8 @@
             ],
             "cid": "601",
             "crid": "702",
-            "adid": "702"
+            "adid": "702",
+            "mtype": 4
           },
           "type": "native"
         },
@@ -171,7 +177,8 @@
             ],
             "cid": "161",
             "crid": "172",
-            "adid": "172"
+            "adid": "172",
+            "mtype": 3
           },
           "type": "audio"
         }

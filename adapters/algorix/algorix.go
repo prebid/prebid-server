@@ -80,6 +80,7 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestDa
 		Uri:     endPoint,
 		Body:    reqBody,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}, nil
 }
 
@@ -141,6 +142,9 @@ func preProcess(request *openrtb2.BidRequest) {
 				videoCopy := *request.Imp[i].Video
 				videoExt := algorixVideoExt{Rewarded: 1}
 				videoCopy.Ext, err = json.Marshal(&videoExt)
+				if err != nil {
+					continue
+				}
 				request.Imp[i].Video = &videoCopy
 			}
 		}

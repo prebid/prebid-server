@@ -200,11 +200,14 @@ func (a *TelariaAdapter) MakeRequests(requestIn *openrtb2.BidRequest, reqInfo *a
 		return nil, []error{err}
 	}
 
+	if telariaImpExt == nil {
+		return nil, []error{&errortypes.BadInput{Message: "Telaria: nil ExtImpTelaria object"}}
+	}
 	// Swap the tagID with adCode
 	imp.TagID = telariaImpExt.AdCode
 
 	// Add the Extra from Imp to the top level Ext
-	if telariaImpExt != nil && telariaImpExt.Extra != nil {
+	if telariaImpExt.Extra != nil {
 		request.Ext, err = json.Marshal(&telariaBidExt{Extra: telariaImpExt.Extra})
 		if err != nil {
 			return nil, []error{err}
@@ -228,6 +231,7 @@ func (a *TelariaAdapter) MakeRequests(requestIn *openrtb2.BidRequest, reqInfo *a
 		Uri:     a.FetchEndpoint(),
 		Body:    reqJSON,
 		Headers: *GetHeaders(&request),
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, nil
 }
 

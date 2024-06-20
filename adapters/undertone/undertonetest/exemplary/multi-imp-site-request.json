@@ -135,7 +135,8 @@
             "id": 4,
             "version": "1.0.0"
           }
-        }
+        },
+        "impIDs":["test-imp-banner-id","test-imp-video-id"]
       },
       "mockResponse": {
         "status": 200,
