@@ -80,7 +80,7 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestDa
 	}, nil
 }
 
-// get MediaGoExt From ext.bidderparams or ext of First Imp. Only check and get first Imp.Ext.Bidder to ExtImpMediago
+// getMediaGoExt get MediaGoExt From ext.bidderparams or ext of First Imp. Only check and get first Imp.Ext.Bidder to ExtImpMediago
 func getMediaGoExt(request *openrtb2.BidRequest) (*openrtb_ext.ExtMediaGo, error) {
 	var extMediaGo openrtb_ext.ExtMediaGo
 	var extBidder adapters.ExtImpBidder
@@ -191,10 +191,6 @@ func getBidType(bid openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, err
 		return openrtb_ext.BidTypeBanner, nil
 	case openrtb2.MarkupNative:
 		return openrtb_ext.BidTypeNative, nil
-	// case openrtb2.MarkupAudio:
-	// 	return openrtb_ext.BidTypeAudio, nil
-	// case openrtb2.MarkupVideo:
-	// 	return openrtb_ext.BidTypeVideo, nil
 	default:
 		for _, imp := range imps {
 			if imp.ID == bid.ImpID {
