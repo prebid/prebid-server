@@ -1,0 +1,19 @@
+endpoint: "http://rtb.driftpixel.live?pid={{.SourceId}}&host={{.Host}}&pbs=1"
+maintainer:
+  email: "developer@driftpixel.ai"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  # DriftPixel supports user syncing, but requires configuration by the host. contact this
+  # bidder directly at the email address in this file to ask about enabling user sync.
+  supports:
+    - redirect

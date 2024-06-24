@@ -30,7 +30,7 @@ func (a *NoBidAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 
 	if len(request.Imp) == 0 {
 		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("No Imps in Bid Request"),
+			Message: "No Imps in Bid Request",
 		}}
 	}
 
