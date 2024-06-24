@@ -9,8 +9,13 @@ import (
 	"github.com/prebid/prebid-server/v2/stored_responses"
 )
 
+type ValidationConfig struct {
+	SkipBidderParams bool
+	SkipNative       bool
+}
+
 type RequestValidator interface {
-	ValidateImp(imp *openrtb_ext.ImpWrapper, index int, aliases map[string]string, hasStoredResponses bool, storedBidResponses stored_responses.ImpBidderStoredResp) []error
+	ValidateImp(imp *openrtb_ext.ImpWrapper, cfg ValidationConfig, index int, aliases map[string]string, hasStoredAuctionResponses bool, storedBidResponses stored_responses.ImpBidderStoredResp) []error
 }
 
 func NewRequestValidator(bidderMap map[string]openrtb_ext.BidderName, disabledBidders map[string]string, paramsValidator openrtb_ext.BidderParamValidator) RequestValidator {
@@ -27,7 +32,7 @@ type standardRequestValidator struct {
 	paramsValidator openrtb_ext.BidderParamValidator
 }
 
-func (srv *standardRequestValidator) ValidateImp(imp *openrtb_ext.ImpWrapper, index int, aliases map[string]string, hasStoredResponses bool, storedBidResponses stored_responses.ImpBidderStoredResp) []error {
+func (srv *standardRequestValidator) ValidateImp(imp *openrtb_ext.ImpWrapper, cfg ValidationConfig, index int, aliases map[string]string, hasStoredAuctionResponses bool, storedBidResponses stored_responses.ImpBidderStoredResp) []error {
 	if imp.ID == "" {
 		return []error{fmt.Errorf("request.imp[%d] missing required field: \"id\"", index)}
 	}
@@ -52,15 +57,17 @@ func (srv *standardRequestValidator) ValidateImp(imp *openrtb_ext.ImpWrapper, in
 		return []error{err}
 	}
 
-	if err := fillAndValidateNative(imp.Native, index); err != nil {
-		return []error{err}
+	if !cfg.SkipNative {
+		if err := fillAndValidateNative(imp.Native, index); err != nil {
+			return []error{err}
+		}
 	}
 
 	if err := validatePmp(imp.PMP, index); err != nil {
 		return []error{err}
 	}
 
-	errL := srv.validateImpExt(imp, aliases, index, hasStoredResponses, storedBidResponses)
+	errL := srv.validateImpExt(imp, cfg, aliases, index, hasStoredAuctionResponses, storedBidResponses)
 	if len(errL) != 0 {
 		return errL
 	}
@@ -68,7 +75,7 @@ func (srv *standardRequestValidator) ValidateImp(imp *openrtb_ext.ImpWrapper, in
 	return nil
 }
 
-func (srv *standardRequestValidator) validateImpExt(imp *openrtb_ext.ImpWrapper, aliases map[string]string, impIndex int, hasStoredResponses bool, storedBidResp stored_responses.ImpBidderStoredResp) []error {
+func (srv *standardRequestValidator) validateImpExt(imp *openrtb_ext.ImpWrapper, cfg ValidationConfig, aliases map[string]string, impIndex int, hasStoredAuctionResponses bool, storedBidResp stored_responses.ImpBidderStoredResp) []error {
 	if len(imp.Ext) == 0 {
 		return []error{fmt.Errorf("request.imp[%d].ext is required", impIndex)}
 	}
@@ -100,7 +107,7 @@ func (srv *standardRequestValidator) validateImpExt(imp *openrtb_ext.ImpWrapper,
 		}
 	}
 
-	if hasStoredResponses && prebid.StoredAuctionResponse == nil {
+	if hasStoredAuctionResponses && prebid.StoredAuctionResponse == nil {
 		return []error{fmt.Errorf("request validation failed. The StoredAuctionResponse.ID field must be completely present with, or completely absent from, all impressions in request. No StoredAuctionResponse data found for request.imp[%d].ext.prebid \n", impIndex)}
 	}
 
@@ -117,8 +124,10 @@ func (srv *standardRequestValidator) validateImpExt(imp *openrtb_ext.ImpWrapper,
 		}
 
 		if coreBidderNormalized, isValid := srv.bidderMap[coreBidder.String()]; isValid {
-			if err := srv.paramsValidator.Validate(coreBidderNormalized, ext); err != nil {
-				return []error{fmt.Errorf("request.imp[%d].ext.prebid.bidder.%s failed validation.\n%v", impIndex, bidder, err)}
+			if !cfg.SkipBidderParams {
+				if err := srv.paramsValidator.Validate(coreBidderNormalized, ext); err != nil {
+					return []error{fmt.Errorf("request.imp[%d].ext.prebid.bidder.%s failed validation.\n%v", impIndex, bidder, err)}
+				}
 			}
 		} else {
 			if msg, isDisabled := srv.disabledBidders[bidder]; isDisabled {

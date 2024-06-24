@@ -13,10 +13,12 @@ import (
 
 func TestValidateImpExt(t *testing.T) {
 	type testCase struct {
-		description    string
-		impExt         json.RawMessage
-		expectedImpExt string
-		expectedErrs   []error
+		description         string
+		impExt              json.RawMessage
+		cfg                 ValidationConfig
+		paramValidatorError error
+		expectedImpExt      string
+		expectedErrs        []error
 	}
 	testGroups := []struct {
 		description string
@@ -200,6 +202,31 @@ func TestValidateImpExt(t *testing.T) {
 				},
 			},
 		},
+		{
+			"Config tests",
+			[]testCase{
+				{
+					description: "Invalid Params",
+					impExt:      json.RawMessage(`{"appnexus":{"placement_id_wrong_format":[]}}`),
+					cfg: ValidationConfig{
+						SkipBidderParams: false,
+					},
+					paramValidatorError: errors.New("params error"),
+					expectedImpExt:      `{"appnexus":{"placement_id_wrong_format":[]}}`,
+					expectedErrs:        []error{errors.New("request.imp[0].ext.prebid.bidder.appnexus failed validation.\nparams error")},
+				},
+				{
+					description: "Invalid Params - Skip Params Validation",
+					impExt:      json.RawMessage(`{"appnexus":{"placement_id_wrong_format":[]}}`),
+					cfg: ValidationConfig{
+						SkipBidderParams: true,
+					},
+					paramValidatorError: errors.New("params error"),
+					expectedImpExt:      `{"prebid":{"bidder":{"appnexus":{"placement_id_wrong_format":[]}}}}`,
+					expectedErrs:        []error{},
+				},
+			},
+		},
 	}
 
 	for _, group := range testGroups {
@@ -212,9 +239,11 @@ func TestValidateImpExt(t *testing.T) {
 				rv := standardRequestValidator{
 					bidderMap:       openrtb_ext.BuildBidderMap(),
 					disabledBidders: disabledBidders,
-					paramsValidator: mockBidderParamValidator{},
+					paramsValidator: mockBidderParamValidator{
+						Error: test.paramValidatorError,
+					},
 				}
-				errs := rv.validateImpExt(impWrapper, nil, 0, false, nil)
+				errs := rv.validateImpExt(impWrapper, test.cfg, nil, 0, false, nil)
 
 				assert.NoError(t, impWrapper.RebuildImp(), test.description+":rebuild_imp")
 
@@ -229,9 +258,11 @@ func TestValidateImpExt(t *testing.T) {
 	}
 }
 
-type mockBidderParamValidator struct{}
+type mockBidderParamValidator struct {
+	Error error
+}
 
 func (v mockBidderParamValidator) Validate(name openrtb_ext.BidderName, ext json.RawMessage) error {
-	return nil
+	return v.Error
 }
 func (v mockBidderParamValidator) Schema(name openrtb_ext.BidderName) string { return "" }

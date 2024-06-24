@@ -562,8 +562,8 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		return nil, nil, nil, nil, nil, nil, errs
 	}
 
-	hasStoredResponses := len(storedAuctionResponses) > 0
-	errL = deps.validateRequest(account, httpRequest, req, false, hasStoredResponses, storedBidResponses, hasStoredBidRequest)
+	hasStoredAuctionResponses := len(storedAuctionResponses) > 0
+	errL = deps.validateRequest(account, httpRequest, req, false, hasStoredAuctionResponses, storedBidResponses, hasStoredBidRequest)
 	if len(errL) > 0 {
 		errs = append(errs, errL...)
 	}
@@ -757,7 +757,7 @@ func mergeBidderParamsImpExtPrebid(impExt *openrtb_ext.ImpExt, reqExtParams map[
 	return nil
 }
 
-func (deps *endpointDeps) validateRequest(account *config.Account, httpReq *http.Request, req *openrtb_ext.RequestWrapper, isAmp bool, hasStoredResponses bool, storedBidResp stored_responses.ImpBidderStoredResp, hasStoredBidRequest bool) []error {
+func (deps *endpointDeps) validateRequest(account *config.Account, httpReq *http.Request, req *openrtb_ext.RequestWrapper, isAmp bool, hasStoredAuctionResponses bool, storedBidResp stored_responses.ImpBidderStoredResp, hasStoredBidRequest bool) []error {
 	errL := []error{}
 	if req.ID == "" {
 		return []error{errors.New("request missing required field: \"id\"")}
@@ -918,7 +918,7 @@ func (deps *endpointDeps) validateRequest(account *config.Account, httpReq *http
 		}
 		impIDs[imp.ID] = i
 
-		errs := deps.requestValidator.ValidateImp(imp, i, requestAliases, hasStoredResponses, storedBidResp)
+		errs := deps.requestValidator.ValidateImp(imp, ortb.ValidationConfig{}, i, requestAliases, hasStoredAuctionResponses, storedBidResp)
 		if len(errs) > 0 {
 			errL = append(errL, errs...)
 		}
