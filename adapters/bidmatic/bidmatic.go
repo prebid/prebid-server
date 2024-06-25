@@ -198,7 +198,5 @@ func validateImpression(imp *openrtb2.Imp) (int, error) {
 
 // Builder builds a new instance of the bidmatic adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	return &Adapter{
-		endpoint: config.Endpoint,
-	}, nil
+	return &Adapter{endpoint: config.Endpoint}, nil
 }
