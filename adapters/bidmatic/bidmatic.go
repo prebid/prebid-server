@@ -95,7 +95,7 @@ func (a *Adapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.Request
 	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(httpRes.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("error while decoding response, err: %s", err),
+			Message: fmt.Sprintf("error while decoding response,  err: %s", err),
 		}}
 	}
 
