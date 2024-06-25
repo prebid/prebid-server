@@ -70,10 +70,6 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 		return openrtb_ext.BidTypeBanner, nil
 	case openrtb2.MarkupVideo:
 		return openrtb_ext.BidTypeVideo, nil
-	case openrtb2.MarkupAudio:
-		return openrtb_ext.BidTypeAudio, nil
-	case openrtb2.MarkupNative:
-		return openrtb_ext.BidTypeNative, nil
 	}
 	return "", &errortypes.BadInput{
 		Message: fmt.Sprintf("Could not define bid type for imp: %s", bid.ImpID),
@@ -101,7 +97,10 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(response.SeatBid))
-	bidResponse.Currency = response.Cur
+
+	if response.Cur != "" {
+		bidResponse.Currency = response.Cur
+	}
 
 	for _, seatBid := range response.SeatBid {
 		for i, bid := range seatBid.Bid {

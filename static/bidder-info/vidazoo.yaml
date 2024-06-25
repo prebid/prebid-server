@@ -15,4 +15,4 @@ capabilities:
 userSync:
   iframe:
     url: https://sync.cootlogix.com/api/user/html/pbs_sync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
-    userMacro: "${userId}"
+    userMacro: ${userId}
