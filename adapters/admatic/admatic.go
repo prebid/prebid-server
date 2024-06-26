@@ -89,7 +89,7 @@ func getImpressionExt(imp openrtb2.Imp) (*openrtb_ext.ImpExtAdmatic, error) {
 	return &admaticExt, nil
 }
 
-// "Un-templates" the endpoint by replacing macroses and adding the required query parameters
+// resolveUrl "un-templates" the endpoint by replacing macroses and adding the required query parameters
 func (a *adapter) resolveUrl(host string) (string, error) {
 	params := macros.EndpointTemplateParams{Host: host}
 
