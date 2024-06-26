@@ -22,18 +22,9 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	requestData, err := a.buildRequest(request)
-	if err != nil {
-		return nil, []error{err}
-	}
-
-	return []*adapters.RequestData{requestData}, nil
-}
-
-func (a *adapter) buildRequest(request *openrtb2.BidRequest) (*adapters.RequestData, error) {
 	requestJSON, err := json.Marshal(request)
 	if err != nil {
-		return nil, err
+		return nil, []error{err}
 	}
 
 	headers := http.Header{}
@@ -41,13 +32,15 @@ func (a *adapter) buildRequest(request *openrtb2.BidRequest) (*adapters.RequestD
 	headers.Add("Accept", "application/json")
 	headers.Add("x-openrtb-version", "2.5")
 
-	return &adapters.RequestData{
+	requestData := &adapters.RequestData{
 		Method:  "POST",
 		Uri:     a.endpoint,
 		Body:    requestJSON,
 		Headers: headers,
 		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
-	}, nil
+	}
+
+	return []*adapters.RequestData{requestData}, nil
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
