@@ -1,6 +1,6 @@
 endpoint: "https://endpoint1.qt.io/pserver"
 maintainer:
-  email: "octavian.cimpu@qt.io"
+  email: "qtssp-support@qt.io"
 capabilities:
   site:
     mediaTypes:
