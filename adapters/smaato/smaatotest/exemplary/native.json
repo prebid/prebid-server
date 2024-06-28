@@ -102,13 +102,16 @@
                         }
                     },
                     "ext": {
-                        "client": "prebid_server_0.7"
+                        "client": "prebid_server_1.0"
                     }
                 },
                 "impIDs":["postbid_iframe"]
             },
             "mockResponse": {
                 "status": 200,
+                "headers": {
+                    "X-Smt-Adtype": ["Native"]
+                },
                 "body": {
                     "id": "5ebea288-f13a-4754-be6d-4ade66c68877",
                     "seatbid": [
