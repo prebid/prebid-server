@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 	"reflect"
+	"strconv"
 
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
@@ -186,7 +186,7 @@ func parseParam(paramName string, paramValue jsonutil.StringInt) (string, error)
 	value := int(ref.Int())
 	// verify we got a non-zero value
 	if value == 0 {
-		return "", errors.New("param not found - " + paramName)	
+		return "", errors.New("param not found - " + paramName)
 	}
 	return strconv.Itoa(value), nil
 }
