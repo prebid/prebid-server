@@ -1,0 +1,158 @@
+{
+  "mockBidRequest": {
+    "id": "testRequestIdSingle",
+    "site": {
+      "page": "https://publisher-website.com/web"
+    },
+    "imp": [
+      {
+        "id": "testImpressionId1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "testPlacementId"
+          }
+        }
+      },
+      {
+        "id": "testImpressionId2",
+        "banner": {
+          "format": [
+            {
+              "w": 320,
+              "h": 100
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "testPlacementId"
+          }
+        }
+      }
+    ],
+    "device": {
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36",
+      "ip": "111.111.111.111"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "X-Openrtb-Version": [
+            "2.5"
+          ]
+        },
+        "uri": "http://test-request.com/prebid",
+        "body": {
+          "id": "testRequestIdSingle",
+          "site": {
+            "page": "https://publisher-website.com/web"
+          },
+          "imp": [
+            {
+              "id": "testImpressionId1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": "testPlacementId"
+                }
+              }
+            },
+            {
+              "id": "testImpressionId2",
+              "banner": {
+                "format": [
+                  {
+                    "w": 320,
+                    "h": 100
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": "testPlacementId"
+                }
+              }
+            }
+          ],
+          "device": {
+            "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36",
+            "ip": "111.111.111.111"
+          }
+        },
+        "impIDs": [
+          "testImpressionId1",
+          "testImpressionId2"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "testRequestIdSingle",
+          "seatbid": [
+            {
+              "seat": "cointraffic",
+              "bid": [
+                {
+                  "id": "uniqueId",
+                  "impid": "testImpressionId1",
+                  "price": 1.50,
+                  "adid": "advertiserUniqueId",
+                  "adm": "iframe-content",
+                  "crid": "creativeUniqueId",
+                  "w": 300,
+                  "h": 250,
+                  "nurl": "http://test-request.com/prebid/confirm"
+                }
+              ]
+            }
+          ],
+          "cur": "EUR"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "uniqueId",
+            "impid": "testImpressionId1",
+            "price": 1.50,
+            "adm": "iframe-content",
+            "adid": "advertiserUniqueId",
+            "crid": "creativeUniqueId",
+            "w": 300,
+            "h": 250,
+            "nurl": "http://test-request.com/prebid/confirm"
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
