@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"reflect"
 	"strconv"
 
 	"github.com/prebid/prebid-server/v2/adapters"
@@ -182,8 +181,7 @@ func getBidType(imp openrtb2.Imp) openrtb_ext.BidType {
 }
 
 func parseParam(paramName string, paramValue jsonutil.StringInt) (string, error) {
-	ref := reflect.ValueOf(paramValue)
-	value := int(ref.Int())
+	value := int(paramValue)
 	// verify we got a non-zero value
 	if value == 0 {
 		return "", errors.New("param not found - " + paramName)
