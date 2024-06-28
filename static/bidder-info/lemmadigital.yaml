@@ -1,4 +1,12 @@
+# We have the following regional endpoint domains: 
+# "uses" (us-east), "usws" (us-west), "usct" (us-central), "emea" (europe middle east africa), "sg" (singapore)
+# Please deploy this config in each of your datacenters with the appropriate regional subdomain
 endpoint: "https://{{.Host}}.ads.lemmatechnologies.com/lemma/servad?src=prebid&pid={{.PublisherID}}&aid={{.AdUnit}}"
+geoscope:
+  - global
+# regional subdomain to be passed in the extra_info field as the "host". 
+# dooh-specific regional subdomain can also be optionally provided as "dooh-host". Available options are: "doohus" (US region), "doohsg" (Asia region)
+extra_info: "{\"host\":\"sg\"}"
 maintainer:
   email: support@lemmatechnologies.com
 endpointCompression: gzip

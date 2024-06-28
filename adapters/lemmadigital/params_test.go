@@ -38,8 +38,8 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
-	`{"pid":1, "aid": 1, "host": "sg"}`,
-	`{"pid":2147483647, "aid": 2147483647, "host": "uses"}`,
+	`{"pid":1, "aid": 1}`,
+	`{"pid":2147483647, "aid": 2147483647}`,
 }
 
 var invalidParams = []string{
@@ -52,10 +52,8 @@ var invalidParams = []string{
 	`{}`,
 	`{"pid":1}`,
 	`{"aid":1}`,
-	`{"pid":"1","aid":1, "host": "sg"}`,
-	`{"pid":1.0,"aid":"1, "host": "sg""}`,
-	`{"pid":"1","aid":"1, "host": "sg""}`,
-	`{"pid":false,"aid":true, "host": "sg"}`,
-	`{"pid":1, "aid": 1, "host": "usc"}`,
-	`{"pid":1, "aid": 1, "host": "eur"}`,
+	`{"pid":"1","aid":1}`,
+	`{"pid":1.0,"aid":"1"}`,
+	`{"pid":"1","aid":"1"}`,
+	`{"pid":false,"aid":true}`,
 }

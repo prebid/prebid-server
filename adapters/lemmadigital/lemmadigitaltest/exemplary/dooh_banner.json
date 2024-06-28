@@ -14,8 +14,7 @@
             "ext": {
                 "bidder": {
                     "aid": 1,
-                    "pid": 1,
-                    "host": "doohsg"
+                    "pid": 1
                 }
             },
             "qty": {
@@ -52,8 +51,7 @@
                     "ext": {
                         "bidder": {
                             "aid": 1,
-                            "pid": 1,
-                            "host": "doohsg"
+                            "pid": 1
                         }
                     },
                     "qty": {

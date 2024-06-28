@@ -29,7 +29,7 @@
   
     "httpCalls": [{
       "expectedRequest": {
-        "uri": "https://doohsg.ads.lemmatechnologies.com/lemma/servad?src=prebid&pid=1&aid=1",
+        "uri": "https://doohus.ads.lemmatechnologies.com/lemma/servad?src=prebid&pid=1&aid=1",
         "body": {
           "id": "test-request-id-video",
           "imp": [{

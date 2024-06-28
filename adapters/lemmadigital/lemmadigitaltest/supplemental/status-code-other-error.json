@@ -12,8 +12,7 @@
       "ext": {
         "bidder": {
           "aid": 1,
-          "pid": 1,
-          "host": "sg"
+          "pid": 1
         }
       }
     }],
@@ -40,8 +39,7 @@
           "ext": {
             "bidder": {
               "aid": 1,
-              "pid": 1,
-              "host": "sg"
+              "pid": 1
             }
           }
         }],

@@ -23,8 +23,7 @@
       "ext": {
         "bidder": {
           "aid": 1,
-          "pid": 1,
-          "host": "sg"
+          "pid": 1
         }
       },
       "id": "test-imp-id-video",
@@ -68,8 +67,7 @@
           "ext": {
             "bidder": {
               "aid": 1,
-              "pid": 1,
-              "host": "sg"
+              "pid": 1
             }
           },
           "id": "test-imp-id-video",

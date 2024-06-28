@@ -15,8 +15,40 @@ import (
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
+// HOST constants
+const (
+	EMEA         = "emea"
+	USES         = "uses"
+	USCT         = "usct"
+	USWS         = "ucws"
+	SG           = "sg"
+	DOOH_US      = "doohus"
+	DOOH_SG      = "doohsg"
+	DEFAULT_HOST = SG
+)
+
+var (
+	validHosts = map[string]bool{
+		USES: true,
+		USWS: true,
+		USCT: true,
+		SG:   true,
+		EMEA: true,
+	}
+	validDoohHosts = map[string]bool{
+		DOOH_US: true,
+		DOOH_SG: true,
+	}
+)
+
+type ExtraInfo struct {
+	Host     string `json:"host,omitempty"`
+	DoohHost string `json:"dooh_host,omitempty"`
+}
+
 type adapter struct {
-	endpoint *template.Template
+	endpoint  *template.Template
+	extraInfo ExtraInfo
 }
 
 // Builder builds a new instance of the Lemmadigital adapter for the given bidder with the given config.
@@ -26,8 +58,14 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
 
+	extraInfo, err := parseExtraInfo(config.ExtraAdapterInfo)
+	if err != nil {
+		return nil, err
+	}
+
 	bidder := &adapter{
-		endpoint: template,
+		endpoint:  template,
+		extraInfo: extraInfo,
 	}
 	return bidder, nil
 }
@@ -51,7 +89,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		}}
 	}
 
-	endpoint, err := a.buildEndpointURL(impExt)
+	endpoint, err := a.buildEndpointURL(impExt, nil != request.DOOH)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -107,8 +145,53 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	return bidResponse, nil
 }
 
-func (a *adapter) buildEndpointURL(params openrtb_ext.ImpExtLemmaDigital) (string, error) {
+func (a *adapter) buildEndpointURL(params openrtb_ext.ImpExtLemmaDigital, isDooh bool) (string, error) {
+	host := a.extraInfo.Host
+	if isDooh {
+		host = a.extraInfo.DoohHost
+	}
 	endpointParams := macros.EndpointTemplateParams{PublisherID: strconv.Itoa(params.PublisherId),
-		AdUnit: strconv.Itoa(params.AdId), Host: params.Host}
+		AdUnit: strconv.Itoa(params.AdId), Host: host}
 	return macros.ResolveMacros(a.endpoint, endpointParams)
+}
+
+func parseExtraInfo(v string) (ExtraInfo, error) {
+	var extraInfo ExtraInfo
+	if len(v) == 0 {
+		extraInfo.defaultHost()
+		return extraInfo, nil
+	}
+
+	if err := json.Unmarshal([]byte(v), &extraInfo); err != nil {
+		return extraInfo, fmt.Errorf("invalid extra info: %v", err)
+	}
+
+	if _, ok := validHosts[extraInfo.Host]; !ok {
+		return extraInfo, fmt.Errorf("invalid host in extra info: %s", extraInfo.Host)
+	}
+
+	if extraInfo.DoohHost == "" {
+		extraInfo.assignDoohHost()
+	}
+
+	if _, ok := validDoohHosts[extraInfo.DoohHost]; !ok {
+		return extraInfo, fmt.Errorf("invalid dooh host: %s", extraInfo.DoohHost)
+	}
+
+	return extraInfo, nil
+}
+
+func (ei *ExtraInfo) defaultHost() {
+	ei.Host = DEFAULT_HOST
+}
+
+func (ei *ExtraInfo) assignDoohHost() {
+	var doohHost string
+	switch ei.Host {
+	case USES, USCT, USWS:
+		doohHost = DOOH_US
+	default:
+		doohHost = DOOH_SG
+	}
+	ei.DoohHost = doohHost
 }
