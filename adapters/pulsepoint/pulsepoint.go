@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"reflect"
 
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 )
@@ -179,16 +181,12 @@ func getBidType(imp openrtb2.Imp) openrtb_ext.BidType {
 	return ""
 }
 
-func parseParam(paramName string, paramValue interface{}) (string, error) {
-	if paramValue != nil {
-		extractedValue := fmt.Sprint(paramValue)
-		_, err := strconv.Atoi(extractedValue)
-		if err != nil {
-			return "", errors.New("expected int value for param - " + paramName + ", got value - " + extractedValue)
-		} else {
-			return extractedValue, nil
-		}
-	} else {
-		return "", errors.New("param not found - " + paramName)
+func parseParam(paramName string, paramValue jsonutil.StringInt) (string, error) {
+	ref := reflect.ValueOf(paramValue)
+	value := int(ref.Int())
+	// verify we got a non-zero value
+	if value == 0 {
+		return "", errors.New("param not found - " + paramName)	
 	}
+	return strconv.Itoa(value), nil
 }

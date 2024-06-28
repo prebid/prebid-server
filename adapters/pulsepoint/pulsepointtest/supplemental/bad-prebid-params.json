@@ -24,7 +24,7 @@
     },
     "httpCalls": [],
     "expectedMakeRequestsErrors": [{
-        "value": "expected int value for param - tagID, got value - ab1001",
+        "value": "Value looks like Number/Boolean/None, but can't find its end: ',' or '}' symbol",
         "comparison": "literal"
     }],
     "expectedBidResponses": [],
