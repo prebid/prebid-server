@@ -12,6 +12,11 @@
         "aid": {
             "type": "integer",
             "description": "Ad ID"
+        },
+        "host": {
+            "type": "string",
+            "description": "Network Host to request from",
+            "enum": ["uses", "usws", "usct", "emea", "sg", "doohsg", "doohus"]
         }
     },
 

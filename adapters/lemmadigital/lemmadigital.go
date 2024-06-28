@@ -146,10 +146,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 }
 
 func (a *adapter) buildEndpointURL(params openrtb_ext.ImpExtLemmaDigital, isDooh bool) (string, error) {
-	host := a.extraInfo.Host
-	if isDooh {
-		host = a.extraInfo.DoohHost
-	}
+	host := a.resolveHost(params, isDooh)
 	endpointParams := macros.EndpointTemplateParams{PublisherID: strconv.Itoa(params.PublisherId),
 		AdUnit: strconv.Itoa(params.AdId), Host: host}
 	return macros.ResolveMacros(a.endpoint, endpointParams)
@@ -194,4 +191,16 @@ func (ei *ExtraInfo) assignDoohHost() {
 		doohHost = DOOH_SG
 	}
 	ei.DoohHost = doohHost
+}
+
+func (a *adapter) resolveHost(params openrtb_ext.ImpExtLemmaDigital, isDooh bool) string {
+	host := a.extraInfo.Host
+	if params.Host != "" { // publisher host parameter
+		host = params.Host
+	}
+
+	if _, ok := validDoohHosts[host]; isDooh && !ok {
+		host = a.extraInfo.DoohHost
+	}
+	return host
 }
