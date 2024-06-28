@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/chasex/glog"
+	gglog "github.com/golang/glog"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/analytics"
 	"github.com/prebid/prebid-server/v2/util/jsonutil"
@@ -21,9 +22,14 @@ const (
 	NOTIFICATION_EVENT RequestType = "/event"
 )
 
+type Logger interface {
+	Debug(v ...interface{})
+	Flush()
+}
+
 // Module that can perform transactional logging
 type FileLogger struct {
-	Logger *glog.Logger
+	Logger Logger
 }
 
 // Writes AuctionObject to file
@@ -82,6 +88,13 @@ func (f *FileLogger) LogNotificationEventObject(ne *analytics.NotificationEvent)
 	var b bytes.Buffer
 	b.WriteString(jsonifyNotificationEventObject(ne))
 	f.Logger.Debug(b.String())
+	f.Logger.Flush()
+}
+
+// Shutdown the logger
+func (f *FileLogger) Shutdown() {
+	// clear all pending buffered data in case there is any
+	gglog.Info("[FileLogger] Shutdown, trying to flush buffer")
 	f.Logger.Flush()
 }
 
