@@ -28,16 +28,16 @@ const (
 )
 
 var (
-	validHosts = map[string]bool{
-		USES: true,
-		USWS: true,
-		USCT: true,
-		SG:   true,
-		EMEA: true,
+	validHosts = map[string]struct{}{
+		USES: {},
+		USWS: {},
+		USCT: {},
+		SG:   {},
+		EMEA: {},
 	}
-	validDoohHosts = map[string]bool{
-		DOOH_US: true,
-		DOOH_SG: true,
+	validDoohHosts = map[string]struct{}{
+		DOOH_US: {},
+		DOOH_SG: {},
 	}
 )
 
