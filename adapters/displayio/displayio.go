@@ -73,10 +73,7 @@ func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *
 			errs = append(errs, err)
 			continue
 		}
-		if len(bidderExt.Bidder) == 0 {
-			errs = append(errs, errors.New("bidder required"))
-			continue
-		}
+
 		var impressionExt openrtb_ext.ExtImpDisplayio
 		err = json.Unmarshal(bidderExt.Bidder, &impressionExt)
 		if err != nil {
