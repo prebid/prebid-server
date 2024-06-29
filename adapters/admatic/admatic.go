@@ -89,7 +89,9 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	if adapters.IsResponseStatusCodeNoContent(responseData) {
 		return nil, nil
 	}
-	if err := adapters.CheckResponseStatusCodeForErrors(responseData); err != nil {
+
+	err := adapters.CheckResponseStatusCodeForErrors(responseData)
+	if err != nil {
 		return nil, []error{err}
 	}
 	var response openrtb2.BidResponse
