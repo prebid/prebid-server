@@ -5,11 +5,17 @@
       {
         "id": "test-imp-id",
         "banner": {
-          "format": [{"w": 728, "h": 90}]
+          "format": [
+            {
+              "w": 728,
+              "h": 90
+            }
+          ]
         },
         "ext": {
           "bidder": {
-            "host": "admatic.rtb.admatic.com.tr"
+            "host": "layer.serve.admatic.com.tr",
+            "networkId": 12345
           }
         }
       }
@@ -19,18 +25,24 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://pbs.admatic.com.tr?host=admatic.rtb.admatic.com.tr",
+        "uri": "http://pbs.admatic.com.tr?host=layer.serve.admatic.com.tr",
         "body": {
           "id": "test-request-id",
           "imp": [
             {
               "id": "test-imp-id",
               "banner": {
-                "format": [{"w": 728, "h": 90}]
+                "format": [
+                  {
+                    "w": 728,
+                    "h": 90
+                  }
+                ]
               },
               "ext": {
                 "bidder": {
-                  "host": "admatic.rtb.admatic.com.tr"
+                  "host": "layer.serve.admatic.com.tr",
+                  "networkId": 12345
                 }
               }
             }
@@ -39,9 +51,16 @@
         "impIDs": ["test-imp-id"]
       },
       "mockResponse": {
-        "status": 204
+        "status": 500,
+        "body": "Server error"
       }
     }
   ],
-  "expectedBidResponses": []
+  "expectedBidResponses": [],
+  "expectedMakeBidsErrors": [ 
+    {
+      "value": "Unexpected status code: 500.",
+      "comparison": "literal" 
+    }
+  ]
 }

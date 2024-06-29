@@ -11,7 +11,8 @@
         },
         "ext": {
           "bidder": {
-            "host": "admatic.rtb.admatic.com.tr"
+            "host": "layer.serve.admatic.com.tr",
+            "networkId": 12345
           }
         }
       }
@@ -20,7 +21,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://pbs.admatic.com.tr?host=admatic.rtb.admatic.com.tr",
+        "uri": "http://pbs.admatic.com.tr?host=layer.serve.admatic.com.tr",
         "body": {
           "id": "test-request-id",
           "imp": [
@@ -33,7 +34,8 @@
               },
               "ext": {
                 "bidder": {
-                  "host": "admatic.rtb.admatic.com.tr"
+                  "host": "layer.serve.admatic.com.tr",
+                  "networkId": 12345
                 }
               }
             }

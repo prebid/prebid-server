@@ -34,13 +34,14 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
-	`{	"host": "admatic.rtb.admatic.com.tr",
+	`{	"host": "layer.serve.admatic.com.tr",
+		"networkId": 1111,
 		"ext": {
 			"key1": "value1",
 			"key2": "value2"
 		}
 	}`,
-	`{"host": "admatic.rtb.admatic.com.tr"}`,
+	`{"host": "layer.serve.admatic.com.tr", "networkId": 1111}`,
 }
 
 var invalidParams = []string{
@@ -49,5 +50,5 @@ var invalidParams = []string{
 		"key2": "value2"
 	}`,
 	`{}`,
-	`{"host": 123}`,
+	`{"host": 123, "networkId":"1111"}`,
 }

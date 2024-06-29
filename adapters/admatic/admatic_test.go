@@ -6,6 +6,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/adapterstest"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestJsonSamples(t *testing.T) {
@@ -18,4 +19,11 @@ func TestJsonSamples(t *testing.T) {
 	}
 
 	adapterstest.RunJSONBidderTest(t, "admatictest", bidder)
+}
+
+func TestEndpointTemplateMalformed(t *testing.T) {
+	_, buildErr := Builder(openrtb_ext.BidderAso, config.Adapter{
+		Endpoint: "host={{Host}}"}, config.Server{ExternalUrl: "http://hosturl.com"})
+
+	assert.Error(t, buildErr)
 }

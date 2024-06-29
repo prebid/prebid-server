@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -32,85 +31,67 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	var requests []*adapters.RequestData
+	var errs []error
 
-	host := ""
-
+	requestCopy := *request
 	for _, imp := range request.Imp {
-		admaticExt, err := getImpressionExt(imp)
+		requestCopy.Imp = []openrtb2.Imp{imp}
+
+		endpoint, err := a.buildEndpointFromRequest(&imp)
 		if err != nil {
-			return nil, []error{err}
+			errs = append(errs, err)
+			continue
 		}
 
-		if host == "" {
-			host = admaticExt.Host
-		} else if host != admaticExt.Host {
-			return nil, []error{&errortypes.BadInput{
-				Message: "There must be only one Host",
-			}}
+		requestJSON, err := json.Marshal(requestCopy)
+		if err != nil {
+			errs = append(errs, err)
+			continue
 		}
+
+		request := &adapters.RequestData{
+			Method: http.MethodPost,
+			Body:   requestJSON,
+			Uri:    endpoint,
+			ImpIDs: openrtb_ext.GetImpIDs(requestCopy.Imp),
+		}
+
+		requests = append(requests, request)
 	}
 
-	resolvedUrl, err := a.resolveUrl(host)
-
-	if err != nil {
-		return nil, []error{err}
-	}
-
-	requestJSON, err := json.Marshal(request)
-	if err != nil {
-		return nil, []error{err}
-	}
-
-	requestData := &adapters.RequestData{
-		Method: "POST",
-		Uri:    resolvedUrl,
-		Body:   requestJSON,
-		ImpIDs: openrtb_ext.GetImpIDs(request.Imp),
-	}
-
-	return []*adapters.RequestData{requestData}, nil
+	return requests, errs
 }
 
-func getImpressionExt(imp openrtb2.Imp) (*openrtb_ext.ImpExtAdmatic, error) {
-	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return nil, &errortypes.BadInput{
-			Message: "Bidder extension not provided or can't be unmarshalled",
+func (a *adapter) buildEndpointFromRequest(imp *openrtb2.Imp) (string, error) {
+	var impExt adapters.ExtImpBidder
+	if err := json.Unmarshal(imp.Ext, &impExt); err != nil {
+		return "", &errortypes.BadInput{
+			Message: fmt.Sprintf("Failed to deserialize bidder impression extension: %v", err),
 		}
 	}
 
 	var admaticExt openrtb_ext.ImpExtAdmatic
-	if err := json.Unmarshal(bidderExt.Bidder, &admaticExt); err != nil {
-		return nil, &errortypes.BadInput{
-			Message: "Error while unmarshaling bidder extension",
+	if err := json.Unmarshal(impExt.Bidder, &admaticExt); err != nil {
+		return "", &errortypes.BadInput{
+			Message: fmt.Sprintf("Failed to deserialize AdMatic extension: %v", err),
 		}
 	}
 
-	return &admaticExt, nil
-}
-
-// resolveUrl "un-templates" the endpoint by replacing macroses and adding the required query parameters
-func (a *adapter) resolveUrl(host string) (string, error) {
-	params := macros.EndpointTemplateParams{Host: host}
-
-	endpointStr, err := macros.ResolveMacros(a.endpoint, params)
-	if err != nil {
-		return "", err
+	endpointParams := macros.EndpointTemplateParams{
+		Host: admaticExt.Host,
 	}
 
-	parsedUrl, err := url.Parse(endpointStr)
-	if err != nil {
-		return "", err
-	}
-
-	return parsedUrl.String(), nil
+	return macros.ResolveMacros(a.endpoint, endpointParams)
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if responseData.StatusCode == http.StatusNoContent {
+	if adapters.IsResponseStatusCodeNoContent(responseData) {
 		return nil, nil
 	}
-
+	if err := adapters.CheckResponseStatusCodeForErrors(responseData); err != nil {
+		return nil, []error{err}
+	}
 	var response openrtb2.BidResponse
 	if err := json.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
