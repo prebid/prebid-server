@@ -79,9 +79,11 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderBWX,
 	BidderCadentApertureMX,
 	BidderCcx,
+	BidderCointraffic,
 	BidderCoinzilla,
 	BidderColossus,
 	BidderCompass,
+	BidderConcert,
 	BidderConnectAd,
 	BidderConsumable,
 	BidderConversant,
@@ -97,6 +99,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderEdge226,
 	BidderDmx,
 	BidderDXKulture,
+	BidderDriftPixel,
 	BidderEmtv,
 	BidderEmxDigital,
 	BidderEPlanning,
@@ -130,7 +133,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderLmKiviads,
 	BidderKrushmedia,
 	BidderLemmadigital,
-	BidderLiftoff,
 	BidderLimelightDigital,
 	BidderLockerDome,
 	BidderLogan,
@@ -141,6 +143,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderMadvertise,
 	BidderMarsmedia,
 	BidderMediafuse,
+	BidderMediaGo,
 	BidderMedianet,
 	BidderMgid,
 	BidderMgidX,
@@ -213,6 +216,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderVisx,
 	BidderVox,
 	BidderVrtcal,
+	BidderVungle,
 	BidderXeworks,
 	BidderYahooAds,
 	BidderYandex,
@@ -390,9 +394,11 @@ const (
 	BidderBWX               BidderName = "bwx"
 	BidderCadentApertureMX  BidderName = "cadent_aperture_mx"
 	BidderCcx               BidderName = "ccx"
+	BidderCointraffic       BidderName = "cointraffic"
 	BidderCoinzilla         BidderName = "coinzilla"
 	BidderColossus          BidderName = "colossus"
 	BidderCompass           BidderName = "compass"
+	BidderConcert           BidderName = "concert"
 	BidderConnectAd         BidderName = "connectad"
 	BidderConsumable        BidderName = "consumable"
 	BidderConversant        BidderName = "conversant"
@@ -408,6 +414,7 @@ const (
 	BidderEdge226           BidderName = "edge226"
 	BidderDmx               BidderName = "dmx"
 	BidderDXKulture         BidderName = "dxkulture"
+	BidderDriftPixel        BidderName = "driftpixel"
 	BidderEmtv              BidderName = "emtv"
 	BidderEmxDigital        BidderName = "emx_digital"
 	BidderEPlanning         BidderName = "eplanning"
@@ -441,7 +448,6 @@ const (
 	BidderLmKiviads         BidderName = "lm_kiviads"
 	BidderKrushmedia        BidderName = "krushmedia"
 	BidderLemmadigital      BidderName = "lemmadigital"
-	BidderLiftoff           BidderName = "liftoff"
 	BidderLimelightDigital  BidderName = "limelightDigital"
 	BidderLockerDome        BidderName = "lockerdome"
 	BidderLogan             BidderName = "logan"
@@ -452,6 +458,7 @@ const (
 	BidderMadvertise        BidderName = "madvertise"
 	BidderMarsmedia         BidderName = "marsmedia"
 	BidderMediafuse         BidderName = "mediafuse"
+	BidderMediaGo           BidderName = "mediago"
 	BidderMedianet          BidderName = "medianet"
 	BidderMgid              BidderName = "mgid"
 	BidderMgidX             BidderName = "mgidX"
@@ -524,6 +531,7 @@ const (
 	BidderVisx              BidderName = "visx"
 	BidderVox               BidderName = "vox"
 	BidderVrtcal            BidderName = "vrtcal"
+	BidderVungle            BidderName = "vungle"
 	BidderXeworks           BidderName = "xeworks"
 	BidderYahooAds          BidderName = "yahooAds"
 	BidderYandex            BidderName = "yandex"

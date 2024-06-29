@@ -1,0 +1,112 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [{"w": 320, "h": 50}]
+        },
+        "ext": {
+          "bidder": {
+            "token": "f9f2b1ef23fe2759c2cad0953029a94b",
+            "placementId": "testPlacementId"
+          }
+        }
+      }
+    ],
+    "site": {
+      "id": "test-site-id",
+      "page": "https://www.example.com/"
+    },
+    "ext": {
+      "prebid": {
+        "bidderparams": {
+          "bidder": {
+            "token": "f9f2b1ef23fe2759c2cad0953029a94b",
+            "region": "US"
+          }
+        }
+      }
+    }
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://REGION.mediago.io/api/bid?tn=f9f2b1ef23fe2759c2cad0953029a94b",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id":"test-imp-id",
+              "banner": {
+                "format": [{"w": 320, "h": 50}],
+                "w": 320,
+                "h": 50
+              },
+              "ext": {
+                "bidder": {
+                  "token": "f9f2b1ef23fe2759c2cad0953029a94b",
+                  "placementId": "testPlacementId"
+                }
+              }
+            }
+          ],
+          "site": {
+            "id": "test-site-id",
+            "page": "https://www.example.com/"
+          },
+          "ext": {
+            "prebid": {
+              "bidderparams": {
+                "bidder": {
+                  "token": "f9f2b1ef23fe2759c2cad0953029a94b",
+                  "region": "US"
+                }
+              }
+            }
+          }
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "mediago",
+              "bid": [{
+                "id": "test-imp-id",
+                "impid": "test-imp-id",
+                "price": 0.5,
+                "adm": "some-ads",
+                "crid": "crid_testid"
+              }]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-imp-id",
+            "impid": "test-imp-id",
+            "price": 0.5,
+            "adm": "some-ads",
+            "crid": "crid_testid"
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

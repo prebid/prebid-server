@@ -30,12 +30,12 @@ func init() {
 // Fields of type json.RawMessage are merged rather than replaced.
 func MergeClone(v any, data json.RawMessage) error {
 	err := jsonConfigMergeClone.Unmarshal(data, v)
-	if err != nil {
-		return &errortypes.FailedToUnmarshal{
-			Message: tryExtractErrorMessage(err),
-		}
+	if err == nil {
+		return nil
 	}
-	return err
+	return &errortypes.FailedToUnmarshal{
+		Message: tryExtractErrorMessage(err),
+	}
 }
 
 type mergeCloneExtension struct {
