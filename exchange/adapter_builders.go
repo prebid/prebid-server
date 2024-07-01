@@ -123,6 +123,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/madvertise"
 	"github.com/prebid/prebid-server/v2/adapters/marsmedia"
 	"github.com/prebid/prebid-server/v2/adapters/medianet"
+	"github.com/prebid/prebid-server/v2/adapters/melozen"
 	"github.com/prebid/prebid-server/v2/adapters/mgid"
 	"github.com/prebid/prebid-server/v2/adapters/mgidX"
 	"github.com/prebid/prebid-server/v2/adapters/minutemedia"
@@ -335,6 +336,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderMarsmedia:         marsmedia.Builder,
 		openrtb_ext.BidderMediafuse:         appnexus.Builder,
 		openrtb_ext.BidderMedianet:          medianet.Builder,
+		openrtb_ext.BidderMeloZen:           melozen.Builder,
 		openrtb_ext.BidderMgid:              mgid.Builder,
 		openrtb_ext.BidderMgidX:             mgidX.Builder,
 		openrtb_ext.BidderMinuteMedia:       minutemedia.Builder,

@@ -141,6 +141,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderMarsmedia,
 	BidderMediafuse,
 	BidderMedianet,
+	BidderMeloZen,
 	BidderMgid,
 	BidderMgidX,
 	BidderMinuteMedia,
@@ -429,6 +430,7 @@ const (
 	BidderMarsmedia         BidderName = "marsmedia"
 	BidderMediafuse         BidderName = "mediafuse"
 	BidderMedianet          BidderName = "medianet"
+	BidderMeloZen           BidderName = "melozen"
 	BidderMgid              BidderName = "mgid"
 	BidderMgidX             BidderName = "mgidX"
 	BidderMinuteMedia       BidderName = "minutemedia"
