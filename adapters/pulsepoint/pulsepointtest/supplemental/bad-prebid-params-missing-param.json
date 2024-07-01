@@ -1,0 +1,31 @@
+{
+    "mockBidRequest": {
+        "id": "request-id",
+        "site": {
+            "page": "http://publisher.com/index.html",
+            "publisher": {
+                "id": "123456789",
+                "name": "publisher.com"
+            }
+        },
+        "imp": [{
+            "id": "banner-1",
+            "banner": {
+                "w": 320,
+                "h": 50
+            },
+            "ext": {
+                "bidder": {
+                    "cp": "1234"
+                }
+            }
+        }]
+    },
+    "httpCalls": [],
+    "expectedMakeRequestsErrors": [{
+        "value": "param not found - tagID",
+        "comparison": "literal"
+    }],
+    "expectedBidResponses": [],
+    "expectedMakeBidsErrors": []
+}
