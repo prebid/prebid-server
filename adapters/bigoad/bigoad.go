@@ -94,7 +94,7 @@ func getImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpBigoAd, error) {
 }
 
 func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtImpBigoAd) (string, error) {
-	endpointParams := macros.EndpointTemplateParams{Host: params.Host, SspId: params.SspId}
+	endpointParams := macros.EndpointTemplateParams{SspId: params.SspId}
 	return macros.ResolveMacros(a.endpoint, endpointParams)
 }
 

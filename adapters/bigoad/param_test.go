@@ -42,5 +42,5 @@ var invalidParams = []string{
 	`null`,
 	`[]`,
 	`{}`,
-	`{"host": "baidu.com"}`,
+	`{"xxx": "baidu.com"}`,
 }
