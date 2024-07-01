@@ -33,8 +33,7 @@
         "ext": {
           "bidder": {
             "accountId": "accountId",
-            "sourceId": "sourceId",
-            "host": "host"
+            "sourceId": "sourceId"
           }
         }
       }
@@ -43,7 +42,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://host.bizzclick.com/bid?rtb_seat_id=sourceId&secret_key=accountId",
+        "uri": "http://t-us.blasto.ai/bid?rtb_seat_id=sourceId&secret_key=accountId",
         "body": {
           "id": "some-request-id",
           "imp": [
@@ -78,7 +77,9 @@
           },
           "tmax": 1000
         },
-        "impIDs":["some-impression-id"]
+        "impIDs": [
+          "some-impression-id"
+        ]
       },
       "mockResponse": {
         "status": 400

@@ -1,4 +1,4 @@
-package bizzclick
+package blasto
 
 import (
 	"encoding/json"
@@ -60,7 +60,7 @@ func (a *adapter) MakeRequests(
 	requestsToBidder []*adapters.RequestData,
 	errs []error,
 ) {
-	bizzclickExt, err := a.getImpressionExt(&openRTBRequest.Imp[0])
+	blastoExt, err := a.getImpressionExt(&openRTBRequest.Imp[0])
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -68,7 +68,7 @@ func (a *adapter) MakeRequests(
 	for idx := range openRTBRequest.Imp {
 		openRTBRequest.Imp[idx].Ext = nil
 	}
-	url, err := a.buildEndpointURL(bizzclickExt)
+	url, err := a.buildEndpointURL(blastoExt)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -87,33 +87,26 @@ func (a *adapter) MakeRequests(
 	}}, nil
 }
 
-func (a *adapter) getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtBizzclick, error) {
+func (a *adapter) getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtBlasto, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: "ext.bidder not provided",
 		}
 	}
-	var bizzclickExt openrtb_ext.ExtBizzclick
-	if err := json.Unmarshal(bidderExt.Bidder, &bizzclickExt); err != nil {
+	var blastoExt openrtb_ext.ExtBlasto
+	if err := json.Unmarshal(bidderExt.Bidder, &blastoExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: "ext.bidder not provided",
 		}
 	}
 
-	return &bizzclickExt, nil
+	return &blastoExt, nil
 }
 
-func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtBizzclick) (string, error) {
-	host := "us-e-node1"
-	if params.Host != "" {
-		host = params.Host
-	}
+func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtBlasto) (string, error) {
 	sourceId := params.SourceID
-	if params.SourceID == "" {
-		sourceId = params.PlacementID
-	}
-	endpointParams := macros.EndpointTemplateParams{AccountID: params.AccountID, SourceId: sourceId, Host: host}
+	endpointParams := macros.EndpointTemplateParams{AccountID: params.AccountID, SourceId: sourceId}
 	return macros.ResolveMacros(a.endpoint, endpointParams)
 }
 
