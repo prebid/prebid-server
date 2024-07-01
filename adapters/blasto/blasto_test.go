@@ -11,7 +11,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderBlasto, config.Adapter{
-		Endpoint: "http://{{.Host}}.blasto.ai/bid?rtb_seat_id={{.SourceId}}&secret_key={{.AccountID}}"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+		Endpoint: "http://t-us.blasto.ai/bid?rtb_seat_id={{.SourceId}}&secret_key={{.AccountID}}"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)

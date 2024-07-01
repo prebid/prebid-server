@@ -105,15 +105,8 @@ func (a *adapter) getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtBlasto, e
 }
 
 func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtBlasto) (string, error) {
-	host := "us-e-node1"
-	if params.Host != "" {
-		host = params.Host
-	}
 	sourceId := params.SourceID
-	if params.SourceID == "" {
-		sourceId = params.PlacementID
-	}
-	endpointParams := macros.EndpointTemplateParams{AccountID: params.AccountID, SourceId: sourceId, Host: host}
+	endpointParams := macros.EndpointTemplateParams{AccountID: params.AccountID, SourceId: sourceId}
 	return macros.ResolveMacros(a.endpoint, endpointParams)
 }
 

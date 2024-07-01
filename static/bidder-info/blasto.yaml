@@ -1,9 +1,10 @@
 # Contact support@blasto.ai to connect with Blasto exchange.
-# We have the following regional endpoint sub-domains: US East: t-us, EU: t-eu, APAC: t-apac
-# Use Host macro to resolve the endpoint based on the datacenter.
-# By default, we will use the US East sub-domain.
+# We have the following regional endpoint sub-domains:
+# US East: t-us
+# EU: t-eu
+# APAC: t-apac
 # Please deploy this config in each of your datacenters with the appropriate regional subdomain
-endpoint: 'http://{{.Host}}.blasto.ai/bid?rtb_seat_id={{.SourceId}}&secret_key={{.AccountID}}'
+endpoint: 'http://t-us.blasto.ai/bid?rtb_seat_id={{.SourceId}}&secret_key={{.AccountID}}'
 maintainer:
   email: 'support@blasto.ai'
 geoscope:

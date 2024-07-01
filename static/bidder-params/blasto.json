@@ -13,30 +13,10 @@
       "type": "string",
       "description": "Source id",
       "minLength": 1
-    },
-    "host": {
-      "type": "string",
-      "description": "Server region",
-      "minLength": 1
-    },
-    "placementId": {
-      "type": "string",
-      "description": "Deprecated, use sourceId instead",
-      "minLength": 1
     }
   },
-  "oneOf": [
-    {
-      "required": [
-        "accountId",
-        "placementId"
-      ]
-    },
-    {
-      "required": [
-        "accountId",
-        "sourceId"
-      ]
-    }
+  "required": [
+    "accountId",
+    "sourceId"
   ]
 }
