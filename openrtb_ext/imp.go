@@ -46,6 +46,9 @@ type ExtImpPrebid struct {
 	Passthrough json.RawMessage `json:"passthrough,omitempty"`
 
 	Floors *ExtImpPrebidFloors `json:"floors,omitempty"`
+
+	// Imp specifies any imp bidder-specific first party data
+	Imp map[string]json.RawMessage `json:"imp,omitempty"`
 }
 
 type ExtImpDataAdServer struct {

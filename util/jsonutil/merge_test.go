@@ -2,9 +2,8 @@ package jsonutil
 
 import (
 	"encoding/json"
+	"slices"
 	"testing"
-
-	"github.com/prebid/prebid-server/v2/util/sliceutil"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/stretchr/testify/assert"
@@ -137,6 +136,22 @@ func TestMergeCloneSlice(t *testing.T) {
 		assert.NotSame(t, iframeBuster, imp.IframeBuster, "ref")
 		assert.Equal(t, []string{"a"}, iframeBuster, "original-val")
 		assert.Equal(t, []string{"b", "c"}, imp.IframeBuster, "new-val")
+	})
+
+	t.Run("replace-not-overlay", func(t *testing.T) {
+		var (
+			imp      = &openrtb2.Imp{ID: "1"}
+			impSlice = []*openrtb2.Imp{imp}
+			test     = &struct {
+				Imps []*openrtb2.Imp `json:"imps"`
+			}{Imps: impSlice}
+		)
+
+		err := MergeClone(test, []byte(`{"imps":[{"tagid":"2"}]}`))
+		require.NoError(t, err)
+
+		impExpected := &openrtb2.Imp{TagID: "2"} // ensure original id is no longer present
+		assert.Equal(t, []*openrtb2.Imp{impExpected}, test.Imps)
 	})
 
 	t.Run("invalid-null", func(t *testing.T) {
@@ -337,8 +352,8 @@ func TestMergeCloneExt(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			// copy original values to check at the end for no modification
-			originalExisting := sliceutil.Clone(test.givenExisting)
-			originalIncoming := sliceutil.Clone(test.givenIncoming)
+			originalExisting := slices.Clone(test.givenExisting)
+			originalIncoming := slices.Clone(test.givenIncoming)
 
 			// build request
 			request := &openrtb2.BidRequest{Ext: test.givenExisting}
@@ -372,8 +387,8 @@ func TestMergeCloneExt(t *testing.T) {
 			// assert no modifications
 			// - can't use `assert.Same`` comparison checks since that's expected if
 			//   either existing or incoming are nil / omitted / empty.
-			assert.Equal(t, originalExisting, []byte(test.givenExisting), "existing")
-			assert.Equal(t, originalIncoming, []byte(test.givenIncoming), "incoming")
+			assert.Equal(t, originalExisting, test.givenExisting, "existing")
+			assert.Equal(t, originalIncoming, test.givenIncoming, "incoming")
 		})
 	}
 }
