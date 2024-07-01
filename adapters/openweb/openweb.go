@@ -180,7 +180,13 @@ func validateImpression(imp *openrtb2.Imp) (int, error) {
 
 	imp.Ext = impExtBuffer
 
-	return impExt.SourceID, nil
+	aid, err := impExt.SourceID.Int64()
+	if err != nil {
+		return 0, &errortypes.BadInput{
+			Message: fmt.Sprintf("ignoring imp id=%s, aid parsing err: %s", imp.ID, err),
+		}
+	}
+	return int(aid), nil
 }
 
 // Builder builds a new instance of the OpenWeb adapter for the given bidder with the given config.
