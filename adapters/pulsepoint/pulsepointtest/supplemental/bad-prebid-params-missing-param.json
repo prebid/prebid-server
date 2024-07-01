@@ -16,15 +16,14 @@
             },
             "ext": {
                 "bidder": {
-                    "cp": "1234",
-                    "ct": "ab1001"
+                    "cp": "1234"
                 }
             }
         }]
     },
     "httpCalls": [],
     "expectedMakeRequestsErrors": [{
-        "value": "Value looks like Number/Boolean/None, but can't find its end: ',' or '}' symbol",
+        "value": "param not found - tagID",
         "comparison": "literal"
     }],
     "expectedBidResponses": [],
