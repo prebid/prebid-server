@@ -43,7 +43,7 @@
           "openx": {
             "unit": "539439964",
             "delDomain": "se-demo-d.openx.net",
-            "customFloor": 0.1,
+            "customFloor": "0.5",
             "customParams": {"foo": "bar"}
           }              
         }

@@ -133,9 +133,12 @@ func preprocess(imp *openrtb2.Imp, reqExt *openxReqExt) error {
 	reqExt.DelDomain = openxExt.DelDomain
 	reqExt.Platform = openxExt.Platform
 
-	imp.TagID = openxExt.Unit
-	if imp.BidFloor == 0 && openxExt.CustomFloor > 0 {
-		imp.BidFloor = openxExt.CustomFloor
+	imp.TagID = openxExt.Unit.String()
+	if imp.BidFloor == 0 {
+		customFloor, err := openxExt.CustomFloor.Float64()
+		if err == nil && customFloor > 0 {
+			imp.BidFloor = customFloor
+		}
 	}
 
 	// outgoing imp.ext should be same as incoming imp.ext minus prebid and bidder
