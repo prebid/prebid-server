@@ -1,17 +1,23 @@
 {
   "mockBidRequest": {
     "id": "test-req",
+    "user": {
+      "ext": {
+        "consent": "dummy"
+      }
+    },
     "imp": [
       {
         "id": "test-req",
-        "video": {
-          "mimes": null
+        "banner": {
+          "w": 300,
+          "h": 250
         },
         "ext": {
           "bidder": {
             "account": "demo",
-            "location": "_adhese_prebid_demo_",
-            "format": "leaderboard",
+            "location": "pbs_test",
+            "format": "pbs_mr",
             "targets": {
               "ci": [
                 "gent",
@@ -24,10 +30,17 @@
                 "all"
               ]
             }
-          }
+          },
+          "tid": "6811e2a1-3649-4e54-ba03-c9b1401ae728"
         }
       }
-    ]
+    ],
+    "site": {
+      "id": "test",
+      "publisher": {
+        "id": "123"
+      }
+    }
   },
   "httpCalls": [
     {
@@ -40,10 +53,14 @@
           "id": "test-req",
           "imp": [
             {
+              "banner": {
+                "h": 250,
+                "w": 300
+              },
               "ext": {
                 "adhese": {
                   "SL": [
-                    "_adhese_prebid_demo_-leaderboard"
+                    "pbs_test-pbs_mr"
                   ],
                   "ag": [
                     "55"
@@ -57,12 +74,20 @@
                   ]
                 }
               },
-              "video": {
-                "mimes": null
-              },
               "id": "test-req"
             }
-          ]
+          ],
+          "site": {
+            "id": "test",
+            "publisher": {
+              "id": "123"
+            }
+          },
+          "user": {
+            "ext": {
+              "consent": "dummy"
+            }
+          }
         }
       },
       "mockResponse": {
@@ -112,24 +137,24 @@
             "adm": "<A TARGET='_blank' HREF='https://ads-demo.adhese.com/raylene//sl219/dtunknown/ogcontrol/II7504ab36-c269-4d5b-bf8d-c59c1867124f/tlall/A2127.68.78.84/ad2993-475/URhttps://test.com' TITLE=''><IMG SRC='https://pool-demo.adhese.com/pool/lib/475_0.jpg' WIDTH='300' HEIGHT='250' ALT='' BORDER='0' /></A><div style=\"position: absolute; left: 0px; top: 0px; visibility: hidden;\"><img src=\"https://ads-demo.adhese.com/track/2993//sl219/dtunknown/ogcontrol/II7504ab36-c269-4d5b-bf8d-c59c1867124f/tlall/A2127.68.78.84/?t=1717755902141\" border=\"0\" width=\"1\" height=\"1\" alt=\"\" style=\"display:none\"></div>",
             "w": 300,
             "h": 250,
+            "id": "a5ec99e8-aa6b-42f4-bf8b-b68dabf96caf",
+            "impid": "imp_id",
+            "price": 1.087,
+            "dealid": "demo-234",
+            "crid": "demo-475",
             "ext": {
               "adFormat": "pbs_mr",
               "adType": "pbs_mr",
               "adspaceId": "431",
+              "orderId": "234",
               "id": "2993",
               "libId": "475",
-              "orderId": "234",
               "orderProperty": "",
               "priority": "0",
               "viewableImpressionCounter": "https://ads-demo.adhese.com/track/2993-Adhese_IABview/sl219/dtunknown/ogcontrol/II7504ab36-c269-4d5b-bf8d-c59c1867124f/tlall/A2127.68.78.84/?t=1717755902141"
-            },
-            "id": "a5ec99e8-aa6b-42f4-bf8b-b68dabf96caf",
-            "impid": "imp_id",
-            "crid": "demo-475",
-            "price": 1.087,
-            "dealid": "demo-234"
+            }
           },
-          "type": "video"
+          "type": "banner"
         }
       ]
     }
