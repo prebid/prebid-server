@@ -14,16 +14,16 @@
         },
         "ext": {
           "bidder": {
-            "aid": "not valid value"
+            "org": "",
+            "placementId": "1"
           }
         }
       }
     ]
   },
-
   "expectedMakeRequestsErrors": [
     {
-      "value": "^ignoring imp id=test-imp-id, error while decoding impExt",
+      "value": "no org or aid supplied",
       "comparison": "regex"
     }
   ]
