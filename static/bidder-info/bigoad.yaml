@@ -11,7 +11,7 @@ geoscope:
   - SAU
   - MEX
 maintainer:
-  email: BigoAds@bigo.sg
+  email: bigoads-prebid@bigo.sg
 modifyingVastXmlAllowed: true
 capabilities:
   app:
