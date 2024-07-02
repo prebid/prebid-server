@@ -9,8 +9,11 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderBidmatic, config.Adapter{
-		Endpoint: "http://adapter.bidmatic.io/pbs/ortb"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+	bidder, buildErr := Builder(
+		openrtb_ext.BidderBidmatic,
+		config.Adapter{Endpoint: "http://adapter.bidmatic.io/pbs/ortb"},
+		config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"},
+	)
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)

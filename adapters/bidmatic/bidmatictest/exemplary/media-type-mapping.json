@@ -58,6 +58,7 @@
                 {
                   "id": "test-bid-id",
                   "impid": "test-imp-id",
+                  "mtype": 2,
                   "price": 3.5,
                   "w": 900,
                   "h": 250
@@ -77,6 +78,7 @@
           "bid": {
             "id": "test-bid-id",
             "impid": "test-imp-id",
+            "mtype": 2,
             "price": 3.5,
             "w": 900,
             "h": 250

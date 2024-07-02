@@ -29,7 +29,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	for i := 0; i < totalImps; i++ {
 
 		sourceId, err := validateImpression(&request.Imp[i])
-
 		if err != nil {
 			errors = append(errors, err)
 			continue
@@ -44,7 +43,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	}
 
 	totalReqs := len(imp2source)
-	if 0 == totalReqs {
+	if totalReqs == 0 {
 		return nil, errors
 	}
 
@@ -78,24 +77,22 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		})
 	}
 
-	if 0 == len(reqs) {
+	if len(reqs) == 0 {
 		return nil, errors
 	}
 
 	return reqs, errors
-
 }
 
 func (a *adapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.RequestData, httpRes *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-
-	if httpRes.StatusCode == http.StatusNoContent {
+	if adapters.IsResponseStatusCodeNoContent(httpRes) {
 		return nil, nil
 	}
 
 	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(httpRes.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("error while decoding response,  err: %s", err),
+			Message: fmt.Sprintf("error while decoding response, err: %s", err),
 		}}
 	}
 
@@ -110,6 +107,7 @@ func (a *adapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.Request
 
 			impOK = false
 			mediaType := openrtb_ext.BidTypeBanner
+			bid.MType = openrtb2.MarkupBanner
 			for _, imp := range bidReq.Imp {
 				if imp.ID == bid.ImpID {
 
@@ -117,6 +115,7 @@ func (a *adapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.Request
 
 					if imp.Video != nil {
 						mediaType = openrtb_ext.BidTypeVideo
+						bid.MType = openrtb2.MarkupVideo
 						break
 					}
 				}
@@ -147,7 +146,7 @@ func validateImpression(imp *openrtb2.Imp) (int, error) {
 		}
 	}
 
-	if 0 == len(imp.Ext) {
+	if len(imp.Ext) == 0 {
 		return 0, &errortypes.BadInput{
 			Message: fmt.Sprintf("ignoring imp id=%s, extImpBidder is empty", imp.ID),
 		}
