@@ -1,0 +1,17 @@
+#todo обновить на необходимый
+endpoint: "https://rtb.dev.zentotem.net/bid?sspuid=1"
+maintainer:
+  email: support@zentotem.net
+endpointCompression: gzip
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
