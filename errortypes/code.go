@@ -17,6 +17,7 @@ const (
 	TmaxTimeoutErrorCode
 	FailedToMarshalErrorCode
 	FailedToUnmarshalErrorCode
+	InvalidImpFirstPartyDataErrorCode
 )
 
 // Defines numeric codes for well-known warnings.

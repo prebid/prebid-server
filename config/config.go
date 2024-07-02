@@ -192,27 +192,27 @@ func (data *ExternalCache) validate(errs []error) []error {
 
 	// Either host or path or both not empty, validate.
 	if data.Host == "" && data.Path != "" || data.Host != "" && data.Path == "" {
-		return append(errs, errors.New("External cache Host and Path must both be specified"))
+		return append(errs, errors.New("external cache Host and Path must both be specified"))
 	}
 	if strings.HasSuffix(data.Host, "/") {
-		return append(errs, errors.New(fmt.Sprintf("External cache Host '%s' must not end with a path separator", data.Host)))
+		return append(errs, fmt.Errorf("external cache Host '%s' must not end with a path separator", data.Host))
 	}
 	if strings.Contains(data.Host, "://") {
-		return append(errs, errors.New(fmt.Sprintf("External cache Host must not specify a protocol. '%s'", data.Host)))
+		return append(errs, fmt.Errorf("external cache Host must not specify a protocol. '%s'", data.Host))
 	}
 	if !strings.HasPrefix(data.Path, "/") {
-		return append(errs, errors.New(fmt.Sprintf("External cache Path '%s' must begin with a path separator", data.Path)))
+		return append(errs, fmt.Errorf("external cache Path '%s' must begin with a path separator", data.Path))
 	}
 
 	urlObj, err := url.Parse("https://" + data.Host + data.Path)
 	if err != nil {
-		return append(errs, errors.New(fmt.Sprintf("External cache Path validation error: %s ", err.Error())))
+		return append(errs, fmt.Errorf("external cache Path validation error: %s ", err.Error()))
 	}
 	if urlObj.Host != data.Host {
-		return append(errs, errors.New(fmt.Sprintf("External cache Host '%s' is invalid", data.Host)))
+		return append(errs, fmt.Errorf("external cache Host '%s' is invalid", data.Host))
 	}
 	if urlObj.Path != data.Path {
-		return append(errs, errors.New("External cache Path is invalid"))
+		return append(errs, fmt.Errorf("external cache Path is invalid"))
 	}
 
 	return errs
@@ -269,7 +269,7 @@ func (cfg *GDPR) validate(v *viper.Viper, errs []error) []error {
 	if cfg.HostVendorID == 0 {
 		glog.Warning("gdpr.host_vendor_id was not specified. Host company GDPR checks will be skipped.")
 	}
-	if cfg.AMPException == true {
+	if cfg.AMPException {
 		errs = append(errs, fmt.Errorf("gdpr.amp_exception has been discontinued and must be removed from your config. If you need to disable GDPR for AMP, you may do so per-account (gdpr.integration_enabled.amp) or at the host level for the default account (account_defaults.gdpr.integration_enabled.amp)"))
 	}
 	return cfg.validatePurposes(errs)
@@ -714,7 +714,7 @@ func (cfg *TimeoutNotification) validate(errs []error) []error {
 }
 
 // New uses viper to get our server configurations.
-func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName func(string) (openrtb_ext.BidderName, bool)) (*Configuration, error) {
+func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName openrtb_ext.BidderNameNormalizer) (*Configuration, error) {
 	var c Configuration
 	if err := v.Unmarshal(&c); err != nil {
 		return nil, fmt.Errorf("viper failed to unmarshal app config: %v", err)

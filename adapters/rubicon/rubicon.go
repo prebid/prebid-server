@@ -331,14 +331,9 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			}
 
 			userExtRP := rubiconUserExt{RP: rubiconUserExtRP{Target: target}}
-			userBuyerUID := userCopy.BuyerUID
 
 			if len(userCopy.EIDs) > 0 {
 				userExtRP.Eids = userCopy.EIDs
-
-				if userBuyerUID == "" {
-					userBuyerUID = extractUserBuyerUID(userExtRP.Eids)
-				}
 			}
 
 			if userCopy.Consent != "" {
@@ -354,7 +349,6 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			userCopy.Geo = nil
 			userCopy.Yob = 0
 			userCopy.Gender = ""
-			userCopy.BuyerUID = userBuyerUID
 			userCopy.EIDs = nil
 
 			rubiconRequest.User = &userCopy
@@ -458,8 +452,14 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 		} else {
 			appCopy := *request.App
 			appCopy.Ext, err = json.Marshal(rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: int(siteId)}})
+			if err != nil {
+				errs = append(errs, &errortypes.BadInput{Message: err.Error()})
+			}
 			appCopy.Publisher = &openrtb2.Publisher{}
 			appCopy.Publisher.Ext, err = json.Marshal(&pubExt)
+			if err != nil {
+				errs = append(errs, &errortypes.BadInput{Message: err.Error()})
+			}
 			rubiconRequest.App = &appCopy
 		}
 
@@ -587,7 +587,7 @@ func createImpsToExtMap(imps []openrtb2.Imp) (map[*openrtb2.Imp]rubiconExtImpBid
 func prepareImpsToExtMap(impsToExtMap map[*openrtb2.Imp]rubiconExtImpBidder) map[*openrtb2.Imp]rubiconExtImpBidder {
 	preparedImpsToExtMap := make(map[*openrtb2.Imp]rubiconExtImpBidder)
 	for imp, bidderExt := range impsToExtMap {
-		if bidderExt.Bidder.BidOnMultiformat == false {
+		if bidderExt.Bidder.BidOnMultiformat == false { //nolint: gosimple,staticcheck
 			impCopy := imp
 			preparedImpsToExtMap[impCopy] = bidderExt
 			continue
@@ -912,20 +912,6 @@ func contains(s []int, e int) bool {
 		}
 	}
 	return false
-}
-
-func extractUserBuyerUID(eids []openrtb2.EID) string {
-	for _, eid := range eids {
-		if eid.Source != "rubiconproject.com" {
-			continue
-		}
-
-		for _, uid := range eid.UIDs {
-			return uid.ID
-		}
-	}
-
-	return ""
 }
 
 func isVideo(imp openrtb2.Imp) bool {

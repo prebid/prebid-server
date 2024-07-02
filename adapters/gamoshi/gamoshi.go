@@ -55,7 +55,7 @@ func (a *GamoshiAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 
 	if !validImpExists {
 		err := &errortypes.BadInput{
-			Message: fmt.Sprintf("No valid impression in the bid request"),
+			Message: "No valid impression in the bid request",
 		}
 		errs = append(errs, err)
 		return nil, errs

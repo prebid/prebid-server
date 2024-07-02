@@ -705,7 +705,7 @@ func TestCloneUserExt(t *testing.T) {
 				eids[0].UIDs[1].ID = "G2"
 				eids[1].UIDs[0].AType = 0
 				eids[0].UIDs = append(eids[0].UIDs, openrtb2.UID{ID: "Z", AType: 2})
-				eids = append(eids, openrtb2.EID{Source: "Blank"})
+				eids = append(eids, openrtb2.EID{Source: "Blank"}) //nolint: ineffassign, staticcheck // this value of `eids` is never used (staticcheck)
 				userExt.eids = nil
 			},
 		},

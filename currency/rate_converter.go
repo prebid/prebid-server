@@ -138,8 +138,7 @@ func (rc *RateConverter) checkStaleRates() bool {
 
 // GetInfo returns setup information about the converter
 func (rc *RateConverter) GetInfo() ConverterInfo {
-	var rates *map[string]map[string]float64
-	rates = rc.Rates().GetRates()
+	var rates *map[string]map[string]float64 = rc.Rates().GetRates()
 	return converterInfo{
 		source:      rc.syncSourceURL,
 		lastUpdated: rc.LastUpdated(),

@@ -1,0 +1,202 @@
+{
+    "requestType": "openrtb2-web",
+    "incomingRequest": {
+        "ortbRequest": {
+            "id": "some-request-id",
+            "site": {
+                "page": "test.somepage.com"
+            },
+            "imp": [
+                {
+                    "id": "imp-id-1",
+                    "banner": {
+                        "format": [
+                            {
+                                "w": 300,
+                                "h": 600
+                            }
+                        ]
+                    },
+                    "ext": {
+                        "prebid": {
+                            "bidder": {
+                                "appnexus": {
+                                    "placementId": 1
+                                },
+                                "audienceNetwork": {
+                                    "placementId": "some-placement"
+                                }
+                            },
+                            "imp": {
+                                "appnexus": {
+                                    "id": "imp-id-1-appnexus"
+                                },
+                                "audienceNetwork": {
+                                    "banner": {
+                                        "format": [
+                                            {
+                                                "w": 3000,
+                                                "h": 6000
+                                            }
+                                        ]
+                                    }
+                                },
+                                "rubicon": {
+                                    "banner": {
+                                        "w": 150,
+                                        "h": 300
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    "outgoingRequests": {
+        "appnexus": {
+            "expectRequest": {
+                "ortbRequest": {
+                    "id": "some-request-id",
+                    "site": {
+                        "page": "test.somepage.com"
+                    },
+                    "imp": [
+                        {
+                            "id": "imp-id-1-appnexus",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 300,
+                                        "h": 600
+                                    }
+                                ]
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "placementId": 1
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            "mockResponse": {
+                "pbsSeatBids": [
+                    {
+                        "pbsBids": [
+                            {
+                                "ortbBid": {
+                                    "id": "apn-bid",
+                                    "impid": "imp-id-1-appnexus",
+                                    "price": 0.3,
+                                    "w": 300,
+                                    "h": 600,
+                                    "crid": "creative-1"
+                                },
+                                "bidType": "banner"
+                            }
+                        ],
+                        "seat": "appnexus"
+                    }
+                ]
+            }
+        },
+        "audienceNetwork": {
+            "expectRequest": {
+                "ortbRequest": {
+                    "id": "some-request-id",
+                    "site": {
+                        "page": "test.somepage.com"
+                    },
+                    "imp": [
+                        {
+                            "id": "imp-id-1",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 3000,
+                                        "h": 6000
+                                    }
+                                ]
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "placementId": "some-placement"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            "mockResponse": {
+                "pbsSeatBids": [
+                    {
+                        "pbsBids": [
+                            {
+                                "ortbBid": {
+                                    "id": "apn-bid",
+                                    "impid": "imp-id-1",
+                                    "price": 0.3,
+                                    "w": 3000,
+                                    "h": 6000,
+                                    "crid": "creative-1"
+                                },
+                                "bidType": "banner"
+                            }
+                        ],
+                        "seat": "audiencenetwork"
+                    }
+                ]
+            }
+        }
+    },
+    "response": {
+        "bids": {
+            "id": "some-request-id",
+            "seatbid": [
+                {
+                    "seat": "appnexus",
+                    "bid": [
+                        {
+                            "id": "apn-bid",
+                            "impid": "imp-id-1-appnexus",
+                            "price": 0.3,
+                            "w": 300,
+                            "h": 600,
+                            "crid": "creative-1",
+                            "ext": {
+                                "origbidcpm": 0.3,
+                                "prebid": {
+                                    "meta": {},
+                                    "type": "banner"
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "seat": "audiencenetwork",
+                    "bid": [
+                        {
+                            "id": "apn-bid",
+                            "impid": "imp-id-1",
+                            "price": 0.3,
+                            "w": 3000,
+                            "h": 6000,
+                            "crid": "creative-1",
+                            "ext": {
+                                "origbidcpm": 0.3,
+                                "prebid": {
+                                    "meta": {},
+                                    "type": "banner"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}
