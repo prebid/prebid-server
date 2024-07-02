@@ -224,13 +224,13 @@ func (adapter *DmxAdapter) MakeBids(request *openrtb2.BidRequest, externalReques
 
 	if http.StatusBadRequest == response.StatusCode {
 		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Unexpected status code 400"),
+			Message: "Unexpected status code 400",
 		}}
 	}
 
 	if http.StatusOK != response.StatusCode {
 		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Unexpected response no status code"),
+			Message: "Unexpected response no status code",
 		}}
 	}
 

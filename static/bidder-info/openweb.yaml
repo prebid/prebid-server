@@ -1,7 +1,8 @@
-endpoint: "http://ghb.spotim.market/pbs/ortb"
+endpoint: "https://pbs.openwebmp.com/pbs"
 maintainer:
   email: "monetization@openweb.com"
 gvlVendorID: 280
+modifyingVastXmlAllowed: true
 capabilities:
   app:
     mediaTypes:
@@ -12,7 +13,6 @@ capabilities:
       - banner
       - video
 userSync:
-  # openweb supports user syncing, but requires configuration by the host. contact this
-  # bidder directly at the email address in this file to ask about enabling user sync.
-  supports:
-    - redirect
+  iframe:
+    url: https://pbs-cs.openwebmp.com/pbs-iframe?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirect={{.RedirectURL}}
+    userMacro: "[PBS_UID]"
