@@ -61,27 +61,10 @@
                   "networkId": 12345
                 }
               }
-            },
-            {
-              "id": "test-imp-id-banner2",
-              "banner": {
-                "format": [
-                  {
-                    "w": 728,
-                    "h": 90
-                  }
-                ]
-              },
-              "ext": {
-                "bidder": {
-                  "host": {},
-                  "networkId": 12345
-                }
-              }
             }
           ]
         },
-        "impIDs": ["test-imp-id-banner","test-imp-id-banner2"]
+        "impIDs": ["test-imp-id-banner"]
       },
       "mockResponse": {
         "status": 200,
