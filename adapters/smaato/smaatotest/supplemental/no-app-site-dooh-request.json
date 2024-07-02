@@ -23,7 +23,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "Missing Site/App.",
+      "value": "Missing Site/App/DOOH.",
       "comparison": "literal"
     }
   ]

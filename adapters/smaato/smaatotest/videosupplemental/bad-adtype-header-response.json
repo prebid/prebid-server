@@ -176,13 +176,19 @@
             }
           },
           "ext": {
-            "client": "prebid_server_0.7"
+            "client": "prebid_server_1.1"
           }
         },
-        "impIDs":["1_1","1_2"]
+        "impIDs": [
+          "1_1",
+          "1_2"
+        ]
       },
       "mockResponse": {
         "status": 200,
+        "headers": {
+          "X-Smt-Adtype": null
+        },
         "body": {
           "id": "5ebea288-f13a-4754-be6d-4ade66c68877",
           "seatbid": [
@@ -204,29 +210,11 @@
                   "price": 0.01,
                   "w": 1024,
                   "h": 768,
-                  "cat": ["IAB1"],
+                  "cat": [
+                    "IAB1"
+                  ],
                   "ext": {
                     "duration": 5
-                  }
-                },
-                {
-                  "adm": "",
-                  "adomain": [
-                    "smaato.com"
-                  ],
-                  "bidderName": "smaato",
-                  "cid": "CM6523",
-                  "crid": "CR69381",
-                  "id": "6906aae8-7f74-4edd-9a4f-f49379a3cadd",
-                  "impid": "1_2",
-                  "iurl": "https://iurl",
-                  "nurl": "https://nurl",
-                  "price": 0.01,
-                  "w": 1024,
-                  "h": 768,
-                  "cat": ["IAB2"],
-                  "ext": {
-                    "duration": 30
                   }
                 }
               ]
@@ -240,38 +228,9 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "Invalid ad markup .",
+      "value": "X-Smt-Adtype header is missing.",
       "comparison": "literal"
     }
   ],
-  "expectedBidResponses": [
-    {
-      "currency": "USD",
-      "bids": [
-        {
-          "bid": {
-            "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?><VAST version=\"2.0\"></VAST>",
-            "adomain": [
-              "smaato.com"
-            ],
-            "cid": "CM6523",
-            "crid": "CR69381",
-            "id": "6906aae8-7f74-4edd-9a4f-f49379a3cadd",
-            "impid": "1_1",
-            "iurl": "https://iurl",
-            "nurl": "https://nurl",
-            "price": 0.01,
-            "w": 1024,
-            "h": 768,
-            "cat": ["IAB1"],
-            "ext": {
-              "duration": 5
-            },
-            "exp": 300
-          },
-          "type": "video"
-        }
-      ]
-    }
-  ]
+  "expectedBidResponses": []
 }
