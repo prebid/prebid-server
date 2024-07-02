@@ -1,0 +1,110 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app": {
+      "bundle": "com.prebid"
+    },
+    "device": {
+      "ifa": "ec943cb9-61ec-460f-a925-6489c3fcc4e3"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "audio": {
+          "mimes": [
+            "audio/mp4"
+          ],
+          "protocols": [
+            9,
+            10
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": 10000000,
+            "adunit": 100000
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://hb.metaxads.com/prebid?sid=10000000&adunit=100000&source=prebid-server",
+        "body": {
+          "id": "test-request-id",
+          "app": {
+            "bundle": "com.prebid"
+          },
+          "device": {
+            "ifa": "ec943cb9-61ec-460f-a925-6489c3fcc4e3"
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "audio": {
+                "mimes": [
+                  "audio/mp4"
+                ],
+                "protocols": [
+                  9,
+                  10
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "publisherId": 10000000,
+                  "adunit": 100000
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "test-imp-id"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "metax",
+              "bid": [
+                {
+                  "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                  "impid": "test-imp-id",
+                  "price": 0.500000,
+                  "adm": "some-test-ad",
+                  "crid": "test-crid",
+                  "mtype": 3
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+            "impid": "test-imp-id",
+            "price": 0.5,
+            "adm": "some-test-ad",
+            "crid": "test-crid",
+            "mtype": 3
+          },
+          "type": "audio"
+        }
+      ]
+    }
+  ]
+}
