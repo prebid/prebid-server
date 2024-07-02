@@ -32,7 +32,7 @@
         "ext": {
           "bidder": {
             "host": "layer2.serve.admatic.com.tr",
-            "networkId": 12345
+            "networkId": 123456
           }
         }
       }
