@@ -44,9 +44,9 @@ type DebugData struct {
 
 func (d *DebugLog) BuildCacheString() {
 	if d.Regexp != nil {
-		d.Data.Request = fmt.Sprintf(d.Regexp.ReplaceAllString(d.Data.Request, ""))
-		d.Data.Headers = fmt.Sprintf(d.Regexp.ReplaceAllString(d.Data.Headers, ""))
-		d.Data.Response = fmt.Sprintf(d.Regexp.ReplaceAllString(d.Data.Response, ""))
+		d.Data.Request = fmt.Sprint(d.Regexp.ReplaceAllString(d.Data.Request, ""))
+		d.Data.Headers = fmt.Sprint(d.Regexp.ReplaceAllString(d.Data.Headers, ""))
+		d.Data.Response = fmt.Sprint(d.Regexp.ReplaceAllString(d.Data.Response, ""))
 	}
 
 	d.Data.Request = fmt.Sprintf("<Request>%s</Request>", d.Data.Request)

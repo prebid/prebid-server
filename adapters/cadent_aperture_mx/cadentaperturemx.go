@@ -38,7 +38,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 	if len(request.Imp) == 0 {
 		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("No Imps in Bid Request"),
+			Message: "No Imps in Bid Request",
 		}}
 	}
 
@@ -51,7 +51,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	data, err := json.Marshal(request)
 	if err != nil {
 		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Error in packaging request to JSON"),
+			Message: "Error in packaging request to JSON",
 		}}
 	}
 
@@ -117,7 +117,7 @@ func buildImpBanner(imp *openrtb2.Imp) error {
 
 	if imp.Banner == nil {
 		return &errortypes.BadInput{
-			Message: fmt.Sprintf("Request needs to include a Banner object"),
+			Message: "Request needs to include a Banner object",
 		}
 	}
 
@@ -127,7 +127,7 @@ func buildImpBanner(imp *openrtb2.Imp) error {
 	if banner.W == nil && banner.H == nil {
 		if len(banner.Format) == 0 {
 			return &errortypes.BadInput{
-				Message: fmt.Sprintf("Need at least one size to build request"),
+				Message: "Need at least one size to build request",
 			}
 		}
 		format := banner.Format[0]
@@ -144,13 +144,13 @@ func buildImpVideo(imp *openrtb2.Imp) error {
 
 	if len(imp.Video.MIMEs) == 0 {
 		return &errortypes.BadInput{
-			Message: fmt.Sprintf("Video: missing required field mimes"),
+			Message: "Video: missing required field mimes",
 		}
 	}
 
 	if (imp.Video.H == nil || *imp.Video.H == 0) && (imp.Video.W == nil || *imp.Video.W == 0) {
 		return &errortypes.BadInput{
-			Message: fmt.Sprintf("Video: Need at least one size to build request"),
+			Message: "Video: Need at least one size to build request",
 		}
 	}
 

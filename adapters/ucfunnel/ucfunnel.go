@@ -75,7 +75,7 @@ func (a *UcfunnelAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ad
 	// If all the requests were malformed, don't bother making a server call with no impressions.
 	if len(request.Imp) == 0 {
 		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("No impression in the bid request\n"),
+			Message: "No impression in the bid request\n",
 		}}
 	}
 
