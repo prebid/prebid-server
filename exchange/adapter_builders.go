@@ -13,6 +13,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/adkernel"
 	"github.com/prebid/prebid-server/v2/adapters/adkernelAdn"
 	"github.com/prebid/prebid-server/v2/adapters/adman"
+	"github.com/prebid/prebid-server/v2/adapters/admatic"
 	"github.com/prebid/prebid-server/v2/adapters/admixer"
 	"github.com/prebid/prebid-server/v2/adapters/adnuntius"
 	"github.com/prebid/prebid-server/v2/adapters/adocean"
@@ -228,6 +229,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderAdkernel:          adkernel.Builder,
 		openrtb_ext.BidderAdkernelAdn:       adkernelAdn.Builder,
 		openrtb_ext.BidderAdman:             adman.Builder,
+		openrtb_ext.BidderAdmatic:           admatic.Builder,
 		openrtb_ext.BidderAdmixer:           admixer.Builder,
 		openrtb_ext.BidderAdnuntius:         adnuntius.Builder,
 		openrtb_ext.BidderAdOcean:           adocean.Builder,
