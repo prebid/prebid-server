@@ -1,6 +1,7 @@
 package exchange
 
 import (
+	"github.com/prebid/openrtb/v20/openrtb3"
 	"github.com/prebid/prebid-server/v2/exchange/entities"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
@@ -52,4 +53,20 @@ func (snb *nonBids) get() []openrtb_ext.SeatNonBid {
 		})
 	}
 	return seatNonBid
+}
+
+func newProxyNonBid(impId string, nonBidReason int) openrtb_ext.NonBid {
+	return openrtb_ext.NonBid{
+		ImpId:      impId,
+		StatusCode: nonBidReason,
+	}
+}
+
+func buildProxyNonBids(impIds []string, nonBidReason openrtb3.NoBidReason) []openrtb_ext.NonBid {
+	proxyNonBids := []openrtb_ext.NonBid{}
+	for _, impId := range impIds {
+		nonBid := newProxyNonBid(impId, int(nonBidReason))
+		proxyNonBids = append(proxyNonBids, nonBid)
+	}
+	return proxyNonBids
 }
