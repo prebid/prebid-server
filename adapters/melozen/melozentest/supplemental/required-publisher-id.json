@@ -1,0 +1,40 @@
+{
+    "mockBidRequest": {
+        "id": "web-banner",
+        "tmax": 3000,
+        "imp": [
+            {
+                "id": "baner-imp-id",
+                "ext": {
+                    "bidder": {}
+                },
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        }
+                    ]
+                }
+            }
+        ],
+        "test": 0,
+        "site": {
+            "publisher": {
+                "id": "1"
+            },
+            "page": "https://some-site.com",
+            "ref": "https://some-site.com"
+        },
+        "device": {
+            "w": 1200,
+            "h": 900
+        }
+    },
+    "expectedMakeRequestsErrors": [
+        {
+            "value": "The publisher ID must not be empty",
+            "comparison": "literal"
+        }
+    ]
+}

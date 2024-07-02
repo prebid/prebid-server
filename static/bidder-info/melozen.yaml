@@ -1,0 +1,17 @@
+# We have the following regional endpoint domains: us-east and us-west
+# Please deploy this config in each of your datacenters with the appropriate regional subdomain
+endpoint: "https://prebid.melozen.com/rtb/v2/bid?publisher_id={{.PublisherID}}"
+endpointCompression: gzip
+geoscope:
+  - global
+maintainer:
+  email: DSP@meldong.com
+capabilities:
+  site:
+    mediaTypes:
+    - banner
+    - native
+  app:
+    mediaTypes:
+    - banner
+    - native
