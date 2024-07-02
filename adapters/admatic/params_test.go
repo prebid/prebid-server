@@ -51,4 +51,6 @@ var invalidParams = []string{
 	}`,
 	`{}`,
 	`{"host": 123, "networkId":"1111"}`,
+	`{"host": "layer.serve.admatic.com.tr", "networkId":"1111"}`,
+	`{"host": 1111, "networkId":1111}`,
 }

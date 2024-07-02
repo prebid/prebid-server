@@ -22,7 +22,7 @@ func TestJsonSamples(t *testing.T) {
 }
 
 func TestEndpointTemplateMalformed(t *testing.T) {
-	_, buildErr := Builder(openrtb_ext.BidderAso, config.Adapter{
+	_, buildErr := Builder(openrtb_ext.BidderAdmatic, config.Adapter{
 		Endpoint: "host={{Host}}"}, config.Server{ExternalUrl: "http://hosturl.com"})
 
 	assert.Error(t, buildErr)
