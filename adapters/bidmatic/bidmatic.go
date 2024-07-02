@@ -186,12 +186,7 @@ func validateImpression(imp *openrtb2.Imp) (int, error) {
 
 	imp.Ext = impExtBuffer
 
-	source, err := impExt.SourceId.Int64()
-	if err != nil {
-		return 0, &errortypes.BadInput{
-			Message: fmt.Sprintf("ignoring imp id=%s, source parsing err: %s", imp.ID, err),
-		}
-	}
+	source, _ := impExt.SourceId.Int64() // json.Unmarshal returns err if it isn't valid
 	return int(source), nil
 }
 
