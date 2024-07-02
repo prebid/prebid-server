@@ -1,9 +1,7 @@
 package exchange
 
 import (
-	"net"
-	"net/url"
-	"os"
+	"errors"
 	"syscall"
 
 	"github.com/prebid/openrtb/v20/openrtb3"
@@ -43,18 +41,8 @@ func httpInfoToNonBidReason(httpInfo *httpCallInfo) openrtb3.NoBidReason {
 	errorCode := errortypes.ReadCode(httpInfo.err)
 	nonBidReason := errorToNonBidReason(errorCode)
 	if nonBidReason == ErrorGeneral {
-		if uError, ok := httpInfo.err.(*url.Error); ok {
-			if opError, ok := uError.Err.(*net.OpError); ok {
-				if sysCallErr, ok := opError.Err.(*os.SyscallError); ok {
-					if sysErr, ok := sysCallErr.Err.(syscall.Errno); ok {
-						switch sysErr {
-						case syscall.ECONNREFUSED:
-							return ErrorBidderUnreachable
-						}
-					}
-				}
-
-			}
+		if errors.Is(httpInfo.err, syscall.ECONNREFUSED) {
+			return ErrorBidderUnreachable
 		}
 	}
 	return nonBidReason
