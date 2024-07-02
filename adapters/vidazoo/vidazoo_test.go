@@ -1,4 +1,4 @@
-package openweb
+package vidazoo
 
 import (
 	"testing"
@@ -9,12 +9,16 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderOpenWeb, config.Adapter{
-		Endpoint: "https://pbs.openwebmp.com/pbs"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+	bidder, buildErr := Builder(openrtb_ext.BidderVidazoo, config.Adapter{
+		Endpoint: "http://prebid-server.cootlogix.com/openrtb/",
+	},
+		config.Server{
+			ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2",
+		})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	adapterstest.RunJSONBidderTest(t, "openwebtest", bidder)
+	adapterstest.RunJSONBidderTest(t, "vidazootest", bidder)
 }

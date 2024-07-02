@@ -14,7 +14,7 @@
         },
         "ext": {
           "bidder": {
-            "aid": 777,
+            "org": "777",
             "placementId": "1"
           }
         }
@@ -40,7 +40,7 @@
               },
               "ext": {
                 "bidder": {
-                  "aid": 777,
+                  "org": "777",
                   "placementId": "1"
                 }
               }
@@ -55,16 +55,21 @@
         "status": 200,
         "body": {
           "id": "test-request-id",
+          "cur": "USD",
           "seatbid": [
             {
+              "seat": "958",
               "bid": [
                 {
-                  "id": "test-bid-id",
+                  "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
                   "impid": "test-imp-id",
-                  "price": 3.5,
+                  "price": 0.500000,
                   "w": 900,
                   "h": 250,
-                  "mtype": 2
+                  "mimes": [
+                    "video/x-flv",
+                    "video/mp4"
+                  ]
                 }
               ]
             }
@@ -73,22 +78,16 @@
       }
     }
   ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "unsupported MType 0",
+      "comparison": "literal"
+    }
+  ],
   "expectedBidResponses": [
     {
       "currency": "USD",
-      "bids": [
-        {
-          "bid": {
-            "id": "test-bid-id",
-            "impid": "test-imp-id",
-            "price": 3.5,
-            "w": 900,
-            "h": 250,
-            "mtype": 2
-          },
-          "type": "video"
-        }
-      ]
+      "bids": []
     }
   ]
 }
