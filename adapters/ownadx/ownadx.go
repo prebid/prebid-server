@@ -145,14 +145,14 @@ func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{
 			&errortypes.BadServerResponse{
-				Message: fmt.Sprintf("Bad server response "),
+				Message: "Bad server response ",
 			},
 		}
 	}
 	if len(bidResp.SeatBid) == 0 {
 		return nil, []error{
 			&errortypes.BadServerResponse{
-				Message: fmt.Sprintf("Array SeatBid cannot be empty "),
+				Message: "Array SeatBid cannot be empty ",
 			},
 		}
 	}
@@ -162,7 +162,7 @@ func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 	if len(seatBid.Bid) == 0 {
 		return nil, []error{
 			&errortypes.BadServerResponse{
-				Message: fmt.Sprintf("Bid cannot be empty "),
+				Message: "Bid cannot be empty ",
 			},
 		}
 	}

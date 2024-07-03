@@ -1065,7 +1065,7 @@ func TestMultiCurrencies_RateConverterNotSet(t *testing.T) {
 		seatBid := seatBids[0]
 
 		// Verify:
-		assert.Equal(t, false, (seatBid == nil && tc.expectedBidsCount != 0), tc.description)
+		assert.Falsef(t, seatBid == nil && tc.expectedBidsCount != 0, tc.description)
 		assert.Equal(t, tc.expectedBidsCount, uint(len(seatBid.Bids)), tc.description)
 		assert.ElementsMatch(t, tc.expectedBadCurrencyErrors, errs, tc.description)
 		assert.False(t, extraBidderRespInfo.respProcessingStartTime.IsZero())

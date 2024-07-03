@@ -31,6 +31,7 @@ import (
 	"github.com/prebid/prebid-server/v2/metrics"
 	metricsConfig "github.com/prebid/prebid-server/v2/metrics/config"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/ortb"
 	"github.com/prebid/prebid-server/v2/privacy"
 	"github.com/prebid/prebid-server/v2/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/v2/util/jsonutil"
@@ -202,7 +203,7 @@ func TestAMPPageInfo(t *testing.T) {
 	endpoint, _ := NewAmpEndpoint(
 		fakeUUIDGenerator{},
 		exchange,
-		newParamsValidator(t),
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 		&mockAmpStoredReqFetcher{stored},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
@@ -300,10 +301,11 @@ func TestGDPRConsent(t *testing.T) {
 
 		// Build Exchange Endpoint
 		mockExchange := &mockAmpExchange{}
+
 		endpoint, _ := NewAmpEndpoint(
 			fakeUUIDGenerator{},
 			mockExchange,
-			newParamsValidator(t),
+			ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 			&mockAmpStoredReqFetcher{stored},
 			empty_fetcher.EmptyFetcher{},
 			&config.Configuration{
@@ -730,7 +732,7 @@ func TestCCPAConsent(t *testing.T) {
 		endpoint, _ := NewAmpEndpoint(
 			fakeUUIDGenerator{},
 			mockExchange,
-			newParamsValidator(t),
+			ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 			&mockAmpStoredReqFetcher{stored},
 			empty_fetcher.EmptyFetcher{},
 			&config.Configuration{MaxRequestSize: maxSize},
@@ -844,7 +846,7 @@ func TestConsentWarnings(t *testing.T) {
 		endpoint, _ := NewAmpEndpoint(
 			fakeUUIDGenerator{},
 			mockExchange,
-			newParamsValidator(t),
+			ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 			&mockAmpStoredReqFetcher{stored},
 			empty_fetcher.EmptyFetcher{},
 			&config.Configuration{MaxRequestSize: maxSize},
@@ -940,7 +942,7 @@ func TestNewAndLegacyConsentBothProvided(t *testing.T) {
 		endpoint, _ := NewAmpEndpoint(
 			fakeUUIDGenerator{},
 			mockExchange,
-			newParamsValidator(t),
+			ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 			&mockAmpStoredReqFetcher{stored},
 			empty_fetcher.EmptyFetcher{},
 			&config.Configuration{
@@ -998,7 +1000,7 @@ func TestAMPSiteExt(t *testing.T) {
 	endpoint, _ := NewAmpEndpoint(
 		fakeUUIDGenerator{},
 		exchange,
-		newParamsValidator(t),
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 		&mockAmpStoredReqFetcher{stored},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
@@ -1060,7 +1062,7 @@ func TestAmpBadRequests(t *testing.T) {
 	endpoint, _ := NewAmpEndpoint(
 		fakeUUIDGenerator{},
 		&mockAmpExchange{},
-		newParamsValidator(t),
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 		&mockAmpStoredReqFetcher{data: mockAmpStoredReq},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
@@ -1149,7 +1151,7 @@ func TestAmpDebug(t *testing.T) {
 	endpoint, _ := NewAmpEndpoint(
 		fakeUUIDGenerator{},
 		&mockAmpExchange{},
-		newParamsValidator(t),
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 		&mockAmpStoredReqFetcher{requests},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
@@ -1285,7 +1287,7 @@ func TestQueryParamOverrides(t *testing.T) {
 	endpoint, _ := NewAmpEndpoint(
 		fakeUUIDGenerator{},
 		&mockAmpExchange{},
-		newParamsValidator(t),
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 		&mockAmpStoredReqFetcher{requests},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
@@ -1443,7 +1445,7 @@ func (s formatOverrideSpec) execute(t *testing.T) {
 	endpoint, _ := NewAmpEndpoint(
 		fakeUUIDGenerator{},
 		&mockAmpExchange{},
-		newParamsValidator(t),
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 		&mockAmpStoredReqFetcher{requests},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
@@ -1985,7 +1987,7 @@ func ampObjectTestSetup(t *testing.T, inTagId string, inStoredRequest json.RawMe
 	endpoint, _ := NewAmpEndpoint(
 		fakeUUIDGenerator{id: "foo", err: nil},
 		exchange,
-		newParamsValidator(t),
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 		mockAmpFetcher,
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize, GenerateRequestID: generateRequestID},
@@ -2038,7 +2040,7 @@ func TestAmpAuctionResponseHeaders(t *testing.T) {
 	endpoint, _ := NewAmpEndpoint(
 		fakeUUIDGenerator{},
 		exchange,
-		newParamsValidator(t),
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 		&mockAmpStoredReqFetcher{storedRequests},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
@@ -2074,7 +2076,7 @@ func TestRequestWithTargeting(t *testing.T) {
 	endpoint, _ := NewAmpEndpoint(
 		fakeUUIDGenerator{},
 		exchange,
-		newParamsValidator(t),
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 		&mockAmpStoredReqFetcher{stored},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
@@ -2523,7 +2525,7 @@ func TestAmpAuctionDebugWarningsOnly(t *testing.T) {
 	endpoint, _ := NewAmpEndpoint(
 		fakeUUIDGenerator{},
 		exchange,
-		newParamsValidator(t),
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 		&mockAmpStoredReqFetcher{storedRequests},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{
