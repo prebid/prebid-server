@@ -9,10 +9,6 @@
             {
               "w": 300,
               "h": 250
-            },
-            {
-              "w": 320,
-              "h": 50
             }
           ]
         },
@@ -31,7 +27,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://prebid.display.io/?publisher=101",
+        "uri": "https://adapter.endpoint/?macro=101",
         "body": {
           "id": "testid",
           "imp": [
@@ -42,10 +38,6 @@
                   {
                     "w": 300,
                     "h": 250
-                  },
-                  {
-                    "w": 320,
-                    "h": 50
                   }
                 ]
               },

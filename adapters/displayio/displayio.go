@@ -4,14 +4,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"text/template"
+
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/macros"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"net/http"
-	"text/template"
 )
 
 type adapter struct {
@@ -30,14 +31,12 @@ func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *
 	headers.Add("Accept", "application/json")
 	headers.Add("x-openrtb-version", "2.5")
 
-	var requestExt map[string]interface{}
-	var dioExt reqDioExt
+	result := make([]*adapters.RequestData, 0, len(request.Imp))
+	errs := make([]error, 0, len(request.Imp))
 
-	impressions := request.Imp
-	result := make([]*adapters.RequestData, 0, len(impressions))
-	errs := make([]error, 0, len(impressions))
+	for _, impression := range request.Imp {
+		var requestExt map[string]interface{}
 
-	for _, impression := range impressions {
 		if impression.BidFloor == 0 {
 			errs = append(errs, &errortypes.BadInput{
 				Message: "BidFloor should be defined",
@@ -81,23 +80,25 @@ func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *
 			continue
 		}
 
-		dioExt = reqDioExt{PlacementId: impressionExt.PlacementId, InventoryId: impressionExt.InventoryId}
+		dioExt := reqDioExt{PlacementId: impressionExt.PlacementId, InventoryId: impressionExt.InventoryId}
 
-		err = json.Unmarshal(request.Ext, &requestExt)
+		requestCopy := *request
+
+		err = json.Unmarshal(requestCopy.Ext, &requestExt)
 		if err != nil {
 			requestExt = make(map[string]interface{})
 		}
 
 		requestExt["displayio"] = dioExt
 
-		request.Ext, err = json.Marshal(requestExt)
+		requestCopy.Ext, err = json.Marshal(requestExt)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		request.Imp = []openrtb2.Imp{impression}
-		body, err := json.Marshal(request)
+		requestCopy.Imp = []openrtb2.Imp{impression}
+		body, err := json.Marshal(requestCopy)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -113,11 +114,9 @@ func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *
 			Uri:     url,
 			Body:    body,
 			Headers: headers,
-			ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
+			ImpIDs:  openrtb_ext.GetImpIDs(requestCopy.Imp),
 		})
 	}
-
-	request.Imp = impressions
 
 	if len(result) == 0 {
 		return nil, errs
