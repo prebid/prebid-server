@@ -21,7 +21,7 @@ func (snb *nonBids) addBid(bid *entities.PbsOrtbBid, nonBidReason int, seat stri
 	nonBid := openrtb_ext.NonBid{
 		ImpId:      bid.Bid.ImpID,
 		StatusCode: nonBidReason,
-		Ext: openrtb_ext.NonBidExt{
+		Ext: &openrtb_ext.NonBidExt{
 			Prebid: openrtb_ext.ExtResponseNonBidPrebid{Bid: openrtb_ext.NonBidObject{
 				Price:          bid.Bid.Price,
 				ADomain:        bid.Bid.ADomain,
