@@ -69,7 +69,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderBidmyadz,
 	BidderBidsCube,
 	BidderBidstack,
-	BidderBizzclick,
+	BidderBlasto,
 	BidderBliink,
 	BidderBlue,
 	BidderBluesea,
@@ -79,6 +79,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderBWX,
 	BidderCadentApertureMX,
 	BidderCcx,
+	BidderCointraffic,
 	BidderCoinzilla,
 	BidderColossus,
 	BidderCompass,
@@ -141,6 +142,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderMadvertise,
 	BidderMarsmedia,
 	BidderMediafuse,
+	BidderMediaGo,
 	BidderMedianet,
 	BidderMgid,
 	BidderMgidX,
@@ -207,6 +209,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderUndertone,
 	BidderUnicorn,
 	BidderUnruly,
+	BidderVidazoo,
 	BidderVideoByte,
 	BidderVideoHeroes,
 	BidderVidoomy,
@@ -382,7 +385,7 @@ const (
 	BidderBidmyadz          BidderName = "bidmyadz"
 	BidderBidsCube          BidderName = "bidscube"
 	BidderBidstack          BidderName = "bidstack"
-	BidderBizzclick         BidderName = "bizzclick"
+	BidderBlasto            BidderName = "blasto"
 	BidderBliink            BidderName = "bliink"
 	BidderBlue              BidderName = "blue"
 	BidderBluesea           BidderName = "bluesea"
@@ -392,6 +395,7 @@ const (
 	BidderBWX               BidderName = "bwx"
 	BidderCadentApertureMX  BidderName = "cadent_aperture_mx"
 	BidderCcx               BidderName = "ccx"
+	BidderCointraffic       BidderName = "cointraffic"
 	BidderCoinzilla         BidderName = "coinzilla"
 	BidderColossus          BidderName = "colossus"
 	BidderCompass           BidderName = "compass"
@@ -454,6 +458,7 @@ const (
 	BidderMadvertise        BidderName = "madvertise"
 	BidderMarsmedia         BidderName = "marsmedia"
 	BidderMediafuse         BidderName = "mediafuse"
+	BidderMediaGo           BidderName = "mediago"
 	BidderMedianet          BidderName = "medianet"
 	BidderMgid              BidderName = "mgid"
 	BidderMgidX             BidderName = "mgidX"
@@ -520,6 +525,7 @@ const (
 	BidderUndertone         BidderName = "undertone"
 	BidderUnicorn           BidderName = "unicorn"
 	BidderUnruly            BidderName = "unruly"
+	BidderVidazoo           BidderName = "vidazoo"
 	BidderVideoByte         BidderName = "videobyte"
 	BidderVideoHeroes       BidderName = "videoheroes"
 	BidderVidoomy           BidderName = "vidoomy"

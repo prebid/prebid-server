@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Blasto Adapter Params",
+  "description": "A schema which validates params accepted by the Blasto adapter",
+  "type": "object",
+  "properties": {
+    "accountId": {
+      "type": "string",
+      "description": "Account id",
+      "minLength": 1
+    },
+    "sourceId": {
+      "type": "string",
+      "description": "Source id",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "accountId",
+    "sourceId"
+  ]
+}
