@@ -813,10 +813,6 @@ func (e *exchange) getAllBids(
 		//but we need to add all bidders data to adapterExtra to have metrics and other metadata
 		adapterExtra[brw.bidder] = brw.adapterExtra
 
-		if !extraRespInfo.bidsFound && adapterBids[brw.bidder] != nil && len(adapterBids[brw.bidder].Bids) > 0 {
-			extraRespInfo.bidsFound = true
-		}
-
 		// collect adapter non bids
 		if brw.adapterNonBids != nil {
 			nonBids = append(nonBids, *brw.adapterNonBids)
