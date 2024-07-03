@@ -184,69 +184,67 @@ func processDataFromRequest(requestData *openrtb2.BidRequest, imp openrtb2.Imp, 
 }
 
 func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if response.StatusCode == http.StatusNoContent {
-		return nil, nil
-	}
-	if response.StatusCode == http.StatusBadRequest {
-		return nil, nil
-	}
-	if response.StatusCode != http.StatusOK {
+	if response.StatusCode == http.StatusNoContent || response.StatusCode == http.StatusBadRequest || response.StatusCode != http.StatusOK {
 		return nil, nil
 	}
 
-	if err := json.Unmarshal(response.Body, &response); err != nil {
+	var bidResp map[string]interface{}
+	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
+
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(MaxBids)
-	//check no bids
-	jsonData := make(map[string]interface{})
+	jsonData := bidResp["bids"].([]interface{})
 
-	json.Unmarshal([]byte(response.Body), &jsonData)
-	//Always one bid
-	bid := getBidFromResponse(jsonData)
+	for _, bidData := range jsonData {
+		bidMap := bidData.(map[string]interface{})
+		bid := getBidFromResponse(bidMap)
+		if bid == nil {
+			continue
+		}
 
-	bidType, err := getBidType(internalRequest.Imp[0])
-	if err != nil {
-		// handle error
-		return nil, []error{err}
+		bidTypes, err := getBidTypes(internalRequest.Imp[0])
+		if err != nil {
+			return nil, []error{err}
+		}
+
+		for _, bidType := range bidTypes {
+			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+				Bid:     bid,
+				BidType: bidType,
+			})
+		}
 	}
-	bidResponse.Currency = getCurrency(internalRequest)
-	bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-		Bid:     bid,
-		BidType: bidType,
-	})
 
+	bidResponse.Currency = getCurrency(internalRequest)
 	return bidResponse, nil
 }
-
 func getBidFromResponse(requestData map[string]interface{}) *openrtb2.Bid {
-	processData := requestData["bids"].([]interface{})[0].(map[string]interface{})
+	processData := requestData["bid_id"].(string)
 
 	bid := &openrtb2.Bid{
-		ID:    processData["bid_id"].(string),
-		Price: getBidPrice(processData),
-		ImpID: processData["imp_id"].(string),
-		CrID:  processData["crid"].(string),
+		ID:    processData,
+		Price: getBidPrice(requestData),
+		ImpID: requestData["imp_id"].(string),
+		CrID:  requestData["crid"].(string),
 	}
-	//if HTML is filled on jsonData then fill ADM with it
-	if value, ok := processData["html"].(string); ok {
+
+	if value, ok := requestData["html"].(string); ok {
 		bid.AdM = value
 	}
-	//if Width and Height are filled on jsonData then fill W and H with it
-	if value, ok := processData["w"].(string); ok {
 
-		i, _ := strconv.ParseInt(value, 10, 64)
-		if i > 0 {
+	if value, ok := requestData["w"].(string); ok {
+		if i, err := strconv.ParseInt(value, 10, 64); err == nil && i > 0 {
 			bid.W = i
 		}
 	}
-	if value, ok := processData["h"].(string); ok {
-		i, _ := strconv.ParseInt(value, 10, 64)
-		if i > 0 {
+
+	if value, ok := requestData["h"].(string); ok {
+		if i, err := strconv.ParseInt(value, 10, 64); err == nil && i > 0 {
 			bid.H = i
 		}
 	}
-	//if Bid Price is 0 then return nil
+
 	if bid.Price == 0 {
 		return nil
 	}
@@ -271,4 +269,23 @@ func getBidType(imp openrtb2.Imp) (openrtb_ext.BidType, error) {
 	}
 
 	return "", fmt.Errorf("failed to find matching imp for bid %s", imp.ID)
+}
+
+func getBidTypes(imp openrtb2.Imp) ([]openrtb_ext.BidType, error) {
+	var bidTypes []openrtb_ext.BidType
+
+	if imp.Banner != nil {
+		bidTypes = append(bidTypes, openrtb_ext.BidTypeBanner)
+	}
+	if imp.Video != nil {
+		bidTypes = append(bidTypes, openrtb_ext.BidTypeVideo)
+	}
+	if imp.Audio != nil {
+		bidTypes = append(bidTypes, openrtb_ext.BidTypeAudio)
+	}
+	if len(bidTypes) == 0 {
+		return nil, fmt.Errorf("failed to find matching imp for bid %s", imp.ID)
+	}
+
+	return bidTypes, nil
 }
