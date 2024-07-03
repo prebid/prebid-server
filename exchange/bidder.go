@@ -415,7 +415,9 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 		seatBids = append(seatBids, seatBid)
 	}
 
-	extraRespInfo.adapterNonBids = seatNonBids
+	if len(seatNonBids.NonBid) > 0 {
+		extraRespInfo.adapterNonBids = seatNonBids
+	}
 	return seatBids, extraRespInfo, errs
 }
 
