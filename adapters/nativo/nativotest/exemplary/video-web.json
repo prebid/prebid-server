@@ -29,11 +29,6 @@
           "h": 480,
           "minduration": 120,
           "maxduration": 150
-        },
-        "ext": {
-          "bidder": {
-            "accountid": "hash"
-          }
         }
       }
     ]
