@@ -130,6 +130,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/mobfoxpb"
 	"github.com/prebid/prebid-server/v2/adapters/mobilefuse"
 	"github.com/prebid/prebid-server/v2/adapters/motorik"
+	"github.com/prebid/prebid-server/v2/adapters/nativo"
 	"github.com/prebid/prebid-server/v2/adapters/nextmillennium"
 	"github.com/prebid/prebid-server/v2/adapters/nobid"
 	"github.com/prebid/prebid-server/v2/adapters/oms"
@@ -345,6 +346,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderMobfoxpb:          mobfoxpb.Builder,
 		openrtb_ext.BidderMobileFuse:        mobilefuse.Builder,
 		openrtb_ext.BidderMotorik:           motorik.Builder,
+		openrtb_ext.BidderNativo:            nativo.Builder,
 		openrtb_ext.BidderNextMillennium:    nextmillennium.Builder,
 		openrtb_ext.BidderNoBid:             nobid.Builder,
 		openrtb_ext.BidderOms:               oms.Builder,
