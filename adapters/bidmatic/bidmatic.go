@@ -139,13 +139,6 @@ func (a *adapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.Request
 }
 
 func validateImpression(imp *openrtb2.Imp) (int, error) {
-
-	if imp.Banner == nil && imp.Video == nil {
-		return 0, &errortypes.BadInput{
-			Message: fmt.Sprintf("ignoring imp id=%s, bidmatic supports only Video and Banner", imp.ID),
-		}
-	}
-
 	if len(imp.Ext) == 0 {
 		return 0, &errortypes.BadInput{
 			Message: fmt.Sprintf("ignoring imp id=%s, extImpBidder is empty", imp.ID),
