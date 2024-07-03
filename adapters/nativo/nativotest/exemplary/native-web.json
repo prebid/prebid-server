@@ -37,7 +37,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://us.example.com/bid?uqhash=hash",
+        "uri": "https://foo.io/?src=prebid",
         "body": {
           "id": "some-request-id",
           "device": {
