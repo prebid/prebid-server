@@ -139,7 +139,7 @@ type NonBid struct {
 
 // SeatNonBid is collection of NonBid objects with seat information
 type SeatNonBid struct {
-	NonBid []NonBid         `json:"nonbid"`
-	Seat   string           `json:"seat"`
-	Ext    *json.RawMessage `json:"ext,omitempty"`
+	NonBid []NonBid        `json:"nonbid"`
+	Seat   string          `json:"seat"`
+	Ext    json.RawMessage `json:"ext,omitempty"`
 }

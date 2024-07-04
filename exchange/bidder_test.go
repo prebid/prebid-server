@@ -3171,7 +3171,7 @@ func TestSeatNonBid(t *testing.T) {
 				},
 			},
 			expect: expect{
-				seatNonBids: &openrtb_ext.SeatNonBid{NonBid: []openrtb_ext.NonBid{}},
+				seatNonBids: nil,
 				seatBids:    []*entities.PbsOrtbSeatBid{{Bids: []*entities.PbsOrtbBid{}, Currency: "USD", HttpCalls: []*openrtb_ext.ExtHttpCall{}}},
 				errors:      []error{&url.Error{Op: "Get", URL: "", Err: errors.New("some_error")}},
 			},
@@ -3208,12 +3208,14 @@ func TestSeatNonBid(t *testing.T) {
 			assert.Equal(t, test.expect.seatBids, seatBids)
 			assert.Equal(t, test.expect.seatNonBids, responseExtra.adapterNonBids)
 			assert.Equal(t, test.expect.errors, errors)
-			for _, nonBid := range responseExtra.adapterNonBids.NonBid {
-				for _, seatBid := range seatBids {
-					for _, bid := range seatBid.Bids {
-						// ensure non bids are not present in seat bids
-						if nonBid.ImpId == bid.Bid.ImpID {
-							assert.Fail(t, "imp id [%s] present in both seat bid and non seat bid", nonBid.ImpId)
+			if test.expect.seatNonBids != nil {
+				for _, nonBid := range responseExtra.adapterNonBids.NonBid {
+					for _, seatBid := range seatBids {
+						for _, bid := range seatBid.Bids {
+							// ensure non bids are not present in seat bids
+							if nonBid.ImpId == bid.Bid.ImpID {
+								assert.Fail(t, "imp id [%s] present in both seat bid and non seat bid", nonBid.ImpId)
+							}
 						}
 					}
 				}
