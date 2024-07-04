@@ -136,26 +136,22 @@ func preprocessImp(imp *openrtb2.Imp) error {
 	}
 
 	if imp.Banner != nil {
-		bannerCopy, err := assignBannerSize(imp.Banner)
-		if err != nil {
-			return err
-		}
-		imp.Banner = bannerCopy
+		imp.Banner = assignBannerSize(imp.Banner)
 	}
 
 	return nil
 }
 
-func assignBannerSize(banner *openrtb2.Banner) (*openrtb2.Banner, error) {
+func assignBannerSize(banner *openrtb2.Banner) *openrtb2.Banner {
 	if banner.W != nil && banner.H != nil {
-		return banner, nil
+		return banner
 	}
 
 	if len(banner.Format) == 0 {
-		return banner, nil
+		return banner
 	}
 
-	return assignBannerWidthAndHeight(banner, banner.Format[0].W, banner.Format[0].H), nil
+	return assignBannerWidthAndHeight(banner, banner.Format[0].W, banner.Format[0].H)
 }
 
 func assignBannerWidthAndHeight(banner *openrtb2.Banner, w, h int64) *openrtb2.Banner {

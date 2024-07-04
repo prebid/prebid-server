@@ -81,10 +81,9 @@ func TestAssignBannerSize(t *testing.T) {
 			{W: 728, H: 90},
 		},
 	}
-	b1n, err := assignBannerSize(b1)
+	b1n := assignBannerSize(b1)
 	assert.Equal(t, b1n.W, ptrutil.ToPtr(int64(300)))
 	assert.Equal(t, b1n.H, ptrutil.ToPtr(int64(250)))
-	assert.Nil(t, err)
 	assert.NotSame(t, b1, b1n)
 
 	b2 := &openrtb2.Banner{
@@ -95,20 +94,18 @@ func TestAssignBannerSize(t *testing.T) {
 		W: ptrutil.ToPtr(int64(336)),
 		H: ptrutil.ToPtr(int64(280)),
 	}
-	b2n, err := assignBannerSize(b2)
+	b2n := assignBannerSize(b2)
 	assert.Equal(t, b2n.W, ptrutil.ToPtr(int64(336)))
 	assert.Equal(t, b2n.H, ptrutil.ToPtr(int64(280)))
-	assert.Nil(t, err)
 	assert.Same(t, b2, b2n)
 
 	b3 := &openrtb2.Banner{
 		W: ptrutil.ToPtr(int64(336)),
 		H: ptrutil.ToPtr(int64(280)),
 	}
-	b3n, err := assignBannerSize(b3)
+	b3n := assignBannerSize(b3)
 	assert.Equal(t, b3n.W, ptrutil.ToPtr(int64(336)))
 	assert.Equal(t, b3n.H, ptrutil.ToPtr(int64(280)))
-	assert.Nil(t, err)
 	assert.Same(t, b3, b3n)
 
 	b4 := &openrtb2.Banner{
@@ -118,17 +115,15 @@ func TestAssignBannerSize(t *testing.T) {
 		},
 		W: ptrutil.ToPtr(int64(336)),
 	}
-	b4n, err := assignBannerSize(b4)
+	b4n := assignBannerSize(b4)
 	assert.Equal(t, b4n.W, ptrutil.ToPtr(int64(300)))
 	assert.Equal(t, b4n.H, ptrutil.ToPtr(int64(250)))
-	assert.Nil(t, err)
 	assert.NotSame(t, b4, b4n)
 
 	b5 := &openrtb2.Banner{}
-	b5n, err := assignBannerSize(b5)
+	b5n := assignBannerSize(b5)
 	assert.Nil(t, b5n.W)
 	assert.Nil(t, b5n.H)
-	assert.Nil(t, err)
 	assert.Same(t, b5, b5n)
 }
 
