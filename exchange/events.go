@@ -4,6 +4,8 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/v2/exchange/entities"
+	"github.com/prebid/prebid-server/v2/injector"
+	"github.com/prebid/prebid-server/v2/macros"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
 	"github.com/prebid/prebid-server/v2/analytics"
@@ -22,10 +24,12 @@ type eventTracking struct {
 	integrationType    string
 	bidderInfos        config.BidderInfos
 	externalURL        string
+	events             injector.VASTEvents
+	macroProvider      *macros.MacroProvider
 }
 
 // getEventTracking creates an eventTracking object from the different configuration sources
-func getEventTracking(requestExtPrebid *openrtb_ext.ExtRequestPrebid, ts time.Time, account *config.Account, bidderInfos config.BidderInfos, externalURL string) *eventTracking {
+func getEventTracking(requestExtPrebid *openrtb_ext.ExtRequestPrebid, ts time.Time, account *config.Account, bidderInfos config.BidderInfos, externalURL string, mp *macros.MacroProvider) *eventTracking {
 	return &eventTracking{
 		accountID:          account.ID,
 		enabledForAccount:  account.Events.Enabled,
@@ -34,6 +38,8 @@ func getEventTracking(requestExtPrebid *openrtb_ext.ExtRequestPrebid, ts time.Ti
 		integrationType:    getIntegrationType(requestExtPrebid),
 		bidderInfos:        bidderInfos,
 		externalURL:        externalURL,
+		macroProvider:      mp,
+		events:             convertToVastEvent(account.Events),
 	}
 }
 
@@ -77,6 +83,8 @@ func (ev *eventTracking) modifyBidVAST(pbsBid *entities.PbsOrtbBid, bidderName o
 	if newVastXML, ok := events.ModifyVastXmlString(ev.externalURL, vastXML, bidID, bidderName.String(), ev.accountID, ev.auctionTimestampMs, ev.integrationType); ok {
 		bid.AdM = newVastXML
 	}
+
+	ev.InjectTrackers(pbsBid, bidderName)
 }
 
 // modifyBidJSON injects "wurl" (win) event url if needed, otherwise returns original json
@@ -133,4 +141,47 @@ func (ev *eventTracking) makeEventURL(evType analytics.EventType, pbsBid *entiti
 // isEventAllowed checks if events are enabled by default or on account/request level
 func (ev *eventTracking) isEventAllowed() bool {
 	return ev.enabledForAccount || ev.enabledForRequest
+}
+
+func (ev *eventTracking) InjectTrackers(pbsBid *entities.PbsOrtbBid, bidderName openrtb_ext.BidderName) {
+	ev.macroProvider.PopulateBidMacros(pbsBid, bidderName.String())
+	ti := injector.NewTrackerInjector(
+		macros.NewStringIndexBasedReplacer(),
+		ev.macroProvider,
+		ev.events,
+	)
+
+	if adm, err := ti.InjectTracker(pbsBid.Bid.AdM, pbsBid.Bid.NURL); err == nil {
+		pbsBid.Bid.AdM = adm
+	}
+}
+
+func convertToVastEvent(events config.Events) injector.VASTEvents {
+	ve := injector.VASTEvents{
+		TrackingEvents: make(map[string][]string),
+	}
+
+	for _, event := range events.VASTEvents {
+		switch event.CreateElement {
+		case config.ImpressionVASTElement:
+			ve.Impressions = appendURLs(ve.Impressions, event, events.DefaultURL)
+		case config.ErrorVASTElement:
+			ve.Errors = appendURLs(ve.Errors, event, events.DefaultURL)
+		case config.TrackingVASTElement:
+			ve.TrackingEvents[string(event.Type)] = appendURLs(ve.TrackingEvents[string(event.Type)], event, events.DefaultURL)
+		case config.ClickTrackingVASTElement:
+			ve.VideoClicks = appendURLs(ve.VideoClicks, event, events.DefaultURL)
+		}
+	}
+
+	return ve
+}
+
+// appendURLs appends event URLs to the provided slice and, if not excluded, the default URL.
+func appendURLs(urls []string, event config.VASTEvent, defaultURL string) []string {
+	urls = append(urls, event.URLs...)
+	if !event.ExcludeDefaultURL {
+		urls = append(urls, defaultURL)
+	}
+	return urls
 }
