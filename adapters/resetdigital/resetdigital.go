@@ -24,8 +24,8 @@ type adapter struct {
 }
 
 type resetDigitalRequest struct {
-	Site resetDigitalRequestSite  `json:"site"`
-	Imps []resetDigitalRequesImps `json:"imps"`
+	Site resetDigitalRequestSite   `json:"site"`
+	Imps []resetDigitalRequestImps `json:"imps"`
 }
 
 type resetDigitalRequestSite struct {
@@ -33,7 +33,7 @@ type resetDigitalRequestSite struct {
 	Referrer string `json:"referrer"`
 }
 
-type resetDigitalRequesImps struct {
+type resetDigitalRequestImps struct {
 	ForceBid bool `json:"force_bid"`
 	ZoneID   struct {
 		PlacementID string `json:"placementId"`
@@ -154,7 +154,7 @@ func processDataFromRequest(requestData *openrtb2.BidRequest, imp openrtb2.Imp, 
 	resetDigitalRequestData.Site.Domain = requestData.Site.Domain
 	resetDigitalRequestData.Site.Referrer = requestData.Site.Page
 
-	resetDigitalRequestData.Imps = append(resetDigitalRequestData.Imps, resetDigitalRequesImps{})
+	resetDigitalRequestData.Imps = append(resetDigitalRequestData.Imps, resetDigitalRequestImps{})
 	resetDigitalRequestData.Imps[0].BidID = requestData.ID
 	resetDigitalRequestData.Imps[0].ImpID = imp.ID
 
