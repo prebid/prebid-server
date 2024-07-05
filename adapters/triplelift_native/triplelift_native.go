@@ -38,7 +38,7 @@ type ExtImpData struct {
 }
 
 type ExtImp struct {
-	adapters.ExtImpBidder
+	*adapters.ExtImpBidder
 	Data *ExtImpData `json:"data,omitempty"`
 }
 
@@ -48,7 +48,7 @@ func getBidType(ext TripleliftRespExt) openrtb_ext.BidType {
 
 func processImp(imp *openrtb2.Imp, request *openrtb2.BidRequest) error {
 	// get the triplelift extension
-	var ext adapters.ExtImpBidder
+	var ext ExtImp
 	var tlext openrtb_ext.ExtImpTriplelift
 	var siteCopy openrtb2.Site
 	var extData ExtImpData
@@ -70,9 +70,10 @@ func processImp(imp *openrtb2.Imp, request *openrtb2.BidRequest) error {
 		return fmt.Errorf("no inv_code specified")
 	}
 
-	fmt.Println(extData)
-	fmt.Println(extData.TagCode)
-	fmt.Println(ext)
+    if ext.Data != nil {
+        extData = *ext.Data
+    }
+
 	if extData.TagCode != "" {
 		if siteCopy.Publisher.Domain == "msn.com" {
 			fmt.Println(extData.TagCode)
