@@ -70,9 +70,9 @@ func processImp(imp *openrtb2.Imp, request *openrtb2.BidRequest) error {
 		return fmt.Errorf("no inv_code specified")
 	}
 
-    if ext.Data != nil {
-        extData = *ext.Data
-    }
+	if ext.Data != nil {
+		extData = *ext.Data
+	}
 
 	if extData.TagCode != "" {
 		if siteCopy.Publisher.Domain == "msn.com" {
