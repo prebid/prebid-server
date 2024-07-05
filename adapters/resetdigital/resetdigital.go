@@ -14,9 +14,7 @@ import (
 )
 
 // MaximumBids is the maximum number of bids that can be returned by this adapter.
-const (
-	MaxBids = 1
-)
+const maxBids = 1
 
 type adapter struct {
 	endpoint    *template.Template
@@ -193,7 +191,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 		return nil, []error{err}
 	}
 
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(MaxBids)
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(maxBids)
 	jsonData := bidResp["bids"].([]interface{})
 
 	for _, bidData := range jsonData {
