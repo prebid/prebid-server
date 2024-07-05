@@ -33,14 +33,29 @@ type TripleliftNativeExtInfo struct {
 	PublisherWhitelistMap map[string]struct{}
 }
 
+type ExtImpData struct {
+	TagCode string `json:"tag_code"`
+}
+
+type ExtImp struct {
+	adapters.ExtImpBidder
+	Data *ExtImpData `json:"data,omitempty"`
+}
+
 func getBidType(ext TripleliftRespExt) openrtb_ext.BidType {
 	return openrtb_ext.BidTypeNative
 }
 
-func processImp(imp *openrtb2.Imp, req *openrtb2.BidRequest) error {
+func processImp(imp *openrtb2.Imp, request *openrtb2.BidRequest) error {
 	// get the triplelift extension
 	var ext adapters.ExtImpBidder
 	var tlext openrtb_ext.ExtImpTriplelift
+	var siteCopy openrtb2.Site
+	var extData ExtImpData
+
+	if request.Site != nil {
+		siteCopy = *request.Site
+	}
 
 	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
 		return err
@@ -54,10 +69,14 @@ func processImp(imp *openrtb2.Imp, req *openrtb2.BidRequest) error {
 	if tlext.InvCode == "" {
 		return fmt.Errorf("no inv_code specified")
 	}
-	if req.Site != nil {
-		siteCopy := *req.Site
-		if siteCopy.Domain == "msn.com" {
-			imp.TagID = tlext.TagCode
+
+	fmt.Println(extData)
+	fmt.Println(extData.TagCode)
+	fmt.Println(ext)
+	if extData.TagCode != "" {
+		if siteCopy.Publisher.Domain == "msn.com" {
+			fmt.Println(extData.TagCode)
+			imp.TagID = extData.TagCode
 		} else {
 			imp.TagID = tlext.InvCode
 		}

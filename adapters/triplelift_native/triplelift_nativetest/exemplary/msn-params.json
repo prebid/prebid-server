@@ -1,7 +1,7 @@
 {
     "mockBidRequest": {
       "id": "test-request-id",
-      "site": { "publisher": {"id":"foo","name":"foo"}, "domain": "msn.com"},
+      "site": { "publisher": {"id":"foo","name":"foo", "domain": "msn.com"}},
       "imp": [
         {
           "native": {
@@ -38,16 +38,19 @@
                   "bidder": {
                     "inventoryCode": "foo",
                      "floor" : 20
+                  },
+                  "data": {
+                    "tag_code": "bar"
                   }
                 }
               }
             ],
-          "site": {
-              "publisher": {
-                "id": "foo",
-                "name": "foo"
-              }, 
-              "domain": "msn.com"
+            "site": {
+                "publisher": {
+                    "id":"foo",
+                    "name":"foo",
+                    "domain": "msn.com"
+                }
             }
           },
           "impIDs":["test-imp-id"]
