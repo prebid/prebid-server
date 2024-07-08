@@ -1,0 +1,38 @@
+{
+  "description": "Required appnexus bidder param is provided but the type is invalid",
+  "config": {
+    "realParamsValidator": true
+  },
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "prebid.org"
+    },
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": []
+          }
+        }
+      }
+    ],
+    "tmax": 500,
+    "ext": {}
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: request.imp[0].ext.prebid.bidder.appnexus failed validation.\nplacementId: Invalid type. Expected: [integer,string], given: array\n"
+}

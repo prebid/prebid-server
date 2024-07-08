@@ -29,15 +29,13 @@ const (
 	ImpressionOpenTag    = "<Impression>"
 )
 
-type normalizeBidderName func(name string) (openrtb_ext.BidderName, bool)
-
 type vtrackEndpoint struct {
 	Cfg                 *config.Configuration
 	Accounts            stored_requests.AccountFetcher
 	BidderInfos         config.BidderInfos
 	Cache               prebid_cache_client.Client
 	MetricsEngine       metrics.MetricsEngine
-	normalizeBidderName normalizeBidderName
+	normalizeBidderName openrtb_ext.BidderNameNormalizer
 }
 
 type BidCacheRequest struct {
@@ -194,12 +192,12 @@ func ParseVTrackRequest(httpRequest *http.Request, maxRequestSize int64) (req *B
 
 	for _, bcr := range req.Puts {
 		if bcr.BidID == "" {
-			err = error(&errortypes.BadInput{Message: fmt.Sprint("'bidid' is required field and can't be empty")})
+			err = error(&errortypes.BadInput{Message: "'bidid' is required field and can't be empty"})
 			return req, err
 		}
 
 		if bcr.Bidder == "" {
-			err = error(&errortypes.BadInput{Message: fmt.Sprint("'bidder' is required field and can't be empty")})
+			err = error(&errortypes.BadInput{Message: "'bidder' is required field and can't be empty"})
 			return req, err
 		}
 	}
@@ -257,7 +255,7 @@ func (v *vtrackEndpoint) cachePutObjects(ctx context.Context, req *BidCacheReque
 }
 
 // getBiddersAllowingVastUpdate returns a list of bidders that allow VAST XML modification
-func getBiddersAllowingVastUpdate(req *BidCacheRequest, bidderInfos *config.BidderInfos, allowUnknownBidder bool, normalizeBidderName normalizeBidderName) map[string]struct{} {
+func getBiddersAllowingVastUpdate(req *BidCacheRequest, bidderInfos *config.BidderInfos, allowUnknownBidder bool, normalizeBidderName openrtb_ext.BidderNameNormalizer) map[string]struct{} {
 	bl := map[string]struct{}{}
 
 	for _, bcr := range req.Puts {
@@ -270,13 +268,14 @@ func getBiddersAllowingVastUpdate(req *BidCacheRequest, bidderInfos *config.Bidd
 }
 
 // isAllowVastForBidder checks if a bidder is active and allowed to modify vast xml data
-func isAllowVastForBidder(bidder string, bidderInfos *config.BidderInfos, allowUnknownBidder bool, normalizeBidderName normalizeBidderName) bool {
-	//if bidder is active and isModifyingVastXmlAllowed is true
+func isAllowVastForBidder(bidder string, bidderInfos *config.BidderInfos, allowUnknownBidder bool, normalizeBidderName openrtb_ext.BidderNameNormalizer) bool {
+	// if bidder is active and isModifyingVastXmlAllowed is true
 	// check if bidder is configured
 	if normalizedBidder, ok := normalizeBidderName(bidder); ok {
-		if b, ok := (*bidderInfos)[normalizedBidder.String()]; bidderInfos != nil && ok {
-			// check if bidder is enabled
-			return b.IsEnabled() && b.ModifyingVastXmlAllowed
+		if bidderInfos != nil {
+			if b, ok := (*bidderInfos)[normalizedBidder.String()]; ok {
+				return b.IsEnabled() && b.ModifyingVastXmlAllowed
+			}
 		}
 	}
 

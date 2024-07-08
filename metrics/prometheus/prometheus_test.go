@@ -1757,7 +1757,7 @@ func getHistogramFromHistogramVecByTwoKeys(histogram *prometheus.HistogramVec, l
 	processMetrics(histogram, func(m dto.Metric) {
 		for ind, label := range m.GetLabel() {
 			if label.GetName() == label1Key && label.GetValue() == label1Value {
-				valInd := ind
+				var valInd int
 				if ind == 1 {
 					valInd = 0
 				} else {
