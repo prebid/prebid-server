@@ -1,0 +1,19 @@
+endpoint: "http://ex.hunchme.com/v1/prebidserver?debug=true"
+geoscope:
+  - global
+maintainer:
+  email: "predid@insticator.com"
+gvlVendorID: 910
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  iframe:
+    url: "https://usync.hunchme.com?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
+    userMacro: ""

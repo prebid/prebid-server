@@ -103,6 +103,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/improvedigital"
 	"github.com/prebid/prebid-server/v2/adapters/infytv"
 	"github.com/prebid/prebid-server/v2/adapters/inmobi"
+	"github.com/prebid/prebid-server/v2/adapters/insticator"
 	"github.com/prebid/prebid-server/v2/adapters/interactiveoffers"
 	"github.com/prebid/prebid-server/v2/adapters/invibes"
 	"github.com/prebid/prebid-server/v2/adapters/iqx"
@@ -320,6 +321,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderImprovedigital:    improvedigital.Builder,
 		openrtb_ext.BidderInfyTV:            infytv.Builder,
 		openrtb_ext.BidderInMobi:            inmobi.Builder,
+		openrtb_ext.BidderInsticator:        insticator.Builder,
 		openrtb_ext.BidderInteractiveoffers: interactiveoffers.Builder,
 		openrtb_ext.BidderInvibes:           invibes.Builder,
 		openrtb_ext.BidderIQX:               iqx.Builder,
