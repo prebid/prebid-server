@@ -1,6 +1,8 @@
-endpoint: "http://ex.hunchme.com/v1/prebidserver?debug=true"
+endpoint: "https://ex.hunchme.com/v1/prebidserver?debug=true"
 geoscope:
   - global
+disable:
+  - false
 maintainer:
   email: "predid@insticator.com"
 gvlVendorID: 910
