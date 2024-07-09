@@ -12,6 +12,7 @@ capabilities:
     mediaTypes:
       - banner
       - video
+      - native
 userSync:
   redirect:
     url: "https://sync.go.sonobi.com/us.gif?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&loc={{.RedirectURL}}"
