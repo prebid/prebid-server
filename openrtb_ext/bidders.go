@@ -29,6 +29,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderAdkernel,
 	BidderAdkernelAdn,
 	BidderAdman,
+	BidderAdmatic,
 	BidderAdmixer,
 	BidderAdnuntius,
 	BidderAdOcean,
@@ -69,7 +70,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderBidmyadz,
 	BidderBidsCube,
 	BidderBidstack,
-	BidderBizzclick,
+	BidderBlasto,
 	BidderBliink,
 	BidderBlue,
 	BidderBluesea,
@@ -209,6 +210,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderUndertone,
 	BidderUnicorn,
 	BidderUnruly,
+	BidderVidazoo,
 	BidderVideoByte,
 	BidderVideoHeroes,
 	BidderVidoomy,
@@ -344,6 +346,7 @@ const (
 	BidderAdkernel          BidderName = "adkernel"
 	BidderAdkernelAdn       BidderName = "adkernelAdn"
 	BidderAdman             BidderName = "adman"
+	BidderAdmatic           BidderName = "admatic"
 	BidderAdmixer           BidderName = "admixer"
 	BidderAdnuntius         BidderName = "adnuntius"
 	BidderAdOcean           BidderName = "adocean"
@@ -384,7 +387,7 @@ const (
 	BidderBidmyadz          BidderName = "bidmyadz"
 	BidderBidsCube          BidderName = "bidscube"
 	BidderBidstack          BidderName = "bidstack"
-	BidderBizzclick         BidderName = "bizzclick"
+	BidderBlasto            BidderName = "blasto"
 	BidderBliink            BidderName = "bliink"
 	BidderBlue              BidderName = "blue"
 	BidderBluesea           BidderName = "bluesea"
@@ -524,6 +527,7 @@ const (
 	BidderUndertone         BidderName = "undertone"
 	BidderUnicorn           BidderName = "unicorn"
 	BidderUnruly            BidderName = "unruly"
+	BidderVidazoo           BidderName = "vidazoo"
 	BidderVideoByte         BidderName = "videobyte"
 	BidderVideoHeroes       BidderName = "videoheroes"
 	BidderVidoomy           BidderName = "vidoomy"
