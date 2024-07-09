@@ -174,7 +174,6 @@
                                 "origbidcpm": 0.4,
                                 "prebid": {
                                     "meta": {
-                                        "adaptercode":"rubicon"
                                     },
                                     "type": "banner"
                                 }
@@ -190,6 +189,30 @@
                     {
                         "code": 4,
                         "message": "bidResponse rejected: size WxH"
+                    }
+                ]
+            },
+            "prebid": {
+                "seatnonbid": [
+                    {
+                        "nonbid": [
+                            {
+                                "impid": "some-imp-id",
+                                "statuscode": 351,
+                                "ext": {
+                                    "prebid": {
+                                        "bid": {
+                                            "price": 0.3,
+                                            "w": 200,
+                                            "h": 500,
+                                            "origbidcpm": 0.3
+                                        }
+                                    }
+                                }
+                            }
+                        ],
+                        "seat": "appnexus",
+                        "ext": null
                     }
                 ]
             }

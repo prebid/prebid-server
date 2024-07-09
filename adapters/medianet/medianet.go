@@ -34,6 +34,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		Uri:     a.endpoint,
 		Body:    reqJson,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, errs
 }
 
@@ -66,7 +67,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
-			bidType, err := getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp)
+			bidType, err := getBidMediaTypeFromMtype(&sb.Bid[i])
 			if err != nil {
 				errs = append(errs, err)
 			} else {
@@ -89,19 +90,16 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	}, nil
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
-	mediaType := openrtb_ext.BidTypeBanner
-	for _, imp := range imps {
-		if imp.ID == impID {
-			if imp.Banner == nil && imp.Video != nil {
-				mediaType = openrtb_ext.BidTypeVideo
-			}
-			return mediaType, nil
-		}
-	}
-
-	return "", &errortypes.BadInput{
-		Message: fmt.Sprintf("Failed to find impression \"%s\" ", impID),
+func getBidMediaTypeFromMtype(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative, nil
+	default:
+		return "", fmt.Errorf("Unable to fetch mediaType for imp: %s", bid.ImpID)
 	}
 }
 

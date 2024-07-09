@@ -1065,7 +1065,7 @@ func TestMultiCurrencies_RateConverterNotSet(t *testing.T) {
 		seatBid := seatBids[0]
 
 		// Verify:
-		assert.Equal(t, false, (seatBid == nil && tc.expectedBidsCount != 0), tc.description)
+		assert.Falsef(t, seatBid == nil && tc.expectedBidsCount != 0, tc.description)
 		assert.Equal(t, tc.expectedBidsCount, uint(len(seatBid.Bids)), tc.description)
 		assert.ElementsMatch(t, tc.expectedBadCurrencyErrors, errs, tc.description)
 		assert.False(t, extraBidderRespInfo.respProcessingStartTime.IsZero())
@@ -2414,10 +2414,7 @@ type goodMultiHTTPCallsBidder struct {
 func (bidder *goodMultiHTTPCallsBidder) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	bidder.bidRequest = request
 	response := make([]*adapters.RequestData, len(bidder.httpRequest))
-
-	for i, r := range bidder.httpRequest {
-		response[i] = r
-	}
+	copy(response, bidder.httpRequest)
 	return response, nil
 }
 
@@ -3377,11 +3374,11 @@ func TestGetRequestBody(t *testing.T) {
 			if test.endpointCompression == "GZIP" {
 				assert.Equal(t, "gzip", req.Headers.Get("Content-Encoding"))
 
-				decompressedReqBody, err := decompressGzip(requestBody)
+				decompressedReqBody, err := decompressGzip(requestBody.Bytes())
 				assert.NoError(t, err)
 				assert.Equal(t, test.givenReqBody, decompressedReqBody)
 			} else {
-				assert.Equal(t, test.givenReqBody, requestBody)
+				assert.Equal(t, test.givenReqBody, requestBody.Bytes())
 			}
 		})
 	}

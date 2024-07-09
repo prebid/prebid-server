@@ -1,0 +1,137 @@
+{
+    "requestType": "openrtb2-web",
+    "incomingRequest": {
+        "ortbRequest": {
+            "id": "some-request-id",
+            "site": {
+                "page": "test.somepage.com"
+            },
+            "imp": [
+                {
+                    "id": "imp-id-1",
+                    "native": {},
+                    "ext": {
+                        "prebid": {
+                            "bidder": {
+                                "appnexus": {
+                                    "placementId": []
+                                }
+                            },
+                            "imp": {
+                                "appnexus": {
+                                    "id": "imp-id-1-appnexus"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "id": "imp-id-2",
+                    "banner": {
+                        "format": [
+                            {
+                                "w": 300,
+                                "h": 600
+                            }
+                        ]
+                    },
+                    "ext": {
+                        "prebid": {
+                            "bidder": {
+                                "appnexus": {
+                                    "placementId": "123"
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    "outgoingRequests": {
+        "appnexus": {
+            "expectRequest": {
+                "ortbRequest": {
+                    "id": "some-request-id",
+                    "site": {
+                        "page": "test.somepage.com"
+                    },
+                    "imp": [
+                        {
+                            "id": "imp-id-1-appnexus",
+                            "native": {},
+                            "ext": {
+                                "bidder": {
+                                    "placementId": []
+                                }
+                            }
+                        },
+                        {
+                            "id": "imp-id-2",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 300,
+                                        "h": 600
+                                    }
+                                ]
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "placementId": "123"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            "mockResponse": {
+                "pbsSeatBids": [
+                    {
+                        "pbsBids": [
+                            {
+                                "ortbBid": {
+                                    "id": "apn-bid",
+                                    "impid": "imp-id-2",
+                                    "price": 0.3,
+                                    "w": 300,
+                                    "h": 600,
+                                    "crid": "creative-1"
+                                },
+                                "bidType": "banner"
+                            }
+                        ],
+                        "seat": "appnexus"
+                    }
+                ]
+            }
+        }
+    },
+    "response": {
+        "bids": {
+            "id": "some-request-id",
+            "seatbid": [
+                {
+                    "seat": "appnexus",
+                    "bid": [
+                        {
+                            "id": "apn-bid",
+                            "impid": "imp-id-2",
+                            "price": 0.3,
+                            "w": 300,
+                            "h": 600,
+                            "crid": "creative-1",
+                            "ext": {
+                                "origbidcpm": 0.3,
+                                "prebid": {
+                                    "meta": {},
+                                    "type": "banner"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}
