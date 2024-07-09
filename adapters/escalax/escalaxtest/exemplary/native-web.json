@@ -103,7 +103,8 @@
                   "adomain": [
                     "awesome.com"
                   ],
-                  "crid": "20"
+                  "crid": "20",
+                  "mtype": 4
                 }
               ],
               "seat": "escalax"
@@ -126,7 +127,8 @@
             "crid": "20",
             "adomain": [
               "awesome.com"
-            ]
+            ],
+            "mtype": 4
           },
           "type": "native"
         }

@@ -101,7 +101,7 @@
         ]
       },
       "mockResponse": {
-        "status": 200,
+      "status": 200,
         "body": {
           "id": "awesome-resp-id",
           "seatbid": [
@@ -115,7 +115,8 @@
                   "adomain": [
                     "awesome.com"
                   ],
-                  "crid": "20"
+                  "crid": "20",
+                  "mtype": 4
                 }
               ],
               "type": "native",
@@ -139,7 +140,8 @@
             "crid": "20",
             "adomain": [
               "awesome.com"
-            ]
+            ],
+            "mtype": 4
           },
           "type": "native"
         }

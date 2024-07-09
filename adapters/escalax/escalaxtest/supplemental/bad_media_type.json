@@ -117,7 +117,8 @@
                   ],
                   "crid": "20",
                   "w": 320,
-                  "h": 50
+                  "h": 50,
+                  "mtype": 0
                 }
               ],
               "type": "banner",
@@ -131,7 +132,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "Impression with ID \"test-imp-id\" not found",
+      "value": "unsupported MType 0",
       "comparison": "literal"
     }
   ]
