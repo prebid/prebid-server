@@ -151,8 +151,8 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 }
 
 func splitImpressionsByMediaType(impression *openrtb2.Imp) ([]openrtb2.Imp, error) {
-	if impression.Banner == nil && impression.Native == nil {
-		return nil, &errortypes.BadInput{Message: "Invalid MediaType. MeloZen only supports Banner and Native."}
+	if impression.Banner == nil && impression.Native == nil && impression.Video == nil {
+		return nil, &errortypes.BadInput{Message: "Invalid MediaType. MeloZen only supports Banner, Video and Native."}
 	}
 
 	if impression.Audio != nil {
@@ -164,6 +164,13 @@ func splitImpressionsByMediaType(impression *openrtb2.Imp) ([]openrtb2.Imp, erro
 	if impression.Banner != nil {
 		impCopy := *impression
 		impCopy.Video = nil
+		impCopy.Native = nil
+		impressions = append(impressions, impCopy)
+	}
+
+	if impression.Video != nil {
+		impCopy := *impression
+		impCopy.Banner = nil
 		impCopy.Native = nil
 		impressions = append(impressions, impCopy)
 	}
