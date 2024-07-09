@@ -163,14 +163,19 @@ func convertToVastEvent(events config.Events) injector.VASTEvents {
 
 	for _, event := range events.VASTEvents {
 		switch event.CreateElement {
-		case config.ImpressionVASTElement:
-			ve.Impressions = appendURLs(ve.Impressions, event, events.DefaultURL)
+		// TODO: Prebid currently uses config.ExternalURL for impression tracking, decprecated in favor of config.Event
+		// case config.ImpressionVASTElement:
+		// 	ve.Impressions = appendURLs(ve.Impressions, event, events.DefaultURL)
 		case config.ErrorVASTElement:
 			ve.Errors = appendURLs(ve.Errors, event, events.DefaultURL)
 		case config.TrackingVASTElement:
 			ve.TrackingEvents[string(event.Type)] = appendURLs(ve.TrackingEvents[string(event.Type)], event, events.DefaultURL)
 		case config.ClickTrackingVASTElement:
 			ve.VideoClicks = appendURLs(ve.VideoClicks, event, events.DefaultURL)
+		case config.NonLinearClickTrackingVASTElement:
+			ve.NonLinearClickTracking = appendURLs(ve.NonLinearClickTracking, event, events.DefaultURL)
+		case config.CompanionClickThroughVASTElement:
+			ve.CompanionClickThrough = appendURLs(ve.CompanionClickThrough, event, events.DefaultURL)
 		}
 	}
 
