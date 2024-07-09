@@ -121,13 +121,16 @@ func (a *adapter) MakeRequests(requestData *openrtb2.BidRequest, requestInfo *ad
 	for i := range requestData.Imp {
 		imp := requestData.Imp[i]
 		bidType, err := getBidType(imp)
-
 		if err != nil {
 			errors = append(errors, err)
 			continue
 		}
 
-		splittedRequestData := processDataFromRequest(requestData, imp, bidType)
+		splittedRequestData, err := processDataFromRequest(requestData, imp, bidType)
+		if err != nil {
+			errors = append(errors, err)
+			continue
+		}
 
 		requestBody, err := json.Marshal(splittedRequestData)
 		if err != nil {
@@ -146,17 +149,18 @@ func (a *adapter) MakeRequests(requestData *openrtb2.BidRequest, requestInfo *ad
 	return requests, errors
 }
 
-func processDataFromRequest(requestData *openrtb2.BidRequest, imp openrtb2.Imp, bidType openrtb_ext.BidType) resetDigitalRequest {
-
+func processDataFromRequest(requestData *openrtb2.BidRequest, imp openrtb2.Imp, bidType openrtb_ext.BidType) (resetDigitalRequest, error) {
 	var resetDigitalRequestData resetDigitalRequest
-	resetDigitalRequestData.Site.Domain = requestData.Site.Domain
-	resetDigitalRequestData.Site.Referrer = requestData.Site.Page
+
+	// Check if requestData.Site is not nil before accessing its fields
+	if requestData.Site != nil {
+		resetDigitalRequestData.Site.Domain = requestData.Site.Domain
+		resetDigitalRequestData.Site.Referrer = requestData.Site.Page
+	}
 
 	resetDigitalRequestData.Imps = append(resetDigitalRequestData.Imps, resetDigitalRequestImps{})
 	resetDigitalRequestData.Imps[0].BidID = requestData.ID
 	resetDigitalRequestData.Imps[0].ImpID = imp.ID
-
-	var err error
 
 	if bidType == openrtb_ext.BidTypeBanner {
 		resetDigitalRequestData.Imps[0].MediaTypes.Banner.Sizes = append(resetDigitalRequestData.Imps[0].MediaTypes.Banner.Sizes, []int64{imp.Banner.Format[0].W, imp.Banner.Format[0].H})
@@ -166,19 +170,17 @@ func processDataFromRequest(requestData *openrtb2.BidRequest, imp openrtb2.Imp, 
 	}
 
 	var extData = make(map[string]interface{})
-	err = json.Unmarshal(imp.Ext, &extData)
+	err := json.Unmarshal(imp.Ext, &extData)
 	if err != nil {
-
-	} else {
-
-		resetDigitalRequestData.Imps[0].ZoneID.PlacementID = extData["bidder"].(map[string]interface{})["placement_id"].(string)
-		if resetDigitalRequestData.Imps[0].ZoneID.PlacementID == "test" {
-			resetDigitalRequestData.Imps[0].ForceBid = true
-		}
-
+		return resetDigitalRequestData, err
 	}
-	return resetDigitalRequestData
 
+	resetDigitalRequestData.Imps[0].ZoneID.PlacementID = extData["bidder"].(map[string]interface{})["placement_id"].(string)
+	if resetDigitalRequestData.Imps[0].ZoneID.PlacementID == "test" {
+		resetDigitalRequestData.Imps[0].ForceBid = true
+	}
+
+	return resetDigitalRequestData, nil
 }
 
 func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
