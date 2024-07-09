@@ -111,13 +111,6 @@ func (a *adapter) MakeRequests(requestData *openrtb2.BidRequest, requestInfo *ad
 		errors   []error
 	)
 
-	referer := getReferer(requestData)
-	currency := getCurrency(requestData)
-
-	if referer == currency {
-		return nil, nil
-	}
-
 	for i := range requestData.Imp {
 		imp := requestData.Imp[i]
 		bidType, err := getBidType(imp)
