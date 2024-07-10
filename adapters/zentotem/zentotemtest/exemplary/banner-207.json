@@ -1,0 +1,196 @@
+{
+  "mockBidRequest": {
+    "id": "test-imp-id",
+    "at": 2,
+    "bcat": [ "IAB8-18", "IAB8-5", "IAB9-9" ],
+    "cur": [
+      "RUB"
+    ],
+    "tmax": 250,
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "bidfloor": 10,
+        "bidfloorcur": "RUB",
+        "tagid": "65f0c2a2feb788d7",
+        "displaymanager": "Fyber",
+        "displaymanagerver": "10.1.1",
+        "banner": {
+          "w": 320,
+          "h": 50,
+          "api": [
+            5
+          ],
+          "mimes": [
+            "application/javascript",
+            "text/html",
+            "text/javascript",
+            "image/png",
+            "image/jpeg",
+            "image/gif"
+          ]
+        }
+      }
+    ],
+    "app": {
+      "privacypolicy": 1,
+      "paid": 0,
+      "id": "1757830",
+      "name": "Craft Playtime: Hide and Seek",
+      "bundle": "lol.new.here",
+      "storeurl": "https://play.google.com/store/apps/details?id=com.unicorn.hugy.craft.fps3&referrer=utm_source%3D42matters.com%26utm_medium%3Dapi",
+      "cat": [
+
+        "IAB1-1"
+      ],
+      "publisher": {
+        "id": "gambling"
+      }
+    },
+    "device": {
+      "dnt": 0,
+      "devicetype": 4,
+      "h": 980,
+      "w": 350,
+      "connectiontype": 2,
+      "ua": "Mozilla/5.0 (Linux; Android 10; YAL-L21 Build/HUAWEIYAL-L21; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/113.0.5672.131 Mobile Safari/537.36",
+      "ip": "95.104.196.182",
+      "make": "Huawei",
+      "model": "YAL-L21",
+      "os": "Android",
+      "osv": "10.0",
+      "ifa": "6cecfc3c-de97-4861-ba6c-41a9dc94b391",
+      "geo": {
+        "country": "RUS"
+      }
+    },
+    "user": {
+      "id": "6cecfc3c-de97-4861-ba6c-41a9dc94b391"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://rtb.dev.zentotem.net/bid?sspuid=cq5r5n0dputspujutpmg",
+        "body": {
+          "id": "test-imp-id",
+          "at": 2,
+          "bcat": [ "IAB8-18", "IAB8-5", "IAB9-9" ],
+          "cur": [
+            "RUB"
+          ],
+          "tmax": 250,
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "bidfloor": 10,
+              "bidfloorcur": "RUB",
+              "tagid": "65f0c2a2feb788d7",
+              "displaymanager": "Fyber",
+              "displaymanagerver": "10.1.1",
+              "banner": {
+                "w": 320,
+                "h": 50,
+                "api": [
+                  5
+                ],
+                "mimes": [
+                  "application/javascript",
+                  "text/html",
+                  "text/javascript",
+                  "image/png",
+                  "image/jpeg",
+                  "image/gif"
+                ]
+              }
+            }
+          ],
+          "app": {
+            "privacypolicy": 1,
+            "paid": 0,
+            "id": "1757830",
+            "name": "Craft Playtime: Hide and Seek",
+            "bundle": "lol.new.here",
+            "storeurl": "https://play.google.com/store/apps/details?id=com.unicorn.hugy.craft.fps3&referrer=utm_source%3D42matters.com%26utm_medium%3Dapi",
+            "cat": [
+
+              "IAB1-1"
+            ],
+            "publisher": {
+              "id": "gambling"
+            }
+          },
+          "device": {
+            "dnt": 0,
+            "devicetype": 4,
+            "h": 980,
+            "w": 350,
+            "connectiontype": 2,
+            "ua": "Mozilla/5.0 (Linux; Android 10; YAL-L21 Build/HUAWEIYAL-L21; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/113.0.5672.131 Mobile Safari/537.36",
+            "ip": "95.104.196.182",
+            "make": "Huawei",
+            "model": "YAL-L21",
+            "os": "Android",
+            "osv": "10.0",
+            "ifa": "6cecfc3c-de97-4861-ba6c-41a9dc94b391",
+            "geo": {
+              "country": "RUS"
+            }
+          },
+          "user": {
+            "id": "6cecfc3c-de97-4861-ba6c-41a9dc94b391"
+          }
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "40",
+                  "impid": "1",
+                  "price": 150,
+                  "nurl": "https://rtb.dev.zentotem.net/win/T_fPm18jG2rse1XwAr3DIhuTk-guAp3r03LEb-qrjRoPNxprnBC6jRBbLSQmREX9ePnWdb4C2vnheyPIJeUahvC20SkOKEt3TdpGe9IYxz36QdYzLjycYwHFl1_HbJ3MT6yLfgPs-2hWKFhAlH8OiDNDw7jTrdQaPztwktWdybLxh_IAHFa0XnaRnksscjw0O6BqHPvKI9u09ggO2Iux5DL2s9Fz3D5CODv__dXHt4F8-0aSc8RdIQb-4Qn-kO_15gCKOV05yqjIFhLc_5wa-Y0zfoVVIkFdDQvpHdPzOYObWYReRLH1UCb1d2lxrGfv-1cwOY9GOUxeC9HANul_WSLn61d6VVkcGLnwgiMNdKB78591dbPf_58eIzw9H9w34xBKF8-iq4fkrebwjPxsZu6CGlsZgcjuFeUuGeMOzTB8EdMXX7YoWpc_3Unb8QhZ_MRoPrlb89iv0T1yXvbg8u3XYS-JBZaDTIjwNwsuH6ajfAz0XDuDhEWa6PTyU9L6QxXW1iUhtx0m6tMUwyM1EUe4hxQhU2g8EY6vBW2pn2SuML0bpA",
+                  "burl": "https://rtb.dev.zentotem.net/track/billing/1_kCEOqJPbGiJcie2e6qpUWHZezCmtLXbqEcMx2T0YOR7Ibq8xq7tEy19nNIG94CklqgSM_LWOWhARSNdpvC4fJKoAbqR4JfwhgWgZ4TgVmxPE5PWMKMreDCYV0LxskKmt6Uikp-2nDz-KItYulj6IpzY_lv0ALIX8hDc-gf35BySkOvuILPrCwNofidKKkZ5oFca1jX6qpsABTRGiQCYuYdOhy-12AUSjlOaAT-z607dhGdaNDOxh2s4F3yQpZc0Haa9iC3uI0FVkVIK2LI9eVZt5QoQSe4X2pz6kHlh4EywnxPUp256YHAiLZpnUAyh7w3dZwiWVhmF0Z01mB-EK9JFzNoWg-Q0tbEE1LYxoozwIrTNO_PfFsFMJVCssvb20plXCEzO97RMU19nVapRA-fd2NqgeFYhablUUmA66CdsT5ZoihxUxWyep_NcmuKqV4sdkWAtuakVlkAuf1boxFn2xPzam6_mBWz23RPqrDfc2GpZb7NAWVeEzdkp5IiFWcYs_u9aIkvXOCrARJeLpdxyAQGnh-e4MjspnOuk-P6fPiRVHVNqbPIVMIdJuNUKgZqGFQCKLmS_857xZ7TInckiLUeXSBxHgyijOVzwobOGeAntgcLpnrZEsSo14esD_Gtcef11oWFF_1NeOEnB_v6dPEQUA?ap=${AUCTION_PRICE}&ac=${AUCTION_CURRENCY}&auid=${AUCTION_ID}",
+                  "adm": "<div><a href=\"https://rtb.dev.zentotem.net/track/click/HaUMcX6ZeDVb6MkyVr73ODTBAOPNDxglqn6ucMiCh0wcKD8ZvJMrb4yoQVi2X2CnhbwQmjKCQbrntbXU4zKdmvj4e6CpU6EM2N9Fxi20XMp4NeeW0bwn61Kysf-LPVp5e7OfPR5m_8uTlOWoKrWDzJg7fK8M4N-QsgylRJik1FwC7E9c_ALcH2kRF4aA5be1D3BPaIoFpqRcKwyo69HJrAKdrylebE6OUrWImx-FloHKHv8D3BWdnm4TY393nCVW1rjK4EFxVcPbAl-BcdICAxffomlTMs0WkMULfk9vlWeQHdiTdzMxzUi6mGcr4mUd8WU3wQXqWNuVXpNmF0xNVC4i3H5qhUVGd2FFwW4m_R73e8umIk9wWIYbEdWpymJaSsJ8yLb5edTEuyTlmk0lwRa9Im3kOAGIsQ_n5w5Hf0liAHht2cErIzZMn730tEgxpXk71eqm9Oy7BXnwGmVLPtWQlPjxBgEUl5wzbdoagpOlbh5GgVgp6tYOcLoxx8GbqjoX57trUFjItKfKad7di6t3HDlQbduN_a1bD47owLtz65iBjD50fS31KPef7A4xJGYPJyuNyfbrcMphZ0GQJZVymFf33Fh-PvH0FdGePkd9Sc_DX2mdY4CvTw8GMfNImHT4hwmXxjUTJuXTEyjU2_AHqXu5urkEatr181FS?auid=${AUCTION_ID}\" target=\"_blank\"><img src=\"https://api-ui.dev.zentotem.net/uploads/images/7b8e1d74-a86d-4398-ac2e-09cf9e2669a5_638548348626171428.jpg\" width=\"320\" height=\"50\"></a><img src=\"https://rtb.dev.zentotem.net/track/impression/ZdV-IggvpLDZP1ibVE-lFU7-bcae2B8MWN4iLxeTXFrdq2uQEo39rK2GgtcELJf6fu88JSBQSV7TTZ24L_gAcFOgbyFSMR_QVoXE3N2-YTup2W0EdJ5TcLtVQXm03e8JmbRW-XsXZVYxx3E3TuR9F9eJ_sWKXMItwKn7_VRzv0EpC_87WJSPgaco8wwyAx2vyWJiKJ317_8Ta4bDj8qbqJQPxvRPxIXNzlCuh93H_yEZ8h0ek321J6o7gTTdQv7Tsm88Ha7fxFnhCM5irgmZX5vxndA4XC5UB1zDavii3NRsfEZ_glZSAwxUsZe2ohKxE40sljgDjmYiFaCWGLNCenhnGemMxnW9r-6mRWnUuu-cQ5b3-NkMpmzw2XhSzJeCOjMXTzDaZPiRezsDqZAHOYJ1nEbP4Lat_B37in-2AOMlSKmZgh8Y55G0j5V_LB3UKNLdGNKq4pELSyvya0I50t1NIvDz9Q4LURK2Qb3Nq9d073DR43G8Xrt2pymZaSSt3399ULibjB4ch9FIfHTZmlkM4wCsjJsU9C-NEZJuADnY0m3kGDAk5OoVN01bzIEh9Q8-u4sdvWQlREpuTfHlfVQ7uDgfKq70hv1325WdnCmxHE1o9XGNhTqId7SnnCjBR-c-zX9uwOnmfVg6fPbUtB7ymSFTMA\" width=\"1\" height=\"1\" style=\"display:none\"></div>",
+                  "adid": "40",
+                  "adomain": [
+                    "app.apple.com"
+                  ],
+                  "crid": "40",
+                  "w": 320,
+                  "h": 50
+                }
+              ],
+              "seat": "boldwin"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bid": [
+        {
+          "id": "36",
+          "impid": "1",
+          "price": 150,
+          "nurl": "https://rtb.dev.zentotem.net/win/fazbtcTjKpyU_1YFFwGq1EfhfvqO54U7lZxcUNPWD3p8k1pnLb4k2KdnEkprncAE4ygqcyEkHv2pcs0woUWJJVD3J-yjYX49_OUkOICkt26tJiUImGXQZqxMTJlCKKt_oORHi9blqIsl3hVSLkpW1n6kQmvmjNOBGXzvgDaBOu3AaBIpxox3dhCCcZsSo1yIhnVLL-Z29m6PHJNN6LiSMMo5h0xBRPVifILafUV-gy8VQeDFhE9M6vIJfZrUqvUPJ1lwlXS1zEzJOQKksu57nJI1a1ByEXkG_R1GL4OJAM6BEpSyzdNiRZpQd9Oqg-Ad0rpLuYDKXYyCiyOu3BNasZwpIaNBIq8InnYLxhTgpVveNTpoxosJa0skVOGYn9MDCm5zoIMPTsfy1HPWJxsgvmqsnNtGQa2Onqk7eYOQGUCQtFxIGREATCVPfqRvpknd9LldQMU_qeGPbAFwtsaGxFMeyi30Xn2FmOadZnVdY_DF5rE3K2gWYa9oRaRS_ytKxLQdUFWW0YqGjWw06tGlWvoOcjeQ5po2-BknfcsKTZlumkWl_A",
+          "burl": "https://rtb.dev.zentotem.net/track/billing/bfBmAV7QnU0Ajt0IO3ndAd1iy8m4kMVfdrCEpU1UmSWBRTLuIynzSQIbfKfz2BDNrySMBDZ_AXlgQJeC8eNrgW-ODVZMgQkIliSwKmBpH1vZFxUpf8Yl2pR2CPn1btO8Rzg12KYl4i5PHiHOlPF9mPA33vvFnJWht-Okzg7yO6jzdDi7J4Y0HhxlAGWLxnAbAKZjtMDCUFs_Obfaqkjeb_8_6lGJ8JBSeKZbUo9M88i5-7GToZbEWs95x5ocjzwcUw1rpvM0fkNo8K-9BhUPeweI29HovNGu5g1LdjBG3ZBTfU09apbZKcuSQsK4pUKin7nWrVKxm3v-nGm3ieqEDAwjqlLeepZvp02yfmu6iBBMkzUYa9y8w9QCo2RpJa1VjxbP6dkP_2mQteGK_lFBuffTJ5tFN-vpd_g67q0OD7amIgfXUEfOcwLhh_6dLJ6I6ZjL51v7D2-yAjSa3aFI7KZjhbNO0XCeOwBkG1CysYi1YN3iIwkGt8n9VsAOiqJHt6rnXgHYxZanWvZTS70dPfwyfdz2N5lQ5wO05Nu2vkCb1UYmu5TQZ-pNXlvJcIBzL4FZAnkAoAWLvZxt_MAjongE3svTTSn_SKzBDx4sl5l888UNdxeXCb2hW3f5q3BXKXQXZLk341b9C1TP8_KEazFJt23ljg?ap=${AUCTION_PRICE}&ac=${AUCTION_CURRENCY}&auid=${AUCTION_ID}",
+          "adm": "<div><iframe src=\"https://pin.it/7i1XLXwLT\"></iframe><img src=\"https://rtb.dev.zentotem.net/track/impression/_CFpbYs1nENtMoScCSukPwpH6B_VbN1bR4gSSXISY6ei7LnUS90dwgCmC-KaupqY9c9QYcjTYQsJu_jlShwx2AuaVQ9XHUB35ZGkUdcMUmmV1mKIjSwNPI3czbf62UCxTQQEP0xqBLFmenuSHiSGLUbkh0-lshTVEqgNJgwW5K4_pVUA6fNceBhCrOTW111d3reHx8A6scWW4uzdVidI-W4iKAPRUREyORfD3hyoxMG5ks5P4jhotYRx5TeE4-VIv079vvKFr282aF_awRi_Rr7Iq2zJ9RjZIjp23Ohbp9hUbGyio3w2vNvcn2Mqb7Dcd5erXvWwvGbSk-rHu9GYpwnO1bRaeBrDEs5icXhQRXmio-CIYLrcBty2FJeE6Zs70_HwooaMlAlWmiKV6LV4NCuIBfN3Rg3ywWPdBEXLZ3cob6C14XMxqMwN0PjMb8zGvuwpuO0h_y_QHCMS66hzz3N1qtFhFO9C_o7hAOl8QTAzUAos3e5BQi-jvv3XeIsgMNSOebx5_1IcN3OgEiaD74X3cylUuT_XB9afKHDZrc_wp4CbPNOFRkDE7o3KBvrAbxcSi7GnqQx9XgWHsYK4W9rOXXNYPs11Nl8DVDhmsqDJoDQw57RZNe0CCvTzLbQm0Fr_7gijxJIxsIwSIRLoUPz13DT94w\" width=\"1\" height=\"1\" style=\"display:none\"></div>",
+          "adid": "36",
+          "adomain": [
+            "app.apple.com"
+          ],
+          "crid": "36"
+        }
+      ]
+    }
+  ]
+}

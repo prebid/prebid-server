@@ -1,0 +1,190 @@
+{
+  "mockBidRequest": {
+    "id": "058e84c8-3684-4725-be57-6a211fb8abc3",
+    "at": 2,
+    "bcat": [ "IAB8-18", "IAB8-5", "IAB9-9" ],
+    "cur": [
+      "RUB"
+    ],
+    "tmax": 250,
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "bidfloor": 10,
+        "bidfloorcur": "RUB",
+        "tagid": "65f0c2a2feb788d7",
+        "displaymanager": "Fyber",
+        "displaymanagerver": "10.1.1",
+        "banner": {
+          "api": [
+            4, 5
+          ],
+          "mimes": [
+            "application/javascript",
+            "text/html",
+            "text/javascript",
+            "image/png",
+            "image/jpeg",
+            "image/gif"
+          ]
+        }
+      }
+    ],
+    "app": {
+      "privacypolicy": 1,
+      "paid": 0,
+      "id": "1757830",
+      "name": "Craft Playtime: Hide and Seek",
+      "bundle": "lol.new.here",
+      "storeurl": "https://play.google.com/store/apps/details?id=com.unicorn.hugy.craft.fps3&referrer=utm_source%3D42matters.com%26utm_medium%3Dapi",
+      "cat": [
+
+        "IAB1-1"
+      ],
+      "publisher": {
+        "id": "gambling"
+      }
+    },
+    "device": {
+      "dnt": 0,
+      "devicetype": 4,
+      "h": 980,
+      "w": 350,
+      "connectiontype": 2,
+      "ua": "Mozilla/5.0 (Linux; Android 10; YAL-L21 Build/HUAWEIYAL-L21; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/113.0.5672.131 Mobile Safari/537.36",
+      "ip": "95.104.196.182",
+      "make": "Huawei",
+      "model": "YAL-L21",
+      "os": "Android",
+      "osv": "10.0",
+      "ifa": "6cecfc3c-de97-4861-ba6c-41a9dc94b391",
+      "geo": {
+        "country": "RUS"
+      }
+    },
+    "user": {
+      "id": "6cecfc3c-de97-4861-ba6c-41a9dc94b391"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://rtb.dev.zentotem.net/bid?sspuid=cq5r5n0dputspujutpmg",
+        "body": {
+          "id": "058e84c8-3684-4725-be57-6a211fb8abc3",
+          "at": 2,
+          "bcat": [ "IAB8-18", "IAB8-5", "IAB9-9" ],
+          "cur": [
+            "RUB"
+          ],
+          "tmax": 250,
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "bidfloor": 10,
+              "bidfloorcur": "RUB",
+              "tagid": "65f0c2a2feb788d7",
+              "displaymanager": "Fyber",
+              "displaymanagerver": "10.1.1",
+              "banner": {
+                "api": [
+                  4, 5
+                ],
+                "mimes": [
+                  "application/javascript",
+                  "text/html",
+                  "text/javascript",
+                  "image/png",
+                  "image/jpeg",
+                  "image/gif"
+                ]
+              }
+            }
+          ],
+          "app": {
+            "privacypolicy": 1,
+            "paid": 0,
+            "id": "1757830",
+            "name": "Craft Playtime: Hide and Seek",
+            "bundle": "lol.new.here",
+            "storeurl": "https://play.google.com/store/apps/details?id=com.unicorn.hugy.craft.fps3&referrer=utm_source%3D42matters.com%26utm_medium%3Dapi",
+            "cat": [
+
+              "IAB1-1"
+            ],
+            "publisher": {
+              "id": "gambling"
+            }
+          },
+          "device": {
+            "dnt": 0,
+            "devicetype": 4,
+            "h": 980,
+            "w": 350,
+            "connectiontype": 2,
+            "ua": "Mozilla/5.0 (Linux; Android 10; YAL-L21 Build/HUAWEIYAL-L21; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/113.0.5672.131 Mobile Safari/537.36",
+            "ip": "95.104.196.182",
+            "make": "Huawei",
+            "model": "YAL-L21",
+            "os": "Android",
+            "osv": "10.0",
+            "ifa": "6cecfc3c-de97-4861-ba6c-41a9dc94b391",
+            "geo": {
+              "country": "RUS"
+            }
+          },
+          "user": {
+            "id": "6cecfc3c-de97-4861-ba6c-41a9dc94b391"
+          }
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "36",
+                  "impid": "1",
+                  "price": 150,
+                  "nurl": "https://rtb.dev.zentotem.net/win/fazbtcTjKpyU_1YFFwGq1EfhfvqO54U7lZxcUNPWD3p8k1pnLb4k2KdnEkprncAE4ygqcyEkHv2pcs0woUWJJVD3J-yjYX49_OUkOICkt26tJiUImGXQZqxMTJlCKKt_oORHi9blqIsl3hVSLkpW1n6kQmvmjNOBGXzvgDaBOu3AaBIpxox3dhCCcZsSo1yIhnVLL-Z29m6PHJNN6LiSMMo5h0xBRPVifILafUV-gy8VQeDFhE9M6vIJfZrUqvUPJ1lwlXS1zEzJOQKksu57nJI1a1ByEXkG_R1GL4OJAM6BEpSyzdNiRZpQd9Oqg-Ad0rpLuYDKXYyCiyOu3BNasZwpIaNBIq8InnYLxhTgpVveNTpoxosJa0skVOGYn9MDCm5zoIMPTsfy1HPWJxsgvmqsnNtGQa2Onqk7eYOQGUCQtFxIGREATCVPfqRvpknd9LldQMU_qeGPbAFwtsaGxFMeyi30Xn2FmOadZnVdY_DF5rE3K2gWYa9oRaRS_ytKxLQdUFWW0YqGjWw06tGlWvoOcjeQ5po2-BknfcsKTZlumkWl_A",
+                  "burl": "https://rtb.dev.zentotem.net/track/billing/bfBmAV7QnU0Ajt0IO3ndAd1iy8m4kMVfdrCEpU1UmSWBRTLuIynzSQIbfKfz2BDNrySMBDZ_AXlgQJeC8eNrgW-ODVZMgQkIliSwKmBpH1vZFxUpf8Yl2pR2CPn1btO8Rzg12KYl4i5PHiHOlPF9mPA33vvFnJWht-Okzg7yO6jzdDi7J4Y0HhxlAGWLxnAbAKZjtMDCUFs_Obfaqkjeb_8_6lGJ8JBSeKZbUo9M88i5-7GToZbEWs95x5ocjzwcUw1rpvM0fkNo8K-9BhUPeweI29HovNGu5g1LdjBG3ZBTfU09apbZKcuSQsK4pUKin7nWrVKxm3v-nGm3ieqEDAwjqlLeepZvp02yfmu6iBBMkzUYa9y8w9QCo2RpJa1VjxbP6dkP_2mQteGK_lFBuffTJ5tFN-vpd_g67q0OD7amIgfXUEfOcwLhh_6dLJ6I6ZjL51v7D2-yAjSa3aFI7KZjhbNO0XCeOwBkG1CysYi1YN3iIwkGt8n9VsAOiqJHt6rnXgHYxZanWvZTS70dPfwyfdz2N5lQ5wO05Nu2vkCb1UYmu5TQZ-pNXlvJcIBzL4FZAnkAoAWLvZxt_MAjongE3svTTSn_SKzBDx4sl5l888UNdxeXCb2hW3f5q3BXKXQXZLk341b9C1TP8_KEazFJt23ljg?ap=${AUCTION_PRICE}&ac=${AUCTION_CURRENCY}&auid=${AUCTION_ID}",
+                  "adm": "<div><iframe src=\"https://pin.it/7i1XLXwLT\"></iframe><img src=\"https://rtb.dev.zentotem.net/track/impression/_CFpbYs1nENtMoScCSukPwpH6B_VbN1bR4gSSXISY6ei7LnUS90dwgCmC-KaupqY9c9QYcjTYQsJu_jlShwx2AuaVQ9XHUB35ZGkUdcMUmmV1mKIjSwNPI3czbf62UCxTQQEP0xqBLFmenuSHiSGLUbkh0-lshTVEqgNJgwW5K4_pVUA6fNceBhCrOTW111d3reHx8A6scWW4uzdVidI-W4iKAPRUREyORfD3hyoxMG5ks5P4jhotYRx5TeE4-VIv079vvKFr282aF_awRi_Rr7Iq2zJ9RjZIjp23Ohbp9hUbGyio3w2vNvcn2Mqb7Dcd5erXvWwvGbSk-rHu9GYpwnO1bRaeBrDEs5icXhQRXmio-CIYLrcBty2FJeE6Zs70_HwooaMlAlWmiKV6LV4NCuIBfN3Rg3ywWPdBEXLZ3cob6C14XMxqMwN0PjMb8zGvuwpuO0h_y_QHCMS66hzz3N1qtFhFO9C_o7hAOl8QTAzUAos3e5BQi-jvv3XeIsgMNSOebx5_1IcN3OgEiaD74X3cylUuT_XB9afKHDZrc_wp4CbPNOFRkDE7o3KBvrAbxcSi7GnqQx9XgWHsYK4W9rOXXNYPs11Nl8DVDhmsqDJoDQw57RZNe0CCvTzLbQm0Fr_7gijxJIxsIwSIRLoUPz13DT94w\" width=\"1\" height=\"1\" style=\"display:none\"></div>",
+                  "adid": "36",
+                  "adomain": [
+                    "app.apple.com"
+                  ],
+                  "crid": "36"
+                }
+              ],
+              "seat": "boldwin"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bid": [
+        {
+          "id": "38",
+          "impid": "1",
+          "price": 150,
+          "nurl": "https://rtb.dev.zentotem.net/win/sAqAO9K9HsaDJ-UDP8im2m4YO9tXkT20zotQvuwuybrB4Q10WFqDWKw699xJMeV9OjV2AbQmISKsHC3Jp3hZvW78A8kUZfj3OM7DCwrjmicExhU67r-r_YZRIkKGG8v1m9IogyBVYsjGFgzQyY0PIIkYTmoFSOXBPp1zA6EdlHY9BAb_ymhRoksBNTU-51dEhtbYUjd5_hXy3uEUBQWnhidHAJQTxXfY0ME8ZGYznX6fKhFovqtmaQ6ei5gPU3LZdCAiREQ3H1sYt2YRpi0TOvBz3OQ2JX_K3ovdkudnGobn16CQWQuWlkd4zsBKPtx1bc5Yj26dk54o6yzeb1hkZqT90rU1PX0aTdw20YZLUG7XkvT2D7TcxyreXRfZ-_-hyNdtjgS4BOGKDovaXtBIYsXUcxR2UYRl_0b1-Ve1mz8dquI304uxDsb6xpeVbxTn5_g_PHXD9rBpqBHzfswhwGFArRsTdJkDT3nNpGla9yVt5GcEwxAJZ1uV9s8yzcyWI33Y0TglGfM_8UYbat2KQ9Q5bTsPXp08kNTgyWpDSNQJKyb39A",
+          "burl": "https://rtb.dev.zentotem.net/track/billing/dCQf_uL6Uk7S4vSttAGN2mwFvkIr76t8hDVnbqa9s-aZviDKxMbw3Vo9aGROWR4gTjvthgmppXaxitdG9kSMl1hgMRE5v1FXqQUapVlSEK8jlzCCnsiYxz1gno9_Kw5ipKmsNf4bvxPvOPPEAWkakG_XT2EZGaDO7eZ_8RR1BEfui3jXnhM863A5CxWnzjKnPxBuW8Jo6BUfqixNFr0JfZt38qvwfMYVtD1YRveRebdxUp1Ol9qhCnMLl502Y5gEvIeFqV9kAkTs1IqoVJmump9wa9PtRpRxju6tzKv_C0cJFRxGtt6XsECuwOO6u4G6f9wjVWdlGOlcuXcYcb9nclErZAPuYPdFci1FlwfgHDeGIY_xdBgDSb7L4Wc36EFZHQk74KeIRsUv_I-m0qWcxqPWqDBzFInBRrZ8DLLX0REhQw3r34txZHaBbUJ_blrG1MfHepUh1wkSAnMcqu3JgIFJsdG-KX_M2VFuATBTQc6f2f7dYz2B1EBXczMkcHISeJDelUgRSL-AgkzvgREhNmH5FZHfNWvle1KmQ7OVVyXRKECpbsdgBKddPdVwL01PxeZwFekkzeNbYfsYH5UQ7lsyq0DLzBIaWt4qaG_xGAVQmV8H4OpfKbRPd9vdn-tuN0ns3lKV5SpsLJ5qbAuAQxVhPbPcBQ?ap=${AUCTION_PRICE}&ac=${AUCTION_CURRENCY}&auid=${AUCTION_ID}",
+          "adm": "<div><iframe src=\"https://pin.it/7i1XLXwLT\"></iframe><img src=\"https://rtb.dev.zentotem.net/track/impression/OCE1E7YMOwnQYJtiiHgA8MtvWHzzjjr5OEYcav5sxg9nyxkx1ahe3Gq3BCJxwEYmVFDZozTKtp9Q20DvqFd5AqvZasuqRB4D0lo6ybV2A_djeW7yc9jEocnzPaiQDWUnvVSH3a7tyi_5RprFYK8o7dt8BnelgKFsxkVYSYwYfvbER7X9J5fVOYPfn8GAwq_C0hYaBdKUsIp9_vFSwEPdCBQkvM4nk7tJ9pGYzUGbMm3m5uoJWNlEEyiWt6wPLZcqoOkeEyaxH1EiD5tLiiNl5fprK9Tgd-6_En9uIPwn5xWhtgzFABiZF3XqrHmrqqfBy-DOAGwxdtduveRBTdppOY9nMBKHzfR74sD1Wqwdb8tpZ9jHXly2-nzZeLHNbnfKrBJDR1GpXd-IukoRupFb0weIoY8j1knsQDEHIA2KNLnZGGSEQC2u0wfIDNL7mpcTjySZOGJ-jyI0fVtjcPtNLRCzW5NTVUg7iaiwZKIgLb7XfO9U7h8VgI6hFEQzILxcGKs_gVSK7U1eUSlLTcNIPun67vB3dMpTCtVN-0wXiIZARY0vtAOlE9mjFBR6964IaIk2NfBbwwUGST98uj1Vo1szhUhgT1ny-DllhRnBWj6l7yKVqBa8zilAg4LoAHIz1dSCoqOsPaARm77xz8hzxupvsqEsHg\" width=\"1\" height=\"1\" style=\"display:none\"></div>",
+          "adid": "38",
+          "adomain": [
+            "app.apple.com"
+          ],
+          "crid": "38"
+        }
+      ]
+    }
+  ]
+}
