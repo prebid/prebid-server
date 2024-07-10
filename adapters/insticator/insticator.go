@@ -211,19 +211,15 @@ func getBidType(ext bidExt) openrtb_ext.BidType {
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
-	log.Printf("IN makeRequests")
-
 	var errs []error
 	var adapterRequests []*adapters.RequestData
 	var groupedImps = make(map[string][]openrtb2.Imp)
 
-	// Construct request extension common to all imps
-	// NOTE: not blocking adapter requests on errors
-	// since request extension is optional.
 	reqExt, err := makeReqExt(request)
 	if err != nil {
 		errs = append(errs, err)
 	}
+
 	request.Ext = reqExt
 
 	for i := 0; i < len(request.Imp); i++ {
@@ -270,16 +266,29 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 func (a *adapter) makeRequest(request openrtb2.BidRequest, impList []openrtb2.Imp) (*adapters.RequestData, error) {
 	request.Imp = impList
 
-	// Last Step
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
 		return nil, err
 	}
-	// log reqJson
-	// log.Printf("reqJSON Before makerequest: %s", reqJSON)
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
+
+	if request.Device != nil {
+		if len(request.Device.UA) > 0 {
+			headers.Add("User-Agent", request.Device.UA)
+		}
+
+		if len(request.Device.IPv6) > 0 {
+			headers.Add("X-Forwarded-For", request.Device.IPv6)
+		}
+
+		if len(request.Device.IP) > 0 {
+			headers.Add("X-Forwarded-For", request.Device.IP)
+			headers.Add("IP", request.Device.IP)
+		}
+	}
 
 	return &adapters.RequestData{
 		Method:  "POST",
@@ -376,7 +385,6 @@ func makeImps(imp openrtb2.Imp) (openrtb2.Imp, error) {
 			}
 		}
 	}
-
 	return imp, nil
 }
 
@@ -498,7 +506,6 @@ func populateSitePublisherId(imp *openrtb2.Imp, site *openrtb2.Site) {
 
 	if site.Publisher == nil {
 		site.Publisher = &openrtb2.Publisher{}
-		log.Printf("Created Publisher object in Site")
 	}
 
 	if err := json.Unmarshal(imp.Ext, &ext); err == nil {
