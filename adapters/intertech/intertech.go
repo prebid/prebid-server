@@ -58,7 +58,7 @@ func (a *adapter) MakeRequests(requestData *openrtb2.BidRequest, requestInfo *ad
 	for i := range requestData.Imp {
 		imp := requestData.Imp[i]
 
-		placementId, err := getIntertechPlacementId(imp)
+		placementId, err := getPlacementID(imp)
 		if err != nil {
 			errors = append(errors, err)
 			continue
@@ -126,7 +126,7 @@ func splitRequestDataByImp(request *openrtb2.BidRequest, imp openrtb2.Imp) openr
 	return requestCopy
 }
 
-func getIntertechPlacementId(imp openrtb2.Imp) (*intertechPlacementID, error) {
+func getPlacementID(imp openrtb2.Imp) (*intertechPlacementID, error) {
 	var ext adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
 		return nil, &errortypes.BadInput{
@@ -141,28 +141,24 @@ func getIntertechPlacementId(imp openrtb2.Imp) (*intertechPlacementID, error) {
 		}
 	}
 
-	placementID, err := mapExtToPlacementID(intertechExt)
-	if err != nil {
-		return nil, err
-	}
-
+	placementID := mapExtToPlacementID(intertechExt)
 	return placementID, nil
 }
 
-func mapExtToPlacementID(intertechExt openrtb_ext.ExtImpIntertech) (*intertechPlacementID, error) {
+func mapExtToPlacementID(intertechExt openrtb_ext.ExtImpIntertech) *intertechPlacementID {
 	var placementID intertechPlacementID
 
 	if len(intertechExt.PlacementID) == 0 {
 		placementID.ImpID = strconv.Itoa(int(intertechExt.ImpID))
 		placementID.PageID = strconv.Itoa(int(intertechExt.PageID))
-		return &placementID, nil
+		return &placementID
 	}
 
 	idParts := strings.Split(intertechExt.PlacementID, "-")
 	placementID.PageID = idParts[0]
 	placementID.ImpID = idParts[1]
 
-	return &placementID, nil
+	return &placementID
 }
 
 func modifyImp(imp *openrtb2.Imp) error {
@@ -179,23 +175,22 @@ func modifyImp(imp *openrtb2.Imp) error {
 	}
 
 	return &errortypes.BadInput{
-		Message: fmt.Sprintf("Unsupported format. Yandex only supports banner and native types. Ignoring imp id #%s", imp.ID),
+		Message: fmt.Sprintf("Unsupported format. Intertech only supports banner and native types. Ignoring imp id #%s", imp.ID),
 	}
 }
 
 func modifyBanner(banner openrtb2.Banner) (*openrtb2.Banner, error) {
-	bannerCopy := banner
-	format := bannerCopy.Format
+	format := banner.Format
 
-	hasRootSize := bannerCopy.W != nil && bannerCopy.H != nil && *bannerCopy.W > 0 && *bannerCopy.H > 0
+	hasRootSize := banner.W != nil && banner.H != nil && *banner.W > 0 && *banner.H > 0
 	if !hasRootSize && len(format) == 0 {
 		w := 0
 		h := 0
-		if bannerCopy.W != nil {
-			w = int(*bannerCopy.W)
+		if banner.W != nil {
+			w = int(*banner.W)
 		}
-		if bannerCopy.H != nil {
-			h = int(*bannerCopy.H)
+		if banner.H != nil {
+			h = int(*banner.H)
 		}
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("Invalid sizes provided for Banner %dx%d", w, h),
@@ -204,11 +199,11 @@ func modifyBanner(banner openrtb2.Banner) (*openrtb2.Banner, error) {
 
 	if !hasRootSize {
 		firstFormat := format[0]
-		bannerCopy.H = &firstFormat.H
-		bannerCopy.W = &firstFormat.W
+		banner.H = &firstFormat.H
+		banner.W = &firstFormat.W
 	}
 
-	return &bannerCopy, nil
+	return &banner, nil
 }
 
 // resolveUrl "un-templates" the endpoint by replacing macroses and adding the required query parameters

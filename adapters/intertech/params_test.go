@@ -36,8 +36,6 @@ func TestInvalidParams(t *testing.T) {
 
 var validParams = []string{
 	`{"page_id": 123123, "imp_id": 123}`,
-	// `{"placement_id": "A-123123-123"}`,
-	// `{"placement_id": "B-A-123123-123"}`,
 	`{"placement_id": "123123-123"}`,
 }
 
@@ -57,10 +55,9 @@ var invalidParams = []string{
 
 func TestValidPlacementIdMapper(t *testing.T) {
 	for ext, expectedPlacementId := range validPlacementIds {
-		val, err := mapExtToPlacementID(ext)
+		val := mapExtToPlacementID(ext)
 
 		assert.Equal(t, &expectedPlacementId, val)
-		assert.NoError(t, err)
 	}
 }
 
