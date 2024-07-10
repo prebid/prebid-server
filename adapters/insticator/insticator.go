@@ -227,7 +227,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			var impExt Ext
 			// Populate site.publisher.id from imp extension only once
 			if request.Site != nil && i == 0 {
-				populateSitePublisherId(&impCopy, request.Site)
+				populatePublisherId(&impCopy, request)
+			} else if request.App != nil && i == 0 {
+				populatePublisherId(&impCopy, request)
 			}
 
 			// group together the imp hacing insticator adUnitId. However let's not block request creation.
@@ -500,17 +502,25 @@ func isZeroOrNil(value reflect.Value) bool {
 	}
 }
 
-// populate publisherId to site object from imp extension
-func populateSitePublisherId(imp *openrtb2.Imp, site *openrtb2.Site) {
+// populate publisherId to site/app object from imp extension
+func populatePublisherId(imp *openrtb2.Imp, request *openrtb2.BidRequest) {
 	var ext Ext
 
-	if site.Publisher == nil {
-		site.Publisher = &openrtb2.Publisher{}
+	if request.Site != nil && request.Site.Publisher == nil {
+		request.Site.Publisher = &openrtb2.Publisher{}
+		if err := json.Unmarshal(imp.Ext, &ext); err == nil {
+			request.Site.Publisher.ID = ext.Insticator.PublisherId
+		} else {
+			log.Printf("Error unmarshalling imp extension: %v", err)
+		}
 	}
 
-	if err := json.Unmarshal(imp.Ext, &ext); err == nil {
-		site.Publisher.ID = ext.Insticator.PublisherId
-	} else {
-		log.Printf("Error unmarshalling imp extension: %v", err)
+	if request.App != nil && request.App.Publisher == nil {
+		request.App.Publisher = &openrtb2.Publisher{}
+		if err := json.Unmarshal(imp.Ext, &ext); err == nil {
+			request.App.Publisher.ID = ext.Insticator.PublisherId
+		} else {
+			log.Printf("Error unmarshalling imp extension: %v", err)
+		}
 	}
 }
