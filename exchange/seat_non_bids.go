@@ -99,6 +99,7 @@ func (snb *nonBids) addProxyNonBids(impIds []string, nonBidReason openrtb3.NoBid
 }
 
 // append adds the nonBids from the input nonBids to the current nonBids.
+// This method is not thread safe as we are initializing and writing to map
 func (snb *nonBids) append(nonBids ...nonBids) {
 	if snb.seatNonBidsMap == nil {
 		snb.seatNonBidsMap = make(map[string][]openrtb_ext.NonBid)
