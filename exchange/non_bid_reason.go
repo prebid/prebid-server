@@ -2,6 +2,7 @@ package exchange
 
 import (
 	"errors"
+	"fmt"
 	"syscall"
 
 	"github.com/prebid/openrtb/v20/openrtb3"
@@ -44,6 +45,9 @@ func httpInfoToNonBidReason(httpInfo *httpCallInfo) openrtb3.NoBidReason {
 		if errors.Is(httpInfo.err, syscall.ECONNREFUSED) {
 			return ErrorBidderUnreachable
 		}
+
+		derr := errors.New("no such host")
+		fmt.Println(errors.Is(httpInfo.err, derr))
 	}
 	return nonBidReason
 }

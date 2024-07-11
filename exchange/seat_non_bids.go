@@ -70,3 +70,22 @@ func buildProxyNonBids(impIds []string, nonBidReason openrtb3.NoBidReason) []ope
 	}
 	return proxyNonBids
 }
+
+func (snb *nonBids) addProxyNonBids(impIds []string, nonBidReason openrtb3.NoBidReason, seat string) {
+	proxyNonBids := buildProxyNonBids(impIds, nonBidReason)
+	if snb.seatNonBidsMap == nil {
+		snb.seatNonBidsMap = make(map[string][]openrtb_ext.NonBid)
+	}
+	snb.seatNonBidsMap[seat] = append(snb.seatNonBidsMap[seat], proxyNonBids...)
+}
+
+func (snb *nonBids) append(nonBids ...nonBids) {
+	if snb.seatNonBidsMap == nil {
+		snb.seatNonBidsMap = make(map[string][]openrtb_ext.NonBid)
+	}
+	for _, nonBid := range nonBids {
+		for seat, nonBids := range nonBid.seatNonBidsMap {
+			snb.seatNonBidsMap[seat] = append(snb.seatNonBidsMap[seat], nonBids...)
+		}
+	}
+}
