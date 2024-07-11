@@ -35,9 +35,9 @@
       "privacypolicy": 1,
       "paid": 0,
       "id": "1757830",
-      "name": "Craft Playtime: Hide and Seek",
-      "bundle": "lol.new.here",
-      "storeurl": "https://play.google.com/store/apps/details?id=com.unicorn.hugy.craft.fps3&referrer=utm_source%3D42matters.com%26utm_medium%3Dapi",
+      "name": "some-app-name",
+      "bundle": "some-app-bundle",
+      "storeurl": "some-store-url",
       "cat": [
 
         "IAB1-1"
@@ -107,9 +107,9 @@
             "privacypolicy": 1,
             "paid": 0,
             "id": "1757830",
-            "name": "Craft Playtime: Hide and Seek",
-            "bundle": "lol.new.here",
-            "storeurl": "https://play.google.com/store/apps/details?id=com.unicorn.hugy.craft.fps3&referrer=utm_source%3D42matters.com%26utm_medium%3Dapi",
+            "name": "some-app-name",
+            "bundle": "some-app-bundle",
+            "storeurl": "some-store-url",
             "cat": [
 
               "IAB1-1"
@@ -152,9 +152,9 @@
                   "id": "36",
                   "impid": "1",
                   "price": 150,
-                  "nurl": "https://rtb.dev.zentotem.net/win/fazbtcTjKpyU_1YFFwGq1EfhfvqO54U7lZxcUNPWD3p8k1pnLb4k2KdnEkprncAE4ygqcyEkHv2pcs0woUWJJVD3J-yjYX49_OUkOICkt26tJiUImGXQZqxMTJlCKKt_oORHi9blqIsl3hVSLkpW1n6kQmvmjNOBGXzvgDaBOu3AaBIpxox3dhCCcZsSo1yIhnVLL-Z29m6PHJNN6LiSMMo5h0xBRPVifILafUV-gy8VQeDFhE9M6vIJfZrUqvUPJ1lwlXS1zEzJOQKksu57nJI1a1ByEXkG_R1GL4OJAM6BEpSyzdNiRZpQd9Oqg-Ad0rpLuYDKXYyCiyOu3BNasZwpIaNBIq8InnYLxhTgpVveNTpoxosJa0skVOGYn9MDCm5zoIMPTsfy1HPWJxsgvmqsnNtGQa2Onqk7eYOQGUCQtFxIGREATCVPfqRvpknd9LldQMU_qeGPbAFwtsaGxFMeyi30Xn2FmOadZnVdY_DF5rE3K2gWYa9oRaRS_ytKxLQdUFWW0YqGjWw06tGlWvoOcjeQ5po2-BknfcsKTZlumkWl_A",
-                  "burl": "https://rtb.dev.zentotem.net/track/billing/bfBmAV7QnU0Ajt0IO3ndAd1iy8m4kMVfdrCEpU1UmSWBRTLuIynzSQIbfKfz2BDNrySMBDZ_AXlgQJeC8eNrgW-ODVZMgQkIliSwKmBpH1vZFxUpf8Yl2pR2CPn1btO8Rzg12KYl4i5PHiHOlPF9mPA33vvFnJWht-Okzg7yO6jzdDi7J4Y0HhxlAGWLxnAbAKZjtMDCUFs_Obfaqkjeb_8_6lGJ8JBSeKZbUo9M88i5-7GToZbEWs95x5ocjzwcUw1rpvM0fkNo8K-9BhUPeweI29HovNGu5g1LdjBG3ZBTfU09apbZKcuSQsK4pUKin7nWrVKxm3v-nGm3ieqEDAwjqlLeepZvp02yfmu6iBBMkzUYa9y8w9QCo2RpJa1VjxbP6dkP_2mQteGK_lFBuffTJ5tFN-vpd_g67q0OD7amIgfXUEfOcwLhh_6dLJ6I6ZjL51v7D2-yAjSa3aFI7KZjhbNO0XCeOwBkG1CysYi1YN3iIwkGt8n9VsAOiqJHt6rnXgHYxZanWvZTS70dPfwyfdz2N5lQ5wO05Nu2vkCb1UYmu5TQZ-pNXlvJcIBzL4FZAnkAoAWLvZxt_MAjongE3svTTSn_SKzBDx4sl5l888UNdxeXCb2hW3f5q3BXKXQXZLk341b9C1TP8_KEazFJt23ljg?ap=${AUCTION_PRICE}&ac=${AUCTION_CURRENCY}&auid=${AUCTION_ID}",
-                  "adm": "<div><iframe src=\"https://pin.it/7i1XLXwLT\"></iframe><img src=\"https://rtb.dev.zentotem.net/track/impression/_CFpbYs1nENtMoScCSukPwpH6B_VbN1bR4gSSXISY6ei7LnUS90dwgCmC-KaupqY9c9QYcjTYQsJu_jlShwx2AuaVQ9XHUB35ZGkUdcMUmmV1mKIjSwNPI3czbf62UCxTQQEP0xqBLFmenuSHiSGLUbkh0-lshTVEqgNJgwW5K4_pVUA6fNceBhCrOTW111d3reHx8A6scWW4uzdVidI-W4iKAPRUREyORfD3hyoxMG5ks5P4jhotYRx5TeE4-VIv079vvKFr282aF_awRi_Rr7Iq2zJ9RjZIjp23Ohbp9hUbGyio3w2vNvcn2Mqb7Dcd5erXvWwvGbSk-rHu9GYpwnO1bRaeBrDEs5icXhQRXmio-CIYLrcBty2FJeE6Zs70_HwooaMlAlWmiKV6LV4NCuIBfN3Rg3ywWPdBEXLZ3cob6C14XMxqMwN0PjMb8zGvuwpuO0h_y_QHCMS66hzz3N1qtFhFO9C_o7hAOl8QTAzUAos3e5BQi-jvv3XeIsgMNSOebx5_1IcN3OgEiaD74X3cylUuT_XB9afKHDZrc_wp4CbPNOFRkDE7o3KBvrAbxcSi7GnqQx9XgWHsYK4W9rOXXNYPs11Nl8DVDhmsqDJoDQw57RZNe0CCvTzLbQm0Fr_7gijxJIxsIwSIRLoUPz13DT94w\" width=\"1\" height=\"1\" style=\"display:none\"></div>",
+                  "nurl": "some-test-nurl",
+                  "burl": "some-test-burl",
+                  "adm": "some-test-adm",
                   "adid": "36",
                   "adomain": [
                     "app.apple.com"
@@ -177,9 +177,9 @@
           "id": "36",
           "impid": "1",
           "price": 150,
-          "nurl": "https://rtb.dev.zentotem.net/win/fazbtcTjKpyU_1YFFwGq1EfhfvqO54U7lZxcUNPWD3p8k1pnLb4k2KdnEkprncAE4ygqcyEkHv2pcs0woUWJJVD3J-yjYX49_OUkOICkt26tJiUImGXQZqxMTJlCKKt_oORHi9blqIsl3hVSLkpW1n6kQmvmjNOBGXzvgDaBOu3AaBIpxox3dhCCcZsSo1yIhnVLL-Z29m6PHJNN6LiSMMo5h0xBRPVifILafUV-gy8VQeDFhE9M6vIJfZrUqvUPJ1lwlXS1zEzJOQKksu57nJI1a1ByEXkG_R1GL4OJAM6BEpSyzdNiRZpQd9Oqg-Ad0rpLuYDKXYyCiyOu3BNasZwpIaNBIq8InnYLxhTgpVveNTpoxosJa0skVOGYn9MDCm5zoIMPTsfy1HPWJxsgvmqsnNtGQa2Onqk7eYOQGUCQtFxIGREATCVPfqRvpknd9LldQMU_qeGPbAFwtsaGxFMeyi30Xn2FmOadZnVdY_DF5rE3K2gWYa9oRaRS_ytKxLQdUFWW0YqGjWw06tGlWvoOcjeQ5po2-BknfcsKTZlumkWl_A",
-          "burl": "https://rtb.dev.zentotem.net/track/billing/bfBmAV7QnU0Ajt0IO3ndAd1iy8m4kMVfdrCEpU1UmSWBRTLuIynzSQIbfKfz2BDNrySMBDZ_AXlgQJeC8eNrgW-ODVZMgQkIliSwKmBpH1vZFxUpf8Yl2pR2CPn1btO8Rzg12KYl4i5PHiHOlPF9mPA33vvFnJWht-Okzg7yO6jzdDi7J4Y0HhxlAGWLxnAbAKZjtMDCUFs_Obfaqkjeb_8_6lGJ8JBSeKZbUo9M88i5-7GToZbEWs95x5ocjzwcUw1rpvM0fkNo8K-9BhUPeweI29HovNGu5g1LdjBG3ZBTfU09apbZKcuSQsK4pUKin7nWrVKxm3v-nGm3ieqEDAwjqlLeepZvp02yfmu6iBBMkzUYa9y8w9QCo2RpJa1VjxbP6dkP_2mQteGK_lFBuffTJ5tFN-vpd_g67q0OD7amIgfXUEfOcwLhh_6dLJ6I6ZjL51v7D2-yAjSa3aFI7KZjhbNO0XCeOwBkG1CysYi1YN3iIwkGt8n9VsAOiqJHt6rnXgHYxZanWvZTS70dPfwyfdz2N5lQ5wO05Nu2vkCb1UYmu5TQZ-pNXlvJcIBzL4FZAnkAoAWLvZxt_MAjongE3svTTSn_SKzBDx4sl5l888UNdxeXCb2hW3f5q3BXKXQXZLk341b9C1TP8_KEazFJt23ljg?ap=${AUCTION_PRICE}&ac=${AUCTION_CURRENCY}&auid=${AUCTION_ID}",
-          "adm": "<div><iframe src=\"https://pin.it/7i1XLXwLT\"></iframe><img src=\"https://rtb.dev.zentotem.net/track/impression/_CFpbYs1nENtMoScCSukPwpH6B_VbN1bR4gSSXISY6ei7LnUS90dwgCmC-KaupqY9c9QYcjTYQsJu_jlShwx2AuaVQ9XHUB35ZGkUdcMUmmV1mKIjSwNPI3czbf62UCxTQQEP0xqBLFmenuSHiSGLUbkh0-lshTVEqgNJgwW5K4_pVUA6fNceBhCrOTW111d3reHx8A6scWW4uzdVidI-W4iKAPRUREyORfD3hyoxMG5ks5P4jhotYRx5TeE4-VIv079vvKFr282aF_awRi_Rr7Iq2zJ9RjZIjp23Ohbp9hUbGyio3w2vNvcn2Mqb7Dcd5erXvWwvGbSk-rHu9GYpwnO1bRaeBrDEs5icXhQRXmio-CIYLrcBty2FJeE6Zs70_HwooaMlAlWmiKV6LV4NCuIBfN3Rg3ywWPdBEXLZ3cob6C14XMxqMwN0PjMb8zGvuwpuO0h_y_QHCMS66hzz3N1qtFhFO9C_o7hAOl8QTAzUAos3e5BQi-jvv3XeIsgMNSOebx5_1IcN3OgEiaD74X3cylUuT_XB9afKHDZrc_wp4CbPNOFRkDE7o3KBvrAbxcSi7GnqQx9XgWHsYK4W9rOXXNYPs11Nl8DVDhmsqDJoDQw57RZNe0CCvTzLbQm0Fr_7gijxJIxsIwSIRLoUPz13DT94w\" width=\"1\" height=\"1\" style=\"display:none\"></div>",
+          "nurl": "some-test-nurl",
+          "burl": "some-test-burl",
+          "adm": "some-test-adm",
           "adid": "36",
           "adomain": [
             "app.apple.com"

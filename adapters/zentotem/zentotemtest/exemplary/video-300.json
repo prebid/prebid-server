@@ -1,6 +1,6 @@
 {
   "mockBidRequest": {
-    "id": "test-imp-id",
+    "id": "058e84c8-3684-4725-be57-6a211fb8abc3",
     "at": 2,
     "bcat": [ "IAB8-18", "IAB8-5", "IAB9-9" ],
     "cur": [
@@ -10,26 +10,25 @@
     "imp": [
       {
         "id": "test-imp-id",
-        "bidfloor": 10,
-        "bidfloorcur": "RUB",
-        "tagid": "65f0c2a2feb788d7",
-        "displaymanager": "Fyber",
-        "displaymanagerver": "10.1.1",
-        "banner": {
-          "w": 320,
-          "h": 50,
-          "api": [
-            5
-          ],
+        "video": {
           "mimes": [
-            "application/javascript",
-            "text/html",
-            "text/javascript",
-            "image/png",
-            "image/jpeg",
-            "image/gif"
-          ]
-        }
+            "video/mp4"
+          ],
+          "protocols": [
+            2,
+            3
+          ],
+          "w": 640,
+          "h": 360,
+          "linearity": 1,
+          "skip": 1,
+          "sequence": 1,
+          "boxingallowed": 1,
+          "placement": 1
+        },
+        "tagid": "27208-0",
+        "bidfloor": 0.35,
+        "secure": 1
       }
     ],
     "app": {
@@ -73,7 +72,7 @@
       "expectedRequest": {
         "uri": "https://rtb.dev.zentotem.net/bid?sspuid=cq5r5n0dputspujutpmg",
         "body": {
-          "id": "test-imp-id",
+          "id": "058e84c8-3684-4725-be57-6a211fb8abc3",
           "at": 2,
           "bcat": [ "IAB8-18", "IAB8-5", "IAB9-9" ],
           "cur": [
@@ -83,26 +82,25 @@
           "imp": [
             {
               "id": "test-imp-id",
-              "bidfloor": 10,
-              "bidfloorcur": "RUB",
-              "tagid": "65f0c2a2feb788d7",
-              "displaymanager": "Fyber",
-              "displaymanagerver": "10.1.1",
-              "banner": {
-                "w": 320,
-                "h": 50,
-                "api": [
-                  5
-                ],
+              "video": {
                 "mimes": [
-                  "application/javascript",
-                  "text/html",
-                  "text/javascript",
-                  "image/png",
-                  "image/jpeg",
-                  "image/gif"
-                ]
-              }
+                  "video/mp4"
+                ],
+                "protocols": [
+                  2,
+                  3
+                ],
+                "w": 640,
+                "h": 360,
+                "linearity": 1,
+                "skip": 1,
+                "sequence": 1,
+                "boxingallowed": 1,
+                "placement": 1
+              },
+              "tagid": "27208-0",
+              "bidfloor": 0.35,
+              "secure": 1
             }
           ],
           "app": {
@@ -151,19 +149,19 @@
             {
               "bid": [
                 {
-                  "id": "40",
-                  "impid": "1",
+                  "id": "43",
+                  "impid": "8f3ac58c-1e03-4264-8619-f79ddb137110",
                   "price": 150,
                   "nurl": "some-test-nurl",
                   "burl": "some-test-burl",
                   "adm": "some-test-adm",
-                  "adid": "40",
+                  "adid": "43",
                   "adomain": [
                     "app.apple.com"
                   ],
-                  "crid": "40",
-                  "w": 320,
-                  "h": 50
+                  "crid": "43",
+                  "w": 1280,
+                  "h": 720
                 }
               ],
               "seat": "boldwin"
@@ -178,19 +176,17 @@
     {
       "bid": [
         {
-          "id": "40",
+          "id": "36",
           "impid": "1",
           "price": 150,
           "nurl": "some-test-nurl",
           "burl": "some-test-burl",
           "adm": "some-test-adm",
-          "adid": "40",
+          "adid": "36",
           "adomain": [
             "app.apple.com"
           ],
-          "crid": "40",
-          "w": 320,
-          "h": 50
+          "crid": "36"
         }
       ]
     }

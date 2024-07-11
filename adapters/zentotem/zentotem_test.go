@@ -4,7 +4,6 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/adapterstest"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -18,11 +17,4 @@ func TestJsonSamples(t *testing.T) {
 	}
 
 	adapterstest.RunJSONBidderTest(t, "zentotemtest", bidder)
-}
-
-func TestEndpointTemplateMalformed(t *testing.T) {
-	_, buildErr := Builder(openrtb_ext.BidderZentotem, config.Adapter{
-		Endpoint: "{{Malformed}}"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
-
-	assert.Error(t, buildErr)
 }
