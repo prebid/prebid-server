@@ -83,8 +83,7 @@ type extraAuctionResponseInfo struct {
 	fledge                  *openrtb_ext.Fledge
 	bidsFound               bool
 	bidderResponseStartTime time.Time
-	// seatNonBid              []openrtb_ext.SeatNonBid
-	seatNonBid nonBids
+	seatNonBid              nonBids
 }
 
 const ImpIdReqBody = "Stored bid response for impression id: "
@@ -138,7 +137,6 @@ type bidderAdapterConfig struct {
 func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, hookExecutor hookexecution.StageExecutor, ruleToAdjustments openrtb_ext.AdjustmentsByDealID) ([]*entities.PbsOrtbSeatBid, extraBidderRespInfo, []error) {
 	request := openrtb_ext.RequestWrapper{BidRequest: bidderRequest.BidRequest}
 	reject := hookExecutor.ExecuteBidderRequestStage(&request, string(bidderRequest.BidderName))
-	// var seatNonBids *openrtb_ext.SeatNonBid
 	var seatNonBids nonBids
 	if reject != nil {
 		return nil, extraBidderRespInfo{}, []error{reject}
@@ -409,20 +407,8 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 		} else {
 			errs = append(errs, httpInfo.err)
 			nonBidReason := httpInfoToNonBidReason(httpInfo)
-			// proxyNonBids := buildProxyNonBids(httpInfo.request.ImpIDs, nonBidReason)
-			// seatNonBids.NonBid = append(seatNonBids.NonBid, proxyNonBids...)
-			// seatNonBids = append(seatNonBids, proxyNonBids)
 			seatNonBids.addProxyNonBids(httpInfo.request.ImpIDs, nonBidReason, string(bidderRequest.BidderName))
 		}
-		// if bidder.BidderName == openrtb_ext.BidderName("bwx") {
-		// 	for _, impid := range httpInfo.request.ImpIDs {
-		// 		if impid == "imp_2" {
-		// 			// proxyNonBids := buildProxyNonBids([]string{"imp_2"}, ErrorBidderUnreachable)
-		// 			// seatNonBids.NonBid = append(seatNonBids.NonBid, proxyNonBids...)
-		// 			seatNonBids.addProxyNonBids(httpInfo.request.ImpIDs, ErrorBidderUnreachable, string(bidderRequest.BidderName))
-		// 		}
-		// 	}
-		// }
 	}
 
 	seatBids := make([]*entities.PbsOrtbSeatBid, 0, len(seatBidMap))

@@ -410,8 +410,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 		auc            *auction
 		cacheErrs      []error
 		bidResponseExt *openrtb_ext.ExtBidResponse
-		// seatNonBids    = nonBids{}
-		seatNonBids = adapterNonBids
+		seatNonBids    = adapterNonBids
 	)
 
 	if anyBidsReturned {
@@ -814,10 +813,6 @@ func (e *exchange) getAllBids(
 		adapterExtra[brw.bidder] = brw.adapterExtra
 
 		// collect adapter non bids
-		// if brw.adapterNonBids != nil {
-		// 	nonBids = append(nonBids, *brw.adapterNonBids)
-		// 	extraRespInfo.seatNonBid = nonBids
-		// }
 		extraRespInfo.seatNonBid.append(brw.adapterNonBids)
 
 	}
@@ -1624,8 +1619,5 @@ func setSeatNonBid(bidResponseExt *openrtb_ext.ExtBidResponse, seatNonBids nonBi
 	}
 
 	bidResponseExt.Prebid.SeatNonBid = seatNonBids.get()
-	// if adapterNonBids != nil {
-	// 	bidResponseExt.Prebid.SeatNonBid = append(bidResponseExt.Prebid.SeatNonBid, adapterNonBids...)
-	// }
 	return bidResponseExt
 }
