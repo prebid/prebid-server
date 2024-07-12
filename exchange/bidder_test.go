@@ -2649,6 +2649,20 @@ func TestExtraBidWithAlternateBidderCodeDisabled(t *testing.T) {
 			Message:     `invalid biddercode "groupm-rejected" sent by adapter "pubmatic"`,
 		},
 	}
+	wantSeatNonBids := nonBids{
+		seatNonBidsMap: map[string][]openrtb_ext.NonBid{
+			"groupm-rejected": {
+				{
+					StatusCode: int(ResponseRejectedGeneral),
+					Ext: openrtb_ext.NonBidExt{
+						Prebid: openrtb_ext.ExtResponseNonBidPrebid{
+							Bid: openrtb_ext.NonBidObject{},
+						},
+					},
+				},
+			},
+		},
+	}
 
 	bidder := AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, &config.DebugInfo{}, "")
 	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
@@ -2680,6 +2694,7 @@ func TestExtraBidWithAlternateBidderCodeDisabled(t *testing.T) {
 	assert.Equal(t, wantErrs, errs)
 	assert.Len(t, seatBids, 2)
 	assert.ElementsMatch(t, wantSeatBids, seatBids)
+	assert.Equal(t, wantSeatNonBids, extraBidderRespInfo.adapterNonBids)
 	assert.False(t, extraBidderRespInfo.respProcessingStartTime.IsZero())
 }
 

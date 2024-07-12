@@ -76,12 +76,14 @@ type bidRequestOptions struct {
 
 type extraBidderRespInfo struct {
 	respProcessingStartTime time.Time
+	adapterNonBids          nonBids
 }
 
 type extraAuctionResponseInfo struct {
 	fledge                  *openrtb_ext.Fledge
 	bidsFound               bool
 	bidderResponseStartTime time.Time
+	seatNonBid              nonBids
 }
 
 const ImpIdReqBody = "Stored bid response for impression id: "
@@ -348,6 +350,14 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 								}
 								errs = append(errs, err)
 							}
+							extraRespInfo.adapterNonBids.addBid(&entities.PbsOrtbBid{
+								Bid:          bidResponse.Bids[i].Bid,
+								BidMeta:      bidResponse.Bids[i].BidMeta,
+								BidType:      bidResponse.Bids[i].BidType,
+								BidVideo:     bidResponse.Bids[i].BidVideo,
+								DealPriority: bidResponse.Bids[i].DealPriority,
+								AdapterCode:  bidderRequest.BidderCoreName,
+							}, int(ResponseRejectedGeneral), bidderName.String())
 							continue
 						}
 
