@@ -32,14 +32,12 @@ type validatedBidder struct {
 }
 
 func (v *validatedBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, hookExecutor hookexecution.StageExecutor, ruleToAdjustments openrtb_ext.AdjustmentsByDealID) ([]*entities.PbsOrtbSeatBid, extraBidderRespInfo, []error) {
-	var seatNonBids nonBids
 	seatBids, extraBidderRespInfo, errs := v.bidder.requestBid(ctx, bidderRequest, conversions, reqInfo, adsCertSigner, bidRequestOptions, alternateBidderCodes, hookExecutor, ruleToAdjustments)
 	for _, seatBid := range seatBids {
-		if validationErrors := removeInvalidBids(bidderRequest.BidRequest, seatBid, &seatNonBids, bidRequestOptions.responseDebugAllowed); len(validationErrors) > 0 {
+		if validationErrors := removeInvalidBids(bidderRequest.BidRequest, seatBid, &extraBidderRespInfo.adapterNonBids, bidRequestOptions.responseDebugAllowed); len(validationErrors) > 0 {
 			errs = append(errs, validationErrors...)
 		}
 	}
-	extraBidderRespInfo.adapterNonBids = seatNonBids
 	return seatBids, extraBidderRespInfo, errs
 }
 
@@ -53,7 +51,7 @@ func removeInvalidBids(request *openrtb2.BidRequest, seatBid *entities.PbsOrtbSe
 	// By design, default currency is USD.
 	if cerr := validateCurrency(request.Cur, seatBid.Currency); cerr != nil {
 		for _, bid := range seatBid.Bids {
-			seatNonBids.addBid(bid, int(ResponseRejectedGeneral), seatBid.Seat) // TODO: discuss
+			seatNonBids.addBid(bid, int(ResponseRejectedGeneral), seatBid.Seat)
 		}
 		seatBid.Bids = nil
 		return []error{cerr}
@@ -62,12 +60,15 @@ func removeInvalidBids(request *openrtb2.BidRequest, seatBid *entities.PbsOrtbSe
 	errs := make([]error, 0, len(seatBid.Bids))
 	validBids := make([]*entities.PbsOrtbBid, 0, len(seatBid.Bids))
 	for _, bid := range seatBid.Bids {
-		if ok, err := validateBid(bid, debug); ok {
+		ok, err := validateBid(bid, debug)
+		if ok {
 			validBids = append(validBids, bid)
-		} else if err != nil {
-			errs = append(errs, err)
-			seatNonBids.addBid(bid, int(ResponseRejectedGeneral), seatBid.Seat) // TODO: discuss: if bid==nill && bid.impId==""
+			continue
 		}
+		if err != nil {
+			errs = append(errs, err)
+		}
+		seatNonBids.addBid(bid, int(ResponseRejectedGeneral), seatBid.Seat)
 	}
 	seatBid.Bids = validBids
 	return errs

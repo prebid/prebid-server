@@ -228,7 +228,7 @@ func TestMixedBids(t *testing.T) {
 	seatBids, extraBidderRespInfo, errs := bidder.requestBid(context.Background(), bidderReq, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
 	assert.Len(t, seatBids, 1)
 	assert.Len(t, seatBids[0].Bids, 3)
-	assert.Len(t, extraBidderRespInfo.adapterNonBids.seatNonBidsMap["appnexus"], 1)
+	assert.Len(t, extraBidderRespInfo.adapterNonBids.seatNonBidsMap["appnexus"], 4)
 	assert.Len(t, errs, 2)
 }
 

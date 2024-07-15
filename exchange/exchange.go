@@ -756,6 +756,7 @@ func (e *exchange) getAllBids(
 			// Add in time reporting
 			elapsed := time.Since(start)
 			brw.adapterSeatBids = seatBids
+			brw.adapterNonBids = extraBidderRespInfo.adapterNonBids
 			// Structure to record extra tracking data generated during bidding
 			ae := new(seatResponseExtra)
 			ae.ResponseTimeMillis = int(elapsed / time.Millisecond)

@@ -2593,7 +2593,8 @@ func TestExtraBidWithAlternateBidderCodeDisabled(t *testing.T) {
 			Bids: []*adapters.TypedBid{
 				{
 					Bid: &openrtb2.Bid{
-						ID: "pubmaticImp1",
+						ID:    "pubmaticImp1",
+						ImpID: "imp1",
 					},
 					BidType:      openrtb_ext.BidTypeBanner,
 					DealPriority: 4,
@@ -2601,7 +2602,8 @@ func TestExtraBidWithAlternateBidderCodeDisabled(t *testing.T) {
 				},
 				{
 					Bid: &openrtb2.Bid{
-						ID: "groupmImp1",
+						ID:    "groupmImp1",
+						ImpID: "imp1",
 					},
 					BidType:      openrtb_ext.BidTypeVideo,
 					DealPriority: 5,
@@ -2609,7 +2611,8 @@ func TestExtraBidWithAlternateBidderCodeDisabled(t *testing.T) {
 				},
 				{
 					Bid: &openrtb2.Bid{
-						ID: "groupmImp2",
+						ID:    "groupmImp2",
+						ImpID: "imp2",
 					},
 					BidType:      openrtb_ext.BidTypeVideo,
 					DealPriority: 5,
@@ -2623,7 +2626,7 @@ func TestExtraBidWithAlternateBidderCodeDisabled(t *testing.T) {
 		{
 			HttpCalls: []*openrtb_ext.ExtHttpCall{},
 			Bids: []*entities.PbsOrtbBid{{
-				Bid:            &openrtb2.Bid{ID: "groupmImp2"},
+				Bid:            &openrtb2.Bid{ID: "groupmImp2", ImpID: "imp2"},
 				DealPriority:   5,
 				BidType:        openrtb_ext.BidTypeVideo,
 				OriginalBidCur: "USD",
@@ -2634,7 +2637,7 @@ func TestExtraBidWithAlternateBidderCodeDisabled(t *testing.T) {
 		{
 			HttpCalls: []*openrtb_ext.ExtHttpCall{},
 			Bids: []*entities.PbsOrtbBid{{
-				Bid:            &openrtb2.Bid{ID: "pubmaticImp1"},
+				Bid:            &openrtb2.Bid{ID: "pubmaticImp1", ImpID: "imp1"},
 				DealPriority:   4,
 				BidType:        openrtb_ext.BidTypeBanner,
 				OriginalBidCur: "USD",
@@ -2653,8 +2656,9 @@ func TestExtraBidWithAlternateBidderCodeDisabled(t *testing.T) {
 		seatNonBidsMap: map[string][]openrtb_ext.NonBid{
 			"groupm-rejected": {
 				{
+					ImpId:      "imp1",
 					StatusCode: int(ResponseRejectedGeneral),
-					Ext: openrtb_ext.NonBidExt{
+					Ext: &openrtb_ext.NonBidExt{
 						Prebid: openrtb_ext.ExtResponseNonBidPrebid{
 							Bid: openrtb_ext.NonBidObject{},
 						},
