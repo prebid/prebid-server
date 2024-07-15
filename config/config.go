@@ -54,6 +54,8 @@ type Configuration struct {
 	// Note that StoredVideo refers to stored video requests, and has nothing to do with caching video creatives.
 	StoredVideo     StoredRequests `mapstructure:"stored_video_req"`
 	StoredResponses StoredRequests `mapstructure:"stored_responses"`
+	// StoredRequestsTimeout defines the number of milliseconds before a timeout occurs with stored requests fetch
+	StoredRequestsTimeout int `mapstructure:"stored_requests_timeout_ms"`
 
 	MaxRequestSize       int64             `mapstructure:"max_request_size"`
 	Analytics            Analytics         `mapstructure:"analytics"`
@@ -132,6 +134,9 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 	var errs []error
 	errs = cfg.AuctionTimeouts.validate(errs)
 	errs = cfg.StoredRequests.validate(errs)
+	if cfg.StoredRequestsTimeout <= 0 {
+		errs = append(errs, fmt.Errorf("cfg.stored_requests_timeout_ms must be > 0. Got %d", cfg.StoredRequestsTimeout))
+	}
 	errs = cfg.StoredRequestsAMP.validate(errs)
 	errs = cfg.Accounts.validate(errs)
 	errs = cfg.CategoryMapping.validate(errs)
@@ -187,27 +192,27 @@ func (data *ExternalCache) validate(errs []error) []error {
 
 	// Either host or path or both not empty, validate.
 	if data.Host == "" && data.Path != "" || data.Host != "" && data.Path == "" {
-		return append(errs, errors.New("External cache Host and Path must both be specified"))
+		return append(errs, errors.New("external cache Host and Path must both be specified"))
 	}
 	if strings.HasSuffix(data.Host, "/") {
-		return append(errs, errors.New(fmt.Sprintf("External cache Host '%s' must not end with a path separator", data.Host)))
+		return append(errs, fmt.Errorf("external cache Host '%s' must not end with a path separator", data.Host))
 	}
 	if strings.Contains(data.Host, "://") {
-		return append(errs, errors.New(fmt.Sprintf("External cache Host must not specify a protocol. '%s'", data.Host)))
+		return append(errs, fmt.Errorf("external cache Host must not specify a protocol. '%s'", data.Host))
 	}
 	if !strings.HasPrefix(data.Path, "/") {
-		return append(errs, errors.New(fmt.Sprintf("External cache Path '%s' must begin with a path separator", data.Path)))
+		return append(errs, fmt.Errorf("external cache Path '%s' must begin with a path separator", data.Path))
 	}
 
 	urlObj, err := url.Parse("https://" + data.Host + data.Path)
 	if err != nil {
-		return append(errs, errors.New(fmt.Sprintf("External cache Path validation error: %s ", err.Error())))
+		return append(errs, fmt.Errorf("external cache Path validation error: %s ", err.Error()))
 	}
 	if urlObj.Host != data.Host {
-		return append(errs, errors.New(fmt.Sprintf("External cache Host '%s' is invalid", data.Host)))
+		return append(errs, fmt.Errorf("external cache Host '%s' is invalid", data.Host))
 	}
 	if urlObj.Path != data.Path {
-		return append(errs, errors.New("External cache Path is invalid"))
+		return append(errs, fmt.Errorf("external cache Path is invalid"))
 	}
 
 	return errs
@@ -264,7 +269,7 @@ func (cfg *GDPR) validate(v *viper.Viper, errs []error) []error {
 	if cfg.HostVendorID == 0 {
 		glog.Warning("gdpr.host_vendor_id was not specified. Host company GDPR checks will be skipped.")
 	}
-	if cfg.AMPException == true {
+	if cfg.AMPException {
 		errs = append(errs, fmt.Errorf("gdpr.amp_exception has been discontinued and must be removed from your config. If you need to disable GDPR for AMP, you may do so per-account (gdpr.integration_enabled.amp) or at the host level for the default account (account_defaults.gdpr.integration_enabled.amp)"))
 	}
 	return cfg.validatePurposes(errs)
@@ -560,6 +565,9 @@ type DisabledMetrics struct {
 	// that were created or reused.
 	AdapterConnectionMetrics bool `mapstructure:"adapter_connections_metrics"`
 
+	// True if we don't want to collect the per adapter buyer UID scrubbed metric
+	AdapterBuyerUIDScrubbed bool `mapstructure:"adapter_buyeruid_scrubbed"`
+
 	// True if we don't want to collect the per adapter GDPR request blocked metric
 	AdapterGDPRRequestBlocked bool `mapstructure:"adapter_gdpr_request_blocked"`
 
@@ -706,7 +714,7 @@ func (cfg *TimeoutNotification) validate(errs []error) []error {
 }
 
 // New uses viper to get our server configurations.
-func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName func(string) (openrtb_ext.BidderName, bool)) (*Configuration, error) {
+func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName openrtb_ext.BidderNameNormalizer) (*Configuration, error) {
 	var c Configuration
 	if err := v.Unmarshal(&c); err != nil {
 		return nil, fmt.Errorf("viper failed to unmarshal app config: %v", err)
@@ -945,6 +953,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("metrics.disabled_metrics.account_debug", true)
 	v.SetDefault("metrics.disabled_metrics.account_stored_responses", true)
 	v.SetDefault("metrics.disabled_metrics.adapter_connections_metrics", true)
+	v.SetDefault("metrics.disabled_metrics.adapter_buyeruid_scrubbed", true)
 	v.SetDefault("metrics.disabled_metrics.adapter_gdpr_request_blocked", false)
 	v.SetDefault("metrics.influxdb.host", "")
 	v.SetDefault("metrics.influxdb.database", "")
@@ -960,6 +969,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("category_mapping.filesystem.enabled", true)
 	v.SetDefault("category_mapping.filesystem.directorypath", "./static/category-mapping")
 	v.SetDefault("category_mapping.http.endpoint", "")
+	v.SetDefault("stored_requests_timeout_ms", 50)
 	v.SetDefault("stored_requests.database.connection.driver", "")
 	v.SetDefault("stored_requests.database.connection.dbname", "")
 	v.SetDefault("stored_requests.database.connection.host", "")

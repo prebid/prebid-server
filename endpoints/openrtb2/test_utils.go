@@ -34,6 +34,7 @@ import (
 	"github.com/prebid/prebid-server/v2/metrics"
 	metricsConfig "github.com/prebid/prebid-server/v2/metrics/config"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/ortb"
 	pbc "github.com/prebid/prebid-server/v2/prebid_cache_client"
 	"github.com/prebid/prebid-server/v2/stored_requests"
 	"github.com/prebid/prebid-server/v2/stored_requests/backends/empty_fetcher"
@@ -948,6 +949,7 @@ type mockBidderHandler struct {
 	Currency   string  `json:"currency"`
 	Price      float64 `json:"price"`
 	DealID     string  `json:"dealid"`
+	Seat       string  `json:"seat"`
 }
 
 func (b mockBidderHandler) bid(w http.ResponseWriter, req *http.Request) {
@@ -1006,6 +1008,7 @@ func (b mockBidderHandler) bid(w http.ResponseWriter, req *http.Request) {
 type mockAdapter struct {
 	mockServerURL string
 	Server        config.Server
+	seat          string
 }
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
@@ -1071,6 +1074,9 @@ func (a mockAdapter) MakeBids(request *openrtb2.BidRequest, requestData *adapter
 						Bid:     &seatBid.Bid[i],
 						BidType: openrtb_ext.BidTypeBanner,
 					}
+					if len(a.seat) > 0 {
+						b.Seat = openrtb_ext.BidderName(a.seat)
+					}
 					rv.Bids = append(rv.Bids, b)
 				}
 			}
@@ -1096,6 +1102,24 @@ func getBidderInfos(disabledAdapters []string, biddersNames []openrtb_ext.Bidder
 		biddersInfos[string(name)] = newBidderInfo(isDisabled)
 	}
 	return biddersInfos
+}
+
+func enableBidders(bidderInfos config.BidderInfos) {
+	for name, bidderInfo := range bidderInfos {
+		if bidderInfo.Disabled {
+			bidderInfo.Disabled = false
+			bidderInfos[name] = bidderInfo
+		}
+	}
+}
+
+func disableBidders(disabledAdapters []string, bidderInfos config.BidderInfos) {
+	for _, disabledAdapter := range disabledAdapters {
+		if bidderInfo, ok := bidderInfos[disabledAdapter]; ok {
+			bidderInfo.Disabled = true
+			bidderInfos[disabledAdapter] = bidderInfo
+		}
+	}
 }
 
 func newBidderInfo(isDisabled bool) config.BidderInfo {
@@ -1180,13 +1204,13 @@ func (te *exchangeTestWrapper) HoldAuction(ctx context.Context, r *exchange.Auct
 }
 
 // buildTestExchange returns an exchange with mock bidder servers and mock currency conversion server
-func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.BidderName]exchange.AdaptedBidder, mockBidServersArray []*httptest.Server, mockCurrencyRatesServer *httptest.Server, bidderInfos config.BidderInfos, cfg *config.Configuration, met metrics.MetricsEngine, mockFetcher stored_requests.CategoryFetcher) (exchange.Exchange, []*httptest.Server) {
+func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.BidderName]exchange.AdaptedBidder, mockBidServersArray []*httptest.Server, mockCurrencyRatesServer *httptest.Server, bidderInfos config.BidderInfos, cfg *config.Configuration, met metrics.MetricsEngine, mockFetcher stored_requests.CategoryFetcher, requestValidator ortb.RequestValidator) (exchange.Exchange, []*httptest.Server) {
 	if len(testCfg.MockBidders) == 0 {
 		testCfg.MockBidders = append(testCfg.MockBidders, mockBidderHandler{BidderName: "appnexus", Currency: "USD", Price: 0.00})
 	}
 	for _, mockBidder := range testCfg.MockBidders {
 		bidServer := httptest.NewServer(http.HandlerFunc(mockBidder.bid))
-		bidderAdapter := mockAdapter{mockServerURL: bidServer.URL}
+		bidderAdapter := mockAdapter{mockServerURL: bidServer.URL, seat: mockBidder.Seat}
 		bidderName := openrtb_ext.BidderName(mockBidder.BidderName)
 
 		adapterMap[bidderName] = exchange.AdaptBidder(bidderAdapter, bidServer.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, bidderName, nil, "")
@@ -1203,6 +1227,7 @@ func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.Bid
 	testExchange := exchange.NewExchange(adapterMap,
 		&wellBehavedCache{},
 		cfg,
+		requestValidator,
 		nil,
 		met,
 		bidderInfos,
@@ -1238,9 +1263,12 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 		paramValidator = mockBidderParamValidator{}
 	}
 
-	bidderInfos := getBidderInfos(test.Config.DisabledAdapters, openrtb_ext.CoreBidderNames())
+	bidderInfos, _ := config.LoadBidderInfoFromDisk("../../static/bidder-info")
+	enableBidders(bidderInfos)
+	disableBidders(test.Config.DisabledAdapters, bidderInfos)
 	bidderMap := exchange.GetActiveBidders(bidderInfos)
 	disabledBidders := exchange.GetDisabledBidderWarningMessages(bidderInfos)
+	requestValidator := ortb.NewRequestValidator(bidderMap, disabledBidders, paramValidator)
 	met := &metricsConfig.NilMetricsEngine{}
 	mockFetcher := empty_fetcher.EmptyFetcher{}
 
@@ -1256,7 +1284,7 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 	}
 	mockCurrencyRatesServer := httptest.NewServer(http.HandlerFunc(mockCurrencyConversionService.handle))
 
-	testExchange, mockBidServersArray := buildTestExchange(test.Config, adapterMap, mockBidServersArray, mockCurrencyRatesServer, bidderInfos, cfg, met, mockFetcher)
+	testExchange, mockBidServersArray := buildTestExchange(test.Config, adapterMap, mockBidServersArray, mockCurrencyRatesServer, bidderInfos, cfg, met, mockFetcher, requestValidator)
 
 	var storedRequestFetcher stored_requests.Fetcher
 	if len(test.StoredRequest) > 0 {
@@ -1274,8 +1302,9 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 
 	accountFetcher := &mockAccountFetcher{
 		data: map[string]json.RawMessage{
-			"malformed_acct": json.RawMessage(`{"disabled":"invalid type"}`),
-			"disabled_acct":  json.RawMessage(`{"disabled":true}`),
+			"malformed_acct":             json.RawMessage(`{"disabled":"invalid type"}`),
+			"disabled_acct":              json.RawMessage(`{"disabled":true}`),
+			"alternate_bidder_code_acct": json.RawMessage(`{"disabled":false,"alternatebiddercodes":{"enabled":true,"bidders":{"appnexus":{"enabled":true,"allowedbiddercodes":["groupm"]}}}}`),
 		},
 	}
 
@@ -1284,7 +1313,7 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 		planBuilder = hooks.EmptyPlanBuilder{}
 	}
 
-	var endpointBuilder func(uuidutil.UUIDGenerator, exchange.Exchange, openrtb_ext.BidderParamValidator, stored_requests.Fetcher, stored_requests.AccountFetcher, *config.Configuration, metrics.MetricsEngine, analytics.Runner, map[string]string, []byte, map[string]openrtb_ext.BidderName, stored_requests.Fetcher, hooks.ExecutionPlanBuilder, *exchange.TmaxAdjustmentsPreprocessed) (httprouter.Handle, error)
+	var endpointBuilder func(uuidutil.UUIDGenerator, exchange.Exchange, ortb.RequestValidator, stored_requests.Fetcher, stored_requests.AccountFetcher, *config.Configuration, metrics.MetricsEngine, analytics.Runner, map[string]string, []byte, map[string]openrtb_ext.BidderName, stored_requests.Fetcher, hooks.ExecutionPlanBuilder, *exchange.TmaxAdjustmentsPreprocessed) (httprouter.Handle, error)
 
 	switch test.endpointType {
 	case AMP_ENDPOINT:
@@ -1296,7 +1325,7 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 	endpoint, err := endpointBuilder(
 		fakeUUIDGenerator{},
 		testExchange,
-		paramValidator,
+		requestValidator,
 		storedRequestFetcher,
 		accountFetcher,
 		cfg,

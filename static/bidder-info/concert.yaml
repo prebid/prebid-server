@@ -1,0 +1,18 @@
+endpoint: "https://bids.concert.io/bids/openrtb"
+endpointCompression: gzip
+geoscope:
+  - global
+maintainer:
+  email: support@concert.io
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - audio
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - audio

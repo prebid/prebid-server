@@ -4,18 +4,20 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/ortb/merge"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 	"github.com/prebid/prebid-server/v2/util/ptrutil"
 )
 
 var (
-	ErrBadFPD = errors.New("invalid first party data ext")
+	ErrBadRequest = errors.New("invalid request ext")
+	ErrBadFPD     = errors.New("invalid first party data ext")
 )
 
 const (
@@ -189,7 +191,7 @@ func resolveUser(fpdConfig *openrtb_ext.ORTB2, bidRequestUser *openrtb2.User, gl
 			var err error
 			newUser.Ext, err = jsonpatch.MergePatch(newUser.Ext, extData)
 			if err != nil {
-				return nil, err
+				return nil, formatMergePatchError(err)
 			}
 		} else {
 			newUser.Ext = extData
@@ -199,12 +201,8 @@ func resolveUser(fpdConfig *openrtb_ext.ORTB2, bidRequestUser *openrtb2.User, gl
 		newUser.Data = openRtbGlobalFPD[userDataKey]
 	}
 	if fpdConfigUser != nil {
-		var err error
-		if newUser, err = merge.User(newUser, fpdConfigUser); err != nil {
-			if err == merge.ErrBadOverride {
-				return nil, ErrBadFPD
-			}
-			return nil, err
+		if err := jsonutil.MergeClone(newUser, fpdConfigUser); err != nil {
+			return nil, formatMergeCloneError(err)
 		}
 	}
 
@@ -241,7 +239,7 @@ func resolveSite(fpdConfig *openrtb_ext.ORTB2, bidRequestSite *openrtb2.Site, gl
 			var err error
 			newSite.Ext, err = jsonpatch.MergePatch(newSite.Ext, extData)
 			if err != nil {
-				return nil, err
+				return nil, formatMergePatchError(err)
 			}
 		} else {
 			newSite.Ext = extData
@@ -258,12 +256,8 @@ func resolveSite(fpdConfig *openrtb_ext.ORTB2, bidRequestSite *openrtb2.Site, gl
 		newSite.Content.Data = openRtbGlobalFPD[siteContentDataKey]
 	}
 	if fpdConfigSite != nil {
-		var err error
-		if newSite, err = merge.Site(newSite, fpdConfigSite, bidderName); err != nil {
-			if err == merge.ErrBadOverride {
-				return nil, ErrBadFPD
-			}
-			return nil, err
+		if err := jsonutil.MergeClone(newSite, fpdConfigSite); err != nil {
+			return nil, formatMergeCloneError(err)
 		}
 
 		// Re-Validate Site
@@ -274,6 +268,25 @@ func resolveSite(fpdConfig *openrtb_ext.ORTB2, bidRequestSite *openrtb2.Site, gl
 		}
 	}
 	return newSite, nil
+}
+
+func formatMergePatchError(err error) error {
+	if errors.Is(err, jsonpatch.ErrBadJSONDoc) {
+		return ErrBadRequest
+	}
+
+	if errors.Is(err, jsonpatch.ErrBadJSONPatch) {
+		return ErrBadFPD
+	}
+
+	return err
+}
+
+func formatMergeCloneError(err error) error {
+	if strings.Contains(err.Error(), "invalid json on existing object") {
+		return ErrBadRequest
+	}
+	return ErrBadFPD
 }
 
 func resolveApp(fpdConfig *openrtb_ext.ORTB2, bidRequestApp *openrtb2.App, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data, bidderName string) (*openrtb2.App, error) {
@@ -307,7 +320,7 @@ func resolveApp(fpdConfig *openrtb_ext.ORTB2, bidRequestApp *openrtb2.App, globa
 			var err error
 			newApp.Ext, err = jsonpatch.MergePatch(newApp.Ext, extData)
 			if err != nil {
-				return nil, err
+				return nil, formatMergePatchError(err)
 			}
 		} else {
 			newApp.Ext = extData
@@ -326,12 +339,8 @@ func resolveApp(fpdConfig *openrtb_ext.ORTB2, bidRequestApp *openrtb2.App, globa
 	}
 
 	if fpdConfigApp != nil {
-		var err error
-		if newApp, err = merge.App(newApp, fpdConfigApp); err != nil {
-			if err == merge.ErrBadOverride {
-				return nil, ErrBadFPD
-			}
-			return nil, err
+		if err := jsonutil.MergeClone(newApp, fpdConfigApp); err != nil {
+			return nil, formatMergeCloneError(err)
 		}
 	}
 

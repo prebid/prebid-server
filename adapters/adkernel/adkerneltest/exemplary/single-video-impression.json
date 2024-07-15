@@ -76,6 +76,7 @@
                   "cat": [
                     "IAB2"
                   ],
+                  "mtype": 2,
                   "adomain": [
                     "video-example.com"
                   ]
@@ -106,7 +107,8 @@
                 "crid": "2002",
                 "cat": [
                   "IAB2"
-                ]
+                ],
+                "mtype": 2
               },
               "type": "video"
             }
