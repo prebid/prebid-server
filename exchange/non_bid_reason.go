@@ -2,6 +2,7 @@ package exchange
 
 import (
 	"errors"
+	"strings"
 	"syscall"
 
 	"github.com/prebid/openrtb/v20/openrtb3"
@@ -41,9 +42,14 @@ func httpInfoToNonBidReason(httpInfo *httpCallInfo) openrtb3.NoBidReason {
 	errorCode := errortypes.ReadCode(httpInfo.err)
 	nonBidReason := errorToNonBidReason(errorCode)
 	if nonBidReason == ErrorGeneral {
-		if errors.Is(httpInfo.err, syscall.ECONNREFUSED) {
+		if isBidderUnreachableError(httpInfo) {
 			return ErrorBidderUnreachable
 		}
 	}
 	return nonBidReason
+}
+
+// isBidderUnreachableError checks if the error is due to connection refused or no such host
+func isBidderUnreachableError(httpInfo *httpCallInfo) bool {
+	return errors.Is(httpInfo.err, syscall.ECONNREFUSED) || strings.Contains(httpInfo.err.Error(), "no such host")
 }

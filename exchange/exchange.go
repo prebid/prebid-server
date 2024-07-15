@@ -105,7 +105,7 @@ type bidResponseWrapper struct {
 	bidder                  openrtb_ext.BidderName
 	adapter                 openrtb_ext.BidderName
 	bidderResponseStartTime time.Time
-	adapterNonBids          *openrtb_ext.SeatNonBid
+	adapterNonBids          nonBids
 }
 
 type BidIDGenerator interface {
@@ -377,7 +377,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 		anyBidsReturned bool
 		// List of bidders we have requests for.
 		liveAdapters   []openrtb_ext.BidderName
-		adapterNonBids []openrtb_ext.SeatNonBid
+		adapterNonBids nonBids
 	)
 
 	if len(r.StoredAuctionResponses) > 0 {
@@ -410,7 +410,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 		auc            *auction
 		cacheErrs      []error
 		bidResponseExt *openrtb_ext.ExtBidResponse
-		seatNonBids    = nonBids{}
+		seatNonBids    = adapterNonBids
 	)
 
 	if anyBidsReturned {
@@ -538,7 +538,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 	if err != nil {
 		return nil, err
 	}
-	bidResponseExt = setSeatNonBid(bidResponseExt, seatNonBids, adapterNonBids)
+	bidResponseExt = setSeatNonBid(bidResponseExt, seatNonBids)
 
 	return &AuctionResponse{
 		BidResponse:    bidResponse,
@@ -786,7 +786,6 @@ func (e *exchange) getAllBids(
 		}, chBids)
 		go bidderRunner(bidder, conversions)
 	}
-	nonBids := make([]openrtb_ext.SeatNonBid, 0)
 
 	// Wait for the bidders to do their thing
 	for i := 0; i < len(bidderRequests); i++ {
@@ -814,10 +813,8 @@ func (e *exchange) getAllBids(
 		adapterExtra[brw.bidder] = brw.adapterExtra
 
 		// collect adapter non bids
-		if brw.adapterNonBids != nil {
-			nonBids = append(nonBids, *brw.adapterNonBids)
-			extraRespInfo.seatNonBid = nonBids
-		}
+		extraRespInfo.seatNonBid.append(brw.adapterNonBids)
+
 	}
 
 	return adapterBids, adapterExtra, extraRespInfo
@@ -1610,8 +1607,8 @@ func setErrorMessageSecureMarkup(validationType string) string {
 }
 
 // setSeatNonBid adds SeatNonBids within bidResponse.Ext.Prebid.SeatNonBid
-func setSeatNonBid(bidResponseExt *openrtb_ext.ExtBidResponse, seatNonBids nonBids, adapterNonBids []openrtb_ext.SeatNonBid) *openrtb_ext.ExtBidResponse {
-	if len(seatNonBids.seatNonBidsMap) == 0 && adapterNonBids == nil {
+func setSeatNonBid(bidResponseExt *openrtb_ext.ExtBidResponse, seatNonBids nonBids) *openrtb_ext.ExtBidResponse {
+	if len(seatNonBids.seatNonBidsMap) == 0 {
 		return bidResponseExt
 	}
 	if bidResponseExt == nil {
@@ -1622,8 +1619,5 @@ func setSeatNonBid(bidResponseExt *openrtb_ext.ExtBidResponse, seatNonBids nonBi
 	}
 
 	bidResponseExt.Prebid.SeatNonBid = seatNonBids.get()
-	if adapterNonBids != nil {
-		bidResponseExt.Prebid.SeatNonBid = append(bidResponseExt.Prebid.SeatNonBid, adapterNonBids...)
-	}
 	return bidResponseExt
 }
