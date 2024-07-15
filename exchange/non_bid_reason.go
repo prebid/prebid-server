@@ -49,6 +49,7 @@ func httpInfoToNonBidReason(httpInfo *httpCallInfo) openrtb3.NoBidReason {
 	return nonBidReason
 }
 
+// isBidderUnreachableError checks if the error is due to connection refused or no such host
 func isBidderUnreachableError(httpInfo *httpCallInfo) bool {
 	return errors.Is(httpInfo.err, syscall.ECONNREFUSED) || strings.Contains(httpInfo.err.Error(), "no such host")
 }

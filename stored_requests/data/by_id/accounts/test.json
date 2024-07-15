@@ -1,7 +1,4 @@
 {
-  "floors" :{
-    "enabled": true
-  },
   "id": "test",
   "name": "test account",
   "disabled": true,
