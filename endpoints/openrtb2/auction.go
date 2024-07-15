@@ -2040,10 +2040,6 @@ func checkIfAppRequest(request []byte) (bool, error) {
 	return false, nil
 }
 
-func generateStoredBidResponseValidationError(impID string) error {
-	return fmt.Errorf("request validation failed. Stored bid responses are specified for imp %s. Bidders specified in imp.ext should match with bidders specified in imp.ext.prebid.storedbidresponse", impID)
-}
-
 // setSeatNonBid populates bidresponse.ext.prebid.seatnonbid
 func setSeatNonBid(finalExtBidResponse *openrtb_ext.ExtBidResponse, seatNonBid []openrtb_ext.SeatNonBid) bool {
 	if finalExtBidResponse == nil || len(seatNonBid) == 0 {

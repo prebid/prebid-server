@@ -38,6 +38,7 @@ import (
 	pbc "github.com/prebid/prebid-server/v2/prebid_cache_client"
 	"github.com/prebid/prebid-server/v2/stored_requests"
 	"github.com/prebid/prebid-server/v2/stored_requests/backends/empty_fetcher"
+	"github.com/prebid/prebid-server/v2/stored_responses"
 	"github.com/prebid/prebid-server/v2/util/iputil"
 	"github.com/prebid/prebid-server/v2/util/jsonutil"
 	"github.com/prebid/prebid-server/v2/util/uuidutil"
@@ -1348,6 +1349,10 @@ func (v mockBidderParamValidator) Validate(name openrtb_ext.BidderName, ext json
 	return nil
 }
 func (v mockBidderParamValidator) Schema(name openrtb_ext.BidderName) string { return "" }
+
+func (v *mockBidderParamValidator) ValidateImp(imp *openrtb_ext.ImpWrapper, cfg ortb.ValidationConfig, index int, aliases map[string]string, hasStoredResponses bool, storedBidResponses stored_responses.ImpBidderStoredResp) []error {
+	return nil
+}
 
 type mockAccountFetcher struct {
 	data map[string]json.RawMessage

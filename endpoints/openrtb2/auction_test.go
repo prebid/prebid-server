@@ -6355,7 +6355,6 @@ func TestSeatNonBidInAuction(t *testing.T) {
 			description: "request parsing failed, auctionObject should contain seatNonBid",
 			args: args{
 				bidRequest: openrtb2.BidRequest{
-					ID: "id",
 					Site: &openrtb2.Site{
 						ID: "site-1",
 					},
@@ -6371,7 +6370,7 @@ func TestSeatNonBidInAuction(t *testing.T) {
 				},
 			},
 			want: want{
-				body:       "Invalid request: request.imp[0].ext is required\n",
+				body:       "Invalid request: request missing required field: \"id\"\n",
 				statusCode: 400,
 				seatNonBid: []openrtb_ext.SeatNonBid{
 					{
@@ -6602,7 +6601,7 @@ func TestSeatNonBidInAuction(t *testing.T) {
 			deps := &endpointDeps{
 				fakeUUIDGenerator{},
 				&mockExchange{seatNonBid: test.args.seatNonBidFromHoldAuction, returnError: test.args.errorFromHoldAuction},
-				mockBidderParamValidator{},
+				&mockBidderParamValidator{},
 				&mockStoredReqFetcher{},
 				empty_fetcher.EmptyFetcher{},
 				empty_fetcher.EmptyFetcher{},

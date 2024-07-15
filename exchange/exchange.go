@@ -425,7 +425,8 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 				if rejectedBid.Bids[0].Bid.DealID != "" {
 					rejectionReason = ResponseRejectedBelowDealFloor
 				}
-				seatNonBids.addBid(rejectedBid.Bids[0], int(rejectionReason), rejectedBid.Seat)
+				nonBid := openrtb_ext.NewNonBid(openrtb_ext.NonBidParams{Bid: rejectedBid.Bids[0].Bid, NonBidReason: int(rejectionReason), OriginalBidCPM: rejectedBid.Bids[0].OriginalBidCPM, OriginalBidCur: rejectedBid.Bids[0].OriginalBidCur})
+				seatNonBid.AddBid(nonBid, rejectedBid.Seat)
 			}
 		}
 

@@ -1590,7 +1590,7 @@ func TestSeatNonBidInVideoAuction(t *testing.T) {
 			deps := &endpointDeps{
 				fakeUUIDGenerator{},
 				ex,
-				mockBidderParamValidator{},
+				&mockBidderParamValidator{},
 				&mockVideoStoredReqFetcher{},
 				&mockVideoStoredReqFetcher{},
 				&mockAccountFetcher{data: mockVideoAccountData},
