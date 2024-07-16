@@ -14,10 +14,7 @@
       "description": "An ID which identifies the site selling the impression"
     },
     "aid": {
-      "type": [
-        "integer",
-        "string"
-      ],
+      "type": "integer",
       "description": "An ID which identifies the channel"
     },
     "bidFloor": {

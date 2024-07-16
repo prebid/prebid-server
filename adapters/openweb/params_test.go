@@ -33,21 +33,16 @@ func TestInvalidParams(t *testing.T) {
 
 	for _, invalidParam := range invalidParams {
 		if err := validator.Validate(openrtb_ext.BidderOpenWeb, json.RawMessage(invalidParam)); err == nil {
-			ext := openrtb_ext.ExtImpOpenWeb{}
-			err = json.Unmarshal([]byte(invalidParam), &ext)
-			if err == nil {
-				t.Errorf("Schema allowed unexpected params: %s", invalidParam)
-			}
+			t.Errorf("Schema allowed unexpected params: %s", invalidParam)
 		}
 	}
 }
 
 var validParams = []string{
 	`{"aid":123}`,
-	`{"aid":"123"}`,
 	`{"aid":123,"placementId":1234}`,
 	`{"aid":123,"siteId":4321}`,
-	`{"aid":"123","siteId":0,"bidFloor":0}`,
+	`{"aid":123,"siteId":0,"bidFloor":0}`,
 }
 
 var invalidParams = []string{
@@ -58,7 +53,8 @@ var invalidParams = []string{
 	`4.2`,
 	`[]`,
 	`{}`,
-	`{"aid":"qwerty"}`,
+	`{"aid":"some string instead of int"}`,
+	`{"aid":"0"}`,
 	`{"aid":"123","placementId":"123"}`,
 	`{"aid":123, "placementId":"123", "siteId":"321"}`,
 }
