@@ -151,9 +151,10 @@ func processDataFromRequest(requestData *openrtb2.BidRequest, imp openrtb2.Imp, 
 		resetDigitalRequestData.Site.Referrer = requestData.Site.Page
 	}
 
-	resetDigitalRequestData.Imps = append(resetDigitalRequestData.Imps, resetDigitalRequestImps{})
-	resetDigitalRequestData.Imps[0].BidID = requestData.ID
-	resetDigitalRequestData.Imps[0].ImpID = imp.ID
+	resetDigitalRequestData.Imps = append(resetDigitalRequestData.Imps, resetDigitalRequestImps{
+		BidID: requestData.ID,
+		ImpID: imp.ID,
+	})
 
 	if bidType == openrtb_ext.BidTypeBanner {
 		resetDigitalRequestData.Imps[0].MediaTypes.Banner.Sizes = append(resetDigitalRequestData.Imps[0].MediaTypes.Banner.Sizes, []int64{imp.Banner.Format[0].W, imp.Banner.Format[0].H})
@@ -165,7 +166,7 @@ func processDataFromRequest(requestData *openrtb2.BidRequest, imp openrtb2.Imp, 
 	var extData = make(map[string]interface{})
 	err := json.Unmarshal(imp.Ext, &extData)
 	if err != nil {
-		return resetDigitalRequestData, err
+		return resetDigitalRequest{}, err
 	}
 
 	resetDigitalRequestData.Imps[0].ZoneID.PlacementID = extData["bidder"].(map[string]interface{})["placement_id"].(string)
