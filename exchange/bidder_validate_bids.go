@@ -60,15 +60,14 @@ func removeInvalidBids(request *openrtb2.BidRequest, seatBid *entities.PbsOrtbSe
 	errs := make([]error, 0, len(seatBid.Bids))
 	validBids := make([]*entities.PbsOrtbBid, 0, len(seatBid.Bids))
 	for _, bid := range seatBid.Bids {
-		ok, err := validateBid(bid, debug)
-		if ok {
+		if ok, err := validateBid(bid, debug); ok {
 			validBids = append(validBids, bid)
-			continue
+		} else {
+			seatNonBids.addBid(bid, int(ResponseRejectedGeneral), seatBid.Seat) // report seat non bid
+			if err != nil {
+				errs = append(errs, err)
+			}
 		}
-		if err != nil {
-			errs = append(errs, err)
-		}
-		seatNonBids.addBid(bid, int(ResponseRejectedGeneral), seatBid.Seat)
 	}
 	seatBid.Bids = validBids
 	return errs
