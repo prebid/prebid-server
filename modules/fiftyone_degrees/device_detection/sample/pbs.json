@@ -84,7 +84,7 @@
                                     "hook_sequence": [
                                         {
                                             "module_code": "fiftyone_degrees.device_detection",
-                                            "hook_impl_code": "fiftyone-devicedetection-entrypoint-hook"
+                                            "hook_impl_code": "fiftyone-devicedetection-raw-auction-request-hook"
                                         }
                                     ]
                                 }
