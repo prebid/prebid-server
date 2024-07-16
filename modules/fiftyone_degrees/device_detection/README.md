@@ -56,6 +56,7 @@ Here's a general template for the account config used in PBS-Go:
 ```json
 {
   "hooks": {
+    "enabled":true,
     "modules": {
       "fiftyone_degrees": {
         "device_detection": {
@@ -85,7 +86,7 @@ Here's a general template for the account config used in PBS-Go:
                     "timeout": 10,
                     "hook_sequence": [
                       {
-                        "module_code": "fiftyone-devicedetection",
+                        "module_code": "fiftyone_degrees.device_detection",
                         "hook_impl_code": "fiftyone-devicedetection-entrypoint-hook"
                       }
                     ]
@@ -98,7 +99,7 @@ Here's a general template for the account config used in PBS-Go:
                     "timeout": 10,
                     "hook_sequence": [
                       {
-                        "module_code": "fiftyone-devicedetection",
+                        "module_code": "fiftyone_degrees.device_detection",
                         "hook_impl_code": "fiftyone-devicedetection-raw-auction-request-hook"
                       }
                     ]
@@ -114,7 +115,43 @@ Here's a general template for the account config used in PBS-Go:
 }
 ```
 
-Note that at a minimum you need to enable the module and specify a path to the data file in the configuration.
+The same config in YAML format:
+```yaml
+hooks:
+  enabled: true
+  modules:
+    fiftyone_degrees:
+      device_detection:
+        enabled: true
+        make_temp_copy: true
+        data_file:
+          path: path/to/51Degrees-LiteV4.1.hash
+          update:
+            auto: true
+            url: "<optional custom URL>"
+            polling_interval: 1800
+            license_key: "<your_license_key>"
+            product: V4Enterprise
+            watch_file_system: 'true'
+    host_execution_plan:
+      endpoints:
+        "/openrtb2/auction":
+          stages:
+            entrypoint:
+              groups:
+                - timeout: 10
+                  hook_sequence:
+                    - module_code: fiftyone_degrees.device_detection
+                      hook_impl_code: fiftyone-devicedetection-entrypoint-hook
+            raw_auction_request:
+              groups:
+                - timeout: 10
+                  hook_sequence:
+                    - module_code: fiftyone_degrees.device_detection
+                      hook_impl_code: fiftyone-devicedetection-raw-auction-request-hook
+```
+
+Note that at a minimum (besides adding to the host_execution_plan) you need to enable the module and specify a path to the data file in the configuration.
 Sample module enablement configuration in JSON and YAML formats:
 
 ```json
