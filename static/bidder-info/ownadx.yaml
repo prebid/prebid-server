@@ -1,4 +1,5 @@
-endpoint: "https://pbs.prebid-ownadx.com/bidder/bid/{{.AccountID}}/{{.ZoneID}}?token={{.SourceId}}"
+#endpoint: "https://pbs.prebid-ownadx.com/bidder/bid/{{.AccountID}}/{{.ZoneID}}?token={{.SourceId}}"
+endpoint: "https://pbs.prebid-ownadx.com/bidder/bid/{{.SeatID}}/{{.SspID}}?token={{.TokenID}}"  # as per suggestion endpoint change
 maintainer:
   email: prebid-team@techbravo.com
 capabilities:
