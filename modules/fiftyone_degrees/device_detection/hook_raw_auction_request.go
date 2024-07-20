@@ -1,29 +1,14 @@
 package device_detection
 
 import (
-	"errors"
-	"fmt"
+	"math"
+
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/v2/hooks/hookexecution"
 	"github.com/prebid/prebid-server/v2/hooks/hookstage"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 )
-
-type deviceMapper interface {
-	HydrateDeviceType(payload hookstage.RawAuctionRequestPayload) ([]byte, error)
-	HydrateUserAgent(payload hookstage.RawAuctionRequestPayload) ([]byte, error)
-	HydrateMake(device hookstage.RawAuctionRequestPayload) ([]byte, error)
-	HydrateModel(payload hookstage.RawAuctionRequestPayload, extMap map[string]any) ([]byte, error)
-	HydrateOS(payload hookstage.RawAuctionRequestPayload) ([]byte, error)
-	HydrateOSVersion(payload hookstage.RawAuctionRequestPayload) ([]byte, error)
-	HydrateScreenHeight(payload hookstage.RawAuctionRequestPayload) ([]byte, error)
-	HydrateScreenWidth(payload hookstage.RawAuctionRequestPayload) ([]byte, error)
-	HydratePixelRatio(payload hookstage.RawAuctionRequestPayload) ([]byte, error)
-	HydrateJavascript(payload hookstage.RawAuctionRequestPayload) ([]byte, error)
-	HydrateGeoLocation(payload hookstage.RawAuctionRequestPayload) ([]byte, error)
-	HydratePPI(payload hookstage.RawAuctionRequestPayload) ([]byte, error)
-}
 
 func handleAuctionRequestHook(ctx hookstage.ModuleInvocationContext, deviceDetector deviceDetector, evidenceExtractor evidenceExtractor) (hookstage.HookResult[hookstage.RawAuctionRequestPayload], error) {
 	var result hookstage.HookResult[hookstage.RawAuctionRequestPayload]
@@ -51,9 +36,8 @@ func handleAuctionRequestHook(ctx hookstage.ModuleInvocationContext, deviceDetec
 			if err != nil {
 				return rawPayload, hookexecution.NewFailure("error getting device info %s", err)
 			}
-			deviceMapper := NewDeviceInformationMapper(deviceInfo)
 
-			result, err := hydrateFields(deviceInfo, deviceMapper, rawPayload)
+			result, err := hydrateFields(deviceInfo, rawPayload)
 			if err != nil {
 				glog.Errorf("error hydrating fields %s", err)
 			}
@@ -66,119 +50,127 @@ func handleAuctionRequestHook(ctx hookstage.ModuleInvocationContext, deviceDetec
 }
 
 // hydrateFields hydrates the fields in the raw auction request payload with the device information
-func hydrateFields(fiftyOneDd *DeviceInfo, deviceMapper deviceMapper, payload hookstage.RawAuctionRequestPayload) (hookstage.RawAuctionRequestPayload, error) {
-	extMap := map[string]any{}
-
-	var (
-		errs       []error
-		err        error
-		newPayload []byte = payload
-	)
-
-	newPayload, err = deviceMapper.HydrateDeviceType(payload)
-	if err != nil {
-		errs = append(errs, fmt.Errorf("error hydrating device type %s", err))
+func hydrateFields(fiftyOneDd *DeviceInfo, payload hookstage.RawAuctionRequestPayload) (hookstage.RawAuctionRequestPayload, error) {
+	devicePayload := gjson.GetBytes(payload, "device")
+	dPV := devicePayload.Value()
+	if dPV == nil {
+		return payload, nil
 	}
 
-	newPayload, err = deviceMapper.HydrateUserAgent(newPayload)
-	if err != nil {
-		errs = append(errs, fmt.Errorf("error hydrating user agent %s", err))
-	}
+	deviceObject := dPV.(map[string]any)
+	deviceObject = setMissingFields(deviceObject, fiftyOneDd)
+	deviceObject = signDeviceData(deviceObject, fiftyOneDd)
 
-	newPayload, err = deviceMapper.HydrateMake(newPayload)
-	if err != nil {
-		errs = append(errs, fmt.Errorf("error hydrating make %s", err))
-	}
-
-	newPayload, err = deviceMapper.HydrateModel(newPayload, extMap)
-	if err != nil {
-		errs = append(errs, fmt.Errorf("error hydrating model %s", err))
-	}
-
-	newPayload, err = deviceMapper.HydrateOS(newPayload)
-	if err != nil {
-		errs = append(errs, fmt.Errorf("error hydrating OS %s", err))
-	}
-
-	newPayload, err = deviceMapper.HydrateOSVersion(newPayload)
-	if err != nil {
-		errs = append(errs, fmt.Errorf("error hydrating OS version %s", err))
-	}
-
-	newPayload, err = deviceMapper.HydrateScreenHeight(newPayload)
-	if err != nil {
-		errs = append(errs, fmt.Errorf("error hydrating screen height %s", err))
-	}
-
-	newPayload, err = deviceMapper.HydrateScreenWidth(newPayload)
-	if err != nil {
-		errs = append(errs, fmt.Errorf("error hydrating screen width %s", err))
-	}
-
-	newPayload, err = deviceMapper.HydratePixelRatio(newPayload)
-	if err != nil {
-		errs = append(errs, fmt.Errorf("error hydrating pixel ratio %s", err))
-	}
-
-	newPayload, err = deviceMapper.HydrateJavascript(newPayload)
-	if err != nil {
-		errs = append(errs, fmt.Errorf("error hydrating javascript %s", err))
-	}
-
-	newPayload, err = deviceMapper.HydrateGeoLocation(newPayload)
-	if err != nil {
-		errs = append(errs, fmt.Errorf("error hydrating geo location %s", err))
-	}
-
-	newPayload, err = deviceMapper.HydratePPI(newPayload)
-	if err != nil {
-		errs = append(errs, fmt.Errorf("error hydrating ppi %s", err))
-	}
-
-	newPayload, err = signDeviceData(newPayload, fiftyOneDd, extMap)
-	if err != nil {
-		errs = append(errs, fmt.Errorf("error signing device data %s", err))
-	}
-
-	return newPayload, joinErrors(errs)
+	return mergeDeviceIntoPayload(payload, deviceObject)
 }
 
-func joinErrors(errs []error) error {
-	msg := ""
-	for _, err := range errs {
-		msg += err.Error() + "\n"
+// setMissingFields sets fields such as ["devicetype", "ua", "make", "os", "osv", "h", "w", "pxratio", "js", "geoFetch", "model", "ppi"]
+// if they are not already present in the device object
+func setMissingFields(deviceObj map[string]any, fiftyOneDd *DeviceInfo) map[string]any {
+	optionalFields := map[string]func() any{
+		"devicetype": func() any {
+			return fiftyOneDtToRTB(fiftyOneDd.DeviceType)
+		},
+		"ua": func() any {
+			if fiftyOneDd.UserAgent != DdUnknown {
+				return fiftyOneDd.UserAgent
+			}
+			return nil
+		},
+		"make": func() any {
+			if fiftyOneDd.HardwareVendor != DdUnknown {
+				return fiftyOneDd.HardwareVendor
+			}
+			return nil
+		},
+		"os": func() any {
+			if fiftyOneDd.PlatformName != DdUnknown {
+				return fiftyOneDd.PlatformName
+			}
+			return nil
+		},
+		"osv": func() any {
+			if fiftyOneDd.PlatformVersion != DdUnknown {
+				return fiftyOneDd.PlatformVersion
+			}
+			return nil
+		},
+		"h": func() any {
+			return fiftyOneDd.ScreenPixelsHeight
+		},
+		"w": func() any {
+			return fiftyOneDd.ScreenPixelsWidth
+		},
+		"pxratio": func() any {
+			return fiftyOneDd.PixelRatio
+		},
+		"js": func() any {
+			val := 0
+			if fiftyOneDd.Javascript {
+				val = 1
+			}
+			return val
+		},
+		"geoFetch": func() any {
+			val := 0
+			if fiftyOneDd.GeoLocation {
+				val = 1
+			}
+			return val
+		},
+		"model": func() any {
+			newVal := fiftyOneDd.HardwareModel
+			if newVal == DdUnknown {
+				newVal = fiftyOneDd.HardwareName
+			}
+			if newVal != DdUnknown {
+				return newVal
+			}
+			return nil
+		},
+		"ppi": func() any {
+			if fiftyOneDd.ScreenPixelsHeight > 0 && fiftyOneDd.ScreenInchesHeight > 0 {
+				ppi := float64(fiftyOneDd.ScreenPixelsHeight) / fiftyOneDd.ScreenInchesHeight
+				return int(math.Round(ppi))
+			}
+			return nil
+		},
 	}
-	if msg == "" {
-		return nil
-	}
-	return errors.New(msg)
-}
 
-// signDeviceData signs the device data with the device information in the ext map of the raw auction request payload
-func signDeviceData(payload hookstage.RawAuctionRequestPayload, deviceInfo *DeviceInfo, extra map[string]any) ([]byte, error) {
-	var (
-		err        error
-		newPayload []byte = []byte(payload)
-	)
-	extResult := gjson.GetBytes(payload, "device.ext")
-
-	if !extResult.Exists() {
-		newPayload, err = sjson.SetBytes(newPayload, "device.ext", map[string]any{})
-		if err != nil {
-			return payload, err
+	for field, valFunc := range optionalFields {
+		_, ok := deviceObj[field]
+		if !ok {
+			val := valFunc()
+			if val != nil {
+				deviceObj[field] = val
+			}
 		}
 	}
 
-	newPayload, err = sjson.SetBytes(newPayload, "device.ext.fiftyonedegrees_deviceId", deviceInfo.DeviceId)
+	return deviceObj
+}
+
+// signDeviceData signs the device data with the device information in the ext map of the device object
+func signDeviceData(deviceObj map[string]any, fiftyOneDd *DeviceInfo) map[string]any {
+	extObj, ok := deviceObj["ext"]
+	var ext map[string]any
+	if ok {
+		ext = extObj.(map[string]any)
+	} else {
+		ext = make(map[string]any)
+	}
+
+	ext["fiftyonedegrees_deviceId"] = fiftyOneDd.DeviceId
+	deviceObj["ext"] = ext
+
+	return deviceObj
+}
+
+// mergeDeviceIntoPayload merges the modified device object back into the RawAuctionRequestPayload
+func mergeDeviceIntoPayload(payload hookstage.RawAuctionRequestPayload, deviceObject map[string]any) (hookstage.RawAuctionRequestPayload, error) {
+	newPayload, err := sjson.SetBytes(payload, "device", deviceObject)
 	if err != nil {
 		return payload, err
-	}
-
-	for k, v := range extra {
-		newPayload, err = sjson.SetBytes(newPayload, "device.ext."+k, v)
-		if err != nil {
-			return payload, err
-		}
 	}
 
 	return newPayload, nil

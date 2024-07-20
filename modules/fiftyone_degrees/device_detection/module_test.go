@@ -2,16 +2,19 @@ package device_detection
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"net/http"
+	"os"
+	"testing"
+
 	"github.com/51Degrees/device-detection-go/v4/dd"
 	"github.com/51Degrees/device-detection-go/v4/onpremise"
 	"github.com/prebid/prebid-server/v2/hooks/hookstage"
 	"github.com/prebid/prebid-server/v2/modules/moduledeps"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"net/http"
-	"os"
-	"testing"
+	"github.com/stretchr/testify/require"
 )
 
 type mockAccValidator struct {
@@ -362,10 +365,7 @@ func TestModule_HandleRawAuctionHookEnrichment(t *testing.T) {
 
 	mutationResult, err := mutation.Apply(body)
 
-	assert.Equal(
-		t, mutationResult, hookstage.RawAuctionRequestPayload(
-			hookstage.RawAuctionRequestPayload(
-				[]byte(`{
+	require.JSONEq(t, string(mutationResult), `{
 		"device": {
 			"connectiontype": 2,
 			"ext": {
@@ -416,10 +416,7 @@ func TestModule_HandleRawAuctionHookEnrichment(t *testing.T) {
 				"model": ""
 			}
 		,"devicetype":2,"ua":"ua","make":"Apple","model":"Macbook","os":"MacOs","osv":"14","h":1080,"w":1024,"pxratio":223,"js":1,"geoFetch":1}
-	}`),
-			),
-		),
-	)
+	}`)
 
 	var deviceDetectorErrM mockDeviceDetector
 
@@ -515,23 +512,9 @@ func TestModule_HandleRawAuctionHookEnrichmentWithErrors(t *testing.T) {
 
 	mutation := result.ChangeSet.Mutations()[0]
 
-	invalidJsonBody := []byte(`{`)
-
-	mutationResult, err := mutation.Apply(invalidJsonBody)
+	mutationResult, err := mutation.Apply(hookstage.RawAuctionRequestPayload(`{"device":{}}`))
 	assert.NoError(t, err)
-	assert.Equal(
-		t,
-		mutationResult,
-		hookstage.RawAuctionRequestPayload([]byte(`{"device":{"ua":"ua","make":"Apple","model":"Macbook","os":"MacOs","osv":"14","h":1080,"w":1024,"pxratio":223,"js":1,"geoFetch":1,"ppi":154,"ext":{"fiftyonedegrees_deviceId":""}}}`)),
-	)
-
-	mutationResult, err = mutation.Apply(hookstage.RawAuctionRequestPayload(nil))
-	assert.NoError(t, err)
-	assert.Equal(
-		t,
-		mutationResult,
-		hookstage.RawAuctionRequestPayload([]byte(`{"device":{"devicetype":2,"ua":"ua","make":"Apple","model":"Macbook","os":"MacOs","osv":"14","h":1080,"w":1024,"pxratio":223,"js":1,"geoFetch":1,"ppi":154,"ext":{"fiftyonedegrees_deviceId":""}}}`)),
-	)
+	require.JSONEq(t, string(mutationResult), `{"device":{"devicetype":2,"ua":"ua","make":"Apple","model":"Macbook","os":"MacOs","osv":"14","h":1080,"w":1024,"pxratio":223,"js":1,"geoFetch":1,"ppi":154,"ext":{"fiftyonedegrees_deviceId":""}}}`)
 }
 
 func TestConfigHashFromConfig(t *testing.T) {
@@ -592,24 +575,26 @@ func TestConfigHashFromConfig(t *testing.T) {
 }
 
 func TestSignDeviceData(t *testing.T) {
-
-	payload := []byte(`{}`)
+	devicePld := map[string]any{
+		"ext": map[string]any{
+			"my-key": "my-value",
+		},
+	}
 
 	deviceInfo := DeviceInfo{
 		DeviceId: "test-device-id",
 	}
 
-	result, err := signDeviceData(
-		payload, &deviceInfo, map[string]any{
-			"my-key": "my-value",
-		},
-	)
-	assert.NoError(t, err)
+	result := signDeviceData(devicePld, &deviceInfo)
+	r, err := json.Marshal(result)
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err.Error())
+	}
 
-	assert.Equal(
+	require.JSONEq(
 		t,
-		result,
-		[]byte(`{"device":{"ext":{"fiftyonedegrees_deviceId":"test-device-id","my-key":"my-value"}}}`),
+		`{"ext":{"fiftyonedegrees_deviceId":"test-device-id","my-key":"my-value"}}`,
+		string(r),
 	)
 }
 
@@ -659,158 +644,7 @@ func TestBuilderHandleDeviceDetectorError(t *testing.T) {
 	assert.Errorf(t, err, "failed to create device detector")
 }
 
-type mockDeviceMapper struct {
-	mock.Mock
-}
-
-func (m *mockDeviceMapper) HydratePPI(payload hookstage.RawAuctionRequestPayload) ([]byte, error) {
-	args := m.Called(payload)
-
-	res := args.Get(0)
-	if res == nil {
-		return nil, args.Error(1)
-	}
-
-	return args.Get(0).([]byte), args.Error(1)
-}
-
-func (m *mockDeviceMapper) HydrateDeviceType(payload hookstage.RawAuctionRequestPayload) ([]byte, error) {
-	args := m.Called(payload)
-
-	res := args.Get(0)
-	if res == nil {
-		return nil, args.Error(1)
-	}
-
-	return args.Get(0).([]byte), args.Error(1)
-}
-
-func (m *mockDeviceMapper) HydrateUserAgent(payload hookstage.RawAuctionRequestPayload) ([]byte, error) {
-	args := m.Called(payload)
-
-	res := args.Get(0)
-	if res == nil {
-		return nil, args.Error(1)
-	}
-
-	return args.Get(0).([]byte), args.Error(1)
-}
-
-func (m *mockDeviceMapper) HydrateMake(device hookstage.RawAuctionRequestPayload) ([]byte, error) {
-	args := m.Called(device)
-
-	res := args.Get(0)
-	if res == nil {
-		return nil, args.Error(1)
-	}
-
-	return args.Get(0).([]byte), args.Error(1)
-}
-
-func (m *mockDeviceMapper) HydrateModel(payload hookstage.RawAuctionRequestPayload, extMap map[string]any) ([]byte, error) {
-	args := m.Called(payload, extMap)
-
-	res := args.Get(0)
-	if res == nil {
-		return nil, args.Error(1)
-	}
-
-	return args.Get(0).([]byte), args.Error(1)
-}
-
-func (m *mockDeviceMapper) HydrateOS(payload hookstage.RawAuctionRequestPayload) ([]byte, error) {
-	args := m.Called(payload)
-
-	res := args.Get(0)
-	if res == nil {
-		return nil, args.Error(1)
-	}
-
-	return args.Get(0).([]byte), args.Error(1)
-}
-
-func (m *mockDeviceMapper) HydrateOSVersion(payload hookstage.RawAuctionRequestPayload) ([]byte, error) {
-	args := m.Called(payload)
-
-	res := args.Get(0)
-	if res == nil {
-		return nil, args.Error(1)
-	}
-
-	return args.Get(0).([]byte), args.Error(1)
-}
-
-func (m *mockDeviceMapper) HydrateScreenHeight(payload hookstage.RawAuctionRequestPayload) ([]byte, error) {
-	args := m.Called(payload)
-
-	res := args.Get(0)
-	if res == nil {
-		return nil, args.Error(1)
-	}
-
-	return args.Get(0).([]byte), args.Error(1)
-}
-
-func (m *mockDeviceMapper) HydrateScreenWidth(payload hookstage.RawAuctionRequestPayload) ([]byte, error) {
-	args := m.Called(payload)
-
-	res := args.Get(0)
-	if res == nil {
-		return nil, args.Error(1)
-	}
-
-	return args.Get(0).([]byte), args.Error(1)
-}
-
-func (m *mockDeviceMapper) HydratePixelRatio(payload hookstage.RawAuctionRequestPayload) ([]byte, error) {
-	args := m.Called(payload)
-
-	res := args.Get(0)
-	if res == nil {
-		return nil, args.Error(1)
-	}
-
-	return args.Get(0).([]byte), args.Error(1)
-}
-
-func (m *mockDeviceMapper) HydrateJavascript(payload hookstage.RawAuctionRequestPayload) ([]byte, error) {
-	args := m.Called(payload)
-
-	res := args.Get(0)
-	if res == nil {
-		return nil, args.Error(1)
-	}
-
-	return args.Get(0).([]byte), args.Error(1)
-}
-
-func (m *mockDeviceMapper) HydrateGeoLocation(payload hookstage.RawAuctionRequestPayload) ([]byte, error) {
-	args := m.Called(payload)
-
-	res := args.Get(0)
-	if res == nil {
-		return nil, args.Error(1)
-	}
-
-	return args.Get(0).([]byte), args.Error(1)
-}
-
-func TestHydrateFieldsErrors(t *testing.T) {
-	var deviceMapper mockDeviceMapper
-
-	deviceMapper.On("HydrateDeviceType", mock.Anything).Return(nil, errors.New("error"))
-	deviceMapper.On("HydrateUserAgent", mock.Anything).Return(nil, errors.New("error"))
-	deviceMapper.On("HydrateMake", mock.Anything).Return(nil, errors.New("error"))
-	deviceMapper.On("HydrateModel", mock.Anything, mock.Anything).Return(nil, errors.New("error"))
-	deviceMapper.On("HydrateOS", mock.Anything).Return(nil, errors.New("error"))
-	deviceMapper.On("HydrateOSVersion", mock.Anything).Return(nil, errors.New("error"))
-	deviceMapper.On("HydrateScreenHeight", mock.Anything).Return(nil, errors.New("error"))
-	deviceMapper.On("HydrateScreenWidth", mock.Anything).Return(nil, errors.New("error"))
-	deviceMapper.On("HydratePixelRatio", mock.Anything).Return(nil, errors.New("error"))
-	deviceMapper.On("HydrateJavascript", mock.Anything).Return(nil, errors.New("error"))
-	deviceMapper.On("HydrateGeoLocation", mock.Anything).Return(nil, errors.New("error"))
-	deviceMapper.On("HydratePPI", mock.Anything).Return(nil, errors.New("error"))
-
+func TestHydrateFields(t *testing.T) {
 	deviceInfo := &DeviceInfo{
 		HardwareVendor:        "Apple",
 		HardwareName:          "Macbook",
@@ -833,8 +667,54 @@ func TestHydrateFieldsErrors(t *testing.T) {
 		DeviceId:              "dev-ide",
 	}
 
-	_, err := hydrateFields(deviceInfo, &deviceMapper, []byte{})
+	rawPld := `{
+    "imp": [{
+            "id": "",
+            "banner": {
+                "topframe": 1,
+                "format": [
+                    {
+                        "w": 728,
+                        "h": 90
+                    }
+                ],
+                "pos": 1
+            },
+            "bidfloor": 0.01,
+            "bidfloorcur": "USD"
+        }
+    ],
+    "device": {
+        "model": "Macintosh",
+        "w": 843,
+        "h": 901,
+        "dnt": 0,
+        "ua": "Mozilla/5.0 (Linux; Android 13; SAMSUNG SM-A037U) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/23.0 Chrome/115.0.0.0 Mobile Safari/537.36",
+        "language": "en",
+        "sua": {"browsers":[{"brand":"Not/A)Brand","version":["99","0","0","0"]},{"brand":"Samsung Internet","version":["23","0","1","1"]},{"brand":"Chromium","version":["115","0","5790","168"]}],"platform":{"brand":"Android","version":["13","0","0"]},"mobile":1,"model":"SM-A037U","source":2},
+		"ext": {"h":"901","w":843}
+    },
+    "cur": [
+        "USD"
+    ],
+    "tmax": 1700
+}`
 
-	assert.Error(t, err)
-	assert.Errorf(t, err, "error hydrating device type error")
+	payload, err := hydrateFields(deviceInfo, []byte(rawPld))
+	assert.NoError(t, err)
+
+	var deviceHolder struct {
+		Device json.RawMessage `json:"device"`
+	}
+
+	err = json.Unmarshal(payload, &deviceHolder)
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err.Error())
+	}
+
+	require.JSONEq(
+		t,
+		`{"devicetype":2,"dnt":0,"ext":{"fiftyonedegrees_deviceId":"dev-ide","h":"901","w":843},"geoFetch":1,"h":901,"js":1,"language":"en","make":"Apple","model":"Macintosh","os":"MacOs","osv":"14","pxratio":223,"sua":{"browsers":[{"brand":"Not/A)Brand","version":["99","0","0","0"]},{"brand":"Samsung Internet","version":["23","0","1","1"]},{"brand":"Chromium","version":["115","0","5790","168"]}],"mobile":1,"model":"SM-A037U","platform":{"brand":"Android","version":["13","0","0"]},"source":2},"ua":"Mozilla/5.0 (Linux; Android 13; SAMSUNG SM-A037U) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/23.0 Chrome/115.0.0.0 Mobile Safari/537.36","w":843}`,
+		string(deviceHolder.Device),
+	)
 }
