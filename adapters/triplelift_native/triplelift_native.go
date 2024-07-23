@@ -76,7 +76,6 @@ func processImp(imp *openrtb2.Imp, request *openrtb2.BidRequest) error {
 
 	if extData.TagCode != "" {
 		if siteCopy.Publisher.Domain == "msn.com" {
-			fmt.Println(extData.TagCode)
 			imp.TagID = extData.TagCode
 		} else {
 			imp.TagID = tlext.InvCode
