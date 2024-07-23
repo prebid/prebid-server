@@ -1,0 +1,348 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>triplelift_native: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/prebid/prebid-server/v2/adapters/triplelift_native/triplelift_native.go (95.2%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package triplelift_native
+
+import (
+        "encoding/json"
+        "fmt"
+        "net/http"
+
+        "github.com/prebid/openrtb/v20/openrtb2"
+        "github.com/prebid/prebid-server/v2/adapters"
+        "github.com/prebid/prebid-server/v2/config"
+        "github.com/prebid/prebid-server/v2/errortypes"
+        "github.com/prebid/prebid-server/v2/openrtb_ext"
+)
+
+type TripleliftNativeAdapter struct {
+        endpoint string
+        extInfo  TripleliftNativeExtInfo
+}
+
+type TripleliftInnerExt struct {
+        Format int `json:"format"`
+}
+
+type TripleliftRespExt struct {
+        Triplelift TripleliftInnerExt `json:"triplelift_pb"`
+}
+
+type TripleliftNativeExtInfo struct {
+        // Array is used for deserialization.
+        PublisherWhitelist []string `json:"publisher_whitelist"`
+
+        // Map is used for optimized memory access and should be constructed after deserialization.
+        PublisherWhitelistMap map[string]struct{}
+}
+
+type ExtImpData struct {
+        TagCode string `json:"tag_code"`
+}
+
+type ExtImp struct {
+        *adapters.ExtImpBidder
+        Data *ExtImpData `json:"data,omitempty"`
+}
+
+func getBidType(ext TripleliftRespExt) openrtb_ext.BidType <span class="cov8" title="1">{
+        return openrtb_ext.BidTypeNative
+}</span>
+
+func processImp(imp *openrtb2.Imp, request *openrtb2.BidRequest) error <span class="cov8" title="1">{
+        // get the triplelift extension
+        var ext ExtImp
+        var tlext openrtb_ext.ExtImpTriplelift
+        var siteCopy openrtb2.Site
+        var extData ExtImpData
+
+        if request.Site != nil </span><span class="cov8" title="1">{
+                siteCopy = *request.Site
+        }</span>
+
+        <span class="cov8" title="1">if err := json.Unmarshal(imp.Ext, &amp;ext); err != nil </span><span class="cov8" title="1">{
+                return err
+        }</span>
+        <span class="cov8" title="1">if err := json.Unmarshal(ext.Bidder, &amp;tlext); err != nil </span><span class="cov8" title="1">{
+                return err
+        }</span>
+        <span class="cov8" title="1">if imp.Native == nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("no native object specified")
+        }</span>
+        <span class="cov8" title="1">if tlext.InvCode == "" </span><span class="cov0" title="0">{
+                return fmt.Errorf("no inv_code specified")
+        }</span>
+
+        <span class="cov8" title="1">if ext.Data != nil </span><span class="cov8" title="1">{
+                extData = *ext.Data
+        }</span>
+
+        <span class="cov8" title="1">if extData.TagCode != "" </span><span class="cov8" title="1">{
+                if siteCopy.Publisher.Domain == "msn.com" </span><span class="cov8" title="1">{
+                        imp.TagID = extData.TagCode
+                }</span> else<span class="cov8" title="1"> {
+                        imp.TagID = tlext.InvCode
+                }</span>
+        } else<span class="cov8" title="1"> {
+                imp.TagID = tlext.InvCode
+        }</span>
+        // floor is optional
+        <span class="cov8" title="1">if tlext.Floor == nil </span><span class="cov8" title="1">{
+                return nil
+        }</span>
+        <span class="cov8" title="1">imp.BidFloor = *tlext.Floor
+        // no error
+        return nil</span>
+}
+
+// Returns the effective publisher ID
+func effectivePubID(pub *openrtb2.Publisher) string <span class="cov8" title="1">{
+        if pub != nil </span><span class="cov8" title="1">{
+                if pub.Ext != nil </span><span class="cov8" title="1">{
+                        var pubExt openrtb_ext.ExtPublisher
+                        err := json.Unmarshal(pub.Ext, &amp;pubExt)
+                        if err == nil &amp;&amp; pubExt.Prebid != nil &amp;&amp; pubExt.Prebid.ParentAccount != nil &amp;&amp; *pubExt.Prebid.ParentAccount != "" </span><span class="cov8" title="1">{
+                                return *pubExt.Prebid.ParentAccount
+                        }</span>
+                }
+                <span class="cov8" title="1">if pub.ID != "" </span><span class="cov8" title="1">{
+                        return pub.ID
+                }</span>
+        }
+        <span class="cov0" title="0">return "unknown"</span>
+}
+
+func (a *TripleliftNativeAdapter) MakeRequests(request *openrtb2.BidRequest, extra *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) <span class="cov8" title="1">{
+        errs := make([]error, 0, len(request.Imp)+1)
+        reqs := make([]*adapters.RequestData, 0, 1)
+        // copy the request, because we are going to mutate it
+        tlRequest := *request
+        // this will contain all the valid impressions
+        var validImps []openrtb2.Imp
+        // pre-process the imps
+        for _, imp := range tlRequest.Imp </span><span class="cov8" title="1">{
+                if err := processImp(&amp;imp, request); err == nil </span><span class="cov8" title="1">{
+                        validImps = append(validImps, imp)
+                }</span> else<span class="cov8" title="1"> {
+                        errs = append(errs, err)
+                }</span>
+        }
+        <span class="cov8" title="1">publisher := getPublisher(request)
+        publisherID := effectivePubID(publisher)
+        if _, exists := a.extInfo.PublisherWhitelistMap[publisherID]; !exists </span><span class="cov8" title="1">{
+                err := fmt.Errorf("Unsupported publisher for triplelift_native")
+                return nil, []error{err}
+        }</span>
+        <span class="cov8" title="1">if len(validImps) == 0 </span><span class="cov8" title="1">{
+                err := fmt.Errorf("No valid impressions for triplelift")
+                errs = append(errs, err)
+                return nil, errs
+        }</span>
+        <span class="cov8" title="1">tlRequest.Imp = validImps
+        reqJSON, err := json.Marshal(tlRequest)
+        if err != nil </span><span class="cov0" title="0">{
+                errs = append(errs, err)
+                return nil, errs
+        }</span>
+        <span class="cov8" title="1">headers := http.Header{}
+        headers.Add("Content-Type", "application/json;charset=utf-8")
+        headers.Add("Accept", "application/json")
+        ad := a.endpoint
+        reqs = append(reqs, &amp;adapters.RequestData{
+                Method:  "POST",
+                Uri:     ad,
+                Body:    reqJSON,
+                Headers: headers,
+                ImpIDs:  openrtb_ext.GetImpIDs(tlRequest.Imp)})
+        return reqs, errs</span>
+}
+
+func getPublisher(request *openrtb2.BidRequest) *openrtb2.Publisher <span class="cov8" title="1">{
+        if request.App != nil </span><span class="cov8" title="1">{
+                return request.App.Publisher
+        }</span>
+        <span class="cov8" title="1">return request.Site.Publisher</span>
+}
+
+func getBidCount(bidResponse openrtb2.BidResponse) int <span class="cov8" title="1">{
+        c := 0
+        for _, sb := range bidResponse.SeatBid </span><span class="cov8" title="1">{
+                c = c + len(sb.Bid)
+        }</span>
+        <span class="cov8" title="1">return c</span>
+}
+
+func (a *TripleliftNativeAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) <span class="cov8" title="1">{
+        if response.StatusCode == http.StatusNoContent </span><span class="cov8" title="1">{
+                return nil, nil
+        }</span>
+
+        <span class="cov8" title="1">if response.StatusCode == http.StatusBadRequest </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">if response.StatusCode != http.StatusOK </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadServerResponse{Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}}
+        }</span>
+        <span class="cov8" title="1">var bidResp openrtb2.BidResponse
+        if err := json.Unmarshal(response.Body, &amp;bidResp); err != nil </span><span class="cov0" title="0">{
+                return nil, []error{err}
+        }</span>
+        <span class="cov8" title="1">var errs []error
+        count := getBidCount(bidResp)
+        bidResponse := adapters.NewBidderResponseWithBidsCapacity(count)
+
+        for _, sb := range bidResp.SeatBid </span><span class="cov8" title="1">{
+                for i := 0; i &lt; len(sb.Bid); i++ </span><span class="cov8" title="1">{
+                        bid := sb.Bid[i]
+                        var bidExt TripleliftRespExt
+                        bidType := getBidType(bidExt)
+                        bidResponse.Bids = append(bidResponse.Bids, &amp;adapters.TypedBid{
+                                Bid:     &amp;bid,
+                                BidType: bidType,
+                        })
+                }</span>
+        }
+        <span class="cov8" title="1">return bidResponse, errs</span>
+}
+
+// Builder builds a new instance of the TripleliftNative adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) <span class="cov8" title="1">{
+        extraInfo, err := getExtraInfo(config.ExtraAdapterInfo)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+
+        // Populate map for faster memory access
+        <span class="cov8" title="1">extraInfo.PublisherWhitelistMap = make(map[string]struct{}, len(extraInfo.PublisherWhitelist))
+        for _, v := range extraInfo.PublisherWhitelist </span><span class="cov8" title="1">{
+                extraInfo.PublisherWhitelistMap[v] = struct{}{}
+        }</span>
+
+        <span class="cov8" title="1">bidder := &amp;TripleliftNativeAdapter{
+                endpoint: config.Endpoint,
+                extInfo:  extraInfo,
+        }
+        return bidder, nil</span>
+}
+
+func getExtraInfo(v string) (TripleliftNativeExtInfo, error) <span class="cov8" title="1">{
+        if len(v) == 0 </span><span class="cov8" title="1">{
+                return getDefaultExtraInfo(), nil
+        }</span>
+
+        <span class="cov8" title="1">var extraInfo TripleliftNativeExtInfo
+        if err := json.Unmarshal([]byte(v), &amp;extraInfo); err != nil </span><span class="cov8" title="1">{
+                return extraInfo, fmt.Errorf("invalid extra info: %v", err)
+        }</span>
+
+        <span class="cov8" title="1">return extraInfo, nil</span>
+}
+
+func getDefaultExtraInfo() TripleliftNativeExtInfo <span class="cov8" title="1">{
+        return TripleliftNativeExtInfo{
+                PublisherWhitelist: []string{},
+        }
+}</span>
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
