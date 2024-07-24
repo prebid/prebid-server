@@ -77,7 +77,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			continue
 		}
 
-		adapterRequests = append(adapterRequests, adapterReq)
+		if adapterReq != nil {
+			adapterRequests = append(adapterRequests, adapterReq)
+		}
 	}
 
 	if len(adapterRequests) == 0 {
@@ -127,8 +129,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 	for _, seatBid := range response.SeatBid {
 		for i := range seatBid.Bid {
-			bid := seatBid.Bid[i]
-			bidType, err := getBidType(bid)
+			bidType, err := getBidType(seatBid.Bid[i])
 			if err != nil {
 				return nil, []error{err}
 			}
