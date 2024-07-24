@@ -29,6 +29,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderAdkernel,
 	BidderAdkernelAdn,
 	BidderAdman,
+	BidderAdmatic,
 	BidderAdmixer,
 	BidderAdnuntius,
 	BidderAdOcean,
@@ -69,7 +70,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderBidmyadz,
 	BidderBidsCube,
 	BidderBidstack,
-	BidderBizzclick,
+	BidderBlasto,
 	BidderBliink,
 	BidderBlue,
 	BidderBluesea,
@@ -79,9 +80,11 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderBWX,
 	BidderCadentApertureMX,
 	BidderCcx,
+	BidderCointraffic,
 	BidderCoinzilla,
 	BidderColossus,
 	BidderCompass,
+	BidderConcert,
 	BidderConnectAd,
 	BidderConsumable,
 	BidderConversant,
@@ -94,9 +97,11 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderDeepintent,
 	BidderDefinemedia,
 	BidderDianomi,
+	BidderDisplayio,
 	BidderEdge226,
 	BidderDmx,
 	BidderDXKulture,
+	BidderDriftPixel,
 	BidderEmtv,
 	BidderEmxDigital,
 	BidderEPlanning,
@@ -140,6 +145,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderMadvertise,
 	BidderMarsmedia,
 	BidderMediafuse,
+	BidderMediaGo,
 	BidderMedianet,
 	BidderMgid,
 	BidderMgidX,
@@ -205,6 +211,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderUndertone,
 	BidderUnicorn,
 	BidderUnruly,
+	BidderVidazoo,
 	BidderVideoByte,
 	BidderVideoHeroes,
 	BidderVidoomy,
@@ -340,6 +347,7 @@ const (
 	BidderAdkernel          BidderName = "adkernel"
 	BidderAdkernelAdn       BidderName = "adkernelAdn"
 	BidderAdman             BidderName = "adman"
+	BidderAdmatic           BidderName = "admatic"
 	BidderAdmixer           BidderName = "admixer"
 	BidderAdnuntius         BidderName = "adnuntius"
 	BidderAdOcean           BidderName = "adocean"
@@ -380,7 +388,7 @@ const (
 	BidderBidmyadz          BidderName = "bidmyadz"
 	BidderBidsCube          BidderName = "bidscube"
 	BidderBidstack          BidderName = "bidstack"
-	BidderBizzclick         BidderName = "bizzclick"
+	BidderBlasto            BidderName = "blasto"
 	BidderBliink            BidderName = "bliink"
 	BidderBlue              BidderName = "blue"
 	BidderBluesea           BidderName = "bluesea"
@@ -390,9 +398,11 @@ const (
 	BidderBWX               BidderName = "bwx"
 	BidderCadentApertureMX  BidderName = "cadent_aperture_mx"
 	BidderCcx               BidderName = "ccx"
+	BidderCointraffic       BidderName = "cointraffic"
 	BidderCoinzilla         BidderName = "coinzilla"
 	BidderColossus          BidderName = "colossus"
 	BidderCompass           BidderName = "compass"
+	BidderConcert           BidderName = "concert"
 	BidderConnectAd         BidderName = "connectad"
 	BidderConsumable        BidderName = "consumable"
 	BidderConversant        BidderName = "conversant"
@@ -405,9 +415,11 @@ const (
 	BidderDeepintent        BidderName = "deepintent"
 	BidderDefinemedia       BidderName = "definemedia"
 	BidderDianomi           BidderName = "dianomi"
+	BidderDisplayio         BidderName = "displayio"
 	BidderEdge226           BidderName = "edge226"
 	BidderDmx               BidderName = "dmx"
 	BidderDXKulture         BidderName = "dxkulture"
+	BidderDriftPixel        BidderName = "driftpixel"
 	BidderEmtv              BidderName = "emtv"
 	BidderEmxDigital        BidderName = "emx_digital"
 	BidderEPlanning         BidderName = "eplanning"
@@ -451,6 +463,7 @@ const (
 	BidderMadvertise        BidderName = "madvertise"
 	BidderMarsmedia         BidderName = "marsmedia"
 	BidderMediafuse         BidderName = "mediafuse"
+	BidderMediaGo           BidderName = "mediago"
 	BidderMedianet          BidderName = "medianet"
 	BidderMgid              BidderName = "mgid"
 	BidderMgidX             BidderName = "mgidX"
@@ -516,6 +529,7 @@ const (
 	BidderUndertone         BidderName = "undertone"
 	BidderUnicorn           BidderName = "unicorn"
 	BidderUnruly            BidderName = "unruly"
+	BidderVidazoo           BidderName = "vidazoo"
 	BidderVideoByte         BidderName = "videobyte"
 	BidderVideoHeroes       BidderName = "videoheroes"
 	BidderVidoomy           BidderName = "vidoomy"
