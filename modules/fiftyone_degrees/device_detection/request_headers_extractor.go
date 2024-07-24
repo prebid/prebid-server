@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	dd "github.com/51Degrees/device-detection-go/v4/dd"
+	"github.com/51Degrees/device-detection-go/v4/dd"
 )
 
 // EvidenceFromRequestHeadersExtractor is a struct that extracts evidence from http request headers
@@ -21,10 +21,9 @@ func (x EvidenceFromRequestHeadersExtractor) Extract(request *http.Request, http
 func (x EvidenceFromRequestHeadersExtractor) extractEvidenceStrings(r *http.Request, keys []dd.EvidenceKey) []StringEvidence {
 	evidence := make([]StringEvidence, 0)
 	for _, e := range keys {
-		lowerKey := strings.ToLower(e.Key)
 		if e.Prefix != dd.HttpEvidenceQuery {
 			// Get evidence from headers
-			headerVal := r.Header.Get(lowerKey)
+			headerVal := r.Header.Get(e.Key)
 			if headerVal != "" {
 				if e.Key != SecUaFullVersionList && e.Key != SecChUa {
 					headerVal = strings.Replace(headerVal, "\"", "", -1)

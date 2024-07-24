@@ -3,12 +3,13 @@ package device_detection
 import (
 	"context"
 	"encoding/json"
+	"net/http"
+
 	"github.com/51Degrees/device-detection-go/v4/dd"
 	"github.com/51Degrees/device-detection-go/v4/onpremise"
 	"github.com/pkg/errors"
 	"github.com/prebid/prebid-server/v2/hooks/hookstage"
 	"github.com/prebid/prebid-server/v2/modules/moduledeps"
-	"net/http"
 )
 
 func configHashFromConfig(cfg *Config) *dd.ConfigHash {
@@ -77,7 +78,7 @@ type deviceDetector interface {
 }
 
 type accountValidator interface {
-	IsWhiteListed(cfg Config, req []byte) bool
+	IsAllowed(cfg Config, req []byte) bool
 }
 
 type evidenceExtractor interface {

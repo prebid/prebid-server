@@ -2,8 +2,9 @@ package device_detection
 
 import (
 	"encoding/json"
-	"github.com/prebid/openrtb/v20/openrtb2"
 	"testing"
+
+	"github.com/prebid/openrtb/v20/openrtb2"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -14,7 +15,7 @@ func TestAccountValidatorAllowed(t *testing.T) {
 		AccountFilter: AccountFilter{AllowList: []string{"1001"}},
 	}
 
-	res := validator.IsWhiteListed(
+	res := validator.IsAllowed(
 		cfg, toBytes(
 			&openrtb2.BidRequest{
 				App: &openrtb2.App{
@@ -28,13 +29,13 @@ func TestAccountValidatorAllowed(t *testing.T) {
 	assert.True(t, res)
 }
 
-func TestWhitelistedAccountsIsEmpty(t *testing.T) {
+func TestAllowedAccountsIsEmpty(t *testing.T) {
 	validator := NewAccountValidator()
 	cfg := Config{
 		AccountFilter: AccountFilter{AllowList: []string{}},
 	}
 
-	res := validator.IsWhiteListed(
+	res := validator.IsAllowed(
 		cfg, toBytes(
 			&openrtb2.BidRequest{
 				App: &openrtb2.App{
@@ -54,7 +55,7 @@ func TestAccountValidatorNotAllowed(t *testing.T) {
 		AccountFilter: AccountFilter{AllowList: []string{"1002"}},
 	}
 
-	res := validator.IsWhiteListed(
+	res := validator.IsAllowed(
 		cfg, toBytes(
 			&openrtb2.BidRequest{
 				App: &openrtb2.App{

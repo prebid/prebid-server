@@ -21,7 +21,7 @@ type mockAccValidator struct {
 	mock.Mock
 }
 
-func (m *mockAccValidator) IsWhiteListed(cfg Config, req []byte) bool {
+func (m *mockAccValidator) IsAllowed(cfg Config, req []byte) bool {
 	args := m.Called(cfg, req)
 	return args.Bool(0)
 }
@@ -75,10 +75,10 @@ func (m *mockDeviceDetector) GetDeviceInfo(evidence []onpremise.Evidence, ua str
 	return res.(*DeviceInfo), args.Error(1)
 }
 
-func TestHandleEntrypointNotWhitelistedHook(t *testing.T) {
+func TestHandleEntrypointNotAllowedHook(t *testing.T) {
 	var mockValidator mockAccValidator
 
-	mockValidator.On("IsWhiteListed", mock.Anything, mock.Anything).Return(false)
+	mockValidator.On("IsAllowed", mock.Anything, mock.Anything).Return(false)
 
 	module := Module{
 		accountValidator: &mockValidator,
@@ -86,13 +86,13 @@ func TestHandleEntrypointNotWhitelistedHook(t *testing.T) {
 
 	_, err := module.HandleEntrypointHook(nil, hookstage.ModuleInvocationContext{}, hookstage.EntrypointPayload{})
 	assert.Error(t, err)
-	assert.Equal(t, "hook execution failed: account not whitelisted", err.Error())
+	assert.Equal(t, "hook execution failed: account not allowed", err.Error())
 }
 
-func TestHandleEntrypointWhitelistedHook(t *testing.T) {
+func TestHandleEntrypointAllowedHook(t *testing.T) {
 	var mockValidator mockAccValidator
 
-	mockValidator.On("IsWhiteListed", mock.Anything, mock.Anything).Return(true)
+	mockValidator.On("IsAllowed", mock.Anything, mock.Anything).Return(true)
 
 	var mockEvidenceExtractor mockEvidenceExtractor
 	mockEvidenceExtractor.On("FromHeaders", mock.Anything, mock.Anything).Return(
@@ -177,7 +177,7 @@ func TestModule_HandleRawAuctionHookWithNilDeviceDetector(t *testing.T) {
 func TestModule_TestModule_HandleRawAuctionHookExtractError(t *testing.T) {
 	var mockValidator mockAccValidator
 
-	mockValidator.On("IsWhiteListed", mock.Anything, mock.Anything).Return(true)
+	mockValidator.On("IsAllowed", mock.Anything, mock.Anything).Return(true)
 
 	var evidenceExtractorM mockEvidenceExtractor
 	evidenceExtractorM.On("Extract", mock.Anything).Return(
@@ -248,7 +248,7 @@ func TestModule_TestModule_HandleRawAuctionHookExtractError(t *testing.T) {
 func TestModule_HandleRawAuctionHookEnrichment(t *testing.T) {
 	var mockValidator mockAccValidator
 
-	mockValidator.On("IsWhiteListed", mock.Anything, mock.Anything).Return(true)
+	mockValidator.On("IsAllowed", mock.Anything, mock.Anything).Return(true)
 
 	var mockEvidenceExtractor mockEvidenceExtractor
 	mockEvidenceExtractor.On("Extract", mock.Anything).Return(
@@ -449,7 +449,7 @@ func TestModule_HandleRawAuctionHookEnrichment(t *testing.T) {
 func TestModule_HandleRawAuctionHookEnrichmentWithErrors(t *testing.T) {
 	var mockValidator mockAccValidator
 
-	mockValidator.On("IsWhiteListed", mock.Anything, mock.Anything).Return(true)
+	mockValidator.On("IsAllowed", mock.Anything, mock.Anything).Return(true)
 
 	var mockEvidenceExtractor mockEvidenceExtractor
 	mockEvidenceExtractor.On("Extract", mock.Anything).Return(
