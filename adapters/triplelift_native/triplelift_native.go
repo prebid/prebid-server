@@ -33,14 +33,30 @@ type TripleliftNativeExtInfo struct {
 	PublisherWhitelistMap map[string]struct{}
 }
 
+type ExtImpData struct {
+	TagCode string `json:"tag_code"`
+}
+
+type ExtImp struct {
+	*adapters.ExtImpBidder
+	Data *ExtImpData `json:"data,omitempty"`
+}
+
 func getBidType(ext TripleliftRespExt) openrtb_ext.BidType {
 	return openrtb_ext.BidTypeNative
 }
 
-func processImp(imp *openrtb2.Imp) error {
+func processImp(imp *openrtb2.Imp, request *openrtb2.BidRequest) error {
 	// get the triplelift extension
-	var ext adapters.ExtImpBidder
+	var ext ExtImp
 	var tlext openrtb_ext.ExtImpTriplelift
+	var siteCopy openrtb2.Site
+	var extData ExtImpData
+
+	if request.Site != nil {
+		siteCopy = *request.Site
+	}
+
 	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
 		return err
 	}
@@ -53,7 +69,20 @@ func processImp(imp *openrtb2.Imp) error {
 	if tlext.InvCode == "" {
 		return fmt.Errorf("no inv_code specified")
 	}
-	imp.TagID = tlext.InvCode
+
+	if ext.Data != nil {
+		extData = *ext.Data
+	}
+
+	if extData.TagCode != "" {
+		if siteCopy.Publisher.Domain == "msn.com" {
+			imp.TagID = extData.TagCode
+		} else {
+			imp.TagID = tlext.InvCode
+		}
+	} else {
+		imp.TagID = tlext.InvCode
+	}
 	// floor is optional
 	if tlext.Floor == nil {
 		return nil
@@ -89,7 +118,7 @@ func (a *TripleliftNativeAdapter) MakeRequests(request *openrtb2.BidRequest, ext
 	var validImps []openrtb2.Imp
 	// pre-process the imps
 	for _, imp := range tlRequest.Imp {
-		if err := processImp(&imp); err == nil {
+		if err := processImp(&imp, request); err == nil {
 			validImps = append(validImps, imp)
 		} else {
 			errs = append(errs, err)
