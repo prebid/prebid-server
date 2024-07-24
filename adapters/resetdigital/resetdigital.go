@@ -178,8 +178,12 @@ func processDataFromRequest(requestData *openrtb2.BidRequest, imp openrtb2.Imp, 
 }
 
 func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if response.StatusCode == http.StatusNoContent || response.StatusCode == http.StatusBadRequest || response.StatusCode != http.StatusOK {
+	if adapters.IsResponseStatusCodeNoContent(response) {
 		return nil, nil
+	}
+
+	if err := adapters.CheckResponseStatusCodeForErrors(response); err != nil {
+		return nil, []error{err}
 	}
 
 	var bidResp map[string]interface{}
