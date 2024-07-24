@@ -30,6 +30,12 @@
                           "meta": {
                               "adaptercode": "appnexus"
                           },
+                          "floors": {
+                            "floorCurrency": "USD",
+                            "floorRule": "*",
+                            "floorRuleValue": 11,
+                            "floorValue": 11
+                        },
                           "targeting": {
                               "hb_bidder": "appnexus",
                               "hb_pb": "1.50",

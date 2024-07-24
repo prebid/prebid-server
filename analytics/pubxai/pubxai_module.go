@@ -15,7 +15,25 @@ import (
 	"github.com/golang/glog"
 
 	"github.com/prebid/prebid-server/v2/analytics"
+	config "github.com/prebid/prebid-server/v2/analytics/pubxai/config"
+	processor "github.com/prebid/prebid-server/v2/analytics/pubxai/processor"
+	queue "github.com/prebid/prebid-server/v2/analytics/pubxai/queue"
+	"github.com/prebid/prebid-server/v2/analytics/pubxai/utils"
 )
+
+type PubxaiModule struct {
+	endpoint         string
+	winBidsQueue     *queue.WinningBidQueue
+	auctionBidsQueue *queue.AuctionBidsQueue
+	httpClient       *http.Client
+	muxConfig        sync.RWMutex
+	clock            clock.Clock
+	cfg              *config.Configuration
+	sigTermCh        chan os.Signal
+	stopCh           chan struct{}
+	configService    config.ConfigService
+	processorService processor.ProcessorService
+}
 
 func InitializePubxAIModule(client *http.Client, publisherId string, endpoint string, bufferInterval string, bufferSize string, SamplingPercentage int, configRefresh string, clock clock.Clock) (analytics.Module, error) {
 	glog.Infof("[pubxai] NewPubxAIModule: %v, %v, %v, %v", publisherId, endpoint, bufferInterval, bufferSize)
@@ -44,48 +62,51 @@ func InitializePubxAIModule(client *http.Client, publisherId string, endpoint st
 		glog.Error("[pubxai] Error parsing bufferSize: %v", err)
 		return nil, err
 	}
-	configUpdateTask, err := NewConfigUpdateHttpTask(
+	configService, err := config.NewConfigService(
 		client,
 		publisherId,
 		endpoint,
 		configRefresh,
 	)
-
+	processorService := processor.NewProcessorService(publisherId, SamplingPercentage)
 	if err != nil {
 		glog.Error("[pubxai] Error creating config update task: %v", err)
 		return nil, err
 	}
 
-	defaultConfig := &Configuration{
+	defaultConfig := &config.Configuration{
 		PublisherId:        publisherId,
 		BufferInterval:     bufferInterval,
 		BufferSize:         bufferSize,
 		SamplingPercentage: SamplingPercentage,
 	}
+	winBidsQueue := queue.NewBidQueue("win", endpoint+"/win", client, clock, bufferInterval, bufferSize)
+	auctionBidsQueue := queue.NewBidQueue("auction", endpoint+"/auction", client, clock, bufferInterval, bufferSize)
 
 	pb := PubxaiModule{
-		publisherId:      publisherId,
 		endpoint:         endpoint,
 		cfg:              defaultConfig,
-		winBidsQueue:     NewBidQueue("win", endpoint+"/win", client, clock, bufferInterval, bufferSize),
-		auctionBidsQueue: NewBidQueue("auction", endpoint+"/auction", client, clock, bufferInterval, bufferSize),
+		winBidsQueue:     winBidsQueue.(*queue.WinningBidQueue),
+		auctionBidsQueue: auctionBidsQueue.(*queue.AuctionBidsQueue),
 		httpClient:       client,
 		clock:            clock,
 		muxConfig:        sync.RWMutex{},
 		sigTermCh:        make(chan os.Signal),
 		stopCh:           make(chan struct{}),
+		configService:    configService,
+		processorService: processorService,
 	}
 
 	signal.Notify(pb.sigTermCh, os.Interrupt, syscall.SIGTERM)
 
-	configChannel := configUpdateTask.Start(pb.stopCh)
+	configChannel := configService.Start(pb.stopCh)
 	go pb.start(configChannel)
 
 	glog.Info("[pubxai] pubxai analytics configured and ready")
 	return &pb, nil
 }
 
-func (p *PubxaiModule) start(c <-chan *Configuration) {
+func (p *PubxaiModule) start(c <-chan *config.Configuration) {
 	for {
 		select {
 		case <-p.sigTermCh:
@@ -98,20 +119,29 @@ func (p *PubxaiModule) start(c <-chan *Configuration) {
 	}
 }
 
-func (p *PubxaiModule) updateConfig(config *Configuration) {
+func (p *PubxaiModule) updateConfig(config *config.Configuration) {
 	p.muxConfig.Lock()
 	defer p.muxConfig.Unlock()
 
-	if p.cfg.isSameAs(config) {
+	if p.configService.IsSameAs(config, p.cfg) {
 		return
 	}
 	p.cfg = config
-	p.auctionBidsQueue.bufferInterval = config.BufferInterval
-	p.auctionBidsQueue.bufferSize = config.BufferSize
-	p.winBidsQueue.bufferInterval = config.BufferInterval
-	p.winBidsQueue.bufferSize = config.BufferSize
+	p.auctionBidsQueue.UpdateConfig(config.BufferInterval, config.BufferSize)
+	p.winBidsQueue.UpdateConfig(config.BufferInterval, config.BufferSize)
 }
 
+func (p *PubxaiModule) pushToQueue(auctionBids *utils.AuctionBids, winningBids []utils.WinningBid) {
+	if len(winningBids) > 0 {
+		for _, winningBid := range winningBids {
+			p.winBidsQueue.Enqueue(winningBid)
+		}
+	}
+
+	if auctionBids != nil {
+		p.auctionBidsQueue.Enqueue(*auctionBids)
+	}
+}
 func (p *PubxaiModule) LogAuctionObject(ao *analytics.AuctionObject) {
 	if ao == nil {
 		glog.Warning("[pubxai] Auction Object is nil")
@@ -123,7 +153,7 @@ func (p *PubxaiModule) LogAuctionObject(ao *analytics.AuctionObject) {
 		return
 	}
 	// convert ao to LogObject
-	lo := &LogObject{
+	lo := &utils.LogObject{
 		Status:         ao.Status,
 		Errors:         ao.Errors,
 		Response:       ao.Response,
@@ -131,7 +161,7 @@ func (p *PubxaiModule) LogAuctionObject(ao *analytics.AuctionObject) {
 		SeatNonBid:     ao.SeatNonBid,
 		RequestWrapper: ao.RequestWrapper,
 	}
-	p.processLogData(lo)
+	p.pushToQueue(p.processorService.ProcessLogData(lo))
 }
 
 func (p *PubxaiModule) LogNotificationEventObject(ne *analytics.NotificationEvent) {
@@ -148,7 +178,7 @@ func (p *PubxaiModule) LogVideoObject(vo *analytics.VideoObject) {
 		return
 	}
 	// convert ao to LogObject
-	lo := &LogObject{
+	lo := &utils.LogObject{
 		Status:         vo.Status,
 		Errors:         vo.Errors,
 		Response:       vo.Response,
@@ -156,7 +186,7 @@ func (p *PubxaiModule) LogVideoObject(vo *analytics.VideoObject) {
 		SeatNonBid:     vo.SeatNonBid,
 		RequestWrapper: vo.RequestWrapper,
 	}
-	p.processLogData(lo)
+	p.pushToQueue(p.processorService.ProcessLogData(lo))
 }
 
 func (p *PubxaiModule) LogSetUIDObject(so *analytics.SetUIDObject) {
@@ -176,7 +206,7 @@ func (p *PubxaiModule) LogAmpObject(ao *analytics.AmpObject) {
 		return
 	}
 	// convert ao to LogObject
-	lo := &LogObject{
+	lo := &utils.LogObject{
 		Status:         ao.Status,
 		Errors:         ao.Errors,
 		Response:       ao.AuctionResponse,
@@ -184,5 +214,5 @@ func (p *PubxaiModule) LogAmpObject(ao *analytics.AmpObject) {
 		SeatNonBid:     ao.SeatNonBid,
 		RequestWrapper: ao.RequestWrapper,
 	}
-	p.processLogData(lo)
+	p.pushToQueue(p.processorService.ProcessLogData(lo))
 }

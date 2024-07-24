@@ -1,4 +1,4 @@
-package pubxai
+package config
 
 import (
 	"encoding/json"
@@ -11,30 +11,24 @@ import (
 	"github.com/prebid/prebid-server/v2/util/task"
 )
 
-type ConfigUpdateTask interface {
-	Start(stop <-chan struct{}) <-chan *Configuration
+type Configuration struct {
+	PublisherId        string `json:"publisher_id"`
+	BufferInterval     string `json:"buffer_interval"`
+	BufferSize         string `json:"buffer_size"`
+	SamplingPercentage int    `json:"sampling_percentage"`
 }
-type ConfigUpdateHttpTask struct {
+
+type ConfigService interface {
+	Start(stop <-chan struct{}) <-chan *Configuration
+	IsSameAs(a *Configuration, b *Configuration) bool
+}
+
+type ConfigServiceImpl struct {
 	task       *task.TickerTask
 	configChan chan *Configuration
 }
 
-func fetchConfig(client *http.Client, endpoint *url.URL) (*Configuration, error) {
-	res, err := client.Get(endpoint.String())
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-	c := Configuration{}
-	err = json.NewDecoder(res.Body).Decode(&c)
-	glog.Info("[pubxai] fetchConfig: %v at time %v", c, time.Now())
-	if err != nil {
-		return nil, err
-	}
-	return &c, nil
-}
-
-func NewConfigUpdateHttpTask(httpClient *http.Client, pubxId, endpoint, refreshInterval string) (*ConfigUpdateHttpTask, error) {
+func NewConfigService(httpClient *http.Client, pubxId, endpoint, refreshInterval string) (ConfigService, error) {
 	refreshDuration, err := time.ParseDuration(refreshInterval)
 	if err != nil {
 		return nil, fmt.Errorf("fail to parse the module args, arg=analytics.pubxai.configuration_refresh_delay: %v", err)
@@ -56,13 +50,28 @@ func NewConfigUpdateHttpTask(httpClient *http.Client, pubxId, endpoint, refreshI
 		return nil
 	})
 
-	return &ConfigUpdateHttpTask{
+	return &ConfigServiceImpl{
 		task:       tr,
 		configChan: configChan,
 	}, nil
 }
 
-func (t *ConfigUpdateHttpTask) Start(stop <-chan struct{}) <-chan *Configuration {
+func fetchConfig(client *http.Client, endpoint *url.URL) (*Configuration, error) {
+	res, err := client.Get(endpoint.String())
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	c := Configuration{}
+	err = json.NewDecoder(res.Body).Decode(&c)
+	glog.Info("[pubxai] fetchConfig: %v at time %v", c, time.Now())
+	if err != nil {
+		return nil, err
+	}
+	return &c, nil
+}
+
+func (t *ConfigServiceImpl) Start(stop <-chan struct{}) <-chan *Configuration {
 	go t.task.Start()
 
 	go func() {
@@ -73,7 +82,7 @@ func (t *ConfigUpdateHttpTask) Start(stop <-chan struct{}) <-chan *Configuration
 	return t.configChan
 }
 
-func (a *Configuration) isSameAs(b *Configuration) bool {
+func (t *ConfigServiceImpl) IsSameAs(a *Configuration, b *Configuration) bool {
 
 	samePublisherId := a.PublisherId == b.PublisherId
 	sameBufferInterval := a.BufferInterval == b.BufferInterval

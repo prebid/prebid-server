@@ -103,11 +103,14 @@ func TestStart(t *testing.T) {
 
 	t.Run("ConfigUpdateReceived", func(t *testing.T) {
 		// Test for proper update of configuration when receiving a configuration update
+		winQueue := NewBidQueue("win", "endpoint/win", mockClient, mockClock, "10s", "1MB")
+		auctionQueue := NewBidQueue("auction", "endpoint/auction", mockClient, mockClock, "10s", "1MB")
+
 		pb := PubxaiModule{
 			sigTermCh:        mockSigTermCh,
 			stopCh:           mockStopCh,
-			winBidsQueue:     NewBidQueue("win", "endpoint/win", mockClient, mockClock, "10s", "1MB"),
-			auctionBidsQueue: NewBidQueue("auction", "endpoint/auction", mockClient, mockClock, "10s", "1MB"),
+			winBidsQueue:     winQueue.(*WinningBidQueue),
+			auctionBidsQueue: auctionQueue.(*AuctionBidsQueue),
 			cfg: &Configuration{
 				PublisherId:        "oldPublisherID",
 				BufferInterval:     "10s",
@@ -133,12 +136,14 @@ func TestUpdateConfig(t *testing.T) {
 	mockClock := clock.NewMock()
 	mockSigTermCh := make(chan os.Signal)
 	mockStopCh := make(chan struct{})
+	winQueue := NewBidQueue("win", "endpoint/win", mockClient, mockClock, "10s", "1MB")
+	auctionQueue := NewBidQueue("auction", "endpoint/auction", mockClient, mockClock, "10s", "1MB")
 
 	mockModule := &PubxaiModule{
 		sigTermCh:        mockSigTermCh,
 		stopCh:           mockStopCh,
-		winBidsQueue:     NewBidQueue("win", "endpoint/win", mockClient, mockClock, "10s", "1MB"),
-		auctionBidsQueue: NewBidQueue("auction", "endpoint/auction", mockClient, mockClock, "10s", "1MB"),
+		winBidsQueue:     winQueue.(*WinningBidQueue),
+		auctionBidsQueue: auctionQueue.(*AuctionBidsQueue),
 		cfg: &Configuration{
 			PublisherId:        "oldPublisherID",
 			BufferInterval:     "10s",
@@ -184,12 +189,16 @@ func TestLogAuctionObject(t *testing.T) {
 	mockAuctionObject := GetMockAuctionObject()
 
 	t.Run("NonNilAuctionObject", func(t *testing.T) {
+
+		winQueue := NewBidQueue("win", "endpoint/win", mockClient, mockClock, "10s", "1MB")
+		auctionQueue := NewBidQueue("auction", "endpoint/auction", mockClient, mockClock, "10s", "1MB")
+
 		// Test with non-nil auction object
 		pb := &PubxaiModule{
 			sigTermCh:        mockSigTermCh,
 			stopCh:           mockStopCh,
-			winBidsQueue:     NewBidQueue("win", "endpoint/win", mockClient, mockClock, "10s", "1MB"),
-			auctionBidsQueue: NewBidQueue("auction", "endpoint/auction", mockClient, mockClock, "10s", "1MB"),
+			winBidsQueue:     winQueue.(*WinningBidQueue),
+			auctionBidsQueue: auctionQueue.(*AuctionBidsQueue),
 			cfg: &Configuration{
 				PublisherId:        "oldPublisherID",
 				BufferInterval:     "10m",
@@ -205,11 +214,14 @@ func TestLogAuctionObject(t *testing.T) {
 
 	t.Run("NilAuctionObject", func(t *testing.T) {
 		// Test with nil auction object
+		winQueue := NewBidQueue("win", "endpoint/win", mockClient, mockClock, "10s", "1MB")
+		auctionQueue := NewBidQueue("auction", "endpoint/auction", mockClient, mockClock, "10s", "1MB")
+
 		pb := &PubxaiModule{
 			sigTermCh:        mockSigTermCh,
 			stopCh:           mockStopCh,
-			winBidsQueue:     NewBidQueue("win", "endpoint/win", mockClient, mockClock, "10s", "1MB"),
-			auctionBidsQueue: NewBidQueue("auction", "endpoint/auction", mockClient, mockClock, "10s", "1MB"),
+			winBidsQueue:     winQueue.(*WinningBidQueue),
+			auctionBidsQueue: auctionQueue.(*AuctionBidsQueue),
 			cfg: &Configuration{
 				PublisherId:        "oldPublisherID",
 				BufferInterval:     "10m",
@@ -234,11 +246,14 @@ func TestLogVideoObject(t *testing.T) {
 
 	t.Run("NonNilAuctionObject", func(t *testing.T) {
 		// Test with non-nil auction object
+		winQueue := NewBidQueue("win", "endpoint/win", mockClient, mockClock, "10s", "1MB")
+		auctionQueue := NewBidQueue("auction", "endpoint/auction", mockClient, mockClock, "10s", "1MB")
+
 		pb := &PubxaiModule{
 			sigTermCh:        mockSigTermCh,
 			stopCh:           mockStopCh,
-			winBidsQueue:     NewBidQueue("win", "endpoint/win", mockClient, mockClock, "10s", "1MB"),
-			auctionBidsQueue: NewBidQueue("auction", "endpoint/auction", mockClient, mockClock, "10s", "1MB"),
+			winBidsQueue:     winQueue.(*WinningBidQueue),
+			auctionBidsQueue: auctionQueue.(*AuctionBidsQueue),
 			cfg: &Configuration{
 				PublisherId:        "oldPublisherID",
 				BufferInterval:     "10m",
@@ -254,11 +269,14 @@ func TestLogVideoObject(t *testing.T) {
 
 	t.Run("NilAuctionObject", func(t *testing.T) {
 		// Test with nil auction object
+		winQueue := NewBidQueue("win", "endpoint/win", mockClient, mockClock, "10s", "1MB")
+		auctionQueue := NewBidQueue("auction", "endpoint/auction", mockClient, mockClock, "10s", "1MB")
+
 		pb := &PubxaiModule{
 			sigTermCh:        mockSigTermCh,
 			stopCh:           mockStopCh,
-			winBidsQueue:     NewBidQueue("win", "endpoint/win", mockClient, mockClock, "10s", "1MB"),
-			auctionBidsQueue: NewBidQueue("auction", "endpoint/auction", mockClient, mockClock, "10s", "1MB"),
+			winBidsQueue:     winQueue.(*WinningBidQueue),
+			auctionBidsQueue: auctionQueue.(*AuctionBidsQueue),
 			cfg: &Configuration{
 				PublisherId:        "oldPublisherID",
 				BufferInterval:     "10m",
@@ -283,11 +301,14 @@ func TestLogAmpObject(t *testing.T) {
 
 	t.Run("NonNilAuctionObject", func(t *testing.T) {
 		// Test with non-nil auction object
+		winQueue := NewBidQueue("win", "endpoint/win", mockClient, mockClock, "10s", "1MB")
+		auctionQueue := NewBidQueue("auction", "endpoint/auction", mockClient, mockClock, "10s", "1MB")
+
 		pb := &PubxaiModule{
 			sigTermCh:        mockSigTermCh,
 			stopCh:           mockStopCh,
-			winBidsQueue:     NewBidQueue("win", "endpoint/win", mockClient, mockClock, "10s", "1MB"),
-			auctionBidsQueue: NewBidQueue("auction", "endpoint/auction", mockClient, mockClock, "10s", "1MB"),
+			winBidsQueue:     winQueue.(*WinningBidQueue),
+			auctionBidsQueue: auctionQueue.(*AuctionBidsQueue),
 			cfg: &Configuration{
 				PublisherId:        "oldPublisherID",
 				BufferInterval:     "10m",
@@ -296,18 +317,21 @@ func TestLogAmpObject(t *testing.T) {
 			},
 		}
 		pb.LogAmpObject(mockAmpObject)
-		if len(pb.winBidsQueue.queue) == 0 {
+		if len(pb.winBidsQueue.Queue) == 0 {
 			t.Error("Expected non-nil winBidsQueue, got nil")
 		}
 	})
 
 	t.Run("NilAuctionObject", func(t *testing.T) {
 		// Test with nil auction object
+		winQueue := NewBidQueue("win", "endpoint/win", mockClient, mockClock, "10s", "1MB")
+		auctionQueue := NewBidQueue("auction", "endpoint/auction", mockClient, mockClock, "10s", "1MB")
+
 		pb := &PubxaiModule{
 			sigTermCh:        mockSigTermCh,
 			stopCh:           mockStopCh,
-			winBidsQueue:     NewBidQueue("win", "endpoint/win", mockClient, mockClock, "10s", "1MB"),
-			auctionBidsQueue: NewBidQueue("auction", "endpoint/auction", mockClient, mockClock, "10s", "1MB"),
+			winBidsQueue:     winQueue.(*WinningBidQueue),
+			auctionBidsQueue: auctionQueue.(*AuctionBidsQueue),
 			cfg: &Configuration{
 				PublisherId:        "oldPublisherID",
 				BufferInterval:     "10m",

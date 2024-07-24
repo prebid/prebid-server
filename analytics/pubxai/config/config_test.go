@@ -1,4 +1,4 @@
-package pubxai
+package config
 
 import (
 	"net/http"
