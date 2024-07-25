@@ -7,7 +7,7 @@
         "banner": {},
         "ext": {
           "bidder": {
-            "unit": "banner-unit-1",
+            "unit": "111",
             "delDomain": "se-demo-d.openx.net"
           }
         }
@@ -17,7 +17,7 @@
         "video": {"mimes": ["video/mp4"]},
         "ext": {
           "bidder": {
-            "unit": "video-unit-1",
+            "unit": "333",
             "delDomain": "se-demo-d.openx.net"
           }
         }
@@ -27,7 +27,7 @@
         "banner": {},
         "ext": {
           "bidder": {
-            "unit": "banner-unit-2",
+            "unit": "222",
             "delDomain": "se-demo-d.openx.net"
           }
         }
@@ -37,7 +37,7 @@
         "video": {"mimes": ["video/mp4"]},
         "ext": {
           "bidder": {
-            "unit": "video-unit-2",
+            "unit": "444",
             "delDomain": "se-demo-d.openx.net"
           }
         }
@@ -48,7 +48,7 @@
         "video": {"mimes": ["video/mp4"]},
         "ext": {
           "bidder": {
-            "unit": "multi-type-unit",
+            "unit": "555",
             "delDomain": "se-demo-d.openx.net"
           }
         }
@@ -66,18 +66,18 @@
             {
               "id": "banner-imp-1",
               "banner": {},
-              "tagid": "banner-unit-1"
+              "tagid": "111"
             },
             {
               "id": "banner-imp-2",
               "banner": {},
-              "tagid": "banner-unit-2"
+              "tagid": "222"
             },
             {
               "id": "multi-type-imp",
               "banner": {},
               "video": {"mimes": ["video/mp4"]},
-              "tagid": "multi-type-unit"
+              "tagid": "555"
             }
           ],
           "ext": {
@@ -125,7 +125,7 @@
             {
               "id": "video-imp-1",
               "video": {"mimes": ["video/mp4"]},
-              "tagid": "video-unit-1"
+              "tagid": "333"
             }
           ],
           "ext": {
@@ -163,7 +163,7 @@
             {
               "id": "video-imp-2",
               "video": {"mimes": ["video/mp4"]},
-              "tagid": "video-unit-2"
+              "tagid": "444"
             }
           ],
           "ext": {
