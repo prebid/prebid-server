@@ -50,12 +50,6 @@ func processImp(imp *openrtb2.Imp, request *openrtb2.BidRequest) error {
 	// get the triplelift extension
 	var ext ExtImp
 	var tlext openrtb_ext.ExtImpTriplelift
-	var siteCopy openrtb2.Site
-	var extData ExtImpData
-
-	if request.Site != nil {
-		siteCopy = *request.Site
-	}
 
 	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
 		return err
@@ -70,19 +64,12 @@ func processImp(imp *openrtb2.Imp, request *openrtb2.BidRequest) error {
 		return fmt.Errorf("no inv_code specified")
 	}
 
-	if ext.Data != nil {
-		extData = *ext.Data
-	}
-
-	if extData.TagCode != "" {
-		if siteCopy.Publisher.Domain == "msn.com" {
-			imp.TagID = extData.TagCode
-		} else {
-			imp.TagID = tlext.InvCode
-		}
+	if ext.Data != nil && len(ext.Data.TagCode) > 0 && request.Site != nil && request.Site.Publisher != nil && request.Site.Publisher.Domain == "msn.com" {
+		imp.TagID = ext.Data.TagCode
 	} else {
 		imp.TagID = tlext.InvCode
 	}
+
 	// floor is optional
 	if tlext.Floor == nil {
 		return nil
