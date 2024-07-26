@@ -50,12 +50,6 @@ func processImp(imp *openrtb2.Imp, request *openrtb2.BidRequest) error {
 	// get the triplelift extension
 	var ext ExtImp
 	var tlext openrtb_ext.ExtImpTriplelift
-	var siteCopy openrtb2.Site
-	var extData ExtImpData
-
-	if request.Site != nil {
-		siteCopy = *request.Site
-	}
 
 	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
 		return err
@@ -66,30 +60,30 @@ func processImp(imp *openrtb2.Imp, request *openrtb2.BidRequest) error {
 	if imp.Native == nil {
 		return fmt.Errorf("no native object specified")
 	}
-	if tlext.InvCode == "" {
-		return fmt.Errorf("no inv_code specified")
-	}
 
-	if ext.Data != nil {
-		extData = *ext.Data
-	}
-
-	if extData.TagCode != "" {
-		if siteCopy.Publisher != nil && siteCopy.Publisher.Domain == "msn.com" {
-			imp.TagID = extData.TagCode
-		} else {
-			imp.TagID = tlext.InvCode
-		}
+	if ext.Data != nil && len(ext.Data.TagCode) > 0 && (msnInSite(request) || msnInApp(request)) {
+		imp.TagID = ext.Data.TagCode
 	} else {
 		imp.TagID = tlext.InvCode
 	}
+
 	// floor is optional
 	if tlext.Floor == nil {
 		return nil
 	}
 	imp.BidFloor = *tlext.Floor
-	// no error
+
 	return nil
+}
+
+// msnInApp returns whether msn.com is in request.app.publisher.domain
+func msnInApp(request *openrtb2.BidRequest) bool {
+	return request.App != nil && request.App.Publisher != nil && request.App.Publisher.Domain == "msn.com"
+}
+
+// msnInSite returns whether msn.com is in request.site.publisher.domain
+func msnInSite(request *openrtb2.BidRequest) bool {
+	return request.Site != nil && request.Site.Publisher != nil && request.Site.Publisher.Domain == "msn.com"
 }
 
 // Returns the effective publisher ID
