@@ -1,9 +1,10 @@
-package device_detection
+package devicedetection
 
 import (
+	"testing"
+
 	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestFiftyOneToRTB(t *testing.T) {

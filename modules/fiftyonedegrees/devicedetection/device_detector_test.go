@@ -1,4 +1,4 @@
-package device_detection
+package devicedetection
 
 import (
 	"fmt"
@@ -62,7 +62,7 @@ func TestBuildEngineOptions(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		cfg, err := ParseConfig(c.cfgRaw)
+		cfg, err := parseConfig(c.cfgRaw)
 		assert.NoError(t, err)
 		configHash := configHashFromConfig(&cfg)
 		options := buildEngineOptions(&cfg, configHash)
@@ -93,16 +93,16 @@ type extractorMock struct {
 	mock.Mock
 }
 
-func (e *extractorMock) Extract(results Results, ua string) (*DeviceInfo, error) {
+func (e *extractorMock) extract(results Results, ua string) (*deviceInfo, error) {
 	args := e.Called(results, ua)
-	return args.Get(0).(*DeviceInfo), args.Error(1)
+	return args.Get(0).(*deviceInfo), args.Error(1)
 }
 
 func TestGetDeviceInfo(t *testing.T) {
 	var extractorM = &extractorMock{}
 
-	extractorM.On("Extract", mock.Anything, mock.Anything).Return(
-		&DeviceInfo{
+	extractorM.On("extract", mock.Anything, mock.Anything).Return(
+		&deviceInfo{
 			DeviceId: "123",
 		}, nil,
 	)
@@ -113,13 +113,13 @@ func TestGetDeviceInfo(t *testing.T) {
 		&dd.ResultsHash{}, nil,
 	)
 
-	deviceDetector := DeviceDetector{
+	deviceDetector := defaultDeviceDetector{
 		cfg:                 nil,
 		deviceInfoExtractor: extractorM,
 		engine:              engineM,
 	}
 
-	result, err := deviceDetector.GetDeviceInfo(
+	result, err := deviceDetector.getDeviceInfo(
 		[]onpremise.Evidence{{
 			Prefix: dd.HttpEvidenceQuery,
 			Key:    "key",
@@ -134,13 +134,13 @@ func TestGetDeviceInfo(t *testing.T) {
 
 	errorEngineM.On("Process", mock.Anything).Return(nil, fmt.Errorf("error"))
 
-	deviceDetector = DeviceDetector{
+	deviceDetector = defaultDeviceDetector{
 		cfg:                 nil,
 		deviceInfoExtractor: extractorM,
 		engine:              errorEngineM,
 	}
 
-	result, err = deviceDetector.GetDeviceInfo(
+	result, err = deviceDetector.getDeviceInfo(
 		[]onpremise.Evidence{{
 			Prefix: dd.HttpEvidenceQuery,
 			Key:    "key",
@@ -148,7 +148,7 @@ func TestGetDeviceInfo(t *testing.T) {
 		}},
 		"ua",
 	)
-	assert.Errorf(t, err, "Failed to process evidence: error")
+	assert.Errorf(t, err, "Failed to Process evidence: error")
 	assert.Nil(t, result)
 }
 
@@ -162,13 +162,13 @@ func TestGetSupportedHeaders(t *testing.T) {
 		}},
 	)
 
-	deviceDetector := DeviceDetector{
+	deviceDetector := defaultDeviceDetector{
 		cfg:                 nil,
 		deviceInfoExtractor: nil,
 		engine:              engineM,
 	}
 
-	result := deviceDetector.GetSupportedHeaders()
+	result := deviceDetector.getSupportedHeaders()
 	assert.NotNil(t, result)
 	assert.Equal(t, len(result), 1)
 	assert.Equal(t, result[0].Key, "key")

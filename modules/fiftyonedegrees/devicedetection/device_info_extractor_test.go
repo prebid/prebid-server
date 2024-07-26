@@ -1,4 +1,4 @@
-package device_detection
+package devicedetection
 
 import (
 	"errors"
@@ -29,11 +29,11 @@ func (m *ResultsHashMock) HasValues(prop1 string) (bool, error) {
 func TestDeviceInfoExtraction(t *testing.T) {
 	results := &ResultsHashMock{}
 
-	extractor := NewDeviceInfoExtractor()
+	extractor := newDeviceInfoExtractor()
 	mockValue(results, "HardwareName", "Macbook")
 	mockValues(results)
 
-	deviceInfo, _ := extractor.Extract(results, "ua")
+	deviceInfo, _ := extractor.extract(results, "ua")
 	assert.NotNil(t, deviceInfo)
 
 	assert.Equal(t, deviceInfo.HardwareName, "Macbook")
@@ -43,12 +43,12 @@ func TestDeviceInfoExtraction(t *testing.T) {
 func TestDeviceInfoExtractionNoProperty(t *testing.T) {
 	results := &ResultsHashMock{}
 
-	extractor := NewDeviceInfoExtractor()
+	extractor := newDeviceInfoExtractor()
 	results.Mock.On("ValuesString", "HardwareName", ",").Return("", errors.New("Error"))
 	results.Mock.On("HasValues", "HardwareName").Return(true, nil)
 	mockValues(results)
 
-	deviceInfo, _ := extractor.Extract(results, "ua")
+	deviceInfo, _ := extractor.extract(results, "ua")
 	assert.NotNil(t, deviceInfo)
 
 	assertDeviceInfo(t, deviceInfo)
@@ -58,14 +58,14 @@ func TestDeviceInfoExtractionNoProperty(t *testing.T) {
 func TestDeviceInfoExtractionNoValue(t *testing.T) {
 	results := &ResultsHashMock{}
 
-	extractor := NewDeviceInfoExtractor()
+	extractor := newDeviceInfoExtractor()
 	mockValues(results)
 	mockValue(results, "HardwareVendor", "Apple")
 
 	results.Mock.On("ValuesString", "HardwareName", ",").Return("Macbook", nil)
 	results.Mock.On("HasValues", "HardwareName").Return(false, nil)
 
-	deviceInfo, _ := extractor.Extract(results, "ua")
+	deviceInfo, _ := extractor.extract(results, "ua")
 	assert.NotNil(t, deviceInfo)
 	assertDeviceInfo(t, deviceInfo)
 	assert.Equal(t, deviceInfo.HardwareName, "Unknown")
@@ -74,7 +74,7 @@ func TestDeviceInfoExtractionNoValue(t *testing.T) {
 func TestDeviceInfoExtractionHasValueError(t *testing.T) {
 	results := &ResultsHashMock{}
 
-	extractor := NewDeviceInfoExtractor()
+	extractor := newDeviceInfoExtractor()
 	mockValue(results, "HardwareVendor", "Apple")
 
 	results.Mock.On("ValuesString", "HardwareName", ",").Return("Macbook", nil)
@@ -82,7 +82,7 @@ func TestDeviceInfoExtractionHasValueError(t *testing.T) {
 
 	mockValues(results)
 
-	deviceInfo, _ := extractor.Extract(results, "ua")
+	deviceInfo, _ := extractor.extract(results, "ua")
 	assert.NotNil(t, deviceInfo)
 	assertDeviceInfo(t, deviceInfo)
 	assert.Equal(t, deviceInfo.HardwareName, "")
@@ -90,7 +90,7 @@ func TestDeviceInfoExtractionHasValueError(t *testing.T) {
 
 func mockValues(results *ResultsHashMock) {
 	mockValue(results, "HardwareVendor", "Apple")
-	mockValue(results, "DeviceType", "Desctop")
+	mockValue(results, "deviceType", "Desctop")
 	mockValue(results, "PlatformVendor", "Apple")
 	mockValue(results, "PlatformName", "MacOs")
 	mockValue(results, "PlatformVersion", "14")
@@ -108,7 +108,7 @@ func mockValues(results *ResultsHashMock) {
 	mockValue(results, "ScreenInchesHeight", "12")
 }
 
-func assertDeviceInfo(t *testing.T, deviceInfo *DeviceInfo) {
+func assertDeviceInfo(t *testing.T, deviceInfo *deviceInfo) {
 	assert.Equal(t, deviceInfo.HardwareVendor, "Apple")
 	assert.Equal(t, deviceInfo.DeviceType, "Desctop")
 	assert.Equal(t, deviceInfo.PlatformVendor, "Apple")

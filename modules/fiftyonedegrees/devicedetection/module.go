@@ -1,4 +1,4 @@
-package device_detection
+package devicedetection
 
 import (
 	"context"
@@ -12,8 +12,8 @@ import (
 	"github.com/prebid/prebid-server/v2/modules/moduledeps"
 )
 
-func configHashFromConfig(cfg *Config) *dd.ConfigHash {
-	configHash := dd.NewConfigHash(cfg.GetPerformanceProfile())
+func configHashFromConfig(cfg *config) *dd.ConfigHash {
+	configHash := dd.NewConfigHash(cfg.getPerformanceProfile())
 	if cfg.Performance.Concurrency != nil {
 		configHash.SetConcurrency(uint16(*cfg.Performance.Concurrency))
 	}
@@ -33,22 +33,19 @@ func configHashFromConfig(cfg *Config) *dd.ConfigHash {
 }
 
 func Builder(rawConfig json.RawMessage, _ moduledeps.ModuleDeps) (interface{}, error) {
-	var cfg Config
-	ncfg, err := ParseConfig(rawConfig)
+	cfg, err := parseConfig(rawConfig)
 	if err != nil {
 		return Module{}, errors.Wrap(err, "failed to parse config")
 	}
 
-	err = ValidateConfig(ncfg)
+	err = validateConfig(cfg)
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid config")
 	}
 
-	cfg = ncfg
-
 	configHash := configHashFromConfig(&cfg)
 
-	deviceDetector, err := NewDeviceDetector(
+	deviceDetectorImpl, err := newDeviceDetector(
 		configHash,
 		&cfg,
 	)
@@ -58,33 +55,33 @@ func Builder(rawConfig json.RawMessage, _ moduledeps.ModuleDeps) (interface{}, e
 
 	return Module{
 			cfg,
-			deviceDetector,
-			NewEvidenceExtractor(),
-			NewAccountValidator(),
+			deviceDetectorImpl,
+			newEvidenceExtractor(),
+			newAccountValidator(),
 		},
 		nil
 }
 
 type Module struct {
-	config            Config
+	config            config
 	deviceDetector    deviceDetector
 	evidenceExtractor evidenceExtractor
 	accountValidator  accountValidator
 }
 
 type deviceDetector interface {
-	GetSupportedHeaders() []dd.EvidenceKey
-	GetDeviceInfo(evidence []onpremise.Evidence, ua string) (*DeviceInfo, error)
+	getSupportedHeaders() []dd.EvidenceKey
+	getDeviceInfo(evidence []onpremise.Evidence, ua string) (*deviceInfo, error)
 }
 
 type accountValidator interface {
-	IsAllowed(cfg Config, req []byte) bool
+	isAllowed(cfg config, req []byte) bool
 }
 
 type evidenceExtractor interface {
-	FromHeaders(request *http.Request, httpHeaderKeys []dd.EvidenceKey) []StringEvidence
-	FromSuaPayload(request *http.Request, payload []byte) []StringEvidence
-	Extract(ctx hookstage.ModuleContext) ([]onpremise.Evidence, string, error)
+	fromHeaders(request *http.Request, httpHeaderKeys []dd.EvidenceKey) []stringEvidence
+	fromSuaPayload(payload []byte) []stringEvidence
+	extract(ctx hookstage.ModuleContext) ([]onpremise.Evidence, string, error)
 }
 
 func (m Module) HandleEntrypointHook(

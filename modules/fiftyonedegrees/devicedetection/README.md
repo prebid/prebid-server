@@ -50,7 +50,7 @@ There is no host-company level config for this module.
 
 ### Account-Level Config
 
-To start using current module in PBS-Java you have to enable module and add `fiftyone-devicedetection-entrypoint-hook` and `fiftyone-devicedetection-raw-auction-request-hook` into hooks execution plan inside your config file:
+To start using current module in PBS-Go you have to enable module and add `fiftyone-devicedetection-entrypoint-hook` and `fiftyone-devicedetection-raw-auction-request-hook` into hooks execution plan inside your config file:
 Here's a general template for the account config used in PBS-Go:
 
 ```json
@@ -58,8 +58,8 @@ Here's a general template for the account config used in PBS-Go:
   "hooks": {
     "enabled":true,
     "modules": {
-      "fiftyone_degrees": {
-        "device_detection": {
+      "fiftyonedegrees": {
+        "devicedetection": {
           "enabled": true,
           "make_temp_copy": true,
           "data_file": {
@@ -86,7 +86,7 @@ Here's a general template for the account config used in PBS-Go:
                     "timeout": 10,
                     "hook_sequence": [
                       {
-                        "module_code": "fiftyone_degrees.device_detection",
+                        "module_code": "fiftyonedegrees.devicedetection",
                         "hook_impl_code": "fiftyone-devicedetection-entrypoint-hook"
                       }
                     ]
@@ -99,7 +99,7 @@ Here's a general template for the account config used in PBS-Go:
                     "timeout": 10,
                     "hook_sequence": [
                       {
-                        "module_code": "fiftyone_degrees.device_detection",
+                        "module_code": "fiftyonedegrees.devicedetection",
                         "hook_impl_code": "fiftyone-devicedetection-raw-auction-request-hook"
                       }
                     ]
@@ -120,8 +120,8 @@ The same config in YAML format:
 hooks:
   enabled: true
   modules:
-    fiftyone_degrees:
-      device_detection:
+    fiftyonedegrees:
+      devicedetection:
         enabled: true
         make_temp_copy: true
         data_file:
@@ -141,13 +141,13 @@ hooks:
               groups:
                 - timeout: 10
                   hook_sequence:
-                    - module_code: fiftyone_degrees.device_detection
+                    - module_code: fiftyonedegrees.devicedetection
                       hook_impl_code: fiftyone-devicedetection-entrypoint-hook
             raw_auction_request:
               groups:
                 - timeout: 10
                   hook_sequence:
-                    - module_code: fiftyone_degrees.device_detection
+                    - module_code: fiftyonedegrees.devicedetection
                       hook_impl_code: fiftyone-devicedetection-raw-auction-request-hook
 ```
 
@@ -157,8 +157,8 @@ Sample module enablement configuration in JSON and YAML formats:
 ```json
 {
   "modules": {
-    "fiftyone_degrees": {
-      "device_detection": {
+    "fiftyonedegrees": {
+      "devicedetection": {
         "enabled": true,
         "data_file": {
           "path": "path/to/51Degrees-LiteV4.1.hash"
@@ -171,10 +171,10 @@ Sample module enablement configuration in JSON and YAML formats:
 
 ```yaml
   modules:
-    fiftyone_degrees:
-      device_detection: 
+    fiftyonedegrees:
+      devicedetection: 
         enabled: true
-        data-file:
+        data_file:
           path: "/path/to/51Degrees-LiteV4.1.hash"
 ```
 
@@ -219,7 +219,7 @@ go mod download
 
 2. Replace the original config file `pbs.json` (placed in the repository root or in `/etc/config`) with the sample [config file](sample/pbs.json):
 ```
-cp modules/fiftyone_degrees/device_detection/sample/pbs.json pbs.json
+cp modules/fiftyonedegrees/devicedetection/sample/pbs.json pbs.json
 ```
 
 3. Download `51Degrees-LiteV4.1.hash` from [[GitHub](https://github.com/51Degrees/device-detection-data/blob/main/51Degrees-LiteV4.1.hash)] and put it in the project root directory.
@@ -243,7 +243,7 @@ go run main.go
 curl \
 --header "Content-Type: application/json" \
 http://localhost:8000/openrtb2/auction \
---data @modules/fiftyone_degrees/device_detection/sample/request_data.json
+--data @modules/fiftyonedegrees/devicedetection/sample/request_data.json
 ```
 
 7. Observe the `device` object get enriched with `devicetype`, `os`, `osv`, `w`, `h` and `ext.fiftyonedegrees_deviceId`.

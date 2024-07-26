@@ -1,4 +1,4 @@
-package device_detection
+package devicedetection
 
 import (
 	"github.com/51Degrees/device-detection-go/v4/dd"
@@ -12,19 +12,19 @@ type engine interface {
 }
 
 type extractor interface {
-	Extract(results Results, ua string) (*DeviceInfo, error)
+	extract(results Results, ua string) (*deviceInfo, error)
 }
 
-type DeviceDetector struct {
+type defaultDeviceDetector struct {
 	cfg                 *dd.ConfigHash
 	deviceInfoExtractor extractor
 	engine              engine
 }
 
-func NewDeviceDetector(
+func newDeviceDetector(
 	cfg *dd.ConfigHash,
-	moduleConfig *Config,
-) (*DeviceDetector, error) {
+	moduleConfig *config,
+) (*defaultDeviceDetector, error) {
 	engineOptions := buildEngineOptions(moduleConfig, cfg)
 
 	ddEngine, err := onpremise.New(
@@ -34,25 +34,26 @@ func NewDeviceDetector(
 		return nil, errors.Wrap(err, "Failed to create onpremise engine.")
 	}
 
-	deviceDetector := &DeviceDetector{
+	deviceDetector := &defaultDeviceDetector{
 		engine:              ddEngine,
 		cfg:                 cfg,
-		deviceInfoExtractor: NewDeviceInfoExtractor(),
+		deviceInfoExtractor: newDeviceInfoExtractor(),
 	}
 
 	return deviceDetector, nil
 }
 
-func buildEngineOptions(moduleConfig *Config, configHash *dd.ConfigHash) []onpremise.EngineOptions {
+func buildEngineOptions(moduleConfig *config, configHash *dd.ConfigHash) []onpremise.EngineOptions {
 	options := []onpremise.EngineOptions{
 		onpremise.WithDataFile(moduleConfig.DataFile.Path),
 	}
 
 	options = append(
 		options,
-		onpremise.WithProperties([]string{"HardwareVendor",
+		onpremise.WithProperties([]string{
+			"HardwareVendor",
 			"HardwareName",
-			"DeviceType",
+			"deviceType",
 			"PlatformVendor",
 			"PlatformName",
 			"PlatformVersion",
@@ -84,12 +85,9 @@ func buildEngineOptions(moduleConfig *Config, configHash *dd.ConfigHash) []onpre
 		)
 	}
 
-	dataUpdateOptions := []onpremise.EngineOptions{}
-
-	dataUpdateOptions = append(
-		dataUpdateOptions,
+	dataUpdateOptions := []onpremise.EngineOptions{
 		onpremise.WithAutoUpdate(moduleConfig.DataFile.Update.Auto),
-	)
+	}
 
 	if moduleConfig.DataFile.Update.Url != "" {
 		dataUpdateOptions = append(
@@ -145,18 +143,18 @@ func buildEngineOptions(moduleConfig *Config, configHash *dd.ConfigHash) []onpre
 	return options
 }
 
-func (x DeviceDetector) GetSupportedHeaders() []dd.EvidenceKey {
+func (x defaultDeviceDetector) getSupportedHeaders() []dd.EvidenceKey {
 	return x.engine.GetHttpHeaderKeys()
 }
 
-func (x DeviceDetector) GetDeviceInfo(evidence []onpremise.Evidence, ua string) (*DeviceInfo, error) {
+func (x defaultDeviceDetector) getDeviceInfo(evidence []onpremise.Evidence, ua string) (*deviceInfo, error) {
 	results, err := x.engine.Process(evidence)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to process evidence")
+		return nil, errors.Wrap(err, "Failed to Process evidence")
 	}
 	defer results.Free()
 
-	deviceInfo, err := x.deviceInfoExtractor.Extract(results, ua)
+	deviceInfo, err := x.deviceInfoExtractor.extract(results, ua)
 
 	return deviceInfo, err
 }

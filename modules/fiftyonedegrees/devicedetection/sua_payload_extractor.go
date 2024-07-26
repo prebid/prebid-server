@@ -1,36 +1,36 @@
-package device_detection
+package devicedetection
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/spf13/cast"
 	"github.com/tidwall/gjson"
-	"net/http"
-	"strings"
 )
 
 const (
-	SecChUaArch            = "Sec-Ch-Ua-Arch"
-	SecChUaMobile          = "Sec-Ch-Ua-Mobile"
-	SecChUaModel           = "Sec-Ch-Ua-Model"
-	SecChUaPlatform        = "Sec-Ch-Ua-Platform"
-	SecUaFullVersionList   = "Sec-Ch-Ua-Full-Version-List"
-	SecChUaPlatformVersion = "Sec-Ch-Ua-Platform-Version"
-	SecChUa                = "Sec-Ch-Ua"
+	secChUaArch            = "Sec-Ch-Ua-Arch"
+	secChUaMobile          = "Sec-Ch-Ua-Mobile"
+	secChUaModel           = "Sec-Ch-Ua-Model"
+	secChUaPlatform        = "Sec-Ch-Ua-Platform"
+	secUaFullVersionList   = "Sec-Ch-Ua-Full-Version-List"
+	secChUaPlatformVersion = "Sec-Ch-Ua-Platform-Version"
+	secChUa                = "Sec-Ch-Ua"
 
-	UserAgentHeader = "User-Agent"
+	userAgentHeader = "User-Agent"
 )
 
-// EvidenceFromSUAPayloadExtractor extracts evidence from the SUA payload of device
-type EvidenceFromSUAPayloadExtractor struct{}
+// evidenceFromSUAPayloadExtractor extracts evidence from the SUA payload of device
+type evidenceFromSUAPayloadExtractor struct{}
 
-func NewEvidenceFromSUAPayloadExtractor() *EvidenceFromSUAPayloadExtractor {
-	return &EvidenceFromSUAPayloadExtractor{}
+func newEvidenceFromSUAPayloadExtractor() evidenceFromSUAPayloadExtractor {
+	return evidenceFromSUAPayloadExtractor{}
 }
 
 // Extract extracts evidence from the SUA payload
-func (x EvidenceFromSUAPayloadExtractor) Extract(r *http.Request, paylod []byte) []StringEvidence {
-	if paylod != nil {
-		return x.extractEvidenceStrings(paylod)
+func (x evidenceFromSUAPayloadExtractor) extract(payload []byte) []stringEvidence {
+	if payload != nil {
+		return x.extractEvidenceStrings(payload)
 	}
 
 	return nil
@@ -47,49 +47,49 @@ var (
 )
 
 // extractEvidenceStrings extracts evidence from the SUA payload
-func (x EvidenceFromSUAPayloadExtractor) extractEvidenceStrings(payload []byte) []StringEvidence {
-	res := make([]StringEvidence, 0, 10)
+func (x evidenceFromSUAPayloadExtractor) extractEvidenceStrings(payload []byte) []stringEvidence {
+	res := make([]stringEvidence, 0, 10)
 
 	uaResult := gjson.GetBytes(payload, uaPath)
 	if uaResult.Exists() {
 		res = append(
 			res,
-			StringEvidence{Prefix: HeaderPrefix, Key: UserAgentHeader, Value: uaResult.String()},
+			stringEvidence{Prefix: headerPrefix, Key: userAgentHeader, Value: uaResult.String()},
 		)
 	}
 
 	archResult := gjson.GetBytes(payload, archPath)
 	if archResult.Exists() {
-		res = x.appendEvidenceIfExists(res, SecChUaArch, archResult.String())
+		res = x.appendEvidenceIfExists(res, secChUaArch, archResult.String())
 	}
 
 	mobileResult := gjson.GetBytes(payload, mobilePath)
 	if mobileResult.Exists() {
-		res = x.appendEvidenceIfExists(res, SecChUaMobile, mobileResult.String())
+		res = x.appendEvidenceIfExists(res, secChUaMobile, mobileResult.String())
 	}
 
 	modelResult := gjson.GetBytes(payload, modelPath)
 	if modelResult.Exists() {
-		res = x.appendEvidenceIfExists(res, SecChUaModel, modelResult.String())
+		res = x.appendEvidenceIfExists(res, secChUaModel, modelResult.String())
 	}
 
 	platformBrandResult := gjson.GetBytes(payload, platformBrandPath)
 	if platformBrandResult.Exists() {
-		res = x.appendEvidenceIfExists(res, SecChUaPlatform, platformBrandResult.String())
+		res = x.appendEvidenceIfExists(res, secChUaPlatform, platformBrandResult.String())
 	}
 
 	platformVersionResult := gjson.GetBytes(payload, platformVersionPath)
 	if platformVersionResult.Exists() {
 		res = x.appendEvidenceIfExists(
 			res,
-			SecChUaPlatformVersion,
+			secChUaPlatformVersion,
 			strings.Join(resultToStringArray(platformVersionResult.Array()), "."),
 		)
 	}
 
 	browsersResult := gjson.GetBytes(payload, browsersPath)
 	if browsersResult.Exists() {
-		res = x.appendEvidenceIfExists(res, SecUaFullVersionList, x.extractBrowsers(browsersResult))
+		res = x.appendEvidenceIfExists(res, secUaFullVersionList, x.extractBrowsers(browsersResult))
 
 	}
 
@@ -106,7 +106,7 @@ func resultToStringArray(array []gjson.Result) []string {
 }
 
 // appendEvidenceIfExists appends evidence to the destination if the value is not nil
-func (x EvidenceFromSUAPayloadExtractor) appendEvidenceIfExists(destination []StringEvidence, name string, value interface{}) []StringEvidence {
+func (x evidenceFromSUAPayloadExtractor) appendEvidenceIfExists(destination []stringEvidence, name string, value interface{}) []stringEvidence {
 	if value != nil {
 		valStr := cast.ToString(value)
 		if len(valStr) == 0 {
@@ -115,7 +115,7 @@ func (x EvidenceFromSUAPayloadExtractor) appendEvidenceIfExists(destination []St
 
 		return append(
 			destination,
-			StringEvidence{Prefix: HeaderPrefix, Key: name, Value: valStr},
+			stringEvidence{Prefix: headerPrefix, Key: name, Value: valStr},
 		)
 	}
 
@@ -123,7 +123,7 @@ func (x EvidenceFromSUAPayloadExtractor) appendEvidenceIfExists(destination []St
 }
 
 // extractBrowsers extracts browsers from the SUA payload
-func (x EvidenceFromSUAPayloadExtractor) extractBrowsers(browsers gjson.Result) string {
+func (x evidenceFromSUAPayloadExtractor) extractBrowsers(browsers gjson.Result) string {
 	if !browsers.IsArray() {
 		return ""
 	}

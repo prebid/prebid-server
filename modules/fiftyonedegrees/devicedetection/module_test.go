@@ -1,4 +1,4 @@
-package device_detection
+package devicedetection
 
 import (
 	"context"
@@ -21,7 +21,7 @@ type mockAccValidator struct {
 	mock.Mock
 }
 
-func (m *mockAccValidator) IsAllowed(cfg Config, req []byte) bool {
+func (m *mockAccValidator) isAllowed(cfg config, req []byte) bool {
 	args := m.Called(cfg, req)
 	return args.Bool(0)
 }
@@ -30,19 +30,19 @@ type mockEvidenceExtractor struct {
 	mock.Mock
 }
 
-func (m *mockEvidenceExtractor) FromHeaders(request *http.Request, httpHeaderKeys []dd.EvidenceKey) []StringEvidence {
+func (m *mockEvidenceExtractor) fromHeaders(request *http.Request, httpHeaderKeys []dd.EvidenceKey) []stringEvidence {
 	args := m.Called(request, httpHeaderKeys)
 
-	return args.Get(0).([]StringEvidence)
+	return args.Get(0).([]stringEvidence)
 }
 
-func (m *mockEvidenceExtractor) FromSuaPayload(request *http.Request, payload []byte) []StringEvidence {
-	args := m.Called(request, payload)
+func (m *mockEvidenceExtractor) fromSuaPayload(payload []byte) []stringEvidence {
+	args := m.Called(payload)
 
-	return args.Get(0).([]StringEvidence)
+	return args.Get(0).([]stringEvidence)
 }
 
-func (m *mockEvidenceExtractor) Extract(ctx hookstage.ModuleContext) ([]onpremise.Evidence, string, error) {
+func (m *mockEvidenceExtractor) extract(ctx hookstage.ModuleContext) ([]onpremise.Evidence, string, error) {
 	args := m.Called(ctx)
 
 	res := args.Get(0)
@@ -57,12 +57,12 @@ type mockDeviceDetector struct {
 	mock.Mock
 }
 
-func (m *mockDeviceDetector) GetSupportedHeaders() []dd.EvidenceKey {
+func (m *mockDeviceDetector) getSupportedHeaders() []dd.EvidenceKey {
 	args := m.Called()
 	return args.Get(0).([]dd.EvidenceKey)
 }
 
-func (m *mockDeviceDetector) GetDeviceInfo(evidence []onpremise.Evidence, ua string) (*DeviceInfo, error) {
+func (m *mockDeviceDetector) getDeviceInfo(evidence []onpremise.Evidence, ua string) (*deviceInfo, error) {
 
 	args := m.Called(evidence, ua)
 
@@ -72,13 +72,13 @@ func (m *mockDeviceDetector) GetDeviceInfo(evidence []onpremise.Evidence, ua str
 		return nil, args.Error(1)
 	}
 
-	return res.(*DeviceInfo), args.Error(1)
+	return res.(*deviceInfo), args.Error(1)
 }
 
 func TestHandleEntrypointNotAllowedHook(t *testing.T) {
 	var mockValidator mockAccValidator
 
-	mockValidator.On("IsAllowed", mock.Anything, mock.Anything).Return(false)
+	mockValidator.On("isAllowed", mock.Anything, mock.Anything).Return(false)
 
 	module := Module{
 		accountValidator: &mockValidator,
@@ -92,19 +92,19 @@ func TestHandleEntrypointNotAllowedHook(t *testing.T) {
 func TestHandleEntrypointAllowedHook(t *testing.T) {
 	var mockValidator mockAccValidator
 
-	mockValidator.On("IsAllowed", mock.Anything, mock.Anything).Return(true)
+	mockValidator.On("isAllowed", mock.Anything, mock.Anything).Return(true)
 
 	var mockEvidenceExtractor mockEvidenceExtractor
-	mockEvidenceExtractor.On("FromHeaders", mock.Anything, mock.Anything).Return(
-		[]StringEvidence{{
+	mockEvidenceExtractor.On("fromHeaders", mock.Anything, mock.Anything).Return(
+		[]stringEvidence{{
 			Prefix: "123",
 			Key:    "key",
 			Value:  "val",
 		}},
 	)
 
-	mockEvidenceExtractor.On("FromSuaPayload", mock.Anything, mock.Anything).Return(
-		[]StringEvidence{{
+	mockEvidenceExtractor.On("fromSuaPayload", mock.Anything, mock.Anything).Return(
+		[]stringEvidence{{
 			Prefix: "123",
 			Key:    "User-Agent",
 			Value:  "ua",
@@ -113,7 +113,7 @@ func TestHandleEntrypointAllowedHook(t *testing.T) {
 
 	var mockDeviceDetector mockDeviceDetector
 
-	mockDeviceDetector.On("GetSupportedHeaders").Return(
+	mockDeviceDetector.On("getSupportedHeaders").Return(
 		[]dd.EvidenceKey{{
 			Prefix: dd.HttpEvidenceQuery,
 			Key:    "key",
@@ -130,7 +130,7 @@ func TestHandleEntrypointAllowedHook(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(
-		t, result.ModuleContext[EvidenceFromHeadersCtxKey], []StringEvidence{{
+		t, result.ModuleContext[evidenceFromHeadersCtxKey], []stringEvidence{{
 			Prefix: "123",
 			Key:    "key",
 			Value:  "val",
@@ -138,7 +138,7 @@ func TestHandleEntrypointAllowedHook(t *testing.T) {
 	)
 
 	assert.Equal(
-		t, result.ModuleContext[EvidenceFromSuaCtxKey], []StringEvidence{{
+		t, result.ModuleContext[evidenceFromSuaCtxKey], []stringEvidence{{
 			Prefix: "123",
 			Key:    "User-Agent",
 			Value:  "ua",
@@ -146,41 +146,23 @@ func TestHandleEntrypointAllowedHook(t *testing.T) {
 	)
 }
 
-func TestModule_HandleRawAuctionHookDisabledDdContext(t *testing.T) {
-
+func TestModule_HandleRawAuctionHookDoesNotHaveModuleCtx(t *testing.T) {
 	module := Module{}
-	var emptyResult hookstage.HookResult[hookstage.RawAuctionRequestPayload]
-	result, err := module.HandleRawAuctionHook(
-		nil, hookstage.ModuleInvocationContext{
-			ModuleContext: make(hookstage.ModuleContext),
-		}, hookstage.RawAuctionRequestPayload{},
-	)
-	assert.NoError(t, err)
-	assert.Equal(t, result, emptyResult)
-}
-
-func TestModule_HandleRawAuctionHookWithNilDeviceDetector(t *testing.T) {
-	module := Module{}
-
-	mctx := make(hookstage.ModuleContext)
-	mctx[DDEnabledCtxKey] = true
 
 	_, err := module.HandleRawAuctionHook(
-		nil, hookstage.ModuleInvocationContext{
-			ModuleContext: mctx,
-		},
+		nil, hookstage.ModuleInvocationContext{},
 		hookstage.RawAuctionRequestPayload{},
 	)
-	assert.Errorf(t, err, "error getting device detector")
+	assert.Errorf(t, err, "entrypoint hook was not configured")
 }
 
 func TestModule_TestModule_HandleRawAuctionHookExtractError(t *testing.T) {
 	var mockValidator mockAccValidator
 
-	mockValidator.On("IsAllowed", mock.Anything, mock.Anything).Return(true)
+	mockValidator.On("isAllowed", mock.Anything, mock.Anything).Return(true)
 
 	var evidenceExtractorM mockEvidenceExtractor
-	evidenceExtractorM.On("Extract", mock.Anything).Return(
+	evidenceExtractorM.On("extract", mock.Anything).Return(
 		nil,
 		"ua",
 		nil,
@@ -196,7 +178,7 @@ func TestModule_TestModule_HandleRawAuctionHookExtractError(t *testing.T) {
 
 	mctx := make(hookstage.ModuleContext)
 
-	mctx[DDEnabledCtxKey] = true
+	mctx[ddEnabledCtxKey] = true
 
 	result, err := module.HandleRawAuctionHook(
 		context.TODO(), hookstage.ModuleInvocationContext{
@@ -217,7 +199,7 @@ func TestModule_TestModule_HandleRawAuctionHookExtractError(t *testing.T) {
 	assert.Errorf(t, err, "error extracting evidence")
 
 	var mockEvidenceErrExtractor mockEvidenceExtractor
-	mockEvidenceErrExtractor.On("Extract", mock.Anything).Return(
+	mockEvidenceErrExtractor.On("extract", mock.Anything).Return(
 		nil,
 		"",
 		errors.New("error"),
@@ -248,10 +230,10 @@ func TestModule_TestModule_HandleRawAuctionHookExtractError(t *testing.T) {
 func TestModule_HandleRawAuctionHookEnrichment(t *testing.T) {
 	var mockValidator mockAccValidator
 
-	mockValidator.On("IsAllowed", mock.Anything, mock.Anything).Return(true)
+	mockValidator.On("isAllowed", mock.Anything, mock.Anything).Return(true)
 
 	var mockEvidenceExtractor mockEvidenceExtractor
-	mockEvidenceExtractor.On("Extract", mock.Anything).Return(
+	mockEvidenceExtractor.On("extract", mock.Anything).Return(
 		[]onpremise.Evidence{
 			{
 				Key:   "key",
@@ -264,8 +246,8 @@ func TestModule_HandleRawAuctionHookEnrichment(t *testing.T) {
 
 	var deviceDetectorM mockDeviceDetector
 
-	deviceDetectorM.On("GetDeviceInfo", mock.Anything, mock.Anything).Return(
-		&DeviceInfo{
+	deviceDetectorM.On("getDeviceInfo", mock.Anything, mock.Anything).Return(
+		&deviceInfo{
 			HardwareVendor:        "Apple",
 			HardwareName:          "Macbook",
 			DeviceType:            "device",
@@ -296,7 +278,7 @@ func TestModule_HandleRawAuctionHookEnrichment(t *testing.T) {
 	}
 
 	mctx := make(hookstage.ModuleContext)
-	mctx[DDEnabledCtxKey] = true
+	mctx[ddEnabledCtxKey] = true
 
 	result, err := module.HandleRawAuctionHook(
 		nil, hookstage.ModuleInvocationContext{
@@ -420,7 +402,7 @@ func TestModule_HandleRawAuctionHookEnrichment(t *testing.T) {
 
 	var deviceDetectorErrM mockDeviceDetector
 
-	deviceDetectorErrM.On("GetDeviceInfo", mock.Anything, mock.Anything).Return(
+	deviceDetectorErrM.On("getDeviceInfo", mock.Anything, mock.Anything).Return(
 		nil,
 		errors.New("error"),
 	)
@@ -449,10 +431,10 @@ func TestModule_HandleRawAuctionHookEnrichment(t *testing.T) {
 func TestModule_HandleRawAuctionHookEnrichmentWithErrors(t *testing.T) {
 	var mockValidator mockAccValidator
 
-	mockValidator.On("IsAllowed", mock.Anything, mock.Anything).Return(true)
+	mockValidator.On("isAllowed", mock.Anything, mock.Anything).Return(true)
 
 	var mockEvidenceExtractor mockEvidenceExtractor
-	mockEvidenceExtractor.On("Extract", mock.Anything).Return(
+	mockEvidenceExtractor.On("extract", mock.Anything).Return(
 		[]onpremise.Evidence{
 			{
 				Key:   "key",
@@ -465,8 +447,8 @@ func TestModule_HandleRawAuctionHookEnrichmentWithErrors(t *testing.T) {
 
 	var mockDeviceDetector mockDeviceDetector
 
-	mockDeviceDetector.On("GetDeviceInfo", mock.Anything, mock.Anything).Return(
-		&DeviceInfo{
+	mockDeviceDetector.On("getDeviceInfo", mock.Anything, mock.Anything).Return(
+		&deviceInfo{
 			HardwareVendor:        "Apple",
 			HardwareName:          "Macbook",
 			DeviceType:            "device",
@@ -498,7 +480,7 @@ func TestModule_HandleRawAuctionHookEnrichmentWithErrors(t *testing.T) {
 	}
 
 	mctx := make(hookstage.ModuleContext)
-	mctx[DDEnabledCtxKey] = true
+	mctx[ddEnabledCtxKey] = true
 
 	result, err := module.HandleRawAuctionHook(
 		nil, hookstage.ModuleInvocationContext{
@@ -518,8 +500,8 @@ func TestModule_HandleRawAuctionHookEnrichmentWithErrors(t *testing.T) {
 }
 
 func TestConfigHashFromConfig(t *testing.T) {
-	cfg := Config{
-		Performance: Performance{
+	cfg := config{
+		Performance: performance{
 			Profile:        "",
 			Concurrency:    nil,
 			Difference:     nil,
@@ -540,8 +522,8 @@ func TestConfigHashFromConfig(t *testing.T) {
 	allowUnmatched := true
 	drift := 1
 
-	cfg = Config{
-		Performance: Performance{
+	cfg = config{
+		Performance: performance{
 			Profile:        "Balanced",
 			Concurrency:    &concurrency,
 			Difference:     &difference,
@@ -557,16 +539,16 @@ func TestConfigHashFromConfig(t *testing.T) {
 	assert.Equal(t, result.AllowUnmatched(), true)
 	assert.Equal(t, result.Drift(), int32(1))
 
-	cfg = Config{
-		Performance: Performance{
+	cfg = config{
+		Performance: performance{
 			Profile: "InMemory",
 		},
 	}
 	result = configHashFromConfig(&cfg)
 	assert.Equal(t, result.PerformanceProfile(), dd.InMemory)
 
-	cfg = Config{
-		Performance: Performance{
+	cfg = config{
+		Performance: performance{
 			Profile: "HighPerformance",
 		},
 	}
@@ -581,7 +563,7 @@ func TestSignDeviceData(t *testing.T) {
 		},
 	}
 
-	deviceInfo := DeviceInfo{
+	deviceInfo := deviceInfo{
 		DeviceId: "test-device-id",
 	}
 
@@ -611,7 +593,7 @@ func TestBuilderWithInvalidConfig(t *testing.T) {
 }
 
 func TestBuilderHandleDeviceDetectorError(t *testing.T) {
-	var mockConfig Config
+	var mockConfig config
 	mockConfig.Performance.Profile = "default"
 	testFile, _ := os.Create("test-builder-config.hash")
 	defer testFile.Close()
@@ -645,7 +627,7 @@ func TestBuilderHandleDeviceDetectorError(t *testing.T) {
 }
 
 func TestHydrateFields(t *testing.T) {
-	deviceInfo := &DeviceInfo{
+	deviceInfo := &deviceInfo{
 		HardwareVendor:        "Apple",
 		HardwareName:          "Macbook",
 		DeviceType:            "device",

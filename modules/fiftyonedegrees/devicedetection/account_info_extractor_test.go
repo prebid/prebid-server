@@ -1,9 +1,10 @@
-package device_detection
+package devicedetection
 
 import (
 	"encoding/json"
-	"github.com/prebid/openrtb/v20/openrtb2"
 	"testing"
+
+	"github.com/prebid/openrtb/v20/openrtb2"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -142,8 +143,8 @@ func TestPublisherIdExtractionFromSiteRequest(t *testing.T) {
 		}
 	`)
 
-	extractor := NewAccountInfoExtractor()
-	accountInfo := extractor.Extract(payload)
+	extractor := newAccountInfoExtractor()
+	accountInfo := extractor.extract(payload)
 
 	assert.Equal(t, accountInfo.Id, "p-bid-config-test-005")
 }
@@ -226,8 +227,8 @@ func TestPublisherIdExtractionFromMobileRequest(t *testing.T) {
 		}
 	`)
 
-	extractor := NewAccountInfoExtractor()
-	accountInfo := extractor.Extract(payload)
+	extractor := newAccountInfoExtractor()
+	accountInfo := extractor.extract(payload)
 
 	assert.Equal(t, accountInfo.Id, "p-bid-config-test-005")
 }
@@ -240,15 +241,15 @@ func TestEmptyPublisherIdExtraction(t *testing.T) {
 	err := json.Unmarshal(payload, &bReq)
 	assert.NoError(t, err)
 
-	extractor := NewAccountInfoExtractor()
-	accountInfo := extractor.Extract(payload)
+	extractor := newAccountInfoExtractor()
+	accountInfo := extractor.extract(payload)
 
 	assert.Nil(t, accountInfo)
 }
 
 func TestExtractionFromEmptyPayload(t *testing.T) {
-	extractor := NewAccountInfoExtractor()
-	accountInfo := extractor.Extract(nil)
+	extractor := newAccountInfoExtractor()
+	accountInfo := extractor.extract(nil)
 
 	assert.Nil(t, accountInfo)
 }

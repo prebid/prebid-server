@@ -1,4 +1,4 @@
-package device_detection
+package devicedetection
 
 import (
 	"encoding/json"
@@ -10,12 +10,12 @@ import (
 )
 
 func TestAccountValidatorAllowed(t *testing.T) {
-	validator := NewAccountValidator()
-	cfg := Config{
-		AccountFilter: AccountFilter{AllowList: []string{"1001"}},
+	validator := newAccountValidator()
+	cfg := config{
+		AccountFilter: accountFilter{AllowList: []string{"1001"}},
 	}
 
-	res := validator.IsAllowed(
+	res := validator.isAllowed(
 		cfg, toBytes(
 			&openrtb2.BidRequest{
 				App: &openrtb2.App{
@@ -30,12 +30,12 @@ func TestAccountValidatorAllowed(t *testing.T) {
 }
 
 func TestAllowedAccountsIsEmpty(t *testing.T) {
-	validator := NewAccountValidator()
-	cfg := Config{
-		AccountFilter: AccountFilter{AllowList: []string{}},
+	validator := newAccountValidator()
+	cfg := config{
+		AccountFilter: accountFilter{AllowList: []string{}},
 	}
 
-	res := validator.IsAllowed(
+	res := validator.isAllowed(
 		cfg, toBytes(
 			&openrtb2.BidRequest{
 				App: &openrtb2.App{
@@ -50,12 +50,12 @@ func TestAllowedAccountsIsEmpty(t *testing.T) {
 }
 
 func TestAccountValidatorNotAllowed(t *testing.T) {
-	validator := NewAccountValidator()
-	cfg := Config{
-		AccountFilter: AccountFilter{AllowList: []string{"1002"}},
+	validator := newAccountValidator()
+	cfg := config{
+		AccountFilter: accountFilter{AllowList: []string{"1002"}},
 	}
 
-	res := validator.IsAllowed(
+	res := validator.isAllowed(
 		cfg, toBytes(
 			&openrtb2.BidRequest{
 				App: &openrtb2.App{

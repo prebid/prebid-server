@@ -1,16 +1,16 @@
-package device_detection
+package devicedetection
 
 import (
 	"net/http"
 	"testing"
 
-	dd "github.com/51Degrees/device-detection-go/v4/dd"
+	"github.com/51Degrees/device-detection-go/v4/dd"
 	"github.com/prebid/prebid-server/v2/hooks/hookstage"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestEvidenceExtractorStringsFromHeaders(t *testing.T) {
-	extractor := NewEvidenceExtractor()
+	extractor := newEvidenceExtractor()
 
 	req := http.Request{
 		Header: make(map[string][]string),
@@ -28,7 +28,7 @@ func TestEvidenceExtractorStringsFromHeaders(t *testing.T) {
 		},
 	}
 
-	evidence := extractor.FromHeaders(&req, evidenceKeys)
+	evidence := extractor.fromHeaders(&req, evidenceKeys)
 
 	assert.NotNil(t, evidence)
 	assert.NotEmpty(t, evidence)
@@ -39,11 +39,8 @@ func TestEvidenceExtractorStringsFromHeaders(t *testing.T) {
 }
 
 func TestEvidenceExtractorStringsFromSUATag(t *testing.T) {
-	extractor := NewEvidenceExtractor()
+	extractor := newEvidenceExtractor()
 
-	req := http.Request{
-		Header: make(map[string][]string),
-	}
 	payload := []byte(`{
 		"device": {
 			"connectiontype": 2,
@@ -108,7 +105,7 @@ func TestEvidenceExtractorStringsFromSUATag(t *testing.T) {
 		}
 	}`)
 
-	evidence := extractor.FromSuaPayload(&req, payload)
+	evidence := extractor.fromSuaPayload(payload)
 
 	assert.NotNil(t, evidence)
 	assert.NotEmpty(t, evidence)
@@ -117,11 +114,8 @@ func TestEvidenceExtractorStringsFromSUATag(t *testing.T) {
 }
 
 func TestEvidenceExtractorUAFromHeaders(t *testing.T) {
-	extractor := NewEvidenceExtractor()
+	extractor := newEvidenceExtractor()
 
-	req := http.Request{
-		Header: make(map[string][]string),
-	}
 	payload := []byte(`{
 		"device": {
 			"connectiontype": 2,
@@ -185,7 +179,7 @@ func TestEvidenceExtractorUAFromHeaders(t *testing.T) {
 		}
 	}`)
 
-	evidence := extractor.FromSuaPayload(&req, payload)
+	evidence := extractor.fromSuaPayload(payload)
 
 	assert.NotNil(t, evidence)
 	assert.NotEmpty(t, evidence)
@@ -194,10 +188,10 @@ func TestEvidenceExtractorUAFromHeaders(t *testing.T) {
 }
 
 func TestEvidenceExtractorEvidenceFromSUATag(t *testing.T) {
-	extractor := NewEvidenceExtractor()
+	extractor := newEvidenceExtractor()
 
 	ctx := hookstage.ModuleContext{
-		EvidenceFromSuaCtxKey: []StringEvidence{
+		evidenceFromSuaCtxKey: []stringEvidence{
 			{
 				Prefix: "sua",
 				Key:    "Sec-Ch-Ua-Full-Version-List",
@@ -211,7 +205,7 @@ func TestEvidenceExtractorEvidenceFromSUATag(t *testing.T) {
 		},
 	}
 
-	evidence, userAgent, err := extractor.Extract(ctx)
+	evidence, userAgent, err := extractor.extract(ctx)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, evidence)
@@ -221,18 +215,18 @@ func TestEvidenceExtractorEvidenceFromSUATag(t *testing.T) {
 }
 
 func TestEvidenceExtractorEvidenceFromHeaders(t *testing.T) {
-	extractor := NewEvidenceExtractor()
+	extractor := newEvidenceExtractor()
 
 	ctx := hookstage.ModuleContext{
-		EvidenceFromHeadersCtxKey: []StringEvidence{
+		evidenceFromHeadersCtxKey: []stringEvidence{
 			{
-				Prefix: QueryPrefix,
-				Key:    SecUaFullVersionList,
+				Prefix: queryPrefix,
+				Key:    secUaFullVersionList,
 				Value:  "Chrome;14",
 			},
 			{
 				Prefix: "sua",
-				Key:    SecChUaArch,
+				Key:    secChUaArch,
 				Value:  "arm",
 			},
 			{
@@ -243,7 +237,7 @@ func TestEvidenceExtractorEvidenceFromHeaders(t *testing.T) {
 		},
 	}
 
-	evidence, userAgent, err := extractor.Extract(ctx)
+	evidence, userAgent, err := extractor.extract(ctx)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, evidence)
@@ -253,9 +247,9 @@ func TestEvidenceExtractorEvidenceFromHeaders(t *testing.T) {
 }
 
 func TestEvidenceExtractorEmptyEvidence(t *testing.T) {
-	extractor := NewEvidenceExtractor()
+	extractor := newEvidenceExtractor()
 
-	evidence, userAgent, err := extractor.Extract(nil)
+	evidence, userAgent, err := extractor.extract(nil)
 
 	assert.Error(t, err)
 	assert.Nil(t, evidence)
@@ -263,36 +257,36 @@ func TestEvidenceExtractorEmptyEvidence(t *testing.T) {
 }
 
 func TestEvidenceExtractorBadEvidence(t *testing.T) {
-	_, err := NewEvidenceExtractor().getEvidenceStrings("123")
+	_, err := newEvidenceExtractor().getEvidenceStrings("123")
 	assert.Error(t, err)
 }
 
 func TestExtractBadContext(t *testing.T) {
-	extractor := NewEvidenceExtractor()
+	extractor := newEvidenceExtractor()
 
 	cases := []struct {
 		ctx hookstage.ModuleContext
 	}{
 		{
 			ctx: hookstage.ModuleContext{
-				EvidenceFromHeadersCtxKey: "bad value",
+				evidenceFromHeadersCtxKey: "bad value",
 			},
 		},
 		{
 			ctx: hookstage.ModuleContext{
-				EvidenceFromSuaCtxKey:     []StringEvidence{},
-				EvidenceFromHeadersCtxKey: "bad value",
+				evidenceFromSuaCtxKey:     []stringEvidence{},
+				evidenceFromHeadersCtxKey: "bad value",
 			},
 		},
 		{
 			ctx: hookstage.ModuleContext{
-				EvidenceFromSuaCtxKey: "bad value",
+				evidenceFromSuaCtxKey: "bad value",
 			},
 		},
 	}
 
 	for _, s := range cases {
-		_, _, err := extractor.Extract(s.ctx)
+		_, _, err := extractor.extract(s.ctx)
 
 		assert.Error(t, err)
 	}

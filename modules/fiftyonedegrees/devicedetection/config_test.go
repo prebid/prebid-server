@@ -1,4 +1,4 @@
-package device_detection
+package devicedetection
 
 import (
 	"os"
@@ -32,7 +32,7 @@ func TestParseConfig(t *testing.T) {
 				  }
 }`)
 
-	cfg, err := ParseConfig(cfgRaw)
+	cfg, err := parseConfig(cfgRaw)
 
 	assert.NoError(t, err)
 
@@ -49,7 +49,7 @@ func TestParseConfig(t *testing.T) {
 	assert.Equal(t, *cfg.Performance.Difference, 1)
 	assert.True(t, *cfg.Performance.AllowUnmatched)
 	assert.Equal(t, *cfg.Performance.Drift, 1)
-	assert.Equal(t, cfg.GetPerformanceProfile(), dd.Default)
+	assert.Equal(t, cfg.getPerformanceProfile(), dd.Default)
 }
 
 func TestValidateConfig(t *testing.T) {
@@ -82,10 +82,10 @@ func TestValidateConfig(t *testing.T) {
 				  }
 }`)
 
-	cfg, err := ParseConfig(cfgRaw)
+	cfg, err := parseConfig(cfgRaw)
 	assert.NoError(t, err)
 
-	err = ValidateConfig(cfg)
+	err = validateConfig(cfg)
 	assert.NoError(t, err)
 
 }
@@ -112,8 +112,8 @@ func TestInvalidPerformanceProfile(t *testing.T) {
 					"drift": 1	
 				  }
 }`)
-	cfg, err := ParseConfig(cfgRaw)
+	cfg, err := parseConfig(cfgRaw)
 	assert.NoError(t, err)
 
-	assert.Equal(t, cfg.GetPerformanceProfile(), dd.Default)
+	assert.Equal(t, cfg.getPerformanceProfile(), dd.Default)
 }

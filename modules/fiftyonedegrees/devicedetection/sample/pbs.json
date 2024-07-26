@@ -42,11 +42,11 @@
     "hooks": {
         "enabled": true,
         "modules": {
-            "fiftyone_degrees": {
-                "device_detection": {
+            "fiftyonedegrees": {
+                "devicedetection": {
                     "enabled": true,
                     "data_file": {
-                        "path": "51Degrees-LiteV4.1.hash",
+                        "path": "TAC-HashV41.hash",
                         "update": {
                             "auto": false,
                             "polling_interval": 3600,
@@ -70,7 +70,7 @@
                                     "timeout": 10,
                                     "hook_sequence": [
                                         {
-                                            "module_code": "fiftyone_degrees.device_detection",
+                                            "module_code": "fiftyonedegrees.devicedetection",
                                             "hook_impl_code": "fiftyone-devicedetection-entrypoint-hook"
                                         }
                                     ]
@@ -83,7 +83,7 @@
                                     "timeout": 10,
                                     "hook_sequence": [
                                         {
-                                            "module_code": "fiftyone_degrees.device_detection",
+                                            "module_code": "fiftyonedegrees.devicedetection",
                                             "hook_impl_code": "fiftyone-devicedetection-raw-auction-request-hook"
                                         }
                                     ]

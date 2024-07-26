@@ -1,4 +1,4 @@
-package device_detection
+package devicedetection
 
 import (
 	"encoding/json"
@@ -10,19 +10,19 @@ import (
 	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
-type Config struct {
-	DataFile      DataFile      `json:"data_file"`
-	AccountFilter AccountFilter `json:"account_filter"`
-	Performance   Performance   `json:"performance"`
+type config struct {
+	DataFile      dataFile      `json:"data_file"`
+	AccountFilter accountFilter `json:"account_filter"`
+	Performance   performance   `json:"performance"`
 }
 
-type DataFile struct {
+type dataFile struct {
 	Path         string         `json:"path"`
-	Update       DataFileUpdate `json:"update"`
+	Update       dataFileUpdate `json:"update"`
 	MakeTempCopy *bool          `json:"make_temp_copy"`
 }
 
-type DataFileUpdate struct {
+type dataFileUpdate struct {
 	Auto            bool   `json:"auto"`
 	Url             string `json:"url"`
 	License         string `json:"license_key"`
@@ -32,11 +32,11 @@ type DataFileUpdate struct {
 	OnStartup       bool   `json:"on_startup"`
 }
 
-type AccountFilter struct {
+type accountFilter struct {
 	AllowList []string `json:"allow_list"`
 }
 
-type Performance struct {
+type performance struct {
 	Profile        string `json:"profile"`
 	Concurrency    *int   `json:"concurrency"`
 	Difference     *int   `json:"difference"`
@@ -53,7 +53,7 @@ var performanceProfileMap = map[string]dd.PerformanceProfile{
 	"InMemory":        dd.InMemory,
 }
 
-func (c *Config) GetPerformanceProfile() dd.PerformanceProfile {
+func (c *config) getPerformanceProfile() dd.PerformanceProfile {
 	mappedResult, ok := performanceProfileMap[c.Performance.Profile]
 	if !ok {
 		return dd.Default
@@ -62,15 +62,15 @@ func (c *Config) GetPerformanceProfile() dd.PerformanceProfile {
 	return mappedResult
 }
 
-func ParseConfig(data json.RawMessage) (Config, error) {
-	var cfg Config
+func parseConfig(data json.RawMessage) (config, error) {
+	var cfg config
 	if err := jsonutil.UnmarshalValid(data, &cfg); err != nil {
 		return cfg, errors.Wrap(err, "failed to parse config")
 	}
 	return cfg, nil
 }
 
-func ValidateConfig(cfg Config) error {
+func validateConfig(cfg config) error {
 	_, err := os.Stat(cfg.DataFile.Path)
 	if err != nil {
 		return errors.Wrap(err, "error opening hash file path")

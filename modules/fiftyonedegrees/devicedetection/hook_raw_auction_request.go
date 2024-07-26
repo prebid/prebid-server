@@ -1,6 +1,7 @@
-package device_detection
+package devicedetection
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/golang/glog"
@@ -13,18 +14,14 @@ import (
 func handleAuctionRequestHook(ctx hookstage.ModuleInvocationContext, deviceDetector deviceDetector, evidenceExtractor evidenceExtractor) (hookstage.HookResult[hookstage.RawAuctionRequestPayload], error) {
 	var result hookstage.HookResult[hookstage.RawAuctionRequestPayload]
 
-	// If the hook is not enabled, return the result without any changes
-	if ctx.ModuleContext[DDEnabledCtxKey] == nil || ctx.ModuleContext[DDEnabledCtxKey] == false {
-		return result, nil
-	}
-
-	if ctx.ModuleContext == nil || deviceDetector == nil {
-		return result, hookexecution.NewFailure("error getting device detector")
+	// If the entrypoint hook was not configured, return the result without any changes
+	if ctx.ModuleContext == nil {
+		return result, hookexecution.NewFailure("entrypoint hook was not configured")
 	}
 
 	result.ChangeSet.AddMutation(
 		func(rawPayload hookstage.RawAuctionRequestPayload) (hookstage.RawAuctionRequestPayload, error) {
-			evidence, ua, err := evidenceExtractor.Extract(ctx.ModuleContext)
+			evidence, ua, err := evidenceExtractor.extract(ctx.ModuleContext)
 			if err != nil {
 				return rawPayload, hookexecution.NewFailure("error extracting evidence %s", err)
 			}
@@ -32,14 +29,16 @@ func handleAuctionRequestHook(ctx hookstage.ModuleInvocationContext, deviceDetec
 				return rawPayload, hookexecution.NewFailure("error extracting evidence")
 			}
 
-			deviceInfo, err := deviceDetector.GetDeviceInfo(evidence, ua)
+			deviceInfo, err := deviceDetector.getDeviceInfo(evidence, ua)
 			if err != nil {
 				return rawPayload, hookexecution.NewFailure("error getting device info %s", err)
 			}
 
 			result, err := hydrateFields(deviceInfo, rawPayload)
 			if err != nil {
-				glog.Errorf("error hydrating fields %s", err)
+				er := fmt.Sprintf("error hydrating fields %s", err)
+				glog.Error(er)
+				return rawPayload, hookexecution.NewFailure(er)
 			}
 
 			return result, nil
@@ -50,7 +49,7 @@ func handleAuctionRequestHook(ctx hookstage.ModuleInvocationContext, deviceDetec
 }
 
 // hydrateFields hydrates the fields in the raw auction request payload with the device information
-func hydrateFields(fiftyOneDd *DeviceInfo, payload hookstage.RawAuctionRequestPayload) (hookstage.RawAuctionRequestPayload, error) {
+func hydrateFields(fiftyOneDd *deviceInfo, payload hookstage.RawAuctionRequestPayload) (hookstage.RawAuctionRequestPayload, error) {
 	devicePayload := gjson.GetBytes(payload, "device")
 	dPV := devicePayload.Value()
 	if dPV == nil {
@@ -66,31 +65,31 @@ func hydrateFields(fiftyOneDd *DeviceInfo, payload hookstage.RawAuctionRequestPa
 
 // setMissingFields sets fields such as ["devicetype", "ua", "make", "os", "osv", "h", "w", "pxratio", "js", "geoFetch", "model", "ppi"]
 // if they are not already present in the device object
-func setMissingFields(deviceObj map[string]any, fiftyOneDd *DeviceInfo) map[string]any {
+func setMissingFields(deviceObj map[string]any, fiftyOneDd *deviceInfo) map[string]any {
 	optionalFields := map[string]func() any{
 		"devicetype": func() any {
 			return fiftyOneDtToRTB(fiftyOneDd.DeviceType)
 		},
 		"ua": func() any {
-			if fiftyOneDd.UserAgent != DdUnknown {
+			if fiftyOneDd.UserAgent != ddUnknown {
 				return fiftyOneDd.UserAgent
 			}
 			return nil
 		},
 		"make": func() any {
-			if fiftyOneDd.HardwareVendor != DdUnknown {
+			if fiftyOneDd.HardwareVendor != ddUnknown {
 				return fiftyOneDd.HardwareVendor
 			}
 			return nil
 		},
 		"os": func() any {
-			if fiftyOneDd.PlatformName != DdUnknown {
+			if fiftyOneDd.PlatformName != ddUnknown {
 				return fiftyOneDd.PlatformName
 			}
 			return nil
 		},
 		"osv": func() any {
-			if fiftyOneDd.PlatformVersion != DdUnknown {
+			if fiftyOneDd.PlatformVersion != ddUnknown {
 				return fiftyOneDd.PlatformVersion
 			}
 			return nil
@@ -120,10 +119,10 @@ func setMissingFields(deviceObj map[string]any, fiftyOneDd *DeviceInfo) map[stri
 		},
 		"model": func() any {
 			newVal := fiftyOneDd.HardwareModel
-			if newVal == DdUnknown {
+			if newVal == ddUnknown {
 				newVal = fiftyOneDd.HardwareName
 			}
-			if newVal != DdUnknown {
+			if newVal != ddUnknown {
 				return newVal
 			}
 			return nil
@@ -151,7 +150,7 @@ func setMissingFields(deviceObj map[string]any, fiftyOneDd *DeviceInfo) map[stri
 }
 
 // signDeviceData signs the device data with the device information in the ext map of the device object
-func signDeviceData(deviceObj map[string]any, fiftyOneDd *DeviceInfo) map[string]any {
+func signDeviceData(deviceObj map[string]any, fiftyOneDd *deviceInfo) map[string]any {
 	extObj, ok := deviceObj["ext"]
 	var ext map[string]any
 	if ok {
