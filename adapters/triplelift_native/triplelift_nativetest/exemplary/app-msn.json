@@ -15,7 +15,7 @@
       "id": "test-imp-id",
       "ext": {
         "bidder": {
-          "inventoryCode": "foo",
+          "inventoryCode": "invcode",
           "floor": 20
         },
         "data": {
@@ -38,7 +38,7 @@
           "bidfloor": 20,
           "ext": {
             "bidder": {
-              "inventoryCode": "foo",
+              "inventoryCode": "invcode",
               "floor": 20
             },
             "data": {
