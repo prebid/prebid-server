@@ -646,13 +646,13 @@ func TestReadCookieOptOut(t *testing.T) {
 	optOutCookieValue := "optOutCookieValue"
 	decoder := Base64Decoder{}
 
-	cookie := *(&Cookie{
+	cookie := Cookie{
 		uids: map[string]UIDEntry{
 			"foo": newTempId("fooID", 1),
 			"bar": newTempId("barID", 2),
 		},
 		optOut: false,
-	})
+	}
 
 	existingCookie, _ := ToHTTPCookie(&cookie)
 

@@ -267,7 +267,7 @@ func (a *GammaAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRe
 				})
 			} else {
 				err := &errortypes.BadServerResponse{
-					Message: fmt.Sprintf("Missing Ad Markup. Run with request.debug = 1 for more info"),
+					Message: "Missing Ad Markup. Run with request.debug = 1 for more info",
 				}
 				errs = append(errs, err)
 			}
