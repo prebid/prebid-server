@@ -69,7 +69,6 @@ func processImp(imp *openrtb2.Imp, request *openrtb2.BidRequest) error {
 	} else {
 		imp.TagID = tlext.InvCode
 	}
-
 	// floor is optional
 	if tlext.Floor == nil {
 		return nil
