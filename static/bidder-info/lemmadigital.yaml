@@ -24,3 +24,7 @@ capabilities:
     mediaTypes:
       - banner
       - video
+userSync:
+  iframe:
+    url: "https://sync.lemmadigital.com/js/usersync.html?redirect={{.RedirectURL}}"
+    userMacro: "${UUID}"
