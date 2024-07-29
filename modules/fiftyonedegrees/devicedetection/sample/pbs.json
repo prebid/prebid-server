@@ -25,20 +25,6 @@
             "directorypath": "sample/stored"
         }
     },
-    "settings": {
-        "enforce-valid-account": false,
-        "generate-storedrequest-bidrequest-id": true,
-        "filesystem": {
-            "settings-filename": "sample/sample-app-settings.yaml",
-            "stored-requests-dir": "sample/stored",
-            "stored-imps-dir": "sample/stored",
-            "stored-responses-dir": "sample/stored",
-            "categories-dir": null
-        },
-        "request": {
-            "test": 1
-        }
-    },
     "hooks": {
         "enabled": true,
         "modules": {
