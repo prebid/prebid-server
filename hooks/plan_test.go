@@ -29,7 +29,7 @@ func TestNewExecutionPlanBuilder(t *testing.T) {
 
 	for name, test := range testCases {
 		t.Run(name, func(t *testing.T) {
-			gotPlanBuilder := NewExecutionPlanBuilder(test.givenConfig, nil)
+			gotPlanBuilder := NewExecutionPlanBuilder(test.givenConfig, nil, nil)
 			assert.Equal(t, test.expectedPlanBuilder, gotPlanBuilder)
 		})
 	}
@@ -798,7 +798,7 @@ func getPlanBuilder(
 		return nil, err
 	}
 
-	return NewExecutionPlanBuilder(hooks, repo), nil
+	return NewExecutionPlanBuilder(hooks, repo, []string{}), nil
 }
 
 type fakeEntrypointHook struct{}
