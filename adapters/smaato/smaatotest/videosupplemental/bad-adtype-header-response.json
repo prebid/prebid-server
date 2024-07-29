@@ -176,7 +176,7 @@
             }
           },
           "ext": {
-            "client": "prebid_server_1.0"
+            "client": "prebid_server_1.1"
           }
         },
         "impIDs": [
@@ -228,7 +228,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "X-Smt-Adtype header is missing!",
+      "value": "X-Smt-Adtype header is missing.",
       "comparison": "literal"
     }
   ],

@@ -15,19 +15,19 @@ func TestExtractAdmBanner(t *testing.T) {
 		{
 			testName:         "extract_banner_without_curls",
 			adMarkup:         `<a rel="nofollow" href="https://prebid.net/click"><img src="https://prebid.net/images/image.png" alt="" width="480" height="320" /></a>`,
-			expectedAdMarkup: `<div style="cursor:pointer" ><a rel="nofollow" href="https://prebid.net/click"><img src="https://prebid.net/images/image.png" alt="" width="480" height="320" /></a></div>`,
+			expectedAdMarkup: `<a rel="nofollow" href="https://prebid.net/click"><img src="https://prebid.net/images/image.png" alt="" width="480" height="320" /></a>`,
 			curls:            []string{},
 		},
 		{
 			testName:         "extract_banner_with_nil_curls",
 			adMarkup:         `<a rel="nofollow" href="https://prebid.net/click"><img src="https://prebid.net/images/image.png" alt="" width="480" height="320" /></a>`,
-			expectedAdMarkup: `<div style="cursor:pointer" ><a rel="nofollow" href="https://prebid.net/click"><img src="https://prebid.net/images/image.png" alt="" width="480" height="320" /></a></div>`,
+			expectedAdMarkup: `<a rel="nofollow" href="https://prebid.net/click"><img src="https://prebid.net/images/image.png" alt="" width="480" height="320" /></a>`,
 			curls:            nil,
 		},
 		{
 			testName:         "extract_banner_with_curls",
 			adMarkup:         `<a rel="nofollow" href="https://prebid.net/click"><img src="https://prebid.net/images/image.png" alt="" width="480" height="320" /></a>`,
-			expectedAdMarkup: `<div style="cursor:pointer" onclick=fetch(decodeURIComponent('curls.net'.replace(/\+/g, ' ')), {cache: 'no-cache'});><a rel="nofollow" href="https://prebid.net/click"><img src="https://prebid.net/images/image.png" alt="" width="480" height="320" /></a></div>`,
+			expectedAdMarkup: `<div style="cursor:pointer" onclick="fetch(decodeURIComponent('curls.net'.replace(/\+/g, ' ')), {cache: 'no-cache'});"><a rel="nofollow" href="https://prebid.net/click"><img src="https://prebid.net/images/image.png" alt="" width="480" height="320" /></a></div>`,
 			curls:            []string{"curls.net"},
 		},
 	}

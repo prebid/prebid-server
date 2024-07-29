@@ -17,7 +17,7 @@ import (
 	"github.com/prebid/prebid-server/v2/util/timeutil"
 )
 
-const clientVersion = "prebid_server_1.0"
+const clientVersion = "prebid_server_1.1"
 
 type adMarkupType string
 
@@ -271,7 +271,7 @@ func getAdMarkupType(response *adapters.ResponseData) (adMarkupType, error) {
 		return admType, nil
 	} else {
 		return "", &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("X-Smt-Adtype header is missing!"),
+			Message: fmt.Sprintf("X-Smt-Adtype header is missing."),
 		}
 	}
 }
@@ -330,6 +330,7 @@ func prepareCommonRequest(request *openrtb2.BidRequest) error {
 	}
 
 	setApp(request)
+	setDOOH(request)
 
 	return setExt(request)
 }
@@ -434,6 +435,13 @@ func setApp(request *openrtb2.BidRequest) {
 	}
 }
 
+func setDOOH(request *openrtb2.BidRequest) {
+	if request.DOOH != nil {
+		doohCopy := *request.DOOH
+		request.DOOH = &doohCopy
+	}
+}
+
 func setPublisherId(request *openrtb2.BidRequest, imp *openrtb2.Imp) error {
 	publisherID, err := jsonparser.GetString(imp.Ext, "bidder", "publisherId")
 	if err != nil {
@@ -448,8 +456,12 @@ func setPublisherId(request *openrtb2.BidRequest, imp *openrtb2.Imp) error {
 		// App is already a copy
 		request.App.Publisher = &openrtb2.Publisher{ID: publisherID}
 		return nil
+	} else if request.DOOH != nil {
+		// DOOH is already a copy
+		request.DOOH.Publisher = &openrtb2.Publisher{ID: publisherID}
+		return nil
 	} else {
-		return &errortypes.BadInput{Message: "Missing Site/App."}
+		return &errortypes.BadInput{Message: "Missing Site/App/DOOH."}
 	}
 }
 
