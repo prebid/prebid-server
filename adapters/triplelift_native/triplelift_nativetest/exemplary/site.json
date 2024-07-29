@@ -1,0 +1,112 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "publisher": {
+        "id": "foo",
+        "name": "foo",
+        "domain": "foo.com"
+      }
+    },
+    "imp": [{
+      "native": {
+        "request": "{\"plcmtcnt\":1,\"plcmttype\":2,\"privacy\":1,\"context\":1,\"contextsubtype\":12,\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]},{\"event\":2,\"methods\":[1]}],\"assets\":[{\"data\":{\"type\":12},\"required\":1},{\"title\":{\"len\":50},\"required\":1},{\"img\":{\"w\":80,\"h\":80,\"type\":1},\"required\":1},{\"img\":{\"w\":1200,\"h\":627,\"type\":3},\"required\":1},{\"data\":{\"type\":3},\"required\":0},{\"data\":{\"len\":100,\"type\":2},\"required\":1},{\"video\":{\"mimes\":[\"video/mpeg\",\"video/mp4\"],\"minduration\":2,\"protocols\":[2,5],\"maxduration\":2,\"ext\":{\"playbackmethod\":[1,2]}},\"required\":1}],\"ver\":\"1.2\"}"
+      },
+      "id": "test-imp-id",
+      "ext": {
+        "bidder": {
+          "inventoryCode": "invcode",
+          "floor": 20
+        },
+        "data": {
+          "tag_code": "bar"
+        }
+      }
+    }]
+  },
+  "httpCalls": [{
+    "expectedRequest": {
+      "uri": "http://tlx.3lift.net/s2sn/auction?supplier_id=20",
+      "body": {
+        "id": "test-request-id",
+        "imp": [{
+          "id": "test-imp-id",
+          "native": {
+            "request": "{\"plcmtcnt\":1,\"plcmttype\":2,\"privacy\":1,\"context\":1,\"contextsubtype\":12,\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]},{\"event\":2,\"methods\":[1]}],\"assets\":[{\"data\":{\"type\":12},\"required\":1},{\"title\":{\"len\":50},\"required\":1},{\"img\":{\"w\":80,\"h\":80,\"type\":1},\"required\":1},{\"img\":{\"w\":1200,\"h\":627,\"type\":3},\"required\":1},{\"data\":{\"type\":3},\"required\":0},{\"data\":{\"len\":100,\"type\":2},\"required\":1},{\"video\":{\"mimes\":[\"video/mpeg\",\"video/mp4\"],\"minduration\":2,\"protocols\":[2,5],\"maxduration\":2,\"ext\":{\"playbackmethod\":[1,2]}},\"required\":1}],\"ver\":\"1.2\"}"
+          },
+          "tagid": "invcode",
+          "bidfloor": 20,
+          "ext": {
+            "bidder": {
+              "inventoryCode": "invcode",
+              "floor": 20
+            },
+            "data": {
+              "tag_code": "bar"
+            }
+          }
+        }],
+        "site": {
+          "publisher": {
+            "id": "foo",
+            "name": "foo",
+            "domain": "foo.com"
+          }
+        }
+      },
+      "impIDs": ["test-imp-id"]
+    },
+    "mockResponse": {
+      "status": 200,
+      "body": {
+        "id": "test-request-id",
+        "seatbid": [{
+          "seat": "958",
+          "bid": [{
+            "id": "7706636740145184841",
+            "impid": "test-imp-id",
+            "price": 0.5,
+            "adid": "29681110",
+            "adm": "some-test-ad",
+            "adomain": [
+              "triplelift.com"
+            ],
+            "iurl": "http://example.com",
+            "cid": "958",
+            "crid": "29681110",
+            "h": 250,
+            "w": 300,
+            "ext": "aaa"
+          }]
+        }],
+        "bidid": "5778926625248726496",
+        "cur": "USD"
+      }
+    }
+  }],
+  "expectedBidResponses": [{
+    "currency": "USD",
+    "bids": [{
+      "id": "test-request-id",
+      "type": "native",
+      "bid": {
+        "id": "7706636740145184841",
+        "impid": "test-imp-id",
+        "price": 0.5,
+        "adid": "29681110",
+        "adm": "some-test-ad",
+        "adomain": [
+          "triplelift.com"
+        ],
+        "iurl": "http://example.com",
+        "cid": "958",
+        "crid": "29681110",
+        "h": 250,
+        "w": 300,
+        "ext": "aaa"
+      },
+      "bidid": "5778926625248726496",
+      "cur": "USD"
+    }]
+  }]
+}
