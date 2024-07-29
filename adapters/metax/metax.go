@@ -28,18 +28,14 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 	// split impressions
 	reqDatas := make([]*adapters.RequestData, 0, len(request.Imp))
-	for i := range request.Imp {
-		imp := &request.Imp[i]
-		impCopy := *imp
-		requestCopy := *request
-
-		metaxExt, err := parseBidderExt(imp)
+	for _, imp := range request.Imp {
+		metaxExt, err := parseBidderExt(&imp)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		if err := preprocessImp(&impCopy); err != nil {
+		if err := preprocessImp(&imp); err != nil {
 			errs = append(errs, err)
 			continue
 		}
@@ -50,7 +46,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			continue
 		}
 
-		requestCopy.Imp = []openrtb2.Imp{impCopy}
+		requestCopy := *request
+		requestCopy.Imp = []openrtb2.Imp{imp}
 		reqJSON, err := json.Marshal(requestCopy)
 		if err != nil {
 			errs = append(errs, err)
