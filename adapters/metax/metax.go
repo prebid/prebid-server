@@ -86,6 +86,11 @@ func (a *adapter) MakeBids(bidReq *openrtb2.BidRequest, reqData *adapters.Reques
 		return nil, []error{err}
 	}
 
+	// additional no content check
+	if len(bidResp.SeatBid) == 0 || len(bidResp.SeatBid[0].Bid) == 0 {
+		return nil, nil
+	}
+
 	resp := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
 	if len(bidResp.Cur) != 0 {
 		resp.Currency = bidResp.Cur
