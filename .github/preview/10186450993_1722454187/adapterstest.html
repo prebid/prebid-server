@@ -1,0 +1,662 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>adapterstest: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/prebid/prebid-server/v2/adapters/adapterstest/adapter_test_util.go (0.0%)</option>
+				
+				<option value="file1">github.com/prebid/prebid-server/v2/adapters/adapterstest/test_json.go (0.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package adapterstest
+
+import (
+        "fmt"
+        "net/http/httptest"
+        "strings"
+        "testing"
+
+        "net/http"
+
+        "github.com/prebid/openrtb/v20/openrtb2"
+)
+
+// OrtbMockService Represents a scaffolded OpenRTB service.
+type OrtbMockService struct {
+        Server          *httptest.Server
+        LastBidRequest  *openrtb2.BidRequest
+        LastHttpRequest *http.Request
+}
+
+// BidOnTags Produces a map of TagIds, based on a comma separated strings. The map
+// contains the list of tags to bid on.
+func BidOnTags(tags string) map[string]bool <span class="cov0" title="0">{
+        values := strings.Split(tags, ",")
+        set := make(map[string]bool)
+        for _, tag := range values </span><span class="cov0" title="0">{
+                set[tag] = true
+        }</span>
+        <span class="cov0" title="0">return set</span>
+}
+
+// SampleBid Produces a sample bid based on params given.
+func SampleBid(width *int64, height *int64, impId string, index int) openrtb2.Bid <span class="cov0" title="0">{
+        return openrtb2.Bid{
+                ID:    "Bid-123",
+                ImpID: fmt.Sprintf("div-adunit-%d", index),
+                Price: 2.1,
+                AdM:   "&lt;div&gt;This is an Ad&lt;/div&gt;",
+                CrID:  "Cr-234",
+                W:     *width,
+                H:     *height,
+        }
+}</span>
+
+// VerifyStringValue Helper function to assert string equals.
+func VerifyStringValue(value string, expected string, t *testing.T) <span class="cov0" title="0">{
+        if value != expected </span><span class="cov0" title="0">{
+                t.Fatalf(fmt.Sprintf("%s expected, got %s", expected, value))
+        }</span>
+}
+
+// VerifyIntValue Helper function to assert Int equals.
+func VerifyIntValue(value int, expected int, t *testing.T) <span class="cov0" title="0">{
+        if value != expected </span><span class="cov0" title="0">{
+                t.Fatalf(fmt.Sprintf("%d expected, got %d", expected, value))
+        }</span>
+}
+
+// VerifyBoolValue Helper function to assert bool equals.
+func VerifyBoolValue(value bool, expected bool, t *testing.T) <span class="cov0" title="0">{
+        if value != expected </span><span class="cov0" title="0">{
+                t.Fatalf(fmt.Sprintf("%v expected, got %v", expected, value))
+        }</span>
+}
+
+// VerifyBannerSize helper function to assert banner size
+func VerifyBannerSize(banner *openrtb2.Banner, expectedWidth int, expectedHeight int, t *testing.T) <span class="cov0" title="0">{
+        VerifyIntValue(int(*(banner.W)), expectedWidth, t)
+        VerifyIntValue(int(*(banner.H)), expectedHeight, t)
+}</span>
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package adapterstest
+
+import (
+        "encoding/json"
+        "fmt"
+        "io/fs"
+        "net/http"
+        "os"
+        "path/filepath"
+        "regexp"
+        "testing"
+
+        "github.com/google/go-cmp/cmp"
+        "github.com/google/go-cmp/cmp/cmpopts"
+        "github.com/mitchellh/copystructure"
+        "github.com/prebid/openrtb/v20/openrtb2"
+        "github.com/prebid/prebid-server/v2/adapters"
+        "github.com/prebid/prebid-server/v2/currency"
+        "github.com/prebid/prebid-server/v2/openrtb_ext"
+        "github.com/stretchr/testify/assert"
+        "github.com/yudai/gojsondiff"
+        "github.com/yudai/gojsondiff/formatter"
+)
+
+const jsonFileExtension string = ".json"
+
+var supportedDirs = map[string]struct{}{
+        "exemplary":         {},
+        "supplemental":      {},
+        "amp":               {},
+        "video":             {},
+        "videosupplemental": {},
+}
+
+// RunJSONBidderTest is a helper method intended to unit test Bidders' adapters.
+// It requires that:
+//
+//  1. Bidders communicate with external servers over HTTP.
+//  2. The HTTP request bodies are legal JSON.
+//
+// Although the project does not require it, we _strongly_ recommend that all Bidders write tests using this.
+// Doing so has the following benefits:
+//
+//  1. This includes some basic tests which confirm that your Bidder is "well-behaved" for all the input samples.
+//     For example, "no nil bids are allowed in the returned array".
+//     These tests are tedious to write, but help prevent bugs during auctions.
+//
+//  2. In the future, we plan to auto-generate documentation from the "exemplary" test files.
+//     Those docs will teach publishers how to use your Bidder, which should encourage adoption.
+//
+// To use this method, create *.json files in the following directories:
+//
+// adapters/{bidder}/{bidder}test/exemplary:
+//
+//        These show "ideal" BidRequests for your Bidder. If possible, configure your servers to return the same
+//        expected responses forever. If your server responds appropriately, our future auto-generated documentation
+//        can guarantee Publishers that your adapter works as documented.
+//
+// adapters/{bidder}/{bidder}test/supplemental:
+//
+//        Fill this with *.json files which are useful test cases, but are not appropriate for public example docs.
+//        For example, a file in this directory might make sure that a mobile-only Bidder returns errors on non-mobile requests.
+//
+// Then create a test in your adapters/{bidder}/{bidder}_test.go file like so:
+//
+//        func TestJsonSamples(t *testing.T) {
+//          adapterstest.RunJSONBidderTest(t, "{bidder}test", instanceOfYourBidder)
+//        }
+func RunJSONBidderTest(t *testing.T, rootDir string, bidder adapters.Bidder) <span class="cov0" title="0">{
+        err := filepath.WalkDir(rootDir, func(path string, info fs.DirEntry, err error) error </span><span class="cov0" title="0">{
+                if err != nil </span><span class="cov0" title="0">{
+                        return err
+                }</span>
+
+                <span class="cov0" title="0">isJsonFile := !info.IsDir() &amp;&amp; filepath.Ext(info.Name()) == jsonFileExtension
+                RunSingleJSONBidderTest(t, bidder, path, isJsonFile)
+                return nil</span>
+        })
+        <span class="cov0" title="0">assert.NoError(t, err, "Error reading files from directory %s \n", rootDir)</span>
+}
+
+func RunSingleJSONBidderTest(t *testing.T, bidder adapters.Bidder, path string, isJsonFile bool) <span class="cov0" title="0">{
+        base := filepath.Base(filepath.Dir(path))
+        if _, ok := supportedDirs[base]; !ok </span><span class="cov0" title="0">{
+                return
+        }</span>
+
+        <span class="cov0" title="0">allowErrors := base != "exemplary" &amp;&amp; base != "video"
+        if isJsonFile </span><span class="cov0" title="0">{
+                specData, err := loadFile(path)
+                if err != nil </span><span class="cov0" title="0">{
+                        t.Fatalf("Failed to load contents of file %s: %v", path, err)
+                }</span>
+
+                <span class="cov0" title="0">if !allowErrors &amp;&amp; specData.expectsErrors() </span><span class="cov0" title="0">{
+                        t.Fatalf("Exemplary spec %s must not expect errors.", path)
+                }</span>
+
+                <span class="cov0" title="0">runSpec(t, path, specData, bidder, base == "amp", base == "videosupplemental" || base == "video")</span>
+        }
+}
+
+// LoadFile reads and parses a file as a test case. If something goes wrong, it returns an error.
+func loadFile(filename string) (*testSpec, error) <span class="cov0" title="0">{
+        specData, err := os.ReadFile(filename)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("Failed to read file %s: %v", filename, err)
+        }</span>
+
+        <span class="cov0" title="0">var spec testSpec
+        if err := json.Unmarshal(specData, &amp;spec); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("Failed to unmarshal JSON from file: %v", err)
+        }</span>
+
+        <span class="cov0" title="0">return &amp;spec, nil</span>
+}
+
+// runSpec runs a single test case. It will make sure:
+//
+//   - That the Bidder does not return nil HTTP requests, bids, or errors inside their lists
+//   - That the Bidder's HTTP calls match the spec's expectations.
+//   - That the Bidder's Bids match the spec's expectations
+//   - That the Bidder's errors match the spec's expectations
+//
+// More assertions will almost certainly be added in the future, as bugs come up.
+func runSpec(t *testing.T, filename string, spec *testSpec, bidder adapters.Bidder, isAmpTest, isVideoTest bool) <span class="cov0" title="0">{
+        reqInfo := getTestExtraRequestInfo(t, filename, spec, isAmpTest, isVideoTest)
+        requests := testMakeRequestsImpl(t, filename, spec, bidder, reqInfo)
+
+        testMakeBidsImpl(t, filename, spec, bidder, requests)
+}</span>
+
+// getTestExtraRequestInfo builds the ExtraRequestInfo object that will be passed to testMakeRequestsImpl
+func getTestExtraRequestInfo(t *testing.T, filename string, spec *testSpec, isAmpTest, isVideoTest bool) *adapters.ExtraRequestInfo <span class="cov0" title="0">{
+        t.Helper()
+
+        var reqInfo adapters.ExtraRequestInfo
+
+        // If test request.ext defines its own currency rates, add currency conversion to reqInfo
+        reqWrapper := &amp;openrtb_ext.RequestWrapper{}
+        reqWrapper.BidRequest = &amp;spec.BidRequest
+
+        reqExt, err := reqWrapper.GetRequestExt()
+        assert.NoError(t, err, "Could not unmarshall test request ext. %s", filename)
+
+        reqPrebid := reqExt.GetPrebid()
+        if reqPrebid != nil &amp;&amp; reqPrebid.CurrencyConversions != nil &amp;&amp; len(reqPrebid.CurrencyConversions.ConversionRates) &gt; 0 </span><span class="cov0" title="0">{
+                err = currency.ValidateCustomRates(reqPrebid.CurrencyConversions)
+                assert.NoError(t, err, "Error validating currency rates in the test request: %s", filename)
+
+                // Get currency rates conversions from the test request.ext
+                conversions := currency.NewRates(reqPrebid.CurrencyConversions.ConversionRates)
+
+                // Create return adapters.ExtraRequestInfo object
+                reqInfo = adapters.NewExtraRequestInfo(conversions)
+        }</span> else<span class="cov0" title="0"> {
+                reqInfo = adapters.ExtraRequestInfo{}
+        }</span>
+
+        // Set PbsEntryPoint if either isAmpTest or isVideoTest is true
+        <span class="cov0" title="0">if isAmpTest </span><span class="cov0" title="0">{
+                // simulates AMP entry point
+                reqInfo.PbsEntryPoint = "amp"
+        }</span> else<span class="cov0" title="0"> if isVideoTest </span><span class="cov0" title="0">{
+                reqInfo.PbsEntryPoint = "video"
+        }</span>
+
+        <span class="cov0" title="0">return &amp;reqInfo</span>
+}
+
+type testSpec struct {
+        BidRequest        openrtb2.BidRequest     `json:"mockBidRequest"`
+        HttpCalls         []httpCall              `json:"httpCalls"`
+        BidResponses      []expectedBidResponse   `json:"expectedBidResponses"`
+        MakeRequestErrors []testSpecExpectedError `json:"expectedMakeRequestsErrors"`
+        MakeBidsErrors    []testSpecExpectedError `json:"expectedMakeBidsErrors"`
+}
+
+type testSpecExpectedError struct {
+        Value      string `json:"value"`
+        Comparison string `json:"comparison"`
+}
+
+func (spec *testSpec) expectsErrors() bool <span class="cov0" title="0">{
+        return len(spec.MakeRequestErrors) &gt; 0 || len(spec.MakeBidsErrors) &gt; 0
+}</span>
+
+type httpCall struct {
+        Request  httpRequest  `json:"expectedRequest"`
+        Response httpResponse `json:"mockResponse"`
+}
+
+func (req *httpRequest) ToRequestData(t *testing.T) *adapters.RequestData <span class="cov0" title="0">{
+        return &amp;adapters.RequestData{
+                Method: "POST",
+                Uri:    req.Uri,
+                Body:   req.Body,
+        }
+}</span>
+
+type httpRequest struct {
+        Body    json.RawMessage `json:"body"`
+        Uri     string          `json:"uri"`
+        Headers http.Header     `json:"headers"`
+        ImpIDs  []string        `json:"impIDs"`
+}
+
+type httpResponse struct {
+        Status  int             `json:"status"`
+        Body    json.RawMessage `json:"body"`
+        Headers http.Header     `json:"headers"`
+}
+
+func (resp *httpResponse) ToResponseData(t *testing.T) *adapters.ResponseData <span class="cov0" title="0">{
+        return &amp;adapters.ResponseData{
+                StatusCode: resp.Status,
+                Body:       resp.Body,
+                Headers:    resp.Headers,
+        }
+}</span>
+
+type expectedBidResponse struct {
+        Bids                 []expectedBid   `json:"bids"`
+        Currency             string          `json:"currency"`
+        FledgeAuctionConfigs json.RawMessage `json:"fledgeauctionconfigs,omitempty"`
+}
+
+type expectedBid struct {
+        Bid   json.RawMessage `json:"bid"`
+        Type  string          `json:"type"`
+        Seat  string          `json:"seat"`
+        Video json.RawMessage `json:"video,omitempty"`
+}
+
+// ---------------------------------------
+// Lots of ugly, repetitive code below here.
+//
+// reflect.DeepEquals doesn't work because each OpenRTB field has an `ext []byte`, but we really care if those are JSON-equal
+//
+// Marshalling the structs and then using a JSON-diff library isn't great either, since
+
+// assertMakeRequestsOutput compares the actual http requests to the expected ones.
+func assertMakeRequestsOutput(t *testing.T, filename string, actual []*adapters.RequestData, expected []httpCall) <span class="cov0" title="0">{
+        t.Helper()
+
+        if len(expected) != len(actual) </span><span class="cov0" title="0">{
+                t.Fatalf("%s: MakeRequests had wrong request count. Expected %d, got %d", filename, len(expected), len(actual))
+        }</span>
+
+        <span class="cov0" title="0">for i := 0; i &lt; len(expected); i++ </span><span class="cov0" title="0">{
+                var err error
+                for j := 0; j &lt; len(actual); j++ </span><span class="cov0" title="0">{
+                        if err = diffHttpRequests(fmt.Sprintf("%s: httpRequest[%d]", filename, i), actual[j], &amp;(expected[i].Request)); err == nil </span><span class="cov0" title="0">{
+                                break</span>
+                        }
+                }
+                <span class="cov0" title="0">assert.NoError(t, err, fmt.Sprintf("%s Expected RequestData was not returned by adapters' MakeRequests() implementation: httpRequest[%d]", filename, i))</span>
+        }
+}
+
+func assertErrorList(t *testing.T, description string, actual []error, expected []testSpecExpectedError) <span class="cov0" title="0">{
+        t.Helper()
+
+        if len(expected) != len(actual) </span><span class="cov0" title="0">{
+                t.Fatalf("%s had wrong error count. Expected %d, got %d (%v)", description, len(expected), len(actual), actual)
+        }</span>
+        <span class="cov0" title="0">for i := 0; i &lt; len(actual); i++ </span><span class="cov0" title="0">{
+                if expected[i].Comparison == "literal" </span><span class="cov0" title="0">{
+                        if expected[i].Value != actual[i].Error() </span><span class="cov0" title="0">{
+                                t.Errorf(`%s error[%d] had wrong message. Expected "%s", got "%s"`, description, i, expected[i].Value, actual[i].Error())
+                        }</span>
+                } else<span class="cov0" title="0"> if expected[i].Comparison == "regex" </span><span class="cov0" title="0">{
+                        if matched, _ := regexp.MatchString(expected[i].Value, actual[i].Error()); !matched </span><span class="cov0" title="0">{
+                                t.Errorf(`%s error[%d] had wrong message. Expected match with regex "%s", got "%s"`, description, i, expected[i].Value, actual[i].Error())
+                        }</span>
+                } else<span class="cov0" title="0"> {
+                        t.Fatalf(`invalid comparison type "%s"`, expected[i].Comparison)
+                }</span>
+        }
+}
+
+func assertMakeBidsOutput(t *testing.T, filename string, bidderResponse *adapters.BidderResponse, expected expectedBidResponse) <span class="cov0" title="0">{
+        t.Helper()
+        if !assert.Len(t, bidderResponse.Bids, len(expected.Bids), "%s: Wrong MakeBids bidderResponse.Bids count. len(bidderResponse.Bids) = %d vs len(spec.BidResponses.Bids) = %d", filename, len(bidderResponse.Bids), len(expected.Bids)) </span><span class="cov0" title="0">{
+                return
+        }</span>
+        <span class="cov0" title="0">for i := 0; i &lt; len(bidderResponse.Bids); i++ </span><span class="cov0" title="0">{
+                diffBids(t, fmt.Sprintf("%s:  typedBid[%d]", filename, i), bidderResponse.Bids[i], &amp;(expected.Bids[i]))
+        }</span>
+        <span class="cov0" title="0">if expected.FledgeAuctionConfigs != nil </span><span class="cov0" title="0">{
+                assert.NotNilf(t, bidderResponse.FledgeAuctionConfigs, "%s: expected fledgeauctionconfigs in bidderResponse", filename)
+                fledgeAuctionConfigsJson, err := json.Marshal(bidderResponse.FledgeAuctionConfigs)
+                assert.NoErrorf(t, err, "%s: failed to marshal actual FledgeAuctionConfig response into JSON.", filename)
+                assert.JSONEqf(t, string(expected.FledgeAuctionConfigs), string(fledgeAuctionConfigsJson), "%s: incorrect fledgeauctionconfig", filename)
+        }</span> else<span class="cov0" title="0"> {
+                assert.Nilf(t, bidderResponse.FledgeAuctionConfigs, "%s: unexpected fledgeauctionconfigs in bidderResponse", filename)
+        }</span>
+}
+
+// diffHttpRequests compares the actual HTTP request data to the expected one.
+// It assumes that the request bodies are JSON
+func diffHttpRequests(description string, actual *adapters.RequestData, expected *httpRequest) error <span class="cov0" title="0">{
+
+        if actual == nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("Bidders cannot return nil HTTP calls. %s was nil.", description)
+        }</span>
+
+        <span class="cov0" title="0">if expected.Uri != actual.Uri </span><span class="cov0" title="0">{
+                return fmt.Errorf(`%s.uri "%s" does not match expected "%s."`, description, actual.Uri, expected.Uri)
+        }</span>
+
+        <span class="cov0" title="0">if expected.Headers != nil </span><span class="cov0" title="0">{
+                actualHeader, err := json.Marshal(actual.Headers)
+                if err != nil </span><span class="cov0" title="0">{
+                        return fmt.Errorf(`%s actual.Headers could not be marshalled. Error: %s"`, description, err.Error())
+                }</span>
+                <span class="cov0" title="0">expectedHeader, err := json.Marshal(expected.Headers)
+                if err != nil </span><span class="cov0" title="0">{
+                        return fmt.Errorf(`%s expected.Headers could not be marshalled. Error: %s"`, description, err.Error())
+                }</span>
+                <span class="cov0" title="0">if err := diffJson(description, actualHeader, expectedHeader); err != nil </span><span class="cov0" title="0">{
+                        return err
+                }</span>
+        }
+
+        <span class="cov0" title="0">if len(expected.ImpIDs) &lt; 1 </span><span class="cov0" title="0">{
+                return fmt.Errorf(`expected.ImpIDs must contain at least one imp ID`)
+        }</span>
+
+        <span class="cov0" title="0">opt := cmpopts.SortSlices(func(a, b string) bool </span><span class="cov0" title="0">{ return a &lt; b }</span>)
+        <span class="cov0" title="0">if !cmp.Equal(expected.ImpIDs, actual.ImpIDs, opt) </span><span class="cov0" title="0">{
+                return fmt.Errorf(`%s actual.ImpIDs "%q" do not match expected "%q"`, description, actual.ImpIDs, expected.ImpIDs)
+        }</span>
+        <span class="cov0" title="0">return diffJson(description, actual.Body, expected.Body)</span>
+}
+
+func diffBids(t *testing.T, description string, actual *adapters.TypedBid, expected *expectedBid) <span class="cov0" title="0">{
+        if actual == nil </span><span class="cov0" title="0">{
+                t.Errorf("Bidders cannot return nil TypedBids. %s was nil.", description)
+                return
+        }</span>
+
+        <span class="cov0" title="0">assert.Equal(t, string(expected.Seat), string(actual.Seat), fmt.Sprintf(`%s.seat "%s" does not match expected "%s."`, description, string(actual.Seat), string(expected.Seat)))
+        assert.Equal(t, string(expected.Type), string(actual.BidType), fmt.Sprintf(`%s.type "%s" does not match expected "%s."`, description, string(actual.BidType), string(expected.Type)))
+        assert.NoError(t, diffOrtbBids(fmt.Sprintf("%s.bid", description), actual.Bid, expected.Bid))
+        if expected.Video != nil </span><span class="cov0" title="0">{
+                assert.NoError(t, diffBidVideo(fmt.Sprintf("%s.video", description), actual.BidVideo, expected.Video))
+        }</span>
+}
+
+// diffOrtbBids compares the actual Bid made by the adapter to the expectation from the JSON file.
+func diffOrtbBids(description string, actual *openrtb2.Bid, expected json.RawMessage) error <span class="cov0" title="0">{
+        if actual == nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("Bidders cannot return nil Bids. %s was nil.", description)
+        }</span>
+
+        <span class="cov0" title="0">actualJson, err := json.Marshal(actual)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("%s failed to marshal actual Bid into JSON. %v", description, err)
+        }</span>
+
+        <span class="cov0" title="0">return diffJson(description, actualJson, expected)</span>
+}
+
+func diffBidVideo(description string, actual *openrtb_ext.ExtBidPrebidVideo, expected json.RawMessage) error <span class="cov0" title="0">{
+        actualJson, err := json.Marshal(actual)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("%s failed to marshal actual Bid Video into JSON. %v", description, err)
+        }</span>
+
+        <span class="cov0" title="0">return diffJson(description, actualJson, []byte(expected))</span>
+}
+
+// diffJson compares two JSON byte arrays for structural equality. It will produce an error if either
+// byte array is not actually JSON.
+func diffJson(description string, actual []byte, expected []byte) error <span class="cov0" title="0">{
+        if len(actual) == 0 &amp;&amp; len(expected) == 0 </span><span class="cov0" title="0">{
+                return nil
+        }</span>
+        <span class="cov0" title="0">if len(actual) == 0 || len(expected) == 0 </span><span class="cov0" title="0">{
+                return fmt.Errorf("%s json diff failed. Expected %d bytes in body, but got %d.", description, len(expected), len(actual))
+        }</span>
+        <span class="cov0" title="0">diff, err := gojsondiff.New().Compare(actual, expected)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("%s json diff failed. %v", description, err)
+        }</span>
+
+        <span class="cov0" title="0">if diff.Modified() </span><span class="cov0" title="0">{
+                var left interface{}
+                if err := json.Unmarshal(actual, &amp;left); err != nil </span><span class="cov0" title="0">{
+                        return fmt.Errorf("%s json did not match, but unmarshalling failed. %v", description, err)
+                }</span>
+                <span class="cov0" title="0">printer := formatter.NewAsciiFormatter(left, formatter.AsciiFormatterConfig{
+                        ShowArrayIndex: true,
+                })
+                output, err := printer.Format(diff)
+                if err != nil </span><span class="cov0" title="0">{
+                        return fmt.Errorf("%s did not match, but diff formatting failed. %v", description, err)
+                }</span> else<span class="cov0" title="0"> {
+                        return fmt.Errorf("%s json did not match expected.\n\n%s", description, output)
+                }</span>
+        }
+        <span class="cov0" title="0">return nil</span>
+}
+
+// testMakeRequestsImpl asserts the resulting values of the bidder's `MakeRequests()` implementation
+// against the expected JSON-defined results and ensures we do not encounter data races in the process.
+// To assert no data races happen we make use of:
+//  1. A shallow copy of the unmarshalled openrtb2.BidRequest that will provide reference values to
+//     shared memory that we don't want the adapters' implementation of `MakeRequests()` to modify.
+//  2. A deep copy that will preserve the original values of all the fields. This copy remains untouched
+//     by the adapters' processes and serves as reference of what the shared memory values should still
+//     be after the `MakeRequests()` call.
+func testMakeRequestsImpl(t *testing.T, filename string, spec *testSpec, bidder adapters.Bidder, reqInfo *adapters.ExtraRequestInfo) []*adapters.RequestData <span class="cov0" title="0">{
+        t.Helper()
+
+        deepBidReqCopy, shallowBidReqCopy, err := getDataRaceTestCopies(&amp;spec.BidRequest)
+        assert.NoError(t, err, "Could not create request copies. %s", filename)
+
+        // Run MakeRequests
+        requests, errs := bidder.MakeRequests(&amp;spec.BidRequest, reqInfo)
+
+        // Compare MakeRequests actual output versus expected values found in JSON file
+        assertErrorList(t, fmt.Sprintf("%s: MakeRequests", filename), errs, spec.MakeRequestErrors)
+        assertMakeRequestsOutput(t, filename, requests, spec.HttpCalls)
+
+        // Assert no data races occur using original bidRequest copies of references and values
+        assert.Equal(t, deepBidReqCopy, shallowBidReqCopy, "Data race found. Test: %s", filename)
+
+        return requests
+}</span>
+
+// getDataRaceTestCopies returns a deep copy and a shallow copy of the original bidRequest that will get
+// compared to verify no data races occur.
+func getDataRaceTestCopies(original *openrtb2.BidRequest) (*openrtb2.BidRequest, *openrtb2.BidRequest, error) <span class="cov0" title="0">{
+        cpy, err := copystructure.Copy(original)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, nil, err
+        }</span>
+        <span class="cov0" title="0">deepReqCopy := cpy.(*openrtb2.BidRequest)
+
+        shallowReqCopy := *original
+
+        // Prebid Server core makes shallow copies of imp elements and adapters are allowed to make changes
+        // to them. Therefore, we need shallow copies of Imp elements here so our test replicates that
+        // functionality and only fail when actual shared momory gets modified.
+        if original.Imp != nil </span><span class="cov0" title="0">{
+                shallowReqCopy.Imp = make([]openrtb2.Imp, len(original.Imp))
+                copy(shallowReqCopy.Imp, original.Imp)
+        }</span>
+
+        <span class="cov0" title="0">return deepReqCopy, &amp;shallowReqCopy, nil</span>
+}
+
+// testMakeBidsImpl asserts the results of the bidder MakeBids implementation against the expected JSON-defined results
+func testMakeBidsImpl(t *testing.T, filename string, spec *testSpec, bidder adapters.Bidder, makeRequestsOut []*adapters.RequestData) <span class="cov0" title="0">{
+        t.Helper()
+
+        bidResponses := make([]*adapters.BidderResponse, 0)
+        var bidsErrs = make([]error, 0, len(spec.MakeBidsErrors))
+
+        // We should have as many bids as number of adapters.RequestData found in MakeRequests output
+        for i := 0; i &lt; len(makeRequestsOut); i++ </span><span class="cov0" title="0">{
+                // Run MakeBids with JSON refined spec.HttpCalls info that was asserted to match MakeRequests
+                // output inside testMakeRequestsImpl
+                thisBidResponse, theseErrs := bidder.MakeBids(&amp;spec.BidRequest, spec.HttpCalls[i].Request.ToRequestData(t), spec.HttpCalls[i].Response.ToResponseData(t))
+
+                if theseErrs != nil </span><span class="cov0" title="0">{
+                        bidsErrs = append(bidsErrs, theseErrs...)
+                }</span>
+                <span class="cov0" title="0">if thisBidResponse != nil </span><span class="cov0" title="0">{
+                        bidResponses = append(bidResponses, thisBidResponse)
+                }</span>
+        }
+
+        // Assert actual errors thrown by MakeBids implementation versus expected JSON-defined spec.MakeBidsErrors
+        <span class="cov0" title="0">assertErrorList(t, fmt.Sprintf("%s: MakeBids", filename), bidsErrs, spec.MakeBidsErrors)
+
+        // Assert MakeBids implementation BidResponses with expected JSON-defined spec.BidResponses[i].Bids
+        if assert.Len(t, bidResponses, len(spec.BidResponses), "%s: MakeBids len(bidResponses) = %d vs len(spec.BidResponses) = %d", filename, len(bidResponses), len(spec.BidResponses)) </span><span class="cov0" title="0">{
+                for i := 0; i &lt; len(spec.BidResponses); i++ </span><span class="cov0" title="0">{
+                        assertMakeBidsOutput(t, filename, bidResponses[i], spec.BidResponses[i])
+                }</span>
+        }
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
