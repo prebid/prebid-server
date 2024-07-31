@@ -24,7 +24,7 @@ func TestEndpointTemplateMalformed(t *testing.T) {
 func TestBadConfig(t *testing.T) {
 	_, buildErr := Builder(openrtb_ext.BidderTheTradeDesk, config.Adapter{
 		Endpoint:         `http://it.doesnt.matter/bid`,
-		ExtraAdapterInfo: `{foo:42}`,
+		ExtraAdapterInfo: "12365217635",
 	},
 		config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 

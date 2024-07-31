@@ -172,9 +172,11 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
 
-	isValidEndpoint, err := regexp.Match("([a-z]*)$", []byte(config.ExtraAdapterInfo))
-	if !isValidEndpoint || err != nil {
-		return nil, errors.New("ExtraAdapterInfo must be a simple string provided by TheTradeDesk")
+	if len(config.ExtraAdapterInfo) > 0 {
+		isValidEndpoint, err := regexp.Match("([a-z]+)$", []byte(config.ExtraAdapterInfo))
+		if !isValidEndpoint || err != nil {
+			return nil, errors.New("ExtraAdapterInfo must be a simple string provided by TheTradeDesk")
+		}
 	}
 
 	urlParams := macros.EndpointTemplateParams{SupplyId: config.ExtraAdapterInfo}
