@@ -2,7 +2,6 @@ package oraki
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -78,11 +77,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		}
 
 		adapterRequests = append(adapterRequests, adapterReq)
-	}
-
-	if len(adapterRequests) == 0 {
-		errs = append(errs, errors.New("found no valid impressions"))
-		return nil, errs
 	}
 
 	return adapterRequests, nil

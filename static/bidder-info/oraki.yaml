@@ -1,6 +1,6 @@
 endpoint: "https://eu1.oraki.io/pserver"
 maintainer:
-  email: "ben@oraki.io"
+  email: "prebid@oraki.io"
 capabilities:
   site:
     mediaTypes:

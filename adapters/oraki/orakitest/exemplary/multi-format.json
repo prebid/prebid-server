@@ -47,7 +47,7 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "https://eu1.oraki.io/pserver",
+                "uri": "https://fake.test.io/pserver",
                 "body": {
                     "id": "test-request-id",
                     "imp": [

@@ -36,7 +36,7 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "https://eu1.oraki.io/pserver",
+                "uri": "https://fake.test.io/pserver",
                 "body": {
                     "id": "test-request-id",
                     "imp": [
@@ -85,7 +85,7 @@
                                     "id": "test_bid_id",
                                     "impid": "test-imp-id",
                                     "price": 0.27543,
-                                    "adm": "<iframe id=\"adm-banner-1\" width=\"468\" height=\"60\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"https://eu1.oraki.io/pserver&k=bc2d316f39931a07d9a8dd249bf85fc0\"></iframe>",
+                                    "adm": "<iframe id=\"adm-banner-1\" width=\"468\" height=\"60\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"https://fake.test.io/pserver&k=bc2d316f39931a07d9a8dd249bf85fc0\"></iframe>",
                                     "cid": "test_cid",
                                     "crid": "test_crid",
                                     "dealid": "test_dealid",
@@ -115,7 +115,7 @@
                         "id": "test_bid_id",
                         "impid": "test-imp-id",
                         "price": 0.27543,
-                        "adm": "<iframe id=\"adm-banner-1\" width=\"468\" height=\"60\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"https://eu1.oraki.io/pserver&k=bc2d316f39931a07d9a8dd249bf85fc0\"></iframe>",
+                        "adm": "<iframe id=\"adm-banner-1\" width=\"468\" height=\"60\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"https://fake.test.io/pserver&k=bc2d316f39931a07d9a8dd249bf85fc0\"></iframe>",
                         "cid": "test_cid",
                         "crid": "test_crid",
                         "dealid": "test_dealid",
