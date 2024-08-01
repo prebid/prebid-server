@@ -1,5 +1,4 @@
-#todo обновить на необходимый
-endpoint: "https://rtb.dev.zentotem.net/bid?sspuid=cq5r5n0dputspujutpmg"
+endpoint: "https://rtb.zentotem.net/bid?sspuid=cqlnvfk00bhs0b6rci6g"
 maintainer:
   email: support@zentotem.net
 endpointCompression: gzip
