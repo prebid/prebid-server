@@ -7,10 +7,9 @@ import (
 	"testing"
 )
 
-// todo endpoint replace
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderZentotem, config.Adapter{
-		Endpoint: "https://rtb.dev.zentotem.net/bid?sspuid=cq5r5n0dputspujutpmg"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+		Endpoint: "https://rtb.zentotem.net/bid?sspuid=cqlnvfk00bhs0b6rci6g"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
