@@ -533,6 +533,14 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		return
 	}
 
+	// When certain modules require updating the request before validation, they currently have to use either the ExecuteEntrypointStage or ExecuteRawAuctionStage hook. Both of these hooks receive the raw byte stream of the request body, which requires each module to redundantly unmarshal and marshal the data, negatively impacting performance.
+	// To address this issue, a proposed solution is to introduce a new hook that allows passing an OpenRTB (ORTB) object directly. This approach would enhance performance and provide greater flexibility for writing code within the hook."
+	rejectErr = hookExecutor.ExecuteBeforeRequestValidationStage(req.BidRequest)
+	if rejectErr != nil {
+		errs = append(errs, rejectErr)
+		return
+	}
+
 	if err := mergeBidderParams(req); err != nil {
 		errs = []error{err}
 		return
