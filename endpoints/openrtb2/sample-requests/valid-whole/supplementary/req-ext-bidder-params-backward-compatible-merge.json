@@ -24,16 +24,17 @@
           ]
         },
         "ext": {
-          "appnexus": {
-            "placementId": 111111
-          },
-          "pubmatic": {
-            "wrapper": {
-              "profile": 1234
-            }
-          },
           "prebid": {
-            "bidder": {}
+            "bidder": {
+              "appnexus": {
+                "placementId": 111111
+              },
+              "pubmatic": {
+                "wrapper": {
+                  "profile": 1234
+                }
+              }
+            }
           }
         }
       }

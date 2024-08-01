@@ -4401,7 +4401,7 @@ func TestValidateStoredResp(t *testing.T) {
 					},
 				},
 			},
-			expectedErrorList:         []error{errors.New("request validation failed. The StoredAuctionResponse.ID field must be completely present with, or completely absent from, all impressions in request. No StoredAuctionResponse data found for request.imp[1].ext.prebid \n")},
+			expectedErrorList:         []error{errors.New("request validation failed. The StoredAuctionResponse.ID field must be completely present with, or completely absent from, all impressions in request. No StoredAuctionResponse data found for request.imp[1].ext.prebid")},
 			hasStoredAuctionResponses: true,
 			storedBidResponses:        nil,
 		},
@@ -4651,7 +4651,7 @@ func TestValidateStoredResp(t *testing.T) {
 			storedBidResponses:        stored_responses.ImpBidderStoredResp{"Some-Imp-ID": {"appnexus": json.RawMessage(`{"test":true}`), "rubicon": json.RawMessage(`{"test":true}`)}},
 		},
 		{
-			description: "One imp with 2 stored bid responses and 1 bidders in imp.ext and 1 in imp.ext.prebid.bidder, expect validate request to throw no errors",
+			description: "One imp with 1 stored bid response and 1 ignored bidder in imp.ext and 1 included bidder in imp.ext.prebid.bidder, expect validate request to throw no errors",
 			givenRequestWrapper: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					ID:  "Some-ID",
@@ -4678,7 +4678,7 @@ func TestValidateStoredResp(t *testing.T) {
 			},
 			expectedErrorList:         []error{},
 			hasStoredAuctionResponses: false,
-			storedBidResponses:        stored_responses.ImpBidderStoredResp{"Some-Imp-ID": {"appnexus": json.RawMessage(`{"test":true}`), "telaria": json.RawMessage(`{"test":true}`)}},
+			storedBidResponses:        stored_responses.ImpBidderStoredResp{"Some-Imp-ID": {"telaria": json.RawMessage(`{"test":true}`)}},
 		},
 		{
 			description: "One imp with 2 stored bid responses and 1 bidders in imp.ext and 1 in imp.ext.prebid.bidder that is not defined in stored bid responses, expect validate request to throw an error",
