@@ -13,20 +13,6 @@
       "ip": "91.199.242.236",
       "ua": "random user agent"
     },
-    "user": {
-      "ext": {
-        "eids": [
-          {
-            "source": "ttd.com",
-            "uids": [
-              {
-                "id": "ttd-uid"
-              }
-            ]
-          }
-        ]
-      }
-    },
     "imp": [
       {
         "id": "test-imp-id",
@@ -41,8 +27,8 @@
               "h": 300
             }
           ],
-          "w": 100,
-          "h": 150
+          "w": 55,
+          "h": 33
         },
         "ext": {
           "bidder": {
@@ -55,16 +41,16 @@
         "banner": {
           "format": [
             {
-              "w": 300,
-              "h": 250
+              "w": 900,
+              "h": 450
             },
             {
               "w": 500,
               "h": 300
             }
           ],
-          "w": 100,
-          "h": 150
+          "w": 88,
+          "h": 99
         },
         "ext": {
           "bidder": {
@@ -101,20 +87,6 @@
             "ip": "91.199.242.236",
             "ua": "random user agent"
           },
-          "user": {
-            "ext": {
-              "eids": [
-                {
-                  "source": "ttd.com",
-                  "uids": [
-                    {
-                      "id": "ttd-uid"
-                    }
-                  ]
-                }
-              ]
-            }
-          },
           "imp": [
             {
               "id": "test-imp-id",
@@ -143,16 +115,16 @@
               "banner": {
                 "format": [
                   {
-                    "w": 300,
-                    "h": 250
+                    "w": 900,
+                    "h": 450
                   },
                   {
                     "w": 500,
                     "h": 300
                   }
                 ],
-                "w": 300,
-                "h": 250
+                "w": 900,
+                "h": 450
               },
               "ext": {
                 "bidder": {
@@ -196,8 +168,8 @@
                   "price": 0.5,
                   "crid": "creative-123",
                   "adm": "<iframe id='789abc' name='789abc' src='http://creative-url.ttd.com'></iframe>",
-                  "w": 300,
-                  "h": 250,
+                  "w": 900,
+                  "h": 450,
                   "ext": {
                     "prebid": {
                       "type": "banner"
@@ -241,8 +213,8 @@
             "price": 0.5,
             "crid": "creative-123",
             "adm": "<iframe id='789abc' name='789abc' src='http://creative-url.ttd.com'></iframe>",
-            "w": 300,
-            "h": 250,
+            "w": 900,
+            "h": 450,
             "ext": {
               "prebid": {
                 "type": "banner"

@@ -1,6 +1,10 @@
 {
   "mockBidRequest": {
     "id": "test-request-id",
+    "site": {
+      "id": "site-id",
+      "page": "ttd.com"
+    },
     "imp": [
       {
         "id": "test-imp-id",
@@ -30,6 +34,13 @@
         },
         "body": {
           "id": "test-request-id",
+          "site": {
+            "id": "site-id",
+            "page": "ttd.com",
+            "publisher": {
+              "id": "123456"
+            }
+          },
           "imp": [
             {
               "id": "test-imp-id",

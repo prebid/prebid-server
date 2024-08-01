@@ -57,7 +57,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		siteCopy := *request.Site
 		if siteCopy.Publisher != nil {
 			publisherCopy := *siteCopy.Publisher
-			publisherCopy.ID = pubID
+			if pubID != "" {
+				publisherCopy.ID = pubID
+			}
 			siteCopy.Publisher = &publisherCopy
 		} else {
 			siteCopy.Publisher = &openrtb2.Publisher{ID: pubID}
@@ -67,7 +69,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		appCopy := *request.App
 		if appCopy.Publisher != nil {
 			publisherCopy := *appCopy.Publisher
-			publisherCopy.ID = pubID
+			if pubID != "" {
+				publisherCopy.ID = pubID
+			}
 			appCopy.Publisher = &publisherCopy
 		} else {
 			appCopy.Publisher = &openrtb2.Publisher{ID: pubID}

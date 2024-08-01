@@ -13,20 +13,6 @@
       "ip": "91.199.242.236",
       "ua": "random user agent"
     },
-    "user": {
-      "ext": {
-        "eids": [
-          {
-            "source": "ttd.com",
-            "uids": [
-              {
-                "id": "ttd-uid"
-              }
-            ]
-          }
-        ]
-      }
-    },
     "imp": [
       {
         "id": "test-imp-id",
@@ -37,8 +23,8 @@
               "h": 250
             }
           ],
-          "w": 300,
-          "h": 250
+          "w": 100,
+          "h": 150
         },
         "ext": {
           "bidder": {
@@ -74,20 +60,6 @@
             "os": "android",
             "ip": "91.199.242.236",
             "ua": "random user agent"
-          },
-          "user": {
-            "ext": {
-              "eids": [
-                {
-                  "source": "ttd.com",
-                  "uids": [
-                    {
-                      "id": "ttd-uid"
-                    }
-                  ]
-                }
-              ]
-            }
           },
           "imp": [
             {

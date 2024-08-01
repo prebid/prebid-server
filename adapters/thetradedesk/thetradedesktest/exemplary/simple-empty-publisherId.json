@@ -3,37 +3,32 @@
     "id": "test-request-id",
     "site": {
       "id": "site-id",
-      "page": "ttd.com"
+      "page": "ttd.com",
+      "publisher": {
+        "id": "did_not_override"
+      }
     },
     "device": {
       "os": "android",
-      "ipv6": "fd36:ce97:0fa1:dec0:0000:0000:0000:0000",
+      "ip": "91.199.242.236",
       "ua": "random user agent"
-    },
-    "user": {
-      "ext": {
-        "eids": [
-          {
-            "source": "ttd.com",
-            "uids": [
-              {
-                "id": "ttd-uid"
-              }
-            ]
-          }
-        ]
-      }
     },
     "imp": [
       {
         "id": "test-imp-id",
         "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ],
           "w": 300,
           "h": 250
         },
         "ext": {
           "bidder": {
-            "publisherId": "123456"
+            "publisherId": ""
           }
         }
       }
@@ -58,38 +53,30 @@
             "id": "site-id",
             "page": "ttd.com",
             "publisher": {
-              "id": "123456"
+              "id": "did_not_override"
             }
           },
           "device": {
             "os": "android",
-            "ipv6": "fd36:ce97:0fa1:dec0:0000:0000:0000:0000",
+            "ip": "91.199.242.236",
             "ua": "random user agent"
-          },
-          "user": {
-            "ext": {
-              "eids": [
-                {
-                  "source": "ttd.com",
-                  "uids": [
-                    {
-                      "id": "ttd-uid"
-                    }
-                  ]
-                }
-              ]
-            }
           },
           "imp": [
             {
               "id": "test-imp-id",
               "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ],
                 "w": 300,
                 "h": 250
               },
               "ext": {
                 "bidder": {
-                  "publisherId": "123456"
+                  "publisherId": ""
                 }
               }
             }
@@ -100,7 +87,6 @@
       "mockResponse": {
         "status": 200,
         "body": {
-          "id": "test-request-id",
           "currency": "USD",
           "seatbid": [
             {
@@ -120,7 +106,7 @@
                   },
                   "mtype": 1
                 }
-              ] 
+              ]
             }
           ]
         }

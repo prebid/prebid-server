@@ -75,7 +75,7 @@ func TestGetBidType(t *testing.T) {
 		wantErr           bool
 	}{
 		{
-			name: "getBidType banner",
+			name: "banner",
 			args: args{
 				markupType: openrtb2.MarkupBanner,
 			},
@@ -83,7 +83,7 @@ func TestGetBidType(t *testing.T) {
 			wantErr:           false,
 		},
 		{
-			name: "getBidType video",
+			name: "video",
 			args: args{
 				markupType: openrtb2.MarkupVideo,
 			},
@@ -91,7 +91,7 @@ func TestGetBidType(t *testing.T) {
 			wantErr:           false,
 		},
 		{
-			name: "getBidType native",
+			name: "native",
 			args: args{
 				markupType: openrtb2.MarkupNative,
 			},
@@ -99,7 +99,7 @@ func TestGetBidType(t *testing.T) {
 			wantErr:           false,
 		},
 		{
-			name: "getBidType invalid",
+			name: "invalid",
 			args: args{
 				markupType: -1,
 			},
@@ -127,7 +127,7 @@ func TestGetPublisherId(t *testing.T) {
 		wantErr             bool
 	}{
 		{
-			name: "valid publisher Id",
+			name: "valid_publisher_Id",
 			args: args{
 				impressions: []openrtb2.Imp{
 					{
@@ -140,7 +140,7 @@ func TestGetPublisherId(t *testing.T) {
 			wantErr:             false,
 		},
 		{
-			name: "multiple valid publisher Id",
+			name: "multiple_valid_publisher_Id",
 			args: args{
 				impressions: []openrtb2.Imp{
 					{
@@ -157,7 +157,7 @@ func TestGetPublisherId(t *testing.T) {
 			wantErr:             false,
 		},
 		{
-			name: "not publisherId present",
+			name: "not_publisherId_present",
 			args: args{
 				impressions: []openrtb2.Imp{
 					{
@@ -170,7 +170,7 @@ func TestGetPublisherId(t *testing.T) {
 			wantErr:             false,
 		},
 		{
-			name: "nil publisherId present",
+			name: "nil_publisherId_present",
 			args: args{
 				impressions: []openrtb2.Imp{
 					{
@@ -183,7 +183,7 @@ func TestGetPublisherId(t *testing.T) {
 			wantErr:             false,
 		},
 		{
-			name: "no impressions",
+			name: "no_impressions",
 			args: args{
 				impressions: []openrtb2.Imp{},
 			},
@@ -191,7 +191,7 @@ func TestGetPublisherId(t *testing.T) {
 			wantErr:             false,
 		},
 		{
-			name: "invalid bidder object",
+			name: "invalid_bidder_object",
 			args: args{
 				impressions: []openrtb2.Imp{
 					{
@@ -229,14 +229,14 @@ func TestTheTradeDeskAdapter_MakeRequests(t *testing.T) {
 		wantErr         bool
 	}{
 		{
-			name: "invalid bidderparams",
+			name: "invalid_bidderparams",
 			args: args{
 				request: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"bidderparams":{:"123"}}}`)},
 			},
 			wantErr: true,
 		},
 		{
-			name: "request with App",
+			name: "request_with_App",
 			args: args{
 				request: &openrtb2.BidRequest{
 					App: &openrtb2.App{},
@@ -246,7 +246,7 @@ func TestTheTradeDeskAdapter_MakeRequests(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "request with App and publisher",
+			name: "request_with_App_and_publisher",
 			args: args{
 				request: &openrtb2.BidRequest{
 					App: &openrtb2.App{Publisher: &openrtb2.Publisher{}},
@@ -256,7 +256,7 @@ func TestTheTradeDeskAdapter_MakeRequests(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "request with Site",
+			name: "request_with_Site",
 			args: args{
 				request: &openrtb2.BidRequest{
 					Site: &openrtb2.Site{},
@@ -297,7 +297,7 @@ func TestTheTradeDeskAdapter_MakeBids(t *testing.T) {
 		wantResp *adapters.BidderResponse
 	}{
 		{
-			name: "happy path, valid response with all bid params",
+			name: "happy_path_valid_response_with_all_bid_params",
 			args: args{
 				response: &adapters.ResponseData{
 					StatusCode: http.StatusOK,
@@ -329,7 +329,7 @@ func TestTheTradeDeskAdapter_MakeBids(t *testing.T) {
 			},
 		},
 		{
-			name: "ignore invalid prebiddealpriority",
+			name: "ignore_invalid_prebiddealpriority",
 			args: args{
 				response: &adapters.ResponseData{
 					StatusCode: http.StatusOK,
@@ -361,7 +361,7 @@ func TestTheTradeDeskAdapter_MakeBids(t *testing.T) {
 			},
 		},
 		{
-			name: "no content response",
+			name: "no_content_response",
 			args: args{
 				response: &adapters.ResponseData{
 					StatusCode: http.StatusNoContent,

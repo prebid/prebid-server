@@ -10,20 +10,6 @@
       "ip": "91.199.242.236",
       "ua": "random user agent"
     },
-    "user": {
-      "ext": {
-        "eids": [
-          {
-            "source": "ttd.com",
-            "uids": [
-              {
-                "id": "ttd-uid"
-              }
-            ]
-          }
-        ]
-      }
-    },
     "imp": [
       {
         "id": "test-imp-id",
@@ -79,20 +65,6 @@
             "os": "android",
             "ip": "91.199.242.236",
             "ua": "random user agent"
-          },
-          "user": {
-            "ext": {
-              "eids": [
-                {
-                  "source": "ttd.com",
-                  "uids": [
-                    {
-                      "id": "ttd-uid"
-                    }
-                  ]
-                }
-              ]
-            }
           },
           "imp": [
             {
