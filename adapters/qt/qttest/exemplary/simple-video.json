@@ -35,7 +35,7 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "https://endpoint1.qt.io/pserver",
+                "uri": "https://fake.test.io/pserver",
                 "body": {
                     "id": "test-request-id",
                     "device": {
