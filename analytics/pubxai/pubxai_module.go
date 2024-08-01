@@ -35,7 +35,7 @@ type PubxaiModule struct {
 	processorService processor.ProcessorService
 }
 
-func InitializePubxAIModule(client *http.Client, publisherId string, endpoint string, bufferInterval string, bufferSize string, SamplingPercentage int, configRefresh string, clock clock.Clock) (analytics.Module, error) {
+func InitializePubxAIModule(client *http.Client, publisherId string, endpoint string, bufferInterval string, bufferSize string, samplingPercentage int, configRefresh string, clock clock.Clock) (analytics.Module, error) {
 	glog.Infof("[pubxai] NewPubxAIModule: %v, %v, %v, %v", publisherId, endpoint, bufferInterval, bufferSize)
 	if client == nil {
 		return nil, errors.New("client cannot be nil")
@@ -74,13 +74,13 @@ func InitializePubxAIModule(client *http.Client, publisherId string, endpoint st
 		return nil, err
 	}
 
-	processorService := processor.NewProcessorService(publisherId, SamplingPercentage)
+	processorService := processor.NewProcessorService(publisherId, samplingPercentage)
 
 	defaultConfig := &config.Configuration{
 		PublisherId:        publisherId,
 		BufferInterval:     bufferInterval,
 		BufferSize:         bufferSize,
-		SamplingPercentage: SamplingPercentage,
+		SamplingPercentage: samplingPercentage,
 	}
 	winBidsQueue := queue.NewBidQueue("win", endpoint+"/win", client, clock, bufferInterval, bufferSize)
 	auctionBidsQueue := queue.NewBidQueue("auction", endpoint+"/auction", client, clock, bufferInterval, bufferSize)

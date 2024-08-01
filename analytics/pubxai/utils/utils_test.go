@@ -681,3 +681,166 @@ func equal(a, b map[string]interface{}) bool {
 
 	return true
 }
+
+func TestCreateWinningBidObject(t *testing.T) {
+	tests := []struct {
+		name        string
+		bidObj      Bid
+		impExt      map[string]interface{}
+		bidExt      map[string]interface{}
+		bidderName  string
+		floorDetail FloorDetail
+		expected    Bid
+	}{
+		{
+			name:   "valid bid with placement_id",
+			bidObj: Bid{},
+			impExt: map[string]interface{}{
+				"prebid": map[string]interface{}{
+					"bidder": map[string]interface{}{
+						"test_bidder": map[string]interface{}{
+							"placement_id": 123.0,
+						},
+					},
+				},
+			},
+			bidExt: map[string]interface{}{
+				"prebid": map[string]interface{}{
+					"targeting": map[string]interface{}{
+						"hb_size": "300x250",
+					},
+				},
+			},
+			bidderName: "test_bidder",
+			floorDetail: FloorDetail{
+				FloorProvider: "provider",
+				FetchStatus:   "fetched",
+				Location:      "location",
+				ModelVersion:  "v1",
+				SkipRate:      1,
+				Skipped:       false,
+			},
+			expected: Bid{
+				IsWinningBid:      true,
+				RenderStatus:      4,
+				Status:            "rendered",
+				PlacementId:       123.0,
+				RenderedSize:      "300x250",
+				FloorProvider:     "provider",
+				FloorFetchStatus:  "fetched",
+				FloorLocation:     "location",
+				FloorModelVersion: "v1",
+				FloorSkipRate:     1,
+				IsFloorSkipped:    false,
+			},
+		},
+		{
+			name:   "missing placement_id",
+			bidObj: Bid{},
+			impExt: map[string]interface{}{
+				"prebid": map[string]interface{}{
+					"bidder": map[string]interface{}{
+						"test_bidder": map[string]interface{}{
+							"other_field": 456.0,
+						},
+					},
+				},
+			},
+			bidExt: map[string]interface{}{
+				"prebid": map[string]interface{}{
+					"targeting": map[string]interface{}{
+						"hb_size": "728x90",
+					},
+				},
+			},
+			bidderName: "test_bidder",
+			floorDetail: FloorDetail{
+				FloorProvider: "provider",
+				FetchStatus:   "fetched",
+				Location:      "location",
+				ModelVersion:  "v1",
+				SkipRate:      2,
+				Skipped:       true,
+			},
+			expected: Bid{
+				IsWinningBid:      true,
+				RenderStatus:      4,
+				Status:            "rendered",
+				PlacementId:       0.0,
+				RenderedSize:      "728x90",
+				FloorProvider:     "provider",
+				FloorFetchStatus:  "fetched",
+				FloorLocation:     "location",
+				FloorModelVersion: "v1",
+				FloorSkipRate:     2,
+				IsFloorSkipped:    true,
+			},
+		},
+		{
+			name:   "invalid placement_id type",
+			bidObj: Bid{},
+			impExt: map[string]interface{}{
+				"prebid": map[string]interface{}{
+					"bidder": map[string]interface{}{
+						"test_bidder": map[string]interface{}{
+							"placement_id": "not_a_number",
+						},
+					},
+				},
+			},
+			bidExt: map[string]interface{}{
+				"prebid": map[string]interface{}{
+					"targeting": map[string]interface{}{
+						"hb_size": "160x600",
+					},
+				},
+			},
+			bidderName: "test_bidder",
+			floorDetail: FloorDetail{
+				FloorProvider: "provider",
+				FetchStatus:   "fetched",
+				Location:      "location",
+				ModelVersion:  "v2",
+				SkipRate:      3,
+				Skipped:       false,
+			},
+			expected: Bid{
+				IsWinningBid:      true,
+				RenderStatus:      4,
+				Status:            "rendered",
+				PlacementId:       0.0,
+				RenderedSize:      "160x600",
+				FloorProvider:     "provider",
+				FloorFetchStatus:  "fetched",
+				FloorLocation:     "location",
+				FloorModelVersion: "v2",
+				FloorSkipRate:     3,
+				IsFloorSkipped:    false,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := createWinningBidObject(tt.bidObj, tt.impExt, tt.bidExt, tt.bidderName, tt.floorDetail)
+			if !equalBids(result, tt.expected) {
+				t.Errorf("createWinningBidObject(%v, %v, %v, %v, %v) = %v; expected %v", tt.bidObj, tt.impExt, tt.bidExt, tt.bidderName, tt.floorDetail, result, tt.expected)
+			}
+		})
+	}
+}
+
+// Helper function to compare two Bid structs
+func equalBids(a, b Bid) bool {
+	return a.IsWinningBid == b.IsWinningBid &&
+		a.RenderStatus == b.RenderStatus &&
+		a.Status == b.Status &&
+		a.PlacementId == b.PlacementId &&
+		a.RenderedSize == b.RenderedSize &&
+		a.FloorProvider == b.FloorProvider &&
+		a.FloorFetchStatus == b.FloorFetchStatus &&
+		a.FloorLocation == b.FloorLocation &&
+		a.FloorModelVersion == b.FloorModelVersion &&
+		a.FloorSkipRate == b.FloorSkipRate &&
+		a.IsFloorSkipped == b.IsFloorSkipped
+}

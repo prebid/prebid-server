@@ -353,7 +353,7 @@ func (u *UtilsServiceImpl) ProcessBidResponses(bidResponses []map[string]interfa
 			return nil, nil
 		}
 
-		bidObj := createBidObject(bid, bidExt, imp, impExt, auctionId, bidderName, startTime, bidderResponsetime, floorDetail)
+		bidObj := createBidObject(bid, bidExt, imp, impExt, auctionId, bidderName, startTime, bidderResponsetime)
 
 		auctionBids = append(auctionBids, bidObj)
 
@@ -372,7 +372,12 @@ func extractFloorData(bidExt map[string]interface{}) map[string]interface{} {
 	if !ok {
 		return nil
 	}
-	return bidFloors.(map[string]interface{})
+	floorData, ok := bidFloors.(map[string]interface{})
+
+	if !ok {
+		return nil
+	}
+	return floorData
 }
 func unmarshalBidAndImpExt(bidData map[string]interface{}) (map[string]interface{}, map[string]interface{}, error) {
 	var bidExt map[string]interface{}
@@ -382,7 +387,7 @@ func unmarshalBidAndImpExt(bidData map[string]interface{}) (map[string]interface
 	imp, impOk := bidData["imp"].(openrtb2.Imp)
 
 	if !bidOk || !impOk {
-		return nil, nil, errors.New("invalid bid")
+		return nil, nil, errors.New("invalid bidData")
 	}
 	err := jsonutil.Unmarshal(imp.Ext, &impExt)
 	if err != nil {
@@ -397,23 +402,12 @@ func unmarshalBidAndImpExt(bidData map[string]interface{}) (map[string]interface
 	return bidExt, impExt, nil
 }
 
-func createBidObject(bid openrtb2.Bid, bidExt map[string]interface{}, imp openrtb2.Imp, impExt map[string]interface{}, auctionId, bidderName string, startTime int64, bidderResponsetime float64, floorDetail FloorDetail) Bid {
-	gptSlotCode, ok := impExt["gpid"].(string)
-	if !ok {
-		gptSlotCode = ""
-	}
-	cpm, ok := bidExt["origbidcpm"].(float64)
-	if !ok {
-		cpm = 0.0
-	}
-	currency, ok := bidExt["origbidcur"].(string)
-	if !ok {
-		currency = ""
-	}
-	tid, ok := impExt["tid"].(string)
-	if !ok {
-		tid = ""
-	}
+func createBidObject(bid openrtb2.Bid, bidExt map[string]interface{}, imp openrtb2.Imp, impExt map[string]interface{}, auctionId, bidderName string, startTime int64, bidderResponsetime float64) Bid {
+	gptSlotCode, _ := impExt["gpid"].(string)
+	cpm, _ := bidExt["origbidcpm"].(float64)
+	currency, _ := bidExt["origbidcur"].(string)
+	tid, _ := impExt["tid"].(string)
+
 	bidObj := Bid{
 		AdUnitCode:        bid.ImpID,
 		BidId:             bid.ID,
@@ -442,12 +436,17 @@ func createBidObject(bid openrtb2.Bid, bidExt map[string]interface{}, imp openrt
 }
 
 func createWinningBidObject(bidObj Bid, impExt, bidExt map[string]interface{}, bidderName string, floorDetail FloorDetail) Bid {
+	if placementInterface, ok := nestedMapLookup(impExt, "prebid", "bidder", bidderName, "placement_id"); ok {
+		bidObj.PlacementId, _ = placementInterface.(float64)
+	}
+
+	if renderSizeInterface, ok := nestedMapLookup(bidExt, "prebid", "targeting", "hb_size"); ok {
+		bidObj.RenderedSize, _ = renderSizeInterface.(string)
+	}
+
 	bidObj.IsWinningBid = true
 	bidObj.RenderStatus = 4
 	bidObj.Status = "rendered"
-	bidObj.PlacementId = impExt["prebid"].(map[string]interface{})["bidder"].(map[string]interface{})[bidderName].(map[string]interface{})["placement_id"].(float64)
-	bidObj.RenderedSize = bidExt["prebid"].(map[string]interface{})["targeting"].(map[string]interface{})["hb_size"].(string)
-
 	bidObj.FloorProvider = floorDetail.FloorProvider
 	bidObj.FloorFetchStatus = floorDetail.FetchStatus
 	bidObj.FloorLocation = floorDetail.Location
@@ -473,11 +472,7 @@ func isWinningBid(bidderName string, bidExt map[string]interface{}) bool {
 	hbPb, hbPbOk := targeting["hb_pb"].(string)
 	hbBidder, hbBidderOk := targeting["hb_bidder"].(string)
 
-	if hbPbOk && hbBidderOk && hbPb != "" && bidderName == hbBidder {
-		return true
-	}
-
-	return false
+	return hbPbOk && hbPb != "" && hbBidderOk && bidderName == hbBidder
 }
 
 func getMap(m map[string]interface{}, key string) map[string]interface{} {
