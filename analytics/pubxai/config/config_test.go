@@ -1,101 +1,120 @@
 package config
 
 import (
+	"encoding/json"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"testing"
+	"time"
+
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestFetchConfig_Success(t *testing.T) {
-	// Mock HTTP server
-	mockServer := MockHTTPServer(http.StatusOK, `{"publisher_id": "test_publisher", "buffer_interval": "10s", "buffer_size": "10MB", "sampling_percentage": 50}`)
-	defer mockServer.Close()
+func TestNewConfigService(t *testing.T) {
+	httpClient := &http.Client{}
+	pubxId := "testPublisher"
+	endpoint := "http://example.com"
+	refreshInterval := "1m"
 
-	client := mockServer.Client()
-	endpointUrl, _ := url.Parse(mockServer.URL)
-
-	config, err := fetchConfig(client, endpointUrl)
-	if err != nil {
-		t.Errorf("Expected no error, got %v", err)
-	}
-
-	if config.PublisherId != "test_publisher" {
-		t.Errorf("Expected PublisherId to be 'test_publisher', got %s", config.PublisherId)
-	}
-	if config.BufferInterval != "10s" {
-		t.Errorf("Expected BufferInterval to be '10s', got %s", config.BufferInterval)
-	}
+	configService, err := NewConfigService(httpClient, pubxId, endpoint, refreshInterval)
+	assert.NoError(t, err)
+	assert.NotNil(t, configService)
 }
 
-func TestFetchConfig_HTTPError(t *testing.T) {
+func TestNewConfigService_InvalidDuration(t *testing.T) {
+	httpClient := &http.Client{}
+	pubxId := "testPublisher"
+	endpoint := "http://example.com"
+	refreshInterval := "invalid"
 
-	mockServer := MockHTTPServer(http.StatusNotFound, "")
-	defer mockServer.Close()
-
-	client := mockServer.Client()
-	endpointUrl, _ := url.Parse(mockServer.URL)
-
-	_, err := fetchConfig(client, endpointUrl)
-	if err == nil {
-		t.Error("Expected an error, got nil")
-	}
+	configService, err := NewConfigService(httpClient, pubxId, endpoint, refreshInterval)
+	assert.Error(t, err)
+	assert.Nil(t, configService)
 }
 
-func TestNewConfigUpdateHttpTask_Success(t *testing.T) {
+func TestFetchConfig(t *testing.T) {
+	expectedConfig := &Configuration{
+		PublisherId:        "testPublisher",
+		BufferInterval:     "30s",
+		BufferSize:         "100",
+		SamplingPercentage: 50,
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(expectedConfig)
+	}))
+	defer server.Close()
+
+	endpointUrl, _ := url.Parse(server.URL)
+
+	config, err := fetchConfig(server.Client(), endpointUrl)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedConfig, config)
+}
+
+func TestFetchConfig_Error(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer server.Close()
+
+	endpointUrl, _ := url.Parse(server.URL)
+
+	config, err := fetchConfig(server.Client(), endpointUrl)
+	assert.Error(t, err)
+	assert.Nil(t, config)
+}
+
+func TestConfigServiceImpl_Start(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
 	httpClient := &http.Client{}
-	task, err := NewConfigUpdateHttpTask(httpClient, "test_pubxId", "http://example.com", "10s")
-	if err != nil {
-		t.Errorf("Expected no error, got %v", err)
-	}
+	pubxId := "testPublisher"
+	endpoint := "http://example.com"
+	refreshInterval := "1m"
 
-	if task == nil {
-		t.Error("Expected a non-nil task, got nil")
-	}
+	configService, _ := NewConfigService(httpClient, pubxId, endpoint, refreshInterval)
+	configImpl := configService.(*ConfigServiceImpl)
+
+	stop := make(chan struct{})
+	configChan := configImpl.Start(stop)
+
+	// Ensure task starts correctly
+	time.Sleep(2 * time.Second)
+	close(stop)
+	// Ensure task stops correctly
+	time.Sleep(2 * time.Second)
+	assert.NotNil(t, configChan)
 }
 
-func TestNewConfigUpdateHttpTask_InvalidRefreshInterval(t *testing.T) {
-
-	httpClient := &http.Client{}
-	_, err := NewConfigUpdateHttpTask(httpClient, "test_pubxId", "http://example.com", "invalid")
-	if err == nil {
-		t.Error("Expected an error, got nil")
+func TestConfigServiceImpl_IsSameAs(t *testing.T) {
+	config1 := &Configuration{
+		PublisherId:        "testPublisher",
+		BufferInterval:     "30s",
+		BufferSize:         "100",
+		SamplingPercentage: 50,
 	}
 
-}
-
-func TestIsSameAs_SameConfig(t *testing.T) {
-	config1 := &Configuration{PublisherId: "test", BufferInterval: "10s", BufferSize: "10MB", SamplingPercentage: 50}
-	config2 := &Configuration{PublisherId: "test", BufferInterval: "10s", BufferSize: "10MB", SamplingPercentage: 50}
-
-	if !config1.isSameAs(config2) {
-		t.Errorf("Expected configurations to be considered the same, but they are not")
+	config2 := &Configuration{
+		PublisherId:        "testPublisher",
+		BufferInterval:     "30s",
+		BufferSize:         "100",
+		SamplingPercentage: 50,
 	}
-}
 
-func TestIsSameAs_DifferentPublisherId(t *testing.T) {
-	config1 := &Configuration{PublisherId: "test1", BufferInterval: "10s", BufferSize: "10MB", SamplingPercentage: 50}
-	config2 := &Configuration{PublisherId: "test2", BufferInterval: "10s", BufferSize: "10MB", SamplingPercentage: 50}
-
-	if config1.isSameAs(config2) {
-		t.Errorf("Expected configurations to be considered different, but they are the same")
+	config3 := &Configuration{
+		PublisherId:        "differentPublisher",
+		BufferInterval:     "30s",
+		BufferSize:         "100",
+		SamplingPercentage: 50,
 	}
-}
 
-func TestIsSameAs_DifferentBufferSize(t *testing.T) {
-	config1 := &Configuration{PublisherId: "test", BufferInterval: "10s", BufferSize: "10MB", SamplingPercentage: 50}
-	config2 := &Configuration{PublisherId: "test", BufferInterval: "10s", BufferSize: "20MB", SamplingPercentage: 50}
+	configService := &ConfigServiceImpl{}
 
-	if config1.isSameAs(config2) {
-		t.Errorf("Expected configurations to be considered different, but they are the same")
-	}
-}
-
-func TestIsSameAs_DifferentSamplingPercentage(t *testing.T) {
-	config1 := &Configuration{PublisherId: "test", BufferInterval: "10s", BufferSize: "10MB", SamplingPercentage: 50}
-	config2 := &Configuration{PublisherId: "test", BufferInterval: "10s", BufferSize: "10MB", SamplingPercentage: 75}
-
-	if config1.isSameAs(config2) {
-		t.Errorf("Expected configurations to be considered different, but they are the same")
-	}
+	assert.True(t, configService.IsSameAs(config1, config2))
+	assert.False(t, configService.IsSameAs(config1, config3))
 }

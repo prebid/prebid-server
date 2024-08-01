@@ -8,7 +8,7 @@ import (
 
 type ProcessorService interface {
 	ProcessLogData(ao *utils.LogObject) (*utils.AuctionBids, []utils.WinningBid)
-	processBidData(bidResponses []map[string]interface{}, ao *utils.LogObject) (*utils.AuctionBids, []utils.WinningBid)
+	ProcessBidData(bidResponses []map[string]interface{}, ao *utils.LogObject) (*utils.AuctionBids, []utils.WinningBid)
 }
 
 type ProcessorServiceImpl struct {
@@ -25,7 +25,7 @@ func NewProcessorService(publisherId string, samplingRate int) ProcessorService 
 	}
 }
 
-func (p *ProcessorServiceImpl) processBidData(bidResponses []map[string]interface{}, ao *utils.LogObject) (*utils.AuctionBids, []utils.WinningBid) {
+func (p *ProcessorServiceImpl) ProcessBidData(bidResponses []map[string]interface{}, ao *utils.LogObject) (*utils.AuctionBids, []utils.WinningBid) {
 	startTime := ao.StartTime.UTC().UnixMilli()
 
 	requestExt, responseExt, err := p.utilService.UnmarshalExtensions(ao)
@@ -37,7 +37,7 @@ func (p *ProcessorServiceImpl) processBidData(bidResponses []map[string]interfac
 	auctionId := requestExt["id"].(string)
 
 	adUnitCodes := p.utilService.ExtractAdunitCodes(requestExt)
-	floorDetail := p.utilService.ExtractFloorData(requestExt, bidResponses[0])
+	floorDetail := p.utilService.ExtractFloorDetail(requestExt, bidResponses[0])
 	pageDetail := p.utilService.ExtractPageData(requestExt)
 	deviceDetail := p.utilService.ExtractDeviceData(requestExt)
 	userDetail := p.utilService.ExtractUserIds(requestExt)
@@ -140,5 +140,5 @@ func (p *ProcessorServiceImpl) ProcessLogData(ao *utils.LogObject) (*utils.Aucti
 		glog.Errorf("[pubxai] No matching bids in response")
 		return nil, nil
 	}
-	return p.processBidData(BidResponses, ao)
+	return p.ProcessBidData(BidResponses, ao)
 }

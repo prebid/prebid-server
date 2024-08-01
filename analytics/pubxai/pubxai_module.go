@@ -68,11 +68,13 @@ func InitializePubxAIModule(client *http.Client, publisherId string, endpoint st
 		endpoint,
 		configRefresh,
 	)
-	processorService := processor.NewProcessorService(publisherId, SamplingPercentage)
+
 	if err != nil {
-		glog.Error("[pubxai] Error creating config update task: %v", err)
+		glog.Error("[pubxai] Error While creating config Service: %v", err)
 		return nil, err
 	}
+
+	processorService := processor.NewProcessorService(publisherId, SamplingPercentage)
 
 	defaultConfig := &config.Configuration{
 		PublisherId:        publisherId,

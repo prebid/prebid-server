@@ -38,6 +38,14 @@ type AuctionBidsQueue struct {
 	QueueService[utils.AuctionBids]
 }
 
+type WinningBidQueueInterface interface {
+	QueueService[utils.WinningBid]
+}
+
+type AuctionBidsQueueInterface interface {
+	QueueService[utils.AuctionBids]
+}
+
 func NewGenericQueue[T any](queueType string, endpoint string, client *http.Client, clock clock.Clock, bufferInterval string, bufferSize string) QueueService[T] {
 	return &GenericQueue[T]{
 		Queue:          make([]T, 0),
@@ -89,6 +97,7 @@ func (q *GenericQueue[T]) flushQueuedData() {
 
 	if len(q.Queue) == 0 {
 		glog.Info("[pubxai] No queued data to send.")
+		return
 	}
 
 	data, err := jsonutil.Marshal(q.Queue)
@@ -118,11 +127,7 @@ func (q *GenericQueue[T]) Enqueue(item T) {
 	defer q.Mutex.Unlock()
 	q.Queue = append(q.Queue, item)
 
-	pBufferSize, err := units.FromHumanSize(q.BufferSize)
-	if err != nil {
-		glog.Errorf("[pubxai] Error parsing bufferSize: %v", err)
-		return
-	}
+	pBufferSize, _ := units.FromHumanSize(q.BufferSize)
 	if int64(len(q.Queue)) >= pBufferSize || q.isTimeToSend() {
 		q.flushQueuedData()
 	}

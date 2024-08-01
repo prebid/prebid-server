@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"errors"
 	"net/url"
 	"time"
 
@@ -21,33 +22,33 @@ type LogObject struct {
 }
 
 type Bid struct {
-	AdUnitCode        string      `json:"adUnitCode"`
-	GptSlotCode       string      `json:"gptSlotCode"`
-	AuctionId         string      `json:"auctionId"`
-	BidderCode        string      `json:"bidderCode"`
-	Cpm               float64     `json:"cpm"`
-	CreativeId        string      `json:"creativeId"`
-	Currency          string      `json:"currency"`
-	FloorData         FloorDetail `json:"floorData"`
-	NetRevenue        bool        `json:"netRevenue"`
-	RequestTimestamp  int64       `json:"requestTimestamp"`
-	ResponseTimestamp int64       `json:"responseTimestamp"`
-	Status            string      `json:"status"`
-	StatusMessage     string      `json:"statusMessage"`
-	TimeToRespond     int64       `json:"timeToRespond"`
-	TransactionId     string      `json:"transactionId"`
-	BidId             string      `json:"bidId"`
-	RenderStatus      int64       `json:"renderStatus"`
-	Sizes             [][]int64   `json:"sizes"`
-	FloorProvider     string      `json:"floorProvider"`
-	FloorFetchStatus  string      `json:"floorFetchStatus"`
-	FloorLocation     string      `json:"floorLocation"`
-	FloorModelVersion string      `json:"floorModelVersion"`
-	FloorSkipRate     int64       `json:"floorSkipRate"`
-	IsFloorSkipped    bool        `json:"isFloorSkipped"`
-	IsWinningBid      bool        `json:"isWinningBid"`
-	PlacementId       float64     `json:"placementId"`
-	RenderedSize      string      `json:"renderedSize"`
+	AdUnitCode        string                 `json:"adUnitCode"`
+	GptSlotCode       string                 `json:"gptSlotCode"`
+	AuctionId         string                 `json:"auctionId"`
+	BidderCode        string                 `json:"bidderCode"`
+	Cpm               float64                `json:"cpm"`
+	CreativeId        string                 `json:"creativeId"`
+	Currency          string                 `json:"currency"`
+	FloorData         map[string]interface{} `json:"floorData"`
+	NetRevenue        bool                   `json:"netRevenue"`
+	RequestTimestamp  int64                  `json:"requestTimestamp"`
+	ResponseTimestamp int64                  `json:"responseTimestamp"`
+	Status            string                 `json:"status"`
+	StatusMessage     string                 `json:"statusMessage"`
+	TimeToRespond     int64                  `json:"timeToRespond"`
+	TransactionId     string                 `json:"transactionId"`
+	BidId             string                 `json:"bidId"`
+	RenderStatus      int64                  `json:"renderStatus"`
+	Sizes             [][]int64              `json:"sizes"`
+	FloorProvider     string                 `json:"floorProvider"`
+	FloorFetchStatus  string                 `json:"floorFetchStatus"`
+	FloorLocation     string                 `json:"floorLocation"`
+	FloorModelVersion string                 `json:"floorModelVersion"`
+	FloorSkipRate     int64                  `json:"floorSkipRate"`
+	IsFloorSkipped    bool                   `json:"isFloorSkipped"`
+	IsWinningBid      bool                   `json:"IsWinningBid"`
+	PlacementId       float64                `json:"placementId"`
+	RenderedSize      string                 `json:"renderedSize"`
 }
 
 type AuctionBids struct {
@@ -114,6 +115,17 @@ type FloorDetail struct {
 	SkippedReason   string `json:"skippedReason"`
 }
 
+type FloorData struct {
+	FetchStatus     string `json:"fetchStatus"`
+	FloorProvider   string `json:"floorProvider"`
+	Location        string `json:"location"`
+	ModelVersion    string `json:"modelVersion"`
+	NoFloorSignaled bool   `json:"noFloorSignaled"`
+	SkipRate        int64  `json:"skipRate"`
+	Skipped         bool   `json:"skipped"`
+	SkippedReason   string `json:"skippedReason"`
+}
+
 type AuctionDetail struct {
 	AdUnitCodes []string `json:"adUnitCodes"`
 	RefreshRank int64    `json:"refreshRank"`
@@ -126,14 +138,10 @@ type UtilsService interface {
 	ExtractConsentTypes(requestExt map[string]interface{}) ConsentDetail
 	ExtractDeviceData(requestExt map[string]interface{}) DeviceDetail
 	ExtractPageData(requestExt map[string]interface{}) PageDetail
-	ExtractFloorData(requestExt map[string]interface{}, bidResponse map[string]interface{}) FloorDetail
+	ExtractFloorDetail(requestExt map[string]interface{}, bidResponse map[string]interface{}) FloorDetail
 	ExtractAdunitCodes(requestExt map[string]interface{}) []string
 	UnmarshalExtensions(ao *LogObject) (map[string]interface{}, map[string]interface{}, error)
-	unmarshalBidAndImpExt(bid openrtb2.Bid, imp openrtb2.Imp) (map[string]interface{}, map[string]interface{}, error)
 	ProcessBidResponses(bidResponses []map[string]interface{}, auctionId string, startTime int64, requestExt, responseExt map[string]interface{}, floorDetail FloorDetail) ([]Bid, []Bid)
-	createBidObject(bid openrtb2.Bid, bidExt map[string]interface{}, imp openrtb2.Imp, impExt map[string]interface{}, auctionId, bidderName string, bidderInfo map[string]interface{}, startTime int64, bidderResponsetime float64, floorDetail FloorDetail) Bid
-	createWinningBidObject(bidObj Bid, impExt, bidExt map[string]interface{}, bidderName string, floorDetail FloorDetail) Bid
-	isWinningBid(bidderName string, bidExt map[string]interface{}) bool
 }
 
 type UtilsServiceImpl struct {
@@ -147,17 +155,13 @@ func NewUtilsService(publisherId string) UtilsService {
 }
 
 func (u *UtilsServiceImpl) ExtractUserIds(requestExt map[string]interface{}) UserDetail {
-	userExt, ok := requestExt["user"].(map[string]interface{})
+
+	eidsInterface, ok := nestedMapLookup(requestExt, "user", "ext", "eids")
 	if !ok {
 		return UserDetail{}
 	}
 
-	ext, ok := userExt["ext"].(map[string]interface{})
-	if !ok {
-		return UserDetail{}
-	}
-
-	eids, ok := ext["eids"].([]interface{})
+	eids, ok := eidsInterface.([]interface{})
 	if !ok {
 		return UserDetail{}
 	}
@@ -177,12 +181,13 @@ func (u *UtilsServiceImpl) ExtractUserIds(requestExt map[string]interface{}) Use
 }
 
 func (u *UtilsServiceImpl) ExtractConsentTypes(requestExt map[string]interface{}) ConsentDetail {
-	regs, ok := requestExt["regs"].(map[string]interface{})
+
+	consentInterface, ok := nestedMapLookup(requestExt, "regs", "ext")
 	if !ok {
 		return ConsentDetail{}
 	}
 
-	consent, ok := regs["ext"].(map[string]interface{})
+	consent, ok := consentInterface.(map[string]interface{})
 	if !ok {
 		return ConsentDetail{}
 	}
@@ -199,12 +204,12 @@ func (u *UtilsServiceImpl) ExtractConsentTypes(requestExt map[string]interface{}
 func (u *UtilsServiceImpl) ExtractDeviceData(requestExt map[string]interface{}) DeviceDetail {
 	var deviceDetail DeviceDetail
 
-	deviceExt, ok := requestExt["device"].(map[string]interface{})
+	userAgentInterface, ok := nestedMapLookup(requestExt, "device", "ua")
 	if !ok {
 		return deviceDetail
 	}
 
-	userAgent, ok := deviceExt["ua"].(string)
+	userAgent, ok := userAgentInterface.(string)
 	if !ok {
 		return deviceDetail
 	}
@@ -212,7 +217,6 @@ func (u *UtilsServiceImpl) ExtractDeviceData(requestExt map[string]interface{}) 
 	deviceDetail.Browser = useragentutil.GetBrowser(userAgent)
 	deviceDetail.DeviceOS = useragentutil.GetOS(userAgent)
 	deviceDetail.DeviceType = useragentutil.GetDeviceType(userAgent)
-
 	return deviceDetail
 }
 
@@ -242,7 +246,7 @@ func (u *UtilsServiceImpl) ExtractPageData(requestExt map[string]interface{}) Pa
 	return pageDetail
 }
 
-func (u *UtilsServiceImpl) ExtractFloorData(requestExt map[string]interface{}, bidResponse map[string]interface{}) FloorDetail {
+func (u *UtilsServiceImpl) ExtractFloorDetail(requestExt map[string]interface{}, bidResponse map[string]interface{}) FloorDetail {
 	floorDetail := FloorDetail{}
 
 	ext := getMap(requestExt, "ext")
@@ -251,7 +255,7 @@ func (u *UtilsServiceImpl) ExtractFloorData(requestExt map[string]interface{}, b
 	floorData := getMap(floors, "data")
 	modelGroups := getSlice(floorData, "modelgroups")
 
-	bidExt, _, err := u.unmarshalBidAndImpExt(bidResponse["bid"].(openrtb2.Bid), bidResponse["imp"].(openrtb2.Imp))
+	bidExt, _, err := unmarshalBidAndImpExt(bidResponse)
 	if err != nil {
 		return floorDetail
 	}
@@ -332,24 +336,29 @@ func (u *UtilsServiceImpl) ProcessBidResponses(bidResponses []map[string]interfa
 
 	for _, bidData := range bidResponses {
 		bidderName := bidData["bidder"].(string)
-		bid := bidData["bid"].(openrtb2.Bid)
-		imp := bidData["imp"].(openrtb2.Imp)
 
-		bidExt, impExt, err := u.unmarshalBidAndImpExt(bid, imp)
+		bidExt, impExt, err := unmarshalBidAndImpExt(bidData)
 		if err != nil {
 			glog.Errorf("[pubxai] Error unmarshalling ext: %v", err)
 			continue
 		}
+		bid := bidData["bid"].(openrtb2.Bid)
+		imp := bidData["imp"].(openrtb2.Imp)
+		bidderResponsetimeInterface, ok := nestedMapLookup(responseExt, "responsetimemillis", bidderName)
+		if !ok {
+			return nil, nil
+		}
+		bidderResponsetime, ok := bidderResponsetimeInterface.(float64)
+		if !ok {
+			return nil, nil
+		}
 
-		bidderInfo := bidExt[bidderName].(map[string]interface{})
-		bidderResponsetime := responseExt["responsetimemillis"].(map[string]interface{})[bidderName].(float64)
-
-		bidObj := u.createBidObject(bid, bidExt, imp, impExt, auctionId, bidderName, bidderInfo, startTime, bidderResponsetime, floorDetail)
+		bidObj := createBidObject(bid, bidExt, imp, impExt, auctionId, bidderName, startTime, bidderResponsetime, floorDetail)
 
 		auctionBids = append(auctionBids, bidObj)
 
-		if u.isWinningBid(bidderName, bidExt) {
-			winningBidObj := u.createWinningBidObject(bidObj, impExt, bidExt, bidderName, floorDetail)
+		if isWinningBid(bidderName, bidExt) {
+			winningBidObj := createWinningBidObject(bidObj, impExt, bidExt, bidderName, floorDetail)
 			winningBids = append(winningBids, winningBidObj)
 		}
 	}
@@ -357,10 +366,24 @@ func (u *UtilsServiceImpl) ProcessBidResponses(bidResponses []map[string]interfa
 	return auctionBids, winningBids
 }
 
-func (u *UtilsServiceImpl) unmarshalBidAndImpExt(bid openrtb2.Bid, imp openrtb2.Imp) (map[string]interface{}, map[string]interface{}, error) {
+func extractFloorData(bidExt map[string]interface{}) map[string]interface{} {
+	bidFloors, ok := nestedMapLookup(bidExt, "prebid", "floors")
+
+	if !ok {
+		return nil
+	}
+	return bidFloors.(map[string]interface{})
+}
+func unmarshalBidAndImpExt(bidData map[string]interface{}) (map[string]interface{}, map[string]interface{}, error) {
 	var bidExt map[string]interface{}
 	var impExt map[string]interface{}
 
+	bid, bidOk := bidData["bid"].(openrtb2.Bid)
+	imp, impOk := bidData["imp"].(openrtb2.Imp)
+
+	if !bidOk || !impOk {
+		return nil, nil, errors.New("invalid bid")
+	}
 	err := jsonutil.Unmarshal(imp.Ext, &impExt)
 	if err != nil {
 		return nil, nil, err
@@ -374,10 +397,22 @@ func (u *UtilsServiceImpl) unmarshalBidAndImpExt(bid openrtb2.Bid, imp openrtb2.
 	return bidExt, impExt, nil
 }
 
-func (u *UtilsServiceImpl) createBidObject(bid openrtb2.Bid, bidExt map[string]interface{}, imp openrtb2.Imp, impExt map[string]interface{}, auctionId, bidderName string, bidderInfo map[string]interface{}, startTime int64, bidderResponsetime float64, floorDetail FloorDetail) Bid {
+func createBidObject(bid openrtb2.Bid, bidExt map[string]interface{}, imp openrtb2.Imp, impExt map[string]interface{}, auctionId, bidderName string, startTime int64, bidderResponsetime float64, floorDetail FloorDetail) Bid {
 	gptSlotCode, ok := impExt["gpid"].(string)
 	if !ok {
 		gptSlotCode = ""
+	}
+	cpm, ok := bidExt["origbidcpm"].(float64)
+	if !ok {
+		cpm = 0.0
+	}
+	currency, ok := bidExt["origbidcur"].(string)
+	if !ok {
+		currency = ""
+	}
+	tid, ok := impExt["tid"].(string)
+	if !ok {
+		tid = ""
 	}
 	bidObj := Bid{
 		AdUnitCode:        bid.ImpID,
@@ -385,17 +420,17 @@ func (u *UtilsServiceImpl) createBidObject(bid openrtb2.Bid, bidExt map[string]i
 		GptSlotCode:       gptSlotCode,
 		AuctionId:         auctionId,
 		BidderCode:        bidderName,
-		Cpm:               bidExt["origbidcpm"].(float64),
+		Cpm:               cpm,
 		CreativeId:        bid.CrID,
-		Currency:          bidExt["origbidcur"].(string),
-		FloorData:         floorDetail,
+		Currency:          currency,
+		FloorData:         extractFloorData(bidExt),
 		NetRevenue:        true,
 		RequestTimestamp:  startTime,
 		ResponseTimestamp: startTime + int64(bidderResponsetime),
 		Status:            "targetingSet",
 		StatusMessage:     "Bid available",
 		TimeToRespond:     int64(bidderResponsetime),
-		TransactionId:     impExt["tid"].(string),
+		TransactionId:     tid,
 		RenderStatus:      2,
 	}
 
@@ -406,7 +441,7 @@ func (u *UtilsServiceImpl) createBidObject(bid openrtb2.Bid, bidExt map[string]i
 	return bidObj
 }
 
-func (u *UtilsServiceImpl) createWinningBidObject(bidObj Bid, impExt, bidExt map[string]interface{}, bidderName string, floorDetail FloorDetail) Bid {
+func createWinningBidObject(bidObj Bid, impExt, bidExt map[string]interface{}, bidderName string, floorDetail FloorDetail) Bid {
 	bidObj.IsWinningBid = true
 	bidObj.RenderStatus = 4
 	bidObj.Status = "rendered"
@@ -424,7 +459,7 @@ func (u *UtilsServiceImpl) createWinningBidObject(bidObj Bid, impExt, bidExt map
 }
 
 // if hb_pb is present in bidExt.prebid.targeting and bidderName matches with hb_bidder
-func (u *UtilsServiceImpl) isWinningBid(bidderName string, bidExt map[string]interface{}) bool {
+func isWinningBid(bidderName string, bidExt map[string]interface{}) bool {
 	prebid, ok := bidExt["prebid"].(map[string]interface{})
 	if !ok {
 		return false
@@ -485,4 +520,20 @@ func getBool(m map[string]interface{}, key string) bool {
 		return val
 	}
 	return false
+}
+
+func nestedMapLookup(m map[string]interface{}, keys ...string) (interface{}, bool) {
+	current := interface{}(m)
+	for _, key := range keys {
+		if m, ok := current.(map[string]interface{}); ok {
+			if value, ok := m[key]; ok {
+				current = value
+			} else {
+				return nil, false
+			}
+		} else {
+			return nil, false
+		}
+	}
+	return current, true
 }
