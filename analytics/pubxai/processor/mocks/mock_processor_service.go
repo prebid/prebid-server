@@ -8,6 +8,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
+	openrtb2 "github.com/prebid/openrtb/v20/openrtb2"
 	utils "github.com/prebid/prebid-server/v2/analytics/pubxai/utils"
 )
 
@@ -35,18 +36,18 @@ func (m *MockProcessorService) EXPECT() *MockProcessorServiceMockRecorder {
 }
 
 // ProcessBidData mocks base method.
-func (m *MockProcessorService) ProcessBidData(arg0 []map[string]interface{}, arg1 *utils.LogObject) (*utils.AuctionBids, []utils.WinningBid) {
+func (m *MockProcessorService) ProcessBidData(arg0 []map[string]interface{}, arg1 map[string]openrtb2.Imp, arg2 *utils.LogObject) (*utils.AuctionBids, []utils.WinningBid) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ProcessBidData", arg0, arg1)
+	ret := m.ctrl.Call(m, "ProcessBidData", arg0, arg1, arg2)
 	ret0, _ := ret[0].(*utils.AuctionBids)
 	ret1, _ := ret[1].([]utils.WinningBid)
 	return ret0, ret1
 }
 
 // ProcessBidData indicates an expected call of ProcessBidData.
-func (mr *MockProcessorServiceMockRecorder) ProcessBidData(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockProcessorServiceMockRecorder) ProcessBidData(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessBidData", reflect.TypeOf((*MockProcessorService)(nil).ProcessBidData), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessBidData", reflect.TypeOf((*MockProcessorService)(nil).ProcessBidData), arg0, arg1, arg2)
 }
 
 // ProcessLogData mocks base method.

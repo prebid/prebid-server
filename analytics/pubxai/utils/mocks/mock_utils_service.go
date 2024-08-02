@@ -8,6 +8,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
+	openrtb2 "github.com/prebid/openrtb/v20/openrtb2"
 	utils "github.com/prebid/prebid-server/v2/analytics/pubxai/utils"
 )
 
@@ -32,6 +33,20 @@ func NewMockUtilsService(ctrl *gomock.Controller) *MockUtilsService {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockUtilsService) EXPECT() *MockUtilsServiceMockRecorder {
 	return m.recorder
+}
+
+// AppendTimeoutBids mocks base method.
+func (m *MockUtilsService) AppendTimeoutBids(arg0 []utils.Bid, arg1 map[string]openrtb2.Imp, arg2 *utils.LogObject) []utils.Bid {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AppendTimeoutBids", arg0, arg1, arg2)
+	ret0, _ := ret[0].([]utils.Bid)
+	return ret0
+}
+
+// AppendTimeoutBids indicates an expected call of AppendTimeoutBids.
+func (mr *MockUtilsServiceMockRecorder) AppendTimeoutBids(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AppendTimeoutBids", reflect.TypeOf((*MockUtilsService)(nil).AppendTimeoutBids), arg0, arg1, arg2)
 }
 
 // ExtractAdunitCodes mocks base method.
@@ -77,17 +92,17 @@ func (mr *MockUtilsServiceMockRecorder) ExtractDeviceData(arg0 interface{}) *gom
 }
 
 // ExtractFloorDetail mocks base method.
-func (m *MockUtilsService) ExtractFloorDetail(arg0, arg1 map[string]interface{}) utils.FloorDetail {
+func (m *MockUtilsService) ExtractFloorDetail(arg0 map[string]interface{}) utils.FloorDetail {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ExtractFloorDetail", arg0, arg1)
+	ret := m.ctrl.Call(m, "ExtractFloorDetail", arg0)
 	ret0, _ := ret[0].(utils.FloorDetail)
 	return ret0
 }
 
 // ExtractFloorDetail indicates an expected call of ExtractFloorDetail.
-func (mr *MockUtilsServiceMockRecorder) ExtractFloorDetail(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockUtilsServiceMockRecorder) ExtractFloorDetail(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExtractFloorDetail", reflect.TypeOf((*MockUtilsService)(nil).ExtractFloorDetail), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExtractFloorDetail", reflect.TypeOf((*MockUtilsService)(nil).ExtractFloorDetail), arg0)
 }
 
 // ExtractPageData mocks base method.

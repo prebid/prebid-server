@@ -224,13 +224,17 @@ func TestExtractFloorDetail(t *testing.T) {
 						},
 					},
 				},
-			},
-			bidResponse: map[string]interface{}{
-				"bid": openrtb2.Bid{
-					Ext: json.RawMessage(`{"prebid":{"floors":{"floorRule":"*|banner","floorRuleValue":1.5}}}`),
-				},
-				"imp": openrtb2.Imp{
-					Ext: json.RawMessage(`{}`),
+				"imp": []interface{}{
+					map[string]interface{}{
+						"ext": map[string]interface{}{
+							"prebid": map[string]interface{}{
+								"floors": map[string]interface{}{
+									"floorrule":      "*|banner",
+									"floorrulevalue": 1.5,
+								},
+							},
+						},
+					},
 				},
 			},
 			expectedFloor: FloorDetail{
@@ -252,7 +256,7 @@ func TestExtractFloorDetail(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actualFloor := service.ExtractFloorDetail(tt.requestExt, tt.bidResponse)
+			actualFloor := service.ExtractFloorDetail(tt.requestExt)
 			assert.Equal(t, tt.expectedFloor, actualFloor)
 		})
 	}
@@ -439,7 +443,7 @@ func TestProcessBidResponses(t *testing.T) {
 			startTime:    time.Now().Unix(),
 			expectedAuctionBids: []Bid{
 				{
-					AdUnitCode:        "imp1",
+					AdUnitCode:        "",
 					BidId:             "bid1",
 					GptSlotCode:       "",
 					AuctionId:         "auction1",
@@ -455,13 +459,13 @@ func TestProcessBidResponses(t *testing.T) {
 					StatusMessage:     "Bid available",
 					TimeToRespond:     100,
 					TransactionId:     "testtid",
-					RenderStatus:      2,
+					BidType:           2,
 					Sizes:             [][]int64{{10, 15}},
 				},
 			},
 			expectedWinningBids: []Bid{
 				{
-					AdUnitCode:        "imp1",
+					AdUnitCode:        "",
 					BidId:             "bid1",
 					GptSlotCode:       "",
 					AuctionId:         "auction1",
@@ -477,7 +481,7 @@ func TestProcessBidResponses(t *testing.T) {
 					StatusMessage:     "Bid available",
 					TimeToRespond:     100,
 					TransactionId:     "testtid",
-					RenderStatus:      4,
+					BidType:           4,
 					Sizes: [][]int64{
 						{10, 15},
 					},
@@ -722,7 +726,7 @@ func TestCreateWinningBidObject(t *testing.T) {
 			},
 			expected: Bid{
 				IsWinningBid:      true,
-				RenderStatus:      4,
+				BidType:           4,
 				Status:            "rendered",
 				PlacementId:       123.0,
 				RenderedSize:      "300x250",
@@ -764,7 +768,7 @@ func TestCreateWinningBidObject(t *testing.T) {
 			},
 			expected: Bid{
 				IsWinningBid:      true,
-				RenderStatus:      4,
+				BidType:           4,
 				Status:            "rendered",
 				PlacementId:       0.0,
 				RenderedSize:      "728x90",
@@ -806,7 +810,7 @@ func TestCreateWinningBidObject(t *testing.T) {
 			},
 			expected: Bid{
 				IsWinningBid:      true,
-				RenderStatus:      4,
+				BidType:           4,
 				Status:            "rendered",
 				PlacementId:       0.0,
 				RenderedSize:      "160x600",
@@ -833,7 +837,7 @@ func TestCreateWinningBidObject(t *testing.T) {
 // Helper function to compare two Bid structs
 func equalBids(a, b Bid) bool {
 	return a.IsWinningBid == b.IsWinningBid &&
-		a.RenderStatus == b.RenderStatus &&
+		a.BidType == b.BidType &&
 		a.Status == b.Status &&
 		a.PlacementId == b.PlacementId &&
 		a.RenderedSize == b.RenderedSize &&

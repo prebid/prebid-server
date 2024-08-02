@@ -38,7 +38,7 @@ type Bid struct {
 	TimeToRespond     int64                  `json:"timeToRespond"`
 	TransactionId     string                 `json:"transactionId"`
 	BidId             string                 `json:"bidId"`
-	RenderStatus      int64                  `json:"renderStatus"`
+	BidType           int64                  `json:"renderStatus"`
 	Sizes             [][]int64              `json:"sizes"`
 	FloorProvider     string                 `json:"floorProvider"`
 	FloorFetchStatus  string                 `json:"floorFetchStatus"`
@@ -138,10 +138,11 @@ type UtilsService interface {
 	ExtractConsentTypes(requestExt map[string]interface{}) ConsentDetail
 	ExtractDeviceData(requestExt map[string]interface{}) DeviceDetail
 	ExtractPageData(requestExt map[string]interface{}) PageDetail
-	ExtractFloorDetail(requestExt map[string]interface{}, bidResponse map[string]interface{}) FloorDetail
+	ExtractFloorDetail(requestExt map[string]interface{}) FloorDetail
 	ExtractAdunitCodes(requestExt map[string]interface{}) []string
 	UnmarshalExtensions(ao *LogObject) (map[string]interface{}, map[string]interface{}, error)
 	ProcessBidResponses(bidResponses []map[string]interface{}, auctionId string, startTime int64, requestExt, responseExt map[string]interface{}, floorDetail FloorDetail) ([]Bid, []Bid)
+	AppendTimeoutBids(auctionBids []Bid, impsById map[string]openrtb2.Imp, ao *LogObject) []Bid
 }
 
 type UtilsServiceImpl struct {
@@ -246,7 +247,7 @@ func (u *UtilsServiceImpl) ExtractPageData(requestExt map[string]interface{}) Pa
 	return pageDetail
 }
 
-func (u *UtilsServiceImpl) ExtractFloorDetail(requestExt map[string]interface{}, bidResponse map[string]interface{}) FloorDetail {
+func (u *UtilsServiceImpl) ExtractFloorDetail(requestExt map[string]interface{}) FloorDetail {
 	floorDetail := FloorDetail{}
 
 	ext := getMap(requestExt, "ext")
@@ -255,17 +256,27 @@ func (u *UtilsServiceImpl) ExtractFloorDetail(requestExt map[string]interface{},
 	floorData := getMap(floors, "data")
 	modelGroups := getSlice(floorData, "modelgroups")
 
-	bidExt, _, err := unmarshalBidAndImpExt(bidResponse)
-	if err != nil {
+	imps, ok := requestExt["imp"].([]interface{})
+
+	if !ok {
+		return floorDetail
+	}
+	imp, ok := imps[0].(map[string]interface{})
+	if !ok {
+		return floorDetail
+	}
+	bidFloorsInterface, ok := nestedMapLookup(imp, "ext", "prebid", "floors")
+	if !ok {
+		return floorDetail
+	}
+	bidFloors, ok := bidFloorsInterface.(map[string]interface{})
+	if !ok {
 		return floorDetail
 	}
 
-	bidPrebid := getMap(bidExt, "prebid")
-	bidFloors := getMap(bidPrebid, "floors")
-
 	var matchingModelGroup map[string]interface{}
-	floorRule := getString(bidFloors, "floorRule")
-	floorRuleValue := getFloat64(bidFloors, "floorRuleValue")
+	floorRule := getString(bidFloors, "floorrule")
+	floorRuleValue := getFloat64(bidFloors, "floorrulevalue")
 
 	for _, modelGroup := range modelGroups {
 		modelgroup := modelGroup.(map[string]interface{})
@@ -353,7 +364,7 @@ func (u *UtilsServiceImpl) ProcessBidResponses(bidResponses []map[string]interfa
 			return nil, nil
 		}
 
-		bidObj := createBidObject(bid, bidExt, imp, impExt, auctionId, bidderName, startTime, bidderResponsetime)
+		bidObj := createBidObject(&bid, bidExt, imp, impExt, auctionId, bidderName, startTime, bidderResponsetime)
 
 		auctionBids = append(auctionBids, bidObj)
 
@@ -366,6 +377,43 @@ func (u *UtilsServiceImpl) ProcessBidResponses(bidResponses []map[string]interfa
 	return auctionBids, winningBids
 }
 
+func (u *UtilsServiceImpl) AppendTimeoutBids(auctionBids []Bid, impsById map[string]openrtb2.Imp, ao *LogObject) []Bid {
+
+	requestExt, _, err := u.UnmarshalExtensions(ao)
+	if err != nil {
+		return auctionBids
+	}
+	imp, ok := requestExt["imp"].([]interface{})
+	if !ok {
+		return auctionBids
+	} else if len(imp) == 0 {
+		return auctionBids
+	}
+
+	glog.Info(requestExt)
+	for id, imp := range impsById {
+		var impExt map[string]interface{}
+		err := jsonutil.Unmarshal(imp.Ext, &impExt)
+		if err != nil {
+			continue
+		}
+		glog.Info(impExt)
+		bidderInterface, ok := nestedMapLookup(impExt, "prebid", "bidder")
+		if !ok {
+			continue
+		}
+		bidders, _ := bidderInterface.(map[string]interface{})
+
+		for bidder := range bidders {
+			glog.Info(bidder)
+			if !hasBidResponse(auctionBids, bidder, id) {
+				auctionBids = append(auctionBids, createTimedOutBid(imp, impExt, requestExt, ao, bidder))
+			}
+		}
+
+	}
+	return auctionBids
+}
 func extractFloorData(bidExt map[string]interface{}) map[string]interface{} {
 	bidFloors, ok := nestedMapLookup(bidExt, "prebid", "floors")
 
@@ -401,31 +449,51 @@ func unmarshalBidAndImpExt(bidData map[string]interface{}) (map[string]interface
 
 	return bidExt, impExt, nil
 }
+func getAdunitCodeAndGptSlot(impExt map[string]interface{}) (string, string) {
+	adUnitCode, ok := nestedMapLookup(impExt, "data", "pbadslot")
+	if !ok {
+		adUnitCode = ""
+	}
 
-func createBidObject(bid openrtb2.Bid, bidExt map[string]interface{}, imp openrtb2.Imp, impExt map[string]interface{}, auctionId, bidderName string, startTime int64, bidderResponsetime float64) Bid {
-	gptSlotCode, _ := impExt["gpid"].(string)
+	gptSlot, ok := nestedMapLookup(impExt, "data", "adserver", "adslot")
+	if !ok {
+		gptSlot = ""
+	}
+	return adUnitCode.(string), gptSlot.(string)
+}
+
+func getResponseBidInfo(bid *openrtb2.Bid) (string, string, int64, bool, string) {
+	if bid == nil {
+		return "", "", 3, false, "Bid Timeout"
+	}
+	return bid.ID, bid.CrID, 2, true, "Bid available"
+
+}
+func createBidObject(bid *openrtb2.Bid, bidExt map[string]interface{}, imp openrtb2.Imp, impExt map[string]interface{}, auctionId, bidderName string, startTime int64, bidderResponsetime float64) Bid {
+	adUnitCode, gptSlot := getAdunitCodeAndGptSlot(impExt)
+	bidId, creativeId, bidType, netRevenue, statusMessage := getResponseBidInfo(bid)
 	cpm, _ := bidExt["origbidcpm"].(float64)
 	currency, _ := bidExt["origbidcur"].(string)
 	tid, _ := impExt["tid"].(string)
 
 	bidObj := Bid{
-		AdUnitCode:        bid.ImpID,
-		BidId:             bid.ID,
-		GptSlotCode:       gptSlotCode,
+		AdUnitCode:        adUnitCode,
+		BidId:             bidId,
+		GptSlotCode:       gptSlot,
 		AuctionId:         auctionId,
 		BidderCode:        bidderName,
 		Cpm:               cpm,
-		CreativeId:        bid.CrID,
+		CreativeId:        creativeId,
 		Currency:          currency,
 		FloorData:         extractFloorData(bidExt),
-		NetRevenue:        true,
+		NetRevenue:        netRevenue,
 		RequestTimestamp:  startTime,
 		ResponseTimestamp: startTime + int64(bidderResponsetime),
 		Status:            "targetingSet",
-		StatusMessage:     "Bid available",
+		StatusMessage:     statusMessage,
 		TimeToRespond:     int64(bidderResponsetime),
 		TransactionId:     tid,
-		RenderStatus:      2,
+		BidType:           bidType,
 	}
 
 	for _, format := range imp.Banner.Format {
@@ -445,7 +513,7 @@ func createWinningBidObject(bidObj Bid, impExt, bidExt map[string]interface{}, b
 	}
 
 	bidObj.IsWinningBid = true
-	bidObj.RenderStatus = 4
+	bidObj.BidType = 4
 	bidObj.Status = "rendered"
 	bidObj.FloorProvider = floorDetail.FloorProvider
 	bidObj.FloorFetchStatus = floorDetail.FetchStatus
@@ -475,6 +543,20 @@ func isWinningBid(bidderName string, bidExt map[string]interface{}) bool {
 	return hbPbOk && hbPb != "" && hbBidderOk && bidderName == hbBidder
 }
 
+func createTimedOutBid(imp openrtb2.Imp, impExt map[string]interface{}, requestExt map[string]interface{}, ao *LogObject, bidder string) Bid {
+	glog.Info(impExt, bidder)
+	return createBidObject(nil, nil, imp, impExt, requestExt["id"].(string), bidder, ao.StartTime.UTC().UnixMilli(), 0.0)
+}
+
+func hasBidResponse(auctionBids []Bid, bidder string, adunitCode string) bool {
+
+	for _, bid := range auctionBids {
+		if bid.AdUnitCode == adunitCode && bid.BidderCode == bidder {
+			return true
+		}
+	}
+	return false
+}
 func getMap(m map[string]interface{}, key string) map[string]interface{} {
 	if val, ok := m[key].(map[string]interface{}); ok {
 		return val

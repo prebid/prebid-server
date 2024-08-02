@@ -8,7 +8,7 @@ import (
 
 type ProcessorService interface {
 	ProcessLogData(ao *utils.LogObject) (*utils.AuctionBids, []utils.WinningBid)
-	ProcessBidData(bidResponses []map[string]interface{}, ao *utils.LogObject) (*utils.AuctionBids, []utils.WinningBid)
+	ProcessBidData(bidResponses []map[string]interface{}, impsById map[string]openrtb2.Imp, ao *utils.LogObject) (*utils.AuctionBids, []utils.WinningBid)
 }
 
 type ProcessorServiceImpl struct {
@@ -25,7 +25,7 @@ func NewProcessorService(publisherId string, samplingRate int) ProcessorService 
 	}
 }
 
-func (p *ProcessorServiceImpl) ProcessBidData(bidResponses []map[string]interface{}, ao *utils.LogObject) (*utils.AuctionBids, []utils.WinningBid) {
+func (p *ProcessorServiceImpl) ProcessBidData(bidResponses []map[string]interface{}, impsById map[string]openrtb2.Imp, ao *utils.LogObject) (*utils.AuctionBids, []utils.WinningBid) {
 	startTime := ao.StartTime.UTC().UnixMilli()
 
 	requestExt, responseExt, err := p.utilService.UnmarshalExtensions(ao)
@@ -37,7 +37,7 @@ func (p *ProcessorServiceImpl) ProcessBidData(bidResponses []map[string]interfac
 	auctionId := requestExt["id"].(string)
 
 	adUnitCodes := p.utilService.ExtractAdunitCodes(requestExt)
-	floorDetail := p.utilService.ExtractFloorDetail(requestExt, bidResponses[0])
+	floorDetail := p.utilService.ExtractFloorDetail(requestExt)
 	pageDetail := p.utilService.ExtractPageData(requestExt)
 	deviceDetail := p.utilService.ExtractDeviceData(requestExt)
 	userDetail := p.utilService.ExtractUserIds(requestExt)
@@ -57,6 +57,8 @@ func (p *ProcessorServiceImpl) ProcessBidData(bidResponses []map[string]interfac
 	}
 
 	auctionBids, winningBids := p.utilService.ProcessBidResponses(bidResponses, auctionId, startTime, requestExt, responseExt, floorDetail)
+
+	auctionBids = p.utilService.AppendTimeoutBids(auctionBids, impsById, ao)
 	// make AuctionBids object and winningBids Object
 	auctionObj := utils.AuctionBids{
 		AuctionDetail: auctionDetail,
@@ -116,10 +118,7 @@ func (p *ProcessorServiceImpl) ProcessLogData(ao *utils.LogObject) (*utils.Aucti
 		return nil, nil
 	}
 	seatBids := response.SeatBid
-	if len(seatBids) == 0 {
-		glog.Errorf("[pubxai] No seatbids in response")
-		return nil, nil
-	}
+
 	var BidResponses []map[string]interface{}
 	for _, seatBid := range seatBids {
 		bidderName := seatBid.Seat
@@ -135,10 +134,5 @@ func (p *ProcessorServiceImpl) ProcessLogData(ao *utils.LogObject) (*utils.Aucti
 			}
 		}
 	}
-	glog.Infof("[pubxai] No of BidResponses: %v", len(BidResponses))
-	if len(BidResponses) == 0 {
-		glog.Errorf("[pubxai] No matching bids in response")
-		return nil, nil
-	}
-	return p.ProcessBidData(BidResponses, ao)
+	return p.ProcessBidData(BidResponses, impsById, ao)
 }
