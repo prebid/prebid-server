@@ -11,7 +11,7 @@ type nonBids struct {
 
 // addBid is not thread safe as we are initializing and writing to map
 func (snb *nonBids) addBid(bid *entities.PbsOrtbBid, nonBidReason int, seat string) {
-	if bid == nil || bid.Bid == nil {
+	if bid == nil || bid.Bid == nil || bid.Bid.ImpID == "" {
 		return
 	}
 	if snb.seatNonBidsMap == nil {
@@ -20,7 +20,7 @@ func (snb *nonBids) addBid(bid *entities.PbsOrtbBid, nonBidReason int, seat stri
 	nonBid := openrtb_ext.NonBid{
 		ImpId:      bid.Bid.ImpID,
 		StatusCode: nonBidReason,
-		Ext: openrtb_ext.NonBidExt{
+		Ext: &openrtb_ext.NonBidExt{
 			Prebid: openrtb_ext.ExtResponseNonBidPrebid{Bid: openrtb_ext.NonBidObject{
 				Price:          bid.Bid.Price,
 				ADomain:        bid.Bid.ADomain,
@@ -52,4 +52,17 @@ func (snb *nonBids) get() []openrtb_ext.SeatNonBid {
 		})
 	}
 	return seatNonBid
+}
+
+// append adds the nonBids from the input nonBids to the current nonBids.
+// This method is not thread safe as we are initializing and writing to map
+func (snb *nonBids) append(nonBids ...nonBids) {
+	if snb.seatNonBidsMap == nil {
+		snb.seatNonBidsMap = make(map[string][]openrtb_ext.NonBid)
+	}
+	for _, nonBid := range nonBids {
+		for seat, nonBids := range nonBid.seatNonBidsMap {
+			snb.seatNonBidsMap[seat] = append(snb.seatNonBidsMap[seat], nonBids...)
+		}
+	}
 }

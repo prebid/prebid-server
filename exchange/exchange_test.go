@@ -4782,15 +4782,16 @@ func TestMakeBidWithValidation(t *testing.T) {
 			name:               "One_of_two_bids_is_invalid_based_on_DSA_object_presence",
 			givenBidRequestExt: json.RawMessage(`{"dsa": {"dsarequired": 2}}`),
 			givenValidations:   config.Validations{},
-			givenBids:          []*entities.PbsOrtbBid{{Bid: &openrtb2.Bid{Ext: json.RawMessage(`{"dsa": {"adrender":1}}`)}}, {Bid: &openrtb2.Bid{}}},
+			givenBids:          []*entities.PbsOrtbBid{{Bid: &openrtb2.Bid{Ext: json.RawMessage(`{"dsa": {"adrender":1}}`)}}, {Bid: &openrtb2.Bid{ImpID: "imp"}}},
 			givenSeat:          "pubmatic",
 			expectedNumOfBids:  1,
 			expectedNonBids: &nonBids{
 				seatNonBidsMap: map[string][]openrtb_ext.NonBid{
 					"pubmatic": {
 						{
+							ImpId:      "imp",
 							StatusCode: 300,
-							Ext: openrtb_ext.NonBidExt{
+							Ext: &openrtb_ext.NonBidExt{
 								Prebid: openrtb_ext.ExtResponseNonBidPrebid{
 									Bid: openrtb_ext.NonBidObject{},
 								},
@@ -4804,15 +4805,16 @@ func TestMakeBidWithValidation(t *testing.T) {
 		{
 			name:              "Creative_size_validation_enforced,_one_of_two_bids_has_invalid_dimensions",
 			givenValidations:  config.Validations{BannerCreativeMaxSize: config.ValidationEnforce, MaxCreativeWidth: 100, MaxCreativeHeight: 100},
-			givenBids:         []*entities.PbsOrtbBid{{Bid: &openrtb2.Bid{W: 200, H: 200}, BidType: openrtb_ext.BidTypeBanner}, {Bid: &openrtb2.Bid{W: 50, H: 50}, BidType: openrtb_ext.BidTypeBanner}},
+			givenBids:         []*entities.PbsOrtbBid{{Bid: &openrtb2.Bid{W: 200, H: 200, ImpID: "imp"}, BidType: openrtb_ext.BidTypeBanner}, {Bid: &openrtb2.Bid{W: 50, H: 50, ImpID: "imp"}, BidType: openrtb_ext.BidTypeBanner}},
 			givenSeat:         "pubmatic",
 			expectedNumOfBids: 1,
 			expectedNonBids: &nonBids{
 				seatNonBidsMap: map[string][]openrtb_ext.NonBid{
 					"pubmatic": {
 						{
+							ImpId:      "imp",
 							StatusCode: 351,
-							Ext: openrtb_ext.NonBidExt{
+							Ext: &openrtb_ext.NonBidExt{
 								Prebid: openrtb_ext.ExtResponseNonBidPrebid{
 									Bid: openrtb_ext.NonBidObject{
 										W: 200,
@@ -4847,6 +4849,11 @@ func TestMakeBidWithValidation(t *testing.T) {
 						{
 							ImpId:      "1",
 							StatusCode: 352,
+							Ext: &openrtb_ext.NonBidExt{
+								Prebid: openrtb_ext.ExtResponseNonBidPrebid{
+									Bid: openrtb_ext.NonBidObject{},
+								},
+							},
 						},
 					},
 				},

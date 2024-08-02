@@ -34,7 +34,7 @@ type validatedBidder struct {
 func (v *validatedBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, hookExecutor hookexecution.StageExecutor, ruleToAdjustments openrtb_ext.AdjustmentsByDealID) ([]*entities.PbsOrtbSeatBid, extraBidderRespInfo, []error) {
 	seatBids, extraBidderRespInfo, errs := v.bidder.requestBid(ctx, bidderRequest, conversions, reqInfo, adsCertSigner, bidRequestOptions, alternateBidderCodes, hookExecutor, ruleToAdjustments)
 	for _, seatBid := range seatBids {
-		if validationErrors := removeInvalidBids(bidderRequest.BidRequest, seatBid, bidRequestOptions.responseDebugAllowed); len(validationErrors) > 0 {
+		if validationErrors := removeInvalidBids(bidderRequest.BidRequest, seatBid, &extraBidderRespInfo.adapterNonBids, bidRequestOptions.responseDebugAllowed); len(validationErrors) > 0 {
 			errs = append(errs, validationErrors...)
 		}
 	}
@@ -42,7 +42,7 @@ func (v *validatedBidder) requestBid(ctx context.Context, bidderRequest BidderRe
 }
 
 // validateBids will run some validation checks on the returned bids and excise any invalid bids
-func removeInvalidBids(request *openrtb2.BidRequest, seatBid *entities.PbsOrtbSeatBid, debug bool) []error {
+func removeInvalidBids(request *openrtb2.BidRequest, seatBid *entities.PbsOrtbSeatBid, seatNonBids *nonBids, debug bool) []error {
 	// Exit early if there is nothing to do.
 	if seatBid == nil || len(seatBid.Bids) == 0 {
 		return nil
@@ -50,6 +50,9 @@ func removeInvalidBids(request *openrtb2.BidRequest, seatBid *entities.PbsOrtbSe
 
 	// By design, default currency is USD.
 	if cerr := validateCurrency(request.Cur, seatBid.Currency); cerr != nil {
+		for _, bid := range seatBid.Bids {
+			seatNonBids.addBid(bid, int(ResponseRejectedGeneral), seatBid.Seat)
+		}
 		seatBid.Bids = nil
 		return []error{cerr}
 	}
@@ -59,8 +62,11 @@ func removeInvalidBids(request *openrtb2.BidRequest, seatBid *entities.PbsOrtbSe
 	for _, bid := range seatBid.Bids {
 		if ok, err := validateBid(bid, debug); ok {
 			validBids = append(validBids, bid)
-		} else if err != nil {
-			errs = append(errs, err)
+		} else {
+			seatNonBids.addBid(bid, int(ResponseRejectedGeneral), seatBid.Seat) // report seat non bid
+			if err != nil {
+				errs = append(errs, err)
+			}
 		}
 	}
 	seatBid.Bids = validBids

@@ -103,6 +103,7 @@ type bidResponseWrapper struct {
 	bidder                  openrtb_ext.BidderName
 	adapter                 openrtb_ext.BidderName
 	bidderResponseStartTime time.Time
+	adapterNonBids          nonBids
 }
 
 type BidIDGenerator interface {
@@ -373,7 +374,8 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 		fledge          *openrtb_ext.Fledge
 		anyBidsReturned bool
 		// List of bidders we have requests for.
-		liveAdapters []openrtb_ext.BidderName
+		liveAdapters   []openrtb_ext.BidderName
+		adapterNonBids nonBids
 	)
 
 	if len(r.StoredAuctionResponses) > 0 {
@@ -399,13 +401,14 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 		fledge = extraRespInfo.fledge
 		anyBidsReturned = extraRespInfo.bidsFound
 		r.BidderResponseStartTime = extraRespInfo.bidderResponseStartTime
+		adapterNonBids = extraRespInfo.seatNonBid
 	}
 
 	var (
 		auc            *auction
 		cacheErrs      []error
 		bidResponseExt *openrtb_ext.ExtBidResponse
-		seatNonBids    = nonBids{}
+		seatNonBids    = adapterNonBids
 	)
 
 	if anyBidsReturned {
@@ -753,6 +756,7 @@ func (e *exchange) getAllBids(
 			// Add in time reporting
 			elapsed := time.Since(start)
 			brw.adapterSeatBids = seatBids
+			brw.adapterNonBids = extraBidderRespInfo.adapterNonBids
 			// Structure to record extra tracking data generated during bidding
 			ae := new(seatResponseExtra)
 			ae.ResponseTimeMillis = int(elapsed / time.Millisecond)
@@ -805,6 +809,9 @@ func (e *exchange) getAllBids(
 		}
 		//but we need to add all bidders data to adapterExtra to have metrics and other metadata
 		adapterExtra[brw.bidder] = brw.adapterExtra
+
+		// collect adapter non bids
+		extraRespInfo.seatNonBid.append(brw.adapterNonBids)
 	}
 
 	return adapterBids, adapterExtra, extraRespInfo

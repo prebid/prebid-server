@@ -33,13 +33,13 @@ func TestSeatNonBidsAdd(t *testing.T) {
 		{
 			name:   "nil-seatNonBidsMap-with-bid-object",
 			fields: fields{seatNonBidsMap: nil},
-			args:   args{bid: &entities.PbsOrtbBid{Bid: &openrtb2.Bid{}}, seat: "bidder1"},
+			args:   args{bid: &entities.PbsOrtbBid{Bid: &openrtb2.Bid{ImpID: "imp"}}, seat: "bidder1"},
 			want:   sampleSeatNonBidMap("bidder1", 1),
 		},
 		{
 			name:   "multiple-nonbids-for-same-seat",
 			fields: fields{seatNonBidsMap: sampleSeatNonBidMap("bidder2", 1)},
-			args:   args{bid: &entities.PbsOrtbBid{Bid: &openrtb2.Bid{}}, seat: "bidder2"},
+			args:   args{bid: &entities.PbsOrtbBid{Bid: &openrtb2.Bid{ImpID: "imp"}}, seat: "bidder2"},
 			want:   sampleSeatNonBidMap("bidder2", 2),
 		},
 	}
@@ -86,7 +86,8 @@ var sampleSeatNonBidMap = func(seat string, nonBidCount int) map[string][]openrt
 	nonBids := make([]openrtb_ext.NonBid, 0)
 	for i := 0; i < nonBidCount; i++ {
 		nonBids = append(nonBids, openrtb_ext.NonBid{
-			Ext: openrtb_ext.NonBidExt{Prebid: openrtb_ext.ExtResponseNonBidPrebid{Bid: openrtb_ext.NonBidObject{}}},
+			ImpId: "imp",
+			Ext:   &openrtb_ext.NonBidExt{Prebid: openrtb_ext.ExtResponseNonBidPrebid{Bid: openrtb_ext.NonBidObject{}}},
 		})
 	}
 	return map[string][]openrtb_ext.NonBid{
@@ -102,7 +103,8 @@ var sampleSeatBids = func(seat string, nonBidCount int) []openrtb_ext.SeatNonBid
 	}
 	for i := 0; i < nonBidCount; i++ {
 		seatNonBid.NonBid = append(seatNonBid.NonBid, openrtb_ext.NonBid{
-			Ext: openrtb_ext.NonBidExt{Prebid: openrtb_ext.ExtResponseNonBidPrebid{Bid: openrtb_ext.NonBidObject{}}},
+			ImpId: "imp",
+			Ext:   &openrtb_ext.NonBidExt{Prebid: openrtb_ext.ExtResponseNonBidPrebid{Bid: openrtb_ext.NonBidObject{}}},
 		})
 	}
 	seatNonBids = append(seatNonBids, seatNonBid)
