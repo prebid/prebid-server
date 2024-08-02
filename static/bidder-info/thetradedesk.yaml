@@ -14,8 +14,8 @@ capabilities:
       - video
       - native
 userSync:
-  redirect:
-    url: https://match.adsrvr.org?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
-    userMacro: $UID
+  # User sync is supported but it requires configuration. Reach out to a TAM to get a <CookiePartnerId>
+  # Here is an example of how the url should look like:
+  # https://match.adsrvr.org/track/rid?ttd_pid=<CookiePartnerId>&fmt=json&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
 openrtb:
   gpp-supported: true
