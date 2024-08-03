@@ -85,3 +85,43 @@ func TestStartWithPeriodicRun(t *testing.T) {
 	time.Sleep(50 * time.Millisecond)
 	assert.Equal(t, expectedRuns, runner.RunCount(), "runner should not run after Stop is called")
 }
+
+func TestSkipInitialRun(t *testing.T) {
+	// Setup One Periodic Run:
+	expectedRuns := 0
+	runner := NewMockRunner(expectedRuns)
+	interval := 0 * time.Millisecond
+	ticker := task.NewTickerTaskWithOptions(task.Options{
+		Interval:       interval,
+		Runner:         runner,
+		SkipInitialRun: true,
+	})
+
+	// Execute:
+	ticker.Start()
+
+	// Verify No Additional Runs After Stop:
+	time.Sleep(50 * time.Millisecond)
+	assert.Equal(t, expectedRuns, runner.RunCount(), "runner should not run")
+}
+
+func TestChannelDone(t *testing.T) {
+	runner := NewMockRunner(1)
+	interval := 10 * time.Millisecond
+	ticker := task.NewTickerTask(interval, runner)
+
+	// Execute:
+	ticker.Start()
+
+	go func() {
+		time.Sleep(10 * time.Millisecond)
+		ticker.Stop()
+	}()
+
+	select {
+	case <-ticker.Done():
+		// Expected
+	case <-time.After(250 * time.Millisecond):
+		assert.Failf(t, "Ticker Done", "expected stop signal")
+	}
+}

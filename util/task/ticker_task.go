@@ -9,23 +9,40 @@ type Runner interface {
 }
 
 type TickerTask struct {
-	interval time.Duration
-	runner   Runner
-	done     chan struct{}
+	interval       time.Duration
+	runner         Runner
+	skipInitialRun bool
+	done           chan struct{}
 }
 
 func NewTickerTask(interval time.Duration, runner Runner) *TickerTask {
+	return NewTickerTaskWithOptions(Options{
+		Interval: interval,
+		Runner:   runner,
+	})
+}
+
+type Options struct {
+	Interval       time.Duration
+	Runner         Runner
+	SkipInitialRun bool
+}
+
+func NewTickerTaskWithOptions(opt Options) *TickerTask {
 	return &TickerTask{
-		interval: interval,
-		runner:   runner,
-		done:     make(chan struct{}),
+		interval:       opt.Interval,
+		runner:         opt.Runner,
+		skipInitialRun: opt.SkipInitialRun,
+		done:           make(chan struct{}),
 	}
 }
 
 // Start runs the task immediately and then schedules the task to run periodically
 // if a positive fetching interval has been specified.
 func (t *TickerTask) Start() {
-	t.runner.Run()
+	if !t.skipInitialRun {
+		t.runner.Run()
+	}
 
 	if t.interval > 0 {
 		go t.runRecurring()
@@ -35,6 +52,11 @@ func (t *TickerTask) Start() {
 // Stop stops the periodic task but the task runner maintains state
 func (t *TickerTask) Stop() {
 	close(t.done)
+}
+
+// Done exports readonly done channel
+func (t *TickerTask) Done() <-chan struct{} {
+	return t.done
 }
 
 // run creates a ticker that ticks at the specified interval. On each tick,

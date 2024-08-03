@@ -226,3 +226,7 @@ func (me *MetricsEngineMock) RecordModuleExecutionError(labels ModuleLabels) {
 func (me *MetricsEngineMock) RecordModuleTimeout(labels ModuleLabels) {
 	me.Called(labels)
 }
+
+func (me *MetricsEngineMock) RecordGeoLocationRequest(success bool) {
+	me.Called(success)
+}

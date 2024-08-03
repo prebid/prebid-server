@@ -56,6 +56,34 @@ func TestContainsFatalError(t *testing.T) {
 	}
 }
 
+func TestFirstFatalErrors(t *testing.T) {
+	fatalError := &stubError{severity: SeverityFatal}
+	fatalError2 := &stubError{severity: SeverityFatal}
+	notFatalError := &stubError{severity: SeverityWarning}
+	unknownSeverityError := errors.New("anyError")
+
+	tests := []struct {
+		errors []error
+		first  error
+	}{
+		{[]error{}, nil},
+		{[]error{fatalError}, fatalError},
+		{[]error{fatalError2}, fatalError2},
+		{[]error{notFatalError}, nil},
+		{[]error{unknownSeverityError}, unknownSeverityError},
+		{[]error{notFatalError, unknownSeverityError}, unknownSeverityError},
+		{[]error{fatalError, fatalError2}, fatalError},
+		{[]error{fatalError2, fatalError}, fatalError2},
+		{[]error{notFatalError, fatalError, fatalError2}, fatalError},
+		{[]error{fatalError2, unknownSeverityError, fatalError}, fatalError},
+		{[]error{notFatalError, fatalError2, unknownSeverityError, fatalError}, fatalError2},
+	}
+
+	for _, test := range tests {
+		assert.Equal(t, test.first, FirstFatalError(test.errors), "FirstFatalError(%v)", test.errors)
+	}
+}
+
 func TestFatalOnly(t *testing.T) {
 	fatalError := &stubError{severity: SeverityFatal}
 	notFatalError := &stubError{severity: SeverityWarning}

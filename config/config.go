@@ -103,6 +103,7 @@ type Configuration struct {
 	Hooks       Hooks       `mapstructure:"hooks"`
 	Validations Validations `mapstructure:"validations"`
 	PriceFloors PriceFloors `mapstructure:"price_floors"`
+	GeoLocation GeoLocation `mapstructure:"geolocation"`
 }
 
 type Admin struct {
@@ -253,8 +254,9 @@ type GDPR struct {
 	// If the gdpr flag is unset in a request, but geo.country is set, we will assume GDPR applies if and only
 	// if the country matches one on this list. If both the GDPR flag and country are not set, we default
 	// to DefaultValue
-	EEACountries    []string `mapstructure:"eea_countries"`
-	EEACountriesMap map[string]struct{}
+	EEACountries              []string `mapstructure:"eea_countries"`
+	EEACountriesMap           map[string]struct{}
+	ConsentStringMeansInScope bool `mapstructure:"consent_string_means_in_scope"`
 }
 
 func (cfg *GDPR) validate(v *viper.Viper, errs []error) []error {
@@ -657,6 +659,27 @@ type DefReqConfig struct {
 
 type DefReqFiles struct {
 	FileName string `mapstructure:"name"`
+}
+
+type GeoLocation struct {
+	Enabled bool               `mapstructure:"enabled"`
+	Type    string             `mapstructure:"type"`
+	Maxmind GeoLocationMaxmind `mapstructure:"maxmind"`
+}
+
+type GeoLocationMaxmind struct {
+	RemoteFileSyncer MaxmindRemoteFileSyncer `mapstructure:"remote_file_syncer"`
+}
+
+type MaxmindRemoteFileSyncer struct {
+	HttpClient           HTTPClient `mapstructure:"http_client"`
+	DownloadURL          string     `mapstructure:"download_url"`
+	SaveFilePath         string     `mapstructure:"save_filepath"`
+	TmpFilePath          string     `mapstructure:"tmp_filepath"`
+	RetryCount           int        `mapstructure:"retry_count"`
+	RetryIntervalMillis  int        `mapstructure:"retry_interval_ms"`
+	TimeoutMillis        int        `mapstructure:"timeout_ms"`
+	UpdateIntervalMillis int        `mapstructure:"update_interval_ms"`
 }
 
 type Debug struct {
@@ -1140,6 +1163,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 		"FIN", "FRA", "GUF", "DEU", "GIB", "GRC", "GLP", "GGY", "HUN", "ISL", "IRL", "IMN", "ITA", "JEY", "LVA",
 		"LIE", "LTU", "LUX", "MLT", "MTQ", "MYT", "NLD", "NOR", "POL", "PRT", "REU", "ROU", "BLM", "MAF", "SPM",
 		"SVK", "SVN", "ESP", "SWE", "GBR"})
+	v.SetDefault("gdpr.consent_string_means_in_scope", false)
 	v.SetDefault("ccpa.enforce", false)
 	v.SetDefault("lmt.enforce", true)
 	v.SetDefault("currency_converter.fetch_url", "https://cdn.jsdelivr.net/gh/prebid/currency-file@1/latest.json")
@@ -1170,6 +1194,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("account_defaults.privacy.privacysandbox.topicsdomain", "")
 	v.SetDefault("account_defaults.privacy.privacysandbox.cookiedeprecation.enabled", false)
 	v.SetDefault("account_defaults.privacy.privacysandbox.cookiedeprecation.ttl_sec", 604800)
+	v.SetDefault("account_defaults.geolocation.enabled", false)
 
 	v.SetDefault("account_defaults.events_enabled", false)
 	v.BindEnv("account_defaults.privacy.dsa.default")
@@ -1186,6 +1211,20 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("price_floors.fetcher.http_client.max_idle_connections_per_host", 2)
 	v.SetDefault("price_floors.fetcher.http_client.idle_connection_timeout_seconds", 60)
 	v.SetDefault("price_floors.fetcher.max_retries", 10)
+
+	v.SetDefault("geolocation.enabled", false)
+	v.SetDefault("geolocation.type", "maxmind")
+	v.SetDefault("geolocation.maxmind.remote_file_syncer.download_url", "https://geolite.maxmind.com/download/geoip/database/GeoLite2-City.tar.gz")
+	v.SetDefault("geolocation.maxmind.remote_file_syncer.save_filepath", "/var/tmp/prebid/GeoLite2-City.tar.gz")
+	v.SetDefault("geolocation.maxmind.remote_file_syncer.tmp_filepath", "/var/tmp/prebid/tmp/GeoLite2-City.tar.gz")
+	v.SetDefault("geolocation.maxmind.remote_file_syncer.retry_count", 3)
+	v.SetDefault("geolocation.maxmind.remote_file_syncer.retry_interval_ms", 3000)
+	v.SetDefault("geolocation.maxmind.remote_file_syncer.timeout_ms", 300000)
+	v.SetDefault("geolocation.maxmind.remote_file_syncer.update_interval_ms", 0)
+	v.SetDefault("geolocation.maxmind.remote_file_syncer.http_client.max_connections_per_host", 0)
+	v.SetDefault("geolocation.maxmind.remote_file_syncer.http_client.max_idle_connections", 40)
+	v.SetDefault("geolocation.maxmind.remote_file_syncer.http_client.max_idle_connections_per_host", 2)
+	v.SetDefault("geolocation.maxmind.remote_file_syncer.http_client.idle_connection_timeout_seconds", 60)
 
 	v.SetDefault("account_defaults.events_enabled", false)
 	v.SetDefault("compression.response.enable_gzip", false)
