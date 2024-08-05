@@ -81,13 +81,13 @@ func buildProxyNonBids(impIds []string, nonBidReason openrtb3.NoBidReason) []ope
 	return proxyNonBids
 }
 
-// addProxyNonBids adds the proxy non-bids to the seatNonBidsMap.
+// rejectImps adds the proxy non-bids to the seatNonBidsMap.
 // It takes a list of impression IDs, a non-bid reason, and a seat as input parameters.
 // It builds the proxy non-bids using the buildProxyNonBids function and appends them to the seatNonBidsMap.
 // If the seatNonBidsMap is nil, it initializes it with an empty map.
 // The proxy non-bids are added to the seatNonBidsMap under the specified seat.
 // This method is not thread safe as we are initializing and writing to map
-func (snb *nonBids) addProxyNonBids(impIds []string, nonBidReason openrtb3.NoBidReason, seat string) {
+func (snb *nonBids) rejectImps(impIds []string, nonBidReason openrtb3.NoBidReason, seat string) {
 	if len(impIds) == 0 {
 		return
 	}
