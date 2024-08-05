@@ -2,7 +2,6 @@ package copper6ssp
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -63,13 +62,13 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			impExt.Copper6sspBidderExt.Type = "network"
 		}
 
-		finalyImpExt, err := json.Marshal(impExt)
+		finalImpExt, err := json.Marshal(impExt)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		reqCopy.Imp[0].Ext = finalyImpExt
+		reqCopy.Imp[0].Ext = finalImpExt
 
 		adapterReq, err := a.makeRequest(&reqCopy)
 		if err != nil {
@@ -83,7 +82,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	}
 
 	if len(adapterRequests) == 0 {
-		errs = append(errs, errors.New("found no valid impressions"))
 		return nil, errs
 	}
 

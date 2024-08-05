@@ -34,7 +34,7 @@
     },
 	"httpCalls": [{
 		"expectedRequest": {
-			"uri": "https://endpoint.copper6.com/pserver",
+			"uri": "https://example.com",
 			"body": {
                 "id": "test-request-id",
                 "imp": [

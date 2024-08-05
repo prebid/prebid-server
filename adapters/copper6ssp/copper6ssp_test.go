@@ -9,8 +9,8 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderEmtv, config.Adapter{
-		Endpoint: "https://endpoint.copper6.com/pserver"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+	bidder, buildErr := Builder(openrtb_ext.BidderCopper6ssp, config.Adapter{
+		Endpoint: "https://example.com"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
