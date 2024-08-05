@@ -34,14 +34,6 @@ func errorToNonBidReason(err error) openrtb3.NoBidReason {
 	}
 }
 
-// func errorToNonBidReason(errorCode int) openrtb3.NoBidReason {
-// 	switch errorCode {
-// 	case errortypes.TimeoutErrorCode:
-// 		return ErrorTimeout
-// 	}
-// 	return ErrorGeneral
-// }
-
 // httpInfoToNonBidReason determines NoBidReason code (NBR)
 // It will first try to resolve the NBR based on prebid's proprietary error code.
 // If proprietary error code not found then it will try to determine NBR using
