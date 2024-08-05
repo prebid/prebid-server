@@ -3199,7 +3199,7 @@ func TestSeatNonBid(t *testing.T) {
 			}
 			bidder := AdaptBidder(mockBidder, client, &config.Configuration{}, mockMetricsEngine, openrtb_ext.BidderAppnexus, &config.DebugInfo{}, test.args.Seat)
 
-			ctx := context.TODO()
+			ctx := context.Background()
 			if client.Timeout > 0 {
 				ctxTimeout, cancel := context.WithTimeout(ctx, client.Timeout)
 				ctx = ctxTimeout
