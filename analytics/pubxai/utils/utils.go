@@ -390,14 +390,12 @@ func (u *UtilsServiceImpl) AppendTimeoutBids(auctionBids []Bid, impsById map[str
 		return auctionBids
 	}
 
-	glog.Info(requestExt)
 	for id, imp := range impsById {
 		var impExt map[string]interface{}
 		err := jsonutil.Unmarshal(imp.Ext, &impExt)
 		if err != nil {
 			continue
 		}
-		glog.Info(impExt)
 		bidderInterface, ok := nestedMapLookup(impExt, "prebid", "bidder")
 		if !ok {
 			continue
@@ -405,7 +403,6 @@ func (u *UtilsServiceImpl) AppendTimeoutBids(auctionBids []Bid, impsById map[str
 		bidders, _ := bidderInterface.(map[string]interface{})
 
 		for bidder := range bidders {
-			glog.Info(bidder)
 			if !hasBidResponse(auctionBids, bidder, id) {
 				auctionBids = append(auctionBids, createTimedOutBid(imp, impExt, requestExt, ao, bidder))
 			}
@@ -544,7 +541,6 @@ func isWinningBid(bidderName string, bidExt map[string]interface{}) bool {
 }
 
 func createTimedOutBid(imp openrtb2.Imp, impExt map[string]interface{}, requestExt map[string]interface{}, ao *LogObject, bidder string) Bid {
-	glog.Info(impExt, bidder)
 	return createBidObject(nil, nil, imp, impExt, requestExt["id"].(string), bidder, ao.StartTime.UTC().UnixMilli(), 0.0)
 }
 
