@@ -17,8 +17,6 @@ import (
 	"github.com/prebid/prebid-server/v2/util/ptrutil"
 )
 
-const SupportedCurrency = "USD"
-
 type adapter struct {
 	template *template.Template
 }
