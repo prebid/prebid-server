@@ -54,6 +54,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/bidmyadz"
 	"github.com/prebid/prebid-server/v2/adapters/bidscube"
 	"github.com/prebid/prebid-server/v2/adapters/bidstack"
+	"github.com/prebid/prebid-server/v2/adapters/bigoad"
 	"github.com/prebid/prebid-server/v2/adapters/blasto"
 	"github.com/prebid/prebid-server/v2/adapters/bliink"
 	"github.com/prebid/prebid-server/v2/adapters/blue"
@@ -152,6 +153,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/pubnative"
 	"github.com/prebid/prebid-server/v2/adapters/pulsepoint"
 	"github.com/prebid/prebid-server/v2/adapters/pwbid"
+	"github.com/prebid/prebid-server/v2/adapters/qt"
 	"github.com/prebid/prebid-server/v2/adapters/readpeak"
 	"github.com/prebid/prebid-server/v2/adapters/relevantdigital"
 	"github.com/prebid/prebid-server/v2/adapters/revcontent"
@@ -272,6 +274,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderBidmyadz:          bidmyadz.Builder,
 		openrtb_ext.BidderBidsCube:          bidscube.Builder,
 		openrtb_ext.BidderBidstack:          bidstack.Builder,
+		openrtb_ext.BidderBigoAd:            bigoad.Builder,
 		openrtb_ext.BidderBlasto:            blasto.Builder,
 		openrtb_ext.BidderBliink:            bliink.Builder,
 		openrtb_ext.BidderBlue:              blue.Builder,
@@ -373,6 +376,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderPubnative:         pubnative.Builder,
 		openrtb_ext.BidderPulsepoint:        pulsepoint.Builder,
 		openrtb_ext.BidderPWBid:             pwbid.Builder,
+		openrtb_ext.BidderQT:                qt.Builder,
 		openrtb_ext.BidderReadpeak:          readpeak.Builder,
 		openrtb_ext.BidderRelevantDigital:   relevantdigital.Builder,
 		openrtb_ext.BidderRevcontent:        revcontent.Builder,

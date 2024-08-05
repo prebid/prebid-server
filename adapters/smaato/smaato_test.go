@@ -2,6 +2,7 @@ package smaato
 
 import (
 	"encoding/json"
+	"net/http"
 	"testing"
 	"time"
 
@@ -74,9 +75,12 @@ func TestVideoWithCategoryAndDuration(t *testing.T) {
 		}},
 	}
 	body, _ := json.Marshal(mockedBidResponse)
+	headers := http.Header{}
+	headers.Add("X-Smt-Adtype", "Video")
 	mockedRes := &adapters.ResponseData{
 		StatusCode: 200,
 		Body:       body,
+		Headers:    headers,
 	}
 
 	expectedBidCount := 1

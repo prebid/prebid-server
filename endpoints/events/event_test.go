@@ -64,6 +64,8 @@ func (e *eventsMockAnalyticsModule) LogNotificationEventObject(ne *analytics.Not
 	e.Invoked = true
 }
 
+func (e *eventsMockAnalyticsModule) Shutdown() {}
+
 var mockAccountData = map[string]json.RawMessage{
 	"events_enabled":  json.RawMessage(`{"events": {"enabled":true}}`),
 	"events_disabled": json.RawMessage(`{"events": {"enabled":false}}`),
