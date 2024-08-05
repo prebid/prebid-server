@@ -2,12 +2,13 @@ package exchange
 
 import (
 	"errors"
-	"reflect"
+	"net"
 	"syscall"
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb3"
 	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_httpInfoToNonBidReason(t *testing.T) {
@@ -20,7 +21,7 @@ func Test_httpInfoToNonBidReason(t *testing.T) {
 		want openrtb3.NoBidReason
 	}{
 		{
-			name: "Test-ErrorTimeout",
+			name: "error-timeout",
 			args: args{
 				httpInfo: &httpCallInfo{
 					err: &errortypes.Timeout{},
@@ -29,7 +30,7 @@ func Test_httpInfoToNonBidReason(t *testing.T) {
 			want: ErrorTimeout,
 		},
 		{
-			name: "Test-ErrorGeneral",
+			name: "error-general",
 			args: args{
 				httpInfo: &httpCallInfo{
 					err: errors.New("some_error"),
@@ -38,7 +39,7 @@ func Test_httpInfoToNonBidReason(t *testing.T) {
 			want: ErrorGeneral,
 		},
 		{
-			name: "Test-ErrorBidderUnreachable",
+			name: "error-bidderUnreachable",
 			args: args{
 				httpInfo: &httpCallInfo{
 					err: syscall.ECONNREFUSED,
@@ -46,12 +47,20 @@ func Test_httpInfoToNonBidReason(t *testing.T) {
 			},
 			want: ErrorBidderUnreachable,
 		},
+		{
+			name: "error-biddersUnreachable-no-such-host",
+			args: args{
+				httpInfo: &httpCallInfo{
+					err: &net.DNSError{IsNotFound: true},
+				},
+			},
+			want: ErrorBidderUnreachable,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := httpInfoToNonBidReason(tt.args.httpInfo); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("httpInfoToNonBidReason() = %v, want %v", got, tt.want)
-			}
+			actual := httpInfoToNonBidReason(tt.args.httpInfo)
+			assert.Equal(t, tt.want, actual)
 		})
 	}
 }
