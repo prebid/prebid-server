@@ -185,6 +185,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/teads"
 	"github.com/prebid/prebid-server/v2/adapters/telaria"
 	"github.com/prebid/prebid-server/v2/adapters/theadx"
+	"github.com/prebid/prebid-server/v2/adapters/thetradedesk"
 	"github.com/prebid/prebid-server/v2/adapters/tpmn"
 	"github.com/prebid/prebid-server/v2/adapters/trafficgate"
 	"github.com/prebid/prebid-server/v2/adapters/triplelift"
@@ -407,6 +408,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderTeads:             teads.Builder,
 		openrtb_ext.BidderTelaria:           telaria.Builder,
 		openrtb_ext.BidderTheadx:            theadx.Builder,
+		openrtb_ext.BidderTheTradeDesk:      thetradedesk.Builder,
 		openrtb_ext.BidderTpmn:              tpmn.Builder,
 		openrtb_ext.BidderTrafficGate:       trafficgate.Builder,
 		openrtb_ext.BidderTriplelift:        triplelift.Builder,
