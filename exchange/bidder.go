@@ -76,12 +76,14 @@ type bidRequestOptions struct {
 
 type extraBidderRespInfo struct {
 	respProcessingStartTime time.Time
+	adapterNonBids          nonBids
 }
 
 type extraAuctionResponseInfo struct {
 	fledge                  *openrtb_ext.Fledge
 	bidsFound               bool
 	bidderResponseStartTime time.Time
+	seatNonBid              nonBids
 }
 
 const ImpIdReqBody = "Stored bid response for impression id: "
@@ -135,6 +137,7 @@ type bidderAdapterConfig struct {
 func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, hookExecutor hookexecution.StageExecutor, ruleToAdjustments openrtb_ext.AdjustmentsByDealID) ([]*entities.PbsOrtbSeatBid, extraBidderRespInfo, []error) {
 	request := openrtb_ext.RequestWrapper{BidRequest: bidderRequest.BidRequest}
 	reject := hookExecutor.ExecuteBidderRequestStage(&request, string(bidderRequest.BidderName))
+	var seatNonBids nonBids
 	if reject != nil {
 		return nil, extraBidderRespInfo{}, []error{reject}
 	}
@@ -198,6 +201,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 		// If the bidder only needs to make one, save some cycles by just using the current one.
 		dataLen = len(reqData) + len(bidderRequest.BidderStoredResponses)
 		responseChannel = make(chan *httpCallInfo, dataLen)
+		seatNonBids = nonBids{}
 		if len(reqData) == 1 {
 			responseChannel <- bidder.doRequest(ctx, reqData[0], bidRequestOptions.bidderRequestStartTime, bidRequestOptions.tmaxAdjustments)
 		} else {
@@ -398,13 +402,17 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 			}
 		} else {
 			errs = append(errs, httpInfo.err)
+			nonBidReason := httpInfoToNonBidReason(httpInfo)
+			seatNonBids.rejectImps(httpInfo.request.ImpIDs, nonBidReason, string(bidderRequest.BidderName))
 		}
 	}
+
 	seatBids := make([]*entities.PbsOrtbSeatBid, 0, len(seatBidMap))
 	for _, seatBid := range seatBidMap {
 		seatBids = append(seatBids, seatBid)
 	}
 
+	extraRespInfo.adapterNonBids = seatNonBids
 	return seatBids, extraRespInfo, errs
 }
 
