@@ -1,4 +1,6 @@
-endpoint: "http://api.hb.ad.cpe.dotomi.com/cvx/server/hb/ortb/25"
+endpoint: "http://api.hb.ad.cpe.dotomi.com/cvx/server/hb/ortb"
+openrtb:
+  version: 2.6
 maintainer:
   email: "PublisherIntegration@epsilon.com"
 gvlVendorID: 24

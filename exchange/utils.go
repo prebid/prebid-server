@@ -9,8 +9,6 @@ import (
 	"math/rand"
 	"strings"
 
-	"github.com/prebid/prebid-server/v2/ortb"
-
 	"github.com/prebid/go-gdpr/vendorconsent"
 	gpplib "github.com/prebid/go-gpp"
 	gppConstants "github.com/prebid/go-gpp/constants"
@@ -22,7 +20,7 @@ import (
 	"github.com/prebid/prebid-server/v2/gdpr"
 	"github.com/prebid/prebid-server/v2/metrics"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	// "github.com/prebid/prebid-server/v2/ortb/validation"
+	"github.com/prebid/prebid-server/v2/ortb"
 	"github.com/prebid/prebid-server/v2/privacy"
 	"github.com/prebid/prebid-server/v2/privacy/ccpa"
 	"github.com/prebid/prebid-server/v2/privacy/lmt"
@@ -609,7 +607,11 @@ func splitImps(imps []openrtb2.Imp, requestValidator ortb.RequestValidator, requ
 					return nil, err
 				}
 				impWrapper := openrtb_ext.ImpWrapper{Imp: &impCopy}
-				if err := requestValidator.ValidateImp(&impWrapper, i, requestAliases, hasStoredAuctionResponses, storedBidResponses); err != nil {
+				cfg := ortb.ValidationConfig{
+					SkipBidderParams: true,
+					SkipNative:       true,
+				}
+				if err := requestValidator.ValidateImp(&impWrapper, cfg, i, requestAliases, hasStoredAuctionResponses, storedBidResponses); err != nil {
 					return nil, &errortypes.InvalidImpFirstPartyData{
 						Message: fmt.Sprintf("merging bidder imp first party data for imp %s results in an invalid imp: %v", imp.ID, err),
 					}

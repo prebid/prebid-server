@@ -124,7 +124,8 @@ type Router struct {
 	*httprouter.Router
 	MetricsEngine   *metricsConf.DetailedMetricsEngine
 	ParamsValidator openrtb_ext.BidderParamValidator
-	Shutdown        func()
+
+	shutdowns []func()
 }
 
 func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *Router, err error) {
@@ -201,10 +202,11 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	// Metrics engine
 	r.MetricsEngine = metricsConf.NewMetricsEngine(cfg, openrtb_ext.CoreBidderNames(), syncerKeys, moduleStageNames)
 	shutdown, fetcher, ampFetcher, accounts, categoriesFetcher, videoFetcher, storedRespFetcher := storedRequestsConf.NewStoredRequests(cfg, r.MetricsEngine, generalHttpClient, r.Router)
-	// todo(zachbadgett): better shutdown
-	r.Shutdown = shutdown
 
 	analyticsRunner := analyticsBuild.New(&cfg.Analytics)
+
+	// register the analytics runner for shutdown
+	r.shutdowns = append(r.shutdowns, shutdown, analyticsRunner.Shutdown)
 
 	paramsValidator, err := openrtb_ext.NewBidderParamsValidator(schemaDirectory)
 	if err != nil {
@@ -301,6 +303,15 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	return r, nil
 }
 
+// Shutdown closes any dependencies of the router that may need closing
+func (r *Router) Shutdown() {
+	glog.Info("[PBS Router] shutting down")
+	for _, shutdown := range r.shutdowns {
+		shutdown()
+	}
+	glog.Info("[PBS Router] shut down")
+}
+
 func checkSupportedUserSyncEndpoints(bidderInfos config.BidderInfos) error {
 	for name, info := range bidderInfos {
 		if info.Syncer == nil {
@@ -375,7 +386,7 @@ func readDefaultRequest(defReqConfig config.DefReqConfig) (map[string]string, []
 		}
 
 		if err := jsonutil.UnmarshalValid(defReqJSON, defReq); err != nil {
-			// we might not have aliases defined, but will atleast show that the JSON file is parsable.
+			// we might not have aliases defined, but will at least show that the JSON file is parsable.
 			glog.Fatalf("error parsing alias json in file %s: %v", defReqConfig.FileSystem.FileName, err)
 			return aliases, []byte{}
 		}
