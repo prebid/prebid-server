@@ -70,6 +70,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderBidmyadz,
 	BidderBidsCube,
 	BidderBidstack,
+	BidderBigoAd,
 	BidderBlasto,
 	BidderBliink,
 	BidderBlue,
@@ -96,6 +97,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderDeepintent,
 	BidderDefinemedia,
 	BidderDianomi,
+	BidderDisplayio,
 	BidderEdge226,
 	BidderDmx,
 	BidderDXKulture,
@@ -146,6 +148,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderMediaGo,
 	BidderMedianet,
 	BidderMeloZen,
+	BidderMetaX,
 	BidderMgid,
 	BidderMgidX,
 	BidderMinuteMedia,
@@ -169,6 +172,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderPubnative,
 	BidderPulsepoint,
 	BidderPWBid,
+	BidderQT,
 	BidderReadpeak,
 	BidderRelevantDigital,
 	BidderRevcontent,
@@ -201,6 +205,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderTeads,
 	BidderTelaria,
 	BidderTheadx,
+	BidderTheTradeDesk,
 	BidderTpmn,
 	BidderTrafficGate,
 	BidderTriplelift,
@@ -387,6 +392,7 @@ const (
 	BidderBidmyadz          BidderName = "bidmyadz"
 	BidderBidsCube          BidderName = "bidscube"
 	BidderBidstack          BidderName = "bidstack"
+	BidderBigoAd            BidderName = "bigoad"
 	BidderBlasto            BidderName = "blasto"
 	BidderBliink            BidderName = "bliink"
 	BidderBlue              BidderName = "blue"
@@ -413,6 +419,7 @@ const (
 	BidderDeepintent        BidderName = "deepintent"
 	BidderDefinemedia       BidderName = "definemedia"
 	BidderDianomi           BidderName = "dianomi"
+	BidderDisplayio         BidderName = "displayio"
 	BidderEdge226           BidderName = "edge226"
 	BidderDmx               BidderName = "dmx"
 	BidderDXKulture         BidderName = "dxkulture"
@@ -463,6 +470,7 @@ const (
 	BidderMediaGo           BidderName = "mediago"
 	BidderMedianet          BidderName = "medianet"
 	BidderMeloZen           BidderName = "melozen"
+	BidderMetaX             BidderName = "metax"
 	BidderMgid              BidderName = "mgid"
 	BidderMgidX             BidderName = "mgidX"
 	BidderMinuteMedia       BidderName = "minutemedia"
@@ -486,6 +494,7 @@ const (
 	BidderPubnative         BidderName = "pubnative"
 	BidderPulsepoint        BidderName = "pulsepoint"
 	BidderPWBid             BidderName = "pwbid"
+	BidderQT                BidderName = "qt"
 	BidderReadpeak          BidderName = "readpeak"
 	BidderRelevantDigital   BidderName = "relevantdigital"
 	BidderRevcontent        BidderName = "revcontent"
@@ -518,6 +527,7 @@ const (
 	BidderTeads             BidderName = "teads"
 	BidderTelaria           BidderName = "telaria"
 	BidderTheadx            BidderName = "theadx"
+	BidderTheTradeDesk      BidderName = "thetradedesk"
 	BidderTpmn              BidderName = "tpmn"
 	BidderTrafficGate       BidderName = "trafficgate"
 	BidderTriplelift        BidderName = "triplelift"

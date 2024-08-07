@@ -33,14 +33,24 @@ type TripleliftNativeExtInfo struct {
 	PublisherWhitelistMap map[string]struct{}
 }
 
+type ExtImpData struct {
+	TagCode string `json:"tag_code"`
+}
+
+type ExtImp struct {
+	*adapters.ExtImpBidder
+	Data *ExtImpData `json:"data,omitempty"`
+}
+
 func getBidType(ext TripleliftRespExt) openrtb_ext.BidType {
 	return openrtb_ext.BidTypeNative
 }
 
-func processImp(imp *openrtb2.Imp) error {
+func processImp(imp *openrtb2.Imp, request *openrtb2.BidRequest) error {
 	// get the triplelift extension
-	var ext adapters.ExtImpBidder
+	var ext ExtImp
 	var tlext openrtb_ext.ExtImpTriplelift
+
 	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
 		return err
 	}
@@ -50,17 +60,30 @@ func processImp(imp *openrtb2.Imp) error {
 	if imp.Native == nil {
 		return fmt.Errorf("no native object specified")
 	}
-	if tlext.InvCode == "" {
-		return fmt.Errorf("no inv_code specified")
+
+	if ext.Data != nil && len(ext.Data.TagCode) > 0 && (msnInSite(request) || msnInApp(request)) {
+		imp.TagID = ext.Data.TagCode
+	} else {
+		imp.TagID = tlext.InvCode
 	}
-	imp.TagID = tlext.InvCode
+
 	// floor is optional
 	if tlext.Floor == nil {
 		return nil
 	}
 	imp.BidFloor = *tlext.Floor
-	// no error
+
 	return nil
+}
+
+// msnInApp returns whether msn.com is in request.app.publisher.domain
+func msnInApp(request *openrtb2.BidRequest) bool {
+	return request.App != nil && request.App.Publisher != nil && request.App.Publisher.Domain == "msn.com"
+}
+
+// msnInSite returns whether msn.com is in request.site.publisher.domain
+func msnInSite(request *openrtb2.BidRequest) bool {
+	return request.Site != nil && request.Site.Publisher != nil && request.Site.Publisher.Domain == "msn.com"
 }
 
 // Returns the effective publisher ID
@@ -89,7 +112,7 @@ func (a *TripleliftNativeAdapter) MakeRequests(request *openrtb2.BidRequest, ext
 	var validImps []openrtb2.Imp
 	// pre-process the imps
 	for _, imp := range tlRequest.Imp {
-		if err := processImp(&imp); err == nil {
+		if err := processImp(&imp, request); err == nil {
 			validImps = append(validImps, imp)
 		} else {
 			errs = append(errs, err)

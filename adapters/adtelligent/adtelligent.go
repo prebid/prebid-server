@@ -187,7 +187,13 @@ func validateImpression(imp *openrtb2.Imp) (int, error) {
 
 	imp.Ext = impExtBuffer
 
-	return impExt.SourceId, nil
+	aid, err := impExt.SourceId.Int64()
+	if err != nil {
+		return 0, &errortypes.BadInput{
+			Message: fmt.Sprintf("ignoring imp id=%s, aid parsing err: %s", imp.ID, err),
+		}
+	}
+	return int(aid), nil
 }
 
 // Builder builds a new instance of the Adtelligent adapter for the given bidder with the given config.
