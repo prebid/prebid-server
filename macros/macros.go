@@ -17,6 +17,7 @@ type EndpointTemplateParams struct {
 	GvlID       string
 	PageID      string
 	SupplyId    string
+	SspId       string
 	SspID       string
 	SeatID      string
 	TokenID     string
