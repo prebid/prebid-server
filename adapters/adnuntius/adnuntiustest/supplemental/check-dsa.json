@@ -46,7 +46,7 @@
 	"httpCalls": [
 		{
 			"expectedRequest": {
-				"uri": "http://whatever.url?format=json&tzo=0",
+				"uri": "http://whatever.url?format=prebid&tzo=0",
 				"body": {
 					"adUnits": [
 						{
@@ -126,7 +126,7 @@
 						}
 					},
 					"type": "banner"
-					
+
 				}
 			],
 			"currency": "NOK"
