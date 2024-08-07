@@ -26,7 +26,7 @@ type deviceInfoProperty string
 const (
 	deviceInfoHardwareVendor        deviceInfoProperty = "HardwareVendor"
 	deviceInfoHardwareName          deviceInfoProperty = "HardwareName"
-	deviceInfoDeviceType            deviceInfoProperty = "deviceType"
+	deviceInfoDeviceType            deviceInfoProperty = "DeviceType"
 	deviceInfoPlatformVendor        deviceInfoProperty = "PlatformVendor"
 	deviceInfoPlatformName          deviceInfoProperty = "PlatformName"
 	deviceInfoPlatformVersion       deviceInfoProperty = "PlatformVersion"
@@ -102,7 +102,7 @@ func (x deviceInfoExtractor) getValue(results Results, propertyName deviceInfoPr
 		",",
 	)
 	if err != nil {
-		glog.Errorf("ERROR: Failed to get results values string.")
+		glog.Errorf("Failed to get results values string.")
 		return ""
 	}
 

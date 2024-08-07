@@ -14,7 +14,7 @@ func newAccountValidator() *defaultAccountValidator {
 	}
 }
 
-func (x *defaultAccountValidator) isAllowed(cfg config, req []byte) bool {
+func (x defaultAccountValidator) isAllowed(cfg config, req []byte) bool {
 	if len(cfg.AccountFilter.AllowList) == 0 {
 		return true
 	}

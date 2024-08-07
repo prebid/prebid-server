@@ -7,22 +7,74 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestFiftyOneToRTB(t *testing.T) {
+func TestFiftyOneDtToRTB(t *testing.T) {
 	cases := []struct {
 		fiftyOneDt string
 		rtbDt      adcom1.DeviceType
 	}{
 		{
+			fiftyOneDt: "Phone",
+			rtbDt:      adcom1.DevicePhone,
+		},
+		{
+			fiftyOneDt: "Console",
+			rtbDt:      adcom1.DeviceSetTopBox,
+		},
+		{
 			fiftyOneDt: "Desktop",
 			rtbDt:      adcom1.DevicePC,
+		},
+		{
+			fiftyOneDt: "EReader",
+			rtbDt:      adcom1.DevicePC,
+		},
+		{
+			fiftyOneDt: "IoT",
+			rtbDt:      adcom1.DeviceConnected,
+		},
+		{
+			fiftyOneDt: "Kiosk",
+			rtbDt:      adcom1.DeviceOOH,
+		},
+		{
+			fiftyOneDt: "MediaHub",
+			rtbDt:      adcom1.DeviceSetTopBox,
+		},
+		{
+			fiftyOneDt: "Mobile",
+			rtbDt:      adcom1.DeviceMobile,
+		},
+		{
+			fiftyOneDt: "Router",
+			rtbDt:      adcom1.DeviceConnected,
+		},
+		{
+			fiftyOneDt: "SmallScreen",
+			rtbDt:      adcom1.DeviceConnected,
 		},
 		{
 			fiftyOneDt: "SmartPhone",
 			rtbDt:      adcom1.DeviceMobile,
 		},
 		{
+			fiftyOneDt: "SmartSpeaker",
+			rtbDt:      adcom1.DeviceConnected,
+		},
+		{
+			fiftyOneDt: "SmartWatch",
+			rtbDt:      adcom1.DeviceConnected,
+		},
+		{
 			fiftyOneDt: "Tablet",
 			rtbDt:      adcom1.DeviceTablet,
+		},
+		{
+			fiftyOneDt: "Tv",
+			rtbDt:      adcom1.DeviceTV,
+		},
+		{
+			fiftyOneDt: "Vehicle Display",
+			rtbDt:      adcom1.DevicePC,
 		},
 		{
 			fiftyOneDt: "Unknown",
@@ -31,6 +83,8 @@ func TestFiftyOneToRTB(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		assert.Equal(t, c.rtbDt, fiftyOneDtToRTB(c.fiftyOneDt))
+		t.Run(c.fiftyOneDt, func(t *testing.T) {
+			assert.Equal(t, c.rtbDt, fiftyOneDtToRTB(c.fiftyOneDt))
+		})
 	}
 }

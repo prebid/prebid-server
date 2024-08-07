@@ -9,64 +9,60 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccountValidatorAllowed(t *testing.T) {
-	validator := newAccountValidator()
-	cfg := config{
-		AccountFilter: accountFilter{AllowList: []string{"1001"}},
+func TestIsAllowed(t *testing.T) {
+	tests := []struct {
+		name           string
+		allowList      []string
+		expectedResult bool
+	}{
+		{
+			name:           "allowed",
+			allowList:      []string{"1001"},
+			expectedResult: true,
+		},
+		{
+			name:           "empty",
+			allowList:      []string{},
+			expectedResult: true,
+		},
+		{
+			name:           "disallowed",
+			allowList:      []string{"1002"},
+			expectedResult: false,
+		},
+		{
+			name:           "allow list is nil",
+			allowList:      nil,
+			expectedResult: true,
+		},
+		{
+			name:           "allow list contains multiple",
+			allowList:      []string{"1000", "1001", "1002"},
+			expectedResult: true,
+		},
 	}
 
-	res := validator.isAllowed(
-		cfg, toBytes(
-			&openrtb2.BidRequest{
-				App: &openrtb2.App{
-					Publisher: &openrtb2.Publisher{
-						ID: "1001",
-					},
-				},
-			},
-		),
-	)
-	assert.True(t, res)
-}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			validator := newAccountValidator()
+			cfg := config{
+				AccountFilter: accountFilter{AllowList: test.allowList},
+			}
 
-func TestAllowedAccountsIsEmpty(t *testing.T) {
-	validator := newAccountValidator()
-	cfg := config{
-		AccountFilter: accountFilter{AllowList: []string{}},
+			res := validator.isAllowed(
+				cfg, toBytes(
+					&openrtb2.BidRequest{
+						App: &openrtb2.App{
+							Publisher: &openrtb2.Publisher{
+								ID: "1001",
+							},
+						},
+					},
+				),
+			)
+			assert.Equal(t, test.expectedResult, res)
+		})
 	}
-
-	res := validator.isAllowed(
-		cfg, toBytes(
-			&openrtb2.BidRequest{
-				App: &openrtb2.App{
-					Publisher: &openrtb2.Publisher{
-						ID: "1001",
-					},
-				},
-			},
-		),
-	)
-	assert.True(t, res)
-}
-
-func TestAccountValidatorNotAllowed(t *testing.T) {
-	validator := newAccountValidator()
-	cfg := config{
-		AccountFilter: accountFilter{AllowList: []string{"1002"}},
-	}
-
-	res := validator.isAllowed(
-		cfg, toBytes(
-			&openrtb2.BidRequest{
-				App: &openrtb2.App{
-					Publisher: &openrtb2.Publisher{
-						ID: "1001",
-					},
-				},
-			},
-		),
-	)
-	assert.False(t, res)
 }
 
 func toBytes(v interface{}) []byte {

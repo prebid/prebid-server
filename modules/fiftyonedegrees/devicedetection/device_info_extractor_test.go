@@ -90,7 +90,7 @@ func TestDeviceInfoExtractionHasValueError(t *testing.T) {
 
 func mockValues(results *ResultsHashMock) {
 	mockValue(results, "HardwareVendor", "Apple")
-	mockValue(results, "deviceType", "Desctop")
+	mockValue(results, "DeviceType", "Desctop")
 	mockValue(results, "PlatformVendor", "Apple")
 	mockValue(results, "PlatformName", "MacOs")
 	mockValue(results, "PlatformVersion", "14")

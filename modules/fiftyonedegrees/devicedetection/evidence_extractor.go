@@ -75,7 +75,7 @@ func (x *defaultEvidenceExtractor) extract(ctx hookstage.ModuleContext) ([]onpre
 	if len(evidenceStrings) > 0 {
 		userAgentE, exists := getEvidenceByKey(evidenceStrings, userAgentHeader)
 		if !exists {
-			return nil, "", errors.Wrap(err, "User-Agent not found")
+			return nil, "", errors.New("User-Agent not found")
 		}
 
 		evidence := x.extractEvidenceFromStrings(evidenceStrings)

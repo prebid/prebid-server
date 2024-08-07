@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/v2/hooks/hookexecution"
 	"github.com/prebid/prebid-server/v2/hooks/hookstage"
 	"github.com/tidwall/gjson"
@@ -36,9 +35,7 @@ func handleAuctionRequestHook(ctx hookstage.ModuleInvocationContext, deviceDetec
 
 			result, err := hydrateFields(deviceInfo, rawPayload)
 			if err != nil {
-				er := fmt.Sprintf("error hydrating fields %s", err)
-				glog.Error(er)
-				return rawPayload, hookexecution.NewFailure(er)
+				return rawPayload, hookexecution.NewFailure(fmt.Sprintf("error hydrating fields %s", err))
 			}
 
 			return result, nil

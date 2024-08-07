@@ -21,10 +21,7 @@ type defaultDeviceDetector struct {
 	engine              engine
 }
 
-func newDeviceDetector(
-	cfg *dd.ConfigHash,
-	moduleConfig *config,
-) (*defaultDeviceDetector, error) {
+func newDeviceDetector(cfg *dd.ConfigHash, moduleConfig *config) (*defaultDeviceDetector, error) {
 	engineOptions := buildEngineOptions(moduleConfig, cfg)
 
 	ddEngine, err := onpremise.New(
@@ -53,7 +50,7 @@ func buildEngineOptions(moduleConfig *config, configHash *dd.ConfigHash) []onpre
 		onpremise.WithProperties([]string{
 			"HardwareVendor",
 			"HardwareName",
-			"deviceType",
+			"DeviceType",
 			"PlatformVendor",
 			"PlatformName",
 			"PlatformVersion",
@@ -150,7 +147,7 @@ func (x defaultDeviceDetector) getSupportedHeaders() []dd.EvidenceKey {
 func (x defaultDeviceDetector) getDeviceInfo(evidence []onpremise.Evidence, ua string) (*deviceInfo, error) {
 	results, err := x.engine.Process(evidence)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to Process evidence")
+		return nil, errors.Wrap(err, "Failed to process evidence")
 	}
 	defer results.Free()
 

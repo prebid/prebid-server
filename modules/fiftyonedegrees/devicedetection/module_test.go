@@ -75,7 +75,7 @@ func (m *mockDeviceDetector) getDeviceInfo(evidence []onpremise.Evidence, ua str
 	return res.(*deviceInfo), args.Error(1)
 }
 
-func TestHandleEntrypointNotAllowedHook(t *testing.T) {
+func TestHandleEntrypointHookAccountNotAllowed(t *testing.T) {
 	var mockValidator mockAccValidator
 
 	mockValidator.On("isAllowed", mock.Anything, mock.Anything).Return(false)
@@ -89,7 +89,7 @@ func TestHandleEntrypointNotAllowedHook(t *testing.T) {
 	assert.Equal(t, "hook execution failed: account not allowed", err.Error())
 }
 
-func TestHandleEntrypointAllowedHook(t *testing.T) {
+func TestHandleEntrypointHookAccountAllowed(t *testing.T) {
 	var mockValidator mockAccValidator
 
 	mockValidator.On("isAllowed", mock.Anything, mock.Anything).Return(true)
@@ -146,17 +146,18 @@ func TestHandleEntrypointAllowedHook(t *testing.T) {
 	)
 }
 
-func TestModule_HandleRawAuctionHookDoesNotHaveModuleCtx(t *testing.T) {
+func TestHandleRawAuctionHookNoCtx(t *testing.T) {
 	module := Module{}
 
 	_, err := module.HandleRawAuctionHook(
-		nil, hookstage.ModuleInvocationContext{},
+		nil,
+		hookstage.ModuleInvocationContext{},
 		hookstage.RawAuctionRequestPayload{},
 	)
 	assert.Errorf(t, err, "entrypoint hook was not configured")
 }
 
-func TestModule_TestModule_HandleRawAuctionHookExtractError(t *testing.T) {
+func TestHandleRawAuctionHookExtractError(t *testing.T) {
 	var mockValidator mockAccValidator
 
 	mockValidator.On("isAllowed", mock.Anything, mock.Anything).Return(true)
@@ -227,7 +228,7 @@ func TestModule_TestModule_HandleRawAuctionHookExtractError(t *testing.T) {
 
 }
 
-func TestModule_HandleRawAuctionHookEnrichment(t *testing.T) {
+func TestHandleRawAuctionHookEnrichment(t *testing.T) {
 	var mockValidator mockAccValidator
 
 	mockValidator.On("isAllowed", mock.Anything, mock.Anything).Return(true)
@@ -428,7 +429,7 @@ func TestModule_HandleRawAuctionHookEnrichment(t *testing.T) {
 	assert.Errorf(t, err, "error getting device info")
 }
 
-func TestModule_HandleRawAuctionHookEnrichmentWithErrors(t *testing.T) {
+func TestHandleRawAuctionHookEnrichmentWithErrors(t *testing.T) {
 	var mockValidator mockAccValidator
 
 	mockValidator.On("isAllowed", mock.Anything, mock.Anything).Return(true)
