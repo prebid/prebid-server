@@ -5,13 +5,15 @@ endpointCompression: gzip
 geoscope:
   - global
 maintainer:
-  email: DSP@meldong.com
+  email: DSP@melodong.com
 capabilities:
   site:
     mediaTypes:
-    - banner
-    - native
+      - banner
+      - video
+      - native
   app:
     mediaTypes:
-    - banner
-    - native
+      - banner
+      - video
+      - native

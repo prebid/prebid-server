@@ -1,6 +1,6 @@
 {
     "mockBidRequest": {
-        "id": "web-video",
+        "id": "app-video",
         "tmax": 3000,
         "imp": [
             {
@@ -45,7 +45,7 @@
                     ]
                 },
                 "body": {
-                    "id": "web-video",
+                    "id": "app-video",
                     "tmax": 3000,
                     "imp": [
                         {
@@ -84,13 +84,13 @@
             "mockResponse": {
                 "status": 200,
                 "body": {
-                    "id": "web-video",
+                    "id": "app-video",
                     "cur": "USD",
                     "seatbid": [
                         {
                             "bid": [
                                 {
-                                    "id": "web-video",
+                                    "id": "app-video",
                                     "impid": "video-imp-id",
                                     "crid": "some-creative-id",
                                     "adm": "<VAST>TAG</VAST>",
@@ -116,7 +116,7 @@
             "bids": [
                 {
                     "bid": {
-                        "id": "web-video",
+                        "id": "app-video",
                         "impid": "video-imp-id",
                         "crid": "some-creative-id",
                         "adm": "<VAST>TAG</VAST>",

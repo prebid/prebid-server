@@ -42,7 +42,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 	requestCopy := *request
 	for _, imp := range request.Imp {
-		// Extract Sharethrough Params
+		// Extract Melozen Params
 		var strImpExt adapters.ExtImpBidder
 		if err := json.Unmarshal(imp.Ext, &strImpExt); err != nil {
 			errors = append(errors, err)
@@ -53,20 +53,18 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			errors = append(errors, err)
 			continue
 		}
-		if strImpParams.PubId == "" {
-			return nil, []error{&errortypes.BadInput{
-				Message: "The publisher ID must not be empty",
-			}}
-		}
-		url, err := a.buildEndpointURL(strImpParams.PubId)
+
+		url, err := macros.ResolveMacros(a.endpointTemplate, macros.EndpointTemplateParams{PublisherID: strImpParams.PubId})
 		if err != nil {
-			return nil, []error{err}
+			errors = append(errors, err)
+			continue
 		}
 		// Convert Floor into USD
 		if imp.BidFloor > 0 && imp.BidFloorCur != "" && !strings.EqualFold(imp.BidFloorCur, "USD") {
 			convertedValue, err := reqInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, "USD")
 			if err != nil {
-				return nil, []error{err}
+				errors = append(errors, err)
+				continue
 			}
 			imp.BidFloorCur = "USD"
 			imp.BidFloor = convertedValue
@@ -100,24 +98,14 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 	return requests, errors
 }
-func (a *adapter) buildEndpointURL(pubID string) (string, error) {
-	endpointParams := macros.EndpointTemplateParams{PublisherID: pubID}
-	return macros.ResolveMacros(a.endpointTemplate, endpointParams)
-}
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if response.StatusCode == http.StatusNoContent {
+	if adapters.IsResponseStatusCodeNoContent(response) {
 		return nil, nil
 	}
 
-	if response.StatusCode == http.StatusBadRequest {
-		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
-		}}
-	}
-
-	if response.StatusCode != http.StatusOK {
-		return nil, []error{fmt.Errorf("unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}
+	if err := adapters.CheckResponseStatusCodeForErrors(response); err != nil {
+		return nil, []error{err}
 	}
 
 	var bidReq openrtb2.BidRequest
@@ -131,7 +119,6 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	bidderResponse := adapters.NewBidderResponse()
-	bidderResponse.Currency = "USD"
 	var errors []error
 	for _, seatBid := range bidResp.SeatBid {
 		for i := range seatBid.Bid {
@@ -139,6 +126,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 			bidType, err := getMediaTypeForBid(*bid)
 			if err != nil {
 				errors = append(errors, err)
+				continue
 			}
 
 			bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
@@ -153,10 +141,6 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 func splitImpressionsByMediaType(impression *openrtb2.Imp) ([]openrtb2.Imp, error) {
 	if impression.Banner == nil && impression.Native == nil && impression.Video == nil {
 		return nil, &errortypes.BadInput{Message: "Invalid MediaType. MeloZen only supports Banner, Video and Native."}
-	}
-
-	if impression.Audio != nil {
-		impression.Audio = nil
 	}
 
 	impressions := make([]openrtb2.Imp, 0, 2)
