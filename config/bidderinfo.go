@@ -201,7 +201,7 @@ func (bi BidderInfo) IsEnabled() bool {
 	return !bi.Disabled
 }
 
-// Defined returns true if at least one field of the syncer is exists other than supports field.
+// Defined returns true if at least one field exists, except for the supports field.
 func (s *Syncer) Defined() bool {
 	if s == nil {
 		return false
