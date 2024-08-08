@@ -1554,70 +1554,72 @@ func TestSyncerEndpointOverride(t *testing.T) {
 
 func TestSyncerDefined(t *testing.T) {
 	testCases := []struct {
-		description string
+		name        string
 		givenSyncer *Syncer
 		expected    bool
 	}{
 		{
-			description: "nil",
+			name:        "nil",
 			givenSyncer: nil,
 			expected:    false,
 		},
 		{
-			description: "empty",
+			name:        "empty",
 			givenSyncer: &Syncer{},
 			expected:    false,
 		},
 		{
-			description: "key-only",
+			name:        "key-only",
 			givenSyncer: &Syncer{Key: "anyKey"},
 			expected:    true,
 		},
 		{
-			description: "iframe-only",
+			name:        "iframe-only",
 			givenSyncer: &Syncer{IFrame: &SyncerEndpoint{}},
 			expected:    true,
 		},
 		{
-			description: "redirect-only",
-			givenSyncer: &Syncer{IFrame: &SyncerEndpoint{}},
+			name:        "redirect-only",
+			givenSyncer: &Syncer{Redirect: &SyncerEndpoint{}},
 			expected:    true,
 		},
 		{
-			description: "externalurl-only",
+			name:        "externalurl-only",
 			givenSyncer: &Syncer{ExternalURL: "anyURL"},
 			expected:    true,
 		},
 		{
-			description: "supportscors-only",
+			name:        "supportscors-only",
 			givenSyncer: &Syncer{SupportCORS: ptrutil.ToPtr(false)},
 			expected:    true,
 		},
 		{
-			description: "formatoverride-only",
+			name:        "formatoverride-only",
 			givenSyncer: &Syncer{FormatOverride: "anyFormat"},
 			expected:    true,
 		},
 		{
-			description: "skipwhen-only",
+			name:        "skipwhen-only",
 			givenSyncer: &Syncer{SkipWhen: &SkipWhen{}},
 			expected:    true,
 		},
 		{
-			description: "supports-only",
+			name:        "supports-only",
 			givenSyncer: &Syncer{Supports: []string{"anySupports"}},
 			expected:    false,
 		},
 		{
-			description: "supports-with-other",
+			name:        "supports-with-other",
 			givenSyncer: &Syncer{Key: "anyKey", Supports: []string{"anySupports"}},
 			expected:    true,
 		},
 	}
 
 	for _, test := range testCases {
-		result := test.givenSyncer.Defined()
-		assert.Equal(t, test.expected, result, test.description)
+		t.Run(test.name, func(t *testing.T) {
+			result := test.givenSyncer.Defined()
+			assert.Equal(t, test.expected, result)
+		})
 	}
 }
 
