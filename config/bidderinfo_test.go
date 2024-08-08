@@ -8,6 +8,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -401,6 +402,15 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 		Key: "bidderA",
 	}
 
+	parentWithSyncerSupports := parentWithoutSyncerKey
+	parentWithSyncerSupports.Syncer = &Syncer{
+		Supports: []string{"iframe"},
+	}
+
+	aliasWithoutSyncer := parentWithoutSyncerKey
+	aliasWithoutSyncer.AliasOf = "bidderA"
+	aliasWithoutSyncer.Syncer = nil
+
 	testCases := []struct {
 		description         string
 		aliasInfos          map[string]aliasNillableFields
@@ -427,6 +437,26 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 			},
 			expectedErr:         nil,
 			expectedBidderInfos: BidderInfos{"bidderA": parentWithSyncerKey, "bidderB": bidderB},
+		},
+		{
+			description: "inherit all parent info in alias bidder, except for syncer is parent only defines supports",
+			aliasInfos: map[string]aliasNillableFields{
+				"bidderB": {
+					Disabled:                nil,
+					ModifyingVastXmlAllowed: nil,
+					Experiment:              nil,
+					XAPI:                    nil,
+				},
+			},
+			bidderInfos: BidderInfos{
+				"bidderA": parentWithSyncerSupports,
+				"bidderB": BidderInfo{
+					AliasOf: "bidderA",
+					// all other fields should be inherited from parent bidder, except for syncer
+				},
+			},
+			expectedErr:         nil,
+			expectedBidderInfos: BidderInfos{"bidderA": parentWithSyncerSupports, "bidderB": aliasWithoutSyncer},
 		},
 		{
 			description: "inherit all parent info in alias bidder, use parent name as syncer alias key",
@@ -1518,6 +1548,75 @@ func TestSyncerEndpointOverride(t *testing.T) {
 
 	for _, test := range testCases {
 		result := test.givenOverride.Override(test.givenOriginal)
+		assert.Equal(t, test.expected, result, test.description)
+	}
+}
+
+func TestSyncerDefined(t *testing.T) {
+	testCases := []struct {
+		description string
+		givenSyncer *Syncer
+		expected    bool
+	}{
+		{
+			description: "nil",
+			givenSyncer: nil,
+			expected:    false,
+		},
+		{
+			description: "empty",
+			givenSyncer: &Syncer{},
+			expected:    false,
+		},
+		{
+			description: "key-only",
+			givenSyncer: &Syncer{Key: "anyKey"},
+			expected:    true,
+		},
+		{
+			description: "iframe-only",
+			givenSyncer: &Syncer{IFrame: &SyncerEndpoint{}},
+			expected:    true,
+		},
+		{
+			description: "redirect-only",
+			givenSyncer: &Syncer{IFrame: &SyncerEndpoint{}},
+			expected:    true,
+		},
+		{
+			description: "externalurl-only",
+			givenSyncer: &Syncer{ExternalURL: "anyURL"},
+			expected:    true,
+		},
+		{
+			description: "supportscors-only",
+			givenSyncer: &Syncer{SupportCORS: ptrutil.ToPtr(false)},
+			expected:    true,
+		},
+		{
+			description: "formatoverride-only",
+			givenSyncer: &Syncer{FormatOverride: "anyFormat"},
+			expected:    true,
+		},
+		{
+			description: "skipwhen-only",
+			givenSyncer: &Syncer{SkipWhen: &SkipWhen{}},
+			expected:    true,
+		},
+		{
+			description: "supports-only",
+			givenSyncer: &Syncer{Supports: []string{"anySupports"}},
+			expected:    false,
+		},
+		{
+			description: "supports-with-other",
+			givenSyncer: &Syncer{Key: "anyKey", Supports: []string{"anySupports"}},
+			expected:    true,
+		},
+	}
+
+	for _, test := range testCases {
+		result := test.givenSyncer.Defined()
 		assert.Equal(t, test.expected, result, test.description)
 	}
 }
