@@ -1,0 +1,18 @@
+endpoint: 'http://bidder_us.escalax.io/?partner={{.SourceId}}&token={{.AccountID}}&type=pbs'
+maintainer:
+  email: 'connect@escalax.io'
+geoscope:
+  - global
+endpointCompression: "GZIP"
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
