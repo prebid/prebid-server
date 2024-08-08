@@ -14,7 +14,30 @@ import (
 )
 
 type adapter struct {
-	endpoint string
+	bidderName string
+	endpoint   string
+}
+
+type interestGroupAuctionBuyer struct {
+	Origin          string          `json:"origin"`
+	MaxBid          float64         `json:"maxbid"`
+	Currency        string          `json:"cur"`
+	BuyerSignals    string          `json:"pbs"`
+	PrioritySignals json.RawMessage `json:"ps"`
+}
+
+type interestGroupAuctionSeller struct {
+	ImpId  string          `json:"impid"`
+	Config json.RawMessage `json:"config"`
+}
+
+type interestGroupIntent struct {
+	Igb []interestGroupAuctionBuyer  `json:"igb,omitempty"`
+	Igs []interestGroupAuctionSeller `json:"igs,omitempty"`
+}
+
+type medianetRespExt struct {
+	Igi []interestGroupIntent `json:"igi,omitempty"`
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -58,7 +81,6 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	}
 
 	var bidResp openrtb2.BidResponse
-
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
@@ -79,6 +101,11 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 			}
 		}
 	}
+
+	if fledgeAuctionConfigs, err := extractFledge(a, bidResp); err == nil && fledgeAuctionConfigs != nil {
+		bidResponse.FledgeAuctionConfigs = fledgeAuctionConfigs
+	}
+
 	return bidResponse, errs
 }
 
@@ -86,7 +113,8 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	url := buildEndpoint(config.Endpoint, config.ExtraAdapterInfo)
 	return &adapter{
-		endpoint: url,
+		bidderName: string(bidderName),
+		endpoint:   url,
 	}, nil
 }
 
@@ -101,6 +129,31 @@ func getBidMediaTypeFromMtype(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 	default:
 		return "", fmt.Errorf("Unable to fetch mediaType for imp: %s", bid.ImpID)
 	}
+}
+
+func extractFledge(a *adapter, bidResp openrtb2.BidResponse) ([]*openrtb_ext.FledgeAuctionConfig, error) {
+	var fledgeAuctionConfigs []*openrtb_ext.FledgeAuctionConfig
+
+	var bidRespExt medianetRespExt
+	if err := json.Unmarshal(bidResp.Ext, &bidRespExt); err != nil {
+		return nil, err
+	}
+
+	for _, igi := range bidRespExt.Igi {
+		for _, igs := range igi.Igs {
+			if fledgeAuctionConfigs == nil {
+				fledgeAuctionConfigs = make([]*openrtb_ext.FledgeAuctionConfig, 0)
+			}
+			fledgeConfig := &openrtb_ext.FledgeAuctionConfig{
+				ImpId:  igs.ImpId,
+				Bidder: a.bidderName,
+				Config: igs.Config,
+			}
+			fledgeAuctionConfigs = append(fledgeAuctionConfigs, fledgeConfig)
+		}
+	}
+
+	return fledgeAuctionConfigs, nil
 }
 
 func buildEndpoint(mnetUrl, hostUrl string) string {

@@ -1,0 +1,91 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "ae": 1,
+          "bidder": {
+            "cid": "8CUTSTCID",
+            "crid": "999999999"
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://example.media.net/rtb/prebid?src=http%3A%2F%2Flocalhost%3A8080%2Fextrnal_url",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "ae": 1,
+                "bidder": {
+                  "cid": "8CUTSTCID",
+                  "crid": "999999999"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs":["1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "1",
+          "cur": "USD",
+          "nbr": 1,
+          "ext": {
+            "igi":[{
+              "igs":[{
+                "impid": "1",
+                "config": {
+                  "key": "value"
+                }
+              }]
+            }]
+          }
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [],
+      "fledgeauctionconfigs": [
+        {
+          "impid": "1",
+          "bidder": "medianet",
+          "config": {
+            "key": "value"
+          }
+        }
+      ]
+    }
+  ]
+}
