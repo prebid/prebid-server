@@ -141,7 +141,7 @@ func TestConnectionMetrics(t *testing.T) {
 func TestRequestMetric(t *testing.T) {
 	m := createMetricsForTesting()
 	requestType := metrics.ReqTypeORTB2Web
-	requestStatus := metrics.RequestStatusBlacklisted
+	requestStatus := metrics.RequestStatusBlockedApp
 
 	m.RecordRequest(metrics.Labels{
 		RType:         requestType,
@@ -285,7 +285,7 @@ func TestRequestMetricWithoutCookie(t *testing.T) {
 	performTest := func(m *Metrics, cookieFlag metrics.CookieFlag) {
 		m.RecordRequest(metrics.Labels{
 			RType:         requestType,
-			RequestStatus: metrics.RequestStatusBlacklisted,
+			RequestStatus: metrics.RequestStatusBlockedApp,
 			CookieFlag:    cookieFlag,
 		})
 	}
@@ -337,7 +337,7 @@ func TestAccountMetric(t *testing.T) {
 	performTest := func(m *Metrics, pubID string) {
 		m.RecordRequest(metrics.Labels{
 			RType:         metrics.ReqTypeORTB2Web,
-			RequestStatus: metrics.RequestStatusBlacklisted,
+			RequestStatus: metrics.RequestStatusBlockedApp,
 			PubID:         pubID,
 		})
 	}
