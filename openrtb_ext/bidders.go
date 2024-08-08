@@ -151,6 +151,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderMgid,
 	BidderMgidX,
 	BidderMinuteMedia,
+	BidderMissena,
 	BidderMobfoxpb,
 	BidderMobileFuse,
 	BidderMotorik,
@@ -472,6 +473,7 @@ const (
 	BidderMgid              BidderName = "mgid"
 	BidderMgidX             BidderName = "mgidX"
 	BidderMinuteMedia       BidderName = "minutemedia"
+	BidderMissena           BidderName = "missena"
 	BidderMobfoxpb          BidderName = "mobfoxpb"
 	BidderMobileFuse        BidderName = "mobilefuse"
 	BidderMotorik           BidderName = "motorik"
