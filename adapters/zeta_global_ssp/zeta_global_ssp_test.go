@@ -1,6 +1,7 @@
 package zeta_global_ssp
 
 import (
+	"github.com/stretchr/testify/assert"
 	"testing"
 
 	"github.com/prebid/prebid-server/v2/adapters/adapterstest"
@@ -10,7 +11,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderZetaGlobalSsp, config.Adapter{
-		Endpoint: "https://ssp.disqus.com/bid/prebid-server?sid=11"},
+		Endpoint: "https://ssp.disqus.com/bid/prebid-server?sid={{.AccountID}}"},
 		config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
@@ -18,4 +19,12 @@ func TestJsonSamples(t *testing.T) {
 	}
 
 	adapterstest.RunJSONBidderTest(t, "zeta_global_ssp-test", bidder)
+}
+
+func TestEndpointTemplateMalformed(t *testing.T) {
+	_, buildErr := Builder(openrtb_ext.BidderZetaGlobalSsp, config.Adapter{
+		Endpoint: "{{Malformed}}"},
+		config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+
+	assert.Error(t, buildErr)
 }
