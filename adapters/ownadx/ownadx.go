@@ -56,9 +56,9 @@ func createBidRequest(rtbBidRequest *openrtb2.BidRequest, imps []openrtb2.Imp) *
 }
 func (adapter *adapter) buildEndpointURL(params *openrtb_ext.ExtImpOwnAdx) (string, error) {
 	endpointParams := macros.EndpointTemplateParams{
-		ZoneID:    params.SspId,
-		AccountID: params.SeatId,
-		SourceId:  params.TokenId,
+		SspID:   params.SspId, // Macro
+		SeatID:  params.SeatId,
+		TokenID: params.TokenId,
 	}
 	return macros.ResolveMacros(adapter.endpoint, endpointParams)
 }
@@ -124,6 +124,7 @@ func groupImpsByExt(imps []openrtb2.Imp) (map[openrtb_ext.ExtImpOwnAdx][]openrtb
 }
 
 func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -159,6 +160,7 @@ func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 
 	seatBid := bidResp.SeatBid[0]
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
+
 	if len(seatBid.Bid) == 0 {
 		return nil, []error{
 			&errortypes.BadServerResponse{
@@ -169,7 +171,6 @@ func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 	for i := 0; i < len(seatBid.Bid); i++ {
 		var bidType openrtb_ext.BidType
 		bid := seatBid.Bid[i]
-
 		bidType, err := getMediaType(bid)
 		if err != nil {
 			return nil, []error{&errortypes.BadServerResponse{
