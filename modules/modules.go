@@ -25,7 +25,7 @@ type Builder interface {
 	// It returns hook repository created based on the implemented hook interfaces by modules
 	// and a map of modules to a list of stage names for which module provides hooks
 	// or an error encountered during module initialization.
-	Build(cfg config.Modules, client moduledeps.ModuleDeps) (hooks.HookRepository, map[string][]string, error)
+	Build(cfg config.Modules, client moduledeps.ModuleDeps) (hooks.HookRepository, map[string][]string, []string, error)
 }
 
 type (
@@ -49,8 +49,10 @@ type builder struct {
 func (m *builder) Build(
 	cfg config.Modules,
 	deps moduledeps.ModuleDeps,
-) (hooks.HookRepository, map[string][]string, error) {
+) (hooks.HookRepository, map[string][]string, []string, error) {
 	modules := make(map[string]interface{})
+	modulesDisabledId := []string{}
+
 	for vendor, moduleBuilders := range m.builders {
 		for moduleName, builder := range moduleBuilders {
 			var err error
@@ -60,7 +62,7 @@ func (m *builder) Build(
 			id := fmt.Sprintf("%s.%s", vendor, moduleName)
 			if data, ok := cfg[vendor][moduleName]; ok {
 				if conf, err = jsonutil.Marshal(data); err != nil {
-					return nil, nil, fmt.Errorf(`failed to marshal "%s" module config: %s`, id, err)
+					return nil, nil, nil, fmt.Errorf(`failed to marshal "%s" module config: %s`, id, err)
 				}
 
 				if values, ok := data.(map[string]interface{}); ok {
@@ -69,15 +71,15 @@ func (m *builder) Build(
 					}
 				}
 			}
-
 			if !isEnabled {
+				modulesDisabledId = append(modulesDisabledId, id)
 				glog.Infof("Skip %s module, disabled.", id)
 				continue
 			}
 
 			module, err := builder(conf, deps)
 			if err != nil {
-				return nil, nil, fmt.Errorf(`failed to init "%s" module: %s`, id, err)
+				return nil, nil, nil, fmt.Errorf(`failed to init "%s" module: %s`, id, err)
 			}
 
 			modules[id] = module
@@ -86,10 +88,9 @@ func (m *builder) Build(
 
 	collection, err := createModuleStageNamesCollection(modules)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
-
 	repo, err := hooks.NewHookRepository(modules)
 
-	return repo, collection, err
+	return repo, collection, modulesDisabledId, err
 }
