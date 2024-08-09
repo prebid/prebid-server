@@ -161,12 +161,8 @@ func preprocess(imp *openrtb2.Imp) (*openrtb_ext.ExtImpGumGum, error) {
 	}
 
 	if imp.Video != nil {
-		err := validateVideoParams(imp.Video)
-		if err != nil {
-			return nil, err
-		}
-
 		if gumgumExt.IrisID != "" {
+			var err error
 			videoCopy := *imp.Video
 			videoExt := openrtb_ext.ExtImpGumGumVideo{IrisID: gumgumExt.IrisID}
 			videoCopy.Ext, err = json.Marshal(&videoExt)
@@ -219,15 +215,6 @@ func getMediaTypeForImpID(impID string, imps []openrtb2.Imp) openrtb_ext.BidType
 		}
 	}
 	return openrtb_ext.BidTypeVideo
-}
-
-func validateVideoParams(video *openrtb2.Video) (err error) {
-	if video.W == nil || *video.W == 0 || video.H == nil || *video.H == 0 || video.MinDuration == 0 || video.MaxDuration == 0 || video.Placement == 0 || video.Linearity == 0 {
-		return &errortypes.BadInput{
-			Message: "Invalid or missing video field(s)",
-		}
-	}
-	return nil
 }
 
 // Builder builds a new instance of the GumGum adapter for the given bidder with the given config.
