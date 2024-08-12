@@ -102,26 +102,13 @@ func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtEscalax) (string, erro
 	return macros.ResolveMacros(a.endpoint, endpointParams)
 }
 
-func checkResponseStatusCodes(response *adapters.ResponseData) error {
-	if response.StatusCode == http.StatusServiceUnavailable {
-		return &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Something went wrong Status Code: [ %d ] ", response.StatusCode),
-		}
-	}
-
-	if response.StatusCode == http.StatusNoContent {
-		return &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Empty response Status Code: [ %d ] ", response.StatusCode),
-		}
-	}
-
-	return adapters.CheckResponseStatusCodeForErrors(response)
-}
-
 func (a *adapter) MakeBids(openRTBRequest *openrtb2.BidRequest, requestToBidder *adapters.RequestData, bidderRawResponse *adapters.ResponseData) (bidderResponse *adapters.BidderResponse, errs []error) {
-	httpStatusError := checkResponseStatusCodes(bidderRawResponse)
-	if httpStatusError != nil {
-		return nil, []error{httpStatusError}
+	if adapters.IsResponseStatusCodeNoContent(bidderRawResponse) {
+		return nil, nil
+	}
+
+	if err := adapters.CheckResponseStatusCodeForErrors(bidderRawResponse); err != nil {
+		return nil, []error{err}
 	}
 
 	responseBody := bidderRawResponse.Body
