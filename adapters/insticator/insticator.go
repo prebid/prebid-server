@@ -86,36 +86,38 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	request.Ext = reqExt
 
 	for i := 0; i < len(request.Imp); i++ {
-		if impCopy, err := makeImps(request.Imp[i]); err == nil {
-			var impExt ext
-			// Populate site.publisher.id from imp extension only once
-			if request.Site != nil && i == 0 {
-				populatePublisherId(&impCopy, request)
-			} else if request.App != nil && i == 0 {
-				populatePublisherId(&impCopy, request)
-			}
-
-			// group together the imp hacing insticator adUnitId. However let's not block request creation.
-			if err := json.Unmarshal(impCopy.Ext, &impExt); err == nil {
-				impKey := impExt.Insticator.AdUnitId
-
-				resolvedBidFloor, errFloor := resolveBidFloor(impCopy.BidFloor, impCopy.BidFloorCur, requestInfo)
-				if errFloor != nil {
-					errs = append(errs, errFloor)
-				} else {
-					if resolvedBidFloor > 0 {
-						impCopy.BidFloor = resolvedBidFloor
-						impCopy.BidFloorCur = "USD"
-					}
-				}
-
-				groupedImps[impKey] = append(groupedImps[impKey], impCopy)
-			} else {
-				errs = append(errs, err)
-			}
-		} else {
+		impCopy, err := makeImps(request.Imp[i])
+		if err != nil {
 			errs = append(errs, err)
+			continue
 		}
+
+		var impExt ext
+
+		// Populate site.publisher.id from imp extension
+		if request.Site != nil || request.App != nil {
+			populatePublisherId(&impCopy, request)
+		}
+
+		// Group together the imps having Insticator adUnitId. However, let's not block request creation.
+		if err := json.Unmarshal(impCopy.Ext, &impExt); err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		impKey := impExt.Insticator.AdUnitId
+
+		resolvedBidFloor, errFloor := resolveBidFloor(impCopy.BidFloor, impCopy.BidFloorCur, requestInfo)
+		if errFloor != nil {
+			errs = append(errs, errFloor)
+		} else {
+			if resolvedBidFloor > 0 {
+				impCopy.BidFloor = resolvedBidFloor
+				impCopy.BidFloorCur = "USD"
+			}
+		}
+
+		groupedImps[impKey] = append(groupedImps[impKey], impCopy)
 	}
 
 	for _, impList := range groupedImps {
@@ -179,7 +181,9 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
-	bidResponse.Currency = response.Cur
+	if response.Cur != "" {
+		bidResponse.Currency = response.Cur
+	}
 	for _, seatBid := range response.SeatBid {
 		for i := range seatBid.Bid {
 			bid := &seatBid.Bid[i]
