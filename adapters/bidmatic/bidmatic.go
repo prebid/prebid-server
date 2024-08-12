@@ -21,13 +21,11 @@ type bidmaticImpExt struct {
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-
 	totalImps := len(request.Imp)
 	errors := make([]error, 0, totalImps)
 	imp2source := make(map[int][]int)
 
 	for i := 0; i < totalImps; i++ {
-
 		sourceId, err := validateImpression(&request.Imp[i])
 		if err != nil {
 			errors = append(errors, err)
@@ -39,7 +37,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		}
 
 		imp2source[sourceId] = append(imp2source[sourceId], i)
-
 	}
 
 	totalReqs := len(imp2source)
@@ -87,6 +84,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 func (a *adapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.RequestData, httpRes *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if adapters.IsResponseStatusCodeNoContent(httpRes) {
 		return nil, nil
+	}
+	if err := adapters.CheckResponseStatusCodeForErrors(httpRes); err != nil {
+		return nil, []error{err}
 	}
 
 	var bidResp openrtb2.BidResponse
