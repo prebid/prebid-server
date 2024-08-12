@@ -2,12 +2,9 @@ package insticator
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"math"
 	"net/http"
-	"reflect"
-	"strconv"
 	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -17,23 +14,13 @@ import (
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
-// type adapter struct {
-// 	endpoint string
-// }
-
-type Ext struct {
+type ext struct {
 	Insticator impInsticatorExt `json:"insticator"`
 }
 
-type insticatorUserExt struct {
-	Eids    []openrtb2.EID  `json:"eids,omitempty"`
-	Data    json.RawMessage `json:"data,omitempty"`
-	Consent string          `json:"consent,omitempty"`
-}
-
 type impInsticatorExt struct {
-	AdUnitId    string `json:"adUnitId,omitempty"`
-	PublisherId string `json:"publisherId,omitempty"`
+	AdUnitId    string `json:"adUnitId"`
+	PublisherId string `json:"publisherId"`
 }
 
 type adapter struct {
@@ -45,17 +32,17 @@ type reqExt struct {
 }
 
 type reqInsticatorExt struct {
-	Caller []InsticatorCaller `json:"caller,omitempty"`
+	Caller []insticatorCaller `json:"caller,omitempty"`
 }
 
-type InsticatorCaller struct {
+type insticatorCaller struct {
 	Name    string `json:"name,omitempty"`
 	Version string `json:"version,omitempty"`
 }
 
-// CALLER Info used to track Prebid Server
+// caller Info used to track Prebid Server
 // as one of the hops in the request to exchange
-var CALLER = InsticatorCaller{"Prebid-Server", "n/a"}
+var caller = insticatorCaller{"Prebid-Server", "n/a"}
 
 type bidExt struct {
 	Insticator bidInsticatorExt `json:"insticator,omitempty"`
@@ -63,122 +50,6 @@ type bidExt struct {
 
 type bidInsticatorExt struct {
 	MediaType string `json:"mediaType,omitempty"`
-}
-
-// Placeholder for the actual openrtb2.Video struct
-type Video struct {
-	W              *int     `json:"w"`
-	H              *int     `json:"h"`
-	MIMEs          []string `json:"mimes"`
-	Placement      int      `json:"placement"`
-	Plcmt          int      `json:"plcmt"`
-	MinDuration    *int     `json:"minduration"`
-	MaxDuration    *int     `json:"maxduration"`
-	Protocols      []int    `json:"protocols"`
-	StartDelay     *int     `json:"startdelay"`
-	Linearity      *int     `json:"linearity"`
-	Skip           *int     `json:"skip"`
-	SkipMin        *int     `json:"skipmin"`
-	SkipAfter      *int     `json:"skipafter"`
-	Sequence       *int     `json:"sequence"`
-	Battr          []int    `json:"battr"`
-	MaxExtended    *int     `json:"maxextended"`
-	MinBitrate     *int     `json:"minbitrate"`
-	MaxBitrate     *int     `json:"maxbitrate"`
-	PlaybackMethod []int    `json:"playbackmethod"`
-	PlaybackEnd    *int     `json:"playbackend"`
-	Delivery       []int    `json:"delivery"`
-	Pos            *int     `json:"pos"`
-	API            []int    `json:"api"`
-}
-
-type BadInput struct {
-	Message string
-}
-
-func (e *BadInput) Error() string {
-	return e.Message
-}
-
-// Validation functions
-func isInteger(value interface{}) bool {
-	switch v := value.(type) {
-	case int:
-		return true
-	case float64:
-		return v == float64(int(v))
-	case string:
-		_, err := strconv.Atoi(v)
-		return err == nil
-	default:
-		return false
-	}
-}
-
-func isArrayOfNums(value interface{}) bool {
-	switch v := value.(type) {
-	case []int:
-		return true
-	case []float64:
-		for _, num := range v {
-			if num != float64(int(num)) {
-				return false
-			}
-		}
-		return true
-	case []string:
-		for _, str := range v {
-			if _, err := strconv.Atoi(str); err != nil {
-				return false
-			}
-		}
-		return true
-	default:
-		return false
-	}
-}
-
-// Define valid values
-var validLinearity = map[int]bool{1: true}
-var validSkip = map[int]bool{0: true, 1: true}
-var validPlaybackEnd = map[int]bool{1: true, 2: true, 3: true}
-var validPos = map[int]bool{0: true, 1: true, 2: true, 3: true, 4: true, 5: true, 6: true, 7: true}
-
-// Map parameters to validation functions
-var optionalVideoParams = map[string]func(interface{}) bool{
-	"minduration":    isInteger,
-	"maxduration":    isInteger,
-	"protocols":      isArrayOfNums,
-	"startdelay":     isInteger,
-	"linearity":      func(value interface{}) bool { return isInteger(value) && validLinearity[toInt(value)] },
-	"skip":           func(value interface{}) bool { return isInteger(value) && validSkip[toInt(value)] },
-	"skipmin":        isInteger,
-	"skipafter":      isInteger,
-	"sequence":       isInteger,
-	"battr":          isArrayOfNums,
-	"maxextended":    isInteger,
-	"minbitrate":     isInteger,
-	"maxbitrate":     isInteger,
-	"playbackmethod": isArrayOfNums,
-	"playbackend":    func(value interface{}) bool { return isInteger(value) && validPlaybackEnd[toInt(value)] },
-	"delivery":       isArrayOfNums,
-	"pos":            func(value interface{}) bool { return isInteger(value) && validPos[toInt(value)] },
-	"api":            isArrayOfNums,
-}
-
-// Helper function to convert interface to int
-func toInt(value interface{}) int {
-	switch v := value.(type) {
-	case int:
-		return v
-	case float64:
-		return int(v)
-	case string:
-		if i, err := strconv.Atoi(v); err == nil {
-			return i
-		}
-	}
-	return 0
 }
 
 // Builder builds a new insticatorance of the Foo adapter for the given bidder with the given config.
@@ -201,14 +72,6 @@ func getMediaTypeForBid(bid *openrtb2.Bid) openrtb_ext.BidType {
 	}
 }
 
-func getBidType(ext bidExt) openrtb_ext.BidType {
-	if ext.Insticator.MediaType == "video" {
-		return openrtb_ext.BidTypeVideo
-	}
-
-	return openrtb_ext.BidTypeBanner
-}
-
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
 	var errs []error
@@ -224,7 +87,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	for i := 0; i < len(request.Imp); i++ {
 		if impCopy, err := makeImps(request.Imp[i]); err == nil {
-			var impExt Ext
+			var impExt ext
 			// Populate site.publisher.id from imp extension only once
 			if request.Site != nil && i == 0 {
 				populatePublisherId(&impCopy, request)
@@ -302,21 +165,11 @@ func (a *adapter) makeRequest(request openrtb2.BidRequest, impList []openrtb2.Im
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if responseData.StatusCode == http.StatusNoContent {
+	if adapters.IsResponseStatusCodeNoContent(responseData) {
 		return nil, nil
 	}
 
-	if responseData.StatusCode == http.StatusBadRequest {
-		err := &errortypes.BadInput{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info.", responseData.StatusCode),
-		}
-		return nil, []error{err}
-	}
-
-	if responseData.StatusCode != http.StatusOK {
-		err := &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info.", responseData.StatusCode),
-		}
+	if err := adapters.CheckResponseStatusCodeForErrors(responseData); err != nil {
 		return nil, []error{err}
 	}
 
@@ -342,11 +195,6 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 }
 
 func makeImps(imp openrtb2.Imp) (openrtb2.Imp, error) {
-	if imp.Banner == nil && imp.Video == nil {
-		return openrtb2.Imp{}, &errortypes.BadInput{
-			Message: fmt.Sprintf("Imp ID %s must have at least one of [Banner, Video] defined", imp.ID),
-		}
-	}
 
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
@@ -362,7 +210,7 @@ func makeImps(imp openrtb2.Imp) (openrtb2.Imp, error) {
 		}
 	}
 
-	var impExt Ext
+	var impExt ext
 	impExt.Insticator.AdUnitId = insticatorExt.AdUnitId
 	impExt.Insticator.PublisherId = insticatorExt.PublisherId
 
@@ -374,7 +222,6 @@ func makeImps(imp openrtb2.Imp) (openrtb2.Imp, error) {
 	}
 
 	imp.Ext = impExtJSON
-
 	// Validate Video if it exists
 	if imp.Video != nil {
 		videoCopy, err := validateVideoParams(imp.Video)
@@ -387,27 +234,8 @@ func makeImps(imp openrtb2.Imp) (openrtb2.Imp, error) {
 			}
 		}
 	}
+
 	return imp, nil
-}
-
-func validateVideoParams(video *openrtb2.Video) (*openrtb2.Video, error) {
-	videoCopy := *video
-	if (videoCopy.W == nil || *videoCopy.W == 0) ||
-		(videoCopy.H == nil || *videoCopy.H == 0) ||
-		videoCopy.MIMEs == nil {
-
-		return nil, &errortypes.BadInput{
-			Message: "One or more invalid or missing video field(s) w, h, mimes",
-		}
-	}
-
-	// Validate optional parameters and remove invalid ones
-	cleanedVideo, err := validateOptionalVideoParams(&videoCopy)
-	if err != nil {
-		return nil, err
-	}
-
-	return cleanedVideo, nil
 }
 
 func makeReqExt(request *openrtb2.BidRequest) ([]byte, error) {
@@ -424,10 +252,10 @@ func makeReqExt(request *openrtb2.BidRequest) ([]byte, error) {
 	}
 
 	if reqExt.Insticator.Caller == nil {
-		reqExt.Insticator.Caller = make([]InsticatorCaller, 0)
+		reqExt.Insticator.Caller = make([]insticatorCaller, 0)
 	}
 
-	reqExt.Insticator.Caller = append(reqExt.Insticator.Caller, CALLER)
+	reqExt.Insticator.Caller = append(reqExt.Insticator.Caller, caller)
 
 	return json.Marshal(reqExt)
 }
@@ -446,65 +274,23 @@ func roundTo4Decimals(amount float64) float64 {
 	return math.Round(amount*10000) / 10000
 }
 
-func validateOptionalVideoParams(video *openrtb2.Video) (*openrtb2.Video, error) {
-	v := reflect.ValueOf(video).Elem()
-	t := v.Type()
+func validateVideoParams(video *openrtb2.Video) (*openrtb2.Video, error) {
+	videoCopy := *video
+	if (videoCopy.W == nil || *videoCopy.W == 0) ||
+		(videoCopy.H == nil || *videoCopy.H == 0) ||
+		videoCopy.MIMEs == nil {
 
-	for i := 0; i < t.NumField(); i++ {
-		field := t.Field(i)
-		fieldValue := v.Field(i)
-
-		// Convert the field name to camelCase for matching in optionalVideoParams map
-		jsonTag := field.Tag.Get("json")
-		if jsonTag == "" {
-			jsonTag = toCamelCase(field.Name)
-		}
-
-		// Skip fields that are not in optionalVideoParams
-		validator, exists := optionalVideoParams[jsonTag]
-		if !exists {
-			continue
-		}
-
-		// Check if the field value is zero/nil and skip if true
-		if isZeroOrNil(fieldValue) {
-			continue
-		}
-
-		// Validate the field value
-		if !validator(fieldValue.Interface()) {
-			// If invalid, set the field to zero value
-			fieldValue.Set(reflect.Zero(fieldValue.Type()))
+		return nil, &errortypes.BadInput{
+			Message: "One or more invalid or missing video field(s) w, h, mimes",
 		}
 	}
-	return video, nil
-}
 
-// Helper function to convert field name to camelCase
-func toCamelCase(s string) string {
-	if s == "" {
-		return s
-	}
-	return strings.ToLower(string(s[0])) + s[1:]
-}
-
-// Helper function to check if a value is zero or nil
-func isZeroOrNil(value reflect.Value) bool {
-	switch value.Kind() {
-	case reflect.Ptr, reflect.Interface:
-		return value.IsNil()
-	case reflect.Slice, reflect.Array:
-		return value.Len() == 0
-	case reflect.Map:
-		return len(value.MapKeys()) == 0
-	default:
-		return value.IsZero()
-	}
+	return &videoCopy, nil
 }
 
 // populate publisherId to site/app object from imp extension
 func populatePublisherId(imp *openrtb2.Imp, request *openrtb2.BidRequest) {
-	var ext Ext
+	var ext ext
 
 	if request.Site != nil && request.Site.Publisher == nil {
 		request.Site.Publisher = &openrtb2.Publisher{}

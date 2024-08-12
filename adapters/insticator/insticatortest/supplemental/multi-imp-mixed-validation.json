@@ -13,15 +13,6 @@
               "publisherId": "test-publisher-id"
             }
           }
-        },
-        {
-          "id": "test-imp-id2",
-          "ext": {
-            "bidder": {
-              "adUnitId": "fake-site-id",
-              "publisherId": "test-publisher-id"
-            }
-          }
         }
       ],
       "site": {
@@ -96,12 +87,6 @@
             "cur": "USD"
           }
         }
-      }
-    ],
-    "expectedMakeRequestsErrors": [
-      {
-        "value": "Imp ID test-imp-id2 must have at least one of [Banner, Video] defined",
-        "comparison": "literal"
       }
     ],
     "expectedBidResponses": [
