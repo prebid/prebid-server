@@ -109,7 +109,7 @@ func TestGetDeviceInfo(t *testing.T) {
 		expectedError  string
 	}{
 		{
-			name:           "Success path",
+			name:           "Success_path",
 			engineResponse: &dd.ResultsHash{},
 			engineError:    nil,
 			expectedResult: &deviceInfo{
@@ -118,7 +118,7 @@ func TestGetDeviceInfo(t *testing.T) {
 			expectedError: "",
 		},
 		{
-			name:           "Error path",
+			name:           "Error_path",
 			engineResponse: nil,
 			engineError:    fmt.Errorf("error"),
 			expectedResult: nil,

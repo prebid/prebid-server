@@ -31,12 +31,12 @@ func TestIsAllowed(t *testing.T) {
 			expectedResult: false,
 		},
 		{
-			name:           "allow list is nil",
+			name:           "allow_list_is_nil",
 			allowList:      nil,
 			expectedResult: true,
 		},
 		{
-			name:           "allow list contains multiple",
+			name:           "allow_list_contains_multiple",
 			allowList:      []string{"1000", "1001", "1002"},
 			expectedResult: true,
 		},

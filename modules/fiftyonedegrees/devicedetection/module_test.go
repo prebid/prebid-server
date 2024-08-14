@@ -353,8 +353,9 @@ func TestHandleRawAuctionHookEnrichment(t *testing.T) {
 			"connectiontype": 2,
 			"ext": {
 				"atts": 0,
-				"ifv": "1B8EFA09-FF8F-4123-B07F-7283B50B3870"
-			,"fiftyonedegrees_deviceId":""},
+				"ifv": "1B8EFA09-FF8F-4123-B07F-7283B50B3870",
+				"fiftyonedegrees_deviceId":""
+			},
 			"sua": {
 				"source": 2,
 				"browsers": [
@@ -601,27 +602,27 @@ func TestBuilderHandleDeviceDetectorError(t *testing.T) {
 	defer os.Remove("test-builder-config.hash")
 
 	_, err := Builder(
-		[]byte(`{ 
-"enabled": true,
-          "data_file": {
-            "path": "test-builder-config.hash",
-            "update": {
-              "auto": true,
-              "url": "https://my.datafile.com/datafile.gz",
-              "polling_interval": 3600,
-              "licence_key": "your_licence_key",
-              "product": "V4Enterprise"
-            }
-          },
-          "account_filter": {"allow_list": ["123"]},
-				  "performance": {
-					"profile": "123",
-					"concurrency": 1,
-					"difference": 1,
-					"allow_unmatched": true,
-					"drift": 1	
-				  }
-}`), moduledeps.ModuleDeps{},
+		[]byte(`{
+			"enabled": true,
+			"data_file": {
+				"path": "test-builder-config.hash",
+				"update": {
+					"auto": true,
+					"url": "https://my.datafile.com/datafile.gz",
+					"polling_interval": 3600,
+					"licence_key": "your_licence_key",
+					"product": "V4Enterprise"
+            	}
+          	},
+			"account_filter": {"allow_list": ["123"]},
+			"performance": {
+				"profile": "123",
+				"concurrency": 1,
+				"difference": 1,
+				"allow_unmatched": true,
+				"drift": 1	
+			}
+		}`), moduledeps.ModuleDeps{},
 	)
 	assert.Error(t, err)
 	assert.Errorf(t, err, "failed to create device detector")
@@ -651,37 +652,36 @@ func TestHydrateFields(t *testing.T) {
 	}
 
 	rawPld := `{
-    "imp": [{
-            "id": "",
-            "banner": {
-                "topframe": 1,
-                "format": [
-                    {
-                        "w": 728,
-                        "h": 90
-                    }
-                ],
-                "pos": 1
-            },
-            "bidfloor": 0.01,
-            "bidfloorcur": "USD"
-        }
-    ],
-    "device": {
-        "model": "Macintosh",
-        "w": 843,
-        "h": 901,
-        "dnt": 0,
-        "ua": "Mozilla/5.0 (Linux; Android 13; SAMSUNG SM-A037U) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/23.0 Chrome/115.0.0.0 Mobile Safari/537.36",
-        "language": "en",
-        "sua": {"browsers":[{"brand":"Not/A)Brand","version":["99","0","0","0"]},{"brand":"Samsung Internet","version":["23","0","1","1"]},{"brand":"Chromium","version":["115","0","5790","168"]}],"platform":{"brand":"Android","version":["13","0","0"]},"mobile":1,"model":"SM-A037U","source":2},
-		"ext": {"h":"901","w":843}
-    },
-    "cur": [
-        "USD"
-    ],
-    "tmax": 1700
-}`
+		"imp": [{
+			"id": "",
+			"banner": {
+				"topframe": 1,
+				"format": [
+					{
+						"w": 728,
+						"h": 90
+					}
+				],
+				"pos": 1
+			},
+			"bidfloor": 0.01,
+			"bidfloorcur": "USD"
+		}],
+		"device": {
+			"model": "Macintosh",
+			"w": 843,
+			"h": 901,
+			"dnt": 0,
+			"ua": "Mozilla/5.0 (Linux; Android 13; SAMSUNG SM-A037U) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/23.0 Chrome/115.0.0.0 Mobile Safari/537.36",
+			"language": "en",
+			"sua": {"browsers":[{"brand":"Not/A)Brand","version":["99","0","0","0"]},{"brand":"Samsung Internet","version":["23","0","1","1"]},{"brand":"Chromium","version":["115","0","5790","168"]}],"platform":{"brand":"Android","version":["13","0","0"]},"mobile":1,"model":"SM-A037U","source":2},
+			"ext": {"h":"901","w":843}
+		},
+		"cur": [
+			"USD"
+		],
+		"tmax": 1700
+	}`
 
 	payload, err := hydrateFields(deviceInfo, []byte(rawPld))
 	assert.NoError(t, err)

@@ -10,27 +10,27 @@ import (
 
 func TestParseConfig(t *testing.T) {
 	cfgRaw := []byte(`{ 
-		  "enabled": true,
-          "data_file": {
+		"enabled": true,
+		"data_file": {
             "path": "path/to/51Degrees-LiteV4.1.hash",
             "update": {
-              "auto": true,
-              "url": "https://my.datafile.com/datafile.gz",
-              "polling_interval": 3600,
-              "license_key": "your_license_key",
-              "product": "V4Enterprise",
-			  "on_startup": true
+				"auto": true,
+				"url": "https://my.datafile.com/datafile.gz",
+				"polling_interval": 3600,
+				"license_key": "your_license_key",
+				"product": "V4Enterprise",
+				"on_startup": true
             }
-          },
-          "account_filter": {"allow_list": ["123"]},
-				  "performance": {
-					"profile": "default",
-					"concurrency": 1,
-					"difference": 1,
-					"allow_unmatched": true,
-					"drift": 1	
-				  }
-}`)
+		},
+		"account_filter": {"allow_list": ["123"]},
+		"performance": {
+			"profile": "default",
+			"concurrency": 1,
+			"difference": 1,
+			"allow_unmatched": true,
+			"drift": 1	
+		}
+	}`)
 
 	cfg, err := parseConfig(cfgRaw)
 
@@ -61,26 +61,26 @@ func TestValidateConfig(t *testing.T) {
 	defer os.Remove("test-validate-config.hash")
 
 	cfgRaw := []byte(`{ 
-"enabled": true,
-          "data_file": {
-            "path": "test-validate-config.hash",
-            "update": {
-              "auto": true,
-              "url": "https://my.datafile.com/datafile.gz",
-              "polling_interval": 3600,
-              "licence_key": "your_licence_key",
-              "product": "V4Enterprise"
-            }
-          },
-          "account_filter": {"allow_list": ["123"]},
-				  "performance": {
-					"profile": "default",
-					"concurrency": 1,
-					"difference": 1,
-					"allow_unmatched": true,
-					"drift": 1	
-				  }
-}`)
+		"enabled": true,
+		"data_file": {
+			"path": "test-validate-config.hash",
+			"update": {
+				"auto": true,
+				"url": "https://my.datafile.com/datafile.gz",
+				"polling_interval": 3600,
+				"licence_key": "your_licence_key",
+				"product": "V4Enterprise"
+			}
+		},
+		"account_filter": {"allow_list": ["123"]},
+		"performance": {
+			"profile": "default",
+			"concurrency": 1,
+			"difference": 1,
+			"allow_unmatched": true,
+			"drift": 1	
+		}
+	}`)
 
 	cfg, err := parseConfig(cfgRaw)
 	assert.NoError(t, err)
@@ -92,26 +92,26 @@ func TestValidateConfig(t *testing.T) {
 
 func TestInvalidPerformanceProfile(t *testing.T) {
 	cfgRaw := []byte(`{ 
-"enabled": true,
-          "data_file": {
-            "path": "test-validate-config.hash",
-            "update": {
-              "auto": true,
-              "url": "https://my.datafile.com/datafile.gz",
-              "polling_interval": 3600,
-              "licence_key": "your_licence_key",
-              "product": "V4Enterprise"
-            }
-          },
-          "account_filter": {"allow_list": ["123"]},
-				  "performance": {
-					"profile": "123",
-					"concurrency": 1,
-					"difference": 1,
-					"allow_unmatched": true,
-					"drift": 1	
-				  }
-}`)
+		"enabled": true,
+		"data_file": {
+			"path": "test-validate-config.hash",
+			"update": {
+				"auto": true,
+				"url": "https://my.datafile.com/datafile.gz",
+				"polling_interval": 3600,
+				"licence_key": "your_licence_key",
+				"product": "V4Enterprise"
+			}
+		},
+		"account_filter": {"allow_list": ["123"]},
+		"performance": {
+			"profile": "123",
+			"concurrency": 1,
+			"difference": 1,
+			"allow_unmatched": true,
+			"drift": 1	
+		}
+	}`)
 	cfg, err := parseConfig(cfgRaw)
 	assert.NoError(t, err)
 

@@ -48,7 +48,7 @@ func TestFromSuaPayload(t *testing.T) {
 		expectedValue    string
 	}{
 		{
-			name: "from SUA tag",
+			name: "from_SUA_tag",
 			payload: []byte(`{
 				"device": {
 					"sua": {
@@ -72,7 +72,7 @@ func TestFromSuaPayload(t *testing.T) {
 			expectedValue:    "arm",
 		},
 		{
-			name: "from UA headers",
+			name: "from_UA_headers",
 			payload: []byte(`{
 				"device": {
 					"ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",

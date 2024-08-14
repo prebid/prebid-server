@@ -16,7 +16,7 @@ func TestExtractEvidenceStrings(t *testing.T) {
 		expectedEvidence []stringEvidence
 	}{
 		{
-			name: "Ignored query evidence",
+			name: "Ignored_query_evidence",
 			headers: map[string]string{
 				"User-Agent": "Mozilla/5.0",
 			},
@@ -26,7 +26,7 @@ func TestExtractEvidenceStrings(t *testing.T) {
 			expectedEvidence: []stringEvidence{},
 		},
 		{
-			name:    "Empty headers",
+			name:    "Empty_headers",
 			headers: map[string]string{},
 			keys: []dd.EvidenceKey{
 				{Prefix: dd.HttpHeaderString, Key: "User-Agent"},
@@ -34,7 +34,7 @@ func TestExtractEvidenceStrings(t *testing.T) {
 			expectedEvidence: []stringEvidence{},
 		},
 		{
-			name: "Single header",
+			name: "Single_header",
 			headers: map[string]string{
 				"User-Agent": "Mozilla/5.0",
 			},
@@ -46,7 +46,7 @@ func TestExtractEvidenceStrings(t *testing.T) {
 			},
 		},
 		{
-			name: "Multiple headers",
+			name: "Multiple_headers",
 			headers: map[string]string{
 				"User-Agent": "Mozilla/5.0",
 				"Accept":     "text/html",
@@ -62,7 +62,7 @@ func TestExtractEvidenceStrings(t *testing.T) {
 			},
 		},
 		{
-			name: "Header with quotes removed",
+			name: "Header_with_quotes_removed",
 			headers: map[string]string{
 				"IP-List": "\"92.0.4515.159\"",
 			},
@@ -74,7 +74,7 @@ func TestExtractEvidenceStrings(t *testing.T) {
 			},
 		},
 		{
-			name: "Sec-CH-UA headers with quotes left",
+			name: "Sec-CH-UA_headers_with_quotes_left",
 			headers: map[string]string{
 				"Sec-CH-UA": "\"Chromium\";v=\"92\", \"Google Chrome\";v=\"92\"",
 			},
@@ -86,7 +86,7 @@ func TestExtractEvidenceStrings(t *testing.T) {
 			},
 		},
 		{
-			name: "Sec-CH-UA-Full-Version-List headers with quotes left",
+			name: "Sec-CH-UA-Full-Version-List_headers_with_quotes_left",
 			headers: map[string]string{
 				"Sec-CH-UA-Full-Version-List": "\"92.0.4515.159\"",
 			},
