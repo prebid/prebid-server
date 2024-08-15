@@ -2,6 +2,7 @@ endpoint: "http://rtb.openx.net/prebid"
 maintainer:
   email: "prebid@openx.com"
 gvlVendorID: 69
+endpointCompression: gzip
 capabilities:
   app:
     mediaTypes:
