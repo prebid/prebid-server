@@ -12,9 +12,9 @@ ENV GOROOT=/usr/local/go
 ENV PATH=$GOROOT/bin:$PATH
 ENV GOPROXY="https://proxy.golang.org"
 RUN apt-get update && \
-    apt-get install -y git && \
+    apt-get install -y git gcc && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-ENV CGO_ENABLED 0
+ENV CGO_ENABLED 1
 COPY ./ ./
 RUN go mod tidy
 RUN go mod vendor
