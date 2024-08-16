@@ -89,14 +89,6 @@ func addNonEmptyHeaders(headers *http.Header, headerValues map[string]string) {
 	}
 }
 
-func getReferer(request *openrtb2.BidRequest) string {
-	if request.Site == nil {
-		return ""
-	}
-
-	return request.Site.Domain
-}
-
 func getCurrency(request *openrtb2.BidRequest) string {
 	if len(request.Cur) == 0 {
 		return "USD"
@@ -113,6 +105,7 @@ func (a *adapter) MakeRequests(requestData *openrtb2.BidRequest, requestInfo *ad
 
 	for i := range requestData.Imp {
 		imp := requestData.Imp[i]
+
 		bidType, err := getBidType(imp)
 		if err != nil {
 			errors = append(errors, err)
@@ -136,8 +129,10 @@ func (a *adapter) MakeRequests(requestData *openrtb2.BidRequest, requestInfo *ad
 			Uri:     a.endpointUri,
 			Body:    requestBody,
 			Headers: getHeaders(requestData),
+			ImpIDs:  []string{imp.ID},
 		})
 	}
+	//clear requests.body
 
 	return requests, errors
 }
@@ -149,6 +144,7 @@ func processDataFromRequest(requestData *openrtb2.BidRequest, imp openrtb2.Imp, 
 	if requestData.Site != nil {
 		resetDigitalRequestData.Site.Domain = requestData.Site.Domain
 		resetDigitalRequestData.Site.Referrer = requestData.Site.Page
+
 	}
 
 	resetDigitalRequestData.Imps = append(resetDigitalRequestData.Imps, resetDigitalRequestImps{
@@ -157,12 +153,33 @@ func processDataFromRequest(requestData *openrtb2.BidRequest, imp openrtb2.Imp, 
 	})
 
 	if bidType == openrtb_ext.BidTypeBanner {
-		resetDigitalRequestData.Imps[0].MediaTypes.Banner.Sizes = append(resetDigitalRequestData.Imps[0].MediaTypes.Banner.Sizes, []int64{imp.Banner.Format[0].W, imp.Banner.Format[0].H})
-	}
-	if bidType == openrtb_ext.BidTypeVideo {
-		resetDigitalRequestData.Imps[0].MediaTypes.Video.Sizes = append(resetDigitalRequestData.Imps[0].MediaTypes.Banner.Sizes, []int64{*imp.Video.W, *imp.Video.H})
+		if imp.Banner != nil {
+			var tempH int64 = *imp.Banner.H
+			var tempW int64 = *imp.Banner.W
+
+			if tempH > 0 && tempW > 0 {
+				resetDigitalRequestData.Imps[0].MediaTypes.Banner.Sizes = append(
+					resetDigitalRequestData.Imps[0].MediaTypes.Banner.Sizes,
+					[]int64{tempH, tempW},
+				)
+			}
+
+		}
 	}
 
+	if bidType == openrtb_ext.BidTypeVideo {
+		if imp.Video != nil {
+			var tempH int64 = *imp.Video.H
+			var tempW int64 = *imp.Video.W
+
+			if tempH > 0 && tempW > 0 {
+				resetDigitalRequestData.Imps[0].MediaTypes.Video.Sizes = append(
+					resetDigitalRequestData.Imps[0].MediaTypes.Video.Sizes,
+					[]int64{tempH, tempW},
+				)
+			}
+		}
+	}
 	var extData = make(map[string]interface{})
 	err := json.Unmarshal(imp.Ext, &extData)
 	if err != nil {
@@ -170,9 +187,6 @@ func processDataFromRequest(requestData *openrtb2.BidRequest, imp openrtb2.Imp, 
 	}
 
 	resetDigitalRequestData.Imps[0].ZoneID.PlacementID = extData["bidder"].(map[string]interface{})["placement_id"].(string)
-	if resetDigitalRequestData.Imps[0].ZoneID.PlacementID == "test" {
-		resetDigitalRequestData.Imps[0].ForceBid = true
-	}
 
 	return resetDigitalRequestData, nil
 }
