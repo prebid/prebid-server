@@ -3,7 +3,7 @@
     "id": "test-req",
     "user": {
       "ext": {
-        "consent" : "dummy"
+        "consent": "dummy"
       }
     },
     "imp": [
@@ -31,7 +31,7 @@
   "expectedBidResponses": [],
   "expectedMakeRequestsErrors": [
     {
-      "value": "Request could not be parsed as ExtImpAdhese due to: unexpected end of JSON input",
+      "value": "Error unmarshalling bidder ext: unexpected end of JSON input",
       "comparison": "literal"
     }
   ]
