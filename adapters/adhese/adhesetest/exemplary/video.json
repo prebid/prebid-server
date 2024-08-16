@@ -5,13 +5,13 @@
       {
         "id": "test-req",
         "video": {
-          "mimes": null
+          "mimes": ["video/mp4"]
         },
         "ext": {
           "bidder": {
             "account": "demo",
             "location": "_adhese_prebid_demo_",
-            "format": "leaderboard",
+            "format": "preroll",
             "targets": {
               "ci": [
                 "gent",
@@ -43,7 +43,7 @@
               "ext": {
                 "adhese": {
                   "SL": [
-                    "_adhese_prebid_demo_-leaderboard"
+                    "_adhese_prebid_demo_-preroll"
                   ],
                   "ag": [
                     "55"
@@ -58,7 +58,7 @@
                 }
               },
               "video": {
-                "mimes": null
+                "mimes": ["video/mp4"]
               },
               "id": "test-req"
             }
@@ -74,7 +74,7 @@
               "bid": [
                 {
                   "price": 1.087,
-                  "adm": "<A TARGET='_blank' HREF='https://ads-demo.adhese.com/raylene//sl219/dtunknown/ogcontrol/II7504ab36-c269-4d5b-bf8d-c59c1867124f/tlall/A2127.68.78.84/ad2993-475/URhttps://test.com' TITLE=''><IMG SRC='https://pool-demo.adhese.com/pool/lib/475_0.jpg' WIDTH='300' HEIGHT='250' ALT='' BORDER='0' /></A><div style=\"position: absolute; left: 0px; top: 0px; visibility: hidden;\"><img src=\"https://ads-demo.adhese.com/track/2993//sl219/dtunknown/ogcontrol/II7504ab36-c269-4d5b-bf8d-c59c1867124f/tlall/A2127.68.78.84/?t=1717755902141\" border=\"0\" width=\"1\" height=\"1\" alt=\"\" style=\"display:none\"></div>",
+                  "adm": "<?xml version='1.0' encoding='UTF-8' standalone='no'?><VAST version='3.0' xmlns:xsi='https://www.w3.org/2001/XMLSchema-instance' xsi:noNamespaceSchemaLocation='vast.xsd'>  <Ad id='536'>  <InLine>    <AdSystem>ADHESE</AdSystem>    <AdTitle>vid</AdTitle>    <Survey></Survey>    <Impression><![CDATA[]]></Impression>    <Impression><![CDATA[https://ads-demo.adhese.com/track/3140//sl290///dtunknown/ogcontrol/II7849444b-2892-4ad0-8bcc-7d410e50d58e/tlall////tm/A2127.68.78.84/?t=1721225407122]]></Impression>    <Error><![CDATA[https://ads-demo.adhese.com/track/3140-error//sl290///dtunknown/ogcontrol/II7849444b-2892-4ad0-8bcc-7d410e50d58e/tlall////tm/A2127.68.78.84/?t=1721225407122]]></Error>    <Creatives>      <Creative id='536'>        <Linear>          <Duration>00:00:30</Duration>          <TrackingEvents>            <Tracking event='skip'><![CDATA[https://ads-demo.adhese.com/track/3140-skip//sl290///dtunknown/ogcontrol/II7849444b-2892-4ad0-8bcc-7d410e50d58e/tlall////tm/A2127.68.78.84/?t=1721225407122]]></Tracking>            <Tracking event='start'><![CDATA[https://ads-demo.adhese.com/track/3140-start//sl290///dtunknown/ogcontrol/II7849444b-2892-4ad0-8bcc-7d410e50d58e/tlall////tm/A2127.68.78.84/?t=1721225407122]]></Tracking>            <Tracking event='firstQuartile'><![CDATA[https://ads-demo.adhese.com/track/3140-firstQuartile//sl290///dtunknown/ogcontrol/II7849444b-2892-4ad0-8bcc-7d410e50d58e/tlall////tm/A2127.68.78.84/?t=1721225407122]]></Tracking>                                 <Tracking event='midpoint'><![CDATA[https://ads-demo.adhese.com/track/3140-midpoint//sl290///dtunknown/ogcontrol/II7849444b-2892-4ad0-8bcc-7d410e50d58e/tlall////tm/A2127.68.78.84/?t=1721225407122]]></Tracking>                                 <Tracking event='thirdQuartile'><![CDATA[https://ads-demo.adhese.com/track/3140-thirdQuartile//sl290///dtunknown/ogcontrol/II7849444b-2892-4ad0-8bcc-7d410e50d58e/tlall////tm/A2127.68.78.84/?t=1721225407122]]></Tracking>                                 <Tracking event='complete'><![CDATA[https://ads-demo.adhese.com/track/3140-complete//sl290///dtunknown/ogcontrol/II7849444b-2892-4ad0-8bcc-7d410e50d58e/tlall////tm/A2127.68.78.84/?t=1721225407122]]></Tracking>          </TrackingEvents>          <VideoClicks>            <ClickThrough><![CDATA[http://clicks.adhese.be/raylene/sl290/ad3140/UR]]></ClickThrough>          </VideoClicks>          <MediaFiles>            <MediaFile id='1' delivery='progressive' type='video/mp4' width='520' height='330'><![CDATA[]]></MediaFile>          </MediaFiles>        </Linear>      </Creative>    </Creatives>    <Extensions>        <DeliveryMultiples><![CDATA[dmADV0]]></DeliveryMultiples>    </Extensions>    </InLine>  </Ad> </VAST>",
                   "w": 300,
                   "h": 250,
                   "crid": "demo-475",
@@ -86,9 +86,9 @@
                       "orderId": "234",
                       "adspaceId": "431",
                       "priority": "0",
-                      "adType": "pbs_mr",
-                      "adFormat": "pbs_mr",
-                      "viewableImpressionCounter": "https://ads-demo.adhese.com/track/2993-Adhese_IABview/sl219/dtunknown/ogcontrol/II7504ab36-c269-4d5b-bf8d-c59c1867124f/tlall/A2127.68.78.84/?t=1717755902141",
+                      "adType": "preroll",
+                      "adFormat": "preroll",
+                      "viewableImpressionCounter": "https://ads-demo.adhese.com/track/3140-Adhese_IABview/sl290/dtunknown/ogcontrol/II7849444b-2892-4ad0-8bcc-7d410e50d58e/tlall/A2127.68.78.84/?t=1721225407122",
                       "orderProperty": ""
                     }
                   },
@@ -109,19 +109,19 @@
       "bids": [
         {
           "bid": {
-            "adm": "<A TARGET='_blank' HREF='https://ads-demo.adhese.com/raylene//sl219/dtunknown/ogcontrol/II7504ab36-c269-4d5b-bf8d-c59c1867124f/tlall/A2127.68.78.84/ad2993-475/URhttps://test.com' TITLE=''><IMG SRC='https://pool-demo.adhese.com/pool/lib/475_0.jpg' WIDTH='300' HEIGHT='250' ALT='' BORDER='0' /></A><div style=\"position: absolute; left: 0px; top: 0px; visibility: hidden;\"><img src=\"https://ads-demo.adhese.com/track/2993//sl219/dtunknown/ogcontrol/II7504ab36-c269-4d5b-bf8d-c59c1867124f/tlall/A2127.68.78.84/?t=1717755902141\" border=\"0\" width=\"1\" height=\"1\" alt=\"\" style=\"display:none\"></div>",
+            "adm": "<?xml version='1.0' encoding='UTF-8' standalone='no'?><VAST version='3.0' xmlns:xsi='https://www.w3.org/2001/XMLSchema-instance' xsi:noNamespaceSchemaLocation='vast.xsd'>  <Ad id='536'>  <InLine>    <AdSystem>ADHESE</AdSystem>    <AdTitle>vid</AdTitle>    <Survey></Survey>    <Impression><![CDATA[]]></Impression>    <Impression><![CDATA[https://ads-demo.adhese.com/track/3140//sl290///dtunknown/ogcontrol/II7849444b-2892-4ad0-8bcc-7d410e50d58e/tlall////tm/A2127.68.78.84/?t=1721225407122]]></Impression>    <Error><![CDATA[https://ads-demo.adhese.com/track/3140-error//sl290///dtunknown/ogcontrol/II7849444b-2892-4ad0-8bcc-7d410e50d58e/tlall////tm/A2127.68.78.84/?t=1721225407122]]></Error>    <Creatives>      <Creative id='536'>        <Linear>          <Duration>00:00:30</Duration>          <TrackingEvents>            <Tracking event='skip'><![CDATA[https://ads-demo.adhese.com/track/3140-skip//sl290///dtunknown/ogcontrol/II7849444b-2892-4ad0-8bcc-7d410e50d58e/tlall////tm/A2127.68.78.84/?t=1721225407122]]></Tracking>            <Tracking event='start'><![CDATA[https://ads-demo.adhese.com/track/3140-start//sl290///dtunknown/ogcontrol/II7849444b-2892-4ad0-8bcc-7d410e50d58e/tlall////tm/A2127.68.78.84/?t=1721225407122]]></Tracking>            <Tracking event='firstQuartile'><![CDATA[https://ads-demo.adhese.com/track/3140-firstQuartile//sl290///dtunknown/ogcontrol/II7849444b-2892-4ad0-8bcc-7d410e50d58e/tlall////tm/A2127.68.78.84/?t=1721225407122]]></Tracking>                                 <Tracking event='midpoint'><![CDATA[https://ads-demo.adhese.com/track/3140-midpoint//sl290///dtunknown/ogcontrol/II7849444b-2892-4ad0-8bcc-7d410e50d58e/tlall////tm/A2127.68.78.84/?t=1721225407122]]></Tracking>                                 <Tracking event='thirdQuartile'><![CDATA[https://ads-demo.adhese.com/track/3140-thirdQuartile//sl290///dtunknown/ogcontrol/II7849444b-2892-4ad0-8bcc-7d410e50d58e/tlall////tm/A2127.68.78.84/?t=1721225407122]]></Tracking>                                 <Tracking event='complete'><![CDATA[https://ads-demo.adhese.com/track/3140-complete//sl290///dtunknown/ogcontrol/II7849444b-2892-4ad0-8bcc-7d410e50d58e/tlall////tm/A2127.68.78.84/?t=1721225407122]]></Tracking>          </TrackingEvents>          <VideoClicks>            <ClickThrough><![CDATA[http://clicks.adhese.be/raylene/sl290/ad3140/UR]]></ClickThrough>          </VideoClicks>          <MediaFiles>            <MediaFile id='1' delivery='progressive' type='video/mp4' width='520' height='330'><![CDATA[]]></MediaFile>          </MediaFiles>        </Linear>      </Creative>    </Creatives>    <Extensions>        <DeliveryMultiples><![CDATA[dmADV0]]></DeliveryMultiples>    </Extensions>    </InLine>  </Ad> </VAST>",
             "w": 300,
             "h": 250,
             "ext": {
-              "adFormat": "pbs_mr",
-              "adType": "pbs_mr",
+              "adFormat": "preroll",
+              "adType": "preroll",
               "adspaceId": "431",
               "id": "2993",
               "libId": "475",
               "orderId": "234",
               "orderProperty": "",
               "priority": "0",
-              "viewableImpressionCounter": "https://ads-demo.adhese.com/track/2993-Adhese_IABview/sl219/dtunknown/ogcontrol/II7504ab36-c269-4d5b-bf8d-c59c1867124f/tlall/A2127.68.78.84/?t=1717755902141"
+              "viewableImpressionCounter": "https://ads-demo.adhese.com/track/3140-Adhese_IABview/sl290/dtunknown/ogcontrol/II7849444b-2892-4ad0-8bcc-7d410e50d58e/tlall/A2127.68.78.84/?t=1721225407122"
             },
             "id": "a5ec99e8-aa6b-42f4-bf8b-b68dabf96caf",
             "impid": "imp_id",
