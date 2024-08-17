@@ -19,28 +19,28 @@ func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) (*MileAnaly
 
 		logEntry = &MileAnalyticsEvent{
 			//SessionID: ao.RequestWrapper
-			Ip:            ao.RequestWrapper.Device.IP,
-			Ua:            ao.RequestWrapper.Device.UA,
-			CityName:      ao.RequestWrapper.Device.Geo.City,
-			StateName:     ao.RequestWrapper.Device.Geo.Region,
-			CountryName:   ao.RequestWrapper.Device.Geo.Country,
-			ArbitraryData: "",
-			Device:        ao.RequestWrapper.Device.Model,
-			Publisher:     ao.RequestWrapper.Site.Publisher.ID,
-			Site:          ao.RequestWrapper.Site.ID,
-			ReferrerURL:   ao.RequestWrapper.Site.Ref,
-			AdvertiserName: "",
-			AuctionID: ao.RequestWrapper.ID,   // TODO
-			Page:          ao.RequestWrapper.Site.Page,
-			YetiSiteID:    ao.RequestWrapper.Site.ID,
-			YetiPublisherID: ao.RequestWrapper.Site.Publisher.ID,
-			SessionID: "",
-			EventType: "",
-			Section: "",
-			BidBidders: []string{},
+			Ip:                ao.RequestWrapper.Device.IP,
+			Ua:                ao.RequestWrapper.Device.UA,
+			CityName:          ao.RequestWrapper.Device.Geo.City,
+			StateName:         ao.RequestWrapper.Device.Geo.Region,
+			CountryName:       ao.RequestWrapper.Device.Geo.Country,
+			ArbitraryData:     "",
+			Device:            ao.RequestWrapper.Device.Model,
+			Publisher:         ao.RequestWrapper.Site.Publisher.ID,
+			Site:              ao.RequestWrapper.Site.ID,
+			ReferrerURL:       ao.RequestWrapper.Site.Ref,
+			AdvertiserName:    "",
+			AuctionID:         ao.RequestWrapper.ID, // TODO
+			Page:              ao.RequestWrapper.Site.Page,
+			YetiSiteID:        ao.RequestWrapper.Site.ID,
+			YetiPublisherID:   ao.RequestWrapper.Site.Publisher.ID,
+			SessionID:         "",
+			EventType:         "",
+			Section:           "",
+			BidBidders:        []string{},
 			ConfiguredBidders: []string{},
 			//Viewability: ao.RequestWrapper.
-			WinningSize: ao.Response.SeatBi	d
+			//WinningSize: ao.Response.SeatBi
 
 			//Status:               ao.Status,
 			//Errors:               ao.Errors,
