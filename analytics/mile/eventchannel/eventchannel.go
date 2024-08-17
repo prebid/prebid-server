@@ -1,6 +1,7 @@
 package eventchannel
 
 import (
+	"fmt"
 	"github.com/prebid/prebid-server/v2/analytics/mile/helpers"
 	"sync"
 	"time"
@@ -21,9 +22,9 @@ type Limit struct {
 
 type EventChannel struct {
 	//gz   *gzip.Writer
-	buff []*helpers.PageViewRecord
+	buff []*helpers.MileAnalyticsEvent
 
-	ch          chan *helpers.PageViewRecord
+	ch          chan *helpers.MileAnalyticsEvent
 	endCh       chan int
 	metrics     Metrics
 	muxGzBuffer sync.RWMutex
@@ -33,13 +34,13 @@ type EventChannel struct {
 }
 
 func NewEventChannel(sender Sender, clock clock.Clock, maxByteSize, maxEventCount int64, maxTime time.Duration) *EventChannel {
-	b := []*helpers.PageViewRecord{}
+	b := []*helpers.MileAnalyticsEvent{}
 	//gzw := gzip.NewWriter(b)
 
 	c := EventChannel{
 		//gz:      gzw,
 		buff:    b,
-		ch:      make(chan *helpers.PageViewRecord),
+		ch:      make(chan *helpers.MileAnalyticsEvent),
 		endCh:   make(chan int),
 		metrics: Metrics{},
 		send:    sender,
@@ -50,7 +51,7 @@ func NewEventChannel(sender Sender, clock clock.Clock, maxByteSize, maxEventCoun
 	return &c
 }
 
-func (c *EventChannel) Push(event *helpers.PageViewRecord) {
+func (c *EventChannel) Push(event *helpers.MileAnalyticsEvent) {
 	c.ch <- event
 }
 
@@ -58,7 +59,7 @@ func (c *EventChannel) Close() {
 	c.endCh <- 1
 }
 
-func (c *EventChannel) buffer(event *helpers.PageViewRecord) {
+func (c *EventChannel) buffer(event *helpers.MileAnalyticsEvent) {
 	c.muxGzBuffer.Lock()
 	defer c.muxGzBuffer.Unlock()
 
@@ -83,7 +84,7 @@ func (c *EventChannel) reset() {
 	//c.gz.Reset(c.buff)
 	//c.buff.Reset()
 
-	c.buff = []*helpers.PageViewRecord{}
+	c.buff = []*helpers.MileAnalyticsEvent{}
 
 	// reset metrics
 	c.metrics.eventCount = 0
@@ -93,8 +94,9 @@ func (c *EventChannel) reset() {
 func (c *EventChannel) flush() {
 	c.muxGzBuffer.Lock()
 	defer c.muxGzBuffer.Unlock()
+	fmt.Println(c.metrics.eventCount, "evec")
 
-	if c.metrics.eventCount == 0 || c.metrics.bufferSize == 0 {
+	if c.metrics.eventCount == 0 { //|| c.metrics.bufferSize == 0 {
 		return
 	}
 
@@ -117,7 +119,8 @@ func (c *EventChannel) flush() {
 	//}
 
 	// send events (async)
-	go c.send(c.buff)
+	err := c.send(c.buff)
+	fmt.Println(err)
 }
 
 func (c *EventChannel) start() {

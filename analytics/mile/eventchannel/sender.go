@@ -4,18 +4,17 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/golang/glog"
+	"github.com/prebid/prebid-server/v2/analytics/mile/helpers"
 	"net/http"
 	"net/url"
 	"path"
-
-	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/v2/analytics/mile/helpers"
 )
 
-type Sender = func(payload []*helpers.PageViewRecord) error
+type Sender = func(payload []*helpers.MileAnalyticsEvent) error
 
 func NewHttpSender(client *http.Client, endpoint string) Sender {
-	return func(payload []*helpers.PageViewRecord) error {
+	return func(payload []*helpers.MileAnalyticsEvent) error {
 
 		data, err := json.Marshal(payload)
 		if err != nil {
@@ -47,10 +46,12 @@ func NewHttpSender(client *http.Client, endpoint string) Sender {
 }
 
 func BuildEndpointSender(client *http.Client, baseUrl string, module string) Sender {
+	fmt.Println(baseUrl)
 	endpoint, err := url.Parse(baseUrl)
 	if err != nil {
 		glog.Error(err)
 	}
-	endpoint.Path = path.Join(endpoint.Path, "intake", module)
+	endpoint.Path = path.Join(endpoint.Path, "pageview-event", "json")
+
 	return NewHttpSender(client, endpoint.String())
 }

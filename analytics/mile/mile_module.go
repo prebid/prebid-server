@@ -63,8 +63,31 @@ func NewModule(client *http.Client, scope, endpoint, configRefreshDelay string, 
 	return NewModuleWithConfigTask(client, scope, endpoint, maxEventCount, maxByteSize, maxTime, configUpdateTask, clock)
 }
 
+func NewModuleWithConfig(client *http.Client, scope, endpoint string, config *Configuration, maxEventCount int, maxByteSize, maxTime string, clock clock.Clock) (analytics.Module, error) {
+
+	bufferCfg, err := newBufferConfig(maxEventCount, maxByteSize, maxTime)
+	if err != nil {
+		return nil, fmt.Errorf("fail to parse the module args, arg=analytics.pubstack.buffers, :%v", err)
+	}
+	mm := MileModule{
+		scope:         scope,
+		httpClient:    client,
+		cfg:           config,
+		buffsCfg:      bufferCfg,
+		sigTermCh:     make(chan os.Signal),
+		stopCh:        make(chan struct{}),
+		eventChannels: make(map[string]*eventchannel.EventChannel),
+		muxConfig:     sync.RWMutex{},
+		clock:         clock,
+	}
+
+	mm.updateConfig(config)
+
+	return &mm, nil
+}
+
 func NewModuleWithConfigTask(client *http.Client, scope, endpoint string, maxEventCount int, maxByteSize, maxTime string, configTask ConfigUpdateTask, clock clock.Clock) (analytics.Module, error) {
-	glog.Infof("[pubstack] Initializing module scope=%s endpoint=%s\n", scope, endpoint)
+	glog.Infof("[mile] Initializing module scope=%s endpoint=%s\n", scope, endpoint)
 
 	// parse args
 	bufferCfg, err := newBufferConfig(maxEventCount, maxByteSize, maxTime)
@@ -86,7 +109,7 @@ func NewModuleWithConfigTask(client *http.Client, scope, endpoint string, maxEve
 		Features: defaultFeatures,
 	}
 
-	pb := MileModule{
+	mm := MileModule{
 		scope:         scope,
 		httpClient:    client,
 		cfg:           defaultConfig,
@@ -98,156 +121,157 @@ func NewModuleWithConfigTask(client *http.Client, scope, endpoint string, maxEve
 		clock:         clock,
 	}
 
-	signal.Notify(pb.sigTermCh, os.Interrupt, syscall.SIGTERM)
+	signal.Notify(mm.sigTermCh, os.Interrupt, syscall.SIGTERM)
 
-	configChannel := configTask.Start(pb.stopCh)
-	go pb.start(configChannel)
+	configChannel := configTask.Start(mm.stopCh)
+	go mm.start(configChannel)
 
 	glog.Info("[pubstack] Pubstack analytics configured and ready")
-	return &pb, nil
+	return &mm, nil
 }
 
-func (p *MileModule) LogAuctionObject(ao *analytics.AuctionObject) {
-	p.muxConfig.RLock()
-	defer p.muxConfig.RUnlock()
+func (m *MileModule) LogAuctionObject(ao *analytics.AuctionObject) {
+	m.muxConfig.RLock()
+	defer m.muxConfig.RUnlock()
 
-	if !p.isFeatureEnable(auction) {
+	if !m.isFeatureEnable(auction) {
 		return
 	}
 
 	// serialize event
-	payload, err := helpers.JsonifyAuctionObject(ao, p.scope)
+	payload, err := helpers.JsonifyAuctionObject(ao, m.scope)
 	if err != nil {
-		glog.Warning("[pubstack] Cannot serialize auction")
+		glog.Warning("[mile] Cannot serialize auction")
 		return
 	}
 
-	p.eventChannels[auction].Push(payload)
+	m.eventChannels[auction].Push(payload)
 }
 
-func (p *MileModule) LogNotificationEventObject(ne *analytics.NotificationEvent) {
+func (m *MileModule) LogNotificationEventObject(ne *analytics.NotificationEvent) {
 }
 
-func (p *MileModule) LogVideoObject(vo *analytics.VideoObject) {
-	p.muxConfig.RLock()
-	defer p.muxConfig.RUnlock()
+func (m *MileModule) LogVideoObject(vo *analytics.VideoObject) {
+	m.muxConfig.RLock()
+	defer m.muxConfig.RUnlock()
 
-	if !p.isFeatureEnable(video) {
+	if !m.isFeatureEnable(video) {
 		return
 	}
 
 	// serialize event
-	payload, err := helpers.JsonifyVideoObject(vo, p.scope)
-	if err != nil {
-		glog.Warning("[pubstack] Cannot serialize video")
-		return
-	}
-
-	p.eventChannels[video].Push(payload)
-}
-
-func (p *MileModule) LogSetUIDObject(so *analytics.SetUIDObject) {
-	p.muxConfig.RLock()
-	defer p.muxConfig.RUnlock()
-
-	if !p.isFeatureEnable(setUID) {
-		return
-	}
-
-	// serialize event
-	payload, err := helpers.JsonifySetUIDObject(so, p.scope)
+	payload, err := helpers.JsonifyVideoObject(vo, m.scope)
 	if err != nil {
 		glog.Warning("[pubstack] Cannot serialize video")
 		return
 	}
 
-	p.eventChannels[setUID].Push(payload)
+	m.eventChannels[video].Push(payload)
 }
 
-func (p *MileModule) LogCookieSyncObject(cso *analytics.CookieSyncObject) {
-	p.muxConfig.RLock()
-	defer p.muxConfig.RUnlock()
+func (m *MileModule) LogSetUIDObject(so *analytics.SetUIDObject) {
+	m.muxConfig.RLock()
+	defer m.muxConfig.RUnlock()
 
-	if !p.isFeatureEnable(cookieSync) {
+	if !m.isFeatureEnable(setUID) {
 		return
 	}
 
 	// serialize event
-	payload, err := helpers.JsonifyCookieSync(cso, p.scope)
+	payload, err := helpers.JsonifySetUIDObject(so, m.scope)
 	if err != nil {
 		glog.Warning("[pubstack] Cannot serialize video")
 		return
 	}
 
-	p.eventChannels[cookieSync].Push(payload)
+	m.eventChannels[setUID].Push(payload)
 }
 
-func (p *MileModule) LogAmpObject(ao *analytics.AmpObject) {
-	p.muxConfig.RLock()
-	defer p.muxConfig.RUnlock()
+func (m *MileModule) LogCookieSyncObject(cso *analytics.CookieSyncObject) {
+	m.muxConfig.RLock()
+	defer m.muxConfig.RUnlock()
 
-	if !p.isFeatureEnable(amp) {
+	if !m.isFeatureEnable(cookieSync) {
 		return
 	}
 
 	// serialize event
-	payload, err := helpers.JsonifyAmpObject(ao, p.scope)
+	payload, err := helpers.JsonifyCookieSync(cso, m.scope)
 	if err != nil {
 		glog.Warning("[pubstack] Cannot serialize video")
 		return
 	}
 
-	p.eventChannels[amp].Push(payload)
+	m.eventChannels[cookieSync].Push(payload)
 }
 
-func (p *MileModule) start(c <-chan *Configuration) {
+func (m *MileModule) LogAmpObject(ao *analytics.AmpObject) {
+	m.muxConfig.RLock()
+	defer m.muxConfig.RUnlock()
+
+	if !m.isFeatureEnable(amp) {
+		return
+	}
+
+	// serialize event
+	payload, err := helpers.JsonifyAmpObject(ao, m.scope)
+	if err != nil {
+		glog.Warning("[pubstack] Cannot serialize video")
+		return
+	}
+
+	m.eventChannels[amp].Push(payload)
+}
+
+func (m *MileModule) start(c <-chan *Configuration) {
 	for {
 		select {
-		case <-p.sigTermCh:
-			close(p.stopCh)
-			cfg := p.cfg.clone().disableAllFeatures()
-			p.updateConfig(cfg)
+		case <-m.sigTermCh:
+			close(m.stopCh)
+			cfg := m.cfg.clone().disableAllFeatures()
+			m.updateConfig(cfg)
 			return
 		case config := <-c:
-			p.updateConfig(config)
-			glog.Infof("[pubstack] Updating config: %v", p.cfg)
+			m.updateConfig(config)
+			glog.Infof("[mile] Updating config: %v", m.cfg)
 		}
 	}
 }
 
-func (p *MileModule) updateConfig(config *Configuration) {
-	p.muxConfig.Lock()
-	defer p.muxConfig.Unlock()
+func (m *MileModule) updateConfig(config *Configuration) {
+	m.muxConfig.Lock()
+	defer m.muxConfig.Unlock()
 
-	if p.cfg.isSameAs(config) {
-		return
-	}
+	//if m.cfg.isSameAs(config) {
+	//	return
+	//}
 
-	p.cfg = config
-	p.closeAllEventChannels()
+	m.cfg = config
+	m.closeAllEventChannels()
 
-	p.registerChannel(amp)
-	p.registerChannel(auction)
-	p.registerChannel(cookieSync)
-	p.registerChannel(video)
-	p.registerChannel(setUID)
+	m.registerChannel(amp)
+	m.registerChannel(auction)
+	m.registerChannel(cookieSync)
+	m.registerChannel(video)
+	m.registerChannel(setUID)
+
 }
 
-func (p *MileModule) isFeatureEnable(feature string) bool {
-	val, ok := p.cfg.Features[feature]
+func (m *MileModule) isFeatureEnable(feature string) bool {
+	val, ok := m.cfg.Features[feature]
 	return ok && val
 }
 
-func (p *MileModule) registerChannel(feature string) {
-	if p.isFeatureEnable(feature) {
-		sender := eventchannel.BuildEndpointSender(p.httpClient, p.cfg.Endpoint, feature)
-		p.eventChannels[feature] = eventchannel.NewEventChannel(sender, p.clock, p.buffsCfg.size, p.buffsCfg.count, p.buffsCfg.timeout)
+func (m *MileModule) registerChannel(feature string) {
+	if m.isFeatureEnable(feature) {
+		sender := eventchannel.BuildEndpointSender(m.httpClient, m.cfg.Endpoint, feature)
+		m.eventChannels[feature] = eventchannel.NewEventChannel(sender, m.clock, m.buffsCfg.size, m.buffsCfg.count, m.buffsCfg.timeout)
 	}
 }
 
-func (p *MileModule) closeAllEventChannels() {
-	for key, ch := range p.eventChannels {
+func (m *MileModule) closeAllEventChannels() {
+	for key, ch := range m.eventChannels {
 		ch.Close()
-		delete(p.eventChannels, key)
+		delete(m.eventChannels, key)
 	}
 }

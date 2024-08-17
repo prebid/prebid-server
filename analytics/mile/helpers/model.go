@@ -1,47 +1,177 @@
 package helpers
 
-type PageViewRecord struct {
-	SessionID string `json:"sessionID"`
+type MileAnalyticsEvent struct {
+	Ip string `json:"ip"`
 
-	Lcp float64 `json:"lcp"`
-
-	Inp float64 `json:"inp"`
-
-	Cls float64 `json:"cls"`
-
-	EventType string `json:"eventType"`
-
-	PageViewID string `json:"pageViewID"`
-
-	Device string `json:"device"`
+	ClientVersion string `json:"clientVersion"`
 
 	Ua string `json:"ua"`
 
-	City string `json:"city"`
+	CityName string `json:"cityName"`
 
-	State string `json:"state"`
+	StateName string `json:"stateName"`
 
-	Country string `json:"country"`
+	CountryName string `json:"countryName"`
+
+	ArbitraryData string `json:"arbitraryData"`
+
+	Device string `json:"device"`
+
+	Publisher string `json:"publisher"`
+
+	Site string `json:"site"`
+
+	ReferrerURL string `json:"referrerURL"`
+
+	AdvertiserName string `json:"advertiserName"`
+
+	AuctionID string `json:"auctionID"`
 
 	Page string `json:"page"`
 
-	AfihbsVersion string `json:"afihbsVersion"`
+	YetiSiteID string `json:"yetiSiteID"`
 
-	YetiSiteID int64 `json:"yetiSiteID"`
+	YetiPublisherID string `json:"yetiPublisherID"`
 
-	YetiSiteUID string `json:"yetiSiteUID"`
+	SessionID string `json:"sessionID"`
 
-	YetiSiteName string `json:"yetiSiteName"`
+	EventType string `json:"eventType"`
 
-	YetiPublisherID int64 `json:"yetiPublisherID"`
+	Section string `json:"section"`
 
-	YetiPublisherUID string `json:"yetiPublisherUID"`
+	Cls float64 `json:"cls"`
 
-	YetiPublisherName string `json:"yetiPublisherName"`
+	Fcp int64 `json:"fcp"`
+
+	Fid int64 `json:"fid"`
+
+	Ttfb int64 `json:"ttfb"`
+
+	BidBidders []string `json:"bidBidders"`
+
+	ConfiguredBidders []string `json:"configuredBidders"`
+
+	IABCategories map[string]map[string]string `json:"IABCategories"`
+
+	SizePrice map[string]map[string]float64 `json:"sizePrice"`
+
+	StatisticalQuantities map[string]map[string]float64 `json:"statisticalQuantities"`
+
+	UserID string `json:"userID"`
+
+	PageViewID string `json:"pageViewID"`
+
+	Lcp int64 `json:"lcp"`
+
+	Cpm float64 `json:"cpm"`
+
+	GamAdvertiserID int64 `json:"gamAdvertiserID"`
+
+	GptAdUnit string `json:"gptAdUnit"`
+
+	HasAdServerWonAuction bool `json:"hasAdServerWonAuction"`
+
+	IsInfiniteScroll bool `json:"isInfiniteScroll"`
+
+	HasPrebidWon bool `json:"hasPrebidWon"`
+
+	IsGAMBackFill bool `json:"isGAMBackFill"`
+
+	NoBidBidders []string `json:"noBidBidders"`
+
+	PseudoAdUnitCode string `json:"pseudoAdUnitCode"`
+
+	Viewability bool `json:"viewability"`
+
+	WinningSize string `json:"winningSize"`
+
+	WinningBidder string `json:"winningBidder"`
+
+	TimedOutBidder []string `json:"timedOutBidder"`
+
+	ConfiguredTimeout int64 `json:"configuredTimeout"`
+
+	AdUnitCode string `json:"adUnitCode"`
+
+	IsAXT bool `json:"isAXT"`
+
+	IsMultiSizedUnit bool `json:"isMultiSizedUnit"`
+
+	SizesRequested []string `json:"sizesRequested"`
+
+	Revenue float64 `json:"revenue"`
+
+	WinningRatio float64 `json:"winningRatio"`
+
+	Impressions int64 `json:"impressions"`
+
+	SessionPageViewCount int64 `json:"sessionPageViewCount"`
+
+	Utm map[string]string `json:"utm"`
+
+	Params map[string]map[string]string `json:"params"`
+
+	Timestamp int64 `json:"timestamp"`
 
 	ServerTimestamp int64 `json:"serverTimestamp"`
 
 	InsertedAt int64 `json:"insertedAt"`
 
+	Browser string `json:"browser"`
+
+	ResponseTimes map[string]int64 `json:"responseTimes"`
+
+	GamRecordedCPM float64 `json:"gamRecordedCPM"`
+
+	SspAdvertiserDomain string `json:"sspAdvertiserDomain"`
+
+	SiteUID string `json:"siteUID"`
+
+	FloorMeta map[string]string `json:"floorMeta"`
+
+	RejectedSizePrice map[string]map[string]float64 `json:"rejectedSizePrice"`
+
+	RejectedBidders []string `json:"rejectedBidders"`
+
+	SizeFloors map[string]map[string]string `json:"sizeFloors"`
+
+	IsNewUser bool `json:"isNewUser"`
+
+	DerivedBrowser string `json:"derivedBrowser"`
+
+	ExprTags map[string]string `json:"exprTags"`
+
+	AdType string `json:"adType"`
+
+	RefreshBucket string `json:"refreshBucket"`
+
+	ReferrerType string `json:"referrerType"`
+
+	HasBid bool `json:"hasBid"`
+
+	FloorPrice float64 `json:"floorPrice"`
+
+	Bidder string `json:"bidder"`
+
+	PageLayout string `json:"pageLayout"`
+
+	UnfilledCPM float64 `json:"unfilledCPM"`
+
 	Uuid string `json:"uuid"`
+
+	FloorMech string `json:"floorMech"`
+
+	Brif float64 `json:"brif"`
+
+	AfihbsVersion string `json:"afihbsVersion"`
+
+	InitPageLayout string `json:"initPageLayout"`
+
+	DealIDsByBidder map[string]map[string]string `json:"dealIDsByBidder"`
+
+	UserIDVendorsByBidder map[string]string `json:"userIDVendorsByBidder"`
+
+	DealID string `json:"dealID"`
+
+	UserIDVendors string `json:"userIDVendors"`
 }
