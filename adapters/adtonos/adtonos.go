@@ -93,7 +93,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	var errors []error
 	for _, seatBid := range response.SeatBid {
 		for i := range seatBid.Bid {
-			bidType, err := getMediaTypeForImp(seatBid.Bid[i].ImpID, request.Imp)
+			bidType, err := getMediaTypeForBid(seatBid.Bid[i], request.Imp)
 			if err != nil {
 				errors = append(errors, err)
 				continue
@@ -108,21 +108,35 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	return bidResponse, errors
 }
 
-func getMediaTypeForImp(responseImpId string, requestImps []openrtb2.Imp) (openrtb_ext.BidType, error) {
+func getMediaTypeForBid(bid openrtb2.Bid, requestImps []openrtb2.Imp) (openrtb_ext.BidType, error) {
+	if bid.MType != 0 {
+		// If present, use explicit markup type annotation from the bidder:
+		switch bid.MType {
+		case openrtb2.MarkupAudio:
+			return openrtb_ext.BidTypeAudio, nil
+		case openrtb2.MarkupVideo:
+			return openrtb_ext.BidTypeVideo, nil
+		case openrtb2.MarkupBanner:
+			return openrtb_ext.BidTypeBanner, nil
+		case openrtb2.MarkupNative:
+			return openrtb_ext.BidTypeNative, nil
+		}
+	}
+	// As a fallback, guess markup type based on requested type - AdTonos is an audio company so we prioritize that.
 	for _, requestImp := range requestImps {
-		if requestImp.ID == responseImpId {
+		if requestImp.ID == bid.ImpID {
 			if requestImp.Audio != nil {
 				return openrtb_ext.BidTypeAudio, nil
 			} else if requestImp.Video != nil {
 				return openrtb_ext.BidTypeVideo, nil
 			} else {
 				return "", &errortypes.BadInput{
-					Message: fmt.Sprintf("Unsupported bidtype for bid: \"%s\"", responseImpId),
+					Message: fmt.Sprintf("Unsupported bidtype for bid: \"%s\"", bid.ImpID),
 				}
 			}
 		}
 	}
 	return "", &errortypes.BadInput{
-		Message: fmt.Sprintf("Failed to find impression: \"%s\"", responseImpId),
+		Message: fmt.Sprintf("Failed to find impression: \"%s\"", bid.ImpID),
 	}
 }
