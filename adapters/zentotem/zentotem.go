@@ -55,17 +55,21 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	return requests, errors
 }
 
-func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
-	if bid.Ext != nil {
-		var bidExt openrtb_ext.ExtBid
-		err := json.Unmarshal(bid.Ext, &bidExt)
-		if err == nil && bidExt.Prebid != nil {
-			return openrtb_ext.ParseBidType(string(bidExt.Prebid.Type))
-		}
+func getMediaTypeForBid(imp openrtb2.Imp) (openrtb_ext.BidType, error) {
+	if imp.Native != nil {
+		return openrtb_ext.BidTypeNative, nil
 	}
 
-	return "", &errortypes.BadServerResponse{
-		Message: fmt.Sprintf("Failed to parse impression \"%s\" mediatype", bid.ImpID),
+	if imp.Banner != nil {
+		return openrtb_ext.BidTypeBanner, nil
+	}
+
+	if imp.Video != nil {
+		return openrtb_ext.BidTypeVideo, nil
+	}
+
+	return "", &errortypes.BadInput{
+		Message: fmt.Sprintf("Processing an invalid impression; cannot resolve impression type for imp #%s", imp.ID),
 	}
 }
 
@@ -88,6 +92,11 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		return nil, []error{err}
 	}
 
+	impMap := map[string]openrtb2.Imp{}
+	for _, imp := range request.Imp {
+		impMap[imp.ID] = imp
+	}
+
 	var response openrtb2.BidResponse
 	if err := json.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
@@ -98,11 +107,20 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	var errors []error
 	for _, seatBid := range response.SeatBid {
 		for i, bid := range seatBid.Bid {
-			bidType, err := getMediaTypeForBid(bid)
+			imp, ok := impMap[bid.ImpID]
+			if !ok {
+				errors = append(errors, &errortypes.BadInput{
+					Message: fmt.Sprintf("Invalid bid imp ID #%s does not match any imp IDs from the original bid request", bid.ImpID),
+				})
+				continue
+			}
+
+			bidType, err := getMediaTypeForBid(imp)
 			if err != nil {
 				errors = append(errors, err)
 				continue
 			}
+
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &seatBid.Bid[i],
 				BidType: bidType,
