@@ -1,4 +1,4 @@
-enabled: false
+disabled: true
 endpoint: https://ssp.disqus.com/bid/prebid-server?sid={{.AccountID}}
 endpointCompression: gzip
 geoscope:
