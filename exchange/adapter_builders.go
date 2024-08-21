@@ -152,6 +152,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/playdigo"
 	"github.com/prebid/prebid-server/v2/adapters/pubmatic"
 	"github.com/prebid/prebid-server/v2/adapters/pubnative"
+	"github.com/prebid/prebid-server/v2/adapters/pubrise"
 	"github.com/prebid/prebid-server/v2/adapters/pulsepoint"
 	"github.com/prebid/prebid-server/v2/adapters/pwbid"
 	"github.com/prebid/prebid-server/v2/adapters/qt"
@@ -377,6 +378,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderPlaydigo:          playdigo.Builder,
 		openrtb_ext.BidderPubmatic:          pubmatic.Builder,
 		openrtb_ext.BidderPubnative:         pubnative.Builder,
+		openrtb_ext.BidderPubrise:           pubrise.Builder,
 		openrtb_ext.BidderPulsepoint:        pulsepoint.Builder,
 		openrtb_ext.BidderPWBid:             pwbid.Builder,
 		openrtb_ext.BidderQT:                qt.Builder,
