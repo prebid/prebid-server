@@ -33,22 +33,22 @@
             },
             {
                 "id": "test-imp-id2",
-                "tagid": "test",
+                "tagid": "test2",
                 "banner": {
                     "format": [
                         {
-                            "w": 300,
-                            "h": 250
+                            "w": 3000,
+                            "h": 2500
                         },
                         {
-                            "w": 300,
-                            "h": 600
+                            "w": 3000,
+                            "h": 6000
                         }
                     ]
                 },
                 "ext": {
                     "bidder": {
-                        "endpointId": "test"
+                        "endpointId": "test2"
                     }
                 }
             }
@@ -135,22 +135,22 @@
                     "imp": [
                         {
                             "id": "test-imp-id2",
-                            "tagid": "test",
+                            "tagid": "test2",
                             "banner": {
                                 "format": [
                                     {
-                                        "w": 300,
-                                        "h": 250
+                                        "w": 3000,
+                                        "h": 2500
                                     },
                                     {
-                                        "w": 300,
-                                        "h": 600
+                                        "w": 3000,
+                                        "h": 6000
                                     }
                                 ]
                             },
                             "ext": {
                                 "bidder": {
-                                    "endpointId": "test",
+                                    "endpointId": "test2",
                                     "type": "network"
                                 }
                             }
@@ -176,15 +176,15 @@
                             "bid": [
                                 {
                                     "id": "test_bid_id",
-                                    "impid": "test-imp-id",
+                                    "impid": "test-imp-id2",
                                     "price": 0.27543,
                                     "adm": "<iframe id=\"adm-banner-16\" width=\"300\" height=\"250\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"https://example.com&k=882b2510ed6d6c94fa69c99aa522a708\"></iframe>",
                                     "cid": "test_cid",
                                     "crid": "test_crid",
                                     "dealid": "test_dealid",
                                     "mtype": 1,
-                                    "w": 300,
-                                    "h": 250,
+                                    "w": 3000,
+                                    "h": 2500,
                                     "ext": {
                                         "prebid": {
                                             "type": "banner"
@@ -230,15 +230,15 @@
                 {
                     "bid": {
                         "id": "test_bid_id",
-                        "impid": "test-imp-id",
+                        "impid": "test-imp-id2",
                         "price": 0.27543,
                         "adm": "<iframe id=\"adm-banner-16\" width=\"300\" height=\"250\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"https://example.com&k=882b2510ed6d6c94fa69c99aa522a708\"></iframe>",
                         "cid": "test_cid",
                         "crid": "test_crid",
                         "dealid": "test_dealid",
                         "mtype": 1,
-                        "w": 300,
-                        "h": 250,
+                        "w": 3000,
+                        "h": 2500,
                         "ext": {
                             "prebid": {
                                 "type": "banner"
