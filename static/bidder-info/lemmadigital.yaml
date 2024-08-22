@@ -14,5 +14,5 @@ capabilities:
       - video
 userSync:
   iframe:
-    url: "https://sync.lemmadigital.com/js/usersync.html?redirect={{.RedirectURL}}"
+    url: "https://sync.lemmadigital.com/setuid?publisher=850&redirect={{.RedirectURL}}"
     userMacro: "${UUID}"
