@@ -161,7 +161,8 @@
                   ],
                   "crid": "43",
                   "w": 1280,
-                  "h": 720
+                  "h": 720,
+                  "mtype": 2
                 }
               ],
               "seat": "boldwin"
@@ -174,19 +175,26 @@
   ],
   "expectedBidResponses": [
     {
-      "bid": [
+      "currency": "USD",
+      "bids": [
         {
-          "id": "36",
-          "impid": "1",
-          "price": 150,
-          "nurl": "some-test-nurl",
-          "burl": "some-test-burl",
-          "adm": "some-test-adm",
-          "adid": "36",
-          "adomain": [
-            "app.apple.com"
-          ],
-          "crid": "36"
+          "bid": {
+            "id": "43",
+            "impid": "8f3ac58c-1e03-4264-8619-f79ddb137110",
+            "price": 150,
+            "nurl": "some-test-nurl",
+            "burl": "some-test-burl",
+            "adm": "some-test-adm",
+            "adid": "43",
+            "adomain": [
+              "app.apple.com"
+            ],
+            "crid": "43",
+            "w": 1280,
+            "h": 720,
+            "mtype": 2
+          },
+          "type": "video"
         }
       ]
     }
