@@ -159,7 +159,8 @@
                   "adomain": [
                     "app.apple.com"
                   ],
-                  "crid": "36"
+                  "crid": "36",
+                  "mtype": 1
                 }
               ],
               "seat": "boldwin"
@@ -172,19 +173,24 @@
   ],
   "expectedBidResponses": [
     {
-      "bid": [
+      "currency": "USD",
+      "bids": [
         {
-          "id": "36",
-          "impid": "1",
-          "price": 150,
-          "nurl": "some-test-nurl",
-          "burl": "some-test-burl",
-          "adm": "some-test-adm",
-          "adid": "36",
-          "adomain": [
-            "app.apple.com"
-          ],
-          "crid": "36"
+          "bid": {
+            "id": "36",
+            "impid": "1",
+            "price": 150,
+            "nurl": "some-test-nurl",
+            "burl": "some-test-burl",
+            "adm": "some-test-adm",
+            "adid": "36",
+            "adomain": [
+              "app.apple.com"
+            ],
+            "crid": "36",
+            "mtype": 1
+          },
+          "type": "banner"
         }
       ]
     }
