@@ -31,7 +31,7 @@ COPY static static/
 COPY stored_requests/data stored_requests/data
 RUN chmod -R a+r static/ stored_requests/data
 RUN apt-get update && \
-    apt-get install -y ca-certificates mtr && \
+    apt-get install -y ca-certificates mtr libatomic1 && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 RUN adduser prebid_user
 USER prebid_user
