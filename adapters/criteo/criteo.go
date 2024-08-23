@@ -13,7 +13,8 @@ import (
 )
 
 type adapter struct {
-	endpoint string
+	endpoint   string
+	bidderName string
 }
 
 type BidExt struct {
@@ -25,9 +26,23 @@ type ExtPrebid struct {
 	NetworkName string              `json:"networkName"`
 }
 
+type CriteoExt struct {
+	Igi []*CriteoExtIgi `json:"igi"`
+}
+
+type CriteoExtIgi struct {
+	ImpId string          `json:"impid"`
+	Igs   []*CriteoExtIgs `json:"igs"`
+}
+
+type CriteoExtIgs struct {
+	Config json.RawMessage `json:"config"`
+}
+
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
-		endpoint: config.Endpoint,
+		endpoint:   config.Endpoint,
+		bidderName: string(bidderName),
 	}
 	return bidder, nil
 }
@@ -93,7 +108,34 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		}
 	}
 
+	bidResponse.FledgeAuctionConfigs = a.ParseFledgeAuctionConfigs(response)
+
 	return bidResponse, nil
+}
+
+func (a *adapter) ParseFledgeAuctionConfigs(response openrtb2.BidResponse) []*openrtb_ext.FledgeAuctionConfig {
+	var responseExt CriteoExt
+	if response.Ext != nil {
+		if err := json.Unmarshal(response.Ext, &responseExt); err == nil && len(responseExt.Igi) > 0 {
+			fledgeAuctionConfigs := make([]*openrtb_ext.FledgeAuctionConfig, 0, len(responseExt.Igi))
+			for _, igi := range responseExt.Igi {
+				if len(igi.Igs) > 0 && igi.Igs[0].Config != nil {
+					fledgeAuctionConfig := &openrtb_ext.FledgeAuctionConfig{
+						ImpId:  igi.ImpId,
+						Bidder: a.bidderName,
+						Config: igi.Igs[0].Config,
+					}
+					fledgeAuctionConfigs = append(fledgeAuctionConfigs, fledgeAuctionConfig)
+				}
+			}
+
+			if len(fledgeAuctionConfigs) > 0 {
+				return fledgeAuctionConfigs
+			}
+		}
+	}
+
+	return nil
 }
 
 func getBidMeta(ext BidExt) *openrtb_ext.ExtBidPrebidMeta {

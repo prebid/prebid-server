@@ -1,0 +1,103 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app": {
+      "bundle": "com.prebid"
+    },
+    "device": {
+      "ifa": "87857b31-8942-4646-ae80-ab9c95bf3fab"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "protocols": [
+            2,
+            5
+          ],
+          "w": 1024,
+          "h": 576,
+          "ext": {
+            "foo": "bar"
+          }
+        },
+        "ext": {
+          "bidder": {
+            "app_store_id": "123",
+            "placement_reference_id": "123"
+          }
+        }
+      }
+    ],
+    "user": {
+      "buyeruid": "123"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://vungle.io/bit/t",
+        "headers": {
+          "Content-Type": ["application/json"],
+          "Accept": ["application/json"],
+          "X-OpenRTB-Version": ["2.5"]
+        },
+        "body": {
+          "id": "test-request-id",
+          "app": {
+            "id": "123",
+            "bundle": "com.prebid"
+          },
+          "device": {
+            "ifa": "87857b31-8942-4646-ae80-ab9c95bf3fab"
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "tagid": "123",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "protocols": [
+                  2,
+                  5
+                ],
+                "w": 1024,
+                "h": 576,
+                "ext": {
+                  "foo": "bar"
+                }
+              },
+              "ext": {
+                "prebid": null,
+                "bidder": {
+                  "app_store_id": "123",
+                  "placement_reference_id": "123"
+                },
+                "vungle": {
+                  "bid_token": "123",
+                  "app_store_id": "123",
+                  "placement_reference_id": "123"
+                }
+              }
+            }
+          ],
+          "user": {
+            "buyeruid": "123"
+          }
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 204,
+        "body": {}
+      }
+    }
+  ],
+  "expectedBidResponses": [],
+  "expectedMakeBidsErrors": []
+}

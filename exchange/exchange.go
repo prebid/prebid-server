@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/prebid/prebid-server/v2/ortb"
 	"github.com/prebid/prebid-server/v2/privacy"
 
 	"github.com/prebid/prebid-server/v2/adapters"
@@ -132,7 +133,7 @@ func (randomDeduplicateBidBooleanGenerator) Generate() bool {
 	return rand.Intn(100) < 50
 }
 
-func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, metricsEngine metrics.MetricsEngine, infos config.BidderInfos, gdprPermsBuilder gdpr.PermissionsBuilder, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher, adsCertSigner adscert.Signer, macroReplacer macros.Replacer, priceFloorFetcher floors.FloorFetcher) Exchange {
+func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, requestValidator ortb.RequestValidator, syncersByBidder map[string]usersync.Syncer, metricsEngine metrics.MetricsEngine, infos config.BidderInfos, gdprPermsBuilder gdpr.PermissionsBuilder, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher, adsCertSigner adscert.Signer, macroReplacer macros.Replacer, priceFloorFetcher floors.FloorFetcher) Exchange {
 	bidderToSyncerKey := map[string]string{}
 	for bidder, syncer := range syncersByBidder {
 		bidderToSyncerKey[bidder] = syncer.Key()
@@ -155,6 +156,7 @@ func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid
 		gdprPermsBuilder:  gdprPermsBuilder,
 		hostSChainNode:    cfg.HostSChainNode,
 		bidderInfo:        infos,
+		requestValidator:  requestValidator,
 	}
 
 	return &exchange{
@@ -313,6 +315,19 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 
 	// Make our best guess if GDPR applies
 	gdprDefaultValue := e.parseGDPRDefaultValue(r.BidRequestWrapper)
+	gdprSignal, err := getGDPR(r.BidRequestWrapper)
+	if err != nil {
+		return nil, err
+	}
+	channelEnabled := r.TCF2Config.ChannelEnabled(channelTypeMap[r.LegacyLabels.RType])
+	gdprEnforced := enforceGDPR(gdprSignal, gdprDefaultValue, channelEnabled)
+	dsaWriter := dsa.Writer{
+		Config:      r.Account.Privacy.DSA,
+		GDPRInScope: gdprEnforced,
+	}
+	if err := dsaWriter.Write(r.BidRequestWrapper); err != nil {
+		return nil, err
+	}
 
 	// rebuild/resync the request in the request wrapper.
 	if err := r.BidRequestWrapper.RebuildRequest(); err != nil {
@@ -324,7 +339,12 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 		Prebid: *requestExtPrebid,
 		SChain: requestExt.GetSChain(),
 	}
-	bidderRequests, privacyLabels, errs := e.requestSplitter.cleanOpenRTBRequests(ctx, *r, requestExtLegacy, gdprDefaultValue, bidAdjustmentFactors)
+	bidderRequests, privacyLabels, errs := e.requestSplitter.cleanOpenRTBRequests(ctx, *r, requestExtLegacy, gdprSignal, gdprEnforced, bidAdjustmentFactors)
+	for _, err := range errs {
+		if errortypes.ReadCode(err) == errortypes.InvalidImpFirstPartyDataErrorCode {
+			return nil, err
+		}
+	}
 	errs = append(errs, floorErrs...)
 
 	mergedBidAdj, err := bidadjustment.Merge(r.BidRequestWrapper, r.Account.BidAdjustments)
@@ -399,6 +419,11 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 				errs = append(errs, &errortypes.Warning{
 					Message:     fmt.Sprintf("%s bid id %s rejected - bid price %.4f %s is less than bid floor %.4f %s for imp %s", rejectedBid.Seat, rejectedBid.Bids[0].Bid.ID, rejectedBid.Bids[0].Bid.Price, rejectedBid.Currency, rejectedBid.Bids[0].BidFloors.FloorValue, rejectedBid.Bids[0].BidFloors.FloorCurrency, rejectedBid.Bids[0].Bid.ImpID),
 					WarningCode: errortypes.FloorBidRejectionWarningCode})
+				rejectionReason := ResponseRejectedBelowFloor
+				if rejectedBid.Bids[0].Bid.DealID != "" {
+					rejectionReason = ResponseRejectedBelowDealFloor
+				}
+				seatNonBids.addBid(rejectedBid.Bids[0], int(rejectionReason), rejectedBid.Seat)
 			}
 		}
 
@@ -1299,7 +1324,7 @@ func (e *exchange) makeBid(bids []*entities.PbsOrtbBid, auc *auction, returnCrea
 			}
 		}
 
-		if bidExtJSON, err := makeBidExtJSON(bid.Bid.Ext, bidExtPrebid, impExtInfoMap, bid.Bid.ImpID, bid.OriginalBidCPM, bid.OriginalBidCur, adapter); err != nil {
+		if bidExtJSON, err := makeBidExtJSON(bid.Bid.Ext, bidExtPrebid, impExtInfoMap, bid.Bid.ImpID, bid.OriginalBidCPM, bid.OriginalBidCur, bid.AdapterCode); err != nil {
 			errs = append(errs, err)
 		} else {
 			result = append(result, *bid.Bid)

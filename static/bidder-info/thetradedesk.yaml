@@ -1,0 +1,23 @@
+endpoint: "https://direct.adsrvr.org/bid/bidder/{{.SupplyId}}"
+maintainer:
+  email: "Prebid-Maintainers@thetradedesk.com"
+gvlVendorID: 21
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  # TheTradeDesk supports user syncing, but requires configuration by the host. Contact a technical account manager
+  # or this bidder directly at the email address in this file to ask about enabling user sync.
+  supports:
+    - redirect
+    - iframe
+openrtb:
+  gpp-supported: true
