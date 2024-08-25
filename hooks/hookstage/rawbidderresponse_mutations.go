@@ -33,7 +33,7 @@ func (c ChangeSetBids[T]) Update(bids []*adapters.TypedBid) {
 	c.changeSetRawBidderResponse.changeSet.AddMutation(func(p T) (T, error) {
 		bidderPayload, err := c.changeSetRawBidderResponse.castPayload(p)
 		if err == nil {
-			bidderPayload.Bids = bids
+			bidderPayload.BidderResponse.Bids = bids
 		}
 		if payload, ok := any(bidderPayload).(T); ok {
 			return payload, nil
