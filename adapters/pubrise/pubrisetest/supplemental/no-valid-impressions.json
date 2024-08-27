@@ -1,0 +1,20 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [],
+    "app": {
+      "id": "1",
+      "bundle": "com.wls.testwlsapplication"
+    },
+    "device": {
+      "ip": "123.123.123.123",
+      "ifa": "sdjfksdf-dfsds-dsdg-dsgg"
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "found no valid impressions",
+      "comparison": "literal"
+    }
+  ]
+}
