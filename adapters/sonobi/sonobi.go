@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
@@ -52,6 +53,24 @@ func (a *SonobiAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adap
 		}
 
 		reqCopy.Imp[0].TagID = sonobiExt.TagID
+
+		// If the bid floor currency is not USD, do the conversion to USD
+		if reqCopy.Imp[0].BidFloor > 0 && reqCopy.Imp[0].BidFloorCur != "" && strings.ToUpper(reqCopy.Imp[0].BidFloorCur) != "USD" {
+
+			// Convert to US dollars
+			convertedValue, err := reqInfo.ConvertCurrency(reqCopy.Imp[0].BidFloor, reqCopy.Imp[0].BidFloorCur, "USD")
+			if err != nil {
+				return nil, []error{err}
+			}
+
+			// Update after conversion. All imp elements inside request.Imp are shallow copies
+			// therefore, their non-pointer values are not shared memory and are safe to modify.
+			reqCopy.Imp[0].BidFloorCur = "USD"
+			reqCopy.Imp[0].BidFloor = convertedValue
+		}
+
+		// Sonobi only bids in USD
+		reqCopy.Cur = append(make([]string, 0, 1), "USD")
 
 		adapterReq, errors := a.makeRequest(&reqCopy)
 		if adapterReq != nil {
@@ -115,19 +134,21 @@ func (a *SonobiAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
+	bidResponse.Currency = "USD" // Sonobi only bids in USD
 
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
-			bidType, err := getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp)
+			bid := sb.Bid[i]
+			bidType, err := getMediaTypeForImp(bid.ImpID, internalRequest.Imp)
+			//bidType, err := getBidType(bid)
 			if err != nil {
 				errs = append(errs, err)
-			} else {
-				b := &adapters.TypedBid{
-					Bid:     &sb.Bid[i],
-					BidType: bidType,
-				}
-				bidResponse.Bids = append(bidResponse.Bids, b)
+				continue
 			}
+			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+				Bid:     &bid,
+				BidType: bidType,
+			})
 		}
 	}
 	return bidResponse, errs
@@ -140,6 +161,9 @@ func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType,
 			if imp.Banner == nil && imp.Video != nil {
 				mediaType = openrtb_ext.BidTypeVideo
 			}
+			if imp.Banner == nil && imp.Video == nil && imp.Native != nil {
+				mediaType = openrtb_ext.BidTypeNative
+			}
 			return mediaType, nil
 		}
 	}
@@ -147,5 +171,22 @@ func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType,
 	// This shouldnt happen. Lets handle it just incase by returning an error.
 	return "", &errortypes.BadInput{
 		Message: fmt.Sprintf("Failed to find impression \"%s\" ", impID),
+	}
+}
+func getBidType(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	// determinate media type by bid response field mtype
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
+	case openrtb2.MarkupAudio:
+		return openrtb_ext.BidTypeAudio, nil
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative, nil
+	}
+
+	return "", &errortypes.BadInput{
+		Message: fmt.Sprintf("Could not define media type for impression: %s", bid.ImpID),
 	}
 }

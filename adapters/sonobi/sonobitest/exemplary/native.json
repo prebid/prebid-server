@@ -1,0 +1,143 @@
+{
+  "mockBidRequest": {
+    "cur": ["USD"],
+    "id": "some-request-id",
+    "site": {
+      "page": "http://tester.go.sonobi.com",
+      "domain": "sonobi.com"
+    },
+    "device": {
+      "ip": "123.123.123.123"
+    },
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "native": {
+          "request": "{\"ver\":\"1.2\",\"context\":1,\"contextsubtype\":11,\"plcmttype\":2,\"plcmtcnt\":3,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":1000}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":600,\"hmin\":600}},{\"id\":3,\"required\":0,\"data\":{\"type\":1,\"len\":200}},{\"id\":4,\"required\":0,\"data\":{\"type\":2,\"len\":3000}},{\"id\":5,\"required\":0,\"data\":{\"type\":6,\"len\":60}},{\"id\":6,\"required\":0,\"data\":{\"type\":500}},{\"id\":10,\"required\":0,\"data\":{\"type\":12,\"len\":15}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]},{\"event\":2,\"methods\":[1]}],\"privacy\":1}",
+          "ver": "1.2",
+          "battr": [
+            1,
+            2,
+            6,
+            7,
+            8,
+            9,
+            10,
+            14
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "TagID": "/7780971/apex_3pdm_integration"
+          }
+        }
+      }
+    ],
+    "test": 1,
+    "tmax": 500
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ]
+        },
+        "uri": "https://apex.go.sonobi.com/prebid?partnerid=71d9d3d8af",
+        "body": {
+          "cur": ["USD"],
+          "id": "some-request-id",
+          "imp": [
+            {
+              "id": "some-impression-id",
+              "native": {
+                "request": "{\"ver\":\"1.2\",\"context\":1,\"contextsubtype\":11,\"plcmttype\":2,\"plcmtcnt\":3,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":1000}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":600,\"hmin\":600}},{\"id\":3,\"required\":0,\"data\":{\"type\":1,\"len\":200}},{\"id\":4,\"required\":0,\"data\":{\"type\":2,\"len\":3000}},{\"id\":5,\"required\":0,\"data\":{\"type\":6,\"len\":60}},{\"id\":6,\"required\":0,\"data\":{\"type\":500}},{\"id\":10,\"required\":0,\"data\":{\"type\":12,\"len\":15}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]},{\"event\":2,\"methods\":[1]}],\"privacy\":1}",
+                "ver": "1.2",
+                "battr": [
+                  1,
+                  2,
+                  6,
+                  7,
+                  8,
+                  9,
+                  10,
+                  14
+                ]
+              },
+              "tagid": "/7780971/apex_3pdm_integration",
+              "ext": {
+                "bidder": {
+                  "TagID": "/7780971/apex_3pdm_integration"
+                }
+              }
+            }
+          ],
+          "site": {
+            "domain": "sonobi.com",
+            "page": "http://tester.go.sonobi.com"
+          },
+          "device": {
+            "ip": "123.123.123.123"
+          },
+          "test": 1,
+          "tmax": 500
+        },
+        "impIDs": [
+          "some-impression-id"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "some-request-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "1",
+                  "impid": "some-impression-id",
+                  "price": 2.8649999999999998,
+                  "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"title\":{\"text\":\"sonobi native test\"}},{\"id\":2,\"img\":{\"url\":\"https://sonobi.com/creatives/88253568_opt?v=v1.8\",\"w\":1200,\"h\":627}},{\"id\":3,\"data\":{\"value\":\"sonobi.native\"}},{\"id\":12,\"img\":{\"url\":\"https://sonobi.com/creatives/88233511_opt?v=v1.8\",\"w\":289,\"h\":289}},{\"id\":9,\"data\":{\"value\":\"5\"}}],\"link\":{\"url\":\"https://sonobi.com/click/QJZuSq1rx3qBu2iR22GBkRhod-7fXskHgy_x3_lJS5ugx3VFkZdy95Z0Tfr70G7Bh_67UxsAh4XBZAUmDHbECmTmLTyUhkOm-ijGH0VCBO3klFS7Nh_gLcyO7vQip8WRmLNWr0AZN5IAJqahFGica2i57JEKq7iunZOE6tfusHjYssR5z9hq3kVKUjt87B8OTb_0EaWTRsHEoPrUnPqlNiQFWvoCoSJglK0KTVA7zqg04sm-IOtJHtsHDCjSJORBA_cRynIDC2sLIYD8lH4NwGZ6nk29X9W6VeiMUss91wbtMxktqMSEmFcwCXMgL41xAxrVz4m7GasC9Oa6MoF023a21xDI5Qee6N3D-CAm-2O2RI78hrNsnsxZt6FJr2r9V3mTBlqtqredd49sCzbJ86k-SJ8gQFhqQNulDTMKZv-pvWahu79WzjRSEjQkR8ondCmveXxuNxcQM0Is2IPdHoBUQmT5vW_NfeNGdArI72iTEQCh1YpOqBSwHzxT8lCrgUc2RlgQBaPYLWt-YOfZGctdu7YkzREoM4rOrwjjhXqiBlU5eApSGFivPaTZ5ptckE8kX4S-ECerOonK4j2fJITTSYbQj54nLSk15DZvDMdcBv1pjaNGmOUQT7SlrNqcjoHoOIXwlYff0Y90e9cjLAlhLwbSAB6nLhMCbqtw65ZoFx4iIS2gVKFJeXPq5uULh4y7FA11xfrTc2NcIoIl66Yy9ip7_aMZWqhAVZs4f9Dt3pwTtL_xLPBJGF2Kz0OSZRGRgyYr9rMIyFlqhIuQ9SfNDqKwdFL3_pjWTMuStVuL8dT_wIMHC1LOwYJUYJ0C73gWmfrXlRfc0sjNjUCmunJpT8OCLioljNeM7JbWbkqWWXzsSGZ7kD0O5UzPuljOoLern9h0k0UHrO4t0t7R1aUQ8WUfKlXFqlbSsCUYQXnnx3z_HYIjWL2lN0eSYr2tOEqFk7dXQec_zpwxe2fHesXU0bYRJK49H9oVYDqbSsNcA2HT5nhaZPV1WTcgxsi_hcbu6ybGU-quD69jVXbuAWcsJQazMixvKXGAHRraeXFW1-FjqLeNyO9u5eI4SycsocVIobSLKL49wMQfuDCr_L6GzHhaqq0FofdSIeqym-8qAI9G7z9zNGFLzdwUsC_2bjLchOVj0a1auJ0g5hbnaYHJItBUa65DcQW3NpFQ0Lo3bimOy6goOXGa2tORg9y8xZSkDwM3-BaxjOX-03D5Sm_tEPYO1luNTYzitVW3197R7u2o_gB4rj9np4myfatlwjaPLIPQE5_MURjqpmqpqeFfUYtcIaWgCLlrU40xILQSMqWgeDktvpDVwbdUjCq-NPSvCQvWg_GYNeKPDFxbZ0BBPD1Yn2Y-xgnHZ7IAxB-rQyuI0RqXGQwGI89oCfMht_SUJmkTqgfWgC8hRUfA2J4WUPyzvHghF5BBDb5g7xWhOpz7_2grqW8xjd-zyBwOkJK3Y9lCBgeIEfuMGcaREMxSSiYQhcL4o1fFNXb-P7BCuR3eyQwfIb7cKuSASf3v-V3I5b-KA2mnNBmLTPzm6pkp2TXDkJMQ81FZ4RxXGChf1IpKzM-MYBXnyqddDiVd2fH0PGw6Ow9FJROF3Ptca-hgi3-f-_BqayiL0jyAR0N36OkYW7Y9iZ-YXNExevL3kuZ7pEUi00-tBsrccrWJnq3O6Yy8dcY-mTrfSaiG3WhzlwT9XRY1IzQH3hK9JzCj1D2Lcdtxdq2JBlfcazZf-pSPrTEhJSRXb80G//https://app.appsflyer.com/1136397354?advertising_id=efda5faa-e37b-4d56-9c16-7d93c1bf8dbc\\u0026af_ad=Native+%231+-+New+Offer\\u0026af_ad_id=88253487\\u0026af_adset=86452228_281940292\\u0026af_adset_id=s86452228_msonobi_b281940292_l88334685_c88253487_a88233515_ab900\\u0026af_c_id=88233526\\u0026af_channel=edge_int\\u0026af_click_lookback=7d\\u0026af_ip=\\u0026af_lang=en\\u0026af_media_type=app\\u0026af_model=Apple+iPhone\\u0026af_os_version=iOS_17\\u0026af_pid=88233515\\u0026af_siteid=281940292\\u0026af_sub1=b4223554-0cb9-4f34-900c-220d8eaa88ef-1\\u0026af_sub_siteid=\\u0026af_ua=Mozilla%2F5.0+%28iPhone%3B+CPU+iPhone+OS+17_5_1+like+Mac+OS+X%29+AppleWebKit%2F605.1.15+%28KHTML%2C+like+Gecko%29+Mobile%2F15E148\\u0026c=Edge226_iOS\\u0026clickid=b4223554-0cb9-4f34-900c-220d8eaa88ef-1\\u0026idfa=efda5faa-e37b-4d56-9c16-7d93c1bf8dbc\\u0026pid=edge_int\",\"clicktrackers\":[\"https://iad-2.go.sonobi.com/native.gif?evt=500\\u0026iid=1724170411_f50c91bcb20e5f97ba7db96b7193a873\\u0026pid=9a1db44c9c\"]},\"eventtrackers\":[{\"event\":1,\"method\":1,\"url\":\"https://iad-2.go.sonobi.com/native.gif?eid=2-3\\u0026evt=504\\u0026iid=1724170411_f50c91bcb20e5f97ba7db96b7193a873\\u0026pid=9a1db44c9c\"},{\"event\":2,\"method\":1,\"url\":\"https://iad-2.go.sonobi.com/native.gif?evt=505\\u0026iid=1724170411_f50c91bcb20e5f97ba7db96b7193a873\\u0026pid=9a1db44c9c\"}]}\n",
+                  "adomain": [
+                    "sonobi.com"
+                  ],
+                  "cid": "house",
+                  "crid": "sandbox"
+
+                }
+              ],
+              "seat": "sonobi"
+            }
+          ],
+          "bidid": "sandbox_642305097",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "1",
+            "impid": "some-impression-id",
+            "price": 2.8649999999999998,
+            "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"title\":{\"text\":\"sonobi native test\"}},{\"id\":2,\"img\":{\"url\":\"https://sonobi.com/creatives/88253568_opt?v=v1.8\",\"w\":1200,\"h\":627}},{\"id\":3,\"data\":{\"value\":\"sonobi.native\"}},{\"id\":12,\"img\":{\"url\":\"https://sonobi.com/creatives/88233511_opt?v=v1.8\",\"w\":289,\"h\":289}},{\"id\":9,\"data\":{\"value\":\"5\"}}],\"link\":{\"url\":\"https://sonobi.com/click/QJZuSq1rx3qBu2iR22GBkRhod-7fXskHgy_x3_lJS5ugx3VFkZdy95Z0Tfr70G7Bh_67UxsAh4XBZAUmDHbECmTmLTyUhkOm-ijGH0VCBO3klFS7Nh_gLcyO7vQip8WRmLNWr0AZN5IAJqahFGica2i57JEKq7iunZOE6tfusHjYssR5z9hq3kVKUjt87B8OTb_0EaWTRsHEoPrUnPqlNiQFWvoCoSJglK0KTVA7zqg04sm-IOtJHtsHDCjSJORBA_cRynIDC2sLIYD8lH4NwGZ6nk29X9W6VeiMUss91wbtMxktqMSEmFcwCXMgL41xAxrVz4m7GasC9Oa6MoF023a21xDI5Qee6N3D-CAm-2O2RI78hrNsnsxZt6FJr2r9V3mTBlqtqredd49sCzbJ86k-SJ8gQFhqQNulDTMKZv-pvWahu79WzjRSEjQkR8ondCmveXxuNxcQM0Is2IPdHoBUQmT5vW_NfeNGdArI72iTEQCh1YpOqBSwHzxT8lCrgUc2RlgQBaPYLWt-YOfZGctdu7YkzREoM4rOrwjjhXqiBlU5eApSGFivPaTZ5ptckE8kX4S-ECerOonK4j2fJITTSYbQj54nLSk15DZvDMdcBv1pjaNGmOUQT7SlrNqcjoHoOIXwlYff0Y90e9cjLAlhLwbSAB6nLhMCbqtw65ZoFx4iIS2gVKFJeXPq5uULh4y7FA11xfrTc2NcIoIl66Yy9ip7_aMZWqhAVZs4f9Dt3pwTtL_xLPBJGF2Kz0OSZRGRgyYr9rMIyFlqhIuQ9SfNDqKwdFL3_pjWTMuStVuL8dT_wIMHC1LOwYJUYJ0C73gWmfrXlRfc0sjNjUCmunJpT8OCLioljNeM7JbWbkqWWXzsSGZ7kD0O5UzPuljOoLern9h0k0UHrO4t0t7R1aUQ8WUfKlXFqlbSsCUYQXnnx3z_HYIjWL2lN0eSYr2tOEqFk7dXQec_zpwxe2fHesXU0bYRJK49H9oVYDqbSsNcA2HT5nhaZPV1WTcgxsi_hcbu6ybGU-quD69jVXbuAWcsJQazMixvKXGAHRraeXFW1-FjqLeNyO9u5eI4SycsocVIobSLKL49wMQfuDCr_L6GzHhaqq0FofdSIeqym-8qAI9G7z9zNGFLzdwUsC_2bjLchOVj0a1auJ0g5hbnaYHJItBUa65DcQW3NpFQ0Lo3bimOy6goOXGa2tORg9y8xZSkDwM3-BaxjOX-03D5Sm_tEPYO1luNTYzitVW3197R7u2o_gB4rj9np4myfatlwjaPLIPQE5_MURjqpmqpqeFfUYtcIaWgCLlrU40xILQSMqWgeDktvpDVwbdUjCq-NPSvCQvWg_GYNeKPDFxbZ0BBPD1Yn2Y-xgnHZ7IAxB-rQyuI0RqXGQwGI89oCfMht_SUJmkTqgfWgC8hRUfA2J4WUPyzvHghF5BBDb5g7xWhOpz7_2grqW8xjd-zyBwOkJK3Y9lCBgeIEfuMGcaREMxSSiYQhcL4o1fFNXb-P7BCuR3eyQwfIb7cKuSASf3v-V3I5b-KA2mnNBmLTPzm6pkp2TXDkJMQ81FZ4RxXGChf1IpKzM-MYBXnyqddDiVd2fH0PGw6Ow9FJROF3Ptca-hgi3-f-_BqayiL0jyAR0N36OkYW7Y9iZ-YXNExevL3kuZ7pEUi00-tBsrccrWJnq3O6Yy8dcY-mTrfSaiG3WhzlwT9XRY1IzQH3hK9JzCj1D2Lcdtxdq2JBlfcazZf-pSPrTEhJSRXb80G//https://app.appsflyer.com/1136397354?advertising_id=efda5faa-e37b-4d56-9c16-7d93c1bf8dbc\\u0026af_ad=Native+%231+-+New+Offer\\u0026af_ad_id=88253487\\u0026af_adset=86452228_281940292\\u0026af_adset_id=s86452228_msonobi_b281940292_l88334685_c88253487_a88233515_ab900\\u0026af_c_id=88233526\\u0026af_channel=edge_int\\u0026af_click_lookback=7d\\u0026af_ip=\\u0026af_lang=en\\u0026af_media_type=app\\u0026af_model=Apple+iPhone\\u0026af_os_version=iOS_17\\u0026af_pid=88233515\\u0026af_siteid=281940292\\u0026af_sub1=b4223554-0cb9-4f34-900c-220d8eaa88ef-1\\u0026af_sub_siteid=\\u0026af_ua=Mozilla%2F5.0+%28iPhone%3B+CPU+iPhone+OS+17_5_1+like+Mac+OS+X%29+AppleWebKit%2F605.1.15+%28KHTML%2C+like+Gecko%29+Mobile%2F15E148\\u0026c=Edge226_iOS\\u0026clickid=b4223554-0cb9-4f34-900c-220d8eaa88ef-1\\u0026idfa=efda5faa-e37b-4d56-9c16-7d93c1bf8dbc\\u0026pid=edge_int\",\"clicktrackers\":[\"https://iad-2.go.sonobi.com/native.gif?evt=500\\u0026iid=1724170411_f50c91bcb20e5f97ba7db96b7193a873\\u0026pid=9a1db44c9c\"]},\"eventtrackers\":[{\"event\":1,\"method\":1,\"url\":\"https://iad-2.go.sonobi.com/native.gif?eid=2-3\\u0026evt=504\\u0026iid=1724170411_f50c91bcb20e5f97ba7db96b7193a873\\u0026pid=9a1db44c9c\"},{\"event\":2,\"method\":1,\"url\":\"https://iad-2.go.sonobi.com/native.gif?evt=505\\u0026iid=1724170411_f50c91bcb20e5f97ba7db96b7193a873\\u0026pid=9a1db44c9c\"}]}\n",
+            "adomain": [
+              "sonobi.com"
+            ],
+            "cid": "house",
+            "crid": "sandbox"
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}
