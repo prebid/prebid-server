@@ -1296,8 +1296,14 @@ func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases 
 	// Check Universal User ID
 	eids := userExt.GetEid()
 	if eids != nil {
-		eidsValue := *eids
-		for eidIndex, eid := range eidsValue {
+
+		validEids, eidErrors := validateEIDs(*eids)
+
+		if len(eidErrors) > 0 {
+			errL = append(errL, eidErrors...)
+		}
+
+		for eidIndex, eid := range validEids {
 			if eid.Source == "" {
 				return append(errL, fmt.Errorf("request.user.ext.eids[%d] missing required field: \"source\"", eidIndex))
 			}
@@ -1315,6 +1321,46 @@ func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases 
 	}
 
 	return errL
+}
+
+func validateEIDs(eids []openrtb2.EID) ([]openrtb2.EID, []error) {
+	var errorsList []error
+	validEIDs := make([]openrtb2.EID, 0, len(eids))
+
+	for _, eid := range eids {
+		validUIDs, uidErrors := validateUIDs(eid.UIDs)
+		errorsList = append(errorsList, uidErrors...)
+
+		if len(validUIDs) > 0 {
+			eid.UIDs = validUIDs
+			validEIDs = append(validEIDs, eid)
+		} else {
+			errorsList = append(errorsList, &errortypes.Warning{
+				Message:     fmt.Sprintf("Removed EID with empty UIDs (source: %s)", eid.Source),
+				WarningCode: errortypes.InvalidUserEIDsWarningCode,
+			})
+		}
+	}
+
+	return validEIDs, errorsList
+}
+
+func validateUIDs(uids []openrtb2.UID) ([]openrtb2.UID, []error) {
+	var validUIDs []openrtb2.UID
+	var uidErrors []error
+
+	for _, uid := range uids {
+		if uid.ID != "" {
+			validUIDs = append(validUIDs, uid)
+		} else {
+			uidErrors = append(uidErrors, &errortypes.Warning{
+				Message:     "Removed UID due to empty ID",
+				WarningCode: errortypes.InvalidUserUIDsWarningCode,
+			})
+		}
+	}
+
+	return validUIDs, uidErrors
 }
 
 func validateRegs(req *openrtb_ext.RequestWrapper, gpp gpplib.GppContainer) []error {
