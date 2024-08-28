@@ -92,5 +92,5 @@ func getMediaTypeForImp(bid openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidT
 			}
 		}
 	}
-	return "", fmt.Errorf("Unrecognized impression type in response from nativo: %d", bid.ImpID)
+	return "", fmt.Errorf("Unrecognized impression type in response from nativo: %s", bid.ImpID)
 }
