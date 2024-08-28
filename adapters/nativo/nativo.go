@@ -8,7 +8,6 @@ import (
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
@@ -93,5 +92,5 @@ func getMediaTypeForImp(bid openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidT
 			}
 		}
 	}
-	return nil, fmt.Errorf("Unrecognized impression type in response from nativo: %d", bid.ImpID)
+	return "", fmt.Errorf("Unrecognized impression type in response from nativo: %d", bid.ImpID)
 }
