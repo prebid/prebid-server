@@ -26,7 +26,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	requestJSON, err := json.Marshal(request)
-
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -46,24 +45,12 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	if adapters.IsResponseStatusCodeNoContent(response) {
+		return nil, nil
+	}
 
-	if response.StatusCode != http.StatusOK {
-		switch response.StatusCode {
-			case http.StatusNoContent:
-				return nil, nil
-			case http.StatusBadRequest:
-				return nil, []error{
-					&errortypes.BadInput{
-						Message: fmt.Sprintf("Unexpected status code: %d.", response.StatusCode),
-					},
-				}
-			default:
-				return nil, []error{
-					&errortypes.BadServerResponse{
-						Message: fmt.Sprintf("Unexpected status code: %d.", response.StatusCode),
-					},
-				}
-		}
+	if err := adapters.CheckResponseStatusCodeForErrors(response); err != nil {
+		return nil, []error{err}
 	}
 
 	var bidResp openrtb2.BidResponse
@@ -74,29 +61,37 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, externalRequest *adapte
 
 	bidResponse := adapters.NewBidderResponse()
 
+	var errs []error
 	for _, seatBid := range bidResp.SeatBid {
 		for i := range seatBid.Bid {
+			bidType, err := getMediaTypeForImp(seatBid.Bid[i], request.Imp)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+			
 			b := &adapters.TypedBid{
 				Bid:     &seatBid.Bid[i],
-				BidType: getMediaTypeForImp(seatBid.Bid[i], request.Imp),
+				BidType: bidType,
 			}
+			
 			bidResponse.Bids = append(bidResponse.Bids, b)
 		}
 	}
-	return bidResponse, nil
+	return bidResponse, errs
 }
 
-func getMediaTypeForImp(bid openrtb2.Bid, imps []openrtb2.Imp) openrtb_ext.BidType {
-	mediaType := openrtb_ext.BidTypeBanner
+func getMediaTypeForImp(bid openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
 	for _, imp := range imps {
 		if imp.ID == bid.ImpID {
 			if imp.Native != nil {
-				mediaType = openrtb_ext.BidTypeNative
+				return openrtb_ext.BidTypeNative, nil
 			} else if imp.Video != nil {
-				mediaType = openrtb_ext.BidTypeVideo
+				return openrtb_ext.BidTypeVideo, nil
+			} else if imp.Banner != nil {
+				return openrtb_ext.BidTypeBanner, nil
 			}
-			return mediaType
 		}
 	}
-	return mediaType
+	return nil, fmt.Errorf("Unrecognized impression type in response from nativo: %d", bid.ImpID)
 }
