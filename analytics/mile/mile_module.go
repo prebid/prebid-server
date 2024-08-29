@@ -126,7 +126,7 @@ func NewModuleWithConfigTask(client *http.Client, scope, endpoint string, maxEve
 	configChannel := configTask.Start(mm.stopCh)
 	go mm.start(configChannel)
 
-	glog.Info("[pubstack] Pubstack analytics configured and ready")
+	glog.Info("[mile] Mile analytics configured and ready")
 	return &mm, nil
 }
 
@@ -139,13 +139,15 @@ func (m *MileModule) LogAuctionObject(ao *analytics.AuctionObject) {
 	}
 
 	// serialize event
-	payload, err := helpers.JsonifyAuctionObject(ao, m.scope)
+	events, err := helpers.JsonifyAuctionObject(ao, m.scope)
+
 	if err != nil {
 		glog.Warning("[mile] Cannot serialize auction")
 		return
 	}
-
-	m.eventChannels[auction].Push(payload)
+	for _, event := range events {
+		m.eventChannels[auction].Push(&event)
+	}
 }
 
 func (m *MileModule) LogNotificationEventObject(ne *analytics.NotificationEvent) {
@@ -162,7 +164,7 @@ func (m *MileModule) LogVideoObject(vo *analytics.VideoObject) {
 	// serialize event
 	payload, err := helpers.JsonifyVideoObject(vo, m.scope)
 	if err != nil {
-		glog.Warning("[pubstack] Cannot serialize video")
+		glog.Warning("[mile] Cannot serialize video")
 		return
 	}
 
@@ -180,7 +182,7 @@ func (m *MileModule) LogSetUIDObject(so *analytics.SetUIDObject) {
 	// serialize event
 	payload, err := helpers.JsonifySetUIDObject(so, m.scope)
 	if err != nil {
-		glog.Warning("[pubstack] Cannot serialize video")
+		glog.Warning("[mile] Cannot serialize video")
 		return
 	}
 
@@ -198,7 +200,7 @@ func (m *MileModule) LogCookieSyncObject(cso *analytics.CookieSyncObject) {
 	// serialize event
 	payload, err := helpers.JsonifyCookieSync(cso, m.scope)
 	if err != nil {
-		glog.Warning("[pubstack] Cannot serialize video")
+		glog.Warning("[mile] Cannot serialize video")
 		return
 	}
 
@@ -216,7 +218,7 @@ func (m *MileModule) LogAmpObject(ao *analytics.AmpObject) {
 	// serialize event
 	payload, err := helpers.JsonifyAmpObject(ao, m.scope)
 	if err != nil {
-		glog.Warning("[pubstack] Cannot serialize video")
+		glog.Warning("[mile] Cannot serialize video")
 		return
 	}
 

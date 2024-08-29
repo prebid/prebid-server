@@ -454,6 +454,7 @@ type Analytics struct {
 	File     FileLogs      `mapstructure:"file"`
 	Agma     AgmaAnalytics `mapstructure:"agma"`
 	Pubstack Pubstack      `mapstructure:"pubstack"`
+	Mile     Mile          `mapstructure:"mile"`
 }
 
 type CurrencyConverter struct {
@@ -505,6 +506,12 @@ type Pubstack struct {
 	IntakeUrl   string         `mapstructure:"endpoint"`
 	Buffers     PubstackBuffer `mapstructure:"buffers"`
 	ConfRefresh string         `mapstructure:"configuration_refresh_delay"`
+}
+
+type Mile struct {
+	Enabled  bool   `mapstructure:"enabled"`
+	Scope    string `mapstructure:"scopeid"`
+	Endpoint string `mapstructure:"endpoint"`
 }
 
 type PubstackBuffer struct {
