@@ -83,6 +83,5 @@ jobs:
       #        shell: bash
 
       - name: Build with Make
-        run: |
+        run: make milebuild
 #                    cd ./prebid-setup && git clone https://github.com/prebid/prebid-server.git -b $GIT_TAG &&
-               make milebuild
