@@ -1,6 +1,5 @@
 name: Mile Build
 run-name: Mile Build triggered by ${{ github.actor }}
-
 on:
   pull_request:
     branches: [ "main" ]
@@ -16,6 +15,10 @@ on:
         type: string
 
   workflow_dispatch:
+    inputs:
+      gitTag:
+        required: false
+        type: string
 jobs:
   build:
     runs-on: ubuntu-latest
