@@ -145,6 +145,8 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 			PublisherID: auctionReq.LegacyLabels.PubID,
 		}
 		gdprPerms = rs.gdprPermsBuilder(auctionReq.TCF2Config, gdprRequestInfo)
+	} else {
+		gdprPerms = gdpr.AlwaysAllow{}
 	}
 
 	allowedBidderRequests = make([]BidderRequest, 0, len(allBidderRequests))
@@ -187,6 +189,7 @@ func (rs *requestSplitter) isBidderBlockedByPrivacy(r *openrtb_ext.RequestWrappe
 	}
 
 	// gdpr
+	// if gdprEnforced && !auctionPermissions.AllowBidRequest {
 	if !auctionPermissions.AllowBidRequest {
 		rs.me.RecordAdapterGDPRRequestBlocked(coreBidder)
 		return true
@@ -210,6 +213,7 @@ func (rs *requestSplitter) applyPrivacy(bidderRequest *BidderRequest, auctionReq
 		privacy.ScrubUserFPD(reqWrapper)
 		buyerUIDRemoved = true
 	} else {
+		// if gdprEnforced && !auctionPermissions.PassID {
 		if !auctionPermissions.PassID {
 			privacy.ScrubGdprID(reqWrapper)
 			buyerUIDRemoved = true
@@ -228,6 +232,7 @@ func (rs *requestSplitter) applyPrivacy(bidderRequest *BidderRequest, auctionReq
 	if !passGeoActivityAllowed {
 		privacy.ScrubGeoAndDeviceIP(reqWrapper, ipConf)
 	} else {
+		// if gdprEnforced && !auctionPermissions.PassGeo {
 		if !auctionPermissions.PassGeo {
 			privacy.ScrubGeoAndDeviceIP(reqWrapper, ipConf)
 		}
