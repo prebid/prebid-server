@@ -125,6 +125,7 @@ func (l *AgmaLogger) isFull() bool {
 func (l *AgmaLogger) flush() {
 	l.mux.Lock()
 	defer l.mux.Unlock()
+	defer l.reset()
 
 	if l.eventCount == 0 || l.buffer.Len() == 0 {
 		return
@@ -135,9 +136,7 @@ func (l *AgmaLogger) flush() {
 	l.buffer.Write([]byte("]"))
 
 	payload := make([]byte, l.buffer.Len())
-	_, err := l.buffer.Read(payload)
-	defer l.reset()
-	if err != nil {
+	if numBytesCopied, err := l.buffer.Read(payload); err != nil || numBytesCopied == 0 {
 		glog.Warning("[AgmaAnalytics] fail to copy the buffer")
 		return
 	}
