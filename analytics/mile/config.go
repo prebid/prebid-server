@@ -9,6 +9,25 @@ import (
 	"github.com/docker/go-units"
 )
 
+func BuildConfig(scope, endpoint string, features ...string) *Configuration {
+
+	config := Configuration{
+		ScopeID:  scope,
+		Endpoint: endpoint,
+		Features: map[string]bool{
+			auction:    false,
+			video:      false,
+			amp:        false,
+			cookieSync: false,
+			setUID:     false,
+		},
+	}
+	for _, feature := range features {
+		config.Features[feature] = true
+	}
+	return &config
+}
+
 func fetchConfig(client *http.Client, endpoint *url.URL) (*Configuration, error) {
 	res, err := client.Get(endpoint.String())
 	if err != nil {

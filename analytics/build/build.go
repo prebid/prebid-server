@@ -2,6 +2,8 @@ package build
 
 import (
 	"encoding/json"
+	"fmt"
+	"github.com/prebid/prebid-server/v2/analytics/mile"
 
 	"github.com/benbjohnson/clock"
 	"github.com/golang/glog"
@@ -53,6 +55,32 @@ func New(analytics *config.Analytics) analytics.Runner {
 			modules["agma"] = agmaModule
 		} else {
 			glog.Errorf("Could not initialize Agma Anayltics: %v", err)
+		}
+	}
+
+	if analytics.Mile.Enabled {
+		mileConfig := mile.BuildConfig(analytics.Mile.Scope,
+			analytics.Mile.Endpoint, "auction")
+
+		fmt.Println(mileConfig)
+
+		mileModule, err := mile.NewModuleWithConfig(
+			clients.GetDefaultHttpInstance(),
+			analytics.Mile.Scope,
+			analytics.Mile.Endpoint,
+			mileConfig,
+			1,
+			"100",
+			"5s",
+			clock.New(),
+		)
+		fmt.Println(mileModule)
+
+		if err == nil {
+			modules["mile"] = mileModule
+		} else {
+			glog.Errorf("Could not initialize MileModule: %v", err)
+
 		}
 	}
 
