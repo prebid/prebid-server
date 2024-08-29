@@ -199,7 +199,7 @@ func (adapter *AdvangelistsAdapter) buildEndpointURL(params *openrtb_ext.ExtImpA
 
 // MakeBids translates advangelists bid response to prebid-server specific format
 func (adapter *AdvangelistsAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	var msg = ""
+	var msg string
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}

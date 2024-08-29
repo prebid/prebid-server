@@ -92,7 +92,7 @@ func (a *adapter) MakeBids(
 
 	if len(bidResp.SeatBid) == 0 {
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Empty seatbid"),
+			Message: "Empty seatbid",
 		}}
 	}
 

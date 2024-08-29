@@ -97,7 +97,7 @@ func extraImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpBluesea, error) {
 	}
 	if len(blueseaImpExt.PubId) == 0 || len(blueseaImpExt.Token) == 0 {
 		return nil, &errortypes.BadInput{
-			Message: fmt.Sprintf("Error in parsing imp.ext.bidder, empty pubid or token"),
+			Message: "Error in parsing imp.ext.bidder, empty pubid or token",
 		}
 	}
 	return &blueseaImpExt, nil
