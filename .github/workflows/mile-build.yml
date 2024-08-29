@@ -1,0 +1,88 @@
+name: PreBid Server - Build
+run-name: Build triggered by ${{ github.actor }}
+
+on:
+  pull_request:
+    branches: [ "main" ]
+
+  workflow_call:
+    inputs:
+      #      deployTarget:
+      #        required: true
+      #        default: staging
+      #        type: string
+      gitTag:
+        required: true
+        type: string
+
+  workflow_dispatch:
+#    inputs:
+#      #      deployTarget:
+#      #        description: 'Deployment Target'
+#      #        required: true
+#      #        default: 'staging'
+#      #        type: choice
+#      #        options:
+#      #          - staging
+#      #          - prod
+#      gitTag:
+#        description: 'Prebid Server Version'
+#        required: true
+#        type: string
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v3
+
+      #      - name: Install GoLang
+      #        uses: actions/setup-go@v3
+      #        with:
+      #          go-version: '>=1.22.0'
+
+      #      - name: Deployment target
+      #        env:
+      #          DEPLOY_TARGET: staging
+      #        run: |
+      #          echo "Received input: ${{ github.event.inputs.deployTarget }}"
+      #
+      #          if [ ! -z "${{ github.event.inputs.deployTarget }}" ]; then
+      #            DEPLOY_TARGET=${{ github.event.inputs.deployTarget }}
+      #          fi
+      #          echo "Using environment...${DEPLOY_TARGET}"
+      #          echo "DEPLOY_TARGET=${DEPLOY_TARGET}" >> $GITHUB_ENV
+      #
+      #        shell: bash
+
+      #      - name: Set Git Tag
+      #        run: |
+      #          echo "GIT_TAG=${{ github.event.inputs.gitTag }}" >> $GITHUB_ENV
+
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Log in to DO Container Registry
+        run: doctl registry login --expiry-seconds 1200
+
+      #      - name: Save DigitalOcean kubeconfig
+      #        run: |
+      #          if [ ${DEPLOY_TARGET} == 'prod' ]; then
+      #            doctl kubernetes cluster kubeconfig save dhi-prod
+      #          elif [ ${DEPLOY_TARGET} == 'staging' ]; then
+      #            doctl kubernetes cluster kubeconfig save atd-dev
+      #          else
+      #            echo "is neither MAIN nor staging branch"
+      #          fi
+      #        shell: bash
+
+      - name: Build with Make
+        run: |
+#                    cd ./prebid-setup && git clone https://github.com/prebid/prebid-server.git -b $GIT_TAG &&
+               make milebuild
