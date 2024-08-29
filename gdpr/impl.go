@@ -71,7 +71,7 @@ func (p *permissionsImpl) AuctionActivitiesAllowed(ctx context.Context, bidderCo
 
 	pc, err := parseConsent(p.consent)
 	if err != nil {
-		return DenyAll
+		return p.defaultPermissions()
 	}
 
 	vendorID, _ := p.resolveVendorID(bidderCoreName, bidder)
