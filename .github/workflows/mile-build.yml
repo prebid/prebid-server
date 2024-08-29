@@ -1,5 +1,5 @@
-name: PreBid Server - Build
-run-name: Build triggered by ${{ github.actor }}
+name: Mile Build
+run-name: Mile Build triggered by ${{ github.actor }}
 
 on:
   pull_request:
@@ -16,26 +16,9 @@ on:
         type: string
 
   workflow_dispatch:
-#    inputs:
-#      #      deployTarget:
-#      #        description: 'Deployment Target'
-#      #        required: true
-#      #        default: 'staging'
-#      #        type: choice
-#      #        options:
-#      #          - staging
-#      #          - prod
-#      gitTag:
-#        description: 'Prebid Server Version'
-#        required: true
-#        type: string
-
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout the code
         uses: actions/checkout@v3
