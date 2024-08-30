@@ -91,6 +91,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/emtv"
 	"github.com/prebid/prebid-server/v2/adapters/eplanning"
 	"github.com/prebid/prebid-server/v2/adapters/epom"
+	"github.com/prebid/prebid-server/v2/adapters/escalax"
 	"github.com/prebid/prebid-server/v2/adapters/flipp"
 	"github.com/prebid/prebid-server/v2/adapters/freewheelssp"
 	"github.com/prebid/prebid-server/v2/adapters/frvradn"
@@ -315,6 +316,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderEmxDigital:        cadentaperturemx.Builder,
 		openrtb_ext.BidderEPlanning:         eplanning.Builder,
 		openrtb_ext.BidderEpom:              epom.Builder,
+		openrtb_ext.BidderEscalax:           escalax.Builder,
 		openrtb_ext.BidderEVolution:         evolution.Builder,
 		openrtb_ext.BidderFlipp:             flipp.Builder,
 		openrtb_ext.BidderFreewheelSSP:      freewheelssp.Builder,
