@@ -75,16 +75,15 @@ func (ev *eventTracking) modifyBidVAST(pbsBid *entities.PbsOrtbBid, bidderName o
 	if pbsBid.BidType != openrtb_ext.BidTypeVideo || len(bid.AdM) == 0 && len(bid.NURL) == 0 {
 		return
 	}
-	vastXML := makeVAST(bid)
+
+	ev.InjectTrackers(pbsBid, bidderName)
 	bidID := bid.ID
 	if len(pbsBid.GeneratedBidID) > 0 {
 		bidID = pbsBid.GeneratedBidID
 	}
-	if newVastXML, ok := events.ModifyVastXmlString(ev.externalURL, vastXML, bidID, bidderName.String(), ev.accountID, ev.auctionTimestampMs, ev.integrationType); ok {
+	if newVastXML, ok := events.ModifyVastXmlString(ev.externalURL, pbsBid.Bid.AdM, bidID, bidderName.String(), ev.accountID, ev.auctionTimestampMs, ev.integrationType); ok {
 		bid.AdM = newVastXML
 	}
-
-	ev.InjectTrackers(pbsBid, bidderName)
 }
 
 // modifyBidJSON injects "wurl" (win) event url if needed, otherwise returns original json
@@ -163,7 +162,7 @@ func convertToVastEvent(events config.Events) injector.VASTEvents {
 
 	for _, event := range events.VASTEvents {
 		switch event.CreateElement {
-		// TODO: Prebid currently uses config.ExternalURL for impression tracking, decprecated in favor of config.Event
+		// TODO: Prebid currently uses config.ExternalURL for impression tracking, deprecated in favor of config.Event
 		// case config.ImpressionVASTElement:
 		// 	ve.Impressions = appendURLs(ve.Impressions, event, events.DefaultURL)
 		case config.ErrorVASTElement:
