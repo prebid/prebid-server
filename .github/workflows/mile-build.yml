@@ -1,73 +1,52 @@
-name: Mile Build
-run-name: Mile Build triggered by ${{ github.actor }}
-on:
-  pull_request:
-    branches: [ "main" ]
+name: Docker Image CI/CD
 
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
   workflow_call:
     inputs:
-      #      deployTarget:
-      #        required: true
-      #        default: staging
-      #        type: string
       gitTag:
         required: true
         type: string
-
   workflow_dispatch:
     inputs:
       gitTag:
         required: false
         type: string
+
 jobs:
-  build:
+  build-and-push:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout the code
-        uses: actions/checkout@v3
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-      #      - name: Install GoLang
-      #        uses: actions/setup-go@v3
-      #        with:
-      #          go-version: '>=1.22.0'
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
 
-      #      - name: Deployment target
-      #        env:
-      #          DEPLOY_TARGET: staging
-      #        run: |
-      #          echo "Received input: ${{ github.event.inputs.deployTarget }}"
-      #
-      #          if [ ! -z "${{ github.event.inputs.deployTarget }}" ]; then
-      #            DEPLOY_TARGET=${{ github.event.inputs.deployTarget }}
-      #          fi
-      #          echo "Using environment...${DEPLOY_TARGET}"
-      #          echo "DEPLOY_TARGET=${DEPLOY_TARGET}" >> $GITHUB_ENV
-      #
-      #        shell: bash
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag milebuild:${{ github.sha }}
 
-      #      - name: Set Git Tag
-      #        run: |
-      #          echo "GIT_TAG=${{ github.event.inputs.gitTag }}" >> $GITHUB_ENV
+    - name: Install doctl
+      uses: digitalocean/action-doctl@v2
+      with:
+        token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
 
-      - name: Install doctl
-        uses: digitalocean/action-doctl@v2
-        with:
-          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+    - name: Log in to DO Container Registry
+      run: doctl registry login --expiry-seconds 1200
 
-      - name: Log in to DO Container Registry
-        run: doctl registry login --expiry-seconds 1200
+    - name: Tag Docker image
+      run: |
+        docker tag milebuild:${{ github.sha }} registry.digitalocean.com/automatad/milebuild:${{ github.sha }}
+        docker tag milebuild:${{ github.sha }} registry.digitalocean.com/automatad/milebuild:latest
 
-      #      - name: Save DigitalOcean kubeconfig
-      #        run: |
-      #          if [ ${DEPLOY_TARGET} == 'prod' ]; then
-      #            doctl kubernetes cluster kubeconfig save dhi-prod
-      #          elif [ ${DEPLOY_TARGET} == 'staging' ]; then
-      #            doctl kubernetes cluster kubeconfig save atd-dev
-      #          else
-      #            echo "is neither MAIN nor staging branch"
-      #          fi
-      #        shell: bash
+    - name: Push Docker image to DigitalOcean Container Registry
+      run: |
+        docker push registry.digitalocean.com/automatad/milebuild:${{ github.sha }}
+        docker push registry.digitalocean.com/automatad/milebuild:latest
 
-      - name: Build with Make
-        run: make milebuild
-#                    cd ./prebid-setup && git clone https://github.com/prebid/prebid-server.git -b $GIT_TAG &&
+    - name: Build with Make (if needed)
+      run: make milebuild GIT_TAG=${{ inputs.gitTag || github.event.inputs.gitTag || github.sha }}
