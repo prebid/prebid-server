@@ -54,5 +54,6 @@ func httpInfoToNonBidReason(httpInfo *httpCallInfo) NonBidReason {
 // isBidderUnreachableError checks if the error is due to connection refused or no such host
 func isBidderUnreachableError(httpInfo *httpCallInfo) bool {
 	var dnsErr *net.DNSError
-	return errors.Is(httpInfo.err, syscall.ECONNREFUSED) || (errors.As(httpInfo.err, &dnsErr) && dnsErr.IsNotFound)
+	isNoSuchHost := errors.As(httpInfo.err, &dnsErr) && dnsErr.IsNotFound
+	return errors.Is(httpInfo.err, syscall.ECONNREFUSED) || isNoSuchHost
 }
