@@ -3110,7 +3110,7 @@ func TestSeatNonBid(t *testing.T) {
 	}
 	type expect struct {
 		seatBids    []*entities.PbsOrtbSeatBid
-		seatNonBids nonBids
+		seatNonBids SeatNonBidBuilder
 		errors      []error
 	}
 	testCases := []struct {
@@ -3130,13 +3130,11 @@ func TestSeatNonBid(t *testing.T) {
 				client:         &http.Client{Timeout: time.Nanosecond}, // for timeout
 			},
 			expect: expect{
-				seatNonBids: nonBids{
-					seatNonBidsMap: map[string][]openrtb_ext.NonBid{
-						"pubmatic": {{
-							ImpId:      "1234",
-							StatusCode: int(ErrorTimeout),
-						}},
-					},
+				seatNonBids: SeatNonBidBuilder{
+					"pubmatic": {{
+						ImpId:      "1234",
+						StatusCode: int(ErrorTimeout),
+					}},
 				},
 				errors:   []error{&errortypes.Timeout{Message: context.DeadlineExceeded.Error()}},
 				seatBids: []*entities.PbsOrtbSeatBid{{Bids: []*entities.PbsOrtbBid{}, Currency: "USD", Seat: "pubmatic", HttpCalls: []*openrtb_ext.ExtHttpCall{}}},
@@ -3152,12 +3150,10 @@ func TestSeatNonBid(t *testing.T) {
 				},
 			},
 			expect: expect{
-				seatNonBids: nonBids{
-					seatNonBidsMap: map[string][]openrtb_ext.NonBid{
-						"appnexus": {
-							{ImpId: "1234", StatusCode: int(ErrorBidderUnreachable)},
-							{ImpId: "4567", StatusCode: int(ErrorBidderUnreachable)},
-						},
+				seatNonBids: SeatNonBidBuilder{
+					"appnexus": {
+						{ImpId: "1234", StatusCode: int(ErrorBidderUnreachable)},
+						{ImpId: "4567", StatusCode: int(ErrorBidderUnreachable)},
 					},
 				},
 				seatBids: []*entities.PbsOrtbSeatBid{{Bids: []*entities.PbsOrtbBid{}, Currency: "USD", Seat: "appnexus", HttpCalls: []*openrtb_ext.ExtHttpCall{}}},
@@ -3175,7 +3171,7 @@ func TestSeatNonBid(t *testing.T) {
 				},
 			},
 			expect: expect{
-				seatNonBids: nonBids{},
+				seatNonBids: SeatNonBidBuilder{},
 				seatBids:    []*entities.PbsOrtbSeatBid{{Bids: []*entities.PbsOrtbBid{}, Currency: "USD", HttpCalls: []*openrtb_ext.ExtHttpCall{}}},
 				errors:      []error{&url.Error{Op: "Get", URL: "", Err: errors.New("some_error")}},
 			},
@@ -3210,9 +3206,9 @@ func TestSeatNonBid(t *testing.T) {
 				BidderName: openrtb_ext.BidderName(test.args.Seat),
 			}, nil, &adapters.ExtraRequestInfo{}, &MockSigner{}, bidRequestOptions{}, openrtb_ext.ExtAlternateBidderCodes{}, hookexecution.EmptyHookExecutor{}, nil)
 			assert.Equal(t, test.expect.seatBids, seatBids)
-			assert.Equal(t, test.expect.seatNonBids, responseExtra.adapterNonBids)
+			assert.Equal(t, test.expect.seatNonBids, responseExtra.seatNonBidBuilder)
 			assert.Equal(t, test.expect.errors, errors)
-			for _, nonBids := range responseExtra.adapterNonBids.seatNonBidsMap {
+			for _, nonBids := range responseExtra.seatNonBidBuilder {
 				for _, nonBid := range nonBids {
 					for _, seatBid := range seatBids {
 						for _, bid := range seatBid.Bids {
