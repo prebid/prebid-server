@@ -387,7 +387,7 @@ func generateReturnExt(ad Ad, request *openrtb2.BidRequest) (json.RawMessage, er
 		}
 	}
 
-	if requestRegsExt != nil && requestRegsExt.DSA != nil && requestRegsExt.DSA.PubRender != &adRender {
+	if requestRegsExt != nil && requestRegsExt.DSA != nil && &ad.Advertiser != nil && &ad.Advertiser.LegalName != nil {
 		ext := &openrtb_ext.ExtBid{
 			DSA: &openrtb_ext.ExtBidDSA{
 				AdRender: &adRender,
