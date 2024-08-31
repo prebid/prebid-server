@@ -78,7 +78,7 @@ func handleRawBidderResponseHook(
 
 	changeSet := hookstage.ChangeSet[hookstage.RawBidderResponsePayload]{}
 	if len(payload.BidderResponse.Bids) != len(allowedBids) {
-		changeSet.RawBidderResponse().Bids().Update(allowedBids)
+		changeSet.RawBidderResponse().Bids().UpdateBids(allowedBids)
 		result.ChangeSet = changeSet
 	}
 
