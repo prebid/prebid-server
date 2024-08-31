@@ -61,6 +61,7 @@ const (
 	schainKey                           = "schain"
 	us_privacyKey                       = "us_privacy"
 	cdepKey                             = "cdep"
+	gpcKey                              = "gpc"
 )
 
 // LenImp returns the number of impressions without causing the creation of ImpWrapper objects.
@@ -1201,6 +1202,8 @@ type RegExt struct {
 	dsaDirty       bool
 	gdpr           *int8
 	gdprDirty      bool
+	gpc            *string
+	gpcDirty       bool
 	usPrivacy      string
 	usPrivacyDirty bool
 }
@@ -1240,6 +1243,13 @@ func (re *RegExt) unmarshal(extJson json.RawMessage) error {
 	uspJson, hasUsp := re.ext[us_privacyKey]
 	if hasUsp && uspJson != nil {
 		if err := jsonutil.Unmarshal(uspJson, &re.usPrivacy); err != nil {
+			return err
+		}
+	}
+
+	gpcJson, hasGPC := re.ext[gpcKey]
+	if hasGPC && gpcJson != nil {
+		if err := jsonutil.Unmarshal(gpcJson, &re.gpc); err != nil {
 			return err
 		}
 	}
@@ -1287,6 +1297,19 @@ func (re *RegExt) marshal() (json.RawMessage, error) {
 		re.usPrivacyDirty = false
 	}
 
+	if re.gpcDirty {
+		if re.gpc != nil {
+			rawjson, err := jsonutil.Marshal(re.gpc)
+			if err != nil {
+				return nil, err
+			}
+			re.ext[gpcKey] = rawjson
+		} else {
+			delete(re.ext, gpcKey)
+		}
+		re.gpcDirty = false
+	}
+
 	re.extDirty = false
 	if len(re.ext) == 0 {
 		return nil, nil
@@ -1295,7 +1318,7 @@ func (re *RegExt) marshal() (json.RawMessage, error) {
 }
 
 func (re *RegExt) Dirty() bool {
-	return re.extDirty || re.dsaDirty || re.gdprDirty || re.usPrivacyDirty
+	return re.extDirty || re.dsaDirty || re.gdprDirty || re.usPrivacyDirty || re.gpcDirty
 }
 
 func (re *RegExt) GetExt() map[string]json.RawMessage {
@@ -1334,6 +1357,19 @@ func (re *RegExt) GetGDPR() *int8 {
 
 func (re *RegExt) SetGDPR(gdpr *int8) {
 	re.gdpr = gdpr
+	re.gdprDirty = true
+}
+
+func (re *RegExt) GetGPC() *string {
+	if re.gpc == nil {
+		return nil
+	}
+	GPC := *re.gpc
+	return &GPC
+}
+
+func (re *RegExt) SetGPC(GPC *string) {
+	re.gpc = GPC
 	re.gdprDirty = true
 }
 

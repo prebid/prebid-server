@@ -329,6 +329,20 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 		return nil, err
 	}
 
+	regExt, err := r.BidRequestWrapper.GetRegExt()
+	if err != nil {
+		return nil, err
+	}
+
+	gpcValue := regExt.GetGPC()
+	if gpcValue == nil {
+		// Im not sure if GlobalPrivacyControlHeader is a correct header
+		if r.GlobalPrivacyControlHeader == "1" {
+			gpc := "1"
+			regExt.SetGPC(&gpc)
+		}
+	}
+
 	// rebuild/resync the request in the request wrapper.
 	if err := r.BidRequestWrapper.RebuildRequest(); err != nil {
 		return nil, err
