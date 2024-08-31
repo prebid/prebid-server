@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSeatNonBidsAdd(t *testing.T) {
+func TestRejectBid(t *testing.T) {
 	type fields struct {
-		seatNonBidsMap map[string][]openrtb_ext.NonBid
+		seatNonBidsMap SeatNonBidBuilder
 	}
 	type args struct {
 		bid          *entities.PbsOrtbBid
@@ -22,7 +22,7 @@ func TestSeatNonBidsAdd(t *testing.T) {
 		name   string
 		fields fields
 		args   args
-		want   map[string][]openrtb_ext.NonBid
+		want   SeatNonBidBuilder
 	}{
 		{
 			name:   "nil-seatNonBidsMap",
@@ -34,7 +34,7 @@ func TestSeatNonBidsAdd(t *testing.T) {
 			name:   "nil-seatNonBidsMap-with-bid-object",
 			fields: fields{seatNonBidsMap: nil},
 			args:   args{bid: &entities.PbsOrtbBid{Bid: &openrtb2.Bid{}}, seat: "bidder1"},
-			want:   sampleSeatNonBidMap("bidder1", 1),
+			want:   nil,
 		},
 		{
 			name:   "multiple-nonbids-for-same-seat",
@@ -45,18 +45,16 @@ func TestSeatNonBidsAdd(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			snb := &nonBids{
-				seatNonBidsMap: tt.fields.seatNonBidsMap,
-			}
-			snb.addBid(tt.args.bid, tt.args.nonBidReason, tt.args.seat)
-			assert.Equalf(t, tt.want, snb.seatNonBidsMap, "expected seatNonBidsMap not nil")
+			snb := tt.fields.seatNonBidsMap
+			snb.rejectBid(tt.args.bid, tt.args.nonBidReason, tt.args.seat)
+			assert.Equalf(t, tt.want, snb, "expected seatNonBidsMap not nil")
 		})
 	}
 }
 
-func TestSeatNonBidsGet(t *testing.T) {
+func TestSeatNonBidsSlice(t *testing.T) {
 	type fields struct {
-		snb *nonBids
+		snb SeatNonBidBuilder
 	}
 	tests := []struct {
 		name   string
@@ -65,31 +63,32 @@ func TestSeatNonBidsGet(t *testing.T) {
 	}{
 		{
 			name:   "get-seat-nonbids",
-			fields: fields{&nonBids{sampleSeatNonBidMap("bidder1", 2)}},
+			fields: fields{sampleSeatNonBidMap("bidder1", 2)},
 			want:   sampleSeatBids("bidder1", 2),
 		},
 		{
 			name:   "nil-seat-nonbids",
-			fields: fields{nil},
+			fields: fields{snb: SeatNonBidBuilder{}},
+			want:   []openrtb_ext.SeatNonBid{},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.fields.snb.get(); !assert.Equal(t, tt.want, got) {
+			if got := tt.fields.snb.Slice(); !assert.Equal(t, tt.want, got) {
 				t.Errorf("seatNonBids.get() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-var sampleSeatNonBidMap = func(seat string, nonBidCount int) map[string][]openrtb_ext.NonBid {
+var sampleSeatNonBidMap = func(seat string, nonBidCount int) SeatNonBidBuilder {
 	nonBids := make([]openrtb_ext.NonBid, 0)
 	for i := 0; i < nonBidCount; i++ {
 		nonBids = append(nonBids, openrtb_ext.NonBid{
 			Ext: &openrtb_ext.NonBidExt{Prebid: openrtb_ext.ExtResponseNonBidPrebid{Bid: openrtb_ext.NonBidObject{}}},
 		})
 	}
-	return map[string][]openrtb_ext.NonBid{
+	return SeatNonBidBuilder{
 		seat: nonBids,
 	}
 }

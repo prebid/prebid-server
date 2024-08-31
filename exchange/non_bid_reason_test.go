@@ -6,7 +6,6 @@ import (
 	"syscall"
 	"testing"
 
-	"github.com/prebid/openrtb/v20/openrtb3"
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/stretchr/testify/assert"
 )
@@ -18,7 +17,7 @@ func Test_httpInfoToNonBidReason(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want openrtb3.NoBidReason
+		want NonBidReason
 	}{
 		{
 			name: "error-timeout",

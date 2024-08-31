@@ -1,23 +1,19 @@
 package exchange
 
 import (
-	"github.com/prebid/openrtb/v20/openrtb3"
 	"github.com/prebid/prebid-server/v2/exchange/entities"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
-type nonBids struct {
-	seatNonBidsMap map[string][]openrtb_ext.NonBid
-}
+type SeatNonBidBuilder map[string][]openrtb_ext.NonBid
 
-// addBid is not thread safe as we are initializing and writing to map
-func (snb *nonBids) addBid(bid *entities.PbsOrtbBid, nonBidReason int, seat string) {
-	if bid == nil || bid.Bid == nil {
+// rejectBid appends a non bid object to the builder based on a bid
+// this method is not thread safe as we are writing to map
+func (b SeatNonBidBuilder) rejectBid(bid *entities.PbsOrtbBid, nonBidReason int, seat string) {
+	if b == nil || bid == nil || bid.Bid == nil {
 		return
 	}
-	if snb.seatNonBidsMap == nil {
-		snb.seatNonBidsMap = make(map[string][]openrtb_ext.NonBid)
-	}
+
 	nonBid := openrtb_ext.NonBid{
 		ImpId:      bid.Bid.ImpID,
 		StatusCode: nonBidReason,
@@ -37,20 +33,29 @@ func (snb *nonBids) addBid(bid *entities.PbsOrtbBid, nonBidReason int, seat stri
 			}},
 		},
 	}
-
-	snb.seatNonBidsMap[seat] = append(snb.seatNonBidsMap[seat], nonBid)
+	b[seat] = append(b[seat], nonBid)
 }
 
-// get returns a slice of SeatNonBid objects representing the non-bids for each seat.
-// If snb is nil, it returns nil.
-// It iterates over the seatNonBidsMap and appends each seat and its corresponding non-bids to the seatNonBid slice.
-// Finally, it returns the seatNonBid slice.
-func (snb *nonBids) get() []openrtb_ext.SeatNonBid {
-	if snb == nil {
-		return nil
+// rejectImps appends a non bid object to the builder for every specified imp
+func (b SeatNonBidBuilder) rejectImps(impIds []string, nonBidReason NonBidReason, seat string) {
+	nonBids := []openrtb_ext.NonBid{}
+	for _, impId := range impIds {
+		nonBid := openrtb_ext.NonBid{
+			ImpId:      impId,
+			StatusCode: int(nonBidReason),
+		}
+		nonBids = append(nonBids, nonBid)
 	}
-	var seatNonBid []openrtb_ext.SeatNonBid
-	for seat, nonBids := range snb.seatNonBidsMap {
+
+	if len(nonBids) > 0 {
+		b[seat] = append(b[seat], nonBids...)
+	}
+}
+
+// slice transforms the seat non bid map into a slice of SeatNonBid objects representing the non-bids for each seat
+func (b SeatNonBidBuilder) Slice() []openrtb_ext.SeatNonBid {
+	seatNonBid := make([]openrtb_ext.SeatNonBid, 0)
+	for seat, nonBids := range b {
 		seatNonBid = append(seatNonBid, openrtb_ext.SeatNonBid{
 			Seat:   seat,
 			NonBid: nonBids,
@@ -59,54 +64,15 @@ func (snb *nonBids) get() []openrtb_ext.SeatNonBid {
 	return seatNonBid
 }
 
-// newProxyNonBid creates a new proxy non-bid object with the given impression ID and non-bid reason.
-func newProxyNonBid(impId string, nonBidReason int) openrtb_ext.NonBid {
-	return openrtb_ext.NonBid{
-		ImpId:      impId,
-		StatusCode: nonBidReason,
-	}
-}
-
-// buildProxyNonBids creates a list of proxy non-bids with the given impression IDs and non-bid reason.
-// this method is not thread safe as we are initializing and writing to map
-func buildProxyNonBids(impIds []string, nonBidReason openrtb3.NoBidReason) []openrtb_ext.NonBid {
-	if len(impIds) == 0 {
-		return nil
-	}
-	proxyNonBids := []openrtb_ext.NonBid{}
-	for _, impId := range impIds {
-		nonBid := newProxyNonBid(impId, int(nonBidReason))
-		proxyNonBids = append(proxyNonBids, nonBid)
-	}
-	return proxyNonBids
-}
-
-// rejectImps adds the proxy non-bids to the seatNonBidsMap.
-// It takes a list of impression IDs, a non-bid reason, and a seat as input parameters.
-// It builds the proxy non-bids using the buildProxyNonBids function and appends them to the seatNonBidsMap.
-// If the seatNonBidsMap is nil, it initializes it with an empty map.
-// The proxy non-bids are added to the seatNonBidsMap under the specified seat.
-// This method is not thread safe as we are initializing and writing to map
-func (snb *nonBids) rejectImps(impIds []string, nonBidReason openrtb3.NoBidReason, seat string) {
-	if len(impIds) == 0 {
-		return
-	}
-	proxyNonBids := buildProxyNonBids(impIds, nonBidReason)
-	if snb.seatNonBidsMap == nil {
-		snb.seatNonBidsMap = make(map[string][]openrtb_ext.NonBid)
-	}
-	snb.seatNonBidsMap[seat] = append(snb.seatNonBidsMap[seat], proxyNonBids...)
-}
-
 // append adds the nonBids from the input nonBids to the current nonBids.
 // This method is not thread safe as we are initializing and writing to map
-func (snb *nonBids) append(nonBids ...nonBids) {
-	if snb.seatNonBidsMap == nil {
-		snb.seatNonBidsMap = make(map[string][]openrtb_ext.NonBid)
+func (b SeatNonBidBuilder) append(nonBids ...SeatNonBidBuilder) {
+	if b == nil {
+		return
 	}
 	for _, nonBid := range nonBids {
-		for seat, nonBids := range nonBid.seatNonBidsMap {
-			snb.seatNonBidsMap[seat] = append(snb.seatNonBidsMap[seat], nonBids...)
+		for seat, nonBids := range nonBid {
+			b[seat] = append(b[seat], nonBids...)
 		}
 	}
 }
