@@ -175,3 +175,10 @@ type MileAnalyticsEvent struct {
 
 	UserIDVendors string `json:"userIDVendors"`
 }
+
+type ImpressionsExt struct {
+	Tid    string `json:"tid"`
+	Prebid struct {
+		Bidder map[string]interface{} `json:"bidder"`
+	} `json:"prebid"`
+}

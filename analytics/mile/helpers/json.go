@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/prebid/prebid-server/v2/analytics"
 )
@@ -20,33 +21,47 @@ func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]MileAnal
 			//}
 		}
 
+		fmt.Println(string(ao.RequestWrapper.Imp[0].Ext), "ext")
+
+		var confBidders ImpressionsExt
+
+		err := json.Unmarshal(ao.RequestWrapper.Imp[0].Ext, &confBidders)
+		if err != nil {
+			return nil, err
+		}
+		configuredBidders := make([]string, len(confBidders.Prebid.Bidder))
+		i := 0
+		for k := range confBidders.Prebid.Bidder {
+			configuredBidders[i] = k
+			i++
+		}
+		fmt.Println(configuredBidders)
+
 		if ao.RequestWrapper != nil {
 
 			for range ao.RequestWrapper.Imp {
-
-				fmt.Println(ao.RequestWrapper.Device.Geo)
-				fmt.Println(ao.RequestWrapper.Site.Publisher.ID)
 
 				logEntry := MileAnalyticsEvent{
 					//SessionID: ao.RequestWrapper
 					Ip: ao.RequestWrapper.Device.IP,
 					//ClientVersion: ao.RequestWrapper.Ext.
-					Ua:             ao.RequestWrapper.Device.UA,
-					ArbitraryData:  "",
-					Device:         ao.RequestWrapper.Device.Model,
-					Publisher:      ao.RequestWrapper.Site.Publisher.Domain,
-					Site:           ao.RequestWrapper.Site.Domain,
-					ReferrerURL:    ao.RequestWrapper.Site.Ref,
-					AdvertiserName: "",
-					//AuctionID:         ao.RequestWrapper.ID,
-					//Page:              ao.RequestWrapper.Site.Page,
-					//YetiSiteID:        ao.RequestWrapper.Site.ID,
-					//YetiPublisherID:   ao.RequestWrapper.Site.Publisher.ID,
+					Ua:                ao.RequestWrapper.Device.UA,
+					ArbitraryData:     "",
+					Device:            ao.RequestWrapper.Device.Model,
+					Publisher:         ao.RequestWrapper.Site.Publisher.Domain,
+					Site:              ao.RequestWrapper.Site.Domain,
+					ReferrerURL:       ao.RequestWrapper.Site.Ref,
+					AdvertiserName:    "",
+					AuctionID:         ao.RequestWrapper.ID,
+					Page:              ao.RequestWrapper.Site.Page,
+					YetiSiteID:        ao.RequestWrapper.Site.ID,
+					YetiPublisherID:   ao.RequestWrapper.Site.Publisher.ID,
 					SessionID:         "",
 					EventType:         "",
 					Section:           "",
 					BidBidders:        bidBiders,
-					ConfiguredBidders: []string{},
+					ConfiguredBidders: configuredBidders,
+					ConfiguredTimeout: ao.RequestWrapper.TMax,
 					//Viewability: ao.RequestWrapper.
 					//WinningSize: ao.Response.SeatBi
 
