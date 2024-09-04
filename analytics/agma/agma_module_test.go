@@ -102,15 +102,19 @@ var mockValidAccounts = []config.AgmaAnalyticsAccount{
 
 type MockedSender struct {
 	mock.Mock
-	wg *sync.WaitGroup
 }
 
 func (m *MockedSender) Send(payload []byte) error {
-	if m.wg != nil {
-		defer m.wg.Done()
-	}
 	args := m.Called(payload)
 	return args.Error(0)
+}
+
+type MockedSenderTwo struct {
+	mock.Mock
+}
+
+func (m *MockedSenderTwo) Send(payload []byte) error {
+	return nil
 }
 
 func TestConfigParsingError(t *testing.T) {
@@ -689,13 +693,14 @@ func TestShutdownFlush(t *testing.T) {
 		},
 	}
 	mockedSender := new(MockedSender)
-	mockedSender.On("Send", mock.Anything).Return(nil)
-	mockedSender.wg = &sync.WaitGroup{}
-	mockedSender.wg.Add(1)
 
 	clockMock := clock.NewMock()
 	logger, err := newAgmaLogger(cfg, mockedSender.Send, clockMock)
 	assert.NoError(t, err)
+
+	mockedBuffer := &MockAgmaLoggerBuffer{}
+	mockedBuffer.On("Read", mock.Anything)
+	logger.buffer = mockedBuffer
 
 	go logger.start()
 	defer func() { logger.sigTermCh <- syscall.SIGTERM }()
@@ -703,8 +708,37 @@ func TestShutdownFlush(t *testing.T) {
 	logger.LogAuctionObject(&mockValidAuctionObject)
 	logger.Shutdown()
 
-	mockedSender.wg.Wait()
-
-	mockedSender.AssertCalled(t, "Send", mock.Anything)
-	mockedSender.AssertNumberOfCalls(t, "Send", 1)
+	mockedBuffer.AssertCalled(t, "Read")
+	mockedBuffer.AssertNumberOfCalls(t, "Read", 1)
 }
+
+type MockAgmaLoggerBuffer struct {
+	mock.Mock
+}
+
+func (m *MockAgmaLoggerBuffer) Bytes() []byte                             { return nil }
+func (m *MockAgmaLoggerBuffer) AvailableBuffer() []byte                   { return nil }
+func (m *MockAgmaLoggerBuffer) String() string                            { return "" }
+func (m *MockAgmaLoggerBuffer) Len() int                                  { return 1 }
+func (m *MockAgmaLoggerBuffer) Cap() int                                  { return 0 }
+func (m *MockAgmaLoggerBuffer) Available() int                            { return 0 }
+func (m *MockAgmaLoggerBuffer) Truncate(n int)                            {}
+func (m *MockAgmaLoggerBuffer) Reset()                                    {}
+func (m *MockAgmaLoggerBuffer) Grow(n int)                                {}
+func (m *MockAgmaLoggerBuffer) Write(p []byte) (n int, err error)         { return 0, nil }
+func (m *MockAgmaLoggerBuffer) WriteString(s string) (n int, err error)   { return 0, nil }
+func (m *MockAgmaLoggerBuffer) ReadFrom(r io.Reader) (n int64, err error) { return 0, nil }
+func (m *MockAgmaLoggerBuffer) WriteTo(w io.Writer) (n int64, err error)  { return 0, nil }
+func (m *MockAgmaLoggerBuffer) WriteByte(c byte) error                    { return nil }
+func (m *MockAgmaLoggerBuffer) WriteRune(r rune) (n int, err error)       { return 0, nil }
+func (m *MockAgmaLoggerBuffer) Read(p []byte) (n int, err error) {
+	m.Called()
+	return 0, io.EOF
+}
+func (m *MockAgmaLoggerBuffer) Next(n int) []byte                              { return nil }
+func (m *MockAgmaLoggerBuffer) ReadByte() (byte, error)                        { return ' ', nil }
+func (m *MockAgmaLoggerBuffer) ReadRune() (r rune, size int, err error)        { return ' ', 0, nil }
+func (m *MockAgmaLoggerBuffer) UnreadRune() error                              { return nil }
+func (m *MockAgmaLoggerBuffer) UnreadByte() error                              { return nil }
+func (m *MockAgmaLoggerBuffer) ReadBytes(delim byte) (line []byte, err error)  { return nil, nil }
+func (m *MockAgmaLoggerBuffer) ReadString(delim byte) (line string, err error) { return "", nil }

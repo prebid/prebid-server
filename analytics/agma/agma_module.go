@@ -3,6 +3,7 @@ package agma
 import (
 	"bytes"
 	"errors"
+	"io"
 	"net/http"
 	"os"
 	"os/signal"
@@ -36,8 +37,35 @@ type AgmaLogger struct {
 	maxDuration       time.Duration
 	mux               sync.RWMutex
 	sigTermCh         chan os.Signal
-	buffer            bytes.Buffer
-	bufferCh          chan []byte
+	// buffer            bytes.Buffer
+	buffer   AgmaLoggerBuffer
+	bufferCh chan []byte
+}
+
+type AgmaLoggerBuffer interface {
+	Bytes() []byte
+	AvailableBuffer() []byte
+	String() string
+	Len() int
+	Cap() int
+	Available() int
+	Truncate(n int)
+	Reset()
+	Grow(n int)
+	Write(p []byte) (n int, err error)
+	WriteString(s string) (n int, err error)
+	ReadFrom(r io.Reader) (n int64, err error)
+	WriteTo(w io.Writer) (n int64, err error)
+	WriteByte(c byte) error
+	WriteRune(r rune) (n int, err error)
+	Read(p []byte) (n int, err error)
+	Next(n int) []byte
+	ReadByte() (byte, error)
+	ReadRune() (r rune, size int, err error)
+	UnreadRune() error
+	UnreadByte() error
+	ReadBytes(delim byte) (line []byte, err error)
+	ReadString(delim byte) (line string, err error)
 }
 
 func newAgmaLogger(cfg config.AgmaAnalytics, sender httpSender, clock clock.Clock) (*AgmaLogger, error) {
@@ -53,7 +81,8 @@ func newAgmaLogger(cfg config.AgmaAnalytics, sender httpSender, clock clock.Cloc
 		return nil, errors.New("Please configure at least one account for Agma Analytics")
 	}
 
-	buffer := bytes.Buffer{}
+	// buffer := bytes.Buffer{}
+	buffer := newAgmaLoggerBuffer()
 	buffer.Write([]byte("["))
 
 	return &AgmaLogger{
@@ -68,6 +97,10 @@ func newAgmaLogger(cfg config.AgmaAnalytics, sender httpSender, clock clock.Cloc
 		bufferCh:          make(chan []byte),
 		sigTermCh:         make(chan os.Signal, 1),
 	}, nil
+}
+
+func newAgmaLoggerBuffer() AgmaLoggerBuffer {
+	return &bytes.Buffer{}
 }
 
 func NewModule(httpClient *http.Client, cfg config.AgmaAnalytics, clock clock.Clock) (analytics.Module, error) {
