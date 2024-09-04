@@ -1497,6 +1497,11 @@ func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, r *openrtb_
 
 	setAuctionTypeImplicitly(r)
 
+	err := setGPCImplicitly(httpReq, r)
+	if err != nil {
+		return []error{err}
+	}
+
 	errs := setSecBrowsingTopicsImplicitly(httpReq, r, account)
 	return errs
 }
@@ -1514,6 +1519,26 @@ func setAuctionTypeImplicitly(r *openrtb_ext.RequestWrapper) {
 	if r.AT == 0 {
 		r.AT = 1
 	}
+}
+
+func setGPCImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) error {
+	secGPC := httpReq.Header.Get("Sec-GPC")
+	fmt.Printf("Sec-GPC Header: %s\n", secGPC)
+
+	if secGPC != "1" {
+		return nil
+	}
+
+	regExt, err := r.GetRegExt()
+	if err != nil {
+		return err
+	}
+
+	gpc := "1"
+	regExt.SetGPC(&gpc)
+	fmt.Printf("GPC set to: %s\n", *regExt.GetGPC())
+
+	return nil
 }
 
 // setSecBrowsingTopicsImplicitly updates user.data with data from request header 'Sec-Browsing-Topics'

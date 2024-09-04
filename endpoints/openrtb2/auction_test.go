@@ -5618,6 +5618,54 @@ func TestValidateOrFillCookieDeprecation(t *testing.T) {
 	}
 }
 
+func TestSetGPCImplicitly(t *testing.T) {
+	testCases := []struct {
+		description string
+		headerValue string
+		expectedGPC string
+		expectError bool
+	}{
+		{
+			description: "Sec-GPC header set to '1', GPC should be set to '1'",
+			headerValue: "1",
+			expectedGPC: "1",
+			expectError: false,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.description, func(t *testing.T) {
+			// Tworzenie przykładowego HTTP requesta
+			httpReq := &http.Request{
+				Header: http.Header{
+					"Sec-GPC": []string{test.headerValue},
+				},
+			}
+
+			// Inicjalizacja request wrappera
+			r := &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{}, // Dodaj tutaj poprawną strukturę
+			}
+
+			// Wywołanie setGPCImplicitly
+			err := setGPCImplicitly(httpReq, r)
+			if (err != nil) != test.expectError {
+				t.Errorf("Unexpected error state: got %v, expected error: %v", err, test.expectError)
+			}
+
+			// Sprawdzanie, czy GPC zostało ustawione
+			regExt, _ := r.GetRegExt()
+			gpcValue := regExt.GetGPC()
+
+			if gpcValue != nil && *gpcValue != test.expectedGPC {
+				t.Errorf("Expected GPC %v, but got %v", test.expectedGPC, *gpcValue)
+			} else if gpcValue == nil && test.expectedGPC != "" {
+				t.Errorf("Expected GPC to be set, but it was nil")
+			}
+		})
+	}
+}
+
 func TestValidateRequestCookieDeprecation(t *testing.T) {
 	testCases :=
 		[]struct {
