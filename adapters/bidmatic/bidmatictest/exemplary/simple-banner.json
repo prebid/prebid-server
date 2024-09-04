@@ -56,9 +56,43 @@
         "impIDs":["test-imp-id"]
       },
       "mockResponse": {
-        "status": 204
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "test-bid-id",
+                  "impid": "test-imp-id",
+                  "mtype": 2,
+                  "price": 3.5,
+                  "w": 900,
+                  "h": 250
+                }
+              ]
+            }
+          ]
+        }
       }
     }
   ],
-  "expectedBidResponses": []
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-bid-id",
+            "impid": "test-imp-id",
+            "mtype": 1,
+            "price": 3.5,
+            "w": 900,
+            "h": 250
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
 }
