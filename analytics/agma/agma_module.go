@@ -37,8 +37,9 @@ type AgmaLogger struct {
 	maxDuration       time.Duration
 	mux               sync.RWMutex
 	sigTermCh         chan os.Signal
-	// buffer            bytes.Buffer
-	buffer   AgmaLoggerBuffer
+	buffer            bytes.Buffer
+	//buffer   AgmaLoggerBuffer
+	read     func(p []byte) (n int, err error)
 	bufferCh chan []byte
 }
 
@@ -81,8 +82,8 @@ func newAgmaLogger(cfg config.AgmaAnalytics, sender httpSender, clock clock.Cloc
 		return nil, errors.New("Please configure at least one account for Agma Analytics")
 	}
 
-	// buffer := bytes.Buffer{}
-	buffer := newAgmaLoggerBuffer()
+	buffer := bytes.Buffer{}
+	//buffer := newAgmaLoggerBuffer()
 	buffer.Write([]byte("["))
 
 	return &AgmaLogger{
@@ -94,8 +95,11 @@ func newAgmaLogger(cfg config.AgmaAnalytics, sender httpSender, clock clock.Cloc
 		maxEventCount:     int64(cfg.Buffers.EventCount),
 		maxDuration:       pDuration,
 		buffer:            buffer,
-		bufferCh:          make(chan []byte),
-		sigTermCh:         make(chan os.Signal, 1),
+		read: func(p []byte) (n int, err error) {
+			return buffer.Read(p)
+		},
+		bufferCh:  make(chan []byte),
+		sigTermCh: make(chan os.Signal, 1),
 	}, nil
 }
 
@@ -169,7 +173,7 @@ func (l *AgmaLogger) flush() {
 	l.buffer.Write([]byte("]"))
 
 	payload := make([]byte, l.buffer.Len())
-	if numBytesCopied, err := l.buffer.Read(payload); err != nil || numBytesCopied == 0 {
+	if numBytesCopied, err := l.read(payload); err != nil || numBytesCopied == 0 {
 		glog.Warning("[AgmaAnalytics] fail to copy the buffer")
 		return
 	}
