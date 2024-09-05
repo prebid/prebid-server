@@ -706,6 +706,7 @@ func TestShutdownFlush(t *testing.T) {
 	go logger.start()
 	defer func() { logger.sigTermCh <- syscall.SIGTERM }()
 	logger.LogAuctionObject(&mockValidAuctionObject)
+	time.Sleep(100 * time.Millisecond)
 	logger.Shutdown()
 
 	mockReader.AssertCalled(t, "Read")

@@ -130,7 +130,6 @@ func (l *AgmaLogger) flush() {
 	l.mux.Lock()
 
 	if l.eventCount == 0 || l.buffer.Len() == 0 {
-		l.reset()
 		l.mux.Unlock()
 		return
 	}
