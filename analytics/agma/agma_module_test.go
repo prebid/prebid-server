@@ -1,6 +1,7 @@
 package agma
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -113,7 +114,7 @@ type MockLoggerReader struct {
 	mock.Mock
 }
 
-func (m *MockLoggerReader) Read(p []byte) (n int, err error) {
+func (m *MockLoggerReader) Read(p []byte, buffer bytes.Buffer) (int, error) {
 	m.Called()
 	return 0, io.EOF
 }
