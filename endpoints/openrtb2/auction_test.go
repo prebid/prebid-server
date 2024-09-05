@@ -5620,16 +5620,24 @@ func TestValidateOrFillCookieDeprecation(t *testing.T) {
 
 func TestSetGPCImplicitly(t *testing.T) {
 	testCases := []struct {
-		description string
-		headerValue string
-		expectedGPC string
-		expectError bool
+		description  string
+		headerValue  string
+		expectedGPC  string
+		expectError  bool
+		regs         *openrtb2.Regs
+		expectedRegs *openrtb2.Regs
 	}{
 		{
 			description: "Sec-GPC header set to '1', GPC should be set to '1'",
 			headerValue: "1",
 			expectedGPC: "1",
 			expectError: false,
+			regs: &openrtb2.Regs{
+				Ext: []byte(`{}`),
+			},
+			expectedRegs: &openrtb2.Regs{
+				Ext: []byte(`{"gpc":"1"}`),
+			},
 		},
 	}
 
@@ -5637,27 +5645,28 @@ func TestSetGPCImplicitly(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			httpReq := &http.Request{
 				Header: http.Header{
-					"Sec-GPC": []string{test.headerValue},
+					http.CanonicalHeaderKey("Sec-GPC"): []string{test.headerValue},
 				},
 			}
 
 			r := &openrtb_ext.RequestWrapper{
-				BidRequest: &openrtb2.BidRequest{}, // what I should add here???
+				BidRequest: &openrtb2.BidRequest{
+					Regs: test.regs,
+				},
 			}
 
+			// Wywołanie funkcji testowanej
 			err := setGPCImplicitly(httpReq, r)
-			if (err != nil) != test.expectError {
-				t.Errorf("Unexpected error state: got %v, expected error: %v", err, test.expectError)
+
+			// Weryfikacja błędu
+			if test.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
 
-			regExt, _ := r.GetRegExt()
-			gpcValue := regExt.GetGPC()
-
-			if gpcValue != nil && *gpcValue != test.expectedGPC {
-				t.Errorf("Expected GPC %v, but got %v", test.expectedGPC, *gpcValue)
-			} else if gpcValue == nil && test.expectedGPC != "" {
-				t.Errorf("Expected GPC to be set, but it was nil")
-			}
+			// Weryfikacja JSON
+			assert.JSONEq(t, string(test.expectedRegs.Ext), string(r.BidRequest.Regs.Ext))
 		})
 	}
 }

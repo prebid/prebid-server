@@ -63,10 +63,11 @@ const observeBrowsingTopics = "Observe-Browsing-Topics"
 const observeBrowsingTopicsValue = "?1"
 
 var (
-	dntKey      string = http.CanonicalHeaderKey("DNT")
-	dntDisabled int8   = 0
-	dntEnabled  int8   = 1
-	notAmp      int8   = 0
+	dntKey       string = http.CanonicalHeaderKey("DNT")
+	secGPCHdrKey string = http.CanonicalHeaderKey("Sec-GPC")
+	dntDisabled  int8   = 0
+	dntEnabled   int8   = 1
+	notAmp       int8   = 0
 )
 
 var accountIdSearchPath = [...]struct {
@@ -1522,7 +1523,7 @@ func setAuctionTypeImplicitly(r *openrtb_ext.RequestWrapper) {
 }
 
 func setGPCImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) error {
-	secGPC := httpReq.Header.Get("Sec-GPC")
+	secGPC := httpReq.Header.Get(secGPCHdrKey)
 	fmt.Printf("Sec-GPC Header: %s\n", secGPC)
 
 	if secGPC != "1" {
@@ -1537,6 +1538,20 @@ func setGPCImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) erro
 	gpc := "1"
 	regExt.SetGPC(&gpc)
 	fmt.Printf("GPC set to: %s\n", *regExt.GetGPC())
+
+	// Ręczna aktualizacja pola Regs.Ext
+	regExtBytes, err := json.Marshal(regExt)
+	if err != nil {
+		return err
+	}
+
+	// Debugging - sprawdzenie, co jest w regExtBytes
+	fmt.Printf("Zawartość regExtBytes przed przypisaniem: %s\n", string(regExtBytes))
+
+	r.BidRequest.Regs.Ext = regExtBytes // Zaktualizowanie pola Regs.Ext
+
+	// Debugging - sprawdzenie, co jest w r.BidRequest.Regs.Ext
+	fmt.Printf("Zaktualizowane Regs.Ext: %s\n", string(r.BidRequest.Regs.Ext))
 
 	return nil
 }
