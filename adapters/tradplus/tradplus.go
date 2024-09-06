@@ -39,10 +39,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 }
 
 func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, []error) {
-	errs := validateTradPlusExt(request)
-	if errs != nil {
-		return nil, errs
-	}
 
 	tradplusExt, err := getImpressionExt(&request.Imp[0])
 	if err != nil {
@@ -126,29 +122,6 @@ func transform(request *openrtb2.BidRequest) error {
 		}
 	}
 	return nil
-}
-
-func validateTradPlusExt(request *openrtb2.BidRequest) []error {
-	var extImpTradPlus openrtb_ext.ExtImpTradPlus
-	var errs []error
-	for _, imp := range request.Imp {
-		var extBidder adapters.ExtImpBidder
-		err := json.Unmarshal(imp.Ext, &extBidder)
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-		err = json.Unmarshal(extBidder.Bidder, &extImpTradPlus)
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-		if extImpTradPlus.AccountID == "" {
-			errs = append(errs, fmt.Errorf("imp.ext.accountId required"))
-			continue
-		}
-	}
-	return errs
 }
 
 // MakeBids make the bids for the bid response.
