@@ -50,11 +50,15 @@ func (a adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.Ex
 		return
 	}
 
+	headers := http.Header{}
+	headers.Add("Content-Type", "application/json;charset=utf-8")
+
 	requestData = append(requestData, &adapters.RequestData{
-		Method: "POST",
-		Uri:    a.getEndpoint(request),
-		Body:   requestJSON,
-		ImpIDs: openrtb_ext.GetImpIDs(request.Imp),
+		Method:  "POST",
+		Uri:     a.getEndpoint(request),
+		Body:    requestJSON,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
+		Headers: headers,
 	})
 
 	return
