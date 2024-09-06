@@ -1368,9 +1368,9 @@ func (re *RegExt) GetGPC() *string {
 	return &GPC
 }
 
-func (re *RegExt) SetGPC(GPC *string) {
-	re.gpc = GPC
-	re.gdprDirty = true
+func (re *RegExt) SetGPC(gpc *string) {
+	re.gpc = gpc
+	re.gpcDirty = true
 }
 
 func (re *RegExt) GetUSPrivacy() string {

@@ -1537,21 +1537,6 @@ func setGPCImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) erro
 
 	gpc := "1"
 	regExt.SetGPC(&gpc)
-	fmt.Printf("GPC set to: %s\n", *regExt.GetGPC())
-
-	// Ręczna aktualizacja pola Regs.Ext
-	regExtBytes, err := json.Marshal(regExt)
-	if err != nil {
-		return err
-	}
-
-	// Debugging - sprawdzenie, co jest w regExtBytes
-	fmt.Printf("Zawartość regExtBytes przed przypisaniem: %s\n", string(regExtBytes))
-
-	r.BidRequest.Regs.Ext = regExtBytes // Zaktualizowanie pola Regs.Ext
-
-	// Debugging - sprawdzenie, co jest w r.BidRequest.Regs.Ext
-	fmt.Printf("Zaktualizowane Regs.Ext: %s\n", string(r.BidRequest.Regs.Ext))
 
 	return nil
 }

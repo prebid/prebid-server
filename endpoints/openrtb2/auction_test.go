@@ -5621,15 +5621,15 @@ func TestValidateOrFillCookieDeprecation(t *testing.T) {
 func TestSetGPCImplicitly(t *testing.T) {
 	testCases := []struct {
 		description  string
-		headerValue  string
+		header       string
 		expectedGPC  string
 		expectError  bool
 		regs         *openrtb2.Regs
 		expectedRegs *openrtb2.Regs
 	}{
 		{
-			description: "Sec-GPC header set to '1', GPC should be set to '1'",
-			headerValue: "1",
+			description: "regs_ext_gpc_not_set_and_header_is_1",
+			header:      "1",
 			expectedGPC: "1",
 			expectError: false,
 			regs: &openrtb2.Regs{
@@ -5639,13 +5639,49 @@ func TestSetGPCImplicitly(t *testing.T) {
 				Ext: []byte(`{"gpc":"1"}`),
 			},
 		},
+		{
+			description: "sec_gpc_header_not_set_gpc_should_not_be_modified",
+			header:      "",
+			expectedGPC: "",
+			expectError: false,
+			regs: &openrtb2.Regs{
+				Ext: []byte(`{}`),
+			},
+			expectedRegs: &openrtb2.Regs{
+				Ext: []byte(`{}`),
+			},
+		},
+		{
+			description: "sec_gpc_header_set_to_2_gpc_should_not_be_modified",
+			header:      "2",
+			expectedGPC: "",
+			expectError: false,
+			regs: &openrtb2.Regs{
+				Ext: []byte(`{}`),
+			},
+			expectedRegs: &openrtb2.Regs{
+				Ext: []byte(`{}`),
+			},
+		},
+		{
+			description: "sec_gpc_header_set_to_1_and_regs_ext_contains_other_data",
+			header:      "1",
+			expectedGPC: "1",
+			expectError: false,
+			regs: &openrtb2.Regs{
+				Ext: []byte(`{"some_other_field":"some_value"}`),
+			},
+			expectedRegs: &openrtb2.Regs{
+				Ext: []byte(`{"some_other_field":"some_value","gpc":"1"}`),
+			},
+		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
 			httpReq := &http.Request{
 				Header: http.Header{
-					http.CanonicalHeaderKey("Sec-GPC"): []string{test.headerValue},
+					http.CanonicalHeaderKey("Sec-GPC"): []string{test.header},
 				},
 			}
 
@@ -5655,17 +5691,14 @@ func TestSetGPCImplicitly(t *testing.T) {
 				},
 			}
 
-			// Wywołanie funkcji testowanej
 			err := setGPCImplicitly(httpReq, r)
 
-			// Weryfikacja błędu
 			if test.expectError {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
 			}
-
-			// Weryfikacja JSON
+			assert.NoError(t, r.RebuildRequest())
 			assert.JSONEq(t, string(test.expectedRegs.Ext), string(r.BidRequest.Regs.Ext))
 		})
 	}
