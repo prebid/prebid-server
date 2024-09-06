@@ -1,4 +1,4 @@
-endpoint: "http://capi.connatix.com/rtb/ortb"
+endpoint: "https://capi.connatix.com/rtb/ortb"
 maintainer:
   email: "some cnx email" // work in progress
 gvlVendorID: 143
