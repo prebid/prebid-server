@@ -62,7 +62,7 @@ type ExtRequestPrebid struct {
 	MultiBid             []*ExtMultiBid                  `json:"multibid,omitempty"`
 	MultiBidMap          map[string]ExtMultiBid          `json:"-"`
 	Passthrough          json.RawMessage                 `json:"passthrough,omitempty"`
-	SChains              []*ExtRequestPrebidSChain       `json:"schains,omitempty"`
+	SChains              []*ExtRequestPrebidSChain       `json:"schains,omitempty"` //!!!! delete from req.ext
 	Sdk                  *ExtRequestSdk                  `json:"sdk,omitempty"`
 	Server               *ExtRequestPrebidServer         `json:"server,omitempty"`
 	StoredRequest        *ExtStoredRequest               `json:"storedrequest,omitempty"`

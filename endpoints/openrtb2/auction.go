@@ -784,6 +784,10 @@ func (deps *endpointDeps) validateRequest(account *config.Account, httpReq *http
 		}
 	}
 
+	if err := deps.validateSourceSChain(req); err != nil {
+		return []error{err}
+	}
+
 	var requestAliases map[string]string
 	reqExt, err := req.GetRequestExt()
 	if err != nil {
@@ -810,7 +814,7 @@ func (deps *endpointDeps) validateRequest(account *config.Account, httpReq *http
 			return []error{err}
 		}
 
-		if err := validateSChains(reqPrebid.SChains); err != nil {
+		if err := validateSChains(reqPrebid.SChains); err != nil { //!!! delete this? should be in req.Source.SChain
 			return []error{err}
 		}
 
@@ -823,7 +827,7 @@ func (deps *endpointDeps) validateRequest(account *config.Account, httpReq *http
 		}
 	}
 
-	if err := mapSChains(req); err != nil {
+	if err := mapSChains(req); err != nil { // do we need this?
 		return []error{err}
 	}
 
@@ -1279,7 +1283,7 @@ func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases 
 	// Check if the buyeruids are valid
 	prebid := userExt.GetPrebid()
 	if prebid != nil {
-		if len(prebid.BuyerUIDs) < 1 {
+		if len(prebid.BuyerUIDs) < 1 { // how to replace validation to user.buyeruid(string)
 			return append(errL, errors.New(`request.user.ext.prebid requires a "buyeruids" property with at least one ID defined. If none exist, then request.user.ext.prebid should not be defined.`))
 		}
 		for bidderName := range prebid.BuyerUIDs {
@@ -1294,9 +1298,8 @@ func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases 
 	}
 
 	// Check Universal User ID
-	eids := userExt.GetEid()
-	if eids != nil {
-		eidsValue := *eids
+	if req.User.EIDs != nil {
+		eidsValue := req.User.EIDs
 		for eidIndex, eid := range eidsValue {
 			if eid.Source == "" {
 				return append(errL, fmt.Errorf("request.user.ext.eids[%d] missing required field: \"source\"", eidIndex))
@@ -1370,7 +1373,20 @@ func validateDevice(device *openrtb2.Device) error {
 	if device.Geo != nil && device.Geo.Accuracy < 0 {
 		return errors.New("request.device.geo.accuracy must be a positive number")
 	}
-
+	if device.SUA != nil {
+		if len(device.SUA.Browsers) > 0 {
+			for i, browser := range device.SUA.Browsers {
+				if len(browser.Brand) == 0 {
+					return fmt.Errorf("request.device.sua.browsers[%d].brand cannot be empty", i)
+				}
+			}
+		}
+		if device.SUA.Platform != nil {
+			if len(device.SUA.Platform.Brand) == 0 {
+				return errors.New("request.device.sua.platform.brand cannot be empty")
+			}
+		}
+	}
 	return nil
 }
 
@@ -1465,6 +1481,29 @@ func fillChannel(reqWrapper *openrtb_ext.RequestWrapper, isAmp bool) error {
 	}
 	return nil
 
+}
+
+func (deps *endpointDeps) validateSourceSChain(req *openrtb_ext.RequestWrapper) error {
+	if req.Source.SChain == nil {
+		return nil
+	}
+	sChain := req.Source.SChain
+
+	if len(sChain.Ver) == 0 {
+		return errors.New("request.source.schain.ver cannot be empty")
+	}
+	if len(sChain.Nodes) == 0 {
+		return errors.New("request.source.schain.nodes cannot be empty")
+	}
+	for i, node := range sChain.Nodes {
+		if len(node.ASI) == 0 {
+			return fmt.Errorf("request.source.schain.nodes[%d].asi cannot be empty", i)
+		}
+		if len(node.SID) == 0 {
+			return fmt.Errorf("request.source.schain.nodes[%d].sid cannot be empty", i)
+		}
+	}
+	return nil
 }
 
 func sanitizeRequest(r *openrtb_ext.RequestWrapper, ipValidator iputil.IPValidator) {

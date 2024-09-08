@@ -24,7 +24,7 @@ type ExtUser struct {
 
 // ExtUserPrebid defines the contract for bidrequest.user.ext.prebid
 type ExtUserPrebid struct {
-	BuyerUIDs map[string]string `json:"buyeruids,omitempty"`
+	BuyerUIDs map[string]string `json:"buyeruids,omitempty"` // delete this? now it's user.buyeruid
 }
 
 type ConsentedProvidersSettingsIn struct {
