@@ -11,3 +11,10 @@ capabilities:
     mediaTypes:
       - banner
       - video
+userSync:
+  iframe:
+    url: https://cds.connatix.com/p/526015/cnx_usync.html?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&callback={{.RedirectURL}}
+    userMacro: "[UID]"
+  redirect:
+    url: "http://capi.connatix.com/us/pixel?pId=52&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&callback={{.RedirectURL}}"
+    userMacro: "[UID]"
