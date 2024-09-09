@@ -89,6 +89,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderConnectAd,
 	BidderConsumable,
 	BidderConversant,
+	BidderCopper6ssp,
 	BidderCpmstar,
 	BidderCriteo,
 	BidderCWire,
@@ -106,6 +107,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderEmxDigital,
 	BidderEPlanning,
 	BidderEpom,
+	BidderEscalax,
 	BidderEVolution,
 	BidderFlipp,
 	BidderFreewheelSSP,
@@ -162,6 +164,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderOpenWeb,
 	BidderOpenx,
 	BidderOperaads,
+	BidderOraki,
 	BidderOrbidder,
 	BidderOutbrain,
 	BidderOwnAdx,
@@ -412,6 +415,7 @@ const (
 	BidderConnectAd         BidderName = "connectad"
 	BidderConsumable        BidderName = "consumable"
 	BidderConversant        BidderName = "conversant"
+	BidderCopper6ssp        BidderName = "copper6ssp"
 	BidderCpmstar           BidderName = "cpmstar"
 	BidderCriteo            BidderName = "criteo"
 	BidderCWire             BidderName = "cwire"
@@ -429,6 +433,7 @@ const (
 	BidderEmxDigital        BidderName = "emx_digital"
 	BidderEPlanning         BidderName = "eplanning"
 	BidderEpom              BidderName = "epom"
+	BidderEscalax           BidderName = "escalax"
 	BidderEVolution         BidderName = "e_volution"
 	BidderFlipp             BidderName = "flipp"
 	BidderFreewheelSSP      BidderName = "freewheelssp"
@@ -485,6 +490,7 @@ const (
 	BidderOpenWeb           BidderName = "openweb"
 	BidderOpenx             BidderName = "openx"
 	BidderOperaads          BidderName = "operaads"
+	BidderOraki             BidderName = "oraki"
 	BidderOrbidder          BidderName = "orbidder"
 	BidderOutbrain          BidderName = "outbrain"
 	BidderOwnAdx            BidderName = "ownadx"

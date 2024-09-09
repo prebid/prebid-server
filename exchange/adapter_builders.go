@@ -73,6 +73,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/connectad"
 	"github.com/prebid/prebid-server/v2/adapters/consumable"
 	"github.com/prebid/prebid-server/v2/adapters/conversant"
+	"github.com/prebid/prebid-server/v2/adapters/copper6ssp"
 	"github.com/prebid/prebid-server/v2/adapters/cpmstar"
 	"github.com/prebid/prebid-server/v2/adapters/criteo"
 	"github.com/prebid/prebid-server/v2/adapters/cwire"
@@ -90,6 +91,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/emtv"
 	"github.com/prebid/prebid-server/v2/adapters/eplanning"
 	"github.com/prebid/prebid-server/v2/adapters/epom"
+	"github.com/prebid/prebid-server/v2/adapters/escalax"
 	"github.com/prebid/prebid-server/v2/adapters/flipp"
 	"github.com/prebid/prebid-server/v2/adapters/freewheelssp"
 	"github.com/prebid/prebid-server/v2/adapters/frvradn"
@@ -144,6 +146,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/openweb"
 	"github.com/prebid/prebid-server/v2/adapters/openx"
 	"github.com/prebid/prebid-server/v2/adapters/operaads"
+	"github.com/prebid/prebid-server/v2/adapters/oraki"
 	"github.com/prebid/prebid-server/v2/adapters/orbidder"
 	"github.com/prebid/prebid-server/v2/adapters/outbrain"
 	"github.com/prebid/prebid-server/v2/adapters/ownadx"
@@ -296,6 +299,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderConnectAd:         connectad.Builder,
 		openrtb_ext.BidderConsumable:        consumable.Builder,
 		openrtb_ext.BidderConversant:        conversant.Builder,
+		openrtb_ext.BidderCopper6ssp:        copper6ssp.Builder,
 		openrtb_ext.BidderCpmstar:           cpmstar.Builder,
 		openrtb_ext.BidderCriteo:            criteo.Builder,
 		openrtb_ext.BidderCWire:             cwire.Builder,
@@ -313,6 +317,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderEmxDigital:        cadentaperturemx.Builder,
 		openrtb_ext.BidderEPlanning:         eplanning.Builder,
 		openrtb_ext.BidderEpom:              epom.Builder,
+		openrtb_ext.BidderEscalax:           escalax.Builder,
 		openrtb_ext.BidderEVolution:         evolution.Builder,
 		openrtb_ext.BidderFlipp:             flipp.Builder,
 		openrtb_ext.BidderFreewheelSSP:      freewheelssp.Builder,
@@ -370,6 +375,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderOpenWeb:           openweb.Builder,
 		openrtb_ext.BidderOpenx:             openx.Builder,
 		openrtb_ext.BidderOperaads:          operaads.Builder,
+		openrtb_ext.BidderOraki:             oraki.Builder,
 		openrtb_ext.BidderOrbidder:          orbidder.Builder,
 		openrtb_ext.BidderOutbrain:          outbrain.Builder,
 		openrtb_ext.BidderOwnAdx:            ownadx.Builder,
