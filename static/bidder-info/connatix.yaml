@@ -1,6 +1,6 @@
 endpoint: "https://capi.connatix.com/rtb/ortb"
 maintainer:
-  email: "some cnx email" // work in progress
+  email: "pubsolutions@connatix.com"
 gvlVendorID: 143
 capabilities:
   app:
