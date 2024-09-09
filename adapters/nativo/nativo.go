@@ -68,12 +68,12 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, externalRequest *adapte
 				errs = append(errs, err)
 				continue
 			}
-			
+
 			b := &adapters.TypedBid{
 				Bid:     &seatBid.Bid[i],
 				BidType: bidType,
 			}
-			
+
 			bidResponse.Bids = append(bidResponse.Bids, b)
 		}
 	}
