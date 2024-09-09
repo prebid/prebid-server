@@ -3,8 +3,8 @@
     "banner": {
         "format": [
           {
-            "w": 320,
-            "h": 50
+            "w": 300,
+            "h": 250
           }
         ]
       },
@@ -21,7 +21,7 @@
           },
           "pubmatic": {
             "publisherId": "158326",
-            "adSlot": "1957464"
+            "adSlot": "3029490"
           },
           "rhythmone": {
             "placementId": "213696",
