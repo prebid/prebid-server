@@ -814,9 +814,9 @@ func (deps *endpointDeps) validateRequest(account *config.Account, httpReq *http
 			return []error{err}
 		}
 
-		if err := validateSChains(reqPrebid.SChains); err != nil { //!!! delete this? should be in req.Source.SChain
+		/*if err := validateSChains(reqPrebid.SChains); err != nil { //!!! delete this? should be in req.Source.SChain
 			return []error{err}
-		}
+		}*/
 
 		if err := deps.validateEidPermissions(reqPrebid.Data, requestAliases); err != nil {
 			return []error{err}
@@ -1340,15 +1340,11 @@ func validateRegs(req *openrtb_ext.RequestWrapper, gpp gpplib.GppContainer) []er
 				Message:     "regs.gdpr signal conflicts with GPP (regs.gpp_sid) and will be ignored",
 				WarningCode: errortypes.InvalidPrivacyConsentWarningCode})
 		}
-	}
-	regsExt, err := req.GetRegExt()
-	if err != nil {
-		return append(errL, fmt.Errorf("request.regs.ext is invalid: %v", err))
-	}
 
-	gdpr := regsExt.GetGDPR()
-	if gdpr != nil && *gdpr != 0 && *gdpr != 1 {
-		return append(errL, errors.New("request.regs.ext.gdpr must be either 0 or 1"))
+		reqGDPR := req.BidRequest.Regs.GDPR
+		if reqGDPR != nil && *reqGDPR != 0 && *reqGDPR != 1 {
+			return append(errL, errors.New("request.regs.gdpr must be either 0 or 1"))
+		}
 	}
 
 	return errL
