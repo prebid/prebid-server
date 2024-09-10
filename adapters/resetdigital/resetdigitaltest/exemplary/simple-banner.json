@@ -36,14 +36,13 @@
           "ext": {
             "gpid": ""
           },
-          "force_bid": false,
           "imp_id": "001",
           "media_types": {
             "banner": {
               "sizes": [
                 [
-                  300,
-                  250
+                  250,
+                  300
                 ]
               ]
             },
