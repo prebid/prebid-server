@@ -43,7 +43,6 @@ import (
 	"github.com/prebid/prebid-server/v2/prebid_cache_client"
 	"github.com/prebid/prebid-server/v2/privacy/ccpa"
 	"github.com/prebid/prebid-server/v2/privacy/lmt"
-	"github.com/prebid/prebid-server/v2/schain"
 	"github.com/prebid/prebid-server/v2/stored_requests"
 	"github.com/prebid/prebid-server/v2/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/v2/stored_responses"
@@ -814,10 +813,6 @@ func (deps *endpointDeps) validateRequest(account *config.Account, httpReq *http
 			return []error{err}
 		}
 
-		/*if err := validateSChains(reqPrebid.SChains); err != nil { //!!! delete this? should be in req.Source.SChain
-			return []error{err}
-		}*/
-
 		if err := deps.validateEidPermissions(reqPrebid.Data, requestAliases); err != nil {
 			return []error{err}
 		}
@@ -825,10 +820,6 @@ func (deps *endpointDeps) validateRequest(account *config.Account, httpReq *http
 		if err := currency.ValidateCustomRates(reqPrebid.CurrencyConversions); err != nil {
 			return []error{err}
 		}
-	}
-
-	if err := mapSChains(req); err != nil { // do we need this?
-		return []error{err}
 	}
 
 	if err := validateOrFillChannel(req, isAmp); err != nil {
@@ -934,32 +925,6 @@ func (deps *endpointDeps) validateRequest(account *config.Account, httpReq *http
 	return errL
 }
 
-// mapSChains maps an schain defined in an ORTB 2.4 location (req.ext.schain) to the ORTB 2.5 location
-// (req.source.ext.schain) if no ORTB 2.5 schain (req.source.ext.schain, req.ext.prebid.schains) exists.
-// An ORTB 2.4 schain is always deleted from the 2.4 location regardless of whether an ORTB 2.5 schain exists.
-func mapSChains(req *openrtb_ext.RequestWrapper) error {
-	reqExt, err := req.GetRequestExt()
-	if err != nil {
-		return fmt.Errorf("req.ext is invalid: %v", err)
-	}
-	sourceExt, err := req.GetSourceExt()
-	if err != nil {
-		return fmt.Errorf("source.ext is invalid: %v", err)
-	}
-
-	reqExtSChain := reqExt.GetSChain()
-	reqExt.SetSChain(nil)
-
-	if reqPrebid := reqExt.GetPrebid(); reqPrebid != nil && reqPrebid.SChains != nil {
-		return nil
-	} else if sourceExt.GetSChain() != nil {
-		return nil
-	} else if reqExtSChain != nil {
-		sourceExt.SetSChain(reqExtSChain)
-	}
-	return nil
-}
-
 func validateAndFillSourceTID(req *openrtb_ext.RequestWrapper, generateRequestID bool, hasStoredBidRequest bool, isAmp bool) error {
 	if req.Source == nil {
 		req.Source = &openrtb2.Source{}
@@ -1014,11 +979,6 @@ func (deps *endpointDeps) validateBidAdjustmentFactors(adjustmentFactors map[str
 		}
 	}
 	return nil
-}
-
-func validateSChains(sChains []*openrtb_ext.ExtRequestPrebidSChain) error {
-	_, err := schain.BidderToPrebidSChains(sChains)
-	return err
 }
 
 func (deps *endpointDeps) validateEidPermissions(prebid *openrtb_ext.ExtRequestPrebidData, requestAliases map[string]string) error {
@@ -1283,7 +1243,7 @@ func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases 
 	// Check if the buyeruids are valid
 	prebid := userExt.GetPrebid()
 	if prebid != nil {
-		if len(prebid.BuyerUIDs) < 1 { // how to replace validation to user.buyeruid(string)
+		if len(prebid.BuyerUIDs) < 1 {
 			return append(errL, errors.New(`request.user.ext.prebid requires a "buyeruids" property with at least one ID defined. If none exist, then request.user.ext.prebid should not be defined.`))
 		}
 		for bidderName := range prebid.BuyerUIDs {

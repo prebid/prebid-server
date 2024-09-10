@@ -420,11 +420,11 @@ func (rw *RequestWrapper) Clone() *RequestWrapper {
 type UserExt struct {
 	ext                                map[string]json.RawMessage
 	extDirty                           bool
-	consent                            *string // delete this? now it's a user.consent
+	consent                            *string
 	consentDirty                       bool
 	prebid                             *ExtUserPrebid
 	prebidDirty                        bool
-	eids                               *[]openrtb2.EID // delete this? now it's user.eids
+	eids                               *[]openrtb2.EID
 	eidsDirty                          bool
 	consentedProvidersSettingsIn       *ConsentedProvidersSettingsIn
 	consentedProvidersSettingsInDirty  bool
