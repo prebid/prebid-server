@@ -13,9 +13,6 @@ import (
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
-// MaximumBids is the maximum number of bids that can be returned by this adapter.
-const maxBids = 1
-
 type adapter struct {
 	endpoint    *template.Template
 	endpointUri string
@@ -30,7 +27,6 @@ type resetDigitalSite struct {
 	Referrer string `json:"referrer"`
 }
 type resetDigitalImp struct {
-	ForceBid   bool                   `json:"force_bid"`
 	ZoneID     resetDigitalImpZone    `json:"zone_id"`
 	BidID      string                 `json:"bid_id"`
 	ImpID      string                 `json:"imp_id"`
@@ -81,7 +77,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 func getHeaders(request *openrtb2.BidRequest) http.Header {
 	headers := http.Header{}
 
-	if request != nil && request.Device != nil && request.Site != nil {
+	if request != nil && request.Device != nil && request.Site != nil { // what about request.App? Do we need to do something different with Referrer in the app case assuming we care about app?
 		addNonEmptyHeaders(&headers, map[string]string{
 			"Referer":         request.Site.Page,
 			"Accept-Language": request.Device.Language,
@@ -154,24 +150,32 @@ func processDataFromRequest(requestData *openrtb2.BidRequest, imp openrtb2.Imp, 
 	})
 
 	if bidType == openrtb_ext.BidTypeBanner && imp.Banner != nil {
-		tempH := *imp.Banner.H
-		tempW := *imp.Banner.W
-
+		var tempH, tempW int64
+		if imp.Banner.H != nil {
+			tempH = *imp.Banner.H
+		}
+		if imp.Banner.W != nil {
+			tempW = *imp.Banner.W
+		}
 		if tempH > 0 && tempW > 0 {
 			reqData.Imps[0].MediaTypes.Banner.Sizes = append(
 				reqData.Imps[0].MediaTypes.Banner.Sizes,
-				[]int64{tempH, tempW},
+				[]int64{tempW, tempH},
 			)
 		}
 	}
 	if bidType == openrtb_ext.BidTypeVideo && imp.Video != nil {
-		tempH := *imp.Video.H
-		tempW := *imp.Video.W
-
+		var tempH, tempW int64
+		if imp.Video.H != nil {
+			tempH = *imp.Video.H
+		}
+		if imp.Video.W != nil {
+			tempW = *imp.Video.W
+		}
 		if tempH > 0 && tempW > 0 {
 			reqData.Imps[0].MediaTypes.Video.Sizes = append(
 				reqData.Imps[0].MediaTypes.Video.Sizes,
-				[]int64{tempH, tempW},
+				[]int64{tempW, tempH},
 			)
 		}
 	}
@@ -206,6 +210,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
 
+	var errs []error
 	requestImps := make(map[string]openrtb2.Imp)
 	for _, imp := range request.Imp {
 		requestImps[imp.ID] = imp
@@ -214,8 +219,10 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	for i := range response.Bids {
 		resetDigitalBid := &response.Bids[i]
 
-		bid := getBidFromResponse(resetDigitalBid)
+		bid, err := getBidFromResponse(resetDigitalBid)
+		// handle the error
 		if bid == nil {
+			// it would be better to return an error here
 			continue
 		}
 
@@ -236,12 +243,13 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		bidResponse.Currency = "USD"
 	}
 
-	return bidResponse, nil
+	return bidResponse, errs
 }
 
-func getBidFromResponse(bidResponse *resetDigitalBid) *openrtb2.Bid {
+func getBidFromResponse(bidResponse *resetDigitalBid) (*openrtb2.Bid, error) {
 	if bidResponse.CPM == 0 {
-		return nil
+		// brian to check how to report this
+		return nil, nil
 	}
 
 	bid := &openrtb2.Bid{
@@ -255,12 +263,17 @@ func getBidFromResponse(bidResponse *resetDigitalBid) *openrtb2.Bid {
 
 	if i, err := strconv.ParseInt(bidResponse.W, 10, 64); err == nil && i > 0 {
 		bid.W = i
-	}
+	} else if err != nil {
+		return nil, err
+	} // the error should be returned here if ParseInt fails
+
 	if i, err := strconv.ParseInt(bidResponse.H, 10, 64); err == nil && i > 0 {
 		bid.H = i
-	}
+	} else if err != nil {
+		return nil, err
+	} // the error should be returned here if ParseInt fails
 
-	return bid
+	return bid, nil
 }
 
 func getBidType(imp openrtb2.Imp) (openrtb_ext.BidType, error) {
@@ -273,25 +286,6 @@ func getBidType(imp openrtb2.Imp) (openrtb_ext.BidType, error) {
 	}
 
 	return "", fmt.Errorf("failed to find matching imp for bid %s", imp.ID)
-}
-
-func getBidTypes(imp openrtb2.Imp) ([]openrtb_ext.BidType, error) {
-	var bidTypes []openrtb_ext.BidType
-
-	if imp.Banner != nil {
-		bidTypes = append(bidTypes, openrtb_ext.BidTypeBanner)
-	}
-	if imp.Video != nil {
-		bidTypes = append(bidTypes, openrtb_ext.BidTypeVideo)
-	}
-	if imp.Audio != nil {
-		bidTypes = append(bidTypes, openrtb_ext.BidTypeAudio)
-	}
-	if len(bidTypes) == 0 {
-		return nil, fmt.Errorf("failed to find matching imp for bid %s", imp.ID)
-	}
-
-	return bidTypes, nil
 }
 
 func GetMediaTypeForImp(reqImps map[string]openrtb2.Imp, bidImpID string) (openrtb_ext.BidType, error) {
