@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/prebid/openrtb/v17/adcom1"
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/adcom1"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/config"
@@ -23,7 +23,7 @@ func TestJsonSamples(t *testing.T) {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	adapterstest.RunJSONBidderTest(t, "avocet", bidder)
+	adapterstest.RunJSONBidderTest(t, "avocettest", bidder)
 }
 
 func TestAvocetAdapter_MakeRequests(t *testing.T) {

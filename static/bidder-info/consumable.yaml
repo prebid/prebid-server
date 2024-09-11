@@ -11,6 +11,8 @@ capabilities:
     - banner
 userSync:
   redirect:
-    url: "https://e.serverbid.com/udb/9969/match?gdpr={{.GDPR}}&euconsent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir={{.RedirectURL}}"
+    url: "https://e.serverbid.com/udb/9969/match?gdpr={{.GDPR}}&euconsent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redir={{.RedirectURL}}"
     userMacro: ""
     # consumable appends the user id to end of the redirect url and does not utilize a macro
+openrtb:
+  gpp-supported: true   

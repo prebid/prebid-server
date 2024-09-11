@@ -25,6 +25,37 @@ const (
 	ActionNone   Action = "no_action" // the hook does not want to take any action
 )
 
+// Messages in format: {"module": {"hook": ["msg1", "msg2"]}}
+type Messages map[string]map[string][]string
+
+// ModulesOutcome represents result of hooks execution
+// ready to be added to BidResponse.
+//
+// Errors and Warnings hold the error and warning
+// messages returned from executing individual hooks.
+type ModulesOutcome struct {
+	Errors   Messages      `json:"errors,omitempty"`
+	Warnings Messages      `json:"warnings,omitempty"`
+	Trace    *TraceOutcome `json:"trace,omitempty"`
+}
+
+// TraceOutcome holds the result of executing hooks at all stages.
+type TraceOutcome struct {
+	// ExecutionTime is the sum of ExecutionTime of all stages.
+	ExecutionTime
+	Stages []Stage `json:"stages"`
+}
+
+// Stage holds the result of executing hooks at specific stage.
+// May contain multiple StageOutcome results for stages executed
+// multiple times (ex. for each bidder-request/response stages).
+type Stage struct {
+	// ExecutionTime is set to the longest ExecutionTime of its children.
+	ExecutionTime
+	Stage    string         `json:"stage"`
+	Outcomes []StageOutcome `json:"outcomes"`
+}
+
 // StageOutcome represents the result of executing specific stage.
 type StageOutcome struct {
 	// ExecutionTime is the sum of ExecutionTime of all its groups
@@ -51,7 +82,7 @@ type HookOutcome struct {
 	Status        Status                  `json:"status"`
 	Action        Action                  `json:"action"`
 	Message       string                  `json:"message"` // arbitrary string value returned from hook execution
-	DebugMessages []string                `json:"debug_messages"`
+	DebugMessages []string                `json:"debug_messages,omitempty"`
 	Errors        []string                `json:"-"`
 	Warnings      []string                `json:"-"`
 }
@@ -63,5 +94,5 @@ type HookID struct {
 }
 
 type ExecutionTime struct {
-	ExecutionTimeMillis time.Duration `json:"execution_time_millis"`
+	ExecutionTimeMillis time.Duration `json:"execution_time_millis,omitempty"`
 }

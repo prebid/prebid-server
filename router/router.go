@@ -22,9 +22,11 @@ import (
 	"github.com/prebid/prebid-server/experiment/adscert"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/hooks"
+	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/metrics"
 	metricsConf "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/modules"
+	"github.com/prebid/prebid-server/modules/moduledeps"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
@@ -53,6 +55,10 @@ import (
 // This function stores the file contents in memory, and should not be used on large directories.
 // If the root directory, or any of the files in it, cannot be read, then the program will exit.
 func NewJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.BidderParamValidator, aliases map[string]string) httprouter.Handle {
+	return newJsonDirectoryServer(schemaDirectory, validator, aliases, openrtb_ext.GetAliasBidderToParent())
+}
+
+func newJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.BidderParamValidator, aliases map[string]string, yamlAliases map[openrtb_ext.BidderName]openrtb_ext.BidderName) httprouter.Handle {
 	// Slurp the files into memory first, since they're small and it minimizes request latency.
 	files, err := os.ReadDir(schemaDirectory)
 	if err != nil {
@@ -69,6 +75,11 @@ func NewJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.Bidder
 			glog.Fatalf("Schema exists for an unknown bidder: %s", bidder)
 		}
 		data[bidder] = json.RawMessage(validator.Schema(bidderName))
+	}
+
+	// Add in any aliases
+	for aliasName, parentBidder := range yamlAliases {
+		data[string(aliasName)] = json.RawMessage(validator.Schema(parentBidder))
 	}
 
 	// Add in any default aliases
@@ -168,7 +179,8 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		syncerKeys = append(syncerKeys, k)
 	}
 
-	repo, moduleStageNames, err := modules.NewBuilder().Build(cfg.Hooks.Modules, generalHttpClient)
+	moduleDeps := moduledeps.ModuleDeps{HTTPClient: generalHttpClient}
+	repo, moduleStageNames, err := modules.NewBuilder().Build(cfg.Hooks.Modules, moduleDeps)
 	if err != nil {
 		glog.Fatalf("Failed to init hook modules: %v", err)
 	}
@@ -187,7 +199,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	}
 
 	activeBidders := exchange.GetActiveBidders(cfg.BidderInfos)
-	disabledBidders := exchange.GetDisabledBiddersErrorMessages(cfg.BidderInfos)
+	disabledBidders := exchange.GetDisabledBidderWarningMessages(cfg.BidderInfos)
 
 	defaultAliases, defReqJSON := readDefaultRequest(cfg.DefReqConfig)
 	if err := validateDefaultAliases(defaultAliases); err != nil {
@@ -211,20 +223,22 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		glog.Fatalf("Failed to create ads cert signer: %v", err)
 	}
 
+	tmaxAdjustments := exchange.ProcessTMaxAdjustments(cfg.TmaxAdjustments)
 	planBuilder := hooks.NewExecutionPlanBuilder(cfg.Hooks, repo)
-	theExchange := exchange.NewExchange(adapters, cacheClient, cfg, syncersByBidder, r.MetricsEngine, cfg.BidderInfos, gdprPermsBuilder, tcf2CfgBuilder, rateConvertor, categoriesFetcher, adsCertSigner)
+	macroReplacer := macros.NewStringIndexBasedReplacer()
+	theExchange := exchange.NewExchange(adapters, cacheClient, cfg, syncersByBidder, r.MetricsEngine, cfg.BidderInfos, gdprPermsBuilder, rateConvertor, categoriesFetcher, adsCertSigner, macroReplacer)
 	var uuidGenerator uuidutil.UUIDRandomGenerator
-	openrtbEndpoint, err := openrtb2.NewEndpoint(uuidGenerator, theExchange, paramsValidator, fetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBidders, storedRespFetcher, planBuilder)
+	openrtbEndpoint, err := openrtb2.NewEndpoint(uuidGenerator, theExchange, paramsValidator, fetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBidders, storedRespFetcher, planBuilder, tmaxAdjustments)
 	if err != nil {
 		glog.Fatalf("Failed to create the openrtb2 endpoint handler. %v", err)
 	}
 
-	ampEndpoint, err := openrtb2.NewAmpEndpoint(uuidGenerator, theExchange, paramsValidator, ampFetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBidders, storedRespFetcher, planBuilder)
+	ampEndpoint, err := openrtb2.NewAmpEndpoint(uuidGenerator, theExchange, paramsValidator, ampFetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBidders, storedRespFetcher, planBuilder, tmaxAdjustments)
 	if err != nil {
 		glog.Fatalf("Failed to create the amp endpoint handler. %v", err)
 	}
 
-	videoEndpoint, err := openrtb2.NewVideoEndpoint(uuidGenerator, theExchange, paramsValidator, fetcher, videoFetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBidders, cacheClient)
+	videoEndpoint, err := openrtb2.NewVideoEndpoint(uuidGenerator, theExchange, paramsValidator, fetcher, videoFetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBidders, cacheClient, tmaxAdjustments)
 	if err != nil {
 		glog.Fatalf("Failed to create the video endpoint handler. %v", err)
 	}
@@ -248,18 +262,19 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 
 	// vtrack endpoint
 	if cfg.VTrack.Enabled {
-		vtrackEndpoint := events.NewVTrackEndpoint(cfg, accounts, cacheClient, cfg.BidderInfos)
+		vtrackEndpoint := events.NewVTrackEndpoint(cfg, accounts, cacheClient, cfg.BidderInfos, r.MetricsEngine)
 		r.POST("/vtrack", vtrackEndpoint)
 	}
 
 	// event endpoint
-	eventEndpoint := events.NewEventEndpoint(cfg, accounts, pbsAnalytics)
+	eventEndpoint := events.NewEventEndpoint(cfg, accounts, pbsAnalytics, r.MetricsEngine)
 	r.GET("/event", eventEndpoint)
 
 	userSyncDeps := &pbs.UserSyncDeps{
 		HostCookieConfig: &(cfg.HostCookie),
 		ExternalUrl:      cfg.ExternalURL,
 		RecaptchaSecret:  cfg.RecaptchaSecret,
+		PriorityGroups:   cfg.UserSync.PriorityGroups,
 	}
 
 	r.GET("/setuid", endpoints.NewSetUIDEndpoint(cfg, syncersByBidder, gdprPermsBuilder, tcf2CfgBuilder, pbsAnalytics, accounts, r.MetricsEngine))

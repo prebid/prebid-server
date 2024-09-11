@@ -13,11 +13,16 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 )
 
 type SovrnAdapter struct {
 	URI string
+}
+
+type sovrnImpExt struct {
+	Bidder     openrtb_ext.ExtImpSovrn `json:"bidder"`
+	AdUnitCode string                  `json:"adunitcode,omitempty"`
 }
 
 func (s *SovrnAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -73,6 +78,20 @@ func (s *SovrnAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 		if imp.BidFloor == 0 && sovrnExt.BidFloor > 0 {
 			imp.BidFloor = sovrnExt.BidFloor
 		}
+
+		var impExtBuffer []byte
+		impExtBuffer, err = json.Marshal(&sovrnImpExt{
+			Bidder:     sovrnExt,
+			AdUnitCode: sovrnExt.AdUnitCode,
+		})
+		if err != nil {
+			errs = append(errs, &errortypes.BadInput{
+				Message: err.Error(),
+			})
+			continue
+		}
+
+		imp.Ext = impExtBuffer
 
 		// Validate video params if appropriate
 		video := imp.Video

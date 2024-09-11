@@ -8,10 +8,10 @@ import (
 
 // HookResult represents the result of execution the concrete hook instance.
 type HookResult[T any] struct {
-	Reject        bool          // true value indicates rejection of the program execution at the specific stage
-	NbrCode       int           // hook must provide NbrCode if the field Reject set to true
-	Message       string        // holds arbitrary message added by hook
-	ChangeSet     *ChangeSet[T] // set of changes the module wants to apply to hook payload in case of successful execution
+	Reject        bool         // true value indicates rejection of the program execution at the specific stage
+	NbrCode       int          // hook must provide NbrCode if the field Reject set to true
+	Message       string       // holds arbitrary message added by hook
+	ChangeSet     ChangeSet[T] // set of changes the module wants to apply to hook payload in case of successful execution
 	Errors        []string
 	Warnings      []string
 	DebugMessages []string

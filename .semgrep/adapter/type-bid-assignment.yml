@@ -1,0 +1,64 @@
+rules:
+  - id: type-bid-assignment-check
+    languages:
+      - go
+    message: >      
+      Found incorrect assignment made to $KEY. $BID variable receives a new value in each iteration of range loop. Assigning the address of $BID `(&$BID)` to $KEY will result in a pointer that always points to the same memory address with the value of the last iteration. 
+      This can lead to unexpected behavior or incorrect results. Refer https://go.dev/play/p/9ZS1f-5h4qS
+
+      Consider using an index variable in the seatBids.Bid loop as shown below
+
+      ```
+        for _, seatBid := range response.SeatBid {
+          for i := range seatBids.Bid {
+            ...
+            responseBid := &adapters.TypedBid{
+              Bid: &seatBids.Bid[i],
+              ...
+            }
+            ...
+            ...
+          }
+        }
+      ```
+    severity: ERROR
+    patterns:
+      - pattern-either:
+          - pattern: >
+              for _, $BID := range ... {
+                ...
+                ... := &adapters.TypedBid{
+                  $KEY: &$BID,
+                  ...
+                }
+                ...
+              }
+          - pattern: >
+              for _, $BID := range ... {
+                ...
+                ... = adapters.TypedBid{
+                  $KEY: &$BID,
+                  ...
+                }
+                ...
+              } 
+          - pattern: >
+              for _, $BID := range ... {
+                ...
+                ... = append(...,  &adapters.TypedBid{
+                  $KEY: &$BID,
+                  ...
+                })
+                ...
+              }
+          - pattern: >
+              for _, $BID := range ... {
+                var $TYPEBID_OBJ adapters.TypedBid
+                ...
+                $TYPEBID_OBJ.$KEY = &$BID
+                ...
+              }                              
+      - focus-metavariable: $KEY
+      - metavariable-regex:
+          metavariable: $KEY
+          regex: Bid

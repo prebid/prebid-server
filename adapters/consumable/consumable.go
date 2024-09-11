@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -40,6 +40,8 @@ type bidRequest struct {
 	Coppa              bool                 `json:"coppa,omitempty"`
 	SChain             openrtb2.SupplyChain `json:"schain"`
 	Content            *openrtb2.Content    `json:"content,omitempty"`
+	GPP                string               `json:"gpp,omitempty"`
+	GPPSID             []int8               `json:"gpp_sid,omitempty"`
 }
 
 type placement struct {
@@ -77,6 +79,8 @@ type decision struct {
 	ImpressionUrl *string    `json:"impressionUrl,omitempty"`
 	Width         uint64     `json:"width,omitempty"`  // Consumable extension, not defined by Adzerk
 	Height        uint64     `json:"height,omitempty"` // Consumable extension, not defined by Adzerk
+	Adomain       []string   `json:"adomain,omitempty"`
+	Cats          []string   `json:"cats,omitempty"`
 }
 
 type contents struct {
@@ -190,6 +194,14 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 
 	body.Coppa = request.Regs != nil && request.Regs.COPPA > 0
 
+	if request.Regs != nil && request.Regs.GPP != "" {
+		body.GPP = request.Regs.GPP
+	}
+
+	if request.Regs != nil && request.Regs.GPPSID != nil {
+		body.GPPSID = request.Regs.GPPSID
+	}
+
 	if request.Site != nil && request.Site.Content != nil {
 		body.Content = request.Site.Content
 	} else if request.App != nil && request.App.Content != nil {
@@ -286,7 +298,8 @@ func (a *ConsumableAdapter) MakeBids(
 			bid.H = int64(decision.Height)
 			bid.CrID = strconv.FormatInt(decision.AdID, 10)
 			bid.Exp = 30 // TODO: Check this is intention of TTL
-
+			bid.ADomain = decision.Adomain
+			bid.Cat = decision.Cats
 			// not yet ported from prebid.js adapter
 			//bid.requestId = bidId;
 			//bid.currency = 'USD';

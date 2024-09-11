@@ -32,8 +32,8 @@ func (provider DbProviderMock) Config() config.DatabaseConnection {
 	return config.DatabaseConnection{}
 }
 
-func (provider DbProviderMock) ConnString() string {
-	return ""
+func (provider DbProviderMock) ConnString() (string, error) {
+	return "", nil
 }
 
 func (provider DbProviderMock) Open() error {

@@ -8,8 +8,6 @@ import (
 )
 
 // This file actually intends to test static/bidder-params/gamma.json
-//
-// These also validate the format of the external API: request.imp[i].ext.prebid.bidder.brightroll
 
 // TestValidParams makes sure that the Gamma schema accepts all imp.ext fields which we intend to support.
 func TestValidParams(t *testing.T) {

@@ -58,13 +58,17 @@
       "hb_pb": "2.00",
       "hb_pb_unknown": "2.00"
     },
-    "warnings": {
-      "general": [
-        {
-          "code": 10002,
-          "message": "debug turned off for account"
+    "ortb2": {
+      "ext": {
+        "warnings": {
+          "general": [
+            {
+              "code": 10002,
+              "message": "debug turned off for account"
+            }
+          ]
         }
-      ]
+      }
     }
   },
   "expectedReturnCode": 200

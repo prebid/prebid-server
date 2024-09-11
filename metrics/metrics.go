@@ -26,6 +26,26 @@ type AdapterLabels struct {
 	AdapterErrors map[AdapterError]struct{}
 }
 
+// OverheadType: overhead type enumeration
+type OverheadType string
+
+const (
+	// PreBidder - measures the time needed to execute the adapter's MakeRequests() implementation, build Prebid headers and apply GZip compression if needed
+	PreBidder OverheadType = "pre-bidder"
+	// MakeAuctionResponse - measures the amount of time spent doing all the MakeBids() calls as well as preparing PBS's response
+	MakeAuctionResponse OverheadType = "make-auction-response"
+	// MakeBidderRequests - measures the time needed to fetch a stored request (if needed), parse, unmarshal, and validate the OpenRTB request, interpret its privacy policies, and split it into multiple requests sanitized for each bidder
+	MakeBidderRequests OverheadType = "make-bidder-requests"
+)
+
+func (t OverheadType) String() string {
+	return string(t)
+}
+
+func OverheadTypes() []OverheadType {
+	return []OverheadType{PreBidder, MakeAuctionResponse, MakeBidderRequests}
+}
+
 // ImpLabels defines metric labels describing the impression type.
 type ImpLabels struct {
 	BannerImps bool
@@ -157,12 +177,20 @@ func DemandTypes() []DemandSource {
 
 // The request types (endpoints)
 const (
-	ReqTypeLegacy   RequestType = "legacy"
 	ReqTypeORTB2Web RequestType = "openrtb2-web"
 	ReqTypeORTB2App RequestType = "openrtb2-app"
 	ReqTypeAMP      RequestType = "amp"
 	ReqTypeVideo    RequestType = "video"
 )
+
+func RequestTypes() []RequestType {
+	return []RequestType{
+		ReqTypeORTB2Web,
+		ReqTypeORTB2App,
+		ReqTypeAMP,
+		ReqTypeVideo,
+	}
+}
 
 // The media types described in the "imp" json objects
 const (
@@ -171,16 +199,6 @@ const (
 	ImpTypeAudio  ImpMediaType = "audio"
 	ImpTypeNative ImpMediaType = "native"
 )
-
-func RequestTypes() []RequestType {
-	return []RequestType{
-		ReqTypeLegacy,
-		ReqTypeORTB2Web,
-		ReqTypeORTB2App,
-		ReqTypeAMP,
-		ReqTypeVideo,
-	}
-}
 
 func ImpTypes() []ImpMediaType {
 	return []ImpMediaType{
@@ -403,17 +421,18 @@ func SyncerSetUidStatuses() []SyncerSetUidStatus {
 // is generally not useful.
 type MetricsEngine interface {
 	RecordConnectionAccept(success bool)
+	RecordTMaxTimeout()
 	RecordConnectionClose(success bool)
 	RecordRequest(labels Labels)                           // ignores adapter. only statusOk and statusErr fom status
 	RecordImps(labels ImpLabels)                           // RecordImps across openRTB2 engines that support the 'Native' Imp Type
 	RecordRequestTime(labels Labels, length time.Duration) // ignores adapter. only statusOk and statusErr fom status
+	RecordOverheadTime(overHead OverheadType, length time.Duration)
 	RecordAdapterRequest(labels AdapterLabels)
 	RecordAdapterConnections(adapterName openrtb_ext.BidderName, connWasReused bool, connWaitTime time.Duration)
 	RecordDNSTime(dnsLookupTime time.Duration)
 	RecordTLSHandshakeTime(tlsHandshakeTime time.Duration)
+	RecordBidderServerResponseTime(bidderServerResponseTime time.Duration)
 	RecordAdapterPanic(labels AdapterLabels)
-	// This records whether or not a bid of a particular type uses `adm` or `nurl`.
-	// Since the legacy endpoints don't have a bid type, it can only count bids from OpenRTB and AMP.
 	RecordAdapterBidReceived(labels AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool)
 	RecordAdapterPrice(labels AdapterLabels, cpm float64)
 	RecordAdapterTime(labels AdapterLabels, length time.Duration)
@@ -435,6 +454,10 @@ type MetricsEngine interface {
 	RecordStoredResponse(pubId string)
 	RecordAdsCertReq(success bool)
 	RecordAdsCertSignTime(adsCertSignTime time.Duration)
+	RecordBidValidationCreativeSizeError(adapter openrtb_ext.BidderName, account string)
+	RecordBidValidationCreativeSizeWarn(adapter openrtb_ext.BidderName, account string)
+	RecordBidValidationSecureMarkupError(adapter openrtb_ext.BidderName, account string)
+	RecordBidValidationSecureMarkupWarn(adapter openrtb_ext.BidderName, account string)
 	RecordModuleCalled(labels ModuleLabels, duration time.Duration)
 	RecordModuleFailed(labels ModuleLabels)
 	RecordModuleSuccessNooped(labels ModuleLabels)
@@ -442,4 +465,8 @@ type MetricsEngine interface {
 	RecordModuleSuccessRejected(labels ModuleLabels)
 	RecordModuleExecutionError(labels ModuleLabels)
 	RecordModuleTimeout(labels ModuleLabels)
+	RecordAccountGDPRPurposeWarning(account string, purposeName string)
+	RecordAccountGDPRChannelEnabledWarning(account string)
+	RecordAccountCCPAChannelEnabledWarning(account string)
+	RecordAccountUpgradeStatus(account string)
 }

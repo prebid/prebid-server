@@ -10,7 +10,7 @@ import (
 
 type DbProvider interface {
 	Config() config.DatabaseConnection
-	ConnString() string
+	ConnString() (string, error)
 	Open() error
 	Close() error
 	Ping() error

@@ -12,6 +12,7 @@ import (
 
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/ptrutil"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
@@ -145,37 +146,68 @@ func TestExternalCacheURLValidate(t *testing.T) {
 func TestDefaults(t *testing.T) {
 	cfg, _ := newDefaultConfig(t)
 
-	cmpInts(t, "port", cfg.Port, 8000)
-	cmpInts(t, "admin_port", cfg.AdminPort, 6060)
-	cmpInts(t, "auction_timeouts_ms.max", int(cfg.AuctionTimeouts.Max), 0)
-	cmpInts(t, "max_request_size", int(cfg.MaxRequestSize), 1024*256)
-	cmpInts(t, "host_cookie.ttl_days", int(cfg.HostCookie.TTL), 90)
-	cmpInts(t, "host_cookie.max_cookie_size_bytes", cfg.HostCookie.MaxCookieSizeBytes, 0)
-	cmpInts(t, "currency_converter.fetch_interval_seconds", cfg.CurrencyConverter.FetchIntervalSeconds, 1800)
-	cmpStrings(t, "currency_converter.fetch_url", cfg.CurrencyConverter.FetchURL, "https://cdn.jsdelivr.net/gh/prebid/currency-file@1/latest.json")
-	cmpBools(t, "account_required", cfg.AccountRequired, false)
-	cmpInts(t, "metrics.influxdb.collection_rate_seconds", cfg.Metrics.Influxdb.MetricSendInterval, 20)
-	cmpBools(t, "account_adapter_details", cfg.Metrics.Disabled.AccountAdapterDetails, false)
-	cmpBools(t, "account_debug", cfg.Metrics.Disabled.AccountDebug, true)
-	cmpBools(t, "account_stored_responses", cfg.Metrics.Disabled.AccountStoredResponses, true)
-	cmpBools(t, "adapter_connections_metrics", cfg.Metrics.Disabled.AdapterConnectionMetrics, true)
-	cmpBools(t, "adapter_gdpr_request_blocked", cfg.Metrics.Disabled.AdapterGDPRRequestBlocked, false)
-	cmpStrings(t, "certificates_file", cfg.PemCertsFile, "")
+	cmpInts(t, "port", 8000, cfg.Port)
+	cmpInts(t, "admin_port", 6060, cfg.AdminPort)
+	cmpInts(t, "auction_timeouts_ms.max", 0, int(cfg.AuctionTimeouts.Max))
+	cmpInts(t, "max_request_size", 1024*256, int(cfg.MaxRequestSize))
+	cmpInts(t, "host_cookie.ttl_days", 90, int(cfg.HostCookie.TTL))
+	cmpInts(t, "host_cookie.max_cookie_size_bytes", 0, cfg.HostCookie.MaxCookieSizeBytes)
+	cmpInts(t, "currency_converter.fetch_interval_seconds", 1800, cfg.CurrencyConverter.FetchIntervalSeconds)
+	cmpStrings(t, "currency_converter.fetch_url", "https://cdn.jsdelivr.net/gh/prebid/currency-file@1/latest.json", cfg.CurrencyConverter.FetchURL)
+	cmpBools(t, "account_required", false, cfg.AccountRequired)
+	cmpInts(t, "metrics.influxdb.collection_rate_seconds", 20, cfg.Metrics.Influxdb.MetricSendInterval)
+	cmpBools(t, "account_adapter_details", false, cfg.Metrics.Disabled.AccountAdapterDetails)
+	cmpBools(t, "account_debug", true, cfg.Metrics.Disabled.AccountDebug)
+	cmpBools(t, "account_stored_responses", true, cfg.Metrics.Disabled.AccountStoredResponses)
+	cmpBools(t, "adapter_connections_metrics", true, cfg.Metrics.Disabled.AdapterConnectionMetrics)
+	cmpBools(t, "adapter_gdpr_request_blocked", false, cfg.Metrics.Disabled.AdapterGDPRRequestBlocked)
+	cmpStrings(t, "certificates_file", "", cfg.PemCertsFile)
 	cmpBools(t, "stored_requests.filesystem.enabled", false, cfg.StoredRequests.Files.Enabled)
 	cmpStrings(t, "stored_requests.filesystem.directorypath", "./stored_requests/data/by_id", cfg.StoredRequests.Files.Path)
-	cmpBools(t, "auto_gen_source_tid", cfg.AutoGenSourceTID, true)
-	cmpBools(t, "generate_bid_id", cfg.GenerateBidID, false)
-	cmpStrings(t, "experiment.adscert.mode", cfg.Experiment.AdCerts.Mode, "off")
-	cmpStrings(t, "experiment.adscert.inprocess.origin", cfg.Experiment.AdCerts.InProcess.Origin, "")
-	cmpStrings(t, "experiment.adscert.inprocess.key", cfg.Experiment.AdCerts.InProcess.PrivateKey, "")
-	cmpInts(t, "experiment.adscert.inprocess.domain_check_interval_seconds", cfg.Experiment.AdCerts.InProcess.DNSCheckIntervalInSeconds, 30)
-	cmpInts(t, "experiment.adscert.inprocess.domain_renewal_interval_seconds", cfg.Experiment.AdCerts.InProcess.DNSRenewalIntervalInSeconds, 30)
-	cmpStrings(t, "experiment.adscert.remote.url", cfg.Experiment.AdCerts.Remote.Url, "")
-	cmpInts(t, "experiment.adscert.remote.signing_timeout_ms", cfg.Experiment.AdCerts.Remote.SigningTimeoutMs, 5)
+	cmpBools(t, "auto_gen_source_tid", true, cfg.AutoGenSourceTID)
+	cmpBools(t, "generate_bid_id", false, cfg.GenerateBidID)
+	cmpStrings(t, "experiment.adscert.mode", "off", cfg.Experiment.AdCerts.Mode)
+	cmpStrings(t, "experiment.adscert.inprocess.origin", "", cfg.Experiment.AdCerts.InProcess.Origin)
+	cmpStrings(t, "experiment.adscert.inprocess.key", "", cfg.Experiment.AdCerts.InProcess.PrivateKey)
+	cmpInts(t, "experiment.adscert.inprocess.domain_check_interval_seconds", 30, cfg.Experiment.AdCerts.InProcess.DNSCheckIntervalInSeconds)
+	cmpInts(t, "experiment.adscert.inprocess.domain_renewal_interval_seconds", 30, cfg.Experiment.AdCerts.InProcess.DNSRenewalIntervalInSeconds)
+	cmpStrings(t, "experiment.adscert.remote.url", "", cfg.Experiment.AdCerts.Remote.Url)
+	cmpInts(t, "experiment.adscert.remote.signing_timeout_ms", 5, cfg.Experiment.AdCerts.Remote.SigningTimeoutMs)
 	cmpNils(t, "host_schain_node", cfg.HostSChainNode)
-	cmpStrings(t, "datacenter", cfg.DataCenter, "")
-	cmpBools(t, "hooks.enabled", cfg.Hooks.Enabled, false)
-	cmpBools(t, "account_modules_metrics", cfg.Metrics.Disabled.AccountModulesMetrics, false)
+	cmpStrings(t, "datacenter", "", cfg.DataCenter)
+
+	//Assert the price floor default values
+	cmpBools(t, "price_floors.enabled", false, cfg.PriceFloors.Enabled)
+
+	// Assert compression related defaults
+	cmpBools(t, "enable_gzip", false, cfg.EnableGzip)
+	cmpBools(t, "compression.request.enable_gzip", false, cfg.Compression.Request.GZIP)
+	cmpBools(t, "compression.response.enable_gzip", false, cfg.Compression.Response.GZIP)
+
+	cmpBools(t, "account_defaults.price_floors.enabled", false, cfg.AccountDefaults.PriceFloors.Enabled)
+	cmpInts(t, "account_defaults.price_floors.enforce_floors_rate", 100, cfg.AccountDefaults.PriceFloors.EnforceFloorsRate)
+	cmpBools(t, "account_defaults.price_floors.adjust_for_bid_adjustment", true, cfg.AccountDefaults.PriceFloors.AdjustForBidAdjustment)
+	cmpBools(t, "account_defaults.price_floors.enforce_deal_floors", false, cfg.AccountDefaults.PriceFloors.EnforceDealFloors)
+	cmpBools(t, "account_defaults.price_floors.use_dynamic_data", false, cfg.AccountDefaults.PriceFloors.UseDynamicData)
+	cmpInts(t, "account_defaults.price_floors.max_rules", 100, cfg.AccountDefaults.PriceFloors.MaxRule)
+	cmpInts(t, "account_defaults.price_floors.max_schema_dims", 3, cfg.AccountDefaults.PriceFloors.MaxSchemaDims)
+	cmpBools(t, "account_defaults.events_enabled", *cfg.AccountDefaults.EventsEnabled, false)
+	cmpNils(t, "account_defaults.events.enabled", cfg.AccountDefaults.Events.Enabled)
+
+	cmpBools(t, "hooks.enabled", false, cfg.Hooks.Enabled)
+	cmpStrings(t, "validations.banner_creative_max_size", "skip", cfg.Validations.BannerCreativeMaxSize)
+	cmpStrings(t, "validations.secure_markup", "skip", cfg.Validations.SecureMarkup)
+	cmpInts(t, "validations.max_creative_width", 0, int(cfg.Validations.MaxCreativeWidth))
+	cmpInts(t, "validations.max_creative_height", 0, int(cfg.Validations.MaxCreativeHeight))
+	cmpBools(t, "account_modules_metrics", false, cfg.Metrics.Disabled.AccountModulesMetrics)
+
+	cmpBools(t, "tmax_adjustments.enabled", false, cfg.TmaxAdjustments.Enabled)
+	cmpUnsignedInts(t, "tmax_adjustments.bidder_response_duration_min_ms", 0, cfg.TmaxAdjustments.BidderResponseDurationMin)
+	cmpUnsignedInts(t, "tmax_adjustments.bidder_network_latency_buffer_ms", 0, cfg.TmaxAdjustments.BidderNetworkLatencyBuffer)
+	cmpUnsignedInts(t, "tmax_adjustments.pbs_response_preparation_duration_ms", 0, cfg.TmaxAdjustments.PBSResponsePreparationDuration)
+
+	cmpInts(t, "account_defaults.privacy.ipv6.anon_keep_bits", 56, cfg.AccountDefaults.Privacy.IPv6Config.AnonKeepBits)
+	cmpInts(t, "account_defaults.privacy.ipv4.anon_keep_bits", 24, cfg.AccountDefaults.Privacy.IPv4Config.AnonKeepBits)
 
 	//Assert purpose VendorExceptionMap hash tables were built correctly
 	expectedTCF2 := TCF2{
@@ -295,6 +327,7 @@ func TestDefaults(t *testing.T) {
 	assert.Equal(t, expectedTCF2, cfg.GDPR.TCF2, "gdpr.tcf2")
 }
 
+// When adding a new field, make sure the indentations are spaces not tabs otherwise read config may fail to parse the new field value.
 var fullConfig = []byte(`
 gdpr:
   host_vendor_id: 15
@@ -353,6 +386,12 @@ external_url: http://prebid-server.prebid.org/
 host: prebid-server.prebid.org
 port: 1234
 admin_port: 5678
+enable_gzip: false
+compression:
+    request:
+        enable_gzip: true
+    response:
+        enable_gzip: false
 garbage_collector_threshold: 1
 datacenter: "1"
 auction_timeouts_ms:
@@ -409,6 +448,11 @@ host_schain_node:
     sid: "00001"
     rid: "BidRequest"
     hp: 1
+validations:
+    banner_creative_max_size: "skip"
+    secure_markup: "skip"
+    max_creative_width: 0
+    max_creative_height: 0
 experiment:
     adscert:
         mode: inprocess
@@ -422,6 +466,30 @@ experiment:
             signing_timeout_ms: 10
 hooks:
     enabled: true
+price_floors:
+    enabled: true
+account_defaults:
+    events_enabled: false
+    events:
+        enabled: true
+    price_floors:
+        enabled: true
+        enforce_floors_rate: 50
+        adjust_for_bid_adjustment: false
+        enforce_deal_floors: true
+        use_dynamic_data: true
+        max_rules: 120
+        max_schema_dims: 5
+    privacy:
+        ipv6:
+            anon_keep_bits: 50
+        ipv4:
+            anon_keep_bits: 20
+tmax_adjustments:
+  enabled: true
+  bidder_response_duration_min_ms: 700
+  bidder_network_latency_buffer_ms: 100
+  pbs_response_preparation_duration_ms: 100
 `)
 
 var oldStoredRequestsConfig = []byte(`
@@ -430,24 +498,29 @@ stored_requests:
   directorypath: "/somepath"
 `)
 
-func cmpStrings(t *testing.T, key string, a string, b string) {
+func cmpStrings(t *testing.T, key, expected, actual string) {
 	t.Helper()
-	assert.Equal(t, a, b, "%s: %s != %s", key, a, b)
+	assert.Equal(t, expected, actual, "%s: %s != %s", key, expected, actual)
 }
 
-func cmpInts(t *testing.T, key string, a int, b int) {
+func cmpInts(t *testing.T, key string, expected, actual int) {
 	t.Helper()
-	assert.Equal(t, a, b, "%s: %d != %d", key, a, b)
+	assert.Equal(t, expected, actual, "%s: %d != %d", key, expected, actual)
 }
 
-func cmpInt8s(t *testing.T, key string, a *int8, b *int8) {
+func cmpUnsignedInts(t *testing.T, key string, expected, actual uint) {
 	t.Helper()
-	assert.Equal(t, a, b, "%s: %d != %d", key, a, b)
+	assert.Equal(t, expected, actual, "%s: %d != %d", key, expected, actual)
 }
 
-func cmpBools(t *testing.T, key string, a bool, b bool) {
+func cmpInt8s(t *testing.T, key string, expected, actual *int8) {
 	t.Helper()
-	assert.Equal(t, a, b, "%s: %t != %t", key, a, b)
+	assert.Equal(t, expected, actual, "%s: %d != %d", key, expected, actual)
+}
+
+func cmpBools(t *testing.T, key string, expected, actual bool) {
+	t.Helper()
+	assert.Equal(t, expected, actual, "%s: %t != %t", key, expected, actual)
 }
 
 func cmpNils(t *testing.T, key string, a interface{}) {
@@ -464,39 +537,67 @@ func TestFullConfig(t *testing.T) {
 	v.ReadConfig(bytes.NewBuffer(fullConfig))
 	cfg, err := New(v, bidderInfos, mockNormalizeBidderName)
 	assert.NoError(t, err, "Setting up config should work but it doesn't")
-	cmpStrings(t, "cookie domain", cfg.HostCookie.Domain, "cookies.prebid.org")
-	cmpStrings(t, "cookie name", cfg.HostCookie.CookieName, "userid")
-	cmpStrings(t, "cookie family", cfg.HostCookie.Family, "prebid")
-	cmpStrings(t, "opt out", cfg.HostCookie.OptOutURL, "http://prebid.org/optout")
-	cmpStrings(t, "opt in", cfg.HostCookie.OptInURL, "http://prebid.org/optin")
-	cmpStrings(t, "external url", cfg.ExternalURL, "http://prebid-server.prebid.org/")
-	cmpStrings(t, "host", cfg.Host, "prebid-server.prebid.org")
-	cmpInts(t, "port", cfg.Port, 1234)
-	cmpInts(t, "admin_port", cfg.AdminPort, 5678)
-	cmpInts(t, "garbage_collector_threshold", cfg.GarbageCollectorThreshold, 1)
-	cmpInts(t, "auction_timeouts_ms.default", int(cfg.AuctionTimeouts.Default), 50)
-	cmpInts(t, "auction_timeouts_ms.max", int(cfg.AuctionTimeouts.Max), 123)
-	cmpStrings(t, "cache.scheme", cfg.CacheURL.Scheme, "http")
-	cmpStrings(t, "cache.host", cfg.CacheURL.Host, "prebidcache.net")
-	cmpStrings(t, "cache.query", cfg.CacheURL.Query, "uuid=%PBS_CACHE_UUID%")
-	cmpStrings(t, "external_cache.scheme", cfg.ExtCacheURL.Scheme, "https")
-	cmpStrings(t, "external_cache.host", cfg.ExtCacheURL.Host, "www.externalprebidcache.net")
-	cmpStrings(t, "external_cache.path", cfg.ExtCacheURL.Path, "/endpoints/cache")
-	cmpInts(t, "http_client.max_connections_per_host", cfg.Client.MaxConnsPerHost, 10)
-	cmpInts(t, "http_client.max_idle_connections", cfg.Client.MaxIdleConns, 500)
-	cmpInts(t, "http_client.max_idle_connections_per_host", cfg.Client.MaxIdleConnsPerHost, 20)
-	cmpInts(t, "http_client.idle_connection_timeout_seconds", cfg.Client.IdleConnTimeout, 30)
-	cmpInts(t, "http_client_cache.max_connections_per_host", cfg.CacheClient.MaxConnsPerHost, 5)
-	cmpInts(t, "http_client_cache.max_idle_connections", cfg.CacheClient.MaxIdleConns, 1)
-	cmpInts(t, "http_client_cache.max_idle_connections_per_host", cfg.CacheClient.MaxIdleConnsPerHost, 2)
-	cmpInts(t, "http_client_cache.idle_connection_timeout_seconds", cfg.CacheClient.IdleConnTimeout, 3)
-	cmpInts(t, "gdpr.host_vendor_id", cfg.GDPR.HostVendorID, 15)
-	cmpStrings(t, "gdpr.default_value", cfg.GDPR.DefaultValue, "1")
-	cmpStrings(t, "host_schain_node.asi", cfg.HostSChainNode.ASI, "pbshostcompany.com")
-	cmpStrings(t, "host_schain_node.sid", cfg.HostSChainNode.SID, "00001")
-	cmpStrings(t, "host_schain_node.rid", cfg.HostSChainNode.RID, "BidRequest")
-	cmpInt8s(t, "host_schain_node.hp", cfg.HostSChainNode.HP, &int8One)
-	cmpStrings(t, "datacenter", cfg.DataCenter, "1")
+	cmpStrings(t, "cookie domain", "cookies.prebid.org", cfg.HostCookie.Domain)
+	cmpStrings(t, "cookie name", "userid", cfg.HostCookie.CookieName)
+	cmpStrings(t, "cookie family", "prebid", cfg.HostCookie.Family)
+	cmpStrings(t, "opt out", "http://prebid.org/optout", cfg.HostCookie.OptOutURL)
+	cmpStrings(t, "opt in", "http://prebid.org/optin", cfg.HostCookie.OptInURL)
+	cmpStrings(t, "external url", "http://prebid-server.prebid.org/", cfg.ExternalURL)
+	cmpStrings(t, "host", "prebid-server.prebid.org", cfg.Host)
+	cmpInts(t, "port", 1234, cfg.Port)
+	cmpInts(t, "admin_port", 5678, cfg.AdminPort)
+	cmpInts(t, "garbage_collector_threshold", 1, cfg.GarbageCollectorThreshold)
+	cmpInts(t, "auction_timeouts_ms.default", 50, int(cfg.AuctionTimeouts.Default))
+	cmpInts(t, "auction_timeouts_ms.max", 123, int(cfg.AuctionTimeouts.Max))
+	cmpStrings(t, "cache.scheme", "http", cfg.CacheURL.Scheme)
+	cmpStrings(t, "cache.host", "prebidcache.net", cfg.CacheURL.Host)
+	cmpStrings(t, "cache.query", "uuid=%PBS_CACHE_UUID%", cfg.CacheURL.Query)
+	cmpStrings(t, "external_cache.scheme", "https", cfg.ExtCacheURL.Scheme)
+	cmpStrings(t, "external_cache.host", "www.externalprebidcache.net", cfg.ExtCacheURL.Host)
+	cmpStrings(t, "external_cache.path", "/endpoints/cache", cfg.ExtCacheURL.Path)
+	cmpInts(t, "http_client.max_connections_per_host", 10, cfg.Client.MaxConnsPerHost)
+	cmpInts(t, "http_client.max_idle_connections", 500, cfg.Client.MaxIdleConns)
+	cmpInts(t, "http_client.max_idle_connections_per_host", 20, cfg.Client.MaxIdleConnsPerHost)
+	cmpInts(t, "http_client.idle_connection_timeout_seconds", 30, cfg.Client.IdleConnTimeout)
+	cmpInts(t, "http_client_cache.max_connections_per_host", 5, cfg.CacheClient.MaxConnsPerHost)
+	cmpInts(t, "http_client_cache.max_idle_connections", 1, cfg.CacheClient.MaxIdleConns)
+	cmpInts(t, "http_client_cache.max_idle_connections_per_host", 2, cfg.CacheClient.MaxIdleConnsPerHost)
+	cmpInts(t, "http_client_cache.idle_connection_timeout_seconds", 3, cfg.CacheClient.IdleConnTimeout)
+	cmpInts(t, "gdpr.host_vendor_id", 15, cfg.GDPR.HostVendorID)
+	cmpStrings(t, "gdpr.default_value", "1", cfg.GDPR.DefaultValue)
+	cmpStrings(t, "host_schain_node.asi", "pbshostcompany.com", cfg.HostSChainNode.ASI)
+	cmpStrings(t, "host_schain_node.sid", "00001", cfg.HostSChainNode.SID)
+	cmpStrings(t, "host_schain_node.rid", "BidRequest", cfg.HostSChainNode.RID)
+	cmpInt8s(t, "host_schain_node.hp", &int8One, cfg.HostSChainNode.HP)
+	cmpStrings(t, "datacenter", "1", cfg.DataCenter)
+	cmpStrings(t, "validations.banner_creative_max_size", "skip", cfg.Validations.BannerCreativeMaxSize)
+	cmpStrings(t, "validations.secure_markup", "skip", cfg.Validations.SecureMarkup)
+	cmpInts(t, "validations.max_creative_width", 0, int(cfg.Validations.MaxCreativeWidth))
+	cmpInts(t, "validations.max_creative_height", 0, int(cfg.Validations.MaxCreativeHeight))
+	cmpBools(t, "tmax_adjustments.enabled", true, cfg.TmaxAdjustments.Enabled)
+	cmpUnsignedInts(t, "tmax_adjustments.bidder_response_duration_min_ms", 700, cfg.TmaxAdjustments.BidderResponseDurationMin)
+	cmpUnsignedInts(t, "tmax_adjustments.bidder_network_latency_buffer_ms", 100, cfg.TmaxAdjustments.BidderNetworkLatencyBuffer)
+	cmpUnsignedInts(t, "tmax_adjustments.pbs_response_preparation_duration_ms", 100, cfg.TmaxAdjustments.PBSResponsePreparationDuration)
+
+	//Assert the price floor values
+	cmpBools(t, "price_floors.enabled", true, cfg.PriceFloors.Enabled)
+	cmpBools(t, "account_defaults.price_floors.enabled", true, cfg.AccountDefaults.PriceFloors.Enabled)
+	cmpInts(t, "account_defaults.price_floors.enforce_floors_rate", 50, cfg.AccountDefaults.PriceFloors.EnforceFloorsRate)
+	cmpBools(t, "account_defaults.price_floors.adjust_for_bid_adjustment", false, cfg.AccountDefaults.PriceFloors.AdjustForBidAdjustment)
+	cmpBools(t, "account_defaults.price_floors.enforce_deal_floors", true, cfg.AccountDefaults.PriceFloors.EnforceDealFloors)
+	cmpBools(t, "account_defaults.price_floors.use_dynamic_data", true, cfg.AccountDefaults.PriceFloors.UseDynamicData)
+	cmpInts(t, "account_defaults.price_floors.max_rules", 120, cfg.AccountDefaults.PriceFloors.MaxRule)
+	cmpInts(t, "account_defaults.price_floors.max_schema_dims", 5, cfg.AccountDefaults.PriceFloors.MaxSchemaDims)
+	cmpBools(t, "account_defaults.events_enabled", *cfg.AccountDefaults.EventsEnabled, true)
+	cmpNils(t, "account_defaults.events.enabled", cfg.AccountDefaults.Events.Enabled)
+
+	cmpInts(t, "account_defaults.privacy.ipv6.anon_keep_bits", 50, cfg.AccountDefaults.Privacy.IPv6Config.AnonKeepBits)
+	cmpInts(t, "account_defaults.privacy.ipv4.anon_keep_bits", 20, cfg.AccountDefaults.Privacy.IPv4Config.AnonKeepBits)
+
+	// Assert compression related defaults
+	cmpBools(t, "enable_gzip", false, cfg.EnableGzip)
+	cmpBools(t, "compression.request.enable_gzip", true, cfg.Compression.Request.GZIP)
+	cmpBools(t, "compression.response.enable_gzip", false, cfg.Compression.Response.GZIP)
 
 	//Assert the NonStandardPublishers was correctly unmarshalled
 	assert.Equal(t, []string{"pub1", "pub2"}, cfg.GDPR.NonStandardPublishers, "gdpr.non_standard_publishers")
@@ -506,16 +607,16 @@ func TestFullConfig(t *testing.T) {
 	assert.Equal(t, []string{"eea1", "eea2"}, cfg.GDPR.EEACountries, "gdpr.eea_countries")
 	assert.Equal(t, map[string]struct{}{"eea1": {}, "eea2": {}}, cfg.GDPR.EEACountriesMap, "gdpr.eea_countries Hash Map")
 
-	cmpBools(t, "ccpa.enforce", cfg.CCPA.Enforce, true)
-	cmpBools(t, "lmt.enforce", cfg.LMT.Enforce, true)
+	cmpBools(t, "ccpa.enforce", true, cfg.CCPA.Enforce)
+	cmpBools(t, "lmt.enforce", true, cfg.LMT.Enforce)
 
 	//Assert the NonStandardPublishers was correctly unmarshalled
-	cmpStrings(t, "blacklisted_apps", cfg.BlacklistedApps[0], "spamAppID")
-	cmpStrings(t, "blacklisted_apps", cfg.BlacklistedApps[1], "sketchy-app-id")
+	cmpStrings(t, "blacklisted_apps", "spamAppID", cfg.BlacklistedApps[0])
+	cmpStrings(t, "blacklisted_apps", "sketchy-app-id", cfg.BlacklistedApps[1])
 
 	//Assert the BlacklistedAppMap hash table was built correctly
 	for i := 0; i < len(cfg.BlacklistedApps); i++ {
-		cmpBools(t, "cfg.BlacklistedAppMap", cfg.BlacklistedAppMap[cfg.BlacklistedApps[i]], true)
+		cmpBools(t, "cfg.BlacklistedAppMap", true, cfg.BlacklistedAppMap[cfg.BlacklistedApps[i]])
 	}
 
 	//Assert purpose VendorExceptionMap hash tables were built correctly
@@ -635,40 +736,40 @@ func TestFullConfig(t *testing.T) {
 	}
 	assert.Equal(t, expectedTCF2, cfg.GDPR.TCF2, "gdpr.tcf2")
 
-	cmpStrings(t, "currency_converter.fetch_url", cfg.CurrencyConverter.FetchURL, "https://currency.prebid.org")
-	cmpInts(t, "currency_converter.fetch_interval_seconds", cfg.CurrencyConverter.FetchIntervalSeconds, 1800)
-	cmpStrings(t, "recaptcha_secret", cfg.RecaptchaSecret, "asdfasdfasdfasdf")
-	cmpStrings(t, "metrics.influxdb.host", cfg.Metrics.Influxdb.Host, "upstream:8232")
-	cmpStrings(t, "metrics.influxdb.database", cfg.Metrics.Influxdb.Database, "metricsdb")
-	cmpStrings(t, "metrics.influxdb.measurement", cfg.Metrics.Influxdb.Measurement, "anyMeasurement")
-	cmpStrings(t, "metrics.influxdb.username", cfg.Metrics.Influxdb.Username, "admin")
-	cmpStrings(t, "metrics.influxdb.password", cfg.Metrics.Influxdb.Password, "admin1324")
-	cmpBools(t, "metrics.influxdb.align_timestamps", cfg.Metrics.Influxdb.AlignTimestamps, true)
-	cmpInts(t, "metrics.influxdb.metric_send_interval", cfg.Metrics.Influxdb.MetricSendInterval, 30)
-	cmpStrings(t, "", cfg.CacheURL.GetBaseURL(), "http://prebidcache.net")
-	cmpStrings(t, "", cfg.GetCachedAssetURL("a0eebc99-9c0b-4ef8-bb00-6bb9bd380a11"), "http://prebidcache.net/cache?uuid=a0eebc99-9c0b-4ef8-bb00-6bb9bd380a11")
-	cmpBools(t, "account_required", cfg.AccountRequired, true)
-	cmpBools(t, "auto_gen_source_tid", cfg.AutoGenSourceTID, false)
-	cmpBools(t, "account_adapter_details", cfg.Metrics.Disabled.AccountAdapterDetails, true)
-	cmpBools(t, "account_debug", cfg.Metrics.Disabled.AccountDebug, false)
-	cmpBools(t, "account_stored_responses", cfg.Metrics.Disabled.AccountStoredResponses, false)
-	cmpBools(t, "adapter_connections_metrics", cfg.Metrics.Disabled.AdapterConnectionMetrics, true)
-	cmpBools(t, "adapter_gdpr_request_blocked", cfg.Metrics.Disabled.AdapterGDPRRequestBlocked, true)
-	cmpStrings(t, "certificates_file", cfg.PemCertsFile, "/etc/ssl/cert.pem")
-	cmpStrings(t, "request_validation.ipv4_private_networks", cfg.RequestValidation.IPv4PrivateNetworks[0], "1.1.1.0/24")
-	cmpStrings(t, "request_validation.ipv6_private_networks", cfg.RequestValidation.IPv6PrivateNetworks[0], "1111::/16")
-	cmpStrings(t, "request_validation.ipv6_private_networks", cfg.RequestValidation.IPv6PrivateNetworks[1], "2222::/16")
-	cmpBools(t, "generate_bid_id", cfg.GenerateBidID, true)
-	cmpStrings(t, "debug.override_token", cfg.Debug.OverrideToken, "")
-	cmpStrings(t, "experiment.adscert.mode", cfg.Experiment.AdCerts.Mode, "inprocess")
-	cmpStrings(t, "experiment.adscert.inprocess.origin", cfg.Experiment.AdCerts.InProcess.Origin, "http://test.com")
-	cmpStrings(t, "experiment.adscert.inprocess.key", cfg.Experiment.AdCerts.InProcess.PrivateKey, "ABC123")
-	cmpInts(t, "experiment.adscert.inprocess.domain_check_interval_seconds", cfg.Experiment.AdCerts.InProcess.DNSCheckIntervalInSeconds, 40)
-	cmpInts(t, "experiment.adscert.inprocess.domain_renewal_interval_seconds", cfg.Experiment.AdCerts.InProcess.DNSRenewalIntervalInSeconds, 60)
-	cmpStrings(t, "experiment.adscert.remote.url", cfg.Experiment.AdCerts.Remote.Url, "")
-	cmpInts(t, "experiment.adscert.remote.signing_timeout_ms", cfg.Experiment.AdCerts.Remote.SigningTimeoutMs, 10)
-	cmpBools(t, "hooks.enabled", cfg.Hooks.Enabled, true)
-	cmpBools(t, "account_modules_metrics", cfg.Metrics.Disabled.AccountModulesMetrics, true)
+	cmpStrings(t, "currency_converter.fetch_url", "https://currency.prebid.org", cfg.CurrencyConverter.FetchURL)
+	cmpInts(t, "currency_converter.fetch_interval_seconds", 1800, cfg.CurrencyConverter.FetchIntervalSeconds)
+	cmpStrings(t, "recaptcha_secret", "asdfasdfasdfasdf", cfg.RecaptchaSecret)
+	cmpStrings(t, "metrics.influxdb.host", "upstream:8232", cfg.Metrics.Influxdb.Host)
+	cmpStrings(t, "metrics.influxdb.database", "metricsdb", cfg.Metrics.Influxdb.Database)
+	cmpStrings(t, "metrics.influxdb.measurement", "anyMeasurement", cfg.Metrics.Influxdb.Measurement)
+	cmpStrings(t, "metrics.influxdb.username", "admin", cfg.Metrics.Influxdb.Username)
+	cmpStrings(t, "metrics.influxdb.password", "admin1324", cfg.Metrics.Influxdb.Password)
+	cmpBools(t, "metrics.influxdb.align_timestamps", true, cfg.Metrics.Influxdb.AlignTimestamps)
+	cmpInts(t, "metrics.influxdb.metric_send_interval", 30, cfg.Metrics.Influxdb.MetricSendInterval)
+	cmpStrings(t, "", "http://prebidcache.net", cfg.CacheURL.GetBaseURL())
+	cmpStrings(t, "", "http://prebidcache.net/cache?uuid=a0eebc99-9c0b-4ef8-bb00-6bb9bd380a11", cfg.GetCachedAssetURL("a0eebc99-9c0b-4ef8-bb00-6bb9bd380a11"))
+	cmpBools(t, "account_required", true, cfg.AccountRequired)
+	cmpBools(t, "auto_gen_source_tid", false, cfg.AutoGenSourceTID)
+	cmpBools(t, "account_adapter_details", true, cfg.Metrics.Disabled.AccountAdapterDetails)
+	cmpBools(t, "account_debug", false, cfg.Metrics.Disabled.AccountDebug)
+	cmpBools(t, "account_stored_responses", false, cfg.Metrics.Disabled.AccountStoredResponses)
+	cmpBools(t, "adapter_connections_metrics", true, cfg.Metrics.Disabled.AdapterConnectionMetrics)
+	cmpBools(t, "adapter_gdpr_request_blocked", true, cfg.Metrics.Disabled.AdapterGDPRRequestBlocked)
+	cmpStrings(t, "certificates_file", "/etc/ssl/cert.pem", cfg.PemCertsFile)
+	cmpStrings(t, "request_validation.ipv4_private_networks", "1.1.1.0/24", cfg.RequestValidation.IPv4PrivateNetworks[0])
+	cmpStrings(t, "request_validation.ipv6_private_networks", "1111::/16", cfg.RequestValidation.IPv6PrivateNetworks[0])
+	cmpStrings(t, "request_validation.ipv6_private_networks", "2222::/16", cfg.RequestValidation.IPv6PrivateNetworks[1])
+	cmpBools(t, "generate_bid_id", true, cfg.GenerateBidID)
+	cmpStrings(t, "debug.override_token", "", cfg.Debug.OverrideToken)
+	cmpStrings(t, "experiment.adscert.mode", "inprocess", cfg.Experiment.AdCerts.Mode)
+	cmpStrings(t, "experiment.adscert.inprocess.origin", "http://test.com", cfg.Experiment.AdCerts.InProcess.Origin)
+	cmpStrings(t, "experiment.adscert.inprocess.key", "ABC123", cfg.Experiment.AdCerts.InProcess.PrivateKey)
+	cmpInts(t, "experiment.adscert.inprocess.domain_check_interval_seconds", 40, cfg.Experiment.AdCerts.InProcess.DNSCheckIntervalInSeconds)
+	cmpInts(t, "experiment.adscert.inprocess.domain_renewal_interval_seconds", 60, cfg.Experiment.AdCerts.InProcess.DNSRenewalIntervalInSeconds)
+	cmpStrings(t, "experiment.adscert.remote.url", "", cfg.Experiment.AdCerts.Remote.Url)
+	cmpInts(t, "experiment.adscert.remote.signing_timeout_ms", 10, cfg.Experiment.AdCerts.Remote.SigningTimeoutMs)
+	cmpBools(t, "hooks.enabled", true, cfg.Hooks.Enabled)
+	cmpBools(t, "account_modules_metrics", true, cfg.Metrics.Disabled.AccountModulesMetrics)
 }
 
 func TestValidateConfig(t *testing.T) {
@@ -795,7 +896,6 @@ func TestUserSyncFromEnv(t *testing.T) {
 	assert.Nil(t, cfg.BidderInfos["bidder2"].Syncer.Redirect)
 	assert.Nil(t, cfg.BidderInfos["bidder2"].Syncer.SupportCORS)
 
-	assert.Nil(t, cfg.BidderInfos["brightroll"].Syncer)
 }
 
 func TestBidderInfoFromEnv(t *testing.T) {
@@ -847,6 +947,11 @@ func TestBidderInfoFromEnv(t *testing.T) {
 	} else {
 		defer os.Unsetenv("PBS_ADAPTERS_BIDDER1_USERSYNC_REDIRECT_URL")
 	}
+	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_BIDDER1_OPENRTB_VERSION"); ok {
+		defer os.Setenv("PBS_ADAPTERS_BIDDER1_OPENRTB_VERSION", oldval)
+	} else {
+		defer os.Unsetenv("PBS_ADAPTERS_BIDDER1_OPENRTB_VERSION")
+	}
 
 	// set new
 	os.Setenv("PBS_ADAPTERS_BIDDER1_DISABLED", "true")
@@ -857,6 +962,7 @@ func TestBidderInfoFromEnv(t *testing.T) {
 	os.Setenv("PBS_ADAPTERS_BIDDER1_EXPERIMENT_ADSCERT_ENABLED", "true")
 	os.Setenv("PBS_ADAPTERS_BIDDER1_XAPI_USERNAME", "username_override")
 	os.Setenv("PBS_ADAPTERS_BIDDER1_USERSYNC_REDIRECT_URL", "http://some.url/sync?redirect={{.RedirectURL}}")
+	os.Setenv("PBS_ADAPTERS_BIDDER1_OPENRTB_VERSION", "2.6")
 
 	cfg, _ := newDefaultConfig(t)
 
@@ -869,6 +975,8 @@ func TestBidderInfoFromEnv(t *testing.T) {
 
 	assert.Equal(t, true, cfg.BidderInfos["bidder1"].Experiment.AdsCert.Enabled)
 	assert.Equal(t, "username_override", cfg.BidderInfos["bidder1"].XAPI.Username)
+
+	assert.Equal(t, "2.6", cfg.BidderInfos["bidder1"].OpenRTB.Version)
 }
 
 func TestMigrateConfigPurposeOneTreatment(t *testing.T) {
@@ -2465,7 +2573,8 @@ func TestMigrateConfigDatabaseQueryParams(t *testing.T) {
 
 	v := viper.New()
 	v.SetConfigType("yaml")
-	v.ReadConfig(bytes.NewBuffer(config))
+	err := v.ReadConfig(bytes.NewBuffer(config))
+	assert.NoError(t, err)
 
 	migrateConfigDatabaseConnection(v)
 
@@ -2486,6 +2595,74 @@ func TestMigrateConfigDatabaseQueryParams(t *testing.T) {
 	assert.Equal(t, want_queries.fetcher_amp_query, v.GetString("stored_responses.database.fetcher.amp_query"))
 	assert.Equal(t, want_queries.poll_for_updates_query, v.GetString("stored_responses.database.poll_for_updates.query"))
 	assert.Equal(t, want_queries.poll_for_updates_amp_query, v.GetString("stored_responses.database.poll_for_updates.amp_query"))
+}
+
+func TestMigrateConfigCompression(t *testing.T) {
+	testCases := []struct {
+		desc                string
+		config              []byte
+		wantEnableGZIP      bool
+		wantReqGZIPEnabled  bool
+		wantRespGZIPEnabled bool
+	}{
+
+		{
+			desc:                "New config and old config not set",
+			config:              []byte{},
+			wantEnableGZIP:      false,
+			wantReqGZIPEnabled:  false,
+			wantRespGZIPEnabled: false,
+		},
+		{
+			desc: "Old config set, new config not set",
+			config: []byte(`
+                    enable_gzip: true
+                    `),
+			wantEnableGZIP:      true,
+			wantRespGZIPEnabled: true,
+			wantReqGZIPEnabled:  false,
+		},
+		{
+			desc: "Old config not set, new config set",
+			config: []byte(`
+                    compression:
+                        response:
+                            enable_gzip: true
+                        request:
+                            enable_gzip: false
+                    `),
+			wantEnableGZIP:      false,
+			wantRespGZIPEnabled: true,
+			wantReqGZIPEnabled:  false,
+		},
+		{
+			desc: "Old config set and new config set",
+			config: []byte(`
+                    enable_gzip: true
+                    compression:
+                        response:
+                            enable_gzip: false
+                        request:
+                            enable_gzip: true
+                    `),
+			wantEnableGZIP:      true,
+			wantRespGZIPEnabled: false,
+			wantReqGZIPEnabled:  true,
+		},
+	}
+
+	for _, test := range testCases {
+		v := viper.New()
+		v.SetConfigType("yaml")
+		err := v.ReadConfig(bytes.NewBuffer(test.config))
+		assert.NoError(t, err)
+
+		migrateConfigCompression(v)
+
+		assert.Equal(t, test.wantEnableGZIP, v.GetBool("enable_gzip"), test.desc)
+		assert.Equal(t, test.wantReqGZIPEnabled, v.GetBool("compression.request.enable_gzip"), test.desc)
+		assert.Equal(t, test.wantRespGZIPEnabled, v.GetBool("compression.response.enable_gzip"), test.desc)
+	}
 }
 
 func TestIsConfigInfoPresent(t *testing.T) {
@@ -3135,5 +3312,54 @@ func TestTCF2FeatureOneVendorException(t *testing.T) {
 		value := tcf2.FeatureOneVendorException(tt.giveBidder)
 
 		assert.Equal(t, tt.wantIsVendorException, value, tt.description)
+	}
+}
+
+func TestMigrateConfigEventsEnabled(t *testing.T) {
+	testCases := []struct {
+		name                  string
+		oldFieldValue         *bool
+		newFieldValue         *bool
+		expectedOldFieldValue *bool
+		expectedNewFieldValue *bool
+	}{
+		{
+			name:                  "Both old and new fields are nil",
+			oldFieldValue:         nil,
+			newFieldValue:         nil,
+			expectedOldFieldValue: nil,
+			expectedNewFieldValue: nil,
+		},
+		{
+			name:                  "Only old field is set",
+			oldFieldValue:         ptrutil.ToPtr(true),
+			newFieldValue:         nil,
+			expectedOldFieldValue: ptrutil.ToPtr(true),
+			expectedNewFieldValue: nil,
+		},
+		{
+			name:                  "Only new field is set",
+			oldFieldValue:         nil,
+			newFieldValue:         ptrutil.ToPtr(true),
+			expectedOldFieldValue: ptrutil.ToPtr(true),
+			expectedNewFieldValue: nil,
+		},
+		{
+			name:                  "Both old and new fields are set, override old field with new field value",
+			oldFieldValue:         ptrutil.ToPtr(false),
+			newFieldValue:         ptrutil.ToPtr(true),
+			expectedOldFieldValue: ptrutil.ToPtr(true),
+			expectedNewFieldValue: nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			updatedOldFieldValue, updatedNewFieldValue := migrateConfigEventsEnabled(tc.oldFieldValue, tc.newFieldValue)
+
+			assert.Equal(t, tc.expectedOldFieldValue, updatedOldFieldValue)
+			assert.Nil(t, updatedNewFieldValue)
+			assert.Nil(t, tc.expectedNewFieldValue)
+		})
 	}
 }

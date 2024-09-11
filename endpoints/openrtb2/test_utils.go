@@ -10,15 +10,14 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"path/filepath"
 	"strconv"
 	"testing"
 	"time"
 
 	"github.com/buger/jsonparser"
 	"github.com/julienschmidt/httprouter"
-	"github.com/prebid/openrtb/v17/openrtb2"
-	"github.com/prebid/openrtb/v17/openrtb3"
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb3"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/analytics"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
@@ -29,7 +28,9 @@ import (
 	"github.com/prebid/prebid-server/experiment/adscert"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/hooks"
+	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/hooks/hookstage"
+	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/metrics"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -38,6 +39,7 @@ import (
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/util/iputil"
 	"github.com/prebid/prebid-server/util/uuidutil"
+	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 )
 
 // In this file we define:
@@ -74,9 +76,9 @@ type testCase struct {
 	ExpectedBidResponse json.RawMessage `json:"expectedBidResponse"`
 
 	// "/openrtb2/amp" endpoint JSON test info
-	storedRequest       map[string]json.RawMessage `json:"mockAmpStoredRequest"`
+	StoredRequest       map[string]json.RawMessage `json:"mockAmpStoredRequest"`
 	StoredResponse      map[string]json.RawMessage `json:"mockAmpStoredResponse"`
-	ExpectedAmpResponse AmpResponse                `json:"expectedAmpResponse"`
+	ExpectedAmpResponse json.RawMessage            `json:"expectedAmpResponse"`
 }
 
 type testConfigValues struct {
@@ -92,7 +94,7 @@ type testConfigValues struct {
 
 type brokenExchange struct{}
 
-func (e *brokenExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+func (e *brokenExchange) HoldAuction(ctx context.Context, r *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*exchange.AuctionResponse, error) {
 	return nil, errors.New("Critical, unrecoverable error.")
 }
 
@@ -846,15 +848,17 @@ type mockExchange struct {
 	lastRequest *openrtb2.BidRequest
 }
 
-func (m *mockExchange) HoldAuction(ctx context.Context, auctionRequest exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+func (m *mockExchange) HoldAuction(ctx context.Context, auctionRequest *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*exchange.AuctionResponse, error) {
 	r := auctionRequest.BidRequestWrapper
 	m.lastRequest = r.BidRequest
-	return &openrtb2.BidResponse{
-		SeatBid: []openrtb2.SeatBid{{
-			Bid: []openrtb2.Bid{{
-				AdM: "<script></script>",
+	return &exchange.AuctionResponse{
+		BidResponse: &openrtb2.BidResponse{
+			SeatBid: []openrtb2.SeatBid{{
+				Bid: []openrtb2.Bid{{
+					AdM: "<script></script>",
+				}},
 			}},
-		}},
+		},
 	}, nil
 }
 
@@ -883,8 +887,8 @@ type warningsCheckExchange struct {
 	auctionRequest exchange.AuctionRequest
 }
 
-func (e *warningsCheckExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
-	e.auctionRequest = r
+func (e *warningsCheckExchange) HoldAuction(ctx context.Context, r *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*exchange.AuctionResponse, error) {
+	e.auctionRequest = *r
 	return nil, nil
 }
 
@@ -894,13 +898,16 @@ type nobidExchange struct {
 	gotRequest *openrtb2.BidRequest
 }
 
-func (e *nobidExchange) HoldAuction(ctx context.Context, auctionRequest exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+func (e *nobidExchange) HoldAuction(ctx context.Context, auctionRequest *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*exchange.AuctionResponse, error) {
 	r := auctionRequest.BidRequestWrapper
 	e.gotRequest = r.BidRequest
-	return &openrtb2.BidResponse{
-		ID:    r.BidRequest.ID,
-		BidID: "test bid id",
-		NBR:   openrtb3.NoBidUnknownError.Ptr(),
+
+	return &exchange.AuctionResponse{
+		BidResponse: &openrtb2.BidResponse{
+			ID:    r.BidRequest.ID,
+			BidID: "test bid id",
+			NBR:   openrtb3.NoBidUnknownError.Ptr(),
+		},
 	}, nil
 }
 
@@ -934,6 +941,7 @@ type mockBidderHandler struct {
 	BidderName string  `json:"bidderName"`
 	Currency   string  `json:"currency"`
 	Price      float64 `json:"price"`
+	DealID     string  `json:"dealid"`
 }
 
 func (b mockBidderHandler) bid(w http.ResponseWriter, req *http.Request) {
@@ -968,9 +976,10 @@ func (b mockBidderHandler) bid(w http.ResponseWriter, req *http.Request) {
 			{
 				Bid: []openrtb2.Bid{
 					{
-						ID:    b.BidderName + "-bid",
-						ImpID: openrtb2Request.Imp[0].ID,
-						Price: b.Price,
+						ID:     b.BidderName + "-bid",
+						ImpID:  openrtb2Request.Imp[0].ID,
+						Price:  b.Price,
+						DealID: b.DealID,
 					},
 				},
 				Seat: b.BidderName,
@@ -1090,23 +1099,7 @@ func newBidderInfo(isDisabled bool) config.BidderInfo {
 	}
 }
 
-func getTestFiles(dir string) ([]string, error) {
-	var filesToAssert []string
-
-	fileList, err := os.ReadDir(dir)
-	if err != nil {
-		return nil, err
-	}
-
-	// Append the path of every file found in `dir` to the `filesToAssert` array
-	for _, fileInfo := range fileList {
-		filesToAssert = append(filesToAssert, filepath.Join(dir, fileInfo.Name()))
-	}
-
-	return filesToAssert, nil
-}
-
-func parseTestFile(fileData []byte, testFile string) (testCase, error) {
+func parseTestData(fileData []byte, testFile string) (testCase, error) {
 
 	parsedTestData := testCase{}
 	var err, errEm error
@@ -1139,9 +1132,9 @@ func parseTestFile(fileData []byte, testFile string) (testCase, error) {
 	parsedTestData.ExpectedErrorMessage, errEm = jsonparser.GetString(fileData, "expectedErrorMessage")
 
 	if err == nil && errEm == nil {
-		return parsedTestData, errors.New("Test case file can't have both a valid expectedBidResponse and a valid expectedErrorMessage, fields are mutually exclusive")
+		return parsedTestData, fmt.Errorf("Test case %s can't have both a valid expectedBidResponse and a valid expectedErrorMessage, fields are mutually exclusive", testFile)
 	} else if err != nil && errEm != nil {
-		return parsedTestData, errors.New("Test case file should come with either a valid expectedBidResponse or a valid expectedErrorMessage, not both.")
+		return parsedTestData, fmt.Errorf("Test case %s should come with either a valid expectedBidResponse or a valid expectedErrorMessage, not both.", testFile)
 	}
 
 	parsedTestData.ExpectedReturnCode = int(parsedReturnCode)
@@ -1179,7 +1172,7 @@ type exchangeTestWrapper struct {
 	actualValidatedBidReq *openrtb2.BidRequest
 }
 
-func (te *exchangeTestWrapper) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+func (te *exchangeTestWrapper) HoldAuction(ctx context.Context, r *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*exchange.AuctionResponse, error) {
 
 	// rebuild/resync the request in the request wrapper.
 	if err := r.BidRequestWrapper.RebuildRequest(); err != nil {
@@ -1213,9 +1206,6 @@ func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.Bid
 	gdprPermsBuilder := fakePermissionsBuilder{
 		permissions: &fakePermissions{},
 	}.Builder
-	tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
-		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
-	}.Builder
 
 	testExchange := exchange.NewExchange(adapterMap,
 		&wellBehavedCache{},
@@ -1224,10 +1214,10 @@ func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.Bid
 		met,
 		bidderInfos,
 		gdprPermsBuilder,
-		tcf2ConfigBuilder,
 		mockCurrencyConverter,
 		mockFetcher,
 		&adscert.NilSigner{},
+		macros.NewStringIndexBasedReplacer(),
 	)
 
 	testExchange = &exchangeTestWrapper{
@@ -1256,7 +1246,7 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 
 	bidderInfos := getBidderInfos(test.Config.DisabledAdapters, openrtb_ext.CoreBidderNames())
 	bidderMap := exchange.GetActiveBidders(bidderInfos)
-	disabledBidders := exchange.GetDisabledBiddersErrorMessages(bidderInfos)
+	disabledBidders := exchange.GetDisabledBidderWarningMessages(bidderInfos)
 	met := &metricsConfig.NilMetricsEngine{}
 	mockFetcher := empty_fetcher.EmptyFetcher{}
 
@@ -1275,8 +1265,8 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 	testExchange, mockBidServersArray := buildTestExchange(test.Config, adapterMap, mockBidServersArray, mockCurrencyRatesServer, bidderInfos, cfg, met, mockFetcher)
 
 	var storedRequestFetcher stored_requests.Fetcher
-	if len(test.storedRequest) > 0 {
-		storedRequestFetcher = &mockAmpStoredReqFetcher{test.storedRequest}
+	if len(test.StoredRequest) > 0 {
+		storedRequestFetcher = &mockAmpStoredReqFetcher{test.StoredRequest}
 	} else {
 		storedRequestFetcher = &mockStoredReqFetcher{}
 	}
@@ -1300,7 +1290,7 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 		planBuilder = hooks.EmptyPlanBuilder{}
 	}
 
-	var endpointBuilder func(uuidutil.UUIDGenerator, exchange.Exchange, openrtb_ext.BidderParamValidator, stored_requests.Fetcher, stored_requests.AccountFetcher, *config.Configuration, metrics.MetricsEngine, analytics.PBSAnalyticsModule, map[string]string, []byte, map[string]openrtb_ext.BidderName, stored_requests.Fetcher, hooks.ExecutionPlanBuilder) (httprouter.Handle, error)
+	var endpointBuilder func(uuidutil.UUIDGenerator, exchange.Exchange, openrtb_ext.BidderParamValidator, stored_requests.Fetcher, stored_requests.AccountFetcher, *config.Configuration, metrics.MetricsEngine, analytics.PBSAnalyticsModule, map[string]string, []byte, map[string]openrtb_ext.BidderName, stored_requests.Fetcher, hooks.ExecutionPlanBuilder, *exchange.TmaxAdjustmentsPreprocessed) (httprouter.Handle, error)
 
 	switch test.endpointType {
 	case AMP_ENDPOINT:
@@ -1323,6 +1313,7 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 		bidderMap,
 		storedResponseFetcher,
 		planBuilder,
+		nil,
 	)
 
 	return endpoint, testExchange.(*exchangeTestWrapper), mockBidServersArray, mockCurrencyRatesServer, err
@@ -1339,7 +1330,7 @@ type mockAccountFetcher struct {
 	data map[string]json.RawMessage
 }
 
-func (af *mockAccountFetcher) FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error) {
+func (af *mockAccountFetcher) FetchAccount(ctx context.Context, defaultAccountJSON json.RawMessage, accountID string) (json.RawMessage, []error) {
 	if account, ok := af.data[accountID]; ok {
 		return account, nil
 	}
@@ -1411,14 +1402,6 @@ func (fpb fakePermissionsBuilder) Builder(gdpr.TCF2ConfigReader, gdpr.RequestInf
 	return fpb.permissions
 }
 
-type fakeTCF2ConfigBuilder struct {
-	cfg gdpr.TCF2ConfigReader
-}
-
-func (fcr fakeTCF2ConfigBuilder) Builder(hostConfig config.TCF2, accountConfig config.AccountGDPR) gdpr.TCF2ConfigReader {
-	return fcr.cfg
-}
-
 type fakePermissions struct {
 }
 
@@ -1441,7 +1424,7 @@ type mockPlanBuilder struct {
 	rawAuctionPlan               hooks.Plan[hookstage.RawAuctionRequest]
 	processedAuctionPlan         hooks.Plan[hookstage.ProcessedAuctionRequest]
 	bidderRequestPlan            hooks.Plan[hookstage.BidderRequest]
-	bidderResponsePlan           hooks.Plan[hookstage.RawBidderResponse]
+	rawBidderResponsePlan        hooks.Plan[hookstage.RawBidderResponse]
 	allProcessedBidResponsesPlan hooks.Plan[hookstage.AllProcessedBidResponses]
 	auctionResponsePlan          hooks.Plan[hookstage.AuctionResponse]
 }
@@ -1463,7 +1446,7 @@ func (m mockPlanBuilder) PlanForBidderRequestStage(_ string, _ *config.Account) 
 }
 
 func (m mockPlanBuilder) PlanForRawBidderResponseStage(_ string, _ *config.Account) hooks.Plan[hookstage.RawBidderResponse] {
-	return m.bidderResponsePlan
+	return m.rawBidderResponsePlan
 }
 
 func (m mockPlanBuilder) PlanForAllProcessedBidResponsesStage(_ string, _ *config.Account) hooks.Plan[hookstage.AllProcessedBidResponses] {
@@ -1474,7 +1457,7 @@ func (m mockPlanBuilder) PlanForAuctionResponseStage(_ string, _ *config.Account
 	return m.auctionResponsePlan
 }
 
-func makeRejectPlan[H any](hook H) hooks.Plan[H] {
+func makePlan[H any](hook H) hooks.Plan[H] {
 	return hooks.Plan[H]{
 		{
 			Timeout: 5 * time.Millisecond,
@@ -1491,6 +1474,7 @@ func makeRejectPlan[H any](hook H) hooks.Plan[H] {
 
 type mockRejectionHook struct {
 	nbr int
+	err error
 }
 
 func (m mockRejectionHook) HandleEntrypointHook(
@@ -1498,7 +1482,7 @@ func (m mockRejectionHook) HandleEntrypointHook(
 	_ hookstage.ModuleInvocationContext,
 	_ hookstage.EntrypointPayload,
 ) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
-	return hookstage.HookResult[hookstage.EntrypointPayload]{Reject: true, NbrCode: m.nbr}, nil
+	return hookstage.HookResult[hookstage.EntrypointPayload]{Reject: true, NbrCode: m.nbr}, m.err
 }
 
 func (m mockRejectionHook) HandleRawAuctionHook(
@@ -1506,7 +1490,7 @@ func (m mockRejectionHook) HandleRawAuctionHook(
 	_ hookstage.ModuleInvocationContext,
 	_ hookstage.RawAuctionRequestPayload,
 ) (hookstage.HookResult[hookstage.RawAuctionRequestPayload], error) {
-	return hookstage.HookResult[hookstage.RawAuctionRequestPayload]{Reject: true, NbrCode: m.nbr}, nil
+	return hookstage.HookResult[hookstage.RawAuctionRequestPayload]{Reject: true, NbrCode: m.nbr}, m.err
 }
 
 func (m mockRejectionHook) HandleProcessedAuctionHook(
@@ -1514,5 +1498,145 @@ func (m mockRejectionHook) HandleProcessedAuctionHook(
 	_ hookstage.ModuleInvocationContext,
 	_ hookstage.ProcessedAuctionRequestPayload,
 ) (hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload], error) {
-	return hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload]{Reject: true, NbrCode: m.nbr}, nil
+	return hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload]{Reject: true, NbrCode: m.nbr}, m.err
+}
+
+func (m mockRejectionHook) HandleBidderRequestHook(
+	_ context.Context,
+	_ hookstage.ModuleInvocationContext,
+	payload hookstage.BidderRequestPayload,
+) (hookstage.HookResult[hookstage.BidderRequestPayload], error) {
+	result := hookstage.HookResult[hookstage.BidderRequestPayload]{}
+	if payload.Bidder == "appnexus" {
+		result.Reject = true
+		result.NbrCode = m.nbr
+	}
+
+	return result, m.err
+}
+
+func (m mockRejectionHook) HandleRawBidderResponseHook(
+	_ context.Context,
+	_ hookstage.ModuleInvocationContext,
+	payload hookstage.RawBidderResponsePayload,
+) (hookstage.HookResult[hookstage.RawBidderResponsePayload], error) {
+	result := hookstage.HookResult[hookstage.RawBidderResponsePayload]{}
+	if payload.Bidder == "appnexus" {
+		result.Reject = true
+		result.NbrCode = m.nbr
+	}
+
+	return result, nil
+}
+
+var entryPointHookUpdateWithErrors = hooks.HookWrapper[hookstage.Entrypoint]{
+	Module: "foobar",
+	Code:   "foo",
+	Hook: mockUpdateHook{
+		entrypointHandler: func(
+			_ hookstage.ModuleInvocationContext,
+			payload hookstage.EntrypointPayload,
+		) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+			ch := hookstage.ChangeSet[hookstage.EntrypointPayload]{}
+			ch.AddMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
+				payload.Request.Header.Add("foo", "bar")
+				return payload, nil
+			}, hookstage.MutationUpdate, "header", "foo")
+
+			return hookstage.HookResult[hookstage.EntrypointPayload]{
+				ChangeSet: ch,
+				Errors:    []string{"error 1"},
+			}, nil
+		},
+	},
+}
+
+var entryPointHookUpdateWithErrorsAndWarnings = hooks.HookWrapper[hookstage.Entrypoint]{
+	Module: "foobar",
+	Code:   "bar",
+	Hook: mockUpdateHook{
+		entrypointHandler: func(
+			_ hookstage.ModuleInvocationContext,
+			payload hookstage.EntrypointPayload,
+		) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+			ch := hookstage.ChangeSet[hookstage.EntrypointPayload]{}
+			ch.AddMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
+				params := payload.Request.URL.Query()
+				params.Add("foo", "baz")
+				payload.Request.URL.RawQuery = params.Encode()
+				return payload, nil
+			}, hookstage.MutationUpdate, "param", "foo")
+
+			return hookstage.HookResult[hookstage.EntrypointPayload]{
+				ChangeSet: ch,
+				Errors:    []string{"error 1"},
+				Warnings:  []string{"warning 1"},
+			}, nil
+		},
+	},
+}
+
+var entryPointHookUpdate = hooks.HookWrapper[hookstage.Entrypoint]{
+	Module: "foobar",
+	Code:   "baz",
+	Hook: mockUpdateHook{
+		entrypointHandler: func(
+			ctx hookstage.ModuleInvocationContext,
+			payload hookstage.EntrypointPayload,
+		) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+			result := hookstage.HookResult[hookstage.EntrypointPayload]{}
+			if ctx.Endpoint != hookexecution.EndpointAuction {
+				result.Warnings = []string{fmt.Sprintf("Endpoint %s is not supported by hook.", ctx.Endpoint)}
+				return result, nil
+			}
+
+			ch := hookstage.ChangeSet[hookstage.EntrypointPayload]{}
+			ch.AddMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
+				body, err := jsonpatch.MergePatch(payload.Body, []byte(`{"tmax":50}`))
+				if err == nil {
+					payload.Body = body
+				}
+				return payload, err
+			}, hookstage.MutationUpdate, "body", "tmax")
+			ch.AddMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
+				body, err := jsonpatch.MergePatch(payload.Body, []byte(`{"regs": {"ext": {"gdpr": 1, "us_privacy": "1NYN"}}}`))
+				if err == nil {
+					payload.Body = body
+				}
+				return payload, err
+			}, hookstage.MutationAdd, "body", "regs", "ext", "us_privacy")
+			result.ChangeSet = ch
+
+			return result, nil
+		},
+	},
+}
+
+var rawAuctionHookNone = hooks.HookWrapper[hookstage.RawAuctionRequest]{
+	Module: "vendor.module",
+	Code:   "foobar",
+	Hook:   mockUpdateHook{},
+}
+
+type mockUpdateHook struct {
+	entrypointHandler func(
+		hookstage.ModuleInvocationContext,
+		hookstage.EntrypointPayload,
+	) (hookstage.HookResult[hookstage.EntrypointPayload], error)
+}
+
+func (m mockUpdateHook) HandleEntrypointHook(
+	_ context.Context,
+	miCtx hookstage.ModuleInvocationContext,
+	payload hookstage.EntrypointPayload,
+) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+	return m.entrypointHandler(miCtx, payload)
+}
+
+func (m mockUpdateHook) HandleRawAuctionHook(
+	_ context.Context,
+	_ hookstage.ModuleInvocationContext,
+	_ hookstage.RawAuctionRequestPayload,
+) (hookstage.HookResult[hookstage.RawAuctionRequestPayload], error) {
+	return hookstage.HookResult[hookstage.RawAuctionRequestPayload]{}, nil
 }

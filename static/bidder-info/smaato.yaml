@@ -1,4 +1,5 @@
 endpoint: "https://prebid.ad.smaato.net/oapi/prebid"
+endpointCompression: gzip
 maintainer:
   email: "prebid@smaato.com"
 gvlVendorID: 82
@@ -15,6 +16,6 @@ capabilities:
       - native
 userSync:
   redirect:
-    url: "https://s.ad.smaato.net/c/?adExInit=p&redir={{.RedirectURL}}"
+    url: "https://s.ad.smaato.net/c/?adExInit=p&redir={{.RedirectURL}}&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}"
     userMacro: "$UID"
 

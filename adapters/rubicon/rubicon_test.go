@@ -15,8 +15,8 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 
 	"github.com/buger/jsonparser"
-	"github.com/prebid/openrtb/v17/adcom1"
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/adcom1"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -123,7 +123,12 @@ func TestResolveNativeObject(t *testing.T) {
 		{
 			nativeObject:  openrtb2.Native{Ver: "1", Request: "{\"eventtrackers\": [], \"context\": \"someWrongValue\"}"},
 			target:        map[string]interface{}{},
-			expectedError: fmt.Errorf("Context is not present or not of int type"),
+			expectedError: fmt.Errorf("Context is not of int type"),
+		},
+		{
+			nativeObject:  openrtb2.Native{Ver: "1", Request: "{\"eventtrackers\": [], \"plcmttype\": 2}"},
+			target:        map[string]interface{}{},
+			expectedError: nil,
 		},
 		{
 			nativeObject:  openrtb2.Native{Ver: "1", Request: "{\"eventtrackers\": [], \"context\": 1}"},
@@ -290,12 +295,12 @@ type mockCurrencyConversion struct {
 	mock.Mock
 }
 
-func (m mockCurrencyConversion) GetRate(from string, to string) (float64, error) {
+func (m *mockCurrencyConversion) GetRate(from string, to string) (float64, error) {
 	args := m.Called(from, to)
 	return args.Get(0).(float64), args.Error(1)
 }
 
-func (m mockCurrencyConversion) GetRates() *map[string]map[string]float64 {
+func (m *mockCurrencyConversion) GetRates() *map[string]map[string]float64 {
 	args := m.Called()
 	return args.Get(0).(*map[string]map[string]float64)
 }

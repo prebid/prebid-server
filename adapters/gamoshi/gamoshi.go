@@ -6,8 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/golang/glog"
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -48,7 +47,6 @@ func (a *GamoshiAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			err := &errortypes.BadInput{
 				Message: fmt.Sprintf("Gamoshi only supports banner and video media types. Ignoring imp id=%s", request.Imp[i].ID),
 			}
-			glog.Warning("Gamoshi SUPPORT VIOLATION: only banner and video media types supported")
 			errs = append(errs, err)
 			request.Imp = append(request.Imp[:i], request.Imp[i+1:]...)
 			i--

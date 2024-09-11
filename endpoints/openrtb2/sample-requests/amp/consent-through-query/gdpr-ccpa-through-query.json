@@ -81,10 +81,7 @@
     "ext": {
       "prebid": {
         "cache": {
-          "bids": {
-            "returnCreative": null
-          },
-          "vastxml": null
+          "bids": {}
         },
         "channel": {
           "name": "amp",
@@ -103,10 +100,7 @@
           },
           "includewinners": true,
           "includebidderkeys": true,
-          "includebrandcategory": null,
-          "includeformat": false,
-          "durationrangesec": null,
-          "preferdeals": false
+          "mediatypepricegranularity": {}
         }
       }
     }
@@ -124,13 +118,17 @@
       "hb_pb": "15.00",
       "hb_pb_appnexus": "15.00"
     },
-    "warnings": {
-      "general": [
-        {
-          "code": 10002,
-          "message": "debug turned off for account"
+    "ortb2": {
+      "ext": {
+        "warnings": {
+          "general": [
+            {
+              "code": 10002,
+              "message": "debug turned off for account"
+            }
+          ]
         }
-      ]
+      }
     }
   },
   "expectedReturnCode": 200

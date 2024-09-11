@@ -1,0 +1,10 @@
+endpoint: "https://ortb.cwi.re/v1/bid"
+maintainer:
+  email: "devs@cwire.com"
+endpointCompression: gzip
+gvlVendorID: 1081
+modifyingVastXmlAllowed: false
+capabilities:
+  site:
+    mediaTypes:
+      - banner

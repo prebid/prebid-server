@@ -190,12 +190,20 @@ func (cfg *DatabaseConfig) validate(dataType DataType, errs []error) []error {
 // DatabaseConnection has options which put types to the Database Connection string. See:
 // https://godoc.org/github.com/lib/pq#hdr-Connection_String_Parameters
 type DatabaseConnection struct {
-	Driver   string `mapstructure:"driver"`
-	Database string `mapstructure:"dbname"`
-	Host     string `mapstructure:"host"`
-	Port     int    `mapstructure:"port"`
-	Username string `mapstructure:"user"`
-	Password string `mapstructure:"password"`
+	Driver      string `mapstructure:"driver"`
+	Database    string `mapstructure:"dbname"`
+	Host        string `mapstructure:"host"`
+	Port        int    `mapstructure:"port"`
+	Username    string `mapstructure:"user"`
+	Password    string `mapstructure:"password"`
+	QueryString string `mapstructure:"query_string"`
+	TLS         TLS    `mapstructure:"tls"`
+}
+
+type TLS struct {
+	RootCert   string `mapstructure:"root_cert"`
+	ClientCert string `mapstructure:"client_cert"`
+	ClientKey  string `mapstructure:"client_key"`
 }
 
 type DatabaseFetcherQueries struct {

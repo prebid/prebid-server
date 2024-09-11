@@ -11,16 +11,14 @@ import (
 	"github.com/prebid/prebid-server/version"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/prebid/openrtb/v17/adcom1"
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/adcom1"
+	"github.com/prebid/openrtb/v19/openrtb2"
 )
 
 const endpoint string = "http://host/endpoint"
 
 func TestJsonSamples(t *testing.T) {
 	if bidder, err := Builder(openrtb_ext.BidderIx, config.Adapter{Endpoint: endpoint}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"}); err == nil {
-		ixBidder := bidder.(*IxAdapter)
-		ixBidder.maxRequests = 2
 		adapterstest.RunJSONBidderTest(t, "ixtest", bidder)
 	} else {
 		t.Fatalf("Builder returned unexpected error %v", err)
@@ -44,7 +42,7 @@ func TestIxMakeBidsWithCategoryDuration(t *testing.T) {
 				`{
 					"prebid": {},
 					"bidder": {
-						"siteID": 123456
+						"siteID": "123456"
 					}
 				}`,
 			)},
@@ -102,6 +100,55 @@ func TestIxMakeBidsWithCategoryDuration(t *testing.T) {
 	if len(errors) != expectedErrorCount {
 		t.Errorf("should not have any errors, errors=%v", errors)
 	}
+}
+
+func TestIxMakeRequestWithGppString(t *testing.T) {
+	bidder := &IxAdapter{}
+
+	testGppString := "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN"
+
+	mockedReq := &openrtb2.BidRequest{
+		Imp: []openrtb2.Imp{{
+			ID: "1_1",
+			Video: &openrtb2.Video{
+				W:           640,
+				H:           360,
+				MIMEs:       []string{"video/mp4"},
+				MaxDuration: 60,
+				Protocols:   []adcom1.MediaCreativeSubtype{2, 3, 5, 6},
+			},
+			Ext: json.RawMessage(
+				`{
+					"prebid": {},
+					"bidder": {
+						"siteId": "123456"
+					}
+				}`,
+			)},
+		},
+		Regs: &openrtb2.Regs{
+			GPP: testGppString,
+		},
+	}
+
+	expectedRequestCount := 1
+	expectedErrorCount := 0
+	var reqInfo *adapters.ExtraRequestInfo
+
+	requests, errors := bidder.MakeRequests(mockedReq, reqInfo)
+
+	if len(requests) != expectedRequestCount {
+		t.Errorf("should have 1 request, requests=%v", requests)
+	}
+
+	if len(errors) != expectedErrorCount {
+		t.Errorf("should not have any errors, errors=%v", errors)
+	}
+
+	req := &openrtb2.BidRequest{}
+	json.Unmarshal(requests[0].Body, req)
+
+	assert.Equal(t, req.Regs.GPP, testGppString)
 }
 
 func TestBuildIxDiag(t *testing.T) {
@@ -206,7 +253,8 @@ func TestBuildIxDiag(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
 			version.Ver = test.pbsVersion
-			err := BuildIxDiag(test.request)
+			ixDiag := &IxDiag{}
+			err := setIxDiagIntoExtRequest(test.request, ixDiag)
 			if test.expectError {
 				assert.NotNil(t, err)
 			} else {

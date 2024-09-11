@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/config"
@@ -122,7 +122,7 @@ func TestParseImpressionObject(t *testing.T) {
 			expectedBidfloor: 0.12,
 		},
 		{
-			name: "imp.bidfloor set and kadfloor set, preference to kadfloor",
+			name: "imp.bidfloor set and kadfloor set, higher imp.bidfloor",
 			args: args{
 				imp: &openrtb2.Imp{
 					BidFloor: 0.12,
@@ -130,7 +130,18 @@ func TestParseImpressionObject(t *testing.T) {
 					Ext:      json.RawMessage(`{"bidder":{"kadfloor":"0.11"}}`),
 				},
 			},
-			expectedBidfloor: 0.11,
+			expectedBidfloor: 0.12,
+		},
+		{
+			name: "imp.bidfloor set and kadfloor set, higher kadfloor",
+			args: args{
+				imp: &openrtb2.Imp{
+					BidFloor: 0.12,
+					Video:    &openrtb2.Video{},
+					Ext:      json.RawMessage(`{"bidder":{"kadfloor":"0.13"}}`),
+				},
+			},
+			expectedBidfloor: 0.13,
 		},
 		{
 			name: "kadfloor string set with whitespace",

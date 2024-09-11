@@ -3,10 +3,11 @@ package modules
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
 
+	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/hooks"
+	"github.com/prebid/prebid-server/modules/moduledeps"
 )
 
 //go:generate go run ./generator/buildergen.go
@@ -23,14 +24,14 @@ type Builder interface {
 	// It returns hook repository created based on the implemented hook interfaces by modules
 	// and a map of modules to a list of stage names for which module provides hooks
 	// or an error encountered during module initialization.
-	Build(cfg config.Modules, client *http.Client) (hooks.HookRepository, map[string][]string, error)
+	Build(cfg config.Modules, client moduledeps.ModuleDeps) (hooks.HookRepository, map[string][]string, error)
 }
 
 type (
 	// ModuleBuilders mapping between module name and its builder: map[vendor]map[module]ModuleBuilderFn
 	ModuleBuilders map[string]map[string]ModuleBuilderFn
-	// ModuleBuilderFn returns an interface{} type that implements certain hook interfaces
-	ModuleBuilderFn func(cfg json.RawMessage, client *http.Client) (interface{}, error)
+	// ModuleBuilderFn returns an interface{} type that implements certain hook interfaces.
+	ModuleBuilderFn func(cfg json.RawMessage, deps moduledeps.ModuleDeps) (interface{}, error)
 )
 
 type builder struct {
@@ -44,21 +45,36 @@ type builder struct {
 //
 // Method returns a hooks.HookRepository and a map of modules to a list of stage names
 // for which module provides hooks or an error occurred during modules initialization.
-func (m *builder) Build(cfg config.Modules, client *http.Client) (hooks.HookRepository, map[string][]string, error) {
+func (m *builder) Build(
+	cfg config.Modules,
+	deps moduledeps.ModuleDeps,
+) (hooks.HookRepository, map[string][]string, error) {
 	modules := make(map[string]interface{})
 	for vendor, moduleBuilders := range m.builders {
 		for moduleName, builder := range moduleBuilders {
 			var err error
 			var conf json.RawMessage
+			var isEnabled bool
 
 			id := fmt.Sprintf("%s.%s", vendor, moduleName)
 			if data, ok := cfg[vendor][moduleName]; ok {
 				if conf, err = json.Marshal(data); err != nil {
 					return nil, nil, fmt.Errorf(`failed to marshal "%s" module config: %s`, id, err)
 				}
+
+				if values, ok := data.(map[string]interface{}); ok {
+					if value, ok := values["enabled"].(bool); ok {
+						isEnabled = value
+					}
+				}
 			}
 
-			module, err := builder(conf, client)
+			if !isEnabled {
+				glog.Infof("Skip %s module, disabled.", id)
+				continue
+			}
+
+			module, err := builder(conf, deps)
 			if err != nil {
 				return nil, nil, fmt.Errorf(`failed to init "%s" module: %s`, id, err)
 			}

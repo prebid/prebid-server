@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/buger/jsonparser"
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -17,7 +17,7 @@ import (
 	"github.com/prebid/prebid-server/util/timeutil"
 )
 
-const clientVersion = "prebid_server_0.5"
+const clientVersion = "prebid_server_0.6"
 
 type adMarkupType string
 
@@ -464,6 +464,11 @@ func setImpForAdspace(imp *openrtb2.Imp) error {
 		return &errortypes.BadInput{Message: "Missing adspaceId parameter."}
 	}
 
+	impExt, err := makeImpExt(&imp.Ext)
+	if err != nil {
+		return err
+	}
+
 	if imp.Banner != nil {
 		bannerCopy, err := setBannerDimension(imp.Banner)
 		if err != nil {
@@ -471,13 +476,13 @@ func setImpForAdspace(imp *openrtb2.Imp) error {
 		}
 		imp.Banner = bannerCopy
 		imp.TagID = adSpaceID
-		imp.Ext = nil
+		imp.Ext = impExt
 		return nil
 	}
 
 	if imp.Video != nil || imp.Native != nil {
 		imp.TagID = adSpaceID
-		imp.Ext = nil
+		imp.Ext = impExt
 		return nil
 	}
 
@@ -494,6 +499,11 @@ func setImpForAdBreak(imps []openrtb2.Imp) error {
 		return &errortypes.BadInput{Message: "Missing adbreakId parameter."}
 	}
 
+	impExt, err := makeImpExt(&imps[0].Ext)
+	if err != nil {
+		return err
+	}
+
 	for i := range imps {
 		imps[i].TagID = adBreakID
 		imps[i].Ext = nil
@@ -506,7 +516,31 @@ func setImpForAdBreak(imps []openrtb2.Imp) error {
 		imps[i].Video = &videoCopy
 	}
 
+	imps[0].Ext = impExt
+
 	return nil
+}
+
+func makeImpExt(impExtRaw *json.RawMessage) (json.RawMessage, error) {
+	var impExt openrtb_ext.ExtImpExtraDataSmaato
+
+	if err := json.Unmarshal(*impExtRaw, &impExt); err != nil {
+		return nil, &errortypes.BadInput{Message: "Invalid imp.ext."}
+	}
+
+	if impExtSkadnRaw := impExt.Skadn; impExtSkadnRaw != nil {
+		var impExtSkadn map[string]json.RawMessage
+
+		if err := json.Unmarshal(impExtSkadnRaw, &impExtSkadn); err != nil {
+			return nil, &errortypes.BadInput{Message: "Invalid imp.ext.skadn."}
+		}
+	}
+
+	if impExtJson, err := json.Marshal(impExt); string(impExtJson) != "{}" {
+		return impExtJson, err
+	} else {
+		return nil, nil
+	}
 }
 
 func setBannerDimension(banner *openrtb2.Banner) (*openrtb2.Banner, error) {

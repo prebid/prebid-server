@@ -27,6 +27,11 @@
       "minItems": 2,
       "maxItems": 2,
       "description": "An array of two integer containing the dimension"
+    },
+    "sid": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Slot ID"
     }
   },
   "oneOf": [

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-
 	"github.com/buger/jsonparser"
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/prebid-server/config"
@@ -12,11 +11,12 @@ import (
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/util/iputil"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 )
 
 // GetAccount looks up the config.Account object referenced by the given accountID, with access rules applied
-func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_requests.AccountFetcher, accountID string) (account *config.Account, errs []error) {
+func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_requests.AccountFetcher, accountID string, me metrics.MetricsEngine) (account *config.Account, errs []error) {
 	// Check BlacklistedAcctMap until we have deprecated it
 	if _, found := cfg.BlacklistedAcctMap[accountID]; found {
 		return nil, []error{&errortypes.BlacklistedAcct{
@@ -28,7 +28,7 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 			Message: fmt.Sprintf("Prebid-server has been configured to discard requests without a valid Account ID. Please reach out to the prebid server host."),
 		}}
 	}
-	if accountJSON, accErrs := fetcher.FetchAccount(ctx, accountID); len(accErrs) > 0 || accountJSON == nil {
+	if accountJSON, accErrs := fetcher.FetchAccount(ctx, cfg.AccountDefaultsJSON(), accountID); len(accErrs) > 0 || accountJSON == nil {
 		// accountID does not reference a valid account
 		for _, e := range accErrs {
 			if _, ok := e.(stored_requests.NotFoundError); !ok {
@@ -49,26 +49,39 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 	} else {
 		// accountID resolved to a valid account, merge with AccountDefaults for a complete config
 		account = &config.Account{}
-		completeJSON, err := jsonpatch.MergePatch(cfg.AccountDefaultsJSON(), accountJSON)
-		if err == nil {
-			err = json.Unmarshal(completeJSON, account)
+		err := json.Unmarshal(accountJSON, account)
 
-			// this logic exists for backwards compatibility. If the initial unmarshal fails above, we attempt to
-			// resolve it by converting the GDPR enforce purpose fields and then attempting an unmarshal again before
-			// declaring a malformed account error.
-			// unmarshal fetched account to determine if it is well-formed
+		// this logic exists for backwards compatibility. If the initial unmarshal fails above, we attempt to
+		// resolve it by converting the GDPR enforce purpose fields and then attempting an unmarshal again before
+		// declaring a malformed account error.
+		// unmarshal fetched account to determine if it is well-formed
+		var deprecatedPurposeFields []string
+		if _, ok := err.(*json.UnmarshalTypeError); ok {
+			// attempt to convert deprecated GDPR enforce purpose fields to resolve issue
+			accountJSON, err, deprecatedPurposeFields = ConvertGDPREnforcePurposeFields(accountJSON)
+			// unmarshal again to check if unmarshal error still exists after GDPR field conversion
+			err = json.Unmarshal(accountJSON, account)
+
 			if _, ok := err.(*json.UnmarshalTypeError); ok {
-				// attempt to convert deprecated GDPR enforce purpose fields to resolve issue
-				completeJSON, err = ConvertGDPREnforcePurposeFields(completeJSON)
-				// unmarshal again to check if unmarshal error still exists after GDPR field conversion
-				err = json.Unmarshal(completeJSON, account)
-
-				if _, ok := err.(*json.UnmarshalTypeError); ok {
-					return nil, []error{&errortypes.MalformedAcct{
-						Message: fmt.Sprintf("The prebid-server account config for account id \"%s\" is malformed. Please reach out to the prebid server host.", accountID),
-					}}
-				}
+				return nil, []error{&errortypes.MalformedAcct{
+					Message: fmt.Sprintf("The prebid-server account config for account id \"%s\" is malformed. Please reach out to the prebid server host.", accountID),
+				}}
 			}
+		}
+		usingGDPRChannelEnabled := useGDPRChannelEnabled(account)
+		usingCCPAChannelEnabled := useCCPAChannelEnabled(account)
+
+		if usingGDPRChannelEnabled {
+			me.RecordAccountGDPRChannelEnabledWarning(accountID)
+		}
+		if usingCCPAChannelEnabled {
+			me.RecordAccountCCPAChannelEnabledWarning(accountID)
+		}
+		for _, purposeName := range deprecatedPurposeFields {
+			me.RecordAccountGDPRPurposeWarning(accountID, purposeName)
+		}
+		if len(deprecatedPurposeFields) > 0 || usingGDPRChannelEnabled || usingCCPAChannelEnabled {
+			me.RecordAccountUpgradeStatus(accountID)
 		}
 
 		if err != nil {
@@ -89,6 +102,18 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 		})
 		return nil, errs
 	}
+
+	if ipV6Err := account.Privacy.IPv6Config.Validate(nil); len(ipV6Err) > 0 {
+		account.Privacy.IPv6Config.AnonKeepBits = iputil.IPv6DefaultMaskingBitSize
+	}
+
+	if ipV4Err := account.Privacy.IPv4Config.Validate(nil); len(ipV4Err) > 0 {
+		account.Privacy.IPv4Config.AnonKeepBits = iputil.IPv4DefaultMaskingBitSize
+	}
+
+	// set the value of events.enabled field based on deprecated events_enabled field and ensure backward compatibility
+	deprecateEventsEnabledField(account)
+
 	return account, nil
 }
 
@@ -171,13 +196,13 @@ type PatchAccountGDPRPurpose struct {
 // given the recent type change of gdpr.purpose{1-10}.enforce_purpose from a string to a bool. This function
 // iterates over each GDPR purpose config and sets enforce_purpose and enforce_algo to the appropriate
 // bool and string values respectively if enforce_purpose is a string and enforce_algo is not set
-func ConvertGDPREnforcePurposeFields(config []byte) (newConfig []byte, err error) {
+func ConvertGDPREnforcePurposeFields(config []byte) (newConfig []byte, err error, deprecatedPurposeFields []string) {
 	gdprJSON, _, _, err := jsonparser.Get(config, "gdpr")
 	if err != nil && err == jsonparser.KeyPathNotFoundError {
-		return config, nil
+		return config, nil, deprecatedPurposeFields
 	}
 	if err != nil {
-		return nil, err
+		return nil, err, deprecatedPurposeFields
 	}
 
 	newAccount := PatchAccount{
@@ -192,15 +217,17 @@ func ConvertGDPREnforcePurposeFields(config []byte) (newConfig []byte, err error
 			continue
 		}
 		if err != nil {
-			return nil, err
+			return nil, err, deprecatedPurposeFields
 		}
 		if purposeDataType != jsonparser.String {
 			continue
+		} else {
+			deprecatedPurposeFields = append(deprecatedPurposeFields, purposeName)
 		}
 
 		_, _, _, err = jsonparser.Get(gdprJSON, purposeName, "enforce_algo")
 		if err != nil && err != jsonparser.KeyPathNotFoundError {
-			return nil, err
+			return nil, err, deprecatedPurposeFields
 		}
 		if err == nil {
 			continue
@@ -219,13 +246,34 @@ func ConvertGDPREnforcePurposeFields(config []byte) (newConfig []byte, err error
 
 	patchConfig, err := json.Marshal(newAccount)
 	if err != nil {
-		return nil, err
+		return nil, err, deprecatedPurposeFields
 	}
 
 	newConfig, err = jsonpatch.MergePatch(config, patchConfig)
 	if err != nil {
-		return nil, err
+		return nil, err, deprecatedPurposeFields
 	}
 
-	return newConfig, nil
+	return newConfig, nil, deprecatedPurposeFields
+}
+
+func useGDPRChannelEnabled(account *config.Account) bool {
+	return account.GDPR.ChannelEnabled.IsSet() && !account.GDPR.IntegrationEnabled.IsSet()
+}
+
+func useCCPAChannelEnabled(account *config.Account) bool {
+	return account.CCPA.ChannelEnabled.IsSet() && !account.CCPA.IntegrationEnabled.IsSet()
+}
+
+// deprecateEventsEnabledField is responsible for ensuring backwards compatibility of "events_enabled" field.
+// This function favors "events.enabled" field over deprecated "events_enabled" field, if values for both are set.
+// If only deprecated "events_enabled" field is set then it sets the same value to "events.enabled" field.
+func deprecateEventsEnabledField(account *config.Account) {
+	if account != nil {
+		if account.Events.Enabled == nil {
+			account.Events.Enabled = account.EventsEnabled
+		}
+		// assign the old value to the new value so old and new are always the same even though the new value is what is used in the application code.
+		account.EventsEnabled = account.Events.Enabled
+	}
 }

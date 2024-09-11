@@ -9,6 +9,7 @@ capabilities:
   site:
     mediaTypes:
       - banner
+      - video
 userSync:
   iframe:
     url: "https://ads.us.e-planning.net/uspd/1/?du={{.RedirectURL}}"

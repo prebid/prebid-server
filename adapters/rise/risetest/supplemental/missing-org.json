@@ -1,0 +1,39 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-missing-ext-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "minduration": 1,
+          "maxduration": 2,
+          "maxextended": 30,
+          "minbitrate": 300,
+          "maxbitrate": 1500,
+          "protocols": [1,2,5],
+          "w": 1020,
+          "h": 780,
+          "startdelay": 1,
+          "placement": 1,
+          "playbackmethod": [2],
+          "delivery": [1],
+          "api": [1,2,3,4]
+        },
+        "ext": {
+          "bidder": {
+            "org": "",
+            "publisher_id": ""
+          }}
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "extractOrg: no org or publisher_id supplied",
+      "comparison": "literal"
+    }
+  ]
+}

@@ -17,8 +17,10 @@ capabilities:
       - audio
 userSync:
   redirect:
-    url: "https://ssum.casalemedia.com/usermatchredir?s=194962&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&cb={{.RedirectURL}}"
+    url: "https://ssum.casalemedia.com/usermatchredir?s=194962&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gppsid={{.GPPSID}}&cb={{.RedirectURL}}"
     userMacro: ""
   iframe:
-    url: "https://ssum-sec.casalemedia.com/usermatch?s=184674&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&cb={{.RedirectURL}}"
+    url: "https://ssum-sec.casalemedia.com/usermatch?s=184674&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gppsid={{.GPPSID}}&cb={{.RedirectURL}}"
     # ix appends the user id to end of the redirect url and does not utilize a macro
+openrtb:
+  gpp-supported: true

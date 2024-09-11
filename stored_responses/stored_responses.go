@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/buger/jsonparser"
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/stored_requests"
 )
@@ -146,8 +146,9 @@ func ProcessStoredResponses(ctx context.Context, requestJson []byte, storedRespF
 		}
 		bidderImpIdReplaceImp := flipMap(impBidderReplaceImp)
 
-		impIdToStoredResp, impBidderToStoredBidResponse := buildStoredResponsesMaps(storedResponses, impBidderToStoredBidResponseId, impIdToRespId)
-		return impIdToStoredResp, impBidderToStoredBidResponse, bidderImpIdReplaceImp, nil
+		impIdToStoredResp, impBidderToStoredBidResponse, errs := buildStoredResponsesMaps(storedResponses, impBidderToStoredBidResponseId, impIdToRespId)
+
+		return impIdToStoredResp, impBidderToStoredBidResponse, bidderImpIdReplaceImp, errs
 	}
 	return nil, nil, nil, nil
 }
@@ -166,24 +167,33 @@ func flipMap(impBidderReplaceImpId ImpBidderReplaceImpID) BidderImpReplaceImpID 
 	return flippedMap
 }
 
-func buildStoredResponsesMaps(storedResponses StoredResponseIdToStoredResponse, impBidderToStoredBidResponseId ImpBiddersWithBidResponseIDs, impIdToRespId ImpsWithAuctionResponseIDs) (ImpsWithBidResponses, ImpBidderStoredResp) {
+func buildStoredResponsesMaps(storedResponses StoredResponseIdToStoredResponse, impBidderToStoredBidResponseId ImpBiddersWithBidResponseIDs, impIdToRespId ImpsWithAuctionResponseIDs) (ImpsWithBidResponses, ImpBidderStoredResp, []error) {
+	var errs []error
 	//imp id to stored resp body
 	impIdToStoredResp := ImpsWithBidResponses{}
 	//stored bid responses: imp id to bidder to stored response body
 	impBidderToStoredBidResponse := ImpBidderStoredResp{}
 
 	for impId, respId := range impIdToRespId {
-		impIdToStoredResp[impId] = storedResponses[respId]
+		if len(storedResponses[respId]) == 0 {
+			errs = append(errs, fmt.Errorf("failed to fetch stored auction response for impId = %s and storedAuctionResponse id = %s", impId, respId))
+		} else {
+			impIdToStoredResp[impId] = storedResponses[respId]
+		}
 	}
 
 	for impId, bidderStoredResp := range impBidderToStoredBidResponseId {
 		bidderStoredResponses := StoredResponseIdToStoredResponse{}
 		for bidderName, id := range bidderStoredResp {
-			bidderStoredResponses[bidderName] = storedResponses[id]
+			if len(storedResponses[id]) == 0 {
+				errs = append(errs, fmt.Errorf("failed to fetch stored bid response for impId = %s, bidder = %s and storedBidResponse id = %s", impId, bidderName, id))
+			} else {
+				bidderStoredResponses[bidderName] = storedResponses[id]
+			}
 		}
 		impBidderToStoredBidResponse[impId] = bidderStoredResponses
 	}
-	return impIdToStoredResp, impBidderToStoredBidResponse
+	return impIdToStoredResp, impBidderToStoredBidResponse, errs
 }
 
 // parseImpInfo parses the request JSON and returns the impressions with their unmarshalled imp.ext.prebid

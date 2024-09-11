@@ -1,6 +1,6 @@
 package openrtb_ext
 
-import "github.com/prebid/openrtb/v17/openrtb2"
+import "github.com/prebid/openrtb/v19/openrtb2"
 
 type BidRequestVideo struct {
 	// Attribute:
@@ -98,7 +98,7 @@ type BidRequestVideo struct {
 	//   object; optional
 	// Description:
 	//    Object to tell ad server how much money the “bidder” demand is worth to you
-	PriceGranularity PriceGranularity `json:"pricegranularity,omitempty"`
+	PriceGranularity *PriceGranularity `json:"pricegranularity,omitempty"`
 
 	// Attribute:
 	//   tmax

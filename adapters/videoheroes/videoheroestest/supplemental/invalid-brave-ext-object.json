@@ -1,0 +1,29 @@
+{
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "ext.bidder not provided",
+      "comparison": "literal"
+    }
+  ],
+  "mockBidRequest": {
+    "id": "request-id",
+    "imp": [
+      {
+        "id": "impression-id",
+        "tagid": "tid",
+        "video": {
+          "mimes": ["video/mp4"],
+          "w": 640,
+          "h": 480,
+          "minduration": 30,
+          "maxduration": 150
+        },
+        "ext": "invalid data"
+      }
+    ],
+    "site": {
+      "page": "test.com"
+    }
+  },
+  "httpCalls": []
+}

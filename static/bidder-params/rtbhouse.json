@@ -7,6 +7,18 @@
         "publisherId": {
             "type": "string",
             "description": "The publisher’s ID provided by RTB House"
+        },
+        "region": {
+            "type": "string",
+            "description": "The publisher’s assigned datacenter region"
+        },
+        "bidfloor": {
+            "type": "number",
+            "description": "(optional) Minimum bid price in CPM that will be considered"
+        },
+        "channel": {
+            "type": "string",
+            "description": "Inventory channel identifier, limited to 50 characters"
         }
     },
     "required": ["publisherId"]

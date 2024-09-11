@@ -80,6 +80,12 @@ func TestNewMetrics(t *testing.T) {
 	ensureContains(t, registry, "ads_cert_requests.ok", m.AdsCertRequestsSuccess)
 	ensureContains(t, registry, "ads_cert_requests.failed", m.AdsCertRequestsFailure)
 
+	ensureContains(t, registry, "request_over_head_time.pre-bidder", m.OverheadTimer[PreBidder])
+	ensureContains(t, registry, "request_over_head_time.make-auction-response", m.OverheadTimer[MakeAuctionResponse])
+	ensureContains(t, registry, "request_over_head_time.make-bidder-requests", m.OverheadTimer[MakeBidderRequests])
+	ensureContains(t, registry, "bidder_server_response_time_seconds", m.BidderServerResponseTimer)
+	ensureContains(t, registry, "tmax_timeout", m.TMaxTimeoutCounter)
+
 	for module, stages := range moduleStageNames {
 		for _, stage := range stages {
 			ensureContainsModuleMetrics(t, registry, fmt.Sprintf("modules.module.%s.stage.%s", module, stage), m.ModuleMetrics[module][stage])
@@ -130,6 +136,12 @@ func ensureContainsAdapterMetrics(t *testing.T, registry metrics.Registry, name 
 	ensureContains(t, registry, name+".connections_created", adapterMetrics.ConnCreated)
 	ensureContains(t, registry, name+".connections_reused", adapterMetrics.ConnReused)
 	ensureContains(t, registry, name+".connection_wait_time", adapterMetrics.ConnWaitTime)
+
+	ensureContains(t, registry, name+".response.validation.size.err", adapterMetrics.BidValidationCreativeSizeErrorMeter)
+	ensureContains(t, registry, name+".response.validation.size.warn", adapterMetrics.BidValidationCreativeSizeWarnMeter)
+	ensureContains(t, registry, name+".response.validation.secure.err", adapterMetrics.BidValidationSecureMarkupErrorMeter)
+	ensureContains(t, registry, name+".response.validation.secure.warn", adapterMetrics.BidValidationSecureMarkupWarnMeter)
+
 }
 
 func ensureContainsModuleMetrics(t *testing.T, registry metrics.Registry, name string, moduleMetrics *ModuleMetrics) {
@@ -272,6 +284,90 @@ func TestRecordDebugRequest(t *testing.T) {
 	}
 }
 
+func TestRecordBidValidationCreativeSize(t *testing.T) {
+	testCases := []struct {
+		description          string
+		givenDisabledMetrics config.DisabledMetrics
+		givenPubID           string
+		expectedAccountCount int64
+		expectedAdapterCount int64
+	}{
+		{
+			description: "Account Metric isn't disabled, so both metrics should be incremented",
+			givenDisabledMetrics: config.DisabledMetrics{
+				AccountAdapterDetails: false,
+			},
+			givenPubID:           "acct-id",
+			expectedAdapterCount: 1,
+			expectedAccountCount: 1,
+		},
+		{
+			description: "Account Metric is disabled, so only the adapter metric should increment",
+			givenDisabledMetrics: config.DisabledMetrics{
+				AccountAdapterDetails: true,
+			},
+			givenPubID:           "acct-id",
+			expectedAdapterCount: 1,
+			expectedAccountCount: 0,
+		},
+	}
+	for _, test := range testCases {
+		registry := metrics.NewRegistry()
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, test.givenDisabledMetrics, nil, nil)
+
+		m.RecordBidValidationCreativeSizeError(openrtb_ext.BidderAppnexus, test.givenPubID)
+		m.RecordBidValidationCreativeSizeWarn(openrtb_ext.BidderAppnexus, test.givenPubID)
+		am := m.getAccountMetrics(test.givenPubID)
+
+		assert.Equal(t, test.expectedAdapterCount, m.AdapterMetrics[openrtb_ext.BidderAppnexus].BidValidationCreativeSizeErrorMeter.Count())
+		assert.Equal(t, test.expectedAdapterCount, m.AdapterMetrics[openrtb_ext.BidderAppnexus].BidValidationCreativeSizeWarnMeter.Count())
+		assert.Equal(t, test.expectedAccountCount, am.bidValidationCreativeSizeMeter.Count())
+		assert.Equal(t, test.expectedAccountCount, am.bidValidationCreativeSizeWarnMeter.Count())
+	}
+}
+
+func TestRecordBidValidationSecureMarkup(t *testing.T) {
+	testCases := []struct {
+		description          string
+		givenDisabledMetrics config.DisabledMetrics
+		givenPubID           string
+		expectedAccountCount int64
+		expectedAdapterCount int64
+	}{
+		{
+			description: "Account Metric isn't disabled, so both metrics should be incremented",
+			givenDisabledMetrics: config.DisabledMetrics{
+				AccountAdapterDetails: false,
+			},
+			givenPubID:           "acct-id",
+			expectedAdapterCount: 1,
+			expectedAccountCount: 1,
+		},
+		{
+			description: "Account Metric is disabled, so only the adapter metric should increment",
+			givenDisabledMetrics: config.DisabledMetrics{
+				AccountAdapterDetails: true,
+			},
+			givenPubID:           "acct-id",
+			expectedAdapterCount: 1,
+			expectedAccountCount: 0,
+		},
+	}
+	for _, test := range testCases {
+		registry := metrics.NewRegistry()
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, test.givenDisabledMetrics, nil, nil)
+
+		m.RecordBidValidationSecureMarkupError(openrtb_ext.BidderAppnexus, test.givenPubID)
+		m.RecordBidValidationSecureMarkupWarn(openrtb_ext.BidderAppnexus, test.givenPubID)
+		am := m.getAccountMetrics(test.givenPubID)
+
+		assert.Equal(t, test.expectedAdapterCount, m.AdapterMetrics[openrtb_ext.BidderAppnexus].BidValidationSecureMarkupErrorMeter.Count())
+		assert.Equal(t, test.expectedAdapterCount, m.AdapterMetrics[openrtb_ext.BidderAppnexus].BidValidationSecureMarkupWarnMeter.Count())
+		assert.Equal(t, test.expectedAccountCount, am.bidValidationSecureMarkupMeter.Count())
+		assert.Equal(t, test.expectedAccountCount, am.bidValidationSecureMarkupWarnMeter.Count())
+	}
+}
+
 func TestRecordDNSTime(t *testing.T) {
 	testCases := []struct {
 		description         string
@@ -323,6 +419,36 @@ func TestRecordTLSHandshakeTime(t *testing.T) {
 		m.RecordTLSHandshakeTime(test.tLSHandshakeDuration)
 
 		assert.Equal(t, test.expectedDuration.Nanoseconds(), m.TLSHandshakeTimer.Sum(), test.description)
+	}
+}
+
+func TestRecordBidderServerResponseTime(t *testing.T) {
+	testCases := []struct {
+		name          string
+		time          time.Duration
+		expectedCount int64
+		expectedSum   int64
+	}{
+		{
+			name:          "record-bidder-server-response-time-1",
+			time:          time.Duration(500),
+			expectedCount: 1,
+			expectedSum:   500,
+		},
+		{
+			name:          "record-bidder-server-response-time-2",
+			time:          time.Duration(500),
+			expectedCount: 2,
+			expectedSum:   1000,
+		},
+	}
+	for _, test := range testCases {
+		registry := metrics.NewRegistry()
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountAdapterDetails: true}, nil, nil)
+
+		m.RecordBidderServerResponseTime(test.time)
+
+		assert.Equal(t, test.time.Nanoseconds(), m.BidderServerResponseTimer.Sum(), test.name)
 	}
 }
 
@@ -937,6 +1063,218 @@ func TestRecordModuleAccountMetrics(t *testing.T) {
 		} else {
 			assert.Len(t, am.moduleMetrics, 0, "Account modules metrics are disabled, they should not be collected. Actual result %d account metrics collected \n", len(am.moduleMetrics))
 		}
+	}
+}
+
+func TestRecordAccountGDPRPurposeWarningMetrics(t *testing.T) {
+	testCases := []struct {
+		name                   string
+		givenPurposeName       string
+		expectedP1MetricCount  int64
+		expectedP2MetricCount  int64
+		expectedP3MetricCount  int64
+		expectedP4MetricCount  int64
+		expectedP5MetricCount  int64
+		expectedP6MetricCount  int64
+		expectedP7MetricCount  int64
+		expectedP8MetricCount  int64
+		expectedP9MetricCount  int64
+		expectedP10MetricCount int64
+	}{
+		{
+			name:                  "Purpose1MetricIncremented",
+			givenPurposeName:      "purpose1",
+			expectedP1MetricCount: 1,
+		},
+		{
+			name:                  "Purpose2MetricIncremented",
+			givenPurposeName:      "purpose2",
+			expectedP2MetricCount: 1,
+		},
+		{
+			name:                  "Purpose3MetricIncremented",
+			givenPurposeName:      "purpose3",
+			expectedP3MetricCount: 1,
+		},
+		{
+			name:                  "Purpose4MetricIncremented",
+			givenPurposeName:      "purpose4",
+			expectedP4MetricCount: 1,
+		},
+		{
+			name:                  "Purpose5MetricIncremented",
+			givenPurposeName:      "purpose5",
+			expectedP5MetricCount: 1,
+		},
+		{
+			name:                  "Purpose6MetricIncremented",
+			givenPurposeName:      "purpose6",
+			expectedP6MetricCount: 1,
+		},
+		{
+			name:                  "Purpose7MetricIncremented",
+			givenPurposeName:      "purpose7",
+			expectedP7MetricCount: 1,
+		},
+		{
+			name:                  "Purpose8MetricIncremented",
+			givenPurposeName:      "purpose8",
+			expectedP8MetricCount: 1,
+		},
+		{
+			name:                  "Purpose9MetricIncremented",
+			givenPurposeName:      "purpose9",
+			expectedP9MetricCount: 1,
+		},
+		{
+			name:                   "Purpose10MetricIncremented",
+			givenPurposeName:       "purpose10",
+			expectedP10MetricCount: 1,
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			registry := metrics.NewRegistry()
+			m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{}, nil, nil)
+
+			m.RecordAccountGDPRPurposeWarning("acct-id", test.givenPurposeName)
+			am := m.getAccountMetrics("acct-id")
+
+			assert.Equal(t, test.expectedP1MetricCount, am.accountDeprecationWarningsPurpose1Meter.Count())
+			assert.Equal(t, test.expectedP2MetricCount, am.accountDeprecationWarningsPurpose2Meter.Count())
+			assert.Equal(t, test.expectedP3MetricCount, am.accountDeprecationWarningsPurpose3Meter.Count())
+			assert.Equal(t, test.expectedP4MetricCount, am.accountDeprecationWarningsPurpose4Meter.Count())
+			assert.Equal(t, test.expectedP5MetricCount, am.accountDeprecationWarningsPurpose5Meter.Count())
+			assert.Equal(t, test.expectedP6MetricCount, am.accountDeprecationWarningsPurpose6Meter.Count())
+			assert.Equal(t, test.expectedP7MetricCount, am.accountDeprecationWarningsPurpose7Meter.Count())
+			assert.Equal(t, test.expectedP8MetricCount, am.accountDeprecationWarningsPurpose8Meter.Count())
+			assert.Equal(t, test.expectedP9MetricCount, am.accountDeprecationWarningsPurpose9Meter.Count())
+			assert.Equal(t, test.expectedP10MetricCount, am.accountDeprecationWarningsPurpose10Meter.Count())
+		})
+	}
+}
+
+func TestRecordAccountGDPRChannelEnabledWarningMetrics(t *testing.T) {
+	testCases := []struct {
+		name                string
+		givenPubID          string
+		expectedMetricCount int64
+	}{
+		{
+			name:                "GdprChannelMetricIncremented",
+			givenPubID:          "acct-id",
+			expectedMetricCount: 1,
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			registry := metrics.NewRegistry()
+			m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{}, nil, nil)
+
+			m.RecordAccountGDPRChannelEnabledWarning(test.givenPubID)
+			am := m.getAccountMetrics(test.givenPubID)
+
+			assert.Equal(t, test.expectedMetricCount, am.channelEnabledGDPRMeter.Count())
+		})
+	}
+}
+
+func TestRecordAccountCCPAChannelEnabledWarningMetrics(t *testing.T) {
+	testCases := []struct {
+		name                string
+		givenPubID          string
+		expectedMetricCount int64
+	}{
+		{
+			name:                "CcpaChannelMetricIncremented",
+			givenPubID:          "acct-id",
+			expectedMetricCount: 1,
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			registry := metrics.NewRegistry()
+			m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{}, nil, nil)
+
+			m.RecordAccountCCPAChannelEnabledWarning(test.givenPubID)
+			am := m.getAccountMetrics(test.givenPubID)
+
+			assert.Equal(t, test.expectedMetricCount, am.channelEnabledCCPAMeter.Count())
+		})
+	}
+}
+
+func TestRecordAccountUpgradeStatusMetrics(t *testing.T) {
+	testCases := []struct {
+		name                string
+		givenPubID          string
+		expectedMetricCount int64
+	}{
+		{
+			name:                "AccountDeprecationMeterIncremented",
+			givenPubID:          "acct-id",
+			expectedMetricCount: 1,
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			registry := metrics.NewRegistry()
+			m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{}, nil, nil)
+
+			m.RecordAccountUpgradeStatus(test.givenPubID)
+			am := m.getAccountMetrics(test.givenPubID)
+
+			assert.Equal(t, test.expectedMetricCount, am.accountDeprecationSummaryMeter.Count())
+		})
+	}
+}
+
+func TestRecordOverheadTime(t *testing.T) {
+	testCases := []struct {
+		name          string
+		time          time.Duration
+		overheadType  OverheadType
+		expectedCount int64
+		expectedSum   int64
+	}{
+		{
+			name:          "record-pre-bidder-overhead-time-1",
+			time:          time.Duration(500),
+			overheadType:  PreBidder,
+			expectedCount: 1,
+			expectedSum:   500,
+		},
+		{
+			name:          "record-pre-bidder-overhead-time-2",
+			time:          time.Duration(500),
+			overheadType:  PreBidder,
+			expectedCount: 2,
+			expectedSum:   1000,
+		},
+		{
+			name:          "record-auction-response-overhead-time",
+			time:          time.Duration(500),
+			overheadType:  MakeAuctionResponse,
+			expectedCount: 1,
+			expectedSum:   500,
+		},
+		{
+			name:          "record-make-bidder-requests-overhead-time",
+			time:          time.Duration(500),
+			overheadType:  MakeBidderRequests,
+			expectedCount: 1,
+			expectedSum:   500,
+		},
+	}
+	registry := metrics.NewRegistry()
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			m := NewMetrics(registry, []openrtb_ext.BidderName{}, config.DisabledMetrics{}, nil, nil)
+			m.RecordOverheadTime(test.overheadType, test.time)
+			overheadMetrics := m.OverheadTimer[test.overheadType]
+			assert.Equal(t, test.expectedCount, overheadMetrics.Count())
+			assert.Equal(t, test.expectedSum, overheadMetrics.Sum())
+		})
 	}
 }
 
