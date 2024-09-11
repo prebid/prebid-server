@@ -239,23 +239,19 @@ func TestGDPRConsent(t *testing.T) {
 		consent         string
 		userExt         *openrtb_ext.ExtUser
 		nilUser         bool
-		expectedUserExt openrtb_ext.ExtUser
+		expectedConsent string
 	}{
 		{
-			description: "Nil User",
-			consent:     consent,
-			nilUser:     true,
-			expectedUserExt: openrtb_ext.ExtUser{
-				Consent: consent,
-			},
+			description:     "Nil User",
+			consent:         consent,
+			nilUser:         true,
+			expectedConsent: consent,
 		},
 		{
-			description: "Nil User Ext",
-			consent:     consent,
-			userExt:     nil,
-			expectedUserExt: openrtb_ext.ExtUser{
-				Consent: consent,
-			},
+			description:     "Nil User Ext",
+			consent:         consent,
+			userExt:         nil,
+			expectedConsent: consent,
 		},
 		{
 			description: "Overrides Existing Consent",
@@ -263,9 +259,7 @@ func TestGDPRConsent(t *testing.T) {
 			userExt: &openrtb_ext.ExtUser{
 				Consent: existingConsent,
 			},
-			expectedUserExt: openrtb_ext.ExtUser{
-				Consent: consent,
-			},
+			expectedConsent: consent,
 		},
 		{
 			description: "Overrides Existing Consent - With Sibling Data",
@@ -273,9 +267,7 @@ func TestGDPRConsent(t *testing.T) {
 			userExt: &openrtb_ext.ExtUser{
 				Consent: existingConsent,
 			},
-			expectedUserExt: openrtb_ext.ExtUser{
-				Consent: consent,
-			},
+			expectedConsent: consent,
 		},
 		{
 			description: "Does Not Override Existing Consent If Empty",
@@ -283,9 +275,7 @@ func TestGDPRConsent(t *testing.T) {
 			userExt: &openrtb_ext.ExtUser{
 				Consent: existingConsent,
 			},
-			expectedUserExt: openrtb_ext.ExtUser{
-				Consent: existingConsent,
-			},
+			expectedConsent: existingConsent,
 		},
 	}
 
@@ -341,15 +331,8 @@ func TestGDPRConsent(t *testing.T) {
 		if !assert.NotNil(t, result.User, test.description+":lastRequest.User") {
 			return
 		}
-		if !assert.NotNil(t, result.User.Ext, test.description+":lastRequest.User.Ext") {
-			return
-		}
-		var ue openrtb_ext.ExtUser
-		err = jsonutil.UnmarshalValid(result.User.Ext, &ue)
-		if !assert.NoError(t, err, test.description+":deserialize") {
-			return
-		}
-		assert.Equal(t, test.expectedUserExt, ue, test.description)
+
+		assert.Equal(t, test.expectedConsent, result.User.Consent, test.description)
 		assert.Equal(t, expectedErrorsFromHoldAuction, response.ORTB2.Ext.Errors, test.description+":errors")
 		assert.Empty(t, response.ORTB2.Ext.Warnings, test.description+":warnings")
 
@@ -372,15 +355,8 @@ func TestGDPRConsent(t *testing.T) {
 		if !assert.NotNil(t, resultLegacy.User, test.description+":legacy:lastRequest.User") {
 			return
 		}
-		if !assert.NotNil(t, resultLegacy.User.Ext, test.description+":legacy:lastRequest.User.Ext") {
-			return
-		}
-		var ueLegacy openrtb_ext.ExtUser
-		err = jsonutil.UnmarshalValid(resultLegacy.User.Ext, &ueLegacy)
-		if !assert.NoError(t, err, test.description+":legacy:deserialize") {
-			return
-		}
-		assert.Equal(t, test.expectedUserExt, ueLegacy, test.description+":legacy")
+
+		assert.Equal(t, test.expectedConsent, resultLegacy.User.Consent, test.description+":legacy")
 		assert.Equal(t, expectedErrorsFromHoldAuction, responseLegacy.ORTB2.Ext.Errors, test.description+":legacy:errors")
 		assert.Empty(t, responseLegacy.ORTB2.Ext.Warnings, test.description+":legacy:warnings")
 	}
@@ -765,7 +741,7 @@ func TestCCPAConsent(t *testing.T) {
 		if !assert.NotNil(t, result.Regs, test.description+":lastRequest.Regs") {
 			return
 		}
-		if !assert.NotNil(t, result.Regs.Ext, test.description+":lastRequest.Regs.Ext") {
+		/* if !assert.NotNil(t, result.Regs.Ext, test.description+":lastRequest.Regs.Ext") {
 			return
 		}
 		var re openrtb_ext.ExtRegs
@@ -773,7 +749,9 @@ func TestCCPAConsent(t *testing.T) {
 		if !assert.NoError(t, err, test.description+":deserialize") {
 			return
 		}
-		assert.Equal(t, test.expectedRegExt, re, test.description)
+		assert.Equal(t, test.expectedRegExt, re, test.description) */
+		assert.Equal(t, test.expectedRegExt.USPrivacy, *&result.Regs.USPrivacy, test.description+":USPrivacy")
+		assert.Equal(t, test.expectedRegExt.GDPR, *&result.Regs.GDPR, test.description+":GDPR")
 		assert.Equal(t, expectedErrorsFromHoldAuction, response.ORTB2.Ext.Errors)
 		assert.Empty(t, response.ORTB2.Ext.Warnings)
 	}
@@ -903,27 +881,22 @@ func TestNewAndLegacyConsentBothProvided(t *testing.T) {
 	validConsentGDPR2 := "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA"
 
 	testCases := []struct {
-		description     string
-		consent         string
-		consentLegacy   string
-		userExt         *openrtb_ext.ExtUser
-		expectedUserExt openrtb_ext.ExtUser
+		description         string
+		consent             string
+		consentLegacy       string
+		expectedUserConsent string
 	}{
 		{
-			description:   "New Consent Wins",
-			consent:       validConsentGDPR1,
-			consentLegacy: validConsentGDPR2,
-			expectedUserExt: openrtb_ext.ExtUser{
-				Consent: validConsentGDPR1,
-			},
+			description:         "New Consent Wins",
+			consent:             validConsentGDPR1,
+			consentLegacy:       validConsentGDPR2,
+			expectedUserConsent: validConsentGDPR1,
 		},
 		{
-			description:   "New Consent Wins - Reverse",
-			consent:       validConsentGDPR2,
-			consentLegacy: validConsentGDPR1,
-			expectedUserExt: openrtb_ext.ExtUser{
-				Consent: validConsentGDPR2,
-			},
+			description:         "New Consent Wins - Reverse",
+			consent:             validConsentGDPR2,
+			consentLegacy:       validConsentGDPR1,
+			expectedUserConsent: validConsentGDPR2,
 		},
 	}
 
@@ -978,15 +951,8 @@ func TestNewAndLegacyConsentBothProvided(t *testing.T) {
 		if !assert.NotNil(t, result.User, test.description+":lastRequest.User") {
 			return
 		}
-		if !assert.NotNil(t, result.User.Ext, test.description+":lastRequest.User.Ext") {
-			return
-		}
-		var ue openrtb_ext.ExtUser
-		err = jsonutil.UnmarshalValid(result.User.Ext, &ue)
-		if !assert.NoError(t, err, test.description+":deserialize") {
-			return
-		}
-		assert.Equal(t, test.expectedUserExt, ue, test.description)
+
+		assert.Equal(t, test.expectedUserConsent, result.User.Consent, test.description)
 		assert.Equal(t, expectedErrorsFromHoldAuction, response.ORTB2.Ext.Errors)
 		assert.Empty(t, response.ORTB2.Ext.Warnings)
 	}
@@ -1030,6 +996,7 @@ func TestAMPSiteExt(t *testing.T) {
 }
 
 // TestBadRequests makes sure we return 400's on bad requests.
+// RTB26: Will need to be fixed once all validation functions are updated to rtb 2.6
 func TestAmpBadRequests(t *testing.T) {
 	dir := "sample-requests/invalid-whole/"
 	files, err := os.ReadDir(dir)

@@ -178,6 +178,9 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		return
 	}
 
+	// upgrade to 2.6 here
+	openrtb_ext.ConvertUpTo26(reqWrapper)
+
 	ao.RequestWrapper = reqWrapper
 
 	ctx := context.Background()

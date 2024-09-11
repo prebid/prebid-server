@@ -260,6 +260,8 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	// all code after this line should use the bidReqWrapper instead of bidReq directly
 	bidReqWrapper := &openrtb_ext.RequestWrapper{BidRequest: bidReq}
 
+	openrtb_ext.ConvertUpTo26(bidReqWrapper)
+
 	if err := ortb.SetDefaults(bidReqWrapper); err != nil {
 		handleError(&labels, w, errL, &vo, &debugLog)
 		return
