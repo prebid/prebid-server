@@ -1,1 +1,0 @@
-module github.com/prebid-server/adapters/playwire_ortb

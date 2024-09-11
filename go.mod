@@ -5,8 +5,6 @@ go 1.19
 // Magic comment that determines which Go version Heroku uses.
 // +heroku goVersion go1.19
 
-replace github.com/prebid-server/adapters/playwire_ortb => ./adapters/playwire_ortb/
-
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/IABTechLab/adscert v0.34.0
@@ -23,8 +21,6 @@ require (
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/lib/pq v1.10.4
 	github.com/mitchellh/copystructure v1.2.0
-	github.com/mxmCherry/openrtb/v15 v15.0.1
-	github.com/prebid-server/adapters/playwire_ortb v0.0.0-00010101000000-000000000000
 	github.com/prebid/go-gdpr v1.11.0
 	github.com/prebid/go-gpp v0.1.1
 	github.com/prebid/openrtb/v17 v17.1.0
