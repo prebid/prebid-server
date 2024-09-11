@@ -1,5 +1,5 @@
 {
-  "description": "Bid request with user.ext.eids array element array element that does not contain source field",
+  "description": "Bid request with user.eids array element array element that does not contain source field",
   "mockBidRequest": {
     "id": "anyRequestID",
     "site": {
@@ -29,15 +29,13 @@
     }],
     "tmax": 1000,
     "user": {
-      "ext": {
-        "eids": [{
-          "uids": [{
-            "id": "A"
-          }]
+      "eids": [{
+        "uids": [{
+          "id": "A"
         }]
-      }
+      }]
     }
   },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request: request.user.ext.eids[0] missing required field: \"source\"\n"
+  "expectedErrorMessage": "Invalid request: request.user.eids[0] missing required field: \"source\"\n"
 }

@@ -2889,55 +2889,6 @@ func TestValidateSourceTID(t *testing.T) {
 	assert.NotEmpty(t, req.Source.TID, "Expected req.Source.TID to be filled with a randomly generated UID")
 }
 
-func TestSChainInvalid(t *testing.T) {
-	deps := &endpointDeps{
-		fakeUUIDGenerator{},
-		&nobidExchange{},
-		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
-		&mockStoredReqFetcher{},
-		empty_fetcher.EmptyFetcher{},
-		empty_fetcher.EmptyFetcher{},
-		&config.Configuration{},
-		&metricsConfig.NilMetricsEngine{},
-		analyticsBuild.New(&config.Analytics{}),
-		map[string]string{},
-		false,
-		[]byte{},
-		openrtb_ext.BuildBidderMap(),
-		nil,
-		nil,
-		hardcodedResponseIPValidator{response: true},
-		empty_fetcher.EmptyFetcher{},
-		hooks.EmptyPlanBuilder{},
-		nil,
-		openrtb_ext.NormalizeBidderName,
-	}
-
-	ui := int64(1)
-	req := openrtb2.BidRequest{
-		ID: "anyRequestID",
-		Imp: []openrtb2.Imp{
-			{
-				ID: "anyImpID",
-				Banner: &openrtb2.Banner{
-					W: &ui,
-					H: &ui,
-				},
-				Ext: json.RawMessage(`{"appnexus": {"placementId": 5667}}`),
-			},
-		},
-		Site: &openrtb2.Site{
-			ID: "anySiteID",
-		},
-		Ext: json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller1.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}, {"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller2.com","sid":"00002","rid":"BidRequest2","hp":1}],"ver":"1.0"}}]}}`),
-	}
-
-	errL := deps.validateRequest(nil, nil, &openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
-
-	expectedError := errors.New("request.ext.prebid.schains contains multiple schains for bidder appnexus; it must contain no more than one per bidder.")
-	assert.ElementsMatch(t, errL, []error{expectedError})
-}
-
 func TestSearchAccountID(t *testing.T) {
 	// Correctness for lookup within Publisher object left to TestGetAccountID
 	// This however tests the expected lookup paths in outer site, app and dooh

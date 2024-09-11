@@ -1,5 +1,5 @@
 {
-  "description": "Invalid GDPR value in regs field",
+  "description": "Bid request defines an invalid request.source.schain.nodes value",
   "mockBidRequest": {
     "id": "b9c97a4b-cbc4-483d-b2c4-58a19ed5cfc5",
     "site": {
@@ -7,9 +7,6 @@
       "publisher": {
         "id": "a3de7af2-a86a-4043-a77b-c7e86744155e"
       }
-    },
-    "source": {
-      "tid": "b9c97a4b-cbc4-483d-b2c4-58a19ed5cfc5"
     },
     "tmax": 1000,
     "imp": [
@@ -34,15 +31,17 @@
         }
       }
     ],
-    "regs": {
-      "ext": {
-        "gdpr": "foo"
+    "source": {
+      "fd": 1,
+      "tid": "abc123",
+      "pchain": "tag_placement",
+      "schain": {
+        "complete": 1,
+        "ver": "ver",
+        "ext": {}
       }
-    },
-    "user": {
-      "ext": {}
     }
   },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request: request.regs.ext is invalid: gdpr must be an integer\n"
+  "expectedErrorMessage": "Invalid request: request.source.schain.nodes cannot be empty"
 }

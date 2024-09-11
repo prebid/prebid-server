@@ -1262,16 +1262,16 @@ func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases 
 		eidsValue := req.User.EIDs
 		for eidIndex, eid := range eidsValue {
 			if eid.Source == "" {
-				return append(errL, fmt.Errorf("request.user.ext.eids[%d] missing required field: \"source\"", eidIndex))
+				return append(errL, fmt.Errorf("request.user.eids[%d] missing required field: \"source\"", eidIndex))
 			}
 
 			if len(eid.UIDs) == 0 {
-				return append(errL, fmt.Errorf("request.user.ext.eids[%d].uids must contain at least one element or be undefined", eidIndex))
+				return append(errL, fmt.Errorf("request.user.eids[%d].uids must contain at least one element or be undefined", eidIndex))
 			}
 
 			for uidIndex, uid := range eid.UIDs {
 				if uid.ID == "" {
-					return append(errL, fmt.Errorf("request.user.ext.eids[%d].uids[%d] missing required field: \"id\"", eidIndex, uidIndex))
+					return append(errL, fmt.Errorf("request.user.eids[%d].uids[%d] missing required field: \"id\"", eidIndex, uidIndex))
 				}
 			}
 		}
@@ -1300,13 +1300,13 @@ func validateRegs(req *openrtb_ext.RequestWrapper, gpp gpplib.GppContainer) []er
 				Message:     "regs.gdpr signal conflicts with GPP (regs.gpp_sid) and will be ignored",
 				WarningCode: errortypes.InvalidPrivacyConsentWarningCode})
 		}
-
+	}
+	if req.BidRequest.Regs.GDPR != nil {
 		reqGDPR := req.BidRequest.Regs.GDPR
 		if reqGDPR != nil && *reqGDPR != 0 && *reqGDPR != 1 {
 			return append(errL, errors.New("request.regs.gdpr must be either 0 or 1"))
 		}
 	}
-
 	return errL
 }
 
@@ -1440,7 +1440,7 @@ func fillChannel(reqWrapper *openrtb_ext.RequestWrapper, isAmp bool) error {
 }
 
 func (deps *endpointDeps) validateSourceSChain(req *openrtb_ext.RequestWrapper) error {
-	if req.Source.SChain == nil {
+	if req.Source == nil || req.Source.SChain == nil {
 		return nil
 	}
 	sChain := req.Source.SChain

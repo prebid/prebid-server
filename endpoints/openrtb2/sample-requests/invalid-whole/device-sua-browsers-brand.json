@@ -1,0 +1,37 @@
+{
+    "description": "Request has a device with empty sua.browsers[].brand.",
+    "mockBidRequest": {
+        "id": "req-id",
+        "site": {
+            "id": "some-site"
+        },
+        "device": {
+            "w": 50,
+            "h": 10,
+            "sua": {
+                "browsers": [
+                    {
+                        "brand": "MS"
+                    },
+                    {
+                        "brand": ""
+                    }
+                ]
+            }
+        },
+        "imp": [{
+            "id": "imp-id",
+            "banner": {
+                "w": 50,
+                "h": 50
+            },
+            "ext": {
+                "appnexus": {
+                    "placementId": 12883451
+                }
+            }
+        }]
+    },
+    "expectedReturnCode": 400,
+    "expectedErrorMessage": "Invalid request: request.device.sua.browsers[1].brand cannot be empty"
+}
