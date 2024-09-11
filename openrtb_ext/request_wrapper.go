@@ -1364,8 +1364,8 @@ func (re *RegExt) GetGPC() *string {
 	if re.gpc == nil {
 		return nil
 	}
-	GPC := *re.gpc
-	return &GPC
+	gpc := *re.gpc
+	return &gpc
 }
 
 func (re *RegExt) SetGPC(gpc *string) {

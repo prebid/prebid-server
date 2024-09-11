@@ -63,11 +63,11 @@ const observeBrowsingTopics = "Observe-Browsing-Topics"
 const observeBrowsingTopicsValue = "?1"
 
 var (
-	dntKey       string = http.CanonicalHeaderKey("DNT")
-	secGPCHdrKey string = http.CanonicalHeaderKey("Sec-GPC")
-	dntDisabled  int8   = 0
-	dntEnabled   int8   = 1
-	notAmp       int8   = 0
+	dntKey      string = http.CanonicalHeaderKey("DNT")
+	secGPCKey   string = http.CanonicalHeaderKey("Sec-GPC")
+	dntDisabled int8   = 0
+	dntEnabled  int8   = 1
+	notAmp      int8   = 0
 )
 
 var accountIdSearchPath = [...]struct {
@@ -1523,8 +1523,7 @@ func setAuctionTypeImplicitly(r *openrtb_ext.RequestWrapper) {
 }
 
 func setGPCImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) error {
-	secGPC := httpReq.Header.Get(secGPCHdrKey)
-	fmt.Printf("Sec-GPC Header: %s\n", secGPC)
+	secGPC := httpReq.Header.Get(secGPCKey)
 
 	if secGPC != "1" {
 		return nil
@@ -1533,6 +1532,10 @@ func setGPCImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) erro
 	regExt, err := r.GetRegExt()
 	if err != nil {
 		return err
+	}
+
+	if regExt.GetGPC() != nil {
+		return nil
 	}
 
 	gpc := "1"

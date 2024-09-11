@@ -5622,19 +5622,17 @@ func TestSetGPCImplicitly(t *testing.T) {
 	testCases := []struct {
 		description  string
 		header       string
-		expectedGPC  string
-		expectError  bool
 		regs         *openrtb2.Regs
+		expectError  bool
 		expectedRegs *openrtb2.Regs
 	}{
 		{
 			description: "regs_ext_gpc_not_set_and_header_is_1",
 			header:      "1",
-			expectedGPC: "1",
-			expectError: false,
 			regs: &openrtb2.Regs{
 				Ext: []byte(`{}`),
 			},
+			expectError: false,
 			expectedRegs: &openrtb2.Regs{
 				Ext: []byte(`{"gpc":"1"}`),
 			},
@@ -5642,11 +5640,10 @@ func TestSetGPCImplicitly(t *testing.T) {
 		{
 			description: "sec_gpc_header_not_set_gpc_should_not_be_modified",
 			header:      "",
-			expectedGPC: "",
-			expectError: false,
 			regs: &openrtb2.Regs{
 				Ext: []byte(`{}`),
 			},
+			expectError: false,
 			expectedRegs: &openrtb2.Regs{
 				Ext: []byte(`{}`),
 			},
@@ -5654,11 +5651,10 @@ func TestSetGPCImplicitly(t *testing.T) {
 		{
 			description: "sec_gpc_header_set_to_2_gpc_should_not_be_modified",
 			header:      "2",
-			expectedGPC: "",
-			expectError: false,
 			regs: &openrtb2.Regs{
 				Ext: []byte(`{}`),
 			},
+			expectError: false,
 			expectedRegs: &openrtb2.Regs{
 				Ext: []byte(`{}`),
 			},
@@ -5666,13 +5662,85 @@ func TestSetGPCImplicitly(t *testing.T) {
 		{
 			description: "sec_gpc_header_set_to_1_and_regs_ext_contains_other_data",
 			header:      "1",
-			expectedGPC: "1",
-			expectError: false,
 			regs: &openrtb2.Regs{
 				Ext: []byte(`{"some_other_field":"some_value"}`),
 			},
+			expectError: false,
 			expectedRegs: &openrtb2.Regs{
 				Ext: []byte(`{"some_other_field":"some_value","gpc":"1"}`),
+			},
+		},
+		{
+			description: "regs_ext_gpc_not_set_and_header_not_set",
+			header:      "",
+			regs: &openrtb2.Regs{
+				Ext: []byte(`{}`),
+			},
+			expectError: false,
+			expectedRegs: &openrtb2.Regs{
+				Ext: []byte(`{}`),
+			},
+		},
+		{
+			description: "regs_ext_gpc_not_set_and_header_not_1",
+			header:      "0",
+			regs: &openrtb2.Regs{
+				Ext: []byte(`{}`),
+			},
+			expectError: false,
+			expectedRegs: &openrtb2.Regs{
+				Ext: []byte(`{}`),
+			},
+		},
+		{
+			description: "regs_ext_gpc_is_1_and_header_is_1",
+			header:      "1",
+			regs: &openrtb2.Regs{
+				Ext: []byte(`{"gpc":"1"}`),
+			},
+			expectError: false,
+			expectedRegs: &openrtb2.Regs{
+				Ext: []byte(`{"gpc":"1"}`),
+			},
+		},
+		{
+			description: "regs_ext_gpc_is_1_and_header_not_1",
+			header:      "0",
+			regs: &openrtb2.Regs{
+				Ext: []byte(`{"gpc":"1"}`),
+			},
+			expectError: false,
+			expectedRegs: &openrtb2.Regs{
+				Ext: []byte(`{"gpc":"1"}`),
+			},
+		},
+		{
+			description: "regs_ext_other_data_and_header_is_1",
+			header:      "1",
+			regs: &openrtb2.Regs{
+				Ext: []byte(`{"other":"value"}`),
+			},
+			expectError: false,
+			expectedRegs: &openrtb2.Regs{
+				Ext: []byte(`{"other":"value","gpc":"1"}`),
+			},
+		},
+		{
+			description: "regs_nil_and_header_is_1",
+			header:      "1",
+			regs:        nil,
+			expectError: false,
+			expectedRegs: &openrtb2.Regs{
+				Ext: []byte(`{"gpc":"1"}`),
+			},
+		},
+		{
+			description: "regs_nil_and_header_not_set",
+			header:      "",
+			regs:        nil,
+			expectError: false,
+			expectedRegs: &openrtb2.Regs{
+				Ext: []byte(`{}`),
 			},
 		},
 	}
