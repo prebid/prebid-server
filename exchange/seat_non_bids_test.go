@@ -121,91 +121,92 @@ func TestAppend(t *testing.T) {
 
 func TestRejectImps(t *testing.T) {
 	tests := []struct {
-		name         string
-		builder      SeatNonBidBuilder
-		impIds       []string
-		nonBidReason NonBidReason
-		seat         string
-		expected     SeatNonBidBuilder
+		name    string
+		impIDs  []string
+		builder SeatNonBidBuilder
+		want    SeatNonBidBuilder
 	}{
 		{
-			name:         "impIds nil",
-			builder:      SeatNonBidBuilder{},
-			impIds:       nil,
-			nonBidReason: NonBidReason(1),
-			seat:         "seat1",
-			expected:     SeatNonBidBuilder{},
+			name:    "nil_imps",
+			impIDs:  nil,
+			builder: SeatNonBidBuilder{},
+			want:    SeatNonBidBuilder{},
 		},
 		{
-			name:         "empty impIds",
-			builder:      SeatNonBidBuilder{},
-			impIds:       []string{},
-			nonBidReason: NonBidReason(1),
-			seat:         "seat1",
-			expected:     SeatNonBidBuilder{},
+			name:    "empty_imps",
+			impIDs:  []string{},
+			builder: SeatNonBidBuilder{},
+			want:    SeatNonBidBuilder{},
 		},
 		{
-			name:         "single impId",
-			builder:      SeatNonBidBuilder{},
-			impIds:       []string{"imp1"},
-			nonBidReason: ErrorGeneral,
-			seat:         "seat1",
-			expected: SeatNonBidBuilder{
-				"seat1": {openrtb_ext.NonBid{ImpId: "imp1", StatusCode: int(ErrorGeneral)}},
-			},
-		},
-		{
-			name:         "multiple impIds",
-			builder:      SeatNonBidBuilder{},
-			impIds:       []string{"imp1", "imp2"},
-			nonBidReason: ErrorGeneral,
-			seat:         "seat1",
-			expected: SeatNonBidBuilder{
-				"seat1": {
-					openrtb_ext.NonBid{ImpId: "imp1", StatusCode: int(ErrorGeneral)},
-					openrtb_ext.NonBid{ImpId: "imp2", StatusCode: int(ErrorGeneral)},
+			name:    "one_imp",
+			impIDs:  []string{"imp1"},
+			builder: SeatNonBidBuilder{},
+			want: SeatNonBidBuilder{
+				"seat1": []openrtb_ext.NonBid{
+					{
+						ImpId:      "imp1",
+						StatusCode: 300,
+					},
 				},
 			},
 		},
 		{
-			name: "append to existing seat",
+			name:    "many_imps",
+			impIDs:  []string{"imp1", "imp2"},
+			builder: SeatNonBidBuilder{},
+			want: SeatNonBidBuilder{
+				"seat1": []openrtb_ext.NonBid{
+					{
+						ImpId:      "imp1",
+						StatusCode: 300,
+					},
+					{
+						ImpId:      "imp2",
+						StatusCode: 300,
+					},
+				},
+			},
+		},
+		{
+			name:   "many_imps_appended_to_prepopulated_list",
+			impIDs: []string{"imp1", "imp2"},
 			builder: SeatNonBidBuilder{
-				"seat1": {openrtb_ext.NonBid{ImpId: "imp1", StatusCode: int(ErrorTimeout)}},
-			},
-			impIds:       []string{"imp2"},
-			nonBidReason: ErrorGeneral,
-			seat:         "seat1",
-			expected: SeatNonBidBuilder{
-				"seat1": {
-					openrtb_ext.NonBid{ImpId: "imp1", StatusCode: int(ErrorTimeout)},
-					openrtb_ext.NonBid{ImpId: "imp2", StatusCode: int(ErrorGeneral)},
+				"seat0": []openrtb_ext.NonBid{
+					{
+						ImpId:      "imp0",
+						StatusCode: 0,
+					},
 				},
 			},
-		},
-		{
-			name: "append to new seat",
-			builder: SeatNonBidBuilder{
-				"seat1": {openrtb_ext.NonBid{ImpId: "imp1", StatusCode: int(ErrorTimeout)}},
-			},
-			impIds:       []string{"imp2"},
-			nonBidReason: ErrorGeneral,
-			seat:         "seat2",
-			expected: SeatNonBidBuilder{
-				"seat1": {
-					openrtb_ext.NonBid{ImpId: "imp1", StatusCode: int(ErrorTimeout)},
+			want: SeatNonBidBuilder{
+				"seat0": []openrtb_ext.NonBid{
+					{
+						ImpId:      "imp0",
+						StatusCode: 0,
+					},
 				},
-				"seat2": {
-					openrtb_ext.NonBid{ImpId: "imp2", StatusCode: int(ErrorGeneral)},
+				"seat1": []openrtb_ext.NonBid{
+					{
+						ImpId:      "imp1",
+						StatusCode: 300,
+					},
+					{
+						ImpId:      "imp2",
+						StatusCode: 300,
+					},
 				},
 			},
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.builder.rejectImps(tt.impIds, tt.nonBidReason, tt.seat)
-			assert.Equal(t, len(tt.builder), len(tt.expected))
-			for seat := range tt.expected {
-				assert.ElementsMatch(t, tt.expected[seat], tt.builder[seat])
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			test.builder.rejectImps(test.impIDs, 300, "seat1")
+
+			assert.Equal(t, len(test.builder), len(test.want))
+			for seat := range test.want {
+				assert.ElementsMatch(t, test.want[seat], test.builder[seat])
 			}
 		})
 	}
