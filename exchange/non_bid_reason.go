@@ -39,9 +39,7 @@ func errorToNonBidReason(err error) NonBidReason {
 // If proprietary error code not found then it will try to determine NBR using
 // system call level error code
 func httpInfoToNonBidReason(httpInfo *httpCallInfo) NonBidReason {
-	// errorCode := errortypes.ReadCode(httpInfo.err)
 	nonBidReason := errorToNonBidReason(httpInfo.err)
-	// nonBidReason := errorToNonBidReason(errorCode)
 	if nonBidReason != ErrorGeneral {
 		return nonBidReason
 	}

@@ -8,7 +8,6 @@ import (
 type SeatNonBidBuilder map[string][]openrtb_ext.NonBid
 
 // rejectBid appends a non bid object to the builder based on a bid
-// this method is not thread safe as we are writing to map
 func (b SeatNonBidBuilder) rejectBid(bid *entities.PbsOrtbBid, nonBidReason int, seat string) {
 	if b == nil || bid == nil || bid.Bid == nil {
 		return

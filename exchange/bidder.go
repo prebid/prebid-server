@@ -137,7 +137,7 @@ type bidderAdapterConfig struct {
 func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, hookExecutor hookexecution.StageExecutor, ruleToAdjustments openrtb_ext.AdjustmentsByDealID) ([]*entities.PbsOrtbSeatBid, extraBidderRespInfo, []error) {
 	request := openrtb_ext.RequestWrapper{BidRequest: bidderRequest.BidRequest}
 	reject := hookExecutor.ExecuteBidderRequestStage(&request, string(bidderRequest.BidderName))
-	var seatNonBidBuilder SeatNonBidBuilder
+	seatNonBidBuilder := SeatNonBidBuilder{}
 	if reject != nil {
 		return nil, extraBidderRespInfo{}, []error{reject}
 	}
@@ -201,7 +201,6 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 		// If the bidder only needs to make one, save some cycles by just using the current one.
 		dataLen = len(reqData) + len(bidderRequest.BidderStoredResponses)
 		responseChannel = make(chan *httpCallInfo, dataLen)
-		seatNonBidBuilder = SeatNonBidBuilder{}
 		if len(reqData) == 1 {
 			responseChannel <- bidder.doRequest(ctx, reqData[0], bidRequestOptions.bidderRequestStartTime, bidRequestOptions.tmaxAdjustments)
 		} else {
