@@ -74,8 +74,8 @@ type ExtBidPrebidMeta struct {
 
 // ExtBidPrebidVideo defines the contract for bidresponse.seatbid.bid[i].ext.prebid.video
 type ExtBidPrebidVideo struct {
-	Duration        int    `json:"duration,omitempty"`
-	PrimaryCategory string `json:"primary_category,omitempty"`
+	Duration        int    `json:"duration"`
+	PrimaryCategory string `json:"primary_category"`
 }
 
 // ExtBidPrebidEvents defines the contract for bidresponse.seatbid.bid[i].ext.prebid.events
