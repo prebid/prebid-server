@@ -70,6 +70,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/colossus"
 	"github.com/prebid/prebid-server/v2/adapters/compass"
 	"github.com/prebid/prebid-server/v2/adapters/concert"
+	"github.com/prebid/prebid-server/v2/adapters/connatix"
 	"github.com/prebid/prebid-server/v2/adapters/connectad"
 	"github.com/prebid/prebid-server/v2/adapters/consumable"
 	"github.com/prebid/prebid-server/v2/adapters/conversant"
@@ -296,6 +297,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderColossus:          colossus.Builder,
 		openrtb_ext.BidderCompass:           compass.Builder,
 		openrtb_ext.BidderConcert:           concert.Builder,
+		openrtb_ext.BidderConnatix:          connatix.Builder,
 		openrtb_ext.BidderConnectAd:         connectad.Builder,
 		openrtb_ext.BidderConsumable:        consumable.Builder,
 		openrtb_ext.BidderConversant:        conversant.Builder,
