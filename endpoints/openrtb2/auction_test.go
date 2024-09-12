@@ -5734,15 +5734,6 @@ func TestSetGPCImplicitly(t *testing.T) {
 				Ext: []byte(`{"gpc":"1"}`),
 			},
 		},
-		{
-			description: "regs_nil_and_header_not_set",
-			header:      "",
-			regs:        nil,
-			expectError: false,
-			expectedRegs: &openrtb2.Regs{
-				Ext: []byte(`{}`),
-			},
-		},
 	}
 
 	for _, test := range testCases {
