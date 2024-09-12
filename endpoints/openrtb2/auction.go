@@ -1526,6 +1526,11 @@ func setGPCImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) erro
 	secGPC := httpReq.Header.Get(secGPCKey)
 
 	if secGPC != "1" {
+		if r.BidRequest != nil && r.BidRequest.Regs == nil {
+			r.BidRequest.Regs = &openrtb2.Regs{
+				Ext: []byte(`{}`),
+			}
+		}
 		return nil
 	}
 
