@@ -11,7 +11,7 @@ import (
 
 func TestRejectBid(t *testing.T) {
 	type fields struct {
-		seatNonBidsMap SeatNonBidBuilder
+		builder SeatNonBidBuilder
 	}
 	type args struct {
 		bid          *entities.PbsOrtbBid
@@ -25,58 +25,160 @@ func TestRejectBid(t *testing.T) {
 		want   SeatNonBidBuilder
 	}{
 		{
-			name:   "nil-seatNonBidsMap",
-			fields: fields{seatNonBidsMap: nil},
-			args:   args{},
-			want:   nil,
+			name: "nil_builder",
+			fields: fields{
+				builder: nil,
+			},
+			args: args{},
+			want: nil,
 		},
 		{
-			name:   "nil-seatNonBidsMap-with-bid-object",
-			fields: fields{seatNonBidsMap: nil},
-			args:   args{bid: &entities.PbsOrtbBid{Bid: &openrtb2.Bid{}}, seat: "bidder1"},
-			want:   nil,
+			name: "nil_pbsortbid",
+			fields: fields{
+				builder: SeatNonBidBuilder{},
+			},
+			args: args{
+				bid: nil,
+			},
+			want: SeatNonBidBuilder{},
 		},
 		{
-			name:   "multiple-nonbids-for-same-seat",
-			fields: fields{seatNonBidsMap: sampleSeatNonBidMap("bidder2", 1)},
-			args:   args{bid: &entities.PbsOrtbBid{Bid: &openrtb2.Bid{}}, seat: "bidder2"},
-			want:   sampleSeatNonBidMap("bidder2", 2),
+			name: "nil_bid",
+			fields: fields{
+				builder: SeatNonBidBuilder{},
+			},
+			args: args{
+				bid: &entities.PbsOrtbBid{
+					Bid: nil,
+				},
+			},
+			want: SeatNonBidBuilder{},
+		},
+		{
+			name: "append_nonbids_new_seat",
+			fields: fields{
+				builder: SeatNonBidBuilder{},
+			},
+			args: args{
+				bid: &entities.PbsOrtbBid{
+					Bid: &openrtb2.Bid{
+						ImpID: "Imp1",
+						Price: 10,
+					},
+				},
+				nonBidReason: int(ErrorGeneral),
+				seat:         "seat1",
+			},
+			want: SeatNonBidBuilder{
+				"seat1": []openrtb_ext.NonBid{
+					{
+						ImpId:      "Imp1",
+						StatusCode: int(ErrorGeneral),
+						Ext: &openrtb_ext.NonBidExt{
+							Prebid: openrtb_ext.ExtResponseNonBidPrebid{
+								Bid: openrtb_ext.NonBidObject{
+									Price: 10,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "append_nonbids_for_different_seat",
+			fields: fields{
+				builder: SeatNonBidBuilder{
+					"seat1": []openrtb_ext.NonBid{
+						{
+							ImpId:      "Imp1",
+							StatusCode: int(ErrorGeneral),
+						},
+					},
+				},
+			},
+			args: args{
+				bid: &entities.PbsOrtbBid{
+					Bid: &openrtb2.Bid{
+						ImpID: "Imp2",
+						Price: 10,
+					},
+				},
+				nonBidReason: int(ErrorGeneral),
+				seat:         "seat2",
+			},
+			want: SeatNonBidBuilder{
+				"seat1": []openrtb_ext.NonBid{
+					{
+						ImpId:      "Imp1",
+						StatusCode: int(ErrorGeneral),
+					},
+				},
+				"seat2": []openrtb_ext.NonBid{
+					{
+						ImpId:      "Imp2",
+						StatusCode: int(ErrorGeneral),
+						Ext: &openrtb_ext.NonBidExt{
+							Prebid: openrtb_ext.ExtResponseNonBidPrebid{
+								Bid: openrtb_ext.NonBidObject{
+									Price: 10,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "append_nonbids_for_existing_seat",
+			fields: fields{
+				builder: SeatNonBidBuilder{
+					"seat1": []openrtb_ext.NonBid{
+						{
+							ImpId:      "Imp1",
+							StatusCode: int(ErrorGeneral),
+						},
+					},
+				},
+			},
+			args: args{
+				bid: &entities.PbsOrtbBid{
+					Bid: &openrtb2.Bid{
+						ImpID: "Imp2",
+						Price: 10,
+					},
+				},
+				nonBidReason: int(ErrorGeneral),
+				seat:         "seat1",
+			},
+			want: SeatNonBidBuilder{
+				"seat1": []openrtb_ext.NonBid{
+					{
+						ImpId:      "Imp1",
+						StatusCode: int(ErrorGeneral),
+					},
+					{
+						ImpId:      "Imp2",
+						StatusCode: int(ErrorGeneral),
+						Ext: &openrtb_ext.NonBidExt{
+							Prebid: openrtb_ext.ExtResponseNonBidPrebid{
+								Bid: openrtb_ext.NonBidObject{
+									Price: 10,
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			snb := tt.fields.seatNonBidsMap
+			snb := tt.fields.builder
 			snb.rejectBid(tt.args.bid, tt.args.nonBidReason, tt.args.seat)
-			assert.Equalf(t, tt.want, snb, "expected seatNonBidsMap not nil")
+			assert.Equal(t, tt.want, snb)
 		})
 	}
-}
-
-var sampleSeatNonBidMap = func(seat string, nonBidCount int) SeatNonBidBuilder {
-	nonBids := make([]openrtb_ext.NonBid, 0)
-	for i := 0; i < nonBidCount; i++ {
-		nonBids = append(nonBids, openrtb_ext.NonBid{
-			Ext: &openrtb_ext.NonBidExt{Prebid: openrtb_ext.ExtResponseNonBidPrebid{Bid: openrtb_ext.NonBidObject{}}},
-		})
-	}
-	return SeatNonBidBuilder{
-		seat: nonBids,
-	}
-}
-
-var sampleSeatBids = func(seat string, nonBidCount int) []openrtb_ext.SeatNonBid {
-	seatNonBids := make([]openrtb_ext.SeatNonBid, 0)
-	seatNonBid := openrtb_ext.SeatNonBid{
-		Seat:   seat,
-		NonBid: make([]openrtb_ext.NonBid, 0),
-	}
-	for i := 0; i < nonBidCount; i++ {
-		seatNonBid.NonBid = append(seatNonBid.NonBid, openrtb_ext.NonBid{
-			Ext: &openrtb_ext.NonBidExt{Prebid: openrtb_ext.ExtResponseNonBidPrebid{Bid: openrtb_ext.NonBidObject{}}},
-		})
-	}
-	seatNonBids = append(seatNonBids, seatNonBid)
-	return seatNonBids
 }
 
 func TestAppend(t *testing.T) {
@@ -87,28 +189,61 @@ func TestAppend(t *testing.T) {
 		expected SeatNonBidBuilder
 	}{
 		{
-			name:     "nil receiver",
+			name:     "nil_buider",
 			builder:  nil,
 			toAppend: []SeatNonBidBuilder{{"seat1": []openrtb_ext.NonBid{{ImpId: "imp1"}}}},
 			expected: nil,
 		},
 		{
-			name:     "empty builder",
+			name:     "empty_builder",
 			builder:  SeatNonBidBuilder{},
 			toAppend: []SeatNonBidBuilder{{"seat1": []openrtb_ext.NonBid{{ImpId: "imp1"}}}},
 			expected: SeatNonBidBuilder{"seat1": []openrtb_ext.NonBid{{ImpId: "imp1"}}},
 		},
 		{
-			name:     "multiple seats",
+			name:     "append_one_different_seat",
 			builder:  SeatNonBidBuilder{"seat1": []openrtb_ext.NonBid{{ImpId: "imp1"}}},
 			toAppend: []SeatNonBidBuilder{{"seat2": []openrtb_ext.NonBid{{ImpId: "imp2"}}}},
 			expected: SeatNonBidBuilder{"seat1": []openrtb_ext.NonBid{{ImpId: "imp1"}}, "seat2": []openrtb_ext.NonBid{{ImpId: "imp2"}}},
 		},
 		{
-			name:     "multiple appends",
+			name:     "append_multiple_different_seats",
 			builder:  SeatNonBidBuilder{"seat1": []openrtb_ext.NonBid{{ImpId: "imp1"}}},
 			toAppend: []SeatNonBidBuilder{{"seat2": []openrtb_ext.NonBid{{ImpId: "imp2"}}}, {"seat3": []openrtb_ext.NonBid{{ImpId: "imp3"}}}},
 			expected: SeatNonBidBuilder{"seat1": []openrtb_ext.NonBid{{ImpId: "imp1"}}, "seat2": []openrtb_ext.NonBid{{ImpId: "imp2"}}, "seat3": []openrtb_ext.NonBid{{ImpId: "imp3"}}},
+		},
+		{
+			name:     "nil_append",
+			builder:  SeatNonBidBuilder{"seat1": []openrtb_ext.NonBid{{ImpId: "imp1"}}},
+			toAppend: nil,
+			expected: SeatNonBidBuilder{"seat1": []openrtb_ext.NonBid{{ImpId: "imp1"}}},
+		},
+		{
+			name:     "empty_append",
+			builder:  SeatNonBidBuilder{"seat1": []openrtb_ext.NonBid{{ImpId: "imp1"}}},
+			toAppend: []SeatNonBidBuilder{},
+			expected: SeatNonBidBuilder{"seat1": []openrtb_ext.NonBid{{ImpId: "imp1"}}},
+		},
+		{
+			name: "append_multiple_same_seat",
+			builder: SeatNonBidBuilder{
+				"seat1": []openrtb_ext.NonBid{
+					{ImpId: "imp1"},
+				},
+			},
+			toAppend: []SeatNonBidBuilder{
+				{
+					"seat1": []openrtb_ext.NonBid{
+						{ImpId: "imp2"},
+					},
+				},
+			},
+			expected: SeatNonBidBuilder{
+				"seat1": []openrtb_ext.NonBid{
+					{ImpId: "imp1"},
+					{ImpId: "imp2"},
+				},
+			},
 		},
 	}
 	for _, tt := range tests {
@@ -187,6 +322,34 @@ func TestRejectImps(t *testing.T) {
 					},
 				},
 				"seat1": []openrtb_ext.NonBid{
+					{
+						ImpId:      "imp1",
+						StatusCode: 300,
+					},
+					{
+						ImpId:      "imp2",
+						StatusCode: 300,
+					},
+				},
+			},
+		},
+		{
+			name:   "many_imps_appended_to_prepopulated_list_same_seat",
+			impIDs: []string{"imp1", "imp2"},
+			builder: SeatNonBidBuilder{
+				"seat1": []openrtb_ext.NonBid{
+					{
+						ImpId:      "imp0",
+						StatusCode: 300,
+					},
+				},
+			},
+			want: SeatNonBidBuilder{
+				"seat1": []openrtb_ext.NonBid{
+					{
+						ImpId:      "imp0",
+						StatusCode: 300,
+					},
 					{
 						ImpId:      "imp1",
 						StatusCode: 300,
@@ -361,7 +524,6 @@ func TestSlice(t *testing.T) {
 			},
 		},
 	}
-
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			result := test.builder.Slice()
