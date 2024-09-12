@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -27,9 +27,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var requestDataRequest []*adapters.RequestData
-
 	errs := make([]error, 0, len(request.Imp))
-
 	raiHeaders := http.Header{}
 	setHeaders(&raiHeaders)
 
@@ -50,7 +48,21 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			errs = append(errs, &errortypes.BadInput{
 				Message: err.Error(),
 			})
-			return nil, errs
+			continue
+		}
+
+		if request.App != nil {
+			appCopy := *request.App
+			request.App = &appCopy
+
+			request.App.Keywords = "tagid=" + imp.TagID
+		}
+
+		if request.Site != nil {
+			siteCopy := *request.Site
+			request.Site = &siteCopy
+
+			request.Site.Keywords = "tagid=" + imp.TagID
 		}
 
 		if raiExt != nil {
@@ -59,6 +71,13 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			}
 
 			if raiExt.Test {
+				if request.Device != nil {
+					deviceCopy := *request.Device
+					request.Device = &deviceCopy
+				} else {
+					request.Device = &openrtb2.Device{}
+				}
+
 				request.Device.IP = "11.222.33.44"
 				request.Test = int8(1)
 			}
@@ -81,8 +100,17 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 					errs = append(errs, &errortypes.BadInput{
 						Message: "request.Banner.Format is required",
 					})
-					return nil, errs
+					continue
 				}
+			}
+		}
+
+		if imp.Video != nil {
+			if imp.Video.W == 0 || imp.Video.H == 0 {
+				errs = append(errs, &errortypes.BadInput{
+					Message: "request.Video.Sizes is required",
+				})
+				continue
 			}
 		}
 
@@ -93,7 +121,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			errs = append(errs, &errortypes.BadInput{
 				Message: err.Error(),
 			})
-			return nil, errs
+			continue
 		}
 
 		requestDataRequest = append(requestDataRequest, &adapters.RequestData{
@@ -105,7 +133,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	}
 
-	return requestDataRequest, nil
+	return requestDataRequest, errs
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
@@ -127,28 +155,41 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		return nil, []error{err}
 	}
 
-	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(responseData.Body, &bidResp); err != nil {
-
+	var bidReq openrtb2.BidRequest
+	if err := json.Unmarshal(requestData.Body, &bidReq); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: err.Error(),
 		}}
 	}
 
-	var response openrtb2.BidResponse
-	if err := json.Unmarshal(responseData.Body, &response); err != nil {
-		return nil, []error{err}
+	var bidResp openrtb2.BidResponse
+	if err := json.Unmarshal(responseData.Body, &bidResp); err != nil {
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: err.Error(),
+		}}
 	}
 
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
-	bidResponse.Currency = response.Cur
-	for _, seatBid := range response.SeatBid {
-		for i := range seatBid.Bid {
-			b := &adapters.TypedBid{
-				Bid:     &seatBid.Bid[i],
-				BidType: getMediaType(seatBid.Bid[i].ImpID, request.Imp),
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidReq.Imp))
+	bidResponse.Currency = bidResp.Cur
+
+	for _, reqBid := range bidReq.Imp {
+		for _, seatBid := range bidResp.SeatBid {
+			for i := range seatBid.Bid {
+
+				bidType := getMediaType(seatBid.Bid[i].ImpID, reqBid)
+
+				if bidType == "video" {
+					seatBid.Bid[i].W = reqBid.Video.W
+					seatBid.Bid[i].H = reqBid.Video.H
+				}
+
+				b := &adapters.TypedBid{
+					Bid:     &seatBid.Bid[i],
+					BidType: bidType,
+				}
+
+				bidResponse.Bids = append(bidResponse.Bids, b)
 			}
-			bidResponse.Bids = append(bidResponse.Bids, b)
 		}
 	}
 
@@ -206,14 +247,12 @@ func parseImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpRichaudience, error) {
 	return &richaudienceExt, nil
 }
 
-func getMediaType(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
-	for _, imp := range imps {
-		if imp.ID == impId {
-			if imp.Video != nil {
-				return openrtb_ext.BidTypeVideo
-			}
-			return openrtb_ext.BidTypeBanner
+func getMediaType(impId string, imp openrtb2.Imp) openrtb_ext.BidType {
+	if imp.ID == impId {
+		if imp.Video != nil {
+			return openrtb_ext.BidTypeVideo
 		}
+		return openrtb_ext.BidTypeBanner
 	}
-	return openrtb_ext.BidTypeBanner
+	return "no bidtype assigned"
 }

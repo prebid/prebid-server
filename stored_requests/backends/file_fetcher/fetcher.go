@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/prebid/prebid-server/stored_requests"
+	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 )
 
 // NewFileFetcher _immediately_ loads stored request data from local files.
@@ -38,7 +39,7 @@ func (fetcher *eagerFetcher) FetchResponses(ctx context.Context, ids []string) (
 }
 
 // FetchAccount fetches the host account configuration for a publisher
-func (fetcher *eagerFetcher) FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error) {
+func (fetcher *eagerFetcher) FetchAccount(ctx context.Context, accountDefaultsJSON json.RawMessage, accountID string) (json.RawMessage, []error) {
 	if len(accountID) == 0 {
 		return nil, []error{fmt.Errorf("Cannot look up an empty accountID")}
 	}
@@ -49,7 +50,12 @@ func (fetcher *eagerFetcher) FetchAccount(ctx context.Context, accountID string)
 			DataType: "Account",
 		}}
 	}
-	return accountJSON, nil
+
+	completeJSON, err := jsonpatch.MergePatch(accountDefaultsJSON, accountJSON)
+	if err != nil {
+		return nil, []error{err}
+	}
+	return completeJSON, nil
 }
 
 func (fetcher *eagerFetcher) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {

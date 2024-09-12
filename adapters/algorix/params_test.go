@@ -38,6 +38,7 @@ var validParams = []string{
 	`{"sid": "11244", "token": "iad"}`,
 	`{"sid": "11244", "token": "iad", "region": "APAC"}`,
 	`{"sid": "11244", "token": "iad", "region": "USE"}`,
+	`{"sid": "11244", "token": "iad", "region": "EUC"}`,
 }
 
 var invalidParams = []string{

@@ -20,12 +20,12 @@ func (mt MutationType) String() string {
 	return "unknown"
 }
 
-type mutationFunc[T any] func(T) (T, error)
+type MutationFunc[T any] func(T) (T, error)
 
 type Mutation[T any] struct {
 	mutType MutationType
 	key     []string        // key indicates path to the modified field
-	fn      mutationFunc[T] // fn actual function that makes changes to payload
+	fn      MutationFunc[T] // fn actual function that makes changes to payload
 }
 
 func (m Mutation[T]) Type() MutationType {
@@ -48,7 +48,7 @@ func (c *ChangeSet[T]) Mutations() []Mutation[T] {
 	return c.muts
 }
 
-func (c *ChangeSet[T]) AddMutation(fn mutationFunc[T], t MutationType, k ...string) *ChangeSet[T] {
+func (c *ChangeSet[T]) AddMutation(fn MutationFunc[T], t MutationType, k ...string) *ChangeSet[T] {
 	c.muts = append(c.muts, Mutation[T]{fn: fn, mutType: t, key: k})
 	return c
 }

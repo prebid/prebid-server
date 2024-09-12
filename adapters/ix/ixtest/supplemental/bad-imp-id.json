@@ -82,6 +82,7 @@
             }
         }
     ],
+    "expectedBidResponses": [{"currency":"USD","bids":[]}],
     "expectedMakeBidsErrors": [
         {
             "value": "unmatched impression id: bad-imp-id",

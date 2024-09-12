@@ -234,7 +234,7 @@
                         }
                     },
                     "ext": {
-                        "client": "prebid_server_0.5"
+                        "client": "prebid_server_0.6"
                     }
                 }
             },
@@ -386,7 +386,7 @@
                         }
                     },
                     "ext": {
-                        "client": "prebid_server_0.5"
+                        "client": "prebid_server_0.6"
                     }
                 }
             },

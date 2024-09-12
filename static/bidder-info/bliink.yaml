@@ -1,4 +1,4 @@
-endpoint: "http://engine.bliink.io/bid"
+endpoint: "https://engine.bliink.io/bid"
 maintainer:
   email: "support@bliink.io"
 gvlVendorID: 658

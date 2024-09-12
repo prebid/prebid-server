@@ -243,7 +243,7 @@ func TestAccountCacheHit(t *testing.T) {
 		})
 
 	metricsEngine.On("RecordAccountCacheResult", metrics.CacheHit, 1)
-	account, errs := aFetcherWithCache.FetchAccount(ctx, "known")
+	account, errs := aFetcherWithCache.FetchAccount(ctx, json.RawMessage("{}"), "known")
 
 	accCache.AssertExpectations(t)
 	fetcher.AssertExpectations(t)
@@ -263,10 +263,10 @@ func TestAccountCacheMiss(t *testing.T) {
 	// Test read from cache
 	accCache.On("Get", ctx, uncachedAccounts).Return(map[string]json.RawMessage{})
 	accCache.On("Save", ctx, uncachedAccountsData)
-	fetcher.On("FetchAccount", ctx, "uncached").Return(uncachedAccountsData["uncached"], []error{})
+	fetcher.On("FetchAccount", ctx, json.RawMessage("{}"), "uncached").Return(uncachedAccountsData["uncached"], []error{})
 	metricsEngine.On("RecordAccountCacheResult", metrics.CacheMiss, 1)
 
-	account, errs := aFetcherWithCache.FetchAccount(ctx, "uncached")
+	account, errs := aFetcherWithCache.FetchAccount(ctx, json.RawMessage("{}"), "uncached")
 
 	accCache.AssertExpectations(t)
 	fetcher.AssertExpectations(t)
@@ -274,7 +274,6 @@ func TestAccountCacheMiss(t *testing.T) {
 	assert.JSONEq(t, `true`, string(account), "FetchAccount should fetch the right account data")
 	assert.Len(t, errs, 0, "FetchAccount shouldn't return any errors")
 }
-
 func TestComposedCache(t *testing.T) {
 	c1 := &mockCache{}
 	c2 := &mockCache{}
@@ -348,8 +347,8 @@ func (f *mockFetcher) FetchResponses(ctx context.Context, ids []string) (data ma
 	return args.Get(0).(map[string]json.RawMessage), args.Get(1).([]error)
 }
 
-func (a *mockFetcher) FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error) {
-	args := a.Called(ctx, accountID)
+func (a *mockFetcher) FetchAccount(ctx context.Context, defaultAccountsJSON json.RawMessage, accountID string) (json.RawMessage, []error) {
+	args := a.Called(ctx, defaultAccountsJSON, accountID)
 	return args.Get(0).(json.RawMessage), args.Get(1).([]error)
 }
 

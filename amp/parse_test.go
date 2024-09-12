@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/privacy/ccpa"
@@ -30,7 +30,7 @@ func TestParseParams(t *testing.T) {
 			description: "All Fields",
 			// targeting data is encoded string that looks like this: {"gam-key1":"val1","gam-key2":"val2"}
 			query: "tag_id=anyTagID&account=anyAccount&curl=anyCurl&consent_string=anyConsent&debug=1&__amp_source_origin=anyOrigin" +
-				"&slot=anySlot&timeout=42&h=1&w=2&oh=3&ow=4&ms=10x11,12x13&targeting=%7B%22gam-key1%22%3A%22val1%22%2C%22gam-key2%22%3A%22val2%22%7D",
+				"&slot=anySlot&timeout=42&h=1&w=2&oh=3&ow=4&ms=10x11,12x13&targeting=%7B%22gam-key1%22%3A%22val1%22%2C%22gam-key2%22%3A%22val2%22%7D&trace=basic",
 			expectedParams: Params{
 				Account:         "anyAccount",
 				CanonicalURL:    "anyCurl",
@@ -50,6 +50,7 @@ func TestParseParams(t *testing.T) {
 					},
 				},
 				Targeting: `{"gam-key1":"val1","gam-key2":"val2"}`,
+				Trace:     "basic",
 			},
 		},
 		{

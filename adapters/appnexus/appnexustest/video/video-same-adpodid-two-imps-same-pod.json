@@ -47,10 +47,9 @@
 			"id": "test-request-id",
 			"ext": {
 				"appnexus": {
-				 "adpod_id": "5577006791947779410",
+				 "adpod_id": "10",
 				  "hb_source": 6
-				},
-				"prebid": {}
+				}
 			},
 			"imp": [
 			  {
@@ -93,5 +92,6 @@
 		  "body": {}
 		}
 	  }
-	]
+	],
+    "expectedBidResponses": [{"currency":"USD","bids":[]}]
   }

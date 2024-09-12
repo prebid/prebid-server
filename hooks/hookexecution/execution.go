@@ -164,6 +164,9 @@ func handleHookResponses[P any](
 	return groupOutcome, payload, groupModuleCtx, nil
 }
 
+// moduleReplacer changes unwanted symbols to be in compliance with metric naming requirements
+var moduleReplacer = strings.NewReplacer(".", "_", "-", "_")
+
 // handleHookResponse is a strategy function that selects and applies
 // one of the available algorithms to handle hook response.
 func handleHookResponse[P any](
@@ -173,7 +176,7 @@ func handleHookResponse[P any](
 	metricEngine metrics.MetricsEngine,
 ) (P, HookOutcome, *RejectError) {
 	var rejectErr *RejectError
-	labels := metrics.ModuleLabels{Module: hr.HookID.ModuleCode, Stage: ctx.stage, AccountID: ctx.accountId}
+	labels := metrics.ModuleLabels{Module: moduleReplacer.Replace(hr.HookID.ModuleCode), Stage: ctx.stage, AccountID: ctx.accountId}
 	metricEngine.RecordModuleCalled(labels, hr.ExecutionTime)
 
 	hookOutcome := HookOutcome{
@@ -187,12 +190,10 @@ func handleHookResponse[P any](
 		ExecutionTime: ExecutionTime{ExecutionTimeMillis: hr.ExecutionTime},
 	}
 
-	switch true {
-	case hr.Err != nil:
+	if hr.Err != nil || hr.Result.Reject {
 		handleHookError(hr, &hookOutcome, metricEngine, labels)
-	case hr.Result.Reject:
 		rejectErr = handleHookReject(ctx, hr, &hookOutcome, metricEngine, labels)
-	default:
+	} else {
 		payload = handleHookMutations(payload, hr, &hookOutcome, metricEngine, labels)
 	}
 
@@ -269,7 +270,7 @@ func handleHookMutations[P any](
 	metricEngine metrics.MetricsEngine,
 	labels metrics.ModuleLabels,
 ) P {
-	if hr.Result.ChangeSet == nil || len(hr.Result.ChangeSet.Mutations()) == 0 {
+	if len(hr.Result.ChangeSet.Mutations()) == 0 {
 		metricEngine.RecordModuleSuccessNooped(labels)
 		hookOutcome.Action = ActionNone
 		return payload

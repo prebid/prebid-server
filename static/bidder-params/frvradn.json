@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "FRVR Ad Network Adapter Params",
+  "description": "A schema which validates params accepted by the FRVR Ad Network adapter",
+  "type": "object",
+  "properties": {
+    "publisher_id": {
+      "type": ["string"],
+      "description": "Publisher ID"
+    },
+    "ad_unit_id": {
+      "type": ["string"],
+      "description": "Ad Unit ID"
+    }
+  },
+  "required": ["publisher_id", "ad_unit_id"]
+}

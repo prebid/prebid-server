@@ -38,6 +38,10 @@
         "type": "array"
       }
     },
+    "bidonmultiformat": {
+      "type": "boolean",
+      "description": "It determines if the request should be processed in multi format way."
+    },
     "visitor": {
       "type": "object",
       "description": "An object defining arbitrary targeting key/value pairs related to the visitor",

@@ -56,6 +56,15 @@
                 "data": {}
             }
         },
+        "regs": {
+            "coppa": 1,
+            "ext": {
+                "gdpr": 1,
+                "us_privacy": "uspConsentString",
+                "gpp": "gppString",
+                "gpp_sid": [7]
+            }
+        },
         "ext": {
             "prebid": {
                 "auctiontimestamp": 1598262728811,
@@ -117,6 +126,15 @@
                         "ext": {
                         }
                     },
+                    "regs": {
+                        "coppa": 1,
+                        "ext": {
+                            "gdpr": 1,
+                            "us_privacy": "uspConsentString",
+                            "gpp": "gppString",
+                            "gpp_sid": [7]
+                        }
+                    },
                     "device": {
                         "ua": "test-user-agent"
                     },
@@ -126,7 +144,7 @@
                         }
                     },
                     "ext": {
-                        "client": "prebid_server_0.5"
+                        "client": "prebid_server_0.6"
                     }
                 }
             },

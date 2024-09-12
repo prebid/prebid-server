@@ -10,8 +10,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/golang/glog"
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -201,7 +200,6 @@ func (a *AdheseAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 func convertAdheseBid(adheseBid AdheseBid, adheseExt AdheseExt, adheseOriginData AdheseOriginData) openrtb2.BidResponse {
 	adheseExtJson, err := json.Marshal(adheseOriginData)
 	if err != nil {
-		glog.Error(fmt.Sprintf("Unable to parse adhese Origin Data as JSON due to %v", err))
 		adheseExtJson = make([]byte, 0)
 	}
 	return openrtb2.BidResponse{

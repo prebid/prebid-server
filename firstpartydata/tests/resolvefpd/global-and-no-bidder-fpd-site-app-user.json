@@ -73,7 +73,7 @@
   },
   "outputRequestData": {
     "site": {
-      "id": "reqSiteId",
+      "id": "apnSiteId",
       "page": "http://www.foobar.com/1234.html",
       "ref": "fpdRef",
       "publisher": {
@@ -99,7 +99,6 @@
       "ext": {
         "testSiteExt": 123,
         "data": {
-          "id": "apnSiteId",
           "moreFpd": {
             "fpd": 123
           },

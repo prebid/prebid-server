@@ -13,6 +13,10 @@ func (e TimeoutError) Error() string {
 	return "Hook execution timeout"
 }
 
+func NewFailure(format string, a ...any) FailureError {
+	return FailureError{Message: fmt.Sprintf(format, a...)}
+}
+
 // FailureError indicates expected error occurred during hook execution on the module-side.
 // A moduleFailed metric will be sent in such case.
 type FailureError struct {

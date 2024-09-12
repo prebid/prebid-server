@@ -68,6 +68,7 @@
       }
     }
   ],
+  "expectedBidResponses": [{"currency":"USD","bids":[]}],
   "expectedMakeBidsErrors": [
     {
       "value": "ignoring bid id=test-bid-id, request doesn't contain any impression with id=SOME-WRONG-IMP-ID",

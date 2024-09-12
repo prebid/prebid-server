@@ -60,6 +60,17 @@
                         "rubicon": {
                             "not": "permitted-for-appnexus"
                         }
+                    },
+                    "sdk": {
+                        "renderers": [
+                            {
+                                "name": "test-name",
+                                "version": "test-version",
+                                "data" : {
+                                    "complex": "data"
+                                }
+                            }
+                        ]
                     }
                 }
             }
@@ -92,11 +103,6 @@
                         "other": "test-other",
                         "prebid": {
                             "integration": "test-integration",
-                            "server": {
-                                "datacenter": "Datacenter",
-                                "externalurl": "http://hosturl.com",
-                                "gvlid": 1
-                            },
                             "channel": {
                                 "name": "test-name",
                                 "version": "test-version"
@@ -113,6 +119,17 @@
                             "bidderparams": {
                                 "param1": 1,
                                 "paramA": "A"
+                            },
+                            "sdk": {
+                                "renderers": [
+                                    {
+                                        "name": "test-name",
+                                        "version": "test-version",
+                                        "data": {
+                                            "complex": "data"
+                                        }
+                                    }
+                                ]
                             }
                         }
                     }

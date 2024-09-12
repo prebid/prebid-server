@@ -28,14 +28,20 @@ func TestAccountFetcher(t *testing.T) {
 	fetcher, err := NewFileFetcher("./test")
 	assert.NoError(t, err, "Failed to create test fetcher")
 
-	account, errs := fetcher.FetchAccount(context.Background(), "valid")
+	account, errs := fetcher.FetchAccount(context.Background(), json.RawMessage(`{"events_enabled":true}`), "valid")
 	assertErrorCount(t, 0, errs)
-	assert.JSONEq(t, `{"disabled":false, "id":"valid"}`, string(account))
+	assert.JSONEq(t, `{"disabled":false, "events_enabled":true, "id":"valid" }`, string(account))
 
-	_, errs = fetcher.FetchAccount(context.Background(), "nonexistent")
+	_, errs = fetcher.FetchAccount(context.Background(), json.RawMessage(`{"events_enabled":true}`), "nonexistent")
 	assertErrorCount(t, 1, errs)
 	assert.Error(t, errs[0])
 	assert.Equal(t, stored_requests.NotFoundError{"nonexistent", "Account"}, errs[0])
+
+	_, errs = fetcher.FetchAccount(context.Background(), json.RawMessage(`{"events_enabled"}`), "valid")
+	assertErrorCount(t, 1, errs)
+	assert.Error(t, errs[0])
+	assert.Equal(t, fmt.Errorf("Invalid JSON Document"), errs[0])
+
 }
 
 func TestInvalidDirectory(t *testing.T) {

@@ -18,8 +18,8 @@ import (
 	"golang.org/x/net/context/ctxhttp"
 )
 
-type saveVendors func(uint16, api.VendorList)
-type VendorListFetcher func(ctx context.Context, id uint16) (vendorlist.VendorList, error)
+type saveVendors func(uint16, uint16, api.VendorList)
+type VendorListFetcher func(ctx context.Context, specVersion uint16, listVersion uint16) (vendorlist.VendorList, error)
 
 // This file provides the vendorlist-fetching function for Prebid Server.
 //
@@ -27,7 +27,7 @@ type VendorListFetcher func(ctx context.Context, id uint16) (vendorlist.VendorLi
 //
 // Nothing in this file is exported. Public APIs can be found in gdpr.go
 
-func NewVendorListFetcher(initCtx context.Context, cfg config.GDPR, client *http.Client, urlMaker func(uint16) string) VendorListFetcher {
+func NewVendorListFetcher(initCtx context.Context, cfg config.GDPR, client *http.Client, urlMaker func(uint16, uint16) string) VendorListFetcher {
 	cacheSave, cacheLoad := newVendorListCache()
 
 	preloadContext, cancel := context.WithTimeout(initCtx, cfg.Timeouts.InitTimeout())
@@ -35,50 +35,62 @@ func NewVendorListFetcher(initCtx context.Context, cfg config.GDPR, client *http
 	preloadCache(preloadContext, client, urlMaker, cacheSave)
 
 	saveOneRateLimited := newOccasionalSaver(cfg.Timeouts.ActiveTimeout())
-	return func(ctx context.Context, vendorListVersion uint16) (vendorlist.VendorList, error) {
+	return func(ctx context.Context, specVersion, listVersion uint16) (vendorlist.VendorList, error) {
 		// Attempt To Load From Cache
-		if list := cacheLoad(vendorListVersion); list != nil {
+		if list := cacheLoad(specVersion, listVersion); list != nil {
 			return list, nil
 		}
 
 		// Attempt To Download
 		// - May not add to cache immediately.
-		saveOneRateLimited(ctx, client, urlMaker(vendorListVersion), cacheSave)
+		saveOneRateLimited(ctx, client, urlMaker(specVersion, listVersion), cacheSave)
 
 		// Attempt To Load From Cache Again
 		// - May have been added by the call to saveOneRateLimited.
-		if list := cacheLoad(vendorListVersion); list != nil {
+		if list := cacheLoad(specVersion, listVersion); list != nil {
 			return list, nil
 		}
 
 		// Give Up
-		return nil, makeVendorListNotFoundError(vendorListVersion)
+		return nil, makeVendorListNotFoundError(specVersion, listVersion)
 	}
 }
 
-func makeVendorListNotFoundError(vendorListVersion uint16) error {
-	return fmt.Errorf("gdpr vendor list version %d does not exist, or has not been loaded yet. Try again in a few minutes", vendorListVersion)
+func makeVendorListNotFoundError(specVersion, listVersion uint16) error {
+	return fmt.Errorf("gdpr vendor list spec version %d list version %d does not exist, or has not been loaded yet. Try again in a few minutes", specVersion, listVersion)
 }
 
 // preloadCache saves all the known versions of the vendor list for future use.
-func preloadCache(ctx context.Context, client *http.Client, urlMaker func(uint16) string, saver saveVendors) {
-	latestVersion := saveOne(ctx, client, urlMaker(0), saver)
+func preloadCache(ctx context.Context, client *http.Client, urlMaker func(uint16, uint16) string, saver saveVendors) {
+	versions := [2]struct {
+		specVersion      uint16
+		firstListVersion uint16
+	}{
+		{
+			specVersion:      2,
+			firstListVersion: 2, // The GVL for TCF2 has no vendors defined in its first version. It's very unlikely to be used, so don't preload it.
+		},
+		{
+			specVersion:      3,
+			firstListVersion: 1,
+		},
+	}
+	for _, v := range versions {
+		latestVersion := saveOne(ctx, client, urlMaker(v.specVersion, 0), saver)
 
-	// The GVL for TCF2 has no vendors defined in its first version. It's very unlikely to be used, so don't preload it.
-	firstVersionToLoad := uint16(2)
-
-	for i := firstVersionToLoad; i < latestVersion; i++ {
-		saveOne(ctx, client, urlMaker(i), saver)
+		for i := v.firstListVersion; i < latestVersion; i++ {
+			saveOne(ctx, client, urlMaker(v.specVersion, i), saver)
+		}
 	}
 }
 
 // Make a URL which can be used to fetch a given version of the Global Vendor List. If the version is 0,
 // this will fetch the latest version.
-func VendorListURLMaker(vendorListVersion uint16) string {
-	if vendorListVersion == 0 {
-		return "https://vendor-list.consensu.org/v2/vendor-list.json"
+func VendorListURLMaker(specVersion, listVersion uint16) string {
+	if listVersion == 0 {
+		return "https://vendor-list.consensu.org/v" + strconv.Itoa(int(specVersion)) + "/vendor-list.json"
 	}
-	return "https://vendor-list.consensu.org/v2/archives/vendor-list-v" + strconv.Itoa(int(vendorListVersion)) + ".json"
+	return "https://vendor-list.consensu.org/v" + strconv.Itoa(int(specVersion)) + "/archives/vendor-list-v" + strconv.Itoa(int(listVersion)) + ".json"
 }
 
 // newOccasionalSaver returns a wrapped version of saveOne() which only activates every few minutes.
@@ -133,19 +145,21 @@ func saveOne(ctx context.Context, client *http.Client, url string, saver saveVen
 		return 0
 	}
 
-	saver(newList.Version(), newList)
+	saver(newList.SpecVersion(), newList.Version(), newList)
 	return newList.Version()
 }
 
-func newVendorListCache() (save func(vendorListVersion uint16, list api.VendorList), load func(vendorListVersion uint16) api.VendorList) {
+func newVendorListCache() (save func(specVersion, listVersion uint16, list api.VendorList), load func(specVersion, listVersion uint16) api.VendorList) {
 	cache := &sync.Map{}
 
-	save = func(vendorListVersion uint16, list api.VendorList) {
-		cache.Store(vendorListVersion, list)
+	save = func(specVersion uint16, listVersion uint16, list api.VendorList) {
+		key := fmt.Sprint(specVersion) + "-" + fmt.Sprint(listVersion)
+		cache.Store(key, list)
 	}
 
-	load = func(vendorListVersion uint16) api.VendorList {
-		list, ok := cache.Load(vendorListVersion)
+	load = func(specVersion, listVersion uint16) api.VendorList {
+		key := fmt.Sprint(specVersion) + "-" + fmt.Sprint(listVersion)
+		list, ok := cache.Load(key)
 		if ok {
 			return list.(vendorlist.VendorList)
 		}

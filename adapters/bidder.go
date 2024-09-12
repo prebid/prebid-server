@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/metrics"
@@ -60,8 +60,9 @@ type TimeoutBidder interface {
 // From the bid response, the bidder accepts a list of valid currencies for the bid.
 // The currency is the same across all bids.
 type BidderResponse struct {
-	Currency string
-	Bids     []*TypedBid
+	Currency             string
+	Bids                 []*TypedBid
+	FledgeAuctionConfigs []*openrtb_ext.FledgeAuctionConfig
 }
 
 // NewBidderResponseWithBidsCapacity create a new BidderResponse initialising the bids array capacity and the default currency value
@@ -134,6 +135,8 @@ type ExtImpBidder struct {
 	// Bidder implementations may safely assume that this JSON has been validated by their
 	// static/bidder-params/{bidder}.json file.
 	Bidder json.RawMessage `json:"bidder"`
+
+	AuctionEnvironment openrtb_ext.AuctionEnvironmentType `json:"ae,omitempty"`
 }
 
 func (r *RequestData) SetBasicAuth(username string, password string) {

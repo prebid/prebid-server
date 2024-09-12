@@ -16,6 +16,7 @@ func preloadLabelValues(m *Metrics, syncerKeys []string, moduleStageNames map[st
 		connectionErrorValues     = []string{connectionAcceptError, connectionCloseError}
 		cookieValues              = cookieTypesAsString()
 		cookieSyncStatusValues    = cookieSyncStatusesAsString()
+		overheadTypes             = overheadTypesAsString()
 		requestTypeValues         = requestTypesAsString()
 		requestStatusValues       = requestStatusesAsString()
 		storedDataFetchTypeValues = storedDataFetchTypesAsString()
@@ -135,6 +136,26 @@ func preloadLabelValues(m *Metrics, syncerKeys []string, moduleStageNames map[st
 		adapterLabel: adapterValues,
 	})
 
+	preloadLabelValuesForCounter(m.adapterBidResponseSecureMarkupError, map[string][]string{
+		adapterLabel: adapterValues,
+		successLabel: boolValues,
+	})
+
+	preloadLabelValuesForCounter(m.adapterBidResponseSecureMarkupWarn, map[string][]string{
+		adapterLabel: adapterValues,
+		successLabel: boolValues,
+	})
+
+	preloadLabelValuesForCounter(m.adapterBidResponseValidationSizeError, map[string][]string{
+		adapterLabel: adapterValues,
+		successLabel: boolValues,
+	})
+
+	preloadLabelValuesForCounter(m.adapterBidResponseValidationSizeWarn, map[string][]string{
+		adapterLabel: adapterValues,
+		successLabel: boolValues,
+	})
+
 	preloadLabelValuesForHistogram(m.adapterPrices, map[string][]string{
 		adapterLabel: adapterValues,
 	})
@@ -165,6 +186,10 @@ func preloadLabelValues(m *Metrics, syncerKeys []string, moduleStageNames map[st
 
 	preloadLabelValuesForHistogram(m.adapterRequestsTimer, map[string][]string{
 		adapterLabel: adapterValues,
+	})
+
+	preloadLabelValuesForHistogram(m.overheadTimer, map[string][]string{
+		overheadTypeLabel: overheadTypes,
 	})
 
 	preloadLabelValuesForCounter(m.syncerRequests, map[string][]string{

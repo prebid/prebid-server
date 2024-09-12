@@ -43,8 +43,7 @@
             {
               "id": "appnexus-bid",
               "impid": "some-impression-id",
-              "price": 0,
-              "ext": {"prebid":{"type":"banner"}}
+              "price": 0
             }
           ],
           "seat": "appnexus"

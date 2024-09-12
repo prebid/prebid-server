@@ -23,6 +23,7 @@ type BidderInfos map[string]BidderInfo
 
 // BidderInfo specifies all configuration for a bidder except for enabled status, endpoint, and extra information.
 type BidderInfo struct {
+	AliasOf          string `yaml:"aliasOf" mapstructure:"aliasOf"`
 	Disabled         bool   `yaml:"disabled" mapstructure:"disabled"`
 	Endpoint         string `yaml:"endpoint" mapstructure:"endpoint"`
 	ExtraAdapterInfo string `yaml:"extra_info" mapstructure:"extra_info"`
@@ -47,7 +48,15 @@ type BidderInfo struct {
 	PlatformID string `yaml:"platform_id" mapstructure:"platform_id"`
 	AppSecret  string `yaml:"app_secret" mapstructure:"app_secret"`
 	// EndpointCompression determines, if set, the type of compression the bid request will undergo before being sent to the corresponding bid server
-	EndpointCompression string `yaml:"endpointCompression" mapstructure:"endpointCompression"`
+	EndpointCompression string       `yaml:"endpointCompression" mapstructure:"endpointCompression"`
+	OpenRTB             *OpenRTBInfo `yaml:"openrtb" mapstructure:"openrtb"`
+}
+
+type aliasNillableFields struct {
+	Disabled                *bool                 `yaml:"disabled" mapstructure:"disabled"`
+	ModifyingVastXmlAllowed *bool                 `yaml:"modifyingVastXmlAllowed" mapstructure:"modifyingVastXmlAllowed"`
+	Experiment              *BidderInfoExperiment `yaml:"experiment" mapstructure:"experiment"`
+	XAPI                    *AdapterXAPI          `yaml:"xapi" mapstructure:"xapi"`
 }
 
 // BidderInfoExperiment specifies non-production ready feature config for a bidder
@@ -87,6 +96,14 @@ type AdapterXAPI struct {
 	Tracker  string `yaml:"tracker" mapstructure:"tracker"`
 }
 
+// OpenRTBInfo specifies the versions/aspects of openRTB that a bidder supports
+// Version is not yet actively supported
+// GPPSupported is not yet actively supported
+type OpenRTBInfo struct {
+	Version      string `yaml:"version" mapstructure:"version"`
+	GPPSupported bool   `yaml:"gpp-supported" mapstructure:"gpp-supported"`
+}
+
 // Syncer specifies the user sync settings for a bidder. This struct is shared by the account config,
 // so it needs to have both yaml and mapstructure mappings.
 type Syncer struct {
@@ -124,7 +141,7 @@ type Syncer struct {
 // In most cases, bidders will specify a URL with a `{{.RedirectURL}}` macro for the call back to
 // Prebid Server and a UserMacro which the bidder server will replace with the user's id. Example:
 //
-//	url: "https://sync.bidderserver.com/usersync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
+//	url: "https://sync.bidderserver.com/usersync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirect={{.RedirectURL}}"
 //	userMacro: "$UID"
 //
 // Prebid Server is configured with a default RedirectURL template matching the /setuid call. This
@@ -143,6 +160,8 @@ type SyncerEndpoint struct {
 	//  {{.GDPR}}        - This will be replaced with the "gdpr" property sent to /cookie_sync.
 	//  {{.Consent}}     - This will be replaced with the "consent" property sent to /cookie_sync.
 	//  {{.USPrivacy}}   - This will be replaced with the "us_privacy" property sent to /cookie_sync.
+	//  {{.GPP}}		 - This will be replaced with the "gpp" property sent to /cookie_sync.
+	//  {{.GPPSID}}		 - This will be replaced with the "gpp_sid" property sent to /cookie_sync.
 	URL string `yaml:"url" mapstructure:"url"`
 
 	// RedirectURL is an endpoint on the host server the user will be redirected to when a user sync
@@ -150,13 +169,13 @@ type SyncerEndpoint struct {
 	// startup:
 	//
 	//  {{.ExternalURL}} - This will be replaced with the host server's externally reachable http path.
-	//  {{.SyncerKey}}   - This will be replaced with the syncer key.
+	//  {{.BidderName}}  - This will be replaced with the bidder name.
 	//  {{.SyncType}}    - This will be replaced with the sync type, either 'b' for iframe syncs or 'i'
 	//                     for redirect/image syncs.
 	//  {{.UserMacro}}   - This will be replaced with the bidder server's user id macro.
 	//
 	// The endpoint on the host server is usually Prebid Server's /setuid endpoint. The default value is:
-	// `{{.ExternalURL}}/setuid?bidder={{.SyncerKey}}&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&f={{.SyncType}}&uid={{.UserMacro}}`
+	// `{{.ExternalURL}}/setuid?bidder={{.SyncerKey}}&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&f={{.SyncType}}&uid={{.UserMacro}}`
 	RedirectURL string `yaml:"redirectUrl" mapstructure:"redirect_url"`
 
 	// ExternalURL is available as a macro to the RedirectURL template. If not specified, either the syncer configuration
@@ -217,24 +236,111 @@ func processBidderInfos(reader InfoReader, normalizeBidderName func(string) (ope
 		return nil, fmt.Errorf("error loading bidders data")
 	}
 
-	infos := BidderInfos{}
-
+	bidderInfos := BidderInfos{}
+	aliasNillableFieldsByBidder := map[string]aliasNillableFields{}
 	for fileName, data := range bidderConfigs {
 		bidderName := strings.Split(fileName, ".")
 		if len(bidderName) == 2 && bidderName[1] == "yaml" {
-			normalizedBidderName, bidderNameExists := normalizeBidderName(bidderName[0])
-			if !bidderNameExists {
-				return nil, fmt.Errorf("error parsing config for bidder %s: unknown bidder", fileName)
-			}
 			info := BidderInfo{}
 			if err := yaml.Unmarshal(data, &info); err != nil {
 				return nil, fmt.Errorf("error parsing config for bidder %s: %v", fileName, err)
 			}
 
-			infos[string(normalizedBidderName)] = info
+			//need to maintain nullable fields from BidderInfo struct into bidderInfoNullableFields
+			//to handle the default values in aliases yaml
+			if len(info.AliasOf) > 0 {
+				aliasFields := aliasNillableFields{}
+				if err := yaml.Unmarshal(data, &aliasFields); err != nil {
+					return nil, fmt.Errorf("error parsing config for aliased bidder %s: %v", fileName, err)
+				}
+
+				//required for CoreBidderNames function to also return aliasBiddernames
+				if err := openrtb_ext.SetAliasBidderName(bidderName[0], openrtb_ext.BidderName(info.AliasOf)); err != nil {
+					return nil, err
+				}
+
+				normalizedBidderName, bidderNameExists := normalizeBidderName(bidderName[0])
+				if !bidderNameExists {
+					return nil, fmt.Errorf("error parsing config for an alias %s: unknown bidder", fileName)
+				}
+
+				aliasNillableFieldsByBidder[string(normalizedBidderName)] = aliasFields
+				bidderInfos[string(normalizedBidderName)] = info
+			} else {
+				normalizedBidderName, bidderNameExists := normalizeBidderName(bidderName[0])
+				if !bidderNameExists {
+					return nil, fmt.Errorf("error parsing config for bidder %s: unknown bidder", fileName)
+				}
+
+				bidderInfos[string(normalizedBidderName)] = info
+			}
 		}
 	}
-	return infos, nil
+	return processBidderAliases(aliasNillableFieldsByBidder, bidderInfos)
+}
+
+func processBidderAliases(aliasNillableFieldsByBidder map[string]aliasNillableFields, bidderInfos BidderInfos) (BidderInfos, error) {
+	for bidderName, alias := range aliasNillableFieldsByBidder {
+		aliasBidderInfo, ok := bidderInfos[bidderName]
+		if !ok {
+			return nil, fmt.Errorf("bidder info not found for an alias: %s", bidderName)
+		}
+		if err := validateAliases(aliasBidderInfo, bidderInfos, bidderName); err != nil {
+			return nil, err
+		}
+
+		parentBidderInfo := bidderInfos[aliasBidderInfo.AliasOf]
+		if aliasBidderInfo.AppSecret == "" {
+			aliasBidderInfo.AppSecret = parentBidderInfo.AppSecret
+		}
+		if aliasBidderInfo.Capabilities == nil {
+			aliasBidderInfo.Capabilities = parentBidderInfo.Capabilities
+		}
+		if aliasBidderInfo.Debug == nil {
+			aliasBidderInfo.Debug = parentBidderInfo.Debug
+		}
+		if aliasBidderInfo.Endpoint == "" {
+			aliasBidderInfo.Endpoint = parentBidderInfo.Endpoint
+		}
+		if aliasBidderInfo.EndpointCompression == "" {
+			aliasBidderInfo.EndpointCompression = parentBidderInfo.EndpointCompression
+		}
+		if aliasBidderInfo.ExtraAdapterInfo == "" {
+			aliasBidderInfo.ExtraAdapterInfo = parentBidderInfo.ExtraAdapterInfo
+		}
+		if aliasBidderInfo.GVLVendorID == 0 {
+			aliasBidderInfo.GVLVendorID = parentBidderInfo.GVLVendorID
+		}
+		if aliasBidderInfo.Maintainer == nil {
+			aliasBidderInfo.Maintainer = parentBidderInfo.Maintainer
+		}
+		if aliasBidderInfo.OpenRTB == nil {
+			aliasBidderInfo.OpenRTB = parentBidderInfo.OpenRTB
+		}
+		if aliasBidderInfo.PlatformID == "" {
+			aliasBidderInfo.PlatformID = parentBidderInfo.PlatformID
+		}
+		if aliasBidderInfo.Syncer == nil {
+			aliasBidderInfo.Syncer = parentBidderInfo.Syncer
+		}
+		if aliasBidderInfo.UserSyncURL == "" {
+			aliasBidderInfo.UserSyncURL = parentBidderInfo.UserSyncURL
+		}
+		if alias.Disabled == nil {
+			aliasBidderInfo.Disabled = parentBidderInfo.Disabled
+		}
+		if alias.Experiment == nil {
+			aliasBidderInfo.Experiment = parentBidderInfo.Experiment
+		}
+		if alias.ModifyingVastXmlAllowed == nil {
+			aliasBidderInfo.ModifyingVastXmlAllowed = parentBidderInfo.ModifyingVastXmlAllowed
+		}
+		if alias.XAPI == nil {
+			aliasBidderInfo.XAPI = parentBidderInfo.XAPI
+		}
+		bidderInfos[bidderName] = aliasBidderInfo
+	}
+	return bidderInfos, nil
 }
 
 // ToGVLVendorIDMap transforms a BidderInfos object to a map of bidder names to GVL id.
@@ -255,18 +361,29 @@ func (infos BidderInfos) validate(errs []error) []error {
 		if bidder.IsEnabled() {
 			errs = validateAdapterEndpoint(bidder.Endpoint, bidderName, errs)
 
-			validateInfoErr := validateInfo(bidder, bidderName)
-			if validateInfoErr != nil {
-				errs = append(errs, validateInfoErr)
+			if err := validateInfo(bidder, infos, bidderName); err != nil {
+				errs = append(errs, err)
 			}
 
-			validateSyncerErr := validateSyncer(bidder)
-			if validateSyncerErr != nil {
-				errs = append(errs, validateSyncerErr)
+			if err := validateSyncer(bidder); err != nil {
+				errs = append(errs, err)
 			}
 		}
 	}
 	return errs
+}
+
+func validateAliases(aliasBidderInfo BidderInfo, infos BidderInfos, bidderName string) error {
+	if len(aliasBidderInfo.AliasOf) > 0 {
+		if parentBidder, ok := infos[aliasBidderInfo.AliasOf]; ok {
+			if len(parentBidder.AliasOf) > 0 {
+				return fmt.Errorf("bidder: %s cannot be an alias of an alias: %s", aliasBidderInfo.AliasOf, bidderName)
+			}
+		} else {
+			return fmt.Errorf("bidder: %s not found for an alias: %s", aliasBidderInfo.AliasOf, bidderName)
+		}
+	}
+	return nil
 }
 
 var testEndpointTemplateParams = macros.EndpointTemplateParams{
@@ -276,6 +393,7 @@ var testEndpointTemplateParams = macros.EndpointTemplateParams{
 	ZoneID:      "anyZoneID",
 	SourceId:    "anySourceID",
 	AdUnit:      "anyAdUnit",
+	MediaType:   "MediaType",
 }
 
 // validateAdapterEndpoint makes sure that an adapter has a valid endpoint
@@ -310,14 +428,18 @@ func validateAdapterEndpoint(endpoint string, bidderName string, errs []error) [
 	return errs
 }
 
-func validateInfo(info BidderInfo, bidderName string) error {
-	if err := validateMaintainer(info.Maintainer, bidderName); err != nil {
+func validateInfo(bidder BidderInfo, infos BidderInfos, bidderName string) error {
+	if err := validateMaintainer(bidder.Maintainer, bidderName); err != nil {
 		return err
 	}
-	if err := validateCapabilities(info.Capabilities, bidderName); err != nil {
+	if err := validateCapabilities(bidder.Capabilities, bidderName); err != nil {
 		return err
 	}
-
+	if len(bidder.AliasOf) > 0 {
+		if err := validateAliasCapabilities(bidder, infos, bidderName); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -325,6 +447,52 @@ func validateMaintainer(info *MaintainerInfo, bidderName string) error {
 	if info == nil || info.Email == "" {
 		return fmt.Errorf("missing required field: maintainer.email for adapter: %s", bidderName)
 	}
+	return nil
+}
+
+func validateAliasCapabilities(aliasBidderInfo BidderInfo, infos BidderInfos, bidderName string) error {
+	parentBidder, parentFound := infos[aliasBidderInfo.AliasOf]
+	if !parentFound {
+		return fmt.Errorf("parent bidder: %s not found for an alias: %s", aliasBidderInfo.AliasOf, bidderName)
+	}
+
+	if aliasBidderInfo.Capabilities != nil {
+		if parentBidder.Capabilities == nil {
+			return fmt.Errorf("capabilities for alias: %s should be a subset of capabilities for parent bidder: %s", bidderName, aliasBidderInfo.AliasOf)
+		}
+
+		if (aliasBidderInfo.Capabilities.App != nil && parentBidder.Capabilities.App == nil) || (aliasBidderInfo.Capabilities.Site != nil && parentBidder.Capabilities.Site == nil) {
+			return fmt.Errorf("capabilities for alias: %s should be a subset of capabilities for parent bidder: %s", bidderName, aliasBidderInfo.AliasOf)
+		}
+
+		if aliasBidderInfo.Capabilities.Site != nil && parentBidder.Capabilities.Site != nil {
+			if err := isAliasPlatformInfoSubsetOfParent(*parentBidder.Capabilities.Site, *aliasBidderInfo.Capabilities.Site, bidderName, aliasBidderInfo.AliasOf); err != nil {
+				return err
+			}
+		}
+
+		if aliasBidderInfo.Capabilities.App != nil && parentBidder.Capabilities.App != nil {
+			if err := isAliasPlatformInfoSubsetOfParent(*parentBidder.Capabilities.App, *aliasBidderInfo.Capabilities.App, bidderName, aliasBidderInfo.AliasOf); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func isAliasPlatformInfoSubsetOfParent(parentInfo PlatformInfo, aliasInfo PlatformInfo, bidderName string, parentBidderName string) error {
+	parentMediaTypes := make(map[openrtb_ext.BidType]struct{})
+	for _, info := range parentInfo.MediaTypes {
+		parentMediaTypes[info] = struct{}{}
+	}
+
+	for _, info := range aliasInfo.MediaTypes {
+		if _, found := parentMediaTypes[info]; !found {
+			return fmt.Errorf("mediaTypes for alias: %s should be a subset of MediaTypes for parent bidder: %s", bidderName, parentBidderName)
+		}
+	}
+
 	return nil
 }
 

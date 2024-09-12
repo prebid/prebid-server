@@ -6,14 +6,16 @@ import (
 
 // ExtImpRubicon defines the contract for bidrequest.imp[i].ext.prebid.bidder.rubicon
 type ExtImpRubicon struct {
-	AccountId json.Number        `json:"accountId"`
-	SiteId    json.Number        `json:"siteId"`
-	ZoneId    json.Number        `json:"zoneId"`
-	Inventory json.RawMessage    `json:"inventory,omitempty"`
-	Keywords  []string           `json:"keywords,omitempty"`
-	Visitor   json.RawMessage    `json:"visitor,omitempty"`
-	Video     rubiconVideoParams `json:"video"`
-	Debug     impExtRubiconDebug `json:"debug,omitempty"`
+	AccountId        json.Number        `json:"accountId"`
+	SiteId           json.Number        `json:"siteId"`
+	ZoneId           json.Number        `json:"zoneId"`
+	Inventory        json.RawMessage    `json:"inventory,omitempty"`
+	BidOnMultiformat bool               `json:"bidonmultiformat,omitempty"`
+	Keywords         []string           `json:"keywords,omitempty"`
+	Visitor          json.RawMessage    `json:"visitor,omitempty"`
+	Video            rubiconVideoParams `json:"video"`
+	Debug            impExtRubiconDebug `json:"debug,omitempty"`
+	PChain           string             `json:"pchain,omitempty"`
 }
 
 // rubiconVideoParams defines the contract for bidrequest.imp[i].ext.prebid.bidder.rubicon.video

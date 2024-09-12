@@ -24,6 +24,10 @@ const (
 	BidderLevelDebugDisabledWarningCode
 	DisabledCurrencyConversionWarningCode
 	AlternateBidderCodeWarningCode
+	MultiBidWarningCode
+	AdServerTargetingWarningCode
+	BidAdjustmentWarningCode
+	FloorBidRejectionWarningCode
 )
 
 // Coder provides an error or warning code with severity.
