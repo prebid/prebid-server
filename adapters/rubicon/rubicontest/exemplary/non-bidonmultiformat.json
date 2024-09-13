@@ -99,12 +99,6 @@
                   "target": {
                     "page": [
                       "somePage"
-                    ],
-                    "ref": [
-                      "someRef"
-                    ],
-                    "search": [
-                      "someSearch"
                     ]
                   },
                   "track": {

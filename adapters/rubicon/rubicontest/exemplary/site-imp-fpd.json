@@ -459,20 +459,6 @@
                     "page": [
                       "somePage"
                     ],
-                    "ref": [
-                      "someRef"
-                    ],
-                    "search": [
-                      "someSearch"
-                    ],
-                    "pagecat": [
-                      "val1",
-                      "val2"
-                    ],
-                    "sectioncat": [
-                      "sectionCat1",
-                      "sectionCat2"
-                    ],
                     "dfp_ad_unit_code": "adSlotFromData"
                   },
                   "track": {
