@@ -108,15 +108,29 @@ func (a *adapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.Request
 			impOK = false
 			mediaType := openrtb_ext.BidTypeBanner
 			bid.MType = openrtb2.MarkupBanner
+		loop:
 			for _, imp := range bidReq.Imp {
 				if imp.ID == bid.ImpID {
 
 					impOK = true
 
-					if imp.Video != nil {
+					switch {
+					case imp.Video != nil:
 						mediaType = openrtb_ext.BidTypeVideo
 						bid.MType = openrtb2.MarkupVideo
-						break
+						break loop
+					case imp.Banner != nil:
+						mediaType = openrtb_ext.BidTypeBanner
+						bid.MType = openrtb2.MarkupBanner
+						break loop
+					case imp.Audio != nil:
+						mediaType = openrtb_ext.BidTypeAudio
+						bid.MType = openrtb2.MarkupAudio
+						break loop
+					case imp.Native != nil:
+						mediaType = openrtb_ext.BidTypeNative
+						bid.MType = openrtb2.MarkupNative
+						break loop
 					}
 				}
 			}
