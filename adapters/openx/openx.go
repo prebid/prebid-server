@@ -231,12 +231,24 @@ func (a *OpenxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRe
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     &sb.Bid[i],
-				BidType: getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp),
+				Bid:      &sb.Bid[i],
+				BidType:  getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp),
+				BidVideo: getBidVideo(&sb.Bid[i]),
 			})
 		}
 	}
 	return bidResponse, nil
+}
+
+func getBidVideo(bid *openrtb2.Bid) *openrtb_ext.ExtBidPrebidVideo {
+	var primaryCategory string
+	if len(bid.Cat) > 0 {
+		primaryCategory = bid.Cat[0]
+	}
+	return &openrtb_ext.ExtBidPrebidVideo{
+		PrimaryCategory: primaryCategory,
+		Duration:        int(bid.Dur),
+	}
 }
 
 // getMediaTypeForImp figures out which media type this bid is for.

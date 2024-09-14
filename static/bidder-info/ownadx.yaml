@@ -1,4 +1,4 @@
-endpoint: "https://pbs.prebid-ownadx.com/bidder/bid/{{.AccountID}}/{{.ZoneID}}?token={{.SourceId}}"
+endpoint: "https://pbs.prebid-ownadx.com/bidder/bid/{{.SeatID}}/{{.SspID}}?token={{.TokenID}}"
 maintainer:
   email: prebid-team@techbravo.com
 capabilities:

@@ -317,9 +317,11 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			continue
 		}
 
-		if resolvedBidFloor > 0 {
-			imp.BidFloorCur = "USD"
+		if resolvedBidFloor >= 0 {
 			imp.BidFloor = resolvedBidFloor
+			if imp.BidFloorCur != "" {
+				imp.BidFloorCur = "USD"
+			}
 		}
 
 		if request.User != nil {
