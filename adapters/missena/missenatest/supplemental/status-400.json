@@ -44,7 +44,7 @@
     "httpCalls": [
       {
         "expectedRequest": {
-          "uri": "https://bid.missena.io?t=test-api-key",
+          "uri": "http://example.com/?t=test-api-key",
           "headers": {
             "Content-Type": [
               "application/json;charset=utf-8"

@@ -17,7 +17,7 @@
             }
         },
         "device": {
-            "ip": "123.123.123.123",
+            "ipv6": "2001:0000:130F:0000:0000:09C0:876A:130B",
             "ua": "test-user-agent"
         },
         "site": {
@@ -56,7 +56,7 @@
                         "test-user-agent"
                     ],
                     "X-Forwarded-For": [
-                        "123.123.123.123"
+                        "2001:0000:130F:0000:0000:09C0:876A:130B"
                     ],
                     "Referer": [
                         "https://example.com/page"
@@ -75,9 +75,31 @@
                 "impIDs":["test-imp-id"]
             },
             "mockResponse": {
-                "status": 204
+                "status": 200,
+                "body": {
+                    "ad": "<div>test ad</div>",
+                    "cpm": 1.5,
+                    "currency": "EUR",
+                    "requestId": "test-request-id"
+                }
             }
         }
     ],
-    "expectedBidResponses": []
+    "expectedBidResponses": [
+        {
+            "currency": "EUR",
+            "bids": [
+                {
+                    "bid": {
+                        "id": "test-request-id",
+                        "impid": "test-imp-id",
+                        "price": 1.5,
+                        "adm": "<div>test ad</div>",
+                        "crid": "test-request-id"
+                    },
+                    "type": "banner"
+                }
+            ]
+        }
+    ]
 }

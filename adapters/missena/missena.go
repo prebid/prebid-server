@@ -73,7 +73,7 @@ func (a *adapter) makeParameter(missenaParams MissenaInternalParams, request *op
 	return &missenaRequest
 }
 
-func (a *adapter) makeRequest(missenaParams MissenaInternalParams, reqInfo *adapters.ExtraRequestInfo, existingRequests []*adapters.RequestData, request *openrtb2.BidRequest) (*adapters.RequestData, error) {
+func (a *adapter) makeRequest(missenaParams MissenaInternalParams, reqInfo *adapters.ExtraRequestInfo, imp *openrtb2.Imp, request *openrtb2.BidRequest) (*adapters.RequestData, error) {
 
 	url := a.endpoint + "?t=" + missenaParams.ApiKey
 	parameter := a.makeParameter(missenaParams, request)
@@ -106,22 +106,26 @@ func (a *adapter) makeRequest(missenaParams MissenaInternalParams, reqInfo *adap
 		Uri:     url,
 		Headers: headers,
 		Body:    body,
-		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
+		ImpIDs:  []string{imp.ID},
 	}, nil
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	// print the request
 
 	var httpRequests []*adapters.RequestData
-	var tempErrors []error
+	var errors []error
 	gdprApplies, consentString := readGDPR(request)
 
-	var missenaInternalParams MissenaInternalParams
+	missenaInternalParams := MissenaInternalParams{
+		GDPR:        gdprApplies,
+		GDPRConsent: consentString,
+	}
 
 	for _, imp := range request.Imp {
 		var bidderExt adapters.ExtImpBidder
 		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-			tempErrors = append(tempErrors, &errortypes.BadInput{
+			errors = append(errors, &errortypes.BadInput{
 				Message: "Error parsing bidderExt object",
 			})
 			continue
@@ -129,7 +133,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 		var missenaExt openrtb_ext.ExtImpMissena
 		if err := json.Unmarshal(bidderExt.Bidder, &missenaExt); err != nil {
-			tempErrors = append(tempErrors, &errortypes.BadInput{
+			errors = append(errors, &errortypes.BadInput{
 				Message: "Error parsing missenaExt parameters",
 			})
 			continue
@@ -138,25 +142,25 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		missenaInternalParams.ApiKey = missenaExt.ApiKey
 		missenaInternalParams.Placement = missenaExt.Placement
 		missenaInternalParams.TestMode = missenaExt.TestMode
-	}
 
-	var finalErrors []error
-	missenaInternalParams.GDPR = gdprApplies
-	missenaInternalParams.GDPRConsent = consentString
+		newHttpRequest, err := a.makeRequest(missenaInternalParams, requestInfo, &imp, request)
+		if err != nil {
+			errors = append(errors, err)
+			continue
+		}
 
-	newHttpRequest, err := a.makeRequest(missenaInternalParams, requestInfo, httpRequests, request)
-
-	if len(tempErrors) > 0 {
-		return nil, tempErrors
-	}
-
-	if err != nil {
-		finalErrors = append(finalErrors, err)
-	} else if newHttpRequest != nil {
 		httpRequests = append(httpRequests, newHttpRequest)
+
+		break
 	}
 
-	return httpRequests, finalErrors
+	if len(httpRequests) == 0 && len(errors) == 0 {
+		errors = append(errors, &errortypes.BadInput{
+			Message: "No valid impressions found",
+		})
+	}
+
+	return httpRequests, errors
 }
 
 func readGDPR(request *openrtb2.BidRequest) (bool, string) {
@@ -221,6 +225,5 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 	bidResponse.Bids = append(bidResponse.Bids, b)
 
-	var errors []error
-	return bidResponse, errors
+	return bidResponse, nil
 }

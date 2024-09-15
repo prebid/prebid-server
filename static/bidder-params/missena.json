@@ -6,7 +6,8 @@
   "properties": {
     "apiKey": {
       "type": "string",
-      "description": "API Key"
+      "description": "API Key",
+      "minLength": 1
     },
     "placement": {
       "type": "string",

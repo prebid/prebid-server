@@ -26,7 +26,7 @@
         },
         "imp": [
             {
-                "id": "test-imp-id",
+                "id": "test-imp-id-1",
                 "banner": {
                     "h": 50,
                     "w": 320
@@ -34,9 +34,19 @@
                 "ext": {
                     "bidder": {
                         "apiKey": "test-api-key",
-                        "placement": "test-placement",
+                        "placement": "test-placement-1",
                         "test": "1"
                     }
+                }
+            },
+            {
+                "id": "test-imp-id-2",
+                "banner": {
+                    "h": 50,
+                    "w": 320
+                },
+                "ext": {
+                    "bidder": "abc"
                 }
             }
         ]
@@ -69,15 +79,37 @@
                     "referer_canonical": "example.com",
                     "consent_string": "CO-X2XiO_eyUoAsAxBFRBECsA",
                     "consent_required": true,
-                    "placement": "test-placement",
+                    "placement": "test-placement-1",
                     "test": "1"
                 },
-                "impIDs":["test-imp-id"]
+                "impIDs":["test-imp-id-1"]
             },
             "mockResponse": {
-                "status": 204
+                "status": 200,
+                "body": {
+                    "ad": "<div>test ad</div>",
+                    "cpm": 1.5,
+                    "currency": "EUR",
+                    "requestId": "test-request-id"
+                }
             }
         }
     ],
-    "expectedBidResponses": []
+    "expectedBidResponses": [
+        {
+            "currency": "EUR",
+            "bids": [
+                {
+                    "bid": {
+                        "id": "test-request-id",
+                        "impid": "test-imp-id-1",
+                        "price": 1.5,
+                        "adm": "<div>test ad</div>",
+                        "crid": "test-request-id"
+                    },
+                    "type": "banner"
+                }
+            ]
+        }
+    ]
 }
