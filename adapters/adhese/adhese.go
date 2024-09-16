@@ -18,8 +18,8 @@ type adapter struct {
 	endpointTemplate *template.Template
 }
 
-type ExtTargetsAdhese map[string][]string
-type ExtImpAdheseWrapper map[string]ExtTargetsAdhese
+type extTargetsAdhese map[string][]string
+type extImpAdheseWrapper map[string]extTargetsAdhese
 type wrappedBidExt map[string]map[string]string
 
 func makeSlot(params openrtb_ext.ExtImpAdhese) string {
@@ -57,7 +57,7 @@ func (a *adapter) MakeRequests(
 	}
 
 	// define a map of targets[] and pre-fill it with the slot
-	targets := ExtTargetsAdhese{
+	targets := extTargetsAdhese{
 		"SL": []string{makeSlot(params)},
 	}
 	// add any additional targets to the map from the params
@@ -66,7 +66,7 @@ func (a *adapter) MakeRequests(
 	}
 
 	// marshal the ext.adhese.bidder object into the ext field
-	modifiedExt, err := json.Marshal(ExtImpAdheseWrapper{
+	modifiedExt, err := json.Marshal(extImpAdheseWrapper{
 		"adhese": targets,
 	})
 	if err != nil {
