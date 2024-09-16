@@ -48,10 +48,10 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 
 /* MakeRequests */
 
-func getAdType(imp openrtb2.Imp, parsedImpExt *wrappedExtImpBidder) int {
+func getAdType(imp openrtb2.Imp) int {
 	// video
 	if imp.Video != nil {
-		if parsedImpExt != nil && parsedImpExt.Prebid != nil && parsedImpExt.Prebid.IsRewardedInventory != nil && *parsedImpExt.Prebid.IsRewardedInventory == 1 {
+		if imp.Rwdd == 1 {
 			return 7
 		}
 		if imp.Instl == 1 {
@@ -92,7 +92,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			continue
 		}
 		// detect and fill adtype
-		adType := getAdType(imp, &impExt)
+		adType := getAdType(imp)
 		if adType == -1 {
 			errs = append(errs, &errortypes.BadInput{Message: "not a supported adtype"})
 			continue

@@ -133,18 +133,14 @@ func preProcess(request *openrtb2.BidRequest) {
 			}
 		}
 		if request.Imp[i].Video != nil {
-			var impExt adapters.ExtImpBidder
-			err := json.Unmarshal(request.Imp[i].Ext, &impExt)
-			if err != nil {
-				continue
-			}
-			if impExt.Prebid != nil && impExt.Prebid.IsRewardedInventory != nil && *impExt.Prebid.IsRewardedInventory == 1 {
+			if request.Imp[i].Rwdd == 1 {
 				videoCopy := *request.Imp[i].Video
 				videoExt := algorixVideoExt{Rewarded: 1}
-				videoCopy.Ext, err = json.Marshal(&videoExt)
+				ext, err := json.Marshal(&videoExt)
 				if err != nil {
 					continue
 				}
+				videoCopy.Ext = ext
 				request.Imp[i].Video = &videoCopy
 			}
 		}

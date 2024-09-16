@@ -41,15 +41,8 @@ func ReadFromRequestWrapper(req *openrtb_ext.RequestWrapper, gpp gpplib.GppConta
 			WarningCode: errortypes.InvalidPrivacyConsentWarningCode}
 	}
 
-	if consent == "" {
-		// Read consent from request.regs.ext
-		regsExt, err := req.GetRegExt()
-		if err != nil {
-			return Policy{}, fmt.Errorf("error reading request.regs.ext: %s", err)
-		}
-		if regsExt != nil {
-			consent = regsExt.GetUSPrivacy()
-		}
+	if consent == "" && req.Regs != nil {
+		consent = req.Regs.USPrivacy
 	}
 	// Read no sale bidders from request.ext.prebid
 	reqExt, err := req.GetRequestExt()
@@ -79,17 +72,15 @@ func (p Policy) Write(req *openrtb_ext.RequestWrapper) error {
 		return nil
 	}
 
-	regsExt, err := req.GetRegExt()
-	if err != nil {
-		return err
-	}
-
 	reqExt, err := req.GetRequestExt()
 	if err != nil {
 		return err
 	}
 
-	regsExt.SetUSPrivacy(p.Consent)
+	if req.Regs == nil {
+		req.Regs = &openrtb2.Regs{}
+	}
+	req.Regs.USPrivacy = p.Consent
 	setPrebidNoSale(p.NoSaleBidders, reqExt)
 	return nil
 }

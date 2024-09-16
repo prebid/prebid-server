@@ -71,7 +71,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 			errs = append(errs, err)
 			continue
 		}
-		if bidderExt.Prebid != nil && bidderExt.Prebid.IsRewardedInventory != nil && *bidderExt.Prebid.IsRewardedInventory == 1 {
+		if impression.Rwdd == 1 {
 			if impression.Banner != nil && !hasRewardedBattr(impression.Banner.BAttr) {
 				bannerCopy := *impression.Banner
 				bannerCopy.BAttr = copyBAttrWithRewardedInventory(bannerCopy.BAttr)

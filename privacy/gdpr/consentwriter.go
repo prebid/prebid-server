@@ -19,18 +19,28 @@ func (c ConsentWriter) Write(req *openrtb2.BidRequest) error {
 	reqWrap := &openrtb_ext.RequestWrapper{BidRequest: req}
 
 	if c.RegExtGDPR != nil {
-		if regsExt, err := reqWrap.GetRegExt(); err == nil {
-			regsExt.SetGDPR(c.RegExtGDPR)
+		if reqWrap.Regs != nil {
+			// this is executed before upconvert to 2.6, we probably don't need this here
+			reqWrap.Regs.GDPR = c.RegExtGDPR
 		} else {
-			return err
+			if regsExt, err := reqWrap.GetRegExt(); err == nil {
+				regsExt.SetGDPR(c.RegExtGDPR)
+			} else {
+				return err
+			}
 		}
 	}
 
 	if c.Consent != "" {
-		if userExt, err := reqWrap.GetUserExt(); err == nil {
-			userExt.SetConsent(&c.Consent)
+		if reqWrap.User != nil {
+			// this is executed before upconvert to 2.6, we probably don't need this here
+			reqWrap.User.Consent = c.Consent
 		} else {
-			return err
+			if userExt, err := reqWrap.GetUserExt(); err == nil {
+				userExt.SetConsent(&c.Consent)
+			} else {
+				return err
+			}
 		}
 	}
 
