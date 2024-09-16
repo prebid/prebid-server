@@ -16,6 +16,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/metrics"
 	metricsconfig "github.com/prebid/prebid-server/metrics/config"
+	mspPlugin "github.com/prebid/prebid-server/msp/plugin"
 )
 
 // Listen blocks forever, serving PBS requests on the given port. This will block forever, until the process is shut down.
@@ -27,6 +28,7 @@ func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.H
 	stopAdmin := make(chan os.Signal)
 	stopMain := make(chan os.Signal)
 	stopPrometheus := make(chan os.Signal)
+	stopMsp := make(chan os.Signal)
 	done := make(chan struct{})
 
 	adminServer := newAdminServer(cfg, adminHandler)
@@ -63,6 +65,18 @@ func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.H
 	}
 	go runServer(adminServer, "Admin", adminListener)
 
+	var (
+		mspListener net.Listener
+		mspServer   = newMSPServer(cfg)
+	)
+	go shutdownAfterSignals(mspServer, stopMsp, done)
+	if mspListener, err = newTCPListener(mspServer.Addr, nil); err != nil {
+		glog.Errorf("Error listening for TCP connections on %s: %v for MSP Metrics server", adminServer.Addr, err)
+		return
+	}
+
+	go runServer(mspServer, "MSP Metrics", mspListener)
+
 	if cfg.Metrics.Prometheus.Port != 0 {
 		var (
 			prometheusListener net.Listener
@@ -75,9 +89,9 @@ func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.H
 		}
 
 		go runServer(prometheusServer, "Prometheus", prometheusListener)
-		wait(stopSignals, done, stopMain, stopAdmin, stopPrometheus)
+		wait(stopSignals, done, stopMain, stopAdmin, stopPrometheus, stopMsp)
 	} else {
-		wait(stopSignals, done, stopMain, stopAdmin)
+		wait(stopSignals, done, stopMain, stopAdmin, stopMsp)
 	}
 
 	return
@@ -205,4 +219,24 @@ func shutdownAfterSignals(server *http.Server, stopper <-chan os.Signal, done ch
 
 func sendSignal(to chan<- os.Signal, sig os.Signal) {
 	to <- sig
+}
+
+func newMSPServer(cfg *config.Configuration) *http.Server {
+	if cfg.MSPMetricsConfig.Enabled {
+		mspBuilder, err := mspPlugin.LoadBuilderFromPath[MSPBuilder]("MSP Metrics", cfg.MSPMetricsConfig.SoPath)
+		if err == nil {
+			glog.Errorf("Failed to initialize MSP Metrics Server")
+		}
+		mspServer, err := mspBuilder.Build(cfg)
+		if err != nil {
+			glog.Errorf("Failed to initialize MSP Metrics Server")
+		}
+		return mspServer
+	} else {
+		return nil
+	}
+}
+
+type MSPBuilder interface {
+	Build(*config.Configuration) (*http.Server, error)
 }
