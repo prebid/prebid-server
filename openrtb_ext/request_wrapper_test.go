@@ -2194,6 +2194,7 @@ func TestRegExtUnmarshal(t *testing.T) {
 		extJson         json.RawMessage
 		expectDSA       *ExtRegsDSA
 		expectGDPR      *int8
+		expectGPC       *string
 		expectUSPrivacy string
 		expectError     bool
 	}{
@@ -2251,6 +2252,21 @@ func TestRegExtUnmarshal(t *testing.T) {
 			regExt:      &RegExt{},
 			extJson:     json.RawMessage(`{"gdpr":""}`),
 			expectGDPR:  ptrutil.ToPtr[int8](0),
+			expectError: true,
+		},
+		// GPC
+		{
+			name:        "valid_gpc_json",
+			regExt:      &RegExt{},
+			extJson:     json.RawMessage(`{"gpc":"some_value"}`),
+			expectGPC:   ptrutil.ToPtr("some_value"),
+			expectError: false,
+		},
+		{
+			name:        "malformed_gpc_json",
+			regExt:      &RegExt{},
+			extJson:     json.RawMessage(`{"gpc":nill}`),
+			expectGPC:   nil,
 			expectError: true,
 		},
 		// us_privacy

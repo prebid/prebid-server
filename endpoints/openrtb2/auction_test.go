@@ -5734,6 +5734,24 @@ func TestSetGPCImplicitly(t *testing.T) {
 				Ext: []byte(`{"gpc":"1"}`),
 			},
 		},
+		{
+			description:  "regs_nil_and_header_not_set",
+			header:       "",
+			regs:         nil,
+			expectError:  false,
+			expectedRegs: nil,
+		},
+		{
+			description: "regs_ext_is_nil_and_header_not_set",
+			header:      "",
+			regs: &openrtb2.Regs{
+				Ext: nil,
+			},
+			expectError: false,
+			expectedRegs: &openrtb2.Regs{
+				Ext: nil,
+			},
+		},
 	}
 
 	for _, test := range testCases {
@@ -5758,7 +5776,13 @@ func TestSetGPCImplicitly(t *testing.T) {
 				assert.NoError(t, err)
 			}
 			assert.NoError(t, r.RebuildRequest())
-			assert.JSONEq(t, string(test.expectedRegs.Ext), string(r.BidRequest.Regs.Ext))
+			if test.expectedRegs == nil {
+				assert.Nil(t, r.BidRequest.Regs)
+			} else if test.expectedRegs.Ext == nil {
+				assert.Nil(t, r.BidRequest.Regs.Ext)
+			} else {
+				assert.JSONEq(t, string(test.expectedRegs.Ext), string(r.BidRequest.Regs.Ext))
+			}
 		})
 	}
 }
