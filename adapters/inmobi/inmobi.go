@@ -77,7 +77,7 @@ func (a *InMobiAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 
 	for _, sb := range serverBidResponse.SeatBid {
 		for i := range sb.Bid {
-			mediaType := getMediaTypeForImp(sb.Bid[i], internalRequest.Imp)
+			mediaType := getMediaTypeForImp(sb.Bid[i])
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &sb.Bid[i],
 				BidType: mediaType,
@@ -118,7 +118,7 @@ func preprocess(imp *openrtb2.Imp) error {
 	return nil
 }
 
-func getMediaTypeForImp(bid openrtb2.Bid, imps []openrtb2.Imp) openrtb_ext.BidType {
+func getMediaTypeForImp(bid openrtb2.Bid) openrtb_ext.BidType {
 	switch bid.MType {
 	case openrtb2.MarkupBanner:
 		return openrtb_ext.BidTypeBanner
@@ -128,18 +128,7 @@ func getMediaTypeForImp(bid openrtb2.Bid, imps []openrtb2.Imp) openrtb_ext.BidTy
 		return openrtb_ext.BidTypeAudio
 	case openrtb2.MarkupNative:
 		return openrtb_ext.BidTypeNative
+	default:
+		return openrtb_ext.BidTypeBanner
 	}
-	mediaType := openrtb_ext.BidTypeBanner
-	for _, imp := range imps {
-		if imp.ID == bid.ImpID {
-			if imp.Video != nil {
-				mediaType = openrtb_ext.BidTypeVideo
-			}
-			if imp.Native != nil {
-				mediaType = openrtb_ext.BidTypeNative
-			}
-			break
-		}
-	}
-	return mediaType
 }
