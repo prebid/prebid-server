@@ -61,7 +61,7 @@ type Ad struct {
 	LineItemId      string
 	Html            string
 	DestinationUrls map[string]string
-	Advertiser      adnAdvertiser
+	Advertiser      adnAdvertiser `json:"advertiser,omitempty"`
 }
 
 type AdUnit struct {
@@ -387,7 +387,7 @@ func generateReturnExt(ad Ad, request *openrtb2.BidRequest) (json.RawMessage, er
 		}
 	}
 
-	if requestRegsExt != nil && requestRegsExt.DSA != nil {
+	if ad.Advertiser.Name != "" && requestRegsExt != nil && requestRegsExt.DSA != nil {
 		legalName := ad.Advertiser.Name
 		if ad.Advertiser.LegalName != "" {
 			legalName = ad.Advertiser.LegalName
@@ -405,10 +405,8 @@ func generateReturnExt(ad Ad, request *openrtb2.BidRequest) (json.RawMessage, er
 		}
 
 		return returnExt, nil
-	} else {
-		return nil, nil
 	}
-
+	return nil, nil
 }
 
 func generateAdResponse(ad Ad, imp openrtb2.Imp, html string, request *openrtb2.BidRequest) (*openrtb2.Bid, []error) {

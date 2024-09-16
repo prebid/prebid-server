@@ -86,11 +86,7 @@
 									"creativeWidth": "980",
 									"creativeHeight": "240",
 									"creativeId": "jn9hpzvlsf8cpdmm",
-									"lineItemId": "q7y9qm5b0xt9htrv",
-									"advertiser": {
-										"legalName": "LegalName",
-										"name": "Name"
-									}
+									"lineItemId": "q7y9qm5b0xt9htrv"
 								}
 							]
 						}
@@ -115,14 +111,7 @@
 						"cid": "q7y9qm5b0xt9htrv",
 						"crid": "jn9hpzvlsf8cpdmm",
 						"w": 980,
-						"h": 240,
-						"ext": {
-							"dsa": {
-								"paid": "LegalName",
-								"behalf": "LegalName",
-								"adrender": 0
-							}
-						}
+						"h": 240
 					},
 					"type": "banner"
 					

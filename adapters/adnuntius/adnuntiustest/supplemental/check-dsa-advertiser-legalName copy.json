@@ -15,7 +15,6 @@
 			"ext": {
 				"dsa": {
 					"dsarequired": 3,
-					"pubrender": 0,
 					"datatopub": 1
 				}
 			}
@@ -89,8 +88,8 @@
 									"creativeId": "jn9hpzvlsf8cpdmm",
 									"lineItemId": "q7y9qm5b0xt9htrv",
 									"advertiser": {
-										"legalName": "LegalName",
-										"name": "Name"
+										"name": "Name",
+										"legalName": "LegalName"
 									}
 								}
 							]
