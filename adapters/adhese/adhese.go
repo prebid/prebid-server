@@ -141,8 +141,10 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		return nil, []error{err}
 	}
 	// create a new bidResponse with a capacity of 1 because we only expect 1 bid
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
-	bidResponse.Currency = response.Cur
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(response.SeatBid[0].Bid))
+	if response.Cur != "" {
+		bidResponse.Currency = response.Cur
+	}
 
 	if (len(response.SeatBid)) == 0 {
 		return nil, []error{&errortypes.BadServerResponse{
