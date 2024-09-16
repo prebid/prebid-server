@@ -3,7 +3,6 @@ package adhese
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -121,23 +120,14 @@ func inferBidTypeFromImp(i openrtb2.Imp) (openrtb_ext.BidType, []error) {
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	err := adapters.CheckResponseStatusCodeForErrors(responseData)
+	if err != nil {
+		return nil, []error{err}
+	}
 
-	if responseData.StatusCode == http.StatusNoContent {
+	noContent := adapters.IsResponseStatusCodeNoContent(responseData)
+	if noContent {
 		return nil, nil
-	}
-
-	if responseData.StatusCode == http.StatusBadRequest {
-		err := &errortypes.BadInput{
-			Message: "Unexpected status code: 400. Bad request from publisher. Run with request.debug = 1 for more info.",
-		}
-		return nil, []error{err}
-	}
-
-	if responseData.StatusCode != http.StatusOK {
-		err := &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info.", responseData.StatusCode),
-		}
-		return nil, []error{err}
 	}
 
 	if len(request.Imp) == 0 {
