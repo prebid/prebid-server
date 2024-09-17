@@ -103,19 +103,30 @@ func (a *adapter) MakeRequests(
 }
 
 func inferBidTypeFromImp(i openrtb2.Imp) (openrtb_ext.BidType, []error) {
+	var mediaTypes []openrtb_ext.BidType
+
 	if i.Banner != nil {
-		return openrtb_ext.BidTypeBanner, nil
+		mediaTypes = append(mediaTypes, openrtb_ext.BidTypeBanner)
 	}
 	if i.Video != nil {
-		return openrtb_ext.BidTypeVideo, nil
+		mediaTypes = append(mediaTypes, openrtb_ext.BidTypeVideo)
 	}
 	if i.Native != nil {
-		return openrtb_ext.BidTypeNative, nil
+		mediaTypes = append(mediaTypes, openrtb_ext.BidTypeNative)
 	}
 	if i.Audio != nil {
-		return openrtb_ext.BidTypeAudio, nil
+		mediaTypes = append(mediaTypes, openrtb_ext.BidTypeAudio)
 	}
 
+	if len(mediaTypes) == 1 {
+		// If there's only one media type, return it.
+		return mediaTypes[0], nil
+	} else if len(mediaTypes) > 1 {
+		// Multi-format case: Log or return an error indicating multiple media types.
+		return "", []error{&errortypes.BadServerResponse{Message: "Multiple media types detected, cannot infer"}}
+	}
+
+	// If no media type was found
 	return "", []error{&errortypes.BadServerResponse{Message: "Could not infer bid type from imp"}}
 }
 
