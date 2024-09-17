@@ -37,7 +37,7 @@ var mockValidAuctionObject = analytics.AuctionObject{
 				UA: "ua",
 			},
 			User: &openrtb2.User{
-				Ext: json.RawMessage(`{"consent": "` + agmaConsent + `"}`),
+				Consent: agmaConsent,
 			},
 		},
 	},
@@ -59,7 +59,7 @@ var mockValidVideoObject = analytics.VideoObject{
 				UA: "ua",
 			},
 			User: &openrtb2.User{
-				Ext: json.RawMessage(`{"consent": "` + agmaConsent + `"}`),
+				Consent: agmaConsent,
 			},
 		},
 	},
@@ -81,7 +81,7 @@ var mockValidAmpObject = analytics.AmpObject{
 				UA: "ua",
 			},
 			User: &openrtb2.User{
-				Ext: json.RawMessage(`{"consent": "` + agmaConsent + `"}`),
+				Consent: agmaConsent,
 			},
 		},
 	},
@@ -324,7 +324,7 @@ func TestShouldTrackMultipleAccounts(t *testing.T) {
 				},
 			},
 			User: &openrtb2.User{
-				Ext: json.RawMessage(`{"consent": "` + agmaConsent + `"}`),
+				Consent: agmaConsent,
 			},
 		},
 	})
@@ -342,7 +342,7 @@ func TestShouldTrackMultipleAccounts(t *testing.T) {
 				},
 			},
 			User: &openrtb2.User{
-				Ext: json.RawMessage(`{"consent": "` + agmaConsent + `"}`),
+				Consent: agmaConsent,
 			},
 		},
 	})
@@ -656,7 +656,7 @@ func TestRaceEnd2End(t *testing.T) {
 
 	time.Sleep(250 * time.Millisecond)
 
-	expected := "[{\"type\":\"amp\",\"id\":\"some-id\",\"code\":\"abcd\",\"site\":{\"id\":\"track-me-site\",\"publisher\":{\"id\":\"track-me\"}},\"device\":{\"ua\":\"ua\"},\"user\":{\"ext\":{\"consent\": \"" + agmaConsent + "\"}},\"created_at\":\"2023-02-01T00:00:00Z\"},{\"type\":\"amp\",\"id\":\"some-id\",\"code\":\"abcd\",\"site\":{\"id\":\"track-me-site\",\"publisher\":{\"id\":\"track-me\"}},\"device\":{\"ua\":\"ua\"},\"user\":{\"ext\":{\"consent\": \"" + agmaConsent + "\"}},\"created_at\":\"2023-02-01T00:00:00Z\"}]"
+	expected := "[{\"type\":\"amp\",\"id\":\"some-id\",\"code\":\"abcd\",\"site\":{\"id\":\"track-me-site\",\"publisher\":{\"id\":\"track-me\"}},\"device\":{\"ua\":\"ua\"},\"user\":{\"consent\":\"" + agmaConsent + "\"},\"created_at\":\"2023-02-01T00:00:00Z\"},{\"type\":\"amp\",\"id\":\"some-id\",\"code\":\"abcd\",\"site\":{\"id\":\"track-me-site\",\"publisher\":{\"id\":\"track-me\"}},\"device\":{\"ua\":\"ua\"},\"user\":{\"consent\":\"" + agmaConsent + "\"},\"created_at\":\"2023-02-01T00:00:00Z\"}]"
 
 	mu.Lock()
 	actual := requestBodyAsString

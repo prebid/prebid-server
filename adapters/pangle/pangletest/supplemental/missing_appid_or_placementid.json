@@ -24,10 +24,8 @@
             "foo": "bar"
           }
         },
+        "rwdd": 1,
         "ext": {
-          "prebid": {
-            "is_rewarded_inventory": 1
-          },
           "bidder": {
             "token": "123",
             "placementid": "78910"

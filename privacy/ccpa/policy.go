@@ -68,7 +68,7 @@ func ReadFromRequest(req *openrtb2.BidRequest) (Policy, error) {
 
 // Write mutates an OpenRTB bid request with the CCPA regulatory information.
 func (p Policy) Write(req *openrtb_ext.RequestWrapper) error {
-	if req == nil {
+	if req == nil || req.BidRequest == nil {
 		return nil
 	}
 
