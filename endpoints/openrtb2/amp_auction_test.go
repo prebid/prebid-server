@@ -741,17 +741,8 @@ func TestCCPAConsent(t *testing.T) {
 		if !assert.NotNil(t, result.Regs, test.description+":lastRequest.Regs") {
 			return
 		}
-		/* if !assert.NotNil(t, result.Regs.Ext, test.description+":lastRequest.Regs.Ext") {
-			return
-		}
-		var re openrtb_ext.ExtRegs
-		err = jsonutil.UnmarshalValid(result.Regs.Ext, &re)
-		if !assert.NoError(t, err, test.description+":deserialize") {
-			return
-		}
-		assert.Equal(t, test.expectedRegExt, re, test.description) */
-		assert.Equal(t, test.expectedRegExt.USPrivacy, *&result.Regs.USPrivacy, test.description+":USPrivacy")
-		assert.Equal(t, test.expectedRegExt.GDPR, *&result.Regs.GDPR, test.description+":GDPR")
+		assert.Equal(t, test.expectedRegExt.USPrivacy, result.Regs.USPrivacy, test.description+":USPrivacy")
+		assert.Equal(t, test.expectedRegExt.GDPR, result.Regs.GDPR, test.description+":GDPR")
 		assert.Equal(t, expectedErrorsFromHoldAuction, response.ORTB2.Ext.Errors)
 		assert.Empty(t, response.ORTB2.Ext.Warnings)
 	}
