@@ -96,7 +96,7 @@
                     "placement": "test-placement-1",
                     "test": "1"
                 },
-                "impIDs":["test-imp-id-1"]
+                "impIDs": ["test-imp-id-1"]
             },
             "mockResponse": {
                 "status": 200,

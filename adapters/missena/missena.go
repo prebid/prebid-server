@@ -59,7 +59,9 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	return bidder, nil
 }
 
-func (a *adapter) makeParameter(missenaParams MissenaInternalParams, request *openrtb2.BidRequest) *MissenaAdRequest {
+func (a *adapter) makeRequest(missenaParams MissenaInternalParams, reqInfo *adapters.ExtraRequestInfo, impID string, request *openrtb2.BidRequest) (*adapters.RequestData, error) {
+	url := a.endpoint + "?t=" + missenaParams.ApiKey
+
 	missenaRequest := MissenaAdRequest{
 		RequestId:        request.ID,
 		Timeout:          2000,
@@ -70,14 +72,8 @@ func (a *adapter) makeParameter(missenaParams MissenaInternalParams, request *op
 		Placement:        missenaParams.Placement,
 		TestMode:         missenaParams.TestMode,
 	}
-	return &missenaRequest
-}
 
-func (a *adapter) makeRequest(missenaParams MissenaInternalParams, reqInfo *adapters.ExtraRequestInfo, imp *openrtb2.Imp, request *openrtb2.BidRequest) (*adapters.RequestData, error) {
-
-	url := a.endpoint + "?t=" + missenaParams.ApiKey
-	parameter := a.makeParameter(missenaParams, request)
-	body, errm := json.Marshal(parameter)
+	body, errm := json.Marshal(missenaRequest)
 	if errm != nil {
 		return nil, errm
 	}
@@ -88,9 +84,6 @@ func (a *adapter) makeRequest(missenaParams MissenaInternalParams, reqInfo *adap
 
 	if request.Device != nil {
 		headers.Add("User-Agent", request.Device.UA)
-	}
-
-	if request.Device != nil {
 		if request.Device.IP != "" {
 			headers.Add("X-Forwarded-For", request.Device.IP)
 		} else if request.Device.IPv6 != "" {
@@ -106,12 +99,11 @@ func (a *adapter) makeRequest(missenaParams MissenaInternalParams, reqInfo *adap
 		Uri:     url,
 		Headers: headers,
 		Body:    body,
-		ImpIDs:  []string{imp.ID},
+		ImpIDs:  []string{impID},
 	}, nil
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	// print the request
 
 	var httpRequests []*adapters.RequestData
 	var errors []error
@@ -143,7 +135,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		missenaInternalParams.Placement = missenaExt.Placement
 		missenaInternalParams.TestMode = missenaExt.TestMode
 
-		newHttpRequest, err := a.makeRequest(missenaInternalParams, requestInfo, &imp, request)
+		newHttpRequest, err := a.makeRequest(missenaInternalParams, requestInfo, imp.ID, request)
 		if err != nil {
 			errors = append(errors, err)
 			continue
@@ -152,12 +144,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		httpRequests = append(httpRequests, newHttpRequest)
 
 		break
-	}
-
-	if len(httpRequests) == 0 && len(errors) == 0 {
-		errors = append(errors, &errortypes.BadInput{
-			Message: "No valid impressions found",
-		})
 	}
 
 	return httpRequests, errors
@@ -171,7 +157,7 @@ func readGDPR(request *openrtb2.BidRequest) (bool, string) {
 			consentString = extUser.Consent
 		}
 	}
-	gdprApplies := true
+	gdprApplies := false
 	var extRegs openrtb_ext.ExtRegs
 	if request.Regs != nil {
 		if err := json.Unmarshal(request.Regs.Ext, &extRegs); err == nil {
