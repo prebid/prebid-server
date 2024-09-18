@@ -178,9 +178,6 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		return
 	}
 
-	// upgrade to 2.6 here
-	openrtb_ext.ConvertUpTo26(reqWrapper)
-
 	ao.RequestWrapper = reqWrapper
 
 	ctx := context.Background()
@@ -512,6 +509,9 @@ func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openr
 
 	// move to using the request wrapper
 	req = &openrtb_ext.RequestWrapper{BidRequest: reqNormal}
+
+	// upgrade to 2.6 here
+	openrtb_ext.ConvertUpTo26(req)
 
 	// Need to ensure cache and targeting are turned on
 	e = initAmpTargetingAndCache(req)
