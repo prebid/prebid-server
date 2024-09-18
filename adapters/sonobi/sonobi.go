@@ -142,8 +142,7 @@ func (a *SonobiAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 			bidType, err := getMediaTypeForImp(bid.ImpID, internalRequest.Imp)
 			//bidType, err := getBidType(bid)
 			if err != nil {
-				errs = append(errs, err)
-				continue
+				return nil, []error{err}
 			}
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &bid,
