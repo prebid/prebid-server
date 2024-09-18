@@ -29,6 +29,7 @@ func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.H
 	stopMain := make(chan os.Signal)
 	stopPrometheus := make(chan os.Signal)
 	stopMsp := make(chan os.Signal)
+	allStops := []chan<- os.Signal{stopAdmin, stopMain}
 	done := make(chan struct{})
 
 	adminServer := newAdminServer(cfg, adminHandler)
@@ -65,17 +66,20 @@ func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.H
 	}
 	go runServer(adminServer, "Admin", adminListener)
 
-	var (
-		mspListener net.Listener
-		mspServer   = newMSPServer(cfg)
-	)
-	go shutdownAfterSignals(mspServer, stopMsp, done)
-	if mspListener, err = newTCPListener(mspServer.Addr, nil); err != nil {
-		glog.Errorf("Error listening for TCP connections on %s: %v for MSP Metrics server", adminServer.Addr, err)
-		return
-	}
+	if cfg.MSPMetricsConfig.Enabled {
+		var (
+			mspListener net.Listener
+			mspServer   = newMSPServer(cfg)
+		)
+		go shutdownAfterSignals(mspServer, stopMsp, done)
+		if mspListener, err = newTCPListener(mspServer.Addr, nil); err != nil {
+			glog.Errorf("Error listening for TCP connections on %s: %v for MSP Metrics server", adminServer.Addr, err)
+			return
+		}
 
-	go runServer(mspServer, "MSP Metrics", mspListener)
+		go runServer(mspServer, "MSP Metrics", mspListener)
+		allStops = append(allStops, stopMsp)
+	}
 
 	if cfg.Metrics.Prometheus.Port != 0 {
 		var (
@@ -89,10 +93,9 @@ func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.H
 		}
 
 		go runServer(prometheusServer, "Prometheus", prometheusListener)
-		wait(stopSignals, done, stopMain, stopAdmin, stopPrometheus, stopMsp)
-	} else {
-		wait(stopSignals, done, stopMain, stopAdmin, stopMsp)
+		allStops = append(allStops, stopPrometheus)
 	}
+	wait(stopSignals, done, allStops...)
 
 	return
 }
@@ -222,19 +225,15 @@ func sendSignal(to chan<- os.Signal, sig os.Signal) {
 }
 
 func newMSPServer(cfg *config.Configuration) *http.Server {
-	if cfg.MSPMetricsConfig.Enabled {
-		mspBuilder, err := mspPlugin.LoadBuilderFromPath[MSPBuilder]("MSP Metrics", cfg.MSPMetricsConfig.SoPath)
-		if err != nil {
-			glog.Errorf("Failed to initialize MSP Metrics Builder")
-		}
-		mspServer, err := mspBuilder.Build(cfg)
-		if err != nil {
-			glog.Errorf("Failed to initialize MSP Metrics Server")
-		}
-		return mspServer
-	} else {
-		return nil
+	mspBuilder, err := mspPlugin.LoadBuilderFromPath[MSPBuilder]("MSP Metrics", cfg.MSPMetricsConfig.SoPath)
+	if err != nil {
+		glog.Errorf("Failed to initialize MSP Metrics Builder")
 	}
+	mspServer, err := mspBuilder.Build(cfg)
+	if err != nil {
+		glog.Errorf("Failed to initialize MSP Metrics Server")
+	}
+	return mspServer
 }
 
 type MSPBuilder interface {
