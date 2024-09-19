@@ -77,7 +77,10 @@ func (a *InMobiAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 
 	for _, sb := range serverBidResponse.SeatBid {
 		for i := range sb.Bid {
-			mediaType := getMediaTypeForImp(sb.Bid[i])
+			mediaType, err := getMediaTypeForImp(sb.Bid[i])
+			if err != nil {
+				return nil, []error{err}
+			}
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &sb.Bid[i],
 				BidType: mediaType,
@@ -118,17 +121,19 @@ func preprocess(imp *openrtb2.Imp) error {
 	return nil
 }
 
-func getMediaTypeForImp(bid openrtb2.Bid) openrtb_ext.BidType {
+func getMediaTypeForImp(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 	switch bid.MType {
 	case openrtb2.MarkupBanner:
-		return openrtb_ext.BidTypeBanner
+		return openrtb_ext.BidTypeBanner, nil
 	case openrtb2.MarkupVideo:
-		return openrtb_ext.BidTypeVideo
+		return openrtb_ext.BidTypeVideo, nil
 	case openrtb2.MarkupAudio:
-		return openrtb_ext.BidTypeAudio
+		return openrtb_ext.BidTypeAudio, nil
 	case openrtb2.MarkupNative:
-		return openrtb_ext.BidTypeNative
+		return openrtb_ext.BidTypeNative, nil
 	default:
-		return openrtb_ext.BidTypeBanner
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Unsupported mtype %d for bid %s", bid.MType, bid.ID),
+		}
 	}
 }
