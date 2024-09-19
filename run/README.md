@@ -5,10 +5,11 @@ To build, you need a C compiler, preferably gcc.
 To run, you may require one or more runtime dependencies, most notably libatomic.
 
 ## Examples (Build --> Target)
+For a containerized example, see the Dockerfile.
 Here are some manual build examples, including some cross-compilation use cases, that have been tested:
 
 ### darwin amd64 --> darwin amd64
-`GOOS=darwin GOARCH=amd64 go build`
+`GOOS=darwin GOARCH=amd64 CGO_ENABLED=1 go build`
 
 Running the built binary on mac amd64:
 `./prebid-server --stderrthreshold=WARNING -v=2`
