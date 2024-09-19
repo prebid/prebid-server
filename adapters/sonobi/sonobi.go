@@ -140,7 +140,6 @@ func (a *SonobiAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 		for i := range sb.Bid {
 			bid := sb.Bid[i]
 			bidType, err := getMediaTypeForImp(bid.ImpID, internalRequest.Imp)
-			//bidType, err := getBidType(bid)
 			if err != nil {
 				return nil, []error{err}
 			}
@@ -170,22 +169,5 @@ func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType,
 	// This shouldnt happen. Lets handle it just incase by returning an error.
 	return "", &errortypes.BadInput{
 		Message: fmt.Sprintf("Failed to find impression \"%s\" ", impID),
-	}
-}
-func getBidType(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
-	// determinate media type by bid response field mtype
-	switch bid.MType {
-	case openrtb2.MarkupBanner:
-		return openrtb_ext.BidTypeBanner, nil
-	case openrtb2.MarkupVideo:
-		return openrtb_ext.BidTypeVideo, nil
-	case openrtb2.MarkupAudio:
-		return openrtb_ext.BidTypeAudio, nil
-	case openrtb2.MarkupNative:
-		return openrtb_ext.BidTypeNative, nil
-	}
-
-	return "", &errortypes.BadInput{
-		Message: fmt.Sprintf("Could not define media type for impression: %s", bid.ImpID),
 	}
 }
