@@ -139,7 +139,7 @@ func preprocess(request *openrtb2.BidRequest) []error {
 }
 
 func addImpInfo(imp *openrtb2.Imp, secure *int8, cadExt *openrtb_ext.ExtImpConnectAd) {
-	imp.TagID = strconv.Itoa(cadExt.SiteID)
+	imp.TagID = strconv.Itoa(int(cadExt.SiteID))
 	imp.Secure = secure
 
 	if cadExt.Bidfloor != 0 {
