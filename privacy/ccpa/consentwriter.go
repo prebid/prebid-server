@@ -20,17 +20,11 @@ func (c ConsentWriter) Write(req *openrtb2.BidRequest) error {
 
 	// Set consent string in USPrivacy
 	if c.Consent != "" {
-		if reqWrap.User != nil {
-			// this is executed before upconvert to 2.6, we probably don't need this here
-			reqWrap.User.Consent = c.Consent
-		} else {
-			if regsExt, err := reqWrap.GetRegExt(); err == nil {
-				regsExt.SetUSPrivacy(c.Consent)
-			} else {
-				return err
-			}
+		if reqWrap.Regs != nil {
+			reqWrap.Regs.USPrivacy = c.Consent
 		}
 	}
 
+	// do we need to rebuild req here?
 	return reqWrap.RebuildRequest()
 }
