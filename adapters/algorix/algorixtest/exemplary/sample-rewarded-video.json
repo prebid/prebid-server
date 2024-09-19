@@ -11,13 +11,15 @@
             "video/mp4"
           ]
         },
-        "rwdd": 1,
         "ext": {
           "bidder": {
             "sid": "testSid",
             "token": "testToken",
             "placementId": "testPlacementId",
             "appId": "testAppId"
+          },
+          "prebid": {
+            "is_rewarded_inventory": 1
           }
         }
       }
@@ -39,17 +41,19 @@
                 "mimes": [
                   "video/mp4"
                 ],
-                "ext":{
+                "ext": {
                   "rewarded": 1
                 }
               },
-              "rwdd": 1,
               "ext": {
                 "bidder": {
                   "sid": "testSid",
                   "token": "testToken",
                   "placementId": "testPlacementId",
                   "appId": "testAppId"
+                },
+                "prebid": {
+                  "is_rewarded_inventory": 1
                 }
               }
             }

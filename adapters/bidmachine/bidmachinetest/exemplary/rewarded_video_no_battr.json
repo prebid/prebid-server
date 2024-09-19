@@ -20,9 +20,12 @@
                 "w": 320,
                 "h": 480
             },
-            "rwdd": 1,
             "ext":
             {
+                "prebid":
+                {
+                    "is_rewarded_inventory": 1
+                },
                 "bidder":
                 {
                     "host": "api-us",
@@ -70,9 +73,12 @@
                         "w": 320,
                         "h": 480
                     },
-                    "rwdd": 1,
                     "ext":
                     {
+                        "prebid":
+                        {
+                            "is_rewarded_inventory": 1
+                        },
                         "bidder":
                         {
                             "host": "api-us",

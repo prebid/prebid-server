@@ -24,8 +24,10 @@
             "foo": "bar"
           }
         },
-        "rwdd": 1,
         "ext": {
+          "prebid": {
+            "is_rewarded_inventory": 1
+          },
           "bidder": {
             "token": "123",
             "appid": "123456",
@@ -72,10 +74,11 @@
                   "foo": "bar"
                 }
               },
-              "rwdd": 1,
               "ext": {
                 "adtype": 7,
-                "prebid": null,
+                "prebid": {
+                  "is_rewarded_inventory": 1
+                },
                 "is_prebid": true,
                 "networkids": {
                   "appid": "123456",
