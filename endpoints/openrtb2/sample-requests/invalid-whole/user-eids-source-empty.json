@@ -1,5 +1,5 @@
 {
-  "description": "Bid request with user.eids array element array element that does not contain source field",
+  "description": "Bid request with user.eids array element that does not contain source field",
   "mockBidRequest": {
     "id": "anyRequestID",
     "site": {

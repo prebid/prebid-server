@@ -27,6 +27,7 @@ import (
 	"github.com/prebid/prebid-server/v2/ortb"
 	"github.com/prebid/prebid-server/v2/privacy"
 	"github.com/prebid/prebid-server/v2/privacysandbox"
+	"github.com/prebid/prebid-server/v2/schain"
 	"golang.org/x/net/publicsuffix"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
@@ -813,6 +814,10 @@ func (deps *endpointDeps) validateRequest(account *config.Account, httpReq *http
 			return []error{err}
 		}
 
+		if err := validateSChains(reqPrebid.SChains); err != nil {
+			return []error{err}
+		}
+
 		if err := deps.validateEidPermissions(reqPrebid.Data, requestAliases); err != nil {
 			return []error{err}
 		}
@@ -979,6 +984,11 @@ func (deps *endpointDeps) validateBidAdjustmentFactors(adjustmentFactors map[str
 		}
 	}
 	return nil
+}
+
+func validateSChains(sChains []*openrtb_ext.ExtRequestPrebidSChain) error {
+	_, err := schain.BidderToPrebidSChains(sChains)
+	return err
 }
 
 func (deps *endpointDeps) validateEidPermissions(prebid *openrtb_ext.ExtRequestPrebidData, requestAliases map[string]string) error {
@@ -1259,8 +1269,7 @@ func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases 
 
 	// Check Universal User ID
 	if req.User.EIDs != nil {
-		eidsValue := req.User.EIDs
-		for eidIndex, eid := range eidsValue {
+		for eidIndex, eid := range req.User.EIDs {
 			if eid.Source == "" {
 				return append(errL, fmt.Errorf("request.user.eids[%d] missing required field: \"source\"", eidIndex))
 			}
