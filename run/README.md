@@ -21,31 +21,25 @@ Running the built binary on mac arm64:
 `./prebid-server --stderrthreshold=WARNING -v=2`
 
 ### darwin amd64 --> windows amd64
-<b>Build (mac):</b>
+<b>Build (mac)</b>
 Install mingw-w64 which consists of a gcc compiler port you can use to generate windows binaries:
 `brew install mingw-w64`
 
-From the root of the project:
 `GOOS=windows GOARCH=amd64 CGO_ENABLED=1 CC="x86_64-w64-mingw32-gcc" go build`
 
 <b>Run (windows)</b>
+Running the built binary on windows:
 `.\prebid-server.exe --sderrthreshold=WARNING =v=2`
 
-You may see the following errors:
+You may receive the following errors or something similar:
 ```
 "The code execution cannot proceed because libatomic-1.dll was not found."
 "The code execution cannot proceed because libwinpthread-1.dll was not found."
 ```
 
-To resolve these errors:
-1) Copy the following files from mingw-64 on your mac to `C:/windows/System32`:
+To resolve these errors, copy the following files from mingw-64 on your mac to `C:/windows/System32` and re-run:
 `/usr/local/Cellar/mingw-w64/12.0.0_1/toolchain-x86_64/x86_64-w64-mingw32/lib/libatomic-1.dll`
 `/usr/local/Cellar/mingw-w64/12.0.0_1/toolchain-x86_64/x86_64-w64-mingw32/bin/libwinpthread-1.dll`
-2) Register the DLLs on your windows machine using the regsvr32 command:
-`regsvr32 "C:\Windows\System32\libatomic-1.dll"`
-`regsvr32 "C:\Windows\System32\libwinpthread-1.dll"`
-
-`.\prebid-server.exe --sderrthreshold=WARNING =v=2`
 
 ### windows amd64 --> windows amd64
 <b>Build</b>
@@ -54,48 +48,58 @@ To resolve these errors:
 `set GOARCH=amd64`
 `go build . && .\prebid-server.exe --stderrthreshold=WARNING -v=2`
 
-If during the build you get an error similar to:
+You may receive the following error or something similar:
 ```
 # runtime/cgo
 cgo: C compiler "gcc" not found: exec: "gcc": executable file not found in %PATH%
 ```
 
-install MSYS2:
-1) download the installer (<b>TODO</b>: link)
-2) run the installer
-3) run MSYS2
-4) install windows/amd64 gcc toolchain: `pacman -S --needed base-devel mingw-w64-x86_64-gcc`
-5) enter `Y` when prompted whether to proceed with the installation
-6) Add the path of your MinGW-w64 bin folder to the Windows PATH environment variable by using the following steps:
-- In the Windows search bar, type Settings to open your Windows Settings.
-- Search for Edit environment variables for your account.
-- In your User variables, select the Path variable and then select Edit.
-- Select New and add the MinGW-w64 destination folder you recorded during the installation process to the list. If you used the default settings above, then this will be the path: C:\msys64\ucrt64\bin.
-- Select OK, and then select OK again in the Environment Variables window to update the PATH environment variable. You have to reopen any console windows for the updated PATH environment variable to be available.
-7) confirm gcc installed: `gcc --version`
+To resolve the error, install MSYS2:
+1) Download the installer (https://www.msys2.org/)
+2) Run the installer and follow the steps of the installation wizard
+3) Run MSYS2 which will open an MSYS2 terminal for you
+4) In the MSYS2 terminal, install windows/amd64 gcc toolchain: `pacman -S --needed base-devel mingw-w64-x86_64-gcc`
+5) Enter `Y` when prompted whether to proceed with the installation
+6) Add the path of your MinGW-w64 `bin` folder to the Windows `PATH` environment variable by using the following steps:
+    - In the Windows search bar, type <b>Settings</b> to open your Windows Settings.
+    - Search for <b>Edit environment variables for your account</b>.
+    - In your <b>User variables</b>, select the `Path` variable and then select <b>Edit</b>.
+    - Select </b>New and add the MinGW-w64 destination folder you recorded during the installation process to the list. If you used the default settings above, then this will be the path: `C:\msys64\ucrt64\bin`.
+    - Select <b>OK</b>, and then select <b>OK</b> again in the <b>Environment Variables</b> window to update the `PATH` environment variable. You have to reopen any console windows for the updated `PATH` environment variable to be available.
+7) Confirm gcc installed: `gcc --version`
 
 <b>Run</b>
+Running the built binary on windows:
 `go build . && .\prebid-server.exe --stderrthreshold=WARNING -v=2`
 
-### linux amd64 --> linux amd64
-<b>Tests</b>
-Debian or Ubuntu Linux targeting a Debian-based Linux distribution
+You may receive the following errors or something similar:
+```
+"The code execution cannot proceed because libatomic-1.dll was not found."
+"The code execution cannot proceed because libwinpthread-1.dll was not found."
+```
+To resolve these errors, copy the following files from MSYS2 installation to `C:/windows/System32` and re-run:
+`C:\mysys64\mingw64\bin\libatomic-1.dll`
+`C:\mysys64\mingw64\bin\libwinpthread-1.dll`
 
+### linux amd64 --> linux amd64
 <b>Build</b>
 `GOOS=linux GOARCH=amd64 CGO_ENABLED=1 go build`
 
-If during the build you get an error similar to:
+You may receive the following error or something similar:
 ```
 # runtime/cgo
 cgo: C compiler "gcc" not found: exec: "gcc": executable file not found in $PATH
 ```
-install gcc, by running  `sudo apt-get install -y gcc`
+To resolve the error, install gcc and re-build:
+`sudo apt-get install -y gcc`
 
 <b>Run</b>
 Running the built binary on Linux:
 `./prebid-server --stderrthreshold=WARNING -v=2`
-If you get an error:
+
+You may receive the following error or something similar:
 ```
 ... error while loading shared libraries: libatomic.so.1: cannot open shared object file ...
 ```
-install libatomic1, by running `sudo apt-get install -y libatomic1`
+To resolve the error, install libatomic1 and re-run:
+`sudo apt-get install -y libatomic1`
