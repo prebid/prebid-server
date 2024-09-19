@@ -24,12 +24,17 @@ const (
 	inlineDivName   = "inline"
 	flippBidder     = "flipp"
 	defaultCurrency = "USD"
+	defaultStandardHeight int64 = 2400
+	defaultCompactHeight int64 = 600
 )
 
 var (
 	count    int64 = 1
 	adTypes        = []int64{4309, 641}
 	dtxTypes       = []int64{5061}
+	defaultHeight int64
+	flippExtParams openrtb_ext.ImpExtFlipp
+	key string
 )
 
 type adapter struct {
@@ -230,7 +235,24 @@ func buildBid(decision *InlineModel, impId string) *openrtb2.Bid {
 		if decision.Contents[0].Data.Width != 0 {
 			bid.W = decision.Contents[0].Data.Width
 		}
-		bid.H = 0
+		customDataInterface := decision.Contents[0].Data.CustomData
+		customDataMap, ok := customDataInterface.(map[string]interface{})
+		if flippExtParams.Options.StartCompact {
+			defaultHeight = defaultCompactHeight
+		} else {
+			defaultHeight = defaultStandardHeight
+		}
+		bid.H = defaultHeight
+		if ok { // customDataMap exists
+			if flippExtParams.Options.StartCompact {
+				key = "compactHeight"
+			} else {
+				key = "standardHeight"
+			}
+			if height, exists := customDataMap[key].(int64); exists {
+				bid.H = height
+			}
+		}
 	}
 	return bid
 }
