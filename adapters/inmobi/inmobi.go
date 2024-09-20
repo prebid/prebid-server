@@ -127,8 +127,6 @@ func getMediaTypeForImp(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 		return openrtb_ext.BidTypeBanner, nil
 	case openrtb2.MarkupVideo:
 		return openrtb_ext.BidTypeVideo, nil
-	case openrtb2.MarkupAudio:
-		return openrtb_ext.BidTypeAudio, nil
 	case openrtb2.MarkupNative:
 		return openrtb_ext.BidTypeNative, nil
 	default:
