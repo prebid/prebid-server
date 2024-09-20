@@ -82,6 +82,9 @@ To resolve these errors, copy the following files from MSYS2 installation to `C:
 `C:\mysys64\mingw64\bin\libwinpthread-1.dll`
 
 ### linux amd64 --> linux amd64
+<b>Note</b>
+These instructions are for building and running on Debian-based distributions
+
 <b>Build</b>
 `GOOS=linux GOARCH=amd64 CGO_ENABLED=1 go build`
 
