@@ -1,0 +1,44 @@
+{
+    "mockBidRequest": {
+      "id": "test-request-id",
+      "app": {
+        "bundle": "test.app.bundle",
+        "publisher": {
+          "id": "this_id_will_be_replaced"
+        }
+      },
+      "device": {
+        "ifa": "test-ifa-123456",
+        "os": "android",
+        "ip": "91.199.242.236",
+        "ua": "random user agent"
+      },
+      "imp": [
+        {
+          "id": "test-imp-id",
+          "banner": {
+            "format": [
+              {
+                "w": 300,
+                "h": 250
+              }
+            ],
+            "w": 300,
+            "h": 250
+          },
+          "ext": {
+            "bidder": {
+              "publisherId": 123456
+            }
+          }
+        }
+      ]
+    },
+    "httpCalls": [],
+    "expectedMakeRequestsErrors": [
+      {
+        "value": "json: cannot unmarshal number into Go struct field ExtImpRoundhouseads.publisherId of type string",
+        "comparison": "literal"
+      }
+    ]
+  }

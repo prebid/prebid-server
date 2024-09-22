@@ -1,0 +1,22 @@
+endpoint: "http://roundhouseads.us-east-1.elasticbeanstalk.com:8080/openrtb2"
+maintainer:
+  email: "info@roundhouseads.com"
+gvlVendorID: 42
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  # Roundhouseads supports user syncing. Contact the bidder at the email address in this file to ask about enabling user sync.
+  supports:
+    - redirect
+    - iframe
+openrtb:
+  gpp-supported: true
