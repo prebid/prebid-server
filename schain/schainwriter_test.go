@@ -91,7 +91,21 @@ func TestSChainWriter(t *testing.T) {
 					FD:     openrtb2.Int8Ptr(1),
 					TID:    "tid data",
 					PChain: "pchain data",
-					Ext:    json.RawMessage(`{` + seller1SChain + `}`),
+					SChain: &openrtb2.SupplyChain{
+						Complete: 1,
+						Ver:      "1.0",
+						Ext:      nil,
+						Nodes: []openrtb2.SupplyChainNode{
+							{
+								ASI: "directseller1.com",
+								SID: "00001",
+								RID: "BidRequest1",
+								HP:  openrtb2.Int8Ptr(1),
+								Ext: nil,
+							},
+						},
+					},
+					Ext: json.RawMessage(`{` + seller2SChain + `}`),
 				},
 			},
 		},
@@ -105,7 +119,21 @@ func TestSChainWriter(t *testing.T) {
 			wantRequest: openrtb2.BidRequest{
 				Ext: json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],` + seller1SChain + `}]}}`),
 				Source: &openrtb2.Source{
-					Ext: json.RawMessage(`{` + seller1SChain + `}`),
+					SChain: &openrtb2.SupplyChain{
+						Complete: 1,
+						Ver:      "1.0",
+						Ext:      nil,
+						Nodes: []openrtb2.SupplyChainNode{
+							{
+								ASI: "directseller1.com",
+								SID: "00001",
+								RID: "BidRequest1",
+								HP:  openrtb2.Int8Ptr(1),
+								Ext: nil,
+							},
+						},
+					},
+					Ext: nil,
 				},
 			},
 		},
@@ -121,7 +149,21 @@ func TestSChainWriter(t *testing.T) {
 			wantRequest: openrtb2.BidRequest{
 				Ext: json.RawMessage(`{"prebid":{"schains":[{"bidders":["*"],` + sellerWildCardSChain + `}]}}`),
 				Source: &openrtb2.Source{
-					Ext: json.RawMessage(`{` + sellerWildCardSChain + `}`),
+					SChain: &openrtb2.SupplyChain{
+						Complete: 1,
+						Ver:      "1.0",
+						Ext:      nil,
+						Nodes: []openrtb2.SupplyChainNode{
+							{
+								ASI: "wildcard1.com",
+								SID: "wildcard1",
+								RID: "WildcardReq1",
+								HP:  openrtb2.Int8Ptr(1),
+								Ext: nil,
+							},
+						},
+					},
+					Ext: nil,
 				},
 			},
 		},
@@ -137,7 +179,21 @@ func TestSChainWriter(t *testing.T) {
 			wantRequest: openrtb2.BidRequest{
 				Ext: json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],` + seller1SChain + `},{"bidders":["*"],` + sellerWildCardSChain + `}]}}`),
 				Source: &openrtb2.Source{
-					Ext: json.RawMessage(`{` + seller1SChain + `}`),
+					SChain: &openrtb2.SupplyChain{
+						Complete: 1,
+						Ver:      "1.0",
+						Ext:      nil,
+						Nodes: []openrtb2.SupplyChainNode{
+							{
+								ASI: "directseller1.com",
+								SID: "00001",
+								RID: "BidRequest1",
+								HP:  openrtb2.Int8Ptr(1),
+								Ext: nil,
+							},
+						},
+					},
+					Ext: nil,
 				},
 			},
 		},
@@ -171,7 +227,28 @@ func TestSChainWriter(t *testing.T) {
 			wantRequest: openrtb2.BidRequest{
 				Ext: json.RawMessage(`{"prebid":{"schains":[{"bidders":["testbidder"],"schain":{"complete":1,"nodes":[` + seller1Node + `],"ver":"1.0"}}]}}`),
 				Source: &openrtb2.Source{
-					Ext: json.RawMessage(`{"schain":{"complete":1,"nodes":[` + seller1Node + `,` + hostNode + `],"ver":"1.0"}}`),
+					SChain: &openrtb2.SupplyChain{
+						Complete: 1,
+						Ver:      "1.0",
+						Ext:      nil,
+						Nodes: []openrtb2.SupplyChainNode{
+							{
+								ASI: "directseller1.com",
+								SID: "00001",
+								RID: "BidRequest1",
+								HP:  openrtb2.Int8Ptr(1),
+								Ext: nil,
+							},
+							{
+								ASI: "pbshostcompany.com",
+								SID: "00001",
+								RID: "BidRequest",
+								HP:  openrtb2.Int8Ptr(1),
+								Ext: nil,
+							},
+						},
+					},
+					Ext: nil,
 				},
 			},
 		},
@@ -188,35 +265,50 @@ func TestSChainWriter(t *testing.T) {
 			wantRequest: openrtb2.BidRequest{
 				Ext: nil,
 				Source: &openrtb2.Source{
-					Ext: json.RawMessage(`{"schain":{"complete":0,"nodes":[` + hostNode + `],"ver":"1.0"}}`),
+					SChain: &openrtb2.SupplyChain{
+						Ver: "1.0",
+						Ext: nil,
+						Nodes: []openrtb2.SupplyChainNode{
+							{
+								ASI: "pbshostcompany.com",
+								SID: "00001",
+								RID: "BidRequest",
+								HP:  openrtb2.Int8Ptr(1),
+								Ext: nil,
+							},
+						},
+					},
+					Ext: nil,
 				},
 			},
 		},
 	}
 
 	for _, tt := range tests {
-		// unmarshal ext to get schains object needed to initialize writer
-		var reqExt *openrtb_ext.ExtRequest
-		if tt.giveRequest.Ext != nil {
-			reqExt = &openrtb_ext.ExtRequest{}
-			err := jsonutil.UnmarshalValid(tt.giveRequest.Ext, reqExt)
-			if err != nil {
-				t.Error("Unable to unmarshal request.ext")
+		t.Run(tt.description, func(t *testing.T) {
+			// unmarshal ext to get schains object needed to initialize writer
+			var reqExt *openrtb_ext.ExtRequest
+			if tt.giveRequest.Ext != nil {
+				reqExt = &openrtb_ext.ExtRequest{}
+				err := jsonutil.UnmarshalValid(tt.giveRequest.Ext, reqExt)
+				if err != nil {
+					t.Error("Unable to unmarshal request.ext")
+				}
 			}
-		}
 
-		writer, err := NewSChainWriter(reqExt, tt.giveHostSChain)
+			writer, err := NewSChainWriter(reqExt, tt.giveHostSChain)
 
-		if tt.wantError {
-			assert.NotNil(t, err)
-			assert.Nil(t, writer)
-		} else {
-			assert.Nil(t, err)
-			assert.NotNil(t, writer)
+			if tt.wantError {
+				assert.NotNil(t, err)
+				assert.Nil(t, writer)
+			} else {
+				assert.Nil(t, err)
+				assert.NotNil(t, writer)
 
-			writer.Write(&tt.giveRequest, tt.giveBidder)
+				writer.Write(&tt.giveRequest, tt.giveBidder)
 
-			assert.Equal(t, tt.wantRequest, tt.giveRequest, tt.description)
-		}
+				assert.Equal(t, tt.wantRequest, tt.giveRequest, tt.description)
+			}
+		})
 	}
 }

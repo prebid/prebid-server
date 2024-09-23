@@ -3,7 +3,6 @@ package schain
 import (
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
 // NewSChainWriter creates an ORTB 2.5 schain writer instance
@@ -54,24 +53,14 @@ func (w SChainWriter) Write(req *openrtb2.BidRequest, bidder string) {
 		selectedSChain = wildCardSChain
 	}
 
-	schain := openrtb_ext.ExtRequestPrebidSChain{
-		SChain: *selectedSChain,
-	}
-
 	if req.Source == nil {
 		req.Source = &openrtb2.Source{}
-	} else {
-		sourceCopy := *req.Source
-		req.Source = &sourceCopy
 	}
+
+	req.Source.SChain = selectedSChain
 
 	if w.hostSChainNode != nil {
-		schain.SChain.Nodes = append(schain.SChain.Nodes, *w.hostSChainNode)
-	}
-
-	sourceExt, err := jsonutil.Marshal(schain)
-	if err == nil {
-		req.Source.Ext = sourceExt
+		req.Source.SChain.Nodes = append(req.Source.SChain.Nodes, *w.hostSChainNode)
 	}
 }
 
