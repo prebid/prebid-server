@@ -1,1 +1,1 @@
-web: ./prebid-server
+web: go run main.go
