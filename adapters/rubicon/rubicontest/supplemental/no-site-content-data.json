@@ -231,10 +231,6 @@
               "ext": {
                 "rp": {
                   "target": {
-                    "pagecat": [
-                      "val1",
-                      "val2"
-                    ]
                   },
                   "track": {
                     "mint": "",

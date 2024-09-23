@@ -675,20 +675,8 @@ func updateImpRpTargetWithFpdAttributes(extImp rubiconExtImpBidder, extImpRubico
 		if err != nil {
 			return nil, err
 		}
-		if len(site.SectionCat) > 0 {
-			addStringArrayAttribute(site.SectionCat, target, "sectioncat")
-		}
-		if len(site.PageCat) > 0 {
-			addStringArrayAttribute(site.PageCat, target, "pagecat")
-		}
 		if site.Page != "" {
 			addStringAttribute(site.Page, target, "page")
-		}
-		if site.Ref != "" {
-			addStringAttribute(site.Ref, target, "ref")
-		}
-		if site.Search != "" {
-			addStringAttribute(site.Search, target, "search")
 		}
 	} else {
 		appExtData, _, _, err := jsonparser.Get(app.Ext, "data")
@@ -698,12 +686,6 @@ func updateImpRpTargetWithFpdAttributes(extImp rubiconExtImpBidder, extImpRubico
 		err = populateFirstPartyDataAttributes(appExtData, target)
 		if err != nil {
 			return nil, err
-		}
-		if len(app.SectionCat) > 0 {
-			addStringArrayAttribute(app.SectionCat, target, "sectioncat")
-		}
-		if len(app.PageCat) > 0 {
-			addStringArrayAttribute(app.PageCat, target, "pagecat")
 		}
 	}
 

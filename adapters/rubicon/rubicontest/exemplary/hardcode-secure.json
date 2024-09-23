@@ -319,11 +319,7 @@
               "ext": {
                 "rp": {
                   "target": {
-                    "pbadslot": "pbadslot",
-                    "pagecat": [
-                      "val1",
-                      "val2"
-                    ]
+                    "pbadslot": "pbadslot"
                   },
                   "track": {
                     "mint": "",

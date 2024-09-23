@@ -269,12 +269,6 @@
                     "page": [
                       "somePage"
                     ],
-                    "ref": [
-                      "someRef"
-                    ],
-                    "search": [
-                      "someSearch"
-                    ],
                     "dfp_ad_unit_code": "someAdSlot"
                   },
                   "track": {
