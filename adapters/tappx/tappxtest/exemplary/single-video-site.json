@@ -79,7 +79,8 @@
               "tappxkey": "pub-12345-site-9876"
             }
           }
-        }
+        },
+        "impIDs":["video-adunit-2"]
       },
       "mockResponse": {
         "status": 200,

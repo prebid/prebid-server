@@ -79,7 +79,8 @@
 
               }
             }
-          }
+          },
+          "impIDs":["div-gpt-ad-1460505748561-0"]
         },
         "mockResponse": {
           "status": 502

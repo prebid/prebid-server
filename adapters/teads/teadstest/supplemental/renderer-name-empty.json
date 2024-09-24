@@ -1,0 +1,144 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "b6321d41-3840-4cb3-baad-b6fc5b0c8553",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "minduration": 15,
+          "maxduration": 30,
+          "protocols": [
+            2,
+            3
+          ],
+          "w": 940,
+          "h": 560
+        },
+        "ext": {
+          "bidder": {
+            "placementId": 125
+          }
+        }
+      }
+    ],
+    "ext": {
+      "prebid": {
+        "sdk": {
+          "renderers": [
+            {
+              "name": "",
+              "version": "5.0.25",
+              "data": {
+                "resize": true,
+                "sdkEngineVersion": "189"
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://psrv.teads.tv/prebid-server/bid-request",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "b6321d41-3840-4cb3-baad-b6fc5b0c8553",
+              "tagid": "125",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "minduration": 15,
+                "maxduration": 30,
+                "protocols": [
+                  2,
+                  3
+                ],
+                "w": 940,
+                "h": 560
+              },
+              "ext": {
+                "kv": {
+                  "placementId": 125
+                }
+              }
+            }
+          ],
+          "ext": {
+            "prebid": {
+              "sdk": {
+                "renderers": [
+                  {
+                    "name": "",
+                    "version": "5.0.25",
+                    "data": {
+                      "resize": true,
+                      "sdkEngineVersion": "189"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "impIDs":["b6321d41-3840-4cb3-baad-b6fc5b0c8553"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "39312703-e970-4914-ae56-8e7d7d1fd16b",
+          "tagid": "125",
+          "seatbid": [
+            {
+              "seat": "teads",
+              "bid": [
+                {
+                  "id": "695ac187-fb3f-4d1f-8d5d-099c5e4c4d28",
+                  "impid": "b6321d41-3840-4cb3-baad-b6fc5b0c8553",
+                  "price": 33,
+                  "nurl": "https://localhost:8080/prebid-server/win-notice?data=base64&clearingPrice=${AUCTION_PRICE}",
+                  "adm": "{\"settings\":{\"values\":{\"animations\":{\"expand\":0,\"collapse\":0.5},\"placementId\":2,\"adType\":\"video\",\"placementFormat\":\"inread\",\"allowedPlayer\":\"any\",\"pageId\":2},\"components\":{\"closeButton\":{\"display\":false,\"countdown\":0},\"credits\":{\"display\":false},\"soundButton\":{\"display\":true,\"countdown\":0,\"type\":\"equalizer\"},\"label\":{\"display\":false},\"slider\":{\"closeButtonDisplay\":false}},\"behaviors\":{\"smartPosition\":{\"top\":false,\"corner\":false,\"mustBypassWhitelist\":true},\"slider\":{\"enable\":false},\"friendly\":false,\"playerClick\":\"fullscreen\",\"soundStart\":{\"type\":\"mute\"},\"soundMute\":\"threshold\",\"soundOver\":\"over\",\"launch\":\"auto\",\"videoStart\":\"threshold\",\"videoPause\":\"threshold\",\"secure\":false}},\"ads\":[{\"settings\":{\"values\":{\"animations\":{\"expand\":0,\"collapse\":0.5},\"placementId\":2,\"adType\":\"video\",\"placementFormat\":\"inread\",\"allowedPlayer\":\"any\",\"pageId\":2},\"components\":{\"closeButton\":{\"display\":false,\"countdown\":0},\"credits\":{\"display\":false},\"soundButton\":{\"display\":true,\"countdown\":0,\"type\":\"equalizer\"},\"label\":{\"display\":false},\"slider\":{\"closeButtonDisplay\":false}},\"behaviors\":{\"smartPosition\":{\"top\":false,\"corner\":false,\"mustBypassWhitelist\":true},\"slider\":{\"enable\":false},\"friendly\":false,\"playerClick\":\"fullscreen\",\"soundStart\":{\"type\":\"mute\"},\"soundMute\":\"threshold\",\"soundOver\":\"over\",\"launch\":\"auto\",\"videoStart\":\"threshold\",\"videoPause\":\"threshold\",\"secure\":false}},\"type\":\"VastXml\",\"content\":\"<VAST version=\\\"3.0\\\"><Ad id=\\\"1\\\"><Wrapper><AdSystem>Teads Technology</AdSystem><VASTAdTagURI><![CDATA[http://vast.tv?auction_publisher_cost=LlBEcMjl2WSVYTIV0ZvZwFta&auction_publisher_cost_currency=USD&auction_ssb_provider_fee=&auction_ssb_provider_fee_currency=&auction_price=74Xz11zXoN9S_a18chCl1DB6&auction_currency=USD]]></VASTAdTagURI><Error><![CDATA[https://localhost:18281/track?action=error-vast&code=[ERRORCODE]&pid=2&vid=708ca808-ec55-4d97-ab81-9c4777e16058&pfid=971104812&mediaFileType=[MEDIAFILETYPE]&auctid=39312703-e970-4914-ae56-8e7d7d1fd16b__b6321d41-3840-4cb3-baad-b6fc5b0c8553__c0f2e6ba-63d0-4e20-ab41-fe0822eb65a6&sid=0&scid=971105412&pscid=971105411&psid=971105457&hb_provider=prebid-server&hb_ad_unit_code=742d38c4-7994-4c2b-ac82-18d3a64ba3c7&dsp_campaign_id=1&dsp_creative_id=1&env=thirdparty-inapp&p=GmbtDz8E6SttqPqekGLm3vHN7muObx7-w6kGLgR8KMiWgUo78VfzNzYlcfjjRwTen7Oad6lYvgPUaiHwDV0lZcpu7lXO4Y7at1NIyIPxfcgdBw&cts=1685971107728&1685971107728]]></Error><Creatives></Creatives></Wrapper></Ad></VAST>\",\"scenario_id\":971105412,\"dsp_campaign_id\":\"1\",\"dsp_creative_id\":\"1\",\"insertion_id\":1,\"placement_id\":2,\"portfolio_item_id\":971104812}],\"wigoEnabled\":false,\"placementMetadata\":{\"2\":{\"adCallTrackingUrl\":\"https://localhost:18281/track?action=adCall&pid=2&pageId=2&auctid=39312703-e970-4914-ae56-8e7d7d1fd16b__b6321d41-3840-4cb3-baad-b6fc5b0c8553__c0f2e6ba-63d0-4e20-ab41-fe0822eb65a6&vid=708ca808-ec55-4d97-ab81-9c4777e16058&hb_provider=prebid-server&hb_ad_unit_code=742d38c4-7994-4c2b-ac82-18d3a64ba3c7&env=thirdparty-inapp&gtc=1&gdpr_apply=false&gac=1&gap=1&ca=false&bsg=uncat&bsias=uncat&pfid=971104812&gid=1&brid=0&cid=1&rpm_reason=3&ut=1&p=5fwoPMJCquIB-txdmwQS0l79-hhHVnlTzyR9mmnBMtZRceP6-q31KzCfLpS8WTNaw_sXr-hkOFBxaxa-jyLblbVc&cts=1685971107773&cs=267268361555465193905\",\"auctionId\":\"39312703-e970-4914-ae56-8e7d7d1fd16b__b6321d41-3840-4cb3-baad-b6fc5b0c8553__c0f2e6ba-63d0-4e20-ab41-fe0822eb65a6\"}},\"viewerId\":\"708ca808-ec55-4d97-ab81-9c4777e16058\"}",
+                  "adid": "1",
+                  "adomain": [
+                    "teads.com"
+                  ],
+                  "cid": "1",
+                  "crid": "1",
+                  "cat": [
+                    "IAB1-6",
+                    "IAB10-5"
+                  ],
+                  "ext": {
+                    "prebid": {
+                      "meta": {
+                        "rendererName": "",
+                        "rendererVersion": "5.0.25",
+                        "rendererData": {
+                          "resize": true,
+                          "sdkEngineVersion": "189"
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "RendererName should not be empty if present",
+      "comparison": "literal"
+    }
+  ]
+}

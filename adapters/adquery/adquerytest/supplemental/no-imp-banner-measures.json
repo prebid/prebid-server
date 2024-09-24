@@ -23,7 +23,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://bidder.adquery.io/prebid/bid",
+        "uri": "https://bidder2.adquery.io/prebid/bid",
         "headers": {
           "Accept": ["application/json"],
           "Content-Type": ["application/json;charset=utf-8"],
@@ -31,18 +31,22 @@
         },
         "body": {
           "adUnitCode": "test-banner-imp-id",
-          "bidId": "22e26bd9a702bc1",
-          "bidQid": "d93f2a0e5f0fe2cc3a6e",
-          "bidPageUrl": "",
           "bidder": "adquery",
           "bidderRequestId": "22e26bd9a702bc",
-          "bidRequestsCount":  1,
           "bidderRequestsCount": 1,
+          "bidId": "22e26bd9a702bc1",
+          "bidIp": "",
+          "bidIpv6": "",
+          "bidPageUrl": "",
+          "bidQid": "d93f2a0e5f0fe2cc3a6e",
+          "bidRequestsCount": 1,
+          "bidUa": "",
           "placementCode": "6d93f2a0e5f0fe2cc3a6e9e3ade964b43b07f897",
           "sizes": "",
           "type": "banner",
           "v": "server"
-        }
+        },
+        "impIDs":["1"]
       },
       "mockResponse": {
         "status": 200,

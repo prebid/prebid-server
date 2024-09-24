@@ -1,0 +1,14 @@
+endpoint: "https://prebid.ecdrsvc.com/pbs"
+maintainer:
+  email: lmprebidadapter@loblaw.ca
+endpointCompression: gzip
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner
+# This bidder does not operate globally. Please consider setting "disabled: true" outside of the following regions:
+geoscope:
+  - CAN

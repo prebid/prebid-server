@@ -3,8 +3,8 @@ package bidadjustment
 import (
 	"math"
 
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 const (
@@ -21,7 +21,7 @@ const minBid = 0.1
 
 // Apply gets the highest priority adjustment slice given a map of rules, and applies those adjustments to a bid's price
 func Apply(rules map[string][]openrtb_ext.Adjustment, bidInfo *adapters.TypedBid, bidderName openrtb_ext.BidderName, currency string, reqInfo *adapters.ExtraRequestInfo, bidType string) (float64, string) {
-	adjustments := []openrtb_ext.Adjustment{}
+	var adjustments []openrtb_ext.Adjustment
 	if len(rules) > 0 {
 		adjustments = get(rules, bidType, string(bidderName), bidInfo.Bid.DealID)
 	} else {

@@ -13,9 +13,9 @@ import (
 
 	"github.com/NYTimes/gziphandler"
 	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/metrics"
-	metricsconfig "github.com/prebid/prebid-server/metrics/config"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/metrics"
+	metricsconfig "github.com/prebid/prebid-server/v2/metrics/config"
 )
 
 // Listen blocks forever, serving PBS requests on the given port. This will block forever, until the process is shut down.
@@ -28,9 +28,6 @@ func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.H
 	stopMain := make(chan os.Signal)
 	stopPrometheus := make(chan os.Signal)
 	done := make(chan struct{})
-
-	adminServer := newAdminServer(cfg, adminHandler)
-	go shutdownAfterSignals(adminServer, stopAdmin, done)
 
 	if cfg.UnixSocketEnable && len(cfg.UnixSocketName) > 0 { // start the unix_socket server if config enable-it.
 		var (
@@ -56,12 +53,17 @@ func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.H
 		go runServer(mainServer, "Main", mainListener)
 	}
 
-	var adminListener net.Listener
-	if adminListener, err = newTCPListener(adminServer.Addr, nil); err != nil {
-		glog.Errorf("Error listening for TCP connections on %s: %v for admin server", adminServer.Addr, err)
-		return
+	if cfg.Admin.Enabled {
+		adminServer := newAdminServer(cfg, adminHandler)
+		go shutdownAfterSignals(adminServer, stopAdmin, done)
+
+		var adminListener net.Listener
+		if adminListener, err = newTCPListener(adminServer.Addr, nil); err != nil {
+			glog.Errorf("Error listening for TCP connections on %s: %v for admin server", adminServer.Addr, err)
+			return
+		}
+		go runServer(adminServer, "Admin", adminListener)
 	}
-	go runServer(adminServer, "Admin", adminListener)
 
 	if cfg.Metrics.Prometheus.Port != 0 {
 		var (
@@ -70,7 +72,7 @@ func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.H
 		)
 		go shutdownAfterSignals(prometheusServer, stopPrometheus, done)
 		if prometheusListener, err = newTCPListener(prometheusServer.Addr, nil); err != nil {
-			glog.Errorf("Error listening for TCP connections on %s: %v for prometheus server", adminServer.Addr, err)
+			glog.Errorf("Error listening for TCP connections on %s: %v for prometheus server", prometheusServer.Addr, err)
 			return
 		}
 

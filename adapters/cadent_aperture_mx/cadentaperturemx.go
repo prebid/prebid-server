@@ -9,12 +9,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/prebid/openrtb/v19/adcom1"
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/adcom1"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type adapter struct {
@@ -38,11 +38,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 	if len(request.Imp) == 0 {
 		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("No Imps in Bid Request"),
+			Message: "No Imps in Bid Request",
 		}}
 	}
 
-	if errs := preprocess(request); errs != nil && len(errs) > 0 {
+	if errs := preprocess(request); len(errs) > 0 {
 		return nil, append(errs, &errortypes.BadInput{
 			Message: fmt.Sprintf("Error in preprocess of Imp, err: %s", errs),
 		})
@@ -51,7 +51,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	data, err := json.Marshal(request)
 	if err != nil {
 		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Error in packaging request to JSON"),
+			Message: "Error in packaging request to JSON",
 		}}
 	}
 
@@ -78,6 +78,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		Uri:     url,
 		Body:    data,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, errs
 }
 
@@ -116,7 +117,7 @@ func buildImpBanner(imp *openrtb2.Imp) error {
 
 	if imp.Banner == nil {
 		return &errortypes.BadInput{
-			Message: fmt.Sprintf("Request needs to include a Banner object"),
+			Message: "Request needs to include a Banner object",
 		}
 	}
 
@@ -126,7 +127,7 @@ func buildImpBanner(imp *openrtb2.Imp) error {
 	if banner.W == nil && banner.H == nil {
 		if len(banner.Format) == 0 {
 			return &errortypes.BadInput{
-				Message: fmt.Sprintf("Need at least one size to build request"),
+				Message: "Need at least one size to build request",
 			}
 		}
 		format := banner.Format[0]
@@ -143,13 +144,13 @@ func buildImpVideo(imp *openrtb2.Imp) error {
 
 	if len(imp.Video.MIMEs) == 0 {
 		return &errortypes.BadInput{
-			Message: fmt.Sprintf("Video: missing required field mimes"),
+			Message: "Video: missing required field mimes",
 		}
 	}
 
-	if imp.Video.H == 0 && imp.Video.W == 0 {
+	if (imp.Video.H == nil || *imp.Video.H == 0) && (imp.Video.W == nil || *imp.Video.W == 0) {
 		return &errortypes.BadInput{
-			Message: fmt.Sprintf("Video: Need at least one size to build request"),
+			Message: "Video: Need at least one size to build request",
 		}
 	}
 
@@ -191,8 +192,6 @@ func addImpProps(imp *openrtb2.Imp, secure *int8, cadentExt *openrtb_ext.ExtImpC
 			imp.BidFloorCur = "USD"
 		}
 	}
-
-	return
 }
 
 // Adding header fields to request header

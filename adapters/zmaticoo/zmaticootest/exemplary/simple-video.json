@@ -1,0 +1,92 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "video": {
+          "w": 300,
+          "h": 250,
+          "mimes": [
+            "video/mp4"
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "pubId": "fake-pub-id",
+            "zoneId": "sin"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bid.zmaticoo.com/prebid/bid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "video": {
+                "w": 300,
+                "h": 250,
+                "mimes": [
+                  "video/mp4"
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "pubId": "fake-pub-id",
+                  "zoneId": "sin"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "ttx",
+              "bid": [
+                {
+                  "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                  "impid": "test-imp-id",
+                  "price": 1.2,
+                  "adm": "some-ads",
+                  "crid": "crid_testid",
+                  "mtype": 2
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+            "impid": "test-imp-id",
+            "price": 1.2,
+            "adm": "some-ads",
+            "crid": "crid_testid",
+            "mtype": 2
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 )
 
 // ExtUser defines the contract for bidrequest.user.ext

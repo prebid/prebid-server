@@ -127,7 +127,8 @@
             "ip": "123.123.123.123",
             "dnt": 1
           }
-        }
+        },
+        "impIDs":["some_test_ad_id_1","some_test_ad_id_2"]
       },
       "mockResponse": {
         "status": 200,

@@ -8,12 +8,12 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/prebid/openrtb/v19/adcom1"
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/adcom1"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type DmxAdapter struct {
@@ -64,7 +64,6 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb2.BidRequest, req *adapt
 	var publisherId string
 	var sellerId string
 	var userExt openrtb_ext.ExtUser
-	var anyHasId = false
 	var reqCopy openrtb2.BidRequest = *request
 	var dmxReq *openrtb2.BidRequest = &reqCopy
 	var dmxRawPubId dmxPubExt
@@ -85,6 +84,7 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb2.BidRequest, req *adapt
 		}
 	}
 
+	hasNoID := true
 	if request.App != nil {
 		appCopy := *request.App
 		appPublisherCopy := *request.App.Publisher
@@ -101,12 +101,12 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb2.BidRequest, req *adapt
 		}
 		dmxReq.App.Publisher.Ext = ext
 		if dmxReq.App.ID != "" {
-			anyHasId = true
+			hasNoID = false
 		}
-		if anyHasId == false {
+		if hasNoID {
 			if idfa, valid := getIdfa(request); valid {
 				dmxReq.App.ID = idfa
-				anyHasId = true
+				hasNoID = false
 			}
 		}
 	} else {
@@ -145,12 +145,12 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb2.BidRequest, req *adapt
 
 	if dmxReq.User != nil {
 		if dmxReq.User.ID != "" {
-			anyHasId = true
+			hasNoID = false
 		}
 		if dmxReq.User.Ext != nil {
 			if err := json.Unmarshal(dmxReq.User.Ext, &userExt); err == nil {
 				if len(userExt.Eids) > 0 {
-					anyHasId = true
+					hasNoID = false
 				}
 			}
 		}
@@ -190,7 +190,7 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb2.BidRequest, req *adapt
 
 	dmxReq.Imp = imps
 
-	if anyHasId == false {
+	if hasNoID {
 		return nil, []error{errors.New("This request contained no identifier")}
 	}
 
@@ -208,6 +208,7 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb2.BidRequest, req *adapt
 		Uri:     adapter.endpoint + addParams(sellerId), //adapter.endpoint,
 		Body:    oJson,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(dmxReq.Imp),
 	}
 
 	reqsBidder = append(reqsBidder, reqBidder)
@@ -223,13 +224,13 @@ func (adapter *DmxAdapter) MakeBids(request *openrtb2.BidRequest, externalReques
 
 	if http.StatusBadRequest == response.StatusCode {
 		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Unexpected status code 400"),
+			Message: "Unexpected status code 400",
 		}}
 	}
 
 	if http.StatusOK != response.StatusCode {
 		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Unexpected response no status code"),
+			Message: "Unexpected response no status code",
 		}}
 	}
 
@@ -263,37 +264,36 @@ func (adapter *DmxAdapter) MakeBids(request *openrtb2.BidRequest, externalReques
 }
 
 func fetchParams(params dmxExt, inst openrtb2.Imp, ins openrtb2.Imp, imps []openrtb2.Imp, banner *openrtb2.Banner, video *openrtb2.Video, intVal int8) []openrtb2.Imp {
-	var tempimp openrtb2.Imp
-	tempimp = inst
+	tempImp := inst
 	if params.Bidder.Bidfloor != 0 {
-		tempimp.BidFloor = params.Bidder.Bidfloor
+		tempImp.BidFloor = params.Bidder.Bidfloor
 	}
 	if params.Bidder.TagId != "" {
-		tempimp.TagID = params.Bidder.TagId
-		tempimp.Secure = &intVal
+		tempImp.TagID = params.Bidder.TagId
+		tempImp.Secure = &intVal
 	}
 
 	if params.Bidder.DmxId != "" {
-		tempimp.TagID = params.Bidder.DmxId
-		tempimp.Secure = &intVal
+		tempImp.TagID = params.Bidder.DmxId
+		tempImp.Secure = &intVal
 	}
 	if banner != nil {
 		if banner.H == nil || banner.W == nil {
 			banner.H = &banner.Format[0].H
 			banner.W = &banner.Format[0].W
 		}
-		tempimp.Banner = banner
+		tempImp.Banner = banner
 	}
 
 	if video != nil {
 		video.Protocols = checkProtocols(video)
-		tempimp.Video = video
+		tempImp.Video = video
 	}
 
-	if tempimp.TagID == "" {
+	if tempImp.TagID == "" {
 		return imps
 	}
-	imps = append(imps, tempimp)
+	imps = append(imps, tempImp)
 	return imps
 }
 

@@ -1,0 +1,307 @@
+{
+    "mockBidRequest": {
+      "id": "test-req-id",
+      "imp": [
+        {
+          "id": "test-imp-id",
+          "native": {
+            "request": "{\"context\":2,\"contextsubtype\":20,\"plcmttype\":1,\"plcmtcnt\":1,\"seq\":0,\"aurlsupport\":0,\"durlsupport\":0,\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]}],\"privacy\":0,\"assets\":[{\"id\":101,\"title\":{\"len\":90},\"required\":1},{\"id\":102,\"img\":{\"type\":3,\"wmin\":225,\"hmin\":150},\"required\":1},{\"id\":103,\"data\":{\"type\":2,\"len\":90},\"required\":1}],\"ver\":\"1.2\"}",
+            "ver": "1.2"
+          },
+          "ext": {
+            "bidder": {
+              "slotid": "u42ohmaufh",
+              "adtype": "native",
+              "publisherid": "123",
+              "signkey": "signkey",
+              "keyid": "41",
+              "isTestAuthorization": "true"
+            }
+          }
+        }
+      ],
+      "app": {
+        "bundle": "com.huawei.browser",
+        "name": "Huawei Browser",
+        "ver": "9.1.0.301"
+      },
+      "device": {
+        "ua": "useragent",
+        "h": 1920,
+        "language": "en",
+        "model": "COL-TEST",
+        "os": "android",
+        "osv": "10.0.0",
+        "devicetype": 4,
+        "make": "huawei",
+        "w": 1080,
+        "ip": "ip",
+        "dnt": 0,
+        "pxratio": 23.01,
+        "geo": {
+          "country": "DEU"
+        }
+      },
+      "user": {
+        "ext": {
+          "data": {
+            "gaid": [
+              "gaid"
+            ],
+            "oaid": [
+              "oaid"
+            ],
+            "clientTime": [
+              "2018-11-02 16:34:07.981+1300"
+            ]
+          }
+        }
+      },
+      "ext": {
+      }
+    },
+    "httpcalls": [
+      {
+        "expectedRequest": {
+          "uri": "https://adx-dre.op.hicloud.com/ppsadx/getResult",
+          "headers": {
+            "Accept": [
+              "application/json"
+            ],
+            "Content-Type": [
+              "application/json;charset=utf-8"
+            ],
+            "User-Agent": [
+              "useragent"
+            ],
+            "Authorization": [
+              "Digest username=123,realm=ppsadx/getResult,nonce=1629473330823,response=d1d61a13a83e1468aa4dff5c8a6cee0b8b381173ca3eb6fa9b313937684d87c0,algorithm=HmacSHA256,usertype=1,keyid=41"
+            ]
+          },
+          "body": {
+            "app": {
+              "lang": "en",
+              "country": "DE",
+              "name": "Huawei Browser",
+              "pkgname": "com.huawei.browser",
+              "version": "9.1.0.301"
+            },
+            "multislot": [
+              {
+                "adtype": 3,
+                "slotid": "u42ohmaufh",
+                "detailedCreativeTypeList": [
+                  "901",
+                  "904",
+                  "905"
+                ],
+                "format":[{"w":1080,"h":607},{"w":300,"h":250},{"w":1080,"h":1620},{"w":1280,"h":720},{"w":640,"h":360},{"w":1080,"h":1920},{"w":720,"h":1280}],
+                "test": 1
+              }
+            ],
+            "device": {
+              "height": 1920,
+              "language": "en",
+              "oaid": "oaid",
+              "os": "android",
+              "type": 4,
+              "ip": "ip",
+              "localeCountry": "DE",
+              "pxratio": 23.01,
+              "model": "COL-TEST",
+              "width": 1080,
+              "clientTime": "2018-11-02 16:34:07.981+1300",
+              "gaid": "gaid",
+              "gaidTrackingEnabled": "1",
+              "isTrackingEnabled": "1",
+              "useragent": "useragent",
+              "version": "10.0.0",
+              "maker": "huawei",
+              "belongCountry": "DE"
+            },
+            "geo": {
+            },
+            "network": {
+              "type": 0
+            },
+            "regs": {
+            },
+            "version": "3.4",
+            "clientAdRequestId": "test-req-id"
+          },
+          "impIDs":["test-imp-id"]
+        },
+        "mockResponse": {
+          "status": 200,
+          "body": {
+            "ctrlSwitchs": "0",
+            "dsp1cost": 28,
+            "dspcost": 59,
+            "multiad": [
+              {
+                "adtype": 3,
+                "content": [
+                  {
+                    "contentid": "58022259",
+                    "creativetype": 106,
+                    "ctrlSwitchs": "001011101001010212",
+                    "endtime": 1621344684645,
+                    "interactiontype": 1,
+                    "landingTitle": 1,
+                    "metaData": {
+                      "adSign": "2",
+                      "apkInfo": {
+                        "appDesc": "43+%E4%BA%BF%E6%AC%A1%E5%AE%89%E8%A3%85",
+                        "appIcon": "https://icon.png",
+                        "appName": "demo",
+                        "fileSize": 118902470,
+                        "packageName": "com.demo.package",
+                        "permPromptForCard": "0",
+                        "popNotify": 1,
+                        "popUpAfterInstallNew": 1,
+                        "priorInstallWay": "2",
+                        "sha256": "sha256",
+                        "url": "http://test/url",
+                        "versionCode": "284",
+                        "versionName": "9.6.1.9"
+                      },
+                      "appId": "101219405",
+                      "appPromotionChannel": "401721412",
+                      "clickUrl": "https://ads.huawei.com/usermgtportal/home/index.html#/",
+                      "cta": "install",
+                      "duration": 6038,
+                      "description": "",
+                      "imageInfo": [
+                        {
+                          "checkSha256Flag": 0,
+                          "height": 607,
+                          "imageType": "img",
+                          "sha256": "8baa56fdb2702b9fb044d95b328936160cd245764375cdb25a4ab504f4ae2e19",
+                          "url": "http://image.jpg",
+                          "width": 1080
+                        }
+                      ],
+                      "label": "%E6%89%8B%E6%9C%BA%E6%B7%98%E5%AE%9D",
+                      "landingPageType": "3",
+                      "marketAppId": "C101219405",
+                      "title": "%2Ftest%2F"
+                    },
+                    "monitor": [
+                      {
+                        "eventType": "click",
+                        "url": [
+                          "http://test/click"
+                        ]
+                      },
+                      {
+                        "eventType": "imp",
+                        "url": [
+                          "http://test/imp"
+                        ]
+                      },
+                      {
+                        "eventType": "download",
+                        "url": [
+                          "http://test/download"
+                        ]
+                      },
+                      {
+                        "eventType": "install",
+                        "url": [
+                          "http://test/install"
+                        ]
+                      },
+                      {
+                        "eventType": "downloadstart",
+                        "url": [
+                          "http://test/downloadstart"
+                        ]
+                      },
+                      {
+                        "eventType": "userclose",
+                        "url": [
+                          "http://test/userclose"
+                        ]
+                      },
+                      {
+                        "eventType": "playStart",
+                        "url": [
+                          "http://test/playStart"
+                        ]
+                      },
+                      {
+                        "eventType": "playEnd",
+                        "url": [
+                          "http://test/playEnd"
+                        ]
+                      },
+                      {
+                        "eventType": "playResume",
+                        "url": [
+                          "http://test/playResume"
+                        ]
+                      },
+                      {
+                        "eventType": "playPause",
+                        "url": [
+                          "http://test/playPause"
+                        ]
+                      },
+                      {
+                        "eventType": "appOpen",
+                        "url": [
+                          "http://test/appOpen"
+                        ]
+                      }
+                    ],
+                    "paramfromserver": {
+                      "a": "1||test",
+                      "sig": "",
+                      "t": "99990101235959"
+                    },
+                    "price": 2.8,
+                    "starttime": 1620230400000,
+                    "taskid": "48016632"
+                  }
+                ],
+                "retcode30": 200,
+                "slotid": "u42ohmaufh"
+              }
+            ],
+            "noReportAdTypeEventList": [
+              {
+                "adType": 3,
+                "eventTypeList": [
+                  "installFail"
+                ]
+              }
+            ],
+            "retcode": 200,
+            "totalCacheSize": 300
+          }
+        }
+      }
+    ],
+    "expectedBidResponses": [
+      {
+        "currency": "USD",
+        "bids": [
+          {
+            "bid": {
+              "adomain": [
+                "huaweiads"
+              ],
+              "crid": "58022259",
+              "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":101,\"title\":{\"text\":\"/test/\",\"len\":6}},{\"id\":102,\"img\":{\"type\":3,\"url\":\"http://image.jpg\",\"w\":1080,\"h\":607}},{\"id\":103,\"data\":{\"label\":\"desc\",\"value\":\"\"}}],\"link\":{\"url\":\"https://ads.huawei.com/usermgtportal/home/index.html#/\",\"clicktrackers\":[\"http://test/click\"]},\"eventtrackers\":[{\"event\":1,\"method\":1,\"url\":\"http://test/imp\"}]}",
+              "id": "test-imp-id",
+              "impid": "test-imp-id",
+              "price": 2.8,
+              "h": 607,
+              "w": 1080
+            },
+            "type": "native"
+          }
+        ]
+      }
+    ]
+  }

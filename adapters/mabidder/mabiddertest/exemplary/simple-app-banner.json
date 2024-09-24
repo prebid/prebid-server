@@ -1,0 +1,111 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app": {
+      "bundle": "com.prebid"
+    },
+    "device": {
+      "ifa":"87857b31-8942-4646-ae80-ab9c95bf3fab"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "ppid": "ppidtest"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://prebid.ecdrsvc.com/pbs",
+        "body": {
+          "id": "test-request-id",
+          "app": {
+            "bundle": "com.prebid"
+          },
+          "device": {
+            "ifa":"87857b31-8942-4646-ae80-ab9c95bf3fab"
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "ppid": "ppidtest"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "Responses": [
+            {
+              "requestId": "1",
+              "currency": "CAD",
+              "width": 300,
+              "height": 250,
+              "creativeId": "6002677",
+              "dealId": "testdeal",
+              "netRevenue": false,
+              "ttl": 5,
+              "ad": "<script type='text/javascript' src='https://adsvr.ecdrsvc.com/js?6002677'></script>",
+              "meta": {
+                "advertiserDomains": [
+                  "https://www.loblaws.ca/"
+                ]
+              },
+              "cpm": 3.5764000415802
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "id": "test-request-id",
+      "bids": [
+        {
+          "bid": {
+            "id": "1",
+            "impid": "1",
+            "price":3.5764000415802, 
+            "adm": "<script type='text/javascript' src='https://adsvr.ecdrsvc.com/js?6002677'></script>",
+            "adomain": [
+              "https://www.loblaws.ca/"
+            ],
+            "crid": "6002677",
+            "dealid": "testdeal",
+            "w": 300,
+            "h": 250
+          }
+        }
+      ],
+      "cur": "USD"
+    }
+  ]
+}

@@ -1,0 +1,151 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "device": {
+            "ip": "123.123.123.123",
+            "ua": "iPad"
+        },
+        "site": {
+            "domain": "www.example.com",
+            "page": "http://www.example.com",
+            "publisher": {
+                "domain": "example.com"
+            },
+            "ext": {
+                "amp": 0
+            }
+        },
+        "imp": [
+            {
+                "id": "test-imp-id",
+                "tagid": "test",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        },
+                        {
+                            "w": 300,
+                            "h": 600
+                        }
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "token": "XXX",
+                        "bidFloor": 0.5
+                    }
+                }
+            }
+        ]
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "https://exchange.alkimi-onboarding.com/server/bid",
+                "body": {
+                    "id": "test-request-id",
+                    "imp": [
+                        {
+                            "id": "test-imp-id",
+                            "tagid": "test",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 300,
+                                        "h": 250
+                                    },
+                                    {
+                                        "w": 300,
+                                        "h": 600
+                                    }
+                                ]
+                            },
+                            "bidfloor": 0.5,
+                            "ext": {
+                                "bidder": {
+                                    "token": "XXX",
+                                    "bidFloor": 0.5,
+                                    "adUnitCode": "test-imp-id",
+                                    "exp": 0,
+                                    "instl": 0
+                                }
+                            }
+                        }
+                    ],
+                    "site": {
+                        "domain": "www.example.com",
+                        "page": "http://www.example.com",
+                        "publisher": {
+                            "domain": "example.com"
+                        },
+                        "ext": {
+                            "amp": 0
+                        }
+                    },
+                    "device": {
+                        "ip": "123.123.123.123",
+                        "ua": "iPad"
+                    }
+                },
+                "impIDs":["test-imp-id"]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "test-request-id",
+                    "seatbid": [
+                        {
+                            "bid": [
+                                {
+                                    "id": "test_bid_id",
+                                    "impid": "test-imp-id",
+                                    "price": 0.9,
+                                    "adm": "<div id=\"qsum\"><a href='https:\/\/alkimi.org' target='_blank'><img src='https:\/\/cloudfront.net\/jpeg\/2_Banner_02_300x250px.jpg'><\/a><\/div><script async src=\"https:\/\/exchange.alkimi-onboarding.com\/dsp-impression?id=H4sIAAAAAAAA_2NkUElJMkszSjIz17VITDPVNTFONdRNSks10zU3TkpNskhJMjU3TmNkYGDsvuy5eQqQAQZMAFKoSf85AAAA&price=${AUCTION_PRICE}\"><\/script>",
+                                    "cid": "test_cid",
+                                    "crid": "test_crid",
+                                    "nurl": "https://exchange.alkimi-onboarding.com/dsp-win?id=H4sIAAAAAAAA_2NkUElJMkszSjIz17VITDPVNTFONdRNSks10zU3TkpNskhJMjU3TmNkYGDsvuy5eQqQAQZMAFKoSf85AAAA&price=${AUCTION_PRICE}",
+                                    "w": 300,
+                                    "h": 250,
+                                    "ext": {
+                                        "prebid": {
+                                            "type": "banner"
+                                        }
+                                    }
+                                }
+                            ],
+                            "seat": "alkimi"
+                        }
+                    ],
+                    "cur": "USD"
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "bids": [
+                {
+                    "bid": {
+                        "id": "test_bid_id",
+                        "impid": "test-imp-id",
+                        "price": 0.9,
+                        "adm": "<div id=\"qsum\"><a href='https:\/\/alkimi.org' target='_blank'><img src='https:\/\/cloudfront.net\/jpeg\/2_Banner_02_300x250px.jpg'><\/a><\/div><script async src=\"https:\/\/exchange.alkimi-onboarding.com\/dsp-impression?id=H4sIAAAAAAAA_2NkUElJMkszSjIz17VITDPVNTFONdRNSks10zU3TkpNskhJMjU3TmNkYGDsvuy5eQqQAQZMAFKoSf85AAAA&price=0.9\"><\/script>",
+                        "cid": "test_cid",
+                        "crid": "test_crid",
+                        "nurl": "https://exchange.alkimi-onboarding.com/dsp-win?id=H4sIAAAAAAAA_2NkUElJMkszSjIz17VITDPVNTFONdRNSks10zU3TkpNskhJMjU3TmNkYGDsvuy5eQqQAQZMAFKoSf85AAAA&price=0.9",
+                        "w": 300,
+                        "h": 250,
+                        "ext": {
+                            "prebid": {
+                                "type": "banner"
+                            }
+                        }
+                    },
+                    "type": "banner"
+                }
+            ]
+        }
+    ]
+}

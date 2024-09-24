@@ -1,15 +1,3 @@
 # DEPRECATED: Use imds bidder instead
+aliasOf: imds
 endpoint: "https://pbs.technoratimedia.com/openrtb/bids/{{.AccountID}}?src={{.SourceId}}&adapter=synacormedia"
-maintainer:
-  email: "eng-demand@imds.tv"
-capabilities:
-  app:
-    mediaTypes:
-      - banner
-      - video
-  site:
-    mediaTypes:
-      - banner
-      - video
-userSync:
-  key: "imds"

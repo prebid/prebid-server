@@ -9,7 +9,7 @@
             "video/mp4"
           ],
           "minduration": 1,
-          "maxduration": 2,
+          "maxduration": 60,
           "protocols": [1,3,5],
           "w": 1020,
           "h": 780,
@@ -41,7 +41,7 @@
                   "video/mp4"
                 ],
                 "minduration": 1,
-                "maxduration": 2,
+                "maxduration": 60,
                 "protocols": [1,3,5],
                 "w": 1020,
                 "h": 780,
@@ -59,7 +59,8 @@
               }
             }
           ]
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,
@@ -77,7 +78,8 @@
                   "adm": "some-test-ad",
                   "crid": "crid_10",
                   "w": 1024,
-                  "h": 576
+                  "h": 576,
+                  "dur": 30
                 }
               ]
             }
@@ -96,7 +98,8 @@
           "adm": "some-test-ad",
           "crid": "crid_10",
           "w": 1024,
-          "h": 576
+          "h": 576,
+          "dur": 30
         },
         "type": "video"
       }]

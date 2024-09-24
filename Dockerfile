@@ -3,8 +3,8 @@ RUN apt-get update && \
     apt-get -y upgrade && \
     apt-get install -y wget
 WORKDIR /tmp
-RUN wget https://dl.google.com/go/go1.20.5.linux-amd64.tar.gz && \
-    tar -xf go1.20.5.linux-amd64.tar.gz && \
+RUN wget https://dl.google.com/go/go1.22.3.linux-amd64.tar.gz && \
+    tar -xf go1.22.3.linux-amd64.tar.gz && \
     mv go /usr/local
 RUN mkdir -p /app/prebid-server/
 WORKDIR /app/prebid-server/
@@ -20,7 +20,7 @@ RUN go mod tidy
 RUN go mod vendor
 ARG TEST="true"
 RUN if [ "$TEST" != "false" ]; then ./validate.sh ; fi
-RUN go build -mod=vendor -ldflags "-X github.com/prebid/prebid-server/version.Ver=`git describe --tags | sed 's/^v//'` -X github.com/prebid/prebid-server/version.Rev=`git rev-parse HEAD`" .
+RUN go build -mod=vendor -ldflags "-X github.com/prebid/prebid-server/v2/version.Ver=`git describe --tags | sed 's/^v//'` -X github.com/prebid/prebid-server/v2/version.Rev=`git rev-parse HEAD`" .
 
 FROM ubuntu:20.04 AS release
 LABEL maintainer="hans.hjort@xandr.com" 

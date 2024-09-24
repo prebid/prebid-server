@@ -131,7 +131,9 @@
               "ext": {
                 "origbidcpm": 0.51,
                 "prebid": {
-                  "bidid": "mock_uuid",
+                  "meta": {
+                  },
+                  "bidid": "bid-audienceNetwork-1",
                   "type": "video"
                 }
               }
@@ -143,7 +145,7 @@
           "bid": [
             {
               "id": "winning-bid",
-              "adm": "<VAST version=\"3.0\"><Ad><Wrapper><AdSystem>prebid.org wrapper</AdSystem><VASTAdTagURI><![CDATA[http://domain.com/winning-bid]]></VASTAdTagURI><Impression><![CDATA[http://localhost/event?t=imp&b=mock_uuid&a=testaccount&bidder=appnexus&f=b&int=testIntegrationType&ts=1234567890]]></Impression><Creatives></Creatives></Wrapper></Ad></VAST>",
+              "adm": "<VAST version=\"3.0\"><Ad><Wrapper><AdSystem>prebid.org wrapper</AdSystem><VASTAdTagURI><![CDATA[http://domain.com/winning-bid]]></VASTAdTagURI><Impression><![CDATA[http://localhost/event?t=imp&b=bid-appnexus-1&a=testaccount&bidder=appnexus&f=b&int=testIntegrationType&ts=1234567890]]></Impression><Creatives></Creatives></Wrapper></Ad></VAST>",
               "nurl": "http://domain.com/winning-bid",
               "impid": "my-imp-id",
               "price": 0.71,
@@ -153,7 +155,9 @@
               "ext": {
                 "origbidcpm": 0.71,
                 "prebid": {
-                  "bidid": "mock_uuid",
+                  "meta": {
+                  },
+                  "bidid": "bid-appnexus-1",
                   "type": "video",
                   "targeting": {
                     "hb_bidder": "appnexus",
@@ -168,7 +172,7 @@
             },
             {
               "id": "losing-bid",
-              "adm": "<VAST version=\"3.0\"><Ad><Wrapper><AdSystem>prebid.org wrapper</AdSystem><VASTAdTagURI><![CDATA[http://domain.com/losing-bid]]></VASTAdTagURI><Impression><![CDATA[http://localhost/event?t=imp&b=mock_uuid&a=testaccount&bidder=appnexus&f=b&int=testIntegrationType&ts=1234567890]]></Impression><Creatives></Creatives></Wrapper></Ad></VAST>",
+              "adm": "<VAST version=\"3.0\"><Ad><Wrapper><AdSystem>prebid.org wrapper</AdSystem><VASTAdTagURI><![CDATA[http://domain.com/losing-bid]]></VASTAdTagURI><Impression><![CDATA[http://localhost/event?t=imp&b=bid-appnexus-2&a=testaccount&bidder=appnexus&f=b&int=testIntegrationType&ts=1234567890]]></Impression><Creatives></Creatives></Wrapper></Ad></VAST>",
               "nurl": "http://domain.com/losing-bid",
               "impid": "my-imp-id",
               "price": 0.21,
@@ -178,7 +182,9 @@
               "ext": {
                 "origbidcpm": 0.21,
                 "prebid": {
-                  "bidid": "mock_uuid",
+                  "meta": {
+                  },
+                  "bidid": "bid-appnexus-2",
                   "type": "video"
                 }
               }

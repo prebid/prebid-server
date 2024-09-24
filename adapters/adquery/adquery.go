@@ -8,11 +8,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 const (
@@ -34,17 +34,14 @@ func Builder(_ openrtb_ext.BidderName, config config.Adapter, _ config.Server) (
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	headers := http.Header{}
-	headers.Add("Content-Type", "application/json;charset=utf-8")
-	headers.Add("Accept", "application/json")
-	headers.Add("x-openrtb-version", "2.5")
+	headers := buildHeaders(request)
 
 	var result []*adapters.RequestData
 	var errs []error
 	for _, imp := range request.Imp {
 		ext, err := parseExt(imp.Ext)
 		if err != nil {
-			errs = append(errs, &errortypes.BadInput{err.Error()})
+			errs = append(errs, &errortypes.BadInput{Message: err.Error()})
 			continue
 		}
 
@@ -58,6 +55,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 			Uri:     a.endpoint,
 			Body:    requestJSON,
 			Headers: headers,
+			ImpIDs:  []string{imp.ID},
 		}
 		result = append(result, data)
 	}
@@ -112,13 +110,27 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 	return bidResponse, nil
 }
 
+func buildHeaders(bidReq *openrtb2.BidRequest) http.Header {
+	headers := http.Header{}
+
+	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
+	headers.Add("X-Openrtb-Version", "2.5")
+
+	if bidReq.Device != nil && len(bidReq.Device.IP) > 0 {
+		headers.Add("X-Forwarded-For", bidReq.Device.IP)
+	}
+
+	return headers
+}
+
 func buildRequest(bidReq *openrtb2.BidRequest, imp *openrtb2.Imp, ext *openrtb_ext.ImpExtAdQuery) *BidderRequest {
 	userId := ""
 	if bidReq.User != nil {
 		userId = bidReq.User.ID
 	}
 
-	return &BidderRequest{
+	bidderRequest := &BidderRequest{
 		V:                   prebidVersion,
 		PlacementCode:       ext.PlacementID,
 		AuctionId:           "",
@@ -132,6 +144,18 @@ func buildRequest(bidReq *openrtb2.BidRequest, imp *openrtb2.Imp, ext *openrtb_e
 		BidderRequestsCount: 1,
 		Sizes:               getImpSizes(imp),
 	}
+
+	if bidReq.Device != nil {
+		bidderRequest.BidIp = bidReq.Device.IP
+		bidderRequest.BidIpv6 = bidReq.Device.IPv6
+		bidderRequest.BidUa = bidReq.Device.UA
+	}
+
+	if bidReq.Site != nil {
+		bidderRequest.BidPageUrl = bidReq.Site.Page
+	}
+
+	return bidderRequest
 }
 
 func parseExt(ext json.RawMessage) (*openrtb_ext.ImpExtAdQuery, error) {

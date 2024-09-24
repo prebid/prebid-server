@@ -6,22 +6,73 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/v2/stored_requests"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestFileFetcher(t *testing.T) {
+	// Load the test input files for testing
 	fetcher, err := NewFileFetcher("./test")
 	if err != nil {
 		t.Errorf("Failed to create a Fetcher: %v", err)
 	}
 
+	// Test stored request and stored imps
 	storedReqs, storedImps, errs := fetcher.FetchRequests(context.Background(), []string{"1", "2"}, []string{"some-imp"})
 	assertErrorCount(t, 0, errs)
 
 	validateStoredReqOne(t, storedReqs)
 	validateStoredReqTwo(t, storedReqs)
 	validateImp(t, storedImps)
+}
+
+func TestStoredResponseFileFetcher(t *testing.T) {
+	// grab the fetcher that do not have /test/stored_responses/stored_responses FS directory
+	directoryNotExistfetcher, err := NewFileFetcher("./test/stored_responses")
+	if err != nil {
+		t.Errorf("Failed to create a Fetcher: %v", err)
+	}
+
+	// we should receive 1 error since we do not have "stored_responses" directory in ./test/stored_responses
+	_, errs := directoryNotExistfetcher.FetchResponses(context.Background(), []string{})
+	assertErrorCount(t, 1, errs)
+
+	// grab the fetcher that has /test/stored_responses FS directory
+	fetcher, err := NewFileFetcher("./test")
+	if err != nil {
+		t.Errorf("Failed to create a Fetcher: %v", err)
+	}
+
+	// Test stored responses, we have 3 stored responses in ./test/stored_responses
+	storedResps, errs := fetcher.FetchResponses(context.Background(), []string{"bar", "escaped", "does_not_exist"})
+	// expect 1 error since we do not have "does_not_exist" stored response file from ./test
+	assertErrorCount(t, 1, errs)
+
+	validateStoredResponse[map[string]string](t, storedResps, "bar", func(val map[string]string) error {
+		if len(val) != 1 {
+			return fmt.Errorf("Unexpected value length. Expected %d, Got %d", 1, len(val))
+		}
+
+		data, hadKey := val["test"]
+		if !hadKey {
+			return fmt.Errorf(`missing key "test" in the value`)
+		}
+
+		expectedVal := "bar"
+		if data != expectedVal {
+			return fmt.Errorf(`Bad value for key "test". Expected "%s", Got "%s"`, expectedVal, data)
+		}
+		return nil
+	})
+
+	validateStoredResponse[string](t, storedResps, "escaped", func(val string) error {
+		expectedVal := `esca"ped`
+		if val != expectedVal {
+			return fmt.Errorf(`Bad data. Expected "%v", Got "%s"`, expectedVal, val)
+		}
+		return nil
+	})
 }
 
 func TestAccountFetcher(t *testing.T) {
@@ -35,7 +86,7 @@ func TestAccountFetcher(t *testing.T) {
 	_, errs = fetcher.FetchAccount(context.Background(), json.RawMessage(`{"events_enabled":true}`), "nonexistent")
 	assertErrorCount(t, 1, errs)
 	assert.Error(t, errs[0])
-	assert.Equal(t, stored_requests.NotFoundError{"nonexistent", "Account"}, errs[0])
+	assert.Equal(t, stored_requests.NotFoundError{ID: "nonexistent", DataType: "Account"}, errs[0])
 
 	_, errs = fetcher.FetchAccount(context.Background(), json.RawMessage(`{"events_enabled"}`), "valid")
 	assertErrorCount(t, 1, errs)
@@ -58,7 +109,7 @@ func validateStoredReqOne(t *testing.T, storedRequests map[string]json.RawMessag
 	}
 
 	var req1Val map[string]string
-	if err := json.Unmarshal(value, &req1Val); err != nil {
+	if err := jsonutil.UnmarshalValid(value, &req1Val); err != nil {
 		t.Errorf("Failed to unmarshal 1: %v", err)
 	}
 	if len(req1Val) != 1 {
@@ -80,7 +131,7 @@ func validateStoredReqTwo(t *testing.T, storedRequests map[string]json.RawMessag
 	}
 
 	var req2Val string
-	if err := json.Unmarshal(value, &req2Val); err != nil {
+	if err := jsonutil.UnmarshalValid(value, &req2Val); err != nil {
 		t.Errorf("Failed to unmarshal %d: %v", 2, err)
 	}
 	if req2Val != `esca"ped` {
@@ -95,7 +146,7 @@ func validateImp(t *testing.T, storedImps map[string]json.RawMessage) {
 	}
 
 	var impVal map[string]bool
-	if err := json.Unmarshal(value, &impVal); err != nil {
+	if err := jsonutil.UnmarshalValid(value, &impVal); err != nil {
 		t.Errorf("Failed to unmarshal some-imp: %v", err)
 	}
 	if len(impVal) != 1 {
@@ -134,7 +185,7 @@ func TestCategoriesFetcherWithPublisher(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to create a category Fetcher: %v", err)
 	}
-	category, err := fetcher.FetchCategories(nil, "test", "categories", "IAB1-1")
+	category, err := fetcher.FetchCategories(context.TODO(), "test", "categories", "IAB1-1")
 	assert.Equal(t, nil, err, "Categories were loaded incorrectly")
 	assert.Equal(t, "Beverages", category, "Categories were loaded incorrectly")
 }
@@ -144,7 +195,7 @@ func TestCategoriesFetcherWithoutPublisher(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to create a category Fetcher: %v", err)
 	}
-	category, err := fetcher.FetchCategories(nil, "test", "", "IAB1-1")
+	category, err := fetcher.FetchCategories(context.TODO(), "test", "", "IAB1-1")
 	assert.Equal(t, nil, err, "Categories were loaded incorrectly")
 	assert.Equal(t, "VideoGames", category, "Categories were loaded incorrectly")
 }
@@ -154,7 +205,7 @@ func TestCategoriesFetcherNoCategory(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to create a category Fetcher: %v", err)
 	}
-	_, fetchingErr := fetcher.FetchCategories(nil, "test", "", "IAB1-100")
+	_, fetchingErr := fetcher.FetchCategories(context.TODO(), "test", "", "IAB1-100")
 	assert.Equal(t, fmt.Errorf("Unable to find category for adserver 'test', publisherId: '', iab category: 'IAB1-100'"),
 		fetchingErr, "Categories were loaded incorrectly")
 }
@@ -164,7 +215,7 @@ func TestCategoriesFetcherBrokenJson(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to create a category Fetcher: %v", err)
 	}
-	_, fetchingErr := fetcher.FetchCategories(nil, "test", "broken", "IAB1-100")
+	_, fetchingErr := fetcher.FetchCategories(context.TODO(), "test", "broken", "IAB1-100")
 	assert.Equal(t, fmt.Errorf("Unable to unmarshal categories for adserver: 'test', publisherId: 'broken'"),
 		fetchingErr, "Categories were loaded incorrectly")
 }
@@ -174,7 +225,24 @@ func TestCategoriesFetcherNoCategoriesFile(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to create a category Fetcher: %v", err)
 	}
-	_, fetchingErr := fetcher.FetchCategories(nil, "test", "not_exists", "IAB1-100")
+	_, fetchingErr := fetcher.FetchCategories(context.TODO(), "test", "not_exists", "IAB1-100")
 	assert.Equal(t, fmt.Errorf("Unable to find mapping file for adserver: 'test', publisherId: 'not_exists'"),
 		fetchingErr, "Categories were loaded incorrectly")
+}
+
+// validateStoredResponse - reusable function in the stored response test to verify the actual data read from the fetcher
+func validateStoredResponse[T any](t *testing.T, storedInfo map[string]json.RawMessage, id string, verifyFunc func(outputVal T) error) {
+	storedValue, hasID := storedInfo[id]
+	if !hasID {
+		t.Fatalf(`Expected stored response data to have id: "%s"`, id)
+	}
+
+	var unmarshalledValue T
+	if err := jsonutil.UnmarshalValid(storedValue, &unmarshalledValue); err != nil {
+		t.Errorf(`Failed to unmarshal stored response data of id "%s": %v`, id, err)
+	}
+
+	if err := verifyFunc(unmarshalledValue); err != nil {
+		t.Errorf(`Bad data in stored response of id: "%s": %v`, id, err)
+	}
 }

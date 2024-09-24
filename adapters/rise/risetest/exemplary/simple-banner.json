@@ -56,7 +56,8 @@
               }
             }
           ]
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,
@@ -64,7 +65,7 @@
           "id": "test-request-id",
           "seatbid": [
             {
-              "seat": "Rhythmone",
+              "seat": "958",
               "bid": [
                 {
                   "id": "7706636740145184841",
