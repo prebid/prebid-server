@@ -43,6 +43,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderAdtarget,
 	BidderAdtrgtme,
 	BidderAdtelligent,
+	BidderAdTonos,
 	BidderAdvangelists,
 	BidderAdView,
 	BidderAdxcg,
@@ -89,6 +90,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderConnectAd,
 	BidderConsumable,
 	BidderConversant,
+	BidderCopper6ssp,
 	BidderCpmstar,
 	BidderCriteo,
 	BidderCWire,
@@ -106,6 +108,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderEmxDigital,
 	BidderEPlanning,
 	BidderEpom,
+	BidderEscalax,
 	BidderEVolution,
 	BidderFlipp,
 	BidderFreewheelSSP,
@@ -162,6 +165,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderOpenWeb,
 	BidderOpenx,
 	BidderOperaads,
+	BidderOraki,
 	BidderOrbidder,
 	BidderOutbrain,
 	BidderOwnAdx,
@@ -169,6 +173,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderPGAMSsp,
 	BidderPlaydigo,
 	BidderPubmatic,
+	BidderPubrise,
 	BidderPubnative,
 	BidderPulsepoint,
 	BidderPWBid,
@@ -364,6 +369,7 @@ const (
 	BidderAdsinteractive    BidderName = "adsinteractive"
 	BidderAdtarget          BidderName = "adtarget"
 	BidderAdtrgtme          BidderName = "adtrgtme"
+	BidderAdTonos           BidderName = "adtonos"
 	BidderAdtelligent       BidderName = "adtelligent"
 	BidderAdvangelists      BidderName = "advangelists"
 	BidderAdView            BidderName = "adview"
@@ -411,6 +417,7 @@ const (
 	BidderConnectAd         BidderName = "connectad"
 	BidderConsumable        BidderName = "consumable"
 	BidderConversant        BidderName = "conversant"
+	BidderCopper6ssp        BidderName = "copper6ssp"
 	BidderCpmstar           BidderName = "cpmstar"
 	BidderCriteo            BidderName = "criteo"
 	BidderCWire             BidderName = "cwire"
@@ -428,6 +435,7 @@ const (
 	BidderEmxDigital        BidderName = "emx_digital"
 	BidderEPlanning         BidderName = "eplanning"
 	BidderEpom              BidderName = "epom"
+	BidderEscalax           BidderName = "escalax"
 	BidderEVolution         BidderName = "e_volution"
 	BidderFlipp             BidderName = "flipp"
 	BidderFreewheelSSP      BidderName = "freewheelssp"
@@ -484,6 +492,7 @@ const (
 	BidderOpenWeb           BidderName = "openweb"
 	BidderOpenx             BidderName = "openx"
 	BidderOperaads          BidderName = "operaads"
+	BidderOraki             BidderName = "oraki"
 	BidderOrbidder          BidderName = "orbidder"
 	BidderOutbrain          BidderName = "outbrain"
 	BidderOwnAdx            BidderName = "ownadx"
@@ -491,6 +500,7 @@ const (
 	BidderPGAMSsp           BidderName = "pgamssp"
 	BidderPlaydigo          BidderName = "playdigo"
 	BidderPubmatic          BidderName = "pubmatic"
+	BidderPubrise           BidderName = "pubrise"
 	BidderPubnative         BidderName = "pubnative"
 	BidderPulsepoint        BidderName = "pulsepoint"
 	BidderPWBid             BidderName = "pwbid"
