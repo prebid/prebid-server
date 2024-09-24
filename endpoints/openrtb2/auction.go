@@ -784,10 +784,6 @@ func (deps *endpointDeps) validateRequest(account *config.Account, httpReq *http
 		}
 	}
 
-	if err := deps.validateSourceSChain(req); err != nil {
-		return []error{err}
-	}
-
 	var requestAliases map[string]string
 	reqExt, err := req.GetRequestExt()
 	if err != nil {
@@ -1338,20 +1334,6 @@ func validateDevice(device *openrtb2.Device) error {
 	if device.Geo != nil && device.Geo.Accuracy < 0 {
 		return errors.New("request.device.geo.accuracy must be a positive number")
 	}
-	if device.SUA != nil {
-		if len(device.SUA.Browsers) > 0 {
-			for i, browser := range device.SUA.Browsers {
-				if len(browser.Brand) == 0 {
-					return fmt.Errorf("request.device.sua.browsers[%d].brand cannot be empty", i)
-				}
-			}
-		}
-		if device.SUA.Platform != nil {
-			if len(device.SUA.Platform.Brand) == 0 {
-				return errors.New("request.device.sua.platform.brand cannot be empty")
-			}
-		}
-	}
 	return nil
 }
 
@@ -1446,29 +1428,6 @@ func fillChannel(reqWrapper *openrtb_ext.RequestWrapper, isAmp bool) error {
 	}
 	return nil
 
-}
-
-func (deps *endpointDeps) validateSourceSChain(req *openrtb_ext.RequestWrapper) error {
-	if req.Source == nil || req.Source.SChain == nil {
-		return nil
-	}
-	sChain := req.Source.SChain
-
-	if len(sChain.Ver) == 0 {
-		return errors.New("request.source.schain.ver cannot be empty")
-	}
-	if len(sChain.Nodes) == 0 {
-		return errors.New("request.source.schain.nodes cannot be empty")
-	}
-	for i, node := range sChain.Nodes {
-		if len(node.ASI) == 0 {
-			return fmt.Errorf("request.source.schain.nodes[%d].asi cannot be empty", i)
-		}
-		if len(node.SID) == 0 {
-			return fmt.Errorf("request.source.schain.nodes[%d].sid cannot be empty", i)
-		}
-	}
-	return nil
 }
 
 func sanitizeRequest(r *openrtb_ext.RequestWrapper, ipValidator iputil.IPValidator) {
