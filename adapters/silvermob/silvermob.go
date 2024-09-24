@@ -176,7 +176,8 @@ func (a *SilverMobAdapter) MakeBids(
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
 
 	for _, sb := range bidResp.SeatBid {
-		for _, bid := range sb.Bid {
+		for i := range sb.Bid {
+			bid := sb.Bid[i]
 			bidType, err := getBidMediaTypeFromMtype(&bid)
 
 			if err != nil {
