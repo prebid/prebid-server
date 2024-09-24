@@ -1,0 +1,3 @@
+gdpr:
+  enabled: true
+  default_value: "1"  # Set to "1" if you want GDPR enabled by default
