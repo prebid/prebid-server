@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Oraki Adapter Params",
+  "description": "A schema which validates params accepted by the Oraki adapter",
+  "type": "object",
+  "properties": {
+    "placementId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Placement ID"
+    },
+    "endpointId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Endpoint ID"
+    }
+  },
+  "oneOf": [
+    { "required": ["placementId"] },
+    { "required": ["endpointId"] }
+  ]
+}

@@ -46,7 +46,7 @@ func (p *permissionsMock) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 	return true, nil
 }
 
-func (p *permissionsMock) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (gdpr.AuctionPermissions, error) {
+func (p *permissionsMock) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) gdpr.AuctionPermissions {
 	permissions := gdpr.AuctionPermissions{
 		PassGeo: p.passGeo,
 		PassID:  p.passID,
@@ -54,7 +54,7 @@ func (p *permissionsMock) AuctionActivitiesAllowed(ctx context.Context, bidderCo
 
 	if p.allowAllBidders {
 		permissions.AllowBidRequest = true
-		return permissions, p.activitiesError
+		return permissions
 	}
 
 	for _, allowedBidder := range p.allowedBidders {
@@ -63,7 +63,7 @@ func (p *permissionsMock) AuctionActivitiesAllowed(ctx context.Context, bidderCo
 		}
 	}
 
-	return permissions, p.activitiesError
+	return permissions
 }
 
 type fakePermissionsBuilder struct {

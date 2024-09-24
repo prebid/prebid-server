@@ -12,8 +12,8 @@ analytics:
         # Required: set the accounts you want to track
         accounts:
         - code: "my-code" # Required: provied by agma
-          publisher_id: "123" # Required: Exchange specific publisher_id
-          site_app_id: "openrtb2-site.id-or-app.id" # optional: scope to the publisher with an openrtb2 Site object id or App object id
+          publisher_id: "123" # Required: Exchange specific publisher_id, can be an empty string accounts are not used
+          site_app_id: "openrtb2-site.id-or-app.id-or-app.bundle" # optional: scope to the publisher with an openrtb2 Site object id or App object id/bundle
         # Optional properties (advanced configuration)
         endpoint: 
             url: "https://go.pbs.agma-analytics.de/v1/prebid-server" # Check with agma if your site needs an extra url
