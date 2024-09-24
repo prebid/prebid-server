@@ -35,7 +35,7 @@ type SChainWriter struct {
 // location and no wildcard schain exists, the request is not modified.
 func (w SChainWriter) Write(req *openrtb2.BidRequest, bidder string) {
 	const sChainWildCard = "*"
-	var selectedSChain *openrtb2.SupplyChain
+	var selectedSChain openrtb2.SupplyChain
 
 	wildCardSChain := w.sChainsByBidder[sChainWildCard]
 	bidderSChain := w.sChainsByBidder[bidder]
@@ -45,19 +45,24 @@ func (w SChainWriter) Write(req *openrtb2.BidRequest, bidder string) {
 		return
 	}
 
-	selectedSChain = &openrtb2.SupplyChain{Ver: "1.0"}
+	selectedSChain = openrtb2.SupplyChain{Ver: "1.0"}
 
 	if bidderSChain != nil {
-		selectedSChain = bidderSChain
+		selectedSChain = *bidderSChain
 	} else if wildCardSChain != nil {
-		selectedSChain = wildCardSChain
+		selectedSChain = *wildCardSChain
 	}
 
 	if req.Source == nil {
 		req.Source = &openrtb2.Source{}
+	} else {
+		// Copy Source to avoid shared memory issues.
+		// Source may be modified differently for different bidders in request
+		sourceCopy := *req.Source
+		req.Source = &sourceCopy
 	}
 
-	req.Source.SChain = selectedSChain
+	req.Source.SChain = &selectedSChain
 
 	if w.hostSChainNode != nil {
 		req.Source.SChain.Nodes = append(req.Source.SChain.Nodes, *w.hostSChainNode)

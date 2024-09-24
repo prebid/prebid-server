@@ -99,7 +99,7 @@ func TestGetConsent(t *testing.T) {
 			wantConsent: "BOS2bx5OS2bx5ABABBAAABoAAAAAFA",
 		},
 		{
-			description: "User Ext Consent is empty",
+			description: "User Consent is empty",
 			giveUser:    &openrtb2.User{Consent: ""},
 			wantConsent: "",
 		},
