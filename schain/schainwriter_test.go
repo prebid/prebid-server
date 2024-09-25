@@ -45,14 +45,18 @@ func TestSChainWriter(t *testing.T) {
 			giveRequest: openrtb2.BidRequest{
 				Ext: json.RawMessage(`{}`),
 				Source: &openrtb2.Source{
-					Ext: json.RawMessage(`{"some":"data"}`),
+					SChain: &openrtb2.SupplyChain{
+						Ver: "1.1",
+					},
 				},
 			},
 			giveBidder: "appnexus",
 			wantRequest: openrtb2.BidRequest{
 				Ext: json.RawMessage(`{}`),
 				Source: &openrtb2.Source{
-					Ext: json.RawMessage(`{"some":"data"}`),
+					SChain: &openrtb2.SupplyChain{
+						Ver: "1.1",
+					},
 				},
 			},
 		},
@@ -61,6 +65,9 @@ func TestSChainWriter(t *testing.T) {
 			giveRequest: openrtb2.BidRequest{
 				Ext: json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],` + seller1SChain + `}]}}`),
 				Source: &openrtb2.Source{
+					SChain: &openrtb2.SupplyChain{
+						Ver: "1.1",
+					},
 					Ext: json.RawMessage(`{"some":"data"}`),
 				},
 			},
@@ -68,6 +75,9 @@ func TestSChainWriter(t *testing.T) {
 			wantRequest: openrtb2.BidRequest{
 				Ext: json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],` + seller1SChain + `}]}}`),
 				Source: &openrtb2.Source{
+					SChain: &openrtb2.SupplyChain{
+						Ver: "1.1",
+					},
 					Ext: json.RawMessage(`{"some":"data"}`),
 				},
 			},
