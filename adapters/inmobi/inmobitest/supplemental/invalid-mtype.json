@@ -1,11 +1,10 @@
 {
   "mockBidRequest": {
-    "app": {
-      "bundle": "com.example.app"
+    "site": {
+      "page": "https://www.inmobi.com"
     },
     "id": "req-id",
     "device": {
-      "ifa": "9d8fe0a9-c0dd-4482-b16b-5709b00c608d",
       "ip": "1.1.1.1",
       "ua": "Mozilla/5.0 (Linux; Android 8.0.0; SM-G960F Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.84 Mobile Safari/537.36"
     },
@@ -13,12 +12,13 @@
       {
         "ext": {
           "bidder": {
-            "plc": "1596825400965"
+            "plc": "1621323101291"
           }
         },
-        "banner": {
-          "w": 320,
-          "h": 50
+        "video": {
+          "w": 640,
+          "h": 360,
+          "mimes": ["video/mp4"]
         },
         "id": "imp-id"
       }
@@ -28,12 +28,11 @@
     "expectedRequest": {
       "uri": "https://api.w.inmobi.com/showad/openrtb/bidder/prebid",
       "body": {
-        "app": {
-          "bundle": "com.example.app"
+        "site": {
+          "page": "https://www.inmobi.com"
         },
         "id": "req-id",
         "device": {
-          "ifa": "9d8fe0a9-c0dd-4482-b16b-5709b00c608d",
           "ip": "1.1.1.1",
           "ua": "Mozilla/5.0 (Linux; Android 8.0.0; SM-G960F Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.84 Mobile Safari/537.36"
         },
@@ -41,12 +40,13 @@
           {
             "ext": {
               "bidder": {
-                "plc": "1596825400965"
+                "plc": "1621323101291"
               }
             },
-            "banner": {
-              "w": 320,
-              "h": 50
+            "video": {
+              "w": 640,
+              "h": 360,
+              "mimes": ["video/mp4"]
             },
             "id": "imp-id"
           }
@@ -74,9 +74,9 @@
                 "adomain": [],
                 "price": 2.0,
                 "id": "1234",
-                "adm": "bannerhtml",
+                "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\"?> <VAST version=\"3.0\"></VAST>",
                 "impid": "imp-id",
-                "mtype": 1
+                "mtype": 0
               }
             ]
           }
@@ -85,26 +85,13 @@
     }
   }],
 
-  "expectedBidResponses": [{
-    "currency": "USD",
-    "bids": [{
-      "bid": {
-        "id": "1234",
-        "impid": "imp-id",
-        "price": 2.0,
-        "adm": "bannerhtml",
-        "crid": "123456789",
-        "nurl": "https://some.event.url/params",
-        "mtype": 1,
-        "ext": {
-          "prebid": {
-            "meta": {
-              "networkName": "inmobi"
-            }
-          }
-        }
-      },
-      "type": "banner"
-    }]
-  }]
+  "expectedBidResponses":[],
+  "expectedMakeBidsErrors":[
+    {
+      "value":"Unsupported mtype 0 for bid 1234",
+      "comparison":"literal"
+    }
+  ]
 }
+
+
