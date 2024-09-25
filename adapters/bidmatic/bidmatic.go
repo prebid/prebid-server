@@ -193,7 +193,10 @@ func validateImpression(imp *openrtb2.Imp) (int, error) {
 
 	imp.Ext = impExtBuffer
 
-	source, _ := impExt.SourceId.Int64() // json.Unmarshal returns err if it isn't valid
+	source, err := impExt.SourceId.Int64() // json.Unmarshal returns err if it isn't valid
+	if err != nil {
+		return 0, err
+	}
 	return int(source), nil
 }
 
