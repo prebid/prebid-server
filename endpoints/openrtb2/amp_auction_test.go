@@ -230,7 +230,7 @@ func TestAMPPageInfo(t *testing.T) {
 	assert.Equal(t, "test.somepage.co.uk", exchange.lastRequest.Site.Domain)
 }
 
-func DisabledTestGDPRConsent(t *testing.T) {
+func TestGDPRConsent(t *testing.T) {
 	consent := "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA"
 	existingConsent := "BONV8oqONXwgmADACHENAO7pqzAAppY"
 
@@ -757,7 +757,7 @@ func TestCCPAConsent(t *testing.T) {
 	}
 }
 
-func DisabledTestConsentWarnings(t *testing.T) {
+func TestConsentWarnings(t *testing.T) {
 	type inputTest struct {
 		regs              *openrtb_ext.ExtRegs
 		invalidConsentURL bool
@@ -876,7 +876,7 @@ func DisabledTestConsentWarnings(t *testing.T) {
 	}
 }
 
-func DisabledTestNewAndLegacyConsentBothProvided(t *testing.T) {
+func TestNewAndLegacyConsentBothProvided(t *testing.T) {
 	validConsentGDPR1 := "COwGVJOOwGVJOADACHENAOCAAO6as_-AAAhoAFNLAAoAAAA"
 	validConsentGDPR2 := "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA"
 
