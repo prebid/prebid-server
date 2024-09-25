@@ -1,33 +1,33 @@
 ## Overview
 
-Prebid Server contains at least one module that requires CGo which introduces both build and runtime dependencies.
-To build, you need a C compiler, preferably gcc.
-To run, you may require one or more runtime dependencies, most notably libatomic.
+As of v2.31.0, Prebid Server contains a module that requires CGo which introduces both build and runtime dependencies. To build, you need a C compiler, preferably gcc. To run, you may require one or more runtime dependencies, most notably libatomic.
 
-## Examples (Build --> Target)
+## Examples
 For a containerized example, see the Dockerfile.
-Here are some manual build examples, including some cross-compilation use cases, that have been tested:
+For manual build examples, including some cross-compilation use cases, see below.
 
-### darwin amd64 --> darwin amd64
+### From darwin amd64
+
+#### To darwin amd64
 `GOOS=darwin GOARCH=amd64 CGO_ENABLED=1 go build`
 
 Running the built binary on mac amd64:
 `./prebid-server --stderrthreshold=WARNING -v=2`
 
-### darwin amd64 --> darwin arm64
+#### To darwin arm64
 `GOOS=darwin GOARCH=arm64 CGO_ENABLED=1 go build`
 
 Running the built binary on mac arm64:
 `./prebid-server --stderrthreshold=WARNING -v=2`
 
-### darwin amd64 --> windows amd64
-<b>Build (mac)</b>
+#### To windows amd64
+<b>Build</b>
 Install mingw-w64 which consists of a gcc compiler port you can use to generate windows binaries:
 `brew install mingw-w64`
 
 `GOOS=windows GOARCH=amd64 CGO_ENABLED=1 CC="x86_64-w64-mingw32-gcc" go build`
 
-<b>Run (windows)</b>
+<b>Run</b>
 Running the built binary on windows:
 `.\prebid-server.exe --sderrthreshold=WARNING =v=2`
 
@@ -41,7 +41,8 @@ To resolve these errors, copy the following files from mingw-64 on your mac to `
 `/usr/local/Cellar/mingw-w64/12.0.0_1/toolchain-x86_64/x86_64-w64-mingw32/lib/libatomic-1.dll`
 `/usr/local/Cellar/mingw-w64/12.0.0_1/toolchain-x86_64/x86_64-w64-mingw32/bin/libwinpthread-1.dll`
 
-### windows amd64 --> windows amd64
+### From windows amd64
+#### To windows amd64
 <b>Build</b>
 `set CGO_ENABLED=1`
 `set GOOS=windows`
@@ -81,7 +82,8 @@ To resolve these errors, copy the following files from MSYS2 installation to `C:
 `C:\mysys64\mingw64\bin\libatomic-1.dll`
 `C:\mysys64\mingw64\bin\libwinpthread-1.dll`
 
-### linux amd64 --> linux amd64
+### From linux amd64
+#### To linux amd64
 <b>Note</b>
 These instructions are for building and running on Debian-based distributions
 
