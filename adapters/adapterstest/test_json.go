@@ -226,9 +226,10 @@ type expectedBidResponse struct {
 }
 
 type expectedBid struct {
-	Bid  json.RawMessage `json:"bid"`
-	Type string          `json:"type"`
-	Seat string          `json:"seat"`
+	Bid   json.RawMessage `json:"bid"`
+	Type  string          `json:"type"`
+	Seat  string          `json:"seat"`
+	Video json.RawMessage `json:"video,omitempty"`
 }
 
 // ---------------------------------------
@@ -342,6 +343,9 @@ func diffBids(t *testing.T, description string, actual *adapters.TypedBid, expec
 	assert.Equal(t, string(expected.Seat), string(actual.Seat), fmt.Sprintf(`%s.seat "%s" does not match expected "%s."`, description, string(actual.Seat), string(expected.Seat)))
 	assert.Equal(t, string(expected.Type), string(actual.BidType), fmt.Sprintf(`%s.type "%s" does not match expected "%s."`, description, string(actual.BidType), string(expected.Type)))
 	assert.NoError(t, diffOrtbBids(fmt.Sprintf("%s.bid", description), actual.Bid, expected.Bid))
+	if expected.Video != nil {
+		assert.NoError(t, diffBidVideo(fmt.Sprintf("%s.video", description), actual.BidVideo, expected.Video))
+	}
 }
 
 // diffOrtbBids compares the actual Bid made by the adapter to the expectation from the JSON file.
@@ -356,6 +360,15 @@ func diffOrtbBids(description string, actual *openrtb2.Bid, expected json.RawMes
 	}
 
 	return diffJson(description, actualJson, expected)
+}
+
+func diffBidVideo(description string, actual *openrtb_ext.ExtBidPrebidVideo, expected json.RawMessage) error {
+	actualJson, err := json.Marshal(actual)
+	if err != nil {
+		return fmt.Errorf("%s failed to marshal actual Bid Video into JSON. %v", description, err)
+	}
+
+	return diffJson(description, actualJson, []byte(expected))
 }
 
 // diffJson compares two JSON byte arrays for structural equality. It will produce an error if either
