@@ -52,6 +52,9 @@ type BidderInfo struct {
 
 	// For MSP Plugin extension only.
 	MspSoPath string `mapstructure:"so_path,omitempty" json:"so_path,omitempty"`
+
+	// For Nova Adapter only
+	NovaScylla AdapterNovaScylla `yaml:"scylla" mapstructure:"scylla"`
 }
 
 // BidderInfoExperiment specifies non-production ready feature config for a bidder
@@ -180,6 +183,12 @@ type SyncerEndpoint struct {
 	// UserMacro is available as a macro to the RedirectURL template. This value is specific to the bidder server
 	// and has no default.
 	UserMacro string `yaml:"userMacro" mapstructure:"user_macro"`
+}
+
+// AdapterNovaScylla specifies the the scylla config for Nova Adapter
+type AdapterNovaScylla struct {
+	Cluster  string `yaml:"cluster" mapstructure:"cluster"`
+	KeySpace string `yaml:"keyspace" mapstructure:"keyspace"`
 }
 
 func (bi BidderInfo) IsEnabled() bool {
@@ -438,6 +447,12 @@ func applyBidderInfoConfigOverrides(configBidderInfos BidderInfos, fsBidderInfos
 			}
 			if bidderInfo.EndpointCompression == "" && fsBidderCfg.EndpointCompression != "" {
 				bidderInfo.EndpointCompression = fsBidderCfg.EndpointCompression
+			}
+			if bidderInfo.NovaScylla.Cluster == "" && fsBidderCfg.NovaScylla.Cluster != "" {
+				bidderInfo.NovaScylla.Cluster = fsBidderCfg.NovaScylla.Cluster
+			}
+			if bidderInfo.NovaScylla.KeySpace == "" && fsBidderCfg.NovaScylla.KeySpace != "" {
+				bidderInfo.NovaScylla.KeySpace = fsBidderCfg.NovaScylla.KeySpace
 			}
 
 			// validate and try to apply the legacy usersync_url configuration in attempt to provide
