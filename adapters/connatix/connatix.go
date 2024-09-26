@@ -152,7 +152,7 @@ func splitRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, uri string
 	impsLeft := len(imps) > 0
 
 	headers := http.Header{}
-	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Content-Type", "application/json")
 	headers.Add("Accept", "application/json")
 
 	for impsLeft {
