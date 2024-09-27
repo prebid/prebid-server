@@ -162,7 +162,7 @@ func (adapter *RTBHouseAdapter) MakeBids(
 	var typedBid *adapters.TypedBid
 	for _, seatBid := range openRTBBidderResponse.SeatBid {
 		for _, bid := range seatBid.Bid {
-			bid := bid // pin! -> https://github.com/kyoh86/scopelint#whats-this
+			bid := bid
 			bidType, err := getMediaTypeForBid(bid)
 			resolveMacros(&bid)
 			if err != nil {
