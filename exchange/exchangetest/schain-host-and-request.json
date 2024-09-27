@@ -84,25 +84,23 @@
                         }
                     },
                     "source": {
-                        "ext": {
-                            "schain": {
-                                "complete": 1,
-                                "nodes": [
-                                    {
-                                        "asi": "whatever.com",
-                                        "sid": "1234",
-                                        "rid": "123-456-7890",
-                                        "hp": 1
-                                    },
-                                    {
-                                        "asi": "pbshostcompany.com",
-                                        "sid": "00001",
-                                        "rid": "BidRequest",
-                                        "hp": 1
-                                    }
-                                ],
-                                "ver": "2.0"
-                            }
+                        "schain": {
+                            "complete": 1,
+                            "nodes": [
+                                {
+                                    "asi": "whatever.com",
+                                    "sid": "1234",
+                                    "rid": "123-456-7890",
+                                    "hp": 1
+                                },
+                                {
+                                    "asi": "pbshostcompany.com",
+                                    "sid": "00001",
+                                    "rid": "BidRequest",
+                                    "hp": 1
+                                }
+                            ],
+                            "ver": "2.0"
                         }
                     }
                 },

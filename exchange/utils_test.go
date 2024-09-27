@@ -1279,7 +1279,7 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 		req := newBidRequest(t)
 		req.Ext = test.reqExt
 		req.Regs = &openrtb2.Regs{
-			Ext: json.RawMessage(`{"us_privacy":"` + test.ccpaConsent + `"}`),
+			USPrivacy: test.ccpaConsent,
 		}
 
 		privacyConfig := config.Privacy{
@@ -1339,32 +1339,32 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 
 func TestCleanOpenRTBRequestsCCPAErrors(t *testing.T) {
 	testCases := []struct {
-		description string
-		reqExt      json.RawMessage
-		reqRegsExt  json.RawMessage
-		expectError error
+		description    string
+		reqExt         json.RawMessage
+		reqRegsPrivacy string
+		expectError    error
 	}{
 		{
-			description: "Invalid Consent",
-			reqExt:      json.RawMessage(`{"prebid":{"nosale":["*"]}}`),
-			reqRegsExt:  json.RawMessage(`{"us_privacy":"malformed"}`),
+			description:    "Invalid Consent",
+			reqExt:         json.RawMessage(`{"prebid":{"nosale":["*"]}}`),
+			reqRegsPrivacy: "malformed",
 			expectError: &errortypes.Warning{
 				Message:     "request.regs.ext.us_privacy must contain 4 characters",
 				WarningCode: errortypes.InvalidPrivacyConsentWarningCode,
 			},
 		},
 		{
-			description: "Invalid No Sale Bidders",
-			reqExt:      json.RawMessage(`{"prebid":{"nosale":["*", "another"]}}`),
-			reqRegsExt:  json.RawMessage(`{"us_privacy":"1NYN"}`),
-			expectError: errors.New("request.ext.prebid.nosale is invalid: can only specify all bidders if no other bidders are provided"),
+			description:    "Invalid No Sale Bidders",
+			reqExt:         json.RawMessage(`{"prebid":{"nosale":["*", "another"]}}`),
+			reqRegsPrivacy: "1NYN",
+			expectError:    errors.New("request.ext.prebid.nosale is invalid: can only specify all bidders if no other bidders are provided"),
 		},
 	}
 
 	for _, test := range testCases {
 		req := newBidRequest(t)
 		req.Ext = test.reqExt
-		req.Regs = &openrtb2.Regs{Ext: test.reqRegsExt}
+		req.Regs = &openrtb2.Regs{USPrivacy: test.reqRegsPrivacy}
 
 		var reqExtStruct openrtb_ext.ExtRequest
 		err := jsonutil.UnmarshalValid(req.Ext, &reqExtStruct)
@@ -2291,7 +2291,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 
 	for _, test := range testCases {
 		req := newBidRequest(t)
-		req.User.Ext = json.RawMessage(`{"consent":"` + test.gdprConsent + `"}`)
+		req.User.Consent = test.gdprConsent
 
 		privacyConfig := config.Privacy{}
 		accountConfig := config.Account{}

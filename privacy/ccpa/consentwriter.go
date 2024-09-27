@@ -18,9 +18,10 @@ func (c ConsentWriter) Write(req *openrtb2.BidRequest) error {
 
 	// Set consent string in USPrivacy
 	if c.Consent != "" {
-		if req.Regs != nil {
-			req.Regs.USPrivacy = c.Consent
+		if req.Regs == nil {
+			req.Regs = &openrtb2.Regs{}
 		}
+		req.Regs.USPrivacy = c.Consent
 	}
 
 	return nil

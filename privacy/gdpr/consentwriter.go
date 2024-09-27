@@ -17,15 +17,17 @@ func (c ConsentWriter) Write(req *openrtb2.BidRequest) error {
 	}
 
 	if c.GDPR != nil {
-		if req.Regs != nil {
-			req.Regs.GDPR = c.GDPR
+		if req.Regs == nil {
+			req.Regs = &openrtb2.Regs{}
 		}
+		req.Regs.GDPR = c.GDPR
 	}
 
 	if c.Consent != "" {
-		if req.User != nil {
-			req.User.Consent = c.Consent
+		if req.User == nil {
+			req.User = &openrtb2.User{}
 		}
+		req.User.Consent = c.Consent
 	}
 
 	return nil

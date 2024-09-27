@@ -27,7 +27,7 @@ func TestConsentWriter(t *testing.T) {
 			consent:     "anyConsent",
 			request:     &openrtb2.BidRequest{},
 			expected: &openrtb2.BidRequest{User: &openrtb2.User{
-				Ext: json.RawMessage(`{"consent":"anyConsent"}`)}},
+				Consent: "anyConsent"}},
 		},
 		{
 			description: "Enabled With Nil Request User Ext Object",
@@ -60,7 +60,7 @@ func TestConsentWriter(t *testing.T) {
 			consent:     "BONV8oqONXwgmADACHENAO7pqzAAppY\"},\"oops\":\"malicious\",\"p\":{\"p\":\"",
 			request:     &openrtb2.BidRequest{},
 			expected: &openrtb2.BidRequest{User: &openrtb2.User{
-				Ext: json.RawMessage(`{"consent":"BONV8oqONXwgmADACHENAO7pqzAAppY\"},\"oops\":\"malicious\",\"p\":{\"p\":\""}`),
+				Consent: "BONV8oqONXwgmADACHENAO7pqzAAppY\"},\"oops\":\"malicious\",\"p\":{\"p\":\"",
 			}},
 		},
 		{
