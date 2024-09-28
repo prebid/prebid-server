@@ -256,9 +256,7 @@ func TestGDPRConsent(t *testing.T) {
 				Consent: existingConsent,
 			},
 			expectedUser: &openrtb2.User{
-				ID:       "aUserId",
-				BuyerUID: "aBuyerID",
-				Consent:  consent,
+				Consent: consent,
 			},
 		},
 		{
@@ -268,9 +266,7 @@ func TestGDPRConsent(t *testing.T) {
 				Consent: existingConsent,
 			},
 			expectedUser: &openrtb2.User{
-				ID:       "aUserId",
-				BuyerUID: "aBuyerID",
-				Consent:  consent,
+				Consent: consent,
 			},
 		},
 		{
@@ -280,16 +276,14 @@ func TestGDPRConsent(t *testing.T) {
 				Consent: existingConsent,
 			},
 			expectedUser: &openrtb2.User{
-				ID:       "aUserId",
-				BuyerUID: "aBuyerID",
-				Consent:  existingConsent,
+				Consent: existingConsent,
 			},
 		},
 	}
 
 	for _, test := range testCases {
 		// Build Request
-		bid, err := getTestBidRequest(test.nilUser, test.consent, true, nil)
+		bid, err := getTestBidRequest(test.nilUser, test.user, true, nil)
 		if err != nil {
 			t.Fatalf("Failed to marshal the complete openrtb2.BidRequest object %v", err)
 		}
@@ -627,13 +621,13 @@ func TestCCPAConsent(t *testing.T) {
 		consent     string
 		regs        openrtb2.Regs
 		nilRegs     bool
-		expectedReg openrtb2.Regs
+		expectedReg *openrtb2.Regs
 	}{
 		{
 			description: "Nil Regs",
 			consent:     consent,
 			nilRegs:     true,
-			expectedReg: openrtb2.Regs{
+			expectedReg: &openrtb2.Regs{
 				USPrivacy: consent,
 			},
 		},
@@ -641,7 +635,7 @@ func TestCCPAConsent(t *testing.T) {
 			description: "Nil Regs Ext",
 			consent:     consent,
 			nilRegs:     true,
-			expectedReg: openrtb2.Regs{
+			expectedReg: &openrtb2.Regs{
 				USPrivacy: consent,
 			},
 		},
@@ -651,7 +645,7 @@ func TestCCPAConsent(t *testing.T) {
 			regs: openrtb2.Regs{
 				USPrivacy: existingConsent,
 			},
-			expectedReg: openrtb2.Regs{
+			expectedReg: &openrtb2.Regs{
 				USPrivacy: consent,
 			},
 		},
@@ -662,7 +656,7 @@ func TestCCPAConsent(t *testing.T) {
 				USPrivacy: existingConsent,
 				GDPR:      &gdpr,
 			},
-			expectedReg: openrtb2.Regs{
+			expectedReg: &openrtb2.Regs{
 				USPrivacy: consent,
 				GDPR:      &gdpr,
 			},
@@ -673,7 +667,7 @@ func TestCCPAConsent(t *testing.T) {
 			regs: openrtb2.Regs{
 				USPrivacy: existingConsent,
 			},
-			expectedReg: openrtb2.Regs{
+			expectedReg: &openrtb2.Regs{
 				USPrivacy: existingConsent,
 			},
 		},
@@ -681,7 +675,7 @@ func TestCCPAConsent(t *testing.T) {
 
 	for _, test := range testCases {
 		// Build Request
-		bid, err := getTestBidRequest(true, test.consent, test.nilRegs, &test.regs)
+		bid, err := getTestBidRequest(true, nil, test.nilRegs, &test.regs)
 		if err != nil {
 			t.Fatalf("Failed to marshal the complete openrtb2.BidRequest object %v", err)
 		}
@@ -725,9 +719,6 @@ func TestCCPAConsent(t *testing.T) {
 			return
 		}
 		if !assert.NotNil(t, result.Regs, test.description+":lastRequest.Regs") {
-			return
-		}
-		if !assert.NotNil(t, result.Regs.Ext, test.description+":lastRequest.Regs.Ext") {
 			return
 		}
 
@@ -786,7 +777,7 @@ func TestConsentWarnings(t *testing.T) {
 
 	for _, testCase := range testData {
 
-		bid, err := getTestBidRequest(true, "", testCase.regs == nil, testCase.regs)
+		bid, err := getTestBidRequest(true, nil, testCase.regs == nil, testCase.regs)
 		if err != nil {
 			t.Fatalf("Failed to marshal the complete openrtb2.BidRequest object %v", err)
 		}
@@ -871,27 +862,25 @@ func TestNewAndLegacyConsentBothProvided(t *testing.T) {
 			description:   "New Consent Wins",
 			consent:       validConsentGDPR1,
 			consentLegacy: validConsentGDPR2,
+			user:          &openrtb2.User{},
 			expectedUser: &openrtb2.User{
-				ID:       "aUserId",
-				BuyerUID: "aBuyerID",
-				Consent:  validConsentGDPR1,
+				Consent: validConsentGDPR1,
 			},
 		},
 		{
 			description:   "New Consent Wins - Reverse",
 			consent:       validConsentGDPR2,
 			consentLegacy: validConsentGDPR1,
+			user:          &openrtb2.User{},
 			expectedUser: &openrtb2.User{
-				ID:       "aUserId",
-				BuyerUID: "aBuyerID",
-				Consent:  validConsentGDPR2,
+				Consent: validConsentGDPR2,
 			},
 		},
 	}
 
 	for _, test := range testCases {
 		// Build Request
-		bid, err := getTestBidRequest(false, test.consent, true, nil)
+		bid, err := getTestBidRequest(false, test.user, true, nil)
 		if err != nil {
 			t.Fatalf("Failed to marshal the complete openrtb2.BidRequest object %v", err)
 		}
@@ -1510,7 +1499,7 @@ func (m *mockAmpExchangeWarnings) HoldAuction(ctx context.Context, r *exchange.A
 	return &exchange.AuctionResponse{BidResponse: response}, nil
 }
 
-func getTestBidRequest(nilUser bool, userConsent string, nilRegs bool, regs *openrtb2.Regs) ([]byte, error) {
+func getTestBidRequest(nilUser bool, user *openrtb2.User, nilRegs bool, regs *openrtb2.Regs) ([]byte, error) {
 	var width int64 = 300
 	var height int64 = 300
 	bidRequest := &openrtb2.BidRequest{
@@ -1542,16 +1531,11 @@ func getTestBidRequest(nilUser bool, userConsent string, nilRegs bool, regs *ope
 	}
 
 	if !nilUser {
-		bidRequest.User = &openrtb2.User{
-			ID:       "aUserId",
-			BuyerUID: "aBuyerID",
-			Consent:  userConsent,
-		}
+		bidRequest.User = user
 	}
 
 	if !nilRegs {
 		bidRequest.Regs = regs
-		bidRequest.Regs.COPPA = 1
 	}
 	return jsonutil.Marshal(bidRequest)
 }

@@ -2775,7 +2775,7 @@ func TestCCPAInvalid(t *testing.T) {
 			ID: "anySiteID",
 		},
 		Regs: &openrtb2.Regs{
-			Ext: json.RawMessage(`{"us_privacy": "invalid by length"}`),
+			USPrivacy: "invalid by length",
 		},
 	}
 
