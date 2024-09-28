@@ -1480,46 +1480,111 @@ func TestCleanOpenRTBRequestsSChain(t *testing.T) {
 	testCases := []struct {
 		description   string
 		inExt         json.RawMessage
-		inSourceExt   json.RawMessage
+		inSChain      *openrtb2.SupplyChain
 		outRequestExt json.RawMessage
-		outSourceExt  json.RawMessage
+		outSource     *openrtb2.Source
 		hasError      bool
 	}{
 		{
 			description:   "nil",
 			inExt:         nil,
-			inSourceExt:   nil,
+			inSChain:      nil,
 			outRequestExt: nil,
-			outSourceExt:  nil,
+			outSource: &openrtb2.Source{
+				TID:    "testTID",
+				SChain: nil,
+				Ext:    nil,
+			},
 		},
 		{
-			description:   "ORTB 2.5 chain at source.ext.schain",
-			inExt:         nil,
-			inSourceExt:   json.RawMessage(`{` + seller1SChain + `}`),
+			description: "Supply Chain defined in request.Source.supplyChain",
+			inExt:       nil,
+			inSChain: &openrtb2.SupplyChain{
+				Complete: 1,
+				Ver:      "1.0",
+				Ext:      nil,
+				Nodes: []openrtb2.SupplyChainNode{
+					{
+						ASI: "directseller1.com",
+						SID: "00001",
+						RID: "BidRequest1",
+						HP:  openrtb2.Int8Ptr(1),
+						Ext: nil,
+					},
+				},
+			},
 			outRequestExt: nil,
-			outSourceExt:  json.RawMessage(`{` + seller1SChain + `}`),
+			outSource: &openrtb2.Source{
+				TID: "testTID",
+				SChain: &openrtb2.SupplyChain{
+					Complete: 1,
+					Ver:      "1.0",
+					Ext:      nil,
+					Nodes: []openrtb2.SupplyChainNode{
+						{
+							ASI: "directseller1.com",
+							SID: "00001",
+							RID: "BidRequest1",
+							HP:  openrtb2.Int8Ptr(1),
+							Ext: nil,
+						},
+					},
+				},
+				Ext: nil,
+			},
 		},
 		{
-			description:   "ORTB 2.5 schain at request.ext.prebid.schains",
+			description:   "Supply Chain defined in request.ext.prebid.schains",
 			inExt:         json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],` + seller1SChain + `}]}}`),
-			inSourceExt:   nil,
+			inSChain:      nil,
 			outRequestExt: nil,
-			outSourceExt:  json.RawMessage(`{` + seller1SChain + `}`),
+			outSource: &openrtb2.Source{
+				TID: "testTID",
+				SChain: &openrtb2.SupplyChain{
+					Complete: 1,
+					Ver:      "1.0",
+					Ext:      nil,
+					Nodes: []openrtb2.SupplyChainNode{
+						{
+							ASI: "directseller1.com",
+							SID: "00001",
+							RID: "BidRequest1",
+							HP:  openrtb2.Int8Ptr(1),
+							Ext: nil,
+						},
+					},
+				},
+				Ext: nil,
+			},
 		},
 		{
-			description:   "schainwriter instantation error -- multiple bidder schains in ext.prebid.schains.",
-			inExt:         json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],` + seller1SChain + `},{"bidders":["appnexus"],` + seller2SChain + `}]}}`),
-			inSourceExt:   json.RawMessage(`{` + seller1SChain + `}`),
+			description: "schainwriter instantation error -- multiple bidder schains in ext.prebid.schains.",
+			inExt:       json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],` + seller1SChain + `},{"bidders":["appnexus"],` + seller2SChain + `}]}}`),
+			inSChain: &openrtb2.SupplyChain{
+				Complete: 1,
+				Ver:      "1.0",
+				Ext:      nil,
+				Nodes: []openrtb2.SupplyChainNode{
+					{
+						ASI: "directseller1.com",
+						SID: "00001",
+						RID: "BidRequest1",
+						HP:  openrtb2.Int8Ptr(1),
+						Ext: nil,
+					},
+				},
+			},
+
 			outRequestExt: nil,
-			outSourceExt:  nil,
+			outSource:     nil,
 			hasError:      true,
 		},
 	}
 
 	for _, test := range testCases {
 		req := newBidRequest(t)
-		if test.inSourceExt != nil {
-			req.Source.Ext = test.inSourceExt
+		if test.inSChain != nil {
+			req.Source.SChain = test.inSChain
 		}
 
 		var extRequest *openrtb_ext.ExtRequest
@@ -1558,7 +1623,7 @@ func TestCleanOpenRTBRequestsSChain(t *testing.T) {
 		} else {
 			result := bidderRequests[0]
 			assert.Nil(t, errs)
-			assert.Equal(t, test.outSourceExt, result.BidRequest.Source.Ext, test.description+":Source.Ext")
+			assert.Equal(t, test.outSource, result.BidRequest.Source, test.description+":Source")
 			assert.Equal(t, test.outRequestExt, result.BidRequest.Ext, test.description+":Ext")
 		}
 	}
@@ -3291,15 +3356,43 @@ func TestCleanOpenRTBRequestsSChainMultipleBidders(t *testing.T) {
 	assert.Nil(t, errs)
 	assert.Len(t, bidderRequests, 2, "Bid request count is not 2")
 
-	bidRequestSourceExts := map[openrtb_ext.BidderName]json.RawMessage{}
+	bidRequestSourceSupplyChain := map[openrtb_ext.BidderName]*openrtb2.SupplyChain{}
 	for _, bidderRequest := range bidderRequests {
-		bidRequestSourceExts[bidderRequest.BidderName] = bidderRequest.BidRequest.Source.Ext
+		bidRequestSourceSupplyChain[bidderRequest.BidderName] = bidderRequest.BidRequest.Source.SChain
 	}
 
-	appnexusPrebidSchainsSchain := json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"directseller1.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}`)
-	axonixPrebidSchainsSchain := json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"directseller2.com","sid":"00002","rid":"BidRequest2","hp":1}],"ver":"1.0"}}`)
-	assert.Equal(t, appnexusPrebidSchainsSchain, bidRequestSourceExts["appnexus"], "Incorrect appnexus bid request schain in source.ext")
-	assert.Equal(t, axonixPrebidSchainsSchain, bidRequestSourceExts["axonix"], "Incorrect axonix bid request schain in source.ext")
+	appnexusSchainsSchainExpected := &openrtb2.SupplyChain{
+		Complete: 1,
+		Ver:      "1.0",
+		Ext:      nil,
+		Nodes: []openrtb2.SupplyChainNode{
+			{
+				ASI: "directseller1.com",
+				SID: "00001",
+				RID: "BidRequest1",
+				HP:  openrtb2.Int8Ptr(1),
+				Ext: nil,
+			},
+		},
+	}
+
+	axonixSchainsSchainExpected := &openrtb2.SupplyChain{
+		Complete: 1,
+		Ver:      "1.0",
+		Ext:      nil,
+		Nodes: []openrtb2.SupplyChainNode{
+			{
+				ASI: "directseller2.com",
+				SID: "00002",
+				RID: "BidRequest2",
+				HP:  openrtb2.Int8Ptr(1),
+				Ext: nil,
+			},
+		},
+	}
+
+	assert.Equal(t, appnexusSchainsSchainExpected, bidRequestSourceSupplyChain["appnexus"], "Incorrect appnexus bid request schain ")
+	assert.Equal(t, axonixSchainsSchainExpected, bidRequestSourceSupplyChain["axonix"], "Incorrect axonix bid request schain")
 }
 
 func TestCleanOpenRTBRequestsBidAdjustment(t *testing.T) {
