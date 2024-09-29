@@ -4,3 +4,4 @@ endpoint: "http://roundhouseads.us-east-1.elasticbeanstalk.com:8000/openrtb2/auc
 gdpr:
   enabled: false
   default_value: "0"  # Set to "1" if you want GDPR enabled by default
+loglevel: "debug"
