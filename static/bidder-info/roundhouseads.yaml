@@ -21,4 +21,4 @@ userSync:
     - redirect
     - iframe
 openrtb:
-  gpp-supported: true
+  gpp-supported: true# Dummy change
