@@ -1,6 +1,6 @@
 host: "0.0.0.0"
 port: 8000
-endpoint: "http://roundhouseads.us-east-1.elasticbeanstalk.com:8000/openrtb2"
+endpoint: "endpoint: "http://roundhouseads-bidder-endpoint.com/openrtb2/bid""
 maintainer:
   email: "info@roundhouseads.com"
 gvlVendorID: 42
