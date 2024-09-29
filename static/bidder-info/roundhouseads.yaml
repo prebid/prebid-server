@@ -21,6 +21,6 @@ userSync:
   supports:
     - redirect
     - iframe
-publisherId: "1234"  # Set your publisherId here
+publisherId: "1234"  
 openrtb:
-  gpp-supported: true #Dummy change
+  gpp-supported: true 
