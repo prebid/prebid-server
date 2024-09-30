@@ -27,6 +27,7 @@ import (
 	"github.com/prebid/prebid-server/v2/ortb"
 	"github.com/prebid/prebid-server/v2/privacy"
 	"github.com/prebid/prebid-server/v2/privacysandbox"
+	"github.com/prebid/prebid-server/v2/schain"
 	"golang.org/x/net/publicsuffix"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
@@ -43,7 +44,6 @@ import (
 	"github.com/prebid/prebid-server/v2/prebid_cache_client"
 	"github.com/prebid/prebid-server/v2/privacy/ccpa"
 	"github.com/prebid/prebid-server/v2/privacy/lmt"
-	"github.com/prebid/prebid-server/v2/schain"
 	"github.com/prebid/prebid-server/v2/stored_requests"
 	"github.com/prebid/prebid-server/v2/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/v2/stored_responses"
@@ -533,6 +533,9 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		return
 	}
 
+	// upgrade to 2.6 here
+	openrtb_ext.ConvertUpTo26(req)
+
 	if err := mergeBidderParams(req); err != nil {
 		errs = []error{err}
 		return
@@ -823,10 +826,6 @@ func (deps *endpointDeps) validateRequest(account *config.Account, httpReq *http
 		}
 	}
 
-	if err := mapSChains(req); err != nil {
-		return []error{err}
-	}
-
 	if err := validateOrFillChannel(req, isAmp); err != nil {
 		return []error{err}
 	}
@@ -928,32 +927,6 @@ func (deps *endpointDeps) validateRequest(account *config.Account, httpReq *http
 	}
 
 	return errL
-}
-
-// mapSChains maps an schain defined in an ORTB 2.4 location (req.ext.schain) to the ORTB 2.5 location
-// (req.source.ext.schain) if no ORTB 2.5 schain (req.source.ext.schain, req.ext.prebid.schains) exists.
-// An ORTB 2.4 schain is always deleted from the 2.4 location regardless of whether an ORTB 2.5 schain exists.
-func mapSChains(req *openrtb_ext.RequestWrapper) error {
-	reqExt, err := req.GetRequestExt()
-	if err != nil {
-		return fmt.Errorf("req.ext is invalid: %v", err)
-	}
-	sourceExt, err := req.GetSourceExt()
-	if err != nil {
-		return fmt.Errorf("source.ext is invalid: %v", err)
-	}
-
-	reqExtSChain := reqExt.GetSChain()
-	reqExt.SetSChain(nil)
-
-	if reqPrebid := reqExt.GetPrebid(); reqPrebid != nil && reqPrebid.SChains != nil {
-		return nil
-	} else if sourceExt.GetSChain() != nil {
-		return nil
-	} else if reqExtSChain != nil {
-		sourceExt.SetSChain(reqExtSChain)
-	}
-	return nil
 }
 
 func validateAndFillSourceTID(req *openrtb_ext.RequestWrapper, generateRequestID bool, hasStoredBidRequest bool, isAmp bool) error {
@@ -1294,21 +1267,19 @@ func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases 
 	}
 
 	// Check Universal User ID
-	eids := userExt.GetEid()
-	if eids != nil {
-		eidsValue := *eids
-		for eidIndex, eid := range eidsValue {
+	if req.User.EIDs != nil {
+		for eidIndex, eid := range req.User.EIDs {
 			if eid.Source == "" {
-				return append(errL, fmt.Errorf("request.user.ext.eids[%d] missing required field: \"source\"", eidIndex))
+				return append(errL, fmt.Errorf("request.user.eids[%d] missing required field: \"source\"", eidIndex))
 			}
 
 			if len(eid.UIDs) == 0 {
-				return append(errL, fmt.Errorf("request.user.ext.eids[%d].uids must contain at least one element or be undefined", eidIndex))
+				return append(errL, fmt.Errorf("request.user.eids[%d].uids must contain at least one element or be undefined", eidIndex))
 			}
 
 			for uidIndex, uid := range eid.UIDs {
 				if uid.ID == "" {
-					return append(errL, fmt.Errorf("request.user.ext.eids[%d].uids[%d] missing required field: \"id\"", eidIndex, uidIndex))
+					return append(errL, fmt.Errorf("request.user.eids[%d].uids[%d] missing required field: \"id\"", eidIndex, uidIndex))
 				}
 			}
 		}
@@ -1338,16 +1309,12 @@ func validateRegs(req *openrtb_ext.RequestWrapper, gpp gpplib.GppContainer) []er
 				WarningCode: errortypes.InvalidPrivacyConsentWarningCode})
 		}
 	}
-	regsExt, err := req.GetRegExt()
-	if err != nil {
-		return append(errL, fmt.Errorf("request.regs.ext is invalid: %v", err))
+	if req.BidRequest.Regs.GDPR != nil {
+		reqGDPR := req.BidRequest.Regs.GDPR
+		if reqGDPR != nil && *reqGDPR != 0 && *reqGDPR != 1 {
+			return append(errL, errors.New("request.regs.gdpr must be either 0 or 1"))
+		}
 	}
-
-	gdpr := regsExt.GetGDPR()
-	if gdpr != nil && *gdpr != 0 && *gdpr != 1 {
-		return append(errL, errors.New("request.regs.ext.gdpr must be either 0 or 1"))
-	}
-
 	return errL
 }
 
@@ -1370,7 +1337,6 @@ func validateDevice(device *openrtb2.Device) error {
 	if device.Geo != nil && device.Geo.Accuracy < 0 {
 		return errors.New("request.device.geo.accuracy must be a positive number")
 	}
-
 	return nil
 }
 

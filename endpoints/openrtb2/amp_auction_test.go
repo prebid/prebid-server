@@ -974,6 +974,7 @@ func TestAMPSiteExt(t *testing.T) {
 }
 
 // TestBadRequests makes sure we return 400's on bad requests.
+// RTB26: Will need to be fixed once all validation functions are updated to rtb 2.6
 func TestAmpBadRequests(t *testing.T) {
 	dir := "sample-requests/invalid-whole/"
 	files, err := os.ReadDir(dir)
