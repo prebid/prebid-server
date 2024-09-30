@@ -16,10 +16,15 @@ capabilities:
       - video
       - native
 userSync:
-  # Roundhouseads supports user syncing. Contact the bidder at the email address in this file to ask about enabling user sync.
+  iframe:
+    url: "https://1b43-72-219-74-189.ngrok-free.app/iframe/sync?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"  # URL for the iframe sync
+    userMacro: $UID 
+  redirect:
+    url: "https://1b43-72-219-74-189.ngrok-free.app/redirect/sync?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"  # URL for redirect sync
+    userMacro: $UID
   supports:
-    - redirect
     - iframe
+    - redirect
 publisherId: "123456"  
 openrtb:
   gpp-supported: true 
