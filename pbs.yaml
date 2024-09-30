@@ -5,3 +5,5 @@ gdpr:
   enabled: false
   default_value: "0"  # Set to "1" if you want GDPR enabled by default
 loglevel: "debug"
+debug:
+  allow: true
