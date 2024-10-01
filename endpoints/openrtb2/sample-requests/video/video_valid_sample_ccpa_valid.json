@@ -24,10 +24,8 @@
       "page": "prebid.com"
     },
     "regs": {
-      "ext": {
-        "gdpr": 0,
-        "us_privacy": "1NYN"
-      }
+      "gdpr": 0,
+      "us_privacy": "1NYN"
     },
     "user": {
       "buyeruid": "anyId",
