@@ -60,7 +60,8 @@ func (a *SonobiAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adap
 			// Convert to US dollars
 			convertedValue, err := reqInfo.ConvertCurrency(reqCopy.Imp[0].BidFloor, reqCopy.Imp[0].BidFloorCur, "USD")
 			if err != nil {
-				return nil, []error{err}
+				errs = append(errs, err)
+				continue
 			}
 
 			// Update after conversion. All imp elements inside request.Imp are shallow copies
