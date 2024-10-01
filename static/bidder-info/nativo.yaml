@@ -16,7 +16,7 @@ capabilities:
 userSync:
   redirect:
     url: https://jadserve.postrelease.com/suid/101787?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&ntv_gpp_consent={{.GPP}}&ntv_r={{.RedirectURL}}
-    userMacro: "NTV_USER_ID"
+    userMacro: NTV_USER_ID
 openrtb:
   version: 2.6
   gpp-supported: true
