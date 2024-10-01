@@ -31,20 +31,22 @@
         "ext": {
           "bidder": {
             "TagID": "/7780971/apex_3pdm_integration"
-          },
-          "prebid": {
-            "currency": {
-              "rates": {
-                "GBP": {
-                  "USD": 0.05
-                }
-              },
-              "usepbsrates": false
-            }
           }
         }
       }
     ],
+    "ext": {
+      "prebid": {
+        "currency": {
+          "rates": {
+            "GBP": {
+              "USD": 0.05
+            }
+          },
+          "usepbsrates": false
+        }
+      }
+    },
     "test": 1,
     "tmax": 500
   },
@@ -86,20 +88,22 @@
               "ext": {
                 "bidder": {
                   "TagID": "/7780971/apex_3pdm_integration"
-                },
-                "prebid": {
-                  "currency": {
-                    "rates": {
-                      "GBP": {
-                        "USD": 0.05
-                      }
-                    },
-                    "usepbsrates": false
-                  }
                 }
               }
             }
           ],
+          "ext": {
+            "prebid": {
+              "currency": {
+                "rates": {
+                  "GBP": {
+                    "USD": 0.05
+                  }
+                },
+                "usepbsrates": false
+              }
+            }
+          },
           "site": {
             "domain": "sonobi.com",
             "page": "http://tester.go.sonobi.com"
