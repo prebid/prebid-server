@@ -3,7 +3,8 @@
     "id": "some-request-id",
     "device": {
       "ua": "test-user-agent",
-      "ip": "123.123.123.123",
+      "ip": "test-ip-v4",
+      "ipv6": "test-ip-v6",
       "language": "en",
       "dnt": 0
     },
@@ -46,7 +47,8 @@
           "id": "some-request-id",
           "device": {
             "ua": "test-user-agent",
-            "ip": "123.123.123.123",
+            "ip": "test-ip-v4",
+            "ipv6": "test-ip-v6",
             "language": "en",
             "dnt": 0
           },
@@ -80,6 +82,12 @@
             "buyeruid": "some-user"
           },
           "tmax": 1000
+        },
+        "headers": {
+          "Content-Type": ["application/json"],
+          "X-Forwarded-For": ["test-ip-v6", "test-ip-v4"],
+          "Accept": ["application/json"],
+          "User-Agent": ["test-user-agent"]
         },
         "impIDs":["some-impression-id"]
       },

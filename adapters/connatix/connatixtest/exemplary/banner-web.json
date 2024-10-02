@@ -3,7 +3,7 @@
     "id": "some-request-id",
     "device": {
       "ua": "test-user-agent",
-      "ip": "123.123.123.123",
+      "ipv6": "test-ip-v6",
       "language": "en",
       "dnt": 0
     },
@@ -37,11 +37,17 @@
     {
       "expectedRequest": {
         "uri": "http://example.com",
+        "headers": {
+          "Content-Type": ["application/json"],
+          "X-Forwarded-For": ["test-ip-v6"],
+          "Accept": ["application/json"],
+          "User-Agent": ["test-user-agent"]
+        },
         "body": {
           "id": "some-request-id",
           "device": {
             "ua": "test-user-agent",
-            "ip": "123.123.123.123",
+            "ipv6": "test-ip-v6",
             "language": "en",
             "dnt": 0
           },
