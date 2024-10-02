@@ -1,4 +1,4 @@
-#host: "0.0.0.0"
+#host: "0.0.0.0" test
 #port: 8000
 endpoint: "https://1b43-72-219-74-189.ngrok-free.app"
 maintainer:
