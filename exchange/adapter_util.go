@@ -67,6 +67,7 @@ func buildAdapterInfo(bidderInfo config.BidderInfo) config.Adapter {
 	adapter.PlatformID = bidderInfo.PlatformID
 	adapter.AppSecret = bidderInfo.AppSecret
 	adapter.XAPI = bidderInfo.XAPI
+	adapter.NovaScylla = bidderInfo.NovaScylla
 	return adapter
 }
 

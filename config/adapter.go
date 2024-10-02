@@ -10,4 +10,7 @@ type Adapter struct {
 	// needed for Facebook
 	PlatformID string
 	AppSecret  string
+
+	// needed for Nova
+	NovaScylla AdapterNovaScylla
 }
