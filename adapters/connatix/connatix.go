@@ -39,7 +39,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		}}
 	}
 
-	if request.Device != nil && request.Device.IP == "" {
+	if request.Device != nil && request.Device.IP == "" && request.Device.IPv6 == "" {
 		return nil, []error{&errortypes.BadInput{
 			Message: "Device IP is required",
 		}}
@@ -154,6 +154,18 @@ func splitRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, uri string
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json")
 	headers.Add("Accept", "application/json")
+
+	if len(request.Device.UA) > 0 {
+		headers.Add("User-Agent", request.Device.UA)
+	}
+
+	if len(request.Device.IPv6) > 0 {
+		headers.Add("X-Forwarded-For", request.Device.IPv6)
+	}
+
+	if len(request.Device.IP) > 0 {
+		headers.Add("X-Forwarded-For", request.Device.IP)
+	}
 
 	for impsLeft {
 		endInd := startInd + maxImpsPerReq
