@@ -982,6 +982,7 @@ func TestAmpBadRequests(t *testing.T) {
 
 	mockAmpStoredReq := make(map[string]json.RawMessage, len(files))
 	badRequests := make(map[string]testCase, len(files))
+	filemap := make(map[string]string, len(files))
 	for index, file := range files {
 		filename := file.Name()
 		fileData := readFile(t, dir+filename)
@@ -1000,6 +1001,7 @@ func TestAmpBadRequests(t *testing.T) {
 
 		badRequests[requestID] = test
 		mockAmpStoredReq[requestID] = test.BidRequest
+		filemap[requestID] = filename
 	}
 
 	addAmpBadRequests(badRequests, mockAmpStoredReq)
@@ -1021,15 +1023,17 @@ func TestAmpBadRequests(t *testing.T) {
 		nil,
 	)
 
-	for _, test := range badRequests {
-		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?%s", test.Query), nil)
-		recorder := httptest.NewRecorder()
+	for id, test := range badRequests {
+		t.Run(filemap[id], func(t *testing.T) {
+			request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?%s", test.Query), nil)
+			recorder := httptest.NewRecorder()
 
-		endpoint(recorder, request, nil)
+			endpoint(recorder, request, nil)
 
-		response := recorder.Body.String()
-		assert.Equal(t, test.ExpectedReturnCode, recorder.Code, test.Description)
-		assert.Contains(t, response, test.ExpectedErrorMessage, "Actual: %s \nExpected: %s. Description: %s \n", response, test.ExpectedErrorMessage, test.Description)
+			response := recorder.Body.String()
+			assert.Equal(t, test.ExpectedReturnCode, recorder.Code, test.Description)
+			assert.Contains(t, response, test.ExpectedErrorMessage, "Actual: %s \nExpected: %s. Description: %s \n", response, test.ExpectedErrorMessage, test.Description)
+		})
 	}
 }
 
