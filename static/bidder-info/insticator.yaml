@@ -1,6 +1,6 @@
 endpoint: "https://ex.ingage.tech/v1/prebidserver"
 maintainer:
-  email: "predid@insticator.com"
+  email: "prebid@insticator.com"
 gvlVendorID: 910
 capabilities:
   app:
