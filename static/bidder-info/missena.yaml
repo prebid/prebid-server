@@ -11,6 +11,6 @@ capabilities:
     mediaTypes:
       - banner
 userSync:
-  redirect:
+  iframe:
     url: https://sync.missena.io/iframe?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
     userMacro: $UID
