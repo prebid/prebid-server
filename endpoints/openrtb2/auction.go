@@ -535,7 +535,10 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	}
 
 	// upgrade to 2.6 here
-	openrtb_ext.ConvertUpTo26(req)
+	if err := openrtb_ext.ConvertUpTo26(req); err != nil {
+		errs = []error{err}
+		return
+	}
 
 	if err := mergeBidderParams(req); err != nil {
 		errs = []error{err}
