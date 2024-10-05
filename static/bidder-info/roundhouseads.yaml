@@ -1,6 +1,5 @@
-#host: "0.0.0.0" test
-#port: 8000
-endpoint: "https://1b43-72-219-74-189.ngrok-free.app"
+endpoint: "https://51e5-72-219-74-189.ngrok-free.app"
+
 maintainer:
   email: "info@roundhouseads.com"
 gvlVendorID: 42
@@ -16,15 +15,12 @@ capabilities:
       - video
       - native
 userSync:
-  iframe:
-    url: "https://1b43-72-219-74-189.ngrok-free.app/iframe/sync?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"  # URL for the iframe sync
-    userMacro: $UID 
-  redirect:
-    url: "https://1b43-72-219-74-189.ngrok-free.app/redirect/sync?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"  # URL for redirect sync
-    userMacro: $UID
+  # Roundhouseads supports user syncing, but requires configuration by the host. Contact a technical account manager
+  # or this bidder directly at the email address in this file to ask about enabling user sync.
+  endpointCompression: gzip
   supports:
-    - iframe
     - redirect
-publisherId: "123456"  
+    - iframe
 openrtb:
-  gpp-supported: true 
+  gpp-supported: true
+

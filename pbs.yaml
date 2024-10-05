@@ -1,5 +1,7 @@
 #host: "0.0.0.0"
-#port: 8000
+#port: 8080
+
+
 endpoint: "http://pbsv4-env.eba-qx2kfrgj.us-east-1.elasticbeanstalk.com//openrtb2/auction"
 gdpr:
   enabled: false
