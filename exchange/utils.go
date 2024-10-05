@@ -81,12 +81,15 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		return
 	}
 
-	allBidderRequests := make([]BidderRequest, 0, len(impsByBidder))
-	var allBidderRequestErrs []error
 	explicitBuyerUIDs, err := extractBuyerUIDs(req.BidRequest.User)
 	if err != nil {
 		errs = []error{err}
 		return
+	}
+	lowerCaseExplicitBuyerUIDs := make(map[string]string)
+	for bidder, uid := range explicitBuyerUIDs {
+		lowerKey := strings.ToLower(bidder)
+		lowerCaseExplicitBuyerUIDs[lowerKey] = uid
 	}
 
 	bidderParamsInReqExt, err := ExtractReqExtBidderParamsMap(req.BidRequest)
@@ -101,11 +104,57 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		return
 	}
 
-	lowerCaseExplicitBuyerUIDs := make(map[string]string)
-	for bidder, uid := range explicitBuyerUIDs {
-		lowerKey := strings.ToLower(bidder)
-		lowerCaseExplicitBuyerUIDs[lowerKey] = uid
+	var gpp gpplib.GppContainer
+	if req.BidRequest.Regs != nil && len(req.BidRequest.Regs.GPP) > 0 {
+		var gppErrs []error
+		gpp, gppErrs = gpplib.Parse(req.BidRequest.Regs.GPP)
+		if len(gppErrs) > 0 {
+			errs = append(errs, gppErrs[0])
+		}
 	}
+
+	consent, err := getConsent(req, gpp)
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	ccpaEnforcer, err := extractCCPA(req.BidRequest, rs.privacyConfig, &auctionReq.Account, requestAliases, channelTypeMap[auctionReq.LegacyLabels.RType], gpp)
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	lmtEnforcer := extractLMT(req.BidRequest, rs.privacyConfig)
+
+	// request level privacy policies
+	coppa := req.BidRequest.Regs != nil && req.BidRequest.Regs.COPPA == 1
+	lmt := lmtEnforcer.ShouldEnforce(unknownBidder)
+
+	privacyLabels.CCPAProvided = ccpaEnforcer.CanEnforce()
+	privacyLabels.CCPAEnforced = ccpaEnforcer.ShouldEnforce(unknownBidder)
+	privacyLabels.COPPAEnforced = coppa
+	privacyLabels.LMTEnforced = lmt
+
+	var gdprPerms gdpr.Permissions = &gdpr.AlwaysAllow{}
+
+	if gdprEnforced {
+		privacyLabels.GDPREnforced = true
+		parsedConsent, err := vendorconsent.ParseString(consent)
+		if err == nil {
+			version := int(parsedConsent.Version())
+			privacyLabels.GDPRTCFVersion = metrics.TCFVersionToValue(version)
+		}
+
+		gdprRequestInfo := gdpr.RequestInfo{
+			AliasGVLIDs: requestAliasesGVLIDs,
+			Consent:     consent,
+			GDPRSignal:  gdprSignal,
+			PublisherID: auctionReq.LegacyLabels.PubID,
+		}
+		gdprPerms = rs.gdprPermsBuilder(auctionReq.TCF2Config, gdprRequestInfo)
+	}
+
+	allBidderRequests := make([]BidderRequest, 0, len(impsByBidder))
+	var allBidderRequestErrs []error
 
 	for bidder, imps := range impsByBidder {
 		coreBidder, isRequestAlias := resolveBidder(bidder, requestAliases)
@@ -159,58 +208,9 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 	//this function should be executed after getAuctionBidderRequests
 	allBidderRequests = mergeBidderRequests(allBidderRequests, bidderNameToBidderReq)
 
-	var gpp gpplib.GppContainer
-	if req.BidRequest.Regs != nil && len(req.BidRequest.Regs.GPP) > 0 {
-		var gppErrs []error
-		gpp, gppErrs = gpplib.Parse(req.BidRequest.Regs.GPP)
-		if len(gppErrs) > 0 {
-			errs = append(errs, gppErrs[0])
-		}
-	}
-
 	if auctionReq.Account.PriceFloors.IsAdjustForBidAdjustmentEnabled() {
 		//Apply BidAdjustmentFactor to imp.BidFloor
 		applyBidAdjustmentToFloor(allBidderRequests, bidAdjustmentFactors)
-	}
-
-	consent, err := getConsent(req, gpp)
-	if err != nil {
-		errs = append(errs, err)
-	}
-
-	ccpaEnforcer, err := extractCCPA(req.BidRequest, rs.privacyConfig, &auctionReq.Account, requestAliases, channelTypeMap[auctionReq.LegacyLabels.RType], gpp)
-	if err != nil {
-		errs = append(errs, err)
-	}
-
-	lmtEnforcer := extractLMT(req.BidRequest, rs.privacyConfig)
-
-	// request level privacy policies
-	coppa := req.BidRequest.Regs != nil && req.BidRequest.Regs.COPPA == 1
-	lmt := lmtEnforcer.ShouldEnforce(unknownBidder)
-
-	privacyLabels.CCPAProvided = ccpaEnforcer.CanEnforce()
-	privacyLabels.CCPAEnforced = ccpaEnforcer.ShouldEnforce(unknownBidder)
-	privacyLabels.COPPAEnforced = coppa
-	privacyLabels.LMTEnforced = lmt
-
-	var gdprPerms gdpr.Permissions = &gdpr.AlwaysAllow{}
-
-	if gdprEnforced {
-		privacyLabels.GDPREnforced = true
-		parsedConsent, err := vendorconsent.ParseString(consent)
-		if err == nil {
-			version := int(parsedConsent.Version())
-			privacyLabels.GDPRTCFVersion = metrics.TCFVersionToValue(version)
-		}
-
-		gdprRequestInfo := gdpr.RequestInfo{
-			AliasGVLIDs: requestAliasesGVLIDs,
-			Consent:     consent,
-			GDPRSignal:  gdprSignal,
-			PublisherID: auctionReq.LegacyLabels.PubID,
-		}
-		gdprPerms = rs.gdprPermsBuilder(auctionReq.TCF2Config, gdprRequestInfo)
 	}
 
 	allowedBidderRequests = make([]BidderRequest, 0, len(allBidderRequests))
