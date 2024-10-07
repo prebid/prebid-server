@@ -37,6 +37,7 @@ type AgmaLogger struct {
 	mux               sync.RWMutex
 	sigTermCh         chan os.Signal
 	buffer            bytes.Buffer
+	read              func([]byte, bytes.Buffer) (int, error)
 	bufferCh          chan []byte
 }
 
@@ -65,8 +66,11 @@ func newAgmaLogger(cfg config.AgmaAnalytics, sender httpSender, clock clock.Cloc
 		maxEventCount:     int64(cfg.Buffers.EventCount),
 		maxDuration:       pDuration,
 		buffer:            buffer,
-		bufferCh:          make(chan []byte),
-		sigTermCh:         make(chan os.Signal, 1),
+		read: func(p []byte, b bytes.Buffer) (int, error) {
+			return b.Read(p)
+		},
+		bufferCh:  make(chan []byte),
+		sigTermCh: make(chan os.Signal, 1),
 	}, nil
 }
 
@@ -135,18 +139,15 @@ func (l *AgmaLogger) flush() {
 	l.buffer.Write([]byte("]"))
 
 	payload := make([]byte, l.buffer.Len())
-	_, err := l.buffer.Read(payload)
-	if err != nil {
-		l.reset()
-		l.mux.Unlock()
+	numBytesCopied, err := l.read(payload, l.buffer)
+	l.reset()
+	l.mux.Unlock()
+	if err != nil || numBytesCopied == 0 {
 		glog.Warning("[AgmaAnalytics] fail to copy the buffer")
 		return
 	}
 
 	go l.sender(payload)
-
-	l.reset()
-	l.mux.Unlock()
 }
 
 func (l *AgmaLogger) reset() {

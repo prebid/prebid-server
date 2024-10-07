@@ -1,6 +1,7 @@
 package agma
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -107,6 +108,15 @@ type MockedSender struct {
 func (m *MockedSender) Send(payload []byte) error {
 	args := m.Called(payload)
 	return args.Error(0)
+}
+
+type MockLoggerReader struct {
+	mock.Mock
+}
+
+func (m *MockLoggerReader) Read(p []byte, buffer bytes.Buffer) (int, error) {
+	m.Called()
+	return 0, io.EOF
 }
 
 func TestConfigParsingError(t *testing.T) {
@@ -453,6 +463,7 @@ func TestShouldNotTrackLog(t *testing.T) {
 			clockMock.Add(2 * time.Minute)
 			mockedSender.AssertNumberOfCalls(t, "Send", 0)
 			assert.Zero(t, logger.eventCount)
+			logger.sigTermCh <- syscall.SIGTERM
 		})
 	}
 }
@@ -478,6 +489,7 @@ func TestRaceAllEvents(t *testing.T) {
 	assert.NoError(t, err)
 
 	go logger.start()
+	defer func() { logger.sigTermCh <- syscall.SIGTERM }()
 
 	logger.LogAuctionObject(&mockValidAuctionObject)
 	logger.LogVideoObject(&mockValidVideoObject)
@@ -553,6 +565,7 @@ func TestRaceBufferCount(t *testing.T) {
 	assert.NoError(t, err)
 
 	go logger.start()
+	defer func() { logger.sigTermCh <- syscall.SIGTERM }()
 	assert.Zero(t, logger.eventCount)
 
 	// Test EventCount Buffer
@@ -604,6 +617,7 @@ func TestBufferSize(t *testing.T) {
 	assert.NoError(t, err)
 
 	go logger.start()
+	defer func() { logger.sigTermCh <- syscall.SIGTERM }()
 
 	for i := 0; i < 50; i++ {
 		logger.LogAuctionObject(&mockValidAuctionObject)
@@ -639,6 +653,7 @@ func TestBufferTime(t *testing.T) {
 	assert.NoError(t, err)
 
 	go logger.start()
+	defer func() { logger.sigTermCh <- syscall.SIGTERM }()
 
 	for i := 0; i < 5; i++ {
 		logger.LogAuctionObject(&mockValidAuctionObject)
@@ -702,11 +717,6 @@ func TestRaceEnd2End(t *testing.T) {
 
 func TestShutdownFlush(t *testing.T) {
 	cfg := config.AgmaAnalytics{
-		Enabled: true,
-		Endpoint: config.AgmaAnalyticsHttpEndpoint{
-			Url:     "http://localhost:8000/event",
-			Timeout: "5s",
-		},
 		Buffers: config.AgmaAnalyticsBuffer{
 			EventCount: 1000,
 			BufferSize: "100mb",
@@ -720,17 +730,20 @@ func TestShutdownFlush(t *testing.T) {
 		},
 	}
 	mockedSender := new(MockedSender)
-	mockedSender.On("Send", mock.Anything).Return(nil)
 	clockMock := clock.NewMock()
 	logger, err := newAgmaLogger(cfg, mockedSender.Send, clockMock)
 	assert.NoError(t, err)
 
+	mockReader := &MockLoggerReader{}
+	mockReader.On("Read", mock.Anything)
+	logger.read = mockReader.Read
+
 	go logger.start()
+	defer func() { logger.sigTermCh <- syscall.SIGTERM }()
 	logger.LogAuctionObject(&mockValidAuctionObject)
+	time.Sleep(100 * time.Millisecond)
 	logger.Shutdown()
 
-	time.Sleep(10 * time.Millisecond)
-
-	mockedSender.AssertCalled(t, "Send", mock.Anything)
-	mockedSender.AssertNumberOfCalls(t, "Send", 1)
+	mockReader.AssertCalled(t, "Read")
+	mockReader.AssertNumberOfCalls(t, "Read", 1)
 }
