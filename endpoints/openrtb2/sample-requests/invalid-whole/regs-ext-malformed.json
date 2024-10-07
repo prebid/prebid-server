@@ -42,5 +42,5 @@
     }
   },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request: error reading request.regs.ext: expect { or n, but found "
+  "expectedErrorMessage": "Invalid request: req.regs.ext is invalid: expect { or n, but found "
 }
