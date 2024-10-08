@@ -81,9 +81,76 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		return
 	}
 
-	var allBidderRequests []BidderRequest
+	allBidderRequests := make([]BidderRequest, 0, len(impsByBidder))
 	var allBidderRequestErrs []error
-	allBidderRequests, allBidderRequestErrs = getAuctionBidderRequests(auctionReq, requestExt, rs.bidderToSyncerKey, impsByBidder, requestAliases, rs.hostSChainNode)
+	explicitBuyerUIDs, err := extractBuyerUIDs(req.BidRequest.User)
+	if err != nil {
+		errs = []error{err}
+		return
+	}
+
+	bidderParamsInReqExt, err := ExtractReqExtBidderParamsMap(req.BidRequest)
+	if err != nil {
+		errs = []error{err}
+		return
+	}
+
+	sChainWriter, err := schain.NewSChainWriter(requestExt, rs.hostSChainNode)
+	if err != nil {
+		errs = []error{err}
+		return
+	}
+
+	lowerCaseExplicitBuyerUIDs := make(map[string]string)
+	for bidder, uid := range explicitBuyerUIDs {
+		lowerKey := strings.ToLower(bidder)
+		lowerCaseExplicitBuyerUIDs[lowerKey] = uid
+	}
+
+	for bidder, imps := range impsByBidder {
+		coreBidder, isRequestAlias := resolveBidder(bidder, requestAliases)
+
+		reqCopy := *req.BidRequest
+		reqCopy.Imp = imps
+
+		sChainWriter.Write(&reqCopy, bidder)
+
+		reqCopy.Ext, err = buildRequestExtForBidder(bidder, req.BidRequest.Ext, requestExt, bidderParamsInReqExt, auctionReq.Account.AlternateBidderCodes)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		if err := removeUnpermissionedEids(&reqCopy, bidder, requestExt); err != nil {
+			errs = append(errs, fmt.Errorf("unable to enforce request.ext.prebid.data.eidpermissions because %v", err))
+			continue
+		}
+
+		bidderRequest := BidderRequest{
+			BidderName:     openrtb_ext.BidderName(bidder),
+			BidderCoreName: coreBidder,
+			IsRequestAlias: isRequestAlias,
+			BidRequest:     &reqCopy,
+			BidderLabels: metrics.AdapterLabels{
+				Source:      auctionReq.LegacyLabels.Source,
+				RType:       auctionReq.LegacyLabels.RType,
+				Adapter:     coreBidder,
+				PubID:       auctionReq.LegacyLabels.PubID,
+				CookieFlag:  auctionReq.LegacyLabels.CookieFlag,
+				AdapterBids: metrics.AdapterBidPresent,
+			},
+		}
+
+		syncerKey := rs.bidderToSyncerKey[string(coreBidder)]
+		if hadSync := prepareUser(&reqCopy, bidder, syncerKey, lowerCaseExplicitBuyerUIDs, auctionReq.UserSyncs); !hadSync && req.BidRequest.App == nil {
+			bidderRequest.BidderLabels.CookieFlag = metrics.CookieFlagNo
+		} else {
+			bidderRequest.BidderLabels.CookieFlag = metrics.CookieFlagYes
+		}
+
+		allBidderRequests = append(allBidderRequests, bidderRequest)
+	}
+
 	if allBidderRequestErrs != nil {
 		errs = append(errs, allBidderRequestErrs...)
 	}
@@ -320,82 +387,6 @@ func ExtractReqExtBidderParamsMap(bidRequest *openrtb2.BidRequest) (map[string]j
 	}
 
 	return bidderParams, nil
-}
-
-func getAuctionBidderRequests(auctionRequest AuctionRequest,
-	requestExt *openrtb_ext.ExtRequest,
-	bidderToSyncerKey map[string]string,
-	impsByBidder map[string][]openrtb2.Imp,
-	requestAliases map[string]string,
-	hostSChainNode *openrtb2.SupplyChainNode) ([]BidderRequest, []error) {
-
-	bidderRequests := make([]BidderRequest, 0, len(impsByBidder))
-	req := auctionRequest.BidRequestWrapper
-	explicitBuyerUIDs, err := extractBuyerUIDs(req.BidRequest.User)
-	if err != nil {
-		return nil, []error{err}
-	}
-
-	bidderParamsInReqExt, err := ExtractReqExtBidderParamsMap(req.BidRequest)
-	if err != nil {
-		return nil, []error{err}
-	}
-
-	sChainWriter, err := schain.NewSChainWriter(requestExt, hostSChainNode)
-	if err != nil {
-		return nil, []error{err}
-	}
-
-	lowerCaseExplicitBuyerUIDs := make(map[string]string)
-	for bidder, uid := range explicitBuyerUIDs {
-		lowerKey := strings.ToLower(bidder)
-		lowerCaseExplicitBuyerUIDs[lowerKey] = uid
-	}
-
-	var errs []error
-	for bidder, imps := range impsByBidder {
-		coreBidder, isRequestAlias := resolveBidder(bidder, requestAliases)
-
-		reqCopy := *req.BidRequest
-		reqCopy.Imp = imps
-
-		sChainWriter.Write(&reqCopy, bidder)
-
-		reqCopy.Ext, err = buildRequestExtForBidder(bidder, req.BidRequest.Ext, requestExt, bidderParamsInReqExt, auctionRequest.Account.AlternateBidderCodes)
-		if err != nil {
-			return nil, []error{err}
-		}
-
-		if err := removeUnpermissionedEids(&reqCopy, bidder, requestExt); err != nil {
-			errs = append(errs, fmt.Errorf("unable to enforce request.ext.prebid.data.eidpermissions because %v", err))
-			continue
-		}
-
-		bidderRequest := BidderRequest{
-			BidderName:     openrtb_ext.BidderName(bidder),
-			BidderCoreName: coreBidder,
-			IsRequestAlias: isRequestAlias,
-			BidRequest:     &reqCopy,
-			BidderLabels: metrics.AdapterLabels{
-				Source:      auctionRequest.LegacyLabels.Source,
-				RType:       auctionRequest.LegacyLabels.RType,
-				Adapter:     coreBidder,
-				PubID:       auctionRequest.LegacyLabels.PubID,
-				CookieFlag:  auctionRequest.LegacyLabels.CookieFlag,
-				AdapterBids: metrics.AdapterBidPresent,
-			},
-		}
-
-		syncerKey := bidderToSyncerKey[string(coreBidder)]
-		if hadSync := prepareUser(&reqCopy, bidder, syncerKey, lowerCaseExplicitBuyerUIDs, auctionRequest.UserSyncs); !hadSync && req.BidRequest.App == nil {
-			bidderRequest.BidderLabels.CookieFlag = metrics.CookieFlagNo
-		} else {
-			bidderRequest.BidderLabels.CookieFlag = metrics.CookieFlagYes
-		}
-
-		bidderRequests = append(bidderRequests, bidderRequest)
-	}
-	return bidderRequests, errs
 }
 
 func buildRequestExtForBidder(bidder string, requestExt json.RawMessage, requestExtParsed *openrtb_ext.ExtRequest, bidderParamsInReqExt map[string]json.RawMessage, cfgABC *openrtb_ext.ExtAlternateBidderCodes) (json.RawMessage, error) {
