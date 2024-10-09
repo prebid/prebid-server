@@ -1,6 +1,7 @@
 endpoint: "https://endpoint1.qt.io/pserver"
 maintainer:
   email: "qtssp-support@qt.io"
+gvlVendorID: 1331
 capabilities:
   site:
     mediaTypes:

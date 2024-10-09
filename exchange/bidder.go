@@ -76,12 +76,14 @@ type bidRequestOptions struct {
 
 type extraBidderRespInfo struct {
 	respProcessingStartTime time.Time
+	seatNonBidBuilder       SeatNonBidBuilder
 }
 
 type extraAuctionResponseInfo struct {
 	fledge                  *openrtb_ext.Fledge
 	bidsFound               bool
 	bidderResponseStartTime time.Time
+	seatNonBidBuilder       SeatNonBidBuilder
 }
 
 const ImpIdReqBody = "Stored bid response for impression id: "
@@ -135,6 +137,7 @@ type bidderAdapterConfig struct {
 func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, hookExecutor hookexecution.StageExecutor, ruleToAdjustments openrtb_ext.AdjustmentsByDealID) ([]*entities.PbsOrtbSeatBid, extraBidderRespInfo, []error) {
 	request := openrtb_ext.RequestWrapper{BidRequest: bidderRequest.BidRequest}
 	reject := hookExecutor.ExecuteBidderRequestStage(&request, string(bidderRequest.BidderName))
+	seatNonBidBuilder := SeatNonBidBuilder{}
 	if reject != nil {
 		return nil, extraBidderRespInfo{}, []error{reject}
 	}
@@ -398,13 +401,17 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 			}
 		} else {
 			errs = append(errs, httpInfo.err)
+			nonBidReason := httpInfoToNonBidReason(httpInfo)
+			seatNonBidBuilder.rejectImps(httpInfo.request.ImpIDs, nonBidReason, string(bidderRequest.BidderName))
 		}
 	}
+
 	seatBids := make([]*entities.PbsOrtbSeatBid, 0, len(seatBidMap))
 	for _, seatBid := range seatBidMap {
 		seatBids = append(seatBids, seatBid)
 	}
 
+	extraRespInfo.seatNonBidBuilder = seatNonBidBuilder
 	return seatBids, extraRespInfo, errs
 }
 
