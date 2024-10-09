@@ -20,16 +20,20 @@ import (
 )
 
 const (
-	bannerType      = "banner"
-	inlineDivName   = "inline"
-	flippBidder     = "flipp"
-	defaultCurrency = "USD"
+	bannerType                  = "banner"
+	inlineDivName               = "inline"
+	flippBidder                 = "flipp"
+	defaultCurrency             = "USD"
+	defaultStandardHeight int64 = 2400
+	defaultCompactHeight  int64 = 600
 )
 
 var (
-	count    int64 = 1
-	adTypes        = []int64{4309, 641}
-	dtxTypes       = []int64{5061}
+	count          int64 = 1
+	adTypes              = []int64{4309, 641}
+	dtxTypes             = []int64{5061}
+	flippExtParams openrtb_ext.ImpExtFlipp
+	customDataKey  string
 )
 
 type adapter struct {
@@ -198,10 +202,18 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
 	bidResponse.Currency = defaultCurrency
 	for _, imp := range request.Imp {
+		params, _, _, err := jsonparser.Get(imp.Ext, "bidder")
+		if err != nil {
+			return nil, []error{fmt.Errorf("flipp params not found. %v", err)}
+		}
+		err = json.Unmarshal(params, &flippExtParams)
+		if err != nil {
+			return nil, []error{fmt.Errorf("unable to extract flipp params. %v", err)}
+		}
 		for _, decision := range campaignResponseBody.Decisions.Inline {
 			if *decision.Prebid.RequestID == imp.ID {
 				b := &adapters.TypedBid{
-					Bid:     buildBid(decision, imp.ID),
+					Bid:     buildBid(decision, imp.ID, flippExtParams),
 					BidType: openrtb_ext.BidType(bannerType),
 				}
 				bidResponse.Bids = append(bidResponse.Bids, b)
@@ -218,7 +230,7 @@ func getAdTypes(creativeType string) []int64 {
 	return adTypes
 }
 
-func buildBid(decision *InlineModel, impId string) *openrtb2.Bid {
+func buildBid(decision *InlineModel, impId string, flippExtParams openrtb_ext.ImpExtFlipp) *openrtb2.Bid {
 	bid := &openrtb2.Bid{
 		CrID:  fmt.Sprint(decision.CreativeID),
 		Price: *decision.Prebid.Cpm,
@@ -230,7 +242,20 @@ func buildBid(decision *InlineModel, impId string) *openrtb2.Bid {
 		if decision.Contents[0].Data.Width != 0 {
 			bid.W = decision.Contents[0].Data.Width
 		}
-		bid.H = 0
+		customDataInterface := decision.Contents[0].Data.CustomData
+		customDataMap := customDataInterface.(map[string]interface{})
+
+		bid.H = defaultStandardHeight
+		customDataKey = "standardHeight"
+		if flippExtParams.Options.StartCompact {
+			bid.H = defaultCompactHeight
+			customDataKey = "compactHeight"
+		}
+		if value, exists := customDataMap[customDataKey]; exists {
+			if floatVal, ok := value.(float64); ok {
+				bid.H = int64(floatVal)
+			}
+		}
 	}
 	return bid
 }
