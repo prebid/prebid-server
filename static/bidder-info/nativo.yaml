@@ -1,0 +1,22 @@
+endpoint: "https://exchange.postrelease.com/esi?ntv_epid=7"
+maintainer:
+  email: "prebiddev@nativo.com"
+gvlVendorID: 263
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  redirect:
+    url: https://jadserve.postrelease.com/suid/101787?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&ntv_gpp_consent={{.GPP}}&ntv_r={{.RedirectURL}}
+    userMacro: NTV_USER_ID
+openrtb:
+  version: 2.6
+  gpp-supported: true
