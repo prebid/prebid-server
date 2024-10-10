@@ -1230,8 +1230,8 @@ func (deps *endpointDeps) validateApp(req *openrtb_ext.RequestWrapper) error {
 	}
 
 	if req.App.ID != "" {
-		if _, found := deps.cfg.BlacklistedAppMap[req.App.ID]; found {
-			return &errortypes.BlacklistedApp{Message: fmt.Sprintf("Prebid-server does not process requests from App ID: %s", req.App.ID)}
+		if _, found := deps.cfg.BlockedAppsLookup[req.App.ID]; found {
+			return &errortypes.BlockedApp{Message: fmt.Sprintf("Prebid-server does not process requests from App ID: %s", req.App.ID)}
 		}
 	}
 
@@ -1898,9 +1898,9 @@ func writeError(errs []error, w http.ResponseWriter, labels *metrics.Labels) boo
 		metricsStatus := metrics.RequestStatusBadInput
 		for _, err := range errs {
 			erVal := errortypes.ReadCode(err)
-			if erVal == errortypes.BlacklistedAppErrorCode || erVal == errortypes.AccountDisabledErrorCode {
+			if erVal == errortypes.BlockedAppErrorCode || erVal == errortypes.AccountDisabledErrorCode {
 				httpStatus = http.StatusServiceUnavailable
-				metricsStatus = metrics.RequestStatusBlacklisted
+				metricsStatus = metrics.RequestStatusBlockedApp
 				break
 			} else if erVal == errortypes.MalformedAcctErrorCode {
 				httpStatus = http.StatusInternalServerError
