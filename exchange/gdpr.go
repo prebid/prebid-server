@@ -16,11 +16,11 @@ func getGDPR(req *openrtb_ext.RequestWrapper) (gdpr.Signal, error) {
 		}
 		return gdpr.SignalNo, nil
 	}
-	re, err := req.GetRegExt()
-	if re == nil || re.GetGDPR() == nil || err != nil {
-		return gdpr.SignalAmbiguous, err
+	if req.Regs != nil && req.Regs.GDPR != nil {
+		return gdpr.IntSignalParse(int(*req.Regs.GDPR))
 	}
-	return gdpr.Signal(*re.GetGDPR()), nil
+	return gdpr.SignalAmbiguous, nil
+
 }
 
 // getConsent will pull the consent string from an openrtb request
@@ -29,11 +29,10 @@ func getConsent(req *openrtb_ext.RequestWrapper, gpp gpplib.GppContainer) (conse
 		consent = gpp.Sections[i].GetValue()
 		return
 	}
-	ue, err := req.GetUserExt()
-	if ue == nil || ue.GetConsent() == nil || err != nil {
-		return
+	if req.User != nil {
+		return req.User.Consent, nil
 	}
-	return *ue.GetConsent(), nil
+	return
 }
 
 // enforceGDPR determines if GDPR should be enforced based on the request signal and whether the channel is enabled

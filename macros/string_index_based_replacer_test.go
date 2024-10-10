@@ -116,7 +116,7 @@ var req *openrtb_ext.RequestWrapper = &openrtb_ext.RequestWrapper{
 		Device: &openrtb2.Device{
 			Lmt: &lmt,
 		},
-		User: &openrtb2.User{Ext: []byte(`{"consent":"yes" }`)},
+		User: &openrtb2.User{Consent: "yes", Ext: []byte(`{"consent":"no" }`)},
 		Ext:  []byte(`{"prebid":{"channel": {"name":"test1"},"macros":{"CUSTOMMACR1":"value1","CUSTOMMACR2":"value2","CUSTOMMACR3":"value3"}}}`),
 	},
 }

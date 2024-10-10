@@ -1091,14 +1091,11 @@ func TestCCPA(t *testing.T) {
 		if ex.lastRequest == nil {
 			t.Fatalf("%s: The request never made it into the exchange.", test.description)
 		}
-		extRegs := &openrtb_ext.ExtRegs{}
-		if err := jsonutil.UnmarshalValid(ex.lastRequest.Regs.Ext, extRegs); err != nil {
-			t.Fatalf("%s: Failed to unmarshal reg.ext in request to the exchange: %v", test.description, err)
-		}
+
 		if test.expectConsentString {
-			assert.Len(t, extRegs.USPrivacy, 4, test.description+":consent")
+			assert.Len(t, ex.lastRequest.Regs.USPrivacy, 4, test.description+":consent")
 		} else if test.expectEmptyConsent {
-			assert.Empty(t, extRegs.USPrivacy, test.description+":consent")
+			assert.Empty(t, ex.lastRequest.Regs.USPrivacy, test.description+":consent")
 		}
 
 		// Validate HTTP Response

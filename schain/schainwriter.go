@@ -3,7 +3,6 @@ package schain
 import (
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
 // NewSChainWriter creates an ORTB 2.5 schain writer instance
@@ -36,7 +35,7 @@ type SChainWriter struct {
 // location and no wildcard schain exists, the request is not modified.
 func (w SChainWriter) Write(req *openrtb2.BidRequest, bidder string) {
 	const sChainWildCard = "*"
-	var selectedSChain *openrtb2.SupplyChain
+	var selectedSChain openrtb2.SupplyChain
 
 	wildCardSChain := w.sChainsByBidder[sChainWildCard]
 	bidderSChain := w.sChainsByBidder[bidder]
@@ -46,32 +45,27 @@ func (w SChainWriter) Write(req *openrtb2.BidRequest, bidder string) {
 		return
 	}
 
-	selectedSChain = &openrtb2.SupplyChain{Ver: "1.0"}
+	selectedSChain = openrtb2.SupplyChain{Ver: "1.0"}
 
 	if bidderSChain != nil {
-		selectedSChain = bidderSChain
+		selectedSChain = *bidderSChain
 	} else if wildCardSChain != nil {
-		selectedSChain = wildCardSChain
-	}
-
-	schain := openrtb_ext.ExtRequestPrebidSChain{
-		SChain: *selectedSChain,
+		selectedSChain = *wildCardSChain
 	}
 
 	if req.Source == nil {
 		req.Source = &openrtb2.Source{}
 	} else {
+		// Copy Source to avoid shared memory issues.
+		// Source may be modified differently for different bidders in request
 		sourceCopy := *req.Source
 		req.Source = &sourceCopy
 	}
 
-	if w.hostSChainNode != nil {
-		schain.SChain.Nodes = append(schain.SChain.Nodes, *w.hostSChainNode)
-	}
+	req.Source.SChain = &selectedSChain
 
-	sourceExt, err := jsonutil.Marshal(schain)
-	if err == nil {
-		req.Source.Ext = sourceExt
+	if w.hostSChainNode != nil {
+		req.Source.SChain.Nodes = append(req.Source.SChain.Nodes, *w.hostSChainNode)
 	}
 }
 
