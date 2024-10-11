@@ -32,7 +32,10 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	return bidder, nil
 }
 
-func (a adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) (requestData []*adapters.RequestData, errors []error) {
+func (a adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	var requestData []*adapters.RequestData
+	var errors []error
+
 	if !contains(request.Cur, SUPPORTED_CURRENCY) {
 		request.Cur = append(request.Cur, SUPPORTED_CURRENCY)
 	}
@@ -40,14 +43,14 @@ func (a adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.Ex
 	for i := range request.Imp {
 		if err := convertImpCurrency(&request.Imp[i], reqInfo); err != nil {
 			errors = append(errors, err)
-			return
+			return nil, errors
 		}
 	}
 
 	requestJSON, err := json.Marshal(request)
 	if err != nil {
 		errors = append(errors, err)
-		return
+		return nil, errors
 	}
 
 	headers := http.Header{}
@@ -61,7 +64,7 @@ func (a adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.Ex
 		Headers: headers,
 	})
 
-	return
+	return requestData, nil
 }
 
 func (a adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
