@@ -5,7 +5,7 @@
         "prebid": {
             "targeting": {
                 "includewinners": true,
-                "includebidderkeys": false,
+                "includebidderkeys": true,
                 "mediatypepricegranularity": {
                     "banner": {
                         "ranges": [
