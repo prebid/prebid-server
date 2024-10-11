@@ -8,8 +8,6 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/prebid/prebid-server/v2/stored_responses"
-
 	gpplib "github.com/prebid/go-gpp"
 	"github.com/prebid/go-gpp/constants"
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -3640,13 +3638,13 @@ func TestApplyFPD(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		bidderRequest := BidderRequest{
-			BidderName:     openrtb_ext.BidderName(testCase.inputBidderName),
-			BidderCoreName: openrtb_ext.BidderName(testCase.inputBidderCoreName),
-			IsRequestAlias: testCase.inputBidderIsRequestAlias,
-			BidRequest:     &testCase.inputRequest,
-		}
-		applyFPD(testCase.inputFpd, bidderRequest)
+		applyFPD(
+			testCase.inputFpd, 
+			openrtb_ext.BidderName(testCase.inputBidderCoreName),
+			openrtb_ext.BidderName(testCase.inputBidderName),
+			testCase.inputBidderIsRequestAlias,
+			&testCase.inputRequest,
+		)
 		assert.Equal(t, testCase.expectedRequest, testCase.inputRequest, fmt.Sprintf("incorrect request after applying fpd, testcase %s", testCase.description))
 	}
 }
@@ -5035,119 +5033,85 @@ func getTransmitTIDActivityConfig(componentName string, allow bool) config.Accou
 
 func TestApplyBidAdjustmentToFloor(t *testing.T) {
 	type args struct {
-		allBidderRequests    []BidderRequest
+		bidRequest           *openrtb2.BidRequest
+		bidderName           string
 		bidAdjustmentFactors map[string]float64
 	}
 	tests := []struct {
-		name                      string
-		args                      args
-		expectedAllBidderRequests []BidderRequest
+		name               string
+		args               args
+		expectedBidRequest *openrtb2.BidRequest
 	}{
 		{
-			name: " bidAdjustmentFactor is empty",
+			name: "bid_adjustment_factor_is_nil",
 			args: args{
-				allBidderRequests: []BidderRequest{
-					{
-						BidRequest: &openrtb2.BidRequest{
-							Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
-						},
-						BidderName: openrtb_ext.BidderName("appnexus"),
-					},
+				bidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
 				},
+				bidderName: "appnexus",
+				bidAdjustmentFactors: nil,
+			},
+			expectedBidRequest: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
+			},
+		},
+		{
+			name: "bid_adjustment_factor_is_empty",
+			args: args{
+				bidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
+				},
+				bidderName: "appnexus",
 				bidAdjustmentFactors: map[string]float64{},
 			},
-			expectedAllBidderRequests: []BidderRequest{
-				{
-					BidRequest: &openrtb2.BidRequest{
-						Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
-					},
-					BidderName: openrtb_ext.BidderName("appnexus"),
-				},
+			expectedBidRequest: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
 			},
 		},
 		{
-			name: "bidAdjustmentFactor not present for request bidder",
+			name: "bid_adjustment_factor_not_present",
 			args: args{
-				allBidderRequests: []BidderRequest{
-					{
-						BidRequest: &openrtb2.BidRequest{
-							Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
-						},
-						BidderName: openrtb_ext.BidderName("appnexus"),
-					},
+				bidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
 				},
+				bidderName: "appnexus",
 				bidAdjustmentFactors: map[string]float64{"pubmatic": 1.0},
 			},
-			expectedAllBidderRequests: []BidderRequest{
-				{
-					BidRequest: &openrtb2.BidRequest{
-						Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
-					},
-					BidderName: openrtb_ext.BidderName("appnexus"),
-				},
+			expectedBidRequest: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
 			},
 		},
 		{
-			name: "bidAdjustmentFactor present for request bidder",
+			name: "bid_adjustment_factor_present",
 			args: args{
-				allBidderRequests: []BidderRequest{
-					{
-						BidRequest: &openrtb2.BidRequest{
-							Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
-						},
-						BidderName: openrtb_ext.BidderName("appnexus"),
-					},
+				bidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
 				},
+				bidderName: "appnexus",
 				bidAdjustmentFactors: map[string]float64{"pubmatic": 1.0, "appnexus": 0.75},
 			},
-			expectedAllBidderRequests: []BidderRequest{
-				{
-					BidRequest: &openrtb2.BidRequest{
-						Imp: []openrtb2.Imp{{BidFloor: 133.33333333333334}, {BidFloor: 200}},
-					},
-					BidderName: openrtb_ext.BidderName("appnexus"),
-				},
+			expectedBidRequest: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{{BidFloor: 133.33333333333334}, {BidFloor: 200}},
 			},
 		},
 		{
-			name: "bidAdjustmentFactor present only for appnexus request bidder",
+			name: "bid_adjustment_factor_present_and_zero",
 			args: args{
-				allBidderRequests: []BidderRequest{
-					{
-						BidRequest: &openrtb2.BidRequest{
-							Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
-						},
-						BidderName: openrtb_ext.BidderName("appnexus"),
-					},
-					{
-						BidRequest: &openrtb2.BidRequest{
-							Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
-						},
-						BidderName: openrtb_ext.BidderName("pubmatic"),
-					},
+				bidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
 				},
-				bidAdjustmentFactors: map[string]float64{"appnexus": 0.75},
+				bidderName: "appnexus",
+				bidAdjustmentFactors: map[string]float64{"pubmatic": 1.0, "appnexus": 0.0},
 			},
-			expectedAllBidderRequests: []BidderRequest{
-				{
-					BidRequest: &openrtb2.BidRequest{
-						Imp: []openrtb2.Imp{{BidFloor: 133.33333333333334}, {BidFloor: 200}},
-					},
-					BidderName: openrtb_ext.BidderName("appnexus"),
-				},
-				{
-					BidRequest: &openrtb2.BidRequest{
-						Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
-					},
-					BidderName: openrtb_ext.BidderName("pubmatic"),
-				},
+			expectedBidRequest: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			applyBidAdjustmentToFloor(tt.args.allBidderRequests, tt.args.bidAdjustmentFactors)
-			assert.Equal(t, tt.expectedAllBidderRequests, tt.args.allBidderRequests, tt.name)
+			applyBidAdjustmentToFloor(tt.args.bidRequest, tt.args.bidderName, tt.args.bidAdjustmentFactors)
+			assert.Equal(t, tt.expectedBidRequest, tt.args.bidRequest, tt.name)
 		})
 	}
 }
@@ -5368,26 +5332,4 @@ func TestCopyExtAlternateBidderCodes(t *testing.T) {
 			assert.Equal(t, tc.expected, alternateBidderCodes)
 		})
 	}
-}
-
-func TestBuildBidResponseRequestBidderName(t *testing.T) {
-	bidderImpResponses := stored_responses.BidderImpsWithBidResponses{
-		openrtb_ext.BidderName("appnexus"): {"impId1": json.RawMessage(`{}`), "impId2": json.RawMessage(`{}`)},
-		openrtb_ext.BidderName("appneXUS"): {"impId3": json.RawMessage(`{}`), "impId4": json.RawMessage(`{}`)},
-	}
-
-	bidderImpReplaceImpID := stored_responses.BidderImpReplaceImpID{
-		"appnexus": {"impId1": true, "impId2": false},
-		"appneXUS": {"impId3": true, "impId4": false},
-	}
-	result := buildBidResponseRequest(nil, bidderImpResponses, nil, bidderImpReplaceImpID)
-
-	resultAppnexus := result["appnexus"]
-	assert.Equal(t, resultAppnexus.BidderName, openrtb_ext.BidderName("appnexus"))
-	assert.Equal(t, resultAppnexus.ImpReplaceImpId, map[string]bool{"impId1": true, "impId2": false})
-
-	resultAppneXUS := result["appneXUS"]
-	assert.Equal(t, resultAppneXUS.BidderName, openrtb_ext.BidderName("appneXUS"))
-	assert.Equal(t, resultAppneXUS.ImpReplaceImpId, map[string]bool{"impId3": true, "impId4": false})
-
 }
