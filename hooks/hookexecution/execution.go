@@ -343,7 +343,7 @@ func handleModuleActivities[P any](hookCode string, activityControl privacy.Acti
 		privacy.ScrubUserFPD(bidderReqCopy)
 	}
 	if !transmitPreciseGeoActivityAllowed {
-		ipConf := privacy.IPConf{}
+		var ipConf privacy.IPConf
 		if account != nil {
 			ipConf = privacy.IPConf{IPV6: account.Privacy.IPv6Config, IPV4: account.Privacy.IPv4Config}
 		} else {

@@ -164,7 +164,8 @@ func (adapter *AdvangelistsAdapter) buildAdapterRequest(prebidBidRequest *openrt
 		Method:  "POST",
 		Uri:     url,
 		Body:    reqJSON,
-		Headers: headers}, nil
+		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(imps)}, nil
 }
 
 func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ExtImpAdvangelists, imps []openrtb2.Imp) *openrtb2.BidRequest {
@@ -198,7 +199,7 @@ func (adapter *AdvangelistsAdapter) buildEndpointURL(params *openrtb_ext.ExtImpA
 
 // MakeBids translates advangelists bid response to prebid-server specific format
 func (adapter *AdvangelistsAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	var msg = ""
+	var msg string
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}

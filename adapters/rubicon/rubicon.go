@@ -3,6 +3,7 @@ package rubicon
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/prebid/prebid-server/v2/version"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -25,6 +26,7 @@ var bannerExtContent = []byte(`{"rp":{"mime":"text/html"}}`)
 
 type RubiconAdapter struct {
 	URI          string
+	externalURI  string
 	XAPIUsername string
 	XAPIPassword string
 }
@@ -219,6 +221,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 
 	bidder := &RubiconAdapter{
 		URI:          uri,
+		externalURI:  server.ExternalUrl,
 		XAPIUsername: config.XAPI.Username,
 		XAPIPassword: config.XAPI.Password,
 	}
@@ -271,7 +274,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 	rubiconRequest := *request
 	for imp, bidderExt := range impsToExtMap {
 		rubiconExt := bidderExt.Bidder
-		target, err := updateImpRpTargetWithFpdAttributes(bidderExt, rubiconExt, *imp, request.Site, request.App)
+		target, err := a.updateImpRpTarget(bidderExt, rubiconExt, *imp, request.Site, request.App)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -317,9 +320,11 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			continue
 		}
 
-		if resolvedBidFloor > 0 {
-			imp.BidFloorCur = "USD"
+		if resolvedBidFloor >= 0 {
 			imp.BidFloor = resolvedBidFloor
+			if imp.BidFloorCur != "" {
+				imp.BidFloorCur = "USD"
+			}
 		}
 
 		if request.User != nil {
@@ -331,14 +336,9 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			}
 
 			userExtRP := rubiconUserExt{RP: rubiconUserExtRP{Target: target}}
-			userBuyerUID := userCopy.BuyerUID
 
 			if len(userCopy.EIDs) > 0 {
 				userExtRP.Eids = userCopy.EIDs
-
-				if userBuyerUID == "" {
-					userBuyerUID = extractUserBuyerUID(userExtRP.Eids)
-				}
 			}
 
 			if userCopy.Consent != "" {
@@ -354,7 +354,6 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			userCopy.Geo = nil
 			userCopy.Yob = 0
 			userCopy.Gender = ""
-			userCopy.BuyerUID = userBuyerUID
 			userCopy.EIDs = nil
 
 			rubiconRequest.User = &userCopy
@@ -458,8 +457,14 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 		} else {
 			appCopy := *request.App
 			appCopy.Ext, err = json.Marshal(rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: int(siteId)}})
+			if err != nil {
+				errs = append(errs, &errortypes.BadInput{Message: err.Error()})
+			}
 			appCopy.Publisher = &openrtb2.Publisher{}
 			appCopy.Publisher.Ext, err = json.Marshal(&pubExt)
+			if err != nil {
+				errs = append(errs, &errortypes.BadInput{Message: err.Error()})
+			}
 			rubiconRequest.App = &appCopy
 		}
 
@@ -556,6 +561,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			Uri:     a.URI,
 			Body:    reqJSON,
 			Headers: headers,
+			ImpIDs:  openrtb_ext.GetImpIDs(rubiconRequest.Imp),
 		}
 		reqData.SetBasicAuth(a.XAPIUsername, a.XAPIPassword)
 		requestData = append(requestData, reqData)
@@ -586,7 +592,7 @@ func createImpsToExtMap(imps []openrtb2.Imp) (map[*openrtb2.Imp]rubiconExtImpBid
 func prepareImpsToExtMap(impsToExtMap map[*openrtb2.Imp]rubiconExtImpBidder) map[*openrtb2.Imp]rubiconExtImpBidder {
 	preparedImpsToExtMap := make(map[*openrtb2.Imp]rubiconExtImpBidder)
 	for imp, bidderExt := range impsToExtMap {
-		if bidderExt.Bidder.BidOnMultiformat == false {
+		if bidderExt.Bidder.BidOnMultiformat == false { //nolint: gosimple,staticcheck
 			impCopy := imp
 			preparedImpsToExtMap[impCopy] = bidderExt
 			continue
@@ -647,7 +653,7 @@ func resolveBidFloor(bidFloor float64, bidFloorCur string, reqInfo *adapters.Ext
 	return bidFloor, nil
 }
 
-func updateImpRpTargetWithFpdAttributes(extImp rubiconExtImpBidder, extImpRubicon openrtb_ext.ExtImpRubicon,
+func (a *RubiconAdapter) updateImpRpTarget(extImp rubiconExtImpBidder, extImpRubicon openrtb_ext.ExtImpRubicon,
 	imp openrtb2.Imp, site *openrtb2.Site, app *openrtb2.App) (json.RawMessage, error) {
 
 	existingTarget, _, _, err := jsonparser.Get(imp.Ext, "rp", "target")
@@ -740,6 +746,11 @@ func updateImpRpTargetWithFpdAttributes(extImp rubiconExtImpBidder, extImpRubico
 	if len(extImpRubicon.Keywords) > 0 {
 		addStringArrayAttribute(extImpRubicon.Keywords, target, "keywords")
 	}
+
+	target["pbs_login"] = a.XAPIUsername
+	target["pbs_version"] = version.Ver
+	target["pbs_url"] = a.externalURI
+
 	updatedTarget, err := json.Marshal(target)
 	if err != nil {
 		return nil, err
@@ -911,20 +922,6 @@ func contains(s []int, e int) bool {
 		}
 	}
 	return false
-}
-
-func extractUserBuyerUID(eids []openrtb2.EID) string {
-	for _, eid := range eids {
-		if eid.Source != "rubiconproject.com" {
-			continue
-		}
-
-		for _, uid := range eid.UIDs {
-			return uid.ID
-		}
-	}
-
-	return ""
 }
 
 func isVideo(imp openrtb2.Imp) bool {

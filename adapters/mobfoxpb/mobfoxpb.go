@@ -50,7 +50,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	key, errKey := jsonparser.GetString(imp.Ext, "bidder", "key")
 	if errTag != nil && errKey != nil {
 		errs = append(errs, &errortypes.BadInput{
-			Message: fmt.Sprintf("Invalid or non existing key and tagId, atleast one should be present"),
+			Message: "Invalid or non existing key and tagId, at least one should be present",
 		})
 		return nil, errs
 	}
@@ -93,6 +93,7 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest, requestURI string) (
 		Uri:     requestURI,
 		Body:    reqJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}, nil
 }
 

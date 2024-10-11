@@ -26,7 +26,8 @@
       {
         "expectedRequest": {
           "uri": "http://rtb.e-planning.net/pbs/1/12345/1/www.publisher.com/ROS?e=testadunitcode%3A600x300&ncb=1&ur=http%3A%2F%2Fwww.publisher.com%2Fawesome%2Fsite%3Fwith%3Dsome%26parameters%3Dhere",
-          "body": {}
+          "body": {},
+          "impIDs":["test-imp-id"]
         },
         "mockResponse": {
           "status": 200,

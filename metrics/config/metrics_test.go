@@ -48,8 +48,7 @@ func TestMultiMetricsEngine(t *testing.T) {
 	engineList := make(MultiMetricsEngine, 2)
 	engineList[0] = goEngine
 	engineList[1] = &NilMetricsEngine{}
-	var metricsEngine metrics.MetricsEngine
-	metricsEngine = &engineList
+	var metricsEngine metrics.MetricsEngine = &engineList
 	labels := metrics.Labels{
 		Source:        metrics.DemandWeb,
 		RType:         metrics.ReqTypeORTB2Web,
@@ -143,6 +142,7 @@ func TestMultiMetricsEngine(t *testing.T) {
 	metricsEngine.RecordStoredImpCacheResult(metrics.CacheHit, 5)
 	metricsEngine.RecordAccountCacheResult(metrics.CacheHit, 6)
 
+	metricsEngine.RecordAdapterBuyerUIDScrubbed(openrtb_ext.BidderAppnexus)
 	metricsEngine.RecordAdapterGDPRRequestBlocked(openrtb_ext.BidderAppnexus)
 
 	metricsEngine.RecordRequestQueueTime(false, metrics.ReqTypeVideo, time.Duration(1))
@@ -188,6 +188,7 @@ func TestMultiMetricsEngine(t *testing.T) {
 	VerifyMetrics(t, "StoredImpCache.Hit", goEngine.StoredImpCacheMeter[metrics.CacheHit].Count(), 5)
 	VerifyMetrics(t, "AccountCache.Hit", goEngine.AccountCacheMeter[metrics.CacheHit].Count(), 6)
 
+	VerifyMetrics(t, "AdapterMetrics.appNexus.BuyerUIDScrubbed", goEngine.AdapterMetrics[strings.ToLower(string(openrtb_ext.BidderAppnexus))].BuyerUIDScrubbed.Count(), 1)
 	VerifyMetrics(t, "AdapterMetrics.appNexus.GDPRRequestBlocked", goEngine.AdapterMetrics[strings.ToLower(string(openrtb_ext.BidderAppnexus))].GDPRRequestBlocked.Count(), 1)
 
 	// verify that each module has its own metric recorded

@@ -74,6 +74,7 @@ func (a *AdtargetAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ad
 			Uri:     a.endpoint + fmt.Sprintf("?aid=%d", sourceId),
 			Body:    body,
 			Headers: headers,
+			ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 		})
 	}
 
@@ -173,14 +174,24 @@ func validateImpressionAndSetExt(imp *openrtb2.Imp) (int, error) {
 	impExtBuffer, err = json.Marshal(&adtargetImpExt{
 		Adtarget: impExt,
 	})
-
+	if err != nil {
+		return 0, &errortypes.BadInput{
+			Message: fmt.Sprintf("ignoring imp id=%s, error while encoding impExt, err: %s", imp.ID, err),
+		}
+	}
 	if impExt.BidFloor > 0 {
 		imp.BidFloor = impExt.BidFloor
 	}
 
 	imp.Ext = impExtBuffer
 
-	return impExt.SourceId, nil
+	aid, err := impExt.SourceId.Int64()
+	if err != nil {
+		return 0, &errortypes.BadInput{
+			Message: fmt.Sprintf("ignoring imp id=%s, aid parsing err: %s", imp.ID, err),
+		}
+	}
+	return int(aid), nil
 }
 
 // Builder builds a new instance of the Adtarget adapter for the given bidder with the given config.

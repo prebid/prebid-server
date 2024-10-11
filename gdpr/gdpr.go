@@ -20,8 +20,8 @@ type Permissions interface {
 
 	// Determines whether or not to send PI information to a bidder, or mask it out.
 	//
-	// If the consent string was nonsensical, the returned error will be an ErrorMalformedConsent.
-	AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (permissions AuctionPermissions, err error)
+	// If the consent string was nonsensical, the no permissions are granted.
+	AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) AuctionPermissions
 }
 
 type PermissionsBuilder func(TCF2ConfigReader, RequestInfo) Permissions

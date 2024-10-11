@@ -71,7 +71,7 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestDa
 		// if the bid request is missing seatId or TagId then ignore it
 		if validExtImpObj.SeatId == "" || validExtImpObj.TagId == "" {
 			errs = append(errs, &errortypes.BadServerResponse{
-				Message: fmt.Sprintf("Invalid Impression"),
+				Message: "Invalid Impression",
 			})
 			continue
 		}
@@ -91,7 +91,7 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestDa
 
 	if firstExtImp == nil || firstExtImp.SeatId == "" || firstExtImp.TagId == "" {
 		return nil, append(errs, &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Invalid Impression"),
+			Message: "Invalid Impression",
 		})
 	}
 	// this is where the empty seatId is filled
@@ -125,6 +125,7 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestDa
 		Uri:     reqUri,
 		Body:    reqJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}, errs
 }
 

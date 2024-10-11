@@ -107,7 +107,8 @@
             "language": "en",
             "ifa": "7a2016d7-17b0-572f-a7a6-13f89a81d905"
           }
-        }
+        },
+        "impIDs":["some_test_ad_id"]
       },
       "mockResponse": {
         "status": 200,

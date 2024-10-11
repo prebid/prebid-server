@@ -55,6 +55,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 			Uri:     a.endpoint,
 			Body:    requestJSON,
 			Headers: headers,
+			ImpIDs:  []string{imp.ID},
 		}
 		result = append(result, data)
 	}

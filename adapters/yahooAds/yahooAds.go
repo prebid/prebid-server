@@ -81,6 +81,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			Uri:     a.URI,
 			Body:    reqJSON,
 			Headers: headers,
+			ImpIDs:  openrtb_ext.GetImpIDs(reqCopy.Imp),
 		})
 	}
 
@@ -181,7 +182,9 @@ func changeRequestForBidService(request *openrtb2.BidRequest, extension *openrtb
 			return err
 		}
 		regsExt["gpp"], err = json.Marshal(&requestRegs.GPP)
-
+		if err != nil {
+			return fmt.Errorf("failed to marshal requestRegs.GPP: %v", err)
+		}
 		if requestRegs.GPPSID != nil {
 			regsExt["gpp_sid"], err = json.Marshal(&requestRegs.GPPSID)
 			if err != nil {
