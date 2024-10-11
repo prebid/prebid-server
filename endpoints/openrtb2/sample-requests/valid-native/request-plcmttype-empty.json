@@ -30,11 +30,11 @@
         "bid": [
           {
             "id": "appnexus-bid",
-            "impid": "",
+            "impid": "some-imp",
             "price": 0
           }
         ],
-        "seat": "appnexus-bids"
+        "seat": "appnexus"
       }
     ]
   },

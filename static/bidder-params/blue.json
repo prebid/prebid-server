@@ -1,0 +1,15 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Blue Adapter Params",
+    "description": "A schema which validates params accepted by the Blue adapter",
+    "type": "object",
+    "properties": {
+        "publisherId": {
+            "type": "string",
+            "description": "The publisher’s ID provided by Blue"
+        }
+    },
+    "required": [
+        "publisherId"
+    ]
+}

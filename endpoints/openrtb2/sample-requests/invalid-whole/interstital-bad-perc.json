@@ -49,5 +49,5 @@
     }
   },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request: request.device.ext.prebid.interstitial.minwidthperc must be a number between 0 and 100\n"
+  "expectedErrorMessage": "Invalid request: request.device.ext.prebid.interstitial.minwidthperc must be a number between 0 and 100"
 }

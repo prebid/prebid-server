@@ -1,0 +1,65 @@
+{
+  "description": "Account is valid but account config is malformed",
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "user": {},
+    "site": {
+      "id": "cool_app",
+      "publisher": {
+        "id": "malformed_acct"
+      }
+    },
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          }
+        }
+      }
+    ],
+    "tmax": 500,
+    "ext": {
+      "prebid": {
+        "aliases": {
+          "districtm": "appnexus"
+        },
+        "bidadjustmentfactors": {
+          "appnexus": 1.01,
+          "districtm": 0.98,
+          "rubicon": 0.99
+        },
+        "cache": {
+          "bids": {}
+        },
+        "targeting": {
+          "includewinners": false,
+          "pricegranularity": {
+            "precision": 2,
+            "ranges": [
+              {
+                "max": 20,
+                "increment": 0.10
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "expectedReturnCode": 500,
+  "expectedErrorMessage": "Invalid request: The prebid-server account config for account id \"malformed_acct\" is malformed. Please reach out to the prebid server host.\n"
+}

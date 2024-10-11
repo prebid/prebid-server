@@ -1,0 +1,194 @@
+{
+  "description": "req.site and req.user is present; req.ext.prebid.data.bidders has appnexus bidder only; req.ext.prebid.bidderconfig is defined for two bidders; expect to see only appnexus in bidders FPD and contain site and user data",
+  "inputRequestData": {
+    "id": "bid_id",
+    "site": {
+      "id": "reqSiteId",
+      "page": "http://www.foobar.com/1234.html",
+      "name": "reqSiteName",
+      "cat": [
+        "electronics",
+        "phone"
+      ],
+      "publisher": {
+        "id": "1"
+      },
+      "content": {
+        "len": 900,
+        "title": "reqContentTitle",
+        "season": "reqContentSeason",
+        "data": [
+          {
+            "id": "reqContentDataId1",
+            "name": "reqContentDataName1"
+          },
+          {
+            "id": "reqContentDataId2",
+            "name": "reqContentDataName2"
+          }
+        ]
+      }
+    },
+    "user": {
+      "id": "reqUserId"
+    },
+    "test": 1,
+    "ext": {
+      "prebid": {
+        "data": {
+          "bidders": [
+            "appnexus"
+          ]
+        },
+        "bidderconfig": [
+          {
+            "bidders": [
+              "appnexus"
+            ],
+            "config": {
+              "ortb2": {
+                "site": {
+                  "id": "apnFpdSiteId",
+                  "page": "http://www.foobar.com/4321.html",
+                  "name": "apnFpdSiteIdSiteName",
+                  "cat": [
+                    "books",
+                    "news"
+                  ],
+                  "publisher": {
+                    "id": "1"
+                  },
+                  "content": {
+                    "len": 900,
+                    "title": "apnFpdSiteIdContentTitle",
+                    "season": "apnFpdSiteIdContentSeason",
+                    "data": [
+                      {
+                        "id": "apnFpdSiteIdContentDataId1",
+                        "name": "apnFpdSiteIdContentDataName1"
+                      },
+                      {
+                        "id": "apnFpdSiteIdContentDataId2",
+                        "name": "apnFpdSiteIdContentDataName2"
+                      }
+                    ]
+                  }
+                },
+                "user": {
+                  "id": "apnUserId",
+                  "gender": "F",
+                  "yob": 2000,
+                  "keywords": "apnFpdUserKeyword",
+                  "data": [
+                    {
+                      "id": "apnFpdUserContentDataId1",
+                      "name": "apnFpdUserContentDataName1"
+                    },
+                    {
+                      "id": "apnFpdUserContentDataId2",
+                      "name": "apnFpdUserContentDataName2"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "bidders": [
+              "telaria"
+            ],
+            "config": {
+              "ortb2": {
+                "user": {
+                  "id": "telariaFpdUserId",
+                  "gender": "M",
+                  "yob": 2001,
+                  "keywords": "telariaFpdUserKeyword",
+                  "data": [
+                    {
+                      "id": "telariaFpdUserContentDataId1",
+                      "name": "telariaFpdUserContentDataName1"
+                    },
+                    {
+                      "id": "telariaFpdUserContentDataId2",
+                      "name": "telariaFpdUserContentDataName2"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "outputRequestData": {
+    "id": "bid_id",
+    "site": {
+      "id": "reqSiteId",
+      "page": "http://www.foobar.com/1234.html",
+      "name": "reqSiteName",
+      "cat": [
+        "electronics",
+        "phone"
+      ],
+      "publisher": {
+        "id": "1"
+      },
+      "content": {
+        "len": 900,
+        "title": "reqContentTitle",
+        "season": "reqContentSeason"
+      }
+    },
+    "test": 1
+  },
+  "biddersFPDResolved": {
+    "appnexus": {
+      "site": {
+        "id": "apnFpdSiteId",
+        "page": "http://www.foobar.com/4321.html",
+        "name": "apnFpdSiteIdSiteName",
+        "cat": [
+          "books",
+          "news"
+        ],
+        "publisher": {
+          "id": "1"
+        },
+        "content": {
+          "len": 900,
+          "season": "apnFpdSiteIdContentSeason",
+          "title": "apnFpdSiteIdContentTitle",
+          "data": [
+            {
+              "id": "apnFpdSiteIdContentDataId1",
+              "name": "apnFpdSiteIdContentDataName1"
+            },
+            {
+              "id": "apnFpdSiteIdContentDataId2",
+              "name": "apnFpdSiteIdContentDataName2"
+            }
+          ]
+        }
+      },
+      "user": {
+        "id": "apnUserId",
+        "gender": "F",
+        "yob": 2000,
+        "keywords": "apnFpdUserKeyword",
+        "data": [
+          {
+            "id": "apnFpdUserContentDataId1",
+            "name": "apnFpdUserContentDataName1"
+          },
+          {
+            "id": "apnFpdUserContentDataId2",
+            "name": "apnFpdUserContentDataName2"
+          }
+        ]
+      }
+    }
+  },
+  "validationErrors": []
+}

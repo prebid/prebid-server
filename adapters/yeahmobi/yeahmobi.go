@@ -7,36 +7,35 @@ import (
 	"net/url"
 	"text/template"
 
-	"github.com/golang/glog"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/macros"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
-type YeahmobiAdapter struct {
+type adapter struct {
 	EndpointTemplate *template.Template
 }
 
 // Builder builds a new instance of the Yeahmobi adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
 
-	bidder := &YeahmobiAdapter{
+	bidder := &adapter{
 		EndpointTemplate: template,
 	}
 	return bidder, nil
 }
 
-func (adapter *YeahmobiAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var adapterRequests []*adapters.RequestData
 
-	adapterRequest, errs := adapter.makeRequest(request)
+	adapterRequest, errs := a.makeRequest(request)
 	if errs == nil {
 		adapterRequests = append(adapterRequests, adapterRequest)
 	}
@@ -44,16 +43,15 @@ func (adapter *YeahmobiAdapter) MakeRequests(request *openrtb2.BidRequest, reqIn
 	return adapterRequests, errs
 }
 
-func (adapter *YeahmobiAdapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, []error) {
+func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, []error) {
 	var errs []error
 
 	yeahmobiExt, errs := getYeahmobiExt(request)
 
 	if yeahmobiExt == nil {
-		glog.Fatal("Invalid ExtImpYeahmobi value")
 		return nil, errs
 	}
-	endPoint, err := adapter.getEndpoint(yeahmobiExt)
+	endPoint, err := a.getEndpoint(yeahmobiExt)
 	if err != nil {
 		return nil, append(errs, err)
 	}
@@ -126,12 +124,12 @@ func getYeahmobiExt(request *openrtb2.BidRequest) (*openrtb_ext.ExtImpYeahmobi, 
 
 }
 
-func (adapter *YeahmobiAdapter) getEndpoint(ext *openrtb_ext.ExtImpYeahmobi) (string, error) {
-	return macros.ResolveMacros(adapter.EndpointTemplate, macros.EndpointTemplateParams{Host: "gw-" + url.QueryEscape(ext.ZoneId) + "-bid.yeahtargeter.com"})
+func (a *adapter) getEndpoint(ext *openrtb_ext.ExtImpYeahmobi) (string, error) {
+	return macros.ResolveMacros(a.EndpointTemplate, macros.EndpointTemplateParams{Host: "gw-" + url.QueryEscape(ext.ZoneId) + "-bid.yeahtargeter.com"})
 }
 
 // MakeBids make the bids for the bid response.
-func (a *YeahmobiAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}

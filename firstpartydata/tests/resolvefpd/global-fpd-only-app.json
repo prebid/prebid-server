@@ -1,0 +1,123 @@
+{
+  "description": "Global and bidder FPD defined for site and user. Global FPD has app.content.data",
+  "inputRequestData": {
+    "app": {
+      "id": "reqAppId",
+      "publisher": {
+        "id": "1"
+      },
+      "content": {
+        "episode": 6,
+        "title": "episodeName",
+        "series": "TvName",
+        "season": "season3",
+        "len": 900
+      },
+      "ext": {
+        "testAppExt": 123
+      }
+    },
+    "device": {
+      "ua": "testDevice",
+      "ip": "123.145.167.10",
+      "devicetype": 1,
+      "ifa": "123"
+    },
+    "user": {
+      "id": "reqUserID",
+      "yob": 1982,
+      "gender": "M"
+    }
+  },
+  "biddersWithGlobalFPD": [
+    "appnexus"
+  ],
+  "bidderConfigFPD": {
+    "appnexus": {
+      "app": {
+        "id": "apnAppId",
+        "ext": {
+          "data": {
+            "morefpdData": "morefpddata",
+            "appFpddata": "appFpddata",
+            "moreFpd": {
+              "fpd": 123
+            }
+          }
+        }
+      }
+    }
+  },
+  "globalFPD": {
+    "app": {
+      "appFpd": 123
+    },
+    "user": {
+      "testUserFpd": "testuser"
+    },
+    "appContentData": [
+      {
+        "id": "appData1",
+        "name": "appName1"
+      },
+      {
+        "id": "appData2",
+        "name": "appName2"
+      }
+    ]
+  },
+  "outputRequestData": {
+    "appnexus": {
+      "app": {
+        "id": "apnAppId",
+        "publisher": {
+          "id": "1"
+        },
+        "content": {
+          "episode": 6,
+          "title": "episodeName",
+          "series": "TvName",
+          "season": "season3",
+          "len": 900,
+          "data": [
+            {
+              "id": "appData1",
+              "name": "appName1"
+            },
+            {
+              "id": "appData2",
+              "name": "appName2"
+            }
+          ]
+        },
+        "ext": {
+          "testAppExt": 123,
+          "data": {
+            "moreFpd": {
+              "fpd": 123
+            },
+            "morefpdData": "morefpddata",
+            "appFpd": 123,
+            "appFpddata": "appFpddata"
+          }
+        }
+      },
+      "device": {
+        "ua": "testDevice",
+        "ip": "123.145.167.10",
+        "devicetype": 1,
+        "ifa": "123"
+      },
+      "user": {
+        "id": "reqUserID",
+        "yob": 1982,
+        "gender": "M",
+        "ext": {
+          "data": {
+            "testUserFpd": "testuser"
+          }
+        }
+      }
+    }
+  }
+}

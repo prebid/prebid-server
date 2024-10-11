@@ -2,11 +2,12 @@ package filesystem
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 
 	"github.com/chasex/glog"
-	"github.com/prebid/prebid-server/analytics"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/analytics"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
 type RequestType string
@@ -20,21 +21,20 @@ const (
 	NOTIFICATION_EVENT RequestType = "/event"
 )
 
-//Module that can perform transactional logging
+// Module that can perform transactional logging
 type FileLogger struct {
 	Logger *glog.Logger
 }
 
-//Writes AuctionObject to file
+// Writes AuctionObject to file
 func (f *FileLogger) LogAuctionObject(ao *analytics.AuctionObject) {
-	//Code to parse the object and log in a way required
 	var b bytes.Buffer
 	b.WriteString(jsonifyAuctionObject(ao))
 	f.Logger.Debug(b.String())
 	f.Logger.Flush()
 }
 
-//Writes VideoObject to file
+// Writes VideoObject to file
 func (f *FileLogger) LogVideoObject(vo *analytics.VideoObject) {
 	//Code to parse the object and log in a way required
 	var b bytes.Buffer
@@ -43,7 +43,7 @@ func (f *FileLogger) LogVideoObject(vo *analytics.VideoObject) {
 	f.Logger.Flush()
 }
 
-//Logs SetUIDObject to file
+// Logs SetUIDObject to file
 func (f *FileLogger) LogSetUIDObject(so *analytics.SetUIDObject) {
 	//Code to parse the object and log in a way required
 	var b bytes.Buffer
@@ -52,7 +52,7 @@ func (f *FileLogger) LogSetUIDObject(so *analytics.SetUIDObject) {
 	f.Logger.Flush()
 }
 
-//Logs CookieSyncObject to file
+// Logs CookieSyncObject to file
 func (f *FileLogger) LogCookieSyncObject(cso *analytics.CookieSyncObject) {
 	//Code to parse the object and log in a way required
 	var b bytes.Buffer
@@ -61,7 +61,7 @@ func (f *FileLogger) LogCookieSyncObject(cso *analytics.CookieSyncObject) {
 	f.Logger.Flush()
 }
 
-//Logs AmpObject to file
+// Logs AmpObject to file
 func (f *FileLogger) LogAmpObject(ao *analytics.AmpObject) {
 	if ao == nil {
 		return
@@ -73,7 +73,7 @@ func (f *FileLogger) LogAmpObject(ao *analytics.AmpObject) {
 	f.Logger.Flush()
 }
 
-//Logs NotificationEvent to file
+// Logs NotificationEvent to file
 func (f *FileLogger) LogNotificationEventObject(ne *analytics.NotificationEvent) {
 	if ne == nil {
 		return
@@ -85,8 +85,8 @@ func (f *FileLogger) LogNotificationEventObject(ne *analytics.NotificationEvent)
 	f.Logger.Flush()
 }
 
-//Method to initialize the analytic module
-func NewFileLogger(filename string) (analytics.PBSAnalyticsModule, error) {
+// Method to initialize the analytic module
+func NewFileLogger(filename string) (analytics.Module, error) {
 	options := glog.LogOptions{
 		File:  filename,
 		Flag:  glog.LstdFlags,
@@ -102,16 +102,30 @@ func NewFileLogger(filename string) (analytics.PBSAnalyticsModule, error) {
 	}
 }
 
-type fileAuctionObject analytics.AuctionObject
-
 func jsonifyAuctionObject(ao *analytics.AuctionObject) string {
-	type alias analytics.AuctionObject
-	b, err := json.Marshal(&struct {
+	var logEntry *logAuction
+	if ao != nil {
+		var request *openrtb2.BidRequest
+		if ao.RequestWrapper != nil {
+			request = ao.RequestWrapper.BidRequest
+		}
+		logEntry = &logAuction{
+			Status:               ao.Status,
+			Errors:               ao.Errors,
+			Request:              request,
+			Response:             ao.Response,
+			Account:              ao.Account,
+			StartTime:            ao.StartTime,
+			HookExecutionOutcome: ao.HookExecutionOutcome,
+		}
+	}
+
+	b, err := jsonutil.Marshal(&struct {
 		Type RequestType `json:"type"`
-		*alias
+		*logAuction
 	}{
-		Type:  AUCTION,
-		alias: (*alias)(ao),
+		Type:       AUCTION,
+		logAuction: logEntry,
 	})
 
 	if err == nil {
@@ -122,13 +136,29 @@ func jsonifyAuctionObject(ao *analytics.AuctionObject) string {
 }
 
 func jsonifyVideoObject(vo *analytics.VideoObject) string {
-	type alias analytics.VideoObject
-	b, err := json.Marshal(&struct {
+	var logEntry *logVideo
+	if vo != nil {
+		var request *openrtb2.BidRequest
+		if vo.RequestWrapper != nil {
+			request = vo.RequestWrapper.BidRequest
+		}
+		logEntry = &logVideo{
+			Status:        vo.Status,
+			Errors:        vo.Errors,
+			Request:       request,
+			Response:      vo.Response,
+			VideoRequest:  vo.VideoRequest,
+			VideoResponse: vo.VideoResponse,
+			StartTime:     vo.StartTime,
+		}
+	}
+
+	b, err := jsonutil.Marshal(&struct {
 		Type RequestType `json:"type"`
-		*alias
+		*logVideo
 	}{
-		Type:  VIDEO,
-		alias: (*alias)(vo),
+		Type:     VIDEO,
+		logVideo: logEntry,
 	})
 
 	if err == nil {
@@ -139,14 +169,21 @@ func jsonifyVideoObject(vo *analytics.VideoObject) string {
 }
 
 func jsonifyCookieSync(cso *analytics.CookieSyncObject) string {
-	type alias analytics.CookieSyncObject
+	var logEntry *logUserSync
+	if cso != nil {
+		logEntry = &logUserSync{
+			Status:       cso.Status,
+			Errors:       cso.Errors,
+			BidderStatus: cso.BidderStatus,
+		}
+	}
 
-	b, err := json.Marshal(&struct {
+	b, err := jsonutil.Marshal(&struct {
 		Type RequestType `json:"type"`
-		*alias
+		*logUserSync
 	}{
-		Type:  COOKIE_SYNC,
-		alias: (*alias)(cso),
+		Type:        COOKIE_SYNC,
+		logUserSync: logEntry,
 	})
 
 	if err == nil {
@@ -157,13 +194,23 @@ func jsonifyCookieSync(cso *analytics.CookieSyncObject) string {
 }
 
 func jsonifySetUIDObject(so *analytics.SetUIDObject) string {
-	type alias analytics.SetUIDObject
-	b, err := json.Marshal(&struct {
+	var logEntry *logSetUID
+	if so != nil {
+		logEntry = &logSetUID{
+			Status:  so.Status,
+			Bidder:  so.Bidder,
+			UID:     so.UID,
+			Errors:  so.Errors,
+			Success: so.Success,
+		}
+	}
+
+	b, err := jsonutil.Marshal(&struct {
 		Type RequestType `json:"type"`
-		*alias
+		*logSetUID
 	}{
-		Type:  SETUID,
-		alias: (*alias)(so),
+		Type:      SETUID,
+		logSetUID: logEntry,
 	})
 
 	if err == nil {
@@ -174,13 +221,30 @@ func jsonifySetUIDObject(so *analytics.SetUIDObject) string {
 }
 
 func jsonifyAmpObject(ao *analytics.AmpObject) string {
-	type alias analytics.AmpObject
-	b, err := json.Marshal(&struct {
+	var logEntry *logAMP
+	if ao != nil {
+		var request *openrtb2.BidRequest
+		if ao.RequestWrapper != nil {
+			request = ao.RequestWrapper.BidRequest
+		}
+		logEntry = &logAMP{
+			Status:               ao.Status,
+			Errors:               ao.Errors,
+			Request:              request,
+			AuctionResponse:      ao.AuctionResponse,
+			AmpTargetingValues:   ao.AmpTargetingValues,
+			Origin:               ao.Origin,
+			StartTime:            ao.StartTime,
+			HookExecutionOutcome: ao.HookExecutionOutcome,
+		}
+	}
+
+	b, err := jsonutil.Marshal(&struct {
 		Type RequestType `json:"type"`
-		*alias
+		*logAMP
 	}{
-		Type:  AMP,
-		alias: (*alias)(ao),
+		Type:   AMP,
+		logAMP: logEntry,
 	})
 
 	if err == nil {
@@ -191,13 +255,20 @@ func jsonifyAmpObject(ao *analytics.AmpObject) string {
 }
 
 func jsonifyNotificationEventObject(ne *analytics.NotificationEvent) string {
-	type alias analytics.NotificationEvent
-	b, err := json.Marshal(&struct {
+	var logEntry *logNotificationEvent
+	if ne != nil {
+		logEntry = &logNotificationEvent{
+			Request: ne.Request,
+			Account: ne.Account,
+		}
+	}
+
+	b, err := jsonutil.Marshal(&struct {
 		Type RequestType `json:"type"`
-		*alias
+		*logNotificationEvent
 	}{
-		Type:  NOTIFICATION_EVENT,
-		alias: (*alias)(ne),
+		Type:                 NOTIFICATION_EVENT,
+		logNotificationEvent: logEntry,
 	})
 
 	if err == nil {

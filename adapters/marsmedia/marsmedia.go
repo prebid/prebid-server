@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type MarsmediaAdapter struct {
@@ -37,13 +37,13 @@ func (a *MarsmediaAdapter) MakeRequests(requestIn *openrtb2.BidRequest, reqInfo 
 	var marsmediaExt openrtb_ext.ExtImpMarsmedia
 	if err := json.Unmarshal(bidderExt.Bidder, &marsmediaExt); err != nil {
 		return nil, []error{&errortypes.BadInput{
-			Message: "ext.bidder.zone not provided",
+			Message: "ext.bidder.zoneId not provided",
 		}}
 	}
 
 	if marsmediaExt.ZoneID == "" {
 		return nil, []error{&errortypes.BadInput{
-			Message: "Zone is empty",
+			Message: "zoneId is empty",
 		}}
 	}
 
@@ -83,7 +83,7 @@ func (a *MarsmediaAdapter) MakeRequests(requestIn *openrtb2.BidRequest, reqInfo 
 		}}
 	}
 
-	uri := a.URI + "&zone=" + marsmediaExt.ZoneID
+	uri := a.URI + "&zone=" + marsmediaExt.ZoneID.String()
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
@@ -164,7 +164,7 @@ func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 }
 
 // Builder builds a new instance of the Marsmedia adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &MarsmediaAdapter{
 		URI: config.Endpoint,
 	}

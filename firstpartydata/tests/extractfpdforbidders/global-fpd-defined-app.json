@@ -1,0 +1,75 @@
+{
+  "description": "req.app and req.ext.prebid.data.bidders contains appnexus; expect bidder config with app data to be included in the resolved FPD for appnexus",
+  "inputRequestData": {
+    "id": "bid_id",
+    "app": {
+      "id": "reqAppId",
+      "publisher": {
+        "id": "1"
+      }
+    },
+    "test": 1,
+    "ext": {
+      "prebid": {
+        "data": {
+          "bidders": [
+            "appnexus"
+          ]
+        },
+        "bidderconfig": [
+          {
+            "bidders": [
+              "appnexus"
+            ],
+            "config": {
+              "ortb2": {
+                "app": {
+                  "id": "apnAppId",
+                  "name": "fpdAppName",
+                  "bundle": "fpdAppBundle",
+                  "domain": "fpdAppDomain",
+                  "storeurl": "fpdAppstoreUrl",
+                  "cat": ["books"],
+                  "sectioncat": ["books"],
+                  "pagecat": ["magazines"],
+                  "keywords": "apnKeywords",
+                  "ver": "1.2"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "outputRequestData": {
+    "id": "bid_id",
+    "app": {
+      "id": "reqAppId",
+      "publisher": {
+        "id": "1"
+      }
+    },
+    "test": 1
+  },
+  "biddersFPDResolved": {
+    "appnexus": {
+      "app": {
+        "id": "apnAppId",
+        "name": "fpdAppName",
+        "bundle": "fpdAppBundle",
+        "domain": "fpdAppDomain",
+        "storeurl": "fpdAppstoreUrl",
+        "cat": ["books"],
+        "sectioncat": ["books"],
+        "pagecat": ["magazines"],
+        "keywords": "apnKeywords",
+        "ver": "1.2",
+        "publisher": {
+          "id": "1"
+        }
+      }
+    }
+  },
+  "validationErrors": []
+}

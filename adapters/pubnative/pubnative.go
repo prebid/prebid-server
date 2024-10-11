@@ -7,11 +7,12 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 )
 
 type PubnativeAdapter struct {
@@ -112,8 +113,8 @@ func convertBanner(banner *openrtb2.Banner) (*openrtb2.Banner, error) {
 
 			bannerCopy := *banner
 
-			bannerCopy.W = openrtb2.Int64Ptr(f.W)
-			bannerCopy.H = openrtb2.Int64Ptr(f.H)
+			bannerCopy.W = ptrutil.ToPtr(f.W)
+			bannerCopy.H = ptrutil.ToPtr(f.H)
 
 			return &bannerCopy, nil
 		} else {
@@ -166,7 +167,7 @@ func (a *PubnativeAdapter) MakeBids(internalRequest *openrtb2.BidRequest, extern
 }
 
 // Builder builds a new instance of the Pubnative adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &PubnativeAdapter{
 		URI: config.Endpoint,
 	}

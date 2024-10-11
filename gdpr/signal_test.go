@@ -3,7 +3,6 @@ package gdpr
 import (
 	"testing"
 
-	"github.com/prebid/prebid-server/config"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -44,18 +43,71 @@ func TestSignalParse(t *testing.T) {
 			wantSignal:  SignalAmbiguous,
 			wantError:   true,
 		},
+		{
+			description: "Out of bounds signal - raw signal is 5",
+			rawSignal:   "5",
+			wantSignal:  SignalAmbiguous,
+			wantError:   true,
+		},
 	}
 
 	for _, test := range tests {
-		signal, err := SignalParse(test.rawSignal)
+		t.Run(test.description, func(t *testing.T) {
+			signal, err := StrSignalParse(test.rawSignal)
 
-		assert.Equal(t, test.wantSignal, signal, test.description)
+			assert.Equal(t, test.wantSignal, signal, test.description)
 
-		if test.wantError {
-			assert.NotNil(t, err, test.description)
-		} else {
-			assert.Nil(t, err, test.description)
-		}
+			if test.wantError {
+				assert.NotNil(t, err, test.description)
+			} else {
+				assert.Nil(t, err, test.description)
+			}
+		})
+	}
+}
+
+func TestIntSignalParse(t *testing.T) {
+	type testOutput struct {
+		signal Signal
+		err    error
+	}
+	testCases := []struct {
+		desc     string
+		input    int
+		expected testOutput
+	}{
+		{
+			desc:  "input out of bounds, return SgnalAmbituous and gdprSignalError",
+			input: -1,
+			expected: testOutput{
+				signal: SignalAmbiguous,
+				err:    gdprSignalError,
+			},
+		},
+		{
+			desc:  "input in bounds equals signalNo, return signalNo and nil error",
+			input: 0,
+			expected: testOutput{
+				signal: SignalNo,
+				err:    nil,
+			},
+		},
+		{
+			desc:  "input in bounds equals signalYes, return signalYes and nil error",
+			input: 1,
+			expected: testOutput{
+				signal: SignalYes,
+				err:    nil,
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			outSignal, outErr := IntSignalParse(tc.input)
+
+			assert.Equal(t, tc.expected.signal, outSignal, tc.desc)
+			assert.Equal(t, tc.expected.err, outErr, tc.desc)
+		})
 	}
 }
 
@@ -105,11 +157,7 @@ func TestSignalNormalize(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		config := config.GDPR{
-			DefaultValue: test.defaultValue,
-		}
-
-		normalizedSignal := SignalNormalize(test.giveSignal, config)
+		normalizedSignal := SignalNormalize(test.giveSignal, test.defaultValue)
 
 		assert.Equal(t, test.wantSignal, normalizedSignal, test.description)
 	}

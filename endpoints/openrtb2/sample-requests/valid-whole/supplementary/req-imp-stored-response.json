@@ -1,0 +1,33 @@
+{
+  "description": "request with valid imp with stored response",
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "test.somepage.com"
+    },
+    "imp": [
+      {
+        "id": "imp-id1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          },
+          "prebid": {
+            "storedauctionresponse": {
+              "id": "6d718149"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "expectedReturnCode": 200
+}

@@ -1,3 +1,4 @@
+endpoint: "https://{{.Host}}.bidmachine.io"
 maintainer:
   email: hi@bidmachine.io
 gvlVendorID: 736

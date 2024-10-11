@@ -28,6 +28,7 @@
                         "value": ["Zone1", "Zone2"]
                       }
                     ],
+                    "kadfloor": "0.12",
                     "wrapper": {
                         "version": 1,
                         "profile": 5123
@@ -43,7 +44,14 @@
 		    	"publisher": {
 			    	"id": "1234"
 		  	}
-	  	}
+	  	},
+      "ext": {
+        "prebid": {
+          "bidderparams": {
+            "acat": ["drg","dlu","ssr"]
+          }
+        }
+      }
     },
   
     "httpCalls": [
@@ -72,6 +80,7 @@
                     "minbitrate": 10,
                     "maxbitrate": 10
                 },
+                "bidfloor": 0.12,
                 "ext": {
                     "pmZoneId": "Zone1,Zone2"
                 }
@@ -90,6 +99,12 @@
                 "wrapper": {
                     "profile": 5123,
                     "version":1
+                },
+                "acat": ["drg","dlu","ssr"],
+                "prebid": {
+                  "bidderparams": {
+                    "acat": ["drg","dlu","ssr"]
+                  }
                 }
             }
           }

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 //Vrtcal doesn't currently require any custom fields. This file is included for conformity only
@@ -12,7 +12,7 @@ import (
 
 // This file actually intends to test static/bidder-params/vrtcal.json
 //
-// These also validate the format of the external API: request.imp[i].ext.vrtcal
+// These also validate the format of the external API: request.imp[i].ext.prebid.bidder.vrtcal
 // TestValidParams makes sure that the Vrtcal schema accepts all imp.ext fields which we intend to support.
 func TestValidParams(t *testing.T) {
 	validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")

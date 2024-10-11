@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/metrics"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/metrics"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -101,7 +101,7 @@ func ExecuteAspectRequest(t *testing.T, timeInQueue string, reqTimeout string, s
 		req.Header.Set(reqTimeoutHeaderName, reqTimeout)
 	}
 
-	customHeaders := config.RequestTimeoutHeaders{reqTimeInQueueHeaderName, reqTimeoutHeaderName}
+	customHeaders := config.RequestTimeoutHeaders{RequestTimeInQueue: reqTimeInQueueHeaderName, RequestTimeoutInQueue: reqTimeoutHeaderName}
 
 	metrics := &metrics.MetricsEngineMock{}
 

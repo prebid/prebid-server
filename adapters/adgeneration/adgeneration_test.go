@@ -4,17 +4,17 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/adapters/adapterstest"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/adapters/adapterstest"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAdgeneration, config.Adapter{
-		Endpoint: "https://d.socdm.com/adsv/v1"})
+		Endpoint: "https://d.socdm.com/adsv/v1"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -23,9 +23,9 @@ func TestJsonSamples(t *testing.T) {
 	adapterstest.RunJSONBidderTest(t, "adgenerationtest", bidder)
 }
 
-func TestgetRequestUri(t *testing.T) {
+func TestGetRequestUri(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAdgeneration, config.Adapter{
-		Endpoint: "https://d.socdm.com/adsv/v1"})
+		Endpoint: "https://d.socdm.com/adsv/v1"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -133,7 +133,7 @@ func TestGetSizes(t *testing.T) {
 
 func TestGetCurrency(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAdgeneration, config.Adapter{
-		Endpoint: "https://d.socdm.com/adsv/v1"})
+		Endpoint: "https://d.socdm.com/adsv/v1"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -204,7 +204,7 @@ func TestCreateAd(t *testing.T) {
 
 func TestMakeBids(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAdgeneration, config.Adapter{
-		Endpoint: "https://d.socdm.com/adsv/v1"})
+		Endpoint: "https://d.socdm.com/adsv/v1"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)

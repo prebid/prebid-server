@@ -1,3 +1,4 @@
+endpoint: "https://ib.beintoo.com/um"
 maintainer:
   email: "adops@beintoo.com"
 gvlVendorID: 618

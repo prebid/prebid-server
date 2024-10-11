@@ -1,3 +1,4 @@
+endpoint: "https://server.cpmstar.com/openrtbbidrq.aspx"
 maintainer:
   email: "prebid@cpmstar.com"
 capabilities:

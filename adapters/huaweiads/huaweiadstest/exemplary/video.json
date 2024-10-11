@@ -22,7 +22,7 @@
         "ext": {
           "bidder": {
             "slotid": "m8x9x3roll",
-            "adtype": "roll",
+            "adtype": "interstitial",
             "publisherid": "123123123",
             "signkey": "signkey",
             "keyid": "41",
@@ -39,8 +39,7 @@
     "device": {
       "ua": "useragent",
       "h": 1920,
-      "language": "zh",
-      "geoCountry": "CH",
+      "language": "en",
       "model": "COL-TEST",
       "os": "android",
       "osv": "10.0.0",
@@ -50,7 +49,7 @@
       "ip": "ip",
       "pxratio": 23.01,
       "geo": {
-        "country": ""
+        "country": "ATA"
       }
     },
     "user": {
@@ -74,7 +73,7 @@
   "httpcalls": [
     {
       "expectedRequest": {
-        "uri": "https://huaweiads.com/adxtest/",
+        "uri": "https://adx-dre.op.hicloud.com/ppsadx/getResult",
         "headers": {
           "Accept": [
             "application/json"
@@ -92,26 +91,28 @@
         "body": {
           "app": {
             "lang": "en",
-            "country": "ZA",
+            "country": "AT",
             "name": "Huawei Browser",
             "pkgname": "com.wavehk.android",
             "version": "9.1.0.301"
           },
           "multislot": [
             {
-              "adtype": 60,
+              "adtype": 12,
               "slotid": "m8x9x3roll",
-              "test": 0
+              "test": 1,
+              "w": 300,
+              "h": 250
             }
           ],
           "device": {
             "height": 1920,
-            "language": "zh",
+            "language": "en",
             "oaid": "oaid",
             "os": "android",
             "type": 4,
             "ip": "ip",
-            "localeCountry": "ZA",
+            "localeCountry": "AT",
             "pxratio": 23.01,
             "width": 1080,
             "model": "COL-TEST",
@@ -120,7 +121,7 @@
             "useragent": "useragent",
             "version": "10.0.0",
             "maker": "huawei",
-            "belongCountry": "ZA"
+            "belongCountry": "AT"
           },
           "geo": {
           },
@@ -129,7 +130,8 @@
           },
           "regs": {
           },
-          "version": "3.4"
+          "version": "3.4",
+          "clientAdRequestId": "test-req-id"
         }
       },
       "mockResponse": {
@@ -144,7 +146,7 @@
                   "contentid": "58001445",
                   "creativetype": 106,
                   "endtime": 1621344684645,
-                  "interactiontype": 2,
+                  "interactiontype": 1,
                   "landingTitle": 1,
                   "metaData": {
                     "adSign": "2",

@@ -29,7 +29,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://tag.test.com/rtbpub?account=101",
+        "uri": "https://pbs2.adksrv.com/rtbpub?account=101",
         "body": {
           "id": "0000000000001",
           "imp": [

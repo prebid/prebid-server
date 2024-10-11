@@ -1,0 +1,49 @@
+{
+  "description": "request with two valid imp with stored bid responses",
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "test.somepage.com"
+    },
+    "imp": [
+      {
+        "id": "imp-id1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          }
+        }
+      },
+      {
+        "id": "imp-id2",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "amx": {
+            "placementId": 12883451
+          },
+          "prebid": {
+            "storedbidresponse": [
+              {"bidder":"amx", "id": "bidResponseId2"}
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "expectedReturnCode": 200
+}

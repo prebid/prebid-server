@@ -2,14 +2,15 @@ package router
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
 
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	jsoniter "github.com/json-iterator/go"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -17,6 +18,11 @@ import (
 const adapterDirectory = "../adapters"
 
 type testValidator struct{}
+
+func TestMain(m *testing.M) {
+	jsoniter.RegisterExtension(&jsonutil.RawMessageExtension{})
+	os.Exit(m.Run())
+}
 
 func (validator *testValidator) Validate(name openrtb_ext.BidderName, ext json.RawMessage) error {
 	return nil
@@ -38,17 +44,18 @@ func ensureHasKey(t *testing.T, data map[string]json.RawMessage, key string) {
 }
 
 func TestNewJsonDirectoryServer(t *testing.T) {
-	alias := map[string]string{"aliastest": "appnexus"}
-	handler := NewJsonDirectoryServer("../static/bidder-params", &testValidator{}, alias)
+	defaultAlias := map[string]string{"aliastest": "appnexus"}
+	yamlAlias := map[openrtb_ext.BidderName]openrtb_ext.BidderName{openrtb_ext.BidderName("alias"): openrtb_ext.BidderName("parentAlias")}
+	handler := newJsonDirectoryServer("../static/bidder-params", &testValidator{}, defaultAlias, yamlAlias)
 	recorder := httptest.NewRecorder()
 	request, _ := http.NewRequest("GET", "/whatever", nil)
 	handler(recorder, request, nil)
 
 	var data map[string]json.RawMessage
-	json.Unmarshal(recorder.Body.Bytes(), &data)
+	jsonutil.UnmarshalValid(recorder.Body.Bytes(), &data)
 
 	// Make sure that every adapter has a json schema by the same name associated with it.
-	adapterFiles, err := ioutil.ReadDir(adapterDirectory)
+	adapterFiles, err := os.ReadDir(adapterDirectory)
 	if err != nil {
 		t.Fatalf("Failed to open the adapters directory: %v", err)
 	}
@@ -60,93 +67,7 @@ func TestNewJsonDirectoryServer(t *testing.T) {
 	}
 
 	ensureHasKey(t, data, "aliastest")
-}
-
-func TestExchangeMap(t *testing.T) {
-	exchanges := newExchangeMap(&config.Configuration{})
-	bidderMap := openrtb_ext.BuildBidderMap()
-	for bidderName := range exchanges {
-		// OpenRTB doesn't support hardcoded aliases... so this test skips districtm,
-		// which was the only alias in the legacy adapter map.
-		if _, ok := bidderMap[bidderName]; bidderName != "districtm" && !ok {
-			t.Errorf("Bidder %s exists in exchange, but is not a part of the BidderMap.", bidderName)
-		}
-	}
-}
-
-func TestApplyBidderInfoConfigOverrides(t *testing.T) {
-	var testCases = []struct {
-		description         string
-		givenBidderInfos    config.BidderInfos
-		givenAdaptersCfg    map[string]config.Adapter
-		expectedError       string
-		expectedBidderInfos config.BidderInfos
-	}{
-		{
-			description:         "Syncer Override",
-			givenBidderInfos:    config.BidderInfos{"a": {Syncer: &config.Syncer{Key: "original"}}},
-			givenAdaptersCfg:    map[string]config.Adapter{"a": {Syncer: &config.Syncer{Key: "override"}}},
-			expectedBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{Key: "override"}}},
-		},
-		{
-			description:         "UserSyncURL Override IFrame",
-			givenBidderInfos:    config.BidderInfos{"a": {Syncer: &config.Syncer{IFrame: &config.SyncerEndpoint{URL: "original"}}}},
-			givenAdaptersCfg:    map[string]config.Adapter{"a": {UserSyncURL: "override"}},
-			expectedBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{IFrame: &config.SyncerEndpoint{URL: "override"}}}},
-		},
-		{
-			description:         "UserSyncURL Supports IFrame",
-			givenBidderInfos:    config.BidderInfos{"a": {Syncer: &config.Syncer{Supports: []string{"iframe"}}}},
-			givenAdaptersCfg:    map[string]config.Adapter{"a": {UserSyncURL: "override"}},
-			expectedBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{Supports: []string{"iframe"}, IFrame: &config.SyncerEndpoint{URL: "override"}}}},
-		},
-		{
-			description:         "UserSyncURL Override Redirect",
-			givenBidderInfos:    config.BidderInfos{"a": {Syncer: &config.Syncer{Supports: []string{"redirect"}}}},
-			givenAdaptersCfg:    map[string]config.Adapter{"a": {UserSyncURL: "override"}},
-			expectedBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{Supports: []string{"redirect"}, Redirect: &config.SyncerEndpoint{URL: "override"}}}},
-		},
-		{
-			description:         "UserSyncURL Supports Redirect",
-			givenBidderInfos:    config.BidderInfos{"a": {Syncer: &config.Syncer{Redirect: &config.SyncerEndpoint{URL: "original"}}}},
-			givenAdaptersCfg:    map[string]config.Adapter{"a": {UserSyncURL: "override"}},
-			expectedBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{Redirect: &config.SyncerEndpoint{URL: "override"}}}},
-		},
-		{
-			description:      "UserSyncURL Override Syncer Not Defined",
-			givenBidderInfos: config.BidderInfos{"a": {}},
-			givenAdaptersCfg: map[string]config.Adapter{"a": {UserSyncURL: "override"}},
-			expectedError:    "adapters.a.usersync_url cannot be applied, bidder does not define a user sync",
-		},
-		{
-			description:      "UserSyncURL Override Syncer Endpoints Not Defined",
-			givenBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{}}},
-			givenAdaptersCfg: map[string]config.Adapter{"a": {UserSyncURL: "override"}},
-			expectedError:    "adapters.a.usersync_url cannot be applied, bidder does not define user sync endpoints and does not define supported endpoints",
-		},
-		{
-			description:      "UserSyncURL Override Ambiguous",
-			givenBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{IFrame: &config.SyncerEndpoint{URL: "originalIFrame"}, Redirect: &config.SyncerEndpoint{URL: "originalRedirect"}}}},
-			givenAdaptersCfg: map[string]config.Adapter{"a": {UserSyncURL: "override"}},
-			expectedError:    "adapters.a.usersync_url cannot be applied, bidder defines multiple user sync endpoints or supports multiple endpoints",
-		},
-		{
-			description:      "UserSyncURL Supports Ambiguous",
-			givenBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{Supports: []string{"iframe", "redirect"}}}},
-			givenAdaptersCfg: map[string]config.Adapter{"a": {UserSyncURL: "override"}},
-			expectedError:    "adapters.a.usersync_url cannot be applied, bidder defines multiple user sync endpoints or supports multiple endpoints",
-		},
-	}
-
-	for _, test := range testCases {
-		resultErr := applyBidderInfoConfigOverrides(test.givenBidderInfos, test.givenAdaptersCfg)
-		if test.expectedError == "" {
-			assert.NoError(t, resultErr, test.description+":err")
-			assert.Equal(t, test.expectedBidderInfos, test.givenBidderInfos, test.description+":result")
-		} else {
-			assert.EqualError(t, resultErr, test.expectedError, test.description+":err")
-		}
-	}
+	ensureHasKey(t, data, "alias")
 }
 
 func TestCheckSupportedUserSyncEndpoints(t *testing.T) {
@@ -290,38 +211,6 @@ func TestNoCache(t *testing.T) {
 	}
 }
 
-func TestLoadDataCache(t *testing.T) {
-	// Test dummy
-	if err := loadDataCache(&config.Configuration{
-		DataCache: config.DataCache{
-			Type: "dummy",
-		},
-	}, nil); err != nil {
-		t.Errorf("data cache: dummy: %s", err)
-	}
-	// Test postgres error
-	if err := loadDataCache(&config.Configuration{
-		DataCache: config.DataCache{
-			Type: "postgres",
-		},
-	}, nil); err == nil {
-		t.Errorf("data cache: postgres: db nil should return error")
-	}
-	// Test file
-	d, _ := ioutil.TempDir("", "pbs-filecache")
-	defer os.RemoveAll(d)
-	f, _ := ioutil.TempFile(d, "file")
-	defer f.Close()
-	if err := loadDataCache(&config.Configuration{
-		DataCache: config.DataCache{
-			Type:     "filecache",
-			Filename: f.Name(),
-		},
-	}, nil); err != nil {
-		t.Errorf("data cache: filecache: %s", err)
-	}
-}
-
 var testDefReqConfig = config.DefReqConfig{
 	Type: "file",
 	FileSystem: config.DefReqFiles{
@@ -391,4 +280,24 @@ func TestValidateDefaultAliases(t *testing.T) {
 			assert.EqualError(t, err, test.expectedError, test.description)
 		}
 	}
+}
+
+func TestBidderParamsCompactedOutput(t *testing.T) {
+	expectedFormattedResponse := `{"appnexus":{"$schema":"http://json-schema.org/draft-04/schema#","title":"Sample schema","description":"A sample schema to test the bidder/params endpoint","type":"object","properties":{"integer_param":{"type":"integer","minimum":1,"description":"A customer id"},"string_param_1":{"type":"string","minLength":1,"description":"Text with blanks in between"},"string_param_2":{"type":"string","minLength":1,"description":"Text_with_no_blanks_in_between"}},"required":["integer_param","string_param_2"]}}`
+
+	// Setup
+	inSchemaDirectory := "bidder_params_tests"
+	paramsValidator, err := openrtb_ext.NewBidderParamsValidator(inSchemaDirectory)
+	assert.NoError(t, err, "Error initialing validator")
+
+	handler := newJsonDirectoryServer(inSchemaDirectory, paramsValidator, nil, nil)
+	recorder := httptest.NewRecorder()
+	request, err := http.NewRequest("GET", "/bidder/params", nil)
+	assert.NoError(t, err, "Error creating request")
+
+	// Run
+	handler(recorder, request, nil)
+
+	// Assertions
+	assert.Equal(t, expectedFormattedResponse, recorder.Body.String())
 }

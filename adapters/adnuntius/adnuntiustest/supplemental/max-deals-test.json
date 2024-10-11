@@ -1,0 +1,168 @@
+{
+	"mockBidRequest": {
+		"id": "test-request-id",
+		"site": {
+			"page": "prebid.org"
+		},
+		"imp": [
+			{
+				"id": "test-imp-id",
+				"banner": {
+					"format": [
+						{
+							"w": 300,
+							"h": 250
+						},
+						{
+							"w": 300,
+							"h": 600
+						}
+					]
+				},
+				"ext": {
+					"bidder": {
+						"auId": "123",
+						"maxDeals": 2
+					}
+				}
+			}
+		]
+	},
+	
+	"httpCalls": [
+		{
+			"expectedRequest": {
+				"uri": "http://whatever.url?format=json&tzo=0",
+				"body": {
+					"adUnits": [
+						{
+							"auId": "123",
+							"targetId": "123-test-imp-id",
+							"dimensions": [[300,250],[300,600]],
+							"maxDeals": 2
+						}
+					],
+					"context": "prebid.org",
+					"metaData": {}
+				}
+			},
+			"mockResponse": {
+				"status": 200,
+				"body": {
+					"adUnits": [
+						{
+							"auId": "0000000000000123",
+							"targetId": "123-test-imp-id",
+							"html": "<ADCODE>",
+							"matchedAdCount": 1,
+							"responseId": "adn-rsp-815135818",
+							"deals": [
+								{
+									"destinationUrlEsc": "",
+									"clickUrl": "https://click.url",
+									"urls": {
+										"url": "https://delivery.adnuntius.com/c/eKOchNsBJzE.net"
+									},
+									"destinationUrls": {
+										"url": "http://www.google.com"
+									},
+									"cpm": {
+										"amount": 1.0,
+										"currency": "NOK"
+									},
+									"bid": {
+										"amount": 0.001,
+										"currency": "NOK"
+									},
+									"grossBid": {
+										"amount": 0.001,
+										"currency": "NOK"
+									},
+									"netBid": {
+										"amount": 0.001,
+										"currency": "NOK"
+									},
+									"cost": {
+										"amount": 0.001,
+										"currency": "NOK"
+									},
+									"dealId": "deal_123",
+									"adId": "adn-id-116330612",
+									"creativeWidth": "300",
+									"creativeHeight": "250",
+									"creativeId": "dl0knc1lnks9jgvx",
+									"lineItemId": "6l5w2d29kz3vkprq",
+									"layoutId": "adnuntius_image_layout_1",
+									"layoutName": "Image",
+									"layoutExternalReference": "",
+									"html": "<ADCODE>"
+								}
+							],
+							"ads": [
+								{
+									"destinationUrls": {
+										"url": "http://www.google.com"
+									},
+									"bid": {
+										"amount": 0.001,
+										"currency": "NOK"
+									},
+									"adId": "adn-id-1559784095",
+									"creativeWidth": "300",
+									"creativeHeight": "250",
+									"creativeId": "jn9hpzvlsf8cpdmm",
+									"lineItemId": "q7y9qm5b0xt9htrv"
+								}
+							]
+						}
+					],
+					"metaData": {
+						"usi": "5dlpmw0d00btldjdvk1lp8rl",
+						"sessionId": "e4ada7251c93291a871f8e4319cc8fe5"
+					},
+					"duplicateFilter": "AAAAAwAAAAAAJ33PAAAAAAAhrK4AAAAAACYNPAAAAAA=",
+					"segments": [],
+					"keywords": []
+				}
+			}
+		}
+	],
+	"expectedBidResponses": [
+		{
+			"bids": [
+				{
+					"bid": {
+						"id": "adn-id-1559784095",
+						"impid": "test-imp-id",
+						"price": 1,
+						"adm": "<ADCODE>",
+						"adid": "adn-id-1559784095",
+						"adomain": ["google.com"],
+						"cid": "q7y9qm5b0xt9htrv",
+						"crid": "jn9hpzvlsf8cpdmm",
+						"w": 300,
+						"h": 250
+					},
+					"type": "banner"
+				},
+        {
+					"bid": {
+						"id": "adn-id-116330612",
+						"impid": "test-imp-id",
+						"price": 1,
+						"adm": "<ADCODE>",
+						"adid": "adn-id-116330612",
+						"adomain": ["google.com"],
+						"cid": "6l5w2d29kz3vkprq",
+						"crid": "dl0knc1lnks9jgvx",
+						"dealid": "deal_123",
+						"w": 300,
+						"h": 250
+					},
+					"type": "banner"
+				}
+			],
+			"currency": "NOK"
+		}
+	]
+}

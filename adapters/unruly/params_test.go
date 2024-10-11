@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 func TestValidParams(t *testing.T) {
@@ -34,14 +34,17 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
-	`{"uuid": "123", "siteid": "abc"}`,
+	`{"siteid": 123}`,
+	`{"siteId": 123}`,
 }
 
 var invalidParams = []string{
-	`{}`,                               // Missing required uuid + siteId
-	`{"siteId": "123"}`,                // Missing required uuid
-	`{"uuid": "123"}`,                  // Missing required siteId
-	`{"uuid": 123, "siteid": "abc"}`,   // Wrong uuid data type
-	`{"uuid": "123", "siteid": 123}`,   // Wrong siteid data type
-	`{"UUID": "123", "SiteId": "abc"}`, // Invalid capitalization (json is case sensitive)
+	`{}`,                // Missing required siteId
+	`{"siteid": "123"}`, // Invalid siteid type
+	`{"siteId": "123"}`, // Invalid siteId type (string)
+	`{"uuid": "123"}`,   // Missing required siteId
+	`{"SiteId": "abc"}`, // Invalid capitalization (json is case sensitive)
+	`{"Siteid": 123}`,   // Invalid capitalization (json is case sensitive)
+	`{"siteid": []}`,    // Invalid siteid data type
+	`{"siteId": []}`,    // Invalid siteid data type
 }

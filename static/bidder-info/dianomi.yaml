@@ -1,0 +1,23 @@
+endpoint: "https://www-prebid.dianomi.com/cgi-bin/smartads_prebid.pl"
+disabled: true
+maintainer:
+  email: 'prebid-maintainer@dianomi.com'
+gvlVendorID: 885
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - native
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - native
+      - video
+userSync:
+  iframe:
+    url: 'https://www-prebid.dianomi.com/prebid/usersync/index.html?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}'
+    userMacro: '$UID'
+  redirect:
+    url: 'https://data.dianomi.com/frontend/usync?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}'
+    userMacro: '$UID'

@@ -1,3 +1,4 @@
+endpoint: "https://dmx-direct.districtm.io/b/v2"
 maintainer:
   email: "prebid@districtm.net"
 gvlVendorID: 144

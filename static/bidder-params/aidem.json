@@ -1,0 +1,29 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "AIDEM Adapter Params",
+    "description": "A schema which validates params accepted by the AIDEM adapter",
+    "type": "object",
+    "properties": {
+        "siteId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Unique site ID"
+        },
+        "publisherId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Unique publisher ID"
+        },
+        "placementId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Unique publisher ttag ID"
+        },
+        "rateLimit": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+        }
+    },
+    "required": ["siteId", "publisherId"]
+}

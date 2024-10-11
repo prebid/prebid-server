@@ -8,12 +8,12 @@ import (
 	"net/url"
 	"text/template"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/macros"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 const DefaultClient = "app"
@@ -37,7 +37,7 @@ type AdopplerAdapter struct {
 }
 
 // Builder builds a new instance of the Adoppler adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
@@ -65,7 +65,7 @@ func (ads *AdopplerAdapter) MakeRequests(
 	for _, imp := range req.Imp {
 		ext, err := unmarshalExt(imp.Ext)
 		if err != nil {
-			errs = append(errs, &errortypes.BadInput{err.Error()})
+			errs = append(errs, &errortypes.BadInput{Message: err.Error()})
 			continue
 		}
 
@@ -83,7 +83,7 @@ func (ads *AdopplerAdapter) MakeRequests(
 		if err != nil {
 			e := fmt.Sprintf("Unable to build bid URI: %s",
 				err.Error())
-			errs = append(errs, &errortypes.BadInput{e})
+			errs = append(errs, &errortypes.BadInput{Message: e})
 			continue
 		}
 		data := &adapters.RequestData{
@@ -110,11 +110,11 @@ func (ads *AdopplerAdapter) MakeBids(
 		return nil, nil
 	}
 	if resp.StatusCode == http.StatusBadRequest {
-		return nil, []error{&errortypes.BadInput{"bad request"}}
+		return nil, []error{&errortypes.BadInput{Message: "bad request"}}
 	}
 	if resp.StatusCode != http.StatusOK {
 		err := &errortypes.BadServerResponse{
-			fmt.Sprintf("unexpected status: %d", resp.StatusCode),
+			Message: fmt.Sprintf("unexpected status: %d", resp.StatusCode),
 		}
 		return nil, []error{err}
 	}
@@ -123,7 +123,7 @@ func (ads *AdopplerAdapter) MakeBids(
 	err := json.Unmarshal(resp.Body, &bidResp)
 	if err != nil {
 		err := &errortypes.BadServerResponse{
-			fmt.Sprintf("invalid body: %s", err.Error()),
+			Message: fmt.Sprintf("invalid body: %s", err.Error()),
 		}
 		return nil, []error{err}
 	}
@@ -132,7 +132,7 @@ func (ads *AdopplerAdapter) MakeBids(
 	for _, imp := range intReq.Imp {
 		if _, ok := impTypes[imp.ID]; ok {
 			return nil, []error{&errortypes.BadInput{
-				fmt.Sprintf("duplicate $.imp.id %s", imp.ID),
+				Message: fmt.Sprintf("duplicate $.imp.id %s", imp.ID),
 			}}
 		}
 		if imp.Banner != nil {
@@ -145,7 +145,7 @@ func (ads *AdopplerAdapter) MakeBids(
 			impTypes[imp.ID] = openrtb_ext.BidTypeNative
 		} else {
 			return nil, []error{&errortypes.BadInput{
-				"one of $.imp.banner, $.imp.video, $.imp.audio and $.imp.native field required",
+				Message: "one of $.imp.banner, $.imp.video, $.imp.audio and $.imp.native field required",
 			}}
 		}
 	}
@@ -156,7 +156,7 @@ func (ads *AdopplerAdapter) MakeBids(
 			tp, ok := impTypes[bid.ImpID]
 			if !ok {
 				err := &errortypes.BadServerResponse{
-					fmt.Sprintf("unknown impid: %s", bid.ImpID),
+					Message: fmt.Sprintf("unknown impid: %s", bid.ImpID),
 				}
 				return nil, []error{err}
 			}
@@ -165,11 +165,11 @@ func (ads *AdopplerAdapter) MakeBids(
 			if tp == openrtb_ext.BidTypeVideo {
 				adsExt, err := unmarshalAdsExt(bid.Ext)
 				if err != nil {
-					return nil, []error{&errortypes.BadServerResponse{err.Error()}}
+					return nil, []error{&errortypes.BadServerResponse{Message: err.Error()}}
 				}
 				if adsExt == nil || adsExt.Video == nil {
 					return nil, []error{&errortypes.BadServerResponse{
-						"$.seatbid.bid.ext.ads.video required",
+						Message: "$.seatbid.bid.ext.ads.video required",
 					}}
 				}
 				bidVideo = &openrtb_ext.ExtBidPrebidVideo{

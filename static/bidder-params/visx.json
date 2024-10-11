@@ -5,7 +5,8 @@
   "type": "object",
   "properties": {
     "uid": {
-      "type": "integer",
+      "type": ["integer", "string"],
+      "pattern": "^\\d+$",
       "description": "An ID which identifies this placement of the impression"
     },
     "size": {

@@ -1,0 +1,146 @@
+{
+  "description": "Amp request",
+  "query": "tag_id=101&trace=verbose",
+  "config": {
+    "mockBidders": [
+      {"bidderName": "appnexus", "currency": "USD", "price": 2}
+    ]
+  },
+  "mockBidRequest": {
+    "id": "my-req-id",
+    "site": {
+      "page": "test.somepage.com"
+    },
+    "imp": [
+      {
+        "id": "my-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "prebid": {
+            "bidder": {
+              "appnexus": {
+                "placementId": 12883451
+              }
+            }
+          }
+        }
+      }
+    ],
+    "ext": {
+      "prebid": {
+        "debug": true,
+        "aliases": {
+          "unknown": "appnexus"
+        }
+      }
+    }
+  },
+  "expectedAmpResponse": {
+    "targeting": {
+      "hb_bidder": "appnexus",
+      "hb_bidder_appnexus": "appnexus",
+      "hb_cache_host": "www.pbcserver.com",
+      "hb_cache_host_appnex": "www.pbcserver.com",
+      "hb_cache_id": "0",
+      "hb_cache_id_appnexus": "0",
+      "hb_cache_path": "/pbcache/endpoint",
+      "hb_cache_path_appnex": "/pbcache/endpoint",
+      "hb_pb": "2.00",
+      "hb_pb_appnexus": "2.00"
+    },
+    "ortb2": {
+      "ext": {
+        "prebid": {
+          "modules": {
+            "errors": {
+              "foobar": {
+                "foo": [
+                  "error 1"
+                ],
+                "bar": [
+                  "error 1"
+                ]
+              }
+            },
+            "warnings": {
+              "foobar": {
+                "bar": [
+                  "warning 1"
+                ],
+                "baz": [
+                  "Endpoint /openrtb2/amp is not supported by hook."
+                ]
+              }
+            },
+            "trace": {
+              "stages": [
+                {
+                  "stage": "entrypoint",
+                  "outcomes": [
+                    {
+                      "entity": "http-request",
+                      "groups": [
+                        {
+                          "invocation_results": [
+                            {
+                              "analytics_tags": {},
+                              "hook_id": {
+                                "module_code": "foobar",
+                                "hook_impl_code": "foo"
+                              },
+                              "status": "success",
+                              "action": "update",
+                              "message": "",
+                              "debug_messages": [
+                                "Hook mutation successfully applied, affected key: header.foo, mutation type: update"
+                              ]
+                            },
+                            {
+                              "analytics_tags": {},
+                              "hook_id": {
+                                "module_code": "foobar",
+                                "hook_impl_code": "bar"
+                              },
+                              "status": "success",
+                              "action": "update",
+                              "message": "",
+                              "debug_messages": [
+                                "Hook mutation successfully applied, affected key: param.foo, mutation type: update"
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "invocation_results": [
+                            {
+                              "analytics_tags": {},
+                              "hook_id": {
+                                "module_code": "foobar",
+                                "hook_impl_code": "baz"
+                              },
+                              "status": "success",
+                              "action": "no_action",
+                              "message": ""
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "expectedReturnCode": 200
+}

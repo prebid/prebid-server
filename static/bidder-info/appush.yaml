@@ -1,0 +1,16 @@
+endpoint: "http://hb.appush.com/pserver"
+maintainer:
+  email: "support@appush.com"
+gvlVendorID: 879
+capabilities:
+  site:
+    mediaTypes:
+    - banner
+    - video
+    - native
+    
+  app:
+    mediaTypes:
+    - banner
+    - video
+    - native

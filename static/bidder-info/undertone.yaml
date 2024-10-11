@@ -1,0 +1,19 @@
+endpoint: "https://ads.undertone.com/rtb"
+maintainer:
+  email: csop@undertone.com
+endpointCompression: gzip
+gvlVendorID: 677
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  iframe:
+    url: https://cdn.undertone.com/js/usersync.html?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
+    userMacro: "$UID"

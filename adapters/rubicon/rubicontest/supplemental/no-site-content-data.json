@@ -10,6 +10,10 @@
       "bundle": "com.wls.testwlsapplication"
     },
     "site": {
+      "pagecat": [
+        "val1",
+        "val2"
+      ],
       "content": {
       }
     },
@@ -113,6 +117,10 @@
             "ifa": "zxcjbzxmc-zxcbmz-zxbcz-zxczx"
           },
           "site": {
+            "pagecat": [
+              "val1",
+              "val2"
+            ],
             "content": {
             },
             "ext": {
@@ -202,6 +210,7 @@
             {
               "id": "test-imp-id",
               "instl": 1,
+              "secure": 1,
               "video": {
                 "placement": 3,
                 "ext": {
@@ -221,6 +230,12 @@
               },
               "ext": {
                 "rp": {
+                  "target": {
+                    "pagecat": [
+                      "val1",
+                      "val2"
+                    ]
+                  },
                   "track": {
                     "mint": "",
                     "mint_version": ""

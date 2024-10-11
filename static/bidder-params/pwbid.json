@@ -1,0 +1,21 @@
+{
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"title": "PubWise (pwbid) Adapter Params",
+	"description": "A schema which validates params accepted by the PubWise (pwbid) adapter",
+	"type": "object",
+	"properties": {
+		"siteId": {
+			"type": "string",
+			"description": "The site ID provided by the PubWise system"
+		},
+        "bidFloor": {
+            "type": "number",
+            "description": "Value to pass as the bidfloor for this bid"
+        },
+        "isTest": {
+            "type": "boolean",
+            "description": "A boolean to indicate 100% fill test placement request"
+        }
+	},
+	"required": ["siteId"]
+}

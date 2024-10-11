@@ -5,16 +5,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 
-	"github.com/prebid/prebid-server/adapters/adapterstest"
-)
-
-var (
-	bidRequest string
+	"github.com/prebid/prebid-server/v2/adapters/adapterstest"
 )
 
 func TestFetchParams(t *testing.T) {
@@ -58,7 +54,7 @@ func TestFetchParams(t *testing.T) {
 
 }
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{})
+	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -73,7 +69,7 @@ func TestMakeRequestsOtherPlacement(t *testing.T) {
 	var width, height int64 = int64(w), int64(h)
 
 	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
-		Endpoint: "https://dmx.districtm.io/b/v2"})
+		Endpoint: "https://dmx.districtm.io/b/v2"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -118,7 +114,7 @@ func TestMakeRequestsInvalid(t *testing.T) {
 	var width, height int64 = int64(w), int64(h)
 
 	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
-		Endpoint: "https://dmx.districtm.io/b/v2"})
+		Endpoint: "https://dmx.districtm.io/b/v2"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -162,7 +158,7 @@ func TestMakeRequestNoSite(t *testing.T) {
 	var width, height int64 = int64(w), int64(h)
 
 	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
-		Endpoint: "https://dmx.districtm.io/b/v2"})
+		Endpoint: "https://dmx.districtm.io/b/v2"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -210,7 +206,7 @@ func TestMakeRequestsApp(t *testing.T) {
 	var width, height int64 = int64(w), int64(h)
 
 	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
-		Endpoint: "https://dmx.districtm.io/b/v2"})
+		Endpoint: "https://dmx.districtm.io/b/v2"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -260,7 +256,7 @@ func TestMakeRequestsNoUser(t *testing.T) {
 	var width, height int64 = int64(w), int64(h)
 
 	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
-		Endpoint: "https://dmx.districtm.io/b/v2"})
+		Endpoint: "https://dmx.districtm.io/b/v2"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -301,7 +297,7 @@ func TestMakeRequests(t *testing.T) {
 	var width, height int64 = int64(w), int64(h)
 
 	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
-		Endpoint: "https://dmx.districtm.io/b/v2"})
+		Endpoint: "https://dmx.districtm.io/b/v2"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -371,7 +367,7 @@ func TestMakeBidVideo(t *testing.T) {
 	var width, height int64 = int64(w), int64(h)
 
 	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
-		Endpoint: "https://dmx.districtm.io/b/v2"})
+		Endpoint: "https://dmx.districtm.io/b/v2"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -381,8 +377,8 @@ func TestMakeBidVideo(t *testing.T) {
 		ID:  "imp1",
 		Ext: json.RawMessage("{\"bidder\":{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}}"),
 		Video: &openrtb2.Video{
-			W:     width,
-			H:     height,
+			W:     &width,
+			H:     &height,
 			MIMEs: []string{"video/mp4"},
 		}}
 
@@ -418,7 +414,7 @@ func TestMakeBidsNoContent(t *testing.T) {
 	var width, height int64 = int64(w), int64(h)
 
 	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
-		Endpoint: "https://dmx.districtm.io/b/v2"})
+		Endpoint: "https://dmx.districtm.io/b/v2"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -556,7 +552,7 @@ func TestUserExtEmptyObject(t *testing.T) {
 	var width, height int64 = int64(w), int64(h)
 
 	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
-		Endpoint: "https://dmx.districtm.io/b/v2"})
+		Endpoint: "https://dmx.districtm.io/b/v2"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -595,7 +591,7 @@ func TestUserEidsOnly(t *testing.T) {
 	var width, height int64 = int64(w), int64(h)
 
 	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
-		Endpoint: "https://dmx.districtm.io/b/v2"})
+		Endpoint: "https://dmx.districtm.io/b/v2"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -649,7 +645,7 @@ func TestUsersEids(t *testing.T) {
 	var width, height int64 = int64(w), int64(h)
 
 	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
-		Endpoint: "https://dmx.districtm.io/b/v2"})
+		Endpoint: "https://dmx.districtm.io/b/v2"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
