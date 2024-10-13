@@ -1,8 +1,8 @@
-endpoint: "https://51e5-72-219-74-189.ngrok-free.app"
+endpoint: "http://pbsv4-env.eba-qx2kfrgj.us-east-1.elasticbeanstalk.com/openrtb2/auction"
 
 maintainer:
   email: "info@roundhouseads.com"
-gvlVendorID: 42
+#gvlVendorID: 42 #need assigned ID
 capabilities:
   app:
     mediaTypes:
