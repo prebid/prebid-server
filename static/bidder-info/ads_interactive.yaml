@@ -1,4 +1,5 @@
 endpoint: "https://bntb.adsinteractive.com/"
+gvlVendorID: 1212
 maintainer:
   email: "it@adsinteractive.com"
 capabilities:
