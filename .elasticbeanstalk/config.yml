@@ -1,5 +1,0 @@
-global:
-  application_name: roundhouseads-prebid
-  default_region: us-east-1
-  profile: eb-cli  # Ensure that this is correctly configured
-  workspace_type: Application
