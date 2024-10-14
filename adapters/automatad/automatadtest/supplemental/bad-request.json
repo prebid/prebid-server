@@ -1,0 +1,70 @@
+{
+	"mockBidRequest": {
+		"id": "test-request-id",
+		"imp": [
+			{
+				"id": "test-banner-imp-id",
+				"banner": {
+					"format": [
+						{
+							"w": 200,
+							"h": 250
+						}
+					]
+				},
+				"ext": {
+					"bidder": {
+						"position": "123",
+						"placementId": "a34gh6d"
+					}
+				}
+			}
+		],
+		"site": {
+			"id": "123"
+		}
+	},
+	"httpCalls": [
+		{
+			"expectedRequest": {
+				"uri": "http://www.biddertest.com",
+				"body": {
+					"id": "test-request-id",
+					"imp": [
+						{
+							"id": "test-banner-imp-id",
+							"banner": {
+								"format": [
+									{
+										"h": 250,
+										"w": 200
+									}
+								]
+							},
+							"ext": {
+								"bidder": {
+									"position": "123",
+									"placementId": "a34gh6d"
+								}
+							}
+						}
+					],
+					"site": {
+						"id": "123"
+					}
+				},
+				"impIDs":["test-banner-imp-id"]
+			},
+			"mockResponse": {
+				"status": 400,
+				"body": "bad request"
+			}
+		}
+	],
+	"expectedMakeBidsErrors": [
+		{
+			"value": "Unexpected status code: 400. Malformed request syntax received.",
+			"comparison": "literal"
+		}
+	]
+}

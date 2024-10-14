@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "SmartyAds Adapter Params",
+  "description": "A schema which validates params accepted by the SmartyAds adapter",
+  "type": "object",
+  "properties": {
+    "host": {
+      "type": "string",
+      "description": "Network host to send request"
+    },
+    "sourceid": {
+      "type": "string",
+      "description": "Partner id"
+    },
+    "accountid": {
+      "type": "string",
+      "description": "Account id"
+    }
+  },
+  "required": ["host", "sourceid", "accountid"]
+}

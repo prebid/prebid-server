@@ -1,6 +1,6 @@
 {
-  "message": "Invalid request: request.ext.prebid.aliases.appnexus defines a no-op alias. Choose a different alias, or remove this entry.\n",
-  "requestPayload": {
+  "description": "Request with invalid alias in the root extension field",
+  "mockBidRequest": {
     "id": "some-request-id",
     "site": {
       "page": "test.somepage.com"
@@ -20,10 +20,12 @@
     ],
     "ext": {
       "prebid": {
-          "aliases": {
-            "appnexus": "appnexus"
-          }
+        "aliases": {
+          "appnexus": "appnexus"
+        }
       }
     }
-  }
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: request.ext.prebid.aliases.appnexus defines a no-op alias. Choose a different alias, or remove this entry.\n"
 }

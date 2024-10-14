@@ -1,0 +1,158 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "supplyId": "supply-test"
+          }
+        }
+      },
+      {
+        "id": "native-imp",
+        "native": {
+          "ver": "1.1",
+          "request": "{\"ver\":\"1.1\",\"context\":1,\"contextsubtype\":11,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":500}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1,\"hmin\":1}},{\"id\":3,\"required\":0,\"data\":{\"type\":1,\"len\":200}},{\"id\":4,\"required\":0,\"data\":{\"type\":2,\"len\":15000}},{\"id\":5,\"required\":0,\"data\":{\"type\":6,\"len\":40}},{\"id\":6,\"required\":0,\"data\":{\"type\":500}}]}"
+        },
+        "ext": {
+          "bidder": {
+            "supplyId": "supply-test"
+          }
+        }
+      },
+      {
+        "id": "test-imp-video-id",
+        "video": {
+          "mimes": ["video/mp4"],
+          "protocols": [2, 5],
+          "w": 1024,
+          "h": 576
+        },
+        "ext": {
+          "bidder": {
+            "supplyId": "supply-test"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://axonix.com/supply/prebid-server/supply-test",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  },
+                  {
+                    "w": 300,
+                    "h": 600
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "supplyId": "supply-test"
+                }
+              }
+            },
+            {
+              "id": "native-imp",
+              "native": {
+                "ver": "1.1",
+                "request": "{\"ver\":\"1.1\",\"context\":1,\"contextsubtype\":11,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":500}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1,\"hmin\":1}},{\"id\":3,\"required\":0,\"data\":{\"type\":1,\"len\":200}},{\"id\":4,\"required\":0,\"data\":{\"type\":2,\"len\":15000}},{\"id\":5,\"required\":0,\"data\":{\"type\":6,\"len\":40}},{\"id\":6,\"required\":0,\"data\":{\"type\":500}}]}"
+              },
+              "ext": {
+                "bidder": {
+                  "supplyId": "supply-test"
+                }
+              }
+            },
+            {
+              "id": "test-imp-video-id",
+              "video": {
+                "mimes": ["video/mp4"],
+                "protocols": [2, 5],
+                "w": 1024,
+                "h": 576
+              },
+              "ext": {
+                "bidder": {
+                  "supplyId": "supply-test"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs":["test-imp-id","native-imp","test-imp-video-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "958",
+              "bid": [{
+                "id": "7706636740145184841",
+                "impid": "test-imp-video-id",
+                "price": 0.500000,
+                "adid": "29681110",
+                "adm": "some-test-ad",
+                "adomain": ["axonix.com"],
+                "cid": "958",
+                "crid": "29681110",
+                "h": 576,
+                "w": 1024
+              }]
+            }
+          ],
+          "bidid": "5778926625248726496",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "bids": [{
+        "bid": {
+          "id": "7706636740145184841",
+          "impid": "test-imp-video-id",
+          "price": 0.5,
+          "adm": "some-test-ad",
+          "adid": "29681110",
+          "adomain": ["axonix.com"],
+          "cid": "958",
+          "crid": "29681110",
+          "w": 1024,
+          "h": 576
+        },
+        "type": "video"
+      }]
+    }
+  ]
+
+}

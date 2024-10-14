@@ -1,0 +1,171 @@
+{
+    "mockBidRequest": {
+      "id": "test-request-id",
+      "imp": [
+        {
+          "id": "banner-imp-id",
+          "banner": {
+            "format": [
+              {
+                "w": 300,
+                "h": 250
+              }
+            ]
+          },
+          "ext": {
+            "bidder": {
+              "placement": "12345"
+            }
+          }
+        },
+        {
+          "id": "video-imp-id",
+          "video": {
+            "w": 640,
+            "h": 480
+          },
+          "ext": {
+            "bidder": {
+              "placement": "54321"
+            }
+          }
+        },
+        {
+          "id": "native-imp-id",
+          "native": {
+            "title": "required"
+          },
+          "ext": {
+            "bidder": {
+              "placement": "123123"
+            }
+          }
+        }
+      ]
+    },
+    "httpCalls": [
+      {
+        "expectedRequest": {
+          "uri": "https://localhost/bid/4",
+          "body": {
+            "id": "test-request-id",
+            "cur": ["USD"],
+            "imp": [
+              {
+                "banner": {
+                  "format": [
+                    {
+                      "h": 250,
+                      "w": 300
+                    }
+                  ]
+                },
+                "ext": {
+                  "bidder": {
+                    "placement": "12345"
+                  }
+                },
+                "id": "banner-imp-id",
+                "tagid": "12345"
+              },
+              {
+                "ext": {
+                  "bidder": {
+                    "placement": "54321"
+                  }
+                },
+                "id": "video-imp-id",
+                "tagid": "54321",
+                "video": {
+                  "h": 480,
+                  "mimes": null,
+                  "w": 640
+                }
+              },
+              {
+                "ext": {
+                  "bidder": {
+                    "placement": "123123"
+                  }
+                },
+                "id": "native-imp-id",
+                "native": {
+                  "request": ""
+                },
+                "tagid": "123123"
+              }
+            ]
+          },
+          "impIDs":["banner-imp-id","video-imp-id","native-imp-id"]
+        },
+        "mockResponse": {
+          "status": 200,
+          "body": {
+            "id": "test-response-id",
+            "seatbid": [{
+              "seat": "1",
+              "bid": [{
+                  "id":    "12340",
+                  "impid": "banner-imp-id",
+                  "price": 300,
+                  "adm": "%3C%3Fxml%20version%3D%221.0%22%20encod%2Fhtml%3E",
+                  "nurl": "http://example.com/winnoticeurl0"
+                },
+                {
+                  "id":    "12341",
+                  "impid": "video-imp-id",
+                  "price": 301,
+                  "adm": "%3C%3Fxml%20version%3D%221.0%22%20encod%2FVAST%3E",
+                  "nurl": "http://example.com/winnoticeurl1"
+                },
+                {                  
+                  "id":    "12342",
+                  "impid": "native-imp-id",
+                  "price": 302,
+                  "adm": "{'json':'response','for':'native'}",
+                  "nurl": "http://example.com/winnoticeurl2"
+                }
+              ]
+            }]
+          }
+        }
+      }
+    ],
+    "expectedBidResponses": [
+      {
+        "currency": "USD",
+        "bids": [
+          {
+            "bid": {
+              "id":    "12340",
+              "impid": "banner-imp-id",
+              "price": 300,
+              "nurl":  "http://example.com/winnoticeurl0",
+              "adm":   "%3C%3Fxml%20version%3D%221.0%22%20encod%2Fhtml%3E"
+            },
+            "type": "banner"
+          },
+          {
+            "bid": {
+              "id":    "12341",
+              "impid": "video-imp-id",
+              "price": 301,
+              "nurl":  "http://example.com/winnoticeurl1",
+              "adm":   "%3C%3Fxml%20version%3D%221.0%22%20encod%2FVAST%3E"
+            },
+            "type": "video"
+          },
+          {
+            "bid": {
+              "id":    "12342",
+              "impid": "native-imp-id",
+              "price": 302,
+              "nurl":  "http://example.com/winnoticeurl2",
+              "adm":   "{'json':'response','for':'native'}"
+            },
+            "type": "native"
+          }
+        ]
+      }
+    ]
+  }

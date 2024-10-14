@@ -1,0 +1,108 @@
+{
+  "mockBidRequest": {
+    "site": {
+      "page": "https://www.inmobi.com"
+    },
+    "id": "req-id",
+    "device": {
+      "ip": "1.1.1.1",
+      "ua": "Mozilla/5.0 (Linux; Android 8.0.0; SM-G960F Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.84 Mobile Safari/537.36"
+    },
+    "imp": [
+      {
+        "ext": {
+          "bidder": {
+            "plc": "1617941157285"
+          }
+        },
+        "banner": {
+          "w": 320,
+          "h": 50
+        },
+        "id": "imp-id"
+      }
+    ]
+  },
+  "httpCalls": [{
+    "expectedRequest": {
+      "uri": "https://api.w.inmobi.com/showad/openrtb/bidder/prebid",
+      "body": {
+        "site": {
+          "page": "https://www.inmobi.com"
+        },
+        "id": "req-id",
+        "device": {
+          "ip": "1.1.1.1",
+          "ua": "Mozilla/5.0 (Linux; Android 8.0.0; SM-G960F Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.84 Mobile Safari/537.36"
+        },
+        "imp": [
+          {
+            "ext": {
+              "bidder": {
+                "plc": "1617941157285"
+              }
+            },
+            "banner": {
+              "w": 320,
+              "h": 50
+            },
+            "id": "imp-id"
+          }
+        ]
+      },
+      "impIDs":["imp-id"]
+    },
+    "mockResponse": {
+      "status": 200,
+      "body": {
+        "id": "req-id",
+        "seatbid": [
+          {
+            "bid": [
+              {
+                "ext": {
+                  "prebid": {
+                    "meta": {
+                      "networkName": "inmobi"
+                    }
+                  }
+                },
+                "nurl": "https://some.event.url/params",
+                "crid": "123456789",
+                "adomain": [],
+                "price": 2.0,
+                "id": "1234",
+                "adm": "bannerhtml",
+                "impid": "imp-id",
+                "mtype": 1
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }],
+
+  "expectedBidResponses": [{
+    "currency": "USD",
+    "bids": [{
+      "bid": {
+        "id": "1234",
+        "impid": "imp-id",
+        "price": 2.0,
+        "adm": "bannerhtml",
+        "crid": "123456789",
+        "nurl": "https://some.event.url/params",
+        "mtype": 1,
+        "ext": {
+          "prebid": {
+            "meta": {
+              "networkName": "inmobi"
+            }
+          }
+        }
+      },
+      "type": "banner"
+    }]
+  }]
+}

@@ -1,0 +1,142 @@
+{
+  "mockBidRequest": {
+    "id": "111",
+    "tmax": 150,
+    "at": 1,
+    "device": {
+      "dnt": 0,
+      "devicetype": 2,
+      "ip": "71.106.52.124",
+      "ua": "Mozilla/5.0 (X11; Linux x86_64; Ubuntu 14.04.2 LTS) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.0 Maxthon/1.0.5.3 Safari/537.36"
+    },
+    "user": {
+      "id": "user-id"
+    },
+    "site": {
+      "id": "native",
+      "domain": "test.com",
+      "cat": ["IAB1"],
+      "page": "https://test.com",
+      "publisher": {
+        "id": "1"
+      }
+    },
+    "cur": [
+      "USD"
+    ],
+    "imp": [{
+      "id": "1",
+      "bidfloor": 0.01,
+      "bidfloorcur": "USD",
+      "instl": 0,
+      "secure": 1,
+      "native": {
+        "request": "{\"ver\":\"1.1\",\"layout\":1,\"adunit\":2,\"plcmtcnt\":6,\"plcmttype\":4,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":15}},{\"id\":2,\"required\":1,\"img\":{\"wmin\":300,\"hmin\":300,\"type\":3}}, {\"id\":6,\"required\":0,\"data\":{\"type\":1,\"len\":20}}]}",
+        "ver": "1.1"
+      },
+      "ext": {
+        "bidder": {
+          "placementId": "tnative"
+        }
+      }
+    }]
+  },
+
+  "httpCalls": [{
+    "expectedRequest": {
+      "uri": "http://endpoint.bidmyadz.com/c0f68227d14ed938c6c49f3967cbe9bc",
+      "body": {
+        "id": "111",
+        "tmax": 150,
+        "at": 1,
+        "device": {
+          "dnt": 0,
+          "devicetype": 2,
+          "ip": "71.106.52.124",
+          "ua": "Mozilla/5.0 (X11; Linux x86_64; Ubuntu 14.04.2 LTS) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.0 Maxthon/1.0.5.3 Safari/537.36"
+        },
+        "user": {
+          "id": "user-id"
+        },
+        "site": {
+          "id": "native",
+          "domain": "test.com",
+          "cat": ["IAB1"],
+          "page": "https://test.com",
+          "publisher": {
+            "id": "1"
+          }
+        },
+        "cur": [
+          "USD"
+        ],
+        "imp": [{
+          "id": "1",
+          "bidfloor": 0.01,
+          "bidfloorcur": "USD",
+          "secure": 1,
+          "native": {
+            "request": "{\"ver\":\"1.1\",\"layout\":1,\"adunit\":2,\"plcmtcnt\":6,\"plcmttype\":4,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":15}},{\"id\":2,\"required\":1,\"img\":{\"wmin\":300,\"hmin\":300,\"type\":3}}, {\"id\":6,\"required\":0,\"data\":{\"type\":1,\"len\":20}}]}",
+            "ver": "1.1"
+          },
+          "ext": {
+            "bidder": {
+              "placementId": "tnative"
+            }
+          }
+        }]
+      },
+      "impIDs":["1"]
+    },
+    "mockResponse": {
+      "status": 200,
+      "body": {
+        "id": "a1580f2f-be6d-11eb-a150-d094662c1c35",
+        "bidid": "359da97d0384d8a14767029c18fd840d",
+        "seatbid": [{
+          "bid": [{
+            "id": "1",
+            "impid": "1",
+            "price": 0.1,
+            "nurl": "http://test.com/nurl",
+            "burl": "http://test.com/burl",
+            "adm": "{native-ads}",
+            "adomain": ["test.com"],
+            "cat": ["IAB1"],
+            "cid": "1",
+            "crid": "2",
+            "w": 0,
+            "h": 0,
+            "ext": {
+              "mediaType": "native"
+            }
+          }],
+          "seat": "1"
+        }],
+        "cur": "USD"
+      }
+    }
+  }],
+
+  "expectedBidResponses": [{
+    "currency": "USD",
+    "bids": [{
+      "bid": {
+        "id": "1",
+        "impid": "1",
+        "price": 0.1,
+        "nurl": "http://test.com/nurl",
+        "burl": "http://test.com/burl",
+        "adm": "{native-ads}",
+        "adomain": ["test.com"],
+        "cat": ["IAB1"],
+        "cid": "1",
+        "crid": "2",
+        "ext": {
+          "mediaType": "native"
+        }
+      },
+      "type": "native"
+    }]
+  }]
+}

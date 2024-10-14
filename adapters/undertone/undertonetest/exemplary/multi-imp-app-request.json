@@ -1,0 +1,226 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-banner-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 300
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": 1234,
+            "placementId": 12345
+          }
+        }
+      },
+      {
+        "id": "test-imp-video-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "minduration": 1,
+          "maxduration": 2,
+          "protocols": [
+            1,
+            2,
+            5
+          ],
+          "w": 1020,
+          "h": 780,
+          "startdelay": 1,
+          "placement": 1,
+          "playbackmethod": [
+            2
+          ],
+          "api": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": 1234,
+            "placementId": 123456
+          },
+          "gpid": "gpid-value"
+        }
+      }
+    ],
+    "app": {
+      "domain": "www.example.com",
+      "storeurl": "http://www.example.com",
+      "publisher": {
+        "domain": "example.com"
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://undertone-test/bid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-banner-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  },
+                  {
+                    "w": 300,
+                    "h": 300
+                  }
+                ]
+              },
+              "tagid": "12345"
+            },
+            {
+              "id": "test-imp-video-id",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "minduration": 1,
+                "maxduration": 2,
+                "protocols": [
+                  1,
+                  2,
+                  5
+                ],
+                "w": 1020,
+                "h": 780,
+                "startdelay": 1,
+                "placement": 1,
+                "playbackmethod": [
+                  2
+                ],
+                "api": [
+                  1,
+                  2,
+                  3,
+                  4
+                ]
+              },
+              "tagid": "123456",
+              "ext": {
+                "gpid": "gpid-value"
+              }
+            }
+          ],
+          "app": {
+            "domain": "www.example.com",
+            "storeurl": "http://www.example.com",
+            "publisher": {
+              "id": "1234",
+              "domain": "example.com"
+            }
+          },
+          "ext": {
+            "id": 4,
+            "version": "1.0.0"
+          }
+        },
+        "impIDs":["test-imp-banner-id","test-imp-video-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "958",
+              "bid": [
+                {
+                  "id": "7706636740145184841",
+                  "impid": "test-imp-video-id",
+                  "price": 0.500000,
+                  "adid": "29681110",
+                  "adm": "some-test-ad-video",
+                  "adomain": [
+                    "undertone.com"
+                  ],
+                  "cid": "958",
+                  "crid": "29681110",
+                  "h": 576,
+                  "w": 1024
+                },
+                {
+                  "id": "8706636740145184841",
+                  "impid": "test-imp-banner-id",
+                  "price": 0.400000,
+                  "adid": "39681110",
+                  "adm": "some-test-ad-banner",
+                  "adomain": [
+                    "undertone.com"
+                  ],
+                  "cid": "958",
+                  "crid": "29681110",
+                  "h": 576,
+                  "w": 1024
+                }
+              ]
+            }
+          ],
+          "bidid": "5778926625248726496",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "7706636740145184841",
+            "impid": "test-imp-video-id",
+            "price": 0.5,
+            "adm": "some-test-ad-video",
+            "adid": "29681110",
+            "adomain": [
+              "undertone.com"
+            ],
+            "cid": "958",
+            "crid": "29681110",
+            "w": 1024,
+            "h": 576
+          },
+          "type": "video"
+        },
+        {
+          "bid": {
+            "id": "8706636740145184841",
+            "impid": "test-imp-banner-id",
+            "price": 0.4,
+            "adm": "some-test-ad-banner",
+            "adid": "39681110",
+            "adomain": [
+              "undertone.com"
+            ],
+            "cid": "958",
+            "crid": "29681110",
+            "w": 1024,
+            "h": 576
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

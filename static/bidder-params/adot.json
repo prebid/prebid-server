@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "The Adot Adapter Params",
+  "description": "A schema which validates params accepted by Adot adapter",
+  "type": "object",
+  "properties": {
+    "placementId": {
+      "type": "string",
+      "description": "An ID which identifies this placement of the impression"
+    },
+    "parallax": {
+      "type": "boolean",
+      "description": "It determines if the wanted advertising format is a parallax."
+    },
+    "publisherPath": {
+      "type": "string",
+      "description": "An optional path used in the bid endpoint"
+    }
+  },
+  "required": []
+}

@@ -1,0 +1,113 @@
+{
+    "mockBidRequest": {
+      "id": "test-request-id",
+      "imp": [
+        {
+          "id": "test-imp-instream-1",
+          "video": {
+            "w": 640,
+            "h": 480,
+            "placement": 1
+          },
+          "ext": {
+            "bidder": {
+              "ci": "12345",
+              "adunit_code": "test_adunitcode_instream_1"
+            }
+          }
+        },
+        {
+          "id": "test-imp-instream-2",
+          "video": {
+            "w": 640,
+            "h": 480,
+            "placement": 1
+          },
+          "ext": {
+            "bidder": {
+              "ci": "12345",
+              "adunit_code": "test_adunitcode_instream_2"
+            }
+          }
+        }
+      ]
+    },
+  
+    "httpCalls": [
+      {
+        "expectedRequest": {
+          "uri": "http://rtb.e-planning.net/pbs/1/12345/1/FILE/ROS?e=video_640x480_0%3A640x480%3B1%2Bvideo_640x480_1%3A640x480%3B1&ncb=1&ur=FILE&vctx=1&vv=3",
+          "body": {},
+          "impIDs":["test-imp-instream-1","test-imp-instream-2"]
+        },
+        "mockResponse": {
+          "status": 200,
+          "body": {
+            "sI": { "k": "12345" },
+            "sec": "ROS",
+            "sp": [
+              {
+                "k": "video_640x480_0",
+                "a": [{
+                  "i": "123456789abcdefg",
+                  "pr": "0.5",
+                  "adm": "<VAST>test</VAST>",
+                  "crid": "abcdef1234567810",
+                  "id": "adid12345",
+                  "w": 640,
+                  "h": 480
+                }]
+              },
+              {
+                "k": "video_640x480_1",
+                "a": [{
+                  "i": "023456789abcdef",
+                  "pr": "0.5",
+                  "adm": "<VAST>test2</VAST>",
+                  "crid": "abcdef123456789",
+                  "id": "adid789",
+                  "w": 640,
+                  "h": 480
+                }]
+              }
+            ]
+          }
+        }
+      }
+    ],
+  
+    "expectedBidResponses": [
+      {
+        "currency": "USD",
+        "bids": [
+          {
+            "bid": {
+              "id": "123456789abcdefg",
+              "impid": "test-imp-instream-1",
+              "price": 0.5,
+              "adm": "<VAST>test</VAST>",
+              "adid": "adid12345",
+              "crid": "abcdef1234567810",
+              "w": 640,
+              "h": 480
+            },
+            "type": "video"
+          },
+          {
+            "bid": {
+              "id": "023456789abcdef",
+              "impid": "test-imp-instream-2",
+              "price": 0.5,
+              "adm": "<VAST>test2</VAST>",
+              "adid": "adid789",
+              "crid": "abcdef123456789",
+              "w": 640,
+              "h": 480
+            },
+            "type": "video"
+          }
+        ]
+      }
+    ]
+  }
+  

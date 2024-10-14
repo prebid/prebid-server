@@ -2,35 +2,99 @@ package openrtb_ext
 
 import (
 	"encoding/json"
+
+	"github.com/prebid/openrtb/v20/openrtb2"
 )
 
-// ExtImp defines the contract for bidrequest.imp[i].ext
-type ExtImp struct {
-	Prebid     *ExtImpPrebid     `json:"prebid"`
-	Appnexus   *ExtImpAppnexus   `json:"appnexus"`
-	Consumable *ExtImpConsumable `json:"consumable"`
-	Rubicon    *ExtImpRubicon    `json:"rubicon"`
-	Adform     *ExtImpAdform     `json:"adform"`
-	Rhythmone  *ExtImpRhythmone  `json:"rhythmone"`
-	Unruly     *ExtImpUnruly     `json:"unruly"`
-	EmxDigital *ExtImpEmxDigital `json:"emx_digital"`
-}
+// AuctionEnvironmentType is a Google Privacy Sandbox flag indicating where the auction may take place
+type AuctionEnvironmentType int8
+
+const (
+	// 0 Standard server-side auction
+	ServerSideAuction AuctionEnvironmentType = 0
+	// 1 On-device interest group auction (FLEDGE)
+	OnDeviceIGAuctionFledge AuctionEnvironmentType = 1
+	// 2 Server-side with interest group simulation
+	ServerSideWithIGSimulation AuctionEnvironmentType = 2
+)
+
+// IsRewardedInventoryKey is the json key for ExtImpPrebid.IsRewardedInventory
+const IsRewardedInventoryKey = "is_rewarded_inventory"
+
+// OptionsKey is the json key for ExtImpPrebid.Options
+const OptionsKey = "options"
 
 // ExtImpPrebid defines the contract for bidrequest.imp[i].ext.prebid
 type ExtImpPrebid struct {
-	StoredRequest *ExtStoredRequest `json:"storedrequest"`
+	// StoredRequest specifies which stored impression to use, if any.
+	StoredRequest *ExtStoredRequest `json:"storedrequest,omitempty"`
 
-	// Rewarded inventory signal, can be 0 or 1
-	IsRewardedInventory int8 `json:"is_rewarded_inventory"`
+	// StoredResponse specifies which stored impression to use, if any.
+	StoredAuctionResponse *ExtStoredAuctionResponse `json:"storedauctionresponse,omitempty"`
 
-	// NOTE: This is not part of the official API, we are not expecting clients
-	// migrate from imp[...].ext.${BIDDER} to imp[...].ext.prebid.bidder.${BIDDER}
-	// at this time
-	// https://github.com/prebid/prebid-server/pull/846#issuecomment-476352224
-	Bidder map[string]json.RawMessage `json:"bidder"`
+	// Stored bid response determines if imp has stored bid response for bidder
+	StoredBidResponse []ExtStoredBidResponse `json:"storedbidresponse,omitempty"`
+
+	// IsRewardedInventory is a signal intended for video impressions. Must be 0 or 1.
+	IsRewardedInventory *int8 `json:"is_rewarded_inventory,omitempty"`
+
+	// Bidder is the preferred approach for providing parameters to be interpreted by the bidder's adapter.
+	Bidder map[string]json.RawMessage `json:"bidder,omitempty"`
+
+	Options *Options `json:"options,omitempty"`
+
+	Passthrough json.RawMessage `json:"passthrough,omitempty"`
+
+	Floors *ExtImpPrebidFloors `json:"floors,omitempty"`
+
+	// Imp specifies any imp bidder-specific first party data
+	Imp map[string]json.RawMessage `json:"imp,omitempty"`
+}
+
+type ExtImpDataAdServer struct {
+	Name   string `json:"name"`
+	AdSlot string `json:"adslot"`
+}
+
+type ExtImpData struct {
+	PbAdslot string              `json:"pbadslot,omitempty"`
+	AdServer *ExtImpDataAdServer `json:"adserver,omitempty"`
+}
+
+type ExtImpPrebidFloors struct {
+	FloorRule      string  `json:"floorrule,omitempty"`
+	FloorRuleValue float64 `json:"floorrulevalue,omitempty"`
+	FloorValue     float64 `json:"floorvalue,omitempty"`
+	FloorMin       float64 `json:"floormin,omitempty"`
+	FloorMinCur    string  `json:"floorminCur,omitempty"`
 }
 
 // ExtStoredRequest defines the contract for bidrequest.imp[i].ext.prebid.storedrequest
 type ExtStoredRequest struct {
 	ID string `json:"id"`
+}
+
+// ExtStoredAuctionResponse defines the contract for bidrequest.imp[i].ext.prebid.storedauctionresponse
+type ExtStoredAuctionResponse struct {
+	ID string `json:"id"`
+}
+
+// ExtStoredBidResponse defines the contract for bidrequest.imp[i].ext.prebid.storedbidresponse
+type ExtStoredBidResponse struct {
+	ID           string `json:"id"`
+	Bidder       string `json:"bidder"`
+	ReplaceImpId *bool  `json:"replaceimpid"`
+}
+
+type Options struct {
+	EchoVideoAttrs bool `json:"echovideoattrs"`
+}
+
+// GetImpIDs returns slice of all impression Ids from impList
+func GetImpIDs(imps []openrtb2.Imp) []string {
+	impIDs := make([]string, len(imps))
+	for i := range imps {
+		impIDs[i] = imps[i].ID
+	}
+	return impIDs
 }

@@ -34,8 +34,6 @@
             "appnexus": {
               "is_amp": 1,
               "hb_source": 5
-            },
-            "prebid": {
             }
           },
           "id": "test-request-id",
@@ -63,7 +61,8 @@
               }
             }
           ]
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,

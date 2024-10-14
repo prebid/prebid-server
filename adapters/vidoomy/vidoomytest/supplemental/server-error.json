@@ -1,0 +1,71 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [{"w": 728, "h": 90}]
+        },
+        "ext": {
+          "bidder": {
+            "zoneId": "zone-id-123"
+          }
+        }
+      }
+    ],
+    "device": {
+      "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36",
+      "ip": "127.0.0.1"
+    },
+    "site": {
+      "id": "site-id"
+    }
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "",
+        "body": {
+          "device": {
+            "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36",
+            "ip": "127.0.0.1"
+          },
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [{"w": 728, "h": 90}],
+                "w": 728,
+                "h": 90
+              },
+              "ext": {
+                "bidder": {
+                  "zoneId": "zone-id-123"
+                }
+              }
+            }
+          ],
+          "site": {
+            "id": "site-id"
+          }
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 500,
+        "body": {
+        }
+      }
+    }
+  ],
+
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 500.",
+      "comparison": "literal"
+    }
+  ]
+}

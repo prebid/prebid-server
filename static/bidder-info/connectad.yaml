@@ -1,0 +1,29 @@
+# Please uncomment the appropriate endpoint URL for your datacenter
+# Europe
+endpoint: "http://bidder.connectad.io/API?src=pbs"
+# North/South America
+# endpoint: "http://bidder-us.connectad.io/API?src=pbs"
+# APAC
+# endpoint: "http://bidder-apac.connectad.io/API?src=pbs"
+geoscope:
+  - global
+maintainer:
+  email: "support@connectad.io"
+endpointCompression: gzip
+gvlVendorID: 138
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner
+userSync:
+  redirect:
+    url: "https://sync.connectad.io/ImageSyncer?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&cb={{.RedirectURL}}"
+    userMacro: ""
+    # connectad appends the user id to end of the redirect url and does not utilize a macro
+  iframe:
+    url: "https://sync.connectad.io/iFrameSyncer?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&cb={{.RedirectURL}}"
+    userMacro: ""
+    # connectad appends the user id to end of the redirect url and does not utilize a macro

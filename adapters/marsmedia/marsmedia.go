@@ -6,17 +6,18 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type MarsmediaAdapter struct {
 	URI string
 }
 
-func (a *MarsmediaAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *MarsmediaAdapter) MakeRequests(requestIn *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
 	request := *requestIn
 
@@ -36,13 +37,13 @@ func (a *MarsmediaAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *
 	var marsmediaExt openrtb_ext.ExtImpMarsmedia
 	if err := json.Unmarshal(bidderExt.Bidder, &marsmediaExt); err != nil {
 		return nil, []error{&errortypes.BadInput{
-			Message: "ext.bidder.zone not provided",
+			Message: "ext.bidder.zoneId not provided",
 		}}
 	}
 
 	if marsmediaExt.ZoneID == "" {
 		return nil, []error{&errortypes.BadInput{
-			Message: "Zone is empty",
+			Message: "zoneId is empty",
 		}}
 	}
 
@@ -82,7 +83,7 @@ func (a *MarsmediaAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *
 		}}
 	}
 
-	uri := a.URI + "&zone=" + marsmediaExt.ZoneID
+	uri := a.URI + "&zone=" + marsmediaExt.ZoneID.String()
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
@@ -102,10 +103,11 @@ func (a *MarsmediaAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *
 		Uri:     uri,
 		Body:    reqJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, []error{}
 }
 
-func (a *MarsmediaAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *MarsmediaAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
@@ -123,7 +125,7 @@ func (a *MarsmediaAdapter) MakeBids(internalRequest *openrtb.BidRequest, externa
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Bad server response: %d. ", err),
@@ -149,7 +151,7 @@ func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue str
 }
 
 // getMediaTypeForImp figures out which media type this bid is for.
-func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
+func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 	mediaType := openrtb_ext.BidTypeBanner //default type
 	for _, imp := range imps {
 		if imp.ID == impId {
@@ -162,8 +164,10 @@ func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
 	return mediaType
 }
 
-func NewMarsmediaBidder(endpoint string) *MarsmediaAdapter {
-	return &MarsmediaAdapter{
-		URI: endpoint,
+// Builder builds a new instance of the Marsmedia adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	bidder := &MarsmediaAdapter{
+		URI: config.Endpoint,
 	}
+	return bidder, nil
 }

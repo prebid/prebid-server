@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
+
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type MgidAdapter struct {
@@ -24,7 +26,7 @@ type RespBidExt struct {
 	CreativeType openrtb_ext.BidType `json:"crtype"`
 }
 
-func (a *MgidAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) (adapterRequests []*adapters.RequestData, errs []error) {
+func (a *MgidAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) (adapterRequests []*adapters.RequestData, errs []error) {
 
 	adapterReq, errs := a.makeRequest(request)
 	if adapterReq != nil && len(errs) == 0 {
@@ -34,7 +36,7 @@ func (a *MgidAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapter
 	return
 }
 
-func (a *MgidAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
+func (a *MgidAdapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, []error) {
 	var errs []error
 
 	path, err := preprocess(request)
@@ -59,11 +61,12 @@ func (a *MgidAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.Reques
 		Uri:     a.endpoint + path,
 		Body:    reqJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}, errs
 }
 
 // Mutate the request to get it ready to send to yieldmo.
-func preprocess(request *openrtb.BidRequest) (path string, err error) {
+func preprocess(request *openrtb2.BidRequest) (path string, err error) {
 	if request.TMax == 0 {
 		request.TMax = 200
 	}
@@ -121,7 +124,7 @@ func preprocess(request *openrtb.BidRequest) (path string, err error) {
 	return
 }
 
-func (a *MgidAdapter) MakeBids(bidReq *openrtb.BidRequest, unused *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *MgidAdapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -138,7 +141,7 @@ func (a *MgidAdapter) MakeBids(bidReq *openrtb.BidRequest, unused *adapters.Requ
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
@@ -166,8 +169,10 @@ func (a *MgidAdapter) MakeBids(bidReq *openrtb.BidRequest, unused *adapters.Requ
 	return bidResponse, nil
 }
 
-func NewMgidBidder(endpoint string) *MgidAdapter {
-	return &MgidAdapter{
-		endpoint: endpoint,
+// Builder builds a new instance of the Mgid adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	bidder := &MgidAdapter{
+		endpoint: config.Endpoint,
 	}
+	return bidder, nil
 }

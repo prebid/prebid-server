@@ -1,0 +1,204 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "tmax": 500,
+        "at": 1,
+        "cur": [
+            "EUR"
+        ],
+        "regs": {
+            "ext": {
+                "gdpr": 1
+            }
+        },
+        "user": {
+            "ext": {
+                "consent": "CO-X2XiO_eyUoAsAxBFRBECsAP_AAH_AAAqIGMgB7CpERSNAYWApAOMAKYhfQAACAGAABAYIASgBQQBAMJQEkGAIMAjAAAAKAAAEACQAAAAgCAGAAAAAAAAAAQCMAAAAABAAACAAAAASAAAACAAACACSCAAQjAAAAAEAgAAAAAIF5wJwAFgAPAAqABcADIAHAAQAAqABiADQAHkARABFACeAFKALgAugBiADaAG8AOYAfwBCAClAGqANcAdQA_QCBgEIAIsARwAq4BgADZAHyAP-Aj0BUwC6gF5gCAoAYBEAC4AKpCQAwCIAFwAVSIgAgABFQAQAAg"
+            }
+        },
+        "app": {
+            "id": "9561622",
+            "bundle": "com.madvertise.bluestack",
+            "name": "FR_BlueStack_App_Android_MNG",
+            "storeurl": "https://play.google.com/store/apps/details?id=com.madvertise.bluestack"
+        },
+        "device": {
+            "ip": "123.123.123.123",
+            "ua": "test-user-agent",
+            "dnt": 0,
+            "lmt": 0,
+            "ifa": "b879a967-cccc-bbbb-aaaa-1aa111111111",
+            "make": "Sony",
+            "model": "G8441",
+            "os": "Android",
+            "osv": "9.0",
+            "devicetype": 4,
+            "connectiontype": 6,
+            "js": 1,
+            "carrier": "Free",
+            "geo": {
+                "type": 2,
+                "country": "FRA"
+            }
+        },
+        "imp": [
+            {
+                "id": "test-imp-id",
+                "secure": 1,
+                "bidfloor": 3,
+                "bidfloorcur": "EUR",
+                "instl": 0,
+                "banner": {
+                    "h": 50,
+                    "w": 320,
+                    "pos": 1
+                },
+                "ext": {
+                    "bidder": {
+                        "zoneId": "/1111111/banner"
+                    }
+                }
+            }
+        ]
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "https://mobile.mng-ads.com/bidrequest/1111111/banner",
+                "headers": {
+                    "Content-Type": [
+                        "application/json;charset=utf-8"
+                    ],
+                    "Accept": [
+                        "application/json"
+                    ],
+                    "X-Openrtb-Version": [
+                        "2.5"
+                    ],
+                    "User-Agent": [
+                        "test-user-agent"
+                    ],
+                    "X-Forwarded-For": [
+                        "123.123.123.123"
+                    ]
+                },
+                "body": {
+                    "id": "test-request-id",
+                    "tmax": 500,
+                    "at": 1,
+                    "cur": [
+                        "EUR"
+                    ],
+                    "regs": {
+                        "ext": {
+                            "gdpr": 1
+                        }
+                    },
+                    "user": {
+                        "ext": {
+                            "consent": "CO-X2XiO_eyUoAsAxBFRBECsAP_AAH_AAAqIGMgB7CpERSNAYWApAOMAKYhfQAACAGAABAYIASgBQQBAMJQEkGAIMAjAAAAKAAAEACQAAAAgCAGAAAAAAAAAAQCMAAAAABAAACAAAAASAAAACAAACACSCAAQjAAAAAEAgAAAAAIF5wJwAFgAPAAqABcADIAHAAQAAqABiADQAHkARABFACeAFKALgAugBiADaAG8AOYAfwBCAClAGqANcAdQA_QCBgEIAIsARwAq4BgADZAHyAP-Aj0BUwC6gF5gCAoAYBEAC4AKpCQAwCIAFwAVSIgAgABFQAQAAg"
+                        }
+                    },
+                    "app": {
+                        "id": "9561622",
+                        "bundle": "com.madvertise.bluestack",
+                        "name": "FR_BlueStack_App_Android_MNG",
+                        "storeurl": "https://play.google.com/store/apps/details?id=com.madvertise.bluestack"
+                    },
+                    "device": {
+                        "ip": "123.123.123.123",
+                        "ua": "test-user-agent",
+                        "dnt": 0,
+                        "lmt": 0,
+                        "ifa": "b879a967-cccc-bbbb-aaaa-1aa111111111",
+                        "make": "Sony",
+                        "model": "G8441",
+                        "os": "Android",
+                        "osv": "9.0",
+                        "devicetype": 4,
+                        "connectiontype": 6,
+                        "js": 1,
+                        "carrier": "Free",
+                        "geo": {
+                            "type": 2,
+                            "country": "FRA"
+                        }
+                    },
+                    "imp": [
+                        {
+                            "id": "test-imp-id",
+                            "secure": 1,
+                            "bidfloor": 3,
+                            "bidfloorcur": "EUR",
+                            "banner": {
+                                "h": 50,
+                                "w": 320,
+                                "pos": 1
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "zoneId": "/1111111/banner"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "impIDs":["test-imp-id"]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "test-request-id",
+                    "seatbid": [
+                        {
+                            "bid": [
+                                {
+                                    "id": "test_bid_id",
+                                    "impid": "test-imp-id",
+                                    "price": 0.27543,
+                                    "adm": "some-test-ad",
+                                    "cid": "test_cid",
+                                    "crid": "test_crid",
+                                    "dealid": "test_dealid",
+                                    "burl": "https://burl.com",
+                                    "adomain": [
+                                        "madvertise.com"
+                                    ],
+                                    "w": 320,
+                                    "h": 50
+                                }
+                            ],
+                            "seat": "adman"
+                        }
+                    ],
+                    "cur": "EUR"
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "currency": "EUR",
+            "bids": [
+                {
+                    "bid": {
+                        "id": "test_bid_id",
+                        "impid": "test-imp-id",
+                        "price": 0.27543,
+                        "adm": "some-test-ad",
+                        "cid": "test_cid",
+                        "crid": "test_crid",
+                        "dealid": "test_dealid",
+                        "burl": "https://burl.com",
+                        "adomain": [
+                            "madvertise.com"
+                        ],
+                        "w": 320,
+                        "h": 50
+                    },
+                    "type": "banner"
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,53 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-banner-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "host": "banner.ortb.net",
+            "publisherId": 123456
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://test.ortb.net/openrtb/123456?host=banner.ortb.net",
+        "body": {
+          "id": "test-request-id-test-banner-id",
+          "imp": [
+            {
+              "id": "test-banner-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "impIDs":["test-banner-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {}
+      }
+    }
+  ],
+  "expectedBidResponses": [{"currency":"USD","bids":[]}]
+}

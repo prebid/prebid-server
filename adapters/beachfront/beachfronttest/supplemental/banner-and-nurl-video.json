@@ -1,0 +1,198 @@
+{
+  "mockBidRequest": {
+    "id": "banner-and-video",
+    "imp": [
+      {
+        "id": "mix1",
+        "ext": {
+          "bidder": {
+            "videoResponseType": "nurl",
+            "appIds": {
+              "banner": "bannerAppId1",
+              "video": "videoAppId1"
+            }
+          }
+        },
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "context": "instream",
+          "w": 300,
+          "h": 250
+        }
+      }
+    ],
+    "site": {
+      "page": "https://some.domain.us/some/page.html"
+    }
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://qa.beachrtb.com/prebid_display",
+        "body": {
+          "slots": [
+            {
+              "slot": "mix1",
+              "id": "bannerAppId1",
+              "bidfloor": 0,
+              "sizes": [
+                {
+                  "w": 300,
+                  "h": 250
+                }
+              ]
+            }
+          ],
+          "domain": "some.domain.us",
+          "page": "https://some.domain.us/some/page.html",
+          "real204": true,
+          "referrer": "",
+          "search": "",
+          "secure": 1,
+          "deviceOs": "",
+          "deviceModel": "",
+          "isMobile": 0,
+          "ua": "",
+          "ip": "",
+          "dnt": 0,
+          "user": {},
+          "adapterName": "BF_PREBID_S2S",
+          "adapterVersion": "1.0.0",
+          "requestId": "banner-and-video",
+          "schain": {
+            "complete": 0,
+            "nodes": null,
+            "ver": ""
+          }
+        },
+        "impIDs":["mix1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": [
+          {
+            "crid": "crid_1",
+            "price": 9.5019655,
+            "w": 300,
+            "h": 250,
+            "slot": "mix1",
+            "adm": "<div id=\"44861168\"><script>!function(){console.log\"Hello, ad.\";}();<\/script><\/div>"
+          }
+        ]
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "https://qa.beachrtb.com/bid.json?exchange_id=videoAppId1&prebidserver",
+        "body": {
+          "id": "banner-and-video",
+          "imp": [
+            {
+              "video": {
+                "w": 300,
+                "h": 250,
+                "mimes": [
+                  "video/mp4"
+                ]
+              },
+              "secure": 1,
+              "id": "mix1"
+            }
+          ],
+          "site": {
+            "domain": "some.domain.us",
+            "page": "https://some.domain.us/some/page.html"
+          },
+          "isPrebid": true,
+          "device": {
+            "devicetype": 2
+          },
+          "cur": [
+            "USD"
+          ]
+        },
+        "impIDs":["mix1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "61b87329-8790-47b7-90dd-c53ae7ce1723",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "5d839458f73decdc1572b7f6",
+                  "impid": "mix1",
+                  "price": 20,
+                  "nurl": "https://useast.bfmio.com/getBids?aid=bid:70b99087-1b92-4e81-bc42-05c940fd6014:11bc5dd5-7421-4dd8-c926-40fa653bec76:20.0:20.0&v=1&dsp=5d8391a85f35945a70c9ddf0,0.01&i_type=pre",
+                  "crid": "70b99087-1b92-4e81-bc42-05c940fd6014",
+                  "adid": "1088",
+                  "adomain": [
+                    "beachfront.io"
+                  ],
+                  "cid": "277",
+                  "w": 300,
+                  "h": 250
+                }
+              ],
+              "seat": "bfb-io-s1"
+            }
+          ],
+          "bidid": "5d839458f73decdc1572b7f6",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "mix1Banner",
+            "impid": "mix1",
+            "price": 9.5019655,
+            "adm": "<div id=\"44861168\"><script>!function(){console.log\"Hello, ad.\";}();<\/script><\/div>",
+            "crid": "crid_1",
+            "w": 300,
+            "h": 250
+          },
+          "type": "banner"
+        }
+      ]
+    },
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "mix1NurlVideo",
+            "impid": "mix1",
+            "price": 20,
+            "nurl": "https://useast.bfmio.com/getBids?aid=bid:70b99087-1b92-4e81-bc42-05c940fd6014:11bc5dd5-7421-4dd8-c926-40fa653bec76:20.0:20.0&v=1&dsp=5d8391a85f35945a70c9ddf0,0.01&i_type=pre",
+            "adid": "1088",
+            "adomain": [
+              "beachfront.io"
+            ],
+            "cid": "277",
+            "crid": "70b99087-1b92-4e81-bc42-05c940fd6014",
+            "w": 300,
+            "h": 250
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

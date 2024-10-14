@@ -1,643 +1,409 @@
 package ix
 
 import (
-	"context"
 	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"math/rand"
-	"net/http"
-	"net/http/httptest"
 	"testing"
-	"time"
 
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/pbs"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/adapters/adapterstest"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/prebid/openrtb/v20/adcom1"
+	"github.com/prebid/openrtb/v20/openrtb2"
 )
 
-const url string = "http://appnexus-us-east.lb.indexww.com/bidder?p=184932"
+const endpoint string = "http://host/endpoint"
 
-func getAdUnit() pbs.PBSAdUnit {
-	return pbs.PBSAdUnit{
-		Code:       "unitCode",
-		MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
-		BidID:      "bidid",
-		Sizes: []openrtb.Format{
-			{
-				W: 10,
-				H: 12,
+func TestJsonSamples(t *testing.T) {
+	if bidder, err := Builder(openrtb_ext.BidderIx, config.Adapter{Endpoint: endpoint}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"}); err == nil {
+		adapterstest.RunJSONBidderTest(t, "ixtest", bidder)
+	} else {
+		t.Fatalf("Builder returned unexpected error %v", err)
+	}
+}
+
+func TestIxMakeBidsWithCategoryDuration(t *testing.T) {
+	bidder := &IxAdapter{}
+
+	mockedReq := &openrtb2.BidRequest{
+		Imp: []openrtb2.Imp{{
+			ID: "1_1",
+			Video: &openrtb2.Video{
+				W:           ptrutil.ToPtr[int64](640),
+				H:           ptrutil.ToPtr[int64](360),
+				MIMEs:       []string{"video/mp4"},
+				MaxDuration: 60,
+				Protocols:   []adcom1.MediaCreativeSubtype{2, 3, 5, 6},
 			},
+			Ext: json.RawMessage(
+				`{
+					"prebid": {},
+					"bidder": {
+						"siteID": "123456"
+					}
+				}`,
+			)},
 		},
-		Params: json.RawMessage("{\"siteId\":\"12\"}"),
+	}
+	mockedExtReq := &adapters.RequestData{}
+	mockedBidResponse := &openrtb2.BidResponse{
+		ID: "test-1",
+		SeatBid: []openrtb2.SeatBid{{
+			Seat: "Buyer",
+			Bid: []openrtb2.Bid{{
+				ID:    "1",
+				ImpID: "1_1",
+				Price: 1.23,
+				AdID:  "123",
+				Ext: json.RawMessage(
+					`{
+						"prebid": {
+							"video": {
+								"duration": 60,
+								"primary_category": "IAB18-1"
+							}
+						}
+					}`,
+				),
+			}},
+		}},
+	}
+	body, _ := json.Marshal(mockedBidResponse)
+	mockedRes := &adapters.ResponseData{
+		StatusCode: 200,
+		Body:       body,
+	}
+
+	expectedBidCount := 1
+	expectedBidType := openrtb_ext.BidTypeVideo
+	expectedBidDuration := 60
+	expectedBidCategory := "IAB18-1"
+	expectedErrorCount := 0
+
+	bidResponse, errors := bidder.MakeBids(mockedReq, mockedExtReq, mockedRes)
+
+	if len(bidResponse.Bids) != expectedBidCount {
+		t.Errorf("should have 1 bid, bids=%v", bidResponse.Bids)
+	}
+	if bidResponse.Bids[0].BidType != expectedBidType {
+		t.Errorf("bid type should be video, bidType=%s", bidResponse.Bids[0].BidType)
+	}
+	if bidResponse.Bids[0].BidVideo.Duration != expectedBidDuration {
+		t.Errorf("video duration should be set")
+	}
+	if bidResponse.Bids[0].Bid.Cat[0] != expectedBidCategory {
+		t.Errorf("bid category should be set")
+	}
+	if len(errors) != expectedErrorCount {
+		t.Errorf("should not have any errors, errors=%v", errors)
 	}
 }
 
-func getOpenRTBBid(i openrtb.Imp) openrtb.Bid {
-	return openrtb.Bid{
-		ID:     fmt.Sprintf("%d", rand.Intn(1000)),
-		ImpID:  i.ID,
-		Price:  1.0,
-		AdM:    "Content",
-		CrID:   fmt.Sprintf("%d", rand.Intn(1000)),
-		W:      *i.Banner.W,
-		H:      *i.Banner.H,
-		DealID: "5",
-	}
-}
+func TestIxMakeRequestWithGppString(t *testing.T) {
+	bidder := &IxAdapter{}
 
-func dummyIXServer(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
-	body, err := ioutil.ReadAll(r.Body)
+	testGppString := "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN"
 
-	var breq openrtb.BidRequest
-	err = json.Unmarshal(body, &breq)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	impression := breq.Imp[0]
-
-	resp := openrtb.BidResponse{
-		SeatBid: []openrtb.SeatBid{
-			{
-				Bid: []openrtb.Bid{
-					getOpenRTBBid(impression),
-				},
+	mockedReq := &openrtb2.BidRequest{
+		Imp: []openrtb2.Imp{{
+			ID: "1_1",
+			Video: &openrtb2.Video{
+				W:           ptrutil.ToPtr[int64](640),
+				H:           ptrutil.ToPtr[int64](360),
+				MIMEs:       []string{"video/mp4"},
+				MaxDuration: 60,
+				Protocols:   []adcom1.MediaCreativeSubtype{2, 3, 5, 6},
 			},
+			Ext: json.RawMessage(
+				`{
+					"prebid": {},
+					"bidder": {
+						"siteId": "123456"
+					}
+				}`,
+			)},
+		},
+		Regs: &openrtb2.Regs{
+			GPP: testGppString,
 		},
 	}
 
-	js, err := json.Marshal(resp)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	expectedRequestCount := 1
+	expectedErrorCount := 0
+	var reqInfo *adapters.ExtraRequestInfo
+
+	requests, errors := bidder.MakeRequests(mockedReq, reqInfo)
+
+	if len(requests) != expectedRequestCount {
+		t.Errorf("should have 1 request, requests=%v", requests)
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(js)
+
+	if len(errors) != expectedErrorCount {
+		t.Errorf("should not have any errors, errors=%v", errors)
+	}
+
+	req := &openrtb2.BidRequest{}
+	json.Unmarshal(requests[0].Body, req)
+
+	assert.Equal(t, req.Regs.GPP, testGppString)
 }
 
-func TestIxInvalidCall(t *testing.T) {
-
-	an := NewIxAdapter(adapters.DefaultHTTPAdapterConfig, url)
-	an.URI = "blah"
-
-	ctx := context.TODO()
-	pbReq := pbs.PBSRequest{}
-	pbBidder := pbs.PBSBidder{}
-	_, err := an.Call(ctx, &pbReq, &pbBidder)
-	if err == nil {
-		t.Fatalf("No error received for invalid request")
-	}
-}
-
-func TestIxInvalidCallReqAppNil(t *testing.T) {
-
-	an := NewIxAdapter(adapters.DefaultHTTPAdapterConfig, url)
-	an.URI = "blah"
-
-	ctx := context.TODO()
-	pbReq := pbs.PBSRequest{
-		App: &openrtb.App{},
-	}
-
-	pbBidder := pbs.PBSBidder{}
-	_, err := an.Call(ctx, &pbReq, &pbBidder)
-
-	if err == nil {
-		t.Fatalf("No error received for invalid request")
-	}
-}
-
-func TestIxInvalidCallMissingSiteID(t *testing.T) {
-
-	an := NewIxAdapter(adapters.DefaultHTTPAdapterConfig, url)
-	an.URI = "blah"
-
-	ctx := context.TODO()
-	pbReq := pbs.PBSRequest{}
-	adUnit := getAdUnit()
-	adUnit.Params = json.RawMessage("{}")
-
-	pbBidder := pbs.PBSBidder{
-		BidderCode: "bannerCode",
-		AdUnits: []pbs.PBSAdUnit{
-			adUnit,
-		},
-	}
-	_, err := an.Call(ctx, &pbReq, &pbBidder)
-	if err == nil {
-		t.Fatalf("No error received for request with missing siteId")
-	}
-}
-
-func TestIxTimeout(t *testing.T) {
-
-	server := httptest.NewServer(
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			<-time.After(2 * time.Millisecond)
-		}),
-	)
-	defer server.Close()
-
-	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
-	ctx, cancel := context.WithTimeout(context.Background(), 0)
-	defer cancel()
-
-	pbReq := pbs.PBSRequest{}
-	pbBidder := pbs.PBSBidder{
-		BidderCode: "bannerCode",
-		AdUnits: []pbs.PBSAdUnit{
-			getAdUnit(),
-		},
-	}
-	_, err := an.Call(ctx, &pbReq, &pbBidder)
-	if err == nil || err != context.DeadlineExceeded {
-		t.Fatalf("Invalid timeout error received")
-	}
-}
-
-func TestIxTimeoutMultipleSlots(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	server := httptest.NewServer(
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			defer r.Body.Close()
-			body, err := ioutil.ReadAll(r.Body)
-
-			var breq openrtb.BidRequest
-			err = json.Unmarshal(body, &breq)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			impression := breq.Imp[0]
-
-			resp := openrtb.BidResponse{
-				SeatBid: []openrtb.SeatBid{
-					{
-						Bid: []openrtb.Bid{
-							getOpenRTBBid(impression),
-						},
-					},
-				},
-			}
-
-			js, err := json.Marshal(resp)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			// cancel the request before 2nd impression is returned
-			// delay to let 1st impression return successfully
-			if impression.ID == "unitCode2" {
-				<-time.After(10 * time.Millisecond)
-				cancel()
-				<-r.Context().Done()
-			}
-
-			w.Header().Set("Content-Type", "application/json")
-			w.Write(js)
-		}),
-	)
-	defer server.Close()
-
-	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
-	pbReq := pbs.PBSRequest{}
-
-	adUnit1 := getAdUnit()
-	adUnit2 := getAdUnit()
-	adUnit2.Code = "unitCode2"
-	adUnit2.Sizes = []openrtb.Format{
+func TestExtractVersionWithoutCommitHash(t *testing.T) {
+	tests := []struct {
+		name     string
+		version  string
+		expected string
+	}{
 		{
-			W: 8,
-			H: 10,
+			name:     "empty version",
+			version:  "",
+			expected: "",
+		},
+		{
+			name:     "version with commit hash",
+			version:  "1.880-abcdef",
+			expected: "1.880",
+		},
+		{
+			name:     "version without commit hash",
+			version:  "1.23.4",
+			expected: "1.23.4",
 		},
 	}
-	pbBidder := pbs.PBSBidder{
-		BidderCode: "bannerCode",
-		AdUnits: []pbs.PBSAdUnit{
-			adUnit1,
-			adUnit2,
-		},
-	}
-	bids, err := an.Call(ctx, &pbReq, &pbBidder)
-
-	if err != nil {
-		t.Fatalf("Should not have gotten an error: %v", err)
-	}
-
-	if len(bids) != 1 {
-		t.Fatalf("Should have received one bid")
-	}
-
-	bid := findBidByAdUnitCode(bids, adUnit1.Code)
-	if adUnit1.Sizes[0].H != bid.Height || adUnit1.Sizes[0].W != bid.Width {
-		t.Fatalf("Received the wrong size")
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			assert.Equal(t, test.expected, extractVersionWithoutCommitHash(test.version))
+		})
 	}
 }
-
-func TestIxInvalidJsonResponse(t *testing.T) {
-
-	server := httptest.NewServer(
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			fmt.Fprint(w, "Blah")
-		}),
-	)
-	defer server.Close()
-
-	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
-	ctx := context.TODO()
-	pbReq := pbs.PBSRequest{}
-	pbBidder := pbs.PBSBidder{
-		BidderCode: "bannerCode",
-		AdUnits: []pbs.PBSAdUnit{
-			getAdUnit(),
+func TestBuildIxDiag(t *testing.T) {
+	testCases := []struct {
+		description     string
+		request         *openrtb2.BidRequest
+		expectedRequest *openrtb2.BidRequest
+		expectError     bool
+		pbsVersion      string
+	}{
+		{
+			description: "Base Test",
+			request: &openrtb2.BidRequest{
+				ID:  "1",
+				Ext: json.RawMessage(`{"prebid":{"channel":{"name":"web","version":"7.20"}}}`),
+			},
+			expectedRequest: &openrtb2.BidRequest{
+				ID:  "1",
+				Ext: json.RawMessage(`{"prebid":{"channel":{"name":"web","version":"7.20"}},"ixdiag":{"pbsv":"1.880","pbjsv":"7.20"}}`),
+			},
+			expectError: false,
+			pbsVersion:  "1.880-abcdef",
+		},
+		{
+			description: "Base test for nil channel but non-empty ext prebid payload",
+			request: &openrtb2.BidRequest{
+				ID:  "1",
+				Ext: json.RawMessage(`{"prebid":{"server":{"externalurl":"http://localhost:8000"}}}`),
+			},
+			expectedRequest: &openrtb2.BidRequest{
+				ID:  "1",
+				Ext: json.RawMessage(`{"prebid":{"server":{"externalurl":"http://localhost:8000","gvlid":0,"datacenter":""}},"ixdiag":{"pbsv":"1.880"}}`),
+			},
+			expectError: false,
+			pbsVersion:  "1.880-abcdef",
+		},
+		{
+			description: "No Ext",
+			request: &openrtb2.BidRequest{
+				ID: "1",
+			},
+			expectedRequest: &openrtb2.BidRequest{
+				ID:  "1",
+				Ext: json.RawMessage(`{"prebid":null,"ixdiag":{"pbsv":"1.880"}}`),
+			},
+			expectError: false,
+			pbsVersion:  "1.880-abcdef",
+		},
+		{
+			description: "PBS Version Two Hypens",
+			request: &openrtb2.BidRequest{
+				ID: "1",
+			},
+			expectedRequest: &openrtb2.BidRequest{
+				ID:  "1",
+				Ext: json.RawMessage(`{"prebid":null,"ixdiag":{"pbsv":"0.23.1"}}`),
+			},
+			expectError: false,
+			pbsVersion:  "0.23.1-3-g4ee257d8",
+		},
+		{
+			description: "PBS Version no Hyphen",
+			request: &openrtb2.BidRequest{
+				ID:  "1",
+				Ext: json.RawMessage(`{"prebid":{"channel":{"name":"web","version":"7.20"}}}`),
+			},
+			expectedRequest: &openrtb2.BidRequest{
+				ID:  "1",
+				Ext: json.RawMessage(`{"prebid":{"channel":{"name":"web","version":"7.20"}},"ixdiag":{"pbsv":"1.880","pbjsv":"7.20"}}`),
+			},
+			expectError: false,
+			pbsVersion:  "1.880",
+		},
+		{
+			description: "PBS Version empty string",
+			request: &openrtb2.BidRequest{
+				ID:  "1",
+				Ext: json.RawMessage(`{"prebid":{"channel":{"name":"web","version":"7.20"}}}`),
+			},
+			expectedRequest: &openrtb2.BidRequest{
+				ID:  "1",
+				Ext: json.RawMessage(`{"prebid":{"channel":{"name":"web","version":"7.20"}},"ixdiag":{"pbjsv":"7.20"}}`),
+			},
+			expectError: false,
+			pbsVersion:  "",
+		},
+		{
+			description: "Error Test",
+			request: &openrtb2.BidRequest{
+				ID:  "1",
+				Ext: json.RawMessage(`{"prebid":"channel":{"name":"web","version":"7.20"}}}`),
+			},
+			expectedRequest: &openrtb2.BidRequest{
+				ID:  "1",
+				Ext: nil,
+			},
+			expectError: true,
+			pbsVersion:  "1.880-abcdef",
 		},
 	}
-	_, err := an.Call(ctx, &pbReq, &pbBidder)
-	if err == nil {
-		t.Fatalf("No error received for invalid request")
-	}
-}
 
-func TestIxInvalidStatusCode(t *testing.T) {
-
-	server := httptest.NewServer(
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Send 404
-			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-		}),
-	)
-	defer server.Close()
-
-	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
-	ctx := context.TODO()
-	pbReq := pbs.PBSRequest{}
-	pbBidder := pbs.PBSBidder{
-		BidderCode: "bannerCode",
-		AdUnits: []pbs.PBSAdUnit{
-			getAdUnit(),
-		},
-	}
-	_, err := an.Call(ctx, &pbReq, &pbBidder)
-	if err == nil {
-		t.Fatalf("No error received for invalid request")
-	}
-}
-
-func TestIxBadRequest(t *testing.T) {
-
-	server := httptest.NewServer(
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Send 400
-			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		}),
-	)
-	defer server.Close()
-
-	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
-	ctx := context.TODO()
-	pbReq := pbs.PBSRequest{}
-	pbBidder := pbs.PBSBidder{
-		BidderCode: "bannerCode",
-		AdUnits: []pbs.PBSAdUnit{
-			getAdUnit(),
-		},
-	}
-	_, err := an.Call(ctx, &pbReq, &pbBidder)
-	if err == nil {
-		t.Fatalf("No error received for bad request")
-	}
-}
-
-func TestIxNoContent(t *testing.T) {
-
-	server := httptest.NewServer(
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Send 204
-			http.Error(w, http.StatusText(http.StatusNoContent), http.StatusNoContent)
-		}),
-	)
-	defer server.Close()
-
-	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
-	ctx := context.TODO()
-	pbReq := pbs.PBSRequest{}
-	pbBidder := pbs.PBSBidder{
-		BidderCode: "bannerCode",
-		AdUnits: []pbs.PBSAdUnit{
-			getAdUnit(),
-		},
-	}
-
-	bids, err := an.Call(ctx, &pbReq, &pbBidder)
-	if err != nil || bids != nil {
-		t.Fatalf("Must return nil for no content")
-	}
-}
-
-func TestIxInvalidCallMissingSize(t *testing.T) {
-
-	server := httptest.NewServer(
-		http.HandlerFunc(dummyIXServer),
-	)
-	defer server.Close()
-
-	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
-	ctx := context.TODO()
-	pbReq := pbs.PBSRequest{}
-	adUnit := getAdUnit()
-	adUnit.Sizes = []openrtb.Format{}
-	pbBidder := pbs.PBSBidder{
-		BidderCode: "bannerCode",
-		AdUnits: []pbs.PBSAdUnit{
-			adUnit,
-		},
-	}
-	if _, err := an.Call(ctx, &pbReq, &pbBidder); err == nil {
-		t.Fatalf("Should not have gotten an error for missing/invalid size: %v", err)
-	}
-}
-
-func TestIxInvalidCallEmptyBidIDResponse(t *testing.T) {
-
-	server := httptest.NewServer(
-		http.HandlerFunc(dummyIXServer),
-	)
-	defer server.Close()
-
-	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
-	ctx := context.TODO()
-	pbReq := pbs.PBSRequest{}
-	adUnit := getAdUnit()
-	adUnit.BidID = ""
-	pbBidder := pbs.PBSBidder{
-		BidderCode: "bannerCode",
-		AdUnits: []pbs.PBSAdUnit{
-			adUnit,
-		},
-	}
-	if _, err := an.Call(ctx, &pbReq, &pbBidder); err == nil {
-		t.Fatalf("Should have gotten an error for unknown adunit code")
-	}
-}
-
-func TestIxMismatchUnitCode(t *testing.T) {
-
-	server := httptest.NewServer(
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			defer r.Body.Close()
-			body, err := ioutil.ReadAll(r.Body)
-
-			var breq openrtb.BidRequest
-			err = json.Unmarshal(body, &breq)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
+	for _, test := range testCases {
+		t.Run(test.description, func(t *testing.T) {
+			ixDiag := &IxDiag{}
+			err := setIxDiagIntoExtRequest(test.request, ixDiag, test.pbsVersion)
+			if test.expectError {
+				assert.NotNil(t, err)
+			} else {
+				assert.Equal(t, test.expectedRequest, test.request)
+				assert.Nil(t, err)
 			}
+		})
+	}
+}
 
-			resp := openrtb.BidResponse{
-				SeatBid: []openrtb.SeatBid{
-					{
-						Bid: []openrtb.Bid{
-							{
-								ID:     fmt.Sprintf("%d", rand.Intn(1000)),
-								ImpID:  "unitCode_bogus",
-								Price:  1.0,
-								AdM:    "Content",
-								CrID:   "567",
-								W:      10,
-								H:      12,
-								DealID: "5",
+func TestMakeRequestsErrIxDiag(t *testing.T) {
+	bidder := &IxAdapter{}
+	req := &openrtb2.BidRequest{
+		ID:  "1",
+		Ext: json.RawMessage(`{"prebid":"channel":{"name":"web","version":"7.20"}}}`),
+	}
+	_, errs := bidder.MakeRequests(req, nil)
+	assert.Len(t, errs, 1)
+}
+
+func TestPABidResponse(t *testing.T) {
+	bidder := &IxAdapter{}
+
+	mockedReq := &openrtb2.BidRequest{
+		Imp: []openrtb2.Imp{{
+			ID: "1_1",
+			Banner: &openrtb2.Banner{
+				Format: []openrtb2.Format{{W: 300, H: 250}},
+			},
+			Ext: json.RawMessage(
+				`{
+					"ae": 1,
+					"bidder": {
+						"siteID": "123456"
+					}
+				}`,
+			)},
+		},
+	}
+	mockedExtReq := &adapters.RequestData{}
+	mockedBidResponse := &openrtb2.BidResponse{
+		ID: "test-1",
+		SeatBid: []openrtb2.SeatBid{{
+			Seat: "Buyer",
+			Bid: []openrtb2.Bid{{
+				ID:    "1",
+				ImpID: "1_1",
+				Price: 1.23,
+				AdID:  "123",
+				Ext: json.RawMessage(
+					`{
+						"prebid": {
+							"video": {
+								"duration": 60,
+								"primary_category": "IAB18-1"
+							}
+						}
+					}`,
+				),
+			}},
+		}},
+	}
+
+	testCases := []struct {
+		name        string
+		ext         json.RawMessage
+		expectedLen int
+	}{
+		{
+			name: "properly formatted",
+			ext: json.RawMessage(
+				`{
+					"protectedAudienceAuctionConfigs": [{
+						"bidId": "test-imp-id",
+						"config": {
+							"seller": "https://seller.com",
+							"decisionLogicUrl": "https://ssp.com/decision-logic.js",
+							"interestGroupBuyers": [
+								"https://buyer.com"
+							],
+							"sellerSignals": {
+								"callbackUrl": "https://callbackurl.com"
 							},
-						},
-					},
-				},
-			}
-
-			js, err := json.Marshal(resp)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			w.Header().Set("Content-Type", "application/json")
-			w.Write(js)
-		}),
-	)
-	defer server.Close()
-
-	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
-	ctx := context.TODO()
-	pbReq := pbs.PBSRequest{}
-	pbBidder := pbs.PBSBidder{
-		BidderCode: "bannerCode",
-		AdUnits: []pbs.PBSAdUnit{
-			getAdUnit(),
+							"perBuyerSignals": {
+								"https://buyer.com": []
+							}
+						}
+					}]
+				}`,
+			),
+			expectedLen: 1,
 		},
-	}
-	if _, err := an.Call(ctx, &pbReq, &pbBidder); err == nil {
-		t.Fatalf("Should have gotten an error for unknown adunit code")
-	}
-}
-
-func TestIxInvalidParam(t *testing.T) {
-
-	server := httptest.NewServer(
-		http.HandlerFunc(dummyIXServer),
-	)
-	defer server.Close()
-
-	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
-	ctx := context.TODO()
-	pbReq := pbs.PBSRequest{}
-	adUnit := getAdUnit()
-	adUnit.Params = json.RawMessage("Bogus invalid input")
-	pbBidder := pbs.PBSBidder{
-		BidderCode: "bannerCode",
-		AdUnits: []pbs.PBSAdUnit{
-			adUnit,
-		},
-	}
-	if _, err := an.Call(ctx, &pbReq, &pbBidder); err == nil {
-		t.Fatalf("Should have gotten an error for unrecognized params")
-	}
-}
-
-func TestIxSingleSlotSingleValidSize(t *testing.T) {
-
-	server := httptest.NewServer(
-		http.HandlerFunc(dummyIXServer),
-	)
-	defer server.Close()
-
-	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
-	ctx := context.TODO()
-	pbReq := pbs.PBSRequest{}
-	pbBidder := pbs.PBSBidder{
-		BidderCode: "bannerCode",
-		AdUnits: []pbs.PBSAdUnit{
-			getAdUnit(),
-		},
-	}
-	bids, err := an.Call(ctx, &pbReq, &pbBidder)
-	if err != nil {
-		t.Fatalf("Should not have gotten an error: %v", err)
-	}
-
-	if len(bids) != 1 {
-		t.Fatalf("Should have received one bid")
-	}
-}
-
-func TestIxTwoSlotValidSize(t *testing.T) {
-
-	server := httptest.NewServer(
-		http.HandlerFunc(dummyIXServer),
-	)
-	defer server.Close()
-
-	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
-	ctx := context.TODO()
-	pbReq := pbs.PBSRequest{}
-	adUnit1 := getAdUnit()
-	adUnit2 := getAdUnit()
-	adUnit2.Code = "unitCode2"
-	adUnit2.Sizes = []openrtb.Format{
 		{
-			W: 8,
-			H: 10,
+			name:        "no protected audience auction configs returned",
+			ext:         json.RawMessage(`{}`),
+			expectedLen: 0,
+		},
+		{
+			name: "no config",
+			ext: json.RawMessage(
+				`{
+					"protectedAudienceAuctionConfigs": [{
+						"bidId": "test-imp-id"
+					}]
+				}`,
+			),
+			expectedLen: 0,
 		},
 	}
-	adUnit2.Params = json.RawMessage("{\"siteId\":\"1111\"}")
 
-	pbBidder := pbs.PBSBidder{
-		BidderCode: "bannerCode",
-		AdUnits: []pbs.PBSAdUnit{
-			adUnit1,
-			adUnit2,
-		},
-	}
-	bids, err := an.Call(ctx, &pbReq, &pbBidder)
-	if err != nil {
-		t.Fatalf("Should not have gotten an error: %v", err)
-	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			mockedBidResponse.Ext = tc.ext
+			body, _ := json.Marshal(mockedBidResponse)
+			mockedRes := &adapters.ResponseData{
+				StatusCode: 200,
+				Body:       body,
+			}
+			bidResponse, errors := bidder.MakeBids(mockedReq, mockedExtReq, mockedRes)
 
-	if len(bids) != 2 {
-		t.Fatalf("Should have received two bid")
-	}
-
-	bid := findBidByAdUnitCode(bids, adUnit1.Code)
-	if adUnit1.Sizes[0].H != bid.Height || adUnit1.Sizes[0].W != bid.Width {
-		t.Fatalf("Received the wrong size")
-	}
-
-	bid = findBidByAdUnitCode(bids, adUnit2.Code)
-	if adUnit2.Sizes[0].H != bid.Height || adUnit2.Sizes[0].W != bid.Width {
-		t.Fatalf("Received the wrong size")
-	}
-}
-
-func TestIxTwoSlotMultiSizeOnlyValidIXSizeResponse(t *testing.T) {
-
-	server := httptest.NewServer(
-		http.HandlerFunc(dummyIXServer),
-	)
-	defer server.Close()
-
-	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
-	ctx := context.TODO()
-	pbReq := pbs.PBSRequest{}
-	adUnit := getAdUnit()
-	adUnit.Sizes = append(adUnit.Sizes, openrtb.Format{W: 20, H: 22})
-
-	pbBidder := pbs.PBSBidder{
-		BidderCode: "bannerCode",
-		AdUnits: []pbs.PBSAdUnit{
-			adUnit,
-		},
-	}
-	bids, err := an.Call(ctx, &pbReq, &pbBidder)
-
-	if err != nil {
-		t.Fatalf("Should not have gotten an error: %v", err)
-	}
-
-	if len(bids) != 2 {
-		t.Fatalf("Should have received 2 bids")
-	}
-
-	for _, size := range adUnit.Sizes {
-		if !bidResponseForSizeExist(bids, size.H, size.W) {
-			t.Fatalf("Missing bid for specified size %d and %d", size.W, size.H)
-		}
-	}
-}
-
-func bidResponseForSizeExist(bids pbs.PBSBidSlice, h uint64, w uint64) bool {
-	for _, v := range bids {
-		if v.Height == h && v.Width == w {
-			return true
-		}
-	}
-	return false
-}
-
-func findBidByAdUnitCode(bids pbs.PBSBidSlice, c string) *pbs.PBSBid {
-	for _, v := range bids {
-		if v.AdUnitCode == c {
-			return v
-		}
-	}
-	return &pbs.PBSBid{}
-}
-
-func TestIxRequestLimit(t *testing.T) {
-
-	server := httptest.NewServer(
-		http.HandlerFunc(dummyIXServer),
-	)
-	defer server.Close()
-
-	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIxAdapter(&conf, server.URL)
-	ctx := context.TODO()
-	pbReq := pbs.PBSRequest{}
-	adUnits := []pbs.PBSAdUnit{}
-
-	for i := 0; i < requestLimit+1; i++ {
-		adUnits = append(adUnits, getAdUnit())
-	}
-
-	pbBidder := pbs.PBSBidder{
-		BidderCode: "bannerCode",
-		AdUnits:    adUnits,
-	}
-
-	bids, err := an.Call(ctx, &pbReq, &pbBidder)
-
-	if err != nil {
-		t.Fatalf("Should not have gotten an error: %v", err)
-	}
-
-	if len(bids) != requestLimit {
-		t.Fatalf("Should have received %d bid", requestLimit)
+			assert.Nil(t, errors)
+			assert.Len(t, bidResponse.FledgeAuctionConfigs, tc.expectedLen)
+		})
 	}
 }

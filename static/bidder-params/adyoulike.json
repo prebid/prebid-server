@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "AdYouLike Adapter Params",
+  "description": "A schema which validates params accepted by the AdYouLike adapter",
+  "type": "object",
+  "properties": {
+    "placement": {
+      "type": "string",
+      "description": "Placement Id"
+    },
+    "campaign": {
+      "type": "string",
+      "description": "Id of a forced campaign"
+    },
+    "track": {
+      "type": "string",
+      "description": "Id of a forced Track"
+    },
+    "creative": {
+      "type": "string",
+      "description": "Id of a forced creative"
+    },
+    "source": {
+      "type": "string",
+      "description": "context of the campaign"
+    },
+    "debug": {
+      "type": "string",
+      "description": "Arbitrary id used for debug purpose"
+    }
+  },
+  "required": ["placement"]
+}

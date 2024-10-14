@@ -1,0 +1,135 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 728,
+              "h": 90
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "adslotId": "12345",
+            "supplyId": "123456789",
+            "targeting": {
+              "key1": "value1",
+              "key2": "value2"
+            },
+            "extId": "abc"
+          }
+        }
+      }
+    ],
+    "source": {
+      "ext": {
+        "schain": {
+          "ver": "1.0",
+          "complete": 1,
+          "nodes": [
+            {
+              "asi": "exchange1.com",
+              "sid": "1234!abcd",
+              "hp": 1,
+              "rid": "bid request&%1",
+              "name": "publisher",
+              "domain": "publisher.com",
+              "ext": {
+                "freeFormData": 1,
+                "nested": {
+                  "isTrue": true
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "user": {
+      "buyeruid": "34a53e82-0dc3-4815-8b7e-b725ede0361c"
+    },
+    "device": {
+      "ifa": "hello-ads",
+      "devicetype": 4,
+      "connectiontype": 6,
+      "geo": {
+        "lat": 51.499488,
+        "lon": -0.128953
+      },
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36",
+      "ip": "169.254.13.37",
+      "h": 1098,
+      "w": 814
+    },
+    "site": {
+      "id": "fake-site-id",
+      "publisher": {
+        "id": "1"
+      },
+      "page": "http://localhost:9090/gdpr.html"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Cookie": [
+            "id=34a53e82-0dc3-4815-8b7e-b725ede0361c"
+          ],
+          "Referer": [
+            "http://localhost:9090/gdpr.html"
+          ],
+          "User-Agent": [
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36"
+          ],
+          "X-Forwarded-For": [
+            "169.254.13.37"
+          ]
+        },
+        "uri": "https://ad.yieldlab.net/testing/12345?content=json&ids=ylid%3A34a53e82-0dc3-4815-8b7e-b725ede0361c&lat=51.499488&lon=-0.128953&pvid=true&schain=1.0%2C1%21exchange1.com%2C1234%2521abcd%2C1%2Cbid%2Brequest%2526%25251%2Cpublisher%2Cpublisher.com%2C%257B%2522freeFormData%2522%253A1%252C%2522nested%2522%253A%257B%2522isTrue%2522%253Atrue%257D%257D&sizes=12345%3A728x90&t=key1%3Dvalue1%26key2%3Dvalue2&ts=testing&yl_rtb_connectiontype=6&yl_rtb_devicetype=4&yl_rtb_ifa=hello-ads",
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": [
+          {
+            "id": 12345,
+            "price": 201,
+            "advertiser": "yieldlab",
+            "adsize": "728x90",
+            "pid": 1234,
+            "did": 5678,
+            "pvid": "40cb3251-1e1e-4cfd-8edc-7d32dc1a21e5"
+          }
+        ]
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "adm": "<script src=\"https://ad.yieldlab.net/d/12345/123456789/728x90?id=abc&ids=ylid%3A34a53e82-0dc3-4815-8b7e-b725ede0361c&pvid=40cb3251-1e1e-4cfd-8edc-7d32dc1a21e5&ts=testing\"></script>",
+            "crid": "12345123433",
+            "dealid": "1234",
+            "id": "12345",
+            "impid": "test-imp-id",
+            "price": 2.01,
+            "w": 728,
+            "h": 90
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

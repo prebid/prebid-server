@@ -1,0 +1,10 @@
+endpoint: "https://prebid-server.ioadx.com/bidRequest/?partnerId={{.AccountID}}"
+maintainer:
+  email: "dev@interactiveoffers.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner

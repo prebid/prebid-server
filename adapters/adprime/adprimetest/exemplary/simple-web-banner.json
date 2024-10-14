@@ -1,133 +1,137 @@
 {
     "mockBidRequest": {
-      "id": "test-request-id",
-      "imp": [
-          {
-              "id": "test-imp-id",
-              "banner": {
-                  "format": [
-                      {
-                          "w": 300,
-                          "h": 250
-                      },
-                      {
-                          "w": 300,
-                          "h": 600
-                      }
-                  ]
-              },
-              "tagid": "1",
-              "ext": {
-                  "bidder": {
-                      "TagID": "1"
-                  }
-              }
-          }
-      ],
-      "site": {
-          "id": "1",
-          "domain": "test.com"
-      },
-      "device": {
-          "ip": "123.123.123.123"
-      }
-  },
-  
-    "httpCalls": [
-      {
-        "expectedRequest": {
-          "uri": "http://delta.adprime.com/?c=o&m=ortb",
-          "body": {
-            "id": "test-request-id",
-            "imp": [
-                {
-                    "id": "test-imp-id",
-                    "banner": {
-                        "format": [
-                            {
-                                "w": 300,
-                                "h": 250
-                            },
-                            {
-                                "w": 300,
-                                "h": 600
-                            }
-                        ]
-                    },
-                    "tagid": "1",
-                    "ext": {
-                        "bidder": {
-                            "TagID": "1"
+        "id": "test-request-id",
+        "imp": [
+            {
+                "id": "test-imp-id",
+                "tagid": "test",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        },
+                        {
+                            "w": 300,
+                            "h": 600
                         }
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "TagID": "test",
+                        "placementId": "test"
                     }
                 }
-            ],
-            "site": {
-                "id": "1",
-                "domain": "test.com"
-            },
-            "device": {
-                "ip": "123.123.123.123"
             }
-        }
+        ],
+        "site": {
+            "id": "1",
+            "domain": "test.com"
         },
-        "mockResponse": {
-          "status": 200,
-          "body": {
-            "id": "test-request-id",
-            "seatbid": [
-                {
-                    "bid": [
+        "device": {
+            "ip": "123.123.123.123",
+            "ua": "Ubuntu"
+        }
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "http://delta.adprime.com/pserver",
+                "body": {
+                    "id": "test-request-id",
+                    "imp": [
                         {
-                            "id": "test_bid_id",
-                            "impid": "test-imp-id",
-                            "price": 0.27543,
-                            "adm": "<iframe id=\"adm-banner-1\" width=\"468\" height=\"60\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"https://delta.adprime.com/?c=o&m=adm&k=bc2d316f39931a07d9a8dd249bf85fc0\"></iframe>",
-                            "cid": "test_cid",
-                            "crid": "test_crid",
-                            "dealid": "test_dealid",
-                            "w": 468,
-                            "h": 60,
+                            "id": "test-imp-id",
+                            "tagid": "test",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 300,
+                                        "h": 250
+                                    },
+                                    {
+                                        "w": 300,
+                                        "h": 600
+                                    }
+                                ]
+                            },
                             "ext": {
-                                "prebid": {
-                                    "type": "banner"
+                                "bidder": {
+                                    "placementId": "test",
+                                    "TagID": "test"
                                 }
                             }
                         }
                     ],
-                    "seat": "adprime"
-                }
-            ],
-            "cur": "USD"
-          }
-        }
-      }
-    ],
-  
-    "expectedBidResponses": [
-      {
-        "bids":[
-          {
-            "bid":  {
-                "id": "test_bid_id",
-                "impid": "test-imp-id",
-                "price": 0.27543,
-                "adm": "<iframe id=\"adm-banner-1\" width=\"468\" height=\"60\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"https://delta.adprime.com/?c=o&m=adm&k=bc2d316f39931a07d9a8dd249bf85fc0\"></iframe>",
-                "cid": "test_cid",
-                "crid": "test_crid",
-                "dealid": "test_dealid",
-                "w": 468,
-                "h": 60,
-                "ext": {
-                    "prebid": {
-                        "type": "banner"
+                    "site": {
+                        "id": "1",
+                        "domain": "test.com"
+                    },
+                    "device": {
+                        "ip": "123.123.123.123",
+                        "ua": "Ubuntu"
                     }
-                }
+                },
+                "impIDs":["test-imp-id"]
             },
-            "type": "banner"
-          }
-        ]
-      }
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "test-request-id",
+                    "seatbid": [
+                        {
+                            "bid": [
+                                {
+                                    "id": "test_bid_id",
+                                    "impid": "test-imp-id",
+                                    "price": 0.27543,
+                                    "adm": "<iframe id=\"adm-banner-1\" width=\"468\" height=\"60\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"https://delta.adprime.com/?c=o&m=adm&k=bc2d316f39931a07d9a8dd249bf85fc0\"></iframe>",
+                                    "cid": "test_cid",
+                                    "crid": "test_crid",
+                                    "dealid": "test_dealid",
+                                    "w": 468,
+                                    "h": 60,
+                                    "mtype": 1,
+                                    "ext": {
+                                        "prebid": {
+                                            "type": "banner"
+                                        }
+                                    }
+                                }
+                            ],
+                            "seat": "adprime"
+                        }
+                    ],
+                    "cur": "USD"
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "bids": [
+                {
+                    "bid": {
+                        "id": "test_bid_id",
+                        "impid": "test-imp-id",
+                        "price": 0.27543,
+                        "adm": "<iframe id=\"adm-banner-1\" width=\"468\" height=\"60\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"https://delta.adprime.com/?c=o&m=adm&k=bc2d316f39931a07d9a8dd249bf85fc0\"></iframe>",
+                        "cid": "test_cid",
+                        "crid": "test_crid",
+                        "dealid": "test_dealid",
+                        "w": 468,
+                        "h": 60,
+                        "mtype": 1,
+                        "ext": {
+                            "prebid": {
+                                "type": "banner"
+                            }
+                        }
+                    },
+                    "type": "banner"
+                }
+            ]
+        }
     ]
-  }
-  
+}

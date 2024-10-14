@@ -1,0 +1,19 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-impression-id-1",
+        "banner": {
+          "format": []
+        }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Impression with id: test-impression-id-1 has following error: Banner width and height is not provided and banner format array is empty. At least one is required",
+      "comparison": "literal"
+    }
+  ]
+}

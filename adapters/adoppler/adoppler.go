@@ -6,12 +6,17 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"text/template"
 
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/macros"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
+
+const DefaultClient = "app"
 
 var bidHeaders http.Header = map[string][]string{
 	"Accept":            {"application/json"},
@@ -28,15 +33,24 @@ type adsImpExt struct {
 }
 
 type AdopplerAdapter struct {
-	endpoint string
+	endpoint *template.Template
 }
 
-func NewAdopplerBidder(endpoint string) *AdopplerAdapter {
-	return &AdopplerAdapter{endpoint}
+// Builder builds a new instance of the Adoppler adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
+	}
+
+	bidder := &AdopplerAdapter{
+		endpoint: template,
+	}
+	return bidder, nil
 }
 
 func (ads *AdopplerAdapter) MakeRequests(
-	req *openrtb.BidRequest,
+	req *openrtb2.BidRequest,
 	info *adapters.ExtraRequestInfo,
 ) (
 	[]*adapters.RequestData,
@@ -51,13 +65,13 @@ func (ads *AdopplerAdapter) MakeRequests(
 	for _, imp := range req.Imp {
 		ext, err := unmarshalExt(imp.Ext)
 		if err != nil {
-			errs = append(errs, &errortypes.BadInput{err.Error()})
+			errs = append(errs, &errortypes.BadInput{Message: err.Error()})
 			continue
 		}
 
-		var r openrtb.BidRequest = *req
+		var r openrtb2.BidRequest = *req
 		r.ID = req.ID + "-" + ext.AdUnit
-		r.Imp = []openrtb.Imp{imp}
+		r.Imp = []openrtb2.Imp{imp}
 
 		body, err := json.Marshal(r)
 		if err != nil {
@@ -65,13 +79,19 @@ func (ads *AdopplerAdapter) MakeRequests(
 			continue
 		}
 
-		uri := fmt.Sprintf("%s/processHeaderBid/%s",
-			ads.endpoint, url.PathEscape(ext.AdUnit))
+		uri, err := ads.bidUri(ext)
+		if err != nil {
+			e := fmt.Sprintf("Unable to build bid URI: %s",
+				err.Error())
+			errs = append(errs, &errortypes.BadInput{Message: e})
+			continue
+		}
 		data := &adapters.RequestData{
 			Method:  "POST",
 			Uri:     uri,
 			Body:    body,
 			Headers: bidHeaders,
+			ImpIDs:  openrtb_ext.GetImpIDs(r.Imp),
 		}
 		datas = append(datas, data)
 	}
@@ -80,7 +100,7 @@ func (ads *AdopplerAdapter) MakeRequests(
 }
 
 func (ads *AdopplerAdapter) MakeBids(
-	intReq *openrtb.BidRequest,
+	intReq *openrtb2.BidRequest,
 	extReq *adapters.RequestData,
 	resp *adapters.ResponseData,
 ) (
@@ -91,20 +111,20 @@ func (ads *AdopplerAdapter) MakeBids(
 		return nil, nil
 	}
 	if resp.StatusCode == http.StatusBadRequest {
-		return nil, []error{&errortypes.BadInput{"bad request"}}
+		return nil, []error{&errortypes.BadInput{Message: "bad request"}}
 	}
 	if resp.StatusCode != http.StatusOK {
 		err := &errortypes.BadServerResponse{
-			fmt.Sprintf("unexpected status: %d", resp.StatusCode),
+			Message: fmt.Sprintf("unexpected status: %d", resp.StatusCode),
 		}
 		return nil, []error{err}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	err := json.Unmarshal(resp.Body, &bidResp)
 	if err != nil {
 		err := &errortypes.BadServerResponse{
-			fmt.Sprintf("invalid body: %s", err.Error()),
+			Message: fmt.Sprintf("invalid body: %s", err.Error()),
 		}
 		return nil, []error{err}
 	}
@@ -113,7 +133,7 @@ func (ads *AdopplerAdapter) MakeBids(
 	for _, imp := range intReq.Imp {
 		if _, ok := impTypes[imp.ID]; ok {
 			return nil, []error{&errortypes.BadInput{
-				fmt.Sprintf("duplicate $.imp.id %s", imp.ID),
+				Message: fmt.Sprintf("duplicate $.imp.id %s", imp.ID),
 			}}
 		}
 		if imp.Banner != nil {
@@ -126,7 +146,7 @@ func (ads *AdopplerAdapter) MakeBids(
 			impTypes[imp.ID] = openrtb_ext.BidTypeNative
 		} else {
 			return nil, []error{&errortypes.BadInput{
-				"one of $.imp.banner, $.imp.video, $.imp.audio and $.imp.native field required",
+				Message: "one of $.imp.banner, $.imp.video, $.imp.audio and $.imp.native field required",
 			}}
 		}
 	}
@@ -137,7 +157,7 @@ func (ads *AdopplerAdapter) MakeBids(
 			tp, ok := impTypes[bid.ImpID]
 			if !ok {
 				err := &errortypes.BadServerResponse{
-					fmt.Sprintf("unknown impid: %s", bid.ImpID),
+					Message: fmt.Sprintf("unknown impid: %s", bid.ImpID),
 				}
 				return nil, []error{err}
 			}
@@ -146,11 +166,11 @@ func (ads *AdopplerAdapter) MakeBids(
 			if tp == openrtb_ext.BidTypeVideo {
 				adsExt, err := unmarshalAdsExt(bid.Ext)
 				if err != nil {
-					return nil, []error{&errortypes.BadServerResponse{err.Error()}}
+					return nil, []error{&errortypes.BadServerResponse{Message: err.Error()}}
 				}
 				if adsExt == nil || adsExt.Video == nil {
 					return nil, []error{&errortypes.BadServerResponse{
-						"$.seatbid.bid.ext.ads.video required",
+						Message: "$.seatbid.bid.ext.ads.video required",
 					}}
 				}
 				bidVideo = &openrtb_ext.ExtBidPrebidVideo{
@@ -170,6 +190,18 @@ func (ads *AdopplerAdapter) MakeBids(
 	adsResp.Bids = bids
 
 	return adsResp, nil
+}
+
+func (ads *AdopplerAdapter) bidUri(ext *openrtb_ext.ExtImpAdoppler) (string, error) {
+	params := macros.EndpointTemplateParams{}
+	params.AdUnit = url.PathEscape(ext.AdUnit)
+	if ext.Client == "" {
+		params.AccountID = DefaultClient
+	} else {
+		params.AccountID = url.PathEscape(ext.Client)
+	}
+
+	return macros.ResolveMacros(ads.endpoint, params)
 }
 
 func unmarshalExt(ext json.RawMessage) (*openrtb_ext.ExtImpAdoppler, error) {

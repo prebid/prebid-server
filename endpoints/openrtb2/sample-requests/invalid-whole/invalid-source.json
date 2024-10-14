@@ -1,0 +1,43 @@
+{
+  "description": "Request with wrong source value",
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "app": {
+      "ext": {
+        "prebid": {
+          "source": { 
+            "foo": "prebid-mobile"
+          },
+          "version": "1.0"
+        }
+      }
+    },
+    "imp": [
+      {
+        "id": "my-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "pmp": {
+          "deals": [
+            {
+              "id": "some-deal-id"
+            }
+          ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          }
+        }
+      }
+    ]
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: cannot unmarshal openrtb_ext.ExtAppPrebid.Source: expects \" or n, but found {"
+}  

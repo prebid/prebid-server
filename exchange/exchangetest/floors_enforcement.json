@@ -1,0 +1,184 @@
+{
+    "floors_enabled": true,
+    "account_floors_enabled": true,
+    "incomingRequest": {
+      "ortbRequest": {
+        "id": "some-request-id",
+        "site": {
+          "page": "test.somepage.com"
+        },
+        "imp": [
+          {
+            "id": "my-imp-id",
+            "video": {
+              "mimes": [
+                "video/mp4"
+              ]
+            },
+            "ext": {
+              "prebid": {
+                "bidder": {
+                  "appnexus": {
+                    "placementId": 1
+                  },
+                  "audienceNetwork": {
+                    "placementId": "some-placement"
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "ext": {
+          "prebid": {
+            "floors": {
+              "data": {
+                "modelgroups": [
+                  {
+                    "currency": "USD",
+                    "modelversion": "version1",
+                    "default": 5,
+                    "values": {
+                      "banner|www.website.com": 3,
+                      "video|www.website.com": 7,
+                      "*|*": 11
+                    },
+                    "schema": {
+                      "fields": [
+                        "mediaType",
+                        "domain"
+                      ],
+                      "delimiter": "|"
+                    }
+                  }
+                ]
+              },
+              "enabled": true,
+              "enforcement": {
+                "enforcepbs": true,
+                "floordeals": true,
+                "enforcerate": 100
+              }
+            }
+          }
+        }
+      }
+    },
+    "outgoingRequests": {
+      "appnexus": {
+        "mockResponse": {
+          "pbsSeatBids": [
+            {
+              "pbsBids": [
+                {
+                  "ortbBid": {
+                    "id": "winning-bid1",
+                    "impid": "my-imp-id",
+                    "price": 12,
+                    "w": 200,
+                    "h": 250,
+                    "crid": "creative-1",
+                    "cat": [
+                      "IAB1-1"
+                    ]
+                  }
+                }
+              ],
+              "seat": "appnexus",
+              "currency": "USD"
+            }
+          ]
+        }
+      },
+      "audienceNetwork": {
+        "mockResponse": {
+          "pbsSeatBids": [
+            {
+              "pbsBids": [
+                {
+                  "ortbBid": {
+                    "id": "winning-bid2",
+                    "impid": "my-imp-id",
+                    "price": 7,
+                    "w": 200,
+                    "h": 250,
+                    "crid": "creative-1",
+                    "cat": [
+                      "IAB1-1"
+                    ]
+                  }
+                }
+              ],
+              "seat": "audienceNetwork",
+              "currency": "USD"
+            }
+          ]
+        }
+      }
+    },
+    "response": {
+      "bids": {
+        "id": "some-request-id",
+        "seatbid": [
+          {
+            "seat": "appnexus",
+            "bid": [
+              {
+                "id": "winning-bid1",
+                "impid": "my-imp-id",
+                "price": 12,
+                "w": 200,
+                "h": 250,
+                "crid": "creative-1",
+                "cat": [
+                  "IAB1-1"
+                ],
+                "ext": {
+                  "origbidcpm": 12,
+                  "prebid": {
+                    "meta": {
+                    },
+                    "floors": {
+                      "floorCurrency": "USD",
+                      "floorRule": "*|*",
+                      "floorRuleValue": 11,
+                      "floorValue": 11
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "ext": {
+        "prebid": {
+          "seatnonbid": [
+           {
+            "nonbid": [
+              {
+                "impid": "my-imp-id",
+                "statuscode": 301,
+                "ext": {
+                  "prebid": {
+                    "bid": {
+                      "price": 7,
+                      "w": 200,
+                      "h": 250,
+                      "origbidcpm": 7,
+                      "cat": [
+                        "IAB1-1"
+                      ]
+                    }
+                  }
+                }
+              }
+            ],
+            "seat": "audienceNetwork",
+            "ext": null
+          }
+        ]
+      }
+     }
+    }
+  }

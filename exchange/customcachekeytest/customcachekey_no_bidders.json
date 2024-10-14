@@ -27,10 +27,10 @@
     }],
     "expectedCacheables": [
         {
-            "Type": "xml",
-            "TTLSeconds": 660,
-            "Key": "11_sports_22_",
-            "Data":"\u003cVAST version=\"3.0\"\u003e\u003cAd\u003e\u003cWrapper\u003e\u003cAdSystem\u003eprebid.org wrapper\u003c/AdSystem\u003e\u003cVASTAdTagURI\u003e\u003c![CDATA[http://domain.com/win-notify/1]]\u003e\u003c/VASTAdTagURI\u003e\u003cImpression\u003e\u003c/Impression\u003e\u003cCreatives\u003e\u003c/Creatives\u003e\u003c/Wrapper\u003e\u003c/Ad\u003e\u003c/VAST\u003e" 
+            "type": "xml",
+            "ttlseconds": 660,
+            "key": "11_sports_22_",
+            "value":"\u003cVAST version=\"3.0\"\u003e\u003cAd\u003e\u003cWrapper\u003e\u003cAdSystem\u003eprebid.org wrapper\u003c/AdSystem\u003e\u003cVASTAdTagURI\u003e\u003c![CDATA[http://domain.com/win-notify/1]]\u003e\u003c/VASTAdTagURI\u003e\u003cImpression\u003e\u003c/Impression\u003e\u003cCreatives\u003e\u003c/Creatives\u003e\u003c/Wrapper\u003e\u003c/Ad\u003e\u003c/VAST\u003e"
         }
     ],
     "defaultTTLs": {

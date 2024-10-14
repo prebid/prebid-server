@@ -1,0 +1,157 @@
+{
+    "description": "FLEDGE request/response with additional contextual bids exist",
+    "fledge_enabled": true,
+    "debuglog": {
+        "enabled": false,
+        "debug_override": false,
+        "debug_enabled_or_overridden": false
+    },
+    "incomingRequest": {
+        "ortbRequest": {
+            "id": "some-request-id",
+            "site": {
+                "page": "test.somepage.com"
+            },
+            "imp": [
+                {
+                    "id": "my-imp-id",
+                    "banner": {
+                        "format": [{"w": 728, "h": 90}]
+                    },
+                    "ext": {
+                        "ae": 1,
+                        "prebid": {
+                            "bidder": {
+                                "openx": {
+                                    "unit": "539439964",
+                                    "delDomain": "se-demo-d.openx.net"
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    "outgoingRequests": {
+        "openx": {
+            "expectRequest": {
+                "ortbRequest": {
+                    "id": "some-request-id",
+                    "site": {
+                        "page": "test.somepage.com"
+                    },
+                    "imp": [{
+                        "id": "my-imp-id",
+                        "banner": {
+                            "format": [{"w": 728, "h": 90}]
+                        },
+                        "ext": {
+                            "ae": 1,
+                            "bidder": {
+                                "unit": "539439964",
+                                "delDomain": "se-demo-d.openx.net"
+                            }
+                        }
+                    }]
+                }
+            },
+            "mockResponse": {
+                "pbsSeatBids": [
+                    {
+                        "pbsBids": [
+                            {
+                                "ortbBid": {
+                                    "id": "apn-bid",
+                                    "impid": "my-imp-id",
+                                    "price": 0.3,
+                                    "w": 200,
+                                    "h": 250,
+                                    "crid": "creative-1",
+                                    "ext": {
+                                        "origbidcpm": 0.3,
+                                        "someField": "someValue"
+                                    }
+                                },
+                                "bidType": "video"
+                            }
+                        ],
+                        "seat": "openx",
+                        "fledgeAuctionConfigs": [
+                            {
+                                "impid": "test-request-id",
+                                "bidder": "openx",
+                                "config": {
+                                    "seller": "openx.com",
+                                    "interestGroupBuyers": ["buyer1.com"],
+                                    "sellerTimeout": 0,
+                                    "perBuyerSignals": {
+                                        "buyer1.com": [1,"two",3,4, {}]
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    },
+    "response": {
+        "bids": {
+            "id": "some-request-id",
+            "seatbid": [
+                {
+                    "seat": "openx",
+                    "bid": [
+                        {
+                            "id": "apn-bid",
+                            "impid": "my-imp-id",
+                            "price": 0.3,
+                            "w": 200,
+                            "h": 250,
+                            "crid": "creative-1",
+                            "ext": {
+                                "origbidcpm": 0.3,
+                                "someField": "someValue",
+                                "prebid": {
+                                    "meta": {
+                                    },
+                                    "type": "video"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        "ext": {
+            "prebid": {
+                "fledge": {
+                    "auctionconfigs": [
+                        {
+                            "impid": "test-request-id",
+                            "adapter":"openx",
+                            "bidder": "openx",
+                            "config": {
+                                "seller": "openx.com",
+                                "interestGroupBuyers": ["buyer1.com"],
+                                "sellerTimeout": 0,
+                                "perBuyerSignals": {
+                                    "buyer1.com": [1,"two",3,4, {}]
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            "warnings": {
+                "general": [
+                    {
+                        "code": 10002,
+                        "message": "debug turned off for account"
+                    }
+                ]
+            }
+        }
+    }
+}

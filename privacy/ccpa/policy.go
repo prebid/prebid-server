@@ -1,12 +1,15 @@
 package ccpa
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	gpplib "github.com/prebid/go-gpp"
+	gppConstants "github.com/prebid/go-gpp/constants"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	gppPolicy "github.com/prebid/prebid-server/v2/privacy/gpp"
 )
 
 // Policy represents the CCPA regulatory information from an OpenRTB bid request.
@@ -15,184 +18,134 @@ type Policy struct {
 	NoSaleBidders []string
 }
 
-// ReadFromRequest extracts the CCPA regulatory information from an OpenRTB bid request.
-func ReadFromRequest(req *openrtb.BidRequest) (Policy, error) {
-	var consent string
+// ReadFromRequestWrapper extracts the CCPA regulatory information from an OpenRTB bid request.
+func ReadFromRequestWrapper(req *openrtb_ext.RequestWrapper, gpp gpplib.GppContainer) (Policy, error) {
 	var noSaleBidders []string
+	var gppSIDs []int8
+	var requestUSPrivacy string
+	var warn error
 
-	if req == nil {
+	if req == nil || req.BidRequest == nil {
 		return Policy{}, nil
 	}
 
-	// Read consent from request.regs.ext
-	if req.Regs != nil && len(req.Regs.Ext) > 0 {
-		var ext openrtb_ext.ExtRegs
-		if err := json.Unmarshal(req.Regs.Ext, &ext); err != nil {
+	if req.BidRequest.Regs != nil {
+		requestUSPrivacy = req.BidRequest.Regs.USPrivacy
+		gppSIDs = req.BidRequest.Regs.GPPSID
+	}
+
+	consent, err := SelectCCPAConsent(requestUSPrivacy, gpp, gppSIDs)
+	if err != nil {
+		warn = &errortypes.Warning{
+			Message:     "regs.us_privacy consent does not match uspv1 in GPP, using regs.gpp",
+			WarningCode: errortypes.InvalidPrivacyConsentWarningCode}
+	}
+
+	if consent == "" {
+		// Read consent from request.regs.ext
+		regsExt, err := req.GetRegExt()
+		if err != nil {
 			return Policy{}, fmt.Errorf("error reading request.regs.ext: %s", err)
 		}
-		consent = ext.USPrivacy
-	}
-
-	// Read no sale bidders from request.ext.prebid
-	if len(req.Ext) > 0 {
-		var ext openrtb_ext.ExtRequest
-		if err := json.Unmarshal(req.Ext, &ext); err != nil {
-			return Policy{}, fmt.Errorf("error reading request.ext.prebid: %s", err)
+		if regsExt != nil {
+			consent = regsExt.GetUSPrivacy()
 		}
-		noSaleBidders = ext.Prebid.NoSale
+	}
+	// Read no sale bidders from request.ext.prebid
+	reqExt, err := req.GetRequestExt()
+	if err != nil {
+		return Policy{}, fmt.Errorf("error reading request.ext: %s", err)
+	}
+	reqPrebid := reqExt.GetPrebid()
+	if reqPrebid != nil {
+		noSaleBidders = reqPrebid.NoSale
 	}
 
-	return Policy{consent, noSaleBidders}, nil
+	return Policy{consent, noSaleBidders}, warn
+}
+
+func ReadFromRequest(req *openrtb2.BidRequest) (Policy, error) {
+	var gpp gpplib.GppContainer
+	if req != nil && req.Regs != nil && len(req.Regs.GPP) > 0 {
+		gpp, _ = gpplib.Parse(req.Regs.GPP)
+	}
+
+	return ReadFromRequestWrapper(&openrtb_ext.RequestWrapper{BidRequest: req}, gpp)
 }
 
 // Write mutates an OpenRTB bid request with the CCPA regulatory information.
-func (p Policy) Write(req *openrtb.BidRequest) error {
+func (p Policy) Write(req *openrtb_ext.RequestWrapper) error {
 	if req == nil {
 		return nil
 	}
 
-	regs, err := buildRegs(p.Consent, req.Regs)
-	if err != nil {
-		return err
-	}
-	ext, err := buildExt(p.NoSaleBidders, req.Ext)
+	regsExt, err := req.GetRegExt()
 	if err != nil {
 		return err
 	}
 
-	req.Regs = regs
-	req.Ext = ext
+	reqExt, err := req.GetRequestExt()
+	if err != nil {
+		return err
+	}
+
+	regsExt.SetUSPrivacy(p.Consent)
+	setPrebidNoSale(p.NoSaleBidders, reqExt)
 	return nil
 }
 
-func buildRegs(consent string, regs *openrtb.Regs) (*openrtb.Regs, error) {
-	if consent == "" {
-		return buildRegsClear(regs)
+func SelectCCPAConsent(requestUSPrivacy string, gpp gpplib.GppContainer, gppSIDs []int8) (string, error) {
+	var consent string
+	var err error
+
+	if len(gpp.SectionTypes) > 0 {
+		if gppPolicy.IsSIDInList(gppSIDs, gppConstants.SectionUSPV1) {
+			if i := gppPolicy.IndexOfSID(gpp, gppConstants.SectionUSPV1); i >= 0 {
+				consent = gpp.Sections[i].GetValue()
+			}
+		}
 	}
-	return buildRegsWrite(consent, regs)
+
+	if requestUSPrivacy != "" {
+		if consent == "" {
+			consent = requestUSPrivacy
+		} else if consent != requestUSPrivacy {
+			err = errors.New("request.us_privacy consent does not match uspv1")
+		}
+	}
+
+	return consent, err
 }
 
-func buildRegsClear(regs *openrtb.Regs) (*openrtb.Regs, error) {
-	if regs == nil || len(regs.Ext) == 0 {
-		return regs, nil
-	}
-
-	var extMap map[string]interface{}
-	if err := json.Unmarshal(regs.Ext, &extMap); err != nil {
-		return nil, err
-	}
-
-	delete(extMap, "us_privacy")
-
-	// Remove entire ext if it's now empty
-	if len(extMap) == 0 {
-		regsResult := *regs
-		regsResult.Ext = nil
-		return &regsResult, nil
-	}
-
-	// Marshal ext if there are still other fields
-	var regsResult openrtb.Regs
-	ext, err := json.Marshal(extMap)
-	if err == nil {
-		regsResult = *regs
-		regsResult.Ext = ext
-	}
-	return &regsResult, err
-}
-
-func buildRegsWrite(consent string, regs *openrtb.Regs) (*openrtb.Regs, error) {
-	if regs == nil {
-		return marshalRegsExt(openrtb.Regs{}, openrtb_ext.ExtRegs{USPrivacy: consent})
-	}
-
-	if regs.Ext == nil {
-		return marshalRegsExt(*regs, openrtb_ext.ExtRegs{USPrivacy: consent})
-	}
-
-	var extMap map[string]interface{}
-	if err := json.Unmarshal(regs.Ext, &extMap); err != nil {
-		return nil, err
-	}
-
-	extMap["us_privacy"] = consent
-	return marshalRegsExt(*regs, extMap)
-}
-
-func marshalRegsExt(regs openrtb.Regs, ext interface{}) (*openrtb.Regs, error) {
-	extJSON, err := json.Marshal(ext)
-	if err == nil {
-		regs.Ext = extJSON
-	}
-	return &regs, err
-}
-
-func buildExt(noSaleBidders []string, ext json.RawMessage) (json.RawMessage, error) {
+func setPrebidNoSale(noSaleBidders []string, ext *openrtb_ext.RequestExt) {
 	if len(noSaleBidders) == 0 {
-		return buildExtClear(ext)
+		setPrebidNoSaleClear(ext)
+	} else {
+		setPrebidNoSaleWrite(noSaleBidders, ext)
 	}
-	return buildExtWrite(noSaleBidders, ext)
 }
 
-func buildExtClear(ext json.RawMessage) (json.RawMessage, error) {
-	if len(ext) == 0 {
-		return ext, nil
-	}
-
-	var extMap map[string]interface{}
-	if err := json.Unmarshal(ext, &extMap); err != nil {
-		return nil, err
-	}
-
-	prebidExt, exists := extMap["prebid"]
-	if !exists {
-		return ext, nil
-	}
-
-	// Verify prebid is an object
-	prebidExtMap, ok := prebidExt.(map[string]interface{})
-	if !ok {
-		return nil, errors.New("request.ext.prebid is not a json object")
+func setPrebidNoSaleClear(ext *openrtb_ext.RequestExt) {
+	prebid := ext.GetPrebid()
+	if prebid == nil {
+		return
 	}
 
 	// Remove no sale member
-	delete(prebidExtMap, "nosale")
-	if len(prebidExtMap) == 0 {
-		delete(extMap, "prebid")
-	}
-
-	// Remove entire ext if it's empty
-	if len(extMap) == 0 {
-		return nil, nil
-	}
-
-	return json.Marshal(extMap)
+	prebid.NoSale = []string{}
+	ext.SetPrebid(prebid)
 }
 
-func buildExtWrite(noSaleBidders []string, ext json.RawMessage) (json.RawMessage, error) {
-	if len(ext) == 0 {
-		return json.Marshal(openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{NoSale: noSaleBidders}})
+func setPrebidNoSaleWrite(noSaleBidders []string, ext *openrtb_ext.RequestExt) {
+	if ext == nil {
+		// This should hopefully not be possible. The only caller insures that this has been initialized
+		return
 	}
 
-	var extMap map[string]interface{}
-	if err := json.Unmarshal(ext, &extMap); err != nil {
-		return nil, err
+	prebid := ext.GetPrebid()
+	if prebid == nil {
+		prebid = &openrtb_ext.ExtRequestPrebid{}
 	}
-
-	var prebidExt map[string]interface{}
-	if prebidExtInterface, exists := extMap["prebid"]; exists {
-		// Reference Existing Prebid Ext Map
-		if prebidExtMap, ok := prebidExtInterface.(map[string]interface{}); ok {
-			prebidExt = prebidExtMap
-		} else {
-			return nil, errors.New("request.ext.prebid is not a json object")
-		}
-	} else {
-		// Create New Empty Prebid Ext Map
-		prebidExt = make(map[string]interface{})
-		extMap["prebid"] = prebidExt
-	}
-
-	prebidExt["nosale"] = noSaleBidders
-	return json.Marshal(extMap)
+	prebid.NoSale = noSaleBidders
+	ext.SetPrebid(prebid)
 }

@@ -1,0 +1,125 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "bidfloor": 1.69,
+        "ext": {
+          "bidder": {
+            "tagid": "123456"
+          }
+        }
+      }
+    ],
+    "device": { },
+    "site": {
+      "domain": "www.publisher.com",
+      "page": "http://www.publisher.com/awesome/site"
+    },
+    "user": {
+      "buyeruid": "test_reader_id"
+    }
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Content-Type": ["application/json"],
+          "Cookie": ["ljt_reader=test_reader_id"]
+        },
+        "uri": "http://sovrn.com/test/endpoint",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  },
+                  {
+                    "w": 300,
+                    "h": 600
+                  }
+                ]
+              },
+              "tagid": "123456",
+              "bidfloor": 1.69,
+              "ext": {
+                "bidder": {
+                  "tagid": "123456"
+                }
+              }
+            }
+          ],
+          "site": {
+            "domain": "www.publisher.com",
+            "page": "http://www.publisher.com/awesome/site"
+          },
+          "user": {
+            "buyeruid": "test_reader_id"
+          },
+          "device": { }
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "a_449642_554a13d3b9f348fba707cf83f0f63800",
+                  "impid": "test-imp-id",
+                  "price": 3.5,
+                  "nurl": "http://sovrn.com/rtb/impression?bannerid=138743&campaignid=3699&zoneid=449642&cb=69493397&tid=a_449642_554a13d3b9f348fba707cf83f0f63800",
+                  "adm": "some-test-ad",
+                  "w": 300,
+                  "h": 250
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "a_449642_554a13d3b9f348fba707cf83f0f63800",
+            "impid": "test-imp-id",
+            "price": 3.5,
+            "adm": "some-test-ad",
+            "nurl": "http://sovrn.com/rtb/impression?bannerid=138743&campaignid=3699&zoneid=449642&cb=69493397&tid=a_449642_554a13d3b9f348fba707cf83f0f63800",
+            "w": 300,
+            "h": 250
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

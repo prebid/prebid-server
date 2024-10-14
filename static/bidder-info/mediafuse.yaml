@@ -1,0 +1,16 @@
+endpoint: "http://ib.adnxs.com/openrtb2"
+maintainer:
+  email: "support@mediafuse.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+# userSync:
+#   key: "adnxs"

@@ -1,9 +1,5 @@
-maintainer:
-  email: "scope.sspp@adform.com"
-capabilities:
-  app:
-    mediaTypes:
-      - banner
-  site:
-    mediaTypes:
-      - banner
+aliasOf: adf
+userSync:
+  redirect:
+    url: "https://cm.adform.net/cookie?redirect_url={{.RedirectURL}}"
+    userMacro: "$UID"

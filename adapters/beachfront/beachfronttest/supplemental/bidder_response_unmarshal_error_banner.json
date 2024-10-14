@@ -1,0 +1,83 @@
+{
+  "mockBidRequest": {
+    "id": "some_test_ad",
+    "site": {
+      "page": "https://some.domain.us/some/page.html"
+    },
+    "imp": [
+      {
+        "id":"test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "appId": "bannerAppId1"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://qa.beachrtb.com/prebid_display",
+        "body": {
+          "slots": [
+            {
+              "slot": "test-imp-id",
+              "id": "bannerAppId1",
+              "bidfloor": 0,
+              "sizes": [
+                {
+                  "w": 300,
+                  "h": 250
+                }
+              ]
+            }
+          ],
+          "domain": "some.domain.us",
+          "page": "https://some.domain.us/some/page.html",
+          "real204": true,
+          "referrer": "",
+          "search": "",
+          "secure": 1,
+          "requestId": "some_test_ad",
+          "isMobile": 0,
+          "ip": "",
+          "deviceModel": "",
+          "deviceOs": "",
+          "dnt": 0,
+          "ua": "",
+          "adapterName": "BF_PREBID_S2S",
+          "adapterVersion": "1.0.0",
+          "user": {},
+          "schain": {
+            "complete": 0,
+            "nodes": null,
+            "ver": ""
+          }
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+            "wrong": "very very wrong.",
+            "alsoWrong": "not even close to right."
+        }
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "server response failed to unmarshal as valid rtb. Run with request.debug = 1 for more info",
+      "comparison": "literal"
+    }
+  ]
+}

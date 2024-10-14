@@ -9,14 +9,32 @@ const (
 	BadServerResponseErrorCode
 	FailedToRequestBidsErrorCode
 	BidderTemporarilyDisabledErrorCode
-	BlacklistedAcctErrorCode
+	AccountDisabledErrorCode
 	AcctRequiredErrorCode
+	NoConversionRateErrorCode
+	MalformedAcctErrorCode
+	ModuleRejectionErrorCode
+	TmaxTimeoutErrorCode
+	FailedToMarshalErrorCode
+	FailedToUnmarshalErrorCode
+	InvalidImpFirstPartyDataErrorCode
 )
 
 // Defines numeric codes for well-known warnings.
 const (
 	UnknownWarningCode               = 10999
 	InvalidPrivacyConsentWarningCode = iota + 10000
+	AccountLevelDebugDisabledWarningCode
+	BidderLevelDebugDisabledWarningCode
+	DisabledCurrencyConversionWarningCode
+	AlternateBidderCodeWarningCode
+	MultiBidWarningCode
+	AdServerTargetingWarningCode
+	BidAdjustmentWarningCode
+	FloorBidRejectionWarningCode
+	InvalidBidResponseDSAWarningCode
+	SecCookieDeprecationLenWarningCode
+	SecBrowsingTopicsWarningCode
 )
 
 // Coder provides an error or warning code with severity.

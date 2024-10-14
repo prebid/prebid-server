@@ -1,6 +1,6 @@
 {
-  "message": "Invalid request: Request imp[0].banner.format[0] must define non-zero \"h\" and \"w\" properties.\n",
-  "requestPayload": {
+  "description": "Banner comes with a zero height value in format array element",
+  "mockBidRequest": {
     "id": "req-id",
     "imp": [
       {
@@ -18,5 +18,7 @@
     "app": {
       "id": "app_001"
     }
-  }
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: Request imp[0].banner.format[0] must define non-zero \"h\" and \"w\" properties.\n"
 }

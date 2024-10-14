@@ -1,0 +1,54 @@
+{
+  "description": "req.site is present; req.ext.prebid.data.bidders has appnexus and telaria bidders; req.ext.prebid.bidderconfig is defined for both bidders from req.ext.prebid.data.bidders; req.ext.prebid.bidderconfig for telaria has app config in it; expect to have validation error about app object is not defined in request",
+  "inputRequestData": {
+    "id": "bid_id",
+    "site": {
+      "id": "reqSiteId",
+      "page": "http://www.foobar.com/1234.html",
+      "publisher": {
+        "id": "1"
+      }
+    },
+    "test": 1,
+    "ext": {
+      "prebid": {
+        "data": {
+          "bidders": [
+            "appnexus", "telaria"
+          ]
+        },
+        "bidderconfig": [
+          {
+            "bidders": [
+              "appnexus"
+            ],
+            "config": {
+              "ortb2": {
+                "site": {
+                  "id": "apnSiteId"
+                }
+              }
+            }
+          },
+          {
+            "bidders": [
+              "telaria"
+            ],
+            "config": {
+              "ortb2": {
+                "app": {
+                  "id": "telariaAppId"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "outputRequestData":  {},
+  "biddersFPDResolved": {},
+  "validationErrors": [
+    {"Message": "incorrect First Party Data for bidder telaria: App object is not defined in request, but defined in FPD config"}
+  ]
+}

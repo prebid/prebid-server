@@ -1,6 +1,6 @@
 {
-  "message": "Invalid request: ext.prebid.storedrequest.id must be a string\n",
-  "requestPayload": {
+  "description": "Bid request with an invalid value for ext.prebid.storedrequest.id field",
+  "mockBidRequest": {
     "id": "some-request-id",
     "site": {
       "page": "test.somepage.com"
@@ -11,7 +11,7 @@
         "video": {
           "mimes": [
             "video/mp4"
-          ]
+            ]
         },
         "ext": {
           "appnexus": {
@@ -27,5 +27,7 @@
         }
       }
     }
-  }
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: ext.prebid.storedrequest.id must be a string\n"
 }

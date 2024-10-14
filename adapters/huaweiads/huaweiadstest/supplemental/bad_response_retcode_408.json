@@ -1,0 +1,158 @@
+{
+  "mockBidRequest": {
+    "id": "test-req-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ],
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "slotid": "m8x9x3rzff",
+            "adtype": "banner",
+            "publisherid": "123",
+            "signkey": "signkey",
+            "keyid": "41",
+            "isTestAuthorization": "true"
+          }
+        }
+      }
+    ],
+    "app": {
+      "bundle": "com.wavehk.android",
+      "name": "Huawei Browser",
+      "ver": "9.1.0.301"
+    },
+    "device": {
+      "ua": "useragent",
+      "h": 1920,
+      "language": "zh",
+      "geoCountry": "CH",
+      "model": "COL-TEST",
+      "os": "android",
+      "osv": "10.0.0",
+      "devicetype": 4,
+      "make": "huawei",
+      "w": 1080,
+      "ip": "ip",
+      "pxratio": 23.01,
+      "geo": {
+        "country": ""
+      }
+    },
+    "user": {
+      "ext": {
+        "data": {
+          "gaid": [
+            "gaid"
+          ],
+          "oaid": [
+            "oaid"
+          ],
+          "clientTime": [
+            "2018-11-02 16:34:07.981+1300"
+          ]
+        }
+      }
+    },
+    "ext": {
+    }
+  },
+  "httpcalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://adx-dra.op.hicloud.com/ppsadx/getResult",
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "User-Agent": [
+            "useragent"
+          ],
+          "Authorization": [
+            "Digest username=123,realm=ppsadx/getResult,nonce=1629473330823,response=d1d61a13a83e1468aa4dff5c8a6cee0b8b381173ca3eb6fa9b313937684d87c0,algorithm=HmacSHA256,usertype=1,keyid=41"
+          ]
+        },
+        "body": {
+          "app": {
+            "lang": "en",
+            "country": "ZA",
+            "name": "Huawei Browser",
+            "pkgname": "com.wavehk.android",
+            "version": "9.1.0.301"
+          },
+          "multislot": [
+            {
+              "adtype": 8,
+              "slotid": "m8x9x3rzff",
+              "test": 1,
+              "format": [
+                {
+                  "h": 250,
+                  "w": 300
+                }
+              ],
+              "h": 250,
+              "w": 300
+            }
+          ],
+          "device": {
+            "height": 1920,
+            "language": "zh",
+            "oaid": "oaid",
+            "os": "android",
+            "type": 4,
+            "ip": "ip",
+            "localeCountry": "ZA",
+            "pxratio": 23.01,
+            "width": 1080,
+            "clientTime": "2018-11-02 16:34:07.981+1300",
+            "gaid": "gaid",
+            "useragent": "useragent",
+            "version": "10.0.0",
+            "maker": "huawei",
+            "model": "COL-TEST",
+            "belongCountry": "ZA"
+          },
+          "geo": {
+          },
+          "network": {
+            "type": 0
+          },
+          "regs": {
+          },
+          "version": "3.4",
+          "clientAdRequestId": "test-req-id"
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "retcode": 408,
+          "reason": "SDK Version Missing"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+  ],
+  "expectedMakeRequestsErrors": [],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "HuaweiAdsResponse retcode: 408 , reason: SDK Version Missing",
+      "comparison": "literal"
+    }
+  ]
+}

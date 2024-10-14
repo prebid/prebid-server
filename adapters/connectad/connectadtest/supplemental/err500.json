@@ -1,0 +1,92 @@
+{
+    "mockBidRequest": {
+      "id": "test-request-id",
+      "imp": [
+        {
+          "id": "test-banner-imp-id",
+          "banner": {
+            "format": [
+              {
+                "w": 300,
+                "h": 250
+              }
+            ]
+          },
+          "ext": {
+            "bidder": {
+              "siteId": 123456,
+              "networkId": 123456
+            }
+          }
+        }
+      ],
+      "site": {
+        "domain": "connectad.io",
+        "page": "http://connectad.io/"
+      },
+      "device": {
+        "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36",
+        "ip": "111.111.111.111",
+        "dnt": 1
+      }
+    },
+    "httpCalls": [
+      {
+        "expectedRequest": {
+          "uri": "http://bidder.connectad.io/API?src=pbs",
+          "headers": {
+            "Accept": [
+              "application/json"
+            ],
+            "Content-Type": [
+              "application/json;charset=utf-8"
+            ],
+            "X-Forwarded-For": [
+              "111.111.111.111"
+            ],
+            "Dnt": [
+              "1"
+            ],
+            "User-Agent": [
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36"
+            ]
+          },
+          "body": {
+            "id": "test-request-id",
+            "imp": [
+              {
+                "id": "test-banner-imp-id",
+                "banner": {
+                  "w": 300,
+                  "h": 250
+                },
+                "tagid": "123456",
+                "secure": 0
+              }
+            ],
+            "site": {
+              "domain": "connectad.io",
+              "page": "http://connectad.io/"
+            },
+            "device": {
+              "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36",
+              "ip": "111.111.111.111",
+              "dnt": 1
+            }
+          },
+          "impIDs":["test-banner-imp-id"]
+        },
+        "mockResponse": {
+            "status": 500,
+            "body": {}
+        }
+      }
+    ],
+    "expectedMakeBidsErrors": [
+        {
+        "value": "Invalid Status Returned: 500. Run with request.debug = 1 for more info",
+        "comparison": "literal"
+        }
+    ]
+  }
+  

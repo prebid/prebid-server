@@ -1,6 +1,6 @@
 {
-  "message": "Invalid request: request.imp[0].banner uses unsupported property: \"wmax\". Use the \"format\" array instead.\n",
-  "requestPayload": {
+  "description": "Request comes with unsupported property 'wmax'",
+  "mockBidRequest": {
     "id": "req-id",
     "imp": [
       {
@@ -13,5 +13,7 @@
     "app": {
       "id": "app_001"
     }
-  }
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: request.imp[0].banner uses unsupported property: \"wmax\". Use the \"format\" array instead.\n"
 }

@@ -1,0 +1,120 @@
+{
+  "events_enabled": false,
+  "start_time_ms": 1234567890,
+  "incomingRequest": {
+    "ortbRequest": {
+      "id": "some-request-id",
+      "site": {
+        "id": "some-site"
+      },
+      "imp": [
+        {
+          "id": "my-imp-id",
+          "banner": {},
+          "ext": {
+            "prebid": {
+              "bidder": {
+                "appnexus": {
+                  "placementId": 1
+                }
+              }
+            }
+          }
+        }
+      ],
+      "ext": {
+        "prebid": {
+          "integration": "testIntegrationType",
+          "events": {}
+        }
+      }
+    }
+  },
+  "outgoingRequests": {
+    "appnexus": {
+      "mockResponse": {
+        "pbsSeatBids": [
+          {
+            "pbsBids": [
+              {
+                "ortbBid": {
+                  "id": "winning-bid",
+                  "impid": "my-imp-id",
+                  "price": 0.71,
+                  "w": 200,
+                  "h": 250,
+                  "crid": "creative-1"
+                },
+                "bidType": "banner"
+              },
+              {
+                "ortbBid": {
+                  "id": "losing-bid",
+                  "impid": "my-imp-id",
+                  "price": 0.21,
+                  "w": 200,
+                  "h": 250,
+                  "crid": "creative-2"
+                },
+                "bidType": "banner"
+              }
+            ],
+            "seat": "appnexus"
+          }
+        ]
+      }
+    }
+  },
+  "response": {
+    "bids": {
+      "id": "some-request-id",
+      "seatbid": [
+        {
+          "seat": "appnexus",
+          "bid": [
+            {
+              "id": "winning-bid",
+              "impid": "my-imp-id",
+              "price": 0.71,
+              "w": 200,
+              "h": 250,
+              "crid": "creative-1",
+              "ext": {
+                "origbidcpm": 0.71,
+                "prebid": {
+                  "meta": {
+                  },
+                  "type": "banner",
+                  "events": {
+                    "imp": "http://localhost/event?t=imp&b=winning-bid&a=testaccount&bidder=appnexus&int=testIntegrationType&ts=1234567890",
+                    "win": "http://localhost/event?t=win&b=winning-bid&a=testaccount&bidder=appnexus&int=testIntegrationType&ts=1234567890"
+                  }
+                }
+              }
+            },
+            {
+              "id": "losing-bid",
+              "impid": "my-imp-id",
+              "price": 0.21,
+              "w": 200,
+              "h": 250,
+              "crid": "creative-2",
+              "ext": {
+                "origbidcpm": 0.21,
+                "prebid": {
+                  "meta": {
+                  },
+                  "type": "banner",
+                  "events": {
+                    "imp": "http://localhost/event?t=imp&b=losing-bid&a=testaccount&bidder=appnexus&int=testIntegrationType&ts=1234567890",
+                    "win": "http://localhost/event?t=win&b=losing-bid&a=testaccount&bidder=appnexus&int=testIntegrationType&ts=1234567890"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

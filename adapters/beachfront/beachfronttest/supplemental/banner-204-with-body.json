@@ -1,0 +1,85 @@
+{
+  "mockBidRequest": {
+    "id": "some_test_ad",
+    "site": {
+      "page": "https://some.domain.us/some/page.html"
+    },
+    "imp": [
+      {
+        "id": "dudImp",
+        "bidfloor": 0.02,
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "bidfloor": 0.02,
+            "appId": "dudAppId1"
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://qa.beachrtb.com/prebid_display",
+        "body": {
+          "slots": [
+            {
+              "slot": "dudImp",
+              "id": "dudAppId1",
+              "bidfloor": 0.02,
+              "sizes": [
+                {
+                  "w": 300,
+                  "h": 250
+                }
+              ]
+            }
+          ],
+          "domain": "some.domain.us",
+          "page": "https://some.domain.us/some/page.html",
+          "real204": true,
+          "referrer": "",
+          "search": "",
+          "secure": 1,
+          "requestId": "some_test_ad",
+          "isMobile": 0,
+          "ip": "",
+          "deviceModel": "",
+          "deviceOs": "",
+          "dnt": 0,
+          "ua": "",
+          "adapterName": "BF_PREBID_S2S",
+          "adapterVersion": "1.0.0",
+          "user": {
+          },
+          "schain": {
+            "complete": 0,
+            "nodes": null,
+            "ver": ""
+          }
+        },
+        "impIDs":["dudImp"]
+      },
+      "mockResponse": {
+        "status": 204,
+        "body": [
+          {
+            "something": "where nothing should be"
+          }
+        ]
+      }
+    }
+  ],
+
+  "expectedBidResponses": []
+}
+

@@ -1,0 +1,333 @@
+{
+  "mockBidRequest": {
+    "id": "two-four-combo",
+    "imp": [
+      {
+        "id": "ComboADMVideoWithBannerImp1",
+        "ext": {
+          "bidder": {
+            "videoResponseType": "adm",
+            "bidfloor": 1.02,
+            "bidfloorcur": "USD",
+            "appIds": {
+              "banner": "bannerAppId1",
+              "video": "videoAppId1"
+            }
+          }
+        },
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 300,
+          "h": 400
+        },
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 400
+            }
+          ]
+        }
+      },
+      {
+        "id": "ComboNurlVideoWithBannerImp2",
+        "ext": {
+          "bidder": {
+            "videoResponsetype": "nurl",
+            "bidfloor": 1.01,
+            "bidfloorcur": "USD",
+            "appIds": {
+              "banner": "bannerAppId2",
+              "video": "videoAppId1"
+            }
+          }
+        },
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 100,
+          "h": 150
+        },
+        "banner": {
+          "format": [
+            {
+              "w": 100,
+              "h": 150
+            }
+          ]
+        }
+      }
+    ],
+    "site": {
+      "page": "http://example.com/whatever/something.html"
+    },
+    "device": {
+      "ip": "255.255.255.255"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://qa.beachrtb.com/prebid_display",
+        "body": {
+          "slots":[
+            {
+              "slot":"ComboADMVideoWithBannerImp1",
+              "id":"bannerAppId1",
+              "bidfloor":1.02,
+              "sizes":[
+                {
+                  "w":300,
+                  "h":400
+                }
+              ]
+            },
+            {
+              "slot":"ComboNurlVideoWithBannerImp2",
+              "id":"bannerAppId2",
+              "bidfloor":1.01,
+              "sizes":[
+                {
+                  "w":100,
+                  "h":150
+                }
+              ]
+            }
+          ],
+          "domain":"example.com",
+          "page":"http://example.com/whatever/something.html",
+          "real204": true,
+          "referrer":"",
+          "search":"",
+          "secure":0,
+          "deviceOs":"",
+          "deviceModel":"",
+          "isMobile":0,
+          "ua":"",
+          "dnt":0,
+          "user":{
+
+          },
+          "adapterName":"BF_PREBID_S2S",
+          "adapterVersion":"1.0.0",
+          "ip":"255.255.255.255",
+          "requestId":"two-four-combo",
+          "schain": {
+            "complete": 0,
+            "nodes": null,
+            "ver": ""
+          }
+
+        },
+        "impIDs":["ComboADMVideoWithBannerImp1","ComboNurlVideoWithBannerImp2"]
+      },
+      "mockResponse": {
+        "status": 200,
+
+        "body": [
+          {
+            "crid": "crid_1",
+            "price": 2.942808,
+            "w": 300,
+            "h": 250,
+            "slot": "div-gpt-ad-1460505748561-0",
+            "adm": "<div id=\"44861168\"><script>!function(){console.log\"Hello, ad.\";}();<\/script><\/div>"
+          },
+          {
+            "crid": "crid_1",
+            "price": 2.942808,
+            "w": 300,
+            "h": 250,
+            "slot": "div-gpt-ad-1460505748561-0",
+            "adm": "<div id=\"44861168\"><script>!function(){console.log\"Hello, ad.\";}();<\/script><\/div>"
+          }
+        ]
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "https://qa.beachrtb.com/bid.json?exchange_id=videoAppId1",
+        "body": {
+          "id":"two-four-combo",
+          "imp":[
+            {
+              "id":"ComboADMVideoWithBannerImp1",
+              "video":{
+                "mimes":[
+                  "video/mp4"
+                ],
+                "w":300,
+                "h":400
+              },
+              "bidfloor":1.02,
+              "bidfloorcur": "USD",
+              "secure":0
+            }
+          ],
+          "site":{
+            "domain":"example.com",
+            "page":"http://example.com/whatever/something.html"
+          },
+          "device":{
+            "devicetype": 2,
+            "ip":"255.255.255.255"
+          },
+          "cur":[
+            "USD"
+          ]
+        },
+        "impIDs":["ComboADMVideoWithBannerImp1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id":"two-four-combo",
+          "seatbid":[
+            {
+              "bid":[
+                {
+                  "id":"5fe7ad26d49d461ab0544836",
+                  "impid":"ComboADMVideoWithBannerImp1",
+                  "price":2.5500002,
+                  "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
+                  "adid":"22873",
+                  "adomain":[
+                    "nintendo.com"
+                  ],
+                  "cid":"6095",
+                  "crid":"0",
+                  "cat":[
+                    "IAB9-30"
+                  ],
+                  "w":300,
+                  "h":400,
+                  "ext":{
+                    "duration":30
+                  }
+                }
+              ],
+              "seat":"bfb-io-s1"
+            }
+          ],
+          "bidid":"5fe7ad26d49d461ab0544836",
+          "cur":"USD"
+        }
+      }
+    },
+    {
+      "expectedRequest":  {
+        "uri": "https://qa.beachrtb.com/bid.json?exchange_id=videoAppId1&prebidserver",
+        "body": {
+          "isPrebid":true,
+          "id":"two-four-combo",
+          "imp":[
+            {
+              "id":"ComboNurlVideoWithBannerImp2",
+              "video":{
+                "mimes":[
+                  "video/mp4"
+                ],
+                "w":100,
+                "h":150
+              },
+              "bidfloor":1.01,
+              "bidfloorcur": "USD",
+              "secure":0
+            }
+          ],
+          "site":{
+            "domain":"example.com",
+            "page":"http://example.com/whatever/something.html"
+          },
+          "device":{
+            "devicetype": 2,
+            "ip":"255.255.255.255"
+          },
+          "cur":[
+            "USD"
+          ]
+        },
+        "impIDs":["ComboNurlVideoWithBannerImp2"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id":"two-four-combo",
+          "seatBid":[
+            {
+              "bid":[
+                {
+                  "id":"ComboNurlVideoWithBannerImp2",
+                  "price":2.4700302,
+                  "nurl":"https://useast.bfmio.com/getmu?aid=bid:747f49a2-7a15-40bd-a43f-b8576eaa0368:2096a4df-d32c-4b7b-b46c-f4b5d717327a:2.5500002:2.5500002&v=1&dsp=5fe7a6ab3f06cc571bf5c897,1.01&i_type=pre",
+                  "w":300,
+                  "h":400
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+      {"currency":"USD","bids":[
+        {"bid": {
+            "adm": "<div id=\"44861168\"><script>!function(){console.log\"Hello, ad.\";}();</script></div>",
+            "crid": "crid_1",
+            "h": 250,
+            "id": "div-gpt-ad-1460505748561-0Banner",
+            "impid": "div-gpt-ad-1460505748561-0",
+            "price": 2.942808,
+            "w": 300
+        }, "type": "banner"},
+        {"bid": {
+            "adm": "<div id=\"44861168\"><script>!function(){console.log\"Hello, ad.\";}();</script></div>",
+            "crid": "crid_1",
+            "h": 250,
+            "id": "div-gpt-ad-1460505748561-0Banner",
+            "impid": "div-gpt-ad-1460505748561-0",
+            "price": 2.942808,
+            "w": 300
+        }, "type": "banner"}
+      ]},
+      {"currency":"USD","bids":[
+        {
+          "bid": {
+            "adid": "22873",
+            "adomain": ["nintendo.com"],
+            "id": "ComboADMVideoWithBannerImp1AdmVideo",
+            "impid": "ComboADMVideoWithBannerImp1",
+            "price": 2.5500002,
+            "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
+            "cat":["IAB9-30"],
+            "cid": "6095",
+            "crid": "0",
+            "w": 300,
+            "h": 400,
+            "ext": {
+              "duration": 30
+            }
+          },
+          "type": "video"
+        }
+      ]},
+      {"currency":"USD","bids":[
+        {
+          "bid": {
+              "crid": "747f49a2-7a15-40bd-a43f-b8576eaa0368",
+            "id": "ComboNurlVideoWithBannerImp2NurlVideo",
+            "impid": "ComboNurlVideoWithBannerImp2",
+            "nurl": "https://useast.bfmio.com/getmu?aid=bid:747f49a2-7a15-40bd-a43f-b8576eaa0368:2096a4df-d32c-4b7b-b46c-f4b5d717327a:2.5500002:2.5500002&v=1&dsp=5fe7a6ab3f06cc571bf5c897,1.01&i_type=pre",
+            "price": 2.4700302,
+            "w": 100,
+            "h": 150
+          },
+          "type": "video"
+        }
+      ]}
+  ]
+}

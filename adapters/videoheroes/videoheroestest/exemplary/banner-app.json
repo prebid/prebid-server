@@ -1,0 +1,141 @@
+{
+    "mockBidRequest": {
+      "id": "request-id",
+      "app": {
+        "publisher": {
+          "id": "123456789"
+        },
+        "cat": [
+          "IAB9-1"
+        ],
+        "bundle": "com.app.test",
+        "name": "Test App",
+        "id": "12345678"
+      },
+      "device": {
+        "ua": "useragent",
+        "ip": "100.100.100.100",
+        "language": "en"
+      },
+      "tmax": 1000,
+      "user": {
+        "id": "some-user"
+      },
+      "imp": [
+        {
+          "id": "impression-id",
+          "tagid": "tid",
+          "banner": {
+            "w":320,
+            "h":50
+          },
+          "ext": {
+            "bidder": {
+              "placementId": "f897beb0daba0253d8e59a098eef9311"
+            }
+          }
+        }
+      ]
+    },
+    "httpCalls": [
+    {
+        "expectedRequest": {
+          "headers": {
+            "Content-Type": [
+              "application/json;charset=utf-8"
+            ],
+            "Accept": [
+              "application/json"
+            ]
+          },
+          "uri": "http://point.contextualadv.com/?t=3&partner=f897beb0daba0253d8e59a098eef9311",
+          "body": {
+            "id": "request-id",
+            "device": {
+              "ua": "useragent",
+              "ip": "100.100.100.100",
+              "language": "en"
+            },
+            "imp": [
+              {
+                "id": "impression-id",
+                "banner": {
+                    "w":320,
+                    "h":50
+                },
+                "tagid": "tid"
+              }
+            ],
+            "app": {
+              "publisher": {
+                "id": "123456789"
+              },
+              "cat": [
+                "IAB9-1"
+              ],
+              "bundle": "com.app.test",
+              "name": "Test App",
+              "id": "12345678"
+            },
+            "user": {
+              "id": "some-user"
+            },
+            "tmax": 1000
+          },
+          "impIDs":["impression-id"]
+        },
+        "mockResponse": {
+          "status": 200,
+          "body": {
+            "id": "resp-id",
+            "seatbid": [
+              {
+                "bid": [
+                  {
+                    "id": "123456789",
+                    "impid": "impression-id",
+                    "price": 2,
+                    "adm": "adm code",
+                    "adomain": [
+                      "testdomain.com"
+                    ],
+                    "crid": "100",
+                    "w":320,
+                    "h":50
+                  }
+                ],
+              "type": "banner",
+                "seat": "videoheroes"
+              }
+            ],
+            "cur": "USD",
+            "ext": {
+              "responsetimemillis": {
+                "videoheroes": 120
+              },
+              "tmaxrequest": 1000
+            }
+          }
+        }
+      }
+    ],
+    "expectedBidResponses": [
+      {
+        "bids": [{
+          "bid": {
+            "id": "123456789",
+            "impid": "impression-id",
+            "price": 2,
+            "adm": "adm code",
+            "adomain": [
+              "testdomain.com"
+            ],
+            "crid": "100",
+            "w":320,
+            "h":50
+          },
+          "type": "banner"
+        }]
+      }
+    ]
+  }

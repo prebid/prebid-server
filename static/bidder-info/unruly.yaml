@@ -1,9 +1,17 @@
+endpoint: "https://targeting.unrulymedia.com/unruly_prebid_server"
 maintainer:
-  email: "adspaces@unrulygroup.com"
+  email: "prebidsupport@unrulygroup.com"
+gvlVendorID: 36
 capabilities:
-  site:
-    mediaTypes:
-      - video
   app:
     mediaTypes:
+      - banner
       - video
+  site:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  redirect:
+    url: "https://sync.1rx.io/usersync2/rmphb?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir={{.RedirectURL}}"
+    userMacro: "[RX_UUID]"

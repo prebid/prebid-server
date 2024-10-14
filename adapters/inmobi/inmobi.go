@@ -3,24 +3,28 @@ package inmobi
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
+
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type InMobiAdapter struct {
 	endPoint string
 }
 
-func NewInMobiAdapter(endpoint string) *InMobiAdapter {
-	return &InMobiAdapter{
-		endPoint: endpoint,
+// Builder builds a new instance of the InMobi adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	bidder := &InMobiAdapter{
+		endPoint: config.Endpoint,
 	}
+	return bidder, nil
 }
 
-func (a *InMobiAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *InMobiAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 
 	if len(request.Imp) == 0 {
@@ -49,10 +53,11 @@ func (a *InMobiAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 		Uri:     a.endPoint,
 		Body:    reqJson,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, errs
 }
 
-func (a *InMobiAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *InMobiAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -63,7 +68,7 @@ func (a *InMobiAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 		}}
 	}
 
-	var serverBidResponse openrtb.BidResponse
+	var serverBidResponse openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &serverBidResponse); err != nil {
 		return nil, []error{err}
 	}
@@ -72,7 +77,10 @@ func (a *InMobiAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 
 	for _, sb := range serverBidResponse.SeatBid {
 		for i := range sb.Bid {
-			mediaType := getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp)
+			mediaType, err := getMediaTypeForImp(sb.Bid[i])
+			if err != nil {
+				return nil, []error{err}
+			}
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &sb.Bid[i],
 				BidType: mediaType,
@@ -83,7 +91,7 @@ func (a *InMobiAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 	return bidResponse, nil
 }
 
-func preprocess(imp *openrtb.Imp) error {
+func preprocess(imp *openrtb2.Imp) error {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return &errortypes.BadInput{
@@ -113,15 +121,17 @@ func preprocess(imp *openrtb.Imp) error {
 	return nil
 }
 
-func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
-	mediaType := openrtb_ext.BidTypeBanner
-	for _, imp := range imps {
-		if imp.ID == impId {
-			if imp.Video != nil {
-				mediaType = openrtb_ext.BidTypeVideo
-			}
-			break
+func getMediaTypeForImp(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative, nil
+	default:
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Unsupported mtype %d for bid %s", bid.MType, bid.ID),
 		}
 	}
-	return mediaType
 }

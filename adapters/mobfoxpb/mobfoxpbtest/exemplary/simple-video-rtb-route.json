@@ -1,0 +1,126 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "device": {
+            "ip": "123.123.123.123",
+            "ifa": "zxcjbzxmc-zxcbmz-zxbcz-zxczx"
+        },
+        "app": {
+            "id": "1",
+            "bundle": "com.wls.testwlsapplication"
+        },
+        "imp": [
+            {
+                "id": "test-imp-id",
+                "video": {
+                    "mimes": [
+                        "video/mp4"
+                    ],
+                    "protocols": [
+                        2,
+                        5
+                    ],
+                    "w": 1024,
+                    "h": 576
+                },
+                "ext": {
+                    "bidder": {
+                        "TagID": "7"
+                    }
+                }
+            }
+        ]
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "http://example.com/?c=o&m=ortb&key=__key__",
+                "body": {
+                    "id": "test-request-id",
+                    "device": {
+                        "ip": "123.123.123.123",
+                        "ifa": "zxcjbzxmc-zxcbmz-zxbcz-zxczx"
+                    },
+                    "app": {
+                        "id": "1",
+                        "bundle": "com.wls.testwlsapplication"
+                    },
+                    "imp": [
+                        {
+                            "id": "test-imp-id",
+                            "video": {
+                                "mimes": [
+                                    "video/mp4"
+                                ],
+                                "protocols": [
+                                    2,
+                                    5
+                                ],
+                                "w": 1024,
+                                "h": 576
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "TagID": "7"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "impIDs":["test-imp-id"]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "test-request-id",
+                    "seatbid": [
+                        {
+                            "bid": [
+                                {
+                                    "id": "test_bid_id",
+                                    "impid": "test-imp-id",
+                                    "price": 0.27543,
+                                    "adm": "<VAST version=\"3.0\"><Ad id=\"20001\" sequence=\"1\"><InLine><AdSystem version=\"4.0\"><![CDATA[iabtechlab]]></AdSystem><AdTitle><![CDATA[Inline Simple Ad]]></AdTitle><Impression><![CDATA[]]></Impression><Creatives><Creative id=\"5480\" sequence=\"1\"><Linear><Duration>00:01:00</Duration><MediaFiles><MediaFile id=\"5246\" delivery=\"progressive\" type=\"video/mp4\" bitrate=\"600\" width=\"640\" height=\"360\" minBitrate=\"500\" maxBitrate=\"700\" scalable=\"1\" maintainAspectRatio=\"1\" codec=\"0\"><![CDATA[https://s0.2mdn.net/4253510/google_ddm_animation_480P.mp4]]></MediaFile></MediaFiles><VideoClicks><ClickThrough id=\"blog\"><![CDATA[https://example.com]]></ClickThrough></VideoClicks></Linear></Creative></Creatives></InLine></Ad></VAST>",
+                                    "cid": "test_cid",
+                                    "crid": "test_crid",
+                                    "dealid": "test_dealid",
+                                    "ext": {
+                                        "prebid": {
+                                            "type": "video"
+                                        }
+                                    }
+                                }
+                            ],
+                            "seat": "mobfoxpb"
+                        }
+                    ],
+                    "cur": "USD"
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "currency": "USD",
+            "bids": [
+                {
+                    "bid": {
+                        "id": "test_bid_id",
+                        "impid": "test-imp-id",
+                        "price": 0.27543,
+                        "adm": "<VAST version=\"3.0\"><Ad id=\"20001\" sequence=\"1\"><InLine><AdSystem version=\"4.0\"><![CDATA[iabtechlab]]></AdSystem><AdTitle><![CDATA[Inline Simple Ad]]></AdTitle><Impression><![CDATA[]]></Impression><Creatives><Creative id=\"5480\" sequence=\"1\"><Linear><Duration>00:01:00</Duration><MediaFiles><MediaFile id=\"5246\" delivery=\"progressive\" type=\"video/mp4\" bitrate=\"600\" width=\"640\" height=\"360\" minBitrate=\"500\" maxBitrate=\"700\" scalable=\"1\" maintainAspectRatio=\"1\" codec=\"0\"><![CDATA[https://s0.2mdn.net/4253510/google_ddm_animation_480P.mp4]]></MediaFile></MediaFiles><VideoClicks><ClickThrough id=\"blog\"><![CDATA[https://example.com]]></ClickThrough></VideoClicks></Linear></Creative></Creatives></InLine></Ad></VAST>",
+                        "cid": "test_cid",
+                        "crid": "test_crid",
+                        "dealid": "test_dealid",
+                        "ext": {
+                            "prebid": {
+                                "type": "video"
+                            }
+                        }
+                    },
+                    "type": "video"
+                }
+            ]
+        }
+    ]
+}

@@ -22,9 +22,6 @@
             "secure": 1,
             "ext": {
                 "bidder": {
-                    "ga_parms": {
-                        "place_on_page": "ATF"
-                    },
                     "size": [
                         300,
                         250
@@ -89,9 +86,6 @@
                     "secure": 1,
                     "ext": {
                         "bidder": {
-                            "ga_parms": {
-                                "place_on_page": "ATF"
-                            },
                             "size": [
                                 300,
                                 250
@@ -127,7 +121,8 @@
                         }
                     }
                 }
-            }
+            },
+            "impIDs":["test-imp-id"]
         },
         "mockResponse": {
             "status": 200,

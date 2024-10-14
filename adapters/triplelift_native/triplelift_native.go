@@ -3,12 +3,13 @@ package triplelift_native
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/golang/glog"
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
+
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type TripleliftNativeAdapter struct {
@@ -29,17 +30,27 @@ type TripleliftNativeExtInfo struct {
 	PublisherWhitelist []string `json:"publisher_whitelist"`
 
 	// Map is used for optimized memory access and should be constructed after deserialization.
-	PublisherWhitelistMap map[string]bool
+	PublisherWhitelistMap map[string]struct{}
+}
+
+type ExtImpData struct {
+	TagCode string `json:"tag_code"`
+}
+
+type ExtImp struct {
+	*adapters.ExtImpBidder
+	Data *ExtImpData `json:"data,omitempty"`
 }
 
 func getBidType(ext TripleliftRespExt) openrtb_ext.BidType {
 	return openrtb_ext.BidTypeNative
 }
 
-func processImp(imp *openrtb.Imp) error {
+func processImp(imp *openrtb2.Imp, request *openrtb2.BidRequest) error {
 	// get the triplelift extension
-	var ext adapters.ExtImpBidder
+	var ext ExtImp
 	var tlext openrtb_ext.ExtImpTriplelift
+
 	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
 		return err
 	}
@@ -49,21 +60,34 @@ func processImp(imp *openrtb.Imp) error {
 	if imp.Native == nil {
 		return fmt.Errorf("no native object specified")
 	}
-	if tlext.InvCode == "" {
-		return fmt.Errorf("no inv_code specified")
+
+	if ext.Data != nil && len(ext.Data.TagCode) > 0 && (msnInSite(request) || msnInApp(request)) {
+		imp.TagID = ext.Data.TagCode
+	} else {
+		imp.TagID = tlext.InvCode
 	}
-	imp.TagID = tlext.InvCode
+
 	// floor is optional
 	if tlext.Floor == nil {
 		return nil
 	}
 	imp.BidFloor = *tlext.Floor
-	// no error
+
 	return nil
 }
 
+// msnInApp returns whether msn.com is in request.app.publisher.domain
+func msnInApp(request *openrtb2.BidRequest) bool {
+	return request.App != nil && request.App.Publisher != nil && request.App.Publisher.Domain == "msn.com"
+}
+
+// msnInSite returns whether msn.com is in request.site.publisher.domain
+func msnInSite(request *openrtb2.BidRequest) bool {
+	return request.Site != nil && request.Site.Publisher != nil && request.Site.Publisher.Domain == "msn.com"
+}
+
 // Returns the effective publisher ID
-func effectivePubID(pub *openrtb.Publisher) string {
+func effectivePubID(pub *openrtb2.Publisher) string {
 	if pub != nil {
 		if pub.Ext != nil {
 			var pubExt openrtb_ext.ExtPublisher
@@ -79,16 +103,16 @@ func effectivePubID(pub *openrtb.Publisher) string {
 	return "unknown"
 }
 
-func (a *TripleliftNativeAdapter) MakeRequests(request *openrtb.BidRequest, extra *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *TripleliftNativeAdapter) MakeRequests(request *openrtb2.BidRequest, extra *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp)+1)
 	reqs := make([]*adapters.RequestData, 0, 1)
 	// copy the request, because we are going to mutate it
 	tlRequest := *request
 	// this will contain all the valid impressions
-	var validImps []openrtb.Imp
+	var validImps []openrtb2.Imp
 	// pre-process the imps
 	for _, imp := range tlRequest.Imp {
-		if err := processImp(&imp); err == nil {
+		if err := processImp(&imp, request); err == nil {
 			validImps = append(validImps, imp)
 		} else {
 			errs = append(errs, err)
@@ -119,18 +143,19 @@ func (a *TripleliftNativeAdapter) MakeRequests(request *openrtb.BidRequest, extr
 		Method:  "POST",
 		Uri:     ad,
 		Body:    reqJSON,
-		Headers: headers})
+		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(tlRequest.Imp)})
 	return reqs, errs
 }
 
-func getPublisher(request *openrtb.BidRequest) *openrtb.Publisher {
+func getPublisher(request *openrtb2.BidRequest) *openrtb2.Publisher {
 	if request.App != nil {
 		return request.App.Publisher
 	}
 	return request.Site.Publisher
 }
 
-func getBidCount(bidResponse openrtb.BidResponse) int {
+func getBidCount(bidResponse openrtb2.BidResponse) int {
 	c := 0
 	for _, sb := range bidResponse.SeatBid {
 		c = c + len(sb.Bid)
@@ -138,7 +163,7 @@ func getBidCount(bidResponse openrtb.BidResponse) int {
 	return c
 }
 
-func (a *TripleliftNativeAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *TripleliftNativeAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -152,7 +177,7 @@ func (a *TripleliftNativeAdapter) MakeBids(internalRequest *openrtb.BidRequest, 
 	if response.StatusCode != http.StatusOK {
 		return nil, []error{&errortypes.BadServerResponse{Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}}
 	}
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
@@ -174,27 +199,41 @@ func (a *TripleliftNativeAdapter) MakeBids(internalRequest *openrtb.BidRequest, 
 	return bidResponse, errs
 }
 
-func NewTripleliftNativeBidder(client *http.Client, endpoint string, extraInfo string) adapters.Bidder {
-	var extInfo TripleliftNativeExtInfo
-
-	if len(extraInfo) == 0 {
-		extraInfo = "{\"publisher_whitelist\":[]}"
-	}
-	if err := json.Unmarshal([]byte(extraInfo), &extInfo); err != nil {
-		glog.Errorf("Invalid TripleLife Native extra adapter info: " + err.Error())
-		return &adapters.MisconfiguredBidder{
-			Name:  "TripleliftNativeAdapter",
-			Error: fmt.Errorf("TripleliftNativeAdapter could not unmarshal config json"),
-		}
+// Builder builds a new instance of the TripleliftNative adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	extraInfo, err := getExtraInfo(config.ExtraAdapterInfo)
+	if err != nil {
+		return nil, err
 	}
 
 	// Populate map for faster memory access
-	extInfo.PublisherWhitelistMap = make(map[string]bool)
-	for _, v := range extInfo.PublisherWhitelist {
-		extInfo.PublisherWhitelistMap[v] = true
+	extraInfo.PublisherWhitelistMap = make(map[string]struct{}, len(extraInfo.PublisherWhitelist))
+	for _, v := range extraInfo.PublisherWhitelist {
+		extraInfo.PublisherWhitelistMap[v] = struct{}{}
 	}
 
-	return &TripleliftNativeAdapter{
-		extInfo:  extInfo,
-		endpoint: endpoint}
+	bidder := &TripleliftNativeAdapter{
+		endpoint: config.Endpoint,
+		extInfo:  extraInfo,
+	}
+	return bidder, nil
+}
+
+func getExtraInfo(v string) (TripleliftNativeExtInfo, error) {
+	if len(v) == 0 {
+		return getDefaultExtraInfo(), nil
+	}
+
+	var extraInfo TripleliftNativeExtInfo
+	if err := json.Unmarshal([]byte(v), &extraInfo); err != nil {
+		return extraInfo, fmt.Errorf("invalid extra info: %v", err)
+	}
+
+	return extraInfo, nil
+}
+
+func getDefaultExtraInfo() TripleliftNativeExtInfo {
+	return TripleliftNativeExtInfo{
+		PublisherWhitelist: []string{},
+	}
 }

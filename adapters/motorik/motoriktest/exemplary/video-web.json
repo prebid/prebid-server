@@ -1,0 +1,158 @@
+{
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "device": {
+      "ua": "test-user-agent",
+      "ip": "123.123.123.123",
+      "language": "en",
+      "dnt": 0
+    },
+    "tmax": 1000,
+    "user": {
+      "buyeruid": "awesome-user"
+    },
+    "site": {
+      "page": "test.com",
+      "publisher": {
+        "id": "123456789"
+      }
+    },
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "tagid": "ogTAGID",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 640,
+          "h": 480,
+          "minduration": 120,
+          "maxduration": 150
+        },
+        "ext": {
+          "bidder": {
+            "accountId": "accountId",
+            "placementId": "placementId"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "X-Openrtb-Version": [
+            "2.5"
+          ],
+          "User-Agent": [
+            "test-user-agent"
+          ],
+          "X-Forwarded-For": [
+            "123.123.123.123"
+          ]
+        },
+        "uri": "http://us.example.com/?k=accountId&name=placementId",
+        "body": {
+          "id": "some-request-id",
+          "device": {
+            "ua": "test-user-agent",
+            "ip": "123.123.123.123",
+            "language": "en",
+            "dnt": 0
+          },
+          "imp": [
+            {
+              "id": "some-impression-id",
+              "tagid": "ogTAGID",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "minduration": 120,
+                "maxduration": 150,
+                "w": 640,
+                "h": 480
+              }
+            }
+          ],
+          "site": {
+            "page": "test.com",
+            "publisher": {
+              "id": "123456789"
+            }
+          },
+          "user": {
+            "buyeruid": "awesome-user"
+          },
+          "tmax": 1000
+        },
+        "impIDs":["some-impression-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "awesome-resp-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "a3ae1b4e2fc24a4fb45540082e98e161",
+                  "impid": "some-impression-id",
+                  "price": 3.5,
+                  "adm": "awesome-markup",
+                  "adomain": [
+                    "awesome.com"
+                  ],
+                  "crid": "20",
+                  "w": 1280,
+                  "h": 720,
+                  "ext": {
+                    "prebid": {
+                      "type": "video"
+                    }
+                  }
+                }
+              ],
+              "seat": "motorik"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "a3ae1b4e2fc24a4fb45540082e98e161",
+            "impid": "some-impression-id",
+            "price": 3.5,
+            "adm": "awesome-markup",
+            "adomain": [
+              "awesome.com"
+            ],
+            "crid": "20",
+            "w": 1280,
+            "h": 720,
+            "ext": {
+              "prebid": {
+                "type": "video"
+              }
+            }
+          },
+          "type":"video"
+        }
+      ]
+    }
+  ]
+}

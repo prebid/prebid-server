@@ -1,6 +1,6 @@
 {
-  "message": "Invalid request: request.imp[0].native missing required property \"request\"\n",
-  "requestPayload": {
+  "description": "Bid request's sole imp element has empty Native field and does not define a Banner, Video nor Audio field",
+  "mockBidRequest": {
     "id": "req-id",
     "imp": [
       {
@@ -11,5 +11,7 @@
     "app": {
       "id": "app_001"
     }
-  }
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: request.imp[0].native missing required property \"request\"\n"
 }

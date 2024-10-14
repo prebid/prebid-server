@@ -1,269 +1,458 @@
 package ix
 
 import (
-	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+	"sort"
+	"strings"
 
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v2/version"
 
-	"github.com/prebid/prebid-server/pbs"
-
-	"golang.org/x/net/context/ctxhttp"
-
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/openrtb/v20/native1"
+	native1response "github.com/prebid/openrtb/v20/native1/response"
+	"github.com/prebid/openrtb/v20/openrtb2"
 )
 
-// maximum number of bid requests
-const requestLimit = 20
-
 type IxAdapter struct {
-	http *adapters.HTTPAdapter
-	URI  string
+	URI string
 }
 
-// Name is used for cookies and such
-func (a *IxAdapter) Name() string {
-	return string(openrtb_ext.BidderIx)
+type ExtRequest struct {
+	Prebid *openrtb_ext.ExtRequestPrebid `json:"prebid"`
+	SChain *openrtb2.SupplyChain         `json:"schain,omitempty"`
+	IxDiag *IxDiag                       `json:"ixdiag,omitempty"`
 }
 
-func (a *IxAdapter) SkipNoCookies() bool {
-	return false
+type IxDiag struct {
+	PbsV            string `json:"pbsv,omitempty"`
+	PbjsV           string `json:"pbjsv,omitempty"`
+	MultipleSiteIds string `json:"multipleSiteIds,omitempty"`
 }
 
-type indexParams struct {
-	SiteID string `json:"siteId"`
+type auctionConfig struct {
+	BidId  string          `json:"bidId,omitempty"`
+	Config json.RawMessage `json:"config,omitempty"`
 }
 
-type ixBidResult struct {
-	Request      *callOneObject
-	StatusCode   int
-	ResponseBody string
-	Bid          *pbs.PBSBid
-	Error        error
+type ixRespExt struct {
+	AuctionConfig []auctionConfig `json:"protectedAudienceAuctionConfigs,omitempty"`
 }
 
-type callOneObject struct {
-	requestJSON bytes.Buffer
-	width       uint64
-	height      uint64
-}
+func (a *IxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	requests := make([]*adapters.RequestData, 0, len(request.Imp))
+	errs := make([]error, 0)
 
-func isValidIXSize(f openrtb.Format, s [2]uint64) bool {
-	if f.W != s[0] || f.H != s[1] {
-		return false
+	headers := http.Header{
+		"Content-Type": {"application/json;charset=utf-8"},
+		"Accept":       {"application/json"}}
+
+	uniqueSiteIDs := make(map[string]struct{})
+	filteredImps := make([]openrtb2.Imp, 0, len(request.Imp))
+	requestCopy := *request
+
+	ixDiag := &IxDiag{}
+
+	for _, imp := range requestCopy.Imp {
+		var err error
+		ixExt, err := unmarshalToIxExt(&imp)
+
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		if err = parseSiteId(ixExt, uniqueSiteIDs); err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		if err := moveSid(&imp, ixExt); err != nil {
+			errs = append(errs, err)
+		}
+
+		if imp.Banner != nil {
+			bannerCopy := *imp.Banner
+
+			if len(bannerCopy.Format) == 0 && bannerCopy.W != nil && bannerCopy.H != nil {
+				bannerCopy.Format = []openrtb2.Format{{W: *bannerCopy.W, H: *bannerCopy.H}}
+			}
+
+			if len(bannerCopy.Format) == 1 {
+				bannerCopy.W = ptrutil.ToPtr(bannerCopy.Format[0].W)
+				bannerCopy.H = ptrutil.ToPtr(bannerCopy.Format[0].H)
+			}
+			imp.Banner = &bannerCopy
+		}
+		filteredImps = append(filteredImps, imp)
 	}
-	return true
-}
+	requestCopy.Imp = filteredImps
 
-func (a *IxAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
-	var prioritizedRequests, requests []callOneObject
+	setPublisherId(&requestCopy, uniqueSiteIDs, ixDiag)
 
-	if req.App != nil {
-		return nil, &errortypes.BadInput{
-			Message: "Index doesn't support apps",
+	err := setIxDiagIntoExtRequest(&requestCopy, ixDiag, version.Ver)
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	if len(requestCopy.Imp) != 0 {
+		if requestData, err := createRequestData(a, &requestCopy, &headers); err == nil {
+			requests = append(requests, requestData)
+		} else {
+			errs = append(errs, err)
 		}
 	}
-	mediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}
-	indexReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.Name(), mediaTypes)
 
-	if err != nil {
+	return requests, errs
+}
+
+func setPublisherId(requestCopy *openrtb2.BidRequest, uniqueSiteIDs map[string]struct{}, ixDiag *IxDiag) {
+	siteIDs := make([]string, 0, len(uniqueSiteIDs))
+	for key := range uniqueSiteIDs {
+		siteIDs = append(siteIDs, key)
+	}
+	if requestCopy.Site != nil {
+		site := *requestCopy.Site
+		if site.Publisher == nil {
+			site.Publisher = &openrtb2.Publisher{}
+		} else {
+			publisher := *site.Publisher
+			site.Publisher = &publisher
+		}
+		if len(siteIDs) == 1 {
+			site.Publisher.ID = siteIDs[0]
+		}
+		requestCopy.Site = &site
+	}
+
+	if requestCopy.App != nil {
+		app := *requestCopy.App
+
+		if app.Publisher == nil {
+			app.Publisher = &openrtb2.Publisher{}
+		} else {
+			publisher := *app.Publisher
+			app.Publisher = &publisher
+		}
+		if len(siteIDs) == 1 {
+			app.Publisher.ID = siteIDs[0]
+		}
+		requestCopy.App = &app
+	}
+
+	if len(siteIDs) > 1 {
+		// Sorting siteIDs for predictable output as Go maps don't guarantee order
+		sort.Strings(siteIDs)
+		multipleSiteIDs := strings.Join(siteIDs, ", ")
+		ixDiag.MultipleSiteIds = multipleSiteIDs
+	}
+}
+
+func unmarshalToIxExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpIx, error) {
+	var bidderExt adapters.ExtImpBidder
+	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, err
 	}
 
-	indexReqImp := indexReq.Imp
-	for i, unit := range bidder.AdUnits {
+	var ixExt openrtb_ext.ExtImpIx
+	if err := json.Unmarshal(bidderExt.Bidder, &ixExt); err != nil {
+		return nil, err
+	}
 
-		// Fixes some segfaults. Since this is legacy code, I'm not looking into it too deeply
-		if len(indexReqImp) <= i {
-			break
-		}
+	return &ixExt, nil
+}
 
-		var params indexParams
-		err := json.Unmarshal(unit.Params, &params)
-		if err != nil {
-			return nil, &errortypes.BadInput{
-				Message: fmt.Sprintf("unmarshal params '%s' failed: %v", unit.Params, err),
-			}
-		}
+func parseSiteId(ixExt *openrtb_ext.ExtImpIx, uniqueSiteIDs map[string]struct{}) error {
+	if ixExt == nil {
+		return fmt.Errorf("Nil Ix Ext")
+	}
+	if ixExt.SiteId != "" {
+		uniqueSiteIDs[ixExt.SiteId] = struct{}{}
+	}
+	return nil
+}
 
-		if params.SiteID == "" {
-			return nil, &errortypes.BadInput{
-				Message: "Missing siteId param",
-			}
-		}
+func createRequestData(a *IxAdapter, request *openrtb2.BidRequest, headers *http.Header) (*adapters.RequestData, error) {
+	body, err := json.Marshal(request)
+	return &adapters.RequestData{
+		Method:  "POST",
+		Uri:     a.URI,
+		Body:    body,
+		Headers: *headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
+	}, err
+}
 
-		for sizeIndex, format := range unit.Sizes {
-			// Only grab this ad unit
-			// Not supporting multi-media-type adunit yet
-			thisImp := indexReqImp[i]
+func (a *IxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	switch {
+	case response.StatusCode == http.StatusNoContent:
+		return nil, nil
+	case response.StatusCode == http.StatusBadRequest:
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+		}}
+	case response.StatusCode != http.StatusOK:
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+		}}
+	}
 
-			thisImp.TagID = unit.Code
-			thisImp.Banner.Format = []openrtb.Format{format}
-			thisImp.Banner.W = &format.W
-			thisImp.Banner.H = &format.H
-			indexReq.Imp = []openrtb.Imp{thisImp}
-			// Index spec says "adunit path representing ad server inventory" but we don't have this
-			// ext is DFP div ID and KV pairs if avail
-			//indexReq.Imp[i].Ext = json.RawMessage("{}")
+	var bidResponse openrtb2.BidResponse
+	if err := json.Unmarshal(response.Body, &bidResponse); err != nil {
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: fmt.Sprintf("JSON parsing error: %v", err),
+		}}
+	}
 
-			// Any objects pointed to by indexReq *must not be mutated*, or we will get race conditions.
-			siteCopy := *indexReq.Site
-			siteCopy.Publisher = &openrtb.Publisher{ID: params.SiteID}
-			indexReq.Site = &siteCopy
-
-			// spec also asks for publisher id if set
-			// ext object on request for prefetch
-			j, _ := json.Marshal(indexReq)
-
-			request := callOneObject{requestJSON: *bytes.NewBuffer(j), width: format.W, height: format.H}
-
-			// prioritize slots over sizes
-			if sizeIndex == 0 {
-				prioritizedRequests = append(prioritizedRequests, request)
-			} else {
-				requests = append(requests, request)
-			}
+	// Store media type per impression in a map for later use to set in bid.ext.prebid.type
+	// Won't work for multiple bid case with a multi-format ad unit. We expect to get type from exchange on such case.
+	impMediaTypeReq := map[string]openrtb_ext.BidType{}
+	for _, imp := range internalRequest.Imp {
+		if imp.Banner != nil {
+			impMediaTypeReq[imp.ID] = openrtb_ext.BidTypeBanner
+		} else if imp.Video != nil {
+			impMediaTypeReq[imp.ID] = openrtb_ext.BidTypeVideo
+		} else if imp.Native != nil {
+			impMediaTypeReq[imp.ID] = openrtb_ext.BidTypeNative
+		} else if imp.Audio != nil {
+			impMediaTypeReq[imp.ID] = openrtb_ext.BidTypeAudio
 		}
 	}
 
-	// cap the number of requests to requestLimit
-	requests = append(prioritizedRequests, requests...)
-	if len(requests) > requestLimit {
-		requests = requests[:requestLimit]
-	}
+	// capacity 0 will make channel unbuffered
+	bidderResponse := adapters.NewBidderResponseWithBidsCapacity(0)
+	bidderResponse.Currency = bidResponse.Cur
 
-	if len(requests) == 0 {
-		return nil, &errortypes.BadInput{
-			Message: "Invalid ad unit/imp/size",
-		}
-	}
+	var errs []error
 
-	ch := make(chan ixBidResult)
-	for _, request := range requests {
-		go func(bidder *pbs.PBSBidder, request callOneObject) {
-			result, err := a.callOne(ctx, request.requestJSON)
-			result.Request = &request
-			result.Error = err
-			if result.Bid != nil {
-				result.Bid.BidderCode = bidder.BidderCode
-				result.Bid.BidID = bidder.LookupBidID(result.Bid.AdUnitCode)
-				result.Bid.Width = request.width
-				result.Bid.Height = request.height
+	for _, seatBid := range bidResponse.SeatBid {
+		for i := range seatBid.Bid {
+			bid := seatBid.Bid[i]
 
-				if result.Bid.BidID == "" {
-					result.Error = &errortypes.BadServerResponse{
-						Message: fmt.Sprintf("Unknown ad unit code '%s'", result.Bid.AdUnitCode),
+			bidType, err := getMediaTypeForBid(bid, impMediaTypeReq)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+
+			var bidExtVideo *openrtb_ext.ExtBidPrebidVideo
+			var bidExt openrtb_ext.ExtBid
+			if bidType == openrtb_ext.BidTypeVideo {
+				unmarshalExtErr := json.Unmarshal(bid.Ext, &bidExt)
+				if unmarshalExtErr == nil && bidExt.Prebid != nil && bidExt.Prebid.Video != nil {
+					bidExtVideo = &openrtb_ext.ExtBidPrebidVideo{
+						Duration: bidExt.Prebid.Video.Duration,
 					}
-					result.Bid = nil
+					if len(bid.Cat) == 0 {
+						bid.Cat = []string{bidExt.Prebid.Video.PrimaryCategory}
+					}
 				}
 			}
-			ch <- result
-		}(bidder, request)
-	}
 
-	bids := make(pbs.PBSBidSlice, 0)
-	for i := 0; i < len(requests); i++ {
-		result := <-ch
-		if result.Bid != nil && result.Bid.Price != 0 {
-			bids = append(bids, result.Bid)
-		}
-
-		if req.IsDebug {
-			debug := &pbs.BidderDebug{
-				RequestURI:   a.URI,
-				RequestBody:  result.Request.requestJSON.String(),
-				StatusCode:   result.StatusCode,
-				ResponseBody: result.ResponseBody,
+			var bidNative1v1 *Native11Wrapper
+			if bidType == openrtb_ext.BidTypeNative {
+				err := json.Unmarshal([]byte(bid.AdM), &bidNative1v1)
+				if err == nil && len(bidNative1v1.Native.EventTrackers) > 0 {
+					mergeNativeImpTrackers(&bidNative1v1.Native)
+					if json, err := marshalJsonWithoutUnicode(bidNative1v1); err == nil {
+						bid.AdM = string(json)
+					}
+				}
 			}
-			bidder.Debug = append(bidder.Debug, debug)
-		}
-		if result.Error != nil {
-			err = result.Error
+
+			var bidNative1v2 *native1response.Response
+			if bidType == openrtb_ext.BidTypeNative {
+				err := json.Unmarshal([]byte(bid.AdM), &bidNative1v2)
+				if err == nil && len(bidNative1v2.EventTrackers) > 0 {
+					mergeNativeImpTrackers(bidNative1v2)
+					if json, err := marshalJsonWithoutUnicode(bidNative1v2); err == nil {
+						bid.AdM = string(json)
+					}
+				}
+			}
+
+			bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
+				Bid:      &bid,
+				BidType:  bidType,
+				BidVideo: bidExtVideo,
+			})
 		}
 	}
 
-	if len(bids) == 0 {
-		return nil, err
+	if bidResponse.Ext != nil {
+		var bidRespExt ixRespExt
+		if err := json.Unmarshal(bidResponse.Ext, &bidRespExt); err != nil {
+			return nil, append(errs, err)
+		}
+
+		if bidRespExt.AuctionConfig != nil {
+			bidderResponse.FledgeAuctionConfigs = make([]*openrtb_ext.FledgeAuctionConfig, 0, len(bidRespExt.AuctionConfig))
+			for _, config := range bidRespExt.AuctionConfig {
+				if config.Config != nil {
+					fledgeAuctionConfig := &openrtb_ext.FledgeAuctionConfig{
+						ImpId:  config.BidId,
+						Config: config.Config,
+					}
+					bidderResponse.FledgeAuctionConfigs = append(bidderResponse.FledgeAuctionConfigs, fledgeAuctionConfig)
+				}
+			}
+		}
 	}
-	return bids, nil
+
+	return bidderResponse, errs
 }
 
-func (a *IxAdapter) callOne(ctx context.Context, reqJSON bytes.Buffer) (ixBidResult, error) {
-	var result ixBidResult
-
-	httpReq, _ := http.NewRequest("POST", a.URI, &reqJSON)
-	httpReq.Header.Add("Content-Type", "application/json;charset=utf-8")
-	httpReq.Header.Add("Accept", "application/json")
-
-	ixResp, err := ctxhttp.Do(ctx, a.http.Client, httpReq)
-	if err != nil {
-		return result, err
+func getMediaTypeForBid(bid openrtb2.Bid, impMediaTypeReq map[string]openrtb_ext.BidType) (openrtb_ext.BidType, error) {
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
+	case openrtb2.MarkupAudio:
+		return openrtb_ext.BidTypeAudio, nil
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative, nil
 	}
 
-	result.StatusCode = ixResp.StatusCode
-
-	if ixResp.StatusCode == http.StatusNoContent {
-		return result, nil
-	}
-
-	if ixResp.StatusCode == http.StatusBadRequest {
-		return result, &errortypes.BadInput{
-			Message: fmt.Sprintf("HTTP status: %d", ixResp.StatusCode),
+	if bid.Ext != nil {
+		var bidExt openrtb_ext.ExtBid
+		err := json.Unmarshal(bid.Ext, &bidExt)
+		if err == nil && bidExt.Prebid != nil {
+			prebidType := string(bidExt.Prebid.Type)
+			if prebidType != "" {
+				return openrtb_ext.ParseBidType(prebidType)
+			}
 		}
 	}
 
-	if ixResp.StatusCode != http.StatusOK {
-		return result, &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("HTTP status: %d", ixResp.StatusCode),
-		}
+	if bidType, ok := impMediaTypeReq[bid.ImpID]; ok {
+		return bidType, nil
+	} else {
+		return "", fmt.Errorf("unmatched impression id: %s", bid.ImpID)
 	}
-
-	defer ixResp.Body.Close()
-	body, err := ioutil.ReadAll(ixResp.Body)
-	if err != nil {
-		return result, err
-	}
-	result.ResponseBody = string(body)
-
-	var bidResp openrtb.BidResponse
-	err = json.Unmarshal(body, &bidResp)
-	if err != nil {
-		return result, &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Error parsing response: %v", err),
-		}
-	}
-
-	if len(bidResp.SeatBid) == 0 {
-		return result, nil
-	}
-	if len(bidResp.SeatBid[0].Bid) == 0 {
-		return result, nil
-	}
-	bid := bidResp.SeatBid[0].Bid[0]
-
-	result.Bid = &pbs.PBSBid{
-		AdUnitCode:        bid.ImpID,
-		Price:             bid.Price,
-		Adm:               bid.AdM,
-		Creative_id:       bid.CrID,
-		Width:             bid.W,
-		Height:            bid.H,
-		DealId:            bid.DealID,
-		CreativeMediaType: string(openrtb_ext.BidTypeBanner),
-	}
-	return result, nil
 }
 
-func NewIxAdapter(config *adapters.HTTPAdapterConfig, uri string) *IxAdapter {
-	a := adapters.NewHTTPAdapter(config)
-	return &IxAdapter{
-		http: a,
-		URI:  uri,
+// Builder builds a new instance of the Ix adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	bidder := &IxAdapter{
+		URI: config.Endpoint,
 	}
+	return bidder, nil
+}
+
+// native 1.2 to 1.1 tracker compatibility handling
+
+type Native11Wrapper struct {
+	Native native1response.Response `json:"native,omitempty"`
+}
+
+func mergeNativeImpTrackers(bidNative *native1response.Response) {
+
+	// create unique list of imp pixels urls from `imptrackers` and `eventtrackers`
+	uniqueImpPixels := map[string]struct{}{}
+	for _, v := range bidNative.ImpTrackers {
+		uniqueImpPixels[v] = struct{}{}
+	}
+
+	for _, v := range bidNative.EventTrackers {
+		if v.Event == native1.EventTypeImpression && v.Method == native1.EventTrackingMethodImage {
+			uniqueImpPixels[v.URL] = struct{}{}
+		}
+	}
+
+	// rewrite `imptrackers` with new deduped list of imp pixels
+	bidNative.ImpTrackers = make([]string, 0)
+	for k := range uniqueImpPixels {
+		bidNative.ImpTrackers = append(bidNative.ImpTrackers, k)
+	}
+
+	// sort so tests pass correctly
+	sort.Strings(bidNative.ImpTrackers)
+}
+
+func marshalJsonWithoutUnicode(v interface{}) (string, error) {
+	// json.Marshal uses HTMLEscape for strings inside JSON which affects URLs
+	// this is a problem with Native responses that embed JSON within JSON
+	// a custom encoder can be used to disable this encoding.
+	// https://pkg.go.dev/encoding/json#Marshal
+	// https://pkg.go.dev/encoding/json#Encoder.SetEscapeHTML
+	sb := &strings.Builder{}
+	encoder := json.NewEncoder(sb)
+	encoder.SetEscapeHTML(false)
+	if err := encoder.Encode(v); err != nil {
+		return "", err
+	}
+	// json.Encode also writes a newline, need to remove
+	// https://pkg.go.dev/encoding/json#Encoder.Encode
+	return strings.TrimSuffix(sb.String(), "\n"), nil
+}
+
+// extractVersionWithoutCommitHash takes a version string like '0.23.1-g4ee257d8' and returns
+// the prefix without the commit hash: '0.23.1' -
+// the substring preceding the first hyphen.
+func extractVersionWithoutCommitHash(ver string) string {
+	if strings.Contains(ver, "-") {
+		return ver[:strings.Index(ver, "-")]
+	}
+	return ver // if no hyphen, return the original string
+}
+
+func setIxDiagIntoExtRequest(request *openrtb2.BidRequest, ixDiag *IxDiag, ver string) error {
+	extRequest := &ExtRequest{}
+	if request.Ext != nil {
+		if err := json.Unmarshal(request.Ext, &extRequest); err != nil {
+			return err
+		}
+	}
+
+	if extRequest.Prebid != nil && extRequest.Prebid.Channel != nil {
+		ixDiag.PbjsV = extRequest.Prebid.Channel.Version
+	}
+	// Slice commit hash out of version
+	if ver != "" {
+		ixDiag.PbsV = extractVersionWithoutCommitHash(ver)
+	}
+
+	// Only set request.ext if ixDiag is not empty
+	if *ixDiag != (IxDiag{}) {
+		extRequest := &ExtRequest{}
+		if request.Ext != nil {
+			if err := json.Unmarshal(request.Ext, &extRequest); err != nil {
+				return err
+			}
+		}
+		extRequest.IxDiag = ixDiag
+		extRequestJson, err := json.Marshal(extRequest)
+		if err != nil {
+			return err
+		}
+		request.Ext = extRequestJson
+	}
+	return nil
+}
+
+// moves sid from imp[].ext.bidder.sid to imp[].ext.sid
+func moveSid(imp *openrtb2.Imp, ixExt *openrtb_ext.ExtImpIx) error {
+	if ixExt == nil {
+		return fmt.Errorf("Nil Ix Ext")
+	}
+
+	if ixExt.Sid != "" {
+		var m map[string]interface{}
+		if err := json.Unmarshal(imp.Ext, &m); err != nil {
+			return err
+		}
+		m["sid"] = ixExt.Sid
+		ext, err := json.Marshal(m)
+		if err != nil {
+			return err
+		}
+		imp.Ext = ext
+	}
+	return nil
 }

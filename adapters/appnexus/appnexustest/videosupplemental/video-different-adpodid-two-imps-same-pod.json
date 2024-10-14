@@ -1,0 +1,48 @@
+{
+	"mockBidRequest": {
+	  "id": "test-request-id",
+	  "imp": [
+		{
+		  "id": "1_1",
+		  "video": {
+			"mimes": ["video/mp4"],
+			"minduration": 15,
+			"maxduration": 30,
+			"protocols": [2, 3, 5, 6, 7, 8],
+			"w": 940,
+			"h": 560
+		  },
+		  "ext": {
+			"bidder": {
+			  "placement_id": 1,
+			  "generate_ad_pod_id": false
+			}
+		  }
+		},
+		{
+		  "id": "1_2",
+		  "video": {
+			  "mimes": ["video/mp4"],
+			  "minduration": 15,
+			  "maxduration": 30,
+			  "protocols": [2, 3, 5, 6, 7, 8],
+			  "w": 940,
+			  "h": 560
+		  },
+		  "ext": {
+			  "bidder": {
+				  "placement_id": 1,
+				  "generate_ad_pod_id": true
+			  }
+		  }
+		}
+	  ]
+	},
+
+	"expectedMakeRequestsErrors": [
+		{
+			"value": "generate ad pod option should be same for all pods in request",
+			"comparison": "literal"
+		}
+	]
+  }

@@ -1,0 +1,202 @@
+{
+   "mockBidRequest": {
+     "id": "8652a8680db33faabbf3fa76150f35df50a67060",
+     "imp": [
+       {
+         "id": "121-dt1",
+         "banner": {
+           "h": 250,
+           "w": 300,
+           "pos": 1
+         },
+         "bidfloor": 0.05,
+         "ext": {
+            "bidder": {
+              "pubId": "386276e072"
+            }
+          }
+        },
+       {
+         "id": "121-dt2",
+         "banner": {
+           "h": 728,
+           "w": 90,
+           "pos": 0
+         },
+         "bidfloor": 0.12,
+         "ext": {
+            "bidder": {
+              "pubId": "386276e072",
+              "ext": {
+                "key1": "value1",
+                "key2": "value2"
+              }
+            }
+          }
+       }
+     ],
+     "site": {
+       "id": "15047",
+       "domain": "dailymotion.com",
+       "cat": ["IAB1"],
+       "page": "http://www.dailymotion.com/video/xxeauj_www-dramacafe-tv-hd-yyyy-yy-yyyyyyy-2012-yyyy_shortfilms",
+       "publisher": {
+         "id": "8796",
+         "name": "dailymotion",
+         "cat": ["IAB3-1"],
+         "domain": "dailymotion.com"
+       }
+     },
+     "user": {
+       "id": "518c3da3717203f34019b038"
+     },
+     "device": {
+       "ua": "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1; Trident/4.0; GTB7.4; (R1 1.6); SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; Media Center PC 6.0)",
+       "ip": "123.145.167.189"
+     },
+     "at": 1,
+     "cur": [
+       "USD"
+     ]
+   },
+   "httpCalls": [
+     {
+       "expectedRequest": {
+         "uri": "https://example.com/prebid-server/386276e072",
+         "headers": {},
+         "body": {
+           "id": "8652a8680db33faabbf3fa76150f35df50a67060",
+           "imp": [
+             {
+               "id": "121-dt1",
+               "banner": {
+                 "h": 250,
+                 "w": 300,
+                 "pos": 1
+               },
+               "bidfloor": 0.05
+             },
+             {
+               "id": "121-dt2",
+               "banner": {
+                 "h": 728,
+                 "w": 90,
+                 "pos": 0
+               },
+               "bidfloor": 0.12,
+               "ext": {
+                  "key1": "value1",
+                  "key2": "value2"
+               }
+             }
+           ],
+           "site": {
+             "id": "15047",
+             "domain": "dailymotion.com",
+             "cat": ["IAB1"],
+             "page": "http://www.dailymotion.com/video/xxeauj_www-dramacafe-tv-hd-yyyy-yy-yyyyyyy-2012-yyyy_shortfilms",
+             "publisher": {
+               "id": "8796",
+               "name": "dailymotion",
+               "cat": ["IAB3-1"],
+               "domain": "dailymotion.com"
+             }
+           },
+           "user": {
+             "id": "518c3da3717203f34019b038"
+           },
+           "device": {
+             "ua": "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1; Trident/4.0; GTB7.4; (R1 1.6); SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; Media Center PC 6.0)",
+             "ip": "123.145.167.189"
+           },
+           "at": 1,
+           "cur": [
+             "USD"
+           ]
+         },
+         "impIDs":["121-dt1","121-dt2"]
+       },
+       "mockResponse": {
+         "status": 200,
+         "headers": {},
+         "body": {
+           "id": "BID-4-ZIMP-4b309eae-504a-4252-a8a8-4c8ceee9791a",
+           "seatbid": [
+             {
+               "bid": [
+                 {
+                  "adid": "52a12b5955314b7194a4c9ff",
+                  "adm": "<iframe src=\"http://ads.com/render/52a12b5955314b7194a4c9ff?won=${AUCTION_PRICE}\" width=\"728\" height=\"90\" frameborder=\"0\" scrolling=\"no\" marginheight=\"0\" marginwidth=\"0\" topmargin=\"0\" leftmargin=\"0\"></iframe>",
+                  "adomain": ["ads.com"],
+                  "cid": "52a12b5955314b7194a4c9ff",
+                  "crid": "52a12b5955314b7194a4c9ff_1386294105",
+                  "dealid": "DX-1985-010A",
+                  "id": "24195efda36066ee21f967bc1de14c82db841f07",
+                  "impid": "121-dt1",
+                  "nurl": "http://ads.com/win/52a12b5955314b7194a4c9ff?won=${AUCTION_PRICE}",
+                  "price": 1.028428,
+                  "attr": []
+                 }
+               ],
+               "seat": "42"
+             },
+             {
+               "bid": [
+                 {
+                  "adid": "527c9fdd55314ba06815f25e",
+                  "adm": "<iframe src=\"http://ads.com/render/527c9fdd55314ba06815f25e?won=${AUCTION_PRICE}\" width=\"300\" height=\"250\" frameborder=\"0\" scrolling=\"no\" marginheight=\"0\" marginwidth=\"0\" topmargin=\"0\" leftmargin=\"0\"></iframe>",
+                  "adomain": ["ads.com"],
+                  "cid": "527c9fdd55314ba06815f25e",
+                  "crid": "527c9fdd55314ba06815f25e_1383899102",
+                  "id": "24195efda36066ee21f967bc1de14c82db841f08",
+                  "impid": "121-dt2",
+                  "nurl": "http://ads.com/win/527c9fdd55314ba06815f25e?won=${AUCTION_PRICE}",
+                  "price": 0.04958,
+                  "attr": []
+                 }
+               ],
+               "seat": "772"
+             }
+           ]
+         },
+         "cur": "USD"
+       }
+     }
+   ],
+   "expectedBidResponses": [
+     {
+       "currency": "USD",
+       "bids": [
+         {
+           "type": "banner",
+           "bid": {
+            "adid": "52a12b5955314b7194a4c9ff",
+            "adm": "<iframe src=\"http://ads.com/render/52a12b5955314b7194a4c9ff?won=${AUCTION_PRICE}\" width=\"728\" height=\"90\" frameborder=\"0\" scrolling=\"no\" marginheight=\"0\" marginwidth=\"0\" topmargin=\"0\" leftmargin=\"0\"></iframe>",
+            "adomain": ["ads.com"],
+            "cid": "52a12b5955314b7194a4c9ff",
+            "crid": "52a12b5955314b7194a4c9ff_1386294105",
+            "dealid": "DX-1985-010A",
+            "id": "24195efda36066ee21f967bc1de14c82db841f07",
+            "impid": "121-dt1",
+            "nurl": "http://ads.com/win/52a12b5955314b7194a4c9ff?won=${AUCTION_PRICE}",
+            "price": 1.028428
+          }
+         },
+         {
+           "type": "banner",
+           "bid": {
+              "adid": "527c9fdd55314ba06815f25e",
+              "adm": "<iframe src=\"http://ads.com/render/527c9fdd55314ba06815f25e?won=${AUCTION_PRICE}\" width=\"300\" height=\"250\" frameborder=\"0\" scrolling=\"no\" marginheight=\"0\" marginwidth=\"0\" topmargin=\"0\" leftmargin=\"0\"></iframe>",
+              "adomain": ["ads.com"],
+              "cid": "527c9fdd55314ba06815f25e",
+              "crid": "527c9fdd55314ba06815f25e_1383899102",
+              "id": "24195efda36066ee21f967bc1de14c82db841f08",
+              "impid": "121-dt2",
+              "nurl": "http://ads.com/win/527c9fdd55314ba06815f25e?won=${AUCTION_PRICE}",
+              "price": 0.04958
+            }
+         }
+       ]
+     }
+   ]
+ }

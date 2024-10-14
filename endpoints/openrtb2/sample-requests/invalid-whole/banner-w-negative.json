@@ -1,0 +1,23 @@
+{
+    "description": "Request has a negative banner width.",
+    "mockBidRequest": {
+        "id": "req-id",
+        "site": {
+            "id": "some-site"
+        },
+        "imp": [{
+            "id": "imp-id",
+            "banner": {
+                "w": -1,
+                "h": 50
+            },
+            "ext": {
+                "appnexus": {
+                    "placementId": 12883451
+                }
+            }
+        }]
+    },
+    "expectedReturnCode": 400,
+    "expectedErrorMessage": "Invalid request: request.imp[0].banner.w must be a positive number"
+}

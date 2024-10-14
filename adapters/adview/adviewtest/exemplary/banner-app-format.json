@@ -1,0 +1,167 @@
+{
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "device": {
+      "ua": "test-user-agent",
+      "ip": "123.123.123.123",
+      "ifa":"00000000-0000-0000-0000-000000000000",
+      "language": "en",
+      "dnt": 0
+    },
+    "tmax": 1000,
+    "user": {
+      "buyeruid": "awesome-user"
+    },
+    "app": {
+      "publisher": {
+        "id": "123456789"
+      },
+      "cat": [
+        "IAB22-1"
+      ],
+      "bundle": "com.app.awesome",
+      "name": "Awesome App",
+      "domain": "awesomeapp.com",
+      "id": "123456789"
+    },
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "banner": {
+          "format": [
+            {
+              "w": 320,
+              "h": 50
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "posid00001",
+            "accountId": "accountid01"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bid.adview.com/agent/thirdAdxService/accountid01",
+        "body": {
+          "id": "some-request-id",
+          "cur": ["USD"],
+          "device": {
+            "ua": "test-user-agent",
+            "ip": "123.123.123.123",
+            "ifa":"00000000-0000-0000-0000-000000000000",
+            "language": "en",
+            "dnt": 0
+          },
+          "imp": [
+            {
+              "id": "some-impression-id",
+              "banner": {
+                "w": 320,
+                "h": 50,
+                "format": [
+                  {
+                    "w": 320,
+                    "h": 50
+                  }
+                ]
+              },
+              "tagid": "posid00001",
+              "ext": {
+                 "bidder": {
+                   "placementId": "posid00001",
+                   "accountId": "accountid01"
+                 }
+              }
+            }
+          ],
+          "app": {
+            "id": "123456789",
+            "name": "Awesome App",
+            "bundle": "com.app.awesome",
+            "domain": "awesomeapp.com",
+            "cat": [
+              "IAB22-1"
+            ],
+            "publisher": {
+              "id": "123456789"
+            }
+          },
+          "user": {
+            "buyeruid": "awesome-user"
+          },
+          "tmax": 1000
+        },
+        "impIDs":["some-impression-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "awesome-resp-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "a3ae1b4e2fc24a4fb45540082e98e161",
+                  "impid": "some-impression-id",
+                  "price": 3.5,
+                  "adm": "awesome-markup",
+                  "adomain": [
+                    "awesome.com"
+                  ],
+                  "crid": "20",
+                  "w": 320,
+                  "h": 50,
+                  "mtype": 1,
+                  "ext": {
+                    "formattype": 0
+                  }
+                }
+              ],
+              "type": "banner",
+              "seat": "adview"
+            }
+          ],
+          "cur": "USD",
+          "ext": {
+            "responsetimemillis": {
+              "adview": 154
+            },
+            "tmaxrequest": 1000
+          }
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "a3ae1b4e2fc24a4fb45540082e98e161",
+            "impid": "some-impression-id",
+            "price": 3.5,
+            "adm": "awesome-markup",
+            "adomain": [
+              "awesome.com"
+            ],
+            "crid": "20",
+            "w": 320,
+            "h": 50,
+            "mtype": 1,
+            "ext": {
+              "formattype": 0
+            }
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

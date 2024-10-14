@@ -10,16 +10,16 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/golang/glog"
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/macros"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type AdheseAdapter struct {
-	endpointTemplate template.Template
+	endpointTemplate *template.Template
 }
 
 func extractSlotParameter(parameters openrtb_ext.ExtImpAdhese) string {
@@ -56,7 +56,7 @@ func extractTargetParameters(parameters openrtb_ext.ExtImpAdhese) string {
 	return parametersAsString
 }
 
-func extractGdprParameter(request *openrtb.BidRequest) string {
+func extractGdprParameter(request *openrtb2.BidRequest) string {
 	if request.User != nil {
 		var extUser openrtb_ext.ExtUser
 		if err := json.Unmarshal(request.User.Ext, &extUser); err == nil {
@@ -66,14 +66,21 @@ func extractGdprParameter(request *openrtb.BidRequest) string {
 	return ""
 }
 
-func extractRefererParameter(request *openrtb.BidRequest) string {
+func extractRefererParameter(request *openrtb2.BidRequest) string {
 	if request.Site != nil && request.Site.Page != "" {
 		return "/xf" + url.QueryEscape(request.Site.Page)
 	}
 	return ""
 }
 
-func (a *AdheseAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func extractIfaParameter(request *openrtb2.BidRequest) string {
+	if request.Device != nil && request.Device.IFA != "" {
+		return "/xz" + url.QueryEscape(request.Device.IFA)
+	}
+	return ""
+}
+
+func (a *AdheseAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 
 	var err error
@@ -101,38 +108,43 @@ func (a *AdheseAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 	// Compose url
 	endpointParams := macros.EndpointTemplateParams{AccountID: params.Account}
 
-	host, err := macros.ResolveMacros(*&a.endpointTemplate, endpointParams)
+	host, err := macros.ResolveMacros(a.endpointTemplate, endpointParams)
 	if err != nil {
 		errs = append(errs, WrapReqError("Could not compose url from template and request account val: "+err.Error()))
 		return nil, errs
 	}
-	complete_url := fmt.Sprintf("%s%s%s%s%s",
+	complete_url := fmt.Sprintf("%s%s%s%s%s%s",
 		host,
 		extractSlotParameter(params),
 		extractTargetParameters(params),
 		extractGdprParameter(request),
-		extractRefererParameter(request))
+		extractRefererParameter(request),
+		extractIfaParameter(request))
 
 	return []*adapters.RequestData{{
 		Method: "GET",
 		Uri:    complete_url,
+		ImpIDs: []string{imp.ID},
 	}}, errs
 }
 
-func (a *AdheseAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *AdheseAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	} else if response.StatusCode != http.StatusOK {
 		return nil, []error{WrapServerError(fmt.Sprintf("Unexpected status code: %d.", response.StatusCode))}
 	}
 
-	var bidResponse openrtb.BidResponse
+	var bidResponse openrtb2.BidResponse
 
 	var adheseBidResponseArray []AdheseBid
 	if err := json.Unmarshal(response.Body, &adheseBidResponseArray); err != nil {
 		return nil, []error{err, WrapServerError(fmt.Sprintf("Response %v could not be parsed as generic Adhese bid.", string(response.Body)))}
 	}
 
+	if len(adheseBidResponseArray) == 0 {
+		return nil, nil
+	}
 	var adheseBid = adheseBidResponseArray[0]
 
 	if adheseBid.Origin == "JERLICIA" {
@@ -154,11 +166,11 @@ func (a *AdheseAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 	if err != nil {
 		return nil, []error{err, WrapServerError(fmt.Sprintf("Could not parse Price %v as float ", string(adheseBid.Extension.Prebid.Cpm.Amount)))}
 	}
-	width, err := strconv.ParseUint(adheseBid.Width, 10, 64)
+	width, err := strconv.ParseInt(adheseBid.Width, 10, 64)
 	if err != nil {
 		return nil, []error{err, WrapServerError(fmt.Sprintf("Could not parse Width %v as int ", string(adheseBid.Width)))}
 	}
-	height, err := strconv.ParseUint(adheseBid.Height, 10, 64)
+	height, err := strconv.ParseInt(adheseBid.Height, 10, 64)
 	if err != nil {
 		return nil, []error{err, WrapServerError(fmt.Sprintf("Could not parse Height %v as int ", string(adheseBid.Height)))}
 	}
@@ -189,16 +201,15 @@ func (a *AdheseAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 	return bidderResponse, errs
 }
 
-func convertAdheseBid(adheseBid AdheseBid, adheseExt AdheseExt, adheseOriginData AdheseOriginData) openrtb.BidResponse {
+func convertAdheseBid(adheseBid AdheseBid, adheseExt AdheseExt, adheseOriginData AdheseOriginData) openrtb2.BidResponse {
 	adheseExtJson, err := json.Marshal(adheseOriginData)
 	if err != nil {
-		glog.Error(fmt.Sprintf("Unable to parse adhese Origin Data as JSON due to %v", err))
 		adheseExtJson = make([]byte, 0)
 	}
-	return openrtb.BidResponse{
+	return openrtb2.BidResponse{
 		ID: adheseExt.Id,
-		SeatBid: []openrtb.SeatBid{{
-			Bid: []openrtb.Bid{{
+		SeatBid: []openrtb2.SeatBid{{
+			Bid: []openrtb2.Bid{{
 				DealID: adheseExt.OrderId,
 				CrID:   adheseExt.Id,
 				AdM:    getAdMarkup(adheseBid, adheseExt),
@@ -209,8 +220,8 @@ func convertAdheseBid(adheseBid AdheseBid, adheseExt AdheseExt, adheseOriginData
 	}
 }
 
-func convertAdheseOpenRtbBid(adheseBid AdheseBid) openrtb.BidResponse {
-	var response openrtb.BidResponse = adheseBid.OriginData
+func convertAdheseOpenRtbBid(adheseBid AdheseBid) openrtb2.BidResponse {
+	var response openrtb2.BidResponse = adheseBid.OriginData
 	if len(response.SeatBid) > 0 && len(response.SeatBid[0].Bid) > 0 {
 		response.SeatBid[0].Bid[0].AdM = adheseBid.Body
 	}
@@ -259,11 +270,15 @@ func ContainsAny(raw string, keys []string) bool {
 
 }
 
-func NewAdheseBidder(uri string) *AdheseAdapter {
-	template, err := template.New("endpointTemplate").Parse(uri)
+// Builder builds a new instance of the Adhese adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
-		glog.Fatal("Unable to parse endpoint url template")
-		return nil
+		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
-	return &AdheseAdapter{endpointTemplate: *template}
+
+	bidder := &AdheseAdapter{
+		endpointTemplate: template,
+	}
+	return bidder, nil
 }

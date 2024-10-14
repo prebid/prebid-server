@@ -2,7 +2,7 @@
   "mockBidRequest": {
     "id": "some_test_ad",
     "site": {
-      "page": "https://example.com/whatever"
+      "page": "https://some.domain.us/some/page.html"
     },
     "imp": [
       {

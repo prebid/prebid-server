@@ -1,0 +1,17 @@
+endpoint: "http://prebid-server.smilewanted.com"
+maintainer:
+  email: "tech@smilewanted.com"
+gvlVendorID: 639
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  redirect:
+    url: "https://csync.smilewanted.com/getuid?source=prebid-server&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
+    userMacro: "$UID"

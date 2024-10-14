@@ -1,5 +1,7 @@
+endpoint: "http://rtb.e-planning.net/pbs/1"
 maintainer:
   email: "producto@e-planning.net"
+gvlVendorID: 90
 capabilities:
   app:
     mediaTypes:
@@ -7,3 +9,8 @@ capabilities:
   site:
     mediaTypes:
       - banner
+      - video
+userSync:
+  iframe:
+    url: "https://ads.us.e-planning.net/uspd/1/?du={{.RedirectURL}}"
+    userMacro: "$UID"

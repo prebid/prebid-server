@@ -6,7 +6,7 @@
       "id": "some-request-id",
       "site": {
         "publisher": { "id": "valid_acct"},
-      	"page": "test.somepage.com"
+        "page": "test.somepage.com"
       },
       "user": { },
       "imp": [

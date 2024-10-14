@@ -1,0 +1,35 @@
+{
+  "description": "Incorrect bidder specific FPD: site not defined in request",
+  "inputRequestData": {
+    "user": {
+      "id": "reqUserID",
+      "yob": 1982,
+      "gender": "M"
+    }
+  },
+  "biddersWithGlobalFPD": [
+    "appnexus"
+  ],
+  "bidderConfigFPD": {
+    "appnexus": {
+      "site": {
+        "page": "",
+        "ext": {
+          "data": {
+            "morefpdData": "morefpddata",
+            "siteFpddata": "siteFpddata",
+            "moreFpd": {
+              "fpd": 123
+            }
+          }
+        }
+      }
+    }
+  },
+  "outputRequestData": {},
+  "validationErrors": [
+    {
+      "Message": "incorrect First Party Data for bidder appnexus: Site object is not defined in request, but defined in FPD config"
+    }
+  ]
+}

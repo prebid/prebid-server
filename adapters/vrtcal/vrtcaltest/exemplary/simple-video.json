@@ -1,0 +1,99 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "video": {
+                "mimes": ["video/mp4"],
+                "protocols": [2, 5],
+                "w": 300,
+                "h": 250
+	},
+        "ext": {
+          "bidder": {
+            "Just_an_unused_vrtcal_param": "unused_data_for_this"
+          }
+        }
+      }
+    ],
+    "app": {
+      "id": "fake-app-id"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://rtb.vrtcal.com/bidder_prebid.vap?ssp=1804",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+	      "video": {
+		"mimes": ["video/mp4"],
+		"protocols": [2, 5],
+		"w": 300,
+		"h": 250
+	      },
+
+	      "ext": {
+		  "bidder": {
+		    "Just_an_unused_vrtcal_param": "unused_data_for_this"
+		  }
+	     }
+            }
+          ],
+          "app": {
+            "id": "fake-app-id"
+          }
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "vrtcal",
+              "bid": [
+                {
+                  "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                  "impid": "test-imp-id",
+                  "price": 0.500000,
+                  "adm": "some-test-video-ad",
+                  "crid": "crid_10",
+                  "h": 250,
+                  "w": 300,
+		  "mtype":2
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+            "impid": "test-imp-id",
+            "price": 0.5,
+            "adm": "some-test-video-ad",
+            "crid": "crid_10",
+            "w": 300,
+            "h": 250,
+	    "mtype":2
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

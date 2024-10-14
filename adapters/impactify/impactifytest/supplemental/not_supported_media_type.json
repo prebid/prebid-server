@@ -1,0 +1,66 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [{
+      "id": "test-imp-id",
+      "audio": {},
+      "ext":{
+        "bidder": {
+          "appId": "impactify.io",
+          "format": "screen",
+          "style": "impact"
+        }
+      }
+    }]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://sonic.impactify.media/bidder",
+        "body": {
+          "cur": [
+            "USD"
+          ],
+          "id": "test-request-id",
+          "imp": [{
+            "ext":{
+              "impactify": {
+                "appId": "impactify.io",
+                "format": "screen",
+                "style": "impact"
+              }
+            },
+            "id": "test-imp-id",
+            "audio": {
+              "mimes": null
+            }
+          }]
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [{
+            "bid": [{
+              "id": "test-bid-id",
+              "impid": "test-imp-id",
+              "price": 10,
+              "adm": "{vast xml}",
+              "crid": "test-creative-id"
+            }]
+          }],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Failed to find a supported media type impression \"test-imp-id\"",
+      "comparison": "literal"
+    }
+  ]
+}

@@ -1,48 +1,43 @@
 package exchange
 
 import (
-	"encoding/json"
-
-	"github.com/mxmCherry/openrtb"
+	gpplib "github.com/prebid/go-gpp"
+	gppConstants "github.com/prebid/go-gpp/constants"
+	"github.com/prebid/prebid-server/v2/gdpr"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	gppPolicy "github.com/prebid/prebid-server/v2/privacy/gpp"
 )
 
-// ExtractGDPR will pull the gdpr flag from an openrtb request
-func extractGDPR(bidRequest *openrtb.BidRequest, usersyncIfAmbiguous bool) (gdpr int) {
-	var re regsExt
-	var err error
-	if bidRequest.Regs != nil {
-		err = json.Unmarshal(bidRequest.Regs.Ext, &re)
-	}
-	if re.GDPR == nil || err != nil {
-		if usersyncIfAmbiguous {
-			gdpr = 0
-		} else {
-			gdpr = 1
+// getGDPR will pull the gdpr flag from an openrtb request
+func getGDPR(req *openrtb_ext.RequestWrapper) (gdpr.Signal, error) {
+	if req.Regs != nil && len(req.Regs.GPPSID) > 0 {
+		if gppPolicy.IsSIDInList(req.Regs.GPPSID, gppConstants.SectionTCFEU2) {
+			return gdpr.SignalYes, nil
 		}
-	} else {
-		gdpr = *re.GDPR
+		return gdpr.SignalNo, nil
 	}
-	return
+	re, err := req.GetRegExt()
+	if re == nil || re.GetGDPR() == nil || err != nil {
+		return gdpr.SignalAmbiguous, err
+	}
+	return gdpr.Signal(*re.GetGDPR()), nil
 }
 
-// ExtractConsent will pull the consent string from an openrtb request
-func extractConsent(bidRequest *openrtb.BidRequest) (consent string) {
-	var ue userExt
-	var err error
-	if bidRequest.User != nil {
-		err = json.Unmarshal(bidRequest.User.Ext, &ue)
-	}
-	if err != nil {
+// getConsent will pull the consent string from an openrtb request
+func getConsent(req *openrtb_ext.RequestWrapper, gpp gpplib.GppContainer) (consent string, err error) {
+	if i := gppPolicy.IndexOfSID(gpp, gppConstants.SectionTCFEU2); i >= 0 {
+		consent = gpp.Sections[i].GetValue()
 		return
 	}
-	consent = ue.Consent
-	return
+	ue, err := req.GetUserExt()
+	if ue == nil || ue.GetConsent() == nil || err != nil {
+		return
+	}
+	return *ue.GetConsent(), nil
 }
 
-type userExt struct {
-	Consent string `json:"consent,omitempty"`
-}
-
-type regsExt struct {
-	GDPR *int `json:"gdpr,omitempty"`
+// enforceGDPR determines if GDPR should be enforced based on the request signal and whether the channel is enabled
+func enforceGDPR(signal gdpr.Signal, defaultValue gdpr.Signal, channelEnabled bool) bool {
+	gdprApplies := signal == gdpr.SignalYes || (signal == gdpr.SignalAmbiguous && defaultValue == gdpr.SignalYes)
+	return gdprApplies && channelEnabled
 }

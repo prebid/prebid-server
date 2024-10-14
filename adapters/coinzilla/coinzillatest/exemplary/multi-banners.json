@@ -1,0 +1,118 @@
+{
+    "mockBidRequest": {
+        "id": "testRequestIdMulti",
+        "site": {
+            "page": "https://publisher-website.com/web"
+        },
+        "imp": [{
+            "id": "testImpressionId",
+            "banner": {
+                "format": [{
+                    "w": 300,
+                    "h": 250
+                },{
+                    "w": 728,
+                    "h": 90
+                }]
+            },
+            "ext": {
+                "bidder": {
+                    "placementId": "testPlacementId"
+                }
+            }
+        }]
+    },
+
+    "httpCalls": [{
+        "expectedRequest": {
+            "uri": "http://test-request.com/prebid",
+            "body": {
+                "id": "testRequestIdMulti",
+                "site": {
+                    "page": "https://publisher-website.com/web"
+                },
+                "imp": [{
+                    "id": "testImpressionId",
+                    "banner": {
+                        "format": [{
+                            "w": 300,
+                            "h": 250
+                        },{
+                            "w": 728,
+                            "h": 90
+                        }]
+                    },
+                    "ext": {
+                        "bidder": {
+                            "placementId": "testPlacementId"
+                        }
+                    }
+                }]
+            },
+            "impIDs":["testImpressionId"]
+        },
+        "mockResponse": {
+            "status": 200,
+            "body": {
+                "id": "testRequestIdMulti",
+                "seatbid": [{
+                    "seat": "coinzilla",
+                    "bid": [{
+                        "id": "uniqueId#1",
+                        "impid": "testImpressionId",
+                        "price": 2.35,
+                        "adid": "advertiserUniqueId#1",
+                        "adm": "iframe-content#1",
+                        "cid": "campaignUniqueId#1",
+                        "crid": "creativeUniqueId#1",
+                        "h": 250,
+                        "w": 300
+                    },{
+                        "id": "uniqueId#2",
+                        "impid": "testImpressionId",
+                        "price": 1.93,
+                        "adid": "advertiserUniqueId#2",
+                        "adm": "iframe-content#2",
+                        "cid": "campaignUniqueId#2",
+                        "crid": "creativeUniqueId#2",
+                        "h": 90,
+                        "w": 728
+                    }]
+                }],
+                "cur": "USD"
+            }
+        }
+    }],
+
+    "expectedBidResponses": [{
+        "currency": "USD",
+        "bids": [{
+            "bid": {
+                "id": "uniqueId#1",
+                "impid": "testImpressionId",
+                "price": 2.35,
+                "adm": "iframe-content#1",
+                "adid": "advertiserUniqueId#1",
+                "cid": "campaignUniqueId#1",
+                "crid": "creativeUniqueId#1",
+                "w": 300,
+                "h": 250
+            },
+            "type": "banner"
+        },{
+            "bid": {
+                "id": "uniqueId#2",
+                "impid": "testImpressionId",
+                "price": 1.93,
+                "adm": "iframe-content#2",
+                "adid": "advertiserUniqueId#2",
+                "cid": "campaignUniqueId#2",
+                "crid": "creativeUniqueId#2",
+                "w": 728,
+                "h": 90
+            },
+            "type": "banner"
+        }
+        ]
+    }]
+}

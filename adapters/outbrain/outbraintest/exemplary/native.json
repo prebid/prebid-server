@@ -1,0 +1,122 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "native": {
+          "request": "{\"context\":1,\"plcmttype\":1,\"assets\":[{\"id\":0,\"required\":1,\"img\":{\"type\":3,\"w\":120,\"h\":100}},{\"id\":1,\"required\":1,\"title\":{\"len\":140}},{\"id\":2,\"data\":{\"type\":1}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1]}]}",
+          "ver": "1.2"
+        },
+        "ext": {
+          "bidder": {
+            "publisher": {
+              "id": "publisher-id"
+            }
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "http://example.com"
+    },
+    "device": {
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36",
+      "h": 500,
+      "w": 1000
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://example.com/bid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "native": {
+                "request": "{\"context\":1,\"plcmttype\":1,\"assets\":[{\"id\":0,\"required\":1,\"img\":{\"type\":3,\"w\":120,\"h\":100}},{\"id\":1,\"required\":1,\"title\":{\"len\":140}},{\"id\":2,\"data\":{\"type\":1}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1]}]}",
+                "ver": "1.2"
+              },
+              "ext": {
+                "bidder": {
+                  "publisher": {
+                    "id": "publisher-id"
+                  }
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "http://example.com",
+            "publisher": {
+              "id": "publisher-id"
+            }
+          },
+          "device": {
+            "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36",
+            "h": 500,
+            "w": 1000
+          }
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "5095a742-1c27-402b-ab6f-66b1bd53383b",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "test-request-id",
+                  "impid": "test-imp-id",
+                  "price": 1000,
+                  "nurl": "http://example.com/win/1000",
+                  "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":3,\"required\":1,\"img\":{\"url\":\"http://example.com/img/url\",\"w\":120,\"h\":100}},{\"id\":0,\"required\":1,\"title\":{\"text\":\"Test title\"}},{\"id\":5,\"data\":{\"value\":\"Test sponsor\"}}],\"link\":{\"url\":\"http://example.com/click/url\"},\"eventtrackers\":[{\"event\":1,\"method\":1,\"url\":\"http://example.com/impression\"},{\"event\":1,\"method\":2,\"url\":\"http://example.com/impression\"}]}",
+                  "adomain": [
+                    "example.com"
+                  ],
+                  "cid": "test-cid",
+                  "crid": "test-crid",
+                  "cat": [
+                    "IAB13-4"
+                  ]
+                }
+              ],
+              "seat": "acc-1876"
+            }
+          ],
+          "bidid": "43ccadf2-8b2e-11eb-b294-de4c49e99ff6",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-request-id",
+            "impid": "test-imp-id",
+            "price": 1000,
+            "nurl": "http://example.com/win/1000",
+            "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":3,\"required\":1,\"img\":{\"url\":\"http://example.com/img/url\",\"w\":120,\"h\":100}},{\"id\":0,\"required\":1,\"title\":{\"text\":\"Test title\"}},{\"id\":5,\"data\":{\"value\":\"Test sponsor\"}}],\"link\":{\"url\":\"http://example.com/click/url\"},\"imptrackers\":[\"http://example.com/impression\"],\"jstracker\":\"\\u003cscript src=\\\"http://example.com/impression\\\"\\u003e\\u003c/script\\u003e\"}",
+            "adomain": [
+              "example.com"
+            ],
+            "cid": "test-cid",
+            "crid": "test-crid",
+            "cat": [
+              "IAB13-4"
+            ]
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}

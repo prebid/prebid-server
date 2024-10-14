@@ -1,0 +1,237 @@
+{
+    "mockBidRequest": {
+      "id": "some_test_auction",
+      "imp": [{
+        "id": "some_test_ad_id_1",
+        "banner": {
+          "format": [{
+            "w": 300,
+            "h": 250
+          }, {
+            "w": 300,
+            "h": 600
+          }],
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "unit": "1000008-AbCdEf1234",
+            "accountid": "accountJX1234"
+          }
+        }
+      },
+      {
+        "id": "some_test_ad_id_2",
+        "banner": {
+          "format": [{
+            "w": 300,
+            "h": 50
+          }],
+          "w": 300,
+          "h": 50
+        },
+        "ext": {
+          "bidder": {
+            "unit": "1000008-AbCdEf2345",
+            "accountid": "accountJX1234"
+          }
+        }
+      },
+      {
+        "id": "some_test_ad_id_3",
+        "video":{
+            "mimes": [
+              "video/mp4",
+              "application/javascript"
+            ],
+            "protocols":[
+               2,
+               3,
+               5,
+               6
+            ],
+            "w":640,
+            "h":480
+        },
+        "ext": {
+          "bidder": {
+            "unit": "1000008-AbCdEf3456",
+            "accountid": "accountJX1234"
+          }
+        }
+      }
+    ],
+      "device": {
+        "ua": "Mozilla/5.0 (Linux; Android 8.0.0; SM-G960F Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.84 Mobile Safari/537.36",
+        "ip": "111.222.333.444"
+      },
+      "site": {
+        "domain": "www.publisher.com",
+        "page": "http://www.publisher.com/today/site?param1=a&param2=b"
+      }
+    },
+  
+    "httpCalls": [{
+      "expectedRequest": {
+        "uri": "https://hb.jixie.io/v2/hbsvrpost",
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "X-Forwarded-For": [
+            "111.222.333.444"
+          ],
+          "Referer": [
+            "http://www.publisher.com/today/site?param1=a&param2=b"
+          ],
+          "User-Agent": [
+            "Mozilla/5.0 (Linux; Android 8.0.0; SM-G960F Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.84 Mobile Safari/537.36"
+          ]
+        },
+        "body": {
+          "id": "some_test_auction",
+          "imp": [{
+            "id": "some_test_ad_id_1",
+            "banner": {
+              "format": [{
+                "w": 300,
+                "h": 250
+              },{
+                "w": 300,
+                "h": 600
+              }],
+              "w": 300,
+              "h": 250
+            },
+            "ext": {
+              "bidder": {
+                "unit": "1000008-AbCdEf1234",
+                "accountid": "accountJX1234"
+              }
+            }
+          },
+          {
+            "id": "some_test_ad_id_2",
+            "banner": {
+              "format": [{
+                "w": 300,
+                "h": 50
+              }],
+              "w": 300,
+              "h": 50
+            },
+            "ext": {
+              "bidder": {
+                "unit": "1000008-AbCdEf2345",
+                "accountid": "accountJX1234"
+              }
+            }
+          },
+          {
+            "id": "some_test_ad_id_3",
+            "video":{
+                "mimes": [
+                  "video/mp4",
+                  "application/javascript"
+                ],
+                "protocols":[
+                   2,
+                   3,
+                   5,
+                   6
+                ],
+                "w":640,
+                "h":480
+            },
+            "ext": {
+              "bidder": {
+                "unit": "1000008-AbCdEf3456",
+                "accountid": "accountJX1234"
+              }
+            }
+          }],
+          "site": {
+            "domain": "www.publisher.com",
+            "page": "http://www.publisher.com/today/site?param1=a&param2=b"
+          },
+          "device": {
+            "ua": "Mozilla/5.0 (Linux; Android 8.0.0; SM-G960F Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.84 Mobile Safari/537.36",
+            "ip": "111.222.333.444"
+          }
+        },
+        "impIDs":["some_test_ad_id_1","some_test_ad_id_2","some_test_ad_id_3"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "some_test_auction",
+          "seatbid": [{
+              "seat": "12356",
+              "bid": [{
+                "adm": "<div id=\"jxoutstream-dcc0ca9c6591\" style=\"width: 100%;\"> <script type=\"text/javascript\" src=\"https://creatives.b-cdn.net/js/hbrenderer.min.js\" defer=\"\"></script> <script> var p ={ responsive: 1, nested: 1, maxwidth: 640,  container: \"jxoutstream-dcc0ca9c6591\", jsoncreativeobj64: \"eyJ0ZXN0dmFyIjoxMjN9\"}; function jxdefer(p) { if (window.jxhbuniversal) { window.jxhbuniversal.hbinit(p); } else { setTimeout(function() { jxdefer(p) }, 100); } } jxdefer(p); </script> </div>",
+                "id": "some_test_ad_id_1",
+                "impid": "some_test_ad_id_1",
+                "ttl": 300,
+                "crid": "94395500",
+                "w": 300,
+                "price": 2.942808,
+                "adid": "94395500",
+                "h": 250
+              }]
+          },
+          {
+            "seat": "45678",
+            "bid": [{
+              "adm": "<VAST xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"vast.xsd\" version=\"3.0\"><Ad id=\"JXAD953\"><InLine><AdSystem> JXADSERVER</AdSystem><AdTitle>DEMO</AdTitle><Description>in-stream</Description><Error><![CDATA[ https://tra.jixie.io/sync/ad?action=error ]]></Error><Impression><![CDATA[ https://tra.jixie.io/sync/ad?action=impression ]]></Impression><Creatives><Creative id=\"JXAD953\" sequence=\"1\"><Linear><Duration> 00:00:10</Duration><TrackingEvents><Tracking event=\"start\"><![CDATA[ https://tra.jixie.io/sync/ad?action=start ]]></Tracking><Tracking event=\"firstQuartil\"><![CDATA[ https://tra.jixie.io/sync/ad?action=firstQuartile ]]></Tracking><Tracking event=\"midpoint\"><![CDATA[ https://tra.jixie.io/sync/ad?action=midpoint ]]></Tracking><Tracking event=\"thirdQuartile\"><![CDATA[ https://tra.jixie.io/sync/ad?action=thirdQuartile ]]></Tracking><Tracking event=\"complete\"><![CDATA[ https://tra.jixie.io/sync/ad?action=complete ]]></Tracking></TrackingEvents><VideoClicks><ClickThrough><![CDATA[ https://tra.jixie.io/sync/ck?igr=1 ]]></ClickThrough><ClickTracking><![CDATA[ https://tra.jixie.io/sync/ad?action=click ]]></ClickTracking></VideoClicks><AdParameters><![CDATA[ {\"videos\": [{\"url\": \"https://creatives.b-cdn.net/80c8a13725c68736d9faf7e5858d51f1/230/798/motion_whitebanner _1_ _ Kislew Trily_240p.mp4\", \"width\": 426, \"height\": 240, \"bitrate\": 342, \"mimetype\": \"video/mp4\"}]}]]></AdParameters><MediaFiles><MediaFile apiFramework=\"VPAID\" type=\"application/javascript\"><![CDATA[ https://creatives.b-cdn.net/js/jxvpaid_1_0.min.js ]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
+              "id": "some_test_ad_id_3",
+              "impid": "some_test_ad_id_3",
+              "ttl": 300,
+              "crid": "9999999",
+              "w": 640,
+              "price": 1,
+              "adid": "9999999",
+              "h": 360
+            }
+          ]
+        }],
+          "cur": "USD"
+      }
+      }
+    }],
+  
+    "expectedBidResponses": [{
+      "currency": "USD",
+      "bids": [{
+        "bid": {
+          "adm": "<div id=\"jxoutstream-dcc0ca9c6591\" style=\"width: 100%;\"> <script type=\"text/javascript\" src=\"https://creatives.b-cdn.net/js/hbrenderer.min.js\" defer=\"\"></script> <script> var p ={ responsive: 1, nested: 1, maxwidth: 640,  container: \"jxoutstream-dcc0ca9c6591\", jsoncreativeobj64: \"eyJ0ZXN0dmFyIjoxMjN9\"}; function jxdefer(p) { if (window.jxhbuniversal) { window.jxhbuniversal.hbinit(p); } else { setTimeout(function() { jxdefer(p) }, 100); } } jxdefer(p); </script> </div>",
+          "id": "some_test_ad_id_1",
+          "impid": "some_test_ad_id_1",
+          "crid": "94395500",
+          "w": 300,
+          "price": 2.942808,
+          "adid": "94395500",
+          "h": 250
+        },
+        "type": "banner"
+      },
+      {
+        "bid": {
+          "adm": "<VAST xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"vast.xsd\" version=\"3.0\"><Ad id=\"JXAD953\"><InLine><AdSystem> JXADSERVER</AdSystem><AdTitle>DEMO</AdTitle><Description>in-stream</Description><Error><![CDATA[ https://tra.jixie.io/sync/ad?action=error ]]></Error><Impression><![CDATA[ https://tra.jixie.io/sync/ad?action=impression ]]></Impression><Creatives><Creative id=\"JXAD953\" sequence=\"1\"><Linear><Duration> 00:00:10</Duration><TrackingEvents><Tracking event=\"start\"><![CDATA[ https://tra.jixie.io/sync/ad?action=start ]]></Tracking><Tracking event=\"firstQuartil\"><![CDATA[ https://tra.jixie.io/sync/ad?action=firstQuartile ]]></Tracking><Tracking event=\"midpoint\"><![CDATA[ https://tra.jixie.io/sync/ad?action=midpoint ]]></Tracking><Tracking event=\"thirdQuartile\"><![CDATA[ https://tra.jixie.io/sync/ad?action=thirdQuartile ]]></Tracking><Tracking event=\"complete\"><![CDATA[ https://tra.jixie.io/sync/ad?action=complete ]]></Tracking></TrackingEvents><VideoClicks><ClickThrough><![CDATA[ https://tra.jixie.io/sync/ck?igr=1 ]]></ClickThrough><ClickTracking><![CDATA[ https://tra.jixie.io/sync/ad?action=click ]]></ClickTracking></VideoClicks><AdParameters><![CDATA[ {\"videos\": [{\"url\": \"https://creatives.b-cdn.net/80c8a13725c68736d9faf7e5858d51f1/230/798/motion_whitebanner _1_ _ Kislew Trily_240p.mp4\", \"width\": 426, \"height\": 240, \"bitrate\": 342, \"mimetype\": \"video/mp4\"}]}]]></AdParameters><MediaFiles><MediaFile apiFramework=\"VPAID\" type=\"application/javascript\"><![CDATA[ https://creatives.b-cdn.net/js/jxvpaid_1_0.min.js ]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
+          "id": "some_test_ad_id_3",
+          "impid": "some_test_ad_id_3",
+          "crid": "9999999",
+          "w": 640,
+          "price": 1,
+          "adid": "9999999",
+          "h": 360
+        },
+        "type": "video"   
+      }]
+    }
+  ]
+}
+  

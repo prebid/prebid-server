@@ -1,0 +1,86 @@
+{
+  "description": "Video endpoint valid request with AppendBidderNames.",
+  "requestPayload": {
+    "appendbiddernames": true,
+    "storedrequestid": "80ce30c53c16e6ede735f123ef6e32361bfc7b22",
+    "podconfig": {
+      "durationrangesec": [
+        30
+      ],
+      "requireexactduration": true,
+      "pods": [{
+          "podid": 1,
+          "adpoddurationsec": 180,
+          "configid": "fba10607-0c12-43d1-ad07-b8a513bc75d6"
+        },
+        {
+          "podid": 2,
+          "adpoddurationsec": 150,
+          "configid": "8b452b41-2681-4a20-9086-6f16ffad7773"
+        }
+      ]
+    },
+    "site": {
+      "page": "prebid.com"
+    },
+    "regs": {
+      "ext": {
+        "gdpr": 0
+      }
+    },
+    "user": {
+      "yob": 1991,
+      "gender": "F",
+      "keywords": "Hotels, Travelling",
+      "ext": {
+        "prebid": {
+          "buyeruids": {
+            "appnexus": "unique_id_an",
+            "rubicon": "unique_id_rubi"
+          }
+        }
+      }
+    },
+    "device": {
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/537.13 (KHTML, like Gecko) Version/5.1.7 Safari/534.57.2",
+      "ip": "123.145.167.10",
+      "devicetype": 1,
+      "ifa": "AA000DFE74168477C70D291f574D344790E0BB11",
+      "lmt": 44,
+      "os": "mac os",
+      "w": 640,
+      "h": 480,
+      "didsha1": "didsha1",
+      "didmd5": "didmd5",
+      "dpidsha1": "dpidsha1",
+      "dpidmd5": "dpidmd5",
+      "macsha1": "macsha1",
+      "macmd5": "macmd5"
+    },
+    "includebrandcategory": {
+      "primaryadserver": 1,
+      "publisher": ""
+    },
+    "video": {
+      "w": 640,
+      "h": 480,
+      "mimes": [
+        "video/mp4"
+      ],
+      "protocols": [
+        2, 3, 5, 6
+      ]
+    },
+    "content": {
+      "episode": 6,
+      "title": "episodeName",
+      "series": "TvName",
+      "season": "season3",
+      "len": 900,
+      "livestream": 0
+    },
+    "cacheconfig": {
+      "ttl": 42
+    }
+  }
+}

@@ -7,26 +7,27 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type BeintooAdapter struct {
 	endpoint string
 }
 
-func (a *BeintooAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *BeintooAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errors []error
 
 	if len(request.Imp) == 0 {
 		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("No Imps in Bid Request"),
+			Message: "No Imps in Bid Request",
 		}}
 	}
 
-	if errors := preprocess(request); errors != nil && len(errors) > 0 {
+	if errors := preprocess(request); len(errors) > 0 {
 		return nil, append(errors, &errortypes.BadInput{
 			Message: fmt.Sprintf("Error in preprocess of Imp, err: %s", errors),
 		})
@@ -35,7 +36,7 @@ func (a *BeintooAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 	data, err := json.Marshal(request)
 	if err != nil {
 		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Error in packaging request to JSON"),
+			Message: "Error in packaging request to JSON",
 		}}
 	}
 
@@ -60,10 +61,11 @@ func (a *BeintooAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 		Uri:     a.endpoint,
 		Body:    data,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, errors
 }
 
-func unpackImpExt(imp *openrtb.Imp) (*openrtb_ext.ExtImpBeintoo, error) {
+func unpackImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpBeintoo, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
@@ -88,12 +90,12 @@ func unpackImpExt(imp *openrtb.Imp) (*openrtb_ext.ExtImpBeintoo, error) {
 	return &beintooExt, nil
 }
 
-func buildImpBanner(imp *openrtb.Imp) error {
+func buildImpBanner(imp *openrtb2.Imp) error {
 	imp.Ext = nil
 
 	if imp.Banner == nil {
 		return &errortypes.BadInput{
-			Message: fmt.Sprintf("Request needs to include a Banner object"),
+			Message: "Request needs to include a Banner object",
 		}
 	}
 
@@ -103,7 +105,7 @@ func buildImpBanner(imp *openrtb.Imp) error {
 	if banner.W == nil && banner.H == nil {
 		if len(banner.Format) == 0 {
 			return &errortypes.BadInput{
-				Message: fmt.Sprintf("Need at least one size to build request"),
+				Message: "Need at least one size to build request",
 			}
 		}
 		format := banner.Format[0]
@@ -117,7 +119,7 @@ func buildImpBanner(imp *openrtb.Imp) error {
 }
 
 // Add Beintoo required properties to Imp object
-func addImpProps(imp *openrtb.Imp, secure *int8, BeintooExt *openrtb_ext.ExtImpBeintoo) {
+func addImpProps(imp *openrtb2.Imp, secure *int8, BeintooExt *openrtb_ext.ExtImpBeintoo) {
 	imp.TagID = BeintooExt.TagID
 	imp.Secure = secure
 
@@ -131,8 +133,6 @@ func addImpProps(imp *openrtb.Imp, secure *int8, BeintooExt *openrtb_ext.ExtImpB
 			imp.BidFloor = bidFloor
 		}
 	}
-
-	return
 }
 
 // Adding header fields to request header
@@ -143,9 +143,9 @@ func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue str
 }
 
 // Handle request errors and formatting to be sent to Beintoo
-func preprocess(request *openrtb.BidRequest) []error {
+func preprocess(request *openrtb2.BidRequest) []error {
 	errors := make([]error, 0, len(request.Imp))
-	resImps := make([]openrtb.Imp, 0, len(request.Imp))
+	resImps := make([]openrtb2.Imp, 0, len(request.Imp))
 	secure := int8(0)
 
 	if request.Site != nil && request.Site.Page != "" {
@@ -177,7 +177,7 @@ func preprocess(request *openrtb.BidRequest) []error {
 }
 
 // MakeBids make the bids for the bid response.
-func (a *BeintooAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *BeintooAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
 	if response.StatusCode == http.StatusNoContent {
 		// no bid response
@@ -190,7 +190,7 @@ func (a *BeintooAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
@@ -215,8 +215,10 @@ func (a *BeintooAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 
 }
 
-func NewBeintooBidder(endpoint string) *BeintooAdapter {
-	return &BeintooAdapter{
-		endpoint: endpoint,
+// Builder builds a new instance of the Beintoo adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	bidder := &BeintooAdapter{
+		endpoint: config.Endpoint,
 	}
+	return bidder, nil
 }

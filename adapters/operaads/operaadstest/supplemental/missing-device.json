@@ -1,0 +1,33 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {}
+        }
+      }
+    ],
+    "site": {
+      "id": "siteID",
+      "publisher": {
+        "id": "1234"
+      }
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Impression is missing device OS information",
+      "comparison": "literal"
+    }
+  ]
+}

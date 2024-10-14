@@ -1,0 +1,133 @@
+{
+  "mockBidRequest": {
+    "id": "d910ceef496ff2d746176506e296f4b3_z53356_a126365",
+    "imp": [{
+      "id": "126365",
+      "secure": 1,
+      "bidfloor": 0.20,
+      "bidfloorcur": "USD",
+      "banner": {
+        "w": 300,
+        "h": 250,
+        "format": [{
+          "w": 300,
+          "h": 250
+        }]
+      },
+      "ext": {
+        "bidder": {
+          "key": "45352"
+        }
+      }
+    }],
+    "device": {
+      "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 14_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1 Mobile/15E148 Safari/604.1",
+      "geo": {
+        "country": "MEX",
+        "region": "CMX",
+        "city": "Mexico City",
+        "lat": 19.42,
+        "lon": -99.1663
+      },
+      "ip": "189.146.118.247",
+      "devicetype": 4,
+      "language": "it"
+    },
+    "regs": {
+      "ext": {
+        "gdpr": 0
+      }
+    },
+    "user": {
+      "id": "460ecf1d41fa6656c4b892fd84e61ff8c2ab5ad5",
+      "ext": {
+        "consent": ""
+      }
+    },
+    "site": {
+      "id": "12",
+      "domain": "milano.repubblica.it",
+      "cat": ["IAB12"],
+      "page": "https://milano.repubblica.it",
+      "publisher": {
+        "id": "45672"
+      }
+    }
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://service.e-volution.ai/pbserver",
+        "body": {
+          "id": "d910ceef496ff2d746176506e296f4b3_z53356_a126365",
+          "imp": [{
+            "id": "126365",
+            "banner": {
+              "format": [{
+                "w": 300,
+                "h": 250
+              }],
+              "w": 300,
+              "h": 250
+            },
+            "bidfloor": 0.2,
+            "bidfloorcur": "USD",
+            "secure": 1,
+            "ext": {
+              "bidder": {
+                "key": "45352"
+              }
+            }
+          }],
+          "site": {
+            "id": "12",
+            "domain": "milano.repubblica.it",
+            "cat": ["IAB12"],
+            "page": "https://milano.repubblica.it",
+            "publisher": {
+              "id": "45672"
+            }
+          },
+          "device": {
+            "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 14_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1 Mobile/15E148 Safari/604.1",
+            "geo": {
+              "lat": 19.42,
+              "lon": -99.1663,
+              "country": "MEX",
+              "region": "CMX",
+              "city": "Mexico City"
+            },
+            "ip": "189.146.118.247",
+            "devicetype": 4,
+            "language": "it"
+          },
+          "user": {
+            "id": "460ecf1d41fa6656c4b892fd84e61ff8c2ab5ad5",
+            "ext": {
+              "consent": ""
+            }
+          },
+          "regs": {
+            "ext": {
+              "gdpr": 0
+            }
+          }
+        },
+        "impIDs":["126365"]
+      },
+      "mockResponse": {
+        "status": 401
+      }
+    }
+  ],
+
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Something went wrong, please contact your Account Manager. Status Code: [ 401 ] ",
+      "comparison": "literal"
+    }
+  ],
+
+  "expectedBidResponses": []
+}

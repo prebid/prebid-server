@@ -1,0 +1,83 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-banner-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "ad_unit_id": "56f94390-e632-46e3-8e0f-e399d7d6e10d",
+            "publisher_id": "96ce87c5-1c9d-4456-a093-9d8162e54b44"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://fran.frvr.com/api/v1/openrtb",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-banner-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 600
+                  }
+                ]
+              },
+              "ext": {
+                "ad_unit_id": "56f94390-e632-46e3-8e0f-e399d7d6e10d",
+                "publisher_id": "96ce87c5-1c9d-4456-a093-9d8162e54b44"
+              }
+            }
+          ]
+        },
+        "impIDs":["test-banner-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "test-seat",
+              "bid": [
+                {
+                  "id": "ec174d08-4c15-4ea0-95cc-e55bb5bfa0f9\n\n",
+                  "impid": "random-imp",
+                  "price": 0.50,
+                  "adm": "a creative",
+                  "adid": "9999",
+                  "adomain": ["advertiser.com"],
+                  "crid": "9999",
+                  "w": 300,
+                  "h": 600
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [{"currency":"USD","bids":[]}],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "unable to deserialize imp random-imp bid.ext",
+      "comparison": "literal"
+    }
+  ]
+}

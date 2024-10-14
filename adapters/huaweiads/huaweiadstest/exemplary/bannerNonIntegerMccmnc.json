@@ -1,0 +1,270 @@
+{
+  "mockBidRequest": {
+    "id": "a3b18c5b-6708-4bb7-b41b-40ed37d89561",
+    "source": {
+      "tid": "a3b18c5b-6708-4bb7-b41b-40ed37d89561"
+    },
+    "imp": [
+      {
+        "id": "PrebidMobile",
+        "secure": 1,
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ],
+          "api": [
+            5
+          ]
+        },
+        "ext": {
+          "prebid": {
+            "storedrequest": {
+              "id": "1001-1"
+            }
+          },
+          "bidder": {
+            "slotid": "m8x9x3rzff",
+            "adtype": "banner",
+            "publisherid": "123",
+            "signkey": "signkey",
+            "keyid": "41",
+            "isTestAuthorization": "true"
+          }
+        }
+      }
+    ],
+    "device": {
+      "make": "HUAWEI",
+      "model": "LYA-AL00",
+      "ua": "ua",
+      "lmt": 0,
+      "os": "android",
+      "osv": "29",
+      "language": "zh",
+      "w": 360,
+      "h": 755,
+      "pxratio": 3,
+      "mccmnc": "test-1",
+      "carrier": "carrier",
+      "connectiontype": 1
+    },
+    "app": {
+      "bundle": "com.example.p10",
+      "ver": "1.11",
+      "name": "API1.0Demo",
+      "publisher": {
+        "id": "1001"
+      },
+      "ext": {
+        "prebid": {
+          "source": "prebid-mobile",
+          "version": "1.11"
+        }
+      }
+    },
+    "user": {
+      "gender": "O",
+      "ext": {
+        "data": {
+          "gaid": [
+            "gaid"
+          ],
+          "oaid": [
+            "oaid"
+          ],
+          "clientTime": [
+            "2018-11-02 16:34:07.981+1300"
+          ]
+        }
+      }
+    },
+    "ext": {
+      "prebid": {
+        "storedrequest": {
+          "id": "1001"
+        },
+        "cache": {
+          "bids": {}
+        },
+        "targeting": {}
+      }
+    }
+  },
+  "httpcalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://adx-dra.op.hicloud.com/ppsadx/getResult",
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "User-Agent": [
+            "ua"
+          ],
+          "Authorization": [
+            "Digest username=123,realm=ppsadx/getResult,nonce=1629473330823,response=d1d61a13a83e1468aa4dff5c8a6cee0b8b381173ca3eb6fa9b313937684d87c0,algorithm=HmacSHA256,usertype=1,keyid=41"
+          ]
+        },
+        "body": {
+          "app": {
+            "lang": "en",
+            "country": "ZA",
+            "name": "API1.0Demo",
+            "pkgname": "com.example.pkgname2",
+            "version": "1.11"
+          },
+          "multislot": [
+            {
+              "adtype": 8,
+              "slotid": "m8x9x3rzff",
+              "test": 1,
+              "format": [
+                {
+                  "w": 300,
+                  "h": 250
+                }
+              ]
+            }
+          ],
+          "device": {
+            "height": 755,
+            "language": "zh",
+            "oaid": "oaid",
+            "os": "android",
+            "localeCountry": "ZA",
+            "pxratio": 3,
+            "width": 360,
+            "model": "LYA-AL00",
+            "clientTime": "2018-11-02 16:34:07.981+1300",
+            "gaid": "gaid",
+            "useragent": "ua",
+            "version": "29",
+            "maker": "HUAWEI",
+            "belongCountry": "ZA"
+          },
+          "geo": {
+          },
+          "network": {
+            "carrier": 99,
+            "cellInfo": [
+              {
+                "mcc": "test",
+                "mnc": "1"
+              }
+            ],
+            "type": 1
+          },
+          "regs": {
+          },
+          "version": "3.4",
+          "clientAdRequestId": "a3b18c5b-6708-4bb7-b41b-40ed37d89561"
+        },
+        "impIDs":["PrebidMobile"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "ctrlSwitchs": "0",
+          "dsp1cost": 61,
+          "dspcost": 108,
+          "multiad": [
+            {
+              "adtype": 8,
+              "brsetting": "Y",
+              "content": [
+                {
+                  "clickActionList": [
+                    1
+                  ],
+                  "contentid": "58025103",
+                  "creativetype": 2,
+                  "endtime": 1621428898335,
+                  "filterList": [
+                    3
+                  ],
+                  "interactiontype": 1,
+                  "landingTitle": 1,
+                  "metaData": {
+                    "adSign": "2",
+                    "appPromotionChannel": "401721412",
+                    "clickUrl": "https://ads.huawei.com/usermgtportal/home/index.html#/",
+                    "imageInfo": [
+                      {
+                        "checkSha256Flag": 1,
+                        "height": 250,
+                        "imageType": "img",
+                        "sha256": "",
+                        "url": "https://ads.huawei.com/usermgtportal/home/img/huawei_logo_black.aaec817d.svg",
+                        "width": 300
+                      }
+                    ],
+                    "label": "Banner_API",
+                    "landingPageType": "3"
+                  },
+                  "monitor": [
+                    {
+                      "eventType": "click"
+                    },
+                    {
+                      "eventType": "imp",
+                      "url": [
+                      ]
+                    }
+                  ],
+                  "paramfromserver": {
+                    "a": "1||test",
+                    "sig": "",
+                    "t": "99990101235959"
+                  },
+                  "price": 2.8,
+                  "starttime": 1621267200000,
+                  "taskid": "48017658"
+                }
+              ],
+              "retcode30": 200,
+              "slotid": "m8x9x3rzff"
+            }
+          ],
+          "noReportAdTypeEventList": [
+            {
+              "adType": 8,
+              "eventTypeList": [
+                "exception_6"
+              ]
+            }
+          ],
+          "retcode": 200,
+          "totalCacheSize": 300
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "adm": "<style> html, body  { margin: 0; padding: 0; width: 100%; height: 100%; vertical-align: middle; }  html  { display: table; }  body { display: table-cell; vertical-align: middle; text-align: center; -webkit-text-size-adjust: none; }  </style> <span class=\"title-link advertiser_label\"></span> <a href='https://ads.huawei.com/usermgtportal/home/index.html#/' style=\"text-decoration:none\" onclick=sendGetReq()> <img src='https://ads.huawei.com/usermgtportal/home/img/huawei_logo_black.aaec817d.svg' width='300' height='250'/> </a> <script type=\"text/javascript\">var dspClickTrackings = [];function sendGetReq() {sendSomeGetReq(dspClickTrackings)}function sendOneGetReq(url) {var req = new XMLHttpRequest();req.open('GET', url, true);req.send(null);}function sendSomeGetReq(urls) {for (var i = 0; i < urls.length; i++) {sendOneGetReq(urls[i]);}}</script>",
+            "adomain": [
+              "huaweiads"
+            ],
+            "h": 250,
+            "w": 300,
+            "crid": "58025103",
+            "id": "PrebidMobile",
+            "impid": "PrebidMobile",
+            "price": 2.8
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

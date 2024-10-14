@@ -34,7 +34,8 @@
               }
             }
           ]
-        }
+        },
+        "impIDs":["some_test_ad"]
       },
       "mockResponse": {
         "status": 200,
@@ -46,5 +47,6 @@
         }
       }
     }
-  ]
+  ],
+  "expectedBidResponses": []
 }

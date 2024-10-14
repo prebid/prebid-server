@@ -1,0 +1,35 @@
+{
+    "mockBidRequest": {
+      "id": "test-request-id",
+      "imp": [
+        {
+          "id": "test-banner-imp-id",
+          "banner": {
+            "format": [
+            ]
+          },
+          "ext": {
+            "bidder": {
+              "siteId": 123456,
+              "networkId": 123456
+            }
+          }
+        }
+      ],
+      "site": {
+        "domain": "connectad.io",
+        "page": "http://connectad.io/"
+      }
+    },
+    "expectedMakeRequestsErrors": [
+      {
+        "value": "At least one size is required",
+        "comparison": "literal"
+      },
+      {
+        "value": "Error in preprocess of Imp",
+        "comparison": "literal"
+      }
+    ]
+  }
+  

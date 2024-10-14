@@ -1,0 +1,54 @@
+{
+  "mockBidRequest": {
+    "id": "bid-request-id",
+    "device": {
+      "ip": "0.0.0.0",
+      "ifa": "ce76100d-82cc-4491-a6c9-50e0e539454c"
+    },
+    "app": {
+      "id": "app-id",
+      "bundle": "com.app.id"
+    },
+    "imp": [
+      {
+        "id": "imp-id-1",
+        "bidfloor": 4.20,
+        "bidfloorcur": "JPY",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "protocols": [
+            2,
+            5
+          ],
+          "w": 1024,
+          "h": 576
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "225a4f40-1df1-48b2-b238-8774a638ce6e"
+          }
+        }
+      }
+    ],
+    "ext": {
+      "prebid": {
+        "currency": {
+          "rates": {
+            "MXN": {
+              "USD": 0.05
+            }
+          },
+          "usepbsrates": false
+        }
+      }
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Currency conversion rate not found: 'JPY' => 'USD'",
+      "comparison": "literal"
+    }
+  ]
+}

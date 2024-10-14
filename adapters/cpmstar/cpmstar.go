@@ -5,17 +5,18 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type Adapter struct {
 	endpoint string
 }
 
-func (a *Adapter) MakeRequests(request *openrtb.BidRequest, unused *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *Adapter) MakeRequests(request *openrtb2.BidRequest, unused *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 	var adapterRequests []*adapters.RequestData
 
@@ -35,7 +36,7 @@ func (a *Adapter) MakeRequests(request *openrtb.BidRequest, unused *adapters.Ext
 	return adapterRequests, errs
 }
 
-func (a *Adapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, error) {
+func (a *Adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, error) {
 	var err error
 
 	jsonBody, err := json.Marshal(request)
@@ -51,10 +52,11 @@ func (a *Adapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestDat
 		Uri:     a.endpoint,
 		Body:    jsonBody,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}, nil
 }
 
-func preprocess(request *openrtb.BidRequest) error {
+func preprocess(request *openrtb2.BidRequest) error {
 	if len(request.Imp) == 0 {
 		return &errortypes.BadInput{
 			Message: "No Imps in Bid Request",
@@ -87,7 +89,7 @@ func preprocess(request *openrtb.BidRequest) error {
 	return nil
 }
 
-func validateImp(imp *openrtb.Imp) error {
+func validateImp(imp *openrtb2.Imp) error {
 	if imp.Banner == nil && imp.Video == nil {
 		return &errortypes.BadInput{
 			Message: "Only Banner and Video bid-types are supported at this time",
@@ -97,7 +99,7 @@ func validateImp(imp *openrtb.Imp) error {
 }
 
 // MakeBids based on cpmstar server response
-func (a *Adapter) MakeBids(bidRequest *openrtb.BidRequest, unused *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *Adapter) MakeBids(bidRequest *openrtb2.BidRequest, unused *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if responseData.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -108,7 +110,7 @@ func (a *Adapter) MakeBids(bidRequest *openrtb.BidRequest, unused *adapters.Requ
 		}}
 	}
 
-	var bidResponse openrtb.BidResponse
+	var bidResponse openrtb2.BidResponse
 
 	if err := json.Unmarshal(responseData.Body, &bidResponse); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
@@ -124,11 +126,11 @@ func (a *Adapter) MakeBids(bidRequest *openrtb.BidRequest, unused *adapters.Requ
 	var errors []error
 
 	for _, seatbid := range bidResponse.SeatBid {
-		for _, bid := range seatbid.Bid {
+		for i := range seatbid.Bid {
 			foundMatchingBid := false
 			bidType := openrtb_ext.BidTypeBanner
 			for _, imp := range bidRequest.Imp {
-				if imp.ID == bid.ImpID {
+				if imp.ID == seatbid.Bid[i].ImpID {
 					foundMatchingBid = true
 					if imp.Banner != nil {
 						bidType = openrtb_ext.BidTypeBanner
@@ -141,12 +143,12 @@ func (a *Adapter) MakeBids(bidRequest *openrtb.BidRequest, unused *adapters.Requ
 
 			if foundMatchingBid {
 				rv.Bids = append(rv.Bids, &adapters.TypedBid{
-					Bid:     &bid,
+					Bid:     &seatbid.Bid[i],
 					BidType: bidType,
 				})
 			} else {
 				errors = append(errors, &errortypes.BadServerResponse{
-					Message: fmt.Sprintf("bid id='%s' could not find valid impid='%s'", bid.ID, bid.ImpID),
+					Message: fmt.Sprintf("bid id='%s' could not find valid impid='%s'", seatbid.Bid[i].ID, seatbid.Bid[i].ImpID),
 				})
 			}
 		}
@@ -154,8 +156,10 @@ func (a *Adapter) MakeBids(bidRequest *openrtb.BidRequest, unused *adapters.Requ
 	return rv, errors
 }
 
-func NewCpmstarBidder(endpoint string) *Adapter {
-	return &Adapter{
-		endpoint: endpoint,
+// Builder builds a new instance of the Cpmstar adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	bidder := &Adapter{
+		endpoint: config.Endpoint,
 	}
+	return bidder, nil
 }

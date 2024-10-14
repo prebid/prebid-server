@@ -1,0 +1,86 @@
+{
+	"mockBidRequest": {
+        "id": "test-request-id",
+        "imp": [
+            {
+                "id": "test-imp-id",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        },
+                        {
+                            "w": 300,
+                            "h": 600
+                        }
+                    ]
+                },
+                "tagid": "17",
+                "displaymanager": "di_prebid",
+                "displaymanagerver": "2.0.0",
+                "ext": {
+                    "bidder": {
+                        "tagId": "17"
+                    }
+                }
+            }
+        ],
+        "app": {
+            "id": "1",
+            "bundle": "com.wls.testwlsapplication"
+        },
+        "device": {
+            "ip": "123.123.123.123",
+            "ifa": "sdjfksdf-dfsds-dsdg-dsgg"
+        }
+    },
+	"httpCalls": [{
+		"expectedRequest": {
+			"uri": "https://prebid.deepintent.com/prebid",
+			"body": {
+                "id": "test-request-id",
+                "imp": [
+                    {
+                        "id": "test-imp-id",
+                        "banner": {
+                            "format": [
+                                {
+                                    "w": 300,
+                                    "h": 250
+                                },
+                                {
+                                    "w": 300,
+                                    "h": 600
+                                }
+                            ],
+                            "h":250,
+                            "w":300
+                        },
+                        "tagid": "17",
+                        "displaymanager": "di_prebid",
+                        "displaymanagerver": "2.0.0",
+                        "ext": {
+                            "bidder": {
+                                "tagId": "17"
+                            }
+                        }
+                    }
+                ],
+                "app": {
+                    "id": "1",
+                    "bundle": "com.wls.testwlsapplication"
+                },
+                "device": {
+                    "ip": "123.123.123.123",
+                    "ifa": "sdjfksdf-dfsds-dsdg-dsgg"
+                }
+            },
+            "impIDs":["test-imp-id"]
+		},
+		"mockResponse": {
+			"status": 204,
+			"body": {}
+		}
+	}]
+}

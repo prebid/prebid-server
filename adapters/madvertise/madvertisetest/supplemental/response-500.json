@@ -1,0 +1,195 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "tmax": 500,
+        "at": 2,
+        "cur": [
+            "EUR"
+        ],
+        "regs": {
+            "ext": {
+                "gdpr": 1
+            }
+        },
+        "user": {
+            "ext": {
+                "consent": "CO-X2XiO_eyUoAsAxBFRBECsAP_AAH_AAAqIGMgB7CpERSNAYWApAOMAKYhfQAACAGAABAYIASgBQQBAMJQEkGAIMAjAAAAKAAAEACQAAAAgCAGAAAAAAAAAAQCMAAAAABAAACAAAAASAAAACAAACACSCAAQjAAAAAEAgAAAAAIF5wJwAFgAPAAqABcADIAHAAQAAqABiADQAHkARABFACeAFKALgAugBiADaAG8AOYAfwBCAClAGqANcAdQA_QCBgEIAIsARwAq4BgADZAHyAP-Aj0BUwC6gF5gCAoAYBEAC4AKpCQAwCIAFwAVSIgAgABFQAQAAg"
+            }
+        },
+        "app": {
+            "id": "9561622",
+            "bundle": "com.madvertise.bluestack",
+            "name": "FR_BlueStack_App_Android_MNG",
+            "storeurl": "https://play.google.com/store/apps/details?id=com.madvertise.bluestack",
+            "cat": [
+                "IAB6",
+                "IAB9",
+                "IAB10",
+                "IAB12",
+                "IAB14",
+                "IAB20"
+            ]
+        },
+        "device": {
+            "ip": "123.123.123.123",
+            "ua": "test-user-agent",
+            "dnt": 0,
+            "lmt": 0,
+            "ifa": "b879a967-cccc-bbbb-aaaa-1aa111111111",
+            "make": "Sony",
+            "model": "G8441",
+            "os": "Android",
+            "osv": "9.0",
+            "devicetype": 4,
+            "connectiontype": 6,
+            "js": 1,
+            "carrier": "Free",
+            "geo": {
+                "type": 2,
+                "country": "FRA"
+            }
+        },
+        "imp": [
+            {
+                "id": "test-imp-id",
+                "secure": 1,
+                "bidfloor": 3,
+                "bidfloorcur": "EUR",
+                "instl": 0,
+                "banner": {
+                    "format": [
+                        {
+                            "w": 320,
+                            "h": 50
+                        }
+                    ],
+                    "w": 320,
+                    "h": 50,
+                    "api": [
+                        3,
+                        5,
+                        6
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "zoneId": "/1111111/banner"
+                    }
+                }
+            }
+        ]
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "https://mobile.mng-ads.com/bidrequest/1111111/banner",
+                "headers": {
+                    "Content-Type": [
+                        "application/json;charset=utf-8"
+                    ],
+                    "Accept": [
+                        "application/json"
+                    ],
+                    "X-Openrtb-Version": [
+                        "2.5"
+                    ],
+                    "User-Agent": [
+                        "test-user-agent"
+                    ],
+                    "X-Forwarded-For": [
+                        "123.123.123.123"
+                    ]
+                },
+                "body": {
+                    "id": "test-request-id",
+                    "tmax": 500,
+                    "at": 2,
+                    "cur": [
+                        "EUR"
+                    ],
+                    "regs": {
+                        "ext": {
+                            "gdpr": 1
+                        }
+                    },
+                    "user": {
+                        "ext": {
+                            "consent": "CO-X2XiO_eyUoAsAxBFRBECsAP_AAH_AAAqIGMgB7CpERSNAYWApAOMAKYhfQAACAGAABAYIASgBQQBAMJQEkGAIMAjAAAAKAAAEACQAAAAgCAGAAAAAAAAAAQCMAAAAABAAACAAAAASAAAACAAACACSCAAQjAAAAAEAgAAAAAIF5wJwAFgAPAAqABcADIAHAAQAAqABiADQAHkARABFACeAFKALgAugBiADaAG8AOYAfwBCAClAGqANcAdQA_QCBgEIAIsARwAq4BgADZAHyAP-Aj0BUwC6gF5gCAoAYBEAC4AKpCQAwCIAFwAVSIgAgABFQAQAAg"
+                        }
+                    },
+                    "app": {
+                        "id": "9561622",
+                        "bundle": "com.madvertise.bluestack",
+                        "name": "FR_BlueStack_App_Android_MNG",
+                        "storeurl": "https://play.google.com/store/apps/details?id=com.madvertise.bluestack",
+                        "cat": [
+                            "IAB6",
+                            "IAB9",
+                            "IAB10",
+                            "IAB12",
+                            "IAB14",
+                            "IAB20"
+                        ]
+                    },
+                    "device": {
+                        "ip": "123.123.123.123",
+                        "ua": "test-user-agent",
+                        "dnt": 0,
+                        "lmt": 0,
+                        "ifa": "b879a967-cccc-bbbb-aaaa-1aa111111111",
+                        "make": "Sony",
+                        "model": "G8441",
+                        "os": "Android",
+                        "osv": "9.0",
+                        "devicetype": 4,
+                        "connectiontype": 6,
+                        "js": 1,
+                        "carrier": "Free",
+                        "geo": {
+                            "type": 2,
+                            "country": "FRA"
+                        }
+                    },
+                    "imp": [
+                        {
+                            "id": "test-imp-id",
+                            "secure": 1,
+                            "bidfloor": 3,
+                            "bidfloorcur": "EUR",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 320,
+                                        "h": 50
+                                    }
+                                ],
+                                "w": 320,
+                                "h": 50,
+                                "api": [
+                                    3,
+                                    5,
+                                    6
+                                ]
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "zoneId": "/1111111/banner"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "impIDs":["test-imp-id"]
+            },
+            "mockResponse": {
+                "status": 500
+            }
+        }
+    ],
+    "expectedMakeBidsErrors": [
+        {
+            "value": "Unexpected status code: 500. Run with request.debug = 1 for more info",
+            "comparison": "literal"
+        }
+    ]
+}

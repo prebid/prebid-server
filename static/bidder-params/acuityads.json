@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "AcuityAds Adapter Params",
+  "description": "A schema which validates params accepted by the AcuityAds adapter",
+  "type": "object",
+  "properties": {
+    "host": {
+      "type": "string",
+      "description": "Network host to send request",
+      "minLength": 1
+    },
+    "accountid": {
+      "type": "string",
+      "description": "Account id",
+      "minLength": 1
+    }
+  },
+  "required": ["host", "accountid"]
+}

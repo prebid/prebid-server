@@ -5,17 +5,18 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type LogicadAdapter struct {
 	endpoint string
 }
 
-func (adapter *LogicadAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (adapter *LogicadAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	if len(request.Imp) == 0 {
 		return nil, []error{&errortypes.BadInput{Message: "No impression in the bid request"}}
 	}
@@ -37,10 +38,10 @@ func (adapter *LogicadAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo
 	return result, errs
 }
 
-func getImpressionsInfo(imps []openrtb.Imp) (map[openrtb_ext.ExtImpLogicad][]openrtb.Imp, []openrtb.Imp, []error) {
+func getImpressionsInfo(imps []openrtb2.Imp) (map[openrtb_ext.ExtImpLogicad][]openrtb2.Imp, []openrtb2.Imp, []error) {
 	errors := make([]error, 0, len(imps))
-	resImps := make([]openrtb.Imp, 0, len(imps))
-	res := make(map[openrtb_ext.ExtImpLogicad][]openrtb.Imp)
+	resImps := make([]openrtb2.Imp, 0, len(imps))
+	res := make(map[openrtb_ext.ExtImpLogicad][]openrtb2.Imp)
 
 	for _, imp := range imps {
 		impExt, err := getImpressionExt(&imp)
@@ -54,7 +55,7 @@ func getImpressionsInfo(imps []openrtb.Imp) (map[openrtb_ext.ExtImpLogicad][]ope
 		}
 
 		if res[impExt] == nil {
-			res[impExt] = make([]openrtb.Imp, 0)
+			res[impExt] = make([]openrtb2.Imp, 0)
 		}
 		res[impExt] = append(res[impExt], imp)
 		resImps = append(resImps, imp)
@@ -69,7 +70,7 @@ func validateImpression(impExt *openrtb_ext.ExtImpLogicad) error {
 	return nil
 }
 
-func getImpressionExt(imp *openrtb.Imp) (openrtb_ext.ExtImpLogicad, error) {
+func getImpressionExt(imp *openrtb2.Imp) (openrtb_ext.ExtImpLogicad, error) {
 	var bidderExt adapters.ExtImpBidder
 	var logicadExt openrtb_ext.ExtImpLogicad
 
@@ -86,7 +87,7 @@ func getImpressionExt(imp *openrtb.Imp) (openrtb_ext.ExtImpLogicad, error) {
 	return logicadExt, nil
 }
 
-func (adapter *LogicadAdapter) buildAdapterRequest(prebidBidRequest *openrtb.BidRequest, params *openrtb_ext.ExtImpLogicad, imps []openrtb.Imp) (*adapters.RequestData, error) {
+func (adapter *LogicadAdapter) buildAdapterRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ExtImpLogicad, imps []openrtb2.Imp) (*adapters.RequestData, error) {
 	newBidRequest := createBidRequest(prebidBidRequest, params, imps)
 	reqJSON, err := json.Marshal(newBidRequest)
 	if err != nil {
@@ -101,10 +102,11 @@ func (adapter *LogicadAdapter) buildAdapterRequest(prebidBidRequest *openrtb.Bid
 		Method:  "POST",
 		Uri:     adapter.endpoint,
 		Body:    reqJSON,
-		Headers: headers}, nil
+		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(imps)}, nil
 }
 
-func createBidRequest(prebidBidRequest *openrtb.BidRequest, params *openrtb_ext.ExtImpLogicad, imps []openrtb.Imp) *openrtb.BidRequest {
+func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ExtImpLogicad, imps []openrtb2.Imp) *openrtb2.BidRequest {
 	bidRequest := *prebidBidRequest
 	bidRequest.Imp = imps
 	for idx := range bidRequest.Imp {
@@ -115,8 +117,8 @@ func createBidRequest(prebidBidRequest *openrtb.BidRequest, params *openrtb_ext.
 	return &bidRequest
 }
 
-//MakeBids translates Logicad bid response to prebid-server specific format
-func (adapter *LogicadAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+// MakeBids translates Logicad bid response to prebid-server specific format
+func (adapter *LogicadAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -125,7 +127,7 @@ func (adapter *LogicadAdapter) MakeBids(internalRequest *openrtb.BidRequest, ext
 		return nil, []error{&errortypes.BadServerResponse{Message: msg}}
 
 	}
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		msg := fmt.Sprintf("Bad server response: %d", err)
 		return nil, []error{&errortypes.BadServerResponse{Message: msg}}
@@ -145,11 +147,16 @@ func (adapter *LogicadAdapter) MakeBids(internalRequest *openrtb.BidRequest, ext
 			BidType: openrtb_ext.BidTypeBanner,
 		})
 	}
+	if bidResp.Cur != "" {
+		bidResponse.Currency = bidResp.Cur
+	}
 	return bidResponse, nil
 }
 
-func NewLogicadBidder(endpoint string) adapters.Bidder {
-	return &LogicadAdapter{
-		endpoint: endpoint,
+// Builder builds a new instance of the Logicad adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	bidder := &LogicadAdapter{
+		endpoint: config.Endpoint,
 	}
+	return bidder, nil
 }

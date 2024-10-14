@@ -1,0 +1,12 @@
+endpoint: "http://bes.mobfox.com/?c=__route__&m=__method__&key=__key__"
+maintainer:
+  email: "support@mobfox.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video

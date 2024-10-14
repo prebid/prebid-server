@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "VideoByte Adapter Params",
+  "description": "A schema which validates params accepted by the VideoByte adapter",
+
+  "type": "object",
+  "properties": {
+    "pubId": {
+      "type": "string",
+      "description": "Publisher ID"
+    },
+    "placementId": {
+      "type": "string",
+      "description": "Placement ID"
+    },
+    "nid": {
+      "type": "string",
+      "description": "Network ID"
+    }
+  },
+  "required": ["pubId"]
+}

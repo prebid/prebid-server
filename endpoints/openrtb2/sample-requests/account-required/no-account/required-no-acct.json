@@ -1,0 +1,68 @@
+{
+  "description": "This request comes with no account id and the mock config requires it. We expect an error",
+  "config": {
+    "accountRequired": true
+  },
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "test.somepage.com"
+    },
+    "user": { },
+    "imp": [
+      {
+        "id": "my-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "pmp": {
+          "deals": [
+            {
+              "id": "some-deal-id"
+            }
+          ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          }
+        }
+      }
+    ],
+    "tmax": 500,
+    "ext": {
+      "prebid": {
+        "aliases": {
+          "districtm": "appnexus"
+        },
+        "bidadjustmentfactors": {
+          "appnexus": 1.01,
+          "districtm": 0.98,
+          "rubicon": 0.99
+        },
+        "cache": {
+          "bids": {}
+        },
+        "targeting": {
+          "includewinners": false,
+          "pricegranularity": {
+            "precision": 2,
+            "ranges": [
+              {
+                "max": 20,
+                "increment": 0.10
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: Prebid-server has been configured to discard requests without a valid Account ID. Please reach out to the prebid server host.\n"
+}

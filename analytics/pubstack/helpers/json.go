@@ -1,19 +1,37 @@
 package helpers
 
 import (
-	"encoding/json"
 	"fmt"
 
-	"github.com/prebid/prebid-server/analytics"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/analytics"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
 func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]byte, error) {
-	b, err := json.Marshal(&struct {
+	var logEntry *logAuction
+	if ao != nil {
+		var request *openrtb2.BidRequest
+		if ao.RequestWrapper != nil {
+			request = ao.RequestWrapper.BidRequest
+		}
+		logEntry = &logAuction{
+			Status:               ao.Status,
+			Errors:               ao.Errors,
+			Request:              request,
+			Response:             ao.Response,
+			Account:              ao.Account,
+			StartTime:            ao.StartTime,
+			HookExecutionOutcome: ao.HookExecutionOutcome,
+		}
+	}
+
+	b, err := jsonutil.Marshal(&struct {
 		Scope string `json:"scope"`
-		*analytics.AuctionObject
+		*logAuction
 	}{
-		Scope:         scope,
-		AuctionObject: ao,
+		Scope:      scope,
+		logAuction: logEntry,
 	})
 
 	if err == nil {
@@ -24,12 +42,29 @@ func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]byte, er
 }
 
 func JsonifyVideoObject(vo *analytics.VideoObject, scope string) ([]byte, error) {
-	b, err := json.Marshal(&struct {
+	var logEntry *logVideo
+	if vo != nil {
+		var request *openrtb2.BidRequest
+		if vo.RequestWrapper != nil {
+			request = vo.RequestWrapper.BidRequest
+		}
+		logEntry = &logVideo{
+			Status:        vo.Status,
+			Errors:        vo.Errors,
+			Request:       request,
+			Response:      vo.Response,
+			VideoRequest:  vo.VideoRequest,
+			VideoResponse: vo.VideoResponse,
+			StartTime:     vo.StartTime,
+		}
+	}
+
+	b, err := jsonutil.Marshal(&struct {
 		Scope string `json:"scope"`
-		*analytics.VideoObject
+		*logVideo
 	}{
-		Scope:       scope,
-		VideoObject: vo,
+		Scope:    scope,
+		logVideo: logEntry,
 	})
 
 	if err == nil {
@@ -40,12 +75,21 @@ func JsonifyVideoObject(vo *analytics.VideoObject, scope string) ([]byte, error)
 }
 
 func JsonifyCookieSync(cso *analytics.CookieSyncObject, scope string) ([]byte, error) {
-	b, err := json.Marshal(&struct {
+	var logEntry *logUserSync
+	if cso != nil {
+		logEntry = &logUserSync{
+			Status:       cso.Status,
+			Errors:       cso.Errors,
+			BidderStatus: cso.BidderStatus,
+		}
+	}
+
+	b, err := jsonutil.Marshal(&struct {
 		Scope string `json:"scope"`
-		*analytics.CookieSyncObject
+		*logUserSync
 	}{
-		Scope:            scope,
-		CookieSyncObject: cso,
+		Scope:       scope,
+		logUserSync: logEntry,
 	})
 
 	if err == nil {
@@ -56,12 +100,23 @@ func JsonifyCookieSync(cso *analytics.CookieSyncObject, scope string) ([]byte, e
 }
 
 func JsonifySetUIDObject(so *analytics.SetUIDObject, scope string) ([]byte, error) {
-	b, err := json.Marshal(&struct {
+	var logEntry *logSetUID
+	if so != nil {
+		logEntry = &logSetUID{
+			Status:  so.Status,
+			Bidder:  so.Bidder,
+			UID:     so.UID,
+			Errors:  so.Errors,
+			Success: so.Success,
+		}
+	}
+
+	b, err := jsonutil.Marshal(&struct {
 		Scope string `json:"scope"`
-		*analytics.SetUIDObject
+		*logSetUID
 	}{
-		Scope:        scope,
-		SetUIDObject: so,
+		Scope:     scope,
+		logSetUID: logEntry,
 	})
 
 	if err == nil {
@@ -72,12 +127,30 @@ func JsonifySetUIDObject(so *analytics.SetUIDObject, scope string) ([]byte, erro
 }
 
 func JsonifyAmpObject(ao *analytics.AmpObject, scope string) ([]byte, error) {
-	b, err := json.Marshal(&struct {
+	var logEntry *logAMP
+	if ao != nil {
+		var request *openrtb2.BidRequest
+		if ao.RequestWrapper != nil {
+			request = ao.RequestWrapper.BidRequest
+		}
+		logEntry = &logAMP{
+			Status:               ao.Status,
+			Errors:               ao.Errors,
+			Request:              request,
+			AuctionResponse:      ao.AuctionResponse,
+			AmpTargetingValues:   ao.AmpTargetingValues,
+			Origin:               ao.Origin,
+			StartTime:            ao.StartTime,
+			HookExecutionOutcome: ao.HookExecutionOutcome,
+		}
+	}
+
+	b, err := jsonutil.Marshal(&struct {
 		Scope string `json:"scope"`
-		*analytics.AmpObject
+		*logAMP
 	}{
-		Scope:     scope,
-		AmpObject: ao,
+		Scope:  scope,
+		logAMP: logEntry,
 	})
 
 	if err == nil {

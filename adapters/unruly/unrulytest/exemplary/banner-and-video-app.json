@@ -1,0 +1,206 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 300
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "siteId": 72721,
+            "siteid": 0
+          }
+        }
+      },
+      {
+        "id": "test-imp-video-id",
+        "video": {
+          "mimes": ["video/mp4"],
+          "minduration": 1,
+          "maxduration": 2,
+          "protocols": [1, 2, 5],
+          "w": 1020,
+          "h": 780,
+          "startdelay": 1,
+          "placement": 1,
+          "playbackmethod": [2],
+          "delivery": [1],
+          "api": [1, 2, 3, 4]
+        },
+        "ext": {
+          "bidder": {
+            "siteId": 72721,
+            "siteid": 0
+          }
+        }
+      }
+    ],
+    "app": {
+      "id": "agltb3B1Yi1pbmNyDAsSA0FwcBiJkfIUDA",
+      "name": "Yahoo Weather",
+      "bundle": "12345",
+      "storeurl": "https://itunes.apple.com/id628677149",
+      "cat": ["IAB15", "IAB15-10"],
+      "ver": "1.0.2",
+      "publisher": {
+        "id": "1"
+      }
+    },
+    "device": {
+      "dnt": 0,
+      "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 6_1 like Mac OS X) AppleWebKit / 534.46(KHTML, like Gecko) Version / 5.1 Mobile / 9 A334 Safari / 7534.48 .3",
+      "ip": "123.145.167.189",
+      "ifa": "AA000DFE74168477C70D291f574D344790E0BB11",
+      "carrier": "VERIZON",
+      "language": "en",
+      "make": "Apple",
+      "model": "iPhone",
+      "os": "iOS",
+      "osv": "6.1",
+      "js": 1,
+      "connectiontype": 3,
+      "devicetype": 1
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://targeting.unrulymedia.com/unruly_prebid_server",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  },
+                  {
+                    "w": 300,
+                    "h": 300
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "siteId": 72721,
+                  "siteid": 0
+                }
+              }
+            },
+            {
+              "id": "test-imp-video-id",
+              "video": {
+                "mimes": ["video/mp4"],
+                "minduration": 1,
+                "maxduration": 2,
+                "protocols": [1, 2, 5],
+                "w": 1020,
+                "h": 780,
+                "startdelay": 1,
+                "placement": 1,
+                "playbackmethod": [2],
+                "delivery": [1],
+                "api": [1, 2, 3, 4]
+              },
+              "ext": {
+                "bidder": {
+                  "siteId": 72721,
+                  "siteid": 0
+                }
+              }
+            }
+          ],
+          "app": {
+            "id": "agltb3B1Yi1pbmNyDAsSA0FwcBiJkfIUDA",
+            "name": "Yahoo Weather",
+            "bundle": "12345",
+            "storeurl": "https://itunes.apple.com/id628677149",
+            "cat": ["IAB15", "IAB15-10"],
+            "ver": "1.0.2",
+            "publisher": {
+              "id": "1"
+            }
+          },
+          "device": {
+            "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 6_1 like Mac OS X) AppleWebKit / 534.46(KHTML, like Gecko) Version / 5.1 Mobile / 9 A334 Safari / 7534.48 .3",
+            "ip": "123.145.167.189",
+            "devicetype": 1,
+            "make": "Apple",
+            "model": "iPhone",
+            "os": "iOS",
+            "osv": "6.1",
+            "js": 1,
+            "dnt": 0,
+            "language": "en",
+            "carrier": "VERIZON",
+            "connectiontype": 3,
+            "ifa": "AA000DFE74168477C70D291f574D344790E0BB11"
+          }
+        },
+        "impIDs":["test-imp-id","test-imp-video-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "958",
+              "bid": [
+                {
+                  "id": "7706636740145184841",
+                  "impid": "test-imp-video-id",
+                  "price": 0.5,
+                  "adid": "29681110",
+                  "adm": "some-test-ad",
+                  "adomain": ["yahoo.com"],
+                  "cid": "958",
+                  "crid": "29681110",
+                  "h": 576,
+                  "w": 1024
+                }
+              ]
+            }
+          ],
+          "bidid": "5778926625248726496",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "7706636740145184841",
+            "impid": "test-imp-video-id",
+            "price": 0.5,
+            "adm": "some-test-ad",
+            "adid": "29681110",
+            "adomain": ["yahoo.com"],
+            "cid": "958",
+            "crid": "29681110",
+            "w": 1024,
+            "h": 576
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

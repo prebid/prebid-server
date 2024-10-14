@@ -1,0 +1,18 @@
+endpoint: "https://pbs.openwebmp.com/pbs"
+maintainer:
+  email: "monetization@openweb.com"
+gvlVendorID: 280
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  iframe:
+    url: https://pbs-cs.openwebmp.com/pbs-iframe?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirect={{.RedirectURL}}
+    userMacro: "[PBS_UID]"

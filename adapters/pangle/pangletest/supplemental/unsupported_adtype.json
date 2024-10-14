@@ -1,0 +1,48 @@
+{
+    "mockBidRequest": {
+      "id": "test-request-id",
+      "app": {
+        "bundle": "com.prebid"
+      },
+      "device": {
+        "ifa": "87857b31-8942-4646-ae80-ab9c95bf3fab"
+      },
+      "imp": [
+        {
+          "id": "test-imp-id",
+          "video": {
+            "mimes": [
+              "video/mp4"
+            ],
+            "protocols": [
+              2,
+              5
+            ],
+            "w": 1024,
+            "h": 576,
+            "ext": {
+              "foo": "bar"
+            }
+          },
+          "instl": 0,
+          "ext": {
+            "bidder": {
+              "token": "123"
+            }
+          }
+        }
+      ]
+    },
+    "httpCalls": [
+    ],
+    "expectedBidResponses": [
+    ],
+    "expectedMakeRequestsErrors": [
+        {
+            "value": "not a supported adtype",
+            "comparison": "literal"
+        }
+    ],
+    "expectedMakeBidsErrors": [
+    ]
+  }

@@ -1,0 +1,16 @@
+endpoint: "https://prebid-us-east-1.getblue.io/?src=prebid"
+maintainer:
+  email: "prebid@getblue.io"
+gvlVendorID: 620
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner
+userSync:
+  # blue supports user syncing, but requires configuration by the host. contact this
+  # bidder directly at the email address in this file to ask about enabling user sync.
+  supports:
+    - redirect

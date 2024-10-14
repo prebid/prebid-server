@@ -1,0 +1,113 @@
+{
+  "mockBidRequest": {
+    "id": "request-id",
+    "imp": [
+      {
+        "id": "impression-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            },
+            {
+              "w": 160,
+              "h": 600
+            }
+          ]
+        },
+      "ext": {
+          "bidder": {
+            "publisherId": "publisher-id",
+            "tagid": "tag-id",
+            "bcat": ["excluded-category"],
+            "badv": ["excluded-advertiser"],
+            "bidfloor": 1.2,
+            "publisherDomain": "http://domain.com"
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "http://domain.com",
+      "page": "http://page-domain.com",
+      "ref": "http://page-domain.com"
+    },
+    "device": {
+      "ua": "Mozilla/5.0 (Linux; Android 12; Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.62 Mobile Safari/537.36",
+      "h": 300,
+      "w": 300
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://display.whatever.com/12/publisher-id",
+        "body": {
+          "id": "request-id",
+          "imp": [
+            {
+              "id": "impression-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  },
+                  {
+                    "w": 300,
+                    "h": 600
+                  },
+                  {
+                    "w": 160,
+                    "h": 600
+                  }
+                ]
+              },
+              "tagid": "tag-id",
+              "bidfloor": 1.2,
+              "ext": {
+                "bidder": {
+                  "publisherId": "publisher-id",
+                  "tagid": "tag-id",
+                  "bcat": ["excluded-category"],
+                  "badv": ["excluded-advertiser"],
+                  "bidfloor": 1.2,
+                  "publisherDomain": "http://domain.com"
+                }
+              }
+            }
+          ],
+          "site": {
+            "id": "publisher-id",
+            "name": "publisher-id",
+            "domain": "http://domain.com",
+            "page": "http://page-domain.com",
+            "ref": "http://page-domain.com",
+            "publisher": {
+              "id": "publisher-id"
+            }
+          },
+          "device": {
+            "ua": "Mozilla/5.0 (Linux; Android 12; Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.62 Mobile Safari/537.36",
+            "h": 300,
+            "w": 300
+          },
+          "bcat": ["excluded-category"],
+          "badv": ["excluded-advertiser"]
+        },
+        "impIDs":["impression-id"]
+      },
+      "mockResponse": {
+        "status": 204,
+        "body": {
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}

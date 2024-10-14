@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "OwnAdx Adapter Params",
+  "description": "A schema which validates params accepted by the OwnAdx adapter",
+  "type": "object",
+
+  "properties": {
+    "sspId": {
+      "type": "string",
+      "description": "Ssp ID"
+    },
+    "seatId": {
+      "type": "string",
+      "description": "Seat ID"
+    },
+    "tokenId": {
+      "type": "string",
+      "description": "Token ID"
+    }
+  },
+  "required": ["sspId","seatId","tokenId"]
+}

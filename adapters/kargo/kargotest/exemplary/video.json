@@ -1,0 +1,225 @@
+{
+    "mockBidRequest": {
+      "id": "5f4d1e01",
+      "at": 1,
+      "imp": [
+          {
+              "id": "8b1bdcca",
+              "banner": {
+                  "w": 300,
+                  "h": 300,
+                  "format": [
+                      {
+                          "w": 300,
+                          "h": 250
+                      }
+                  ],
+                  "pos": 0,
+                  "expdir": [1,2,3,4,5]
+              },
+              "video": {
+                 "mimes": null, 
+                  "skip":0,
+                  "playbackmethod":[2]
+              },
+              "tagid": "73",
+              "secure": 1,
+              "iframebuster": [
+                  "ALL"
+              ],
+              "ext": {
+                "adSlotID": "11523"
+              }
+          }
+      ],
+      "site": {
+          "id": "123",
+          "domain": "www.dailymail.co.uk",
+          "cat": ["IAB7"],
+          "page": "https://www.dailymail.co.uk/",
+          "ref": "https://www.dailymail.co.uk/",
+          "mobile": 1,
+          "publisher": {
+              "id": "1"
+          }
+      },
+      "device": {
+          "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.1 Safari/537",
+          "geo": {
+              "ipservice": 4,
+              "country": "US",
+              "region": "CO",
+              "metro": "751",
+              "city": "Ft Collins",
+              "zip": "80524"
+          },
+          "ip": "127.0.0.1",
+          "devicetype": 2,
+          "make": "Apple",
+          "model": "iPhone",
+          "os": "Windows",
+          "osv": "10.0",
+          "carrier": "none",
+          "language": "en",
+          "connectiontype": 2,
+          "dnt": 0
+      },
+      "user": {
+          "id": "07fb48ed",
+          "ext": {
+          },
+          "buyeruid": "345"
+      },
+      "regs": {
+          "ext": {
+              "us_privacy": "1"
+          }
+      },
+      "tmax": 200,
+      "ext": {
+      }
+  }
+  ,
+    "httpCalls": [
+      {
+        "expectedRequest": {
+          "uri": "http://example.com/bid",
+          "body": {
+            "id": "5f4d1e01",
+      "at": 1,
+      "imp": [
+          {
+              "id": "8b1bdcca",
+              "banner": {
+                  "w": 300,
+                  "h": 300,
+                  "format": [
+                      {
+                          "w": 300,
+                          "h": 250
+                      }
+                  ],
+                  "pos": 0,
+                  "expdir": [1,2,3,4,5]
+              },
+              "video": {
+                 "mimes": null, 
+                  "skip":0,
+                  "playbackmethod":[2]
+              },
+              "tagid": "73",
+              "secure": 1,
+              "iframebuster": [
+                  "ALL"
+              ],
+              "ext": {
+                "adSlotID": "11523"
+              }
+          }
+      ],
+      "site": {
+          "id": "123",
+          "domain": "www.dailymail.co.uk",
+          "cat": ["IAB7"],
+          "page": "https://www.dailymail.co.uk/",
+          "ref": "https://www.dailymail.co.uk/",
+          "mobile": 1,
+          "publisher": {
+              "id": "1"
+          }
+      },
+      "device": {
+          "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.1 Safari/537",
+          "geo": {
+              "ipservice": 4,
+              "country": "US",
+              "region": "CO",
+              "metro": "751",
+              "city": "Ft Collins",
+              "zip": "80524"
+          },
+          "ip": "127.0.0.1",
+          "devicetype": 2,
+          "make": "Apple",
+          "model": "iPhone",
+          "os": "Windows",
+          "osv": "10.0",
+          "carrier": "none",
+          "language": "en",
+          "connectiontype": 2,
+          "dnt": 0
+      },
+      "user": {
+          "id": "07fb48ed",
+          "ext": {
+          },
+          "buyeruid": "345"
+      },
+      "regs": {
+          "ext": {
+              "us_privacy": "1"
+          }
+      },
+      "tmax": 200,
+      "ext": {
+      }
+          },
+          "impIDs":["8b1bdcca"]
+        },
+        "mockResponse": {
+            "status": 200,
+            "body": {
+              "id": "5f4d1e01",
+              "seatbid": [
+                {
+                  "bid": [
+                    {
+                      "id": "67sadsac",
+                      "impid": "8b1bdcca",
+                      "price": 10,
+                      "nurl": "http://example.com/win/10",
+                      "adm": "<div>ad</div>",
+                      "adomain": ["example.com"],
+                      "cid": "test-cid",
+                      "crid": "test-crid",
+                      "cat": ["IAB13"],
+                      "w": 300,
+                      "h": 300,
+                      "ext": {"mediaType": "video"}
+                    }
+                  ],
+                  "seat": "_b345"
+                }
+              ],
+              "bidid": "67sadsac",
+              "cur": "USD"
+            }
+          }
+        }
+      ],
+      "expectedBidResponses": [
+        {
+          "currency": "USD",
+          "bids": [
+            {
+              "bid": {
+                "id": "67sadsac",
+                "impid": "8b1bdcca",
+                "price": 10,
+                "nurl": "http://example.com/win/10",
+                "adm": "<div>ad</div>",
+                "adomain": ["example.com"],
+                "cid": "test-cid",
+                "crid": "test-crid",
+                "cat": ["IAB13"],
+                "w": 300,
+                "h": 300,
+                "ext": {"mediaType": "video"}
+              },
+              "type": "video"
+            }
+          ]
+        }
+      ]
+    }
+    

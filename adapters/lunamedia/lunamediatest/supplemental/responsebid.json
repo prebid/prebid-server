@@ -33,7 +33,7 @@
   "httpCalls": [
       {
           "expectedRequest": {
-              "uri": "http://api.lunamedia.io/xp/get?pubid=yu",
+              "uri": "http://rtb.lunamedia.live/?pid=yu",
               "body": {
                   "id": "testid",
                   "imp": [
@@ -59,7 +59,8 @@
                   "site": {
                       "id": "test"
                   }
-              }
+              },
+              "impIDs":["testimpid"]
           },
           "mockResponse": {
             "status":200,

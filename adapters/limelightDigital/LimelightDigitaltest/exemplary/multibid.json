@@ -1,0 +1,169 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-banner-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "host": "banner.ortb.net",
+            "publisherId": 123456
+          }
+        }
+      },
+      {
+        "id": "test-video-id",
+        "video": {
+          "mimes": ["video/mp4"],
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "host": "video.ortb.net",
+            "publisherId": 456789
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://test.ortb.net/openrtb/123456?host=banner.ortb.net",
+        "body": {
+          "id": "test-request-id-test-banner-id",
+          "imp": [
+            {
+              "id": "test-banner-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "impIDs":["test-banner-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id-test-banner-id",
+          "seatbid": [
+            {
+              "seat": "test-seat",
+              "bid": [
+                {
+                  "id": "5665e2bf-5a8d-a16c-a3d6-584a39392c87",
+                  "impid": "test-banner-id",
+                  "price": 0.1427,
+                  "adm": "test-banner",
+                  "adid": "92-287",
+                  "adomain": ["advertiserdomain.com"],
+                  "crid": "287",
+                  "w": 300,
+                  "h": 250
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "http://test.ortb.net/openrtb/456789?host=video.ortb.net",
+        "body": {
+          "id": "test-request-id-test-video-id",
+          "imp": [
+            {
+              "id": "test-video-id",
+              "video": {
+                "mimes": ["video/mp4"],
+                "w": 300,
+                "h": 250
+              }
+            }
+          ]
+        },
+        "impIDs":["test-video-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id-test-video-id",
+          "seatbid": [
+            {
+              "seat": "test-seat",
+              "bid": [
+                {
+                  "id": "5dce6055-a93c-1fd0-8c29-14afc3e510fd",
+                  "impid": "test-video-id",
+                  "price": 0.1529,
+                  "nurl": "test-win",
+                  "adm": "test-video",
+                  "adid": "92-288",
+                  "adomain": ["advertiserdomain.com"],
+                  "crid": "288",
+                  "w": 300,
+                  "h": 250
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "5665e2bf-5a8d-a16c-a3d6-584a39392c87",
+            "impid": "test-banner-id",
+            "price": 0.1427,
+            "adm": "test-banner",
+            "adid": "92-287",
+            "adomain": ["advertiserdomain.com"],
+            "crid": "287",
+            "w": 300,
+            "h": 250
+          },
+          "type": "banner"
+        }
+      ]
+    },
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "5dce6055-a93c-1fd0-8c29-14afc3e510fd",
+            "impid": "test-video-id",
+            "price": 0.1529,
+            "nurl": "test-win",
+            "adm": "test-video",
+            "adid": "92-288",
+            "adomain": ["advertiserdomain.com"],
+            "crid": "288",
+            "w": 300,
+            "h": 250
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

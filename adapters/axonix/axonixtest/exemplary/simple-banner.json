@@ -1,0 +1,108 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "supplyId": "supply-test"
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://axonix.com/supply/prebid-server/supply-test",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  },
+                  {
+                    "w": 300,
+                    "h": 600
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "supplyId": "supply-test"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "958",
+              "bid": [{
+                "id": "7706636740145184841",
+                "impid": "test-imp-id",
+                "price": 0.500000,
+                "adid": "29681110",
+                "adm": "some-test-ad imp_${AUCTION_PRICE} creativeview_${AUCTION_PRICE}",
+                "nurl": "nurl.link/win?p=${AUCTION_PRICE}",
+                "adomain": ["yahoo.com"],
+                "cid": "958",
+                "crid": "29681110",
+                "h": 250,
+                "w": 300
+              }]
+            }
+          ],
+          "bidid": "5778926625248726496",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "bids": [{
+        "bid": {
+          "id": "7706636740145184841",
+          "impid": "test-imp-id",
+          "price": 0.5,
+          "adm": "some-test-ad imp_0.5 creativeview_0.5",
+          "nurl": "nurl.link/win?p=0.5",
+          "adid": "29681110",
+          "adomain": ["yahoo.com"],
+          "cid": "958",
+          "crid": "29681110",
+          "w": 300,
+          "h": 250
+        },
+        "type": "banner"
+      }]
+    }
+  ]
+}

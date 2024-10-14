@@ -1,0 +1,12 @@
+endpoint: "https://mobile.mng-ads.com/bidrequest{{.ZoneID}}"
+maintainer:
+  email: "hb@azerion.com"
+gvlVendorID: 153
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner

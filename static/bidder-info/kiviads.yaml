@@ -1,0 +1,18 @@
+endpoint: "http://lb.kiviads.com/pserver"
+maintainer:
+  email: "prebid@kiviads.com"
+capabilities:
+  site:
+    mediaTypes:
+    - banner
+    - video
+    - native
+  app:
+    mediaTypes:
+    - banner
+    - video
+    - native
+userSync:
+  redirect:
+    url: "https://sync.kiviads.com/pserver?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ccpa={{.USPrivacy}}&redir={{.RedirectURL}}"
+    userMacro: "[UID]"

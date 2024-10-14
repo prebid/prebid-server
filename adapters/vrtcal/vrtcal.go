@@ -5,16 +5,18 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type VrtcalAdapter struct {
 	endpoint string
 }
 
-func (a *VrtcalAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *VrtcalAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 	var adapterRequests []*adapters.RequestData
 
@@ -32,6 +34,7 @@ func (a *VrtcalAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 		Uri:     a.endpoint,
 		Body:    reqJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}
 
 	adapterRequests = append(adapterRequests, &reqData)
@@ -40,7 +43,7 @@ func (a *VrtcalAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 }
 
 // MakeBids make the bids for the bid response.
-func (a *VrtcalAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *VrtcalAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
@@ -58,7 +61,7 @@ func (a *VrtcalAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
@@ -66,20 +69,41 @@ func (a *VrtcalAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
 
+	var errs []error
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
-			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     &sb.Bid[i],
-				BidType: "banner",
-			})
+			bidType, err := getReturnTypeForImp(sb.Bid[i].MType)
+			if err == nil {
+				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+					Bid:     &sb.Bid[i],
+					BidType: bidType,
+				})
+			} else {
+				errs = append(errs, err)
+			}
 		}
 	}
-	return bidResponse, nil
+	return bidResponse, errs
 
 }
 
-func NewVrtcalBidder(endpoint string) *VrtcalAdapter {
-	return &VrtcalAdapter{
-		endpoint: endpoint,
+// Builder builds a new instance of the Vrtcal adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	bidder := &VrtcalAdapter{
+		endpoint: config.Endpoint,
+	}
+	return bidder, nil
+}
+
+func getReturnTypeForImp(mType openrtb2.MarkupType) (openrtb_ext.BidType, error) {
+	if mType == openrtb2.MarkupBanner {
+		return openrtb_ext.BidTypeBanner, nil
+	} else if mType == openrtb2.MarkupVideo {
+		return openrtb_ext.BidTypeVideo, nil
+	} else if mType == openrtb2.MarkupNative {
+		return openrtb_ext.BidTypeNative, nil
+	} else {
+		return "", &errortypes.BadServerResponse{
+			Message: "Unsupported return type"}
 	}
 }

@@ -1,21 +1,23 @@
 {
-	"message": "Invalid request: Request imp[0].banner.format[0] must define non-zero \"wmin\", \"wratio\", and \"hratio\" properties.\n",
-	"requestPayload": {
-		"id": "req-id",
-		"imp": [
-			{
-				"id": "imp-id",
-				"banner": {
-					"format": [
-						{
-							"wratio": 30
-						}
-					]
-				}
-			}
-		],
-        "app": {
-          "id": "app_001"
+  "description": "Banner comes with a zero hratio value",
+  "mockBidRequest": {
+    "id": "req-id",
+    "imp": [
+      {
+        "id": "imp-id",
+        "banner": {
+          "format": [
+            {
+              "wratio": 30
+            }
+          ]
         }
-	}
+      }
+    ],
+    "app": {
+      "id": "app_001"
+    }
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: Request imp[0].banner.format[0] must define non-zero \"wmin\", \"wratio\", and \"hratio\" properties.\n"
 }

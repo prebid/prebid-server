@@ -5,18 +5,19 @@
   "type": "object",
   "properties": {
     "cp": {
-      "type": "integer",
+      "type": [
+        "integer",
+        "string"
+      ],
       "description": "An ID which identifies the publisher selling the impression"
     },
     "ct": {
-      "type": "integer",
+      "type": [
+        "integer",
+        "string"
+      ],
       "description": "An ID which identifies the ad slot being sold"
-    },
-    "cf": {
-      "type": "string",
-      "pattern": "^[0-9]+[xX][0-9]+$",
-      "description": "The size of the ad slot being sold. This should be a string like 300X250"
     }
   },
-  "required": ["cp", "ct", "cf"]
+  "required": ["cp", "ct"]
 }

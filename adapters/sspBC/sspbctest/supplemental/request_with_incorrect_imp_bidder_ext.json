@@ -1,0 +1,149 @@
+{
+    "mockBidRequest": {
+        "id": "test-request",
+        "imp": [
+            {
+                "id": "slot",
+                "ext": {
+                    "bidder": "incorrect"
+                },
+                "secure": 1,
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        }
+                    ]
+                }
+            }
+        ],
+        "site": {
+            "domain": "test.page",
+            "page": "https://test.page/",
+            "ref": "https://test.referer/"
+        },
+        "regs": {
+            "ext": {
+                "gdpr": 1
+            }
+        },
+        "user": {
+            "ext": {
+                "consent": "test_consent"
+            },
+            "buyeruid": "test_user"
+        }
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "http://ssp.wp.test/bidder/?bdver=5.8&inver=4",
+                "body": {
+                    "id": "test-request",
+                    "imp": [
+                        {
+                            "id": "slot",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 300,
+                                        "h": 250
+                                    }
+                                ]
+                            },
+                            "tagid": "slot",
+                            "secure": 1,
+                            "ext": {
+                                "data": {
+                                    "pbslot": "slot",
+                                    "pbsize": "300x250"
+                                }
+                            }
+                        }
+                    ],
+                    "site": {
+                        "domain": "test.page",
+                        "page": "https://test.page/",
+                        "ref": "https://test.referer/"
+                    },
+                    "user": {
+                        "ext": {
+                            "consent": "test_consent"
+                        },
+                        "buyeruid": "test_user"
+                    },
+                    "regs": {
+                        "ext": {
+                            "gdpr": 1
+                        }
+                    }
+                },
+                "impIDs":["slot"]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "cur": "USD",
+                    "id": "test-request",
+                    "seatbid": [
+                        {
+                            "bid": [
+                                {
+                                    "adm": "{\"bunch\":\"237503\",\"capping\":\"\",\"server\":\"s\",\"campaign\":\"c\",\"score\":\"1\",\"creations\":[{\"type\":\"image\",\"src\":\"https:\/\/bdr.wpcdn.pl\/tests\/test-300x250.png\",\"trackers\":{},\"width\":300,\"height\":250}],\"code\":\"1\",\"aabVendors\":false,\"slot\":\"005\",\"redir\":\"https:\/\/www.wp.pl\",\"wpclid\":\"1\"}",
+                                    "adomain": [
+                                        "sspbc-test"
+                                    ],
+                                    "crid": "1234",
+                                    "ext": {
+                                        "adlabel": "Reklama",
+                                        "pubid": "431",
+                                        "siteid": "237503",
+                                        "slotid": "005",
+                                        "tagid": "slot"
+                                    },
+                                    "w": 300,
+                                    "h": 250,
+                                    "id": "response-005",
+                                    "impid": "slot",
+                                    "price": 20
+                                }
+                            ],
+                            "seat": "sspbc-test"
+                        }
+                    ],
+                    "sn": "sspbc-test"
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "currency": "USD",
+            "bids": [
+                {
+                    "bid": {
+                        "id": "response-005",
+                        "impid": "slot",
+                        "price": 20,
+                        "adm": "<html><head><title><\/title><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><style> body { background-color: transparent; margin: 0; padding: 0; }<\/style><script> window.rekid = \"237503\"; window.slot = \"005\"; window.adlabel = 'Reklama'; window.pubid = '431'; window.wp_sn = 'sspbc_go'; window.page = 'https:\\\/\\\/test.page\\\/'; window.ref = 'https:\\\/\\\/test.referer\\\/'; window.mcad = {\"id\":\"test-request\",\"seat\":\"sspbc-test\",\"seatbid\":[{\"bid\":[{\"id\":\"response-005\",\"impid\":\"slot\",\"price\":20,\"adm\":\"{\\\"bunch\\\":\\\"237503\\\",\\\"capping\\\":\\\"\\\",\\\"server\\\":\\\"s\\\",\\\"campaign\\\":\\\"c\\\",\\\"score\\\":\\\"1\\\",\\\"creations\\\":[{\\\"type\\\":\\\"image\\\",\\\"src\\\":\\\"https://bdr.wpcdn.pl/tests/test-300x250.png\\\",\\\"trackers\\\":{},\\\"width\\\":300,\\\"height\\\":250}],\\\"code\\\":\\\"1\\\",\\\"aabVendors\\\":false,\\\"slot\\\":\\\"005\\\",\\\"redir\\\":\\\"https://www.wp.pl\\\",\\\"wpclid\\\":\\\"1\\\"}\",\"adomain\":[\"sspbc-test\"],\"crid\":\"1234\",\"w\":300,\"h\":250,\"ext\":{\"adlabel\":\"Reklama\",\"pubid\":\"431\",\"siteid\":\"237503\",\"slotid\":\"005\",\"tagid\":\"slot\"}}]}]}; window.inver = '4'; <\/script><\/head><body><div id=\"c\"><\/div><script async crossorigin nomodule src=\"\/\/std.wpcdn.pl\/wpjslib\/wpjslib-inline.js\" id=\"wpjslib\"><\/script><script async crossorigin type=\"module\" src=\"\/\/std.wpcdn.pl\/wpjslib6\/wpjslib-inline.js\" id=\"wpjslib6\"><\/script><\/body><\/html>",
+                        "adomain": [
+                            "sspbc-test"
+                        ],
+                        "crid": "1234",
+                        "w": 300,
+                        "h": 250,
+                        "ext": {
+                            "adlabel": "Reklama",
+                            "pubid": "431",
+                            "siteid": "237503",
+                            "slotid": "005",
+                            "tagid": "slot"
+                        }
+                    },
+                    "type": "banner"
+                }
+            ]
+        }
+    ]
+}

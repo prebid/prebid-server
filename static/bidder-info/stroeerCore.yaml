@@ -1,0 +1,22 @@
+endpoint: "http://mhb.adscale.de/s2sdsh"
+disabled: true
+maintainer:
+  email: "help@cz.stroeer-labs.com"
+gvlVendorID: 136
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  # for both user syncs, stroeerCore appends the user id to end of the redirect url and does not utilize a macro
+  iframe:
+    url: "https://js.adscale.de/pbsync.html?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&redirect={{.RedirectURL}}"
+    userMacro: ""
+  redirect:
+    url: "https://ih.adscale.de/uu?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&cburl={{.RedirectURL}}"
+    userMacro: ""

@@ -6,17 +6,17 @@ import (
 	"net/http"
 	"text/template"
 
-	"github.com/golang/glog"
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/macros"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 // Base adapter structure.
 type SmartRTBAdapter struct {
-	EndpointTemplate template.Template
+	EndpointTemplate *template.Template
 }
 
 // Bid request extension appended to downstream request.
@@ -29,6 +29,7 @@ type bidRequestExt struct {
 }
 
 // bidExt.CreativeType values.
+// nolint: staticcheck // staticcheck SA9004: only the first constant in this group has an explicit type
 const (
 	creativeTypeBanner string = "BANNER"
 	creativeTypeVideo         = "VIDEO"
@@ -41,13 +42,17 @@ type bidExt struct {
 	CreativeType string `json:"format"`
 }
 
-func NewSmartRTBBidder(endpointTemplate string) adapters.Bidder {
-	template, err := template.New("endpointTemplate").Parse(endpointTemplate)
+// Builder builds a new instance of the SmartRTB adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
-		glog.Fatal("Template URL error")
-		return nil
+		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
-	return &SmartRTBAdapter{EndpointTemplate: *template}
+
+	bidder := &SmartRTBAdapter{
+		EndpointTemplate: template,
+	}
+	return bidder, nil
 }
 
 func (adapter *SmartRTBAdapter) buildEndpointURL(pubID string) (string, error) {
@@ -55,15 +60,19 @@ func (adapter *SmartRTBAdapter) buildEndpointURL(pubID string) (string, error) {
 	return macros.ResolveMacros(adapter.EndpointTemplate, endpointParams)
 }
 
-func parseExtImp(dst *bidRequestExt, imp *openrtb.Imp) error {
+func parseExtImp(dst *bidRequestExt, imp *openrtb2.Imp) error {
 	var ext adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
-		return adapters.BadInput(err.Error())
+		return &errortypes.BadInput{
+			Message: err.Error(),
+		}
 	}
 
 	var src openrtb_ext.ExtImpSmartRTB
 	if err := json.Unmarshal(ext.Bidder, &src); err != nil {
-		return adapters.BadInput(err.Error())
+		return &errortypes.BadInput{
+			Message: err.Error(),
+		}
 	}
 
 	if dst.PubID == "" {
@@ -76,8 +85,8 @@ func parseExtImp(dst *bidRequestExt, imp *openrtb.Imp) error {
 	return nil
 }
 
-func (s *SmartRTBAdapter) MakeRequests(brq *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var imps []openrtb.Imp
+func (s *SmartRTBAdapter) MakeRequests(brq *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	var imps []openrtb2.Imp
 	var err error
 	ext := bidRequestExt{}
 	nrImps := len(brq.Imp)
@@ -103,7 +112,7 @@ func (s *SmartRTBAdapter) MakeRequests(brq *openrtb.BidRequest, reqInfo *adapter
 	}
 
 	if ext.PubID == "" {
-		return nil, append(errs, adapters.BadInput("Cannot infer publisher ID from bid ext"))
+		return nil, append(errs, &errortypes.BadInput{Message: "Cannot infer publisher ID from bid ext"})
 	}
 
 	brq.Ext, err = json.Marshal(ext)
@@ -132,24 +141,25 @@ func (s *SmartRTBAdapter) MakeRequests(brq *openrtb.BidRequest, reqInfo *adapter
 		Uri:     url,
 		Body:    rq,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(brq.Imp),
 	}}, errs
 }
 
 func (s *SmartRTBAdapter) MakeBids(
-	brq *openrtb.BidRequest, drq *adapters.RequestData,
+	brq *openrtb2.BidRequest, drq *adapters.RequestData,
 	rs *adapters.ResponseData,
 ) (*adapters.BidderResponse, []error) {
 	if rs.StatusCode == http.StatusNoContent {
 		return nil, nil
 	} else if rs.StatusCode == http.StatusBadRequest {
-		return nil, []error{adapters.BadInput("Invalid request.")}
+		return nil, []error{&errortypes.BadInput{Message: "Invalid request."}}
 	} else if rs.StatusCode != http.StatusOK {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Unexpected HTTP status %d.", rs.StatusCode),
 		}}
 	}
 
-	var brs openrtb.BidResponse
+	var brs openrtb2.BidResponse
 	if err := json.Unmarshal(rs.Body, &brs); err != nil {
 		return nil, []error{err}
 	}

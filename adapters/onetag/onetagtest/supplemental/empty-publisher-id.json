@@ -1,0 +1,65 @@
+{
+    "mockBidRequest": {
+      "id": "8652a8680db33faabbf3fa76150f35df50a67060",
+      "imp": [
+        {
+          "id": "121-dt1",
+          "banner": {
+            "h": 250,
+            "w": 300,
+            "pos": 1
+          },
+          "bidfloor": 0.05,
+          "ext": {
+            "bidder": {
+              "pubId" : "1"
+            }
+          }
+        },
+        {
+          "id": "121-dt2",
+          "banner": {
+            "h": 728,
+            "w": 90,
+            "pos": 0
+          },
+          "bidfloor": 0.12,
+          "ext": {
+            "bidder": {
+              "pubId" : ""
+            }
+          }
+        }
+      ],
+      "site": {
+        "id": "15047",
+        "domain": "dailymotion.com",
+        "cat": ["IAB1"],
+        "page": "http://www.dailymotion.com/video/xxeauj_www-dramacafe-tv-hd-yyyy-yy-yyyyyyy-2012-yyyy_shortfilms",
+        "publisher": {
+          "id": "8796",
+          "name": "dailymotion",
+          "cat": ["IAB3-1"],
+          "domain": "dailymotion.com"
+        }
+      },
+      "user": {
+        "id": "518c3da3717203f34019b038"
+      },
+      "device": {
+        "ua": "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1; Trident/4.0; GTB7.4; (R1 1.6); SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; Media Center PC 6.0)",
+        "ip": "123.145.167.189"
+      },
+      "at": 1,
+      "cur": [
+        "USD"
+      ]
+    },
+    "expectedMakeRequestsErrors": [
+        {
+            "value": "The publisher ID must not be empty",
+            "comparison": "literal"
+        }
+    ]
+}
+ 

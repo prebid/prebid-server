@@ -1,0 +1,25 @@
+endpoint: "http://pbs.amxrtb.com/auction/openrtb"
+maintainer:
+  email: "prebid@amxrtb.com"
+gvlVendorID: 737
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  iframe:
+    url: "https://prebid.a-mo.net/isyn?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&s=pbs&cb={{.RedirectURL}}"
+    userMacro: "$UID"
+  redirect:
+    url: "https://prebid.a-mo.net/cchain/0?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&s=pbs&cb={{.RedirectURL}}"
+    userMacro: "$UID"
+endpointCompression: GZIP
+openrtb:
+  gpp-supported: true

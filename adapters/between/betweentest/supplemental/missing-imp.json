@@ -1,0 +1,24 @@
+{
+  "mockBidRequest": {
+    "id": "missing-extbid-test",
+    "imp": [
+      {
+        "id": "missing-extbid-test",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "ignoring imp id=missing-extbid-test, invalid BidderExt",
+      "comparison": "literal"
+    }
+  ]
+}

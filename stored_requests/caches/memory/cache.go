@@ -7,7 +7,7 @@ import (
 
 	"github.com/coocood/freecache"
 	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/v2/stored_requests"
 )
 
 // NewCache returns an in-memory Cache which evicts items if:
@@ -18,7 +18,8 @@ import (
 // For no TTL, use ttlSeconds <= 0
 func NewCache(size int, ttl int, dataType string) stored_requests.CacheJSON {
 	if ttl > 0 && size <= 0 {
-		glog.Fatalf("No in-memory %s caches defined with a finite TTL but unbounded size. Config validation should have caught this. Failing fast because something is buggy.", dataType)
+		// a positive ttl indicates "LRU" cache type, while unlimited size indicates an "unbounded" cache type
+		glog.Fatalf("unbounded in-memory %s cache with TTL not allowed. Config validation should have caught this. Failing fast because something is buggy.", dataType)
 	}
 	if size > 0 {
 		glog.Infof("Using a Stored %s in-memory cache. Max size: %d bytes. TTL: %d seconds.", dataType, size, ttl)

@@ -1,0 +1,137 @@
+{
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "device": {
+      "ua": "test-user-agent",
+      "ip": "123.123.123.123"
+    },
+    "user": {
+      "buyeruid": "awesome-user",
+      "ext": {
+        "consent": "gdprConsentString"
+      }
+    },
+    "site": {
+      "page": "test.com",
+      "publisher": {
+        "id": "123456789"
+      }
+    },
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "tagid": "TAGID",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 500,
+          "h": 300,
+          "minduration": 120,
+          "maxduration": 150
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "X-Openrtb-Version": [
+            "2.5"
+          ]
+        },
+        "uri": "http://biddertest.url/bid",
+        "body": {
+          "id": "some-request-id",
+          "device": {
+            "ua": "test-user-agent",
+            "ip": "123.123.123.123"
+          },
+          "imp": [
+            {
+              "id": "some-impression-id",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 500,
+                "h": 300,
+                "minduration": 120,
+                "maxduration": 150
+              },
+              "tagid": "TAGID"
+            }
+          ],
+          "site": {
+            "page": "test.com",
+            "publisher": {
+              "id": "123456789"
+            }
+          },
+          "user": {
+            "buyeruid": "awesome-user",
+            "ext": {
+              "consent": "gdprConsentString"
+            }
+          }
+        },
+        "impIDs":["some-impression-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "awesome-resp-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "a3ae1b4e2fc24a4fb45540082e98e161",
+                  "impid": "some-impression-id",
+                  "price": 0.9,
+                  "adm": "awesome-markup",
+                  "adomain": [
+                    "awesome.com"
+                  ],
+                  "crid": "20",
+                  "w": 320,
+                  "h": 50
+                }
+              ],
+              "type": "video",
+              "seat": "bliink"
+            }
+          ],
+          "cur": "EUR"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "a3ae1b4e2fc24a4fb45540082e98e161",
+            "impid": "some-impression-id",
+            "price": 0.9,
+            "adm": "awesome-markup",
+            "adomain": [
+              "awesome.com"
+            ],
+            "crid": "20",
+            "w": 320,
+            "h": 50
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

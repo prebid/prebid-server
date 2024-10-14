@@ -1,0 +1,143 @@
+{
+  "mockBidRequest": {
+    "id": "id",
+    "imp": [{
+      "id": "id",
+      "secure": 1,
+      "bidfloor": 0.01,
+      "bidfloorcur": "USD",
+      "banner": {
+        "w": 300,
+        "h": 250
+      },
+      "ext": {
+        "bidder": {
+          "key": "test"
+        }
+      }
+    }],
+    "device": {
+      "ua": "UA",
+      "ip": "123.3.4.123"
+    },
+    "regs": {
+      "ext": {
+        "gdpr": 0
+      }
+    },
+    "user": {
+      "id": "userid"
+    },
+    "site": {
+      "id": "id",
+      "domain": "test,com",
+      "cat": ["IAB12"],
+      "publisher": {
+        "id": "pubid"
+      }
+    }
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://test.com/pserver",
+        "body": {
+          "id": "id",
+          "imp": [{
+            "id": "id",
+            "secure": 1,
+            "bidfloor": 0.01,
+            "bidfloorcur": "USD",
+            "banner": {
+              "w": 300,
+              "h": 250
+            },
+            "ext": {
+              "bidder": {
+                "key": "test"
+              }
+            }
+          }],
+          "device": {
+            "ua": "UA",
+            "ip": "123.3.4.123"
+          },
+          "regs": {
+            "ext": {
+              "gdpr": 0
+            }
+          },
+          "user": {
+            "id": "userid"
+          },
+          "site": {
+            "id": "id",
+            "domain": "test,com",
+            "cat": ["IAB12"],
+            "publisher": {
+              "id": "pubid"
+            }
+          }
+        },
+        "impIDs":["id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "id",
+          "bidid": "id",
+          "seatbid": [{
+            "bid": [{
+              "id": "id",
+              "impid": "id",
+              "price": 0.1,
+              "nurl": "http://test.com/nurl",
+              "burl": "http://test.com/burl",
+              "adm": "<span>Test</span>",
+              "adomain": ["test.com"],
+              "cat": ["IAB1"],
+              "cid": "cid",
+              "crid": "crid",
+              "w": 300,
+              "h": 250,
+              "ext": {
+                "mediaType": "banner"
+              }
+            }],
+            "seat": "seat"
+          }],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "id",
+            "impid": "id",
+            "price": 0.1,
+            "nurl": "http://test.com/nurl",
+            "burl": "http://test.com/burl",
+            "adm": "<span>Test</span>",
+            "adomain": ["test.com"],
+            "cat": ["IAB1"],
+            "cid": "cid",
+            "crid": "crid",
+            "w": 300,
+            "h": 250,
+            "ext": {
+              "mediaType": "banner"
+            }
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

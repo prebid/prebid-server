@@ -1,0 +1,63 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-banner-id",
+    "imp": [
+      {
+        "id": "test-imp-banner-id",
+        "banner": {
+          "format": [
+            {
+              "w": 320,
+              "h": 250
+            }
+          ],
+          "w": 320,
+          "h": 250
+        },
+        "ext": {
+          "adot": {}
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://dsp.adotmob.com/headerbidding/bidrequest",
+        "body": {
+          "id": "test-request-banner-id",
+          "imp": [
+            {
+              "id": "test-imp-banner-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 320,
+                    "h": 250
+                  }
+                ],
+                "w": 320,
+                "h": 250
+              },
+              "ext": {
+                "adot": {}
+              }
+            }
+          ]
+        },
+        "impIDs":["test-imp-banner-id"]
+      },
+      "mockResponse": {
+        "status": 400,
+        "body": {}
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 400. Run with request.debug = 1 for more info",
+      "comparison": "literal"
+    }
+  ]
+}
+

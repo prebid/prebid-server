@@ -1,0 +1,13 @@
+rules:
+  - id: package-import-check
+    message: Usage of "$PKG" package is prohibited in adapter code
+    languages:
+      - go
+    severity: ERROR
+    pattern-either:
+      - patterns:
+          - pattern: import "$PKG"
+          - focus-metavariable: $PKG
+          - metavariable-regex:
+              metavariable: $PKG
+              regex: (^github\.com/mitchellh/copystructure(/.*)?$|^github\.com/golang/glog(/.*)?$)

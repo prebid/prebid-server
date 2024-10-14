@@ -1,0 +1,119 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "imp": [
+            {
+                "id": "test-imp-id",
+                "video": {
+                    "mimes": ["video/mp4"],
+                    "minduration": 15,
+                    "maxduration": 30,
+                    "protocols": [2, 3, 5, 6, 7, 8],
+                    "w": 940,
+                    "h": 560
+                },
+                "ext": {
+                    "bidder": {
+                        "inventoryCode": "aaw",
+                        "floor": 0.10
+                    }
+                }
+            }
+        ]
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "http://tlx.3lift.net/s2s/auction?sra=1&supplier_id=20",
+                "body": {
+                    "id": "test-request-id",
+                    "imp": [
+                        {
+                            "tagid": "aaw",
+                            "bidfloor": 0.10,
+                            "id": "test-imp-id",
+                            "video": {
+                                "mimes": [ "video/mp4"],
+                                "minduration": 15,
+                                "maxduration": 30,
+                                "protocols": [2, 3, 5, 6, 7, 8],
+                                "w": 940,
+                                "h": 560
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "inventoryCode": "aaw",
+                                    "floor": 0.10
+                                }
+                            }
+                        }
+                    ]
+                },
+                "impIDs":["test-imp-id"]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "test-request-id",
+                    "seatbid": [
+                        {
+                            "seat": "958",
+                            "bid": [
+                                {
+                                    "id": "7706636740145184841",
+                                    "impid": "test-imp-id",
+                                    "price": 0.500000,
+                                    "adid": "29681110",
+                                    "adm": "some-test-ad",
+                                    "adomain": ["foo.com"],
+                                    "iurl": "http://tlx.3lift.net/s2s/auction?sra=1&supplier_id=20",
+                                    "cid": "958",
+                                    "crid": "29681110",
+                                    "h": 250,
+                                    "w": 300,
+                                    "cat": ["IAB9-1"],
+                                    "ext": {
+                                        "triplelift_pb": {
+                                            "format": 12
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "bidid": "5778926625248726496",
+                    "cur": "USD"
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "currency": "USD",
+            "bids": [
+                {
+                    "bid": {
+                        "id": "7706636740145184841",
+                        "impid": "test-imp-id",
+                        "price": 0.5,
+                        "adm": "some-test-ad",
+                        "adid": "29681110",
+                        "adomain": ["foo.com"],
+                        "iurl": "http://tlx.3lift.net/s2s/auction?sra=1&supplier_id=20",
+                        "cid": "958",
+                        "crid": "29681110",
+                        "w": 300,
+                        "h": 250,
+                        "cat": ["IAB9-1"],
+                        "ext": {
+                            "triplelift_pb": {
+                                "format": 12
+                            }
+                        }
+                    },
+                    "type": "video"
+                }
+            ]
+        }
+    ]
+}

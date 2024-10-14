@@ -1,0 +1,130 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "imp": [
+            {
+                "id": "1",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 320,
+                            "h": 50
+                        }
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "cid": "TCID",
+                        "crid": "1234"
+                    }
+                }
+            },
+            {
+                "id": "2",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 50
+                        }
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "cid": "TCID",
+                        "crid": "1234"
+                    }
+                }
+            }
+        ]
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "https://example.aax.media/rtb/prebid?src=http%3A%2F%2Flocalhost%3A8080%2Fextrnal_url",
+                "body": {
+                    "id": "test-request-id",
+                    "imp": [
+                        {
+                            "id": "1",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 320,
+                                        "h": 50
+                                    }
+                                ]
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "cid": "TCID",
+                                    "crid": "1234"
+                                }
+                            }
+                        },
+                        {
+                            "id": "2",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 300,
+                                        "h": 50
+                                    }
+                                ]
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "cid": "TCID",
+                                    "crid": "1234"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "impIDs":["1","2"]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "test-request-id",
+                    "seatbid": [
+                        {
+                            "seat": "aax",
+                            "bid": [
+                                {
+                                    "id": "test-bid-id",
+                                    "impid": "1",
+                                    "price": 1.50,
+                                    "adm": "some-test-ad",
+                                    "crid": "test-crid",
+                                    "h": 50,
+                                    "w": 320
+                                }
+                            ]
+                        }
+                    ],
+                    "cur": "USD"
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "currency": "USD",
+            "bids": [
+                {
+                    "bid": {
+                        "id": "test-bid-id",
+                        "impid": "1",
+                        "price": 1.50,
+                        "adm": "some-test-ad",
+                        "crid": "test-crid",
+                        "w": 320,
+                        "h": 50
+                    },
+                    "type": "banner"
+                }
+            ]
+        }
+    ]
+}

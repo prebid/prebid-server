@@ -1,5 +1,7 @@
+endpoint: "https://orbidder.otto.de/openrtb2"
 maintainer:
   email: "realtime-siggi@otto.de"
+gvlVendorID: 559
 capabilities:
   app:
     mediaTypes:
@@ -7,3 +9,9 @@ capabilities:
   site:
     mediaTypes:
       - banner
+      - native
+userSync:
+  supportCors: true
+  redirect:
+    url: "https://orbidder.otto.de/pbs-usersync?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&redirect={{.RedirectURL}}"
+    userMacro: "[ODN_ID]"

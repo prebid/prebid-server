@@ -1,0 +1,131 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app": {
+      "bundle": "com.prebid"
+    },
+    "device": {
+      "ifa": "87857b31-8942-4646-ae80-ab9c95bf3fab"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "instl": 1,
+        "ext": {
+          "bidder": {
+            "token": "123"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://pangle.io/api/get_ads",
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ],
+          "TOKEN": [
+            "123"
+          ]
+        },
+        "body": {
+          "id": "test-request-id",
+          "app": {
+            "bundle": "com.prebid"
+          },
+          "device": {
+            "ifa": "87857b31-8942-4646-ae80-ab9c95bf3fab"
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "instl": 1,
+              "ext": {
+                "adtype": 2,
+                "bidder": {
+                  "token": "123"
+                },
+                "is_prebid": true,
+                "prebid": null
+              }
+            }
+          ]
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "seat-id",
+              "bid": [
+                {
+                  "id": "1",
+                  "impid": "test-imp-id",
+                  "adid": "11110126",
+                  "price": 0.500000,
+                  "adm": "some-test-ad",
+                  "crid": "test-crid",
+                  "h": 250,
+                  "w": 300,
+                  "ext": {
+                    "pangle": {
+                      "adtype": 2
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "1",
+            "impid": "test-imp-id",
+            "adid": "11110126",
+            "price": 0.5,
+            "adm": "some-test-ad",
+            "crid": "test-crid",
+            "w": 300,
+            "h": 250,
+            "ext": {
+              "pangle": {
+                "adtype": 2
+              }
+            }
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

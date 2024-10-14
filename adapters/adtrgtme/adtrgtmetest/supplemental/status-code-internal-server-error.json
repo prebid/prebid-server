@@ -1,0 +1,83 @@
+{
+  "mockBidRequest": {
+    "id": "test-req-id",
+    "tmax": 1000,
+    "user": {
+      "buyeruid": "test-user"
+    },
+    "site": {
+      "id": "123456789",
+      "page": "mock-site.com",
+      "publisher": {
+        "id": "123456789"
+      }
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "tagid": "test-adtarget-tag-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 640,
+          "h": 480,
+          "minduration": 120,
+          "maxduration": 150
+        },
+        "ext": {
+          "bidder": {
+            "site_id": 123456789
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://localhost/ssp?s=123456789&prebid",
+        "body": {
+          "id": "test-req-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "tagid": "test-adtarget-tag-id",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "minduration": 120,
+                "maxduration": 150,
+                "w": 640,
+                "h": 480
+              }
+            }
+          ],
+          "site": {
+            "id": "123456789",
+            "page": "mock-site.com",
+            "publisher": {
+              "id": "123456789"
+            }
+          },
+          "user": {
+            "buyeruid": "test-user"
+          },
+          "tmax": 1000
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 500
+      }
+    }
+  ],
+  "expectedBidResponses": [],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: [ 500 ]. Run with request.debug = 1 for more info",
+      "comparison": "literal"
+    }
+  ]
+}

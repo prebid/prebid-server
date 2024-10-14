@@ -1,0 +1,19 @@
+endpoint: "https://prebidtest.zemanta.com/api/bidder/prebidtest/bid/"
+maintainer:
+  email: prog-ops-team@outbrain.com
+gvlVendorID: 164
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - native
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - native
+      - video
+userSync:
+  redirect:
+    url: "https://prebidtest.zemanta.com/usersync/prebidtest?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&cb={{.RedirectURL}}"
+    userMacro: "__ZUID__"

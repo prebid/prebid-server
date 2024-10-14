@@ -1,0 +1,68 @@
+{
+    "mockBidRequest": {
+      "id": "test-request-id",
+      "imp": [
+        {
+          "id": "test-banner-imp-id",
+          "banner": {
+            "format": [
+              {
+                "w": 300,
+                "h": 250
+              }
+            ]
+          },
+          "ext": {
+            "bidder": {
+              "siteId": 123456,
+              "networkId": 123456
+            }
+          }
+        }
+      ],
+      "site": {
+        "domain": "connectad.io",
+        "page": "http://connectad.io/"
+      }
+    },
+    "httpCalls": [
+      {
+        "expectedRequest": {
+          "uri": "http://bidder.connectad.io/API?src=pbs",
+          "headers": {
+            "Accept": [
+              "application/json"
+            ],
+            "Content-Type": [
+              "application/json;charset=utf-8"
+            ]
+          },
+          "body": {
+            "id": "test-request-id",
+            "imp": [
+              {
+                "id": "test-banner-imp-id",
+                "banner": {
+                  "w": 300,
+                  "h": 250
+                },
+                "tagid": "123456",
+                "secure": 0
+              }
+            ],
+            "site": {
+              "domain": "connectad.io",
+              "page": "http://connectad.io/"
+            }
+          },
+          "impIDs":["test-banner-imp-id"]
+        },
+        "mockResponse": {
+            "status": 204,
+            "body": {}
+        }
+      }
+    ],
+    "expectedBidResponses": []
+  }
+  

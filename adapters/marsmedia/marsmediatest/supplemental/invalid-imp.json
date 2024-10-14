@@ -3,7 +3,7 @@
     "id": "test-request-id",
     "ext": {
       "bidder": {
-        "zone": "9999"
+        "zoneId": "9999"
       }
     }
   },

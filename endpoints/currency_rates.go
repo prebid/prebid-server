@@ -1,12 +1,12 @@
 package endpoints
 
 import (
-	"encoding/json"
 	"net/http"
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/currencies"
+	"github.com/prebid/prebid-server/v2/currency"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
 // currencyRatesInfo holds currency rates information.
@@ -20,7 +20,7 @@ type currencyRatesInfo struct {
 }
 
 type rateConverter interface {
-	GetInfo() currencies.ConverterInfo
+	GetInfo() currency.ConverterInfo
 }
 
 // newCurrencyRatesInfo creates a new CurrencyRatesInfo instance.
@@ -60,7 +60,7 @@ func NewCurrencyRatesEndpoint(rateConverter rateConverter, fetchingInterval time
 	currencyRateInfo := newCurrencyRatesInfo(rateConverter, fetchingInterval)
 
 	return func(w http.ResponseWriter, _ *http.Request) {
-		jsonOutput, err := json.Marshal(currencyRateInfo)
+		jsonOutput, err := jsonutil.Marshal(currencyRateInfo)
 		if err != nil {
 			glog.Errorf("/currency/rates Critical error when trying to marshal currencyRateInfo: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)

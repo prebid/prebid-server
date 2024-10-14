@@ -1,0 +1,80 @@
+name: Adapter Semgrep Check
+
+on:
+  pull_request_target:
+    paths: ["adapters/*/*.go"]
+
+permissions: 
+    pull-requests: write
+
+jobs:
+  semgrep-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{github.event.pull_request.head.ref}}
+          repository: ${{github.event.pull_request.head.repo.full_name}}
+
+      - name: Calculate Code Diff
+        id: calculate_diff
+        uses: actions/github-script@v7
+        with:
+          result-encoding: string
+          script: |
+            const utils = require('./.github/workflows/helpers/pull-request-utils.js')
+            // consider only non-test Go files that are part of the adapter code
+            function fileNameFilter(filename) {
+              return filename.startsWith("adapters/") && filename.split("/").length > 2 && filename.endsWith(".go") && !filename.endsWith("_test.go")
+            }
+            const helper = utils.diffHelper({github, context, fileNameFilter, event: "${{github.event.action}}", testName: "${{github.job}}"})
+            return await helper.buildDiff()
+
+      - name: Check For Changes
+        id: should_run_semgrep
+        run: |
+          hasChanges=$(echo '${{ steps.calculate_diff.outputs.result }}' | jq .pullRequest.hasChanges)
+          echo "hasChanges=${hasChanges}" >> $GITHUB_OUTPUT
+
+      - name: Install semgrep
+        if: contains(steps.should_run_semgrep.outputs.hasChanges, 'true')
+        run: |
+          pip3 install semgrep==1.22.0
+          semgrep --version
+
+      - name: Run Semgrep
+        id: run_semgrep_tests
+        if: contains(steps.should_run_semgrep.outputs.hasChanges, 'true')
+        run: |
+          unqouted_string=$(echo '${{ steps.calculate_diff.outputs.result }}' | jq .pullRequest.files | tr -d '"')
+          outputs=$(semgrep --gitlab-sast --config=.semgrep/adapter $unqouted_string  | jq '[.vulnerabilities[] | {"file": .location.file, "severity": .severity, "start": .location.start_line, "end": .location.end_line, "message": (.message | gsub("\\n"; "\n"))}]' | jq -c | jq -R)
+          echo "semgrep_result=${outputs}" >> "$GITHUB_OUTPUT"
+
+      - name: Add Pull Request Comment
+        id: add_pull_request_comment
+        if: contains(steps.should_run_semgrep.outputs.hasChanges, 'true')
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          result-encoding: string
+          script: |
+            const utils = require('./.github/workflows/helpers/pull-request-utils.js')
+            const helper = utils.semgrepHelper({
+                github, context, event: "${{github.event.action}}", 
+                semgrepResult: JSON.parse(${{ steps.run_semgrep_tests.outputs.semgrep_result }}), 
+                diff: ${{ steps.calculate_diff.outputs.result }}, headSha: "${{github.event.pull_request.head.sha}}"
+            })
+            const { previousScan, currentScan } = await helper.addReviewComments()
+            return previousScan.unAddressedComments + currentScan.newComments
+
+      - name: Check Results
+        if: contains(steps.should_run_semgrep.outputs.hasChanges, 'true')
+        run: |
+          if [ "${{steps.add_pull_request_comment.outputs.result}}" -ne "0" ]; then
+              echo 'Semgrep has found "${{steps.add_pull_request_comment.outputs.result}}" errors'
+              exit 1
+          else
+              echo 'Semgrep did not find any errors in the pull request changes'
+          fi

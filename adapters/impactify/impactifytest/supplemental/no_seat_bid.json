@@ -1,0 +1,63 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "at": 1,
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "video": {
+          "mimes": ["video/mp4"],
+          "protocols": [2, 5],
+          "w": 1024,
+          "h": 576
+        },
+        "ext":{
+          "bidder": {
+            "appId": "impactify.io",
+            "format": "screen",
+            "style": "impact"
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://sonic.impactify.media/bidder",
+        "body": {
+          "id": "test-request-id",
+          "at":1,
+          "cur": ["USD"],
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "video": {
+                "mimes": ["video/mp4"],
+                "protocols": [2, 5],
+                "w": 1024,
+                "h": 576
+              },
+              "ext": {
+                "impactify": {
+                  "appId": "impactify.io",
+                  "format": "screen",
+                  "style": "impact"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD"
+        }
+      }
+    }
+  ]
+}

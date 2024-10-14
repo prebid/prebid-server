@@ -1,0 +1,121 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "test": 3,
+    "at": 1,
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "video": {
+          "mimes": ["video/mp4"],
+          "protocols": [2, 5],
+          "w": 1024,
+          "h": 576
+        },
+        "ext":{
+          "bidder": {
+            "appId": "impactify.io",
+            "format": "screen",
+            "style": "impact"
+          }
+        }
+      }
+    ],
+    "device": {
+      "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1",
+      "ipv6": "2001:DB8:3333:4::5"
+    }
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "X-Openrtb-Version": [
+            "2.5"
+          ],
+          "User-Agent": [
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1"
+          ],
+          "X-Forwarded-For": [
+            "2001:DB8:3333:4::5"
+          ]
+        },
+        "uri": "https://sonic.impactify.media/bidder",
+        "body": {
+          "id": "test-request-id",
+          "at":1,
+          "cur": ["USD"],
+          "test": 3,
+          "device": {
+            "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1",
+            "ipv6": "2001:DB8:3333:4::5"
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "video": {
+                "mimes": ["video/mp4"],
+                "protocols": [2, 5],
+                "w": 1024,
+                "h": 576
+              },
+              "ext": {
+                "impactify": {
+                  "appId": "impactify.io",
+                  "format": "screen",
+                  "style": "impact"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "impactify",
+              "bid": [{
+                "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                "impid": "test-imp-id",
+                "price": 18,
+                "adm": "<script>window.impactifyTag = window.impactifyTag || [];impactifyTag.push({appId: 'deco.fr', format: 'screen', style: 'impact'});(function(d, s, id) {var js, ijs = d.getElementsByTagName(s)[0];if (d.getElementById(id)) return;js = d.createElement(s); js.id = id;js.src = 'https://ad.impactify.io/static/ad/tag.js';ijs.parentNode.insertBefore(js, ijs);}(document, 'script', 'impactify-sdk'));</script>",
+                "crid": "crid_10",
+                "w": 1,
+                "h": 1
+              }]
+            }
+          ]
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "bids": [{
+        "bid": {
+          "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+          "impid": "test-imp-id",
+          "price": 18,
+          "adm": "<script>window.impactifyTag = window.impactifyTag || [];impactifyTag.push({appId: 'deco.fr', format: 'screen', style: 'impact'});(function(d, s, id) {var js, ijs = d.getElementsByTagName(s)[0];if (d.getElementById(id)) return;js = d.createElement(s); js.id = id;js.src = 'https://ad.impactify.io/static/ad/tag.js';ijs.parentNode.insertBefore(js, ijs);}(document, 'script', 'impactify-sdk'));</script>",
+          "crid": "crid_10",
+          "w": 1,
+          "h": 1
+        },
+        "type": "video"
+      }]
+    }
+  ]
+}

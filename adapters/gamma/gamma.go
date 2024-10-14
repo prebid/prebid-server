@@ -7,10 +7,12 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb3"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type GammaAdapter struct {
@@ -18,9 +20,9 @@ type GammaAdapter struct {
 }
 
 type gammaBid struct {
-	openrtb.Bid        //base
-	VastXML     string `json:"vastXml,omitempty"`
-	VastURL     string `json:"vastUrl,omitempty"`
+	openrtb2.Bid        //base
+	VastXML      string `json:"vastXml,omitempty"`
+	VastURL      string `json:"vastUrl,omitempty"`
 }
 
 type gammaSeatBid struct {
@@ -29,13 +31,13 @@ type gammaSeatBid struct {
 	Ext   json.RawMessage `json:"ext,omitempty"`
 }
 type gammaBidResponse struct {
-	ID         string                   `json:"id"`
-	SeatBid    []gammaSeatBid           `json:"seatbid,omitempty"`
-	BidID      string                   `json:"bidid,omitempty"`
-	Cur        string                   `json:"cur,omitempty"`
-	CustomData string                   `json:"customdata,omitempty"`
-	NBR        *openrtb.NoBidReasonCode `json:"nbr,omitempty"`
-	Ext        json.RawMessage          `json:"ext,omitempty"`
+	ID         string                `json:"id"`
+	SeatBid    []gammaSeatBid        `json:"seatbid,omitempty"`
+	BidID      string                `json:"bidid,omitempty"`
+	Cur        string                `json:"cur,omitempty"`
+	CustomData string                `json:"customdata,omitempty"`
+	NBR        *openrtb3.NoBidReason `json:"nbr,omitempty"`
+	Ext        json.RawMessage       `json:"ext,omitempty"`
 }
 
 func checkParams(gammaExt openrtb_ext.ExtImpGamma) error {
@@ -56,7 +58,7 @@ func checkParams(gammaExt openrtb_ext.ExtImpGamma) error {
 	}
 	return nil
 }
-func (a *GammaAdapter) makeRequest(request *openrtb.BidRequest, imp openrtb.Imp) (*adapters.RequestData, []error) {
+func (a *GammaAdapter) makeRequest(request *openrtb2.BidRequest, imp openrtb2.Imp) (*adapters.RequestData, []error) {
 	var errors []error
 
 	var bidderExt adapters.ExtImpBidder
@@ -136,9 +138,10 @@ func (a *GammaAdapter) makeRequest(request *openrtb.BidRequest, imp openrtb.Imp)
 		Method:  "GET",
 		Uri:     thisURI,
 		Headers: headers,
+		ImpIDs:  []string{imp.ID},
 	}, errors
 }
-func (a *GammaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *GammaAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 	if len(request.Imp) == 0 {
 		err := &errortypes.BadInput{
@@ -147,7 +150,7 @@ func (a *GammaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapte
 		errs = append(errs, err)
 		return nil, errs
 	}
-	var invalidImpIndex = make([]int, 0, 0)
+	var invalidImpIndex []int
 
 	for i := 0; i < len(request.Imp); i++ {
 		if request.Imp[i].Banner != nil {
@@ -179,7 +182,7 @@ func (a *GammaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapte
 	} else if len(request.Imp) == len(invalidImpIndex) {
 		//only true if every Imp was not a Banner or a Video
 		err := &errortypes.BadInput{
-			Message: fmt.Sprintf("No valid impression in the bid request"),
+			Message: "No valid impression in the bid request",
 		}
 		errs = append(errs, err)
 		return nil, errs
@@ -201,9 +204,8 @@ func (a *GammaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapte
 	return adapterRequests, errs
 }
 
-func convertBid(gBid gammaBid, mediaType openrtb_ext.BidType) *openrtb.Bid {
-	var bid openrtb.Bid
-	bid = gBid.Bid
+func convertBid(gBid gammaBid, mediaType openrtb_ext.BidType) *openrtb2.Bid {
+	bid := gBid.Bid
 
 	if mediaType == openrtb_ext.BidTypeVideo {
 		//Return inline VAST XML Document (Section 6.4.2)
@@ -223,7 +225,7 @@ func convertBid(gBid gammaBid, mediaType openrtb_ext.BidType) *openrtb.Bid {
 	return &bid
 }
 
-func (a *GammaAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *GammaAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -265,7 +267,7 @@ func (a *GammaAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReq
 				})
 			} else {
 				err := &errortypes.BadServerResponse{
-					Message: fmt.Sprintf("Missing Ad Markup. Run with request.debug = 1 for more info"),
+					Message: "Missing Ad Markup. Run with request.debug = 1 for more info",
 				}
 				errs = append(errs, err)
 			}
@@ -274,7 +276,7 @@ func (a *GammaAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReq
 	return bidResponse, errs
 }
 
-//Adding header fields to request header
+// Adding header fields to request header
 func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue string) {
 	if len(headerValue) > 0 {
 		headers.Add(headerName, headerValue)
@@ -282,7 +284,7 @@ func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue str
 }
 
 // getMediaTypeForImp figures out which media type this bid is for.
-func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
+func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 	mediaType := openrtb_ext.BidTypeBanner //default type
 	for _, imp := range imps {
 		if imp.ID == impId {
@@ -295,8 +297,10 @@ func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
 	return mediaType
 }
 
-func NewGammaBidder(endpoint string) *GammaAdapter {
-	return &GammaAdapter{
-		URI: endpoint,
+// Builder builds a new instance of the Gamma adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	bidder := &GammaAdapter{
+		URI: config.Endpoint,
 	}
+	return bidder, nil
 }

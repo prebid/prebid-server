@@ -1,13 +1,25 @@
 {
-    "context": 1,
-    "plcmttype": 1,
-    "assets": [
-        {
-            "video": {
-                "mimes": ["video/mp4"],
-                "maxduration": 120,
-                "protocols": [3]
-            }
+  "description": "Native request with missing minduration value in a video asset in the imp.native.request field",
+  "mockBidRequest": {
+    "id": "req-id",
+    "site": {
+      "page": "some.page.com"
+    },
+    "tmax": 500,
+    "imp": [
+      {
+        "id": "some-imp",
+        "native": {
+          "request": "{\"context\":1,\"plcmttype\":1,\"assets\":[{\"video\":{\"mimes\":[\"video/mp4\"],\"maxduration\":120,\"protocols\":[3]}}]}"
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          }
         }
+      }
     ]
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request"
 }

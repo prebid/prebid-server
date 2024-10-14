@@ -1,0 +1,123 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "site": {
+            "page": "https://good.site/url"
+        },
+        "imp": [{
+            "id": "test-imp-id",
+            "banner": {
+                "format": [{
+                    "w": 300,
+                    "h": 250
+                }]
+            },
+            "ext": {
+                "bidder": {
+                    "uid": 1,
+                    "keywords": {
+                        "site": {
+                            "somePublisher": [
+                                {
+                                    "name": "someName",
+                                    "topic": ["stress", "fear"]
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        }]
+    },
+
+    "httpCalls": [{
+        "expectedRequest": {
+            "uri": "http://localhost/prebid",
+            "body": {
+                "ext": {
+                    "keywords": {
+                        "site": {
+                            "somePublisher": [
+                                {
+                                    "name": "someName",
+                                    "segments": [
+                                        { "name":  "topic", "value": "stress" },
+                                        { "name":  "topic", "value": "fear" }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                },
+                "id": "test-request-id",
+                "site": {
+                    "page": "https://good.site/url"
+                },
+                "imp": [{
+                    "id": "test-imp-id",
+                    "banner": {
+                        "format": [{
+                            "w": 300,
+                            "h": 250
+                        }]
+                    },
+                    "ext": {
+                        "bidder": {
+                            "uid": 1,
+                            "keywords": {
+                                "site": {
+                                    "somePublisher": [
+                                        {
+                                            "name": "someName",
+                                            "topic": ["stress", "fear"]
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }]
+            },
+            "impIDs":["test-imp-id"]
+        },
+        "mockResponse": {
+            "status": 200,
+            "body": {
+                "id": "test-request-id",
+                "seatbid": [{
+                    "seat": "grid",
+                    "bid": [{
+                        "id": "randomid",
+                        "impid": "test-imp-id",
+                        "price": 0.500000,
+                        "adid": "12345678",
+                        "adm": "some-test-ad",
+                        "cid": "987",
+                        "crid": "12345678",
+                        "h": 250,
+                        "w": 300
+                    }]
+                }],
+                "cur": "USD"
+            }
+        }
+    }],
+
+    "expectedBidResponses": [{
+        "currency": "USD",
+        "bids": [{
+            "bid": {
+                "id": "randomid",
+                "impid": "test-imp-id",
+                "price": 0.5,
+                "adm": "some-test-ad",
+                "adid": "12345678",
+                "cid": "987",
+                "crid": "12345678",
+                "w": 300,
+                "h": 250
+            },
+            "type": "banner"
+        }]
+    }]
+}

@@ -1,0 +1,158 @@
+{
+  "description": "req.site is present; req.ext.prebid.data.bidders has appnexus bidder only; req.ext.prebid.bidderconfig is defined for two bidders appnexus and telaria; expect to see only appnexus in resolved bidder FPD and have extra data in site.ext.data",
+  "inputRequestData": {
+    "id": "bid_id",
+    "site": {
+      "id": "reqSiteId",
+      "page": "http://www.foobar.com/1234.html",
+      "name": "reqSiteName",
+      "cat": [
+        "electronics",
+        "phone"
+      ],
+      "publisher": {
+        "id": "1"
+      },
+      "content": {
+        "len": 900,
+        "title": "reqContentTitle",
+        "season": "reqContentSeason",
+        "data": [
+          {
+            "id": "reqContentDataId1",
+            "name": "reqContentDataName1"
+          },
+          {
+            "id": "reqContentDataId2",
+            "name": "reqContentDataName2"
+          }
+        ]
+      }
+    },
+    "user": {
+      "id": "reqUserId",
+      "keywords": "reqUserKeyword"
+    },
+    "test": 1,
+    "ext": {
+      "prebid": {
+        "data": {
+          "bidders": [
+            "appnexus"
+          ]
+        },
+        "bidderconfig": [
+          {
+            "bidders": [
+              "appnexus"
+            ],
+            "config": {
+              "ortb2": {
+                "site": {
+                  "id": "apnFpdSiteId",
+                  "page": "http://www.foobar.com/4321.html",
+                  "name": "apnFpdSiteIdSiteName",
+                  "cat": [
+                    "books",
+                    "news"
+                  ],
+                  "publisher": {
+                    "id": "1"
+                  },
+                  "content": {
+                    "len": 900,
+                    "title": "apnFpdSiteIdContentTitle",
+                    "season": "apnFpdSiteIdContentSeason",
+                    "data": [
+                      {
+                        "id": "apnFpdSiteIdContentDataId1",
+                        "name": "apnFpdSiteIdContentDataName1"
+                      },
+                      {
+                        "id": "apnFpdSiteIdContentDataId2",
+                        "name": "apnFpdSiteIdContentDataName2"
+                      }
+                    ]
+                  }
+                },
+                "user": {
+                  "id": "apnUserId",
+                  "keywords": "apnFpdUserKeyword"
+                }
+              }
+            }
+          },
+          {
+            "bidders": [
+              "telaria"
+            ],
+            "config": {
+              "ortb2": {
+                "user": {
+                  "keywords": "telariaFpdUserKeywords"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "outputRequestData": {
+    "id": "bid_id",
+    "site": {
+      "id": "reqSiteId",
+      "page": "http://www.foobar.com/1234.html",
+      "name": "reqSiteName",
+      "cat": [
+        "electronics",
+        "phone"
+      ],
+      "publisher": {
+        "id": "1"
+      },
+      "content": {
+        "len": 900,
+        "title": "reqContentTitle",
+        "season": "reqContentSeason"
+      }
+    },
+    "test": 1
+  },
+  "biddersFPDResolved": {
+    "appnexus": {
+      "site": {
+        "id": "apnFpdSiteId",
+        "page": "http://www.foobar.com/4321.html",
+        "name": "apnFpdSiteIdSiteName",
+        "cat": [
+          "books",
+          "news"
+        ],
+        "publisher": {
+          "id": "1"
+        },
+        "content": {
+          "len": 900,
+          "title": "apnFpdSiteIdContentTitle",
+          "season": "apnFpdSiteIdContentSeason",
+          "data": [
+            {
+              "id": "apnFpdSiteIdContentDataId1",
+              "name": "apnFpdSiteIdContentDataName1"
+            },
+            {
+              "id": "apnFpdSiteIdContentDataId2",
+              "name": "apnFpdSiteIdContentDataName2"
+            }
+          ]
+        }
+      },
+      "user": {
+        "id": "apnUserId",
+        "keywords": "apnFpdUserKeyword"
+      }
+    }
+  },
+  "validationErrors": []
+}

@@ -1,11 +1,25 @@
 {
-    "context": 1,
-    "plcmttype": 1,
-    "assets": [
-        {
-            "data": {
-                "type": 364
-            }
+  "description": "Native request with an invalid value in its imp.native.request.data.type field",
+  "mockBidRequest": {
+    "id": "req-id",
+    "site": {
+      "page": "some.page.com"
+    },
+    "tmax": 500,
+    "imp": [
+      {
+        "id": "some-imp",
+        "native": {
+          "request": "{\"context\":1,\"plcmttype\":1,\"assets\":[{\"data\":{\"type\":364}}]}"
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          }
         }
+      }
     ]
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request"
 }

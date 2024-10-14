@@ -1,0 +1,137 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-bad",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "seatId": "",
+            "tagId": ""
+          }
+        }
+      },
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "seatId": "prebid",
+            "tagId": "demo1"
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://pbs.technoratimedia.com/openrtb/bids/prebid?src=pbs-go%2F1.0.0&adapter=imds",
+        "body": {
+          "id": "test-request-id",
+          "ext": {
+            "seatId": "prebid"
+          },
+          "imp": [
+            {
+              "id":"test-imp-id",
+              "tagid": "demo1",
+              "banner": {
+                "format": [
+                  {"w":300,"h":250}
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "seatId": "prebid",
+                  "tagId": "demo1"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "1",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "test-request-id",
+                  "impid": "test-imp-id",
+                  "price": 2.69,
+                  "adomain": [
+                    "psacentral.org"
+                  ],
+                  "cid": "mock-crid",
+                  "crid": "mock-cid",
+                  "ext": {
+                    "prebid": {
+                      "type": "banner"
+                    }
+                  }
+                }
+              ],
+              "seat": "imds"
+            }
+          ],
+          "ext": {
+            "responsetimemillis": {
+              "imds": 339
+            }
+          }
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "adomain": [
+              "psacentral.org"
+            ],
+            "cid": "mock-crid",
+            "crid": "mock-cid",
+            "ext": {
+              "prebid": {
+                "type": "banner"
+              }
+            },
+            "id": "test-request-id",
+            "impid": "test-imp-id",
+            "price": 2.69
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Invalid Impression",
+      "comparison": "literal"
+    }
+  ]
+}

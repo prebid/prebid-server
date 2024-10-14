@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type AdtargetAdapter struct {
@@ -19,7 +20,7 @@ type adtargetImpExt struct {
 	Adtarget openrtb_ext.ExtImpAdtarget `json:"adtarget"`
 }
 
-func (a *AdtargetAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *AdtargetAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
 	totalImps := len(request.Imp)
 	errors := make([]error, 0, totalImps)
@@ -54,7 +55,7 @@ func (a *AdtargetAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 	reqs := make([]*adapters.RequestData, 0, totalReqs)
 
 	imps := request.Imp
-	request.Imp = make([]openrtb.Imp, 0, len(imps))
+	request.Imp = make([]openrtb2.Imp, 0, len(imps))
 	for sourceId, impIndexes := range imp2source {
 		request.Imp = request.Imp[:0]
 
@@ -73,13 +74,14 @@ func (a *AdtargetAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 			Uri:     a.endpoint + fmt.Sprintf("?aid=%d", sourceId),
 			Body:    body,
 			Headers: headers,
+			ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 		})
 	}
 
 	return reqs, errors
 }
 
-func (a *AdtargetAdapter) MakeBids(bidReq *openrtb.BidRequest, unused *adapters.RequestData, httpRes *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *AdtargetAdapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.RequestData, httpRes *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
 	if httpRes.StatusCode == http.StatusNoContent {
 		return nil, nil
@@ -89,7 +91,7 @@ func (a *AdtargetAdapter) MakeBids(bidReq *openrtb.BidRequest, unused *adapters.
 			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", httpRes.StatusCode),
 		}}
 	}
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(httpRes.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("error while decoding response, err: %s", err),
@@ -136,7 +138,7 @@ func (a *AdtargetAdapter) MakeBids(bidReq *openrtb.BidRequest, unused *adapters.
 	return bidResponse, errors
 }
 
-func validateImpressionAndSetExt(imp *openrtb.Imp) (int, error) {
+func validateImpressionAndSetExt(imp *openrtb2.Imp) (int, error) {
 
 	if imp.Banner == nil && imp.Video == nil {
 		return 0, &errortypes.BadInput{
@@ -172,18 +174,30 @@ func validateImpressionAndSetExt(imp *openrtb.Imp) (int, error) {
 	impExtBuffer, err = json.Marshal(&adtargetImpExt{
 		Adtarget: impExt,
 	})
-
+	if err != nil {
+		return 0, &errortypes.BadInput{
+			Message: fmt.Sprintf("ignoring imp id=%s, error while encoding impExt, err: %s", imp.ID, err),
+		}
+	}
 	if impExt.BidFloor > 0 {
 		imp.BidFloor = impExt.BidFloor
 	}
 
 	imp.Ext = impExtBuffer
 
-	return impExt.SourceId, nil
+	aid, err := impExt.SourceId.Int64()
+	if err != nil {
+		return 0, &errortypes.BadInput{
+			Message: fmt.Sprintf("ignoring imp id=%s, aid parsing err: %s", imp.ID, err),
+		}
+	}
+	return int(aid), nil
 }
 
-func NewAdtargetBidder(endpoint string) *AdtargetAdapter {
-	return &AdtargetAdapter{
-		endpoint: endpoint,
+// Builder builds a new instance of the Adtarget adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	bidder := &AdtargetAdapter{
+		endpoint: config.Endpoint,
 	}
+	return bidder, nil
 }

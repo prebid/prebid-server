@@ -1,0 +1,34 @@
+{
+  "mockBidRequest": {
+    "id": "some_test_ad",
+    "site": {
+      "page": "https://some.domain.us/some/page.html"
+    },
+    "imp": [
+      {
+        "bidfloor": 0.02,
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "bidfloor": 0.02,
+            "appId": ""
+          }
+        }
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "unable to determine the appId(s) from the supplied extension",
+      "comparison": "literal"
+    }
+  ] 
+}

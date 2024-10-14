@@ -1,0 +1,128 @@
+{
+  "mockBidRequest": {
+    "id": "0000000000001",
+    "test": 1,
+    "imp": [
+      {
+        "id": "adunit-1",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+         "bidder": {
+            "tappxkey": "pub-12345-site-9876",
+            "endpoint": "ZZ123456PS"
+          }
+        }
+      }
+    ],
+    "site": {
+      "id": "102855",
+      "cat": [ "IAB3-1" ],
+      "domain": "www.tappx.com",
+      "page": "https://www.tappx.com/example.html ",
+      "publisher": {
+        "id": "8953", "name": "publisher.com",
+        "cat": [ "IAB3-1" ],
+        "domain": "publisher.com"
+      }
+    },
+    "user": {
+      "buyeruid": "A-38327932832"
+    }
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://ssp.api.tappx.com/rtb/v2/ZZ123456PS?tappxkey=pub-12345-site-9876&type_cnn=prebid&v=1.5",
+        "body": {
+          "id": "0000000000001",
+          "test": 1,
+          "imp": [
+            {
+              "id": "adunit-1",
+              "banner": {
+                "w": 300,
+                "h": 250
+              },
+              "ext": {
+                "bidder": {
+                  "tappxkey": "pub-12345-site-9876",
+                  "endpoint": "ZZ123456PS"
+                }
+              }
+            }
+          ],
+          "site": {
+            "id": "102855",
+            "cat": [ "IAB3-1" ],
+            "domain": "www.tappx.com",
+            "page": "https://www.tappx.com/example.html ",
+            "publisher": {
+              "id": "8953", "name": "publisher.com",
+              "cat": [ "IAB3-1" ],
+              "domain": "publisher.com"
+            }
+          },
+          "user": {
+            "buyeruid": "A-38327932832"
+          },
+          "ext":{
+            "bidder": {
+              "tappxkey": "pub-12345-site-9876"
+            }
+          }
+        },
+        "impIDs":["adunit-1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "75472df2-1cb3-4f8e-9a28-10cb95fe05a4",
+          "seatbid": [{
+              "bid": [{
+                  "id": "wehM-93KGr0_0_0",
+                  "impid": "adunit-1",
+                  "price": 0.5,
+                  "cid": "3706",
+                  "crid": "19005",
+                  "adid": "19005",
+                  "adm": "<!-- admarkup -->",
+                  "cat": ["IAB2"],
+                  "adomain": ["test.com"],
+                  "h": 250,
+                  "w": 300
+              }]
+          }],
+          "bidid": "wehM-93KGr0"
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "wehM-93KGr0_0_0",
+            "impid": "adunit-1",
+            "price": 0.5,
+            "adm": "<!-- admarkup -->",
+            "adid": "19005",
+            "adomain": ["test.com"],
+            "cid": "3706",
+            "crid": "19005",
+            "w": 300,
+            "h": 250,
+            "cat": ["IAB2"]
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

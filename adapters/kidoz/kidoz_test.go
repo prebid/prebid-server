@@ -5,25 +5,33 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/adapters/adapterstest"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/adapters/adapterstest"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestJsonSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "kidoztest", NewKidozBidder("http://example.com/prebid"))
+	bidder, buildErr := Builder(openrtb_ext.BidderKidoz, config.Adapter{
+		Endpoint: "http://example.com/prebid"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	adapterstest.RunJSONBidderTest(t, "kidoztest", bidder)
 }
 
-func makeBidRequest() *openrtb.BidRequest {
-	request := &openrtb.BidRequest{
+func makeBidRequest() *openrtb2.BidRequest {
+	request := &openrtb2.BidRequest{
 		ID: "test-req-id-0",
-		Imp: []openrtb.Imp{
+		Imp: []openrtb2.Imp{
 			{
 				ID: "test-imp-id-0",
-				Banner: &openrtb.Banner{
-					Format: []openrtb.Format{
+				Banner: &openrtb2.Banner{
+					Format: []openrtb2.Format{
 						{
 							W: 320,
 							H: 50,
@@ -38,13 +46,18 @@ func makeBidRequest() *openrtb.BidRequest {
 }
 
 func TestMakeRequests(t *testing.T) {
-	kidoz := NewKidozBidder("http://example.com/prebid")
+	bidder, buildErr := Builder(openrtb_ext.BidderKidoz, config.Adapter{
+		Endpoint: "http://example.com/prebid"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
 
 	t.Run("Handles Request marshal failure", func(t *testing.T) {
 		request := makeBidRequest()
 		request.Imp[0].BidFloor = math.Inf(1) // cant be marshalled
 		extra := &adapters.ExtraRequestInfo{}
-		reqs, errs := kidoz.MakeRequests(request, extra)
+		reqs, errs := bidder.MakeRequests(request, extra)
 		// cant assert message its different on different versions of go
 		assert.Equal(t, 1, len(errs))
 		assert.Contains(t, errs[0].Error(), "json")
@@ -53,7 +66,12 @@ func TestMakeRequests(t *testing.T) {
 }
 
 func TestMakeBids(t *testing.T) {
-	kidoz := NewKidozBidder("http://example.com/prebid")
+	bidder, buildErr := Builder(openrtb_ext.BidderKidoz, config.Adapter{
+		Endpoint: "http://example.com/prebid"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
 
 	t.Run("Handles response marshal failure", func(t *testing.T) {
 		request := makeBidRequest()
@@ -62,7 +80,7 @@ func TestMakeBids(t *testing.T) {
 			StatusCode: http.StatusOK,
 		}
 
-		resp, errs := kidoz.MakeBids(request, requestData, responseData)
+		resp, errs := bidder.MakeBids(request, requestData, responseData)
 		// cant assert message its different on different versions of go
 		assert.Equal(t, 1, len(errs))
 		assert.Contains(t, errs[0].Error(), "JSON")
@@ -71,22 +89,22 @@ func TestMakeBids(t *testing.T) {
 }
 
 func TestGetMediaTypeForImp(t *testing.T) {
-	imps := []openrtb.Imp{
+	imps := []openrtb2.Imp{
 		{
 			ID:     "1",
-			Banner: &openrtb.Banner{},
+			Banner: &openrtb2.Banner{},
 		},
 		{
 			ID:    "2",
-			Video: &openrtb.Video{},
+			Video: &openrtb2.Video{},
 		},
 		{
 			ID:     "3",
-			Native: &openrtb.Native{},
+			Native: &openrtb2.Native{},
 		},
 		{
 			ID:    "4",
-			Audio: &openrtb.Audio{},
+			Audio: &openrtb2.Audio{},
 		},
 	}
 

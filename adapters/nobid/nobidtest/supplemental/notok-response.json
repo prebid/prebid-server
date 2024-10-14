@@ -1,0 +1,52 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "imp": [
+          {
+            "id": "test-imp-id",
+            "banner": {
+              "format": [{"w": 728, "h": 90}]
+            },
+            "ext": {
+              "nobid": {
+                "siteId": "000"
+              }
+            }
+          }
+        ]
+    },
+    "httpCalls": [
+      {
+        "expectedRequest": {
+            "uri": "http://ads.servenobid.com/ortb_adreq?tek=pbs",
+            "body": {
+              "id": "test-request-id",
+              "imp": [
+                {
+                  "id":"test-imp-id",
+                  "banner": {
+                    "format": [{"w": 728, "h": 90}]
+                  },
+                  "ext": {
+                    "nobid": {
+                      "siteId": "000"
+                    }
+                  }
+                }
+              ]
+            },
+            "impIDs":["test-imp-id"]
+        },
+        "mockResponse": {
+          "status": 500
+        }
+      }
+    ],
+    "expectedBidResponses": [],
+    "expectedMakeBidsErrors": [
+        {
+            "value": "Unexpected status code: 500. Run with request.debug = 1 for more info",
+            "comparison": "literal"
+        }
+    ]
+  }

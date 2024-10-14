@@ -3,9 +3,18 @@ package vrtcal
 import (
 	"testing"
 
-	"github.com/prebid/prebid-server/adapters/adapterstest"
+	"github.com/prebid/prebid-server/v2/adapters/adapterstest"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 func TestJsonSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "vrtcaltest", NewVrtcalBidder("http://rtb.vrtcal.com/bidder_prebid.vap?ssp=1804"))
+	bidder, buildErr := Builder(openrtb_ext.BidderVrtcal, config.Adapter{
+		Endpoint: "http://rtb.vrtcal.com/bidder_prebid.vap?ssp=1804"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	adapterstest.RunJSONBidderTest(t, "vrtcaltest", bidder)
 }

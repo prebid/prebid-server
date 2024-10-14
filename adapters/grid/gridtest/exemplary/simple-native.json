@@ -1,0 +1,86 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "site": {
+            "page": "https://good.site/url"
+        },
+        "imp": [{
+            "id": "test-imp-id",
+            "native": {
+                "ver": "1.1",
+                "request": "{\"ver\":\"1.0\",\"layout\":1,\"adunit\":1,\"plcmttype\":1,\"plcmtcnt\":1,\"seq\":0,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":75}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":60,\"hmin\":60,\"mimes\":[\"image/jpeg\",\"image/jpg\",\"image/png\"]}},{\"id\":3,\"required\":0,\"data\":{\"type\":2,\"len\":75}},{\"id\":4,\"required\":0,\"data\":{\"type\":6,\"len\":1000}},{\"id\":5,\"required\":0,\"data\":{\"type\":7,\"len\":1000}},{\"id\":6,\"required\":0,\"data\":{\"type\":11,\"len\":1000}}]}"
+            },
+            "ext": {
+                "bidder": {
+                    "uid": 1
+                }
+            }
+        }]
+    },
+
+    "httpCalls": [{
+        "expectedRequest": {
+            "uri": "http://localhost/prebid",
+            "body": {
+                "id": "test-request-id",
+                "site": {
+                    "page": "https://good.site/url"
+                },
+                "imp": [{
+                    "id": "test-imp-id",
+                    "native": {
+                        "ver": "1.1",
+                        "request_native": {"ver":"1.0","layout":1,"adunit":1,"plcmttype":1,"plcmtcnt":1,"seq":0,"assets":[{"id":1,"required":1,"title":{"len":75}},{"id":2,"required":1,"img":{"type":3,"wmin":60,"hmin":60,"mimes":["image/jpeg","image/jpg","image/png"]}},{"id":3,"required":0,"data":{"type":2,"len":75}},{"id":4,"required":0,"data":{"type":6,"len":1000}},{"id":5,"required":0,"data":{"type":7,"len":1000}},{"id":6,"required":0,"data":{"type":11,"len":1000}}]}
+                    },
+                    "ext": {
+                        "bidder": {
+                            "uid": 1
+                        }
+                    }
+                }]
+            },
+            "impIDs":["test-imp-id"]
+        },
+        "mockResponse": {
+            "status": 200,
+            "body": {
+                "id": "test-request-id",
+                "seatbid": [{
+                    "seat": "grid",
+                    "bid": [{
+                        "id": "randomid",
+                        "impid": "test-imp-id",
+                        "price": 0.500000,
+                        "adid": "12345678",
+                        "adm_native": {
+                            "some_native_key": "native_value"
+                        },
+                        "cid": "987",
+                        "crid": "12345678",
+                        "h": 250,
+                        "w": 300
+                    }]
+                }],
+                "cur": "USD"
+            }
+        }
+    }],
+
+    "expectedBidResponses": [{
+        "currency": "USD",
+        "bids": [{
+            "bid": {
+                "id": "randomid",
+                "impid": "test-imp-id",
+                "price": 0.5,
+                "adm": "{\"some_native_key\":\"native_value\"}",
+                "adid": "12345678",
+                "cid": "987",
+                "crid": "12345678",
+                "w": 300,
+                "h": 250
+            },
+            "type": "native"
+        }]
+    }]
+}

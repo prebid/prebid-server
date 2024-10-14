@@ -28,7 +28,9 @@
               {"key": "valueless"}
             ],
             "use_pmt_rule": true,
-            "private_sizes": [{"w": 300, "h": 250}]
+            "private_sizes": [{"w": 300, "h": 250}],
+            "ext_inv_code": "invCode",
+            "external_imp_id": "impId"
           }
         }
       }
@@ -44,8 +46,7 @@
           "ext": {
             "appnexus": {
               "hb_source": 5
-            },
-            "prebid": {}
+            }
           },
           "imp": [
             {
@@ -66,16 +67,20 @@
                   "keywords": "foo=bar,foo=baz,valueless",
                   "traffic_source_code": "trafficSource",
                   "use_pmt_rule": true,
-                  "private_sizes": [{"w": 300, "h": 250}]
+                  "private_sizes": [{"w": 300, "h": 250}],
+                  "ext_inv_code": "invCode",
+                  "external_imp_id": "impId"
                 }
               }
             }
           ]
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 204
       }
     }
-  ]
+  ],
+  "expectedBidResponses": []
 }

@@ -1,0 +1,9 @@
+endpoint: "https://{{.Host}}.bidmachine.io"
+maintainer:
+  email: hi@bidmachine.io
+gvlVendorID: 736
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video

@@ -6,17 +6,18 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type KidozAdapter struct {
 	endpoint string
 }
 
-func (a *KidozAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *KidozAdapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
@@ -90,6 +91,7 @@ func (a *KidozAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.Ext
 			Uri:     a.endpoint,
 			Body:    body,
 			Headers: headers,
+			ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 		})
 	}
 
@@ -101,7 +103,7 @@ func (a *KidozAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.Ext
 	return result, errs
 }
 
-func (a *KidozAdapter) MakeBids(request *openrtb.BidRequest, _ *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *KidozAdapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var errs []error
 
 	switch responseData.StatusCode {
@@ -128,7 +130,7 @@ func (a *KidozAdapter) MakeBids(request *openrtb.BidRequest, _ *adapters.Request
 		}}
 	}
 
-	var bidResponse openrtb.BidResponse
+	var bidResponse openrtb2.BidResponse
 	err := json.Unmarshal(responseData.Body, &bidResponse)
 	if err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
@@ -158,15 +160,17 @@ func (a *KidozAdapter) MakeBids(request *openrtb.BidRequest, _ *adapters.Request
 	return response, errs
 }
 
-func NewKidozBidder(endpoint string) *KidozAdapter {
-	return &KidozAdapter{
-		endpoint: endpoint,
+// Builder builds a new instance of the Kidoz adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	bidder := &KidozAdapter{
+		endpoint: config.Endpoint,
 	}
+	return bidder, nil
 }
 
 const UndefinedMediaType = openrtb_ext.BidType("")
 
-func GetMediaTypeForImp(impID string, imps []openrtb.Imp) openrtb_ext.BidType {
+func GetMediaTypeForImp(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
 	var bidType openrtb_ext.BidType = UndefinedMediaType
 	for _, impression := range imps {
 		if impression.ID != impID {

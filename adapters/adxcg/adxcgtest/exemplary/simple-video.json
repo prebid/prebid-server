@@ -1,0 +1,108 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-video-id",
+    "imp": [
+      {
+        "id": "test-imp-video-id",
+        "video": {
+          "w": 300,
+          "h": 250,
+          "maxduration": 60,
+          "minduration": 1,
+          "api": [
+            1,
+            2,
+            5,
+            6,
+            7
+          ],
+          "mimes": [
+            "video\/mp4"
+          ],
+          "placement": 4,
+          "protocols": [
+            2
+          ]
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://localhost/prebid_server",
+        "body": {
+          "id": "test-request-video-id",
+          "imp": [
+            {
+              "id": "test-imp-video-id",
+              "video": {
+                "w": 300,
+                "h": 250,
+                "maxduration": 60,
+                "minduration": 1,
+                "api": [
+                  1,
+                  2,
+                  5,
+                  6,
+                  7
+                ],
+                "mimes": [
+                  "video\/mp4"
+                ],
+                "placement": 4,
+                "protocols": [
+                  2
+                ]
+              }
+            }
+          ]
+        },
+        "impIDs":["test-imp-video-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "adxcg",
+              "bid": [
+                {
+                  "id": "test-request-video-id",
+                  "impid": "test-imp-video-id",
+                  "price": 1.16,
+                  "adm": "some-test-ad",
+                  "w": 300,
+                  "h": 250,
+                  "mtype":2
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-request-video-id",
+            "impid": "test-imp-video-id",
+            "price": 1.16,
+            "adm": "some-test-ad",
+            "w": 300,
+            "h": 250,
+            "mtype":2
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

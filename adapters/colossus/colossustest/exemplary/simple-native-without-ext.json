@@ -1,0 +1,105 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+        {
+            "id": "test-imp-id",
+            "native": {
+              "request": ""
+            },
+            "tagid": "61317",
+            "ext": {
+                "bidder": {
+                    "TagID": "61317"
+                }
+            }
+        }
+    ],
+    "app": {
+        "id": "1",
+        "bundle": "com.wls.testwlsapplication"
+    },
+    "device": {
+        "ip": "123.123.123.123",
+        "ifa": "zxcjbzxmc-zxcbmz-zxbcz-zxczx"
+    }
+},
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://example.com/?c=o&m=rtb",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+              {
+                  "id": "test-imp-id",
+                  "native": {
+                    "request": ""
+                  },
+                  "tagid": "61317",
+                  "ext": {
+                      "bidder": {
+                          "TagID": "61317"
+                      }
+                  }
+              }
+          ],
+          "app": {
+              "id": "1",
+              "bundle": "com.wls.testwlsapplication"
+          },
+          "device": {
+              "ip": "123.123.123.123",
+              "ifa": "zxcjbzxmc-zxcbmz-zxbcz-zxczx"
+          }
+      },
+      "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+              {
+                  "bid": [
+                      {
+                          "id": "test_bid_id",
+                          "impid": "test-imp-id",
+                          "price": 0.27543,
+                          "adm": "<iframe id=\"adm-native-16\" width=\"300\" height=\"250\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"https://colossusssp.com/?c=o&m=adm&k=882b2510ed6d6c94fa69c99aa522a708\"></iframe>",
+                          "cid": "test_cid",
+                          "crid": "test_crid",
+                          "dealid": "test_dealid",
+                          "w": 300,
+                          "h": 250
+                      }
+                  ]
+              }
+          ]
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "bids":[
+        {
+          "bid":  {
+            "id": "test_bid_id",
+            "impid": "test-imp-id",
+            "price": 0.27543,
+            "adm": "<iframe id=\"adm-native-16\" width=\"300\" height=\"250\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"https://colossusssp.com/?c=o&m=adm&k=882b2510ed6d6c94fa69c99aa522a708\"></iframe>",
+            "cid": "test_cid",
+            "crid": "test_crid",
+            "dealid": "test_dealid",
+            "w": 300,
+            "h": 250
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}

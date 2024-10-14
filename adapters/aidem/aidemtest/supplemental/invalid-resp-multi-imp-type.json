@@ -1,0 +1,152 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "imp": [
+            {
+                "id": "test-imp-id",
+                "banner": {
+                    "w": 300,
+                    "h": 250
+                },
+                "video": {
+                    "mimes": [
+                        "video/mp4"
+                    ],
+                    "w": 640,
+                    "h": 480,
+                    "minduration": 120,
+                    "maxduration": 150
+                },
+                "native": {
+                    "ver": "1.1",
+                    "request": "{\"adunit\":2,\"assets\":[{\"id\":3,\"img\":{\"h\":120,\"hmin\":0,\"type\":3,\"w\":180,\"wmin\":0},\"required\":1},{\"id\":0,\"required\":1,\"title\":{\"len\":25}},{\"data\":{\"len\":25,\"type\":1},\"id\":4,\"required\":1},{\"data\":{\"len\":140,\"type\":2},\"id\":6,\"required\":1}],\"context\":1,\"layout\":1,\"contextsubtype\":11,\"plcmtcnt\":1,\"plcmttype\":2,\"ver\":\"1.1\",\"ext\":{\"banner\":{\"w\":320,\"h\":50}}}"
+                },
+                "ext": {
+                    "bidder": {
+                        "siteId": "TCID",
+                        "publisherId": "1234"
+                    }
+                }
+            }
+        ],
+        "site": {
+            "domain": "www.example.com",
+            "page": "http://www.example.com",
+            "publisher": {
+                "domain": "example.com"
+            },
+            "ext": {
+                "amp": 0
+            }
+        },
+        "device": {
+            "ua": "userAgent",
+            "ip": "193.168.244.1"
+        },
+        "at": 1,
+        "tmax": 5000,
+        "cur": [
+            "USD"
+        ],
+        "regs": {
+            "ext": {
+                "gdpr": 0
+            }
+        }
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "https://fakezero.aidemsrv.com/ortb/v2.6/bid/request?billing_id=1234",
+                "body": {
+                    "id": "test-request-id",
+                    "imp": [
+                        {
+                            "id": "test-imp-id",
+                            "banner": {
+                                "w": 300,
+                                "h": 250
+                            },
+                            "video": {
+                                "mimes": [
+                                    "video/mp4"
+                                ],
+                                "w": 640,
+                                "h": 480,
+                                "minduration": 120,
+                                "maxduration": 150
+                            },
+                            "native": {
+                                "ver": "1.1",
+                                "request": "{\"adunit\":2,\"assets\":[{\"id\":3,\"img\":{\"h\":120,\"hmin\":0,\"type\":3,\"w\":180,\"wmin\":0},\"required\":1},{\"id\":0,\"required\":1,\"title\":{\"len\":25}},{\"data\":{\"len\":25,\"type\":1},\"id\":4,\"required\":1},{\"data\":{\"len\":140,\"type\":2},\"id\":6,\"required\":1}],\"context\":1,\"layout\":1,\"contextsubtype\":11,\"plcmtcnt\":1,\"plcmttype\":2,\"ver\":\"1.1\",\"ext\":{\"banner\":{\"w\":320,\"h\":50}}}"
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "siteId": "TCID",
+                                    "publisherId": "1234"
+                                }
+                            }
+                        }
+                    ],
+                    "site": {
+                        "domain": "www.example.com",
+                        "page": "http://www.example.com",
+                        "publisher": {
+                            "domain": "example.com"
+                        },
+                        "ext": {
+                            "amp": 0
+                        }
+                    },
+                    "device": {
+                        "ua": "userAgent",
+                        "ip": "193.168.244.1"
+                    },
+                    "at": 1,
+                    "tmax": 5000,
+                    "cur": [
+                        "USD"
+                    ],
+                    "regs": {
+                        "ext": {
+                            "gdpr": 0
+                        }
+                    }
+                },
+                "impIDs":["test-imp-id"]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "tid",
+                    "seatbid": [
+                        {
+                            "seat": "aax",
+                            "bid": [
+                                {
+                                    "id": "randomid",
+                                    "impid": "test-imp-id",
+                                    "price": 0.500000,
+                                    "adid": "12345678",
+                                    "adm": "some-test-ad",
+                                    "cid": "987",
+                                    "crid": "12345678",
+                                    "h": 250,
+                                    "w": 300
+                                }
+                            ]
+                        }
+                    ],
+                    "bidid": "bid01"
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [{"currency":"USD","bids":[]}],
+    "expectedMakeBidsErrors": [
+        {
+            "value": "Unable to fetch mediaType in multi-format: test-imp-id",
+            "comparison": "literal"
+        }
+    ]
+}

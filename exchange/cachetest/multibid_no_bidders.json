@@ -54,13 +54,13 @@
     ],
     "expectedCacheables": [
         {
-            "Type": "json",
-            "Data": "{\"id\": \"bidOne\",\"impid\": \"oneImp\",\"price\": 7.64,\"exp\": 600}",
-            "TTLSeconds": 360
+            "type": "json",
+            "value": "{\"id\": \"bidOne\",\"impid\": \"oneImp\",\"price\": 7.64,\"exp\": 600}",
+            "ttlseconds": 360
         }, {
-            "Type": "json",
-            "Data": "{\"id\": \"bidFive\", \"impid\": \"twoImp\", \"price\": 7.64, \"exp\":   900}",
-            "TTLSeconds": 960
+            "type": "json",
+            "value": "{\"id\": \"bidFive\", \"impid\": \"twoImp\", \"price\": 7.64, \"exp\":   900}",
+            "ttlseconds": 960
         }
     ],
     "targetDataIncludeWinners":true,

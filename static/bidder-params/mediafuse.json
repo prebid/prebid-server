@@ -1,0 +1,109 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Mediafuse Adapter Params",
+  "description": "A schema which validates params accepted by the Mediafuse adapter",
+
+  "type": "object",
+  "properties": {
+    "placement_id": {
+      "type": "integer",
+      "description": "An ID which identifies this placement of the impression"
+    },
+    "placementId": {
+      "type": "integer",
+      "description": "Deprecated, use placement_id instead."
+    },
+    "inv_code": {
+      "type": "string",
+      "description": "A code identifying the inventory of this placement."
+    },
+    "invCode": {
+      "type": "string",
+      "description": "Deprecated, use inv_code instead."
+    },
+    "member": {
+      "type": "string",
+      "description": "An ID which identifies the member selling the impression."
+    },
+    "keywords": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "description": "A key with one or more values associated with it. These are used in buy-side segment targeting.",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "value": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["key"]
+      }
+    },
+    "traffic_source_code": {
+      "type": "string",
+      "description": "Specifies the third-party source of this impression."
+    },
+    "trafficSourceCode": {
+      "type": "string",
+      "description": "Deprecated, use traffic_source_code instead."
+    },
+    "reserve": {
+      "type": "number",
+      "description": "The minimium acceptable bid, in CPM, using US Dollars"
+    },
+    "position": {
+      "type": "string",
+      "enum": ["above", "below"],
+      "description": "Specifies the ad unit as above or below the fold"
+    },
+    "use_pmt_rule": {
+      "type": "boolean",
+      "description": "Boolean to signal Mediafuse to apply the relevant payment rule"
+    },
+    "generate_ad_pod_id": {
+      "type": "boolean",
+      "description": "Boolean to signal Mediafuse to add ad pod id to each request"
+    },
+    "private_sizes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "w": {
+            "type": "integer"
+          },
+          "h": {
+            "type": "integer"
+          }
+        },
+        "required": ["w", "h"]
+      },
+      "description": "Private sizes (ex: [{\"w\": 300, \"h\": 250},{...}]), experimental, may not be supported."
+    }
+  },
+
+  "oneOf": [{
+    "oneOf": [{
+      "required": ["placementId"]
+    }, {
+      "required": ["placement_id"]
+    }]
+  }, {
+    "oneOf": [{
+      "required": ["invCode", "member"]
+    }, {
+      "required": ["inv_code", "member"]
+    }]
+  }],
+
+  "not": {
+    "required": ["placementId", "invCode", "member"]
+  }
+}

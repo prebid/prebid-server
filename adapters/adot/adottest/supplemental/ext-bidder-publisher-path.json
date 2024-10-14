@@ -1,0 +1,111 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-publishPath-id",
+    "imp": [
+      {
+        "id": "test-imp-publishPath-id",
+        "banner": {
+          "format": [
+            {
+              "w": 320,
+              "h": 250
+            }
+          ],
+          "w": 320,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "publisherPath": "/hubvisor"
+          },
+          "adot": {}
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://dsp.adotmob.com/headerbidding/hubvisor/bidrequest",
+        "body": {
+          "id": "test-request-publishPath-id",
+          "imp": [
+            {
+              "id": "test-imp-publishPath-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 320,
+                    "h": 250
+                  }
+                ],
+                "w": 320,
+                "h": 250
+              },
+              "ext": {
+                "bidder": {
+                  "publisherPath": "/hubvisor"
+                },
+                "adot": {}
+              }
+            }
+          ]
+        },
+        "impIDs":["test-imp-publishPath-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-publishPath-id",
+          "seatbid": [
+            {
+              "seat": "adot",
+              "bid": [
+                {
+                  "id": "test-request-publishPath-id",
+                  "impid": "test-imp-publishPath-id",
+                  "price": 1.16346,
+                  "adm": "some-test-ad imp_${AUCTION_PRICE} creativeview_${AUCTION_PRICE}",
+                  "nurl": "nurl.link/win?p=${AUCTION_PRICE}",
+                  "w": 320,
+                  "h": 50,
+                  "ext": {
+                    "adot": {
+                      "media_type": "banner"
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-request-publishPath-id",
+            "impid": "test-imp-publishPath-id",
+            "price": 1.16346,
+            "adm": "some-test-ad imp_1.16346 creativeview_1.16346",
+            "nurl": "nurl.link/win?p=1.16346",
+            "w": 320,
+            "h": 50,
+            "ext": {
+              "adot": {
+                "media_type": "banner"
+              }
+            }
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

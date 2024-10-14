@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/adcom1"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 // AvocetAdapter implements a adapters.Bidder compatible with the Avocet advertising platform.
@@ -17,7 +19,7 @@ type AvocetAdapter struct {
 	Endpoint string
 }
 
-func (a *AvocetAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *AvocetAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	if len(request.Imp) == 0 {
 		return nil, nil
 	}
@@ -36,6 +38,7 @@ func (a *AvocetAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 		Uri:     a.Endpoint,
 		Body:    body,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}
 	return []*adapters.RequestData{reqData}, nil
 }
@@ -49,7 +52,7 @@ type avocetBidExtension struct {
 	DealPriority int `json:"deal_priority"`
 }
 
-func (a *AvocetAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *AvocetAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
@@ -67,7 +70,7 @@ func (a *AvocetAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 		}}
 	}
 
-	var br openrtb.BidResponse
+	var br openrtb2.BidResponse
 	err := json.Unmarshal(response.Body, &br)
 	if err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
@@ -100,25 +103,29 @@ func (a *AvocetAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 			bidResponse.Bids = append(bidResponse.Bids, tbid)
 		}
 	}
+	if len(errs) > 0 {
+		return nil, errs
+	}
 	return bidResponse, nil
 }
 
 // getBidType returns the openrtb_ext.BidType for the provided bid.
-func getBidType(bid openrtb.Bid, ext avocetBidExt) openrtb_ext.BidType {
+func getBidType(bid openrtb2.Bid, ext avocetBidExt) openrtb_ext.BidType {
 	if ext.Avocet.Duration != 0 {
 		return openrtb_ext.BidTypeVideo
 	}
 	switch bid.API {
-	case openrtb.APIFrameworkVPAID10, openrtb.APIFrameworkVPAID20:
+	case adcom1.APIVPAID10, adcom1.APIVPAID20:
 		return openrtb_ext.BidTypeVideo
 	default:
 		return openrtb_ext.BidTypeBanner
 	}
 }
 
-// NewAvocetAdapter returns a new AvocetAdapter using the provided endpoint.
-func NewAvocetAdapter(endpoint string) *AvocetAdapter {
-	return &AvocetAdapter{
-		Endpoint: endpoint,
+// Builder builds a new instance of the Avocet adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	bidder := &AvocetAdapter{
+		Endpoint: config.Endpoint,
 	}
+	return bidder, nil
 }

@@ -1,0 +1,94 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "test": 3,
+    "at": 1,
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "video": {
+          "mimes": ["video/mp4"],
+          "protocols": [2, 5],
+          "w": 1024,
+          "h": 576
+        },
+        "ext":{
+          "bidder": {
+            "appId": "impactify.io",
+            "format": "screen",
+            "style": "impact"
+          }
+        }
+      }
+    ],
+    "device": {
+      "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1",
+      "ip": "81.92.224.65"
+    }
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "X-Openrtb-Version": [
+            "2.5"
+          ],
+          "User-Agent": [
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1"
+          ],
+          "X-Forwarded-For": [
+            "81.92.224.65"
+          ]
+        },
+        "uri": "https://sonic.impactify.media/bidder",
+        "body": {
+          "id": "test-request-id",
+          "at":1,
+          "cur": ["USD"],
+          "test": 3,
+          "device": {
+            "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1",
+            "ip": "81.92.224.65"
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "video": {
+                "mimes": ["video/mp4"],
+                "protocols": [2, 5],
+                "w": 1024,
+                "h": 576
+              },
+              "ext": {
+                "impactify": {
+                  "appId": "impactify.io",
+                  "format": "screen",
+                  "style": "impact"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 500,
+        "body": {}
+      }
+    }
+  ],
+
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected HTTP status 500.",
+      "comparison": "literal"
+    }
+  ]
+}

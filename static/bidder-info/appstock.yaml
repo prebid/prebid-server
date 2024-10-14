@@ -1,0 +1,2 @@
+endpoint: "http://ads-pbs.pre.vr-tb.com/openrtb/{{.PublisherID}}?host={{.Host}}"
+aliasOf: "limelightDigital"

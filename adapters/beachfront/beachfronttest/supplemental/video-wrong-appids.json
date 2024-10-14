@@ -1,0 +1,39 @@
+{
+  "mockBidRequest": {
+    "id": "adm-video",
+    "imp": [
+      {
+        "id": "video1",
+        "ext": {
+          "bidder": {
+            "bidfloor": 3.01,
+            "appIds": {
+              "banner": "theWrongAppId"
+            }
+          }
+        },
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "context": "instream",
+          "w": 300,
+          "h": 250
+        }
+      }
+    ],
+    "site": {
+      "page": "https://some.domain.us/some/page.html"
+    },
+    "device":{
+      "ip":"255.255.255.255"
+    }
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "unable to determine the appId(s) from the supplied extension",
+      "comparison": "literal"
+    }
+  ] 
+}

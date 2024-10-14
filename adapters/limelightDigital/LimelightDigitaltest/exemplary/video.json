@@ -1,0 +1,88 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-video-id",
+        "video": {
+          "mimes": ["video/mp4"],
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "host": "video.ortb.net",
+            "publisherId": 123456
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://test.ortb.net/openrtb/123456?host=video.ortb.net",
+        "body": {
+          "id": "test-request-id-test-video-id",
+          "imp": [
+            {
+              "id": "test-video-id",
+              "video": {
+                "mimes": ["video/mp4"],
+                "w": 300,
+                "h": 250
+              }
+            }
+          ]
+        },
+        "impIDs":["test-video-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id-test-video-id",
+          "seatbid": [
+            {
+              "seat": "test-seat",
+              "bid": [
+                {
+                  "id": "5dce6055-a93c-1fd0-8c29-14afc3e510fd",
+                  "impid": "test-video-id",
+                  "price": 0.1529,
+                  "nurl": "test-win",
+                  "adm": "test-video",
+                  "adid": "92-288",
+                  "adomain": ["advertiserdomain.com"],
+                  "crid": "288",
+                  "w": 300,
+                  "h": 250
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "5dce6055-a93c-1fd0-8c29-14afc3e510fd",
+            "impid": "test-video-id",
+            "price": 0.1529,
+            "nurl": "test-win",
+            "adm": "test-video",
+            "adid": "92-288",
+            "adomain": ["advertiserdomain.com"],
+            "crid": "288",
+            "w": 300,
+            "h": 250
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

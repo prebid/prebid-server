@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type YieldoneAdapter struct {
@@ -16,10 +17,10 @@ type YieldoneAdapter struct {
 }
 
 // MakeRequests makes the HTTP requests which should be made to fetch bids.
-func (a *YieldoneAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *YieldoneAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errors = make([]error, 0)
 
-	var validImps []openrtb.Imp
+	var validImps []openrtb2.Imp
 	for i := 0; i < len(request.Imp); i++ {
 		if err := preprocess(&request.Imp[i]); err == nil {
 			validImps = append(validImps, request.Imp[i])
@@ -44,11 +45,12 @@ func (a *YieldoneAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 		Uri:     a.endpoint,
 		Body:    reqJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, errors
 }
 
 // MakeBids unpacks the server's response into Bids.
-func (a *YieldoneAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *YieldoneAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -65,7 +67,7 @@ func (a *YieldoneAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
@@ -85,18 +87,22 @@ func (a *YieldoneAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 			})
 		}
 	}
+	if bidResp.Cur != "" {
+		bidResponse.Currency = bidResp.Cur
+	}
 	return bidResponse, nil
 
 }
 
-// NewYieldoneBidder configure bidder endpoint
-func NewYieldoneBidder(endpoint string) *YieldoneAdapter {
-	return &YieldoneAdapter{
-		endpoint: endpoint,
+// Builder builds a new instance of the Yieldone adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	bidder := &YieldoneAdapter{
+		endpoint: config.Endpoint,
 	}
+	return bidder, nil
 }
 
-func preprocess(imp *openrtb.Imp) error {
+func preprocess(imp *openrtb2.Imp) error {
 
 	var ext adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
@@ -120,7 +126,7 @@ func preprocess(imp *openrtb.Imp) error {
 	return nil
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb.Imp) (openrtb_ext.BidType, error) {
+func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
 	for _, imp := range imps {
 		if imp.ID == impID {
 			if imp.Banner != nil {

@@ -51,6 +51,7 @@
                   }
                 ]
               },
+              "bidfloorcur": "EUR",
               "ext": {
                 "bidder": {
                   "accountId": "orbidder-test",
@@ -60,7 +61,8 @@
               }
             }
           ]
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 403,

@@ -1,0 +1,52 @@
+{
+  "mockBidRequest": {
+    "id": "some_test_auction",
+    "imp": [
+      {
+        "id": "some_test_ad",
+        "banner": {
+          "w": 90,
+          "h": 728
+        },
+        "ext": {
+          "bidder": {
+            "siteId": "123"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "//host",
+        "body": {
+          "id": "some_test_auction",
+          "imp": [
+            {
+              "id": "some_test_ad",
+              "banner": {
+                "h": 728,
+                "w": 90
+              },
+              "ext": {
+                "siteId": "123"
+              }
+            }
+          ]
+        },
+        "impIDs":["some_test_ad"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "some_test_auction",
+          "seatbid": [
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}

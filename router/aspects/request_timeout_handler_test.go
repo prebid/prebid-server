@@ -1,14 +1,15 @@
 package aspects
 
 import (
-	"github.com/julienschmidt/httprouter"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/pbsmetrics"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/julienschmidt/httprouter"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/metrics"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -75,9 +76,9 @@ func TestAny(t *testing.T) {
 
 	for _, test := range testCases {
 		reqTimeFloat, _ := strconv.ParseFloat(test.reqTimeInQueue, 64)
-		result := ExecuteAspectRequest(t, test.reqTimeInQueue, test.reqTimeOut, test.setHeaders, pbsmetrics.ReqTypeVideo, test.requestStatusMetrics, reqTimeFloat)
+		result := ExecuteAspectRequest(t, test.reqTimeInQueue, test.reqTimeOut, test.setHeaders, metrics.ReqTypeVideo, test.requestStatusMetrics, reqTimeFloat)
 		assert.Equal(t, test.expectedRespCode, result.Code, test.expectedRespCodeMessage)
-		assert.Equal(t, test.expectedRespBody, string(result.Body.Bytes()), test.expectedRespBodyMessage)
+		assert.Equal(t, test.expectedRespBody, result.Body.String(), test.expectedRespBodyMessage)
 	}
 }
 
@@ -89,7 +90,7 @@ func MockHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Write([]byte("Executed"))
 }
 
-func ExecuteAspectRequest(t *testing.T, timeInQueue string, reqTimeout string, setHeaders bool, requestType pbsmetrics.RequestType, status bool, requestDuration float64) *httptest.ResponseRecorder {
+func ExecuteAspectRequest(t *testing.T, timeInQueue string, reqTimeout string, setHeaders bool, requestType metrics.RequestType, status bool, requestDuration float64) *httptest.ResponseRecorder {
 	rw := httptest.NewRecorder()
 	req, err := http.NewRequest("POST", "/test", nil)
 	if err != nil {
@@ -100,9 +101,9 @@ func ExecuteAspectRequest(t *testing.T, timeInQueue string, reqTimeout string, s
 		req.Header.Set(reqTimeoutHeaderName, reqTimeout)
 	}
 
-	customHeaders := config.RequestTimeoutHeaders{reqTimeInQueueHeaderName, reqTimeoutHeaderName}
+	customHeaders := config.RequestTimeoutHeaders{RequestTimeInQueue: reqTimeInQueueHeaderName, RequestTimeoutInQueue: reqTimeoutHeaderName}
 
-	metrics := &pbsmetrics.MetricsEngineMock{}
+	metrics := &metrics.MetricsEngineMock{}
 
 	metrics.On("RecordRequestQueueTime", status, requestType, time.Duration(requestDuration*float64(time.Second))).Once()
 

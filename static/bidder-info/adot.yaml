@@ -1,0 +1,20 @@
+endpoint: "https://dsp.adotmob.com/headerbidding{PUBLISHER_PATH}/bidrequest"
+maintainer:
+  email: "admin@we-are-adot.com"
+gvlVendorID: 272
+modifyingVastXmlAllowed: false
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  redirect:
+    url: "https://sync.adotmob.com/cookie/pbs?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&r={{.RedirectURL}}"
+    userMacro: "{amob_user_id}"

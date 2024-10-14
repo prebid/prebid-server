@@ -44,6 +44,76 @@
             }
           }
         }
+      },
+      {
+        "id": "test-imp-id",
+        "bidfloor": 0.5,
+        "banner": {
+          "format": [
+            {
+              "w": 728,
+              "h": 90
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "zone": "2eb6bd58-865c-47ce-af7f-a918108c3fd2",
+            "customParams": {
+              "foo": [
+                "bar",
+                "baz"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": "test-imp-id",
+        "bidfloor": 0.5,
+        "banner": {
+          "format": [
+            {
+              "w": 728,
+              "h": 90
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "zone": "2eb6bd58-865c-47ce-af7f-a918108c3fd2",
+            "customParams": {
+              "foo": [
+                "bar",
+                "baz"
+              ]
+            }
+          },
+          "customFloor": 0.9
+        }
+      },
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 728,
+              "h": 90
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "customFloor": 0.9,
+            "zone": "2eb6bd58-865c-47ce-af7f-a918108c3fd2",
+            "customParams": {
+              "foo": [
+                "bar",
+                "baz"
+              ]
+            }
+          }
+        }
       }
     ]
   },
@@ -92,13 +162,78 @@
                   ]
                 }
               }
+            },
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 728,
+                    "h": 90
+                  }
+                ]
+              },
+              "tagid": "2eb6bd58-865c-47ce-af7f-a918108c3fd2",
+              "bidfloor": 0.5,
+              "ext": {
+                "customParams": {
+                  "foo": [
+                    "bar",
+                    "baz"
+                  ]
+                }
+              }
+            },
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 728,
+                    "h": 90
+                  }
+                ]
+              },
+              "tagid": "2eb6bd58-865c-47ce-af7f-a918108c3fd2",
+              "bidfloor": 0.5,
+              "ext": {
+                "customParams": {
+                  "foo": [
+                    "bar",
+                    "baz"
+                  ]
+                }
+              }
+            },
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 728,
+                    "h": 90
+                  }
+                ]
+              },
+              "tagid": "2eb6bd58-865c-47ce-af7f-a918108c3fd2",
+              "bidfloor": 0.9,
+              "ext": {
+                "customParams": {
+                  "foo": [
+                    "bar",
+                    "baz"
+                  ]
+                }
+              }
             }
           ]
-        }
+        },
+        "impIDs":["test-imp-id","test-imp-id","test-imp-id","test-imp-id","test-imp-id"]
       },
       "mockResponse": {
         "status": 204
       }
     }
-  ]
+  ],
+  "expectedBidResponses": []
 }

@@ -1,0 +1,107 @@
+{
+    "mockBidRequest": {
+      "id": "test-request-id",
+      "imp": [
+        {
+          "id": "test-imp-id",
+          "at" : 1,
+          "banner": {
+            "format": [
+              {
+                  "w": 300,
+                  "h": 250
+              }
+            ]
+          },
+          "ext": {
+            "bidder": {
+              "zoneId": 9999
+            }
+          }
+        }
+      ]
+    },
+  
+    "httpCalls": [
+      {
+        "expectedRequest": {
+          "uri": "http://bid306.rtbsrv.com/bidder/?bid=f3xtet&zone=9999",
+          "body": {
+            "id": "test-request-id",
+            "at" : 1,
+            "imp": [
+              {
+                "id": "test-imp-id",
+                "banner": {
+                  "format": [
+                    {
+                        "w": 300,
+                        "h": 250
+                    }
+                  ],
+                  "w": 300,
+                  "h": 250
+                },
+                "ext": {
+                  "bidder": {
+                    "zoneId": 9999
+                  }
+                }
+              }
+            ]
+          },
+          "impIDs":["test-imp-id"]
+        },
+        "mockResponse": {
+          "status": 200,
+          "body": {
+            "id": "test-request-id",
+            "seatbid": [
+              {
+                "seat": "marsmedia",
+                "bid": [{
+                  "id": "1",
+                  "impid": "test-imp-id",
+                  "price": 1.1,
+                  "adid": "17586",
+                  "adm": "some-test-ad",
+                  "nurl" : "some-test-nurl",
+                  "iurl" : "some-test-iurl",
+                  "adomain": ["wooga.com"],
+                  "cid": "17586",
+                  "crid": "17586",
+                  "h": 250,
+                  "w": 300
+                }]
+              }
+            ],
+            "bidid": "5778926625248726496",
+            "cur": "USD"
+          }
+        }
+      }
+    ],
+  
+    "expectedBidResponses": [
+      {
+        "bids": [{
+          "bid": {
+            "id": "1",
+            "impid": "test-imp-id",
+            "price": 1.1,
+            "adm": "some-test-ad",
+            "adid": "17586",
+            "adomain": ["wooga.com"],
+            "cid": "17586",
+            "crid": "17586",
+            "nurl" : "some-test-nurl",
+            "iurl" : "some-test-iurl",
+            "h": 250,
+            "w": 300
+          },
+          "type": "banner"
+        }]
+      }
+    ]
+  }
+  

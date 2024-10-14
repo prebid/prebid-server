@@ -1,0 +1,69 @@
+{
+  "mockBidRequest": {
+    "id": "unsupported-audio-request",
+    "imp": [
+      {
+        "id": "unsupported-audio-imp",
+        "audio": {
+          "mimes": ["video/mp4"]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": 1
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://dsp.adotmob.com/headerbidding/bidrequest",
+        "body": {
+          "id": "unsupported-audio-request",
+          "imp": [
+            {
+              "id": "unsupported-audio-imp",
+              "audio": {
+                "mimes": ["video/mp4"]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": 1
+                }
+              }
+            }
+          ]
+        },
+        "impIDs":["unsupported-audio-imp"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "adot",
+              "bid": [
+                {
+                  "id": "test-request-audio-id",
+                  "impid": "test-imp-audio-id",
+                  "price": 1.16346,
+                  "adm": "some-audio-ad",
+                  "ext": {
+                    "adot": {
+                      "media_type": "audio"
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [{"currency":"USD","bids":[]}]
+}

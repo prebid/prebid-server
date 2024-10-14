@@ -1,0 +1,161 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      releaseType:
+        type: choice
+        options:
+          - major
+          - minor
+          - patch
+        default: minor
+        required: true
+        description: 'major: vX.0.0, minor: v0.X.0, patch: v0.0.X'
+      debug:
+        type: boolean
+        default: true
+        description: 'executes the workflow in debug mode (skip the publishing tag, docker image and release steps)'
+
+jobs:
+  check-permission:
+    name: Check permission
+    if: contains(github.ref, 'refs/heads/master')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          repository: ${{ github.repository }}
+          ref: master
+      - name: Check user permission
+        uses: actions/github-script@v7
+        id: check
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          result-encoding: string
+          script: |
+            const utils = require('./.github/workflows/helpers/pull-request-utils.js')
+            const helper = utils.userHelper({github, context, user: '${{ github.actor }}'})
+            const hasPermission = await helper.hasWritePermissions()
+            return hasPermission
+    outputs:
+      hasWritePermission: ${{ steps.check.outputs.result }}
+
+  build-master:
+    name: Build master
+    needs: check-permission
+    if: contains(needs.check-permission.outputs.hasWritePermission, 'true')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          repository: ${{ github.repository }}
+          ref: master
+      - name: Build and validate
+        run: |
+          ./validate.sh
+
+  publish-tag:
+    name: Publish tag
+    needs: build-master
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Prebid Server
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Create & publish tag
+        id: release
+        run: |
+          currentTag=$(git describe --abbrev=0 --tags)
+          echo "Current release tag ${currentTag}"
+
+          echo ${currentTag} | grep -q "^v\?[0-9]\+\.[0-9]\+\.[0-9]\+$"
+          if [ $? -ne 0 ]; then
+            echo "Current tag format won't let us compute the new tag name. Required format v[0-9]\+\.[0-9]\+\.[0-9]\+"
+            exit 1
+          fi
+
+          if [[ "${currentTag:0:1}" != "v" ]]; then
+            currentTag="v${currentTag}"
+          fi
+
+          nextTag=''
+          releaseType=${{ inputs.releaseType }}
+          if [ $releaseType == "major" ]; then
+              # PBS-GO skipped the v1.0.0 major release - https://github.com/prebid/prebid-server/issues/3068
+              # If the current tag is v0.x.x, the script sets the next release tag to v2.0.0
+              # Otherwise, the script increments the major version by 1 and sets the minor and patch versions to zero
+              # For example, v2.x.x will be incremented to v3.0.0
+              major=$(echo "${currentTag}" | awk -F. '{gsub(/^v/, "", $1); if($1 == 0) $1=2; else $1+=1; print $1}')
+              nextTag="v${major}.0.0"
+          elif [ $releaseType == "minor" ]; then
+              # Increment minor version and reset patch version
+              nextTag=$(echo "${currentTag}" | awk -F. '{OFS="."; $2+=1; $3=0; print $0}')
+          else
+            # Increment patch version
+            nextTag=$(echo "${currentTag}" | awk -F. '{OFS="."; $3+=1; print $0}')
+          fi
+
+          if [ ${{ inputs.debug }} == 'true' ]; then
+            echo "running workflow in debug mode, next ${releaseType} tag: ${nextTag}"
+          else
+            git tag $nextTag
+            git push origin $nextTag
+            echo "tag=${nextTag}" >> $GITHUB_OUTPUT
+          fi
+    outputs:
+      releaseTag: ${{ steps.release.outputs.tag }}
+
+  publish-docker-image:
+    name: Publish docker image
+    needs: publish-tag
+    if: contains(inputs.debug, 'false')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Prebid Server
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Build image
+        run: |
+          docker build -t docker.io/prebid/prebid-server:${{ needs.publish-tag.outputs.releaseTag }} .
+      - name: Login to docker Hub
+        if: contains(inputs.debug, 'false')
+        uses: docker/login-action@v2.1.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+      - name: Publish to docker Hub
+        run: |
+          docker push docker.io/prebid/prebid-server:${{ needs.publish-tag.outputs.releaseTag }}
+
+  publish-release:
+    name: Publish release
+    needs: [publish-tag, publish-docker-image] 
+    if: contains(inputs.debug, 'false')
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Prebid Server
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Create & publish release
+        uses: release-drafter/release-drafter@v5.22.0
+        with:
+          name: ${{ needs.publish-tag.outputs.releaseTag }}
+          tag: ${{ needs.publish-tag.outputs.releaseTag }}
+          version: ${{ needs.publish-tag.outputs.releaseTag }}
+          publish: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

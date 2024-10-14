@@ -1,0 +1,130 @@
+{
+  "description": "Auction request rejected at bidder-level stage",
+  "config": {
+    "mockBidders": [
+      {"bidderName": "appnexus", "currency": "USD", "price": 0.00},
+      {"bidderName": "rubicon", "currency": "USD", "price": 0.00}
+    ]
+  },
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "prebid.org"
+    },
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          },
+          "rubicon": {
+            "placementId": 12883451
+          }
+        }
+      }
+    ],
+    "tmax": 500,
+    "test": 1,
+    "ext": {
+      "prebid": {
+        "trace": "verbose"
+      }
+    }
+  },
+  "expectedBidResponse": {
+    "id":"some-request-id",
+    "bidid":"test bid id",
+    "cur":"USD",
+    "nbr":null,
+    "seatbid": [
+      {
+        "bid": [
+          {
+            "id": "rubicon-bid",
+            "impid": "some-impression-id",
+            "price": 0
+          }
+        ],
+        "seat": "rubicon"
+      }
+    ],
+    "ext": {
+      "warnings": {
+        "appnexus": [
+          {
+            "code": 11,
+            "message": "Module foobar (hook: foo) rejected request with code 123 at raw_bidder_response stage"
+          }
+        ]
+      },
+      "prebid": {
+        "modules": {
+          "errors": {
+            "foobar": {
+              "foo": [
+                "Module foobar (hook: foo) rejected request with code 123 at raw_bidder_response stage"
+              ]
+            }
+          },
+          "trace": {
+            "stages": [
+              {
+                "outcomes": [
+                  {
+                    "entity": "appnexus",
+                    "groups": [
+                      {
+                        "invocation_results": [
+                          {
+                            "action": "reject",
+                            "analytics_tags": {},
+                            "hook_id": {
+                              "hook_impl_code": "foo",
+                              "module_code": "foobar"
+                            },
+                            "message": "",
+                            "status": "success"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "entity": "rubicon",
+                    "groups": [
+                      {
+                        "invocation_results": [
+                          {
+                            "action": "no_action",
+                            "analytics_tags": {},
+                            "hook_id": {
+                              "hook_impl_code": "foo",
+                              "module_code": "foobar"
+                            },
+                            "message": "",
+                            "status": "success"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "stage": "raw_bidder_response"
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "expectedReturnCode": 200
+}

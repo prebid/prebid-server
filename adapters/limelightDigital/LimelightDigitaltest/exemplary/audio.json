@@ -1,0 +1,80 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-audio-id",
+        "audio": {
+          "mimes": ["audio/mp4"]
+        },
+        "ext": {
+          "bidder": {
+            "host": "audio.ortb.net",
+            "publisherId": 123456
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://test.ortb.net/openrtb/123456?host=audio.ortb.net",
+        "body": {
+          "id": "test-request-id-test-audio-id",
+          "imp": [
+            {
+              "id": "test-audio-id",
+              "audio": {
+                "mimes": ["audio/mp4"]
+              }
+            }
+          ]
+        },
+        "impIDs":["test-audio-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id-test-audio-id",
+          "seatbid": [
+            {
+              "seat": "test-seat",
+              "bid": [
+                {
+                  "id": "5dce6055-a93c-1fd0-8c29-14afc3e510fd",
+                  "impid": "test-audio-id",
+                  "price": 0.1464,
+                  "nurl": "test-win",
+                  "adm": "test-audio",
+                  "adid": "92-289",
+                  "adomain": ["advertiserdomain.com"],
+                  "crid": "289"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "5dce6055-a93c-1fd0-8c29-14afc3e510fd",
+            "impid": "test-audio-id",
+            "price": 0.1464,
+            "nurl": "test-win",
+            "adm": "test-audio",
+            "adid": "92-289",
+            "adomain": ["advertiserdomain.com"],
+            "crid": "289"
+          },
+          "type": "audio"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,153 @@
+{
+  "mockBidRequest": {
+    "id": "some-request-id1",
+    "imp": [
+      {
+        "id": "some-impression-id1",
+        "banner": {
+          "format": [
+            {
+              "h": 250,
+              "w": 300
+            }
+          ],
+          "h": 250,
+          "w": 300
+        },
+        "ext": {
+          "bidder": {
+            "host": "127.0.0.2",
+            "publisher_id": "1"
+          }
+        }
+      },
+      {
+        "id": "some-impression-id2",
+        "banner": {
+          "format": [
+            {
+              "h": 250,
+              "w": 300
+            }
+          ],
+          "h": 250,
+          "w": 300
+        },
+        "ext": {
+          "bidder": {
+            "host": "127.0.0.2",
+            "publisher_id": "1"
+          }
+        }
+      }
+    ],
+    "device": {
+      "ip": "8.8.8.12"
+    },
+    "tmax": 500
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://127.0.0.2/1",
+        "body": {
+          "id": "some-request-id1",
+          "imp": [
+            {
+              "id": "some-impression-id1",
+              "banner": {
+                "format": [
+                  {
+                    "h": 250,
+                    "w": 300
+                  }
+                ],
+                "h": 250,
+                "w": 300
+              },
+              "ext": {
+                "bidder": {
+                  "host": "127.0.0.2",
+                  "publisher_id": "1"
+                }
+              },
+              "secure": 0
+            },
+            {
+              "id": "some-impression-id2",
+              "banner": {
+                "format": [
+                  {
+                    "h": 250,
+                    "w": 300
+                  }
+                ],
+                "h": 250,
+                "w": 300
+              },
+              "ext": {
+                "bidder": {
+                  "host": "127.0.0.2",
+                  "publisher_id": "1"
+                }
+              },
+              "secure": 0
+            }
+          ],
+          "device": {
+            "ip": "8.8.8.12"
+          },
+          "tmax": 500
+        },
+        "impIDs":["some-impression-id1","some-impression-id2"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "some-impression-id1",
+          "bidid": "183975330-5-29038-2",
+          "seatbid": [
+            {
+              "seat": "906295",
+              "bid": [
+                {
+                  "id": "2181314349",
+                  "impid": "some-impression-id1",
+                  "adm": "<div>some adm</div>",
+                  "price": 13.37,
+                  "cid": "906293",
+                  "adid": "906297",
+                  "crid": "906299",
+                  "w": 300,
+                  "h": 250
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "2181314349",
+            "impid": "some-impression-id1",
+            "adm": "<div>some adm</div>",
+            "price": 13.37,
+            "cid": "906293",
+            "adid": "906297",
+            "crid": "906299",
+            "w": 300,
+            "h": 250
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

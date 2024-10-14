@@ -62,17 +62,13 @@
           "buyeruid": "0000-000-000-0000"
         },
         "tmax": 1000
-      }
+      },
+      "impIDs":["some-impression-id"]
     },
     "mockResponse": {
       "status": 503
     }
   }],
   "expectedBidResponses": [],
-  "expectedMakeBidsErrors": [
-    {
-      "value": "Something went wrong, please contact your Account Manager. Status Code: [ 503 ] ",
-      "comparison": "literal"
-    }
-  ]
+  "expectedMakeBidsErrors": []
 }

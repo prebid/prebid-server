@@ -26,9 +26,9 @@
     }],
     "expectedCacheables": [
         {
-            "Type": "json",
-            "TTLSeconds": 660,
-            "Data": "{\"id\": \"appbid001\", \"impid\": \"oneImp\", \"price\": 7.64, \"cat\": [\"11_sports_22\"]}"
+            "type": "json",
+            "ttlseconds": 660,
+            "value": "{\"id\": \"appbid001\", \"impid\": \"oneImp\", \"price\": 7.64, \"cat\": [\"11_sports_22\"]}"
         }
     ],
     "defaultTTLs": {

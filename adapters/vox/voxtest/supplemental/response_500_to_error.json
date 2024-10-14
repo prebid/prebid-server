@@ -1,0 +1,57 @@
+{
+  "mockBidRequest": {
+    "id": "It is hard to make up ids.",
+    "site": {
+      "page": "http://catsanddogs.com/article/887"
+    },
+    "cur": ["USD"],
+    "imp": [{
+      "id": "Impression id #4",
+      "bidfloorcur": "USD",
+      "video": { "w": 1280, "h": 720, "mimes": ["video/mp4"] },
+      "ext": {
+        "bidder": {
+          "placementId": "64b94ca2b5eb3605e0a0e3be"
+        }
+      }
+    }]
+  },
+
+  "httpCalls": [{
+    "expectedRequest": {
+      "uri": "http://somecoolurlfor.vox",
+      "heades": {},
+      "body": {
+        "id": "It is hard to make up ids.",
+        "site": {
+          "page": "http://catsanddogs.com/article/887"
+        },
+        "cur": ["USD"],
+        "imp": [{
+          "id": "Impression id #4",
+          "bidfloorcur": "USD",
+          "video": { "w": 1280, "h": 720, "mimes": ["video/mp4"] },
+          "ext": {
+            "bidder": {
+              "placementId": "64b94ca2b5eb3605e0a0e3be"
+            }
+          }
+        }]
+      },
+      "impIDs":["Impression id #4"]
+    },
+
+    "mockResponse": {
+      "status": 500,
+      "headers": {},
+      "body": {}
+    }
+  }],
+
+  "expectedBidResponses": [],
+
+  "expectedMakeBidsErrors": [{
+    "value": "Unexpected status code: 500",
+    "comparison": "regex"
+  }]
+}

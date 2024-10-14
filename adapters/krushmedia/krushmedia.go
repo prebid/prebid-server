@@ -7,36 +7,32 @@ import (
 	"strconv"
 	"text/template"
 
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/macros"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type KrushmediaAdapter struct {
-	endpoint template.Template
+	endpoint *template.Template
 }
 
-func NewKrushmediaBidder(endpointTemplate string) *KrushmediaAdapter {
-	template, err := template.New("endpointTemplate").Parse(endpointTemplate)
+// Builder builds a new instance of the KrushmediaA adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
-	return &KrushmediaAdapter{endpoint: *template}
+
+	bidder := &KrushmediaAdapter{
+		endpoint: template,
+	}
+	return bidder, nil
 }
 
-func (a *KrushmediaAdapter) CheckHasImps(request *openrtb.BidRequest) error {
-	if len(request.Imp) == 0 {
-		err := &errortypes.BadInput{
-			Message: "Missing Imp Object",
-		}
-		return err
-	}
-	return nil
-}
-
-func GetHeaders(request *openrtb.BidRequest) *http.Header {
+func getHeaders(request *openrtb2.BidRequest) *http.Header {
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
@@ -64,7 +60,7 @@ func GetHeaders(request *openrtb.BidRequest) *http.Header {
 }
 
 func (a *KrushmediaAdapter) MakeRequests(
-	openRTBRequest *openrtb.BidRequest,
+	openRTBRequest *openrtb2.BidRequest,
 	reqInfo *adapters.ExtraRequestInfo,
 ) (
 	requestsToBidder []*adapters.RequestData,
@@ -73,21 +69,20 @@ func (a *KrushmediaAdapter) MakeRequests(
 
 	request := *openRTBRequest
 
-	if noImps := a.CheckHasImps(&request); noImps != nil {
-		return nil, []error{noImps}
-	}
-
 	var errors []error
 	var krushmediaExt *openrtb_ext.ExtKrushmedia
 	var err error
 
-	for i, imp := range request.Imp {
-		krushmediaExt, err = a.getImpressionExt(&imp)
+	if len(request.Imp) > 0 {
+		krushmediaExt, err = a.getImpressionExt(&(request.Imp[0]))
 		if err != nil {
 			errors = append(errors, err)
-			break
 		}
-		request.Imp[i].Ext = nil
+		request.Imp[0].Ext = nil
+	} else {
+		errors = append(errors, &errortypes.BadInput{
+			Message: "Missing Imp Object",
+		})
 	}
 
 	if len(errors) > 0 {
@@ -108,21 +103,22 @@ func (a *KrushmediaAdapter) MakeRequests(
 		Method:  http.MethodPost,
 		Body:    reqJSON,
 		Uri:     url,
-		Headers: *GetHeaders(&request),
+		Headers: *getHeaders(&request),
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, nil
 }
 
-func (a *KrushmediaAdapter) getImpressionExt(imp *openrtb.Imp) (*openrtb_ext.ExtKrushmedia, error) {
+func (a *KrushmediaAdapter) getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtKrushmedia, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: "ext.bidder not provided",
+			Message: "Bidder extension not provided or can't be unmarshalled",
 		}
 	}
 	var krushmediaExt openrtb_ext.ExtKrushmedia
 	if err := json.Unmarshal(bidderExt.Bidder, &krushmediaExt); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: "ext.bidder not provided",
+			Message: "Error while unmarshaling bidder extension",
 		}
 	}
 	return &krushmediaExt, nil
@@ -133,47 +129,36 @@ func (a *KrushmediaAdapter) buildEndpointURL(params *openrtb_ext.ExtKrushmedia) 
 	return macros.ResolveMacros(a.endpoint, endpointParams)
 }
 
-func (a *KrushmediaAdapter) CheckResponseStatusCodes(response *adapters.ResponseData) error {
-	if response.StatusCode == http.StatusNoContent {
-		return &errortypes.BadInput{Message: "No bid response"}
-	}
-
-	if response.StatusCode == http.StatusBadRequest {
-		return &errortypes.BadInput{
-			Message: fmt.Sprintf("Unexpected status code: [ %d ]", response.StatusCode),
-		}
-	}
-
-	if response.StatusCode == http.StatusServiceUnavailable {
-		return &errortypes.BadInput{
-			Message: fmt.Sprintf("Something went wrong, please contact your Account Manager. Status Code: [ %d ] ", response.StatusCode),
-		}
-	}
-
-	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
-		return &errortypes.BadInput{
-			Message: fmt.Sprintf("Something went wrong, please contact your Account Manager. Status Code: [ %d ] ", response.StatusCode),
-		}
-	}
-
-	return nil
-}
-
 func (a *KrushmediaAdapter) MakeBids(
-	openRTBRequest *openrtb.BidRequest,
+	openRTBRequest *openrtb2.BidRequest,
 	requestToBidder *adapters.RequestData,
 	bidderRawResponse *adapters.ResponseData,
 ) (
 	bidderResponse *adapters.BidderResponse,
 	errs []error,
 ) {
-	httpStatusError := a.CheckResponseStatusCodes(bidderRawResponse)
-	if httpStatusError != nil {
-		return nil, []error{httpStatusError}
+	if bidderRawResponse.StatusCode == http.StatusNoContent {
+		return nil, nil
+	}
+
+	if bidderRawResponse.StatusCode == http.StatusBadRequest {
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("Unexpected status code: [ %d ]", bidderRawResponse.StatusCode),
+		}}
+	}
+
+	if bidderRawResponse.StatusCode == http.StatusServiceUnavailable {
+		return nil, nil
+	}
+
+	if bidderRawResponse.StatusCode != http.StatusOK {
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Something went wrong, please contact your Account Manager. Status Code: [ %d ] ", bidderRawResponse.StatusCode),
+		}}
 	}
 
 	responseBody := bidderRawResponse.Body
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(responseBody, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: "Bad Server Response",
@@ -192,7 +177,7 @@ func (a *KrushmediaAdapter) MakeBids(
 	return bidResponse, nil
 }
 
-func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
+func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
 		if imp.ID == impId {

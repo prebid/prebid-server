@@ -1,9 +1,0 @@
-maintainer:
-  email: "development@nanointeractive.com"
-capabilities:
-  app:
-    mediaTypes:
-      - banner
-  site:
-    mediaTypes:
-      - banner

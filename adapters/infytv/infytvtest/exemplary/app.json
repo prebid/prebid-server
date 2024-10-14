@@ -1,0 +1,259 @@
+{
+  "mockBidRequest": {
+    "id": "6d773e60ab245243a04217d5f7e9e786",
+    "imp": [
+      {
+        "id": "bfb2dd46a5e63a0a84711c20fd8ce9e1",
+        "video": {
+          "mimes": [
+            "video/mp4",
+            "video/ogg",
+            "video/webm"
+          ],
+          "minduration": 3,
+          "maxduration": 3000,
+          "protocols": [
+            2,
+            3,
+            5,
+            6,
+            7,
+            8
+          ],
+          "w": 480,
+          "h": 320,
+          "linearity": 1,
+          "playbackmethod": [
+            2
+          ],
+          "pos": 0
+        },
+        "bidfloor": 0.40404,
+        "bidfloorcur": "USD",
+        "secure": 1,
+        "exp": 3600,
+        "ext": {
+          "bidder": {
+            "publisherId": "IY1014",
+            "placementId": "1999"
+          }
+        }
+      }
+    ],
+    "app": {
+      "id": "AA88S0101",
+      "name": "Crunchyroll",
+      "bundle": "com.adrise.crunchyroll",
+      "storeurl": "https://channelstore.roku.com/details/d11368f0934f695ff350af56600d8ccb",
+      "cat": [
+        "IAB1"
+      ],
+      "privacypolicy": 1,
+      "publisher": {
+        "id": "IY1002",
+        "name": "The View Point",
+        "domain": "krushmedia.com"
+      },
+      "content": {
+        "language": "en"
+      }
+    },
+    "device": {
+      "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.190 Safari/537.36",
+      "geo": {
+        "lat": 20.6668,
+        "lon": -103.3918,
+        "accuracy": 5,
+        "country": "MEX",
+        "region": "JAL",
+        "zip": "45186"
+      },
+      "dnt": 0,
+      "lmt": 0,
+      "ip": "187.152.119.145",
+      "devicetype": 2,
+      "os": "Windows",
+      "osv": "10",
+      "carrier": "Telmex"
+    },
+    "test": 1,
+    "at": 1,
+    "tmax": 500,
+    "cur": [
+      "USD"
+    ],
+    "source": {
+      "tid": "42da74bc-88c5-40ea-8187-9070a34e8e10"
+    },
+    "regs": {
+      "ext": {
+        "gdpr": 0
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://test.infy.tv/pbs/openrtb",
+        "body": {
+          "id": "6d773e60ab245243a04217d5f7e9e786",
+          "imp": [
+            {
+              "id": "bfb2dd46a5e63a0a84711c20fd8ce9e1",
+              "video": {
+                "mimes": [
+                  "video/mp4",
+                  "video/ogg",
+                  "video/webm"
+                ],
+                "minduration": 3,
+                "maxduration": 3000,
+                "protocols": [
+                  2,
+                  3,
+                  5,
+                  6,
+                  7,
+                  8
+                ],
+                "w": 480,
+                "h": 320,
+                "linearity": 1,
+                "playbackmethod": [
+                  2
+                ],
+                "pos": 0
+              },
+              "bidfloor": 0.40404,
+              "bidfloorcur": "USD",
+              "secure": 1,
+              "exp": 3600,
+              "ext": {
+                "bidder": {
+                  "publisherId": "IY1014",
+                  "placementId": "1999"
+                }
+              }
+            }
+          ],
+          "app": {
+            "id": "AA88S0101",
+            "name": "Crunchyroll",
+            "bundle": "com.adrise.crunchyroll",
+            "storeurl": "https://channelstore.roku.com/details/d11368f0934f695ff350af56600d8ccb",
+            "cat": [
+              "IAB1"
+            ],
+            "privacypolicy": 1,
+            "publisher": {
+              "id": "IY1002",
+              "name": "The View Point",
+              "domain": "krushmedia.com"
+            },
+            "content": {
+              "language": "en"
+            }
+          },
+          "device": {
+            "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.190 Safari/537.36",
+            "geo": {
+              "lat": 20.6668,
+              "lon": -103.3918,
+              "accuracy": 5,
+              "country": "MEX",
+              "region": "JAL",
+              "zip": "45186"
+            },
+            "dnt": 0,
+            "lmt": 0,
+            "ip": "187.152.119.145",
+            "devicetype": 2,
+            "os": "Windows",
+            "osv": "10",
+            "carrier": "Telmex"
+          },
+          "test": 1,
+          "at": 1,
+          "tmax": 500,
+          "cur": [
+            "USD"
+          ],
+          "source": {
+            "tid": "42da74bc-88c5-40ea-8187-9070a34e8e10"
+          },
+          "regs": {
+            "ext": {
+              "gdpr": 0
+            }
+          }
+        },
+        "impIDs":["bfb2dd46a5e63a0a84711c20fd8ce9e1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "6d773e60ab245243a04217d5f7e9e786",
+          "bidid": "ccbd63285c0e7b69602d90319bda6be4",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "7f6c6d6ba432059a5305815a8d740283",
+                  "impid": "bfb2dd46a5e63a0a84711c20fd8ce9e1",
+                  "price": 0.1,
+                  "nurl": "http://us-east-edge1.e-volution.ai/?c=rtb&m=nurl&auctionId=ccbd63285c0e7b69602d90319bda6be4&price=${AUCTION_PRICE}",
+                  "burl": "http://us-east-edge1.e-volution.ai/?c=rtb&m=burl&auctionId=ccbd63285c0e7b69602d90319bda6be4&price=${AUCTION_PRICE}",
+                  "adm": "<VAST version=\"2.0\"><Ad id=\"20001\" sequence=\"1\" conditionalAd=\"false\"><InLine><AdSystem version=\"4.0\"><![CDATA[iabtechlab]]></AdSystem><AdTitle><![CDATA[Inline Simple Ad]]></AdTitle><Impression><![CDATA[https://s.funnel.e-volution.ai/2/623416/analytics.gif?dt=6234161617121529371000&di=kiwilimon.com&ui=&ap=&sr=-1&pp=866d6b3a4a483ed4a454a1acaa588852&ti=6d773e60ab245243a04217d5f7e9e786&md=2&de=2&si=1c94d85ea1a55ebf3325a82935240614&dm=480x320&gt=MX&ac=&pc=&cr=&pv=56d8a5f0-3872-4fa9-9f03-85cd17df2f1f&c1=1&c2=-1&cb=16220688009256611]]></Impression><Impression><![CDATA[https://s.funnel.e-volution.ai/2/623416/analytics.js?dt=6234161607645611134000&di=kiwilimon.com&ui=&ap=&sr=-1&pp=866d6b3a4a483ed4a454a1acaa588852&ti=6d773e60ab245243a04217d5f7e9e786&md=2&de=2&si=1c94d85ea1a55ebf3325a82935240614&dm=480x320&gt=MX&ac=&pc=&cr=&pv=56d8a5f0-3872-4fa9-9f03-85cd17df2f1f&c1=1&c2=-1&cb=16220688009256611]]></Impression><Impression><![CDATA[https://adrta.com/i?clid=vrl&paid=bidlab&dvid=v&avid=&caid=&plid=&publisherId=866d6b3a4a483ed4a454a1acaa588852&siteId=1c94d85ea1a55ebf3325a82935240614&priceBid=10.01000&pricePaid=&lineItemId=1&kv1=0x0&kv2=https%3A%2F%2Fkiwilimon.com%2F&kv3=&kv4=187.152.119.145&kv5=1622068800924671&kv7=-1&kv9=00%3A00%3A16&kv11=&kv12=&kv15=MEX&kv16=20.6668&kv17=-103.3918&kv18=&kv19=&kv23=Telmex&kv24=&kv25=&kv26=windows&kv27=Mozilla%2F5.0%20(Windows%20NT%2010.0%3B%20Win64%3B%20x64)%20AppleWebKit%2F537.36%20(KHTML%2C%20like%20Gecko)%20Chrome%2F88.0.4324.190%20Safari%2F537.36&kv28=&cb=1622068800924671&kv29=[ERRORCODE]&kv30=[CONTENTPLAYHEAD]_[ADPLAYHEAD]&kv33=[ASSETURI]&kv34=[VASTVERSIONS]&kv35=[IFATYPE]&kv36=[IFA]&kv37=[CLIENTUA]&kv38=[SERVERUA]&kv39=[DEVICEUA]&kv40=[DEVICEIP]&kv41=[LATLONG]&kv42=[DOMAIN]&kv43=[PAGEURL]&kv44=[VIDEO_TYPE]&kv45=[PLAYERSIZE]&kv46=[REGULATIONS]&kv47=[ADTYPE]&kv48=[TRANSACTIONID]&kv49=[BREAKPOSITION]&kv50=[APPNAME]&kv51=[PLACEMENTTYPE]]]></Impression><Impression><![CDATA[https://us-east-edge1.e-volution.ai/?c=rtb&m=sync&gdpr=0&gdpr_consent=&ccpa_consent=]]></Impression><Impression><![CDATA[https://us-east-edge1.e-volution.ai/?c=rtb&m=i&key=ccbd63285c0e7b69602d90319bda6be4&cp=${AUCTION_PRICE}]]></Impression><Creatives><Creative id=\"5480\" sequence=\"1\" adId=\"2447226\"><UniversalAdId idRegistry=\"Ad-ID\" idValue=\"8465\">8465</UniversalAdId><Linear><TrackingEvents></TrackingEvents><Duration>00:00:16</Duration><MediaFiles><MediaFile id=\"5241\" delivery=\"progressive\" type=\"video/mp4\" bitrate=\"2000\" width=\"1280\" height=\"720\" minBitrate=\"1500\" maxBitrate=\"2500\" scalable=\"1\" maintainAspectRatio=\"1\" codec=\"0\"><![CDATA[https://iab-publicfiles.s3.amazonaws.com/vast/VAST-4.0-Short-Intro.mp4]]></MediaFile><MediaFile id=\"5244\" delivery=\"progressive\" type=\"video/mp4\" bitrate=\"1000\" width=\"854\" height=\"480\" minBitrate=\"700\" maxBitrate=\"1500\" scalable=\"1\" maintainAspectRatio=\"1\" codec=\"0\"><![CDATA[https://iab-publicfiles.s3.amazonaws.com/vast/VAST-4.0-Short-Intro-mid-resolution.mp4]]></MediaFile><MediaFile id=\"5246\" delivery=\"progressive\" type=\"video/mp4\" bitrate=\"600\" width=\"640\" height=\"360\" minBitrate=\"500\" maxBitrate=\"700\" scalable=\"1\" maintainAspectRatio=\"1\" codec=\"0\"><![CDATA[https://iab-publicfiles.s3.amazonaws.com/vast/VAST-4.0-Short-Intro-low-resolution.mp4]]></MediaFile></MediaFiles><VideoClicks><ClickThrough id=\"blog\"><![CDATA[https://iabtechlab.com]]></ClickThrough></VideoClicks></Linear></Creative></Creatives><Error><![CDATA[https://us-east-edge1.e-volution.ai/?c=rtb&m=nurl&auctionId=ccbd63285c0e7b69602d90319bda6be4&price=${AUCTION_PRICE}&ecode=[ERRORCODE]]]></Error></InLine></Ad></VAST>",
+                  "adomain": [
+                    "test.com"
+                  ],
+                  "cat": [
+                    "IAB24"
+                  ],
+                  "cid": "1IP31",
+                  "crid": "1KS13",
+                  "w": 0,
+                  "h": 0,
+                  "ext": {
+                    "mediaType": "video"
+                  }
+                }
+              ],
+              "seat": "1"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "7f6c6d6ba432059a5305815a8d740283",
+            "impid": "bfb2dd46a5e63a0a84711c20fd8ce9e1",
+            "price": 0.1,
+            "nurl": "http://us-east-edge1.e-volution.ai/?c=rtb&m=nurl&auctionId=ccbd63285c0e7b69602d90319bda6be4&price=${AUCTION_PRICE}",
+            "burl": "http://us-east-edge1.e-volution.ai/?c=rtb&m=burl&auctionId=ccbd63285c0e7b69602d90319bda6be4&price=${AUCTION_PRICE}",
+            "adm": "<VAST version=\"2.0\"><Ad id=\"20001\" sequence=\"1\" conditionalAd=\"false\"><InLine><AdSystem version=\"4.0\"><![CDATA[iabtechlab]]></AdSystem><AdTitle><![CDATA[Inline Simple Ad]]></AdTitle><Impression><![CDATA[https://s.funnel.e-volution.ai/2/623416/analytics.gif?dt=6234161617121529371000&di=kiwilimon.com&ui=&ap=&sr=-1&pp=866d6b3a4a483ed4a454a1acaa588852&ti=6d773e60ab245243a04217d5f7e9e786&md=2&de=2&si=1c94d85ea1a55ebf3325a82935240614&dm=480x320&gt=MX&ac=&pc=&cr=&pv=56d8a5f0-3872-4fa9-9f03-85cd17df2f1f&c1=1&c2=-1&cb=16220688009256611]]></Impression><Impression><![CDATA[https://s.funnel.e-volution.ai/2/623416/analytics.js?dt=6234161607645611134000&di=kiwilimon.com&ui=&ap=&sr=-1&pp=866d6b3a4a483ed4a454a1acaa588852&ti=6d773e60ab245243a04217d5f7e9e786&md=2&de=2&si=1c94d85ea1a55ebf3325a82935240614&dm=480x320&gt=MX&ac=&pc=&cr=&pv=56d8a5f0-3872-4fa9-9f03-85cd17df2f1f&c1=1&c2=-1&cb=16220688009256611]]></Impression><Impression><![CDATA[https://adrta.com/i?clid=vrl&paid=bidlab&dvid=v&avid=&caid=&plid=&publisherId=866d6b3a4a483ed4a454a1acaa588852&siteId=1c94d85ea1a55ebf3325a82935240614&priceBid=10.01000&pricePaid=&lineItemId=1&kv1=0x0&kv2=https%3A%2F%2Fkiwilimon.com%2F&kv3=&kv4=187.152.119.145&kv5=1622068800924671&kv7=-1&kv9=00%3A00%3A16&kv11=&kv12=&kv15=MEX&kv16=20.6668&kv17=-103.3918&kv18=&kv19=&kv23=Telmex&kv24=&kv25=&kv26=windows&kv27=Mozilla%2F5.0%20(Windows%20NT%2010.0%3B%20Win64%3B%20x64)%20AppleWebKit%2F537.36%20(KHTML%2C%20like%20Gecko)%20Chrome%2F88.0.4324.190%20Safari%2F537.36&kv28=&cb=1622068800924671&kv29=[ERRORCODE]&kv30=[CONTENTPLAYHEAD]_[ADPLAYHEAD]&kv33=[ASSETURI]&kv34=[VASTVERSIONS]&kv35=[IFATYPE]&kv36=[IFA]&kv37=[CLIENTUA]&kv38=[SERVERUA]&kv39=[DEVICEUA]&kv40=[DEVICEIP]&kv41=[LATLONG]&kv42=[DOMAIN]&kv43=[PAGEURL]&kv44=[VIDEO_TYPE]&kv45=[PLAYERSIZE]&kv46=[REGULATIONS]&kv47=[ADTYPE]&kv48=[TRANSACTIONID]&kv49=[BREAKPOSITION]&kv50=[APPNAME]&kv51=[PLACEMENTTYPE]]]></Impression><Impression><![CDATA[https://us-east-edge1.e-volution.ai/?c=rtb&m=sync&gdpr=0&gdpr_consent=&ccpa_consent=]]></Impression><Impression><![CDATA[https://us-east-edge1.e-volution.ai/?c=rtb&m=i&key=ccbd63285c0e7b69602d90319bda6be4&cp=${AUCTION_PRICE}]]></Impression><Creatives><Creative id=\"5480\" sequence=\"1\" adId=\"2447226\"><UniversalAdId idRegistry=\"Ad-ID\" idValue=\"8465\">8465</UniversalAdId><Linear><TrackingEvents></TrackingEvents><Duration>00:00:16</Duration><MediaFiles><MediaFile id=\"5241\" delivery=\"progressive\" type=\"video/mp4\" bitrate=\"2000\" width=\"1280\" height=\"720\" minBitrate=\"1500\" maxBitrate=\"2500\" scalable=\"1\" maintainAspectRatio=\"1\" codec=\"0\"><![CDATA[https://iab-publicfiles.s3.amazonaws.com/vast/VAST-4.0-Short-Intro.mp4]]></MediaFile><MediaFile id=\"5244\" delivery=\"progressive\" type=\"video/mp4\" bitrate=\"1000\" width=\"854\" height=\"480\" minBitrate=\"700\" maxBitrate=\"1500\" scalable=\"1\" maintainAspectRatio=\"1\" codec=\"0\"><![CDATA[https://iab-publicfiles.s3.amazonaws.com/vast/VAST-4.0-Short-Intro-mid-resolution.mp4]]></MediaFile><MediaFile id=\"5246\" delivery=\"progressive\" type=\"video/mp4\" bitrate=\"600\" width=\"640\" height=\"360\" minBitrate=\"500\" maxBitrate=\"700\" scalable=\"1\" maintainAspectRatio=\"1\" codec=\"0\"><![CDATA[https://iab-publicfiles.s3.amazonaws.com/vast/VAST-4.0-Short-Intro-low-resolution.mp4]]></MediaFile></MediaFiles><VideoClicks><ClickThrough id=\"blog\"><![CDATA[https://iabtechlab.com]]></ClickThrough></VideoClicks></Linear></Creative></Creatives><Error><![CDATA[https://us-east-edge1.e-volution.ai/?c=rtb&m=nurl&auctionId=ccbd63285c0e7b69602d90319bda6be4&price=${AUCTION_PRICE}&ecode=[ERRORCODE]]]></Error></InLine></Ad></VAST>",
+            "adomain": [
+              "test.com"
+            ],
+            "cat": [
+              "IAB24"
+            ],
+            "cid": "1IP31",
+            "crid": "1KS13",
+            "ext": {
+              "mediaType": "video"
+            }
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

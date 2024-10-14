@@ -1,0 +1,9 @@
+
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Revcontent Adapter Params",
+  "description": "A schema which validates params accepted by the Revcontent adapter",
+  "type": "object",
+  "properties": {},
+  "required": []
+}

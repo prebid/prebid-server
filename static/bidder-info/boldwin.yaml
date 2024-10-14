@@ -1,0 +1,19 @@
+endpoint: "http://ssp.videowalldirect.com/pserver"
+maintainer:
+  email: "info@bold-win.com"
+capabilities:
+  site:
+    mediaTypes:
+    - banner
+    - video
+    - native
+    
+  app:
+    mediaTypes:
+    - banner
+    - video
+    - native
+userSync:
+  redirect:
+    url: "https://sync.videowalldirect.com/pbserver?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ccpa={{.USPrivacy}}&redir={{.RedirectURL}}"
+    userMacro: "[UID]"

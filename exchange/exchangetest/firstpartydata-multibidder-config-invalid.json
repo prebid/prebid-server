@@ -1,0 +1,78 @@
+{
+    "requestType": "openrtb2-web",
+    "incomingRequest": {
+        "ortbRequest": {
+            "id": "some-request-id",
+            "site": {
+                "page": "test.somepage.com"
+            },
+            "imp": [
+                {
+                    "id": "some-imp-id",
+                    "banner": {
+                        "format": [
+                            {
+                                "w": 600,
+                                "h": 500
+                            },
+                            {
+                                "w": 300,
+                                "h": 600
+                            }
+                        ]
+                    },
+                    "ext": {
+                        "prebid": {
+                            "bidder": {
+                                "appnexus": {
+                                    "placementId": 1
+                                }
+                            }
+                        }
+                    }
+                }
+            ],
+            "ext": {
+                "prebid": {
+                    "data": {
+                        "bidders": [
+                            "appnexus"
+                        ]
+                    },
+                    "bidderconfig": [
+                        {
+                            "bidders": [
+                                "appnexus"
+                            ],
+                            "config": {
+                                "ortb2": {
+                                    "app": {
+                                        "domain": "bidconfig_domain1",
+                                        "page": "bidconfig_page1"
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "bidders": [
+                                "appnexus"
+                            ],
+                            "config": {
+                                "ortb2": {
+                                    "app": {
+                                        "domain": "bidconfig_domain2",
+                                        "page": "bidconfig_page2"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    },
+    "outgoingRequests": {},
+    "response": {
+        "error": "multiple First Party Data bidder configs provided for bidder: appnexus"
+    }
+}

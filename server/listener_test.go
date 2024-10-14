@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/pbsmetrics"
-	metrics "github.com/rcrowley/go-metrics"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/metrics"
+	gometrics "github.com/rcrowley/go-metrics"
 )
 
 func TestNormalConnectionMetrics(t *testing.T) {
@@ -24,8 +24,8 @@ func TestCloseErrorMetrics(t *testing.T) {
 }
 
 func doTest(t *testing.T, allowAccept bool, allowClose bool) {
-	reg := metrics.NewRegistry()
-	me := pbsmetrics.NewMetrics(reg, nil, config.DisabledMetrics{})
+	reg := gometrics.NewRegistry()
+	me := metrics.NewMetrics(reg, nil, config.DisabledMetrics{}, nil, nil)
 
 	var listener net.Listener = &mockListener{
 		listenSuccess: allowAccept,

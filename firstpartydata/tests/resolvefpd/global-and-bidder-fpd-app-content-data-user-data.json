@@ -1,0 +1,109 @@
+{
+  "description": "Global FPD defined for app and user. Bidder FPD defined for app. Global FPD has app.content.data and user.data",
+  "inputRequestData": {
+    "app": {
+      "id": "reqAppId",
+      "page": "http://www.foobar.com/1234.html",
+      "publisher": {
+        "id": "1"
+      }
+    },
+    "user": {
+      "id": "reqUserID",
+      "yob": 1982,
+      "gender": "reqUserGender"
+    }
+  },
+  "biddersWithGlobalFPD": [
+    "appnexus"
+  ],
+  "bidderConfigFPD": {
+    "appnexus": {
+      "app": {
+        "id": "apnAppId",
+        "ext": {
+          "data": {
+            "morefpdData": "morefpddata"
+          }
+        }
+      }
+    }
+  },
+  "globalFPD": {
+    "app": {
+      "appFpd": 123
+    },
+    "user": {
+      "testUserFpd": "testuser"
+    },
+    "appContentData": [
+      {
+        "id": "appData1",
+        "name": "appName1"
+      },
+      {
+        "id": "appData2",
+        "name": "appName2"
+      }
+    ],
+    "userData": [
+      {
+        "id": "userData1",
+        "name": "userName1"
+      },
+      {
+        "id": "userData2",
+        "name": "userName2"
+      }
+    ]
+  },
+  "outputRequestData": {
+    "appnexus": {
+      "app": {
+        "id": "apnAppId",
+        "page": "http://www.foobar.com/1234.html",
+        "publisher": {
+          "id": "1"
+        },
+        "content": {
+          "data": [
+            {
+              "id": "appData1",
+              "name": "appName1"
+            },
+            {
+              "id": "appData2",
+              "name": "appName2"
+            }
+          ]
+        },
+        "ext": {
+          "data": {
+            "morefpdData": "morefpddata",
+            "appFpd": 123
+          }
+        }
+      },
+      "user": {
+        "id": "reqUserID",
+        "yob": 1982,
+        "gender": "reqUserGender",
+        "data": [
+          {
+            "id": "userData1",
+            "name": "userName1"
+          },
+          {
+            "id": "userData2",
+            "name": "userName2"
+          }
+        ],
+        "ext": {
+          "data": {
+            "testUserFpd": "testuser"
+          }
+        }
+      }
+    }
+  }
+}

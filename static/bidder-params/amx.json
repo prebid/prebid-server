@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "AMX RTB Adapter Params",
+  "description": "A schema to validate params accepted by the AMX adapter",
+  "type": "object",
+  "properties": {
+    "tagId" : {
+      "type": "string",
+      "description": "Set a tagId (overrides site.publisher.id, or app.publisher.id)"
+    },
+    "adUnitId": {
+      "type": "string",
+      "description": "Override imp.tagid value to provide a custom value in AMX ad unit ID reporting"
+    }
+  }
+}

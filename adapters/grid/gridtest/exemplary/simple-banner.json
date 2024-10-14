@@ -4,6 +4,11 @@
         "site": {
             "page": "https://good.site/url"
         },
+        "ext": {
+            "keywords": {
+                "anyName": "anyVal"
+            }
+        },
         "imp": [{
             "id": "test-imp-id",
             "banner": {
@@ -28,6 +33,11 @@
                 "site": {
                     "page": "https://good.site/url"
                 },
+                "ext": {
+                    "keywords": {
+                        "anyName": "anyVal"
+                    }
+                },
                 "imp": [{
                     "id": "test-imp-id",
                     "banner": {
@@ -42,7 +52,8 @@
                         }
                     }
                 }]
-            }
+            },
+            "impIDs":["test-imp-id"]
         },
         "mockResponse": {
             "status": 200,
@@ -59,7 +70,12 @@
                         "cid": "987",
                         "crid": "12345678",
                         "h": 250,
-                        "w": 300
+                        "w": 300,
+                        "ext": {
+                            "bidder": {
+                                "grid": {"demandSource":"trustx"}
+                            }
+                        }
                     }]
                 }],
                 "cur": "USD"
@@ -79,7 +95,12 @@
                 "cid": "987",
                 "crid": "12345678",
                 "w": 300,
-                "h": 250
+                "h": 250,
+                "ext": {
+                    "bidder": {
+                        "grid": {"demandSource":"trustx"}
+                    }
+                }
             },
             "type": "banner"
         }]

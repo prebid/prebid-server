@@ -1,0 +1,73 @@
+{
+    "mockBidRequest": {
+      "id": "test-request-id",
+      "imp": [
+        {
+          "id": "test-imp-id",
+          "video": {
+            "w": 300,
+            "h": 150
+          },
+          "ext": {
+            "bidder": {
+              "ci": "12345",
+              "adunit_code": "test_adunitcode_nosize"
+            }
+          }
+        }
+      ]
+    },
+  
+    "httpCalls": [
+      {
+        "expectedRequest": {
+          "uri": "http://rtb.e-planning.net/pbs/1/12345/1/FILE/ROS?e=video_300x150_0%3A300x150%3B1&ncb=1&ur=FILE&vctx=2&vv=3",
+          "body": {},
+          "impIDs":["test-imp-id"]
+        },
+        "mockResponse": {
+          "status": 200,
+          "body": {
+            "sI": { "k": "12345" },
+            "sec": "ROS",
+            "sp": [
+              {
+                "k": "video_300x150_0",
+                "a": [{
+                  "i": "123456789abcdef",
+                  "pr": "0.5",
+                  "adm": "<VAST>test</VAST>",
+                  "crid": "abcdef123456789",
+                  "id": "adid12345",
+                  "w": 300,
+                  "h": 150
+                }]
+              }
+            ]
+          }
+        }
+      }
+    ],
+  
+    "expectedBidResponses": [
+      {
+        "currency": "USD",
+        "bids": [
+          {
+            "bid": {
+              "id": "123456789abcdef",
+              "impid": "test-imp-id",
+              "price": 0.5,
+              "adm": "<VAST>test</VAST>",
+              "adid": "adid12345",
+              "crid": "abcdef123456789",
+              "w": 300,
+              "h": 150
+            },
+            "type": "video"
+          }
+        ]
+      }
+    ]
+  }
+  

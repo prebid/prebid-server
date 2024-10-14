@@ -1,0 +1,88 @@
+{
+    "mockBidRequest": {
+        "id": "request-id",
+        "site": {
+            "page": "http://publisher.com/index.html",
+            "publisher": {
+                "id": "123456789",
+                "name": "publisher.com"
+            }
+        },
+        "imp": [{
+            "id": "banner-1",
+            "banner": {
+                "w": 320,
+                "h": 50
+            },
+            "ext": {
+                "bidder": {
+                    "cp": 1234,
+                    "ct": 1001
+                }
+            }
+        }]
+    },
+    "httpCalls": [{
+        "expectedRequest": {
+            "headers": {
+                "Content-Type": [
+                    "application/json;charset=utf-8"
+                ],
+                "Accept": [
+                    "application/json"
+                ]
+            },
+            "uri": "http://bidder.pulsepoint.com",
+            "body": {
+                "id": "request-id",
+                "site": {
+                    "page": "http://publisher.com/index.html",
+                    "publisher": {
+                        "id": "1234",
+                        "name": "publisher.com"
+                    }
+                },
+                "imp": [{
+                    "id": "banner-1",
+                    "tagid": "1001",
+                    "banner": {
+                        "w": 320,
+                        "h": 50
+                    },
+                    "ext": {
+                        "bidder": {
+                            "cp": 1234,
+                            "ct": 1001
+                        }
+                    }
+                }]
+            },
+            "impIDs":["banner-1"]
+        },
+        "mockResponse": {
+            "status": 200,
+            "body": {
+                "id": "response-id",
+                "seatbid": [{
+                    "bid": [{
+                        "id": "banner-1-bid",
+                        "impid": "banner-2",
+                        "price": 3.5,
+                        "adm": "<div>Creative</div>",
+                        "adomain": [
+                            "advertiser.com"
+                        ],
+                        "crid": "20",
+                        "w": 300,
+                        "h": 250
+                    }],
+                    "seat": "pulsepoint-seat"
+                }],
+                "cur": "USD"
+            }
+        }
+    }],
+    "expectedBidResponses": [{
+        "bids": []
+    }]
+}

@@ -1,0 +1,112 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "device": {
+      "ip": "123.123.123.123",
+      "ifa": "zxcjbzxmc-zxcbmz-zxbcz-zxczx"
+    },
+    "app": {
+      "id": "1",
+      "bundle": "com.wls.testwlsapplication"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "audio": {
+          "mimes": ["audio/mp4"]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "3",
+            "host": "example"
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://example.bc-plugin.com/?c=o&m=rtb",
+        "body": {
+          "id": "test-request-id",
+          "device": {
+            "ip": "123.123.123.123",
+            "ifa": "zxcjbzxmc-zxcbmz-zxbcz-zxczx"
+          },
+          "app": {
+            "id": "1",
+            "bundle": "com.wls.testwlsapplication"
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "audio": {
+                "mimes": ["audio/mp4"]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": "3",
+                  "host": "example"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+          {
+            "bid": [
+              {
+                "id": "test_bid_id",
+                "impid": "test-imp-id",
+                "price": 0.27543,
+                "adm": "<VAST version=\"4.1\"></VAST>",
+                "cid": "test_cid",
+                "crid": "test_crid",
+                "dealid": "test_dealid",
+                "ext": {
+                  "prebid": {
+                    "type": "audio"
+                  }
+                }
+              }
+            ]
+          }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "test_bid_id",
+            "impid": "test-imp-id",
+            "price": 0.27543,
+            "adm": "<VAST version=\"4.1\"></VAST>",
+            "cid": "test_cid",
+            "crid": "test_crid",
+            "dealid": "test_dealid",
+            "ext": {
+              "prebid": {
+                "type": "audio"
+              }
+            }
+          },
+          "type": "audio"
+        }
+      ],
+      "currency": "USD"
+    }
+  ]
+}

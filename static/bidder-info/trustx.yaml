@@ -1,0 +1,9 @@
+aliasOf: grid
+maintainer:
+  email: "grid-tech@themediagrid.com"
+gvlVendorID: 686
+userSync:
+  redirect:
+    url: "https://x.bidswitch.net/check_uuid/{{.RedirectURL}}?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}"
+    userMacro: "${BSW_UUID}"
+    

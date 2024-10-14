@@ -1,6 +1,0 @@
-#!/bin/sh
-#To install this hook, run this from project root directory:
-#ln -s -f ../../hooks/pre-push .git/hooks/pre-push
-echo "running pre push hook validations"
-./validate.sh
-exit $?

@@ -9,21 +9,24 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/prebid/prebid-server/stored_requests"
-	"github.com/prebid/prebid-server/stored_requests/caches/memory"
-	"github.com/prebid/prebid-server/stored_requests/events"
+	"github.com/prebid/prebid-server/v2/stored_requests"
+	"github.com/prebid/prebid-server/v2/stored_requests/caches/memory"
+	"github.com/prebid/prebid-server/v2/stored_requests/events"
 )
 
 func TestGoodRequests(t *testing.T) {
 	cache := stored_requests.Cache{
-		Requests: memory.NewCache(256*1024, -1, "Requests"),
-		Imps:     memory.NewCache(256*1024, -1, "Imps"),
+		Requests:  memory.NewCache(256*1024, -1, "Request"),
+		Imps:      memory.NewCache(256*1024, -1, "Imp"),
+		Responses: memory.NewCache(256*1024, -1, "Responses"),
+		Accounts:  memory.NewCache(256*1024, -1, "Account"),
 	}
 	id := "1"
 	config := fmt.Sprintf(`{"id": "%s"}`, id)
 	initialValue := map[string]json.RawMessage{id: json.RawMessage(config)}
 	cache.Requests.Save(context.Background(), initialValue)
 	cache.Imps.Save(context.Background(), initialValue)
+	cache.Responses.Save(context.Background(), initialValue)
 
 	apiEvents, endpoint := NewEventsAPI()
 
@@ -39,7 +42,7 @@ func TestGoodRequests(t *testing.T) {
 	defer listener.Stop()
 
 	config = fmt.Sprintf(`{"id": "%s", "updated": true}`, id)
-	update := fmt.Sprintf(`{"requests": {"%s": %s}, "imps": {"%s": %s}}`, id, config, id, config)
+	update := fmt.Sprintf(`{"requests": {"%s": %s}, "imps": {"%s": %s}, "responses": {"%s": %s}}`, id, config, id, config, id, config)
 	request := newRequest("POST", update)
 
 	recorder := httptest.NewRecorder()
@@ -52,10 +55,12 @@ func TestGoodRequests(t *testing.T) {
 	<-updateOccurred
 	reqData := cache.Requests.Get(context.Background(), []string{id})
 	impData := cache.Imps.Get(context.Background(), []string{id})
+	respData := cache.Responses.Get(context.Background(), []string{id})
 	assertHasValue(t, reqData, id, config)
 	assertHasValue(t, impData, id, config)
+	assertHasValue(t, respData, id, config)
 
-	invalidation := fmt.Sprintf(`{"requests": ["%s"], "imps": ["%s"]}`, id, id)
+	invalidation := fmt.Sprintf(`{"requests": ["%s"], "imps": ["%s"], "responses": ["%s"]}`, id, id, id)
 	request = newRequest("DELETE", invalidation)
 
 	recorder = httptest.NewRecorder()
@@ -68,14 +73,17 @@ func TestGoodRequests(t *testing.T) {
 	<-invalidateOccurred
 	reqData = cache.Requests.Get(context.Background(), []string{id})
 	impData = cache.Imps.Get(context.Background(), []string{id})
+	respData = cache.Responses.Get(context.Background(), []string{id})
 	assertMapLength(t, 0, reqData)
 	assertMapLength(t, 0, impData)
+	assertMapLength(t, 0, respData)
 }
 
 func TestBadRequests(t *testing.T) {
 	cache := stored_requests.Cache{
-		Requests: memory.NewCache(256*1024, -1, "Requests"),
-		Imps:     memory.NewCache(256*1024, -1, "Imps"),
+		Requests:  memory.NewCache(256*1024, -1, "Requests"),
+		Imps:      memory.NewCache(256*1024, -1, "Imps"),
+		Responses: memory.NewCache(256*1024, -1, "Responses"),
 	}
 	apiEvents, endpoint := NewEventsAPI()
 	listener := events.SimpleEventListener()

@@ -1,0 +1,108 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [{"w": 728, "h": 90}]
+        },
+        "ext": {
+          "bidder": {
+            "siteId": "fake-site-id",
+            "productId": "inview"
+          }
+        }
+      }
+    ],
+    "site": {}
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://ssc.33across.com",
+        "body": {
+          "ext": {
+            "ttx": {
+              "caller": [
+                {
+                  "name": "Prebid-Server",
+                  "version": "n/a"
+                }
+              ]
+            }
+          },
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id":"test-imp-id",
+              "banner": {
+                "format": [{"w": 728, "h": 90}]
+              },
+              "ext": {
+                "ttx": {
+                  "prod": "inview",
+                  "zoneid": "fake-site-id"
+                }
+              }
+            }
+          ],
+          "site": {}
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "ttx",
+              "bid": [{
+                "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                "impid": "test-imp-id",
+                "price": 0.500000,
+                "adm": "some-test-ad",
+                "crid": "crid_10",
+                "h": 90,
+                "w": 728,
+                "ext": {
+                  "ttx": {
+                    "mediaType": "banner"
+                  }
+                }
+              }]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+            "impid": "test-imp-id",
+            "price": 0.5,
+            "adm": "some-test-ad",
+            "crid": "crid_10",
+            "w": 728,
+            "h": 90,
+            "ext": {
+              "ttx": {
+                "mediaType": "banner"
+              }
+            }
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

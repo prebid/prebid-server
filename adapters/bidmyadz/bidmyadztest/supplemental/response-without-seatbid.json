@@ -1,0 +1,107 @@
+{
+  "mockBidRequest": {
+    "id": "12345",
+    "imp": [{
+      "id": "1",
+      "secure": 1,
+      "bidfloor": 0.31,
+      "bidfloorcur": "USD",
+      "banner": {
+        "w": 300,
+        "h": 250
+      },
+      "ext": {
+        "bidder": {
+          "placementId": "tbanner"
+        }
+      }
+    }],
+    "device": {
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36",
+      "geo": {
+        "country": "USA",
+        "lat": 47.627500,
+        "lon": -122.346200
+      },
+      "ip": "18.146.18.241",
+      "devicetype": 2
+    },
+    "user": {
+      "id": "a66e61ff8c2ab5460ecf156c4b892fd84d41fad5"
+    },
+    "site": {
+      "id": "banner",
+      "domain": "test.com",
+      "cat": ["IAB1"],
+      "page": "https://test.com",
+      "publisher": {
+        "id": "1"
+      }
+    }
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://endpoint.bidmyadz.com/c0f68227d14ed938c6c49f3967cbe9bc",
+        "body": {
+          "id": "12345",
+          "imp": [{
+            "id": "1",
+            "secure": 1,
+            "bidfloor": 0.31,
+            "bidfloorcur": "USD",
+            "banner": {
+              "w": 300,
+              "h": 250
+            },
+            "ext": {
+              "bidder": {
+                "placementId": "tbanner"
+              }
+            }
+          }],
+          "device": {
+            "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36",
+            "geo": {
+              "country": "USA",
+              "lat": 47.627500,
+              "lon": -122.346200
+            },
+            "ip": "18.146.18.241",
+            "devicetype": 2
+          },
+          "user": {
+            "id": "a66e61ff8c2ab5460ecf156c4b892fd84d41fad5"
+          },
+          "site": {
+            "id": "banner",
+            "domain": "test.com",
+            "cat": ["IAB1"],
+            "page": "https://test.com",
+            "publisher": {
+              "id": "1"
+            }
+          }
+        },
+        "impIDs":["1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "d910ceef496ff2d746176506e296f4b3_z53356_a126365",
+          "bidid": "880184da7ec02b1f42802acb46b63b3c",
+          "seatbid": [],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Empty SeatBid",
+      "comparison": "literal"
+    }
+  ]
+}

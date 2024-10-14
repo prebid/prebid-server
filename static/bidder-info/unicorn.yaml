@@ -1,0 +1,7 @@
+endpoint: "https://ds.uncn.jp/pb/0/bid.json"
+maintainer:
+  email: prebid@unicorn.inc
+capabilities:
+  app:
+    mediaTypes:
+      - banner

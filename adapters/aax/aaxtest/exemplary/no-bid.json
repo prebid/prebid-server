@@ -1,0 +1,59 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "imp": [
+            {
+                "id": "1",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        }
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "cid": "TCID",
+                        "crid": "1234"
+                    }
+                }
+            }
+        ]
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "https://example.aax.media/rtb/prebid?src=http%3A%2F%2Flocalhost%3A8080%2Fextrnal_url",
+                "body": {
+                    "id": "test-request-id",
+                    "imp": [
+                        {
+                            "id": "1",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 300,
+                                        "h": 250
+                                    }
+                                ]
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "cid": "TCID",
+                                    "crid": "1234"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "impIDs":["1"]
+            },
+            "mockResponse": {
+                "status": 204,
+                "body": {}
+            }
+        }
+    ],
+    "expectedBidResponses": []
+}

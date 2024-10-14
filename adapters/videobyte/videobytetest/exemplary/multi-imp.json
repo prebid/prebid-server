@@ -1,0 +1,279 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "bcat": [
+      "IAB25",
+      "IAB7-39",
+      "IAB8-18"
+    ],
+    "user": {
+      "buyeruid": "user-101",
+      "yob": 1973
+    },
+    "device": {
+      "ua": "my-user-agent",
+      "ip": "1.2.3.4"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id-1",
+        "video": {
+          "w": 900,
+          "h": 250,
+          "mimes": [
+            "video/x-flv",
+            "video/mp4"
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "pubId": "examplePublisherId-1",
+            "placementId": "examplePlacementId-1",
+            "nid": "exampleNetworkId-1"
+          }
+        }
+      },
+      {
+        "id": "test-imp-id-2",
+        "video": {
+          "w": 800,
+          "h": 150,
+          "mimes": [
+            "video/x-flv",
+            "video/mp4"
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "pubId": "examplePublisherId-2",
+            "placementId": "examplePlacementId-2",
+            "nid": "exampleNetworkId-2"
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "example.com",
+      "page": "http://example.com/page-1",
+      "ref": "http://referer.com/page-2"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "method": "GET",
+        "headers": {
+          "Referer": [
+            "http://referer.com/page-2"
+          ],
+          "Origin": [
+            "example.com"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ]
+        },
+        "uri": "https://mock.videobyte.com?nid=exampleNetworkId-1&pid=examplePublisherId-1&placementId=examplePlacementId-1&source=pbs",
+        "body": {
+          "id": "test-request-id",
+          "bcat": [
+            "IAB25",
+            "IAB7-39",
+            "IAB8-18"
+          ],
+          "user": {
+            "buyeruid": "user-101",
+            "yob": 1973
+          },
+          "device": {
+            "ua": "my-user-agent",
+            "ip": "1.2.3.4"
+          },
+          "imp": [
+            {
+              "id": "test-imp-id-1",
+              "video": {
+                "w": 900,
+                "h": 250,
+                "mimes": [
+                  "video/x-flv",
+                  "video/mp4"
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "pubId": "examplePublisherId-1",
+                  "placementId": "examplePlacementId-1",
+                  "nid": "exampleNetworkId-1"
+                }
+              }
+            }
+          ],
+          "site": {
+            "domain": "example.com",
+            "page": "http://example.com/page-1",
+            "ref": "http://referer.com/page-2"
+          }
+        },
+        "impIDs":["test-imp-id-1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "fe69dd6d-e85c-4186-80a7-605b530bc23b",
+                  "crid": "72745",
+                  "adomain": [
+                    "ad-domain.com"
+                  ],
+                  "price": 3,
+                  "impid": "test-imp-id-1",
+                  "adid": "564",
+                  "adm": "<?xml version=\"1.0\"?><VAST version=\"2.0\"></VAST>"
+                }
+              ],
+              "seat": "videobyte"
+            }
+          ],
+          "bidid": "test-request-id",
+          "id": "test-request-id"
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "method": "GET",
+        "headers": {
+          "Referer": [
+            "http://referer.com/page-2"
+          ],
+          "Origin": [
+            "example.com"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ]
+        },
+        "uri": "https://mock.videobyte.com?nid=exampleNetworkId-2&pid=examplePublisherId-2&placementId=examplePlacementId-2&source=pbs",
+        "body": {
+          "id": "test-request-id",
+          "bcat": [
+            "IAB25",
+            "IAB7-39",
+            "IAB8-18"
+          ],
+          "user": {
+            "buyeruid": "user-101",
+            "yob": 1973
+          },
+          "device": {
+            "ua": "my-user-agent",
+            "ip": "1.2.3.4"
+          },
+          "imp": [
+            {
+              "id": "test-imp-id-2",
+              "video": {
+                "w": 800,
+                "h": 150,
+                "mimes": [
+                  "video/x-flv",
+                  "video/mp4"
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "pubId": "examplePublisherId-2",
+                  "placementId": "examplePlacementId-2",
+                  "nid": "exampleNetworkId-2"
+                }
+              }
+            }
+          ],
+          "site": {
+            "domain": "example.com",
+            "page": "http://example.com/page-1",
+            "ref": "http://referer.com/page-2"
+          }
+        },
+        "impIDs":["test-imp-id-2"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "fe69dd6d-e85c-4186-80a7-605b530bc23c",
+                  "crid": "72746",
+                  "adomain": [
+                    "ad-domain.com"
+                  ],
+                  "price": 4,
+                  "impid": "test-imp-id-2",
+                  "adid": "565",
+                  "adm": "<?xml version=\"1.0\"?><VAST version=\"2.0\"></VAST>"
+                }
+              ],
+              "seat": "videobyte"
+            }
+          ],
+          "bidid": "test-request-id",
+          "id": "test-request-id"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "fe69dd6d-e85c-4186-80a7-605b530bc23b",
+            "crid": "72745",
+            "adomain": [
+              "ad-domain.com"
+            ],
+            "price": 3,
+            "impid": "test-imp-id-1",
+            "adid": "564",
+            "adm": "<?xml version=\"1.0\"?><VAST version=\"2.0\"></VAST>"
+          },
+          "type": "video"
+        }
+      ]
+    },
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "fe69dd6d-e85c-4186-80a7-605b530bc23c",
+            "crid": "72746",
+            "adomain": [
+              "ad-domain.com"
+            ],
+            "price": 4,
+            "impid": "test-imp-id-2",
+            "adid": "565",
+            "adm": "<?xml version=\"1.0\"?><VAST version=\"2.0\"></VAST>"
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

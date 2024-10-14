@@ -1,0 +1,60 @@
+{
+  "mockBidRequest": {
+    "id": "id",
+    "imp": [
+      {
+        "id": "id",
+        "banner": {
+          "w": 300,
+          "h": 200
+        },
+        "ext": {
+          "bidder": {
+            "sid": "tagid"
+          }
+        }
+      }
+    ],
+    "user": {
+      "buyeruid": "test-buyer-user-id"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://localhost/s2sdsh",
+        "body": {
+          "id": "id",
+          "imp": [
+            {
+              "id": "id",
+              "tagid": "tagid",
+              "banner": {
+                "w": 300,
+                "h": 200
+              },
+              "ext": {
+                "bidder": {
+                  "sid": "tagid"
+                }
+              }
+            }
+          ],
+          "user": {
+            "buyeruid": "test-buyer-user-id"
+          }
+        },
+        "impIDs":["id"]
+      },
+      "mockResponse": {
+        "status": 500
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected http status code: 500.",
+      "comparison": "literal"
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+    "description": "Well Formed iOS 14.0 App Request With Unspecified LMT + Empty IFA",
+    "mockBidRequest": {
+        "id": "some-request-id",
+        "app": {
+            "id": "some-app-id"
+        },
+        "device": {
+            "os": "iOS",
+            "osv": "14.0",
+            "ifa": ""
+        },
+        "imp": [{
+            "id": "my-imp-id",
+            "banner": {
+                "format": [{
+                    "w": 300,
+                    "h": 600
+                }]
+            },
+            "ext": {
+                "appnexus": {
+                    "placementId": 12883451
+                }
+            }
+        }]
+    },
+    "expectedBidResponse": {
+        "id": "some-request-id",
+        "bidid": "test bid id",
+        "nbr": 0
+    },
+    "expectedReturnCode": 200
+}

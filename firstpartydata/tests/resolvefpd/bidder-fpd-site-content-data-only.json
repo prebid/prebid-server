@@ -1,0 +1,108 @@
+{
+  "description": "Global and bidder FPD defined for site. Bidder FPD has site.content.data",
+  "inputRequestData": {
+    "site": {
+      "id": "reqSiteId",
+      "name": "reqSiteName",
+      "domain": "reqSiteDomain",
+      "cat": [
+        "books",
+        "novels"
+      ],
+      "search": "book search",
+      "publisher": {
+        "id": "1"
+      },
+      "content": {
+        "episode": 6,
+        "title": "episodeName",
+        "series": "TvName",
+        "season": "season3",
+        "len": 900
+      }
+    },
+    "device": {
+      "ua": "testDevice",
+      "ip": "123.145.167.10",
+      "devicetype": 1,
+      "ifa": "123"
+    }
+  },
+  "biddersWithGlobalFPD": [
+    "appnexus"
+  ],
+  "bidderConfigFPD": {
+    "appnexus": {
+      "site": {
+        "id": "apnSiteId",
+        "name": "apnSiteName",
+        "domain": "apnSiteDomain",
+        "page": "http://www.foobar.com/1234.html",
+        "content": {
+          "episode": 7,
+          "title": "apnEpisodeName",
+          "len": 600,
+          "data": [
+            {
+              "id": "siteData3",
+              "name": "siteName3"
+            }
+          ]
+        },
+        "ext": {
+          "data": {
+            "other": "data"
+          }
+        }
+      }
+    }
+  },
+  "globalFPD": {
+    "site": {
+      "testSiteFpd": "testSite"
+    }
+  },
+  "outputRequestData": {
+    "appnexus": {
+      "site": {
+        "id": "apnSiteId",
+        "name": "apnSiteName",
+        "domain": "apnSiteDomain",
+        "page": "http://www.foobar.com/1234.html",
+        "cat": [
+          "books",
+          "novels"
+        ],
+        "search": "book search",
+        "publisher": {
+          "id": "1"
+        },
+        "content": {
+          "episode": 7,
+          "title": "apnEpisodeName",
+          "series": "TvName",
+          "season": "season3",
+          "len": 600,
+          "data": [
+            {
+              "id": "siteData3",
+              "name": "siteName3"
+            }
+          ]
+        },
+        "ext": {
+          "data": {
+            "other": "data",
+            "testSiteFpd": "testSite"
+          }
+        }
+      },
+      "device": {
+        "ua": "testDevice",
+        "ip": "123.145.167.10",
+        "devicetype": 1,
+        "ifa": "123"
+      }
+    }
+  }
+}

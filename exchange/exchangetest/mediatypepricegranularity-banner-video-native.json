@@ -1,0 +1,292 @@
+{
+    "incomingRequest": {
+        "ortbRequest": {
+            "id": "some-request-id",
+            "site": {
+                "page": "test.somepage.com"
+            },
+            "imp": [
+                {
+                    "id": "my-imp-id",
+                    "video": {
+                        "mimes": [
+                            "video/mp4"
+                        ]
+                    },
+                    "ext": {
+                        "prebid": {
+                            "bidder": {
+                                "appnexus": {
+                                    "placementId": 1
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "id": "imp-id-2",
+                    "video": {
+                        "mimes": [
+                            "video/mp4"
+                        ]
+                    },
+                    "ext": {
+                        "prebid": {
+                            "bidder": {
+                                "appnexus": {
+                                    "placementId": 1
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "id": "imp-id-3",
+                    "video": {
+                        "mimes": [
+                            "video/mp4"
+                        ]
+                    },
+                    "ext": {
+                        "prebid": {
+                            "bidder": {
+                                "appnexus": {
+                                    "placementId": 1
+                                }
+                            }
+                        }
+                    }
+                }
+            ],
+            "ext": {
+                "prebid": {
+                    "targeting": {
+                        "includebrandcategory": {
+                            "primaryadserver": 1,
+                            "publisher": "",
+                            "withcategory": true
+                        },
+                        "pricegranularity": {
+                            "precision": 2,
+                            "ranges": [
+                                {
+                                    "min": 0,
+                                    "max": 20,
+                                    "increment": 2
+                                }
+                            ]
+                        },
+                        "mediatypepricegranularity": {
+                            "banner": {
+                                "precision": 3,
+                                "ranges": [
+                                    {
+                                        "max": 20,
+                                        "increment": 4.5
+                                    }
+                                ]
+                            },
+                            "video": {
+                                "precision": 4,
+                                "ranges": [
+                                    {
+                                        "min": 10,
+                                        "max": 30,
+                                        "increment": 1.5
+                                    }
+                                ]
+                            },
+                            "native": {
+                                "precision": 5,
+                                "ranges": [
+                                    {
+                                        "max": 30,
+                                        "increment": 1.8
+                                    }
+                                ]
+                            }
+                        },
+                        "includewinners": true,
+                        "includebidderkeys": true,
+                        "appendbiddernames": true
+                    }
+                }
+            }
+        },
+        "usersyncs": {
+            "appnexus": "123"
+        }
+    },
+    "outgoingRequests": {
+        "appnexus": {
+            "mockResponse": {
+                "pbsSeatBids": [
+                    {
+                        "pbsBids": [
+                            {
+                                "ortbBid": {
+                                    "id": "apn-bid",
+                                    "impid": "my-imp-id",
+                                    "price": 15,
+                                    "w": 200,
+                                    "h": 250,
+                                    "crid": "creative-1",
+                                    "cat": [
+                                        "IAB1-1"
+                                    ],
+                                    "mtype": 1
+                                },
+                                "bidType": "banner"
+                            },
+                            {
+                                "ortbBid": {
+                                    "id": "apn-other-bid",
+                                    "impid": "imp-id-2",
+                                    "price": 18,
+                                    "w": 300,
+                                    "h": 500,
+                                    "crid": "creative-3",
+                                    "cat": [
+                                        "IAB1-2"
+                                    ],
+                                    "mtype": 2
+                                },
+                                "bidType": "video"
+                            },
+                            {
+                                "ortbBid": {
+                                    "id": "apn-native-bid",
+                                    "impid": "imp-id-3",
+                                    "price": 29,
+                                    "w": 300,
+                                    "h": 500,
+                                    "crid": "creative-3",
+                                    "cat": [
+                                        "IAB1-4"
+                                    ],
+                                    "mtype": 4
+                                },
+                                "bidType": "native"
+                            }
+                        ],
+                        "seat": "appnexus"
+                    }
+                ]
+            }
+        }
+    },
+    "response": {
+        "bids": {
+            "id": "some-request-id",
+            "seatbid": [
+                {
+                    "seat": "appnexus",
+                    "bid": [
+                        {
+                            "id": "apn-bid",
+                            "impid": "my-imp-id",
+                            "price": 15,
+                            "w": 200,
+                            "h": 250,
+                            "crid": "creative-1",
+                            "cat": [
+                                "IAB1-1"
+                            ],
+                            "mtype": 1,
+                            "ext": {
+                                "origbidcpm": 15,
+                                "prebid": {
+                                    "meta": {
+                                    },
+                                    "type": "banner",
+                                    "targeting": {
+                                        "hb_bidder": "appnexus",
+                                        "hb_bidder_appnexus": "appnexus",
+                                        "hb_cache_host": "www.pbcserver.com",
+                                        "hb_cache_host_appnex": "www.pbcserver.com",
+                                        "hb_cache_path": "/pbcache/endpoint",
+                                        "hb_cache_path_appnex": "/pbcache/endpoint",
+                                        "hb_pb": "13.500",
+                                        "hb_pb_appnexus": "13.500",
+                                        "hb_pb_cat_dur": "13.500_VideoGames_0s_appnexus",
+                                        "hb_pb_cat_dur_appnex": "13.500_VideoGames_0s_appnexus",
+                                        "hb_size": "200x250",
+                                        "hb_size_appnexus": "200x250"
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "cat": [
+                                "IAB1-2"
+                            ],
+                            "crid": "creative-3",
+                            "mtype": 2,
+                            "ext": {
+                                "origbidcpm": 18,
+                                "prebid": {
+                                    "meta": {
+                                    },
+                                    "targeting": {
+                                        "hb_bidder": "appnexus",
+                                        "hb_bidder_appnexus": "appnexus",
+                                        "hb_cache_host": "www.pbcserver.com",
+                                        "hb_cache_host_appnex": "www.pbcserver.com",
+                                        "hb_cache_path": "/pbcache/endpoint",
+                                        "hb_cache_path_appnex": "/pbcache/endpoint",
+                                        "hb_pb": "17.5000",
+                                        "hb_pb_appnexus": "17.5000",
+                                        "hb_pb_cat_dur": "17.5000_HomeDecor_0s_appnexus",
+                                        "hb_pb_cat_dur_appnex": "17.5000_HomeDecor_0s_appnexus",
+                                        "hb_size": "300x500",
+                                        "hb_size_appnexus": "300x500"
+                                    },
+                                    "type": "video"
+                                }
+                            },
+                            "h": 500,
+                            "id": "apn-other-bid",
+                            "impid": "imp-id-2",
+                            "price": 18,
+                            "w": 300
+                        },
+                        {
+                            "cat": [
+                                "IAB1-4"
+                            ],
+                            "crid": "creative-3",
+                            "mtype": 4,
+                            "ext": {
+                                "origbidcpm": 29,
+                                "prebid": {
+                                    "meta": {
+                                    },
+                                    "targeting": {
+                                        "hb_bidder": "appnexus",
+                                        "hb_bidder_appnexus": "appnexus",
+                                        "hb_cache_host": "www.pbcserver.com",
+                                        "hb_cache_host_appnex": "www.pbcserver.com",
+                                        "hb_cache_path": "/pbcache/endpoint",
+                                        "hb_cache_path_appnex": "/pbcache/endpoint",
+                                        "hb_pb": "28.80000",
+                                        "hb_pb_appnexus": "28.80000",
+                                        "hb_pb_cat_dur": "28.80000_Sports_0s_appnexus",
+                                        "hb_pb_cat_dur_appnex": "28.80000_Sports_0s_appnexus",
+                                        "hb_size": "300x500",
+                                        "hb_size_appnexus": "300x500"
+                                    },
+                                    "type": "native"
+                                }
+                            },
+                            "h": 500,
+                            "id": "apn-native-bid",
+                            "impid": "imp-id-3",
+                            "price": 29,
+                            "w": 300
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

@@ -1,0 +1,88 @@
+{
+    "mockBidRequest": {
+        "id": "testRequestIdSingle",
+        "site": {
+            "page": "https://publisher-website.com/web"
+        },
+        "imp": [{
+            "id": "testImpressionId",
+            "banner": {
+                "format": [{
+                    "w": 300,
+                    "h": 250
+                }]
+            },
+            "ext": {
+                "bidder": {
+                    "placementId": "testPlacementId"
+                }
+            }
+        }]
+    },
+
+    "httpCalls": [{
+        "expectedRequest": {
+            "uri": "http://test-request.com/prebid",
+            "body": {
+                "id": "testRequestIdSingle",
+                "site": {
+                    "page": "https://publisher-website.com/web"
+                },
+                "imp": [{
+                    "id": "testImpressionId",
+                    "banner": {
+                        "format": [{
+                            "w": 300,
+                            "h": 250
+                        }]
+                    },
+                    "ext": {
+                        "bidder": {
+                            "placementId": "testPlacementId"
+                        }
+                    }
+                }]
+            },
+            "impIDs":["testImpressionId"]
+        },
+        "mockResponse": {
+            "status": 200,
+            "body": {
+                "id": "testRequestIdSingle",
+                "seatbid": [{
+                    "seat": "coinzilla",
+                    "bid": [{
+                        "id": "uniqueId",
+                        "impid": "testImpressionId",
+                        "price": 2.35,
+                        "adid": "advertiserUniqueId",
+                        "adm": "iframe-content",
+                        "cid": "campaignUniqueId",
+                        "crid": "creativeUniqueId",
+                        "h": 250,
+                        "w": 300
+                    }]
+                }],
+                "cur": "USD"
+            }
+        }
+    }],
+
+    "expectedBidResponses": [{
+        "currency": "USD",
+        "bids": [{
+            "bid": {
+                "id": "uniqueId",
+                "impid": "testImpressionId",
+                "price": 2.35,
+                "adm": "iframe-content",
+                "adid": "advertiserUniqueId",
+                "cid": "campaignUniqueId",
+                "crid": "creativeUniqueId",
+                "w": 300,
+                "h": 250
+            },
+            "type": "banner"
+        }]
+    }]
+}

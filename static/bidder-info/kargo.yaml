@@ -1,0 +1,19 @@
+endpoint: "https://krk.kargo.com/api/v1/openrtb"
+maintainer:
+  email: "kraken@kargo.com"
+gvlVendorID: 972
+modifyingVastXmlAllowed: true
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  redirect:
+    url: "https://crb.kargo.com/api/v1/dsync/PrebidServer?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&r={{.RedirectURL}}"
+    userMacro: "$UID"
+endpointCompression: "GZIP"
+openrtb:
+  version: 2.6
+  gpp-supported: true

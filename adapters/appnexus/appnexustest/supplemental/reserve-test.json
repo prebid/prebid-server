@@ -1,0 +1,143 @@
+{
+    "mockBidRequest": {
+      "id": "test-request-id",
+      "imp": [
+        {
+          "id": "test-imp-id",
+          "banner": {
+            "format": [
+              {
+                "w": 300,
+                "h": 250
+              },
+              {
+                "w": 300,
+                "h": 600
+              }
+            ]
+          },
+          "ext": {
+            "bidder": {
+              "placement_id": 1,
+              "reserve": 0.4
+            }
+          }
+        }
+      ]
+    },
+  
+    "httpCalls": [
+      {
+        "expectedRequest": {
+          "uri": "http://ib.adnxs.com/openrtb2",
+          "body": {
+            "id": "test-request-id",
+            "ext": {
+              "appnexus": {
+                "hb_source": 5
+              }
+            },
+            "imp": [
+              {
+                "id": "test-imp-id",
+                "banner": {
+                  "format": [
+                    {
+                      "w": 300,
+                      "h": 250
+                    },
+                    {
+                      "w": 300,
+                      "h": 600
+                    }
+                  ],
+                  "w": 300,
+                  "h": 250
+                },
+                "bidfloor": 0.4,
+                "ext": {
+                  "appnexus": {
+                    "placement_id": 1
+                  }
+                }
+              }
+            ]
+          },
+          "impIDs":["test-imp-id"]
+        },
+        "mockResponse": {
+          "status": 200,
+          "body": {
+            "id": "test-request-id",
+            "seatbid": [
+              {
+                "seat": "958",
+                "bid": [{
+                  "id": "7706636740145184841",
+                  "impid": "test-imp-id",
+                  "price": 0.500000,
+                  "adid": "29681110",
+                  "adm": "some-test-ad",
+                  "adomain": ["appnexus.com"],
+                  "iurl": "http://nym1-ib.adnxs.com/cr?id=29681110",
+                  "cid": "958",
+                  "crid": "29681110",
+                  "h": 250,
+                  "w": 300,
+                  "ext": {
+                    "appnexus": {
+                      "brand_id": 1,
+                      "brand_category_id": 1,
+                      "auction_id": 8189378542222915032,
+                      "bid_ad_type": 0,
+                      "bidder_id": 2,
+                      "ranking_price": 0.000000,
+                      "deal_priority": 5
+                    }
+                  }
+                }]
+              }
+            ],
+            "bidid": "5778926625248726496",
+            "cur": "USD"
+          }
+        }
+      }
+    ],
+  
+    "expectedBidResponses": [
+      {
+        "currency": "USD",
+        "bids": [
+          {
+            "bid": {
+              "id": "7706636740145184841",
+              "impid": "test-imp-id",
+              "price": 0.5,
+              "adm": "some-test-ad",
+              "adid": "29681110",
+              "adomain": ["appnexus.com"],
+              "iurl": "http://nym1-ib.adnxs.com/cr?id=29681110",
+              "cid": "958",
+              "crid": "29681110",
+              "w": 300,
+              "h": 250,
+              "cat": ["IAB20-3"],
+              "ext": {
+                "appnexus": {
+                  "brand_id": 1,
+                  "brand_category_id": 1,
+                  "auction_id": 8189378542222915032,
+                  "bid_ad_type": 0,
+                  "bidder_id": 2,
+                  "ranking_price": 0.000000,
+                  "deal_priority": 5
+                }
+              }
+            },
+            "type": "banner"
+          }
+        ]
+      }
+    ]
+  }

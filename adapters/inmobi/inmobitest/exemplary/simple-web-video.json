@@ -1,0 +1,112 @@
+{
+  "mockBidRequest": {
+    "site": {
+      "page": "https://www.inmobi.com"
+    },
+    "id": "req-id",
+    "device": {
+      "ip": "1.1.1.1",
+      "ua": "Mozilla/5.0 (Linux; Android 8.0.0; SM-G960F Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.84 Mobile Safari/537.36"
+    },
+    "imp": [
+      {
+        "ext": {
+          "bidder": {
+            "plc": "1621323101291"
+          }
+        },
+        "video": {
+          "w": 640,
+          "h": 360,
+          "mimes": ["video/mp4"]
+        },
+        "id": "imp-id"
+      }
+    ]
+  },
+  "httpCalls": [{
+    "expectedRequest": {
+      "uri": "https://api.w.inmobi.com/showad/openrtb/bidder/prebid",
+      "body": {
+        "site": {
+          "page": "https://www.inmobi.com"
+        },
+        "id": "req-id",
+        "device": {
+          "ip": "1.1.1.1",
+          "ua": "Mozilla/5.0 (Linux; Android 8.0.0; SM-G960F Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.84 Mobile Safari/537.36"
+        },
+        "imp": [
+          {
+            "ext": {
+              "bidder": {
+                "plc": "1621323101291"
+              }
+            },
+            "video": {
+              "w": 640,
+              "h": 360,
+              "mimes": ["video/mp4"]
+            },
+            "id": "imp-id"
+          }
+        ]
+      },
+      "impIDs":["imp-id"]
+    },
+    "mockResponse": {
+      "status": 200,
+      "body": {
+        "id": "req-id",
+        "seatbid": [
+          {
+            "bid": [
+              {
+                "ext": {
+                  "prebid": {
+                    "meta": {
+                      "networkName": "inmobi"
+                    }
+                  }
+                },
+                "nurl": "https://some.event.url/params",
+                "crid": "123456789",
+                "adomain": [],
+                "price": 2.0,
+                "id": "1234",
+                "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\"?> <VAST version=\"3.0\"></VAST>",
+                "impid": "imp-id",
+                "mtype": 2
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }],
+
+  "expectedBidResponses": [{
+    "currency": "USD",
+    "bids": [{
+      "bid": {
+        "id": "1234",
+        "impid": "imp-id",
+        "price": 2.0,
+        "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\"?> <VAST version=\"3.0\"></VAST>",
+        "crid": "123456789",
+        "nurl": "https://some.event.url/params",
+        "mtype": 2,
+        "ext": {
+          "prebid": {
+            "meta": {
+              "networkName": "inmobi"
+            }
+          }
+        }
+      },
+      "type": "video"
+    }]
+  }]
+}
+
+

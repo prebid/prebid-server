@@ -1,12 +1,12 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "title": "Conversant Adapter Params",
-  "description": "A schema which validates params accepted by the Conversant adapter.",
+  "title": "Epsilon (formerly Conversant) Adapter Params",
+  "description": "A schema which validates params accepted by the Epsilon (Conversant) adapter.",
   "type": "object",
   "properties": {
     "site_id": {
       "type": "string",
-      "description": "A Conversant specific ID which identifies the site."
+      "description": "An Epsilon (Conversant) specific ID which identifies the site."
     },
    	"secure": {
    	  "type": "integer",
@@ -23,10 +23,6 @@
    	"position": {
       "type": "integer",
       "description": "Ad position on screen."
-   	},
-   	"mobile": {
-   	  "type": "integer",
-   	  "description": "Indicate if the site is mobile optimized."
    	},
    	"mimes": {
    	  "type": "array",

@@ -1,0 +1,160 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "test": 3,
+    "at": 1,
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "video": {
+          "mimes": ["video/mp4"],
+          "protocols": [2, 5],
+          "w": 1024,
+          "h": 576
+        },
+        "ext":{
+          "bidder": {
+            "appId": "impactify.io",
+            "format": "screen",
+            "style": "impact"
+          }
+        }
+      }
+    ],
+    "device": {
+      "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1",
+      "ip": "81.92.224.65"
+    }
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "X-Openrtb-Version": [
+            "2.5"
+          ],
+          "User-Agent": [
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1"
+          ],
+          "X-Forwarded-For": [
+            "81.92.224.65"
+          ]
+        },
+        "uri": "https://sonic.impactify.media/bidder",
+        "body": {
+          "id": "test-request-id",
+          "at":1,
+          "cur": ["USD"],
+          "test": 3,
+          "device": {
+            "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1",
+            "ip": "81.92.224.65"
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "video": {
+                "mimes": ["video/mp4"],
+                "protocols": [2, 5],
+                "w": 1024,
+                "h": 576
+              },
+              "ext": {
+                "impactify": {
+                  "appId": "impactify.io",
+                  "format": "screen",
+                  "style": "impact"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "4e97a64f-e57f-48a7-8770-d5bcc95bb988",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "test-request-id",
+                  "impid": "test-imp-id",
+                  "price": -1,
+                  "adm": "<script>window.impactifyTag = window.impactifyTag || [];impactifyTag.push({appId: 'impactify.io', format: 'screen', style: 'impact'});(function(d, s, id) {var js, ijs = d.getElementsByTagName(s)[0];if (d.getElementById(id)) return;js = d.createElement(s); js.id = id;js.src = 'https://ad.impactify.io/static/ad/tag.js';ijs.parentNode.insertBefore(js, ijs);}(document, 'script', 'impactify-sdk'));</script>",
+                  "adid": "230769549",
+                  "adomain": [
+                    "https://event.webcasts.com/starthere.jsp?ei=1268923&tp_key=84ed77e3e5"
+                  ],
+                  "iurl": "https://ams1-ib.adnxs.com/cr?id=230769549",
+                  "cid": "1212",
+                  "crid": "230769549",
+                  "cat": [
+                    "IAB7-25"
+                  ],
+                  "w": 1,
+                  "h": 1,
+                  "ext": {
+                    "bidder": {
+                      "bidder": {
+                        "impactify": {
+                          "auction_id": 9001143799525811000,
+                          "bid_ad_type": 1,
+                          "bidder_id": 101,
+                          "brand_id": 840665,
+                          "creative_info": {
+                            "video": {
+                              "duration": 15,
+                              "mimes": [
+                                "video/mp4",
+                                "video/webm",
+                                "video/3gpp"
+                              ]
+                            }
+                          }
+                        }
+                      },
+                      "prebid": {
+                        "type": "video",
+                        "video": {
+                          "duration": 15,
+                          "primary_category": ""
+                        }
+                      }
+                    },
+                    "prebid": {
+                      "type": "video"
+                    }
+                  }
+                }
+              ],
+              "seat": "impactify"
+            }
+          ],
+          "cur": "USD",
+          "ext": {
+            "responsetimemillis": {
+              "impactify": 17
+            },
+            "prebid": {
+              "auctiontimestamp": 1632899733548
+            }
+          }
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": []
+    }
+  ]
+}

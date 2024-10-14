@@ -1,0 +1,90 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "minduration": 1,
+          "maxduration": 2,
+          "protocols": [
+            1,
+            3,
+            5
+          ],
+          "w": 1020,
+          "h": 780,
+          "startdelay": 1,
+          "placement": 1,
+          "playbackmethod": [
+            2
+          ],
+          "delivery": [
+            1
+          ],
+          "api": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "siteId": 72721,
+            "siteid": 0
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://targeting.unrulymedia.com/unruly_prebid_server",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "minduration": 1,
+                "maxduration": 2,
+                "protocols": [1,3,5],
+                "w": 1020,
+                "h": 780,
+                "startdelay": 1,
+                "placement": 1,
+                "playbackmethod": [2],
+                "delivery": [1],
+                "api": [1,2,3,4]
+              },
+              "ext": {
+                "bidder": {
+                  "siteId": 72721,
+                  "siteid": 0
+                }
+              }
+            }
+          ]
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 400
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "comparison": "literal",
+      "value": "unexpected status code: 400. Run with request.debug = 1 for more info"
+    }
+  ]
+}

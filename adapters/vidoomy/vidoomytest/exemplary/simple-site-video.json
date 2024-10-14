@@ -1,0 +1,122 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-video-id",
+        "video": {
+          "w": 900,
+          "h": 250,
+          "mimes": [
+            "video/x-flv",
+            "video/mp4"
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "zoneId": "zone-id-123"
+          }
+        }
+      }
+    ],
+    "site": {
+      "id": "test",
+      "publisher": {
+        "id": "123"
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "method": "GET",
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "X-Openrtb-Version": [
+            "2.5"
+          ]
+        },
+        "uri": "",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-video-id",
+              "video": {
+                "w": 900,
+                "h": 250,
+                "mimes": [
+                  "video/x-flv",
+                  "video/mp4"
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "zoneId": "zone-id-123"
+                }
+              }
+            }
+          ],
+          "site": {
+            "id": "test",
+            "publisher": {
+              "id": "123"
+            }
+          }
+        },
+        "impIDs":["test-imp-video-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "fe69dd6d-e85c-4186-80a7-605b530bc23b",
+                  "crid": "72745",
+                  "adomain": [
+                    "ad-domain.com"
+                  ],
+                  "price": 3,
+                  "impid": "test-imp-video-id",
+                  "adid": "564",
+                  "adm": "<?xml version=\"1.0\"?><VAST version=\"2.0\"></VAST>"
+                }
+              ],
+              "seat": "vidoomy"
+            }
+          ],
+          "id": "test-request-id"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "fe69dd6d-e85c-4186-80a7-605b530bc23b",
+            "crid": "72745",
+            "adomain": [
+              "ad-domain.com"
+            ],
+            "price": 3,
+            "impid": "test-imp-video-id",
+            "adid": "564",
+            "adm": "<?xml version=\"1.0\"?><VAST version=\"2.0\"></VAST>"
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

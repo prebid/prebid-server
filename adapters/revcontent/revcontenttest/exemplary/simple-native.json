@@ -1,0 +1,77 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "native": {
+          "request": "{\"ver\":\"1.2\",\"context\":1,\"plcmttype\":4,\"plcmtcnt\":1,\"assets\":[{\"id\":2,\"required\":1,\"title\":{\"len\":90}},{\"id\":6,\"required\":1,\"img\":{\"type\":3,\"wmin\":128,\"hmin\":128,\"mimes\":[\"image/jpg\",\"image/jpeg\",\"image/png\"]}},{\"id\":7,\"required\":1,\"data\":{\"type\":2,\"len\":120}}]}",
+          "ver": "1.2"
+        }
+      }
+    ],
+    "site": {
+      "domain": "test.com"
+    }
+  },
+  "httpcalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://trends.revcontent.com/rtb?userId=1234&apiKey=abcd",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "native": {
+                "request": "{\"ver\":\"1.2\",\"context\":1,\"plcmttype\":4,\"plcmtcnt\":1,\"assets\":[{\"id\":2,\"required\":1,\"title\":{\"len\":90}},{\"id\":6,\"required\":1,\"img\":{\"type\":3,\"wmin\":128,\"hmin\":128,\"mimes\":[\"image/jpg\",\"image/jpeg\",\"image/png\"]}},{\"id\":7,\"required\":1,\"data\":{\"type\":2,\"len\":120}}]}",
+                "ver": "1.2"
+              }
+            }
+          ],
+          "site": {
+            "domain": "test.com"
+          }
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "8400d766-58b3-47d4-80d7-6658b337d403",
+                  "impid": "test-imp-id",
+                  "price": 1.2,
+                  "adm": "{\\\"ver\\\":\\\"1.1\\\",\\\"assets\\\":[]}",
+                  "crid": "crid_testid"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "8400d766-58b3-47d4-80d7-6658b337d403",
+            "impid": "test-imp-id",
+            "price": 1.2,
+            "adm": "{\\\"ver\\\":\\\"1.1\\\",\\\"assets\\\":[]}",
+            "crid": "crid_testid"
+
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}

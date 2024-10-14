@@ -1,0 +1,98 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id-banner",
+    "imp": [
+      {
+        "id": "test-imp-id-banner",
+        "banner": {
+          "format": [
+            {
+              "w": 728,
+              "h": 90
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "siteId": "3943fa",
+            "bidFloor": 0.10,
+            "isTest": false
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bidder.east2.pubwise.io/bid/pubwisedirect",
+        "body": {
+          "id": "test-request-id-banner",
+          "imp": [
+            {
+              "id": "test-imp-id-banner",
+              "banner": {
+                "format": [
+                  {
+                    "w": 728,
+                    "h": 90
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "siteId": "3943fa",
+                  "bidFloor": 0.10,
+                  "isTest": false
+                }
+              }
+            }
+          ]
+        },
+        "impIDs":["test-imp-id-banner"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id-banner",
+          "seatbid": [
+            {
+              "seat": "pwbid",
+              "bid": [
+                {
+                  "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                  "impid": "test-imp-id-banner",
+                  "price": 0.500000,
+                  "adm": "some-test-ad-banner",
+                  "crid": "crid_10",
+                  "w": 728,
+                  "h": 90
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+            "impid": "test-imp-id-banner",
+            "price": 0.5,
+            "adm": "some-test-ad-banner",
+            "crid": "crid_10",
+            "w": 728,
+            "h": 90
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/currency"
+	"github.com/prebid/prebid-server/v2/metrics"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 // Bidder describes how to connect to external demand.
@@ -25,7 +27,7 @@ type Bidder interface {
 	// "subpar" in some way. For example: the request contained ad types which this bidder doesn't support.
 	//
 	// If the error is caused by bad user input, return an errortypes.BadInput.
-	MakeRequests(request *openrtb.BidRequest, reqInfo *ExtraRequestInfo) ([]*RequestData, []error)
+	MakeRequests(request *openrtb2.BidRequest, reqInfo *ExtraRequestInfo) ([]*RequestData, []error)
 
 	// MakeBids unpacks the server's response into Bids.
 	//
@@ -36,14 +38,14 @@ type Bidder interface {
 	//
 	// If the error was caused by bad user input, return a errortypes.BadInput.
 	// If the error was caused by a bad server response, return a errortypes.BadServerResponse
-	MakeBids(internalRequest *openrtb.BidRequest, externalRequest *RequestData, response *ResponseData) (*BidderResponse, []error)
+	MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *RequestData, response *ResponseData) (*BidderResponse, []error)
 }
 
 // TimeoutBidder is used to identify bidders that support timeout notifications.
 type TimeoutBidder interface {
 	Bidder
 
-	// MakeTimeoutNotice functions much the same as MakeRequests, except it is fed the bidder request that timed out,
+	// MakeTimeoutNotification functions much the same as MakeRequests, except it is fed the bidder request that timed out,
 	// and expects that only one notification "request" will be generated. A use case for multiple timeout notifications
 	// has not been anticipated.
 	//
@@ -52,33 +54,15 @@ type TimeoutBidder interface {
 	MakeTimeoutNotification(req *RequestData) (*RequestData, []error)
 }
 
-type MisconfiguredBidder struct {
-	Name  string
-	Error error
-}
-
-func (this *MisconfiguredBidder) MakeRequests(request *openrtb.BidRequest, reqInfo *ExtraRequestInfo) ([]*RequestData, []error) {
-	return nil, []error{this.Error}
-}
-
-func (this *MisconfiguredBidder) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *RequestData, response *ResponseData) (*BidderResponse, []error) {
-	return nil, []error{this.Error}
-}
-
-func BadInput(msg string) *errortypes.BadInput {
-	return &errortypes.BadInput{
-		Message: msg,
-	}
-}
-
 // BidderResponse wraps the server's response with the list of bids and the currency used by the bidder.
 //
 // Currency declaration is not mandatory but helps to detect an eventual currency mismatch issue.
 // From the bid response, the bidder accepts a list of valid currencies for the bid.
 // The currency is the same across all bids.
 type BidderResponse struct {
-	Currency string
-	Bids     []*TypedBid
+	Currency             string
+	Bids                 []*TypedBid
+	FledgeAuctionConfigs []*openrtb_ext.FledgeAuctionConfig
 }
 
 // NewBidderResponseWithBidsCapacity create a new BidderResponse initialising the bids array capacity and the default currency value
@@ -102,18 +86,22 @@ func NewBidderResponse() *BidderResponse {
 	return NewBidderResponseWithBidsCapacity(0)
 }
 
-// TypedBid packages the openrtb.Bid with any bidder-specific information that PBS needs to populate an
+// TypedBid packages the openrtb2.Bid with any bidder-specific information that PBS needs to populate an
 // openrtb_ext.ExtBidPrebid.
 //
 // TypedBid.Bid.Ext will become "response.seatbid[i].bid.ext.bidder" in the final OpenRTB response.
+// TypedBid.BidMeta will become "response.seatbid[i].bid.ext.prebid.meta" in the final OpenRTB response.
 // TypedBid.BidType will become "response.seatbid[i].bid.ext.prebid.type" in the final OpenRTB response.
 // TypedBid.BidVideo will become "response.seatbid[i].bid.ext.prebid.video" in the final OpenRTB response.
 // TypedBid.DealPriority is optionally provided by adapters and used internally by the exchange to support deal targeted campaigns.
+// TypedBid.Seat new seat under which the bid should pe placed. Default is adapter name
 type TypedBid struct {
-	Bid          *openrtb.Bid
+	Bid          *openrtb2.Bid
+	BidMeta      *openrtb_ext.ExtBidPrebidMeta
 	BidType      openrtb_ext.BidType
 	BidVideo     *openrtb_ext.ExtBidPrebidVideo
 	DealPriority int
+	Seat         openrtb_ext.BidderName
 }
 
 // RequestData and ResponseData exist so that prebid-server core code can implement its "debug" functionality
@@ -133,6 +121,7 @@ type RequestData struct {
 	Uri     string
 	Body    []byte
 	Headers http.Header
+	ImpIDs  []string
 }
 
 // ExtImpBidder can be used by Bidders to unmarshal any request.imp[i].ext.
@@ -147,8 +136,36 @@ type ExtImpBidder struct {
 	// Bidder implementations may safely assume that this JSON has been validated by their
 	// static/bidder-params/{bidder}.json file.
 	Bidder json.RawMessage `json:"bidder"`
+
+	AuctionEnvironment openrtb_ext.AuctionEnvironmentType `json:"ae,omitempty"`
 }
 
 func (r *RequestData) SetBasicAuth(username string, password string) {
 	r.Headers.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(username+":"+password)))
 }
+
+type ExtraRequestInfo struct {
+	PbsEntryPoint              metrics.RequestType
+	GlobalPrivacyControlHeader string
+	CurrencyConversions        currency.Conversions
+}
+
+func NewExtraRequestInfo(c currency.Conversions) ExtraRequestInfo {
+	return ExtraRequestInfo{
+		CurrencyConversions: c,
+	}
+}
+
+// ConvertCurrency converts a given amount from one currency to another, or returns:
+//   - Error if the `from` or `to` arguments are malformed or unknown ISO-4217 codes.
+//   - ConversionNotFoundError if the conversion mapping is unknown to Prebid Server
+//     and not provided in the bid request.
+func (r ExtraRequestInfo) ConvertCurrency(value float64, from, to string) (float64, error) {
+	if rate, err := r.CurrencyConversions.GetRate(from, to); err == nil {
+		return value * rate, nil
+	} else {
+		return 0, err
+	}
+}
+
+type Builder func(openrtb_ext.BidderName, config.Adapter, config.Server) (Bidder, error)

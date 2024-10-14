@@ -1,0 +1,145 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-banner-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 300
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": 1234,
+            "placementId": 12345
+          }
+        }
+      },
+      {
+        "id": "test-imp-video-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "minduration": 1,
+          "maxduration": 2,
+          "protocols": [
+            1,
+            2,
+            5
+          ],
+          "w": 1020,
+          "h": 780,
+          "startdelay": 1,
+          "placement": 1,
+          "playbackmethod": [
+            2
+          ],
+          "api": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": 1234,
+            "placementId": 123456
+          }
+        }
+      }
+    ],
+    "app": {
+      "domain": "www.example.com",
+      "storeurl": "http://www.example.com",
+      "publisher": {
+        "domain": "example.com"
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://undertone-test/bid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-banner-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  },
+                  {
+                    "w": 300,
+                    "h": 300
+                  }
+                ]
+              },
+              "tagid": "12345"
+            },
+            {
+              "id": "test-imp-video-id",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "minduration": 1,
+                "maxduration": 2,
+                "protocols": [
+                  1,
+                  2,
+                  5
+                ],
+                "w": 1020,
+                "h": 780,
+                "startdelay": 1,
+                "placement": 1,
+                "playbackmethod": [
+                  2
+                ],
+                "api": [
+                  1,
+                  2,
+                  3,
+                  4
+                ]
+              },
+              "tagid": "123456"
+            }
+          ],
+          "app": {
+            "domain": "www.example.com",
+            "storeurl": "http://www.example.com",
+            "publisher": {
+              "id": "1234",
+              "domain": "example.com"
+            }
+          },
+          "ext": {
+            "id": 4,
+            "version": "1.0.0"
+          }
+        },
+        "impIDs":["test-imp-banner-id","test-imp-video-id"]
+      },
+      "mockResponse": {
+        "status": 204,
+        "body": {}
+      }
+    }
+  ],
+  "expectedBidResponses": [],
+  "expectedMakeBidsErrors": []
+}

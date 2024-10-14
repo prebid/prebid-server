@@ -1,35 +1,36 @@
 package openrtb2
 
 import (
-	"encoding/json"
 	"fmt"
 
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
-func processInterstitials(req *openrtb.BidRequest) error {
-	var devExt openrtb_ext.ExtDevice
+func processInterstitials(req *openrtb_ext.RequestWrapper) error {
 	unmarshalled := true
-	for i := range req.Imp {
-		if req.Imp[i].Instl == 1 {
+	for _, imp := range req.GetImp() {
+		if imp.Instl == 1 {
+			var prebid *openrtb_ext.ExtDevicePrebid
 			if unmarshalled {
 				if req.Device.Ext == nil {
 					// No special interstitial support requested, so bail as there is nothing to do
 					return nil
 				}
-				err := json.Unmarshal(req.Device.Ext, &devExt)
+				deviceExt, err := req.GetDeviceExt()
+
 				if err != nil {
 					return err
 				}
-				if devExt.Prebid.Interstitial == nil {
+				prebid = deviceExt.GetPrebid()
+				if prebid == nil || prebid.Interstitial == nil {
 					// No special interstitial support requested, so bail as there is nothing to do
 					return nil
 				}
 			}
-			err := processInterstitialsForImp(&req.Imp[i], &devExt, req.Device)
+			err := processInterstitialsForImp(imp, prebid, req.Device)
 			if err != nil {
 				return err
 			}
@@ -38,8 +39,8 @@ func processInterstitials(req *openrtb.BidRequest) error {
 	return nil
 }
 
-func processInterstitialsForImp(imp *openrtb.Imp, devExt *openrtb_ext.ExtDevice, device *openrtb.Device) error {
-	var maxWidth, maxHeight, minWidth, minHeight uint64
+func processInterstitialsForImp(imp *openrtb_ext.ImpWrapper, devExtPrebid *openrtb_ext.ExtDevicePrebid, device *openrtb2.Device) error {
+	var maxWidth, maxHeight, minWidth, minHeight int64
 	if imp.Banner == nil {
 		// custom interstitial support is only available for banner requests.
 		return nil
@@ -56,8 +57,8 @@ func processInterstitialsForImp(imp *openrtb.Imp, devExt *openrtb_ext.ExtDevice,
 		maxWidth = device.W
 		maxHeight = device.H
 	}
-	minWidth = (maxWidth * devExt.Prebid.Interstitial.MinWidthPerc) / 100
-	minHeight = (maxHeight * devExt.Prebid.Interstitial.MinHeightPerc) / 100
+	minWidth = (maxWidth * devExtPrebid.Interstitial.MinWidthPerc) / 100
+	minHeight = (maxHeight * devExtPrebid.Interstitial.MinHeightPerc) / 100
 	imp.Banner.Format = genInterstitialFormat(minWidth, maxWidth, minHeight, maxHeight)
 	if len(imp.Banner.Format) == 0 {
 		return &errortypes.BadInput{Message: fmt.Sprintf("Unable to set interstitial size list for Imp id=%s (No valid sizes between %dx%d and %dx%d)", imp.ID, minWidth, minHeight, maxWidth, maxHeight)}
@@ -65,10 +66,10 @@ func processInterstitialsForImp(imp *openrtb.Imp, devExt *openrtb_ext.ExtDevice,
 	return nil
 }
 
-func genInterstitialFormat(minWidth, maxWidth, minHeight, maxHeight uint64) []openrtb.Format {
-	sizes := make(config.InterstitialSizes, 0, 10)
+func genInterstitialFormat(minWidth, maxWidth, minHeight, maxHeight int64) []openrtb2.Format {
+	sizes := make([]config.InterstitialSize, 0, 10)
 	for _, size := range config.ResolvedInterstitialSizes {
-		if size.Width >= minWidth && size.Width <= maxWidth && size.Height >= minHeight && size.Height <= maxHeight {
+		if int64(size.Width) >= minWidth && int64(size.Width) <= maxWidth && int64(size.Height) >= minHeight && int64(size.Height) <= maxHeight {
 			sizes = append(sizes, size)
 			if len(sizes) >= 10 {
 				// we have enough sizes
@@ -76,9 +77,9 @@ func genInterstitialFormat(minWidth, maxWidth, minHeight, maxHeight uint64) []op
 			}
 		}
 	}
-	formatList := make([]openrtb.Format, 0, len(sizes))
+	formatList := make([]openrtb2.Format, 0, len(sizes))
 	for _, size := range sizes {
-		formatList = append(formatList, openrtb.Format{W: size.Width, H: size.Height})
+		formatList = append(formatList, openrtb2.Format{W: int64(size.Width), H: int64(size.Height)})
 	}
 	return formatList
 }

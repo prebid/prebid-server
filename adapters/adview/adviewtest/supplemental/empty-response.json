@@ -1,0 +1,46 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [{
+        "id": "test-imp-id",
+        "native": {
+          "request": ""
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "posid00001",
+            "accountId": "accountid01"
+          }
+        }
+      }]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bid.adview.com/agent/thirdAdxService/accountid01",
+        "body": {
+          "id": "test-request-id",
+          "cur": ["USD"],
+          "imp": [{
+            "ext": {
+              "bidder": {
+                "placementId": "posid00001",
+                "accountId": "accountid01"
+              }
+            },
+            "id": "test-imp-id",
+            "native": {
+              "request": ""
+            },
+            "tagid": "posid00001"
+          }]
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 204
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}

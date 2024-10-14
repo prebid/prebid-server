@@ -7,17 +7,19 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 )
 
 type PubnativeAdapter struct {
 	URI string
 }
 
-func (a *PubnativeAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *PubnativeAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	impCount := len(request.Imp)
 	requestData := make([]*adapters.RequestData, 0, impCount)
 	errs := []error{}
@@ -52,7 +54,7 @@ func (a *PubnativeAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ad
 			continue
 		}
 
-		requestCopy.Imp = []openrtb.Imp{imp}
+		requestCopy.Imp = []openrtb2.Imp{imp}
 		reqJSON, err := json.Marshal(&requestCopy)
 		if err != nil {
 			errs = append(errs, err)
@@ -69,6 +71,7 @@ func (a *PubnativeAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ad
 			Uri:     fmt.Sprintf("%s?%s", a.URI, queryString),
 			Body:    reqJSON,
 			Headers: headers,
+			ImpIDs:  openrtb_ext.GetImpIDs(requestCopy.Imp),
 		}
 
 		requestData = append(requestData, reqData)
@@ -76,7 +79,7 @@ func (a *PubnativeAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ad
 	return requestData, errs
 }
 
-func checkRequest(request *openrtb.BidRequest) error {
+func checkRequest(request *openrtb2.BidRequest) error {
 	if request.Device == nil || len(request.Device.OS) == 0 {
 		return &errortypes.BadInput{
 			Message: "Impression is missing device OS information",
@@ -86,39 +89,45 @@ func checkRequest(request *openrtb.BidRequest) error {
 	return nil
 }
 
-func convertImpression(imp *openrtb.Imp) error {
+func convertImpression(imp *openrtb2.Imp) error {
 	if imp.Banner == nil && imp.Video == nil && imp.Native == nil {
 		return &errortypes.BadInput{
 			Message: "Pubnative only supports banner, video or native ads.",
 		}
 	}
 	if imp.Banner != nil {
-		err := convertBanner(imp.Banner)
+		bannerCopy, err := convertBanner(imp.Banner)
 		if err != nil {
 			return err
 		}
+		imp.Banner = bannerCopy
 	}
 
 	return nil
 }
 
 // make sure that banner has openrtb 2.3-compatible size information
-func convertBanner(banner *openrtb.Banner) error {
+func convertBanner(banner *openrtb2.Banner) (*openrtb2.Banner, error) {
 	if banner.W == nil || banner.H == nil || *banner.W == 0 || *banner.H == 0 {
 		if len(banner.Format) > 0 {
 			f := banner.Format[0]
-			banner.W = &f.W
-			banner.H = &f.H
+
+			bannerCopy := *banner
+
+			bannerCopy.W = ptrutil.ToPtr(f.W)
+			bannerCopy.H = ptrutil.ToPtr(f.H)
+
+			return &bannerCopy, nil
 		} else {
-			return &errortypes.BadInput{
+			return nil, &errortypes.BadInput{
 				Message: "Size information missing for banner",
 			}
 		}
 	}
-	return nil
+	return banner, nil
 }
 
-func (a *PubnativeAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *PubnativeAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -135,7 +144,7 @@ func (a *PubnativeAdapter) MakeBids(internalRequest *openrtb.BidRequest, externa
 		}}
 	}
 
-	var parsedResponse openrtb.BidResponse
+	var parsedResponse openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &parsedResponse); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: err.Error(),
@@ -158,11 +167,15 @@ func (a *PubnativeAdapter) MakeBids(internalRequest *openrtb.BidRequest, externa
 	return bidResponse, nil
 }
 
-func NewPubnativeBidder(uri string) *PubnativeAdapter {
-	return &PubnativeAdapter{URI: uri}
+// Builder builds a new instance of the Pubnative adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	bidder := &PubnativeAdapter{
+		URI: config.Endpoint,
+	}
+	return bidder, nil
 }
 
-func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
+func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
 		if imp.ID == impId {

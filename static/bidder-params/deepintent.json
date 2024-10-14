@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Deepintent Adapter Params",
+  "description": "A schema which validates params accepted by the Deepintent adapter",
+
+  "type": "object",
+  "properties": {
+    "tagId": {
+      "type": "string",
+      "description": "An ID which identifies the deepintent ad tag"
+    }
+  },
+  "required" : [ "tagId" ]
+}

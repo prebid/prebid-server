@@ -88,7 +88,8 @@
             "buyeruid": "0000-000-000-0000"
           },
           "tmax": 1000
-        }
+        },
+        "impIDs":["some-impression-id"]
       },
       "mockResponse": {
         "status": 200,
@@ -101,7 +102,7 @@
                   "id": "a3ae1b4e2fc24a4fb45540082e98e161",
                   "impid": "some-impression-id",
                   "price": 3.5,
-                  "adm": "asesome-markup",
+                  "adm": "awesome-markup",
                   "adomain": [
                     "awesome.com"
                   ],
@@ -130,7 +131,7 @@
             "id": "a3ae1b4e2fc24a4fb45540082e98e161",
             "impid": "some-impression-id",
             "price": 3.5,
-            "adm": "asesome-markup",
+            "adm": "awesome-markup",
             "crid": "20",
             "adomain": [
               "awesome.com"

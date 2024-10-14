@@ -1,0 +1,14 @@
+endpoint: "http://bl-us.aceex.io/?uqhash={{.AccountID}}"
+maintainer:
+  email: "tech@aceex.io"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native

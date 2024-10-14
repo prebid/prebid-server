@@ -1,0 +1,48 @@
+{
+  "mockBidRequest": {
+    "id": "12345",
+    "imp": [{
+      "id": "1",
+      "secure": 1,
+      "bidfloor": 0.31,
+      "bidfloorcur": "USD",
+      "banner": {
+        "w": 300,
+        "h": 250
+      },
+      "ext": {
+        "bidder": {
+          "placementId": "tbanner"
+        }
+      }
+    }],
+    "device": {
+      "geo": {
+        "country": "USA",
+        "lat": 47.627500,
+        "lon": -122.346200
+      },
+      "devicetype": 2
+    },
+    "user": {
+      "id": "460ecf1d41fa6656c4b892fd84e61ff8c2ab5ad5"
+    },
+    "site": {
+      "id": "banner",
+      "domain": "test.com",
+      "cat": ["IAB1"],
+      "page": "https://test.com",
+      "publisher": {
+        "id": "test"
+      }
+    }
+  },
+
+  "expectedMakeRequestsErrors": [{
+    "value": "IP/IPv6 is a required field",
+    "comparison": "literal"
+  }, {
+    "value": "User-Agent is a required field",
+    "comparison": "literal"
+  }]
+}

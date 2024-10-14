@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "UNICORN Adapter Params",
+  "description": "A schema which validates params accepted by the UNICORN adapter",
+  "type": "object",
+  "properties": {
+    "placementId": {
+      "type": "string",
+      "description": "In Application, if placementId is empty, prebid server configuration id will be used as placementId."
+    },
+    "publisherId": {
+      "type": "string",
+      "description": "Account specific publisher id"
+    },
+    "mediaId": {
+      "type": "string",
+      "description": "Publisher specific media id"
+    },
+    "accountId": {
+      "type": "integer",
+      "description": "Account ID for charge request"
+    }
+  },
+  "required" : ["accountId"]
+}

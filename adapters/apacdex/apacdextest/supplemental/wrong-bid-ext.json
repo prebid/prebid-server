@@ -1,0 +1,77 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "video": {
+          "w": 900,
+          "h": 250,
+          "mimes": [
+            "video/x-flv",
+            "video/mp4"
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "siteId": "123"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "//host",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "video": {
+                "w": 900,
+                "h": 250,
+                "mimes": [
+                  "video/x-flv",
+                  "video/mp4"
+                ]
+              },
+              "ext": {
+                "siteId": "123"
+              }
+            }
+          ]
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "test-bid-id",
+                  "impid": "another-imp-id",
+                  "price": 3.5,
+                  "w": 900,
+                  "h": 250,
+                  "ext": {}
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [{"currency":"USD","bids":[]}],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Failed to parse bid mediatype for impression \"another-imp-id\"",
+      "comparison": "regex"
+    }
+  ]
+}

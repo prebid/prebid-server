@@ -1,0 +1,113 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placement": "5ea9601ac865f911007f1b6a"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bid.staging.avct.cloud/ortb/bid/5e722ee9bd6df11d063a8013",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  },
+                  {
+                    "w": 300,
+                    "h": 600
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "placement": "5ea9601ac865f911007f1b6a"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "bidid": "dd87f80c-16a0-43c8-a673-b94b3ea4d417",
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "adm": "<iframe src=\"http://ads.staging.avct.cloud/sv?pp=${AUCTION_PRICE}&uuid=0df2c449-6d85-4179-b5d5-37f2f91caa24&ty=h&crid=5b51e49634f2021f127ff7c9&tacid=5b51e4ed89654741306813a8&aid=749d36d7-c993-455f-aefd-ffd8a7e3ccf_0&accid=5b51dd1634f2021f127ff7c0&brid=5b51e20f34f2021f127ff7c4&ioid=5b51e22089654741306813a1&caid=5b51e2d689654741306813a4&it=1&iobsid=496e8cff35b2c0110029534d&ext_aid=749d36d7-c993-455f-aefd-ffd8a7e3ccf_0&bp=15.64434783&bt=1591874537316649768&h=250&w=300&vpr=0&vdp=0&domain=example.com&gco=54510b3b816269000061a0f7&stid=542d2c1615e3c013de53a6e2&glat=0&glong=0&bip4=3232238090&ext_siid=5ea89200c865f911007f1b0e&ext_pid=1&ext_sid=5ea84df8c865f911007f1ade&ext_plid=5ea9601ac865f911007f1b6a&optv=latest:latest&invsrc=5e722ee9bd6df11d063a8013&ug=0d&ca=0&biid=requestd-54644474bf-l7gx4|eu-central-1-staging&reg=eu-central-1&ck=1_5d99a849\" height=\"250\" width=\"300\" marginwidth=0 marginheight=0 hspace=0 vspace=0 frameborder=0 scrolling=\"no\"></iframe>",
+                  "adomain": [
+                    "avocet.io"
+                  ],
+                  "cid": "5b51e2d689654741306813a4",
+                  "crid": "5b51e49634f2021f127ff7c9",
+                  "h": 250,
+                  "id": "bc708396-9202-437b-b726-08b9864cb8b8",
+                  "impid": "test-imp-id",
+                  "iurl": "https://cdn.staging.avocet.io/snapshots/5b51dd1634f2021f127ff7c0/5b51e49634f2021f127ff7c9.jpeg",
+                  "language": "en",
+                  "price": 15.64434783,
+                  "w": 300
+                }
+              ],
+              "seat": "TEST_SEAT_ID"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "adm": "<iframe src=\"http://ads.staging.avct.cloud/sv?pp=${AUCTION_PRICE}&uuid=0df2c449-6d85-4179-b5d5-37f2f91caa24&ty=h&crid=5b51e49634f2021f127ff7c9&tacid=5b51e4ed89654741306813a8&aid=749d36d7-c993-455f-aefd-ffd8a7e3ccf_0&accid=5b51dd1634f2021f127ff7c0&brid=5b51e20f34f2021f127ff7c4&ioid=5b51e22089654741306813a1&caid=5b51e2d689654741306813a4&it=1&iobsid=496e8cff35b2c0110029534d&ext_aid=749d36d7-c993-455f-aefd-ffd8a7e3ccf_0&bp=15.64434783&bt=1591874537316649768&h=250&w=300&vpr=0&vdp=0&domain=example.com&gco=54510b3b816269000061a0f7&stid=542d2c1615e3c013de53a6e2&glat=0&glong=0&bip4=3232238090&ext_siid=5ea89200c865f911007f1b0e&ext_pid=1&ext_sid=5ea84df8c865f911007f1ade&ext_plid=5ea9601ac865f911007f1b6a&optv=latest:latest&invsrc=5e722ee9bd6df11d063a8013&ug=0d&ca=0&biid=requestd-54644474bf-l7gx4|eu-central-1-staging&reg=eu-central-1&ck=1_5d99a849\" height=\"250\" width=\"300\" marginwidth=0 marginheight=0 hspace=0 vspace=0 frameborder=0 scrolling=\"no\"></iframe>",
+            "adomain": [
+              "avocet.io"
+            ],
+            "cid": "5b51e2d689654741306813a4",
+            "crid": "5b51e49634f2021f127ff7c9",
+            "h": 250,
+            "id": "bc708396-9202-437b-b726-08b9864cb8b8",
+            "impid": "test-imp-id",
+            "iurl": "https://cdn.staging.avocet.io/snapshots/5b51dd1634f2021f127ff7c0/5b51e49634f2021f127ff7c9.jpeg",
+            "language": "en",
+            "price": 15.64434783,
+            "w": 300
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

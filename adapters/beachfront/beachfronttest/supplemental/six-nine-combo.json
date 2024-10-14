@@ -1,0 +1,608 @@
+{
+  "mockBidRequest":
+  {
+    "id": "six-nine-combo",
+    "imp": [
+      {
+        "id": "ADMVideoWithBannerImp1",
+        "ext": {
+          "bidder": {
+            "videoResponseType": "adm",
+            "bidfloor": 1.01,
+            "appIds": {
+              "banner" : "bannerAppId1",
+              "video" :  "videoAppId1"
+            }
+          }
+        },
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 300,
+          "h": 400
+        },
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 400
+            }
+          ]
+        }
+      },
+      {
+        "id": "ADMVideoWithBannerImp2",
+        "ext": {
+          "bidder": {
+            "videoResponseType": "adm",
+            "bidfloor": 1.01,
+            "appIds": {
+              "banner" : "bannerAppId2",
+              "video" :  "videoAppId1"
+            }
+          }
+        },
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 100,
+          "h": 150
+        },
+        "banner": {
+          "format": [
+            {
+              "w": 100,
+              "h": 150
+            }
+          ]
+        }
+      },
+      {
+        "id": "NURLVideoImp3",
+        "ext": {
+          "bidder": {
+            "videoResponseType": "nurl",
+            "bidfloor": 1.01,
+            "appId": "videoAppId1"
+          }
+        },
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 150,
+          "h": 300
+        }
+      },
+      {
+        "id": "RegularBannerImp4",
+        "ext": {
+          "bidder": {
+            "bidfloor": 1.05,
+            "appId" : "bannerAppId3"
+          }
+        },
+        "banner": {
+          "format": [
+            {
+              "w": 1280,
+              "h": 1024
+            }
+          ]
+        }
+      },
+      {
+        "id": "RegularBannerImp5",
+        "ext": {
+          "bidder": {
+            "bidfloor": 1.05,
+            "appId" : "bannerAppId4"
+          }
+        },
+        "banner": {
+          "format": [
+            {
+              "w": 1280,
+              "h": 1024
+            }
+          ]
+        }
+      },
+      {
+        "id": "ADMVideoImp6",
+        "ext": {
+          "bidder": {
+            "videoResponseType": "adm",
+            "bidfloor": 1.01,
+            "appId": "videoAppId1"
+          }
+        },
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 100,
+          "h": 150
+        }
+      }
+    ],
+    "site": {
+      "page": "http://example.com/whatever/something.html"
+    },
+    "device":{
+      "ip":"255.255.255.255"
+    }
+  } ,
+  "httpCalls": [
+
+    {
+      "expectedRequest":  {
+        "uri": "https://qa.beachrtb.com/prebid_display",
+        "body": {
+          "slots": [
+            {
+              "slot": "ADMVideoWithBannerImp1",
+              "id": "bannerAppId1",
+              "bidfloor": 1.01,
+              "sizes": [
+                {
+                  "w": 300,
+                  "h": 400
+                }
+              ]
+            },
+            {
+              "slot": "ADMVideoWithBannerImp2",
+              "id": "bannerAppId2",
+              "bidfloor": 1.01,
+              "sizes": [
+                {
+                  "w": 100,
+                  "h": 150
+                }
+              ]
+            },
+            {
+              "slot": "RegularBannerImp4",
+              "id": "bannerAppId3",
+              "bidfloor": 1.05,
+              "sizes": [
+                {
+                  "w": 1280,
+                  "h": 1024
+                }
+              ]
+            },
+            {
+              "slot": "RegularBannerImp5",
+              "id": "bannerAppId4",
+              "bidfloor": 1.05,
+              "sizes": [
+                {
+                  "w": 1280,
+                  "h": 1024
+                }
+              ]
+            }
+          ],
+          "domain": "example.com",
+          "page": "http://example.com/whatever/something.html",
+          "real204": true,
+          "referrer": "",
+          "search": "",
+          "secure": 0,
+          "deviceOs": "",
+          "deviceModel": "",
+          "isMobile": 0,
+          "ua": "",
+          "dnt": 0,
+          "user": {},
+          "adapterName": "BF_PREBID_S2S",
+          "adapterVersion": "1.0.0",
+          "ip": "255.255.255.255",
+          "requestId": "six-nine-combo",
+          "schain": {
+            "complete": 0,
+            "nodes": null,
+            "ver": ""
+          }
+        },
+        "impIDs":["ADMVideoWithBannerImp1","ADMVideoWithBannerImp2","RegularBannerImp4","RegularBannerImp5"]
+      },
+      "mockResponse": {
+        "status" : 200,
+        "body": [
+          {
+            "crid": "crid_1",
+            "price": 1.594764,
+            "w": 100,
+            "h": 150,
+            "slot": "ADMVideoWithBannerImp1",
+            "adm": "<div id=\"crid_1\">Buy now!</div>"
+          },
+          {
+            "crid": "crid_2",
+            "price": 1.594764,
+            "w": 100,
+            "h": 150,
+            "slot": "ADMVideoWithBannerImp2",
+            "adm": "<div id=\"crid_2\">Buy now!</div>"
+          },
+          {
+            "crid": "crid_3",
+            "price": 1.501188,
+            "w": 1280,
+            "h": 1024,
+            "slot": "RegularBannerImp4",
+            "adm": "<div id=\"crid_3\">Buy now!</div>"
+          },
+          {
+            "crid": "crid_4",
+            "price": 1.501188,
+            "w": 1280,
+            "h": 1024,
+            "slot": "RegularBannerImp5",
+            "adm": "<div id=\"crid_4\">Buy now!</div>"
+          }
+        ]
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "https://qa.beachrtb.com/bid.json?exchange_id=videoAppId1",
+        "body": {
+          "id": "six-nine-combo",
+          "imp": [
+            {
+              "id": "ADMVideoWithBannerImp1",
+              "secure": 0,
+              "bidfloor": 1.01,
+              "bidfloorcur": "USD",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 300,
+                "h": 400
+              }
+            }
+          ],
+          "site": {
+            "domain": "example.com",
+            "page": "http://example.com/whatever/something.html"
+          },
+          "device": {
+            "devicetype": 2,
+            "ip": "255.255.255.255"
+          },
+          "cur": [
+            "USD"
+          ]
+        },
+        "impIDs":["ADMVideoWithBannerImp1"]
+      },
+      "mockResponse": {
+        "status" : 200,
+        "body": {
+          "id": "six-nine-combo",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "crid_7",
+                  "impid": "ADMVideoWithBannerImp1",
+                  "cat":["IAB2"],
+                  "price": 0.8,
+                  "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
+                  "w": 300,
+                  "h": 400,
+                  "ext": {
+                    "duration": 30
+                  }
+                }
+              ],
+              "seat": "bfb-io-s1"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "https://qa.beachrtb.com/bid.json?exchange_id=videoAppId1",
+        "body": {
+          "id": "six-nine-combo",
+          "imp": [
+            {
+              "id": "ADMVideoWithBannerImp2",
+              "secure": 0,
+              "bidfloor": 1.01,
+              "bidfloorcur": "USD",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 100,
+                "h": 150
+              }
+            }
+          ],
+          "site": {
+            "domain": "example.com",
+            "page": "http://example.com/whatever/something.html"
+          },
+          "device": {
+            "devicetype": 2,
+            "ip": "255.255.255.255"
+          },
+          "cur": [
+            "USD"
+          ]
+        },
+        "impIDs":["ADMVideoWithBannerImp2"]
+      },
+      "mockResponse": {
+        "status" : 200,
+        "body": {
+          "id": "six-nine-combo",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "crid_7",
+                  "impid": "ADMVideoWithBannerImp2",
+                  "price": 0.8,
+                  "cat":["IAB2"],
+                  "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
+                  "w": 300,
+                  "h": 400,
+                  "ext": {
+                    "duration": 30
+                  }
+                }
+              ],
+              "seat": "bfb-io-s1"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "https://qa.beachrtb.com/bid.json?exchange_id=videoAppId1",
+        "body": {
+          "id": "six-nine-combo",
+          "imp": [
+            {
+              "id": "ADMVideoImp6",
+              "bidfloor": 1.01,
+              "bidfloorcur": "USD",
+              "secure": 0,
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 100,
+                "h": 150
+              }
+            }
+          ],
+          "site": {
+            "domain": "example.com",
+            "page": "http://example.com/whatever/something.html"
+          },
+          "device": {
+            "devicetype": 2,
+            "ip": "255.255.255.255"
+          },
+          "cur": [
+            "USD"
+          ]
+        },
+        "impIDs":["ADMVideoImp6"]
+      },
+      "mockResponse": {
+        "status" : 200,
+        "body": {
+          "id": "5f4f8790dca51d29347f4dd8",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "crid_8",
+                  "impid": "ADMVideoImp6",
+                  "price": 0.8,
+                  "cat":["IAB2"],
+                  "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
+                  "w": 100,
+                  "h": 150,
+                  "ext": {
+                    "duration": 30
+                  }
+                }
+              ],
+              "seat": "bfb-io-s1"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "https://qa.beachrtb.com/bid.json?exchange_id=videoAppId1&prebidserver",
+        "body": {
+          "isPrebid": true,
+          "id": "six-nine-combo",
+          "imp": [
+            {
+              "id": "NURLVideoImp3",
+              "bidfloor": 1.01,
+              "bidfloorcur": "USD",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 150,
+                "h": 300
+              },
+              "secure": 0
+            }
+          ],
+          "site": {
+            "domain": "example.com",
+            "page": "http://example.com/whatever/something.html"
+          },
+          "device": {
+            "devicetype": 2,
+            "ip": "255.255.255.255"
+          },
+          "cur": [
+            "USD"
+          ]
+        },
+        "impIDs":["NURLVideoImp3"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "61b87329-8790-47b7-90dd-c53ae7ce1723",
+          "seatBid": [
+            {
+              "bid": [
+                {
+                  "id": "NURLVideoImp3",
+                  "price": 20.0,
+                  "nurl": "https://useast.bfmio.com/getBids?aid=bid:de5b4976-0d2a-4032-874c-35e2b3e3ab95: videoAppId1: 10.0: 10.0&v=1&dsp=5f7da002b6b0ca361fc692b0,0.01&i_type=pre",
+                  "adomain": [
+                  ],
+                  "cat": [
+                  ],
+                  "attr": [
+                  ],
+                  "w": 0,
+                  "h": 0,
+                  "ext": {
+                  }
+                }
+              ],
+              "group": 0,
+              "ext": {
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+      {"currency":"USD","bids":[
+        {"bid": {
+            "adm": "<div id=\"crid_1\">Buy now!</div>",
+            "crid": "crid_1",
+            "h": 150,
+            "id": "ADMVideoWithBannerImp1Banner",
+            "impid": "ADMVideoWithBannerImp1",
+            "price": 1.594764,
+            "w": 100
+        }, "type": "banner"},
+        {"bid": {
+            "adm": "<div id=\"crid_2\">Buy now!</div>",
+            "crid": "crid_2",
+            "h": 150,
+            "id": "ADMVideoWithBannerImp2Banner",
+            "impid": "ADMVideoWithBannerImp2",
+            "price": 1.594764,
+            "w": 100
+        }, "type": "banner"},
+        {"bid": {
+            "adm": "<div id=\"crid_3\">Buy now!</div>",
+            "crid": "crid_3",
+            "h": 1024,
+            "id": "RegularBannerImp4Banner",
+            "impid": "RegularBannerImp4",
+            "price": 1.501188,
+            "w": 1280
+        }, "type": "banner"},
+        {"bid": {
+            "adm": "<div id=\"crid_4\">Buy now!</div>",
+            "crid": "crid_4",
+            "h": 1024,
+            "id": "RegularBannerImp5Banner",
+            "impid": "RegularBannerImp5",
+            "price": 1.501188,
+            "w": 1280
+        }, "type": "banner"}
+      ]},
+      {"currency":"USD","bids":[
+        {
+          "bid": {
+            "id": "ADMVideoWithBannerImp1AdmVideo",
+            "impid": "ADMVideoWithBannerImp1",
+            "price": 0.8,
+            "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
+            "cat":["IAB2"],
+            "w": 300,
+            "h": 400,
+            "ext": {
+              "duration": 30
+            }
+          },
+          "type": "video"
+        }
+      ]},
+      {"currency":"USD","bids":[
+        {
+          "bid": {
+            "id": "ADMVideoWithBannerImp2AdmVideo",
+            "impid": "ADMVideoWithBannerImp2",
+            "price": 0.8,
+            "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
+            "cat":["IAB2"],
+            "w": 300,
+            "h": 400,
+            "ext": {
+              "duration": 30
+            }
+          },
+          "type": "video"
+        }
+      ]},
+      {"currency":"USD","bids":[
+        {
+          "bid": {
+            "id": "ADMVideoImp6AdmVideo",
+            "impid": "ADMVideoImp6",
+            "price": 0.8,
+            "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
+            "cat":["IAB2"],
+            "w": 100,
+            "h": 150,
+            "ext": {
+              "duration": 30
+            }
+          },
+          "type": "video"
+        }
+      ]},
+      {"currency":"USD","bids":[
+        {
+          "bid": {
+            "crid": "de5b4976-0d2a-4032-874c-35e2b3e3ab95",
+            "id": "NURLVideoImp3NurlVideo",
+            "impid": "NURLVideoImp3",
+            "nurl": "https://useast.bfmio.com/getBids?aid=bid:de5b4976-0d2a-4032-874c-35e2b3e3ab95: videoAppId1: 10.0: 10.0&v=1&dsp=5f7da002b6b0ca361fc692b0,0.01&i_type=pre",
+            "price": 20,
+            "w": 150,
+            "h": 300,
+            "ext": {}
+          },
+          "type": "video"
+        }
+      ]}
+  ]
+}

@@ -6,14 +6,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/metrics"
 
 	"github.com/buger/jsonparser"
 	"github.com/golang/glog"
@@ -22,7 +22,7 @@ import (
 
 // Client stores values in Prebid Cache. For more info, see https://github.com/prebid/prebid-cache
 type Client interface {
-	// PutJson stores JSON values for the given openrtb.Bids in the cache. Null values will be
+	// PutJson stores JSON values for the given openrtb2.Bids in the cache. Null values will be
 	//
 	// The returned string slice will always have the same number of elements as the values argument. If a
 	// value could not be saved, the element will be an empty string. Implementations are responsible for
@@ -41,13 +41,17 @@ const (
 )
 
 type Cacheable struct {
-	Type       PayloadType
-	Data       json.RawMessage
-	TTLSeconds int64
-	Key        string
+	Type       PayloadType     `json:"type,omitempty"`
+	Data       json.RawMessage `json:"value,omitempty"`
+	TTLSeconds int64           `json:"ttlseconds,omitempty"`
+	Key        string          `json:"key,omitempty"`
+
+	BidID     string `json:"bidid,omitempty"`     // this is "/vtrack" specific
+	Bidder    string `json:"bidder,omitempty"`    // this is "/vtrack" specific
+	Timestamp int64  `json:"timestamp,omitempty"` // this is "/vtrack" specific
 }
 
-func NewClient(httpClient *http.Client, conf *config.Cache, extCache *config.ExternalCache, metrics pbsmetrics.MetricsEngine) Client {
+func NewClient(httpClient *http.Client, conf *config.Cache, extCache *config.ExternalCache, metrics metrics.MetricsEngine) Client {
 	return &clientImpl{
 		httpClient:          httpClient,
 		putUrl:              conf.GetBaseURL() + "/cache",
@@ -64,7 +68,7 @@ type clientImpl struct {
 	externalCacheScheme string
 	externalCacheHost   string
 	externalCachePath   string
-	metrics             pbsmetrics.MetricsEngine
+	metrics             metrics.MetricsEngine
 }
 
 func (c *clientImpl) GetExtCacheData() (string, string, string) {
@@ -114,9 +118,9 @@ func (c *clientImpl) PutJson(ctx context.Context, values []Cacheable) (uuids []s
 	defer anResp.Body.Close()
 	c.metrics.RecordPrebidCacheRequestTime(true, elapsedTime)
 
-	responseBody, err := ioutil.ReadAll(anResp.Body)
+	responseBody, err := io.ReadAll(anResp.Body)
 	if anResp.StatusCode != 200 {
-		logError(&errs, "Prebid Cache call to %s returned %d: %s", putURL, anResp.StatusCode, responseBody)
+		logError(&errs, "Prebid Cache call to %s returned %d: %s", c.putUrl, anResp.StatusCode, responseBody)
 		return uuidsToReturn, errs
 	}
 
@@ -181,6 +185,25 @@ func encodeValueToBuffer(value Cacheable, leadingComma bool, buffer *bytes.Buffe
 		buffer.WriteString(string(value.Key))
 		buffer.WriteString(`"`)
 	}
+
+	//vtrack specific
+	if len(value.BidID) > 0 {
+		buffer.WriteString(`,"bidid":"`)
+		buffer.WriteString(string(value.BidID))
+		buffer.WriteString(`"`)
+	}
+
+	if len(value.Bidder) > 0 {
+		buffer.WriteString(`,"bidder":"`)
+		buffer.WriteString(string(value.Bidder))
+		buffer.WriteString(`"`)
+	}
+
+	if value.Timestamp > 0 {
+		buffer.WriteString(`,"timestamp":`)
+		buffer.WriteString(strconv.FormatInt(value.Timestamp, 10))
+	}
+
 	buffer.WriteByte('}')
 	return nil
 }

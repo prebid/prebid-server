@@ -40,7 +40,7 @@ those updates must be submitted in the same Pull Request as the code changes.
 When you're ready, [submit a Pull Request](https://help.github.com/articles/creating-a-pull-request/)
 against the `master` branch of [our GitHub repository](https://github.com/prebid/prebid-server/compare).
 
-Pull Requests will be vetted through [Travis CI](https://travis-ci.com/).
+Pull Requests will be vetted through GitHub Actions.
 To reproduce these same tests locally, do:
 
 ```bash

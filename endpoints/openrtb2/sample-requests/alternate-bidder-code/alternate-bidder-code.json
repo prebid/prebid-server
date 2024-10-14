@@ -1,0 +1,67 @@
+{
+    "description": "Imp extension doesn't come with valid bidder name but does come with valid bidder alias as defined in the mockAliases list.",
+    "config": {
+      "mockBidders": [
+        {
+          "bidderName": "appnexus",
+          "currency": "USD",
+          "price": 2,
+          "seat": "groupm"
+        }
+      ]
+    },
+    "mockBidRequest": {
+      "id": "some-request-id",
+      "site": {
+        "page": "test.somepage.com",
+        "publisher": {
+            "id": "alternate_bidder_code_acct"
+          }
+      },
+      "imp": [
+        {
+          "id": "my-imp-id",
+          "video": {
+            "mimes": [
+              "video/mp4"
+            ]
+          },
+          "ext": {
+            "appnexus": {
+              "placementId": 12883451
+            }
+          }
+        }
+      ]
+    },
+    "expectedBidResponse": {
+      "id":"some-request-id",
+      "bidid":"test bid id",
+      "cur": "USD",
+      "nbr":0,
+      "seatbid": [
+        {
+          "bid": [
+            {
+              "id": "appnexus-bid",
+              "impid": "my-imp-id",
+              "price": 2,
+              "ext": {
+                "origbidcpm": 2,
+                "origbidcur": "USD",
+                "prebid": {
+                  "meta": {
+                    "adaptercode": "appnexus"
+                  },
+                  "type": "banner"
+                }
+              }
+            }
+          ],
+         "seat": "groupm"
+        }
+      ]
+    },
+    "expectedReturnCode": 200
+  }
+  
