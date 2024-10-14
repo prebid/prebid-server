@@ -31,10 +31,6 @@ type RubiconAdapter struct {
 	XAPIPassword string
 }
 
-type rubiconContext struct {
-	Data json.RawMessage `json:"data"`
-}
-
 type rubiconData struct {
 	AdServer rubiconAdServer `json:"adserver"`
 	PbAdSlot string          `json:"pbadslot"`
@@ -46,12 +42,11 @@ type rubiconAdServer struct {
 }
 
 type rubiconExtImpBidder struct {
-	Prebid  *openrtb_ext.ExtImpPrebid `json:"prebid"`
-	Bidder  openrtb_ext.ExtImpRubicon `json:"bidder"`
-	Gpid    string                    `json:"gpid"`
-	Skadn   json.RawMessage           `json:"skadn,omitempty"`
-	Data    json.RawMessage           `json:"data"`
-	Context rubiconContext            `json:"context"`
+	Prebid *openrtb_ext.ExtImpPrebid `json:"prebid"`
+	Bidder openrtb_ext.ExtImpRubicon `json:"bidder"`
+	Gpid   string                    `json:"gpid"`
+	Skadn  json.RawMessage           `json:"skadn,omitempty"`
+	Data   json.RawMessage           `json:"data"`
 }
 
 type bidRequestExt struct {
@@ -710,9 +705,7 @@ func (a *RubiconAdapter) updateImpRpTarget(extImp rubiconExtImpBidder, extImpRub
 		}
 	}
 
-	if len(extImp.Context.Data) > 0 {
-		err = populateFirstPartyDataAttributes(extImp.Context.Data, target)
-	} else if len(extImp.Data) > 0 {
+	if len(extImp.Data) > 0 {
 		err = populateFirstPartyDataAttributes(extImp.Data, target)
 	}
 	if isNotKeyPathError(err) {
@@ -726,18 +719,11 @@ func (a *RubiconAdapter) updateImpRpTarget(extImp rubiconExtImpBidder, extImpRub
 			return nil, err
 		}
 	}
-	var contextData rubiconData
-	if len(extImp.Context.Data) > 0 {
-		err := json.Unmarshal(extImp.Context.Data, &contextData)
-		if err != nil {
-			return nil, err
-		}
-	}
 
 	if data.PbAdSlot != "" {
 		target["pbadslot"] = data.PbAdSlot
 	} else {
-		dfpAdUnitCode := extractDfpAdUnitCode(data, contextData)
+		dfpAdUnitCode := extractDfpAdUnitCode(data)
 		if dfpAdUnitCode != "" {
 			target["dfp_ad_unit_code"] = dfpAdUnitCode
 		}
@@ -758,10 +744,8 @@ func (a *RubiconAdapter) updateImpRpTarget(extImp rubiconExtImpBidder, extImpRub
 	return updatedTarget, nil
 }
 
-func extractDfpAdUnitCode(data rubiconData, contextData rubiconData) string {
-	if contextData.AdServer.Name == "gam" && contextData.AdServer.AdSlot != "" {
-		return contextData.AdServer.AdSlot
-	} else if data.AdServer.Name == "gam" && data.AdServer.AdSlot != "" {
+func extractDfpAdUnitCode(data rubiconData) string {
+	if data.AdServer.Name == "gam" && data.AdServer.AdSlot != "" {
 		return data.AdServer.AdSlot
 	}
 
