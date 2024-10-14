@@ -3,7 +3,7 @@
     "id": "some-request-id",
     "device": {
       "ua": "test-user-agent",
-      "ip": "123.13.123.123",
+      "ip": "123.123.123.123",
       "language": "en",
       "dnt": 0
     },
