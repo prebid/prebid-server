@@ -156,7 +156,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 	}
 
 	bidderRequests = make([]BidderRequest, 0, len(impsByBidder))
-	
+
 	for bidder, imps := range impsByBidder {
 		reqWrapperCopy := req.Clone() //TODO: check if it is cloning stuff that we don't need to clone
 		reqCopy := *req.BidRequest
@@ -221,7 +221,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		if !ok || info.OpenRTB == nil || info.OpenRTB.Version != "2.6" {
 			if err := openrtb_ext.ConvertDownTo25(reqWrapperCopy); err != nil {
 				errs = append(errs, err)
-				continue	
+				continue
 			}
 		}
 
@@ -276,7 +276,7 @@ func removeImpsWithStoredResponses(req *openrtb2.BidRequest, impBidResponses map
 }
 
 // PreloadExts...
-//TODO: move elsewhere, perhaps into openrtb_ext package?
+// TODO: move elsewhere, perhaps into openrtb_ext package?
 func PreloadExts(req *openrtb_ext.RequestWrapper) error {
 	if req == nil {
 		return nil
@@ -376,7 +376,7 @@ func (rs *requestSplitter) applyPrivacy(bidRequest *openrtb2.BidRequest, coreBid
 		return err
 	}
 
-	bidRequest = reqWrapper.BidRequest
+	*bidRequest = *reqWrapper.BidRequest
 	return nil
 }
 

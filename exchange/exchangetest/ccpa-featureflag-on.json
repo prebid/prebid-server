@@ -57,7 +57,9 @@
                         }
                     ],
                     "regs": {
-                        "us_privacy": "1-Y-"
+                        "ext": {
+                            "us_privacy": "1-Y-"
+                        }
                     },
                     "user": {}
                 }
