@@ -33,7 +33,7 @@ type SChainWriter struct {
 // Write selects an schain from the multi-schain ORTB 2.5 location (req.ext.prebid.schains) for the specified bidder
 // and copies it to the ORTB 2.5 location (req.source.ext). If no schain exists for the bidder in the multi-schain
 // location and no wildcard schain exists, the request is not modified.
-func (w SChainWriter) Write(req *openrtb2.BidRequest, bidder string) {
+func (w SChainWriter) Write(reqWrapper *openrtb_ext.RequestWrapper, bidder string) {
 	const sChainWildCard = "*"
 	var selectedSChain openrtb2.SupplyChain
 
@@ -53,19 +53,19 @@ func (w SChainWriter) Write(req *openrtb2.BidRequest, bidder string) {
 		selectedSChain = *wildCardSChain
 	}
 
-	if req.Source == nil {
-		req.Source = &openrtb2.Source{}
+	if reqWrapper.Source == nil {
+		reqWrapper.Source = &openrtb2.Source{}
 	} else {
 		// Copy Source to avoid shared memory issues.
 		// Source may be modified differently for different bidders in request
-		sourceCopy := *req.Source
-		req.Source = &sourceCopy
+		sourceCopy := *reqWrapper.Source
+		reqWrapper.Source = &sourceCopy
 	}
 
-	req.Source.SChain = &selectedSChain
+	reqWrapper.Source.SChain = &selectedSChain
 
 	if w.hostSChainNode != nil {
-		req.Source.SChain.Nodes = append(req.Source.SChain.Nodes, *w.hostSChainNode)
+		reqWrapper.Source.SChain.Nodes = append(reqWrapper.Source.SChain.Nodes, *w.hostSChainNode)
 	}
 }
 
