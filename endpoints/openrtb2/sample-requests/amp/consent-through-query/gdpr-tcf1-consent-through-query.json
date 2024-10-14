@@ -79,7 +79,9 @@
       }
     ],
     "regs": {
-      "gdpr": 1
+      "ext": {
+        "gdpr": 1
+      }
     },
     "ext": {
       "prebid": {
