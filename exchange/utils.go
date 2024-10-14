@@ -376,7 +376,7 @@ func (rs *requestSplitter) applyPrivacy(bidRequest *openrtb2.BidRequest, coreBid
 		return err
 	}
 
-	bidRequest = reqWrapper.BidRequest
+	*bidRequest = *reqWrapper.BidRequest
 	return nil
 }
 

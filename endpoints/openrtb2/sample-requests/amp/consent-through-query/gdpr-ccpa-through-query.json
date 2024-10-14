@@ -74,7 +74,9 @@
       }
     ],
     "regs": {
-      "us_privacy": "1YYY"
+      "ext": {
+        "us_privacy": "1YYY"
+      }
     },
     "ext": {
       "prebid": {

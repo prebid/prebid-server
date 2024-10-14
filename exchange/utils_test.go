@@ -965,7 +965,7 @@ func TestCleanOpenRTBRequestsWithBidResponses(t *testing.T) {
 						W: ptrutil.ToPtr[int64](300),
 						H: ptrutil.ToPtr[int64](250),
 					},
-					Ext: json.RawMessage(`{"prebid":{"bidder":{"bidderA":{"placementId":"123"}}}}`),
+					Ext: json.RawMessage(`{"prebid":{"bidder":{"bidderA":{"placementId":"123"},"bidderB":{"placementId":"456"}}}}`),
 				},
 			},
 			expectedBidderRequests: map[string]BidderRequest{
@@ -996,7 +996,7 @@ func TestCleanOpenRTBRequestsWithBidResponses(t *testing.T) {
 						W: ptrutil.ToPtr[int64](300),
 						H: ptrutil.ToPtr[int64](250),
 					},
-					Ext: json.RawMessage(`{"prebid":{"bidder":{"bidderA":{"placementId":"123"}}}}`),
+					Ext: json.RawMessage(`{"prebid":{"bidder":{"bidderA":{"placementId":"123"},"bidderB":{"placementId":"456"}}}}`),
 				},
 				{
 					ID:  "imp-id2",
@@ -1036,7 +1036,7 @@ func TestCleanOpenRTBRequestsWithBidResponses(t *testing.T) {
 						W: ptrutil.ToPtr[int64](300),
 						H: ptrutil.ToPtr[int64](250),
 					},
-					Ext: json.RawMessage(`{"prebid":{"bidder":{"bidderA":{"placementId":"123"}}}}`),
+					Ext: json.RawMessage(`{"prebid":{"bidder":{"bidderA":{"placementId":"123"},"bidderB":{"placementId":"456"}}}}`),
 				},
 				{
 					ID:  "imp-id2",
@@ -1102,11 +1102,11 @@ func TestCleanOpenRTBRequestsWithBidResponses(t *testing.T) {
 			imps: []openrtb2.Imp{
 				{
 					ID:  "imp-id1",
-					Ext: json.RawMessage(`"prebid": {}`),
+					Ext: json.RawMessage(`{"prebid":{"bidder":{"bidderA":{"placementId":"123"}}}}`),
 				},
 				{
 					ID:  "imp-id2",
-					Ext: json.RawMessage(`"prebid": {}`),
+					Ext: json.RawMessage(`{"prebid":{"bidder":{"bidderA":{"placementId":"123"}}}}`),
 				},
 			},
 			expectedBidderRequests: map[string]BidderRequest{
@@ -3639,7 +3639,7 @@ func TestApplyFPD(t *testing.T) {
 
 	for _, testCase := range testCases {
 		applyFPD(
-			testCase.inputFpd, 
+			testCase.inputFpd,
 			openrtb_ext.BidderName(testCase.inputBidderCoreName),
 			openrtb_ext.BidderName(testCase.inputBidderName),
 			testCase.inputBidderIsRequestAlias,
@@ -5048,7 +5048,7 @@ func TestApplyBidAdjustmentToFloor(t *testing.T) {
 				bidRequest: &openrtb2.BidRequest{
 					Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
 				},
-				bidderName: "appnexus",
+				bidderName:           "appnexus",
 				bidAdjustmentFactors: nil,
 			},
 			expectedBidRequest: &openrtb2.BidRequest{
@@ -5061,7 +5061,7 @@ func TestApplyBidAdjustmentToFloor(t *testing.T) {
 				bidRequest: &openrtb2.BidRequest{
 					Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
 				},
-				bidderName: "appnexus",
+				bidderName:           "appnexus",
 				bidAdjustmentFactors: map[string]float64{},
 			},
 			expectedBidRequest: &openrtb2.BidRequest{
@@ -5074,7 +5074,7 @@ func TestApplyBidAdjustmentToFloor(t *testing.T) {
 				bidRequest: &openrtb2.BidRequest{
 					Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
 				},
-				bidderName: "appnexus",
+				bidderName:           "appnexus",
 				bidAdjustmentFactors: map[string]float64{"pubmatic": 1.0},
 			},
 			expectedBidRequest: &openrtb2.BidRequest{
@@ -5087,7 +5087,7 @@ func TestApplyBidAdjustmentToFloor(t *testing.T) {
 				bidRequest: &openrtb2.BidRequest{
 					Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
 				},
-				bidderName: "appnexus",
+				bidderName:           "appnexus",
 				bidAdjustmentFactors: map[string]float64{"pubmatic": 1.0, "appnexus": 0.75},
 			},
 			expectedBidRequest: &openrtb2.BidRequest{
@@ -5100,7 +5100,7 @@ func TestApplyBidAdjustmentToFloor(t *testing.T) {
 				bidRequest: &openrtb2.BidRequest{
 					Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
 				},
-				bidderName: "appnexus",
+				bidderName:           "appnexus",
 				bidAdjustmentFactors: map[string]float64{"pubmatic": 1.0, "appnexus": 0.0},
 			},
 			expectedBidRequest: &openrtb2.BidRequest{
@@ -5331,5 +5331,71 @@ func TestCopyExtAlternateBidderCodes(t *testing.T) {
 			alternateBidderCodes := copyExtAlternateBidderCodes(tc.in.bidder, tc.in.alternateBidderCodes)
 			assert.Equal(t, tc.expected, alternateBidderCodes)
 		})
+	}
+}
+
+func TestRemoveImpsWithStoredResponses(t *testing.T) {
+	bidRespId1 := json.RawMessage(`{"id": "resp_id1"}`)
+	testCases := []struct {
+		description        string
+		reqIn              *openrtb2.BidRequest
+		storedBidResponses map[string]json.RawMessage
+		expectedImps       []openrtb2.Imp
+	}{
+		{
+			description: "request with imps and stored bid response for this imp",
+			reqIn: &openrtb2.BidRequest{Imp: []openrtb2.Imp{
+				{ID: "imp-id1"},
+			}},
+			storedBidResponses: map[string]json.RawMessage{
+				"imp-id1": bidRespId1,
+			},
+			expectedImps: nil,
+		},
+		{
+			description: "request with imps and stored bid response for one of these imp",
+			reqIn: &openrtb2.BidRequest{Imp: []openrtb2.Imp{
+				{ID: "imp-id1"},
+				{ID: "imp-id2"},
+			}},
+			storedBidResponses: map[string]json.RawMessage{
+				"imp-id1": bidRespId1,
+			},
+			expectedImps: []openrtb2.Imp{
+				{
+					ID: "imp-id2",
+				},
+			},
+		},
+		{
+			description: "request with imps and stored bid response for both of these imp",
+			reqIn: &openrtb2.BidRequest{Imp: []openrtb2.Imp{
+				{ID: "imp-id1"},
+				{ID: "imp-id2"},
+			}},
+			storedBidResponses: map[string]json.RawMessage{
+				"imp-id1": bidRespId1,
+				"imp-id2": bidRespId1,
+			},
+			expectedImps: nil,
+		},
+		{
+			description: "request with imps and no stored bid responses",
+			reqIn: &openrtb2.BidRequest{Imp: []openrtb2.Imp{
+				{ID: "imp-id1"},
+				{ID: "imp-id2"},
+			}},
+			storedBidResponses: nil,
+
+			expectedImps: []openrtb2.Imp{
+				{ID: "imp-id1"},
+				{ID: "imp-id2"},
+			},
+		},
+	}
+	for _, testCase := range testCases {
+		request := testCase.reqIn
+		removeImpsWithStoredResponses(request, testCase.storedBidResponses)
+		assert.Equal(t, testCase.expectedImps, request.Imp, "incorrect Impressions for testCase %s", testCase.description)
 	}
 }

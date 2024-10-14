@@ -74,10 +74,14 @@
       }
     ],
     "regs": {
-      "gdpr": 1
+      "ext": {
+        "gdpr": 1
+      }
     },
     "user": {
-      "consent": "CPdECS0PdECS0ACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA"
+      "ext": {
+        "consent": "CPdECS0PdECS0ACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA"
+      }
     },
     "ext": {
       "prebid": {
