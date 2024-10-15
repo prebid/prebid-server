@@ -142,19 +142,7 @@ func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.P
 		TID:          req.Tid,
 		BidderStatus: req.Bidders,
 	}
-	ch := make(chan bidResult)
-	sentBids := 0
-	for _, bidder := range req.Bidders {
-		if ex, ok := a.exchanges[bidder.BidderCode]; ok {
-			// Make sure we have an independent label struct for each bidder. We don't want to run into issues with the goroutine below.
-			blabels := pbsmetrics.AdapterLabels{
-				Source:      labels.Source,
-				RType:       labels.RType,
-				Adapter:     openrtb_ext.BidderMap[bidder.BidderCode],
-				PubID:       labels.PubID,
-				Browser:     labels.Browser,
-				CookieFlag:  labels.CookieFlag,
-				AdapterBids: pbsmetrics.AdapterBidPresent,
+	s.AdapterBidPresent,
 			}
 			if blabels.Adapter == "" {
 				// "districtm" is legal, but not in BidderMap. Other values will log errors in the go_metrics code
