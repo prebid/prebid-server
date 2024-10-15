@@ -51,7 +51,7 @@ func BuildEndpointSender(client *http.Client, baseUrl string, module string) Sen
 	if err != nil {
 		glog.Error(err)
 	}
-	endpoint.Path = path.Join(endpoint.Path, "pageview-event", "json")
+	endpoint.Path = path.Join(endpoint.Path, "bidanalytics-event", "json")
 
 	return NewHttpSender(client, endpoint.String())
 }
