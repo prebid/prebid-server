@@ -341,7 +341,10 @@
                     ],
                     "attr5": [
                       "3"
-                    ]
+                    ],
+                    "pbs_login": "xuser",
+                    "pbs_url": "http://hosturl.com",
+                    "pbs_version": ""
                   },
                   "track": {
                     "mint": "",
