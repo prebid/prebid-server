@@ -1,27 +1,30 @@
-name: SonarQube Analysis
+name: SonarCloud Analysis
 
 on:
   pull_request:
     branches:
-      - main  # Change this to your default branch if different
+      - main  # Adjust this if your default branch is different
 
 jobs:
   sonarcloud:
-    docker:
-      - image: sonarsource/sonarcloud-scanner-cli:latest
+    name: SonarCloud Scan
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: SonarQube Scan
+      - name: Set up JDK
+        uses: actions/setup-java@v2
+        with:
+          java-version: '11'  # Adjust the version if needed
+
+      - name: SonarCloud Scan
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}  # Add SONAR_TOKEN to your GitHub secrets
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Required for GitHub Actions
         run: |
-          sonar-scanner \
+          mvn sonar:sonar \
             -Dsonar.projectKey=<your_project_key> \
             -Dsonar.organization=<your_organization> \
-            -Dsonar.sources=. \
             -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.login=$SONAR_TOKEN
