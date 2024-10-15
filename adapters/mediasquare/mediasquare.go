@@ -1,0 +1,118 @@
+package mediasquare
+
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+)
+
+type adapter struct {
+	endpoint string
+}
+
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	return &adapter{
+		endpoint: config.Endpoint,
+	}, nil
+}
+
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	var (
+		requestData []*adapters.RequestData
+		errs        []error
+	)
+	if request == nil {
+		errs = append(errs, errorWritter("<MakeRequests> request", nil, true))
+		return nil, errs
+	}
+
+	msqParams := initMsqParams(request)
+	for _, imp := range request.Imp {
+		var (
+			bidderExt   adapters.ExtImpBidder
+			msqExt      openrtb_ext.ImpExtMediasquare
+			currentCode = MsqParametersCodes{
+				AdUnit:    imp.TagID,
+				AuctionId: request.ID,
+				BidId:     imp.ID,
+			}
+		)
+
+		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+			errs = append(errs, errorWritter("<MakeRequests> imp[ext]", err, len(imp.Ext) == 0))
+			continue
+		}
+		if err := json.Unmarshal(bidderExt.Bidder, &msqExt); err != nil {
+			errs = append(errs, errorWritter("<MakeRequests> imp-bidder[ext]", err, len(bidderExt.Bidder) == 0))
+			continue
+		}
+		currentCode.Owner = msqExt.Owner
+		currentCode.Code = msqExt.Code
+
+		if ok := currentCode.setContent(imp); ok {
+			msqParams.Codes = append(msqParams.Codes, currentCode)
+		}
+	}
+
+	req, err := a.makeRequest(request, &msqParams)
+	if err != nil {
+		errs = append(errs, err)
+	} else if req != nil {
+		requestData = append(requestData, req)
+	}
+	return requestData, errs
+}
+
+func (a *adapter) makeRequest(request *openrtb2.BidRequest, msqParams *MsqParameters) (requestData *adapters.RequestData, err error) {
+	var requestJsonBytes []byte
+	if msqParams == nil {
+		err = errorWritter("<makeRequest> msqParams", nil, true)
+		return
+	}
+	if requestJsonBytes, err = json.Marshal(*msqParams); err == nil {
+		var headers http.Header = headerList
+		requestData = &adapters.RequestData{
+			Method:  "POST",
+			Uri:     a.endpoint,
+			Body:    requestJsonBytes,
+			Headers: headers,
+			ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
+		}
+	} else {
+		err = errorWritter("<makeRequest> json.Marshal", err, false)
+	}
+	return
+}
+
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	var (
+		bidderResponse *adapters.BidderResponse
+		errs           []error
+	)
+	if response.StatusCode != http.StatusOK {
+		switch response.StatusCode {
+		case http.StatusBadRequest:
+			errs = []error{&errortypes.BadInput{Message: fmt.Sprintf("<MakeBids> Unexpected status code: %d.", response.StatusCode)}}
+		default:
+			errs = []error{&errortypes.BadServerResponse{
+				Message: fmt.Sprintf("<MakeBids> Unexpected status code: %d. Run with request.debug = 1 for more info.", response.StatusCode),
+			}}
+		}
+		return bidderResponse, errs
+	}
+
+	var msqResponse MsqResponse
+	if err := json.Unmarshal(response.Body, &msqResponse); err != nil {
+		errs = []error{&errortypes.BadServerResponse{Message: fmt.Sprintf("<MakeBids> Bad server response: %s.", err.Error())}}
+		return bidderResponse, errs
+	}
+	bidderResponse = adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
+	msqResponse.getContent(bidderResponse)
+	return bidderResponse, errs
+}

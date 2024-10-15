@@ -1,0 +1,138 @@
+{
+  "device": {
+    "ip": "92.154.6.151",
+    "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+    "language": "fr",
+    "geo": {
+      "country": "FRA",
+      "ipservice": 3
+    }
+  },
+  "ext": {
+    "prebid": {
+      "aliases": {
+        "Magnite": "rubicon",
+        "msqClassic": "appnexus",
+        "msqMediagrid": "grid"
+      },
+      "bidadjustmentfactors": {
+        "msqClassic": 0.8,
+        "msqMediagrid": 0.8
+      },
+      "targeting": {
+        "pricegranularity": {}
+      },
+      "debug": true,
+      "schains": [
+        {
+          "bidders": ["*"],
+          "schain": {
+            "ver": "1.0",
+            "complete": 1,
+            "nodes": [
+              {
+                "asi": "mediasquare.fr",
+                "sid": "1",
+                "hp": 1
+              }
+            ]
+          }
+        },
+        {
+          "bidders": ["msqClassic"],
+          "schain": {
+            "ver": "1.0",
+            "complete": 1,
+            "nodes": [
+              {
+                "asi": "mediasquare.fr",
+                "sid": "68",
+                "hp": 1
+              }
+            ]
+          }
+        }
+      ],
+      "channel": {
+        "name": "pbjs",
+        "version": "9.16.0-pre"
+      }
+    }
+  },
+  "id": "70e5672c-515b-406e-967c-fcc2b04de04f",
+  "imp": [
+    {
+      "banner": {
+        "format": [
+          {
+            "w": 970,
+            "h": 250
+          }
+        ],
+        "pos": 1
+      },
+      "ext": {
+        "mediasquare": {
+          "owner": "owner42",
+          "code": "code42"
+        }
+      },
+      "id": "2c35e25e-e7d3-41bf-b810-06a449f456b9",
+      "secure": 1,
+      "bidfloor": 1,
+      "bidfloorcur": "USD"
+    },
+    {
+      "banner": {
+        "format": [
+          {
+            "w": 300,
+            "h": 250
+          },
+          {
+            "w": 300,
+            "h": 600
+          },
+          {
+            "w": 120,
+            "h": 600
+          }
+        ],
+        "pos": 1
+      },
+      "ext": {
+        "mediasquare": {
+          "owner": "owner-42",
+          "code": "code-42"
+        }
+      },
+      "id": "2059a3e6-71a3-43ea-8290-b5ceb13d35a8",
+      "secure": 1,
+      "bidfloor": 0.01,
+      "bidfloorcur": "USD"
+    }
+  ],
+  "regs": {
+    "gdpr": 1,
+    "ext": {
+      "gdpr": 1
+    }
+  },
+  "site": {
+    "page": "https://debug.mediasquare.fr/debug/prebid/msq_desktop.html?pbjs_debug=true",
+    "publisher": {
+      "id": "MEDIA_SQUARE"
+    },
+    "name": "debug.mediasquare.fr",
+    "domain": "debug.mediasquare.fr",
+    "content": {}
+  },
+  "tmax": 1300,
+  "user": {
+    "consent": "CQF9-AAQF9-AAAKA1AENDgCsAP_AAEPAAAqIg1NX_H__bW9r8X7_aft0eY1P9_j77sQxBhfJE-4F3LvW_JwXx2E5NF36tqoKmRoEu3ZBIUNlHJHUTVmwaogVryHsakWcoTNKJ6BkkFMRM2dYCF5vm4tjeQKY5_p_d3fx2D-t_dv839zzz8VHn3e5fue0-PCdU5-9Dfn9fRfb-9IP9_78v8v8_l_rk2_eT13_pcvr_D--f_87_XW-9_cAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEQagCzDQuIAuyJCQm0DCKBACIKwgIoEAAAAJA0QEALgwKdgYBLrCRACBFAAcEAIQAUZAAgAAEgAQiACQIoEAAEAgEAAIAEAgEADAwADgAtBAIAAQHQMUwoAFAsIEiMiIUwIQoEggJbKBBKCoQVwgCLDAigERsFAAgCQEVgACAsXgMASAlYkECXUG0AABAAgFFKFQik_MAQ4Jmy1V4om0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAACAA.f_gAAAAAAAAA",
+    "ext": {
+      "consent": "CQF9-AAQF9-AAAKA1AENDgCsAP_AAEPAAAqIg1NX_H__bW9r8X7_aft0eY1P9_j77sQxBhfJE-4F3LvW_JwXx2E5NF36tqoKmRoEu3ZBIUNlHJHUTVmwaogVryHsakWcoTNKJ6BkkFMRM2dYCF5vm4tjeQKY5_p_d3fx2D-t_dv839zzz8VHn3e5fue0-PCdU5-9Dfn9fRfb-9IP9_78v8v8_l_rk2_eT13_pcvr_D--f_87_XW-9_cAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEQagCzDQuIAuyJCQm0DCKBACIKwgIoEAAAAJA0QEALgwKdgYBLrCRACBFAAcEAIQAUZAAgAAEgAQiACQIoEAAEAgEAAIAEAgEADAwADgAtBAIAAQHQMUwoAFAsIEiMiIUwIQoEggJbKBBKCoQVwgCLDAigERsFAAgCQEVgACAsXgMASAlYkECXUG0AABAAgFFKFQik_MAQ4Jmy1V4om0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAACAA.f_gAAAAAAAAA"
+    }
+  },
+  "cur": ["USD"]
+}
