@@ -1,5 +1,6 @@
 {
     "host_schain_flag": true,
+    "ortbversion": "2.6",
     "incomingRequest": {
         "ortbRequest": {
             "id": "some-request-id",
