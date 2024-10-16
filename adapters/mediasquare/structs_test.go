@@ -139,7 +139,7 @@ func TestSetContent(t *testing.T) {
 		expected := test.params
 
 		ok := test.params.setContent(test.imp)
-		assert.Equal(t, test.ok, ok, fmt.Sprintf("ok >> index: %d", index))
+		assert.Equal(t, test.ok, ok, fmt.Sprintf("ok >> index: %d.", index))
 
 		switch index {
 		case 1:
@@ -158,7 +158,7 @@ func TestSetContent(t *testing.T) {
 
 		expectedBytes, _ := json.Marshal(expected)
 		paramsBytes, _ := json.Marshal(test.params)
-		assert.Equal(t, string(expectedBytes), string(paramsBytes), fmt.Sprintf("assert >> index: %d", index))
+		assert.Equal(t, string(expectedBytes), string(paramsBytes), fmt.Sprintf("assert >> index: %d.", index))
 	}
 }
 
