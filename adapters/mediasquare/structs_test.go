@@ -51,7 +51,6 @@ func TestGetContent(t *testing.T) {
 						},
 						BidMeta: &openrtb_ext.ExtBidPrebidMeta{MediaType: "banner"},
 						BidType: "banner",
-						Seat:    "bidder-ok",
 					},
 				},
 			},
@@ -86,9 +85,6 @@ func TestSetContent(t *testing.T) {
 				AuctionId: "auctionid-ok",
 				Code:      "code-ok",
 				BidId:     "bidid-ok",
-				Mediatypes: MediaTypes{
-					Banner: &MediaTypeBanner{Sizes: [][]*int{{intAsPtrInt(1), intAsPtrInt(1)}, {intAsPtrInt(42), intAsPtrInt(42)}}},
-				},
 			},
 			imp: openrtb2.Imp{
 				ID: "imp-id",
@@ -147,7 +143,8 @@ func TestSetContent(t *testing.T) {
 
 		switch index {
 		case 1:
-			expected.Floor = map[string]MsqFloor{"1x1": {Price: 0.8}, "1x2": {Price: 0.8}, "2x1": {Price: 0.8}, "42x42": {Price: 0.8}}
+			expected.Mediatypes.Banner = &MediaTypeBanner{Sizes: [][]*int{{intAsPtrInt(1), intAsPtrInt(2)}, {intAsPtrInt(2), intAsPtrInt(1)}}}
+			expected.Floor = map[string]MsqFloor{"1x2": {Price: 0.8}, "2x1": {Price: 0.8}}
 		case 2:
 			expected.Floor = map[string]MsqFloor{"42x42": {Price: 0.8}, "*": {Price: 0.8}}
 			expected.Mediatypes.Video = &MediaTypeVideo{Mimes: []string{"MIMEs-ok"}, H: intAsPtrInt(42), W: intAsPtrInt(42)}
@@ -155,6 +152,7 @@ func TestSetContent(t *testing.T) {
 			expected.Mediatypes.Native = &MediaTypeNative{Type: "native", Sizes: [][]int{{42, 42}, {2, 1}, {1, 1}}}
 			expected.Floor = map[string]MsqFloor{"1x1": {Price: 0.8}, "42x42": {Price: 0.8}, "2x1": {Price: 0.8}, "*": {Price: 0.8}}
 		case 4:
+			expected.Mediatypes.Banner = &MediaTypeBanner{Sizes: [][]*int{{intAsPtrInt(42), intAsPtrInt(42)}}}
 			expected.Floor = map[string]MsqFloor{"42x42": {Price: 0.8}}
 		}
 

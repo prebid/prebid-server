@@ -104,7 +104,7 @@ func TestMakeRequest(t *testing.T) {
 
 			result: []*adapters.RequestData{
 				{Method: "POST", Uri: "edp-mediasquare", Headers: headerList, ImpIDs: []string{"0", "1", "-42", "-1", "-0", "42"},
-					Body: []byte(`{"codes":[{"adunit":"","auctionid":"id-ok","bidid":"42","code":"code-ok","owner":"owner-ok","mediatypes":{"banner":null,"video":null,"native":{"title":null,"icon":null,"image":null,"clickUrl":null,"displayUrl":null,"privacyLink":null,"privacyIcon":null,"cta":null,"rating":null,"downloads":null,"likes":null,"price":null,"saleprice":null,"address":null,"phone":null,"body":null,"body2":null,"sponsoredBy":null,"sizes":null,"type":"native"}},"floor":{"*":{}}}],"gdpr":{"consent_required":false,"consent_string":""},"type":"pbs","dsa":"","tech":{"device":null,"app":null}}`)},
+					Body: []byte(`{"codes":[{"adunit":"","auctionid":"id-ok","bidid":"42","code":"code-ok","owner":"owner-ok","mediatypes":{"banner":null,"video":null,"native":{"title":null,"icon":null,"image":null,"clickUrl":null,"displayUrl":null,"privacyLink":null,"privacyIcon":null,"cta":null,"rating":null,"downloads":null,"likes":null,"price":null,"saleprice":null,"address":null,"phone":null,"body":null,"body2":null,"sponsoredBy":null,"sizes":null,"type":"native"}},"floor":{"*":{}}}],"gdpr":{"consent_required":false,"consent_string":""},"type":"pbs","dsa":"","tech":{"device":null,"app":null},"test":false}`)},
 			},
 			errs: []error{
 				errors.New("<MakeRequests> imp[ext]: is empty."),

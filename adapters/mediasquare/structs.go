@@ -6,7 +6,6 @@ import (
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 // MsqResponse: Bid-Response sent by Mediasquare.
@@ -29,6 +28,7 @@ type MsqParameters struct {
 	Type    string      `json:"type"`
 	DSA     interface{} `json:"dsa,omitempty"`
 	Support MsqSupport  `json:"tech"`
+	Test    bool        `json:"test"`
 }
 
 type MsqResponseBidsVideo struct {
@@ -236,15 +236,21 @@ func (msqParams *MsqParametersCodes) setContent(currentImp openrtb2.Imp) (ok boo
 
 	if currentImp.Banner != nil {
 		ok = true
+		var banner MediaTypeBanner
+		json.Unmarshal(currentImp.Banner.Ext, &banner)
 
-		json.Unmarshal(currentImp.Banner.Ext, msqParams.Mediatypes.Banner)
+		msqParams.Mediatypes.Banner = &banner
 		switch {
 		case len(currentImp.Banner.Format) > 0:
 			for _, bannerFormat := range currentImp.Banner.Format {
 				currentMapFloors[fmt.Sprintf("%dx%d", bannerFormat.W, bannerFormat.H)] = currentFloor
+				msqParams.Mediatypes.Banner.Sizes = append(msqParams.Mediatypes.Banner.Sizes,
+					[]*int{intToPtrInt(int(bannerFormat.W)), intToPtrInt(int(bannerFormat.H))})
 			}
 		case currentImp.Banner.W != nil && currentImp.Banner.H != nil:
 			currentMapFloors[fmt.Sprintf("%dx%d", *(currentImp.Banner.W), *(currentImp.Banner.H))] = currentFloor
+			msqParams.Mediatypes.Banner.Sizes = append(msqParams.Mediatypes.Banner.Sizes,
+				[]*int{intToPtrInt(int(*currentImp.Banner.W)), intToPtrInt(int(*currentImp.Banner.H))})
 		}
 
 		if msqParams.Mediatypes.Banner != nil {
@@ -282,7 +288,6 @@ func (msqResp *MsqResponse) getContent(bidderResponse *adapters.BidderResponse) 
 	for _, resp := range msqResp.Responses {
 		tmpTBid := adapters.TypedBid{
 			BidType: resp.bidType(),
-			Seat:    openrtb_ext.BidderName(resp.Bidder),
 			Bid: &openrtb2.Bid{
 				ID:      resp.ID,
 				ImpID:   resp.BidId,

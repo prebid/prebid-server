@@ -33,6 +33,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	}
 
 	msqParams := initMsqParams(request)
+	msqParams.Test = (request.Test == int8(1))
 	for _, imp := range request.Imp {
 		var (
 			bidderExt   adapters.ExtImpBidder
@@ -75,7 +76,7 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest, msqParams *MsqParame
 		err = errorWritter("<makeRequest> msqParams", nil, true)
 		return
 	}
-	if requestJsonBytes, err = json.Marshal(*msqParams); err == nil {
+	if requestJsonBytes, err = json.Marshal(msqParams); err == nil {
 		var headers http.Header = headerList
 		requestData = &adapters.RequestData{
 			Method:  "POST",

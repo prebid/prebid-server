@@ -93,6 +93,11 @@ func ptrInt8ToBool(i *int8) bool {
 	return false
 }
 
+func intToPtrInt(i int) *int {
+	val := int(i)
+	return &val
+}
+
 func errorWritter(referer string, err error, isEmpty bool) error {
 	if isEmpty {
 		return fmt.Errorf("%s: is empty.", referer)

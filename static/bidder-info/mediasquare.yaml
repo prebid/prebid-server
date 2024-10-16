@@ -1,4 +1,4 @@
-endpoint: "https://pbs-front.mediasquare.fr/msq_prebid"
+endpoint: "http://pbs-front.mediasquare.fr/msq_prebid"
 endpointCompression: gzip
 gvlVendorID: 791
 modifyingVastXmlAllowed: true
@@ -7,6 +7,6 @@ maintainer:
 capabilities:
   app:
     mediaTypes:
-    - banner
-    - video
-    - native
+      - banner
+      - video
+      - native
