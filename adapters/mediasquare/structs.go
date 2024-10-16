@@ -66,13 +66,11 @@ type MsqResponseBidsNative struct {
 }
 
 type MsqResponseBids struct {
-	ID     string `json:"id"`
-	Ad     string `json:"ad,omitempty"`
-	BidId  string `json:"bid_id,omitempty"`
-	Bidder string `json:"bidder,omitempty"`
-	//Code          string                 `json:"code,omitempty"`
-	Cpm float64 `json:"cpm,omitempty"`
-	//Increment     float32                `json:"increment"`
+	ID            string                 `json:"id"`
+	Ad            string                 `json:"ad,omitempty"`
+	BidId         string                 `json:"bid_id,omitempty"`
+	Bidder        string                 `json:"bidder,omitempty"`
+	Cpm           float64                `json:"cpm,omitempty"`
 	Currency      string                 `json:"currency,omitempty"`
 	CreativeId    string                 `json:"creative_id,omitempty"`
 	Height        int64                  `json:"height,omitempty"`
@@ -82,14 +80,9 @@ type MsqResponseBids struct {
 	Ttl           int                    `json:"ttl,omitempty"`
 	Video         *MsqResponseBidsVideo  `json:"video,omitempty"`
 	Native        *MsqResponseBidsNative `json:"native,omitempty"`
-	//Amp           *MsqResponseBidsAmp    `json:"targeting,omitempty"`
-	ADomain []string `json:"adomain,omitempty"`
-	//HasConsent    bool                   `json:"hasConsent,omitempty"`
-	//Context       string                 `json:"context,omitempty"`
-	//Ova           string                 `json:"ova,omitempty"`
-	Dsa interface{} `json:"dsa,omitempty"`
-	//Match         string                 `json:"match,omitempty"`
-	BURL string `json:"burl,omitempty"`
+	ADomain       []string               `json:"adomain,omitempty"`
+	Dsa           interface{}            `json:"dsa,omitempty"`
+	BURL          string                 `json:"burl,omitempty"`
 }
 
 type MsqSupport struct {
@@ -202,7 +195,7 @@ func initMsqParams(request *openrtb2.BidRequest) (msqParams MsqParameters) {
 		ConsentRequired: (parserGDPR{}).getValue("consent_requirement", request) == "true",
 		ConsentString:   (parserGDPR{}).getValue("consent_string", request),
 	}
-	msqParams.DSA = parserDSA{}.getValue(request)
+	msqParams.DSA = (parserDSA{}).getValue(request)
 
 	return
 }

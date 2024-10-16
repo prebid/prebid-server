@@ -74,8 +74,8 @@ func TestMakeBids(t *testing.T) {
 
 		errsVal, _ := json.Marshal(errs)
 		errsExp, _ := json.Marshal(test.errs)
-		assert.Equal(t, test.bidderResponse, resp, fmt.Sprintf("resp >> index: %d", index))
-		assert.Equal(t, errsExp, errsVal, fmt.Sprintf("errs >> index: %d", index))
+		assert.Equal(t, test.bidderResponse, resp, fmt.Sprintf("resp >> index: %d.", index))
+		assert.Equal(t, errsExp, errsVal, fmt.Sprintf("errs >> index: %d.", index))
 	}
 }
 
@@ -132,5 +132,4 @@ func TestMakeRequest(t *testing.T) {
 	assert.Equal(t, errorWritter("<makeRequest> msqParams", nil, true), errNil, "error<makeRequest> errNil")
 	_, errChan := msqAdapter.makeRequest(nil, &MsqParameters{DSA: make(chan int)})
 	assert.Equal(t, errorWritter("<makeRequest> json.Marshal", errors.New("json: unsupported type: chan int"), false), errChan, "error<makeRequest> errChan")
-
 }

@@ -18,7 +18,7 @@ func TestPtrInt8ToBool(t *testing.T) {
 		42: false,
 	}
 	for value, expected := range tests {
-		assert.Equal(t, expected, ptrInt8ToBool(&value), "ptrInt8ToBool >> value:", value)
+		assert.Equal(t, expected, ptrInt8ToBool(&value), fmt.Sprintf("ptrInt8ToBool >> value: (int8)=%d.", value))
 	}
 	assert.Equal(t, false, ptrInt8ToBool(nil), "ptrInt8ToBool >> value(nil)")
 }
@@ -32,20 +32,17 @@ func TestMethodsType(t *testing.T) {
 		mType   openrtb2.MarkupType
 	}{
 		{
-			resp: MsqResponseBids{Native: &MsqResponseBidsNative{ClickUrl: "not-nil"}},
-
+			resp:    MsqResponseBids{Native: &MsqResponseBidsNative{ClickUrl: "not-nil"}},
 			bidType: "native",
 			mType:   openrtb2.MarkupNative,
 		},
 		{
-			resp: MsqResponseBids{Video: &MsqResponseBidsVideo{Xml: "not-nil"}},
-
+			resp:    MsqResponseBids{Video: &MsqResponseBidsVideo{Xml: "not-nil"}},
 			bidType: "video",
 			mType:   openrtb2.MarkupVideo,
 		},
 		{
-			resp: MsqResponseBids{ID: "not-nil"},
-
+			resp:    MsqResponseBids{ID: "not-nil"},
 			bidType: "banner",
 			mType:   openrtb2.MarkupBanner,
 		},
@@ -65,26 +62,22 @@ func TestLoadExtBid(t *testing.T) {
 		isOk   bool
 	}{
 		{
-			resp: MsqResponseBids{},
-
+			resp:   MsqResponseBids{},
 			extBid: openrtb_ext.ExtBid{DSA: nil, Prebid: nil},
 			isOk:   true,
 		},
 		{
-			resp: MsqResponseBids{Dsa: openrtb_ext.ExtBidDSA{Behalf: "behalf"}},
-
+			resp:   MsqResponseBids{Dsa: openrtb_ext.ExtBidDSA{Behalf: "behalf"}},
 			extBid: openrtb_ext.ExtBid{DSA: &openrtb_ext.ExtBidDSA{Behalf: "behalf"}},
 			isOk:   true,
 		},
 		{
-			resp: MsqResponseBids{Dsa: "lol"},
-
+			resp:   MsqResponseBids{Dsa: "lol"},
 			extBid: openrtb_ext.ExtBid{},
 			isOk:   false,
 		},
 		{
-			resp: MsqResponseBids{Dsa: make(chan int)},
-
+			resp:   MsqResponseBids{Dsa: make(chan int)},
 			extBid: openrtb_ext.ExtBid{},
 			isOk:   false,
 		},
@@ -92,8 +85,8 @@ func TestLoadExtBid(t *testing.T) {
 
 	for index, test := range tests {
 		extBid, errs := test.resp.loadExtBid()
-		assert.Equal(t, test.extBid.DSA, extBid.DSA, fmt.Sprintf("extBid.DSA >> index: %d", index))
-		assert.Equal(t, test.isOk, errs == nil, fmt.Sprintf("isOk >> index: %d", index))
+		assert.Equal(t, test.extBid.DSA, extBid.DSA, fmt.Sprintf("extBid.DSA >> index: %d.", index))
+		assert.Equal(t, test.isOk, errs == nil, fmt.Sprintf("isOk >> index: %d.", index))
 	}
 }
 
@@ -107,8 +100,7 @@ func TestExtBidPrebidMeta(t *testing.T) {
 		value     openrtb_ext.ExtBidPrebidMeta
 	}{
 		{
-			resp: MsqResponseBids{ADomain: []string{"test-adomain-0", "test-adomain-1"}},
-
+			resp:      MsqResponseBids{ADomain: []string{"test-adomain-0", "test-adomain-1"}},
 			adomains:  []string{"test-adomain-0", "test-adomain-1"},
 			mediatype: "banner",
 			value: openrtb_ext.ExtBidPrebidMeta{
@@ -117,15 +109,13 @@ func TestExtBidPrebidMeta(t *testing.T) {
 			},
 		},
 		{
-			resp: MsqResponseBids{},
-
+			resp:      MsqResponseBids{},
 			adomains:  nil,
 			mediatype: "banner",
 			value:     openrtb_ext.ExtBidPrebidMeta{MediaType: "banner"},
 		},
 		{
-			resp: MsqResponseBids{Video: &MsqResponseBidsVideo{Xml: "not-nil"}},
-
+			resp:      MsqResponseBids{Video: &MsqResponseBidsVideo{Xml: "not-nil"}},
 			adomains:  nil,
 			mediatype: "video",
 			value:     openrtb_ext.ExtBidPrebidMeta{MediaType: "video"},
@@ -134,9 +124,9 @@ func TestExtBidPrebidMeta(t *testing.T) {
 
 	for index, test := range tests {
 		result := test.resp.extBidPrebidMeta()
-		assert.Equal(t, test.adomains, result.AdvertiserDomains, fmt.Sprintf("ADomains >> index: %d", index))
-		assert.Equal(t, test.mediatype, result.MediaType, fmt.Sprintf("MediaType >> index: %d", index))
-		assert.Equal(t, test.value, *result, fmt.Sprintf("ExactValue >> index: %d", index))
+		assert.Equal(t, test.adomains, result.AdvertiserDomains, fmt.Sprintf("ADomains >> index: %d.", index))
+		assert.Equal(t, test.mediatype, result.MediaType, fmt.Sprintf("MediaType >> index: %d.", index))
+		assert.Equal(t, test.value, *result, fmt.Sprintf("ExactValue >> index: %d.", index))
 	}
 }
 
@@ -158,6 +148,6 @@ func TestExtBid(t *testing.T) {
 	}
 
 	for index, test := range tests {
-		assert.Equal(t, test.raw, test.resp.extBid(), fmt.Sprintf("raw >> index: %d", index))
+		assert.Equal(t, test.raw, test.resp.extBid(), fmt.Sprintf("Raw >> index: %d.", index))
 	}
 }

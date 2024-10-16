@@ -48,8 +48,7 @@ func (msqBids *MsqResponseBids) bidType() openrtb_ext.BidType {
 func (msqBids *MsqResponseBids) extBid() (raw json.RawMessage) {
 	extBid, _ := msqBids.loadExtBid()
 	if extBid.DSA != nil || extBid.Prebid != nil {
-		bb, _ := json.Marshal(extBid)
-		if len(bb) > 0 {
+		if bb, _ := json.Marshal(extBid); len(bb) > 0 {
 			raw = json.RawMessage(bb)
 		}
 	}
@@ -75,7 +74,7 @@ func (msqBids *MsqResponseBids) loadExtBid() (extBid openrtb_ext.ExtBid, errs []
 	return
 }
 
-// extBidPrebidMeta: Extracts the ExtBidPrebidMeta from msqBids.
+// extBidPrebidMeta: Extracts the ExtBidPrebidMeta from msqBids as (*openrtb_ext.ExtBidPrebidMeta).
 func (msqBids *MsqResponseBids) extBidPrebidMeta() *openrtb_ext.ExtBidPrebidMeta {
 	var extBidMeta openrtb_ext.ExtBidPrebidMeta
 	if msqBids.ADomain != nil {
@@ -85,7 +84,7 @@ func (msqBids *MsqResponseBids) extBidPrebidMeta() *openrtb_ext.ExtBidPrebidMeta
 	return &extBidMeta
 }
 
-// ptrInt8ToBool: Return (TRUE) when i equals 1.
+// ptrInt8ToBool: Returns (TRUE) when i equals 1.
 func ptrInt8ToBool(i *int8) bool {
 	if i != nil {
 		return (*i == int8(1))
@@ -93,11 +92,13 @@ func ptrInt8ToBool(i *int8) bool {
 	return false
 }
 
+// intToPtrInt: Returns a ptr_int(*int) for which *ptr_int = i.
 func intToPtrInt(i int) *int {
 	val := int(i)
 	return &val
 }
 
+// errorWritter: Returns a Custom error message.
 func errorWritter(referer string, err error, isEmpty bool) error {
 	if isEmpty {
 		return fmt.Errorf("%s: is empty.", referer)
