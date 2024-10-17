@@ -1,0 +1,14 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Connatix Adapter Params",
+    "description": "A schema which validates params accepted by the Connatix adapter",
+    "type": "object",
+    "properties": {
+      "placementId": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Placement ID"
+      }
+    },
+    "required": ["placementId"]
+  }
