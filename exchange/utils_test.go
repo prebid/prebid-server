@@ -5033,78 +5033,98 @@ func getTransmitTIDActivityConfig(componentName string, allow bool) config.Accou
 
 func TestApplyBidAdjustmentToFloor(t *testing.T) {
 	type args struct {
-		bidRequest           *openrtb2.BidRequest
+		bidRequest           *openrtb_ext.RequestWrapper
 		bidderName           string
 		bidAdjustmentFactors map[string]float64
 	}
 	tests := []struct {
 		name               string
 		args               args
-		expectedBidRequest *openrtb2.BidRequest
+		expectedBidRequest *openrtb_ext.RequestWrapper
 	}{
 		{
 			name: "bid_adjustment_factor_is_nil",
 			args: args{
-				bidRequest: &openrtb2.BidRequest{
-					Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
+				bidRequest: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
+					},
 				},
 				bidderName:           "appnexus",
 				bidAdjustmentFactors: nil,
 			},
-			expectedBidRequest: &openrtb2.BidRequest{
-				Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
+			expectedBidRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
+				},
 			},
 		},
 		{
 			name: "bid_adjustment_factor_is_empty",
 			args: args{
-				bidRequest: &openrtb2.BidRequest{
-					Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
+				bidRequest: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
+					},
 				},
 				bidderName:           "appnexus",
 				bidAdjustmentFactors: map[string]float64{},
 			},
-			expectedBidRequest: &openrtb2.BidRequest{
-				Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
+			expectedBidRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
+				},
 			},
 		},
 		{
 			name: "bid_adjustment_factor_not_present",
 			args: args{
-				bidRequest: &openrtb2.BidRequest{
-					Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
+				bidRequest: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
+					},
 				},
 				bidderName:           "appnexus",
 				bidAdjustmentFactors: map[string]float64{"pubmatic": 1.0},
 			},
-			expectedBidRequest: &openrtb2.BidRequest{
-				Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
+			expectedBidRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
+				},
 			},
 		},
 		{
 			name: "bid_adjustment_factor_present",
 			args: args{
-				bidRequest: &openrtb2.BidRequest{
-					Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
+				bidRequest: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
+					},
 				},
 				bidderName:           "appnexus",
 				bidAdjustmentFactors: map[string]float64{"pubmatic": 1.0, "appnexus": 0.75},
 			},
-			expectedBidRequest: &openrtb2.BidRequest{
-				Imp: []openrtb2.Imp{{BidFloor: 133.33333333333334}, {BidFloor: 200}},
+			expectedBidRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{{BidFloor: 133.33333333333334}, {BidFloor: 200}},
+				},
 			},
 		},
 		{
 			name: "bid_adjustment_factor_present_and_zero",
 			args: args{
-				bidRequest: &openrtb2.BidRequest{
-					Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
+				bidRequest: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
+					},
 				},
 				bidderName:           "appnexus",
 				bidAdjustmentFactors: map[string]float64{"pubmatic": 1.0, "appnexus": 0.0},
 			},
-			expectedBidRequest: &openrtb2.BidRequest{
-				Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
+			expectedBidRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
+				},
 			},
 		},
 	}

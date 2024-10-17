@@ -182,7 +182,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 
 		// apply bid adjustments
 		if auctionReq.Account.PriceFloors.IsAdjustForBidAdjustmentEnabled() {
-			applyBidAdjustmentToFloor(&reqCopy, bidder, bidAdjustmentFactors)
+			applyBidAdjustmentToFloor(reqWrapperCopy, bidder, bidAdjustmentFactors)
 		}
 
 		// prepare user
@@ -1147,7 +1147,7 @@ func getPrebidMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 	}
 }
 
-func applyBidAdjustmentToFloor(req *openrtb2.BidRequest, bidder string, adjustmentFactors map[string]float64) {
+func applyBidAdjustmentToFloor(req *openrtb_ext.RequestWrapper, bidder string, adjustmentFactors map[string]float64) {
 	if len(adjustmentFactors) == 0 {
 		return
 	}
