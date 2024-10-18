@@ -1,0 +1,87 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "site": {
+            "page": "https://good.site/url"
+        },
+        "imp": [{
+            "id": "test-imp-id",
+            "banner": {
+                "format": [{
+                    "w": 300,
+                    "h": 250
+                }]
+            },
+            "ext": {
+                "bidder": {}
+            }
+        }]
+    },
+
+    "httpCalls": [{
+        "expectedRequest": {
+            "uri": "http://localhost/prebid_server",
+            "body": {
+                "id": "test-request-id",
+                "cur": ["USD"],
+                "site": {
+                    "page": "https://good.site/url"
+                },
+                "imp": [{
+                    "id": "test-imp-id",
+                    "banner": {
+                        "format": [{
+                            "w": 300,
+                            "h": 250
+                        }]
+                    },
+                    "ext": {
+                        "bidder": {}
+                    }
+                }]
+            },
+            "impIDs":["test-imp-id"]
+        },
+        "mockResponse": {
+            "status": 200,
+            "body": {
+                "id": "test-request-id",
+                "seatbid": [{
+                    "seat": "rtbhouse",
+                    "bid": [{
+                        "id": "randomid",
+                        "impid": "test-imp-id",
+                        "price": 0.500000,
+                        "adid": "12345678",
+                        "adm": "<iframe src=\"https://endpoint.url/banner1234567890.html\"></iframe><img src=\"https://endpoint.url/win-notify?a=xyz&price=${AUCTION_PRICE}\">",
+                        "cid": "987",
+                        "crid": "12345678",
+                        "h": 250,
+                        "w": 300,
+                        "mtype": 1
+                    }]
+                }],
+                "cur": "USD"
+            }
+        }
+    }],
+
+    "expectedBidResponses": [{
+        "currency": "USD",
+        "bids": [{
+            "bid": {
+                "id": "randomid",
+                "impid": "test-imp-id",
+                "price": 0.5,
+                "adm": "<iframe src=\"https://endpoint.url/banner1234567890.html\"></iframe><img src=\"https://endpoint.url/win-notify?a=xyz&price=0.5\">",
+                "adid": "12345678",
+                "cid": "987",
+                "crid": "12345678",
+                "w": 300,
+                "h": 250,
+                "mtype": 1
+            },
+            "type": "banner"
+        }]
+    }]
+}

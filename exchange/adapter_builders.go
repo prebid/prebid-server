@@ -52,6 +52,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/between"
 	"github.com/prebid/prebid-server/v2/adapters/beyondmedia"
 	"github.com/prebid/prebid-server/v2/adapters/bidmachine"
+	"github.com/prebid/prebid-server/v2/adapters/bidmatic"
 	"github.com/prebid/prebid-server/v2/adapters/bidmyadz"
 	"github.com/prebid/prebid-server/v2/adapters/bidscube"
 	"github.com/prebid/prebid-server/v2/adapters/bidstack"
@@ -138,6 +139,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters/mgid"
 	"github.com/prebid/prebid-server/v2/adapters/mgidX"
 	"github.com/prebid/prebid-server/v2/adapters/minutemedia"
+	"github.com/prebid/prebid-server/v2/adapters/missena"
 	"github.com/prebid/prebid-server/v2/adapters/mobfoxpb"
 	"github.com/prebid/prebid-server/v2/adapters/mobilefuse"
 	"github.com/prebid/prebid-server/v2/adapters/motorik"
@@ -280,6 +282,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderBetween:           between.Builder,
 		openrtb_ext.BidderBeyondMedia:       beyondmedia.Builder,
 		openrtb_ext.BidderBidmachine:        bidmachine.Builder,
+		openrtb_ext.BidderBidmatic:          bidmatic.Builder,
 		openrtb_ext.BidderBidmyadz:          bidmyadz.Builder,
 		openrtb_ext.BidderBidsCube:          bidscube.Builder,
 		openrtb_ext.BidderBidstack:          bidstack.Builder,
@@ -369,6 +372,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderMgid:              mgid.Builder,
 		openrtb_ext.BidderMgidX:             mgidX.Builder,
 		openrtb_ext.BidderMinuteMedia:       minutemedia.Builder,
+		openrtb_ext.BidderMissena:           missena.Builder,
 		openrtb_ext.BidderMobfoxpb:          mobfoxpb.Builder,
 		openrtb_ext.BidderMobileFuse:        mobilefuse.Builder,
 		openrtb_ext.BidderMotorik:           motorik.Builder,

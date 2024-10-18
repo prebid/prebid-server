@@ -1,6 +1,6 @@
 {
   "mockBidRequest": {
-    "cur": ["USD"],
+    "cur": ["GBP"],
     "id": "some-request-id",
     "site": {
       "page": "http://tester.go.sonobi.com",
@@ -26,6 +26,8 @@
             }
           ]
         },
+        "bidfloor": 1.00,
+        "bidfloorcur": "GBP",
         "ext": {
           "bidder": {
             "TagID": "/7780971/apex_3pdm_integration"
@@ -33,6 +35,18 @@
         }
       }
     ],
+    "ext": {
+      "prebid": {
+        "currency": {
+          "rates": {
+            "GBP": {
+              "USD": 0.05
+            }
+          },
+          "usepbsrates": false
+        }
+      }
+    },
     "test": 1,
     "tmax": 500
   },
@@ -68,6 +82,8 @@
                 "w": 300,
                 "h": 250
               },
+              "bidfloor": 0.05,
+              "bidfloorcur": "USD",
               "tagid": "/7780971/apex_3pdm_integration",
               "ext": {
                 "bidder": {
@@ -76,6 +92,18 @@
               }
             }
           ],
+          "ext": {
+            "prebid": {
+              "currency": {
+                "rates": {
+                  "GBP": {
+                    "USD": 0.05
+                  }
+                },
+                "usepbsrates": false
+              }
+            }
+          },
           "site": {
             "domain": "sonobi.com",
             "page": "http://tester.go.sonobi.com"
@@ -90,11 +118,55 @@
       },
       "mockResponse": {
         "status": 200,
-        "body": {}
+        "body": {
+          "id": "some-request-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "1",
+                  "impid": "some-impression-id",
+                  "price": 2.8649999999999998,
+                  "adm": "<script type=\"text/javascript\" src=\"http://iad-2.go.sonobi.com/sbid.js?demand&aid=sandbox_642305097&aic=${AUCTION_PRICE}&pid=71d9d3d8af&h=6.137\"></script>",
+                  "adomain": [
+                    "sonobi.com"
+                  ],
+                  "cid": "house",
+                  "crid": "sandbox",
+                  "h": 1,
+                  "w": 1
+                }
+              ],
+              "seat": "sonobi"
+            }
+          ],
+          "bidid": "sandbox_642305097",
+          "cur": "USD"
+        }
       }
     }
   ],
   "expectedBidResponses": [
-    {}
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "1",
+            "impid": "some-impression-id",
+            "price": 2.8649999999999998,
+            "adm": "<script type=\"text/javascript\" src=\"http://iad-2.go.sonobi.com/sbid.js?demand&aid=sandbox_642305097&aic=${AUCTION_PRICE}&pid=71d9d3d8af&h=6.137\"></script>",
+            "adomain": [
+              "sonobi.com"
+            ],
+            "cid": "house",
+            "crid": "sandbox",
+            "h": 1,
+            "w": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
   ]
 }
