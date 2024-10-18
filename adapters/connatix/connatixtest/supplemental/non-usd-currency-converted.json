@@ -1,0 +1,181 @@
+{
+    "mockBidRequest": {
+      "id": "some-request-id",
+      "device": {
+        "ua": "test-user-agent",
+        "ip": "test-ip-v4",
+        "ipv6": "test-ip-v6",
+        "language": "en",
+        "dnt": 0
+      },
+      "tmax": 1000,
+      "user": {
+        "buyeruid": "some-user"
+      },
+      "site": {
+        "page": "test.com",
+        "publisher": {
+          "id": "123456789"
+        }
+      },
+      "imp": [
+        {
+          "id": "some-impression-id",
+          "tagid": "some-tag-id",
+          "video": {
+            "mimes": [
+              "video/mp4"
+            ],
+            "w": 640,
+            "h": 480,
+            "minduration": 120,
+            "maxduration": 150
+          },
+          "bidfloor": 1,
+          "bidfloorcur": "EUR",
+          "ext": {
+            "bidder": {
+              "placementId": "some-placement-id"
+            }
+          }
+        }
+      ],
+      "ext": {
+        "prebid": {
+            "currency": {
+              "rates": {
+                "EUR": {
+                  "USD": 1.5
+                }
+              },
+              "usepbsrates": false
+            }
+        }
+      }
+    },
+    "httpCalls": [
+      {
+        "expectedRequest": {
+          "uri": "http://example.com",
+          "body": {
+            "id": "some-request-id",
+            "device": {
+              "ua": "test-user-agent",
+              "ip": "test-ip-v4",
+              "ipv6": "test-ip-v6",
+              "language": "en",
+              "dnt": 0
+            },
+            "imp": [
+            {
+                "bidfloorcur": "USD",
+                "bidfloor": 1.5,
+                "id": "some-impression-id",
+                "tagid": "some-tag-id",
+                "video": {
+                  "mimes": [
+                    "video/mp4"
+                  ],
+                  "minduration": 120,
+                  "maxduration": 150,
+                  "w": 640,
+                  "h": 480
+                },
+                "ext": {
+                  "connatix": {
+                    "placementId": "some-placement-id"
+                  }
+                }
+            }
+            ],
+            "site": {
+              "page": "test.com",
+              "publisher": {
+                "id": "123456789"
+              }
+            },
+            "user": {
+              "buyeruid": "some-user"
+            },
+            "ext": {
+                "prebid": {
+                    "currency": {
+                      "rates": {
+                        "EUR": {
+                          "USD": 1.5
+                        }
+                      },
+                      "usepbsrates": false
+                    }
+                }
+            },
+            "tmax": 1000
+          },
+          "headers": {
+            "Content-Type": ["application/json"],
+            "X-Forwarded-For": ["test-ip-v6", "test-ip-v4"],
+            "Accept": ["application/json"],
+            "User-Agent": ["test-user-agent"]
+          },
+          "impIDs":["some-impression-id"]
+        },
+        "mockResponse": {
+          "status": 200,
+          "body": {
+            "id": "some-response-id",
+            "seatbid": [
+              {
+                "bid": [
+                  {
+                    "id": "b3ae1b4e2fc24a4fb45540082e98e161",
+                    "impid": "some-impression-id",
+                    "price": 3.5,
+                    "adm": "some-test-vast-ad",
+                    "adomain": [
+                      "awesome.com"
+                    ],
+                    "crid": "112233",
+                    "w": 1280,
+                    "h": 720,
+                    "ext": {
+                      "connatix": {
+                        "mediaType": "video"
+                      }
+                    }
+                  }
+                ],
+                "seat": "connatix"
+              }
+            ],
+            "cur": "USD"
+          }
+        }
+      }
+    ],
+    "expectedBidResponses": [
+      {
+        "bids": [
+          {
+            "bid": {
+              "id": "b3ae1b4e2fc24a4fb45540082e98e161",
+              "impid": "some-impression-id",
+              "price": 3.5,
+              "adm": "some-test-vast-ad",
+              "adomain": [
+                "awesome.com"
+              ],
+              "crid": "112233",
+              "w": 1280,
+              "h": 720,
+              "ext": {
+                "connatix": {
+                  "mediaType": "video"
+                }
+              }
+            },
+            "type":"video"
+          }
+        ]
+      }
+    ]
+  }
