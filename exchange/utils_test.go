@@ -2590,145 +2590,146 @@ func TestBuildRequestExtForBidder(t *testing.T) {
 	)
 
 	testCases := []struct {
-		description          string
+		name                 string
 		requestExt           json.RawMessage
 		bidderParams         map[string]json.RawMessage
 		alternateBidderCodes *openrtb_ext.ExtAlternateBidderCodes
 		expectedJson         json.RawMessage
 	}{
 		{
-			description:          "Nil",
+			name:                 "Nil",
 			bidderParams:         nil,
 			requestExt:           nil,
 			alternateBidderCodes: nil,
 			expectedJson:         nil,
 		},
 		{
-			description:          "Empty",
+			name:                 "Empty",
 			bidderParams:         nil,
 			alternateBidderCodes: nil,
 			requestExt:           json.RawMessage(`{}`),
 			expectedJson:         nil,
 		},
 		{
-			description:  "Prebid - Allowed Fields Only",
+			name:         "Prebid - Allowed Fields Only",
 			bidderParams: nil,
 			requestExt:   json.RawMessage(`{"prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true}, "server": {"externalurl": "url", "gvlid": 1, "datacenter": "2"}, "sdk": {"renderers": [{"name": "r1"}]}}}`),
 			expectedJson: json.RawMessage(`{"prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true}, "server": {"externalurl": "url", "gvlid": 1, "datacenter": "2"}, "sdk": {"renderers": [{"name": "r1"}]}}}`),
 		},
 		{
-			description:  "Prebid - Allowed Fields + Bidder Params",
+			name:         "Prebid - Allowed Fields + Bidder Params",
 			bidderParams: map[string]json.RawMessage{bidder: bidderParams},
 			requestExt:   json.RawMessage(`{"prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true}, "server": {"externalurl": "url", "gvlid": 1, "datacenter": "2"}, "sdk": {"renderers": [{"name": "r1"}]}}}`),
 			expectedJson: json.RawMessage(`{"prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true}, "server": {"externalurl": "url", "gvlid": 1, "datacenter": "2"}, "sdk": {"renderers": [{"name": "r1"}]}, "bidderparams":"bar"}}`),
 		},
 		{
-			description:  "Other",
+			name:         "Other",
 			bidderParams: nil,
 			requestExt:   json.RawMessage(`{"other":"foo"}`),
 			expectedJson: json.RawMessage(`{"other":"foo"}`),
 		},
 		{
-			description:  "Prebid + Other + Bider Params",
+			name:         "Prebid + Other + Bider Params",
 			bidderParams: map[string]json.RawMessage{bidder: bidderParams},
 			requestExt:   json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true}, "server": {"externalurl": "url", "gvlid": 1, "datacenter": "2"}, "sdk": {"renderers": [{"name": "r1"}]}}}`),
 			expectedJson: json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true}, "server": {"externalurl": "url", "gvlid": 1, "datacenter": "2"}, "sdk": {"renderers": [{"name": "r1"}]}, "bidderparams":"bar"}}`),
 		},
 		{
-			description:          "Prebid + AlternateBidderCodes in pbs config but current bidder not in AlternateBidderCodes config",
+			name:                 "Prebid + AlternateBidderCodes in pbs config but current bidder not in AlternateBidderCodes config",
 			bidderParams:         map[string]json.RawMessage{bidder: bidderParams},
 			alternateBidderCodes: &openrtb_ext.ExtAlternateBidderCodes{Enabled: true, Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{"bar": {Enabled: true, AllowedBidderCodes: []string{"*"}}}},
 			requestExt:           json.RawMessage(`{"other":"foo"}`),
 			expectedJson:         json.RawMessage(`{"other":"foo","prebid":{"alternatebiddercodes":{"enabled":true,"bidders":null},"bidderparams":"bar"}}`),
 		},
 		{
-			description:          "Prebid + AlternateBidderCodes in request",
+			name:                 "Prebid + AlternateBidderCodes in request",
 			bidderParams:         map[string]json.RawMessage{bidder: bidderParams},
 			alternateBidderCodes: &openrtb_ext.ExtAlternateBidderCodes{},
 			requestExt:           json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["foo2"]},"bar":{"enabled":true,"allowedbiddercodes":["ix"]}}}}}`),
 			expectedJson:         json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["foo2"]}}},"bidderparams":"bar"}}`),
 		},
 		{
-			description:          "Prebid + AlternateBidderCodes in request but current bidder not in AlternateBidderCodes config",
+			name:                 "Prebid + AlternateBidderCodes in request but current bidder not in AlternateBidderCodes config",
 			bidderParams:         map[string]json.RawMessage{bidder: bidderParams},
 			alternateBidderCodes: &openrtb_ext.ExtAlternateBidderCodes{},
 			requestExt:           json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"bar":{"enabled":true,"allowedbiddercodes":["ix"]}}}}}`),
 			expectedJson:         json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":null},"bidderparams":"bar"}}`),
 		},
 		{
-			description:          "Prebid + AlternateBidderCodes in both pbs config and in the request",
+			name:                 "Prebid + AlternateBidderCodes in both pbs config and in the request",
 			bidderParams:         map[string]json.RawMessage{bidder: bidderParams},
 			alternateBidderCodes: &openrtb_ext.ExtAlternateBidderCodes{Enabled: true, Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{"foo": {Enabled: true, AllowedBidderCodes: []string{"*"}}}},
 			requestExt:           json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["foo2"]},"bar":{"enabled":true,"allowedbiddercodes":["ix"]}}}}}`),
 			expectedJson:         json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["foo2"]}}},"bidderparams":"bar"}}`),
 		},
 		{
-			description:  "Prebid + Other + Bider Params + MultiBid.Bidder",
+			name:         "Prebid + Other + Bider Params + MultiBid.Bidder",
 			bidderParams: map[string]json.RawMessage{bidder: bidderParams},
 			requestExt:   json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"multibid":[{"bidder":"foo","maxbids":2,"targetbiddercodeprefix":"fmb"},{"bidders":["appnexus","groupm"],"maxbids":2}]}}`),
 			expectedJson: json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"multibid":[{"bidder":"foo","maxbids":2,"targetbiddercodeprefix":"fmb"}],"bidderparams":"bar"}}`),
 		},
 		{
-			description:  "Prebid + Other + Bider Params + MultiBid.Bidders",
+			name:         "Prebid + Other + Bider Params + MultiBid.Bidders",
 			bidderParams: map[string]json.RawMessage{bidder: bidderParams},
 			requestExt:   json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"multibid":[{"bidder":"pubmatic","maxbids":3,"targetbiddercodeprefix":"pubM"},{"bidders":["foo","groupm"],"maxbids":4}]}}`),
 			expectedJson: json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"multibid":[{"bidders":["foo"],"maxbids":4}],"bidderparams":"bar"}}`),
 		},
 		{
-			description:  "Prebid + Other + Bider Params + MultiBid (foo not in MultiBid)",
+			name:         "Prebid + Other + Bider Params + MultiBid (foo not in MultiBid)",
 			bidderParams: map[string]json.RawMessage{bidder: bidderParams},
 			requestExt:   json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"multibid":[{"bidder":"foo2","maxbids":2,"targetbiddercodeprefix":"fmb"},{"bidders":["appnexus","groupm"],"maxbids":2}]}}`),
 			expectedJson: json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"bidderparams":"bar"}}`),
 		},
 		{
-			description:  "Prebid + Other + Bider Params + MultiBid (foo not in MultiBid)",
+			name:         "Prebid + Other + Bider Params + MultiBid (foo not in MultiBid)",
 			bidderParams: map[string]json.RawMessage{bidder: bidderParams},
 			requestExt:   json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"multibid":[{"bidder":"foo2","maxbids":2,"targetbiddercodeprefix":"fmb"},{"bidders":["appnexus","groupm"],"maxbids":2}]}}`),
 			expectedJson: json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"bidderparams":"bar"}}`),
 		},
 		{
-			description:  "Prebid + AlternateBidderCodes.MultiBid.Bidder",
+			name:         "Prebid + AlternateBidderCodes.MultiBid.Bidder",
 			requestExt:   json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["pubmatic"]}}},"multibid":[{"bidder":"foo","maxbids":3,"targetbiddercodeprefix":"fmb"},{"bidder":"foo2","maxbids":4,"targetbiddercodeprefix":"fmb2"},{"bidder":"pubmatic","maxbids":5,"targetbiddercodeprefix":"pm"}]}}`),
 			expectedJson: json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["pubmatic"]}}},"multibid":[{"bidder":"foo","maxbids":3,"targetbiddercodeprefix":"fmb"},{"bidder":"pubmatic","maxbids":5,"targetbiddercodeprefix":"pm"}]}}`),
 		},
 		{
-			description:  "Prebid + AlternateBidderCodes.MultiBid.Bidders",
+			name:         "Prebid + AlternateBidderCodes.MultiBid.Bidders",
 			requestExt:   json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["pubmatic"]}}},"multibid":[{"bidder":"foo","maxbids":3,"targetbiddercodeprefix":"fmb"},{"bidders":["pubmatic","groupm"],"maxbids":4}]}}`),
 			expectedJson: json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["pubmatic"]}}},"multibid":[{"bidder":"foo","maxbids":3,"targetbiddercodeprefix":"fmb"},{"bidders":["pubmatic"],"maxbids":4}]}}`),
 		},
 		{
-			description:  "Prebid + AlternateBidderCodes.MultiBid.Bidder with *",
+			name:         "Prebid + AlternateBidderCodes.MultiBid.Bidder with *",
 			requestExt:   json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["*"]}}},"multibid":[{"bidder":"foo","maxbids":3,"targetbiddercodeprefix":"fmb"},{"bidder":"foo2","maxbids":4,"targetbiddercodeprefix":"fmb2"},{"bidder":"pubmatic","maxbids":5,"targetbiddercodeprefix":"pm"}]}}`),
 			expectedJson: json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["*"]}}},"multibid":[{"bidder":"foo","maxbids":3,"targetbiddercodeprefix":"fmb"},{"bidder":"foo2","maxbids":4,"targetbiddercodeprefix":"fmb2"},{"bidder":"pubmatic","maxbids":5,"targetbiddercodeprefix":"pm"}]}}`),
 		},
 		{
-			description:  "Prebid + AlternateBidderCodes.MultiBid.Bidders with *",
+			name:         "Prebid + AlternateBidderCodes.MultiBid.Bidders with *",
 			requestExt:   json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["*"]}}},"multibid":[{"bidder":"foo","maxbids":3,"targetbiddercodeprefix":"fmb"},{"bidders":["pubmatic","groupm"],"maxbids":4}]}}`),
 			expectedJson: json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["*"]}}},"multibid":[{"bidder":"foo","maxbids":3,"targetbiddercodeprefix":"fmb"},{"bidders":["pubmatic"],"maxbids":4},{"bidders":["groupm"],"maxbids":4}]}}`),
 		},
 		{
-			description:  "Prebid + AlternateBidderCodes + MultiBid",
+			name:         "Prebid + AlternateBidderCodes + MultiBid",
 			requestExt:   json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["foo2"]}}},"multibid":[{"bidder":"foo3","maxbids":3,"targetbiddercodeprefix":"fmb"},{"bidders":["pubmatic","groupm"],"maxbids":4}]}}`),
 			expectedJson: json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["foo2"]}}}}}`),
 		},
 	}
 
 	for _, test := range testCases {
-		requestExtParsed := &openrtb_ext.ExtRequest{}
-		if test.requestExt != nil {
-			err := jsonutil.UnmarshalValid(test.requestExt, requestExtParsed)
-			if !assert.NoError(t, err, test.description+":parse_ext") {
-				continue
+		t.Run(test.name, func(t *testing.T) {
+			req := openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Ext: test.requestExt,
+				},
 			}
-		}
+			err := buildRequestExtForBidder(bidder, &req, test.bidderParams, test.alternateBidderCodes)
+			assert.NoError(t, req.RebuildRequest())
+			assert.NoError(t, err)
 
-		actualJson, actualErr := buildRequestExtForBidder(bidder, test.requestExt, requestExtParsed, test.bidderParams, test.alternateBidderCodes)
-		if len(test.expectedJson) > 0 {
-			assert.JSONEq(t, string(test.expectedJson), string(actualJson), test.description+":json")
-		} else {
-			assert.Equal(t, test.expectedJson, actualJson, test.description+":json")
-		}
-		assert.NoError(t, actualErr, test.description+":err")
+			if len(test.expectedJson) > 0 {
+				assert.JSONEq(t, string(test.expectedJson), string(req.Ext))
+			} else {
+				assert.Equal(t, test.expectedJson, req.Ext)
+			}
+		})
 	}
 }
 
@@ -2736,28 +2737,37 @@ func TestBuildRequestExtForBidder_RequestExtParsedNil(t *testing.T) {
 	var (
 		bidder               = "foo"
 		requestExt           = json.RawMessage(`{}`)
-		requestExtParsed     *openrtb_ext.ExtRequest
 		bidderParams         map[string]json.RawMessage
 		alternateBidderCodes *openrtb_ext.ExtAlternateBidderCodes
 	)
 
-	actualJson, actualErr := buildRequestExtForBidder(bidder, requestExt, requestExtParsed, bidderParams, alternateBidderCodes)
-	assert.Nil(t, actualJson)
-	assert.NoError(t, actualErr)
+	req := openrtb_ext.RequestWrapper{
+		BidRequest: &openrtb2.BidRequest{
+			Ext: requestExt,
+		},
+	}
+	err := buildRequestExtForBidder(bidder, &req, bidderParams, alternateBidderCodes)
+	assert.NoError(t, req.RebuildRequest())
+	assert.Nil(t, req.Ext)
+	assert.NoError(t, err)
 }
 
 func TestBuildRequestExtForBidder_RequestExtMalformed(t *testing.T) {
 	var (
 		bidder               = "foo"
 		requestExt           = json.RawMessage(`malformed`)
-		requestExtParsed     = &openrtb_ext.ExtRequest{}
 		bidderParams         map[string]json.RawMessage
 		alternateBidderCodes *openrtb_ext.ExtAlternateBidderCodes
 	)
 
-	actualJson, actualErr := buildRequestExtForBidder(bidder, requestExt, requestExtParsed, bidderParams, alternateBidderCodes)
-	assert.Equal(t, json.RawMessage(nil), actualJson)
-	assert.EqualError(t, actualErr, "expect { or n, but found m")
+	req := openrtb_ext.RequestWrapper{
+		BidRequest: &openrtb2.BidRequest{
+			Ext: requestExt,
+		},
+	}
+	err := buildRequestExtForBidder(bidder, &req, bidderParams, alternateBidderCodes)
+	assert.NoError(t, req.RebuildRequest())
+	assert.EqualError(t, err, "expect { or n, but found m")
 }
 
 // newAdapterAliasBidRequest builds a BidRequest with aliases
@@ -5033,7 +5043,7 @@ func getTransmitTIDActivityConfig(componentName string, allow bool) config.Accou
 
 func TestApplyBidAdjustmentToFloor(t *testing.T) {
 	type args struct {
-		bidRequest           *openrtb2.BidRequest
+		bidRequestWrapper    *openrtb_ext.RequestWrapper
 		bidderName           string
 		bidAdjustmentFactors map[string]float64
 	}
@@ -5045,8 +5055,10 @@ func TestApplyBidAdjustmentToFloor(t *testing.T) {
 		{
 			name: "bid_adjustment_factor_is_nil",
 			args: args{
-				bidRequest: &openrtb2.BidRequest{
-					Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
+				bidRequestWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
+					},
 				},
 				bidderName:           "appnexus",
 				bidAdjustmentFactors: nil,
@@ -5058,8 +5070,10 @@ func TestApplyBidAdjustmentToFloor(t *testing.T) {
 		{
 			name: "bid_adjustment_factor_is_empty",
 			args: args{
-				bidRequest: &openrtb2.BidRequest{
-					Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
+				bidRequestWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
+					},
 				},
 				bidderName:           "appnexus",
 				bidAdjustmentFactors: map[string]float64{},
@@ -5071,8 +5085,10 @@ func TestApplyBidAdjustmentToFloor(t *testing.T) {
 		{
 			name: "bid_adjustment_factor_not_present",
 			args: args{
-				bidRequest: &openrtb2.BidRequest{
-					Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
+				bidRequestWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
+					},
 				},
 				bidderName:           "appnexus",
 				bidAdjustmentFactors: map[string]float64{"pubmatic": 1.0},
@@ -5084,8 +5100,10 @@ func TestApplyBidAdjustmentToFloor(t *testing.T) {
 		{
 			name: "bid_adjustment_factor_present",
 			args: args{
-				bidRequest: &openrtb2.BidRequest{
-					Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
+				bidRequestWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
+					},
 				},
 				bidderName:           "appnexus",
 				bidAdjustmentFactors: map[string]float64{"pubmatic": 1.0, "appnexus": 0.75},
@@ -5097,8 +5115,10 @@ func TestApplyBidAdjustmentToFloor(t *testing.T) {
 		{
 			name: "bid_adjustment_factor_present_and_zero",
 			args: args{
-				bidRequest: &openrtb2.BidRequest{
-					Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
+				bidRequestWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						Imp: []openrtb2.Imp{{BidFloor: 100}, {BidFloor: 150}},
+					},
 				},
 				bidderName:           "appnexus",
 				bidAdjustmentFactors: map[string]float64{"pubmatic": 1.0, "appnexus": 0.0},
@@ -5110,8 +5130,9 @@ func TestApplyBidAdjustmentToFloor(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			applyBidAdjustmentToFloor(tt.args.bidRequest, tt.args.bidderName, tt.args.bidAdjustmentFactors)
-			assert.Equal(t, tt.expectedBidRequest, tt.args.bidRequest, tt.name)
+			applyBidAdjustmentToFloor(tt.args.bidRequestWrapper, tt.args.bidderName, tt.args.bidAdjustmentFactors)
+			assert.NoError(t, tt.args.bidRequestWrapper.RebuildRequest())
+			assert.Equal(t, tt.expectedBidRequest, tt.args.bidRequestWrapper.BidRequest, tt.name)
 		})
 	}
 }
@@ -5338,15 +5359,19 @@ func TestRemoveImpsWithStoredResponses(t *testing.T) {
 	bidRespId1 := json.RawMessage(`{"id": "resp_id1"}`)
 	testCases := []struct {
 		description        string
-		reqIn              *openrtb2.BidRequest
+		req                *openrtb_ext.RequestWrapper
 		storedBidResponses map[string]json.RawMessage
 		expectedImps       []openrtb2.Imp
 	}{
 		{
 			description: "request with imps and stored bid response for this imp",
-			reqIn: &openrtb2.BidRequest{Imp: []openrtb2.Imp{
-				{ID: "imp-id1"},
-			}},
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{
+						{ID: "imp-id1"},
+					},
+				},
+			},
 			storedBidResponses: map[string]json.RawMessage{
 				"imp-id1": bidRespId1,
 			},
@@ -5354,10 +5379,14 @@ func TestRemoveImpsWithStoredResponses(t *testing.T) {
 		},
 		{
 			description: "request with imps and stored bid response for one of these imp",
-			reqIn: &openrtb2.BidRequest{Imp: []openrtb2.Imp{
-				{ID: "imp-id1"},
-				{ID: "imp-id2"},
-			}},
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{
+						{ID: "imp-id1"},
+						{ID: "imp-id2"},
+					},
+				},
+			},
 			storedBidResponses: map[string]json.RawMessage{
 				"imp-id1": bidRespId1,
 			},
@@ -5369,10 +5398,14 @@ func TestRemoveImpsWithStoredResponses(t *testing.T) {
 		},
 		{
 			description: "request with imps and stored bid response for both of these imp",
-			reqIn: &openrtb2.BidRequest{Imp: []openrtb2.Imp{
-				{ID: "imp-id1"},
-				{ID: "imp-id2"},
-			}},
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{
+						{ID: "imp-id1"},
+						{ID: "imp-id2"},
+					},
+				},
+			},
 			storedBidResponses: map[string]json.RawMessage{
 				"imp-id1": bidRespId1,
 				"imp-id2": bidRespId1,
@@ -5381,10 +5414,14 @@ func TestRemoveImpsWithStoredResponses(t *testing.T) {
 		},
 		{
 			description: "request with imps and no stored bid responses",
-			reqIn: &openrtb2.BidRequest{Imp: []openrtb2.Imp{
-				{ID: "imp-id1"},
-				{ID: "imp-id2"},
-			}},
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{
+						{ID: "imp-id1"},
+						{ID: "imp-id2"},
+					},
+				},
+			},
 			storedBidResponses: nil,
 
 			expectedImps: []openrtb2.Imp{
@@ -5394,8 +5431,9 @@ func TestRemoveImpsWithStoredResponses(t *testing.T) {
 		},
 	}
 	for _, testCase := range testCases {
-		request := testCase.reqIn
+		request := testCase.req
 		removeImpsWithStoredResponses(request, testCase.storedBidResponses)
+		assert.NoError(t, request.RebuildRequest())
 		assert.Equal(t, testCase.expectedImps, request.Imp, "incorrect Impressions for testCase %s", testCase.description)
 	}
 }
