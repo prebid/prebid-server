@@ -166,7 +166,7 @@ func resolveFloors(account config.Account, bidRequestWrapper *openrtb_ext.Reques
 		fetchResult, fetchStatus = priceFloorFetcher.Fetch(account.PriceFloors)
 	}
 
-	if fetchResult != nil && fetchStatus == openrtb_ext.FetchSuccess && useFetchedData(fetchResult.Data.FetchRate) {
+	if fetchResult != nil && fetchStatus == openrtb_ext.FetchSuccess && useFetchedData(fetchResult.Data.UseFetchDataRate) {
 		mergedFloor := mergeFloors(reqFloor, fetchResult, conversions)
 		floorRules, errList = createFloorsFrom(mergedFloor, account, fetchStatus, openrtb_ext.FetchLocation)
 	} else if reqFloor != nil {
