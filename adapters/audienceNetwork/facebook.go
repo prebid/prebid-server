@@ -37,13 +37,15 @@ type facebookAdMarkup struct {
 }
 
 type facebookReqExt struct {
-	PlatformID string `json:"platformid"`
-	AuthID     string `json:"authentication_id"`
+	PlatformID    string `json:"platformid"`
+	AuthID        string `json:"authentication_id"`
+	SecurityAppID string `json:"security_app_id,omitempty"`
 }
 
 type ExtImpFB struct {
-	AppSecret  string `json:"app_secret"`
-	PlatformID string `json:"platform_id"`
+	AppSecret     string `json:"app_secret"`
+	PlatformID    string `json:"platform_id"`
+	SecurityAppID string `json:"security_app_id"`
 }
 
 func (this *FacebookAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -146,21 +148,24 @@ func (this *FacebookAdapter) modifyRequest(out *openrtb2.BidRequest) error {
 
 	platformId := this.platformID
 	appSecret := this.appSecret
+	securityAppId := ""
 
 	var bidderExt adapters.ExtImpBidder
 	err = json.Unmarshal(imp.Ext, &bidderExt)
 	if err == nil {
 		var impressionExt ExtImpFB
 		err = json.Unmarshal(bidderExt.Bidder, &impressionExt)
-		if err == nil && len(impressionExt.PlatformID) > 0 && len(impressionExt.AppSecret) > 0 {
+		if err == nil && len(impressionExt.PlatformID) > 0 && len(impressionExt.AppSecret) > 0 && len(impressionExt.SecurityAppID) > 0 {
 			platformId = impressionExt.PlatformID
 			appSecret = impressionExt.AppSecret
+			securityAppId = impressionExt.SecurityAppID
 		}
 	}
 
 	reqExt := facebookReqExt{
-		PlatformID: platformId,
-		AuthID:     this.makeAuthID(out, appSecret),
+		PlatformID:    platformId,
+		AuthID:        this.makeAuthID(out, appSecret),
+		SecurityAppID: securityAppId,
 	}
 
 	if out.Ext, err = json.Marshal(reqExt); err != nil {
