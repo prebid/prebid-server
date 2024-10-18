@@ -44,7 +44,7 @@ func TestSeatNonBidsAdd(t *testing.T) {
 		name   string
 		fields fields
 		args   args
-		want   map[string][]NonBid
+		want   SeatNonBidBuilder
 	}{
 		{
 			name:   "nil-seatNonBidsMap",
@@ -103,14 +103,14 @@ func TestSeatNonBidsGet(t *testing.T) {
 	}
 }
 
-var sampleSeatNonBidMap = func(seat string, nonBidCount int) map[string][]NonBid {
+var sampleSeatNonBidMap = func(seat string, nonBidCount int) SeatNonBidBuilder {
 	nonBids := make([]NonBid, 0)
 	for i := 0; i < nonBidCount; i++ {
 		nonBids = append(nonBids, NonBid{
-			Ext: &ExtNonBid{Prebid: ExtNonBidPrebid{Bid: ExtNonBidPrebidBid{}}},
+			Ext: ExtNonBid{Prebid: ExtNonBidPrebid{Bid: ExtNonBidPrebidBid{}}},
 		})
 	}
-	return map[string][]NonBid{
+	return SeatNonBidBuilder{
 		seat: nonBids,
 	}
 }
@@ -123,7 +123,7 @@ var sampleSeatBids = func(seat string, nonBidCount int) []SeatNonBid {
 	}
 	for i := 0; i < nonBidCount; i++ {
 		seatNonBid.NonBid = append(seatNonBid.NonBid, NonBid{
-			Ext: &ExtNonBid{Prebid: ExtNonBidPrebid{Bid: ExtNonBidPrebidBid{}}},
+			Ext: ExtNonBid{Prebid: ExtNonBidPrebid{Bid: ExtNonBidPrebidBid{}}},
 		})
 	}
 	seatNonBids = append(seatNonBids, seatNonBid)

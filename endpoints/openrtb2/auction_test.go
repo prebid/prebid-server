@@ -5168,7 +5168,7 @@ func TestSendAuctionResponse(t *testing.T) {
 				},
 			},
 			expectedResponseBody: "{\"id\":\"some-id\",\"ext\":{\"prebid\":{\"modules\":{\"warnings\":{\"foobar\":{\"foo\":[\"warning message\"]}}}," +
-				"\"seatnonbid\":[{\"nonbid\":[{\"impid\":\"imp1\",\"statuscode\":303,\"ext\":{\"prebid\":{\"bid\":{}}}}],\"seat\":\"pubmatic\",\"ext\":null}]}}}\n",
+				"\"seatnonbid\":[{\"nonbid\":[{\"impid\":\"imp1\",\"statuscode\":303,\"ext\":{\"prebid\":{\"bid\":{}}}}],\"seat\":\"pubmatic\"}]}}}\n",
 			request:      &openrtb2.BidRequest{ID: "some-id", Test: 1, Ext: json.RawMessage(`"returnallbidstatus": true}}`)},
 			response:     &openrtb2.BidResponse{ID: "some-id", Ext: json.RawMessage("{}")},
 			hookExecutor: hookExecutor,
@@ -5429,7 +5429,7 @@ func TestSetSeatNonBidRaw(t *testing.T) {
 			want: want{
 				error: false,
 				response: &openrtb2.BidResponse{
-					Ext: json.RawMessage(`{"prebid":{"seatnonbid":[{"nonbid":[{"impid":"imp","statuscode":1,"ext":{"prebid":{"bid":{}}}}],"seat":"pubmatic","ext":null}]}}`),
+					Ext: json.RawMessage(`{"prebid":{"seatnonbid":[{"nonbid":[{"impid":"imp","statuscode":1,"ext":{"prebid":{"bid":{}}}}],"seat":"pubmatic"}]}}`),
 				},
 			},
 		},
@@ -5453,7 +5453,7 @@ func TestSetSeatNonBidRaw(t *testing.T) {
 			want: want{
 				error: false,
 				response: &openrtb2.BidResponse{
-					Ext: json.RawMessage(`{"prebid":{"seatnonbid":[{"nonbid":[{"impid":"imp","statuscode":1,"ext":{"prebid":{"bid":{}}}}],"seat":"pubmatic","ext":null}]}}`),
+					Ext: json.RawMessage(`{"prebid":{"seatnonbid":[{"nonbid":[{"impid":"imp","statuscode":1,"ext":{"prebid":{"bid":{}}}}],"seat":"pubmatic"}]}}`),
 				},
 			},
 		},
@@ -6578,7 +6578,7 @@ func TestSeatNonBidInAuction(t *testing.T) {
 			want: want{
 				statusCode: 200,
 				body: `{"id":"","seatbid":[{"bid":[{"id":"","impid":"","price":0,"adm":"<script></script>"}]}],"ext":{"prebid":` +
-					`{"seatnonbid":[{"nonbid":[{"impid":"imp","statuscode":100,"ext":{"prebid":{"bid":{}}}}],"seat":"pubmatic","ext":null}]}}}` + "\n",
+					`{"seatnonbid":[{"nonbid":[{"impid":"imp","statuscode":100,"ext":{"prebid":{"bid":{}}}}],"seat":"pubmatic"}]}}}` + "\n",
 				seatNonBid: []openrtb_ext.SeatNonBid{
 					{
 						Seat: "pubmatic",
@@ -6672,7 +6672,7 @@ func TestSeatNonBidInAuction(t *testing.T) {
 			want: want{
 				statusCode: 200,
 				body: `{"id":"id","nbr":10,"ext":{"prebid":{"seatnonbid":[{"nonbid":[{"impid":"imp","statuscode":100,` +
-					`"ext":{"prebid":{"bid":{}}}}],"seat":"pubmatic","ext":null}]}}}` + "\n",
+					`"ext":{"prebid":{"bid":{}}}}],"seat":"pubmatic"}]}}}` + "\n",
 				seatNonBid: []openrtb_ext.SeatNonBid{
 					{
 						Seat: "pubmatic",
@@ -6710,7 +6710,7 @@ func TestSeatNonBidInAuction(t *testing.T) {
 			},
 			want: want{
 				statusCode: 200,
-				body:       `{"id":"id","nbr":5,"ext":{"prebid":{"seatnonbid":[{"nonbid":[{"impid":"imp","statuscode":100,"ext":{"prebid":{"bid":{}}}}],"seat":"pubmatic","ext":null}]}}}` + "\n",
+				body:       `{"id":"id","nbr":5,"ext":{"prebid":{"seatnonbid":[{"nonbid":[{"impid":"imp","statuscode":100,"ext":{"prebid":{"bid":{}}}}],"seat":"pubmatic"}]}}}` + "\n",
 				seatNonBid: []openrtb_ext.SeatNonBid{
 					{
 						Seat: "pubmatic",

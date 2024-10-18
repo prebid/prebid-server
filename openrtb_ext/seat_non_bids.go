@@ -40,7 +40,7 @@ func NewNonBid(bidParams NonBidParams) NonBid {
 	return NonBid{
 		ImpId:      bidParams.Bid.ImpID,
 		StatusCode: bidParams.NonBidReason,
-		Ext: &ExtNonBid{
+		Ext: ExtNonBid{
 			Prebid: ExtNonBidPrebid{Bid: ExtNonBidPrebidBid{
 				Price:          bidParams.Bid.Price,
 				ADomain:        bidParams.Bid.ADomain,
@@ -60,33 +60,33 @@ func NewNonBid(bidParams NonBidParams) NonBid {
 
 // AddBid adds the nonBid into the map against the respective seat.
 // Note: This function is not a thread safe.
-func (snb SeatNonBidBuilder) AddBid(nonBid NonBid, seat string) {
-	if snb == nil {
-		snb = make(map[string][]NonBid)
+func (snb *SeatNonBidBuilder) AddBid(nonBid NonBid, seat string) {
+	if *snb == nil {
+		*snb = make(map[string][]NonBid)
 	}
-	snb[seat] = append(snb[seat], nonBid)
+	(*snb)[seat] = append((*snb)[seat], nonBid)
 }
 
 // append adds the nonBids from the input nonBids to the current nonBids.
 // This method is not thread safe as we are initializing and writing to map
-func (snb SeatNonBidBuilder) Append(nonBids ...SeatNonBidBuilder) {
-	if snb == nil {
+func (snb *SeatNonBidBuilder) Append(nonBids ...SeatNonBidBuilder) {
+	if *snb == nil {
 		return
 	}
 	for _, nonBid := range nonBids {
 		for seat, nonBids := range nonBid {
-			snb[seat] = append(snb[seat], nonBids...)
+			(*snb)[seat] = append((*snb)[seat], nonBids...)
 		}
 	}
 }
 
 // Get function converts the internal seatNonBidsMap to standard openrtb seatNonBid structure and returns it
-func (snb SeatNonBidBuilder) Get() []SeatNonBid {
-	if snb == nil {
+func (snb *SeatNonBidBuilder) Get() []SeatNonBid {
+	if *snb == nil {
 		return nil
 	}
 	var seatNonBid []SeatNonBid
-	for seat, nonBids := range snb {
+	for seat, nonBids := range *snb {
 		seatNonBid = append(seatNonBid, SeatNonBid{
 			Seat:   seat,
 			NonBid: nonBids,
@@ -96,7 +96,7 @@ func (snb SeatNonBidBuilder) Get() []SeatNonBid {
 }
 
 // rejectImps appends a non bid object to the builder for every specified imp
-func (b SeatNonBidBuilder) RejectImps(impIds []string, nonBidReason NonBidReason, seat string) {
+func (b *SeatNonBidBuilder) RejectImps(impIds []string, nonBidReason NonBidReason, seat string) {
 	nonBids := []NonBid{}
 	for _, impId := range impIds {
 		nonBid := NonBid{
@@ -107,6 +107,6 @@ func (b SeatNonBidBuilder) RejectImps(impIds []string, nonBidReason NonBidReason
 	}
 
 	if len(nonBids) > 0 {
-		b[seat] = append(b[seat], nonBids...)
+		(*b)[seat] = append((*b)[seat], nonBids...)
 	}
 }

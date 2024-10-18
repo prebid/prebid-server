@@ -1617,7 +1617,7 @@ func TestSeatNonBidInVideoAuction(t *testing.T) {
 			recorder := httptest.NewRecorder()
 			deps.VideoAuctionEndpoint(recorder, req, nil)
 
-			assert.Equal(t, test.want.seatNonBid, analyticsModule.videoObjects[0].SeatNonBid, "mismatched seatnonbid.")
+			assert.ElementsMatch(t, test.want.seatNonBid, analyticsModule.videoObjects[0].SeatNonBid, "mismatched seatnonbid.")
 		})
 	}
 }

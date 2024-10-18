@@ -4813,7 +4813,7 @@ func TestMakeBidWithValidation(t *testing.T) {
 				"pubmatic": {
 					{
 						StatusCode: 300,
-						Ext: &openrtb_ext.ExtNonBid{
+						Ext: openrtb_ext.ExtNonBid{
 							Prebid: openrtb_ext.ExtNonBidPrebid{
 								Bid: openrtb_ext.ExtNonBidPrebidBid{},
 							},
@@ -4833,7 +4833,7 @@ func TestMakeBidWithValidation(t *testing.T) {
 				"pubmatic": {
 					{
 						StatusCode: 351,
-						Ext: &openrtb_ext.ExtNonBid{
+						Ext: openrtb_ext.ExtNonBid{
 							Prebid: openrtb_ext.ExtNonBidPrebid{
 								Bid: openrtb_ext.ExtNonBidPrebidBid{
 									W: 200,
@@ -4866,7 +4866,7 @@ func TestMakeBidWithValidation(t *testing.T) {
 					{
 						ImpId:      "1",
 						StatusCode: 352,
-						Ext: &openrtb_ext.ExtNonBid{
+						Ext: openrtb_ext.ExtNonBid{
 							Prebid: openrtb_ext.ExtNonBidPrebid{
 								Bid: openrtb_ext.ExtNonBidPrebidBid{},
 							},
