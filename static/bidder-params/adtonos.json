@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "AdTonos Adapter Params",
+  "description": "A schema which validates params accepted by the AdTonos adapter",
+  
+  "type": "object",
+  "properties": {
+    "supplierId": {
+      "type": "string",
+      "description": "ID of the supplier account in AdTonos platform"
+    }
+  },
+  "required": ["supplierId"]
+}

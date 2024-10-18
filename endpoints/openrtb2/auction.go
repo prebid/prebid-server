@@ -64,6 +64,7 @@ const observeBrowsingTopicsValue = "?1"
 
 var (
 	dntKey      string = http.CanonicalHeaderKey("DNT")
+	secGPCKey   string = http.CanonicalHeaderKey("Sec-GPC")
 	dntDisabled int8   = 0
 	dntEnabled  int8   = 1
 	notAmp      int8   = 0
@@ -1525,6 +1526,11 @@ func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, r *openrtb_
 
 	setAuctionTypeImplicitly(r)
 
+	err := setGPCImplicitly(httpReq, r)
+	if err != nil {
+		return []error{err}
+	}
+
 	errs := setSecBrowsingTopicsImplicitly(httpReq, r, account)
 	return errs
 }
@@ -1542,6 +1548,28 @@ func setAuctionTypeImplicitly(r *openrtb_ext.RequestWrapper) {
 	if r.AT == 0 {
 		r.AT = 1
 	}
+}
+
+func setGPCImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) error {
+	secGPC := httpReq.Header.Get(secGPCKey)
+
+	if secGPC != "1" {
+		return nil
+	}
+
+	regExt, err := r.GetRegExt()
+	if err != nil {
+		return err
+	}
+
+	if regExt.GetGPC() != nil {
+		return nil
+	}
+
+	gpc := "1"
+	regExt.SetGPC(&gpc)
+
+	return nil
 }
 
 // setSecBrowsingTopicsImplicitly updates user.data with data from request header 'Sec-Browsing-Topics'

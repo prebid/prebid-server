@@ -188,6 +188,11 @@ func TestShouldTrackEvent(t *testing.T) {
 				PublisherId: "track-me",
 				Code:        "abc",
 			},
+			{
+				PublisherId: "",
+				SiteAppId:   "track-me",
+				Code:        "abc",
+			},
 		},
 	}
 	mockedSender := new(MockedSender)
@@ -283,6 +288,36 @@ func TestShouldTrackEvent(t *testing.T) {
 
 	assert.False(t, shouldTrack)
 	assert.Equal(t, "", code)
+
+	// should allow empty accounts
+	shouldTrack, code = logger.shouldTrackEvent(&openrtb_ext.RequestWrapper{
+		BidRequest: &openrtb2.BidRequest{
+			App: &openrtb2.App{
+				ID: "track-me",
+			},
+			User: &openrtb2.User{
+				Ext: json.RawMessage(`{"consent": "` + agmaConsent + `"}`),
+			},
+		},
+	})
+
+	assert.True(t, shouldTrack)
+	assert.Equal(t, "abc", code)
+
+	// Bundle ID instead of app.id
+	shouldTrack, code = logger.shouldTrackEvent(&openrtb_ext.RequestWrapper{
+		BidRequest: &openrtb2.BidRequest{
+			App: &openrtb2.App{
+				Bundle: "track-me",
+			},
+			User: &openrtb2.User{
+				Ext: json.RawMessage(`{"consent": "` + agmaConsent + `"}`),
+			},
+		},
+	})
+
+	assert.True(t, shouldTrack)
+	assert.Equal(t, "abc", code)
 }
 
 func TestShouldTrackMultipleAccounts(t *testing.T) {
@@ -663,4 +698,39 @@ func TestRaceEnd2End(t *testing.T) {
 	mu.Unlock()
 
 	assert.Equal(t, expected, actual)
+}
+
+func TestShutdownFlush(t *testing.T) {
+	cfg := config.AgmaAnalytics{
+		Enabled: true,
+		Endpoint: config.AgmaAnalyticsHttpEndpoint{
+			Url:     "http://localhost:8000/event",
+			Timeout: "5s",
+		},
+		Buffers: config.AgmaAnalyticsBuffer{
+			EventCount: 1000,
+			BufferSize: "100mb",
+			Timeout:    "5m",
+		},
+		Accounts: []config.AgmaAnalyticsAccount{
+			{
+				PublisherId: "track-me",
+				Code:        "abc",
+			},
+		},
+	}
+	mockedSender := new(MockedSender)
+	mockedSender.On("Send", mock.Anything).Return(nil)
+	clockMock := clock.NewMock()
+	logger, err := newAgmaLogger(cfg, mockedSender.Send, clockMock)
+	assert.NoError(t, err)
+
+	go logger.start()
+	logger.LogAuctionObject(&mockValidAuctionObject)
+	logger.Shutdown()
+
+	time.Sleep(10 * time.Millisecond)
+
+	mockedSender.AssertCalled(t, "Send", mock.Anything)
+	mockedSender.AssertNumberOfCalls(t, "Send", 1)
 }
