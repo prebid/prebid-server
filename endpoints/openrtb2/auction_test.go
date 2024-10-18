@@ -5078,7 +5078,7 @@ func TestSendAuctionResponse(t *testing.T) {
 									"pubmatic": {
 										{
 											Bid:          &openrtb2.Bid{ImpID: "imp1"},
-											NonBidReason: int(exchange.ResponseRejectedCategoryMappingInvalid),
+											NonBidReason: int(openrtb_ext.ResponseRejectedCategoryMappingInvalid),
 										},
 									},
 								}),
@@ -5111,7 +5111,7 @@ func TestSendAuctionResponse(t *testing.T) {
 						NonBid: []openrtb_ext.NonBid{
 							{
 								ImpId:      "imp1",
-								StatusCode: int(exchange.ResponseRejectedCategoryMappingInvalid),
+								StatusCode: int(openrtb_ext.ResponseRejectedCategoryMappingInvalid),
 							},
 						},
 						Seat: "pubmatic",
@@ -5137,7 +5137,7 @@ func TestSendAuctionResponse(t *testing.T) {
 						NonBid: []openrtb_ext.NonBid{
 							{
 								ImpId:      "imp1",
-								StatusCode: int(exchange.ResponseRejectedCategoryMappingInvalid),
+								StatusCode: int(openrtb_ext.ResponseRejectedCategoryMappingInvalid),
 							},
 						},
 						Seat: "pubmatic",
@@ -5160,7 +5160,7 @@ func TestSendAuctionResponse(t *testing.T) {
 						NonBid: []openrtb_ext.NonBid{
 							{
 								ImpId:      "imp1",
-								StatusCode: int(exchange.ResponseRejectedCategoryMappingInvalid),
+								StatusCode: int(openrtb_ext.ResponseRejectedCategoryMappingInvalid),
 							},
 						},
 						Seat: "pubmatic",
@@ -5188,7 +5188,7 @@ func TestSendAuctionResponse(t *testing.T) {
 						NonBid: []openrtb_ext.NonBid{
 							{
 								ImpId:      "imp1",
-								StatusCode: int(exchange.ResponseRejectedCategoryMappingInvalid),
+								StatusCode: int(openrtb_ext.ResponseRejectedCategoryMappingInvalid),
 							},
 						},
 						Seat: "pubmatic",
@@ -5211,7 +5211,7 @@ func TestSendAuctionResponse(t *testing.T) {
 				test.auctionObject.RequestWrapper.RebuildRequest()
 			}
 
-			_, ao := sendAuctionResponse(writer, test.hookExecutor, test.response, test.request, account, labels, test.auctionObject, &openrtb_ext.NonBidCollection{})
+			_, ao := sendAuctionResponse(writer, test.hookExecutor, test.response, test.request, account, labels, test.auctionObject, &openrtb_ext.SeatNonBidBuilder{})
 
 			assert.Equal(t, test.expectedAuctionObject.Errors, ao.Errors, "Invalid errors.")
 			assert.Equal(t, test.expectedAuctionObject.Status, ao.Status, "Invalid HTTP response status.")
@@ -6254,7 +6254,7 @@ func TestGetNonBidsFromStageOutcomes(t *testing.T) {
 	tests := []struct {
 		name            string
 		stageOutcomes   []hookexecution.StageOutcome
-		expectedNonBids openrtb_ext.NonBidCollection
+		expectedNonBids openrtb_ext.SeatNonBidBuilder
 	}{
 		{
 			name: "nil groups",
@@ -6464,7 +6464,7 @@ func TestGetNonBidsFromStageOutcomes(t *testing.T) {
 							InvocationResults: []hookexecution.HookOutcome{
 								{
 									Status:     hookexecution.StatusSuccess,
-									SeatNonBid: openrtb_ext.NonBidCollection{},
+									SeatNonBid: openrtb_ext.SeatNonBidBuilder{},
 								},
 							},
 						},
@@ -6472,14 +6472,14 @@ func TestGetNonBidsFromStageOutcomes(t *testing.T) {
 							InvocationResults: []hookexecution.HookOutcome{
 								{
 									Status:     hookexecution.StatusSuccess,
-									SeatNonBid: openrtb_ext.NonBidCollection{},
+									SeatNonBid: openrtb_ext.SeatNonBidBuilder{},
 								},
 							},
 						},
 					},
 				},
 			},
-			expectedNonBids: openrtb_ext.NonBidCollection{},
+			expectedNonBids: openrtb_ext.SeatNonBidBuilder{},
 		},
 	}
 	for _, tt := range tests {
@@ -6490,9 +6490,9 @@ func TestGetNonBidsFromStageOutcomes(t *testing.T) {
 	}
 }
 
-// getNonBids is utility function which forms NonBidCollection from NonBidParams input
-func getNonBids(bidParamsMap map[string][]openrtb_ext.NonBidParams) openrtb_ext.NonBidCollection {
-	nonBids := openrtb_ext.NonBidCollection{}
+// getNonBids is utility function which forms SeatNonBidBuilder from NonBidParams input
+func getNonBids(bidParamsMap map[string][]openrtb_ext.NonBidParams) openrtb_ext.SeatNonBidBuilder {
+	nonBids := openrtb_ext.SeatNonBidBuilder{}
 	for bidder, bidParams := range bidParamsMap {
 		for _, bidParam := range bidParams {
 			nonBid := openrtb_ext.NewNonBid(bidParam)
@@ -6505,7 +6505,7 @@ func getNonBids(bidParamsMap map[string][]openrtb_ext.NonBidParams) openrtb_ext.
 func TestSeatNonBidInAuction(t *testing.T) {
 	type args struct {
 		bidRequest                openrtb2.BidRequest
-		seatNonBidFromHoldAuction openrtb_ext.NonBidCollection
+		seatNonBidFromHoldAuction openrtb_ext.SeatNonBidBuilder
 		errorFromHoldAuction      error
 		rejectRawAuctionHook      bool
 		errorFromHook             error

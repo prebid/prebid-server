@@ -164,7 +164,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	// We can respect timeouts more accurately if we note the *real* start time, and use it
 	// to compute the auction timeout.
 	start := time.Now()
-	seatNonBid := &openrtb_ext.NonBidCollection{}
+	seatNonBid := &openrtb_ext.SeatNonBidBuilder{}
 
 	hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
 
@@ -340,7 +340,7 @@ func rejectAuctionRequest(
 	account *config.Account,
 	labels metrics.Labels,
 	ao analytics.AuctionObject,
-	seatNonBid *openrtb_ext.NonBidCollection,
+	seatNonBid *openrtb_ext.SeatNonBidBuilder,
 ) (metrics.Labels, analytics.AuctionObject) {
 	response := &openrtb2.BidResponse{NBR: openrtb3.NoBidReason(rejectErr.NBR).Ptr()}
 	if request != nil {
@@ -353,8 +353,8 @@ func rejectAuctionRequest(
 	return sendAuctionResponse(w, hookExecutor, response, request, account, labels, ao, seatNonBid)
 }
 
-func getNonBidsFromStageOutcomes(stageOutcomes []hookexecution.StageOutcome) openrtb_ext.NonBidCollection {
-	seatNonBid := openrtb_ext.NonBidCollection{}
+func getNonBidsFromStageOutcomes(stageOutcomes []hookexecution.StageOutcome) openrtb_ext.SeatNonBidBuilder {
+	seatNonBid := openrtb_ext.SeatNonBidBuilder{}
 	for _, stageOutcome := range stageOutcomes {
 		for _, groups := range stageOutcome.Groups {
 			for _, result := range groups.InvocationResults {
@@ -375,7 +375,7 @@ func sendAuctionResponse(
 	account *config.Account,
 	labels metrics.Labels,
 	ao analytics.AuctionObject,
-	seatNonBid *openrtb_ext.NonBidCollection,
+	seatNonBid *openrtb_ext.SeatNonBidBuilder,
 ) (metrics.Labels, analytics.AuctionObject) {
 	hookExecutor.ExecuteAuctionResponseStage(response)
 

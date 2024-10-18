@@ -1,11 +1,28 @@
 package openrtb_ext
 
-import "github.com/prebid/openrtb/v20/openrtb2"
+import (
+	"github.com/prebid/openrtb/v20/openrtb2"
+)
+
+// SeatNonBid list the reasons why bid was not resulted in positive bid
+// reason could be either No bid, Error, Request rejection or Response rejection
+// Reference:  https://github.com/InteractiveAdvertisingBureau/openrtb/blob/master/extensions/community_extensions/seat-non-bid.md#list-non-bid-status-codes
+type NonBidReason int64
+
+const (
+	ErrorGeneral                           NonBidReason = 100 // Error - General
+	ErrorTimeout                           NonBidReason = 101 // Error - Timeout
+	ErrorBidderUnreachable                 NonBidReason = 103 // Error - Bidder Unreachable
+	ResponseRejectedGeneral                NonBidReason = 300
+	ResponseRejectedBelowFloor             NonBidReason = 301 // Response Rejected - Below Floor
+	ResponseRejectedCategoryMappingInvalid NonBidReason = 303 // Response Rejected - Category Mapping Invalid
+	ResponseRejectedBelowDealFloor         NonBidReason = 304 // Response Rejected - Bid was Below Deal Floor
+	ResponseRejectedCreativeSizeNotAllowed NonBidReason = 351 // Response Rejected - Invalid Creative (Size Not Allowed)
+	ResponseRejectedCreativeNotSecure      NonBidReason = 352 // Response Rejected - Invalid Creative (Not Secure)
+)
 
 // NonBidCollection contains the map of seat with list of nonBids
-type NonBidCollection struct {
-	seatNonBidsMap map[string][]NonBid
-}
+type SeatNonBidBuilder map[string][]NonBid
 
 // NonBidParams contains the fields that are required to form the nonBid object
 type NonBidParams struct {
@@ -23,7 +40,7 @@ func NewNonBid(bidParams NonBidParams) NonBid {
 	return NonBid{
 		ImpId:      bidParams.Bid.ImpID,
 		StatusCode: bidParams.NonBidReason,
-		Ext: ExtNonBid{
+		Ext: &ExtNonBid{
 			Prebid: ExtNonBidPrebid{Bid: ExtNonBidPrebidBid{
 				Price:          bidParams.Bid.Price,
 				ADomain:        bidParams.Bid.ADomain,
@@ -43,38 +60,53 @@ func NewNonBid(bidParams NonBidParams) NonBid {
 
 // AddBid adds the nonBid into the map against the respective seat.
 // Note: This function is not a thread safe.
-func (snb *NonBidCollection) AddBid(nonBid NonBid, seat string) {
-	if snb.seatNonBidsMap == nil {
-		snb.seatNonBidsMap = make(map[string][]NonBid)
+func (snb SeatNonBidBuilder) AddBid(nonBid NonBid, seat string) {
+	if snb == nil {
+		snb = make(map[string][]NonBid)
 	}
-	snb.seatNonBidsMap[seat] = append(snb.seatNonBidsMap[seat], nonBid)
+	snb[seat] = append(snb[seat], nonBid)
 }
 
-// Append functions appends the NonBids from the input instance into the current instance's seatNonBidsMap, creating the map if needed.
-// Note: This function is not a thread safe.
-func (snb *NonBidCollection) Append(nonbid NonBidCollection) {
-	if snb == nil || len(nonbid.seatNonBidsMap) == 0 {
+// append adds the nonBids from the input nonBids to the current nonBids.
+// This method is not thread safe as we are initializing and writing to map
+func (snb SeatNonBidBuilder) Append(nonBids ...SeatNonBidBuilder) {
+	if snb == nil {
 		return
 	}
-	if snb.seatNonBidsMap == nil {
-		snb.seatNonBidsMap = make(map[string][]NonBid, len(nonbid.seatNonBidsMap))
-	}
-	for seat, nonBids := range nonbid.seatNonBidsMap {
-		snb.seatNonBidsMap[seat] = append(snb.seatNonBidsMap[seat], nonBids...)
+	for _, nonBid := range nonBids {
+		for seat, nonBids := range nonBid {
+			snb[seat] = append(snb[seat], nonBids...)
+		}
 	}
 }
 
 // Get function converts the internal seatNonBidsMap to standard openrtb seatNonBid structure and returns it
-func (snb *NonBidCollection) Get() []SeatNonBid {
+func (snb SeatNonBidBuilder) Get() []SeatNonBid {
 	if snb == nil {
 		return nil
 	}
 	var seatNonBid []SeatNonBid
-	for seat, nonBids := range snb.seatNonBidsMap {
+	for seat, nonBids := range snb {
 		seatNonBid = append(seatNonBid, SeatNonBid{
 			Seat:   seat,
 			NonBid: nonBids,
 		})
 	}
 	return seatNonBid
+}
+
+// rejectImps appends a non bid object to the builder for every specified imp
+func (b SeatNonBidBuilder) RejectImps(impIds []string, nonBidReason NonBidReason, seat string) {
+	nonBids := []NonBid{}
+	for _, impId := range impIds {
+		nonBid := NonBid{
+			ImpId:      impId,
+			StatusCode: int(nonBidReason),
+		}
+		nonBids = append(nonBids, nonBid)
+	}
+
+	if len(nonBids) > 0 {
+		b[seat] = append(b[seat], nonBids...)
+	}
 }

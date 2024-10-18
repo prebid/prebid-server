@@ -9,5 +9,5 @@ import (
 type AuctionResponse struct {
 	*openrtb2.BidResponse
 	ExtBidResponse *openrtb_ext.ExtBidResponse
-	SeatNonBid     openrtb_ext.NonBidCollection
+	SeatNonBid     openrtb_ext.SeatNonBidBuilder
 }

@@ -117,7 +117,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	// We can respect timeouts more accurately if we note the *real* start time, and use it
 	// to compute the auction timeout.
 	start := time.Now()
-	seatNonBid := &openrtb_ext.NonBidCollection{}
+	seatNonBid := &openrtb_ext.SeatNonBidBuilder{}
 
 	hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAmp, deps.metricsEngine)
 
@@ -341,7 +341,7 @@ func rejectAmpRequest(
 	labels metrics.Labels,
 	ao analytics.AmpObject,
 	errs []error,
-	seatNonBid openrtb_ext.NonBidCollection,
+	seatNonBid openrtb_ext.SeatNonBidBuilder,
 ) (metrics.Labels, analytics.AmpObject) {
 	response := &openrtb2.BidResponse{NBR: openrtb3.NoBidReason(rejectErr.NBR).Ptr()}
 	ao.AuctionResponse = response
@@ -359,7 +359,7 @@ func sendAmpResponse(
 	labels metrics.Labels,
 	ao analytics.AmpObject,
 	errs []error,
-	seatNonBid openrtb_ext.NonBidCollection,
+	seatNonBid openrtb_ext.SeatNonBidBuilder,
 ) (metrics.Labels, analytics.AmpObject) {
 	var response *openrtb2.BidResponse
 	if auctionResponse != nil {
@@ -448,7 +448,7 @@ func getExtBidResponse(
 	account *config.Account,
 	ao analytics.AmpObject,
 	errs []error,
-	seatNonBid openrtb_ext.NonBidCollection,
+	seatNonBid openrtb_ext.SeatNonBidBuilder,
 ) (analytics.AmpObject, openrtb_ext.ExtBidResponse) {
 	var response *openrtb2.BidResponse
 	if auctionResponse != nil {
