@@ -1,0 +1,16 @@
+endpoint: http://b-us-east14.resetdigital.co:9001
+maintainer:
+  email: biddersupport@resetdigital.co
+capabilities:
+  site:
+    mediaTypes:
+    - banner
+    - video
+    - audio
+gvlVendorID: 1162
+userSync:
+  key: resetdigital
+  supportCors: false
+  redirect:
+    url: https://sync.resetdigital.co/csync?pid=rubicon&redir={{redirect_url}}
+    userMacro: '$USER_ID'
