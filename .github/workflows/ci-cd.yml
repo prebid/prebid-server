@@ -31,6 +31,8 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
 
+    steps:
+
     - name: Install doctl
       uses: digitalocean/action-doctl@v2
       with:
