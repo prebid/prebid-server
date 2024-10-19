@@ -3553,14 +3553,17 @@ func TestApplyFPD(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		applyFPD(
-			testCase.inputFpd,
-			openrtb_ext.BidderName(testCase.inputBidderCoreName),
-			openrtb_ext.BidderName(testCase.inputBidderName),
-			testCase.inputBidderIsRequestAlias,
-			&testCase.inputRequest,
-		)
-		assert.Equal(t, testCase.expectedRequest, testCase.inputRequest, fmt.Sprintf("incorrect request after applying fpd, testcase %s", testCase.description))
+		t.Run(testCase.description, func(t *testing.T) {
+			reqWrapper := &openrtb_ext.RequestWrapper{BidRequest: &testCase.inputRequest}
+			applyFPD(
+				testCase.inputFpd,
+				openrtb_ext.BidderName(testCase.inputBidderCoreName),
+				openrtb_ext.BidderName(testCase.inputBidderName),
+				testCase.inputBidderIsRequestAlias,
+				reqWrapper,
+			)
+			assert.Equal(t, &testCase.expectedRequest, reqWrapper.BidRequest, fmt.Sprintf("incorrect request after applying fpd, testcase %s", testCase.description))
+		})
 	}
 }
 

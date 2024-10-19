@@ -197,7 +197,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		}
 
 		// fpd
-		applyFPD(auctionReq.FirstPartyData, coreBidder, openrtb_ext.BidderName(bidder), isRequestAlias, reqWrapperCopy.BidRequest)
+		applyFPD(auctionReq.FirstPartyData, coreBidder, openrtb_ext.BidderName(bidder), isRequestAlias, reqWrapperCopy)
 
 		// privacy scrubbing
 		if err := rs.applyPrivacy(reqWrapperCopy, coreBidder, bidder, auctionReq, auctionPermissions, ccpaEnforcer, lmt, coppa); err != nil {
@@ -949,7 +949,7 @@ func getExtBidAdjustmentFactors(requestExtPrebid *openrtb_ext.ExtRequestPrebid) 
 	return nil
 }
 
-func applyFPD(fpd map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData, coreBidderName openrtb_ext.BidderName, bidderName openrtb_ext.BidderName, isRequestAlias bool, bidRequest *openrtb2.BidRequest) {
+func applyFPD(fpd map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData, coreBidderName openrtb_ext.BidderName, bidderName openrtb_ext.BidderName, isRequestAlias bool, reqWrapper *openrtb_ext.RequestWrapper) {
 	if fpd == nil {
 		return
 	}
@@ -965,20 +965,20 @@ func applyFPD(fpd map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyD
 	}
 
 	if fpdToApply.Site != nil {
-		bidRequest.Site = fpdToApply.Site
+		reqWrapper.Site = fpdToApply.Site
 	}
 
 	if fpdToApply.App != nil {
-		bidRequest.App = fpdToApply.App
+		reqWrapper.App = fpdToApply.App
 	}
 
 	if fpdToApply.User != nil {
 		//BuyerUID is a value obtained between fpd extraction and fpd application.
 		//BuyerUID needs to be set back to fpd before applying this fpd to final bidder request
-		if bidRequest.User != nil && len(bidRequest.User.BuyerUID) > 0 {
-			fpdToApply.User.BuyerUID = bidRequest.User.BuyerUID
+		if reqWrapper.User != nil && len(reqWrapper.User.BuyerUID) > 0 {
+			fpdToApply.User.BuyerUID = reqWrapper.User.BuyerUID
 		}
-		bidRequest.User = fpdToApply.User
+		reqWrapper.User = fpdToApply.User
 	}
 }
 
