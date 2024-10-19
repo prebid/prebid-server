@@ -157,16 +157,10 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 	bidderRequests = make([]BidderRequest, 0, len(impsByBidder))
 
 	for bidder, imps := range impsByBidder {
-		reqWrapperCopy := req.Clone()
+		reqWrapperCopy := req.CloneAndClearImpWrappers()
 		bidRequestCopy := *req.BidRequest
 		reqWrapperCopy.BidRequest = &bidRequestCopy
-		impWrappers := make([]*openrtb_ext.ImpWrapper, 0)
-		for _, imp := range imps {
-			impCopy := imp
-			impWrapper := openrtb_ext.ImpWrapper{Imp: &impCopy}
-			impWrappers = append(impWrappers, &impWrapper)
-		}
-		reqWrapperCopy.SetImp(impWrappers)
+		reqWrapperCopy.Imp = imps
 
 		coreBidder, isRequestAlias := resolveBidder(bidder, requestAliases)
 
@@ -275,15 +269,14 @@ func removeImpsWithStoredResponses(req *openrtb_ext.RequestWrapper, impBidRespon
 		return
 	}
 
-	var updatedImps []*openrtb_ext.ImpWrapper
-	imps := req.GetImp()
+	imps := req.Imp
+	req.Imp = nil //to indicate this bidder doesn't have real requests
 	for _, imp := range imps {
 		if _, ok := impBidResponses[imp.ID]; !ok {
 			//add real imp back to request
-			updatedImps = append(updatedImps, imp)
+			req.Imp = append(req.Imp, imp)
 		}
 	}
-	req.SetImp(updatedImps)
 }
 
 // PreloadExts ensures all exts have been unmarshalled into wrapper ext objects
@@ -1144,12 +1137,9 @@ func applyBidAdjustmentToFloor(req *openrtb_ext.RequestWrapper, bidder string, a
 	}
 
 	if bidAdjustment != 1.0 {
-		impWrappers := req.GetImp()
-		for ind, imp := range impWrappers {
-			impCopy := *imp.Imp
-			impCopy.BidFloor = impCopy.BidFloor / bidAdjustment
-			impWrappers[ind].Imp = &impCopy
+		for index, imp := range req.Imp {
+			imp.BidFloor = imp.BidFloor / bidAdjustment
+			req.Imp[index] = imp
 		}
-		req.SetImp(impWrappers)
 	}
 }
