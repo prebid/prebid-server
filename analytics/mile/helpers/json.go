@@ -57,11 +57,12 @@ func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]MileAnal
 					YetiSiteID:        ao.RequestWrapper.Site.ID,
 					YetiPublisherID:   ao.RequestWrapper.Site.Publisher.ID,
 					SessionID:         "",
-					EventType:         "",
+					EventType:         "pbs_agg_adunit",
 					Section:           "",
 					BidBidders:        bidBiders,
 					ConfiguredBidders: configuredBidders,
 					ConfiguredTimeout: ao.RequestWrapper.TMax,
+					MetaData:          map[string][]string{"prebid_server": []string{"1"}},
 					//Viewability: ao.RequestWrapper.
 					//WinningSize: ao.Response.SeatBi
 

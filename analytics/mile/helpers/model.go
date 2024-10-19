@@ -174,6 +174,8 @@ type MileAnalyticsEvent struct {
 	DealID string `json:"dealID"`
 
 	UserIDVendors string `json:"userIDVendors"`
+
+	MetaData map[string][]string `json:"metaData"`
 }
 
 type ImpressionsExt struct {
