@@ -57,6 +57,7 @@ func New(analytics *config.Analytics) analytics.Runner {
 			glog.Errorf("Could not initialize Agma Anayltics: %v", err)
 		}
 	}
+	fmt.Println(analytics)
 
 	if analytics.Mile.Enabled {
 		mileConfig := mile.BuildConfig(analytics.Mile.Scope,
