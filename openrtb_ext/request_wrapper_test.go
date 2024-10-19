@@ -198,6 +198,7 @@ func TestRebuildImp(t *testing.T) {
 		request           openrtb2.BidRequest
 		requestImpWrapper []*ImpWrapper
 		expectedRequest   openrtb2.BidRequest
+		expectedAccessed  bool
 		expectedError     string
 	}{
 		{
@@ -217,11 +218,13 @@ func TestRebuildImp(t *testing.T) {
 			request:           openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "1"}}},
 			requestImpWrapper: []*ImpWrapper{{Imp: &openrtb2.Imp{ID: "2"}, impExt: &ImpExt{prebid: prebid, prebidDirty: true}}},
 			expectedRequest:   openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "2", Ext: prebidJson}}},
+			expectedAccessed:  true,
 		},
 		{
 			description:       "One - Accessed - Error",
 			request:           openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "1"}}},
 			requestImpWrapper: []*ImpWrapper{{Imp: nil, impExt: &ImpExt{}}},
+			expectedAccessed:  true,
 			expectedError:     "ImpWrapper RebuildImp called on a nil Imp",
 		},
 		{
@@ -229,6 +232,7 @@ func TestRebuildImp(t *testing.T) {
 			request:           openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "1"}, {ID: "2"}}},
 			requestImpWrapper: []*ImpWrapper{{Imp: &openrtb2.Imp{ID: "1"}, impExt: &ImpExt{}}, {Imp: &openrtb2.Imp{ID: "2"}, impExt: &ImpExt{prebid: prebid, prebidDirty: true}}},
 			expectedRequest:   openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "1"}, {ID: "2", Ext: prebidJson}}},
+			expectedAccessed:  true,
 		},
 	}
 
@@ -246,6 +250,20 @@ func TestRebuildImp(t *testing.T) {
 		} else {
 			assert.NoError(t, err, test.description)
 			assert.Equal(t, test.expectedRequest, *w.BidRequest, test.description)
+		}
+
+		if test.expectedAccessed && test.expectedError == "" {
+			bidRequestImps := make(map[string]*openrtb2.Imp, 0)
+			for i, v := range w.Imp {
+				bidRequestImps[v.ID] = &w.Imp[i]
+			}
+			wrapperImps := make(map[string]*openrtb2.Imp, 0)
+			for i, v := range w.impWrappers {
+				wrapperImps[v.ID] = w.impWrappers[i].Imp
+			}
+			for k := range bidRequestImps {
+				assert.Same(t, bidRequestImps[k], wrapperImps[k], test.description)
+			}
 		}
 	}
 }
