@@ -167,16 +167,16 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		// apply bidder-specific schains
 		sChainWriter.Write(reqWrapperCopy, bidder)
 
+		// eid scrubbing
+		if err := removeUnpermissionedEids(reqWrapperCopy, bidder); err != nil {
+			errs = append(errs, fmt.Errorf("unable to enforce request.ext.prebid.data.eidpermissions because %v", err))
+			continue
+		}
+
 		// generate bidder-specific request ext
 		err = buildRequestExtForBidder(bidder, reqWrapperCopy, bidderParamsInReqExt, auctionReq.Account.AlternateBidderCodes)
 		if err != nil {
 			errs = append(errs, err)
-			continue
-		}
-
-		// eid scrubbing
-		if err := removeUnpermissionedEids(reqWrapperCopy.BidRequest, bidder, requestExt); err != nil {
-			errs = append(errs, fmt.Errorf("unable to enforce request.ext.prebid.data.eidpermissions because %v", err))
 			continue
 		}
 
@@ -756,42 +756,31 @@ func copyWithBuyerUID(user *openrtb2.User, buyerUID string) *openrtb2.User {
 	return user
 }
 
-// removeUnpermissionedEids modifies the request to remove any request.user.ext.eids not permissions for the specific bidder
-func removeUnpermissionedEids(request *openrtb2.BidRequest, bidder string, requestExt *openrtb_ext.ExtRequest) error {
+// removeUnpermissionedEids modifies the request to remove any request.user.eids not permissions for the specific bidder
+func removeUnpermissionedEids(reqWrapper *openrtb_ext.RequestWrapper, bidder string) error {
 	// ensure request might have eids (as much as we can check before unmarshalling)
-	if request.User == nil || len(request.User.Ext) == 0 {
+	if reqWrapper.User == nil || len(reqWrapper.User.EIDs) == 0 {
 		return nil
 	}
 
 	// ensure request has eid permissions to enforce
-	if requestExt == nil || requestExt.Prebid.Data == nil || len(requestExt.Prebid.Data.EidPermissions) == 0 {
-		return nil
-	}
-
-	// low level unmarshal to preserve other request.user.ext values. prebid server is non-destructive.
-	var userExt map[string]json.RawMessage
-	if err := jsonutil.Unmarshal(request.User.Ext, &userExt); err != nil {
+	reqExt, err := reqWrapper.GetRequestExt()
+	if err != nil {
 		return err
 	}
-
-	eidsJSON, eidsSpecified := userExt["eids"]
-	if !eidsSpecified {
+	if reqExt == nil {
 		return nil
 	}
 
-	var eids []openrtb2.EID
-	if err := jsonutil.Unmarshal(eidsJSON, &eids); err != nil {
-		return err
-	}
-
-	// exit early if there are no eids (empty array)
-	if len(eids) == 0 {
+	if reqExt.GetPrebid() == nil || reqExt.GetPrebid().Data == nil || len(reqExt.GetPrebid().Data.EidPermissions) == 0 {
 		return nil
 	}
+
+	eids := reqWrapper.User.EIDs
 
 	// translate eid permissions to a map for quick lookup
 	eidRules := make(map[string][]string)
-	for _, p := range requestExt.Prebid.Data.EidPermissions {
+	for _, p := range reqExt.GetPrebid().Data.EidPermissions {
 		eidRules[p.Source] = p.Bidders
 	}
 
@@ -819,35 +808,13 @@ func removeUnpermissionedEids(request *openrtb2.BidRequest, bidder string, reque
 		return nil
 	}
 
-	// marshal eidsAllowed back to userExt
+	// set eidsAllowed back to userExt
 	if len(eidsAllowed) == 0 {
-		delete(userExt, "eids")
+		reqWrapper.User.EIDs = nil
 	} else {
-		eidsRaw, err := jsonutil.Marshal(eidsAllowed)
-		if err != nil {
-			return err
-		}
-		userExt["eids"] = eidsRaw
+		reqWrapper.User.EIDs = eidsAllowed
 	}
-
-	// exit early if userExt is empty
-	if len(userExt) == 0 {
-		setUserExtWithCopy(request, nil)
-		return nil
-	}
-
-	userExtJSON, err := jsonutil.Marshal(userExt)
-	if err != nil {
-		return err
-	}
-	setUserExtWithCopy(request, userExtJSON)
 	return nil
-}
-
-func setUserExtWithCopy(request *openrtb2.BidRequest, userExtJSON json.RawMessage) {
-	userCopy := *request.User
-	userCopy.Ext = userExtJSON
-	request.User = &userCopy
 }
 
 // resolveBidder returns the known BidderName associated with bidder, if bidder is an alias. If it's not an alias, the bidder is returned.
