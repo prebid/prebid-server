@@ -207,8 +207,8 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 
 		// GPP downgrade: always downgrade unless we can confirm GPP is supported
 		if shouldSetLegacyPrivacy(rs.bidderInfo, string(coreBidder)) {
-			setLegacyGDPRFromGPP(reqWrapperCopy.BidRequest, gpp)
-			setLegacyUSPFromGPP(reqWrapperCopy.BidRequest, gpp)
+			setLegacyGDPRFromGPP(reqWrapperCopy, gpp)
+			setLegacyUSPFromGPP(reqWrapperCopy, gpp)
 		}
 
 		// remove imps with stored responses so they aren't sent to the bidder
@@ -1015,7 +1015,7 @@ func applyFPD(fpd map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyD
 	}
 }
 
-func setLegacyGDPRFromGPP(r *openrtb2.BidRequest, gpp gpplib.GppContainer) {
+func setLegacyGDPRFromGPP(r *openrtb_ext.RequestWrapper, gpp gpplib.GppContainer) {
 	if r.Regs != nil && r.Regs.GDPR == nil {
 		if r.Regs.GPPSID != nil {
 			// Set to 0 unless SID exists
@@ -1044,13 +1044,12 @@ func setLegacyGDPRFromGPP(r *openrtb2.BidRequest, gpp gpplib.GppContainer) {
 			}
 		}
 	}
-
 }
-func setLegacyUSPFromGPP(r *openrtb2.BidRequest, gpp gpplib.GppContainer) {
+
+func setLegacyUSPFromGPP(r *openrtb_ext.RequestWrapper, gpp gpplib.GppContainer) {
 	if r.Regs == nil {
 		return
 	}
-
 	if len(r.Regs.USPrivacy) > 0 || r.Regs.GPPSID == nil {
 		return
 	}
@@ -1065,7 +1064,6 @@ func setLegacyUSPFromGPP(r *openrtb2.BidRequest, gpp gpplib.GppContainer) {
 			}
 		}
 	}
-
 }
 
 func WrapJSONInData(data []byte) []byte {

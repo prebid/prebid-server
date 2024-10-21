@@ -3982,21 +3982,27 @@ func (gs GPPMockSection) Encode(bool) []byte {
 func TestGdprFromGPP(t *testing.T) {
 	testCases := []struct {
 		name            string
-		initialRequest  *openrtb2.BidRequest
+		initialRequest  *openrtb_ext.RequestWrapper
 		gpp             gpplib.GppContainer
-		expectedRequest *openrtb2.BidRequest
+		expectedRequest *openrtb_ext.RequestWrapper
 	}{
 		{
-			name:            "Empty", // Empty Request
-			initialRequest:  &openrtb2.BidRequest{},
-			gpp:             gpplib.GppContainer{},
-			expectedRequest: &openrtb2.BidRequest{},
+			name: "Empty", // Empty Request
+			initialRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{},
+			},
+			gpp: gpplib.GppContainer{},
+			expectedRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{},
+			},
 		},
 		{
 			name: "GDPR_Downgrade", // GDPR from GPP, into empty
-			initialRequest: &openrtb2.BidRequest{
-				Regs: &openrtb2.Regs{
-					GPPSID: []int8{2},
+			initialRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GPPSID: []int8{2},
+					},
 				},
 			},
 			gpp: gpplib.GppContainer{
@@ -4008,25 +4014,29 @@ func TestGdprFromGPP(t *testing.T) {
 					},
 				},
 			},
-			expectedRequest: &openrtb2.BidRequest{
-				Regs: &openrtb2.Regs{
-					GPPSID: []int8{2},
-					GDPR:   ptrutil.ToPtr[int8](1),
-				},
-				User: &openrtb2.User{
-					Consent: "GDPRConsent",
+			expectedRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GPPSID: []int8{2},
+						GDPR:   ptrutil.ToPtr[int8](1),
+					},
+					User: &openrtb2.User{
+						Consent: "GDPRConsent",
+					},
 				},
 			},
 		},
 		{
 			name: "GDPR_Downgrade", // GDPR from GPP, into empty legacy, existing objects
-			initialRequest: &openrtb2.BidRequest{
-				Regs: &openrtb2.Regs{
-					GPPSID:    []int8{2},
-					USPrivacy: "LegacyUSP",
-				},
-				User: &openrtb2.User{
-					ID: "1234",
+			initialRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GPPSID:    []int8{2},
+						USPrivacy: "LegacyUSP",
+					},
+					User: &openrtb2.User{
+						ID: "1234",
+					},
 				},
 			},
 			gpp: gpplib.GppContainer{
@@ -4038,27 +4048,31 @@ func TestGdprFromGPP(t *testing.T) {
 					},
 				},
 			},
-			expectedRequest: &openrtb2.BidRequest{
-				Regs: &openrtb2.Regs{
-					GPPSID:    []int8{2},
-					GDPR:      ptrutil.ToPtr[int8](1),
-					USPrivacy: "LegacyUSP",
-				},
-				User: &openrtb2.User{
-					ID:      "1234",
-					Consent: "GDPRConsent",
+			expectedRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GPPSID:    []int8{2},
+						GDPR:      ptrutil.ToPtr[int8](1),
+						USPrivacy: "LegacyUSP",
+					},
+					User: &openrtb2.User{
+						ID:      "1234",
+						Consent: "GDPRConsent",
+					},
 				},
 			},
 		},
 		{
 			name: "Downgrade_Blocked_By_Existing", // GDPR from GPP blocked by existing GDPR",
-			initialRequest: &openrtb2.BidRequest{
-				Regs: &openrtb2.Regs{
-					GPPSID: []int8{2},
-					GDPR:   ptrutil.ToPtr[int8](1),
-				},
-				User: &openrtb2.User{
-					Consent: "LegacyConsent",
+			initialRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GPPSID: []int8{2},
+						GDPR:   ptrutil.ToPtr[int8](1),
+					},
+					User: &openrtb2.User{
+						Consent: "LegacyConsent",
+					},
 				},
 			},
 			gpp: gpplib.GppContainer{
@@ -4070,22 +4084,26 @@ func TestGdprFromGPP(t *testing.T) {
 					},
 				},
 			},
-			expectedRequest: &openrtb2.BidRequest{
-				Regs: &openrtb2.Regs{
-					GPPSID: []int8{2},
-					GDPR:   ptrutil.ToPtr[int8](1),
-				},
-				User: &openrtb2.User{
-					Consent: "LegacyConsent",
+			expectedRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GPPSID: []int8{2},
+						GDPR:   ptrutil.ToPtr[int8](1),
+					},
+					User: &openrtb2.User{
+						Consent: "LegacyConsent",
+					},
 				},
 			},
 		},
 		{
 			name: "Downgrade_Partial", // GDPR from GPP partially blocked by existing GDPR
-			initialRequest: &openrtb2.BidRequest{
-				Regs: &openrtb2.Regs{
-					GPPSID: []int8{2},
-					GDPR:   ptrutil.ToPtr[int8](0),
+			initialRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GPPSID: []int8{2},
+						GDPR:   ptrutil.ToPtr[int8](0),
+					},
 				},
 			},
 			gpp: gpplib.GppContainer{
@@ -4097,21 +4115,25 @@ func TestGdprFromGPP(t *testing.T) {
 					},
 				},
 			},
-			expectedRequest: &openrtb2.BidRequest{
-				Regs: &openrtb2.Regs{
-					GPPSID: []int8{2},
-					GDPR:   ptrutil.ToPtr[int8](0),
-				},
-				User: &openrtb2.User{
-					Consent: "GDPRConsent",
+			expectedRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GPPSID: []int8{2},
+						GDPR:   ptrutil.ToPtr[int8](0),
+					},
+					User: &openrtb2.User{
+						Consent: "GDPRConsent",
+					},
 				},
 			},
 		},
 		{
 			name: "No_GDPR", // Downgrade not possible due to missing GDPR
-			initialRequest: &openrtb2.BidRequest{
-				Regs: &openrtb2.Regs{
-					GPPSID: []int8{6},
+			initialRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GPPSID: []int8{6},
+					},
 				},
 			},
 			gpp: gpplib.GppContainer{
@@ -4123,18 +4145,22 @@ func TestGdprFromGPP(t *testing.T) {
 					},
 				},
 			},
-			expectedRequest: &openrtb2.BidRequest{
-				Regs: &openrtb2.Regs{
-					GPPSID: []int8{6},
-					GDPR:   ptrutil.ToPtr[int8](0),
+			expectedRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GPPSID: []int8{6},
+						GDPR:   ptrutil.ToPtr[int8](0),
+					},
 				},
 			},
 		},
 		{
 			name: "No_SID", // GDPR from GPP partially blocked by no SID
-			initialRequest: &openrtb2.BidRequest{
-				Regs: &openrtb2.Regs{
-					GPPSID: []int8{6},
+			initialRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GPPSID: []int8{6},
+					},
 				},
 			},
 			gpp: gpplib.GppContainer{
@@ -4150,19 +4176,23 @@ func TestGdprFromGPP(t *testing.T) {
 					},
 				},
 			},
-			expectedRequest: &openrtb2.BidRequest{
-				Regs: &openrtb2.Regs{
-					GPPSID: []int8{6},
-					GDPR:   ptrutil.ToPtr[int8](0),
-				},
-				User: &openrtb2.User{
-					Consent: "GDPRConsent",
+			expectedRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GPPSID: []int8{6},
+						GDPR:   ptrutil.ToPtr[int8](0),
+					},
+					User: &openrtb2.User{
+						Consent: "GDPRConsent",
+					},
 				},
 			},
 		},
 		{
-			name:           "GDPR_Nil_SID", // GDPR from GPP, into empty, but with nil SID
-			initialRequest: &openrtb2.BidRequest{},
+			name: "GDPR_Nil_SID", // GDPR from GPP, into empty, but with nil SID
+			initialRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{},
+			},
 			gpp: gpplib.GppContainer{
 				SectionTypes: []constants.SectionID{2},
 				Sections: []gpplib.Section{
@@ -4172,20 +4202,24 @@ func TestGdprFromGPP(t *testing.T) {
 					},
 				},
 			},
-			expectedRequest: &openrtb2.BidRequest{
-				User: &openrtb2.User{
-					Consent: "GDPRConsent",
+			expectedRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					User: &openrtb2.User{
+						Consent: "GDPRConsent",
+					},
 				},
 			},
 		},
 		{
 			name: "Downgrade_Nil_SID_Blocked_By_Existing", // GDPR from GPP blocked by existing GDPR, with nil SID",
-			initialRequest: &openrtb2.BidRequest{
-				Regs: &openrtb2.Regs{
-					GDPR: ptrutil.ToPtr[int8](1),
-				},
-				User: &openrtb2.User{
-					Consent: "LegacyConsent",
+			initialRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GDPR: ptrutil.ToPtr[int8](1),
+					},
+					User: &openrtb2.User{
+						Consent: "LegacyConsent",
+					},
 				},
 			},
 			gpp: gpplib.GppContainer{
@@ -4197,12 +4231,14 @@ func TestGdprFromGPP(t *testing.T) {
 					},
 				},
 			},
-			expectedRequest: &openrtb2.BidRequest{
-				Regs: &openrtb2.Regs{
-					GDPR: ptrutil.ToPtr[int8](1),
-				},
-				User: &openrtb2.User{
-					Consent: "LegacyConsent",
+			expectedRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GDPR: ptrutil.ToPtr[int8](1),
+					},
+					User: &openrtb2.User{
+						Consent: "LegacyConsent",
+					},
 				},
 			},
 		},
@@ -4219,21 +4255,27 @@ func TestGdprFromGPP(t *testing.T) {
 func TestPrivacyFromGPP(t *testing.T) {
 	testCases := []struct {
 		name            string
-		initialRequest  *openrtb2.BidRequest
+		initialRequest  *openrtb_ext.RequestWrapper
 		gpp             gpplib.GppContainer
-		expectedRequest *openrtb2.BidRequest
+		expectedRequest *openrtb_ext.RequestWrapper
 	}{
 		{
-			name:            "Empty", // Empty Request
-			initialRequest:  &openrtb2.BidRequest{},
-			gpp:             gpplib.GppContainer{},
-			expectedRequest: &openrtb2.BidRequest{},
+			name: "Empty", // Empty Request
+			initialRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{},
+			},
+			gpp: gpplib.GppContainer{},
+			expectedRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{},
+			},
 		},
 		{
 			name: "Privacy_Downgrade", // US Privacy from GPP, into empty
-			initialRequest: &openrtb2.BidRequest{
-				Regs: &openrtb2.Regs{
-					GPPSID: []int8{6},
+			initialRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GPPSID: []int8{6},
+					},
 				},
 			},
 			gpp: gpplib.GppContainer{
@@ -4245,19 +4287,23 @@ func TestPrivacyFromGPP(t *testing.T) {
 					},
 				},
 			},
-			expectedRequest: &openrtb2.BidRequest{
-				Regs: &openrtb2.Regs{
-					GPPSID:    []int8{6},
-					USPrivacy: "USPrivacy",
+			expectedRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GPPSID:    []int8{6},
+						USPrivacy: "USPrivacy",
+					},
 				},
 			},
 		},
 		{
 			name: "Downgrade_Blocked_By_Existing", // US Privacy from GPP blocked by existing US Privacy
-			initialRequest: &openrtb2.BidRequest{
-				Regs: &openrtb2.Regs{
-					GPPSID:    []int8{6},
-					USPrivacy: "LegacyPrivacy",
+			initialRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GPPSID:    []int8{6},
+						USPrivacy: "LegacyPrivacy",
+					},
 				},
 			},
 			gpp: gpplib.GppContainer{
@@ -4269,18 +4315,22 @@ func TestPrivacyFromGPP(t *testing.T) {
 					},
 				},
 			},
-			expectedRequest: &openrtb2.BidRequest{
-				Regs: &openrtb2.Regs{
-					GPPSID:    []int8{6},
-					USPrivacy: "LegacyPrivacy",
+			expectedRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GPPSID:    []int8{6},
+						USPrivacy: "LegacyPrivacy",
+					},
 				},
 			},
 		},
 		{
 			name: "No_USPrivacy", // Downgrade not possible due to missing USPrivacy
-			initialRequest: &openrtb2.BidRequest{
-				Regs: &openrtb2.Regs{
-					GPPSID: []int8{2},
+			initialRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GPPSID: []int8{2},
+					},
 				},
 			},
 			gpp: gpplib.GppContainer{
@@ -4292,17 +4342,21 @@ func TestPrivacyFromGPP(t *testing.T) {
 					},
 				},
 			},
-			expectedRequest: &openrtb2.BidRequest{
-				Regs: &openrtb2.Regs{
-					GPPSID: []int8{2},
+			expectedRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GPPSID: []int8{2},
+					},
 				},
 			},
 		},
 		{
 			name: "No_SID", // US Privacy from GPP partially blocked by no SID
-			initialRequest: &openrtb2.BidRequest{
-				Regs: &openrtb2.Regs{
-					GPPSID: []int8{2},
+			initialRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GPPSID: []int8{2},
+					},
 				},
 			},
 			gpp: gpplib.GppContainer{
@@ -4318,9 +4372,11 @@ func TestPrivacyFromGPP(t *testing.T) {
 					},
 				},
 			},
-			expectedRequest: &openrtb2.BidRequest{
-				Regs: &openrtb2.Regs{
-					GPPSID: []int8{2},
+			expectedRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GPPSID: []int8{2},
+					},
 				},
 			},
 		},
