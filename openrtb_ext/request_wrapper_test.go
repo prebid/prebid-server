@@ -1910,7 +1910,7 @@ func TestImpWrapperSetImp(t *testing.T) {
 	// Ensure that the wrapper pointers are in sync.
 	for i, _ := range rw.BidRequest.Imp {
 		// Assert the pointers are in sync.
-		assert.Equal(t, &rw.Imp[i], iw[i].Imp)
+		assert.Same(t, &rw.Imp[i], iw[i].Imp)
 	}
 
 }
