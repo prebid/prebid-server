@@ -1884,6 +1884,37 @@ func TestImpWrapperGetImpExt(t *testing.T) {
 	}
 }
 
+func TestImpWrapperSetImp(t *testing.T) {
+	origImps := []openrtb2.Imp{
+		{ID: "imp1", TagID: "tag1"},
+		{ID: "imp2", TagID: "tag2"},
+		{ID: "imp3", TagID: "tag3"},
+	}
+	expectedImps := []openrtb2.Imp{
+		{ID: "imp1", TagID: "tag4", BidFloor: 0.5},
+		{ID: "imp1.1", TagID: "tag2", BidFloor: 0.6},
+		{ID: "imp2", TagID: "notag"},
+		{ID: "imp3", TagID: "tag3"},
+	}
+	rw := RequestWrapper{BidRequest: &openrtb2.BidRequest{Imp: origImps}}
+	iw := rw.GetImp()
+	rw.Imp[0].TagID = "tag4"
+	rw.Imp[0].BidFloor = 0.5
+	iw[1] = &ImpWrapper{Imp: &expectedImps[1]}
+	*iw[2] = ImpWrapper{Imp: &expectedImps[2]}
+	iw = append(iw, &ImpWrapper{Imp: &expectedImps[3]})
+
+	rw.SetImp(iw)
+	assert.Equal(t, expectedImps, rw.BidRequest.Imp)
+	iw = rw.GetImp()
+	// Ensure that the wrapper pointers are in sync.
+	for i, _ := range rw.BidRequest.Imp {
+		// Assert the pointers are in sync.
+		assert.Equal(t, &rw.Imp[i], iw[i].Imp)
+	}
+
+}
+
 func TestImpExtTid(t *testing.T) {
 	impExt := &ImpExt{}
 
