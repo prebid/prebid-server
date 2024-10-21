@@ -6,7 +6,9 @@
       {
         "id": "some-impression-id",
         "ext": {
-          "bidder": {}
+          "bidder": {
+            "sid": 11
+          }
         },
         "video": {
           "w": 640,
@@ -49,9 +51,6 @@
           "imp": [
             {
               "id": "some-impression-id",
-              "ext": {
-                "bidder": {}
-              },
               "video": {
                 "w": 640,
                 "h": 480,
