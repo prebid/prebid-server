@@ -95,6 +95,12 @@ func (rw *RequestWrapper) GetImp() []*ImpWrapper {
 
 func (rw *RequestWrapper) SetImp(imps []*ImpWrapper) {
 	rw.impWrappers = imps
+	imparr := make([]openrtb2.Imp, len(imps), len(imps))
+	for i, imp := range imps {
+		imparr[i] = *imp.Imp
+		imp.Imp = &imparr[i]
+	}
+	rw.Imp = imparr
 	rw.impWrappersAccessed = true
 }
 
