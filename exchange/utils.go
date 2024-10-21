@@ -192,7 +192,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		auctionPermissions := gdprPerms.AuctionActivitiesAllowed(ctx, coreBidder, openrtb_ext.BidderName(bidder))
 
 		// privacy blocking
-		if rs.isBidderBlockedByPrivacy(req, auctionReq.Activities, auctionPermissions, coreBidder, openrtb_ext.BidderName(bidder)) {
+		if rs.isBidderBlockedByPrivacy(reqWrapperCopy, auctionReq.Activities, auctionPermissions, coreBidder, openrtb_ext.BidderName(bidder)) {
 			continue
 		}
 
