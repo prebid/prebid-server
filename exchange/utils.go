@@ -772,7 +772,8 @@ func removeUnpermissionedEids(reqWrapper *openrtb_ext.RequestWrapper, bidder str
 		return nil
 	}
 
-	if reqExt.GetPrebid() == nil || reqExt.GetPrebid().Data == nil || len(reqExt.GetPrebid().Data.EidPermissions) == 0 {
+	reqExtPrebid := reqExt.GetPrebid()
+	if reqExtPrebid == nil || reqExtPrebid.Data == nil || len(reqExtPrebid.Data.EidPermissions) == 0 {
 		return nil
 	}
 
@@ -780,7 +781,7 @@ func removeUnpermissionedEids(reqWrapper *openrtb_ext.RequestWrapper, bidder str
 
 	// translate eid permissions to a map for quick lookup
 	eidRules := make(map[string][]string)
-	for _, p := range reqExt.GetPrebid().Data.EidPermissions {
+	for _, p := range reqExtPrebid.Data.EidPermissions {
 		eidRules[p.Source] = p.Bidders
 	}
 
@@ -973,10 +974,17 @@ func applyFPD(fpd map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyD
 	}
 
 	if fpdToApply.User != nil {
-		//BuyerUID is a value obtained between fpd extraction and fpd application.
-		//BuyerUID needs to be set back to fpd before applying this fpd to final bidder request
-		if reqWrapper.User != nil && len(reqWrapper.User.BuyerUID) > 0 {
-			fpdToApply.User.BuyerUID = reqWrapper.User.BuyerUID
+		if reqWrapper.User != nil {
+			if len(reqWrapper.User.BuyerUID) > 0 {
+				//BuyerUID is a value obtained between fpd extraction and fpd application.
+				//BuyerUID needs to be set back to fpd before applying this fpd to final bidder request
+				fpdToApply.User.BuyerUID = reqWrapper.User.BuyerUID
+			}
+			if len(reqWrapper.User.EIDs) > 0 {
+				// copy reqWrapper.User.EIDs to fpdToApply.User.EIDs
+				// because EIDs might have been removed by removeUnpermissionedEids.
+				fpdToApply.User.EIDs = reqWrapper.User.EIDs
+			}
 		}
 		reqWrapper.User = fpdToApply.User
 	}
