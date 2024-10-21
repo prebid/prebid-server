@@ -980,11 +980,9 @@ func applyFPD(fpd map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyD
 				//BuyerUID needs to be set back to fpd before applying this fpd to final bidder request
 				fpdToApply.User.BuyerUID = reqWrapper.User.BuyerUID
 			}
-			if len(reqWrapper.User.EIDs) > 0 {
-				// copy reqWrapper.User.EIDs to fpdToApply.User.EIDs
-				// because EIDs might have been removed by removeUnpermissionedEids.
-				fpdToApply.User.EIDs = reqWrapper.User.EIDs
-			}
+			// copy reqWrapper.User.EIDs to fpdToApply.User.EIDs
+			// because EIDs might have been removed by removeUnpermissionedEids.
+			fpdToApply.User.EIDs = reqWrapper.User.EIDs
 		}
 		reqWrapper.User = fpdToApply.User
 	}

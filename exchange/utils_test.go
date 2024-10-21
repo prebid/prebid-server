@@ -3562,17 +3562,6 @@ func TestApplyFPD(t *testing.T) {
 			expectedRequest:           openrtb2.BidRequest{User: &openrtb2.User{ID: "UserId", EIDs: []openrtb2.EID{{Source: "source1"}, {Source: "source2"}}}, Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}},
 		},
 		{
-			description: "req.User is defined; bidderFPD.User defined; req.User has EIDs with zero length. Expect to see no userEIDs in result request",
-			inputFpd: map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData{
-				"bidderNormalized": {Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}, User: &openrtb2.User{ID: "UserId"}},
-			},
-			inputBidderName:           "bidderFromRequest",
-			inputBidderCoreName:       "bidderNormalized",
-			inputBidderIsRequestAlias: false,
-			inputRequest:              openrtb2.BidRequest{User: &openrtb2.User{ID: "UserIdIn", EIDs: []openrtb2.EID{}}},
-			expectedRequest:           openrtb2.BidRequest{User: &openrtb2.User{ID: "UserId"}, Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}},
-		},
-		{
 			description: "req.User is not defined; bidderFPD.User defined and has EIDs. Expect to see user.EIDs in result request",
 			inputFpd: map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData{
 				"bidderNormalized": {Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}, User: &openrtb2.User{ID: "UserId", EIDs: []openrtb2.EID{{Source: "source1"}, {Source: "source2"}}}},
