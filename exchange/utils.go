@@ -187,7 +187,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 
 		// prepare user
 		syncerKey := rs.bidderToSyncerKey[string(coreBidder)]
-		hadSync := prepareUser(reqWrapperCopy.BidRequest, bidder, syncerKey, lowerCaseExplicitBuyerUIDs, auctionReq.UserSyncs)
+		hadSync := prepareUser(reqWrapperCopy, bidder, syncerKey, lowerCaseExplicitBuyerUIDs, auctionReq.UserSyncs)
 
 		auctionPermissions := gdprPerms.AuctionActivitiesAllowed(ctx, coreBidder, openrtb_ext.BidderName(bidder))
 
@@ -728,7 +728,7 @@ func createSanitizedImpExt(impExt, impExtPrebid map[string]json.RawMessage) (map
 //
 // In this function, "givenBidder" may or may not be an alias. "coreBidder" must *not* be an alias.
 // It returns true if a Cookie User Sync existed, and false otherwise.
-func prepareUser(req *openrtb2.BidRequest, givenBidder, syncerKey string, explicitBuyerUIDs map[string]string, usersyncs IdFetcher) bool {
+func prepareUser(req *openrtb_ext.RequestWrapper, givenBidder, syncerKey string, explicitBuyerUIDs map[string]string, usersyncs IdFetcher) bool {
 	cookieId, hadCookie, _ := usersyncs.GetUID(syncerKey)
 
 	if id, ok := explicitBuyerUIDs[strings.ToLower(givenBidder)]; ok {
