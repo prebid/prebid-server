@@ -306,6 +306,26 @@ func TestAppendURLs(t *testing.T) {
 		expectedURLs []string
 	}{
 		{
+			name: "urls is nil",
+			urls: nil,
+			event: config.VASTEvent{
+				URLs:              []string{},
+				ExcludeDefaultURL: false,
+			},
+			defaultURL:   "http://default.url",
+			expectedURLs: []string{"http://default.url"},
+		},
+		{
+			name: "events.url is nil",
+			urls: []string{},
+			event: config.VASTEvent{
+				URLs:              nil,
+				ExcludeDefaultURL: false,
+			},
+			defaultURL:   "http://default.url",
+			expectedURLs: []string{"http://default.url"},
+		},
+		{
 			name: "No URLs in event, include default URL",
 			urls: []string{},
 			event: config.VASTEvent{
@@ -478,6 +498,41 @@ func TestModifyBidVAST(t *testing.T) {
 					NURL: "http://nurl.com",
 					AdM:  "<VAST version=\"4.0\" xmlns=\"http://www.iab.com/VAST\"><Ad id=\"20011\" sequence=\"1\" conditionalAd=\"false\"><Wrapper followAdditionalWrappers=\"0\" allowMultipleAds=\"1\" fallbackOnNoAd=\"0\"><AdSystem version=\"4.0\"><![CDATA[iabtechlab]]></AdSystem><Error><![CDATA[http://example.com/error]]></Error><Impression id=\"Impression-ID\"><![CDATA[http://example.com/track/impression]]></Impression><Impression><![CDATA[http://example.com/event?t=imp&b=bid2&a=account1&bidder=bidder2&f=b&int=integration1&ts=1234567890]]></Impression><Creatives><Creative id=\"5480\" sequence=\"1\" adId=\"2447226\"><CompanionAds><Companion id=\"1232\" width=\"100\" height=\"150\" assetWidth=\"250\" assetHeight=\"200\" expandedWidth=\"350\" expandedHeight=\"250\" apiFramework=\"VPAID\" adSlotID=\"3214\" pxratio=\"1400\"><StaticResource creativeType=\"image/png\"><![CDATA[https://www.iab.com/wp-content/uploads/2014/09/iab-tech-lab-6-644x290.png]]></StaticResource><CompanionClickThrough><![CDATA[https://iabtechlab.com]]></CompanionClickThrough><CompanionClickThrough><![CDATA[http://tracking.url]]></CompanionClickThrough><CompanionClickThrough><![CDATA[http://default.url]]></CompanionClickThrough></Companion></CompanionAds></Creative></Creatives><VASTAdTagURI><![CDATA[https://raw.githubusercontent.com/InteractiveAdvertisingBureau/VAST_Samples/master/VAST%204.0%20Samples/Inline_Companion_Tag-test.xml]]></VASTAdTagURI></Wrapper></Ad></VAST>",
 				},
+			},
+		},
+		{
+			name: "Video bid type with AdM with generatedBIdID set",
+			ev: &eventTracking{
+				externalURL:        "http://example.com",
+				accountID:          "account1",
+				auctionTimestampMs: 1234567890,
+				integrationType:    "integration1",
+				macroProvider: macros.NewProvider(&openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{},
+				}),
+				events: injector.VASTEvents{
+					TrackingEvents:        make(map[string][]string),
+					CompanionClickThrough: []string{"http://tracking.url", "http://default.url"},
+				},
+			},
+			pbsBid: &entities.PbsOrtbBid{
+				BidType: openrtb_ext.BidTypeVideo,
+				Bid: &openrtb2.Bid{
+					ID:   "bid2",
+					NURL: "http://nurl.com",
+					AdM:  `<VAST version="4.0" xmlns="http://www.iab.com/VAST"><Ad id="20011" sequence="1" conditionalAd="false"><Wrapper followAdditionalWrappers="0" allowMultipleAds="1" fallbackOnNoAd="0"><AdSystem version="4.0">iabtechlab</AdSystem><Error>http://example.com/error</Error><Impression id="Impression-ID">http://example.com/track/impression</Impression><Creatives><Creative id="5480" sequence="1" adId="2447226"><CompanionAds><Companion id="1232" width="100" height="150" assetWidth="250" assetHeight="200" expandedWidth="350" expandedHeight="250" apiFramework="VPAID" adSlotID="3214" pxratio="1400"><StaticResource creativeType="image/png"><![CDATA[https://www.iab.com/wp-content/uploads/2014/09/iab-tech-lab-6-644x290.png]]></StaticResource><CompanionClickThrough><![CDATA[https://iabtechlab.com]]></CompanionClickThrough></Companion></CompanionAds></Creative></Creatives><VASTAdTagURI><![CDATA[https://raw.githubusercontent.com/InteractiveAdvertisingBureau/VAST_Samples/master/VAST%204.0%20Samples/Inline_Companion_Tag-test.xml]]></VASTAdTagURI></Wrapper></Ad></VAST>`,
+				},
+				GeneratedBidID: "generatedBidID",
+			},
+			bidderName: "bidder2",
+			expectedPbsBid: &entities.PbsOrtbBid{
+				BidType: openrtb_ext.BidTypeVideo,
+				Bid: &openrtb2.Bid{
+					ID:   "bid2",
+					NURL: "http://nurl.com",
+					AdM:  "<VAST version=\"4.0\" xmlns=\"http://www.iab.com/VAST\"><Ad id=\"20011\" sequence=\"1\" conditionalAd=\"false\"><Wrapper followAdditionalWrappers=\"0\" allowMultipleAds=\"1\" fallbackOnNoAd=\"0\"><AdSystem version=\"4.0\"><![CDATA[iabtechlab]]></AdSystem><Error><![CDATA[http://example.com/error]]></Error><Impression id=\"Impression-ID\"><![CDATA[http://example.com/track/impression]]></Impression><Impression><![CDATA[http://example.com/event?t=imp&b=generatedBidID&a=account1&bidder=bidder2&f=b&int=integration1&ts=1234567890]]></Impression><Creatives><Creative id=\"5480\" sequence=\"1\" adId=\"2447226\"><CompanionAds><Companion id=\"1232\" width=\"100\" height=\"150\" assetWidth=\"250\" assetHeight=\"200\" expandedWidth=\"350\" expandedHeight=\"250\" apiFramework=\"VPAID\" adSlotID=\"3214\" pxratio=\"1400\"><StaticResource creativeType=\"image/png\"><![CDATA[https://www.iab.com/wp-content/uploads/2014/09/iab-tech-lab-6-644x290.png]]></StaticResource><CompanionClickThrough><![CDATA[https://iabtechlab.com]]></CompanionClickThrough><CompanionClickThrough><![CDATA[http://tracking.url]]></CompanionClickThrough><CompanionClickThrough><![CDATA[http://default.url]]></CompanionClickThrough></Companion></CompanionAds></Creative></Creatives><VASTAdTagURI><![CDATA[https://raw.githubusercontent.com/InteractiveAdvertisingBureau/VAST_Samples/master/VAST%204.0%20Samples/Inline_Companion_Tag-test.xml]]></VASTAdTagURI></Wrapper></Ad></VAST>",
+				},
+				GeneratedBidID: "generatedBidID",
 			},
 		},
 	}
