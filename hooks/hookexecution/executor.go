@@ -51,6 +51,7 @@ type HookStageExecutor interface {
 type hookExecutor struct {
 	account         *config.Account
 	accountID       string
+	ctx             context.Context
 	endpoint        string
 	planBuilder     hooks.ExecutionPlanBuilder
 	stageOutcomes   []StageOutcome
@@ -61,14 +62,37 @@ type hookExecutor struct {
 	sync.Mutex
 }
 
-func NewHookExecutor(builder hooks.ExecutionPlanBuilder, endpoint string, me metrics.MetricsEngine) *hookExecutor {
-	return &hookExecutor{
+// HookExecutorOpt is a functional option to configure the hook executor
+type HookExecutorOpt func(*hookExecutor)
+
+var (
+	defaultHookExecutorOpts = []HookExecutorOpt{
+		WithContext(context.Background()),
+	}
+)
+
+// WithContext sets the context for the hook execution
+func WithContext(ctx context.Context) HookExecutorOpt {
+	return func(e *hookExecutor) {
+		e.ctx = ctx
+	}
+}
+
+func NewHookExecutor(builder hooks.ExecutionPlanBuilder, endpoint string, me metrics.MetricsEngine, opts ...HookExecutorOpt) *hookExecutor {
+	ret := &hookExecutor{
 		endpoint:       endpoint,
 		planBuilder:    builder,
 		stageOutcomes:  []StageOutcome{},
 		moduleContexts: &moduleContexts{ctxs: make(map[string]hookstage.ModuleContext)},
 		metricEngine:   me,
 	}
+	for _, opt := range defaultHookExecutorOpts {
+		opt(ret)
+	}
+	for _, opt := range opts {
+		opt(ret)
+	}
+	return ret
 }
 
 func (e *hookExecutor) SetAccount(account *config.Account) {
@@ -303,6 +327,7 @@ func (e *hookExecutor) newContext(stage string) executionContext {
 		moduleContexts:  e.moduleContexts,
 		stage:           stage,
 		activityControl: e.activityControl,
+		ctx:             e.ctx,
 	}
 }
 

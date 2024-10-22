@@ -1,6 +1,7 @@
 package hookexecution
 
 import (
+	"context"
 	"sync"
 
 	"github.com/golang/glog"
@@ -17,6 +18,7 @@ type executionContext struct {
 	account         *config.Account
 	moduleContexts  *moduleContexts
 	activityControl privacy.ActivityControl
+	ctx             context.Context
 }
 
 func (ctx executionContext) getModuleContext(moduleName string) hookstage.ModuleInvocationContext {

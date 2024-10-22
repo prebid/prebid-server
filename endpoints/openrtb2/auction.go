@@ -165,7 +165,10 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	// to compute the auction timeout.
 	start := time.Now()
 
-	hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
+	hookExecutor := hookexecution.NewHookExecutor(
+		deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine,
+		hookexecution.WithContext(r.Context()),
+	)
 
 	ao := analytics.AuctionObject{
 		Status:    http.StatusOK,
