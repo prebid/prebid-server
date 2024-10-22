@@ -241,10 +241,12 @@ type Privacy struct {
 }
 
 type VendorListFetcher struct {
-	// Max concurrent request for downloading the latest version of the vendor list from a specific major version
+	// Max concurrent request for downloading the latest version of the vendor list from a specific major version.
+	// If it is 0 or negative, then means there is no limit for the max concurrency.
 	MaxConcurrencyInitFetchLatestVersion int `mapstructure:"max_concurrency_init_fetch_latest_version"`
 
-	// Max concurrent request for downloading every specific version of the vendor list from its first version to its latest version
+	// Max concurrent request for downloading every specific version of the vendor list from its first version to its latest version.
+	// If it is 0 or negative, then means there is no limit for the max concurrency.
 	MaxConcurrencyInitFetchSpecificVersion int `mapstructure:"max_concurrency_init_fetch_specific_version"`
 }
 

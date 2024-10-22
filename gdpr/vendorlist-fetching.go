@@ -81,8 +81,13 @@ func preloadCache(ctx context.Context, client *http.Client, urlMaker func(uint16
 	var wgLatestVersion errgroup.Group
 	var wgSpecificVersion errgroup.Group
 
-	wgLatestVersion.SetLimit(conf.MaxConcurrencyInitFetchLatestVersion)
-	wgSpecificVersion.SetLimit(conf.MaxConcurrencyInitFetchSpecificVersion)
+	if conf.MaxConcurrencyInitFetchLatestVersion > 0 {
+		wgLatestVersion.SetLimit(conf.MaxConcurrencyInitFetchLatestVersion)
+	}
+
+	if conf.MaxConcurrencyInitFetchSpecificVersion > 0 {
+		wgSpecificVersion.SetLimit(conf.MaxConcurrencyInitFetchSpecificVersion)
+	}
 
 	tsStart := time.Now() // For logging how long this takes
 	for _, v := range versions {

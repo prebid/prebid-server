@@ -411,5 +411,9 @@ func testConfig() config.GDPR {
 			InitVendorlistFetch:   60 * 1000,
 			ActiveVendorlistFetch: 1000 * 5,
 		},
+		VendorListFetcher: config.VendorListFetcher{
+			MaxConcurrencyInitFetchLatestVersion:   2,
+			MaxConcurrencyInitFetchSpecificVersion: 2,
+		},
 	}
 }
