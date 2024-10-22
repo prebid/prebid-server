@@ -37,6 +37,11 @@ type siteExt struct {
 	Data interface{} `json:"data"`
 }
 
+type adnAdvertiser struct {
+	LegalName string `json:"legalName,omitempty"`
+	Name      string `json:"name,omitempty"`
+}
+
 type Ad struct {
 	Bid struct {
 		Amount   float64
@@ -56,6 +61,7 @@ type Ad struct {
 	LineItemId      string
 	Html            string
 	DestinationUrls map[string]string
+	Advertiser      adnAdvertiser `json:"advertiser,omitempty"`
 }
 
 type AdUnit struct {
@@ -369,6 +375,40 @@ func getGDPR(request *openrtb2.BidRequest) (string, string, error) {
 	return gdpr, consent, nil
 }
 
+func generateReturnExt(ad Ad, request *openrtb2.BidRequest) (json.RawMessage, error) {
+	// We always force the publisher to render
+	var adRender int8 = 0
+
+	var requestRegsExt *openrtb_ext.ExtRegs
+	if request.Regs != nil && request.Regs.Ext != nil {
+		if err := json.Unmarshal(request.Regs.Ext, &requestRegsExt); err != nil {
+
+			return nil, fmt.Errorf("Failed to parse Ext information in Adnuntius: %v", err)
+		}
+	}
+
+	if ad.Advertiser.Name != "" && requestRegsExt != nil && requestRegsExt.DSA != nil {
+		legalName := ad.Advertiser.Name
+		if ad.Advertiser.LegalName != "" {
+			legalName = ad.Advertiser.LegalName
+		}
+		ext := &openrtb_ext.ExtBid{
+			DSA: &openrtb_ext.ExtBidDSA{
+				AdRender: &adRender,
+				Paid:     legalName,
+				Behalf:   legalName,
+			},
+		}
+		returnExt, err := json.Marshal(ext)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to parse Ext information in Adnuntius: %v", err)
+		}
+
+		return returnExt, nil
+	}
+	return nil, nil
+}
+
 func generateAdResponse(ad Ad, imp openrtb2.Imp, html string, request *openrtb2.BidRequest) (*openrtb2.Bid, []error) {
 
 	creativeWidth, widthErr := strconv.ParseInt(ad.CreativeWidth, 10, 64)
@@ -410,6 +450,13 @@ func generateAdResponse(ad Ad, imp openrtb2.Imp, html string, request *openrtb2.
 		}
 	}
 
+	extJson, err := generateReturnExt(ad, request)
+	if err != nil {
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("Error extracting Ext: %s", err.Error()),
+		}}
+	}
+
 	adDomain := []string{}
 	for _, url := range ad.DestinationUrls {
 		domainArray := strings.Split(url, "/")
@@ -429,6 +476,7 @@ func generateAdResponse(ad Ad, imp openrtb2.Imp, html string, request *openrtb2.
 		Price:   price * 1000,
 		AdM:     html,
 		ADomain: adDomain,
+		Ext:     extJson,
 	}
 	return &bid, nil
 
