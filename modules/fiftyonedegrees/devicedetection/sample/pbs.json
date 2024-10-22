@@ -1,0 +1,84 @@
+{
+    "adapters": [
+        {
+            "appnexus": {
+                "enabled": true
+            }
+        }
+    ],
+    "gdpr": {
+        "enabled": true,
+        "default_value": 0,
+        "timeouts_ms": {
+            "active_vendorlist_fetch": 900000
+        }
+    },
+    "stored_requests": {
+        "filesystem": {
+            "enabled": true,
+            "directorypath": "sample/stored"
+        }
+    },
+    "stored_responses": {
+        "filesystem": {
+            "enabled": true,
+            "directorypath": "sample/stored"
+        }
+    },
+    "hooks": {
+        "enabled": true,
+        "modules": {
+            "fiftyonedegrees": {
+                "devicedetection": {
+                    "enabled": true,
+                    "data_file": {
+                        "path": "TAC-HashV41.hash",
+                        "update": {
+                            "auto": false,
+                            "polling_interval": 3600,
+                            "license_key": "YOUR_LICENSE_KEY",
+                            "product": "V4Enterprise"
+                        }
+                    },
+                    "performance": {
+                        "profile": "InMemory"
+                    }
+                }
+            }
+        },
+        "host_execution_plan": {
+            "endpoints": {
+                "/openrtb2/auction": {
+                    "stages": {
+                        "entrypoint": {
+                            "groups": [
+                                {
+                                    "timeout": 10,
+                                    "hook_sequence": [
+                                        {
+                                            "module_code": "fiftyonedegrees.devicedetection",
+                                            "hook_impl_code": "fiftyone-devicedetection-entrypoint-hook"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        "raw_auction_request": {
+                            "groups": [
+                                {
+                                    "timeout": 10,
+                                    "hook_sequence": [
+                                        {
+                                            "module_code": "fiftyonedegrees.devicedetection",
+                                            "hook_impl_code": "fiftyone-devicedetection-raw-auction-request-hook"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
