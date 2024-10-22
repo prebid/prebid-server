@@ -201,8 +201,8 @@ func (s *saver) saveVendorLists(specVersion uint16, listVersion uint16, gvl api.
 		listVersion: listVersion,
 	}
 	saverMutex.Lock()
+	defer saverMutex.Unlock()
 	*s = append(*s, vi)
-	saverMutex.Unlock()
 }
 
 func TestPreloadCache(t *testing.T) {
