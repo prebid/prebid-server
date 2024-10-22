@@ -89,7 +89,7 @@ func preloadCache(ctx context.Context, client *http.Client, urlMaker func(uint16
 		wgSpecificVersion.SetLimit(conf.MaxConcurrencyInitFetchSpecificVersion)
 	}
 
-	tsStart := time.Now() // For logging how long this takes
+	tsStart := time.Now() // For logging how long it takes to preload the vendor lists.
 	for _, v := range versions {
 		specVersion := v.specVersion
 		firstVersion := v.firstListVersion

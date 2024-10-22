@@ -241,11 +241,11 @@ type Privacy struct {
 }
 
 type VendorListFetcher struct {
-	// Max concurrent request for downloading the latest version of the vendor list from a specific major version.
+	// Max concurrent requests for downloading the latest version of the vendor list from a specific major version.
 	// If it is 0 or negative, then means there is no limit for the max concurrency.
 	MaxConcurrencyInitFetchLatestVersion int `mapstructure:"max_concurrency_init_fetch_latest_version"`
 
-	// Max concurrent request for downloading every specific version of the vendor list from its first version to its latest version.
+	// Max concurrent requests for downloading every specific version of the vendor list from its first version to its latest version.
 	// If it is 0 or negative, then means there is no limit for the max concurrency.
 	MaxConcurrencyInitFetchSpecificVersion int `mapstructure:"max_concurrency_init_fetch_specific_version"`
 }
@@ -1154,8 +1154,8 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 		"FIN", "FRA", "GUF", "DEU", "GIB", "GRC", "GLP", "GGY", "HUN", "ISL", "IRL", "IMN", "ITA", "JEY", "LVA",
 		"LIE", "LTU", "LUX", "MLT", "MTQ", "MYT", "NLD", "NOR", "POL", "PRT", "REU", "ROU", "BLM", "MAF", "SPM",
 		"SVK", "SVN", "ESP", "SWE", "GBR"})
-	v.SetDefault("gdpr.vendorlist_fetcher.max_concurrency_init_fetch_latest_version", 1) // by default one download at a time
-	v.SetDefault("gdpr.vendorlist_fetcher.max_concurrency_init_fetch_latest_version", 1) // by default one download at a time
+	v.SetDefault("gdpr.vendorlist_fetcher.max_concurrency_init_fetch_latest_version", 1)   // by default one fetch at a time
+	v.SetDefault("gdpr.vendorlist_fetcher.max_concurrency_init_fetch_specific_version", 1) // by default one fetch at a time
 	v.SetDefault("ccpa.enforce", false)
 	v.SetDefault("lmt.enforce", true)
 	v.SetDefault("currency_converter.fetch_url", "https://cdn.jsdelivr.net/gh/prebid/currency-file@1/latest.json")
