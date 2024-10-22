@@ -157,8 +157,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 	bidderRequests = make([]BidderRequest, 0, len(impsByBidder))
 
 	for bidder, imps := range impsByBidder {
-		userEIDsOverride := fpdUserEIDExists(req, auctionReq.FirstPartyData, bidder)
-		fpdUserEIDExists(req, auctionReq.FirstPartyData, bidder)
+		fpdUserEIDsPresent := fpdUserEIDExists(req, auctionReq.FirstPartyData, bidder)
 		reqWrapperCopy := req.CloneAndClearImpWrappers()
 		bidRequestCopy := *req.BidRequest
 		reqWrapperCopy.BidRequest = &bidRequestCopy
@@ -199,7 +198,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		}
 
 		// fpd
-		applyFPD(auctionReq.FirstPartyData, coreBidder, openrtb_ext.BidderName(bidder), isRequestAlias, reqWrapperCopy, userEIDsOverride)
+		applyFPD(auctionReq.FirstPartyData, coreBidder, openrtb_ext.BidderName(bidder), isRequestAlias, reqWrapperCopy, fpdUserEIDsPresent)
 
 		// privacy scrubbing
 		if err := rs.applyPrivacy(reqWrapperCopy, coreBidder, bidder, auctionReq, auctionPermissions, ccpaEnforcer, lmt, coppa); err != nil {
@@ -275,10 +274,6 @@ func fpdUserEIDExists(req *openrtb_ext.RequestWrapper, fpd map[openrtb_ext.Bidde
 		return false
 	}
 	fpdUserEIDs := fpdToApply.User.EIDs
-	if len(fpdUserEIDs) == 0 {
-		return false
-	}
-
 	reqUserEIDs := req.User.EIDs
 
 	if len(reqUserEIDs) != len(fpdUserEIDs) {
@@ -291,11 +286,10 @@ func fpdUserEIDExists(req *openrtb_ext.RequestWrapper, fpd map[openrtb_ext.Bidde
 		pReqUserEID := &reqUserEIDs[i]
 		pFpdUserEID := &fpdUserEIDs[i]
 		if pReqUserEID != pFpdUserEID {
-			return false
+			return true
 		}
-
 	}
-	return true
+	return false
 }
 
 // removeImpsWithStoredResponses deletes imps with stored bid resp
@@ -844,7 +838,6 @@ func removeUnpermissionedEids(reqWrapper *openrtb_ext.RequestWrapper, bidder str
 		return nil
 	}
 
-	// set eidsAllowed back to userExt
 	if len(eidsAllowed) == 0 {
 		reqWrapper.User.EIDs = nil
 	} else {
@@ -990,7 +983,7 @@ func applyFPD(fpd map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyD
 	bidderName openrtb_ext.BidderName,
 	isRequestAlias bool,
 	reqWrapper *openrtb_ext.RequestWrapper,
-	userEIDsOverride bool) {
+	fpdUserEIDsPresent bool) {
 	if fpd == nil {
 		return
 	}
@@ -1022,7 +1015,7 @@ func applyFPD(fpd map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyD
 			}
 
 			// if FPD config didn't have user.eids - use reqWrapper.User.EIDs after removeUnpermissionedEids
-			if userEIDsOverride {
+			if !fpdUserEIDsPresent {
 				fpdToApply.User.EIDs = reqWrapper.User.EIDs
 			}
 		}

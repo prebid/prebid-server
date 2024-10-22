@@ -3429,7 +3429,7 @@ func TestApplyFPD(t *testing.T) {
 		inputBidderIsRequestAlias bool
 		inputRequest              openrtb2.BidRequest
 		expectedRequest           openrtb2.BidRequest
-		userEIDsOverride          bool
+		fpdUserEIDsExisted        bool
 	}{
 		{
 			description:               "fpd-nil",
@@ -3561,7 +3561,7 @@ func TestApplyFPD(t *testing.T) {
 			inputBidderIsRequestAlias: false,
 			inputRequest:              openrtb2.BidRequest{User: &openrtb2.User{ID: "UserId", EIDs: []openrtb2.EID{{Source: "source3"}, {Source: "source4"}}}},
 			expectedRequest:           openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}, User: &openrtb2.User{ID: "UserId", EIDs: []openrtb2.EID{{Source: "source1"}, {Source: "source2"}}}},
-			userEIDsOverride:          false,
+			fpdUserEIDsExisted:        true,
 		},
 		{
 			description: "req.User is defined and doesn't have fpr user eids (userEIDsOverride); bidderFPD.User defined and has EIDs. Expect to see user.EIDs in result request taken from original req",
@@ -3573,7 +3573,7 @@ func TestApplyFPD(t *testing.T) {
 			inputBidderIsRequestAlias: false,
 			inputRequest:              openrtb2.BidRequest{User: &openrtb2.User{ID: "UserId", EIDs: []openrtb2.EID{{Source: "source3"}, {Source: "source4"}}}},
 			expectedRequest:           openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}, User: &openrtb2.User{ID: "UserId", EIDs: []openrtb2.EID{{Source: "source3"}, {Source: "source4"}}}},
-			userEIDsOverride:          true,
+			fpdUserEIDsExisted:        false,
 		},
 	}
 
@@ -3586,7 +3586,7 @@ func TestApplyFPD(t *testing.T) {
 				openrtb_ext.BidderName(testCase.inputBidderName),
 				testCase.inputBidderIsRequestAlias,
 				reqWrapper,
-				testCase.userEIDsOverride,
+				testCase.fpdUserEIDsExisted,
 			)
 			assert.Equal(t, &testCase.expectedRequest, reqWrapper.BidRequest, fmt.Sprintf("incorrect request after applying fpd, testcase %s", testCase.description))
 		})
