@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -192,12 +193,16 @@ type versionInfo struct {
 }
 type saver []versionInfo
 
+var saverMutex sync.Mutex
+
 func (s *saver) saveVendorLists(specVersion uint16, listVersion uint16, gvl api.VendorList) {
 	vi := versionInfo{
 		specVersion: specVersion,
 		listVersion: listVersion,
 	}
+	saverMutex.Lock()
 	*s = append(*s, vi)
+	saverMutex.Unlock()
 }
 
 func TestPreloadCache(t *testing.T) {
@@ -253,7 +258,10 @@ func TestPreloadCache(t *testing.T) {
 	defer server.Close()
 
 	s := make(saver, 0, 5)
-	preloadCache(context.Background(), server.Client(), testURLMaker(server), s.saveVendorLists)
+	preloadCache(context.Background(), server.Client(), testURLMaker(server), s.saveVendorLists, config.VendorListFetcher{
+		MaxConcurrencyInitFetchLatestVersion:   2,
+		MaxConcurrencyInitFetchSpecificVersion: 2,
+	})
 
 	expectedLoadedVersions := []versionInfo{
 		{specVersion: 2, listVersion: 2},
@@ -282,12 +290,6 @@ var vendorList2Expected = testExpected{
 	vendorListVersion: 2,
 	vendorID:          12,
 	vendorPurposes:    map[int]bool{1: false, 2: true, 3: true},
-}
-
-var vendorListFallbackExpected = testExpected{
-	vendorListVersion: 215, // Values from hardcoded fallback file.
-	vendorID:          12,
-	vendorPurposes:    map[int]bool{1: true, 2: false, 3: true},
 }
 
 type vendorList struct {
