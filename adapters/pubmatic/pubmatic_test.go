@@ -80,14 +80,22 @@ func TestParseImpressionObject(t *testing.T) {
 		imp                      *openrtb2.Imp
 		extractWrapperExtFromImp bool
 		extractPubIDFromImp      bool
+		displayManager           string
+		displayManagerVer        string
+	}
+	type want struct {
+		bidfloor          float64
+		impExt            json.RawMessage
+		displayManager    string
+		displayManagerVer string
 	}
 	tests := []struct {
 		name                string
 		args                args
 		expectedWrapperExt  *pubmaticWrapperExt
 		expectedPublisherId string
+		want                want
 		wantErr             bool
-		expectedBidfloor    float64
 	}{
 		{
 			name: "imp.bidfloor empty and kadfloor set",
@@ -97,7 +105,9 @@ func TestParseImpressionObject(t *testing.T) {
 					Ext:   json.RawMessage(`{"bidder":{"kadfloor":"0.12"}}`),
 				},
 			},
-			expectedBidfloor: 0.12,
+			want: want{
+				bidfloor: 0.12,
+			},
 		},
 		{
 			name: "imp.bidfloor set and kadfloor empty",
@@ -108,7 +118,9 @@ func TestParseImpressionObject(t *testing.T) {
 					Ext:      json.RawMessage(`{"bidder":{}}`),
 				},
 			},
-			expectedBidfloor: 0.12,
+			want: want{
+				bidfloor: 0.12,
+			},
 		},
 		{
 			name: "imp.bidfloor set and kadfloor invalid",
@@ -119,8 +131,9 @@ func TestParseImpressionObject(t *testing.T) {
 					Ext:      json.RawMessage(`{"bidder":{"kadfloor":"aaa"}}`),
 				},
 			},
-			expectedBidfloor: 0.12,
-		},
+			want: want{
+				bidfloor: 0.12,
+			}},
 		{
 			name: "imp.bidfloor set and kadfloor set, higher imp.bidfloor",
 			args: args{
@@ -130,8 +143,9 @@ func TestParseImpressionObject(t *testing.T) {
 					Ext:      json.RawMessage(`{"bidder":{"kadfloor":"0.11"}}`),
 				},
 			},
-			expectedBidfloor: 0.12,
-		},
+			want: want{
+				bidfloor: 0.12,
+			}},
 		{
 			name: "imp.bidfloor set and kadfloor set, higher kadfloor",
 			args: args{
@@ -141,8 +155,9 @@ func TestParseImpressionObject(t *testing.T) {
 					Ext:      json.RawMessage(`{"bidder":{"kadfloor":"0.13"}}`),
 				},
 			},
-			expectedBidfloor: 0.13,
-		},
+			want: want{
+				bidfloor: 0.13,
+			}},
 		{
 			name: "kadfloor string set with whitespace",
 			args: args{
@@ -152,16 +167,72 @@ func TestParseImpressionObject(t *testing.T) {
 					Ext:      json.RawMessage(`{"bidder":{"kadfloor":" \t  0.13  "}}`),
 				},
 			},
-			expectedBidfloor: 0.13,
+			want: want{
+				bidfloor: 0.13,
+			}},
+		{
+			name: "Populate imp.displaymanager and imp.displaymanagerver if both are empty in imp",
+			args: args{
+				imp: &openrtb2.Imp{
+					Video: &openrtb2.Video{},
+					Ext:   json.RawMessage(`{"bidder":{"kadfloor":"0.12"}}`),
+				},
+				displayManager:    "prebid-mobile",
+				displayManagerVer: "1.0.0",
+			},
+			want: want{
+				bidfloor:          0.12,
+				impExt:            json.RawMessage(nil),
+				displayManager:    "prebid-mobile",
+				displayManagerVer: "1.0.0",
+			},
+		},
+		{
+			name: "do not populate imp.displaymanager and imp.displaymanagerver in imp if only displaymanager or displaymanagerver is present in args",
+			args: args{
+				imp: &openrtb2.Imp{
+					Video:             &openrtb2.Video{},
+					Ext:               json.RawMessage(`{"bidder":{"kadfloor":"0.12"}}`),
+					DisplayManagerVer: "1.0.0",
+				},
+				displayManager:    "prebid-mobile",
+				displayManagerVer: "1.0.0",
+			},
+			want: want{
+				bidfloor:          0.12,
+				impExt:            json.RawMessage(nil),
+				displayManagerVer: "1.0.0",
+			},
+		},
+		{
+			name: "do not populate imp.displaymanager and imp.displaymanagerver if already present in imp",
+			args: args{
+				imp: &openrtb2.Imp{
+					Video:             &openrtb2.Video{},
+					Ext:               json.RawMessage(`{"bidder":{"kadfloor":"0.12"}}`),
+					DisplayManager:    "prebid-mobile",
+					DisplayManagerVer: "1.0.0",
+				},
+				displayManager:    "prebid-android",
+				displayManagerVer: "2.0.0",
+			},
+			want: want{
+				bidfloor:          0.12,
+				impExt:            json.RawMessage(nil),
+				displayManager:    "prebid-mobile",
+				displayManagerVer: "1.0.0",
+			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			receivedWrapperExt, receivedPublisherId, err := parseImpressionObject(tt.args.imp, tt.args.extractWrapperExtFromImp, tt.args.extractPubIDFromImp)
+			receivedWrapperExt, receivedPublisherId, err := parseImpressionObject(tt.args.imp, tt.args.extractWrapperExtFromImp, tt.args.extractPubIDFromImp, tt.args.displayManager, tt.args.displayManagerVer)
 			assert.Equal(t, tt.wantErr, err != nil)
 			assert.Equal(t, tt.expectedWrapperExt, receivedWrapperExt)
 			assert.Equal(t, tt.expectedPublisherId, receivedPublisherId)
-			assert.Equal(t, tt.expectedBidfloor, tt.args.imp.BidFloor)
+			assert.Equal(t, tt.want.bidfloor, tt.args.imp.BidFloor)
+			assert.Equal(t, tt.want.displayManager, tt.args.imp.DisplayManager)
+			assert.Equal(t, tt.want.displayManagerVer, tt.args.imp.DisplayManagerVer)
 		})
 	}
 }
@@ -713,6 +784,135 @@ func TestGetMapFromJSON(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := getMapFromJSON(tt.input)
 			assert.Equal(t, tt.output, got)
+		})
+	}
+}
+
+func TestGetDisplayManagerAndVer(t *testing.T) {
+	type args struct {
+		app *openrtb2.App
+	}
+	type want struct {
+		displayManager    string
+		displayManagerVer string
+	}
+	tests := []struct {
+		name string
+		args args
+		want want
+	}{
+		{
+			name: "request app object is not nil but app.ext has no source and version",
+			args: args{
+
+				app: &openrtb2.App{
+					Name: "AutoScout24",
+					Ext:  json.RawMessage(`{}`),
+				},
+			},
+			want: want{
+				displayManager:    "",
+				displayManagerVer: "",
+			},
+		},
+		{
+			name: "request app object is not nil and app.ext has source and version",
+			args: args{
+
+				app: &openrtb2.App{
+					Name: "AutoScout24",
+					Ext:  json.RawMessage(`{"source":"prebid-mobile","version":"1.0.0"}`),
+				},
+			},
+			want: want{
+				displayManager:    "prebid-mobile",
+				displayManagerVer: "1.0.0",
+			},
+		},
+		{
+			name: "request app object is not nil and app.ext.prebid has source and version",
+			args: args{
+				app: &openrtb2.App{
+					Name: "AutoScout24",
+					Ext:  json.RawMessage(`{"prebid":{"source":"prebid-mobile","version":"1.0.0"}}`),
+				},
+			},
+			want: want{
+				displayManager:    "prebid-mobile",
+				displayManagerVer: "1.0.0",
+			},
+		},
+		{
+			name: "request app object is not nil and app.ext has only version",
+			args: args{
+				app: &openrtb2.App{
+					Name: "AutoScout24",
+					Ext:  json.RawMessage(`{"version":"1.0.0"}`),
+				},
+			},
+			want: want{
+				displayManager:    "",
+				displayManagerVer: "",
+			},
+		},
+		{
+			name: "request app object is not nil and app.ext has only source",
+			args: args{
+				app: &openrtb2.App{
+					Name: "AutoScout24",
+					Ext:  json.RawMessage(`{"source":"prebid-mobile"}`),
+				},
+			},
+			want: want{
+				displayManager:    "",
+				displayManagerVer: "",
+			},
+		},
+		{
+			name: "request app object is not nil and app.ext have empty source but version is present",
+			args: args{
+				app: &openrtb2.App{
+					Name: "AutoScout24",
+					Ext:  json.RawMessage(`{"source":"", "version":"1.0.0"}`),
+				},
+			},
+			want: want{
+				displayManager:    "",
+				displayManagerVer: "",
+			},
+		},
+		{
+			name: "request app object is not nil and app.ext have empty version but source is present",
+			args: args{
+				app: &openrtb2.App{
+					Name: "AutoScout24",
+					Ext:  json.RawMessage(`{"source":"prebid-mobile", "version":""}`),
+				},
+			},
+			want: want{
+				displayManager:    "",
+				displayManagerVer: "",
+			},
+		},
+		{
+			name: "request app object is not nil and both app.ext and app.ext.prebid have source and version",
+			args: args{
+				app: &openrtb2.App{
+					Name: "AutoScout24",
+					Ext:  json.RawMessage(`{"source":"prebid-mobile-android","version":"2.0.0","prebid":{"source":"prebid-mobile","version":"1.0.0"}}`),
+				},
+			},
+			want: want{
+				displayManager:    "prebid-mobile",
+				displayManagerVer: "1.0.0",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			displayManager, displayManagerVer := getDisplayManagerAndVer(tt.args.app)
+			assert.Equal(t, tt.want.displayManager, displayManager)
+			assert.Equal(t, tt.want.displayManagerVer, displayManagerVer)
 		})
 	}
 }
