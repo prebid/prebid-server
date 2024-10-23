@@ -38,6 +38,7 @@
             "publisherId": "1100042525",
             "adspaceId": "130563103"
           },
+          "gpid": 1,
           "skadn": {
             "versions": ["2.0", "2.1", "2.2", "3.0", "4.0"],
             "sourceapp": "880047117",
@@ -118,6 +119,7 @@
                 ]
               },
               "ext": {
+                "gpid": 1,
                 "skadn": {
                   "versions": ["2.0", "2.1", "2.2", "3.0", "4.0"],
                   "sourceapp": "880047117",
@@ -167,7 +169,7 @@
             "keywords": "power tools"
           },
           "ext": {
-            "client": "prebid_server_1.1"
+            "client": "prebid_server_1.2"
           }
         },
         "impIDs":["1C86242D-9535-47D6-9576-7B1FE87F282C"]
