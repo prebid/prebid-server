@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"sort"
 	"testing"
 
@@ -3057,7 +3056,7 @@ func TestRemoveUnpermissionedEids(t *testing.T) {
 
 			resultErr := removeUnpermissionedEids(&reqWrapper, bidder)
 			assert.NoError(t, resultErr, test.description)
-			assert.Equal(t, expectedRequest, reqWrapper.BidRequest, test.description)
+			assert.Equal(t, expectedRequest, reqWrapper.BidRequest)
 		})
 	}
 }
@@ -3552,7 +3551,7 @@ func TestApplyFPD(t *testing.T) {
 			expectedRequest:           openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}, User: &openrtb2.User{ID: "UserId", BuyerUID: "FPDBuyerUID"}},
 		},
 		{
-			description: "req.User is defined and had bidder fpd user eids (userEIDsOverride); bidderFPD.User defined and has EIDs. Expect to see user.EIDs in result request taken from fpd",
+			description: "req.User is defined and had bidder fpd user eids (fpdUserEIDsExisted); bidderFPD.User defined and has EIDs. Expect to see user.EIDs in result request taken from fpd",
 			inputFpd: map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData{
 				"bidderNormalized": {Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}, User: &openrtb2.User{ID: "UserId", EIDs: []openrtb2.EID{{Source: "source1"}, {Source: "source2"}}}},
 			},
@@ -3564,7 +3563,7 @@ func TestApplyFPD(t *testing.T) {
 			fpdUserEIDsExisted:        true,
 		},
 		{
-			description: "req.User is defined and doesn't have fpr user eids (userEIDsOverride); bidderFPD.User defined and has EIDs. Expect to see user.EIDs in result request taken from original req",
+			description: "req.User is defined and doesn't have fpr user eids (fpdUserEIDsExisted); bidderFPD.User defined and has EIDs. Expect to see user.EIDs in result request taken from original req",
 			inputFpd: map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData{
 				"bidderNormalized": {Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}, User: &openrtb2.User{ID: "UserId", EIDs: []openrtb2.EID{{Source: "source1"}, {Source: "source2"}}}},
 			},
@@ -3588,7 +3587,7 @@ func TestApplyFPD(t *testing.T) {
 				reqWrapper,
 				testCase.fpdUserEIDsExisted,
 			)
-			assert.Equal(t, &testCase.expectedRequest, reqWrapper.BidRequest, fmt.Sprintf("incorrect request after applying fpd, testcase %s", testCase.description))
+			assert.Equal(t, &testCase.expectedRequest, reqWrapper.BidRequest)
 		})
 	}
 }

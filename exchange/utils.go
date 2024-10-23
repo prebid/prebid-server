@@ -274,6 +274,14 @@ func fpdUserEIDExists(req *openrtb_ext.RequestWrapper, fpd map[openrtb_ext.Bidde
 		return false
 	}
 	fpdUserEIDs := fpdToApply.User.EIDs
+
+	if len(fpdUserEIDs) == 0 {
+		return false
+	}
+	if req.User == nil {
+		return true
+	}
+
 	reqUserEIDs := req.User.EIDs
 
 	if len(reqUserEIDs) != len(fpdUserEIDs) {
