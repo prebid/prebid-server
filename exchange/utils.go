@@ -422,6 +422,7 @@ func buildRequestExtForBidder(bidder string, requestExt json.RawMessage, request
 		prebid.MultiBid = buildRequestExtMultiBid(bidder, requestExtParsed.Prebid.MultiBid, alternateBidderCodes)
 		prebid.Sdk = requestExtParsed.Prebid.Sdk
 		prebid.Server = requestExtParsed.Prebid.Server
+		prebid.Targeting = buildRequestExtTargeting(requestExtParsed.Prebid.Targeting)
 	}
 
 	// Marshal New Prebid Object
@@ -505,6 +506,18 @@ func buildRequestExtMultiBid(adapter string, reqMultiBid []*openrtb_ext.ExtMulti
 	}
 
 	return nil
+}
+
+func buildRequestExtTargeting(t *openrtb_ext.ExtRequestTargeting) *openrtb_ext.ExtRequestTargeting {
+	if t == nil || t.IncludeBrandCategory == nil {
+		return nil
+	}
+
+	// only include fields bidders can use to influence their response and which does
+	// not expose information about other bidders or restricted auction processing
+	return &openrtb_ext.ExtRequestTargeting{
+		IncludeBrandCategory: t.IncludeBrandCategory,
+	}
 }
 
 func isBidderInExtAlternateBidderCodes(adapter, currentMultiBidBidder string, adapterABC *openrtb_ext.ExtAlternateBidderCodes) bool {
@@ -889,15 +902,15 @@ func getExtCacheInstructions(requestExtPrebid *openrtb_ext.ExtRequestPrebid) ext
 func getExtTargetData(requestExtPrebid *openrtb_ext.ExtRequestPrebid, cacheInstructions extCacheInstructions) *targetData {
 	if requestExtPrebid != nil && requestExtPrebid.Targeting != nil {
 		return &targetData{
-			includeWinners:            *requestExtPrebid.Targeting.IncludeWinners,
-			includeBidderKeys:         *requestExtPrebid.Targeting.IncludeBidderKeys,
+			alwaysIncludeDeals:        requestExtPrebid.Targeting.AlwaysIncludeDeals,
+			includeBidderKeys:         ptrutil.ValueOrDefault(requestExtPrebid.Targeting.IncludeBidderKeys),
 			includeCacheBids:          cacheInstructions.cacheBids,
 			includeCacheVast:          cacheInstructions.cacheVAST,
 			includeFormat:             requestExtPrebid.Targeting.IncludeFormat,
-			priceGranularity:          *requestExtPrebid.Targeting.PriceGranularity,
-			mediaTypePriceGranularity: requestExtPrebid.Targeting.MediaTypePriceGranularity,
+			includeWinners:            ptrutil.ValueOrDefault(requestExtPrebid.Targeting.IncludeWinners),
+			mediaTypePriceGranularity: ptrutil.ValueOrDefault(requestExtPrebid.Targeting.MediaTypePriceGranularity),
 			preferDeals:               requestExtPrebid.Targeting.PreferDeals,
-			alwaysIncludeDeals:        requestExtPrebid.Targeting.AlwaysIncludeDeals,
+			priceGranularity:          ptrutil.ValueOrDefault(requestExtPrebid.Targeting.PriceGranularity),
 		}
 	}
 
