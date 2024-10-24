@@ -1179,7 +1179,7 @@ func (tc *testConfigValues) getBlacklistedAppMap() map[string]bool {
 // exchangeTestWrapper is a wrapper that asserts the openrtb2 bid request just before the HoldAuction call
 type exchangeTestWrapper struct {
 	ex                    exchange.Exchange
-	actualValidatedBidReq *openrtb2.BidRequest
+	actualValidatedBidReq json.RawMessage
 }
 
 func (te *exchangeTestWrapper) HoldAuction(ctx context.Context, r *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*exchange.AuctionResponse, error) {
@@ -1190,7 +1190,13 @@ func (te *exchangeTestWrapper) HoldAuction(ctx context.Context, r *exchange.Auct
 	}
 
 	// Save the validated bidRequest that we are about to feed HoldAuction
-	te.actualValidatedBidReq = r.BidRequestWrapper.BidRequest
+	if r.BidRequestWrapper.BidRequest != nil {
+		v, err := jsonutil.Marshal(r.BidRequestWrapper.BidRequest)
+		if err != nil {
+			return nil, fmt.Errorf("Error converting actual validated bid request to json: %s", err)
+		}
+		te.actualValidatedBidReq = v
+	}
 
 	// Call HoldAuction() implementation as written in the exchange package
 	return te.ex.HoldAuction(ctx, r, debugLog)
