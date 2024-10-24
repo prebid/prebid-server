@@ -2146,7 +2146,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 	if spec.BidIDGenerator != nil {
 		bidIdGenerator = spec.BidIDGenerator
 	}
-	ex := newExchangeForTests(t, filename, spec.OutgoingRequests, aliases, privacyConfig, bidIdGenerator, spec.HostSChainFlag, spec.FloorsEnabled, spec.HostConfigBidValidation, spec.Server)
+	ex := newExchangeForTests(t, filename, aliases, privacyConfig, bidIdGenerator, spec)
 	biddersInAuction := findBiddersInAuction(t, filename, &spec.IncomingRequest.OrtbRequest)
 	debugLog := &DebugLog{}
 	if spec.DebugLog != nil {
@@ -2374,11 +2374,11 @@ func extractResponseTimes(t *testing.T, context string, bid *openrtb2.BidRespons
 	}
 }
 
-func newExchangeForTests(t *testing.T, filename string, expectations map[string]*bidderSpec, aliases map[string]string, privacyConfig config.Privacy, bidIDGenerator BidIDGenerator, hostSChainFlag, floorsFlag bool, hostBidValidation config.Validations, server exchangeServer) Exchange {
-	bidderAdapters := make(map[openrtb_ext.BidderName]AdaptedBidder, len(expectations))
-	bidderInfos := make(config.BidderInfos, len(expectations))
+func newExchangeForTests(t *testing.T, filename string, aliases map[string]string, privacyConfig config.Privacy, bidIDGenerator BidIDGenerator, exSpec *exchangeSpec) Exchange {
+	bidderAdapters := make(map[openrtb_ext.BidderName]AdaptedBidder, len(exSpec.OutgoingRequests))
+	bidderInfos := make(config.BidderInfos, len(exSpec.OutgoingRequests))
 	for _, bidderName := range openrtb_ext.CoreBidderNames() {
-		if spec, ok := expectations[string(bidderName)]; ok {
+		if spec, ok := exSpec.OutgoingRequests[string(bidderName)]; ok {
 			bidderAdapters[bidderName] = &validatingBidder{
 				t:             t,
 				fileName:      filename,
@@ -2386,14 +2386,21 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 				expectations:  map[string]*bidderRequest{string(bidderName): spec.ExpectedRequest},
 				mockResponses: map[string]bidderResponse{string(bidderName): spec.MockResponse},
 			}
-			bidderInfos[string(bidderName)] = config.BidderInfo{ModifyingVastXmlAllowed: spec.ModifyingVastXmlAllowed}
+			ortbVersion, found := exSpec.ORTBVersion[string(bidderName)]
+			if !found {
+				ortbVersion = "2.5"
+			}
+			bidderInfos[string(bidderName)] = config.BidderInfo{
+				ModifyingVastXmlAllowed: spec.ModifyingVastXmlAllowed,
+				OpenRTB:                 &config.OpenRTBInfo{Version: ortbVersion},
+			}
 		} else {
 			bidderInfos[string(bidderName)] = config.BidderInfo{}
 		}
 	}
 
 	for alias, coreBidder := range aliases {
-		if spec, ok := expectations[alias]; ok {
+		if spec, ok := exSpec.OutgoingRequests[alias]; ok {
 			if bidder, ok := bidderAdapters[openrtb_ext.BidderName(coreBidder)]; ok {
 				bidder.(*validatingBidder).expectations[alias] = spec.ExpectedRequest
 				bidder.(*validatingBidder).mockResponses[alias] = spec.MockResponse
@@ -2431,7 +2438,7 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 	}
 
 	var hostSChainNode *openrtb2.SupplyChainNode
-	if hostSChainFlag {
+	if exSpec.HostSChainFlag {
 		hostSChainNode = &openrtb2.SupplyChainNode{
 			ASI: "pbshostcompany.com", SID: "00001", RID: "BidRequest", HP: openrtb2.Int8Ptr(1),
 		}
@@ -2469,10 +2476,10 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 		externalURL:              "http://localhost",
 		bidIDGenerator:           bidIDGenerator,
 		hostSChainNode:           hostSChainNode,
-		server:                   config.Server{ExternalUrl: server.ExternalUrl, GvlID: server.GvlID, DataCenter: server.DataCenter},
-		bidValidationEnforcement: hostBidValidation,
+		server:                   config.Server{ExternalUrl: exSpec.Server.ExternalUrl, GvlID: exSpec.Server.GvlID, DataCenter: exSpec.Server.DataCenter},
+		bidValidationEnforcement: exSpec.HostConfigBidValidation,
 		requestSplitter:          requestSplitter,
-		priceFloorEnabled:        floorsFlag,
+		priceFloorEnabled:        exSpec.FloorsEnabled,
 		priceFloorFetcher:        &mockPriceFloorFetcher{},
 	}
 }
@@ -5513,6 +5520,7 @@ type exchangeSpec struct {
 	MultiBid                   *multiBidSpec          `json:"multiBid,omitempty"`
 	Server                     exchangeServer         `json:"server,omitempty"`
 	AccountPrivacy             config.AccountPrivacy  `json:"accountPrivacy,omitempty"`
+	ORTBVersion                map[string]string      `json:"ortbversion"`
 }
 
 type multiBidSpec struct {
