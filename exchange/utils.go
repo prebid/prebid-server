@@ -157,6 +157,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 	bidderRequests = make([]BidderRequest, 0, len(impsByBidder))
 
 	for bidder, imps := range impsByBidder {
+		fpdUserEIDsPresent := fpdUserEIDExists(req, auctionReq.FirstPartyData, bidder)
 		reqWrapperCopy := req.CloneAndClearImpWrappers()
 		bidRequestCopy := *req.BidRequest
 		reqWrapperCopy.BidRequest = &bidRequestCopy
@@ -167,16 +168,16 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		// apply bidder-specific schains
 		sChainWriter.Write(reqWrapperCopy, bidder)
 
+		// eid scrubbing
+		if err := removeUnpermissionedEids(reqWrapperCopy, bidder); err != nil {
+			errs = append(errs, fmt.Errorf("unable to enforce request.ext.prebid.data.eidpermissions because %v", err))
+			continue
+		}
+
 		// generate bidder-specific request ext
 		err = buildRequestExtForBidder(bidder, reqWrapperCopy, bidderParamsInReqExt, auctionReq.Account.AlternateBidderCodes)
 		if err != nil {
 			errs = append(errs, err)
-			continue
-		}
-
-		// eid scrubbing
-		if err := removeUnpermissionedEids(reqWrapperCopy.BidRequest, bidder, requestExt); err != nil {
-			errs = append(errs, fmt.Errorf("unable to enforce request.ext.prebid.data.eidpermissions because %v", err))
 			continue
 		}
 
@@ -197,7 +198,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		}
 
 		// fpd
-		applyFPD(auctionReq.FirstPartyData, coreBidder, openrtb_ext.BidderName(bidder), isRequestAlias, reqWrapperCopy.BidRequest)
+		applyFPD(auctionReq.FirstPartyData, coreBidder, openrtb_ext.BidderName(bidder), isRequestAlias, reqWrapperCopy, fpdUserEIDsPresent)
 
 		// privacy scrubbing
 		if err := rs.applyPrivacy(reqWrapperCopy, coreBidder, bidder, auctionReq, auctionPermissions, ccpaEnforcer, lmt, coppa); err != nil {
@@ -261,6 +262,42 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 	}
 
 	return
+}
+
+// fpdUserEIDExists determines if req fpd config had User.EIDs
+func fpdUserEIDExists(req *openrtb_ext.RequestWrapper, fpd map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData, bidder string) bool {
+	fpdToApply, exists := fpd[openrtb_ext.BidderName(bidder)]
+	if !exists || fpdToApply == nil {
+		return false
+	}
+	if fpdToApply.User == nil {
+		return false
+	}
+	fpdUserEIDs := fpdToApply.User.EIDs
+
+	if len(fpdUserEIDs) == 0 {
+		return false
+	}
+	if req.User == nil {
+		return true
+	}
+
+	reqUserEIDs := req.User.EIDs
+
+	if len(reqUserEIDs) != len(fpdUserEIDs) {
+		return true
+	}
+
+	// if bidder fpd didn't have user.eids then user.eids will remain the same
+	// hence we can use the same index to compare elements
+	for i := range reqUserEIDs {
+		pReqUserEID := &reqUserEIDs[i]
+		pFpdUserEID := &fpdUserEIDs[i]
+		if pReqUserEID != pFpdUserEID {
+			return true
+		}
+	}
+	return false
 }
 
 // removeImpsWithStoredResponses deletes imps with stored bid resp
@@ -756,42 +793,32 @@ func copyWithBuyerUID(user *openrtb2.User, buyerUID string) *openrtb2.User {
 	return user
 }
 
-// removeUnpermissionedEids modifies the request to remove any request.user.ext.eids not permissions for the specific bidder
-func removeUnpermissionedEids(request *openrtb2.BidRequest, bidder string, requestExt *openrtb_ext.ExtRequest) error {
+// removeUnpermissionedEids modifies the request to remove any request.user.eids not permissions for the specific bidder
+func removeUnpermissionedEids(reqWrapper *openrtb_ext.RequestWrapper, bidder string) error {
 	// ensure request might have eids (as much as we can check before unmarshalling)
-	if request.User == nil || len(request.User.Ext) == 0 {
+	if reqWrapper.User == nil || len(reqWrapper.User.EIDs) == 0 {
 		return nil
 	}
 
 	// ensure request has eid permissions to enforce
-	if requestExt == nil || requestExt.Prebid.Data == nil || len(requestExt.Prebid.Data.EidPermissions) == 0 {
-		return nil
-	}
-
-	// low level unmarshal to preserve other request.user.ext values. prebid server is non-destructive.
-	var userExt map[string]json.RawMessage
-	if err := jsonutil.Unmarshal(request.User.Ext, &userExt); err != nil {
+	reqExt, err := reqWrapper.GetRequestExt()
+	if err != nil {
 		return err
 	}
-
-	eidsJSON, eidsSpecified := userExt["eids"]
-	if !eidsSpecified {
+	if reqExt == nil {
 		return nil
 	}
 
-	var eids []openrtb2.EID
-	if err := jsonutil.Unmarshal(eidsJSON, &eids); err != nil {
-		return err
-	}
-
-	// exit early if there are no eids (empty array)
-	if len(eids) == 0 {
+	reqExtPrebid := reqExt.GetPrebid()
+	if reqExtPrebid == nil || reqExtPrebid.Data == nil || len(reqExtPrebid.Data.EidPermissions) == 0 {
 		return nil
 	}
+
+	eids := reqWrapper.User.EIDs
 
 	// translate eid permissions to a map for quick lookup
 	eidRules := make(map[string][]string)
-	for _, p := range requestExt.Prebid.Data.EidPermissions {
+	for _, p := range reqExtPrebid.Data.EidPermissions {
 		eidRules[p.Source] = p.Bidders
 	}
 
@@ -819,35 +846,12 @@ func removeUnpermissionedEids(request *openrtb2.BidRequest, bidder string, reque
 		return nil
 	}
 
-	// marshal eidsAllowed back to userExt
 	if len(eidsAllowed) == 0 {
-		delete(userExt, "eids")
+		reqWrapper.User.EIDs = nil
 	} else {
-		eidsRaw, err := jsonutil.Marshal(eidsAllowed)
-		if err != nil {
-			return err
-		}
-		userExt["eids"] = eidsRaw
+		reqWrapper.User.EIDs = eidsAllowed
 	}
-
-	// exit early if userExt is empty
-	if len(userExt) == 0 {
-		setUserExtWithCopy(request, nil)
-		return nil
-	}
-
-	userExtJSON, err := jsonutil.Marshal(userExt)
-	if err != nil {
-		return err
-	}
-	setUserExtWithCopy(request, userExtJSON)
 	return nil
-}
-
-func setUserExtWithCopy(request *openrtb2.BidRequest, userExtJSON json.RawMessage) {
-	userCopy := *request.User
-	userCopy.Ext = userExtJSON
-	request.User = &userCopy
 }
 
 // resolveBidder returns the known BidderName associated with bidder, if bidder is an alias. If it's not an alias, the bidder is returned.
@@ -982,7 +986,12 @@ func getExtBidAdjustmentFactors(requestExtPrebid *openrtb_ext.ExtRequestPrebid) 
 	return nil
 }
 
-func applyFPD(fpd map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData, coreBidderName openrtb_ext.BidderName, bidderName openrtb_ext.BidderName, isRequestAlias bool, bidRequest *openrtb2.BidRequest) {
+func applyFPD(fpd map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData,
+	coreBidderName openrtb_ext.BidderName,
+	bidderName openrtb_ext.BidderName,
+	isRequestAlias bool,
+	reqWrapper *openrtb_ext.RequestWrapper,
+	fpdUserEIDsPresent bool) {
 	if fpd == nil {
 		return
 	}
@@ -998,20 +1007,27 @@ func applyFPD(fpd map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyD
 	}
 
 	if fpdToApply.Site != nil {
-		bidRequest.Site = fpdToApply.Site
+		reqWrapper.Site = fpdToApply.Site
 	}
 
 	if fpdToApply.App != nil {
-		bidRequest.App = fpdToApply.App
+		reqWrapper.App = fpdToApply.App
 	}
 
 	if fpdToApply.User != nil {
-		//BuyerUID is a value obtained between fpd extraction and fpd application.
-		//BuyerUID needs to be set back to fpd before applying this fpd to final bidder request
-		if bidRequest.User != nil && len(bidRequest.User.BuyerUID) > 0 {
-			fpdToApply.User.BuyerUID = bidRequest.User.BuyerUID
+		if reqWrapper.User != nil {
+			if len(reqWrapper.User.BuyerUID) > 0 {
+				//BuyerUID is a value obtained between fpd extraction and fpd application.
+				//BuyerUID needs to be set back to fpd before applying this fpd to final bidder request
+				fpdToApply.User.BuyerUID = reqWrapper.User.BuyerUID
+			}
+
+			// if FPD config didn't have user.eids - use reqWrapper.User.EIDs after removeUnpermissionedEids
+			if !fpdUserEIDsPresent {
+				fpdToApply.User.EIDs = reqWrapper.User.EIDs
+			}
 		}
-		bidRequest.User = fpdToApply.User
+		reqWrapper.User = fpdToApply.User
 	}
 }
 
