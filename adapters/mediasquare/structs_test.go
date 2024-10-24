@@ -13,18 +13,18 @@ import (
 
 func TestGetContent(t *testing.T) {
 	tests := []struct {
-		resp     MsqResponse
+		resp     msqResponse
 		value    adapters.BidderResponse
 		expected adapters.BidderResponse
 	}{
 		{
-			resp:     MsqResponse{},
+			resp:     msqResponse{},
 			value:    adapters.BidderResponse{Currency: ""},
 			expected: adapters.BidderResponse{Currency: ""},
 		},
 		{
-			resp: MsqResponse{
-				Responses: []MsqResponseBids{
+			resp: msqResponse{
+				Responses: []msqResponseBids{
 					{
 						ID:       "id-ok",
 						Ad:       "ad-ok",
@@ -69,18 +69,18 @@ func TestGetContent(t *testing.T) {
 func TestSetContent(t *testing.T) {
 	tests := []struct {
 		// tests inputs
-		params MsqParametersCodes
+		params msqParametersCodes
 		imp    openrtb2.Imp
 		// tests expected-results
 		ok bool
 	}{
 		{
-			params: MsqParametersCodes{},
+			params: msqParametersCodes{},
 			imp:    openrtb2.Imp{},
 			ok:     false,
 		},
 		{
-			params: MsqParametersCodes{
+			params: msqParametersCodes{
 				AdUnit:    "adunit-ok",
 				AuctionId: "auctionid-ok",
 				Code:      "code-ok",
@@ -97,7 +97,7 @@ func TestSetContent(t *testing.T) {
 			ok: true,
 		},
 		{
-			params: MsqParametersCodes{},
+			params: msqParametersCodes{},
 			imp: openrtb2.Imp{
 				ID: "imp-id",
 				Video: &openrtb2.Video{
@@ -110,7 +110,7 @@ func TestSetContent(t *testing.T) {
 			ok: true,
 		},
 		{
-			params: MsqParametersCodes{},
+			params: msqParametersCodes{},
 			imp: openrtb2.Imp{
 				ID: "imp-id",
 				Native: &openrtb2.Native{
@@ -122,7 +122,7 @@ func TestSetContent(t *testing.T) {
 			ok: true,
 		},
 		{
-			params: MsqParametersCodes{},
+			params: msqParametersCodes{},
 			imp: openrtb2.Imp{
 				ID: "imp-id",
 				Banner: &openrtb2.Banner{
@@ -143,17 +143,17 @@ func TestSetContent(t *testing.T) {
 
 		switch index {
 		case 1:
-			expected.Mediatypes.Banner = &MediaTypeBanner{Sizes: [][]*int{{intAsPtrInt(1), intAsPtrInt(2)}, {intAsPtrInt(2), intAsPtrInt(1)}}}
-			expected.Floor = map[string]MsqFloor{"1x2": {Price: 0.8}, "2x1": {Price: 0.8}}
+			expected.Mediatypes.Banner = &mediaTypeBanner{Sizes: [][]*int{{intAsPtrInt(1), intAsPtrInt(2)}, {intAsPtrInt(2), intAsPtrInt(1)}}}
+			expected.Floor = map[string]msqFloor{"1x2": {Price: 0.8}, "2x1": {Price: 0.8}}
 		case 2:
-			expected.Floor = map[string]MsqFloor{"42x42": {Price: 0.8}, "*": {Price: 0.8}}
-			expected.Mediatypes.Video = &MediaTypeVideo{Mimes: []string{"MIMEs-ok"}, H: intAsPtrInt(42), W: intAsPtrInt(42)}
+			expected.Floor = map[string]msqFloor{"42x42": {Price: 0.8}, "*": {Price: 0.8}}
+			expected.Mediatypes.Video = &mediaTypeVideo{Mimes: []string{"MIMEs-ok"}, H: intAsPtrInt(42), W: intAsPtrInt(42)}
 		case 3:
-			expected.Mediatypes.Native = &MediaTypeNative{Type: "native", Sizes: [][]int{{42, 42}, {2, 1}, {1, 1}}}
-			expected.Floor = map[string]MsqFloor{"1x1": {Price: 0.8}, "42x42": {Price: 0.8}, "2x1": {Price: 0.8}, "*": {Price: 0.8}}
+			expected.Mediatypes.Native = &mediaTypeNative{Type: "native", Sizes: [][]int{{42, 42}, {2, 1}, {1, 1}}}
+			expected.Floor = map[string]msqFloor{"1x1": {Price: 0.8}, "42x42": {Price: 0.8}, "2x1": {Price: 0.8}, "*": {Price: 0.8}}
 		case 4:
-			expected.Mediatypes.Banner = &MediaTypeBanner{Sizes: [][]*int{{intAsPtrInt(42), intAsPtrInt(42)}}}
-			expected.Floor = map[string]MsqFloor{"42x42": {Price: 0.8}}
+			expected.Mediatypes.Banner = &mediaTypeBanner{Sizes: [][]*int{{intAsPtrInt(42), intAsPtrInt(42)}}}
+			expected.Floor = map[string]msqFloor{"42x42": {Price: 0.8}}
 		}
 
 		expectedBytes, _ := json.Marshal(expected)

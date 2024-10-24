@@ -130,6 +130,6 @@ func TestMakeRequest(t *testing.T) {
 	var msqAdapter adapter
 	_, errNil := msqAdapter.makeRequest(nil, nil)
 	assert.Equal(t, errorWritter("<makeRequest> msqParams", nil, true), errNil, "error<makeRequest> errNil")
-	_, errChan := msqAdapter.makeRequest(nil, &MsqParameters{DSA: make(chan int)})
+	_, errChan := msqAdapter.makeRequest(nil, &msqParameters{DSA: make(chan int)})
 	assert.Equal(t, errorWritter("<makeRequest> json.Marshal", errors.New("json: unsupported type: chan int"), false), errChan, "error<makeRequest> errChan")
 }

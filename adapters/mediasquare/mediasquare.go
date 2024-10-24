@@ -38,7 +38,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		var (
 			bidderExt   adapters.ExtImpBidder
 			msqExt      openrtb_ext.ImpExtMediasquare
-			currentCode = MsqParametersCodes{
+			currentCode = msqParametersCodes{
 				AdUnit:    imp.TagID,
 				AuctionId: request.ID,
 				BidId:     imp.ID,
@@ -70,7 +70,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	return requestData, errs
 }
 
-func (a *adapter) makeRequest(request *openrtb2.BidRequest, msqParams *MsqParameters) (requestData *adapters.RequestData, err error) {
+func (a *adapter) makeRequest(request *openrtb2.BidRequest, msqParams *msqParameters) (requestData *adapters.RequestData, err error) {
 	var requestJsonBytes []byte
 	if msqParams == nil {
 		err = errorWritter("<makeRequest> msqParams", nil, true)
@@ -108,12 +108,12 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		return bidderResponse, errs
 	}
 
-	var msqResponse MsqResponse
-	if err := json.Unmarshal(response.Body, &msqResponse); err != nil {
+	var msqResp msqResponse
+	if err := json.Unmarshal(response.Body, &msqResp); err != nil {
 		errs = []error{&errortypes.BadServerResponse{Message: fmt.Sprintf("<MakeBids> Bad server response: %s.", err.Error())}}
 		return bidderResponse, errs
 	}
 	bidderResponse = adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
-	msqResponse.getContent(bidderResponse)
+	msqResp.getContent(bidderResponse)
 	return bidderResponse, errs
 }

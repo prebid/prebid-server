@@ -26,23 +26,23 @@ func TestPtrInt8ToBool(t *testing.T) {
 func TestMethodsType(t *testing.T) {
 	tests := []struct {
 		// tests inputs
-		resp MsqResponseBids
+		resp msqResponseBids
 		// tests expected-results
 		bidType openrtb_ext.BidType
 		mType   openrtb2.MarkupType
 	}{
 		{
-			resp:    MsqResponseBids{Native: &MsqResponseBidsNative{ClickUrl: "not-nil"}},
+			resp:    msqResponseBids{Native: &msqResponseBidsNative{ClickUrl: "not-nil"}},
 			bidType: "native",
 			mType:   openrtb2.MarkupNative,
 		},
 		{
-			resp:    MsqResponseBids{Video: &MsqResponseBidsVideo{Xml: "not-nil"}},
+			resp:    msqResponseBids{Video: &msqResponseBidsVideo{Xml: "not-nil"}},
 			bidType: "video",
 			mType:   openrtb2.MarkupVideo,
 		},
 		{
-			resp:    MsqResponseBids{ID: "not-nil"},
+			resp:    msqResponseBids{ID: "not-nil"},
 			bidType: "banner",
 			mType:   openrtb2.MarkupBanner,
 		},
@@ -56,28 +56,28 @@ func TestMethodsType(t *testing.T) {
 func TestLoadExtBid(t *testing.T) {
 	tests := []struct {
 		// tests inputs
-		resp MsqResponseBids
+		resp msqResponseBids
 		// tests expected-results
 		extBid openrtb_ext.ExtBid
 		isOk   bool
 	}{
 		{
-			resp:   MsqResponseBids{},
+			resp:   msqResponseBids{},
 			extBid: openrtb_ext.ExtBid{DSA: nil, Prebid: nil},
 			isOk:   true,
 		},
 		{
-			resp:   MsqResponseBids{Dsa: openrtb_ext.ExtBidDSA{Behalf: "behalf"}},
+			resp:   msqResponseBids{Dsa: openrtb_ext.ExtBidDSA{Behalf: "behalf"}},
 			extBid: openrtb_ext.ExtBid{DSA: &openrtb_ext.ExtBidDSA{Behalf: "behalf"}},
 			isOk:   true,
 		},
 		{
-			resp:   MsqResponseBids{Dsa: "lol"},
+			resp:   msqResponseBids{Dsa: "lol"},
 			extBid: openrtb_ext.ExtBid{},
 			isOk:   false,
 		},
 		{
-			resp:   MsqResponseBids{Dsa: make(chan int)},
+			resp:   msqResponseBids{Dsa: make(chan int)},
 			extBid: openrtb_ext.ExtBid{},
 			isOk:   false,
 		},
@@ -93,14 +93,14 @@ func TestLoadExtBid(t *testing.T) {
 func TestExtBidPrebidMeta(t *testing.T) {
 	tests := []struct {
 		// tests inputs
-		resp MsqResponseBids
+		resp msqResponseBids
 		// tests expected-results
 		adomains  []string
 		mediatype string
 		value     openrtb_ext.ExtBidPrebidMeta
 	}{
 		{
-			resp:      MsqResponseBids{ADomain: []string{"test-adomain-0", "test-adomain-1"}},
+			resp:      msqResponseBids{ADomain: []string{"test-adomain-0", "test-adomain-1"}},
 			adomains:  []string{"test-adomain-0", "test-adomain-1"},
 			mediatype: "banner",
 			value: openrtb_ext.ExtBidPrebidMeta{
@@ -109,13 +109,13 @@ func TestExtBidPrebidMeta(t *testing.T) {
 			},
 		},
 		{
-			resp:      MsqResponseBids{},
+			resp:      msqResponseBids{},
 			adomains:  nil,
 			mediatype: "banner",
 			value:     openrtb_ext.ExtBidPrebidMeta{MediaType: "banner"},
 		},
 		{
-			resp:      MsqResponseBids{Video: &MsqResponseBidsVideo{Xml: "not-nil"}},
+			resp:      msqResponseBids{Video: &msqResponseBidsVideo{Xml: "not-nil"}},
 			adomains:  nil,
 			mediatype: "video",
 			value:     openrtb_ext.ExtBidPrebidMeta{MediaType: "video"},
@@ -133,16 +133,16 @@ func TestExtBidPrebidMeta(t *testing.T) {
 func TestExtBid(t *testing.T) {
 	tests := []struct {
 		// tests inputs
-		resp MsqResponseBids
+		resp msqResponseBids
 		// tests expected-results
 		raw json.RawMessage
 	}{
 		{
-			resp: MsqResponseBids{Dsa: openrtb_ext.ExtBidDSA{Behalf: "behalf"}},
+			resp: msqResponseBids{Dsa: openrtb_ext.ExtBidDSA{Behalf: "behalf"}},
 			raw:  json.RawMessage([]byte(`{"dsa":{"behalf":"behalf"}}`)),
 		},
 		{
-			resp: MsqResponseBids{},
+			resp: msqResponseBids{},
 			raw:  nil,
 		},
 	}

@@ -8,49 +8,49 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters"
 )
 
-// MsqResponse: Bid-Response sent by Mediasquare.
-type MsqResponse struct {
+// msqResponse: Bid-Response sent by mediasquare.
+type msqResponse struct {
 	Infos struct {
 		Version     string `json:"version"`
 		Description string `json:"description"`
 		Hostname    string `json:"hostname,omitempty"`
 	} `json:"infos"`
-	Responses []MsqResponseBids `json:"responses"`
+	Responses []msqResponseBids `json:"responses"`
 }
 
-// MsqParameters: Bid-Request sent to Mediasquare.
-type MsqParameters struct {
-	Codes []MsqParametersCodes `json:"codes"`
+// msqParameters: Bid-Request sent to mediasquare.
+type msqParameters struct {
+	Codes []msqParametersCodes `json:"codes"`
 	Gdpr  struct {
 		ConsentRequired bool   `json:"consent_required"`
 		ConsentString   string `json:"consent_string"`
 	} `json:"gdpr"`
 	Type    string      `json:"type"`
 	DSA     interface{} `json:"dsa,omitempty"`
-	Support MsqSupport  `json:"tech"`
+	Support msqSupport  `json:"tech"`
 	Test    bool        `json:"test"`
 }
 
-type MsqResponseBidsVideo struct {
+type msqResponseBidsVideo struct {
 	Xml string `json:"xml"`
 	Url string `json:"url"`
 }
 
-type NativeResponseImg struct {
+type nativeResponseImg struct {
 	Url    string `json:"url"`
 	Width  *int   `json:"width,omitempty"`
 	Height *int   `json:"height,omitempty"`
 }
 
-type MsqResponseBidsNative struct {
+type msqResponseBidsNative struct {
 	ClickUrl           string             `json:"clickUrl,omitempty"`
 	ClickTrackers      []string           `json:"clickTrackers,omitempty"`
 	ImpressionTrackers []string           `json:"impressionTrackers,omitempty"`
 	JavascriptTrackers []string           `json:"javascriptTrackers,omitempty"`
 	Privacy            *string            `json:"privacy,omitempty"`
 	Title              *string            `json:"title,omitempty"`
-	Icon               *NativeResponseImg `json:"icon,omitempty"`
-	Image              *NativeResponseImg `json:"image,omitempty"`
+	Icon               *nativeResponseImg `json:"icon,omitempty"`
+	Image              *nativeResponseImg `json:"image,omitempty"`
 	Cta                *string            `json:"cta,omitempty"`
 	Rating             *string            `json:"rating,omitempty"`
 	Downloads          *string            `json:"downloads,omitempty"`
@@ -65,7 +65,7 @@ type MsqResponseBidsNative struct {
 	DisplayUrl         *string            `json:"displayUrl,omitempty"`
 }
 
-type MsqResponseBids struct {
+type msqResponseBids struct {
 	ID            string                 `json:"id"`
 	Ad            string                 `json:"ad,omitempty"`
 	BidId         string                 `json:"bid_id,omitempty"`
@@ -78,39 +78,39 @@ type MsqResponseBids struct {
 	NetRevenue    bool                   `json:"net_revenue,omitempty"`
 	TransactionId string                 `json:"transaction_id,omitempty"`
 	Ttl           int                    `json:"ttl,omitempty"`
-	Video         *MsqResponseBidsVideo  `json:"video,omitempty"`
-	Native        *MsqResponseBidsNative `json:"native,omitempty"`
+	Video         *msqResponseBidsVideo  `json:"video,omitempty"`
+	Native        *msqResponseBidsNative `json:"native,omitempty"`
 	ADomain       []string               `json:"adomain,omitempty"`
 	Dsa           interface{}            `json:"dsa,omitempty"`
 	BURL          string                 `json:"burl,omitempty"`
 }
 
-type MsqSupport struct {
+type msqSupport struct {
 	Device interface{} `json:"device"`
 	App    interface{} `json:"app"`
 }
 
-type MsqParametersCodes struct {
+type msqParametersCodes struct {
 	AdUnit     string              `json:"adunit"`
 	AuctionId  string              `json:"auctionid"`
 	BidId      string              `json:"bidid"`
 	Code       string              `json:"code"`
 	Owner      string              `json:"owner"`
-	Mediatypes MediaTypes          `json:"mediatypes,omitempty"`
-	Floor      map[string]MsqFloor `json:"floor,omitempty"`
+	Mediatypes mediaTypes          `json:"mediatypes,omitempty"`
+	Floor      map[string]msqFloor `json:"floor,omitempty"`
 }
 
-type MsqFloor struct {
+type msqFloor struct {
 	Price    float64 `json:"floor,omitempty"`
 	Currency string  `json:"currency,omitempty"`
 }
 
-type MediaTypeNativeBasis struct {
+type mediaTypeNativeBasis struct {
 	Required bool
 	Len      *int
 }
 
-type MediaTypeNativeImage struct {
+type mediaTypeNativeImage struct {
 	Required     bool
 	Sizes        []*int
 	Aspect_ratio *struct {
@@ -121,35 +121,35 @@ type MediaTypeNativeImage struct {
 	}
 }
 
-type MediaTypeNativeTitle struct {
+type mediaTypeNativeTitle struct {
 	Required bool
 	Len      int
 }
 
-type MediaTypeNative struct {
-	Title       *MediaTypeNativeTitle `json:"title"`
-	Icon        *MediaTypeNativeImage `json:"icon"`
-	Image       *MediaTypeNativeImage `json:"image"`
-	Clickurl    *MediaTypeNativeBasis `json:"clickUrl"`
-	Displayurl  *MediaTypeNativeBasis `json:"displayUrl"`
-	Privacylink *MediaTypeNativeBasis `json:"privacyLink"`
-	Privacyicon *MediaTypeNativeBasis `json:"privacyIcon"`
-	Cta         *MediaTypeNativeBasis `json:"cta"`
-	Rating      *MediaTypeNativeBasis `json:"rating"`
-	Downloads   *MediaTypeNativeBasis `json:"downloads"`
-	Likes       *MediaTypeNativeBasis `json:"likes"`
-	Price       *MediaTypeNativeBasis `json:"price"`
-	Saleprice   *MediaTypeNativeBasis `json:"saleprice"`
-	Address     *MediaTypeNativeBasis `json:"address"`
-	Phone       *MediaTypeNativeBasis `json:"phone"`
-	Body        *MediaTypeNativeBasis `json:"body"`
-	Body2       *MediaTypeNativeBasis `json:"body2"`
-	Sponsoredby *MediaTypeNativeBasis `json:"sponsoredBy"`
+type mediaTypeNative struct {
+	Title       *mediaTypeNativeTitle `json:"title"`
+	Icon        *mediaTypeNativeImage `json:"icon"`
+	Image       *mediaTypeNativeImage `json:"image"`
+	Clickurl    *mediaTypeNativeBasis `json:"clickUrl"`
+	Displayurl  *mediaTypeNativeBasis `json:"displayUrl"`
+	Privacylink *mediaTypeNativeBasis `json:"privacyLink"`
+	Privacyicon *mediaTypeNativeBasis `json:"privacyIcon"`
+	Cta         *mediaTypeNativeBasis `json:"cta"`
+	Rating      *mediaTypeNativeBasis `json:"rating"`
+	Downloads   *mediaTypeNativeBasis `json:"downloads"`
+	Likes       *mediaTypeNativeBasis `json:"likes"`
+	Price       *mediaTypeNativeBasis `json:"price"`
+	Saleprice   *mediaTypeNativeBasis `json:"saleprice"`
+	Address     *mediaTypeNativeBasis `json:"address"`
+	Phone       *mediaTypeNativeBasis `json:"phone"`
+	Body        *mediaTypeNativeBasis `json:"body"`
+	Body2       *mediaTypeNativeBasis `json:"body2"`
+	Sponsoredby *mediaTypeNativeBasis `json:"sponsoredBy"`
 	Sizes       [][]int               `json:"sizes"`
 	Type        string                `json:"type"`
 }
 
-type MediaTypeVideo struct {
+type mediaTypeVideo struct {
 	Mimes          []string `json:"mimes"`
 	Minduration    *int     `json:"minduration"`
 	Maxduration    *int     `json:"maxduration"`
@@ -172,19 +172,19 @@ type MediaTypeVideo struct {
 	Plcmt          *int     `json:"plcmt,omitempty"`
 }
 
-type MediaTypes struct {
-	Banner *MediaTypeBanner `json:"banner"`
-	Video  *MediaTypeVideo  `json:"video"`
-	Native *MediaTypeNative `json:"native"`
+type mediaTypes struct {
+	Banner *mediaTypeBanner `json:"banner"`
+	Video  *mediaTypeVideo  `json:"video"`
+	Native *mediaTypeNative `json:"native"`
 }
 
-type MediaTypeBanner struct {
+type mediaTypeBanner struct {
 	Sizes [][]*int `json:"sizes"`
 }
 
-func initMsqParams(request *openrtb2.BidRequest) (msqParams MsqParameters) {
+func initMsqParams(request *openrtb2.BidRequest) (msqParams msqParameters) {
 	msqParams.Type = "pbs"
-	msqParams.Support = MsqSupport{
+	msqParams.Support = msqSupport{
 		Device: request.Device,
 		App:    request.App,
 	}
@@ -200,12 +200,12 @@ func initMsqParams(request *openrtb2.BidRequest) (msqParams MsqParameters) {
 	return
 }
 
-// setContent: Loads currentImp into msqParams (*MsqParametersCodes),
+// setContent: Loads currentImp into msqParams (*msqParametersCodes),
 // returns (errs []error, ok bool) where `ok` express if mandatory content had been loaded.
-func (msqParams *MsqParametersCodes) setContent(currentImp openrtb2.Imp) (ok bool) {
+func (msqParams *msqParametersCodes) setContent(currentImp openrtb2.Imp) (ok bool) {
 	var (
-		currentMapFloors = make(map[string]MsqFloor, 0)
-		currentFloor     = MsqFloor{
+		currentMapFloors = make(map[string]msqFloor, 0)
+		currentFloor     = msqFloor{
 			Price:    currentImp.BidFloor,
 			Currency: currentImp.BidFloorCur,
 		}
@@ -213,7 +213,7 @@ func (msqParams *MsqParametersCodes) setContent(currentImp openrtb2.Imp) (ok boo
 
 	if currentImp.Video != nil {
 		ok = true
-		var video MediaTypeVideo
+		var video mediaTypeVideo
 		currentVideoBytes, _ := json.Marshal(currentImp.Video)
 		json.Unmarshal(currentVideoBytes, &video)
 		json.Unmarshal(currentImp.Video.Ext, &video)
@@ -229,7 +229,7 @@ func (msqParams *MsqParametersCodes) setContent(currentImp openrtb2.Imp) (ok boo
 
 	if currentImp.Banner != nil {
 		ok = true
-		var banner MediaTypeBanner
+		var banner mediaTypeBanner
 		json.Unmarshal(currentImp.Banner.Ext, &banner)
 
 		msqParams.Mediatypes.Banner = &banner
@@ -257,7 +257,7 @@ func (msqParams *MsqParametersCodes) setContent(currentImp openrtb2.Imp) (ok boo
 
 	if currentImp.Native != nil {
 		ok = true
-		var native = MediaTypeNative{Type: "native"}
+		var native = mediaTypeNative{Type: "native"}
 		json.Unmarshal(currentImp.Native.Ext, &native)
 
 		msqParams.Mediatypes.Native = &native
@@ -276,7 +276,7 @@ func (msqParams *MsqParametersCodes) setContent(currentImp openrtb2.Imp) (ok boo
 }
 
 // getContent: Loads msqResp content into the bidderResponse (*adapters.BidderResponse).
-func (msqResp *MsqResponse) getContent(bidderResponse *adapters.BidderResponse) {
+func (msqResp *msqResponse) getContent(bidderResponse *adapters.BidderResponse) {
 	var tmpBids []*adapters.TypedBid
 	for _, resp := range msqResp.Responses {
 		tmpTBid := adapters.TypedBid{

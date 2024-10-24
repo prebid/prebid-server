@@ -20,8 +20,8 @@ var mediaTypeList = map[openrtb_ext.BidType]openrtb2.MarkupType{
 	"native": openrtb2.MarkupNative,
 }
 
-// mType: Returns the openrtb2.MarkupType from an MsqResponseBids.
-func (msqBids *MsqResponseBids) mType() openrtb2.MarkupType {
+// mType: Returns the openrtb2.MarkupType from an msqResponseBids.
+func (msqBids *msqResponseBids) mType() openrtb2.MarkupType {
 	switch {
 	case msqBids.Video != nil:
 		return mediaTypeList["video"]
@@ -32,8 +32,8 @@ func (msqBids *MsqResponseBids) mType() openrtb2.MarkupType {
 	}
 }
 
-// bidType: Returns the openrtb_ext.BidType from an MsqResponseBids.
-func (msqBids *MsqResponseBids) bidType() openrtb_ext.BidType {
+// bidType: Returns the openrtb_ext.BidType from an msqResponseBids.
+func (msqBids *msqResponseBids) bidType() openrtb_ext.BidType {
 	switch {
 	case msqBids.Video != nil:
 		return "video"
@@ -45,7 +45,7 @@ func (msqBids *MsqResponseBids) bidType() openrtb_ext.BidType {
 }
 
 // extBid: Extracts the ExtBid from msqBids formated as (json.RawMessage).
-func (msqBids *MsqResponseBids) extBid() (raw json.RawMessage) {
+func (msqBids *msqResponseBids) extBid() (raw json.RawMessage) {
 	extBid, _ := msqBids.loadExtBid()
 	if extBid.DSA != nil || extBid.Prebid != nil {
 		if bb, _ := json.Marshal(extBid); len(bb) > 0 {
@@ -56,7 +56,7 @@ func (msqBids *MsqResponseBids) extBid() (raw json.RawMessage) {
 }
 
 // loadExtBid: Extracts the ExtBid from msqBids as (openrtb_ext.ExtBid, []error).
-func (msqBids *MsqResponseBids) loadExtBid() (extBid openrtb_ext.ExtBid, errs []error) {
+func (msqBids *msqResponseBids) loadExtBid() (extBid openrtb_ext.ExtBid, errs []error) {
 	if msqBids.Dsa != nil {
 		bb, err := json.Marshal(msqBids.Dsa)
 		if err != nil {
@@ -75,7 +75,7 @@ func (msqBids *MsqResponseBids) loadExtBid() (extBid openrtb_ext.ExtBid, errs []
 }
 
 // extBidPrebidMeta: Extracts the ExtBidPrebidMeta from msqBids as (*openrtb_ext.ExtBidPrebidMeta).
-func (msqBids *MsqResponseBids) extBidPrebidMeta() *openrtb_ext.ExtBidPrebidMeta {
+func (msqBids *msqResponseBids) extBidPrebidMeta() *openrtb_ext.ExtBidPrebidMeta {
 	var extBidMeta openrtb_ext.ExtBidPrebidMeta
 	if msqBids.ADomain != nil {
 		extBidMeta.AdvertiserDomains = msqBids.ADomain
