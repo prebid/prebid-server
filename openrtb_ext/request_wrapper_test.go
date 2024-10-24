@@ -1908,7 +1908,7 @@ func TestImpWrapperSetImp(t *testing.T) {
 	assert.Equal(t, expectedImps, rw.BidRequest.Imp)
 	iw = rw.GetImp()
 	// Ensure that the wrapper pointers are in sync.
-	for i, _ := range rw.BidRequest.Imp {
+	for i := range rw.BidRequest.Imp {
 		// Assert the pointers are in sync.
 		assert.Same(t, &rw.Imp[i], iw[i].Imp)
 	}
