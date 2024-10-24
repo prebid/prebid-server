@@ -1,5 +1,8 @@
 {
     "requestType": "openrtb2-web",
+    "ortbversion": {
+        "appnexus":"2.6"
+    },
     "incomingRequest": {
         "ortbRequest": {
             "id": "some-request-id",
