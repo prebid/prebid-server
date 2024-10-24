@@ -1481,6 +1481,7 @@ func TestCleanOpenRTBRequestsSChain(t *testing.T) {
 		outRequestExt json.RawMessage
 		outSource     *openrtb2.Source
 		hasError      bool
+		ortbVersion   string
 	}{
 		{
 			description:   "nil",
@@ -1529,6 +1530,7 @@ func TestCleanOpenRTBRequestsSChain(t *testing.T) {
 				},
 				Ext: nil,
 			},
+			ortbVersion: "2.6",
 		},
 		{
 			description:   "Supply Chain defined in request.ext.prebid.schains",
@@ -1553,6 +1555,7 @@ func TestCleanOpenRTBRequestsSChain(t *testing.T) {
 				},
 				Ext: nil,
 			},
+			ortbVersion: "2.6",
 		},
 		{
 			description: "schainwriter instantation error -- multiple bidder schains in ext.prebid.schains.",
@@ -1610,7 +1613,7 @@ func TestCleanOpenRTBRequestsSChain(t *testing.T) {
 			privacyConfig:     config.Privacy{},
 			gdprPermsBuilder:  gdprPermissionsBuilder,
 			hostSChainNode:    nil,
-			bidderInfo:        config.BidderInfos{},
+			bidderInfo:        config.BidderInfos{"appnexus": config.BidderInfo{OpenRTB: &config.OpenRTBInfo{Version: test.ortbVersion}}},
 		}
 
 		bidderRequests, _, errs := reqSplitter.cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, gdpr.SignalNo, false, map[string]float64{})
@@ -2535,14 +2538,14 @@ func TestCleanOpenRTBRequestsWithOpenRTBDowngrade(t *testing.T) {
 			req:         AuctionRequest{BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: bidReq}, UserSyncs: &emptyUsersync{}, TCF2Config: emptyTCF2Config},
 			expectRegs:  &downgradedRegs,
 			expectUser:  &downgradedUser,
-			bidderInfos: config.BidderInfos{"appnexus": config.BidderInfo{OpenRTB: &config.OpenRTBInfo{GPPSupported: false}}},
+			bidderInfos: config.BidderInfos{"appnexus": config.BidderInfo{OpenRTB: &config.OpenRTBInfo{GPPSupported: false, Version: "2.6"}}},
 		},
 		{
 			name:        "Supported",
 			req:         AuctionRequest{BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: bidReq}, UserSyncs: &emptyUsersync{}, TCF2Config: emptyTCF2Config},
 			expectRegs:  bidReq.Regs,
 			expectUser:  bidReq.User,
-			bidderInfos: config.BidderInfos{"appnexus": config.BidderInfo{OpenRTB: &config.OpenRTBInfo{GPPSupported: true}}},
+			bidderInfos: config.BidderInfos{"appnexus": config.BidderInfo{OpenRTB: &config.OpenRTBInfo{GPPSupported: true, Version: "2.6"}}},
 		},
 	}
 
@@ -3255,13 +3258,14 @@ func TestCleanOpenRTBRequestsSChainMultipleBidders(t *testing.T) {
 		},
 	}.Builder
 
+	ortb26enabled := config.BidderInfo{OpenRTB: &config.OpenRTBInfo{Version: "2.6"}}
 	reqSplitter := &requestSplitter{
 		bidderToSyncerKey: map[string]string{},
 		me:                &metrics.MetricsEngineMock{},
 		privacyConfig:     config.Privacy{},
 		gdprPermsBuilder:  gdprPermissionsBuilder,
 		hostSChainNode:    nil,
-		bidderInfo:        config.BidderInfos{},
+		bidderInfo:        config.BidderInfos{"appnexus": ortb26enabled, "axonix": ortb26enabled},
 	}
 	bidderRequests, _, errs := reqSplitter.cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, gdpr.SignalNo, false, map[string]float64{})
 
@@ -4799,6 +4803,7 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 		privacyConfig     config.AccountPrivacy
 		componentName     string
 		allow             bool
+		ortbVersion       string
 		expectedReqNumber int
 		expectedUser      openrtb2.User
 		expectUserScrub   bool
@@ -4810,6 +4815,7 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 			name:              "fetch_bids_request_with_one_bidder_allowed",
 			req:               newBidRequest(t),
 			privacyConfig:     getFetchBidsActivityConfig("appnexus", true),
+			ortbVersion:       "2.6",
 			expectedReqNumber: 1,
 			expectedUser:      expectedUserDefault,
 			expectedDevice:    expectedDeviceDefault,
@@ -4828,6 +4834,7 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 			name:              "transmit_ufpd_allowed",
 			req:               newBidRequest(t),
 			privacyConfig:     getTransmitUFPDActivityConfig("appnexus", true),
+			ortbVersion:       "2.6",
 			expectedReqNumber: 1,
 			expectedUser:      expectedUserDefault,
 			expectedDevice:    expectedDeviceDefault,
@@ -4869,6 +4876,7 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 			name:              "transmit_precise_geo_allowed",
 			req:               newBidRequest(t),
 			privacyConfig:     getTransmitPreciseGeoActivityConfig("appnexus", true),
+			ortbVersion:       "2.6",
 			expectedReqNumber: 1,
 			expectedUser:      expectedUserDefault,
 			expectedDevice:    expectedDeviceDefault,
@@ -4880,6 +4888,7 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 			name:              "transmit_precise_geo_deny",
 			req:               newBidRequest(t),
 			privacyConfig:     getTransmitPreciseGeoActivityConfig("appnexus", false),
+			ortbVersion:       "2.6",
 			expectedReqNumber: 1,
 			expectedUser: openrtb2.User{
 				ID:       "our-id",
@@ -4912,6 +4921,7 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 			name:              "transmit_tid_allowed",
 			req:               newBidRequest(t),
 			privacyConfig:     getTransmitTIDActivityConfig("appnexus", true),
+			ortbVersion:       "2.6",
 			expectedReqNumber: 1,
 			expectedUser:      expectedUserDefault,
 			expectedDevice:    expectedDeviceDefault,
@@ -4922,6 +4932,7 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 			name:              "transmit_tid_deny",
 			req:               newBidRequest(t),
 			privacyConfig:     getTransmitTIDActivityConfig("appnexus", false),
+			ortbVersion:       "2.6",
 			expectedReqNumber: 1,
 			expectedUser:      expectedUserDefault,
 			expectedDevice:    expectedDeviceDefault,
@@ -4958,7 +4969,7 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 				bidderToSyncerKey: bidderToSyncerKey,
 				me:                &metricsMock,
 				hostSChainNode:    nil,
-				bidderInfo:        config.BidderInfos{},
+				bidderInfo:        config.BidderInfos{"appnexus": config.BidderInfo{OpenRTB: &config.OpenRTBInfo{Version: test.ortbVersion}}},
 			}
 
 			bidderRequests, _, errs := reqSplitter.cleanOpenRTBRequests(context.Background(), auctionReq, nil, gdpr.SignalNo, false, map[string]float64{})
