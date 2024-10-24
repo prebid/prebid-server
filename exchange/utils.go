@@ -218,13 +218,13 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		}
 
 		// down convert
-		// info, ok := rs.bidderInfo[bidder]
-		// if !ok || info.OpenRTB == nil || info.OpenRTB.Version != "2.6" {
-		// 	if err := openrtb_ext.ConvertDownTo25(reqWrapperCopy); err != nil {
-		// 		errs = append(errs, err)
-		// 		continue
-		// 	}
-		// }
+		info, ok := rs.bidderInfo[bidder]
+		if !ok || info.OpenRTB == nil || info.OpenRTB.Version != "2.6" {
+			if err := openrtb_ext.ConvertDownTo25(reqWrapperCopy); err != nil {
+				errs = append(errs, err)
+				continue
+			}
+		}
 
 		// sync wrapper
 		if err := reqWrapperCopy.RebuildRequest(); err != nil {
