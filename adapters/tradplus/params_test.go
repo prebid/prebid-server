@@ -44,5 +44,11 @@ var invalidParams = []string{
 	`{"accountId": ""}`,
 	`{"accountId": "", "zoneId": ""}`,
 	`{"accountId": "", "zoneId": "sin"}`,
+	`{"accountId": 123}`,
+	`{"accountId": {"test":1}}`,
+	`{"accountId": true}`,
+	`{"accountId": null}`,
 	`{"zoneId": "aaa"}`,
+	`{"zoneId": "aaa"}`,
+	`{"zoneId": null}`,
 }

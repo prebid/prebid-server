@@ -52,11 +52,6 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestDa
 		return nil, []error{err}
 	}
 
-	err = transform(request)
-	if err != nil {
-		return nil, []error{err}
-	}
-
 	reqBody, err := json.Marshal(request)
 	if err != nil {
 		return nil, []error{err}
@@ -103,31 +98,6 @@ func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtImpTradPlus) (string, 
 		ZoneID:    params.ZoneID,
 	}
 	return macros.ResolveMacros(a.endpoint, endpointParams)
-}
-
-func transform(request *openrtb2.BidRequest) error {
-	for i, imp := range request.Imp {
-		if imp.Native != nil {
-			var nativeRequest map[string]interface{}
-			nativeCopyRequest := make(map[string]interface{})
-			if err := json.Unmarshal([]byte(request.Imp[i].Native.Request), &nativeRequest); err != nil {
-				return err
-			}
-			_, exists := nativeRequest["native"]
-			if exists {
-				continue
-			}
-			nativeCopyRequest["native"] = nativeRequest
-			nativeReqByte, err := json.Marshal(nativeCopyRequest)
-			if err != nil {
-				return err
-			}
-			nativeCopy := *request.Imp[i].Native
-			nativeCopy.Request = string(nativeReqByte)
-			request.Imp[i].Native = &nativeCopy
-		}
-	}
-	return nil
 }
 
 // MakeBids make the bids for the bid response.

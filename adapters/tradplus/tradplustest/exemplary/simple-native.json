@@ -27,7 +27,7 @@
             {
               "id": "test-imp-id",
               "native": {
-                "request": "{\"native\":{\"assets\":[{\"id\":2,\"required\":1,\"title\":{\"len\":90}},{\"id\":6,\"img\":{\"hmin\":128,\"mimes\":[\"image/jpg\",\"image/jpeg\",\"image/png\"],\"type\":3,\"wmin\":128},\"required\":1},{\"data\":{\"len\":120,\"type\":2},\"id\":7,\"required\":1}],\"context\":1,\"plcmtcnt\":1,\"plcmttype\":4,\"ver\":\"1.2\"}}",
+                "request": "{\"ver\":\"1.2\",\"context\":1,\"plcmttype\":4,\"plcmtcnt\":1,\"assets\":[{\"id\":2,\"required\":1,\"title\":{\"len\":90}},{\"id\":6,\"required\":1,\"img\":{\"type\":3,\"wmin\":128,\"hmin\":128,\"mimes\":[\"image/jpg\",\"image/jpeg\",\"image/png\"]}},{\"id\":7,\"required\":1,\"data\":{\"type\":2,\"len\":120}}]}",
                 "ver": "1.2"
               }
             }
