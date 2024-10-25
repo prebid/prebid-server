@@ -134,7 +134,10 @@ func TestGoodAmpRequests(t *testing.T) {
 			}
 			if test.ExpectedValidatedBidReq != nil {
 				// compare as json to ignore whitespace and ext field ordering
-				assert.JSONEq(t, string(test.ExpectedValidatedBidReq), string(ex.actualValidatedBidReq), "Not the expected validated request. Test file: %s", filename)
+				actualJson, err := jsonutil.Marshal(ex.actualValidatedBidReq)
+				if assert.NoError(t, err, "Error converting actual bid request to json. Test file: %s", filename) {
+				        assert.JSONEq(t, string(test.ExpectedValidatedBidReq), string(actualJson), "Not the expected validated request. Test file: %s", filename)
+				}				
 			}
 		}
 	}
