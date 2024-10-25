@@ -2386,10 +2386,7 @@ func newExchangeForTests(t *testing.T, filename string, aliases map[string]strin
 				expectations:  map[string]*bidderRequest{string(bidderName): spec.ExpectedRequest},
 				mockResponses: map[string]bidderResponse{string(bidderName): spec.MockResponse},
 			}
-			ortbVersion, found := exSpec.ORTBVersion[string(bidderName)]
-			if !found {
-				ortbVersion = "2.5"
-			}
+			ortbVersion, _ := exSpec.ORTBVersion[string(bidderName)]
 			bidderInfos[string(bidderName)] = config.BidderInfo{
 				ModifyingVastXmlAllowed: spec.ModifyingVastXmlAllowed,
 				OpenRTB:                 &config.OpenRTBInfo{Version: ortbVersion},

@@ -97,10 +97,7 @@
                 "gpp": "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1NYN",
                 "gppsid": [
                     6
-                ],
-                "ext": {
-                    "gdpr": 0
-                }
+                ]
             }
         }
     },
@@ -179,10 +176,9 @@
                     },
                     "regs": {
                         "coppa": 1,
-                        "ext": {
-                            "gdpr": 1,
-                            "us_privacy": "1YYY"
-                        }
+                        "gdpr": 1,
+                        "us_privacy": "1YYY",
+                        "gpp": "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1NYN"
                     }
                 }
             }
