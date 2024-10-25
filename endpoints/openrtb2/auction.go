@@ -1562,6 +1562,15 @@ func isPossibleBidder(bidder string) bool {
 		return false
 	case openrtb_ext.BidderReservedAE:
 		return false
+	// HACK: Support the keys used by the PAAPI (Protected Audience API) module.
+	// Without the hack, PBS will reject any requests that contain them. This hack
+	// can be removed once the upstream repo supports them. For more info, see:
+	// https://docs.prebid.org/dev-docs/modules/paapi.html
+	// https://github.com/prebid/prebid-server/issues/3735
+	case openrtb_ext.BidderReservedIGS:
+		return false
+	case openrtb_ext.BidderReservedPAAPI:
+		return false
 	default:
 		return true
 	}

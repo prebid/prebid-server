@@ -264,6 +264,14 @@ const (
 	BidderReservedSKAdN   BidderName = "skadn"   // Reserved for Apple's SKAdNetwork OpenRTB extension.
 	BidderReservedTID     BidderName = "tid"     // Reserved for Per-Impression Transactions IDs for Multi-Impression Bid Requests.
 	BidderReservedAE      BidderName = "ae"      // Reserved for FLEDGE Auction Environment
+
+	// HACK: Support the keys used by the PAAPI (Protected Audience API) module.
+	// Without the hack, PBS will reject any requests that contain them. This hack
+	// can be removed once the upstream repo supports them. For more info, see:
+	// https://docs.prebid.org/dev-docs/modules/paapi.html
+	// https://github.com/prebid/prebid-server/issues/3735
+	BidderReservedIGS   BidderName = "igs"
+	BidderReservedPAAPI BidderName = "paapi"
 )
 
 // IsBidderNameReserved returns true if the specified name is a case insensitive match for a reserved bidder name.
@@ -301,6 +309,19 @@ func IsBidderNameReserved(name string) bool {
 	}
 
 	if strings.EqualFold(name, string(BidderReservedAE)) {
+		return true
+	}
+
+	// HACK: Support the keys used by the PAAPI (Protected Audience API) module.
+	// Without the hack, PBS will reject any requests that contain them. This hack
+	// can be removed once the upstream repo supports them. For more info, see:
+	// https://docs.prebid.org/dev-docs/modules/paapi.html
+	// https://github.com/prebid/prebid-server/issues/3735
+	if strings.EqualFold(name, string(BidderReservedIGS)) {
+		return true
+	}
+
+	if strings.EqualFold(name, string(BidderReservedPAAPI)) {
 		return true
 	}
 
