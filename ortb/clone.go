@@ -277,3 +277,19 @@ func CloneBidRequestPartial(s *openrtb2.BidRequest) *openrtb2.BidRequest {
 
 	return &c
 }
+
+func CloneRegs(s *openrtb2.Regs) *openrtb2.Regs {
+	if s == nil {
+		return nil
+	}
+
+	// Shallow Copy (Value Fields)
+	c := *s
+
+	// Deep Copy (Pointers)
+	c.GDPR = ptrutil.Clone(s.GDPR)
+	c.GPPSID = slices.Clone(s.GPPSID)
+	c.Ext = slices.Clone(s.Ext)
+
+	return &c
+}
