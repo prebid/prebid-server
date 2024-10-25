@@ -595,6 +595,13 @@ var allowedImpExtFields = map[string]interface{}{
 	openrtb_ext.GPIDKey:                     struct{}{},
 	openrtb_ext.SKAdNExtKey:                 struct{}{},
 	openrtb_ext.TIDKey:                      struct{}{},
+	// HACK: Support the keys used by the PAAPI (Protected Audience API) module.
+	// Without the hack, PBS will reject any requests that contain them. This hack
+	// can be removed once the upstream repo supports them. For more info, see:
+	// https://docs.prebid.org/dev-docs/modules/paapi.html
+	// https://github.com/prebid/prebid-server/issues/3735
+	openrtb_ext.IGSKey:   struct{}{},
+	openrtb_ext.PAAPIKey: struct{}{},
 }
 
 var allowedImpExtPrebidFields = map[string]interface{}{
