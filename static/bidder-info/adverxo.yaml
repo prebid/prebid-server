@@ -1,0 +1,15 @@
+endpoint: "https://pbsadverxo.com/auction?id={{.AdUnit}}&auth={{.TokenID}}"
+endpointCompression: gzip
+maintainer:
+  email: "developer@adverxo.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - native
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - native
+      - video
