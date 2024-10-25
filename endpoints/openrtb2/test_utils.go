@@ -1150,6 +1150,7 @@ func parseTestData(fileData []byte, testFile string) (testCase, error) {
 	}
 
 	// Get both bid response and error message, if any
+	parsedTestData.ExpectedValidatedBidReq, _, _, err = jsonparser.Get(fileData, "expectedValidatedBidRequest")
 	parsedTestData.ExpectedBidResponse, _, _, err = jsonparser.Get(fileData, "expectedBidResponse")
 	parsedTestData.ExpectedErrorMessage, errEm = jsonparser.GetString(fileData, "expectedErrorMessage")
 

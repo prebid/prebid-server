@@ -1,0 +1,192 @@
+{
+  "description": "Request with all 2.5 ext fields that were moved into 2.6 ortb fields",
+  "config": {
+    "mockBidders": [
+      {
+        "bidderName": "appnexus",
+        "currency": "USD",
+        "price": 15
+      }
+    ]
+  },
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "prebid.org"
+    },
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "prebid": {
+            "bidder": {
+              "appnexus": {
+                "placementId": 12883451
+              }
+            },
+            "is_rewarded_inventory": 1
+          }
+        }
+      }
+    ],
+    "regs": {
+      "ext": {
+        "gdpr": 1,
+        "us_privacy": "1YYY"
+      }
+    },
+    "user": {
+      "ext": {
+        "consent": "some-consent-string",
+        "eids": [
+          {
+              "source": "source",
+              "uids": [
+                  {
+                      "id": "1",
+                      "atype": 1,
+                      "ext": {}
+                  },
+                  {
+                      "id": "1",
+                      "atype": 1,
+                      "ext": {}
+                  }
+              ],
+              "ext": {}
+          }
+        ]
+      }
+    },
+    "source": {
+      "ext": {
+        "schain": {
+          "complete": 1,
+          "nodes": [
+              {
+                  "asi": "whatever.com",
+                  "sid": "1234",
+                  "rid": "123-456-7890",
+                  "hp": 1
+              }
+          ],
+          "ver": "2.0"
+        }
+      }
+    },
+    "ext": {}
+  },
+  "expectedValidatedBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "prebid.org",
+      "ext": {
+        "amp": 0
+      }
+    },
+    "at": 1,
+    "device": {
+      "ip": "192.0.2.1"
+    },
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "prebid": {
+            "bidder": {
+              "appnexus": {
+                "placementId": 12883451
+              }
+            }
+          }
+        },
+        "secure": 1,
+        "rwdd": 1
+      }
+    ],
+    "regs": {
+      "gdpr": 1,
+      "us_privacy": "1YYY"
+    },
+    "user": {
+      "consent": "some-consent-string",
+      "eids": [
+        {
+            "source": "source",
+            "uids": [
+                {
+                    "id": "1",
+                    "atype": 1,
+                    "ext": {}
+                },
+                {
+                    "id": "1",
+                    "atype": 1,
+                    "ext": {}
+                }
+            ],
+            "ext": {}
+        }
+      ]
+    },
+    "source": {
+      "schain": {
+        "complete": 1,
+        "nodes": [
+            {
+                "asi": "whatever.com",
+                "sid": "1234",
+                "rid": "123-456-7890",
+                "hp": 1
+            }
+        ],
+        "ver": "2.0"
+      }
+    }
+  },
+  "expectedBidResponse": {
+    "id": "some-request-id",
+    "seatbid": [
+      {
+        "bid": [
+          {
+            "id": "appnexus-bid",
+            "impid": "some-impression-id",
+            "price": 15,
+            "ext": {
+              "origbidcpm": 15,
+              "origbidcur": "USD",
+              "prebid": {
+                "meta": {
+                  "adaptercode": "appnexus"
+                },
+                "type": "banner"
+              }
+            }
+          }
+        ],
+        "seat": "appnexus"
+      }
+    ],
+    "bidid": "test-bid-id",
+    "cur": "USD",
+    "nbr": 0
+  },
+  "expectedReturnCode": 200
+}
