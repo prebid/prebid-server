@@ -1,0 +1,69 @@
+{
+    "mockBidRequest": {
+      "id": "test_nil_invalid_impid",
+      "imp": [
+        {
+          "id": null,  
+          "banner": {
+            "h": 250,
+            "w": 300
+          },
+          "ext": {
+            "bidder": {
+              "placement_id": "placement-id-7"
+            }
+          }
+        }
+      ],
+      "site": {
+        "domain": "https://example.com",
+        "page": "https://example.com/page"
+      },
+      "cur": ["USD"],
+      "device": {
+        "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+        "ip": "192.168.0.1",
+        "language": "EN"
+      },
+      "tmax": 500
+    },
+    "httpCalls": [
+      {
+        "expectedRequest": {
+          "method": "POST",
+          "body": {
+            "imps": [
+              {
+                "bid_id": "test_nil_invalid_impid",
+                "imp_id": null, 
+                "media_types": {
+                  "banner": {
+                    "sizes": [[300, 250]]
+                  }
+                },
+                "zone_id": {
+                  "placementId": "placement-id-7"
+                }
+              }
+            ],
+            "site": {
+              "domain": "https://example.com",
+              "referrer": "https://example.com/page"
+            }
+          },
+          "impIDs": ["006", null, "unknown_imp_id"]
+        }
+      }
+    ],
+    "expectedMakeBidsErrors": [
+      {
+        "value": "bid is nil or imp ID is missing",
+        "comparison": "literal"
+      },
+      {
+        "value": "unknown media type for bid imp ID unknown_imp_id",
+        "comparison": "literal"
+      }
+    ]
+  }
+  

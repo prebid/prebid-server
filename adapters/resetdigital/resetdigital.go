@@ -223,12 +223,14 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		// handle the error
 		if bid == nil {
 			// it would be better to return an error here
+			errs = append(errs, err)
 			continue
 		}
 
 		bidType, err := GetMediaTypeForImp(requestImps, bid.ImpID)
 		if err != nil {
-			return nil, []error{err}
+			errs = append(errs, err)
+			continue
 		}
 
 		b := &adapters.TypedBid{
@@ -261,18 +263,17 @@ func getBidFromResponse(bidResponse *resetDigitalBid) (*openrtb2.Bid, error) {
 		AdM:   bidResponse.HTML,
 	}
 
-	if i, err := strconv.ParseInt(bidResponse.W, 10, 64); err == nil && i > 0 {
-		bid.W = i
-	} else if err != nil {
+	w, err := strconv.ParseInt(bidResponse.W, 10, 64)
+	if err != nil {
 		return nil, err
-	} // the error should be returned here if ParseInt fails
+	}
+	bid.W = w
 
-	if i, err := strconv.ParseInt(bidResponse.H, 10, 64); err == nil && i > 0 {
-		bid.H = i
-	} else if err != nil {
+	h, err := strconv.ParseInt(bidResponse.H, 10, 64)
+	if err != nil {
 		return nil, err
-	} // the error should be returned here if ParseInt fails
-
+	}
+	bid.H = h
 	return bid, nil
 }
 
