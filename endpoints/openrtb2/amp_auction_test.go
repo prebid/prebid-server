@@ -56,6 +56,7 @@ func TestGoodAmpRequests(t *testing.T) {
 				"buyeruids-case-insensitive.json",
 				"buyeruids-camel-case.json",
 				"aliased-buyeruids-case-insensitive.json",
+				"ortb-2.5-to-2.6-upconvert.json",
 			},
 		},
 		{
