@@ -176,9 +176,17 @@ func runJsonBasedTest(t *testing.T, filename, desc string) {
 	cfg.MarshalAccountDefaults()
 	test.endpointType = OPENRTB_ENDPOINT
 
-	auctionEndpointHandler, _, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg)
+	auctionEndpointHandler, ex, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg)
 	if assert.NoError(t, err) {
 		assert.NotPanics(t, func() { runEndToEndTest(t, auctionEndpointHandler, test, fileData, filename) }, filename)
+	}
+
+	if test.ExpectedValidatedBidReq != nil {
+		// compare as json to ignore whitespace and ext field ordering
+		actualJson, err := jsonutil.Marshal(ex.actualValidatedBidReq)
+		if assert.NoError(t, err, "Error converting actual bid request to json. Test file: %s", filename) {
+			assert.JSONEq(t, string(test.ExpectedValidatedBidReq), string(actualJson), "Not the expected validated request. Test file: %s", filename)
+		}
 	}
 
 	// Close servers regardless if the test case was run or not
