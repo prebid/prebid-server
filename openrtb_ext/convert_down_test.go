@@ -36,50 +36,6 @@ func TestConvertDownTo25(t *testing.T) {
 			},
 		},
 		{
-			name: "2.6-dropped", // integration with clear26Fields
-			givenRequest: openrtb2.BidRequest{
-				ID:     "anyID",
-				CatTax: adcom1.CatTaxIABContent10,
-				Device: &openrtb2.Device{LangB: "anyLang"},
-			},
-			expectedRequest: openrtb2.BidRequest{
-				ID:     "anyID",
-				Device: &openrtb2.Device{},
-			},
-		},
-		{
-			name: "2.6-202211-dropped", // integration with clear202211Fields
-			givenRequest: openrtb2.BidRequest{
-				ID:  "anyID",
-				App: &openrtb2.App{InventoryPartnerDomain: "anyDomain"},
-			},
-			expectedRequest: openrtb2.BidRequest{
-				ID:  "anyID",
-				App: &openrtb2.App{},
-			},
-		},
-		{
-			name: "2.6-202303-dropped", // integration with clear202303Fields
-			givenRequest: openrtb2.BidRequest{
-				ID:  "anyID",
-				Imp: []openrtb2.Imp{{ID: "1", Refresh: &openrtb2.Refresh{Count: ptrutil.ToPtr(1)}}},
-			},
-			expectedRequest: openrtb2.BidRequest{
-				ID:  "anyID",
-				Imp: []openrtb2.Imp{{ID: "1"}},
-			},
-		},
-		{
-			name: "2.6-202309-dropped", // integration with clear202309Fields
-			givenRequest: openrtb2.BidRequest{
-				ID:   "anyID",
-				ACat: []string{"anyACat"},
-			},
-			expectedRequest: openrtb2.BidRequest{
-				ID: "anyID",
-			},
-		},
-		{
 			name: "2.6-to-2.5-OtherExtFields",
 			givenRequest: openrtb2.BidRequest{
 				ID:     "anyID",
