@@ -26,7 +26,7 @@ func ConvertDownTo25(r *RequestWrapper) error {
 
 	// imp
 	for _, imp := range r.GetImp() {
-		if err := moveRewardedFrom26ToPrebidExt(imp); err != nil {
+		if err := copyRewardedFrom26ToPrebidExt(imp); err != nil {
 			return err
 		}
 	}
@@ -149,20 +149,19 @@ func moveEIDFrom26To25(r *RequestWrapper) error {
 	return nil
 }
 
-// moveRewardedFrom26ToPrebidExt modifies the impression to move the OpenRTB 2.6 rewarded
+// copyRewardedFrom26ToPrebidExt modifies the impression by copying the OpenRTB 2.6 rewarded
 // signal (imp[].rwdd) to the OpenRTB 2.x Prebid specific location (imp[].ext.prebid.is_rewarded_inventory).
 // If the Prebid specific location is already present, it may be overwritten. The Prebid specific
 // location is expected to be empty.
-func moveRewardedFrom26ToPrebidExt(i *ImpWrapper) error {
+func copyRewardedFrom26ToPrebidExt(i *ImpWrapper) error {
 	if i.Rwdd == 0 {
 		return nil
 	}
 
-	// read and clear 2.6 location
+	// read the 2.6 location
 	rwdd26 := i.Rwdd
-	i.Rwdd = 0
 
-	// move to Prebid specific location
+	// copy to Prebid specific location
 	impExt, err := i.GetImpExt()
 	if err != nil {
 		return err

@@ -29,7 +29,7 @@ func TestConvertDownTo25(t *testing.T) {
 			},
 			expectedRequest: openrtb2.BidRequest{
 				ID:     "anyID",
-				Imp:    []openrtb2.Imp{{Ext: json.RawMessage(`{"prebid":{"is_rewarded_inventory":1}}`)}},
+				Imp:    []openrtb2.Imp{{Rwdd: 1, Ext: json.RawMessage(`{"prebid":{"is_rewarded_inventory":1}}`)}},
 				Source: &openrtb2.Source{Ext: json.RawMessage(`{"schain":{"complete":1,"nodes":[],"ver":"2"}}`)},
 				Regs:   &openrtb2.Regs{Ext: json.RawMessage(`{"gdpr":1,"us_privacy":"3"}`)},
 				User:   &openrtb2.User{Ext: json.RawMessage(`{"consent":"1","eids":[{"source":"42"}]}`)},
@@ -47,7 +47,7 @@ func TestConvertDownTo25(t *testing.T) {
 			},
 			expectedRequest: openrtb2.BidRequest{
 				ID:     "anyID",
-				Imp:    []openrtb2.Imp{{Ext: json.RawMessage(`{"other":"otherImp","prebid":{"is_rewarded_inventory":1}}`)}},
+				Imp:    []openrtb2.Imp{{Rwdd: 1, Ext: json.RawMessage(`{"other":"otherImp","prebid":{"is_rewarded_inventory":1}}`)}},
 				Ext:    json.RawMessage(`{"other":"otherExt"}`),
 				Source: &openrtb2.Source{Ext: json.RawMessage(`{"other":"otherSource","schain":{"complete":1,"nodes":[],"ver":"2"}}`)},
 				Regs:   &openrtb2.Regs{Ext: json.RawMessage(`{"gdpr":1,"other":"otherRegs","us_privacy":"3"}`)},
@@ -381,7 +381,7 @@ func TestMoveEIDFrom26To25(t *testing.T) {
 	}
 }
 
-func TestMoveRewardedFrom26ToPrebidExt(t *testing.T) {
+func TestCopyRewardedFrom26ToPrebidExt(t *testing.T) {
 	testCases := []struct {
 		name            string
 		givenImp        openrtb2.Imp
@@ -396,12 +396,12 @@ func TestMoveRewardedFrom26ToPrebidExt(t *testing.T) {
 		{
 			name:        "2.6-migratedto-2.5",
 			givenImp:    openrtb2.Imp{Rwdd: 1},
-			expectedImp: openrtb2.Imp{Ext: json.RawMessage(`{"prebid":{"is_rewarded_inventory":1}}`)},
+			expectedImp: openrtb2.Imp{Rwdd: 1, Ext: json.RawMessage(`{"prebid":{"is_rewarded_inventory":1}}`)},
 		},
 		{
 			name:        "2.5-overwritten",
 			givenImp:    openrtb2.Imp{Rwdd: 1, Ext: json.RawMessage(`{"prebid":{"is_rewarded_inventory":2}}`)},
-			expectedImp: openrtb2.Imp{Ext: json.RawMessage(`{"prebid":{"is_rewarded_inventory":1}}`)},
+			expectedImp: openrtb2.Imp{Rwdd: 1, Ext: json.RawMessage(`{"prebid":{"is_rewarded_inventory":1}}`)},
 		},
 		{
 			name:            "Malformed",
@@ -413,7 +413,7 @@ func TestMoveRewardedFrom26ToPrebidExt(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			w := &ImpWrapper{Imp: &test.givenImp}
-			err := moveRewardedFrom26ToPrebidExt(w)
+			err := copyRewardedFrom26ToPrebidExt(w)
 
 			if test.expectedErrType != nil {
 				assert.IsType(t, test.expectedErrType, err)

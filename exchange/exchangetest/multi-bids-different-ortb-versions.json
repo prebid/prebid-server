@@ -216,6 +216,7 @@
                     },
                     "imp": [
                         {
+                            "rwdd": 1,
                             "id": "some-imp-id",
                             "banner": {
                                 "format": [
