@@ -230,6 +230,7 @@ func (a *InvibesAdapter) makeRequest(invibesParams InvibesInternalParams, reqInf
 		Uri:     url,
 		Headers: headers,
 		Body:    body,
+		ImpIDs:  getImpIDs(invibesParams.BidParams.Properties),
 	}, nil
 }
 
@@ -335,4 +336,12 @@ func (a *InvibesAdapter) MakeBids(
 	}
 
 	return parsedResponses, errors
+}
+
+func getImpIDs(bidParamsProperties map[string]InvibesPlacementProperty) []string {
+	impIDs := make([]string, 0, len(bidParamsProperties))
+	for i := range bidParamsProperties {
+		impIDs = append(impIDs, bidParamsProperties[i].ImpID)
+	}
+	return impIDs
 }

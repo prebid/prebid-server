@@ -61,7 +61,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			Method:  "POST",
 			Uri:     url,
 			Body:    reqJson,
-			Headers: headers}
+			Headers: headers,
+			ImpIDs:  openrtb_ext.GetImpIDs(request.Imp)}
 
 		requests = append(requests, &request)
 	}
@@ -104,12 +105,12 @@ func (a *adapter) MakeBids(
 			var bidExt BidResponseExt
 			if err := json.Unmarshal(seatBid.Bid[i].Ext, &bidExt); err != nil {
 				return nil, []error{&errortypes.BadServerResponse{
-					Message: fmt.Sprintf("Missing response ext"),
+					Message: "Missing response ext",
 				}}
 			}
 			if len(bidExt.Prebid.Type) < 1 {
 				return nil, []error{&errortypes.BadServerResponse{
-					Message: fmt.Sprintf("Unable to read bid.ext.prebid.type"),
+					Message: "Unable to read bid.ext.prebid.type",
 				}}
 			}
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
@@ -142,13 +143,13 @@ func getBidderParams(imp *openrtb2.Imp) (*openrtb_ext.ExtImpTrafficGate, error) 
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: fmt.Sprintf("Missing bidder ext"),
+			Message: "Missing bidder ext",
 		}
 	}
 	var TrafficGateExt openrtb_ext.ExtImpTrafficGate
 	if err := json.Unmarshal(bidderExt.Bidder, &TrafficGateExt); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: fmt.Sprintf("Bidder parameters required"),
+			Message: "Bidder parameters required",
 		}
 	}
 

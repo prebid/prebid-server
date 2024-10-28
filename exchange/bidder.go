@@ -76,12 +76,14 @@ type bidRequestOptions struct {
 
 type extraBidderRespInfo struct {
 	respProcessingStartTime time.Time
+	seatNonBidBuilder       SeatNonBidBuilder
 }
 
 type extraAuctionResponseInfo struct {
 	fledge                  *openrtb_ext.Fledge
 	bidsFound               bool
 	bidderResponseStartTime time.Time
+	seatNonBidBuilder       SeatNonBidBuilder
 }
 
 const ImpIdReqBody = "Stored bid response for impression id: "
@@ -135,6 +137,7 @@ type bidderAdapterConfig struct {
 func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, hookExecutor hookexecution.StageExecutor, ruleToAdjustments openrtb_ext.AdjustmentsByDealID) ([]*entities.PbsOrtbSeatBid, extraBidderRespInfo, []error) {
 	request := openrtb_ext.RequestWrapper{BidRequest: bidderRequest.BidRequest}
 	reject := hookExecutor.ExecuteBidderRequestStage(&request, string(bidderRequest.BidderName))
+	seatNonBidBuilder := SeatNonBidBuilder{}
 	if reject != nil {
 		return nil, extraBidderRespInfo{}, []error{reject}
 	}
@@ -387,6 +390,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 							DealPriority:   bidResponse.Bids[i].DealPriority,
 							OriginalBidCPM: originalBidCpm,
 							OriginalBidCur: bidResponse.Currency,
+							AdapterCode:    bidderRequest.BidderCoreName,
 						})
 						seatBidMap[bidderName].Currency = currencyAfterAdjustments
 					}
@@ -397,13 +401,17 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 			}
 		} else {
 			errs = append(errs, httpInfo.err)
+			nonBidReason := httpInfoToNonBidReason(httpInfo)
+			seatNonBidBuilder.rejectImps(httpInfo.request.ImpIDs, nonBidReason, string(bidderRequest.BidderName))
 		}
 	}
+
 	seatBids := make([]*entities.PbsOrtbSeatBid, 0, len(seatBidMap))
 	for _, seatBid := range seatBidMap {
 		seatBids = append(seatBids, seatBid)
 	}
 
+	extraRespInfo.seatNonBidBuilder = seatNonBidBuilder
 	return seatBids, extraRespInfo, errs
 }
 
@@ -669,7 +677,7 @@ func (bidder *bidderAdapter) addClientTrace(ctx context.Context) context.Context
 		},
 		// GotConn is called after a successful connection is obtained
 		GotConn: func(info httptrace.GotConnInfo) {
-			connWaitTime := time.Now().Sub(connStart)
+			connWaitTime := time.Since(connStart)
 
 			bidder.me.RecordAdapterConnections(bidder.BidderName, info.Reused, connWaitTime)
 		},
@@ -679,7 +687,7 @@ func (bidder *bidderAdapter) addClientTrace(ctx context.Context) context.Context
 		},
 		// DNSDone is called when a DNS lookup ends.
 		DNSDone: func(info httptrace.DNSDoneInfo) {
-			dnsLookupTime := time.Now().Sub(dnsStart)
+			dnsLookupTime := time.Since(dnsStart)
 
 			bidder.me.RecordDNSTime(dnsLookupTime)
 		},
@@ -689,7 +697,7 @@ func (bidder *bidderAdapter) addClientTrace(ctx context.Context) context.Context
 		},
 
 		TLSHandshakeDone: func(tls.ConnectionState, error) {
-			tlsHandshakeTime := time.Now().Sub(tlsStart)
+			tlsHandshakeTime := time.Since(tlsStart)
 
 			bidder.me.RecordTLSHandshakeTime(tlsHandshakeTime)
 		},

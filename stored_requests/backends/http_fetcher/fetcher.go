@@ -207,6 +207,9 @@ func (fetcher *HttpFetcher) FetchCategories(ctx context.Context, primaryAdServer
 	defer httpResp.Body.Close()
 
 	respBytes, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return "", fmt.Errorf("Unable to read response body: %v", err)
+	}
 	tmp := make(map[string]stored_requests.Category)
 
 	if err := jsonutil.UnmarshalValid(respBytes, &tmp); err != nil {

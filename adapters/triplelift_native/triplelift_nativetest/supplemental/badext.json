@@ -1,7 +1,7 @@
 {
   "expectedMakeRequestsErrors": [
     {
-      "value": "json: cannot unmarshal string into Go value of type adapters.ExtImpBidder",
+      "value": "json: cannot unmarshal string into Go value of type triplelift_native.ExtImp",
       "comparison": "literal"
     },
     {

@@ -50,7 +50,8 @@
                 },
                 "bidType": "video",
                 "bidVideo": {
-                  "duration": 30
+                  "duration": 30,
+                  "primary_category": ""
                 }
               }
             ],
@@ -81,10 +82,13 @@
                 "origbidcpm": 0.3,
                 "prebid": {
                   "meta": {
-                    "adaptercode": "appnexus"
                   },
                   "bidid": "bid-appnexus-1",
-                  "type": "video"
+                  "type": "video",
+                  "video": {
+                    "duration": 30,
+                    "primary_category": ""
+                  }
                 }
               }
             }

@@ -41,9 +41,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		requests := []*adapters.RequestData{
 			{
 				Method:  "POST",
-				Uri:     "https://e.serverbid.com/sb/rtb",
+				Uri:     a.endpoint + "/sb/rtb",
 				Body:    bodyBytes,
 				Headers: headers,
+				ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 			},
 		}
 		return requests, errs
@@ -62,15 +63,16 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		requests := []*adapters.RequestData{
 			{
 				Method:  "POST",
-				Uri:     "https://e.serverbid.com/rtb/bid?s=" + consumableExt.PlacementId,
+				Uri:     a.endpoint + "/rtb/bid?s=" + consumableExt.PlacementId,
 				Body:    bodyBytes,
 				Headers: headers,
+				ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 			},
 		}
 		return requests, errs
 	}
-
 }
+
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if adapters.IsResponseStatusCodeNoContent(responseData) {
 		return nil, nil
@@ -87,12 +89,10 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
 	bidResponse.Currency = response.Cur
-	var errors []error
 	for _, seatBid := range response.SeatBid {
 		for i, bid := range seatBid.Bid {
 			bidType, err := getMediaTypeForBid(bid)
 			if err != nil {
-				errors = append(errors, err)
 				continue
 			}
 			var bidVideo *openrtb_ext.ExtBidPrebidVideo
@@ -102,13 +102,10 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 			switch bidType {
 			case openrtb_ext.BidTypeAudio:
 				seatBid.Bid[i].MType = openrtb2.MarkupAudio
-				break
 			case openrtb_ext.BidTypeVideo:
 				seatBid.Bid[i].MType = openrtb2.MarkupVideo
-				break
 			case openrtb_ext.BidTypeBanner:
 				seatBid.Bid[i].MType = openrtb2.MarkupBanner
-				break
 			}
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:      &seatBid.Bid[i],

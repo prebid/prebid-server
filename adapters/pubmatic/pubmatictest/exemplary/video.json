@@ -107,7 +107,8 @@
                   }
                 }
             }
-          }
+          },
+          "impIDs":["test-video-imp"]
         },
         "mockResponse": {
           "status": 200,
@@ -176,7 +177,8 @@
             },
             "type": "video",
             "video" :{
-              "duration" : 5
+              "duration" : 5,
+              "primary_category": ""
             }
           }
         ]

@@ -169,6 +169,10 @@ func (l *AgmaLogger) extractPublisherAndSite(requestWrapper *openrtb_ext.Request
 			publisherId = requestWrapper.App.Publisher.ID
 		}
 		appSiteId = requestWrapper.App.ID
+		if appSiteId == "" {
+			appSiteId = requestWrapper.App.Bundle
+		}
+
 	}
 	return publisherId, appSiteId
 }
@@ -259,6 +263,11 @@ func (l *AgmaLogger) LogVideoObject(event *analytics.VideoObject) {
 		return
 	}
 	l.bufferCh <- data
+}
+
+func (l *AgmaLogger) Shutdown() {
+	glog.Info("[AgmaAnalytics] Shutdown, trying to flush buffer")
+	l.flush() // mutex safe
 }
 
 func (l *AgmaLogger) LogCookieSyncObject(event *analytics.CookieSyncObject)         {}

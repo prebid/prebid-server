@@ -110,6 +110,7 @@ func (a *OpenxAdapter) makeRequest(request *openrtb2.BidRequest) (*adapters.Requ
 		Uri:     a.endpoint,
 		Body:    reqJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}, errs
 }
 
@@ -132,9 +133,12 @@ func preprocess(imp *openrtb2.Imp, reqExt *openxReqExt) error {
 	reqExt.DelDomain = openxExt.DelDomain
 	reqExt.Platform = openxExt.Platform
 
-	imp.TagID = openxExt.Unit
-	if imp.BidFloor == 0 && openxExt.CustomFloor > 0 {
-		imp.BidFloor = openxExt.CustomFloor
+	imp.TagID = openxExt.Unit.String()
+	if imp.BidFloor == 0 {
+		customFloor, err := openxExt.CustomFloor.Float64()
+		if err == nil && customFloor > 0 {
+			imp.BidFloor = customFloor
+		}
 	}
 
 	// outgoing imp.ext should be same as incoming imp.ext minus prebid and bidder
@@ -227,12 +231,24 @@ func (a *OpenxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRe
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     &sb.Bid[i],
-				BidType: getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp),
+				Bid:      &sb.Bid[i],
+				BidType:  getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp),
+				BidVideo: getBidVideo(&sb.Bid[i]),
 			})
 		}
 	}
 	return bidResponse, nil
+}
+
+func getBidVideo(bid *openrtb2.Bid) *openrtb_ext.ExtBidPrebidVideo {
+	var primaryCategory string
+	if len(bid.Cat) > 0 {
+		primaryCategory = bid.Cat[0]
+	}
+	return &openrtb_ext.ExtBidPrebidVideo{
+		PrimaryCategory: primaryCategory,
+		Duration:        int(bid.Dur),
+	}
 }
 
 // getMediaTypeForImp figures out which media type this bid is for.

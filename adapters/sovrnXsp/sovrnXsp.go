@@ -20,9 +20,9 @@ type adapter struct {
 // bidExt.CreativeType values.
 const (
 	creativeTypeBanner int = 0
-	creativeTypeVideo      = 1
-	creativeTypeNative     = 2
-	creativeTypeAudio      = 3
+	creativeTypeVideo  int = 1
+	creativeTypeNative int = 2
+	creativeTypeAudio  int = 3
 )
 
 // Bid response extension from XSP.
@@ -98,6 +98,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		Uri:     a.Endpoint,
 		Body:    requestJson,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, errors
 }
 

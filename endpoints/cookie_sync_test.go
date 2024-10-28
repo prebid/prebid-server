@@ -2198,6 +2198,10 @@ func (m *MockAnalyticsRunner) LogNotificationEventObject(obj *analytics.Notifica
 	m.Called(obj, ac)
 }
 
+func (m *MockAnalyticsRunner) Shutdown() {
+	m.Called()
+}
+
 type MockGDPRPerms struct {
 	mock.Mock
 }
@@ -2212,17 +2216,17 @@ func (m *MockGDPRPerms) BidderSyncAllowed(ctx context.Context, bidder openrtb_ex
 	return args.Bool(0), args.Error(1)
 }
 
-func (m *MockGDPRPerms) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (permissions gdpr.AuctionPermissions, err error) {
+func (m *MockGDPRPerms) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) gdpr.AuctionPermissions {
 	args := m.Called(ctx, bidderCoreName, bidder)
-	return args.Get(0).(gdpr.AuctionPermissions), args.Error(1)
+	return args.Get(0).(gdpr.AuctionPermissions)
 }
 
 type FakeAccountsFetcher struct {
 	AccountData map[string]json.RawMessage
 }
 
-func (f FakeAccountsFetcher) FetchAccount(ctx context.Context, defaultAccountJSON json.RawMessage, accountID string) (json.RawMessage, []error) {
-	defaultAccountJSON = json.RawMessage(`{"disabled":false}`)
+func (f FakeAccountsFetcher) FetchAccount(ctx context.Context, _ json.RawMessage, accountID string) (json.RawMessage, []error) {
+	defaultAccountJSON := json.RawMessage(`{"disabled":false}`)
 
 	if accountID == metrics.PublisherUnknown {
 		return defaultAccountJSON, nil
@@ -2244,10 +2248,10 @@ func (p *fakePermissions) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 	return true, nil
 }
 
-func (p *fakePermissions) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (permissions gdpr.AuctionPermissions, err error) {
+func (p *fakePermissions) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) gdpr.AuctionPermissions {
 	return gdpr.AuctionPermissions{
 		AllowBidRequest: true,
-	}, nil
+	}
 }
 
 func getDefaultActivityConfig(componentName string, allow bool) *config.AccountPrivacy {

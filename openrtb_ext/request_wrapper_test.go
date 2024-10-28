@@ -705,7 +705,7 @@ func TestCloneUserExt(t *testing.T) {
 				eids[0].UIDs[1].ID = "G2"
 				eids[1].UIDs[0].AType = 0
 				eids[0].UIDs = append(eids[0].UIDs, openrtb2.UID{ID: "Z", AType: 2})
-				eids = append(eids, openrtb2.EID{Source: "Blank"})
+				eids = append(eids, openrtb2.EID{Source: "Blank"}) //nolint: ineffassign, staticcheck // this value of `eids` is never used (staticcheck)
 				userExt.eids = nil
 			},
 		},
@@ -2174,6 +2174,30 @@ func TestRebuildRegExt(t *testing.T) {
 			regExt:          RegExt{usPrivacy: "", usPrivacyDirty: true},
 			expectedRequest: openrtb2.BidRequest{Regs: &openrtb2.Regs{}},
 		},
+		{
+			name:            "req_regs_gpc_populated_-_not_dirty_-_no_change",
+			request:         openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"gpc":"a"}`)}},
+			regExt:          RegExt{},
+			expectedRequest: openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"gpc":"a"}`)}},
+		},
+		{
+			name:            "req_regs_gpc_populated_-_dirty_and_different-_change",
+			request:         openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"gpc":"a"}`)}},
+			regExt:          RegExt{gpc: &strB, gpcDirty: true},
+			expectedRequest: openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"gpc":"b"}`)}},
+		},
+		{
+			name:            "req_regs_gpc_populated_-_dirty_and_same_-_no_change",
+			request:         openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"gpc":"a"}`)}},
+			regExt:          RegExt{gpc: &strA, gpcDirty: true},
+			expectedRequest: openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"gpc":"a"}`)}},
+		},
+		{
+			name:            "req_regs_gpc_populated_-_dirty_and_nil_-_cleared",
+			request:         openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"gpc":"a"}`)}},
+			regExt:          RegExt{gpc: nil, gpcDirty: true},
+			expectedRequest: openrtb2.BidRequest{Regs: &openrtb2.Regs{}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -2194,6 +2218,7 @@ func TestRegExtUnmarshal(t *testing.T) {
 		extJson         json.RawMessage
 		expectDSA       *ExtRegsDSA
 		expectGDPR      *int8
+		expectGPC       *string
 		expectUSPrivacy string
 		expectError     bool
 	}{
@@ -2251,6 +2276,21 @@ func TestRegExtUnmarshal(t *testing.T) {
 			regExt:      &RegExt{},
 			extJson:     json.RawMessage(`{"gdpr":""}`),
 			expectGDPR:  ptrutil.ToPtr[int8](0),
+			expectError: true,
+		},
+		// GPC
+		{
+			name:        "valid_gpc_json",
+			regExt:      &RegExt{},
+			extJson:     json.RawMessage(`{"gpc":"some_value"}`),
+			expectGPC:   ptrutil.ToPtr("some_value"),
+			expectError: false,
+		},
+		{
+			name:        "malformed_gpc_json",
+			regExt:      &RegExt{},
+			extJson:     json.RawMessage(`{"gpc":nill}`),
+			expectGPC:   nil,
 			expectError: true,
 		},
 		// us_privacy
@@ -2347,4 +2387,19 @@ func TestRegExtGetGDPRSetGDPR(t *testing.T) {
 	regExtGDPR = regExt.GetGDPR()
 	assert.Equal(t, regExtGDPR, gdpr)
 	assert.NotSame(t, regExtGDPR, gdpr)
+}
+
+func TestRegExtGetGPCSetGPC(t *testing.T) {
+	regExt := &RegExt{}
+	regExtGPC := regExt.GetGPC()
+	assert.Nil(t, regExtGPC)
+	assert.False(t, regExt.Dirty())
+
+	gpc := ptrutil.ToPtr("Gpc")
+	regExt.SetGPC(gpc)
+	assert.True(t, regExt.Dirty())
+
+	regExtGPC = regExt.GetGPC()
+	assert.Equal(t, regExtGPC, gpc)
+	assert.NotSame(t, regExtGPC, gpc)
 }
