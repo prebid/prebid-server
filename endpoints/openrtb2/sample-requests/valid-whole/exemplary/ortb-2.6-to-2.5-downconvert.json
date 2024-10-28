@@ -29,7 +29,8 @@
   "mockBidRequest": {
     "id": "some-request-id",
     "site": {
-      "page": "prebid.org"
+      "page": "prebid.org",
+      "inventorypartnerdomain": "any-domain"
     },
     "imp": [
       {
@@ -56,6 +57,9 @@
             },
             "is_rewarded_inventory": 1
           }
+        },
+        "refresh": {
+          "count": 10
         }
       }
     ],
@@ -104,12 +108,15 @@
         }
       }
     },
-    "ext": {}
+    "ext": {},
+    "cattax": 20,
+    "acat": ["any-acat"]
   },
   "expectedValidatedBidRequest": {
     "id": "some-request-id",
     "site": {
       "page": "prebid.org",
+      "inventorypartnerdomain": "any-domain",
       "ext": {
         "amp": 0
       }
@@ -144,7 +151,10 @@
           }
         },
         "secure": 1,
-        "rwdd": 1
+        "rwdd": 1,
+        "refresh": {
+          "count": 10
+        }
       }
     ],
     "regs": {
@@ -185,13 +195,16 @@
         ],
         "ver": "2.0"
       }
-    }
+    },
+    "cattax": 20,
+    "acat": ["any-acat"]
   },
   "expectedMockBidderRequests": {
     "appnexus": {
       "id": "some-request-id",
       "site": {
         "page": "prebid.org",
+        "inventorypartnerdomain": "any-domain",
         "ext": {
           "amp": 0
         }
@@ -218,6 +231,9 @@
           "prebid": {
             "is_rewarded_inventory": 1
           }
+        },
+        "refresh": {
+          "count": 10
         },
         "secure": 1
       }],
@@ -265,12 +281,15 @@
             }
           ]
         }
-      }
+      },
+      "cattax": 20,
+      "acat": ["any-acat"]
     },
     "rubicon": {
       "id": "some-request-id",
       "site": {
         "page": "prebid.org",
+        "inventorypartnerdomain": "any-domain",
         "ext": {
           "amp": 0
         }
@@ -298,6 +317,9 @@
           }
         },
         "secure": 1,
+        "refresh": {
+          "count": 10
+        },
         "rwdd": 1
       }],
       "regs": {
@@ -338,7 +360,9 @@
               "ext": {}
           }
         ]
-      }
+      },
+      "cattax": 20,
+      "acat": ["any-acat"]
     }
   },
   "expectedBidResponse": {

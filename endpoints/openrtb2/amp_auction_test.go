@@ -139,6 +139,17 @@ func TestGoodAmpRequests(t *testing.T) {
 					assert.JSONEq(t, string(test.ExpectedValidatedBidReq), string(actualJson), "Not the expected validated request. Test file: %s", filename)
 				}
 			}
+			if test.ExpectedMockBidderRequests != nil {
+				for bidder, req := range test.ExpectedMockBidderRequests {
+					a, ok := ex.adapters[openrtb_ext.BidderName(bidder)]
+					if !ok {
+						t.Fatalf("Unexpected bidder %s has an expected mock bidder request. Test file: %s", bidder, filename)
+					}
+					aa := a.(*exchange.BidderAdapter)
+					ma := aa.Bidder.(*mockAdapter)
+					assert.JSONEq(t, string(req), string(ma.requestData[0]), "Not the expected mock bidder request for bidder %s. Test file: %s", bidder, filename)
+				}
+			}
 		}
 	}
 }
