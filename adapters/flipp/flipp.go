@@ -16,6 +16,7 @@ import (
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 	"github.com/prebid/prebid-server/v2/util/uuidutil"
 )
 
@@ -94,7 +95,7 @@ func (a *adapter) processImp(request *openrtb2.BidRequest, imp openrtb2.Imp) (*a
 	if err != nil {
 		return nil, fmt.Errorf("flipp params not found. %v", err)
 	}
-	err = json.Unmarshal(params, &flippExtParams)
+	err = jsonutil.Unmarshal(params, &flippExtParams)
 	if err != nil {
 		return nil, fmt.Errorf("unable to extract flipp params. %v", err)
 	}
@@ -191,7 +192,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	var campaignResponseBody CampaignResponseBody
-	if err := json.Unmarshal(responseData.Body, &campaignResponseBody); err != nil {
+	if err := jsonutil.Unmarshal(responseData.Body, &campaignResponseBody); err != nil {
 		return nil, []error{err}
 	}
 
@@ -248,7 +249,7 @@ func paramsUserKeyPermitted(request *openrtb2.BidRequest) bool {
 		var extData struct {
 			TransmitEids *bool `json:"transmitEids,omitempty"`
 		}
-		if err := json.Unmarshal(request.Ext, &extData); err == nil {
+		if err := jsonutil.Unmarshal(request.Ext, &extData); err == nil {
 			if extData.TransmitEids != nil && !*extData.TransmitEids {
 				return false
 			}

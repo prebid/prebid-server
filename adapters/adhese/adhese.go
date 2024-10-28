@@ -16,6 +16,7 @@ import (
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/macros"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
 type AdheseAdapter struct {
@@ -32,7 +33,7 @@ func extractTargetParameters(parameters openrtb_ext.ExtImpAdhese) string {
 	}
 	var parametersAsString = ""
 	var targetParsed map[string]interface{}
-	err := json.Unmarshal(parameters.Keywords, &targetParsed)
+	err := jsonutil.Unmarshal(parameters.Keywords, &targetParsed)
 	if err != nil {
 		return ""
 	}
@@ -59,7 +60,7 @@ func extractTargetParameters(parameters openrtb_ext.ExtImpAdhese) string {
 func extractGdprParameter(request *openrtb2.BidRequest) string {
 	if request.User != nil {
 		var extUser openrtb_ext.ExtUser
-		if err := json.Unmarshal(request.User.Ext, &extUser); err == nil {
+		if err := jsonutil.Unmarshal(request.User.Ext, &extUser); err == nil {
 			return "/xt" + extUser.Consent
 		}
 	}
@@ -94,13 +95,13 @@ func (a *AdheseAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adap
 	var imp = &request.Imp[0]
 	var bidderExt adapters.ExtImpBidder
 
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		errs = append(errs, WrapReqError("Request could not be parsed as ExtImpBidder due to: "+err.Error()))
 		return nil, errs
 	}
 
 	var params openrtb_ext.ExtImpAdhese
-	if err := json.Unmarshal(bidderExt.Bidder, &params); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &params); err != nil {
 		errs = append(errs, WrapReqError("Request could not be parsed as ExtImpAdhese due to: "+err.Error()))
 		return nil, errs
 	}
@@ -138,7 +139,7 @@ func (a *AdheseAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 	var bidResponse openrtb2.BidResponse
 
 	var adheseBidResponseArray []AdheseBid
-	if err := json.Unmarshal(response.Body, &adheseBidResponseArray); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &adheseBidResponseArray); err != nil {
 		return nil, []error{err, WrapServerError(fmt.Sprintf("Response %v could not be parsed as generic Adhese bid.", string(response.Body)))}
 	}
 
@@ -150,11 +151,11 @@ func (a *AdheseAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 	if adheseBid.Origin == "JERLICIA" {
 		var extArray []AdheseExt
 		var originDataArray []AdheseOriginData
-		if err := json.Unmarshal(response.Body, &extArray); err != nil {
+		if err := jsonutil.Unmarshal(response.Body, &extArray); err != nil {
 			return nil, []error{err, WrapServerError(fmt.Sprintf("Response %v could not be parsed to JERLICIA ext.", string(response.Body)))}
 		}
 
-		if err := json.Unmarshal(response.Body, &originDataArray); err != nil {
+		if err := jsonutil.Unmarshal(response.Body, &originDataArray); err != nil {
 			return nil, []error{err, WrapServerError(fmt.Sprintf("Response %v could not be parsed to JERLICIA origin data.", string(response.Body)))}
 		}
 		bidResponse = convertAdheseBid(adheseBid, extArray[0], originDataArray[0])

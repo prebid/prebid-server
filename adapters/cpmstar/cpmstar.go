@@ -10,6 +10,7 @@ import (
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
 type Adapter struct {
@@ -66,7 +67,7 @@ func preprocess(request *openrtb2.BidRequest) error {
 		var imp = &request.Imp[i]
 		var bidderExt adapters.ExtImpBidder
 
-		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			return &errortypes.BadInput{
 				Message: err.Error(),
 			}
@@ -77,7 +78,7 @@ func preprocess(request *openrtb2.BidRequest) error {
 		}
 
 		var extImp openrtb_ext.ExtImpCpmstar
-		if err := json.Unmarshal(bidderExt.Bidder, &extImp); err != nil {
+		if err := jsonutil.Unmarshal(bidderExt.Bidder, &extImp); err != nil {
 			return &errortypes.BadInput{
 				Message: err.Error(),
 			}
@@ -112,7 +113,7 @@ func (a *Adapter) MakeBids(bidRequest *openrtb2.BidRequest, unused *adapters.Req
 
 	var bidResponse openrtb2.BidResponse
 
-	if err := json.Unmarshal(responseData.Body, &bidResponse); err != nil {
+	if err := jsonutil.Unmarshal(responseData.Body, &bidResponse); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: err.Error(),
 		}}

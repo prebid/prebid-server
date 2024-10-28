@@ -11,6 +11,7 @@ import (
 
 	"github.com/prebid/prebid-server/v2/adapters"
 	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
 // Builder builds a new instance of the Adpone adapter for the given bidder with the given config.
@@ -35,11 +36,11 @@ func (adapter *adponeAdapter) MakeRequests(
 	if len(openRTBRequest.Imp) > 0 {
 		var imp = &openRTBRequest.Imp[0]
 		var bidderExt adapters.ExtImpBidder
-		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			errs = append(errs, newBadInputError(err.Error()))
 		}
 		var ttxExt openrtb_ext.ExtAdpone
-		if err := json.Unmarshal(bidderExt.Bidder, &ttxExt); err != nil {
+		if err := jsonutil.Unmarshal(bidderExt.Bidder, &ttxExt); err != nil {
 			errs = append(errs, newBadInputError(err.Error()))
 		}
 	}
@@ -101,7 +102,7 @@ func (adapter *adponeAdapter) MakeBids(
 	}
 
 	var openRTBBidderResponse openrtb2.BidResponse
-	if err := json.Unmarshal(bidderRawResponse.Body, &openRTBBidderResponse); err != nil {
+	if err := jsonutil.Unmarshal(bidderRawResponse.Body, &openRTBBidderResponse); err != nil {
 		return nil, []error{err}
 	}
 

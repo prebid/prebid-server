@@ -13,6 +13,7 @@ import (
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/macros"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
 type adkernelAdnAdapter struct {
@@ -149,13 +150,13 @@ func compatVideoImpression(imp *openrtb2.Imp) error {
 
 func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpAdkernelAdn, error) {
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
 	var adkernelAdnExt openrtb_ext.ExtImpAdkernelAdn
-	if err := json.Unmarshal(bidderExt.Bidder, &adkernelAdnExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &adkernelAdnExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: err.Error(),
 		}
@@ -226,7 +227,7 @@ func (adapter *adkernelAdnAdapter) MakeBids(internalRequest *openrtb2.BidRequest
 		}
 	}
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{
 			newBadServerResponseError(fmt.Sprintf("Bad server response: %d", err)),
 		}

@@ -13,6 +13,7 @@ import (
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
 type SmartAdserverAdapter struct {
@@ -61,7 +62,7 @@ func (a *SmartAdserverAdapter) MakeRequests(request *openrtb2.BidRequest, reqInf
 	// We send one serialized "smartRequest" per impression of the original request.
 	for _, imp := range request.Imp {
 		var bidderExt adapters.ExtImpBidder
-		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			errs = append(errs, &errortypes.BadInput{
 				Message: "Error parsing bidderExt object",
 			})
@@ -69,7 +70,7 @@ func (a *SmartAdserverAdapter) MakeRequests(request *openrtb2.BidRequest, reqInf
 		}
 
 		var smartadserverExt openrtb_ext.ExtImpSmartadserver
-		if err := json.Unmarshal(bidderExt.Bidder, &smartadserverExt); err != nil {
+		if err := jsonutil.Unmarshal(bidderExt.Bidder, &smartadserverExt); err != nil {
 			errs = append(errs, &errortypes.BadInput{
 				Message: "Error parsing smartadserverExt parameters",
 			})
@@ -137,7 +138,7 @@ func (a *SmartAdserverAdapter) MakeBids(internalRequest *openrtb2.BidRequest, ex
 	}
 
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 

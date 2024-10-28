@@ -13,6 +13,7 @@ import (
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
 const (
@@ -123,7 +124,7 @@ func (a *ImprovedigitalAdapter) MakeBids(internalRequest *openrtb2.BidRequest, e
 
 	var bidResp openrtb2.BidResponse
 	var impMap = make(map[string]openrtb2.Imp)
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
@@ -159,7 +160,7 @@ func (a *ImprovedigitalAdapter) MakeBids(internalRequest *openrtb2.BidRequest, e
 
 		if bid.Ext != nil {
 			var bidExt BidExt
-			err = json.Unmarshal(bid.Ext, &bidExt)
+			err = jsonutil.Unmarshal(bid.Ext, &bidExt)
 			if err != nil {
 				return nil, []error{err}
 			}
@@ -267,7 +268,7 @@ func (a *ImprovedigitalAdapter) getAdditionalConsentProvidersUserExt(request ope
 	// Start validating additional consent
 	// Check key exist user.ext.ConsentedProvidersSettings
 	var userExtMap = make(map[string]json.RawMessage)
-	if err := json.Unmarshal(request.User.Ext, &userExtMap); err != nil {
+	if err := jsonutil.Unmarshal(request.User.Ext, &userExtMap); err != nil {
 		return nil, err
 	}
 
@@ -278,7 +279,7 @@ func (a *ImprovedigitalAdapter) getAdditionalConsentProvidersUserExt(request ope
 
 	// Check key exist user.ext.ConsentedProvidersSettings.consented_providers
 	var cpMap = make(map[string]json.RawMessage)
-	if err := json.Unmarshal(cpsMapValue, &cpMap); err != nil {
+	if err := jsonutil.Unmarshal(cpsMapValue, &cpMap); err != nil {
 		return nil, err
 	}
 
@@ -320,7 +321,7 @@ func (a *ImprovedigitalAdapter) getAdditionalConsentProvidersUserExt(request ope
 
 func getImpExtWithRewardedInventory(imp openrtb2.Imp) ([]byte, error) {
 	var ext = make(map[string]json.RawMessage)
-	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &ext); err != nil {
 		return nil, err
 	}
 
@@ -330,7 +331,7 @@ func getImpExtWithRewardedInventory(imp openrtb2.Imp) ([]byte, error) {
 	}
 
 	var prebidMap = make(map[string]json.RawMessage)
-	if err := json.Unmarshal(prebidJSONValue, &prebidMap); err != nil {
+	if err := jsonutil.Unmarshal(prebidJSONValue, &prebidMap); err != nil {
 		return nil, err
 	}
 
@@ -351,7 +352,7 @@ func (a *ImprovedigitalAdapter) buildEndpointURL(imp openrtb2.Imp) string {
 	publisherEndpoint := ""
 	var impBidder ImpExtBidder
 
-	err := json.Unmarshal(imp.Ext, &impBidder)
+	err := jsonutil.Unmarshal(imp.Ext, &impBidder)
 	if err == nil && impBidder.Bidder.PublisherID != 0 {
 		publisherEndpoint = strconv.Itoa(impBidder.Bidder.PublisherID) + "/"
 	}

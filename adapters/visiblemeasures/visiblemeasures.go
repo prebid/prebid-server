@@ -10,6 +10,7 @@ import (
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
 type adapter struct {
@@ -44,10 +45,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		var bidderExt adapters.ExtImpBidder
 		var visiblemeasuresExt openrtb_ext.ImpExtVisibleMeasures
 
-		if err = json.Unmarshal(reqCopy.Imp[0].Ext, &bidderExt); err != nil {
+		if err = jsonutil.Unmarshal(reqCopy.Imp[0].Ext, &bidderExt); err != nil {
 			return nil, []error{err}
 		}
-		if err = json.Unmarshal(bidderExt.Bidder, &visiblemeasuresExt); err != nil {
+		if err = jsonutil.Unmarshal(bidderExt.Bidder, &visiblemeasuresExt); err != nil {
 			return nil, []error{err}
 		}
 
@@ -111,7 +112,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	var response openrtb2.BidResponse
-	if err := json.Unmarshal(responseData.Body, &response); err != nil {
+	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}
 

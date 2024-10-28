@@ -11,6 +11,7 @@ import (
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
 type ColossusAdapter struct {
@@ -99,7 +100,7 @@ func (a *ColossusAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 
 	var bidResp openrtb2.BidResponse
 
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
@@ -124,7 +125,7 @@ func (a *ColossusAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 
 func getMediaTypeForImp(bid openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
 	var bidExt ColossusResponseBidExt
-	err := json.Unmarshal(bid.Ext, &bidExt)
+	err := jsonutil.Unmarshal(bid.Ext, &bidExt)
 	if err == nil {
 		switch bidExt.MediaType {
 		case "banner":

@@ -14,6 +14,7 @@ import (
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/macros"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
 // Builder builds a new instance of the Teads adapter for the given bidder with the given config.
@@ -77,7 +78,7 @@ func updateImpObject(imps []openrtb2.Imp) error {
 		}
 
 		var defaultImpExt defaultBidderImpExtension
-		if err := json.Unmarshal(imp.Ext, &defaultImpExt); err != nil {
+		if err := jsonutil.Unmarshal(imp.Ext, &defaultImpExt); err != nil {
 			return &errortypes.BadInput{
 				Message: "Error parsing Imp.Ext object",
 			}
@@ -136,7 +137,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, _ *adapters.Req
 	}
 
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
@@ -172,7 +173,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, _ *adapters.Req
 
 func getTeadsRendererFromBidExt(ext json.RawMessage) (*teadsBidExt, []error) {
 	var bidExtTeads teadsBidExt
-	if err := json.Unmarshal(ext, &bidExtTeads); err != nil {
+	if err := jsonutil.Unmarshal(ext, &bidExtTeads); err != nil {
 		return nil, []error{err}
 	}
 	if bidExtTeads.Prebid.Meta.RendererName == "" {

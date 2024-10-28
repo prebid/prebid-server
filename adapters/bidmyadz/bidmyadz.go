@@ -11,6 +11,7 @@ import (
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
 type adapter struct {
@@ -111,7 +112,7 @@ func (a *adapter) MakeBids(
 
 	responseBody := bidderRawResponse.Body
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(responseBody, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(responseBody, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
@@ -136,7 +137,7 @@ func (a *adapter) MakeBids(
 	var bidExt bidExt
 	var bidType openrtb_ext.BidType
 
-	if err := json.Unmarshal(bid.Ext, &bidExt); err != nil {
+	if err := jsonutil.Unmarshal(bid.Ext, &bidExt); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("BidExt parsing error. %s", err.Error()),
 		}}

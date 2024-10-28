@@ -16,6 +16,7 @@ import (
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/macros"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
 const TAPPX_BIDDER_VERSION = "1.5"
@@ -57,13 +58,13 @@ func (a *TappxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 	}
 
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(request.Imp[0].Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(request.Imp[0].Ext, &bidderExt); err != nil {
 		return nil, []error{&errortypes.BadInput{
 			Message: "Error parsing bidderExt object",
 		}}
 	}
 	var tappxExt openrtb_ext.ExtImpTappx
-	if err := json.Unmarshal(bidderExt.Bidder, &tappxExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &tappxExt); err != nil {
 		return nil, []error{&errortypes.BadInput{
 			Message: "Error parsing tappxExt parameters",
 		}}
@@ -198,7 +199,7 @@ func (a *TappxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRe
 	}
 
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 

@@ -12,6 +12,7 @@ import (
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/macros"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
 type adapter struct {
@@ -67,13 +68,13 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 func (a *adapter) getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpVideoHeroes, error) {
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: "ext.bidder not provided",
 		}
 	}
 	var videoHeroesExt openrtb_ext.ExtImpVideoHeroes
-	if err := json.Unmarshal(bidderExt.Bidder, &videoHeroesExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &videoHeroesExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: "ext.bidder not provided",
 		}
@@ -118,7 +119,7 @@ func (a *adapter) MakeBids(
 	}
 
 	var bidResponse openrtb2.BidResponse
-	if err := json.Unmarshal(bidderResponse.Body, &bidResponse); err != nil {
+	if err := jsonutil.Unmarshal(bidderResponse.Body, &bidResponse); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: "Bad Server Response",
 		}}
