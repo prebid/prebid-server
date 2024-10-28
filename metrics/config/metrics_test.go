@@ -39,17 +39,14 @@ func TestGoMetricsEngine(t *testing.T) {
 	}
 }
 
-// Test the multiengine
 func TestMultiMetricsEngine(t *testing.T) {
 	cfg := mainConfig.Configuration{}
 	cfg.Metrics.Influxdb.Host = "localhost"
 	adapterList := openrtb_ext.CoreBidderNames()
 	goEngine := metrics.NewMetrics(gometrics.NewPrefixedRegistry("prebidserver."), adapterList, mainConfig.DisabledMetrics{}, nil, modulesStages)
-	engineList := make(MultiMetricsEngine, 2)
-	engineList[0] = goEngine
-	engineList[1] = &NilMetricsEngine{}
-	var metricsEngine metrics.MetricsEngine
-	metricsEngine = &engineList
+	metricsEngine := make(MultiMetricsEngine, 2)
+	metricsEngine[0] = goEngine
+	metricsEngine[1] = &NilMetricsEngine{}
 	labels := metrics.Labels{
 		Source:        metrics.DemandWeb,
 		RType:         metrics.ReqTypeORTB2Web,
@@ -150,14 +147,14 @@ func TestMultiMetricsEngine(t *testing.T) {
 	//Make the metrics engine, instantiated here with goEngine, fill its RequestStatuses[RequestType][metrics.RequestStatusXX] with the new boolean values added to metrics.Labels
 	VerifyMetrics(t, "RequestStatuses.OpenRTB2.OK", goEngine.RequestStatuses[metrics.ReqTypeORTB2Web][metrics.RequestStatusOK].Count(), 5)
 	VerifyMetrics(t, "RequestStatuses.AMP.OK", goEngine.RequestStatuses[metrics.ReqTypeAMP][metrics.RequestStatusOK].Count(), 0)
-	VerifyMetrics(t, "RequestStatuses.AMP.BlockedAcctOrApp", goEngine.RequestStatuses[metrics.ReqTypeAMP][metrics.RequestStatusBlockedApp].Count(), 1)
+	VerifyMetrics(t, "RequestStatuses.AMP.BlockedApp", goEngine.RequestStatuses[metrics.ReqTypeAMP][metrics.RequestStatusBlockedApp].Count(), 1)
 	VerifyMetrics(t, "RequestStatuses.Video.OK", goEngine.RequestStatuses[metrics.ReqTypeVideo][metrics.RequestStatusOK].Count(), 0)
 	VerifyMetrics(t, "RequestStatuses.Video.Error", goEngine.RequestStatuses[metrics.ReqTypeVideo][metrics.RequestStatusErr].Count(), 0)
 	VerifyMetrics(t, "RequestStatuses.Video.BadInput", goEngine.RequestStatuses[metrics.ReqTypeVideo][metrics.RequestStatusBadInput].Count(), 0)
-	VerifyMetrics(t, "RequestStatuses.Video.BlockededAcctOrApp", goEngine.RequestStatuses[metrics.ReqTypeVideo][metrics.RequestStatusBlockedApp].Count(), 1)
+	VerifyMetrics(t, "RequestStatuses.Video.BlockedApp", goEngine.RequestStatuses[metrics.ReqTypeVideo][metrics.RequestStatusBlockedApp].Count(), 1)
 	VerifyMetrics(t, "RequestStatuses.OpenRTB2.Error", goEngine.RequestStatuses[metrics.ReqTypeORTB2Web][metrics.RequestStatusErr].Count(), 0)
 	VerifyMetrics(t, "RequestStatuses.OpenRTB2.BadInput", goEngine.RequestStatuses[metrics.ReqTypeORTB2Web][metrics.RequestStatusBadInput].Count(), 0)
-	VerifyMetrics(t, "RequestStatuses.OpenRTB2.BlockedAcctOrApp", goEngine.RequestStatuses[metrics.ReqTypeORTB2Web][metrics.RequestStatusBlockedApp].Count(), 0)
+	VerifyMetrics(t, "RequestStatuses.OpenRTB2.BlockedApp", goEngine.RequestStatuses[metrics.ReqTypeORTB2Web][metrics.RequestStatusBlockedApp].Count(), 0)
 
 	VerifyMetrics(t, "ImpsTypeBanner", goEngine.ImpsTypeBanner.Count(), 5)
 	VerifyMetrics(t, "ImpsTypeVideo", goEngine.ImpsTypeVideo.Count(), 3)
