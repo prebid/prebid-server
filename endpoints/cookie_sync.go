@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -29,6 +30,7 @@ import (
 	"github.com/prebid/prebid-server/v2/stored_requests"
 	"github.com/prebid/prebid-server/v2/usersync"
 	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 	stringutil "github.com/prebid/prebid-server/v2/util/stringutil"
 	"github.com/prebid/prebid-server/v2/util/timeutil"
 )
@@ -181,7 +183,7 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, ma
 			PriorityGroups: c.config.UserSync.PriorityGroups,
 		},
 		Debug: request.Debug,
-		Limit: request.Limit,
+		Limit: *request.Limit,
 		Privacy: usersyncPrivacy{
 			gdprPermissions:  gdprPerms,
 			ccpaParsedPolicy: ccpaParsedPolicy,
@@ -285,17 +287,33 @@ func (c *cookieSyncEndpoint) writeParseRequestErrorMetrics(err error) {
 }
 
 func (c *cookieSyncEndpoint) setLimit(request cookieSyncRequest, cookieSyncConfig config.CookieSync) cookieSyncRequest {
-	if request.Limit <= 0 && cookieSyncConfig.DefaultLimit != nil {
-		request.Limit = *cookieSyncConfig.DefaultLimit
+	limit := getEffectiveLimit(request.Limit, cookieSyncConfig.DefaultLimit)
+	maxLimit := getEffectiveMaxLimit(cookieSyncConfig.MaxLimit)
+	if maxLimit < limit {
+		request.Limit = &maxLimit
+	} else {
+		request.Limit = &limit
 	}
-	if cookieSyncConfig.MaxLimit != nil && (request.Limit <= 0 || request.Limit > *cookieSyncConfig.MaxLimit) {
-		request.Limit = *cookieSyncConfig.MaxLimit
-	}
-	if request.Limit < 0 {
-		request.Limit = 0
-	}
-
 	return request
+}
+
+func getEffectiveLimit(reqLimit *int, defaultLimit *int) int {
+	limit := reqLimit
+	if reqLimit == nil && defaultLimit != nil {
+		limit = defaultLimit
+	}
+	if limit == nil || *limit <= 0 || *limit > math.MaxInt32 {
+		limit = ptrutil.ToPtr(math.MaxInt32)
+	}
+	return *limit
+}
+
+func getEffectiveMaxLimit(maxLimit *int) int {
+	limit := maxLimit
+	if maxLimit == nil || *maxLimit <= 0 || *limit > math.MaxInt32 {
+		limit = ptrutil.ToPtr(math.MaxInt32)
+	}
+	return *limit
 }
 
 func (c *cookieSyncEndpoint) setCooperativeSync(request cookieSyncRequest, cookieSyncConfig config.CookieSync) cookieSyncRequest {
@@ -537,7 +555,7 @@ type cookieSyncRequest struct {
 	GDPR            *int                             `json:"gdpr"`
 	GDPRConsent     string                           `json:"gdpr_consent"`
 	USPrivacy       string                           `json:"us_privacy"`
-	Limit           int                              `json:"limit"`
+	Limit           *int                             `json:"limit"`
 	GPP             string                           `json:"gpp"`
 	GPPSID          string                           `json:"gpp_sid"`
 	CooperativeSync *bool                            `json:"coopSync"`
