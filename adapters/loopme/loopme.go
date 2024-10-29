@@ -13,11 +13,11 @@ import (
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
-type LoopmeAdapter struct {
-	Endpoint string
+type adapter struct {
+	endpoint string
 }
 
-func (a *LoopmeAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 
 	reqDatas := make([]*adapters.RequestData, 0, len(request.Imp))
@@ -41,7 +41,7 @@ func (a *LoopmeAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adap
 		headers.Add("Accept", "application/json")
 		reqDatas = append(reqDatas, &adapters.RequestData{
 			Method:  "POST",
-			Uri:     a.Endpoint,
+			Uri:     a.endpoint,
 			Body:    reqJSON,
 			Headers: headers,
 			ImpIDs:  openrtb_ext.GetImpIDs(requestCopy.Imp),
@@ -51,7 +51,7 @@ func (a *LoopmeAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adap
 	return reqDatas, errs
 }
 
-func (a *LoopmeAdapter) MakeBids(bidReq *openrtb2.BidRequest, reqData *adapters.RequestData, respData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(bidReq *openrtb2.BidRequest, reqData *adapters.RequestData, respData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if adapters.IsResponseStatusCodeNoContent(respData) {
 		return nil, nil
 	}
@@ -125,8 +125,8 @@ func Builder(bidderName openrtb_ext.BidderName, cfg config.Adapter, serverCfg co
 		return nil, errors.New("endpoint is empty")
 	}
 
-	bidder := &LoopmeAdapter{
-		Endpoint: cfg.Endpoint,
+	bidder := &adapter{
+		endpoint: cfg.Endpoint,
 	}
 	return bidder, nil
 }
