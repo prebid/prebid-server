@@ -83,8 +83,8 @@ func TestJsonSampleRequests(t *testing.T) {
 			"account-malformed",
 		},
 		{
-			"Asserts we return 503s on requests with blacklisted accounts and apps.",
-			"blacklisted",
+			"Asserts we return 503s on requests with blocked apps.",
+			"blocked",
 		},
 		{
 			"Assert that requests that come with no user id nor app id return error if the `AccountRequired` field in the `config.Configuration` structure is set to true",
@@ -169,8 +169,8 @@ func runJsonBasedTest(t *testing.T, filename, desc string) {
 	// Build endpoint for testing. If no error, run test case
 	cfg := &config.Configuration{MaxRequestSize: maxSize}
 	if test.Config != nil {
-		cfg.BlacklistedApps = test.Config.BlacklistedApps
-		cfg.BlacklistedAppMap = test.Config.getBlacklistedAppMap()
+		cfg.BlockedApps = test.Config.BlockedApps
+		cfg.BlockedAppsLookup = test.Config.getBlockedAppLookup()
 		cfg.AccountRequired = test.Config.AccountRequired
 	}
 	cfg.MarshalAccountDefaults()

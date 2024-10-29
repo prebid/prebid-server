@@ -451,7 +451,7 @@ metrics:
     adapter_buyeruid_scrubbed: false
     adapter_gdpr_request_blocked: true
     account_modules_metrics: true
-blacklisted_apps: ["spamAppID","sketchy-app-id"]
+blocked_apps: ["spamAppID","sketchy-app-id"]
 account_required: true
 auto_gen_source_tid: false
 certificates_file: /etc/ssl/cert.pem
@@ -714,12 +714,12 @@ func TestFullConfig(t *testing.T) {
 	cmpBools(t, "lmt.enforce", true, cfg.LMT.Enforce)
 
 	//Assert the NonStandardPublishers was correctly unmarshalled
-	cmpStrings(t, "blacklisted_apps", "spamAppID", cfg.BlacklistedApps[0])
-	cmpStrings(t, "blacklisted_apps", "sketchy-app-id", cfg.BlacklistedApps[1])
+	cmpStrings(t, "blocked_apps", "spamAppID", cfg.BlockedApps[0])
+	cmpStrings(t, "blocked_apps", "sketchy-app-id", cfg.BlockedApps[1])
 
-	//Assert the BlacklistedAppMap hash table was built correctly
-	for i := 0; i < len(cfg.BlacklistedApps); i++ {
-		cmpBools(t, "cfg.BlacklistedAppMap", true, cfg.BlacklistedAppMap[cfg.BlacklistedApps[i]])
+	//Assert the BlockedAppsLookup hash table was built correctly
+	for i := 0; i < len(cfg.BlockedApps); i++ {
+		cmpBools(t, "cfg.BlockedAppsLookup", true, cfg.BlockedAppsLookup[cfg.BlockedApps[i]])
 	}
 
 	//Assert purpose VendorExceptionMap hash tables were built correctly

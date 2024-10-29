@@ -12,3 +12,6 @@ userSync:
     url: "https://rtb.gumgum.com/usync/prbds2s?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&r={{.RedirectURL}}"
     userMacro: ""
     # gumgum appends the user id to end of the redirect url and does not utilize a macro
+openrtb:
+  version: 2.6
+  gpp-supported: true
