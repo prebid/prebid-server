@@ -534,7 +534,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		return
 	}
 
-	// upgrade to 2.6 here
+	// normalize to openrtb 2.6
 	if err := openrtb_ext.ConvertUpTo26(req); err != nil {
 		errs = []error{err}
 		return
@@ -1271,20 +1271,18 @@ func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases 
 	}
 
 	// Check Universal User ID
-	if req.User.EIDs != nil {
-		for eidIndex, eid := range req.User.EIDs {
-			if eid.Source == "" {
-				return append(errL, fmt.Errorf("request.user.eids[%d] missing required field: \"source\"", eidIndex))
-			}
+	for eidIndex, eid := range req.User.EIDs {
+		if eid.Source == "" {
+			return append(errL, fmt.Errorf("request.user.eids[%d] missing required field: \"source\"", eidIndex))
+		}
 
-			if len(eid.UIDs) == 0 {
-				return append(errL, fmt.Errorf("request.user.eids[%d].uids must contain at least one element or be undefined", eidIndex))
-			}
+		if len(eid.UIDs) == 0 {
+			return append(errL, fmt.Errorf("request.user.eids[%d].uids must contain at least one element or be undefined", eidIndex))
+		}
 
-			for uidIndex, uid := range eid.UIDs {
-				if uid.ID == "" {
-					return append(errL, fmt.Errorf("request.user.eids[%d].uids[%d] missing required field: \"id\"", eidIndex, uidIndex))
-				}
+		for uidIndex, uid := range eid.UIDs {
+			if uid.ID == "" {
+				return append(errL, fmt.Errorf("request.user.eids[%d].uids[%d] missing required field: \"id\"", eidIndex, uidIndex))
 			}
 		}
 	}
@@ -1313,11 +1311,10 @@ func validateRegs(req *openrtb_ext.RequestWrapper, gpp gpplib.GppContainer) []er
 				WarningCode: errortypes.InvalidPrivacyConsentWarningCode})
 		}
 	}
-	if req.BidRequest.Regs.GDPR != nil {
-		reqGDPR := req.BidRequest.Regs.GDPR
-		if reqGDPR != nil && *reqGDPR != 0 && *reqGDPR != 1 {
-			return append(errL, errors.New("request.regs.gdpr must be either 0 or 1"))
-		}
+
+	reqGDPR := req.BidRequest.Regs.GDPR
+	if reqGDPR != nil && *reqGDPR != 0 && *reqGDPR != 1 {
+		return append(errL, errors.New("request.regs.gdpr must be either 0 or 1"))
 	}
 	return errL
 }

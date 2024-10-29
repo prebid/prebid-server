@@ -104,7 +104,6 @@ func (b *MacroProvider) populateRequestMacros(reqWrapper *openrtb_ext.RequestWra
 		}
 	}
 
-	//is this happening after upconvert?
 	if reqWrapper.User != nil && len(reqWrapper.User.Consent) > 0 {
 		b.macros[MacroKeyConsent] = reqWrapper.User.Consent
 	}

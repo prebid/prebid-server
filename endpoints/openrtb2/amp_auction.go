@@ -510,9 +510,8 @@ func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openr
 	// move to using the request wrapper
 	req = &openrtb_ext.RequestWrapper{BidRequest: reqNormal}
 
-	// upgrade to 2.6 here
-	err := openrtb_ext.ConvertUpTo26(req)
-	if err != nil {
+	// normalize to openrtb 2.6
+	if err := openrtb_ext.ConvertUpTo26(req); err != nil {
 		errs = append(errs, err)
 	}
 	if errortypes.ContainsFatalError(errs) {
