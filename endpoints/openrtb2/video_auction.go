@@ -411,9 +411,9 @@ func handleError(labels *metrics.Labels, w http.ResponseWriter, errL []error, vo
 	var status int = http.StatusInternalServerError
 	for _, er := range errL {
 		erVal := errortypes.ReadCode(er)
-		if erVal == errortypes.BlacklistedAppErrorCode || erVal == errortypes.AccountDisabledErrorCode {
+		if erVal == errortypes.BlockedAppErrorCode || erVal == errortypes.AccountDisabledErrorCode {
 			status = http.StatusServiceUnavailable
-			labels.RequestStatus = metrics.RequestStatusBlacklisted
+			labels.RequestStatus = metrics.RequestStatusBlockedApp
 			break
 		} else if erVal == errortypes.AcctRequiredErrorCode {
 			status = http.StatusBadRequest
@@ -813,8 +813,8 @@ func (deps *endpointDeps) validateVideoRequest(req *openrtb_ext.BidRequestVideo)
 		errL = append(errL, err)
 	} else if req.App != nil {
 		if req.App.ID != "" {
-			if _, found := deps.cfg.BlacklistedAppMap[req.App.ID]; found {
-				err := &errortypes.BlacklistedApp{Message: fmt.Sprintf("Prebid-server does not process requests from App ID: %s", req.App.ID)}
+			if _, found := deps.cfg.BlockedAppsLookup[req.App.ID]; found {
+				err := &errortypes.BlockedApp{Message: fmt.Sprintf("Prebid-server does not process requests from App ID: %s", req.App.ID)}
 				errL = append(errL, err)
 				return errL, podErrors
 			}

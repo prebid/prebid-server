@@ -234,7 +234,7 @@ const (
 	RequestStatusBadInput         RequestStatus = "badinput"
 	RequestStatusErr              RequestStatus = "err"
 	RequestStatusNetworkErr       RequestStatus = "networkerr"
-	RequestStatusBlacklisted      RequestStatus = "blacklistedacctorapp"
+	RequestStatusBlockedApp       RequestStatus = "blockedapp"
 	RequestStatusQueueTimeout     RequestStatus = "queuetimeout"
 	RequestStatusAccountConfigErr RequestStatus = "acctconfigerr"
 )
@@ -245,7 +245,7 @@ func RequestStatuses() []RequestStatus {
 		RequestStatusBadInput,
 		RequestStatusErr,
 		RequestStatusNetworkErr,
-		RequestStatusBlacklisted,
+		RequestStatusBlockedApp,
 		RequestStatusQueueTimeout,
 		RequestStatusAccountConfigErr,
 	}
