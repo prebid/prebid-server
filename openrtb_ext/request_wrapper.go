@@ -95,6 +95,12 @@ func (rw *RequestWrapper) GetImp() []*ImpWrapper {
 
 func (rw *RequestWrapper) SetImp(imps []*ImpWrapper) {
 	rw.impWrappers = imps
+	imparr := make([]openrtb2.Imp, len(imps))
+	for i, iw := range imps {
+		imparr[i] = *iw.Imp
+		iw.Imp = &imparr[i]
+	}
+	rw.Imp = imparr
 	rw.impWrappersAccessed = true
 }
 
@@ -239,6 +245,7 @@ func (rw *RequestWrapper) rebuildImp() error {
 			return err
 		}
 		rw.Imp[i] = *rw.impWrappers[i].Imp
+		rw.impWrappers[i].Imp = &rw.Imp[i]
 	}
 
 	return nil
@@ -392,6 +399,8 @@ func (rw *RequestWrapper) rebuildSourceExt() error {
 	return nil
 }
 
+// Clone clones the request wrapper exts and the imp wrappers
+// the cloned imp wrappers are pointing to the bid request imps
 func (rw *RequestWrapper) Clone() *RequestWrapper {
 	if rw == nil {
 		return nil
@@ -402,6 +411,26 @@ func (rw *RequestWrapper) Clone() *RequestWrapper {
 		newImpWrappers[i] = iw.Clone()
 	}
 	clone.impWrappers = newImpWrappers
+	clone.userExt = rw.userExt.Clone()
+	clone.deviceExt = rw.deviceExt.Clone()
+	clone.requestExt = rw.requestExt.Clone()
+	clone.appExt = rw.appExt.Clone()
+	clone.regExt = rw.regExt.Clone()
+	clone.siteExt = rw.siteExt.Clone()
+	clone.doohExt = rw.doohExt.Clone()
+	clone.sourceExt = rw.sourceExt.Clone()
+
+	return &clone
+}
+
+func (rw *RequestWrapper) CloneAndClearImpWrappers() *RequestWrapper {
+	if rw == nil {
+		return nil
+	}
+	rw.impWrappersAccessed = false
+
+	clone := *rw
+	clone.impWrappers = nil
 	clone.userExt = rw.userExt.Clone()
 	clone.deviceExt = rw.deviceExt.Clone()
 	clone.requestExt = rw.requestExt.Clone()

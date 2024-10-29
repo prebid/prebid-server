@@ -35,7 +35,7 @@ var reqWrapper = &openrtb_ext.RequestWrapper{
 		Device: &openrtb2.Device{
 			Lmt: ptrutil.ToPtr(int8(1)),
 		},
-		User: &openrtb2.User{Ext: []byte(`{"consent":"1" }`)},
+		User: &openrtb2.User{Consent: "1", Ext: []byte(`{"consent":"2" }`)},
 		Ext:  []byte(`{"prebid":{"channel": {"name":"test1"},"macros":{"CUSTOMMACR1":"value1"}}}`),
 	},
 }

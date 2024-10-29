@@ -311,8 +311,8 @@ func TestPrivacyReader(t *testing.T) {
 					},
 					expected: expectedResults{
 						policyWriter: gdpr.ConsentWriter{
-							Consent:    "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA",
-							RegExtGDPR: &int8One,
+							Consent: "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA",
+							GDPR:    &int8One,
 						},
 						warning: nil,
 					},
@@ -378,8 +378,8 @@ func TestPrivacyReader(t *testing.T) {
 					},
 					expected: expectedResults{
 						policyWriter: gdpr.ConsentWriter{
-							Consent:    "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA",
-							RegExtGDPR: &int8One,
+							Consent: "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA",
+							GDPR:    &int8One,
 						},
 						warning: nil,
 					},
@@ -400,8 +400,8 @@ func TestPrivacyReader(t *testing.T) {
 					},
 					expected: expectedResults{
 						policyWriter: gdpr.ConsentWriter{
-							Consent:    "INVALID_GDPR",
-							RegExtGDPR: &int8One,
+							Consent: "INVALID_GDPR",
+							GDPR:    &int8One,
 						},
 						warning: &errortypes.Warning{
 							Message:     "Consent string 'INVALID_GDPR' is not a valid TCF2 consent string.",
@@ -420,8 +420,8 @@ func TestPrivacyReader(t *testing.T) {
 					},
 					expected: expectedResults{
 						policyWriter: gdpr.ConsentWriter{
-							Consent:    "INVALID_GDPR",
-							RegExtGDPR: &int8Zero,
+							Consent: "INVALID_GDPR",
+							GDPR:    &int8Zero,
 						},
 						warning: &errortypes.Warning{
 							Message:     "Consent string 'INVALID_GDPR' is not a valid TCF2 consent string.",
@@ -440,8 +440,8 @@ func TestPrivacyReader(t *testing.T) {
 					},
 					expected: expectedResults{
 						policyWriter: gdpr.ConsentWriter{
-							Consent:    "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA",
-							RegExtGDPR: &int8Zero,
+							Consent: "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA",
+							GDPR:    &int8Zero,
 						},
 						warning: nil,
 					},
@@ -457,8 +457,8 @@ func TestPrivacyReader(t *testing.T) {
 					},
 					expected: expectedResults{
 						policyWriter: gdpr.ConsentWriter{
-							Consent:    "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA",
-							RegExtGDPR: &int8One,
+							Consent: "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA",
+							GDPR:    &int8One,
 						},
 						warning: nil,
 					},
@@ -473,8 +473,8 @@ func TestPrivacyReader(t *testing.T) {
 					},
 					expected: expectedResults{
 						policyWriter: gdpr.ConsentWriter{
-							Consent:    "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA",
-							RegExtGDPR: &int8One,
+							Consent: "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA",
+							GDPR:    &int8One,
 						},
 						warning: nil,
 					},
@@ -559,8 +559,8 @@ func TestBuildGdprTCF2ConsentWriter(t *testing.T) {
 			desc:     "gdpr_applies not set",
 			inParams: Params{Consent: consentString},
 			expectedWriter: gdpr.ConsentWriter{
-				Consent:    consentString,
-				RegExtGDPR: &int8One,
+				Consent: consentString,
+				GDPR:    &int8One,
 			},
 		},
 		{
@@ -570,8 +570,8 @@ func TestBuildGdprTCF2ConsentWriter(t *testing.T) {
 				GdprApplies: &boolFalse,
 			},
 			expectedWriter: gdpr.ConsentWriter{
-				Consent:    consentString,
-				RegExtGDPR: &int8Zero,
+				Consent: consentString,
+				GDPR:    &int8Zero,
 			},
 		},
 		{
@@ -581,8 +581,8 @@ func TestBuildGdprTCF2ConsentWriter(t *testing.T) {
 				GdprApplies: &boolTrue,
 			},
 			expectedWriter: gdpr.ConsentWriter{
-				Consent:    consentString,
-				RegExtGDPR: &int8One,
+				Consent: consentString,
+				GDPR:    &int8One,
 			},
 		},
 	}

@@ -510,6 +510,14 @@ func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openr
 	// move to using the request wrapper
 	req = &openrtb_ext.RequestWrapper{BidRequest: reqNormal}
 
+	// normalize to openrtb 2.6
+	if err := openrtb_ext.ConvertUpTo26(req); err != nil {
+		errs = append(errs, err)
+	}
+	if errortypes.ContainsFatalError(errs) {
+		return
+	}
+
 	// Need to ensure cache and targeting are turned on
 	e = initAmpTargetingAndCache(req)
 	if errs = append(errs, e...); errortypes.ContainsFatalError(errs) {
