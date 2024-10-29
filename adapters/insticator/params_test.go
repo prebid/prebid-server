@@ -46,6 +46,12 @@ var validParams = []string{
 }
 
 var invalidParams = []string{
-	`{"publisherId": "inview"}`,
-	`{"publisherId": 123, "adUnitId": "fakesiteid2"}`,
+	`{"publisherId": "inview"}`,                        // Missing adUnitId
+	`{"publisherId": 123, "adUnitId": "fakesiteid2"}`,  // publisherId should be a string
+	`{"adUnitId": "fakesiteid3"}`,                      // Missing publisherId
+	`{"publisherId": "inview", "adUnitId": 456}`,       // adUnitId should be a string
+	`{"publisherId": null, "adUnitId": "fakesiteid5"}`, // Null publisherId
+	`{"publisherId": "inview", "adUnitId": null}`,      // Null adUnitId
+	`{"publisherId": true, "adUnitId": "fakesiteid6"}`, // publisherId should be a string, got boolean
+	`{"publisherId": "inview", "adUnitId": [1, 2, 3]}`, // adUnitId should be a string, got array
 }
