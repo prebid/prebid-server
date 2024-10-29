@@ -361,7 +361,7 @@ const (
 	SyncerCookieSyncOK               SyncerCookieSyncStatus = "ok"
 	SyncerCookieSyncPrivacyBlocked   SyncerCookieSyncStatus = "privacy_blocked"
 	SyncerCookieSyncAlreadySynced    SyncerCookieSyncStatus = "already_synced"
-	SyncerCookieSyncTypeNotSupported SyncerCookieSyncStatus = "type_not_supported"
+	SyncerCookieSyncRejectedByFilter SyncerCookieSyncStatus = "rejected_by_filter"
 )
 
 // SyncerRequestStatuses returns possible syncer statuses.
@@ -370,7 +370,7 @@ func SyncerRequestStatuses() []SyncerCookieSyncStatus {
 		SyncerCookieSyncOK,
 		SyncerCookieSyncPrivacyBlocked,
 		SyncerCookieSyncAlreadySynced,
-		SyncerCookieSyncTypeNotSupported,
+		SyncerCookieSyncRejectedByFilter,
 	}
 }
 

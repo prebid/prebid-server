@@ -402,8 +402,8 @@ func (c *cookieSyncEndpoint) writeSyncerMetrics(biddersEvaluated []usersync.Bidd
 			c.metrics.RecordSyncerRequest(bidder.SyncerKey, metrics.SyncerCookieSyncPrivacyBlocked)
 		case usersync.StatusAlreadySynced:
 			c.metrics.RecordSyncerRequest(bidder.SyncerKey, metrics.SyncerCookieSyncAlreadySynced)
-		case usersync.StatusTypeNotSupported:
-			c.metrics.RecordSyncerRequest(bidder.SyncerKey, metrics.SyncerCookieSyncTypeNotSupported)
+		case usersync.StatusRejectedByFilter:
+			c.metrics.RecordSyncerRequest(bidder.SyncerKey, metrics.SyncerCookieSyncRejectedByFilter)
 		}
 	}
 }
@@ -524,8 +524,8 @@ func getDebugMessage(status usersync.Status) string {
 		return "Unsupported bidder"
 	case usersync.StatusUnconfiguredBidder:
 		return "No sync config"
-	case usersync.StatusTypeNotSupported:
-		return "Type not supported"
+	case usersync.StatusRejectedByFilter:
+		return "Rejected by request filter"
 	case usersync.StatusBlockedByDisabledUsersync:
 		return "Sync disabled by config"
 	}
