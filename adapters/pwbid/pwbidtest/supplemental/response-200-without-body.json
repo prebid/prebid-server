@@ -45,7 +45,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "unexpected end of JSON input",
+      "value": "expect { or n, but found ",
       "comparison": "literal"
     }
   ]
