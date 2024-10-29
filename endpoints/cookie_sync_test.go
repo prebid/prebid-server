@@ -693,7 +693,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			givenCCPAEnabled: true,
 			expectedPrivacy:  macros.UserSyncPrivacy{},
 			expectedRequest: usersync.Request{
-				Limit: math.MaxInt32,
+				Limit: math.MaxInt,
 				Privacy: usersyncPrivacy{
 					gdprPermissions: &fakePermissions{},
 					activityRequest: emptyActivityPoliciesRequest,
@@ -722,7 +722,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 					Enabled:        true,
 					PriorityGroups: [][]string{{"a", "b", "c"}},
 				},
-				Limit: math.MaxInt32,
+				Limit: math.MaxInt,
 				Privacy: usersyncPrivacy{
 					gdprPermissions: &fakePermissions{},
 					activityRequest: emptyActivityPoliciesRequest,
@@ -751,7 +751,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 					Enabled:        false,
 					PriorityGroups: [][]string{{"a", "b", "c"}},
 				},
-				Limit: math.MaxInt32,
+				Limit: math.MaxInt,
 				Privacy: usersyncPrivacy{
 					gdprPermissions: &fakePermissions{},
 					activityRequest: emptyActivityPoliciesRequest,
@@ -780,7 +780,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 					Enabled:        false,
 					PriorityGroups: [][]string{{"a", "b", "c"}},
 				},
-				Limit: math.MaxInt32,
+				Limit: math.MaxInt,
 				Privacy: usersyncPrivacy{
 					gdprPermissions: &fakePermissions{},
 					activityRequest: emptyActivityPoliciesRequest,
@@ -809,7 +809,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 					Enabled:        false,
 					PriorityGroups: [][]string{{"a", "b", "c"}},
 				},
-				Limit: math.MaxInt32,
+				Limit: math.MaxInt,
 				Privacy: usersyncPrivacy{
 					gdprPermissions: &fakePermissions{},
 					activityRequest: emptyActivityPoliciesRequest,
@@ -838,7 +838,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 					Enabled:        true,
 					PriorityGroups: [][]string{{"a", "b", "c"}},
 				},
-				Limit: math.MaxInt32,
+				Limit: math.MaxInt,
 				Privacy: usersyncPrivacy{
 					gdprPermissions: &fakePermissions{},
 					activityRequest: emptyActivityPoliciesRequest,
@@ -867,7 +867,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 					Enabled:        true,
 					PriorityGroups: [][]string{{"a", "b", "c"}},
 				},
-				Limit: math.MaxInt32,
+				Limit: math.MaxInt,
 				Privacy: usersyncPrivacy{
 					gdprPermissions: &fakePermissions{},
 					activityRequest: emptyActivityPoliciesRequest,
@@ -886,7 +886,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			givenCCPAEnabled: true,
 			expectedPrivacy:  macros.UserSyncPrivacy{},
 			expectedRequest: usersync.Request{
-				Limit: math.MaxInt32,
+				Limit: math.MaxInt,
 				Privacy: usersyncPrivacy{
 					gdprPermissions: &fakePermissions{},
 					activityRequest: emptyActivityPoliciesRequest,
@@ -907,7 +907,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 				USPrivacy: "1NYN",
 			},
 			expectedRequest: usersync.Request{
-				Limit: math.MaxInt32,
+				Limit: math.MaxInt,
 				Privacy: usersyncPrivacy{
 					gdprPermissions: &fakePermissions{},
 					activityRequest: emptyActivityPoliciesRequest,
@@ -949,7 +949,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 				GDPR: "0",
 			},
 			expectedRequest: usersync.Request{
-				Limit: math.MaxInt32,
+				Limit: math.MaxInt,
 				Privacy: usersyncPrivacy{
 					gdprPermissions: &fakePermissions{},
 					activityRequest: emptyActivityPoliciesRequest,
@@ -977,7 +977,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 				GDPR: "",
 			},
 			expectedRequest: usersync.Request{
-				Limit: math.MaxInt32,
+				Limit: math.MaxInt,
 				Privacy: usersyncPrivacy{
 					gdprPermissions: &fakePermissions{},
 					activityRequest: emptyActivityPoliciesRequest,
@@ -1152,7 +1152,7 @@ func TestGetEffectiveLimit(t *testing.T) {
 	int0 := ptrutil.ToPtr(0)
 	int30 := ptrutil.ToPtr(30)
 	int40 := ptrutil.ToPtr(40)
-	intTooLarge := ptrutil.ToPtr(math.MaxInt32 + 1)
+	intMax := ptrutil.ToPtr(math.MaxInt)
 
 	tests := []struct {
 		name          string
@@ -1164,19 +1164,19 @@ func TestGetEffectiveLimit(t *testing.T) {
 			name:          "nil",
 			reqLimit:      nil,
 			defaultLimit:  nil,
-			expectedLimit: math.MaxInt32,
+			expectedLimit: math.MaxInt,
 		},
 		{
 			name:          "req_limit_negative",
 			reqLimit:      intNegative,
 			defaultLimit:  nil,
-			expectedLimit: math.MaxInt32,
+			expectedLimit: math.MaxInt,
 		},
 		{
 			name:          "req_limit_zero",
 			reqLimit:      int0,
 			defaultLimit:  nil,
-			expectedLimit: math.MaxInt32,
+			expectedLimit: math.MaxInt,
 		},
 		{
 			name:          "req_limit_in_range",
@@ -1185,22 +1185,22 @@ func TestGetEffectiveLimit(t *testing.T) {
 			expectedLimit: 30,
 		},
 		{
-			name:          "req_limit_too_large",
-			reqLimit:      intTooLarge,
+			name:          "req_limit_at_max",
+			reqLimit:      intMax,
 			defaultLimit:  nil,
-			expectedLimit: math.MaxInt32,
+			expectedLimit: math.MaxInt,
 		},
 		{
 			name:          "default_limit_negative",
 			reqLimit:      nil,
 			defaultLimit:  intNegative,
-			expectedLimit: math.MaxInt32,
+			expectedLimit: math.MaxInt,
 		},
 		{
 			name:          "default_limit_zero",
 			reqLimit:      nil,
 			defaultLimit:  intNegative,
-			expectedLimit: math.MaxInt32,
+			expectedLimit: math.MaxInt,
 		},
 		{
 			name:          "default_limit_in_range",
@@ -1209,10 +1209,10 @@ func TestGetEffectiveLimit(t *testing.T) {
 			expectedLimit: 30,
 		},
 		{
-			name:          "default_limit_too_large",
+			name:          "default_limit_at_max",
 			reqLimit:      nil,
-			defaultLimit:  intTooLarge,
-			expectedLimit: math.MaxInt32,
+			defaultLimit:  intMax,
+			expectedLimit: math.MaxInt,
 		},
 		{
 			name:          "both_in_range",
@@ -1234,7 +1234,7 @@ func TestGetEffectiveMaxLimit(t *testing.T) {
 	intNegative := ptrutil.ToPtr(-1)
 	int0 := ptrutil.ToPtr(0)
 	int30 := ptrutil.ToPtr(30)
-	intTooLarge := ptrutil.ToPtr(math.MaxInt32 + 1)
+	intMax := ptrutil.ToPtr(math.MaxInt)
 
 	tests := []struct {
 		name          string
@@ -1244,17 +1244,17 @@ func TestGetEffectiveMaxLimit(t *testing.T) {
 		{
 			name:          "nil",
 			maxLimit:      nil,
-			expectedLimit: math.MaxInt32,
+			expectedLimit: math.MaxInt,
 		},
 		{
 			name:          "req_limit_negative",
 			maxLimit:      intNegative,
-			expectedLimit: math.MaxInt32,
+			expectedLimit: math.MaxInt,
 		},
 		{
 			name:          "req_limit_zero",
 			maxLimit:      int0,
-			expectedLimit: math.MaxInt32,
+			expectedLimit: math.MaxInt,
 		},
 		{
 			name:          "req_limit_in_range",
@@ -1263,8 +1263,8 @@ func TestGetEffectiveMaxLimit(t *testing.T) {
 		},
 		{
 			name:          "req_limit_too_large",
-			maxLimit:      intTooLarge,
-			expectedLimit: math.MaxInt32,
+			maxLimit:      intMax,
+			expectedLimit: math.MaxInt,
 		},
 	}
 
@@ -1282,8 +1282,7 @@ func TestSetLimit(t *testing.T) {
 	int10 := ptrutil.ToPtr(10)
 	int20 := ptrutil.ToPtr(20)
 	int30 := ptrutil.ToPtr(30)
-	intMax := ptrutil.ToPtr(math.MaxInt32)
-	intTooLarge := ptrutil.ToPtr(math.MaxInt32 + 1)
+	intMax := ptrutil.ToPtr(math.MaxInt)
 
 	tests := []struct {
 		name            string
@@ -1365,9 +1364,9 @@ func TestSetLimit(t *testing.T) {
 			},
 		},
 		{
-			name: "limit_too_large",
+			name: "limit_at_max",
 			givenRequest: cookieSyncRequest{
-				Limit: intTooLarge,
+				Limit: intMax,
 			},
 			givenAccount: &config.Account{
 				CookieSync: config.CookieSync{},

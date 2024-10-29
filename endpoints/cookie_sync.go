@@ -30,7 +30,6 @@ import (
 	"github.com/prebid/prebid-server/v2/stored_requests"
 	"github.com/prebid/prebid-server/v2/usersync"
 	"github.com/prebid/prebid-server/v2/util/jsonutil"
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
 	stringutil "github.com/prebid/prebid-server/v2/util/stringutil"
 	"github.com/prebid/prebid-server/v2/util/timeutil"
 )
@@ -176,6 +175,11 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, ma
 	tcf2Cfg := c.privacyConfig.tcf2ConfigBuilder(c.privacyConfig.gdprConfig.TCF2, account.GDPR)
 	gdprPerms := c.privacyConfig.gdprPermissionsBuilder(tcf2Cfg, gdprRequestInfo)
 
+	limit := math.MaxInt
+	if request.Limit != nil {
+		limit = *request.Limit
+	}
+
 	rx := usersync.Request{
 		Bidders: request.Bidders,
 		Cooperative: usersync.Cooperative{
@@ -183,7 +187,7 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, ma
 			PriorityGroups: c.config.UserSync.PriorityGroups,
 		},
 		Debug: request.Debug,
-		Limit: *request.Limit,
+		Limit: limit,
 		Privacy: usersyncPrivacy{
 			gdprPermissions:  gdprPerms,
 			ccpaParsedPolicy: ccpaParsedPolicy,
@@ -299,21 +303,26 @@ func (c *cookieSyncEndpoint) setLimit(request cookieSyncRequest, cookieSyncConfi
 
 func getEffectiveLimit(reqLimit *int, defaultLimit *int) int {
 	limit := reqLimit
-	if reqLimit == nil && defaultLimit != nil {
+
+	if limit == nil {
 		limit = defaultLimit
 	}
-	if limit == nil || *limit <= 0 || *limit > math.MaxInt32 {
-		limit = ptrutil.ToPtr(math.MaxInt32)
+
+	if limit != nil && *limit > 0 {
+		return *limit
 	}
-	return *limit
+
+	return math.MaxInt
 }
 
 func getEffectiveMaxLimit(maxLimit *int) int {
 	limit := maxLimit
-	if maxLimit == nil || *maxLimit <= 0 || *limit > math.MaxInt32 {
-		limit = ptrutil.ToPtr(math.MaxInt32)
+
+	if limit != nil && *limit > 0 {
+		return *limit
 	}
-	return *limit
+
+	return math.MaxInt
 }
 
 func (c *cookieSyncEndpoint) setCooperativeSync(request cookieSyncRequest, cookieSyncConfig config.CookieSync) cookieSyncRequest {
