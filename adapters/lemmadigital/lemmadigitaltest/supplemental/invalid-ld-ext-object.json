@@ -1,7 +1,7 @@
 {
   "expectedMakeRequestsErrors": [{
-    "value": "Invalid imp.ext for impression index 0. Error Infomation: expect { or n, but found null end of string character",
-    "comparison": "literal"
+    "value": "Invalid imp.ext for impression index 0. Error Infomation: expect { or n, but found",
+    "comparison": "regex"
   }],
   "mockBidRequest": {
     "app": {

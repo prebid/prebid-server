@@ -28,8 +28,8 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "extractOrg: unmarshal ImpExtRise: expect { or n, but found null end of string character",
-      "comparison": "literal"
+      "value": "extractOrg: unmarshal ImpExtRise: expect { or n, but found",
+      "comparison": "regex"
     }
   ]
 }

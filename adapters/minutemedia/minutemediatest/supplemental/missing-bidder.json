@@ -41,8 +41,8 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "failed to extract org: failed to unmarshal ImpExtMinuteMedia: expect { or n, but found null end of string character",
-      "comparison": "literal"
+      "value": "failed to extract org: failed to unmarshal ImpExtMinuteMedia: expect { or n, but found",
+      "comparison": "regex"
     }
   ]
 }

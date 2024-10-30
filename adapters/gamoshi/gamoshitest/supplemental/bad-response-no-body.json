@@ -51,7 +51,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "bad server response: expect { or n, but found null end of string character. ",
+      "value": "bad server response: expect { or n, but found",
       "comparison": "regex"
     }
   ]

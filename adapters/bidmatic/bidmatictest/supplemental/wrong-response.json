@@ -58,8 +58,8 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "error while decoding response, err: expect { or n, but found null end of string character",
-      "comparison": "literal"
+      "value": "error while decoding response, err: expect { or n, but found",
+      "comparison": "regex"
     }
   ]
 }

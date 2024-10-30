@@ -21,8 +21,8 @@
 
   "expectedMakeRequestsErrors": [
     {
-      "value": "Cannot Resolve host or sourceId: expect { or n, but found null end of string character",
-      "comparison": "literal"
+      "value": "Cannot Resolve host or sourceId: expect { or n, but found",
+      "comparison": "regex"
     } 
   ]
 

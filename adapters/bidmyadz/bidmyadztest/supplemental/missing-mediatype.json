@@ -116,8 +116,8 @@
 
   "expectedMakeBidsErrors": [
     {
-      "value": "BidExt parsing error. expect { or n, but found null end of string character",
-      "comparison": "literal"
+      "value": "BidExt parsing error. expect { or n, but found",
+      "comparison": "regex"
     }
   ]
 }

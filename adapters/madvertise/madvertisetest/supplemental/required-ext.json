@@ -12,8 +12,8 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "expect { or n, but found null end of string character; ImpID=test-imp-id-1",
-      "comparison": "literal"
+      "value": "expect { or n, but found",
+      "comparison": "regex"
     }
   ]
 }

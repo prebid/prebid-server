@@ -14,7 +14,7 @@
     },
     "expectedMakeRequestsErrors": [
         {
-            "value": "expect { or n, but found null end of string character",
+            "value": "expect { or n, but found",
             "comparison": "regex"
         }
     ]

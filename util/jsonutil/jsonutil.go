@@ -205,18 +205,6 @@ func tryExtractErrorMessage(err error) string {
 		return "cannot unmarshal " + operationStack[len(operationStack)-2] + ": " + msg[msgStartIndex+2:msgEndIndex]
 	}
 
-	modifiedMsg := msg[msgStartIndex+2 : msgEndIndex]
-	idx := strings.LastIndex(modifiedMsg, " ")
-	invalidChars := map[string]string{
-		"\x00": "null end of string character",
-	}
-	if idx != -1 {
-		lastChar := modifiedMsg[idx+1:]
-		if v, ok := invalidChars[lastChar]; ok {
-			return modifiedMsg[0:idx] + " " + v
-		}
-	}
-
 	return msg[msgStartIndex+2 : msgEndIndex]
 }
 
