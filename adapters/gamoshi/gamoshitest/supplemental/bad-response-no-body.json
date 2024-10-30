@@ -52,7 +52,7 @@
   "expectedMakeBidsErrors": [
     {
       "value": "bad server response: expect { or n, but found",
-      "comparison": "regex"
+      "comparison": "startswith"
     }
   ]
 }

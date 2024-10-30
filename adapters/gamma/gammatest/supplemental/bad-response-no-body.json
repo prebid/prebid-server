@@ -40,8 +40,8 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "bad server response: &{%!d\\(string=expect { or n, but found",
-      "comparison": "regex"
+      "value": "bad server response: &{%!d(string=expect { or n, but found",
+      "comparison": "startswith"
     }
   ]
 }

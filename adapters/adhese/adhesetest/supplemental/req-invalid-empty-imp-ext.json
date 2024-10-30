@@ -32,7 +32,7 @@
   "expectedMakeRequestsErrors": [
     {
       "value": "Request could not be parsed as ExtImpAdhese due to: expect { or n, but found",
-      "comparison": "regex"
+      "comparison": "startswith"
     }
   ]
 }

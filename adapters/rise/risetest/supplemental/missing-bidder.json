@@ -29,7 +29,7 @@
   "expectedMakeRequestsErrors": [
     {
       "value": "extractOrg: unmarshal ImpExtRise: expect { or n, but found",
-      "comparison": "regex"
+      "comparison": "startswith"
     }
   ]
 }

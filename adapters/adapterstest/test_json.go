@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -272,6 +273,10 @@ func assertErrorList(t *testing.T, description string, actual []error, expected 
 		} else if expected[i].Comparison == "regex" {
 			if matched, _ := regexp.MatchString(expected[i].Value, actual[i].Error()); !matched {
 				t.Errorf(`%s error[%d] had wrong message. Expected match with regex "%s", got "%s"`, description, i, expected[i].Value, actual[i].Error())
+			}
+		} else if expected[i].Comparison == "startswith" {
+			if !strings.HasPrefix(actual[i].Error(), expected[i].Value) {
+				t.Errorf(`%s error[%d] had wrong message. Expected to start with "%s", got "%s"`, description, i, expected[i].Value, actual[i].Error())
 			}
 		} else {
 			t.Fatalf(`invalid comparison type "%s"`, expected[i].Comparison)

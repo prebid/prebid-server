@@ -42,7 +42,7 @@
   "expectedMakeRequestsErrors": [
     {
       "value": "failed to extract org: failed to unmarshal ImpExtMinuteMedia: expect { or n, but found",
-      "comparison": "regex"
+      "comparison": "startswith"
     }
   ]
 }

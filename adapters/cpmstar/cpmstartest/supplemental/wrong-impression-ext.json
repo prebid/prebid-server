@@ -20,7 +20,7 @@
   "expectedMakeRequestsErrors": [
     {
       "value": "cannot unmarshal openrtb_ext.ExtImpCpmstar.PoolId: unexpected character",
-      "comparison": "regex"
+      "comparison": "startswith"
     }
   ]
 }

@@ -85,7 +85,7 @@
     "expectedBidResponses": [],
     "expectedMakeBidsErrors": [{
           "value": "cannot unmarshal openrtb2.Bid.W: unexpected character",
-          "comparison": "regex"
+          "comparison": "startswith"
         }
     ]
 }

@@ -117,7 +117,7 @@
   "expectedMakeBidsErrors": [
     {
       "value": "BidExt parsing error. expect { or n, but found",
-      "comparison": "regex"
+      "comparison": "startswith"
     }
   ]
 }

@@ -22,7 +22,7 @@
     "expectedMakeRequestsErrors": [
       {
         "value": "Impression id=test-banner-imp-id has an Error: expect { or n, but found",
-        "comparison": "regex"
+        "comparison": "startswith"
       }
     ]
   }

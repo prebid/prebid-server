@@ -22,7 +22,7 @@
   "expectedMakeRequestsErrors": [
     {
       "value": "Cannot Resolve host or sourceId: expect { or n, but found",
-      "comparison": "regex"
+      "comparison": "startswith"
     } 
   ]
 

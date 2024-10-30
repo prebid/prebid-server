@@ -16,7 +16,7 @@
   "expectedMakeRequestsErrors": [
     {
       "value": "invalid imp.ext, expect { or n, but found",
-      "comparison": "regex"
+      "comparison": "startswith"
     }
   ]
 }

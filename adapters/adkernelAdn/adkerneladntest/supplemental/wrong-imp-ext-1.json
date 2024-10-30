@@ -19,7 +19,7 @@
   "expectedMakeRequestsErrors": [
     {
       "value": "cannot unmarshal openrtb_ext.ExtImpAdkernelAdn.PublisherID: unexpected character",
-      "comparison": "regex"
+      "comparison": "startswith"
     }
   ]
 }

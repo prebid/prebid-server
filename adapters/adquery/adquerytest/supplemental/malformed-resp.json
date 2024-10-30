@@ -106,7 +106,7 @@
   "expectedMakeBidsErrors": [
     {
       "value": "cannot unmarshal adquery.ResponseData.CrID: unexpected character",
-      "comparison": "regex"
+      "comparison": "startswith"
     }
   ]
 }

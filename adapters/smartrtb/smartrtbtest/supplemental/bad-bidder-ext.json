@@ -25,7 +25,7 @@
   "expectedMakeRequestsErrors": [
     {
       "value": "expect { or n, but found",
-      "comparison": "regex"
+      "comparison": "startswith"
     }
   ]
 }

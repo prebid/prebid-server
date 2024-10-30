@@ -68,8 +68,8 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "Error while decoding imp\\[0].ext: cannot unmarshal openrtb_ext.ExtImpUnicorn.AccountID: unexpected character",
-      "comparison": "regex"
+      "value": "Error while decoding imp[0].ext: cannot unmarshal openrtb_ext.ExtImpUnicorn.AccountID: unexpected character",
+      "comparison": "startswith"
     }
   ]
 }
