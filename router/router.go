@@ -371,8 +371,8 @@ func readDefaultRequestFromFile(defReqConfig config.DefReqConfig) []byte {
 		return []byte{}
 	}
 
+	// validate json is valid
 	if err := jsonutil.UnmarshalValid(defaultRequestJSON, &openrtb2model.BidRequest{}); err != nil {
-		// we might not have aliases defined, but will at least show that the JSON file is parsable.
 		glog.Fatalf("error parsing default request from file %s: %v", defReqConfig.FileSystem.FileName, err)
 		return []byte{}
 	}
