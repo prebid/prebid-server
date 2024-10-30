@@ -83,7 +83,7 @@ func TestMakeBids(t *testing.T) {
 		resp, errs := bidder.MakeBids(request, requestData, responseData)
 		// cant assert message its different on different versions of go
 		assert.Equal(t, 1, len(errs))
-		assert.Contains(t, errs[0].Error(), "JSON")
+		assert.Contains(t, errs[0].Error(), "expect { or n, but found")
 		assert.Nil(t, resp)
 	})
 }

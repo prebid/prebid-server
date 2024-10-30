@@ -12,6 +12,7 @@ import (
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/macros"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
 type SilverMobAdapter struct {
@@ -111,13 +112,13 @@ func (a *SilverMobAdapter) MakeRequests(
 
 func (a *SilverMobAdapter) getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtSilverMob, error) {
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("error unmarshaling imp.ext: %s", err.Error()),
 		}
 	}
 	var silvermobExt openrtb_ext.ExtSilverMob
-	if err := json.Unmarshal(bidderExt.Bidder, &silvermobExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &silvermobExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("error unmarshaling imp.ext.bidder: %s", err.Error()),
 		}
@@ -161,7 +162,7 @@ func (a *SilverMobAdapter) MakeBids(
 
 	responseBody := bidderRawResponse.Body
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(responseBody, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(responseBody, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Error unmarshaling server Response: %s", err),
 		}}

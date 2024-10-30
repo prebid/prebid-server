@@ -12,6 +12,7 @@ import (
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/macros"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
 type AcuityAdsAdapter struct {
@@ -90,13 +91,13 @@ func (a *AcuityAdsAdapter) MakeRequests(
 
 func (a *AcuityAdsAdapter) getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtAcuityAds, error) {
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: "ext.bidder not provided",
 		}
 	}
 	var acuityAdsExt openrtb_ext.ExtAcuityAds
-	if err := json.Unmarshal(bidderExt.Bidder, &acuityAdsExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &acuityAdsExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: "ext.bidder not provided",
 		}
@@ -155,7 +156,7 @@ func (a *AcuityAdsAdapter) MakeBids(
 
 	responseBody := bidderRawResponse.Body
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(responseBody, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(responseBody, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: "Bad Server Response",
 		}}

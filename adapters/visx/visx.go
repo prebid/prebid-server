@@ -10,6 +10,7 @@ import (
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
 type VisxAdapter struct {
@@ -107,7 +108,7 @@ func (a *VisxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReq
 	}
 
 	var bidResp visxResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
@@ -146,7 +147,7 @@ func getMediaTypeForImp(impID string, imps []openrtb2.Imp, bid visxBid) (openrtb
 	for _, imp := range imps {
 		if imp.ID == impID {
 			var ext visxBidExt
-			if err := json.Unmarshal(bid.Ext, &ext); err == nil {
+			if err := jsonutil.Unmarshal(bid.Ext, &ext); err == nil {
 				if ext.Prebid.Meta.MediaType == openrtb_ext.BidTypeBanner {
 					return openrtb_ext.BidTypeBanner, nil
 				}

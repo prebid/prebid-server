@@ -12,6 +12,7 @@ import (
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
 type adapter struct {
@@ -35,11 +36,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		imp := reqCopy.Imp[i]
 
 		var bidderExt adapters.ExtImpBidder
-		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			errs = append(errs, err)
 			continue
 		}
-		if err := json.Unmarshal(bidderExt.Bidder, &outbrainExt); err != nil {
+		if err := jsonutil.Unmarshal(bidderExt.Bidder, &outbrainExt); err != nil {
 			errs = append(errs, err)
 			continue
 		}
@@ -107,7 +108,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	var response openrtb2.BidResponse
-	if err := json.Unmarshal(responseData.Body, &response); err != nil {
+	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}
 
@@ -125,7 +126,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 			}
 			if bidType == openrtb_ext.BidTypeNative {
 				var nativePayload nativeResponse.Response
-				if err := json.Unmarshal(json.RawMessage(bid.AdM), &nativePayload); err != nil {
+				if err := jsonutil.Unmarshal(json.RawMessage(bid.AdM), &nativePayload); err != nil {
 					errs = append(errs, err)
 					continue
 				}

@@ -10,6 +10,7 @@ import (
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
 type adapter struct {
@@ -61,14 +62,14 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	}
 
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Bad server response: %s.", err),
 		}}
 	}
 
 	var bidReq openrtb2.BidRequest
-	if err := json.Unmarshal(externalRequest.Body, &bidReq); err != nil {
+	if err := jsonutil.Unmarshal(externalRequest.Body, &bidReq); err != nil {
 		return nil, []error{err}
 	}
 

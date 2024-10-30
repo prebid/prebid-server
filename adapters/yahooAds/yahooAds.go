@@ -10,6 +10,7 @@ import (
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 	"github.com/prebid/prebid-server/v2/util/ptrutil"
 )
 
@@ -33,7 +34,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 	for idx, imp := range request.Imp {
 		var bidderExt adapters.ExtImpBidder
-		err := json.Unmarshal(imp.Ext, &bidderExt)
+		err := jsonutil.Unmarshal(imp.Ext, &bidderExt)
 		if err != nil {
 			err = &errortypes.BadInput{
 				Message: fmt.Sprintf("imp #%d: ext.bidder not provided", idx),
@@ -43,7 +44,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		}
 
 		var yahooAdsExt openrtb_ext.ExtImpYahooAds
-		err = json.Unmarshal(bidderExt.Bidder, &yahooAdsExt)
+		err = jsonutil.Unmarshal(bidderExt.Bidder, &yahooAdsExt)
 		if err != nil {
 			err = &errortypes.BadInput{
 				Message: fmt.Sprintf("imp #%d: %s", idx, err.Error()),
@@ -101,7 +102,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	}
 
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Bad server response: %d.", err),
 		}}
@@ -177,7 +178,7 @@ func changeRequestForBidService(request *openrtb2.BidRequest, extension *openrtb
 			requestRegs.Ext = json.RawMessage("{}")
 		}
 		var regsExt map[string]json.RawMessage
-		err := json.Unmarshal(requestRegs.Ext, &regsExt)
+		err := jsonutil.Unmarshal(requestRegs.Ext, &regsExt)
 		if err != nil {
 			return err
 		}

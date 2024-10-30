@@ -11,6 +11,7 @@ import (
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
 type adapter struct {
@@ -59,7 +60,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	var response openrtb2.BidResponse
-	if err := json.Unmarshal(responseData.Body, &response); err != nil {
+	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}
 
@@ -79,7 +80,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 func getMediaTypeForBid(ext json.RawMessage) openrtb_ext.BidType {
 	var impExt kargoExt
-	if err := json.Unmarshal(ext, &impExt); err == nil {
+	if err := jsonutil.Unmarshal(ext, &impExt); err == nil {
 		switch impExt.MediaType {
 		case string(openrtb_ext.BidTypeVideo):
 			return openrtb_ext.BidTypeVideo

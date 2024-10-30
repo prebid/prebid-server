@@ -13,6 +13,7 @@ import (
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/macros"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
 const adapterVersion string = "pbs-go/1.0.0"
@@ -136,14 +137,14 @@ func (adapter *adapter) buildEndpointURL(params *openrtb_ext.ExtImpImds) (string
 
 func getExtImpObj(imp *openrtb2.Imp) (*openrtb_ext.ExtImpImds, error) {
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
 
 	var imdsExt openrtb_ext.ExtImpImds
-	if err := json.Unmarshal(bidderExt.Bidder, &imdsExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &imdsExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: err.Error(),
 		}
@@ -170,7 +171,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 
 	var bidResp openrtb2.BidResponse
 
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 

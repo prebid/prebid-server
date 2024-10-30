@@ -10,6 +10,7 @@ import (
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
 type LogicadAdapter struct {
@@ -74,12 +75,12 @@ func getImpressionExt(imp *openrtb2.Imp) (openrtb_ext.ExtImpLogicad, error) {
 	var bidderExt adapters.ExtImpBidder
 	var logicadExt openrtb_ext.ExtImpLogicad
 
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return logicadExt, &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
-	if err := json.Unmarshal(bidderExt.Bidder, &logicadExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &logicadExt); err != nil {
 		return logicadExt, &errortypes.BadInput{
 			Message: err.Error(),
 		}
@@ -128,7 +129,7 @@ func (adapter *LogicadAdapter) MakeBids(internalRequest *openrtb2.BidRequest, ex
 
 	}
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		msg := fmt.Sprintf("Bad server response: %d", err)
 		return nil, []error{&errortypes.BadServerResponse{Message: msg}}
 	}

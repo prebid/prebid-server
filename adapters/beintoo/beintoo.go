@@ -12,6 +12,7 @@ import (
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
 type BeintooAdapter struct {
@@ -67,14 +68,14 @@ func (a *BeintooAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 
 func unpackImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpBeintoo, error) {
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
 
 	var beintooExt openrtb_ext.ExtImpBeintoo
-	if err := json.Unmarshal(bidderExt.Bidder, &beintooExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &beintooExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("ignoring imp id=%s, invalid ImpExt", imp.ID),
 		}
@@ -192,7 +193,7 @@ func (a *BeintooAdapter) MakeBids(internalRequest *openrtb2.BidRequest, external
 
 	var bidResp openrtb2.BidResponse
 
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Unable to unpackage bid response. Error: %s", err.Error()),
 		}}

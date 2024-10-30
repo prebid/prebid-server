@@ -10,6 +10,7 @@ import (
 	"github.com/prebid/prebid-server/v2/config"
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
 type TripleliftNativeAdapter struct {
@@ -51,10 +52,10 @@ func processImp(imp *openrtb2.Imp, request *openrtb2.BidRequest) error {
 	var ext ExtImp
 	var tlext openrtb_ext.ExtImpTriplelift
 
-	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &ext); err != nil {
 		return err
 	}
-	if err := json.Unmarshal(ext.Bidder, &tlext); err != nil {
+	if err := jsonutil.Unmarshal(ext.Bidder, &tlext); err != nil {
 		return err
 	}
 	if imp.Native == nil {
@@ -91,7 +92,7 @@ func effectivePubID(pub *openrtb2.Publisher) string {
 	if pub != nil {
 		if pub.Ext != nil {
 			var pubExt openrtb_ext.ExtPublisher
-			err := json.Unmarshal(pub.Ext, &pubExt)
+			err := jsonutil.Unmarshal(pub.Ext, &pubExt)
 			if err == nil && pubExt.Prebid != nil && pubExt.Prebid.ParentAccount != nil && *pubExt.Prebid.ParentAccount != "" {
 				return *pubExt.Prebid.ParentAccount
 			}
@@ -178,7 +179,7 @@ func (a *TripleliftNativeAdapter) MakeBids(internalRequest *openrtb2.BidRequest,
 		return nil, []error{&errortypes.BadServerResponse{Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}}
 	}
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 	var errs []error
@@ -225,7 +226,7 @@ func getExtraInfo(v string) (TripleliftNativeExtInfo, error) {
 	}
 
 	var extraInfo TripleliftNativeExtInfo
-	if err := json.Unmarshal([]byte(v), &extraInfo); err != nil {
+	if err := jsonutil.Unmarshal([]byte(v), &extraInfo); err != nil {
 		return extraInfo, fmt.Errorf("invalid extra info: %v", err)
 	}
 

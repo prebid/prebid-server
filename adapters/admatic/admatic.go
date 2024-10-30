@@ -12,6 +12,7 @@ import (
 	"github.com/prebid/prebid-server/v2/errortypes"
 	"github.com/prebid/prebid-server/v2/macros"
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
 type adapter struct {
@@ -65,14 +66,14 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 func (a *adapter) buildEndpointFromRequest(imp *openrtb2.Imp) (string, error) {
 	var impExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &impExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &impExt); err != nil {
 		return "", &errortypes.BadInput{
 			Message: fmt.Sprintf("Failed to deserialize bidder impression extension: %v", err),
 		}
 	}
 
 	var admaticExt openrtb_ext.ImpExtAdmatic
-	if err := json.Unmarshal(impExt.Bidder, &admaticExt); err != nil {
+	if err := jsonutil.Unmarshal(impExt.Bidder, &admaticExt); err != nil {
 		return "", &errortypes.BadInput{
 			Message: fmt.Sprintf("Failed to deserialize AdMatic extension: %v", err),
 		}
@@ -95,7 +96,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		return nil, []error{err}
 	}
 	var response openrtb2.BidResponse
-	if err := json.Unmarshal(responseData.Body, &response); err != nil {
+	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}
 
