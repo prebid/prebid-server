@@ -14,6 +14,7 @@ import (
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/prebid/prebid-server/v2/ortb"
 	"github.com/prebid/prebid-server/v2/privacy"
+	"github.com/prebid/prebid-server/v2/util/errorsutil"
 	"github.com/prebid/prebid-server/v2/util/iputil"
 )
 
@@ -103,6 +104,12 @@ func executeHook[H any, P any](
 	hookId := HookID{ModuleCode: hw.Module, HookImplCode: hw.Code}
 
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				errorsutil.LogPanic(r)
+			}
+		}()
+
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 		result, err := hookHandler(ctx, moduleCtx, hw.Hook, payload)
