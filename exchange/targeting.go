@@ -63,7 +63,16 @@ func (targData *targetData) setTargeting(auc *auction, isApp bool, categoryMappi
 
 				targets := make(map[string]string, 10)
 				if cpm, ok := auc.roundedPrices[topBid]; ok {
-					targData.addKeys(targets, openrtb_ext.HbpbConstantKey, cpm, targetingBidderCode, isOverallWinner, truncateTargetAttr)
+					// HACK: Just for mobile apps, use an alternate name for this key. We're
+					// doing this so that we can separately target app and web line items in
+					// GAM without updating our existing web line items. We can revert to
+					// using the original key in both cases when/if we update our line items,
+					// e.g. by looking at whether the hb_env KV equals "mobile-app".
+					if isApp {
+						targData.addKeys(targets, openrtb_ext.AppConstantKey, cpm, targetingBidderCode, isOverallWinner, truncateTargetAttr)
+					} else {
+						targData.addKeys(targets, openrtb_ext.HbpbConstantKey, cpm, targetingBidderCode, isOverallWinner, truncateTargetAttr)
+					}
 				}
 				targData.addKeys(targets, openrtb_ext.HbBidderConstantKey, string(targetingBidderCode), targetingBidderCode, isOverallWinner, truncateTargetAttr)
 				if hbSize := makeHbSize(topBid.Bid); hbSize != "" {
