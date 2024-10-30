@@ -1,4 +1,4 @@
-endpoint: "http://pbs-front.mediasquare.fr/msq_prebid"
+endpoint: "https://pbs-front.mediasquare.fr/msq_prebid"
 endpointCompression: gzip
 gvlVendorID: 791
 modifyingVastXmlAllowed: true
