@@ -35,7 +35,7 @@
 },
 "expectedMakeRequestsErrors": [
   {
-    "value": "unexpected end of JSON input",
+    "value": "expect { or n, but found null end of string character",
     "comparison": "literal"
   }
 ]

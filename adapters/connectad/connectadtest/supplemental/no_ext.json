@@ -21,7 +21,7 @@
     },
     "expectedMakeRequestsErrors": [
       {
-        "value": "Impression id=test-banner-imp-id has an Error: unexpected end of JSON input",
+        "value": "Impression id=test-banner-imp-id has an Error: expect { or n, but found null end of string character",
         "comparison": "literal"
       },
       {

@@ -40,7 +40,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "failed to extract org: failed to unmarshal bidderExt: unexpected end of JSON input",
+      "value": "failed to extract org: failed to unmarshal bidderExt: expect { or n, but found null end of string character",
       "comparison": "literal"
     }
   ]

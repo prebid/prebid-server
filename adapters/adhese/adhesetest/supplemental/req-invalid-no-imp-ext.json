@@ -30,7 +30,7 @@
     "expectedBidResponses": [],
     "expectedMakeRequestsErrors": [
       {
-        "value": "Request could not be parsed as ExtImpBidder due to: unexpected end of JSON input",
+        "value": "Request could not be parsed as ExtImpBidder due to: expect { or n, but found null end of string character",
         "comparison": "literal"
       }
     ]

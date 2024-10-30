@@ -116,7 +116,7 @@
 
   "expectedMakeBidsErrors": [
     {
-      "value": "BidExt parsing error. unexpected end of JSON input",
+      "value": "BidExt parsing error. expect { or n, but found null end of string character",
       "comparison": "literal"
     }
   ]

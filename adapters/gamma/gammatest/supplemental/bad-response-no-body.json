@@ -40,7 +40,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "bad server response: &{%!d(string=unexpected end of JSON input) 0}. ",
+      "value": "bad server response: &{%!d(string=expect { or n, but found null end of string character)}. ",
       "comparison": "literal"
     }
   ]

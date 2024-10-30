@@ -41,7 +41,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "failed to extract org: failed to unmarshal ImpExtMinuteMedia: unexpected end of JSON input",
+      "value": "failed to extract org: failed to unmarshal ImpExtMinuteMedia: expect { or n, but found null end of string character",
       "comparison": "literal"
     }
   ]

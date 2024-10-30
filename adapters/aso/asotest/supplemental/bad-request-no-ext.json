@@ -15,7 +15,7 @@
   "expectedBidResponses": [],
   "expectedMakeRequestsErrors": [
     {
-      "value": "invalid imp.ext, unexpected end of JSON input",
+      "value": "invalid imp.ext, expect { or n, but found null end of string character",
       "comparison": "literal"
     }
   ]

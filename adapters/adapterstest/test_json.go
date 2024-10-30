@@ -73,7 +73,9 @@ func RunJSONBidderTest(t *testing.T, rootDir string, bidder adapters.Bidder) {
 		}
 
 		isJsonFile := !info.IsDir() && filepath.Ext(info.Name()) == jsonFileExtension
+		// if info.Name() == "bad-ext-ix.json" {
 		RunSingleJSONBidderTest(t, bidder, path, isJsonFile)
+		// }
 		return nil
 	})
 	assert.NoError(t, err, "Error reading files from directory %s \n", rootDir)

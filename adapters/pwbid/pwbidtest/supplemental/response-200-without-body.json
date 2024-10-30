@@ -45,7 +45,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "expect { or n, but found ",
+      "value": "expect { or n, but found null end of string character",
       "comparison": "literal"
     }
   ]

@@ -12,7 +12,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "unexpected end of JSON input; ImpID=test-imp-id-1",
+      "value": "expect { or n, but found null end of string character; ImpID=test-imp-id-1",
       "comparison": "literal"
     }
   ]
