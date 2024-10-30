@@ -1,4 +1,4 @@
-module github.com/prebid/prebid-server/v2
+module github.com/prebid/prebid-server/v3
 
 go 1.21
 
