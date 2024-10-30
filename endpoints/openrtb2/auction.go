@@ -1670,9 +1670,9 @@ func (deps *endpointDeps) processStoredRequests(requestJson []byte, impInfo []Im
 		}
 	}
 
-	// Apply default aliases, if they are provided
+	// apply default stored request
 	if deps.defaultRequest {
-		aliasedRequest, err := jsonpatch.MergePatch(deps.defReqJSON, resolvedRequest)
+		merged, err := jsonpatch.MergePatch(deps.defReqJSON, resolvedRequest)
 		if err != nil {
 			hasErr, Err := getJsonSyntaxError(resolvedRequest)
 			if hasErr {
@@ -1685,7 +1685,7 @@ func (deps *endpointDeps) processStoredRequests(requestJson []byte, impInfo []Im
 			}
 			return nil, nil, []error{err}
 		}
-		resolvedRequest = aliasedRequest
+		resolvedRequest = merged
 	}
 
 	// Apply any Stored Imps, if they exist. Since the JSON Merge Patch overrides arrays,
