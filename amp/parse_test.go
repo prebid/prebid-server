@@ -5,10 +5,10 @@ import (
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/privacy"
-	"github.com/prebid/prebid-server/v2/privacy/ccpa"
-	"github.com/prebid/prebid-server/v2/privacy/gdpr"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/privacy"
+	"github.com/prebid/prebid-server/v3/privacy/ccpa"
+	"github.com/prebid/prebid-server/v3/privacy/gdpr"
 	"github.com/stretchr/testify/assert"
 )
 

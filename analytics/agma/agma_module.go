@@ -14,9 +14,9 @@ import (
 	"github.com/docker/go-units"
 	"github.com/golang/glog"
 	"github.com/prebid/go-gdpr/vendorconsent"
-	"github.com/prebid/prebid-server/v2/analytics"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/analytics"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 type httpSender = func(payload []byte) error
