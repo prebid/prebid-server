@@ -2,6 +2,8 @@ module github.com/prebid/prebid-server/v3
 
 go 1.21
 
+retract v3.0.0 // Forgot to update major version in import path and module name
+
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/IABTechLab/adscert v0.34.0
