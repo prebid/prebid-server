@@ -3,9 +3,9 @@ package exchange
 import (
 	gpplib "github.com/prebid/go-gpp"
 	gppConstants "github.com/prebid/go-gpp/constants"
-	"github.com/prebid/prebid-server/v2/gdpr"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	gppPolicy "github.com/prebid/prebid-server/v2/privacy/gpp"
+	"github.com/prebid/prebid-server/v3/gdpr"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	gppPolicy "github.com/prebid/prebid-server/v3/privacy/gpp"
 )
 
 // getGDPR will pull the gdpr flag from an openrtb request

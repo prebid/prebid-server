@@ -51,8 +51,8 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "bad server response: unexpected end of JSON input. ",
-      "comparison": "literal"
+      "value": "bad server response: expect { or n, but found",
+      "comparison": "startswith"
     }
   ]
 }
