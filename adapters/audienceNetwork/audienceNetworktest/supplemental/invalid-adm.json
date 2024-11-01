@@ -99,7 +99,7 @@
     }],
     "expectedBidResponses": [{"currency":"USD","bids":[]}],
     "expectedMakeBidsErrors": [{
-        "value": "invalid character 'm' looking for beginning of value",
+        "value": "expect { or n, but found m",
         "comparison": "literal"
     }]
 }

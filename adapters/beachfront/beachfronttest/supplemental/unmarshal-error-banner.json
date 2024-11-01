@@ -28,7 +28,7 @@
 
   "expectedMakeRequestsErrors": [
     {
-      "value": "ignoring imp id=fail, error while decoding extImpBeachfront, err: json: cannot unmarshal number into Go struct field ExtImpBeachfront.appId of type string",
+      "value": "ignoring imp id=fail, error while decoding extImpBeachfront, err: cannot unmarshal openrtb_ext.ExtImpBeachfront.AppId: expects \" or n, but found 1",
       "comparison": "literal"
     }
   ]

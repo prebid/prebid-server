@@ -14,7 +14,7 @@
 
   "expectedMakeRequestsErrors": [
     {
-      "value": "Error parsing tradplusExt - json: cannot unmarshal string into Go value of type adapters.ExtImpBidder",
+      "value": "Error parsing tradplusExt - expect { or n, but found \"",
       "comparison": "literal"
     }
   ]
