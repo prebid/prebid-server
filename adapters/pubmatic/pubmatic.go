@@ -9,11 +9,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 
 	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -260,12 +261,12 @@ func parseImpressionObject(imp *openrtb2.Imp, extractWrapperExtFromImp, extractP
 	}
 
 	var bidderExt ExtImpBidderPubmatic
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return wrapExt, pubID, err
 	}
 
 	var pubmaticExt openrtb_ext.ExtImpPubmatic
-	if err := json.Unmarshal(bidderExt.Bidder, &pubmaticExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &pubmaticExt); err != nil {
 		return wrapExt, pubID, err
 	}
 
@@ -275,7 +276,7 @@ func parseImpressionObject(imp *openrtb2.Imp, extractWrapperExtFromImp, extractP
 
 	// Parse Wrapper Extension only once per request
 	if extractWrapperExtFromImp && len(pubmaticExt.WrapExt) != 0 {
-		err := json.Unmarshal([]byte(pubmaticExt.WrapExt), &wrapExt)
+		err := jsonutil.Unmarshal([]byte(pubmaticExt.WrapExt), &wrapExt)
 		if err != nil {
 			return wrapExt, pubID, fmt.Errorf("Error in Wrapper Parameters = %v  for ImpID = %v WrapperExt = %v", err.Error(), imp.ID, string(pubmaticExt.WrapExt))
 		}
@@ -346,7 +347,7 @@ func extractPubmaticExtFromRequest(request *openrtb2.BidRequest) (extRequestAdSe
 	}
 
 	reqExt := &openrtb_ext.ExtRequest{}
-	err := json.Unmarshal(request.Ext, &reqExt)
+	err := jsonutil.Unmarshal(request.Ext, &reqExt)
 	if err != nil {
 		return pmReqExt, fmt.Errorf("error decoding Request.ext : %s", err.Error())
 	}
@@ -354,7 +355,7 @@ func extractPubmaticExtFromRequest(request *openrtb2.BidRequest) (extRequestAdSe
 
 	reqExtBidderParams := make(map[string]json.RawMessage)
 	if reqExt.Prebid.BidderParams != nil {
-		err = json.Unmarshal(reqExt.Prebid.BidderParams, &reqExtBidderParams)
+		err = jsonutil.Unmarshal(reqExt.Prebid.BidderParams, &reqExtBidderParams)
 		if err != nil {
 			return pmReqExt, err
 		}
@@ -363,7 +364,7 @@ func extractPubmaticExtFromRequest(request *openrtb2.BidRequest) (extRequestAdSe
 	//get request ext bidder params
 	if wrapperObj, present := reqExtBidderParams["wrapper"]; present && len(wrapperObj) != 0 {
 		wrpExt := &pubmaticWrapperExt{}
-		err = json.Unmarshal(wrapperObj, wrpExt)
+		err = jsonutil.Unmarshal(wrapperObj, wrpExt)
 		if err != nil {
 			return pmReqExt, err
 		}
@@ -372,7 +373,7 @@ func extractPubmaticExtFromRequest(request *openrtb2.BidRequest) (extRequestAdSe
 
 	if acatBytes, ok := reqExtBidderParams["acat"]; ok {
 		var acat []string
-		err = json.Unmarshal(acatBytes, &acat)
+		err = jsonutil.Unmarshal(acatBytes, &acat)
 		if err != nil {
 			return pmReqExt, err
 		}
@@ -437,7 +438,7 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 	}
 
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
@@ -458,7 +459,7 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 			}
 
 			var bidExt *pubmaticBidExt
-			err := json.Unmarshal(bid.Ext, &bidExt)
+			err := jsonutil.Unmarshal(bid.Ext, &bidExt)
 			if err != nil {
 				errs = append(errs, err)
 			} else if bidExt != nil {
@@ -489,7 +490,7 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 
 	if bidResp.Ext != nil {
 		var bidRespExt respExt
-		if err := json.Unmarshal(bidResp.Ext, &bidRespExt); err == nil && bidRespExt.FledgeAuctionConfigs != nil {
+		if err := jsonutil.Unmarshal(bidResp.Ext, &bidRespExt); err == nil && bidRespExt.FledgeAuctionConfigs != nil {
 			bidResponse.FledgeAuctionConfigs = make([]*openrtb_ext.FledgeAuctionConfig, 0, len(bidRespExt.FledgeAuctionConfigs))
 			for impId, config := range bidRespExt.FledgeAuctionConfigs {
 				fledgeAuctionConfig := &openrtb_ext.FledgeAuctionConfig{
@@ -506,7 +507,7 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 func getNativeAdm(adm string) (string, error) {
 	var err error
 	nativeAdm := make(map[string]interface{})
-	err = json.Unmarshal([]byte(adm), &nativeAdm)
+	err = jsonutil.Unmarshal([]byte(adm), &nativeAdm)
 	if err != nil {
 		return adm, errors.New("unable to unmarshal native adm")
 	}
@@ -528,7 +529,7 @@ func getNativeAdm(adm string) (string, error) {
 func getMapFromJSON(source json.RawMessage) map[string]interface{} {
 	if source != nil {
 		dataMap := make(map[string]interface{})
-		err := json.Unmarshal(source, &dataMap)
+		err := jsonutil.Unmarshal(source, &dataMap)
 		if err == nil {
 			return dataMap
 		}

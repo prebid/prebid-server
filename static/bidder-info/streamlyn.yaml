@@ -1,0 +1,2 @@
+endpoint: "http://rtba.bidsxchange.com/openrtb/{{.PublisherID}}?host={{.Host}}"
+aliasOf: "limelightDigital"

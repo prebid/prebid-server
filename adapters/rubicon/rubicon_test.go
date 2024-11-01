@@ -8,12 +8,12 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/adapters/adapterstest"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/adapters/adapterstest"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 
 	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v20/adcom1"
@@ -608,6 +608,73 @@ func TestOpenRTBFirstPartyDataPopulating(t *testing.T) {
 	}
 }
 
+func TestPbsHostInfoPopulating(t *testing.T) {
+	bidder := RubiconAdapter{
+		URI:          "url",
+		externalURI:  "externalUrl",
+		XAPIUsername: "username",
+		XAPIPassword: "password",
+	}
+
+	request := &openrtb2.BidRequest{
+		ID: "test-request-id",
+		Imp: []openrtb2.Imp{{
+			ID: "test-imp-id",
+			Banner: &openrtb2.Banner{
+				Format: []openrtb2.Format{
+					{W: 300, H: 250},
+				},
+			},
+			Ext: json.RawMessage(`{
+				"bidder": {
+					"zoneId": 8394,
+					"siteId": 283282,
+					"accountId": 7891,
+					"inventory": {"key1" : "val1"},
+					"visitor": {"key2" : "val2"}
+				}
+			}`),
+		}},
+		App: &openrtb2.App{
+			ID:   "com.test",
+			Name: "testApp",
+		},
+	}
+
+	reqs, _ := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
+
+	rubiconReq := &openrtb2.BidRequest{}
+	if err := json.Unmarshal(reqs[0].Body, rubiconReq); err != nil {
+		t.Fatalf("Unexpected error while decoding request: %s", err)
+	}
+
+	var rpImpExt rubiconImpExt
+	if err := json.Unmarshal(rubiconReq.Imp[0].Ext, &rpImpExt); err != nil {
+		t.Fatalf("Error unmarshalling imp.ext: %s", err)
+	}
+
+	var pbsLogin string
+	pbsLogin, err := jsonparser.GetString(rpImpExt.RP.Target, "pbs_login")
+	if err != nil {
+		t.Fatal("Error extracting pbs_login")
+	}
+	assert.Equal(t, pbsLogin, "username", "Unexpected pbs_login value")
+
+	var pbsVersion string
+	pbsVersion, err = jsonparser.GetString(rpImpExt.RP.Target, "pbs_version")
+	if err != nil {
+		t.Fatal("Error extracting pbs_version")
+	}
+	assert.Equal(t, pbsVersion, "", "Unexpected pbs_version value")
+
+	var pbsUrl string
+	pbsUrl, err = jsonparser.GetString(rpImpExt.RP.Target, "pbs_url")
+	if err != nil {
+		t.Fatal("Error extracting pbs_url")
+	}
+	assert.Equal(t, pbsUrl, "externalUrl", "Unexpected pbs_url value")
+}
+
 func TestOpenRTBRequestWithBadvOverflowed(t *testing.T) {
 	bidder := new(RubiconAdapter)
 
@@ -990,7 +1057,7 @@ func TestOpenRTBResponseOverridePriceFromCorrespondingImp(t *testing.T) {
 				"siteId": 68780,
 				"zoneId": 327642,
 				"debug": {
-					"cpmoverride" : 20 
+					"cpmoverride" : 20
 				}
 			}}`),
 		}},

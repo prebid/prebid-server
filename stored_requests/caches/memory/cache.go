@@ -7,7 +7,7 @@ import (
 
 	"github.com/coocood/freecache"
 	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/v2/stored_requests"
+	"github.com/prebid/prebid-server/v3/stored_requests"
 )
 
 // NewCache returns an in-memory Cache which evicts items if:

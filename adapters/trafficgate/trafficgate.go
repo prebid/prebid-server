@@ -7,11 +7,12 @@ import (
 	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/macros"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -91,7 +92,7 @@ func (a *adapter) MakeBids(
 
 	var bidResp openrtb2.BidResponse
 
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: err.Error(),
 		}}
@@ -103,7 +104,7 @@ func (a *adapter) MakeBids(
 	for _, seatBid := range bidResp.SeatBid {
 		for i := range seatBid.Bid {
 			var bidExt BidResponseExt
-			if err := json.Unmarshal(seatBid.Bid[i].Ext, &bidExt); err != nil {
+			if err := jsonutil.Unmarshal(seatBid.Bid[i].Ext, &bidExt); err != nil {
 				return nil, []error{&errortypes.BadServerResponse{
 					Message: "Missing response ext",
 				}}
@@ -141,13 +142,13 @@ func splitImpressions(imps []openrtb2.Imp) (map[openrtb_ext.ExtImpTrafficGate][]
 
 func getBidderParams(imp *openrtb2.Imp) (*openrtb_ext.ExtImpTrafficGate, error) {
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: "Missing bidder ext",
 		}
 	}
 	var TrafficGateExt openrtb_ext.ExtImpTrafficGate
-	if err := json.Unmarshal(bidderExt.Bidder, &TrafficGateExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &TrafficGateExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: "Bidder parameters required",
 		}
