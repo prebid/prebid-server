@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v3/adapters"
 )
 
 // msqResponse: Bid-Response sent by mediasquare.
