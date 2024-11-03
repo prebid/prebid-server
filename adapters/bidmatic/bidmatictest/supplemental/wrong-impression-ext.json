@@ -19,7 +19,7 @@
 
   "expectedMakeRequestsErrors": [
     {
-      "value": "ignoring imp id=unsupported-native-imp, error while decoding impExt, err: json: invalid number literal, trying to unmarshal \"\\\"some string instead of int\\\"\" into Number",
+      "value": "ignoring imp id=unsupported-native-imp, error while marshaling impExt, err: json: invalid number literal \"some string instead of int\"",
       "comparison": "literal"
     }
   ]

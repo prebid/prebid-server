@@ -27,14 +27,14 @@ func TestConsentWriter(t *testing.T) {
 			consent:     "anyConsent",
 			request:     &openrtb2.BidRequest{},
 			expected: &openrtb2.BidRequest{User: &openrtb2.User{
-				Ext: json.RawMessage(`{"consent":"anyConsent"}`)}},
+				Consent: "anyConsent"}},
 		},
 		{
 			description: "Enabled With Nil Request User Ext Object",
 			consent:     "anyConsent",
 			request:     &openrtb2.BidRequest{User: &openrtb2.User{}},
 			expected: &openrtb2.BidRequest{User: &openrtb2.User{
-				Ext: json.RawMessage(`{"consent":"anyConsent"}`)}},
+				Consent: "anyConsent"}},
 		},
 		{
 			description: "Enabled With Existing Request User Ext Object - Doesn't Overwrite",
@@ -42,29 +42,25 @@ func TestConsentWriter(t *testing.T) {
 			request: &openrtb2.BidRequest{User: &openrtb2.User{
 				Ext: json.RawMessage(`{"existing":"any"}`)}},
 			expected: &openrtb2.BidRequest{User: &openrtb2.User{
-				Ext: json.RawMessage(`{"consent":"anyConsent","existing":"any"}`)}},
+				Consent: "anyConsent",
+				Ext:     json.RawMessage(`{"existing":"any"}`)}},
 		},
 		{
 			description: "Enabled With Existing Request User Ext Object - Overwrites",
 			consent:     "anyConsent",
 			request: &openrtb2.BidRequest{User: &openrtb2.User{
-				Ext: json.RawMessage(`{"existing":"any","consent":"toBeOverwritten"}`)}},
+				Consent: "toBeOverwritten",
+				Ext:     json.RawMessage(`{"existing":"any"}`)}},
 			expected: &openrtb2.BidRequest{User: &openrtb2.User{
-				Ext: json.RawMessage(`{"consent":"anyConsent","existing":"any"}`)}},
-		},
-		{
-			description: "Enabled With Existing Malformed Request User Ext Object",
-			consent:     "anyConsent",
-			request: &openrtb2.BidRequest{User: &openrtb2.User{
-				Ext: json.RawMessage(`malformed`)}},
-			expectedError: true,
+				Consent: "anyConsent",
+				Ext:     json.RawMessage(`{"existing":"any"}`)}},
 		},
 		{
 			description: "Injection Attack With Nil Request User Object",
 			consent:     "BONV8oqONXwgmADACHENAO7pqzAAppY\"},\"oops\":\"malicious\",\"p\":{\"p\":\"",
 			request:     &openrtb2.BidRequest{},
 			expected: &openrtb2.BidRequest{User: &openrtb2.User{
-				Ext: json.RawMessage(`{"consent":"BONV8oqONXwgmADACHENAO7pqzAAppY\"},\"oops\":\"malicious\",\"p\":{\"p\":\""}`),
+				Consent: "BONV8oqONXwgmADACHENAO7pqzAAppY\"},\"oops\":\"malicious\",\"p\":{\"p\":\"",
 			}},
 		},
 		{
@@ -72,7 +68,8 @@ func TestConsentWriter(t *testing.T) {
 			consent:     "BONV8oqONXwgmADACHENAO7pqzAAppY\"},\"oops\":\"malicious\",\"p\":{\"p\":\"",
 			request:     &openrtb2.BidRequest{User: &openrtb2.User{}},
 			expected: &openrtb2.BidRequest{User: &openrtb2.User{
-				Ext: json.RawMessage(`{"consent":"BONV8oqONXwgmADACHENAO7pqzAAppY\"},\"oops\":\"malicious\",\"p\":{\"p\":\""}`),
+				Consent: "BONV8oqONXwgmADACHENAO7pqzAAppY\"},\"oops\":\"malicious\",\"p\":{\"p\":\"",
+				Ext:     nil,
 			}},
 		},
 		{
@@ -82,7 +79,8 @@ func TestConsentWriter(t *testing.T) {
 				Ext: json.RawMessage(`{"existing":"any"}`),
 			}},
 			expected: &openrtb2.BidRequest{User: &openrtb2.User{
-				Ext: json.RawMessage(`{"consent":"BONV8oqONXwgmADACHENAO7pqzAAppY\"},\"oops\":\"malicious\",\"p\":{\"p\":\"","existing":"any"}`),
+				Consent: "BONV8oqONXwgmADACHENAO7pqzAAppY\"},\"oops\":\"malicious\",\"p\":{\"p\":\"",
+				Ext:     json.RawMessage(`{"existing":"any"}`),
 			}},
 		},
 	}
