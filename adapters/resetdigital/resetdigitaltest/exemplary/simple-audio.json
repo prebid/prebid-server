@@ -1,16 +1,78 @@
 {
   "mockBidRequest": {
     "id": "12345",
+    "at": 1,
+    "bcat": [
+      "IAB24",
+      "IAB25",
+      "IAB26"
+    ],
+    "cur": [
+      "USD"
+    ],
+    "source": {
+      "fd": 0,
+      "tid": "00000FBCE10DE8FA",
+      "schain": {
+        "complete": 1,
+        "ver": "1.0",
+        "nodes": [
+          {
+            "asi": "resetdigital.co",
+            "sid": "176",
+            "hp": 1
+          }
+        ]
+      }
+    },
+    "device": {
+      "ip": "35.146.176.97",
+      "js": 1,
+      "language": "en",
+      "ua": "PostmanRuntime/7.42.0"
+    },
+    "user": {
+      "id": "000011200BA1065C",
+      "buyeruid": "000011200BA1065C"
+    },
+    "app": {
+      "id": "test.com",
+      "bundle": "test.com",
+      "name": "test.com",
+      "content": {
+        "livestream": 1,
+        "genre": "F%C3%BAtbol",
+        "cat": [
+          ""
+        ],
+        "language": "es"
+      },
+      "publisher": {
+        "id": "176"
+      },
+      "keywords": ""
+    },
     "imp": [
       {
         "id": "001",
-        "video": {
-          "w": 900,
-          "h": 250,
+        "bidfloor": 1.429,
+        "tagid": "667",
+        "secure": 1,
+        "audio": {
+          "protocols": [
+            2,
+            3,
+            5,
+            6
+          ],
           "mimes": [
-            "video/x-flv",
-            "video/mp4"
-          ]
+            "audio/mp4",
+            "audio/mp3"
+          ],
+          "api": [],
+          "minduration": 15,
+          "maxduration": 60,
+          "startdelay": -1
         },
         "ext": {
           "bidder": {
@@ -31,7 +93,7 @@
       "ip": "127.0.0.1",
       "language": "EN"
     },
-    "tmax": 500
+    "tmax": 400
   },
   "httpCalls": [
     {
@@ -47,24 +109,19 @@
               "imp_id": "001",
               "media_types": {
                 "banner": {
-                  "mimes": null,
-                  "sizes": null
+                  "sizes": null,
+                  "mimes": null
                 },
                 "video": {
-                  "sizes": [
-                    [
-                      900,
-                      250
-                    ]
-                  ],
-                  "mimes": [
-                    "video/x-flv",
-                    "video/mp4"
-                  ]
+                  "sizes": null,
+                  "mimes": null
                 },
                 "audio": {
-                  "mimes": null,
-                  "sizes": null
+                  "sizes": null,
+                  "mimes": [
+                    "audio/mp4",
+                    "audio/mp3"
+                  ]
                 }
               },
               "zone_id": {
@@ -88,12 +145,14 @@
             {
               "bid_id": "01",
               "imp_id": "001",
-              "cpm": 1.00,
-              "cid": "1002088",
-              "crid": "1000763-1002088",
-              "adid": "1002088",
-              "w": "900",
-              "h": "250",
+              "cpm": 9.11,
+              "dealid": "RD-1000164",
+              "cid": "1000048-1002918",
+              "crid": "1003893",
+              "adid": "1003893",
+              "language": "en",
+              "w": "0",
+              "h": "0",
               "seat": "resetdigital",
               "html": "<script src=\"https://data.resetdigital.co/evts?S0B=1&R0E=1&R0M=3_3&testad=US-HEADER-04&R0A=1000048_1001096_1001117_1627360746&R0P=resetio_1234_muscleandfitness.com_Site_1_Banner&R0L=*_*_*_*_*&R0D=*_*_*_*_*_*&R0B=*_*_*\" type=\"text/javascript\"></script><image src='https://adsreq.resetdigital.co?brid=0000000000000001' /><image src='https://sync2.resetdigital.co/hbsync?ck=0000000000000001' />"
             }
@@ -109,15 +168,13 @@
         {
           "bid": {
             "adm": "<script src=\"https://data.resetdigital.co/evts?S0B=1&R0E=1&R0M=3_3&testad=US-HEADER-04&R0A=1000048_1001096_1001117_1627360746&R0P=resetio_1234_muscleandfitness.com_Site_1_Banner&R0L=*_*_*_*_*&R0D=*_*_*_*_*_*&R0B=*_*_*\" type=\"text/javascript\"></script><image src='https://adsreq.resetdigital.co?brid=0000000000000001' /><image src='https://sync2.resetdigital.co/hbsync?ck=0000000000000001' />",
-            "cid": "1002088",
-            "crid": "1000763-1002088",
+            "cid": "1000048-1002918",
+            "crid": "1003893",
             "id": "01",
             "impid": "001",
-            "price": 1.00,
-            "w": 900,
-            "h": 250
+            "price": 9.11
           },
-          "type": "video",
+          "type": "audio",
           "seat": "resetdigital"
         }
       ]
