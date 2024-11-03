@@ -133,7 +133,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/marsmedia"
 	"github.com/prebid/prebid-server/v3/adapters/mediago"
 	"github.com/prebid/prebid-server/v3/adapters/medianet"
-  "github.com/prebid/prebid-server/v2/adapters/mediasquare"
+  	"github.com/prebid/prebid-server/v3/adapters/mediasquare"
 	"github.com/prebid/prebid-server/v3/adapters/melozen"
 	"github.com/prebid/prebid-server/v3/adapters/metax"
 	"github.com/prebid/prebid-server/v3/adapters/mgid"
