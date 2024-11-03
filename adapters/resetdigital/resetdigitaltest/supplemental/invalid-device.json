@@ -33,6 +33,7 @@
             "imp_id": "001",
             "media_types": {
               "banner": {
+                "mimes": null,
                 "sizes": [
                   [
                     250,
@@ -41,6 +42,11 @@
                 ]
               },
               "video": {
+                "mimes": null,
+                "sizes": null
+              },
+              "audio": {
+                "mimes": null,
                 "sizes": null
               }
             },

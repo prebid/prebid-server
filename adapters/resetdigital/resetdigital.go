@@ -42,11 +42,12 @@ type resetDigitalImpExt struct {
 type resetDigitalMediaTypes struct {
 	Banner resetDigitalMediaType `json:"banner"`
 	Video  resetDigitalMediaType `json:"video"`
+	Audio  resetDigitalMediaType `json:"audio"`
 }
 type resetDigitalMediaType struct {
 	Sizes [][]int64 `json:"sizes"`
+	Mimes []string `json:"mimes"`
 }
-
 type resetDigitalBidResponse struct {
 	Bids []resetDigitalBid `json:"bids"`
 }
@@ -178,6 +179,16 @@ func processDataFromRequest(requestData *openrtb2.BidRequest, imp openrtb2.Imp, 
 				[]int64{tempW, tempH},
 			)
 		}
+		if imp.Video.MIMEs != nil{
+			reqData.Imps[0].MediaTypes.Video.Mimes = append(
+				imp.Video.MIMEs,
+			)
+		}
+	}
+	if bidType == openrtb_ext.BidTypeAudio && imp.Audio != nil && imp.Audio.MIMEs != nil{
+		reqData.Imps[0].MediaTypes.Audio.Mimes = append(
+			imp.Audio.MIMEs,
+		)
 	}
 
 	var bidderExt adapters.ExtImpBidder
@@ -295,6 +306,8 @@ func GetMediaTypeForImp(reqImps map[string]openrtb2.Imp, bidImpID string) (openr
 	if reqImp, ok := reqImps[bidImpID]; ok {
 		if reqImp.Banner == nil && reqImp.Video != nil {
 			mediaType = openrtb_ext.BidTypeVideo
+		} else if reqImp.Audio != nil {
+			mediaType = openrtb_ext.BidTypeAudio
 		}
 		return mediaType, nil
 	}
