@@ -22,9 +22,9 @@ func TestValidParams(t *testing.T) {
 
 var validParams = []string{
 	`{"adUnitId": "12", "assetKey": "OGY"}`,
-	`{"publisherId": "some publisher id"}`,
-	`{"publisherId": "some publisher id", "assetKey": "ogy"}`,
-	`{"publisherId": "some publisher id", "adUnitId": "12"}`,
+	`{"publisherId": "0b33fb0a-7b2d-44f0-ab0a-a6df93740dba"}`,
+	`{"publisherId": "0b33fb0a-7b2d-44f0-ab0a-a6df93740dba", "assetKey": "ogy"}`,
+	`{"publisherId": "0b33fb0a-7b2d-44f0-ab0a-a6df93740dba", "adUnitId": "12"}`,
 }
 
 func TestInvalidParams(t *testing.T) {
