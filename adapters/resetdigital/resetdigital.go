@@ -78,17 +78,25 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 func getHeaders(request *openrtb2.BidRequest) http.Header {
 	headers := http.Header{}
 
-	if request != nil && request.Device != nil && request.Site != nil { // what about request.App? Do we need to do something different with Referrer in the app case assuming we care about app?
+	addNonEmptyHeaders(&headers, map[string]string{
+		"Content-Type": "application/json;charset=utf-8",
+		"Accept":       "application/json",
+	})
+
+	if request != nil && request.Device != nil {
 		addNonEmptyHeaders(&headers, map[string]string{
-			"Referer":         request.Site.Page,
 			"Accept-Language": request.Device.Language,
 			"User-Agent":      request.Device.UA,
 			"X-Forwarded-For": request.Device.IP,
 			"X-Real-Ip":       request.Device.IP,
-			"Content-Type":    "application/json;charset=utf-8",
-			"Accept":          "application/json",
 		})
 	}
+	if request != nil && request.Site != nil {
+		addNonEmptyHeaders(&headers, map[string]string{
+			"Referer": request.Site.Page,
+		})
+	}
+
 	return headers
 }
 
@@ -263,10 +271,6 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 }
 
 func getBidFromResponse(bidResponse *resetDigitalBid) (*openrtb2.Bid, error) {
-	if bidResponse.CPM == 0 {
-		// brian to check how to report this
-		return nil, nil
-	}
 
 	bid := &openrtb2.Bid{
 		ID:    bidResponse.BidID,
