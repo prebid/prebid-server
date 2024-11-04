@@ -72,6 +72,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/colossus"
 	"github.com/prebid/prebid-server/v3/adapters/compass"
 	"github.com/prebid/prebid-server/v3/adapters/concert"
+	"github.com/prebid/prebid-server/v3/adapters/connatix"
 	"github.com/prebid/prebid-server/v3/adapters/connectad"
 	"github.com/prebid/prebid-server/v3/adapters/consumable"
 	"github.com/prebid/prebid-server/v3/adapters/conversant"
