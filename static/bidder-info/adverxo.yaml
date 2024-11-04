@@ -13,3 +13,10 @@ capabilities:
       - banner
       - native
       - video
+userSync:
+  iframe:
+    url: https://pbsadverxo.com/usync?type=iframe&gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
+    userMacro: $UID
+  redirect:
+    url: https://pbsadverxo.com/usync?type=image&gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
+    userMacro: $UID
