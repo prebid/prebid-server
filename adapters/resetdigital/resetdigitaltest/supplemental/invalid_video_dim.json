@@ -44,9 +44,18 @@
             "imp_id": "001",
             "media_types": {
               "banner": {
-               "sizes": null
+                "mimes": null,
+                "sizes": null
               },
               "video": {
+                "sizes": null,
+                "mimes": [
+                  "video/x-flv",
+                  "video/mp4"
+                ]
+              },
+              "audio": {
+                "mimes": null,
                 "sizes": null
               }
             },

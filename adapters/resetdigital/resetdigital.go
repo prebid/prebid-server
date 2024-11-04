@@ -42,11 +42,12 @@ type resetDigitalImpExt struct {
 type resetDigitalMediaTypes struct {
 	Banner resetDigitalMediaType `json:"banner"`
 	Video  resetDigitalMediaType `json:"video"`
+	Audio  resetDigitalMediaType `json:"audio"`
 }
 type resetDigitalMediaType struct {
 	Sizes [][]int64 `json:"sizes"`
+	Mimes []string  `json:"mimes"`
 }
-
 type resetDigitalBidResponse struct {
 	Bids []resetDigitalBid `json:"bids"`
 }
@@ -77,17 +78,25 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 func getHeaders(request *openrtb2.BidRequest) http.Header {
 	headers := http.Header{}
 
-	if request != nil && request.Device != nil && request.Site != nil { // what about request.App? Do we need to do something different with Referrer in the app case assuming we care about app?
+	addNonEmptyHeaders(&headers, map[string]string{
+		"Content-Type": "application/json;charset=utf-8",
+		"Accept":       "application/json",
+	})
+
+	if request != nil && request.Device != nil {
 		addNonEmptyHeaders(&headers, map[string]string{
-			"Referer":         request.Site.Page,
 			"Accept-Language": request.Device.Language,
 			"User-Agent":      request.Device.UA,
 			"X-Forwarded-For": request.Device.IP,
 			"X-Real-Ip":       request.Device.IP,
-			"Content-Type":    "application/json;charset=utf-8",
-			"Accept":          "application/json",
 		})
 	}
+	if request != nil && request.Site != nil {
+		addNonEmptyHeaders(&headers, map[string]string{
+			"Referer": request.Site.Page,
+		})
+	}
+
 	return headers
 }
 
@@ -178,6 +187,19 @@ func processDataFromRequest(requestData *openrtb2.BidRequest, imp openrtb2.Imp, 
 				[]int64{tempW, tempH},
 			)
 		}
+		if imp.Video.MIMEs != nil {
+			// reqData.Imps[0].MediaTypes.Video.Mimes = imp.Video.MIMEs
+			reqData.Imps[0].MediaTypes.Video.Mimes = append(
+				reqData.Imps[0].MediaTypes.Video.Mimes,
+				imp.Video.MIMEs...,
+			)
+		}
+	}
+	if bidType == openrtb_ext.BidTypeAudio && imp.Audio != nil && imp.Audio.MIMEs != nil {
+		reqData.Imps[0].MediaTypes.Audio.Mimes = append(
+			reqData.Imps[0].MediaTypes.Audio.Mimes,
+			imp.Audio.MIMEs...,
+		)
 	}
 
 	var bidderExt adapters.ExtImpBidder
@@ -249,10 +271,6 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 }
 
 func getBidFromResponse(bidResponse *resetDigitalBid) (*openrtb2.Bid, error) {
-	if bidResponse.CPM == 0 {
-		// brian to check how to report this
-		return nil, nil
-	}
 
 	bid := &openrtb2.Bid{
 		ID:    bidResponse.BidID,
@@ -295,6 +313,8 @@ func GetMediaTypeForImp(reqImps map[string]openrtb2.Imp, bidImpID string) (openr
 	if reqImp, ok := reqImps[bidImpID]; ok {
 		if reqImp.Banner == nil && reqImp.Video != nil {
 			mediaType = openrtb_ext.BidTypeVideo
+		} else if reqImp.Audio != nil {
+			mediaType = openrtb_ext.BidTypeAudio
 		}
 		return mediaType, nil
 	}

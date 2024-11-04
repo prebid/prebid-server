@@ -32,10 +32,16 @@
             "imp_id": "001",
             "media_types": {
               "banner": {
+                "mimes": null,
                 "sizes": null
               },
               "video": {
-                  "sizes": null
+                "mimes": null,
+                "sizes": null
+              },
+              "audio": {
+                "sizes": null,
+                "mimes": ["audio/mpeg"]
               }
             },
             "zone_id": {
