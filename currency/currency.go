@@ -1,7 +1,7 @@
 package currency
 
 import (
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 func GetAuctionCurrencyRates(currencyConverter *RateConverter, requestRates *openrtb_ext.ExtRequestCurrency) Conversions {

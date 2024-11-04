@@ -65,7 +65,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "json: cannot unmarshal string into Go value of type []adocean.ResponseAdUnit",
+      "value": "decode slice: expect [ or n, but found \"",
       "comparison": "literal"
     }
   ]

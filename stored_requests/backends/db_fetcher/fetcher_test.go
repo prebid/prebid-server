@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/prebid/prebid-server/v2/stored_requests/backends/db_provider"
+	"github.com/prebid/prebid-server/v3/stored_requests/backends/db_provider"
 	"github.com/stretchr/testify/assert"
 )
 

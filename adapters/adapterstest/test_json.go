@@ -8,15 +8,16 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/mitchellh/copystructure"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/currency"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/currency"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 	"github.com/yudai/gojsondiff"
 	"github.com/yudai/gojsondiff/formatter"
@@ -272,6 +273,10 @@ func assertErrorList(t *testing.T, description string, actual []error, expected 
 		} else if expected[i].Comparison == "regex" {
 			if matched, _ := regexp.MatchString(expected[i].Value, actual[i].Error()); !matched {
 				t.Errorf(`%s error[%d] had wrong message. Expected match with regex "%s", got "%s"`, description, i, expected[i].Value, actual[i].Error())
+			}
+		} else if expected[i].Comparison == "startswith" {
+			if !strings.HasPrefix(actual[i].Error(), expected[i].Value) {
+				t.Errorf(`%s error[%d] had wrong message. Expected to start with "%s", got "%s"`, description, i, expected[i].Value, actual[i].Error())
 			}
 		} else {
 			t.Fatalf(`invalid comparison type "%s"`, expected[i].Comparison)
