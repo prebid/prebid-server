@@ -224,6 +224,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/zeta_global_ssp"
 	"github.com/prebid/prebid-server/v3/adapters/zmaticoo"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/adapters/resetdigital"
 )
 
 // Adapter registration is kept in this separate file for ease of use and to aid
