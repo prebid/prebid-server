@@ -46,7 +46,7 @@ type resetDigitalMediaTypes struct {
 }
 type resetDigitalMediaType struct {
 	Sizes [][]int64 `json:"sizes"`
-	Mimes []string `json:"mimes"`
+	Mimes []string  `json:"mimes"`
 }
 type resetDigitalBidResponse struct {
 	Bids []resetDigitalBid `json:"bids"`
@@ -179,15 +179,18 @@ func processDataFromRequest(requestData *openrtb2.BidRequest, imp openrtb2.Imp, 
 				[]int64{tempW, tempH},
 			)
 		}
-		if imp.Video.MIMEs != nil{
+		if imp.Video.MIMEs != nil {
+			// reqData.Imps[0].MediaTypes.Video.Mimes = imp.Video.MIMEs
 			reqData.Imps[0].MediaTypes.Video.Mimes = append(
-				imp.Video.MIMEs,
+				reqData.Imps[0].MediaTypes.Video.Mimes,
+				imp.Video.MIMEs...,
 			)
 		}
 	}
-	if bidType == openrtb_ext.BidTypeAudio && imp.Audio != nil && imp.Audio.MIMEs != nil{
+	if bidType == openrtb_ext.BidTypeAudio && imp.Audio != nil && imp.Audio.MIMEs != nil {
 		reqData.Imps[0].MediaTypes.Audio.Mimes = append(
-			imp.Audio.MIMEs,
+			reqData.Imps[0].MediaTypes.Audio.Mimes,
+			imp.Audio.MIMEs...,
 		)
 	}
 
