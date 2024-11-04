@@ -1,0 +1,26 @@
+endpoint: "https://api.imotech.tech/Ad/GetAdOut?sspid={{.SspId}}"
+endpointCompression: gzip
+geoscope:
+  - USA
+  - RUS
+  - JPN
+  - BRA
+  - KOR
+  - IDN
+  - TUR
+  - SAU
+  - MEX
+maintainer:
+  email: bigoads-prebid@bigo.sg
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native

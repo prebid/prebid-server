@@ -1,0 +1,77 @@
+{
+  "mockBidRequest": {
+    "id": "testid",
+    "imp": [
+      {
+        "id": "testimpid",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "bidfloor": 0.01,
+        "ext": {
+          "bidder": {
+            "placementId": "1101",
+            "inventoryId": "1101",
+            "publisherId": "101"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://adapter.endpoint/?macro=101",
+        "body": {
+          "id": "testid",
+          "imp": [
+            {
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "id": "testimpid",
+              "bidfloor": 0.01,
+              "bidfloorcur": "USD",
+              "ext": {
+                "bidder": {
+                  "placementId": "1101",
+                  "inventoryId": "1101",
+                  "publisherId": "101"
+                }
+              }
+            }
+          ],
+          "ext": {
+            "displayio": {
+              "placementId": "1101",
+              "inventoryId": "1101"
+            }
+          }
+        },
+        "impIDs": [
+          "testimpid"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": ""
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Bad server response: .*",
+      "comparison": "regex"
+    }
+  ]
+}
