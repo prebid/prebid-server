@@ -164,6 +164,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/qt"
 	"github.com/prebid/prebid-server/v3/adapters/readpeak"
 	"github.com/prebid/prebid-server/v3/adapters/relevantdigital"
+	"github.com/prebid/prebid-server/v3/adapters/resetdigital"
 	"github.com/prebid/prebid-server/v3/adapters/revcontent"
 	"github.com/prebid/prebid-server/v3/adapters/richaudience"
 	"github.com/prebid/prebid-server/v3/adapters/rise"
@@ -224,7 +225,6 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/zeta_global_ssp"
 	"github.com/prebid/prebid-server/v3/adapters/zmaticoo"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/adapters/resetdigital"
 )
 
 // Adapter registration is kept in this separate file for ease of use and to aid
