@@ -1,0 +1,90 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [{"w": 128, "h": 100}]
+        },
+        "ext": {
+          "bidder": {
+            "assetKey": "OGY",
+            "adUnitId": "123"
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://ogury.example.com",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id":"test-imp-id",
+              "banner": {
+                "format": [{"w": 128, "h": 100}]
+              },
+              "ext": {
+                "assetKey": "OGY",
+                "adUnitId": "123",
+                "bidder": {
+                  "assetKey": "OGY",
+                  "adUnitId": "123"
+                },
+                "prebid": null
+              }
+            }
+          ]
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "seat",
+              "bid": [{
+                "id": "some-UUID",
+                "impid": "test-imp-id",
+                "price": 0.500000,
+                "adm": "adm string",
+                "crid": "crid_10",
+                "h": 100,
+                "w": 128
+              }]
+            }
+          ]
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "some-UUID",
+            "impid": "test-imp-id",
+            "price": 0.5,
+            "adm": "adm string",
+            "crid": "crid_10",
+            "h": 100,
+            "w": 128
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
+
