@@ -7,10 +7,11 @@ import (
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -84,7 +85,7 @@ func (a *adapter) MakeBids(
 
 	responseBody := bidderRawResponse.Body
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(responseBody, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(responseBody, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Bad response, %s", err),
 		}}
@@ -101,7 +102,7 @@ func (a *adapter) MakeBids(
 	for i := range sb.Bid {
 		var bidType openrtb_ext.BidType
 		var bidExt bidExt
-		if err := json.Unmarshal(sb.Bid[i].Ext, &bidExt); err != nil {
+		if err := jsonutil.Unmarshal(sb.Bid[i].Ext, &bidExt); err != nil {
 			bidType = openrtb_ext.BidTypeBanner
 		} else {
 			bidType = bidExt.MediaType
