@@ -7,8 +7,8 @@ import (
 	cglog "github.com/chasex/glog"
 	"github.com/golang/glog"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/analytics"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/analytics"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type RequestType string

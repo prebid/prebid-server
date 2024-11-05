@@ -82,7 +82,7 @@
   "expectedBidResponses": [],
     "expectedMakeBidsErrors": [
       {
-        "value": "json: cannot unmarshal number into Go struct field CPMValues.*\\.amount of type string",
+        "value": "cannot unmarshal adhese.CPMValues.Amount: expects \" or n, but found 1",
         "comparison": "regex"
       }, {
         "value": "Response (.*\n.*)+ could not be parsed as generic Adhese bid",

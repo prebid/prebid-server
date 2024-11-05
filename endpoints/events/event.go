@@ -10,17 +10,17 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 
 	"github.com/julienschmidt/httprouter"
-	accountService "github.com/prebid/prebid-server/v2/account"
-	"github.com/prebid/prebid-server/v2/analytics"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/metrics"
-	"github.com/prebid/prebid-server/v2/privacy"
-	"github.com/prebid/prebid-server/v2/stored_requests"
-	"github.com/prebid/prebid-server/v2/util/httputil"
+	accountService "github.com/prebid/prebid-server/v3/account"
+	"github.com/prebid/prebid-server/v3/analytics"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/metrics"
+	"github.com/prebid/prebid-server/v3/privacy"
+	"github.com/prebid/prebid-server/v3/stored_requests"
+	"github.com/prebid/prebid-server/v3/util/httputil"
 )
 
 const (
@@ -216,7 +216,7 @@ func HandleAccountServiceErrors(errs []error) (status int, messages []string) {
 
 		errCode := errortypes.ReadCode(er)
 
-		if errCode == errortypes.BlacklistedAppErrorCode || errCode == errortypes.AccountDisabledErrorCode {
+		if errCode == errortypes.BlockedAppErrorCode || errCode == errortypes.AccountDisabledErrorCode {
 			status = http.StatusServiceUnavailable
 		}
 		if errCode == errortypes.MalformedAcctErrorCode {

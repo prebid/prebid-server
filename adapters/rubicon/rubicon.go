@@ -3,7 +3,6 @@ package rubicon
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/v2/version"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -11,11 +10,14 @@ import (
 
 	"github.com/golang-collections/collections/stack"
 
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/maputil"
+	"github.com/prebid/prebid-server/v3/version"
+
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/maputil"
 
 	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v20/adcom1"
@@ -481,7 +483,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			if sourceCopy.SChain != nil {
 				var sourceCopyExt openrtb_ext.ExtSource
 				if sourceCopy.Ext != nil {
-					if err = json.Unmarshal(sourceCopy.Ext, &sourceCopyExt); err != nil {
+					if err = jsonutil.Unmarshal(sourceCopy.Ext, &sourceCopyExt); err != nil {
 						errs = append(errs, &errortypes.BadInput{Message: err.Error()})
 						continue
 					}
@@ -511,7 +513,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 
 			var regsCopyExt openrtb_ext.ExtRegs
 			if regsCopy.Ext != nil {
-				if err = json.Unmarshal(regsCopy.Ext, &regsCopyExt); err != nil {
+				if err = jsonutil.Unmarshal(regsCopy.Ext, &regsCopyExt); err != nil {
 					errs = append(errs, &errortypes.BadInput{Message: err.Error()})
 					continue
 				}
@@ -579,7 +581,7 @@ func createImpsToExtMap(imps []openrtb2.Imp) (map[*openrtb2.Imp]rubiconExtImpBid
 	for _, imp := range imps {
 		impCopy := imp
 		var bidderExt rubiconExtImpBidder
-		if err = json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		if err = jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			errs = append(errs, &errortypes.BadInput{
 				Message: err.Error(),
 			})
@@ -723,14 +725,14 @@ func (a *RubiconAdapter) updateImpRpTarget(extImp rubiconExtImpBidder, extImpRub
 
 	var data rubiconData
 	if len(extImp.Data) > 0 {
-		err := json.Unmarshal(extImp.Data, &data)
+		err := jsonutil.Unmarshal(extImp.Data, &data)
 		if err != nil {
 			return nil, err
 		}
 	}
 	var contextData rubiconData
 	if len(extImp.Context.Data) > 0 {
-		err := json.Unmarshal(extImp.Context.Data, &contextData)
+		err := jsonutil.Unmarshal(extImp.Context.Data, &contextData)
 		if err != nil {
 			return nil, err
 		}
@@ -983,7 +985,7 @@ func rawJSONToMap(message json.RawMessage) (map[string]interface{}, error) {
 
 func mapFromRawJSON(message json.RawMessage) (map[string]interface{}, error) {
 	targetAsMap := make(map[string]interface{})
-	err := json.Unmarshal(message, &targetAsMap)
+	err := jsonutil.Unmarshal(message, &targetAsMap)
 	if err != nil {
 		return nil, err
 	}
@@ -1022,7 +1024,7 @@ func resolveNativeObject(native *openrtb2.Native, target map[string]interface{})
 		return native, nil
 	}
 
-	err := json.Unmarshal([]byte(native.Request), &target)
+	err := jsonutil.Unmarshal([]byte(native.Request), &target)
 	if err != nil {
 		return nil, err
 	}
@@ -1047,7 +1049,7 @@ func resolveNativeObject(native *openrtb2.Native, target map[string]interface{})
 
 func setImpNative(jsonData []byte, requestNative map[string]interface{}) ([]byte, error) {
 	var jsonMap map[string]interface{}
-	if err := json.Unmarshal(jsonData, &jsonMap); err != nil {
+	if err := jsonutil.Unmarshal(jsonData, &jsonMap); err != nil {
 		return jsonData, err
 	}
 
@@ -1092,14 +1094,14 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb2.BidRequest, external
 	}
 
 	var bidResp rubiconBidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: err.Error(),
 		}}
 	}
 
 	var bidReq openrtb2.BidRequest
-	if err := json.Unmarshal(externalRequest.Body, &bidReq); err != nil {
+	if err := jsonutil.Unmarshal(externalRequest.Body, &bidReq); err != nil {
 		return nil, []error{err}
 	}
 
@@ -1154,7 +1156,7 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb2.BidRequest, external
 
 				rubiconBidAsBytes, _ := json.Marshal(bid)
 				if len(rubiconBidAsBytes) > 0 {
-					err = json.Unmarshal(rubiconBidAsBytes, &ortbBid)
+					err = jsonutil.Unmarshal(rubiconBidAsBytes, &ortbBid)
 					if err != nil {
 						return nil, []error{err}
 					}
@@ -1178,12 +1180,12 @@ func mapImpIdToCpmOverride(imps []openrtb2.Imp) map[string]float64 {
 	impIdToCmpOverride := make(map[string]float64)
 	for _, imp := range imps {
 		var bidderExt adapters.ExtImpBidder
-		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			continue
 		}
 
 		var rubiconExt openrtb_ext.ExtImpRubicon
-		if err := json.Unmarshal(bidderExt.Bidder, &rubiconExt); err != nil {
+		if err := jsonutil.Unmarshal(bidderExt.Bidder, &rubiconExt); err != nil {
 			continue
 		}
 
@@ -1209,7 +1211,7 @@ func resolveAdm(bid rubiconBid) string {
 
 func cmpOverrideFromBidRequest(bidRequest *openrtb2.BidRequest) float64 {
 	var bidRequestExt bidRequestExt
-	if err := json.Unmarshal(bidRequest.Ext, &bidRequestExt); err != nil {
+	if err := jsonutil.Unmarshal(bidRequest.Ext, &bidRequestExt); err != nil {
 		return 0
 	}
 
@@ -1222,7 +1224,7 @@ func updateBidExtWithMetaNetworkId(bid rubiconBid, buyer int) json.RawMessage {
 	}
 	var bidExt *extPrebid
 	if bid.Ext != nil {
-		if err := json.Unmarshal(bid.Ext, &bidExt); err != nil {
+		if err := jsonutil.Unmarshal(bid.Ext, &bidExt); err != nil {
 			return nil
 		}
 	}

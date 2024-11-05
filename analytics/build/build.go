@@ -5,15 +5,15 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/v2/analytics"
-	"github.com/prebid/prebid-server/v2/analytics/agma"
-	"github.com/prebid/prebid-server/v2/analytics/clients"
-	"github.com/prebid/prebid-server/v2/analytics/filesystem"
-	"github.com/prebid/prebid-server/v2/analytics/pubstack"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/ortb"
-	"github.com/prebid/prebid-server/v2/privacy"
+	"github.com/prebid/prebid-server/v3/analytics"
+	"github.com/prebid/prebid-server/v3/analytics/agma"
+	"github.com/prebid/prebid-server/v3/analytics/clients"
+	"github.com/prebid/prebid-server/v3/analytics/filesystem"
+	"github.com/prebid/prebid-server/v3/analytics/pubstack"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/ortb"
+	"github.com/prebid/prebid-server/v3/privacy"
 )
 
 // Modules that need to be logged to need to be initialized here
