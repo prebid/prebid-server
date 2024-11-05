@@ -1,0 +1,417 @@
+{
+  "description": "Request with all 2.5 ext fields that were moved into 2.6 ortb fields",
+  "config": {
+    "mockBidders": [
+      {
+        "bidderName": "appnexus",
+        "currency": "USD",
+        "price": 15
+      },
+      {
+        "bidderName": "rubicon",
+        "currency": "USD",
+        "price": 1.00
+      }
+    ],
+    "bidderInfoOverrides": {
+      "appnexus": {
+        "openrtb": {
+          "version": "2.5"
+        }
+      },
+      "rubicon": {
+        "openrtb": {
+          "version": "2.6"
+        }
+      }
+    }
+  },
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "prebid.org",
+      "inventorypartnerdomain": "any-domain"
+    },
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "prebid": {
+            "bidder": {
+              "appnexus": {
+                "placementId": 12883451
+              },
+              "rubicon": {
+                "accountId": 1,
+                "siteId": 2,
+                "zoneId": 3
+              }
+            },
+            "is_rewarded_inventory": 1
+          }
+        },
+        "refresh": {
+          "count": 10
+        }
+      }
+    ],
+    "regs": {
+      "ext": {
+        "gdpr": 1,
+        "us_privacy": "1YYY"
+      }
+    },
+    "user": {
+      "ext": {
+        "consent": "some-consent-string",
+        "eids": [
+          {
+              "source": "source",
+              "uids": [
+                  {
+                      "id": "1",
+                      "atype": 1,
+                      "ext": {}
+                  },
+                  {
+                      "id": "1",
+                      "atype": 1,
+                      "ext": {}
+                  }
+              ],
+              "ext": {}
+          }
+        ]
+      }
+    },
+    "source": {
+      "ext": {
+        "schain": {
+          "complete": 1,
+          "nodes": [
+              {
+                  "asi": "whatever.com",
+                  "sid": "1234",
+                  "rid": "123-456-7890",
+                  "hp": 1
+              }
+          ],
+          "ver": "2.0"
+        }
+      }
+    },
+    "ext": {},
+    "cattax": 20,
+    "acat": ["any-acat"]
+  },
+  "expectedValidatedBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "prebid.org",
+      "inventorypartnerdomain": "any-domain",
+      "ext": {
+        "amp": 0
+      }
+    },
+    "at": 1,
+    "device": {
+      "ip": "192.0.2.1"
+    },
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "prebid": {
+            "bidder": {
+              "appnexus": {
+                "placementId": 12883451
+              },
+              "rubicon": {
+                "accountId": 1,
+                "siteId": 2,
+                "zoneId": 3
+              }
+            }
+          }
+        },
+        "secure": 1,
+        "rwdd": 1,
+        "refresh": {
+          "count": 10
+        }
+      }
+    ],
+    "regs": {
+      "gdpr": 1,
+      "us_privacy": "1YYY"
+    },
+    "user": {
+      "consent": "some-consent-string",
+      "eids": [
+        {
+            "source": "source",
+            "uids": [
+                {
+                    "id": "1",
+                    "atype": 1,
+                    "ext": {}
+                },
+                {
+                    "id": "1",
+                    "atype": 1,
+                    "ext": {}
+                }
+            ],
+            "ext": {}
+        }
+      ]
+    },
+    "source": {
+      "schain": {
+        "complete": 1,
+        "nodes": [
+            {
+                "asi": "whatever.com",
+                "sid": "1234",
+                "rid": "123-456-7890",
+                "hp": 1
+            }
+        ],
+        "ver": "2.0"
+      }
+    },
+    "cattax": 20,
+    "acat": ["any-acat"]
+  },
+  "expectedMockBidderRequests": {
+    "appnexus": {
+      "id": "some-request-id",
+      "site": {
+        "page": "prebid.org",
+        "inventorypartnerdomain": "any-domain",
+        "ext": {
+          "amp": 0
+        }
+      },
+      "at": 1,
+      "device": {
+        "ip": "192.0.2.1"
+      },
+      "imp": [
+      {
+        "id": "some-impression-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": 12883451
+          },
+          "prebid": {
+            "is_rewarded_inventory": 1
+          }
+        },
+        "refresh": {
+          "count": 10
+        },
+        "secure": 1
+      }],
+      "regs": {
+        "ext": {
+          "gdpr": 1,
+          "us_privacy": "1YYY"
+        }
+      },
+      "source": {
+        "ext": {
+          "schain": {
+            "complete": 1,
+            "nodes": [
+                {
+                    "asi": "whatever.com",
+                    "sid": "1234",
+                    "rid": "123-456-7890",
+                    "hp": 1
+                }
+            ],
+            "ver": "2.0"
+          }
+        }
+      },
+      "user": {
+        "ext": {
+          "consent": "some-consent-string",
+          "eids": [
+            {
+                "source": "source",
+                "uids": [
+                    {
+                        "id": "1",
+                        "atype": 1,
+                        "ext": {}
+                    },
+                    {
+                        "id": "1",
+                        "atype": 1,
+                        "ext": {}
+                    }
+                ],
+                "ext": {}
+            }
+          ]
+        }
+      },
+      "cattax": 20,
+      "acat": ["any-acat"]
+    },
+    "rubicon": {
+      "id": "some-request-id",
+      "site": {
+        "page": "prebid.org",
+        "inventorypartnerdomain": "any-domain",
+        "ext": {
+          "amp": 0
+        }
+      },
+      "at": 1,
+      "device": {
+        "ip": "192.0.2.1"
+      },
+      "imp": [
+      {
+        "id": "some-impression-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "accountId": 1,
+            "siteId": 2,
+            "zoneId": 3
+          }
+        },
+        "secure": 1,
+        "refresh": {
+          "count": 10
+        },
+        "rwdd": 1
+      }],
+      "regs": {
+        "gdpr": 1,
+        "us_privacy": "1YYY"
+      },
+      "source": {
+        "schain": {
+          "complete": 1,
+          "nodes": [
+              {
+                  "asi": "whatever.com",
+                  "sid": "1234",
+                  "rid": "123-456-7890",
+                  "hp": 1
+              }
+          ],
+          "ver": "2.0"
+        }
+      },
+      "user": {
+        "consent": "some-consent-string",
+        "eids": [
+          {
+              "source": "source",
+              "uids": [
+                  {
+                      "id": "1",
+                      "atype": 1,
+                      "ext": {}
+                  },
+                  {
+                      "id": "1",
+                      "atype": 1,
+                      "ext": {}
+                  }
+              ],
+              "ext": {}
+          }
+        ]
+      },
+      "cattax": 20,
+      "acat": ["any-acat"]
+    }
+  },
+  "expectedBidResponse": {
+    "id": "some-request-id",
+    "seatbid": [
+      {
+        "bid": [
+          {
+            "id": "appnexus-bid",
+            "impid": "some-impression-id",
+            "price": 15,
+            "ext": {
+              "origbidcpm": 15,
+              "origbidcur": "USD",
+              "prebid": {
+                "meta": {
+                  "adaptercode": "appnexus"
+                },
+                "type": "banner"
+              }
+            }
+          }
+        ],
+        "seat": "appnexus"
+      },
+      {
+        "bid": [
+          {
+            "id": "rubicon-bid",
+            "impid": "some-impression-id",
+            "price": 1.00,
+            "ext": {
+              "origbidcpm": 1.00,
+              "origbidcur": "USD",
+              "prebid": {
+                "meta": {
+                  "adaptercode": "rubicon"
+                },
+                "type": "banner"
+              }
+            }
+          }
+        ],
+        "seat": "rubicon"
+      }
+    ],
+    "bidid": "test-bid-id",
+    "cur": "USD",
+    "nbr": 0
+  },
+  "expectedReturnCode": 200
+}

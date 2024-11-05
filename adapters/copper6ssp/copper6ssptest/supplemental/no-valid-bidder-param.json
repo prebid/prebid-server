@@ -35,7 +35,7 @@
     },
     "expectedMakeRequestsErrors": [
         {
-            "value": "json: cannot unmarshal array into Go struct field ImpExtCopper6ssp.endpointId of type string",
+            "value": "cannot unmarshal openrtb_ext.ImpExtCopper6ssp.EndpointID: expects \" or n, but found [",
             "comparison": "literal"
         }
     ]
