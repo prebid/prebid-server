@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/51Degrees/device-detection-go/v4/dd"
-	"github.com/prebid/prebid-server/v2/hooks/hookstage"
+	"github.com/prebid/prebid-server/v3/hooks/hookstage"
 )
 
 type defaultEvidenceExtractor struct {
