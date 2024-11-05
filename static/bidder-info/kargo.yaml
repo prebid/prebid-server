@@ -15,4 +15,5 @@ userSync:
     userMacro: "$UID"
 endpointCompression: "GZIP"
 openrtb:
+  version: 2.6
   gpp-supported: true

@@ -22,23 +22,23 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/analytics"
-	analyticsBuild "github.com/prebid/prebid-server/v2/analytics/build"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/exchange"
-	"github.com/prebid/prebid-server/v2/hooks"
-	"github.com/prebid/prebid-server/v2/hooks/hookexecution"
-	"github.com/prebid/prebid-server/v2/hooks/hookstage"
-	"github.com/prebid/prebid-server/v2/metrics"
-	metricsConfig "github.com/prebid/prebid-server/v2/metrics/config"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/ortb"
-	"github.com/prebid/prebid-server/v2/stored_requests/backends/empty_fetcher"
-	"github.com/prebid/prebid-server/v2/stored_responses"
-	"github.com/prebid/prebid-server/v2/util/iputil"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v3/analytics"
+	analyticsBuild "github.com/prebid/prebid-server/v3/analytics/build"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/exchange"
+	"github.com/prebid/prebid-server/v3/hooks"
+	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v3/hooks/hookstage"
+	"github.com/prebid/prebid-server/v3/metrics"
+	metricsConfig "github.com/prebid/prebid-server/v3/metrics/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/ortb"
+	"github.com/prebid/prebid-server/v3/stored_requests/backends/empty_fetcher"
+	"github.com/prebid/prebid-server/v3/stored_responses"
+	"github.com/prebid/prebid-server/v3/util/iputil"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -83,8 +83,8 @@ func TestJsonSampleRequests(t *testing.T) {
 			"account-malformed",
 		},
 		{
-			"Asserts we return 503s on requests with blacklisted accounts and apps.",
-			"blacklisted",
+			"Asserts we return 503s on requests with blocked apps.",
+			"blocked",
 		},
 		{
 			"Assert that requests that come with no user id nor app id return error if the `AccountRequired` field in the `config.Configuration` structure is set to true",
@@ -169,16 +169,35 @@ func runJsonBasedTest(t *testing.T, filename, desc string) {
 	// Build endpoint for testing. If no error, run test case
 	cfg := &config.Configuration{MaxRequestSize: maxSize}
 	if test.Config != nil {
-		cfg.BlacklistedApps = test.Config.BlacklistedApps
-		cfg.BlacklistedAppMap = test.Config.getBlacklistedAppMap()
+		cfg.BlockedApps = test.Config.BlockedApps
+		cfg.BlockedAppsLookup = test.Config.getBlockedAppLookup()
 		cfg.AccountRequired = test.Config.AccountRequired
 	}
 	cfg.MarshalAccountDefaults()
 	test.endpointType = OPENRTB_ENDPOINT
 
-	auctionEndpointHandler, _, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg)
+	auctionEndpointHandler, ex, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg)
 	if assert.NoError(t, err) {
 		assert.NotPanics(t, func() { runEndToEndTest(t, auctionEndpointHandler, test, fileData, filename) }, filename)
+	}
+
+	if test.ExpectedValidatedBidReq != nil {
+		// compare as json to ignore whitespace and ext field ordering
+		actualJson, err := jsonutil.Marshal(ex.actualValidatedBidReq)
+		if assert.NoError(t, err, "Error converting actual bid request to json. Test file: %s", filename) {
+			assert.JSONEq(t, string(test.ExpectedValidatedBidReq), string(actualJson), "Not the expected validated request. Test file: %s", filename)
+		}
+	}
+	if test.ExpectedMockBidderRequests != nil {
+		for bidder, req := range test.ExpectedMockBidderRequests {
+			a, ok := ex.adapters[openrtb_ext.BidderName(bidder)]
+			if !ok {
+				t.Fatalf("Unexpected bidder %s has an expected mock bidder request. Test file: %s", bidder, filename)
+			}
+			aa := a.(*exchange.BidderAdapter)
+			ma := aa.Bidder.(*mockAdapter)
+			assert.JSONEq(t, string(req), string(ma.requestData[0]), "Not the expected mock bidder request for bidder %s. Test file: %s", bidder, filename)
+		}
 	}
 
 	// Close servers regardless if the test case was run or not
@@ -2775,7 +2794,7 @@ func TestCCPAInvalid(t *testing.T) {
 			ID: "anySiteID",
 		},
 		Regs: &openrtb2.Regs{
-			Ext: json.RawMessage(`{"us_privacy": "invalid by length"}`),
+			USPrivacy: "invalid by length",
 		},
 	}
 
@@ -2936,134 +2955,6 @@ func TestSChainInvalid(t *testing.T) {
 
 	expectedError := errors.New("request.ext.prebid.schains contains multiple schains for bidder appnexus; it must contain no more than one per bidder.")
 	assert.ElementsMatch(t, errL, []error{expectedError})
-}
-
-func TestMapSChains(t *testing.T) {
-	const seller1SChain string = `"schain":{"complete":1,"nodes":[{"asi":"directseller1.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}`
-	const seller2SChain string = `"schain":{"complete":2,"nodes":[{"asi":"directseller2.com","sid":"00002","rid":"BidRequest2","hp":2}],"ver":"2.0"}`
-
-	seller1SChainUnpacked := openrtb2.SupplyChain{
-		Complete: 1,
-		Nodes: []openrtb2.SupplyChainNode{{
-			ASI: "directseller1.com",
-			SID: "00001",
-			RID: "BidRequest1",
-			HP:  openrtb2.Int8Ptr(1),
-		}},
-		Ver: "1.0",
-	}
-
-	tests := []struct {
-		description         string
-		bidRequest          openrtb2.BidRequest
-		wantReqExtSChain    *openrtb2.SupplyChain
-		wantSourceExtSChain *openrtb2.SupplyChain
-		wantError           bool
-	}{
-		{
-			description: "invalid req.ext",
-			bidRequest: openrtb2.BidRequest{
-				Ext: json.RawMessage(`{"prebid":{"schains":invalid}}`),
-				Source: &openrtb2.Source{
-					Ext: json.RawMessage(`{}`),
-				},
-			},
-			wantError: true,
-		},
-		{
-			description: "invalid source.ext",
-			bidRequest: openrtb2.BidRequest{
-				Ext: json.RawMessage(`{}`),
-				Source: &openrtb2.Source{
-					Ext: json.RawMessage(`{"schain":invalid}}`),
-				},
-			},
-			wantError: true,
-		},
-		{
-			description: "req.ext.prebid.schains, req.source.ext.schain and req.ext.schain are nil",
-			bidRequest: openrtb2.BidRequest{
-				Ext: json.RawMessage(`{}`),
-				Source: &openrtb2.Source{
-					Ext: json.RawMessage(`{}`),
-				},
-			},
-			wantReqExtSChain:    nil,
-			wantSourceExtSChain: nil,
-		},
-		{
-			description: "req.ext.prebid.schains is not nil",
-			bidRequest: openrtb2.BidRequest{
-				Ext: json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],` + seller1SChain + `}]}}`),
-				Source: &openrtb2.Source{
-					Ext: json.RawMessage(`{}`),
-				},
-			},
-			wantReqExtSChain:    nil,
-			wantSourceExtSChain: nil,
-		},
-		{
-			description: "req.source.ext is not nil",
-			bidRequest: openrtb2.BidRequest{
-				Ext: json.RawMessage(`{}`),
-				Source: &openrtb2.Source{
-					Ext: json.RawMessage(`{` + seller1SChain + `}`),
-				},
-			},
-			wantReqExtSChain:    nil,
-			wantSourceExtSChain: &seller1SChainUnpacked,
-		},
-		{
-			description: "req.ext.schain is not nil",
-			bidRequest: openrtb2.BidRequest{
-				Ext: json.RawMessage(`{` + seller1SChain + `}`),
-				Source: &openrtb2.Source{
-					Ext: json.RawMessage(`{}`),
-				},
-			},
-			wantReqExtSChain:    nil,
-			wantSourceExtSChain: &seller1SChainUnpacked,
-		},
-		{
-			description: "req.source.ext.schain and req.ext.schain are not nil",
-			bidRequest: openrtb2.BidRequest{
-				Ext: json.RawMessage(`{` + seller2SChain + `}`),
-				Source: &openrtb2.Source{
-					Ext: json.RawMessage(`{` + seller1SChain + `}`),
-				},
-			},
-			wantReqExtSChain:    nil,
-			wantSourceExtSChain: &seller1SChainUnpacked,
-		},
-	}
-
-	for _, test := range tests {
-		reqWrapper := openrtb_ext.RequestWrapper{
-			BidRequest: &test.bidRequest,
-		}
-
-		err := mapSChains(&reqWrapper)
-
-		if test.wantError {
-			assert.NotNil(t, err, test.description)
-		} else {
-			assert.Nil(t, err, test.description)
-
-			reqExt, err := reqWrapper.GetRequestExt()
-			if err != nil {
-				assert.Fail(t, "Error getting request ext from wrapper", test.description)
-			}
-			reqExtSChain := reqExt.GetSChain()
-			assert.Equal(t, test.wantReqExtSChain, reqExtSChain, test.description)
-
-			sourceExt, err := reqWrapper.GetSourceExt()
-			if err != nil {
-				assert.Fail(t, "Error getting source ext from wrapper", test.description)
-			}
-			sourceExtSChain := sourceExt.GetSChain()
-			assert.Equal(t, test.wantSourceExtSChain, sourceExtSChain, test.description)
-		}
-	}
 }
 
 func TestSearchAccountID(t *testing.T) {
@@ -5613,6 +5504,175 @@ func TestValidateOrFillCookieDeprecation(t *testing.T) {
 				}
 			} else {
 				assert.Equal(t, string(tt.wantDeviceExt), string(tt.args.req.Device.Ext))
+			}
+		})
+	}
+}
+
+func TestSetGPCImplicitly(t *testing.T) {
+	testCases := []struct {
+		description  string
+		header       string
+		regs         *openrtb2.Regs
+		expectError  bool
+		expectedRegs *openrtb2.Regs
+	}{
+		{
+			description: "regs_ext_gpc_not_set_and_header_is_1",
+			header:      "1",
+			regs: &openrtb2.Regs{
+				Ext: []byte(`{}`),
+			},
+			expectError: false,
+			expectedRegs: &openrtb2.Regs{
+				Ext: []byte(`{"gpc":"1"}`),
+			},
+		},
+		{
+			description: "sec_gpc_header_not_set_gpc_should_not_be_modified",
+			header:      "",
+			regs: &openrtb2.Regs{
+				Ext: []byte(`{}`),
+			},
+			expectError: false,
+			expectedRegs: &openrtb2.Regs{
+				Ext: []byte(`{}`),
+			},
+		},
+		{
+			description: "sec_gpc_header_set_to_2_gpc_should_not_be_modified",
+			header:      "2",
+			regs: &openrtb2.Regs{
+				Ext: []byte(`{}`),
+			},
+			expectError: false,
+			expectedRegs: &openrtb2.Regs{
+				Ext: []byte(`{}`),
+			},
+		},
+		{
+			description: "sec_gpc_header_set_to_1_and_regs_ext_contains_other_data",
+			header:      "1",
+			regs: &openrtb2.Regs{
+				Ext: []byte(`{"some_other_field":"some_value"}`),
+			},
+			expectError: false,
+			expectedRegs: &openrtb2.Regs{
+				Ext: []byte(`{"some_other_field":"some_value","gpc":"1"}`),
+			},
+		},
+		{
+			description: "regs_ext_gpc_not_set_and_header_not_set",
+			header:      "",
+			regs: &openrtb2.Regs{
+				Ext: []byte(`{}`),
+			},
+			expectError: false,
+			expectedRegs: &openrtb2.Regs{
+				Ext: []byte(`{}`),
+			},
+		},
+		{
+			description: "regs_ext_gpc_not_set_and_header_not_1",
+			header:      "0",
+			regs: &openrtb2.Regs{
+				Ext: []byte(`{}`),
+			},
+			expectError: false,
+			expectedRegs: &openrtb2.Regs{
+				Ext: []byte(`{}`),
+			},
+		},
+		{
+			description: "regs_ext_gpc_is_1_and_header_is_1",
+			header:      "1",
+			regs: &openrtb2.Regs{
+				Ext: []byte(`{"gpc":"1"}`),
+			},
+			expectError: false,
+			expectedRegs: &openrtb2.Regs{
+				Ext: []byte(`{"gpc":"1"}`),
+			},
+		},
+		{
+			description: "regs_ext_gpc_is_1_and_header_not_1",
+			header:      "0",
+			regs: &openrtb2.Regs{
+				Ext: []byte(`{"gpc":"1"}`),
+			},
+			expectError: false,
+			expectedRegs: &openrtb2.Regs{
+				Ext: []byte(`{"gpc":"1"}`),
+			},
+		},
+		{
+			description: "regs_ext_other_data_and_header_is_1",
+			header:      "1",
+			regs: &openrtb2.Regs{
+				Ext: []byte(`{"other":"value"}`),
+			},
+			expectError: false,
+			expectedRegs: &openrtb2.Regs{
+				Ext: []byte(`{"other":"value","gpc":"1"}`),
+			},
+		},
+		{
+			description: "regs_nil_and_header_is_1",
+			header:      "1",
+			regs:        nil,
+			expectError: false,
+			expectedRegs: &openrtb2.Regs{
+				Ext: []byte(`{"gpc":"1"}`),
+			},
+		},
+		{
+			description:  "regs_nil_and_header_not_set",
+			header:       "",
+			regs:         nil,
+			expectError:  false,
+			expectedRegs: nil,
+		},
+		{
+			description: "regs_ext_is_nil_and_header_not_set",
+			header:      "",
+			regs: &openrtb2.Regs{
+				Ext: nil,
+			},
+			expectError: false,
+			expectedRegs: &openrtb2.Regs{
+				Ext: nil,
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.description, func(t *testing.T) {
+			httpReq := &http.Request{
+				Header: http.Header{
+					http.CanonicalHeaderKey("Sec-GPC"): []string{test.header},
+				},
+			}
+
+			r := &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: test.regs,
+				},
+			}
+
+			err := setGPCImplicitly(httpReq, r)
+
+			if test.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.NoError(t, r.RebuildRequest())
+			if test.expectedRegs == nil {
+				assert.Nil(t, r.BidRequest.Regs)
+			} else if test.expectedRegs.Ext == nil {
+				assert.Nil(t, r.BidRequest.Regs.Ext)
+			} else {
+				assert.JSONEq(t, string(test.expectedRegs.Ext), string(r.BidRequest.Regs.Ext))
 			}
 		})
 	}

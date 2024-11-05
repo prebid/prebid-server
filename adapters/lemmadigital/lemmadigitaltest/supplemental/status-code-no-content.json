@@ -25,7 +25,7 @@
 
   "httpCalls": [{
     "expectedRequest": {
-      "uri": "https://sg.ads.lemmatechnologies.com/lemma/servad?pid=1&aid=1",
+      "uri": "https://test.lemmaurl.com/lemma/servad?src=prebid&pid=1&aid=1",
       "body": {
         "id": "test-request-id-video",
         "imp": [{

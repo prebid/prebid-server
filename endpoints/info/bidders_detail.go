@@ -8,9 +8,9 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 const (
@@ -19,20 +19,21 @@ const (
 )
 
 // NewBiddersDetailEndpoint builds a handler for the /info/bidders/<bidder> endpoint.
-func NewBiddersDetailEndpoint(bidders config.BidderInfos, aliases map[string]string) httprouter.Handle {
-	responses, err := prepareBiddersDetailResponse(bidders, aliases)
+func NewBiddersDetailEndpoint(bidders config.BidderInfos) httprouter.Handle {
+	responses, err := prepareBiddersDetailResponse(bidders)
 	if err != nil {
 		glog.Fatalf("error creating /info/bidders/<bidder> endpoint response: %v", err)
 	}
 
 	return func(w http.ResponseWriter, _ *http.Request, ps httprouter.Params) {
 		bidder := ps.ByName("bidderName")
+		bidderName, found := getNormalizedBidderName(bidder)
 
-		coreBidderName, found := getNormalisedBidderName(bidder, aliases)
 		if !found {
 			w.WriteHeader(http.StatusNotFound)
 		}
-		if response, ok := responses[coreBidderName]; ok {
+
+		if response, ok := responses[bidderName]; ok {
 			w.Header().Set("Content-Type", "application/json")
 			if _, err := w.Write(response); err != nil {
 				glog.Errorf("error writing response to /info/bidders/%s: %v", bidder, err)
@@ -43,25 +44,21 @@ func NewBiddersDetailEndpoint(bidders config.BidderInfos, aliases map[string]str
 	}
 }
 
-func getNormalisedBidderName(bidderName string, aliases map[string]string) (string, bool) {
+func getNormalizedBidderName(bidderName string) (string, bool) {
 	if strings.ToLower(bidderName) == "all" {
 		return "all", true
 	}
-	coreBidderName, ok := openrtb_ext.NormalizeBidderName(bidderName)
-	if !ok { //check default aliases if not found in coreBidders
-		if _, isDefaultAlias := aliases[bidderName]; isDefaultAlias {
-			return bidderName, true
-		}
+
+	bidderNameNormalized, ok := openrtb_ext.NormalizeBidderName(bidderName)
+	if !ok {
 		return "", false
 	}
-	return coreBidderName.String(), true
+
+	return bidderNameNormalized.String(), true
 }
 
-func prepareBiddersDetailResponse(bidders config.BidderInfos, aliases map[string]string) (map[string][]byte, error) {
-	details, err := mapDetails(bidders, aliases)
-	if err != nil {
-		return nil, err
-	}
+func prepareBiddersDetailResponse(bidders config.BidderInfos) (map[string][]byte, error) {
+	details := mapDetails(bidders)
 
 	responses, err := marshalDetailsResponse(details)
 	if err != nil {
@@ -77,25 +74,14 @@ func prepareBiddersDetailResponse(bidders config.BidderInfos, aliases map[string
 	return responses, nil
 }
 
-func mapDetails(bidders config.BidderInfos, aliases map[string]string) (map[string]bidderDetail, error) {
+func mapDetails(bidders config.BidderInfos) map[string]bidderDetail {
 	details := map[string]bidderDetail{}
 
 	for bidderName, bidderInfo := range bidders {
 		details[bidderName] = mapDetailFromConfig(bidderInfo)
 	}
 
-	for aliasName, bidderName := range aliases {
-		aliasBaseInfo, aliasBaseInfoFound := details[bidderName]
-		if !aliasBaseInfoFound {
-			return nil, fmt.Errorf("base adapter %s for alias %s not found", bidderName, aliasName)
-		}
-
-		aliasInfo := aliasBaseInfo
-		aliasInfo.AliasOf = bidderName
-		details[aliasName] = aliasInfo
-	}
-
-	return details, nil
+	return details
 }
 
 func marshalDetailsResponse(details map[string]bidderDetail) (map[string][]byte, error) {
@@ -150,6 +136,8 @@ type platform struct {
 
 func mapDetailFromConfig(c config.BidderInfo) bidderDetail {
 	var bidderDetail bidderDetail
+
+	bidderDetail.AliasOf = c.AliasOf
 
 	if c.Maintainer != nil {
 		bidderDetail.Maintainer = &maintainer{
