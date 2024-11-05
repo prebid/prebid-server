@@ -1,9 +1,10 @@
 package ortb
 
 import (
+	"slices"
+
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
-	"github.com/prebid/prebid-server/v2/util/sliceutil"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 )
 
 func CloneDataSlice(s []openrtb2.Data) []openrtb2.Data {
@@ -25,7 +26,7 @@ func CloneData(s openrtb2.Data) openrtb2.Data {
 
 	// Deep Copy (Pointers)
 	s.Segment = CloneSegmentSlice(s.Segment)
-	s.Ext = sliceutil.Clone(s.Ext)
+	s.Ext = slices.Clone(s.Ext)
 
 	return s
 }
@@ -48,7 +49,7 @@ func CloneSegment(s openrtb2.Segment) openrtb2.Segment {
 	// - Implicitly created by the cloned array.
 
 	// Deep Copy (Pointers)
-	s.Ext = sliceutil.Clone(s.Ext)
+	s.Ext = slices.Clone(s.Ext)
 
 	return s
 }
@@ -62,11 +63,11 @@ func CloneUser(s *openrtb2.User) *openrtb2.User {
 	c := *s
 
 	// Deep Copy (Pointers)
-	c.KwArray = sliceutil.Clone(s.KwArray)
+	c.KwArray = slices.Clone(s.KwArray)
 	c.Geo = CloneGeo(s.Geo)
 	c.Data = CloneDataSlice(s.Data)
 	c.EIDs = CloneEIDSlice(s.EIDs)
-	c.Ext = sliceutil.Clone(s.Ext)
+	c.Ext = slices.Clone(s.Ext)
 
 	return &c
 }
@@ -87,7 +88,7 @@ func CloneDevice(s *openrtb2.Device) *openrtb2.Device {
 	c.JS = ptrutil.Clone(s.JS)
 	c.GeoFetch = ptrutil.Clone(s.GeoFetch)
 	c.ConnectionType = ptrutil.Clone(s.ConnectionType)
-	c.Ext = sliceutil.Clone(s.Ext)
+	c.Ext = slices.Clone(s.Ext)
 
 	return &c
 }
@@ -108,7 +109,7 @@ func CloneUserAgent(s *openrtb2.UserAgent) *openrtb2.UserAgent {
 		mobileCopy := *s.Mobile
 		c.Mobile = &mobileCopy
 	}
-	s.Ext = sliceutil.Clone(s.Ext)
+	s.Ext = slices.Clone(s.Ext)
 
 	return &c
 }
@@ -136,8 +137,8 @@ func CloneBrandVersion(s *openrtb2.BrandVersion) *openrtb2.BrandVersion {
 	c := *s
 
 	// Deep Copy (Pointers)
-	c.Version = sliceutil.Clone(s.Version)
-	c.Ext = sliceutil.Clone(s.Ext)
+	c.Version = slices.Clone(s.Version)
+	c.Ext = slices.Clone(s.Ext)
 
 	return &c
 }
@@ -153,7 +154,7 @@ func CloneSource(s *openrtb2.Source) *openrtb2.Source {
 	// Deep Copy (Pointers)
 	c.FD = ptrutil.Clone(s.FD)
 	c.SChain = CloneSChain(s.SChain)
-	c.Ext = sliceutil.Clone(s.Ext)
+	c.Ext = slices.Clone(s.Ext)
 
 	return &c
 }
@@ -168,7 +169,7 @@ func CloneSChain(s *openrtb2.SupplyChain) *openrtb2.SupplyChain {
 
 	// Deep Copy (Pointers)
 	c.Nodes = CloneSupplyChainNodes(s.Nodes)
-	c.Ext = sliceutil.Clone(s.Ext)
+	c.Ext = slices.Clone(s.Ext)
 
 	return &c
 }
@@ -192,7 +193,7 @@ func CloneSupplyChainNode(s openrtb2.SupplyChainNode) openrtb2.SupplyChainNode {
 
 	// Deep Copy (Pointers)
 	s.HP = ptrutil.Clone(s.HP)
-	s.Ext = sliceutil.Clone(s.Ext)
+	s.Ext = slices.Clone(s.Ext)
 
 	return s
 }
@@ -208,7 +209,7 @@ func CloneGeo(s *openrtb2.Geo) *openrtb2.Geo {
 	// Deep Copy (Pointers)
 	c.Lat = ptrutil.Clone(s.Lat)
 	c.Lon = ptrutil.Clone(s.Lon)
-	c.Ext = sliceutil.Clone(s.Ext)
+	c.Ext = slices.Clone(s.Ext)
 
 	return &c
 }
@@ -232,7 +233,7 @@ func CloneEID(s openrtb2.EID) openrtb2.EID {
 
 	// Deep Copy (Pointers)
 	s.UIDs = CloneUIDSlice(s.UIDs)
-	s.Ext = sliceutil.Clone(s.Ext)
+	s.Ext = slices.Clone(s.Ext)
 
 	return s
 }
@@ -255,7 +256,7 @@ func CloneUID(s openrtb2.UID) openrtb2.UID {
 	// - Implicitly created by the cloned array.
 
 	// Deep Copy (Pointers)
-	s.Ext = sliceutil.Clone(s.Ext)
+	s.Ext = slices.Clone(s.Ext)
 
 	return s
 }
@@ -273,6 +274,22 @@ func CloneBidRequestPartial(s *openrtb2.BidRequest) *openrtb2.BidRequest {
 	c.Device = CloneDevice(s.Device)
 	c.User = CloneUser(s.User)
 	c.Source = CloneSource(s.Source)
+
+	return &c
+}
+
+func CloneRegs(s *openrtb2.Regs) *openrtb2.Regs {
+	if s == nil {
+		return nil
+	}
+
+	// Shallow Copy (Value Fields)
+	c := *s
+
+	// Deep Copy (Pointers)
+	c.GDPR = ptrutil.Clone(s.GDPR)
+	c.GPPSID = slices.Clone(s.GPPSID)
+	c.Ext = slices.Clone(s.Ext)
 
 	return &c
 }

@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/prebid/prebid-server/v2/stored_requests"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/stored_requests"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -185,7 +185,7 @@ func TestCategoriesFetcherWithPublisher(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to create a category Fetcher: %v", err)
 	}
-	category, err := fetcher.FetchCategories(nil, "test", "categories", "IAB1-1")
+	category, err := fetcher.FetchCategories(context.TODO(), "test", "categories", "IAB1-1")
 	assert.Equal(t, nil, err, "Categories were loaded incorrectly")
 	assert.Equal(t, "Beverages", category, "Categories were loaded incorrectly")
 }
@@ -195,7 +195,7 @@ func TestCategoriesFetcherWithoutPublisher(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to create a category Fetcher: %v", err)
 	}
-	category, err := fetcher.FetchCategories(nil, "test", "", "IAB1-1")
+	category, err := fetcher.FetchCategories(context.TODO(), "test", "", "IAB1-1")
 	assert.Equal(t, nil, err, "Categories were loaded incorrectly")
 	assert.Equal(t, "VideoGames", category, "Categories were loaded incorrectly")
 }
@@ -205,7 +205,7 @@ func TestCategoriesFetcherNoCategory(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to create a category Fetcher: %v", err)
 	}
-	_, fetchingErr := fetcher.FetchCategories(nil, "test", "", "IAB1-100")
+	_, fetchingErr := fetcher.FetchCategories(context.TODO(), "test", "", "IAB1-100")
 	assert.Equal(t, fmt.Errorf("Unable to find category for adserver 'test', publisherId: '', iab category: 'IAB1-100'"),
 		fetchingErr, "Categories were loaded incorrectly")
 }
@@ -215,7 +215,7 @@ func TestCategoriesFetcherBrokenJson(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to create a category Fetcher: %v", err)
 	}
-	_, fetchingErr := fetcher.FetchCategories(nil, "test", "broken", "IAB1-100")
+	_, fetchingErr := fetcher.FetchCategories(context.TODO(), "test", "broken", "IAB1-100")
 	assert.Equal(t, fmt.Errorf("Unable to unmarshal categories for adserver: 'test', publisherId: 'broken'"),
 		fetchingErr, "Categories were loaded incorrectly")
 }
@@ -225,7 +225,7 @@ func TestCategoriesFetcherNoCategoriesFile(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to create a category Fetcher: %v", err)
 	}
-	_, fetchingErr := fetcher.FetchCategories(nil, "test", "not_exists", "IAB1-100")
+	_, fetchingErr := fetcher.FetchCategories(context.TODO(), "test", "not_exists", "IAB1-100")
 	assert.Equal(t, fmt.Errorf("Unable to find mapping file for adserver: 'test', publisherId: 'not_exists'"),
 		fetchingErr, "Categories were loaded incorrectly")
 }

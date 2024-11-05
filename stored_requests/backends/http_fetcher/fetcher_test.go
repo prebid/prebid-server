@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -105,7 +105,7 @@ func TestFetchAccountsNoIDsProvided(t *testing.T) {
 	fetcher, close := newTestAccountFetcher(t, []string{"acc-1", "acc-2"})
 	defer close()
 
-	accData, errs := fetcher.FetchAccounts(nil, []string{})
+	accData, errs := fetcher.FetchAccounts(context.TODO(), []string{})
 	assert.Empty(t, errs, "Unexpected error fetching empty account list")
 	assert.Nil(t, accData, "Fetching empty account list should return nil")
 }
@@ -115,7 +115,7 @@ func TestFetchAccountsFailedBuildRequest(t *testing.T) {
 	fetcher, close := newTestAccountFetcher(t, []string{"acc-1", "acc-2"})
 	defer close()
 
-	accData, errs := fetcher.FetchAccounts(nil, []string{"acc-1"})
+	accData, errs := fetcher.FetchAccounts(nil, []string{"acc-1"}) //nolint: staticcheck // test handling of a nil context
 	assert.Len(t, errs, 1, "Fetching accounts without context should result in error ")
 	assert.Nil(t, accData, "Fetching accounts without context should return nil")
 }

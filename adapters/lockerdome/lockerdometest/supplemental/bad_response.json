@@ -57,7 +57,7 @@
 
   "expectedMakeBidsErrors": [
     {
-      "value": "Error unmarshaling LockerDome bid response - json: cannot unmarshal string into Go value of type openrtb2.BidResponse",
+      "value": "Error unmarshaling LockerDome bid response - expect { or n, but found \"",
       "comparison": "literal"
     }
   ]

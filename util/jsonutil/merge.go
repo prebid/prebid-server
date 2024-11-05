@@ -10,8 +10,7 @@ import (
 	"github.com/modern-go/reflect2"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/util/reflectutil"
+	"github.com/prebid/prebid-server/v3/errortypes"
 )
 
 // jsonConfigMergeClone uses the same configuration as the `ConfigCompatibleWithStandardLibrary` profile
@@ -31,12 +30,12 @@ func init() {
 // Fields of type json.RawMessage are merged rather than replaced.
 func MergeClone(v any, data json.RawMessage) error {
 	err := jsonConfigMergeClone.Unmarshal(data, v)
-	if err != nil {
-		return &errortypes.FailedToUnmarshal{
-			Message: tryExtractErrorMessage(err),
-		}
+	if err == nil {
+		return nil
 	}
-	return err
+	return &errortypes.FailedToUnmarshal{
+		Message: tryExtractErrorMessage(err),
+	}
 }
 
 type mergeCloneExtension struct {
@@ -98,18 +97,12 @@ type sliceCloneDecoder struct {
 }
 
 func (d *sliceCloneDecoder) Decode(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
-	// don't clone if field is being set to nil. checking for nil "consumes" the null
-	// token, so must be handled in this decoder.
-	if iter.ReadNil() {
-		d.sliceType.UnsafeSetNil(ptr)
-		return
-	}
+	// clear the field. a new slice will be created by the original decoder if needed.
+	d.sliceType.UnsafeSetNil(ptr)
 
-	// clone if there is an existing object. creation of new objects is handled by the
-	// original decoder.
-	if !d.sliceType.UnsafeIsNil(ptr) {
-		clone := reflectutil.UnsafeSliceClone(ptr, d.sliceType)
-		d.sliceType.UnsafeSet(ptr, clone)
+	// checking for nil "consumes" the null token, so must be handled in this decoder.
+	if iter.ReadNil() {
+		return
 	}
 
 	d.valueDecoder.Decode(ptr, iter)

@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/prebid/prebid-server/v2/exchange/entities"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/exchange/entities"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 const (
@@ -104,9 +104,8 @@ func (b *MacroProvider) populateRequestMacros(reqWrapper *openrtb_ext.RequestWra
 		}
 	}
 
-	userExt, err := reqWrapper.GetUserExt()
-	if err == nil && userExt != nil && userExt.GetConsent() != nil {
-		b.macros[MacroKeyConsent] = *userExt.GetConsent()
+	if reqWrapper.User != nil && len(reqWrapper.User.Consent) > 0 {
+		b.macros[MacroKeyConsent] = reqWrapper.User.Consent
 	}
 	if reqWrapper.Device != nil && reqWrapper.Device.Lmt != nil {
 		b.macros[MacroKeyLmtTracking] = strconv.Itoa(int(*reqWrapper.Device.Lmt))

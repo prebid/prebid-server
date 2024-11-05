@@ -12,11 +12,11 @@ import (
 
 	uuid "github.com/gofrs/uuid"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/exchange/entities"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/prebid_cache_client"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/exchange/entities"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/prebid_cache_client"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 const (
@@ -44,9 +44,9 @@ type DebugData struct {
 
 func (d *DebugLog) BuildCacheString() {
 	if d.Regexp != nil {
-		d.Data.Request = fmt.Sprintf(d.Regexp.ReplaceAllString(d.Data.Request, ""))
-		d.Data.Headers = fmt.Sprintf(d.Regexp.ReplaceAllString(d.Data.Headers, ""))
-		d.Data.Response = fmt.Sprintf(d.Regexp.ReplaceAllString(d.Data.Response, ""))
+		d.Data.Request = fmt.Sprint(d.Regexp.ReplaceAllString(d.Data.Request, ""))
+		d.Data.Headers = fmt.Sprint(d.Regexp.ReplaceAllString(d.Data.Headers, ""))
+		d.Data.Response = fmt.Sprint(d.Regexp.ReplaceAllString(d.Data.Response, ""))
 	}
 
 	d.Data.Request = fmt.Sprintf("<Request>%s</Request>", d.Data.Request)

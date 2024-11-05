@@ -20,11 +20,12 @@ import (
 	nativeRequests "github.com/prebid/openrtb/v20/native1/request"
 	nativeResponse "github.com/prebid/openrtb/v20/native1/response"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 )
 
 const huaweiAdxApiVersion = "3.4"
@@ -362,7 +363,7 @@ func (a *adapter) MakeBids(openRTBRequest *openrtb2.BidRequest, requestToBidder 
 	}
 
 	var huaweiAdsResponse huaweiAdsResponse
-	if err := json.Unmarshal(bidderRawResponse.Body, &huaweiAdsResponse); err != nil {
+	if err := jsonutil.Unmarshal(bidderRawResponse.Body, &huaweiAdsResponse); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: "Unable to parse server response",
 		}}
@@ -400,7 +401,7 @@ func getExtraInfo(v string) (ExtraInfo, error) {
 		return extraInfo, nil
 	}
 
-	if err := json.Unmarshal([]byte(v), &extraInfo); err != nil {
+	if err := jsonutil.Unmarshal([]byte(v), &extraInfo); err != nil {
 		return extraInfo, fmt.Errorf("invalid extra info: %v , pls check", err)
 	}
 
@@ -532,7 +533,7 @@ func getNativeFormat(adslot30 *adslot30, openRTBImp *openrtb2.Imp) error {
 	}
 
 	var nativePayload nativeRequests.Request
-	if err := json.Unmarshal(json.RawMessage(openRTBImp.Native.Request), &nativePayload); err != nil {
+	if err := jsonutil.Unmarshal(json.RawMessage(openRTBImp.Native.Request), &nativePayload); err != nil {
 		return err
 	}
 
@@ -856,7 +857,7 @@ func getDeviceIDFromUserExt(device *device, openRTBRequest *openrtb2.BidRequest)
 	}
 	if userObjExist {
 		var extUserDataHuaweiAds openrtb_ext.ExtUserDataHuaweiAds
-		if err := json.Unmarshal(openRTBRequest.User.Ext, &extUserDataHuaweiAds); err != nil {
+		if err := jsonutil.Unmarshal(openRTBRequest.User.Ext, &extUserDataHuaweiAds); err != nil {
 			return errors.New("get gaid from openrtb Device.IFA failed, and get device id failed: Unmarshal openRTBRequest.User.Ext -> extUserDataHuaweiAds. Error: " + err.Error())
 		}
 
@@ -954,7 +955,7 @@ func getReqGeoInfo(request *huaweiAdsRequest, openRTBRequest *openrtb2.BidReques
 func getReqConsentInfo(request *huaweiAdsRequest, openRTBRequest *openrtb2.BidRequest) {
 	if openRTBRequest.User != nil && openRTBRequest.User.Ext != nil {
 		var extUser openrtb_ext.ExtUser
-		if err := json.Unmarshal(openRTBRequest.User.Ext, &extUser); err != nil {
+		if err := jsonutil.Unmarshal(openRTBRequest.User.Ext, &extUser); err != nil {
 			return
 		}
 		request.Consent = extUser.Consent
@@ -964,10 +965,10 @@ func getReqConsentInfo(request *huaweiAdsRequest, openRTBRequest *openrtb2.BidRe
 func unmarshalExtImpHuaweiAds(openRTBImp *openrtb2.Imp) (*openrtb_ext.ExtImpHuaweiAds, error) {
 	var bidderExt adapters.ExtImpBidder
 	var huaweiAdsImpExt openrtb_ext.ExtImpHuaweiAds
-	if err := json.Unmarshal(openRTBImp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(openRTBImp.Ext, &bidderExt); err != nil {
 		return nil, errors.New("Unmarshal: openRTBImp.Ext -> bidderExt failed")
 	}
-	if err := json.Unmarshal(bidderExt.Bidder, &huaweiAdsImpExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &huaweiAdsImpExt); err != nil {
 		return nil, errors.New("Unmarshal: bidderExt.Bidder -> huaweiAdsImpExt failed")
 	}
 	if huaweiAdsImpExt.SlotId == "" {
@@ -1166,7 +1167,7 @@ func (a *adapter) extractAdmNative(adType int32, content *content, bidType openr
 	}
 
 	var nativePayload nativeRequests.Request
-	if err := json.Unmarshal(json.RawMessage(openrtb2Imp.Native.Request), &nativePayload); err != nil {
+	if err := jsonutil.Unmarshal(json.RawMessage(openrtb2Imp.Native.Request), &nativePayload); err != nil {
 		return "", 0, 0, err
 	}
 

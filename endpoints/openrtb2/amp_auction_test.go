@@ -19,21 +19,22 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/prebid/prebid-server/v2/amp"
-	"github.com/prebid/prebid-server/v2/analytics"
-	analyticsBuild "github.com/prebid/prebid-server/v2/analytics/build"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/exchange"
-	"github.com/prebid/prebid-server/v2/hooks"
-	"github.com/prebid/prebid-server/v2/hooks/hookexecution"
-	"github.com/prebid/prebid-server/v2/hooks/hookstage"
-	"github.com/prebid/prebid-server/v2/metrics"
-	metricsConfig "github.com/prebid/prebid-server/v2/metrics/config"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/privacy"
-	"github.com/prebid/prebid-server/v2/stored_requests/backends/empty_fetcher"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/amp"
+	"github.com/prebid/prebid-server/v3/analytics"
+	analyticsBuild "github.com/prebid/prebid-server/v3/analytics/build"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/exchange"
+	"github.com/prebid/prebid-server/v3/hooks"
+	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v3/hooks/hookstage"
+	"github.com/prebid/prebid-server/v3/metrics"
+	metricsConfig "github.com/prebid/prebid-server/v3/metrics/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/ortb"
+	"github.com/prebid/prebid-server/v3/privacy"
+	"github.com/prebid/prebid-server/v3/stored_requests/backends/empty_fetcher"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 // TestGoodRequests makes sure that the auction runs properly-formatted stored bids correctly.
@@ -55,6 +56,7 @@ func TestGoodAmpRequests(t *testing.T) {
 				"buyeruids-case-insensitive.json",
 				"buyeruids-camel-case.json",
 				"aliased-buyeruids-case-insensitive.json",
+				"ortb-2.5-to-2.6-upconvert.json",
 			},
 		},
 		{
@@ -102,8 +104,8 @@ func TestGoodAmpRequests(t *testing.T) {
 				GDPR:           config.GDPR{Enabled: true},
 			}
 			if test.Config != nil {
-				cfg.BlacklistedApps = test.Config.BlacklistedApps
-				cfg.BlacklistedAppMap = test.Config.getBlacklistedAppMap()
+				cfg.BlockedApps = test.Config.BlockedApps
+				cfg.BlockedAppsLookup = test.Config.getBlockedAppLookup()
 				cfg.AccountRequired = test.Config.AccountRequired
 			}
 
@@ -135,6 +137,17 @@ func TestGoodAmpRequests(t *testing.T) {
 				actualJson, err := jsonutil.Marshal(ex.actualValidatedBidReq)
 				if assert.NoError(t, err, "Error converting actual bid request to json. Test file: %s", filename) {
 					assert.JSONEq(t, string(test.ExpectedValidatedBidReq), string(actualJson), "Not the expected validated request. Test file: %s", filename)
+				}
+			}
+			if test.ExpectedMockBidderRequests != nil {
+				for bidder, req := range test.ExpectedMockBidderRequests {
+					a, ok := ex.adapters[openrtb_ext.BidderName(bidder)]
+					if !ok {
+						t.Fatalf("Unexpected bidder %s has an expected mock bidder request. Test file: %s", bidder, filename)
+					}
+					aa := a.(*exchange.BidderAdapter)
+					ma := aa.Bidder.(*mockAdapter)
+					assert.JSONEq(t, string(req), string(ma.requestData[0]), "Not the expected mock bidder request for bidder %s. Test file: %s", bidder, filename)
 				}
 			}
 		}
@@ -202,7 +215,7 @@ func TestAMPPageInfo(t *testing.T) {
 	endpoint, _ := NewAmpEndpoint(
 		fakeUUIDGenerator{},
 		exchange,
-		newParamsValidator(t),
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 		&mockAmpStoredReqFetcher{stored},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
@@ -234,55 +247,47 @@ func TestGDPRConsent(t *testing.T) {
 	existingConsent := "BONV8oqONXwgmADACHENAO7pqzAAppY"
 
 	testCases := []struct {
-		description     string
-		consent         string
-		userExt         *openrtb_ext.ExtUser
-		nilUser         bool
-		expectedUserExt openrtb_ext.ExtUser
+		description  string
+		consent      string
+		user         *openrtb2.User
+		nilUser      bool
+		expectedUser *openrtb2.User
 	}{
 		{
 			description: "Nil User",
 			consent:     consent,
 			nilUser:     true,
-			expectedUserExt: openrtb_ext.ExtUser{
-				Consent: consent,
-			},
-		},
-		{
-			description: "Nil User Ext",
-			consent:     consent,
-			userExt:     nil,
-			expectedUserExt: openrtb_ext.ExtUser{
+			expectedUser: &openrtb2.User{
 				Consent: consent,
 			},
 		},
 		{
 			description: "Overrides Existing Consent",
 			consent:     consent,
-			userExt: &openrtb_ext.ExtUser{
+			user: &openrtb2.User{
 				Consent: existingConsent,
 			},
-			expectedUserExt: openrtb_ext.ExtUser{
+			expectedUser: &openrtb2.User{
 				Consent: consent,
 			},
 		},
 		{
 			description: "Overrides Existing Consent - With Sibling Data",
 			consent:     consent,
-			userExt: &openrtb_ext.ExtUser{
+			user: &openrtb2.User{
 				Consent: existingConsent,
 			},
-			expectedUserExt: openrtb_ext.ExtUser{
+			expectedUser: &openrtb2.User{
 				Consent: consent,
 			},
 		},
 		{
 			description: "Does Not Override Existing Consent If Empty",
 			consent:     "",
-			userExt: &openrtb_ext.ExtUser{
+			user: &openrtb2.User{
 				Consent: existingConsent,
 			},
-			expectedUserExt: openrtb_ext.ExtUser{
+			expectedUser: &openrtb2.User{
 				Consent: existingConsent,
 			},
 		},
@@ -290,7 +295,7 @@ func TestGDPRConsent(t *testing.T) {
 
 	for _, test := range testCases {
 		// Build Request
-		bid, err := getTestBidRequest(test.nilUser, test.userExt, true, nil)
+		bid, err := getTestBidRequest(test.nilUser, test.user, true, nil)
 		if err != nil {
 			t.Fatalf("Failed to marshal the complete openrtb2.BidRequest object %v", err)
 		}
@@ -300,10 +305,11 @@ func TestGDPRConsent(t *testing.T) {
 
 		// Build Exchange Endpoint
 		mockExchange := &mockAmpExchange{}
+
 		endpoint, _ := NewAmpEndpoint(
 			fakeUUIDGenerator{},
 			mockExchange,
-			newParamsValidator(t),
+			ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 			&mockAmpStoredReqFetcher{stored},
 			empty_fetcher.EmptyFetcher{},
 			&config.Configuration{
@@ -339,15 +345,8 @@ func TestGDPRConsent(t *testing.T) {
 		if !assert.NotNil(t, result.User, test.description+":lastRequest.User") {
 			return
 		}
-		if !assert.NotNil(t, result.User.Ext, test.description+":lastRequest.User.Ext") {
-			return
-		}
-		var ue openrtb_ext.ExtUser
-		err = jsonutil.UnmarshalValid(result.User.Ext, &ue)
-		if !assert.NoError(t, err, test.description+":deserialize") {
-			return
-		}
-		assert.Equal(t, test.expectedUserExt, ue, test.description)
+
+		assert.Equal(t, test.expectedUser, result.User, test.description)
 		assert.Equal(t, expectedErrorsFromHoldAuction, response.ORTB2.Ext.Errors, test.description+":errors")
 		assert.Empty(t, response.ORTB2.Ext.Warnings, test.description+":warnings")
 
@@ -370,15 +369,8 @@ func TestGDPRConsent(t *testing.T) {
 		if !assert.NotNil(t, resultLegacy.User, test.description+":legacy:lastRequest.User") {
 			return
 		}
-		if !assert.NotNil(t, resultLegacy.User.Ext, test.description+":legacy:lastRequest.User.Ext") {
-			return
-		}
-		var ueLegacy openrtb_ext.ExtUser
-		err = jsonutil.UnmarshalValid(resultLegacy.User.Ext, &ueLegacy)
-		if !assert.NoError(t, err, test.description+":legacy:deserialize") {
-			return
-		}
-		assert.Equal(t, test.expectedUserExt, ueLegacy, test.description+":legacy")
+
+		assert.Equal(t, test.expectedUser, resultLegacy.User, test.description+":legacy")
 		assert.Equal(t, expectedErrorsFromHoldAuction, responseLegacy.ORTB2.Ext.Errors, test.description+":legacy:errors")
 		assert.Empty(t, responseLegacy.ORTB2.Ext.Warnings, test.description+":legacy:warnings")
 	}
@@ -551,28 +543,6 @@ func TestOverrideWithParams(t *testing.T) {
 				errorMsgs: []string{"unable to merge imp.ext with targeting data, check targeting data is correct: Invalid JSON Patch"},
 			},
 		},
-		{
-			desc: "bid request with malformed user.ext.prebid - amp.Params with GDPR consent values - expect policy writer to return error",
-			given: testInput{
-				ampParams: amp.Params{
-					ConsentType: amp.ConsentTCF2,
-					Consent:     "CPdECS0PdECS0ACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA",
-				},
-				bidRequest: &openrtb2.BidRequest{
-					Imp:  []openrtb2.Imp{{Banner: &openrtb2.Banner{Format: []openrtb2.Format{}}}},
-					User: &openrtb2.User{Ext: json.RawMessage(`{"prebid":{malformed}}`)},
-				},
-			},
-			expected: testOutput{
-				bidRequest: &openrtb2.BidRequest{
-					Imp:  []openrtb2.Imp{{Banner: &openrtb2.Banner{Format: []openrtb2.Format{}}}},
-					User: &openrtb2.User{Ext: json.RawMessage(`{"prebid":{malformed}}`)},
-					Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)},
-				},
-				errorMsgs:         []string{"expect \" after {, but found m"},
-				expectFatalErrors: true,
-			},
-		},
 	}
 
 	for _, test := range testCases {
@@ -659,46 +629,46 @@ func TestCCPAConsent(t *testing.T) {
 	var gdpr int8 = 1
 
 	testCases := []struct {
-		description    string
-		consent        string
-		regsExt        *openrtb_ext.ExtRegs
-		nilRegs        bool
-		expectedRegExt openrtb_ext.ExtRegs
+		description string
+		consent     string
+		regs        openrtb2.Regs
+		nilRegs     bool
+		expectedReg *openrtb2.Regs
 	}{
 		{
 			description: "Nil Regs",
 			consent:     consent,
 			nilRegs:     true,
-			expectedRegExt: openrtb_ext.ExtRegs{
+			expectedReg: &openrtb2.Regs{
 				USPrivacy: consent,
 			},
 		},
 		{
 			description: "Nil Regs Ext",
 			consent:     consent,
-			regsExt:     nil,
-			expectedRegExt: openrtb_ext.ExtRegs{
+			nilRegs:     true,
+			expectedReg: &openrtb2.Regs{
 				USPrivacy: consent,
 			},
 		},
 		{
 			description: "Overrides Existing Consent",
 			consent:     consent,
-			regsExt: &openrtb_ext.ExtRegs{
+			regs: openrtb2.Regs{
 				USPrivacy: existingConsent,
 			},
-			expectedRegExt: openrtb_ext.ExtRegs{
+			expectedReg: &openrtb2.Regs{
 				USPrivacy: consent,
 			},
 		},
 		{
 			description: "Overrides Existing Consent - With Sibling Data",
 			consent:     consent,
-			regsExt: &openrtb_ext.ExtRegs{
+			regs: openrtb2.Regs{
 				USPrivacy: existingConsent,
 				GDPR:      &gdpr,
 			},
-			expectedRegExt: openrtb_ext.ExtRegs{
+			expectedReg: &openrtb2.Regs{
 				USPrivacy: consent,
 				GDPR:      &gdpr,
 			},
@@ -706,10 +676,10 @@ func TestCCPAConsent(t *testing.T) {
 		{
 			description: "Does Not Override Existing Consent If Empty",
 			consent:     "",
-			regsExt: &openrtb_ext.ExtRegs{
+			regs: openrtb2.Regs{
 				USPrivacy: existingConsent,
 			},
-			expectedRegExt: openrtb_ext.ExtRegs{
+			expectedReg: &openrtb2.Regs{
 				USPrivacy: existingConsent,
 			},
 		},
@@ -717,7 +687,7 @@ func TestCCPAConsent(t *testing.T) {
 
 	for _, test := range testCases {
 		// Build Request
-		bid, err := getTestBidRequest(true, nil, test.nilRegs, test.regsExt)
+		bid, err := getTestBidRequest(true, nil, test.nilRegs, &test.regs)
 		if err != nil {
 			t.Fatalf("Failed to marshal the complete openrtb2.BidRequest object %v", err)
 		}
@@ -730,7 +700,7 @@ func TestCCPAConsent(t *testing.T) {
 		endpoint, _ := NewAmpEndpoint(
 			fakeUUIDGenerator{},
 			mockExchange,
-			newParamsValidator(t),
+			ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 			&mockAmpStoredReqFetcher{stored},
 			empty_fetcher.EmptyFetcher{},
 			&config.Configuration{MaxRequestSize: maxSize},
@@ -763,15 +733,8 @@ func TestCCPAConsent(t *testing.T) {
 		if !assert.NotNil(t, result.Regs, test.description+":lastRequest.Regs") {
 			return
 		}
-		if !assert.NotNil(t, result.Regs.Ext, test.description+":lastRequest.Regs.Ext") {
-			return
-		}
-		var re openrtb_ext.ExtRegs
-		err = jsonutil.UnmarshalValid(result.Regs.Ext, &re)
-		if !assert.NoError(t, err, test.description+":deserialize") {
-			return
-		}
-		assert.Equal(t, test.expectedRegExt, re, test.description)
+
+		assert.Equal(t, test.expectedReg, result.Regs, test.description)
 		assert.Equal(t, expectedErrorsFromHoldAuction, response.ORTB2.Ext.Errors)
 		assert.Empty(t, response.ORTB2.Ext.Warnings)
 	}
@@ -779,7 +742,7 @@ func TestCCPAConsent(t *testing.T) {
 
 func TestConsentWarnings(t *testing.T) {
 	type inputTest struct {
-		regs              *openrtb_ext.ExtRegs
+		regs              *openrtb2.Regs
 		invalidConsentURL bool
 		expectedWarnings  map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage
 	}
@@ -810,7 +773,7 @@ func TestConsentWarnings(t *testing.T) {
 			expectedWarnings:  map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage{openrtb_ext.BidderReservedGeneral: {invalidCCPAWarning}},
 		},
 		{
-			regs:              &openrtb_ext.ExtRegs{USPrivacy: "invalid"},
+			regs:              &openrtb2.Regs{USPrivacy: "invalid"},
 			invalidConsentURL: true,
 			expectedWarnings: map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage{
 				openrtb_ext.BidderReservedGeneral:  {invalidCCPAWarning, invalidConsentWarning},
@@ -818,7 +781,7 @@ func TestConsentWarnings(t *testing.T) {
 			},
 		},
 		{
-			regs:              &openrtb_ext.ExtRegs{USPrivacy: "1NYN"},
+			regs:              &openrtb2.Regs{USPrivacy: "1NYN"},
 			invalidConsentURL: false,
 			expectedWarnings:  map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage{openrtb_ext.BidderName("appnexus"): {bidderWarning}},
 		},
@@ -844,7 +807,7 @@ func TestConsentWarnings(t *testing.T) {
 		endpoint, _ := NewAmpEndpoint(
 			fakeUUIDGenerator{},
 			mockExchange,
-			newParamsValidator(t),
+			ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 			&mockAmpStoredReqFetcher{stored},
 			empty_fetcher.EmptyFetcher{},
 			&config.Configuration{MaxRequestSize: maxSize},
@@ -901,17 +864,18 @@ func TestNewAndLegacyConsentBothProvided(t *testing.T) {
 	validConsentGDPR2 := "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA"
 
 	testCases := []struct {
-		description     string
-		consent         string
-		consentLegacy   string
-		userExt         *openrtb_ext.ExtUser
-		expectedUserExt openrtb_ext.ExtUser
+		description   string
+		consent       string
+		consentLegacy string
+		user          *openrtb2.User
+		expectedUser  *openrtb2.User
 	}{
 		{
 			description:   "New Consent Wins",
 			consent:       validConsentGDPR1,
 			consentLegacy: validConsentGDPR2,
-			expectedUserExt: openrtb_ext.ExtUser{
+			user:          &openrtb2.User{},
+			expectedUser: &openrtb2.User{
 				Consent: validConsentGDPR1,
 			},
 		},
@@ -919,7 +883,8 @@ func TestNewAndLegacyConsentBothProvided(t *testing.T) {
 			description:   "New Consent Wins - Reverse",
 			consent:       validConsentGDPR2,
 			consentLegacy: validConsentGDPR1,
-			expectedUserExt: openrtb_ext.ExtUser{
+			user:          &openrtb2.User{},
+			expectedUser: &openrtb2.User{
 				Consent: validConsentGDPR2,
 			},
 		},
@@ -927,7 +892,7 @@ func TestNewAndLegacyConsentBothProvided(t *testing.T) {
 
 	for _, test := range testCases {
 		// Build Request
-		bid, err := getTestBidRequest(false, nil, true, nil)
+		bid, err := getTestBidRequest(false, test.user, true, nil)
 		if err != nil {
 			t.Fatalf("Failed to marshal the complete openrtb2.BidRequest object %v", err)
 		}
@@ -940,7 +905,7 @@ func TestNewAndLegacyConsentBothProvided(t *testing.T) {
 		endpoint, _ := NewAmpEndpoint(
 			fakeUUIDGenerator{},
 			mockExchange,
-			newParamsValidator(t),
+			ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 			&mockAmpStoredReqFetcher{stored},
 			empty_fetcher.EmptyFetcher{},
 			&config.Configuration{
@@ -976,15 +941,8 @@ func TestNewAndLegacyConsentBothProvided(t *testing.T) {
 		if !assert.NotNil(t, result.User, test.description+":lastRequest.User") {
 			return
 		}
-		if !assert.NotNil(t, result.User.Ext, test.description+":lastRequest.User.Ext") {
-			return
-		}
-		var ue openrtb_ext.ExtUser
-		err = jsonutil.UnmarshalValid(result.User.Ext, &ue)
-		if !assert.NoError(t, err, test.description+":deserialize") {
-			return
-		}
-		assert.Equal(t, test.expectedUserExt, ue, test.description)
+
+		assert.Equal(t, test.expectedUser, result.User, test.description)
 		assert.Equal(t, expectedErrorsFromHoldAuction, response.ORTB2.Ext.Errors)
 		assert.Empty(t, response.ORTB2.Ext.Warnings)
 	}
@@ -998,7 +956,7 @@ func TestAMPSiteExt(t *testing.T) {
 	endpoint, _ := NewAmpEndpoint(
 		fakeUUIDGenerator{},
 		exchange,
-		newParamsValidator(t),
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 		&mockAmpStoredReqFetcher{stored},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
@@ -1028,6 +986,7 @@ func TestAMPSiteExt(t *testing.T) {
 }
 
 // TestBadRequests makes sure we return 400's on bad requests.
+// RTB26: Will need to be fixed once all validation functions are updated to rtb 2.6
 func TestAmpBadRequests(t *testing.T) {
 	dir := "sample-requests/invalid-whole/"
 	files, err := os.ReadDir(dir)
@@ -1035,6 +994,7 @@ func TestAmpBadRequests(t *testing.T) {
 
 	mockAmpStoredReq := make(map[string]json.RawMessage, len(files))
 	badRequests := make(map[string]testCase, len(files))
+	filemap := make(map[string]string, len(files))
 	for index, file := range files {
 		filename := file.Name()
 		fileData := readFile(t, dir+filename)
@@ -1053,6 +1013,7 @@ func TestAmpBadRequests(t *testing.T) {
 
 		badRequests[requestID] = test
 		mockAmpStoredReq[requestID] = test.BidRequest
+		filemap[requestID] = filename
 	}
 
 	addAmpBadRequests(badRequests, mockAmpStoredReq)
@@ -1060,7 +1021,7 @@ func TestAmpBadRequests(t *testing.T) {
 	endpoint, _ := NewAmpEndpoint(
 		fakeUUIDGenerator{},
 		&mockAmpExchange{},
-		newParamsValidator(t),
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 		&mockAmpStoredReqFetcher{data: mockAmpStoredReq},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
@@ -1074,15 +1035,17 @@ func TestAmpBadRequests(t *testing.T) {
 		nil,
 	)
 
-	for _, test := range badRequests {
-		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?%s", test.Query), nil)
-		recorder := httptest.NewRecorder()
+	for id, test := range badRequests {
+		t.Run(filemap[id], func(t *testing.T) {
+			request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?%s", test.Query), nil)
+			recorder := httptest.NewRecorder()
 
-		endpoint(recorder, request, nil)
+			endpoint(recorder, request, nil)
 
-		response := recorder.Body.String()
-		assert.Equal(t, test.ExpectedReturnCode, recorder.Code, test.Description)
-		assert.Contains(t, response, test.ExpectedErrorMessage, "Actual: %s \nExpected: %s. Description: %s \n", response, test.ExpectedErrorMessage, test.Description)
+			response := recorder.Body.String()
+			assert.Equal(t, test.ExpectedReturnCode, recorder.Code, test.Description)
+			assert.Contains(t, response, test.ExpectedErrorMessage, "Actual: %s \nExpected: %s. Description: %s \n", response, test.ExpectedErrorMessage, test.Description)
+		})
 	}
 }
 
@@ -1149,7 +1112,7 @@ func TestAmpDebug(t *testing.T) {
 	endpoint, _ := NewAmpEndpoint(
 		fakeUUIDGenerator{},
 		&mockAmpExchange{},
-		newParamsValidator(t),
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 		&mockAmpStoredReqFetcher{requests},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
@@ -1285,7 +1248,7 @@ func TestQueryParamOverrides(t *testing.T) {
 	endpoint, _ := NewAmpEndpoint(
 		fakeUUIDGenerator{},
 		&mockAmpExchange{},
-		newParamsValidator(t),
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 		&mockAmpStoredReqFetcher{requests},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
@@ -1443,7 +1406,7 @@ func (s formatOverrideSpec) execute(t *testing.T) {
 	endpoint, _ := NewAmpEndpoint(
 		fakeUUIDGenerator{},
 		&mockAmpExchange{},
-		newParamsValidator(t),
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 		&mockAmpStoredReqFetcher{requests},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
@@ -1553,7 +1516,7 @@ func (m *mockAmpExchangeWarnings) HoldAuction(ctx context.Context, r *exchange.A
 	return &exchange.AuctionResponse{BidResponse: response}, nil
 }
 
-func getTestBidRequest(nilUser bool, userExt *openrtb_ext.ExtUser, nilRegs bool, regsExt *openrtb_ext.ExtRegs) ([]byte, error) {
+func getTestBidRequest(nilUser bool, user *openrtb2.User, nilRegs bool, regs *openrtb2.Regs) ([]byte, error) {
 	var width int64 = 300
 	var height int64 = 300
 	bidRequest := &openrtb2.BidRequest{
@@ -1584,37 +1547,12 @@ func getTestBidRequest(nilUser bool, userExt *openrtb_ext.ExtUser, nilRegs bool,
 		},
 	}
 
-	var userExtData []byte
-	if userExt != nil {
-		var err error
-		userExtData, err = jsonutil.Marshal(userExt)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	if !nilUser {
-		bidRequest.User = &openrtb2.User{
-			ID:       "aUserId",
-			BuyerUID: "aBuyerID",
-			Ext:      userExtData,
-		}
-	}
-
-	var regsExtData []byte
-	if regsExt != nil {
-		var err error
-		regsExtData, err = jsonutil.Marshal(regsExt)
-		if err != nil {
-			return nil, err
-		}
+		bidRequest.User = user
 	}
 
 	if !nilRegs {
-		bidRequest.Regs = &openrtb2.Regs{
-			COPPA: 1,
-			Ext:   regsExtData,
-		}
+		bidRequest.Regs = regs
 	}
 	return jsonutil.Marshal(bidRequest)
 }
@@ -1732,6 +1670,7 @@ func (logger mockLogger) LogNotificationEventObject(uuidObj *analytics.Notificat
 func (logger mockLogger) LogAmpObject(ao *analytics.AmpObject, _ privacy.ActivityControl) {
 	*logger.ampObject = *ao
 }
+func (logger mockLogger) Shutdown() {}
 
 func TestBuildAmpObject(t *testing.T) {
 	testCases := []struct {
@@ -1984,7 +1923,7 @@ func ampObjectTestSetup(t *testing.T, inTagId string, inStoredRequest json.RawMe
 	endpoint, _ := NewAmpEndpoint(
 		fakeUUIDGenerator{id: "foo", err: nil},
 		exchange,
-		newParamsValidator(t),
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 		mockAmpFetcher,
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize, GenerateRequestID: generateRequestID},
@@ -2037,7 +1976,7 @@ func TestAmpAuctionResponseHeaders(t *testing.T) {
 	endpoint, _ := NewAmpEndpoint(
 		fakeUUIDGenerator{},
 		exchange,
-		newParamsValidator(t),
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 		&mockAmpStoredReqFetcher{storedRequests},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
@@ -2073,7 +2012,7 @@ func TestRequestWithTargeting(t *testing.T) {
 	endpoint, _ := NewAmpEndpoint(
 		fakeUUIDGenerator{},
 		exchange,
-		newParamsValidator(t),
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 		&mockAmpStoredReqFetcher{stored},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
@@ -2522,7 +2461,7 @@ func TestAmpAuctionDebugWarningsOnly(t *testing.T) {
 	endpoint, _ := NewAmpEndpoint(
 		fakeUUIDGenerator{},
 		exchange,
-		newParamsValidator(t),
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
 		&mockAmpStoredReqFetcher{storedRequests},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{

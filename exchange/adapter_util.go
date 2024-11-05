@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/metrics"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/metrics"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 func BuildAdapters(client *http.Client, cfg *config.Configuration, infos config.BidderInfos, me metrics.MetricsEngine) (map[openrtb_ext.BidderName]AdaptedBidder, []error) {
@@ -120,6 +120,8 @@ func GetDisabledBidderWarningMessages(infos config.BidderInfos) map[string]strin
 		"applogy":         `Bidder "applogy" is no longer available in Prebid Server. Please update your configuration.`,
 		"rhythmone":       `Bidder "rhythmone" is no longer available in Prebid Server. Please update your configuration.`,
 		"nanointeractive": `Bidder "nanointeractive" is no longer available in Prebid Server. Please update your configuration.`,
+		"bizzclick":       `Bidder "bizzclick" is no longer available in Prebid Server. Please update your configuration. "bizzclick" has been renamed to "blasto".`,
+		"liftoff":         `Bidder "liftoff" is no longer available in Prebid Server. If you're looking to use the Vungle Exchange adapter, please rename it to "vungle" in your configuration.`,
 	}
 
 	return mergeRemovedAndDisabledBidderWarningMessages(removed, infos)

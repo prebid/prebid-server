@@ -5,7 +5,7 @@ const (
 	UnknownErrorCode = 999
 	TimeoutErrorCode = iota
 	BadInputErrorCode
-	BlacklistedAppErrorCode
+	BlockedAppErrorCode
 	BadServerResponseErrorCode
 	FailedToRequestBidsErrorCode
 	BidderTemporarilyDisabledErrorCode
@@ -17,6 +17,7 @@ const (
 	TmaxTimeoutErrorCode
 	FailedToMarshalErrorCode
 	FailedToUnmarshalErrorCode
+	InvalidImpFirstPartyDataErrorCode
 )
 
 // Defines numeric codes for well-known warnings.

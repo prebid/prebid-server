@@ -30,7 +30,7 @@
 
   "expectedMakeRequestsErrors": [
     {
-      "value": "json: cannot unmarshal number into Go struct field ExtImpSmartRTB.pub_id of type string",
+      "value": "cannot unmarshal PubID: expects \" or n, but found 0",
       "comparison": "literal"
     }
   ]

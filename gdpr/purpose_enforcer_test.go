@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/prebid/go-gdpr/consentconstants"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -111,10 +111,10 @@ func TestNewPurposeEnforcerBuilder(t *testing.T) {
 		assert.IsType(t, tt.wantType, enforcer1, tt.description)
 
 		// assert enforcer 1 config values are properly set
-		switch enforcer1.(type) {
+		switch enforcerCasted := enforcer1.(type) {
 		case *FullEnforcement:
 			{
-				fullEnforcer := enforcer1.(*FullEnforcement)
+				fullEnforcer := enforcerCasted
 				assert.Equal(t, fullEnforcer.cfg.PurposeID, tt.purpose, tt.description)
 				assert.Equal(t, fullEnforcer.cfg.EnforceAlgo, tt.enforceAlgo, tt.description)
 				assert.Equal(t, fullEnforcer.cfg.EnforcePurpose, tt.enforcePurpose, tt.description)
@@ -132,6 +132,8 @@ func TestNewPurposeEnforcerBuilder(t *testing.T) {
 				assert.Equal(t, basicEnforcer.cfg.BasicEnforcementVendorsMap, tt.basicVendorsMap, tt.description)
 				assert.Equal(t, basicEnforcer.cfg.VendorExceptionMap, tt.vendorExceptionMap, tt.description)
 			}
+		default:
+			assert.FailNow(t, "unexpected type of enforcer")
 		}
 	}
 }
