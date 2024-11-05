@@ -8,11 +8,12 @@ import (
 	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/macros"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type DatablocksAdapter struct {
@@ -87,7 +88,7 @@ func (a *DatablocksAdapter) MakeBids(
 
 	var bidResp openrtb2.BidResponse
 
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
@@ -130,13 +131,13 @@ func splitImpressions(imps []openrtb2.Imp) (map[openrtb_ext.ExtImpDatablocks][]o
 
 func getBidderParams(imp *openrtb2.Imp) (*openrtb_ext.ExtImpDatablocks, error) {
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("Missing bidder ext: %s", err.Error()),
 		}
 	}
 	var datablocksExt openrtb_ext.ExtImpDatablocks
-	if err := json.Unmarshal(bidderExt.Bidder, &datablocksExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &datablocksExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("Cannot Resolve sourceId: %s", err.Error()),
 		}

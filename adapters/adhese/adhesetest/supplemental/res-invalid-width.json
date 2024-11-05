@@ -82,7 +82,7 @@
   "expectedBidResponses": [],
     "expectedMakeBidsErrors": [
       {
-        "value": "json: cannot unmarshal number into Go struct field AdheseBid.width of type string",
+        "value": "cannot unmarshal adhese.AdheseBid.Width: expects \" or n, but found 7",
         "comparison": "literal"
       }, {
         "value": "Response (.*\n.*)+ could not be parsed as generic Adhese bid",

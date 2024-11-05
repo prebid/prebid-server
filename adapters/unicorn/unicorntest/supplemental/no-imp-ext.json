@@ -55,8 +55,8 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "Error while decoding imp[0].ext: unexpected end of JSON input",
-      "comparison": "literal"
+      "value": "Error while decoding imp[0].ext: expect { or n, but found",
+      "comparison": "startswith"
     }
   ]
 }
