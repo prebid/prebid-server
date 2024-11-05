@@ -1,0 +1,26 @@
+endpoint: "http://pbsv4-env.eba-qx2kfrgj.us-east-1.elasticbeanstalk.com/openrtb2/auction"
+
+maintainer:
+  email: "info@roundhouseads.com"
+#gvlVendorID: 42 #need assigned ID
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  # Roundhouseads supports user syncing, but requires configuration by the host. Contact a technical account manager
+  # or this bidder directly at the email address in this file to ask about enabling user sync.
+  endpointCompression: gzip
+  supports:
+    - redirect
+    - iframe
+openrtb:
+  gpp-supported: true
+
