@@ -7,11 +7,12 @@ import (
 	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/macros"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type bidType struct {
@@ -41,14 +42,14 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 
 func (a *adapter) buildEndpointFromRequest(imp *openrtb2.Imp) (string, error) {
 	var impExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &impExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &impExt); err != nil {
 		return "", &errortypes.BadInput{
 			Message: fmt.Sprintf("Failed to deserialize bidder impression extension: %v", err),
 		}
 	}
 
 	var xeworksExt openrtb_ext.ExtXeworks
-	if err := json.Unmarshal(impExt.Bidder, &xeworksExt); err != nil {
+	if err := jsonutil.Unmarshal(impExt.Bidder, &xeworksExt); err != nil {
 		return "", &errortypes.BadInput{
 			Message: fmt.Sprintf("Failed to deserialize Xeworks extension: %v", err),
 		}
@@ -116,7 +117,7 @@ func (a *adapter) MakeBids(openRTBRequest *openrtb2.BidRequest, requestToBidder 
 	}
 
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(bidderRawResponse.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(bidderRawResponse.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
@@ -136,7 +137,7 @@ func prepareBidResponse(seats []openrtb2.SeatBid) (*adapters.BidderResponse, []e
 	for _, seatBid := range seats {
 		for bidId, bid := range seatBid.Bid {
 			var bidExt bidExt
-			if err := json.Unmarshal(bid.Ext, &bidExt); err != nil {
+			if err := jsonutil.Unmarshal(bid.Ext, &bidExt); err != nil {
 				errs = append(errs, &errortypes.BadServerResponse{
 					Message: fmt.Sprintf("Failed to parse Bid[%d].Ext: %s", bidId, err.Error()),
 				})

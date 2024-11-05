@@ -60,7 +60,7 @@
   "expectedMakeBidsErrors": [
     {
       "comparison": "literal",
-      "value": "json: cannot unmarshal string into Go value of type openrtb2.BidResponse"
+      "value": "expect { or n, but found \""
     }
   ]
 }

@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/metrics"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/metrics"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prometheus/client_golang/prometheus"
 	promCollector "github.com/prometheus/client_golang/prometheus/collectors"
 )
