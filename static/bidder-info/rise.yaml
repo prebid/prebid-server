@@ -1,4 +1,7 @@
 endpoint: "https://pbs.yellowblue.io/pbs"
+endpointCompression: gzip
+geoscope:
+  - global
 maintainer:
   email: rise-prog-dev@risecodes.com
 gvlVendorID: 1043
@@ -8,6 +11,7 @@ capabilities:
     mediaTypes:
       - banner
       - video
+      - native
   site:
     mediaTypes:
       - banner
