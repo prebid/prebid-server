@@ -6,10 +6,11 @@ import (
 	"net/http"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -76,14 +77,14 @@ func preprocess(request *openrtb2.BidRequest) error {
 		var imp = &request.Imp[i]
 		var bidderExt adapters.ExtImpBidder
 
-		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			return &errortypes.BadInput{
 				Message: err.Error(),
 			}
 		}
 
 		var extImp openrtb_ext.ExtImpApacdex
-		if err := json.Unmarshal(bidderExt.Bidder, &extImp); err != nil {
+		if err := jsonutil.Unmarshal(bidderExt.Bidder, &extImp); err != nil {
 			return &errortypes.BadInput{
 				Message: err.Error(),
 			}
@@ -116,7 +117,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 	var response openrtb2.BidResponse
 
-	if err := json.Unmarshal(responseData.Body, &response); err != nil {
+	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: err.Error(),
 		}}
@@ -150,7 +151,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 	if bid.Ext != nil {
 		var bidExt openrtb_ext.ExtBid
-		err := json.Unmarshal(bid.Ext, &bidExt)
+		err := jsonutil.Unmarshal(bid.Ext, &bidExt)
 		if err == nil && bidExt.Prebid != nil {
 			return openrtb_ext.ParseBidType(string(bidExt.Prebid.Type))
 		}

@@ -7,11 +7,12 @@ import (
 	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/macros"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -82,13 +83,13 @@ func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest, reqInfo *ada
 
 func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtMotorik, error) {
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: "Error parsing motorikExt - " + err.Error(),
 		}
 	}
 	var motorikExt openrtb_ext.ExtMotorik
-	if err := json.Unmarshal(bidderExt.Bidder, &motorikExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &motorikExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: "Error parsing bidderExt - " + err.Error(),
 		}
@@ -124,7 +125,7 @@ func (a *adapter) MakeBids(openRTBRequest *openrtb2.BidRequest, requestToBidder 
 
 	responseBody := bidderRawResponse.Body
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(responseBody, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(responseBody, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: "Bad Server Response",
 		}}

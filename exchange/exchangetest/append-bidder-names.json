@@ -148,10 +148,14 @@
                                         "hb_cache_path_appnex": "/pbcache/endpoint",
                                         "hb_pb": "0.20",
                                         "hb_pb_appnexus": "0.20",
-                                        "hb_pb_cat_dur": "0.20_VideoGames_0s_appnexus",
-                                        "hb_pb_cat_dur_appnex": "0.20_VideoGames_0s_appnexus",
+                                        "hb_pb_cat_dur": "0.20_VideoGames_30s_appnexus",
+                                        "hb_pb_cat_dur_appnex": "0.20_VideoGames_30s_appnexus",
                                         "hb_size": "200x250",
                                         "hb_size_appnexus": "200x250"
+                                    },
+                                    "video": {
+                                        "duration": 30,
+                                        "primary_category": ""
                                     }
                                 }
                             }

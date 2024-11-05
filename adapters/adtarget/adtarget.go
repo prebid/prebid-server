@@ -6,10 +6,11 @@ import (
 	"net/http"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type AdtargetAdapter struct {
@@ -92,7 +93,7 @@ func (a *AdtargetAdapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters
 		}}
 	}
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(httpRes.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(httpRes.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("error while decoding response, err: %s", err),
 		}}
@@ -154,14 +155,14 @@ func validateImpressionAndSetExt(imp *openrtb2.Imp) (int, error) {
 
 	var bidderExt adapters.ExtImpBidder
 
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return 0, &errortypes.BadInput{
 			Message: fmt.Sprintf("ignoring imp id=%s, error while decoding extImpBidder, err: %s", imp.ID, err),
 		}
 	}
 
 	impExt := openrtb_ext.ExtImpAdtarget{}
-	err := json.Unmarshal(bidderExt.Bidder, &impExt)
+	err := jsonutil.Unmarshal(bidderExt.Bidder, &impExt)
 	if err != nil {
 		return 0, &errortypes.BadInput{
 			Message: fmt.Sprintf("ignoring imp id=%s, error while decoding impExt, err: %s", imp.ID, err),

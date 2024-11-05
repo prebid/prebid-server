@@ -93,7 +93,7 @@
   ],
   "expectedMakeRequestsErrors": [
     {
-      "value": "Failed to deserialize AdMatic extension: json: cannot unmarshal object into Go struct field ImpExtAdmatic.host of type string",
+      "value": "Failed to deserialize AdMatic extension: cannot unmarshal openrtb_ext.ImpExtAdmatic.Host: expects \" or n, but found {",
       "comparison": "literal"
     }
   ],

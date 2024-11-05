@@ -43,6 +43,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderAdtarget,
 	BidderAdtrgtme,
 	BidderAdtelligent,
+	BidderAdTonos,
 	BidderAdvangelists,
 	BidderAdView,
 	BidderAdxcg,
@@ -67,6 +68,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderBetween,
 	BidderBeyondMedia,
 	BidderBidmachine,
+	BidderBidmatic,
 	BidderBidmyadz,
 	BidderBidsCube,
 	BidderBidstack,
@@ -155,6 +157,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderMgid,
 	BidderMgidX,
 	BidderMinuteMedia,
+	BidderMissena,
 	BidderMobfoxpb,
 	BidderMobileFuse,
 	BidderMotorik,
@@ -369,6 +372,7 @@ const (
 	BidderAdsinteractive    BidderName = "adsinteractive"
 	BidderAdtarget          BidderName = "adtarget"
 	BidderAdtrgtme          BidderName = "adtrgtme"
+	BidderAdTonos           BidderName = "adtonos"
 	BidderAdtelligent       BidderName = "adtelligent"
 	BidderAdvangelists      BidderName = "advangelists"
 	BidderAdView            BidderName = "adview"
@@ -394,6 +398,7 @@ const (
 	BidderBetween           BidderName = "between"
 	BidderBeyondMedia       BidderName = "beyondmedia"
 	BidderBidmachine        BidderName = "bidmachine"
+	BidderBidmatic          BidderName = "bidmatic"
 	BidderBidmyadz          BidderName = "bidmyadz"
 	BidderBidsCube          BidderName = "bidscube"
 	BidderBidstack          BidderName = "bidstack"
@@ -482,6 +487,7 @@ const (
 	BidderMgid              BidderName = "mgid"
 	BidderMgidX             BidderName = "mgidX"
 	BidderMinuteMedia       BidderName = "minutemedia"
+	BidderMissena           BidderName = "missena"
 	BidderMobfoxpb          BidderName = "mobfoxpb"
 	BidderMobileFuse        BidderName = "mobilefuse"
 	BidderMotorik           BidderName = "motorik"
