@@ -7,75 +7,9 @@ import (
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
-
-func TestRemoveImpsWithStoredResponses(t *testing.T) {
-	bidRespId1 := json.RawMessage(`{"id": "resp_id1"}`)
-	testCases := []struct {
-		description        string
-		reqIn              *openrtb2.BidRequest
-		storedBidResponses ImpBidderStoredResp
-		expectedImps       []openrtb2.Imp
-	}{
-		{
-			description: "request with imps and stored bid response for this imp",
-			reqIn: &openrtb2.BidRequest{Imp: []openrtb2.Imp{
-				{ID: "imp-id1"},
-			}},
-			storedBidResponses: ImpBidderStoredResp{
-				"imp-id1": {"appnexus": bidRespId1},
-			},
-			expectedImps: nil,
-		},
-		{
-			description: "request with imps and stored bid response for one of these imp",
-			reqIn: &openrtb2.BidRequest{Imp: []openrtb2.Imp{
-				{ID: "imp-id1"},
-				{ID: "imp-id2"},
-			}},
-			storedBidResponses: ImpBidderStoredResp{
-				"imp-id1": {"appnexus": bidRespId1},
-			},
-			expectedImps: []openrtb2.Imp{
-				{
-					ID: "imp-id2",
-				},
-			},
-		},
-		{
-			description: "request with imps and stored bid response for both of these imp",
-			reqIn: &openrtb2.BidRequest{Imp: []openrtb2.Imp{
-				{ID: "imp-id1"},
-				{ID: "imp-id2"},
-			}},
-			storedBidResponses: ImpBidderStoredResp{
-				"imp-id1": {"appnexus": bidRespId1},
-				"imp-id2": {"appnexus": bidRespId1},
-			},
-			expectedImps: nil,
-		},
-		{
-			description: "request with imps and no stored bid responses",
-			reqIn: &openrtb2.BidRequest{Imp: []openrtb2.Imp{
-				{ID: "imp-id1"},
-				{ID: "imp-id2"},
-			}},
-			storedBidResponses: nil,
-
-			expectedImps: []openrtb2.Imp{
-				{ID: "imp-id1"},
-				{ID: "imp-id2"},
-			},
-		},
-	}
-	for _, testCase := range testCases {
-		request := testCase.reqIn
-		removeImpsWithStoredResponses(request, testCase.storedBidResponses)
-		assert.Equal(t, testCase.expectedImps, request.Imp, "incorrect Impressions for testCase %s", testCase.description)
-	}
-}
 
 func TestBuildStoredBidResponses(t *testing.T) {
 	bidRespId1 := json.RawMessage(`{"id": "resp_id1"}`)

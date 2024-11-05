@@ -2,6 +2,8 @@ endpoint: "https://ads.yieldmo.com/exchange/prebid-server"
 maintainer:
   email: "prebid@yieldmo.com"
 gvlVendorID: 173
+openrtb:
+  version: 2.6
 capabilities:
   app:
     mediaTypes:
