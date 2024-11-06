@@ -5993,10 +5993,11 @@ func TestRequestContextPropagates(t *testing.T) {
 	reqBody := validRequest(t, "site.json")
 	mockEntrypoint := mocks.NewEntrypoint(t)
 	mockEntrypoint.On("HandleEntrypointHook", mock.Anything, mock.Anything, mock.Anything).
-		Return(func(ctx context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+		Run(func(args mock.Arguments) {
+			ctx := args.Get(0).(context.Context)
 			assert.Equal(t, "testing", ctx.Value(testKey))
-			return hookstage.HookResult[hookstage.EntrypointPayload]{}, nil
-		})
+		}).
+		Return(hookstage.HookResult[hookstage.EntrypointPayload]{}, nil)
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&mockExchange{},
