@@ -75,7 +75,8 @@
                 "price": 2.0,
                 "id": "1234",
                 "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\"?> <VAST version=\"3.0\"></VAST>",
-                "impid": "imp-id"
+                "impid": "imp-id",
+                "mtype": 2
               }
             ]
           }
@@ -94,6 +95,7 @@
         "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\"?> <VAST version=\"3.0\"></VAST>",
         "crid": "123456789",
         "nurl": "https://some.event.url/params",
+        "mtype": 2,
         "ext": {
           "prebid": {
             "meta": {

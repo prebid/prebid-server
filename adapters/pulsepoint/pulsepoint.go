@@ -2,14 +2,16 @@ package pulsepoint
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 )
@@ -35,25 +37,39 @@ func (a *PulsePointAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 	for i := 0; i < len(request.Imp); i++ {
 		imp := request.Imp[i]
 		var bidderExt adapters.ExtImpBidder
-		if err = json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		if err = jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			errs = append(errs, &errortypes.BadInput{
 				Message: err.Error(),
 			})
 			continue
 		}
 		var pulsepointExt openrtb_ext.ExtImpPulsePoint
-		if err = json.Unmarshal(bidderExt.Bidder, &pulsepointExt); err != nil {
+		if err = jsonutil.Unmarshal(bidderExt.Bidder, &pulsepointExt); err != nil {
 			errs = append(errs, &errortypes.BadInput{
 				Message: err.Error(),
 			})
 			continue
 		}
 		// parse pubid and keep it for reference
-		if pubID == "" && pulsepointExt.PubID > 0 {
-			pubID = strconv.Itoa(pulsepointExt.PubID)
+		if pubID == "" {
+			pubID, err = parseParam("pubID", pulsepointExt.PubID)
+			if err != nil {
+				errs = append(errs, &errortypes.BadInput{
+					Message: err.Error(),
+				})
+				continue
+			}
 		}
 		// tag id to be sent
-		imp.TagID = strconv.Itoa(pulsepointExt.TagID)
+		var tagID string
+		tagID, err = parseParam("tagID", pulsepointExt.TagID)
+		if err != nil {
+			errs = append(errs, &errortypes.BadInput{
+				Message: err.Error(),
+			})
+			continue
+		}
+		imp.TagID = tagID
 		imps = append(imps, imp)
 	}
 
@@ -122,7 +138,7 @@ func (a *PulsePointAdapter) MakeBids(internalRequest *openrtb2.BidRequest, exter
 	}
 	// parse response
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
@@ -162,4 +178,13 @@ func getBidType(imp openrtb2.Imp) openrtb_ext.BidType {
 		return openrtb_ext.BidTypeNative
 	}
 	return ""
+}
+
+func parseParam(paramName string, paramValue jsonutil.StringInt) (string, error) {
+	value := int(paramValue)
+	// verify we got a non-zero value
+	if value == 0 {
+		return "", errors.New("param not found - " + paramName)
+	}
+	return strconv.Itoa(value), nil
 }

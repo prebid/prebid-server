@@ -105,8 +105,8 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "json: cannot unmarshal string into Go struct field ResponseData.data.creationId of type int64",
-      "comparison": "literal"
+      "value": "cannot unmarshal adquery.ResponseData.CrID: unexpected character",
+      "comparison": "startswith"
     }
   ]
 }

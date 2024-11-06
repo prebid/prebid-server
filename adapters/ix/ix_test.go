@@ -4,12 +4,11 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/adapters/adapterstest"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
-	"github.com/prebid/prebid-server/v2/version"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/adapters/adapterstest"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/prebid/openrtb/v20/adcom1"
@@ -152,6 +151,34 @@ func TestIxMakeRequestWithGppString(t *testing.T) {
 	assert.Equal(t, req.Regs.GPP, testGppString)
 }
 
+func TestExtractVersionWithoutCommitHash(t *testing.T) {
+	tests := []struct {
+		name     string
+		version  string
+		expected string
+	}{
+		{
+			name:     "empty version",
+			version:  "",
+			expected: "",
+		},
+		{
+			name:     "version with commit hash",
+			version:  "1.880-abcdef",
+			expected: "1.880",
+		},
+		{
+			name:     "version without commit hash",
+			version:  "1.23.4",
+			expected: "1.23.4",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			assert.Equal(t, test.expected, extractVersionWithoutCommitHash(test.version))
+		})
+	}
+}
 func TestBuildIxDiag(t *testing.T) {
 	testCases := []struct {
 		description     string
@@ -253,9 +280,8 @@ func TestBuildIxDiag(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
-			version.Ver = test.pbsVersion
 			ixDiag := &IxDiag{}
-			err := setIxDiagIntoExtRequest(test.request, ixDiag)
+			err := setIxDiagIntoExtRequest(test.request, ixDiag, test.pbsVersion)
 			if test.expectError {
 				assert.NotNil(t, err)
 			} else {
