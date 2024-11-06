@@ -26,19 +26,19 @@ import (
 	nativeRequests "github.com/prebid/openrtb/v20/native1/request"
 	nativeResponse "github.com/prebid/openrtb/v20/native1/response"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/currency"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/exchange/entities"
-	"github.com/prebid/prebid-server/v2/experiment/adscert"
-	"github.com/prebid/prebid-server/v2/hooks/hookexecution"
-	"github.com/prebid/prebid-server/v2/metrics"
-	metricsConfig "github.com/prebid/prebid-server/v2/metrics/config"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
-	"github.com/prebid/prebid-server/v2/version"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/currency"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/exchange/entities"
+	"github.com/prebid/prebid-server/v3/experiment/adscert"
+	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v3/metrics"
+	metricsConfig "github.com/prebid/prebid-server/v3/metrics/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
+	"github.com/prebid/prebid-server/v3/version"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -556,7 +556,7 @@ func TestBidderTimeout(t *testing.T) {
 	server := httptest.NewServer(handler)
 	defer server.Close()
 
-	bidder := &bidderAdapter{
+	bidder := &BidderAdapter{
 		Bidder:     &mixedMultiBidder{},
 		BidderName: openrtb_ext.BidderAppnexus,
 		Client:     server.Client(),
@@ -578,7 +578,7 @@ func TestBidderTimeout(t *testing.T) {
 // TestInvalidRequest makes sure that bidderAdapter.doRequest returns errors on bad requests.
 func TestInvalidRequest(t *testing.T) {
 	server := httptest.NewServer(mockHandler(200, "getBody", "postBody"))
-	bidder := &bidderAdapter{
+	bidder := &BidderAdapter{
 		Bidder: &mixedMultiBidder{},
 		Client: server.Client(),
 	}
@@ -599,7 +599,7 @@ func TestConnectionClose(t *testing.T) {
 	})
 	server = httptest.NewServer(handler)
 
-	bidder := &bidderAdapter{
+	bidder := &BidderAdapter{
 		Bidder:     &mixedMultiBidder{},
 		Client:     server.Client(),
 		BidderName: openrtb_ext.BidderAppnexus,
@@ -2149,7 +2149,7 @@ func TestCallRecordDNSTime(t *testing.T) {
 	// Instantiate the bidder that will send the request. We'll make sure to use an
 	// http.Client that runs our mock RoundTripper so DNSDone(httptrace.DNSDoneInfo{})
 	// gets called
-	bidder := &bidderAdapter{
+	bidder := &BidderAdapter{
 		Bidder: &mixedMultiBidder{},
 		Client: &http.Client{Transport: DNSDoneTripper{}},
 		me:     metricsMock,
@@ -2173,7 +2173,7 @@ func TestCallRecordTLSHandshakeTime(t *testing.T) {
 	// Instantiate the bidder that will send the request. We'll make sure to use an
 	// http.Client that runs our mock RoundTripper so DNSDone(httptrace.DNSDoneInfo{})
 	// gets called
-	bidder := &bidderAdapter{
+	bidder := &BidderAdapter{
 		Bidder: &mixedMultiBidder{},
 		Client: &http.Client{Transport: TLSHandshakeTripper{}},
 		me:     metricsMock,
@@ -2201,7 +2201,7 @@ func TestTimeoutNotificationOff(t *testing.T) {
 			Headers: http.Header{},
 		},
 	}
-	bidder := &bidderAdapter{
+	bidder := &BidderAdapter{
 		Bidder: bidderImpl,
 		Client: server.Client(),
 		config: bidderAdapterConfig{Debug: config.Debug{}},
@@ -2235,7 +2235,7 @@ func TestTimeoutNotificationOn(t *testing.T) {
 	// Wrap with BidderInfo to mimic exchange.go flow.
 	bidderWrappedWithInfo := wrapWithBidderInfo(bidder)
 
-	bidderAdapter := &bidderAdapter{
+	bidderAdapter := &BidderAdapter{
 		Bidder: bidderWrappedWithInfo,
 		Client: server.Client(),
 		config: bidderAdapterConfig{
@@ -3381,7 +3381,7 @@ func TestDoRequestImplWithTmax(t *testing.T) {
 		Body:   []byte(`{"id":"this-id","app":{"publisher":{"id":"pub-id"}}}`),
 	}
 
-	bidderAdapter := bidderAdapter{
+	bidderAdapter := BidderAdapter{
 		me:     &metricsConfig.NilMetricsEngine{},
 		Client: server.Client(),
 	}
@@ -3456,7 +3456,7 @@ func TestDoRequestImplWithTmaxTimeout(t *testing.T) {
 	metricsMock.On("RecordOverheadTime", metrics.PreBidder, mock.Anything).Once()
 	metricsMock.On("RecordTMaxTimeout").Once()
 
-	bidderAdapter := bidderAdapter{
+	bidderAdapter := BidderAdapter{
 		me:     metricsMock,
 		Client: server.Client(),
 	}

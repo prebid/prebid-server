@@ -40,7 +40,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "json: cannot unmarshal number into Go struct field ImpExtTaboola.publisherId of type string",
+      "value": "cannot unmarshal openrtb_ext.ImpExtTaboola.PublisherId: expects \" or n, but found 1",
       "comparison": "literal"
     }
   ]
