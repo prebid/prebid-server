@@ -53,8 +53,8 @@
     "expectedBidResponses": [],
     "expectedMakeBidsErrors": [
       {
-        "value": "unexpected end of JSON input",
-        "comparison": "literal"
+        "value": "decode slice: expect [ or n, but found",
+        "comparison": "startswith"
       },{
         "value": "Response  could not be parsed as generic Adhese bid.",
         "comparison": "literal"

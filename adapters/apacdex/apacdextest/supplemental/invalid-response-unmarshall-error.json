@@ -60,8 +60,8 @@
     ],
     "expectedMakeBidsErrors": [
         {
-            "value": "json: cannot unmarshal string into Go struct field Bid(\\.seatbid\\.bid)?\\.w of type int64",
-            "comparison": "regex"
+            "value": "cannot unmarshal openrtb2.Bid.W: unexpected character",
+            "comparison": "startswith"
         }
     ]
 }

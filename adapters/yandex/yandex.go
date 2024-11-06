@@ -10,11 +10,12 @@ import (
 	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/macros"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 const (
@@ -131,14 +132,14 @@ func splitRequestDataByImp(request *openrtb2.BidRequest, imp openrtb2.Imp) openr
 
 func getYandexPlacementId(imp openrtb2.Imp) (*yandexPlacementID, error) {
 	var ext adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &ext); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("imp %s: unable to unmarshal ext", imp.ID),
 		}
 	}
 
 	var yandexExt openrtb_ext.ExtImpYandex
-	if err := json.Unmarshal(ext.Bidder, &yandexExt); err != nil {
+	if err := jsonutil.Unmarshal(ext.Bidder, &yandexExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("imp %s: unable to unmarshal ext.bidder: %v", imp.ID, err),
 		}
@@ -280,7 +281,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 	}
 
 	var bidResponse openrtb2.BidResponse
-	if err := json.Unmarshal(responseData.Body, &bidResponse); err != nil {
+	if err := jsonutil.Unmarshal(responseData.Body, &bidResponse); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Bad server response: %d", err),
 		}}

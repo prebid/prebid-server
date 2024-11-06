@@ -31,8 +31,8 @@
   "expectedBidResponses": [],
   "expectedMakeRequestsErrors": [
     {
-      "value": "Request could not be parsed as ExtImpAdhese due to: unexpected end of JSON input",
-      "comparison": "literal"
+      "value": "Request could not be parsed as ExtImpAdhese due to: expect { or n, but found",
+      "comparison": "startswith"
     }
   ]
 }

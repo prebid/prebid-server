@@ -22,37 +22,37 @@ import (
 	"github.com/prebid/go-gpp/constants"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/openrtb/v20/openrtb3"
-	"github.com/prebid/prebid-server/v2/bidadjustment"
-	"github.com/prebid/prebid-server/v2/hooks"
-	"github.com/prebid/prebid-server/v2/ortb"
-	"github.com/prebid/prebid-server/v2/privacy"
-	"github.com/prebid/prebid-server/v2/privacysandbox"
+	"github.com/prebid/prebid-server/v3/bidadjustment"
+	"github.com/prebid/prebid-server/v3/hooks"
+	"github.com/prebid/prebid-server/v3/ortb"
+	"github.com/prebid/prebid-server/v3/privacy"
+	"github.com/prebid/prebid-server/v3/privacysandbox"
+	"github.com/prebid/prebid-server/v3/schain"
 	"golang.org/x/net/publicsuffix"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
-	accountService "github.com/prebid/prebid-server/v2/account"
-	"github.com/prebid/prebid-server/v2/analytics"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/currency"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/exchange"
-	"github.com/prebid/prebid-server/v2/gdpr"
-	"github.com/prebid/prebid-server/v2/hooks/hookexecution"
-	"github.com/prebid/prebid-server/v2/metrics"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/prebid_cache_client"
-	"github.com/prebid/prebid-server/v2/privacy/ccpa"
-	"github.com/prebid/prebid-server/v2/privacy/lmt"
-	"github.com/prebid/prebid-server/v2/schain"
-	"github.com/prebid/prebid-server/v2/stored_requests"
-	"github.com/prebid/prebid-server/v2/stored_requests/backends/empty_fetcher"
-	"github.com/prebid/prebid-server/v2/stored_responses"
-	"github.com/prebid/prebid-server/v2/usersync"
-	"github.com/prebid/prebid-server/v2/util/httputil"
-	"github.com/prebid/prebid-server/v2/util/iputil"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
-	"github.com/prebid/prebid-server/v2/util/uuidutil"
-	"github.com/prebid/prebid-server/v2/version"
+	accountService "github.com/prebid/prebid-server/v3/account"
+	"github.com/prebid/prebid-server/v3/analytics"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/currency"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/exchange"
+	"github.com/prebid/prebid-server/v3/gdpr"
+	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v3/metrics"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/prebid_cache_client"
+	"github.com/prebid/prebid-server/v3/privacy/ccpa"
+	"github.com/prebid/prebid-server/v3/privacy/lmt"
+	"github.com/prebid/prebid-server/v3/stored_requests"
+	"github.com/prebid/prebid-server/v3/stored_requests/backends/empty_fetcher"
+	"github.com/prebid/prebid-server/v3/stored_responses"
+	"github.com/prebid/prebid-server/v3/usersync"
+	"github.com/prebid/prebid-server/v3/util/httputil"
+	"github.com/prebid/prebid-server/v3/util/iputil"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/uuidutil"
+	"github.com/prebid/prebid-server/v3/version"
 )
 
 const ampChannel = "amp"
@@ -537,6 +537,12 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		return
 	}
 
+	// normalize to openrtb 2.6
+	if err := openrtb_ext.ConvertUpTo26(req); err != nil {
+		errs = []error{err}
+		return
+	}
+
 	if err := mergeBidderParams(req); err != nil {
 		errs = []error{err}
 		return
@@ -827,10 +833,6 @@ func (deps *endpointDeps) validateRequest(account *config.Account, httpReq *http
 		}
 	}
 
-	if err := mapSChains(req); err != nil {
-		return []error{err}
-	}
-
 	if err := validateOrFillChannel(req, isAmp); err != nil {
 		return []error{err}
 	}
@@ -932,32 +934,6 @@ func (deps *endpointDeps) validateRequest(account *config.Account, httpReq *http
 	}
 
 	return errL
-}
-
-// mapSChains maps an schain defined in an ORTB 2.4 location (req.ext.schain) to the ORTB 2.5 location
-// (req.source.ext.schain) if no ORTB 2.5 schain (req.source.ext.schain, req.ext.prebid.schains) exists.
-// An ORTB 2.4 schain is always deleted from the 2.4 location regardless of whether an ORTB 2.5 schain exists.
-func mapSChains(req *openrtb_ext.RequestWrapper) error {
-	reqExt, err := req.GetRequestExt()
-	if err != nil {
-		return fmt.Errorf("req.ext is invalid: %v", err)
-	}
-	sourceExt, err := req.GetSourceExt()
-	if err != nil {
-		return fmt.Errorf("source.ext is invalid: %v", err)
-	}
-
-	reqExtSChain := reqExt.GetSChain()
-	reqExt.SetSChain(nil)
-
-	if reqPrebid := reqExt.GetPrebid(); reqPrebid != nil && reqPrebid.SChains != nil {
-		return nil
-	} else if sourceExt.GetSChain() != nil {
-		return nil
-	} else if reqExtSChain != nil {
-		sourceExt.SetSChain(reqExtSChain)
-	}
-	return nil
 }
 
 func validateAndFillSourceTID(req *openrtb_ext.RequestWrapper, generateRequestID bool, hasStoredBidRequest bool, isAmp bool) error {
@@ -1233,8 +1209,8 @@ func (deps *endpointDeps) validateApp(req *openrtb_ext.RequestWrapper) error {
 	}
 
 	if req.App.ID != "" {
-		if _, found := deps.cfg.BlacklistedAppMap[req.App.ID]; found {
-			return &errortypes.BlacklistedApp{Message: fmt.Sprintf("Prebid-server does not process requests from App ID: %s", req.App.ID)}
+		if _, found := deps.cfg.BlockedAppsLookup[req.App.ID]; found {
+			return &errortypes.BlockedApp{Message: fmt.Sprintf("Prebid-server does not process requests from App ID: %s", req.App.ID)}
 		}
 	}
 
@@ -1298,22 +1274,18 @@ func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases 
 	}
 
 	// Check Universal User ID
-	eids := userExt.GetEid()
-	if eids != nil {
-		eidsValue := *eids
-		for eidIndex, eid := range eidsValue {
-			if eid.Source == "" {
-				return append(errL, fmt.Errorf("request.user.ext.eids[%d] missing required field: \"source\"", eidIndex))
-			}
+	for eidIndex, eid := range req.User.EIDs {
+		if eid.Source == "" {
+			return append(errL, fmt.Errorf("request.user.eids[%d] missing required field: \"source\"", eidIndex))
+		}
 
-			if len(eid.UIDs) == 0 {
-				return append(errL, fmt.Errorf("request.user.ext.eids[%d].uids must contain at least one element or be undefined", eidIndex))
-			}
+		if len(eid.UIDs) == 0 {
+			return append(errL, fmt.Errorf("request.user.eids[%d].uids must contain at least one element or be undefined", eidIndex))
+		}
 
-			for uidIndex, uid := range eid.UIDs {
-				if uid.ID == "" {
-					return append(errL, fmt.Errorf("request.user.ext.eids[%d].uids[%d] missing required field: \"id\"", eidIndex, uidIndex))
-				}
+		for uidIndex, uid := range eid.UIDs {
+			if uid.ID == "" {
+				return append(errL, fmt.Errorf("request.user.eids[%d].uids[%d] missing required field: \"id\"", eidIndex, uidIndex))
 			}
 		}
 	}
@@ -1342,16 +1314,11 @@ func validateRegs(req *openrtb_ext.RequestWrapper, gpp gpplib.GppContainer) []er
 				WarningCode: errortypes.InvalidPrivacyConsentWarningCode})
 		}
 	}
-	regsExt, err := req.GetRegExt()
-	if err != nil {
-		return append(errL, fmt.Errorf("request.regs.ext is invalid: %v", err))
-	}
 
-	gdpr := regsExt.GetGDPR()
-	if gdpr != nil && *gdpr != 0 && *gdpr != 1 {
-		return append(errL, errors.New("request.regs.ext.gdpr must be either 0 or 1"))
+	reqGDPR := req.BidRequest.Regs.GDPR
+	if reqGDPR != nil && *reqGDPR != 0 && *reqGDPR != 1 {
+		return append(errL, errors.New("request.regs.gdpr must be either 0 or 1"))
 	}
-
 	return errL
 }
 
@@ -1374,7 +1341,6 @@ func validateDevice(device *openrtb2.Device) error {
 	if device.Geo != nil && device.Geo.Accuracy < 0 {
 		return errors.New("request.device.geo.accuracy must be a positive number")
 	}
-
 	return nil
 }
 
@@ -1707,9 +1673,9 @@ func (deps *endpointDeps) processStoredRequests(requestJson []byte, impInfo []Im
 		}
 	}
 
-	// Apply default aliases, if they are provided
+	// apply default stored request
 	if deps.defaultRequest {
-		aliasedRequest, err := jsonpatch.MergePatch(deps.defReqJSON, resolvedRequest)
+		merged, err := jsonpatch.MergePatch(deps.defReqJSON, resolvedRequest)
 		if err != nil {
 			hasErr, Err := getJsonSyntaxError(resolvedRequest)
 			if hasErr {
@@ -1722,7 +1688,7 @@ func (deps *endpointDeps) processStoredRequests(requestJson []byte, impInfo []Im
 			}
 			return nil, nil, []error{err}
 		}
-		resolvedRequest = aliasedRequest
+		resolvedRequest = merged
 	}
 
 	// Apply any Stored Imps, if they exist. Since the JSON Merge Patch overrides arrays,
@@ -1901,9 +1867,9 @@ func writeError(errs []error, w http.ResponseWriter, labels *metrics.Labels) boo
 		metricsStatus := metrics.RequestStatusBadInput
 		for _, err := range errs {
 			erVal := errortypes.ReadCode(err)
-			if erVal == errortypes.BlacklistedAppErrorCode || erVal == errortypes.AccountDisabledErrorCode {
+			if erVal == errortypes.BlockedAppErrorCode || erVal == errortypes.AccountDisabledErrorCode {
 				httpStatus = http.StatusServiceUnavailable
-				metricsStatus = metrics.RequestStatusBlacklisted
+				metricsStatus = metrics.RequestStatusBlockedApp
 				break
 			} else if erVal == errortypes.MalformedAcctErrorCode {
 				httpStatus = http.StatusInternalServerError
