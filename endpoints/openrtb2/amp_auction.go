@@ -183,7 +183,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 
 	ao.RequestWrapper = reqWrapper
 
-	ctx := r.Context()
+	ctx := context.Background()
 	var cancel context.CancelFunc
 	if reqWrapper.TMax > 0 {
 		ctx, cancel = context.WithDeadline(ctx, start.Add(time.Duration(reqWrapper.TMax)*time.Millisecond))
@@ -545,7 +545,7 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 		return nil, nil, nil, nil, []error{err}
 	}
 
-	ctx, cancel := context.WithTimeout(httpRequest.Context(), time.Duration(deps.cfg.StoredRequestsTimeout)*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(deps.cfg.StoredRequestsTimeout)*time.Millisecond)
 	defer cancel()
 
 	storedRequests, _, errs := deps.storedReqFetcher.FetchRequests(ctx, []string{ampParams.StoredRequestID}, nil)
