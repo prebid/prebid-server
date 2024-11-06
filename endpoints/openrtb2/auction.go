@@ -212,8 +212,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	hookExecutor.SetActivityControl(activityControl)
 	hookExecutor.SetAccount(account)
 
-	ctx := context.Background()
-
+	ctx := r.Context()
 	timeout := deps.cfg.AuctionTimeouts.LimitAuctionTimeout(time.Duration(req.TMax) * time.Millisecond)
 	if timeout > 0 {
 		var cancel context.CancelFunc
@@ -468,7 +467,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	}
 
 	timeout := parseTimeout(requestJson, time.Duration(deps.cfg.StoredRequestsTimeout)*time.Millisecond)
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctx, cancel := context.WithTimeout(httpRequest.Context(), timeout)
 	defer cancel()
 
 	impInfo, errs := parseImpInfo(requestJson)

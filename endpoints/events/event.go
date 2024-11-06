@@ -91,7 +91,7 @@ func (e *eventEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprou
 		return
 	}
 
-	ctx := context.Background()
+	ctx := r.Context()
 	if e.Cfg.Event.TimeoutMS > 0 {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, time.Duration(e.Cfg.Event.TimeoutMS)*time.Millisecond)
