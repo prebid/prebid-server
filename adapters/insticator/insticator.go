@@ -73,7 +73,6 @@ func getMediaTypeForBid(bid *openrtb2.Bid) openrtb_ext.BidType {
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-
 	var errs []error
 	var adapterRequests []*adapters.RequestData
 	var groupedImps = make(map[string][]openrtb2.Imp)
@@ -85,6 +84,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	request.Ext = reqExt
 
+	// Create a deep copy of the request to avoid modifying the original request
+	requestCopy := *request
+	requestCopy.Site = request.Site
+	requestCopy.App = request.App
+
 	for i := 0; i < len(request.Imp); i++ {
 		impCopy, err := makeImps(request.Imp[i])
 		if err != nil {
@@ -95,8 +99,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		var impExt ext
 
 		// Populate site.publisher.id from imp extension
-		if request.Site != nil || request.App != nil {
-			populatePublisherId(&impCopy, request)
+		if requestCopy.Site != nil || requestCopy.App != nil {
+			populatePublisherId(&impCopy, &requestCopy)
 		}
 
 		// Group together the imps having Insticator adUnitId. However, let's not block request creation.
@@ -121,7 +125,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	}
 
 	for _, impList := range groupedImps {
-		if adapterReq, err := a.makeRequest(*request, impList); err == nil {
+		if adapterReq, err := a.makeRequest(requestCopy, impList); err == nil {
 			adapterRequests = append(adapterRequests, adapterReq)
 		} else {
 			errs = append(errs, err)
@@ -292,25 +296,29 @@ func validateVideoParams(video *openrtb2.Video) (*openrtb2.Video, error) {
 	return &videoCopy, nil
 }
 
-// populate publisherId to site/app object from imp extension
+// populatePublisherId function populates site.publisher.id or app.publisher.id
 func populatePublisherId(imp *openrtb2.Imp, request *openrtb2.BidRequest) {
 	var ext ext
 
-	if request.Site != nil && request.Site.Publisher == nil {
-		request.Site.Publisher = &openrtb2.Publisher{}
-		if err := json.Unmarshal(imp.Ext, &ext); err == nil {
-			request.Site.Publisher.ID = ext.Insticator.PublisherId
-		} else {
-			log.Printf("Error unmarshalling imp extension: %v", err)
-		}
+	// Unmarshal the imp extension to get the publisher ID
+	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
+		log.Printf("Error unmarshalling imp extension: %v", err)
+		return
 	}
 
-	if request.App != nil && request.App.Publisher == nil {
-		request.App.Publisher = &openrtb2.Publisher{}
-		if err := json.Unmarshal(imp.Ext, &ext); err == nil {
-			request.App.Publisher.ID = ext.Insticator.PublisherId
-		} else {
-			log.Printf("Error unmarshalling imp extension: %v", err)
+	// Populate site.publisher.id if request.Site is not nil
+	if request.Site != nil {
+		if request.Site.Publisher == nil {
+			request.Site.Publisher = &openrtb2.Publisher{}
 		}
+		request.Site.Publisher.ID = ext.Insticator.PublisherId
+	}
+
+	// Populate app.publisher.id if request.App is not nil
+	if request.App != nil {
+		if request.App.Publisher == nil {
+			request.App.Publisher = &openrtb2.Publisher{}
+		}
+		request.App.Publisher.ID = ext.Insticator.PublisherId
 	}
 }

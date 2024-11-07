@@ -14,4 +14,4 @@ capabilities:
 userSync:
   iframe:
     url: "https://usync.ingage.tech?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
-    userMacro: ""
+    userMacro: "$UID"
