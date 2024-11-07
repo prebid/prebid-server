@@ -1,16 +1,16 @@
 package adhese
 
 import (
-	"encoding/json"
 	"fmt"
 	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/macros"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -40,12 +40,12 @@ func (a *adapter) MakeRequests(
 	imp := &request.Imp[0]
 
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, []error{&errortypes.BadInput{Message: fmt.Sprintf("Error unmarshalling imp.ext: %v", err)}}
 	}
 
 	var params openrtb_ext.ExtImpAdhese
-	if err := json.Unmarshal(bidderExt.Bidder, &params); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &params); err != nil {
 		return nil, []error{&errortypes.BadInput{Message: fmt.Sprintf("Error unmarshalling bidder ext: %v", err)}}
 	}
 
@@ -65,7 +65,7 @@ func (a *adapter) MakeRequests(
 	}
 
 	// marshal the ext.adhese.bidder object into the ext field
-	modifiedExt, err := json.Marshal(extImpAdheseWrapper{
+	modifiedExt, err := jsonutil.Marshal(extImpAdheseWrapper{
 		"adhese": targets,
 	})
 	if err != nil {
@@ -86,7 +86,7 @@ func (a *adapter) MakeRequests(
 	}
 
 	// marshal the request body
-	requestJSON, err := json.Marshal(modifiedRequest)
+	requestJSON, err := jsonutil.Marshal(modifiedRequest)
 
 	if err != nil {
 		return nil, []error{err}
@@ -148,7 +148,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	var response openrtb2.BidResponse
-	if err := json.Unmarshal(responseData.Body, &response); err != nil {
+	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}
 	// create a new bidResponse with a capacity of 1 because we only expect 1 bid
@@ -172,7 +172,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	bid := bids[0]
 
 	var wrappedBidExt wrappedBidExt
-	if err := json.Unmarshal(bid.Ext, &wrappedBidExt); err != nil {
+	if err := jsonutil.Unmarshal(bid.Ext, &wrappedBidExt); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("BidExt parsing error. %s", err.Error()),
 		}}
@@ -185,7 +185,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		}}
 	}
 
-	marshalledBidExt, err := json.Marshal(wrappedBidExt["adhese"])
+	marshalledBidExt, err := jsonutil.Marshal(wrappedBidExt["adhese"])
 	if err != nil {
 		return nil, []error{err}
 	}

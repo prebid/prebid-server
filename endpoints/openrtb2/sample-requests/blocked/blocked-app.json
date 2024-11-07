@@ -1,0 +1,87 @@
+{
+  "description": "This is a perfectly valid request except that it comes from a blocked app",
+  "config": {
+    "blockedApps": ["spam_app"]
+  },
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "user": {
+      "ext": {
+        "consent": "gdpr-consent-string",
+        "prebid": {
+          "buyeruids": {
+            "appnexus": "override-appnexus-id-in-cookie"
+          }
+        }
+      }
+    },
+    "app": {
+      "id": "spam_app"
+    },
+    "regs": {
+      "ext": {
+        "gdpr": 1
+      }
+    },
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          },
+          "districtm": {
+            "placementId": 105
+          },
+          "rubicon": {
+            "accountId": 1001,
+            "siteId": 113932,
+            "zoneId": 535510
+          }
+        }
+      }
+    ],
+    "tmax": 500,
+    "ext": {
+      "prebid": {
+        "aliases": {
+          "districtm": "appnexus"
+        },
+        "bidadjustmentfactors": {
+          "appnexus": 1.01,
+          "districtm": 0.98,
+          "rubicon": 0.99
+        },
+        "cache": {
+          "bids": {}
+        },
+        "targeting": {
+          "includewinners": false,
+          "pricegranularity": {
+            "precision": 2,
+            "ranges": [
+              {
+                "max": 20,
+                "increment": 0.10
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "expectedReturnCode": 503,
+  "expectedErrorMessage": "Invalid request: Prebid-server does not process requests from App ID: spam_app\n"
+}

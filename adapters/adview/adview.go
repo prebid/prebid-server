@@ -8,11 +8,12 @@ import (
 	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/macros"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -45,7 +46,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	requestCopy := *request
 	for _, imp := range request.Imp {
 		var bidderExt adapters.ExtImpBidder
-		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			errors = append(errors, &errortypes.BadInput{
 				Message: fmt.Sprintf("invalid imp.ext, %s", err.Error()),
 			})
@@ -53,7 +54,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		}
 		//use adview
 		var advImpExt openrtb_ext.ExtImpAdView
-		if err := json.Unmarshal(bidderExt.Bidder, &advImpExt); err != nil {
+		if err := jsonutil.Unmarshal(bidderExt.Bidder, &advImpExt); err != nil {
 			errors = append(errors, &errortypes.BadInput{
 				Message: fmt.Sprintf("invalid bidderExt.Bidder, %s", err.Error()),
 			})
@@ -132,7 +133,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	var response openrtb2.BidResponse
-	if err := json.Unmarshal(responseData.Body, &response); err != nil {
+	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}
 

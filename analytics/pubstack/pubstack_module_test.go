@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
-	"github.com/prebid/prebid-server/v2/analytics"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/analytics"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -99,7 +99,7 @@ func TestNewModuleSuccess(t *testing.T) {
 								{
 									ImpId:      "123",
 									StatusCode: 34,
-									Ext:        openrtb_ext.NonBidExt{Prebid: openrtb_ext.ExtResponseNonBidPrebid{Bid: openrtb_ext.NonBidObject{}}},
+									Ext:        &openrtb_ext.NonBidExt{Prebid: openrtb_ext.ExtResponseNonBidPrebid{Bid: openrtb_ext.NonBidObject{}}},
 								},
 							},
 						},

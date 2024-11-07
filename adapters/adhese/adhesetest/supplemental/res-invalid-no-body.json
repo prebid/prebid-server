@@ -23,16 +23,9 @@
             "location": "_adhese_prebid_demo_",
             "format": "leaderboard",
             "targets": {
-              "ci": [
-                "gent",
-                "brussels"
-              ],
-              "ag": [
-                "55"
-              ],
-              "tl": [
-                "all"
-              ]
+              "ci": ["gent", "brussels"],
+              "ag": ["55"],
+              "tl": ["all"]
             }
           }
         }
@@ -49,9 +42,7 @@
     {
       "expectedRequest": {
         "uri": "https://ads-demo.adhese.com/openrtb2",
-        "impIDs": [
-          "test-req"
-        ],
+        "impIDs": ["test-req"],
         "body": {
           "id": "test-req",
           "imp": [
@@ -66,19 +57,10 @@
               },
               "ext": {
                 "adhese": {
-                  "SL": [
-                    "_adhese_prebid_demo_-leaderboard"
-                  ],
-                  "ag": [
-                    "55"
-                  ],
-                  "ci": [
-                    "gent",
-                    "brussels"
-                  ],
-                  "tl": [
-                    "all"
-                  ]
+                  "SL": ["_adhese_prebid_demo_-leaderboard"],
+                  "ag": ["55"],
+                  "ci": ["gent", "brussels"],
+                  "tl": ["all"]
                 }
               },
               "id": "test-req"
@@ -110,3 +92,4 @@
     }
   ]
 }
+
