@@ -87,9 +87,8 @@
   "expectedBidResponses": [],
   "expectedMakeBidsErrors": [
     {
-      "value": "unexpected end of JSON input",
+      "value": "Empty body",
       "comparison": "literal"
     }
   ]
 }
-

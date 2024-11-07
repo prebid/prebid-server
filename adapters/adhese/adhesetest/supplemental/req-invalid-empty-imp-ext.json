@@ -31,9 +31,8 @@
   "expectedBidResponses": [],
   "expectedMakeRequestsErrors": [
     {
-      "value": "Error unmarshalling bidder ext: unexpected end of JSON input",
+      "value": "bidderExt.Bidder is empty",
       "comparison": "literal"
     }
   ]
 }
-

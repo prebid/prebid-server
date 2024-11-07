@@ -30,9 +30,8 @@
   "expectedBidResponses": [],
   "expectedMakeRequestsErrors": [
     {
-      "value": "Error unmarshalling imp.ext: unexpected end of JSON input",
+      "value": "imp.Ext is empty",
       "comparison": "literal"
     }
   ]
 }
-

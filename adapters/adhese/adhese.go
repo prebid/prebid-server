@@ -39,11 +39,19 @@ func (a *adapter) MakeRequests(
 	}
 	imp := &request.Imp[0]
 
+	// Check if imp.Ext is empty before unmarshalling
+	if len(imp.Ext) == 0 {
+		return nil, []error{&errortypes.BadInput{Message: "imp.Ext is empty"}}
+	}
 	var bidderExt adapters.ExtImpBidder
 	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, []error{&errortypes.BadInput{Message: fmt.Sprintf("Error unmarshalling imp.ext: %v", err)}}
 	}
 
+	// Check if bidderExt.Bidder is empty before unmarshalling
+	if len(bidderExt.Bidder) == 0 {
+		return nil, []error{&errortypes.BadInput{Message: "bidderExt.Bidder is empty"}}
+	}
 	var params openrtb_ext.ExtImpAdhese
 	if err := jsonutil.Unmarshal(bidderExt.Bidder, &params); err != nil {
 		return nil, []error{&errortypes.BadInput{Message: fmt.Sprintf("Error unmarshalling bidder ext: %v", err)}}
@@ -149,7 +157,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 	var response openrtb2.BidResponse
 	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
-		return nil, []error{err}
+		return nil, []error{&errortypes.BadServerResponse{Message: "Empty body"}}
 	}
 	// create a new bidResponse with a capacity of 1 because we only expect 1 bid
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(response.SeatBid[0].Bid))
