@@ -170,25 +170,6 @@ func (p *PubxaiModule) LogNotificationEventObject(ne *analytics.NotificationEven
 }
 
 func (p *PubxaiModule) LogVideoObject(vo *analytics.VideoObject) {
-	if vo == nil {
-		glog.Warning("[pubxai] Auction Object is nil")
-		return
-	}
-	// Generate a random integer between 1 and 100
-	randomNumber := rand.Intn(100) + 1
-	if p.cfg.SamplingPercentage < randomNumber {
-		return
-	}
-	// convert ao to LogObject
-	lo := &utils.LogObject{
-		Status:         vo.Status,
-		Errors:         vo.Errors,
-		Response:       vo.Response,
-		StartTime:      vo.StartTime,
-		SeatNonBid:     vo.SeatNonBid,
-		RequestWrapper: vo.RequestWrapper,
-	}
-	p.pushToQueue(p.processorService.ProcessLogData(lo))
 }
 
 func (p *PubxaiModule) LogSetUIDObject(so *analytics.SetUIDObject) {
@@ -198,25 +179,6 @@ func (p *PubxaiModule) LogCookieSyncObject(cso *analytics.CookieSyncObject) {
 }
 
 func (p *PubxaiModule) LogAmpObject(ao *analytics.AmpObject) {
-	if ao == nil {
-		glog.Warning("[pubxai] Auction Object is nil")
-		return
-	}
-	// Generate a random integer between 1 and 100
-	randomNumber := rand.Intn(100) + 1
-	if p.cfg.SamplingPercentage < randomNumber {
-		return
-	}
-	// convert ao to LogObject
-	lo := &utils.LogObject{
-		Status:         ao.Status,
-		Errors:         ao.Errors,
-		Response:       ao.AuctionResponse,
-		StartTime:      ao.StartTime,
-		SeatNonBid:     ao.SeatNonBid,
-		RequestWrapper: ao.RequestWrapper,
-	}
-	p.pushToQueue(p.processorService.ProcessLogData(lo))
 }
 
 func (p *PubxaiModule) Shutdown() {
