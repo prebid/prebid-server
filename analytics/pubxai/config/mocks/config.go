@@ -8,7 +8,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	config "github.com/prebid/prebid-server/v2/analytics/pubxai/config"
+	config "github.com/prebid/prebid-server/v3/analytics/pubxai/config"
 )
 
 // MockConfigService is a mock of ConfigService interface.

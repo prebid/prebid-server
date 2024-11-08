@@ -7,9 +7,9 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	utils "github.com/prebid/prebid-server/v2/analytics/pubxai/utils"
-	utilsMock "github.com/prebid/prebid-server/v2/analytics/pubxai/utils/mocks"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	utils "github.com/prebid/prebid-server/v3/analytics/pubxai/utils"
+	utilsMock "github.com/prebid/prebid-server/v3/analytics/pubxai/utils/mocks"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 

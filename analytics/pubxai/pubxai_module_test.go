@@ -10,13 +10,13 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/golang/mock/gomock"
-	"github.com/prebid/prebid-server/v2/analytics"
-	config "github.com/prebid/prebid-server/v2/analytics/pubxai/config"
-	configMock "github.com/prebid/prebid-server/v2/analytics/pubxai/config/mocks"
-	processorMock "github.com/prebid/prebid-server/v2/analytics/pubxai/processor/mocks"
-	queue "github.com/prebid/prebid-server/v2/analytics/pubxai/queue"
-	queueMock "github.com/prebid/prebid-server/v2/analytics/pubxai/queue/mocks"
-	"github.com/prebid/prebid-server/v2/analytics/pubxai/utils"
+	"github.com/prebid/prebid-server/v3/analytics"
+	config "github.com/prebid/prebid-server/v3/analytics/pubxai/config"
+	configMock "github.com/prebid/prebid-server/v3/analytics/pubxai/config/mocks"
+	processorMock "github.com/prebid/prebid-server/v3/analytics/pubxai/processor/mocks"
+	queue "github.com/prebid/prebid-server/v3/analytics/pubxai/queue"
+	queueMock "github.com/prebid/prebid-server/v3/analytics/pubxai/queue/mocks"
+	"github.com/prebid/prebid-server/v3/analytics/pubxai/utils"
 	"github.com/stretchr/testify/assert"
 )
 

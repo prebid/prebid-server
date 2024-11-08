@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/v2/util/task"
+	"github.com/prebid/prebid-server/v3/util/task"
 )
 
 type Configuration struct {

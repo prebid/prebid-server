@@ -9,8 +9,8 @@ import (
 	"github.com/benbjohnson/clock"
 	"github.com/docker/go-units"
 	"github.com/golang/glog"
-	utils "github.com/prebid/prebid-server/v2/analytics/pubxai/utils"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	utils "github.com/prebid/prebid-server/v3/analytics/pubxai/utils"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type QueueService[T any] interface {

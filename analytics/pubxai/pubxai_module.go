@@ -14,11 +14,11 @@ import (
 	"github.com/docker/go-units"
 	"github.com/golang/glog"
 
-	"github.com/prebid/prebid-server/v2/analytics"
-	config "github.com/prebid/prebid-server/v2/analytics/pubxai/config"
-	processor "github.com/prebid/prebid-server/v2/analytics/pubxai/processor"
-	queue "github.com/prebid/prebid-server/v2/analytics/pubxai/queue"
-	"github.com/prebid/prebid-server/v2/analytics/pubxai/utils"
+	"github.com/prebid/prebid-server/v3/analytics"
+	config "github.com/prebid/prebid-server/v3/analytics/pubxai/config"
+	processor "github.com/prebid/prebid-server/v3/analytics/pubxai/processor"
+	queue "github.com/prebid/prebid-server/v3/analytics/pubxai/queue"
+	"github.com/prebid/prebid-server/v3/analytics/pubxai/utils"
 )
 
 type PubxaiModule struct {

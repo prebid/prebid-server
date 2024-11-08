@@ -3,7 +3,7 @@ package processor
 import (
 	"github.com/golang/glog"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	utils "github.com/prebid/prebid-server/v2/analytics/pubxai/utils"
+	utils "github.com/prebid/prebid-server/v3/analytics/pubxai/utils"
 )
 
 type ProcessorService interface {
