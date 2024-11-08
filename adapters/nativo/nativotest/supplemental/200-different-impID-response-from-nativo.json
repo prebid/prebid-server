@@ -69,16 +69,7 @@
   "expectedBidResponses": [
     {
       "currency": "USD",
-      "bids": [
-        {
-          "bid": {
-            "id": "bid-id",
-            "impid": "nativo-id-2",
-            "price": 3.5
-          },
-          "type": "banner"
-        }
-      ]
+      "bids": []
     }
   ],
   "expectedMakeBidsErrors": [
