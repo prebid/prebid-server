@@ -51,7 +51,7 @@
             {
               "bid": [
                 {
-                  "id": "a3ae1b4e2fc24a4fb45540082e98e161",
+                  "id": "bid-id",
                   "impid": "nativo-id-2",
                   "price": 3.5,
                   "w": 300,
@@ -66,7 +66,21 @@
       }
     }
   ],
-  "expectedBidResponses": [],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-id",
+            "impid": "nativo-id-2",
+            "price": 3.5
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ],
   "expectedMakeBidsErrors": [
     {
       "value": "Unrecognized impression type in response from nativo: nativo-id-2",
