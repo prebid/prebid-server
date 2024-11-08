@@ -65,5 +65,10 @@
       }
     }
   ],
-  "expectedBidResponses": []
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unrecognized impression type in response from nativo: nativo-id-2",
+      "comparison": "literal"
+    }
+  ]
 }
