@@ -218,3 +218,7 @@ func (p *PubxaiModule) LogAmpObject(ao *analytics.AmpObject) {
 	}
 	p.pushToQueue(p.processorService.ProcessLogData(lo))
 }
+
+func (p *PubxaiModule) Shutdown() {
+	close(p.sigTermCh)
+}
