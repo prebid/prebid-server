@@ -8,11 +8,14 @@ capabilities:
       - banner
       - video
       - native
+      - audio
   site:
     mediaTypes:
       - banner
       - video
       - native
+      - audio
+multiformatSupport: "will-bid-on-any"
 userSync:
   redirect:
     url: "https://ssbsync-global.smartadserver.com/api/sync?callerId=5&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirectUri={{.RedirectURL}}"
