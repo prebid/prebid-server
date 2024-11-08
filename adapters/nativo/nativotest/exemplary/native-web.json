@@ -108,7 +108,8 @@
             "adomain": [
               "awesome.com"
             ]
-          }
+          },
+          "type": "native"
         }
       ]
     }

@@ -132,7 +132,8 @@
                 "type": "video"
               }
             }
-          }
+          },
+          "type": "video"
         }
       ]
     }
