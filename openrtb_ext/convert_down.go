@@ -31,13 +31,6 @@ func ConvertDownTo25(r *RequestWrapper) error {
 		}
 	}
 
-	// Remove fields introduced in OpenRTB 2.6+. The previous OpenRTB 2.5 spec did not specify that
-	// bidders must tolerate new or unexpected fields.
-	clear26Fields(r)
-	clear202211Fields(r)
-	clear202303Fields(r)
-	clear202309Fields(r)
-
 	return nil
 }
 

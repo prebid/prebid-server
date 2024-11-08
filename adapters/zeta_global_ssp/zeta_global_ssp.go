@@ -6,10 +6,11 @@ import (
 	"net/http"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -54,7 +55,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	var response openrtb2.BidResponse
-	if err := json.Unmarshal(responseData.Body, &response); err != nil {
+	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}
 
@@ -81,7 +82,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 	if bid.Ext != nil {
 		var bidExt openrtb_ext.ExtBid
-		err := json.Unmarshal(bid.Ext, &bidExt)
+		err := jsonutil.Unmarshal(bid.Ext, &bidExt)
 		if err == nil && bidExt.Prebid != nil {
 			return openrtb_ext.ParseBidType(string(bidExt.Prebid.Type))
 		}

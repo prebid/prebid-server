@@ -82,7 +82,7 @@
 	],
 	"expectedMakeBidsErrors": [
 		{
-			"value": "json: cannot unmarshal number into Go struct field Ad.AdUnits.Ads.CreativeHeight of type string",
+			"value": "cannot unmarshal adnuntius.Ad.CreativeHeight: expects \" or n, but found 2",
 			"comparison": "literal"
 		}
 	]

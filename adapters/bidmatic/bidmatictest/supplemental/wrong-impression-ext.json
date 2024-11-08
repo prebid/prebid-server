@@ -1,0 +1,26 @@
+{
+  "mockBidRequest": {
+    "id": "unsupported-native-request",
+    "imp": [
+      {
+        "id": "unsupported-native-imp",
+        "video": {
+         "w": 100,
+          "h": 200
+        },
+        "ext": {
+          "bidder": {
+            "source": "some string instead of int"
+          }
+        }
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "ignoring imp id=unsupported-native-imp, error while marshaling impExt, err: json: invalid number literal \"some string instead of int\"",
+      "comparison": "literal"
+    }
+  ]
+}

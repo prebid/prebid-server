@@ -84,7 +84,7 @@
     ],
     "expectedMakeBidsErrors": [
         {
-            "value": "Unable to unpackage bid response. Error: json: cannot unmarshal string into Go value of type openrtb2.BidResponse",
+            "value": "Unable to unpackage bid response. Error: expect { or n, but found \"",
             "comparison": "literal"
           }
     ]

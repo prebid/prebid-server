@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 // SonobiAdapter - Sonobi SonobiAdapter definition
@@ -41,17 +43,36 @@ func (a *SonobiAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adap
 		reqCopy.Imp = append(make([]openrtb2.Imp, 0, 1), imp)
 
 		var bidderExt adapters.ExtImpBidder
-		if err = json.Unmarshal(reqCopy.Imp[0].Ext, &bidderExt); err != nil {
+		if err = jsonutil.Unmarshal(reqCopy.Imp[0].Ext, &bidderExt); err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		if err = json.Unmarshal(bidderExt.Bidder, &sonobiExt); err != nil {
+		if err = jsonutil.Unmarshal(bidderExt.Bidder, &sonobiExt); err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
 		reqCopy.Imp[0].TagID = sonobiExt.TagID
+
+		// If the bid floor currency is not USD, do the conversion to USD
+		if reqCopy.Imp[0].BidFloor > 0 && reqCopy.Imp[0].BidFloorCur != "" && strings.ToUpper(reqCopy.Imp[0].BidFloorCur) != "USD" {
+
+			// Convert to US dollars
+			convertedValue, err := reqInfo.ConvertCurrency(reqCopy.Imp[0].BidFloor, reqCopy.Imp[0].BidFloorCur, "USD")
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+
+			// Update after conversion. All imp elements inside request.Imp are shallow copies
+			// therefore, their non-pointer values are not shared memory and are safe to modify.
+			reqCopy.Imp[0].BidFloorCur = "USD"
+			reqCopy.Imp[0].BidFloor = convertedValue
+		}
+
+		// Sonobi only bids in USD
+		reqCopy.Cur = append(make([]string, 0, 1), "USD")
 
 		adapterReq, errors := a.makeRequest(&reqCopy)
 		if adapterReq != nil {
@@ -110,24 +131,24 @@ func (a *SonobiAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 
 	var bidResp openrtb2.BidResponse
 
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
+	bidResponse.Currency = "USD" // Sonobi only bids in USD
 
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
-			bidType, err := getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp)
+			bid := sb.Bid[i]
+			bidType, err := getMediaTypeForImp(bid.ImpID, internalRequest.Imp)
 			if err != nil {
-				errs = append(errs, err)
-			} else {
-				b := &adapters.TypedBid{
-					Bid:     &sb.Bid[i],
-					BidType: bidType,
-				}
-				bidResponse.Bids = append(bidResponse.Bids, b)
+				return nil, []error{err}
 			}
+			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+				Bid:     &bid,
+				BidType: bidType,
+			})
 		}
 	}
 	return bidResponse, errs
@@ -139,6 +160,9 @@ func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType,
 		if imp.ID == impID {
 			if imp.Banner == nil && imp.Video != nil {
 				mediaType = openrtb_ext.BidTypeVideo
+			}
+			if imp.Banner == nil && imp.Video == nil && imp.Native != nil {
+				mediaType = openrtb_ext.BidTypeNative
 			}
 			return mediaType, nil
 		}

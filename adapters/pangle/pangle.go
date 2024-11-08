@@ -6,10 +6,11 @@ import (
 	"net/http"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -81,13 +82,13 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	requestCopy := *request
 	for _, imp := range request.Imp {
 		var impExt wrappedExtImpBidder
-		if err := json.Unmarshal(imp.Ext, &impExt); err != nil {
+		if err := jsonutil.Unmarshal(imp.Ext, &impExt); err != nil {
 			errs = append(errs, fmt.Errorf("failed unmarshalling imp ext (err)%s", err.Error()))
 			continue
 		}
 		// get token & networkIDs
 		var bidderImpExt openrtb_ext.ImpExtPangle
-		if err := json.Unmarshal(impExt.Bidder, &bidderImpExt); err != nil {
+		if err := jsonutil.Unmarshal(impExt.Bidder, &bidderImpExt); err != nil {
 			errs = append(errs, fmt.Errorf("failed unmarshalling bidder imp ext (err)%s", err.Error()))
 			continue
 		}
@@ -147,7 +148,7 @@ func getMediaTypeForBid(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 	}
 
 	var bidExt pangleBidExt
-	if err := json.Unmarshal(bid.Ext, &bidExt); err != nil {
+	if err := jsonutil.Unmarshal(bid.Ext, &bidExt); err != nil {
 		return "", fmt.Errorf("invalid bid ext")
 	} else if bidExt.Pangle == nil || bidExt.Pangle.AdType == nil {
 		return "", fmt.Errorf("missing pangleExt/adtype in bid ext")
@@ -189,7 +190,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	var response openrtb2.BidResponse
-	if err := json.Unmarshal(responseData.Body, &response); err != nil {
+	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}
 

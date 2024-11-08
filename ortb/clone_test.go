@@ -7,7 +7,7 @@ import (
 
 	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -758,4 +758,45 @@ func discoverPointerFields(t reflect.Type) []string {
 		}
 	}
 	return fields
+}
+
+func TestCloneRegs(t *testing.T) {
+	t.Run("nil", func(t *testing.T) {
+		result := CloneRegs(nil)
+		assert.Nil(t, result)
+	})
+
+	t.Run("empty", func(t *testing.T) {
+		given := &openrtb2.Regs{}
+		result := CloneRegs(given)
+		assert.Empty(t, result)
+		assert.NotSame(t, given, result)
+	})
+
+	t.Run("populated", func(t *testing.T) {
+		given := &openrtb2.Regs{
+			COPPA:     1,
+			GDPR:      ptrutil.ToPtr(int8(0)),
+			USPrivacy: "1YNN",
+			GPP:       "SomeGPPStrig",
+			GPPSID:    []int8{1, 2, 3},
+			Ext:       json.RawMessage(`{"anyField":1}`),
+		}
+		result := CloneRegs(given)
+		assert.Equal(t, given, result, "equality")
+		assert.NotSame(t, given, result, "pointer")
+		assert.NotSame(t, given.GDPR, result.GDPR, "gdpr")
+		assert.NotSame(t, given.GPPSID, result.GPPSID, "gppsid[]")
+		assert.NotSame(t, given.GPPSID[0], result.GPPSID[0], "gppsid[0]")
+		assert.NotSame(t, given.Ext, result.Ext, "ext")
+	})
+
+	t.Run("assumptions", func(t *testing.T) {
+		assert.ElementsMatch(t, discoverPointerFields(reflect.TypeOf(openrtb2.Regs{})),
+			[]string{
+				"GDPR",
+				"GPPSID",
+				"Ext",
+			})
+	})
 }
