@@ -40,7 +40,7 @@
   "httpCalls": [],
   "expectedMakeRequestsErrors": [
     {
-      "value": "Failed to deserialize bidder impression extension: json: cannot unmarshal string into Go value of type adapters.ExtImpBidder",
+      "value": "Failed to deserialize bidder impression extension: expect { or n, but found \"",
       "comparison": "literal"
     }
   ]

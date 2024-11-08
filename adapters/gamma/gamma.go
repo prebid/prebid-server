@@ -9,10 +9,11 @@ import (
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/openrtb/v20/openrtb3"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type GammaAdapter struct {
@@ -62,7 +63,7 @@ func (a *GammaAdapter) makeRequest(request *openrtb2.BidRequest, imp openrtb2.Im
 	var errors []error
 
 	var bidderExt adapters.ExtImpBidder
-	err := json.Unmarshal(imp.Ext, &bidderExt)
+	err := jsonutil.Unmarshal(imp.Ext, &bidderExt)
 	if err != nil {
 		err = &errortypes.BadInput{
 			Message: "ext.bidder not provided",
@@ -71,7 +72,7 @@ func (a *GammaAdapter) makeRequest(request *openrtb2.BidRequest, imp openrtb2.Im
 		return nil, errors
 	}
 	var gammaExt openrtb_ext.ExtImpGamma
-	err = json.Unmarshal(bidderExt.Bidder, &gammaExt)
+	err = jsonutil.Unmarshal(bidderExt.Bidder, &gammaExt)
 	if err != nil {
 		err = &errortypes.BadInput{
 			Message: "ext.bidder.publisher not provided",
@@ -243,7 +244,7 @@ func (a *GammaAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRe
 	}
 
 	var gammaResp gammaBidResponse
-	if err := json.Unmarshal(response.Body, &gammaResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &gammaResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("bad server response: %d. ", err),
 		}}
