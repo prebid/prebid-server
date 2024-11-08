@@ -10,7 +10,7 @@ import (
 
 func TestBidderNativo(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderNativo, config.Adapter{
-		Endpoint: "https://exchange.postrelease.com/esi?ntv_epid=7"},
+		Endpoint: "https://foo.io/?src=prebid"},
 		config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {

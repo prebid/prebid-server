@@ -93,7 +93,6 @@
                     "crid": "20"
                   }
                 ],
-                "type": "native",
                 "seat": "nativo"
               }
             ],
@@ -121,8 +120,7 @@
               "adomain": [
                 "awesome.com"
               ]
-            },
-            "type": "native"
+            }
           }
         ]
       }

@@ -21,7 +21,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://exchange.postrelease.com/esi?ntv_epid=7",
+        "uri": "https://foo.io/?src=prebid",
         "body": {
           "id": "test-request-id",
           "imp": [

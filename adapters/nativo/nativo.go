@@ -63,7 +63,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, externalRequest *adapte
 	var errs []error
 	for _, seatBid := range bidResp.SeatBid {
 		for i := range seatBid.Bid {
-			bidType, err := getMediaTypeForImp(seatBid.Bid[i], request.Imp)
+			bidType, err := getMediaTypeForImp(seatBid.Bid[i].ImpID, request.Imp)
 			if err != nil {
 				errs = append(errs, err)
 				continue
@@ -80,9 +80,9 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, externalRequest *adapte
 	return bidResponse, errs
 }
 
-func getMediaTypeForImp(bid openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
+func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
 	for _, imp := range imps {
-		if imp.ID == bid.ImpID {
+		if imp.ID == impID {
 			if imp.Native != nil {
 				return openrtb_ext.BidTypeNative, nil
 			} else if imp.Video != nil {
@@ -92,5 +92,5 @@ func getMediaTypeForImp(bid openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidT
 			}
 		}
 	}
-	return "", fmt.Errorf("Unrecognized impression type in response from nativo: %s", bid.ImpID)
+	return "", fmt.Errorf("Unrecognized impression type in response from nativo: %s", impID)
 }
