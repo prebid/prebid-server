@@ -2,6 +2,8 @@ endpoint: "https://ssb-global.smartadserver.com"
 maintainer:
   email: "supply-partner-integration@equativ.com"
 gvlVendorID: 45
+geoscope:
+  - global
 capabilities:
   app:
     mediaTypes:
