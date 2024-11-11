@@ -122,7 +122,9 @@ func (g *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 			})
 		}
 	}
-
+	if bidResp.Cur != "" {
+		bidResponse.Currency = bidResp.Cur
+	}
 	return bidResponse, errs
 }
 
