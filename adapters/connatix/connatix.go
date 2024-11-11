@@ -34,12 +34,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	if request.Site == nil && request.App == nil {
-		return nil, []error{&errortypes.BadInput{
-			Message: "Either site or app object is required",
-		}}
-	}
-
 	if request.Device != nil && request.Device.IP == "" && request.Device.IPv6 == "" {
 		return nil, []error{&errortypes.BadInput{
 			Message: "Device IP is required",
@@ -125,20 +119,7 @@ func validateAndBuildImpExt(imp *openrtb2.Imp) (impExtIncoming, error) {
 		return impExtIncoming{}, err
 	}
 
-	if err := validateConnatixExt(&ext.Bidder); err != nil {
-		return impExtIncoming{}, err
-	}
-
 	return ext, nil
-}
-
-func validateConnatixExt(cnxExt *openrtb_ext.ExtImpConnatix) error {
-	if cnxExt.PlacementId == "" {
-		return &errortypes.BadInput{
-			Message: "Placement id is required",
-		}
-	}
-	return nil
 }
 
 func splitRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, uri string) ([]*adapters.RequestData, []error) {
@@ -198,12 +179,6 @@ func splitRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, uri string
 }
 
 func buildRequestImp(imp *openrtb2.Imp, ext impExtIncoming, displayManagerVer string, reqInfo *adapters.ExtraRequestInfo) error {
-	if imp.Video == nil && imp.Banner == nil {
-		return &errortypes.BadInput{
-			Message: "Either video or banner object on impression is required",
-		}
-	}
-
 	if imp.Banner != nil {
 		bannerCopy := *imp.Banner
 
