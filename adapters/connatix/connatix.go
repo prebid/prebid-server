@@ -42,12 +42,13 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 	// connatix adapter expects imp.displaymanagerver to be populated in openrtb2 request
 	// but some SDKs will put it in imp.ext.prebid instead
-	displayManagerVer := buildDisplayManageVer(request)
+	displayManagerVer := buildDisplayManagerVer(request)
 
 	var errs []error
 
 	validImps := []openrtb2.Imp{}
-	for i := 0; i < len(request.Imp); i++ {
+
+	for i := range request.Imp {
 		impExtIncoming, err := validateAndBuildImpExt(&request.Imp[i])
 		if err != nil {
 			errs = append(errs, err)
@@ -61,15 +62,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 		validImps = append(validImps, request.Imp[i])
 	}
-	request.Imp = validImps
-
-	// If all the requests were malformed, don't bother making a server call with no impressions.
-	if len(request.Imp) == 0 {
-		return nil, errs
-	}
 
 	// Divide imps to several requests
-	requests, errors := splitRequests(request.Imp, request, a.uri.String())
+	requests, errors := splitRequests(validImps, request, a.uri.String())
 	return requests, append(errs, errors...)
 }
 
@@ -138,17 +133,17 @@ func splitRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, uri string
 	headers.Add("Accept", "application/json")
 
 	if request.Device != nil {
-	if len(request.Device.UA) > 0 {
-		headers.Add("User-Agent", request.Device.UA)
-	}
+		if len(request.Device.UA) > 0 {
+			headers.Add("User-Agent", request.Device.UA)
+		}
 
-	if len(request.Device.IPv6) > 0 {
-		headers.Add("X-Forwarded-For", request.Device.IPv6)
-	}
+		if len(request.Device.IPv6) > 0 {
+			headers.Add("X-Forwarded-For", request.Device.IPv6)
+		}
 
-	if len(request.Device.IP) > 0 {
-		headers.Add("X-Forwarded-For", request.Device.IP)
-	}
+		if len(request.Device.IP) > 0 {
+			headers.Add("X-Forwarded-For", request.Device.IP)
+		}
 	}
 
 	for impsLeft {
@@ -220,7 +215,7 @@ func buildRequestImp(imp *openrtb2.Imp, ext impExtIncoming, displayManagerVer st
 	return err
 }
 
-func buildDisplayManageVer(req *openrtb2.BidRequest) string {
+func buildDisplayManagerVer(req *openrtb2.BidRequest) string {
 	if req.App == nil {
 		return ""
 	}
