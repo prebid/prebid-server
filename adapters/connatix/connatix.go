@@ -156,6 +156,7 @@ func splitRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, uri string
 	headers.Add("Content-Type", "application/json")
 	headers.Add("Accept", "application/json")
 
+	if request.Device != nil {
 	if len(request.Device.UA) > 0 {
 		headers.Add("User-Agent", request.Device.UA)
 	}
@@ -166,6 +167,7 @@ func splitRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, uri string
 
 	if len(request.Device.IP) > 0 {
 		headers.Add("X-Forwarded-For", request.Device.IP)
+	}
 	}
 
 	for impsLeft {
