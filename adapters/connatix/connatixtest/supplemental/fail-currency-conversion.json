@@ -31,16 +31,34 @@
             "minduration": 120,
             "maxduration": 150
           },
+          "bidfloor": 1,
+          "bidfloorcur": "test",
           "ext": {
-            "bidder": {}
+            "bidder": {
+              "placementId": "some-placement-id"
+            }
           }
         }
-      ]
+      ],
+      "ext": {
+        "prebid": {
+            "currency": {
+              "rates": {
+                "EUR": {
+                  "USD": 1.5
+                }
+              },
+              "usepbsrates": false
+            }
+        }
+      }
     },
+    "httpCalls": [],
+    "expectedBidResponses": [],
     "expectedMakeRequestsErrors": [
         {
-          "value": "Placement id is required",
-          "comparison": "literal"
+            "value": "currency: tag is not well-formed",
+            "comparison": "literal"
         }
     ]
   }
