@@ -3426,9 +3426,9 @@ func TestCleanOpenRTBRequestsBidAdjustment(t *testing.T) {
 func TestCleanOpenRTBRequestsBuyerUID(t *testing.T) {
 	tcf2Consent := "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA"
 
-	buyerUIDAppnexus := `{"appnexus": "a123"}`
-	buyerUIDAppnexusMixedCase := `{"aPpNeXuS": "a123"}`
-	buyerUIDBoth := `{"appnexus": "a123", "pubmatic": "p456"}`
+	buyerUIDAppnexus := `{"appnexus": "a"}`
+	buyerUIDAppnexusMixedCase := `{"aPpNeXuS": "a"}`
+	buyerUIDBoth := `{"appnexus": "a", "pubmatic": "b"}`
 
 	bidderParamsAppnexus := `{"appnexus": {"placementId": 1}}`
 	bidderParamsBoth := `{"appnexus": {"placementId": 1}, "pubmatic": {"publisherId": "abc"}}`
@@ -3450,7 +3450,7 @@ func TestCleanOpenRTBRequestsBuyerUID(t *testing.T) {
 			expectedUsers: map[string]openrtb2.User{
 				"appnexus": {
 					ID:       "some-id",
-					BuyerUID: "a123",
+					BuyerUID: "a",
 					Ext:      json.RawMessage(`{"consent":"` + tcf2Consent + `","data":1,"test":2}`),
 				},
 			},
@@ -3466,7 +3466,7 @@ func TestCleanOpenRTBRequestsBuyerUID(t *testing.T) {
 			expectedUsers: map[string]openrtb2.User{
 				"appnexus": {
 					ID:       "some-id",
-					BuyerUID: "a123",
+					BuyerUID: "a",
 					Ext:      json.RawMessage(`{"consent":"` + tcf2Consent + `","data":1,"test":2}`),
 				},
 			},
@@ -3499,12 +3499,12 @@ func TestCleanOpenRTBRequestsBuyerUID(t *testing.T) {
 			expectedUsers: map[string]openrtb2.User{
 				"appnexus": {
 					ID:       "some-id",
-					BuyerUID: "a123",
+					BuyerUID: "a",
 					Ext:      json.RawMessage(`{"consent":"` + tcf2Consent + `","data":1,"test":2}`),
 				},
 				"pubmatic": {
 					ID:       "some-id",
-					BuyerUID: "p456",
+					BuyerUID: "b",
 					Ext:      json.RawMessage(`{"consent":"` + tcf2Consent + `","data":1,"test":2}`),
 				},
 			},
@@ -3572,9 +3572,12 @@ func TestCleanOpenRTBRequestsBuyerUID(t *testing.T) {
 			}
 
 			results, _, errs := reqSplitter.cleanOpenRTBRequests(context.Background(), auctionReq, nil, gdpr.SignalNo, false, nil)
+
+			assert.Empty(t, errs)
 			for _, v := range results {
-				assert.Empty(t, errs)
 				assert.Equal(t, test.expectedUsers[string(v.BidderName)], *v.BidRequest.User)
+				require.NotNil(t, v.BidRequest, "bidrequest")
+				require.NotNil(t, v.BidRequest.User, "bidrequest.user")
 			}
 		})
 	}
@@ -5600,12 +5603,14 @@ func TestExtractAndCleanBuyerUIDs(t *testing.T) {
 		name              string
 		user              *openrtb2.User
 		expectedBuyerUIDs map[string]string
+		expectedUser      *openrtb2.User
 		expectError       bool
 	}{
 		{
 			name:              "user_is_nil",
 			user:              nil,
 			expectedBuyerUIDs: nil,
+			expectedUser:      nil,
 			expectError:       false,
 		},
 		{
@@ -5614,7 +5619,10 @@ func TestExtractAndCleanBuyerUIDs(t *testing.T) {
 				Ext: nil,
 			},
 			expectedBuyerUIDs: nil,
-			expectError:       false,
+			expectedUser: &openrtb2.User{
+				Ext: nil,
+			},
+			expectError: false,
 		},
 		{
 			name: "user.ext_malformed",
@@ -5622,7 +5630,10 @@ func TestExtractAndCleanBuyerUIDs(t *testing.T) {
 				Ext: json.RawMessage(`{"prebid":}`),
 			},
 			expectedBuyerUIDs: nil,
-			expectError:       true,
+			expectedUser: &openrtb2.User{
+				Ext: json.RawMessage(`{"prebid":}`),
+			},
+			expectError: true,
 		},
 		{
 			name: "user.ext.prebid_is_nil",
@@ -5630,7 +5641,10 @@ func TestExtractAndCleanBuyerUIDs(t *testing.T) {
 				Ext: json.RawMessage(`{"prebid":null}`),
 			},
 			expectedBuyerUIDs: nil,
-			expectError:       false,
+			expectedUser: &openrtb2.User{
+				Ext: nil,
+			},
+			expectError: false,
 		},
 		{
 			name: "user.ext.prebid.buyeruids_is_nil",
@@ -5638,23 +5652,32 @@ func TestExtractAndCleanBuyerUIDs(t *testing.T) {
 				Ext: json.RawMessage(`{"prebid":{"buyeruids": null}}`),
 			},
 			expectedBuyerUIDs: nil,
-			expectError:       false,
+			expectedUser: &openrtb2.User{
+				Ext: nil,
+			},
+			expectError: false,
 		},
 		{
-			name: "user.ext.prebid.buyeruids_is_empty",
+			name: "user.ext.prebid.buyeruids_has_one",
 			user: &openrtb2.User{
-				Ext: json.RawMessage(`{"prebid":{"buyeruids": {}}}`),
+				Ext: json.RawMessage(`{"prebid":{"buyeruids": {"appnexus":"a"}}}`),
 			},
-			expectedBuyerUIDs: nil,
-			expectError:       false,
+			expectedBuyerUIDs: map[string]string{"appnexus": "a"},
+			expectedUser: &openrtb2.User{
+				Ext: nil,
+			},
+			expectError: false,
 		},
 		{
-			name: "user.ext.prebid.buyeruids_is_populated",
+			name: "user.ext.prebid.buyeruids_has_many",
 			user: &openrtb2.User{
-				Ext: json.RawMessage(`{"prebid":{"buyeruids": {"appnexus":"a123", "pubmatic":"p456"}}}`),
+				Ext: json.RawMessage(`{"prebid":{"buyeruids": {"appnexus":"a", "pubmatic":"b"}}}`),
 			},
-			expectedBuyerUIDs: map[string]string{"appnexus": "a123", "pubmatic": "p456"},
-			expectError:       false,
+			expectedBuyerUIDs: map[string]string{"appnexus": "a", "pubmatic": "b"},
+			expectedUser: &openrtb2.User{
+				Ext: nil,
+			},
+			expectError: false,
 		},
 	}
 
@@ -5673,10 +5696,10 @@ func TestExtractAndCleanBuyerUIDs(t *testing.T) {
 				assert.Nil(t, err)
 			}
 
-			assert.Len(t, result, len(test.expectedBuyerUIDs))
-			for bidder, buyerUID := range result {
-				assert.Equal(t, test.expectedBuyerUIDs[bidder], buyerUID)
-			}
+			assert.NoError(t, req.RebuildRequest())
+
+			assert.Equal(t, req.User, test.expectedUser)
+			assert.Equal(t, test.expectedBuyerUIDs, result)
 		})
 	}
 }
