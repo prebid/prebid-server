@@ -3557,7 +3557,7 @@ func TestCleanOpenRTBRequestsBuyerUID(t *testing.T) {
 				me:                &metrics.MetricsEngineMock{},
 				gdprPermsBuilder:  gdprPermissionsBuilder,
 				hostSChainNode:    nil,
-				bidderInfo:        config.BidderInfos{
+				bidderInfo: config.BidderInfos{
 					"appnexus": config.BidderInfo{
 						OpenRTB: &config.OpenRTBInfo{
 							Version: "2.5",
