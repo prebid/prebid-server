@@ -82,7 +82,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		return
 	}
 
-	explicitBuyerUIDs, err := extractBuyerUIDs(req.BidRequest.User)
+	explicitBuyerUIDs, err := extractBuyerUIDs(req)
 	if err != nil {
 		errs = []error{err}
 		return
@@ -600,38 +600,23 @@ func isBidderInExtAlternateBidderCodes(adapter, currentMultiBidBidder string, ad
 
 // extractBuyerUIDs parses the values from user.ext.prebid.buyeruids, and then deletes those values from the ext.
 // This prevents a Bidder from using these values to figure out who else is involved in the Auction.
-func extractBuyerUIDs(user *openrtb2.User) (map[string]string, error) {
-	if user == nil {
+func extractBuyerUIDs(req *openrtb_ext.RequestWrapper) (map[string]string, error) {
+	if req.User == nil {
 		return nil, nil
 	}
-	if len(user.Ext) == 0 {
-		return nil, nil
-	}
-
-	var userExt openrtb_ext.ExtUser
-	if err := jsonutil.Unmarshal(user.Ext, &userExt); err != nil {
+	userExt, err := req.GetUserExt()
+	if err != nil {
 		return nil, err
 	}
-	if userExt.Prebid == nil {
+	prebid := userExt.GetPrebid()
+	if prebid == nil {
 		return nil, nil
 	}
+	userExt.SetPrebid(nil)
 
 	// The API guarantees that user.ext.prebid.buyeruids exists and has at least one ID defined,
 	// as long as user.ext.prebid exists.
-	buyerUIDs := userExt.Prebid.BuyerUIDs
-	userExt.Prebid = nil
-
-	// Remarshal (instead of removing) if the ext has other known fields
-	if userExt.Consent != "" || len(userExt.Eids) > 0 {
-		if newUserExtBytes, err := jsonutil.Marshal(userExt); err != nil {
-			return nil, err
-		} else {
-			user.Ext = newUserExtBytes
-		}
-	} else {
-		user.Ext = nil
-	}
-	return buyerUIDs, nil
+	return prebid.BuyerUIDs, nil
 }
 
 // splitImps takes a list of Imps and returns a map of imps which have been sanitized for each bidder.
@@ -762,8 +747,6 @@ func createSanitizedImpExt(impExt, impExtPrebid map[string]json.RawMessage) (map
 }
 
 // prepareUser changes req.User so that it's ready for the given bidder.
-// This *will* mutate the request, but will *not* mutate any objects nested inside it.
-//
 // In this function, "givenBidder" may or may not be an alias. "coreBidder" must *not* be an alias.
 // It returns true if a Cookie User Sync existed, and false otherwise.
 func prepareUser(req *openrtb_ext.RequestWrapper, givenBidder, syncerKey string, explicitBuyerUIDs map[string]string, usersyncs IdFetcher) bool {
