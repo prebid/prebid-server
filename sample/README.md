@@ -7,6 +7,11 @@ The Sample describes several demos of quickly spinning up different Prebid Serve
 In the Sample, we use `docker` and `docker-compose` to instantiate examples; with docker providing a unified setup and interface,  you can spin up a demo server instance locally with only one command without knowing all the complexities.
 The docker image used in `docker-compose.yml` is the `Dockerfile` residing in the root level of the repository. 
 
+
+> [!NOTE] 
+> Depending on what version of Docker is installed on your system, `docker-compose` might be considered deprecated.  If you receive an error when trying to run `docker-compose`, use `docker compose` (without the dash) instead.
+
+
 ## Option 1 - Standard Docker Engine
 Install `docker` and `docker-compose` via the [official docker page](https://docs.docker.com/compose/install/#scenario-one-install-docker-desktop). If you cannot use the official docker engine due to restrictions of its license, see the option below about using Podman instead of Docker. 
 
