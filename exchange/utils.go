@@ -612,11 +612,15 @@ func extractBuyerUIDs(req *openrtb_ext.RequestWrapper) (map[string]string, error
 	if prebid == nil {
 		return nil, nil
 	}
-	userExt.SetPrebid(nil)
+
+	buyerUIDs := prebid.BuyerUIDs
+
+	prebid.BuyerUIDs = nil
+	userExt.SetPrebid(prebid)
 
 	// The API guarantees that user.ext.prebid.buyeruids exists and has at least one ID defined,
 	// as long as user.ext.prebid exists.
-	return prebid.BuyerUIDs, nil
+	return buyerUIDs, nil
 }
 
 // splitImps takes a list of Imps and returns a map of imps which have been sanitized for each bidder.
