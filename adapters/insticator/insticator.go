@@ -2,7 +2,7 @@ package insticator
 
 import (
 	"encoding/json"
-	"log"
+	"fmt"
 	"math"
 	"net/http"
 	"strings"
@@ -52,7 +52,7 @@ type bidInsticatorExt struct {
 	MediaType string `json:"mediaType,omitempty"`
 }
 
-// Builder builds a new insticatorance of the Foo adapter for the given bidder with the given config.
+// Builder builds a new instance of the Insticator adapter with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,
@@ -60,7 +60,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	return bidder, nil
 }
 
-// getMediaTypeForImp figures out which media type this bid is for
+// getMediaTypeForBid figures out which media type this bid is for
 func getMediaTypeForBid(bid *openrtb2.Bid) openrtb_ext.BidType {
 	switch bid.MType {
 	case openrtb2.MarkupBanner:
@@ -100,7 +100,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 		// Populate site.publisher.id from imp extension
 		if requestCopy.Site != nil || requestCopy.App != nil {
-			populatePublisherId(&impCopy, &requestCopy)
+			if err := populatePublisherId(&impCopy, &requestCopy); err != nil {
+				errs = append(errs, err)
+				continue
+			}
 		}
 
 		// Group together the imps having Insticator adUnitId. However, let's not block request creation.
@@ -113,7 +116,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 		resolvedBidFloor, errFloor := resolveBidFloor(impCopy.BidFloor, impCopy.BidFloorCur, requestInfo)
 		if errFloor != nil {
-			errs = append(errs, errFloor)
+			errs = append(errs, &errortypes.BadInput{
+				Message: fmt.Sprintf("Error in converting the provided bid floor currency from %s to USD",
+					impCopy.BidFloorCur),
+			})
+			continue
 		} else {
 			if resolvedBidFloor > 0 {
 				impCopy.BidFloor = resolvedBidFloor
@@ -203,7 +210,6 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 }
 
 func makeImps(imp openrtb2.Imp) (openrtb2.Imp, error) {
-
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return openrtb2.Imp{}, &errortypes.BadInput{
@@ -218,9 +224,13 @@ func makeImps(imp openrtb2.Imp) (openrtb2.Imp, error) {
 		}
 	}
 
-	var impExt ext
-	impExt.Insticator.AdUnitId = insticatorExt.AdUnitId
-	impExt.Insticator.PublisherId = insticatorExt.PublisherId
+	// Directly construct the impExt
+	impExt := ext{
+		Insticator: impInsticatorExt{
+			AdUnitId:    insticatorExt.AdUnitId,
+			PublisherId: insticatorExt.PublisherId,
+		},
+	}
 
 	impExtJSON, err := json.Marshal(impExt)
 	if err != nil {
@@ -228,15 +238,11 @@ func makeImps(imp openrtb2.Imp) (openrtb2.Imp, error) {
 			Message: err.Error(),
 		}
 	}
-
 	imp.Ext = impExtJSON
+
 	// Validate Video if it exists
 	if imp.Video != nil {
-		videoCopy, err := validateVideoParams(imp.Video)
-
-		imp.Video = videoCopy
-
-		if err != nil {
+		if err := validateVideoParams(imp.Video); err != nil {
 			return openrtb2.Imp{}, &errortypes.BadInput{
 				Message: err.Error(),
 			}
@@ -282,28 +288,27 @@ func roundTo4Decimals(amount float64) float64 {
 	return math.Round(amount*10000) / 10000
 }
 
-func validateVideoParams(video *openrtb2.Video) (*openrtb2.Video, error) {
+func validateVideoParams(video *openrtb2.Video) error {
 	videoCopy := *video
 	if (videoCopy.W == nil || *videoCopy.W == 0) ||
 		(videoCopy.H == nil || *videoCopy.H == 0) ||
 		videoCopy.MIMEs == nil {
 
-		return nil, &errortypes.BadInput{
+		return &errortypes.BadInput{
 			Message: "One or more invalid or missing video field(s) w, h, mimes",
 		}
 	}
 
-	return &videoCopy, nil
+	return nil
 }
 
 // populatePublisherId function populates site.publisher.id or app.publisher.id
-func populatePublisherId(imp *openrtb2.Imp, request *openrtb2.BidRequest) {
+func populatePublisherId(imp *openrtb2.Imp, request *openrtb2.BidRequest) error {
 	var ext ext
 
 	// Unmarshal the imp extension to get the publisher ID
 	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
-		log.Printf("Error unmarshalling imp extension: %v", err)
-		return
+		return &errortypes.BadInput{Message: "Error unmarshalling imp extension"}
 	}
 
 	// Populate site.publisher.id if request.Site is not nil
@@ -321,4 +326,5 @@ func populatePublisherId(imp *openrtb2.Imp, request *openrtb2.BidRequest) {
 		}
 		request.App.Publisher.ID = ext.Insticator.PublisherId
 	}
+	return nil
 }
