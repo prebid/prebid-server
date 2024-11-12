@@ -5595,7 +5595,7 @@ func TestRemoveImpsWithStoredResponses(t *testing.T) {
 	}
 }
 
-func TestExtractBuyerUIDs(t *testing.T) {
+func TestExtractAndCleanBuyerUIDs(t *testing.T) {
 	tests := []struct {
 		name              string
 		user              *openrtb2.User
@@ -5666,7 +5666,7 @@ func TestExtractBuyerUIDs(t *testing.T) {
 				},
 			}
 
-			result, err := extractBuyerUIDs(&req)
+			result, err := extractAndCleanBuyerUIDs(&req)
 			if test.expectError {
 				assert.NotNil(t, err)
 			} else {

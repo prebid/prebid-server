@@ -82,11 +82,12 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		return
 	}
 
-	explicitBuyerUIDs, err := extractBuyerUIDs(req)
+	explicitBuyerUIDs, err := extractAndCleanBuyerUIDs(req)
 	if err != nil {
 		errs = []error{err}
 		return
 	}
+
 	lowerCaseExplicitBuyerUIDs := make(map[string]string)
 	for bidder, uid := range explicitBuyerUIDs {
 		lowerKey := strings.ToLower(bidder)
@@ -598,16 +599,18 @@ func isBidderInExtAlternateBidderCodes(adapter, currentMultiBidBidder string, ad
 	return false
 }
 
-// extractBuyerUIDs parses the values from user.ext.prebid.buyeruids, and then deletes those values from the ext.
+// extractAndCleanBuyerUIDs parses the values from user.ext.prebid.buyeruids, and then deletes those values from the ext.
 // This prevents a Bidder from using these values to figure out who else is involved in the Auction.
-func extractBuyerUIDs(req *openrtb_ext.RequestWrapper) (map[string]string, error) {
+func extractAndCleanBuyerUIDs(req *openrtb_ext.RequestWrapper) (map[string]string, error) {
 	if req.User == nil {
 		return nil, nil
 	}
+
 	userExt, err := req.GetUserExt()
 	if err != nil {
 		return nil, err
 	}
+
 	prebid := userExt.GetPrebid()
 	if prebid == nil {
 		return nil, nil
