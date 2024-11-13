@@ -8,13 +8,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/floors"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/floors"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 const price_macro = "${AUCTION_PRICE}"
@@ -69,12 +70,12 @@ func updateImps(bidRequest openrtb2.BidRequest) ([]openrtb2.Imp, []error) {
 		var bidderExt adapters.ExtImpBidder
 		var extImpAlkimi openrtb_ext.ExtImpAlkimi
 
-		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		if err := json.Unmarshal(bidderExt.Bidder, &extImpAlkimi); err != nil {
+		if err := jsonutil.Unmarshal(bidderExt.Bidder, &extImpAlkimi); err != nil {
 			errs = append(errs, err)
 			continue
 		}
@@ -134,7 +135,7 @@ func (adapter *adapter) MakeBids(request *openrtb2.BidRequest, externalRequest *
 	}
 
 	var bidResp openrtb2.BidResponse
-	err := json.Unmarshal(response.Body, &bidResp)
+	err := jsonutil.Unmarshal(response.Body, &bidResp)
 	if err != nil {
 		return nil, []error{err}
 	}

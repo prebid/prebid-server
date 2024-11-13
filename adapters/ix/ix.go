@@ -7,12 +7,13 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
-	"github.com/prebid/prebid-server/v2/version"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
+	"github.com/prebid/prebid-server/v3/version"
 
 	"github.com/prebid/openrtb/v20/native1"
 	native1response "github.com/prebid/openrtb/v20/native1/response"
@@ -155,12 +156,12 @@ func setPublisherId(requestCopy *openrtb2.BidRequest, uniqueSiteIDs map[string]s
 
 func unmarshalToIxExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpIx, error) {
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, err
 	}
 
 	var ixExt openrtb_ext.ExtImpIx
-	if err := json.Unmarshal(bidderExt.Bidder, &ixExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &ixExt); err != nil {
 		return nil, err
 	}
 
@@ -203,7 +204,7 @@ func (a *IxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReque
 	}
 
 	var bidResponse openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResponse); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResponse); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("JSON parsing error: %v", err),
 		}}
@@ -243,7 +244,7 @@ func (a *IxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReque
 			var bidExtVideo *openrtb_ext.ExtBidPrebidVideo
 			var bidExt openrtb_ext.ExtBid
 			if bidType == openrtb_ext.BidTypeVideo {
-				unmarshalExtErr := json.Unmarshal(bid.Ext, &bidExt)
+				unmarshalExtErr := jsonutil.Unmarshal(bid.Ext, &bidExt)
 				if unmarshalExtErr == nil && bidExt.Prebid != nil && bidExt.Prebid.Video != nil {
 					bidExtVideo = &openrtb_ext.ExtBidPrebidVideo{
 						Duration: bidExt.Prebid.Video.Duration,
@@ -256,7 +257,7 @@ func (a *IxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReque
 
 			var bidNative1v1 *Native11Wrapper
 			if bidType == openrtb_ext.BidTypeNative {
-				err := json.Unmarshal([]byte(bid.AdM), &bidNative1v1)
+				err := jsonutil.Unmarshal([]byte(bid.AdM), &bidNative1v1)
 				if err == nil && len(bidNative1v1.Native.EventTrackers) > 0 {
 					mergeNativeImpTrackers(&bidNative1v1.Native)
 					if json, err := marshalJsonWithoutUnicode(bidNative1v1); err == nil {
@@ -267,7 +268,7 @@ func (a *IxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReque
 
 			var bidNative1v2 *native1response.Response
 			if bidType == openrtb_ext.BidTypeNative {
-				err := json.Unmarshal([]byte(bid.AdM), &bidNative1v2)
+				err := jsonutil.Unmarshal([]byte(bid.AdM), &bidNative1v2)
 				if err == nil && len(bidNative1v2.EventTrackers) > 0 {
 					mergeNativeImpTrackers(bidNative1v2)
 					if json, err := marshalJsonWithoutUnicode(bidNative1v2); err == nil {
@@ -286,7 +287,7 @@ func (a *IxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReque
 
 	if bidResponse.Ext != nil {
 		var bidRespExt ixRespExt
-		if err := json.Unmarshal(bidResponse.Ext, &bidRespExt); err != nil {
+		if err := jsonutil.Unmarshal(bidResponse.Ext, &bidRespExt); err != nil {
 			return nil, append(errs, err)
 		}
 
@@ -321,7 +322,7 @@ func getMediaTypeForBid(bid openrtb2.Bid, impMediaTypeReq map[string]openrtb_ext
 
 	if bid.Ext != nil {
 		var bidExt openrtb_ext.ExtBid
-		err := json.Unmarshal(bid.Ext, &bidExt)
+		err := jsonutil.Unmarshal(bid.Ext, &bidExt)
 		if err == nil && bidExt.Prebid != nil {
 			prebidType := string(bidExt.Prebid.Type)
 			if prebidType != "" {
@@ -405,7 +406,7 @@ func extractVersionWithoutCommitHash(ver string) string {
 func setIxDiagIntoExtRequest(request *openrtb2.BidRequest, ixDiag *IxDiag, ver string) error {
 	extRequest := &ExtRequest{}
 	if request.Ext != nil {
-		if err := json.Unmarshal(request.Ext, &extRequest); err != nil {
+		if err := jsonutil.Unmarshal(request.Ext, &extRequest); err != nil {
 			return err
 		}
 	}
@@ -422,7 +423,7 @@ func setIxDiagIntoExtRequest(request *openrtb2.BidRequest, ixDiag *IxDiag, ver s
 	if *ixDiag != (IxDiag{}) {
 		extRequest := &ExtRequest{}
 		if request.Ext != nil {
-			if err := json.Unmarshal(request.Ext, &extRequest); err != nil {
+			if err := jsonutil.Unmarshal(request.Ext, &extRequest); err != nil {
 				return err
 			}
 		}
@@ -444,7 +445,7 @@ func moveSid(imp *openrtb2.Imp, ixExt *openrtb_ext.ExtImpIx) error {
 
 	if ixExt.Sid != "" {
 		var m map[string]interface{}
-		if err := json.Unmarshal(imp.Ext, &m); err != nil {
+		if err := jsonutil.Unmarshal(imp.Ext, &m); err != nil {
 			return err
 		}
 		m["sid"] = ixExt.Sid
