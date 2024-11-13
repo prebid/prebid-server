@@ -3575,9 +3575,9 @@ func TestCleanOpenRTBRequestsBuyerUID(t *testing.T) {
 
 			assert.Empty(t, errs)
 			for _, v := range results {
-				assert.Equal(t, test.expectedUsers[string(v.BidderName)], *v.BidRequest.User)
 				require.NotNil(t, v.BidRequest, "bidrequest")
 				require.NotNil(t, v.BidRequest.User, "bidrequest.user")
+				assert.Equal(t, test.expectedUsers[string(v.BidderName)], *v.BidRequest.User)
 			}
 		})
 	}
