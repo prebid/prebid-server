@@ -140,7 +140,7 @@
       "comparison":"literal"
     },
     {
-      "value":"json: cannot unmarshal string into Go value of type struct { Ads *adoppler.adsImpExt \"json:\\\"ads\\\"\" }",
+      "value":"expect { or n, but found \"",
       "comparison":"literal"
     }
   ]

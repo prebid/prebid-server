@@ -58,8 +58,8 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "error while decoding response, err: unexpected end of JSON input",
-      "comparison": "literal"
+      "value": "error while decoding response, err: expect { or n, but found",
+      "comparison": "startswith"
     }
   ]
 }
