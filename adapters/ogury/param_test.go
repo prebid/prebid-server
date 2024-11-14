@@ -22,9 +22,10 @@ func TestValidParams(t *testing.T) {
 
 var validParams = []string{
 	`{"adUnitId": "12", "assetKey": "OGY"}`,
-	`{"publisherId": "0b33fb0a-7b2d-44f0-ab0a-a6df93740dba"}`,
-	`{"publisherId": "0b33fb0a-7b2d-44f0-ab0a-a6df93740dba", "assetKey": "ogy"}`,
-	`{"publisherId": "0b33fb0a-7b2d-44f0-ab0a-a6df93740dba", "adUnitId": "12"}`,
+	`{"publisherId": "00000000-0000-0000-0000-000000000000"}`,
+	`{"publisherId": "00000000-0000-0000-0000-000000000000", "assetKey": "ogy"}`,
+	`{"publisherId": "00000000-0000-0000-0000-000000000000", "adUnitId": "12"}`,
+	`{"publisherId": "00000000-0000-0000-0000-000000000000", "assetKey": "ogy asset", "adUnitId": "1"}`,
 }
 
 func TestInvalidParams(t *testing.T) {
@@ -49,6 +50,4 @@ var invalidParams = []string{
 	`{"adUnitId": 12, "assetKey": "OGY"}`,
 	`{"adUnitId": "45test", "assetKey": false}`,
 	`{"publisherId": true}`,
-
-	`{"publisherId": "some publisher", "assetKey": "ogy asset", "adUnitId": "1"}`,
 }

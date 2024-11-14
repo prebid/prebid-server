@@ -22,7 +22,7 @@
     }
   },
 
-  "oneOf": [
+  "anyOf": [
     { "required": ["assetKey", "adUnitId"] },
     { "required": ["publisherId"] }
   ]
