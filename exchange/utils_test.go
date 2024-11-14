@@ -3423,6 +3423,166 @@ func TestCleanOpenRTBRequestsBidAdjustment(t *testing.T) {
 	}
 }
 
+func TestCleanOpenRTBRequestsBuyerUID(t *testing.T) {
+	tcf2Consent := "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA"
+
+	buyerUIDAppnexus := `{"appnexus": "a"}`
+	buyerUIDAppnexusMixedCase := `{"aPpNeXuS": "a"}`
+	buyerUIDBoth := `{"appnexus": "a", "pubmatic": "b"}`
+
+	bidderParamsAppnexus := `{"appnexus": {"placementId": 1}}`
+	bidderParamsBoth := `{"appnexus": {"placementId": 1}, "pubmatic": {"publisherId": "abc"}}`
+
+	tests := []struct {
+		name          string
+		bidderParams  string
+		user          openrtb2.User
+		expectedUsers map[string]openrtb2.User
+	}{
+		{
+			name:         "one-bidder-with-prebid-buyeruid",
+			bidderParams: bidderParamsAppnexus,
+			user: openrtb2.User{
+				ID:      "some-id",
+				Ext:     json.RawMessage(`{"data": 1, "test": 2, "prebid": {"buyeruids": ` + buyerUIDAppnexus + `}}`),
+				Consent: tcf2Consent,
+			},
+			expectedUsers: map[string]openrtb2.User{
+				"appnexus": {
+					ID:       "some-id",
+					BuyerUID: "a",
+					Ext:      json.RawMessage(`{"consent":"` + tcf2Consent + `","data":1,"test":2}`),
+				},
+			},
+		},
+		{
+			name:         "one-bidder-with-prebid-buyeruid-mixed-case",
+			bidderParams: bidderParamsAppnexus,
+			user: openrtb2.User{
+				ID:      "some-id",
+				Ext:     json.RawMessage(`{"data": 1, "test": 2, "prebid": {"buyeruids": ` + buyerUIDAppnexusMixedCase + `}}`),
+				Consent: tcf2Consent,
+			},
+			expectedUsers: map[string]openrtb2.User{
+				"appnexus": {
+					ID:       "some-id",
+					BuyerUID: "a",
+					Ext:      json.RawMessage(`{"consent":"` + tcf2Consent + `","data":1,"test":2}`),
+				},
+			},
+		},
+		{
+			name:         "one-bidder-with-buyeruid-already-set",
+			bidderParams: bidderParamsAppnexus,
+			user: openrtb2.User{
+				ID:       "some-id",
+				BuyerUID: "already-set-buyeruid",
+				Ext:      json.RawMessage(`{"data": 1, "test": 2, "prebid": {"buyeruids": ` + buyerUIDAppnexus + `}}`),
+				Consent:  tcf2Consent,
+			},
+			expectedUsers: map[string]openrtb2.User{
+				"appnexus": {
+					ID:       "some-id",
+					BuyerUID: "already-set-buyeruid",
+					Ext:      json.RawMessage(`{"consent":"` + tcf2Consent + `","data":1,"test":2}`),
+				},
+			},
+		},
+		{
+			name:         "two-bidder-with-prebid-buyeruids",
+			bidderParams: bidderParamsBoth,
+			user: openrtb2.User{
+				ID:      "some-id",
+				Ext:     json.RawMessage(`{"data": 1, "test": 2, "prebid": {"buyeruids": ` + buyerUIDBoth + `}}`),
+				Consent: tcf2Consent,
+			},
+			expectedUsers: map[string]openrtb2.User{
+				"appnexus": {
+					ID:       "some-id",
+					BuyerUID: "a",
+					Ext:      json.RawMessage(`{"consent":"` + tcf2Consent + `","data":1,"test":2}`),
+				},
+				"pubmatic": {
+					ID:       "some-id",
+					BuyerUID: "b",
+					Ext:      json.RawMessage(`{"consent":"` + tcf2Consent + `","data":1,"test":2}`),
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+
+			req := &openrtb2.BidRequest{
+				Site: &openrtb2.Site{
+					Publisher: &openrtb2.Publisher{
+						ID: "some-publisher-id",
+					},
+				},
+				Imp: []openrtb2.Imp{{
+					ID: "some-imp-id",
+					Banner: &openrtb2.Banner{
+						Format: []openrtb2.Format{{
+							W: 300,
+							H: 250,
+						}},
+					},
+					Ext: json.RawMessage(`{"prebid":{"tid":"123", "bidder":` + string(test.bidderParams) + `}}`),
+				}},
+				User: &test.user,
+			}
+
+			auctionReq := AuctionRequest{
+				BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
+				UserSyncs:         &emptyUsersync{},
+				Account: config.Account{
+					GDPR: config.AccountGDPR{
+						Enabled: ptrutil.ToPtr(false),
+					},
+				},
+				TCF2Config: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
+			}
+			gdprPermissionsBuilder := fakePermissionsBuilder{
+				permissions: &permissionsMock{
+					allowAllBidders: true,
+					passGeo:         false,
+					passID:          false,
+					activitiesError: nil,
+				},
+			}.Builder
+
+			reqSplitter := &requestSplitter{
+				bidderToSyncerKey: map[string]string{},
+				me:                &metrics.MetricsEngineMock{},
+				gdprPermsBuilder:  gdprPermissionsBuilder,
+				hostSChainNode:    nil,
+				bidderInfo: config.BidderInfos{
+					"appnexus": config.BidderInfo{
+						OpenRTB: &config.OpenRTBInfo{
+							Version: "2.5",
+						},
+					},
+					"pubmatic": config.BidderInfo{
+						OpenRTB: &config.OpenRTBInfo{
+							Version: "2.5",
+						},
+					},
+				},
+			}
+
+			results, _, errs := reqSplitter.cleanOpenRTBRequests(context.Background(), auctionReq, nil, gdpr.SignalNo, false, nil)
+
+			assert.Empty(t, errs)
+			for _, v := range results {
+				require.NotNil(t, v.BidRequest, "bidrequest")
+				require.NotNil(t, v.BidRequest.User, "bidrequest.user")
+				assert.Equal(t, test.expectedUsers[string(v.BidderName)], *v.BidRequest.User)
+			}
+		})
+	}
+}
+
 func TestApplyFPD(t *testing.T) {
 	testCases := []struct {
 		description               string
@@ -5435,5 +5595,111 @@ func TestRemoveImpsWithStoredResponses(t *testing.T) {
 		removeImpsWithStoredResponses(request, testCase.storedBidResponses)
 		assert.NoError(t, request.RebuildRequest())
 		assert.Equal(t, testCase.expectedImps, request.Imp, "incorrect Impressions for testCase %s", testCase.description)
+	}
+}
+
+func TestExtractAndCleanBuyerUIDs(t *testing.T) {
+	tests := []struct {
+		name              string
+		user              *openrtb2.User
+		expectedBuyerUIDs map[string]string
+		expectedUser      *openrtb2.User
+		expectError       bool
+	}{
+		{
+			name:              "user_is_nil",
+			user:              nil,
+			expectedBuyerUIDs: nil,
+			expectedUser:      nil,
+			expectError:       false,
+		},
+		{
+			name: "user.ext_is_nil",
+			user: &openrtb2.User{
+				Ext: nil,
+			},
+			expectedBuyerUIDs: nil,
+			expectedUser: &openrtb2.User{
+				Ext: nil,
+			},
+			expectError: false,
+		},
+		{
+			name: "user.ext_malformed",
+			user: &openrtb2.User{
+				Ext: json.RawMessage(`{"prebid":}`),
+			},
+			expectedBuyerUIDs: nil,
+			expectedUser: &openrtb2.User{
+				Ext: json.RawMessage(`{"prebid":}`),
+			},
+			expectError: true,
+		},
+		{
+			name: "user.ext.prebid_is_nil",
+			user: &openrtb2.User{
+				Ext: json.RawMessage(`{"prebid":null}`),
+			},
+			expectedBuyerUIDs: nil,
+			expectedUser: &openrtb2.User{
+				Ext: nil,
+			},
+			expectError: false,
+		},
+		{
+			name: "user.ext.prebid.buyeruids_is_nil",
+			user: &openrtb2.User{
+				Ext: json.RawMessage(`{"prebid":{"buyeruids": null}}`),
+			},
+			expectedBuyerUIDs: nil,
+			expectedUser: &openrtb2.User{
+				Ext: nil,
+			},
+			expectError: false,
+		},
+		{
+			name: "user.ext.prebid.buyeruids_has_one",
+			user: &openrtb2.User{
+				Ext: json.RawMessage(`{"prebid":{"buyeruids": {"appnexus":"a"}}}`),
+			},
+			expectedBuyerUIDs: map[string]string{"appnexus": "a"},
+			expectedUser: &openrtb2.User{
+				Ext: nil,
+			},
+			expectError: false,
+		},
+		{
+			name: "user.ext.prebid.buyeruids_has_many",
+			user: &openrtb2.User{
+				Ext: json.RawMessage(`{"prebid":{"buyeruids": {"appnexus":"a", "pubmatic":"b"}}}`),
+			},
+			expectedBuyerUIDs: map[string]string{"appnexus": "a", "pubmatic": "b"},
+			expectedUser: &openrtb2.User{
+				Ext: nil,
+			},
+			expectError: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			req := openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					User: test.user,
+				},
+			}
+
+			result, err := extractAndCleanBuyerUIDs(&req)
+			if test.expectError {
+				assert.NotNil(t, err)
+			} else {
+				assert.Nil(t, err)
+			}
+
+			assert.NoError(t, req.RebuildRequest())
+
+			assert.Equal(t, req.User, test.expectedUser)
+			assert.Equal(t, test.expectedBuyerUIDs, result)
+		})
 	}
 }
