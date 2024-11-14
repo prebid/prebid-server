@@ -90,13 +90,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	requestCopy.App = request.App
 
 	for i := 0; i < len(request.Imp); i++ {
-		impCopy, err := makeImps(request.Imp[i])
+		impCopy, impKey, err := makeImps(request.Imp[i])
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
-
-		var impExt ext
 
 		// Populate site.publisher.id from imp extension
 		if requestCopy.Site != nil || requestCopy.App != nil {
@@ -105,14 +103,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 				continue
 			}
 		}
-
-		// Group together the imps having Insticator adUnitId. However, let's not block request creation.
-		if err := json.Unmarshal(impCopy.Ext, &impExt); err != nil {
-			errs = append(errs, err)
-			continue
-		}
-
-		impKey := impExt.Insticator.AdUnitId
 
 		resolvedBidFloor, errFloor := resolveBidFloor(impCopy.BidFloor, impCopy.BidFloorCur, requestInfo)
 		if errFloor != nil {
@@ -209,18 +199,32 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	return bidResponse, nil
 }
 
-func makeImps(imp openrtb2.Imp) (openrtb2.Imp, error) {
+func makeImps(imp openrtb2.Imp) (openrtb2.Imp, string, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return openrtb2.Imp{}, &errortypes.BadInput{
+		return openrtb2.Imp{}, "", &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
 
 	var insticatorExt openrtb_ext.ExtImpInsticator
 	if err := json.Unmarshal(bidderExt.Bidder, &insticatorExt); err != nil {
-		return openrtb2.Imp{}, &errortypes.BadInput{
+		return openrtb2.Imp{}, "", &errortypes.BadInput{
 			Message: err.Error(),
+		}
+	}
+
+	// check if the adUnitId is not empty
+	if insticatorExt.AdUnitId == "" {
+		return openrtb2.Imp{}, "", &errortypes.BadInput{
+			Message: "Missing adUnitId",
+		}
+	}
+
+	// check if the publisherId is not empty
+	if insticatorExt.PublisherId == "" {
+		return openrtb2.Imp{}, insticatorExt.AdUnitId, &errortypes.BadInput{
+			Message: "Missing publisherId",
 		}
 	}
 
@@ -234,7 +238,7 @@ func makeImps(imp openrtb2.Imp) (openrtb2.Imp, error) {
 
 	impExtJSON, err := json.Marshal(impExt)
 	if err != nil {
-		return openrtb2.Imp{}, &errortypes.BadInput{
+		return openrtb2.Imp{}, "", &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
@@ -243,13 +247,14 @@ func makeImps(imp openrtb2.Imp) (openrtb2.Imp, error) {
 	// Validate Video if it exists
 	if imp.Video != nil {
 		if err := validateVideoParams(imp.Video); err != nil {
-			return openrtb2.Imp{}, &errortypes.BadInput{
+			return openrtb2.Imp{}, insticatorExt.AdUnitId, &errortypes.BadInput{
 				Message: err.Error(),
 			}
 		}
 	}
 
-	return imp, nil
+	// Return the imp, AdUnitId, and no error
+	return imp, insticatorExt.AdUnitId, nil
 }
 
 func makeReqExt(request *openrtb2.BidRequest) ([]byte, error) {
