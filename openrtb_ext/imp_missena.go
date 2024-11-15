@@ -1,7 +1,8 @@
 package openrtb_ext
 
 type ExtImpMissena struct {
-	ApiKey    string `json:"apiKey"`
-	Placement string `json:"placement"`
-	TestMode  string `json:"test"`
+	ApiKey    string   `json:"apiKey"`
+	Formats   []string `json:"formats"`
+	Placement string   `json:"placement"`
+	Sample    string   `json:"sample"`
 }
