@@ -32,11 +32,7 @@ func (a *adapter) MakeRequests(
 	[]*adapters.RequestData,
 	[]error,
 ) {
-	if len(request.Imp) == 0 {
-		return nil, []error{&errortypes.BadInput{
-			Message: "No impression in the bid request",
-		}}
-	}
+
 	imp := &request.Imp[0]
 
 	// Check if imp.Ext is empty before unmarshalling
