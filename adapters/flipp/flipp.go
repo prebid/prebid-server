@@ -243,18 +243,25 @@ func buildBid(decision *InlineModel, impId string, flippExtParams openrtb_ext.Im
 		if decision.Contents[0].Data.Width != 0 {
 			bid.W = decision.Contents[0].Data.Width
 		}
-		customDataInterface := decision.Contents[0].Data.CustomData
-		customDataMap := customDataInterface.(map[string]interface{})
 
-		bid.H = defaultStandardHeight
-		customDataKey = "standardHeight"
 		if flippExtParams.Options.StartCompact {
 			bid.H = defaultCompactHeight
-			customDataKey = "compactHeight"
+		} else {
+			bid.H = defaultStandardHeight
 		}
-		if value, exists := customDataMap[customDataKey]; exists {
-			if floatVal, ok := value.(float64); ok {
-				bid.H = int64(floatVal)
+
+		if customDataInterface := decision.Contents[0].Data.CustomData; customDataInterface != nil {
+			if customDataMap, ok := customDataInterface.(map[string]interface{}); ok {
+				customDataKey := "standardHeight"
+				if flippExtParams.Options.StartCompact {
+					customDataKey = "compactHeight"
+				}
+
+				if value, exists := customDataMap[customDataKey]; exists {
+					if floatVal, ok := value.(float64); ok {
+						bid.H = int64(floatVal)
+					}
+				}
 			}
 		}
 	}
