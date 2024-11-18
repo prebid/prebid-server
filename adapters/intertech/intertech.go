@@ -15,6 +15,7 @@ import (
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/macros"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 const (
@@ -77,7 +78,7 @@ func (a *adapter) MakeRequests(requestData *openrtb2.BidRequest, requestInfo *ad
 
 		splittedRequestData := splitRequestDataByImp(requestData, imp)
 
-		requestBody, err := json.Marshal(splittedRequestData)
+		requestBody, err := jsonutil.Marshal(splittedRequestData)
 		if err != nil {
 			errors = append(errors, err)
 			continue
@@ -128,14 +129,14 @@ func splitRequestDataByImp(request *openrtb2.BidRequest, imp openrtb2.Imp) openr
 
 func getPlacementID(imp openrtb2.Imp) (*intertechPlacementID, error) {
 	var ext adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &ext); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("imp %s: unable to unmarshal ext", imp.ID),
 		}
 	}
 
 	var intertechExt openrtb_ext.ExtImpIntertech
-	if err := json.Unmarshal(ext.Bidder, &intertechExt); err != nil {
+	if err := jsonutil.Unmarshal(ext.Bidder, &intertechExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("imp %s: unable to unmarshal ext.bidder: %v", imp.ID, err),
 		}
