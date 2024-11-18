@@ -19,14 +19,14 @@ type adapter struct {
 }
 
 const (
-	DEV_BIDDER_ENDPOINT = "https://bid-service.dev.essrtb.com/bid/prebid_server_rtb_call"
-	SUPPORTED_CURRENCY  = "USD"
+	devBidderEndpoint = "https://bid-service.dev.essrtb.com/bid/prebid_server_rtb_call"
+	supportedCurrency = "USD"
 )
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint:    config.Endpoint,
-		devEndpoint: DEV_BIDDER_ENDPOINT,
+		devEndpoint: devBidderEndpoint,
 	}
 
 	return bidder, nil
@@ -36,8 +36,8 @@ func (a adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.Ex
 	var requestData []*adapters.RequestData
 	var errors []error
 
-	if !contains(request.Cur, SUPPORTED_CURRENCY) {
-		request.Cur = append(request.Cur, SUPPORTED_CURRENCY)
+	if !contains(request.Cur, supportedCurrency) {
+		request.Cur = append(request.Cur, supportedCurrency)
 	}
 
 	for i := range request.Imp {
@@ -122,14 +122,14 @@ func getMediaTypeForBid(bid openrtb2.Bid) openrtb_ext.BidType {
 }
 
 func convertImpCurrency(imp *openrtb2.Imp, reqInfo *adapters.ExtraRequestInfo) error {
-	if imp.BidFloor > 0 && imp.BidFloorCur != "" && strings.ToUpper(imp.BidFloorCur) != SUPPORTED_CURRENCY {
-		convertedValue, err := reqInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, SUPPORTED_CURRENCY)
+	if imp.BidFloor > 0 && imp.BidFloorCur != "" && strings.ToUpper(imp.BidFloorCur) != supportedCurrency {
+		convertedValue, err := reqInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, supportedCurrency)
 		if err != nil {
 			return err
 		}
 
 		imp.BidFloor = convertedValue
-		imp.BidFloorCur = SUPPORTED_CURRENCY
+		imp.BidFloorCur = supportedCurrency
 	}
 
 	return nil
