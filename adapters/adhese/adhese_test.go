@@ -11,48 +11,56 @@ import (
 )
 
 func TestInferBidType(t *testing.T) {
-	imp := openrtb2.Imp{}
+	tests := []struct {
+		description   string
+		imp           openrtb2.Imp
+		expectedType  openrtb_ext.BidType
+		expectedError string
+	}{
+		{
+			description:   "Error case: empty imp",
+			imp:           openrtb2.Imp{},
+			expectedError: "Could not infer bid type from imp",
+		},
+		{
+			description:  "Banner type",
+			imp:          openrtb2.Imp{Banner: &openrtb2.Banner{}},
+			expectedType: openrtb_ext.BidTypeBanner,
+		},
+		{
+			description:  "Native type",
+			imp:          openrtb2.Imp{Native: &openrtb2.Native{}},
+			expectedType: openrtb_ext.BidTypeNative,
+		},
+		{
+			description:  "Video type",
+			imp:          openrtb2.Imp{Video: &openrtb2.Video{}},
+			expectedType: openrtb_ext.BidTypeVideo,
+		},
+		{
+			description:  "Audio type",
+			imp:          openrtb2.Imp{Audio: &openrtb2.Audio{}},
+			expectedType: openrtb_ext.BidTypeAudio,
+		},
+		{
+			description:   "Unsupported type",
+			imp:           openrtb2.Imp{PMP: &openrtb2.PMP{}},
+			expectedError: "Could not infer bid type from imp",
+		},
+	}
 
-	_, err := inferBidTypeFromImp(imp)
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			inferredType, err := inferBidTypeFromImp(test.imp)
 
-	assert.EqualError(t, err[0], "Could not infer bid type from imp", "Error should be 'Could not infer bid type from imp'")
-	assert.NotEmpty(t, err, "Error should not be empty")
-
-	// Test for banner type
-	var bannerImp openrtb2.Imp
-	bannerImp.Banner = &openrtb2.Banner{}
-	inferredType, err := inferBidTypeFromImp(bannerImp)
-	assert.Nil(t, err, "Error should be nil")
-	assert.Equal(t, openrtb_ext.BidTypeBanner, inferredType, "Inferred type should be 'Banner'")
-
-	// Test for native type
-	var nativeImp openrtb2.Imp
-	nativeImp.Native = &openrtb2.Native{}
-	nativeImp.Native = &openrtb2.Native{}
-	inferredType, err = inferBidTypeFromImp(nativeImp)
-	assert.Nil(t, err, "Error should be nil")
-	assert.Equal(t, openrtb_ext.BidTypeNative, inferredType, "Inferred type should be 'Native'")
-
-	// Test for video type
-	var videoImp openrtb2.Imp
-	videoImp.Video = &openrtb2.Video{}
-	inferredType, err = inferBidTypeFromImp(videoImp)
-	assert.Nil(t, err, "Error should be nil")
-	assert.Equal(t, openrtb_ext.BidTypeVideo, inferredType, "Inferred type should be 'Video'")
-
-	// Test for audio type
-	var audioImp openrtb2.Imp
-	audioImp.Audio = &openrtb2.Audio{}
-	inferredType, err = inferBidTypeFromImp(audioImp)
-	assert.Nil(t, err, "Error should be nil")
-	assert.Equal(t, openrtb_ext.BidTypeAudio, inferredType, "Inferred type should be 'Audio'")
-
-	// Test for unsupported type
-	var unsupportedImp openrtb2.Imp
-	unsupportedImp.PMP = &openrtb2.PMP{}
-	inferredType, err = inferBidTypeFromImp(unsupportedImp)
-	assert.EqualError(t, err[0], "Could not infer bid type from imp", "Error should be 'Could not infer bid type from imp'")
-	assert.NotEmpty(t, err, "Error should not be empty")
+			if test.expectedError != "" {
+				assert.EqualError(t, err[0], test.expectedError)
+			} else {
+				assert.Nil(t, err)
+				assert.Equal(t, test.expectedType, inferredType)
+			}
+		})
+	}
 }
 
 func TestJsonSamples(t *testing.T) {
