@@ -11,6 +11,7 @@ import (
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/sliceutil"
 )
 
 type adapter struct {
@@ -36,7 +37,7 @@ func (a adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.Ex
 	var requestData []*adapters.RequestData
 	var errors []error
 
-	if !contains(request.Cur, supportedCurrency) {
+	if !sliceutil.Contains(request.Cur, supportedCurrency) {
 		request.Cur = append(request.Cur, supportedCurrency)
 	}
 
@@ -133,14 +134,4 @@ func convertImpCurrency(imp *openrtb2.Imp, reqInfo *adapters.ExtraRequestInfo) e
 	}
 
 	return nil
-}
-
-func contains[T comparable](array []T, value T) bool {
-	for _, item := range array {
-		if item == value {
-			return true
-		}
-	}
-
-	return false
 }
