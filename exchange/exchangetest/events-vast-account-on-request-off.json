@@ -153,7 +153,7 @@
                     "hb_cache_host": "www.pbcserver.com",
                     "hb_cache_path": "/pbcache/endpoint",
                     "hb_env": "mobile-app",
-                    "app": "0.70",
+                    "hb_pb": "0.70",
                     "hb_size": "200x250"
                   }
                 }

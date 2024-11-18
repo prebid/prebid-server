@@ -132,13 +132,6 @@ type TargetingKey string
 const (
 	HbpbConstantKey TargetingKey = "hb_pb"
 
-	// HACK: Just for mobile apps, use an alternate name for the key above. We're
-	// doing this so that we can separately target app and web line items in GAM
-	// without updating our existing web line items. We can remove this hack
-	// when/if we update them to exclude apps, e.g. by also requiring the hb_env
-	// KV to not equal "mobile-app".
-	AppConstantKey TargetingKey = "app"
-
 	// HbEnvKey exists to support the Prebid Universal Creative. If it exists, the only legal value is mobile-app.
 	// It will exist only if the incoming bidRequest defined request.app instead of request.site.
 	HbEnvKey TargetingKey = "hb_env"
