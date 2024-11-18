@@ -7,11 +7,12 @@ import (
 	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/macros"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 // Base adapter structure.
@@ -62,14 +63,14 @@ func (adapter *SmartRTBAdapter) buildEndpointURL(pubID string) (string, error) {
 
 func parseExtImp(dst *bidRequestExt, imp *openrtb2.Imp) error {
 	var ext adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &ext); err != nil {
 		return &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
 
 	var src openrtb_ext.ExtImpSmartRTB
-	if err := json.Unmarshal(ext.Bidder, &src); err != nil {
+	if err := jsonutil.Unmarshal(ext.Bidder, &src); err != nil {
 		return &errortypes.BadInput{
 			Message: err.Error(),
 		}
@@ -160,7 +161,7 @@ func (s *SmartRTBAdapter) MakeBids(
 	}
 
 	var brs openrtb2.BidResponse
-	if err := json.Unmarshal(rs.Body, &brs); err != nil {
+	if err := jsonutil.Unmarshal(rs.Body, &brs); err != nil {
 		return nil, []error{err}
 	}
 
@@ -168,7 +169,7 @@ func (s *SmartRTBAdapter) MakeBids(
 	for _, seat := range brs.SeatBid {
 		for i := range seat.Bid {
 			var ext bidExt
-			if err := json.Unmarshal(seat.Bid[i].Ext, &ext); err != nil {
+			if err := jsonutil.Unmarshal(seat.Bid[i].Ext, &ext); err != nil {
 				return nil, []error{&errortypes.BadServerResponse{
 					Message: "Invalid bid extension from endpoint.",
 				}}

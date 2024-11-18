@@ -10,10 +10,11 @@ import (
 
 	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type DmxAdapter struct {
@@ -75,7 +76,7 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb2.BidRequest, req *adapt
 	}
 
 	if len(request.Imp) >= 1 {
-		err := json.Unmarshal(request.Imp[0].Ext, &rootExtInfo)
+		err := jsonutil.Unmarshal(request.Imp[0].Ext, &rootExtInfo)
 		if err != nil {
 			errs = append(errs, err)
 		} else {
@@ -148,7 +149,7 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb2.BidRequest, req *adapt
 			hasNoID = false
 		}
 		if dmxReq.User.Ext != nil {
-			if err := json.Unmarshal(dmxReq.User.Ext, &userExt); err == nil {
+			if err := jsonutil.Unmarshal(dmxReq.User.Ext, &userExt); err == nil {
 				if len(userExt.Eids) > 0 {
 					hasNoID = false
 				}
@@ -161,7 +162,7 @@ func (adapter *DmxAdapter) MakeRequests(request *openrtb2.BidRequest, req *adapt
 		var params dmxExt
 		const intVal int8 = 1
 		source := (*json.RawMessage)(&inst.Ext)
-		if err := json.Unmarshal(*source, &params); err != nil {
+		if err := jsonutil.Unmarshal(*source, &params); err != nil {
 			errs = append(errs, err)
 		}
 		if isDmxParams(params.Bidder) {
@@ -236,7 +237,7 @@ func (adapter *DmxAdapter) MakeBids(request *openrtb2.BidRequest, externalReques
 
 	var bidResp openrtb2.BidResponse
 
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 

@@ -9,11 +9,12 @@ import (
 	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/macros"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -87,9 +88,9 @@ func getMediaGoExt(request *openrtb2.BidRequest) (*openrtb_ext.ExtMediaGo, error
 
 	// first get the mediago ext from ext.bidderparams
 	reqExt := &openrtb_ext.ExtRequest{}
-	err := json.Unmarshal(request.Ext, &reqExt)
+	err := jsonutil.Unmarshal(request.Ext, &reqExt)
 	if err != nil {
-		err = json.Unmarshal(reqExt.Prebid.BidderParams, &extMediaGo)
+		err = jsonutil.Unmarshal(reqExt.Prebid.BidderParams, &extMediaGo)
 		if err != nil && extMediaGo.Token != "" {
 			return &extMediaGo, nil
 		}
@@ -97,13 +98,13 @@ func getMediaGoExt(request *openrtb2.BidRequest) (*openrtb_ext.ExtMediaGo, error
 
 	// fallback to get token and region from first imp
 	imp := request.Imp[0]
-	err = json.Unmarshal(imp.Ext, &extBidder)
+	err = jsonutil.Unmarshal(imp.Ext, &extBidder)
 	if err != nil {
 		return nil, err
 	}
 
 	var extImpMediaGo openrtb_ext.ExtImpMediaGo
-	err = json.Unmarshal(extBidder.Bidder, &extImpMediaGo)
+	err = jsonutil.Unmarshal(extBidder.Bidder, &extImpMediaGo)
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +162,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	}
 
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 

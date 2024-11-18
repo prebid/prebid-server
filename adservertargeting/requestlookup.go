@@ -8,7 +8,7 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/pkg/errors"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 func getAdServerTargeting(reqWrapper *openrtb_ext.RequestWrapper) ([]openrtb_ext.AdServerTarget, error) {
