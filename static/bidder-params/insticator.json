@@ -8,11 +8,13 @@
     "properties": {
       "adUnitId": {
         "type": "string",
-        "description": "Ad Unit Id"
+        "description": "Ad Unit Id",
+        "minLength": 1
       },
       "publisherId": {
         "type": "string",
-        "description": "Publisher Id"
+        "description": "Publisher Id",
+        "minLength": 1
       }
     },
     "required": ["adUnitId", "publisherId"]

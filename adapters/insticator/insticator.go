@@ -1,9 +1,7 @@
 package insticator
 
 import (
-	"encoding/json"
 	"fmt"
-	"math"
 	"net/http"
 	"strings"
 
@@ -12,6 +10,8 @@ import (
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/mathutil"
 )
 
 type ext struct {
@@ -86,8 +86,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	// Create a deep copy of the request to avoid modifying the original request
 	requestCopy := *request
-	requestCopy.Site = request.Site
-	requestCopy.App = request.App
 
 	for i := 0; i < len(request.Imp); i++ {
 		impCopy, impKey, err := makeImps(request.Imp[i])
@@ -134,7 +132,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 func (a *adapter) makeRequest(request openrtb2.BidRequest, impList []openrtb2.Imp) (*adapters.RequestData, error) {
 	request.Imp = impList
 
-	reqJSON, err := json.Marshal(request)
+	reqJSON, err := jsonutil.Marshal(request)
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +175,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	var response openrtb2.BidResponse
-	if err := json.Unmarshal(responseData.Body, &response); err != nil {
+	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}
 
@@ -201,30 +199,16 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 func makeImps(imp openrtb2.Imp) (openrtb2.Imp, string, error) {
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return openrtb2.Imp{}, "", &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
 
 	var insticatorExt openrtb_ext.ExtImpInsticator
-	if err := json.Unmarshal(bidderExt.Bidder, &insticatorExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &insticatorExt); err != nil {
 		return openrtb2.Imp{}, "", &errortypes.BadInput{
 			Message: err.Error(),
-		}
-	}
-
-	// check if the adUnitId is not empty
-	if insticatorExt.AdUnitId == "" {
-		return openrtb2.Imp{}, "", &errortypes.BadInput{
-			Message: "Missing adUnitId",
-		}
-	}
-
-	// check if the publisherId is not empty
-	if insticatorExt.PublisherId == "" {
-		return openrtb2.Imp{}, insticatorExt.AdUnitId, &errortypes.BadInput{
-			Message: "Missing publisherId",
 		}
 	}
 
@@ -236,7 +220,7 @@ func makeImps(imp openrtb2.Imp) (openrtb2.Imp, string, error) {
 		},
 	}
 
-	impExtJSON, err := json.Marshal(impExt)
+	impExtJSON, err := jsonutil.Marshal(impExt)
 	if err != nil {
 		return openrtb2.Imp{}, "", &errortypes.BadInput{
 			Message: err.Error(),
@@ -261,7 +245,7 @@ func makeReqExt(request *openrtb2.BidRequest) ([]byte, error) {
 	var reqExt reqExt
 
 	if len(request.Ext) > 0 {
-		if err := json.Unmarshal(request.Ext, &reqExt); err != nil {
+		if err := jsonutil.Unmarshal(request.Ext, &reqExt); err != nil {
 			return nil, err
 		}
 	}
@@ -276,28 +260,22 @@ func makeReqExt(request *openrtb2.BidRequest) ([]byte, error) {
 
 	reqExt.Insticator.Caller = append(reqExt.Insticator.Caller, caller)
 
-	return json.Marshal(reqExt)
+	return jsonutil.Marshal(reqExt)
 }
 
 func resolveBidFloor(bidFloor float64, bidFloorCur string, reqInfo *adapters.ExtraRequestInfo) (float64, error) {
 	if bidFloor > 0 && bidFloorCur != "" && strings.ToUpper(bidFloorCur) != "USD" {
 		floor, err := reqInfo.ConvertCurrency(bidFloor, bidFloorCur, "USD")
-		return roundTo4Decimals(floor), err
+		return mathutil.RoundTo4Decimals(floor), err
 	}
 
 	return bidFloor, nil
 }
 
-// roundTo4Decimals function
-func roundTo4Decimals(amount float64) float64 {
-	return math.Round(amount*10000) / 10000
-}
-
 func validateVideoParams(video *openrtb2.Video) error {
-	videoCopy := *video
-	if (videoCopy.W == nil || *videoCopy.W == 0) ||
-		(videoCopy.H == nil || *videoCopy.H == 0) ||
-		videoCopy.MIMEs == nil {
+	if (video.W == nil || *video.W == 0) ||
+		(video.H == nil || *video.H == 0) ||
+		video.MIMEs == nil {
 
 		return &errortypes.BadInput{
 			Message: "One or more invalid or missing video field(s) w, h, mimes",
@@ -312,24 +290,43 @@ func populatePublisherId(imp *openrtb2.Imp, request *openrtb2.BidRequest) error 
 	var ext ext
 
 	// Unmarshal the imp extension to get the publisher ID
-	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &ext); err != nil {
 		return &errortypes.BadInput{Message: "Error unmarshalling imp extension"}
 	}
 
 	// Populate site.publisher.id if request.Site is not nil
 	if request.Site != nil {
-		if request.Site.Publisher == nil {
+		// Make a shallow copy of Site if it already exists
+		siteCopy := *request.Site
+		request.Site = &siteCopy
+
+		// Make a shallow copy of Publisher if it already exists
+		if request.Site.Publisher != nil {
+			publisherCopy := *request.Site.Publisher
+			request.Site.Publisher = &publisherCopy
+		} else {
 			request.Site.Publisher = &openrtb2.Publisher{}
 		}
+
 		request.Site.Publisher.ID = ext.Insticator.PublisherId
 	}
 
 	// Populate app.publisher.id if request.App is not nil
 	if request.App != nil {
-		if request.App.Publisher == nil {
+		// Make a shallow copy of App if it already exists
+		appCopy := *request.App
+		request.App = &appCopy
+
+		// Make a shallow copy of Publisher if it already exists
+		if request.App.Publisher != nil {
+			publisherCopy := *request.App.Publisher
+			request.App.Publisher = &publisherCopy
+		} else {
 			request.App.Publisher = &openrtb2.Publisher{}
 		}
+
 		request.App.Publisher.ID = ext.Insticator.PublisherId
 	}
+
 	return nil
 }
