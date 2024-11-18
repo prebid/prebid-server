@@ -1,7 +1,6 @@
 package kobler
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -11,6 +10,7 @@ import (
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -47,7 +47,7 @@ func (a adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.Ex
 		}
 	}
 
-	requestJSON, err := json.Marshal(request)
+	requestJSON, err := jsonutil.Marshal(request)
 	if err != nil {
 		errors = append(errors, err)
 		return nil, errors
@@ -79,7 +79,7 @@ func (a adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.Re
 	}
 
 	var response openrtb2.BidResponse
-	if err := json.Unmarshal(responseData.Body, &response); err != nil {
+	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}
 
@@ -109,7 +109,7 @@ func (a adapter) getEndpoint(request *openrtb2.BidRequest) string {
 func getMediaTypeForBid(bid openrtb2.Bid) openrtb_ext.BidType {
 	if bid.Ext != nil {
 		var bidExt openrtb_ext.ExtBid
-		err := json.Unmarshal(bid.Ext, &bidExt)
+		err := jsonutil.Unmarshal(bid.Ext, &bidExt)
 		if err == nil && bidExt.Prebid != nil {
 			mediaType, err := openrtb_ext.ParseBidType(string(bidExt.Prebid.Type))
 			if err == nil {
