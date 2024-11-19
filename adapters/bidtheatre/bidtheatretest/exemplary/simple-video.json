@@ -1,0 +1,120 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "video": {
+          "mimes": ["video/mp4", "video/webm"],
+          "minduration": 5,
+          "maxduration": 30,
+          "protocols": [2, 3, 5, 6],
+          "w": 640,
+          "h": 360
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "73b20b3a-12a0-4869-b54e-8d42b55786ee"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "prebid.org"
+    },
+    "device": {
+      "ip": "81.227.82.28"
+    }
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://any.url",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "video": {
+                "mimes": ["video/mp4", "video/webm"],
+                "minduration": 5,
+                "maxduration": 30,
+                "protocols": [2, 3, 5, 6],
+                "w": 640,
+                "h": 360
+              },
+              "ext": {
+                "bidder": {
+                  "publisherId": "73b20b3a-12a0-4869-b54e-8d42b55786ee"
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "prebid.org"
+          },
+          "device": {
+            "ip": "81.227.82.28"
+          }
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "5",
+              "bid": [
+                {
+                  "id": "test-imp-id",
+                  "impid": "test-imp-id",
+                  "price": 5.08712911605835,
+                  "nurl": "https:\/\/adsby.bidtheatre.com\/video?z=27025;a=1922926;ex=36;es=prebid.org;eb=3672319;xs=940698616;so=1;tag=unspec_640_360;kuid=1d10dda6-740d-4386-94a0-7042b2ad2a66;wp=${AUCTION_PRICE};su=unknown;iab=vast2;dealId=;ma=eyJjZCI6ZmFsc2UsInN0IjozLCJtbGF0Ijo1OS4zMjkzLCJhZGMiOi0xLCJtb3JnIjoidGVsaWEgbmV0d29yayBzZXJ2aWNlcyIsIm1sc2NvcmUiOjkuNTY5ODA3NDQzNzY3Nzg2RS00LCJtemlwIjoiMTExMjAiLCJiaXAiOiI4MS4yMjcuODIuMjgiLCJhZ2lkIjozNTYyNzAyLCJtbG1vZGVsIjoibWFzdGVyX21sX2Nsa181NDMiLCJ1YSI6ImN1cmxcLzcuODcuMCIsImJycmUiOiJhYiIsIm1sb24iOjE4LjA2ODYsIm1yZWdpb24iOiJhYiIsImR0Ijo4LCJicmNvIjoic3dlIiwibWNpdHkiOiJzdG9ja2hvbG0iLCJicmNpIjoic3RvY2tob2xtIiwicGFnZXVybCI6InByZWJpZC5vcmciLCJpbXBpZCI6IngzNl9hc3gtYi1zMV8yNTY5OTI0ODYzMjY2ODA4OTM2IiwibWNvdW50cnkiOiJzd2UiLCJ0cyI6MTczMjA5NjgyNjg5OH0%3D;cd=0;cb0=;impId=x36_asx-b-s1_2569924863266808936;gdpr=0;gdpr_consent=",
+                  "adid": "1915538",
+                  "cid": "c154375",
+                  "crid": "1915538",
+                  "w": 640,
+                  "h": 360,
+                  "ext": {
+                    "prebid": {
+                      "type": "video"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids":[
+        {
+          "currency": "USD",
+          "bid":  {
+            "id": "test-imp-id",
+            "impid": "test-imp-id",
+            "price": 5.08712911605835,
+            "nurl": "https:\/\/adsby.bidtheatre.com\/video?z=27025;a=1922926;ex=36;es=prebid.org;eb=3672319;xs=940698616;so=1;tag=unspec_640_360;kuid=1d10dda6-740d-4386-94a0-7042b2ad2a66;wp=5.08712911605835;su=unknown;iab=vast2;dealId=;ma=eyJjZCI6ZmFsc2UsInN0IjozLCJtbGF0Ijo1OS4zMjkzLCJhZGMiOi0xLCJtb3JnIjoidGVsaWEgbmV0d29yayBzZXJ2aWNlcyIsIm1sc2NvcmUiOjkuNTY5ODA3NDQzNzY3Nzg2RS00LCJtemlwIjoiMTExMjAiLCJiaXAiOiI4MS4yMjcuODIuMjgiLCJhZ2lkIjozNTYyNzAyLCJtbG1vZGVsIjoibWFzdGVyX21sX2Nsa181NDMiLCJ1YSI6ImN1cmxcLzcuODcuMCIsImJycmUiOiJhYiIsIm1sb24iOjE4LjA2ODYsIm1yZWdpb24iOiJhYiIsImR0Ijo4LCJicmNvIjoic3dlIiwibWNpdHkiOiJzdG9ja2hvbG0iLCJicmNpIjoic3RvY2tob2xtIiwicGFnZXVybCI6InByZWJpZC5vcmciLCJpbXBpZCI6IngzNl9hc3gtYi1zMV8yNTY5OTI0ODYzMjY2ODA4OTM2IiwibWNvdW50cnkiOiJzd2UiLCJ0cyI6MTczMjA5NjgyNjg5OH0%3D;cd=0;cb0=;impId=x36_asx-b-s1_2569924863266808936;gdpr=0;gdpr_consent=",
+            "adid": "1915538",
+            "cid": "c154375",
+            "crid": "1915538",
+            "w": 640,
+            "h": 360,
+            "ext": {
+              "prebid": {
+                "type": "video"
+              }
+            }
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}
