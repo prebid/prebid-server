@@ -35,34 +35,34 @@ type MissenaAdRequest struct {
 	SChain           *openrtb2.SupplyChain `json:"schain,omitempty"`
 	Timeout          int                   `json:"timeout,omitempty"`
 	URL              string                `json:"url,omitempty"`
-	UserParams       MissenaUserParams     `json:"params"`
+	UserParams       UserParams            `json:"params"`
 	USPrivacy        string                `json:"us_privacy,omitempty"`
 	Version          string                `json:"version,omitempty"`
 }
 
-type MissenaBidServerResponse struct {
+type BidServerResponse struct {
 	Ad        string  `json:"ad"`
 	Cpm       float64 `json:"cpm"`
 	Currency  string  `json:"currency"`
 	RequestID string  `json:"requestId"`
 }
 
-type MissenaUserParams struct {
+type UserParams struct {
 	Formats   []string       `json:"formats,omitempty"`
 	Placement string         `json:"placement,omitempty" default:"sticky"`
 	Sample    string         `json:"sample,omitempty"`
 	Settings  map[string]any `json:"settings,omitempty"`
 }
 
-type MissenaInternalParams struct {
-	ApiKey           string
+type InternalParams struct {
+	APIKey           string
 	Formats          []string
 	GDPR             bool
 	GDPRConsent      string
 	Placement        string
 	Referer          string
 	RefererCanonical string
-	RequestId        string
+	RequestID        string
 	Sample           string
 	Settings         map[string]any
 	Timeout          int
@@ -96,8 +96,8 @@ func getCurrency(currencies []string) (string, error) {
 	return "", fmt.Errorf("no currency supported %v", currencies)
 }
 
-func (a *adapter) makeRequest(missenaParams MissenaInternalParams, _ *adapters.ExtraRequestInfo, imp openrtb2.Imp, request *openrtb2.BidRequest) (*adapters.RequestData, error) {
-	url := a.endpoint + "?t=" + missenaParams.ApiKey
+func (a *adapter) makeRequest(missenaParams InternalParams, _ *adapters.ExtraRequestInfo, imp openrtb2.Imp, request *openrtb2.BidRequest) (*adapters.RequestData, error) {
+	url := a.endpoint + "?t=" + missenaParams.APIKey
 	currency, err := getCurrency(request.Cur)
 	if err != nil {
 		// TODO: convert unsupported currency on response
@@ -124,7 +124,7 @@ func (a *adapter) makeRequest(missenaParams MissenaInternalParams, _ *adapters.E
 		RequestID:        request.ID,
 		SChain:           schain,
 		Timeout:          2000,
-		UserParams: MissenaUserParams{
+		UserParams: UserParams{
 			Formats:   missenaParams.Formats,
 			Placement: missenaParams.Placement,
 			Settings:  missenaParams.Settings,
@@ -167,7 +167,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	var errors []error
 	gdprApplies, consentString := readGDPR(request)
 
-	params := MissenaInternalParams{
+	params := InternalParams{
 		GDPR:        gdprApplies,
 		GDPRConsent: consentString,
 	}
@@ -189,7 +189,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			continue
 		}
 
-		params.ApiKey = missenaExt.APIKey
+		params.APIKey = missenaExt.APIKey
 		params.Placement = missenaExt.Placement
 		params.Sample = missenaExt.Sample
 
@@ -244,7 +244,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		return nil, []error{err}
 	}
 
-	var missenaResponse MissenaBidServerResponse
+	var missenaResponse BidServerResponse
 	if err := jsonutil.Unmarshal(responseData.Body, &missenaResponse); err != nil {
 		return nil, []error{err}
 	}
