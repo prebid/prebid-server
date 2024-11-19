@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Lacuna Adapter Params",
+  "description": "A schema which validates params accepted by the Lacuna adapter",
+  "type": "object",
+  "properties": {
+    "plc": {
+      "type": ["string"],
+      "description": "An ID corresponding to the placement selling the impression"
+    },
+    "token": {
+      "type": ["string"],
+      "description": "An ID for auth"
+    }
+  },
+  "required": ["plc","token"]
+}

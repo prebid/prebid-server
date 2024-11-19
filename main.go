@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"net/http"
 	"path/filepath"
 	"runtime"
@@ -61,6 +62,14 @@ const infoDirectory = "./static/bidder-info"
 func loadConfig(bidderInfos config.BidderInfos) (*config.Configuration, error) {
 	v := viper.New()
 	config.SetupViper(v, configFileName, bidderInfos)
+	allKey := v.AllKeys()
+	for _, s := range allKey {
+		if s == "gdpr.default_value" {
+			fmt.Println(v.Get("gdpr.default_value"))
+
+		}
+	}
+
 	return config.New(v, bidderInfos, openrtb_ext.NormalizeBidderName)
 }
 

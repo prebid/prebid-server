@@ -1,0 +1,21 @@
+endpoint: "http://test-bid.lacunads.com/v1/prebid"
+endpointCompression: gzip
+maintainer:
+  email: "san_pro_all@ushareit.com"
+#gvlVendorID:
+modifyingVastXmlAllowed: false
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  redirect:
+    url: 'https://mapping.lacunads.com/v1/webmcm?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}'
+    userMacro: '$UID'
