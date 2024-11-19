@@ -163,7 +163,6 @@ func (a *adapter) makeRequest(missenaParams MissenaInternalParams, _ *adapters.E
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-
 	var httpRequests []*adapters.RequestData
 	var errors []error
 	gdprApplies, consentString := readGDPR(request)
