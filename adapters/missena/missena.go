@@ -190,7 +190,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			continue
 		}
 
-		params.ApiKey = missenaExt.ApiKey
+		params.ApiKey = missenaExt.APIKey
 		params.Placement = missenaExt.Placement
 		params.Sample = missenaExt.Sample
 
