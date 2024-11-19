@@ -4,19 +4,21 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"github.com/prebid/prebid-server/v3/version"
 )
 
 type adapter struct {
-	endpoint string
+	EndpointTemplate *template.Template
 }
 
 type MissenaAdRequest struct {
@@ -54,28 +56,18 @@ type UserParams struct {
 	Settings  map[string]any `json:"settings,omitempty"`
 }
 
-type InternalParams struct {
-	APIKey           string
-	Formats          []string
-	GDPR             bool
-	GDPRConsent      string
-	Placement        string
-	Referer          string
-	RefererCanonical string
-	RequestID        string
-	Sample           string
-	Settings         map[string]any
-	Timeout          int
-}
-
 type MissenaAdapter struct {
 	EndpointTemplate *template.Template
 }
 
 // Builder builds a new instance of the Foo adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	endpoint, err := template.New("endpointTemplate").Parse(config.Endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
+	}
 	bidder := &adapter{
-		endpoint: config.Endpoint,
+		EndpointTemplate: endpoint,
 	}
 	return bidder, nil
 }
@@ -96,8 +88,18 @@ func getCurrency(currencies []string) (string, error) {
 	return "", fmt.Errorf("no currency supported %v", currencies)
 }
 
-func (a *adapter) makeRequest(missenaParams InternalParams, _ *adapters.ExtraRequestInfo, imp openrtb2.Imp, request *openrtb2.BidRequest) (*adapters.RequestData, error) {
-	url := a.endpoint + "?t=" + missenaParams.APIKey
+func (a *adapter) getEndPoint(ext *openrtb_ext.ExtImpMissena) (string, error) {
+	endPointParams := macros.EndpointTemplateParams{
+		PublisherID: url.PathEscape(ext.APIKey),
+	}
+	return macros.ResolveMacros(a.EndpointTemplate, endPointParams)
+}
+
+func (a *adapter) makeRequest(imp openrtb2.Imp, request *openrtb2.BidRequest, params *openrtb_ext.ExtImpMissena, gdprApplies bool, consentString string) (*adapters.RequestData, error) {
+	url, err := a.getEndPoint(params)
+	if err != nil {
+		return nil, err
+	}
 	currency, err := getCurrency(request.Cur)
 	if err != nil {
 		// TODO: convert unsupported currency on response
@@ -116,8 +118,8 @@ func (a *adapter) makeRequest(missenaParams InternalParams, _ *adapters.ExtraReq
 		EIDs:             request.User.EIDs,
 		Floor:            imp.BidFloor,
 		FloorCurrency:    imp.BidFloorCur,
-		GDPR:             missenaParams.GDPR,
-		GDPRConsent:      missenaParams.GDPRConsent,
+		GDPR:             gdprApplies,
+		GDPRConsent:      consentString,
 		IdempotencyKey:   request.ID,
 		Referer:          request.Site.Page,
 		RefererCanonical: request.Site.Domain,
@@ -125,9 +127,9 @@ func (a *adapter) makeRequest(missenaParams InternalParams, _ *adapters.ExtraReq
 		SChain:           schain,
 		Timeout:          2000,
 		UserParams: UserParams{
-			Formats:   missenaParams.Formats,
-			Placement: missenaParams.Placement,
-			Settings:  missenaParams.Settings,
+			Formats:   params.Formats,
+			Placement: params.Placement,
+			Settings:  params.Settings,
 		},
 		Version: version.Ver,
 	}
@@ -167,11 +169,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	var errors []error
 	gdprApplies, consentString := readGDPR(request)
 
-	params := InternalParams{
-		GDPR:        gdprApplies,
-		GDPRConsent: consentString,
-	}
-
 	for _, imp := range request.Imp {
 		var bidderExt adapters.ExtImpBidder
 		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
@@ -181,7 +178,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			continue
 		}
 
-		var missenaExt openrtb_ext.ExtImpMissena
+		var missenaExt *openrtb_ext.ExtImpMissena
 		if err := jsonutil.Unmarshal(bidderExt.Bidder, &missenaExt); err != nil {
 			errors = append(errors, &errortypes.BadInput{
 				Message: "Error parsing missenaExt parameters",
@@ -189,11 +186,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			continue
 		}
 
-		params.APIKey = missenaExt.APIKey
-		params.Placement = missenaExt.Placement
-		params.Sample = missenaExt.Sample
-
-		newHttpRequest, err := a.makeRequest(params, requestInfo, imp, request)
+		newHttpRequest, err := a.makeRequest(imp, request, missenaExt, gdprApplies, consentString)
 		if err != nil {
 			errors = append(errors, err)
 			continue
