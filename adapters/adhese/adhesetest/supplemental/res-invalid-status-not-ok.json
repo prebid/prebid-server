@@ -41,7 +41,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://ads-demo.adhese.com/openrtb2",
+        "uri": "https://demo.foo.bar/",
         "impIDs": ["test-req"],
         "body": {
           "id": "test-req",
@@ -116,4 +116,3 @@
     }
   ]
 }
-

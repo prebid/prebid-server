@@ -65,7 +65,7 @@ func TestInferBidType(t *testing.T) {
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAdhese, config.Adapter{
-		Endpoint: "https://ads-{{.AccountID}}.adhese.com/openrtb2"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+		Endpoint: "https://{{.AccountID}}.foo.bar/"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)

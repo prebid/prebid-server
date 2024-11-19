@@ -19,16 +19,9 @@
             "location": "pbs_test",
             "format": "pbs_mr",
             "targets": {
-              "ci": [
-                "gent",
-                "brussels"
-              ],
-              "ag": [
-                "55"
-              ],
-              "tl": [
-                "all"
-              ]
+              "ci": ["gent", "brussels"],
+              "ag": ["55"],
+              "tl": ["all"]
             }
           },
           "tid": "6811e2a1-3649-4e54-ba03-c9b1401ae728"
@@ -45,10 +38,8 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://ads-demo.adhese.com/openrtb2",
-        "impIDs": [
-          "test-req"
-        ],
+        "uri": "https://demo.foo.bar/",
+        "impIDs": ["test-req"],
         "body": {
           "id": "test-req",
           "imp": [
@@ -59,19 +50,10 @@
               },
               "ext": {
                 "adhese": {
-                  "SL": [
-                    "pbs_test-pbs_mr"
-                  ],
-                  "ag": [
-                    "55"
-                  ],
-                  "ci": [
-                    "gent",
-                    "brussels"
-                  ],
-                  "tl": [
-                    "all"
-                  ]
+                  "SL": ["pbs_test-pbs_mr"],
+                  "ag": ["55"],
+                  "ci": ["gent", "brussels"],
+                  "tl": ["all"]
                 }
               },
               "id": "test-req"

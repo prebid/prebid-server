@@ -13,16 +13,9 @@
             "location": "_adhese_prebid_demo_",
             "format": "preroll",
             "targets": {
-              "ci": [
-                "gent",
-                "brussels"
-              ],
-              "ag": [
-                "55"
-              ],
-              "tl": [
-                "all"
-              ]
+              "ci": ["gent", "brussels"],
+              "ag": ["55"],
+              "tl": ["all"]
             }
           }
         }
@@ -32,29 +25,18 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://ads-demo.adhese.com/openrtb2",
-        "impIDs": [
-          "test-req"
-        ],
+        "uri": "https://demo.foo.bar/",
+        "impIDs": ["test-req"],
         "body": {
           "id": "test-req",
           "imp": [
             {
               "ext": {
                 "adhese": {
-                  "SL": [
-                    "_adhese_prebid_demo_-preroll"
-                  ],
-                  "ag": [
-                    "55"
-                  ],
-                  "ci": [
-                    "gent",
-                    "brussels"
-                  ],
-                  "tl": [
-                    "all"
-                  ]
+                  "SL": ["_adhese_prebid_demo_-preroll"],
+                  "ag": ["55"],
+                  "ci": ["gent", "brussels"],
+                  "tl": ["all"]
                 }
               },
               "video": {
