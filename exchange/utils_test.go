@@ -3728,7 +3728,6 @@ func TestBuildExtData(t *testing.T) {
 	}
 }
 
-// fails
 func TestCleanOpenRTBRequestsFilterBidderRequestExt(t *testing.T) {
 	testCases := []struct {
 		desc      string
