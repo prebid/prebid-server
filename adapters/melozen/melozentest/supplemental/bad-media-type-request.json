@@ -1,0 +1,28 @@
+{
+    "mockBidRequest": {
+      "id": "unsupported-request",
+      "imp": [
+        {
+          "id": "unsupported-imp",
+          "unupported": {
+        },
+          "ext": {
+            "bidder": {
+              "pubId": "386276e072"
+            }
+          }
+        }
+      ], 
+      "site": {
+              "id": "siteID"
+          }
+    },
+  
+    "expectedMakeRequestsErrors": [
+      {
+        "value": "Invalid MediaType. MeloZen only supports Banner, Video and Native.",
+        "comparison": "literal"
+      }
+    ]
+  }
+  

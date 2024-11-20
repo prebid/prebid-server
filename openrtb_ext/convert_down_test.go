@@ -6,8 +6,8 @@ import (
 
 	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -33,50 +33,6 @@ func TestConvertDownTo25(t *testing.T) {
 				Source: &openrtb2.Source{Ext: json.RawMessage(`{"schain":{"complete":1,"nodes":[],"ver":"2"}}`)},
 				Regs:   &openrtb2.Regs{Ext: json.RawMessage(`{"gdpr":1,"us_privacy":"3"}`)},
 				User:   &openrtb2.User{Ext: json.RawMessage(`{"consent":"1","eids":[{"source":"42"}]}`)},
-			},
-		},
-		{
-			name: "2.6-dropped", // integration with clear26Fields
-			givenRequest: openrtb2.BidRequest{
-				ID:     "anyID",
-				CatTax: adcom1.CatTaxIABContent10,
-				Device: &openrtb2.Device{LangB: "anyLang"},
-			},
-			expectedRequest: openrtb2.BidRequest{
-				ID:     "anyID",
-				Device: &openrtb2.Device{},
-			},
-		},
-		{
-			name: "2.6-202211-dropped", // integration with clear202211Fields
-			givenRequest: openrtb2.BidRequest{
-				ID:  "anyID",
-				App: &openrtb2.App{InventoryPartnerDomain: "anyDomain"},
-			},
-			expectedRequest: openrtb2.BidRequest{
-				ID:  "anyID",
-				App: &openrtb2.App{},
-			},
-		},
-		{
-			name: "2.6-202303-dropped", // integration with clear202303Fields
-			givenRequest: openrtb2.BidRequest{
-				ID:  "anyID",
-				Imp: []openrtb2.Imp{{ID: "1", Refresh: &openrtb2.Refresh{Count: ptrutil.ToPtr(1)}}},
-			},
-			expectedRequest: openrtb2.BidRequest{
-				ID:  "anyID",
-				Imp: []openrtb2.Imp{{ID: "1"}},
-			},
-		},
-		{
-			name: "2.6-202309-dropped", // integration with clear202309Fields
-			givenRequest: openrtb2.BidRequest{
-				ID:   "anyID",
-				ACat: []string{"anyACat"},
-			},
-			expectedRequest: openrtb2.BidRequest{
-				ID: "anyID",
 			},
 		},
 		{

@@ -9,8 +9,8 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/prebid/prebid-server/v2/macros"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 
 	validator "github.com/asaskevich/govalidator"
 	"gopkg.in/yaml.v3"
@@ -201,6 +201,21 @@ func (bi BidderInfo) IsEnabled() bool {
 	return !bi.Disabled
 }
 
+// Defined returns true if at least one field exists, except for the supports field.
+func (s *Syncer) Defined() bool {
+	if s == nil {
+		return false
+	}
+
+	return s.Key != "" ||
+		s.IFrame != nil ||
+		s.Redirect != nil ||
+		s.ExternalURL != "" ||
+		s.SupportCORS != nil ||
+		s.FormatOverride != "" ||
+		s.SkipWhen != nil
+}
+
 type InfoReader interface {
 	Read() (map[string][]byte, error)
 }
@@ -335,7 +350,7 @@ func processBidderAliases(aliasNillableFieldsByBidder map[string]aliasNillableFi
 		if aliasBidderInfo.PlatformID == "" {
 			aliasBidderInfo.PlatformID = parentBidderInfo.PlatformID
 		}
-		if aliasBidderInfo.Syncer == nil && parentBidderInfo.Syncer != nil {
+		if aliasBidderInfo.Syncer == nil && parentBidderInfo.Syncer.Defined() {
 			syncerKey := aliasBidderInfo.AliasOf
 			if parentBidderInfo.Syncer.Key != "" {
 				syncerKey = parentBidderInfo.Syncer.Key

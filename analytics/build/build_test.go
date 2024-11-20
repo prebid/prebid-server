@@ -1,18 +1,18 @@
 package build
 
 import (
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/iputil"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/iputil"
 
 	"net/http"
 	"os"
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/analytics"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/privacy"
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v3/analytics"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/privacy"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -79,6 +79,8 @@ func (m *sampleModule) LogAmpObject(ao *analytics.AmpObject) { *m.count++ }
 
 func (m *sampleModule) LogNotificationEventObject(ne *analytics.NotificationEvent) { *m.count++ }
 
+func (m *sampleModule) Shutdown() { *m.count++ }
+
 func initAnalytics(count *int) analytics.Runner {
 	modules := make(enabledAnalytics, 0)
 	modules["sampleModule"] = &sampleModule{count}
@@ -90,6 +92,19 @@ func TestNewPBSAnalytics(t *testing.T) {
 	instance := pbsAnalytics.(enabledAnalytics)
 
 	assert.Equal(t, len(instance), 0)
+}
+
+func TestPBSAnalyticsShutdown(t *testing.T) {
+	countA := 0
+	countB := 0
+	modules := make(enabledAnalytics, 0)
+	modules["sampleModuleA"] = &sampleModule{count: &countA}
+	modules["sampleModuleB"] = &sampleModule{count: &countB}
+
+	modules.Shutdown()
+
+	assert.Equal(t, 1, countA, "sampleModuleA should have been shutdown")
+	assert.Equal(t, 1, countB, "sampleModuleB should have been shutdown")
 }
 
 func TestNewPBSAnalytics_FileLogger(t *testing.T) {
@@ -414,6 +429,8 @@ func (m *mockAnalytics) LogCookieSyncObject(ao *analytics.CookieSyncObject) {}
 func (m *mockAnalytics) LogSetUIDObject(ao *analytics.SetUIDObject) {}
 
 func (m *mockAnalytics) LogNotificationEventObject(ao *analytics.NotificationEvent) {}
+
+func (m *mockAnalytics) Shutdown() {}
 
 func TestLogObject(t *testing.T) {
 	tests := []struct {
