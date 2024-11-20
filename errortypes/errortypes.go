@@ -59,23 +59,20 @@ func (err *BadInput) Severity() Severity {
 	return SeverityFatal
 }
 
-// BlacklistedApp should be used when a request App.ID matches an entry in the BlacklistedApps
-// environment variable array
-//
-// These errors will be written to  http.ResponseWriter before canceling execution
-type BlacklistedApp struct {
+// BlockedApp should be used when a request App.ID matches an entry in the BlockedApp configuration.
+type BlockedApp struct {
 	Message string
 }
 
-func (err *BlacklistedApp) Error() string {
+func (err *BlockedApp) Error() string {
 	return err.Message
 }
 
-func (err *BlacklistedApp) Code() int {
-	return BlacklistedAppErrorCode
+func (err *BlockedApp) Code() int {
+	return BlockedAppErrorCode
 }
 
-func (err *BlacklistedApp) Severity() Severity {
+func (err *BlockedApp) Severity() Severity {
 	return SeverityFatal
 }
 

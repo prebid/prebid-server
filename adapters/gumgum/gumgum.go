@@ -8,10 +8,11 @@ import (
 	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 // adapter implements Bidder interface.
@@ -98,7 +99,7 @@ func (g *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 		}}
 	}
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Bad server response: %d. ", err),
 		}}
@@ -121,13 +122,15 @@ func (g *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 			})
 		}
 	}
-
+	if bidResp.Cur != "" {
+		bidResponse.Currency = bidResp.Cur
+	}
 	return bidResponse, errs
 }
 
 func preprocess(imp *openrtb2.Imp) (*openrtb_ext.ExtImpGumGum, error) {
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		err = &errortypes.BadInput{
 			Message: err.Error(),
 		}
@@ -135,7 +138,7 @@ func preprocess(imp *openrtb2.Imp) (*openrtb_ext.ExtImpGumGum, error) {
 	}
 
 	var gumgumExt openrtb_ext.ExtImpGumGum
-	if err := json.Unmarshal(bidderExt.Bidder, &gumgumExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &gumgumExt); err != nil {
 		err = &errortypes.BadInput{
 			Message: err.Error(),
 		}

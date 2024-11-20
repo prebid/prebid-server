@@ -12,19 +12,19 @@ import (
 	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
-type LacunaAdapter struct {
+type adapter struct {
 	endPoint string
 }
 
 // Builder builds a new instance of the Lacuna adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	bidder := &LacunaAdapter{
+	bidder := &adapter{
 		endPoint: config.Endpoint,
 	}
 	return bidder, nil
 }
 
-func (a *LacunaAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 
 	if len(request.Imp) == 0 {
@@ -58,7 +58,7 @@ func (a *LacunaAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adap
 	}}, errs
 }
 
-func (a *LacunaAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
