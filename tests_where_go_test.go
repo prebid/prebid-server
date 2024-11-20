@@ -46,9 +46,6 @@ func FirstFunc[Slice ~[]T, T any](s Slice, matchFunc func(T) bool) (T, bool) {
 
 // EveryDirWithGoCodeHasTests asserts that every directory in the current working directory
 func EveryDirWithGoCodeHasTests(t *testing.T, opts ...EveryDirOpt) {
-	// TODO: Ensure that every directory with go code in it has at least one test
-	t.Skip("Ensure every dir with go code has at least one test file.")
-
 	wd, err := os.Getwd()
 	require.NoError(t, err)
 	everyDirOptions := newEveryDirOptions(opts...)
