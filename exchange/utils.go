@@ -715,7 +715,7 @@ var allowedImpExtPrebidFields = map[string]interface{}{
 }
 
 var deniedImpExtFields = map[string]interface{}{
-	"prebid": struct{}{},
+	openrtb_ext.PrebidExtKey: struct{}{},
 }
 
 func createSanitizedImpExt(impExt, impExtPrebid map[string]json.RawMessage) (map[string]json.RawMessage, error) {

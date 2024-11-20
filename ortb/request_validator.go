@@ -113,7 +113,7 @@ func (srv *standardRequestValidator) validateImpExt(imp *openrtb_ext.ImpWrapper,
 	}
 
 	if hasStoredAuctionResponses && prebid.StoredAuctionResponse == nil {
-		return []error{fmt.Errorf("request validation failed. The StoredAuctionResponse.ID field must be completely present with, or completely absent from, all impressions in request. No StoredAuctionResponse data found for request.imp[%d].ext.prebid", impIndex)}
+		return []error{fmt.Errorf("request validation failed. The StoredAuctionResponse.ID field must be completely present with, or completely absent from, all impressions in request. No StoredAuctionResponse data found for request.imp[%d].ext.prebid \n", impIndex)}
 	}
 
 	if err := srv.validateStoredBidResponses(prebid, storedBidResp, imp.ID); err != nil {

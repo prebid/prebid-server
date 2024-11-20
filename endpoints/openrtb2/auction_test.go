@@ -4401,7 +4401,7 @@ func TestValidateStoredResp(t *testing.T) {
 					},
 				},
 			},
-			expectedErrorList:         []error{errors.New("request validation failed. The StoredAuctionResponse.ID field must be completely present with, or completely absent from, all impressions in request. No StoredAuctionResponse data found for request.imp[1].ext.prebid")},
+			expectedErrorList:         []error{errors.New("request validation failed. The StoredAuctionResponse.ID field must be completely present with, or completely absent from, all impressions in request. No StoredAuctionResponse data found for request.imp[1].ext.prebid \n")},
 			hasStoredAuctionResponses: true,
 			storedBidResponses:        nil,
 		},
