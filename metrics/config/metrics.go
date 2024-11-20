@@ -1,10 +1,12 @@
 package config
 
 import (
+	"log/slog"
 	"time"
 
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/metrics"
+	"github.com/prebid/prebid-server/v3/metrics/opentelemetry"
 	prometheusmetrics "github.com/prebid/prebid-server/v3/metrics/prometheus"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	gometrics "github.com/rcrowley/go-metrics"
@@ -42,6 +44,13 @@ func NewMetricsEngine(cfg *config.Configuration, adapterList []openrtb_ext.Bidde
 		// Set up the Prometheus metrics.
 		returnEngine.PrometheusMetrics = prometheusmetrics.NewMetrics(cfg.Metrics.Prometheus, cfg.Metrics.Disabled, syncerKeys, moduleStageNames)
 		engineList = append(engineList, returnEngine.PrometheusMetrics)
+	}
+	if cfg.Metrics.Otel.Enabled {
+		otelEngine, err := opentelemetry.NewEngine(cfg.Metrics.Otel.Prefix, &cfg.Metrics.Disabled)
+		if err != nil {
+			slog.Error("error creating otel engine", "err", err.Error())
+		}
+		engineList = append(engineList, otelEngine)
 	}
 
 	// Now return the proper metrics engine
