@@ -9,6 +9,7 @@ import (
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"github.com/prebid/prebid-server/v3/util/ptrutil"
+	"github.com/tidwall/gjson"
 )
 
 // RequestWrapper wraps the OpenRTB request to provide a storage location for unmarshalled ext fields, so they
@@ -1278,8 +1279,10 @@ func (re *RegExt) unmarshal(extJson json.RawMessage) error {
 
 	gpcJson, hasGPC := re.ext[gpcKey]
 	if hasGPC && gpcJson != nil {
-		if err := jsonutil.Unmarshal(gpcJson, &re.gpc); err != nil {
-			return err
+		gpcResult := gjson.ParseBytes(gpcJson)
+		if gpcResult.Exists() {
+			gpc := gpcResult.String()
+			re.gpc = &gpc
 		}
 	}
 
