@@ -2,7 +2,6 @@ package loopme
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"net/http"
@@ -22,18 +21,13 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 	reqDatas := make([]*adapters.RequestData, 0, len(request.Imp))
 	for _, imp := range request.Imp {
-		_, err := parseBidderExt(&imp)
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
 
 		requestCopy := *request
 		requestCopy.Imp = []openrtb2.Imp{imp}
 		reqJSON, err := json.Marshal(requestCopy)
 		if err != nil {
 			errs = append(errs, err)
-			return nil, errs
+			continue
 		}
 
 		headers := http.Header{}
@@ -69,37 +63,35 @@ func (a *adapter) MakeBids(bidReq *openrtb2.BidRequest, reqData *adapters.Reques
 		return nil, nil
 	}
 
-	resp := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
-	if len(bidResp.Cur) != 0 {
-		resp.Currency = bidResp.Cur
-	}
+	errs := make([]error, 0, len(bidResp.SeatBid[0].Bid))
+	bids := make([]*adapters.TypedBid, 0, len(bidResp.SeatBid[0].Bid))
+
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
 			bid := &sb.Bid[i]
 			bidType, err := getBidType(bid)
 			if err != nil {
-				return nil, []error{err}
+				errs = append(errs, err)
+				continue
 			}
-			resp.Bids = append(resp.Bids, &adapters.TypedBid{
+			bids = append(bids, &adapters.TypedBid{
 				Bid:     bid,
 				BidType: bidType,
 			})
 		}
 	}
-	return resp, nil
-}
-
-func parseBidderExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpLoopme, error) {
-	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return nil, err
+	if len(bids) > 0 {
+		resp := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
+		if len(bidResp.Cur) != 0 {
+			resp.Currency = bidResp.Cur
+		}
+		for _, bid := range bids {
+			resp.Bids = append(resp.Bids, bid)
+		}
+		return resp, errs
+	} else {
+		return nil, errs
 	}
-
-	var loopmeExt openrtb_ext.ExtImpLoopme
-	if err := json.Unmarshal(bidderExt.Bidder, &loopmeExt); err != nil {
-		return nil, fmt.Errorf("Wrong Loopme bidder ext")
-	}
-	return &loopmeExt, nil
 }
 
 func getBidType(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
@@ -121,10 +113,6 @@ func getBidType(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 
 // Builder builds a new instance of the Loopme adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, cfg config.Adapter, serverCfg config.Server) (adapters.Bidder, error) {
-	if cfg.Endpoint == "" {
-		return nil, errors.New("endpoint is empty")
-	}
-
 	bidder := &adapter{
 		endpoint: cfg.Endpoint,
 	}
