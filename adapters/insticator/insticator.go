@@ -84,7 +84,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	request.Ext = reqExt
 
-	// Create a deep copy of the request to avoid modifying the original request
+	// Create a copy of the request to avoid modifying the original request
 	requestCopy := *request
 
 	for i := 0; i < len(request.Imp); i++ {
@@ -120,7 +120,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	}
 
 	for _, impList := range groupedImps {
-		if adapterReq, err := a.makeRequest(requestCopy, impList); err == nil {
+		if adapterReq, err := a.makeRequest(&requestCopy, impList); err == nil {
 			adapterRequests = append(adapterRequests, adapterReq)
 		} else {
 			errs = append(errs, err)
@@ -129,7 +129,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	return adapterRequests, errs
 }
 
-func (a *adapter) makeRequest(request openrtb2.BidRequest, impList []openrtb2.Imp) (*adapters.RequestData, error) {
+func (a *adapter) makeRequest(request *openrtb2.BidRequest, impList []openrtb2.Imp) (*adapters.RequestData, error) {
 	request.Imp = impList
 
 	reqJSON, err := jsonutil.Marshal(request)
