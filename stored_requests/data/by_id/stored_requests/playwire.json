@@ -6,17 +6,26 @@
             "targeting": {
                 "includewinners": true,
                 "includebidderkeys": true,
-                "mediatypepricegranularity": {
-                    "banner": {
-                        "ranges": [
-                            {
-                                "max": 50,
-                                "min": 0,
-                                "increment": 0.01
-                            }
-                        ],
-                        "precision": 3
-                    }
+                "pricegranularity": {
+                    "ranges": [
+                        {
+                            "max": 3,
+                            "increment": 0.01
+                        },
+                        {
+                            "max": 8,
+                            "increment": 0.05
+                        },
+                        {
+                            "max": 15,
+                            "increment": 0.25
+                        },
+                        {
+                            "max": 30,
+                            "increment": 1
+                        }
+                    ],
+                    "precision": 2
                 }
             },
             "cache": {
