@@ -1142,19 +1142,19 @@ func validateTargeting(t *openrtb_ext.ExtRequestTargeting) error {
 		}
 	}
 
-	if mediaPriceGranularity := t.MediaTypePriceGranularity; mediaPriceGranularity != nil {
-		if mediaPriceGranularity.Video != nil {
-			if err := validatePriceGranularity(mediaPriceGranularity.Video); err != nil {
+	if t.MediaTypePriceGranularity != nil {
+		if t.MediaTypePriceGranularity.Video != nil {
+			if err := validatePriceGranularity(t.MediaTypePriceGranularity.Video); err != nil {
 				return err
 			}
 		}
 		if t.MediaTypePriceGranularity.Banner != nil {
-			if err := validatePriceGranularity(mediaPriceGranularity.Banner); err != nil {
+			if err := validatePriceGranularity(t.MediaTypePriceGranularity.Banner); err != nil {
 				return err
 			}
 		}
-		if mediaPriceGranularity.Native != nil {
-			if err := validatePriceGranularity(mediaPriceGranularity.Native); err != nil {
+		if t.MediaTypePriceGranularity.Native != nil {
+			if err := validatePriceGranularity(t.MediaTypePriceGranularity.Native); err != nil {
 				return err
 			}
 		}
