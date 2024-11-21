@@ -155,6 +155,9 @@ func TestValidateImpExt(t *testing.T) {
 					expectedErrs:   []error{},
 				},
 				{
+					// Since prebid.bidder object is present - bidders expected to be within it
+					// So even though appnexus is a valid bidder - it is ignored and considered to be an arbitrary field
+					// If there was no prebid.bidder then appnexus would have been considered a bidder.
 					description:    "Valid bidder root ext + Empty Prebid Bidder",
 					impExt:         json.RawMessage(`{"prebid":{"bidder":{}}, "appnexus":{"placement_id":555}}`),
 					expectedImpExt: `{"prebid":{"bidder":{}}, "appnexus":{"placement_id":555}}`,
@@ -211,9 +214,9 @@ func TestValidateImpExt(t *testing.T) {
 					expectedErrs:   []error{&errortypes.BidderTemporarilyDisabled{Message: "The bidder 'disabledbidder' has been disabled."}},
 				},
 				{
-					description:    "Valid Prebid Ext Bidder + Unknown Ext",
-					impExt:         json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placement_id": 555}}},"unknownbidder":{"placement_id":555}}`),
-					expectedImpExt: `{"prebid":{"bidder":{"appnexus":{"placement_id": 555}}},"unknownbidder":{"placement_id":555}}`,
+					description:    "Valid Prebid Ext Bidder + Arbitrary Key Ext",
+					impExt:         json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placement_id": 555}}},"arbitraryKey":{"placement_id":555}}`),
+					expectedImpExt: `{"prebid":{"bidder":{"appnexus":{"placement_id": 555}}},"arbitraryKey":{"placement_id":555}}`,
 					expectedErrs:   []error{},
 				},
 				{
