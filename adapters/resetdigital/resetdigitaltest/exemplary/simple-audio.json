@@ -154,7 +154,7 @@
               "w": "0",
               "h": "0",
               "seat": "resetdigital",
-              "html": "<script src=\"https://data.resetdigital.co/evts?S0B=1&R0E=1&R0M=3_3&testad=US-HEADER-04&R0A=1000048_1001096_1001117_1627360746&R0P=resetio_1234_muscleandfitness.com_Site_1_Banner&R0L=*_*_*_*_*&R0D=*_*_*_*_*_*&R0B=*_*_*\" type=\"text/javascript\"></script><image src='https://adsreq.resetdigital.co?brid=0000000000000001' /><image src='https://sync2.resetdigital.co/hbsync?ck=0000000000000001' />"
+              "html": "test markup"
             }
           ]
         }
@@ -167,7 +167,7 @@
       "bids": [
         {
           "bid": {
-            "adm": "<script src=\"https://data.resetdigital.co/evts?S0B=1&R0E=1&R0M=3_3&testad=US-HEADER-04&R0A=1000048_1001096_1001117_1627360746&R0P=resetio_1234_muscleandfitness.com_Site_1_Banner&R0L=*_*_*_*_*&R0D=*_*_*_*_*_*&R0B=*_*_*\" type=\"text/javascript\"></script><image src='https://adsreq.resetdigital.co?brid=0000000000000001' /><image src='https://sync2.resetdigital.co/hbsync?ck=0000000000000001' />",
+            "adm": "test markup",
             "cid": "1000048-1002918",
             "crid": "1003893",
             "id": "01",
