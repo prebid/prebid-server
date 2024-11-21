@@ -193,12 +193,7 @@ func (s *SovrnAdapter) MakeBids(request *openrtb2.BidRequest, bidderRequest *ada
 }
 
 func getExtBidFloor(sovrnExt openrtb_ext.ExtImpSovrn) float64 {
-	var bidFloor interface{}
-	if err := json.Unmarshal(sovrnExt.BidFloor, &bidFloor); err != nil {
-		return 0
-	}
-
-	switch v := bidFloor.(type) {
+	switch v := sovrnExt.BidFloor.(type) {
 	case string:
 		if numValue, err := strconv.ParseFloat(v, 64); err == nil {
 			return numValue
@@ -206,7 +201,6 @@ func getExtBidFloor(sovrnExt openrtb_ext.ExtImpSovrn) float64 {
 	case float64:
 		return v
 	}
-
 	return 0
 }
 
