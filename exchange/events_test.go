@@ -203,7 +203,7 @@ func TestConvertToVastEvent(t *testing.T) {
 		expected injector.VASTEvents
 	}{
 		{
-			name: "Error event",
+			name: "Error_event",
 			input: config.Events{
 				DefaultURL: "http://default.url",
 				VASTEvents: []config.VASTEvent{
@@ -220,7 +220,7 @@ func TestConvertToVastEvent(t *testing.T) {
 			},
 		},
 		{
-			name: "NonLinearTracking event",
+			name: "NonLinearTracking_event",
 			input: config.Events{
 				DefaultURL: "http://default.url",
 				VASTEvents: []config.VASTEvent{
@@ -237,7 +237,7 @@ func TestConvertToVastEvent(t *testing.T) {
 			},
 		},
 		{
-			name: "CompanionClickThrough event",
+			name: "CompanionClickThrough_event",
 			input: config.Events{
 				DefaultURL: "http://default.url",
 				VASTEvents: []config.VASTEvent{
@@ -254,7 +254,7 @@ func TestConvertToVastEvent(t *testing.T) {
 			},
 		},
 		{
-			name: "Tracking event",
+			name: "Tracking_event",
 			input: config.Events{
 				DefaultURL: "http://default.url",
 				VASTEvents: []config.VASTEvent{
@@ -272,7 +272,7 @@ func TestConvertToVastEvent(t *testing.T) {
 			},
 		},
 		{
-			name: "Click tracking event",
+			name: "Clicktracking_event",
 			input: config.Events{
 				DefaultURL: "http://default.url",
 				VASTEvents: []config.VASTEvent{
@@ -306,7 +306,7 @@ func TestAppendURLs(t *testing.T) {
 		expectedURLs []string
 	}{
 		{
-			name: "urls is nil",
+			name: "urls_is_nil",
 			urls: nil,
 			event: config.VASTEvent{
 				URLs:              []string{},
@@ -316,7 +316,7 @@ func TestAppendURLs(t *testing.T) {
 			expectedURLs: []string{"http://default.url"},
 		},
 		{
-			name: "events.url is nil",
+			name: "events.url_is_nil",
 			urls: []string{},
 			event: config.VASTEvent{
 				URLs:              nil,
@@ -326,7 +326,7 @@ func TestAppendURLs(t *testing.T) {
 			expectedURLs: []string{"http://default.url"},
 		},
 		{
-			name: "No URLs in event, include default URL",
+			name: "No_URLs_in_event,_include_default_URL",
 			urls: []string{},
 			event: config.VASTEvent{
 				URLs:              []string{},
@@ -336,7 +336,7 @@ func TestAppendURLs(t *testing.T) {
 			expectedURLs: []string{"http://default.url"},
 		},
 		{
-			name: "No URLs in event, exclude default URL",
+			name: "No_URLs_in_event,_exclude_default_URL",
 			urls: []string{},
 			event: config.VASTEvent{
 				URLs:              []string{},
@@ -346,7 +346,7 @@ func TestAppendURLs(t *testing.T) {
 			expectedURLs: []string{},
 		},
 		{
-			name: "URLs in event, include default URL",
+			name: "URLs_in_event,_include_default_URL",
 			urls: []string{},
 			event: config.VASTEvent{
 				URLs:              []string{"http://event.url"},
@@ -356,7 +356,7 @@ func TestAppendURLs(t *testing.T) {
 			expectedURLs: []string{"http://event.url", "http://default.url"},
 		},
 		{
-			name: "URLs in event, exclude default URL",
+			name: "URLs_in_event,_exclude_default_URL",
 			urls: []string{},
 			event: config.VASTEvent{
 				URLs:              []string{"http://event.url"},
@@ -366,7 +366,7 @@ func TestAppendURLs(t *testing.T) {
 			expectedURLs: []string{"http://event.url"},
 		},
 		{
-			name: "Existing URLs, URLs in event, include default URL",
+			name: "Existing_URLs,_URLs_in_event,_include_default_URL",
 			urls: []string{"http://existing.url"},
 			event: config.VASTEvent{
 				URLs:              []string{"http://event.url"},
@@ -376,7 +376,7 @@ func TestAppendURLs(t *testing.T) {
 			expectedURLs: []string{"http://existing.url", "http://event.url", "http://default.url"},
 		},
 		{
-			name: "Existing URLs, URLs in event, exclude default URL",
+			name: "Existing_URLs,_URLs_in_event,_exclude_default_URL",
 			urls: []string{"http://existing.url"},
 			event: config.VASTEvent{
 				URLs:              []string{"http://event.url"},
@@ -386,7 +386,6 @@ func TestAppendURLs(t *testing.T) {
 			expectedURLs: []string{"http://existing.url", "http://event.url"},
 		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := appendURLs(tt.urls, tt.event, tt.defaultURL)
