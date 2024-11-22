@@ -322,7 +322,7 @@ func setSeatNonBidRaw(request *openrtb_ext.RequestWrapper, response *openrtb2.Bi
 		return err
 	}
 	if setSeatNonBid(respExt, nonBids) {
-		if respExtJson, err := json.Marshal(respExt); err == nil {
+		if respExtJson, err := jsonutil.Marshal(respExt); err == nil {
 			response.Ext = respExtJson
 			return nil
 		} else {
