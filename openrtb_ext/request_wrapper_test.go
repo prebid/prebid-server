@@ -2345,14 +2345,14 @@ func TestRegExtUnmarshal(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name:        `valid_gpc_json "1"`,
+			name:        `valid_gpc_json_"1"`,
 			regExt:      &RegExt{},
 			extJson:     json.RawMessage(`{"gpc": "1"}`),
 			expectGPC:   ptrutil.ToPtr("1"),
 			expectError: false,
 		},
 		{
-			name:        `valid_gpc_json 1`,
+			name:        `valid_gpc_json_1`,
 			regExt:      &RegExt{},
 			extJson:     json.RawMessage(`{"gpc": 1}`),
 			expectGPC:   ptrutil.ToPtr("1"),
@@ -2391,6 +2391,7 @@ func TestRegExtUnmarshal(t *testing.T) {
 			assert.Equal(t, tt.expectDSA, tt.regExt.dsa)
 			assert.Equal(t, tt.expectGDPR, tt.regExt.gdpr)
 			assert.Equal(t, tt.expectUSPrivacy, tt.regExt.usPrivacy)
+			assert.Equal(t, tt.expectGPC, tt.regExt.gpc)
 		})
 	}
 }
