@@ -31,6 +31,9 @@
             "wrapper": {
               "profile": 1234
             }
+          },
+          "arbitraryObject": {
+            "arbitraryField": 1232
           }
         }
       }
@@ -105,6 +108,9 @@
           }
         }
       }
+    },
+    "arbitraryObject": {
+      "arbitraryField": 1232
     }
   },
   "expectedReturnCode": 200

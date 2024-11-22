@@ -3970,6 +3970,7 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 		expectedImpExt     json.RawMessage
 		expectedReqExt     json.RawMessage
 		expectedErrorCount int
+		expectedErrors     []error
 	}{
 		{
 			name:               "add missing bidder-params from req.ext.prebid.bidderparams to imp[].ext.prebid.bidder",
@@ -3987,10 +3988,16 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 		},
 		{
 			name:               "add missing bidder-params from req.ext.prebid.bidderparams to imp[].ext for backward compatibility",
-			givenRequestBody:   validRequest(t, "req-ext-bidder-params-backward-compatible-merge.json"),
-			expectedImpExt:     getObject(t, "req-ext-bidder-params-backward-compatible-merge.json", "expectedImpExt"),
-			expectedReqExt:     getObject(t, "req-ext-bidder-params-backward-compatible-merge.json", "expectedReqExt"),
-			expectedErrorCount: 0,
+			givenRequestBody:   validRequest(t, "req-ext-bidder-params-promotion.json"),
+			expectedImpExt:     getObject(t, "req-ext-bidder-params-promotion.json", "expectedImpExt"),
+			expectedReqExt:     getObject(t, "req-ext-bidder-params-promotion.json", "expectedReqExt"),
+			expectedErrorCount: 1,
+			expectedErrors: []error{
+				&errortypes.Warning{
+					WarningCode: 0,
+					Message:     "request.imp[0].ext contains unknown bidder: 'arbitraryObject', ignoring",
+				},
+			},
 		},
 	}
 	for _, test := range tests {
@@ -4047,6 +4054,8 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 			assert.Equal(t, eReqE, reqE, "req.Ext should match")
 
 			assert.Len(t, errL, test.expectedErrorCount, "error length should match")
+
+			assert.Equal(t, errL, test.expectedErrors)
 		})
 	}
 }
