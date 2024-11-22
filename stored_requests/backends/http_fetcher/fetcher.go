@@ -164,6 +164,9 @@ func (fetcher *HttpFetcher) FetchAccount(ctx context.Context, accountDefaultsJSO
 			DataType: "Account",
 		}}
 	}
+	if accountDefaultsJSON == nil {
+		return accountJSON, nil
+	}
 	completeJSON, err := jsonpatch.MergePatch(accountDefaultsJSON, accountJSON)
 	if err != nil {
 		return nil, []error{err}

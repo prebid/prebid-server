@@ -60,6 +60,9 @@ func (fetcher *eagerFetcher) FetchAccount(ctx context.Context, accountDefaultsJS
 		}}
 	}
 
+	if accountDefaultsJSON == nil {
+		return accountJSON, nil
+	}
 	completeJSON, err := jsonpatch.MergePatch(accountDefaultsJSON, accountJSON)
 	if err != nil {
 		return nil, []error{err}
