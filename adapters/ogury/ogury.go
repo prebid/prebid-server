@@ -29,38 +29,54 @@ func (a oguryAdapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *ad
 	headers := setHeaders(request)
 
 	var errors []error
-	var bidderImpExt adapters.ExtImpBidder
-	var oguryExtParams openrtb_ext.ImpExtOgury
+	var impExt, impExtBidderHoist map[string]json.RawMessage
 	for i, imp := range request.Imp {
-		// extract Ogury params
-		if err := json.Unmarshal(imp.Ext, &bidderImpExt); err != nil {
+		// extract ext
+		if err := json.Unmarshal(imp.Ext, &impExt); err != nil {
 			return nil, append(errors, &errortypes.BadInput{
 				Message: "Bidder extension not provided or can't be unmarshalled",
 			})
 		}
-		if err := json.Unmarshal(bidderImpExt.Bidder, &oguryExtParams); err != nil {
-			return nil, append(errors, &errortypes.BadInput{
-				Message: "Error while unmarshalling Ogury bidder extension",
-			})
+		// find Ogury bidder params
+		bidder, ok := impExt["bidder"]
+		if ok {
+			if err := json.Unmarshal(bidder, &impExtBidderHoist); err != nil {
+				return nil, append(errors, &errortypes.BadInput{
+					Message: "Bidder extension not provided or can't be unmarshalled",
+				})
+			}
+
 		}
 
-		// map Ogury params to top of Ext object
-		ext, err := json.Marshal(struct {
-			adapters.ExtImpBidder
-			openrtb_ext.ImpExtOgury
-		}{bidderImpExt, oguryExtParams})
+		impExtOut := make(map[string]any, len(impExt)-1+len(impExtBidderHoist))
+
+		// extract Ogury "bidder" params from imp.ext.bidder to imp.ext
+		for key, value := range impExt {
+			if key != "bidder" {
+				impExtOut[key] = value
+			}
+		}
+		for key, value := range impExtBidderHoist {
+			impExtOut[key] = value
+		}
+
+		ext, err := json.Marshal(impExtOut)
 		if err != nil {
 			return nil, append(errors, &errortypes.BadInput{
 				Message: "Error while marshaling Imp.Ext bidder exension",
 			})
 		}
-		request.Imp[i].Ext = ext
 
-		if oguryExtParams.PublisherID != "" {
-			request.Imp[i].TagID = imp.ID
+		// save adUnitCode
+		request.Imp[i].TagID = imp.ID
+		if impExtOut["gpid"] == "" {
+			impExtOut["gpid"] = imp.ID
 		}
+
+		request.Imp[i].Ext = ext
 	}
 
+	// currency conversion
 	for i, imp := range request.Imp {
 		// Check if imp comes with bid floor amount defined in a foreign currency
 		if imp.BidFloor > 0 && imp.BidFloorCur != "" && strings.ToUpper(imp.BidFloorCur) != "USD" {

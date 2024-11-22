@@ -8,6 +8,7 @@
           "format": [{"w": 128, "h": 100}]
         },
         "ext": {
+          "gpid": "global position id",
           "bidder": {
             "assetKey": "OGY",
             "adUnitId": "123"
@@ -26,17 +27,14 @@
           "imp": [
             {
               "id":"test-imp-id",
+              "tagid": "test-imp-id",
               "banner": {
                 "format": [{"w": 128, "h": 100}]
               },
               "ext": {
+                "gpid": "global position id",
                 "assetKey": "OGY",
-                "adUnitId": "123",
-                "bidder": {
-                  "assetKey": "OGY",
-                  "adUnitId": "123"
-                },
-                "prebid": null
+                "adUnitId": "123"
               }
             }
           ]

@@ -8,8 +8,11 @@
           "format": [{"w": 128, "h": 100}]
         },
         "ext": {
+          "gpid": "global position id",
           "bidder": {
-            "publisherId": "pub123"
+            "assetKey": "OGY",
+            "adUnitId": "123",
+            "testcampaign": "test123"
           }
         }
       }
@@ -30,7 +33,10 @@
                 "format": [{"w": 128, "h": 100}]
               },
               "ext": {
-                "publisherId": "pub123"
+                "gpid": "global position id",
+                "assetKey": "OGY",
+                "adUnitId": "123",
+                "testcampaign": "test123"
               }
             }
           ]
@@ -81,4 +87,3 @@
     }
   ]
 }
-
