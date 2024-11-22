@@ -2345,6 +2345,20 @@ func TestRegExtUnmarshal(t *testing.T) {
 			expectError: false,
 		},
 		{
+			name:        `valid_gpc_json "1"`,
+			regExt:      &RegExt{},
+			extJson:     json.RawMessage(`{"gpc": "1"}`),
+			expectGPC:   ptrutil.ToPtr("1"),
+			expectError: false,
+		},
+		{
+			name:        `valid_gpc_json 1`,
+			regExt:      &RegExt{},
+			extJson:     json.RawMessage(`{"gpc": 1}`),
+			expectGPC:   ptrutil.ToPtr("1"),
+			expectError: false,
+		},
+		{
 			name:        "malformed_gpc_json",
 			regExt:      &RegExt{},
 			extJson:     json.RawMessage(`{"gpc":nill}`),
