@@ -5,9 +5,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/prebid/prebid-server/v2/hooks/hookstage"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v3/hooks/hookstage"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 )
 
 type mockUpdateHeaderEntrypointHook struct{}
@@ -151,7 +151,7 @@ func (e mockTimeoutHook) HandleRawBidderResponseHook(_ context.Context, _ hookst
 	time.Sleep(20 * time.Millisecond)
 	c := hookstage.ChangeSet[hookstage.RawBidderResponsePayload]{}
 	c.AddMutation(func(payload hookstage.RawBidderResponsePayload) (hookstage.RawBidderResponsePayload, error) {
-		payload.Bids[0].BidMeta = &openrtb_ext.ExtBidPrebidMeta{AdapterCode: "new-code"}
+		payload.BidderResponse.Bids[0].BidMeta = &openrtb_ext.ExtBidPrebidMeta{AdapterCode: "new-code"}
 		return payload, nil
 	}, hookstage.MutationUpdate, "bidderResponse", "bidMeta.AdapterCode")
 
@@ -351,7 +351,7 @@ func (e mockUpdateBidderResponseHook) HandleRawBidderResponseHook(_ context.Cont
 	c := hookstage.ChangeSet[hookstage.RawBidderResponsePayload]{}
 	c.AddMutation(
 		func(payload hookstage.RawBidderResponsePayload) (hookstage.RawBidderResponsePayload, error) {
-			payload.Bids[0].DealPriority = 10
+			payload.BidderResponse.Bids[0].DealPriority = 10
 			return payload, nil
 		}, hookstage.MutationUpdate, "bidderResponse", "bid.deal-priority",
 	)

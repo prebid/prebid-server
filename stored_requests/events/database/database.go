@@ -9,11 +9,11 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/metrics"
-	"github.com/prebid/prebid-server/v2/stored_requests/backends/db_provider"
-	"github.com/prebid/prebid-server/v2/stored_requests/events"
-	"github.com/prebid/prebid-server/v2/util/timeutil"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/metrics"
+	"github.com/prebid/prebid-server/v3/stored_requests/backends/db_provider"
+	"github.com/prebid/prebid-server/v3/stored_requests/events"
+	"github.com/prebid/prebid-server/v3/util/timeutil"
 )
 
 func bytesNull() []byte {
@@ -78,7 +78,7 @@ func (e *DatabaseEventProducer) Invalidations() <-chan events.Invalidation {
 }
 
 func (e *DatabaseEventProducer) fetchAll() (fetchErr error) {
-	timeout := e.cfg.CacheInitTimeout * time.Millisecond
+	timeout := e.cfg.CacheInitTimeout
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
@@ -115,7 +115,7 @@ func (e *DatabaseEventProducer) fetchAll() (fetchErr error) {
 }
 
 func (e *DatabaseEventProducer) fetchDelta() (fetchErr error) {
-	timeout := e.cfg.CacheUpdateTimeout * time.Millisecond
+	timeout := e.cfg.CacheUpdateTimeout
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 

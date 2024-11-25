@@ -7,10 +7,11 @@ import (
 	"strconv"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type MarsmediaAdapter struct {
@@ -28,14 +29,14 @@ func (a *MarsmediaAdapter) MakeRequests(requestIn *openrtb2.BidRequest, reqInfo 
 	}
 
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(request.Imp[0].Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(request.Imp[0].Ext, &bidderExt); err != nil {
 		return nil, []error{&errortypes.BadInput{
 			Message: "ext.bidder not provided",
 		}}
 	}
 
 	var marsmediaExt openrtb_ext.ExtImpMarsmedia
-	if err := json.Unmarshal(bidderExt.Bidder, &marsmediaExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &marsmediaExt); err != nil {
 		return nil, []error{&errortypes.BadInput{
 			Message: "ext.bidder.zoneId not provided",
 		}}
@@ -126,7 +127,7 @@ func (a *MarsmediaAdapter) MakeBids(internalRequest *openrtb2.BidRequest, extern
 	}
 
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Bad server response: %d. ", err),
 		}}

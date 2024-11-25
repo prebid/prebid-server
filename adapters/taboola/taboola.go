@@ -11,11 +11,12 @@ import (
 	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/openrtb/v20/openrtb2"
 
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/macros"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -86,7 +87,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	var response openrtb2.BidResponse
-	if err := json.Unmarshal(responseData.Body, &response); err != nil {
+	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}
 
@@ -131,7 +132,14 @@ func (a *adapter) buildRequest(request *openrtb2.BidRequest) (*adapters.RequestD
 		return nil, fmt.Errorf("unsupported media type for imp: %v", request.Imp[0])
 	}
 
-	url, err := a.buildEndpointURL(request.Site.ID, mediaType)
+	var taboolaPublisherId string
+	if request.Site != nil && request.Site.ID != "" {
+		taboolaPublisherId = request.Site.ID
+	} else if request.App != nil && request.App.ID != "" {
+		taboolaPublisherId = request.App.ID
+	}
+
+	url, err := a.buildEndpointURL(taboolaPublisherId, mediaType)
 	if err != nil {
 		return nil, err
 	}
@@ -167,11 +175,11 @@ func createTaboolaRequests(request *openrtb2.BidRequest) (taboolaRequests []*ope
 		imp := modifiedRequest.Imp[i]
 
 		var bidderExt adapters.ExtImpBidder
-		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			errs = append(errs, err)
 			continue
 		}
-		if err := json.Unmarshal(bidderExt.Bidder, &taboolaExt); err != nil {
+		if err := jsonutil.Unmarshal(bidderExt.Bidder, &taboolaExt); err != nil {
 			errs = append(errs, err)
 			continue
 		}
@@ -207,21 +215,19 @@ func createTaboolaRequests(request *openrtb2.BidRequest) (taboolaRequests []*ope
 		ID: taboolaExt.PublisherId,
 	}
 
-	if modifiedRequest.Site == nil {
-		newSite := &openrtb2.Site{
-			ID:        taboolaExt.PublisherId,
-			Name:      taboolaExt.PublisherId,
-			Domain:    evaluateDomain(taboolaExt.PublisherDomain, request),
-			Publisher: publisher,
-		}
-		modifiedRequest.Site = newSite
-	} else {
+	if modifiedRequest.Site != nil {
 		modifiedSite := *modifiedRequest.Site
-		modifiedSite.Publisher = publisher
 		modifiedSite.ID = taboolaExt.PublisherId
 		modifiedSite.Name = taboolaExt.PublisherId
 		modifiedSite.Domain = evaluateDomain(taboolaExt.PublisherDomain, request)
+		modifiedSite.Publisher = publisher
 		modifiedRequest.Site = &modifiedSite
+	}
+	if modifiedRequest.App != nil {
+		modifiedApp := *modifiedRequest.App
+		modifiedApp.ID = taboolaExt.PublisherId
+		modifiedApp.Publisher = publisher
+		modifiedRequest.App = &modifiedApp
 	}
 
 	if taboolaExt.BCat != nil {

@@ -6,10 +6,11 @@ import (
 	"net/http"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 const hbconfig = "hb_pbs_1.0.0"
@@ -117,14 +118,14 @@ func (a *OpenxAdapter) makeRequest(request *openrtb2.BidRequest) (*adapters.Requ
 // Mutate the imp to get it ready to send to openx.
 func preprocess(imp *openrtb2.Imp, reqExt *openxReqExt) error {
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
 
 	var openxExt openrtb_ext.ExtImpOpenx
-	if err := json.Unmarshal(bidderExt.Bidder, &openxExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &openxExt); err != nil {
 		return &errortypes.BadInput{
 			Message: err.Error(),
 		}
@@ -143,7 +144,7 @@ func preprocess(imp *openrtb2.Imp, reqExt *openxReqExt) error {
 
 	// outgoing imp.ext should be same as incoming imp.ext minus prebid and bidder
 	impExt := openxImpExt{}
-	if err := json.Unmarshal(imp.Ext, &impExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &impExt); err != nil {
 		return &errortypes.BadInput{
 			Message: err.Error(),
 		}
@@ -173,7 +174,7 @@ func preprocess(imp *openrtb2.Imp, reqExt *openxReqExt) error {
 
 	if imp.Video != nil {
 		videoCopy := *imp.Video
-		if bidderExt.Prebid != nil && bidderExt.Prebid.IsRewardedInventory != nil && *bidderExt.Prebid.IsRewardedInventory == 1 {
+		if imp.Rwdd == 1 {
 			videoCopy.Ext = json.RawMessage(`{"rewarded":1}`)
 		} else {
 			videoCopy.Ext = nil
@@ -202,7 +203,7 @@ func (a *OpenxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRe
 	}
 
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
@@ -215,7 +216,7 @@ func (a *OpenxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRe
 
 	if bidResp.Ext != nil {
 		var bidRespExt openxRespExt
-		if err := json.Unmarshal(bidResp.Ext, &bidRespExt); err == nil && bidRespExt.FledgeAuctionConfigs != nil {
+		if err := jsonutil.Unmarshal(bidResp.Ext, &bidRespExt); err == nil && bidRespExt.FledgeAuctionConfigs != nil {
 			bidResponse.FledgeAuctionConfigs = make([]*openrtb_ext.FledgeAuctionConfig, 0, len(bidRespExt.FledgeAuctionConfigs))
 			for impId, config := range bidRespExt.FledgeAuctionConfigs {
 				fledgeAuctionConfig := &openrtb_ext.FledgeAuctionConfig{
@@ -231,12 +232,24 @@ func (a *OpenxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRe
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     &sb.Bid[i],
-				BidType: getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp),
+				Bid:      &sb.Bid[i],
+				BidType:  getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp),
+				BidVideo: getBidVideo(&sb.Bid[i]),
 			})
 		}
 	}
 	return bidResponse, nil
+}
+
+func getBidVideo(bid *openrtb2.Bid) *openrtb_ext.ExtBidPrebidVideo {
+	var primaryCategory string
+	if len(bid.Cat) > 0 {
+		primaryCategory = bid.Cat[0]
+	}
+	return &openrtb_ext.ExtBidPrebidVideo{
+		PrimaryCategory: primaryCategory,
+		Duration:        int(bid.Dur),
+	}
 }
 
 // getMediaTypeForImp figures out which media type this bid is for.
