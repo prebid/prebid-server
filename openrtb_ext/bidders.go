@@ -342,6 +342,8 @@ func IsPotentialBidder(name string) bool {
 		return false
 	case BidderReservedAE:
 		return false
+	case BidderReservedIGS:
+		return false
 	default:
 		return true
 	}
