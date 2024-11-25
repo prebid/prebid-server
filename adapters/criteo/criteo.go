@@ -6,14 +6,16 @@ import (
 	"net/http"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
-	endpoint string
+	endpoint   string
+	bidderName string
 }
 
 type BidExt struct {
@@ -25,9 +27,23 @@ type ExtPrebid struct {
 	NetworkName string              `json:"networkName"`
 }
 
+type CriteoExt struct {
+	Igi []*CriteoExtIgi `json:"igi"`
+}
+
+type CriteoExtIgi struct {
+	ImpId string          `json:"impid"`
+	Igs   []*CriteoExtIgs `json:"igs"`
+}
+
+type CriteoExtIgs struct {
+	Config json.RawMessage `json:"config"`
+}
+
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
-		endpoint: config.Endpoint,
+		endpoint:   config.Endpoint,
+		bidderName: string(bidderName),
 	}
 	return bidder, nil
 }
@@ -68,7 +84,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	var response openrtb2.BidResponse
-	if err := json.Unmarshal(responseData.Body, &response); err != nil {
+	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}
 
@@ -78,7 +94,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	for _, seatBid := range response.SeatBid {
 		for i := range seatBid.Bid {
 			var bidExt BidExt
-			if err := json.Unmarshal(seatBid.Bid[i].Ext, &bidExt); err != nil {
+			if err := jsonutil.Unmarshal(seatBid.Bid[i].Ext, &bidExt); err != nil {
 				return nil, []error{&errortypes.BadServerResponse{
 					Message: fmt.Sprintf("Missing ext.prebid.type in bid for impression : %s.", seatBid.Bid[i].ImpID),
 				}}
@@ -93,7 +109,34 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		}
 	}
 
+	bidResponse.FledgeAuctionConfigs = a.ParseFledgeAuctionConfigs(response)
+
 	return bidResponse, nil
+}
+
+func (a *adapter) ParseFledgeAuctionConfigs(response openrtb2.BidResponse) []*openrtb_ext.FledgeAuctionConfig {
+	var responseExt CriteoExt
+	if response.Ext != nil {
+		if err := jsonutil.Unmarshal(response.Ext, &responseExt); err == nil && len(responseExt.Igi) > 0 {
+			fledgeAuctionConfigs := make([]*openrtb_ext.FledgeAuctionConfig, 0, len(responseExt.Igi))
+			for _, igi := range responseExt.Igi {
+				if len(igi.Igs) > 0 && igi.Igs[0].Config != nil {
+					fledgeAuctionConfig := &openrtb_ext.FledgeAuctionConfig{
+						ImpId:  igi.ImpId,
+						Bidder: a.bidderName,
+						Config: igi.Igs[0].Config,
+					}
+					fledgeAuctionConfigs = append(fledgeAuctionConfigs, fledgeAuctionConfig)
+				}
+			}
+
+			if len(fledgeAuctionConfigs) > 0 {
+				return fledgeAuctionConfigs
+			}
+		}
+	}
+
+	return nil
 }
 
 func getBidMeta(ext BidExt) *openrtb_ext.ExtBidPrebidMeta {

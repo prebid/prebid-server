@@ -5,10 +5,10 @@ import (
 	"fmt"
 
 	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/hooks"
-	"github.com/prebid/prebid-server/v2/modules/moduledeps"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/hooks"
+	"github.com/prebid/prebid-server/v3/modules/moduledeps"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 //go:generate go run ./generator/buildergen.go

@@ -9,15 +9,16 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/metrics"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/timeutil"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/metrics"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/timeutil"
 )
 
-const clientVersion = "prebid_server_1.0"
+const clientVersion = "prebid_server_1.1"
 
 type adMarkupType string
 
@@ -108,7 +109,7 @@ func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 	}
 
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
@@ -271,7 +272,7 @@ func getAdMarkupType(response *adapters.ResponseData) (adMarkupType, error) {
 		return admType, nil
 	} else {
 		return "", &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("X-Smt-Adtype header is missing!"),
+			Message: fmt.Sprintf("X-Smt-Adtype header is missing."),
 		}
 	}
 }
@@ -330,6 +331,7 @@ func prepareCommonRequest(request *openrtb2.BidRequest) error {
 	}
 
 	setApp(request)
+	setDOOH(request)
 
 	return setExt(request)
 }
@@ -360,7 +362,7 @@ func setUser(request *openrtb2.BidRequest) error {
 	if request.User != nil && request.User.Ext != nil {
 		var userExtRaw map[string]json.RawMessage
 
-		if err := json.Unmarshal(request.User.Ext, &userExtRaw); err != nil {
+		if err := jsonutil.Unmarshal(request.User.Ext, &userExtRaw); err != nil {
 			return &errortypes.BadInput{Message: "Invalid user.ext."}
 		}
 
@@ -368,7 +370,7 @@ func setUser(request *openrtb2.BidRequest) error {
 			var err error
 			var userExtData userExtData
 
-			if err = json.Unmarshal(userExtDataRaw, &userExtData); err != nil {
+			if err = jsonutil.Unmarshal(userExtDataRaw, &userExtData); err != nil {
 				return &errortypes.BadInput{Message: "Invalid user.ext.data."}
 			}
 
@@ -414,7 +416,7 @@ func setSite(request *openrtb2.BidRequest) error {
 		if request.Site.Ext != nil {
 			var siteExt siteExt
 
-			if err := json.Unmarshal(request.Site.Ext, &siteExt); err != nil {
+			if err := jsonutil.Unmarshal(request.Site.Ext, &siteExt); err != nil {
 				return &errortypes.BadInput{Message: "Invalid site.ext."}
 			}
 
@@ -434,6 +436,13 @@ func setApp(request *openrtb2.BidRequest) {
 	}
 }
 
+func setDOOH(request *openrtb2.BidRequest) {
+	if request.DOOH != nil {
+		doohCopy := *request.DOOH
+		request.DOOH = &doohCopy
+	}
+}
+
 func setPublisherId(request *openrtb2.BidRequest, imp *openrtb2.Imp) error {
 	publisherID, err := jsonparser.GetString(imp.Ext, "bidder", "publisherId")
 	if err != nil {
@@ -448,8 +457,12 @@ func setPublisherId(request *openrtb2.BidRequest, imp *openrtb2.Imp) error {
 		// App is already a copy
 		request.App.Publisher = &openrtb2.Publisher{ID: publisherID}
 		return nil
+	} else if request.DOOH != nil {
+		// DOOH is already a copy
+		request.DOOH.Publisher = &openrtb2.Publisher{ID: publisherID}
+		return nil
 	} else {
-		return &errortypes.BadInput{Message: "Missing Site/App."}
+		return &errortypes.BadInput{Message: "Missing Site/App/DOOH."}
 	}
 }
 
@@ -508,14 +521,14 @@ func setImpForAdBreak(imps []openrtb2.Imp) error {
 func makeImpExt(impExtRaw *json.RawMessage) (json.RawMessage, error) {
 	var impExt openrtb_ext.ExtImpExtraDataSmaato
 
-	if err := json.Unmarshal(*impExtRaw, &impExt); err != nil {
+	if err := jsonutil.Unmarshal(*impExtRaw, &impExt); err != nil {
 		return nil, &errortypes.BadInput{Message: "Invalid imp.ext."}
 	}
 
 	if impExtSkadnRaw := impExt.Skadn; impExtSkadnRaw != nil {
 		var impExtSkadn map[string]json.RawMessage
 
-		if err := json.Unmarshal(impExtSkadnRaw, &impExtSkadn); err != nil {
+		if err := jsonutil.Unmarshal(impExtSkadnRaw, &impExtSkadn); err != nil {
 			return nil, &errortypes.BadInput{Message: "Invalid imp.ext.skadn."}
 		}
 	}
@@ -573,7 +586,7 @@ func extractBidExt(bid *openrtb2.Bid) (bidExt, error) {
 	if bid.Ext == nil {
 		return bidExt, nil
 	}
-	if err := json.Unmarshal(bid.Ext, &bidExt); err != nil {
+	if err := jsonutil.Unmarshal(bid.Ext, &bidExt); err != nil {
 		return bidExt, &errortypes.BadServerResponse{Message: "Invalid bid.ext."}
 	}
 	return bidExt, nil
