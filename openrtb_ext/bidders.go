@@ -276,9 +276,8 @@ const (
 	BidderReservedPrebid  BidderName = "prebid"  // Reserved for Prebid Server configuration.
 	BidderReservedSKAdN   BidderName = "skadn"   // Reserved for Apple's SKAdNetwork OpenRTB extension.
 	BidderReservedTID     BidderName = "tid"     // Reserved for Per-Impression Transactions IDs for Multi-Impression Bid Requests.
-	BidderReservedAE      BidderName = "ae"      // Reserved for PAAPI Auction Environment
-	BidderReservedIGS     BidderName = "igs"     // Reserved for PAAPI Auction Environment
-)
+	BidderReservedAE      BidderName = "ae"      // Reserved for PAAPI Auction Environment.
+	BidderReservedIGS     BidderName = "igs"     // Reserved for PAAPI Interest Group Seller object.
 
 // IsBidderNameReserved returns true if the specified name is a case insensitive match for a reserved bidder name.
 func IsBidderNameReserved(name string) bool {
