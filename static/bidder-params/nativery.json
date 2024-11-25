@@ -1,0 +1,15 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Nativery Adapter Params",
+    "description": "A schema which validates params accepted by the Natiery adapter",
+  
+    "type": "object",
+    "properties": {
+      "placement_id": {
+        "type": "string",
+        "description": "An ID which identifies this placement of the impression"
+      }
+    },
+  
+    "required": ["placement_id"]
+  }

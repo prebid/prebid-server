@@ -1,0 +1,13 @@
+endpoint: "http://127.0.0.1:3000/v1/pbjs"
+maintainer:
+  email: "andrea.fassina@nativery.com"
+gvlVendorID: 0000
+disabled: false
+geoscope:
+  - EEA
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - native
+userSync:
