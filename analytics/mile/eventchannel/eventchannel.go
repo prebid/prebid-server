@@ -2,10 +2,10 @@ package eventchannel
 
 import (
 	"fmt"
-	"github.com/prebid/prebid-server/v2/analytics/mile/helpers"
 	"sync"
 	"time"
 
+	"github.com/automatad/prebid-server/v3/analytics/mile/helpers"
 	"github.com/benbjohnson/clock"
 )
 

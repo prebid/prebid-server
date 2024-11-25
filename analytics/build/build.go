@@ -3,8 +3,8 @@ package build
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/v2/analytics/mile"
 
+	"github.com/automatad/prebid-server/v3/analytics/mile"
 	"github.com/benbjohnson/clock"
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/v3/analytics"
