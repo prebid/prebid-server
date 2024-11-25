@@ -1,7 +1,6 @@
 package intertech
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -267,7 +266,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 	}
 
 	var bidResponse openrtb2.BidResponse
-	if err := json.Unmarshal(responseData.Body, &bidResponse); err != nil {
+	if err := jsonutil.Unmarshal(responseData.Body, &bidResponse); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Bad server response: %d", err),
 		}}
