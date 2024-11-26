@@ -7,10 +7,12 @@
     "cId": {
       "type": "string",
       "description": "The connection id.",
-      "minLength": 1
+      "minLength": 1,
+      "pattern": "^[a-zA-Z0-9_]+$"
     }
   },
   "required": [
     "cId"
-  ]
+  ],
+  "additionalProperties": false
 }
