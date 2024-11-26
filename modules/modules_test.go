@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/prebid/prebid-server/v3/di"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"math"
 	"net/http"
 	"testing"
@@ -116,6 +118,93 @@ func TestModuleBuilderBuild(t *testing.T) {
 			assert.Equal(t, test.expectedHookRepo, repo)
 		})
 	}
+}
+
+func TestPlanForDisabledModule(t *testing.T) {
+	testCases := map[string]struct {
+		moduleCode        string
+		enabled           bool
+		expectedPlanLen   int
+		expectedLogOutput string
+	}{
+		"Correct module_code and module enabled = plan contains one hook": {
+			moduleCode:        "prebid.ortb2blocking",
+			enabled:           true,
+			expectedPlanLen:   1,
+			expectedLogOutput: "",
+		},
+		"Incorrect module_code but module enabled = plan contains no hooks": {
+			moduleCode:        "prebid_ortb2blocking",
+			enabled:           true,
+			expectedPlanLen:   0,
+			expectedLogOutput: "Not found hook while building hook execution plan: prebid_ortb2blocking foo",
+		},
+		"Correct module_code but module disabled = plan contains no hooks": {
+			moduleCode:        "prebid.ortb2blocking",
+			enabled:           false,
+			expectedPlanLen:   0,
+			expectedLogOutput: "",
+		},
+	}
+
+	old_logger := di.Logger
+	testLogger := TestLogger{}
+	di.Logger = &testLogger
+	defer func() { di.Logger = old_logger }()
+
+	for name, test := range testCases {
+		t.Run(name, func(t *testing.T) {
+			testLogger.log = ""
+			hooksCfgData, accountCfgData := constructCfg(test.moduleCode, test.enabled)
+			var hooksCfg config.Hooks
+			var accountCfg config.Account
+			var err = jsonutil.UnmarshalValid([]byte(hooksCfgData), &hooksCfg)
+			assert.Nil(t, err)
+
+			err = jsonutil.UnmarshalValid([]byte(accountCfgData), &accountCfg)
+			assert.Nil(t, err)
+
+			planBuilder, err := constructPlanBuilder(hooksCfg)
+			assert.Nil(t, err)
+
+			plan := planBuilder.PlanForRawBidderResponseStage("/openrtb2/auction", &accountCfg)
+			assert.Equal(t, test.expectedPlanLen, len(plan))
+			assert.Equal(t, test.expectedLogOutput, testLogger.log)
+
+		})
+	}
+}
+
+type TestLogger struct {
+	log string
+}
+
+func (logger *TestLogger) Warningf(format string, args ...interface{}) {
+	logger.log = logger.log + fmt.Sprintf(format, args...)
+}
+
+func constructCfg(module_code string, enabled bool) (string, string) {
+	group := `{"timeout":  5, "hook_sequence": [{"module_code": "` + module_code + `", "hook_impl_code": "foo"}]}`
+	executionPlanData := `{"endpoints": {"/openrtb2/auction": {"stages": {"raw_bidder_response": {"groups": [` + group + `]}}}}}`
+	enabledS := `false`
+	if enabled {
+		enabledS = `true`
+	}
+	modules := `"modules": {"prebid": {"ortb2blocking": {"enabled": ` + enabledS + `}}}`
+	hooksCfgData := `{"enabled":true, ` + modules + `, "execution_plan": ` + executionPlanData + `}`
+	accountCfgData := `{"hooks":` + hooksCfgData + `}`
+	return hooksCfgData, accountCfgData
+}
+
+func constructPlanBuilder(cfgHooks config.Hooks) (hooks.ExecutionPlanBuilder, error) {
+	moduleDeps := moduledeps.ModuleDeps{}
+	repo, _, disabledModuleCodes, err := NewBuilder().Build(cfgHooks.Modules, moduleDeps)
+	if err != nil {
+		return nil, err
+	}
+
+	planBuilder := hooks.NewExecutionPlanBuilder(cfgHooks, repo, disabledModuleCodes)
+	return planBuilder, nil
 }
 
 type module struct{}
