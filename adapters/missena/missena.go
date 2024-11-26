@@ -35,7 +35,7 @@ type MissenaAdRequest struct {
 	RefererCanonical string                `json:"referer_canonical,omitempty"`
 	RequestID        string                `json:"request_id,omitempty"`
 	SChain           *openrtb2.SupplyChain `json:"schain,omitempty"`
-	Timeout          int                   `json:"timeout,omitempty"`
+	Timeout          int64                 `json:"timeout,omitempty"`
 	URL              string                `json:"url,omitempty"`
 	UserParams       UserParams            `json:"params"`
 	USPrivacy        string                `json:"us_privacy,omitempty"`
@@ -60,6 +60,8 @@ type MissenaAdapter struct {
 	EndpointTemplate *template.Template
 }
 
+var defaultCur = "USD"
+
 // Builder builds a new instance of the Foo adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	endpoint, err := template.New("endpointTemplate").Parse(config.Endpoint)
@@ -75,8 +77,8 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 func getCurrency(currencies []string) (string, error) {
 	eurAvailable := false
 	for _, cur := range currencies {
-		if cur == "USD" {
-			return "USD", nil
+		if cur == defaultCur {
+			return defaultCur, nil
 		}
 		if cur == "EUR" {
 			eurAvailable = true
@@ -95,15 +97,28 @@ func (a *adapter) getEndPoint(ext *openrtb_ext.ExtImpMissena) (string, error) {
 	return macros.ResolveMacros(a.EndpointTemplate, endPointParams)
 }
 
-func (a *adapter) makeRequest(imp openrtb2.Imp, request *openrtb2.BidRequest, params *openrtb_ext.ExtImpMissena, gdprApplies bool, consentString string) (*adapters.RequestData, error) {
+func (a *adapter) makeRequest(imp openrtb2.Imp, request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo, params *openrtb_ext.ExtImpMissena, gdprApplies bool, consentString string) (*adapters.RequestData, error) {
 	url, err := a.getEndPoint(params)
 	if err != nil {
 		return nil, err
 	}
-	currency, err := getCurrency(request.Cur)
+	cur, err := getCurrency(request.Cur)
 	if err != nil {
-		// TODO: convert unsupported currency on response
-		return nil, err
+		cur = defaultCur
+	}
+
+	var floor float64
+	var floorCur string
+	if imp.BidFloor != 0 {
+		floor = imp.BidFloor
+		floorCur, err = getCurrency(request.Cur)
+		if err != nil {
+			floorCur = defaultCur
+			floor, err = requestInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, floorCur)
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	var schain *openrtb2.SupplyChain
@@ -114,10 +129,10 @@ func (a *adapter) makeRequest(imp openrtb2.Imp, request *openrtb2.BidRequest, pa
 	missenaRequest := MissenaAdRequest{
 		Adunit:           imp.ID,
 		COPPA:            request.Regs.COPPA,
-		Currency:         currency,
+		Currency:         cur,
 		EIDs:             request.User.EIDs,
-		Floor:            imp.BidFloor,
-		FloorCurrency:    imp.BidFloorCur,
+		Floor:            floor,
+		FloorCurrency:    floorCur,
 		GDPR:             gdprApplies,
 		GDPRConsent:      consentString,
 		IdempotencyKey:   request.ID,
@@ -125,7 +140,7 @@ func (a *adapter) makeRequest(imp openrtb2.Imp, request *openrtb2.BidRequest, pa
 		RefererCanonical: request.Site.Domain,
 		RequestID:        request.ID,
 		SChain:           schain,
-		Timeout:          2000,
+		Timeout:          request.TMax,
 		UserParams: UserParams{
 			Formats:   params.Formats,
 			Placement: params.Placement,
@@ -186,7 +201,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			continue
 		}
 
-		newHttpRequest, err := a.makeRequest(imp, request, missenaExt, gdprApplies, consentString)
+		newHttpRequest, err := a.makeRequest(imp, request, requestInfo, missenaExt, gdprApplies, consentString)
 		if err != nil {
 			errors = append(errors, err)
 			continue
