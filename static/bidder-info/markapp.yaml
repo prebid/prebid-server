@@ -1,4 +1,4 @@
-endpoint: "http://markapp-prebid.smart-hub.io/pbserver/?seat={{.AccountID}}&token={{.SourceId}}"
+endpoint: "https://markapp-prebid.attekmi.com/pbserver/?seat={{.AccountID}}&token={{.SourceId}}"
 aliasOf: "smarthub"
 userSync:
   supports:

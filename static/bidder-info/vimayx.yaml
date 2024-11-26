@@ -1,2 +1,2 @@
-endpoint: "http://vimayx-prebid.smart-hub.io/pbserver/?seat={{.AccountID}}&token={{.SourceId}}"
+endpoint: "https://vimayx-prebid.attekmi.com/pbserver/?seat={{.AccountID}}&token={{.SourceId}}"
 aliasOf: "smarthub"
