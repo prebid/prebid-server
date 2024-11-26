@@ -718,18 +718,13 @@ func mergeImpFPD(imp *openrtb2.Imp, fpd json.RawMessage, index int) error {
 	return nil
 }
 
-var allowedImpExtFields = map[string]interface{}{
-	openrtb_ext.AuctionEnvironmentKey:       struct{}{},
-	openrtb_ext.FirstPartyDataExtKey:        struct{}{},
-	openrtb_ext.FirstPartyDataContextExtKey: struct{}{},
-	openrtb_ext.GPIDKey:                     struct{}{},
-	openrtb_ext.SKAdNExtKey:                 struct{}{},
-	openrtb_ext.TIDKey:                      struct{}{},
-}
-
 var allowedImpExtPrebidFields = map[string]interface{}{
 	openrtb_ext.IsRewardedInventoryKey: struct{}{},
 	openrtb_ext.OptionsKey:             struct{}{},
+}
+
+var deniedImpExtFields = map[string]interface{}{
+	openrtb_ext.PrebidExtKey: struct{}{},
 }
 
 func createSanitizedImpExt(impExt, impExtPrebid map[string]json.RawMessage) (map[string]json.RawMessage, error) {
@@ -753,8 +748,8 @@ func createSanitizedImpExt(impExt, impExtPrebid map[string]json.RawMessage) (map
 	}
 
 	// copy reserved imp[].ext fields known to not be bidder names
-	for k := range allowedImpExtFields {
-		if v, exists := impExt[k]; exists {
+	for k, v := range impExt {
+		if _, exists := deniedImpExtFields[k]; !exists {
 			sanitizedImpExt[k] = v
 		}
 	}
