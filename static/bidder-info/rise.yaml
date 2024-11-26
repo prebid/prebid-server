@@ -1,4 +1,7 @@
 endpoint: "https://pbs.yellowblue.io/pbs"
+endpointCompression: gzip
+geoscope:
+  - global
 maintainer:
   email: rise-prog-dev@risecodes.com
 gvlVendorID: 1043
@@ -8,10 +11,12 @@ capabilities:
     mediaTypes:
       - banner
       - video
+      - native
   site:
     mediaTypes:
       - banner
       - video
+      - native
 userSync:
   iframe:
     url: https://pbs-cs.yellowblue.io/pbs-iframe?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirect={{.RedirectURL}}
