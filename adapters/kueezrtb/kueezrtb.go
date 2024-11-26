@@ -65,18 +65,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	return requests, errors
 }
 
-func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
-	switch bid.MType {
-	case openrtb2.MarkupBanner:
-		return openrtb_ext.BidTypeBanner, nil
-	case openrtb2.MarkupVideo:
-		return openrtb_ext.BidTypeVideo, nil
-	}
-	return "", &errortypes.BadInput{
-		Message: fmt.Sprintf("Could not define bid type for imp: %s", bid.ImpID),
-	}
-}
-
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var errs []error
 
@@ -131,4 +119,16 @@ func extractCid(imp *openrtb2.Imp) (string, error) {
 		return "", fmt.Errorf("unmarshal ImpExtkueez: %w", err)
 	}
 	return strings.TrimSpace(impExt.ConnectionId), nil
+}
+
+func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
+	}
+	return "", &errortypes.BadInput{
+		Message: fmt.Sprintf("Could not define bid type for imp: %s", bid.ImpID),
+	}
 }
