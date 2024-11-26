@@ -62,7 +62,7 @@
           "referer": "https://example.com/page",
           "referer_canonical": "example.com",
           "request_id": "test-request-id",
-          "timeout": 2000
+          "timeout": 500
         },
         "impIDs": ["test-imp-id"]
       },
