@@ -102,10 +102,10 @@ const (
 	UserSyncPixel  UserSyncType = "pixel"
 )
 
-// NonBidObject is subset of Bid object with exact json signature
+// ExtNonBidPrebidBid is subset of Bid object with exact json signature
+// defined at https://github.com/prebid/openrtb/blob/v19.0.0/openrtb2/bid.go
 // It also contains the custom fields
-type NonBidObject struct {
-	// SubSet
+type ExtNonBidPrebidBid struct {
 	Price   float64                 `json:"price,omitempty"`
 	ADomain []string                `json:"adomain,omitempty"`
 	CatTax  adcom1.CategoryTaxonomy `json:"cattax,omitempty"`
@@ -121,20 +121,20 @@ type NonBidObject struct {
 	OriginalBidCur string  `json:"origbidcur,omitempty"`
 }
 
-// ExtResponseNonBidPrebid represents bidresponse.ext.prebid.seatnonbid[].nonbid[].ext
-type ExtResponseNonBidPrebid struct {
-	Bid NonBidObject `json:"bid"`
+// ExtNonBidPrebid represents bidresponse.ext.prebid.seatnonbid[].nonbid[].ext
+type ExtNonBidPrebid struct {
+	Bid ExtNonBidPrebidBid `json:"bid"`
 }
 
-type NonBidExt struct {
-	Prebid ExtResponseNonBidPrebid `json:"prebid"`
+type ExtNonBid struct {
+	Prebid ExtNonBidPrebid `json:"prebid"`
 }
 
 // NonBid represnts the Non Bid Reason (statusCode) for given impression ID
 type NonBid struct {
-	ImpId      string     `json:"impid"`
-	StatusCode int        `json:"statuscode"`
-	Ext        *NonBidExt `json:"ext,omitempty"`
+	ImpId      string    `json:"impid"`
+	StatusCode int       `json:"statuscode"`
+	Ext        ExtNonBid `json:"ext,omitempty"`
 }
 
 // SeatNonBid is collection of NonBid objects with seat information
