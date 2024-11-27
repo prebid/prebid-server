@@ -1,0 +1,20 @@
+endpoint: http://prebid.loopmertb.com
+geoscope:
+  - global
+maintainer:
+  email: "prebid@loopme.com"
+gvlVendorID: 109
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+      - audio
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+      - audio
+
