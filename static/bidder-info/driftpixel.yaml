@@ -13,7 +13,6 @@ capabilities:
       - video
       - native
 userSync:
-  # DriftPixel supports user syncing, but requires configuration by the host. contact this
-  # bidder directly at the email address in this file to ask about enabling user sync.
-  supports:
-    - redirect
+  redirect:
+    url: "https://sync.driftpixel.live/psync?t=s&e=0&gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&cb={{.RedirectURL}}"
+    userMacro: "%USER_ID%"
