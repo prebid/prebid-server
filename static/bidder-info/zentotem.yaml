@@ -1,0 +1,16 @@
+endpoint: "https://rtb.zentotem.net/bid?sspuid=cqlnvfk00bhs0b6rci6g"
+maintainer:
+  email: support@zentotem.net
+endpointCompression: gzip
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
