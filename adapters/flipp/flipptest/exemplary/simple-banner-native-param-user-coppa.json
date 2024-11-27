@@ -33,7 +33,7 @@
                                 "siteId": 1243066,
                                 "zoneIds": [285431],
                                 "options": {
-                                   "startCompact": true
+                                   "startCompact": false
                                 },
                                 "userKey": "abc123"
                         }
@@ -74,7 +74,7 @@
                              285431
                           ],
                           "options": {
-                             "startCompact": true
+                             
                           }
                        }
                     ],
@@ -168,7 +168,8 @@
                         "price": 12.34,
                         "adm": "creativeContent",
                         "crid": "81325690",
-                        "w": 300
+                        "w": 300,
+                        "h": 2400
                     },
                     "type": "banner"
                 }
