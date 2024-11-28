@@ -1,0 +1,105 @@
+{
+  "mockBidRequest": {
+    "id": "request_id",
+    "imp": [
+      {
+        "id": "imp_id",
+        "native": {
+          "request": "{}",
+          "ver": "1"
+        },
+        "ext": {
+          "bidder": {
+            "adUnitId": 18,
+            "auth": "fb71a1ec1d4c0b7e3f0a21703fece91d8b65be44"
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "www.example.com",
+      "page": "http://www.example.com"
+    },
+    "cur": [
+      "USD"
+    ],
+    "device": {
+      "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36",
+      "ip": "127.0.0.1",
+      "language": "EN"
+    },
+    "tmax": 500
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://example.com/auction?id=18&auth=fb71a1ec1d4c0b7e3f0a21703fece91d8b65be44",
+        "body": {
+          "id": "request_id",
+          "imp": [
+            {
+              "id": "imp_id",
+              "native": {
+                "request": "{}",
+                "ver": "1"
+              },
+              "ext": {
+                "bidder": {
+                  "adUnitId": 18,
+                  "auth": "fb71a1ec1d4c0b7e3f0a21703fece91d8b65be44"
+                }
+              }
+            }
+          ],
+          "site": {
+            "domain": "www.example.com",
+            "page": "http://www.example.com"
+          },
+          "cur": [
+            "USD"
+          ],
+          "device": {
+            "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36",
+            "ip": "127.0.0.1",
+            "language": "EN"
+          },
+          "tmax": 500
+        },
+        "impIDs":["imp_id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "headers": {},
+        "body": {
+          "id": "request_id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid_id",
+                  "impid": "imp_id",
+                  "price": 1.25,
+                  "crid": "crid",
+                  "adm": "invalid",
+                  "h": 600,
+                  "w": 300,
+                  "mtype": 4
+                }
+              ]
+            }
+          ],
+          "bidid": "bid_id",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "unable to unmarshal native adm",
+      "comparison": "literal"
+    }
+  ]
+}

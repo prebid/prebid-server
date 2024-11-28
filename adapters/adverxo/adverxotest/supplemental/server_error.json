@@ -1,0 +1,82 @@
+{
+  "mockBidRequest": {
+    "id": "request_id",
+    "imp": [
+      {
+        "id": "imp_id",
+        "banner": {
+          "w": 300,
+          "h": 600
+        },
+        "ext": {
+          "bidder": {
+            "adUnitId": 1,
+            "auth": "tokenExample1"
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "www.example.com",
+      "page": "http://www.example.com"
+    },
+    "cur": [
+      "USD"
+    ],
+    "device": {
+      "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36",
+      "ip": "127.0.0.1"
+    },
+    "tmax": 500
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://example.com/auction?id=1&auth=tokenExample1",
+        "body": {
+          "id": "request_id",
+          "imp": [
+            {
+              "id": "imp_id",
+              "banner": {
+                "w": 300,
+                "h": 600
+              },
+              "ext": {
+                "bidder": {
+                  "adUnitId": 1,
+                  "auth": "tokenExample1"
+                }
+              }
+            }
+          ],
+          "site": {
+            "domain": "www.example.com",
+            "page": "http://www.example.com"
+          },
+          "cur": [
+            "USD"
+          ],
+          "device": {
+            "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36",
+            "ip": "127.0.0.1"
+          },
+          "tmax": 500
+        },
+        "impIDs":["imp_id"]
+      },
+      "mockResponse": {
+        "status": 500,
+        "body": "",
+        "headers": {}
+      }
+    }
+  ],
+  "expectedBidResponses": [],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 500. Run with request.debug = 1 for more info.",
+      "comparison": "literal"
+    }
+  ]
+}

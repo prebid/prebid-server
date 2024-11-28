@@ -1,0 +1,19 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Adverxo Adapter Params",
+    "description": "A schema which validates params accepted by the Adverxo adapter",
+    "type": "object",
+    "properties": {
+      "adUnitId": {
+        "type": "integer",
+        "minimum": 1,
+        "description": "Unique identifier for the ad unit in Adverxo platform."
+      },
+      "auth": {
+        "type": "string",
+        "minLength": 6,
+        "description": "Authentication token provided by Adverxo platform for the AdUnit."
+      }
+    },
+    "required": ["adUnitId", "auth"]
+  }
