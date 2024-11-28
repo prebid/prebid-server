@@ -1,11 +1,11 @@
 package mediasquare
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 // msqResponse: Bid-Response sent by mediasquare.
@@ -106,24 +106,24 @@ type msqFloor struct {
 }
 
 type mediaTypeNativeBasis struct {
-	Required bool
-	Len      *int
+	Required bool `json:"required,omitempty"`
+	Len      *int `json:"len,omitempty"`
 }
 
 type mediaTypeNativeImage struct {
-	Required     bool
-	Sizes        []*int
+	Required     bool   `json:"required"`
+	Sizes        []*int `json:"sizes,omitempty"`
 	Aspect_ratio *struct {
-		Min_width    *int
-		Min_height   *int
-		Ratio_width  *int
-		Ratio_height *int
-	}
+		Min_width    *int `json:"min_width,omitempty"`
+		Min_height   *int `json:"min_height,omitempty"`
+		Ratio_width  *int `json:"ratio_width,omitempty"`
+		Ratio_height *int `json:"ratio_height,omitempty"`
+	} `json:"aspect_ratio,omitempty"`
 }
 
 type mediaTypeNativeTitle struct {
-	Required bool
-	Len      int
+	Required bool `json:"required,omitempty"`
+	Len      int  `json:"len,omitempty"`
 }
 
 type mediaTypeNative struct {
@@ -214,9 +214,9 @@ func (msqParams *msqParametersCodes) setContent(currentImp openrtb2.Imp) (ok boo
 	if currentImp.Video != nil {
 		ok = true
 		var video mediaTypeVideo
-		currentVideoBytes, _ := json.Marshal(currentImp.Video)
-		json.Unmarshal(currentVideoBytes, &video)
-		json.Unmarshal(currentImp.Video.Ext, &video)
+		currentVideoBytes, _ := jsonutil.Marshal(currentImp.Video)
+		jsonutil.Unmarshal(currentVideoBytes, &video)
+		jsonutil.Unmarshal(currentImp.Video.Ext, &video)
 
 		msqParams.Mediatypes.Video = &video
 		if msqParams.Mediatypes.Video != nil {
@@ -230,7 +230,7 @@ func (msqParams *msqParametersCodes) setContent(currentImp openrtb2.Imp) (ok boo
 	if currentImp.Banner != nil {
 		ok = true
 		var banner mediaTypeBanner
-		json.Unmarshal(currentImp.Banner.Ext, &banner)
+		jsonutil.Unmarshal(currentImp.Banner.Ext, &banner)
 
 		msqParams.Mediatypes.Banner = &banner
 		switch {
@@ -258,7 +258,7 @@ func (msqParams *msqParametersCodes) setContent(currentImp openrtb2.Imp) (ok boo
 	if currentImp.Native != nil {
 		ok = true
 		var native = mediaTypeNative{Type: "native"}
-		json.Unmarshal(currentImp.Native.Ext, &native)
+		jsonutil.Unmarshal(currentImp.Native.Ext, &native)
 
 		msqParams.Mediatypes.Native = &native
 		for _, nativeSizes := range msqParams.Mediatypes.Native.Sizes {

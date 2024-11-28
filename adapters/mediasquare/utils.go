@@ -6,6 +6,7 @@ import (
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 var headerList = map[string][]string{
@@ -48,7 +49,7 @@ func (msqBids *msqResponseBids) bidType() openrtb_ext.BidType {
 func (msqBids *msqResponseBids) extBid() (raw json.RawMessage) {
 	extBid, _ := msqBids.loadExtBid()
 	if extBid.DSA != nil || extBid.Prebid != nil {
-		if bb, _ := json.Marshal(extBid); len(bb) > 0 {
+		if bb, _ := jsonutil.Marshal(extBid); len(bb) > 0 {
 			raw = json.RawMessage(bb)
 		}
 	}
@@ -58,13 +59,13 @@ func (msqBids *msqResponseBids) extBid() (raw json.RawMessage) {
 // loadExtBid: Extracts the ExtBid from msqBids as (openrtb_ext.ExtBid, []error).
 func (msqBids *msqResponseBids) loadExtBid() (extBid openrtb_ext.ExtBid, errs []error) {
 	if msqBids.Dsa != nil {
-		bb, err := json.Marshal(msqBids.Dsa)
+		bb, err := jsonutil.Marshal(msqBids.Dsa)
 		if err != nil {
 			errs = append(errs, err)
 		}
 		if len(bb) > 0 {
 			var dsa openrtb_ext.ExtBidDSA
-			if err = json.Unmarshal(bb, &dsa); err != nil {
+			if err = jsonutil.Unmarshal(bb, &dsa); err != nil {
 				errs = append(errs, err)
 			} else {
 				extBid.DSA = &dsa

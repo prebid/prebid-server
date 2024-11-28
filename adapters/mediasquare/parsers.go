@@ -1,13 +1,13 @@
 package mediasquare
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
-// parserDSA: Struct used to extracts dsa content of a json.
+// parserDSA: Struct used to extracts dsa content of a jsonutil.
 type parserDSA struct {
 	DSA interface{} `json:"dsa,omitempty"`
 }
@@ -15,7 +15,7 @@ type parserDSA struct {
 // setContent: Unmarshal a []byte into the parserDSA struct.
 func (parser *parserDSA) setContent(extJsonBytes []byte) error {
 	if len(extJsonBytes) > 0 {
-		if err := json.Unmarshal(extJsonBytes, parser); err != nil {
+		if err := jsonutil.Unmarshal(extJsonBytes, parser); err != nil {
 			return errorWritter("<setContent(*parserDSA)> extJsonBytes", err, false)
 		}
 		return nil
@@ -24,18 +24,18 @@ func (parser *parserDSA) setContent(extJsonBytes []byte) error {
 }
 
 // getValue: Returns the DSA value as a string, defaultly returns empty-string.
-func (parser parserDSA) getValue(request *openrtb2.BidRequest) string {
+func (parser parserDSA) getValue(request *openrtb2.BidRequest) (dsa string) {
 	if request == nil || request.Regs == nil {
-		return ""
+		return
 	}
 	parser.setContent(request.Regs.Ext)
 	if parser.DSA != nil {
-		return fmt.Sprint(parser.DSA)
+		dsa = fmt.Sprint(parser.DSA)
 	}
-	return ""
+	return
 }
 
-// parserGDPR: Struct used to extract pair of GDPR/Consent of a json.
+// parserGDPR: Struct used to extract pair of GDPR/Consent of a jsonutil.
 type parserGDPR struct {
 	GDPR    interface{} `json:"gdpr,omitempty"`
 	Consent interface{} `json:"consent,omitempty"`
@@ -44,7 +44,7 @@ type parserGDPR struct {
 // setContent: Unmarshal a []byte into the parserGDPR struct.
 func (parser *parserGDPR) setContent(extJsonBytes []byte) error {
 	if len(extJsonBytes) > 0 {
-		if err := json.Unmarshal(extJsonBytes, parser); err != nil {
+		if err := jsonutil.Unmarshal(extJsonBytes, parser); err != nil {
 			return errorWritter("<setContent(*parserGDPR)> extJsonBytes", err, false)
 		}
 		return nil
@@ -53,34 +53,32 @@ func (parser *parserGDPR) setContent(extJsonBytes []byte) error {
 }
 
 // value: Returns the consent or GDPR-string depending of the parserGDPR content, defaulty return empty-string.
-func (parser *parserGDPR) value() string {
+func (parser *parserGDPR) value() (gdpr string) {
 	switch {
 	case parser.Consent != nil:
-		return fmt.Sprint(parser.Consent)
+		gdpr = fmt.Sprint(parser.Consent)
 	case parser.GDPR != nil:
-		return fmt.Sprint(parser.GDPR)
+		gdpr = fmt.Sprint(parser.GDPR)
 	}
-	return ""
+	return
 }
 
 // getValue: Returns the consent or GDPR-string depending on the openrtb2.User content, defaultly returns empty-string.
-func (parser parserGDPR) getValue(field string, request *openrtb2.BidRequest) string {
-	if request == nil {
-		return ""
-	}
-	switch {
-	case field == "consent_requirement" && request.Regs != nil:
-		if ptrInt8ToBool(request.Regs.GDPR) {
-			return "true"
+func (parser parserGDPR) getValue(field string, request *openrtb2.BidRequest) (gdpr string) {
+	if request != nil {
+		switch {
+		case field == "consent_requirement" && request.Regs != nil:
+			gdpr = "false"
+			if ptrInt8ToBool(request.Regs.GDPR) {
+				gdpr = "true"
+			}
+		case field == "consent_string" && request.User != nil:
+			gdpr = request.User.Consent
+			if len(gdpr) <= 0 {
+				parser.setContent(request.User.Ext)
+				gdpr = parser.value()
+			}
 		}
-		return "false"
-	case field == "consent_string" && request.User != nil:
-		if len(request.User.Consent) > 0 {
-			return request.User.Consent
-		}
-		parser.setContent(request.User.Ext)
-		return parser.value()
-	default:
-		return ""
 	}
+	return
 }
