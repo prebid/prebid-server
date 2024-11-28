@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -189,8 +189,10 @@ func TestUserExt(t *testing.T) {
 
 func TestRebuildImp(t *testing.T) {
 	var (
-		prebid     = &ExtImpPrebid{IsRewardedInventory: openrtb2.Int8Ptr(1)}
-		prebidJson = json.RawMessage(`{"prebid":{"is_rewarded_inventory":1}}`)
+		prebid                   = &ExtImpPrebid{IsRewardedInventory: openrtb2.Int8Ptr(1)}
+		prebidJson               = json.RawMessage(`{"prebid":{"is_rewarded_inventory":1}}`)
+		prebidWithAdunitCode     = &ExtImpPrebid{AdUnitCode: "adunitcode"}
+		prebidWithAdunitCodeJson = json.RawMessage(`{"prebid":{"adunitcode":"adunitcode"}}`)
 	)
 
 	testCases := []struct {
@@ -218,6 +220,13 @@ func TestRebuildImp(t *testing.T) {
 			request:           openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "1"}}},
 			requestImpWrapper: []*ImpWrapper{{Imp: &openrtb2.Imp{ID: "2"}, impExt: &ImpExt{prebid: prebid, prebidDirty: true}}},
 			expectedRequest:   openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "2", Ext: prebidJson}}},
+			expectedAccessed:  true,
+		},
+		{
+			description:       "One - Accessed - Dirty - AdUnitCode",
+			request:           openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "1"}}},
+			requestImpWrapper: []*ImpWrapper{{Imp: &openrtb2.Imp{ID: "1"}, impExt: &ImpExt{prebid: prebidWithAdunitCode, prebidDirty: true}}},
+			expectedRequest:   openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "1", Ext: prebidWithAdunitCodeJson}}},
 			expectedAccessed:  true,
 		},
 		{
