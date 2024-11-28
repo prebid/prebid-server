@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 func TestValidParams(t *testing.T) {
@@ -21,11 +21,9 @@ func TestValidParams(t *testing.T) {
 }
 
 var validParams = []string{
+	`{}`,
 	`{"adUnitId": "12", "assetKey": "OGY"}`,
-	`{"publisherId": "00000000-0000-0000-0000-000000000000"}`,
-	`{"publisherId": "00000000-0000-0000-0000-000000000000", "assetKey": "ogy"}`,
-	`{"publisherId": "00000000-0000-0000-0000-000000000000", "adUnitId": "12"}`,
-	`{"publisherId": "00000000-0000-0000-0000-000000000000", "assetKey": "ogy asset", "adUnitId": "1"}`,
+	`{"adUnitId": "123", "assetKey": "OGY", "thirdParam": "something"}`,
 }
 
 func TestInvalidParams(t *testing.T) {
@@ -49,5 +47,4 @@ var invalidParams = []string{
 	`{"assetKey": "ogy asset"}`,
 	`{"adUnitId": 12, "assetKey": "OGY"}`,
 	`{"adUnitId": "45test", "assetKey": false}`,
-	`{"publisherId": true}`,
 }

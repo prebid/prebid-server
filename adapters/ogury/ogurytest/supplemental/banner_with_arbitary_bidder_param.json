@@ -9,6 +9,9 @@
         },
         "ext": {
           "gpid": "global position id",
+          "prebid": {
+            "adunitcode": "ad-unit-code"
+          },
           "bidder": {
             "assetKey": "OGY",
             "adUnitId": "123",
@@ -28,7 +31,7 @@
           "imp": [
             {
               "id":"test-imp-id",
-              "tagid": "test-imp-id",
+              "tagid": "ad-unit-code",
               "banner": {
                 "format": [{"w": 128, "h": 100}]
               },
@@ -36,7 +39,10 @@
                 "gpid": "global position id",
                 "assetKey": "OGY",
                 "adUnitId": "123",
-                "testcampaign": "test123"
+                "testcampaign": "test123",
+                "prebid": {
+                  "adunitcode": "ad-unit-code"
+                }
               }
             }
           ]

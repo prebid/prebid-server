@@ -1,11 +1,6 @@
 {
   "mockBidRequest": {
     "id": "test-request-id",
-    "site": {
-      "publisher": {
-        "id": "pub123"
-      }
-    },
     "imp": [
       {
         "id": "test-imp-id",
@@ -13,8 +8,10 @@
           "format": [{"w": 128, "h": 100}]
         },
         "ext": {
-          "prebid": {
-            "adunitcode": "ad-unit-code"
+          "gpid": "global position id",
+          "bidder": {
+            "assetKey": "OGY",
+            "adUnitId": "123"
           }
         }
       }
@@ -27,22 +24,17 @@
         "uri": "http://ogury.example.com",
         "body": {
           "id": "test-request-id",
-          "site": {
-            "publisher": {
-              "id": "pub123"
-            }
-          },
           "imp": [
             {
               "id":"test-imp-id",
-              "tagid": "ad-unit-code",
+              "tagid": "test-imp-id",
               "banner": {
                 "format": [{"w": 128, "h": 100}]
               },
               "ext": {
-                "prebid": {
-                  "adunitcode": "ad-unit-code"
-                }
+                "gpid": "global position id",
+                "assetKey": "OGY",
+                "adUnitId": "123"
               }
             }
           ]

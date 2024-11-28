@@ -8,10 +8,10 @@ import (
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 type oguryAdapter struct {
@@ -28,9 +28,16 @@ func Builder(_ openrtb_ext.BidderName, config config.Adapter, _ config.Server) (
 func (a oguryAdapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	headers := setHeaders(request)
 
+	request.Imp = filterValidImps(request)
+	if len(request.Imp) == 0 {
+		return nil, []error{&errortypes.BadInput{
+			Message: "Invalid request. assetKey/adUnitId or request.site.publisher.id required",
+		}}
+	}
+
 	var errors []error
-	var impExt, impExtBidderHoist map[string]json.RawMessage
 	for i, imp := range request.Imp {
+		var impExt, impExtBidderHoist map[string]json.RawMessage
 		// extract ext
 		if err := json.Unmarshal(imp.Ext, &impExt); err != nil {
 			return nil, append(errors, &errortypes.BadInput{
@@ -38,21 +45,19 @@ func (a oguryAdapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *ad
 			})
 		}
 		// find Ogury bidder params
-		bidder, ok := impExt["bidder"]
-		if ok {
+		if bidder, ok := impExt[openrtb_ext.PrebidExtBidderKey]; ok {
 			if err := json.Unmarshal(bidder, &impExtBidderHoist); err != nil {
 				return nil, append(errors, &errortypes.BadInput{
-					Message: "Bidder extension not provided or can't be unmarshalled",
+					Message: "Ogury bidder extension not provided or can't be unmarshalled",
 				})
 			}
-
 		}
 
 		impExtOut := make(map[string]any, len(impExt)-1+len(impExtBidderHoist))
 
 		// extract Ogury "bidder" params from imp.ext.bidder to imp.ext
 		for key, value := range impExt {
-			if key != "bidder" {
+			if key != openrtb_ext.PrebidExtBidderKey {
 				impExtOut[key] = value
 			}
 		}
@@ -66,14 +71,14 @@ func (a oguryAdapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *ad
 				Message: "Error while marshaling Imp.Ext bidder exension",
 			})
 		}
+		request.Imp[i].Ext = ext
 
 		// save adUnitCode
-		request.Imp[i].TagID = imp.ID
-		if impExtOut["gpid"] == "" {
-			impExtOut["gpid"] = imp.ID
+		if adUnitCode := getAdUnitCode(impExt); adUnitCode != "" {
+			request.Imp[i].TagID = adUnitCode
+		} else {
+			request.Imp[i].TagID = imp.ID
 		}
-
-		request.Imp[i].Ext = ext
 	}
 
 	// currency conversion
@@ -111,6 +116,51 @@ func (a oguryAdapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *ad
 
 }
 
+func filterValidImps(request *openrtb2.BidRequest) (validImps []openrtb2.Imp) {
+	for _, imp := range request.Imp {
+		var impExt adapters.ExtImpBidder
+		var impExtOgury openrtb_ext.ImpExtOgury
+
+		if err := json.Unmarshal(imp.Ext, &impExt); err != nil {
+			continue
+		}
+		if err := json.Unmarshal(impExt.Bidder, &impExtOgury); err != nil {
+			continue
+		}
+		if impExtOgury.AssetKey != "" && impExtOgury.AdUnitID != "" {
+			validImps = append(validImps, imp)
+		}
+	}
+
+	// if we have imp with assetKey/adUnitId then we want to serve them
+	if len(validImps) > 0 {
+		return validImps
+	}
+
+	// no assetKey/adUnitId imps then we serve everything if publisher.ID exists
+	if request.Site != nil && request.Site.Publisher.ID != "" {
+		return request.Imp
+	}
+
+	// else no valid imp
+	return nil
+}
+
+func getAdUnitCode(ext map[string]json.RawMessage) string {
+	var prebidExt openrtb_ext.ExtImpPrebid
+	v, ok := ext["prebid"]
+	if !ok {
+		return ""
+	}
+
+	err := json.Unmarshal(v, &prebidExt)
+	if err != nil {
+		return ""
+	}
+
+	return prebidExt.AdUnitCode
+}
+
 func setHeaders(request *openrtb2.BidRequest) http.Header {
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
@@ -144,21 +194,10 @@ func getMediaTypeForBid(impressions []openrtb2.Imp, bid openrtb2.Bid) (openrtb_e
 }
 
 func (a oguryAdapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if responseData.StatusCode == http.StatusNoContent {
+	if adapters.IsResponseStatusCodeNoContent(responseData) {
 		return nil, nil
 	}
-
-	if responseData.StatusCode == http.StatusBadRequest {
-		err := &errortypes.BadInput{
-			Message: "Unexpected status code: 400. Bad request from publisher. Run with request.debug = 1 for more info.",
-		}
-		return nil, []error{err}
-	}
-
-	if responseData.StatusCode != http.StatusOK {
-		err := &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info.", responseData.StatusCode),
-		}
+	if err := adapters.CheckResponseStatusCodeForErrors(responseData); err != nil {
 		return nil, []error{err}
 	}
 

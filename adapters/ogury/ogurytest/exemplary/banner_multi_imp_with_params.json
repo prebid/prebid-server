@@ -13,8 +13,36 @@
           "format": [{"w": 128, "h": 100}]
         },
         "ext": {
+          "gpid": "global position id",
           "prebid": {
             "adunitcode": "ad-unit-code"
+          },
+          "bidder": {
+            "assetKey": "OGY",
+            "adUnitId": "123"
+          }
+        }
+      },
+      {
+        "id": "test-imp-id-2",
+        "banner": {
+          "format": [{"w": 128, "h": 100}]
+        },
+        "ext": {"bidder": {}}
+      },
+      {
+        "id": "test-imp-id-3",
+        "banner": {
+          "format": [{"w": 1, "h": 1}]
+        },
+        "ext": {
+          "gpid": "global position id",
+          "prebid": {
+            "adunitcode": "ad-unit-code-2"
+          },
+          "bidder": {
+            "assetKey": "OGY3",
+            "adUnitId": "1234"
           }
         }
       }
@@ -40,14 +68,32 @@
                 "format": [{"w": 128, "h": 100}]
               },
               "ext": {
+                "gpid": "global position id",
+                "assetKey": "OGY",
+                "adUnitId": "123",
                 "prebid": {
                   "adunitcode": "ad-unit-code"
+                }
+              }
+            },
+            {
+              "id":"test-imp-id-3",
+              "tagid": "ad-unit-code-2",
+              "banner": {
+                "format": [{"w": 1, "h": 1}]
+              },
+              "ext": {
+                "gpid": "global position id",
+                "assetKey": "OGY3",
+                "adUnitId": "1234",
+                "prebid": {
+                  "adunitcode": "ad-unit-code-2"
                 }
               }
             }
           ]
         },
-        "impIDs":["test-imp-id"]
+        "impIDs":["test-imp-id", "test-imp-id-3"]
       },
       "mockResponse": {
         "status": 200,

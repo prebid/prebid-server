@@ -13,10 +13,19 @@
           "format": [{"w": 128, "h": 100}]
         },
         "ext": {
+          "gpid": "global position id",
           "prebid": {
             "adunitcode": "ad-unit-code"
-          }
+          },
+          "bidder": {}
         }
+      },
+      {
+        "id": "test-imp-id-2",
+        "banner": {
+          "format": [{"w": 128, "h": 100}]
+        },
+        "ext": {"bidder": {}}
       }
     ]
   },
@@ -40,14 +49,23 @@
                 "format": [{"w": 128, "h": 100}]
               },
               "ext": {
+                "gpid": "global position id",
                 "prebid": {
                   "adunitcode": "ad-unit-code"
                 }
               }
+            },
+            {
+              "id": "test-imp-id-2",
+              "tagid": "test-imp-id-2",
+              "banner": {
+                "format": [{"w": 128, "h": 100}]
+              },
+              "ext": {}
             }
           ]
         },
-        "impIDs":["test-imp-id"]
+        "impIDs":["test-imp-id", "test-imp-id-2"]
       },
       "mockResponse": {
         "status": 200,
