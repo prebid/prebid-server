@@ -500,7 +500,6 @@ func setImpForAdBreak(imps []openrtb2.Imp) error {
 	if err != nil {
 		return err
 	}
-	ext := firstImp.Ext
 
 	for i := range imps {
 		imps[i].TagID = adBreakID
@@ -514,7 +513,7 @@ func setImpForAdBreak(imps []openrtb2.Imp) error {
 		imps[i].Video = &videoCopy
 	}
 
-	imps[0].Ext = ext
+	imps[0].Ext = firstImp.Ext
 
 	return nil
 }
@@ -541,6 +540,7 @@ func removeBidderNodeFromImpExt(imp *openrtb2.Imp) error {
 	}
 	return nil
 }
+
 func groupImpressionsByPod(imps []openrtb2.Imp) (map[string]([]openrtb2.Imp), []string, []error) {
 	pods := make(map[string][]openrtb2.Imp)
 	orderKeys := make([]string, 0)
