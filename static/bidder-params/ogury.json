@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Ogury Adapter Params",
+  "description": "A schema which validates params accepted by the Ogury adapter",
+  "type": "object",
+
+  "properties": {
+    "assetKey": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Ogury provided id for you site."
+    },
+    "adUnitId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Ogury provided id for you placement."
+    },
+    "publisherId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Ogury provided publisher id."
+    }
+  },
+
+  "anyOf": [
+    { "required": ["assetKey", "adUnitId"] },
+    { "required": ["publisherId"] }
+  ]
+}
+
