@@ -14,18 +14,16 @@ import (
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
-type oguryAdapter struct {
+type adapter struct {
 	endpoint string
 }
 
 func Builder(_ openrtb_ext.BidderName, config config.Adapter, _ config.Server) (adapters.Bidder, error) {
-	adapter := &oguryAdapter{
-		endpoint: config.Endpoint,
-	}
-	return adapter, nil
+	return &adapter{endpoint: config.Endpoint,}, nil
+
 }
 
-func (a oguryAdapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	headers := setHeaders(request)
 
 	request.Imp = filterValidImps(request)
@@ -193,7 +191,7 @@ func getMediaTypeForBid(impressions []openrtb2.Imp, bid openrtb2.Bid) (openrtb_e
 	}
 }
 
-func (a oguryAdapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if adapters.IsResponseStatusCodeNoContent(responseData) {
 		return nil, nil
 	}
