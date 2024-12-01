@@ -9,8 +9,6 @@ capabilities:
     - audio
 gvlVendorID: 1162
 userSync:
-  key: resetdigital
-  supportCors: false
   redirect:
-    url: https://sync.resetdigital.co/csync?pid=rubicon&redir={{redirect_url}}
+    url: https://sync.resetdigital.co/csync?redir={{.RedirectURL}}
     userMacro: '$USER_ID'
