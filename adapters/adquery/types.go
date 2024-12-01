@@ -1,6 +1,6 @@
 package adquery
 
-import "github.com/prebid/prebid-server/v2/openrtb_ext"
+import "github.com/prebid/prebid-server/v3/openrtb_ext"
 
 type BidderRequest struct {
 	V                   string `json:"v"`

@@ -12,9 +12,9 @@ import (
 	"github.com/golang/glog"
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"github.com/spf13/viper"
 )
 
@@ -68,9 +68,9 @@ type Configuration struct {
 
 	VideoStoredRequestRequired bool `mapstructure:"video_stored_request_required"`
 
-	// Array of blacklisted apps that is used to create the hash table BlacklistedAppMap so App.ID's can be instantly accessed.
-	BlacklistedApps   []string `mapstructure:"blacklisted_apps,flow"`
-	BlacklistedAppMap map[string]bool
+	// Array of blocked apps that is used to create the hash table BlockedAppsLookup so App.ID's can be instantly accessed.
+	BlockedApps       []string `mapstructure:"blocked_apps,flow"`
+	BlockedAppsLookup map[string]bool
 	// Is publisher/account ID required to be submitted in the OpenRTB2 request
 	AccountRequired bool `mapstructure:"account_required"`
 	// AccountDefaults defines default settings for valid accounts that are partially defined
@@ -796,10 +796,10 @@ func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName openrtb_ex
 	}
 
 	// To look for a request's app_id in O(1) time, we fill this hash table located in the
-	// the BlacklistedApps field of the Configuration struct defined in this file
-	c.BlacklistedAppMap = make(map[string]bool)
-	for i := 0; i < len(c.BlacklistedApps); i++ {
-		c.BlacklistedAppMap[c.BlacklistedApps[i]] = true
+	// the BlockedApps field of the Configuration struct defined in this file
+	c.BlockedAppsLookup = make(map[string]bool)
+	for i := 0; i < len(c.BlockedApps); i++ {
+		c.BlockedAppsLookup[c.BlockedApps[i]] = true
 	}
 
 	// Migrate combo stored request config to separate stored_reqs and amp stored_reqs configs.
@@ -1148,8 +1148,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("default_request.type", "")
 	v.SetDefault("default_request.file.name", "")
 	v.SetDefault("default_request.alias_info", false)
-	v.SetDefault("blacklisted_apps", []string{""})
-	v.SetDefault("blacklisted_accts", []string{""})
+	v.SetDefault("blocked_apps", []string{""})
 	v.SetDefault("account_required", false)
 	v.SetDefault("account_defaults.disabled", false)
 	v.SetDefault("account_defaults.debug_allow", true)
