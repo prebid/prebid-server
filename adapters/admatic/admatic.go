@@ -68,11 +68,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		}
 
 		request := &adapters.RequestData{
-			Method: http.MethodPost,
-			Body:   requestJSON,
-			Uri:    endpoint,
+			Method:  http.MethodPost,
+			Body:    requestJSON,
+			Uri:     endpoint,
 			Headers: headers,
-			ImpIDs: openrtb_ext.GetImpIDs(requestCopy.Imp),
+			ImpIDs:  openrtb_ext.GetImpIDs(requestCopy.Imp),
 		}
 
 		requests = append(requests, request)
