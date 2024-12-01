@@ -8,10 +8,11 @@ import (
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -47,7 +48,7 @@ func (a *adapter) MakeRequests(bidRequest *openrtb2.BidRequest, reqInfo *adapter
 		var impactifyExt ImpactifyExtBidder
 
 		var defaultExt DefaultExtBidder
-		err := json.Unmarshal(bidRequest.Imp[i].Ext, &defaultExt)
+		err := jsonutil.Unmarshal(bidRequest.Imp[i].Ext, &defaultExt)
 		if err != nil {
 			return nil, []error{&errortypes.BadInput{
 				Message: fmt.Sprintf("Unable to decode the imp ext : \"%s\"", bidRequest.Imp[i].ID),
@@ -128,7 +129,7 @@ func (a *adapter) MakeBids(
 
 	var openRtbBidResponse openrtb2.BidResponse
 
-	if err := json.Unmarshal(response.Body, &openRtbBidResponse); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &openRtbBidResponse); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: "Bad server body response",
 		}}

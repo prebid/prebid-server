@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/stored_responses"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/stored_responses"
 )
 
 type ValidationConfig struct {
@@ -88,22 +88,27 @@ func (srv *standardRequestValidator) validateImpExt(imp *openrtb_ext.ImpWrapper,
 	prebid := impExt.GetOrCreatePrebid()
 	prebidModified := false
 
+	bidderPromote := false
+
 	if prebid.Bidder == nil {
 		prebid.Bidder = make(map[string]json.RawMessage)
+		bidderPromote = true
 	}
 
 	ext := impExt.GetExt()
 	extModified := false
 
 	// promote imp[].ext.BIDDER to newer imp[].ext.prebid.bidder.BIDDER location, with the later taking precedence
-	for k, v := range ext {
-		if openrtb_ext.IsPotentialBidder(k) {
-			if _, exists := prebid.Bidder[k]; !exists {
-				prebid.Bidder[k] = v
-				prebidModified = true
+	if bidderPromote {
+		for k, v := range ext {
+			if openrtb_ext.IsPotentialBidder(k) {
+				if _, exists := prebid.Bidder[k]; !exists {
+					prebid.Bidder[k] = v
+					prebidModified = true
+				}
+				delete(ext, k)
+				extModified = true
 			}
-			delete(ext, k)
-			extModified = true
 		}
 	}
 
@@ -117,7 +122,7 @@ func (srv *standardRequestValidator) validateImpExt(imp *openrtb_ext.ImpWrapper,
 
 	errL := []error{}
 
-	for bidder, ext := range prebid.Bidder {
+	for bidder, val := range prebid.Bidder {
 		coreBidder, _ := openrtb_ext.NormalizeBidderName(bidder)
 		if tmp, isAlias := aliases[bidder]; isAlias {
 			coreBidder = openrtb_ext.BidderName(tmp)
@@ -125,13 +130,18 @@ func (srv *standardRequestValidator) validateImpExt(imp *openrtb_ext.ImpWrapper,
 
 		if coreBidderNormalized, isValid := srv.bidderMap[coreBidder.String()]; isValid {
 			if !cfg.SkipBidderParams {
-				if err := srv.paramsValidator.Validate(coreBidderNormalized, ext); err != nil {
+				if err := srv.paramsValidator.Validate(coreBidderNormalized, val); err != nil {
 					return []error{fmt.Errorf("request.imp[%d].ext.prebid.bidder.%s failed validation.\n%v", impIndex, bidder, err)}
 				}
 			}
 		} else {
 			if msg, isDisabled := srv.disabledBidders[bidder]; isDisabled {
 				errL = append(errL, &errortypes.BidderTemporarilyDisabled{Message: msg})
+				delete(prebid.Bidder, bidder)
+				prebidModified = true
+			} else if bidderPromote {
+				errL = append(errL, &errortypes.Warning{Message: fmt.Sprintf("request.imp[%d].ext contains unknown bidder: '%s', ignoring", impIndex, bidder)})
+				ext[bidder] = val
 				delete(prebid.Bidder, bidder)
 				prebidModified = true
 			} else {

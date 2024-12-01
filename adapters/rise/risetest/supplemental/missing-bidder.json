@@ -28,8 +28,8 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "extractOrg: unmarshal ImpExtRise: unexpected end of JSON input",
-      "comparison": "literal"
+      "value": "extractOrg: unmarshal ImpExtRise: expect { or n, but found",
+      "comparison": "startswith"
     }
   ]
 }

@@ -12,11 +12,12 @@ import (
 	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/openrtb/v20/openrtb2"
 
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/macros"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -54,14 +55,14 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 		}
 
 		var bidderExt adapters.ExtImpBidder
-		err := json.Unmarshal(impression.Ext, &bidderExt)
+		err := jsonutil.Unmarshal(impression.Ext, &bidderExt)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
 		var impressionExt openrtb_ext.ExtImpBidmachine
-		err = json.Unmarshal(bidderExt.Bidder, &impressionExt)
+		err = jsonutil.Unmarshal(bidderExt.Bidder, &impressionExt)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -137,7 +138,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 	}
 
 	var bidResponse openrtb2.BidResponse
-	err := json.Unmarshal(responseData.Body, &bidResponse)
+	err := jsonutil.Unmarshal(responseData.Body, &bidResponse)
 	if err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: err.Error(),
