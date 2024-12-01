@@ -108,16 +108,9 @@
               },
               "imp_id": "001",
               "media_types": {
-                "banner": {
-                  "sizes": null,
-                  "mimes": null
-                },
-                "video": {
-                  "sizes": null,
-                  "mimes": null
-                },
+                "banner": {},
+                "video": {},
                 "audio": {
-                  "sizes": null,
                   "mimes": [
                     "audio/mp4",
                     "audio/mp3"

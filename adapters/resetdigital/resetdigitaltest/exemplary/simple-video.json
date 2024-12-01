@@ -46,10 +46,7 @@
               },
               "imp_id": "001",
               "media_types": {
-                "banner": {
-                  "mimes": null,
-                  "sizes": null
-                },
+                "banner": {},
                 "video": {
                   "sizes": [
                     [
@@ -62,10 +59,7 @@
                     "video/mp4"
                   ]
                 },
-                "audio": {
-                  "mimes": null,
-                  "sizes": null
-                }
+                "audio": {}
               },
               "zone_id": {
                 "placementId": "placement-id-1"

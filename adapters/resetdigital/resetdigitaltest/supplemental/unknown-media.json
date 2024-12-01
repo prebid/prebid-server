@@ -31,16 +31,9 @@
             },
             "imp_id": "001",
             "media_types": {
-              "banner": {
-                "mimes": null,
-                "sizes": null
-              },
-              "video": {
-                "mimes": null,
-                "sizes": null
-              },
+              "banner": {},
+              "video": {},
               "audio": {
-                "sizes": null,
                 "mimes": ["audio/mpeg"]
               }
             },
