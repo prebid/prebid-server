@@ -7,11 +7,12 @@ import (
 	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/macros"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -65,14 +66,14 @@ func (adapter *adapter) buildEndpointURL(params *openrtb_ext.ExtImpOwnAdx) (stri
 
 func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpOwnAdx, error) {
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: "Bidder extension not valid or can't be unmarshalled",
 		}
 	}
 
 	var ownAdxExt openrtb_ext.ExtImpOwnAdx
-	if err := json.Unmarshal(bidderExt.Bidder, &ownAdxExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &ownAdxExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: "Error while unmarshaling bidder extension",
 		}
@@ -143,7 +144,7 @@ func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 		}
 	}
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{
 			&errortypes.BadServerResponse{
 				Message: "Bad server response ",
