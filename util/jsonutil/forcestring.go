@@ -1,6 +1,9 @@
 package jsonutil
 
-import "github.com/tidwall/gjson"
+import (
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
+	"github.com/tidwall/gjson"
+)
 
 // ParseIntoString Parse json bytes into a string pointer
 func ParseIntoString(b []byte, ppString **string) {
@@ -9,7 +12,6 @@ func ParseIntoString(b []byte, ppString **string) {
 	}
 	result := gjson.ParseBytes(b)
 	if result.Exists() && result.Raw != `null` {
-		*ppString = new(string)
-		**ppString = result.String()
+		*ppString = ptrutil.ToPtr(result.String())
 	}
 }
