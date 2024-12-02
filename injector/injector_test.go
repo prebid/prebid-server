@@ -75,7 +75,7 @@ func TestInjectTracker(t *testing.T) {
 				vastXML: "",
 				NURL:    "www.nurl.com",
 			},
-			want:      `<VAST version="3.0"><Ad><Wrapper><AdSystem>prebid.org wrapper</AdSystem><VASTAdTagURI><![CDATA[www.nurl.com]]></VASTAdTagURI><Creatives></Creatives></Wrapper></Ad></VAST>`,
+			want:      `<VAST version="3.0"><Ad><Wrapper><AdSystem>prebid.org wrapper</AdSystem><VASTAdTagURI><![CDATA[www.nurl.com]]></VASTAdTagURI><Impression></Impression><Creatives></Creatives></Wrapper></Ad></VAST>`,
 			wantError: nil,
 		},
 		{
