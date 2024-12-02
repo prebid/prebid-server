@@ -21,6 +21,9 @@
           ]
         },
         "ext": {
+          "prebid": {
+            "bidder": {}
+          },
           "appnexus": {
             "placementId": 12883451
           },
@@ -34,5 +37,5 @@
     "tmax": 500
   },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request"
+  "expectedErrorMessage": "Invalid request: request.imp[0].ext.prebid.bidder must contain at least one bidder\n"
 }
