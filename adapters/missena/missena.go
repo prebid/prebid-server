@@ -126,18 +126,34 @@ func (a *adapter) makeRequest(imp openrtb2.Imp, request *openrtb2.BidRequest, re
 		schain = request.Source.SChain
 	}
 
+	var eids []openrtb2.EID
+	if request.User != nil {
+		eids = request.User.EIDs
+	}
+
+	var coppa int8
+	if request.Regs != nil {
+		coppa = request.Regs.COPPA
+	}
+
+	var page, domain string
+	if request.Site != nil {
+		page = request.Site.Page
+		domain = request.Site.Domain
+	}
+
 	missenaRequest := MissenaAdRequest{
 		Adunit:           imp.ID,
-		COPPA:            request.Regs.COPPA,
+		COPPA:            coppa,
 		Currency:         cur,
-		EIDs:             request.User.EIDs,
+		EIDs:             eids,
 		Floor:            floor,
 		FloorCurrency:    floorCur,
 		GDPR:             gdprApplies,
 		GDPRConsent:      consentString,
 		IdempotencyKey:   request.ID,
-		Referer:          request.Site.Page,
-		RefererCanonical: request.Site.Domain,
+		Referer:          page,
+		RefererCanonical: domain,
 		RequestID:        request.ID,
 		SChain:           schain,
 		Timeout:          request.TMax,
