@@ -1,13 +1,11 @@
 package connatix
 
 import (
-	"net/url"
-
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 type adapter struct {
-	uri url.URL
+	endpoint string
 }
 
 type impExtIncoming struct {
