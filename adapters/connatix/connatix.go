@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 	"strings"
 
 	"github.com/buger/jsonparser"
@@ -22,19 +21,14 @@ const (
 
 // Builder builds a new instance of the Connatix adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	uri, err := url.Parse(config.Endpoint)
-	if err != nil {
-		return nil, err
-	}
-
 	bidder := &adapter{
-		uri: *uri,
+		endpoint: config.Endpoint,
 	}
 	return bidder, nil
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	if request.Device != nil && request.Device.IP == "" && request.Device.IPv6 == "" {
+	if request.Device == nil || (request.Device.IP == "" && request.Device.IPv6 == "") {
 		return nil, []error{&errortypes.BadInput{
 			Message: "Device IP is required",
 		}}
@@ -64,7 +58,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	}
 
 	// Divide imps to several requests
-	requests, errors := splitRequests(validImps, request, a.uri.String())
+	requests, errors := splitRequests(validImps, request, a.endpoint)
 	return requests, append(errs, errors...)
 }
 
