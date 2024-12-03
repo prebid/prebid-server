@@ -3,8 +3,6 @@ package hookexecution
 import (
 	"context"
 	"errors"
-	"time"
-
 	"github.com/prebid/prebid-server/v3/hooks/hookstage"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/ptrutil"
@@ -102,8 +100,8 @@ func (e mockRejectHook) HandleAuctionResponseHook(_ context.Context, _ hookstage
 
 type mockTimeoutHook struct{}
 
-func (e mockTimeoutHook) HandleEntrypointHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
-	time.Sleep(20 * time.Millisecond)
+func (e mockTimeoutHook) HandleEntrypointHook(ctx context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+	<-ctx.Done()
 	c := hookstage.ChangeSet[hookstage.EntrypointPayload]{}
 	c.AddMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
 		params := payload.Request.URL.Query()
@@ -115,8 +113,8 @@ func (e mockTimeoutHook) HandleEntrypointHook(_ context.Context, _ hookstage.Mod
 	return hookstage.HookResult[hookstage.EntrypointPayload]{ChangeSet: c}, nil
 }
 
-func (e mockTimeoutHook) HandleRawAuctionHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.RawAuctionRequestPayload) (hookstage.HookResult[hookstage.RawAuctionRequestPayload], error) {
-	time.Sleep(20 * time.Millisecond)
+func (e mockTimeoutHook) HandleRawAuctionHook(ctx context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.RawAuctionRequestPayload) (hookstage.HookResult[hookstage.RawAuctionRequestPayload], error) {
+	<-ctx.Done()
 	c := hookstage.ChangeSet[hookstage.RawAuctionRequestPayload]{}
 	c.AddMutation(func(_ hookstage.RawAuctionRequestPayload) (hookstage.RawAuctionRequestPayload, error) {
 		return []byte(`{"last_name": "Doe", "foo": "bar", "address": "A st."}`), nil
@@ -125,8 +123,8 @@ func (e mockTimeoutHook) HandleRawAuctionHook(_ context.Context, _ hookstage.Mod
 	return hookstage.HookResult[hookstage.RawAuctionRequestPayload]{ChangeSet: c}, nil
 }
 
-func (e mockTimeoutHook) HandleProcessedAuctionHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.ProcessedAuctionRequestPayload) (hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload], error) {
-	time.Sleep(20 * time.Millisecond)
+func (e mockTimeoutHook) HandleProcessedAuctionHook(ctx context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.ProcessedAuctionRequestPayload) (hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload], error) {
+	<-ctx.Done()
 	c := hookstage.ChangeSet[hookstage.ProcessedAuctionRequestPayload]{}
 	c.AddMutation(func(payload hookstage.ProcessedAuctionRequestPayload) (hookstage.ProcessedAuctionRequestPayload, error) {
 		payload.Request.User.CustomData = "some-custom-data"
@@ -136,8 +134,8 @@ func (e mockTimeoutHook) HandleProcessedAuctionHook(_ context.Context, _ hooksta
 	return hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload]{ChangeSet: c}, nil
 }
 
-func (e mockTimeoutHook) HandleBidderRequestHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.BidderRequestPayload) (hookstage.HookResult[hookstage.BidderRequestPayload], error) {
-	time.Sleep(20 * time.Millisecond)
+func (e mockTimeoutHook) HandleBidderRequestHook(ctx context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.BidderRequestPayload) (hookstage.HookResult[hookstage.BidderRequestPayload], error) {
+	<-ctx.Done()
 	c := hookstage.ChangeSet[hookstage.BidderRequestPayload]{}
 	c.AddMutation(func(payload hookstage.BidderRequestPayload) (hookstage.BidderRequestPayload, error) {
 		payload.Request.User.CustomData = "some-custom-data"
@@ -147,8 +145,8 @@ func (e mockTimeoutHook) HandleBidderRequestHook(_ context.Context, _ hookstage.
 	return hookstage.HookResult[hookstage.BidderRequestPayload]{ChangeSet: c}, nil
 }
 
-func (e mockTimeoutHook) HandleRawBidderResponseHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.RawBidderResponsePayload) (hookstage.HookResult[hookstage.RawBidderResponsePayload], error) {
-	time.Sleep(20 * time.Millisecond)
+func (e mockTimeoutHook) HandleRawBidderResponseHook(ctx context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.RawBidderResponsePayload) (hookstage.HookResult[hookstage.RawBidderResponsePayload], error) {
+	<-ctx.Done()
 	c := hookstage.ChangeSet[hookstage.RawBidderResponsePayload]{}
 	c.AddMutation(func(payload hookstage.RawBidderResponsePayload) (hookstage.RawBidderResponsePayload, error) {
 		payload.BidderResponse.Bids[0].BidMeta = &openrtb_ext.ExtBidPrebidMeta{AdapterCode: "new-code"}
@@ -158,8 +156,8 @@ func (e mockTimeoutHook) HandleRawBidderResponseHook(_ context.Context, _ hookst
 	return hookstage.HookResult[hookstage.RawBidderResponsePayload]{ChangeSet: c}, nil
 }
 
-func (e mockTimeoutHook) HandleAllProcessedBidResponsesHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.AllProcessedBidResponsesPayload) (hookstage.HookResult[hookstage.AllProcessedBidResponsesPayload], error) {
-	time.Sleep(20 * time.Millisecond)
+func (e mockTimeoutHook) HandleAllProcessedBidResponsesHook(ctx context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.AllProcessedBidResponsesPayload) (hookstage.HookResult[hookstage.AllProcessedBidResponsesPayload], error) {
+	<-ctx.Done()
 	c := hookstage.ChangeSet[hookstage.AllProcessedBidResponsesPayload]{}
 	c.AddMutation(func(payload hookstage.AllProcessedBidResponsesPayload) (hookstage.AllProcessedBidResponsesPayload, error) {
 		payload.Responses["some-bidder"].Bids[0].BidMeta = &openrtb_ext.ExtBidPrebidMeta{AdapterCode: "new-code"}
@@ -169,8 +167,8 @@ func (e mockTimeoutHook) HandleAllProcessedBidResponsesHook(_ context.Context, _
 	return hookstage.HookResult[hookstage.AllProcessedBidResponsesPayload]{ChangeSet: c}, nil
 }
 
-func (e mockTimeoutHook) HandleAuctionResponseHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.AuctionResponsePayload) (hookstage.HookResult[hookstage.AuctionResponsePayload], error) {
-	time.Sleep(2 * time.Millisecond)
+func (e mockTimeoutHook) HandleAuctionResponseHook(ctx context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.AuctionResponsePayload) (hookstage.HookResult[hookstage.AuctionResponsePayload], error) {
+	<-ctx.Done()
 	c := hookstage.ChangeSet[hookstage.AuctionResponsePayload]{}
 	c.AddMutation(func(payload hookstage.AuctionResponsePayload) (hookstage.AuctionResponsePayload, error) {
 		payload.BidResponse.Ext = []byte("another-byte")

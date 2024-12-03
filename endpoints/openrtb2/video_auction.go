@@ -189,6 +189,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 
 	//load additional data - stored simplified req
 	storedRequestId, err := getVideoStoredRequestId(requestJson)
+	ctx := r.Context()
 
 	if err != nil {
 		if deps.cfg.VideoStoredRequestRequired {
@@ -196,7 +197,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 			return
 		}
 	} else {
-		storedRequest, errs := deps.loadStoredVideoRequest(context.Background(), storedRequestId)
+		storedRequest, errs := deps.loadStoredVideoRequest(ctx, storedRequestId)
 		if len(errs) > 0 {
 			handleError(&labels, w, errs, &vo, &debugLog)
 			return
@@ -270,7 +271,6 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	ctx := context.Background()
 	timeout := deps.cfg.AuctionTimeouts.LimitAuctionTimeout(time.Duration(bidReqWrapper.TMax) * time.Millisecond)
 	if timeout > 0 {
 		var cancel context.CancelFunc
