@@ -7,7 +7,6 @@ import (
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
-// This file actually intends to test static/bidder-params/blue.json TODO: MUST BE CREATED
 func TestValidParams(t *testing.T) {
 	validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
 	if err != nil {
@@ -37,6 +36,7 @@ func TestInvalidParams(t *testing.T) {
 var validParams = []string{
 	`{"publisherId":"1234"}`,
 	`{"publisherId":"1234", "placementId":"12345"}`,
+	`{"publisherId":"", "placementId":""}`,
 }
 
 var invalidParams = []string{
@@ -47,4 +47,5 @@ var invalidParams = []string{
 	`4.2`,
 	`[]`,
 	`{}`,
+	`{"placementId":"12345"}`,
 }
