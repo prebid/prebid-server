@@ -44,7 +44,6 @@
               "imp_id": "001",
               "media_types": {
                 "banner": {
-                  "mimes": null,
                   "sizes": [
                     [
                       300,
@@ -52,14 +51,8 @@
                     ]
                   ]
                 },
-                "video": {
-                  "sizes": null,
-                  "mimes": null
-                },
-                "audio": {
-                  "mimes": null,
-                  "sizes": null
-                }
+                "video": {},
+                "audio": {}
               },
               "zone_id": {
                 "placementId": "placement-id-1"
@@ -106,7 +99,7 @@
           "w": 300,
           "h": 250
         },
-        "type": "banner",
+        "type": "video",
         "seat": "resetdigital"
       }]
     }]

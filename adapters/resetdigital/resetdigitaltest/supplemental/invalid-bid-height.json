@@ -46,8 +46,8 @@
                 ]
               ]
             },
-            "audio": {},
-            "video": {}
+            "video": {},
+            "audio": {}
           },
           "zone_id": {
             "placementId": "placement-id-1"
@@ -73,7 +73,7 @@
           "crid": "1000763-1002088",
           "adid": "1002088",
           "w": "300",
-          "h": "250",
+          "h": "123456789012345678901234567890123456789012345678901234567890",
           "seat": "resetdigital",
           "html": "test markup"
         }]
@@ -81,21 +81,11 @@
     }
   }],
 
-  "expectedBidResponses": [{
-    "currency": "USD",
-    "bids": [{
-      "bid": {
-        "adm": "test markup",
-        "cid": "1002088",
-        "crid": "1000763-1002088",
-        "id": "01",
-        "impid": "001",
-        "price": 1.00,
-        "w": 300,
-        "h": 250
-      },
-      "type": "banner",
-      "seat": "resetdigital"
-    }]
-  }]
+  "expectedMakeBidsErrors": [
+    {
+      "value": "strconv.ParseInt: parsing \"123456789012345678901234567890123456789012345678901234567890\": value out of range",
+      "comparison": "literal"
+    }
+  ],
+  "expectedBidResponses": [{}]
 }

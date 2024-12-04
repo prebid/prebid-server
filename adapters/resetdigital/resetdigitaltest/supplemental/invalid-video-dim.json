@@ -43,21 +43,14 @@
             },
             "imp_id": "001",
             "media_types": {
-              "banner": {
-                "mimes": null,
-                "sizes": null
-              },
+              "banner": {},
               "video": {
-                "sizes": null,
                 "mimes": [
                   "video/x-flv",
                   "video/mp4"
                 ]
               },
-              "audio": {
-                "mimes": null,
-                "sizes": null
-              }
+              "audio": {}
             },
             "zone_id": {
               "placementId": "placement-id-1"

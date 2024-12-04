@@ -40,13 +40,13 @@ type resetDigitalImpExt struct {
 	Gpid string `json:"gpid"`
 }
 type resetDigitalMediaTypes struct {
-	Banner resetDigitalMediaType `json:"banner"`
-	Video  resetDigitalMediaType `json:"video"`
-	Audio  resetDigitalMediaType `json:"audio"`
+	Banner resetDigitalMediaType `json:"banner,omitempty"`
+	Video  resetDigitalMediaType `json:"video,omitempty"`
+	Audio  resetDigitalMediaType `json:"audio,omitempty"`
 }
 type resetDigitalMediaType struct {
-	Sizes [][]int64 `json:"sizes"`
-	Mimes []string  `json:"mimes"`
+	Sizes [][]int64 `json:"sizes,omitempty"`
+	Mimes []string  `json:"mimes,omitempty"`
 }
 type resetDigitalBidResponse struct {
 	Bids []resetDigitalBid `json:"bids"`
@@ -128,6 +128,7 @@ func (a *adapter) MakeRequests(requestData *openrtb2.BidRequest, requestInfo *ad
 		}
 
 		requestBody, err := json.Marshal(splittedRequestData)
+
 		if err != nil {
 			errors = append(errors, err)
 			continue
@@ -153,10 +154,10 @@ func processDataFromRequest(requestData *openrtb2.BidRequest, imp openrtb2.Imp, 
 		reqData.Site.Referrer = requestData.Site.Page
 	}
 
-	reqData.Imps = append(reqData.Imps, resetDigitalImp{
+	rdImp := resetDigitalImp{
 		BidID: requestData.ID,
 		ImpID: imp.ID,
-	})
+	}
 
 	if bidType == openrtb_ext.BidTypeBanner && imp.Banner != nil {
 		var tempH, tempW int64
@@ -167,10 +168,7 @@ func processDataFromRequest(requestData *openrtb2.BidRequest, imp openrtb2.Imp, 
 			tempW = *imp.Banner.W
 		}
 		if tempH > 0 && tempW > 0 {
-			reqData.Imps[0].MediaTypes.Banner.Sizes = append(
-				reqData.Imps[0].MediaTypes.Banner.Sizes,
-				[]int64{tempW, tempH},
-			)
+			rdImp.MediaTypes.Banner.Sizes = append(rdImp.MediaTypes.Banner.Sizes, []int64{tempW, tempH})
 		}
 	}
 	if bidType == openrtb_ext.BidTypeVideo && imp.Video != nil {
@@ -182,24 +180,14 @@ func processDataFromRequest(requestData *openrtb2.BidRequest, imp openrtb2.Imp, 
 			tempW = *imp.Video.W
 		}
 		if tempH > 0 && tempW > 0 {
-			reqData.Imps[0].MediaTypes.Video.Sizes = append(
-				reqData.Imps[0].MediaTypes.Video.Sizes,
-				[]int64{tempW, tempH},
-			)
+			rdImp.MediaTypes.Video.Sizes = append(rdImp.MediaTypes.Video.Sizes, []int64{tempW, tempH})
 		}
 		if imp.Video.MIMEs != nil {
-			// reqData.Imps[0].MediaTypes.Video.Mimes = imp.Video.MIMEs
-			reqData.Imps[0].MediaTypes.Video.Mimes = append(
-				reqData.Imps[0].MediaTypes.Video.Mimes,
-				imp.Video.MIMEs...,
-			)
+			rdImp.MediaTypes.Video.Mimes = append(rdImp.MediaTypes.Video.Mimes, imp.Video.MIMEs...)
 		}
 	}
 	if bidType == openrtb_ext.BidTypeAudio && imp.Audio != nil && imp.Audio.MIMEs != nil {
-		reqData.Imps[0].MediaTypes.Audio.Mimes = append(
-			reqData.Imps[0].MediaTypes.Audio.Mimes,
-			imp.Audio.MIMEs...,
-		)
+		rdImp.MediaTypes.Audio.Mimes = append(rdImp.MediaTypes.Audio.Mimes, imp.Audio.MIMEs...)
 	}
 
 	var bidderExt adapters.ExtImpBidder
@@ -211,7 +199,9 @@ func processDataFromRequest(requestData *openrtb2.BidRequest, imp openrtb2.Imp, 
 	if err := json.Unmarshal(bidderExt.Bidder, &resetDigitalExt); err != nil {
 		return resetDigitalRequest{}, err
 	}
-	reqData.Imps[0].ZoneID.PlacementID = resetDigitalExt.PlacementID
+	rdImp.ZoneID.PlacementID = resetDigitalExt.PlacementID
+
+	reqData.Imps = append(reqData.Imps, rdImp)
 
 	return reqData, nil
 }
@@ -242,14 +232,12 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		resetDigitalBid := &response.Bids[i]
 
 		bid, err := getBidFromResponse(resetDigitalBid)
-		// handle the error
 		if bid == nil {
-			// it would be better to return an error here
 			errs = append(errs, err)
 			continue
 		}
 
-		bidType, err := GetMediaTypeForImp(requestImps, bid.ImpID)
+		bidType, err := GetMediaTypeForImp(requestImps[bid.ImpID])
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -307,16 +295,13 @@ func getBidType(imp openrtb2.Imp) (openrtb_ext.BidType, error) {
 	return "", fmt.Errorf("failed to find matching imp for bid %s", imp.ID)
 }
 
-func GetMediaTypeForImp(reqImps map[string]openrtb2.Imp, bidImpID string) (openrtb_ext.BidType, error) {
-	mediaType := openrtb_ext.BidTypeBanner
+func GetMediaTypeForImp(reqImp openrtb2.Imp) (openrtb_ext.BidType, error) {
 
-	if reqImp, ok := reqImps[bidImpID]; ok {
-		if reqImp.Banner == nil && reqImp.Video != nil {
-			mediaType = openrtb_ext.BidTypeVideo
-		} else if reqImp.Audio != nil {
-			mediaType = openrtb_ext.BidTypeAudio
-		}
-		return mediaType, nil
+	if reqImp.Video != nil {
+		return openrtb_ext.BidTypeVideo, nil
 	}
-	return "", fmt.Errorf("unknown media type for bid imp ID %s", bidImpID)
+	if reqImp.Audio != nil {
+		return openrtb_ext.BidTypeAudio, nil
+	}
+	return openrtb_ext.BidTypeBanner, nil
 }
