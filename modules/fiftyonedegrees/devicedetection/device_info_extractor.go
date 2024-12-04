@@ -3,8 +3,8 @@ package devicedetection
 import (
 	"strconv"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"github.com/prebid/prebid-server/v3/di"
 )
 
 // deviceInfoExtractor is a struct that contains the methods to extract device information
@@ -102,18 +102,18 @@ func (x deviceInfoExtractor) getValue(results Results, propertyName deviceInfoPr
 		",",
 	)
 	if err != nil {
-		glog.Errorf("Failed to get results values string.")
+		di.Log.Errorf("Failed to get results values string.")
 		return ""
 	}
 
 	hasValues, err := results.HasValues(string(propertyName))
 	if err != nil {
-		glog.Errorf("Failed to check if a matched value exists for property %s.\n", propertyName)
+		di.Log.Errorf("Failed to check if a matched value exists for property %s.\n", propertyName)
 		return ""
 	}
 
 	if !hasValues {
-		glog.Warningf("Property %s does not have a matched value.\n", propertyName)
+		di.Log.Warningf("Property %s does not have a matched value.\n", propertyName)
 		return "Unknown"
 	}
 

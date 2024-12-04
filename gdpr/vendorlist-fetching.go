@@ -10,11 +10,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/prebid/go-gdpr/api"
 	"github.com/prebid/go-gdpr/vendorlist"
 	"github.com/prebid/go-gdpr/vendorlist2"
 	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/di"
 	"golang.org/x/net/context/ctxhttp"
 )
 
@@ -118,30 +118,30 @@ func newOccasionalSaver(timeout time.Duration) func(ctx context.Context, client 
 func saveOne(ctx context.Context, client *http.Client, url string, saver saveVendors) uint16 {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		glog.Errorf("Failed to build GET %s request. Cookie syncs may be affected: %v", url, err)
+		di.Log.Errorf("Failed to build GET %s request. Cookie syncs may be affected: %v", url, err)
 		return 0
 	}
 
 	resp, err := ctxhttp.Do(ctx, client, req)
 	if err != nil {
-		glog.Errorf("Error calling GET %s. Cookie syncs may be affected: %v", url, err)
+		di.Log.Errorf("Error calling GET %s. Cookie syncs may be affected: %v", url, err)
 		return 0
 	}
 	defer resp.Body.Close()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		glog.Errorf("Error reading response body from GET %s. Cookie syncs may be affected: %v", url, err)
+		di.Log.Errorf("Error reading response body from GET %s. Cookie syncs may be affected: %v", url, err)
 		return 0
 	}
 	if resp.StatusCode != http.StatusOK {
-		glog.Errorf("GET %s returned %d. Cookie syncs may be affected.", url, resp.StatusCode)
+		di.Log.Errorf("GET %s returned %d. Cookie syncs may be affected.", url, resp.StatusCode)
 		return 0
 	}
 	var newList api.VendorList
 	newList, err = vendorlist2.ParseEagerly(respBody)
 	if err != nil {
-		glog.Errorf("GET %s returned malformed JSON. Cookie syncs may be affected. Error was %v. Body was %s", url, err, string(respBody))
+		di.Log.Errorf("GET %s returned malformed JSON. Cookie syncs may be affected. Error was %v. Body was %s", url, err, string(respBody))
 		return 0
 	}
 

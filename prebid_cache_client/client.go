@@ -16,7 +16,7 @@ import (
 	"github.com/prebid/prebid-server/v3/metrics"
 
 	"github.com/buger/jsonparser"
-	"github.com/golang/glog"
+	"github.com/prebid/prebid-server/v3/di"
 	"golang.org/x/net/context/ctxhttp"
 )
 
@@ -149,7 +149,7 @@ func (c *clientImpl) PutJson(ctx context.Context, values []Cacheable) (uuids []s
 
 func logError(errs *[]error, format string, a ...interface{}) {
 	msg := fmt.Sprintf(format, a...)
-	glog.Error(msg)
+	di.Log.Error(msg)
 	*errs = append(*errs, errors.New(msg))
 }
 

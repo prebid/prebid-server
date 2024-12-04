@@ -12,13 +12,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	gpplib "github.com/prebid/go-gpp"
 	gppConstants "github.com/prebid/go-gpp/constants"
 	accountService "github.com/prebid/prebid-server/v3/account"
 	"github.com/prebid/prebid-server/v3/analytics"
 	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/di"
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/gdpr"
 	"github.com/prebid/prebid-server/v3/macros"
@@ -450,7 +450,7 @@ func (c *cookieSyncEndpoint) handleResponse(w http.ResponseWriter, tf usersync.S
 		syncTypes := tf.ForBidder(syncerChoice.Bidder)
 		sync, err := syncerChoice.Syncer.GetSync(syncTypes, m)
 		if err != nil {
-			glog.Errorf("Failed to get usersync info for %s: %v", syncerChoice.Bidder, err)
+			di.Log.Errorf("Failed to get usersync info for %s: %v", syncerChoice.Bidder, err)
 			continue
 		}
 

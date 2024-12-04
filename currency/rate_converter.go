@@ -7,7 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/golang/glog"
+	"github.com/prebid/prebid-server/v3/di"
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"github.com/prebid/prebid-server/v3/util/timeutil"
@@ -83,9 +83,9 @@ func (rc *RateConverter) update() error {
 	} else {
 		if rc.checkStaleRates() {
 			rc.clearRates()
-			glog.Errorf("Error updating conversion rates, falling back to constant rates: %v", err)
+			di.Log.Errorf("Error updating conversion rates, falling back to constant rates: %v", err)
 		} else {
-			glog.Errorf("Error updating conversion rates: %v", err)
+			di.Log.Errorf("Error updating conversion rates: %v", err)
 		}
 	}
 
