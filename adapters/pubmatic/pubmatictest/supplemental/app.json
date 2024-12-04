@@ -37,7 +37,8 @@
 		    	"id": "appID",
 		    	"publisher": {
 		      		"id": "1234"
-		    	}
+		    	},
+          "ext":{}
 		    }
     },
   
@@ -75,7 +76,8 @@
                 "id": "appID",
                 "publisher": {
                     "id": "999"
-                }
+                },
+                "ext":{}
             },
             "ext": {
                 "wrapper": {
