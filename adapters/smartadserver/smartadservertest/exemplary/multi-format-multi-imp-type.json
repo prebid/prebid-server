@@ -5,7 +5,22 @@
       {
         "id": "test-imp-id-1",
         "banner": {
-          "format": [{"w": 728, "h": 90}]
+          "format": [
+            {
+              "w": 728,
+              "h": 90
+            }
+          ]
+        },
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "protocols": [
+            1
+          ],
+          "w": 1024,
+          "h": 576
         },
         "ext": {
           "bidder": {
@@ -19,7 +34,22 @@
       {
         "id": "test-imp-id-2",
         "banner": {
-          "format": [{"w": 300, "h": 150}]
+          "format": [
+            {
+              "w": 300,
+              "h": 150
+            }
+          ]
+        },
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "protocols": [
+            1
+          ],
+          "w": 920,
+          "h": 200
         },
         "ext": {
           "bidder": {
@@ -32,7 +62,6 @@
       }
     ]
   },
-
   "httpCalls": [
     {
       "expectedRequest": {
@@ -43,7 +72,22 @@
             {
               "id": "test-imp-id-1",
               "banner": {
-                "format": [{"w": 728, "h": 90}]
+                "format": [
+                  {
+                    "w": 728,
+                    "h": 90
+                  }
+                ]
+              },
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "protocols": [
+                  1
+                ],
+                "w": 1024,
+                "h": 576
               },
               "ext": {
                 "bidder": {
@@ -61,7 +105,9 @@
             }
           }
         },
-        "impIDs":["test-imp-id-1"]
+        "impIDs": [
+          "test-imp-id-1"
+        ]
       },
       "mockResponse": {
         "status": 200,
@@ -70,16 +116,18 @@
           "seatbid": [
             {
               "seat": "smartadserver",
-              "bid": [{
-                "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
-                "impid": "test-imp-id-1",
-                "price": 0.500000,
-                "adm": "some-test-ad",
-                "crid": "crid_10",
-                "mtype": 1,
-                "h": 90,
-                "w": 728
-              }]
+              "bid": [
+                {
+                  "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                  "impid": "test-imp-id-1",
+                  "price": 0.500000,
+                  "adm": "some-test-ad",
+                  "crid": "crid_10",
+                  "mtype": 1,
+                  "w": 728,
+                  "h": 90
+                }
+              ]
             }
           ],
           "cur": "USD"
@@ -95,7 +143,22 @@
             {
               "id": "test-imp-id-2",
               "banner": {
-                "format": [{"w": 300, "h": 150}]
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 150
+                  }
+                ]
+              },
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "protocols": [
+                  1
+                ],
+                "w": 920,
+                "h": 200
               },
               "ext": {
                 "bidder": {
@@ -113,7 +176,9 @@
             }
           }
         },
-        "impIDs":["test-imp-id-2"]
+        "impIDs": [
+          "test-imp-id-2"
+        ]
       },
       "mockResponse": {
         "status": 200,
@@ -122,16 +187,18 @@
           "seatbid": [
             {
               "seat": "smartadserver",
-              "bid": [{
-                "id": "8ee514f1-b2b8-4abb-89fd-084437d1e801",
-                "impid": "test-imp-id-2",
-                "price": 0.800000,
-                "adm": "some-test-ad",
-                "crid": "crid_11",
-                "mtype": 1,
-                "h": 150,
-                "w": 300
-              }]
+              "bid": [
+                {
+                  "id": "8ee514f1-b2b8-4abb-89fd-084437d1e801",
+                  "impid": "test-imp-id-2",
+                  "price": 0.800000,
+                  "adm": "some-test-ad",
+                  "crid": "crid_11",
+                  "mtype": 2,
+                  "w": 920,
+                  "h": 200
+                }
+              ]
             }
           ],
           "cur": "USD"
@@ -139,7 +206,6 @@
       }
     }
   ],
-
   "expectedBidResponses": [
     {
       "currency": "USD",
@@ -169,11 +235,11 @@
             "price": 0.8,
             "adm": "some-test-ad",
             "crid": "crid_11",
-            "mtype": 1,
-            "w": 300,
-            "h": 150
+            "mtype": 2,
+            "w": 920,
+            "h": 200
           },
-          "type": "banner"
+          "type": "video"
         }
       ]
     }
