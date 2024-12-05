@@ -1,0 +1,16 @@
+endpoint: "https://gosrv.adinify.com/pixservices"
+maintainer:
+  email: "client-support@pixfuture.com"
+gvlVendorID: 839
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
+  app:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  redirect:
+    url: "https://sync.pixfuture.com/sync?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
