@@ -1,6 +1,6 @@
 //go:build !custom_logger
 
-package providers
+package log
 
 import (
 	"github.com/golang/glog"

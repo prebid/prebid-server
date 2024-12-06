@@ -2,7 +2,7 @@ package di
 
 import (
 	"github.com/prebid/prebid-server/v3/di/interfaces"
-	"github.com/prebid/prebid-server/v3/di/providers"
+	"github.com/prebid/prebid-server/v3/di/providers/log"
 )
 
-var Log interfaces.ILogger = providers.ProvideLogger()
+var Log interfaces.ILogger = log.ProvideLogger()
