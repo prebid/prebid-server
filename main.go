@@ -16,7 +16,7 @@ import (
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"github.com/prebid/prebid-server/v3/util/task"
 
-	"github.com/golang/glog"
+	"github.com/prebid/prebid-server/v3/di"
 	"github.com/spf13/viper"
 )
 
@@ -25,20 +25,20 @@ func init() {
 }
 
 func main() {
-	flag.Parse() // required for glog flags and testing package flags
+	flag.Parse() // required for di.Log flags and testing package flags
 
 	bidderInfoPath, err := filepath.Abs(infoDirectory)
 	if err != nil {
-		glog.Exitf("Unable to build configuration directory path: %v", err)
+		di.Log.Exitf("Unable to build configuration directory path: %v", err)
 	}
 
 	bidderInfos, err := config.LoadBidderInfoFromDisk(bidderInfoPath)
 	if err != nil {
-		glog.Exitf("Unable to load bidder configurations: %v", err)
+		di.Log.Exitf("Unable to load bidder configurations: %v", err)
 	}
 	cfg, err := loadConfig(bidderInfos)
 	if err != nil {
-		glog.Exitf("Configuration could not be loaded or did not pass validation: %v", err)
+		di.Log.Exitf("Configuration could not be loaded or did not pass validation: %v", err)
 	}
 
 	// Create a soft memory limit on the total amount of memory that PBS uses to tune the behavior
@@ -51,7 +51,7 @@ func main() {
 
 	err = serve(cfg)
 	if err != nil {
-		glog.Exitf("prebid-server failed: %v", err)
+		di.Log.Exitf("prebid-server failed: %v", err)
 	}
 }
 
@@ -79,7 +79,7 @@ func serve(cfg *config.Configuration) error {
 
 	corsRouter := router.SupportCORS(r)
 	if err := server.Listen(cfg, router.NoCache{Handler: corsRouter}, router.Admin(currencyConverter, fetchingInterval), r.MetricsEngine); err != nil {
-		glog.Fatalf("prebid-server returned an error: %v", err)
+		di.Log.Fatalf("prebid-server returned an error: %v", err)
 	}
 
 	r.Shutdown()
