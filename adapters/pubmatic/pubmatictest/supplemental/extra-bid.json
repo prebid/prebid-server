@@ -58,7 +58,6 @@
             }
           }
      },
-
      "httpCalls": [
       {
         "expectedRequest": {
@@ -103,22 +102,6 @@
                 "acat": ["drg","dlu","ssr"],
                 "marketplace": {
                   "allowedbidders": ["pubmatic", "groupm"]
-                },
-                "prebid": {
-                  "bidderparams": {
-                    "acat": ["drg","dlu","ssr"]
-                  },
-                  "alternatebiddercodes": {
-                    "enabled": true,
-                    "bidders": {
-                      "pubmatic": {
-                        "enabled": true,
-                        "allowedbiddercodes": [
-                          "groupm"
-                        ]
-                      }
-                    }
-                  }
                 }
             }
           },
