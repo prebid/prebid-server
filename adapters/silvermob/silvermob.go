@@ -204,8 +204,6 @@ func getBidMediaTypeFromMtype(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 		return openrtb_ext.BidTypeVideo, nil
 	case openrtb2.MarkupNative:
 		return openrtb_ext.BidTypeNative, nil
-	case openrtb2.MarkupAudio:
-		return openrtb_ext.BidTypeAudio, nil
 	default:
 		return "", fmt.Errorf("Unable to fetch mediaType for imp: %s", bid.ImpID)
 	}
