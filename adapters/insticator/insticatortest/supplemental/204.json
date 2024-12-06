@@ -9,7 +9,7 @@
           },
           "ext": {
             "bidder": {
-              "adUnitId": "fake-invalid-site-id",
+              "adUnitId": "fake-site-id",
               "publisherId": "test-publisher-id"
             }
           }
@@ -46,7 +46,7 @@
                 },
                 "ext": {
                   "insticator": {
-                    "adUnitId": "fake-invalid-site-id",
+                    "adUnitId": "fake-site-id",
                     "publisherId": "test-publisher-id"
                   }
                 }
@@ -61,26 +61,11 @@
           "impIDs":["test-imp-id"]
         },
         "mockResponse": {
-          "status": 400,
-          "body": {
-            "error": {
-              "message": "Validation failed",
-              "details": [
-                {
-                  "message": "site.id is invalid"
-                }
-              ]
-          }
-          }
+          "status": 204,
+          "body": {}
         }
       }
     ],
-  
-    "expectedMakeBidsErrors": [
-      {
-        "value": "Unexpected status code: 400. Run with request.debug = 1 for more info",
-        "comparison": "literal"
-      }
-    ]
+    "expectedBidResponses": []
   }
   

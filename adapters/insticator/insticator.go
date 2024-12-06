@@ -109,11 +109,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 					impCopy.BidFloorCur),
 			})
 			continue
-		} else {
-			if resolvedBidFloor > 0 {
-				impCopy.BidFloor = resolvedBidFloor
-				impCopy.BidFloorCur = "USD"
-			}
+		}
+		if resolvedBidFloor > 0 {
+			impCopy.BidFloor = resolvedBidFloor
+			impCopy.BidFloorCur = "USD"
 		}
 
 		groupedImps[impKey] = append(groupedImps[impKey], impCopy)
@@ -273,10 +272,7 @@ func resolveBidFloor(bidFloor float64, bidFloorCur string, reqInfo *adapters.Ext
 }
 
 func validateVideoParams(video *openrtb2.Video) error {
-	if (video.W == nil || *video.W == 0) ||
-		(video.H == nil || *video.H == 0) ||
-		video.MIMEs == nil {
-
+	if (video.W == nil || *video.W == 0) || (video.H == nil || *video.H == 0) || video.MIMEs == nil {
 		return &errortypes.BadInput{
 			Message: "One or more invalid or missing video field(s) w, h, mimes",
 		}

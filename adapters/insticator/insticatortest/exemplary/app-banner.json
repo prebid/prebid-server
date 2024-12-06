@@ -19,14 +19,22 @@
         "publisher": {
           "id": "test-publisher-id"
         }
+      },
+      "device": {
+        "ua": "",
+        "ip": "1.1.1.2",
+        "ipv6": ""
       }
     },
   
     "httpCalls": [
       {
         "expectedRequest": {
-          "uri": "https://ex.ingage.tech/v1/prebidserver",
+          "uri": "https://insticator.example.com/v1/pbs",
           "body": {
+            "device":{
+              "ip": "1.1.1.2"
+            },
             "ext": {
               "insticator": {
                 "caller": [

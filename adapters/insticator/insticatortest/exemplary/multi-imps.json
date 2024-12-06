@@ -61,7 +61,7 @@
     "httpCalls": [
       {
         "expectedRequest": {
-          "uri": "https://ex.ingage.tech/v1/prebidserver",
+          "uri": "https://insticator.example.com/v1/pbs",
           "body": {
             "ext": {
               "insticator": {
@@ -179,7 +179,7 @@
       },
       {
         "expectedRequest": {
-          "uri": "https://ex.ingage.tech/v1/prebidserver",
+          "uri": "https://insticator.example.com/v1/pbs",
           "body": {
             "ext": {
               "insticator": {

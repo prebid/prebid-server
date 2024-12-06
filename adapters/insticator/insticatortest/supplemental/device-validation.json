@@ -27,9 +27,9 @@
         }
       },
       "device": {
-        "ipv6": "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
+        "ipv6": "",
         "ip": "1.22.22.1",
-        "ua": "Mozilla/5.0 (Linux; Android 8.0.0; SM-G960F Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.84 Mobile Safari/537.36"
+        "ua": ""
       }
     },
   
@@ -39,9 +39,7 @@
           "uri": "https://insticator.example.com/v1/pbs",
           "body": {
             "device": {
-              "ip": "1.22.22.1",
-              "ipv6": "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
-              "ua": "Mozilla/5.0 (Linux; Android 8.0.0; SM-G960F Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.84 Mobile Safari/537.36"
+              "ip": "1.22.22.1"
             },
             "ext": {
               "insticator": {

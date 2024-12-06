@@ -13,6 +13,23 @@
               "publisherId": "test-publisher-id"
             }
           }
+        },
+        {
+          "id": "test-imp-id2",
+          "video": {
+            "mimes": ["video/mp4"],
+            "minduration": 5,
+            "maxduration": 30,
+            "protocols": [2, 3, 5, 6],
+            "w": 640,
+            "h": 480
+          },
+          "ext": {
+            "bidder": {
+              "adUnitId": "fake-site-id",
+              "publisherId": "test-publisher-id"
+            }
+          }
         }
       ],
       "site": {
@@ -25,7 +42,7 @@
     "httpCalls": [
       {
         "expectedRequest": {
-          "uri": "https://ex.ingage.tech/v1/prebidserver",
+          "uri": "https://insticator.example.com/v1/pbs",
           "body": {
             "ext": {
               "insticator": {
@@ -50,6 +67,23 @@
                     "publisherId": "test-publisher-id"
                   }
                 }
+              },
+              {
+                "id":"test-imp-id2",
+                "video": {
+                  "mimes": ["video/mp4"],
+                  "minduration": 5,
+                  "maxduration": 30,
+                  "protocols": [2, 3, 5, 6],
+                  "w": 640,
+                  "h": 480
+                },
+                "ext": {
+                  "insticator": {
+                    "adUnitId": "fake-site-id",
+                    "publisherId": "test-publisher-id"
+                  }
+                }
               }
             ],
             "site": {
@@ -58,7 +92,7 @@
               }
             }
           },
-          "impIDs":["test-imp-id1"]
+          "impIDs":["test-imp-id1", "test-imp-id2"]
         },
         "mockResponse": {
           "status": 200,
