@@ -1,4 +1,4 @@
-endpoint: "http://jdpmedia-prebid.smart-hub.io/pbserver/?seat={{.AccountID}}&token={{.SourceId}}"
+endpoint: "https://jdpmedia-prebid.attekmi.com/pbserver/?seat={{.AccountID}}&token={{.SourceId}}"
 aliasOf: "smarthub"
 userSync:
   supports:
