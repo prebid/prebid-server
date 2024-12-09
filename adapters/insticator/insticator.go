@@ -86,20 +86,22 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	// Create a copy of the request to avoid modifying the original request
 	requestCopy := *request
+	isPublisherIdPopulated := false // Flag to track if populatePublisherId has been called
 
 	for i := 0; i < len(request.Imp); i++ {
-		impCopy, impKey, err := makeImps(request.Imp[i])
+		impCopy, impKey, publisherId, err := makeImps(request.Imp[i])
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		// Populate site.publisher.id from imp extension
-		if requestCopy.Site != nil || requestCopy.App != nil {
-			if err := populatePublisherId(&impCopy, &requestCopy); err != nil {
+		// Populate publisher.id from imp extension
+		if !isPublisherIdPopulated && (requestCopy.Site != nil || requestCopy.App != nil) {
+			if err := populatePublisherId(publisherId, &requestCopy); err != nil {
 				errs = append(errs, err)
 				continue
 			}
+			isPublisherIdPopulated = true
 		}
 
 		resolvedBidFloor, errFloor := resolveBidFloor(impCopy.BidFloor, impCopy.BidFloorCur, requestInfo)
@@ -196,17 +198,17 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	return bidResponse, nil
 }
 
-func makeImps(imp openrtb2.Imp) (openrtb2.Imp, string, error) {
+func makeImps(imp openrtb2.Imp) (openrtb2.Imp, string, string, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return openrtb2.Imp{}, "", &errortypes.BadInput{
+		return openrtb2.Imp{}, "", "", &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
 
 	var insticatorExt openrtb_ext.ExtImpInsticator
 	if err := jsonutil.Unmarshal(bidderExt.Bidder, &insticatorExt); err != nil {
-		return openrtb2.Imp{}, "", &errortypes.BadInput{
+		return openrtb2.Imp{}, "", "", &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
@@ -221,7 +223,7 @@ func makeImps(imp openrtb2.Imp) (openrtb2.Imp, string, error) {
 
 	impExtJSON, err := jsonutil.Marshal(impExt)
 	if err != nil {
-		return openrtb2.Imp{}, "", &errortypes.BadInput{
+		return openrtb2.Imp{}, "", "", &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
@@ -230,14 +232,14 @@ func makeImps(imp openrtb2.Imp) (openrtb2.Imp, string, error) {
 	// Validate Video if it exists
 	if imp.Video != nil {
 		if err := validateVideoParams(imp.Video); err != nil {
-			return openrtb2.Imp{}, insticatorExt.AdUnitId, &errortypes.BadInput{
+			return openrtb2.Imp{}, insticatorExt.AdUnitId, insticatorExt.PublisherId, &errortypes.BadInput{
 				Message: err.Error(),
 			}
 		}
 	}
 
 	// Return the imp, AdUnitId, and no error
-	return imp, insticatorExt.AdUnitId, nil
+	return imp, insticatorExt.AdUnitId, insticatorExt.PublisherId, nil
 }
 
 func makeReqExt(request *openrtb2.BidRequest) ([]byte, error) {
@@ -282,13 +284,7 @@ func validateVideoParams(video *openrtb2.Video) error {
 }
 
 // populatePublisherId function populates site.publisher.id or app.publisher.id
-func populatePublisherId(imp *openrtb2.Imp, request *openrtb2.BidRequest) error {
-	var ext ext
-
-	// Unmarshal the imp extension to get the publisher ID
-	if err := jsonutil.Unmarshal(imp.Ext, &ext); err != nil {
-		return &errortypes.BadInput{Message: "Error unmarshalling imp extension"}
-	}
+func populatePublisherId(publisherId string, request *openrtb2.BidRequest) error {
 
 	// Populate site.publisher.id if request.Site is not nil
 	if request.Site != nil {
@@ -304,7 +300,7 @@ func populatePublisherId(imp *openrtb2.Imp, request *openrtb2.BidRequest) error 
 			request.Site.Publisher = &openrtb2.Publisher{}
 		}
 
-		request.Site.Publisher.ID = ext.Insticator.PublisherId
+		request.Site.Publisher.ID = publisherId
 	}
 
 	// Populate app.publisher.id if request.App is not nil
@@ -321,7 +317,7 @@ func populatePublisherId(imp *openrtb2.Imp, request *openrtb2.BidRequest) error 
 			request.App.Publisher = &openrtb2.Publisher{}
 		}
 
-		request.App.Publisher.ID = ext.Insticator.PublisherId
+		request.App.Publisher.ID = publisherId
 	}
 
 	return nil
