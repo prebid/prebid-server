@@ -57,7 +57,6 @@ import (
 	"github.com/prebid/prebid-server/version"
 )
 
-const storedRequestTimeoutMillis = 50
 const ampChannel = "amp"
 const appChannel = "app"
 
@@ -443,7 +442,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		return
 	}
 
-	timeout := parseTimeout(requestJson, time.Duration(storedRequestTimeoutMillis)*time.Millisecond)
+	timeout := parseTimeout(requestJson, time.Duration(deps.cfg.StoredRequestsTimeout)*time.Millisecond)
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
