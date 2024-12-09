@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 // This file tests static/bidder-params/lockerdome.json
-// and validates the format of the external API: request.imp[i].ext.lockerdome
+// and validates the format of the external API: request.imp[i].ext.prebid.bidder.lockerdome
 
 // TestValidParams makes sure that the LockerDome schema accepts all imp.ext fields which we intend to support.
 func TestValidParams(t *testing.T) {

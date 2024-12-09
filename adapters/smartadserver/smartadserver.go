@@ -8,19 +8,21 @@ import (
 	"path"
 	"strconv"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type SmartAdserverAdapter struct {
-	host string
+	host   string
+	Server config.Server
 }
 
 // Builder builds a new instance of the SmartAdserver adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &SmartAdserverAdapter{
 		host: config.Endpoint,
 	}
@@ -60,7 +62,7 @@ func (a *SmartAdserverAdapter) MakeRequests(request *openrtb2.BidRequest, reqInf
 	// We send one serialized "smartRequest" per impression of the original request.
 	for _, imp := range request.Imp {
 		var bidderExt adapters.ExtImpBidder
-		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			errs = append(errs, &errortypes.BadInput{
 				Message: "Error parsing bidderExt object",
 			})
@@ -68,7 +70,7 @@ func (a *SmartAdserverAdapter) MakeRequests(request *openrtb2.BidRequest, reqInf
 		}
 
 		var smartadserverExt openrtb_ext.ExtImpSmartadserver
-		if err := json.Unmarshal(bidderExt.Bidder, &smartadserverExt); err != nil {
+		if err := jsonutil.Unmarshal(bidderExt.Bidder, &smartadserverExt); err != nil {
 			errs = append(errs, &errortypes.BadInput{
 				Message: "Error parsing smartadserverExt parameters",
 			})
@@ -111,6 +113,7 @@ func (a *SmartAdserverAdapter) MakeRequests(request *openrtb2.BidRequest, reqInf
 			Uri:     url,
 			Body:    reqJSON,
 			Headers: headers,
+			ImpIDs:  openrtb_ext.GetImpIDs(smartRequest.Imp),
 		})
 	}
 	return adapterRequests, errs
@@ -135,7 +138,7 @@ func (a *SmartAdserverAdapter) MakeBids(internalRequest *openrtb2.BidRequest, ex
 	}
 
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
@@ -174,6 +177,8 @@ func getMediaTypeForImp(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
 		if imp.ID == impID {
 			if imp.Video != nil {
 				return openrtb_ext.BidTypeVideo
+			} else if imp.Native != nil {
+				return openrtb_ext.BidTypeNative
 			}
 			return openrtb_ext.BidTypeBanner
 		}

@@ -3,12 +3,15 @@ package evolution
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
+
+	"github.com/prebid/openrtb/v20/openrtb2"
+
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -19,7 +22,7 @@ type bidExt struct {
 	MediaType openrtb_ext.BidType `json:"mediaType"`
 }
 
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		URI: config.Endpoint,
 	}
@@ -48,6 +51,7 @@ func (a *adapter) MakeRequests(
 		Body:    reqJSON,
 		Uri:     a.URI,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(openRTBRequest.Imp),
 	}}, nil
 }
 
@@ -81,7 +85,7 @@ func (a *adapter) MakeBids(
 
 	responseBody := bidderRawResponse.Body
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(responseBody, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(responseBody, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Bad response, %s", err),
 		}}
@@ -89,7 +93,7 @@ func (a *adapter) MakeBids(
 
 	if len(bidResp.SeatBid) == 0 {
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Empty seatbid"),
+			Message: "Empty seatbid",
 		}}
 	}
 
@@ -98,7 +102,7 @@ func (a *adapter) MakeBids(
 	for i := range sb.Bid {
 		var bidType openrtb_ext.BidType
 		var bidExt bidExt
-		if err := json.Unmarshal(sb.Bid[i].Ext, &bidExt); err != nil {
+		if err := jsonutil.Unmarshal(sb.Bid[i].Ext, &bidExt); err != nil {
 			bidType = openrtb_ext.BidTypeBanner
 		} else {
 			bidType = bidExt.MediaType

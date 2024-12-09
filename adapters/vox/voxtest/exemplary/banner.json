@@ -1,0 +1,83 @@
+{
+  "mockBidRequest": {
+    "id": "cf4b0abb-7ccc-4057-9914-c85f467260c6",
+    "site": {
+      "page": "http://some.site/url/page?id=338"
+    },
+    "cur": [ "USD" ],
+    "imp": [{
+        "id": "8a7510f9-0ca1-44c4-a8c6-1ce639b5eef9",
+        "banner": { "w": 100, "h": 100 },
+        "bidfloorcur": "USD",
+        "ext": {
+          "bidder": {
+            "placementId":"64b939146d66df22ccae95c5"
+          }
+        }
+      }]
+  },
+
+  "httpCalls": [{
+      "expectedRequest": {
+        "uri": "http://somecoolurlfor.vox",
+        "headers": {},
+        "body": {
+          "id": "cf4b0abb-7ccc-4057-9914-c85f467260c6",
+          "site": {
+            "page": "http://some.site/url/page?id=338"
+          },
+          "imp": [
+            {
+              "id": "8a7510f9-0ca1-44c4-a8c6-1ce639b5eef9",
+              "banner": {
+                "w": 100,
+                "h": 100
+              },
+              "bidfloorcur": "USD",
+              "ext": {
+                "bidder": {
+                  "placementId": "64b939146d66df22ccae95c5"
+                }
+              }
+            }
+          ],
+          "cur": [ "USD" ]
+        },
+        "impIDs":["8a7510f9-0ca1-44c4-a8c6-1ce639b5eef9"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "headers": {},
+        "body": {
+          "id": "cf4b0abb-7ccc-4057-9914-c85f467260c6",
+          "cur": "USD",
+          "seatbid": [{
+            "bid": [{
+              "id": "e6a143f3-5176-4607-b09e-0e67e358b0b6",
+              "impid": "8a7510f9-0ca1-44c4-a8c6-1ce639b5eef9",
+              "price": 3.1415,
+              "adm": "<html><h1>Hi, there</h1></html>",
+              "w": 50,
+              "h": 50,
+              "mtype": 1
+            }]
+           }]
+        }}
+    }],
+
+    "expectedBidResponses": [{
+      "bids": [{
+        "currency": "USD",
+        "bid": {
+          "id": "e6a143f3-5176-4607-b09e-0e67e358b0b6",
+          "impid": "8a7510f9-0ca1-44c4-a8c6-1ce639b5eef9",
+          "price": 3.1415,
+          "adm": "<html><h1>Hi, there</h1></html>",
+          "w": 50,
+          "h": 50,
+          "mtype": 1
+        },
+        "type": "banner"
+      }]
+    }]
+}

@@ -1,0 +1,126 @@
+{
+  "mockBidRequest": {
+    "id": "request-id",
+    "imp": [
+      {
+        "id": "impression-id",
+        "native": {
+          "request": "\"{\\\"ver\\\":\\\"1.1\\\",\\\"plcmttype\\\": 4,\\\"plcmtcnt\\\": 1,\\\"assets\\\":[{\\\"id\\\": 1,\\\"required\\\": 1,\\\"title\\\":{\\\"len\\\": 140}},{\\\"id\\\": 4,\\\"required\\\": 1,\\\"img\\\":{\\\"type\\\": 3,\\\"wmin\\\": 600,\\\"hmin\\\": 315}},{\\\"id\\\": 6,\\\"required\\\": 1,\\\"data\\\":{\\\"type\\\": 2,\\\"len\\\": 205}},{\\\"id\\\": 5,\\\"required\\\": 1,\\\"data\\\":{\\\"type\\\": 1,\\\"len\\\": 140}}]}}\"",
+          "ver": "1.1"
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "publisher-id",
+            "tagid": "tag-id"
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "http://domain.com",
+      "page": "http://page-domain.com",
+      "ref": "http://page-domain.com"
+    },
+    "device": {
+      "ua": "Mozilla/5.0 (Linux; Android 12; Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.62 Mobile Safari/537.36",
+      "h": 300,
+      "w": 300
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://native.whatever.com/12/publisher-id",
+        "body": {
+          "id": "request-id",
+          "imp": [
+            {
+              "id": "impression-id",
+              "native": {
+                "request": "\"{\\\"ver\\\":\\\"1.1\\\",\\\"plcmttype\\\": 4,\\\"plcmtcnt\\\": 1,\\\"assets\\\":[{\\\"id\\\": 1,\\\"required\\\": 1,\\\"title\\\":{\\\"len\\\": 140}},{\\\"id\\\": 4,\\\"required\\\": 1,\\\"img\\\":{\\\"type\\\": 3,\\\"wmin\\\": 600,\\\"hmin\\\": 315}},{\\\"id\\\": 6,\\\"required\\\": 1,\\\"data\\\":{\\\"type\\\": 2,\\\"len\\\": 205}},{\\\"id\\\": 5,\\\"required\\\": 1,\\\"data\\\":{\\\"type\\\": 1,\\\"len\\\": 140}}]}}\"",
+                "ver": "1.1"
+              },
+              "tagid": "tag-id",
+              "ext": {
+                "bidder": {
+                  "publisherId": "publisher-id",
+                  "tagid": "tag-id"
+                }
+              }
+            }
+          ],
+          "site": {
+            "id": "publisher-id",
+            "name": "publisher-id",
+            "domain": "http://domain.com",
+            "page": "http://page-domain.com",
+            "ref": "http://page-domain.com",
+            "publisher": {
+              "id": "publisher-id"
+            }
+          },
+          "device": {
+            "ua": "Mozilla/5.0 (Linux; Android 12; Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.62 Mobile Safari/537.36",
+            "h": 300,
+            "w": 300
+          }
+        },
+        "impIDs":["impression-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "123",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "request-id",
+                  "impid": "impression-id",
+                  "price": 2.1,
+                  "adid": "1",
+                  "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":7,\"required\":1,\"img\":{\"url\":\"http://image.taboola.com\",\"w\":600,\"h\":315}},{\"id\":0,\"required\":1,\"title\":{\"text\":\"Title For Example\"}},{\"id\":5,\"data\":{\"value\":\"Test sponsor\"}}],\"link\":{\"url\":\"http://clickUrl.com\"},\"eventtrackers\":[{\"event\":1,\"method\":1,\"url\":\"http://tracker.com\"},{\"event\":1,\"method\":2,\"url\":\"http://tracker-2.com\"}]}&wp=${AUCTION_PRICE}",
+                  "adomain": [
+                    "adomain.comadomain.com"
+                  ],
+                  "cid": "cid",
+                  "crid": "crid",
+                  "lurl": "https://lurl.domain.com/",
+                  "nurl": "nurl.com&wp=${AUCTION_PRICE}"
+                }
+              ],
+              "seat": "1111"
+            }
+          ],
+          "bidid": "123",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "request-id",
+            "impid": "impression-id",
+            "price": 2.1,
+            "adid": "1",
+            "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":7,\"required\":1,\"img\":{\"url\":\"http://image.taboola.com\",\"w\":600,\"h\":315}},{\"id\":0,\"required\":1,\"title\":{\"text\":\"Title For Example\"}},{\"id\":5,\"data\":{\"value\":\"Test sponsor\"}}],\"link\":{\"url\":\"http://clickUrl.com\"},\"eventtrackers\":[{\"event\":1,\"method\":1,\"url\":\"http://tracker.com\"},{\"event\":1,\"method\":2,\"url\":\"http://tracker-2.com\"}]}&wp=2.1",
+
+          "adomain": [
+              "adomain.comadomain.com"
+            ],
+            "cid": "cid",
+            "crid": "crid",
+            "lurl": "https://lurl.domain.com/",
+            "nurl": "nurl.com&wp=2.1"
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}

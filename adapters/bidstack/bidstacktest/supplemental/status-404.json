@@ -1,0 +1,84 @@
+{
+  "mockBidRequest": {
+    "id": "bid-request-id",
+    "device": {
+      "ip": "0.0.0.0",
+      "ifa": "ce76100d-82cc-4491-a6c9-50e0e539454c"
+    },
+    "app": {
+      "id": "app-id",
+      "bundle": "com.app.id"
+    },
+    "imp": [
+      {
+        "id": "imp-id-1",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "protocols": [
+            2,
+            5
+          ],
+          "w": 1024,
+          "h": 576
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "225a4f40-1df1-48b2-b238-8774a638ce6e"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://mock-adserver.url",
+        "body": {
+          "id": "bid-request-id",
+          "device": {
+            "ip": "0.0.0.0",
+            "ifa": "ce76100d-82cc-4491-a6c9-50e0e539454c"
+          },
+          "app": {
+            "id": "app-id",
+            "bundle": "com.app.id"
+          },
+          "imp": [
+            {
+              "id": "imp-id-1",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "protocols": [
+                  2,
+                  5
+                ],
+                "w": 1024,
+                "h": 576
+              },
+              "ext": {
+                "bidder": {
+                  "publisherId": "225a4f40-1df1-48b2-b238-8774a638ce6e"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs":["imp-id-1"]
+      },
+      "mockResponse": {
+        "status": 404,
+        "body": {}
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "unexpected response status code: 404",
+      "comparison": "literal"
+    }
+  ]
+}

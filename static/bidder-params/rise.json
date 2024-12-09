@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Rise Adapter Params",
+  "description": "A schema which validates params accepted by the Rise adapter",
+  "type": "object",
+  "properties": {
+    "org": {
+      "type": "string",
+      "description": "The organization ID."
+    },
+    "publisher_id": {
+      "type": "string",
+      "description": "Deprecated, use org instead."
+    },
+    "placementId": {
+      "type": "string",
+      "description": "Placement ID."
+    }
+  },
+  "oneOf": [
+    {
+      "required": [
+        "org"
+      ]
+    },
+    {
+      "required": [
+        "publisher_id"
+      ]
+    }
+  ]
+}

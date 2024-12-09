@@ -1,0 +1,110 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "site": {
+            "publisher": {
+                "id": "foo",
+                "name": "foo"
+            }
+        },
+        "cur": [
+            "EUR"
+        ],
+        "imp": [
+            {
+                "id": "test-imp-id",
+                "native": {
+                    "request": "{\"plcmtcnt\":1,\"plcmttype\":2,\"privacy\":1,\"context\":1,\"contextsubtype\":12,\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]},{\"event\":2,\"methods\":[1]}],\"assets\":[{\"data\":{\"type\":12},\"required\":1},{\"title\":{\"len\":50},\"required\":1},{\"img\":{\"w\":80,\"h\":80,\"type\":1},\"required\":1},{\"img\":{\"w\":1200,\"h\":627,\"type\":3},\"required\":1},{\"data\":{\"type\":3},\"required\":0},{\"data\":{\"len\":100,\"type\":2},\"required\":1},{\"video\":{\"mimes\":[\"video/mpeg\",\"video/mp4\"],\"minduration\":2,\"protocols\":[2,5],\"maxduration\":2,\"ext\":{\"playbackmethod\":[1,2]}},\"required\":1}],\"ver\":\"1.2\"}"
+                },
+                "ext": {
+                    "bidder": {
+                        "adUnitId": "example-tag-id"
+                    }
+                }
+            }
+        ]
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "https://mockup.seeding-alliance.de/?ssp=pbs",
+                "body": {
+                    "cur": [
+                        "EUR"
+                    ],
+                    "id": "test-request-id",
+                    "imp": [
+                        {
+                            "tagid": "example-tag-id",
+                            "id": "test-imp-id",
+                            "native": {
+                                "request": "{\"plcmtcnt\":1,\"plcmttype\":2,\"privacy\":1,\"context\":1,\"contextsubtype\":12,\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]},{\"event\":2,\"methods\":[1]}],\"assets\":[{\"data\":{\"type\":12},\"required\":1},{\"title\":{\"len\":50},\"required\":1},{\"img\":{\"w\":80,\"h\":80,\"type\":1},\"required\":1},{\"img\":{\"w\":1200,\"h\":627,\"type\":3},\"required\":1},{\"data\":{\"type\":3},\"required\":0},{\"data\":{\"len\":100,\"type\":2},\"required\":1},{\"video\":{\"mimes\":[\"video/mpeg\",\"video/mp4\"],\"minduration\":2,\"protocols\":[2,5],\"maxduration\":2,\"ext\":{\"playbackmethod\":[1,2]}},\"required\":1}],\"ver\":\"1.2\"}"
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "adUnitId": "example-tag-id"
+                                }
+                            }
+                        }
+                    ],
+                    "site": {
+                        "publisher": {
+                            "id": "foo",
+                            "name": "foo"
+                        }
+                    }
+                },
+                "impIDs":["test-imp-id"]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "test-request-id",
+                    "seatbid": [
+                        {
+                            "bid": [
+                                {
+                                    "id": "some-id",
+                                    "impid": "test-imp-id",
+                                    "price": 1,
+                                    "adid": "69595837",
+                                    "adm": "{\"assets\":[{\"id\": 2,\"img\":{\"url\":\"http://example.com/p/creative-image/5e/b6/de/c3/5eb6dec3-4854-4dcd-980a-347f36ab502e.jpg\",\"w\": 3000,\"h\": 2250}},{\"id\": 1,\"title\":{\"text\":\"This is an example Prebid Native creative\"}},{\"id\": 3,\"data\":{\"value\":\"Prebid.org\"}},{\"id\": 4,\"data\":{\"value\":\"This is a Prebid Native Creative. There are many like it, but this one is mine.\"}}],\"link\":{\"url\":\"http://example.com/click?AAAAAAAA8D8AAAAAAADwPwAAAAAAAAAAAAAAAAAA8D8AAAAAAADwPwhdYz3ZyNFNG3fXpZUyLXNZ0o5aAAAAACrElgC-AwAAvgMAAAIAAAC98iUEeP4QAAAAAABVU0QAVVNEAAEAAQARIAAAAAABAgQCAAAAAAEAhBaSXgAAAAA./pp=${AUCTION_PRICE}/cnd=%21OwwGAQiGmooHEL3llyEY-PxDIAQoADoRZGVmYXVsdCNOWU0yOjQwMjM./bn=75922/test=1/referrer=prebid.org/clickenc=http%3A%2F%2Fprebid.org%2Fdev-docs%2Fshow-native-ads.html\"},\"imptrackers\":[\"http://example.com/openrtb_win?e=wqT_3QLFBqBFAwAAAwDWAAUBCNmku9QFEIi6jeuTm_LoTRib7t2u2tLMlnMqNgkAAAECCPA_EQEHEAAA8D8ZCQkIAAAhCQkI8D8pEQkAMQkJqAAAMKqI2wQ4vgdAvgdIAlC95ZchWPj8Q2AAaJFAeJLRBIABAYoBA1VTRJIFBvBQmAEBoAEBqAEBsAEAuAECwAEEyAEC0AEJ2AEA4AEB8AEAigI7dWYoJ2EnLCAxMzc2ODYwLCAxNTE5MzA5NDAxKTt1ZigncicsIDY5NTk1ODM3Nh4A8IqSAvUBIXRETkdfUWlHbW9vSEVMM2xseUVZQUNENF9FTXdBRGdBUUFSSXZnZFFxb2piQkZnQVlMTURhQUJ3QUhnQWdBRUFpQUVBa0FFQm1BRUJvQUVCcUFFRHNBRUF1UUVwaTRpREFBRHdQOEVCS1l1SWd3QUE4RF9KQVhfelYzek1zXzBfMlFFQUFBAQMkRHdQLUFCQVBVQgEOLEFKZ0NBS0FDQUxVQwUQBEwwCQjwTE1BQ0FNZ0NBT0FDQU9nQ0FQZ0NBSUFEQVpBREFKZ0RBYWdEaHBxS0I3b0RFV1JsWm1GMWJIUWpUbGxOTWpvME1ESXqaAjkhT3d3R0FRNvgA8E4tUHhESUFRb0FEb1JaR1ZtWVhWc2RDTk9XVTB5T2pRd01qTS7YAugH4ALH0wHqAgpwcmViaWQub3Jn8gIRCgZBRFZfSUQSBzEzNzY4NjDyARQMQ1BHXwEUNDM1MDMwOTjyAhEKBUNQARPwmQgxNDg0NzIzOIADAYgDAZADAJgDFKADAaoDAMADkBzIAwDYAwDgAwDoAwD4AwOABACSBAkvb3BlbnJ0YjKYBACiBAwxNTIuMTkzLjYuNzSoBJrMI7IEDAgAEAAYACAAMAA4ALgEAMAEAMgEANIEEWRlZmF1bHQjTllNMjo0MDIz2gQCCADgBADwBL3llyGIBQGYBQCgBf____8FA1ABqgULc29tZS1yZXEtaWTABQDJBQAFARTwP9IFCQkFC2QAAADYBQHgBQHwBd4C-gUECAAQAJAGAZgGAA..&s=08b1535744639c904684afe46e3c6c0e4786089f&test=1&referrer=prebid.org&pp=${AUCTION_PRICE}\"],\"jstracker\":\"<script src=\\\"http://www.dummyurl.js\\\"></script>\"}",
+                                    "ext": {
+                                        "prebid": {
+                                            "type": "native"
+                                        }
+                                    }
+                                }
+                            ],
+                            "seat": "123"
+                        }
+                    ],
+                    "bidid": "8141327771600527856",
+                    "cur": "EUR"
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "currency": "EUR",
+            "bids": [
+                {
+                    "bid": {
+                        "id": "some-id",
+                        "impid": "test-imp-id",
+                        "price": 1,
+                        "adid": "69595837",
+                        "adm": "{\"assets\":[{\"id\": 2,\"img\":{\"url\":\"http://example.com/p/creative-image/5e/b6/de/c3/5eb6dec3-4854-4dcd-980a-347f36ab502e.jpg\",\"w\": 3000,\"h\": 2250}},{\"id\": 1,\"title\":{\"text\":\"This is an example Prebid Native creative\"}},{\"id\": 3,\"data\":{\"value\":\"Prebid.org\"}},{\"id\": 4,\"data\":{\"value\":\"This is a Prebid Native Creative. There are many like it, but this one is mine.\"}}],\"link\":{\"url\":\"http://example.com/click?AAAAAAAA8D8AAAAAAADwPwAAAAAAAAAAAAAAAAAA8D8AAAAAAADwPwhdYz3ZyNFNG3fXpZUyLXNZ0o5aAAAAACrElgC-AwAAvgMAAAIAAAC98iUEeP4QAAAAAABVU0QAVVNEAAEAAQARIAAAAAABAgQCAAAAAAEAhBaSXgAAAAA./pp=1/cnd=%21OwwGAQiGmooHEL3llyEY-PxDIAQoADoRZGVmYXVsdCNOWU0yOjQwMjM./bn=75922/test=1/referrer=prebid.org/clickenc=http%3A%2F%2Fprebid.org%2Fdev-docs%2Fshow-native-ads.html\"},\"imptrackers\":[\"http://example.com/openrtb_win?e=wqT_3QLFBqBFAwAAAwDWAAUBCNmku9QFEIi6jeuTm_LoTRib7t2u2tLMlnMqNgkAAAECCPA_EQEHEAAA8D8ZCQkIAAAhCQkI8D8pEQkAMQkJqAAAMKqI2wQ4vgdAvgdIAlC95ZchWPj8Q2AAaJFAeJLRBIABAYoBA1VTRJIFBvBQmAEBoAEBqAEBsAEAuAECwAEEyAEC0AEJ2AEA4AEB8AEAigI7dWYoJ2EnLCAxMzc2ODYwLCAxNTE5MzA5NDAxKTt1ZigncicsIDY5NTk1ODM3Nh4A8IqSAvUBIXRETkdfUWlHbW9vSEVMM2xseUVZQUNENF9FTXdBRGdBUUFSSXZnZFFxb2piQkZnQVlMTURhQUJ3QUhnQWdBRUFpQUVBa0FFQm1BRUJvQUVCcUFFRHNBRUF1UUVwaTRpREFBRHdQOEVCS1l1SWd3QUE4RF9KQVhfelYzek1zXzBfMlFFQUFBAQMkRHdQLUFCQVBVQgEOLEFKZ0NBS0FDQUxVQwUQBEwwCQjwTE1BQ0FNZ0NBT0FDQU9nQ0FQZ0NBSUFEQVpBREFKZ0RBYWdEaHBxS0I3b0RFV1JsWm1GMWJIUWpUbGxOTWpvME1ESXqaAjkhT3d3R0FRNvgA8E4tUHhESUFRb0FEb1JaR1ZtWVhWc2RDTk9XVTB5T2pRd01qTS7YAugH4ALH0wHqAgpwcmViaWQub3Jn8gIRCgZBRFZfSUQSBzEzNzY4NjDyARQMQ1BHXwEUNDM1MDMwOTjyAhEKBUNQARPwmQgxNDg0NzIzOIADAYgDAZADAJgDFKADAaoDAMADkBzIAwDYAwDgAwDoAwD4AwOABACSBAkvb3BlbnJ0YjKYBACiBAwxNTIuMTkzLjYuNzSoBJrMI7IEDAgAEAAYACAAMAA4ALgEAMAEAMgEANIEEWRlZmF1bHQjTllNMjo0MDIz2gQCCADgBADwBL3llyGIBQGYBQCgBf____8FA1ABqgULc29tZS1yZXEtaWTABQDJBQAFARTwP9IFCQkFC2QAAADYBQHgBQHwBd4C-gUECAAQAJAGAZgGAA..&s=08b1535744639c904684afe46e3c6c0e4786089f&test=1&referrer=prebid.org&pp=1\"],\"jstracker\":\"<script src=\\\"http://www.dummyurl.js\\\"></script>\"}",
+                        "ext": {
+                            "prebid": {
+                                "type": "native"
+                            }
+                        }
+                    },
+                    "type": "native"
+                }
+            ]
+        }
+    ]
+}

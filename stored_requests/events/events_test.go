@@ -7,8 +7,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/prebid/prebid-server/stored_requests"
-	"github.com/prebid/prebid-server/stored_requests/caches/memory"
+	"github.com/prebid/prebid-server/v3/stored_requests"
+	"github.com/prebid/prebid-server/v3/stored_requests/caches/memory"
 )
 
 func TestListen(t *testing.T) {
@@ -17,9 +17,10 @@ func TestListen(t *testing.T) {
 		invalidations: make(chan Invalidation),
 	}
 	cache := stored_requests.Cache{
-		Requests: memory.NewCache(256*1024, -1, "Requests"),
-		Imps:     memory.NewCache(256*1024, -1, "Imps"),
-		Accounts: memory.NewCache(256*1024, -1, "Account"),
+		Requests:  memory.NewCache(256*1024, -1, "Requests"),
+		Imps:      memory.NewCache(256*1024, -1, "Imps"),
+		Responses: memory.NewCache(256*1024, -1, "Responses"),
+		Accounts:  memory.NewCache(256*1024, -1, "Account"),
 	}
 
 	// create channels to synchronize
@@ -38,9 +39,10 @@ func TestListen(t *testing.T) {
 	config := fmt.Sprintf(`{"id": "%s"}`, id)
 	data := map[string]json.RawMessage{id: json.RawMessage(config)}
 	save := Save{
-		Requests: data,
-		Imps:     data,
-		Accounts: data,
+		Requests:  data,
+		Imps:      data,
+		Responses: data,
+		Accounts:  data,
 	}
 	cache.Requests.Save(context.Background(), save.Requests)
 	cache.Imps.Save(context.Background(), save.Imps)
@@ -49,9 +51,10 @@ func TestListen(t *testing.T) {
 	config = fmt.Sprintf(`{"id": "%s", "updated": true}`, id)
 	data = map[string]json.RawMessage{id: json.RawMessage(config)}
 	save = Save{
-		Requests: data,
-		Imps:     data,
-		Accounts: data,
+		Requests:  data,
+		Imps:      data,
+		Responses: data,
+		Accounts:  data,
 	}
 
 	ep.saves <- save
@@ -59,15 +62,17 @@ func TestListen(t *testing.T) {
 
 	requestData := cache.Requests.Get(context.Background(), idSlice)
 	impData := cache.Imps.Get(context.Background(), idSlice)
+	respData := cache.Responses.Get(context.Background(), idSlice)
 	accountData := cache.Accounts.Get(context.Background(), idSlice)
-	if !reflect.DeepEqual(requestData, data) || !reflect.DeepEqual(impData, data) || !reflect.DeepEqual(accountData, data) {
+	if !reflect.DeepEqual(requestData, data) || !reflect.DeepEqual(impData, data) || !reflect.DeepEqual(respData, data) || !reflect.DeepEqual(accountData, data) {
 		t.Error("Update failed")
 	}
 
 	invalidation := Invalidation{
-		Requests: idSlice,
-		Imps:     idSlice,
-		Accounts: idSlice,
+		Requests:  idSlice,
+		Imps:      idSlice,
+		Responses: idSlice,
+		Accounts:  idSlice,
 	}
 
 	ep.invalidations <- invalidation
@@ -75,8 +80,9 @@ func TestListen(t *testing.T) {
 
 	requestData = cache.Requests.Get(context.Background(), idSlice)
 	impData = cache.Imps.Get(context.Background(), idSlice)
+	respData = cache.Responses.Get(context.Background(), idSlice)
 	accountData = cache.Accounts.Get(context.Background(), idSlice)
-	if len(requestData) > 0 || len(impData) > 0 || len(accountData) > 0 {
+	if len(requestData) > 0 || len(impData) > 0 || len(respData) > 0 || len(accountData) > 0 {
 		t.Error("Invalidate failed")
 	}
 }

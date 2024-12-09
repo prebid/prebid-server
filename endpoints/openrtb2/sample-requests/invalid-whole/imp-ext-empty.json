@@ -18,5 +18,5 @@
     }
   },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request: request.imp[0].ext must contain at least one bidder\n"
+  "expectedErrorMessage": "Invalid request: request.imp[0].ext.prebid.bidder must contain at least one bidder\n"
 }

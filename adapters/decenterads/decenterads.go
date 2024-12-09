@@ -7,11 +7,12 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -28,7 +29,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 
 	for _, impression := range impressions {
 		var impExt map[string]json.RawMessage
-		if err := json.Unmarshal(impression.Ext, &impExt); err != nil {
+		if err := jsonutil.Unmarshal(impression.Ext, &impExt); err != nil {
 			errs = append(errs, fmt.Errorf("unable to parse bidder parameers: %s", err))
 			continue
 		}
@@ -51,6 +52,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 			Uri:     a.endpoint,
 			Body:    body,
 			Headers: headers,
+			ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 		})
 	}
 
@@ -77,7 +79,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 	}
 
 	var bidResponse openrtb2.BidResponse
-	err := json.Unmarshal(responseData.Body, &bidResponse)
+	err := jsonutil.Unmarshal(responseData.Body, &bidResponse)
 	if err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: err.Error(),
@@ -116,7 +118,7 @@ func getMediaTypeForImp(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
 }
 
 // Builder builds a new instance of the DecenterAds adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,
 	}

@@ -1,0 +1,85 @@
+{
+	"mockBidRequest": {
+        "id": "test-request-id",
+        "imp": [
+            {
+                "id": "test-imp-id",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        },
+                        {
+                            "w": 300,
+                            "h": 600
+                        }
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "placementId": "test"
+                    }
+                }
+            }
+        ],
+        "app": {
+            "id": "1",
+            "bundle": "com.wls.testwlsapplication"
+        },
+        "device": {
+            "ip": "123.123.123.123",
+            "ifa": "sdjfksdf-dfsds-dsdg-dsgg"
+        }
+    },
+	"httpCalls": [{
+		"expectedRequest": {
+			"uri": "http://ssp.videowalldirect.com/pserver",
+			"body": {
+                "id": "test-request-id",
+                "imp": [
+                    {
+                        "id": "test-imp-id",
+                        "banner": {
+                            "format": [
+                                {
+                                    "w": 300,
+                                    "h": 250
+                                },
+                                {
+                                    "w": 300,
+                                    "h": 600
+                                }
+                            ]
+                        },
+                        "ext": {
+                            "bidder": {
+                                "placementId": "test",
+                                "type": "publisher"
+                            }
+                        }
+                    }
+                ],
+                "app": {
+                    "id": "1",
+                    "bundle": "com.wls.testwlsapplication"
+                },
+                "device": {
+                    "ip": "123.123.123.123",
+                    "ifa": "sdjfksdf-dfsds-dsdg-dsgg"
+                }
+            },
+            "impIDs":["test-imp-id"]
+		},
+		"mockResponse": {
+			"status": 200,
+			"body": ""
+        }
+    }],
+    "expectedMakeBidsErrors": [
+        {
+          "value": "expect { or n, but found \"",
+          "comparison": "literal"
+        }
+    ]
+}

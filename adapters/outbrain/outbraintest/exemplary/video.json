@@ -1,0 +1,132 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "video": {
+          "w": 640,
+          "h": 480,
+          "protocols": [1,2,3,4,5,6,7,8],
+          "playbackmethod": [1],
+          "mimes": ["video/mp4"],
+          "skip": 1,
+          "api": [2],
+          "maxbitrate": 3000
+        },
+        "ext": {
+          "bidder": {
+            "publisher": {
+              "id": "publisher-id"
+            }
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "http://example.com"
+    },
+    "device": {
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36",
+      "h": 500,
+      "w": 1000
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://example.com/bid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "video": {
+                "w": 640,
+                "h": 480,
+                "protocols": [1,2,3,4,5,6,7,8],
+                "playbackmethod": [1],
+                "mimes": ["video/mp4"],
+                "skip": 1,
+                "api": [2],
+                "maxbitrate": 3000
+              },
+              "ext": {
+                "bidder": {
+                  "publisher": {
+                    "id": "publisher-id"
+                  }
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "http://example.com",
+            "publisher": {
+              "id": "publisher-id"
+            }
+          },
+          "device": {
+            "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36",
+            "h": 500,
+            "w": 1000
+          }
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "5095a742-1c27-402b-ab6f-66b1bd53383b",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "test-request-id",
+                  "impid": "test-imp-id",
+                  "price": 2.549447,
+                  "adm": "<vast ad>",
+                  "adomain": [
+                    "example.com"
+                  ],
+                  "cid": "test-cid",
+                  "crid": "test-crid",
+                  "cat": [
+                    "IAB13-4"
+                  ]
+                }
+              ],
+              "seat": "acc-1876"
+            }
+          ],
+          "bidid": "43ccadf2-8b2e-11eb-b294-de4c49e99ff6",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-request-id",
+            "impid": "test-imp-id",
+            "price": 2.549447,
+            "adm": "<vast ad>",
+            "adomain": [
+              "example.com"
+            ],
+            "cid": "test-cid",
+            "crid": "test-crid",
+            "cat": [
+              "IAB13-4"
+            ]
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

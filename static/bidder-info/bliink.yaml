@@ -1,0 +1,23 @@
+endpoint: "https://engine.bliink.io/bid"
+maintainer:
+  email: "support@bliink.io"
+gvlVendorID: 658
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  iframe:
+    url: "https://tag.bliink.io/usersync.html?gdpr={{.GDPR}}&gdprConsent={{.GDPRConsent}}&uspConsent={{.USPrivacy}}&redirect={{.RedirectURL}}"
+    userMacro: "$UID"
+  redirect:
+    url: "https://cookiesync.api.bliink.io/getuid?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&url={{.RedirectURL}}"
+    userMacro: "$UID"

@@ -1,0 +1,199 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id1",
+        "video": {
+          "mimes": [
+            "video/mp4",
+            "video/3gpp",
+            "video/x-ms-wmv"
+          ],
+          "minduration": 5,
+          "maxduration": 30,
+          "protocols": [
+            4,
+            5,
+            6,
+            8
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "tagid": "123456"
+          }
+        }
+      },
+      {
+        "id": "test-imp-id2",
+        "video": {
+          "mimes": [
+            "video/mp4",
+            "video/3gpp",
+            "video/x-ms-wmv"
+          ],
+          "minduration": 10,
+          "maxduration": 60,
+          "protocols": [
+            4,
+            5,
+            6,
+            8
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "tagid": "654321"
+          }
+        }
+      }
+    ],
+    "device": {
+      "ua": "test-user-agent",
+      "ip": "123.123.123.123",
+      "language": "en",
+      "dnt": 0
+    },
+    "site": {
+      "domain": "www.publisher.com",
+      "page": "http://www.publisher.com/awesome/site"
+    },
+    "user": {
+      "buyeruid": "test_reader_id"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "Accept": [
+          "application/json"
+        ],
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ],
+          "User-Agent": [
+            "test-user-agent"
+          ],
+          "X-Forwarded-For": [
+            "123.123.123.123"
+          ],
+          "Accept-Language": [
+            "en"
+          ],
+          "Dnt": [
+            "0"
+          ],
+          "Cookie": [
+            "ljt_reader=test_reader_id"
+          ]
+        },
+        "uri": "http://sovrn.com/test/endpoint",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id1",
+              "video": {
+                "mimes": [
+                  "video/mp4",
+                  "video/3gpp",
+                  "video/x-ms-wmv"
+                ],
+                "minduration": 5,
+                "maxduration": 30,
+                "protocols": [
+                  4,
+                  5,
+                  6,
+                  8
+                ]
+              },
+              "tagid": "123456",
+              "ext": {
+                "bidder": {
+                  "tagid": "123456"
+                }
+              }
+            },
+            {
+              "id": "test-imp-id2",
+              "video": {
+                "mimes": [
+                  "video/mp4",
+                  "video/3gpp",
+                  "video/x-ms-wmv"
+                ],
+                "minduration": 10,
+                "maxduration": 60,
+                "protocols": [
+                  4,
+                  5,
+                  6,
+                  8
+                ]
+              },
+              "tagid": "654321",
+              "ext": {
+                "bidder": {
+                  "tagid": "654321"
+                }
+              }
+            }
+          ],
+          "site": {
+            "domain": "www.publisher.com",
+            "page": "http://www.publisher.com/awesome/site"
+          },
+          "user": {
+            "buyeruid": "test_reader_id"
+          },
+          "device": {
+            "ua": "test-user-agent",
+            "ip": "123.123.123.123",
+            "dnt": 0,
+            "language": "en"
+          }
+        },
+        "impIDs":["test-imp-id1","test-imp-id2"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "v_449642_554a13d3b9f348fba707cf83f0f63800",
+                  "impid": "test-imp-id2",
+                  "price": 3.5,
+                  "nurl": "http://sovrn.com/rtb/impression?bannerid=138743&campaignid=3699&zoneid=449642&cb=69493397&tid=a_449642_554a13d3b9f348fba707cf83f0f63800",
+                  "adm": "<?xml version=\"1.0\" encoding=\"utf-8\"?><VAST version=\"2.0\"><Ad id=\"12345\"><InLine><AdSystem version=\"1.0\">SpotXchange</AdSystem><AdTitle> <![CDATA[Sample VAST]]></AdTitle><Impression>http://sample.com</Impression><Description><![CDATA[A sample VAST feed]]></Description> <Creatives><Creative sequence=\"1\" id=\"1\"><Linear><Duration>00:00:30</Duration> <TrackingEvents> </TrackingEvents><VideoClicks><ClickThrough><![CDATA[http://sample.com/openrtbtest]]></ClickThrough></VideoClicks><MediaFiles><MediaFile delivery=\"progressive\" bitrate=\"256\" width=\"640\" height=\"480\" type=\"video/mp4\"><![CDATA[http://sample.com/video.mp4]]> </MediaFile></MediaFiles></Linear> </Creative></Creatives></InLine></Ad></VAST>"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "v_449642_554a13d3b9f348fba707cf83f0f63800",
+            "impid": "test-imp-id2",
+            "price": 3.5,
+            "nurl": "http://sovrn.com/rtb/impression?bannerid=138743&campaignid=3699&zoneid=449642&cb=69493397&tid=a_449642_554a13d3b9f348fba707cf83f0f63800",
+            "adm": "<?xml version=\"1.0\" encoding=\"utf-8\"?><VAST version=\"2.0\"><Ad id=\"12345\"><InLine><AdSystem version=\"1.0\">SpotXchange</AdSystem><AdTitle> <![CDATA[Sample VAST]]></AdTitle><Impression>http://sample.com</Impression><Description><![CDATA[A sample VAST feed]]></Description> <Creatives><Creative sequence=\"1\" id=\"1\"><Linear><Duration>00:00:30</Duration> <TrackingEvents> </TrackingEvents><VideoClicks><ClickThrough><![CDATA[http://sample.com/openrtbtest]]></ClickThrough></VideoClicks><MediaFiles><MediaFile delivery=\"progressive\" bitrate=\"256\" width=\"640\" height=\"480\" type=\"video/mp4\"><![CDATA[http://sample.com/video.mp4]]> </MediaFile></MediaFiles></Linear> </Creative></Creatives></InLine></Ad></VAST>"
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

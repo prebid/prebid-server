@@ -7,12 +7,13 @@ import (
 	"strconv"
 	"text/template"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type DatablocksAdapter struct {
@@ -27,7 +28,7 @@ func (a *DatablocksAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 		"Accept":       {"application/json"},
 	}
 
-	// Pull the host and source ID info from the bidder params.
+	// Pull the source ID info from the bidder params.
 	reqImps, err := splitImpressions(request.Imp)
 
 	if err != nil {
@@ -45,7 +46,7 @@ func (a *DatablocksAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 			continue
 		}
 
-		urlParams := macros.EndpointTemplateParams{Host: reqExt.Host, SourceId: strconv.Itoa(reqExt.SourceId)}
+		urlParams := macros.EndpointTemplateParams{SourceId: strconv.Itoa(reqExt.SourceId)}
 		url, err := macros.ResolveMacros(a.EndpointTemplate, urlParams)
 
 		if err != nil {
@@ -57,7 +58,8 @@ func (a *DatablocksAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 			Method:  "POST",
 			Uri:     url,
 			Body:    reqJson,
-			Headers: headers}
+			Headers: headers,
+			ImpIDs:  openrtb_ext.GetImpIDs(request.Imp)}
 
 		requests = append(requests, &request)
 	}
@@ -86,7 +88,7 @@ func (a *DatablocksAdapter) MakeBids(
 
 	var bidResp openrtb2.BidResponse
 
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
@@ -129,27 +131,21 @@ func splitImpressions(imps []openrtb2.Imp) (map[openrtb_ext.ExtImpDatablocks][]o
 
 func getBidderParams(imp *openrtb2.Imp) (*openrtb_ext.ExtImpDatablocks, error) {
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("Missing bidder ext: %s", err.Error()),
 		}
 	}
 	var datablocksExt openrtb_ext.ExtImpDatablocks
-	if err := json.Unmarshal(bidderExt.Bidder, &datablocksExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &datablocksExt); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: fmt.Sprintf("Cannot Resolve host or sourceId: %s", err.Error()),
+			Message: fmt.Sprintf("Cannot Resolve sourceId: %s", err.Error()),
 		}
 	}
 
 	if datablocksExt.SourceId < 1 {
 		return nil, &errortypes.BadInput{
 			Message: "Invalid/Missing SourceId",
-		}
-	}
-
-	if len(datablocksExt.Host) < 1 {
-		return nil, &errortypes.BadInput{
-			Message: "Invalid/Missing Host",
 		}
 	}
 
@@ -179,7 +175,7 @@ func getMediaType(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
 }
 
 // Builder builds a new instance of the Datablocks adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)

@@ -1,7 +1,7 @@
 package currency
 
 import (
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/util/task"
+	"github.com/prebid/prebid-server/v3/util/task"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -374,6 +374,6 @@ func (m *mockHttpClient) Do(req *http.Request) (*http.Response, error) {
 	return &http.Response{
 		Status:     "200 OK",
 		StatusCode: http.StatusOK,
-		Body:       ioutil.NopCloser(strings.NewReader(m.responseBody)),
+		Body:       io.NopCloser(strings.NewReader(m.responseBody)),
 	}, nil
 }

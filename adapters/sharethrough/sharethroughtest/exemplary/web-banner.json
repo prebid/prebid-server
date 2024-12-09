@@ -1,0 +1,139 @@
+{
+  "mockBidRequest": {
+    "id": "web-banner",
+    "tmax": 3000,
+    "imp": [
+      {
+        "id": "baner-imp-id",
+        "ext": {
+          "bidder": {
+            "pkey": "pkey"
+          }
+        },
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        }
+      }
+    ],
+    "test": 0,
+    "site": {
+      "publisher": {
+        "id": "1"
+      },
+      "page": "https://some-site.com",
+      "ref": "https://some-site.com"
+    },
+    "device": {
+      "w": 1200,
+      "h": 900
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://whatever.url",
+        "headers": {
+          "Content-Type": ["application/json;charset=utf-8"],
+          "Accept": ["application/json"]
+        },
+        "body": {
+          "id": "web-banner",
+          "tmax": 3000,
+          "imp": [
+            {
+              "id": "baner-imp-id",
+              "tagid": "pkey",
+              "ext": {
+                "bidder": {
+                  "pkey": "pkey"
+                }
+              },
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              }
+            }
+          ],
+          "site": {
+            "publisher": {
+              "id": "1"
+            },
+            "page": "https://some-site.com",
+            "ref": "https://some-site.com"
+          },
+          "device": {
+            "w": 1200,
+            "h": 900
+          },
+          "source": {
+            "ext": {
+              "version": "",
+              "str": "10.0"
+            }
+          }
+        },
+        "impIDs":["baner-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "web-banner",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "web-banner",
+                  "impid": "baner-imp-id",
+                  "crid": "some-creative-id",
+                  "adm": "<div>Ad</div>",
+                  "price": 20,
+                  "w": 300,
+                  "h": 250,
+                  "ext": {
+                    "prebid": {
+                      "type": "banner"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "web-banner",
+            "impid": "baner-imp-id",
+            "crid": "some-creative-id",
+            "adm": "<div>Ad</div>",
+            "price": 20,
+            "w": 300,
+            "h": 250,
+            "ext": {
+              "prebid": {
+                "type": "banner"
+              }
+            }
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

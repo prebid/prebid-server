@@ -1,0 +1,197 @@
+{
+  "mockBidRequest": {
+    "id": "6d773e60ab245243a04217d5f7e9e786",
+    "imp": [
+      {
+        "id": "bfb2dd46a5e63a0a84711c20fd8ce9e1",
+        "video": {
+          "mimes": [
+            "video/mp4",
+            "video/ogg",
+            "video/webm"
+          ],
+          "minduration": 3,
+          "maxduration": 3000,
+          "protocols": [
+            2,
+            3,
+            5,
+            6,
+            7,
+            8
+          ],
+          "w": 480,
+          "h": 320,
+          "linearity": 1,
+          "playbackmethod": [
+            2
+          ],
+          "pos": 0
+        },
+        "bidfloor": 0.40404,
+        "bidfloorcur": "USD",
+        "secure": 1,
+        "exp": 3600,
+        "ext": {
+          "bidder": {
+            "key": "test_video"
+          }
+        }
+      }
+    ],
+    "app": {
+      "id": "AA88S0101",
+      "name": "Crunchyroll",
+      "bundle": "com.adrise.crunchyroll",
+      "storeurl": "https://channelstore.roku.com/details/d11368f0934f695ff350af56600d8ccb",
+      "cat": [
+        "IAB1"
+      ],
+      "privacypolicy": 1,
+      "publisher": {
+        "id": "IY1002",
+        "name": "The View Point",
+        "domain": "krushmedia.com"
+      },
+      "content": {
+        "language": "en"
+      }
+    },
+    "device": {
+      "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.190 Safari/537.36",
+      "geo": {
+        "lat": 20.6668,
+        "lon": -103.3918,
+        "accuracy": 5,
+        "country": "MEX",
+        "region": "JAL",
+        "zip": "45186"
+      },
+      "dnt": 0,
+      "lmt": 0,
+      "ip": "187.152.119.145",
+      "devicetype": 2,
+      "os": "Windows",
+      "osv": "10",
+      "carrier": "Telmex"
+    },
+    "test": 1,
+    "at": 1,
+    "tmax": 500,
+    "cur": [
+      "USD"
+    ],
+    "source": {
+      "tid": "42da74bc-88c5-40ea-8187-9070a34e8e10"
+    },
+    "regs": {
+      "ext": {
+        "gdpr": 0
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://test.infy.tv/pbs/openrtb",
+        "body": {
+          "id": "6d773e60ab245243a04217d5f7e9e786",
+          "imp": [
+            {
+              "id": "bfb2dd46a5e63a0a84711c20fd8ce9e1",
+              "video": {
+                "mimes": [
+                  "video/mp4",
+                  "video/ogg",
+                  "video/webm"
+                ],
+                "minduration": 3,
+                "maxduration": 3000,
+                "protocols": [
+                  2,
+                  3,
+                  5,
+                  6,
+                  7,
+                  8
+                ],
+                "w": 480,
+                "h": 320,
+                "linearity": 1,
+                "playbackmethod": [
+                  2
+                ],
+                "pos": 0
+              },
+              "bidfloor": 0.40404,
+              "bidfloorcur": "USD",
+              "secure": 1,
+              "exp": 3600,
+              "ext": {
+                "bidder": {
+                  "key": "test_video"
+                }
+              }
+            }
+          ],
+          "app": {
+            "id": "AA88S0101",
+            "name": "Crunchyroll",
+            "bundle": "com.adrise.crunchyroll",
+            "storeurl": "https://channelstore.roku.com/details/d11368f0934f695ff350af56600d8ccb",
+            "cat": [
+              "IAB1"
+            ],
+            "privacypolicy": 1,
+            "publisher": {
+              "id": "IY1002",
+              "name": "The View Point",
+              "domain": "krushmedia.com"
+            },
+            "content": {
+              "language": "en"
+            }
+          },
+          "device": {
+            "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.190 Safari/537.36",
+            "geo": {
+              "lat": 20.6668,
+              "lon": -103.3918,
+              "accuracy": 5,
+              "country": "MEX",
+              "region": "JAL",
+              "zip": "45186"
+            },
+            "dnt": 0,
+            "lmt": 0,
+            "ip": "187.152.119.145",
+            "devicetype": 2,
+            "os": "Windows",
+            "osv": "10",
+            "carrier": "Telmex"
+          },
+          "test": 1,
+          "at": 1,
+          "tmax": 500,
+          "cur": [
+            "USD"
+          ],
+          "source": {
+            "tid": "42da74bc-88c5-40ea-8187-9070a34e8e10"
+          },
+          "regs": {
+            "ext": {
+              "gdpr": 0
+            }
+          }
+        },
+        "impIDs":["bfb2dd46a5e63a0a84711c20fd8ce9e1"]
+      },
+      "mockResponse": {
+        "status": 204,
+        "body": {}
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}

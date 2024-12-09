@@ -37,7 +37,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://tag.test.com/rtbpub?account=101",
+        "uri": "https://pbs2.adksrv.com/rtbpub?account=101",
         "body": {
             "app": {
             "bundle": "com.rovia.angrybirds",
@@ -56,7 +56,8 @@
               "video": {"mimes": ["video/mp4"]}
             }
           ]
-        }
+        },
+        "impIDs":["banner-adunit-1","video-adunit-2"]
       },
       "mockResponse": {
         "status": 200,

@@ -6,14 +6,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/metrics"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/metrics"
 
 	"github.com/buger/jsonparser"
 	"github.com/golang/glog"
@@ -118,7 +118,7 @@ func (c *clientImpl) PutJson(ctx context.Context, values []Cacheable) (uuids []s
 	defer anResp.Body.Close()
 	c.metrics.RecordPrebidCacheRequestTime(true, elapsedTime)
 
-	responseBody, err := ioutil.ReadAll(anResp.Body)
+	responseBody, err := io.ReadAll(anResp.Body)
 	if anResp.StatusCode != 200 {
 		logError(&errs, "Prebid Cache call to %s returned %d: %s", c.putUrl, anResp.StatusCode, responseBody)
 		return uuidsToReturn, errs

@@ -1,0 +1,59 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "imp": [
+            {
+                "id": "1",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        }
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "siteId": "TCID",
+                        "publisherId": "1234"
+                    }
+                }
+            }
+        ]
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "https://fakezero.aidemsrv.com/ortb/v2.6/bid/request?billing_id=1234",
+                "body": {
+                    "id": "test-request-id",
+                    "imp": [
+                        {
+                            "id": "1",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 300,
+                                        "h": 250
+                                    }
+                                ]
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "siteId": "TCID",
+                                    "publisherId": "1234"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "impIDs":["1"]
+            },
+            "mockResponse": {
+                "status": 204,
+                "body": {}
+            }
+        }
+    ],
+    "expectedBidResponses": []
+}

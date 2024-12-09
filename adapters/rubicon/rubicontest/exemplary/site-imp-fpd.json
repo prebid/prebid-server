@@ -410,6 +410,7 @@
             {
               "id": "test-imp-id",
               "instl": 1,
+              "secure": 1,
               "video": {
                 "placement": 3,
                 "ext": {
@@ -472,7 +473,10 @@
                       "sectionCat1",
                       "sectionCat2"
                     ],
-                    "dfp_ad_unit_code": "adSlotFromData"
+                    "dfp_ad_unit_code": "adSlotFromData",
+                    "pbs_login": "xuser",
+                    "pbs_url": "http://hosturl.com",
+                    "pbs_version": ""
                   },
                   "track": {
                     "mint": "",
@@ -483,7 +487,8 @@
               }
             }
           ]
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,

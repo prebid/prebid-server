@@ -71,7 +71,8 @@
               "ip": "123.123.123.123",
               "ifa": "zxcjbzxmc-zxcbmz-zxbcz-zxczx"
           }
-      }
+      },
+      "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,
@@ -91,10 +92,8 @@
                           "w": 300,
                           "h": 250,
                           "ext": {
-                              "prebid": {
-                                  "type": "banner"
-                              }
-                          }
+                            "mediaType": "banner"
+                        }
                       }
                   ]
               }
@@ -119,10 +118,8 @@
             "w": 300,
             "h": 250,
             "ext": {
-              "prebid": {
-                "type": "banner"
-              }
-            }
+              "mediaType": "banner"
+          }
           },
           "type": "banner"
         }

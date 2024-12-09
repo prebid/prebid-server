@@ -1,0 +1,134 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "imp": [
+            {
+                "id": "test-imp-id",
+                "tagid": "test",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        },
+                        {
+                            "w": 300,
+                            "h": 600
+                        }
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "placementId": "test"
+                    }
+                }
+            }
+        ],
+        "site": {
+            "id": "1",
+            "domain": "test.com"
+        },
+        "device": {
+            "ip": "123.123.123.123",
+            "ua": "Ubuntu"
+        }
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "http://example.com/pserver",
+                "body": {
+                    "id": "test-request-id",
+                    "imp": [
+                        {
+                            "id": "test-imp-id",
+                            "tagid": "test",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 300,
+                                        "h": 250
+                                    },
+                                    {
+                                        "w": 300,
+                                        "h": 600
+                                    }
+                                ]
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "placementId": "test",
+                                    "type": "publisher"
+                                }
+                            }
+                        }
+                    ],
+                    "site": {
+                        "id": "1",
+                        "domain": "test.com"
+                    },
+                    "device": {
+                        "ip": "123.123.123.123",
+                        "ua": "Ubuntu"
+                    }
+                },
+                "impIDs":["test-imp-id"]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "test-request-id",
+                    "seatbid": [
+                        {
+                            "bid": [
+                                {
+                                    "id": "test_bid_id",
+                                    "impid": "test-imp-id",
+                                    "price": 0.27543,
+                                    "adm": "<iframe id=\"adm-banner-1\" width=\"468\" height=\"60\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"http://example.com/pserver&k=bc2d316f39931a07d9a8dd249bf85fc0\"></iframe>",
+                                    "cid": "test_cid",
+                                    "crid": "test_crid",
+                                    "dealid": "test_dealid",
+                                    "w": 468,
+                                    "h": 60,
+                                    "ext": {
+                                        "prebid": {
+                                            "type": "banner"
+                                        }
+                                    }
+                                }
+                            ],
+                            "seat": "emtv"
+                        }
+                    ],
+                    "cur": "USD"
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "bids": [
+                {
+                    "bid": {
+                        "id": "test_bid_id",
+                        "impid": "test-imp-id",
+                        "price": 0.27543,
+                        "adm": "<iframe id=\"adm-banner-1\" width=\"468\" height=\"60\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"http://example.com/pserver&k=bc2d316f39931a07d9a8dd249bf85fc0\"></iframe>",
+                        "cid": "test_cid",
+                        "crid": "test_crid",
+                        "dealid": "test_dealid",
+                        "w": 468,
+                        "h": 60,
+                        "ext": {
+                            "prebid": {
+                                "type": "banner"
+                            }
+                        }
+                    },
+                    "type": "banner"
+                }
+            ]
+        }
+    ]
+}

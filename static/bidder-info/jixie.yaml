@@ -1,3 +1,4 @@
+endpoint: "https://hb.jixie.io/v2/hbsvrpost"
 maintainer:
   email: contact@jixie.io
 modifyingVastXmlAllowed: true

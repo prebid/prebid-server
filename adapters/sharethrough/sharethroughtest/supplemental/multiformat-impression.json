@@ -1,0 +1,365 @@
+{
+  "mockBidRequest": {
+    "id": "parent-id",
+    "tmax": 3000,
+    "imp": [
+      {
+        "id": "impression-id",
+        "ext": {
+          "bidder": {
+            "pkey": "pkey1"
+          }
+        },
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "video": {
+          "w": 640,
+          "h": 480,
+          "mimes": [
+            "video/mp4"
+          ],
+          "placement": 1
+        },
+        "native": {
+          "ver": "1.2",
+          "request": "placeholder request"
+        },
+        "audio": {
+          "mimes": [
+            "audio/mp4"
+          ],
+          "protocols": [
+            1,
+            2
+          ]
+        }
+      }
+    ],
+    "site": {
+      "publisher": {
+        "id": "1"
+      },
+      "page": "https://some-site.com",
+      "ref": "https://some-site.com"
+    },
+    "device": {
+      "w": 1200,
+      "h": 900
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://whatever.url",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
+        "body": {
+          "id": "parent-id",
+          "tmax": 3000,
+          "imp": [
+            {
+              "id": "impression-id",
+              "tagid": "pkey1",
+              "ext": {
+                "bidder": {
+                  "pkey": "pkey1"
+                }
+              },
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              }
+            }
+          ],
+          "site": {
+            "publisher": {
+              "id": "1"
+            },
+            "page": "https://some-site.com",
+            "ref": "https://some-site.com"
+          },
+          "device": {
+            "w": 1200,
+            "h": 900
+          },
+          "source": {
+            "ext": {
+              "version": "",
+              "str": "10.0"
+            }
+          }
+        },
+        "impIDs":["impression-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "parent-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "parent-id",
+                  "impid": "impression-id",
+                  "crid": "some-creative-id",
+                  "adm": "<div>Ad</div>",
+                  "price": 20,
+                  "w": 300,
+                  "h": 250,
+                  "ext": {
+                    "prebid": {
+                      "type": "banner"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "http://whatever.url",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
+        "body": {
+          "id": "parent-id",
+          "tmax": 3000,
+          "imp": [
+            {
+              "id": "impression-id",
+              "tagid": "pkey1",
+              "ext": {
+                "bidder": {
+                  "pkey": "pkey1"
+                }
+              },
+              "video": {
+                "w": 640,
+                "h": 480,
+                "mimes": [
+                  "video/mp4"
+                ],
+                "placement": 1
+              }
+            }
+          ],
+          "site": {
+            "publisher": {
+              "id": "1"
+            },
+            "page": "https://some-site.com",
+            "ref": "https://some-site.com"
+          },
+          "device": {
+            "w": 1200,
+            "h": 900
+          },
+          "source": {
+            "ext": {
+              "version": "",
+              "str": "10.0"
+            }
+          }
+        },
+        "impIDs":["impression-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "parent-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "parent-id",
+                  "impid": "impression-id",
+                  "crid": "some-creative-id",
+                  "adm": "<VAST>TAG</VAST>",
+                  "price": 20,
+                  "w": 640,
+                  "h": 480,
+                  "ext": {
+                    "prebid": {
+                      "type": "video"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "http://whatever.url",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
+        "body": {
+          "id": "parent-id",
+          "tmax": 3000,
+          "imp": [
+            {
+              "id": "impression-id",
+              "tagid": "pkey1",
+              "ext": {
+                "bidder": {
+                  "pkey": "pkey1"
+                }
+              },
+              "native": {
+                "ver": "1.2",
+                "request": "placeholder request"
+              }
+            }
+          ],
+          "site": {
+            "publisher": {
+              "id": "1"
+            },
+            "page": "https://some-site.com",
+            "ref": "https://some-site.com"
+          },
+          "device": {
+            "w": 1200,
+            "h": 900
+          },
+          "source": {
+            "ext": {
+              "version": "",
+              "str": "10.0"
+            }
+          }
+        },
+        "impIDs":["impression-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "parent-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "parent-id",
+                  "impid": "impression-id",
+                  "crid": "some-creative-id",
+                  "adm": "<div>Ad</div>",
+                  "price": 20,
+                  "w": 640,
+                  "h": 480,
+                  "ext": {
+                    "prebid": {
+                      "type": "native"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "parent-id",
+            "impid": "impression-id",
+            "crid": "some-creative-id",
+            "adm": "<div>Ad</div>",
+            "price": 20,
+            "w": 300,
+            "h": 250,
+            "ext": {
+              "prebid": {
+                "type": "banner"
+              }
+            }
+          },
+          "type": "banner"
+        }
+      ]
+    },
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "parent-id",
+            "impid": "impression-id",
+            "crid": "some-creative-id",
+            "adm": "<VAST>TAG</VAST>",
+            "price": 20,
+            "w": 640,
+            "h": 480,
+            "ext": {
+              "prebid": {
+                "type": "video"
+              }
+            }
+          },
+          "type": "video"
+        }
+      ]
+    },
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "parent-id",
+            "impid": "impression-id",
+            "crid": "some-creative-id",
+            "adm": "<div>Ad</div>",
+            "price": 20,
+            "w": 640,
+            "h": 480,
+            "ext": {
+              "prebid": {
+                "type": "native"
+              }
+            }
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}

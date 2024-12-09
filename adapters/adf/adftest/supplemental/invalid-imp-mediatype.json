@@ -48,7 +48,8 @@
             },
             "tagid": "12345"
           }]
-        }
+        },
+        "impIDs":["test-imp-id","test-imp-id-2"]
       },
       "mockResponse": {
         "status": 200,
@@ -79,7 +80,7 @@
       }
     }
   ],
-  "expectedBidResponses": [],
+  "expectedBidResponses": [{"currency":"USD","bids":[]}],
   "expectedMakeBidsErrors": [ 
     {
       "value": "Failed to parse impression \"test-imp-id\" mediatype",

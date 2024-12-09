@@ -1,0 +1,128 @@
+{
+  "mockBidRequest": {
+    "id": "1",
+    "site": {
+      "domain": "test.com",
+      "page": "http://test.com",
+      "ref": "",
+      "publisher": {}
+    },
+    "imp": [
+      {
+        "id": "i3",
+        "video": {
+          "w": 300,
+          "h": 250,
+          "pos": 1,
+          "mimes": [
+            "video/mp4"
+          ]
+        },
+        "metric": [],
+        "ext": {
+          "bidder": {
+            "seatId":"prebid",
+            "tagId": "demo1"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://pbs.technoratimedia.com/openrtb/bids/prebid?src=pbs-go%2F1.0.0&adapter=imds",
+        "body": {
+          "id": "1",
+          "site": {
+            "domain": "test.com",
+            "page": "http://test.com",
+            "publisher": {}
+          },
+          "ext": {
+            "seatId": "prebid"
+          },
+          "imp": [
+            {
+              "id": "i3",
+              "tagid": "demo1",
+              "video": {
+                "w": 300,
+                "h": 250,
+                "pos": 1,
+                "mimes": [
+                  "video/mp4"
+                ]
+              },
+              "ext": {
+                "bidder":{
+                  "seatId":"prebid",
+                  "tagId": "demo1"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs":["i3"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "1",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "video-request-id",
+                  "impid": "i3",
+                  "price": 2.693309696244891,
+                  "adomain": [
+                    "psacentral.org"
+                  ],
+                  "cid": "mock-crid",
+                  "crid": "mock-cid",
+                  "ext": {
+                    "prebid": {
+                      "type": "video"
+                    }
+                  }
+                }
+              ],
+              "seat": "imds"
+            }
+          ],
+          "ext": {
+            "responsetimemillis": {
+              "imds": 339
+            }
+          }
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "adomain": [
+              "psacentral.org"
+            ],
+            "cid": "mock-crid",
+            "crid": "mock-cid",
+            "ext": {
+                "prebid": {
+                "type": "video"
+              }
+            },
+            "id": "video-request-id",
+            "impid": "i3",
+            "price": 2.693309696244891
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

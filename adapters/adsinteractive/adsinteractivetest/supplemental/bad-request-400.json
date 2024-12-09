@@ -1,0 +1,65 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "adUnit": "fake-adunit-name"
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      
+      "expectedRequest": {
+        "uri": "http://bid.adsinteractive.com/prebid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "adUnit": "fake-adunit-name"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 400,
+        "body": {}
+      }
+    }
+  ],
+
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 400. Bad request from publisher. Run with request.debug = 1 for more info.",
+      "comparison": "literal"
+    }
+  ]
+}

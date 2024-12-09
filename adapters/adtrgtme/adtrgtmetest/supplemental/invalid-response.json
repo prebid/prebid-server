@@ -1,0 +1,112 @@
+{
+  "mockBidRequest": {
+    "id": "test-req-id",
+    "device": {
+      "ua": "test-user-agent",
+      "ip": "123.123.123.123",
+      "language": "en",
+      "dnt": 0
+    },
+    "tmax": 1000,
+    "user": {
+      "buyeruid": "test-buyer-id"
+    },
+    "app": {
+      "publisher": {
+        "id": "123456789"
+      },
+      "cat": [
+        "IAB22-1"
+      ],
+      "bundle": "com.app.test",
+      "name": "test-app",
+      "domain": "test-app.com",
+      "id": "123456789"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "tagid": "test-adtarget-test",
+        "banner": {
+          "w": 320,
+          "h": 50
+        },
+        "ext": {
+          "bidder": {
+            "site_id": 123456789
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "X-Openrtb-Version": [
+            "2.5"
+          ],
+          "User-Agent": [
+            "test-user-agent"
+          ],
+          "X-Forwarded-For": [
+            "123.123.123.123"
+          ]
+        },
+        "uri": "http://localhost/ssp?s=123456789&prebid",
+        "body": {
+          "id": "test-req-id",
+          "device": {
+            "ua": "test-user-agent",
+            "ip": "123.123.123.123",
+            "language": "en",
+            "dnt": 0
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "w": 320,
+                "h": 50
+              },
+              "tagid": "test-adtarget-test"
+            }
+          ],
+          "app": {
+            "id": "123456789",
+            "name": "test-app",
+            "bundle": "com.app.test",
+            "domain": "test-app.com",
+            "cat": [
+              "IAB22-1"
+            ],
+            "publisher": {
+              "id": "123456789"
+            }
+          },
+          "user": {
+            "buyeruid": "test-buyer-id"
+          },
+          "tmax": 1000
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": "invalid response"
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Bad Server Response",
+      "comparison": "literal"
+    }
+  ]
+}

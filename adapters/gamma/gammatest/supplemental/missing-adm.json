@@ -28,7 +28,8 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "https://hb.gammaplatform.com/adx/request/?id=sample-id&zid=sample-zone-id&wid=sample-web-id&bidid=test-imp-video-id&hb=pbmobile"
+                "uri": "https://hb.gammaplatform.com/adx/request/?id=sample-id&zid=sample-zone-id&wid=sample-web-id&bidid=test-imp-video-id&hb=pbmobile",
+                "impIDs":["test-imp-video-id"]
             },
             "mockResponse": {
                 "status": 200,
@@ -54,7 +55,7 @@
             }
         }
     ],
-    "expectedBids": [
+    "expectedBidResponses": [
         {
             "bid": {
                 "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",

@@ -2,29 +2,41 @@ package main
 
 import (
 	"flag"
-	"math/rand"
 	"net/http"
+	"path/filepath"
 	"runtime"
 	"time"
 
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/currency"
-	"github.com/prebid/prebid-server/router"
-	"github.com/prebid/prebid-server/server"
-	"github.com/prebid/prebid-server/util/task"
+	jsoniter "github.com/json-iterator/go"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/currency"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/router"
+	"github.com/prebid/prebid-server/v3/server"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/task"
 
 	"github.com/golang/glog"
 	"github.com/spf13/viper"
 )
 
 func init() {
-	rand.Seed(time.Now().UnixNano())
+	jsoniter.RegisterExtension(&jsonutil.RawMessageExtension{})
 }
 
 func main() {
 	flag.Parse() // required for glog flags and testing package flags
 
-	cfg, err := loadConfig()
+	bidderInfoPath, err := filepath.Abs(infoDirectory)
+	if err != nil {
+		glog.Exitf("Unable to build configuration directory path: %v", err)
+	}
+
+	bidderInfos, err := config.LoadBidderInfoFromDisk(bidderInfoPath)
+	if err != nil {
+		glog.Exitf("Unable to load bidder configurations: %v", err)
+	}
+	cfg, err := loadConfig(bidderInfos)
 	if err != nil {
 		glog.Exitf("Configuration could not be loaded or did not pass validation: %v", err)
 	}
@@ -44,11 +56,12 @@ func main() {
 }
 
 const configFileName = "pbs"
+const infoDirectory = "./static/bidder-info"
 
-func loadConfig() (*config.Configuration, error) {
+func loadConfig(bidderInfos config.BidderInfos) (*config.Configuration, error) {
 	v := viper.New()
-	config.SetupViper(v, configFileName)
-	return config.New(v)
+	config.SetupViper(v, configFileName, bidderInfos)
+	return config.New(v, bidderInfos, openrtb_ext.NormalizeBidderName)
 }
 
 func serve(cfg *config.Configuration) error {
@@ -65,7 +78,9 @@ func serve(cfg *config.Configuration) error {
 	}
 
 	corsRouter := router.SupportCORS(r)
-	server.Listen(cfg, router.NoCache{Handler: corsRouter}, router.Admin(currencyConverter, fetchingInterval), r.MetricsEngine)
+	if err := server.Listen(cfg, router.NoCache{Handler: corsRouter}, router.Admin(currencyConverter, fetchingInterval), r.MetricsEngine); err != nil {
+		glog.Fatalf("prebid-server returned an error: %v", err)
+	}
 
 	r.Shutdown()
 	return nil

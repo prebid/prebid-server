@@ -57,6 +57,7 @@
                   }
                 ]
               },
+              "bidfloorcur": "EUR",
               "ext": {
                 "bidder": {
                   "accountId": "orbidder-test",
@@ -66,7 +67,8 @@
               }
             }
           ]
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,
@@ -84,7 +86,8 @@
                   "adm": "some-test-ad",
                   "crid": "test-crid",
                   "h": 250,
-                  "w": 300
+                  "w": 300,
+                  "mtype": 1
                 }
               ]
             }
@@ -107,7 +110,8 @@
             "adm": "some-test-ad",
             "crid": "test-crid",
             "w": 300,
-            "h": 250
+            "h": 250,
+            "mtype": 1
           },
           "type": "banner"
         }
@@ -116,8 +120,8 @@
   ],
   "expectedMakeRequestsErrors": [
     {
-      "value": "unexpected end of JSON input",
-      "comparison": "literal"
+      "value": "expect { or n, but found",
+      "comparison": "startswith"
     }
   ]
 }

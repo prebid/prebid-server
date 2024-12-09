@@ -1,0 +1,13 @@
+endpoint: "https://b.nativendo.de/cds/rtb/bid?ssp={{.AccountID}}"
+maintainer:
+  email: tech@seeding-alliance.de
+gvlVendorID: 371
+capabilities:
+  site:
+    mediaTypes:
+      - native
+      - banner
+userSync:
+  redirect:
+    url: "https://dmp.nativendo.de/set-uuid?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&redirect_url={{.RedirectURL}}"
+    userMacro: "$UID"

@@ -1,5 +1,8 @@
+endpoint: "http://api.hb.ad.cpe.dotomi.com/cvx/server/hb/ortb"
+openrtb:
+  version: 2.6
 maintainer:
-  email: "CNVR_PublisherIntegration@conversantmedia.com"
+  email: "PublisherIntegration@epsilon.com"
 gvlVendorID: 24
 capabilities:
   app:
@@ -12,6 +15,6 @@ capabilities:
       - video
 userSync:
   redirect:
-    url: "https://prebid-match.dotomi.com/match/bounce/current?version=1&networkId=72582&rurl={{.RedirectURL}}"
+    url: "https://prebid-match.dotomi.com/match/bounce/current?version=1&networkId=72582&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&rurl={{.RedirectURL}}"
     userMacro: ""
-    # conversant appends the user id to end of the redirect url and does not utilize a macro
+    # epsilon appends the user id to end of the redirect url and does not utilize a macro

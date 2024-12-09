@@ -1,0 +1,82 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-native-id",
+        "native": {
+          "request": "test-native-request"
+        },
+        "ext": {
+          "bidder": {
+            "host": "native.ortb.net",
+            "publisherId": 123456
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://test.ortb.net/openrtb/123456?host=native.ortb.net",
+        "body": {
+          "id": "test-request-id-test-native-id",
+          "imp": [
+            {
+              "id": "test-native-id",
+              "native": {
+                "request": "test-native-request"
+              }
+            }
+          ]
+        },
+        "impIDs":["test-native-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id-test-native-id",
+          "seatbid": [
+            {
+              "seat": "test-seat",
+              "bid": [
+                {
+                  "id": "5665e2bf-5a8d-a16c-a3d6-584a39392c87",
+                  "impid": "test-native-id",
+                  "price": 0.1427,
+                  "adm": "test-native-response",
+                  "adid": "92-287",
+                  "adomain": ["advertiserdomain.com"],
+                  "crid": "287",
+                  "w": 300,
+                  "h": 250
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "5665e2bf-5a8d-a16c-a3d6-584a39392c87",
+            "impid": "test-native-id",
+            "price": 0.1427,
+            "adm": "test-native-response",
+            "adid": "92-287",
+            "adomain": ["advertiserdomain.com"],
+            "crid": "287",
+            "w": 300,
+            "h": 250
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}

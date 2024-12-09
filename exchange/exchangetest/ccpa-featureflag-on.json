@@ -1,26 +1,35 @@
 {
     "enforceCcpa": true,
+    "ortbversion": {
+        "appnexus":"2.6"
+    },
     "incomingRequest": {
         "ortbRequest": {
             "id": "some-request-id",
             "site": {
                 "page": "test.somepage.com"
             },
-            "imp": [{
-                "id": "my-imp-id",
-                "video": {
-                    "mimes": ["video/mp4"]
-                },
-                "ext": {
-                    "appnexus": {
-                        "placementId": 1
+            "imp": [
+                {
+                    "id": "my-imp-id",
+                    "video": {
+                        "mimes": [
+                            "video/mp4"
+                        ]
+                    },
+                    "ext": {
+                        "prebid": {
+                            "bidder": {
+                                "appnexus": {
+                                    "placementId": 1
+                                }
+                            }
+                        }
                     }
                 }
-            }],
+            ],
             "regs": {
-                "ext": {
-                    "us_privacy": "1-Y-"
-                }
+                "us_privacy": "1-Y-"
             },
             "user": {
                 "buyeruid": "some-buyer-id"
@@ -35,29 +44,31 @@
                     "site": {
                         "page": "test.somepage.com"
                     },
-                    "imp": [{
-                        "id": "my-imp-id",
-                        "video": {
-                            "mimes": ["video/mp4"]
-                        },
-                        "ext": {
-                            "bidder": {
-                                "placementId": 1
+                    "imp": [
+                        {
+                            "id": "my-imp-id",
+                            "video": {
+                                "mimes": [
+                                    "video/mp4"
+                                ]
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "placementId": 1
+                                }
                             }
                         }
-                    }],
+                    ],
                     "regs": {
-                        "ext": {
-                            "us_privacy": "1-Y-"
-                        }
+                        "us_privacy": "1-Y-"
                     },
-                    "user": {
-                    }
-                },
-                "bidAdjustment": 1.0
+                    "user": {}
+                }
             },
             "mockResponse": {
-                "errors": ["appnexus-error"]
+                "errors": [
+                    "appnexus-error"
+                ]
             }
         }
     }

@@ -1,0 +1,19 @@
+endpoint: "https://ads.stickyadstv.com/openrtb/dsp"
+maintainer:
+  email: prebid-maintainer@freewheel.com
+gvlVendorID: 285
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - video
+  site:
+    mediaTypes:
+      - video
+userSync:
+  iframe:
+    url: "https://ads.stickyadstv.com/pbs-user-sync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&r={{.RedirectURL}}"
+    userMacro: "{viewerid}"
+openrtb:
+  version: 2.6
+  gpp-supported: true

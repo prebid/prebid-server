@@ -1,0 +1,120 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "imp": [
+            {
+                "id": "1",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 320,
+                            "h": 50
+                        }
+                    ]
+                },
+                "video": {
+                    "mimes": [
+                        "video/mp4"
+                    ],
+                    "protocols": [
+                        2,
+                        5
+                    ],
+                    "w": 320,
+                    "h": 480
+                },
+                "ext": {
+                    "bidder": {
+                        "siteId": "TCID",
+                        "publisherId": "1234"
+                    }
+                }
+            }
+        ]
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "https://fakezero.aidemsrv.com/ortb/v2.6/bid/request?billing_id=1234",
+                "body": {
+                    "id": "test-request-id",
+                    "imp": [
+                        {
+                            "id": "1",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 320,
+                                        "h": 50
+                                    }
+                                ]
+                            },
+                            "video": {
+                                "mimes": [
+                                    "video/mp4"
+                                ],
+                                "protocols": [
+                                    2,
+                                    5
+                                ],
+                                "w": 320,
+                                "h": 480
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "siteId": "TCID",
+                                    "publisherId": "1234"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "impIDs":["1"]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "test-request-id",
+                    "seatbid": [
+                        {
+                            "seat": "aax",
+                            "bid": [
+                                {
+                                    "id": "test-bid-id",
+                                    "impid": "1",
+                                    "price": 1.50,
+                                    "adm": "some-test-ad",
+                                    "crid": "test-crid",
+                                    "h": 50,
+                                    "w": 320,
+                                    "mtype": 1
+                                }
+                            ]
+                        }
+                    ],
+                    "cur": "USD"
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "currency": "USD",
+            "bids": [
+                {
+                    "bid": {
+                        "id": "test-bid-id",
+                        "impid": "1",
+                        "price": 1.50,
+                        "adm": "some-test-ad",
+                        "crid": "test-crid",
+                        "w": 320,
+                        "h": 50,
+                        "mtype": 1
+                    },
+                    "type": "banner"
+                }
+            ]
+        }
+    ]
+}

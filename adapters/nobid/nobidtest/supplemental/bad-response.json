@@ -35,7 +35,8 @@
                 }
               }
             ]
-          }
+          },
+          "impIDs":["test-imp-id"]
         },
         "mockResponse": {
           "status": 200,
@@ -60,7 +61,7 @@
         }
       }
     ],
-    "expectedBidResponses": [],
+    "expectedBidResponses": [{"currency":"USD","bids":[]}],
     "expectedMakeBidsErrors": [
       {
       "value": "Failed to find impression \"XYZ\"",

@@ -1,0 +1,49 @@
+{
+  "mockBidRequest": {
+    "id": "id",
+    "imp": [
+      {
+        "id": "id",
+        "secure": 1,
+        "bidfloor": 0.01,
+        "bidfloorcur": "USD",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": []
+        }
+      }
+    ],
+    "device": {
+      "ua": "UA",
+      "ip": "123.3.4.123"
+    },
+    "regs": {
+      "ext": {
+        "gdpr": 0
+      }
+    },
+    "user": {
+      "id": "userid"
+    },
+    "site": {
+      "id": "id",
+      "domain": "test,com",
+      "cat": [
+        "IAB12"
+      ],
+      "publisher": {
+        "id": "pubid"
+      }
+    }
+  },
+  "httpCalls": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Failed to deserialize DriftPixel extension: expect { or n, but found [",
+      "comparison": "literal"
+    }
+  ]
+}

@@ -67,7 +67,8 @@
               }
             }
           ]
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,
@@ -100,8 +101,7 @@
       }
     }
   ],
-  "expectedBidResponses": [
-  ],
+  "expectedBidResponses": [{"currency":"USD","bids":[]}],
   "expectedMakeBidsErrors": [
     {
       "value": "unrecognized adtype in response",

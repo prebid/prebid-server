@@ -1,0 +1,183 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 300
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "org": "72721",
+            "path": "mvo",
+            "zone": "1r"
+          }
+        }
+      },
+      {
+        "id": "test-imp-video-id",
+        "video": {
+          "mimes": ["video/mp4"],
+          "minduration": 1,
+          "maxduration": 2,
+          "protocols": [1, 2, 5],
+          "w": 1020,
+          "h": 780,
+          "startdelay": 1,
+          "placement": 1,
+          "playbackmethod": [2],
+          "delivery": [1],
+          "api": [1, 2, 3, 4]
+        },
+        "ext": {
+          "bidder": {
+            "org": "72721",
+            "path": "mvo",
+            "zone": "1r"
+          }
+        }
+      }
+    ],
+    "user": {
+      "id": "eyJ0ZW1wVUlEcyI6eyJhZGZvcm0iOnsidWlkIjoiMzA5MTMwOTUxNjQ5NDA1MjcxIiwiZXhwaXJlcyI6IjIwMTgtMDYtMjBUMTE6NDA6MzUuODAwNTE0NzQ3KzA1OjMwIn0sImFkbnhzIjp7InVpZCI6IjM1MTUzMjg2MTAyNjMxNjQ0ODQiLCJleHBpcmVzIjoiMjAxOC0wNi0xOFQxODoxMjoxNy4wMTExMzg2MDgrMDU6MzAifX0sImJkYXkiOiIyMDE4LTA2LTA0VDE4OjEyOjE3LjAxMTEzMDg3NSswNTozMCJ9",
+      "ext": {
+        "consent": "BOPVK28OPVK28ABABAENA8-AAAADkCNQCGoQAAQ"
+      }
+    },
+    "regs": {
+      "ext": {
+        "gdpr": 1
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://localhost/prebid_server?publisher_id=72721",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  },
+                  {
+                    "w": 300,
+                    "h": 300
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "org": "72721",
+                  "zone": "1r",
+                  "path": "mvo"
+                }
+              }
+            },
+            {
+              "id": "test-imp-video-id",
+              "video": {
+                "mimes": ["video/mp4"],
+                "minduration": 1,
+                "maxduration": 2,
+                "protocols": [1, 2, 5],
+                "w": 1020,
+                "h": 780,
+                "startdelay": 1,
+                "placement": 1,
+                "playbackmethod": [2],
+                "delivery": [1],
+                "api": [1, 2, 3, 4]
+              },
+              "ext": {
+                "bidder": {
+                  "org": "72721",
+                  "zone": "1r",
+                  "path": "mvo"
+                }
+              }
+            }
+          ],
+          "user": {
+            "id": "eyJ0ZW1wVUlEcyI6eyJhZGZvcm0iOnsidWlkIjoiMzA5MTMwOTUxNjQ5NDA1MjcxIiwiZXhwaXJlcyI6IjIwMTgtMDYtMjBUMTE6NDA6MzUuODAwNTE0NzQ3KzA1OjMwIn0sImFkbnhzIjp7InVpZCI6IjM1MTUzMjg2MTAyNjMxNjQ0ODQiLCJleHBpcmVzIjoiMjAxOC0wNi0xOFQxODoxMjoxNy4wMTExMzg2MDgrMDU6MzAifX0sImJkYXkiOiIyMDE4LTA2LTA0VDE4OjEyOjE3LjAxMTEzMDg3NSswNTozMCJ9",
+            "ext": {
+              "consent": "BOPVK28OPVK28ABABAENA8-AAAADkCNQCGoQAAQ"
+            }
+          },
+          "regs": {
+            "ext": {
+              "gdpr": 1
+            }
+          }
+        },
+        "impIDs":["test-imp-id","test-imp-video-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "958",
+              "bid": [
+                {
+                  "id": "7706636740145184841",
+                  "impid": "test-imp-video-id",
+                  "price": 0.5,
+                  "adid": "29681110",
+                  "adm": "some-test-ad",
+                  "adomain": ["yahoo.com"],
+                  "cid": "958",
+                  "crid": "29681110",
+                  "h": 576,
+                  "w": 1024,
+                  "mtype": 2
+                }
+              ]
+            }
+          ],
+          "bidid": "5778926625248726496",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "7706636740145184841",
+            "impid": "test-imp-video-id",
+            "price": 0.5,
+            "adm": "some-test-ad",
+            "adid": "29681110",
+            "adomain": ["yahoo.com"],
+            "cid": "958",
+            "crid": "29681110",
+            "w": 1024,
+            "h": 576,
+            "mtype": 2
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "mockBidRequest": {
+    "id": "Some Id (445455)",
+    "cur": ["AUD"],
+    "imp": [{
+      "id": "Impression id #1",
+      "banner": {},
+      "bidfloorcur": "AUD",
+      "ext": {
+        "bidder": {
+          "placementId": "64b94ad4ed136806629dd51c"
+        }
+      }
+    }]
+  },
+
+  "httpCalls": [{
+    "expectedRequest": {
+      "uri": "http://somecoolurlfor.vox",
+      "headers": {},
+      "body": {
+        "id": "Some Id (445455)",
+        "cur": ["AUD"],
+        "imp": [{
+          "id": "Impression id #1",
+          "banner": {},
+          "bidfloorcur": "AUD",
+          "ext": {
+            "bidder": {
+              "placementId": "64b94ad4ed136806629dd51c"
+            }
+          }
+        }]
+      },
+      "impIDs":["Impression id #1"]
+    },
+
+    "mockResponse": {
+      "status": 204,
+      "headers": {},
+      "body": {}
+    }
+  }],
+
+  "expectedBidResponses": []
+}

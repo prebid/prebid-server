@@ -297,6 +297,7 @@
             {
               "id": "test-imp-id",
               "instl": 1,
+              "secure": 1,
               "video": {
                 "placement": 3,
                 "ext": {
@@ -321,7 +322,10 @@
                     "pagecat": [
                       "val1",
                       "val2"
-                    ]
+                    ],
+                    "pbs_login": "xuser",
+                    "pbs_url": "http://hosturl.com",
+                    "pbs_version": ""
                   },
                   "track": {
                     "mint": "",
@@ -332,7 +336,8 @@
               }
             }
           ]
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,

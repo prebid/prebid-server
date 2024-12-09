@@ -1,0 +1,186 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "page": "https://test.orbidder.de"
+    },
+    "user": {
+      "buyeruid": "XX672XXX-5XXd-4XX2-8XX6-6XXXXc9cXXXX.v1"
+    },
+    "imp": [
+      {
+        "id": "multi-format-test-imp-id-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "native": {
+          "ver":"1.2",
+          "request":"\"assets\":[{\"id\":0,\"required\":1,\"title\":{\"len\":140},{\"id\":1,\"img\":{\"h\":250,\"hmin\":0,\"type\":3,\"w\":300,\"wmin\":0}}]"
+        },
+        "ext": {
+          "bidder": {
+            "accountId": "orbidder-test",
+            "placementId": "web-test-placement-1",
+            "bidfloor": 0.1
+          }
+        }
+      },{
+        "id": "multi-format-test-imp-id-2",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "native": {
+          "ver":"1.2",
+          "request":"\"assets\":[{\"id\":0,\"required\":1,\"title\":{\"len\":140},{\"id\":1,\"img\":{\"h\":250,\"hmin\":0,\"type\":3,\"w\":300,\"wmin\":0}}]"
+        },
+        "ext": {
+          "bidder": {
+            "accountId": "orbidder-test",
+            "placementId": "web-test-placement-2",
+            "bidfloor": 0.1
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://orbidder-test",
+        "body": {
+          "id": "test-request-id",
+          "site": {
+            "page": "https://test.orbidder.de"
+          },
+          "user": {
+            "buyeruid": "XX672XXX-5XXd-4XX2-8XX6-6XXXXc9cXXXX.v1"
+          },
+          "imp": [
+            {
+              "id": "multi-format-test-imp-id-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "native": {
+                "ver":"1.2",
+                "request":"\"assets\":[{\"id\":0,\"required\":1,\"title\":{\"len\":140},{\"id\":1,\"img\":{\"h\":250,\"hmin\":0,\"type\":3,\"w\":300,\"wmin\":0}}]"
+              },
+              "bidfloorcur": "EUR",
+              "ext": {
+                "bidder": {
+                  "accountId": "orbidder-test",
+                  "placementId": "web-test-placement-1",
+                  "bidfloor": 0.1
+                }
+              }
+            },{
+              "id": "multi-format-test-imp-id-2",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "native": {
+                "ver":"1.2",
+                "request":"\"assets\":[{\"id\":0,\"required\":1,\"title\":{\"len\":140},{\"id\":1,\"img\":{\"h\":250,\"hmin\":0,\"type\":3,\"w\":300,\"wmin\":0}}]"
+              },
+              "bidfloorcur": "EUR",
+              "ext": {
+                "bidder": {
+                  "accountId": "orbidder-test",
+                  "placementId": "web-test-placement-2",
+                  "bidfloor": 0.1
+                }
+              }
+            }
+          ]
+        },
+        "impIDs":["multi-format-test-imp-id-1","multi-format-test-imp-id-2"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "seat-id",
+              "bid": [
+                {
+                  "id": "8ee514f1-b2b8-4abb-89fd-084437d1e900",
+                  "impid": "multi-format-test-imp-id-1",
+                  "adid": "11110126",
+                  "price": 0.600000,
+                  "adm": "banner-some-test-ad",
+                  "crid": "banner-test-crid",
+                  "h": 250,
+                  "w": 300,
+                  "mtype": 1
+                },{
+                  "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                  "impid": "multi-format-test-imp-id-2",
+                  "adid": "11110136",
+                  "price": 0.500000,
+                  "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":0,\"required\":1,\"title\":{\"text\":\"Orbidder rocks\"}},{\"id\":1,\"required\":1,\"img\":{\"url\":\"https://prd.orbidder.de/common/logo.png\"}}],\"link\":{\"url\":\"https://www.otto.de/\",\"clicktrackers\":[\"https://prd.orbidder.de/click\"]},\"imptrackers\":[\"https://prd.orbidder.de/imp\"]}",
+                  "crid": "native-test-crid",
+                  "mtype": 4
+                }
+              ]
+            }
+          ],
+          "bidid": "5778926625248726496",
+          "cur": "EUR"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "8ee514f1-b2b8-4abb-89fd-084437d1e900",
+            "impid": "multi-format-test-imp-id-1",
+            "adid": "11110126",
+            "price": 0.6,
+            "adm": "banner-some-test-ad",
+            "crid": "banner-test-crid",
+            "w": 300,
+            "h": 250,
+            "mtype": 1
+          },
+          "type": "banner"
+        },{
+          "bid": {
+            "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+            "impid": "multi-format-test-imp-id-2",
+            "adid": "11110136",
+            "price": 0.5,
+            "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":0,\"required\":1,\"title\":{\"text\":\"Orbidder rocks\"}},{\"id\":1,\"required\":1,\"img\":{\"url\":\"https://prd.orbidder.de/common/logo.png\"}}],\"link\":{\"url\":\"https://www.otto.de/\",\"clicktrackers\":[\"https://prd.orbidder.de/click\"]},\"imptrackers\":[\"https://prd.orbidder.de/imp\"]}",
+            "crid": "native-test-crid",
+            "mtype": 4
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}

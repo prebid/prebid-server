@@ -1,0 +1,116 @@
+{
+  "mockBidRequest": {
+    "site": {
+      "page": "https://getblue.io"
+    },
+    "id": "req-id",
+    "device": {
+      "ip": "1.1.1.1",
+      "ua": "Mozilla/5.0 (Linux; Android 8.0.0; SM-G960F Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.84 Mobile Safari/537.36"
+    },
+    "imp": [
+      {
+        "ext": {
+          "bidder": {
+            "plc": "125566877"
+          }
+        },
+        "banner": {
+          "w": 300,
+          "h": 50
+        },
+        "id": "blue-id"
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://foo.io/?src=prebid",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ]
+        },
+        "body": {
+          "site": {
+            "page": "https://getblue.io"
+          },
+          "id": "req-id",
+          "device": {
+            "ip": "1.1.1.1",
+            "ua": "Mozilla/5.0 (Linux; Android 8.0.0; SM-G960F Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.84 Mobile Safari/537.36"
+          },
+          "imp": [
+            {
+              "ext": {
+                "bidder": {
+                  "plc": "125566877"
+                }
+              },
+              "banner": {
+                "w": 300,
+                "h": 50
+              },
+              "id": "blue-id"
+            }
+          ]
+        },
+        "impIDs":["blue-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "req-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "ext": {
+                    "prebid": {
+                      "meta": {
+                        "networkName": "blue"
+                      }
+                    }
+                  },
+                  "nurl": "https://some.event.url/params",
+                  "crid": "123456789",
+                  "adomain": [],
+                  "price": 1.0,
+                  "id": "1234",
+                  "adm": "bannerhtml",
+                  "impid": "blue-id"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "BRL",
+      "bids": [
+        {
+          "bid": {
+            "id": "1234",
+            "impid": "blue-id",
+            "price": 1.0,
+            "adm": "bannerhtml",
+            "crid": "123456789",
+            "nurl": "https://some.event.url/params",
+            "ext": {
+              "prebid": {
+                "meta": {
+                  "networkName": "blue"
+                }
+              }
+            }
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

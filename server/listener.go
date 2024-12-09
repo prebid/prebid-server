@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/metrics"
+	"github.com/prebid/prebid-server/v3/metrics"
 )
 
 // monitorableListener tracks any opened connections in the metrics.
@@ -38,7 +38,7 @@ func (l *monitorableConnection) Close() error {
 	return err
 }
 
-func (ln *monitorableListener) Accept() (c net.Conn, err error) {
+func (ln *monitorableListener) Accept() (net.Conn, error) {
 	tc, err := ln.Listener.Accept()
 	if err != nil {
 		glog.Errorf("Error accepting connection: %v", err)
@@ -71,3 +71,7 @@ func (ln tcpKeepAliveListener) Accept() (net.Conn, error) {
 	tc.SetKeepAlivePeriod(3 * time.Minute)
 	return tc, nil
 }
+
+type unixListener struct{ *net.UnixListener }
+
+func (ln unixListener) Accept() (net.Conn, error) { return ln.AcceptUnix() }

@@ -1,3 +1,4 @@
+endpoint: "http://ortb.richaudience.com/ortb/?bidder=pbs"
 maintainer:
   email: partnerintegrations@richaudience.com
 gvlVendorID: 108
@@ -6,10 +7,15 @@ capabilities:
   site:
     mediaTypes:
       - banner
+      - video
   app:
     mediaTypes:
       - banner
+      - video
 userSync:
   iframe:
     url: "https://sync.richaudience.com/74889303289e27f327ad0c6de7be7264/?consentString={{.GDPRConsent}}&r={{.RedirectURL}}"
     userMacro: "[PDID]"
+  redirect:
+      url: "https://sync.richaudience.com/f7872c90c5d3791e2b51f7edce1a0a5d/?p=pbs&consentString={{.GDPRConsent}}&r={{.RedirectURL}}"
+      userMacro: "[PDID]"

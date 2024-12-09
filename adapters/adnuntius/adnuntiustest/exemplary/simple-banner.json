@@ -31,17 +31,19 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "http://whatever.url?format=json&tzo=0",
+                "uri": "http://whatever.url?format=prebid&tzo=0",
                 "body": {
                     "adUnits": [
                         {
                             "auId": "123",
-                            "targetId": "123-test-imp-id"
+                            "targetId": "123-test-imp-id",
+							"dimensions": [[300,250],[300,600]]
                         }
                     ],
                     "context": "prebid.org",
                     "metaData": {}
-                }
+                },
+                "impIDs":["test-imp-id"]
             },
             "mockResponse": {
                 "status": 200,

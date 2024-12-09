@@ -1,0 +1,96 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-native-id",
+        "native": {
+          "request": "test-native-request"
+        },
+        "ext": {
+          "bidder": {
+            "ad_unit_id": "38cab549-569e-4362-a90f-f7c1d09d3e4c",
+            "publisher_id": "90f55919-525e-4e2f-99cb-fd4a59fb75a0"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://fran.frvr.com/api/v1/openrtb",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-native-id",
+              "native": {
+                "request": "test-native-request"
+              },
+              "ext": {
+                "ad_unit_id": "38cab549-569e-4362-a90f-f7c1d09d3e4c",
+                "publisher_id": "90f55919-525e-4e2f-99cb-fd4a59fb75a0"
+              }
+            }
+          ]
+        },
+        "impIDs":["test-native-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "test-seat",
+              "bid": [
+                {
+                  "id": "9244e776-e0c7-4d76-8c20-88971909114b",
+                  "impid": "test-native-id",
+                  "price": 2.50,
+                  "adm": "a creative",
+                  "adid": "9999",
+                  "adomain": ["advertiser.com"],
+                  "crid": "9999",
+                  "w": 300,
+                  "h": 600,
+                  "ext": {
+                    "prebid": {
+                      "type": "native"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "9244e776-e0c7-4d76-8c20-88971909114b",
+            "impid": "test-native-id",
+            "price": 2.50,
+            "adm": "a creative",
+            "adid": "9999",
+            "adomain": ["advertiser.com"],
+            "crid": "9999",
+            "w": 300,
+            "h": 600,
+            "ext": {
+              "prebid": {
+                "type": "native"
+              }
+            }
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}

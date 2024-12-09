@@ -5,110 +5,146 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
-	uri             string
-	slotIDGenerator slotIDGenerator
+	endpoint   string
+	bidderName string
 }
 
-func (a *adapter) MakeRequests(request *openrtb2.BidRequest, extraRequestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	criteoRequest, errs := newCriteoRequest(a.slotIDGenerator, request)
-	if len(errs) > 0 {
-		return nil, errs
-	}
+type BidExt struct {
+	Prebid ExtPrebid `json:"prebid"`
+}
 
-	jsonRequest, err := json.Marshal(criteoRequest)
+type ExtPrebid struct {
+	BidType     openrtb_ext.BidType `json:"type"`
+	NetworkName string              `json:"networkName"`
+}
+
+type CriteoExt struct {
+	Igi []*CriteoExtIgi `json:"igi"`
+}
+
+type CriteoExtIgi struct {
+	ImpId string          `json:"impid"`
+	Igs   []*CriteoExtIgs `json:"igs"`
+}
+
+type CriteoExtIgs struct {
+	Config json.RawMessage `json:"config"`
+}
+
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	bidder := &adapter{
+		endpoint:   config.Endpoint,
+		bidderName: string(bidderName),
+	}
+	return bidder, nil
+}
+
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	requestJSON, err := json.Marshal(request)
 	if err != nil {
 		return nil, []error{err}
 	}
 
-	rqData := adapters.RequestData{
-		Method:  "POST",
-		Uri:     a.uri,
-		Body:    jsonRequest,
-		Headers: getCriteoRequestHeaders(&criteoRequest),
+	requestData := &adapters.RequestData{
+		Method: "POST",
+		Uri:    a.endpoint,
+		Body:   requestJSON,
+		ImpIDs: openrtb_ext.GetImpIDs(request.Imp),
 	}
 
-	return []*adapters.RequestData{&rqData}, nil
+	return []*adapters.RequestData{requestData}, nil
 }
 
-func getCriteoRequestHeaders(criteoRequest *criteoRequest) http.Header {
-	headers := http.Header{}
-
-	// criteoRequest is known not to be nil
-	// If there was an error generating it from newCriteoRequest, the errors will be returned immediately
-	// and this method won't be called
-
-	if criteoRequest.User.CookieID != "" {
-		headers.Add("Cookie", "uid="+criteoRequest.User.CookieID)
-	}
-
-	if criteoRequest.User.IP != "" {
-		headers.Add("X-Forwarded-For", criteoRequest.User.IP)
-	}
-
-	if criteoRequest.User.IPv6 != "" {
-		headers.Add("X-Forwarded-For", criteoRequest.User.IPv6)
-	}
-
-	if criteoRequest.User.UA != "" {
-		headers.Add("User-Agent", criteoRequest.User.UA)
-	}
-
-	return headers
-}
-
-func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if response.StatusCode == http.StatusNoContent {
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	if responseData.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
 
-	if response.StatusCode != http.StatusOK {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
-		}}
-	}
-
-	bidResponse, err := newCriteoResponseFromBytes(response.Body)
-	if err != nil {
+	if responseData.StatusCode == http.StatusBadRequest {
+		err := &errortypes.BadInput{
+			Message: "Unexpected status code: 400. Run with request.debug = 1 for more info.",
+		}
 		return nil, []error{err}
 	}
 
-	bidderResponse := adapters.NewBidderResponse()
-	bidderResponse.Bids = make([]*adapters.TypedBid, len(bidResponse.Slots))
+	if responseData.StatusCode != http.StatusOK {
+		err := &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info.", responseData.StatusCode),
+		}
+		return nil, []error{err}
+	}
 
-	for i := 0; i < len(bidResponse.Slots); i++ {
-		bidderResponse.Bids[i] = &adapters.TypedBid{
-			Bid: &openrtb2.Bid{
-				ID:    bidResponse.Slots[i].ArbitrageID,
-				ImpID: bidResponse.Slots[i].ImpID,
-				Price: bidResponse.Slots[i].CPM,
-				AdM:   bidResponse.Slots[i].Creative,
-				W:     bidResponse.Slots[i].Width,
-				H:     bidResponse.Slots[i].Height,
-				CrID:  bidResponse.Slots[i].CreativeCode,
-			},
-			BidType: openrtb_ext.BidTypeBanner,
+	var response openrtb2.BidResponse
+	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
+		return nil, []error{err}
+	}
+
+	bidResponse := adapters.NewBidderResponse()
+	bidResponse.Currency = response.Cur
+
+	for _, seatBid := range response.SeatBid {
+		for i := range seatBid.Bid {
+			var bidExt BidExt
+			if err := jsonutil.Unmarshal(seatBid.Bid[i].Ext, &bidExt); err != nil {
+				return nil, []error{&errortypes.BadServerResponse{
+					Message: fmt.Sprintf("Missing ext.prebid.type in bid for impression : %s.", seatBid.Bid[i].ImpID),
+				}}
+			}
+
+			b := &adapters.TypedBid{
+				Bid:     &seatBid.Bid[i],
+				BidType: bidExt.Prebid.BidType,
+				BidMeta: getBidMeta(bidExt),
+			}
+			bidResponse.Bids = append(bidResponse.Bids, b)
 		}
 	}
 
-	return bidderResponse, nil
+	bidResponse.FledgeAuctionConfigs = a.ParseFledgeAuctionConfigs(response)
+
+	return bidResponse, nil
 }
 
-// Builder builds a new instance of the Criteo adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	return builderWithGuidGenerator(bidderName, config, newRandomSlotIDGenerator())
+func (a *adapter) ParseFledgeAuctionConfigs(response openrtb2.BidResponse) []*openrtb_ext.FledgeAuctionConfig {
+	var responseExt CriteoExt
+	if response.Ext != nil {
+		if err := jsonutil.Unmarshal(response.Ext, &responseExt); err == nil && len(responseExt.Igi) > 0 {
+			fledgeAuctionConfigs := make([]*openrtb_ext.FledgeAuctionConfig, 0, len(responseExt.Igi))
+			for _, igi := range responseExt.Igi {
+				if len(igi.Igs) > 0 && igi.Igs[0].Config != nil {
+					fledgeAuctionConfig := &openrtb_ext.FledgeAuctionConfig{
+						ImpId:  igi.ImpId,
+						Bidder: a.bidderName,
+						Config: igi.Igs[0].Config,
+					}
+					fledgeAuctionConfigs = append(fledgeAuctionConfigs, fledgeAuctionConfig)
+				}
+			}
+
+			if len(fledgeAuctionConfigs) > 0 {
+				return fledgeAuctionConfigs
+			}
+		}
+	}
+
+	return nil
 }
 
-func builderWithGuidGenerator(bidderName openrtb_ext.BidderName, config config.Adapter, slotIDGenerator slotIDGenerator) (adapters.Bidder, error) {
-	return &adapter{
-		uri:             config.Endpoint,
-		slotIDGenerator: slotIDGenerator,
-	}, nil
+func getBidMeta(ext BidExt) *openrtb_ext.ExtBidPrebidMeta {
+	var bidMeta *openrtb_ext.ExtBidPrebidMeta
+	if ext.Prebid.NetworkName != "" {
+		bidMeta = &openrtb_ext.ExtBidPrebidMeta{
+			NetworkName: ext.Prebid.NetworkName,
+		}
+	}
+	return bidMeta
 }

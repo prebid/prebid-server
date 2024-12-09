@@ -1,0 +1,243 @@
+{
+    "mockBidRequest":{
+        "id": "X4lwEgAAyXAKlqvGCwa9kg",
+        "imp": [
+            {
+                "id": "1",
+                "banner": {
+                    "w": 300,
+                    "h": 50,
+                    "pos": 3,
+                    "mimes": [
+                        "image/jpeg",
+                        "image/gif"
+                    ],
+                    "expdir": [
+                        1,
+                        2,
+                        3,
+                        4
+                    ],
+                   
+                    "format": [
+                        {
+                            "w": 290,
+                            "h": 260
+                        }
+                    ]
+                },
+                "tagid": "2612792908",
+                "bidfloor": 0.01,
+                "bidfloorcur": "USD",
+                "secure": 1,
+                "ext": {
+                        "bidder": {
+                                "publisherId": "publisher123",
+                                "bidfloor": 0.05
+                         }
+                    }
+            }
+        ],
+        "app": {
+            
+        },
+        "device": {
+            "devicetype": 1,
+            "dnt": 0,
+            "h": 2340,
+            "ifa": "9e13d2bf-e968-4065-b4db-852123b627a9",
+            "ip": "110.33.122.75",
+            "js": 1,
+            "make": "OPPO",
+            "model": "CPH2209",
+            "os": "Android",
+            "osv": "11",
+            "pxratio": 3,
+            "ua": "Mozilla/5.0 (Linux; Android 11; CPH2209 Build/RP1A.200720.011; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/100.0.4896.127 Mobile Safari/537.36",
+            "w": 1080
+        },
+        "user": {
+            "id": "Uyb8g9qJmfcma4ABC"
+        },
+        "at": 1,
+        "tmax": 1300,
+        "cur": [
+            "USD"
+        ],
+        "ext": {
+            "bc": "sp_pb_ortb_1.0.0",
+            "publisherId": "publisher123"
+        }
+      },
+    "httpCalls": [
+      {
+        "expectedRequest": {
+            "headers": {
+              "Content-Type": ["application/json;charset=utf-8"],
+              "Accept": ["application/json"],
+              "X-Openrtb-Version": [
+                "2.5"
+              ]
+            },
+            "uri": "http://localhost:8080/bidder/?identifier=5krH8Q",
+            "body": {
+                
+                "id": "X4lwEgAAyXAKlqvGCwa9kg",
+                "imp": [
+                    {
+                        "id": "1",
+                        "banner": {
+                            "w": 300,
+                            "h": 50,
+                            "pos": 3,
+                            "mimes": [
+                                "image/jpeg",
+                                "image/gif"
+                            ],
+                            "expdir": [
+                                1,
+                                2,
+                                3,
+                                4
+                            ],
+                           
+                            "format": [
+                                {
+                                    "w": 290,
+                                    "h": 260
+                                }
+                            ]
+                        },
+                        "tagid": "2612792908",
+                        "bidfloor": 0.05,
+                        "bidfloorcur": "USD",
+                        "secure": 1,
+                        "ext": {
+                                "bidder": {
+                                        "publisherId": "publisher123",
+                                        "bidfloor": 0.05
+                                 }
+                            }
+                    }
+                ],
+                "app": {
+                    "publisher": {
+                        "id": "publisher123"
+                    }
+                },
+                "device": {
+                    "devicetype": 1,
+                    "dnt": 0,
+                    "h": 2340,
+                    "ifa": "9e13d2bf-e968-4065-b4db-852123b627a9",
+                    "ip": "110.33.122.75",
+                    "js": 1,
+                    "make": "OPPO",
+                    "model": "CPH2209",
+                    "os": "Android",
+                    "osv": "11",
+                    "pxratio": 3,
+                    "ua": "Mozilla/5.0 (Linux; Android 11; CPH2209 Build/RP1A.200720.011; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/100.0.4896.127 Mobile Safari/537.36",
+                    "w": 1080
+                },
+                "user": {
+                    "id": "Uyb8g9qJmfcma4ABC"
+                },
+                "at": 1,
+                "tmax": 1300,
+                "cur": [
+                    "USD"
+                ],
+                "ext": {
+                    "bc": "sp_pb_ortb_1.0.0",
+                    "publisherId": "publisher123"
+                }
+                  },
+                  "impIDs":["1"]
+                },
+          "mockResponse": {
+            "status": 200,
+            "headers": {
+                "Content-Type": ["application/json;charset=utf-8"],
+                "Accept": ["application/json"],
+                "X-Openrtb-Version": [
+                    "2.5"
+                  ]
+                
+            },
+            "body": {
+                "id": "X4lwEgAAyXAKlqvGCwa9kg",
+                "seatbid": [
+                    {
+                        "bid": [
+                            {
+                                "id": "TbthOMFy",
+                                "impid": "1",
+                                "price": 0.03,
+                                "burl": "https://localhost:8181/tracker/?p=FAlHYmO6o9Zl4J-A9I0lpSo19KeQaWQU_nIsE-kC1tevBA0xn9BSCf1FxK6f-zkPdD88g5V1wAwJnsj3HFHsQMoWLEv7j-DOqwSR_qtcTs77QhThKsEptZTR1BfmIaiBzNK3PCqdbUzSAdcUv8ftAZkzKBpRcoZuFYUFiSCRq014TN8AOhmgartsPmNuex_hS9Zq4Px-SsZkbGzL9MoBNfygT8v-eIC7lgDdKIlhUfcTOwHqcVx2Ji3vHQieaBDBlw2GTAATu1KEwLfS2hqzh0XQEI-TFBjvrvEypqfjQMdTtUcS1N34Pc7WPPgVbJk4X2p8DeoTBpKpCQJHRvveYUvC46WySfNha1lv_MB0Mf1hadYrDDqt3hjZa0o-7wRZsjGutVf2bM-I4LUSSNMCTNJF48ooJ_cZMd6Z0GWWQGZpM5yG5qUBJKtvN4ZbHTNftqyspsy_XyMD9c2Bl4QZA3Hn-McV0mQ_eelyCg-2vtLCDEOq4BsqhPNHy5jUsIC-kJYSng1LM_sAi6SAVhLWj0cH7hTGqPNhvTevCfd6o-B1v4ynptVnDmmBT7Mz4pDNWSYiJapg9QnBwjmENG1hbTtrxQoSVCXhhWgjsoQOB6XA_RdHmGqqQ4MgSn0pjKi--jnKCloXykuh3CM8a8PGzbNRk8aCHucTA-g12bmM5xsZg08hTW44eB-CJ7DHltjSc8FuDG2866YSXWahG488QWYmS-_AEBMSV2mIk49BWOWSOfjDK0Wo0_k9FqaoPpB-rtdsUMo-0VWLlZInDNJ1-BZgGC0CKx3BgYTonAoKxU5w86OayNr_kOGHzFKMMt2a7d6lTZmPz-x8ndFIYzsrzLMLxvvwLs2FZnHhobmPHgwDCO94QhrHtHC31edqa2T3QnlBnEg2fovlzi44a2vItNIZYYdhxlGKvfW4BwgPVc0BQVxl9voP-p4cytPrstWODIZ_2D6HiU1vdlZyXBFoPaeovOHE5Nvf1n9IQOlDRmp-7tE3Nx6iS_jiqnGZYIFKSwOGL7gUyoeYKZHc7tN_XUg6cxzBTf1ERC7C5StsLs7VCXCqWZg0t-RSeCdQ4zLt2eZEB_60KpW9RtXo5aALR49OsBLrXe2gldLKMwm9Waa6LZC1R5hj8T4gnpvjEC9jLyFEt7TmVRDkXWeXYiKW2cZCpZjPxv8S5cb0FPliR4tT3lkkOoRhlP9yWiVoHp58CGcfNonBvvwG9rMUdAqqVJD7Agw-v6jpLl_v3nk5ujdD09YT8Da6peM5m5J3Qmm7eTyUsm8zNroHeDSkcUh6kkpvUbrpvaFNaefIw1e1kzR7ONG9SWmpULSIygX4Ibh6FXRbyXw3Ekx-UQLS2EZ2b-MCuL08lyjGioRnDk8zB5jZo-0DKql93CbtDnjJbV-Q6a3Zy0L3zpyCx4V6mnd5kpe7USU-am-dy0aSAgNWkERkcc-v2l4oNVn9gLG5C5L7CS_xA1gceds34LfKFKFn0PwCZglpDUoOk1PZUWY6dQbTnC3qpK4_quEZxU4gZxoMlzsD1DiyX-RtXfqc-vUeKCVUzfz4IaL4BWizOh5c_YNdUib6d70DXGm_eKIBMVrSFGKuXelo2g6QsfosDV-qxnqhkwaFiAVzGFfrRYj5DYVHJHsr4TJ-7_c-OMX5ncr_3FiFHUk3ZVHVOUxTW3jfgWnnHSoPDmy9M2FAcbFQnbgnp9TB_Zmw7xxZXrzXvZuAbFbDqN34hIhqdz-U8I4KfituMY1HCCpgz7wCh6etG6868-g5wu6BRR7qv4F5ID4TEZzQOKodx-Hy5hJcBPwgphMMt6Ch7q_v4Hur-e-JMoJhjzsatxSc5klv-ZrJF6GkfMchMPwHYtfIyBcEKCQHKZAMsaJN20EhRcmNjMPS1thFqN4TXQSPVD__j4yn_KF175Xz7VAnIzfoFW9NiE9_trtZGPiJ&wn_wp=${AUCTION_PRICE}&wn_aid=${AUCTION_ID}&wn_abi=${AUCTION_BID_ID}&wn_aii=${AUCTION_IMP_ID}&wn_aai=${AUCTION_AD_ID}&wn_asi=${AUCTION_SEAT_ID}",
+                                "adm": "<img src=\"https://localhost:8181/tracker/?p=FAlHYmO6o9Zl4J-A9I0lpSo19KeQaWQU_nIsE-kC1tevBA0xn9BSCf1FxK6f-zkPdD88g5V1wAwJnsj3HFHsQMoWLEv7j-Dat1CJyLBQG850DANUFNFHwK5HzqFL8xtIy2F6N5xYuFeF9LGMSnBU3sxUPb0v7sK-_BjHjfCwEArh9_ypJweEvF1nNAQ8r0QJNuEDXjWPSNzGngZ_3b-jwxUZbTIxaQSwID-5mJShpuz7hpyi6ueCdwBkGvTxavlX_3HvV8rDFQTGLqfL7nU1Wh7B9t6PCHJaBB78sZd5KFN1g2EOiHvAMKEi-gfZi-MeWOUbHROK1tLrzYLBpKsyYJhNU1HBTVNDeENbXt0Sed5DvJYj3GESTIrK3BpmfTIUnRCsIETNxmFBCbUCxE0OlXu3v8zYMkW7jZQgT8W7kaQGRIvucwT9joN_tmwNsBQ_Tj6Jq3WgKzZxhaIP9wcxKMDOPDpQ-nGumRkS9xXWXyc_FXW0Eadu_KjquY4=\" style=\"width:1px; height:1px; display:None\"/>https://adrta.com/i?clid=slp&paid=choc&avid=2008&caid=&plid=cr39487593745jefoijdf&publisherId=17281&siteId=&lineItemId=QKWUYk&kv1=360x640&kv2=&kv3=Uyb8g9qJmfcma4ABC&kv7=159&kv10=Optus&kv4=110.33.122.75&kv11=7360132c-cc30-4334-b3fe-c3ec98e27a0e&kv12=3&kv15=AUS&kv26=Android&kv16=-35.342200&kv17=149.210100&kv18=a.f.fnf.mod.returns.rapper.music.funkin.fire&kv19=9e13d2bf-e968-4065-b4db-852123b627a9&kv25=a.f.fnf.mod.returns.rapper.music.funkin.fire&kv27=Mozilla%2F5.0+%28Linux%3B+Android+11%3B+CPH2209+Build%2FRP1A.200720.011%3B+wv%29+AppleWebKit%2F537.36+%28KHTML%2C+like+Gecko%29+Version%2F4.0+Chrome%2F100.0.4896.127+Mobile+Safari%2F537.36&kv24=OTT/CTV<script>;var lib=document.createElement('script');lib.onload=function(){(new window.Viewability()).init(document.getElementById('sas_0_iframe'),{0:{viewable:['https://ssb-us-east.smartadserver.com/api/event?bid=1&callerid=57&bidh=5625062759a5264b831cb87b5e2f57c6f10ce0f2&bidid=1b221bb5-eef3-4572-a813-e049367d9aa3&bidenv=2&bidtime=638186997769013639&bidnwid=4395&rtbchc=1919253882149389758&actionid=41'],undetermined:['https://ssb-us-east.smartadserver.com/api/event?bid=1&callerid=57&bidh=5625062759a5264b831cb87b5e2f57c6f10ce0f2&bidid=1b221bb5-eef3-4572-a813-e049367d9aa3&bidenv=2&bidtime=638186997769013639&bidnwid=4395&rtbchc=1919253882149389758&actionid=52']}});};lib.src='https://ced-ns.sascdn.com/diff/templates/ts/dist/viewability/sas-viewability-1.1.js';document.head.appendChild(lib);(function(w, d){\\nvar getDomElem = function(id)\\n{ return d.getElementById(id).contentDocument || d.frames[id].document; }\\n\\nvar i = d.createElement('iframe');\\ni.id = 'sas_0_iframe';\\ni.scrolling = 'no';\\ni.frameBorder = 0;\\ni.width = 360; \\ni.height = 640; \\ni.style.margin = 0;\\ni.style.padding = 0;\\ni.style.width = '360px';\\ni.style.height = '640px';\\nif (typeof(sas_ajax) != 'undefined' && sas_ajax) {\\n    sas_appendToContainer(0, i);\\n} \\nelse\\n{ \\n    d.write('<div id=\"sas_rtb_0\"></div>');\\n    var sas_rtb_div = d.getElementById(\"sas_rtb_0\");    \\n    if((typeof (sas_rtb_div) != 'undefined') && (sas_rtb_div != null))\\n    {\\n        sas_rtb_div.appendChild(i);\\n    }\\n}\\ni.doc = getDomElem(i.id);\\ni.doc.write(\\n'<!doctype html><html><head><title></title></head><body style=\"margin:0;padding:0\">'+\\n'<scr'+'ipt type=\"text/javascript\">var inDapIF=inDapMgrIf=true;</scr'+'ipt>'+\\n\"\\\\x3Cimg src=\\\\'https://ssb-use1.smartadserver.com/api/event?callerid=57&amp;actionid=10016&amp;rtb=1&amp;rtbnid=4395&amp;rtbbid=1b221bb5-eef3-4572-a813-e049367d9aa3&amp;rtbh=5625062759a5264b831cb87b5e2f57c6f10ce0f2&amp;rtblt=638186997769013639&amp;rtbet=2&amp;rtbptnid=43\\\\' border=\\\\'0\\\\' width=\\\\'0\\\\' height=\\\\'0\\\\' style=\\\\'display:none\\\\'/>\\\\x3Cimg src=\\\\'https://ash.creativecdn.com/win-notify?tk=YlmnJSe9khxTFuH6yvXWba8fSWuZlnS7mfRRAC7L9KCUbO8t5syuK1ReIO_dwQfoPnRlOMpFSis10gEcvw2i17PlpQbHKDIqFHvIqYbVpjzfpuqcTV-RK_NtjQnjuZbwz8xEhvSS0oaVb-xS39qootV0XNfL4NPJahcUZU57uY88tq0MmU2gzSCYDMmJlOUXxuwVuQxW22xRIUvXxUi1BcpeSQGrnmjp5R7oumS0BNaWKFSpqr24rb006W1hnALauGdi1mOcBq4Fu3a7HUNw6V8Z8qiutscoN3eyeKFm9P4spzOJCN1R0yXS3nismO36ofTPx0aa-fSAoQ42qkRnDxgEA8j_sqsVk5QauS22lc4oLtTXPuMs3U0tXVRxRhtraXm4CUA-srziucvNJxqf1wj4qsSPcKbRaUx2akt9yCTSlCLspwiAVRH1HrBAyn2Ws-_mIjtJdHXX-4QdY9QbjtH2LSLayqEF4TMwDpMWtRlMpBJaNbfSMz9H4EyEhPPd&amp;wp=0.184552276&amp;tdc=ash\\\\' border=\\\\'0\\\\' width=\\\\'0\\\\' height=\\\\'0\\\\' style=\\\\'display:none\\\\'/>\\\\x3Ciframe src=\\\\\"https://ash.creativecdn.com/imp-delivery?tk=YlmnJSe9khxTFuH6yvXWba8fSWuZlnS7mfRRAC7L9KCUbO8t5syuK1ReIO_dwQfoPnRlOMpFSis10gEcvw2i17PlpQbHKDIqFHvIqYbVpjzfpuqcTV-RK_NtjQnjuZbwz8xEhvSS0oaVb-xS39qootV0XNfL4NPJahcUZU57uY88tq0MmU2gzSCYDMmJlOUXxuwVuQxW22xRIUvXxUi1BcpeSQGrnmjp5R7oumS0BNaWKFSpqr24rb006W1hnALauGdi1mOcBq4Fu3a7HUNw6V8Z8qiutscoN3eyeKFm9P4spzOJCN1R0yXS3nismO36ofTPx0aa-fSAoQ42qkRnDxgEA8j_sqsVk5QauS22lc4oLtTXPuMs3U0tXVRxRhtraXm4CUA-srziucvNJxqf1wj4qsSPcKbRaUx2akt9yCTSlCLspwiAVRH1HrBAyn2Ws-_mIjtJdHXX-4QdY9QbjtH2LSLayqEF4TMwDpMWtRlMpBJaNbfSMz9H4EyEhPPd&amp;curl=https%3A%2F%2Fus.creativecdn.com%2Fclicks%3Fid%3D20230503_EvIqkbOxqmDzkg8yN6gj%26%7BEXTRA_CLICK_PARAMS%7D&amp;tdc=ash\\\\\" width=\\\\\"360\\\\\" height=\\\\\"640\\\\\" scrolling=\\\\\"no\\\\\" frameBorder=\\\\\"0\\\\\"  loading=\\\\\"eager\\\\\" >\\\\x3C/iframe>\\\\x3Cscript> window.SASAdContainerTypeTrackerConfig = {mraidTrackingUrl: \\\\'https://ssb-use1.smartadserver.com/api/event?callerid=57&actionid=10012&rtb=1&rtbnid=4395&rtbbid=1b221bb5-eef3-4572-a813-e049367d9aa3&rtbh=5625062759a5264b831cb87b5e2f57c6f10ce0f2&rtblt=638186997769013639&rtbet=2&rtbptnid=43\\\\',omidTrackingUrl: \\\\'https://ssb-use1.smartadserver.com/api/event?callerid=57&actionid=10013&rtb=1&rtbnid=4395&rtbbid=1b221bb5-eef3-4572-a813-e049367d9aa3&rtbh=5625062759a5264b831cb87b5e2f57c6f10ce0f2&rtblt=638186997769013639&rtbet=2&rtbptnid=43\\\\'} \\\\x3C/script>\\\\x3Cscript src=\\\\\"https://apps.sascdn.com/onepx/OnepxImpressionScript.js\\\\\">\\\\x3C/script>\" + \\n'</body></html>'\\n);\\n\\nif (navigator.userAgent.indexOf('MSIE') == -1 && navigator.userAgent.indexOf('Opera') == -1) i.doc.close();\\n})(window, document);\\n</script>",
+                                "adomain": [
+                                    "linio.com.co"
+                                ],
+                                "cid": "FmQOmKiRUsLh",
+                                "crid": "cr39487593745jefoijdf",
+                                "w": 360,
+                                "h": 640,
+                                "mtype":1,
+                                "ext": {
+                                    "origbidcpm": 0.03,
+                                    "origbidcur": "USD",
+                                    "prebid": {
+                                        "meta": {
+                                            "adaptercode": "silverpush"
+                                        },
+                                        "type": "banner"
+                                    }
+                                }
+                            }
+                        ],
+                        "seat": "silverpush"
+                    }
+                ],
+                "cur": "USD"
+              }
+          }
+      }
+    ],
+    "expectedBidResponses": [
+        {
+            "id": "X4lwEgAAyXAKlqvGCwa9kg", 
+            "bids": [
+                       {"bid": {
+                            "id": "TbthOMFy",
+                            "impid": "1",
+                            "price": 0.03,
+                            "burl": "https://localhost:8181/tracker/?p=FAlHYmO6o9Zl4J-A9I0lpSo19KeQaWQU_nIsE-kC1tevBA0xn9BSCf1FxK6f-zkPdD88g5V1wAwJnsj3HFHsQMoWLEv7j-DOqwSR_qtcTs77QhThKsEptZTR1BfmIaiBzNK3PCqdbUzSAdcUv8ftAZkzKBpRcoZuFYUFiSCRq014TN8AOhmgartsPmNuex_hS9Zq4Px-SsZkbGzL9MoBNfygT8v-eIC7lgDdKIlhUfcTOwHqcVx2Ji3vHQieaBDBlw2GTAATu1KEwLfS2hqzh0XQEI-TFBjvrvEypqfjQMdTtUcS1N34Pc7WPPgVbJk4X2p8DeoTBpKpCQJHRvveYUvC46WySfNha1lv_MB0Mf1hadYrDDqt3hjZa0o-7wRZsjGutVf2bM-I4LUSSNMCTNJF48ooJ_cZMd6Z0GWWQGZpM5yG5qUBJKtvN4ZbHTNftqyspsy_XyMD9c2Bl4QZA3Hn-McV0mQ_eelyCg-2vtLCDEOq4BsqhPNHy5jUsIC-kJYSng1LM_sAi6SAVhLWj0cH7hTGqPNhvTevCfd6o-B1v4ynptVnDmmBT7Mz4pDNWSYiJapg9QnBwjmENG1hbTtrxQoSVCXhhWgjsoQOB6XA_RdHmGqqQ4MgSn0pjKi--jnKCloXykuh3CM8a8PGzbNRk8aCHucTA-g12bmM5xsZg08hTW44eB-CJ7DHltjSc8FuDG2866YSXWahG488QWYmS-_AEBMSV2mIk49BWOWSOfjDK0Wo0_k9FqaoPpB-rtdsUMo-0VWLlZInDNJ1-BZgGC0CKx3BgYTonAoKxU5w86OayNr_kOGHzFKMMt2a7d6lTZmPz-x8ndFIYzsrzLMLxvvwLs2FZnHhobmPHgwDCO94QhrHtHC31edqa2T3QnlBnEg2fovlzi44a2vItNIZYYdhxlGKvfW4BwgPVc0BQVxl9voP-p4cytPrstWODIZ_2D6HiU1vdlZyXBFoPaeovOHE5Nvf1n9IQOlDRmp-7tE3Nx6iS_jiqnGZYIFKSwOGL7gUyoeYKZHc7tN_XUg6cxzBTf1ERC7C5StsLs7VCXCqWZg0t-RSeCdQ4zLt2eZEB_60KpW9RtXo5aALR49OsBLrXe2gldLKMwm9Waa6LZC1R5hj8T4gnpvjEC9jLyFEt7TmVRDkXWeXYiKW2cZCpZjPxv8S5cb0FPliR4tT3lkkOoRhlP9yWiVoHp58CGcfNonBvvwG9rMUdAqqVJD7Agw-v6jpLl_v3nk5ujdD09YT8Da6peM5m5J3Qmm7eTyUsm8zNroHeDSkcUh6kkpvUbrpvaFNaefIw1e1kzR7ONG9SWmpULSIygX4Ibh6FXRbyXw3Ekx-UQLS2EZ2b-MCuL08lyjGioRnDk8zB5jZo-0DKql93CbtDnjJbV-Q6a3Zy0L3zpyCx4V6mnd5kpe7USU-am-dy0aSAgNWkERkcc-v2l4oNVn9gLG5C5L7CS_xA1gceds34LfKFKFn0PwCZglpDUoOk1PZUWY6dQbTnC3qpK4_quEZxU4gZxoMlzsD1DiyX-RtXfqc-vUeKCVUzfz4IaL4BWizOh5c_YNdUib6d70DXGm_eKIBMVrSFGKuXelo2g6QsfosDV-qxnqhkwaFiAVzGFfrRYj5DYVHJHsr4TJ-7_c-OMX5ncr_3FiFHUk3ZVHVOUxTW3jfgWnnHSoPDmy9M2FAcbFQnbgnp9TB_Zmw7xxZXrzXvZuAbFbDqN34hIhqdz-U8I4KfituMY1HCCpgz7wCh6etG6868-g5wu6BRR7qv4F5ID4TEZzQOKodx-Hy5hJcBPwgphMMt6Ch7q_v4Hur-e-JMoJhjzsatxSc5klv-ZrJF6GkfMchMPwHYtfIyBcEKCQHKZAMsaJN20EhRcmNjMPS1thFqN4TXQSPVD__j4yn_KF175Xz7VAnIzfoFW9NiE9_trtZGPiJ&wn_wp=${AUCTION_PRICE}&wn_aid=${AUCTION_ID}&wn_abi=${AUCTION_BID_ID}&wn_aii=${AUCTION_IMP_ID}&wn_aai=${AUCTION_AD_ID}&wn_asi=${AUCTION_SEAT_ID}",
+                            "adm": "<img src=\"https://localhost:8181/tracker/?p=FAlHYmO6o9Zl4J-A9I0lpSo19KeQaWQU_nIsE-kC1tevBA0xn9BSCf1FxK6f-zkPdD88g5V1wAwJnsj3HFHsQMoWLEv7j-Dat1CJyLBQG850DANUFNFHwK5HzqFL8xtIy2F6N5xYuFeF9LGMSnBU3sxUPb0v7sK-_BjHjfCwEArh9_ypJweEvF1nNAQ8r0QJNuEDXjWPSNzGngZ_3b-jwxUZbTIxaQSwID-5mJShpuz7hpyi6ueCdwBkGvTxavlX_3HvV8rDFQTGLqfL7nU1Wh7B9t6PCHJaBB78sZd5KFN1g2EOiHvAMKEi-gfZi-MeWOUbHROK1tLrzYLBpKsyYJhNU1HBTVNDeENbXt0Sed5DvJYj3GESTIrK3BpmfTIUnRCsIETNxmFBCbUCxE0OlXu3v8zYMkW7jZQgT8W7kaQGRIvucwT9joN_tmwNsBQ_Tj6Jq3WgKzZxhaIP9wcxKMDOPDpQ-nGumRkS9xXWXyc_FXW0Eadu_KjquY4=\" style=\"width:1px; height:1px; display:None\"/>https://adrta.com/i?clid=slp&paid=choc&avid=2008&caid=&plid=cr39487593745jefoijdf&publisherId=17281&siteId=&lineItemId=QKWUYk&kv1=360x640&kv2=&kv3=Uyb8g9qJmfcma4ABC&kv7=159&kv10=Optus&kv4=110.33.122.75&kv11=7360132c-cc30-4334-b3fe-c3ec98e27a0e&kv12=3&kv15=AUS&kv26=Android&kv16=-35.342200&kv17=149.210100&kv18=a.f.fnf.mod.returns.rapper.music.funkin.fire&kv19=9e13d2bf-e968-4065-b4db-852123b627a9&kv25=a.f.fnf.mod.returns.rapper.music.funkin.fire&kv27=Mozilla%2F5.0+%28Linux%3B+Android+11%3B+CPH2209+Build%2FRP1A.200720.011%3B+wv%29+AppleWebKit%2F537.36+%28KHTML%2C+like+Gecko%29+Version%2F4.0+Chrome%2F100.0.4896.127+Mobile+Safari%2F537.36&kv24=OTT/CTV<script>;var lib=document.createElement('script');lib.onload=function(){(new window.Viewability()).init(document.getElementById('sas_0_iframe'),{0:{viewable:['https://ssb-us-east.smartadserver.com/api/event?bid=1&callerid=57&bidh=5625062759a5264b831cb87b5e2f57c6f10ce0f2&bidid=1b221bb5-eef3-4572-a813-e049367d9aa3&bidenv=2&bidtime=638186997769013639&bidnwid=4395&rtbchc=1919253882149389758&actionid=41'],undetermined:['https://ssb-us-east.smartadserver.com/api/event?bid=1&callerid=57&bidh=5625062759a5264b831cb87b5e2f57c6f10ce0f2&bidid=1b221bb5-eef3-4572-a813-e049367d9aa3&bidenv=2&bidtime=638186997769013639&bidnwid=4395&rtbchc=1919253882149389758&actionid=52']}});};lib.src='https://ced-ns.sascdn.com/diff/templates/ts/dist/viewability/sas-viewability-1.1.js';document.head.appendChild(lib);(function(w, d){\\nvar getDomElem = function(id)\\n{ return d.getElementById(id).contentDocument || d.frames[id].document; }\\n\\nvar i = d.createElement('iframe');\\ni.id = 'sas_0_iframe';\\ni.scrolling = 'no';\\ni.frameBorder = 0;\\ni.width = 360; \\ni.height = 640; \\ni.style.margin = 0;\\ni.style.padding = 0;\\ni.style.width = '360px';\\ni.style.height = '640px';\\nif (typeof(sas_ajax) != 'undefined' && sas_ajax) {\\n    sas_appendToContainer(0, i);\\n} \\nelse\\n{ \\n    d.write('<div id=\"sas_rtb_0\"></div>');\\n    var sas_rtb_div = d.getElementById(\"sas_rtb_0\");    \\n    if((typeof (sas_rtb_div) != 'undefined') && (sas_rtb_div != null))\\n    {\\n        sas_rtb_div.appendChild(i);\\n    }\\n}\\ni.doc = getDomElem(i.id);\\ni.doc.write(\\n'<!doctype html><html><head><title></title></head><body style=\"margin:0;padding:0\">'+\\n'<scr'+'ipt type=\"text/javascript\">var inDapIF=inDapMgrIf=true;</scr'+'ipt>'+\\n\"\\\\x3Cimg src=\\\\'https://ssb-use1.smartadserver.com/api/event?callerid=57&amp;actionid=10016&amp;rtb=1&amp;rtbnid=4395&amp;rtbbid=1b221bb5-eef3-4572-a813-e049367d9aa3&amp;rtbh=5625062759a5264b831cb87b5e2f57c6f10ce0f2&amp;rtblt=638186997769013639&amp;rtbet=2&amp;rtbptnid=43\\\\' border=\\\\'0\\\\' width=\\\\'0\\\\' height=\\\\'0\\\\' style=\\\\'display:none\\\\'/>\\\\x3Cimg src=\\\\'https://ash.creativecdn.com/win-notify?tk=YlmnJSe9khxTFuH6yvXWba8fSWuZlnS7mfRRAC7L9KCUbO8t5syuK1ReIO_dwQfoPnRlOMpFSis10gEcvw2i17PlpQbHKDIqFHvIqYbVpjzfpuqcTV-RK_NtjQnjuZbwz8xEhvSS0oaVb-xS39qootV0XNfL4NPJahcUZU57uY88tq0MmU2gzSCYDMmJlOUXxuwVuQxW22xRIUvXxUi1BcpeSQGrnmjp5R7oumS0BNaWKFSpqr24rb006W1hnALauGdi1mOcBq4Fu3a7HUNw6V8Z8qiutscoN3eyeKFm9P4spzOJCN1R0yXS3nismO36ofTPx0aa-fSAoQ42qkRnDxgEA8j_sqsVk5QauS22lc4oLtTXPuMs3U0tXVRxRhtraXm4CUA-srziucvNJxqf1wj4qsSPcKbRaUx2akt9yCTSlCLspwiAVRH1HrBAyn2Ws-_mIjtJdHXX-4QdY9QbjtH2LSLayqEF4TMwDpMWtRlMpBJaNbfSMz9H4EyEhPPd&amp;wp=0.184552276&amp;tdc=ash\\\\' border=\\\\'0\\\\' width=\\\\'0\\\\' height=\\\\'0\\\\' style=\\\\'display:none\\\\'/>\\\\x3Ciframe src=\\\\\"https://ash.creativecdn.com/imp-delivery?tk=YlmnJSe9khxTFuH6yvXWba8fSWuZlnS7mfRRAC7L9KCUbO8t5syuK1ReIO_dwQfoPnRlOMpFSis10gEcvw2i17PlpQbHKDIqFHvIqYbVpjzfpuqcTV-RK_NtjQnjuZbwz8xEhvSS0oaVb-xS39qootV0XNfL4NPJahcUZU57uY88tq0MmU2gzSCYDMmJlOUXxuwVuQxW22xRIUvXxUi1BcpeSQGrnmjp5R7oumS0BNaWKFSpqr24rb006W1hnALauGdi1mOcBq4Fu3a7HUNw6V8Z8qiutscoN3eyeKFm9P4spzOJCN1R0yXS3nismO36ofTPx0aa-fSAoQ42qkRnDxgEA8j_sqsVk5QauS22lc4oLtTXPuMs3U0tXVRxRhtraXm4CUA-srziucvNJxqf1wj4qsSPcKbRaUx2akt9yCTSlCLspwiAVRH1HrBAyn2Ws-_mIjtJdHXX-4QdY9QbjtH2LSLayqEF4TMwDpMWtRlMpBJaNbfSMz9H4EyEhPPd&amp;curl=https%3A%2F%2Fus.creativecdn.com%2Fclicks%3Fid%3D20230503_EvIqkbOxqmDzkg8yN6gj%26%7BEXTRA_CLICK_PARAMS%7D&amp;tdc=ash\\\\\" width=\\\\\"360\\\\\" height=\\\\\"640\\\\\" scrolling=\\\\\"no\\\\\" frameBorder=\\\\\"0\\\\\"  loading=\\\\\"eager\\\\\" >\\\\x3C/iframe>\\\\x3Cscript> window.SASAdContainerTypeTrackerConfig = {mraidTrackingUrl: \\\\'https://ssb-use1.smartadserver.com/api/event?callerid=57&actionid=10012&rtb=1&rtbnid=4395&rtbbid=1b221bb5-eef3-4572-a813-e049367d9aa3&rtbh=5625062759a5264b831cb87b5e2f57c6f10ce0f2&rtblt=638186997769013639&rtbet=2&rtbptnid=43\\\\',omidTrackingUrl: \\\\'https://ssb-use1.smartadserver.com/api/event?callerid=57&actionid=10013&rtb=1&rtbnid=4395&rtbbid=1b221bb5-eef3-4572-a813-e049367d9aa3&rtbh=5625062759a5264b831cb87b5e2f57c6f10ce0f2&rtblt=638186997769013639&rtbet=2&rtbptnid=43\\\\'} \\\\x3C/script>\\\\x3Cscript src=\\\\\"https://apps.sascdn.com/onepx/OnepxImpressionScript.js\\\\\">\\\\x3C/script>\" + \\n'</body></html>'\\n);\\n\\nif (navigator.userAgent.indexOf('MSIE') == -1 && navigator.userAgent.indexOf('Opera') == -1) i.doc.close();\\n})(window, document);\\n</script>",
+                            "adomain": [
+                                "linio.com.co"
+                            ],
+                            "cid": "FmQOmKiRUsLh",
+                            "crid": "cr39487593745jefoijdf",
+                            "w": 360,
+                            "h": 640,
+                            "mtype":1,
+                            "ext": {
+                                "origbidcpm": 0.03,
+                                "origbidcur": "USD",
+                                "prebid": {
+                                    "meta": {
+                                        "adaptercode": "silverpush"
+                                    },
+                                    "type": "banner"
+                                }
+                            }
+                        },
+                        "type":"banner"
+                    }
+                ],
+            "cur": "USD"
+            
+        }
+    ]
+  }

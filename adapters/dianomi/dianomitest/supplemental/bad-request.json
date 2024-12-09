@@ -1,0 +1,49 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [{
+        "id": "test-imp-id",
+        "native": {
+          "request": ""
+        },
+        "ext": {
+          "bidder": {
+            "smartadId": 9607
+          }
+        }
+      }]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://prebid-server-aws.dianomi.com/openrtb2/auction",
+        "body": {
+          "id": "test-request-id",
+          "imp": [{
+            "ext": {
+              "bidder": {
+                "smartadId": 9607
+              }
+            },
+            "id": "test-imp-id",
+            "native": {
+              "request": ""
+            },
+            "tagid": "9607"
+          }]
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 400
+      }
+    }
+  ],
+  "expectedBidResponses": [],
+  "expectedMakeBidsErrors": [ 
+    {
+      "value": "Unexpected status code: 400. Bad request from publisher.",
+      "comparison": "literal" 
+    }
+  ]
+}

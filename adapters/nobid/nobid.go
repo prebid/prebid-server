@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 // NoBidAdapter - NoBid Adapter definition
@@ -18,7 +19,7 @@ type NoBidAdapter struct {
 }
 
 // Builder builds a new instance of the NoBid adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &NoBidAdapter{
 		endpoint: config.Endpoint,
 	}
@@ -30,7 +31,7 @@ func (a *NoBidAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 
 	if len(request.Imp) == 0 {
 		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("No Imps in Bid Request"),
+			Message: "No Imps in Bid Request",
 		}}
 	}
 
@@ -48,6 +49,7 @@ func (a *NoBidAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 		Uri:     a.endpoint,
 		Body:    data,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, []error{}
 }
 
@@ -72,7 +74,7 @@ func (a *NoBidAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRe
 
 	var bidResp openrtb2.BidResponse
 
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 

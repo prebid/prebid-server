@@ -1,0 +1,38 @@
+{
+  "mockBidRequest": {
+    "id": "22e26bd9a702bc",
+    "user": {
+      "id": "d93f2a0e5f0fe2cc3a6e"
+    },
+    "imp": [
+      {
+        "id": "1",
+        "tagid": "test-banner-imp-id",
+        "bidder": "adquery",
+        "banner": {
+          "format": [
+            {
+              "w": 320,
+              "h": 100
+            },
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": [],
+            "type": "banner"
+          }
+        }
+      }
+    ],
+    "bidder": "adquery"
+  },
+  "expectedMakeRequestsErrors": [{
+    "value": "cannot unmarshal openrtb_ext.ImpExtAdQuery.PlacementID: expects \" or n, but found [",
+    "comparison": "literal"
+  }]
+}

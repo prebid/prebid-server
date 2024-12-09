@@ -1,0 +1,150 @@
+{
+  "description": "Global FPD and bidder FPD have site.content.data",
+  "inputRequestData": {
+    "site": {
+      "id": "reqSiteId",
+      "page": "http://www.foobar.com/1234.html",
+      "publisher": {
+        "id": "1"
+      },
+      "content": {
+        "episode": 6,
+        "title": "episodeName",
+        "series": "TvName",
+        "season": "season3",
+        "len": 900,
+        "data": [
+          {
+            "id": "reqSiteData1",
+            "name": "reqSiteName1"
+          },
+          {
+            "id": "reqSiteData2",
+            "name": "reqSiteName2"
+          }
+        ]
+      },
+      "ext": {
+        "testSiteExt": 123
+      }
+    },
+    "device": {
+      "ua": "testDevice",
+      "ip": "123.145.167.10",
+      "devicetype": 1,
+      "ifa": "123"
+    },
+    "user": {
+      "id": "reqUserID",
+      "yob": 1982,
+      "gender": "M"
+    }
+  },
+  "biddersWithGlobalFPD": [
+    "appnexus"
+  ],
+  "bidderConfigFPD": {
+    "appnexus": {
+      "site": {
+        "id": "apnSiteId",
+        "page": "http://www.foobar.com/1234.html",
+        "ref": "fpdRef",
+        "content": {
+          "episode": 8,
+          "title": "episodeName8",
+          "series": "TvName",
+          "season": "season4",
+          "len": 900,
+          "data": [
+            {
+              "id": "siteData1",
+              "name": "siteName1"
+            },
+            {
+              "id": "siteData2",
+              "name": "siteName2"
+            }
+          ]
+        },
+        "ext": {
+          "data": {
+            "morefpdData": "morefpddata",
+            "siteFpddata": "siteFpddata",
+            "moreFpd": {
+              "fpd": 123
+            }
+          }
+        }
+      }
+    }
+  },
+  "globalFPD": {
+    "site": {
+      "siteFpd": 123
+    },
+    "app": {
+      "appFpd": {
+        "testValue": true
+      }
+    },
+    "user": {
+      "testUserFpd": "testuser"
+    }
+  },
+  "outputRequestData": {
+    "appnexus": {
+      "site": {
+        "id": "apnSiteId",
+        "page": "http://www.foobar.com/1234.html",
+        "ref": "fpdRef",
+        "publisher": {
+          "id": "1"
+        },
+        "content": {
+          "episode": 8,
+          "title": "episodeName8",
+          "series": "TvName",
+          "season": "season4",
+          "len": 900,
+          "data": [
+            {
+              "id": "siteData1",
+              "name": "siteName1"
+            },
+            {
+              "id": "siteData2",
+              "name": "siteName2"
+            }
+          ]
+        },
+        "ext": {
+          "testSiteExt": 123,
+          "data": {
+            "moreFpd": {
+              "fpd": 123
+            },
+            "morefpdData": "morefpddata",
+            "siteFpd": 123,
+            "siteFpddata": "siteFpddata"
+          }
+        }
+      },
+      "device": {
+        "ua": "testDevice",
+        "ip": "123.145.167.10",
+        "devicetype": 1,
+        "ifa": "123"
+      },
+      "user": {
+        "id": "reqUserID",
+        "yob": 1982,
+        "gender": "M",
+        "ext": {
+          "data": {
+            "testUserFpd": "testuser"
+          }
+        }
+      }
+    }
+  }
+}

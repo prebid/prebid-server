@@ -39,7 +39,7 @@
           "id":"some-req-id",
           "imp":[
             {
-              "id":"some-imp-id",
+              "id":"some-imp-id:opa:native",
               "tagid":"s123456",
               "ext":{
                 "bidder":{
@@ -67,7 +67,8 @@
             "buyeruid":"8299345306627569435"
           },
           "tmax":500
-        }
+        },
+        "impIDs":["some-imp-id:opa:native"]
       },
       "mockResponse":{
         "status":400,

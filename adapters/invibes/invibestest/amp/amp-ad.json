@@ -49,7 +49,8 @@
           "InvibBVLog": false,
           "VideoAdDebug": false,
           "Width": "1000"
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,
@@ -73,5 +74,23 @@
       }
     }
   ],
-  "expectedBidResponses": []
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "1234",
+            "impid": "test-imp-id",
+            "price": 0.5,
+            "adm": "<div>abc</div>",
+            "crid": "29681110",
+            "w": 300,
+            "h": 250
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
 }

@@ -1,0 +1,148 @@
+{
+  "mockBidRequest": {
+    "id": "test-req-id",
+    "at": 1,
+    "tmax": 300,
+    "imp": [
+      {
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "id": "test-bid-id",
+        "bidfloor": 1,
+        "bidfloorcur": "USD",
+        "secure": 1,
+        "ext": {
+          "bidder": {
+            "site_id": 123456789
+          }
+        }
+      }
+    ],
+    "site": {
+      "id": "123456789",
+      "cat": [
+        "test-cat"
+      ],
+      "page": "test-page-site",
+      "publisher": {
+        "id": "test-site-publisher-id"
+      }
+    },
+    "device": {
+      "ua": "test-device-user-agent",
+      "ipv6": "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
+      "geo": {
+        "country": "TST"
+      },
+      "os": "Android",
+      "language": "en"
+    },
+    "user": {
+      "id": "test-user-id"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://localhost/ssp?s=123456789&prebid",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "X-Openrtb-Version": [
+            "2.5"
+          ],
+          "User-Agent": [
+            "test-device-user-agent"
+          ],
+          "X-Forwarded-For": [
+            "2001:0db8:85a3:0000:0000:8a2e:0370:7334"
+          ]
+        },
+        "body": {
+          "id": "test-req-id",
+          "at": 1,
+          "tmax": 300,
+          "imp": [
+            {
+              "banner": {
+                "w": 300,
+                "h": 250
+              },
+              "id": "test-bid-id",
+              "bidfloor": 1,
+              "bidfloorcur": "USD",
+              "secure": 1
+            }
+          ],
+          "site": {
+            "id": "123456789",
+            "cat": [
+              "test-cat"
+            ],
+            "page": "test-page-site",
+            "publisher": {
+              "id": "test-site-publisher-id"
+            }
+          },
+          "device": {
+            "ua": "test-device-user-agent",
+            "ipv6": "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
+            "geo": {
+              "country": "TST"
+            },
+            "os": "Android",
+            "language": "en"
+          },
+          "user": {
+            "id": "test-user-id"
+          }
+        },
+        "impIDs":["test-bid-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-req-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "test-bid-id",
+                  "impid": "test-bid-id",
+                  "price": 1,
+                  "adm": "<div>test</div>",
+                  "crid": "test-creative-id"
+                }
+              ]
+            }
+          ],
+          "bidid": "test-seatbid-id",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-bid-id",
+            "impid": "test-bid-id",
+            "price": 1,
+            "adm": "<div>test</div>",
+            "crid": "test-creative-id"
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

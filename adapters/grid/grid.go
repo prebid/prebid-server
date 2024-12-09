@@ -2,21 +2,39 @@ package grid
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"sort"
 	"strings"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/util/maputil"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/maputil"
 )
 
 type GridAdapter struct {
 	endpoint string
+}
+
+type GridBid struct {
+	*openrtb2.Bid
+	AdmNative   json.RawMessage     `json:"adm_native,omitempty"`
+	ContentType openrtb_ext.BidType `json:"content_type"`
+}
+
+type GridSeatBid struct {
+	*openrtb2.SeatBid
+	Bid []GridBid `json:"bid"`
+}
+
+type GridResponse struct {
+	*openrtb2.BidResponse
+	SeatBid []GridSeatBid `json:"seatbid,omitempty"`
 }
 
 type GridBidExt struct {
@@ -42,10 +60,12 @@ type ExtImpData struct {
 }
 
 type ExtImp struct {
-	Prebid *openrtb_ext.ExtImpPrebid `json:"prebid,omitempty"`
-	Bidder json.RawMessage           `json:"bidder"`
-	Data   *ExtImpData               `json:"data,omitempty"`
-	Gpid   string                    `json:"gpid,omitempty"`
+	Prebid  *openrtb_ext.ExtImpPrebid `json:"prebid,omitempty"`
+	Bidder  json.RawMessage           `json:"bidder"`
+	Data    *ExtImpData               `json:"data,omitempty"`
+	Gpid    string                    `json:"gpid,omitempty"`
+	Skadn   json.RawMessage           `json:"skadn,omitempty"`
+	Context json.RawMessage           `json:"context,omitempty"`
 }
 
 type KeywordSegment struct {
@@ -103,7 +123,7 @@ func buildConsolidatedKeywordsReqExt(openRTBUser, openRTBSite string, firstImpEx
 }
 func parseExtToMap(ext json.RawMessage) map[string]interface{} {
 	var root map[string]interface{}
-	if err := json.Unmarshal(ext, &root); err != nil {
+	if err := jsonutil.Unmarshal(ext, &root); err != nil {
 		return make(map[string]interface{})
 	}
 	return root
@@ -233,10 +253,10 @@ func processImp(imp *openrtb2.Imp) error {
 	// get the grid extension
 	var ext adapters.ExtImpBidder
 	var gridExt openrtb_ext.ExtImpGrid
-	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &ext); err != nil {
 		return err
 	}
-	if err := json.Unmarshal(ext.Bidder, &gridExt); err != nil {
+	if err := jsonutil.Unmarshal(ext.Bidder, &gridExt); err != nil {
 		return err
 	}
 
@@ -252,7 +272,7 @@ func processImp(imp *openrtb2.Imp) error {
 
 func setImpExtData(imp openrtb2.Imp) openrtb2.Imp {
 	var ext ExtImp
-	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &ext); err != nil {
 		return imp
 	}
 	if ext.Data != nil && ext.Data.AdServer != nil && ext.Data.AdServer.AdSlot != "" {
@@ -263,6 +283,35 @@ func setImpExtData(imp openrtb2.Imp) openrtb2.Imp {
 		}
 	}
 	return imp
+}
+
+func fixNative(req json.RawMessage) (json.RawMessage, error) {
+	var gridReq map[string]interface{}
+	var parsedRequest map[string]interface{}
+
+	if err := jsonutil.Unmarshal(req, &gridReq); err != nil {
+		return req, nil
+	}
+	if imps, exists := maputil.ReadEmbeddedSlice(gridReq, "imp"); exists {
+		for _, imp := range imps {
+			if gridImp, ok := imp.(map[string]interface{}); ok {
+				native, hasNative := maputil.ReadEmbeddedMap(gridImp, "native")
+				if hasNative {
+					request, hasRequest := maputil.ReadEmbeddedString(native, "request")
+					if hasRequest {
+						delete(native, "request")
+						if err := jsonutil.Unmarshal([]byte(request), &parsedRequest); err == nil {
+							native["request_native"] = parsedRequest
+						} else {
+							native["request_native"] = request
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return json.Marshal(gridReq)
 }
 
 // MakeRequests makes the HTTP requests which should be made to fetch bids.
@@ -295,6 +344,14 @@ func (a *GridAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapte
 	request.Imp = validImps
 
 	reqJSON, err := json.Marshal(request)
+
+	if err != nil {
+		errors = append(errors, err)
+		return nil, errors
+	}
+
+	fixedReqJSON, err := fixNative(reqJSON)
+
 	if err != nil {
 		errors = append(errors, err)
 		return nil, errors
@@ -306,8 +363,9 @@ func (a *GridAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapte
 	return []*adapters.RequestData{{
 		Method:  "POST",
 		Uri:     a.endpoint,
-		Body:    reqJSON,
+		Body:    fixedReqJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, errors
 }
 
@@ -329,8 +387,8 @@ func (a *GridAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReq
 		}}
 	}
 
-	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	var bidResp GridResponse
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
@@ -338,14 +396,25 @@ func (a *GridAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReq
 
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
-			bidMeta, err := getBidMeta(sb.Bid[i].Ext)
-			bidType, err := getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp)
+			bidMeta, err := getBidMeta(sb.Bid[i].Ext) //nolint: ineffassign,staticcheck // ineffectual assignment to err
+
+			bidType, err := getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp, sb.Bid[i])
+			if err != nil {
+				return nil, []error{err}
+			}
+			if sb.Bid[i].AdmNative != nil && sb.Bid[i].AdM == "" {
+				if bytes, err := json.Marshal(sb.Bid[i].AdmNative); err == nil {
+					sb.Bid[i].AdM = string(bytes)
+				}
+			}
 			if err != nil {
 				return nil, []error{err}
 			}
 
+			openrtb2Bid := sb.Bid[i].Bid
+
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     &sb.Bid[i],
+				Bid:     openrtb2Bid,
 				BidType: bidType,
 				BidMeta: bidMeta,
 			})
@@ -356,7 +425,7 @@ func (a *GridAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReq
 }
 
 // Builder builds a new instance of the Grid adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &GridAdapter{
 		endpoint: config.Endpoint,
 	}
@@ -364,9 +433,12 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 }
 
 func getBidMeta(ext json.RawMessage) (*openrtb_ext.ExtBidPrebidMeta, error) {
+	if ext == nil {
+		return nil, errors.New("nil ext passed to getBidMeta")
+	}
 	var bidExt GridBidExt
 
-	if err := json.Unmarshal(ext, &bidExt); err != nil {
+	if err := jsonutil.Unmarshal(ext, &bidExt); err != nil {
 		return nil, err
 	}
 	var bidMeta *openrtb_ext.ExtBidPrebidMeta
@@ -378,19 +450,27 @@ func getBidMeta(ext json.RawMessage) (*openrtb_ext.ExtBidPrebidMeta, error) {
 	return bidMeta, nil
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
-	for _, imp := range imps {
-		if imp.ID == impID {
-			if imp.Banner != nil {
-				return openrtb_ext.BidTypeBanner, nil
-			}
+func getMediaTypeForImp(impID string, imps []openrtb2.Imp, bidWithType GridBid) (openrtb_ext.BidType, error) {
+	if bidWithType.ContentType != "" {
+		return bidWithType.ContentType, nil
+	} else {
+		for _, imp := range imps {
+			if imp.ID == impID {
+				if imp.Banner != nil {
+					return openrtb_ext.BidTypeBanner, nil
+				}
 
-			if imp.Video != nil {
-				return openrtb_ext.BidTypeVideo, nil
-			}
+				if imp.Video != nil {
+					return openrtb_ext.BidTypeVideo, nil
+				}
 
-			return "", &errortypes.BadServerResponse{
-				Message: fmt.Sprintf("Unknown impression type for ID: \"%s\"", impID),
+				if imp.Native != nil {
+					return openrtb_ext.BidTypeNative, nil
+				}
+
+				return "", &errortypes.BadServerResponse{
+					Message: fmt.Sprintf("Unknown impression type for ID: \"%s\"", impID),
+				}
 			}
 		}
 	}

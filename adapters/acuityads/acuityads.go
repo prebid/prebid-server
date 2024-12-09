@@ -6,12 +6,13 @@ import (
 	"net/http"
 	"text/template"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type AcuityAdsAdapter struct {
@@ -19,7 +20,7 @@ type AcuityAdsAdapter struct {
 }
 
 // Builder builds a new instance of the AcuityAds adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
@@ -84,18 +85,19 @@ func (a *AcuityAdsAdapter) MakeRequests(
 		Body:    reqJSON,
 		Uri:     url,
 		Headers: getHeaders(openRTBRequest),
+		ImpIDs:  openrtb_ext.GetImpIDs(openRTBRequest.Imp),
 	}}, nil
 }
 
 func (a *AcuityAdsAdapter) getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtAcuityAds, error) {
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: "ext.bidder not provided",
 		}
 	}
 	var acuityAdsExt openrtb_ext.ExtAcuityAds
-	if err := json.Unmarshal(bidderExt.Bidder, &acuityAdsExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &acuityAdsExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: "ext.bidder not provided",
 		}
@@ -154,7 +156,7 @@ func (a *AcuityAdsAdapter) MakeBids(
 
 	responseBody := bidderRawResponse.Body
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(responseBody, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(responseBody, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: "Bad Server Response",
 		}}

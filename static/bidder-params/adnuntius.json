@@ -9,9 +9,21 @@
             "type": "string",
             "description": "Placement ID"
         },
+        "maxDeals": {
+            "type": "integer",
+            "description": "Specify how many deals that you want to return from the auction."
+        },
         "network": {
             "type": "string",
             "description": "Network if required"
+        },
+        "noCookies": {
+            "type": "boolean",
+            "description": "Disable cookies being set by the ad server."
+        },
+        "bidType": {
+            "type": "string",
+            "description": "Allows you to specify Net or Gross bids."
         }
     },
 

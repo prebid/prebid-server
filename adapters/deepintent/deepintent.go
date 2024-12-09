@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 const displayManager string = "di_prebid"
@@ -21,14 +22,14 @@ type DeepintentAdapter struct {
 }
 
 // Builder builds a new instance of the Deepintent adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &DeepintentAdapter{
 		URI: config.Endpoint,
 	}
 	return bidder, nil
 }
 
-//MakeRequests which creates request object for Deepintent DSP
+// MakeRequests which creates request object for Deepintent DSP
 func (d *DeepintentAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 	var deepintentExt openrtb_ext.ExtImpDeepintent
@@ -41,14 +42,14 @@ func (d *DeepintentAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 		reqCopy.Imp = []openrtb2.Imp{imp}
 
 		var bidderExt adapters.ExtImpBidder
-		if err = json.Unmarshal(reqCopy.Imp[0].Ext, &bidderExt); err != nil {
+		if err = jsonutil.Unmarshal(reqCopy.Imp[0].Ext, &bidderExt); err != nil {
 			errs = append(errs, &errortypes.BadInput{
 				Message: fmt.Sprintf("Impression id=%s has an Error: %s", imp.ID, err.Error()),
 			})
 			continue
 		}
 
-		if err = json.Unmarshal(bidderExt.Bidder, &deepintentExt); err != nil {
+		if err = jsonutil.Unmarshal(bidderExt.Bidder, &deepintentExt); err != nil {
 			errs = append(errs, &errortypes.BadInput{
 				Message: fmt.Sprintf("Impression id=%s, has invalid Ext", imp.ID),
 			})
@@ -87,7 +88,7 @@ func (d *DeepintentAdapter) MakeBids(internalRequest *openrtb2.BidRequest, exter
 
 	var bidResp openrtb2.BidResponse
 
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
@@ -143,6 +144,7 @@ func (d *DeepintentAdapter) preprocess(request openrtb2.BidRequest) (*adapters.R
 		Uri:     d.URI,
 		Body:    reqJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}, errs
 }
 
@@ -150,7 +152,7 @@ func buildImpBanner(imp *openrtb2.Imp) error {
 
 	if imp.Banner == nil {
 		return &errortypes.BadInput{
-			Message: fmt.Sprintf("We need a Banner Object in the request"),
+			Message: "We need a Banner Object in the request",
 		}
 	}
 
@@ -160,7 +162,7 @@ func buildImpBanner(imp *openrtb2.Imp) error {
 
 		if len(banner.Format) == 0 {
 			return &errortypes.BadInput{
-				Message: fmt.Sprintf("At least one size is required"),
+				Message: "At least one size is required",
 			}
 		}
 		format := banner.Format[0]

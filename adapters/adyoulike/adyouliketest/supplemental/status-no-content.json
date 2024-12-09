@@ -26,6 +26,7 @@
           "uri": "https://localhost/bid/4",
           "body": {
             "id": "test-request-id",
+            "cur": ["USD"],
             "imp": [
               {
                 "banner": {
@@ -45,7 +46,8 @@
                 "tagid": "12345"
               }
             ]
-          }
+          },
+          "impIDs":["banner-imp-id"]
         },
       "mockResponse": {
         "status": 204,
@@ -56,11 +58,5 @@
   ],
 
   "expectedBidResponses": [],
-
-  "expectedMakeBidsErrors": [
-    {
-      "value": "MakeBids error: No Content",
-      "comparison": "literal"
-    }
-  ]
+  "expectedMakeBidsErrors": []
 }

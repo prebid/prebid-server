@@ -13,7 +13,8 @@
             "sid": "testSid",
             "token": "testToken",
             "placementId": "testPlacementId",
-            "appId": "testAppId"
+            "appId": "testAppId",
+            "region": "USE"
           }
         }
       }
@@ -23,7 +24,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://test.com?sid=testSid&token=testToken",
+        "uri": "https://use.xyz.test.com?sid=testSid&token=testToken",
         "body": {
           "id": "test-request-id",
           "imp": [
@@ -40,12 +41,14 @@
                   "sid": "testSid",
                   "token": "testToken",
                   "placementId": "testPlacementId",
-                  "appId": "testAppId"
+                  "appId": "testAppId",
+                  "region": "USE"
                 }
               }
             }
           ]
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,

@@ -1,0 +1,135 @@
+{
+    "requestType": "amp",
+    "incomingRequest": {
+        "ortbRequest": {
+            "id": "some-request-id",
+            "site": {
+                "page": "test.somepage.com"
+            },
+            "imp": [
+                {
+                    "id": "some-imp-id",
+                    "banner": {
+                        "format": [
+                            {
+                                "w": 600,
+                                "h": 500
+                            },
+                            {
+                                "w": 300,
+                                "h": 600
+                            }
+                        ]
+                    },
+                    "ext": {
+                        "prebid": {
+                            "bidder": {
+                                "appnexus": {
+                                    "placementId": 1
+                                }
+                            }
+                        },
+                        "data": {
+                            "keywords": "prebid server example"
+                        },
+                        "context": {
+                            "data": {
+                                "keywords": "another prebid server example"
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    "outgoingRequests": {
+        "appnexus": {
+            "expectRequest": {
+                "ortbRequest": {
+                    "id": "some-request-id",
+                    "site": {
+                        "page": "test.somepage.com"
+                    },
+                    "imp": [
+                        {
+                            "id": "some-imp-id",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 600,
+                                        "h": 500
+                                    },
+                                    {
+                                        "w": 300,
+                                        "h": 600
+                                    }
+                                ]
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "placementId": 1
+                                },
+                                "data": {
+                                    "keywords": "prebid server example"
+                                },
+                                "context": {
+                                    "data": {
+                                        "keywords": "another prebid server example"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            "mockResponse": {
+                "pbsSeatBids": [
+                    {
+                        "pbsBids": [
+                            {
+                                "ortbBid": {
+                                    "id": "apn-bid",
+                                    "impid": "some-imp-id",
+                                    "price": 0.3,
+                                    "w": 200,
+                                    "h": 500,
+                                    "crid": "creative-1"
+                                },
+                                "bidType": "banner"
+                            }
+                        ],
+                        "seat": "appnexus"
+                    }
+                ]
+            }
+        }
+    },
+    "response": {
+        "bids": {
+            "id": "some-request-id",
+            "seatbid": [
+                {
+                    "seat": "appnexus",
+                    "bid": [
+                        {
+                            "id": "apn-bid",
+                            "impid": "some-imp-id",
+                            "price": 0.3,
+                            "w": 200,
+                            "h": 500,
+                            "crid": "creative-1",
+                            "ext": {
+                                "origbidcpm": 0.3,
+                                "prebid": {
+                                    "meta": {
+                                    },
+                                    "type": "banner"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

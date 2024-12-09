@@ -1,0 +1,122 @@
+{
+  "mockBidRequest": {
+    "id": "request-id",
+    "site": {
+      "page": "test.com/page",
+      "domain": "test.com",
+      "cat": [
+        "IAB9-1"
+      ],
+      "publisher": {
+        "id": "123456789"
+      }
+    },
+    "device": {
+      "ua": "useragent",
+      "ip": "100.100.100.100",
+      "language": "en"
+    },
+    "tmax": 1000,
+    "user": {
+      "id": "some-user"
+    },
+    "imp": [
+      {
+        "id": "impression-id",
+        "tagid": "tid",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 640,
+          "h": 480,
+          "minduration": 30,
+          "maxduration": 150
+        },
+	      "ext": {
+            "bidder": {
+              "placementId": "f897beb0daba0253d8e59a098eef9311"
+            }
+          }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
+        "uri": "http://point.contextualadv.com/?t=3&partner=f897beb0daba0253d8e59a098eef9311",
+        "body": {
+          "id": "request-id",
+          "device": {
+            "ua": "useragent",
+            "ip": "100.100.100.100",
+            "language": "en"
+          },
+          "imp": [
+            {
+              "id": "impression-id",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "minduration": 30,
+                "maxduration": 150,
+                "w": 640,
+                "h": 480
+              },
+              "tagid": "tid"
+            }
+          ],
+          "site": {
+            "page": "test.com/page",
+            "domain": "test.com",
+            "cat": [
+              "IAB9-1"
+            ],
+            "publisher": {
+              "id": "123456789"
+            }
+          },
+          "user": {
+            "id": "some-user"
+          },
+          "tmax": 1000
+        },
+        "impIDs":["impression-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "resp-id",
+          "seatbid": [
+          ],
+          "cur": "USD",
+          "ext": {
+            "responsetimemillis": {
+              "videoheroes": 120
+            },
+            "tmaxrequest": 1000
+          }
+        }
+      }
+    }
+  ],
+    "mockResponse": {
+      "status": 200,
+      "body": "invalid response"
+    },
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Empty SeatBid array",
+      "comparison": "literal"
+    }
+  ]
+}

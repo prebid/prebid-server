@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 // This file actually intends to test static/bidder-params/criteo.json
 //
-// These also validate the format of the external API: request.imp[i].ext.criteo
+// These also validate the format of the external API: request.imp[i].ext.prebid.bidder.criteo
 
 // TestValidParams makes sure that the criteo schema accepts all imp.ext fields which we intend to support.
 func TestValidParams(t *testing.T) {

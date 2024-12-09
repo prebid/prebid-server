@@ -2,13 +2,15 @@ package router
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	jsoniter "github.com/json-iterator/go"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -16,6 +18,11 @@ import (
 const adapterDirectory = "../adapters"
 
 type testValidator struct{}
+
+func TestMain(m *testing.M) {
+	jsoniter.RegisterExtension(&jsonutil.RawMessageExtension{})
+	os.Exit(m.Run())
+}
 
 func (validator *testValidator) Validate(name openrtb_ext.BidderName, ext json.RawMessage) error {
 	return nil
@@ -37,17 +44,17 @@ func ensureHasKey(t *testing.T, data map[string]json.RawMessage, key string) {
 }
 
 func TestNewJsonDirectoryServer(t *testing.T) {
-	alias := map[string]string{"aliastest": "appnexus"}
-	handler := NewJsonDirectoryServer("../static/bidder-params", &testValidator{}, alias)
+	alias := map[openrtb_ext.BidderName]openrtb_ext.BidderName{openrtb_ext.BidderName("alias"): openrtb_ext.BidderName("parentAlias")}
+	handler := newJsonDirectoryServer("../static/bidder-params", &testValidator{}, alias)
 	recorder := httptest.NewRecorder()
 	request, _ := http.NewRequest("GET", "/whatever", nil)
 	handler(recorder, request, nil)
 
 	var data map[string]json.RawMessage
-	json.Unmarshal(recorder.Body.Bytes(), &data)
+	jsonutil.UnmarshalValid(recorder.Body.Bytes(), &data)
 
 	// Make sure that every adapter has a json schema by the same name associated with it.
-	adapterFiles, err := ioutil.ReadDir(adapterDirectory)
+	adapterFiles, err := os.ReadDir(adapterDirectory)
 	if err != nil {
 		t.Fatalf("Failed to open the adapters directory: %v", err)
 	}
@@ -58,90 +65,7 @@ func TestNewJsonDirectoryServer(t *testing.T) {
 		}
 	}
 
-	ensureHasKey(t, data, "aliastest")
-}
-
-func TestApplyBidderInfoConfigOverrides(t *testing.T) {
-	var testCases = []struct {
-		description         string
-		givenBidderInfos    config.BidderInfos
-		givenAdaptersCfg    map[string]config.Adapter
-		expectedError       string
-		expectedBidderInfos config.BidderInfos
-	}{
-		{
-			description:         "Syncer Override",
-			givenBidderInfos:    config.BidderInfos{"a": {Syncer: &config.Syncer{Key: "original"}}},
-			givenAdaptersCfg:    map[string]config.Adapter{"a": {Syncer: &config.Syncer{Key: "override"}}},
-			expectedBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{Key: "override"}}},
-		},
-		{
-			// Adapter Configs use a lower case bidder name, but the Bidder Infos follow the official
-			// bidder name casing.
-			description:         "Syncer Override - Case Sensitivity",
-			givenBidderInfos:    config.BidderInfos{"A": {Syncer: &config.Syncer{Key: "original"}}},
-			givenAdaptersCfg:    map[string]config.Adapter{"a": {Syncer: &config.Syncer{Key: "override"}}},
-			expectedBidderInfos: config.BidderInfos{"A": {Syncer: &config.Syncer{Key: "override"}}},
-		},
-		{
-			description:         "UserSyncURL Override IFrame",
-			givenBidderInfos:    config.BidderInfos{"a": {Syncer: &config.Syncer{IFrame: &config.SyncerEndpoint{URL: "original"}}}},
-			givenAdaptersCfg:    map[string]config.Adapter{"a": {UserSyncURL: "override"}},
-			expectedBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{IFrame: &config.SyncerEndpoint{URL: "override"}}}},
-		},
-		{
-			description:         "UserSyncURL Supports IFrame",
-			givenBidderInfos:    config.BidderInfos{"a": {Syncer: &config.Syncer{Supports: []string{"iframe"}}}},
-			givenAdaptersCfg:    map[string]config.Adapter{"a": {UserSyncURL: "override"}},
-			expectedBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{Supports: []string{"iframe"}, IFrame: &config.SyncerEndpoint{URL: "override"}}}},
-		},
-		{
-			description:         "UserSyncURL Override Redirect",
-			givenBidderInfos:    config.BidderInfos{"a": {Syncer: &config.Syncer{Supports: []string{"redirect"}}}},
-			givenAdaptersCfg:    map[string]config.Adapter{"a": {UserSyncURL: "override"}},
-			expectedBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{Supports: []string{"redirect"}, Redirect: &config.SyncerEndpoint{URL: "override"}}}},
-		},
-		{
-			description:         "UserSyncURL Supports Redirect",
-			givenBidderInfos:    config.BidderInfos{"a": {Syncer: &config.Syncer{Redirect: &config.SyncerEndpoint{URL: "original"}}}},
-			givenAdaptersCfg:    map[string]config.Adapter{"a": {UserSyncURL: "override"}},
-			expectedBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{Redirect: &config.SyncerEndpoint{URL: "override"}}}},
-		},
-		{
-			description:      "UserSyncURL Override Syncer Not Defined",
-			givenBidderInfos: config.BidderInfos{"a": {}},
-			givenAdaptersCfg: map[string]config.Adapter{"a": {UserSyncURL: "override"}},
-			expectedError:    "adapters.a.usersync_url cannot be applied, bidder does not define a user sync",
-		},
-		{
-			description:      "UserSyncURL Override Syncer Endpoints Not Defined",
-			givenBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{}}},
-			givenAdaptersCfg: map[string]config.Adapter{"a": {UserSyncURL: "override"}},
-			expectedError:    "adapters.a.usersync_url cannot be applied, bidder does not define user sync endpoints and does not define supported endpoints",
-		},
-		{
-			description:      "UserSyncURL Override Ambiguous",
-			givenBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{IFrame: &config.SyncerEndpoint{URL: "originalIFrame"}, Redirect: &config.SyncerEndpoint{URL: "originalRedirect"}}}},
-			givenAdaptersCfg: map[string]config.Adapter{"a": {UserSyncURL: "override"}},
-			expectedError:    "adapters.a.usersync_url cannot be applied, bidder defines multiple user sync endpoints or supports multiple endpoints",
-		},
-		{
-			description:      "UserSyncURL Supports Ambiguous",
-			givenBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{Supports: []string{"iframe", "redirect"}}}},
-			givenAdaptersCfg: map[string]config.Adapter{"a": {UserSyncURL: "override"}},
-			expectedError:    "adapters.a.usersync_url cannot be applied, bidder defines multiple user sync endpoints or supports multiple endpoints",
-		},
-	}
-
-	for _, test := range testCases {
-		resultErr := applyBidderInfoConfigOverrides(test.givenBidderInfos, test.givenAdaptersCfg)
-		if test.expectedError == "" {
-			assert.NoError(t, resultErr, test.description+":err")
-			assert.Equal(t, test.expectedBidderInfos, test.givenBidderInfos, test.description+":result")
-		} else {
-			assert.EqualError(t, resultErr, test.expectedError, test.description+":err")
-		}
-	}
+	ensureHasKey(t, data, "alias")
 }
 
 func TestCheckSupportedUserSyncEndpoints(t *testing.T) {
@@ -285,73 +209,22 @@ func TestNoCache(t *testing.T) {
 	}
 }
 
-var testDefReqConfig = config.DefReqConfig{
-	Type: "file",
-	FileSystem: config.DefReqFiles{
-		FileName: "test_aliases.json",
-	},
-	AliasInfo: true,
-}
+func TestBidderParamsCompactedOutput(t *testing.T) {
+	expectedFormattedResponse := `{"appnexus":{"$schema":"http://json-schema.org/draft-04/schema#","title":"Sample schema","description":"A sample schema to test the bidder/params endpoint","type":"object","properties":{"integer_param":{"type":"integer","minimum":1,"description":"A customer id"},"string_param_1":{"type":"string","minLength":1,"description":"Text with blanks in between"},"string_param_2":{"type":"string","minLength":1,"description":"Text_with_no_blanks_in_between"}},"required":["integer_param","string_param_2"]}}`
 
-func TestLoadDefaultAliases(t *testing.T) {
-	defAliases, aliasJSON := readDefaultRequest(testDefReqConfig)
-	expectedJSON := []byte(`{"ext":{"prebid":{"aliases": {"test1": "appnexus", "test2": "rubicon", "test3": "openx"}}}}`)
-	expectedAliases := map[string]string{
-		"test1": "appnexus",
-		"test2": "rubicon",
-		"test3": "openx",
-	}
+	// Setup
+	inSchemaDirectory := "bidder_params_tests"
+	paramsValidator, err := openrtb_ext.NewBidderParamsValidator(inSchemaDirectory)
+	assert.NoError(t, err, "Error initialing validator")
 
-	assert.JSONEq(t, string(expectedJSON), string(aliasJSON))
-	assert.Equal(t, expectedAliases, defAliases)
-}
+	handler := newJsonDirectoryServer(inSchemaDirectory, paramsValidator, nil)
+	recorder := httptest.NewRecorder()
+	request, err := http.NewRequest("GET", "/bidder/params", nil)
+	assert.NoError(t, err, "Error creating request")
 
-func TestLoadDefaultAliasesNoInfo(t *testing.T) {
-	noInfoConfig := testDefReqConfig
-	noInfoConfig.AliasInfo = false
-	defAliases, aliasJSON := readDefaultRequest(noInfoConfig)
-	expectedJSON := []byte(`{"ext":{"prebid":{"aliases": {"test1": "appnexus", "test2": "rubicon", "test3": "openx"}}}}`)
-	expectedAliases := map[string]string{}
+	// Run
+	handler(recorder, request, nil)
 
-	assert.JSONEq(t, string(expectedJSON), string(aliasJSON))
-	assert.Equal(t, expectedAliases, defAliases)
-}
-
-func TestValidateDefaultAliases(t *testing.T) {
-	var testCases = []struct {
-		description   string
-		givenAliases  map[string]string
-		expectedError string
-	}{
-		{
-			description:   "None",
-			givenAliases:  map[string]string{},
-			expectedError: "",
-		},
-		{
-			description:   "Valid",
-			givenAliases:  map[string]string{"aAlias": "a"},
-			expectedError: "",
-		},
-		{
-			description:   "Invalid",
-			givenAliases:  map[string]string{"all": "a"},
-			expectedError: "default request alias errors (1 error):\n  1: alias all is a reserved bidder name and cannot be used\n",
-		},
-		{
-			description:   "Mixed",
-			givenAliases:  map[string]string{"aAlias": "a", "all": "a"},
-			expectedError: "default request alias errors (1 error):\n  1: alias all is a reserved bidder name and cannot be used\n",
-		},
-	}
-
-	for _, test := range testCases {
-		err := validateDefaultAliases(test.givenAliases)
-
-		if test.expectedError == "" {
-			assert.NoError(t, err, test.description)
-		} else {
-			assert.EqualError(t, err, test.expectedError, test.description)
-		}
-	}
+	// Assertions
+	assert.Equal(t, expectedFormattedResponse, recorder.Body.String())
 }

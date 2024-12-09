@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 // TestValidParams makes sure that the colossus schema accepts all imp.ext fields which we intend to support.
@@ -37,10 +37,12 @@ func TestInvalidParams(t *testing.T) {
 
 var validParams = []string{
 	`{"TagID": "61317"}`,
+	`{"groupId": "123"}`,
 }
 
 var invalidParams = []string{
 	`{"id": "123"}`,
 	`{"tagid": "123"}`,
 	`{"TagID": 16}`,
+	`{"TagID": "123", "groupId": "456"}`,
 }

@@ -9,13 +9,14 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/metrics"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/metrics"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 const adapterVersion = "prebid_1.0.0"
@@ -74,7 +75,7 @@ type InvibesAdapter struct {
 }
 
 // Builder builds a new instance of the Invibes adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
@@ -100,14 +101,14 @@ func (a *InvibesAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 
 	for _, imp := range request.Imp {
 		var bidderExt adapters.ExtImpBidder
-		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			tempErrors = append(tempErrors, &errortypes.BadInput{
 				Message: "Error parsing bidderExt object",
 			})
 			continue
 		}
 		var invibesExt openrtb_ext.ExtImpInvibes
-		if err := json.Unmarshal(bidderExt.Bidder, &invibesExt); err != nil {
+		if err := jsonutil.Unmarshal(bidderExt.Bidder, &invibesExt); err != nil {
 			tempErrors = append(tempErrors, &errortypes.BadInput{
 				Message: "Error parsing invibesExt parameters",
 			})
@@ -159,14 +160,14 @@ func readGDPR(request *openrtb2.BidRequest) (bool, string) {
 	consentString := ""
 	if request.User != nil {
 		var extUser openrtb_ext.ExtUser
-		if err := json.Unmarshal(request.User.Ext, &extUser); err == nil {
+		if err := jsonutil.Unmarshal(request.User.Ext, &extUser); err == nil {
 			consentString = extUser.Consent
 		}
 	}
 	gdprApplies := true
 	var extRegs openrtb_ext.ExtRegs
 	if request.Regs != nil {
-		if err := json.Unmarshal(request.Regs.Ext, &extRegs); err == nil {
+		if err := jsonutil.Unmarshal(request.Regs.Ext, &extRegs); err == nil {
 			if extRegs.GDPR != nil {
 				gdprApplies = (*extRegs.GDPR == 1)
 			}
@@ -230,6 +231,7 @@ func (a *InvibesAdapter) makeRequest(invibesParams InvibesInternalParams, reqInf
 		Uri:     url,
 		Headers: headers,
 		Body:    body,
+		ImpIDs:  getImpIDs(invibesParams.BidParams.Properties),
 	}, nil
 }
 
@@ -279,19 +281,17 @@ func (a *InvibesAdapter) makeParameter(invibesParams InvibesInternalParams, requ
 }
 
 func (a *InvibesAdapter) makeURL(request *openrtb2.BidRequest, domainID int) (string, error) {
-	host := "bid.videostep.com"
-	if domainID == 1 {
-		host = "adweb.videostepstage.com"
-	} else if domainID == 2 {
-		host = "adweb.invibesstage.com"
-	} else if domainID == 1001 {
-		host = "bid.videostep.com"
-	} else if domainID >= 1002 {
-		host = "bid" + strconv.Itoa(domainID-1000) + ".videostep.com"
+	var subdomain string
+	if domainID == 0 || domainID == 1 || domainID == 1001 {
+		subdomain = "bid"
+	} else if domainID < 1002 {
+		subdomain = "bid" + strconv.Itoa(domainID)
+	} else {
+		subdomain = "bid" + strconv.Itoa(domainID-1000)
 	}
 
 	var endpointURL *url.URL
-	endpointParams := macros.EndpointTemplateParams{Host: host}
+	endpointParams := macros.EndpointTemplateParams{ZoneID: subdomain}
 	host, err := macros.ResolveMacros(a.EndpointTemplate, endpointParams)
 
 	if err == nil {
@@ -316,7 +316,7 @@ func (a *InvibesAdapter) MakeBids(
 	}
 
 	bidResponse := BidServerBidderResponse{}
-	if err := json.Unmarshal(response.Body, &bidResponse); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResponse); err != nil {
 		return nil, []error{err}
 	}
 
@@ -337,4 +337,12 @@ func (a *InvibesAdapter) MakeBids(
 	}
 
 	return parsedResponses, errors
+}
+
+func getImpIDs(bidParamsProperties map[string]InvibesPlacementProperty) []string {
+	impIDs := make([]string, 0, len(bidParamsProperties))
+	for i := range bidParamsProperties {
+		impIDs = append(impIDs, bidParamsProperties[i].ImpID)
+	}
+	return impIDs
 }

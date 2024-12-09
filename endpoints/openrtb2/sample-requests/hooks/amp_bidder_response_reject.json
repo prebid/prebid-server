@@ -1,0 +1,135 @@
+{
+  "description": "Amp request",
+  "query": "tag_id=101&trace=verbose",
+  "config": {
+    "mockBidders": [
+      {"bidderName": "appnexus", "currency": "USD", "price": 2},
+      {"bidderName": "rubicon", "currency": "USD", "price": 1}
+    ]
+  },
+  "mockBidRequest": {
+    "id": "my-req-id",
+    "site": {
+      "page": "test.somepage.com"
+    },
+    "imp": [
+      {
+        "id": "my-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "prebid": {
+            "bidder": {
+              "appnexus": {
+                "placementId": 12883451
+              },
+              "rubicon": {
+                "placementId": 12883451
+              }
+            }
+          }
+        }
+      }
+    ],
+    "ext": {
+      "prebid": {
+        "debug": true,
+        "aliases": {
+          "unknown": "appnexus",
+          "foo": "rubicon"
+        }
+      }
+    }
+  },
+  "expectedAmpResponse": {
+    "targeting": {
+      "hb_bidder": "rubicon",
+      "hb_bidder_rubicon": "rubicon",
+      "hb_cache_host": "www.pbcserver.com",
+      "hb_cache_host_rubico": "www.pbcserver.com",
+      "hb_cache_id": "0",
+      "hb_cache_id_rubicon": "0",
+      "hb_cache_path": "/pbcache/endpoint",
+      "hb_cache_path_rubico": "/pbcache/endpoint",
+      "hb_pb": "1.00",
+      "hb_pb_rubicon": "1.00"
+    },
+    "ortb2": {
+      "ext": {
+        "warnings": {
+          "appnexus": [
+            {
+              "code": 11,
+              "message": "Module foobar (hook: foo) rejected request with code 123 at raw_bidder_response stage"
+            }
+          ]
+        },
+        "prebid": {
+          "modules": {
+            "errors": {
+              "foobar": {
+                "foo": [
+                  "Module foobar (hook: foo) rejected request with code 123 at raw_bidder_response stage"
+                ]
+              }
+            },
+            "trace": {
+              "stages": [
+                {
+                  "outcomes": [
+                    {
+                      "entity": "appnexus",
+                      "groups": [
+                        {
+                          "invocation_results": [
+                            {
+                              "action": "reject",
+                              "analytics_tags": {},
+                              "hook_id": {
+                                "hook_impl_code": "foo",
+                                "module_code": "foobar"
+                              },
+                              "message": "",
+                              "status": "success"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "entity": "rubicon",
+                      "groups": [
+                        {
+                          "invocation_results": [
+                            {
+                              "action": "no_action",
+                              "analytics_tags": {},
+                              "hook_id": {
+                                "hook_impl_code": "foo",
+                                "module_code": "foobar"
+                              },
+                              "message": "",
+                              "status": "success"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ],
+                  "stage": "raw_bidder_response"
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "expectedReturnCode": 200
+}

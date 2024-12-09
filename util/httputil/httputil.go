@@ -5,35 +5,23 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/prebid/prebid-server/util/iputil"
+	"github.com/prebid/prebid-server/v3/util/iputil"
 )
 
 var (
-	trueClientIP    = http.CanonicalHeaderKey("True-Client-IP")
-	xForwardedProto = http.CanonicalHeaderKey("X-Forwarded-Proto")
-	xForwardedFor   = http.CanonicalHeaderKey("X-Forwarded-For")
-	xRealIP         = http.CanonicalHeaderKey("X-Real-IP")
+	trueClientIP  = http.CanonicalHeaderKey("True-Client-IP")
+	xForwardedFor = http.CanonicalHeaderKey("X-Forwarded-For")
+	xRealIP       = http.CanonicalHeaderKey("X-Real-IP")
 )
+
+type ContentEncoding string
 
 const (
-	https = "https"
+	ContentEncodingGZIP ContentEncoding = "gzip"
 )
 
-// IsSecure determines if a http request uses https.
-func IsSecure(r *http.Request) bool {
-	if strings.EqualFold(r.Header.Get(xForwardedProto), https) {
-		return true
-	}
-
-	if strings.EqualFold(r.URL.Scheme, https) {
-		return true
-	}
-
-	if r.TLS != nil {
-		return true
-	}
-
-	return false
+func (k ContentEncoding) Normalize() ContentEncoding {
+	return ContentEncoding(strings.ToLower(string(k)))
 }
 
 // FindIP returns the first ip address found in the http request matching the predicate v.

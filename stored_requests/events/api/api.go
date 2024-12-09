@@ -1,12 +1,12 @@
 package api
 
 import (
-	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/prebid/prebid-server/stored_requests/events"
+	"github.com/prebid/prebid-server/v3/stored_requests/events"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type eventsAPI struct {
@@ -35,7 +35,7 @@ func NewEventsAPI() (events.EventProducer, httprouter.Handle) {
 
 func (api *eventsAPI) HandleEvent(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	if r.Method == "POST" {
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte("Missing update data.\n"))
@@ -43,7 +43,7 @@ func (api *eventsAPI) HandleEvent(w http.ResponseWriter, r *http.Request, _ http
 		}
 
 		var save events.Save
-		if err := json.Unmarshal(body, &save); err != nil {
+		if err := jsonutil.UnmarshalValid(body, &save); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte("Invalid update.\n"))
 			return
@@ -51,7 +51,7 @@ func (api *eventsAPI) HandleEvent(w http.ResponseWriter, r *http.Request, _ http
 
 		api.saves <- save
 	} else if r.Method == "DELETE" {
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte("Missing invalidation data.\n"))
@@ -59,7 +59,7 @@ func (api *eventsAPI) HandleEvent(w http.ResponseWriter, r *http.Request, _ http
 		}
 
 		var invalidation events.Invalidation
-		if err := json.Unmarshal(body, &invalidation); err != nil {
+		if err := jsonutil.UnmarshalValid(body, &invalidation); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte("Invalid invalidation.\n"))
 			return

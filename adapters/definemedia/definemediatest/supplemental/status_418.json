@@ -1,0 +1,225 @@
+{
+    "mockBidRequest": {
+      "imp": [
+        {
+          "ext": {
+            "tid": "397962d3-47a1-4634-9cb7-78597b01d9a9",
+            "prebid": {
+              "bidder": {
+                "definemedia": {}
+              }
+            }
+          },
+          "id": "div-gpt-ad-1460505748561-0",
+          "banner": {
+            "topframe": 1,
+            "format": [
+              {
+                "w": 300,
+                "h": 250
+              }
+            ]
+          }
+        }
+      ],
+      "site": {
+        "page": "http://localhost:8080/prebidServer_example.html?pbjs_debug=true",
+        "domain": "localhost:8080",
+        "publisher": {
+          "domain": "localhost:8080",
+          "id": "1"
+        }
+      },
+      "device": {
+        "w": 1098,
+        "h": 1169,
+        "dnt": 0,
+        "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
+        "language": "de",
+        "sua": {
+          "source": 2,
+          "platform": {
+            "brand": "macOS",
+            "version": [
+              "12",
+              "3",
+              "1"
+            ]
+          },
+          "browsers": [
+            {
+              "brand": "Not?A_Brand",
+              "version": [
+                "8",
+                "0",
+                "0",
+                "0"
+              ]
+            },
+            {
+              "brand": "Chromium",
+              "version": [
+                "108",
+                "0",
+                "5359",
+                "124"
+              ]
+            },
+            {
+              "brand": "Google Chrome",
+              "version": [
+                "108",
+                "0",
+                "5359",
+                "124"
+              ]
+            }
+          ],
+          "mobile": 0,
+          "model": "",
+          "bitness": "64",
+          "architecture": "x86"
+        }
+      },
+      "id": "ceb63773-4280-45f2-a684-94cf6a3b8fcf",
+      "test": 0,
+      "source": {
+        "tid": "ceb63773-4280-45f2-a684-94cf6a3b8fcf"
+      },
+      "ext": {
+        "prebid": {
+          "auctiontimestamp": 1671449004622,
+          "targeting": {
+            "includewinners": true,
+            "includebidderkeys": false
+          },
+          "debug": true,
+          "channel": {
+            "name": "pbjs",
+            "version": "v7.28.0"
+          }
+        }
+      },
+      "tmax": 1000
+    },
+    "httpCalls": [
+      {
+        "expectedRequest": {
+          "uri": "https://rtb.conative.network/openrtb2/auction",
+          "body": {
+            "id": "ceb63773-4280-45f2-a684-94cf6a3b8fcf",
+            "imp": [
+              {
+                "id": "div-gpt-ad-1460505748561-0",
+                "banner": {
+                  "format": [
+                    {
+                      "w": 300,
+                      "h": 250
+                    }
+                  ],
+                  "topframe": 1
+                },
+                "ext": {
+                  "prebid": {
+                    "bidder": {
+                      "definemedia": {}
+                    }
+                  },
+                  "tid": "397962d3-47a1-4634-9cb7-78597b01d9a9"
+                }
+              }
+            ],
+            "site": {
+              "domain": "localhost:8080",
+              "page": "http://localhost:8080/prebidServer_example.html?pbjs_debug=true",
+              "publisher": {
+                "id": "1",
+                "domain": "localhost:8080"
+              }
+            },
+            "device": {
+              "dnt": 0,
+              "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
+              "sua": {
+                "browsers": [
+                  {
+                    "brand": "Not?A_Brand",
+                    "version": [
+                      "8",
+                      "0",
+                      "0",
+                      "0"
+                    ]
+                  },
+                  {
+                    "brand": "Chromium",
+                    "version": [
+                      "108",
+                      "0",
+                      "5359",
+                      "124"
+                    ]
+                  },
+                  {
+                    "brand": "Google Chrome",
+                    "version": [
+                      "108",
+                      "0",
+                      "5359",
+                      "124"
+                    ]
+                  }
+                ],
+                "platform": {
+                  "brand": "macOS",
+                  "version": [
+                    "12",
+                    "3",
+                    "1"
+                  ]
+                },
+                "mobile": 0,
+                "architecture": "x86",
+                "bitness": "64",
+                "source": 2
+              },
+              "h": 1169,
+              "w": 1098,
+              "language": "de"
+            },
+            "tmax": 1000,
+            "source": {
+              "tid": "ceb63773-4280-45f2-a684-94cf6a3b8fcf"
+            },
+            "ext": {
+              "prebid": {
+                "auctiontimestamp": 1.671449004622e+12,
+                "channel": {
+                  "name": "pbjs",
+                  "version": "v7.28.0"
+                },
+                "debug": true,
+                "targeting": {
+                  "includebidderkeys": false,
+                  "includewinners": true
+                }
+              }
+            }
+          },
+          "impIDs":["div-gpt-ad-1460505748561-0"]
+        },
+        "mockResponse": {
+          "status": 418,
+          "body": {}
+        }
+      }
+    ],
+    "expectedBidResponses": [],
+    "expectedMakeBidsErrors": [
+        {
+          "value": "Unexpected status code: 418. Run with request.debug = 1 for more info",
+          "comparison": "literal"
+        }
+      ]
+  }

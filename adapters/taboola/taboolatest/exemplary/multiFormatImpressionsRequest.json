@@ -1,0 +1,347 @@
+{
+  "mockBidRequest": {
+    "id": "request-id",
+    "imp": [
+      {
+        "id": "native-impression-id",
+        "native": {
+          "request": "\"{\\\"ver\\\":\\\"1.1\\\",\\\"plcmttype\\\": 4,\\\"plcmtcnt\\\": 1,\\\"assets\\\":[{\\\"id\\\": 1,\\\"required\\\": 1,\\\"title\\\":{\\\"len\\\": 140}},{\\\"id\\\": 4,\\\"required\\\": 1,\\\"img\\\":{\\\"type\\\": 3,\\\"wmin\\\": 600,\\\"hmin\\\": 315}},{\\\"id\\\": 2,\\\"required\\\": 0,\\\"img\\\":{\\\"type\\\": 1,\\\"wmin\\\": 320,\\\"hmin\\\": 180}},{\\\"id\\\": 6,\\\"required\\\": 1,\\\"data\\\":{\\\"type\\\": 2,\\\"len\\\": 205}},{\\\"id\\\": 5,\\\"required\\\": 1,\\\"data\\\":{\\\"type\\\": 1,\\\"len\\\": 140}}]}}\"",
+          "ver": "1.1"
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "publisher-id",
+            "tagid": "tag-id"
+          }
+        }
+      },
+      {
+        "id": "banner-impression-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            },
+            {
+              "w": 160,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "publisher-id",
+            "tagid": "tag-id"
+          }
+        }
+      },
+      {
+        "id": "banner-impression-id-2",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            },
+            {
+              "w": 160,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "publisher-id",
+            "tagid": "tag-id-2"
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "http://domain.com",
+      "page": "http://page-domain.com",
+      "ref": "http://page-domain.com"
+    },
+    "device": {
+      "ua": "Mozilla/5.0 (Linux; Android 12; Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.62 Mobile Safari/537.36",
+      "h": 300,
+      "w": 300
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://native.whatever.com/12/publisher-id",
+        "body": {
+          "id": "request-id",
+          "imp": [
+            {
+              "id": "native-impression-id",
+              "native": {
+                "request": "\"{\\\"ver\\\":\\\"1.1\\\",\\\"plcmttype\\\": 4,\\\"plcmtcnt\\\": 1,\\\"assets\\\":[{\\\"id\\\": 1,\\\"required\\\": 1,\\\"title\\\":{\\\"len\\\": 140}},{\\\"id\\\": 4,\\\"required\\\": 1,\\\"img\\\":{\\\"type\\\": 3,\\\"wmin\\\": 600,\\\"hmin\\\": 315}},{\\\"id\\\": 2,\\\"required\\\": 0,\\\"img\\\":{\\\"type\\\": 1,\\\"wmin\\\": 320,\\\"hmin\\\": 180}},{\\\"id\\\": 6,\\\"required\\\": 1,\\\"data\\\":{\\\"type\\\": 2,\\\"len\\\": 205}},{\\\"id\\\": 5,\\\"required\\\": 1,\\\"data\\\":{\\\"type\\\": 1,\\\"len\\\": 140}}]}}\"",
+                "ver": "1.1"
+              },
+              "tagid": "tag-id",
+              "ext": {
+                "bidder": {
+                  "publisherId": "publisher-id",
+                  "tagid": "tag-id"
+                }
+              }
+            }
+          ],
+          "site": {
+            "id": "publisher-id",
+            "name": "publisher-id",
+            "domain": "http://domain.com",
+            "page": "http://page-domain.com",
+            "ref": "http://page-domain.com",
+            "publisher": {
+              "id": "publisher-id"
+            }
+          },
+          "device": {
+            "ua": "Mozilla/5.0 (Linux; Android 12; Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.62 Mobile Safari/537.36",
+            "h": 300,
+            "w": 300
+          }
+        },
+        "impIDs":["native-impression-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "123",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "native-request-id",
+                  "impid": "native-impression-id",
+                  "price": 2.1,
+                  "adid": "1",
+                  "adm": "{}",
+                  "adomain": [
+                    "adomain.com"
+                  ],
+                  "cid": "cid",
+                  "crid": "crid",
+                  "w": 300,
+                  "h": 250,
+                  "exp": 60,
+                  "lurl": "https://lurl.domain.com/"
+                }
+              ],
+              "seat": "1111"
+            }
+          ],
+          "bidid": "123",
+          "cur": "USD"
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "http://display.whatever.com/12/publisher-id",
+        "body": {
+          "id": "request-id",
+          "imp": [
+            {
+              "id": "banner-impression-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  },
+                  {
+                    "w": 300,
+                    "h": 600
+                  },
+                  {
+                    "w": 160,
+                    "h": 600
+                  }
+                ]
+              },
+              "tagid" : "tag-id",
+              "ext": {
+                "bidder": {
+                  "publisherId": "publisher-id",
+                  "tagid": "tag-id"
+                }
+              }
+            },
+            {
+              "id": "banner-impression-id-2",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  },
+                  {
+                    "w": 300,
+                    "h": 600
+                  },
+                  {
+                    "w": 160,
+                    "h": 600
+                  }
+                ]
+              },
+              "tagid" : "tag-id-2",
+              "ext": {
+                "bidder": {
+                  "publisherId": "publisher-id",
+                  "tagid": "tag-id-2"
+                }
+              }
+            }
+          ],
+          "site": {
+            "id": "publisher-id",
+            "name": "publisher-id",
+            "domain": "http://domain.com",
+            "page": "http://page-domain.com",
+            "ref": "http://page-domain.com",
+            "publisher": {
+              "id": "publisher-id"
+            }
+          },
+          "device": {
+            "ua": "Mozilla/5.0 (Linux; Android 12; Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.62 Mobile Safari/537.36",
+            "h": 300,
+            "w": 300
+          }
+        },
+        "impIDs":["banner-impression-id","banner-impression-id-2"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "1234",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "banner-request-id",
+                  "impid": "banner-impression-id",
+                  "price": 3.5,
+                  "adid": "1",
+                  "adm": "<hrml></html>",
+                  "adomain": [
+                    "adomain.com"
+                  ],
+                  "cid": "cid",
+                  "crid": "crid",
+                  "w": 300,
+                  "h": 250,
+                  "exp": 60,
+                  "lurl": "https://lurl.domain.com/"
+                },
+                {
+                  "id": "banner-request-id-2",
+                  "impid": "banner-impression-id-2",
+                  "price": 4.2,
+                  "adid": "1",
+                  "adm": "<hrml></html>",
+                  "adomain": [
+                    "adomain.com"
+                  ],
+                  "cid": "cid",
+                  "crid": "crid",
+                  "w": 300,
+                  "h": 250,
+                  "exp": 60,
+                  "lurl": "https://lurl.domain.com/"
+                }
+              ],
+              "seat": "1111"
+            }
+          ],
+          "bidid": "123",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "native-request-id",
+            "impid": "native-impression-id",
+            "price": 2.1,
+            "adid": "1",
+            "adm": "{}",
+            "adomain": [
+              "adomain.com"
+            ],
+            "cid": "cid",
+            "crid": "crid",
+            "w": 300,
+            "h": 250,
+            "exp": 60,
+            "lurl": "https://lurl.domain.com/"
+          },
+          "type": "native"
+        }
+      ]
+    },
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "banner-request-id",
+            "impid": "banner-impression-id",
+            "price": 3.5,
+            "adid": "1",
+            "adm": "<hrml></html>",
+            "adomain": [
+              "adomain.com"
+            ],
+            "cid": "cid",
+            "crid": "crid",
+            "w": 300,
+            "h": 250,
+            "exp": 60,
+            "lurl": "https://lurl.domain.com/"
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "banner-request-id-2",
+            "impid": "banner-impression-id-2",
+            "price": 4.2,
+            "adid": "1",
+            "adm": "<hrml></html>",
+            "adomain": [
+              "adomain.com"
+            ],
+            "cid": "cid",
+            "crid": "crid",
+            "w": 300,
+            "h": 250,
+            "exp": 60,
+            "lurl": "https://lurl.domain.com/"
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

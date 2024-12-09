@@ -5,32 +5,37 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
-	accountService "github.com/prebid/prebid-server/account"
-	"github.com/prebid/prebid-server/analytics"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/prebid_cache_client"
-	"github.com/prebid/prebid-server/stored_requests"
+	accountService "github.com/prebid/prebid-server/v3/account"
+	"github.com/prebid/prebid-server/v3/analytics"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/metrics"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/prebid_cache_client"
+	"github.com/prebid/prebid-server/v3/stored_requests"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 const (
-	AccountParameter   = "a"
-	ImpressionCloseTag = "</Impression>"
-	ImpressionOpenTag  = "<Impression>"
+	AccountParameter     = "a"
+	IntegrationParameter = "int"
+	ImpressionCloseTag   = "</Impression>"
+	ImpressionOpenTag    = "<Impression>"
 )
 
 type vtrackEndpoint struct {
-	Cfg         *config.Configuration
-	Accounts    stored_requests.AccountFetcher
-	BidderInfos config.BidderInfos
-	Cache       prebid_cache_client.Client
+	Cfg                 *config.Configuration
+	Accounts            stored_requests.AccountFetcher
+	BidderInfos         config.BidderInfos
+	Cache               prebid_cache_client.Client
+	MetricsEngine       metrics.MetricsEngine
+	normalizeBidderName openrtb_ext.BidderNameNormalizer
 }
 
 type BidCacheRequest struct {
@@ -45,12 +50,14 @@ type CacheObject struct {
 	UUID string `json:"uuid"`
 }
 
-func NewVTrackEndpoint(cfg *config.Configuration, accounts stored_requests.AccountFetcher, cache prebid_cache_client.Client, bidderInfos config.BidderInfos) httprouter.Handle {
+func NewVTrackEndpoint(cfg *config.Configuration, accounts stored_requests.AccountFetcher, cache prebid_cache_client.Client, bidderInfos config.BidderInfos, me metrics.MetricsEngine) httprouter.Handle {
 	vte := &vtrackEndpoint{
-		Cfg:         cfg,
-		Accounts:    accounts,
-		BidderInfos: bidderInfos,
-		Cache:       cache,
+		Cfg:                 cfg,
+		Accounts:            accounts,
+		BidderInfos:         bidderInfos,
+		Cache:               cache,
+		MetricsEngine:       me,
+		normalizeBidderName: openrtb_ext.NormalizeBidderName,
 	}
 
 	return vte.Handle
@@ -65,7 +72,15 @@ func (v *vtrackEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httpro
 	// account id is required
 	if accountId == "" {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprintf("Account '%s' is required query parameter and can't be empty", AccountParameter)))
+		fmt.Fprintf(w, "Account '%s' is required query parameter and can't be empty", AccountParameter)
+		return
+	}
+
+	// get integration value from request parameter
+	integrationType, err := getIntegrationType(r)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, "Invalid integration type: %s\n", err.Error())
 		return
 	}
 
@@ -75,7 +90,7 @@ func (v *vtrackEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httpro
 	// check if there was any error while parsing puts request
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprintf("Invalid request: %s\n", err.Error())))
+		fmt.Fprintf(w, "Invalid request: %s\n", err.Error())
 		return
 	}
 
@@ -83,35 +98,35 @@ func (v *vtrackEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httpro
 	defer cancel()
 
 	// get account details
-	account, errs := accountService.GetAccount(ctx, v.Cfg, v.Accounts, accountId)
+	account, errs := accountService.GetAccount(ctx, v.Cfg, v.Accounts, accountId, v.MetricsEngine)
 	if len(errs) > 0 {
 		status, messages := HandleAccountServiceErrors(errs)
 		w.WriteHeader(status)
 
 		for _, message := range messages {
-			w.Write([]byte(fmt.Sprintf("Invalid request: %s\n", message)))
+			fmt.Fprintf(w, "Invalid request: %s\n", message)
 		}
 		return
 	}
 
 	// insert impression tracking if account allows events and bidder allows VAST modification
 	if v.Cache != nil {
-		cachingResponse, errs := v.handleVTrackRequest(ctx, req, account)
+		cachingResponse, errs := v.handleVTrackRequest(ctx, req, account, integrationType)
 
 		if len(errs) > 0 {
 			w.WriteHeader(http.StatusInternalServerError)
 			for _, err := range errs {
-				w.Write([]byte(fmt.Sprintf("Error(s) updating vast: %s\n", err.Error())))
+				fmt.Fprintf(w, "Error(s) updating vast: %s\n", err.Error())
 
 				return
 			}
 		}
 
-		d, err := json.Marshal(*cachingResponse)
+		d, err := jsonutil.Marshal(*cachingResponse)
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(fmt.Sprintf("Error serializing pbs cache response: %s\n", err.Error())))
+			fmt.Fprintf(w, "Error serializing pbs cache response: %s\n", err.Error())
 
 			return
 		}
@@ -128,15 +143,16 @@ func (v *vtrackEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httpro
 }
 
 // GetVastUrlTracking creates a vast url tracking
-func GetVastUrlTracking(externalUrl string, bidid string, bidder string, accountId string, timestamp int64) string {
+func GetVastUrlTracking(externalUrl string, bidid string, bidder string, accountId string, timestamp int64, integration string) string {
 
 	eventReq := &analytics.EventRequest{
-		Type:      analytics.Imp,
-		BidID:     bidid,
-		AccountID: accountId,
-		Bidder:    bidder,
-		Timestamp: timestamp,
-		Format:    analytics.Blank,
+		Type:        analytics.Imp,
+		BidID:       bidid,
+		AccountID:   accountId,
+		Bidder:      bidder,
+		Timestamp:   timestamp,
+		Format:      analytics.Blank,
+		Integration: integration,
 	}
 
 	return EventRequestToUrl(externalUrl, eventReq)
@@ -154,7 +170,7 @@ func ParseVTrackRequest(httpRequest *http.Request, maxRequestSize int64) (req *B
 	}
 
 	defer httpRequest.Body.Close()
-	requestJson, err := ioutil.ReadAll(lr)
+	requestJson, err := io.ReadAll(lr)
 	if err != nil {
 		return req, err
 	}
@@ -170,18 +186,18 @@ func ParseVTrackRequest(httpRequest *http.Request, maxRequestSize int64) (req *B
 		return req, err
 	}
 
-	if err := json.Unmarshal(requestJson, req); err != nil {
+	if err := jsonutil.UnmarshalValid(requestJson, req); err != nil {
 		return req, err
 	}
 
 	for _, bcr := range req.Puts {
 		if bcr.BidID == "" {
-			err = error(&errortypes.BadInput{Message: fmt.Sprint("'bidid' is required field and can't be empty")})
+			err = error(&errortypes.BadInput{Message: "'bidid' is required field and can't be empty"})
 			return req, err
 		}
 
 		if bcr.Bidder == "" {
-			err = error(&errortypes.BadInput{Message: fmt.Sprint("'bidder' is required field and can't be empty")})
+			err = error(&errortypes.BadInput{Message: "'bidder' is required field and can't be empty"})
 			return req, err
 		}
 	}
@@ -190,10 +206,10 @@ func ParseVTrackRequest(httpRequest *http.Request, maxRequestSize int64) (req *B
 }
 
 // handleVTrackRequest handles a VTrack request
-func (v *vtrackEndpoint) handleVTrackRequest(ctx context.Context, req *BidCacheRequest, account *config.Account) (*BidCacheResponse, []error) {
-	biddersAllowingVastUpdate := getBiddersAllowingVastUpdate(req, &v.BidderInfos, v.Cfg.VTrack.AllowUnknownBidder)
+func (v *vtrackEndpoint) handleVTrackRequest(ctx context.Context, req *BidCacheRequest, account *config.Account, integration string) (*BidCacheResponse, []error) {
+	biddersAllowingVastUpdate := getBiddersAllowingVastUpdate(req, &v.BidderInfos, v.Cfg.VTrack.AllowUnknownBidder, v.normalizeBidderName)
 	// cache data
-	r, errs := v.cachePutObjects(ctx, req, biddersAllowingVastUpdate, account.ID)
+	r, errs := v.cachePutObjects(ctx, req, biddersAllowingVastUpdate, account.ID, integration)
 
 	// handle pbs caching errors
 	if len(errs) != 0 {
@@ -216,7 +232,7 @@ func (v *vtrackEndpoint) handleVTrackRequest(ctx context.Context, req *BidCacheR
 }
 
 // cachePutObjects caches BidCacheRequest data
-func (v *vtrackEndpoint) cachePutObjects(ctx context.Context, req *BidCacheRequest, biddersAllowingVastUpdate map[string]struct{}, accountId string) ([]string, []error) {
+func (v *vtrackEndpoint) cachePutObjects(ctx context.Context, req *BidCacheRequest, biddersAllowingVastUpdate map[string]struct{}, accountId string, integration string) ([]string, []error) {
 	var cacheables []prebid_cache_client.Cacheable
 
 	for _, c := range req.Puts {
@@ -229,7 +245,7 @@ func (v *vtrackEndpoint) cachePutObjects(ctx context.Context, req *BidCacheReque
 		}
 
 		if _, ok := biddersAllowingVastUpdate[c.Bidder]; ok && nc.Data != nil {
-			nc.Data = ModifyVastXmlJSON(v.Cfg.ExternalURL, nc.Data, c.BidID, c.Bidder, accountId, c.Timestamp)
+			nc.Data = ModifyVastXmlJSON(v.Cfg.ExternalURL, nc.Data, c.BidID, c.Bidder, accountId, c.Timestamp, integration)
 		}
 
 		cacheables = append(cacheables, *nc)
@@ -239,11 +255,11 @@ func (v *vtrackEndpoint) cachePutObjects(ctx context.Context, req *BidCacheReque
 }
 
 // getBiddersAllowingVastUpdate returns a list of bidders that allow VAST XML modification
-func getBiddersAllowingVastUpdate(req *BidCacheRequest, bidderInfos *config.BidderInfos, allowUnknownBidder bool) map[string]struct{} {
+func getBiddersAllowingVastUpdate(req *BidCacheRequest, bidderInfos *config.BidderInfos, allowUnknownBidder bool, normalizeBidderName openrtb_ext.BidderNameNormalizer) map[string]struct{} {
 	bl := map[string]struct{}{}
 
 	for _, bcr := range req.Puts {
-		if _, ok := bl[bcr.Bidder]; isAllowVastForBidder(bcr.Bidder, bidderInfos, allowUnknownBidder) && !ok {
+		if _, ok := bl[bcr.Bidder]; isAllowVastForBidder(bcr.Bidder, bidderInfos, allowUnknownBidder, normalizeBidderName) && !ok {
 			bl[bcr.Bidder] = struct{}{}
 		}
 	}
@@ -252,12 +268,15 @@ func getBiddersAllowingVastUpdate(req *BidCacheRequest, bidderInfos *config.Bidd
 }
 
 // isAllowVastForBidder checks if a bidder is active and allowed to modify vast xml data
-func isAllowVastForBidder(bidder string, bidderInfos *config.BidderInfos, allowUnknownBidder bool) bool {
-	//if bidder is active and isModifyingVastXmlAllowed is true
+func isAllowVastForBidder(bidder string, bidderInfos *config.BidderInfos, allowUnknownBidder bool, normalizeBidderName openrtb_ext.BidderNameNormalizer) bool {
+	// if bidder is active and isModifyingVastXmlAllowed is true
 	// check if bidder is configured
-	if b, ok := (*bidderInfos)[bidder]; bidderInfos != nil && ok {
-		// check if bidder is enabled
-		return b.Enabled && b.ModifyingVastXmlAllowed
+	if normalizedBidder, ok := normalizeBidderName(bidder); ok {
+		if bidderInfos != nil {
+			if b, ok := (*bidderInfos)[normalizedBidder.String()]; ok {
+				return b.IsEnabled() && b.ModifyingVastXmlAllowed
+			}
+		}
 	}
 
 	return allowUnknownBidder
@@ -268,8 +287,17 @@ func getAccountId(httpRequest *http.Request) string {
 	return httpRequest.URL.Query().Get(AccountParameter)
 }
 
+func getIntegrationType(httpRequest *http.Request) (string, error) {
+	integrationType := httpRequest.URL.Query().Get(IntegrationParameter)
+	err := validateIntegrationType(integrationType)
+	if err != nil {
+		return "", err
+	}
+	return integrationType, nil
+}
+
 // ModifyVastXmlString rewrites and returns the string vastXML and a flag indicating if it was modified
-func ModifyVastXmlString(externalUrl, vast, bidid, bidder, accountID string, timestamp int64) (string, bool) {
+func ModifyVastXmlString(externalUrl, vast, bidid, bidder, accountID string, timestamp int64, integrationType string) (string, bool) {
 	ci := strings.Index(vast, ImpressionCloseTag)
 
 	// no impression tag - pass it as it is
@@ -277,7 +305,7 @@ func ModifyVastXmlString(externalUrl, vast, bidid, bidder, accountID string, tim
 		return vast, false
 	}
 
-	vastUrlTracking := GetVastUrlTracking(externalUrl, bidid, bidder, accountID, timestamp)
+	vastUrlTracking := GetVastUrlTracking(externalUrl, bidid, bidder, accountID, timestamp, integrationType)
 	impressionUrl := "<![CDATA[" + vastUrlTracking + "]]>"
 	oi := strings.Index(vast, ImpressionOpenTag)
 
@@ -289,13 +317,13 @@ func ModifyVastXmlString(externalUrl, vast, bidid, bidder, accountID string, tim
 }
 
 // ModifyVastXmlJSON modifies BidCacheRequest element Vast XML data
-func ModifyVastXmlJSON(externalUrl string, data json.RawMessage, bidid, bidder, accountId string, timestamp int64) json.RawMessage {
+func ModifyVastXmlJSON(externalUrl string, data json.RawMessage, bidid, bidder, accountId string, timestamp int64, integrationType string) json.RawMessage {
 	var vast string
-	if err := json.Unmarshal(data, &vast); err != nil {
+	if err := jsonutil.Unmarshal(data, &vast); err != nil {
 		// failed to decode json, fall back to string
 		vast = string(data)
 	}
-	vast, ok := ModifyVastXmlString(externalUrl, vast, bidid, bidder, accountId, timestamp)
+	vast, ok := ModifyVastXmlString(externalUrl, vast, bidid, bidder, accountId, timestamp, integrationType)
 	if !ok {
 		return data
 	}

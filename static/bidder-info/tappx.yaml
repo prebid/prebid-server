@@ -1,3 +1,4 @@
+endpoint: "http://{{.Host}}"
 maintainer:
   email: "tappx@tappx.com"
 gvlVendorID: 628

@@ -1,0 +1,687 @@
+{
+    "multiBid": {
+        "default_bid_limit": 2
+    },
+    "incomingRequest": {
+        "ortbRequest": {
+            "id": "tid",
+            "imp": [
+                {
+                    "id": "impId1",
+                    "video": {
+                        "mimes": [
+                            "mimes"
+                        ],
+                        "minduration": 20,
+                        "maxduration": 60,
+                        "protocols": [
+                            1
+                        ],
+                        "w": 300,
+                        "h": 250,
+                        "startdelay": 5,
+                        "skipmin": 0,
+                        "skipafter": 0,
+                        "playbackmethod": [
+                            1
+                        ]
+                    },
+                    "ext": {
+                        "prebid": {
+                            "bidder": {
+                                "rubicon": {
+                                    "accountId": 2001,
+                                    "siteId": 3001,
+                                    "inventory": {
+                                        "rating": [
+                                            "5-star"
+                                        ],
+                                        "prodtype": [
+                                            "tech"
+                                        ]
+                                    },
+                                    "video": {
+                                        "size_id": 15,
+                                        "playerWidth": 780,
+                                        "playerHeight": "438",
+                                        "skip": 5,
+                                        "skipdelay": 1
+                                    }
+                                },
+                                "appnexus": {
+                                    "traffic_source_code": "trafficSource"
+                                }
+                            }
+                        }
+                    }
+                }
+            ],
+            "device": {
+                "pxratio": 4.2,
+                "dnt": 2,
+                "ip": "80.215.195.122",
+                "language": "en",
+                "ifa": "ifaId",
+                "ext": {
+                    "prebid": {
+                        "interstitial": {
+                            "minwidthperc": 50,
+                            "minheightperc": 60
+                        }
+                    }
+                }
+            },
+            "site": {
+                "publisher": {
+                    "id": "5001"
+                }
+            },
+            "at": 1,
+            "tmax": 5000,
+            "cur": [
+                "USD"
+            ],
+            "source": {
+                "fd": 1,
+                "tid": "tid"
+            },
+            "ext": {
+                "prebid": {
+                    "debug": false,
+                    "currency": {
+                        "rates": {
+                            "EUR": {
+                                "USD": 1.2406
+                            },
+                            "USD": {
+                                "EUR": 0.811
+                            }
+                        },
+                        "usepbsrates": false
+                    },
+                    "targeting": {
+                        "includewinners": true,
+                        "includebidderkeys": true,
+                        "pricegranularity": {
+                            "precision": 2,
+                            "ranges": [
+                                {
+                                    "max": 20,
+                                    "increment": 0.1
+                                }
+                            ]
+                        }
+                    },
+                    "multibid": [
+                        {
+                            "bidder": "rubicon",
+                            "maxbids": 2,
+                            "targetbiddercodeprefix": "rubN"
+                        },
+                        {
+                            "bidders": [
+                                "appnexus",
+                                "someBidder"
+                            ],
+                            "maxbids": 2
+                        }
+                    ],
+                    "auctiontimestamp": 1000
+                }
+            },
+            "user": {
+                "ext": {
+                    "consent": "CPBCa-mPBCa-mAAAAAENA0CAAEAAAAAAACiQAaQAwAAgAgABoAAAAAA"
+                }
+            },
+            "regs": {
+                "ext": {
+                    "us_privacy": "1YNN"
+                }
+            }
+        }
+    },
+    "outgoingRequests": {
+        "appnexus": {
+            "expectRequest": {
+                "ortbRequest": {
+                    "id": "tid",
+                    "imp": [
+                        {
+                            "id": "impId1",
+                            "video": {
+                                "mimes": [
+                                    "mimes"
+                                ],
+                                "minduration": 20,
+                                "maxduration": 60,
+                                "protocols": [
+                                    1
+                                ],
+                                "w": 300,
+                                "h": 250,
+                                "startdelay": 5,
+                                "skipmin": 0,
+                                "skipafter": 0,
+                                "playbackmethod": [
+                                    1
+                                ]
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "traffic_source_code": "trafficSource"
+                                }
+                            }
+                        }
+                    ],
+                    "site": {
+                        "publisher": {
+                            "id": "5001"
+                        }
+                    },
+                    "device": {
+                        "dnt": 2,
+                        "ip": "80.215.195.122",
+                        "pxratio": 4.2,
+                        "language": "en",
+                        "ifa": "ifaId",
+                        "ext": {
+                            "prebid": {
+                                "interstitial": {
+                                    "minwidthperc": 50,
+                                    "minheightperc": 60
+                                }
+                            }
+                        }
+                    },
+                    "user": {
+                        "ext": {
+                            "consent": "CPBCa-mPBCa-mAAAAAENA0CAAEAAAAAAACiQAaQAwAAgAgABoAAAAAA"
+                        }
+                    },
+                    "at": 1,
+                    "tmax": 5000,
+                    "cur": [
+                        "USD"
+                    ],
+                    "source": {
+                        "fd": 1,
+                        "tid": "tid"
+                    },
+                    "regs": {
+                        "ext": {
+                            "us_privacy": "1YNN"
+                        }
+                    },
+                    "ext": {
+                        "prebid": {
+                            "currency": {
+                                "rates": {
+                                    "EUR": {
+                                        "USD": 1.2406
+                                    },
+                                    "USD": {
+                                        "EUR": 0.811
+                                    }
+                                },
+                                "usepbsrates": false
+                            },
+                            "multibid": [
+                                {
+                                    "bidders": [
+                                        "appnexus"
+                                    ],
+                                    "maxbids": 2
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "mockResponse": {
+                "pbsSeatBids": [
+                    {
+                        "pbsBids": [
+                            {
+                                "ortbBid": {
+                                    "id": "7706636740145184841",
+                                    "impid": "impId1",
+                                    "price": 5.5,
+                                    "adid": "29681110",
+                                    "adm": "some-test-ad2",
+                                    "adomain": [
+                                        "appnexus.com"
+                                    ],
+                                    "iurl": "http://nym1-ib.adnxs.com/cr?id=29681110",
+                                    "cid": "958",
+                                    "crid": "29681110",
+                                    "ext": {
+                                        "appnexus": {
+                                            "brand_id": 1,
+                                            "auction_id": 8189378542222915000,
+                                            "bidder_id": 2,
+                                            "bid_ad_type": 1,
+                                            "ranking_price": 0
+                                        }
+                                    }
+                                },
+                                "bidType": "video",
+                                "bidMeta": {
+                                }
+                            },
+                            {
+                                "ortbBid": {
+                                    "id": "928185755156387460",
+                                    "impid": "impId1",
+                                    "price": 1,
+                                    "adid": "69595837",
+                                    "adm": "some-test-ad1",
+                                    "adomain": [
+                                        "appnexus.com"
+                                    ],
+                                    "iurl": "http://nym1-ib.adnxs.com/cr?id=69595837",
+                                    "cid": "958",
+                                    "crid": "69595837",
+                                    "ext": {
+                                        "appnexus": {
+                                            "brand_id": 1,
+                                            "brand_category_id": 1,
+                                            "auction_id": 5607483846416358000,
+                                            "bidder_id": 2,
+                                            "bid_ad_type": 1
+                                        }
+                                    }
+                                },
+                                "bidType": "video",
+                                "bidMeta": {
+                                }
+                            },
+                            {
+                                "ortbBid": {
+                                    "id": "222214214214",
+                                    "impid": "impId1",
+                                    "price": 2,
+                                    "adid": "69595837",
+                                    "adomain": [
+                                        "appnexus.com"
+                                    ],
+                                    "adm": "some-test-ad1",
+                                    "iurl": "http://nym1-ib.adnxs.com/cr?id=69595837",
+                                    "cid": "958",
+                                    "crid": "69595837",
+                                    "ext": {
+                                        "appnexus": {
+                                            "brand_id": 1,
+                                            "brand_category_id": 1,
+                                            "auction_id": 5607483846416358000,
+                                            "bidder_id": 2,
+                                            "bid_ad_type": 1
+                                        }
+                                    }
+                                },
+                                "bidType": "video",
+                                "bidMeta": {
+                                }
+                            }
+                        ],
+                        "seat": "appnexus"
+                    }
+                ]
+            }
+        },
+        "rubicon": {
+            "expectRequest": {
+                "ortbRequest": {
+                    "id": "tid",
+                    "imp": [
+                        {
+                            "id": "impId1",
+                            "video": {
+                                "mimes": [
+                                    "mimes"
+                                ],
+                                "minduration": 20,
+                                "maxduration": 60,
+                                "protocols": [
+                                    1
+                                ],
+                                "w": 300,
+                                "h": 250,
+                                "startdelay": 5,
+                                "skipmin": 0,
+                                "skipafter": 0,
+                                "playbackmethod": [
+                                    1
+                                ]
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "accountId": 2001,
+                                    "siteId": 3001,
+                                    "inventory": {
+                                        "rating": [
+                                            "5-star"
+                                        ],
+                                        "prodtype": [
+                                            "tech"
+                                        ]
+                                    },
+                                    "video": {
+                                        "size_id": 15,
+                                        "playerWidth": 780,
+                                        "playerHeight": "438",
+                                        "skip": 5,
+                                        "skipdelay": 1
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    "site": {
+                        "publisher": {
+                            "id": "5001"
+                        }
+                    },
+                    "device": {
+                        "dnt": 2,
+                        "ip": "80.215.195.122",
+                        "pxratio": 4.2,
+                        "language": "en",
+                        "ifa": "ifaId",
+                        "ext": {
+                            "prebid": {
+                                "interstitial": {
+                                    "minwidthperc": 50,
+                                    "minheightperc": 60
+                                }
+                            }
+                        }
+                    },
+                    "user": {
+                        "ext": {
+                            "consent": "CPBCa-mPBCa-mAAAAAENA0CAAEAAAAAAACiQAaQAwAAgAgABoAAAAAA"
+                        }
+                    },
+                    "at": 1,
+                    "tmax": 5000,
+                    "cur": [
+                        "USD"
+                    ],
+                    "source": {
+                        "fd": 1,
+                        "tid": "tid"
+                    },
+                    "regs": {
+                        "ext": {
+                            "us_privacy": "1YNN"
+                        }
+                    },
+                    "ext": {
+                        "prebid": {
+                            "currency": {
+                                "rates": {
+                                    "EUR": {
+                                        "USD": 1.2406
+                                    },
+                                    "USD": {
+                                        "EUR": 0.811
+                                    }
+                                },
+                                "usepbsrates": false
+                            },
+                            "multibid": [
+                                {
+                                    "bidder": "rubicon",
+                                    "maxbids": 2,
+                                    "targetbiddercodeprefix": "rubN"
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "mockResponse": {
+                "pbsSeatBids": [
+                    {
+                        "pbsBids": [
+                            {
+                                "ortbBid": {
+                                    "id": "880290288",
+                                    "impid": "impId1",
+                                    "price": 8.43,
+                                    "adm": "<InLine><Impression><![CDATA[]]></Impression><Impression><![CDATA[http://localhost:8080/event?t=imp&b=880290288&a=5001&aid=tid&ts=1000&bidder=rubicon&f=b&int=]]></Impression></InLine>",
+                                    "crid": "crid-880290288",
+                                    "w": 300,
+                                    "h": 250,
+                                    "ext": {
+                                        "rubicon": {
+                                            "targeting": [
+                                                {
+                                                    "key": "rpfl_1001",
+                                                    "values": [
+                                                        "2_tier0100"
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    }
+                                },
+                                "bidType": "video",
+                                "bidMeta": {
+                                }
+                            },
+                            {
+                                "ortbBid": {
+                                    "id": "21521324",
+                                    "impid": "impId1",
+                                    "price": 12.43,
+                                    "adm": "<InLine><Impression><![CDATA[]]></Impression><Impression><![CDATA[http://localhost:8080/event?t=imp&b=21521324&a=5001&aid=tid&ts=1000&bidder=rubicon&f=b&int=]]></Impression></InLine>",
+                                    "crid": "crid-21521324",
+                                    "w": 300,
+                                    "h": 250,
+                                    "ext": {
+                                        "rubicon": {
+                                            "targeting": [
+                                                {
+                                                    "key": "rpfl_1001",
+                                                    "values": [
+                                                        "2_tier0100"
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    }
+                                },
+                                "bidType": "video",
+                                "bidMeta": {
+                                }
+                            },
+                            {
+                                "ortbBid": {
+                                    "id": "992342532",
+                                    "impid": "impId1",
+                                    "price": 2,
+                                    "adm": "992342532-admn",
+                                    "crid": "crid-992342532",
+                                    "w": 300,
+                                    "h": 250,
+                                    "ext": {
+                                        "rubicon": {
+                                            "targeting": [
+                                                {
+                                                    "key": "rpfl_1001",
+                                                    "values": [
+                                                        "2_tier0100"
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    }
+                                },
+                                "bidType": "banner",
+                                "bidMeta": {
+                                }
+                            }
+                        ],
+                        "seat": "rubicon"
+                    }
+                ]
+            }
+        }
+    },
+    "response": {
+        "bids": {
+            "id": "tid",
+            "seatbid": [
+                {
+                    "bid": [
+                        {
+                            "id": "21521324",
+                            "impid": "impId1",
+                            "price": 12.43,
+                            "adm": "<InLine><Impression><![CDATA[]]></Impression><Impression><![CDATA[http://localhost:8080/event?t=imp&b=21521324&a=5001&aid=tid&ts=1000&bidder=rubicon&f=b&int=]]></Impression></InLine>",
+                            "crid": "crid-21521324",
+                            "w": 300,
+                            "h": 250,
+                            "ext": {
+                                "prebid": {
+                                    "meta": {
+                                    },
+                                    "type": "video",
+                                    "targeting": {
+                                        "hb_size_rubicon": "300x250",
+                                        "hb_cache_path_rubico": "/pbcache/endpoint",
+                                        "hb_cache_host_rubico": "www.pbcserver.com",
+                                        "hb_pb": "12.40",
+                                        "hb_pb_rubicon": "12.40",
+                                        "hb_cache_path": "/pbcache/endpoint",
+                                        "hb_size": "300x250",
+                                        "hb_bidder": "rubicon",
+                                        "hb_bidder_rubicon": "rubicon",
+                                        "hb_cache_host": "www.pbcserver.com"
+                                    },
+                                    "targetbiddercode": "rubicon"
+                                },
+                                "origbidcpm": 12.43,
+                                "rubicon": {
+                                    "targeting": [
+                                        {
+                                            "key": "rpfl_1001",
+                                            "values": [
+                                                "2_tier0100"
+                                            ]
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "id": "880290288",
+                            "impid": "impId1",
+                            "price": 8.43,
+                            "adm": "<InLine><Impression><![CDATA[]]></Impression><Impression><![CDATA[http://localhost:8080/event?t=imp&b=880290288&a=5001&aid=tid&ts=1000&bidder=rubicon&f=b&int=]]></Impression></InLine>",
+                            "crid": "crid-880290288",
+                            "w": 300,
+                            "h": 250,
+                            "ext": {
+                                "prebid": {
+                                    "meta": {
+                                    },
+                                    "type": "video",
+                                    "targeting": {
+                                        "hb_pb_rubN2": "8.40",
+                                        "hb_cache_host_rubN2": "www.pbcserver.com",
+                                        "hb_bidder_rubN2": "rubN2",
+                                        "hb_cache_path_rubN2": "/pbcache/endpoint",
+                                        "hb_size_rubN2": "300x250"
+                                    },
+                                    "targetbiddercode": "rubN2"
+                                },
+                                "origbidcpm": 8.43,
+                                "rubicon": {
+                                    "targeting": [
+                                        {
+                                            "key": "rpfl_1001",
+                                            "values": [
+                                                "2_tier0100"
+                                            ]
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    ],
+                    "seat": "rubicon"
+                },
+                {
+                    "bid": [
+                        {
+                            "id": "7706636740145184841",
+                            "impid": "impId1",
+                            "price": 5.5,
+                            "adm": "some-test-ad2",
+                            "adid": "29681110",
+                            "adomain": [
+                                "appnexus.com"
+                            ],
+                            "iurl": "http://nym1-ib.adnxs.com/cr?id=29681110",
+                            "cid": "958",
+                            "crid": "29681110",
+                            "ext": {
+                                "prebid": {
+                                    "meta": {
+                                    },
+                                    "type": "video",
+                                    "targeting": {
+                                        "hb_pb_appnexus": "5.50",
+                                        "hb_cache_path_appnex": "/pbcache/endpoint",
+                                        "hb_bidder_appnexus": "appnexus",
+                                        "hb_cache_host_appnex": "www.pbcserver.com"
+                                    },
+                                    "targetbiddercode": "appnexus"
+                                },
+                                "origbidcpm": 5.5,
+                                "appnexus": {
+                                    "brand_id": 1,
+                                    "auction_id": 8189378542222915000,
+                                    "bidder_id": 2,
+                                    "bid_ad_type": 1,
+                                    "ranking_price": 0
+                                }
+                            }
+                        },
+                        {
+                            "id": "222214214214",
+                            "impid": "impId1",
+                            "price": 2,
+                            "adm": "some-test-ad1",
+                            "adid": "69595837",
+                            "adomain": [
+                                "appnexus.com"
+                            ],
+                            "iurl": "http://nym1-ib.adnxs.com/cr?id=69595837",
+                            "cid": "958",
+                            "crid": "69595837",
+                            "ext": {
+                                "prebid": {
+                                    "meta": {
+                                    },
+                                    "type": "video"
+                                },
+                                "origbidcpm": 2,
+                                "appnexus": {
+                                    "brand_id": 1,
+                                    "brand_category_id": 1,
+                                    "auction_id": 5607483846416358000,
+                                    "bidder_id": 2,
+                                    "bid_ad_type": 1
+                                }
+                            }
+                        }
+                    ],
+                    "seat": "appnexus"
+                }
+            ]
+        }
+    }
+}

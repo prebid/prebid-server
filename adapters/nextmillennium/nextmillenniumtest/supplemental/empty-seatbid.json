@@ -33,13 +33,47 @@
         "body": {
           "id": "testid",
           "ext": {
+            "nextMillennium": {},
             "prebid": {
               "storedrequest": {
                 "id": "7819"
+              },
+              "server": {
+                "datacenter": "2",
+                "externalurl": "http://hosturl.com",
+               "gvlid": 1
               }
             }
-          }
-        }
+          },
+          "imp": [
+            {
+              "banner": {
+                "format": [
+                  {
+                    "h": 250,
+                    "w": 320
+                  },
+                  {
+                    "h": 300,
+                    "w": 320
+                  }
+                ],
+                "h": 250,
+                "w": 320
+              },
+              "ext": {
+                "nextMillennium": {},
+                "prebid": {
+                  "storedrequest": {
+                    "id": "7819"
+                  }
+                }
+              },
+              "id": "testimpid"
+            }
+          ]
+        },
+        "impIDs":["testimpid"]
       },
       "mockResponse": {
         "status": 200,

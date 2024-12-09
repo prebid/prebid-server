@@ -1,7 +1,6 @@
 package adocean
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -13,15 +12,16 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
-const adapterVersion = "1.2.0"
+const adapterVersion = "1.3.0"
 const maxUriLength = 8000
 const measurementCode = `
 	<script>
@@ -57,10 +57,11 @@ type requestData struct {
 	Url        *url.URL
 	Headers    *http.Header
 	SlaveSizes map[string]string
+	ImpIDs     []string
 }
 
 // Builder builds a new instance of the AdOcean adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	endpointTemplate, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
 		return nil, errors.New("Unable to parse endpoint template")
@@ -90,18 +91,18 @@ func (a *AdOceanAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 	consentString := ""
 	if request.User != nil {
 		var extUser openrtb_ext.ExtUser
-		if err := json.Unmarshal(request.User.Ext, &extUser); err == nil {
+		if err := jsonutil.Unmarshal(request.User.Ext, &extUser); err == nil {
 			consentString = extUser.Consent
 		}
 	}
 
-	var errors []error
+	var reqCreationErrors []error
 	var err error
 	requestsData := make([]*requestData, 0, len(request.Imp))
 	for _, auction := range request.Imp {
 		requestsData, err = a.addNewBid(requestsData, &auction, request, consentString)
 		if err != nil {
-			errors = append(errors, err)
+			reqCreationErrors = append(reqCreationErrors, err)
 		}
 	}
 
@@ -111,10 +112,11 @@ func (a *AdOceanAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			Method:  "GET",
 			Uri:     requestData.Url.String(),
 			Headers: *requestData.Headers,
+			ImpIDs:  requestData.ImpIDs,
 		})
 	}
 
-	return httpRequests, errors
+	return httpRequests, reqCreationErrors
 }
 
 func (a *AdOceanAdapter) addNewBid(
@@ -124,16 +126,22 @@ func (a *AdOceanAdapter) addNewBid(
 	consentString string,
 ) ([]*requestData, error) {
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return requestsData, &errortypes.BadInput{
 			Message: "Error parsing bidderExt object",
 		}
 	}
 
 	var adOceanExt openrtb_ext.ExtImpAdOcean
-	if err := json.Unmarshal(bidderExt.Bidder, &adOceanExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &adOceanExt); err != nil {
 		return requestsData, &errortypes.BadInput{
 			Message: "Error parsing adOceanExt parameters",
+		}
+	}
+
+	if adOceanExt.EmitterPrefix == "" {
+		return requestsData, &errortypes.BadInput{
+			Message: "No emitterPrefix param",
 		}
 	}
 
@@ -154,6 +162,7 @@ func (a *AdOceanAdapter) addNewBid(
 		Url:        url,
 		Headers:    a.formHeaders(request),
 		SlaveSizes: slaveSizes,
+		ImpIDs:     []string{imp.ID},
 	})
 
 	return requestsData, nil
@@ -179,6 +188,7 @@ func addToExistingRequest(requestsData []*requestData, newParams *openrtb_ext.Ex
 			newUrl.RawQuery = queryParams.Encode()
 			if len(newUrl.String()) < maxUriLength {
 				requestData.Url = &newUrl
+				requestData.ImpIDs = append(requestData.ImpIDs, auctionID)
 				return true
 			}
 
@@ -196,7 +206,7 @@ func (a *AdOceanAdapter) makeURL(
 	slaveSizes map[string]string,
 	consentString string,
 ) (*url.URL, error) {
-	endpointParams := macros.EndpointTemplateParams{Host: params.EmitterDomain}
+	endpointParams := macros.EndpointTemplateParams{Host: params.EmitterPrefix}
 	host, err := macros.ResolveMacros(a.endpointTemplate, endpointParams)
 	if err != nil {
 		return nil, &errortypes.BadInput{
@@ -339,12 +349,12 @@ func (a *AdOceanAdapter) MakeBids(
 	auctionIDs := queryParams["aid"]
 
 	bidResponses := make([]ResponseAdUnit, 0)
-	if err := json.Unmarshal(response.Body, &bidResponses); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResponses); err != nil {
 		return nil, []error{err}
 	}
 
 	var parsedResponses = adapters.NewBidderResponseWithBidsCapacity(len(auctionIDs))
-	var errors []error
+	var parsingErrors []error
 	var slaveToAuctionIDMap = make(map[string]string, len(auctionIDs))
 
 	for _, auctionFullID := range auctionIDs {
@@ -363,7 +373,7 @@ func (a *AdOceanAdapter) MakeBids(
 			height, _ := strconv.ParseInt(bid.Height, 10, 64)
 			adCode, err := a.prepareAdCodeForBid(bid)
 			if err != nil {
-				errors = append(errors, err)
+				parsingErrors = append(parsingErrors, err)
 				continue
 			}
 
@@ -383,7 +393,7 @@ func (a *AdOceanAdapter) MakeBids(
 		}
 	}
 
-	return parsedResponses, errors
+	return parsedResponses, parsingErrors
 }
 
 func (a *AdOceanAdapter) prepareAdCodeForBid(bid ResponseAdUnit) (string, error) {

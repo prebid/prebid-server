@@ -1,0 +1,236 @@
+{
+    "mockBidRequest": {
+        "id": "test-request",
+        "imp": [
+            {
+                "id": "slot1",
+                "ext": {
+                    "bidder": {
+                        "siteId": "237503",
+                        "id": "005"
+                    }
+                },
+                "secure": 1,
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        }
+                    ]
+                }
+            },
+            {
+                "id": "slot2",
+                "ext": {
+                    "bidder": {
+                        "siteId": "237503",
+                        "id": "037"
+                    }
+                },
+                "secure": 1,
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 600
+                        }
+                    ]
+                }
+            }
+        ],
+        "site": {
+            "domain": "test.page",
+            "page": "https://test.page/",
+            "ref": "https://test.referer/"
+        },
+        "regs": {
+            "ext": {
+                "gdpr": 1
+            }
+        },
+        "user": {
+            "ext": {
+                "consent": "test_consent"
+            },
+            "buyeruid": "test_user"
+        }
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "http://ssp.wp.test/bidder/?bdver=5.8&inver=4",
+                "body": {
+                    "id": "test-request",
+                    "imp": [
+                        {
+                            "id": "005",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 300,
+                                        "h": 250
+                                    }
+                                ]
+                            },
+                            "tagid": "slot1",
+                            "secure": 1,
+                            "ext": {
+                                "data": {
+                                    "pbslot": "slot1",
+                                    "pbsize": "300x250"
+                                }
+                            }
+                        },
+                        {
+                            "id": "037",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 300,
+                                        "h": 600
+                                    }
+                                ]
+                            },
+                            "tagid": "slot2",
+                            "secure": 1,
+                            "ext": {
+                                "data": {
+                                    "pbslot": "slot2",
+                                    "pbsize": "300x600"
+                                }
+                            }
+                        }
+                    ],
+                    "site": {
+                        "id": "237503",
+                        "domain": "test.page",
+                        "page": "https://test.page/",
+                        "ref": "https://test.referer/"
+                    },
+                    "user": {
+                        "ext": {
+                            "consent": "test_consent"
+                        },
+                        "buyeruid": "test_user"
+                    },
+                    "regs": {
+                        "ext": {
+                            "gdpr": 1
+                        }
+                    }
+                },
+                "impIDs":["slot1","slot2"]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "cur": "USD",
+                    "id": "test-request",
+                    "seatbid": [
+                        {
+                            "bid": [
+                                {
+                                    "adm": "<!--preformatted-->test_ad_1",
+                                    "adomain": [
+                                        "sspbc-test"
+                                    ],
+                                    "crid": "1234",
+                                    "ext": {
+                                        "adlabel": "Reklama",
+                                        "pubid": "431",
+                                        "siteid": "237503",
+                                        "slotid": "005",
+                                        "tagid": "slot1"
+                                    },
+                                    "w": 300,
+                                    "h": 250,
+                                    "id": "response-005",
+                                    "impid": "005",
+                                    "price": 20
+                                }
+                            ],
+                            "seat": "sspbc-test"
+                        },
+                        {
+                            "bid": [
+                                {
+                                    "adm": "<!--preformatted-->test_ad_2",
+                                    "adomain": [
+                                        "sspbc-test"
+                                    ],
+                                    "crid": "5678",
+                                    "ext": {
+                                        "adlabel": "Reklama",
+                                        "pubid": "431",
+                                        "siteid": "237503",
+                                        "slotid": "037",
+                                        "tagid": "slot2"
+                                    },
+                                    "w": 300,
+                                    "h": 600,
+                                    "id": "response-037",
+                                    "impid": "037",
+                                    "price": 10
+                                }
+                            ],
+                            "seat": "sspbc-test"
+                        }
+                    ],
+                    "sn": "sspbc-test"
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "currency": "USD",
+            "bids": [
+                {
+                    "bid": {
+                        "id": "response-005",
+                        "impid": "slot1",
+                        "price": 20,
+                        "adm": "<!--preformatted-->test_ad_1",
+                        "adomain": [
+                            "sspbc-test"
+                        ],
+                        "crid": "1234",
+                        "w": 300,
+                        "h": 250,
+                        "ext": {
+                            "adlabel": "Reklama",
+                            "pubid": "431",
+                            "siteid": "237503",
+                            "slotid": "005",
+                            "tagid": "slot1"
+                        }
+                    },
+                    "type": "banner"
+                },
+                {
+                    "bid": {
+                        "id": "response-037",
+                        "impid": "slot2",
+                        "price": 10,
+                        "adm": "<!--preformatted-->test_ad_2",
+                        "adomain": [
+                            "sspbc-test"
+                        ],
+                        "crid": "5678",
+                        "w": 300,
+                        "h": 600,
+                        "ext": {
+                            "adlabel": "Reklama",
+                            "pubid": "431",
+                            "siteid": "237503",
+                            "slotid": "037",
+                            "tagid": "slot2"
+                        }
+                    },
+                    "type": "banner"
+                }
+            ]
+        }
+    ]
+}

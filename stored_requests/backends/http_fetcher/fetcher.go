@@ -1,16 +1,17 @@
 package http_fetcher
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
 
-	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/v3/stored_requests"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
 	"github.com/golang/glog"
 	"golang.org/x/net/context/ctxhttp"
@@ -28,26 +29,26 @@ import (
 //
 // The above endpoints should return a payload like:
 //
-// {
-//   "requests": {
-//     "req1": { ... stored data for req1 ... },
-//     "req2": { ... stored data for req2 ... },
-//   },
-//   "imps": {
-//     "imp1": { ... stored data for imp1 ... },
-//     "imp2": { ... stored data for imp2 ... },
-//     "imp3": null // If imp3 is not found
-//   }
-// }
+//	{
+//	  "requests": {
+//	    "req1": { ... stored data for req1 ... },
+//	    "req2": { ... stored data for req2 ... },
+//	  },
+//	  "imps": {
+//	    "imp1": { ... stored data for imp1 ... },
+//	    "imp2": { ... stored data for imp2 ... },
+//	    "imp3": null // If imp3 is not found
+//	  }
+//	}
+//
 // or
-// {
-//   "accounts": {
-//     "acc1": { ... config data for acc1 ... },
-//     "acc2": { ... config data for acc2 ... },
-//   },
-// }
 //
-//
+//	{
+//	  "accounts": {
+//	    "acc1": { ... config data for acc1 ... },
+//	    "acc2": { ... config data for acc2 ... },
+//	  },
+//	}
 func NewFetcher(client *http.Client, endpoint string) *HttpFetcher {
 	// Do some work up-front to figure out if the (configurable) endpoint has a query string or not.
 	// When we build requests, we'll either want to add `?request-ids=...&imp-ids=...` _or_
@@ -96,15 +97,21 @@ func (fetcher *HttpFetcher) FetchRequests(ctx context.Context, requestIDs []stri
 	return
 }
 
+func (fetcher *HttpFetcher) FetchResponses(ctx context.Context, ids []string) (data map[string]json.RawMessage, errs []error) {
+	return nil, nil
+}
+
 // FetchAccounts retrieves account configurations
 //
 // Request format is similar to the one for requests:
 // GET {endpoint}?account-ids=["account1","account2",...]
 //
 // The endpoint is expected to respond with a JSON map with accountID -> json.RawMessage
-// {
-//   "account1": { ... account json ... }
-// }
+//
+//	{
+//	  "account1": { ... account json ... }
+//	}
+//
 // The JSON contents of account config is returned as-is (NOT validated)
 func (fetcher *HttpFetcher) FetchAccounts(ctx context.Context, accountIDs []string) (map[string]json.RawMessage, []error) {
 	if len(accountIDs) == 0 {
@@ -123,7 +130,7 @@ func (fetcher *HttpFetcher) FetchAccounts(ctx context.Context, accountIDs []stri
 		}
 	}
 	defer httpResp.Body.Close()
-	respBytes, err := ioutil.ReadAll(httpResp.Body)
+	respBytes, err := io.ReadAll(httpResp.Body)
 	if err != nil {
 		return nil, []error{
 			fmt.Errorf(`Error fetching accounts %v via http: error reading response: %v`, accountIDs, err),
@@ -135,7 +142,7 @@ func (fetcher *HttpFetcher) FetchAccounts(ctx context.Context, accountIDs []stri
 		}
 	}
 	var responseData accountsResponseContract
-	if err = json.Unmarshal(respBytes, &responseData); err != nil {
+	if err = jsonutil.UnmarshalValid(respBytes, &responseData); err != nil {
 		return nil, []error{
 			fmt.Errorf(`Error fetching accounts %v via http: failed to parse response: %v`, accountIDs, err),
 		}
@@ -145,7 +152,7 @@ func (fetcher *HttpFetcher) FetchAccounts(ctx context.Context, accountIDs []stri
 }
 
 // FetchAccount fetchers a single accountID and returns its corresponding json
-func (fetcher *HttpFetcher) FetchAccount(ctx context.Context, accountID string) (accountJSON json.RawMessage, errs []error) {
+func (fetcher *HttpFetcher) FetchAccount(ctx context.Context, accountDefaultsJSON json.RawMessage, accountID string) (accountJSON json.RawMessage, errs []error) {
 	accountData, errs := fetcher.FetchAccounts(ctx, []string{accountID})
 	if len(errs) > 0 {
 		return nil, errs
@@ -157,7 +164,11 @@ func (fetcher *HttpFetcher) FetchAccount(ctx context.Context, accountID string) 
 			DataType: "Account",
 		}}
 	}
-	return accountJSON, nil
+	completeJSON, err := jsonpatch.MergePatch(accountDefaultsJSON, accountJSON)
+	if err != nil {
+		return nil, []error{err}
+	}
+	return completeJSON, nil
 }
 
 func (fetcher *HttpFetcher) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {
@@ -195,10 +206,13 @@ func (fetcher *HttpFetcher) FetchCategories(ctx context.Context, primaryAdServer
 	}
 	defer httpResp.Body.Close()
 
-	respBytes, err := ioutil.ReadAll(httpResp.Body)
+	respBytes, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return "", fmt.Errorf("Unable to read response body: %v", err)
+	}
 	tmp := make(map[string]stored_requests.Category)
 
-	if err := json.Unmarshal(respBytes, &tmp); err != nil {
+	if err := jsonutil.UnmarshalValid(respBytes, &tmp); err != nil {
 		return "", fmt.Errorf("Unable to unmarshal categories for adserver: '%s', publisherId: '%s'", primaryAdServer, publisherId)
 	}
 	fetcher.Categories[dataName] = tmp
@@ -221,7 +235,7 @@ func buildRequest(endpoint string, requestIDs []string, impIDs []string) (*http.
 }
 
 func unpackResponse(resp *http.Response) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
-	respBytes, err := ioutil.ReadAll(resp.Body)
+	respBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		errs = append(errs, err)
 		return
@@ -229,7 +243,7 @@ func unpackResponse(resp *http.Response) (requestData map[string]json.RawMessage
 
 	if resp.StatusCode == http.StatusOK {
 		var responseObj responseContract
-		if err := json.Unmarshal(respBytes, &responseObj); err != nil {
+		if err := jsonutil.UnmarshalValid(respBytes, &responseObj); err != nil {
 			errs = append(errs, err)
 			return
 		}
@@ -249,7 +263,7 @@ func unpackResponse(resp *http.Response) (requestData map[string]json.RawMessage
 
 func convertNullsToErrs(m map[string]json.RawMessage, dataType string, errs []error) []error {
 	for id, val := range m {
-		if bytes.Equal(val, []byte("null")) {
+		if val == nil {
 			delete(m, id)
 			errs = append(errs, stored_requests.NotFoundError{
 				ID:       id,

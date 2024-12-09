@@ -1,0 +1,147 @@
+{
+    "floors_enabled": true,
+    "account_floors_enabled": true,
+    "account_enforce_deal_floors": true,
+    "incomingRequest": {
+      "ortbRequest": {
+        "id": "request-id",
+        "site": {
+          "page": "test.somepage.com"
+        },
+        "imp": [
+          {
+            "id": "imp-id",
+            "video": {
+              "mimes": [
+                "video/mp4"
+              ]
+            },
+            "bidfloor": 20,
+            "bidfloorcur": "USD",
+            "ext": {
+              "prebid": {
+                "bidder": {
+                  "appnexus": {
+                    "placementId": 1
+                  },
+                  "pubmatic": {
+                    "publisherId": "1234"
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "ext": {
+          "prebid": {
+            "floors": {
+              "enabled": true,
+              "enforcement": {
+                "floordeals": true,
+                "enforcerate": 100
+              }
+            }
+          }
+        }
+      }
+    },
+    "outgoingRequests": {
+      "appnexus": {
+        "mockResponse": {
+          "pbsSeatBids": [
+            {
+              "pbsBids": [
+                {
+                  "ortbBid": {
+                    "id": "apnx-bid-id",
+                    "dealid": "apnx-deal-id",
+                    "impid": "imp-id",
+                    "price": 5,
+                    "w": 200,
+                    "h": 250,
+                    "crid": "creative-1"
+                  }
+                }
+              ],
+              "seat": "appnexus",
+              "currency": "USD"
+            }
+          ]
+        }
+      },
+      "pubmatic": {
+        "mockResponse": {
+          "pbsSeatBids": [
+            {
+              "pbsBids": [
+                {
+                  "ortbBid": {
+                    "id": "pubm-bid-id",
+                    "impid": "imp-id",
+                    "price": 10,
+                    "w": 200,
+                    "h": 250,
+                    "crid": "creative-1"
+                  }
+                }
+              ],
+              "seat": "pubmatic",
+              "currency": "USD"
+            }
+          ]
+        }
+      }
+    },
+    "response": {
+      "bids": {},
+      "ext": {
+        "prebid": {
+          "seatnonbid": [
+           {
+            "nonbid": [
+              {
+                "impid": "imp-id",
+                "statuscode": 304,
+                "ext": {
+                  "prebid": {
+                    "bid": {
+                      "price": 5,
+                      "w": 200,
+                      "h": 250,
+                      "crid": "creative-1",
+                      "origbidcpm": 5,
+                      "dealid": "apnx-deal-id"
+                    }
+                  }
+                }
+              }
+            ],
+            "seat": "appnexus",
+            "ext": null
+          },
+          {
+            "nonbid": [
+              {
+                "impid": "imp-id",
+                "statuscode": 301,
+                "ext": {
+                  "prebid": {
+                    "bid": {
+                      "price": 10,
+                      "w": 200,
+                      "h": 250,
+                      "crid": "creative-1",
+                      "origbidcpm": 10
+                    }
+                  }
+                }
+              }
+            ],
+            "seat": "pubmatic",
+            "ext": null
+          }
+        ]
+      }
+     }
+    }
+  }

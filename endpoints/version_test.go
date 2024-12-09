@@ -1,7 +1,7 @@
 package endpoints
 
 import (
-	"io/ioutil"
+	"io"
 	"net/http/httptest"
 	"testing"
 
@@ -47,7 +47,7 @@ func TestVersion(t *testing.T) {
 
 		handler(w, nil)
 
-		response, err := ioutil.ReadAll(w.Result().Body)
+		response, err := io.ReadAll(w.Result().Body)
 		if assert.NoError(t, err, test.description+":read") {
 			assert.JSONEq(t, test.expected, string(response), test.description+":response")
 		}

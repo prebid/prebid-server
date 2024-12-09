@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 // This file actually intends to test static/bidder-params/openx.json
 //
-// These also validate the format of the external API: request.imp[i].ext.openx
+// These also validate the format of the external API: request.imp[i].ext.prebid.bidder.openx
 
 // TestValidParams makes sure that the openx schema accepts all imp.ext fields which we intend to support.
 func TestValidParams(t *testing.T) {
@@ -40,14 +40,17 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
+	`{"unit": 123, "delDomain": "foo.ba"}`,
 	`{"unit": "123", "delDomain": "foo.ba"}`,
 	`{"unit": "123", "delDomain": "foo.bar"}`,
 	`{"unit": "123", "delDomain": "foo.bar", "customFloor": 0.1}`,
+	`{"unit": "123", "delDomain": "foo.bar", "customFloor": "0.1"}`,
 	`{"unit": "123", "delDomain": "foo.bar", "customParams": {"foo": "bar"}}`,
 	`{"unit": "123", "delDomain": "foo.bar", "customParams": {"foo": ["bar", "baz"]}}`,
 }
 
 var invalidParams = []string{
+	`{"unit": "", "delDomain": "foo.bar"}`,
 	`{"unit": "123"}`,
 	`{"delDomain": "foo.bar"}`,
 	`{"unit": "", "delDomain": "foo.bar"}`,
@@ -56,7 +59,10 @@ var invalidParams = []string{
 	`{"unit": "123", "delDomain": "foo.b"}`,
 	`{"unit": "123", "delDomain": "foo.barr"}`,
 	`{"unit": "123", "delDomain": ".bar"}`,
-	`{"unit": "123", "delDomain": "foo.bar", "customFloor": "0.1"}`,
+	`{"unit": "123", "delDomain": "foo.bar", "customFloor": ""}`,
+	`{"unit": "123", "delDomain": "foo.bar", "customFloor": "1."}`,
+	`{"unit": "123", "delDomain": "foo.bar", "customFloor": "1.0x"}`,
+	`{"unit": "123", "delDomain": "foo.bar", "customFloor": "-0.1"}`,
 	`{"unit": "123", "delDomain": "foo.bar", "customFloor": -0.1}`,
 	`{"unit": "123", "delDomain": "foo.bar", "customParams": "foo: bar"}`,
 }

@@ -1,0 +1,97 @@
+{
+  "mockBidRequest": {
+    "id": "req_id",
+    "imp": [
+      {
+        "id": "imp_id",
+        "native": {
+          "request": "{\"native\":{\"ver\":1.1,\"assets\":[]}}",
+          "ver": "1.1"
+        },
+        "ext": {
+          "bidder": {
+            "siteId": "1234"
+          }
+        }
+      }
+    ]
+  },
+  "httpcalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://pbs-dev.amxrtb.com/auction/openrtb?v=pbs1.2",
+        "body": {
+          "id": "req_id",
+          "imp": [
+            {
+              "id": "imp_id",
+              "native": {
+                "request": "{\"native\":{\"ver\":1.1,\"assets\":[]}}",
+                "ver": "1.1"
+              },
+              "ext": {
+                "bidder": {
+                  "siteId": "1234"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs":["imp_id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "req_id",
+          "seatbid": [
+            {
+              "seat": "123",
+              "bid": [
+                {
+                  "id": "example_bid_id",
+                  "impid": "example_imp_id",
+                  "price": 1,
+                  "adid": "12345678",
+                  "adm": "{\"native\":{\"ver\":1.1,\"assets\":[]}}",
+                  "adomain": ["advertiser.com"],
+                  "cid": "1",
+                  "crid": "12345",
+                  "cat": ["IAB1-1"],
+                  "ext": {
+                    "ct": 10
+                  }
+                }
+              ]
+            }
+          ],
+          "bidid": "123456",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "example_bid_id",
+            "impid": "example_imp_id",
+            "price": 1,
+            "adid": "12345678",
+            "adm": "{\"native\":{\"ver\":1.1,\"assets\":[]}}",
+            "adomain": ["advertiser.com"],
+            "cid": "1",
+            "crid": "12345",
+            "cat": ["IAB1-1"],
+            "ext": {
+              "ct": 10
+            }
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}

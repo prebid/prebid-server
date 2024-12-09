@@ -1,0 +1,109 @@
+
+{
+  "mockBidRequest": {
+    "id": "request-id",
+    "app": {
+      "publisher": {
+        "id": "123456789"
+      },
+      "cat": [
+        "IAB9-1"
+      ],
+      "bundle": "com.app.test",
+      "name": "Test App",
+      "id": "12345678"
+    },
+    "device": {
+      "ua": "useragent",
+      "ip": "100.100.100.100",
+      "language": "en"
+    },
+    "tmax": 1000,
+    "user": {
+      "id": "some-user"
+    },
+    "imp": [
+      {
+        "id": "impression-id",
+        "tagid": "tid",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 640,
+          "h": 480,
+          "minduration": 30,
+          "maxduration": 150
+        },
+	      "ext": {
+            "bidder": {
+              "placementId": "f897beb0daba0253d8e59a098eef9311"
+            }
+          }
+      }
+    ]
+  },
+
+  "httpCalls": [{
+    "expectedRequest": {
+      "headers": {
+        "Content-Type": [
+          "application/json;charset=utf-8"
+        ],
+        "Accept": [
+          "application/json"
+        ]
+      },
+      "uri": "http://point.braveglobal.tv/?t=3&partner=f897beb0daba0253d8e59a098eef9311",
+      "body": {
+        "id": "request-id",
+        "device": {
+          "ua": "useragent",
+          "ip": "100.100.100.100",
+          "language": "en"
+        },
+        "imp": [
+          {
+            "id": "impression-id",
+            "video": {
+              "mimes": [
+                "video/mp4"
+              ],
+              "minduration": 30,
+              "maxduration": 150,
+              "w": 640,
+              "h": 480
+            },
+            "tagid": "tid"
+          }
+        ],
+        "app": {
+          "publisher": {
+            "id": "123456789"
+          },
+          "cat": [
+            "IAB9-1"
+          ],
+          "bundle": "com.app.test",
+          "name": "Test App",
+          "id": "12345678"
+        },
+        "user": {
+          "id": "some-user"
+        },
+        "tmax": 1000
+      },
+      "impIDs":["impression-id"]
+    },
+    "mockResponse": {
+      "status": 400
+    }
+  }],
+  "expectedBidResponses": [],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 400. Run with request.debug = 1 for more info",
+      "comparison": "literal"
+    }
+  ]
+}

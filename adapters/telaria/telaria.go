@@ -6,11 +6,12 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 const Endpoint = "https://ads.tremorhub.com/ad/rtb/prebid"
@@ -19,7 +20,7 @@ type TelariaAdapter struct {
 	URI string
 }
 
-// This will be part of Imp[i].Ext when this adapter calls out the Telaria Ad Server
+// This will be part of imp[i].ext when this adapter calls out the Telaria Ad Server
 type ImpressionExtOut struct {
 	OriginalTagID       string `json:"originalTagid"`
 	OriginalPublisherID string `json:"originalPublisherid"`
@@ -99,7 +100,7 @@ func GetHeaders(request *openrtb2.BidRequest) *http.Header {
 // Checks the imp[i].ext object and returns a imp.ext object as per ExtImpTelaria format
 func (a *TelariaAdapter) FetchTelariaExtImpParams(imp *openrtb2.Imp) (*openrtb_ext.ExtImpTelaria, error) {
 	var bidderExt adapters.ExtImpBidder
-	err := json.Unmarshal(imp.Ext, &bidderExt)
+	err := jsonutil.Unmarshal(imp.Ext, &bidderExt)
 
 	if err != nil {
 		err = &errortypes.BadInput{
@@ -110,7 +111,7 @@ func (a *TelariaAdapter) FetchTelariaExtImpParams(imp *openrtb2.Imp) (*openrtb_e
 	}
 
 	var telariaExt openrtb_ext.ExtImpTelaria
-	err = json.Unmarshal(bidderExt.Bidder, &telariaExt)
+	err = jsonutil.Unmarshal(bidderExt.Bidder, &telariaExt)
 
 	if err != nil {
 		return nil, err
@@ -182,41 +183,38 @@ func (a *TelariaAdapter) MakeRequests(requestIn *openrtb2.BidRequest, reqInfo *a
 	var seatCode string
 	originalPublisherID := a.FetchOriginalPublisherID(&request)
 
-	var errors []error
 	var telariaImpExt *openrtb_ext.ExtImpTelaria
 	var err error
-	for i, imp := range request.Imp {
-		// fetch adCode & seatCode from Imp[i].Ext
-		telariaImpExt, err = a.FetchTelariaExtImpParams(&imp)
-		if err != nil {
-			errors = append(errors, err)
-			break
-		}
 
-		seatCode = telariaImpExt.SeatCode
-
-		// move the original tagId and the original publisher.id into the Imp[i].Ext object
-		request.Imp[i].Ext, err = json.Marshal(&ImpressionExtOut{request.Imp[i].TagID, originalPublisherID})
-		if err != nil {
-			errors = append(errors, err)
-			break
-		}
-
-		// Swap the tagID with adCode
-		request.Imp[i].TagID = telariaImpExt.AdCode
+	var imp = request.Imp[0]
+	// fetch adCode & seatCode from imp[i].ext
+	telariaImpExt, err = a.FetchTelariaExtImpParams(&imp)
+	if err != nil {
+		return nil, []error{err}
 	}
+
+	seatCode = telariaImpExt.SeatCode
+
+	// move the original tagId and the original publisher.id into the imp[i].ext object
+	imp.Ext, err = json.Marshal(&ImpressionExtOut{imp.TagID, originalPublisherID})
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	if telariaImpExt == nil {
+		return nil, []error{&errortypes.BadInput{Message: "Telaria: nil ExtImpTelaria object"}}
+	}
+	// Swap the tagID with adCode
+	imp.TagID = telariaImpExt.AdCode
 
 	// Add the Extra from Imp to the top level Ext
-	if telariaImpExt != nil && telariaImpExt.Extra != nil {
+	if telariaImpExt.Extra != nil {
 		request.Ext, err = json.Marshal(&telariaBidExt{Extra: telariaImpExt.Extra})
 		if err != nil {
-			errors = append(errors, err)
+			return nil, []error{err}
 		}
 	}
-
-	if len(errors) > 0 {
-		return nil, errors
-	}
+	request.Imp = []openrtb2.Imp{imp}
 
 	// Add seatCode to <Site/App>.Publisher.ID
 	siteObject, appObject := a.PopulatePublisherId(&request, seatCode)
@@ -234,6 +232,7 @@ func (a *TelariaAdapter) MakeRequests(requestIn *openrtb2.BidRequest, reqInfo *a
 		Uri:     a.FetchEndpoint(),
 		Body:    reqJSON,
 		Headers: *GetHeaders(&request),
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, nil
 }
 
@@ -273,7 +272,7 @@ func (a *TelariaAdapter) MakeBids(internalRequest *openrtb2.BidRequest, external
 	responseBody := response.Body
 
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(responseBody, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(responseBody, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: "Telaria: Bad Server Response",
 		}}
@@ -282,7 +281,12 @@ func (a *TelariaAdapter) MakeBids(internalRequest *openrtb2.BidRequest, external
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
 	sb := bidResp.SeatBid[0]
 
-	for _, bid := range sb.Bid {
+	for i := range sb.Bid {
+		bid := sb.Bid[i]
+		if i >= len(internalRequest.Imp) {
+			break
+		}
+		bid.ImpID = internalRequest.Imp[i].ID
 		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 			Bid:     &bid,
 			BidType: openrtb_ext.BidTypeVideo,
@@ -292,7 +296,7 @@ func (a *TelariaAdapter) MakeBids(internalRequest *openrtb2.BidRequest, external
 }
 
 // Builder builds a new instance of the Telaria adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	endpoint := config.Endpoint
 	if endpoint == "" {
 		endpoint = Endpoint // Hardcoded default

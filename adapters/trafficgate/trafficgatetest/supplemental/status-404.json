@@ -1,0 +1,88 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "1",
+            "host": "example"
+          }
+        }
+      }
+    ],
+    "app": {
+      "id": "1",
+      "bundle": "com.wls.testwlsapplication"
+    },
+    "device": {
+      "ip": "123.123.123.123",
+      "ifa": "sdjfksdf-dfsds-dsdg-dsgg"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://example.bc-plugin.com/?c=o&m=rtb",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  },
+                  {
+                    "w": 300,
+                    "h": 600
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": "1",
+                  "host": "example"
+                }
+              }
+            }
+          ],
+          "app": {
+            "id": "1",
+            "bundle": "com.wls.testwlsapplication"
+          },
+          "device": {
+            "ip": "123.123.123.123",
+            "ifa": "sdjfksdf-dfsds-dsdg-dsgg"
+          }
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 404,
+        "body": {}
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Error response with status 404",
+      "comparison": "literal"
+    }
+  ]
+}

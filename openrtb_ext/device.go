@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/buger/jsonparser"
-	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/v3/errortypes"
 )
 
 // PrebidExtKey represents the prebid extension key used in requests
@@ -70,7 +70,7 @@ type ExtDevicePrebid struct {
 
 // ExtDeviceInt defines the contract for bidrequest.device.ext.prebid.interstitial
 type ExtDeviceInt struct {
-	MinWidthPerc  int64 `json:"minwidtheperc"`
+	MinWidthPerc  int64 `json:"minwidthperc"`
 	MinHeightPerc int64 `json:"minheightperc"`
 }
 

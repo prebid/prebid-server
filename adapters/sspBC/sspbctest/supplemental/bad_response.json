@@ -1,0 +1,100 @@
+{
+    "mockBidRequest": {
+        "id": "test-request",
+        "imp": [
+            {
+                "id": "slot",
+                "ext": {
+                    "bidder": {
+                        "siteId": "237503",
+                        "id": "005"
+                    }
+                },
+                "secure": 1,
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        }
+                    ]
+                }
+            }
+        ],
+        "site": {
+            "domain": "test.page",
+            "page": "https://test.page/",
+            "ref": "https://test.referer/"
+        },
+        "regs": {
+            "ext": {
+                "gdpr": 1
+            }
+        },
+        "user": {
+            "ext": {
+                "consent": "test_consent"
+            },
+            "buyeruid": "test_user"
+        }
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "http://ssp.wp.test/bidder/?bdver=5.8&inver=4",
+                "body": {
+                    "id": "test-request",
+                    "imp": [
+                        {
+                            "id": "005",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 300,
+                                        "h": 250
+                                    }
+                                ]
+                            },
+                            "tagid": "slot",
+                            "secure": 1,
+                            "ext": {
+                                "data": {
+                                    "pbslot": "slot",
+                                    "pbsize": "300x250"
+                                }
+                            }
+                        }
+                    ],
+                    "site": {
+                        "id": "237503",
+                        "domain": "test.page",
+                        "page": "https://test.page/",
+                        "ref": "https://test.referer/"
+                    },
+                    "user": {
+                        "ext": {
+                            "consent": "test_consent"
+                        },
+                        "buyeruid": "test_user"
+                    },
+                    "regs": {
+                        "ext": {
+                            "gdpr": 1
+                        }
+                    }
+                },
+                "impIDs":["slot"]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": "{\"id\"incorrect json"
+            }
+        }
+    ],
+    "expectedMakeBidsErrors": [
+        {
+            "value": "expect { or n, but found \"",
+            "comparison": "literal"
+        }
+    ]
+}

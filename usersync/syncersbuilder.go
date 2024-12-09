@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/v3/config"
 )
 
 type namedSyncerConfig struct {
@@ -59,17 +59,16 @@ func BuildSyncers(hostConfig *config.Configuration, bidderInfos config.BidderInf
 			continue
 		}
 
-		syncer, err := NewSyncer(hostUserSyncConfig, primaryCfg.cfg)
-		if err != nil {
-			errs = append(errs, SyncerBuildError{
-				Bidder:    primaryCfg.name,
-				SyncerKey: key,
-				Err:       err,
-			})
-			continue
-		}
-
 		for _, bidder := range cfgGroup {
+			syncer, err := NewSyncer(hostUserSyncConfig, primaryCfg.cfg, bidder.name)
+			if err != nil {
+				errs = append(errs, SyncerBuildError{
+					Bidder:    primaryCfg.name,
+					SyncerKey: key,
+					Err:       err,
+				})
+				continue
+			}
 			syncers[bidder.name] = syncer
 		}
 	}
@@ -81,17 +80,13 @@ func BuildSyncers(hostConfig *config.Configuration, bidderInfos config.BidderInf
 }
 
 func shouldCreateSyncer(cfg config.BidderInfo) bool {
-	if !cfg.Enabled {
-		return false
-	}
-
-	if cfg.Syncer == nil {
+	if cfg.Disabled {
 		return false
 	}
 
 	// a syncer may provide just a Supports field to provide hints to the host. we should only try to create a syncer
 	// if there is at least one non-Supports value populated.
-	return cfg.Syncer.Key != "" || cfg.Syncer.Default != "" || cfg.Syncer.IFrame != nil || cfg.Syncer.Redirect != nil || cfg.Syncer.SupportCORS != nil
+	return cfg.Syncer.Defined()
 }
 
 func chooseSyncerConfig(biddersSyncerConfig []namedSyncerConfig) (namedSyncerConfig, error) {

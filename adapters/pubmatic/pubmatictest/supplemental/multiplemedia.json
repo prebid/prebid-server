@@ -53,8 +53,12 @@
                   "publisher": {
                       "id": "999"
                   }
+              },
+              "ext" : {
+                "prebid": {}
               }
-            }
+            },
+            "impIDs":["multiple-media-imp"]
           },
           "mockResponse": {
             "status": 200,

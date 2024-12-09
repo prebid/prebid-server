@@ -50,10 +50,22 @@
                                     }
                                 ]
                             },
+                            "video": {
+                                "mimes": [
+                                    "video/mp4"
+                                ],
+                                "protocols": [
+                                    2,
+                                    5
+                                ],
+                                "w": 320,
+                                "h": 480
+                            },
                             "tagid": "123456"
                         }
                     ]
-                }
+                },
+                "impIDs":["1"]
             },
 
             "mockResponse": {

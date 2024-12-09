@@ -47,7 +47,8 @@
                             "tagid": "200000"
                         }
                     ]
-                }
+                },
+                "impIDs":["1"]
             },
             "mockResponse": {
                 "status": 200,
@@ -65,7 +66,12 @@
                                     "adm": "some-test-ad",
                                     "crid": "test-crid",
                                     "w": 320,
-                                    "h": 480
+                                    "h": 480,
+                                    "ext": {
+                                        "mf": {
+                                            "media_type": "video"
+                                        }
+                                    }
                                 }
                             ]
                         }

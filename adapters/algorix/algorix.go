@@ -7,20 +7,29 @@ import (
 	"net/url"
 	"text/template"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
 	EndpointTemplate *template.Template
 }
 
+type algorixVideoExt struct {
+	Rewarded int `json:"rewarded"`
+}
+
+type algorixResponseBidExt struct {
+	MediaType string `json:"mediaType"`
+}
+
 // Builder builds a new instance of the AlgoriX adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	endpoint, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
@@ -72,6 +81,7 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestDa
 		Uri:     endPoint,
 		Body:    reqBody,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}, nil
 }
 
@@ -79,21 +89,35 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestDa
 func getImpAlgoriXExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpAlgorix, error) {
 	var extImpAlgoriX openrtb_ext.ExtImpAlgorix
 	var extBidder adapters.ExtImpBidder
-	err := json.Unmarshal(imp.Ext, &extBidder)
+	err := jsonutil.Unmarshal(imp.Ext, &extBidder)
 	if err != nil {
 		return nil, err
 	}
-	err = json.Unmarshal(extBidder.Bidder, &extImpAlgoriX)
+	err = jsonutil.Unmarshal(extBidder.Bidder, &extImpAlgoriX)
 	if err != nil {
 		return nil, err
 	}
 	return &extImpAlgoriX, nil
 }
 
+func getRegionInfo(region string) string {
+	switch region {
+	case "APAC":
+		return "apac.xyz"
+	case "USE":
+		return "use.xyz"
+	case "EUC":
+		return "euc.xyz"
+	default:
+		return "xyz"
+	}
+}
+
 func (a *adapter) getEndPoint(ext *openrtb_ext.ExtImpAlgorix) (string, error) {
 	endPointParams := macros.EndpointTemplateParams{
 		SourceId:  url.PathEscape(ext.Sid),
 		AccountID: url.PathEscape(ext.Token),
+		Host:      url.PathEscape(getRegionInfo(ext.Region)),
 	}
 	return macros.ResolveMacros(a.EndpointTemplate, endPointParams)
 }
@@ -107,6 +131,22 @@ func preProcess(request *openrtb2.BidRequest) {
 				banner.W = &firstFormat.W
 				banner.H = &firstFormat.H
 				request.Imp[i].Banner = &banner
+			}
+		}
+		if request.Imp[i].Video != nil {
+			var impExt adapters.ExtImpBidder
+			err := jsonutil.Unmarshal(request.Imp[i].Ext, &impExt)
+			if err != nil {
+				continue
+			}
+			if impExt.Prebid != nil && impExt.Prebid.IsRewardedInventory != nil && *impExt.Prebid.IsRewardedInventory == 1 {
+				videoCopy := *request.Imp[i].Video
+				videoExt := algorixVideoExt{Rewarded: 1}
+				videoCopy.Ext, err = json.Marshal(&videoExt)
+				if err != nil {
+					continue
+				}
+				request.Imp[i].Video = &videoCopy
 			}
 		}
 	}
@@ -130,37 +170,63 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	}
 
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
+	var errs []error
 
 	for _, seatBid := range bidResp.SeatBid {
 		for idx := range seatBid.Bid {
-			mediaType := getBidType(seatBid.Bid[idx].ImpID, internalRequest.Imp)
-			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     &seatBid.Bid[idx],
-				BidType: mediaType,
-			})
+			mediaType, err := getBidType(seatBid.Bid[idx], internalRequest.Imp)
+			if err != nil {
+				errs = append(errs, err)
+			} else {
+				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+					Bid:     &seatBid.Bid[idx],
+					BidType: mediaType,
+				})
+			}
 		}
 	}
-	return bidResponse, nil
+
+	return bidResponse, errs
 }
 
-func getBidType(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
+func getBidType(bid openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
+	var bidExt algorixResponseBidExt
+	err := jsonutil.Unmarshal(bid.Ext, &bidExt)
+	if err == nil {
+		switch bidExt.MediaType {
+		case "banner":
+			return openrtb_ext.BidTypeBanner, nil
+		case "native":
+			return openrtb_ext.BidTypeNative, nil
+		case "video":
+			return openrtb_ext.BidTypeVideo, nil
+		}
+	}
+	var mediaType openrtb_ext.BidType
+	var typeCnt = 0
 	for _, imp := range imps {
-		if imp.ID == impId {
+		if imp.ID == bid.ImpID {
 			if imp.Banner != nil {
-				break
+				typeCnt += 1
+				mediaType = openrtb_ext.BidTypeBanner
 			}
 			if imp.Native != nil {
-				return openrtb_ext.BidTypeNative
+				typeCnt += 1
+				mediaType = openrtb_ext.BidTypeNative
 			}
 			if imp.Video != nil {
-				return openrtb_ext.BidTypeVideo
+				typeCnt += 1
+				mediaType = openrtb_ext.BidTypeVideo
 			}
 		}
 	}
-	return openrtb_ext.BidTypeBanner
+	if typeCnt == 1 {
+		return mediaType, nil
+	}
+	return mediaType, fmt.Errorf("unable to fetch mediaType in multi-format: %s", bid.ImpID)
 }

@@ -1,0 +1,136 @@
+{
+    "mockBidRequest": {
+      "id": "request-id",
+      "site": {
+        "page": "test.com/page",
+        "domain": "test.com",
+        "cat": [
+          "IAB9-1"
+        ],
+        "publisher": {
+          "id": "123456789"
+        }
+      },
+      "device": {
+        "ua": "useragent",
+        "ip": "100.100.100.100",
+        "language": "en"
+      },
+      "tmax": 1000,
+      "user": {
+        "id": "some-user"
+      },
+      "imp": [
+        {
+          "id": "impression-id",
+          "tagid": "tid",
+          "native": {
+            "ver":"1.1",
+            "request":"{\"adunit\":2,\"assets\":[{\"id\":3,\"img\":{\"h\":120,\"hmin\":0,\"type\":3,\"w\":180,\"wmin\":0},\"required\":1},{\"id\":0,\"required\":1,\"title\":{\"len\":25}},{\"data\":{\"len\":25,\"type\":1},\"id\":4,\"required\":1},{\"data\":{\"len\":140,\"type\":2},\"id\":6,\"required\":1}],\"context\":1,\"layout\":1,\"contextsubtype\":11,\"plcmtcnt\":1,\"plcmttype\":2,\"ver\":\"1.1\",\"ext\":{\"banner\":{\"w\":320,\"h\":50}}}"
+          },
+	        "ext": {
+            "bidder": {
+              "placementId": "f897beb0daba0253d8e59a098eef9311"
+            }
+          }
+        }
+      ]
+    },
+    "httpCalls": [
+    {
+        "expectedRequest": {
+            "headers": {
+              "Content-Type": [
+                "application/json;charset=utf-8"
+              ],
+              "Accept": [
+                "application/json"
+              ]
+            },
+            "uri": "http://point.contextualadv.com/?t=3&partner=f897beb0daba0253d8e59a098eef9311",
+            "body": {
+              "id": "request-id",
+              "device": {
+                "ua": "useragent",
+                "ip": "100.100.100.100",
+                "language": "en"
+              },
+              "imp": [
+                {
+                  "id": "impression-id",
+                  "native": {
+                    "ver":"1.1",
+                    "request":"{\"adunit\":2,\"assets\":[{\"id\":3,\"img\":{\"h\":120,\"hmin\":0,\"type\":3,\"w\":180,\"wmin\":0},\"required\":1},{\"id\":0,\"required\":1,\"title\":{\"len\":25}},{\"data\":{\"len\":25,\"type\":1},\"id\":4,\"required\":1},{\"data\":{\"len\":140,\"type\":2},\"id\":6,\"required\":1}],\"context\":1,\"layout\":1,\"contextsubtype\":11,\"plcmtcnt\":1,\"plcmttype\":2,\"ver\":\"1.1\",\"ext\":{\"banner\":{\"w\":320,\"h\":50}}}"
+                  },
+                  "tagid": "tid"
+                }
+              ],
+              "site": {
+                "page": "test.com/page",
+                "domain": "test.com",
+                "cat": [
+                  "IAB9-1"
+                ],
+                "publisher": {
+                  "id": "123456789"
+                }
+              },
+              "user": {
+                "id": "some-user"
+              },
+              "tmax": 1000
+            },
+            "impIDs":["impression-id"]
+        },
+        "mockResponse": {
+
+          "status": 200,
+          "body": {
+            "id": "resp-id",
+            "seatbid": [
+              {
+                "bid": [
+                  {
+                    "id": "123456789",
+                    "impid": "impression-id",
+                    "price": 2,
+                    "adm": "adm code",
+                    "adomain": [
+                      "testdomain.com"
+                    ],
+                    "crid": "100"
+                  }
+                ],
+                "type": "native",
+                "seat": "videoheroes"
+              }
+            ],
+            "cur": "USD",
+            "ext": {
+              "responsetimemillis": {
+                "videoheroes": 120
+              },
+              "tmaxrequest": 1000
+            }
+          }
+        }
+      }
+    ],
+    "expectedBidResponses": [
+      {
+        "bids": [{
+          "bid": {
+            "id": "123456789",
+            "impid": "impression-id",
+            "price": 2,
+            "adm": "adm code",
+            "adomain": [
+              "testdomain.com"
+            ],
+            "crid": "100"
+          },
+          "type": "native"
+        }]
+      }
+    ]
+  }

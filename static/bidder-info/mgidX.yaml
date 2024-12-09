@@ -1,0 +1,25 @@
+disabled: true
+# We have the following regional endpoint domains: 'us-east-x' and 'eu-x'
+# Please deploy this config in each of your datacenters with the appropriate regional subdomain
+endpoint: "https://REGION.mgid.com/pserver"
+maintainer:
+  email: "prebid@mgid.com"
+gvlVendorID: 358
+capabilities:
+  site:
+    mediaTypes:
+    - banner
+    - video
+    - native
+  app:
+    mediaTypes:
+    - banner
+    - video
+    - native
+userSync:
+  redirect:
+    url: "https://cm.mgid.com/i.gif?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&adu={{.RedirectURL}}"
+    userMacro: "{muidn}"
+  iframe:
+    url: "https://cm.mgid.com/i.html?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&adu={{.RedirectURL}}"
+    userMacro: "{muidn}"

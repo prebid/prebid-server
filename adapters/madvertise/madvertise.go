@@ -6,19 +6,21 @@ import (
 	"net/http"
 	"text/template"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/adcom1"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
 	endpointTemplate *template.Template
 }
 
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
@@ -84,6 +86,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		Uri:     url,
 		Body:    requestJSON,
 		Headers: getHeaders(request),
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}
 
 	return []*adapters.RequestData{requestData}, nil
@@ -91,13 +94,13 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 func getImpressionExt(imp openrtb2.Imp) (*openrtb_ext.ExtImpMadvertise, error) {
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("%s; ImpID=%s", err.Error(), imp.ID),
 		}
 	}
 	var madvertiseExt openrtb_ext.ExtImpMadvertise
-	if err := json.Unmarshal(bidderExt.Bidder, &madvertiseExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &madvertiseExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("%s; ImpID=%s", err.Error(), imp.ID),
 		}
@@ -129,7 +132,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	var response openrtb2.BidResponse
-	if err := json.Unmarshal(responseData.Body, &response); err != nil {
+	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}
 
@@ -149,13 +152,13 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	return bidResponse, nil
 }
 
-func getMediaTypeForBid(attr []openrtb2.CreativeAttribute) openrtb_ext.BidType {
+func getMediaTypeForBid(attr []adcom1.CreativeAttribute) openrtb_ext.BidType {
 	for i := 0; i < len(attr); i++ {
-		if attr[i] == openrtb2.CreativeAttribute(16) {
+		if attr[i] == adcom1.AttrHasSkipButton {
 			return openrtb_ext.BidTypeVideo
-		} else if attr[i] == openrtb2.CreativeAttribute(6) {
+		} else if attr[i] == adcom1.AttrVideoAuto {
 			return openrtb_ext.BidTypeVideo
-		} else if attr[i] == openrtb2.CreativeAttribute(7) {
+		} else if attr[i] == adcom1.AttrVideoUser {
 			return openrtb_ext.BidTypeVideo
 		}
 	}

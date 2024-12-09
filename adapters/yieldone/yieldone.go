@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type YieldoneAdapter struct {
@@ -45,6 +46,7 @@ func (a *YieldoneAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ad
 		Uri:     a.endpoint,
 		Body:    reqJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, errors
 }
 
@@ -67,7 +69,7 @@ func (a *YieldoneAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 	}
 
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
@@ -86,12 +88,15 @@ func (a *YieldoneAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 			})
 		}
 	}
+	if bidResp.Cur != "" {
+		bidResponse.Currency = bidResp.Cur
+	}
 	return bidResponse, nil
 
 }
 
 // Builder builds a new instance of the Yieldone adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &YieldoneAdapter{
 		endpoint: config.Endpoint,
 	}
@@ -101,11 +106,11 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 func preprocess(imp *openrtb2.Imp) error {
 
 	var ext adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &ext); err != nil {
 		return err
 	}
 	var impressionExt openrtb_ext.ExtImpYieldone
-	if err := json.Unmarshal(ext.Bidder, &impressionExt); err != nil {
+	if err := jsonutil.Unmarshal(ext.Bidder, &impressionExt); err != nil {
 		return err
 	}
 

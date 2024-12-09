@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb/v15/native1"
-	nativeResponse "github.com/mxmCherry/openrtb/v15/native1/response"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/native1"
+	nativeResponse "github.com/prebid/openrtb/v20/native1/response"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -19,7 +20,7 @@ type adapter struct {
 }
 
 // Builder builds a new instance of the Outbrain adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,
 	}
@@ -35,11 +36,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		imp := reqCopy.Imp[i]
 
 		var bidderExt adapters.ExtImpBidder
-		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			errs = append(errs, err)
 			continue
 		}
-		if err := json.Unmarshal(bidderExt.Bidder, &outbrainExt); err != nil {
+		if err := jsonutil.Unmarshal(bidderExt.Bidder, &outbrainExt); err != nil {
 			errs = append(errs, err)
 			continue
 		}
@@ -81,6 +82,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		Method: "POST",
 		Uri:    a.endpoint,
 		Body:   requestJSON,
+		ImpIDs: openrtb_ext.GetImpIDs(reqCopy.Imp),
 	}
 
 	return []*adapters.RequestData{requestData}, nil
@@ -106,7 +108,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	var response openrtb2.BidResponse
-	if err := json.Unmarshal(responseData.Body, &response); err != nil {
+	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}
 
@@ -124,7 +126,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 			}
 			if bidType == openrtb_ext.BidTypeNative {
 				var nativePayload nativeResponse.Response
-				if err := json.Unmarshal(json.RawMessage(bid.AdM), &nativePayload); err != nil {
+				if err := jsonutil.Unmarshal(json.RawMessage(bid.AdM), &nativePayload); err != nil {
 					errs = append(errs, err)
 					continue
 				}
@@ -155,12 +157,14 @@ func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType,
 				return openrtb_ext.BidTypeNative, nil
 			} else if imp.Banner != nil {
 				return openrtb_ext.BidTypeBanner, nil
+			} else if imp.Video != nil {
+				return openrtb_ext.BidTypeVideo, nil
 			}
 		}
 	}
 
 	return "", &errortypes.BadInput{
-		Message: fmt.Sprintf("Failed to find native/banner impression \"%s\" ", impID),
+		Message: fmt.Sprintf("Failed to find native/banner/video impression \"%s\" ", impID),
 	}
 }
 

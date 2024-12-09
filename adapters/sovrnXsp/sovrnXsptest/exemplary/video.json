@@ -1,0 +1,122 @@
+{
+  "mockBidRequest": {
+    "id": "abc",
+    "app": {
+      "id": "0jqCuiqHfPDHAHrdFfGG",
+      "bundle": "test",
+      "publisher": {
+        "id": "sovrn"
+      }
+    },
+    "imp": [
+      {
+        "id": "imp123",
+        "bidfloor": 1.0,
+        "video": {
+          "w": 300,
+          "h": 250,
+          "protocols": [1,2,3,4,5,6,7,8],
+          "playbackmethod": [1],
+          "mimes": ["video/mp4"],
+          "skip": 1,
+          "api": [2],
+          "maxbitrate": 3000
+        },
+        "ext": {
+          "bidder": {
+            "pub_id": "sovrn",
+            "med_id": "0jqCuiqHfPDHAHrdFfGG",
+            "zone_id": "FgUtQqop18uf1I2fwDie"
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://xsp.lijit.com/json/rtb/prebid/server",
+        "body":{
+          "id": "abc",
+          "app": {
+            "id": "0jqCuiqHfPDHAHrdFfGG",
+            "bundle": "test",
+            "publisher": {
+                "id": "sovrn"
+            }
+          },
+          "imp": [{
+            "id": "imp123",
+            "bidfloor": 1.0,
+            "tagid": "FgUtQqop18uf1I2fwDie",
+            "video": {
+              "w": 300,
+              "h": 250,
+              "protocols": [1,2,3,4,5,6,7,8],
+              "playbackmethod": [1],
+              "mimes": ["video/mp4"],
+              "skip": 1,
+              "api": [2],
+              "maxbitrate": 3000
+            },
+            "ext": {
+              "bidder": {
+                "pub_id": "sovrn",
+                "med_id": "0jqCuiqHfPDHAHrdFfGG",
+                "zone_id": "FgUtQqop18uf1I2fwDie"
+              }
+            }
+          }]
+        },
+        "impIDs":["imp123"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "abc",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "adm": "<VAST version='3.0'><Ad id='testing_is_cool'><InLine><AdSystem>Mc0</AdSystem><AdTitle>Sovrn PSA</AdTitle><Creatives><Creative id='1' sequence='1'><Linear><Duration>00:00:30</Duration><MediaFiles><MediaFile delivery='progressive' width='1920' height='1080' type='video/mp4' scaleable='1'><![CDATA[https://ads.smrtb.com/demo/SOVRN_30sec_house_ad_1.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
+                  "crid": "sovrn_psa_crid_1",
+                  "cid": "sovrn_psa",
+                  "impid": "imp123",
+                  "id": "1",
+                  "price": 1.0,
+                  "ext": {
+                    "creative_type": 1
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "adm": "<VAST version='3.0'><Ad id='testing_is_cool'><InLine><AdSystem>Mc0</AdSystem><AdTitle>Sovrn PSA</AdTitle><Creatives><Creative id='1' sequence='1'><Linear><Duration>00:00:30</Duration><MediaFiles><MediaFile delivery='progressive' width='1920' height='1080' type='video/mp4' scaleable='1'><![CDATA[https://ads.smrtb.com/demo/SOVRN_30sec_house_ad_1.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
+            "crid": "sovrn_psa_crid_1",
+            "cid": "sovrn_psa",
+            "impid": "imp123",
+            "price": 1.0,
+            "id": "1",
+            "mtype": 2,
+            "ext": {
+              "creative_type": 1
+            }
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

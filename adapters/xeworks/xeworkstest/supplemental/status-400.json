@@ -1,0 +1,107 @@
+{
+  "mockBidRequest": {
+    "id": "id",
+    "imp": [
+      {
+        "id": "id",
+        "secure": 1,
+        "bidfloor": 0.01,
+        "bidfloorcur": "USD",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "env": "xe-stage",
+            "pid": "dc230510f7eb516f0eb9a10e5913d3b5"
+          }
+        }
+      }
+    ],
+    "device": {
+      "ua": "UA",
+      "ip": "123.3.4.123"
+    },
+    "regs": {
+      "ext": {
+        "gdpr": 0
+      }
+    },
+    "user": {
+      "id": "userid"
+    },
+    "site": {
+      "id": "id",
+      "domain": "test,com",
+      "cat": [
+        "IAB12"
+      ],
+      "publisher": {
+        "id": "pubid"
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://prebid-srv.xe.works/?pid=dc230510f7eb516f0eb9a10e5913d3b5&host=xe-stage",
+        "body": {
+          "id": "id",
+          "imp": [
+            {
+              "id": "id",
+              "secure": 1,
+              "bidfloor": 0.01,
+              "bidfloorcur": "USD",
+              "banner": {
+                "w": 300,
+                "h": 250
+              },
+              "ext": {
+                "bidder": {
+                  "env": "xe-stage",
+                  "pid": "dc230510f7eb516f0eb9a10e5913d3b5"
+                }
+              }
+            }
+          ],
+          "device": {
+            "ua": "UA",
+            "ip": "123.3.4.123"
+          },
+          "regs": {
+            "ext": {
+              "gdpr": 0
+            }
+          },
+          "user": {
+            "id": "userid"
+          },
+          "site": {
+            "id": "id",
+            "domain": "test,com",
+            "cat": [
+              "IAB12"
+            ],
+            "publisher": {
+              "id": "pubid"
+            }
+          }
+        },
+        "impIDs":["id"]
+      },
+      "mockResponse": {
+        "status": 400,
+        "body": "The Key has a different ad format"
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 400. Run with request.debug = 1 for more info",
+      "comparison": "literal"
+    }
+  ],
+  "expectedBidResponses": []
+}

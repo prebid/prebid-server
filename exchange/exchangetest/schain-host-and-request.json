@@ -1,0 +1,114 @@
+{
+    "host_schain_flag": true,
+    "ortbversion": {
+        "appnexus":"2.6"
+    },
+    "incomingRequest": {
+        "ortbRequest": {
+            "id": "some-request-id",
+            "site": {
+                "page": "test.somepage.com"
+            },
+            "imp": [
+                {
+                    "id": "my-imp-id",
+                    "video": {
+                        "mimes": [
+                            "video/mp4"
+                        ]
+                    },
+                    "ext": {
+                        "prebid": {
+                            "bidder": {
+                                "appnexus": {
+                                    "placementId": 1
+                                }
+                            }
+                        }
+                    }
+                }
+            ],
+            "ext": {
+                "prebid": {
+                    "bidadjustmentfactors": null,
+                    "schains": [
+                        {
+                            "bidders": [
+                                "appnexus"
+                            ],
+                            "schain": {
+                                "complete": 1,
+                                "nodes": [
+                                    {
+                                        "asi": "whatever.com",
+                                        "sid": "1234",
+                                        "rid": "123-456-7890",
+                                        "hp": 1
+                                    }
+                                ],
+                                "ver": "2.0"
+                            }
+                        }
+                    ],
+                    "debug": true,
+                    "nosale": [
+                        "appnexus"
+                    ]
+                }
+            }
+        }
+    },
+    "outgoingRequests": {
+        "appnexus": {
+            "expectRequest": {
+                "ortbRequest": {
+                    "id": "some-request-id",
+                    "site": {
+                        "page": "test.somepage.com"
+                    },
+                    "imp": [
+                        {
+                            "id": "my-imp-id",
+                            "video": {
+                                "mimes": [
+                                    "video/mp4"
+                                ]
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "placementId": 1
+                                }
+                            }
+                        }
+                    ],
+                    "ext": {
+                        "prebid": {
+                            "debug": true
+                        }
+                    },
+                    "source": {
+                        "schain": {
+                            "complete": 1,
+                            "nodes": [
+                                {
+                                    "asi": "whatever.com",
+                                    "sid": "1234",
+                                    "rid": "123-456-7890",
+                                    "hp": 1
+                                },
+                                {
+                                    "asi": "pbshostcompany.com",
+                                    "sid": "00001",
+                                    "rid": "BidRequest",
+                                    "hp": 1
+                                }
+                            ],
+                            "ver": "2.0"
+                        }
+                    }
+                },
+                "bidAdjustment": 1.0
+            }
+        }
+    }
+}

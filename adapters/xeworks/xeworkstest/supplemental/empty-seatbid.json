@@ -1,0 +1,112 @@
+{
+  "mockBidRequest": {
+    "id": "id",
+    "imp": [
+      {
+        "id": "id",
+        "secure": 1,
+        "bidfloor": 0.01,
+        "bidfloorcur": "USD",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "env": "xe-stage",
+            "pid": "dc230510f7eb516f0eb9a10e5913d3b5"
+          }
+        }
+      }
+    ],
+    "device": {
+      "ua": "UA",
+      "ip": "123.3.4.123"
+    },
+    "regs": {
+      "ext": {
+        "gdpr": 0
+      }
+    },
+    "user": {
+      "id": "userid"
+    },
+    "site": {
+      "id": "id",
+      "domain": "test,com",
+      "cat": [
+        "IAB12"
+      ],
+      "publisher": {
+        "id": "pubid"
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://prebid-srv.xe.works/?pid=dc230510f7eb516f0eb9a10e5913d3b5&host=xe-stage",
+        "body": {
+          "id": "id",
+          "imp": [
+            {
+              "id": "id",
+              "secure": 1,
+              "bidfloor": 0.01,
+              "bidfloorcur": "USD",
+              "banner": {
+                "w": 300,
+                "h": 250
+              },
+              "ext": {
+                "bidder": {
+                  "env": "xe-stage",
+                  "pid": "dc230510f7eb516f0eb9a10e5913d3b5"
+                }
+              }
+            }
+          ],
+          "device": {
+            "ua": "UA",
+            "ip": "123.3.4.123"
+          },
+          "regs": {
+            "ext": {
+              "gdpr": 0
+            }
+          },
+          "user": {
+            "id": "userid"
+          },
+          "site": {
+            "id": "id",
+            "domain": "test,com",
+            "cat": [
+              "IAB12"
+            ],
+            "publisher": {
+              "id": "pubid"
+            }
+          }
+        },
+        "impIDs":["id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "a1580f2f-be6d-11eb-a150-d094662c1c35",
+          "bidid": "359da97d0384d8a14767029c18fd840d",
+          "seatbid": [],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Array SeatBid cannot be empty",
+      "comparison": "literal"
+    }
+  ],
+  "expectedBidResponses": []
+}

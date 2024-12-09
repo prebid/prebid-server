@@ -1,0 +1,88 @@
+{
+  "mockBidRequest": {
+    "id": "9a4bdb67-43ef-488f-937d-cd01e9dce43d",
+    "site": {
+      "page": "http://blog.com/article/1"
+    },
+    "cur": ["PLN"],
+    "imp": [{
+        "id": "d190d6f3-5264-4df5-91b2-8a9c72cbeb6a",
+        "bidfloorcur": "PLN",
+        "video": {
+          "mimes": ["video/mp4"],
+          "minduration": 5,
+          "maxduration": 15,
+          "w": 1280,
+          "h": 720
+        },
+        "ext": {
+          "bidder": {
+            "placementId":"64b9486efecad2330718e233"
+          }
+        }
+      }]
+  },
+
+  "httpCalls": [{
+    "expectedRequest": {
+      "uri": "http://somecoolurlfor.vox",
+      "header": {},
+      "body": {
+        "id": "9a4bdb67-43ef-488f-937d-cd01e9dce43d",
+        "site": {
+          "page": "http://blog.com/article/1"
+        },
+        "cur": [ "PLN" ],
+        "imp": [{
+            "id": "d190d6f3-5264-4df5-91b2-8a9c72cbeb6a",
+            "bidfloorcur": "PLN",
+            "video": {
+              "mimes": ["video/mp4"],
+              "minduration": 5,
+              "maxduration": 15,
+              "w": 1280,
+              "h": 720
+            },
+            "ext": {
+              "bidder": {
+                "placementId":"64b9486efecad2330718e233"
+              }
+            }
+          }]
+      },
+      "impIDs":["d190d6f3-5264-4df5-91b2-8a9c72cbeb6a"]
+    },
+
+    "mockResponse": {
+      "status": 200,
+      "headers": {},
+      "body": {
+        "id":"d64fdeae-cb1c-4322-8fb6-18f5ec49bb76",
+        "cur": "PLN",
+        "seatbid": [{
+          "bid": [{
+            "id": "05349123-29e2-4be0-b662-48914f75ebe1",
+            "impid": "d190d6f3-5264-4df5-91b2-8a9c72cbeb6a",
+            "price": 2.149,
+            "adm": "<VAST>...</VAST>",
+            "mtype": 2
+          }]
+        }]
+      }
+    }
+  }],
+
+  "expectedBidResponses": [{
+    "bids": [{
+      "currency": "PLN",
+      "bid": {
+        "id": "05349123-29e2-4be0-b662-48914f75ebe1",
+        "impid": "d190d6f3-5264-4df5-91b2-8a9c72cbeb6a",
+        "price": 2.149,
+        "adm": "<VAST>...</VAST>",
+        "mtype": 2
+      },
+      "type": "video"
+    }]
+  }]
+}

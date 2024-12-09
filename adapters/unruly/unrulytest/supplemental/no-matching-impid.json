@@ -21,7 +21,8 @@
         },
         "ext": {
           "bidder": {
-            "siteid": 72721
+            "siteId": 72721,
+            "siteid": 0
           }
         }
       }
@@ -53,12 +54,14 @@
               },
               "ext": {
                 "bidder": {
-                  "siteid": 72721
+                  "siteId": 72721,
+                  "siteid": 0
                 }
               }
             }
           ]
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,
@@ -85,6 +88,7 @@
       }
     }
   ],
+  "expectedBidResponses": [{"currency":"USD","bids":[]}],
   "expectedMakeBidsErrors": [
     {
       "comparison": "literal",

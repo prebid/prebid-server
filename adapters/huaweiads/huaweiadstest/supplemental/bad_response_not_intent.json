@@ -1,0 +1,228 @@
+{
+  "mockBidRequest": {
+    "id": "test-req-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ],
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "slotid": "testslotid",
+            "adtype": "banner",
+            "publisherid": "123",
+            "signkey": "signkey",
+            "keyid": "41",
+            "isTestAuthorization": "true"
+          }
+        }
+      }
+    ],
+    "app": {
+      "bundle": "com.example.p1",
+      "name": "Huawei Browser",
+      "ver": "9.1.0.301",
+      "content": {
+        "language": "zh"
+      }
+    },
+    "device": {
+      "ua": "useragent",
+      "h": 1920,
+      "language": "zh",
+      "model": "COL-TEST",
+      "os": "android",
+      "osv": "10.0.0",
+      "devicetype": 4,
+      "make": "huawei",
+      "w": 1080,
+      "ip": "ip",
+      "pxratio": 23.01,
+      "geo": {
+        "country": "CHN"
+      }
+    },
+    "user": {
+      "ext": {
+        "data": {
+          "gaid": [
+            "gaid"
+          ],
+          "oaid": [
+            "oaid"
+          ],
+          "clientTime": [
+            "2018-11-02 16:34:07.981+1300"
+          ]
+        }
+      }
+    },
+    "regs": {
+      "coppa": 1
+    },
+    "ext": {
+    }
+  },
+  "httpcalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://acd.op.hicloud.com/ppsadx/getResult",
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "User-Agent": [
+            "useragent"
+          ],
+          "Authorization": [
+            "Digest username=123,realm=ppsadx/getResult,nonce=1629473330823,response=d1d61a13a83e1468aa4dff5c8a6cee0b8b381173ca3eb6fa9b313937684d87c0,algorithm=HmacSHA256,usertype=1,keyid=41"
+          ]
+        },
+        "body": {
+          "app": {
+            "lang": "zh",
+            "country": "CN",
+            "name": "Huawei Browser",
+            "pkgname": "com.example.pkgname1",
+            "version": "9.1.0.301"
+          },
+          "multislot": [
+            {
+              "adtype": 8,
+              "slotid": "testslotid",
+              "test": 1,
+              "format": [
+                {
+                  "w": 300,
+                  "h": 250
+                }
+              ],
+              "w": 300,
+              "h": 250
+            }
+          ],
+          "device": {
+            "height": 1920,
+            "language": "zh",
+            "oaid": "oaid",
+            "os": "android",
+            "type": 4,
+            "ip": "ip",
+            "localeCountry": "CN",
+            "pxratio": 23.01,
+            "width": 1080,
+            "clientTime": "2018-11-02 16:34:07.981+1300",
+            "gaid": "gaid",
+            "useragent": "useragent",
+            "version": "10.0.0",
+            "maker": "huawei",
+            "model": "COL-TEST",
+            "belongCountry": "CN"
+          },
+          "geo": {
+          },
+          "network": {
+            "type": 0
+          },
+          "regs": {
+            "coppa": 1
+          },
+          "version": "3.4",
+          "clientAdRequestId": "test-req-id"
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "multiad": [
+            {
+              "adtype": 8,
+              "content": [
+                {
+                  "contentid": "58025103",
+                  "creativetype": 2,
+                  "endtime": 1621428898335,
+                  "interactiontype": 3,
+                  "landingTitle": 1,
+                  "metaData": {
+                    "adSign": "2",
+                    "appPromotionChannel": "401721412",
+                    "clickUrl": "https://ads.huawei.com/usermgtportal/home/index.html#/",
+                    "imageInfo": [
+                      {
+                        "checkSha256Flag": 1,
+                        "height": 300,
+                        "imageType": "img",
+                        "sha256": "f5d8487cddaecec45b73fc078649478c80ec646bfec8ed7da4ff931f90eab232",
+                        "url": "https://ads.huawei.com/usermgtportal/home/img/huawei_logo_black.aaec817d.svg",
+                        "width": 250
+                      }
+                    ],
+                    "apkInfo": {
+                      "appIcon": "https://pps-icon.png",
+                      "appName": "%E6%89%8B%E6%9C%BA%E6%B7%98%E5%AE%9D",
+                      "fileSize": 118902470,
+                      "packageName": "com.demo.package",
+                      "permPromptForCard": "0",
+                      "popNotify": 1,
+                      "popUpAfterInstallNew": 1,
+                      "priorInstallWay": "2",
+                      "sha256": "sha256",
+                      "url": "https://test/apkurl",
+                      "secondUrl": "",
+                      "versionCode": "284",
+                      "versionName": "9.6.1.9"
+                    },
+                    "label": "Banner_API",
+                    "landingPageType": "3"
+                  },
+                  "monitor": [
+                    {
+                      "eventType": "click",
+                      "url": [
+                        "http://test/click1"
+                      ]
+                    },
+                    {
+                      "eventType": "imp",
+                      "url": [
+                        "http://test/imp1"
+                      ]
+                    }
+                  ],
+                  "price": 2.8,
+                  "starttime": 1621267200000,
+                  "taskid": "48017658"
+                }
+              ],
+              "retcode30": 200,
+              "slotid": "testslotid"
+            }
+          ],
+          "retcode": 200
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+  ],
+  "expectedMakeRequestsErrors": [],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "generate Adm field from HuaweiAds response failed: content.MetaData.Intent in huaweiads resopnse is empty when interactiontype is appPromotion",
+      "comparison": "literal"
+    }
+  ]
+}

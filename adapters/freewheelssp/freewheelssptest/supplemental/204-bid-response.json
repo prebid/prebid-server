@@ -1,0 +1,61 @@
+{
+  "mockBidRequest": {
+    "id": "freewheelssp-test",
+    "site": {
+      "page": "prebid.org"
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "video": {
+          "mimes": ["video/mp4"],
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "zoneId": 12345
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://testjsonsample.com",
+        "body":{
+          "id": "freewheelssp-test",
+          "site": {
+            "page": "prebid.org"
+          },
+          "imp": [{
+            "id": "imp-1",
+            "video": {
+              "mimes": ["video/mp4"],
+              "w": 300,
+              "h": 250
+            },
+            "ext": {
+              "zoneId": 12345
+            }
+          }]
+        },
+        "headers": {
+          "Componentid": [
+            "prebid-go"
+          ]
+        },
+        "impIDs":["imp-1"]
+      },
+      "mockResponse": {
+        "status": 204,
+        "body" : {}
+      }
+    }
+  ],
+
+  "expectedBidResponses": []
+}
+

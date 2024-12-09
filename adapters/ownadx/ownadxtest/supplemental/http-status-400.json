@@ -1,0 +1,58 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "tokenId": "126151698247",
+            "sspId": "11",
+            "seatId": "2"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://pbs.prebid-ownadx.com/bidder/bid/2/11?token=126151698247",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "w": 300,
+                "h": 250
+              },
+              "ext": {
+                "bidder": {
+                  "tokenId": "126151698247",
+                  "sspId": "11",
+                  "seatId": "2"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 400
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Bad request: 400",
+      "comparison": "literal"
+    }
+  ],
+  "expectedBidResponses": []
+}

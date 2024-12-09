@@ -8,7 +8,23 @@
       "type": "string",
       "minLength": 1,
       "description": "An id used to identify NextMillennium placement"
+    },
+    "group_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "An id used to identify NextMillennium placement group"
     }
   },
-  "required": ["placement_id"]
+  "anyOf": [
+    {
+      "required": [
+        "placement_id"
+      ]
+    },
+    {
+      "required": [
+        "group_id"
+      ]
+    }
+  ]
 }

@@ -45,7 +45,8 @@
               }
             }
           ]
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,
@@ -68,6 +69,7 @@
       }
     }
   ],
+  "expectedBidResponses": [{"currency":"USD","bids":[]}],
   "expectedMakeBidsErrors": [
     {
       "value": "ignoring bid id=test-bid-id, request doesn't contain any impression with id=SOME-WRONG-IMP-ID",

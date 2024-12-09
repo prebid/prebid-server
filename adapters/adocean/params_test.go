@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 func TestValidParams(t *testing.T) {
@@ -34,17 +34,20 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
+	`{"emitterPrefix": "myao", "masterId": "tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7", "slaveId": "adoceanmyaozpniqismex"}`,
 	`{"emiter": "myao.adocean.pl", "masterId": "tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7", "slaveId": "adoceanmyaozpniqismex"}`,
 }
 
 var invalidParams = []string{
 	`{}`,
-	`{"masterId": "tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7", "slaveId": "adoceanmyaozpniqismex"}`,
+	`{"emitterPrefix": "myao", "slaveId": "adoceanmyaozpniqismex"}`,
+	`{"emitterPrefix": "myao", "masterId": "tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7"}`,
+	`{"emitterPrefix": "", "masterId": "tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7", "slaveId": "adoceanmyaozpniqismex"}`,
+	`{"emitterPrefix": "myao", "", "slaveId": "adoceanmyaozpniqismex"}`,
+	`{"emitterPrefix": "myao", "masterId": "tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7", "slaveId": ""}`,
+	`{"emitterPrefix": "myao", "masterId": "tmYF.DMl7Z utQTJfTpxCOmtNPZoQUDcL.G7", "slaveId": "adoceanmyaozpniqismex"}`,
+	`{"emitterPrefix": "myao", "masterId": "tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7", "slaveId": "adoceanmy iqismex"}`,
+	`{"emitterPrefix": "myao.adocean.pl", "masterId": "tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7", "slaveId": "adoceanmyaozpniqismex"}`,
 	`{"emiter": "myao.adocean.pl", "slaveId": "adoceanmyaozpniqismex"}`,
-	`{"emiter": "myao.adocean.pl", "masterId": "tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7"}`,
 	`{"emiter": "", "masterId": "tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7", "slaveId": "adoceanmyaozpniqismex"}`,
-	`{"emiter": "myao.adocean.pl", "", "slaveId": "adoceanmyaozpniqismex"}`,
-	`{"emiter": "myao.adocean.pl", "masterId": "tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7", "slaveId": ""}`,
-	`{"emiter": "myao.adocean.pl", "masterId": "tmYF.DMl7Z utQTJfTpxCOmtNPZoQUDcL.G7", "slaveId": "adoceanmyaozpniqismex"}`,
-	`{"emiter": "myao.adocean.pl", "masterId": "tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7", "slaveId": "adoceanmy iqismex"}`,
 }

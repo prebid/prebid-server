@@ -1,0 +1,117 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "imp": [
+            {
+                "id": "test-audio-id",
+                "audio": {
+                    "mimes": [
+                        "audio/mp4"
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "accountId": "620523ae7f4bbe1691bbb815",
+                        "pbsHost": "fakeHost",
+                        "placementId": "620525862d7518bfd4bbb81e_620523b5d1dbed6b0fbbb817"
+                    }
+                }
+            }
+        ]
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "https://fakeHost.relevant-digital.com/openrtb2/auction",
+                "body": {
+                    "id": "test-request-id",
+                    "imp": [
+                        {
+                            "id": "test-audio-id",
+                            "audio": {
+                                "mimes": [
+                                    "audio/mp4"
+                                ]
+                            },
+                            "ext": {
+                                "prebid": {
+                                    "storedrequest": {
+                                        "id": "620525862d7518bfd4bbb81e_620523b5d1dbed6b0fbbb817"
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    "ext": {
+                        "prebid": {
+                            "debug": false,
+                            "storedrequest": {
+                                "id": "620523ae7f4bbe1691bbb815"
+                            }
+                        },
+                        "relevant": {
+                            "adapterType": "server",
+                            "count": 1
+                        }
+                    },
+                    "tmax": 750
+                },
+                "impIDs":["test-audio-id"]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "test-request-id",
+                    "seatbid": [
+                        {
+                            "seat": "test-seat",
+                            "bid": [
+                                {
+                                    "id": "9244e776-e0c7-4d76-8c20-88971909114b",
+                                    "impid": "test-audio-id",
+                                    "price": 2.50,
+                                    "adm": "a creative",
+                                    "adomain": [
+                                        "advertiser.com"
+                                    ],
+                                    "crid": "9999",
+                                    "mtype": 3,
+                                    "ext": {
+                                        "prebid": {
+                                            "type": "audio"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "bids": [
+                {
+                    "bid": {
+                        "id": "9244e776-e0c7-4d76-8c20-88971909114b",
+                        "impid": "test-audio-id",
+                        "price": 2.50,
+                        "adm": "a creative",
+                        "adomain": [
+                            "advertiser.com"
+                        ],
+                        "crid": "9999",
+                        "mtype": 3,
+                        "ext": {
+                            "prebid": {
+                                "type": "audio"
+                            }
+                        }
+                    },
+                    "type": "audio"
+                }
+            ]
+        }
+    ]
+}

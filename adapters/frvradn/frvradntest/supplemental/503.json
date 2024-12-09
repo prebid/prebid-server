@@ -1,0 +1,61 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-banner-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "ad_unit_id": "7fc326d4-243d-41ef-bbb4-4c76c4ad69cd",
+            "publisher_id": "4552e5bd-5ece-4f7d-a256-9069a33260a6"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://fran.frvr.com/api/v1/openrtb",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-banner-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 600
+                  }
+                ]
+              },
+              "ext": {
+                "ad_unit_id": "7fc326d4-243d-41ef-bbb4-4c76c4ad69cd",
+                "publisher_id": "4552e5bd-5ece-4f7d-a256-9069a33260a6"
+              }
+            }
+          ]
+        },
+        "impIDs":["test-banner-id"]
+      },
+      "mockResponse": {
+        "status": 503
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 503. Run with request.debug = 1 for more info",
+      "comparison": "literal"
+    }
+  ]
+}

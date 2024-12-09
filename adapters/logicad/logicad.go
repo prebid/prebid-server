@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type LogicadAdapter struct {
@@ -74,12 +75,12 @@ func getImpressionExt(imp *openrtb2.Imp) (openrtb_ext.ExtImpLogicad, error) {
 	var bidderExt adapters.ExtImpBidder
 	var logicadExt openrtb_ext.ExtImpLogicad
 
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return logicadExt, &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
-	if err := json.Unmarshal(bidderExt.Bidder, &logicadExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &logicadExt); err != nil {
 		return logicadExt, &errortypes.BadInput{
 			Message: err.Error(),
 		}
@@ -102,7 +103,8 @@ func (adapter *LogicadAdapter) buildAdapterRequest(prebidBidRequest *openrtb2.Bi
 		Method:  "POST",
 		Uri:     adapter.endpoint,
 		Body:    reqJSON,
-		Headers: headers}, nil
+		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(imps)}, nil
 }
 
 func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ExtImpLogicad, imps []openrtb2.Imp) *openrtb2.BidRequest {
@@ -116,7 +118,7 @@ func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext
 	return &bidRequest
 }
 
-//MakeBids translates Logicad bid response to prebid-server specific format
+// MakeBids translates Logicad bid response to prebid-server specific format
 func (adapter *LogicadAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
@@ -127,7 +129,7 @@ func (adapter *LogicadAdapter) MakeBids(internalRequest *openrtb2.BidRequest, ex
 
 	}
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		msg := fmt.Sprintf("Bad server response: %d", err)
 		return nil, []error{&errortypes.BadServerResponse{Message: msg}}
 	}
@@ -146,11 +148,14 @@ func (adapter *LogicadAdapter) MakeBids(internalRequest *openrtb2.BidRequest, ex
 			BidType: openrtb_ext.BidTypeBanner,
 		})
 	}
+	if bidResp.Cur != "" {
+		bidResponse.Currency = bidResp.Cur
+	}
 	return bidResponse, nil
 }
 
 // Builder builds a new instance of the Logicad adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &LogicadAdapter{
 		endpoint: config.Endpoint,
 	}

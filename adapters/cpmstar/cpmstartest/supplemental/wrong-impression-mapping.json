@@ -45,7 +45,8 @@
               }
             }
           ]
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,
@@ -68,6 +69,7 @@
       }
     }
   ],
+  "expectedBidResponses": [{"currency":"USD","bids":[]}],
   "expectedMakeBidsErrors": [
     {
       "value": "bid id='test-bid-id' could not find valid impid='BOGUS-IMPID'",

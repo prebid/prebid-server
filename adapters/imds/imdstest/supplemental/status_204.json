@@ -1,0 +1,68 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "seatId": "prebid",
+            "tagId": "demo1"
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://pbs.technoratimedia.com/openrtb/bids/prebid?src=pbs-go%2F1.0.0&adapter=imds",
+        "body": {
+          "id": "test-request-id",
+          "ext": {
+            "seatId": "prebid"
+          },
+          "imp": [
+            {
+              "id":"test-imp-id",
+              "tagid": "demo1",
+              "banner": {
+                "format": [
+                  {"w":300,"h":250},
+                  {"w":300,"h":600}
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "seatId": "prebid",
+                  "tagId": "demo1"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 204,
+        "body": {
+
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}

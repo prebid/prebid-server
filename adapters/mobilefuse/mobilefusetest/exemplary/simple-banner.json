@@ -42,7 +42,8 @@
                             "tagid": "123456"
                         }
                     ]
-                }
+                },
+                "impIDs":["1"]
             },
 
             "mockResponse": {
@@ -60,7 +61,12 @@
                                     "adm": "some-test-ad",
                                     "crid": "test-crid",
                                     "h": 50,
-                                    "w": 320
+                                    "w": 320,
+                                    "ext": {
+                                        "mf": {
+                                            "media_type": "banner"
+                                        }
+                                    }
                                 }
                             ]
                         }

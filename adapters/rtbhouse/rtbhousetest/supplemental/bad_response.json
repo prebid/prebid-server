@@ -26,6 +26,7 @@
         "uri": "http://localhost/prebid_server",
         "body": {
           "id": "test-request-id",
+          "cur": ["USD"],
           "imp": [
             {
               "id": "test-imp-id",
@@ -43,7 +44,8 @@
               }
             }
           ]
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,
@@ -54,7 +56,7 @@
 
   "expectedMakeBidsErrors": [
     {
-      "value": "json: cannot unmarshal string into Go value of type openrtb2.BidResponse",
+      "value": "expect { or n, but found \"",
       "comparison": "literal"
     }
   ]

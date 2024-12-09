@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 // This file actually intends to test static/bidder-params/consumable.json
 //
-// These also validate the format of the external API: request.imp[i].ext.consumable
+// These also validate the format of the external API: request.imp[i].ext.prebid.bidder.consumable
 
 // TestValidParams makes sure that the 33across schema accepts all imp.ext fields which we intend to support.
 func TestValidParams(t *testing.T) {
@@ -43,6 +43,7 @@ var validParams = []string{
 	`{"networkId": 22, "siteId": 1, "unitId": 101, "unitName": "unit-1"}`,
 	`{"networkId": 22, "siteId": 1, "unitId": 101, "unitName": "-unit-1"}`, // unitName can start with a dash
 	`{"networkId": 22, "siteId": 1, "unitId": 101}`,                        // unitName can be omitted (although prebid.js doesn't allow that)
+	`{"placementId": "abcdjk232"}`,
 }
 
 var invalidParams = []string{
@@ -56,4 +57,5 @@ var invalidParams = []string{
 	`{"siteId": 1, "unitId": 101, "unitName": 11}`,                          // networkId must be present
 	`{"networkId": 22, "unitId": 101, "unitName": 11}`,                      // siteId must be present
 	`{"siteId": 1, "networkId": 22, "unitName": 11}`,                        // unitId must be present
+	`{"placementId": "---abjk;jkewj;k;jwejklfs}`,                            // placementId must be alphanumeric
 }

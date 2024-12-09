@@ -1,0 +1,38 @@
+{
+	"mockBidRequest": {
+		"id": "test-request-id",
+		"user": {
+			"id": "1kjh3429kjh295jkl"
+		},
+		"imp": [
+			{
+				"id": "test-imp-id",
+				"banner": {
+					"format": [
+						{
+							"w": 300,
+							"h": 250
+						},
+						{
+							"w": 300,
+							"h": 600
+						}
+					]
+				},
+				"ext": {
+					"bidder": {
+						"auId": "123",
+						"bidType": 123
+					}
+				}
+			}
+		]
+	},
+	"httpCalls": [],
+	"expectedMakeRequestsErrors": [
+		{
+			"value": "Error unmarshalling ExtImpValues: cannot unmarshal openrtb_ext.ImpExtAdnunitus.BidType: expects \" or n, but found 1",
+			"comparison": "literal"
+		}
+	]
+}

@@ -1,0 +1,95 @@
+{
+  "mockBidRequest": {
+    "id": "web-banner",
+    "tmax": 3000,
+    "imp": [
+      {
+        "id": "banner-imp-id",
+        "ext": {
+          "bidder": {
+            "pkey": "pkey"
+          }
+        },
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        }
+      }
+    ],
+    "app": {
+      "bundle": "com.fake.app",
+      "publisher": {
+        "id": "42",
+        "name": "whatever.pub"
+      }
+    },
+    "device": {
+      "w": 1200,
+      "h": 900
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://whatever.url",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
+        "body": {
+          "id": "web-banner",
+          "tmax": 3000,
+          "imp": [
+            {
+              "id": "banner-imp-id",
+              "tagid": "pkey",
+              "ext": {
+                "bidder": {
+                  "pkey": "pkey"
+                }
+              },
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              }
+            }
+          ],
+          "device": {
+            "w": 1200,
+            "h": 900
+          },
+          "app": {
+            "bundle": "com.fake.app",
+            "publisher": {
+              "id": "42",
+              "name": "whatever.pub"
+            }
+          },
+          "source": {
+            "ext": {
+              "version": "",
+              "str": "10.0"
+            }
+          }
+        },
+        "impIDs":["banner-imp-id"]
+      },
+      "mockResponse": {
+        "status": 204
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": []
+}

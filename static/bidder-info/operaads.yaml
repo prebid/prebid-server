@@ -1,3 +1,4 @@
+endpoint: "https://s.adx.opera.com/ortb/v2/{{.PublisherID}}?ep={{.AccountID}}"
 maintainer:
   email: adtech-prebid-group@opera.com
 modifyingVastXmlAllowed: true

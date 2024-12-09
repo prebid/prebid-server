@@ -3,7 +3,7 @@ package metrics
 import (
 	"time"
 
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -20,6 +20,11 @@ func (me *MetricsEngineMock) RecordRequest(labels Labels) {
 // RecordConnectionAccept mock
 func (me *MetricsEngineMock) RecordConnectionAccept(success bool) {
 	me.Called(success)
+}
+
+// RecordTMaxTimeout mock
+func (me *MetricsEngineMock) RecordTMaxTimeout() {
+	me.Called()
 }
 
 // RecordConnectionClose mock
@@ -71,6 +76,11 @@ func (me *MetricsEngineMock) RecordTLSHandshakeTime(tlsHandshakeTime time.Durati
 	me.Called(tlsHandshakeTime)
 }
 
+// RecordBidderServerResponseTime mock
+func (me *MetricsEngineMock) RecordBidderServerResponseTime(bidderServerResponseTime time.Duration) {
+	me.Called(bidderServerResponseTime)
+}
+
 // RecordAdapterBidReceived mock
 func (me *MetricsEngineMock) RecordAdapterBidReceived(labels AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
 	me.Called(labels, bidType, hasAdm)
@@ -84,6 +94,11 @@ func (me *MetricsEngineMock) RecordAdapterPrice(labels AdapterLabels, cpm float6
 // RecordAdapterTime mock
 func (me *MetricsEngineMock) RecordAdapterTime(labels AdapterLabels, length time.Duration) {
 	me.Called(labels, length)
+}
+
+// RecordOverheadTime mock
+func (me *MetricsEngineMock) RecordOverheadTime(overhead OverheadType, length time.Duration) {
+	me.Called(overhead, length)
 }
 
 // RecordCookieSync mock
@@ -141,7 +156,73 @@ func (me *MetricsEngineMock) RecordRequestPrivacy(privacy PrivacyLabels) {
 	me.Called(privacy)
 }
 
+// RecordAdapterBuyerUIDScrubbed mock
+func (me *MetricsEngineMock) RecordAdapterBuyerUIDScrubbed(adapterName openrtb_ext.BidderName) {
+	me.Called(adapterName)
+}
+
 // RecordAdapterGDPRRequestBlocked mock
 func (me *MetricsEngineMock) RecordAdapterGDPRRequestBlocked(adapterName openrtb_ext.BidderName) {
 	me.Called(adapterName)
+}
+
+// RecordDebugRequest mock
+func (me *MetricsEngineMock) RecordDebugRequest(debugEnabled bool, pubId string) {
+	me.Called(debugEnabled, pubId)
+}
+
+func (me *MetricsEngineMock) RecordStoredResponse(pubId string) {
+	me.Called(pubId)
+}
+
+func (me *MetricsEngineMock) RecordAdsCertReq(success bool) {
+	me.Called(success)
+}
+
+func (me *MetricsEngineMock) RecordAdsCertSignTime(adsCertSignTime time.Duration) {
+	me.Called(adsCertSignTime)
+}
+
+func (me *MetricsEngineMock) RecordBidValidationCreativeSizeError(adapter openrtb_ext.BidderName, account string) {
+	me.Called(adapter, account)
+}
+
+func (me *MetricsEngineMock) RecordBidValidationCreativeSizeWarn(adapter openrtb_ext.BidderName, account string) {
+	me.Called(adapter, account)
+}
+
+func (me *MetricsEngineMock) RecordBidValidationSecureMarkupError(adapter openrtb_ext.BidderName, account string) {
+	me.Called(adapter, account)
+}
+
+func (me *MetricsEngineMock) RecordBidValidationSecureMarkupWarn(adapter openrtb_ext.BidderName, account string) {
+	me.Called(adapter, account)
+}
+
+func (me *MetricsEngineMock) RecordModuleCalled(labels ModuleLabels, duration time.Duration) {
+	me.Called(labels, duration)
+}
+
+func (me *MetricsEngineMock) RecordModuleFailed(labels ModuleLabels) {
+	me.Called(labels)
+}
+
+func (me *MetricsEngineMock) RecordModuleSuccessNooped(labels ModuleLabels) {
+	me.Called(labels)
+}
+
+func (me *MetricsEngineMock) RecordModuleSuccessUpdated(labels ModuleLabels) {
+	me.Called(labels)
+}
+
+func (me *MetricsEngineMock) RecordModuleSuccessRejected(labels ModuleLabels) {
+	me.Called(labels)
+}
+
+func (me *MetricsEngineMock) RecordModuleExecutionError(labels ModuleLabels) {
+	me.Called(labels)
+}
+
+func (me *MetricsEngineMock) RecordModuleTimeout(labels ModuleLabels) {
+	me.Called(labels)
 }

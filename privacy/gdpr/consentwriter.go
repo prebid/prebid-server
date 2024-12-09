@@ -1,43 +1,34 @@
 package gdpr
 
 import (
-	"encoding/json"
-
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
 )
 
 // ConsentWriter implements the PolicyWriter interface for GDPR TCF.
 type ConsentWriter struct {
 	Consent string
+	GDPR    *int8
 }
 
 // Write mutates an OpenRTB bid request with the GDPR TCF consent.
 func (c ConsentWriter) Write(req *openrtb2.BidRequest) error {
-	if c.Consent == "" {
+	if req == nil {
 		return nil
 	}
 
-	if req.User == nil {
-		req.User = &openrtb2.User{}
+	if c.GDPR != nil {
+		if req.Regs == nil {
+			req.Regs = &openrtb2.Regs{}
+		}
+		req.Regs.GDPR = c.GDPR
 	}
 
-	if req.User.Ext == nil {
-		ext, err := json.Marshal(openrtb_ext.ExtUser{Consent: c.Consent})
-		if err == nil {
-			req.User.Ext = ext
+	if c.Consent != "" {
+		if req.User == nil {
+			req.User = &openrtb2.User{}
 		}
-		return err
+		req.User.Consent = c.Consent
 	}
 
-	var extMap map[string]interface{}
-	err := json.Unmarshal(req.User.Ext, &extMap)
-	if err == nil {
-		extMap["consent"] = c.Consent
-		ext, err := json.Marshal(extMap)
-		if err == nil {
-			req.User.Ext = ext
-		}
-	}
-	return err
+	return nil
 }

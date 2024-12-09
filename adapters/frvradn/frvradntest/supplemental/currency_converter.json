@@ -1,0 +1,134 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-banner-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "bidfloor": 5,
+        "bidfloorcur": "EUR",
+        "ext": {
+          "bidder": {
+            "ad_unit_id": "33c76a5f-d9ef-4630-9e1e-7705673f1693",
+            "publisher_id": "0c0ac25e-e0b5-46d7-94d1-e1bf68034dd9"
+          }
+        }
+      }
+    ],
+    "ext": {
+      "prebid": {
+        "currency": {
+          "rates": {
+            "EUR": {
+              "USD": 1.5
+            }
+          },
+          "usepbsrates": false
+        }
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://fran.frvr.com/api/v1/openrtb",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-banner-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 600
+                  }
+                ]
+              },
+              "bidfloor": 7.5,
+              "bidfloorcur": "USD",
+              "ext": {
+                "ad_unit_id": "33c76a5f-d9ef-4630-9e1e-7705673f1693",
+                "publisher_id": "0c0ac25e-e0b5-46d7-94d1-e1bf68034dd9"
+              }
+            }
+          ],
+          "ext": {
+            "prebid": {
+              "currency": {
+                "rates": {
+                  "EUR": {
+                    "USD": 1.5
+                  }
+                },
+                "usepbsrates": false
+              }
+            }
+          }
+        },
+        "impIDs":["test-banner-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "test-seat",
+              "bid": [
+                {
+                  "id": "ed03a73b-3c9d-4883-a672-7919cb607c15",
+                  "impid": "test-banner-id",
+                  "price": 7.5,
+                  "adm": "a creative",
+                  "adid": "9999",
+                  "adomain": ["advertiser.com"],
+                  "crid": "9999",
+                  "w": 300,
+                  "h": 600,
+                  "ext": {
+                    "prebid": {
+                      "type": "banner"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "ed03a73b-3c9d-4883-a672-7919cb607c15",
+            "impid": "test-banner-id",
+            "price": 7.5,
+            "adm": "a creative",
+            "adid": "9999",
+            "adomain": ["advertiser.com"],
+            "crid": "9999",
+            "w": 300,
+            "h": 600,
+            "ext": {
+              "prebid": {
+                "type": "banner"
+              }
+            }
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-banner-id",
+        "ext": {
+          "bidder": {
+            "ad_unit_id": "cdb3a029-ce0a-4b4b-b404-1d5f9ff86d7d",
+            "publisher_id": "dc4c0f5e-8637-4017-8aa8-af59d4bc03af"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://fran.frvr.com/api/v1/openrtb",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-banner-id",
+              "ext": {
+                "ad_unit_id": "cdb3a029-ce0a-4b4b-b404-1d5f9ff86d7d",
+                "publisher_id": "dc4c0f5e-8637-4017-8aa8-af59d4bc03af"
+              }
+            }
+          ]
+        },
+        "impIDs":["test-banner-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "test-seat",
+              "bid": [
+                {
+                  "id": "e2710817-83dd-421f-9cd6-55bed1ca8a41",
+                  "impid": "test-banner-id",
+                  "price": 5.50,
+                  "adm": "test-banner",
+                  "adid": "9999",
+                  "adomain": ["advertiser.com"],
+                  "crid": "9999",
+                  "w": 300,
+                  "h": 600,
+                  "ext": {}
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [{"currency":"USD","bids":[]}],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "imp test-banner-id with unknown media type",
+      "comparison": "literal"
+    }
+  ]
+}

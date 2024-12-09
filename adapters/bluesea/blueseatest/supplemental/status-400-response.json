@@ -1,0 +1,91 @@
+{
+    "mockBidRequest":{
+        "id":"b655d86c-fdf6-4e68-a1e9-abc223f84a65",
+        "app":{
+            "name":"test-app",
+            "bundle":"com.test.app",
+            "ver":"10400"
+        },
+        "imp":[
+            {
+                "id":"1",
+                "banner":{
+                    "w":300,
+                    "h":250
+                },
+                "secure":1,
+                "ext":{
+                    "bidder":{
+                        "pubid":"test-pubid",
+                        "token":"test-pub-token"
+                    }
+                }
+            }
+        ],
+        "device":{
+            "os":"android",
+            "ua":"Mozilla/5.0 (Linux; Android 8.0.0; SC-04J Build/R16NW; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/113.0.5672.162 Mobile Safari/537.36",
+            "ip":"101.101.101.101",
+            "h":1280,
+            "w":720,
+            "ifa":"test-ifa"
+        },
+        "at":1,
+        "tmax":1200,
+        "test":1
+    },
+    "httpCalls":[
+        {
+            "expectedRequest":{
+                "uri":"https://test.prebid.bluesea?pubid=test-pubid&token=test-pub-token",
+                "body":{
+                    "id":"b655d86c-fdf6-4e68-a1e9-abc223f84a65",
+                    "app":{
+                        "name":"test-app",
+                        "bundle":"com.test.app",
+                        "ver":"10400"
+                    },
+                    "imp":[
+                        {
+                            "id":"1",
+                            "banner":{
+                                "w":300,
+                                "h":250
+                            },
+                            "secure":1,
+                            "ext":{
+                                "bidder":{
+                                    "pubid":"test-pubid",
+                                    "token":"test-pub-token"
+                                }
+                            }
+                        }
+                    ],
+                    "device":{
+                        "os":"android",
+                        "ua":"Mozilla/5.0 (Linux; Android 8.0.0; SC-04J Build/R16NW; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/113.0.5672.162 Mobile Safari/537.36",
+                        "ip":"101.101.101.101",
+                        "h":1280,
+                        "w":720,
+                        "ifa":"test-ifa"
+                    },
+                    "at":1,
+                    "tmax":1200,
+                    "test":1
+                },
+                "impIDs":["1"]
+            },
+            "mockResponse":{
+                "status":400,
+                "body":""
+            }
+        }
+    ],
+
+    "expectedMakeBidsErrors": [
+      {
+        "comparison": "literal",
+        "value": "Unexpected status code: 400. Run with request.debug = 1 for more info"
+      }
+    ]
+}

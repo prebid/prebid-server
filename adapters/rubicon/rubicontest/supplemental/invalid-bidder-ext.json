@@ -1,0 +1,32 @@
+{
+  "//": "Prevents #317",
+  "mockBidRequest": {
+    "id": "e8f0d8a3-f360-43c2-af08-34aa265108b0",
+    "site": {
+      "page": "mysite.com"
+    },
+    "imp": [
+      {
+        "id":"/19968336/header-bid-tag-0",
+        "banner": {},
+        "ext": {
+          "bidder": [
+
+          {
+            "accountId": 1001,
+            "siteId":113932,
+            "zoneId":535510
+          }
+            ]
+        }
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "cannot unmarshal rubicon.rubiconExtImpBidder.Bidder: expect { or n, but found [",
+      "comparison": "literal"
+    }
+  ]
+}

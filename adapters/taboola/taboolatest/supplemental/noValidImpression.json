@@ -1,0 +1,47 @@
+{
+  "mockBidRequest": {
+    "id": "request-id",
+    "imp": [
+      {
+        "id": "impression-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            },
+            {
+              "w": 160,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": 1
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "http://domain.com",
+      "page": "http://page-domain.com",
+      "ref": "http://page-domain.com"
+    },
+    "device": {
+      "ua": "Mozilla/5.0 (Linux; Android 12; Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.62 Mobile Safari/537.36",
+      "h": 300,
+      "w": 300
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "cannot unmarshal openrtb_ext.ImpExtTaboola.PublisherId: expects \" or n, but found 1",
+      "comparison": "literal"
+    }
+  ]
+}

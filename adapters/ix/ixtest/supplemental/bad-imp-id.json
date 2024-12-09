@@ -46,7 +46,8 @@
                             }
                         }
                     ]
-                }
+                },
+                "impIDs":["test-imp-id"]
             },
             "mockResponse": {
                 "status": 200,
@@ -82,33 +83,7 @@
             }
         }
     ],
-    "expectedBidResponses": [
-        {
-            "currency": "USD",
-            "bids": [
-                {
-                    "bid": {
-                        "id": "7706636740145184841",
-                        "impid": "bad-imp-id",
-                        "price": 0.5,
-                        "adm": "some-test-ad",
-                        "adid": "29681110",
-                        "adomain": [
-                            "https://advertiser.example.com"
-                        ],
-                        "cid": "958",
-                        "crid": "29681110",
-                        "w": 300,
-                        "h": 250,
-                        "ext": {
-                            "ix": {}
-                        }
-                    },
-                    "type": ""
-                }
-            ]
-        }
-    ],
+    "expectedBidResponses": [{"currency":"USD","bids":[]}],
     "expectedMakeBidsErrors": [
         {
             "value": "unmatched impression id: bad-imp-id",

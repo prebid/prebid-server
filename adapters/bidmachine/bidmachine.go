@@ -9,12 +9,15 @@ import (
 	"strconv"
 	"text/template"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/adcom1"
+	"github.com/prebid/openrtb/v20/openrtb2"
+
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -52,14 +55,14 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 		}
 
 		var bidderExt adapters.ExtImpBidder
-		err := json.Unmarshal(impression.Ext, &bidderExt)
+		err := jsonutil.Unmarshal(impression.Ext, &bidderExt)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
 		var impressionExt openrtb_ext.ExtImpBidmachine
-		err = json.Unmarshal(bidderExt.Bidder, &impressionExt)
+		err = jsonutil.Unmarshal(bidderExt.Bidder, &impressionExt)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -69,7 +72,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 			errs = append(errs, err)
 			continue
 		}
-		if bidderExt.Prebid != nil && bidderExt.Prebid.IsRewardedInventory == 1 {
+		if bidderExt.Prebid != nil && bidderExt.Prebid.IsRewardedInventory != nil && *bidderExt.Prebid.IsRewardedInventory == 1 {
 			if impression.Banner != nil && !hasRewardedBattr(impression.Banner.BAttr) {
 				bannerCopy := *impression.Banner
 				bannerCopy.BAttr = copyBAttrWithRewardedInventory(bannerCopy.BAttr)
@@ -92,6 +95,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 			Uri:     url,
 			Body:    body,
 			Headers: headers,
+			ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 		})
 	}
 
@@ -100,9 +104,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 	return result, errs
 }
 
-func hasRewardedBattr(attr []openrtb2.CreativeAttribute) bool {
+func hasRewardedBattr(attr []adcom1.CreativeAttribute) bool {
 	for i := 0; i < len(attr); i++ {
-		if attr[i] == openrtb2.CreativeAttribute(16) {
+		if attr[i] == adcom1.AttrHasSkipButton {
 			return true
 		}
 	}
@@ -134,7 +138,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 	}
 
 	var bidResponse openrtb2.BidResponse
-	err := json.Unmarshal(responseData.Body, &bidResponse)
+	err := jsonutil.Unmarshal(responseData.Body, &bidResponse)
 	if err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: err.Error(),
@@ -164,7 +168,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 }
 
 // Builder builds a new instance of the Bidmachine adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
@@ -198,10 +202,10 @@ func (a *adapter) buildEndpointURL(params openrtb_ext.ExtImpBidmachine) (string,
 	return uri.String(), nil
 }
 
-func copyBAttrWithRewardedInventory(src []openrtb2.CreativeAttribute) []openrtb2.CreativeAttribute {
-	dst := make([]openrtb2.CreativeAttribute, len(src))
+func copyBAttrWithRewardedInventory(src []adcom1.CreativeAttribute) []adcom1.CreativeAttribute {
+	dst := make([]adcom1.CreativeAttribute, len(src))
 	copy(dst, src)
-	dst = append(dst, openrtb2.CreativeAttribute(16))
+	dst = append(dst, adcom1.AttrHasSkipButton)
 	return dst
 }
 

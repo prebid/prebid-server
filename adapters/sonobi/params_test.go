@@ -2,13 +2,14 @@ package sonobi
 
 import (
 	"encoding/json"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"testing"
+
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 // This file actually intends to test static/bidder-params/sonobi.json
 //
-// These also validate the format of the external API: request.imp[i].ext.sonobi
+// These also validate the format of the external API: request.imp[i].ext.prebid.bidder.sonobi
 
 // TestValidParams makes sure that the sonobi schema accepts all imp.ext fields which we intend to support.
 func TestValidParams(t *testing.T) {

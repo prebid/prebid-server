@@ -1,0 +1,144 @@
+{
+  "mockBidRequest": {
+    "id": "bid-request-id",
+    "device": {
+      "ip": "0.0.0.0",
+      "ifa": "ce76100d-82cc-4491-a6c9-50e0e539454c"
+    },
+    "app": {
+      "id": "app-id",
+      "bundle": "com.app.id"
+    },
+    "imp": [
+      {
+        "id": "imp-id-1",
+        "bidfloor": 4.20,
+        "bidfloorcur": "GBP",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "protocols": [
+            2,
+            5
+          ],
+          "w": 1024,
+          "h": 576
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "225a4f40-1df1-48b2-b238-8774a638ce6e"
+          }
+        }
+      }
+    ],
+    "ext": {
+      "prebid": {
+        "currency": {
+          "rates": {
+            "GBP": {
+              "USD": 0.5
+            }
+          },
+          "usepbsrates": false
+        }
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://mock-adserver.url",
+        "body": {
+          "id": "bid-request-id",
+          "device": {
+            "ip": "0.0.0.0",
+            "ifa": "ce76100d-82cc-4491-a6c9-50e0e539454c"
+          },
+          "app": {
+            "id": "app-id",
+            "bundle": "com.app.id"
+          },
+          "imp": [
+            {
+              "id": "imp-id-1",
+              "bidfloor": 2.10,
+              "bidfloorcur": "USD",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "protocols": [
+                  2,
+                  5
+                ],
+                "w": 1024,
+                "h": 576
+              },
+              "ext": {
+                "bidder": {
+                  "publisherId": "225a4f40-1df1-48b2-b238-8774a638ce6e"
+                }
+              }
+            }
+          ],
+          "ext": {
+            "prebid": {
+              "currency": {
+                "rates": {
+                  "GBP": {
+                    "USD": 0.5
+                  }
+                },
+                "usepbsrates": false
+              }
+            }
+          }
+        },
+        "impIDs":["imp-id-1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "bid-request-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid_id-1",
+                  "impid": "imp-id-1",
+                  "price": 0.27543,
+                  "adm": "<VAST version=\"3.0\"></VAST>",
+                  "cid": "cid",
+                  "crid": "crid",
+                  "dealid": "dealid"
+                }
+              ],
+              "seat": "seat"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid_id-1",
+            "impid": "imp-id-1",
+            "price": 0.27543,
+            "adm": "<VAST version=\"3.0\"></VAST>",
+            "cid": "cid",
+            "crid": "crid",
+            "dealid": "dealid"
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

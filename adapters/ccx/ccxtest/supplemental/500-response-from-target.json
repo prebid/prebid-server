@@ -1,0 +1,59 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [{"w": 300, "h": 250}]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": 123456789
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "somepage.com"
+    }
+  },
+  
+    "httpCalls": [
+      {
+        "expectedRequest": {
+          "uri": "https://delivery.clickonometrics.pl/ortb/prebid/bid",
+          "body": {
+            "id": "test-request-id",
+            "imp": [
+              {
+                "id": "test-imp-id",
+                "banner": {
+                  "format": [{"w": 300, "h": 250}]
+                },
+                "ext": {
+                  "bidder": {
+                    "placementId": 123456789
+                  }
+                }
+              }
+            ],
+            "site": {
+                "page": "somepage.com"
+            }
+          },
+          "impIDs":["test-imp-id"]
+        },
+        "mockResponse": {
+          "status": 500
+        }
+      }
+    ],
+    "expectedMakeBidsErrors": [
+        {
+            "value": "Unexpected status code: 500. Run with request.debug = 1 for more info.",
+            "comparison": "literal"
+        }
+    ]
+  }
+  

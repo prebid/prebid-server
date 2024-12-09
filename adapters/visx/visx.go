@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type VisxAdapter struct {
@@ -69,11 +70,22 @@ func (a *VisxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapte
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 
+	if request.Device != nil {
+		if request.Device.IP != "" {
+			headers.Add("X-Forwarded-For", request.Device.IP)
+		}
+
+		if request.Device.IPv6 != "" {
+			headers.Add("X-Forwarded-For", request.Device.IPv6)
+		}
+	}
+
 	return []*adapters.RequestData{{
 		Method:  "POST",
 		Uri:     a.endpoint,
 		Body:    reqJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(requestCopy.Imp),
 	}}, errors
 }
 
@@ -96,7 +108,7 @@ func (a *VisxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReq
 	}
 
 	var bidResp visxResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
@@ -135,7 +147,7 @@ func getMediaTypeForImp(impID string, imps []openrtb2.Imp, bid visxBid) (openrtb
 	for _, imp := range imps {
 		if imp.ID == impID {
 			var ext visxBidExt
-			if err := json.Unmarshal(bid.Ext, &ext); err == nil {
+			if err := jsonutil.Unmarshal(bid.Ext, &ext); err == nil {
 				if ext.Prebid.Meta.MediaType == openrtb_ext.BidTypeBanner {
 					return openrtb_ext.BidTypeBanner, nil
 				}
@@ -165,7 +177,7 @@ func getMediaTypeForImp(impID string, imps []openrtb2.Imp, bid visxBid) (openrtb
 }
 
 // Builder builds a new instance of the Visx adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &VisxAdapter{
 		endpoint: config.Endpoint,
 	}

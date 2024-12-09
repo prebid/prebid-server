@@ -48,7 +48,8 @@
               }
             }
           ]
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 204,
@@ -57,12 +58,6 @@
           "cur": "USD"
         }
       }
-    }
-  ],
-
-  "expectedBidResponses": [
-    {
-      "bids": []
     }
   ]
 }

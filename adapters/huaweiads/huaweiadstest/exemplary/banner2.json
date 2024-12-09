@@ -51,11 +51,11 @@
       "carrier": "carrier",
       "connectiontype": 1,
       "geo": {
-        "country": "ZAF"
+        "country": "ZA"
       }
     },
     "app": {
-      "bundle": "org.prebid.mobile.prebidjavademo",
+      "bundle": "com.example.p10",
       "ver": "1.11",
       "name": "API1.0Demo",
       "publisher": {
@@ -99,7 +99,7 @@
   "httpcalls": [
     {
       "expectedRequest": {
-        "uri": "https://huaweiads.com/adxtest/",
+        "uri": "https://adx-dra.op.hicloud.com/ppsadx/getResult",
         "headers": {
           "Accept": [
             "application/json"
@@ -119,14 +119,14 @@
             "lang": "en",
             "country": "ZA",
             "name": "API1.0Demo",
-            "pkgname": "org.prebid.mobile.prebidjavademo",
+            "pkgname": "com.example.pkgname2",
             "version": "1.11"
           },
           "multislot": [
             {
               "adtype": 8,
               "slotid": "m8x9x3rzff",
-              "test": 0,
+              "test": 1,
               "format": [
                 {
                   "w": 300,
@@ -165,8 +165,10 @@
           },
           "regs": {
           },
-          "version": "3.4"
-        }
+          "version": "3.4",
+          "clientAdRequestId": "a3b18c5b-6708-4bb7-b41b-40ed37d89561"
+        },
+        "impIDs":["PrebidMobile"]
       },
       "mockResponse": {
         "status": 200,

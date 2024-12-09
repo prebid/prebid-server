@@ -1,0 +1,26 @@
+{
+  "mockBidRequest": {
+    "id": "rqid",
+    "imp": [
+      {
+        "id": "impid",
+        "video": {
+         "w": 100,
+          "h": 200
+        },
+        "ext": {
+          "bidder": {
+            "siteId": 123
+          }
+        }
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "cannot unmarshal openrtb_ext.ExtImpApacdex.SiteID: expects \" or n, but found 1",
+      "comparison": "literal"
+    }
+  ]
+}

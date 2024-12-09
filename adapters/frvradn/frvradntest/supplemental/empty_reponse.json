@@ -1,0 +1,56 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-banner-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "ad_unit_id": "33c76a5f-d9ef-4630-9e1e-7705673f1693",
+            "publisher_id": "0c0ac25e-e0b5-46d7-94d1-e1bf68034dd9"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://fran.frvr.com/api/v1/openrtb",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-banner-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 600
+                  }
+                ]
+              },
+              "ext": {
+                "ad_unit_id": "33c76a5f-d9ef-4630-9e1e-7705673f1693",
+                "publisher_id": "0c0ac25e-e0b5-46d7-94d1-e1bf68034dd9"
+              }
+            }
+          ]
+        },
+        "impIDs":["test-banner-id"]
+      },
+      "mockResponse": {
+        "status": 200
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}

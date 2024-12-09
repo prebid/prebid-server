@@ -1,0 +1,102 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-video-id",
+        "video": {
+          "mimes": ["video/mp4"],
+          "w": 300,
+          "h": 600
+        },
+        "ext": {
+          "bidder": {
+            "ad_unit_id": "5da02f4f-96de-4a89-824a-6e8e1dfc495c",
+            "publisher_id": "9d66baf8-a80f-4378-9bd2-06ec09eaa86c"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://fran.frvr.com/api/v1/openrtb",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-video-id",
+              "video": {
+                "mimes": ["video/mp4"],
+                "w": 300,
+                "h": 600
+              },
+              "ext": {
+                "ad_unit_id": "5da02f4f-96de-4a89-824a-6e8e1dfc495c",
+                "publisher_id": "9d66baf8-a80f-4378-9bd2-06ec09eaa86c"
+              }
+            }
+          ]
+        },
+        "impIDs":["test-video-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "test-seat",
+              "bid": [
+                {
+                  "id": "42d72858-e071-40b2-ab74-27848e4d3336",
+                  "impid": "test-video-id",
+                  "price": 6.50,
+                  "nurl": "notification",
+                  "adm": "a creative",
+                  "adid": "9999",
+                  "adomain": ["advertiser.com"],
+                  "crid": "9999",
+                  "w": 300,
+                  "h": 600,
+                  "ext": {
+                    "prebid": {
+                      "type": "video"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "42d72858-e071-40b2-ab74-27848e4d3336",
+            "impid": "test-video-id",
+            "price": 6.50,
+            "nurl": "notification",
+            "adm": "a creative",
+            "adid": "9999",
+            "adomain": ["advertiser.com"],
+            "crid": "9999",
+            "w": 300,
+            "h": 600,
+            "ext": {
+              "prebid": {
+                "type": "video"
+              }
+            }
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

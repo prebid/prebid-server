@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Vidoomy Adapter Params",
+  "description": "A schema which validates params accepted by the Vidoomy adapter",
+  "type": "object",
+  "properties": {
+    "zoneId": {
+      "type": "string",
+      "description": "Specific zone ID for this placement, belonging to app/site",
+      "minLength": 1
+    }
+  },
+  "required": ["zoneId"]
+}
