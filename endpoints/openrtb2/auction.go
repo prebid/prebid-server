@@ -1134,12 +1134,17 @@ func validateRequestExt(req *openrtb_ext.RequestWrapper) []error {
 }
 
 func validateTargeting(t *openrtb_ext.ExtRequestTargeting) error {
-	if t != nil {
-		if t.PriceGranularity != nil {
-			if err := validatePriceGranularity(t.PriceGranularity); err != nil {
-				return err
-			}
+	if t == nil {
+		return nil
+	}
+
+	if t.PriceGranularity != nil {
+		if err := validatePriceGranularity(t.PriceGranularity); err != nil {
+			return err
 		}
+	}
+
+	if t.MediaTypePriceGranularity != nil {
 		if t.MediaTypePriceGranularity.Video != nil {
 			if err := validatePriceGranularity(t.MediaTypePriceGranularity.Video); err != nil {
 				return err
@@ -1156,6 +1161,7 @@ func validateTargeting(t *openrtb_ext.ExtRequestTargeting) error {
 			}
 		}
 	}
+
 	return nil
 }
 

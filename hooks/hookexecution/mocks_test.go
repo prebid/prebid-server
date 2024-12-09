@@ -149,7 +149,7 @@ func (e mockTimeoutHook) HandleRawBidderResponseHook(ctx context.Context, _ hook
 	<-ctx.Done()
 	c := hookstage.ChangeSet[hookstage.RawBidderResponsePayload]{}
 	c.AddMutation(func(payload hookstage.RawBidderResponsePayload) (hookstage.RawBidderResponsePayload, error) {
-		payload.Bids[0].BidMeta = &openrtb_ext.ExtBidPrebidMeta{AdapterCode: "new-code"}
+		payload.BidderResponse.Bids[0].BidMeta = &openrtb_ext.ExtBidPrebidMeta{AdapterCode: "new-code"}
 		return payload, nil
 	}, hookstage.MutationUpdate, "bidderResponse", "bidMeta.AdapterCode")
 
@@ -349,7 +349,7 @@ func (e mockUpdateBidderResponseHook) HandleRawBidderResponseHook(_ context.Cont
 	c := hookstage.ChangeSet[hookstage.RawBidderResponsePayload]{}
 	c.AddMutation(
 		func(payload hookstage.RawBidderResponsePayload) (hookstage.RawBidderResponsePayload, error) {
-			payload.Bids[0].DealPriority = 10
+			payload.BidderResponse.Bids[0].DealPriority = 10
 			return payload, nil
 		}, hookstage.MutationUpdate, "bidderResponse", "bid.deal-priority",
 	)
