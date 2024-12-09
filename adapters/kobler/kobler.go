@@ -99,6 +99,8 @@ func (a adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.Re
 	return bidResponse, nil
 }
 
+// Use a separate endpoint for testing purposes in the DEV environment.
+// Required due to Kobler's internal test campaign setup.
 func (a adapter) getEndpoint(request *openrtb2.BidRequest) string {
 	if request.Test == 1 {
 		return a.devEndpoint
