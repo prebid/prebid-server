@@ -1,4 +1,4 @@
-endpoint: "https://gosrv.adinify.com/pixservices"
+endpoint: "https://srv-adapter.pixfuture.com/pixservices"
 maintainer:
   email: "client-support@pixfuture.com"
 gvlVendorID: 839
