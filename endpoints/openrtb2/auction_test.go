@@ -5998,3 +5998,179 @@ func sortUserData(user *openrtb2.User) {
 		}
 	}
 }
+func TestValidateEIDs(t *testing.T) {
+	testCases := []struct {
+		name                  string
+		input                 []openrtb2.EID
+		expected              []openrtb2.EID
+		numErrors             int
+		expectedErrorMessages []string
+	}{
+		{
+			name: "one-eid-one-uid-valid",
+			input: []openrtb2.EID{
+				{Source: "src1", UIDs: []openrtb2.UID{{ID: "id1"}}},
+			},
+			expected: []openrtb2.EID{
+				{Source: "src1", UIDs: []openrtb2.UID{{ID: "id1"}}},
+			},
+			numErrors:             0,
+			expectedErrorMessages: nil,
+		},
+		{
+			name: "one-eid-one-uid-empty",
+			input: []openrtb2.EID{
+				{Source: "src2", UIDs: []openrtb2.UID{{ID: ""}}},
+			},
+			expected:  []openrtb2.EID{},
+			numErrors: 2,
+			expectedErrorMessages: []string{
+				"request.user.eids.uids[0] contains empty ids and is removed from the request",
+				"request.user.eids[0] (source: src2) contains only empty uids and is removed from the request",
+			},
+		},
+		{
+			name: "many-mixed",
+			input: []openrtb2.EID{
+				{Source: "src3", UIDs: []openrtb2.UID{{ID: "ID1"}, {ID: "ID2"}}},
+				{Source: "src4", UIDs: []openrtb2.UID{{ID: ""}, {ID: "ID1"}}},
+				{Source: "src5", UIDs: []openrtb2.UID{{ID: ""}, {ID: ""}}},
+			},
+			expected: []openrtb2.EID{
+				{Source: "src3", UIDs: []openrtb2.UID{{ID: "ID1"}, {ID: "ID2"}}},
+				{Source: "src4", UIDs: []openrtb2.UID{{ID: "ID1"}}},
+			},
+			numErrors: 4,
+			expectedErrorMessages: []string{
+				"request.user.eids.uids[0] contains empty ids and is removed from the request",
+				"request.user.eids.uids[0] contains empty ids and is removed from the request",
+				"request.user.eids.uids[1] contains empty ids and is removed from the request",
+				"request.user.eids[2] (source: src5) contains only empty uids and is removed from the request",
+			},
+		},
+		{
+			name: "one-eid-many-uid-empty",
+			input: []openrtb2.EID{
+				{Source: "src6", UIDs: []openrtb2.UID{{ID: ""}, {ID: ""}}},
+			},
+			expected:  []openrtb2.EID{},
+			numErrors: 3,
+			expectedErrorMessages: []string{
+				"request.user.eids.uids[0] contains empty ids and is removed from the request",
+				"request.user.eids.uids[1] contains empty ids and is removed from the request",
+				"request.user.eids[0] (source: src6) contains only empty uids and is removed from the request",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			validEIDs, errorsList := validateEIDs(tc.input)
+
+			assert.ElementsMatch(t, tc.expected, validEIDs)
+			assert.Equal(t, tc.numErrors, len(errorsList))
+
+			// Assert error messages
+			if tc.numErrors > 0 {
+				var errorMessages []string
+				for _, err := range errorsList {
+					if warning, ok := err.(*errortypes.Warning); ok {
+						errorMessages = append(errorMessages, warning.Message)
+					}
+				}
+
+				for i, expectedMsg := range tc.expectedErrorMessages {
+					if i >= len(errorMessages) {
+						t.Errorf("Expected error message %q but got none", expectedMsg)
+					} else if expectedMsg != errorMessages[i] {
+						t.Errorf("Expected error message %q but got %q", expectedMsg, errorMessages[i])
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestValidateUIDs(t *testing.T) {
+	testCases := []struct {
+		name              string
+		input             []openrtb2.UID
+		expectedValidUIDs []openrtb2.UID
+		expectedErrors    []error
+	}{
+		{
+			name: "many-uid-valid",
+			input: []openrtb2.UID{
+				{ID: "id1"},
+				{ID: "id2"},
+			},
+			expectedValidUIDs: []openrtb2.UID{
+				{ID: "id1"},
+				{ID: "id2"},
+			},
+			expectedErrors: nil,
+		},
+		{
+			name: "many-uid-empty",
+			input: []openrtb2.UID{
+				{ID: ""},
+				{ID: ""},
+			},
+			expectedValidUIDs: nil,
+			expectedErrors: []error{
+				&errortypes.Warning{
+					Message:     "request.user.eids.uids[0] contains empty ids and is removed from the request",
+					WarningCode: errortypes.InvalidUserUIDsWarningCode,
+				},
+				&errortypes.Warning{
+					Message:     "request.user.eids.uids[1] contains empty ids and is removed from the request",
+					WarningCode: errortypes.InvalidUserUIDsWarningCode,
+				},
+			},
+		},
+		{
+			name: "many-mixed",
+			input: []openrtb2.UID{
+				{ID: "id1"},
+				{ID: ""},
+				{ID: "id2"},
+				{ID: ""},
+			},
+			expectedValidUIDs: []openrtb2.UID{
+				{ID: "id1"},
+				{ID: "id2"},
+			},
+			expectedErrors: []error{
+				&errortypes.Warning{
+					Message:     "request.user.eids.uids[1] contains empty ids and is removed from the request",
+					WarningCode: errortypes.InvalidUserUIDsWarningCode,
+				},
+				&errortypes.Warning{
+					Message:     "request.user.eids.uids[3] contains empty ids and is removed from the request",
+					WarningCode: errortypes.InvalidUserUIDsWarningCode,
+				},
+			},
+		},
+		{
+			name:              "empty-uid",
+			input:             []openrtb2.UID{},
+			expectedValidUIDs: nil,
+			expectedErrors:    nil,
+		},
+		{
+			name:              "nil-uid",
+			input:             nil,
+			expectedValidUIDs: nil,
+			expectedErrors:    nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			validUIDs, errorsList := validateUIDs(tc.input)
+
+			assert.ElementsMatch(t, tc.expectedValidUIDs, validUIDs, "Valid UIDs mismatch")
+			assert.ElementsMatch(t, tc.expectedErrors, errorsList, "Errors mismatch")
+		})
+	}
+}
