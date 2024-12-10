@@ -1,1 +1,25 @@
 mode: set
+github.com/prebid/prebid-server/v3/adapters/pixfuture/pixfuture.go:20.119,25.2 2 1
+github.com/prebid/prebid-server/v3/adapters/pixfuture/pixfuture.go:28.146,29.27 1 1
+github.com/prebid/prebid-server/v3/adapters/pixfuture/pixfuture.go:29.27,31.3 1 1
+github.com/prebid/prebid-server/v3/adapters/pixfuture/pixfuture.go:32.2,33.16 2 1
+github.com/prebid/prebid-server/v3/adapters/pixfuture/pixfuture.go:33.16,35.3 1 0
+github.com/prebid/prebid-server/v3/adapters/pixfuture/pixfuture.go:37.2,45.50 2 1
+github.com/prebid/prebid-server/v3/adapters/pixfuture/pixfuture.go:49.72,50.20 1 1
+github.com/prebid/prebid-server/v3/adapters/pixfuture/pixfuture.go:50.20,53.41 3 1
+github.com/prebid/prebid-server/v3/adapters/pixfuture/pixfuture.go:53.41,55.4 1 1
+github.com/prebid/prebid-server/v3/adapters/pixfuture/pixfuture.go:58.2,60.3 1 1
+github.com/prebid/prebid-server/v3/adapters/pixfuture/pixfuture.go:64.175,65.53 1 1
+github.com/prebid/prebid-server/v3/adapters/pixfuture/pixfuture.go:65.53,67.3 1 1
+github.com/prebid/prebid-server/v3/adapters/pixfuture/pixfuture.go:69.2,69.54 1 1
+github.com/prebid/prebid-server/v3/adapters/pixfuture/pixfuture.go:69.54,73.3 1 1
+github.com/prebid/prebid-server/v3/adapters/pixfuture/pixfuture.go:75.2,75.46 1 1
+github.com/prebid/prebid-server/v3/adapters/pixfuture/pixfuture.go:75.46,79.3 1 1
+github.com/prebid/prebid-server/v3/adapters/pixfuture/pixfuture.go:81.2,82.73 2 1
+github.com/prebid/prebid-server/v3/adapters/pixfuture/pixfuture.go:82.73,84.3 1 1
+github.com/prebid/prebid-server/v3/adapters/pixfuture/pixfuture.go:86.2,90.43 4 1
+github.com/prebid/prebid-server/v3/adapters/pixfuture/pixfuture.go:90.43,91.35 1 1
+github.com/prebid/prebid-server/v3/adapters/pixfuture/pixfuture.go:91.35,93.18 2 1
+github.com/prebid/prebid-server/v3/adapters/pixfuture/pixfuture.go:93.18,95.13 2 0
+github.com/prebid/prebid-server/v3/adapters/pixfuture/pixfuture.go:97.4,100.6 1 1
+github.com/prebid/prebid-server/v3/adapters/pixfuture/pixfuture.go:104.2,104.28 1 1
