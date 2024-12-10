@@ -31,7 +31,7 @@
                                 "siteId": 1243066,
                                 "zoneIds": [285431],
                                 "options": {
-                                   "startCompact": true
+                                    "startCompact": true
                                 }
                         }
                 }
@@ -70,7 +70,7 @@
                              285431
                           ],
                           "options": {
-                             "startCompact": true
+                            "startCompact": true
                           }
                        }
                     ],
@@ -93,11 +93,8 @@
                                 "clickUrl": "https://e-11090.adzerk.net/r?e=eyJ2IjoiMS4xMSIsImF2IjoxOTg4MDI3LCJhdCI6NDMwOSwiYnQiOjAsImNtIjo2MzI4NTM5MiwiY2giOjU4MDgxLCJjayI6e30sImNyIjo4MTMyNTY5MCwiZGkiOiJiOTg3MGNkYTA5MTU0NDlmOTkwZGNkZTNmNjYyNGNhMyIsImRqIjowLCJpaSI6IjJmNjYwMjMyODBmYjQ4NTRiYTY0YzFlYzA1ZDU5MTNiIiwiZG0iOjMsImZjIjoxODM1OTkxMTUsImZsIjoxNzU0MjE3OTUsImlwIjoiMTQyLjE4MS41OC41MiIsIm53IjoxMDkyMiwicGMiOjAsIm9wIjowLCJlYyI6MCwiZ20iOjAsImVwIjpudWxsLCJwciI6MjMyNjk5LCJydCI6MywicnMiOjUwMCwic2EiOiIzNCIsInNiIjoiaS0wNDZjMWNlNWRjYmExMTVjNSIsInNwIjozNzIzMDU1LCJzdCI6MTI0MzA2NiwidWsiOiJkOTU1N2Q2NS1kNWI5LTQyOTItYjg2My0xNGEyOTcyNTk3ZjQiLCJ6biI6Mjg1NDMxLCJ0cyI6MTY4MDU1NTc4MzkyMiwicG4iOiJpbmxpbmUiLCJnYyI6dHJ1ZSwiZ0MiOnRydWUsImdzIjoibm9uZSIsInR6IjoiQW1lcmljYS9OZXdfWW9yayIsInVyIjoiaHR0cDovL3d3dy5mbGlwcC5jb20ifQ&s=Mnss8P1kc37Eftik5RJvLJb4S9Y",
                                 "contents": [
                                     {
-                                        "data": {
-                                            "customData": {
-                                                "campaignConfigUrl": "https://campaign-config.flipp.com/dist-campaign-admin/215",
-                                                "campaignNameIdentifier": "US Grocery Demo (Kroger)"
-                                            },
+                                        "data": {                                            
+                                            "customData": null,
                                             "height": 1800,
                                             "width": 300
                                         },
@@ -106,7 +103,7 @@
                                 ],
                                 "creativeId": 81325690,
                                 "flightId": 175421795,
-                                "height": 1800,
+                                "height": 700,
                                 "impressionUrl": "https://e-11090.adzerk.net/i.gif?e=eyJ2IjoiMS4xMSIsImF2IjoxOTg4MDI3LCJhdCI6NDMwOSwiYnQiOjAsImNtIjo2MzI4NTM5MiwiY2giOjU4MDgxLCJjayI6e30sImNyIjo4MTMyNTY5MCwiZGkiOiJiOTg3MGNkYTA5MTU0NDlmOTkwZGNkZTNmNjYyNGNhMyIsImRqIjowLCJpaSI6IjJmNjYwMjMyODBmYjQ4NTRiYTY0YzFlYzA1ZDU5MTNiIiwiZG0iOjMsImZjIjoxODM1OTkxMTUsImZsIjoxNzU0MjE3OTUsImlwIjoiMTQyLjE4MS41OC41MiIsIm53IjoxMDkyMiwicGMiOjAsIm9wIjowLCJlYyI6MCwiZ20iOjAsImVwIjpudWxsLCJwciI6MjMyNjk5LCJydCI6MywicnMiOjUwMCwic2EiOiIzNCIsInNiIjoiaS0wNDZjMWNlNWRjYmExMTVjNSIsInNwIjozNzIzMDU1LCJzdCI6MTI0MzA2NiwidWsiOiJkOTU1N2Q2NS1kNWI5LTQyOTItYjg2My0xNGEyOTcyNTk3ZjQiLCJ6biI6Mjg1NDMxLCJ0cyI6MTY4MDU1NTc4MzkyMywicG4iOiJpbmxpbmUiLCJnYyI6dHJ1ZSwiZ0MiOnRydWUsImdzIjoibm9uZSIsInR6IjoiQW1lcmljYS9OZXdfWW9yayIsImJhIjoxLCJmcSI6MH0&s=Qce4_IohtESeNA_sB71Qjb4TouY",
                                 "prebid": {
                                     "cpm": 12.34,
@@ -164,7 +161,8 @@
                         "price": 12.34,
                         "adm": "creativeContent",
                         "crid": "81325690",
-                        "w": 300
+                        "w": 300,
+                        "h": 600
                     },
                     "type": "banner"
                 }
