@@ -207,7 +207,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		if err != nil {
 			return nil, []error{fmt.Errorf("flipp params not found. %v", err)}
 		}
-		err = json.Unmarshal(params, &flippExtParams)
+		err = jsonutil.Unmarshal(params, &flippExtParams)
 		if err != nil {
 			return nil, []error{fmt.Errorf("unable to extract flipp params. %v", err)}
 		}
