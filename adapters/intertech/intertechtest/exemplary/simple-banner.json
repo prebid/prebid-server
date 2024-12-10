@@ -80,7 +80,8 @@
                   "cid": "test_cid",
                   "crid": "test_crid",
                   "w": 300,
-                  "h": 250
+                  "h": 250,
+                  "mtype": 1
                 }
               ]
             }
@@ -101,7 +102,8 @@
             "cid": "test_cid",
             "crid": "test_crid",
             "w": 300,
-            "h": 250
+            "h": 250,
+            "mtype": 1
           },
           "type": "banner"
         }

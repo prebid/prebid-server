@@ -206,71 +206,50 @@ func getCur(request *openrtb2.BidRequest) string {
 	return ""
 }
 
-func (a *adapter) MakeBids(req *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if responseData.StatusCode != http.StatusOK {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d", responseData.StatusCode),
-		}}
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	if adapters.IsResponseStatusCodeNoContent(responseData) {
+		return nil, nil
 	}
 
-	var bidResp openrtb2.BidResponse
-	if err := jsonutil.Unmarshal(responseData.Body, &bidResp); err != nil {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Failed to decode bid response: %s", err.Error()),
-		}}
+	if err := adapters.CheckResponseStatusCodeForErrors(responseData); err != nil {
+		return nil, []error{err}
 	}
 
-	seatBids := bidResp.SeatBid
-	if seatBids == nil {
-		return &adapters.BidderResponse{
-			Currency: bidResp.Cur,
-			Bids:     make([]*adapters.TypedBid, 0),
-		}, nil
+	var response openrtb2.BidResponse
+	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
+		return nil, []error{err}
 	}
 
-	if len(seatBids) == 0 {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: "SeatBids is empty",
-		}}
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
+	if len(response.Cur) != 0 {
+		bidResponse.Currency = response.Cur
 	}
 
-	bidderResponse := adapters.NewBidderResponseWithBidsCapacity(len(seatBids))
-	bidderResponse.Currency = bidResp.Cur
-
-	var errs []error
-	for _, seatBid := range seatBids {
-		for _, bid := range seatBid.Bid {
-			bidType, err := getBidTypeFromImps(bid.ImpID, req.Imp)
+	for _, seatBid := range response.SeatBid {
+		for i := range seatBid.Bid {
+			bid := seatBid.Bid[i]
+			bidType, err := getBidType(bid)
 			if err != nil {
-				errs = append(errs, &errortypes.BadServerResponse{Message: err.Error()})
-				continue
+				return nil, []error{err}
 			}
-			typedBid := &adapters.TypedBid{
-				Bid:     &bid,
+
+			b := &adapters.TypedBid{
+				Bid:     &seatBid.Bid[i],
 				BidType: bidType,
 			}
-			bidderResponse.Bids = append(bidderResponse.Bids, typedBid)
+			bidResponse.Bids = append(bidResponse.Bids, b)
 		}
 	}
-
-	return bidderResponse, errs
+	return bidResponse, nil
 }
 
-func getBidTypeFromImps(bidImpID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
-	for _, imp := range imps {
-		if imp.ID == bidImpID {
-			return resolveImpType(imp)
-		}
-	}
-	return "", fmt.Errorf("Invalid bid imp ID %s does not match any imp IDs from the original bid request", bidImpID)
-}
-
-func resolveImpType(imp openrtb2.Imp) (openrtb_ext.BidType, error) {
-	if imp.Native != nil {
+func getBidType(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupNative:
 		return openrtb_ext.BidTypeNative, nil
 	}
-	if imp.Banner != nil {
-		return openrtb_ext.BidTypeBanner, nil
-	}
-	return "", fmt.Errorf("Processing an invalid impression; cannot resolve impression type")
+
+	return "", fmt.Errorf("could not define media type for impression: %s", bid.ImpID)
 }
