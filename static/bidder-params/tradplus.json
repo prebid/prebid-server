@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "TradPlus Adapter Params",
+  "description": "A schema which validates params accepted by the TradPlus adapter",
+  "type": "object",
+  "properties": {
+    "accountId": {
+      "type": "string",
+      "description": "Account ID",
+      "minLength": 1
+    },
+    "zoneId": {
+      "type": "string",
+      "description": "Zone ID"
+    }
+  },
+  "required": [
+    "accountId"
+  ]
+}
