@@ -1,0 +1,130 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "video": {
+          "w": 728, 
+          "h": 90,
+          "protocols": [2],
+          "placement": 1,
+          "startdelay": -2,
+          "playbackmethod": [2],
+          "mimes": ["foo", "bar"]
+        },
+        "ext": {
+          "bidder": {
+            "adUnitId": "fake-site-id",
+            "publisherId": "test-publisher-id"
+          }
+        }
+      }
+    ],
+    "site": {
+      "publisher": {
+        "id": "test-publisher-id"
+      }
+    }
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://insticator.example.com/v1/pbs",
+        "body": {
+          "ext": {
+            "insticator": {
+              "caller": [
+                {
+                  "name": "Prebid-Server",
+                  "version": "n/a"
+                }
+              ]
+            }
+          },
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id":"test-imp-id",
+              "video": {
+                "w": 728, 
+                "h": 90,
+                "protocols": [2],
+                "placement": 1,
+                "startdelay": -2,
+                "playbackmethod": [2],
+                "mimes": ["foo", "bar"]
+              },
+              "ext": {
+                "insticator": {
+                  "adUnitId": "fake-site-id",
+                  "publisherId": "test-publisher-id"
+                }
+              }
+            }
+          ],
+          "site": {
+            "publisher": {
+              "id": "test-publisher-id"
+            }
+          }
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "insticator",
+              "bid": [{
+                "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                "impid": "test-imp-id",
+                "price": 0.500000,
+                "adm": "some-test-vast-ad",
+                "mtype": 2,
+                "crid": "crid_10",
+                "h": 90,
+                "w": 728,
+                "ext": {
+                  "insticator": {
+                    "mediaType": "video"
+                  }
+                }
+              }]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+            "impid": "test-imp-id",
+            "price": 0.5,
+            "adm": "some-test-vast-ad",
+            "crid": "crid_10",
+            "w": 728,
+            "mtype": 2,
+            "h": 90,
+            "ext": {
+              "insticator": {
+                "mediaType": "video"
+              }
+            }
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}
