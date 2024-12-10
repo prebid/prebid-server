@@ -6,6 +6,13 @@ status_response: "ok" # default response string for /status endpoint
 
 gdpr:
   default_value: "0" # disable gdpr, explicitly specifying a default value is a requirement in prebid server config
+  vendorlist_fetcher:
+    max_concurrency_init_fetch_latest_version: 2
+    max_concurrency_init_fetch_specific_version: 20
+  timeouts_ms:
+    init_vendorlist_fetches: 30000
+    active_vendorlist_fetch: 30000
+
 
 # set up stored request storage using local file system
 stored_requests:

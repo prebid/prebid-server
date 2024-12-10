@@ -16,10 +16,16 @@ import (
 	"github.com/prebid/go-gdpr/vendorlist2"
 	"github.com/prebid/prebid-server/v3/config"
 	"golang.org/x/net/context/ctxhttp"
+	"golang.org/x/sync/errgroup"
 )
 
 type saveVendors func(uint16, uint16, api.VendorList)
 type VendorListFetcher func(ctx context.Context, specVersion uint16, listVersion uint16) (vendorlist.VendorList, error)
+
+type vendorListVersionGroup struct {
+	specVersion      uint16
+	firstListVersion uint16
+}
 
 // This file provides the vendorlist-fetching function for Prebid Server.
 //
@@ -32,7 +38,7 @@ func NewVendorListFetcher(initCtx context.Context, cfg config.GDPR, client *http
 
 	preloadContext, cancel := context.WithTimeout(initCtx, cfg.Timeouts.InitTimeout())
 	defer cancel()
-	preloadCache(preloadContext, client, urlMaker, cacheSave)
+	preloadCache(preloadContext, client, urlMaker, cacheSave, cfg.VendorListFetcher)
 
 	saveOneRateLimited := newOccasionalSaver(cfg.Timeouts.ActiveTimeout())
 	return func(ctx context.Context, specVersion, listVersion uint16) (vendorlist.VendorList, error) {
@@ -61,11 +67,8 @@ func makeVendorListNotFoundError(specVersion, listVersion uint16) error {
 }
 
 // preloadCache saves all the known versions of the vendor list for future use.
-func preloadCache(ctx context.Context, client *http.Client, urlMaker func(uint16, uint16) string, saver saveVendors) {
-	versions := [2]struct {
-		specVersion      uint16
-		firstListVersion uint16
-	}{
+func preloadCache(ctx context.Context, client *http.Client, urlMaker func(uint16, uint16) string, saver saveVendors, conf config.VendorListFetcher) {
+	versions := [2]vendorListVersionGroup{
 		{
 			specVersion:      2,
 			firstListVersion: 2, // The GVL for TCF2 has no vendors defined in its first version. It's very unlikely to be used, so don't preload it.
@@ -75,13 +78,38 @@ func preloadCache(ctx context.Context, client *http.Client, urlMaker func(uint16
 			firstListVersion: 1,
 		},
 	}
-	for _, v := range versions {
-		latestVersion := saveOne(ctx, client, urlMaker(v.specVersion, 0), saver)
+	var wgLatestVersion errgroup.Group
+	var wgSpecificVersion errgroup.Group
 
-		for i := v.firstListVersion; i < latestVersion; i++ {
-			saveOne(ctx, client, urlMaker(v.specVersion, i), saver)
-		}
+	if conf.MaxConcurrencyInitFetchLatestVersion > 0 {
+		wgLatestVersion.SetLimit(conf.MaxConcurrencyInitFetchLatestVersion)
 	}
+
+	if conf.MaxConcurrencyInitFetchSpecificVersion > 0 {
+		wgSpecificVersion.SetLimit(conf.MaxConcurrencyInitFetchSpecificVersion)
+	}
+
+	tsStart := time.Now() // For logging how long it takes to preload the vendor lists.
+	for _, v := range versions {
+		specVersion := v.specVersion
+		firstVersion := v.firstListVersion
+		wgLatestVersion.Go(func() error {
+			latestVersion := saveOne(ctx, client, urlMaker(specVersion, 0), saver)
+			for i := firstVersion; i < latestVersion; i++ {
+				currentVersion := i
+				wgSpecificVersion.Go(func() error {
+					saveOne(ctx, client, urlMaker(specVersion, currentVersion), saver)
+					return nil
+				})
+			}
+			return nil
+		})
+	}
+
+	wgLatestVersion.Wait()
+	wgSpecificVersion.Wait()
+
+	glog.Infof("Finished Preloading vendor lists within %v", time.Since(tsStart))
 }
 
 // Make a URL which can be used to fetch a given version of the Global Vendor List. If the version is 0,
