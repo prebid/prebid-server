@@ -27,7 +27,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		requestData []*adapters.RequestData
 		errs        []error
 	)
-	if request == nil {
+	if request == nil || request.Imp == nil {
 		errs = append(errs, errorWritter("<MakeRequests> request", nil, true))
 		return nil, errs
 	}
@@ -111,7 +111,10 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 	var msqResp msqResponse
 	if err := jsonutil.Unmarshal(response.Body, &msqResp); err != nil {
-		errs = []error{&errortypes.BadServerResponse{Message: fmt.Sprintf("<MakeBids> Bad server response: %s.", err.Error())}}
+		errs = []error{&errortypes.BadServerResponse{
+			Message: fmt.Sprintf("<MakeBids> Unexprected status code: %d. Bad server response: %s.",
+				http.StatusNotAcceptable, err.Error())},
+		}
 		return bidderResponse, errs
 	}
 	bidderResponse = adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
