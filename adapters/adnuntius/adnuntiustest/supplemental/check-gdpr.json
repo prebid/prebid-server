@@ -38,7 +38,7 @@
 	"httpCalls": [
 		{
 			"expectedRequest": {
-				"uri": "http://gdpr.url?consentString=CONSENT_STRING&format=prebid&gdpr=1&tzo=0",
+				"uri": "http://gdpr.url?consentString=CONSENT_STRING&format=prebidServer&gdpr=1&tzo=0",
 				"body": {
 					"adUnits": [
 						{
