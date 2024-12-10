@@ -129,17 +129,18 @@ func updateBanner(banner *openrtb2.Banner) (*openrtb2.Banner, error) {
 	if banner == nil {
 		return nil, fmt.Errorf("banner is null")
 	}
-	if banner.W == nil || banner.H == nil || *banner.W == 0 || *banner.H == 0 {
-		if len(banner.Format) > 0 {
-			w := banner.Format[0].W
-			h := banner.Format[0].H
-			banner.W = &w
-			banner.H = &h
+	bannerCopy := *banner
+	if bannerCopy.W == nil || bannerCopy.H == nil || *bannerCopy.W == 0 || *bannerCopy.H == 0 {
+		if len(bannerCopy.Format) > 0 {
+			w := bannerCopy.Format[0].W
+			h := bannerCopy.Format[0].H
+			bannerCopy.W = &w
+			bannerCopy.H = &h
 		} else {
 			return nil, fmt.Errorf("Invalid sizes provided for Banner")
 		}
 	}
-	return banner, nil
+	return &bannerCopy, nil
 }
 
 func (a *adapter) modifyUrl(extImp ExtImpIntertech, referer, cur string) (string, error) {
@@ -187,6 +188,7 @@ func buildRequestData(bidRequest openrtb2.BidRequest, uri string) (*adapters.Req
 		Uri:     uri,
 		Body:    body,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(bidRequest.Imp),
 	}, nil
 }
 
