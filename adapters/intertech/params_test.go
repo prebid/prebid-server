@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestValidParams(t *testing.T) {
@@ -35,33 +34,15 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
-	`{"page_id": 123123, "imp_id": 123}`,
-	`{"placement_id": "123123-123"}`,
+	`{"page_id": 123, "imp_id": 456}`,
+	`{"page_id": 1, "imp_id": 1}`,
+	`{"page_id": 999, "imp_id": 999}`,
 }
 
 var invalidParams = []string{
-	`{"pageId": 123123, "impId": 123}`,
-	`{"page_id": "123123", "imp_id": "123"}`,
-	`{"page_id": "123123", "imp_id": "123", "placement_id": "123123"}`,
+	`{"page_id": "abc", "imp_id": 1}`,
+	`{"page_id": "1", "imp_id": abc}`,
 	`{"page_id": "123123"}`,
 	`{"imp_id": "123"}`,
-	`{"placement_id": 123123}`,
-	`{"placement_id": "123123"}`,
-	`{"placement_id": "A-123123"}`,
-	`{"placement_id": "B-A-123123"}`,
-	`{"placement_id": "123123-A"}`,
 	`{}`,
-}
-
-func TestValidPlacementIdMapper(t *testing.T) {
-	for ext, expectedPlacementId := range validPlacementIds {
-		val := mapExtToPlacementID(ext)
-
-		assert.Equal(t, &expectedPlacementId, val)
-	}
-}
-
-var validPlacementIds = map[openrtb_ext.ExtImpIntertech]intertechPlacementID{
-	{PlacementID: "111-222"}:  {PageID: "111", ImpID: "222"},
-	{PageID: 111, ImpID: 222}: {PageID: "111", ImpID: "222"},
 }

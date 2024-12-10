@@ -6,321 +6,269 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/macros"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 const (
-	refererQueryKey  = "target-ref"
-	currencyQueryKey = "ssp-cur"
-	impIdQueryKey    = "imp-id"
+	pageIDMacro = "{{page_id}}"
+	impIDMacro  = "{{imp_id}}"
 )
 
-// intertechPlacementID is the composite id of an ad placement
-type intertechPlacementID struct {
-	PageID string
-	ImpID  string
+type adapter struct {
+	endpoint string
 }
 
-type adapter struct {
-	endpoint *template.Template
+type ExtImpIntertech struct {
+	PageID int `json:"page_id"`
+	ImpID  int `json:"imp_id"`
 }
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
-	}
-
 	bidder := &adapter{
-		endpoint: template,
+		endpoint: config.Endpoint,
 	}
-
 	return bidder, nil
 }
 
-func (a *adapter) MakeRequests(requestData *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var (
-		requests []*adapters.RequestData
-		errors   []error
-	)
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	var errs []error
+	var requests []*adapters.RequestData
 
-	referer := getReferer(requestData)
-	currency := getCurrency(requestData)
+	referer := getReferer(request)
+	cur := getCur(request)
 
-	for i := range requestData.Imp {
-		imp := requestData.Imp[i]
-
-		placementId, err := getPlacementID(imp)
+	for _, imp := range request.Imp {
+		extImp, err := parseAndValidateImpExt(imp)
 		if err != nil {
-			errors = append(errors, err)
+			errs = append(errs, err)
 			continue
 		}
 
-		if err := modifyImp(&imp); err != nil {
-			errors = append(errors, err)
-			continue
-		}
-
-		resolvedUrl, err := a.resolveUrl(*placementId, referer, currency)
+		modifiedImp, err := modifyImp(imp)
 		if err != nil {
-			errors = append(errors, err)
+			errs = append(errs, err)
 			continue
 		}
 
-		splittedRequestData := splitRequestDataByImp(requestData, imp)
-
-		requestBody, err := jsonutil.Marshal(splittedRequestData)
+		modifiedUrl, err := a.modifyUrl(extImp, referer, cur)
 		if err != nil {
-			errors = append(errors, err)
+			errs = append(errs, err)
 			continue
 		}
 
-		requests = append(requests, &adapters.RequestData{
-			Method:  "POST",
-			Uri:     resolvedUrl,
-			Body:    requestBody,
-			Headers: getHeaders(&splittedRequestData),
-			ImpIDs:  openrtb_ext.GetImpIDs(splittedRequestData.Imp),
-		})
+		modRequest := *request
+		modRequest.Imp = []openrtb2.Imp{modifiedImp}
+
+		reqData, err := buildRequestData(modRequest, modifiedUrl)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		requests = append(requests, reqData)
 	}
 
-	return requests, errors
+	return requests, errs
 }
 
-func getHeaders(request *openrtb2.BidRequest) http.Header {
-	headers := http.Header{}
-
-	if request.Device != nil && request.Site != nil {
-		addNonEmptyHeader(&headers, "Referer", request.Site.Page)
-		addNonEmptyHeader(&headers, "Accept-Language", request.Device.Language)
-		addNonEmptyHeader(&headers, "User-Agent", request.Device.UA)
-		addNonEmptyHeader(&headers, "X-Forwarded-For", request.Device.IP)
-		addNonEmptyHeader(&headers, "X-Real-Ip", request.Device.IP)
-		addNonEmptyHeader(&headers, "X-Forwarded-For-IPv6", request.Device.IPv6)
-		headers.Add("Content-Type", "application/json;charset=utf-8")
-		headers.Add("Accept", "application/json")
-	}
-
-	return headers
-}
-
-func addNonEmptyHeader(headers *http.Header, key, value string) {
-	if len(value) > 0 {
-		headers.Add(key, value)
-	}
-}
-
-// splitRequestDataByImp makes a shallow copy of the request for further modification (imp is already a shallow copy)
-func splitRequestDataByImp(request *openrtb2.BidRequest, imp openrtb2.Imp) openrtb2.BidRequest {
-	requestCopy := *request
-	requestCopy.Imp = []openrtb2.Imp{imp}
-
-	return requestCopy
-}
-
-func getPlacementID(imp openrtb2.Imp) (*intertechPlacementID, error) {
-	var ext adapters.ExtImpBidder
-	if err := jsonutil.Unmarshal(imp.Ext, &ext); err != nil {
-		return nil, &errortypes.BadInput{
-			Message: fmt.Sprintf("imp %s: unable to unmarshal ext", imp.ID),
+func parseAndValidateImpExt(imp openrtb2.Imp) (ExtImpIntertech, error) {
+	var bidderExt adapters.ExtImpBidder
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		return ExtImpIntertech{}, &errortypes.BadInput{
+			Message: fmt.Sprintf("imp #%s: unable to parse bidder ext: %s", imp.ID, err),
 		}
 	}
 
-	var intertechExt openrtb_ext.ExtImpIntertech
-	if err := jsonutil.Unmarshal(ext.Bidder, &intertechExt); err != nil {
-		return nil, &errortypes.BadInput{
-			Message: fmt.Sprintf("imp %s: unable to unmarshal ext.bidder: %v", imp.ID, err),
+	var extImp ExtImpIntertech
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &extImp); err != nil {
+		return ExtImpIntertech{}, &errortypes.BadInput{
+			Message: fmt.Sprintf("imp #%s: unable to parse intertech ext: %s", imp.ID, err),
 		}
 	}
 
-	placementID := mapExtToPlacementID(intertechExt)
-	return placementID, nil
-}
-
-func mapExtToPlacementID(intertechExt openrtb_ext.ExtImpIntertech) *intertechPlacementID {
-	var placementID intertechPlacementID
-
-	if len(intertechExt.PlacementID) == 0 {
-		placementID.ImpID = strconv.Itoa(int(intertechExt.ImpID))
-		placementID.PageID = strconv.Itoa(int(intertechExt.PageID))
-		return &placementID
+	if extImp.PageID == 0 {
+		return ExtImpIntertech{}, &errortypes.BadInput{
+			Message: fmt.Sprintf("imp #%s: missing param page_id", imp.ID),
+		}
+	}
+	if extImp.ImpID == 0 {
+		return ExtImpIntertech{}, &errortypes.BadInput{
+			Message: fmt.Sprintf("imp #%s: missing param imp_id", imp.ID),
+		}
 	}
 
-	idParts := strings.Split(intertechExt.PlacementID, "-")
-	placementID.PageID = idParts[0]
-	placementID.ImpID = idParts[1]
-
-	return &placementID
+	return extImp, nil
 }
 
-func modifyImp(imp *openrtb2.Imp) error {
+func modifyImp(imp openrtb2.Imp) (openrtb2.Imp, error) {
 	if imp.Banner != nil {
-		banner, err := modifyBanner(*imp.Banner)
-		if banner != nil {
-			imp.Banner = banner
+		banner, err := updateBanner(imp.Banner)
+		if err != nil {
+			return openrtb2.Imp{}, &errortypes.BadInput{
+				Message: fmt.Sprintf("imp #%s: %s", imp.ID, err.Error()),
+			}
 		}
-		return err
+		imp.Banner = banner
+		return imp, nil
 	}
-
 	if imp.Native != nil {
-		return nil
+		return imp, nil
 	}
-
-	return &errortypes.BadInput{
-		Message: fmt.Sprintf("Unsupported format. Intertech only supports banner and native types. Ignoring imp id #%s", imp.ID),
+	return openrtb2.Imp{}, &errortypes.BadInput{
+		Message: fmt.Sprintf("Intertech only supports banner and native types. Ignoring imp id=%s", imp.ID),
 	}
 }
 
-func modifyBanner(banner openrtb2.Banner) (*openrtb2.Banner, error) {
-	format := banner.Format
-
-	hasRootSize := banner.W != nil && banner.H != nil && *banner.W > 0 && *banner.H > 0
-	if !hasRootSize && len(format) == 0 {
-		w := 0
-		h := 0
-		if banner.W != nil {
-			w = int(*banner.W)
-		}
-		if banner.H != nil {
-			h = int(*banner.H)
-		}
-		return nil, &errortypes.BadInput{
-			Message: fmt.Sprintf("Invalid sizes provided for Banner %dx%d", w, h),
+func updateBanner(banner *openrtb2.Banner) (*openrtb2.Banner, error) {
+	if banner == nil {
+		return nil, fmt.Errorf("banner is null")
+	}
+	if banner.W == nil || banner.H == nil || *banner.W == 0 || *banner.H == 0 {
+		if len(banner.Format) > 0 {
+			w := banner.Format[0].W
+			h := banner.Format[0].H
+			banner.W = &w
+			banner.H = &h
+		} else {
+			return nil, fmt.Errorf("Invalid sizes provided for Banner")
 		}
 	}
-
-	if !hasRootSize {
-		firstFormat := format[0]
-		banner.H = &firstFormat.H
-		banner.W = &firstFormat.W
-	}
-
-	return &banner, nil
+	return banner, nil
 }
 
-// resolveUrl "un-templates" the endpoint by replacing macroses and adding the required query parameters
-func (a *adapter) resolveUrl(placementID intertechPlacementID, referer string, currency string) (string, error) {
-	params := macros.EndpointTemplateParams{PageID: placementID.PageID, ImpID: placementID.ImpID}
+func (a *adapter) modifyUrl(extImp ExtImpIntertech, referer, cur string) (string, error) {
+	pageStr := strconv.Itoa(extImp.PageID)
+	impStr := strconv.Itoa(extImp.ImpID)
 
-	endpointStr, err := macros.ResolveMacros(a.endpoint, params)
+	resolvedUrl := strings.ReplaceAll(a.endpoint, pageIDMacro, url.QueryEscape(pageStr))
+	resolvedUrl = strings.ReplaceAll(resolvedUrl, impIDMacro, url.QueryEscape(impStr))
+
+	if referer != "" {
+		resolvedUrl += "&target-ref=" + url.QueryEscape(referer)
+	}
+
+	if cur != "" {
+		resolvedUrl += "&ssp-cur=" + cur
+	}
+
+	return resolvedUrl, nil
+}
+
+func buildRequestData(bidRequest openrtb2.BidRequest, uri string) (*adapters.RequestData, error) {
+	body, err := jsonutil.Marshal(bidRequest)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	parsedUrl, err := url.Parse(endpointStr)
-	if err != nil {
-		return "", err
-	}
+	headers := http.Header{}
+	headers.Add("Content-Type", "application/json")
 
-	addNonEmptyQueryParams(parsedUrl, map[string]string{
-		refererQueryKey:  referer,
-		currencyQueryKey: currency,
-		impIdQueryKey:    placementID.ImpID,
-	})
-
-	return parsedUrl.String(), nil
-}
-
-func addNonEmptyQueryParams(url *url.URL, queryMap map[string]string) {
-	query := url.Query()
-	for key, value := range queryMap {
-		if len(value) > 0 {
-			query.Add(key, value)
+	if bidRequest.Device != nil {
+		if bidRequest.Device.UA != "" {
+			headers.Add("User-Agent", bidRequest.Device.UA)
+		}
+		if bidRequest.Device.IP != "" {
+			headers.Add("X-Forwarded-For", bidRequest.Device.IP)
+			headers.Add("X-Real-Ip", bidRequest.Device.IP)
+		}
+		if bidRequest.Device.Language != "" {
+			headers.Add("Accept-Language", bidRequest.Device.Language)
 		}
 	}
 
-	url.RawQuery = query.Encode()
+	return &adapters.RequestData{
+		Method:  http.MethodPost,
+		Uri:     uri,
+		Body:    body,
+		Headers: headers,
+	}, nil
 }
 
 func getReferer(request *openrtb2.BidRequest) string {
-	if request.Site == nil {
-		return ""
+	if request.Site != nil {
+		return request.Site.Page
 	}
-
-	return request.Site.Domain
+	return ""
 }
 
-func getCurrency(request *openrtb2.BidRequest) string {
-	if len(request.Cur) == 0 {
-		return ""
+func getCur(request *openrtb2.BidRequest) string {
+	if len(request.Cur) > 0 {
+		return request.Cur[0]
 	}
-
-	return request.Cur[0]
+	return ""
 }
 
-func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if adapters.IsResponseStatusCodeNoContent(responseData) {
-		return nil, nil
-	}
-
-	if err := adapters.CheckResponseStatusCodeForErrors(responseData); err != nil {
-		return nil, []error{err}
-	}
-
-	var bidResponse openrtb2.BidResponse
-	if err := jsonutil.Unmarshal(responseData.Body, &bidResponse); err != nil {
+func (a *adapter) MakeBids(req *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	if responseData.StatusCode != http.StatusOK {
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Bad server response: %d", err),
+			Message: fmt.Sprintf("Unexpected status code: %d", responseData.StatusCode),
 		}}
 	}
 
-	bidResponseWithCapacity := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
-
-	var errors []error
-
-	impMap := map[string]*openrtb2.Imp{}
-	for i := range request.Imp {
-		imp := request.Imp[i]
-
-		impMap[imp.ID] = &imp
+	var bidResp openrtb2.BidResponse
+	if err := jsonutil.Unmarshal(responseData.Body, &bidResp); err != nil {
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Failed to decode bid response: %s", err.Error()),
+		}}
 	}
 
-	for _, seatBid := range bidResponse.SeatBid {
-		for i := range seatBid.Bid {
-			bid := seatBid.Bid[i]
+	seatBids := bidResp.SeatBid
+	if seatBids == nil {
+		return &adapters.BidderResponse{
+			Currency: bidResp.Cur,
+			Bids:     make([]*adapters.TypedBid, 0),
+		}, nil
+	}
 
-			imp, exists := impMap[bid.ImpID]
-			if !exists {
-				errors = append(errors, &errortypes.BadInput{
-					Message: fmt.Sprintf("Invalid bid imp ID #%s does not match any imp IDs from the original bid request", bid.ImpID),
-				})
-				continue
-			}
+	if len(seatBids) == 0 {
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: "SeatBids is empty",
+		}}
+	}
 
-			bidType, err := getBidType(*imp)
+	bidderResponse := adapters.NewBidderResponseWithBidsCapacity(len(seatBids))
+	bidderResponse.Currency = bidResp.Cur
+
+	var errs []error
+	for _, seatBid := range seatBids {
+		for _, bid := range seatBid.Bid {
+			bidType, err := getBidTypeFromImps(bid.ImpID, req.Imp)
 			if err != nil {
-				errors = append(errors, err)
+				errs = append(errs, &errortypes.BadServerResponse{Message: err.Error()})
 				continue
 			}
-
-			bidResponseWithCapacity.Bids = append(bidResponseWithCapacity.Bids, &adapters.TypedBid{
+			typedBid := &adapters.TypedBid{
 				Bid:     &bid,
 				BidType: bidType,
-			})
+			}
+			bidderResponse.Bids = append(bidderResponse.Bids, typedBid)
 		}
 	}
 
-	return bidResponseWithCapacity, errors
+	return bidderResponse, errs
 }
 
-func getBidType(imp openrtb2.Imp) (openrtb_ext.BidType, error) {
+func getBidTypeFromImps(bidImpID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
+	for _, imp := range imps {
+		if imp.ID == bidImpID {
+			return resolveImpType(imp)
+		}
+	}
+	return "", fmt.Errorf("Invalid bid imp ID %s does not match any imp IDs from the original bid request", bidImpID)
+}
+
+func resolveImpType(imp openrtb2.Imp) (openrtb_ext.BidType, error) {
 	if imp.Native != nil {
 		return openrtb_ext.BidTypeNative, nil
 	}
-
 	if imp.Banner != nil {
 		return openrtb_ext.BidTypeBanner, nil
 	}
-
-	return "", &errortypes.BadInput{
-		Message: fmt.Sprintf("Processing an invalid impression; cannot resolve impression type for imp #%s", imp.ID),
-	}
+	return "", fmt.Errorf("Processing an invalid impression; cannot resolve impression type")
 }
