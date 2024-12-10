@@ -26,6 +26,9 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 
 // MakeRequests prepares and serializes HTTP requests to be sent to the Pixfuture endpoint.
 func (a *PixfutureAdapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	if len(request.Imp) == 0 {
+		return nil, []error{&errortypes.BadInput{Message: "No impressions in the bid request"}}
+	}
 	requestJSON, err := jsonutil.Marshal(request)
 	if err != nil {
 		return nil, []error{err}
