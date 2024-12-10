@@ -42,6 +42,6 @@
       }]
     }
   },
-  "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request: request.user.eids[0].uids must contain at least one element or be undefined\n"
+  "expectedReturnCode": 200,
+  "expectedErrorMessage": "request.user.eids[0] (source: source1) contains only empty uids and is removed from the request"
 }
