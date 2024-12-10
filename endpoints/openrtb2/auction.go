@@ -164,8 +164,12 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	// We can respect timeouts more accurately if we note the *real* start time, and use it
 	// to compute the auction timeout.
 	start := time.Now()
+	ctx := r.Context()
 
-	hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
+	hookExecutor := hookexecution.NewHookExecutor(
+		deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine,
+		hookexecution.WithContext(ctx),
+	)
 
 	ao := analytics.AuctionObject{
 		Status:    http.StatusOK,
@@ -191,7 +195,16 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
 	setBrowsingTopicsHeader(w, r)
 
-	req, impExtInfoMap, storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, account, errL := deps.parseRequest(r, &labels, hookExecutor)
+	// tmax comes with the request, but when a tmax max is configured use that to prevent hanging reads.
+	parseRequestCtx := ctx
+	var parseRequestCancel context.CancelFunc
+	if deps.cfg.AuctionTimeouts.Max > 0 {
+		parseRequestTimeout := time.Duration(deps.cfg.AuctionTimeouts.Max) * time.Millisecond
+		parseRequestCtx, parseRequestCancel = context.WithDeadline(ctx, start.Add(parseRequestTimeout))
+		defer parseRequestCancel()
+	}
+	req, impExtInfoMap, storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, account, errL := deps.parseRequest(
+		r.WithContext(parseRequestCtx), &labels, hookExecutor)
 	if errortypes.ContainsFatalError(errL) && writeError(errL, w, &labels) {
 		return
 	}
@@ -209,13 +222,13 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	hookExecutor.SetActivityControl(activityControl)
 	hookExecutor.SetAccount(account)
 
-	ctx := context.Background()
-
 	timeout := deps.cfg.AuctionTimeouts.LimitAuctionTimeout(time.Duration(req.TMax) * time.Millisecond)
 	if timeout > 0 {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithDeadline(ctx, start.Add(timeout))
 		defer cancel()
+		hookexecution.WithContext(ctx)(hookExecutor)
+		r = r.WithContext(ctx)
 	}
 
 	// Read Usersyncs/Cookie
@@ -465,7 +478,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	}
 
 	timeout := parseTimeout(requestJson, time.Duration(deps.cfg.StoredRequestsTimeout)*time.Millisecond)
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctx, cancel := context.WithTimeout(httpRequest.Context(), timeout)
 	defer cancel()
 
 	impInfo, errs := parseImpInfo(requestJson)
