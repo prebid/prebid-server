@@ -1,0 +1,123 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+        "page": "https://good.site/url"
+    },
+    "imp": [{
+        "id": "test-imp-id", 
+        "bidfloor": 1.0,
+        "bidfloorcur": "USD",
+        "banner": {
+            "format": [{
+                "w": 300,
+                "h": 250
+            }]
+        },
+        "ext": {
+          "bidder": {
+              "publisher": "123456",
+              "placement": "234567"
+          }
+        }
+  }],
+  "ext": {
+    "prebid": {
+      "currency": {
+        "rates": {
+          "EUR": {
+            "USD": 0.05
+          }
+        },
+        "usepbsrates": false
+      }
+    }
+  }
+ },
+  "httpCalls": [{
+    "expectedRequest": {
+      "uri": "https://example.com/rtb/bid",
+      "body": {
+        "id": "test-request-id",
+        "site": {
+          "page": "https://good.site/url"
+        },
+        "imp": [
+          {
+            "id": "test-imp-id",
+            "bidfloor": 20,
+            "bidfloorcur": "EUR",
+            "banner": {
+              "format": [
+                {
+                  "w": 300,
+                  "h": 250
+                }
+              ]
+            },
+            "ext": {
+              "bidder": {
+                "publisher": "123456",
+                "placement": "234567"
+              }
+            }
+          }
+        ],
+        "ext": {
+          "prebid": {
+            "currency": {
+              "rates": {
+                "EUR": {
+                  "USD": 0.05
+                }
+              },
+              "usepbsrates": false
+            }
+          }
+        }
+      },
+      "impIDs":["test-imp-id"]
+    },
+    "mockResponse": {
+      "status": 200,
+      "body": {
+        "id": "test-request-id",
+        "seatbid": [
+            {
+              "seat": "958",
+              "bid": [{
+                "id": "7706636740145184841",
+                "impid": "test-imp-id",
+                "price": 0.500000,
+                "adm": "some-test-ad",
+                "adomain": ["example.com"],
+                "crid": "29681110",
+                "h": 250,
+                "w": 300,
+                "mtype": 1
+              }]
+            }
+        ],
+        "cur": "EUR"
+      }
+    }
+  }],
+
+  "expectedBidResponses": [{
+    "currency": "EUR",
+    "bids": [{
+      "bid": {
+        "id": "7706636740145184841",
+        "impid": "test-imp-id",
+        "price": 0.500000,
+        "adm": "some-test-ad",
+        "adomain": ["example.com"],
+        "crid": "29681110",
+        "h": 250,
+        "w": 300,
+        "mtype": 1
+      },
+      "type": "banner"
+    }]
+  }]
+}
