@@ -148,6 +148,40 @@ func TestGetBidType(t *testing.T) {
 	}
 }
 
+func TestGetBidVideo(t *testing.T) {
+	tests := []struct {
+		bid      *openrtb2.Bid
+		bidvideo openrtb_ext.ExtBidPrebidVideo
+	}{
+		{
+			&openrtb2.Bid{Cat: []string{"IAB1-1"}},
+			openrtb_ext.ExtBidPrebidVideo{PrimaryCategory: "IAB1-1", Duration: 0},
+		},
+		{
+			&openrtb2.Bid{Cat: []string{"IAB1-1", "IAB1-2"}},
+			openrtb_ext.ExtBidPrebidVideo{PrimaryCategory: "IAB1-1", Duration: 0},
+		},
+		{
+			&openrtb2.Bid{Cat: []string{}},
+			openrtb_ext.ExtBidPrebidVideo{PrimaryCategory: "", Duration: 0},
+		},
+		{
+			&openrtb2.Bid{Cat: nil},
+			openrtb_ext.ExtBidPrebidVideo{PrimaryCategory: "", Duration: 0},
+		},
+		{
+			&openrtb2.Bid{Cat: []string{"IAB1-1", "IAB1-2"}, Dur: 15},
+			openrtb_ext.ExtBidPrebidVideo{PrimaryCategory: "IAB1-1", Duration: 15},
+		},
+	}
+
+	for _, test := range tests {
+		bidVideo := getBidVideo(test.bid)
+		assert.Equal(t, test.bidvideo.PrimaryCategory, bidVideo.PrimaryCategory)
+		assert.Equal(t, test.bidvideo.Duration, bidVideo.Duration)
+	}
+}
+
 func TestBuilder(t *testing.T) {
 	serverCfg := config.Server{}
 
