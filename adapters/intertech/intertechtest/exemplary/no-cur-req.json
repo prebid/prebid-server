@@ -1,0 +1,71 @@
+{
+  "mockBidRequest": {
+    "id": "test-no-cur-request-id",
+    "device": {
+      "ip": "123.123.123.123",
+      "ua": "Mozilla/5.0 (X11; Linux x86_64)"
+    },
+    "site": {
+      "page": "http://example-nocur.com"
+    },
+    "imp": [
+      {
+        "id": "test-imp-no-cur",
+        "tagid": "no-cur-tag",
+        "banner": {
+          "format": [
+            { "w": 300, "h": 250 }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "page_id": 1111,
+            "imp_id": 2222
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://test.intertech.com/ssp?pid=1111&imp=2222&target-ref=http%3A%2F%2Fexample-nocur.com",
+        "body": {
+          "id": "test-no-cur-request-id",
+          "imp": [
+            {
+              "id": "test-imp-no-cur",
+              "tagid": "no-cur-tag",
+              "banner": {
+                "w": 300,
+                "h": 250,
+                "format": [
+                  { "w": 300, "h": 250 }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "page_id": 1111,
+                  "imp_id": 2222
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "http://example-nocur.com"
+          },
+          "device": {
+            "ip": "123.123.123.123",
+            "ua": "Mozilla/5.0 (X11; Linux x86_64)"
+          }
+        },
+        "impIDs": ["test-imp-no-cur"]
+      },
+      "mockResponse": {
+        "status": 204,
+        "body": {}
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}

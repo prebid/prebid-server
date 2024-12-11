@@ -1,0 +1,35 @@
+{
+  "mockBidRequest": {
+    "id": "test-invalid-sizes-request-id",
+    "device": {
+      "ip": "123.123.123.123",
+      "ua": "Mozilla/5.0 (X11; Linux x86_64)"
+    },
+    "site": {
+      "page": "http://no-size-banner.com"
+    },
+    "imp": [
+      {
+        "id": "test-imp-no-size",
+        "tagid": "no-size-tag",
+        "banner": {
+          "format": []
+        },
+        "ext": {
+          "bidder": {
+            "page_id": 1111,
+            "imp_id": 9999
+          }
+        }
+      }
+    ],
+    "cur": ["USD"]
+  },
+  "httpCalls": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "imp #test-imp-no-size: Invalid sizes provided for Banner",
+      "comparison": "literal"
+    }
+  ]
+}

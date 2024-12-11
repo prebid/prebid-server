@@ -1,0 +1,100 @@
+{
+    "mockBidRequest": {
+      "id": "test-request-id",
+      "device": {
+        "ip": "123.123.123.123",
+        "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+      },
+      "site": {
+        "page": "http://example.com"
+      },
+      "imp": [
+        {
+          "id": "test-imp-id",
+          "tagid": "test-tag",
+          "banner": {
+            "format": [
+              { "w": 300, "h": 250 }
+            ]
+          },
+          "ext": {
+            "bidder": {
+              "page_id": 3003,
+              "imp_id": 5005
+            }
+          }
+        }
+      ],
+      "cur": ["USD"]
+    },
+    "httpCalls": [
+      {
+        "expectedRequest": {
+          "uri": "https://test.intertech.com/ssp?pid=3003&imp=5005&target-ref=http%3A%2F%2Fexample.com&ssp-cur=USD",
+          "body": {
+            "id": "test-request-id",
+            "imp": [
+              {
+                "id": "test-imp-id",
+                "tagid": "test-tag",
+                "banner": {
+                  "w": 300,
+                  "h": 250,
+                  "format": [
+                    { "w": 300, "h": 250 }
+                  ]
+                },
+                "ext": {
+                  "bidder": {
+                    "page_id": 3003,
+                    "imp_id": 5005
+                  }
+                }
+              }
+            ],
+            "site": {
+              "page": "http://example.com"
+            },
+            "device": {
+              "ip": "123.123.123.123",
+              "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+            },
+            "cur": ["USD"]
+          },
+          "impIDs": ["test-imp-id"]
+        },
+        "mockResponse": {
+          "status": 200,
+          "body": {
+            "id": "test-request-id",
+            "cur": "USD",
+            "seatbid": [
+              {
+                "seat": "intertech",
+                "bid": [
+                  {
+                    "id": "test_bid_id",
+                    "impid": "test-imp-id",
+                    "price": 0.5,
+                    "adm": "<html><body><h1>Test Ad</h1></body></html>",
+                    "cid": "test_cid",
+                    "crid": "test_crid",
+                    "w": 300,
+                    "h": 250,
+                    "mtype": 2
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "expectedMakeBidsErrors": [
+      {
+        "value": "could not define media type for impression: test-imp-id",
+        "comparison": "literal"
+      }
+    ]
+  }
+  
