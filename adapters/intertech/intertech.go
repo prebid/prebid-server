@@ -92,17 +92,6 @@ func parseAndValidateImpExt(imp openrtb2.Imp) (ExtImpIntertech, error) {
 		}
 	}
 
-	if extImp.PageID == 0 {
-		return ExtImpIntertech{}, &errortypes.BadInput{
-			Message: fmt.Sprintf("imp #%s: missing param page_id", imp.ID),
-		}
-	}
-	if extImp.ImpID == 0 {
-		return ExtImpIntertech{}, &errortypes.BadInput{
-			Message: fmt.Sprintf("imp #%s: missing param imp_id", imp.ID),
-		}
-	}
-
 	return extImp, nil
 }
 
