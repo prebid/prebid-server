@@ -1,6 +1,6 @@
 {
   "mockBidRequest": {
-    "id": "test-request-id",
+    "id": "filter-imp-without-ogury-params",
     "site": {
       "publisher": {
         "id": "pub123"
@@ -14,9 +14,6 @@
         },
         "ext": {
           "gpid": "global position id",
-          "prebid": {
-            "adunitcode": "ad-unit-code"
-          },
           "bidder": {
             "assetKey": "OGY",
             "adUnitId": "123"
@@ -37,9 +34,6 @@
         },
         "ext": {
           "gpid": "global position id",
-          "prebid": {
-            "adunitcode": "ad-unit-code-2"
-          },
           "bidder": {
             "assetKey": "OGY3",
             "adUnitId": "1234"
@@ -54,7 +48,7 @@
       "expectedRequest": {
         "uri": "http://ogury.example.com",
         "body": {
-          "id": "test-request-id",
+          "id": "filter-imp-without-ogury-params",
           "site": {
             "publisher": {
               "id": "pub123"
@@ -63,32 +57,26 @@
           "imp": [
             {
               "id":"test-imp-id",
-              "tagid": "ad-unit-code",
+              "tagid": "test-imp-id",
               "banner": {
                 "format": [{"w": 128, "h": 100}]
               },
               "ext": {
                 "gpid": "global position id",
                 "assetKey": "OGY",
-                "adUnitId": "123",
-                "prebid": {
-                  "adunitcode": "ad-unit-code"
-                }
+                "adUnitId": "123"
               }
             },
             {
               "id":"test-imp-id-3",
-              "tagid": "ad-unit-code-2",
+              "tagid": "test-imp-id-3",
               "banner": {
                 "format": [{"w": 1, "h": 1}]
               },
               "ext": {
                 "gpid": "global position id",
                 "assetKey": "OGY3",
-                "adUnitId": "1234",
-                "prebid": {
-                  "adunitcode": "ad-unit-code-2"
-                }
+                "adUnitId": "1234"
               }
             }
           ]

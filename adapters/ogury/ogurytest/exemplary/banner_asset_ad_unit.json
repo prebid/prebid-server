@@ -3,15 +3,12 @@
     "id": "test-request-id",
     "imp": [
       {
-        "id": "test-imp-id",
+        "id": "ad-unit-code-as-imp-id",
         "banner": {
           "format": [{"w": 128, "h": 100}]
         },
         "ext": {
           "gpid": "global position id",
-          "prebid": {
-            "adunitcode": "ad-unit-code"
-          },
           "bidder": {
             "assetKey": "OGY",
             "adUnitId": "123"
@@ -29,23 +26,20 @@
           "id": "test-request-id",
           "imp": [
             {
-              "id":"test-imp-id",
-              "tagid": "ad-unit-code",
+              "id":"ad-unit-code-as-imp-id",
+              "tagid": "ad-unit-code-as-imp-id",
               "banner": {
                 "format": [{"w": 128, "h": 100}]
               },
               "ext": {
                 "gpid": "global position id",
                 "assetKey": "OGY",
-                "adUnitId": "123",
-                "prebid": {
-                  "adunitcode": "ad-unit-code"
-                }
+                "adUnitId": "123"
               }
             }
           ]
         },
-        "impIDs":["test-imp-id"]
+        "impIDs":["ad-unit-code-as-imp-id"]
       },
       "mockResponse": {
         "status": 200,
@@ -57,7 +51,7 @@
               "seat": "seat",
               "bid": [{
                 "id": "some-UUID",
-                "impid": "test-imp-id",
+                "impid": "ad-unit-code-as-imp-id",
                 "price": 0.500000,
                 "adm": "adm string",
                 "crid": "crid_10",
@@ -78,7 +72,7 @@
         {
           "bid": {
             "id": "some-UUID",
-            "impid": "test-imp-id",
+            "impid": "ad-unit-code-as-imp-id",
             "price": 0.5,
             "adm": "adm string",
             "crid": "crid_10",

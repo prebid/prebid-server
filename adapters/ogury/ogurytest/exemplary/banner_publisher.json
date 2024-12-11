@@ -12,11 +12,7 @@
         "banner": {
           "format": [{"w": 128, "h": 100}]
         },
-        "ext": {
-          "prebid": {
-            "adunitcode": "ad-unit-code"
-          }
-        }
+        "ext": {}
       }
     ]
   },
@@ -35,15 +31,11 @@
           "imp": [
             {
               "id":"test-imp-id",
-              "tagid": "ad-unit-code",
+              "tagid": "test-imp-id",
               "banner": {
                 "format": [{"w": 128, "h": 100}]
               },
-              "ext": {
-                "prebid": {
-                  "adunitcode": "ad-unit-code"
-                }
-              }
+              "ext": {}
             }
           ]
         },

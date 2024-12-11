@@ -1,6 +1,6 @@
 {
   "mockBidRequest": {
-    "id": "test-request-id",
+    "id": "every-param-in-imp.ext.bidder-is-hoisted-to-imp.ext",
     "imp": [
       {
         "id": "test-imp-id",
@@ -9,9 +9,6 @@
         },
         "ext": {
           "gpid": "global position id",
-          "prebid": {
-            "adunitcode": "ad-unit-code"
-          },
           "bidder": {
             "assetKey": "OGY",
             "adUnitId": "123",
@@ -27,11 +24,11 @@
       "expectedRequest": {
         "uri": "http://ogury.example.com",
         "body": {
-          "id": "test-request-id",
+          "id": "every-param-in-imp.ext.bidder-is-hoisted-to-imp.ext",
           "imp": [
             {
               "id":"test-imp-id",
-              "tagid": "ad-unit-code",
+              "tagid": "test-imp-id",
               "banner": {
                 "format": [{"w": 128, "h": 100}]
               },
@@ -39,10 +36,7 @@
                 "gpid": "global position id",
                 "assetKey": "OGY",
                 "adUnitId": "123",
-                "testcampaign": "test123",
-                "prebid": {
-                  "adunitcode": "ad-unit-code"
-                }
+                "testcampaign": "test123"
               }
             }
           ]

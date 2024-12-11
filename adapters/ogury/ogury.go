@@ -19,8 +19,7 @@ type adapter struct {
 }
 
 func Builder(_ openrtb_ext.BidderName, config config.Adapter, _ config.Server) (adapters.Bidder, error) {
-	return &adapter{endpoint: config.Endpoint,}, nil
-
+	return &adapter{endpoint: config.Endpoint}, nil
 }
 
 func (a adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -51,19 +50,20 @@ func (a adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapter
 			}
 		}
 
-		impExtOut := make(map[string]any, len(impExt)-1+len(impExtBidderHoist))
+		newImpExt := make(map[string]any, len(impExt)-1+len(impExtBidderHoist))
 
-		// extract Ogury "bidder" params from imp.ext.bidder to imp.ext
+		// copy every imp.ext field to the new "ext" object except for imp.ext.bidder
 		for key, value := range impExt {
 			if key != openrtb_ext.PrebidExtBidderKey {
-				impExtOut[key] = value
+				newImpExt[key] = value
 			}
 		}
+		// extract Ogury params from imp.ext.bidder to imp.ext
 		for key, value := range impExtBidderHoist {
-			impExtOut[key] = value
+			newImpExt[key] = value
 		}
 
-		ext, err := json.Marshal(impExtOut)
+		ext, err := json.Marshal(newImpExt)
 		if err != nil {
 			return nil, append(errors, &errortypes.BadInput{
 				Message: "Error while marshaling Imp.Ext bidder exension",
@@ -72,11 +72,7 @@ func (a adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapter
 		request.Imp[i].Ext = ext
 
 		// save adUnitCode
-		if adUnitCode := getAdUnitCode(impExt); adUnitCode != "" {
-			request.Imp[i].TagID = adUnitCode
-		} else {
-			request.Imp[i].TagID = imp.ID
-		}
+		request.Imp[i].TagID = imp.ID
 	}
 
 	// currency conversion
@@ -142,21 +138,6 @@ func filterValidImps(request *openrtb2.BidRequest) (validImps []openrtb2.Imp) {
 
 	// else no valid imp
 	return nil
-}
-
-func getAdUnitCode(ext map[string]json.RawMessage) string {
-	var prebidExt openrtb_ext.ExtImpPrebid
-	v, ok := ext["prebid"]
-	if !ok {
-		return ""
-	}
-
-	err := json.Unmarshal(v, &prebidExt)
-	if err != nil {
-		return ""
-	}
-
-	return prebidExt.AdUnitCode
 }
 
 func setHeaders(request *openrtb2.BidRequest) http.Header {

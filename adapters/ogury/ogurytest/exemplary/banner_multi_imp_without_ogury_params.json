@@ -1,6 +1,6 @@
 {
   "mockBidRequest": {
-    "id": "test-request-id",
+    "id": "every-imp-without-param-dont-filter-imps",
     "site": {
       "publisher": {
         "id": "pub123"
@@ -14,9 +14,6 @@
         },
         "ext": {
           "gpid": "global position id",
-          "prebid": {
-            "adunitcode": "ad-unit-code"
-          },
           "bidder": {}
         }
       },
@@ -35,7 +32,7 @@
       "expectedRequest": {
         "uri": "http://ogury.example.com",
         "body": {
-          "id": "test-request-id",
+          "id": "every-imp-without-param-dont-filter-imps",
           "site": {
             "publisher": {
               "id": "pub123"
@@ -44,15 +41,12 @@
           "imp": [
             {
               "id":"test-imp-id",
-              "tagid": "ad-unit-code",
+              "tagid": "test-imp-id",
               "banner": {
                 "format": [{"w": 128, "h": 100}]
               },
               "ext": {
-                "gpid": "global position id",
-                "prebid": {
-                  "adunitcode": "ad-unit-code"
-                }
+                "gpid": "global position id"
               }
             },
             {
