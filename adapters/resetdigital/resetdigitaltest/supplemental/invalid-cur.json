@@ -1,0 +1,75 @@
+{
+    "mockBidRequest": {
+      "id": "test-invalid-cur",
+      "imp": [{
+        "id": "001",
+        "banner": {
+          "h": 300,
+          "w": 250
+        },
+        "ext": {
+          "bidder": {
+            "placement_id": "placement-id-1"
+          }
+        }
+      }],
+      "site": {
+        "domain": "https://test.com",
+        "page": "https://test.com/2016/06/12"
+      },
+      "device": {
+        "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36",
+        "ip": "127.0.0.1",
+        "language": "EN"
+      }
+    },
+    "httpCalls": [{
+        "expectedRequest": {
+          "method": "POST",
+          "body": {
+            "imps": [{
+              "bid_id": "test-invalid-cur",
+              "ext": {
+                "gpid": ""
+              },
+              "imp_id": "001",
+              "media_types": {
+                "banner": {
+                  "sizes": [
+                    [
+                      250,
+                      300
+                    ]
+                  ]
+                },
+                "video": {},
+                "audio": {}
+              },
+              "zone_id": {
+                "placementId": "placement-id-1"
+              }
+            }],
+            "site": {
+              "domain": "https://test.com",
+              "referrer": "https://test.com/2016/06/12"
+            }
+          },
+          "impIDs": [
+            "001"
+          ]
+        },
+        "mockResponse": {
+          "status": 400,
+          "body": {
+            "error": "Unexpected status code: 400. Run with request.debug = 1 for more info"
+          }
+        }
+      }],
+      "expectedMakeBidsErrors": [
+        {
+          "value": "Unexpected status code: 400. Run with request.debug = 1 for more info",
+          "comparison": "literal"
+        }
+      ]
+  }
+  
