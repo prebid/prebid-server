@@ -9,9 +9,10 @@ import (
 
 func Test_ParseIntoString(t *testing.T) {
 	tests := []struct {
-		name string
-		b    []byte
-		want *string
+		name    string
+		b       []byte
+		want    *string
+		wantErr bool
 	}{
 		{
 			name: "empty",
@@ -44,14 +45,17 @@ func Test_ParseIntoString(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var got *string
-			ParseIntoString(tt.b, &got)
+			err := ParseIntoString(tt.b, &got)
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
 			assert.Equal(t, tt.want, got)
 		})
 	}
 }
 
-func Test_ParseIntoStringPanic(t *testing.T) {
-	assert.Panics(t, func() {
-		ParseIntoString([]byte(`"123"`), nil)
-	})
+func Test_ParseIntoNilStringError(t *testing.T) {
+	assert.Error(t, ParseIntoString([]byte(`"123"`), nil))
 }
