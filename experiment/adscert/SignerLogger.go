@@ -2,7 +2,7 @@ package adscert
 
 import (
 	"fmt"
-	"github.com/golang/glog"
+	"github.com/prebid/prebid-server/v3/di"
 )
 
 type SignerLogger struct {
@@ -10,27 +10,27 @@ type SignerLogger struct {
 
 func (sl *SignerLogger) Debugf(format string, args ...interface{}) {
 	//there is no Debug level in glog
-	glog.Infof(format, args...)
+	di.Log.Infof(format, args...)
 }
 
 func (sl *SignerLogger) Infof(format string, args ...interface{}) {
-	glog.Infof(format, args...)
+	di.Log.Infof(format, args...)
 }
 
 func (sl *SignerLogger) Info(format string) {
-	glog.Info(format)
+	di.Log.Info(format)
 }
 
 func (sl *SignerLogger) Warningf(format string, args ...interface{}) {
-	glog.Warningf(format, args...)
+	di.Log.Warningf(format, args...)
 }
 
 func (sl *SignerLogger) Errorf(format string, args ...interface{}) {
-	glog.Errorf(format, args...)
+	di.Log.Errorf(format, args...)
 }
 
 func (sl *SignerLogger) Fatalf(format string, args ...interface{}) {
-	glog.Fatalf(format, args...)
+	di.Log.Fatalf(format, args...)
 }
 
 func (sl *SignerLogger) Panicf(format string, args ...interface{}) {
