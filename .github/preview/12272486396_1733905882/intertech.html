@@ -1,0 +1,347 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>intertech: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/prebid/prebid-server/v3/adapters/intertech/intertech.go (89.6%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package intertech
+
+import (
+        "fmt"
+        "net/http"
+        "net/url"
+        "strconv"
+        "strings"
+
+        "github.com/prebid/openrtb/v20/openrtb2"
+        "github.com/prebid/prebid-server/v3/adapters"
+        "github.com/prebid/prebid-server/v3/config"
+        "github.com/prebid/prebid-server/v3/errortypes"
+        "github.com/prebid/prebid-server/v3/openrtb_ext"
+        "github.com/prebid/prebid-server/v3/util/jsonutil"
+)
+
+const (
+        pageIDMacro = "{{page_id}}"
+        impIDMacro  = "{{imp_id}}"
+)
+
+type adapter struct {
+        endpoint string
+}
+
+type ExtImpIntertech struct {
+        PageID int `json:"page_id"`
+        ImpID  int `json:"imp_id"`
+}
+
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) <span class="cov8" title="1">{
+        bidder := &amp;adapter{
+                endpoint: config.Endpoint,
+        }
+        return bidder, nil
+}</span>
+
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) <span class="cov8" title="1">{
+        var errs []error
+        var requests []*adapters.RequestData
+
+        referer := getReferer(request)
+        cur := getCur(request)
+
+        for _, imp := range request.Imp </span><span class="cov8" title="1">{
+                extImp, err := parseAndValidateImpExt(imp)
+                if err != nil </span><span class="cov0" title="0">{
+                        errs = append(errs, err)
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">modifiedImp, err := modifyImp(imp)
+                if err != nil </span><span class="cov8" title="1">{
+                        errs = append(errs, err)
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">modifiedUrl, err := a.modifyUrl(extImp, referer, cur)
+                if err != nil </span><span class="cov0" title="0">{
+                        errs = append(errs, err)
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">modRequest := *request
+                modRequest.Imp = []openrtb2.Imp{modifiedImp}
+
+                reqData, err := buildRequestData(modRequest, modifiedUrl)
+                if err != nil </span><span class="cov0" title="0">{
+                        errs = append(errs, err)
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">requests = append(requests, reqData)</span>
+        }
+
+        <span class="cov8" title="1">return requests, errs</span>
+}
+
+func parseAndValidateImpExt(imp openrtb2.Imp) (ExtImpIntertech, error) <span class="cov8" title="1">{
+        var bidderExt adapters.ExtImpBidder
+        if err := jsonutil.Unmarshal(imp.Ext, &amp;bidderExt); err != nil </span><span class="cov0" title="0">{
+                return ExtImpIntertech{}, &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("imp #%s: unable to parse bidder ext: %s", imp.ID, err),
+                }
+        }</span>
+
+        <span class="cov8" title="1">var extImp ExtImpIntertech
+        if err := jsonutil.Unmarshal(bidderExt.Bidder, &amp;extImp); err != nil </span><span class="cov0" title="0">{
+                return ExtImpIntertech{}, &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("imp #%s: unable to parse intertech ext: %s", imp.ID, err),
+                }
+        }</span>
+
+        <span class="cov8" title="1">return extImp, nil</span>
+}
+
+func modifyImp(imp openrtb2.Imp) (openrtb2.Imp, error) <span class="cov8" title="1">{
+        if imp.Banner != nil </span><span class="cov8" title="1">{
+                banner, err := updateBanner(imp.Banner)
+                if err != nil </span><span class="cov8" title="1">{
+                        return openrtb2.Imp{}, &amp;errortypes.BadInput{
+                                Message: fmt.Sprintf("imp #%s: %s", imp.ID, err.Error()),
+                        }
+                }</span>
+                <span class="cov8" title="1">imp.Banner = banner
+                return imp, nil</span>
+        }
+        <span class="cov8" title="1">if imp.Native != nil </span><span class="cov8" title="1">{
+                return imp, nil
+        }</span>
+        <span class="cov8" title="1">return openrtb2.Imp{}, &amp;errortypes.BadInput{
+                Message: fmt.Sprintf("Intertech only supports banner and native types. Ignoring imp id=%s", imp.ID),
+        }</span>
+}
+
+func updateBanner(banner *openrtb2.Banner) (*openrtb2.Banner, error) <span class="cov8" title="1">{
+        if banner == nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("banner is null")
+        }</span>
+        <span class="cov8" title="1">bannerCopy := *banner
+        if bannerCopy.W == nil || bannerCopy.H == nil || *bannerCopy.W == 0 || *bannerCopy.H == 0 </span><span class="cov8" title="1">{
+                if len(bannerCopy.Format) &gt; 0 </span><span class="cov8" title="1">{
+                        w := bannerCopy.Format[0].W
+                        h := bannerCopy.Format[0].H
+                        bannerCopy.W = &amp;w
+                        bannerCopy.H = &amp;h
+                }</span> else<span class="cov8" title="1"> {
+                        return nil, fmt.Errorf("Invalid sizes provided for Banner")
+                }</span>
+        }
+        <span class="cov8" title="1">return &amp;bannerCopy, nil</span>
+}
+
+func (a *adapter) modifyUrl(extImp ExtImpIntertech, referer, cur string) (string, error) <span class="cov8" title="1">{
+        pageStr := strconv.Itoa(extImp.PageID)
+        impStr := strconv.Itoa(extImp.ImpID)
+
+        resolvedUrl := strings.ReplaceAll(a.endpoint, pageIDMacro, url.QueryEscape(pageStr))
+        resolvedUrl = strings.ReplaceAll(resolvedUrl, impIDMacro, url.QueryEscape(impStr))
+
+        if referer != "" </span><span class="cov8" title="1">{
+                resolvedUrl += "&amp;target-ref=" + url.QueryEscape(referer)
+        }</span>
+
+        <span class="cov8" title="1">if cur != "" </span><span class="cov8" title="1">{
+                resolvedUrl += "&amp;ssp-cur=" + cur
+        }</span>
+
+        <span class="cov8" title="1">return resolvedUrl, nil</span>
+}
+
+func buildRequestData(bidRequest openrtb2.BidRequest, uri string) (*adapters.RequestData, error) <span class="cov8" title="1">{
+        body, err := jsonutil.Marshal(bidRequest)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">headers := http.Header{}
+        headers.Add("Content-Type", "application/json")
+
+        if bidRequest.Device != nil </span><span class="cov8" title="1">{
+                if bidRequest.Device.UA != "" </span><span class="cov8" title="1">{
+                        headers.Add("User-Agent", bidRequest.Device.UA)
+                }</span>
+                <span class="cov8" title="1">if bidRequest.Device.IP != "" </span><span class="cov8" title="1">{
+                        headers.Add("X-Forwarded-For", bidRequest.Device.IP)
+                        headers.Add("X-Real-Ip", bidRequest.Device.IP)
+                }</span>
+                <span class="cov8" title="1">if bidRequest.Device.Language != "" </span><span class="cov0" title="0">{
+                        headers.Add("Accept-Language", bidRequest.Device.Language)
+                }</span>
+        }
+
+        <span class="cov8" title="1">return &amp;adapters.RequestData{
+                Method:  http.MethodPost,
+                Uri:     uri,
+                Body:    body,
+                Headers: headers,
+                ImpIDs:  openrtb_ext.GetImpIDs(bidRequest.Imp),
+        }, nil</span>
+}
+
+func getReferer(request *openrtb2.BidRequest) string <span class="cov8" title="1">{
+        if request.Site != nil </span><span class="cov8" title="1">{
+                return request.Site.Page
+        }</span>
+        <span class="cov8" title="1">return ""</span>
+}
+
+func getCur(request *openrtb2.BidRequest) string <span class="cov8" title="1">{
+        if len(request.Cur) &gt; 0 </span><span class="cov8" title="1">{
+                return request.Cur[0]
+        }</span>
+        <span class="cov8" title="1">return ""</span>
+}
+
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) <span class="cov8" title="1">{
+        if adapters.IsResponseStatusCodeNoContent(responseData) </span><span class="cov8" title="1">{
+                return nil, nil
+        }</span>
+
+        <span class="cov8" title="1">if err := adapters.CheckResponseStatusCodeForErrors(responseData); err != nil </span><span class="cov8" title="1">{
+                return nil, []error{err}
+        }</span>
+
+        <span class="cov8" title="1">var response openrtb2.BidResponse
+        if err := jsonutil.Unmarshal(responseData.Body, &amp;response); err != nil </span><span class="cov8" title="1">{
+                return nil, []error{err}
+        }</span>
+
+        <span class="cov8" title="1">bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
+        if len(response.Cur) != 0 </span><span class="cov8" title="1">{
+                bidResponse.Currency = response.Cur
+        }</span>
+
+        <span class="cov8" title="1">for _, seatBid := range response.SeatBid </span><span class="cov8" title="1">{
+                for i := range seatBid.Bid </span><span class="cov8" title="1">{
+                        bid := seatBid.Bid[i]
+                        bidType, err := getBidType(bid)
+                        if err != nil </span><span class="cov8" title="1">{
+                                return nil, []error{err}
+                        }</span>
+
+                        <span class="cov8" title="1">b := &amp;adapters.TypedBid{
+                                Bid:     &amp;seatBid.Bid[i],
+                                BidType: bidType,
+                        }
+                        bidResponse.Bids = append(bidResponse.Bids, b)</span>
+                }
+        }
+        <span class="cov8" title="1">return bidResponse, nil</span>
+}
+
+func getBidType(bid openrtb2.Bid) (openrtb_ext.BidType, error) <span class="cov8" title="1">{
+        switch bid.MType </span>{
+        case openrtb2.MarkupBanner:<span class="cov8" title="1">
+                return openrtb_ext.BidTypeBanner, nil</span>
+        case openrtb2.MarkupNative:<span class="cov8" title="1">
+                return openrtb_ext.BidTypeNative, nil</span>
+        }
+
+        <span class="cov8" title="1">return "", fmt.Errorf("could not define media type for impression: %s", bid.ImpID)</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
