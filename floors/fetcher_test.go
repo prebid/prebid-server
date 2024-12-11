@@ -398,7 +398,7 @@ func TestValidatePriceFloorRules(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Invalid FetchRate",
+			name: "Invalid UseFetchDataRate",
 			args: args{
 				configs: config.AccountFloorFetch{
 					Enabled:       true,
@@ -417,7 +417,7 @@ func TestValidatePriceFloorRules(t *testing.T) {
 								"*|*|www.website.com": 15.01,
 							},
 						}},
-						FetchRate: ptrutil.ToPtr(-11),
+						UseFetchDataRate: ptrutil.ToPtr(-11),
 					},
 				},
 			},

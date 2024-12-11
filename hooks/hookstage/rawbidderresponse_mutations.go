@@ -29,11 +29,12 @@ type ChangeSetBids[T any] struct {
 	changeSetRawBidderResponse ChangeSetRawBidderResponse[T]
 }
 
-func (c ChangeSetBids[T]) Update(bids []*adapters.TypedBid) {
+// UpdateBids updates the list of bids present in bidder-response using mutations.
+func (c ChangeSetBids[T]) UpdateBids(bids []*adapters.TypedBid) {
 	c.changeSetRawBidderResponse.changeSet.AddMutation(func(p T) (T, error) {
 		bidderPayload, err := c.changeSetRawBidderResponse.castPayload(p)
 		if err == nil {
-			bidderPayload.Bids = bids
+			bidderPayload.BidderResponse.Bids = bids
 		}
 		if payload, ok := any(bidderPayload).(T); ok {
 			return payload, nil
