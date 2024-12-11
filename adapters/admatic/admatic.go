@@ -35,6 +35,22 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	var requests []*adapters.RequestData
 	var errs []error
 
+	headers := http.Header{}
+	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
+	if request.Device != nil {
+		if len(request.Device.UA) > 0 {
+			headers.Add("User-Agent", request.Device.UA)
+		}
+
+		if len(request.Device.IPv6) > 0 {
+			headers.Add("X-Forwarded-For", request.Device.IPv6)
+		}
+
+		if len(request.Device.IP) > 0 {
+			headers.Add("X-Forwarded-For", request.Device.IP)
+		}
+	}
 	requestCopy := *request
 	for _, imp := range request.Imp {
 		requestCopy.Imp = []openrtb2.Imp{imp}
@@ -52,10 +68,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		}
 
 		request := &adapters.RequestData{
-			Method: http.MethodPost,
-			Body:   requestJSON,
-			Uri:    endpoint,
-			ImpIDs: openrtb_ext.GetImpIDs(requestCopy.Imp),
+			Method:  http.MethodPost,
+			Body:    requestJSON,
+			Uri:     endpoint,
+			Headers: headers,
+			ImpIDs:  openrtb_ext.GetImpIDs(requestCopy.Imp),
 		}
 
 		requests = append(requests, request)
