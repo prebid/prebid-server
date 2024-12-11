@@ -1254,6 +1254,7 @@ func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.Bid
 		&adscert.NilSigner{},
 		macros.NewStringIndexBasedReplacer(),
 		nil,
+		&exchange.NilGeoLocationResolver{},
 	)
 
 	testExchange = &exchangeTestWrapper{
