@@ -1011,7 +1011,7 @@ func TestOpenRTBResponseSettingOfNetworkId(t *testing.T) {
 
 		var givenBidExt json.RawMessage
 		if scenario.bidExt != nil {
-			marshalledExt, _ := json.Marshal(scenario.bidExt)
+			marshalledExt, _ := json.Marshal(&openrtb_ext.ExtBid{Prebid: scenario.bidExt})
 			givenBidExt = marshalledExt
 		} else {
 			givenBidExt = nil
@@ -1039,6 +1039,46 @@ func TestOpenRTBResponseSettingOfNetworkId(t *testing.T) {
 			assert.Equal(t, bidResponse.Bids[0].Bid.Ext, givenBidExt)
 		}
 	}
+}
+
+func TestOpenRTBResponseBidExtPrebidMetaPassthrough(t *testing.T) {
+	request := &openrtb2.BidRequest{
+		Imp: []openrtb2.Imp{{
+			ID:     "test-imp-id",
+			Banner: &openrtb2.Banner{},
+		}},
+	}
+
+	requestJson, _ := json.Marshal(request)
+	reqData := &adapters.RequestData{
+		Method:  "POST",
+		Uri:     "test-uri",
+		Body:    requestJson,
+		Headers: nil,
+	}
+
+	bidExt := &openrtb_ext.ExtBid{Prebid: &openrtb_ext.ExtBidPrebid{Meta: &openrtb_ext.ExtBidPrebidMeta{AdapterCode: "1", MediaType: "banner"}}}
+	givenBidExt, _ := json.Marshal(bidExt)
+
+	givenBidResponse := rubiconBidResponse{
+		SeatBid: []rubiconSeatBid{{
+			Bid: []rubiconBid{{
+				Bid: openrtb2.Bid{Price: 123.2, ImpID: "test-imp-id", Ext: givenBidExt}}}}},
+	}
+	body, _ := json.Marshal(&givenBidResponse)
+	httpResp := &adapters.ResponseData{
+		StatusCode: http.StatusOK,
+		Body:       body,
+	}
+
+	bidder := new(RubiconAdapter)
+	bidResponse, errs := bidder.MakeBids(request, reqData, httpResp)
+	assert.Empty(t, errs)
+
+	var actualBidExt openrtb_ext.ExtBid
+	err := json.Unmarshal(bidResponse.Bids[0].Bid.Ext, &actualBidExt)
+	assert.NoError(t, err)
+	assert.Equal(t, bidExt.Prebid.Meta, actualBidExt.Prebid.Meta)
 }
 
 func TestOpenRTBResponseOverridePriceFromCorrespondingImp(t *testing.T) {
