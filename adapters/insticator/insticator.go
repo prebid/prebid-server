@@ -96,11 +96,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		}
 
 		// Populate publisher.id from imp extension
-		if !isPublisherIdPopulated && (requestCopy.Site != nil || requestCopy.App != nil) {
-			if err := populatePublisherId(publisherId, &requestCopy); err != nil {
-				errs = append(errs, err)
-				continue
-			}
+		if !isPublisherIdPopulated {
+			populatePublisherId(publisherId, &requestCopy)
 			isPublisherIdPopulated = true
 		}
 
@@ -148,11 +145,11 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest, impList []openrtb2.I
 		}
 
 		if len(request.Device.IPv6) > 0 {
-			headers.Add("X-Forwarded-For", request.Device.IPv6)
+			headers.Set("X-Forwarded-For", request.Device.IPv6)
 		}
 
 		if len(request.Device.IP) > 0 {
-			headers.Add("X-Forwarded-For", request.Device.IP)
+			headers.Set("X-Forwarded-For", request.Device.IP)
 			headers.Add("IP", request.Device.IP)
 		}
 	}
@@ -274,7 +271,7 @@ func resolveBidFloor(bidFloor float64, bidFloorCur string, reqInfo *adapters.Ext
 }
 
 func validateVideoParams(video *openrtb2.Video) error {
-	if (video.W == nil || *video.W == 0) || (video.H == nil || *video.H == 0) || video.MIMEs == nil {
+	if video.W == nil || *video.W == 0 || video.H == nil || *video.H == 0 || video.MIMEs == nil {
 		return &errortypes.BadInput{
 			Message: "One or more invalid or missing video field(s) w, h, mimes",
 		}
@@ -284,7 +281,7 @@ func validateVideoParams(video *openrtb2.Video) error {
 }
 
 // populatePublisherId function populates site.publisher.id or app.publisher.id
-func populatePublisherId(publisherId string, request *openrtb2.BidRequest) error {
+func populatePublisherId(publisherId string, request *openrtb2.BidRequest) {
 
 	// Populate site.publisher.id if request.Site is not nil
 	if request.Site != nil {
@@ -319,6 +316,4 @@ func populatePublisherId(publisherId string, request *openrtb2.BidRequest) error
 
 		request.App.Publisher.ID = publisherId
 	}
-
-	return nil
 }
