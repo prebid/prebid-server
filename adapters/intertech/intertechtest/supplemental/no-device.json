@@ -1,11 +1,6 @@
 {
   "mockBidRequest": {
-    "id": "test-request-id",
-    "device": {
-      "ip": "123.123.123.123",
-      "ua": "Mozilla/5.0 (iPad; CPU OS 10_3 like Mac OS X)",
-      "language": "en-US"
-    },
+    "id": "test-request-no-device",
     "site": {
       "page": "mypage"
     },
@@ -33,14 +28,10 @@
         "uri": "https://test.intertech.com/ssp?pid=1001&imp=2002&target-ref=mypage&ssp-cur=USD",
         "headers": {
           "Content-Type": ["application/json;charset=utf-8"],
-          "Accept": ["application/json"],
-          "Accept-Language": ["en-US"],
-          "User-Agent": ["Mozilla/5.0 (iPad; CPU OS 10_3 like Mac OS X)"],
-          "X-Forwarded-For": ["123.123.123.123"],
-          "X-Real-Ip": ["123.123.123.123"]
+          "Accept": ["application/json"]
         },
         "body": {
-          "id": "test-request-id",
+          "id": "test-request-no-device",
           "imp": [
             {
               "id": "test-imp-id",
@@ -60,11 +51,6 @@
           "site": {
             "page": "mypage"
           },
-          "device": {
-            "ip": "123.123.123.123",
-            "ua": "Mozilla/5.0 (iPad; CPU OS 10_3 like Mac OS X)",
-            "language": "en-US"
-          },
           "cur": ["USD"]
         },
         "impIDs": ["test-imp-id"]
@@ -72,7 +58,7 @@
       "mockResponse": {
         "status": 200,
         "body": {
-          "id": "test-request-id",
+          "id": "test-request-no-device",
           "cur": "USD",
           "seatbid": [
             {

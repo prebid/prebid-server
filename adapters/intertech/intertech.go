@@ -56,11 +56,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			continue
 		}
 
-		modifiedUrl, err := a.modifyUrl(extImp, referer, cur)
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
+		modifiedUrl := a.modifyUrl(extImp, referer, cur)
 
 		modRequest := *request
 		modRequest.Imp = []openrtb2.Imp{modifiedImp}
@@ -104,20 +100,11 @@ func modifyImp(imp openrtb2.Imp) (openrtb2.Imp, error) {
 			}
 		}
 		imp.Banner = banner
-		return imp, nil
 	}
-	if imp.Native != nil {
-		return imp, nil
-	}
-	return openrtb2.Imp{}, &errortypes.BadInput{
-		Message: fmt.Sprintf("Intertech only supports banner and native types. Ignoring imp id=%s", imp.ID),
-	}
+	return imp, nil
 }
 
 func updateBanner(banner *openrtb2.Banner) (*openrtb2.Banner, error) {
-	if banner == nil {
-		return nil, fmt.Errorf("banner is null")
-	}
 	bannerCopy := *banner
 	if bannerCopy.W == nil || bannerCopy.H == nil || *bannerCopy.W == 0 || *bannerCopy.H == 0 {
 		if len(bannerCopy.Format) > 0 {
@@ -132,7 +119,7 @@ func updateBanner(banner *openrtb2.Banner) (*openrtb2.Banner, error) {
 	return &bannerCopy, nil
 }
 
-func (a *adapter) modifyUrl(extImp ExtImpIntertech, referer, cur string) (string, error) {
+func (a *adapter) modifyUrl(extImp ExtImpIntertech, referer, cur string) string {
 	pageStr := strconv.Itoa(extImp.PageID)
 	impStr := strconv.Itoa(extImp.ImpID)
 
@@ -147,7 +134,7 @@ func (a *adapter) modifyUrl(extImp ExtImpIntertech, referer, cur string) (string
 		resolvedUrl += "&ssp-cur=" + cur
 	}
 
-	return resolvedUrl, nil
+	return resolvedUrl
 }
 
 func buildRequestData(bidRequest openrtb2.BidRequest, uri string) (*adapters.RequestData, error) {
@@ -157,7 +144,8 @@ func buildRequestData(bidRequest openrtb2.BidRequest, uri string) (*adapters.Req
 	}
 
 	headers := http.Header{}
-	headers.Add("Content-Type", "application/json")
+	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
 
 	if bidRequest.Device != nil {
 		if bidRequest.Device.UA != "" {
@@ -171,7 +159,6 @@ func buildRequestData(bidRequest openrtb2.BidRequest, uri string) (*adapters.Req
 			headers.Add("Accept-Language", bidRequest.Device.Language)
 		}
 	}
-
 	return &adapters.RequestData{
 		Method:  http.MethodPost,
 		Uri:     uri,
