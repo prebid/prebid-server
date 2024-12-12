@@ -1,4 +1,4 @@
-module github.com/automatad/prebid-server/v3
+module github.com/prebid/prebid-server/v3
 
 go 1.21
 
@@ -30,7 +30,6 @@ require (
 	github.com/prebid/go-gpp v0.2.0
 	github.com/prebid/openrtb/v20 v20.1.0
 	github.com/prebid/prebid-server/v2 v2.32.0
-	github.com/prebid/prebid-server/v3 v3.2.0
 	github.com/prometheus/client_golang v1.12.1
 	github.com/prometheus/client_model v0.2.0
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475

@@ -12,9 +12,9 @@ import (
 	"github.com/benbjohnson/clock"
 	"github.com/golang/glog"
 
-	"github.com/automatad/prebid-server/v3/analytics"
-	"github.com/automatad/prebid-server/v3/analytics/mile/eventchannel"
-	"github.com/automatad/prebid-server/v3/analytics/mile/helpers"
+	"github.com/prebid/prebid-server/v3/analytics"
+	"github.com/prebid/prebid-server/v3/analytics/mile/eventchannel"
+	"github.com/prebid/prebid-server/v3/analytics/mile/helpers"
 )
 
 type Configuration struct {
@@ -276,4 +276,8 @@ func (m *MileModule) closeAllEventChannels() {
 		ch.Close()
 		delete(m.eventChannels, key)
 	}
+}
+
+func (p *MileModule) Shutdown() {
+	glog.Info("[MileModule] Shutdown")
 }

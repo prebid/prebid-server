@@ -412,8 +412,6 @@ github.com/prebid/openrtb/v20 v20.1.0 h1:Rb+Z3H3UxiqqnjgJK3R9Wt73ibrh7HPzG7ikBck
 github.com/prebid/openrtb/v20 v20.1.0/go.mod h1:hLBrA/APkSrxs5MaW639l+y/EAHivDfRagO2TX/wbSc=
 github.com/prebid/prebid-server/v2 v2.32.0 h1:E+zX1CGtWjkUTPQzMKHMEsn26yGDnZI6znG1rgxosQo=
 github.com/prebid/prebid-server/v2 v2.32.0/go.mod h1:wyuZeJWIWtt+D5YWN/CL+t9IklM/Gof5YBs+Urt1tHM=
-github.com/prebid/prebid-server/v3 v3.2.0 h1:yOKJRH3g3qHe5NX3XnLHS3xV8IA1TPKP7uG7b/1gePw=
-github.com/prebid/prebid-server/v3 v3.2.0/go.mod h1:oI+Gr09AQbG7GUauwJAbqLGcUQY/tW8GTIHVGxOuxUE=
 github.com/prometheus/client_golang v0.9.1/go.mod h1:7SWBe2y4D6OKWSNQJUaRYU/AaXPKyh/dDVn+NZz0KFw=
 github.com/prometheus/client_golang v1.0.0/go.mod h1:db9x61etRT2tGnBNRi70OPL5FsnadC4Ky3P0J6CfImo=
 github.com/prometheus/client_golang v1.4.0/go.mod h1:e9GMxYsXl05ICDXkRhurwBS4Q3OK1iX/F2sw+iXX5zU=

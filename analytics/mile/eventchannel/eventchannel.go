@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/automatad/prebid-server/v3/analytics/mile/helpers"
 	"github.com/benbjohnson/clock"
+	"github.com/prebid/prebid-server/v3/analytics/mile/helpers"
 )
 
 type Metrics struct {

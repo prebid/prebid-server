@@ -3,7 +3,7 @@ package helpers
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/v2/analytics"
+	"github.com/prebid/prebid-server/v3/analytics"
 )
 
 func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]MileAnalyticsEvent, error) {
