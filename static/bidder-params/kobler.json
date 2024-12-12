@@ -4,5 +4,10 @@
   "description": "A schema which validates params accepted by the Kobler adapter",
   "type": "object",
 
-  "properties": {}
+  "properties": {
+    "test": {
+      "type": "boolean",
+      "description": "Whether the request is for testing only. When multiple ad units are submitted together, it is enough to set this parameter on the first one."
+    }
+  }
 }

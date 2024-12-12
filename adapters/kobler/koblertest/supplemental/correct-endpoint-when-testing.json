@@ -1,7 +1,6 @@
 {
   "mockBidRequest": {
     "id": "test-request-id",
-    "test": 1,
     "device": {
       "devicetype": 2
     },
@@ -23,6 +22,11 @@
               "h": 100
             }
           ]
+        },
+        "ext": {
+          "bidder": {
+            "test": true
+          }
         }
       }
     ]
@@ -33,7 +37,6 @@
         "uri": "https://bid-service.dev.essrtb.com/bid/prebid_server_rtb_call",
         "body": {
           "id": "test-request-id",
-          "test": 1,
           "device": {
             "devicetype": 2
           },
@@ -55,6 +58,11 @@
                     "h": 100
                   }
                 ]
+              },
+              "ext": {
+                "bidder": {
+                  "test": true
+                }
               }
             }
           ],

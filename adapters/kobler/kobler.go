@@ -37,6 +37,8 @@ func (a adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.Ex
 	var requestData []*adapters.RequestData
 	var errors []error
 
+	testMode := false
+
 	if !sliceutil.Contains(request.Cur, supportedCurrency) {
 		request.Cur = append(request.Cur, supportedCurrency)
 	}
@@ -46,6 +48,29 @@ func (a adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.Ex
 			errors = append(errors, err)
 			return nil, errors
 		}
+
+		// Check the first Imp for test mode, which decides the endpoint.
+		if i == 0 && request.Imp[i].Ext != nil {
+			var bidderExt adapters.ExtImpBidder
+			if err := jsonutil.Unmarshal(request.Imp[i].Ext, &bidderExt); err != nil {
+				errors = append(errors, &errortypes.BadInput{
+					Message: "Error parsing bidderExt object",
+				})
+				continue
+			}
+
+			var impExt openrtb_ext.ExtImpKobler
+			if err := jsonutil.Unmarshal(bidderExt.Bidder, &impExt); err != nil {
+				errors = append(errors, &errortypes.BadInput{
+					Message: "Error parsing impExt object",
+				})
+				continue
+			}
+
+			if impExt.Test != nil {
+				testMode = *impExt.Test
+			}
+		}
 	}
 
 	requestJSON, err := jsonutil.Marshal(request)
@@ -54,12 +79,19 @@ func (a adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.Ex
 		return nil, errors
 	}
 
+	// Use a separate endpoint for testing purposes in the DEV environment.
+	// Required due to Kobler's internal test campaign setup.
+	endpoint := a.endpoint
+	if testMode {
+		endpoint = a.devEndpoint
+	}
+
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 
 	requestData = append(requestData, &adapters.RequestData{
 		Method:  "POST",
-		Uri:     a.getEndpoint(request),
+		Uri:     endpoint,
 		Body:    requestJSON,
 		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 		Headers: headers,
@@ -97,16 +129,6 @@ func (a adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.Re
 	}
 
 	return bidResponse, nil
-}
-
-// Use a separate endpoint for testing purposes in the DEV environment.
-// Required due to Kobler's internal test campaign setup.
-func (a adapter) getEndpoint(request *openrtb2.BidRequest) string {
-	if request.Test == 1 {
-		return a.devEndpoint
-	}
-
-	return a.endpoint
 }
 
 func getMediaTypeForBid(bid openrtb2.Bid) openrtb_ext.BidType {
