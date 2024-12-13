@@ -268,12 +268,6 @@
                     "page": [
                       "somePage"
                     ],
-                    "ref": [
-                      "someRef"
-                    ],
-                    "search": [
-                      "someSearch"
-                    ],
                     "dfp_ad_unit_code": "someAdSlot",
                     "pbs_login": "xuser",
                     "pbs_url": "http://hosturl.com",

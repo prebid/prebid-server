@@ -226,10 +226,6 @@
               "ext": {
                 "rp": {
                   "target": {
-                    "pagecat": [
-                      "val1",
-                      "val2"
-                    ],
                     "pbs_login": "xuser",
                     "pbs_url": "http://hosturl.com",
                     "pbs_version": ""
