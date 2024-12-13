@@ -51,6 +51,10 @@ type MileAnalyticsEvent struct {
 
 	ConfiguredBidders []string `json:"configuredBidders"`
 
+	RequestedBidders []string `json:"requestedBidders"`
+
+	RemovedBidders []string `json:"removedBidders"`
+
 	IABCategories map[string]map[string]string `json:"IABCategories"`
 
 	SizePrice map[string]map[string]float64 `json:"sizePrice"`
@@ -113,7 +117,7 @@ type MileAnalyticsEvent struct {
 
 	Timestamp int64 `json:"timestamp"`
 
-	ServerTimestamp int64 `json:"serverTimestamp"`
+	//ServerTimestamp int64 `json:"serverTimestamp"`
 
 	InsertedAt int64 `json:"insertedAt"`
 
@@ -176,6 +180,16 @@ type MileAnalyticsEvent struct {
 	UserIDVendors string `json:"userIDVendors"`
 
 	MetaData map[string][]string `json:"metaData"`
+
+	BiddersFloorMeta map[string]map[string]string `json:"biddersFloorMeta"`
+
+	RevenueSource string `json:"revenueSource"`
+
+	GamMatchedLineItemID int64 `json:"gamMatchedLineItemID"`
+
+	GamYieldGroupIDs []int64 `json:"gamYieldGroupIDs"`
+
+	IsNewSession bool `json:"isNewSession"`
 }
 
 type ImpressionsExt struct {

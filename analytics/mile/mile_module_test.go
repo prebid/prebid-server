@@ -3,8 +3,8 @@ package mile
 import (
 	"fmt"
 	"github.com/benbjohnson/clock"
-	"github.com/prebid/prebid-server/v2/analytics"
-	"github.com/prebid/prebid-server/v2/analytics/clients"
+	"github.com/prebid/prebid-server/v3/analytics"
+	"github.com/prebid/prebid-server/v3/analytics/clients"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"

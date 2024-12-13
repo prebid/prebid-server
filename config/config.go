@@ -509,9 +509,12 @@ type Pubstack struct {
 }
 
 type Mile struct {
-	Enabled  bool   `mapstructure:"enabled"`
-	Scope    string `mapstructure:"scopeid"`
-	Endpoint string `mapstructure:"endpoint"`
+	Enabled       bool   `mapstructure:"enabled"`
+	Scope         string `mapstructure:"scopeid"`
+	Endpoint      string `mapstructure:"endpoint"`
+	MaxByteSize   string `mapstructure:"maxbytesize"`
+	MaxEventCount int    `mapstructure:"maxeventcount"`
+	MaxTime       string `mapstructure:"maxtime"`
 }
 
 type PubstackBuffer struct {

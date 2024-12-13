@@ -70,9 +70,9 @@ func New(analytics *config.Analytics) analytics.Runner {
 			analytics.Mile.Scope,
 			analytics.Mile.Endpoint,
 			mileConfig,
-			1,
-			"100",
-			"5s",
+			analytics.Mile.MaxEventCount,
+			analytics.Mile.MaxByteSize,
+			analytics.Mile.MaxTime,
 			clock.New(),
 		)
 		fmt.Println(mileModule)
