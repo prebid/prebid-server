@@ -19,7 +19,7 @@ import (
 	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
 	"github.com/prebid/prebid-server/v3/ortb"
 	"github.com/prebid/prebid-server/v3/util/uuidutil"
-	jsonpatch "gopkg.in/evanphx/json-patch.v4"
+	jsonpatch "gopkg.in/evanphx/json-patch.v5"
 
 	accountService "github.com/prebid/prebid-server/v3/account"
 	"github.com/prebid/prebid-server/v3/amp"

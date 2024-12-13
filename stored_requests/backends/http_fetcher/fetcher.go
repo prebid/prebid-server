@@ -11,7 +11,7 @@ import (
 
 	"github.com/prebid/prebid-server/v3/stored_requests"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
-	jsonpatch "gopkg.in/evanphx/json-patch.v4"
+	jsonpatch "gopkg.in/evanphx/json-patch.v5"
 
 	"github.com/golang/glog"
 	"golang.org/x/net/context/ctxhttp"

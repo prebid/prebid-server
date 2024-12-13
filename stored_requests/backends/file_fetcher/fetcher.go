@@ -10,7 +10,7 @@ import (
 
 	"github.com/prebid/prebid-server/v3/stored_requests"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
-	jsonpatch "gopkg.in/evanphx/json-patch.v4"
+	jsonpatch "gopkg.in/evanphx/json-patch.v5"
 )
 
 // NewFileFetcher _immediately_ loads stored request data from local files.
