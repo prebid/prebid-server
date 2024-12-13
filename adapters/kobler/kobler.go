@@ -3,6 +3,7 @@ package kobler
 import (
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -11,7 +12,6 @@ import (
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
-	"github.com/prebid/prebid-server/v3/util/sliceutil"
 )
 
 type adapter struct {
@@ -39,7 +39,7 @@ func (a adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.Ex
 
 	testMode := false
 
-	if !sliceutil.Contains(request.Cur, supportedCurrency) {
+	if !slices.Contains(request.Cur, supportedCurrency) {
 		request.Cur = append(request.Cur, supportedCurrency)
 	}
 
