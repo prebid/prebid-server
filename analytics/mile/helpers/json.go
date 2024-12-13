@@ -44,8 +44,9 @@ func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]MileAnal
 
 				logEntry := MileAnalyticsEvent{
 					//SessionID: ao.RequestWrapper
-					Ip:        ao.RequestWrapper.Device.IP,
-					Timestamp: time.Now().Unix(),
+					Ip:              ao.RequestWrapper.Device.IP,
+					Timestamp:       time.Now().Unix(),
+					ServerTimestamp: -1,
 					//ClientVersion: ao.RequestWrapper.Ext.
 					Ua:                ao.RequestWrapper.Device.UA,
 					ArbitraryData:     "",
@@ -67,7 +68,7 @@ func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]MileAnal
 					MetaData:          map[string][]string{"prebid_server": []string{"1"}},
 					//Viewability: ao.RequestWrapper.
 					//WinningSize: ao.Response.SeatBi
-
+					IsPBS: true,
 				}
 
 				events = append(events, logEntry)

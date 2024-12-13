@@ -117,7 +117,7 @@ type MileAnalyticsEvent struct {
 
 	Timestamp int64 `json:"timestamp"`
 
-	//ServerTimestamp int64 `json:"serverTimestamp"`
+	ServerTimestamp int64 `json:"serverTimestamp"`
 
 	InsertedAt int64 `json:"insertedAt"`
 
@@ -190,6 +190,8 @@ type MileAnalyticsEvent struct {
 	GamYieldGroupIDs []int64 `json:"gamYieldGroupIDs"`
 
 	IsNewSession bool `json:"isNewSession"`
+
+	IsPBS bool `json:"isPBS"`
 }
 
 type ImpressionsExt struct {
