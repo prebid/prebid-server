@@ -5,6 +5,9 @@ endpointCompression: gzip
 gvlVendorID: 1081
 modifyingVastXmlAllowed: false
 capabilities:
+  app:
+    mediaTypes:
+      - banner
   site:
     mediaTypes:
       - banner
