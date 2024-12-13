@@ -88,6 +88,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderColossus,
 	BidderCompass,
 	BidderConcert,
+	BidderConnatix,
 	BidderConnectAd,
 	BidderConsumable,
 	BidderConversant,
@@ -126,6 +127,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderImprovedigital,
 	BidderInfyTV,
 	BidderInMobi,
+	BidderInsticator,
 	BidderInteractiveoffers,
 	BidderInvibes,
 	BidderIQX,
@@ -426,6 +428,7 @@ const (
 	BidderColossus          BidderName = "colossus"
 	BidderCompass           BidderName = "compass"
 	BidderConcert           BidderName = "concert"
+	BidderConnatix          BidderName = "connatix"
 	BidderConnectAd         BidderName = "connectad"
 	BidderConsumable        BidderName = "consumable"
 	BidderConversant        BidderName = "conversant"
@@ -464,6 +467,7 @@ const (
 	BidderImprovedigital    BidderName = "improvedigital"
 	BidderInfyTV            BidderName = "infytv"
 	BidderInMobi            BidderName = "inmobi"
+	BidderInsticator        BidderName = "insticator"
 	BidderInteractiveoffers BidderName = "interactiveoffers"
 	BidderInvibes           BidderName = "invibes"
 	BidderIQX               BidderName = "iqx"
