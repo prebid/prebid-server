@@ -1,5 +1,5 @@
 package openrtb_ext
 
 type ExtImpKobler struct {
-	Test *bool `json:"test"`
+	Test bool `json:"test"`
 }

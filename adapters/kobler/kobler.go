@@ -67,9 +67,7 @@ func (a adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.Ex
 				continue
 			}
 
-			if impExt.Test != nil {
-				testMode = *impExt.Test
-			}
+			testMode = impExt.Test
 		}
 	}
 
