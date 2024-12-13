@@ -2,10 +2,10 @@ package opentelemetry
 
 import (
 	"context"
-	"log/slog"
 	"strings"
 	"time"
 
+	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/metrics"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
@@ -401,7 +401,7 @@ func (o *PbsMetricsEngine) RecordStoredDataFetchTime(labels metrics.StoredDataLa
 	case metrics.ResponseDataType:
 		histogramPtr = &o.StoredResponsesFetchTime
 	default:
-		slog.DebugContext(ctx, "unknown data type", "dataType", labels.DataType)
+		glog.Error("unknown data type: %v", labels.DataType)
 		return
 	}
 	// Record the chosen histogram
@@ -427,7 +427,7 @@ func (o *PbsMetricsEngine) RecordStoredDataError(labels metrics.StoredDataLabels
 	case metrics.ResponseDataType:
 		counterPtr = &o.StoredResponsesErrors
 	default:
-		slog.DebugContext(ctx, "unknown data type", "dataType", labels.DataType)
+		glog.Error(ctx, "unknown data type: %v", labels.DataType)
 		return
 	}
 	// Record the chosen histogram

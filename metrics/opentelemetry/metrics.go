@@ -3,12 +3,12 @@ package opentelemetry
 import (
 	"errors"
 	"fmt"
-	"log/slog"
 	"reflect"
 	"strconv"
 	"strings"
 
 	"github.com/gobeam/stringy"
+	"github.com/golang/glog"
 	"go.opentelemetry.io/otel/metric"
 )
 
@@ -85,7 +85,7 @@ func HistogramOptions(elem Elem) []metric.HistogramOption {
 		var err error
 		for i, s := range floatStrings {
 			if floats[i], err = strconv.ParseFloat(s, 64); err != nil {
-				slog.Error("failed to parse bucket boundary", "boundary", s, "err", err.Error())
+				glog.Error("failed to parse bucket boundary: %s: %v", s, err)
 				return nil
 			}
 		}
@@ -113,7 +113,7 @@ func InitMetrics(meter metric.Meter, m any, prefix string) error {
 // possibly with altered Name or Tags.
 func InitMetricElem(meter metric.Meter, elem Elem, prefix string) error {
 	if elem.Tag.Get("metric") == "-" {
-		slog.Debug("skipping metric", "name", elem.Name)
+		glog.Info("skipping metric: %s", elem.Name)
 		return nil
 	}
 	var opts []metric.InstrumentOption
@@ -142,7 +142,7 @@ func InitMetricElem(meter metric.Meter, elem Elem, prefix string) error {
 	case "metric.Float64Histogram":
 		m, err = CreateHistogramMetric(metricName, meter.Float64Histogram, HistogramOptions(elem), opts...)
 	default:
-		slog.Warn("unknown metric type; skipping", "type", elem.Value.Type().String())
+		glog.Error("unknown metric type; skipping: %s", elem.Value.Type().String())
 		return nil
 	}
 	if err != nil {

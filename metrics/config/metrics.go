@@ -1,9 +1,9 @@
 package config
 
 import (
-	"log/slog"
 	"time"
 
+	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/metrics"
 	"github.com/prebid/prebid-server/v3/metrics/opentelemetry"
@@ -48,7 +48,7 @@ func NewMetricsEngine(cfg *config.Configuration, adapterList []openrtb_ext.Bidde
 	if cfg.Metrics.Otel.Enabled {
 		otelEngine, err := opentelemetry.NewEngine(cfg.Metrics.Otel.Prefix, &cfg.Metrics.Disabled)
 		if err != nil {
-			slog.Error("error creating otel engine", "err", err.Error())
+			glog.Error("error creating otel engine: %v", err)
 		}
 		engineList = append(engineList, otelEngine)
 	}
