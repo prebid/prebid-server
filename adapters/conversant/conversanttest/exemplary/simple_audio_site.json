@@ -1,0 +1,110 @@
+{
+  "mockBidRequest": {
+    "id": "testaudio",
+    "site": {
+      "domain": "www.mypage.com"
+    },
+    "imp": [
+      {
+        "id": "1",
+        "audio": {
+          "mimes": [ "audio/vnd.wav", "audio/mpeg", "audio/mp4" ],
+          "protocols": [3,6,7,8]
+        },
+        "ext": {
+          "bidder": {
+            "site_id": "108060",
+            "bidfloor": 0.01,
+            "tag_id": "mytag",
+            "secure": 1
+          }
+        }
+      }
+    ],
+    "device": {
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.91 Safari/537.36",
+      "ip": "192.168.1.1",
+      "dnt": 1
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "",
+        "body": {
+          "id": "testaudio",
+          "site": {
+            "id": "108060",
+            "domain": "www.mypage.com"
+          },
+          "imp": [
+            {
+              "id": "1",
+              "tagid": "mytag",
+              "secure": 1,
+              "bidfloor": 0.01,
+              "displaymanager": "prebid-s2s",
+              "displaymanagerver": "2.0.0",
+              "audio": {
+                "mimes": [ "audio/vnd.wav", "audio/mpeg", "audio/mp4" ],
+                "protocols": [3,6,7,8]
+              },
+              "ext": {
+                "bidder": {
+                  "site_id": "108060",
+                  "bidfloor": 0.01,
+                  "tag_id": "mytag",
+                  "secure": 1
+                }
+              }
+            }
+          ],
+          "device": {
+            "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.91 Safari/537.36",
+            "ip": "192.168.1.1",
+            "dnt": 1
+          }
+        },
+        "impIDs":["1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "testaudio",
+          "bidid": "c8d95f4b-bcbb-4a6c-adbb-4c7f33af3c24",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "1",
+                  "impid": "1",
+                  "price": 0.0340,
+                  "nurl": "https:\/\/event.ad.cpe.dotomi.com\/cvx\/event\/imp?enc=eyJ1c2VyaWQiOiI3MTI3MDUzNzM3NTM3MTAzMjIiLCJwYXJ0bmVyVHhpZCI6ImUyZWUzNjZlLWEyMjgtNDI0Mi1hNjJlLTk4ODk3ODhiYzgxNCIsInR4aWQiOiI3MTE1NzQwNDg3NTczODUwMDIiLCJuZXR3b3JrUmVxdWVzdElkIjoiNzExNTc0MDQ4NzU3Mzg1ODc0Iiwic2lkIjoxMTgwOTgsImRpdmlzaW9uSWQiOjgsInRpZCI6OCwibW9iaWxlRGF0YSI6IjU5IiwiYmlkUHJpY2UiOjAuMDY4MCwicHViQ29zdCI6MC4wMzQwLCJwYXJ0bmVyRmVlIjowLjAxMzYsImlwU3RyaW5nIjoiNzMuMTE4LjEzMC4xODYiLCJzdXBwbHlUeXBlIjoxLCJpbnRlZ3JhdGlvblR5cGUiOjQsIm1lZGlhdGlvblR5cGUiOjEyNiwicGxhY2VtZW50SWQiOiIxMTY5ODcwIiwiaGVhZGVyQmlkIjoxLCJpc0RpcmVjdFB1Ymxpc2hlciI6MCwiaGFzQ29uc2VudCI6MSwib3BlcmF0aW9uIjoiQ0xJRU5UX0hFQURFUl8yNSIsImlzQ29yZVNoaWVsZCI6MCwicGFydG5lckNyZWF0aXZlSWQiOiIyNDk2NDRfMzAweDI1MCIsInBhcnRuZXJEb21haW5zIjpbIndhbG1hcnQuY29tIl0sInNlbGxlclJlcXVlc3RJZCI6ImE3ODcyMWQ3LWE2ZmUtNGJiNS1hNjFkLTFhMDg1MzkxZTVlZCIsInNlbGxlckltcElkIjoiMzAwNDIxZDY0NWY2ZjRjOWMifQ&",
+                  "adm": "somead",
+                  "crid": "249644_300x250",
+                  "mtype": 3
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }],
+  "expectedBidResponses": [
+    {
+      "bids": [{
+        "bid": {
+          "id": "1",
+          "impid": "1",
+          "price": 0.0340,
+          "nurl": "https:\/\/event.ad.cpe.dotomi.com\/cvx\/event\/imp?enc=eyJ1c2VyaWQiOiI3MTI3MDUzNzM3NTM3MTAzMjIiLCJwYXJ0bmVyVHhpZCI6ImUyZWUzNjZlLWEyMjgtNDI0Mi1hNjJlLTk4ODk3ODhiYzgxNCIsInR4aWQiOiI3MTE1NzQwNDg3NTczODUwMDIiLCJuZXR3b3JrUmVxdWVzdElkIjoiNzExNTc0MDQ4NzU3Mzg1ODc0Iiwic2lkIjoxMTgwOTgsImRpdmlzaW9uSWQiOjgsInRpZCI6OCwibW9iaWxlRGF0YSI6IjU5IiwiYmlkUHJpY2UiOjAuMDY4MCwicHViQ29zdCI6MC4wMzQwLCJwYXJ0bmVyRmVlIjowLjAxMzYsImlwU3RyaW5nIjoiNzMuMTE4LjEzMC4xODYiLCJzdXBwbHlUeXBlIjoxLCJpbnRlZ3JhdGlvblR5cGUiOjQsIm1lZGlhdGlvblR5cGUiOjEyNiwicGxhY2VtZW50SWQiOiIxMTY5ODcwIiwiaGVhZGVyQmlkIjoxLCJpc0RpcmVjdFB1Ymxpc2hlciI6MCwiaGFzQ29uc2VudCI6MSwib3BlcmF0aW9uIjoiQ0xJRU5UX0hFQURFUl8yNSIsImlzQ29yZVNoaWVsZCI6MCwicGFydG5lckNyZWF0aXZlSWQiOiIyNDk2NDRfMzAweDI1MCIsInBhcnRuZXJEb21haW5zIjpbIndhbG1hcnQuY29tIl0sInNlbGxlclJlcXVlc3RJZCI6ImE3ODcyMWQ3LWE2ZmUtNGJiNS1hNjFkLTFhMDg1MzkxZTVlZCIsInNlbGxlckltcElkIjoiMzAwNDIxZDY0NWY2ZjRjOWMifQ&",
+          "adm": "somead",
+          "crid": "249644_300x250",
+          "mtype": 3
+        },
+        "type": "audio"
+      }]
+    }
+  ]
+}
