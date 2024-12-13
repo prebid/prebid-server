@@ -290,17 +290,19 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	ao.SeatNonBid = auctionResponse.GetSeatNonBid()
 	rejectErr, isRejectErr := hookexecution.CastRejectErr(err)
 	if err != nil && !isRejectErr {
-		if errortypes.ReadCode(err) == errortypes.BadInputErrorCode {
+		switch errortypes.ReadCode(err) {
+		case errortypes.BadInputErrorCode, errortypes.TimeoutErrorCode:
 			writeError([]error{err}, w, &labels)
 			return
+		default:
+			labels.RequestStatus = metrics.RequestStatusErr
+			w.WriteHeader(http.StatusInternalServerError)
+			_, _ = fmt.Fprintf(w, "Critical error while running the auction: %v", err)
+			glog.Errorf("/openrtb2/auction Critical error: %v", err)
+			ao.Status = http.StatusInternalServerError
+			ao.Errors = append(ao.Errors, err)
+			return
 		}
-		labels.RequestStatus = metrics.RequestStatusErr
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
-		glog.Errorf("/openrtb2/auction Critical error: %v", err)
-		ao.Status = http.StatusInternalServerError
-		ao.Errors = append(ao.Errors, err)
-		return
 	} else if isRejectErr {
 		labels, ao = rejectAuctionRequest(*rejectErr, w, hookExecutor, req.BidRequest, account, labels, ao)
 		return
@@ -1891,6 +1893,9 @@ func writeError(errs []error, w http.ResponseWriter, labels *metrics.Labels) boo
 				httpStatus = http.StatusInternalServerError
 				metricsStatus = metrics.RequestStatusAccountConfigErr
 				break
+			} else if erVal == errortypes.TimeoutErrorCode {
+				httpStatus = http.StatusRequestTimeout
+				metricsStatus = metrics.RequestStatusTimeout
 			}
 		}
 		w.WriteHeader(httpStatus)

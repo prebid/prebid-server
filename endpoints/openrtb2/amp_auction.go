@@ -117,6 +117,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	// We can respect timeouts more accurately if we note the *real* start time, and use it
 	// to compute the auction timeout.
 	start := time.Now()
+	ctx := r.Context()
 
 	hookExecutor := hookexecution.NewHookExecutor(
 		deps.hookExecutionPlanBuilder, hookexecution.EndpointAmp, deps.metricsEngine,
@@ -183,7 +184,6 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 
 	ao.RequestWrapper = reqWrapper
 
-	ctx := r.Context()
 	var cancel context.CancelFunc
 	if reqWrapper.TMax > 0 {
 		ctx, cancel = context.WithDeadline(ctx, start.Add(time.Duration(reqWrapper.TMax)*time.Millisecond))
@@ -191,6 +191,8 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		ctx, cancel = context.WithDeadline(ctx, start.Add(time.Duration(defaultAmpRequestTimeoutMillis)*time.Millisecond))
 	}
 	defer cancel()
+	r = r.WithContext(ctx)
+	hookexecution.WithContext(ctx)(hookExecutor)
 
 	// Read UserSyncs/Cookie from Request
 	usersyncs := usersync.ReadCookie(r, usersync.Base64Decoder{}, &deps.cfg.HostCookie)
@@ -294,10 +296,14 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	ao.AuctionResponse = response
 	rejectErr, isRejectErr := hookexecution.CastRejectErr(err)
 	if err != nil && !isRejectErr {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
+		status := http.StatusInternalServerError
+		if errortypes.ReadCode(err) == errortypes.TimeoutErrorCode {
+			status = http.StatusRequestTimeout
+		}
+		w.WriteHeader(status)
+		_, _ = fmt.Fprintf(w, "Critical error while running the auction: %v", err)
 		glog.Errorf("/openrtb2/amp Critical error: %v", err)
-		ao.Status = http.StatusInternalServerError
+		ao.Status = status
 		ao.Errors = append(ao.Errors, err)
 		return
 	}
