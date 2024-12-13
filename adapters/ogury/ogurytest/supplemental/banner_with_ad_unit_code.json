@@ -12,6 +12,9 @@
           "bidder": {
             "assetKey": "OGY",
             "adUnitId": "123"
+          },
+          "prebid": {
+            "adunitcode": "ad-unit-code"
           }
         }
       }
@@ -34,7 +37,14 @@
               "ext": {
                 "gpid": "global position id",
                 "assetKey": "OGY",
-                "adUnitId": "123"
+                "adUnitId": "123",
+                "bidder": {
+                  "assetKey": "OGY",
+                  "adUnitId": "123"
+                },
+                "prebid": {
+                  "adunitcode": "ad-unit-code"
+                }
               }
             }
           ]
@@ -56,7 +66,8 @@
                 "adm": "adm string",
                 "crid": "crid_10",
                 "h": 100,
-                "w": 128
+                "w": 128,
+                "mtype": 1
               }]
             }
           ]
@@ -77,7 +88,8 @@
             "adm": "adm string",
             "crid": "crid_10",
             "h": 100,
-            "w": 128
+            "w": 128,
+            "mtype": 1
           },
           "type": "banner"
         }

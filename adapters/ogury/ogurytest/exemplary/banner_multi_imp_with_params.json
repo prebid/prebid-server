@@ -64,7 +64,11 @@
               "ext": {
                 "gpid": "global position id",
                 "assetKey": "OGY",
-                "adUnitId": "123"
+                "adUnitId": "123",
+                "bidder": {
+                  "assetKey": "OGY",
+                  "adUnitId": "123"
+                }
               }
             },
             {
@@ -76,7 +80,11 @@
               "ext": {
                 "gpid": "global position id",
                 "assetKey": "OGY3",
-                "adUnitId": "1234"
+                "adUnitId": "1234",
+                "bidder": {
+                  "assetKey": "OGY3",
+                  "adUnitId": "1234"
+                }
               }
             }
           ]
@@ -98,7 +106,8 @@
                 "adm": "adm string",
                 "crid": "crid_10",
                 "h": 100,
-                "w": 128
+                "w": 128,
+                "mtype": 1
               }]
             }
           ]
@@ -119,7 +128,8 @@
             "adm": "adm string",
             "crid": "crid_10",
             "h": 100,
-            "w": 128
+            "w": 128,
+            "mtype": 1
           },
           "type": "banner"
         }

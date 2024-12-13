@@ -12,6 +12,7 @@ import (
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -23,7 +24,7 @@ func Builder(_ openrtb_ext.BidderName, config config.Adapter, _ config.Server) (
 }
 
 func (a adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	headers := setHeaders(request)
+	headers := buildHeaders(request)
 
 	request.Imp = filterValidImps(request)
 	if len(request.Imp) == 0 {
@@ -36,34 +37,26 @@ func (a adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapter
 	for i, imp := range request.Imp {
 		var impExt, impExtBidderHoist map[string]json.RawMessage
 		// extract ext
-		if err := json.Unmarshal(imp.Ext, &impExt); err != nil {
+		if err := jsonutil.Unmarshal(imp.Ext, &impExt); err != nil {
 			return nil, append(errors, &errortypes.BadInput{
 				Message: "Bidder extension not provided or can't be unmarshalled",
 			})
 		}
 		// find Ogury bidder params
 		if bidder, ok := impExt[openrtb_ext.PrebidExtBidderKey]; ok {
-			if err := json.Unmarshal(bidder, &impExtBidderHoist); err != nil {
+			if err := jsonutil.Unmarshal(bidder, &impExtBidderHoist); err != nil {
 				return nil, append(errors, &errortypes.BadInput{
 					Message: "Ogury bidder extension not provided or can't be unmarshalled",
 				})
 			}
 		}
 
-		newImpExt := make(map[string]any, len(impExt)-1+len(impExtBidderHoist))
-
-		// copy every imp.ext field to the new "ext" object except for imp.ext.bidder
-		for key, value := range impExt {
-			if key != openrtb_ext.PrebidExtBidderKey {
-				newImpExt[key] = value
-			}
-		}
-		// extract Ogury params from imp.ext.bidder to imp.ext
+		// extract every value from imp[].ext.bidder to imp[].ext
 		for key, value := range impExtBidderHoist {
-			newImpExt[key] = value
+			impExt[key] = value
 		}
 
-		ext, err := json.Marshal(newImpExt)
+		ext, err := jsonutil.Marshal(impExt)
 		if err != nil {
 			return nil, append(errors, &errortypes.BadInput{
 				Message: "Error while marshaling Imp.Ext bidder exension",
@@ -93,7 +86,7 @@ func (a adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapter
 		}
 	}
 
-	requestJSON, err := json.Marshal(request)
+	requestJSON, err := jsonutil.Marshal(request)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -115,10 +108,10 @@ func filterValidImps(request *openrtb2.BidRequest) (validImps []openrtb2.Imp) {
 		var impExt adapters.ExtImpBidder
 		var impExtOgury openrtb_ext.ImpExtOgury
 
-		if err := json.Unmarshal(imp.Ext, &impExt); err != nil {
+		if err := jsonutil.Unmarshal(imp.Ext, &impExt); err != nil {
 			continue
 		}
-		if err := json.Unmarshal(impExt.Bidder, &impExtOgury); err != nil {
+		if err := jsonutil.Unmarshal(impExt.Bidder, &impExtOgury); err != nil {
 			continue
 		}
 		if impExtOgury.AssetKey != "" && impExtOgury.AdUnitID != "" {
@@ -140,11 +133,12 @@ func filterValidImps(request *openrtb2.BidRequest) (validImps []openrtb2.Imp) {
 	return nil
 }
 
-func setHeaders(request *openrtb2.BidRequest) http.Header {
+func buildHeaders(request *openrtb2.BidRequest) http.Header {
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	if request.Device != nil {
 		headers.Add("X-Forwarded-For", request.Device.IP)
+		headers.Add("X-Forwarded-For", request.Device.IPv6)
 		headers.Add("User-Agent", request.Device.UA)
 		headers.Add("Accept-Language", request.Device.Language)
 	}
@@ -152,23 +146,20 @@ func setHeaders(request *openrtb2.BidRequest) http.Header {
 
 }
 
-func getMediaTypeForBid(impressions []openrtb2.Imp, bid openrtb2.Bid) (openrtb_ext.BidType, error) {
-	for _, imp := range impressions {
-		if imp.ID == bid.ImpID {
-			switch {
-			case imp.Banner != nil:
-				return openrtb_ext.BidTypeBanner, nil
-			case imp.Video != nil:
-				return openrtb_ext.BidTypeVideo, nil
-			case imp.Native != nil:
-				return openrtb_ext.BidTypeNative, nil
-			}
+func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupAudio:
+		return openrtb_ext.BidTypeAudio, nil
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative, nil
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
+	default:
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Unsupported MType \"%d\", for impression \"%s\"", bid.MType, bid.ImpID),
 		}
-
-	}
-
-	return "", &errortypes.BadServerResponse{
-		Message: fmt.Sprintf("Failed to determine media type of impression \"%s\"", bid.ImpID),
 	}
 }
 
@@ -181,7 +172,7 @@ func (a adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData,
 	}
 
 	var response openrtb2.BidResponse
-	if err := json.Unmarshal(responseData.Body, &response); err != nil {
+	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}
 
@@ -190,7 +181,7 @@ func (a adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData,
 	var errors []error
 	for _, seatBid := range response.SeatBid {
 		for i, bid := range seatBid.Bid {
-			bidType, err := getMediaTypeForBid(request.Imp, bid)
+			bidType, err := getMediaTypeForBid(bid)
 			if err != nil {
 				errors = append(errors, err)
 				continue
