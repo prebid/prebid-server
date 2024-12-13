@@ -1,4 +1,4 @@
-name: Find stale PRs
+name: Post Stale PRs To Slack
 
 on:
   # run Monday 9am and on-demand
