@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/prebid/prebid-server/v3/analytics"
+	"time"
 )
 
 func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]MileAnalyticsEvent, error) {
@@ -43,7 +44,8 @@ func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]MileAnal
 
 				logEntry := MileAnalyticsEvent{
 					//SessionID: ao.RequestWrapper
-					Ip: ao.RequestWrapper.Device.IP,
+					Ip:        ao.RequestWrapper.Device.IP,
+					Timestamp: time.Now().Unix(),
 					//ClientVersion: ao.RequestWrapper.Ext.
 					Ua:                ao.RequestWrapper.Device.UA,
 					ArbitraryData:     "",

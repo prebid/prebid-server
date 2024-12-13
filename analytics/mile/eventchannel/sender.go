@@ -29,6 +29,7 @@ func NewHttpSender(client *http.Client, endpoint string) Sender {
 		}
 
 		req.Header.Set("Content-Type", "application/json")
+		//req.Header.Set("X-Forwarded-For", payload[0])
 		//req.Header.Set("Content-Encoding", "gzip")
 
 		resp, err := client.Do(req)
