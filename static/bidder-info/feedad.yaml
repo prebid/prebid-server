@@ -13,5 +13,5 @@ capabilities:
       - banner
 userSync:
   iframe:
-    url: https://ortb.feedad.com/1/usersyncs/supply?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
+    url: https://ortb.feedad.com/1/usersyncs/supply?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
     userMacro: $UID
