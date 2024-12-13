@@ -24,11 +24,6 @@ type adapter struct {
 	endpoint string
 }
 
-type ExtImpIntertech struct {
-	PageID int `json:"page_id"`
-	ImpID  int `json:"imp_id"`
-}
-
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,
@@ -73,17 +68,17 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	return requests, errs
 }
 
-func parseAndValidateImpExt(imp openrtb2.Imp) (ExtImpIntertech, error) {
+func parseAndValidateImpExt(imp openrtb2.Imp) (openrtb_ext.ExtImpIntertech, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return ExtImpIntertech{}, &errortypes.BadInput{
+		return openrtb_ext.ExtImpIntertech{}, &errortypes.BadInput{
 			Message: fmt.Sprintf("imp #%s: unable to parse bidder ext: %s", imp.ID, err),
 		}
 	}
 
-	var extImp ExtImpIntertech
+	var extImp openrtb_ext.ExtImpIntertech
 	if err := jsonutil.Unmarshal(bidderExt.Bidder, &extImp); err != nil {
-		return ExtImpIntertech{}, &errortypes.BadInput{
+		return openrtb_ext.ExtImpIntertech{}, &errortypes.BadInput{
 			Message: fmt.Sprintf("imp #%s: unable to parse intertech ext: %s", imp.ID, err),
 		}
 	}
@@ -119,9 +114,9 @@ func updateBanner(banner *openrtb2.Banner) (*openrtb2.Banner, error) {
 	return &bannerCopy, nil
 }
 
-func (a *adapter) modifyUrl(extImp ExtImpIntertech, referer, cur string) string {
-	pageStr := strconv.Itoa(extImp.PageID)
-	impStr := strconv.Itoa(extImp.ImpID)
+func (a *adapter) modifyUrl(extImp openrtb_ext.ExtImpIntertech, referer, cur string) string {
+	pageStr := strconv.Itoa(int(extImp.PageID))
+	impStr := strconv.Itoa(int(extImp.ImpID))
 
 	resolvedUrl := strings.ReplaceAll(a.endpoint, pageIDMacro, url.QueryEscape(pageStr))
 	resolvedUrl = strings.ReplaceAll(resolvedUrl, impIDMacro, url.QueryEscape(impStr))
