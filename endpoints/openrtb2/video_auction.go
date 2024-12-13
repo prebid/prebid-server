@@ -276,6 +276,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithDeadline(ctx, start.Add(timeout))
 		defer cancel()
+		r = r.WithContext(ctx)
 	}
 
 	// Read Usersyncs/Cookie
