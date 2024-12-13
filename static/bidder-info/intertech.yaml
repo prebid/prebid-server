@@ -11,5 +11,5 @@ capabilities:
       - native
 userSync:
   redirect:
-    url: https://prebid.intertechsrvcs.com/mapuid/intertech/?ssp-id=10500&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&location={{.RedirectURL}}
+    url: https://prebid.intertechsrvcs.com/mapuid/intertech/?ssp-id=10500&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&location=
     userMacro: "{UID}"
