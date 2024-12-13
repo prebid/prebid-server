@@ -2,8 +2,6 @@ module github.com/prebid/prebid-server/v3
 
 go 1.22
 
-toolchain go1.23.3
-
 retract v3.0.0 // Forgot to update major version in import path and module name
 
 require (
