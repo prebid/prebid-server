@@ -37,7 +37,7 @@
                                 "siteId": 1243066,
                                 "zoneIds": [285431],
                                 "options": {
-                                   "startCompact": true
+                                   "startCompact": false
                                 },
                                 "userKey": "abc123"
                         }
@@ -78,7 +78,6 @@
                              285431
                           ],
                           "options": {
-                             "startCompact": true
                           }
                        }
                     ],
@@ -104,7 +103,9 @@
                                         "data": {
                                             "customData": {
                                                 "campaignConfigUrl": "https://campaign-config.flipp.com/dist-campaign-admin/215",
-                                                "campaignNameIdentifier": "US Grocery Demo (Kroger)"
+                                                "campaignNameIdentifier": "US Grocery Demo (Kroger)",
+                                                "standardHeight": 900,
+                                                "compactHeight": 700
                                             },
                                             "height": 1800,
                                             "width": 300
@@ -172,7 +173,8 @@
                         "price": 12.34,
                         "adm": "creativeContent",
                         "crid": "81325690",
-                        "w": 300
+                        "w": 300,
+                        "h": 900
                     },
                     "type": "banner"
                 }
