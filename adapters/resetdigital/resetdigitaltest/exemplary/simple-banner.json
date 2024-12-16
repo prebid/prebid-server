@@ -1,0 +1,101 @@
+{
+  "mockBidRequest": {
+    "id": "12345",
+    "imp": [{
+      "id": "001",
+      "banner": {
+        "h": 300,
+        "w": 250
+      },
+      "ext": {
+        "bidder": {
+          "placement_id": "placement-id-1"
+        }
+      }
+    }],
+    "site": {
+      "domain": "https://test.com",
+      "page": "https://test.com/2016/06/12"
+    },
+    "cur": [
+      "USD"
+    ],
+    "device": {
+      "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36",
+      "ip": "127.0.0.1",
+      "language": "EN"
+    },
+    "tmax": 500
+  },
+  "httpCalls": [{
+    "expectedRequest": {
+      "method": "POST",
+      "body": {
+        "imps": [{
+          "bid_id": "12345",
+          "ext": {
+            "gpid": ""
+          },
+          "imp_id": "001",
+          "media_types": {
+            "banner": {
+              "sizes": [
+                [
+                  250,
+                  300
+                ]
+              ]
+            },
+            "audio": {},
+            "video": {}
+          },
+          "zone_id": {
+            "placementId": "placement-id-1"
+          }
+        }],
+        "site": {
+          "domain": "https://test.com",
+          "referrer": "https://test.com/2016/06/12"
+        }
+      },
+      "impIDs": [
+        "001"
+      ]
+    },
+    "mockResponse": {
+      "status": 200,
+      "body": {
+        "bids": [{
+          "bid_id": "01",
+          "imp_id": "001",
+          "cpm": 1.00,
+          "cid": "1002088",
+          "crid": "1000763-1002088",
+          "adid": "1002088",
+          "w": "300",
+          "h": "250",
+          "seat": "resetdigital",
+          "html": "test markup"
+        }]
+      }
+    }
+  }],
+
+  "expectedBidResponses": [{
+    "currency": "USD",
+    "bids": [{
+      "bid": {
+        "adm": "test markup",
+        "cid": "1002088",
+        "crid": "1000763-1002088",
+        "id": "01",
+        "impid": "001",
+        "price": 1.00,
+        "w": 300,
+        "h": 250
+      },
+      "type": "banner",
+      "seat": "resetdigital"
+    }]
+  }]
+}
