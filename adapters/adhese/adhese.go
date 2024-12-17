@@ -53,12 +53,6 @@ func (a *adapter) MakeRequests(
 		return nil, []error{&errortypes.BadInput{Message: fmt.Sprintf("Error unmarshalling bidder ext: %v", err)}}
 	}
 
-	if params.Account == "" || params.Location == "" {
-		return nil, []error{&errortypes.BadInput{
-			Message: "Missing required params: location, account",
-		}}
-	}
-
 	// define a map of targets[] and pre-fill it with the slot
 	targets := extTargetsAdhese{
 		"SL": []string{makeSlot(params)},
