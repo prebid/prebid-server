@@ -7,116 +7,50 @@ import (
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
-func mustMarshal(t *testing.T, v interface{}) []byte {
-	data, err := json.Marshal(v)
-	if err != nil {
-		t.Errorf("mustMarshal: %s", err)
-	}
-	return data
-}
-
-func provideCompleteParams() *openrtb_ext.ExtImpFeedAd {
-	return &openrtb_ext.ExtImpFeedAd{
-		ClientToken: "some-clienttoken",
-		Decoration:  "some-decoration",
-		PlacementId: "some-placementid",
-		SdkOptions: &openrtb_ext.ExtImpFeedAdSdkOptions{
-			AdvertisingId:   "some-advertisingid",
-			AppName:         "some-appname",
-			BundleId:        "some-bundleid",
-			HybridApp:       true,
-			HybridPlatform:  "android",
-			LimitAdTracking: true,
-		},
-	}
-}
-
-func TestParams(t *testing.T) {
-	type testCase struct {
-		_id         string
-		_shouldPass bool
-		data        []byte
-	}
-
-	tests := make([]*testCase, 0)
-
-	// empty-params
-	test := &testCase{
-		_id:         "empty-params",
-		_shouldPass: false,
-		data:        []byte("{}"),
-	}
-	tests = append(tests, test)
-
-	// pass-complete
-	params := provideCompleteParams()
-
-	test = &testCase{
-		_id:         "pass-complete",
-		_shouldPass: true,
-		data:        mustMarshal(t, params),
-	}
-	tests = append(tests, test)
-
-	// pass-minimal
-	params = provideCompleteParams()
-	params.Decoration = ""
-	params.SdkOptions = nil
-
-	test = &testCase{
-		_id:         "pass-minimal",
-		_shouldPass: true,
-		data:        mustMarshal(t, params),
-	}
-	tests = append(tests, test)
-
-	// fail-missing-clienttoken
-	params = provideCompleteParams()
-	params.ClientToken = ""
-
-	test = &testCase{
-		_id:         "fail-missing-clienttoken",
-		_shouldPass: false,
-		data:        mustMarshal(t, params),
-	}
-	tests = append(tests, test)
-
-	// fail-missing-placementid
-	params = provideCompleteParams()
-	params.PlacementId = ""
-
-	test = &testCase{
-		_id:         "fail-missing-placementid",
-		_shouldPass: false,
-		data:        mustMarshal(t, params),
-	}
-	tests = append(tests, test)
-
-	// pass-empty-sdkoptions
-	params = provideCompleteParams()
-	params.SdkOptions = &openrtb_ext.ExtImpFeedAdSdkOptions{}
-
-	test = &testCase{
-		_id:         "pass-empty-sdkoptions",
-		_shouldPass: true,
-		data:        mustMarshal(t, params),
-	}
-	tests = append(tests, test)
-
-	// Run tests
+func TestValidParams(t *testing.T) {
 	validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
 	if err != nil {
-		t.Fatalf("Failed to fetch the json-schemas: %v", err)
+		t.Fatalf("Failed to fetch the json schema: %v", err)
 	}
 
-	for _, test := range tests {
-		t.Run(test._id, func(t *testing.T) {
-			err := validator.Validate(openrtb_ext.BidderFeedAd, test.data)
-			if err == nil && !test._shouldPass {
-				t.Error("did not fail")
-			} else if err != nil && test._shouldPass {
-				t.Errorf("did fail: %s", err)
-			}
-		})
+	for _, p := range validParams {
+		if err := validator.Validate(openrtb_ext.BidderFeedAd, json.RawMessage(p)); err != nil {
+			t.Errorf("Schema rejected valid params: %s", p)
+		}
 	}
+}
+
+func TestInvalidParams(t *testing.T) {
+	validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
+	if err != nil {
+		t.Fatalf("Failed to fetch the json schema: %v", err)
+	}
+
+	for _, p := range invalidParams {
+		if err := validator.Validate(openrtb_ext.BidderFeedAd, json.RawMessage(p)); err == nil {
+			t.Errorf("Schema allowed invalid params: %s", p)
+		}
+	}
+}
+
+var validParams = []string{
+	`{"clientToken":"some-clienttoken","placementId":"some-placementid"}`,
+	`{"clientToken":"some-clienttoken","placementId":"some-placementid","sdkOptions":{}}`,
+	`{"clientToken":"some-clienttoken","placementId":"some-placementid","sdkOptions":{"hybrid_platform":"ios"}}`,
+	`{"clientToken":"some-clienttoken","placementId":"some-placementid","sdkOptions":{"hybrid_platform":"windows"}}`,
+	`{"clientToken":"some-clienttoken","decoration":"some-decoration","placementId":"some-placementid","sdkOptions":{"advertising_id":"","app_name":"","bundle_id":"","hybrid_app":false,"hybrid_platform":"","limit_ad_tracking":false}}`,
+	`{"clientToken":"some-clienttoken","decoration":"some-decoration","placementId":"some-placementid","sdkOptions":{"advertising_id":"some-advertisingid","app_name":"some-appname","bundle_id":"some-bundleid","hybrid_app":true,"hybrid_platform":"android","limit_ad_tracking":true}}`,
+}
+
+var invalidParams = []string{
+	`{}`,
+	`{"clientToken":"","placementId":"some-placementid"}`,
+	`{"clientToken":"some-clienttoken","placementId":""}`,
+	`{"clientToken":"some-clienttoken","placementId":"some-placementid","sdkOptions":"complete-garbage"}`,
+	`{"clientToken":"some-clienttoken","placementId":"some-placementid","sdkOptions":{"advertising_id":{}}}`,
+	`{"clientToken":"some-clienttoken","placementId":"some-placementid","sdkOptions":{"advertising_id":{}}}`,
+	`{"clientToken":"some-clienttoken","placementId":"some-placementid","sdkOptions":{"app_name":{}}}`,
+	`{"clientToken":"some-clienttoken","placementId":"some-placementid","sdkOptions":{"bundle_id":{}}}`,
+	`{"clientToken":"some-clienttoken","placementId":"some-placementid","sdkOptions":{"hybrid_platform":{}}}`,
+	`{"clientToken":"some-clienttoken","placementId":"some-placementid","sdkOptions":{"limit_ad_tracking":{}}}`,
 }
