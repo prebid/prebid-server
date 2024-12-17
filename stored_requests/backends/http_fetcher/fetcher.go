@@ -222,12 +222,21 @@ func (fetcher *HttpFetcher) FetchCategories(ctx context.Context, primaryAdServer
 }
 
 func buildRequest(endpoint string, requestIDs []string, impIDs []string) (*http.Request, error) {
+	// Percent-encode the '[', ']', and '"' characters in the query string since
+	// they're unsafe in URLs. The Config File Server, for example, rejects
+	// unencoded double quotes, and CloudFront won't let you invalidate URLs that
+	// contain unencoded brackets.
+	//
+	// See the following open issue for the status of a possible upstream fix:
+	//
+	// 		https://github.com/prebid/prebid-server/issues/3595
+	//
 	if len(requestIDs) > 0 && len(impIDs) > 0 {
-		return http.NewRequest("GET", endpoint+"request-ids=[%22"+strings.Join(requestIDs, "%22,%22")+"%22]&imp-ids=[%22"+strings.Join(impIDs, "%22,%22")+"%22]", nil)
+		return http.NewRequest("GET", endpoint+"request-ids=%5B%22"+strings.Join(requestIDs, "%22,%22")+"%22%5D&imp-ids=%5B%22"+strings.Join(impIDs, "%22,%22")+"%22%5D", nil)
 	} else if len(requestIDs) > 0 {
-		return http.NewRequest("GET", endpoint+"request-ids=[%22"+strings.Join(requestIDs, "%22,%22")+"%22]", nil)
+		return http.NewRequest("GET", endpoint+"request-ids=%5B%22"+strings.Join(requestIDs, "%22,%22")+"%22%5D", nil)
 	} else {
-		return http.NewRequest("GET", endpoint+"imp-ids=[%22"+strings.Join(impIDs, "%22,%22")+"%22]", nil)
+		return http.NewRequest("GET", endpoint+"imp-ids=%5B%22"+strings.Join(impIDs, "%22,%22")+"%22%5D", nil)
 	}
 }
 
