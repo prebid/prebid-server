@@ -3,7 +3,7 @@
     "id": "test-req",
     "user": {
       "ext": {
-        "consent" : "dummy"
+        "consent": "dummy"
       }
     },
     "imp": [
@@ -31,8 +31,8 @@
   "expectedBidResponses": [],
   "expectedMakeRequestsErrors": [
     {
-      "value": "Request could not be parsed as ExtImpAdhese due to: expect { or n, but found",
-      "comparison": "startswith"
+      "value": "bidderExt.Bidder is empty",
+      "comparison": "literal"
     }
   ]
 }

@@ -1,25 +1,27 @@
 {
-	"$schema": "http://json-schema.org/draft-04/schema#",
-	"title": "Adhese Adapter Parameters",
-	"description": "Validation for parameters handled by the Adhese adapter",
-	"type": "object",
-	"properties": {
-		"account": {
-			"type": "string",
-			"description": "Your Adhese account name. If unknown, please contact your sales rep"
-		},
-		"location": {
-			"type": "string",
-			"description": "The location you want to refer to for a specific section or page, as defined in your Adhese inventory"
-		},
-		"format": {
-			"type": "string",
-			"description": "The format you accept for this unit, as defined in your Adhese inventory"
-		},
-		"targets": {
-			"type": "object",
-			"description": "Target params, as defined in your Adhese setup."
-		  }
-	},
-	"required": ["account", "location", "format"]
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Adhese Adapter Parameters",
+  "description": "Validation for parameters handled by the Adhese adapter",
+  "type": "object",
+  "properties": {
+    "account": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Your Adhese account name. If unknown, please contact your sales rep"
+    },
+    "location": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The location you want to refer to for a specific section or page, as defined in your Adhese inventory"
+    },
+    "format": {
+      "type": "string",
+      "description": "The format you accept for this unit, as defined in your Adhese inventory"
+    },
+    "targets": {
+      "type": "object",
+      "description": "Target params, as defined in your Adhese setup."
+    }
+  },
+  "required": ["account", "location", "format"]
 }
