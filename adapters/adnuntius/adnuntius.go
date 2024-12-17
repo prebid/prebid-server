@@ -54,15 +54,16 @@ type Ad struct {
 	GrossBid struct {
 		Amount float64
 	}
-	DealID          string `json:"dealId,omitempty"`
-	AdId            string
-	CreativeWidth   string
-	CreativeHeight  string
-	CreativeId      string
-	LineItemId      string
-	Html            string
-	DestinationUrls map[string]string
-	Advertiser      adnAdvertiser `json:"advertiser,omitempty"`
+	DealID            string `json:"dealId,omitempty"`
+	AdId              string
+	CreativeWidth     string
+	CreativeHeight    string
+	CreativeId        string
+	LineItemId        string
+	Html              string
+	DestinationUrls   map[string]string
+	AdvertiserDomains []string
+	Advertiser        adnAdvertiser `json:"advertiser,omitempty"`
 }
 
 type AdUnit struct {
@@ -458,13 +459,6 @@ func generateAdResponse(ad Ad, imp openrtb2.Imp, html string, request *openrtb2.
 		}}
 	}
 
-	adDomain := []string{}
-	for _, url := range ad.DestinationUrls {
-		domainArray := strings.Split(url, "/")
-		domain := strings.Replace(domainArray[2], "www.", "", -1)
-		adDomain = append(adDomain, domain)
-	}
-
 	bid := openrtb2.Bid{
 		ID:      ad.AdId,
 		ImpID:   imp.ID,
@@ -476,7 +470,7 @@ func generateAdResponse(ad Ad, imp openrtb2.Imp, html string, request *openrtb2.
 		CrID:    ad.CreativeId,
 		Price:   price * 1000,
 		AdM:     html,
-		ADomain: adDomain,
+		ADomain: ad.AdvertiserDomains,
 		Ext:     extJson,
 	}
 	return &bid, nil
