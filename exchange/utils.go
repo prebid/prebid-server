@@ -498,33 +498,30 @@ func buildRequestExtForBidder(bidder string, req *openrtb_ext.RequestWrapper, re
 	}
 	prebid := reqExt.GetPrebid()
 
-	// Resolve alternatebiddercode
+	// Resolve Alternate Bidder Codes
 	var reqABC *openrtb_ext.ExtAlternateBidderCodes
 	if prebid != nil && prebid.AlternateBidderCodes != nil {
 		reqABC = prebid.AlternateBidderCodes
 	}
 	alternateBidderCodes := buildRequestExtAlternateBidderCodes(bidder, cfgABC, reqABC)
 
-	var prebidNew openrtb_ext.ExtRequestPrebid
-	if prebid == nil {
-		prebidNew = openrtb_ext.ExtRequestPrebid{
-			BidderParams:         reqExtBidderParams[bidder],
-			AlternateBidderCodes: alternateBidderCodes,
-		}
-	} else {
-		// Copy Allowed Fields
-		// Per: https://docs.prebid.org/prebid-server/endpoints/openrtb2/pbs-endpoint-auction.html#prebid-server-ortb2-extension-summary
-		prebidNew = openrtb_ext.ExtRequestPrebid{
-			BidderParams:         reqExtBidderParams[bidder],
-			AlternateBidderCodes: alternateBidderCodes,
-			Channel:              prebid.Channel,
-			CurrencyConversions:  prebid.CurrencyConversions,
-			Debug:                prebid.Debug,
-			Integration:          prebid.Integration,
-			MultiBid:             buildRequestExtMultiBid(bidder, prebid.MultiBid, alternateBidderCodes),
-			Sdk:                  prebid.Sdk,
-			Server:               prebid.Server,
-		}
+	// Build New/Filtered Prebid Ext
+	prebidNew := openrtb_ext.ExtRequestPrebid{
+		BidderParams:         reqExtBidderParams[bidder],
+		AlternateBidderCodes: alternateBidderCodes,
+	}
+
+	// Copy Allowed Fields
+	// Per: https://docs.prebid.org/prebid-server/endpoints/openrtb2/pbs-endpoint-auction.html#prebid-server-ortb2-extension-summary
+	if prebid != nil {
+		prebidNew.Channel = prebid.Channel
+		prebidNew.CurrencyConversions = prebid.CurrencyConversions
+		prebidNew.Debug = prebid.Debug
+		prebidNew.Integration = prebid.Integration
+		prebidNew.MultiBid = buildRequestExtMultiBid(bidder, prebid.MultiBid, alternateBidderCodes)
+		prebidNew.Sdk = prebid.Sdk
+		prebidNew.Server = prebid.Server
+		prebidNew.Targeting = buildRequestExtTargeting(prebid.Targeting)
 	}
 
 	reqExt.SetPrebid(&prebidNew)
@@ -584,6 +581,18 @@ func buildRequestExtMultiBid(adapter string, reqMultiBid []*openrtb_ext.ExtMulti
 	}
 
 	return nil
+}
+
+func buildRequestExtTargeting(t *openrtb_ext.ExtRequestTargeting) *openrtb_ext.ExtRequestTargeting {
+	if t == nil || t.IncludeBrandCategory == nil {
+		return nil
+	}
+
+	// only include fields bidders can use to influence their response and which does
+	// not expose information about other bidders or restricted auction processing
+	return &openrtb_ext.ExtRequestTargeting{
+		IncludeBrandCategory: t.IncludeBrandCategory,
+	}
 }
 
 func isBidderInExtAlternateBidderCodes(adapter, currentMultiBidBidder string, adapterABC *openrtb_ext.ExtAlternateBidderCodes) bool {
@@ -709,18 +718,13 @@ func mergeImpFPD(imp *openrtb2.Imp, fpd json.RawMessage, index int) error {
 	return nil
 }
 
-var allowedImpExtFields = map[string]interface{}{
-	openrtb_ext.AuctionEnvironmentKey:       struct{}{},
-	openrtb_ext.FirstPartyDataExtKey:        struct{}{},
-	openrtb_ext.FirstPartyDataContextExtKey: struct{}{},
-	openrtb_ext.GPIDKey:                     struct{}{},
-	openrtb_ext.SKAdNExtKey:                 struct{}{},
-	openrtb_ext.TIDKey:                      struct{}{},
-}
-
 var allowedImpExtPrebidFields = map[string]interface{}{
 	openrtb_ext.IsRewardedInventoryKey: struct{}{},
 	openrtb_ext.OptionsKey:             struct{}{},
+}
+
+var deniedImpExtFields = map[string]interface{}{
+	openrtb_ext.PrebidExtKey: struct{}{},
 }
 
 func createSanitizedImpExt(impExt, impExtPrebid map[string]json.RawMessage) (map[string]json.RawMessage, error) {
@@ -744,8 +748,8 @@ func createSanitizedImpExt(impExt, impExtPrebid map[string]json.RawMessage) (map
 	}
 
 	// copy reserved imp[].ext fields known to not be bidder names
-	for k := range allowedImpExtFields {
-		if v, exists := impExt[k]; exists {
+	for k, v := range impExt {
+		if _, exists := deniedImpExtFields[k]; !exists {
 			sanitizedImpExt[k] = v
 		}
 	}
@@ -924,15 +928,15 @@ func getExtCacheInstructions(requestExtPrebid *openrtb_ext.ExtRequestPrebid) ext
 func getExtTargetData(requestExtPrebid *openrtb_ext.ExtRequestPrebid, cacheInstructions extCacheInstructions) *targetData {
 	if requestExtPrebid != nil && requestExtPrebid.Targeting != nil {
 		return &targetData{
-			includeWinners:            *requestExtPrebid.Targeting.IncludeWinners,
-			includeBidderKeys:         *requestExtPrebid.Targeting.IncludeBidderKeys,
+			alwaysIncludeDeals:        requestExtPrebid.Targeting.AlwaysIncludeDeals,
+			includeBidderKeys:         ptrutil.ValueOrDefault(requestExtPrebid.Targeting.IncludeBidderKeys),
 			includeCacheBids:          cacheInstructions.cacheBids,
 			includeCacheVast:          cacheInstructions.cacheVAST,
 			includeFormat:             requestExtPrebid.Targeting.IncludeFormat,
-			priceGranularity:          *requestExtPrebid.Targeting.PriceGranularity,
-			mediaTypePriceGranularity: requestExtPrebid.Targeting.MediaTypePriceGranularity,
+			includeWinners:            ptrutil.ValueOrDefault(requestExtPrebid.Targeting.IncludeWinners),
+			mediaTypePriceGranularity: ptrutil.ValueOrDefault(requestExtPrebid.Targeting.MediaTypePriceGranularity),
 			preferDeals:               requestExtPrebid.Targeting.PreferDeals,
-			alwaysIncludeDeals:        requestExtPrebid.Targeting.AlwaysIncludeDeals,
+			priceGranularity:          ptrutil.ValueOrDefault(requestExtPrebid.Targeting.PriceGranularity),
 		}
 	}
 

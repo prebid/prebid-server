@@ -1278,9 +1278,7 @@ func (re *RegExt) unmarshal(extJson json.RawMessage) error {
 
 	gpcJson, hasGPC := re.ext[gpcKey]
 	if hasGPC && gpcJson != nil {
-		if err := jsonutil.Unmarshal(gpcJson, &re.gpc); err != nil {
-			return err
-		}
+		return jsonutil.ParseIntoString(gpcJson, &re.gpc)
 	}
 
 	return nil

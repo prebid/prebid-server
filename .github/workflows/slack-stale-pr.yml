@@ -1,0 +1,27 @@
+name: Post Stale PRs To Slack
+
+on:
+  # run Monday 9am and on-demand
+  workflow_dispatch:
+  schedule:
+    - cron:  '0 9 * * 1'
+
+jobs:
+  fetch-PRs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch pull requests
+        id: local
+        uses: paritytech/stale-pr-finder@v0.3.0
+        with:
+          GITHUB_TOKEN: ${{ github.token }}
+          days-stale: 14
+          ignoredLabels: "blocked"
+      - name: Post to a Slack channel
+        id: slack
+        uses: slackapi/slack-github-action@v1.27.1
+        with:
+          channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+          slack-message: "${{ steps.local.outputs.message }}"
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}

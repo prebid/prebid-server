@@ -129,6 +129,7 @@
                   "adomain": [
                     "awesome.com"
                   ],
+                  "mtype": 2,
                   "crid": "20",
                   "w": 1280,
                   "h": 720
@@ -156,6 +157,7 @@
             "id": "a3ae1b4e2fc24a4fb45540082e98e161",
             "impid": "some-impression-id",
             "price": 3.5,
+            "mtype": 2,
             "adm": "awesome-markup",
             "crid": "20",
             "adomain": [

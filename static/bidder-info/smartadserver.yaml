@@ -2,18 +2,25 @@ endpoint: "https://ssb-global.smartadserver.com"
 maintainer:
   email: "supply-partner-integration@equativ.com"
 gvlVendorID: 45
+endpointCompression: gzip
+geoscope:
+  - global
 capabilities:
   app:
     mediaTypes:
       - banner
       - video
       - native
+      - audio
   site:
     mediaTypes:
       - banner
       - video
       - native
+      - audio
 userSync:
   redirect:
     url: "https://ssbsync-global.smartadserver.com/api/sync?callerId=5&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirectUri={{.RedirectURL}}"
     userMacro: "[ssb_sync_pid]"
+openrtb:
+  gpp-supported: true

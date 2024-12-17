@@ -195,6 +195,9 @@ func getBidType(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 			if imp.Video != nil {
 				bidType = openrtb_ext.BidTypeVideo
 			}
+			if imp.Audio != nil {
+				bidType = openrtb_ext.BidTypeAudio
+			}
 			break
 		}
 	}

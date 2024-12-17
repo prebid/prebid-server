@@ -78,7 +78,7 @@ func (e *DatabaseEventProducer) Invalidations() <-chan events.Invalidation {
 }
 
 func (e *DatabaseEventProducer) fetchAll() (fetchErr error) {
-	timeout := e.cfg.CacheInitTimeout * time.Millisecond
+	timeout := e.cfg.CacheInitTimeout
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
@@ -115,7 +115,7 @@ func (e *DatabaseEventProducer) fetchAll() (fetchErr error) {
 }
 
 func (e *DatabaseEventProducer) fetchDelta() (fetchErr error) {
-	timeout := e.cfg.CacheUpdateTimeout * time.Millisecond
+	timeout := e.cfg.CacheUpdateTimeout
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 

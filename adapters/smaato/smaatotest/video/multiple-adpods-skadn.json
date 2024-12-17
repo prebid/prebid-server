@@ -29,6 +29,7 @@
                         "publisherId": "1100042525",
                         "adbreakId": "400000001"
                     },
+                    "gpid": 1,
                     "skadn": {
                         "versions": ["2.0", "2.1", "2.2", "3.0", "4.0"],
                         "sourceapp": "880047117",
@@ -71,6 +72,7 @@
                         "publisherId": "1100042525",
                         "adbreakId": "400000001"
                     },
+                    "gpid": 1,
                     "skadn": {
                         "versions": ["2.0", "2.1", "2.2", "3.0", "4.0"],
                         "sourceapp": "880047118",
@@ -113,6 +115,7 @@
                         "publisherId": "1100042525",
                         "adbreakId": "400000001"
                     },
+                    "gpid": 1,
                     "skadn": {
                         "versions": ["2.0", "2.1", "2.2", "3.0", "4.0"],
                         "sourceapp": "880047119",
@@ -155,6 +158,7 @@
                         "publisherId": "1100042525",
                         "adbreakId": "400000001"
                     },
+                    "gpid": 1,
                     "skadn": {
                         "versions": ["2.0", "2.1", "2.2", "3.0", "4.0"],
                         "sourceapp": "880047120",
@@ -236,6 +240,7 @@
                                 }
                             },
                             "ext": {
+                                "gpid": 1,
                                 "skadn": {
                                     "versions": ["2.0", "2.1", "2.2", "3.0", "4.0"],
                                     "sourceapp": "880047117",
@@ -301,7 +306,7 @@
                         }
                     },
                     "ext": {
-                        "client": "prebid_server_1.1"
+                        "client": "prebid_server_1.2"
                     }
                 },
                 "impIDs":["1_1","1_2"]
@@ -451,6 +456,7 @@
                                 }
                             },
                             "ext": {
+                                "gpid": 1,
                                 "skadn": {
                                     "versions": ["2.0", "2.1", "2.2", "3.0", "4.0"],
                                     "sourceapp": "880047119",
@@ -516,7 +522,7 @@
                         }
                     },
                     "ext": {
-                        "client": "prebid_server_1.1"
+                        "client": "prebid_server_1.2"
                     }
                 },
                 "impIDs":["2_1","2_2"]

@@ -1,0 +1,33 @@
+{
+    "mockBidRequest": {
+      "id": "test-request-id",
+      "imp": [
+        {
+          "id": "test-imp-id",
+          "video": {
+            "w": 728, 
+            "h": 90
+          },
+          "ext": {
+            "bidder": {
+              "adUnitId": "fake-site-id",
+              "publisherId": "test-publisher-id"
+            }
+          }
+        }
+      ],
+      "site": {
+        "publisher": {
+          "id": "test-publisher-id"
+        }
+      }
+    },
+    
+    "expectedMakeRequestsErrors": [
+      {
+        "value": "One or more invalid or missing video field(s) w, h, mimes",
+        "comparison": "literal"
+      }
+    ]
+  }
+  

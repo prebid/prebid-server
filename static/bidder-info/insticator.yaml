@@ -1,0 +1,17 @@
+endpoint: "https://ex.ingage.tech/v1/prebidserver"
+maintainer:
+  email: "prebid@insticator.com"
+gvlVendorID: 910
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  iframe:
+    url: "https://usync.ingage.tech?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
+    userMacro: "$UID"
