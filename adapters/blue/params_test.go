@@ -34,9 +34,8 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
-	`{"publisherId":"1234"}`,
-	`{"publisherId":"1234", "placementId":"12345"}`,
-	`{"publisherId":"", "placementId":""}`,
+	`{"publisherId":"1234", "placementId":"12345","bidFloor":1,"currency":"USD"}`,
+	`{"publisherId":"", "placementId":"","bidFloor":0,"currency":""}`,
 }
 
 var invalidParams = []string{
@@ -47,5 +46,11 @@ var invalidParams = []string{
 	`4.2`,
 	`[]`,
 	`{}`,
-	`{"placementId":"12345"}`,
+	`{"placementId":"12345","bidFloor":1,"currency":"USD"}`,
+	`{"publisherId":"1234", "bidFloor":1,"currency":"USD"}`,
+	`{"publisherId":"1234", "placementId":"12345","currency":"USD"}`,
+	`{"publisherId":"1234", "placementId":"12345","bidFloor":1}`,
+	`{"publisherId":"Y9Evrh40ejsrCR4EtidUt1cSxhJsz8X1", "placementId":"12345","bidFloor":1,"currency":"USD"}`,
+	`{"publisherId":"1234", "placementId":"alNYtemWggraDVbhJrsOs9pXc3Eld32E","bidFloor":1,"currency":"USD"}`,
+	`{"publisherId":"1234", "placementId":"12345","bidFloor":1,"currency":"Bq7PfZuLxKcMnT5RwV2Gy9AoHiJD4S6F"}`,
 }
