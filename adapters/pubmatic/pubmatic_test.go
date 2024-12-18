@@ -268,14 +268,8 @@ func TestExtractPubmaticExtFromRequest(t *testing.T) {
 					Ext: json.RawMessage(`{"prebid":{"bidderparams":{}}}`),
 				},
 			},
-			expectedReqExt: extRequestAdServer{
-				ExtRequest: openrtb_ext.ExtRequest{
-					Prebid: openrtb_ext.ExtRequestPrebid{
-						BidderParams: json.RawMessage("{}"),
-					},
-				},
-			},
-			wantErr: false,
+			expectedReqExt: extRequestAdServer{},
+			wantErr:        false,
 		},
 		{
 			name: "Only_Pubmatic_wrapper_ext_present",
@@ -286,11 +280,6 @@ func TestExtractPubmaticExtFromRequest(t *testing.T) {
 			},
 			expectedReqExt: extRequestAdServer{
 				Wrapper: &pubmaticWrapperExt{ProfileID: 123, VersionID: 456},
-				ExtRequest: openrtb_ext.ExtRequest{
-					Prebid: openrtb_ext.ExtRequestPrebid{
-						BidderParams: json.RawMessage(`{"wrapper":{"profile":123,"version":456}}`),
-					},
-				},
 			},
 			wantErr: false,
 		},
@@ -313,11 +302,6 @@ func TestExtractPubmaticExtFromRequest(t *testing.T) {
 			expectedReqExt: extRequestAdServer{
 				Wrapper: &pubmaticWrapperExt{ProfileID: 123, VersionID: 456},
 				Acat:    []string{"drg", "dlu", "ssr"},
-				ExtRequest: openrtb_ext.ExtRequest{
-					Prebid: openrtb_ext.ExtRequestPrebid{
-						BidderParams: json.RawMessage(`{"acat":[" drg \t","dlu","ssr"],"wrapper":{"profile":123,"version":456}}`),
-					},
-				},
 			},
 			wantErr: false,
 		},
@@ -330,11 +314,6 @@ func TestExtractPubmaticExtFromRequest(t *testing.T) {
 			},
 			expectedReqExt: extRequestAdServer{
 				Wrapper: &pubmaticWrapperExt{ProfileID: 123, VersionID: 456},
-				ExtRequest: openrtb_ext.ExtRequest{
-					Prebid: openrtb_ext.ExtRequestPrebid{
-						BidderParams: json.RawMessage(`{"acat":[1,3,4],"wrapper":{"profile":123,"version":456}}`),
-					},
-				},
 			},
 			wantErr: true,
 		},
@@ -348,12 +327,6 @@ func TestExtractPubmaticExtFromRequest(t *testing.T) {
 			expectedReqExt: extRequestAdServer{
 				Marketplace: &marketplaceReqExt{AllowedBidders: []string{"pubmatic", "groupm"}},
 				Wrapper:     &pubmaticWrapperExt{ProfileID: 123, VersionID: 456},
-				ExtRequest: openrtb_ext.ExtRequest{
-					Prebid: openrtb_ext.ExtRequestPrebid{
-						BidderParams:         json.RawMessage(`{"wrapper":{"profile":123,"version":456}}`),
-						AlternateBidderCodes: &openrtb_ext.ExtAlternateBidderCodes{Enabled: true, Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{"pubmatic": {Enabled: true, AllowedBidderCodes: []string{"groupm"}}}},
-					},
-				},
 			},
 			wantErr: false,
 		},
