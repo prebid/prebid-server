@@ -13,13 +13,13 @@ import (
 )
 
 func TestBuilder(t *testing.T) {
-	adapter, err := Builder("pixfuture", config.Adapter{Endpoint: "http://mock-endpoint.com"}, config.Server{})
+	adapter, err := Builder("pixfuture", config.Adapter{Endpoint: "https://mock-endpoint.com"}, config.Server{})
 	assert.NoError(t, err, "unexpected error during Builder execution")
 	assert.NotNil(t, adapter, "expected a non-nil adapter instance")
 }
 
 func TestPixfutureAdapter_MakeRequests(t *testing.T) {
-	adapter := &PixfutureAdapter{endpoint: "http://mock-pixfuture-endpoint.com"}
+	adapter := &PixfutureAdapter{endpoint: "https://mock-pixfuture-endpoint.com"}
 
 	t.Run("Valid Request", func(t *testing.T) {
 		bidRequest := &openrtb2.BidRequest{
@@ -39,7 +39,7 @@ func TestPixfutureAdapter_MakeRequests(t *testing.T) {
 
 		request := requests[0]
 		assert.Equal(t, "POST", request.Method, "unexpected HTTP method")
-		assert.Equal(t, "http://mock-pixfuture-endpoint.com", request.Uri, "unexpected request URI")
+		assert.Equal(t, "https://mock-pixfuture-endpoint.com", request.Uri, "unexpected request URI")
 		assert.Contains(t, string(request.Body), `"id":"test-request-id"`, "unexpected request body")
 		assert.Equal(t, "application/json", request.Headers.Get("Content-Type"), "unexpected content-type")
 	})
