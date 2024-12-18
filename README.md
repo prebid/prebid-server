@@ -92,6 +92,10 @@ An option for developing Prebid Server in a reproducible environment isolated fr
 
 Prebid Server is not currently intended to be imported by other projects. Go Modules is used to manage dependencies, which also makes it possible to import Prebid Server packages. This is not supported. We offer no guarantees regarding the stability of packages and do not adhere to semantic versioning guidelines.
 
+## Swapping Global Dependencies
+
+Logger is a global side-effectful dependency that sometimes needs to be swapped in order to modify the behavior.  This can be done compile-time in the `di` package.  It contains the `interface` sub-package with a ILogger interface definition and `provider` with the implementation of the default logger (`providers/log/default.go`) and an example of an alternative (`providers/log/alternative.go`) logger.  Notice that the alternative logger is compiled only if a `custom_logger` build tag is specified while default logger will not be compiled in that case.  You can replace the `alternative.go` with your logger implementation, but please adhere to the interface and expose a `ProvideLogger()` function that is called by `di/di.go` to set your dependency to be used globally. This is not a dependency injection per se, but this mechanism can be extended to other similar side-effectful global dependencies besides logger.
+
 ## Contributing
 > [!IMPORTANT]
 > All contributions must follow the [Prebid Code of Conduct](https://prebid.org/code-of-conduct/) and the [Prebid Module Rules](https://docs.prebid.org/dev-docs/module-rules.html).

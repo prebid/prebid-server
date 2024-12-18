@@ -6,7 +6,7 @@ import (
 	// ruleid: package-import-check
 	"github.com/mitchellh/copystructure"
 	// ruleid: package-import-check
-	"github.com/golang/glog"
+	"github.com/prebid/prebid-server/v3/di"
 )
 
 import (
@@ -17,7 +17,7 @@ import (
 	// ok: package-import-check
 	"os"
 	// ruleid: package-import-check
-	log "github.com/golang/glog"
+	log "github.com/prebid/prebid-server/v3/di"
 )
 
 import (
@@ -32,13 +32,13 @@ import (
 )
 
 // ruleid: package-import-check
-import "github.com/golang/glog"
+import "github.com/prebid/prebid-server/v3/di"
 
 // ruleid: package-import-check
 import "github.com/mitchellh/copystructure"
 
 // ruleid: package-import-check
-import log "github.com/golang/glog"
+import log "github.com/prebid/prebid-server/v3/di"
 
 // ruleid: package-import-check
 import copy "github.com/mitchellh/copystructure"

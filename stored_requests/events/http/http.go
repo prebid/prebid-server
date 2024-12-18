@@ -15,7 +15,7 @@ import (
 	"github.com/prebid/prebid-server/v3/stored_requests/events"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 
-	"github.com/golang/glog"
+	"github.com/prebid/prebid-server/v3/di"
 )
 
 // NewHTTPEvents makes an EventProducer which creates events by pinging an external HTTP API
@@ -77,7 +77,7 @@ func NewHTTPEvents(client *httpCore.Client, endpoint string, ctxProducer func() 
 		saves:         make(chan events.Save, 1),
 		invalidations: make(chan events.Invalidation, 1),
 	}
-	glog.Infof("Loading HTTP cache from GET %s", endpoint)
+	di.Log.Infof("Loading HTTP cache from GET %s", endpoint)
 	e.fetchAll()
 
 	go e.refresh(time.Tick(refreshRate))
@@ -117,7 +117,7 @@ func (e *HTTPEvents) refresh(ticker <-chan time.Time) {
 
 		// Error with url parsing
 		if urlErr != nil {
-			glog.Errorf("Disabling refresh HTTP cache from GET '%s': %v", e.Endpoint, urlErr)
+			di.Log.Errorf("Disabling refresh HTTP cache from GET '%s': %v", e.Endpoint, urlErr)
 			return
 		}
 
@@ -133,7 +133,7 @@ func (e *HTTPEvents) refresh(ticker <-chan time.Time) {
 		// Convert to string
 		endpoint := endpointUrl.String()
 
-		glog.Infof("Refreshing HTTP cache from GET '%s'", endpoint)
+		di.Log.Infof("Refreshing HTTP cache from GET '%s'", endpoint)
 
 		ctx, cancel := e.ctxProducer()
 		resp, err := ctxhttp.Get(ctx, e.client, endpoint)
@@ -165,25 +165,25 @@ func (e *HTTPEvents) refresh(ticker <-chan time.Time) {
 // It returns true if everything was successful, and false if any errors occurred.
 func (e *HTTPEvents) parse(endpoint string, resp *httpCore.Response, err error) (*responseContract, bool) {
 	if err != nil {
-		glog.Errorf("Failed call: GET %s for Stored Requests: %v", endpoint, err)
+		di.Log.Errorf("Failed call: GET %s for Stored Requests: %v", endpoint, err)
 		return nil, false
 	}
 	defer resp.Body.Close()
 
 	respBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		glog.Errorf("Failed to read body of GET %s for Stored Requests: %v", endpoint, err)
+		di.Log.Errorf("Failed to read body of GET %s for Stored Requests: %v", endpoint, err)
 		return nil, false
 	}
 
 	if resp.StatusCode != httpCore.StatusOK {
-		glog.Errorf("Got %d response from GET %s for Stored Requests. Response body was: %s", resp.StatusCode, endpoint, string(respBytes))
+		di.Log.Errorf("Got %d response from GET %s for Stored Requests. Response body was: %s", resp.StatusCode, endpoint, string(respBytes))
 		return nil, false
 	}
 
 	var respObj responseContract
 	if err := jsonutil.UnmarshalValid(respBytes, &respObj); err != nil {
-		glog.Errorf("Failed to unmarshal body of GET %s for Stored Requests: %v", endpoint, err)
+		di.Log.Errorf("Failed to unmarshal body of GET %s for Stored Requests: %v", endpoint, err)
 		return nil, false
 	}
 
