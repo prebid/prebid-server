@@ -84,12 +84,6 @@ func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpTradPlus, error) {
 		}
 	}
 
-	if tradplusExt.AccountID == "" {
-		return nil, &errortypes.BadInput{
-			Message: "imp.ext.accountId required",
-		}
-	}
-
 	return &tradplusExt, nil
 }
 
