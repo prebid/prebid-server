@@ -6,14 +6,28 @@
     "properties": {
         "placementId": {
             "type": "string",
-            "description": "Placement ID provided by Blue"
+            "description": "Placement ID provided by Blue",
+            "maxLength": 30
         },
         "publisherId": {
             "type": "string",
-            "description": "The publisher’s ID provided by Blue"
+            "description": "The publisher’s ID provided by Blue",
+            "maxLength": 30
+        },
+        "bidFloor": {
+            "type": "number",
+            "description": "The bid floor value provided by Blue"
+        },
+        "currency": {
+            "type": "string",
+            "description": "The currency code provided by Blue",
+            "maxLength": 30
         }
     },
     "required": [
-        "publisherId"
+        "placementId",
+        "publisherId",
+        "bidFloor",
+        "currency"
     ]
 }
