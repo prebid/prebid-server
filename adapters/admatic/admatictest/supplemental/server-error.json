@@ -25,6 +25,14 @@
   "httpCalls": [
     {
       "expectedRequest": {
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
         "uri": "http://pbs.admatic.com.tr?host=layer.serve.admatic.com.tr",
         "body": {
           "id": "test-request-id",
