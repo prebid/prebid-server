@@ -12,20 +12,19 @@ import (
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
-type PixfutureAdapter struct {
+type adapter struct {
 	endpoint string
 }
 
 // Builder builds a new instance of the Pixfuture adapter.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	bidder := &PixfutureAdapter{
+	return &adapter{
 		endpoint: config.Endpoint,
-	}
-	return bidder, nil
+	}, nil
 }
 
 // MakeRequests prepares and serializes HTTP requests to be sent to the Pixfuture endpoint.
-func (a *PixfutureAdapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	if len(request.Imp) == 0 {
 		return nil, []error{&errortypes.BadInput{Message: "No impressions in the bid request"}}
 	}
@@ -61,7 +60,7 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 }
 
 // MakeBids parses the HTTP response from the Pixfuture endpoint and generates a BidderResponse.
-func (a *PixfutureAdapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if responseData.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}

@@ -18,8 +18,8 @@ func TestBuilder(t *testing.T) {
 	assert.NotNil(t, adapter, "expected a non-nil adapter instance")
 }
 
-func TestPixfutureAdapter_MakeRequests(t *testing.T) {
-	adapter := &PixfutureAdapter{endpoint: "https://mock-pixfuture-endpoint.com"}
+func TestAdapter_MakeRequests(t *testing.T) {
+	adapter := &adapter{endpoint: "https://mock-pixfuture-endpoint.com"}
 
 	t.Run("Valid Request", func(t *testing.T) {
 		bidRequest := &openrtb2.BidRequest{
@@ -61,8 +61,8 @@ func TestPixfutureAdapter_MakeRequests(t *testing.T) {
 	})
 }
 
-func TestPixfutureAdapter_MakeBids(t *testing.T) {
-	adapter := &PixfutureAdapter{}
+func TestAdapter_MakeBids(t *testing.T) {
+	adapter := &adapter{}
 
 	t.Run("Valid Response", func(t *testing.T) {
 		responseData := &adapters.ResponseData{
