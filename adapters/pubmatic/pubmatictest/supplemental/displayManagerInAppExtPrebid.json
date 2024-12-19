@@ -110,8 +110,7 @@
                         "wrapper": {
                             "profile": 5123,
                             "version": 1
-                        },
-                        "prebid": {}
+                        }
                     }
                 },
                 "impIDs": [
