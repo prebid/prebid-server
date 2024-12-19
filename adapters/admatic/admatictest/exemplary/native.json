@@ -1,6 +1,12 @@
 {
   "mockBidRequest": {
     "id": "test-request-id-native",
+    "device": {
+      "ua": "test-user-agent",
+      "ip": "123.123.123.123",
+      "language": "en",
+      "dnt": 0
+    },
     "imp": [
       {
         "id": "test-imp-id-native",
@@ -36,6 +42,12 @@
         "uri": "http://pbs.admatic.com.tr?host=layer.serve.admatic.com.tr",
         "body": {
           "id": "test-request-id-native",
+          "device": {
+            "ua": "test-user-agent",
+            "ip": "123.123.123.123",
+            "language": "en",
+            "dnt": 0
+          },
           "imp": [
             {
               "id": "test-imp-id-native",
