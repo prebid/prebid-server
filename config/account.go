@@ -42,6 +42,7 @@ type Account struct {
 	DefaultBidLimit         int                                         `mapstructure:"default_bid_limit" json:"default_bid_limit"`
 	BidAdjustments          *openrtb_ext.ExtRequestPrebidBidAdjustments `mapstructure:"bidadjustments" json:"bidadjustments"`
 	Privacy                 AccountPrivacy                              `mapstructure:"privacy" json:"privacy"`
+	EEACountries            []string                                    `mapstructure:"eea_countries" json:"eea_countries"`
 }
 
 // CookieSync represents the account-level defaults for the cookie sync endpoint.
@@ -378,6 +379,15 @@ func (ip *IPv4) Validate(errs []error) []error {
 	if ip.AnonKeepBits > iputil.IPv4BitSize || ip.AnonKeepBits < 0 {
 		err := fmt.Errorf("bits cannot exceed %d in ipv4 address, or be less than 0", iputil.IPv4BitSize)
 		errs = append(errs, err)
+	}
+	return errs
+}
+
+func (a *Account) ValidateEEACountries(errs []error) []error {
+	for _, country := range a.EEACountries {
+		if len(country) != 2 { // Check if country code is valid
+			errs = append(errs, fmt.Errorf("invalid EEA country code: %s", country))
+		}
 	}
 	return errs
 }
