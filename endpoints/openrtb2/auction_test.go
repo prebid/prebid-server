@@ -5301,7 +5301,7 @@ func TestSetSeatNonBidRaw(t *testing.T) {
 			},
 		},
 		{
-			name: "returnallbistatus is true, update seatnonbid in nil responseExt",
+			name: "returnallbidstatus is true, update seatnonbid in nil responseExt",
 			args: args{
 				request:  &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid": { "returnallbidstatus" : true }}`)}},
 				response: &openrtb2.BidResponse{Ext: nil},
