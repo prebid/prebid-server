@@ -182,11 +182,12 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		RequestStatus: metrics.RequestStatusOK,
 	}
 
+	foundErrors := false
 	activityControl := privacy.ActivityControl{}
 	defer func() {
 		// if AuctionObject.Response is nil then collect nonbids from all stage outcomes and set it in the AuctionObject.
 		// Nil AuctionObject.Response indicates the occurrence of a fatal error.
-		if ao.Response == nil {
+		if foundErrors {
 			seatNonBid.Append(getNonBidsFromStageOutcomes(hookExecutor.GetOutcomes()))
 			ao.SeatNonBid = seatNonBid.Get()
 		}
@@ -200,6 +201,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	req, impExtInfoMap, storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, account, errL := deps.parseRequest(r, &labels, hookExecutor)
 	if errortypes.ContainsFatalError(errL) && writeError(errL, w, &labels) {
+		foundErrors = true
 		return
 	}
 
@@ -241,6 +243,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	// Set Integration Information
 	err := deps.setIntegrationType(req, account)
 	if err != nil {
+		foundErrors = true
 		errL = append(errL, err)
 		writeError(errL, w, &labels)
 		return
@@ -284,6 +287,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	ao.Response = response
 	rejectErr, isRejectErr := hookexecution.CastRejectErr(err)
 	if err != nil && !isRejectErr {
+		foundErrors = true
 		if errortypes.ReadCode(err) == errortypes.BadInputErrorCode {
 			writeError([]error{err}, w, &labels)
 			return
