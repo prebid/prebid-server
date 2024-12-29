@@ -1,15 +1,18 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "title": "Foo Adapter Params",
-  "description": "A schema which validates params accepted by the Foo adapter",
+  "title": "RediAds Adapter Params",
+  "description": "A schema which validates params accepted by the Rediads adapter",
   "type": "object",
-
   "properties": {
-    "placementId": {
-      "type": "string",
-      "description": "Placement ID"
+    "account_id": {
+      "type": "string"
+    },
+    "site": {
+      "type": "string"
+    },
+    "slot": {
+      "type": "string"
     }
   },
-
-  "required": ["placementId"]
+  "required": ["account_id"]
 }

@@ -1,13 +1,14 @@
+#rediads_commit_check : disabled true should be uncommented before raising release PRs
+# disabled: true
 # We have the following regional endpoint domains: us-east and us-west
 # Please deploy this config in each of your datacenters with the appropriate regional subdomain
-endpoint: "http://REGION.example.com/openrtb2"
+endpoint: "https://bidding.rediads.com/openrtb2/auction"
 endpointCompression: gzip
 geoscope:
-  - USA
-  - CAN
+  - global
 maintainer:
-  email: prebid-maintainer@example.com
-gvlVendorID: 42
+  email: support@rediads.com
+# gvlVendorID: 42
 modifyingVastXmlAllowed: true
 openrtb:
   version: 2.6
@@ -18,19 +19,20 @@ capabilities:
       - video
       - audio
       - native
-  site:
-    mediaTypes:
-      - banner
-      - video
-      - audio
-      - native
-  dooh:
-    mediaTypes:
-      - banner
-      - video
-      - audio
-      - native
+  # site:
+  #   mediaTypes:
+  #     - banner
+  #     - video
+  #     - audio
+  #     - native
+  # dooh:
+  #   mediaTypes:
+  #     - banner
+  #     - video
+  #     - audio
+  #     - native
 userSync:
   redirect:
-    url: https://foo.com/sync?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
+    #rediads_todo: change with correct user sync url 
+    url: https://cdn.rediads.com/sync?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
     userMacro: $UID

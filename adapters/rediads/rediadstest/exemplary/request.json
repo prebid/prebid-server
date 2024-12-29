@@ -13,14 +13,15 @@
       },
       "ext": {
         "bidder": {
-          "placementId": "12345",
-          "key": "your-bidder-specific-key"
+          "account_id": "123",
+          "site": "rediads.com",
+          "slot": "12345"
         }
       }
     }
   ],
   "site": {
-    "page": "https://example.com",
+    "page": "https://rediads.com",
     "publisher": {
       "id": "1234"
     }

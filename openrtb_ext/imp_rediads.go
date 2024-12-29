@@ -1,5 +1,7 @@
 package openrtb_ext
 
-type ImpExtFoo struct {
-  PlacementID string `json:"placementId"`
+type ExtImpRediads struct {
+	AccountID string `json:"account_id"`
+	Site      string `json:"site"`
+	Slot      string `json:"slot"`
 }

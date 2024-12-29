@@ -1,98 +1,135 @@
-package foo
+package rediads
 
 import (
-  "fmt"
-  "net/http"
+	"fmt"
+	"net/http"
 
-  "github.com/prebid/openrtb/v20/openrtb2"
-  "github.com/prebid/prebid-server/v3/adapters"
-  "github.com/prebid/prebid-server/v3/config"
-  "github.com/prebid/prebid-server/v3/errortypes"
-  "github.com/prebid/prebid-server/v3/util/jsonutil"
-  "github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
-  endpoint string
+	endpoint string
 }
 
-// Builder builds a new instance of the {bidder} adapter for the given bidder with the given config.
+// Builder builds a new instance of the adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-  bidder := &adapter{
-    endpoint: config.Endpoint,
-  }
-  return bidder, nil
+	bidder := &adapter{
+		endpoint: config.Endpoint,
+	}
+	return bidder, nil
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-  requestJSON, err := jsonutil.Marshal(request)
-  if err != nil {
-    return nil, []error{err}
-  }
+	var errors []error
 
-  requestData := &adapters.RequestData{
-    Method:  "POST",
-    Uri:     a.endpoint,
-    Body:    requestJSON,
-    ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
-  }
+	// Iterate through all impressions in the request
+	for _, imp := range request.Imp {
+		// Extract and validate bidder-specific params from imp.Ext
+		var bidderExt adapters.ExtImpBidder
+		var rediadsExt openrtb_ext.ExtImpRediads
 
-  return []*adapters.RequestData{requestData}, nil
+		// Unmarshal bidder extension
+		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
+			errors = append(errors, &errortypes.BadInput{
+				Message: fmt.Sprintf("Invalid Ext format in impression %s", imp.ID),
+			})
+			continue
+		}
+
+		// Unmarshal custom bidder params
+		if err := jsonutil.Unmarshal(bidderExt.Bidder, &rediadsExt); err != nil {
+			errors = append(errors, &errortypes.BadInput{
+				Message: fmt.Sprintf("Invalid bidder params in impression %s", imp.ID),
+			})
+			continue
+		}
+
+		// Validate required params
+		if rediadsExt.AccountID == "" {
+			errors = append(errors, &errortypes.BadInput{
+				Message: fmt.Sprintf("Missing account_id in impression %s", imp.ID),
+			})
+			continue
+		}
+
+		// Update the impression with bidder params if needed
+		// Example: Attach Slot to Imp.TagID
+		// imp.TagID = rediadsExt.Slot
+	}
+
+	requestJSON, err := jsonutil.Marshal(request)
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	requestData := &adapters.RequestData{
+		Method: "POST",
+		Uri:    a.endpoint,
+		Body:   requestJSON,
+		ImpIDs: openrtb_ext.GetImpIDs(request.Imp),
+	}
+
+	return []*adapters.RequestData{requestData}, errors
 }
 
 func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
-  if bid.Ext != nil {
-    var bidExt openrtb_ext.ExtBid
-    err := jsonutil.Unmarshal(bid.Ext, &bidExt)
-    if err == nil && bidExt.Prebid != nil {
-      return openrtb_ext.ParseBidType(string(bidExt.Prebid.Type))
-    }
-  }
+	if bid.Ext != nil {
+		var bidExt openrtb_ext.ExtBid
+		err := jsonutil.Unmarshal(bid.Ext, &bidExt)
+		if err == nil && bidExt.Prebid != nil {
+			return openrtb_ext.ParseBidType(string(bidExt.Prebid.Type))
+		}
+	}
 
-  return "", &errortypes.BadServerResponse{
-    Message: fmt.Sprintf("Failed to parse impression \"%s\" mediatype", bid.ImpID),
-  }
+	return "", &errortypes.BadServerResponse{
+		Message: fmt.Sprintf("Failed to parse impression \"%s\" mediatype", bid.ImpID),
+	}
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-  if responseData.StatusCode == http.StatusNoContent {
-    return nil, nil
-  }
+	if responseData.StatusCode == http.StatusNoContent {
+		return nil, nil
+	}
 
-  if responseData.StatusCode == http.StatusBadRequest {
-    err := &errortypes.BadInput{
-      Message: "Unexpected status code: 400. Bad request from publisher. Run with request.debug = 1 for more info.",
-    }
-    return nil, []error{err}
-  }
+	if responseData.StatusCode == http.StatusBadRequest {
+		err := &errortypes.BadInput{
+			Message: "Unexpected status code: 400. Bad request from publisher. Run with request.debug = 1 for more info.",
+		}
+		return nil, []error{err}
+	}
 
-  if responseData.StatusCode != http.StatusOK {
-    err := &errortypes.BadServerResponse{
-      Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info.", responseData.StatusCode),
-    }
-    return nil, []error{err}
-  }
+	if responseData.StatusCode != http.StatusOK {
+		err := &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info.", responseData.StatusCode),
+		}
+		return nil, []error{err}
+	}
 
-  var response openrtb2.BidResponse
-  if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
-    return nil, []error{err}
-  }
+	var response openrtb2.BidResponse
+	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
+		return nil, []error{err}
+	}
 
-  bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
-  bidResponse.Currency = response.Cur
-  var errors []error
-  for _, seatBid := range response.SeatBid {
-    for i, bid := range seatBid.Bid {
-      bidType, err := getMediaTypeForBid(bid)
-      if err != nil {
-        errors = append(errors, err)
-        continue
-      }
-      bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-        Bid:     &seatBid.Bid[i],
-        BidType: bidType,
-      })
-    }
-  }
-  return bidResponse, nil
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
+	bidResponse.Currency = response.Cur
+	var errors []error
+	for _, seatBid := range response.SeatBid {
+		for i, bid := range seatBid.Bid {
+			bidType, err := getMediaTypeForBid(bid)
+			if err != nil {
+				errors = append(errors, err)
+				continue
+			}
+			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+				Bid:     &seatBid.Bid[i],
+				BidType: bidType,
+			})
+		}
+	}
+	return bidResponse, nil
 }
