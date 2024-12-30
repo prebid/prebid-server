@@ -115,17 +115,6 @@ type FloorDetail struct {
 	SkippedReason   string `json:"skippedReason"`
 }
 
-type FloorData struct {
-	FetchStatus     string `json:"fetchStatus"`
-	FloorProvider   string `json:"floorProvider"`
-	Location        string `json:"location"`
-	ModelVersion    string `json:"modelVersion"`
-	NoFloorSignaled bool   `json:"noFloorSignaled"`
-	SkipRate        int64  `json:"skipRate"`
-	Skipped         bool   `json:"skipped"`
-	SkippedReason   string `json:"skippedReason"`
-}
-
 type AuctionDetail struct {
 	AdUnitCodes []string `json:"adUnitCodes"`
 	RefreshRank int64    `json:"refreshRank"`
@@ -303,17 +292,20 @@ func UnmarshalExtensions(ao *LogObject) (map[string]interface{}, map[string]inte
 
 	data, err := jsonutil.Marshal(ao.RequestWrapper)
 	if err != nil {
+		glog.Errorf("[pubxai] Error unmarshalling extensions: %v", err)
 		return nil, nil, err
 	}
 
 	err = jsonutil.Unmarshal(data, &requestExt)
 	if err != nil {
+		glog.Errorf("[pubxai] Error unmarshalling extensions: %v", err)
 		return nil, nil, err
 	}
 
 	err = jsonutil.Unmarshal(ao.Response.Ext, &responseExt)
 	if err != nil {
-		return nil, nil, err
+		glog.Errorf("[pubxai] Error unmarshalling extensions: %v", err)
+		return requestExt, nil, nil
 	}
 
 	return requestExt, responseExt, nil

@@ -22,12 +22,20 @@ func TestProcessLogData(t *testing.T) {
 	if err := json.Unmarshal(requestData, &bidRequest); err != nil {
 		panic(err)
 	}
-	responseData, err := os.ReadFile("./mocks/mock_openrtb_response.json")
+	winningBidResponseData, err := os.ReadFile("./mocks/mock_openrtb_response_with_winningbid.json")
 	if err != nil {
 		panic(err)
 	}
-	var bidResponse openrtb2.BidResponse
-	if err := json.Unmarshal(responseData, &bidResponse); err != nil {
+	var winningBidResponse openrtb2.BidResponse
+	if err := json.Unmarshal(winningBidResponseData, &winningBidResponse); err != nil {
+		panic(err)
+	}
+	nonWinningBidResponseData, err := os.ReadFile("./mocks/mock_openrtb_response_without_winningbid.json")
+	if err != nil {
+		panic(err)
+	}
+	var nonWinningBidResponse openrtb2.BidResponse
+	if err := json.Unmarshal(nonWinningBidResponseData, &nonWinningBidResponse); err != nil {
 		panic(err)
 	}
 	tests := []struct {
@@ -85,7 +93,7 @@ func TestProcessLogData(t *testing.T) {
 				RequestWrapper: &openrtb_ext.RequestWrapper{
 					BidRequest: &bidRequest,
 				},
-				Response: &bidResponse,
+				Response: &winningBidResponse,
 				StartTime: time.Now(),
 			},
 			expectedAuctionBids: 1,
@@ -97,11 +105,7 @@ func TestProcessLogData(t *testing.T) {
 				RequestWrapper: &openrtb_ext.RequestWrapper{
 					BidRequest: &bidRequest,
 				},
-				Response: &openrtb2.BidResponse{
-					SeatBid: []openrtb2.SeatBid{
-						{},
-					},
-				},
+				Response: &nonWinningBidResponse,
 				StartTime: time.Now(),
 			},
 			expectedAuctionBids: 1,

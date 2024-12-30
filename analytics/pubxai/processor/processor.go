@@ -28,7 +28,6 @@ func (p *ProcessorServiceImpl) ProcessBidData(bidResponses []map[string]interfac
 
 	requestExt, responseExt, err := utils.UnmarshalExtensions(ao)
 	if err != nil {
-		glog.Errorf("[pubxai] Error unmarshalling extensions: %v", err)
 		return nil, nil
 	}
 

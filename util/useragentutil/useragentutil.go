@@ -8,75 +8,75 @@ import (
 
 // Device types enum
 const (
-	DEVICE_DESKTOP = iota
-	DEVICE_MOBILE
-	DEVICE_TABLET
+	DeviceDesktop = iota
+	DeviceMobile
+	DeviceTablet
 )
 
 // Browser types enum
 const (
-	BROWSER_CHROME = iota
-	BROWSER_FIREFOX
-	BROWSER_SAFARI
-	BROWSER_EDGE
-	BROWSER_INTERNET_EXPLORER
-	BROWSER_OTHER
+	BrowserChrome = iota
+	BrowserFirefox
+	BrowserSafari
+	BrowserEdge
+	BrowserInternetExplorer
+	BrowserOther
 )
 
 // OS types enum
 const (
-	OS_WINDOWS = iota
-	OS_MAC
-	OS_LINUX
-	OS_UNIX
-	OS_IOS
-	OS_ANDROID
-	OS_OTHER
+	OsWindows = iota
+	OsMac
+	OsLinux
+	OsUnix
+	OsIOS
+	OsAndroid
+	OsOther
 )
 
 // GetDeviceType determines the device type from the user agent
 func GetDeviceType(userAgent string) int {
 	ua := useragent.Parse(userAgent)
 	if ua.Tablet {
-		return DEVICE_TABLET
+		return DeviceTablet
 	} else if ua.Mobile {
-		return DEVICE_MOBILE
+		return DeviceMobile
 	}
-	return DEVICE_DESKTOP
+	return DeviceDesktop
 }
 
 // GetBrowser determines the browser type from the user agent
 func GetBrowser(userAgent string) int {
 	ua := useragent.Parse(userAgent)
 	if ua.IsEdge() {
-		return BROWSER_EDGE
+		return BrowserEdge
 	} else if ua.IsChrome() {
-		return BROWSER_CHROME
+		return BrowserChrome
 	} else if ua.IsFirefox() {
-		return BROWSER_FIREFOX
+		return BrowserFirefox
 	} else if ua.IsSafari() {
-		return BROWSER_SAFARI
+		return BrowserSafari
 	} else if ua.IsInternetExplorer() {
-		return BROWSER_INTERNET_EXPLORER
+		return BrowserInternetExplorer
 	}
-	return BROWSER_OTHER
+	return BrowserOther
 }
 
 // GetOS determines the OS from the user agent
 func GetOS(userAgent string) int {
 	ua := useragent.Parse(userAgent)
 	if ua.IsAndroid() {
-		return OS_ANDROID
+		return OsAndroid
 	} else if ua.IsIOS() {
-		return OS_IOS
+		return OsIOS
 	} else if ua.IsMacOS() {
-		return OS_MAC
+		return OsMac
 	} else if ua.IsWindows() {
-		return OS_WINDOWS
+		return OsWindows
 	} else if strings.Contains(strings.ToLower(userAgent), "x11") {
-		return OS_UNIX
+		return OsUnix
 	} else if ua.IsLinux() {
-		return OS_LINUX
+		return OsLinux
 	}
-	return OS_OTHER
+	return OsOther
 }
