@@ -40,19 +40,19 @@ func TestProcessLogData(t *testing.T) {
 	}
 	tests := []struct {
 		name                string
-		logObject          *utils.LogObject
+		logObject           *utils.LogObject
 		expectedAuctionBids int
 		expectedWinningBids int
 	}{
 		{
 			name:                "NilAuctionObject",
-			logObject:          nil,
+			logObject:           nil,
 			expectedAuctionBids: 0,
 			expectedWinningBids: 0,
 		},
 		{
 			name:                "NilRequestWrapper",
-			logObject:          &utils.LogObject{},
+			logObject:           &utils.LogObject{},
 			expectedAuctionBids: 0,
 			expectedWinningBids: 0,
 		},
@@ -93,7 +93,7 @@ func TestProcessLogData(t *testing.T) {
 				RequestWrapper: &openrtb_ext.RequestWrapper{
 					BidRequest: &bidRequest,
 				},
-				Response: &winningBidResponse,
+				Response:  &winningBidResponse,
 				StartTime: time.Now(),
 			},
 			expectedAuctionBids: 1,
@@ -105,7 +105,7 @@ func TestProcessLogData(t *testing.T) {
 				RequestWrapper: &openrtb_ext.RequestWrapper{
 					BidRequest: &bidRequest,
 				},
-				Response: &nonWinningBidResponse,
+				Response:  &nonWinningBidResponse,
 				StartTime: time.Now(),
 			},
 			expectedAuctionBids: 1,
@@ -120,14 +120,14 @@ func TestProcessLogData(t *testing.T) {
 			auctionBids, winningBids := processorService.ProcessLogData(tt.logObject)
 			fmt.Println("name", tt.name)
 			// Use zero value if auctionBids is nil
-            bidsLength := 0
-            if auctionBids != nil {
-                bidsLength = len(auctionBids.Bids)
-            }
+			bidsLength := 0
+			if auctionBids != nil {
+				bidsLength = len(auctionBids.Bids)
+			}
 			fmt.Println("auctionBids", bidsLength, tt.expectedAuctionBids)
-			fmt.Println("winningBids",  len(winningBids), tt.expectedWinningBids)
-            assert.Equal(t, tt.expectedAuctionBids, bidsLength)
-            assert.Equal(t, tt.expectedWinningBids, len(winningBids))
+			fmt.Println("winningBids", len(winningBids), tt.expectedWinningBids)
+			assert.Equal(t, tt.expectedAuctionBids, bidsLength)
+			assert.Equal(t, tt.expectedWinningBids, len(winningBids))
 		})
 	}
 }

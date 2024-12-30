@@ -12,8 +12,9 @@ type MockConfigService struct {
 
 // NewMockConfigService creates a new mock instance
 func NewMockConfigService() *MockConfigService {
-    return &MockConfigService{}
+	return &MockConfigService{}
 }
+
 // IsSameAs provides a mock function
 func (m *MockConfigService) IsSameAs(a, b *config.Configuration) bool {
 	args := m.Called(a, b)

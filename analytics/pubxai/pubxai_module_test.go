@@ -28,80 +28,80 @@ func TestInitializePubxAIModule(t *testing.T) {
 	mockClock := clock.NewMock()
 
 	tests := []struct {
-		name              string
-		client           *http.Client
-		publisherId      string
-		endpoint         string
-		bufferInterval   string
-		bufferSize       string
-		samplingPercent  int
-		configRefresh    string
+		name            string
+		client          *http.Client
+		publisherId     string
+		endpoint        string
+		bufferInterval  string
+		bufferSize      string
+		samplingPercent int
+		configRefresh   string
 		wantErr         bool
 	}{
 		{
-			name:             "successful initialization",
-			client:           mockClient,
-			publisherId:      "testPublisher",
-			endpoint:         "http://test-endpoint",
-			bufferInterval:   "10s",
-			bufferSize:       "1MB",
-			samplingPercent:  50,
-			configRefresh:    "1m",
+			name:            "successful initialization",
+			client:          mockClient,
+			publisherId:     "testPublisher",
+			endpoint:        "http://test-endpoint",
+			bufferInterval:  "10s",
+			bufferSize:      "1MB",
+			samplingPercent: 50,
+			configRefresh:   "1m",
 			wantErr:         false,
 		},
 		{
-			name:             "client is nil",
-			client:           nil,
-			publisherId:      "testPublisher",
-			endpoint:         "http://test-endpoint",
-			bufferInterval:   "10s",
-			bufferSize:       "1MB",
-			samplingPercent:  50,
-			configRefresh:    "1m",
+			name:            "client is nil",
+			client:          nil,
+			publisherId:     "testPublisher",
+			endpoint:        "http://test-endpoint",
+			bufferInterval:  "10s",
+			bufferSize:      "1MB",
+			samplingPercent: 50,
+			configRefresh:   "1m",
 			wantErr:         true,
 		},
 		{
-			name:             "empty publisherId",
-			client:           mockClient,
-			publisherId:      "",
-			endpoint:         "http://test-endpoint",
-			bufferInterval:   "10s",
-			bufferSize:       "1MB",
-			samplingPercent:  50,
-			configRefresh:    "1m",
+			name:            "empty publisherId",
+			client:          mockClient,
+			publisherId:     "",
+			endpoint:        "http://test-endpoint",
+			bufferInterval:  "10s",
+			bufferSize:      "1MB",
+			samplingPercent: 50,
+			configRefresh:   "1m",
 			wantErr:         true,
 		},
 		{
-			name:             "empty endpoint",
-			client:           mockClient,
-			publisherId:      "testPublisher",
-			endpoint:         "",
-			bufferInterval:   "10s",
-			bufferSize:       "1MB",
-			samplingPercent:  50,
-			configRefresh:    "1m",
+			name:            "empty endpoint",
+			client:          mockClient,
+			publisherId:     "testPublisher",
+			endpoint:        "",
+			bufferInterval:  "10s",
+			bufferSize:      "1MB",
+			samplingPercent: 50,
+			configRefresh:   "1m",
 			wantErr:         true,
 		},
 		{
-			name:             "invalid bufferInterval",
-			client:           mockClient,
-			publisherId:      "testPublisher",
-			endpoint:         "http://test-endpoint",
-			bufferInterval:   "invalid",
-			bufferSize:       "1MB",
-			samplingPercent:  50,
-			configRefresh:    "1m",
+			name:            "invalid bufferInterval",
+			client:          mockClient,
+			publisherId:     "testPublisher",
+			endpoint:        "http://test-endpoint",
+			bufferInterval:  "invalid",
+			bufferSize:      "1MB",
+			samplingPercent: 50,
+			configRefresh:   "1m",
 			wantErr:         true,
 		},
 		{
-			name:             "invalid bufferSize",
-			client:           mockClient,
-			publisherId:      "testPublisher",
-			endpoint:         "http://test-endpoint",
-			bufferInterval:   "10s",
-			bufferSize:       "invalid",
-			samplingPercent:  50,
-			configRefresh:    "1m",
+			name:            "invalid bufferSize",
+			client:          mockClient,
+			publisherId:     "testPublisher",
+			endpoint:        "http://test-endpoint",
+			bufferInterval:  "10s",
+			bufferSize:      "invalid",
+			samplingPercent: 50,
+			configRefresh:   "1m",
 			wantErr:         true,
 		},
 	}
@@ -122,8 +122,8 @@ func TestInitializePubxAIModule(t *testing.T) {
 
 func TestPubxaiModule_start(t *testing.T) {
 	tests := []struct {
-		name           string
-		initialConfig  *config.Configuration
+		name          string
+		initialConfig *config.Configuration
 		newConfig     *config.Configuration
 		configIsSame  bool
 		expectUpdate  bool
@@ -161,74 +161,74 @@ func TestPubxaiModule_start(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-        t.Run(tt.name, func(t *testing.T) {
-            // Setup mocks
-            mockConfigService := &configMock.MockConfigService{}
-            mockAuctionBidsQueue := queueMock.NewMockQueueService[utils.AuctionBids](t)
-            mockWinBidsQueue := queueMock.NewMockQueueService[utils.WinningBid](t)
+		t.Run(tt.name, func(t *testing.T) {
+			// Setup mocks
+			mockConfigService := &configMock.MockConfigService{}
+			mockAuctionBidsQueue := queueMock.NewMockQueueService[utils.AuctionBids](t)
+			mockWinBidsQueue := queueMock.NewMockQueueService[utils.WinningBid](t)
 
-            // Create channels
-            configChan := make(chan *config.Configuration)
-            sigTermChan := make(chan os.Signal)
-            stopChan := make(chan struct{})
-            done := make(chan struct{})
+			// Create channels
+			configChan := make(chan *config.Configuration)
+			sigTermChan := make(chan os.Signal)
+			stopChan := make(chan struct{})
+			done := make(chan struct{})
 
-            p := &PubxaiModule{
-                sigTermCh:     sigTermChan,
-                stopCh:        stopChan,
-                cfg:           tt.initialConfig,
-                configService: mockConfigService,
-                auctionBidsQueue: &queue.AuctionBidsQueue{
-                    QueueService: mockAuctionBidsQueue,
-                },
-                winBidsQueue: &queue.WinningBidQueue{
-                    QueueService: mockWinBidsQueue,
-                },
-            }
+			p := &PubxaiModule{
+				sigTermCh:     sigTermChan,
+				stopCh:        stopChan,
+				cfg:           tt.initialConfig,
+				configService: mockConfigService,
+				auctionBidsQueue: &queue.AuctionBidsQueue{
+					QueueService: mockAuctionBidsQueue,
+				},
+				winBidsQueue: &queue.WinningBidQueue{
+					QueueService: mockWinBidsQueue,
+				},
+			}
 
-            // Set up mock expectations
-            mockConfigService.On("IsSameAs", tt.newConfig, tt.initialConfig).Return(tt.configIsSame).Run(func(args mock.Arguments) {
-                if !tt.configIsSame {
-                    // For updates, wait until after UpdateConfig is called
-                    return
-                }
-                done <- struct{}{}
-            })
+			// Set up mock expectations
+			mockConfigService.On("IsSameAs", tt.newConfig, tt.initialConfig).Return(tt.configIsSame).Run(func(args mock.Arguments) {
+				if !tt.configIsSame {
+					// For updates, wait until after UpdateConfig is called
+					return
+				}
+				done <- struct{}{}
+			})
 
-            if tt.expectUpdate {
-                mockAuctionBidsQueue.On("UpdateConfig", tt.newConfig.BufferInterval, tt.newConfig.BufferSize).Return(nil).Run(func(args mock.Arguments) {
-                    // Signal done after the update is complete
-                    done <- struct{}{}
-                })
-                mockWinBidsQueue.On("UpdateConfig", tt.newConfig.BufferInterval, tt.newConfig.BufferSize).Return(nil)
-            }
+			if tt.expectUpdate {
+				mockAuctionBidsQueue.On("UpdateConfig", tt.newConfig.BufferInterval, tt.newConfig.BufferSize).Return(nil).Run(func(args mock.Arguments) {
+					// Signal done after the update is complete
+					done <- struct{}{}
+				})
+				mockWinBidsQueue.On("UpdateConfig", tt.newConfig.BufferInterval, tt.newConfig.BufferSize).Return(nil)
+			}
 
-            go p.start(configChan)
-            configChan <- tt.newConfig
+			go p.start(configChan)
+			configChan <- tt.newConfig
 
-            select {
-            case <-done:
-                if tt.expectUpdate {
-                    assert.Equal(t, tt.newConfig, p.cfg)
-                }
-            case <-time.After(time.Second):
-                t.Fatal("timeout waiting for config update")
-            }
+			select {
+			case <-done:
+				if tt.expectUpdate {
+					assert.Equal(t, tt.newConfig, p.cfg)
+				}
+			case <-time.After(time.Second):
+				t.Fatal("timeout waiting for config update")
+			}
 
-            close(sigTermChan)
-            mockConfigService.AssertExpectations(t)
-            mockAuctionBidsQueue.AssertExpectations(t)
-            mockWinBidsQueue.AssertExpectations(t)
-        })
-    }
+			close(sigTermChan)
+			mockConfigService.AssertExpectations(t)
+			mockAuctionBidsQueue.AssertExpectations(t)
+			mockWinBidsQueue.AssertExpectations(t)
+		})
+	}
 }
 
 func TestPubxaiModule_updateConfig(t *testing.T) {
 	tests := []struct {
-		name         string
+		name          string
 		initialConfig *config.Configuration
-		newConfig    *config.Configuration
-		configIsSame bool
+		newConfig     *config.Configuration
+		configIsSame  bool
 	}{
 		{
 			name: "config is the same",
@@ -265,7 +265,7 @@ func TestPubxaiModule_updateConfig(t *testing.T) {
 			// Mock dependencies using testify
 			mockConfigService := &configMock.MockConfigService{}
 			mockAuctionBidsQueue := queueMock.NewMockQueueService[utils.AuctionBids](t)
-            mockWinBidsQueue := queueMock.NewMockQueueService[utils.WinningBid](t)
+			mockWinBidsQueue := queueMock.NewMockQueueService[utils.WinningBid](t)
 
 			p := &PubxaiModule{
 				cfg:           tt.initialConfig,
@@ -308,35 +308,35 @@ func TestPubxaiModule_pushToQueue(t *testing.T) {
 	}
 
 	tests := []struct {
-		name           string
+		name          string
 		auctionBids   *utils.AuctionBids
 		winningBids   []utils.WinningBid
 		expectAuction bool
 		expectWins    bool
 	}{
 		{
-			name:           "only winning bids",
+			name:          "only winning bids",
 			auctionBids:   nil,
 			winningBids:   winningBids,
 			expectAuction: false,
 			expectWins:    true,
 		},
 		{
-			name:           "only auction bids",
+			name:          "only auction bids",
 			auctionBids:   auctionBids,
 			winningBids:   nil,
 			expectAuction: true,
 			expectWins:    false,
 		},
 		{
-			name:           "both auction bids and winning bids",
+			name:          "both auction bids and winning bids",
 			auctionBids:   auctionBids,
 			winningBids:   winningBids,
 			expectAuction: true,
 			expectWins:    true,
 		},
 		{
-			name:           "neither auction bids nor winning bids",
+			name:          "neither auction bids nor winning bids",
 			auctionBids:   nil,
 			winningBids:   nil,
 			expectAuction: false,
@@ -348,7 +348,7 @@ func TestPubxaiModule_pushToQueue(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Mock dependencies
 			mockAuctionBidsQueue := queueMock.NewMockQueueService[utils.AuctionBids](t)
-            mockWinBidsQueue := queueMock.NewMockQueueService[utils.WinningBid](t)
+			mockWinBidsQueue := queueMock.NewMockQueueService[utils.WinningBid](t)
 
 			p := &PubxaiModule{
 				auctionBidsQueue: &queue.AuctionBidsQueue{
@@ -383,7 +383,7 @@ func TestPubxaiModule_pushToQueue(t *testing.T) {
 func TestPubxaiModule_LogAuctionObject(t *testing.T) {
 	mockProcessorService := processorMock.NewMockProcessorService()
 	mockAuctionBidsQueue := queueMock.NewMockQueueService[utils.AuctionBids](t)
-    mockWinBidsQueue := queueMock.NewMockQueueService[utils.WinningBid](t)
+	mockWinBidsQueue := queueMock.NewMockQueueService[utils.WinningBid](t)
 
 	auctionBids := &utils.AuctionBids{AuctionDetail: utils.AuctionDetail{AuctionId: "auction1"}}
 	winningBids := []utils.WinningBid{
@@ -392,29 +392,29 @@ func TestPubxaiModule_LogAuctionObject(t *testing.T) {
 	}
 
 	tests := []struct {
-		name              string
-		samplingPercent   int
+		name             string
+		samplingPercent  int
 		auctionObj       *analytics.AuctionObject
-		expectProcessing  bool
+		expectProcessing bool
 	}{
 		{
 			name:             "Empty AuctionObject",
 			samplingPercent:  0,
-			auctionObj:      nil,
+			auctionObj:       nil,
 			expectProcessing: false,
 		},
 		{
 			name:             "Sampling percentage too low",
 			samplingPercent:  0,
-			auctionObj:      &analytics.AuctionObject{Status: 0},
+			auctionObj:       &analytics.AuctionObject{Status: 0},
 			expectProcessing: false,
 		},
 		{
-			name:             "Sampling percentage allows logging",
-			samplingPercent:  100,
+			name:            "Sampling percentage allows logging",
+			samplingPercent: 100,
 			auctionObj: &analytics.AuctionObject{
-				Status:         0,
-				StartTime:      time.Now(),
+				Status:    0,
+				StartTime: time.Now(),
 			},
 			expectProcessing: true,
 		},
@@ -424,11 +424,11 @@ func TestPubxaiModule_LogAuctionObject(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Reset mock expectations for each test case
 			mockProcessorService.Mock = mock.Mock{}
-			
+
 			p := &PubxaiModule{
 				processorService: mockProcessorService,
 				auctionBidsQueue: &queue.AuctionBidsQueue{
-						QueueService: mockAuctionBidsQueue,
+					QueueService: mockAuctionBidsQueue,
 				},
 				winBidsQueue: &queue.WinningBidQueue{
 					QueueService: mockWinBidsQueue,
@@ -452,4 +452,3 @@ func TestPubxaiModule_LogAuctionObject(t *testing.T) {
 		})
 	}
 }
-

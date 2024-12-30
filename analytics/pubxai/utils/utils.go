@@ -290,6 +290,10 @@ func UnmarshalExtensions(ao *LogObject) (map[string]interface{}, map[string]inte
 	var requestExt map[string]interface{}
 	var responseExt map[string]interface{}
 
+	if ao.RequestWrapper == nil {
+		return nil, nil, errors.New("request wrapper is nil")
+	}
+
 	data, err := jsonutil.Marshal(ao.RequestWrapper)
 	if err != nil {
 		glog.Errorf("[pubxai] Error unmarshalling extensions: %v", err)

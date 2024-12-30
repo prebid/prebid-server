@@ -7,7 +7,7 @@ import (
 )
 
 type MockQueueService[T any] struct {
-    mock.Mock
+	mock.Mock
 }
 
 func NewMockQueueService[T any](t *testing.T) *MockQueueService[T] {
@@ -17,11 +17,11 @@ func NewMockQueueService[T any](t *testing.T) *MockQueueService[T] {
 }
 
 func (m *MockQueueService[T]) Enqueue(item T) {
-    _ = m.Called(item)
-    return
+	_ = m.Called(item)
+	return
 }
 
 func (m *MockQueueService[T]) UpdateConfig(bufferInterval, bufferSize string) {
-    _ = m.Called(bufferInterval, bufferSize)
-    return
+	_ = m.Called(bufferInterval, bufferSize)
+	return
 }

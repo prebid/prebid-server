@@ -107,7 +107,6 @@ func TestExtractConsentTypes(t *testing.T) {
 
 func TestExtractDeviceData(t *testing.T) {
 
-
 	tests := []struct {
 		name           string
 		requestExt     map[string]interface{}
@@ -142,7 +141,6 @@ func TestExtractDeviceData(t *testing.T) {
 }
 
 func TestExtractPageData(t *testing.T) {
-
 
 	tests := []struct {
 		name         string
@@ -190,7 +188,6 @@ func TestExtractPageData(t *testing.T) {
 }
 
 func TestExtractFloorDetail(t *testing.T) {
-
 
 	tests := []struct {
 		name          string
@@ -306,7 +303,6 @@ func TestExtractAdunitCodes(t *testing.T) {
 
 func TestUnmarshalExtensions(t *testing.T) {
 
-
 	tests := []struct {
 		name           string
 		logObject      *LogObject
@@ -353,14 +349,8 @@ func TestUnmarshalExtensions(t *testing.T) {
 		{
 			name: "Error Case",
 			logObject: &LogObject{
-				RequestWrapper: &openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
-						ID: "requestId",
-					},
-				},
-				Response: &openrtb2.BidResponse{
-					ID: "responseId",
-				},
+				RequestWrapper: nil,
+				Response:       &openrtb2.BidResponse{},
 			},
 			expectedReqExt: nil,
 			expectedResExt: nil,
@@ -384,7 +374,6 @@ func TestUnmarshalExtensions(t *testing.T) {
 }
 
 func TestProcessBidResponses(t *testing.T) {
-
 
 	bid := openrtb2.Bid{
 		ID:    "bid1",

@@ -23,18 +23,18 @@ func TestNewConfigService(t *testing.T) {
 		{
 			name:            "valid configuration",
 			httpClient:      &http.Client{},
-			pubxId:         "testPublisher",
-			endpoint:       "http://example.com",
+			pubxId:          "testPublisher",
+			endpoint:        "http://example.com",
 			refreshInterval: "1m",
-			wantErr:        false,
+			wantErr:         false,
 		},
 		{
 			name:            "invalid duration",
 			httpClient:      &http.Client{},
-			pubxId:         "testPublisher",
-			endpoint:       "http://example.com",
+			pubxId:          "testPublisher",
+			endpoint:        "http://example.com",
 			refreshInterval: "invalid",
-			wantErr:        true,
+			wantErr:         true,
 		},
 	}
 

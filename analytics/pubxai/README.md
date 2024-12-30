@@ -20,7 +20,7 @@ Or using the pbs configuration file and by appending the following block:
 analytics:
   pubxai:
     enabled: true
-    publisherid: "77435468-dfc1-44b5-82c6-f6ae0e14fd35" # should be an UUIDv4
+    publisherid: "your pubxid here" # should be an UUIDv4
     endpoint: "https://analytics.pbxai.com"
     buffer_interval: 5m
     buffer_size: 10kb
