@@ -133,29 +133,7 @@ type AuctionDetail struct {
 	Timestamp   int64    `json:"timestamp"`
 }
 
-type UtilsService interface {
-	ExtractUserIds(requestExt map[string]interface{}) UserDetail
-	ExtractConsentTypes(requestExt map[string]interface{}) ConsentDetail
-	ExtractDeviceData(requestExt map[string]interface{}) DeviceDetail
-	ExtractPageData(requestExt map[string]interface{}) PageDetail
-	ExtractFloorDetail(requestExt map[string]interface{}) FloorDetail
-	ExtractAdunitCodes(requestExt map[string]interface{}) []string
-	UnmarshalExtensions(ao *LogObject) (map[string]interface{}, map[string]interface{}, error)
-	ProcessBidResponses(bidResponses []map[string]interface{}, auctionId string, startTime int64, requestExt, responseExt map[string]interface{}, floorDetail FloorDetail) ([]Bid, []Bid)
-	AppendTimeoutBids(auctionBids []Bid, impsById map[string]openrtb2.Imp, ao *LogObject) []Bid
-}
-
-type UtilsServiceImpl struct {
-	publisherId string
-}
-
-func NewUtilsService(publisherId string) UtilsService {
-	return &UtilsServiceImpl{
-		publisherId: publisherId,
-	}
-}
-
-func (u *UtilsServiceImpl) ExtractUserIds(requestExt map[string]interface{}) UserDetail {
+func ExtractUserIds(requestExt map[string]interface{}) UserDetail {
 
 	eidsInterface, ok := nestedMapLookup(requestExt, "user", "ext", "eids")
 	if !ok {
@@ -181,7 +159,7 @@ func (u *UtilsServiceImpl) ExtractUserIds(requestExt map[string]interface{}) Use
 	}
 }
 
-func (u *UtilsServiceImpl) ExtractConsentTypes(requestExt map[string]interface{}) ConsentDetail {
+func ExtractConsentTypes(requestExt map[string]interface{}) ConsentDetail {
 
 	consentInterface, ok := nestedMapLookup(requestExt, "regs", "ext")
 	if !ok {
@@ -202,7 +180,7 @@ func (u *UtilsServiceImpl) ExtractConsentTypes(requestExt map[string]interface{}
 	}
 }
 
-func (u *UtilsServiceImpl) ExtractDeviceData(requestExt map[string]interface{}) DeviceDetail {
+func ExtractDeviceData(requestExt map[string]interface{}) DeviceDetail {
 	var deviceDetail DeviceDetail
 
 	userAgentInterface, ok := nestedMapLookup(requestExt, "device", "ua")
@@ -221,7 +199,7 @@ func (u *UtilsServiceImpl) ExtractDeviceData(requestExt map[string]interface{}) 
 	return deviceDetail
 }
 
-func (u *UtilsServiceImpl) ExtractPageData(requestExt map[string]interface{}) PageDetail {
+func ExtractPageData(requestExt map[string]interface{}) PageDetail {
 	var pageDetail PageDetail
 
 	siteExt, ok := requestExt["site"].(map[string]interface{})
@@ -247,7 +225,7 @@ func (u *UtilsServiceImpl) ExtractPageData(requestExt map[string]interface{}) Pa
 	return pageDetail
 }
 
-func (u *UtilsServiceImpl) ExtractFloorDetail(requestExt map[string]interface{}) FloorDetail {
+func ExtractFloorDetail(requestExt map[string]interface{}) FloorDetail {
 	floorDetail := FloorDetail{}
 
 	ext := getMap(requestExt, "ext")
@@ -302,7 +280,7 @@ func (u *UtilsServiceImpl) ExtractFloorDetail(requestExt map[string]interface{})
 	return floorDetail
 }
 
-func (u *UtilsServiceImpl) ExtractAdunitCodes(requestExt map[string]interface{}) []string {
+func ExtractAdunitCodes(requestExt map[string]interface{}) []string {
 	var adunitCodes []string
 	imps, ok := requestExt["imp"].([]interface{})
 	if !ok {
@@ -319,7 +297,7 @@ func (u *UtilsServiceImpl) ExtractAdunitCodes(requestExt map[string]interface{})
 
 	return adunitCodes
 }
-func (u *UtilsServiceImpl) UnmarshalExtensions(ao *LogObject) (map[string]interface{}, map[string]interface{}, error) {
+func UnmarshalExtensions(ao *LogObject) (map[string]interface{}, map[string]interface{}, error) {
 	var requestExt map[string]interface{}
 	var responseExt map[string]interface{}
 
@@ -341,7 +319,7 @@ func (u *UtilsServiceImpl) UnmarshalExtensions(ao *LogObject) (map[string]interf
 	return requestExt, responseExt, nil
 }
 
-func (u *UtilsServiceImpl) ProcessBidResponses(bidResponses []map[string]interface{}, auctionId string, startTime int64, requestExt, responseExt map[string]interface{}, floorDetail FloorDetail) ([]Bid, []Bid) {
+func ProcessBidResponses(bidResponses []map[string]interface{}, auctionId string, startTime int64, requestExt, responseExt map[string]interface{}, floorDetail FloorDetail) ([]Bid, []Bid) {
 	var auctionBids []Bid
 	var winningBids []Bid
 
@@ -377,9 +355,9 @@ func (u *UtilsServiceImpl) ProcessBidResponses(bidResponses []map[string]interfa
 	return auctionBids, winningBids
 }
 
-func (u *UtilsServiceImpl) AppendTimeoutBids(auctionBids []Bid, impsById map[string]openrtb2.Imp, ao *LogObject) []Bid {
+func AppendTimeoutBids(auctionBids []Bid, impsById map[string]openrtb2.Imp, ao *LogObject) []Bid {
 
-	requestExt, _, err := u.UnmarshalExtensions(ao)
+	requestExt, _, err := UnmarshalExtensions(ao)
 	if err != nil {
 		return auctionBids
 	}

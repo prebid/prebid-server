@@ -57,7 +57,6 @@ func New(analytics *config.Analytics) analytics.Runner {
 			clock.New(),
 		)
 		if err == nil {
-			glog.Infof("PubxaiModule initialized")
 			modules["pubxai"] = pubxaiModule
 		} else {
 			glog.Errorf("Could not initialize Pubxai Module: %v", err)

@@ -33,11 +33,14 @@ func NewConfigService(httpClient *http.Client, pubxId, endpoint, refreshInterval
 	if err != nil {
 		return nil, fmt.Errorf("fail to parse the module args, arg=analytics.pubxai.configuration_refresh_delay: %v", err)
 	}
+	endpointUrl, err := url.Parse(endpoint + "/config")
+    if err != nil {
+        return nil, err
+    }
 
-	endpointUrl, err := url.Parse(endpoint + "/config?pubxId=" + pubxId)
-	if err != nil {
-		return nil, err
-	}
+	query := endpointUrl.Query()
+	query.Set("pubxId", pubxId)
+	endpointUrl.RawQuery = query.Encode()
 
 	configChan := make(chan *Configuration)
 

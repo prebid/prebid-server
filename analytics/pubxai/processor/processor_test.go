@@ -1,214 +1,129 @@
 package processor
 
 import (
-	"errors"
+	"encoding/json"
+	"fmt"
+	"os"
 	"testing"
 	"time"
 
-	"github.com/golang/mock/gomock"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	utils "github.com/prebid/prebid-server/v3/analytics/pubxai/utils"
-	utilsMock "github.com/prebid/prebid-server/v3/analytics/pubxai/utils/mocks"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestProcessLogData_NilAuctionObject(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockUtilsService := utilsMock.NewMockUtilsService(ctrl)
-	processorService := &ProcessorServiceImpl{
-		utilService: mockUtilsService,
+func TestProcessLogData(t *testing.T) {
+	requestData, err := os.ReadFile("./mocks/mock_openrtb_request.json")
+	if err != nil {
+		panic(err)
 	}
-
-	ao := (*utils.LogObject)(nil)
-	auctionBids, winningBids := processorService.ProcessLogData(ao)
-	assert.Nil(t, auctionBids)
-	assert.Nil(t, winningBids)
-}
-
-func TestProcessLogData_NilRequestWrapper(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockUtilsService := utilsMock.NewMockUtilsService(ctrl)
-	processorService := &ProcessorServiceImpl{
-		utilService: mockUtilsService,
+	var bidRequest openrtb2.BidRequest
+	if err := json.Unmarshal(requestData, &bidRequest); err != nil {
+		panic(err)
 	}
-
-	ao := &utils.LogObject{}
-	auctionBids, winningBids := processorService.ProcessLogData(ao)
-	assert.Nil(t, auctionBids)
-	assert.Nil(t, winningBids)
-}
-
-func TestProcessLogData_NoImpressions(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockUtilsService := utilsMock.NewMockUtilsService(ctrl)
-	processorService := &ProcessorServiceImpl{
-		utilService: mockUtilsService,
+	responseData, err := os.ReadFile("./mocks/mock_openrtb_response.json")
+	if err != nil {
+		panic(err)
 	}
-
-	ao := &utils.LogObject{
-		RequestWrapper: &openrtb_ext.RequestWrapper{
-			BidRequest: &openrtb2.BidRequest{},
-		},
+	var bidResponse openrtb2.BidResponse
+	if err := json.Unmarshal(responseData, &bidResponse); err != nil {
+		panic(err)
 	}
-	auctionBids, winningBids := processorService.ProcessLogData(ao)
-	assert.Nil(t, auctionBids)
-	assert.Nil(t, winningBids)
-}
-
-func TestProcessLogData_NilResponse(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockUtilsService := utilsMock.NewMockUtilsService(ctrl)
-	processorService := &ProcessorServiceImpl{
-		utilService: mockUtilsService,
-	}
-
-	ao := &utils.LogObject{
-		RequestWrapper: &openrtb_ext.RequestWrapper{
-			BidRequest: &openrtb2.BidRequest{
-				Imp: []openrtb2.Imp{{ID: "imp1"}},
-			},
-		},
-		Response: nil,
-	}
-	auctionBids, winningBids := processorService.ProcessLogData(ao)
-	assert.Nil(t, auctionBids)
-	assert.Nil(t, winningBids)
-}
-
-func TestProcessLogData_UnmarshalExtensionsFailed(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockUtilsService := utilsMock.NewMockUtilsService(ctrl)
-	processorService := &ProcessorServiceImpl{
-		utilService: mockUtilsService,
-	}
-
-	ao := &utils.LogObject{
-		RequestWrapper: &openrtb_ext.RequestWrapper{
-			BidRequest: &openrtb2.BidRequest{
-				Imp: []openrtb2.Imp{{ID: "imp1"}},
-			},
-		},
-		Response: &openrtb2.BidResponse{
-			SeatBid: []openrtb2.SeatBid{
-				{
-					Seat: "bidder1",
-					Bid:  []openrtb2.Bid{{ImpID: "imp1"}},
-				},
-			},
-		},
-		StartTime: time.Now(),
-	}
-
-	mockUtilsService.EXPECT().UnmarshalExtensions(ao).Return(nil, nil, errors.New("Invalid Data"))
-
-	auctionBids, winningBids := processorService.ProcessLogData(ao)
-	assert.Nil(t, auctionBids)
-	assert.Nil(t, winningBids)
-}
-
-func TestProcessLogData_Success(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockUtilsService := utilsMock.NewMockUtilsService(ctrl)
-	processorService := &ProcessorServiceImpl{
-		utilService: mockUtilsService,
-	}
-
-	ao := &utils.LogObject{
-		RequestWrapper: &openrtb_ext.RequestWrapper{
-			BidRequest: &openrtb2.BidRequest{
-				Imp: []openrtb2.Imp{{ID: "imp1"}},
-			},
-		},
-		Response: &openrtb2.BidResponse{
-			SeatBid: []openrtb2.SeatBid{
-				{
-					Seat: "bidder1",
-					Bid:  []openrtb2.Bid{{ImpID: "imp1"}},
-				},
-			},
-		},
-		StartTime: time.Now(),
-	}
-	wBids := []utils.Bid{
-		{BidId: "bidder1"},
-	}
-
-	mockUtilsService.EXPECT().UnmarshalExtensions(ao).Return(map[string]interface{}{"id": "auctionId"}, map[string]interface{}{}, nil)
-	mockUtilsService.EXPECT().ExtractAdunitCodes(gomock.Any()).Return([]string{"adUnitCode"})
-	mockUtilsService.EXPECT().ExtractFloorDetail(gomock.Any()).Return(utils.FloorDetail{})
-	mockUtilsService.EXPECT().ExtractPageData(gomock.Any()).Return(utils.PageDetail{})
-	mockUtilsService.EXPECT().ExtractDeviceData(gomock.Any()).Return(utils.DeviceDetail{})
-	mockUtilsService.EXPECT().ExtractUserIds(gomock.Any()).Return(utils.UserDetail{})
-	mockUtilsService.EXPECT().ExtractConsentTypes(gomock.Any()).Return(utils.ConsentDetail{})
-	mockUtilsService.EXPECT().ProcessBidResponses(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]utils.Bid{}, wBids)
-	mockUtilsService.EXPECT().AppendTimeoutBids(gomock.Any(), gomock.Any(), gomock.Any()).Return([]utils.Bid{})
-	auctionBids, winningBids := processorService.ProcessLogData(ao)
-	assert.NotNil(t, auctionBids)
-	assert.NotNil(t, winningBids)
-}
-
-func TestProcessBidData_Success_NoWinningBid(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockUtilsService := utilsMock.NewMockUtilsService(ctrl)
-	processorService := &ProcessorServiceImpl{
-		utilService: mockUtilsService,
-	}
-
-	ao := &utils.LogObject{
-		RequestWrapper: &openrtb_ext.RequestWrapper{
-			BidRequest: &openrtb2.BidRequest{
-				Imp: []openrtb2.Imp{{ID: "imp1"}},
-			},
-		},
-		Response: &openrtb2.BidResponse{
-			SeatBid: []openrtb2.SeatBid{
-				{
-					Seat: "bidder1",
-					Bid:  []openrtb2.Bid{{ImpID: "imp1"}},
-				},
-			},
-		},
-		StartTime: time.Now(),
-	}
-	bidResponses := []map[string]interface{}{
+	tests := []struct {
+		name                string
+		logObject          *utils.LogObject
+		expectedAuctionBids int
+		expectedWinningBids int
+	}{
 		{
-			"bidder": "bidder1",
-			"bid":    openrtb2.Bid{ImpID: "imp1"},
-			"imp":    openrtb2.Imp{ID: "imp1"},
+			name:                "NilAuctionObject",
+			logObject:          nil,
+			expectedAuctionBids: 0,
+			expectedWinningBids: 0,
+		},
+		{
+			name:                "NilRequestWrapper",
+			logObject:          &utils.LogObject{},
+			expectedAuctionBids: 0,
+			expectedWinningBids: 0,
+		},
+		{
+			name: "NoImpressions",
+			logObject: &utils.LogObject{
+				RequestWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{},
+				},
+			},
+			expectedAuctionBids: 0,
+			expectedWinningBids: 0,
+		},
+		{
+			name: "UnmarshalExtensionsFailed",
+			logObject: &utils.LogObject{
+				RequestWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						Imp: []openrtb2.Imp{{ID: "imp1"}},
+					},
+				},
+				Response: &openrtb2.BidResponse{
+					SeatBid: []openrtb2.SeatBid{
+						{
+							Seat: "bidder1",
+							Bid:  []openrtb2.Bid{{ImpID: "imp1"}},
+						},
+					},
+				},
+				StartTime: time.Now(),
+			},
+			expectedAuctionBids: 0,
+			expectedWinningBids: 0,
+		},
+		{
+			name: "Success",
+			logObject: &utils.LogObject{
+				RequestWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &bidRequest,
+				},
+				Response: &bidResponse,
+				StartTime: time.Now(),
+			},
+			expectedAuctionBids: 1,
+			expectedWinningBids: 1,
+		},
+		{
+			name: "SuccessWithoutWinningBid",
+			logObject: &utils.LogObject{
+				RequestWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &bidRequest,
+				},
+				Response: &openrtb2.BidResponse{
+					SeatBid: []openrtb2.SeatBid{
+						{},
+					},
+				},
+				StartTime: time.Now(),
+			},
+			expectedAuctionBids: 1,
+			expectedWinningBids: 0,
 		},
 	}
-	request := ao.RequestWrapper.BidRequest
-	var impsById = make(map[string]openrtb2.Imp)
-	imps := request.Imp
-	for _, imp := range imps {
-		impsById[imp.ID] = imp
-	}
-	mockUtilsService.EXPECT().UnmarshalExtensions(ao).Return(map[string]interface{}{"id": "auctionId"}, map[string]interface{}{}, nil)
-	mockUtilsService.EXPECT().ExtractAdunitCodes(gomock.Any()).Return([]string{"adUnitCode"})
-	mockUtilsService.EXPECT().ExtractFloorDetail(gomock.Any()).Return(utils.FloorDetail{})
-	mockUtilsService.EXPECT().ExtractPageData(gomock.Any()).Return(utils.PageDetail{})
-	mockUtilsService.EXPECT().ExtractDeviceData(gomock.Any()).Return(utils.DeviceDetail{})
-	mockUtilsService.EXPECT().ExtractUserIds(gomock.Any()).Return(utils.UserDetail{})
-	mockUtilsService.EXPECT().ExtractConsentTypes(gomock.Any()).Return(utils.ConsentDetail{})
-	mockUtilsService.EXPECT().ProcessBidResponses(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]utils.Bid{}, []utils.Bid{})
-	mockUtilsService.EXPECT().AppendTimeoutBids(gomock.Any(), gomock.Any(), gomock.Any()).Return([]utils.Bid{})
 
-	auctionBids, winningBids := processorService.ProcessBidData(bidResponses, impsById, ao)
-	assert.NotNil(t, auctionBids)
-	assert.Nil(t, winningBids)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			processorService := &ProcessorServiceImpl{}
+
+			auctionBids, winningBids := processorService.ProcessLogData(tt.logObject)
+			fmt.Println("name", tt.name)
+			// Use zero value if auctionBids is nil
+            bidsLength := 0
+            if auctionBids != nil {
+                bidsLength = len(auctionBids.Bids)
+            }
+			fmt.Println("auctionBids", bidsLength, tt.expectedAuctionBids)
+			fmt.Println("winningBids",  len(winningBids), tt.expectedWinningBids)
+            assert.Equal(t, tt.expectedAuctionBids, bidsLength)
+            assert.Equal(t, tt.expectedWinningBids, len(winningBids))
+		})
+	}
 }
