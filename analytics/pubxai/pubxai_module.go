@@ -151,7 +151,7 @@ func (p *PubxaiModule) LogAuctionObject(ao *analytics.AuctionObject) {
 	}
 	// Generate a random integer between 1 and 100
 	randomNumber := rand.Intn(100) + 1
-	if p.cfg.SamplingPercentage > randomNumber {
+	if p.cfg.SamplingPercentage < randomNumber {
 		return
 	}
 	// convert ao to LogObject
