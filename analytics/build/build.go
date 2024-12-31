@@ -44,7 +44,6 @@ func New(analytics *config.Analytics) analytics.Runner {
 			glog.Errorf("Could not initialize PubstackModule: %v", err)
 		}
 	}
-	glog.Info("pubxai.Enabled: ", analytics.Pubxai.Enabled)
 	if analytics.Pubxai.Enabled {
 		pubxaiModule, err := pubxai.InitializePubxAIModule(
 			clients.GetDefaultHttpInstance(),
