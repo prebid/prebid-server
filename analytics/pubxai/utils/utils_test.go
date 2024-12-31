@@ -12,7 +12,6 @@ import (
 )
 
 func TestExtractUserIds(t *testing.T) {
-	service := NewUtilsService("testPublisherId")
 
 	tests := []struct {
 		name               string
@@ -55,14 +54,13 @@ func TestExtractUserIds(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			userDetail := service.ExtractUserIds(tt.requestExt)
+			userDetail := ExtractUserIds(tt.requestExt)
 			assert.Equal(t, tt.expectedUserDetail, userDetail)
 		})
 	}
 }
 
 func TestExtractConsentTypes(t *testing.T) {
-	service := NewUtilsService("testPublisherId")
 
 	tests := []struct {
 		name            string
@@ -101,14 +99,13 @@ func TestExtractConsentTypes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actualConsent := service.ExtractConsentTypes(tt.requestExt)
+			actualConsent := ExtractConsentTypes(tt.requestExt)
 			assert.Equal(t, tt.expectedConsent, actualConsent)
 		})
 	}
 }
 
 func TestExtractDeviceData(t *testing.T) {
-	service := NewUtilsService("testPublisherId")
 
 	tests := []struct {
 		name           string
@@ -137,14 +134,13 @@ func TestExtractDeviceData(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actualDevice := service.ExtractDeviceData(tt.requestExt)
+			actualDevice := ExtractDeviceData(tt.requestExt)
 			assert.Equal(t, tt.expectedDevice, actualDevice)
 		})
 	}
 }
 
 func TestExtractPageData(t *testing.T) {
-	service := NewUtilsService("testPublisherId")
 
 	tests := []struct {
 		name         string
@@ -185,14 +181,13 @@ func TestExtractPageData(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actualPage := service.ExtractPageData(tt.requestExt)
+			actualPage := ExtractPageData(tt.requestExt)
 			assert.Equal(t, tt.expectedPage, actualPage)
 		})
 	}
 }
 
 func TestExtractFloorDetail(t *testing.T) {
-	service := NewUtilsService("testPublisherId")
 
 	tests := []struct {
 		name          string
@@ -256,14 +251,14 @@ func TestExtractFloorDetail(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actualFloor := service.ExtractFloorDetail(tt.requestExt)
+			actualFloor := ExtractFloorDetail(tt.requestExt)
 			assert.Equal(t, tt.expectedFloor, actualFloor)
 		})
 	}
 }
 
 func TestExtractAdunitCodes(t *testing.T) {
-	service := NewUtilsService("testPublisherId")
+
 	var emptyAdunits []string
 	tests := []struct {
 		name                string
@@ -300,14 +295,13 @@ func TestExtractAdunitCodes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actualAdunitCodes := service.ExtractAdunitCodes(tt.requestExt)
+			actualAdunitCodes := ExtractAdunitCodes(tt.requestExt)
 			assert.Equal(t, tt.expectedAdunitCodes, actualAdunitCodes)
 		})
 	}
 }
 
 func TestUnmarshalExtensions(t *testing.T) {
-	service := NewUtilsService("testPublisherId")
 
 	tests := []struct {
 		name           string
@@ -355,14 +349,8 @@ func TestUnmarshalExtensions(t *testing.T) {
 		{
 			name: "Error Case",
 			logObject: &LogObject{
-				RequestWrapper: &openrtb_ext.RequestWrapper{
-					BidRequest: &openrtb2.BidRequest{
-						ID: "requestId",
-					},
-				},
-				Response: &openrtb2.BidResponse{
-					ID: "responseId",
-				},
+				RequestWrapper: nil,
+				Response:       &openrtb2.BidResponse{},
 			},
 			expectedReqExt: nil,
 			expectedResExt: nil,
@@ -372,7 +360,7 @@ func TestUnmarshalExtensions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actualReqExt, actualResExt, err := service.UnmarshalExtensions(tt.logObject)
+			actualReqExt, actualResExt, err := UnmarshalExtensions(tt.logObject)
 
 			if tt.expectError {
 				assert.Error(t, err)
@@ -386,7 +374,6 @@ func TestUnmarshalExtensions(t *testing.T) {
 }
 
 func TestProcessBidResponses(t *testing.T) {
-	service := NewUtilsService("testPublisherId")
 
 	bid := openrtb2.Bid{
 		ID:    "bid1",
@@ -501,7 +488,7 @@ func TestProcessBidResponses(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actualAuctionBids, actualWinningBids := service.ProcessBidResponses(tt.bidResponses, tt.auctionId, tt.startTime, requestExt, responseExt, floorDetail)
+			actualAuctionBids, actualWinningBids := ProcessBidResponses(tt.bidResponses, tt.auctionId, tt.startTime, requestExt, responseExt, floorDetail)
 
 			assert.Equal(t, tt.expectedAuctionBids, actualAuctionBids)
 			assert.Equal(t, tt.expectedWinningBids, actualWinningBids)

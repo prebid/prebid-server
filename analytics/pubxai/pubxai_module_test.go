@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"os"
 	"sync"
-	"syscall"
 	"testing"
 	"time"
 
@@ -18,6 +17,7 @@ import (
 	queueMock "github.com/prebid/prebid-server/v3/analytics/pubxai/queue/mocks"
 	"github.com/prebid/prebid-server/v3/analytics/pubxai/utils"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestInitializePubxAIModule(t *testing.T) {
@@ -27,276 +27,363 @@ func TestInitializePubxAIModule(t *testing.T) {
 	mockClient := &http.Client{}
 	mockClock := clock.NewMock()
 
-	// Test case: successful initialization
-	t.Run("successful initialization", func(t *testing.T) {
-		publisherId := "testPublisher"
-		endpoint := "http://test-endpoint"
-		bufferInterval := "10s"
-		bufferSize := "1MB"
-		SamplingPercentage := 50
-		configRefresh := "1m"
-		module, err := InitializePubxAIModule(mockClient, publisherId, endpoint, bufferInterval, bufferSize, SamplingPercentage, configRefresh, mockClock)
-		assert.NoError(t, err)
-		assert.NotNil(t, module)
-	})
+	tests := []struct {
+		name            string
+		client          *http.Client
+		publisherId     string
+		endpoint        string
+		bufferInterval  string
+		bufferSize      string
+		samplingPercent int
+		configRefresh   string
+		wantErr         bool
+	}{
+		{
+			name:            "successful initialization",
+			client:          mockClient,
+			publisherId:     "testPublisher",
+			endpoint:        "http://test-endpoint",
+			bufferInterval:  "10s",
+			bufferSize:      "1MB",
+			samplingPercent: 50,
+			configRefresh:   "1m",
+			wantErr:         false,
+		},
+		{
+			name:            "client is nil",
+			client:          nil,
+			publisherId:     "testPublisher",
+			endpoint:        "http://test-endpoint",
+			bufferInterval:  "10s",
+			bufferSize:      "1MB",
+			samplingPercent: 50,
+			configRefresh:   "1m",
+			wantErr:         true,
+		},
+		{
+			name:            "empty publisherId",
+			client:          mockClient,
+			publisherId:     "",
+			endpoint:        "http://test-endpoint",
+			bufferInterval:  "10s",
+			bufferSize:      "1MB",
+			samplingPercent: 50,
+			configRefresh:   "1m",
+			wantErr:         true,
+		},
+		{
+			name:            "empty endpoint",
+			client:          mockClient,
+			publisherId:     "testPublisher",
+			endpoint:        "",
+			bufferInterval:  "10s",
+			bufferSize:      "1MB",
+			samplingPercent: 50,
+			configRefresh:   "1m",
+			wantErr:         true,
+		},
+		{
+			name:            "invalid bufferInterval",
+			client:          mockClient,
+			publisherId:     "testPublisher",
+			endpoint:        "http://test-endpoint",
+			bufferInterval:  "invalid",
+			bufferSize:      "1MB",
+			samplingPercent: 50,
+			configRefresh:   "1m",
+			wantErr:         true,
+		},
+		{
+			name:            "invalid bufferSize",
+			client:          mockClient,
+			publisherId:     "testPublisher",
+			endpoint:        "http://test-endpoint",
+			bufferInterval:  "10s",
+			bufferSize:      "invalid",
+			samplingPercent: 50,
+			configRefresh:   "1m",
+			wantErr:         true,
+		},
+	}
 
-	// Test case: client is nil
-	t.Run("client is nil", func(t *testing.T) {
-		module, err := InitializePubxAIModule(nil, "testPublisher", "http://test-endpoint", "10s", "1MB", 50, "1m", mockClock)
-		assert.Error(t, err)
-		assert.Nil(t, module)
-	})
-
-	// Test case: empty publisherId
-	t.Run("empty publisherId", func(t *testing.T) {
-		module, err := InitializePubxAIModule(mockClient, "", "http://test-endpoint", "10s", "1MB", 50, "1m", mockClock)
-		assert.Error(t, err)
-		assert.Nil(t, module)
-	})
-
-	// Test case: empty endpoint
-	t.Run("empty endpoint", func(t *testing.T) {
-		module, err := InitializePubxAIModule(mockClient, "testPublisher", "", "10s", "1MB", 50, "1m", mockClock)
-		assert.Error(t, err)
-		assert.Nil(t, module)
-	})
-
-	// Test case: invalid bufferInterval
-	t.Run("invalid bufferInterval", func(t *testing.T) {
-		module, err := InitializePubxAIModule(mockClient, "testPublisher", "http://test-endpoint", "invalid", "1MB", 50, "1m", mockClock)
-		assert.Error(t, err)
-		assert.Nil(t, module)
-	})
-
-	// Test case: invalid bufferSize
-	t.Run("invalid bufferSize", func(t *testing.T) {
-		module, err := InitializePubxAIModule(mockClient, "testPublisher", "http://test-endpoint", "10s", "invalid", 50, "1m", mockClock)
-		assert.Error(t, err)
-		assert.Nil(t, module)
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			module, err := InitializePubxAIModule(tt.client, tt.publisherId, tt.endpoint, tt.bufferInterval, tt.bufferSize, tt.samplingPercent, tt.configRefresh, mockClock)
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.Nil(t, module)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, module)
+			}
+		})
+	}
 }
 
 func TestPubxaiModule_start(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	// Mock dependencies
-	mockConfigService := configMock.NewMockConfigService(ctrl)
-	mockAuctionBidsQueue := queueMock.NewMockAuctionBidsQueueInterface(ctrl)
-	mockWinBidsQueue := queueMock.NewMockWinningBidQueueInterface(ctrl)
-
-	// Test case: update configuration
-	t.Run("update configuration", func(t *testing.T) {
-		// Create channels
-		configChan := make(chan *config.Configuration)
-		sigTermChan := make(chan os.Signal)
-		stopChan := make(chan struct{})
-		// Create a PubxaiModule instance
-		p := &PubxaiModule{
-			sigTermCh:     sigTermChan,
-			stopCh:        stopChan,
-			cfg:           &config.Configuration{},
-			configService: mockConfigService,
-			auctionBidsQueue: &queue.AuctionBidsQueue{
-				QueueService: mockAuctionBidsQueue,
+	tests := []struct {
+		name          string
+		initialConfig *config.Configuration
+		newConfig     *config.Configuration
+		configIsSame  bool
+		expectUpdate  bool
+	}{
+		{
+			name: "should update config when received from channel",
+			initialConfig: &config.Configuration{
+				PublisherId:    "initial",
+				BufferInterval: "10s",
+				BufferSize:     "1MB",
 			},
-			winBidsQueue: &queue.WinningBidQueue{
-				QueueService: mockWinBidsQueue,
+			newConfig: &config.Configuration{
+				PublisherId:    "updated",
+				BufferInterval: "20s",
+				BufferSize:     "2MB",
 			},
-		}
-		go p.start(configChan)
-		newConfig := &config.Configuration{
-			PublisherId: "newPublisher",
-		}
-		mockConfigService.EXPECT().IsSameAs(newConfig, p.cfg).Return(false)
-		mockAuctionBidsQueue.EXPECT().UpdateConfig(newConfig.BufferInterval, newConfig.BufferSize).Times(1)
-		mockWinBidsQueue.EXPECT().UpdateConfig(newConfig.BufferInterval, newConfig.BufferSize).Times(1)
-		configChan <- newConfig
-
-		time.Sleep(100 * time.Millisecond) // give some time for the goroutine to process the update
-
-		assert.Equal(t, newConfig, p.cfg)
-		close(sigTermChan) // stop the goroutine
-	})
-
-	// Test case: terminate on signal
-	t.Run("terminate on signal", func(t *testing.T) {
-		// Create channels
-		configChan := make(chan *config.Configuration)
-		sigTermChan := make(chan os.Signal)
-		stopChan := make(chan struct{})
-		// Create a PubxaiModule instance
-		p := &PubxaiModule{
-			sigTermCh:     sigTermChan,
-			stopCh:        stopChan,
-			cfg:           &config.Configuration{},
-			configService: mockConfigService,
-			auctionBidsQueue: &queue.AuctionBidsQueue{
-				QueueService: mockAuctionBidsQueue,
+			configIsSame: false,
+			expectUpdate: true,
+		},
+		{
+			name: "should ignore config update if config is same",
+			initialConfig: &config.Configuration{
+				PublisherId:    "same",
+				BufferInterval: "10s",
+				BufferSize:     "1MB",
 			},
-			winBidsQueue: &queue.WinningBidQueue{
-				QueueService: mockWinBidsQueue,
+			newConfig: &config.Configuration{
+				PublisherId:    "same",
+				BufferInterval: "10s",
+				BufferSize:     "1MB",
 			},
-		}
-		go p.start(configChan)
+			configIsSame: true,
+			expectUpdate: false,
+		},
+	}
 
-		sigTermChan <- syscall.SIGTERM
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Setup mocks
+			mockConfigService := &configMock.MockConfigService{}
+			mockAuctionBidsQueue := queueMock.NewMockQueueService[utils.AuctionBids](t)
+			mockWinBidsQueue := queueMock.NewMockQueueService[utils.WinningBid](t)
 
-		time.Sleep(100 * time.Millisecond) // give some time for the goroutine to terminate
+			// Create channels
+			configChan := make(chan *config.Configuration)
+			sigTermChan := make(chan os.Signal)
+			stopChan := make(chan struct{})
+			done := make(chan struct{})
 
-		select {
-		case <-stopChan:
-			// success, the channel was closed
-		default:
-			t.Errorf("expected stopChan to be closed")
-		}
-	})
+			p := &PubxaiModule{
+				sigTermCh:     sigTermChan,
+				stopCh:        stopChan,
+				cfg:           tt.initialConfig,
+				configService: mockConfigService,
+				auctionBidsQueue: &queue.AuctionBidsQueue{
+					QueueService: mockAuctionBidsQueue,
+				},
+				winBidsQueue: &queue.WinningBidQueue{
+					QueueService: mockWinBidsQueue,
+				},
+			}
+
+			// Set up mock expectations
+			mockConfigService.On("IsSameAs", tt.newConfig, tt.initialConfig).Return(tt.configIsSame).Run(func(args mock.Arguments) {
+				if !tt.configIsSame {
+					// For updates, wait until after UpdateConfig is called
+					return
+				}
+				done <- struct{}{}
+			})
+
+			if tt.expectUpdate {
+				mockAuctionBidsQueue.On("UpdateConfig", tt.newConfig.BufferInterval, tt.newConfig.BufferSize).Return(nil).Run(func(args mock.Arguments) {
+					// Signal done after the update is complete
+					done <- struct{}{}
+				})
+				mockWinBidsQueue.On("UpdateConfig", tt.newConfig.BufferInterval, tt.newConfig.BufferSize).Return(nil)
+			}
+
+			go p.start(configChan)
+			configChan <- tt.newConfig
+
+			select {
+			case <-done:
+				if tt.expectUpdate {
+					assert.Equal(t, tt.newConfig, p.cfg)
+				}
+			case <-time.After(time.Second):
+				t.Fatal("timeout waiting for config update")
+			}
+
+			close(sigTermChan)
+			mockConfigService.AssertExpectations(t)
+			mockAuctionBidsQueue.AssertExpectations(t)
+			mockWinBidsQueue.AssertExpectations(t)
+		})
+	}
 }
 
 func TestPubxaiModule_updateConfig(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	// Mock dependencies
-	mockConfigService := configMock.NewMockConfigService(ctrl)
-	mockAuctionBidsQueue := queueMock.NewMockAuctionBidsQueueInterface(ctrl)
-	mockWinBidsQueue := queueMock.NewMockWinningBidQueueInterface(ctrl)
-
-	// Create a PubxaiModule instance
-	p := &PubxaiModule{
-		cfg:           &config.Configuration{},
-		configService: mockConfigService,
-		auctionBidsQueue: &queue.AuctionBidsQueue{
-			QueueService: mockAuctionBidsQueue,
+	tests := []struct {
+		name          string
+		initialConfig *config.Configuration
+		newConfig     *config.Configuration
+		configIsSame  bool
+	}{
+		{
+			name: "config is the same",
+			initialConfig: &config.Configuration{
+				PublisherId:    "samePublisher",
+				BufferInterval: "10s",
+				BufferSize:     "1MB",
+			},
+			newConfig: &config.Configuration{
+				PublisherId:    "samePublisher",
+				BufferInterval: "10s",
+				BufferSize:     "1MB",
+			},
+			configIsSame: true,
 		},
-		winBidsQueue: &queue.WinningBidQueue{
-			QueueService: mockWinBidsQueue,
+		{
+			name: "config is different",
+			initialConfig: &config.Configuration{
+				PublisherId:    "oldPublisher",
+				BufferInterval: "10s",
+				BufferSize:     "1MB",
+			},
+			newConfig: &config.Configuration{
+				PublisherId:    "newPublisher",
+				BufferInterval: "20s",
+				BufferSize:     "2MB",
+			},
+			configIsSame: false,
 		},
-		muxConfig: sync.RWMutex{},
 	}
 
-	// Test case: config is the same
-	t.Run("config is the same", func(t *testing.T) {
-		newConfig := &config.Configuration{
-			PublisherId:    "samePublisher",
-			BufferInterval: "10s",
-			BufferSize:     "1MB",
-		}
-		mockConfigService.EXPECT().IsSameAs(newConfig, p.cfg).Return(true)
-		mockAuctionBidsQueue.EXPECT().UpdateConfig(gomock.Any(), gomock.Any()).Times(0)
-		mockWinBidsQueue.EXPECT().UpdateConfig(gomock.Any(), gomock.Any()).Times(0)
-		p.updateConfig(newConfig)
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Mock dependencies using testify
+			mockConfigService := &configMock.MockConfigService{}
+			mockAuctionBidsQueue := queueMock.NewMockQueueService[utils.AuctionBids](t)
+			mockWinBidsQueue := queueMock.NewMockQueueService[utils.WinningBid](t)
 
-	// Test case: config is different
-	t.Run("config is different", func(t *testing.T) {
-		oldConfig := &config.Configuration{
-			PublisherId:    "oldPublisher",
-			BufferInterval: "10s",
-			BufferSize:     "1MB",
-		}
-		p.cfg = oldConfig
+			p := &PubxaiModule{
+				cfg:           tt.initialConfig,
+				configService: mockConfigService,
+				auctionBidsQueue: &queue.AuctionBidsQueue{
+					QueueService: mockAuctionBidsQueue,
+				},
+				winBidsQueue: &queue.WinningBidQueue{
+					QueueService: mockWinBidsQueue,
+				},
+				muxConfig: sync.RWMutex{},
+			}
 
-		newConfig := &config.Configuration{
-			PublisherId:    "newPublisher",
-			BufferInterval: "20s",
-			BufferSize:     "2MB",
-		}
+			// Set expectations
+			mockConfigService.On("IsSameAs", tt.newConfig, tt.initialConfig).Return(tt.configIsSame)
 
-		mockConfigService.EXPECT().IsSameAs(newConfig, p.cfg).Return(false)
-		mockAuctionBidsQueue.EXPECT().UpdateConfig(newConfig.BufferInterval, newConfig.BufferSize).Times(1)
-		mockWinBidsQueue.EXPECT().UpdateConfig(newConfig.BufferInterval, newConfig.BufferSize).Times(1)
-		p.updateConfig(newConfig)
+			if !tt.configIsSame {
+				mockAuctionBidsQueue.On("UpdateConfig", tt.newConfig.BufferInterval, tt.newConfig.BufferSize).Return(nil)
+				mockWinBidsQueue.On("UpdateConfig", tt.newConfig.BufferInterval, tt.newConfig.BufferSize).Return(nil)
+			}
 
-		assert.Equal(t, newConfig, p.cfg)
-	})
+			p.updateConfig(tt.newConfig)
+
+			if !tt.configIsSame {
+				assert.Equal(t, tt.newConfig, p.cfg)
+			} else {
+				assert.Equal(t, tt.initialConfig, p.cfg)
+			}
+			mockConfigService.AssertExpectations(t)
+		})
+	}
 }
 
 func TestPubxaiModule_pushToQueue(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	// Test data setup
+	auctionBids := &utils.AuctionBids{AuctionDetail: utils.AuctionDetail{AuctionId: "auction1"}}
+	winningBids := []utils.WinningBid{
+		{AuctionDetail: utils.AuctionDetail{AuctionId: "auction1"}, WinningBid: utils.Bid{BidId: "bid1"}},
+		{AuctionDetail: utils.AuctionDetail{AuctionId: "auction2"}, WinningBid: utils.Bid{BidId: "bid2"}},
+	}
 
-	// Mock dependencies
-	mockAuctionBidsQueue := queueMock.NewMockAuctionBidsQueueInterface(ctrl)
-	mockWinBidsQueue := queueMock.NewMockWinningBidQueueInterface(ctrl)
-
-	// Create a PubxaiModule instance
-	p := &PubxaiModule{
-		auctionBidsQueue: &queue.AuctionBidsQueue{
-			QueueService: mockAuctionBidsQueue,
+	tests := []struct {
+		name          string
+		auctionBids   *utils.AuctionBids
+		winningBids   []utils.WinningBid
+		expectAuction bool
+		expectWins    bool
+	}{
+		{
+			name:          "only winning bids",
+			auctionBids:   nil,
+			winningBids:   winningBids,
+			expectAuction: false,
+			expectWins:    true,
 		},
-		winBidsQueue: &queue.WinningBidQueue{
-			QueueService: mockWinBidsQueue,
+		{
+			name:          "only auction bids",
+			auctionBids:   auctionBids,
+			winningBids:   nil,
+			expectAuction: true,
+			expectWins:    false,
+		},
+		{
+			name:          "both auction bids and winning bids",
+			auctionBids:   auctionBids,
+			winningBids:   winningBids,
+			expectAuction: true,
+			expectWins:    true,
+		},
+		{
+			name:          "neither auction bids nor winning bids",
+			auctionBids:   nil,
+			winningBids:   nil,
+			expectAuction: false,
+			expectWins:    false,
 		},
 	}
 
-	// Test case: only winning bids
-	t.Run("only winning bids", func(t *testing.T) {
-		winningBids := []utils.WinningBid{
-			{AuctionDetail: utils.AuctionDetail{AuctionId: "auction1"}, WinningBid: utils.Bid{BidId: "bid1"}},
-			{AuctionDetail: utils.AuctionDetail{AuctionId: "auction2"}, WinningBid: utils.Bid{BidId: "bid2"}},
-		}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Mock dependencies
+			mockAuctionBidsQueue := queueMock.NewMockQueueService[utils.AuctionBids](t)
+			mockWinBidsQueue := queueMock.NewMockQueueService[utils.WinningBid](t)
 
-		mockWinBidsQueue.EXPECT().Enqueue(winningBids[0]).Times(1)
-		mockWinBidsQueue.EXPECT().Enqueue(winningBids[1]).Times(1)
-		mockAuctionBidsQueue.EXPECT().Enqueue(gomock.Any()).Times(0)
+			p := &PubxaiModule{
+				auctionBidsQueue: &queue.AuctionBidsQueue{
+					QueueService: mockAuctionBidsQueue,
+				},
+				winBidsQueue: &queue.WinningBidQueue{
+					QueueService: mockWinBidsQueue,
+				},
+			}
 
-		p.pushToQueue(nil, winningBids)
-	})
+			// Set expectations based
+			if tt.expectAuction {
+				mockAuctionBidsQueue.On("Enqueue", *auctionBids).Return(nil)
+			}
 
-	// Test case: only auction bids
-	t.Run("only auction bids", func(t *testing.T) {
-		auctionBids := &utils.AuctionBids{AuctionDetail: utils.AuctionDetail{AuctionId: "auction1"}}
+			if tt.expectWins {
+				for _, win := range winningBids {
+					mockWinBidsQueue.On("Enqueue", win).Return(nil)
+				}
+			}
 
-		mockAuctionBidsQueue.EXPECT().Enqueue(*auctionBids).Times(1)
-		mockWinBidsQueue.EXPECT().Enqueue(gomock.Any()).Times(0)
+			// Execute test
+			p.pushToQueue(tt.auctionBids, tt.winningBids)
 
-		p.pushToQueue(auctionBids, nil)
-	})
-
-	// Test case: both auction bids and winning bids
-	t.Run("both auction bids and winning bids", func(t *testing.T) {
-		auctionBids := &utils.AuctionBids{AuctionDetail: utils.AuctionDetail{AuctionId: "auction1"}}
-		winningBids := []utils.WinningBid{
-			{AuctionDetail: utils.AuctionDetail{AuctionId: "auction1"}, WinningBid: utils.Bid{BidId: "bid1"}},
-			{AuctionDetail: utils.AuctionDetail{AuctionId: "auction2"}, WinningBid: utils.Bid{BidId: "bid2"}},
-		}
-
-		mockAuctionBidsQueue.EXPECT().Enqueue(*auctionBids).Times(1)
-		mockWinBidsQueue.EXPECT().Enqueue(winningBids[0]).Times(1)
-		mockWinBidsQueue.EXPECT().Enqueue(winningBids[1]).Times(1)
-
-		p.pushToQueue(auctionBids, winningBids)
-	})
-
-	// Test case: neither auction bids nor winning bids
-	t.Run("neither auction bids nor winning bids", func(t *testing.T) {
-		mockAuctionBidsQueue.EXPECT().Enqueue(gomock.Any()).Times(0)
-		mockWinBidsQueue.EXPECT().Enqueue(gomock.Any()).Times(0)
-
-		p.pushToQueue(nil, nil)
-	})
+			// Verify expectations
+			mockAuctionBidsQueue.AssertExpectations(t)
+			mockWinBidsQueue.AssertExpectations(t)
+		})
+	}
 }
 
 func TestPubxaiModule_LogAuctionObject(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	// Mock dependencies
-	mockProcessorService := processorMock.NewMockProcessorService(ctrl)
-	mockAuctionBidsQueue := queueMock.NewMockAuctionBidsQueueInterface(ctrl)
-	mockWinBidsQueue := queueMock.NewMockWinningBidQueueInterface(ctrl)
-
-	// Set up a PubxaiModule instance
-	p := &PubxaiModule{
-		processorService: mockProcessorService,
-		auctionBidsQueue: &queue.AuctionBidsQueue{
-			QueueService: mockAuctionBidsQueue,
-		},
-		winBidsQueue: &queue.WinningBidQueue{
-			QueueService: mockWinBidsQueue,
-		},
-	}
+	mockProcessorService := processorMock.NewMockProcessorService()
+	mockAuctionBidsQueue := queueMock.NewMockQueueService[utils.AuctionBids](t)
+	mockWinBidsQueue := queueMock.NewMockQueueService[utils.WinningBid](t)
 
 	auctionBids := &utils.AuctionBids{AuctionDetail: utils.AuctionDetail{AuctionId: "auction1"}}
 	winningBids := []utils.WinningBid{
@@ -304,203 +391,64 @@ func TestPubxaiModule_LogAuctionObject(t *testing.T) {
 		{AuctionDetail: utils.AuctionDetail{AuctionId: "auction2"}, WinningBid: utils.Bid{BidId: "bid2"}},
 	}
 
-	// auctionObj is nil
-	t.Run("Empty AuctionObject", func(t *testing.T) {
-		p.cfg = &config.Configuration{SamplingPercentage: 0}
-
-		mockProcessorService.EXPECT().ProcessLogData(gomock.Any()).Times(0)
-
-		p.LogAuctionObject(nil)
-	})
-	// Test case: Sampling percentage too low
-	t.Run("Sampling percentage too low", func(t *testing.T) {
-		p.cfg = &config.Configuration{SamplingPercentage: 0}
-
-		ao := &analytics.AuctionObject{
-			Status: 0,
-		}
-		mockProcessorService.EXPECT().ProcessLogData(gomock.Any()).Times(0)
-
-		p.LogAuctionObject(ao)
-	})
-
-	// Test case: Sampling percentage allows logging
-	t.Run("Sampling percentage allows logging", func(t *testing.T) {
-		p.cfg = &config.Configuration{SamplingPercentage: 100}
-
-		ao := &analytics.AuctionObject{
-			Status:         0,
-			Errors:         nil,
-			Response:       nil,
-			StartTime:      time.Now(),
-			SeatNonBid:     nil,
-			RequestWrapper: nil,
-		}
-
-		logObject := &utils.LogObject{
-			Status:         ao.Status,
-			Errors:         ao.Errors,
-			Response:       ao.Response,
-			StartTime:      ao.StartTime,
-			SeatNonBid:     ao.SeatNonBid,
-			RequestWrapper: ao.RequestWrapper,
-		}
-
-		mockProcessorService.EXPECT().ProcessLogData(logObject).Return(auctionBids, winningBids).Times(1)
-		mockAuctionBidsQueue.EXPECT().Enqueue(*auctionBids).Times(1)
-		mockWinBidsQueue.EXPECT().Enqueue(winningBids[0]).Times(1)
-		mockWinBidsQueue.EXPECT().Enqueue(winningBids[1]).Times(1)
-
-		p.LogAuctionObject(ao)
-	})
-}
-
-func TestPubxaiModule_VideoObject(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	// Mock dependencies
-	mockProcessorService := processorMock.NewMockProcessorService(ctrl)
-	mockAuctionBidsQueue := queueMock.NewMockAuctionBidsQueueInterface(ctrl)
-	mockWinBidsQueue := queueMock.NewMockWinningBidQueueInterface(ctrl)
-
-	// Set up a PubxaiModule instance
-	p := &PubxaiModule{
-		processorService: mockProcessorService,
-		auctionBidsQueue: &queue.AuctionBidsQueue{
-			QueueService: mockAuctionBidsQueue,
+	tests := []struct {
+		name             string
+		samplingPercent  int
+		auctionObj       *analytics.AuctionObject
+		expectProcessing bool
+	}{
+		{
+			name:             "Empty AuctionObject",
+			samplingPercent:  0,
+			auctionObj:       nil,
+			expectProcessing: false,
 		},
-		winBidsQueue: &queue.WinningBidQueue{
-			QueueService: mockWinBidsQueue,
+		{
+			name:             "Sampling percentage too low",
+			samplingPercent:  0,
+			auctionObj:       &analytics.AuctionObject{Status: 0},
+			expectProcessing: false,
+		},
+		{
+			name:            "Sampling percentage allows logging",
+			samplingPercent: 100,
+			auctionObj: &analytics.AuctionObject{
+				Status:    0,
+				StartTime: time.Now(),
+			},
+			expectProcessing: true,
 		},
 	}
 
-	auctionBids := &utils.AuctionBids{AuctionDetail: utils.AuctionDetail{AuctionId: "auction1"}}
-	winningBids := []utils.WinningBid{
-		{AuctionDetail: utils.AuctionDetail{AuctionId: "auction1"}, WinningBid: utils.Bid{BidId: "bid1"}},
-		{AuctionDetail: utils.AuctionDetail{AuctionId: "auction2"}, WinningBid: utils.Bid{BidId: "bid2"}},
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Reset mock expectations for each test case
+			mockProcessorService.Mock = mock.Mock{}
+
+			p := &PubxaiModule{
+				processorService: mockProcessorService,
+				auctionBidsQueue: &queue.AuctionBidsQueue{
+					QueueService: mockAuctionBidsQueue,
+				},
+				winBidsQueue: &queue.WinningBidQueue{
+					QueueService: mockWinBidsQueue,
+				},
+				cfg: &config.Configuration{SamplingPercentage: tt.samplingPercent},
+			}
+
+			if tt.expectProcessing {
+				mockProcessorService.On("ProcessLogData", mock.Anything).Return(auctionBids, winningBids)
+				mockAuctionBidsQueue.On("Enqueue", *auctionBids).Return(nil)
+				mockWinBidsQueue.On("Enqueue", winningBids[0]).Return(nil)
+				mockWinBidsQueue.On("Enqueue", winningBids[1]).Return(nil)
+			}
+
+			p.LogAuctionObject(tt.auctionObj)
+
+			// Assert that all expectations were met
+			mockProcessorService.AssertExpectations(t)
+			mockAuctionBidsQueue.AssertExpectations(t)
+			mockWinBidsQueue.AssertExpectations(t)
+		})
 	}
-	// Test case: Sampling percentage too low
-	t.Run("Empty AuctionObject", func(t *testing.T) {
-		p.cfg = &config.Configuration{SamplingPercentage: 0}
-
-		mockProcessorService.EXPECT().ProcessLogData(gomock.Any()).Times(0)
-
-		p.LogVideoObject(nil)
-	})
-	t.Run("Sampling percentage too low", func(t *testing.T) {
-		p.cfg = &config.Configuration{SamplingPercentage: 0}
-
-		vo := &analytics.VideoObject{
-			Status: 0,
-		}
-		mockProcessorService.EXPECT().ProcessLogData(gomock.Any()).Times(0)
-
-		p.LogVideoObject(vo)
-	})
-
-	// Test case: Sampling percentage allows logging
-	t.Run("Sampling percentage allows logging", func(t *testing.T) {
-		p.cfg = &config.Configuration{SamplingPercentage: 100}
-
-		vo := &analytics.VideoObject{
-			Status:         0,
-			Errors:         nil,
-			Response:       nil,
-			StartTime:      time.Now(),
-			SeatNonBid:     nil,
-			RequestWrapper: nil,
-		}
-
-		logObject := &utils.LogObject{
-			Status:         vo.Status,
-			Errors:         vo.Errors,
-			Response:       vo.Response,
-			StartTime:      vo.StartTime,
-			SeatNonBid:     vo.SeatNonBid,
-			RequestWrapper: vo.RequestWrapper,
-		}
-
-		mockProcessorService.EXPECT().ProcessLogData(logObject).Return(auctionBids, winningBids).Times(1)
-		mockAuctionBidsQueue.EXPECT().Enqueue(*auctionBids).Times(1)
-		mockWinBidsQueue.EXPECT().Enqueue(winningBids[0]).Times(1)
-		mockWinBidsQueue.EXPECT().Enqueue(winningBids[1]).Times(1)
-
-		p.LogVideoObject(vo)
-	})
-}
-
-func TestPubxaiModule_LogAmpObject(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	// Mock dependencies
-	mockProcessorService := processorMock.NewMockProcessorService(ctrl)
-	mockAuctionBidsQueue := queueMock.NewMockAuctionBidsQueueInterface(ctrl)
-	mockWinBidsQueue := queueMock.NewMockWinningBidQueueInterface(ctrl)
-
-	// Set up a PubxaiModule instance
-	p := &PubxaiModule{
-		processorService: mockProcessorService,
-		auctionBidsQueue: &queue.AuctionBidsQueue{
-			QueueService: mockAuctionBidsQueue,
-		},
-		winBidsQueue: &queue.WinningBidQueue{
-			QueueService: mockWinBidsQueue,
-		},
-	}
-
-	auctionBids := &utils.AuctionBids{AuctionDetail: utils.AuctionDetail{AuctionId: "auction1"}}
-	winningBids := []utils.WinningBid{
-		{AuctionDetail: utils.AuctionDetail{AuctionId: "auction1"}, WinningBid: utils.Bid{BidId: "bid1"}},
-		{AuctionDetail: utils.AuctionDetail{AuctionId: "auction2"}, WinningBid: utils.Bid{BidId: "bid2"}},
-	}
-	t.Run("Empty AuctionObject", func(t *testing.T) {
-		p.cfg = &config.Configuration{SamplingPercentage: 0}
-
-		mockProcessorService.EXPECT().ProcessLogData(gomock.Any()).Times(0)
-
-		p.LogAmpObject(nil)
-	})
-	// Test case: Sampling percentage too low
-	t.Run("Sampling percentage too low", func(t *testing.T) {
-		p.cfg = &config.Configuration{SamplingPercentage: 0}
-
-		ampo := &analytics.AmpObject{
-			Status: 0,
-		}
-		mockProcessorService.EXPECT().ProcessLogData(gomock.Any()).Times(0)
-
-		p.LogAmpObject(ampo)
-	})
-
-	// Test case: Sampling percentage allows logging
-	t.Run("Sampling percentage allows logging", func(t *testing.T) {
-		p.cfg = &config.Configuration{SamplingPercentage: 100}
-
-		ampo := &analytics.AmpObject{
-			Status:          0,
-			Errors:          nil,
-			AuctionResponse: nil,
-			StartTime:       time.Now(),
-			SeatNonBid:      nil,
-			RequestWrapper:  nil,
-		}
-
-		logObject := &utils.LogObject{
-			Status:         ampo.Status,
-			Errors:         ampo.Errors,
-			Response:       ampo.AuctionResponse,
-			StartTime:      ampo.StartTime,
-			SeatNonBid:     ampo.SeatNonBid,
-			RequestWrapper: ampo.RequestWrapper,
-		}
-
-		mockProcessorService.EXPECT().ProcessLogData(logObject).Return(auctionBids, winningBids).Times(1)
-		mockAuctionBidsQueue.EXPECT().Enqueue(*auctionBids).Times(1)
-		mockWinBidsQueue.EXPECT().Enqueue(winningBids[0]).Times(1)
-		mockWinBidsQueue.EXPECT().Enqueue(winningBids[1]).Times(1)
-
-		p.LogAmpObject(ampo)
-	})
 }

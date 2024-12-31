@@ -5,62 +5,29 @@
 package mocks
 
 import (
-	reflect "reflect"
-
-	gomock "github.com/golang/mock/gomock"
-	openrtb2 "github.com/prebid/openrtb/v20/openrtb2"
-	utils "github.com/prebid/prebid-server/v3/analytics/pubxai/utils"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/analytics/pubxai/utils"
+	"github.com/stretchr/testify/mock"
 )
 
-// MockProcessorService is a mock of ProcessorService interface.
+// MockProcessorService is a mock implementation of ProcessorService interface
 type MockProcessorService struct {
-	ctrl     *gomock.Controller
-	recorder *MockProcessorServiceMockRecorder
+	mock.Mock
 }
 
-// MockProcessorServiceMockRecorder is the mock recorder for MockProcessorService.
-type MockProcessorServiceMockRecorder struct {
-	mock *MockProcessorService
+// NewMockProcessorService creates a new instance of MockProcessorService
+func NewMockProcessorService() *MockProcessorService {
+	return &MockProcessorService{}
 }
 
-// NewMockProcessorService creates a new mock instance.
-func NewMockProcessorService(ctrl *gomock.Controller) *MockProcessorService {
-	mock := &MockProcessorService{ctrl: ctrl}
-	mock.recorder = &MockProcessorServiceMockRecorder{mock}
-	return mock
+// ProcessBidData provides a mock function
+func (m *MockProcessorService) ProcessBidData(bids []map[string]interface{}, imps map[string]openrtb2.Imp, logObject *utils.LogObject) (*utils.AuctionBids, []utils.WinningBid) {
+	args := m.Called(bids, imps, logObject)
+	return args.Get(0).(*utils.AuctionBids), args.Get(1).([]utils.WinningBid)
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockProcessorService) EXPECT() *MockProcessorServiceMockRecorder {
-	return m.recorder
-}
-
-// ProcessBidData mocks base method.
-func (m *MockProcessorService) ProcessBidData(arg0 []map[string]interface{}, arg1 map[string]openrtb2.Imp, arg2 *utils.LogObject) (*utils.AuctionBids, []utils.WinningBid) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ProcessBidData", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*utils.AuctionBids)
-	ret1, _ := ret[1].([]utils.WinningBid)
-	return ret0, ret1
-}
-
-// ProcessBidData indicates an expected call of ProcessBidData.
-func (mr *MockProcessorServiceMockRecorder) ProcessBidData(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessBidData", reflect.TypeOf((*MockProcessorService)(nil).ProcessBidData), arg0, arg1, arg2)
-}
-
-// ProcessLogData mocks base method.
-func (m *MockProcessorService) ProcessLogData(arg0 *utils.LogObject) (*utils.AuctionBids, []utils.WinningBid) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ProcessLogData", arg0)
-	ret0, _ := ret[0].(*utils.AuctionBids)
-	ret1, _ := ret[1].([]utils.WinningBid)
-	return ret0, ret1
-}
-
-// ProcessLogData indicates an expected call of ProcessLogData.
-func (mr *MockProcessorServiceMockRecorder) ProcessLogData(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessLogData", reflect.TypeOf((*MockProcessorService)(nil).ProcessLogData), arg0)
+// ProcessLogData provides a mock function
+func (m *MockProcessorService) ProcessLogData(logObject *utils.LogObject) (*utils.AuctionBids, []utils.WinningBid) {
+	args := m.Called(logObject)
+	return args.Get(0).(*utils.AuctionBids), args.Get(1).([]utils.WinningBid)
 }

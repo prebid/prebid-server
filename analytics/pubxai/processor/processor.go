@@ -14,34 +14,31 @@ type ProcessorService interface {
 type ProcessorServiceImpl struct {
 	publisherId  string
 	samplingRate int
-	utilService  utils.UtilsService
 }
 
 func NewProcessorService(publisherId string, samplingRate int) ProcessorService {
 	return &ProcessorServiceImpl{
 		publisherId:  publisherId,
 		samplingRate: samplingRate,
-		utilService:  utils.NewUtilsService(publisherId),
 	}
 }
 
 func (p *ProcessorServiceImpl) ProcessBidData(bidResponses []map[string]interface{}, impsById map[string]openrtb2.Imp, ao *utils.LogObject) (*utils.AuctionBids, []utils.WinningBid) {
 	startTime := ao.StartTime.UTC().UnixMilli()
 
-	requestExt, responseExt, err := p.utilService.UnmarshalExtensions(ao)
+	requestExt, responseExt, err := utils.UnmarshalExtensions(ao)
 	if err != nil {
-		glog.Errorf("[pubxai] Error unmarshalling extensions: %v", err)
 		return nil, nil
 	}
 
 	auctionId := requestExt["id"].(string)
 
-	adUnitCodes := p.utilService.ExtractAdunitCodes(requestExt)
-	floorDetail := p.utilService.ExtractFloorDetail(requestExt)
-	pageDetail := p.utilService.ExtractPageData(requestExt)
-	deviceDetail := p.utilService.ExtractDeviceData(requestExt)
-	userDetail := p.utilService.ExtractUserIds(requestExt)
-	consentDetail := p.utilService.ExtractConsentTypes(requestExt)
+	adUnitCodes := utils.ExtractAdunitCodes(requestExt)
+	floorDetail := utils.ExtractFloorDetail(requestExt)
+	pageDetail := utils.ExtractPageData(requestExt)
+	deviceDetail := utils.ExtractDeviceData(requestExt)
+	userDetail := utils.ExtractUserIds(requestExt)
+	consentDetail := utils.ExtractConsentTypes(requestExt)
 	pmacDetail := map[string]interface{}{}
 
 	auctionDetail := utils.AuctionDetail{
@@ -56,9 +53,9 @@ func (p *ProcessorServiceImpl) ProcessBidData(bidResponses []map[string]interfac
 		SamplingRate: p.samplingRate,
 	}
 
-	auctionBids, winningBids := p.utilService.ProcessBidResponses(bidResponses, auctionId, startTime, requestExt, responseExt, floorDetail)
+	auctionBids, winningBids := utils.ProcessBidResponses(bidResponses, auctionId, startTime, requestExt, responseExt, floorDetail)
 
-	auctionBids = p.utilService.AppendTimeoutBids(auctionBids, impsById, ao)
+	auctionBids = utils.AppendTimeoutBids(auctionBids, impsById, ao)
 	// make AuctionBids object and winningBids Object
 	auctionObj := utils.AuctionBids{
 		AuctionDetail: auctionDetail,
@@ -101,6 +98,7 @@ func (p *ProcessorServiceImpl) ProcessLogData(ao *utils.LogObject) (*utils.Aucti
 		return nil, nil
 	}
 	request := ao.RequestWrapper.BidRequest
+
 	imps := request.Imp
 	var impsById = make(map[string]openrtb2.Imp)
 	for _, imp := range imps {
