@@ -12,6 +12,9 @@
     },
     "slot": {
       "type": "string"
+    },
+    "ssi": {
+      "type": "string"
     }
   },
   "required": ["account_id"]
