@@ -137,11 +137,11 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		RequestStatus: metrics.RequestStatusOK,
 	}
 	activityControl := privacy.ActivityControl{}
-
+	foundErrors := false
 	defer func() {
 		// if AmpObject.AuctionResponse is nil then collect nonbids from all stage outcomes and set it in the AmpObject.SeatNonBid
 		// Nil AmpObject.AuctionResponse indicates the occurrence of a fatal error.
-		if ao.AuctionResponse == nil {
+		if foundErrors {
 			seatNonBid.Append(getNonBidsFromStageOutcomes(hookExecutor.GetOutcomes()))
 			ao.SeatNonBid = seatNonBid.Get()
 		}
@@ -177,6 +177,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	}
 
 	if errortypes.ContainsFatalError(errL) {
+		foundErrors = true
 		w.WriteHeader(http.StatusBadRequest)
 		for _, err := range errortypes.FatalOnly(errL) {
 			fmt.Fprintf(w, "Invalid request: %s\n", err.Error())
@@ -235,6 +236,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 			fmt.Fprintf(w, "Invalid request: %s\n", err.Error())
 		}
 		ao.Errors = append(ao.Errors, acctIDErrs...)
+		foundErrors = true
 		return
 	}
 
@@ -248,6 +250,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	errL = append(errL, errs...)
 	ao.Errors = append(ao.Errors, errs...)
 	if errortypes.ContainsFatalError(errs) {
+		foundErrors = true
 		w.WriteHeader(http.StatusBadRequest)
 		for _, err := range errortypes.FatalOnly(errs) {
 			fmt.Fprintf(w, "Invalid request: %s\n", err.Error())
@@ -299,6 +302,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	ao.AuctionResponse = response
 	rejectErr, isRejectErr := hookexecution.CastRejectErr(err)
 	if err != nil && !isRejectErr {
+		foundErrors = true
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
 		glog.Errorf("/openrtb2/amp Critical error: %v", err)
@@ -320,6 +324,8 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 			// there could be a case where ao.AuctionResponse nil and reqWrapper.RebuildRequest returns error
 			seatNonBid.Append(getNonBidsFromStageOutcomes(hookExecutor.GetOutcomes()))
 			ao.SeatNonBid = seatNonBid.Get()
+		} else {
+			foundErrors = true
 		}
 		return
 	}
