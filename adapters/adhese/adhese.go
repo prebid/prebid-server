@@ -135,16 +135,17 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{Message: "Empty body"}}
 	}
-	// create a new bidResponse with a capacity of 1 because we only expect 1 bid
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(response.SeatBid[0].Bid))
-	if response.Cur != "" {
-		bidResponse.Currency = response.Cur
-	}
 
 	if (len(response.SeatBid)) == 0 {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: "Empty SeatBid",
 		}}
+	}
+
+	// create a new bidResponse with a capacity of 1 because we only expect 1 bid
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(response.SeatBid[0].Bid))
+	if response.Cur != "" {
+		bidResponse.Currency = response.Cur
 	}
 
 	bids := response.SeatBid[0].Bid
