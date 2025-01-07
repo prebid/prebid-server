@@ -121,6 +121,7 @@ func NewVideoEndpoint(
 */
 func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	start := time.Now()
+	ctx := r.Context()
 
 	vo := analytics.VideoObject{
 		Status:    http.StatusOK,
@@ -196,7 +197,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 			return
 		}
 	} else {
-		storedRequest, errs := deps.loadStoredVideoRequest(context.Background(), storedRequestId)
+		storedRequest, errs := deps.loadStoredVideoRequest(ctx, storedRequestId)
 		if len(errs) > 0 {
 			handleError(&labels, w, errs, &vo, &debugLog)
 			return
@@ -270,12 +271,12 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	ctx := context.Background()
 	timeout := deps.cfg.AuctionTimeouts.LimitAuctionTimeout(time.Duration(bidReqWrapper.TMax) * time.Millisecond)
 	if timeout > 0 {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithDeadline(ctx, start.Add(timeout))
 		defer cancel()
+		r = r.WithContext(ctx)
 	}
 
 	// Read Usersyncs/Cookie
@@ -428,12 +429,15 @@ func handleError(labels *metrics.Labels, w http.ResponseWriter, errL []error, vo
 			status = http.StatusInternalServerError
 			labels.RequestStatus = metrics.RequestStatusAccountConfigErr
 			break
+		} else if erVal == errortypes.TimeoutErrorCode {
+			status = http.StatusRequestTimeout
+			labels.RequestStatus = metrics.RequestStatusTimeout
 		}
 		errors = fmt.Sprintf("%s %s", errors, er.Error())
 	}
 	w.WriteHeader(status)
 	vo.Status = status
-	fmt.Fprintf(w, "Critical error while running the video endpoint: %v", errors)
+	_, _ = fmt.Fprintf(w, "Critical error while running the video endpoint: %v", errors)
 	glog.Errorf("/openrtb2/video Critical error: %v", errors)
 	vo.Errors = append(vo.Errors, errL...)
 }
