@@ -33,18 +33,16 @@ type openxRespExt struct {
 
 func (a *OpenxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
-	var bannerImps []openrtb2.Imp
+	var bannerAndNativeImps []openrtb2.Imp
 	var videoImps []openrtb2.Imp
-	var nativeImps []openrtb2.Imp
 
 	for _, imp := range request.Imp {
 		// OpenX doesn't allow multi-type imp. Banner takes priority over video and video takes priority over native
-		if imp.Banner != nil {
-			bannerImps = append(bannerImps, imp)
+		// Openx also wants to send banner and native imps in one request
+		if imp.Banner != nil || imp.Native != nil {
+			bannerAndNativeImps = append(bannerAndNativeImps, imp)
 		} else if imp.Video != nil {
 			videoImps = append(videoImps, imp)
-		} else if imp.Native != nil {
-			nativeImps = append(nativeImps, imp)
 		}
 	}
 
@@ -52,7 +50,7 @@ func (a *OpenxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 	// Make a copy as we don't want to change the original request
 	reqCopy := *request
 
-	reqCopy.Imp = bannerImps
+	reqCopy.Imp = bannerAndNativeImps
 	adapterReq, errors := a.makeRequest(&reqCopy)
 	if adapterReq != nil {
 		adapterRequests = append(adapterRequests, adapterReq)
@@ -68,13 +66,6 @@ func (a *OpenxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 		}
 		errs = append(errs, errors...)
 	}
-
-	reqCopy.Imp = nativeImps
-	adapterReq, errors = a.makeRequest(&reqCopy)
-	if adapterReq != nil {
-		adapterRequests = append(adapterRequests, adapterReq)
-	}
-	errs = append(errs, errors...)
 
 	return adapterRequests, errs
 }
