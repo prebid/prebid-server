@@ -1,0 +1,21 @@
+
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Insticator Adapter Params",
+    "description": "A schema which validates params accepted by Insticator",
+  
+    "type": "object",
+    "properties": {
+      "adUnitId": {
+        "type": "string",
+        "description": "Ad Unit Id",
+        "minLength": 1
+      },
+      "publisherId": {
+        "type": "string",
+        "description": "Publisher Id",
+        "minLength": 1
+      }
+    },
+    "required": ["adUnitId", "publisherId"]
+  }

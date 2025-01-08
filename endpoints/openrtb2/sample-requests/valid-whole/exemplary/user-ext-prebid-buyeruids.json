@@ -1,0 +1,170 @@
+{
+  "description": "Bid request with user.ext.prebid.buyeruids object",
+  "config": {
+    "mockBidders": [
+      {
+        "bidderName": "appnexus",
+        "currency": "USD",
+        "price": 1.00
+      },
+      {
+        "bidderName": "pubmatic",
+        "currency": "USD",
+        "price": 2.00
+      }
+    ],
+    "bidderInfoOverrides": {
+      "appnexus": {
+        "openrtb": {
+          "version": "2.5"
+        }
+      },
+      "pubmatic": {
+        "openrtb": {
+          "version": "2.6"
+        }
+      }
+    }
+  },
+  "mockBidRequest": {
+    "id": "request-id",
+    "site": {
+      "page": "prebid.org"
+    },
+    "imp": [
+      {
+        "id": "imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          },
+          "pubmatic": {
+            "publisherId": "123"
+          }
+        }
+      }
+    ],
+    "user": {
+      "consent": "some-consent-string",
+      "ext": {
+        "prebid": {
+          "buyeruids": {
+            "appnexus": "appnexus-buyeruid",
+            "pubmatic": "pubmatic-buyeruid" 
+          }
+        }
+      }
+    }
+  },
+  "expectedMockBidderRequests": {
+    "appnexus": {
+      "id": "request-id",
+      "site": {
+        "page": "prebid.org",
+        "ext": {
+          "amp": 0
+        }
+      },
+      "at": 1,
+      "device": {
+        "ip": "192.0.2.1"
+      },
+      "imp": [
+      {
+        "id": "imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": 12883451
+          }
+        },
+        "secure": 1
+      }],
+      "user": {
+        "buyeruid": "appnexus-buyeruid",
+        "ext": {
+          "consent": "some-consent-string"
+        }
+      }
+    },
+    "pubmatic": {
+      "id": "request-id",
+      "site": {
+        "page": "prebid.org",
+        "ext": {
+          "amp": 0
+        }
+      },
+      "at": 1,
+      "device": {
+        "ip": "192.0.2.1"
+      },
+      "imp": [
+      {
+        "id": "imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "123"
+          }
+        },
+        "secure": 1
+      }],
+      "user": {
+        "buyeruid": "pubmatic-buyeruid",
+        "consent": "some-consent-string"
+      }
+    }
+  },
+  "expectedBidResponse": {
+    "id": "request-id",
+    "seatbid": [
+      {
+        "bid": [
+          {
+            "id": "appnexus-bid",
+            "impid": "imp-id",
+            "price": 1.0
+          }
+        ],
+        "seat": "appnexus"
+      },
+      {
+        "bid": [
+          {
+            "id": "pubmatic-bid",
+            "impid": "imp-id",
+            "price": 2.0
+          }
+        ],
+        "seat": "pubmatic"
+      }
+    ],
+    "bidid": "test bid id",
+    "cur": "USD",
+    "nbr": 0
+  },
+  "expectedReturnCode": 200
+}
