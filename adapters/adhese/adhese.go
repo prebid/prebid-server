@@ -81,12 +81,12 @@ func (a *adapter) MakeRequests(
 	if err != nil {
 		return nil, []error{err}
 	}
-
+	var firstImIpd = openrtb_ext.GetImpIDs(request.Imp)[0]
 	requestData := &adapters.RequestData{
 		Method: "POST",
 		Uri:    endpoint,
 		Body:   requestJSON,
-		ImpIDs: openrtb_ext.GetImpIDs(request.Imp),
+		ImpIDs: []string{firstImIpd},
 	}
 
 	return []*adapters.RequestData{requestData}, nil
@@ -142,18 +142,19 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		}}
 	}
 
-	// create a new bidResponse with a capacity of 1 because we only expect 1 bid
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(response.SeatBid[0].Bid))
-	if response.Cur != "" {
-		bidResponse.Currency = response.Cur
-	}
-
 	bids := response.SeatBid[0].Bid
 	if len(bids) == 0 {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: "Empty SeatBid.Bid",
 		}}
 	}
+
+	// create a new bidResponse with a capacity of 1 because we only expect 1 bid
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(response.SeatBid[0].Bid))
+	if response.Cur != "" {
+		bidResponse.Currency = response.Cur
+	}
+
 	bid := bids[0]
 
 	var wrappedBidExt wrappedBidExt
