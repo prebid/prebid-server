@@ -87,7 +87,10 @@
             },
             {
               "id": "native-imp-1",
-              "banner": {},
+              "native": {
+                "request": "test-native",
+                "ver": "1.2"
+              },
               "tagid": "123"
             },
             {
