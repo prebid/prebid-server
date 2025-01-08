@@ -23,6 +23,19 @@
         }
       },
       {
+        "id": "native-imp-1",
+        "native": {
+          "request": "test-native",
+          "ver": "1.2"
+        },
+        "ext": {
+          "bidder": {
+            "unit": "123",
+            "delDomain": "se-demo-d.openx.net"
+          }
+        }
+      },
+      {
         "id": "banner-imp-2",
         "banner": {},
         "ext": {
@@ -46,6 +59,10 @@
         "id": "multi-type-imp",
         "banner": {},
         "video": {"mimes": ["video/mp4"]},
+        "native": {
+          "request": "test-native",
+          "ver": "1.2"
+        },
         "ext": {
           "bidder": {
             "unit": "555",
@@ -69,6 +86,11 @@
               "tagid": "111"
             },
             {
+              "id": "native-imp-1",
+              "banner": {},
+              "tagid": "123"
+            },
+            {
               "id": "banner-imp-2",
               "banner": {},
               "tagid": "222"
@@ -77,6 +99,10 @@
               "id": "multi-type-imp",
               "banner": {},
               "video": {"mimes": ["video/mp4"]},
+              "native": {
+                "request": "test-native",
+                "ver": "1.2"
+              },
               "tagid": "555"
             }
           ],
@@ -85,7 +111,7 @@
             "delDomain": "se-demo-d.openx.net"
           }
         },
-        "impIDs":["banner-imp-1","banner-imp-2","multi-type-imp"]
+        "impIDs":["banner-imp-1","native-imp-1","banner-imp-2","multi-type-imp"]
       },
       "mockResponse": {
         "status": 200,
@@ -98,6 +124,11 @@
                 {
                   "id": "banner-bid-1",
                   "impid": "banner-imp-1",
+                  "price": 0.1
+                },
+                {
+                  "id": "native-bid-1",
+                  "impid": "native-imp-1",
                   "price": 0.1
                 },
                 {
@@ -205,6 +236,14 @@
             "price": 0.1
           },
           "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "native-bid-1",
+            "impid": "native-imp-1",
+            "price": 0.1
+          },
+          "type": "native"
         },
         {
           "bid": {

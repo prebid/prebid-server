@@ -39,10 +39,12 @@ func (a *OpenxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 	for _, imp := range request.Imp {
 		// OpenX doesn't allow multi-type imp. Banner takes priority over video and video takes priority over native
 		// Openx also wants to send banner and native imps in one request
-		if imp.Banner != nil || imp.Native != nil {
+		if imp.Banner != nil {
 			bannerAndNativeImps = append(bannerAndNativeImps, imp)
 		} else if imp.Video != nil {
 			videoImps = append(videoImps, imp)
+		} else if imp.Native != nil {
+			bannerAndNativeImps = append(bannerAndNativeImps, imp)
 		}
 	}
 
