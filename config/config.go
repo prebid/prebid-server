@@ -544,9 +544,15 @@ type RequestTimeoutHeaders struct {
 	RequestTimeoutInQueue string `mapstructure:"request_timeout_in_queue"`
 }
 
+type OtelMetrics struct {
+	Enabled bool   `mapstructure:"enabled"`
+	Prefix  string `mapstructure:"prefix"`
+}
+
 type Metrics struct {
 	Influxdb   InfluxMetrics     `mapstructure:"influxdb"`
 	Prometheus PrometheusMetrics `mapstructure:"prometheus"`
+	Otel       OtelMetrics       `mapstructure:"otel"`
 	Disabled   DisabledMetrics   `mapstructure:"disabled_metrics"`
 }
 
