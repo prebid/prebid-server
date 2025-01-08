@@ -42,7 +42,7 @@
   "httpCalls": [],
   "expectedMakeRequestsErrors": [
     {
-      "value": "Failed to deserialize IQZonex extension: json: cannot unmarshal array into Go value of type openrtb_ext.ExtIQX",
+      "value": "Failed to deserialize IQZonex extension: expect { or n, but found [",
       "comparison": "literal"
     }
   ]

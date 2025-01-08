@@ -1,0 +1,20 @@
+endpoint: "https://capi.connatix.com/rtb/ortb"
+maintainer:
+  email: "pubsolutions@connatix.com"
+gvlVendorID: 143
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  iframe:
+    url: "https://capi.connatix.com/us/pixel?pId=53&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&callback={{.RedirectURL}}"
+    userMacro: "[UID]"
+  redirect:
+    url: "https://capi.connatix.com/us/pixel?pId=52&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&callback={{.RedirectURL}}"
+    userMacro: "[UID]"

@@ -7,10 +7,11 @@ import (
 	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 // AdprimeAdapter struct
@@ -40,13 +41,13 @@ func (a *AdprimeAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 	for _, imp := range request.Imp {
 		reqCopy.Imp = []openrtb2.Imp{imp}
 
-		err = json.Unmarshal(reqCopy.Imp[0].Ext, &bidderExt)
+		err = jsonutil.Unmarshal(reqCopy.Imp[0].Ext, &bidderExt)
 		if err != nil {
 			errs = append(errs, err)
 			return nil, errs
 		}
 
-		err = json.Unmarshal(bidderExt.Bidder, &adprimeExt)
+		err = jsonutil.Unmarshal(bidderExt.Bidder, &adprimeExt)
 		if err != nil {
 			errs = append(errs, err)
 			return nil, errs
@@ -141,7 +142,7 @@ func (a *AdprimeAdapter) MakeBids(internalRequest *openrtb2.BidRequest, external
 
 	var bidResp openrtb2.BidResponse
 
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
