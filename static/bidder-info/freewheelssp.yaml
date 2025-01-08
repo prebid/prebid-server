@@ -14,3 +14,6 @@ userSync:
   iframe:
     url: "https://ads.stickyadstv.com/pbs-user-sync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&r={{.RedirectURL}}"
     userMacro: "{viewerid}"
+openrtb:
+  version: 2.6
+  gpp-supported: true

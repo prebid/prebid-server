@@ -77,7 +77,7 @@
       },
       "expectedMakeRequestsErrors": [
         {
-          "value": "json: cannot unmarshal number into Go value of type openrtb_ext.ImpExtSilverpush",
+          "value": "expect { or n, but found 9",
           "comparison": "literal"
         }
       ]

@@ -6,8 +6,8 @@ import (
 
 	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -33,50 +33,6 @@ func TestConvertDownTo25(t *testing.T) {
 				Source: &openrtb2.Source{Ext: json.RawMessage(`{"schain":{"complete":1,"nodes":[],"ver":"2"}}`)},
 				Regs:   &openrtb2.Regs{Ext: json.RawMessage(`{"gdpr":1,"us_privacy":"3"}`)},
 				User:   &openrtb2.User{Ext: json.RawMessage(`{"consent":"1","eids":[{"source":"42"}]}`)},
-			},
-		},
-		{
-			name: "2.6-dropped", // integration with clear26Fields
-			givenRequest: openrtb2.BidRequest{
-				ID:     "anyID",
-				CatTax: adcom1.CatTaxIABContent10,
-				Device: &openrtb2.Device{LangB: "anyLang"},
-			},
-			expectedRequest: openrtb2.BidRequest{
-				ID:     "anyID",
-				Device: &openrtb2.Device{},
-			},
-		},
-		{
-			name: "2.6-202211-dropped", // integration with clear202211Fields
-			givenRequest: openrtb2.BidRequest{
-				ID:  "anyID",
-				App: &openrtb2.App{InventoryPartnerDomain: "anyDomain"},
-			},
-			expectedRequest: openrtb2.BidRequest{
-				ID:  "anyID",
-				App: &openrtb2.App{},
-			},
-		},
-		{
-			name: "2.6-202303-dropped", // integration with clear202303Fields
-			givenRequest: openrtb2.BidRequest{
-				ID:  "anyID",
-				Imp: []openrtb2.Imp{{ID: "1", Refresh: &openrtb2.Refresh{Count: ptrutil.ToPtr(1)}}},
-			},
-			expectedRequest: openrtb2.BidRequest{
-				ID:  "anyID",
-				Imp: []openrtb2.Imp{{ID: "1"}},
-			},
-		},
-		{
-			name: "2.6-202309-dropped", // integration with clear202309Fields
-			givenRequest: openrtb2.BidRequest{
-				ID:   "anyID",
-				ACat: []string{"anyACat"},
-			},
-			expectedRequest: openrtb2.BidRequest{
-				ID: "anyID",
 			},
 		},
 		{
@@ -622,7 +578,7 @@ func TestClear26Fields(t *testing.T) {
 	}
 
 	r := &RequestWrapper{BidRequest: given}
-	clear26Fields(r)
+	Clear26Fields(r)
 	assert.Equal(t, expected, r.BidRequest)
 }
 
@@ -681,7 +637,7 @@ func TestClear202211Fields(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			r := &RequestWrapper{BidRequest: &test.given}
-			clear202211Fields(r)
+			Clear202211Fields(r)
 			assert.Equal(t, &test.expected, r.BidRequest)
 		})
 	}
@@ -710,7 +666,7 @@ func TestClear202303Fields(t *testing.T) {
 	}
 
 	r := &RequestWrapper{BidRequest: &given}
-	clear202303Fields(r)
+	Clear202303Fields(r)
 	assert.Equal(t, expected, given)
 }
 
@@ -757,6 +713,90 @@ func TestClear202309Fields(t *testing.T) {
 	}
 
 	r := &RequestWrapper{BidRequest: &given}
-	clear202309Fields(r)
+	Clear202309Fields(r)
 	assert.Equal(t, expected, given)
+}
+
+func TestClear202402Fields(t *testing.T) {
+	given := openrtb2.BidRequest{
+		ID: "anyID",
+		Imp: []openrtb2.Imp{
+			{
+				ID: "imp2",
+				Video: &openrtb2.Video{
+					PodID:     "1",
+					PodDedupe: []adcom1.PodDedupe{adcom1.PodDedupeADomain},
+				},
+			},
+		},
+	}
+
+	expected := openrtb2.BidRequest{
+		ID: "anyID",
+		Imp: []openrtb2.Imp{
+			{
+				ID: "imp2",
+				Video: &openrtb2.Video{
+					PodID: "1",
+				},
+			},
+		},
+	}
+
+	r := &RequestWrapper{BidRequest: &given}
+	Clear202402Fields(r)
+	assert.Equal(t, expected, given)
+}
+
+func TestClear202409Fields(t *testing.T) {
+	testCases := []struct {
+		name     string
+		given    openrtb2.BidRequest
+		expected openrtb2.BidRequest
+	}{
+		{
+			name:     "user-nil",
+			given:    openrtb2.BidRequest{User: nil},
+			expected: openrtb2.BidRequest{User: nil},
+		},
+		{
+			name:     "eids-nil",
+			given:    openrtb2.BidRequest{User: &openrtb2.User{EIDs: nil}},
+			expected: openrtb2.BidRequest{User: &openrtb2.User{EIDs: nil}},
+		},
+		{
+			name: "cleared",
+			given: openrtb2.BidRequest{
+				User: &openrtb2.User{
+					EIDs: []openrtb2.EID{
+						{
+							Source:   "anySource",
+							Inserter: "anyInserter",
+							Matcher:  "anyMatcher",
+							MM:       adcom1.MatchMethodBrowserCookieSync,
+							UIDs:     []openrtb2.UID{{ID: "anyID"}},
+						},
+					},
+				},
+			},
+			expected: openrtb2.BidRequest{
+				User: &openrtb2.User{
+					EIDs: []openrtb2.EID{
+						{
+							Source: "anySource",
+							UIDs:   []openrtb2.UID{{ID: "anyID"}},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			r := &RequestWrapper{BidRequest: &test.given}
+			Clear202409Fields(r)
+			assert.Equal(t, test.expected, test.given)
+		})
+	}
 }

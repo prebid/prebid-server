@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/stored_requests"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/stored_requests"
 )
 
 type ImpsWithAuctionResponseIDs map[string]string
@@ -22,20 +22,7 @@ type ImpBidderReplaceImpID map[string]map[string]bool
 type BidderImpReplaceImpID map[string]map[string]bool
 
 func InitStoredBidResponses(req *openrtb2.BidRequest, storedBidResponses ImpBidderStoredResp) BidderImpsWithBidResponses {
-	removeImpsWithStoredResponses(req, storedBidResponses)
 	return buildStoredResp(storedBidResponses)
-}
-
-// removeImpsWithStoredResponses deletes imps with stored bid resp
-func removeImpsWithStoredResponses(req *openrtb2.BidRequest, storedBidResponses ImpBidderStoredResp) {
-	imps := req.Imp
-	req.Imp = nil //to indicate this bidder doesn't have real requests
-	for _, imp := range imps {
-		if _, ok := storedBidResponses[imp.ID]; !ok {
-			//add real imp back to request
-			req.Imp = append(req.Imp, imp)
-		}
-	}
 }
 
 func buildStoredResp(storedBidResponses ImpBidderStoredResp) BidderImpsWithBidResponses {

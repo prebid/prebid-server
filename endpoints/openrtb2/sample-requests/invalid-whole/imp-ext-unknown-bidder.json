@@ -22,5 +22,5 @@
     }
   },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request: request.imp[0].ext.prebid.bidder contains unknown bidder: noBidderShouldEverHaveThisName. Did you forget an alias in request.ext.prebid.aliases?\n"
+  "expectedErrorMessage": "Invalid request: request.imp[0].ext.prebid.bidder must contain at least one bidder"
 }

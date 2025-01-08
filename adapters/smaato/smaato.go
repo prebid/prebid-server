@@ -9,15 +9,16 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/metrics"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/timeutil"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/metrics"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/timeutil"
 )
 
-const clientVersion = "prebid_server_1.1"
+const clientVersion = "prebid_server_1.2"
 
 type adMarkupType string
 
@@ -108,7 +109,7 @@ func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 	}
 
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
@@ -361,7 +362,7 @@ func setUser(request *openrtb2.BidRequest) error {
 	if request.User != nil && request.User.Ext != nil {
 		var userExtRaw map[string]json.RawMessage
 
-		if err := json.Unmarshal(request.User.Ext, &userExtRaw); err != nil {
+		if err := jsonutil.Unmarshal(request.User.Ext, &userExtRaw); err != nil {
 			return &errortypes.BadInput{Message: "Invalid user.ext."}
 		}
 
@@ -369,7 +370,7 @@ func setUser(request *openrtb2.BidRequest) error {
 			var err error
 			var userExtData userExtData
 
-			if err = json.Unmarshal(userExtDataRaw, &userExtData); err != nil {
+			if err = jsonutil.Unmarshal(userExtDataRaw, &userExtData); err != nil {
 				return &errortypes.BadInput{Message: "Invalid user.ext.data."}
 			}
 
@@ -415,7 +416,7 @@ func setSite(request *openrtb2.BidRequest) error {
 		if request.Site.Ext != nil {
 			var siteExt siteExt
 
-			if err := json.Unmarshal(request.Site.Ext, &siteExt); err != nil {
+			if err := jsonutil.Unmarshal(request.Site.Ext, &siteExt); err != nil {
 				return &errortypes.BadInput{Message: "Invalid site.ext."}
 			}
 
@@ -471,14 +472,13 @@ func setImpForAdspace(imp *openrtb2.Imp) error {
 		return &errortypes.BadInput{Message: "Missing adspaceId parameter."}
 	}
 
-	impExt, err := makeImpExt(&imp.Ext)
+	err = removeBidderNodeFromImpExt(imp)
 	if err != nil {
 		return err
 	}
 
 	if imp.Banner != nil || imp.Video != nil || imp.Native != nil {
 		imp.TagID = adSpaceID
-		imp.Ext = impExt
 		return nil
 	}
 
@@ -490,12 +490,13 @@ func setImpForAdBreak(imps []openrtb2.Imp) error {
 		return &errortypes.BadInput{Message: "No impressions in bid request."}
 	}
 
-	adBreakID, err := jsonparser.GetString(imps[0].Ext, "bidder", "adbreakId")
+	firstImp := imps[0]
+	adBreakID, err := jsonparser.GetString(firstImp.Ext, "bidder", "adbreakId")
 	if err != nil {
 		return &errortypes.BadInput{Message: "Missing adbreakId parameter."}
 	}
 
-	impExt, err := makeImpExt(&imps[0].Ext)
+	err = removeBidderNodeFromImpExt(&firstImp)
 	if err != nil {
 		return err
 	}
@@ -512,31 +513,32 @@ func setImpForAdBreak(imps []openrtb2.Imp) error {
 		imps[i].Video = &videoCopy
 	}
 
-	imps[0].Ext = impExt
+	imps[0].Ext = firstImp.Ext
 
 	return nil
 }
 
-func makeImpExt(impExtRaw *json.RawMessage) (json.RawMessage, error) {
-	var impExt openrtb_ext.ExtImpExtraDataSmaato
+func removeBidderNodeFromImpExt(imp *openrtb2.Imp) error {
+	if imp.Ext == nil {
+		return nil
+	}
+	updatedExt := jsonparser.Delete(imp.Ext, "bidder")
+	isEmpty := true
+	err := jsonparser.ObjectEach(updatedExt, func(key []byte, value []byte, dataType jsonparser.ValueType, offset int) error {
+		isEmpty = false
+		return nil
+	})
 
-	if err := json.Unmarshal(*impExtRaw, &impExt); err != nil {
-		return nil, &errortypes.BadInput{Message: "Invalid imp.ext."}
+	if err != nil {
+		return err
 	}
 
-	if impExtSkadnRaw := impExt.Skadn; impExtSkadnRaw != nil {
-		var impExtSkadn map[string]json.RawMessage
-
-		if err := json.Unmarshal(impExtSkadnRaw, &impExtSkadn); err != nil {
-			return nil, &errortypes.BadInput{Message: "Invalid imp.ext.skadn."}
-		}
-	}
-
-	if impExtJson, err := json.Marshal(impExt); string(impExtJson) != "{}" {
-		return impExtJson, err
+	if isEmpty {
+		imp.Ext = nil
 	} else {
-		return nil, nil
+		imp.Ext = updatedExt
 	}
+	return nil
 }
 
 func groupImpressionsByPod(imps []openrtb2.Imp) (map[string]([]openrtb2.Imp), []string, []error) {
@@ -585,7 +587,7 @@ func extractBidExt(bid *openrtb2.Bid) (bidExt, error) {
 	if bid.Ext == nil {
 		return bidExt, nil
 	}
-	if err := json.Unmarshal(bid.Ext, &bidExt); err != nil {
+	if err := jsonutil.Unmarshal(bid.Ext, &bidExt); err != nil {
 		return bidExt, &errortypes.BadServerResponse{Message: "Invalid bid.ext."}
 	}
 	return bidExt, nil

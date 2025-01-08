@@ -4,7 +4,7 @@ import (
 	"maps"
 	"slices"
 
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 )
 
 // Defines strings for FetchStatus
@@ -89,7 +89,7 @@ type PriceFloorData struct {
 	ModelTimestamp      int                    `json:"modeltimestamp,omitempty"`
 	ModelGroups         []PriceFloorModelGroup `json:"modelgroups,omitempty"`
 	FloorProvider       string                 `json:"floorprovider,omitempty"`
-	FetchRate           *int                   `json:"fetchrate,omitempty"`
+	UseFetchDataRate    *int                   `json:"usefetchdatarate,omitempty"`
 }
 
 type PriceFloorModelGroup struct {

@@ -4,11 +4,11 @@
 		"user": {
 			"ext":{
 				"eids" : [
-					{ 
-						"source": "idProvider", 
+					{
+						"source": "idProvider",
 						"uids": [
 							{ "id": "userId", "atype": 1, "ext": { "stype": "ppuid" } }
-						] 
+						]
 					}
 				]
 			}
@@ -39,7 +39,7 @@
 	"httpCalls": [
 		{
 			"expectedRequest": {
-				"uri": "http://whatever.url?format=json&tzo=0",
+				"uri": "http://whatever.url?format=prebidServer&tzo=0",
 				"body": {
 					"adUnits": [
 						{
