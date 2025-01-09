@@ -5,7 +5,7 @@
       {
         "id": "test-imp-id",
         "native": {
-          "request": "test-native",
+          "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1200,\"hmin\":627}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]}]}",
           "ver": "1.2"
         },
         "ext": {
@@ -28,7 +28,7 @@
             {
               "id": "test-imp-id",
               "native": {
-                "request": "test-native",
+                "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1200,\"hmin\":627}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]}]}",
                 "ver": "1.2"
               },
               "tagid": "539439964"

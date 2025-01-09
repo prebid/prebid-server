@@ -25,7 +25,7 @@
       {
         "id": "native-imp-1",
         "native": {
-          "request": "test-native",
+          "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1200,\"hmin\":627}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]}]}",
           "ver": "1.2"
         },
         "ext": {
@@ -59,7 +59,7 @@
         "id": "banner-native-imp-1",
         "banner": {},
         "native": {
-          "request": "test-native",
+          "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1200,\"hmin\":627}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]}]}",
           "ver": "1.2"
         },
         "ext": {
@@ -73,7 +73,7 @@
         "id": "video-native-imp-1",
         "video": {"mimes": ["video/mp4"]},
         "native": {
-          "request": "test-native",
+          "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1200,\"hmin\":627}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]}]}",
           "ver": "1.2"
         },
         "ext": {
@@ -88,7 +88,7 @@
         "banner": {},
         "video": {"mimes": ["video/mp4"]},
         "native": {
-          "request": "test-native",
+          "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1200,\"hmin\":627}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]}]}",
           "ver": "1.2"
         },
         "ext": {
@@ -116,7 +116,7 @@
             {
               "id": "native-imp-1",
               "native": {
-                "request": "test-native",
+                "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1200,\"hmin\":627}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]}]}",
                 "ver": "1.2"
               },
               "tagid": "666"
@@ -130,7 +130,7 @@
               "id": "banner-native-imp-1",
               "banner": {},
               "native": {
-                "request": "test-native",
+                "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1200,\"hmin\":627}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]}]}",
                 "ver": "1.2"
               },
               "tagid": "777"
@@ -140,7 +140,7 @@
               "banner": {},
               "video": {"mimes": ["video/mp4"]},
               "native": {
-                "request": "test-native",
+                "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1200,\"hmin\":627}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]}]}",
                 "ver": "1.2"
               },
               "tagid": "555"
@@ -284,7 +284,7 @@
               "id": "video-native-imp-1",
               "video": {"mimes": ["video/mp4"]},
               "native": {
-                "request": "test-native",
+                "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1200,\"hmin\":627}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]}]}",
                 "ver": "1.2"
               },
               "tagid": "888"

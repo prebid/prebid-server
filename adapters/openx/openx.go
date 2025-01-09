@@ -259,9 +259,9 @@ func getBidVideo(bid *openrtb2.Bid) *openrtb_ext.ExtBidPrebidVideo {
 //
 // OpenX doesn't support multi-type impressions.
 // If both banner and video exist, take banner as we do not want in-banner video.
-// If both video and native exist and banner is nil, take video
-// If both banner and native exist, take banner
-// And if all the types exist, take banner
+// If both video and native exist and banner is nil, take video.
+// If both banner and native exist, take banner.
+// If all of the types (banner, video, native) exist, take banner.
 func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
