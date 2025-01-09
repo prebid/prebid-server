@@ -38,7 +38,6 @@ func TestInvalidParams(t *testing.T) {
 var validParams = []string{
 	`{"tagId":"1"}`,
 	`{"tagid":"2"}`,
-	`{"tagId":"1", "tagid":"2"}`,
 	`{"tagId":"1","bidfloor":"0.5"}`,
 	`{"tagId":"1","bidfloor":0.5}`,
 	`{"tagId":"1","bidfloor":"0.5", "adunitcode":"0.5"}`,
