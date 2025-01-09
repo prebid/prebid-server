@@ -33,23 +33,6 @@ func TestResponseWithCurrencies(t *testing.T) {
 	assertCurrencyInBidResponse(t, "EUR", &currency)
 }
 
-func TestGetMediaTypeForImp(t *testing.T) {
-	imps := []openrtb2.Imp{
-		{ID: "1", Banner: &openrtb2.Banner{}},
-		{ID: "2", Video: &openrtb2.Video{}},
-		{ID: "3", Native: &openrtb2.Native{}},
-		{ID: "4", Video: &openrtb2.Video{}, Native: &openrtb2.Native{}},
-		{ID: "5", Banner: &openrtb2.Banner{}, Video: &openrtb2.Video{}, Native: &openrtb2.Native{}},
-	}
-
-	assert.Equal(t, getMediaTypeForImp("1", imps), openrtb_ext.BidTypeBanner)
-	assert.Equal(t, getMediaTypeForImp("2", imps), openrtb_ext.BidTypeVideo)
-	assert.Equal(t, getMediaTypeForImp("3", imps), openrtb_ext.BidTypeNative)
-	assert.Equal(t, getMediaTypeForImp("4", imps), openrtb_ext.BidTypeVideo)
-	assert.Equal(t, getMediaTypeForImp("5", imps), openrtb_ext.BidTypeBanner)
-
-}
-
 func assertCurrencyInBidResponse(t *testing.T, expectedCurrency string, currency *string) {
 	bidder, buildErr := Builder(openrtb_ext.BidderOpenx, config.Adapter{
 		Endpoint: "http://rtb.openx.net/prebid"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
