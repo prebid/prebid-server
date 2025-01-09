@@ -13,7 +13,54 @@
       "pagecat": [
         "val1",
         "val2"
-      ]
+      ],
+      "content": {
+        "data": [
+          {
+            "ext": {
+              "segtax": 1
+            },
+            "segment": [
+              {
+                "id": "segmentId1"
+              },
+              {
+                "id": "segmentId2"
+              }
+            ]
+          },
+          {
+            "ext": {
+              "segtax": "1"
+            },
+            "segment": [
+              {
+                "id": "shouldNotBeCopied"
+              }
+            ]
+          },
+          {
+            "ext": {
+              "segtax": 2
+            },
+            "segment": [
+              {
+                "id": "segmentId3"
+              }
+            ]
+          },
+          {
+            "ext": {
+              "segtax": 10
+            },
+            "segment": [
+              {
+                "id": "segmentId4"
+              }
+            ]
+          }
+        ]
+      }
     },
     "user": {
       "yob": 2000,
@@ -23,6 +70,70 @@
         "lon": -122.346200
       },
       "gender": "f",
+      "data": [
+        {
+          "ext": {
+            "segtax": 4
+          },
+          "segment": [
+            {
+              "id": "idToCopy"
+            }
+          ]
+        },
+        {
+          "ext": {
+            "segtax": "someValue"
+          },
+          "segment": [
+            {
+              "id": "shouldNotBeCopied"
+            }
+          ]
+        },
+        {
+          "ext": {
+            "segtax": "4"
+          },
+          "segment": [
+            {
+              "id": "shouldNotBeCopied2"
+            }
+          ]
+        },
+        {
+          "ext": {
+            "segtax": 4
+          },
+          "segment": [
+            {
+              "id": "idToCopy2"
+            }
+          ]
+        },
+        {
+          "ext": {
+            "segtax": [
+              4
+            ]
+          },
+          "segment": [
+            {
+              "id": "shouldNotBeCopied3"
+            }
+          ]
+        },
+        {
+          "ext": {
+            "segtax": 2
+          },
+          "segment": [
+            {
+              "id": "idToCopy3"
+            }
+          ]
+        }
+      ],
       "ext": {
         "consent": "consent"
       }
@@ -102,9 +213,66 @@
               "val1",
               "val2"
             ],
+            "content": {
+              "data": [
+                {
+                  "ext": {
+                    "segtax": 1
+                  },
+                  "segment": [
+                    {
+                      "id": "segmentId1"
+                    },
+                    {
+                      "id": "segmentId2"
+                    }
+                  ]
+                },
+                {
+                  "ext": {
+                    "segtax": "1"
+                  },
+                  "segment": [
+                    {
+                      "id": "shouldNotBeCopied"
+                    }
+                  ]
+                },
+                {
+                  "ext": {
+                    "segtax": 2
+                  },
+                  "segment": [
+                    {
+                      "id": "segmentId3"
+                    }
+                  ]
+                },
+                {
+                  "ext": {
+                    "segtax": 10
+                  },
+                  "segment": [
+                    {
+                      "id": "segmentId4"
+                    }
+                  ]
+                }
+              ]
+            },
             "ext": {
               "rp": {
-                "site_id": 113932
+                "site_id": 113932,
+                "target": {
+                  "iab": [
+                    "segmentId2",
+                    "segmentId1",
+                    "segmentId3"
+                  ],
+                  "tax10": [
+                    "segmentId4"
+                  ]
+                }
               }
             },
             "publisher": {
@@ -116,10 +284,81 @@
             }
           },
           "user": {
+            "data": [
+              {
+                "ext": {
+                  "segtax": 4
+                },
+                "segment": [
+                  {
+                    "id": "idToCopy"
+                  }
+                ]
+              },
+              {
+                "ext": {
+                  "segtax": "someValue"
+                },
+                "segment": [
+                  {
+                    "id": "shouldNotBeCopied"
+                  }
+                ]
+              },
+              {
+                "ext": {
+                  "segtax": "4"
+                },
+                "segment": [
+                  {
+                    "id": "shouldNotBeCopied2"
+                  }
+                ]
+              },
+              {
+                "ext": {
+                  "segtax": 4
+                },
+                "segment": [
+                  {
+                    "id": "idToCopy2"
+                  }
+                ]
+              },
+              {
+                "ext": {
+                  "segtax": [
+                    4
+                  ]
+                },
+                "segment": [
+                  {
+                    "id": "shouldNotBeCopied3"
+                  }
+                ]
+              },
+              {
+                "ext": {
+                  "segtax": 2
+                },
+                "segment": [
+                  {
+                    "id": "idToCopy3"
+                  }
+                ]
+              }
+            ],
             "ext": {
               "consent": "consent",
               "rp": {
                 "target": {
+                  "iab": [
+                    "idToCopy2",
+                    "idToCopy"
+                  ],
+                  "tax2": [
+                    "idToCopy3"
+                  ]
                 }
               }
             }
@@ -169,7 +408,11 @@
                     "pbadslot": "pbadslot",
                     "pbs_login": "xuser",
                     "pbs_url": "http://hosturl.com",
-                    "pbs_version": ""
+                    "pbs_version": "",
+                    "pagecat": [
+                      "val1",
+                      "val2"
+                    ]
                   },
                   "track": {
                     "mint": "",
