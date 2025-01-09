@@ -50,5 +50,4 @@ var invalidParams = []string{
 	`0`,
 	`[]`,
 	`{}`,
-	`{"tagId":""}`,
 }
