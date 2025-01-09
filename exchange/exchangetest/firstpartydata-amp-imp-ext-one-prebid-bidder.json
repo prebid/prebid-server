@@ -121,6 +121,8 @@
                             "ext": {
                                 "origbidcpm": 0.3,
                                 "prebid": {
+                                    "meta": {
+                                    },
                                     "type": "banner"
                                 }
                             }

@@ -2,12 +2,12 @@ package hooks
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/hooks/hookstage"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/hooks/hookstage"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -227,7 +227,7 @@ func TestPlanForRawAuctionStage(t *testing.T) {
 	for name, test := range testCases {
 		t.Run(name, func(t *testing.T) {
 			account := new(config.Account)
-			if err := json.Unmarshal(test.giveAccountPlanData, &account.Hooks); err != nil {
+			if err := jsonutil.UnmarshalValid(test.giveAccountPlanData, &account.Hooks); err != nil {
 				t.Fatal(err)
 			}
 
@@ -333,7 +333,7 @@ func TestPlanForProcessedAuctionStage(t *testing.T) {
 	for name, test := range testCases {
 		t.Run(name, func(t *testing.T) {
 			account := new(config.Account)
-			if err := json.Unmarshal(test.giveAccountPlanData, &account.Hooks); err != nil {
+			if err := jsonutil.UnmarshalValid(test.giveAccountPlanData, &account.Hooks); err != nil {
 				t.Fatal(err)
 			}
 
@@ -439,7 +439,7 @@ func TestPlanForBidderRequestStage(t *testing.T) {
 	for name, test := range testCases {
 		t.Run(name, func(t *testing.T) {
 			account := new(config.Account)
-			if err := json.Unmarshal(test.giveAccountPlanData, &account.Hooks); err != nil {
+			if err := jsonutil.UnmarshalValid(test.giveAccountPlanData, &account.Hooks); err != nil {
 				t.Fatal(err)
 			}
 
@@ -545,7 +545,7 @@ func TestPlanForRawBidderResponseStage(t *testing.T) {
 	for name, test := range testCases {
 		t.Run(name, func(t *testing.T) {
 			account := new(config.Account)
-			if err := json.Unmarshal(test.giveAccountPlanData, &account.Hooks); err != nil {
+			if err := jsonutil.UnmarshalValid(test.giveAccountPlanData, &account.Hooks); err != nil {
 				t.Fatal(err)
 			}
 
@@ -651,7 +651,7 @@ func TestPlanForAllProcessedBidResponsesStage(t *testing.T) {
 	for name, test := range testCases {
 		t.Run(name, func(t *testing.T) {
 			account := new(config.Account)
-			if err := json.Unmarshal(test.giveAccountPlanData, &account.Hooks); err != nil {
+			if err := jsonutil.UnmarshalValid(test.giveAccountPlanData, &account.Hooks); err != nil {
 				t.Fatal(err)
 			}
 
@@ -757,7 +757,7 @@ func TestPlanForAuctionResponseStage(t *testing.T) {
 	for name, test := range testCases {
 		t.Run(name, func(t *testing.T) {
 			account := new(config.Account)
-			if err := json.Unmarshal(test.giveAccountPlanData, &account.Hooks); err != nil {
+			if err := jsonutil.UnmarshalValid(test.giveAccountPlanData, &account.Hooks); err != nil {
 				t.Fatal(err)
 			}
 
@@ -779,12 +779,12 @@ func getPlanBuilder(
 	var hostPlan config.HookExecutionPlan
 	var defaultAccountPlan config.HookExecutionPlan
 
-	err = json.Unmarshal(hostPlanData, &hostPlan)
+	err = jsonutil.UnmarshalValid(hostPlanData, &hostPlan)
 	if err != nil {
 		return nil, err
 	}
 
-	err = json.Unmarshal(accountPlanData, &defaultAccountPlan)
+	err = jsonutil.UnmarshalValid(accountPlanData, &defaultAccountPlan)
 	if err != nil {
 		return nil, err
 	}

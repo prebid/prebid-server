@@ -30,7 +30,7 @@ func TestStrToInt8Slice(t *testing.T) {
 			in:   "malformed",
 			expected: testOutput{
 				arr: nil,
-				err: &strconv.NumError{"ParseInt", "malformed", strconv.ErrSyntax},
+				err: &strconv.NumError{Func: "ParseInt", Num: "malformed", Err: strconv.ErrSyntax},
 			},
 		},
 		{
@@ -38,7 +38,7 @@ func TestStrToInt8Slice(t *testing.T) {
 			in:   "malformed,2,malformed",
 			expected: testOutput{
 				arr: nil,
-				err: &strconv.NumError{"ParseInt", "malformed", strconv.ErrSyntax},
+				err: &strconv.NumError{Func: "ParseInt", Num: "malformed", Err: strconv.ErrSyntax},
 			},
 		},
 		{
@@ -46,7 +46,7 @@ func TestStrToInt8Slice(t *testing.T) {
 			in:   "128",
 			expected: testOutput{
 				arr: nil,
-				err: &strconv.NumError{"ParseInt", "128", strconv.ErrRange},
+				err: &strconv.NumError{Func: "ParseInt", Num: "128", Err: strconv.ErrRange},
 			},
 		},
 		{

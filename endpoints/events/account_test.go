@@ -2,7 +2,6 @@ package events
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -10,24 +9,23 @@ import (
 	"testing"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/metrics"
-	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/metrics"
+	"github.com/prebid/prebid-server/v3/stored_requests"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestHandleAccountServiceErrors(t *testing.T) {
 	tests := map[string]struct {
-		fetcher   *mockAccountsFetcher
-		cfg       *config.Configuration
-		accountID string
-		want      struct {
-			code     int
-			response string
-		}
+		fetcher      *mockAccountsFetcher
+		cfg          *config.Configuration
+		accountID    string
+		wantCode     int
+		wantResponse string
 	}{
-		"badRequest": {
+		"bad-request": {
 			fetcher: &mockAccountsFetcher{
 				Fail:  true,
 				Error: errors.New("some error"),
@@ -40,16 +38,11 @@ func TestHandleAccountServiceErrors(t *testing.T) {
 					TimeoutMS: int64(2000), AllowUnknownBidder: false,
 				},
 			},
-			accountID: "testacc",
-			want: struct {
-				code     int
-				response string
-			}{
-				code:     400,
-				response: "Invalid request: some error\nInvalid request: Prebid-server could not verify the Account ID. Please reach out to the prebid server host.\n",
-			},
+			accountID:    "testacc",
+			wantCode:     400,
+			wantResponse: "Invalid request: some error\nInvalid request: Prebid-server could not verify the Account ID. Please reach out to the prebid server host.\n",
 		},
-		"malformedAccountConfig": {
+		"malformed-account-config": {
 			fetcher: &mockAccountsFetcher{
 				Fail:  true,
 				Error: &errortypes.MalformedAcct{},
@@ -60,34 +53,25 @@ func TestHandleAccountServiceErrors(t *testing.T) {
 					TimeoutMS: int64(2000), AllowUnknownBidder: false,
 				},
 			},
-			accountID: "malformed_acct",
-			want: struct {
-				code     int
-				response string
-			}{
-				code:     500,
-				response: "Invalid request: The prebid-server account config for account id \"malformed_acct\" is malformed. Please reach out to the prebid server host.\n",
-			},
+			accountID:    "malformed_acct",
+			wantCode:     500,
+			wantResponse: "Invalid request: The prebid-server account config for account id \"malformed_acct\" is malformed. Please reach out to the prebid server host.\n",
 		},
-		"serviceUnavailable": {
+		"service-unavailable": {
 			fetcher: &mockAccountsFetcher{
 				Fail: false,
 			},
 			cfg: &config.Configuration{
-				BlacklistedAcctMap: map[string]bool{"testacc": true},
-				MaxRequestSize:     maxSize,
+				AccountDefaults: config.Account{},
+				AccountRequired: true,
+				MaxRequestSize:  maxSize,
 				VTrack: config.VTrack{
 					TimeoutMS: int64(2000), AllowUnknownBidder: false,
 				},
 			},
-			accountID: "testacc",
-			want: struct {
-				code     int
-				response string
-			}{
-				code:     503,
-				response: "Invalid request: Prebid-server has disabled Account ID: testacc, please reach out to the prebid server host.\n",
-			},
+			accountID:    "disabled_acct",
+			wantCode:     503,
+			wantResponse: "Invalid request: Prebid-server has disabled Account ID: disabled_acct, please reach out to the prebid server host.\n",
 		},
 		"timeout": {
 			fetcher: &mockAccountsFetcher{
@@ -106,19 +90,13 @@ func TestHandleAccountServiceErrors(t *testing.T) {
 					AllowUnknownBidder: false,
 				},
 			},
-			accountID: "testacc",
-			want: struct {
-				code     int
-				response string
-			}{
-				code:     504,
-				response: "Invalid request: context deadline exceeded\nInvalid request: Prebid-server could not verify the Account ID. Please reach out to the prebid server host.\n",
-			},
+			accountID:    "testacc",
+			wantCode:     504,
+			wantResponse: "Invalid request: context deadline exceeded\nInvalid request: Prebid-server could not verify the Account ID. Please reach out to the prebid server host.\n",
 		},
 	}
 
 	for name, test := range tests {
-
 		handlers := []struct {
 			name string
 			h    httprouter.Handle
@@ -137,13 +115,11 @@ func TestHandleAccountServiceErrors(t *testing.T) {
 				// execute
 				handler.h(recorder, handler.r, nil)
 				d, err := io.ReadAll(recorder.Result().Body)
-				if err != nil {
-					t.Fatal(err)
-				}
+				require.NoError(t, err)
 
 				// validate
-				assert.Equal(t, test.want.code, recorder.Result().StatusCode, fmt.Sprintf("Expected %d", test.want.code))
-				assert.Equal(t, test.want.response, string(d))
+				assert.Equal(t, test.wantCode, recorder.Result().StatusCode)
+				assert.Equal(t, test.wantResponse, string(d))
 			})
 		}
 	}

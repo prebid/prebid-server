@@ -1,0 +1,167 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 728,
+              "h": 90
+            }
+          ]
+        },
+        "ext": {
+          "ae": 1,
+          "bidder": {
+            "publisherId": "999",
+            "adSlot": "AdTag_Div1@300x250"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://hbopenbid.pubmatic.com/translator?source=prebid-server",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 728,
+                    "h": 90
+                  }
+                ],
+                "h": 250,
+                "w": 300
+              },
+              "tagid": "AdTag_Div1",
+              "ext": {
+                "ae": 1
+              }
+            }
+          ],
+          "ext": {}
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "pubmatic",
+              "bid": [
+                {
+                  "id": "9d8e77c2-ee0f-4781-af59-5359493b11af",
+                  "impid": "test-imp-id",
+                  "price": 1.1,
+                  "adm": "some-test-ad",
+                  "crid": "crid_10",
+                  "h": 90,
+                  "w": 728,
+                  "ext": {}
+                }
+              ]
+            }
+          ],
+          "cur": "USD",
+          "ext": {
+            "fledge_auction_configs": {
+              "test-imp-id": {
+                "seller": "PUBMATIC_SELLER_CONSTANT_STRING",
+                "sellerTimeout": 123,
+                "decisionLogicUrl": "PUBMATIC_URL_CONSTANT_STRING",
+                "interestGroupBuyers": [
+                  "somedomain1.com",
+                  "somedomain2.com",
+                  "somedomain3.com",
+                  "somedomain4.com"
+                ],
+                "perBuyerSignals": {
+                  "somedomain1.com": {
+                    "multiplier": 1,
+                    "win_reporting_id": "1234"
+                  },
+                  "somedomain2.com": {
+                    "multiplier": 2,
+                    "win_reporting_id": "2345"
+                  },
+                  "somedomain3.com": {
+                    "multiplier": 3,
+                    "win_reporting_id": "3456"
+                  },
+                  "somedomain4.com": {
+                    "multiplier": 4,
+                    "win_reporting_id": "4567"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "9d8e77c2-ee0f-4781-af59-5359493b11af",
+            "impid": "test-imp-id",
+            "price": 1.1,
+            "adm": "some-test-ad",
+            "crid": "crid_10",
+            "w": 728,
+            "h": 90,
+            "ext": {}
+          },
+          "type": "banner"
+        }
+      ],
+      "fledgeauctionconfigs": [
+        {
+          "impid": "test-imp-id",
+          "config": {
+            "seller": "PUBMATIC_SELLER_CONSTANT_STRING",
+            "sellerTimeout": 123,
+            "decisionLogicUrl": "PUBMATIC_URL_CONSTANT_STRING",
+            "interestGroupBuyers": [
+              "somedomain1.com",
+              "somedomain2.com",
+              "somedomain3.com",
+              "somedomain4.com"
+            ],
+            "perBuyerSignals": {
+              "somedomain1.com": {
+                "multiplier": 1,
+                "win_reporting_id": "1234"
+              },
+              "somedomain2.com": {
+                "multiplier": 2,
+                "win_reporting_id": "2345"
+              },
+              "somedomain3.com": {
+                "multiplier": 3,
+                "win_reporting_id": "3456"
+              },
+              "somedomain4.com": {
+                "multiplier": 4,
+                "win_reporting_id": "4567"
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

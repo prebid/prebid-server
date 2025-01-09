@@ -15,7 +15,7 @@ test: deps
 ifeq "$(adapter)" ""
 	./validate.sh
 else
-	go test github.com/prebid/prebid-server/adapters/$(adapter) -bench=.
+	go test github.com/prebid/prebid-server/v3/adapters/$(adapter) -bench=.
 endif
 
 # build-modules generates modules/builder.go file which provides a list of all available modules
@@ -33,3 +33,7 @@ image:
 # format runs format
 format:
 	./scripts/format.sh -f true
+
+# formatcheck runs format for diagnostics, without modifying the code
+formatcheck:
+	./scripts/format.sh -f false

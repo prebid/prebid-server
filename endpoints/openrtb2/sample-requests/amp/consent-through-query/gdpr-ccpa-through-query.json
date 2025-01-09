@@ -74,9 +74,7 @@
       }
     ],
     "regs": {
-      "ext": {
-        "us_privacy": "1YYY"
-      }
+      "us_privacy": "1YYY"
     },
     "ext": {
       "prebid": {
@@ -99,8 +97,7 @@
             ]
           },
           "includewinners": true,
-          "includebidderkeys": true,
-          "mediatypepricegranularity": {}
+          "includebidderkeys": true
         }
       }
     }

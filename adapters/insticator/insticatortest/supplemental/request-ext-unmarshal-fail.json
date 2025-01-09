@@ -1,0 +1,41 @@
+{
+"mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "video": {
+          "w": 728, 
+          "h": 90,
+          "protocols": [2],
+          "placement": 1,
+          "startdelay": -2,
+          "playbackmethod": [2],
+          "mimes": ["foo", "bar"]
+        },
+        "ext": {
+          "bidder": "invalid"
+        }
+      }
+    ],
+    "site": {
+      "publisher": {
+        "id": "test-publisher-id"
+      }
+    },
+    "ext": {
+        "insticator": "invalid"
+    }
+  },
+    
+    "expectedMakeRequestsErrors": [
+        {
+            "value": "cannot unmarshal insticator.reqExt.Insticator: expect { or n, but found \"",
+            "comparison": "literal"
+        },
+        {
+            "value": "expect { or n, but found \"",
+            "comparison": "literal"
+        }
+    ]
+}

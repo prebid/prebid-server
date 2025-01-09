@@ -1,0 +1,91 @@
+{
+  "mockBidRequest": {
+    "imp": [
+      {
+        "ext": {
+          "bidder": {}
+        },
+        "id": "test-native-imp",
+        "native": {
+          "request": "{\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]}],\"ver\":\"1.2\",\"assets\":[{\"id\":0,\"required\":1,\"title\":{\"len\":140}},{\"id\":1,\"required\":1,\"data\":{\"type\":2}},{\"id\":2,\"required\":1,\"img\":{\"type\":3}}]}",
+          "ver": "1.2"
+        }
+      }
+    ],
+    "site": {
+      "page": "https://good.site/url"
+    },
+    "id": "test-native-request",
+    "ext": {},
+    "debug": 1
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://localhost/prebid_server",
+        "body": {
+          "id": "test-native-request",
+          "cur": [
+            "USD"
+          ],
+          "imp": [
+            {
+              "id": "test-native-imp",
+              "native": {
+                "request": "{\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]}],\"ver\":\"1.2\",\"assets\":[{\"id\":0,\"required\":1,\"title\":{\"len\":140}},{\"id\":1,\"required\":1,\"data\":{\"type\":2}},{\"id\":2,\"required\":1,\"img\":{\"type\":3}}]}",
+                "ver": "1.2"
+              },
+              "ext": {
+                "bidder": {}
+              }
+            }
+          ],
+          "site": {
+            "page": "https://good.site/url"
+          },
+          "ext": {}
+        },
+        "impIDs":["test-native-imp"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-native-request",
+          "bidid": "test-bidid",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "rtbhouse",
+              "bid": [
+                {
+                  "id": "test-native-request",
+                  "impid": "test-native-imp",
+                  "price": 0.5,
+                  "adid": "test-adid",
+                  "adm": "{\"native\":\"faulty object\"}",
+                  "adomain": [ "adomain.com" ],
+                  "cid": "test-cid",
+                  "crid": "test-crid",
+                  "dealid": "test-dealid",
+                  "mtype": 4
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": []
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "unable to get native adm",
+      "comparison": "literal"
+    }
+  ]
+}

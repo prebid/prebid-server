@@ -99,17 +99,10 @@
             "wrapper": {
               "profile": 1234,
               "version": 2
-            },
-            "prebid": {
-              "bidderparams": {
-                "wrapper": {
-                  "profile": 1234,
-                  "version": 2
-                }
-              }
             }
           }
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,

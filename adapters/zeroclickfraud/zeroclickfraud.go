@@ -7,12 +7,13 @@ import (
 	"strconv"
 	"text/template"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type ZeroClickFraudAdapter struct {
@@ -57,7 +58,9 @@ func (a *ZeroClickFraudAdapter) MakeRequests(request *openrtb2.BidRequest, reqIn
 			Method:  "POST",
 			Uri:     url,
 			Body:    reqJson,
-			Headers: headers}
+			Headers: headers,
+			ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
+		}
 
 		requests = append(requests, &request)
 	}
@@ -90,7 +93,7 @@ func (a *ZeroClickFraudAdapter) MakeBids(
 
 	var bidResp openrtb2.BidResponse
 
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
@@ -128,13 +131,13 @@ func splitImpressions(imps []openrtb2.Imp) (map[openrtb_ext.ExtImpZeroClickFraud
 
 func getBidderParams(imp *openrtb2.Imp) (*openrtb_ext.ExtImpZeroClickFraud, error) {
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("Missing bidder ext: %s", err.Error()),
 		}
 	}
 	var zeroclickfraudExt openrtb_ext.ExtImpZeroClickFraud
-	if err := json.Unmarshal(bidderExt.Bidder, &zeroclickfraudExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &zeroclickfraudExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("Cannot Resolve host or sourceId: %s", err.Error()),
 		}

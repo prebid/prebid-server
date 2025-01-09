@@ -1,11 +1,12 @@
 package currency
 
 import (
-	"encoding/json"
 	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 func TestUnMarshallRates(t *testing.T) {
@@ -22,7 +23,7 @@ func TestUnMarshallRates(t *testing.T) {
 			ratesJSON:     `malformed`,
 			expectedRates: Rates{},
 			expectsError:  true,
-			expectedError: errors.New("invalid character 'm' looking for beginning of value"),
+			expectedError: errors.New("expect { or n, but found m"),
 		},
 		{
 			desc: "Valid JSON field defining valid conversion object. Expect no error",
@@ -50,7 +51,7 @@ func TestUnMarshallRates(t *testing.T) {
 			expectedError: nil,
 		},
 		{
-			desc: "Valid JSON field defines a conversions map with repeated entries, expect error",
+			desc: "Valid JSON field defines a conversions map with repeated entries, last one wins",
 			ratesJSON: `{
 				"conversions":{
 					"USD":{
@@ -58,25 +59,31 @@ func TestUnMarshallRates(t *testing.T) {
 						"MXN":20.00
 					},
 					"USD":{
-						"GBP":0.7662523901
-					},
+						"GBP":0.4815162342
+					}
 				}
 			}`,
-			expectedRates: Rates{},
-			expectsError:  true,
-			expectedError: errors.New("invalid character '}' looking for beginning of object key string"),
+			expectedRates: Rates{
+				Conversions: map[string]map[string]float64{
+					"USD": {
+						"GBP": 0.4815162342,
+					},
+				},
+			},
+			expectsError:  false,
+			expectedError: nil,
 		},
 	}
 
 	for _, tc := range testCases {
 		// Execute:
 		updatedRates := Rates{}
-		err := json.Unmarshal([]byte(tc.ratesJSON), &updatedRates)
+		err := jsonutil.UnmarshalValid([]byte(tc.ratesJSON), &updatedRates)
 
 		// Verify:
 		assert.Equal(t, err != nil, tc.expectsError, tc.desc)
 		if tc.expectsError {
-			assert.Equal(t, err.Error(), tc.expectedError.Error(), tc.desc)
+			assert.Equal(t, tc.expectedError.Error(), err.Error(), tc.desc)
 		}
 		assert.Equal(t, tc.expectedRates, updatedRates, tc.desc)
 	}

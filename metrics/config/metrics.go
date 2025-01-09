@@ -3,10 +3,10 @@ package config
 import (
 	"time"
 
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/metrics"
-	prometheusmetrics "github.com/prebid/prebid-server/metrics/prometheus"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/metrics"
+	prometheusmetrics "github.com/prebid/prebid-server/v3/metrics/prometheus"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	gometrics "github.com/rcrowley/go-metrics"
 	influxdb "github.com/vrischmann/go-metrics-influxdb"
 )
@@ -266,6 +266,13 @@ func (me *MultiMetricsEngine) RecordRequestPrivacy(privacy metrics.PrivacyLabels
 	}
 }
 
+// RecordAdapterBuyerUIDScrubbed across all engines
+func (me *MultiMetricsEngine) RecordAdapterBuyerUIDScrubbed(adapter openrtb_ext.BidderName) {
+	for _, thisME := range *me {
+		thisME.RecordAdapterBuyerUIDScrubbed(adapter)
+	}
+}
+
 // RecordAdapterGDPRRequestBlocked across all engines
 func (me *MultiMetricsEngine) RecordAdapterGDPRRequestBlocked(adapter openrtb_ext.BidderName) {
 	for _, thisME := range *me {
@@ -319,27 +326,6 @@ func (me *MultiMetricsEngine) RecordBidValidationSecureMarkupError(adapter openr
 func (me *MultiMetricsEngine) RecordBidValidationSecureMarkupWarn(adapter openrtb_ext.BidderName, account string) {
 	for _, thisME := range *me {
 		thisME.RecordBidValidationSecureMarkupWarn(adapter, account)
-	}
-}
-
-func (me *MultiMetricsEngine) RecordAccountGDPRPurposeWarning(account string, purposeName string) {
-	for _, thisME := range *me {
-		thisME.RecordAccountGDPRPurposeWarning(account, purposeName)
-	}
-}
-func (me *MultiMetricsEngine) RecordAccountGDPRChannelEnabledWarning(account string) {
-	for _, thisME := range *me {
-		thisME.RecordAccountGDPRChannelEnabledWarning(account)
-	}
-}
-func (me *MultiMetricsEngine) RecordAccountCCPAChannelEnabledWarning(account string) {
-	for _, thisME := range *me {
-		thisME.RecordAccountCCPAChannelEnabledWarning(account)
-	}
-}
-func (me *MultiMetricsEngine) RecordAccountUpgradeStatus(account string) {
-	for _, thisME := range *me {
-		thisME.RecordAccountUpgradeStatus(account)
 	}
 }
 
@@ -505,6 +491,10 @@ func (me *NilMetricsEngine) RecordTimeoutNotice(success bool) {
 func (me *NilMetricsEngine) RecordRequestPrivacy(privacy metrics.PrivacyLabels) {
 }
 
+// RecordAdapterBuyerUIDScrubbed as a noop
+func (me *NilMetricsEngine) RecordAdapterBuyerUIDScrubbed(adapter openrtb_ext.BidderName) {
+}
+
 // RecordAdapterGDPRRequestBlocked as a noop
 func (me *NilMetricsEngine) RecordAdapterGDPRRequestBlocked(adapter openrtb_ext.BidderName) {
 }
@@ -534,18 +524,6 @@ func (me *NilMetricsEngine) RecordBidValidationSecureMarkupError(adapter openrtb
 }
 
 func (me *NilMetricsEngine) RecordBidValidationSecureMarkupWarn(adapter openrtb_ext.BidderName, account string) {
-}
-
-func (me *NilMetricsEngine) RecordAccountGDPRPurposeWarning(account string, purposeName string) {
-}
-
-func (me *NilMetricsEngine) RecordAccountGDPRChannelEnabledWarning(account string) {
-}
-
-func (me *NilMetricsEngine) RecordAccountCCPAChannelEnabledWarning(account string) {
-}
-
-func (me *NilMetricsEngine) RecordAccountUpgradeStatus(account string) {
 }
 
 func (me *NilMetricsEngine) RecordModuleCalled(labels metrics.ModuleLabels, duration time.Duration) {

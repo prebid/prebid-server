@@ -1,0 +1,11 @@
+endpoint: "http://rt.marphezis.com/pbs"
+maintainer:
+  email: "prebid@onlinemediasolutions.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner
+

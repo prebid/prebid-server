@@ -3,11 +3,12 @@ package adservertargeting
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/buger/jsonparser"
-	"github.com/pkg/errors"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/url"
 	"strings"
+
+	"github.com/buger/jsonparser"
+	"github.com/pkg/errors"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 func getAdServerTargeting(reqWrapper *openrtb_ext.RequestWrapper) ([]openrtb_ext.AdServerTarget, error) {

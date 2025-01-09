@@ -1,0 +1,5 @@
+endpoint: "https://tredio-prebid.attekmi.com/pbserver/?seat={{.AccountID}}&token={{.SourceId}}"
+aliasOf: "smarthub"
+userSync:
+  supports:
+    - redirect

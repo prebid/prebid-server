@@ -2,6 +2,8 @@ endpoint: "https://ads.yieldmo.com/exchange/prebid-server"
 maintainer:
   email: "prebid@yieldmo.com"
 gvlVendorID: 173
+openrtb:
+  version: 2.6
 capabilities:
   app:
     mediaTypes:
@@ -13,5 +15,5 @@ capabilities:
     - video
 userSync:
   redirect:
-    url: "https://ads.yieldmo.com/pbsync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirectUri={{.RedirectURL}}"
+    url: "https://ads.yieldmo.com/pbsync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirectUri={{.RedirectURL}}"
     userMacro: "$UID"

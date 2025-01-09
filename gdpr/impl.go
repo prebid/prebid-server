@@ -6,7 +6,7 @@ import (
 	"github.com/prebid/go-gdpr/api"
 	"github.com/prebid/go-gdpr/consentconstants"
 	tcf2 "github.com/prebid/go-gdpr/vendorconsent/tcf2"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 const noBidder openrtb_ext.BidderName = ""
@@ -48,7 +48,7 @@ func (p *permissionsImpl) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 	id, ok := p.vendorIDs[bidder]
 	if ok {
 		vendorExceptions := p.cfg.PurposeVendorExceptions(consentconstants.Purpose(1))
-		_, vendorException := vendorExceptions[bidder]
+		_, vendorException := vendorExceptions[string(bidder)]
 		return p.allowSync(ctx, id, bidder, vendorException)
 	}
 
@@ -56,33 +56,36 @@ func (p *permissionsImpl) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 }
 
 // AuctionActivitiesAllowed determines whether auction activities are permitted for a given bidder
-func (p *permissionsImpl) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (permissions AuctionPermissions, err error) {
+func (p *permissionsImpl) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) AuctionPermissions {
 	if _, ok := p.nonStandardPublishers[p.publisherID]; ok {
-		return AllowAll, nil
+		return AllowAll
 	}
+
 	if p.gdprSignal != SignalYes {
-		return AllowAll, nil
+		return AllowAll
 	}
+
 	if p.consent == "" {
-		return p.defaultPermissions(), nil
+		return p.defaultPermissions()
 	}
+
 	pc, err := parseConsent(p.consent)
 	if err != nil {
-		return p.defaultPermissions(), err
+		return p.defaultPermissions()
 	}
+
 	vendorID, _ := p.resolveVendorID(bidderCoreName, bidder)
 	vendor, err := p.getVendor(ctx, vendorID, *pc)
 	if err != nil {
-		return p.defaultPermissions(), err
+		return p.defaultPermissions()
 	}
+
 	vendorInfo := VendorInfo{vendorID: vendorID, vendor: vendor}
-
-	permissions = AuctionPermissions{}
-	permissions.AllowBidRequest = p.allowBidRequest(bidderCoreName, pc.consentMeta, vendorInfo)
-	permissions.PassGeo = p.allowGeo(bidderCoreName, pc.consentMeta, vendor)
-	permissions.PassID = p.allowID(bidderCoreName, pc.consentMeta, vendorInfo)
-
-	return permissions, nil
+	return AuctionPermissions{
+		AllowBidRequest: p.allowBidRequest(bidderCoreName, pc.consentMeta, vendorInfo),
+		PassGeo:         p.allowGeo(bidderCoreName, pc.consentMeta, vendor),
+		PassID:          p.allowID(bidderCoreName, pc.consentMeta, vendorInfo),
+	}
 }
 
 // defaultPermissions returns a permissions object that denies passing user IDs while
@@ -138,9 +141,9 @@ func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, bidder
 	}
 
 	purpose := consentconstants.Purpose(1)
-	enforcer := p.purposeEnforcerBuilder(purpose, bidder)
+	enforcer := p.purposeEnforcerBuilder(purpose, string(bidder))
 
-	if enforcer.LegalBasis(vendorInfo, bidder, pc.consentMeta, Overrides{blockVendorExceptions: !vendorException}) {
+	if enforcer.LegalBasis(vendorInfo, string(bidder), pc.consentMeta, Overrides{blockVendorExceptions: !vendorException}) {
 		return true, nil
 	}
 	return false, nil
@@ -149,13 +152,13 @@ func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, bidder
 // allowBidRequest computes legal basis for a given bidder using the enforcement algorithms selected
 // by the purpose enforcer builder
 func (p *permissionsImpl) allowBidRequest(bidder openrtb_ext.BidderName, consentMeta tcf2.ConsentMetadata, vendorInfo VendorInfo) bool {
-	enforcer := p.purposeEnforcerBuilder(consentconstants.Purpose(2), bidder)
+	enforcer := p.purposeEnforcerBuilder(consentconstants.Purpose(2), string(bidder))
 
 	overrides := Overrides{}
 	if _, ok := enforcer.(*BasicEnforcement); ok {
 		overrides.allowLITransparency = true
 	}
-	return enforcer.LegalBasis(vendorInfo, bidder, consentMeta, overrides)
+	return enforcer.LegalBasis(vendorInfo, string(bidder), consentMeta, overrides)
 }
 
 // allowGeo computes legal basis for a given bidder using the configs, consent and GVL pertaining to
@@ -180,13 +183,13 @@ func (p *permissionsImpl) allowGeo(bidder openrtb_ext.BidderName, consentMeta tc
 func (p *permissionsImpl) allowID(bidder openrtb_ext.BidderName, consentMeta tcf2.ConsentMetadata, vendorInfo VendorInfo) bool {
 	for i := 2; i <= 10; i++ {
 		purpose := consentconstants.Purpose(i)
-		enforcer := p.purposeEnforcerBuilder(purpose, bidder)
+		enforcer := p.purposeEnforcerBuilder(purpose, string(bidder))
 
 		overrides := Overrides{enforcePurpose: true, enforceVendors: true}
 		if _, ok := enforcer.(*BasicEnforcement); ok && purpose == consentconstants.Purpose(2) {
 			overrides.allowLITransparency = true
 		}
-		if enforcer.LegalBasis(vendorInfo, bidder, consentMeta, overrides) {
+		if enforcer.LegalBasis(vendorInfo, string(bidder), consentMeta, overrides) {
 			return true
 		}
 	}
@@ -222,6 +225,6 @@ func (a AlwaysAllow) HostCookiesAllowed(ctx context.Context) (bool, error) {
 func (a AlwaysAllow) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName) (bool, error) {
 	return true, nil
 }
-func (a AlwaysAllow) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (permissions AuctionPermissions, err error) {
-	return AllowAll, nil
+func (a AlwaysAllow) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) AuctionPermissions {
+	return AllowAll
 }

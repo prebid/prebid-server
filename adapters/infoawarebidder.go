@@ -3,17 +3,17 @@ package adapters
 import (
 	"fmt"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 // InfoAwareBidder wraps a Bidder to ensure all requests abide by the capabilities and
 // media types defined in the static/bidder-info/{bidder}.yaml file.
 //
 // It adjusts incoming requests in the following ways:
-//  1. If App or Site traffic is not supported by the info file, then requests from
+//  1. If App, Site or DOOH traffic is not supported by the info file, then requests from
 //     those sources will be rejected before the delegate is called.
 //  2. If a given MediaType is not supported for the platform, then it will be set
 //     to nil before the request is forwarded to the delegate.
@@ -24,7 +24,7 @@ type InfoAwareBidder struct {
 	info parsedBidderInfo
 }
 
-// BuildInfoAwareBidder wraps a bidder to enforce site, app, and media type support.
+// BuildInfoAwareBidder wraps a bidder to enforce inventory {site, app, dooh} and media type support.
 func BuildInfoAwareBidder(bidder Bidder, info config.BidderInfo) Bidder {
 	return &InfoAwareBidder{
 		Bidder: bidder,
@@ -46,6 +46,12 @@ func (i *InfoAwareBidder) MakeRequests(request *openrtb2.BidRequest, reqInfo *Ex
 			return nil, []error{&errortypes.Warning{Message: "this bidder does not support app requests"}}
 		}
 		allowedMediaTypes = i.info.app
+	}
+	if request.DOOH != nil {
+		if !i.info.dooh.enabled {
+			return nil, []error{&errortypes.Warning{Message: "this bidder does not support dooh requests"}}
+		}
+		allowedMediaTypes = i.info.dooh
 	}
 
 	// Filtering imps is quite expensive (array filter with large, non-pointer elements)... but should be rare,
@@ -136,6 +142,7 @@ func filterImps(imps []openrtb2.Imp, numToFilter int) ([]openrtb2.Imp, []error) 
 type parsedBidderInfo struct {
 	app  parsedSupports
 	site parsedSupports
+	dooh parsedSupports
 }
 
 type parsedSupports struct {
@@ -148,13 +155,22 @@ type parsedSupports struct {
 
 func parseBidderInfo(info config.BidderInfo) parsedBidderInfo {
 	var parsedInfo parsedBidderInfo
-	if info.Capabilities != nil && info.Capabilities.App != nil {
+
+	if info.Capabilities == nil {
+		return parsedInfo
+	}
+
+	if info.Capabilities.App != nil {
 		parsedInfo.app.enabled = true
 		parsedInfo.app.banner, parsedInfo.app.video, parsedInfo.app.audio, parsedInfo.app.native = parseAllowedTypes(info.Capabilities.App.MediaTypes)
 	}
-	if info.Capabilities != nil && info.Capabilities.Site != nil {
+	if info.Capabilities.Site != nil {
 		parsedInfo.site.enabled = true
 		parsedInfo.site.banner, parsedInfo.site.video, parsedInfo.site.audio, parsedInfo.site.native = parseAllowedTypes(info.Capabilities.Site.MediaTypes)
+	}
+	if info.Capabilities.DOOH != nil {
+		parsedInfo.dooh.enabled = true
+		parsedInfo.dooh.banner, parsedInfo.dooh.video, parsedInfo.dooh.audio, parsedInfo.dooh.native = parseAllowedTypes(info.Capabilities.DOOH.MediaTypes)
 	}
 	return parsedInfo
 }

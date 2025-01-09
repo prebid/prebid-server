@@ -1,0 +1,109 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "user": {
+      "buyeruid": "userId",
+      "yob": 1990
+    },
+    "device": {
+      "ua": "user-agent",
+      "ip": "1.2.3.4"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "video": {
+          "w": 1920,
+          "h": 1080,
+          "mimes": [
+            "video/x-flv",
+            "video/mp4"
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "pub123",
+            "placementId": "placement123"
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "site.com",
+      "page": "http://site.com/page",
+      "ref": "http://site.com/ref"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "method": "GET",
+        "headers": {
+          "Referer": [
+            "http://site.com/ref"
+          ],
+          "Origin": [
+            "site.com"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "User-Agent": [
+            "user-agent"
+          ],
+          "X-Forwarded-For": [
+            "1.2.3.4"
+          ],
+          "X-Openrtb-Version": [
+            "2.5"
+          ]
+        },
+        "uri": "https://ads.dxkulture.com/pbs?placement_id=placement123&publisher_id=pub123",
+        "body": {
+          "id": "test-request-id",
+          "user": {
+            "buyeruid": "userId",
+            "yob": 1990
+          },
+          "device": {
+            "ua": "user-agent",
+            "ip": "1.2.3.4"
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "video": {
+                "w": 1920,
+                "h": 1080,
+                "mimes": [
+                  "video/x-flv",
+                  "video/mp4"
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "publisherId": "pub123",
+                  "placementId": "placement123"
+                }
+              }
+            }
+          ],
+          "site": {
+            "domain": "site.com",
+            "page": "http://site.com/page",
+            "ref": "http://site.com/ref"
+          }
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 204
+      }
+    }
+  ],
+  "expectedBidResponses": [],
+  "expectedMakeBidsErrors": []
+}

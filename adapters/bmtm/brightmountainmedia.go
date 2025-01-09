@@ -6,11 +6,12 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -48,14 +49,14 @@ func (a *adapter) makeRequest(ortbRequest openrtb2.BidRequest, ortbImp openrtb2.
 	}
 
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(ortbImp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(ortbImp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("Error unmarshalling ExtImpBidder: %s", err.Error()),
 		}
 	}
 
 	var bmtmExt openrtb_ext.ImpExtBmtm
-	if err := json.Unmarshal(bidderExt.Bidder, &bmtmExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &bmtmExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("Error unmarshalling ExtImpBmtm: %s", err.Error()),
 		}
@@ -75,6 +76,7 @@ func (a *adapter) makeRequest(ortbRequest openrtb2.BidRequest, ortbImp openrtb2.
 		Uri:     a.endpoint,
 		Body:    requestJSON,
 		Headers: setHeaders(ortbRequest),
+		ImpIDs:  openrtb_ext.GetImpIDs(ortbRequest.Imp),
 	}
 	return requestData, nil
 }
@@ -98,7 +100,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 
 	var bidResp openrtb2.BidResponse
 
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 

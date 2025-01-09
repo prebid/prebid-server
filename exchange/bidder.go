@@ -13,26 +13,28 @@ import (
 	"net/http/httptrace"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/bidadjustment"
-	"github.com/prebid/prebid-server/config/util"
-	"github.com/prebid/prebid-server/currency"
-	"github.com/prebid/prebid-server/exchange/entities"
-	"github.com/prebid/prebid-server/experiment/adscert"
-	"github.com/prebid/prebid-server/hooks/hookexecution"
-	"github.com/prebid/prebid-server/version"
+	"github.com/prebid/prebid-server/v3/bidadjustment"
+	"github.com/prebid/prebid-server/v3/config/util"
+	"github.com/prebid/prebid-server/v3/currency"
+	"github.com/prebid/prebid-server/v3/exchange/entities"
+	"github.com/prebid/prebid-server/v3/experiment/adscert"
+	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v3/version"
 
-	"github.com/prebid/openrtb/v19/adcom1"
-	nativeRequests "github.com/prebid/openrtb/v19/native1/request"
-	nativeResponse "github.com/prebid/openrtb/v19/native1/response"
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/metrics"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/adcom1"
+	nativeRequests "github.com/prebid/openrtb/v20/native1/request"
+	nativeResponse "github.com/prebid/openrtb/v20/native1/response"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/metrics"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"golang.org/x/net/context/ctxhttp"
 )
 
@@ -69,16 +71,19 @@ type bidRequestOptions struct {
 	bidAdjustments         map[string]float64
 	tmaxAdjustments        *TmaxAdjustmentsPreprocessed
 	bidderRequestStartTime time.Time
+	responseDebugAllowed   bool
 }
 
 type extraBidderRespInfo struct {
 	respProcessingStartTime time.Time
+	seatNonBidBuilder       SeatNonBidBuilder
 }
 
 type extraAuctionResponseInfo struct {
 	fledge                  *openrtb_ext.Fledge
 	bidsFound               bool
 	bidderResponseStartTime time.Time
+	seatNonBidBuilder       SeatNonBidBuilder
 }
 
 const ImpIdReqBody = "Stored bid response for impression id: "
@@ -88,14 +93,12 @@ const (
 	Gzip string = "GZIP"
 )
 
-var errTmaxTimeout = errors.New("exceeded tmax duration")
-
 // AdaptBidder converts an adapters.Bidder into an exchange.AdaptedBidder.
 //
 // The name refers to the "Adapter" architecture pattern, and should not be confused with a Prebid "Adapter"
 // (which is being phased out and replaced by Bidder for OpenRTB auctions)
 func AdaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Configuration, me metrics.MetricsEngine, name openrtb_ext.BidderName, debugInfo *config.DebugInfo, endpointCompression string) AdaptedBidder {
-	return &bidderAdapter{
+	return &BidderAdapter{
 		Bidder:     bidder,
 		BidderName: name,
 		Client:     client,
@@ -116,7 +119,7 @@ func parseDebugInfo(info *config.DebugInfo) bool {
 	return info.Allow
 }
 
-type bidderAdapter struct {
+type BidderAdapter struct {
 	Bidder     adapters.Bidder
 	BidderName openrtb_ext.BidderName
 	Client     *http.Client
@@ -131,8 +134,10 @@ type bidderAdapterConfig struct {
 	EndpointCompression string
 }
 
-func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, hookExecutor hookexecution.StageExecutor, ruleToAdjustments openrtb_ext.AdjustmentsByDealID) ([]*entities.PbsOrtbSeatBid, extraBidderRespInfo, []error) {
-	reject := hookExecutor.ExecuteBidderRequestStage(bidderRequest.BidRequest, string(bidderRequest.BidderName))
+func (bidder *BidderAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, hookExecutor hookexecution.StageExecutor, ruleToAdjustments openrtb_ext.AdjustmentsByDealID) ([]*entities.PbsOrtbSeatBid, extraBidderRespInfo, []error) {
+	request := openrtb_ext.RequestWrapper{BidRequest: bidderRequest.BidRequest}
+	reject := hookExecutor.ExecuteBidderRequestStage(&request, string(bidderRequest.BidderName))
+	seatNonBidBuilder := SeatNonBidBuilder{}
 	if reject != nil {
 		return nil, extraBidderRespInfo{}, []error{reject}
 	}
@@ -143,6 +148,10 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 		responseChannel chan *httpCallInfo
 		extraRespInfo   extraBidderRespInfo
 	)
+
+	// rebuild request after modules execution
+	request.RebuildRequest()
+	bidderRequest.BidRequest = request.BidRequest
 
 	//check if real request exists for this bidder or it only has stored responses
 	dataLen := 0
@@ -289,7 +298,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 							errs = append(errs, moreErrs...)
 
 							if nativeMarkup != nil {
-								markup, err := json.Marshal(*nativeMarkup)
+								markup, err := jsonutil.Marshal(*nativeMarkup)
 								if err != nil {
 									errs = append(errs, err)
 								} else {
@@ -328,10 +337,6 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 				if err == nil {
 					// Conversion rate found, using it for conversion
 					for i := 0; i < len(bidResponse.Bids); i++ {
-						if bidResponse.Bids[i].BidMeta == nil {
-							bidResponse.Bids[i].BidMeta = &openrtb_ext.ExtBidPrebidMeta{}
-						}
-						bidResponse.Bids[i].BidMeta.AdapterCode = bidderRequest.BidderName.String()
 
 						bidderName := bidderRequest.BidderName
 						if bidResponse.Bids[i].Seat != "" {
@@ -350,9 +355,9 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 						}
 
 						adjustmentFactor := 1.0
-						if givenAdjustment, ok := bidRequestOptions.bidAdjustments[bidderName.String()]; ok {
+						if givenAdjustment, ok := bidRequestOptions.bidAdjustments[(strings.ToLower(bidderName.String()))]; ok {
 							adjustmentFactor = givenAdjustment
-						} else if givenAdjustment, ok := bidRequestOptions.bidAdjustments[bidderRequest.BidderName.String()]; ok {
+						} else if givenAdjustment, ok := bidRequestOptions.bidAdjustments[(strings.ToLower(bidderRequest.BidderName.String()))]; ok {
 							adjustmentFactor = givenAdjustment
 						}
 
@@ -385,6 +390,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 							DealPriority:   bidResponse.Bids[i].DealPriority,
 							OriginalBidCPM: originalBidCpm,
 							OriginalBidCur: bidResponse.Currency,
+							AdapterCode:    bidderRequest.BidderCoreName,
 						})
 						seatBidMap[bidderName].Currency = currencyAfterAdjustments
 					}
@@ -395,20 +401,24 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 			}
 		} else {
 			errs = append(errs, httpInfo.err)
+			nonBidReason := httpInfoToNonBidReason(httpInfo)
+			seatNonBidBuilder.rejectImps(httpInfo.request.ImpIDs, nonBidReason, string(bidderRequest.BidderName))
 		}
 	}
+
 	seatBids := make([]*entities.PbsOrtbSeatBid, 0, len(seatBidMap))
 	for _, seatBid := range seatBidMap {
 		seatBids = append(seatBids, seatBid)
 	}
 
+	extraRespInfo.seatNonBidBuilder = seatNonBidBuilder
 	return seatBids, extraRespInfo, errs
 }
 
 func addNativeTypes(bid *openrtb2.Bid, request *openrtb2.BidRequest) (*nativeResponse.Response, []error) {
 	var errs []error
-	var nativeMarkup *nativeResponse.Response
-	if err := json.Unmarshal(json.RawMessage(bid.AdM), &nativeMarkup); err != nil || len(nativeMarkup.Assets) == 0 {
+	var nativeMarkup nativeResponse.Response
+	if err := jsonutil.UnmarshalValid(json.RawMessage(bid.AdM), &nativeMarkup); err != nil || len(nativeMarkup.Assets) == 0 {
 		// Some bidders are returning non-IAB compliant native markup. In this case Prebid server will not be able to add types. E.g Facebook
 		return nil, errs
 	}
@@ -420,7 +430,7 @@ func addNativeTypes(bid *openrtb2.Bid, request *openrtb2.BidRequest) (*nativeRes
 	}
 
 	var nativePayload nativeRequests.Request
-	if err := json.Unmarshal(json.RawMessage((*nativeImp).Request), &nativePayload); err != nil {
+	if err := jsonutil.UnmarshalValid(json.RawMessage((*nativeImp).Request), &nativePayload); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -430,7 +440,7 @@ func addNativeTypes(bid *openrtb2.Bid, request *openrtb2.BidRequest) (*nativeRes
 		}
 	}
 
-	return nativeMarkup, errs
+	return &nativeMarkup, errs
 }
 
 func setAssetTypes(asset nativeResponse.Asset, nativePayload nativeRequests.Request) error {
@@ -516,21 +526,19 @@ func makeExt(httpInfo *httpCallInfo) *openrtb_ext.ExtHttpCall {
 
 // doRequest makes a request, handles the response, and returns the data needed by the
 // Bidder interface.
-func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.RequestData, bidderRequestStartTime time.Time, tmaxAdjustments *TmaxAdjustmentsPreprocessed) *httpCallInfo {
+func (bidder *BidderAdapter) doRequest(ctx context.Context, req *adapters.RequestData, bidderRequestStartTime time.Time, tmaxAdjustments *TmaxAdjustmentsPreprocessed) *httpCallInfo {
 	return bidder.doRequestImpl(ctx, req, glog.Warningf, bidderRequestStartTime, tmaxAdjustments)
 }
 
-func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.RequestData, logger util.LogMsg, bidderRequestStartTime time.Time, tmaxAdjustments *TmaxAdjustmentsPreprocessed) *httpCallInfo {
-	var requestBody []byte
-
-	switch strings.ToUpper(bidder.config.EndpointCompression) {
-	case Gzip:
-		requestBody = compressToGZIP(req.Body)
-		req.Headers.Set("Content-Encoding", "gzip")
-	default:
-		requestBody = req.Body
+func (bidder *BidderAdapter) doRequestImpl(ctx context.Context, req *adapters.RequestData, logger util.LogMsg, bidderRequestStartTime time.Time, tmaxAdjustments *TmaxAdjustmentsPreprocessed) *httpCallInfo {
+	requestBody, err := getRequestBody(req, bidder.config.EndpointCompression)
+	if err != nil {
+		return &httpCallInfo{
+			request: req,
+			err:     err,
+		}
 	}
-	httpReq, err := http.NewRequest(req.Method, req.Uri, bytes.NewBuffer(requestBody))
+	httpReq, err := http.NewRequest(req.Method, req.Uri, requestBody)
 	if err != nil {
 		return &httpCallInfo{
 			request: req,
@@ -551,7 +559,7 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 			bidder.me.RecordTMaxTimeout()
 			return &httpCallInfo{
 				request: req,
-				err:     errTmaxTimeout,
+				err:     &errortypes.TmaxTimeout{Message: "exceeded tmax duration"},
 			}
 		}
 	}
@@ -609,7 +617,7 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 	}
 }
 
-func (bidder *bidderAdapter) doTimeoutNotification(timeoutBidder adapters.TimeoutBidder, req *adapters.RequestData, logger util.LogMsg) {
+func (bidder *BidderAdapter) doTimeoutNotification(timeoutBidder adapters.TimeoutBidder, req *adapters.RequestData, logger util.LogMsg) {
 	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 	defer cancel()
 	toReq, errL := timeoutBidder.MakeTimeoutNotification(req)
@@ -638,7 +646,7 @@ func (bidder *bidderAdapter) doTimeoutNotification(timeoutBidder adapters.Timeou
 			}
 		}
 	} else if bidder.config.Debug.TimeoutNotification.Log {
-		reqJSON, err := json.Marshal(req)
+		reqJSON, err := jsonutil.Marshal(req)
 		var msg string
 		if err == nil {
 			msg = fmt.Sprintf("TimeoutNotification: Failed to generate timeout request: error(%s), bidder request(%s)", errL[0].Error(), string(reqJSON))
@@ -659,7 +667,7 @@ type httpCallInfo struct {
 // This function adds an httptrace.ClientTrace object to the context so, if connection with the bidder
 // endpoint is established, we can keep track of whether the connection was newly created, reused, and
 // the time from the connection request, to the connection creation.
-func (bidder *bidderAdapter) addClientTrace(ctx context.Context) context.Context {
+func (bidder *BidderAdapter) addClientTrace(ctx context.Context) context.Context {
 	var connStart, dnsStart, tlsStart time.Time
 
 	trace := &httptrace.ClientTrace{
@@ -669,7 +677,7 @@ func (bidder *bidderAdapter) addClientTrace(ctx context.Context) context.Context
 		},
 		// GotConn is called after a successful connection is obtained
 		GotConn: func(info httptrace.GotConnInfo) {
-			connWaitTime := time.Now().Sub(connStart)
+			connWaitTime := time.Since(connStart)
 
 			bidder.me.RecordAdapterConnections(bidder.BidderName, info.Reused, connWaitTime)
 		},
@@ -679,7 +687,7 @@ func (bidder *bidderAdapter) addClientTrace(ctx context.Context) context.Context
 		},
 		// DNSDone is called when a DNS lookup ends.
 		DNSDone: func(info httptrace.DNSDoneInfo) {
-			dnsLookupTime := time.Now().Sub(dnsStart)
+			dnsLookupTime := time.Since(dnsStart)
 
 			bidder.me.RecordDNSTime(dnsLookupTime)
 		},
@@ -689,7 +697,7 @@ func (bidder *bidderAdapter) addClientTrace(ctx context.Context) context.Context
 		},
 
 		TLSHandshakeDone: func(tls.ConnectionState, error) {
-			tlsHandshakeTime := time.Now().Sub(tlsStart)
+			tlsHandshakeTime := time.Since(tlsStart)
 
 			bidder.me.RecordTLSHandshakeTime(tlsHandshakeTime)
 		},
@@ -714,14 +722,6 @@ func prepareStoredResponse(impId string, bidResp json.RawMessage) *httpCallInfo 
 		err: nil,
 	}
 	return respData
-}
-
-func compressToGZIP(requestBody []byte) []byte {
-	var b bytes.Buffer
-	w := gzip.NewWriter(&b)
-	w.Write([]byte(requestBody))
-	w.Close()
-	return b.Bytes()
 }
 
 func getBidTypeForAdjustments(bidType openrtb_ext.BidType, impID string, imp []openrtb2.Imp) string {
@@ -750,4 +750,38 @@ func hasShorterDurationThanTmax(ctx bidderTmaxContext, tmaxAdjustments TmaxAdjus
 		}
 	}
 	return false
+}
+
+func getRequestBody(req *adapters.RequestData, endpointCompression string) (*bytes.Buffer, error) {
+	switch strings.ToUpper(endpointCompression) {
+	case Gzip:
+		// Compress to GZIP
+		b := bytes.NewBuffer(make([]byte, 0, len(req.Body)))
+
+		w := gzipWriterPool.Get().(*gzip.Writer)
+		defer gzipWriterPool.Put(w)
+
+		w.Reset(b)
+		_, err := w.Write(req.Body)
+		if err != nil {
+			return nil, err
+		}
+		err = w.Close()
+		if err != nil {
+			return nil, err
+		}
+
+		// Set Header
+		req.Headers.Set("Content-Encoding", "gzip")
+
+		return b, nil
+	default:
+		return bytes.NewBuffer(req.Body), nil
+	}
+}
+
+var gzipWriterPool = sync.Pool{
+	New: func() interface{} {
+		return gzip.NewWriter(nil)
+	},
 }

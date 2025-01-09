@@ -7,11 +7,12 @@ import (
 	"net/http"
 
 	"github.com/buger/jsonparser"
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -51,7 +52,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 				Message: "COPPA is not supported",
 			}}
 		}
-		if err := json.Unmarshal(request.Regs.Ext, &extRegs); err == nil {
+		if err := jsonutil.Unmarshal(request.Regs.Ext, &extRegs); err == nil {
 			if extRegs.GDPR != nil && (*extRegs.GDPR == 1) {
 				return nil, []error{&errortypes.BadInput{
 					Message: "GDPR is not supported",
@@ -98,6 +99,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		Uri:     a.endpoint,
 		Body:    requestJSON,
 		Headers: getHeaders(request),
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}
 
 	return []*adapters.RequestData{requestData}, nil
@@ -131,7 +133,7 @@ func modifyImps(request *openrtb2.BidRequest) error {
 		imp := &request.Imp[i]
 
 		var ext unicornImpExt
-		err := json.Unmarshal(imp.Ext, &ext)
+		err := jsonutil.Unmarshal(imp.Ext, &ext)
 
 		if err != nil {
 			return &errortypes.BadInput{
@@ -213,7 +215,7 @@ func setExt(request *openrtb2.BidRequest) (json.RawMessage, error) {
 	}
 
 	var decodedExt *unicornExt
-	err = json.Unmarshal(request.Ext, &decodedExt)
+	err = jsonutil.Unmarshal(request.Ext, &decodedExt)
 	if err != nil {
 		decodedExt = &unicornExt{
 			Prebid: nil,
@@ -252,7 +254,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	var response openrtb2.BidResponse
-	if err := json.Unmarshal(responseData.Body, &response); err != nil {
+	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}
 

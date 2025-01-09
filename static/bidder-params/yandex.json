@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Yandex Adapter Params",
+  "description": "A schema which validates params accepted by the Yandex adapter",
+  "type": "object",
+  "properties": {
+    "page_id": {
+      "type": "integer",
+      "minLength": 1,
+      "minimum": 1,
+      "description": "Special Page Id provided by Yandex Manager"
+    },
+    "imp_id": {
+      "type": "integer",
+      "minLength": 1,
+      "minimum": 1,
+      "description": "Special identifier provided by Yandex Manager"
+    },
+    "placement_id": {
+      "type": "string",
+      "description": "Ad placement identifier",
+      "pattern": "(\\S+-)?\\d+-\\d+"
+    }
+  },
+  "oneOf": [
+    {
+      "required": [ "page_id", "imp_id" ]
+    },
+    {
+      "required": [ "placement_id" ]
+    }
+  ]
+}

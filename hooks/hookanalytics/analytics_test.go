@@ -1,9 +1,9 @@
 package hookanalytics
 
 import (
-	"encoding/json"
 	"testing"
 
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -50,7 +50,7 @@ func TestAnalytics(t *testing.T) {
 		Activity{Name: "define-blocks", Status: ActivityStatusError},
 	)
 
-	gotAnalytics, err := json.Marshal(analytics)
+	gotAnalytics, err := jsonutil.Marshal(analytics)
 	assert.NoError(t, err, "Failed to marshal analytics: %s", err)
 	assert.JSONEq(t, string(expectedAnalytics), string(gotAnalytics))
 }

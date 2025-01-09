@@ -11,14 +11,15 @@ import (
 	"strings"
 
 	"github.com/buger/jsonparser"
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/util/jsonutil"
-	"github.com/prebid/prebid-server/util/maputil"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/maputil"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 )
 
 var supportedBannerHeights = map[int64]struct{}{
@@ -26,8 +27,8 @@ var supportedBannerHeights = map[int64]struct{}{
 	250: {},
 }
 
-type FacebookAdapter struct {
-	URI        string
+type adapter struct {
+	uri        string
 	platformID string
 	appSecret  string
 }
@@ -41,7 +42,7 @@ type facebookReqExt struct {
 	AuthID     string `json:"authentication_id"`
 }
 
-func (this *FacebookAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	if len(request.Imp) == 0 {
 		return nil, []error{&errortypes.BadInput{
 			Message: "No impressions provided",
@@ -60,10 +61,10 @@ func (this *FacebookAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo 
 		}}
 	}
 
-	return this.buildRequests(request)
+	return a.buildRequests(request)
 }
 
-func (this *FacebookAdapter) buildRequests(request *openrtb2.BidRequest) ([]*adapters.RequestData, []error) {
+func (a *adapter) buildRequests(request *openrtb2.BidRequest) ([]*adapters.RequestData, []error) {
 	// Documentation suggests bid request splitting by impression so that each
 	// request only represents a single impression
 	reqs := make([]*adapters.RequestData, 0, len(request.Imp))
@@ -80,7 +81,7 @@ func (this *FacebookAdapter) buildRequests(request *openrtb2.BidRequest) ([]*ada
 		fbreq := *request
 		fbreq.Imp = []openrtb2.Imp{imp}
 
-		if err := this.modifyRequest(&fbreq); err != nil {
+		if err := a.modifyRequest(&fbreq); err != nil {
 			errs = append(errs, err)
 			continue
 		}
@@ -105,9 +106,10 @@ func (this *FacebookAdapter) buildRequests(request *openrtb2.BidRequest) ([]*ada
 
 		reqs = append(reqs, &adapters.RequestData{
 			Method:  "POST",
-			Uri:     this.URI,
+			Uri:     a.uri,
 			Body:    body,
 			Headers: headers,
+			ImpIDs:  openrtb_ext.GetImpIDs(fbreq.Imp),
 		})
 	}
 
@@ -116,20 +118,20 @@ func (this *FacebookAdapter) buildRequests(request *openrtb2.BidRequest) ([]*ada
 
 // The authentication ID is a sha256 hmac hash encoded as a hex string, based on
 // the app secret and the ID of the bid request
-func (this *FacebookAdapter) makeAuthID(req *openrtb2.BidRequest) string {
-	h := hmac.New(sha256.New, []byte(this.appSecret))
+func (a *adapter) makeAuthID(req *openrtb2.BidRequest) string {
+	h := hmac.New(sha256.New, []byte(a.appSecret))
 	h.Write([]byte(req.ID))
 
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-func (this *FacebookAdapter) modifyRequest(out *openrtb2.BidRequest) error {
+func (a *adapter) modifyRequest(out *openrtb2.BidRequest) error {
 	if len(out.Imp) != 1 {
 		panic("each bid request to facebook should only have a single impression")
 	}
 
 	imp := &out.Imp[0]
-	plmtId, pubId, err := this.extractPlacementAndPublisher(imp)
+	plmtId, pubId, err := extractPlacementAndPublisher(imp)
 	if err != nil {
 		return err
 	}
@@ -140,8 +142,8 @@ func (this *FacebookAdapter) modifyRequest(out *openrtb2.BidRequest) error {
 	out.ID = imp.ID
 
 	reqExt := facebookReqExt{
-		PlatformID: this.platformID,
-		AuthID:     this.makeAuthID(out),
+		PlatformID: a.platformID,
+		AuthID:     a.makeAuthID(out),
 	}
 
 	if out.Ext, err = json.Marshal(reqExt); err != nil {
@@ -157,14 +159,14 @@ func (this *FacebookAdapter) modifyRequest(out *openrtb2.BidRequest) error {
 		out.App = &app
 	}
 
-	if err = this.modifyImp(imp); err != nil {
+	if err = modifyImp(imp); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (this *FacebookAdapter) modifyImp(out *openrtb2.Imp) error {
+func modifyImp(out *openrtb2.Imp) error {
 	impType := resolveImpType(out)
 
 	if out.Instl == 1 && impType != openrtb_ext.BidTypeBanner {
@@ -178,8 +180,8 @@ func (this *FacebookAdapter) modifyImp(out *openrtb2.Imp) error {
 		out.Banner = &bannerCopy
 
 		if out.Instl == 1 {
-			out.Banner.W = openrtb2.Int64Ptr(0)
-			out.Banner.H = openrtb2.Int64Ptr(0)
+			out.Banner.W = ptrutil.ToPtr[int64](0)
+			out.Banner.H = ptrutil.ToPtr[int64](0)
 			out.Banner.Format = nil
 			return nil
 		}
@@ -205,23 +207,23 @@ func (this *FacebookAdapter) modifyImp(out *openrtb2.Imp) error {
 			}
 		}
 
-		out.Banner.W = openrtb2.Int64Ptr(-1)
+		out.Banner.W = ptrutil.ToPtr[int64](-1)
 		out.Banner.Format = nil
 	}
 
 	return nil
 }
 
-func (this *FacebookAdapter) extractPlacementAndPublisher(out *openrtb2.Imp) (string, string, error) {
+func extractPlacementAndPublisher(out *openrtb2.Imp) (string, string, error) {
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(out.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(out.Ext, &bidderExt); err != nil {
 		return "", "", &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
 
 	var fbExt openrtb_ext.ExtImpFacebook
-	if err := json.Unmarshal(bidderExt.Bidder, &fbExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &fbExt); err != nil {
 		return "", "", &errortypes.BadInput{
 			Message: err.Error(),
 		}
@@ -272,7 +274,7 @@ func modifyImpCustom(jsonData []byte, imp *openrtb2.Imp) ([]byte, error) {
 	}
 
 	var jsonMap map[string]interface{}
-	if err := json.Unmarshal(jsonData, &jsonMap); err != nil {
+	if err := jsonutil.Unmarshal(jsonData, &jsonMap); err != nil {
 		return jsonData, err
 	}
 
@@ -323,7 +325,7 @@ func modifyImpCustom(jsonData []byte, imp *openrtb2.Imp) ([]byte, error) {
 	}
 }
 
-func (this *FacebookAdapter) MakeBids(request *openrtb2.BidRequest, adapterRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, adapterRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -336,7 +338,7 @@ func (this *FacebookAdapter) MakeBids(request *openrtb2.BidRequest, adapterReque
 	}
 
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
@@ -355,7 +357,7 @@ func (this *FacebookAdapter) MakeBids(request *openrtb2.BidRequest, adapterReque
 			}
 
 			var obj facebookAdMarkup
-			if err := json.Unmarshal([]byte(bid.AdM), &obj); err != nil {
+			if err := jsonutil.Unmarshal([]byte(bid.AdM), &obj); err != nil {
 				errs = append(errs, &errortypes.BadServerResponse{
 					Message: err.Error(),
 				})
@@ -423,15 +425,15 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 		return nil, errors.New("AppSecret is not configured. Did you set adapters.facebook.app_secret in the app config?")
 	}
 
-	bidder := &FacebookAdapter{
-		URI:        config.Endpoint,
+	bidder := &adapter{
+		uri:        config.Endpoint,
 		platformID: config.PlatformID,
 		appSecret:  config.AppSecret,
 	}
 	return bidder, nil
 }
 
-func (fa *FacebookAdapter) MakeTimeoutNotification(req *adapters.RequestData) (*adapters.RequestData, []error) {
+func (a *adapter) MakeTimeoutNotification(req *adapters.RequestData) (*adapters.RequestData, []error) {
 	var (
 		rID   string
 		pubID string
@@ -454,7 +456,7 @@ func (fa *FacebookAdapter) MakeTimeoutNotification(req *adapters.RequestData) (*
 		}
 	}
 
-	uri := fmt.Sprintf("https://www.facebook.com/audiencenetwork/nurl/?partner=%s&app=%s&auction=%s&ortb_loss_code=2", fa.platformID, pubID, rID)
+	uri := fmt.Sprintf("https://www.facebook.com/audiencenetwork/nurl/?partner=%s&app=%s&auction=%s&ortb_loss_code=2", a.platformID, pubID, rID)
 	timeoutReq := adapters.RequestData{
 		Method:  "GET",
 		Uri:     uri,

@@ -1,8 +1,8 @@
 package bidadjustment
 
 import (
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 const (
@@ -60,13 +60,11 @@ func merge(req *openrtb_ext.RequestWrapper, acct *openrtb_ext.ExtRequestPrebidBi
 	}
 	extPrebid := reqExt.GetPrebid()
 
-	if extPrebid == nil && acct == nil {
-		return nil, nil
-	}
-	if extPrebid == nil && acct != nil {
+	if extPrebid == nil || extPrebid.BidAdjustments == nil {
 		return acct, nil
 	}
-	if extPrebid != nil && acct == nil {
+
+	if acct == nil {
 		return extPrebid.BidAdjustments, nil
 	}
 

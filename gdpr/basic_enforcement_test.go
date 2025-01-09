@@ -6,13 +6,16 @@ import (
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/go-gdpr/vendorconsent"
 	tcf2 "github.com/prebid/go-gdpr/vendorconsent/tcf2"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestBasicLegalBasis(t *testing.T) {
-	appnexusID := uint16(32)
+	var (
+		appnexus   = string(openrtb_ext.BidderAppnexus)
+		appnexusID = uint16(32)
+	)
 
 	noConsents := "CPerMsAPerMsAAAAAAENCfCAAAAAAAAAAAAAAAAAAAAA"
 	purpose2Consent := "CPerMsAPerMsAAAAAAENCfCAAEAAAAAAAAAAAAAAAAAA"
@@ -149,7 +152,7 @@ func TestBasicLegalBasis(t *testing.T) {
 				PurposeID:                  consentconstants.Purpose(2),
 				EnforcePurpose:             false,
 				EnforceVendors:             true,
-				BasicEnforcementVendorsMap: map[string]struct{}{string(openrtb_ext.BidderAppnexus): {}},
+				BasicEnforcementVendorsMap: map[string]struct{}{appnexus: {}},
 			},
 			wantResult: true,
 		},
@@ -170,7 +173,7 @@ func TestBasicLegalBasis(t *testing.T) {
 				PurposeID:          consentconstants.Purpose(2),
 				EnforcePurpose:     true,
 				EnforceVendors:     true,
-				VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderAppnexus: {}},
+				VendorExceptionMap: map[string]struct{}{appnexus: {}},
 			},
 			wantResult: true,
 		},
@@ -181,7 +184,7 @@ func TestBasicLegalBasis(t *testing.T) {
 				PurposeID:          consentconstants.Purpose(2),
 				EnforcePurpose:     true,
 				EnforceVendors:     true,
-				VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderAppnexus: {}},
+				VendorExceptionMap: map[string]struct{}{appnexus: {}},
 			},
 			overrides:  Overrides{blockVendorExceptions: true},
 			wantResult: false,
@@ -203,7 +206,7 @@ func TestBasicLegalBasis(t *testing.T) {
 				PurposeID:                  consentconstants.Purpose(2),
 				EnforcePurpose:             true,
 				EnforceVendors:             true,
-				BasicEnforcementVendorsMap: map[string]struct{}{string(openrtb_ext.BidderAppnexus): {}},
+				BasicEnforcementVendorsMap: map[string]struct{}{appnexus: {}},
 			},
 			wantResult: true,
 		},
@@ -233,7 +236,7 @@ func TestBasicLegalBasis(t *testing.T) {
 		enforcer := BasicEnforcement{cfg: tt.config}
 
 		vendorInfo := VendorInfo{vendorID: appnexusID, vendor: nil}
-		result := enforcer.LegalBasis(vendorInfo, openrtb_ext.BidderAppnexus, consentMeta, tt.overrides)
+		result := enforcer.LegalBasis(vendorInfo, appnexus, consentMeta, tt.overrides)
 
 		assert.Equal(t, tt.wantResult, result, tt.description)
 	}

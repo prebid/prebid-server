@@ -1,8 +1,8 @@
 package hooks
 
 import (
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/hooks/hookstage"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/hooks/hookstage"
 )
 
 // EmptyPlanBuilder implements the ExecutionPlanBuilder interface

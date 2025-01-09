@@ -2,12 +2,12 @@ package usersync
 
 import (
 	"encoding/base64"
-	"encoding/json"
+
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type Decoder interface {
-	// Decode takes an encoded string and decodes it into a cookie
-	Decode(v string) *Cookie
+	Decode(encodedValue string) *Cookie
 }
 
 type Base64Decoder struct{}
@@ -19,7 +19,7 @@ func (d Base64Decoder) Decode(encodedValue string) *Cookie {
 	}
 
 	var cookie Cookie
-	if err = json.Unmarshal(jsonValue, &cookie); err != nil {
+	if err = jsonutil.UnmarshalValid(jsonValue, &cookie); err != nil {
 		return NewCookie()
 	}
 

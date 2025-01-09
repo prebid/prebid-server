@@ -53,7 +53,6 @@
         }
       }
     },
-  
     "httpCalls": [
       {
         "expectedRequest": {
@@ -100,14 +99,10 @@
                     "profile": 5123,
                     "version":1
                 },
-                "acat": ["drg","dlu","ssr"],
-                "prebid": {
-                  "bidderparams": {
-                    "acat": ["drg","dlu","ssr"]
-                  }
-                }
+                "acat": ["drg","dlu","ssr"]
             }
-          }
+          },
+          "impIDs":["test-video-imp"]
         },
         "mockResponse": {
           "status": 200,
@@ -176,7 +171,8 @@
             },
             "type": "video",
             "video" :{
-              "duration" : 5
+              "duration" : 5,
+              "primary_category": ""
             }
           }
         ]

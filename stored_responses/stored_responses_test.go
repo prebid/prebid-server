@@ -6,76 +6,10 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
-
-func TestRemoveImpsWithStoredResponses(t *testing.T) {
-	bidRespId1 := json.RawMessage(`{"id": "resp_id1"}`)
-	testCases := []struct {
-		description        string
-		reqIn              *openrtb2.BidRequest
-		storedBidResponses ImpBidderStoredResp
-		expectedImps       []openrtb2.Imp
-	}{
-		{
-			description: "request with imps and stored bid response for this imp",
-			reqIn: &openrtb2.BidRequest{Imp: []openrtb2.Imp{
-				{ID: "imp-id1"},
-			}},
-			storedBidResponses: ImpBidderStoredResp{
-				"imp-id1": {"appnexus": bidRespId1},
-			},
-			expectedImps: nil,
-		},
-		{
-			description: "request with imps and stored bid response for one of these imp",
-			reqIn: &openrtb2.BidRequest{Imp: []openrtb2.Imp{
-				{ID: "imp-id1"},
-				{ID: "imp-id2"},
-			}},
-			storedBidResponses: ImpBidderStoredResp{
-				"imp-id1": {"appnexus": bidRespId1},
-			},
-			expectedImps: []openrtb2.Imp{
-				{
-					ID: "imp-id2",
-				},
-			},
-		},
-		{
-			description: "request with imps and stored bid response for both of these imp",
-			reqIn: &openrtb2.BidRequest{Imp: []openrtb2.Imp{
-				{ID: "imp-id1"},
-				{ID: "imp-id2"},
-			}},
-			storedBidResponses: ImpBidderStoredResp{
-				"imp-id1": {"appnexus": bidRespId1},
-				"imp-id2": {"appnexus": bidRespId1},
-			},
-			expectedImps: nil,
-		},
-		{
-			description: "request with imps and no stored bid responses",
-			reqIn: &openrtb2.BidRequest{Imp: []openrtb2.Imp{
-				{ID: "imp-id1"},
-				{ID: "imp-id2"},
-			}},
-			storedBidResponses: nil,
-
-			expectedImps: []openrtb2.Imp{
-				{ID: "imp-id1"},
-				{ID: "imp-id2"},
-			},
-		},
-	}
-	for _, testCase := range testCases {
-		request := testCase.reqIn
-		removeImpsWithStoredResponses(request, testCase.storedBidResponses)
-		assert.Equal(t, testCase.expectedImps, request.Imp, "incorrect Impressions for testCase %s", testCase.description)
-	}
-}
 
 func TestBuildStoredBidResponses(t *testing.T) {
 	bidRespId1 := json.RawMessage(`{"id": "resp_id1"}`)
@@ -163,136 +97,109 @@ func TestBuildStoredBidResponses(t *testing.T) {
 }
 
 func TestProcessStoredAuctionAndBidResponsesErrors(t *testing.T) {
-	bidderMap := map[string]openrtb_ext.BidderName{"testBidder": "testBidder"}
-
 	testCases := []struct {
 		description       string
-		requestJson       []byte
+		request           openrtb2.BidRequest
 		expectedErrorList []error
 	}{
 		{
 			description: "Invalid stored auction response format: empty stored Auction Response Id",
-			requestJson: []byte(`{"imp": [
-    			  {
-    			    "id": "imp-id1",
-    			    "ext": {
+			request: openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{ID: "imp-id1",
+						Ext: json.RawMessage(`{
     			      "prebid": {
-    			        "storedauctionresponse": {
-    			        }
-    			      }
-    			    }
-    			  }
-    			]}`),
+    			        "storedauctionresponse": {}
+    			      }}`)},
+				},
+			},
 			expectedErrorList: []error{errors.New("request.imp[0] has ext.prebid.storedauctionresponse specified, but \"id\" field is missing ")},
 		},
 		{
 			description: "Invalid stored bid response format: empty storedbidresponse.bidder",
-			requestJson: []byte(`{"imp": [
-    			  {
-    			    "id": "imp-id1",
-    			    "ext": {
+			request: openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{ID: "imp-id1",
+						Ext: json.RawMessage(`{
     			      "prebid": {
     			        "storedbidresponse": [
 							{ "id": "123abc"}]
-    			      }
-    			    }
-    			  }
-    			]}`),
+    			      }}`)},
+				},
+			},
 			expectedErrorList: []error{errors.New("request.imp[0] has ext.prebid.storedbidresponse specified, but \"id\" or/and \"bidder\" fields are missing ")},
 		},
 		{
 			description: "Invalid stored bid response format: empty storedbidresponse.id",
-			requestJson: []byte(`{"imp": [
-    			  {
-    			    "id": "imp-id1",
-    			    "ext": {
+			request: openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{ID: "imp-id1",
+						Ext: json.RawMessage(`{
     			      "prebid": {
     			        "storedbidresponse": [
 							{ "bidder": "testbidder"}]
-    			      }
-    			    }
-    			  }
-    			]}`),
+    			      }}`)},
+				},
+			},
 			expectedErrorList: []error{errors.New("request.imp[0] has ext.prebid.storedbidresponse specified, but \"id\" or/and \"bidder\" fields are missing ")},
 		},
 		{
-			description: "Invalid stored bid response: storedbidresponse.bidder not found",
-			requestJson: []byte(`{"imp": [
-    			  {
-    			    "id": "imp-id1",
-    			    "ext": {
-    			      "prebid": {
-    			        "storedbidresponse": [
-							{ "bidder": "testBidder123", "id": "123abc"}]
-    			      }
-    			    }
-    			  }
-    			]}`),
-			expectedErrorList: []error{errors.New("request.imp[impId: imp-id1].ext.prebid.bidder contains unknown bidder: testBidder123. Did you forget an alias in request.ext.prebid.aliases?")},
-		},
-		{
 			description: "Invalid stored auction response format: empty stored Auction Response Id in second imp",
-			requestJson: []byte(`{"imp": [
-    			  {
-    			    "id": "imp-id1",
-    			    "ext": {
+			request: openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{ID: "imp-id1",
+						Ext: json.RawMessage(`{
     			      "prebid": {
     			        "storedauctionresponse": {
 							"id":"123"
     			        }
-    			      }
-    			    }
-    			  },
-			      {
-    			    "id": "imp-id2",
-    			    "ext": {
+    			      }}`)},
+					{ID: "imp-id2",
+						Ext: json.RawMessage(`{
     			      "prebid": {
-    			        "storedauctionresponse": {
+    			         "storedauctionresponse": {
 							"id":""
     			        }
-    			      }
-    			    }
-    			  }
-    			]}`),
+    			      }}`)},
+				},
+			},
 			expectedErrorList: []error{errors.New("request.imp[1] has ext.prebid.storedauctionresponse specified, but \"id\" field is missing ")},
 		},
 		{
 			description: "Invalid stored bid response format: empty stored bid Response Id in second imp",
-			requestJson: []byte(`{"imp": [
-    			  {
-    			    "id": "imp-id1",
-    			    "ext": {
+			request: openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{ID: "imp-id1",
+						Ext: json.RawMessage(`{
     			      "prebid": {
-    			        "storedbidresponse": [
+    			         "storedbidresponse": [
                              {"bidder":"testBidder", "id": "123abc"}
                         ]
-    			      }
-    			    }
-    			  },
-			      {
-    			    "id": "imp-id2",
-    			    "ext": {
+    			      }}`)},
+					{ID: "imp-id2",
+						Ext: json.RawMessage(`{
     			      "prebid": {
-    			        "storedbidresponse": [
+    			         "storedbidresponse": [
                              {"bidder":"testBidder", "id": ""}
                         ]
-    			      }
-    			    }
-    			  }
-    			]}`),
+    			      }}`)},
+				},
+			},
 			expectedErrorList: []error{errors.New("request.imp[1] has ext.prebid.storedbidresponse specified, but \"id\" or/and \"bidder\" fields are missing ")},
 		},
 	}
 
 	for _, test := range testCases {
-		_, _, _, errorList := ProcessStoredResponses(nil, test.requestJson, nil, bidderMap)
-		assert.Equalf(t, test.expectedErrorList, errorList, "Error doesn't match: %s\n", test.description)
+		t.Run(test.description, func(t *testing.T) {
+			rw := &openrtb_ext.RequestWrapper{BidRequest: &test.request}
+			_, _, _, errorList := ProcessStoredResponses(context.TODO(), rw, nil)
+			assert.Equalf(t, test.expectedErrorList, errorList, "Error doesn't match: %s\n", test.description)
+		})
 	}
 
 }
 
 func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
-	bidderMap := map[string]openrtb_ext.BidderName{"bidderA": "bidderA", "bidderB": "bidderB"}
 	bidStoredResp1 := json.RawMessage(`[{"bid": [{"id": "bid_id1"],"seat": "bidderA"}]`)
 	bidStoredResp2 := json.RawMessage(`[{"bid": [{"id": "bid_id2"],"seat": "bidderB"}]`)
 	bidStoredResp3 := json.RawMessage(`[{"bid": [{"id": "bid_id3"],"seat": "bidderA"}]`)
@@ -305,33 +212,31 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
 
 	testCases := []struct {
 		description                    string
-		requestJson                    []byte
+		request                        openrtb2.BidRequest
 		expectedStoredAuctionResponses ImpsWithBidResponses
 		expectedStoredBidResponses     ImpBidderStoredResp
 		expectedBidderImpReplaceImpID  BidderImpReplaceImpID
 	}{
 		{
 			description: "No stored responses",
-			requestJson: []byte(`{"imp": [
-    			  {
-    			    "id": "imp-id1",
-    			    "ext": {
-    			      "prebid": {
-    			        
-    			      }
-    			    }
-    			  }
-    			]}`),
+			request: openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{ID: "imp-id1",
+						Ext: json.RawMessage(`{
+    			      "prebid": {}
+    			    }`)},
+				},
+			},
 			expectedStoredAuctionResponses: nil,
 			expectedStoredBidResponses:     nil,
 			expectedBidderImpReplaceImpID:  nil,
 		},
 		{
 			description: "Stored auction response one imp",
-			requestJson: []byte(`{"imp": [
-    			  {
-    			    "id": "imp-id1",
-    			    "ext": {
+			request: openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{ID: "imp-id1",
+						Ext: json.RawMessage(`{
                 		"appnexus": {
 							"placementId": 123
                 		},
@@ -340,9 +245,9 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
                         		"id": "1"
                     		}
                 		}
-            		}
-    			  }
-    			]}`),
+            		}`)},
+				},
+			},
 			expectedStoredAuctionResponses: ImpsWithBidResponses{
 				"imp-id1": bidStoredResp1,
 			},
@@ -351,11 +256,11 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
 		},
 		{
 			description: "Stored bid response one imp",
-			requestJson: []byte(`{"imp": [
-    			  {
-    			    "id": "imp-id1",
-    			    "ext": {
-                		"appnexus": {
+			request: openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{ID: "imp-id1",
+						Ext: json.RawMessage(`{
+                		"bidderA": {
 							"placementId": 123
                 		},
                 		"prebid": {
@@ -363,9 +268,9 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
                         		{"bidder":"bidderA", "id": "1"}
                     		]
                 		}
-            		}
-    			  }
-    			]}`),
+            		}`)},
+				},
+			},
 			expectedStoredAuctionResponses: ImpsWithBidResponses{},
 			expectedStoredBidResponses: ImpBidderStoredResp{
 				"imp-id1": {"bidderA": bidStoredResp1},
@@ -376,11 +281,14 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
 		},
 		{
 			description: "Stored bid responses two bidders one imp",
-			requestJson: []byte(`{"imp": [
-    			  {
-    			    "id": "imp-id1",
-    			    "ext": {
-                		"appnexus": {
+			request: openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{ID: "imp-id1",
+						Ext: json.RawMessage(`{
+                		"bidderA": {
+							"placementId": 123
+                		},
+						"bidderB": {
 							"placementId": 123
                 		},
                 		"prebid": {
@@ -389,9 +297,9 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
                         		{"bidder":"bidderB", "id": "2", "replaceimpid": false}
                     		]
                 		}
-            		}
-    			  }
-    			]}`),
+            		}`)},
+				},
+			},
 			expectedStoredAuctionResponses: ImpsWithBidResponses{},
 			expectedStoredBidResponses: ImpBidderStoredResp{
 				"imp-id1": {"bidderA": bidStoredResp1, "bidderB": bidStoredResp2},
@@ -402,13 +310,119 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
 			},
 		},
 		{
+			description: "Stored bid responses two same mixed case bidders one imp",
+			request: openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{ID: "imp-id1",
+						Ext: json.RawMessage(`{
+                		"bidderA": {
+							"placementId": 123
+                		},
+						"BIDDERa": {
+							"placementId": 123
+                		},
+                		"prebid": {
+                    		"storedbidresponse": [
+                        		{"bidder":"bidderA", "id": "1", "replaceimpid": true},
+                        		{"bidder":"bidderB", "id": "2", "replaceimpid": false}
+                    		]
+                		}
+            		}`)},
+				},
+			},
+			expectedStoredAuctionResponses: ImpsWithBidResponses{},
+			expectedStoredBidResponses: ImpBidderStoredResp{
+				"imp-id1": {"bidderA": bidStoredResp1, "BIDDERa": bidStoredResp1},
+			},
+			expectedBidderImpReplaceImpID: BidderImpReplaceImpID{
+				"BIDDERa": map[string]bool{"imp-id1": true},
+				"bidderA": map[string]bool{"imp-id1": true},
+			},
+		},
+		{
+			description: "Stored bid responses 3 same mixed case bidders in imp.ext and imp.ext.prebid.bidders one imp",
+			request: openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{ID: "imp-id1",
+						Ext: json.RawMessage(`{
+                		"bidderA": {
+							"placementId": 123
+                		},
+						"BIDDERa": {
+							"placementId": 123
+                		},
+                		"prebid": {
+							"bidder": {
+                        		"BiddeRa": {
+                            		"placementId": 12883451
+                        		}
+                    		},
+                    		"storedbidresponse": [
+                        		{"bidder":"bidderA", "id": "1", "replaceimpid": true},
+                        		{"bidder":"bidderB", "id": "2", "replaceimpid": false}
+                    		]
+                		}
+            		}`)},
+				},
+			},
+			expectedStoredAuctionResponses: ImpsWithBidResponses{},
+			expectedStoredBidResponses: ImpBidderStoredResp{
+				"imp-id1": {"bidderA": bidStoredResp1, "BIDDERa": bidStoredResp1, "BiddeRa": bidStoredResp1},
+			},
+			expectedBidderImpReplaceImpID: BidderImpReplaceImpID{
+				"BIDDERa": map[string]bool{"imp-id1": true},
+				"bidderA": map[string]bool{"imp-id1": true},
+				"BiddeRa": map[string]bool{"imp-id1": true},
+			},
+		},
+		{
+			description: "Stored bid responses 3 same mixed case bidders in imp.ext and imp.ext.prebid.bidders one imp, duplicated stored response",
+			request: openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{ID: "imp-id1",
+						Ext: json.RawMessage(`{
+                		"bidderA": {
+							"placementId": 123
+                		},
+						"BIDDERa": {
+							"placementId": 123
+                		},
+                		"prebid": {
+							"bidder": {
+                        		"BiddeRa": {
+                            		"placementId": 12883451
+                        		}
+                    		},
+                    		"storedbidresponse": [
+                        		{"bidder":"bidderA", "id": "1", "replaceimpid": true},
+                        		{"bidder":"bidderA", "id": "2", "replaceimpid": true},
+                        		{"bidder":"bidderB", "id": "2", "replaceimpid": false}
+                    		]
+                		}
+            		}`)},
+				},
+			},
+			expectedStoredAuctionResponses: ImpsWithBidResponses{},
+			expectedStoredBidResponses: ImpBidderStoredResp{
+				"imp-id1": {"bidderA": bidStoredResp1, "BIDDERa": bidStoredResp1, "BiddeRa": bidStoredResp1},
+			},
+			expectedBidderImpReplaceImpID: BidderImpReplaceImpID{
+				"BIDDERa": map[string]bool{"imp-id1": true},
+				"bidderA": map[string]bool{"imp-id1": true},
+				"BiddeRa": map[string]bool{"imp-id1": true},
+			},
+		},
+		{
 			//This is not a valid scenario for real auction request, added for testing purposes
 			description: "Stored auction and bid responses one imp",
-			requestJson: []byte(`{"imp": [
-    			  {
-    			    "id": "imp-id1",
-    			    "ext": {
-                		"appnexus": {
+			request: openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{ID: "imp-id1",
+						Ext: json.RawMessage(`{
+                		"bidderA": {
+							"placementId": 123
+                		},
+						"bidderB": {
 							"placementId": 123
                 		},
                 		"prebid": {
@@ -420,9 +434,9 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
                         		{"bidder":"bidderB", "id": "2"}
                     		]
                 		}
-            		}
-    			  }
-    			]}`),
+            		}`)},
+				},
+			},
 			expectedStoredAuctionResponses: ImpsWithBidResponses{
 				"imp-id1": bidStoredResp1,
 			},
@@ -436,10 +450,10 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
 		},
 		{
 			description: "Stored auction response three imps",
-			requestJson: []byte(`{"imp": [
-    			  {
-    			    "id": "imp-id1",
-    			    "ext": {
+			request: openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{ID: "imp-id1",
+						Ext: json.RawMessage(`{
                 		"appnexus": {
 							"placementId": 123
                 		},
@@ -448,11 +462,9 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
                         		"id": "1"
                     		}
                 		}
-            		}
-    			  },
-					{
-    			    "id": "imp-id2",
-    			    "ext": {
+            		}`)},
+					{ID: "imp-id2",
+						Ext: json.RawMessage(`{
                 		"appnexus": {
 							"placementId": 123
                 		},
@@ -461,11 +473,10 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
                         		"id": "2"
                     		}
                 		}
-            		}
-    			  },
+            		}`)},
 					{
-    			    "id": "imp-id3",
-    			    "ext": {
+						ID: "imp-id3",
+						Ext: json.RawMessage(`{
                 		"appnexus": {
 							"placementId": 123
                 		},
@@ -474,9 +485,10 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
                         		"id": "3"
                     		}
                 		}
-            		}
-    			  }
-    			]}`),
+            		}`),
+					},
+				},
+			},
 			expectedStoredAuctionResponses: ImpsWithBidResponses{
 				"imp-id1": bidStoredResp1,
 				"imp-id2": bidStoredResp2,
@@ -487,10 +499,10 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
 		},
 		{
 			description: "Stored auction response three imps duplicated stored auction response",
-			requestJson: []byte(`{"imp": [
-    			  {
-    			    "id": "imp-id1",
-    			    "ext": {
+			request: openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{ID: "imp-id1",
+						Ext: json.RawMessage(`{
                 		"appnexus": {
 							"placementId": 123
                 		},
@@ -499,11 +511,9 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
                         		"id": "1"
                     		}
                 		}
-            		}
-    			  },
-					{
-    			    "id": "imp-id2",
-    			    "ext": {
+            		}`)},
+					{ID: "imp-id2",
+						Ext: json.RawMessage(`{
                 		"appnexus": {
 							"placementId": 123
                 		},
@@ -512,11 +522,10 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
                         		"id": "2"
                     		}
                 		}
-            		}
-    			  },
+            		}`)},
 					{
-    			    "id": "imp-id3",
-    			    "ext": {
+						ID: "imp-id3",
+						Ext: json.RawMessage(`{
                 		"appnexus": {
 							"placementId": 123
                 		},
@@ -525,9 +534,10 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
                         		"id": "2"
                     		}
                 		}
-            		}
-    			  }
-    			]}`),
+            		}`),
+					},
+				},
+			},
 			expectedStoredAuctionResponses: ImpsWithBidResponses{
 				"imp-id1": bidStoredResp1,
 				"imp-id2": bidStoredResp2,
@@ -538,11 +548,14 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
 		},
 		{
 			description: "Stored bid responses two bidders two imp",
-			requestJson: []byte(`{"imp": [
-    			  {
-    			    "id": "imp-id1",
-    			    "ext": {
-                		"appnexus": {
+			request: openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{ID: "imp-id1",
+						Ext: json.RawMessage(`{
+                		"bidderA": {
+							"placementId": 123
+                		},
+						"bidderB": {
 							"placementId": 123
                 		},
                 		"prebid": {
@@ -551,12 +564,13 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
                         		{"bidder":"bidderB", "id": "2"}
                     		]
                 		}
-            		}
-    			  },
-					{
-    			    "id": "imp-id2",
-    			    "ext": {
-                		"appnexus": {
+            		}`)},
+					{ID: "imp-id2",
+						Ext: json.RawMessage(`{
+                		"bidderA": {
+							"placementId": 123
+                		},
+						"bidderB": {
 							"placementId": 123
                 		},
                 		"prebid": {
@@ -565,9 +579,9 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
                         		{"bidder":"bidderB", "id": "2", "replaceimpid": false}
                     		]
                 		}
-            		}
-    			  }
-    			]}`),
+            		}`)},
+				},
+			},
 			expectedStoredAuctionResponses: ImpsWithBidResponses{},
 			expectedStoredBidResponses: ImpBidderStoredResp{
 				"imp-id1": {"bidderA": bidStoredResp1, "bidderB": bidStoredResp2},
@@ -581,17 +595,19 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		storedAuctionResponses, storedBidResponses, bidderImpReplaceImpId, errorList := ProcessStoredResponses(nil, test.requestJson, fetcher, bidderMap)
-		assert.Equal(t, test.expectedStoredAuctionResponses, storedAuctionResponses, "storedAuctionResponses doesn't match: %s\n", test.description)
-		assert.Equalf(t, test.expectedStoredBidResponses, storedBidResponses, "storedBidResponses doesn't match: %s\n", test.description)
-		assert.Equal(t, test.expectedBidderImpReplaceImpID, bidderImpReplaceImpId, "bidderImpReplaceImpId doesn't match: %s\n", test.description)
-		assert.Nil(t, errorList, "Error should be nil")
+		t.Run(test.description, func(t *testing.T) {
+			rw := openrtb_ext.RequestWrapper{BidRequest: &test.request}
+			storedAuctionResponses, storedBidResponses, bidderImpReplaceImpId, errorList := ProcessStoredResponses(context.TODO(), &rw, fetcher)
+			assert.Equal(t, test.expectedStoredAuctionResponses, storedAuctionResponses)
+			assert.Equal(t, test.expectedStoredBidResponses, storedBidResponses)
+			assert.Equal(t, test.expectedBidderImpReplaceImpID, bidderImpReplaceImpId)
+			assert.Nil(t, errorList, "Error should be nil")
+		})
 	}
 
 }
 
 func TestProcessStoredResponsesNotFoundResponse(t *testing.T) {
-	bidderMap := map[string]openrtb_ext.BidderName{"bidderA": "bidderA", "bidderB": "bidderB"}
 	bidStoredResp1 := json.RawMessage(`[{"bid": [{"id": "bid_id1"],"seat": "bidderA"}]`)
 	bidStoredResp2 := json.RawMessage(`[{"bid": [{"id": "bid_id2"],"seat": "bidderB"}]`)
 	mockStoredResponses := map[string]json.RawMessage{
@@ -604,16 +620,16 @@ func TestProcessStoredResponsesNotFoundResponse(t *testing.T) {
 
 	testCases := []struct {
 		description    string
-		requestJson    []byte
+		request        openrtb2.BidRequest
 		expectedErrors []error
 	}{
 		{
 			description: "Stored bid response with nil data, one bidder one imp",
-			requestJson: []byte(`{"imp": [
-    			  {
-    			    "id": "imp-id1",
-    			    "ext": {
-                		"appnexus": {
+			request: openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{ID: "imp-id1",
+						Ext: json.RawMessage(`{
+                		"bidderB": {
 							"placementId": 123
                 		},
                 		"prebid": {
@@ -621,20 +637,20 @@ func TestProcessStoredResponsesNotFoundResponse(t *testing.T) {
                         		{"bidder":"bidderB", "id": "3"}
                     		]
                 		}
-            		}
-    			  }
-    			]}`),
+            		}`)},
+				},
+			},
 			expectedErrors: []error{
 				errors.New("failed to fetch stored bid response for impId = imp-id1, bidder = bidderB and storedBidResponse id = 3"),
 			},
 		},
 		{
 			description: "Stored bid response with nil data, one bidder, two imps, one with correct stored response",
-			requestJson: []byte(`{"imp": [
-    			  {
-    			    "id": "imp-id1",
-    			    "ext": {
-                		"appnexus": {
+			request: openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{ID: "imp-id1",
+						Ext: json.RawMessage(`{
+                		"bidderB": {
 							"placementId": 123
                 		},
                 		"prebid": {
@@ -642,12 +658,10 @@ func TestProcessStoredResponsesNotFoundResponse(t *testing.T) {
                         		{"bidder":"bidderB", "id": "1"}
                     		]
                 		}
-            		}
-    			  },
-                  {
-    			    "id": "imp-id2",
-    			    "ext": {
-                		"appnexus": {
+            		}`)},
+					{ID: "imp-id2",
+						Ext: json.RawMessage(`{
+                		"bidderB": {
 							"placementId": 123
                 		},
                 		"prebid": {
@@ -655,20 +669,20 @@ func TestProcessStoredResponsesNotFoundResponse(t *testing.T) {
                         		{"bidder":"bidderB", "id": "3"}
                     		]
                 		}
-            		}
-    			  }
-    			]}`),
+            		}`)},
+				},
+			},
 			expectedErrors: []error{
 				errors.New("failed to fetch stored bid response for impId = imp-id2, bidder = bidderB and storedBidResponse id = 3"),
 			},
 		},
 		{
 			description: "Stored bid response with nil data, one bidder, two imps, both with correct stored response",
-			requestJson: []byte(`{"imp": [
-    			  {
-    			    "id": "imp-id1",
-    			    "ext": {
-                		"appnexus": {
+			request: openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{ID: "imp-id1",
+						Ext: json.RawMessage(`{
+                		"bidderB": {
 							"placementId": 123
                 		},
                 		"prebid": {
@@ -676,12 +690,10 @@ func TestProcessStoredResponsesNotFoundResponse(t *testing.T) {
                         		{"bidder":"bidderB", "id": "4"}
                     		]
                 		}
-            		}
-    			  },
-                  {
-    			    "id": "imp-id2",
-    			    "ext": {
-                		"appnexus": {
+            		}`)},
+					{ID: "imp-id2",
+						Ext: json.RawMessage(`{
+                		"bidderB": {
 							"placementId": 123
                 		},
                 		"prebid": {
@@ -689,9 +701,9 @@ func TestProcessStoredResponsesNotFoundResponse(t *testing.T) {
                         		{"bidder":"bidderB", "id": "3"}
                     		]
                 		}
-            		}
-    			  }
-    			]}`),
+            		}`)},
+				},
+			},
 			expectedErrors: []error{
 				errors.New("failed to fetch stored bid response for impId = imp-id1, bidder = bidderB and storedBidResponse id = 4"),
 				errors.New("failed to fetch stored bid response for impId = imp-id2, bidder = bidderB and storedBidResponse id = 3"),
@@ -699,10 +711,10 @@ func TestProcessStoredResponsesNotFoundResponse(t *testing.T) {
 		},
 		{
 			description: "Stored auction response with nil data and one imp",
-			requestJson: []byte(`{"imp": [
-    			  {
-    			    "id": "imp-id1",
-    			    "ext": {
+			request: openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{ID: "imp-id1",
+						Ext: json.RawMessage(`{
                 		"appnexus": {
 							"placementId": 123
                 		},
@@ -711,19 +723,19 @@ func TestProcessStoredResponsesNotFoundResponse(t *testing.T) {
                         		"id": "4"
                     		}
                 		}
-            		}
-    			  }
-    			]}`),
+            		}`)},
+				},
+			},
 			expectedErrors: []error{
 				errors.New("failed to fetch stored auction response for impId = imp-id1 and storedAuctionResponse id = 4"),
 			},
 		},
 		{
 			description: "Stored auction response with nil data, and two imps with nil responses",
-			requestJson: []byte(`{"imp": [
-    			  {
-    			    "id": "imp-id1",
-    			    "ext": {
+			request: openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{ID: "imp-id1",
+						Ext: json.RawMessage(`{
                 		"appnexus": {
 							"placementId": 123
                 		},
@@ -732,11 +744,9 @@ func TestProcessStoredResponsesNotFoundResponse(t *testing.T) {
                         		"id": "4"
                     		}
                 		}
-            		}
-    			  },
-                  {
-    			    "id": "imp-id2",
-    			    "ext": {
+            		}`)},
+					{ID: "imp-id2",
+						Ext: json.RawMessage(`{
                 		"appnexus": {
 							"placementId": 123
                 		},
@@ -745,9 +755,9 @@ func TestProcessStoredResponsesNotFoundResponse(t *testing.T) {
                         		"id": "3"
                     		}
                 		}
-            		}
-    			  }
-    			]}`),
+            		}`)},
+				},
+			},
 			expectedErrors: []error{
 				errors.New("failed to fetch stored auction response for impId = imp-id1 and storedAuctionResponse id = 4"),
 				errors.New("failed to fetch stored auction response for impId = imp-id2 and storedAuctionResponse id = 3"),
@@ -755,10 +765,10 @@ func TestProcessStoredResponsesNotFoundResponse(t *testing.T) {
 		},
 		{
 			description: "Stored auction response with nil data, two imps, one with nil responses",
-			requestJson: []byte(`{"imp": [
-    			  {
-    			    "id": "imp-id1",
-    			    "ext": {
+			request: openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{ID: "imp-id1",
+						Ext: json.RawMessage(`{
                 		"appnexus": {
 							"placementId": 123
                 		},
@@ -767,11 +777,9 @@ func TestProcessStoredResponsesNotFoundResponse(t *testing.T) {
                         		"id": "2"
                     		}
                 		}
-            		}
-    			  },
-                  {
-    			    "id": "imp-id2",
-    			    "ext": {
+            		}`)},
+					{ID: "imp-id2",
+						Ext: json.RawMessage(`{
                 		"appnexus": {
 							"placementId": 123
                 		},
@@ -780,9 +788,9 @@ func TestProcessStoredResponsesNotFoundResponse(t *testing.T) {
                         		"id": "3"
                     		}
                 		}
-            		}
-    			  }
-    			]}`),
+            		}`)},
+				},
+			},
 			expectedErrors: []error{
 				errors.New("failed to fetch stored auction response for impId = imp-id2 and storedAuctionResponse id = 3"),
 			},
@@ -790,10 +798,13 @@ func TestProcessStoredResponsesNotFoundResponse(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		_, _, _, errorList := ProcessStoredResponses(nil, test.requestJson, fetcher, bidderMap)
-		for _, err := range test.expectedErrors {
-			assert.Contains(t, errorList, err, "incorrect errors returned: %s", test.description)
-		}
+		t.Run(test.description, func(t *testing.T) {
+			rw := openrtb_ext.RequestWrapper{BidRequest: &test.request}
+			_, _, _, errorList := ProcessStoredResponses(context.TODO(), &rw, fetcher)
+			for _, err := range test.expectedErrors {
+				assert.Contains(t, errorList, err)
+			}
+		})
 	}
 }
 
@@ -847,8 +858,10 @@ func TestFlipMap(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		actualResult := flipMap(test.inImpBidderReplaceImpID)
-		assert.Equal(t, test.outBidderImpReplaceImpID, actualResult, "Incorrect flipped map for test case %s\n", test.description)
+		t.Run(test.description, func(t *testing.T) {
+			actualResult := flipMap(test.inImpBidderReplaceImpID)
+			assert.Equal(t, test.outBidderImpReplaceImpID, actualResult)
+		})
 	}
 }
 

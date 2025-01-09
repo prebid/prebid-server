@@ -110,7 +110,8 @@
               "id": "pubid"
             }
           }
-        }
+        },
+        "impIDs":["id"]
       },
       "mockResponse": {
         "status": 200,

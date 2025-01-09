@@ -7,12 +7,13 @@ import (
 	"net/url"
 	"text/template"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 const adapterVersion string = "pbs-go/1.0.0"
@@ -71,7 +72,7 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestDa
 		// if the bid request is missing seatId or TagId then ignore it
 		if validExtImpObj.SeatId == "" || validExtImpObj.TagId == "" {
 			errs = append(errs, &errortypes.BadServerResponse{
-				Message: fmt.Sprintf("Invalid Impression"),
+				Message: "Invalid Impression",
 			})
 			continue
 		}
@@ -91,7 +92,7 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestDa
 
 	if firstExtImp == nil || firstExtImp.SeatId == "" || firstExtImp.TagId == "" {
 		return nil, append(errs, &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Invalid Impression"),
+			Message: "Invalid Impression",
 		})
 	}
 	// this is where the empty seatId is filled
@@ -125,6 +126,7 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestDa
 		Uri:     reqUri,
 		Body:    reqJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}, errs
 }
 
@@ -135,14 +137,14 @@ func (adapter *adapter) buildEndpointURL(params *openrtb_ext.ExtImpImds) (string
 
 func getExtImpObj(imp *openrtb2.Imp) (*openrtb_ext.ExtImpImds, error) {
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
 
 	var imdsExt openrtb_ext.ExtImpImds
-	if err := json.Unmarshal(bidderExt.Bidder, &imdsExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &imdsExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: err.Error(),
 		}
@@ -169,7 +171,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 
 	var bidResp openrtb2.BidResponse
 
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 

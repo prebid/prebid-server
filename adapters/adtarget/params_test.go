@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 // This file actually intends to test static/bidder-params/adtarget.json
@@ -33,16 +33,21 @@ func TestInvalidParams(t *testing.T) {
 
 	for _, invalidParam := range invalidParams {
 		if err := validator.Validate(openrtb_ext.BidderAdtarget, json.RawMessage(invalidParam)); err == nil {
-			t.Errorf("Schema allowed unexpected params: %s", invalidParam)
+			ext := openrtb_ext.ExtImpAdtarget{}
+			err = json.Unmarshal([]byte(invalidParam), &ext)
+			if err == nil {
+				t.Errorf("Schema allowed unexpected params: %s", invalidParam)
+			}
 		}
 	}
 }
 
 var validParams = []string{
 	`{"aid":123}`,
+	`{"aid":"123"}`,
 	`{"aid":123,"placementId":1234}`,
 	`{"aid":123,"siteId":4321}`,
-	`{"aid":123,"siteId":0,"bidFloor":0}`,
+	`{"aid":"123","siteId":0,"bidFloor":0}`,
 }
 
 var invalidParams = []string{
@@ -53,8 +58,7 @@ var invalidParams = []string{
 	`4.2`,
 	`[]`,
 	`{}`,
-	`{"aid":"123"}`,
-	`{"aid":"0"}`,
+	`{"aid":"qwerty"}`,
 	`{"aid":"123","placementId":"123"}`,
 	`{"aid":123, "placementId":"123", "siteId":"321"}`,
 }

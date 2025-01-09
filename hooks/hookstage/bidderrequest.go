@@ -3,7 +3,7 @@ package hookstage
 import (
 	"context"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 // BidderRequest hooks are invoked for each bidder participating in auction.
@@ -25,6 +25,20 @@ type BidderRequest interface {
 // distilled for the particular bidder.
 // Hooks are allowed to modify openrtb2.BidRequest using mutations.
 type BidderRequestPayload struct {
-	BidRequest *openrtb2.BidRequest
-	Bidder     string
+	Request *openrtb_ext.RequestWrapper
+	Bidder  string
+}
+
+func (brp *BidderRequestPayload) GetBidderRequestPayload() *openrtb_ext.RequestWrapper {
+	return brp.Request
+}
+
+func (brp *BidderRequestPayload) SetBidderRequestPayload(br *openrtb_ext.RequestWrapper) {
+	brp.Request = br
+}
+
+// RequestUpdater allows reading and writing a bid request
+type RequestUpdater interface {
+	GetBidderRequestPayload() *openrtb_ext.RequestWrapper
+	SetBidderRequestPayload(br *openrtb_ext.RequestWrapper)
 }

@@ -99,6 +99,8 @@
                                 "someField": "someValue",
                                 "origbidcpm": 0.3,
                                 "prebid": {
+                                    "meta": {
+                                    },
                                     "type": "video"
                                 }
                             }

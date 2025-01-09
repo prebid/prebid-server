@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type Adapter struct {
@@ -52,6 +53,7 @@ func (a *Adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestDa
 		Uri:     a.endpoint,
 		Body:    jsonBody,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}, nil
 }
 
@@ -65,7 +67,7 @@ func preprocess(request *openrtb2.BidRequest) error {
 		var imp = &request.Imp[i]
 		var bidderExt adapters.ExtImpBidder
 
-		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			return &errortypes.BadInput{
 				Message: err.Error(),
 			}
@@ -76,7 +78,7 @@ func preprocess(request *openrtb2.BidRequest) error {
 		}
 
 		var extImp openrtb_ext.ExtImpCpmstar
-		if err := json.Unmarshal(bidderExt.Bidder, &extImp); err != nil {
+		if err := jsonutil.Unmarshal(bidderExt.Bidder, &extImp); err != nil {
 			return &errortypes.BadInput{
 				Message: err.Error(),
 			}
@@ -111,7 +113,7 @@ func (a *Adapter) MakeBids(bidRequest *openrtb2.BidRequest, unused *adapters.Req
 
 	var bidResponse openrtb2.BidResponse
 
-	if err := json.Unmarshal(responseData.Body, &bidResponse); err != nil {
+	if err := jsonutil.Unmarshal(responseData.Body, &bidResponse); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: err.Error(),
 		}}
@@ -125,11 +127,11 @@ func (a *Adapter) MakeBids(bidRequest *openrtb2.BidRequest, unused *adapters.Req
 	var errors []error
 
 	for _, seatbid := range bidResponse.SeatBid {
-		for _, bid := range seatbid.Bid {
+		for i := range seatbid.Bid {
 			foundMatchingBid := false
 			bidType := openrtb_ext.BidTypeBanner
 			for _, imp := range bidRequest.Imp {
-				if imp.ID == bid.ImpID {
+				if imp.ID == seatbid.Bid[i].ImpID {
 					foundMatchingBid = true
 					if imp.Banner != nil {
 						bidType = openrtb_ext.BidTypeBanner
@@ -142,12 +144,12 @@ func (a *Adapter) MakeBids(bidRequest *openrtb2.BidRequest, unused *adapters.Req
 
 			if foundMatchingBid {
 				rv.Bids = append(rv.Bids, &adapters.TypedBid{
-					Bid:     &bid,
+					Bid:     &seatbid.Bid[i],
 					BidType: bidType,
 				})
 			} else {
 				errors = append(errors, &errortypes.BadServerResponse{
-					Message: fmt.Sprintf("bid id='%s' could not find valid impid='%s'", bid.ID, bid.ImpID),
+					Message: fmt.Sprintf("bid id='%s' could not find valid impid='%s'", seatbid.Bid[i].ID, seatbid.Bid[i].ImpID),
 				})
 			}
 		}

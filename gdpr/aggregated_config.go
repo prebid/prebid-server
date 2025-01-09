@@ -3,8 +3,8 @@ package gdpr
 import (
 	"github.com/prebid/go-gdpr/consentconstants"
 
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 // TCF2ConfigReader is an interface to access TCF2 configurations
@@ -17,7 +17,7 @@ type TCF2ConfigReader interface {
 	PurposeEnforced(consentconstants.Purpose) bool
 	PurposeEnforcementAlgo(consentconstants.Purpose) config.TCF2EnforcementAlgo
 	PurposeEnforcingVendors(consentconstants.Purpose) bool
-	PurposeVendorExceptions(consentconstants.Purpose) map[openrtb_ext.BidderName]struct{}
+	PurposeVendorExceptions(consentconstants.Purpose) map[string]struct{}
 	PurposeOneTreatmentEnabled() bool
 	PurposeOneTreatmentAccessAllowed() bool
 }
@@ -85,9 +85,9 @@ func (tc *tcf2Config) PurposeEnforcingVendors(purpose consentconstants.Purpose) 
 }
 
 // PurposeVendorExceptions returns the vendor exception map for the specified purpose if it exists for the account;
-// otherwise it returns a nil map. If a bidder is a vendor exception, the GDPR full enforcement algorithm will
+// otherwise it returns a nil map. If a bidder/analytics adapter is a vendor exception, the GDPR full enforcement algorithm will
 // bypass the legal basis calculation assuming the request is valid and there isn't a "deny all" publisher restriction
-func (tc *tcf2Config) PurposeVendorExceptions(purpose consentconstants.Purpose) map[openrtb_ext.BidderName]struct{} {
+func (tc *tcf2Config) PurposeVendorExceptions(purpose consentconstants.Purpose) map[string]struct{} {
 	if value, exists := tc.AccountConfig.PurposeVendorExceptions(purpose); exists {
 		return value
 	}

@@ -9,10 +9,8 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/util/sliceutil"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 
 	validator "github.com/asaskevich/govalidator"
 	"gopkg.in/yaml.v3"
@@ -37,9 +35,6 @@ type BidderInfo struct {
 	Syncer *Syncer `yaml:"userSync" mapstructure:"userSync"`
 
 	Experiment BidderInfoExperiment `yaml:"experiment" mapstructure:"experiment"`
-
-	// needed for backwards compatibility
-	UserSyncURL string `yaml:"usersync_url" mapstructure:"usersync_url"`
 
 	// needed for Rubicon
 	XAPI AdapterXAPI `yaml:"xapi" mapstructure:"xapi"`
@@ -78,6 +73,7 @@ type MaintainerInfo struct {
 type CapabilitiesInfo struct {
 	App  *PlatformInfo `yaml:"app" mapstructure:"app"`
 	Site *PlatformInfo `yaml:"site" mapstructure:"site"`
+	DOOH *PlatformInfo `yaml:"dooh" mapstructure:"dooh"`
 }
 
 // PlatformInfo specifies the supported media types for a bidder.
@@ -128,6 +124,20 @@ type Syncer struct {
 
 	// SupportCORS identifies if CORS is supported for the user syncing endpoints.
 	SupportCORS *bool `yaml:"supportCors" mapstructure:"support_cors"`
+
+	// FormatOverride allows a bidder to override their callback type "b" for iframe, "i" for redirect
+	FormatOverride string `yaml:"formatOverride" mapstructure:"format_override"`
+
+	// Enabled signifies whether a bidder is enabled/disabled for user sync
+	Enabled *bool `yaml:"enabled" mapstructure:"enabled"`
+
+	// SkipWhen allows bidders to specify when they don't want to sync
+	SkipWhen *SkipWhen `yaml:"skipwhen" mapstructure:"skipwhen"`
+}
+
+type SkipWhen struct {
+	GDPR   bool     `yaml:"gdpr" mapstructure:"gdpr"`
+	GPPSID []string `yaml:"gpp_sid" mapstructure:"gpp_sid"`
 }
 
 // SyncerEndpoint specifies the configuration of the URL returned by the /cookie_sync endpoint
@@ -191,6 +201,21 @@ func (bi BidderInfo) IsEnabled() bool {
 	return !bi.Disabled
 }
 
+// Defined returns true if at least one field exists, except for the supports field.
+func (s *Syncer) Defined() bool {
+	if s == nil {
+		return false
+	}
+
+	return s.Key != "" ||
+		s.IFrame != nil ||
+		s.Redirect != nil ||
+		s.ExternalURL != "" ||
+		s.SupportCORS != nil ||
+		s.FormatOverride != "" ||
+		s.SkipWhen != nil
+}
+
 type InfoReader interface {
 	Read() (map[string][]byte, error)
 }
@@ -198,6 +223,11 @@ type InfoReader interface {
 type InfoReaderFromDisk struct {
 	Path string
 }
+
+const (
+	SyncResponseFormatIFrame   = "b" // b = blank HTML response
+	SyncResponseFormatRedirect = "i" // i = image response
+)
 
 func (r InfoReaderFromDisk) Read() (map[string][]byte, error) {
 	bidderConfigs, err := os.ReadDir(r.Path)
@@ -230,7 +260,7 @@ func LoadBidderInfo(reader InfoReader) (BidderInfos, error) {
 	return processBidderInfos(reader, openrtb_ext.NormalizeBidderName)
 }
 
-func processBidderInfos(reader InfoReader, normalizeBidderName func(string) (openrtb_ext.BidderName, bool)) (BidderInfos, error) {
+func processBidderInfos(reader InfoReader, normalizeBidderName openrtb_ext.BidderNameNormalizer) (BidderInfos, error) {
 	bidderConfigs, err := reader.Read()
 	if err != nil {
 		return nil, fmt.Errorf("error loading bidders data")
@@ -320,11 +350,13 @@ func processBidderAliases(aliasNillableFieldsByBidder map[string]aliasNillableFi
 		if aliasBidderInfo.PlatformID == "" {
 			aliasBidderInfo.PlatformID = parentBidderInfo.PlatformID
 		}
-		if aliasBidderInfo.Syncer == nil {
-			aliasBidderInfo.Syncer = parentBidderInfo.Syncer
-		}
-		if aliasBidderInfo.UserSyncURL == "" {
-			aliasBidderInfo.UserSyncURL = parentBidderInfo.UserSyncURL
+		if aliasBidderInfo.Syncer == nil && parentBidderInfo.Syncer.Defined() {
+			syncerKey := aliasBidderInfo.AliasOf
+			if parentBidderInfo.Syncer.Key != "" {
+				syncerKey = parentBidderInfo.Syncer.Key
+			}
+			syncer := Syncer{Key: syncerKey}
+			aliasBidderInfo.Syncer = &syncer
 		}
 		if alias.Disabled == nil {
 			aliasBidderInfo.Disabled = parentBidderInfo.Disabled
@@ -461,7 +493,9 @@ func validateAliasCapabilities(aliasBidderInfo BidderInfo, infos BidderInfos, bi
 			return fmt.Errorf("capabilities for alias: %s should be a subset of capabilities for parent bidder: %s", bidderName, aliasBidderInfo.AliasOf)
 		}
 
-		if (aliasBidderInfo.Capabilities.App != nil && parentBidder.Capabilities.App == nil) || (aliasBidderInfo.Capabilities.Site != nil && parentBidder.Capabilities.Site == nil) {
+		if (aliasBidderInfo.Capabilities.App != nil && parentBidder.Capabilities.App == nil) ||
+			(aliasBidderInfo.Capabilities.Site != nil && parentBidder.Capabilities.Site == nil) ||
+			(aliasBidderInfo.Capabilities.DOOH != nil && parentBidder.Capabilities.DOOH == nil) {
 			return fmt.Errorf("capabilities for alias: %s should be a subset of capabilities for parent bidder: %s", bidderName, aliasBidderInfo.AliasOf)
 		}
 
@@ -473,6 +507,12 @@ func validateAliasCapabilities(aliasBidderInfo BidderInfo, infos BidderInfos, bi
 
 		if aliasBidderInfo.Capabilities.App != nil && parentBidder.Capabilities.App != nil {
 			if err := isAliasPlatformInfoSubsetOfParent(*parentBidder.Capabilities.App, *aliasBidderInfo.Capabilities.App, bidderName, aliasBidderInfo.AliasOf); err != nil {
+				return err
+			}
+		}
+
+		if aliasBidderInfo.Capabilities.DOOH != nil && parentBidder.Capabilities.DOOH != nil {
+			if err := isAliasPlatformInfoSubsetOfParent(*parentBidder.Capabilities.DOOH, *aliasBidderInfo.Capabilities.DOOH, bidderName, aliasBidderInfo.AliasOf); err != nil {
 				return err
 			}
 		}
@@ -501,8 +541,8 @@ func validateCapabilities(info *CapabilitiesInfo, bidderName string) error {
 		return fmt.Errorf("missing required field: capabilities for adapter: %s", bidderName)
 	}
 
-	if info.App == nil && info.Site == nil {
-		return fmt.Errorf("at least one of capabilities.site or capabilities.app must exist for adapter: %s", bidderName)
+	if info.App == nil && info.Site == nil && info.DOOH == nil {
+		return fmt.Errorf("at least one of capabilities.site, capabilities.app, or capabilities.dooh must exist for adapter: %s", bidderName)
 	}
 
 	if info.App != nil {
@@ -513,9 +553,16 @@ func validateCapabilities(info *CapabilitiesInfo, bidderName string) error {
 
 	if info.Site != nil {
 		if err := validatePlatformInfo(info.Site); err != nil {
-			return fmt.Errorf("capabilities.site failed validation: %v, for adapter: %s", err, bidderName)
+			return fmt.Errorf("capabilities.site failed validation: %v for adapter: %s", err, bidderName)
 		}
 	}
+
+	if info.DOOH != nil {
+		if err := validatePlatformInfo(info.DOOH); err != nil {
+			return fmt.Errorf("capabilities.dooh failed validation: %v for adapter: %s", err, bidderName)
+		}
+	}
+
 	return nil
 }
 
@@ -538,6 +585,10 @@ func validateSyncer(bidderInfo BidderInfo) error {
 		return nil
 	}
 
+	if bidderInfo.Syncer.FormatOverride != SyncResponseFormatIFrame && bidderInfo.Syncer.FormatOverride != SyncResponseFormatRedirect && bidderInfo.Syncer.FormatOverride != "" {
+		return fmt.Errorf("syncer could not be created, invalid format override value: %s", bidderInfo.Syncer.FormatOverride)
+	}
+
 	for _, supports := range bidderInfo.Syncer.Supports {
 		if !strings.EqualFold(supports, "iframe") && !strings.EqualFold(supports, "redirect") {
 			return fmt.Errorf("syncer could not be created, invalid supported endpoint: %s", supports)
@@ -547,103 +598,79 @@ func validateSyncer(bidderInfo BidderInfo) error {
 	return nil
 }
 
-func applyBidderInfoConfigOverrides(configBidderInfos BidderInfos, fsBidderInfos BidderInfos, normalizeBidderName func(string) (openrtb_ext.BidderName, bool)) (BidderInfos, error) {
-	for bidderName, bidderInfo := range configBidderInfos {
-		normalizedBidderName, bidderNameExists := normalizeBidderName(bidderName)
-		if !bidderNameExists {
+func applyBidderInfoConfigOverrides(configBidderInfos nillableFieldBidderInfos, fsBidderInfos BidderInfos, normalizeBidderName openrtb_ext.BidderNameNormalizer) (BidderInfos, error) {
+	mergedBidderInfos := make(map[string]BidderInfo, len(fsBidderInfos))
+
+	for bidderName, configBidderInfo := range configBidderInfos {
+		normalizedBidderName, exists := normalizeBidderName(bidderName)
+		if !exists {
 			return nil, fmt.Errorf("error setting configuration for bidder %s: unknown bidder", bidderName)
 		}
-		if fsBidderCfg, exists := fsBidderInfos[string(normalizedBidderName)]; exists {
-			bidderInfo.Syncer = bidderInfo.Syncer.Override(fsBidderCfg.Syncer)
-
-			if bidderInfo.Endpoint == "" && len(fsBidderCfg.Endpoint) > 0 {
-				bidderInfo.Endpoint = fsBidderCfg.Endpoint
-			}
-			if bidderInfo.ExtraAdapterInfo == "" && len(fsBidderCfg.ExtraAdapterInfo) > 0 {
-				bidderInfo.ExtraAdapterInfo = fsBidderCfg.ExtraAdapterInfo
-			}
-			if bidderInfo.Maintainer == nil && fsBidderCfg.Maintainer != nil {
-				bidderInfo.Maintainer = fsBidderCfg.Maintainer
-			}
-			if bidderInfo.Capabilities == nil && fsBidderCfg.Capabilities != nil {
-				bidderInfo.Capabilities = fsBidderCfg.Capabilities
-			}
-			if bidderInfo.Debug == nil && fsBidderCfg.Debug != nil {
-				bidderInfo.Debug = fsBidderCfg.Debug
-			}
-			if bidderInfo.GVLVendorID == 0 && fsBidderCfg.GVLVendorID > 0 {
-				bidderInfo.GVLVendorID = fsBidderCfg.GVLVendorID
-			}
-			if bidderInfo.XAPI.Username == "" && fsBidderCfg.XAPI.Username != "" {
-				bidderInfo.XAPI.Username = fsBidderCfg.XAPI.Username
-			}
-			if bidderInfo.XAPI.Password == "" && fsBidderCfg.XAPI.Password != "" {
-				bidderInfo.XAPI.Password = fsBidderCfg.XAPI.Password
-			}
-			if bidderInfo.XAPI.Tracker == "" && fsBidderCfg.XAPI.Tracker != "" {
-				bidderInfo.XAPI.Tracker = fsBidderCfg.XAPI.Tracker
-			}
-			if bidderInfo.PlatformID == "" && fsBidderCfg.PlatformID != "" {
-				bidderInfo.PlatformID = fsBidderCfg.PlatformID
-			}
-			if bidderInfo.AppSecret == "" && fsBidderCfg.AppSecret != "" {
-				bidderInfo.AppSecret = fsBidderCfg.AppSecret
-			}
-			if bidderInfo.EndpointCompression == "" && fsBidderCfg.EndpointCompression != "" {
-				bidderInfo.EndpointCompression = fsBidderCfg.EndpointCompression
-			}
-
-			// validate and try to apply the legacy usersync_url configuration in attempt to provide
-			// an easier upgrade path. be warned, this will break if the bidder adds a second syncer
-			// type and will eventually be removed after we've given hosts enough time to upgrade to
-			// the new config.
-			if bidderInfo.UserSyncURL != "" {
-				if fsBidderCfg.Syncer == nil {
-					return nil, fmt.Errorf("adapters.%s.usersync_url cannot be applied, bidder does not define a user sync", strings.ToLower(bidderName))
-				}
-
-				endpointsCount := 0
-				if bidderInfo.Syncer.IFrame != nil {
-					bidderInfo.Syncer.IFrame.URL = bidderInfo.UserSyncURL
-					endpointsCount++
-				}
-				if bidderInfo.Syncer.Redirect != nil {
-					bidderInfo.Syncer.Redirect.URL = bidderInfo.UserSyncURL
-					endpointsCount++
-				}
-
-				// use Supports as a hint if there are no good defaults provided
-				if endpointsCount == 0 {
-					if sliceutil.ContainsStringIgnoreCase(bidderInfo.Syncer.Supports, "iframe") {
-						bidderInfo.Syncer.IFrame = &SyncerEndpoint{URL: bidderInfo.UserSyncURL}
-						endpointsCount++
-					}
-					if sliceutil.ContainsStringIgnoreCase(bidderInfo.Syncer.Supports, "redirect") {
-						bidderInfo.Syncer.Redirect = &SyncerEndpoint{URL: bidderInfo.UserSyncURL}
-						endpointsCount++
-					}
-				}
-
-				if endpointsCount == 0 {
-					return nil, fmt.Errorf("adapters.%s.usersync_url cannot be applied, bidder does not define user sync endpoints and does not define supported endpoints", strings.ToLower(bidderName))
-				}
-
-				// if the bidder defines both an iframe and redirect endpoint, we can't be sure which config value to
-				// override, and  it wouldn't be both. this is a fatal configuration error.
-				if endpointsCount > 1 {
-					return nil, fmt.Errorf("adapters.%s.usersync_url cannot be applied, bidder defines multiple user sync endpoints or supports multiple endpoints", strings.ToLower(bidderName))
-				}
-
-				// provide a warning that this compatibility layer is temporary
-				glog.Warningf("adapters.%s.usersync_url is deprecated and will be removed in a future version, please update to the latest user sync config values", strings.ToLower(bidderName))
-			}
-
-			fsBidderInfos[string(normalizedBidderName)] = bidderInfo
-		} else {
+		fsBidderInfo, exists := fsBidderInfos[string(normalizedBidderName)]
+		if !exists {
 			return nil, fmt.Errorf("error finding configuration for bidder %s: unknown bidder", bidderName)
 		}
+
+		mergedBidderInfo := fsBidderInfo
+		mergedBidderInfo.Syncer = configBidderInfo.bidderInfo.Syncer.Override(fsBidderInfo.Syncer)
+		if len(configBidderInfo.bidderInfo.Endpoint) > 0 {
+			mergedBidderInfo.Endpoint = configBidderInfo.bidderInfo.Endpoint
+		}
+		if len(configBidderInfo.bidderInfo.ExtraAdapterInfo) > 0 {
+			mergedBidderInfo.ExtraAdapterInfo = configBidderInfo.bidderInfo.ExtraAdapterInfo
+		}
+		if configBidderInfo.bidderInfo.Maintainer != nil {
+			mergedBidderInfo.Maintainer = configBidderInfo.bidderInfo.Maintainer
+		}
+		if configBidderInfo.bidderInfo.Capabilities != nil {
+			mergedBidderInfo.Capabilities = configBidderInfo.bidderInfo.Capabilities
+		}
+		if configBidderInfo.bidderInfo.Debug != nil {
+			mergedBidderInfo.Debug = configBidderInfo.bidderInfo.Debug
+		}
+		if configBidderInfo.bidderInfo.GVLVendorID > 0 {
+			mergedBidderInfo.GVLVendorID = configBidderInfo.bidderInfo.GVLVendorID
+		}
+		if configBidderInfo.bidderInfo.XAPI.Username != "" {
+			mergedBidderInfo.XAPI.Username = configBidderInfo.bidderInfo.XAPI.Username
+		}
+		if configBidderInfo.bidderInfo.XAPI.Password != "" {
+			mergedBidderInfo.XAPI.Password = configBidderInfo.bidderInfo.XAPI.Password
+		}
+		if configBidderInfo.bidderInfo.XAPI.Tracker != "" {
+			mergedBidderInfo.XAPI.Tracker = configBidderInfo.bidderInfo.XAPI.Tracker
+		}
+		if configBidderInfo.bidderInfo.PlatformID != "" {
+			mergedBidderInfo.PlatformID = configBidderInfo.bidderInfo.PlatformID
+		}
+		if configBidderInfo.bidderInfo.AppSecret != "" {
+			mergedBidderInfo.AppSecret = configBidderInfo.bidderInfo.AppSecret
+		}
+		if configBidderInfo.nillableFields.Disabled != nil {
+			mergedBidderInfo.Disabled = configBidderInfo.bidderInfo.Disabled
+		}
+		if configBidderInfo.nillableFields.ModifyingVastXmlAllowed != nil {
+			mergedBidderInfo.ModifyingVastXmlAllowed = configBidderInfo.bidderInfo.ModifyingVastXmlAllowed
+		}
+		if configBidderInfo.bidderInfo.Experiment.AdsCert.Enabled {
+			mergedBidderInfo.Experiment.AdsCert.Enabled = true
+		}
+		if configBidderInfo.bidderInfo.EndpointCompression != "" {
+			mergedBidderInfo.EndpointCompression = configBidderInfo.bidderInfo.EndpointCompression
+		}
+		if configBidderInfo.bidderInfo.OpenRTB != nil {
+			mergedBidderInfo.OpenRTB = configBidderInfo.bidderInfo.OpenRTB
+		}
+
+		mergedBidderInfos[string(normalizedBidderName)] = mergedBidderInfo
 	}
-	return fsBidderInfos, nil
+	for bidderName, fsBidderInfo := range fsBidderInfos {
+		if _, exists := mergedBidderInfos[bidderName]; !exists {
+			mergedBidderInfos[bidderName] = fsBidderInfo
+		}
+	}
+
+	return mergedBidderInfos, nil
 }
 
 // Override returns a new Syncer object where values in the original are replaced by non-empty/non-default

@@ -1,41 +1,56 @@
 package flipp
 
 import (
+	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
 
 	"github.com/buger/jsonparser"
-	"github.com/gofrs/uuid"
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/go-gdpr/consentconstants"
+	"github.com/prebid/go-gdpr/vendorconsent"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/uuidutil"
 )
 
 const (
-	bannerType      = "banner"
-	inlineDivName   = "inline"
-	flippBidder     = "flipp"
-	defaultCurrency = "USD"
+	bannerType                  = "banner"
+	inlineDivName               = "inline"
+	flippBidder                 = "flipp"
+	defaultCurrency             = "USD"
+	defaultStandardHeight int64 = 2400
+	defaultCompactHeight  int64 = 600
 )
 
 var (
-	count    int64 = 1
-	adTypes        = []int64{4309, 641}
-	dtxTypes       = []int64{5061}
+	count          int64 = 1
+	adTypes              = []int64{4309, 641}
+	dtxTypes             = []int64{5061}
+	flippExtParams openrtb_ext.ImpExtFlipp
+	customDataKey  string
 )
 
 type adapter struct {
-	endpoint string
+	endpoint      string
+	uuidGenerator uuidutil.UUIDGenerator
 }
+
+var (
+	errRequestEmpty = errors.New("adapterRequest is empty")
+)
 
 // Builder builds a new instance of the Flipp adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
-		endpoint: config.Endpoint,
+		endpoint:      config.Endpoint,
+		uuidGenerator: uuidutil.UUIDRandomGenerator{},
 	}
 	return bidder, nil
 }
@@ -53,12 +68,12 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		adapterRequests = append(adapterRequests, adapterReq)
 	}
 	if len(adapterRequests) == 0 {
-		return nil, append(errors, fmt.Errorf("adapterRequest is empty"))
+		return nil, append(errors, errRequestEmpty)
 	}
 	return adapterRequests, errors
 }
 
-func (a *adapter) makeRequest(request *openrtb2.BidRequest, campaignRequestBody CampaignRequestBody) (*adapters.RequestData, error) {
+func (a *adapter) makeRequest(request *openrtb2.BidRequest, campaignRequestBody CampaignRequestBody, impID string) (*adapters.RequestData, error) {
 	campaignRequestBodyJSON, err := json.Marshal(campaignRequestBody)
 	if err != nil {
 		return nil, err
@@ -74,6 +89,7 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest, campaignRequestBody 
 		Uri:     a.endpoint,
 		Body:    campaignRequestBodyJSON,
 		Headers: headers,
+		ImpIDs:  []string{impID},
 	}, err
 }
 
@@ -83,7 +99,7 @@ func (a *adapter) processImp(request *openrtb2.BidRequest, imp openrtb2.Imp) (*a
 	if err != nil {
 		return nil, fmt.Errorf("flipp params not found. %v", err)
 	}
-	err = json.Unmarshal(params, &flippExtParams)
+	err = jsonutil.Unmarshal(params, &flippExtParams)
 	if err != nil {
 		return nil, fmt.Errorf("unable to extract flipp params. %v", err)
 	}
@@ -123,14 +139,14 @@ func (a *adapter) processImp(request *openrtb2.BidRequest, imp openrtb2.Imp) (*a
 	var userKey string
 	if request.User != nil && request.User.ID != "" {
 		userKey = request.User.ID
-	} else if flippExtParams.UserKey != "" {
+	} else if flippExtParams.UserKey != "" && paramsUserKeyPermitted(request) {
 		userKey = flippExtParams.UserKey
 	} else {
-		uid, err := uuid.NewV4()
+		uid, err := a.uuidGenerator.Generate()
 		if err != nil {
 			return nil, fmt.Errorf("unable to generate user uuid. %v", err)
 		}
-		userKey = uid.String()
+		userKey = uid
 	}
 
 	keywordsArray := strings.Split(request.Site.Keywords, ",")
@@ -145,7 +161,7 @@ func (a *adapter) processImp(request *openrtb2.BidRequest, imp openrtb2.Imp) (*a
 		},
 	}
 
-	adapterReq, err := a.makeRequest(request, campaignRequestBody)
+	adapterReq, err := a.makeRequest(request, campaignRequestBody, imp.ID)
 	if err != nil {
 		return nil, fmt.Errorf("make request failed with err %v", err)
 	}
@@ -180,17 +196,25 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	var campaignResponseBody CampaignResponseBody
-	if err := json.Unmarshal(responseData.Body, &campaignResponseBody); err != nil {
+	if err := jsonutil.Unmarshal(responseData.Body, &campaignResponseBody); err != nil {
 		return nil, []error{err}
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
 	bidResponse.Currency = defaultCurrency
 	for _, imp := range request.Imp {
+		params, _, _, err := jsonparser.Get(imp.Ext, "bidder")
+		if err != nil {
+			return nil, []error{fmt.Errorf("flipp params not found. %v", err)}
+		}
+		err = jsonutil.Unmarshal(params, &flippExtParams)
+		if err != nil {
+			return nil, []error{fmt.Errorf("unable to extract flipp params. %v", err)}
+		}
 		for _, decision := range campaignResponseBody.Decisions.Inline {
 			if *decision.Prebid.RequestID == imp.ID {
 				b := &adapters.TypedBid{
-					Bid:     buildBid(decision, imp.ID),
+					Bid:     buildBid(decision, imp.ID, flippExtParams),
 					BidType: openrtb_ext.BidType(bannerType),
 				}
 				bidResponse.Bids = append(bidResponse.Bids, b)
@@ -207,7 +231,7 @@ func getAdTypes(creativeType string) []int64 {
 	return adTypes
 }
 
-func buildBid(decision *InlineModel, impId string) *openrtb2.Bid {
+func buildBid(decision *InlineModel, impId string, flippExtParams openrtb_ext.ImpExtFlipp) *openrtb2.Bid {
 	bid := &openrtb2.Bid{
 		CrID:  fmt.Sprint(decision.CreativeID),
 		Price: *decision.Prebid.Cpm,
@@ -219,7 +243,62 @@ func buildBid(decision *InlineModel, impId string) *openrtb2.Bid {
 		if decision.Contents[0].Data.Width != 0 {
 			bid.W = decision.Contents[0].Data.Width
 		}
-		bid.H = 0
+
+		if flippExtParams.Options.StartCompact {
+			bid.H = defaultCompactHeight
+		} else {
+			bid.H = defaultStandardHeight
+		}
+
+		if customDataInterface := decision.Contents[0].Data.CustomData; customDataInterface != nil {
+			if customDataMap, ok := customDataInterface.(map[string]interface{}); ok {
+				customDataKey := "standardHeight"
+				if flippExtParams.Options.StartCompact {
+					customDataKey = "compactHeight"
+				}
+
+				if value, exists := customDataMap[customDataKey]; exists {
+					if floatVal, ok := value.(float64); ok {
+						bid.H = int64(floatVal)
+					}
+				}
+			}
+		}
 	}
 	return bid
+}
+
+func paramsUserKeyPermitted(request *openrtb2.BidRequest) bool {
+	if request.Regs != nil {
+		if request.Regs.COPPA == 1 {
+			return false
+		}
+		if request.Regs.GDPR != nil && *request.Regs.GDPR == 1 {
+			return false
+		}
+	}
+	if request.Ext != nil {
+		var extData struct {
+			TransmitEids *bool `json:"transmitEids,omitempty"`
+		}
+		if err := jsonutil.Unmarshal(request.Ext, &extData); err == nil {
+			if extData.TransmitEids != nil && !*extData.TransmitEids {
+				return false
+			}
+		}
+	}
+	if request.User != nil && request.User.Consent != "" {
+		data, err := base64.RawURLEncoding.DecodeString(request.User.Consent)
+		if err != nil {
+			return true
+		}
+		consent, err := vendorconsent.Parse(data)
+		if err != nil {
+			return true
+		}
+		if !consent.PurposeAllowed(consentconstants.ContentSelectionDeliveryReporting) {
+			return false
+		}
+	}
+	return true
 }

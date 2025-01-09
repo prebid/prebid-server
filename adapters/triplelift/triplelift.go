@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type TripleliftAdapter struct {
@@ -36,10 +37,10 @@ func processImp(imp *openrtb2.Imp) error {
 	// get the triplelift extension
 	var ext adapters.ExtImpBidder
 	var tlext openrtb_ext.ExtImpTriplelift
-	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &ext); err != nil {
 		return err
 	}
-	if err := json.Unmarshal(ext.Bidder, &tlext); err != nil {
+	if err := jsonutil.Unmarshal(ext.Bidder, &tlext); err != nil {
 		return err
 	}
 	if imp.Banner == nil && imp.Video == nil {
@@ -90,7 +91,8 @@ func (a *TripleliftAdapter) MakeRequests(request *openrtb2.BidRequest, extra *ad
 		Method:  "POST",
 		Uri:     ad,
 		Body:    reqJSON,
-		Headers: headers})
+		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(tlRequest.Imp)})
 	return reqs, errs
 }
 
@@ -117,7 +119,7 @@ func (a *TripleliftAdapter) MakeBids(internalRequest *openrtb2.BidRequest, exter
 		return nil, []error{fmt.Errorf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}
 	}
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 	var errs []error
@@ -128,7 +130,7 @@ func (a *TripleliftAdapter) MakeBids(internalRequest *openrtb2.BidRequest, exter
 		for i := 0; i < len(sb.Bid); i++ {
 			bid := sb.Bid[i]
 			var bidExt TripleliftRespExt
-			if err := json.Unmarshal(bid.Ext, &bidExt); err != nil {
+			if err := jsonutil.Unmarshal(bid.Ext, &bidExt); err != nil {
 				errs = append(errs, err)
 			} else {
 				bidType := getBidType(bidExt)

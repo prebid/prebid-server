@@ -22,10 +22,10 @@
           ]
         },
         "ext": {
-            "bidder": {
-                "placementId": "6d93f2a0e5f0fe2cc3a6e9e3ade964b43b07f897",
-                "type": "banner"
-            }
+          "bidder": {
+            "placementId": "6d93f2a0e5f0fe2cc3a6e9e3ade964b43b07f897",
+            "type": "banner"
+          }
         }
       }
     ],
@@ -34,7 +34,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://bidder.adquery.io/prebid/bid",
+        "uri": "https://bidder2.adquery.io/prebid/bid",
         "headers": {
           "Accept": ["application/json"],
           "Content-Type": ["application/json;charset=utf-8"],
@@ -42,18 +42,22 @@
         },
         "body": {
           "adUnitCode": "test-banner-imp-id",
-          "bidId": "22e26bd9a702bc1",
-          "bidQid": "d93f2a0e5f0fe2cc3a6e",
-          "bidPageUrl": "",
           "bidder": "adquery",
           "bidderRequestId": "22e26bd9a702bc",
-          "bidRequestsCount":  1,
           "bidderRequestsCount": 1,
+          "bidId": "22e26bd9a702bc1",
+          "bidIp": "",
+          "bidIpv6": "",
+          "bidPageUrl": "",
+          "bidQid": "d93f2a0e5f0fe2cc3a6e",
+          "bidRequestsCount": 1,
+          "bidUa": "",
           "placementCode": "6d93f2a0e5f0fe2cc3a6e9e3ade964b43b07f897",
           "sizes": "320x100,300x250",
           "type": "banner",
           "v": "server"
-        }
+        },
+        "impIDs":["1"]
       },
       "mockResponse": {
         "status": 200,
@@ -80,9 +84,7 @@
             "urlAdq": "https://adquery.io",
             "creationId": 7211,
             "currency": "PLN",
-            "adDomains": [
-              "https://s1.adquery.io"
-            ],
+            "adDomains": ["https://s1.adquery.io"],
             "tag": "<ad-adquery-prebid data-qid=\"fc08aacb07eac44421ed\" data-type=\"banner320x50\" data-width=\"320\" date-height=\"50\" data-placement=\"d30f79cf7fef47bd7a5611719f936539bec0d2e9\" data-eventTracker=\"https://bidder.adquery.io/prebid/ev/d30f79cf7fef47bd7a5611719f936539bec0d2e9/22e26bd9a702bc?ad=1\" data-externalEmissionCodes=\"\" data-impressionTracker=\"https://bidder.adquery.io/prebid/im/d30f79cf7fef47bd7a5611719f936539bec0d2e9/22e26bd9a702bc?ad=1\" data-viewabilityTracker=\"https://bidder.adquery.io/prebid/vi/d30f79cf7fef47bd7a5611719f936539bec0d2e9/22e26bd9a702bc?ad=1\" data-clickTracker=\"https://bidder.adquery.io/prebid/cl/d30f79cf7fef47bd7a5611719f936539bec0d2e9/22e26bd9a702bc?url=https%3A%2F%2Fbrodacid.pl%2F%3Futm_source%3Dmobile_open%26utm_medium%3Dcpc%26utm_campaign%3Dhi2023\" data-link=\"https://brodacid.pl/?utm_source=mobile_open&utm_medium=cpc&utm_campaign=hi2023\" data-src=\"banner/2023-06-05/17591\" data-ext=\"zip\" data-media-type=\"3\" data-isExpand=\"\" data-domain=\"https://bidder.adquery.io\"  data-isVideoFloating=\"\" data-content=\"\" data-creationType=\"16\"> </ad-adquery>",
             "adqLib": "https://api.adquery.io/js/adquery-0.1.js?time=10",
             "mediaType": {
@@ -101,8 +103,10 @@
       }
     }
   ],
-  "expectedMakeBidsErrors": [{
-    "value": "unsupported MediaType: video",
-    "comparison": "literal"
-  }]
+  "expectedMakeBidsErrors": [
+    {
+      "value": "unsupported MediaType: video",
+      "comparison": "literal"
+    }
+  ]
 }

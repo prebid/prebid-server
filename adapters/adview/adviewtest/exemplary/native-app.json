@@ -86,7 +86,8 @@
             "buyeruid": "awesome-user"
           },
           "tmax": 1000
-        }
+        },
+        "impIDs":["some-impression-id"]
       },
       "mockResponse": {
         "status": 200,
@@ -103,7 +104,11 @@
                   "adomain": [
                     "awesome.com"
                   ],
-                  "crid": "20"
+                  "crid": "20",
+                  "mtype": 4,
+                  "ext": {
+                    "formattype": 2
+                  }
                 }
               ],
               "type": "native",
@@ -132,9 +137,13 @@
             "price": 3.5,
             "adm": "awesome-markup",
             "crid": "20",
+            "mtype": 4,
             "adomain": [
               "awesome.com"
-            ]
+            ],
+            "ext": {
+              "formattype": 2
+            }
           },
           "type": "native"
         }

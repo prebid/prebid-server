@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/golang/glog"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 const versionEndpointValueNotSet = "not-set"
@@ -29,7 +30,7 @@ func prepareVersionEndpointResponse(version, revision string) (json.RawMessage, 
 		revision = versionEndpointValueNotSet
 	}
 
-	return json.Marshal(struct {
+	return jsonutil.Marshal(struct {
 		Revision string `json:"revision"`
 		Version  string `json:"version"`
 	}{

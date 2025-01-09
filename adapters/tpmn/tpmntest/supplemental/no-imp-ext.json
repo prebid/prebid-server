@@ -63,7 +63,8 @@
             "ip": "123.123.123.123",
             "ifa": "zxcjbzxmc-zxcbmz-zxbcz-zxczx"
           }
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,
@@ -73,7 +74,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "bid response unmarshal: json: cannot unmarshal string into Go value of type openrtb2.BidResponse",
+      "value": "bid response unmarshal: expect { or n, but found \"",
       "comparison": "literal"
     }
   ]

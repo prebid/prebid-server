@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -43,6 +44,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 				Uri:     a.endPoint,
 				Body:    reqJSON,
 				Headers: headers,
+				ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 			}}, errs
 		}
 	}
@@ -54,7 +56,7 @@ func (a *adapter) preProcess(req *openrtb2.BidRequest, errors []error) (*openrtb
 	for i := 0; i < numRequests; i++ {
 		imp := req.Imp[i]
 		var bidderExt adapters.ExtImpBidder
-		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			err = &errortypes.BadInput{
 				Message: fmt.Sprintf("ext data not provided in imp id=%s. Abort all Request", imp.ID),
 			}
@@ -62,7 +64,7 @@ func (a *adapter) preProcess(req *openrtb2.BidRequest, errors []error) (*openrtb
 			return nil, errors
 		}
 		var unrulyExt openrtb_ext.ExtImpUnruly
-		if err := json.Unmarshal(bidderExt.Bidder, &unrulyExt); err != nil {
+		if err := jsonutil.Unmarshal(bidderExt.Bidder, &unrulyExt); err != nil {
 			err = &errortypes.BadInput{
 				Message: fmt.Sprintf("siteid not provided in imp id=%s. Abort all Request", imp.ID),
 			}
@@ -106,13 +108,13 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 		}}
 	}
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("bad server response: %d. ", err),
 		}}
 	}
 
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(internalRequest.Imp))
 
 	var errs []error
 	for _, sb := range bidResp.SeatBid {
@@ -121,10 +123,16 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 			if err != nil {
 				errs = append(errs, err...)
 			} else {
-				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+				bid := adapters.TypedBid{
 					Bid:     &sb.Bid[i],
 					BidType: bidType,
-				})
+				}
+				if bidType == openrtb_ext.BidTypeVideo && sb.Bid[i].Dur > 0 {
+					bid.BidVideo = &openrtb_ext.ExtBidPrebidVideo{
+						Duration: int(sb.Bid[i].Dur),
+					}
+				}
+				bidResponse.Bids = append(bidResponse.Bids, &bid)
 			}
 		}
 	}

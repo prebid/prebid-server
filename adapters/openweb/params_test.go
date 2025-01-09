@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 // This file actually intends to test static/bidder-params/openweb.json
@@ -39,10 +39,8 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
-	`{"aid":123}`,
-	`{"aid":123,"placementId":1234}`,
-	`{"aid":123,"siteId":4321}`,
-	`{"aid":123,"siteId":0,"bidFloor":0}`,
+	`{"aid":123,"placementId":"1234"}`,
+	`{"org":"123","placementId":"1234"}`,
 }
 
 var invalidParams = []string{
@@ -53,8 +51,10 @@ var invalidParams = []string{
 	`4.2`,
 	`[]`,
 	`{}`,
-	`{"aid":"some string instead of int"}`,
-	`{"aid":"0"}`,
+	`{"org":123}`,
+	`{"org":0}`,
+	`{"org":"123","placementId":123}`,
+	`{"org":123, "placementId":"123"}`,
+	`{"aid":123}`,
 	`{"aid":"123","placementId":"123"}`,
-	`{"aid":123, "placementId":"123", "siteId":"321"}`,
 }

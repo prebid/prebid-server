@@ -60,7 +60,8 @@
               "id": "73"
             }
           }
-        }
+        },
+        "impIDs":["test-imp-id-1"]
       },
       "mockResponse": {
         "status": 200,
@@ -75,6 +76,7 @@
                 "price": 0.500000,
                 "adm": "some-test-ad",
                 "crid": "crid_10",
+                "mtype": 1,
                 "h": 90,
                 "w": 728
               }]
@@ -110,7 +112,8 @@
               "id": "73"
             }
           }
-        }
+        },
+        "impIDs":["test-imp-id-2"]
       },
       "mockResponse": {
         "status": 200,
@@ -125,6 +128,7 @@
                 "price": 0.800000,
                 "adm": "some-test-ad",
                 "crid": "crid_11",
+                "mtype": 1,
                 "h": 150,
                 "w": 300
               }]
@@ -147,6 +151,7 @@
             "price": 0.5,
             "adm": "some-test-ad",
             "crid": "crid_10",
+            "mtype": 1,
             "w": 728,
             "h": 90
           },
@@ -164,6 +169,7 @@
             "price": 0.8,
             "adm": "some-test-ad",
             "crid": "crid_11",
+            "mtype": 1,
             "w": 300,
             "h": 150
           },

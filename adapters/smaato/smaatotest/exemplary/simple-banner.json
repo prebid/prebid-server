@@ -66,7 +66,18 @@
         "gdpr": 1,
         "us_privacy": "uspConsentString",
         "gpp": "gppString",
-        "gpp_sid": [7]
+        "gpp_sid": [7],
+        "dsa": {
+          "dsarequired": 1,
+          "pubrender": 1,
+          "datatopub": 1,
+          "transparency": [
+            {
+              "domain": "testdomain.com",
+              "dsaparams": [1,3]
+            }
+          ]
+        }
       }
     }
   },
@@ -87,8 +98,6 @@
               "bidfloor": 0.00123,
               "instl": 1,
               "banner": {
-                "h": 50,
-                "w": 320,
                 "format": [
                   {
                     "w": 320,
@@ -122,7 +131,18 @@
               "gdpr": 1,
               "us_privacy": "uspConsentString",
               "gpp": "gppString",
-              "gpp_sid": [7]
+              "gpp_sid": [7],
+              "dsa": {
+                "dsarequired": 1,
+                "pubrender": 1,
+                "datatopub": 1,
+                "transparency": [
+                  {
+                    "domain": "testdomain.com",
+                    "dsaparams": [1,3]
+                  }
+                ]
+              }
             }
           },
           "site": {
@@ -133,12 +153,16 @@
             "keywords": "power tools"
           },
           "ext": {
-            "client": "prebid_server_0.6"
+            "client": "prebid_server_1.2"
           }
-        }
+        },
+        "impIDs":["1C86242D-9535-47D6-9576-7B1FE87F282C"]
       },
       "mockResponse": {
         "status": 200,
+        "headers": {
+          "X-Smt-Adtype": ["Img"]
+        },
         "body": {
           "id": "5ebea288-f13a-4754-be6d-4ade66c68877",
           "seatbid": [
@@ -146,7 +170,7 @@
               "seat": "CM6523",
               "bid": [
                 {
-                  "adm": "{\"image\":{\"img\":{\"url\":\"//prebid-test.smaatolabs.net/img/320x50.jpg\",\"w\":350,\"h\":50,\"ctaurl\":\"//prebid-test.smaatolabs.net/track/ctaurl/1\"},\"impressiontrackers\":[\"//prebid-test.smaatolabs.net/track/imp/1\",\"//prebid-test.smaatolabs.net/track/imp/2\"],\"clicktrackers\":[\"//prebid-test.smaatolabs.net/track/click/1\",\"//prebid-test.smaatolabs.net/track/click/2\"]}}",
+                  "adm": "<a rel=\"nofollow\" href=\"https://prebid.net/click\"><img src=\"https://prebid.net/images/image.png\" alt=\"\" width=\"480\" height=\"320\" /></a>",
                   "adomain": [
                     "smaato.com"
                   ],
@@ -159,7 +183,23 @@
                   "nurl": "https://ets-eu-west-1.track.smaato.net/v1/view?sessionId=e4e17adb-9599-42b1-bb5f-a1f1b3bee572&adSourceId=6906aae8-7f74-4edd-9a4f-f49379a3cadd&originalRequestTime=1552310449698&expires=1552311350698&winurl=ama8JbpJVpFWxvEja5viE3cLXFu58qRI8dGUh23xtsOn3N2-5UU0IwkgNEmR82pI37fcMXejL5IWTNAoW6Cnsjf-Dxl_vx2dUqMrVEevX-Vdx2VVnf-D5f73gZhvi4t36iPL8Dsw4aACekoLvVOV7-eXDjz7GHy60QFqcwKf5g2AlKPOInyZ6vJg_fn4qA9argvCRgwVybXE9Ndm2W0v8La4uFYWpJBOUveDDUrSQfzal7RsYvLb_OyaMlPHdrd_bwA9qqZWuyJXd-L9lxr7RQ%3D%3D%7CMw3kt91KJR0Uy5L-oNztAg%3D%3D&dpid=4XVofb_lH-__hr2JNGhKfg%3D%3D%7Cr9ciCU1cx3zmHXihItKO0g%3D%3D",
                   "price": 0.01,
                   "w": 350,
-                  "h": 50
+                  "h": 50,
+                  "ext": {
+                    "curls": [
+                      "https://track.net/v1/click"
+                    ],
+                    "dsa": {
+                      "behalf": "Advertiser",
+                      "paid": "Advertiser",
+                      "adrender": 1,
+                      "transparency": [
+                        {
+                          "domain": "dsp1domain.com",
+                          "dsaparams": [1,3]
+                        }
+                      ]
+                    }
+                  }
                 }
               ]
             }
@@ -176,7 +216,7 @@
       "bids": [
         {
           "bid": {
-            "adm": "<div style=\"cursor:pointer\" onclick=\"fetch(decodeURIComponent('%2F%2Fprebid-test.smaatolabs.net%2Ftrack%2Fclick%2F1'.replace(/\\+/g, ' ')), {cache: 'no-cache'});fetch(decodeURIComponent('%2F%2Fprebid-test.smaatolabs.net%2Ftrack%2Fclick%2F2'.replace(/\\+/g, ' ')), {cache: 'no-cache'});;window.open(decodeURIComponent('%2F%2Fprebid-test.smaatolabs.net%2Ftrack%2Fctaurl%2F1'.replace(/\\+/g, ' ')));\"><img src=\"//prebid-test.smaatolabs.net/img/320x50.jpg\" width=\"350\" height=\"50\"/><img src=\"//prebid-test.smaatolabs.net/track/imp/1\" alt=\"\" width=\"0\" height=\"0\"/><img src=\"//prebid-test.smaatolabs.net/track/imp/2\" alt=\"\" width=\"0\" height=\"0\"/></div>",
+            "adm": "<div style=\"cursor:pointer\" onclick=\"fetch(decodeURIComponent('https%3A%2F%2Ftrack.net%2Fv1%2Fclick'.replace(/\\+/g, ' ')), {cache: 'no-cache'});\"><a rel=\"nofollow\" href=\"https://prebid.net/click\"><img src=\"https://prebid.net/images/image.png\" alt=\"\" width=\"480\" height=\"320\" /></a></div>",
             "adomain": [
               "smaato.com"
             ],
@@ -189,7 +229,23 @@
             "price": 0.01,
             "w": 350,
             "h": 50,
-            "exp": 300
+            "exp": 300,
+            "ext": {
+              "curls": [
+                "https://track.net/v1/click"
+              ],
+              "dsa": {
+                "behalf": "Advertiser",
+                "paid": "Advertiser",
+                "adrender": 1,
+                "transparency": [
+                  {
+                    "domain": "dsp1domain.com",
+                    "dsaparams": [1,3]
+                  }
+                ]
+              }
+            }
           },
           "type": "banner"
         }

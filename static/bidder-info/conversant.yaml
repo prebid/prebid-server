@@ -1,4 +1,6 @@
-endpoint: "http://api.hb.ad.cpe.dotomi.com/cvx/server/hb/ortb/25"
+endpoint: "http://api.hb.ad.cpe.dotomi.com/cvx/server/hb/ortb"
+openrtb:
+  version: 2.6
 maintainer:
   email: "PublisherIntegration@epsilon.com"
 gvlVendorID: 24
@@ -7,10 +9,12 @@ capabilities:
     mediaTypes:
       - banner
       - video
+      - audio
   site:
     mediaTypes:
       - banner
       - video
+      - audio
 userSync:
   redirect:
     url: "https://prebid-match.dotomi.com/match/bounce/current?version=1&networkId=72582&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&rurl={{.RedirectURL}}"

@@ -7,12 +7,13 @@ import (
 	"strconv"
 	"text/template"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adkernelAdnAdapter struct {
@@ -124,7 +125,7 @@ func compatBannerImpression(imp *openrtb2.Imp) error {
 	//As banner.w/h are required fields for adkernelAdn platform - take the first format entry
 	if banner.W == nil && banner.H == nil {
 		if len(banner.Format) == 0 {
-			return newBadInputError(fmt.Sprintf("Expected at least one banner.format entry or explicit w/h"))
+			return newBadInputError("Expected at least one banner.format entry or explicit w/h")
 		}
 		format := banner.Format[0]
 		banner.Format = banner.Format[1:]
@@ -149,13 +150,13 @@ func compatVideoImpression(imp *openrtb2.Imp) error {
 
 func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpAdkernelAdn, error) {
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
 	var adkernelAdnExt openrtb_ext.ExtImpAdkernelAdn
-	if err := json.Unmarshal(bidderExt.Bidder, &adkernelAdnExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &adkernelAdnExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: err.Error(),
 		}
@@ -184,7 +185,8 @@ func (adapter *adkernelAdnAdapter) buildAdapterRequest(prebidBidRequest *openrtb
 		Method:  "POST",
 		Uri:     url,
 		Body:    reqJSON,
-		Headers: headers}, nil
+		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(imps)}, nil
 }
 
 func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ExtImpAdkernelAdn, imps []openrtb2.Imp) *openrtb2.BidRequest {
@@ -225,7 +227,7 @@ func (adapter *adkernelAdnAdapter) MakeBids(internalRequest *openrtb2.BidRequest
 		}
 	}
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{
 			newBadServerResponseError(fmt.Sprintf("Bad server response: %d", err)),
 		}

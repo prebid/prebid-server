@@ -9,9 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/config"
-	metricsconfig "github.com/prebid/prebid-server/metrics/config"
+	"github.com/prebid/prebid-server/v3/config"
+	metricsconfig "github.com/prebid/prebid-server/v3/metrics/config"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestServerShutdown(t *testing.T) {
@@ -21,7 +22,7 @@ func TestServerShutdown(t *testing.T) {
 	stopper := make(chan os.Signal)
 	done := make(chan struct{})
 	go shutdownAfterSignals(server, stopper, done)
-	go server.Serve(ln)
+	go server.Serve(ln) //nolint: errcheck
 
 	stopper <- os.Interrupt
 	<-done
@@ -73,7 +74,8 @@ func TestNewSocketServer(t *testing.T) {
 	}
 
 	ret := newSocketServer(cfg, nil)
-	assert.NotEqual(t, nil, ret, "ret : isNil()")
+	require.NotNil(t, ret, "ret : isNil()")
+
 	assert.Equal(t, mockServer.Addr, ret.Addr, fmt.Sprintf("Addr invalide: %v != %v",
 		ret.Addr, mockServer.Addr))
 	assert.Equal(t, mockServer.ReadTimeout, ret.ReadTimeout, fmt.Sprintf("ReadTimeout invalide: %v != %v",
@@ -81,9 +83,7 @@ func TestNewSocketServer(t *testing.T) {
 	assert.Equal(t, mockServer.WriteTimeout, ret.WriteTimeout, fmt.Sprintf("WriteTimeout invalide: %v != %v",
 		ret.WriteTimeout, mockServer.WriteTimeout))
 
-	if ret != nil {
-		ret.Close()
-	}
+	ret.Close()
 }
 
 func TestNewMainServer(t *testing.T) {
@@ -103,7 +103,8 @@ func TestNewMainServer(t *testing.T) {
 	}
 
 	ret := newMainServer(cfg, nil)
-	assert.NotEqual(t, nil, ret, "ret : isNil()")
+	require.NotNil(t, ret, "ret : isNil()")
+
 	assert.Equal(t, ret.Addr, mockServer.Addr, fmt.Sprintf("Addr invalide: %v != %v",
 		ret.Addr, mockServer.Addr))
 	assert.Equal(t, ret.ReadTimeout, mockServer.ReadTimeout,
@@ -111,9 +112,7 @@ func TestNewMainServer(t *testing.T) {
 	assert.Equal(t, ret.WriteTimeout, mockServer.WriteTimeout,
 		fmt.Sprintf("WriteTimeout invalide: %v != %v", ret.WriteTimeout, mockServer.WriteTimeout))
 
-	if ret != nil {
-		ret.Close()
-	}
+	ret.Close()
 }
 
 func TestNewTCPListener(t *testing.T) {
@@ -155,13 +154,11 @@ func TestNewAdminServer(t *testing.T) {
 	}
 
 	ret := newAdminServer(cfg, nil)
-	assert.NotEqual(t, nil, ret, "ret : isNil()")
+	require.NotNil(t, ret, "ret : isNil()")
 	assert.Equal(t, mockServer.Addr, ret.Addr, fmt.Sprintf("Addr invalide: %v != %v",
 		ret.Addr, mockServer.Addr))
 
-	if ret != nil {
-		ret.Close()
-	}
+	ret.Close()
 }
 
 func TestRunServer(t *testing.T) {
@@ -181,7 +178,6 @@ func TestRunServer(t *testing.T) {
 }
 
 func TestListen(t *testing.T) {
-	const name = "TestListen"
 	var (
 		handler, adminHandler http.Handler
 
@@ -192,7 +188,6 @@ func TestListen(t *testing.T) {
 			Port:             8000,
 			UnixSocketEnable: false,
 			UnixSocketName:   "prebid_socket",
-			EnableGzip:       false,
 		}
 	)
 

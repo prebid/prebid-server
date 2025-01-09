@@ -1,0 +1,218 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+			  "placementId": 13245
+          }
+        }
+      },
+      {
+        "id": "test-multi-format-id-without-mtype",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "video": {
+          "mimes": ["video/mp4"],
+          "protocols": [2, 5],
+          "w": 1920,
+          "h": 1080
+        },
+        "ext": {
+          "bidder": {
+            "placementId": 13244
+          }
+        }
+      },
+      {
+        "id": "test-unsupported-format-id-without-mtype",
+        "ext": {
+          "bidder": {
+            "placementId": 13244
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://localhost/pbs",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+					"placementId": 13245
+                }
+              }
+            }
+          ]
+        },
+        "impIDs":["test-imp-id"]
+      },
+	  "mockResponse": {
+		  "status": 200,
+		  "body": {
+			  "id": "test-request-id",
+			  "seatbid": [{
+				  "seat": "improvedigital",
+				  "bid": [{
+					  "id": "randomid",
+					  "impid": "test-imp-id",
+					  "price": 0.500000,
+					  "adid": "12345678",
+					  "adm": "some-test-ad",
+					  "cid": "987",
+					  "crid": "12345678",
+					  "h": 250,
+					  "w": 300,
+                      "mtype": 5
+				  }]
+			  }],
+			  "cur": "USD"
+		  }
+	  }
+    },
+    {
+      "expectedRequest": {
+        "uri": "http://localhost/pbs",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-multi-format-id-without-mtype",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "video": {
+                "mimes": ["video/mp4"],
+                "protocols": [2, 5],
+                "w": 1920,
+                "h": 1080
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": 13244
+                }
+              }
+            }
+          ]
+        },
+        "impIDs":["test-multi-format-id-without-mtype"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "improvedigital",
+              "bid": [
+                {
+                  "id": "randomid2",
+                  "impid": "test-multi-format-id-without-mtype",
+                  "price": 0.5,
+                  "adm": "some-test-ad-vast",
+                  "crid": "1234567",
+                  "w": 1920,
+                  "h": 1080
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "http://localhost/pbs",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-unsupported-format-id-without-mtype",
+              "ext": {
+                "bidder": {
+                  "placementId": 13244
+                }
+              }
+            }
+          ]
+        },
+        "impIDs":["test-unsupported-format-id-without-mtype"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "improvedigital",
+              "bid": [
+                {
+                  "id": "randomid3",
+                  "impid": "test-unsupported-format-id-without-mtype",
+                  "price": 0.5,
+                  "adm": "some-test-ad-vast",
+                  "crid": "1234567",
+                  "w": 1920,
+                  "h": 1080
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unsupported MType 5 for impression with ID: \"test-imp-id\"",
+      "comparison": "literal"
+    },
+    {
+      "value": "Bid must have non-zero MType for multi format impression with ID: \"test-multi-format-id-without-mtype\"",
+      "comparison": "literal"
+    },
+    {
+      "value": "Could not determine MType from impression with ID: \"test-unsupported-format-id-without-mtype\"",
+      "comparison": "literal"
+    }
+  ]
+}

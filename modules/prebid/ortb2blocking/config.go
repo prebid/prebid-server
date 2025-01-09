@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/prebid/openrtb/v19/adcom1"
+	"github.com/prebid/openrtb/v20/adcom1"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 func newConfig(data json.RawMessage) (config, error) {
 	var cfg config
-	if err := json.Unmarshal(data, &cfg); err != nil {
+	if err := jsonutil.UnmarshalValid(data, &cfg); err != nil {
 		return cfg, fmt.Errorf("failed to parse config: %s", err)
 	}
 	return cfg, nil
@@ -112,7 +113,7 @@ type Override struct {
 
 func (o *Override) UnmarshalJSON(bytes []byte) error {
 	var overrideData interface{}
-	if err := json.Unmarshal(bytes, &overrideData); err != nil {
+	if err := jsonutil.UnmarshalValid(bytes, &overrideData); err != nil {
 		return err
 	}
 

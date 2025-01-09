@@ -1,6 +1,6 @@
 endpoint: "http://ssp.videowalldirect.com/pserver"
 maintainer:
-  email: "wls_demo_box@smartyads.com"
+  email: "info@bold-win.com"
 capabilities:
   site:
     mediaTypes:
@@ -13,3 +13,7 @@ capabilities:
     - banner
     - video
     - native
+userSync:
+  redirect:
+    url: "https://sync.videowalldirect.com/pbserver?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ccpa={{.USPrivacy}}&redir={{.RedirectURL}}"
+    userMacro: "[UID]"

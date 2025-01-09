@@ -1,0 +1,12 @@
+endpoint: "https://rtb.ads.vungle.com/bid/t/c770f32"
+maintainer:
+  email: vxssp@liftoff.io
+endpointCompression: gzip
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - video
+  site:
+    mediaTypes:
+      - video

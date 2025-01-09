@@ -53,7 +53,8 @@
               }
             }
           ]
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,
@@ -96,7 +97,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "json: cannot unmarshal string into Go value of type triplelift.TripleliftRespExt",
+      "value": "expect { or n, but found \"",
       "comparison": "literal"
     }
   ]

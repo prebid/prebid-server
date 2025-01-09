@@ -4,17 +4,17 @@ import (
 	"github.com/prebid/go-gdpr/api"
 	"github.com/prebid/go-gdpr/consentconstants"
 	tcf2 "github.com/prebid/go-gdpr/vendorconsent/tcf2"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 // PurposeEnforcer represents the enforcement strategy for determining if legal basis is achieved for a purpose
 type PurposeEnforcer interface {
-	LegalBasis(vendorInfo VendorInfo, bidder openrtb_ext.BidderName, consent tcf2.ConsentMetadata, overrides Overrides) bool
+	LegalBasis(vendorInfo VendorInfo, name string, consent tcf2.ConsentMetadata, overrides Overrides) bool
 }
 
 // PurposeEnforcerBuilder generates an instance of PurposeEnforcer for a given purpose and bidder
-type PurposeEnforcerBuilder func(p consentconstants.Purpose, bidder openrtb_ext.BidderName) PurposeEnforcer
+type PurposeEnforcerBuilder func(p consentconstants.Purpose, name string) PurposeEnforcer
 
 // Overrides specifies enforcement algorithm rule adjustments
 type Overrides struct {
@@ -45,7 +45,7 @@ type PurposeEnforcers struct {
 func NewPurposeEnforcerBuilder(cfg TCF2ConfigReader) PurposeEnforcerBuilder {
 	cachedEnforcers := make([]PurposeEnforcers, 10)
 
-	return func(purpose consentconstants.Purpose, bidder openrtb_ext.BidderName) PurposeEnforcer {
+	return func(purpose consentconstants.Purpose, name string) PurposeEnforcer {
 		index := purpose - 1
 
 		var basicEnforcementVendor bool
@@ -53,7 +53,7 @@ func NewPurposeEnforcerBuilder(cfg TCF2ConfigReader) PurposeEnforcerBuilder {
 			basicEnforcementVendor = false
 		} else {
 			basicEnforcementVendors := cfg.BasicEnforcementVendors()
-			_, basicEnforcementVendor = basicEnforcementVendors[string(bidder)]
+			_, basicEnforcementVendor = basicEnforcementVendors[name]
 		}
 
 		enforceAlgo := cfg.PurposeEnforcementAlgo(purpose)

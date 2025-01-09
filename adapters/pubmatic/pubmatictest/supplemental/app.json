@@ -37,10 +37,10 @@
 		    	"id": "appID",
 		    	"publisher": {
 		      		"id": "1234"
-		    	}
+		    	},
+          "ext":{}
 		    }
     },
-  
     "httpCalls": [
       {
         "expectedRequest": {
@@ -75,16 +75,17 @@
                 "id": "appID",
                 "publisher": {
                     "id": "999"
-                }
+                },
+                "ext":{}
             },
             "ext": {
                 "wrapper": {
                     "profile": 5123,
                     "version":1
-                },
-                "prebid": {}
+                }
             }
-          }
+          },
+          "impIDs":["app-imp"]
         },
         "mockResponse": {
           "status": 200,
@@ -138,8 +139,8 @@
     ],
     "expectedMakeBidsErrors": [
       {
-        "value": "unexpected end of JSON input",
-        "comparison": "literal"
+        "value": "expect { or n, but found",
+        "comparison": "startswith"
       }
     ]
   }

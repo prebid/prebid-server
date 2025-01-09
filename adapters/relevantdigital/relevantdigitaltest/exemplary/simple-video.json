@@ -1,0 +1,186 @@
+{
+    "mockBidRequest": {
+        "id": "3621f78b-abdf-4562-8eca-1c5e893387d0",
+        "imp": [
+            {
+                "id": "div-1",
+                "video": {
+                    "mimes": [
+                        "video/mp4",
+                        "video/webm",
+                        "video/ogg"
+                    ],
+                    "w": 640,
+                    "h": 480
+                },
+                "ext": {
+                    "bidder": {
+                        "accountId": "620523ae7f4bbe1691bbb815",
+                        "pbsHost": "fakeHost",
+                        "placementId": "620525862d7518bfd4bbb81e_620523b5d1dbed6b0fbbb817"
+                    }
+                }
+            }
+        ],
+        "site": {
+            "domain": "somedomain.com",
+            "page": "https://somedomain.com",
+            "publisher": {
+                "id": "1001",
+                "domain": "somepub.com"
+            },
+            "ext": {
+                "amp": 0
+            }
+        },
+        "device": {
+            "ua": "userAgent",
+            "ipv6": "2607:fb90:f27:4512:d800:cb23:a603:e245"
+        }
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "https://fakeHost.relevant-digital.com/openrtb2/auction",
+                "body": {
+                    "id": "3621f78b-abdf-4562-8eca-1c5e893387d0",
+                    "imp": [
+                        {
+                            "id": "div-1",
+                            "video": {
+                                "mimes": [
+                                    "video/mp4",
+                                    "video/webm",
+                                    "video/ogg"
+                                ],
+                                "w": 640,
+                                "h": 480
+                            },
+                            "ext": {
+                                "prebid": {
+                                    "storedrequest": {
+                                        "id": "620525862d7518bfd4bbb81e_620523b5d1dbed6b0fbbb817"
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    "site": {
+                        "domain": "somedomain.com",
+                        "page": "https://somedomain.com",
+                        "publisher": {
+                            "id": "1001",
+                            "domain": "somepub.com"
+                        },
+                        "ext": {
+                            "amp": 0
+                        }
+                    },
+                    "device": {
+                        "ua": "userAgent",
+                        "ipv6": "2607:fb90:f27:4512:d800:cb23:a603:e245"
+                    },
+                    "ext": {
+                        "prebid": {
+                            "debug": false,
+                            "storedrequest": {
+                                "id": "620523ae7f4bbe1691bbb815"
+                            }
+                        },
+                        "relevant": {
+                            "adapterType": "server",
+                            "count": 1
+                        }
+                    },
+                    "tmax": 750
+                },
+                "impIDs":["div-1"]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "3621f78b-abdf-4562-8eca-1c5e893387d0",
+                    "seatbid": [
+                        {
+                            "seat": "relevantdigital",
+                            "bid": [
+                                {
+                                    "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                                    "impid": "div-1",
+                                    "price": 0.500000,
+                                    "adm": "<VAST version=\"3.0\"> <Ad id=\"1\"> <Wrapper> </Wrapper> </Ad> </VAST>",
+                                    "crid": "crid_10",
+                                    "mtype": 2,
+                                    "ext": {
+                                        "dspid": 6,
+                                        "origbidcpm": 11.13998874085194,
+                                        "origbidcur": "USD",
+                                        "prebid": {
+                                            "bidid": "09abd496-5706-4311-a356-d559629a1d17",
+                                            "events": {
+                                                "win": "https://fakeHost.relevant-digital.com/event?t=win\u0026b=09abd496-5706-4311-a356-d559629a1d17\u0026a=1001\u0026bidder=providerA\u0026ts=1694939785078",
+                                                "imp": "https://fakeHost.relevant-digital.com/event?t=imp\u0026b=09abd496-5706-4311-a356-d559629a1d17\u0026a=1001\u0026bidder=providerA\u0026ts=1694939785078"
+                                            },
+                                            "meta": {
+                                                "adaptercode": "relevantdigital"
+                                            },
+                                            "targeting": {
+                                                "hb_bidder": "relevantdigital",
+                                                "hb_cache_host": "somedomain.com",
+                                                "hb_cache_path": "/analytics_cache/read",
+                                                "hb_pb": "11.10"
+                                            },
+                                            "type": "video"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "cur": "USD"
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "currency": "USD",
+            "bids": [
+                {
+                    "bid": {
+                        "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                        "impid": "div-1",
+                        "price": 0.5,
+                        "adm": "<VAST version=\"3.0\"> <Ad id=\"1\"> <Wrapper> </Wrapper> </Ad> </VAST>",
+                        "crid": "crid_10",
+                        "mtype": 2,
+                        "ext": {
+                            "dspid": 6,
+                            "origbidcpm": 11.13998874085194,
+                            "origbidcur": "USD",
+                            "prebid": {
+                                "bidid": "09abd496-5706-4311-a356-d559629a1d17",
+                                "events": {
+                                    "win": "https://fakeHost.relevant-digital.com/event?t=win\u0026b=09abd496-5706-4311-a356-d559629a1d17\u0026a=1001\u0026bidder=providerA\u0026ts=1694939785078",
+                                    "imp": "https://fakeHost.relevant-digital.com/event?t=imp\u0026b=09abd496-5706-4311-a356-d559629a1d17\u0026a=1001\u0026bidder=providerA\u0026ts=1694939785078"
+                                },
+                                "meta": {
+                                    "adaptercode": "relevantdigital"
+                                },
+                                "targeting": {
+                                    "hb_bidder": "relevantdigital",
+                                    "hb_cache_host": "somedomain.com",
+                                    "hb_cache_path": "/analytics_cache/read",
+                                    "hb_pb": "11.10"
+                                },
+                                "type": "video"
+                            }
+                        }
+                    },
+                    "type": "video"
+                }
+            ],
+            "cur": "USD"
+        }
+    ]
+}

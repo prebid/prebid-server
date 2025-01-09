@@ -1,0 +1,305 @@
+{
+  "description": "Amp request with all 2.5 ext fields that were moved into 2.6 ortb fields",
+  "query": "tag_id=101",
+  "config": {
+    "mockBidders": [
+      {
+        "bidderName": "appnexus",
+        "currency": "USD",
+        "price": 15
+      }
+    ]
+  },
+  "mockBidRequest": {
+    "id": "b9c97a4b-cbc4-483d-b2c4-58a19ed5cfc5",
+    "site": {
+      "page": "prebid.org"
+    },
+    "imp": [
+      {
+        "id": "/19968336/header-bid-tag-0",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "prebid": {
+            "bidder": {
+              "appnexus": {
+                "placementId": 12883451
+              }
+            },
+            "is_rewarded_inventory": 1
+          }
+        }
+      }
+    ],
+    "regs": {
+      "ext": {
+        "gdpr": 1,
+        "us_privacy": "1YYY"
+      }
+    },
+    "user": {
+      "ext": {
+        "consent": "some-consent-string",
+        "eids": [
+          {
+              "source": "source",
+              "uids": [
+                  {
+                      "id": "1",
+                      "atype": 1,
+                      "ext": {}
+                  },
+                  {
+                      "id": "1",
+                      "atype": 1,
+                      "ext": {}
+                  }
+              ],
+              "ext": {}
+          }
+        ]
+      }
+    },
+    "source": {
+      "ext": {
+        "schain": {
+          "complete": 1,
+          "nodes": [
+              {
+                  "asi": "whatever.com",
+                  "sid": "1234",
+                  "rid": "123-456-7890",
+                  "hp": 1
+              }
+          ],
+          "ver": "2.0"
+      }
+      }
+    }
+  },
+  "expectedValidatedBidRequest": {
+    "id": "b9c97a4b-cbc4-483d-b2c4-58a19ed5cfc5",
+    "site": {
+      "page": "prebid.org",
+      "ext": {
+        "amp": 1
+      }
+    },
+    "device": {
+      "ip": "192.0.2.1"
+    },
+    "at": 1,
+    "imp": [
+      {
+        "id": "/19968336/header-bid-tag-0",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "prebid": {
+            "bidder": {
+              "appnexus": {
+                "placementId": 12883451
+              }
+            }
+          }
+        },
+        "secure": 1,
+        "rwdd": 1
+      }
+    ],
+    "regs": {
+      "gdpr": 1,
+      "us_privacy": "1YYY"
+    },
+    "user": {
+      "consent": "some-consent-string",
+      "eids": [
+        {
+            "source": "source",
+            "uids": [
+                {
+                    "id": "1",
+                    "atype": 1,
+                    "ext": {}
+                },
+                {
+                    "id": "1",
+                    "atype": 1,
+                    "ext": {}
+                }
+            ],
+            "ext": {}
+        }
+      ]
+    },
+    "source": {
+      "schain": {
+        "complete": 1,
+        "nodes": [
+            {
+                "asi": "whatever.com",
+                "sid": "1234",
+                "rid": "123-456-7890",
+                "hp": 1
+            }
+        ],
+        "ver": "2.0"
+      }
+    },
+    "ext": {
+      "prebid": {
+        "cache": {
+          "bids": {}
+        },
+        "channel": {
+          "name": "amp",
+          "version": ""
+        },
+        "targeting": {
+          "pricegranularity": {
+            "precision": 2,
+            "ranges": [
+              {
+                "min": 0,
+                "max": 20,
+                "increment": 0.1
+              }
+            ]
+          },
+          "includewinners": true,
+          "includebidderkeys": true
+        }
+      }
+    }
+  },
+  "expectedMockBidderRequests": {
+    "appnexus": {
+      "id": "b9c97a4b-cbc4-483d-b2c4-58a19ed5cfc5",
+      "site": {
+        "page": "prebid.org",
+        "ext": {
+          "amp": 1
+        }
+      },
+      "device": {
+        "ip": "192.0.2.1"
+      },
+      "at": 1,
+      "imp": [
+        {
+          "id": "/19968336/header-bid-tag-0",
+          "banner": {
+            "format": [
+              {
+                "w": 300,
+                "h": 600
+              }
+            ]
+          },
+          "ext": {
+            "bidder": {
+              "placementId": 12883451
+            },
+            "prebid": {
+              "is_rewarded_inventory": 1
+            }
+          },
+          "secure": 1
+        }
+      ],
+      "regs": {
+        "ext": {
+          "gdpr": 1,
+          "us_privacy": "1YYY"
+        }
+      },
+      "user": {
+        "ext": {
+          "consent": "some-consent-string",
+          "eids": [
+            {
+                "source": "source",
+                "uids": [
+                    {
+                        "id": "1",
+                        "atype": 1,
+                        "ext": {}
+                    },
+                    {
+                        "id": "1",
+                        "atype": 1,
+                        "ext": {}
+                    }
+                ],
+                "ext": {}
+            }
+          ]
+        }
+      },
+      "source": {
+        "ext": {
+          "schain": {
+            "complete": 1,
+            "nodes": [
+                {
+                    "asi": "whatever.com",
+                    "sid": "1234",
+                    "rid": "123-456-7890",
+                    "hp": 1
+                }
+            ],
+            "ver": "2.0"
+          }
+        }
+      },
+      "ext": {
+        "prebid": {
+          "channel": {
+            "name": "amp",
+            "version": ""
+          }
+        }
+      }
+    }
+  },
+  "expectedAmpResponse": {
+    "targeting": {
+      "hb_bidder": "appnexus",
+      "hb_bidder_appnexus": "appnexus",
+      "hb_cache_host": "www.pbcserver.com",
+      "hb_cache_host_appnex": "www.pbcserver.com",
+      "hb_cache_id": "0",
+      "hb_cache_id_appnexus": "0",
+      "hb_cache_path": "/pbcache/endpoint",
+      "hb_cache_path_appnex": "/pbcache/endpoint",
+      "hb_pb": "15.00",
+      "hb_pb_appnexus": "15.00"
+    },
+    "ortb2": {
+      "ext": {
+        "warnings": {
+          "general": [
+            {
+              "code": 10002,
+              "message": "debug turned off for account"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "expectedReturnCode": 200
+}

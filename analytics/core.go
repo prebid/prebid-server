@@ -3,22 +3,23 @@ package analytics
 import (
 	"time"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/hooks/hookexecution"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
-// PBSAnalyticsModule must be implemented by analytics modules to extract the required information and logging
+// Module must be implemented by analytics modules to extract the required information and logging
 // activities. Do not use marshal the parameter objects directly as they can change over time. Use a separate
 // model for each analytics module and transform as appropriate.
-type PBSAnalyticsModule interface {
+type Module interface {
 	LogAuctionObject(*AuctionObject)
 	LogVideoObject(*VideoObject)
 	LogCookieSyncObject(*CookieSyncObject)
 	LogSetUIDObject(*SetUIDObject)
 	LogAmpObject(*AmpObject)
 	LogNotificationEventObject(*NotificationEvent)
+	Shutdown()
 }
 
 // Loggable object of a transaction at /openrtb2/auction endpoint

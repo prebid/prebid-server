@@ -2,15 +2,19 @@ package rtbhouse
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/buger/jsonparser"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 const (
@@ -49,9 +53,12 @@ func (adapter *RTBHouseAdapter) MakeRequests(
 			if err != nil {
 				return nil, []error{err}
 			}
-			if rtbhouseExt.BidFloor > 0 && len(reqCopy.Cur) > 0 {
-				bidFloorCur = reqCopy.Cur[0]
+			if rtbhouseExt.BidFloor > 0 {
 				bidFloor = rtbhouseExt.BidFloor
+				bidFloorCur = BidderCurrency
+				if len(reqCopy.Cur) > 0 {
+					bidFloorCur = reqCopy.Cur[0]
+				}
 			}
 		}
 
@@ -92,6 +99,7 @@ func (adapter *RTBHouseAdapter) MakeRequests(
 		Uri:     adapter.endpoint,
 		Body:    openRTBRequestJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(reqCopy.Imp),
 	}
 	requestsToBidder = append(requestsToBidder, requestToBidder)
 
@@ -100,14 +108,14 @@ func (adapter *RTBHouseAdapter) MakeRequests(
 
 func getImpressionExt(imp openrtb2.Imp) (*openrtb_ext.ExtImpRTBHouse, error) {
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: "Bidder extension not provided or can't be unmarshalled",
 		}
 	}
 
 	var rtbhouseExt openrtb_ext.ExtImpRTBHouse
-	if err := json.Unmarshal(bidderExt.Bidder, &rtbhouseExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &rtbhouseExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: "Error while unmarshaling bidder extension",
 		}
@@ -146,7 +154,7 @@ func (adapter *RTBHouseAdapter) MakeBids(
 	}
 
 	var openRTBBidderResponse openrtb2.BidResponse
-	if err := json.Unmarshal(bidderRawResponse.Body, &openRTBBidderResponse); err != nil {
+	if err := jsonutil.Unmarshal(bidderRawResponse.Body, &openRTBBidderResponse); err != nil {
 		return nil, []error{err}
 	}
 
@@ -155,14 +163,73 @@ func (adapter *RTBHouseAdapter) MakeBids(
 	var typedBid *adapters.TypedBid
 	for _, seatBid := range openRTBBidderResponse.SeatBid {
 		for _, bid := range seatBid.Bid {
-			bid := bid // pin! -> https://github.com/kyoh86/scopelint#whats-this
-			typedBid = &adapters.TypedBid{Bid: &bid, BidType: "banner"}
-			bidderResponse.Bids = append(bidderResponse.Bids, typedBid)
+			bid := bid
+			bidType, err := getMediaTypeForBid(bid)
+			resolveMacros(&bid)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			} else {
+				typedBid = &adapters.TypedBid{
+					Bid:     &bid,
+					BidType: bidType,
+				}
+
+				// for native bid responses fix Adm field
+				if typedBid.BidType == openrtb_ext.BidTypeNative {
+					bid.AdM, err = getNativeAdm(bid.AdM)
+					if err != nil {
+						errs = append(errs, err)
+						continue
+					}
+				}
+
+				bidderResponse.Bids = append(bidderResponse.Bids, typedBid)
+			}
 		}
 	}
 
 	bidderResponse.Currency = BidderCurrency
 
-	return bidderResponse, nil
+	return bidderResponse, errs
 
+}
+
+func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative, nil
+	default:
+		return "", fmt.Errorf("unrecognized bid type in response from rtbhouse for bid %s", bid.ImpID)
+	}
+}
+
+func getNativeAdm(adm string) (string, error) {
+	nativeAdm := make(map[string]interface{})
+	err := jsonutil.Unmarshal([]byte(adm), &nativeAdm)
+	if err != nil {
+		return adm, errors.New("unable to unmarshal native adm")
+	}
+
+	// move bid.adm.native to bid.adm
+	if _, ok := nativeAdm["native"]; ok {
+		//using jsonparser to avoid marshaling, encode escape, etc.
+		value, dataType, _, err := jsonparser.Get([]byte(adm), string(openrtb_ext.BidTypeNative))
+		if err != nil || dataType != jsonparser.Object {
+			return adm, errors.New("unable to get native adm")
+		}
+		adm = string(value)
+	}
+
+	return adm, nil
+}
+
+func resolveMacros(bid *openrtb2.Bid) {
+	if bid != nil {
+		price := strconv.FormatFloat(bid.Price, 'f', -1, 64)
+		bid.NURL = strings.Replace(bid.NURL, "${AUCTION_PRICE}", price, -1)
+		bid.AdM = strings.Replace(bid.AdM, "${AUCTION_PRICE}", price, -1)
+	}
 }

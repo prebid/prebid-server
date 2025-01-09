@@ -42,6 +42,28 @@
                         "placementId": 13244
                     }
                 }
+            },
+            {
+                "id": "test-multi-format-id-with-mtype",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        }
+                    ]
+                },
+                "video": {
+                    "mimes": ["video/mp4"],
+                    "protocols": [2, 5],
+                    "w": 1920,
+                    "h": 1080
+                },
+                "ext": {
+                    "bidder": {
+                        "placementId": 13245
+                    }
+                }
             }
         ]
     },
@@ -81,7 +103,8 @@
                             }
                         }
                     ]
-                }
+                },
+                "impIDs":["test-imp-id-banner"]
             },
             "mockResponse": {
                 "status": 200,
@@ -141,7 +164,8 @@
                             }
                         }
                     ]
-                }
+                },
+                "impIDs":["test-imp-id-video"]
             },
             "mockResponse": {
                 "status": 200,
@@ -159,6 +183,76 @@
                                     "crid": "1234567",
                                     "w": 1920,
                                     "h": 1080
+                                }
+                            ]
+                        }
+                    ],
+                    "cur": "USD"
+                }
+            }
+        },
+        {
+            "expectedRequest": {
+                "uri": "http://localhost/pbs",
+                "body": {
+                    "id": "test-request-id",
+                    "site": {
+                        "page": "https://good.site/url",
+                        "domain": "good.site",
+                        "publisher": {
+                            "id": "uniq_pub_id"
+                        },
+                        "keywords": "omgword",
+                        "ext": {
+                            "amp": 0
+                        }
+                    },
+                    "imp": [
+                        {
+                            "id": "test-multi-format-id-with-mtype",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 300,
+                                        "h": 250
+                                    }
+                                ]
+                            },
+                            "video": {
+                                "mimes": ["video/mp4"],
+                                "protocols": [2, 5],
+                                "w": 1920,
+                                "h": 1080
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "placementId": 13245
+                                }
+                            }
+                        }
+                    ]
+                },
+                "impIDs":["test-multi-format-id-with-mtype"]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "test-request-id",
+                    "seatbid": [
+                        {
+                            "seat": "improvedigital",
+                            "bid": [
+                                {
+                                    "id": "randomid1",
+                                    "impid": "test-multi-format-id-with-mtype",
+                                    "price": 0.5,
+                                    "adid": "12345678",
+                                    "adm": "some-test-ad-html",
+                                    "cid": "987",
+                                    "crid": "12345678",
+                                    "h": 250,
+                                    "w": 300,
+                                    "mtype": 1
                                 }
                             ]
                         }
@@ -203,6 +297,26 @@
                         "h": 1080
                     },
                     "type": "video"
+                }
+            ]
+        },
+        {
+            "currency": "USD",
+            "bids": [
+                {
+                    "bid": {
+                        "id": "randomid1",
+                        "impid": "test-multi-format-id-with-mtype",
+                        "price": 0.5,
+                        "adm": "some-test-ad-html",
+                        "adid": "12345678",
+                        "cid": "987",
+                        "crid": "12345678",
+                        "w": 300,
+                        "h": 250,
+                        "mtype": 1
+                    },
+                    "type": "banner"
                 }
             ]
         }

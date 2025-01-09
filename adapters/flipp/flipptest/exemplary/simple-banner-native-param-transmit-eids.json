@@ -1,0 +1,184 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "test": 1,
+        "device": {
+            "ip": "123.123.123.123"
+        },
+        "site": {
+            "id": "1243066",
+            "page": "http://www.example.com/test?flipp-content-code=publisher-test"
+        },
+        "user": {
+        },
+        "ext": {
+            "transmitEids": false
+        },
+        "regs": {
+            "coppa": 0,
+            "gdpr": 0
+        },
+        "imp": [
+            {
+                "id": "test-imp-id",
+                "tagid": "test",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 1800
+                        }
+                    ]
+                },
+                "ext": {
+                        "bidder": {
+                                "publisherNameIdentifier": "wishabi-test-publisher",
+                                "creativeType": "NativeX",
+                                "siteId": 1243066,
+                                "zoneIds": [285431],
+                                "options": {
+                                   "startCompact": false
+                                },
+                                "userKey": "abc123"
+                        }
+                }
+            }
+                
+        ]
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "http://example.com/pserver",
+                "body": {
+                    "ip":"123.123.123.123",
+                    "keywords":[
+                       ""
+                    ],
+                    "placements":[
+                       {
+                          "adTypes":[
+                             4309,
+                             641
+                          ],
+                          "count":1,
+                          "divName":"inline",
+                          "prebid":{
+                             "creativeType":"NativeX",
+                             "height":1800,
+                             "publisherNameIdentifier":"wishabi-test-publisher",
+                             "requestId":"test-imp-id",
+                             "width":300
+                          },
+                          "properties":{
+                             "contentCode":"publisher-test"
+                          },
+                          "siteId":1243066,
+                          "zoneIds":[
+                             285431
+                          ],
+                          "options": {
+                          }
+                       }
+                    ],
+                    "url":"http://www.example.com/test?flipp-content-code=publisher-test",
+                    "user":{
+                       "key":"30470a14-2949-4110-abce-b62d57304ad5"
+                    }
+                },
+                "impIDs":["test-imp-id"]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "decisions": {
+                        "inline": [
+                            {
+                                "adId": 183599115,
+                                "advertiserId": 1988027,
+                                "campaignId": 63285392,
+                                "clickUrl": "https://e-11090.adzerk.net/r?e=eyJ2IjoiMS4xMSIsImF2IjoxOTg4MDI3LCJhdCI6NDMwOSwiYnQiOjAsImNtIjo2MzI4NTM5MiwiY2giOjU4MDgxLCJjayI6e30sImNyIjo4MTMyNTY5MCwiZGkiOiJiOTg3MGNkYTA5MTU0NDlmOTkwZGNkZTNmNjYyNGNhMyIsImRqIjowLCJpaSI6IjJmNjYwMjMyODBmYjQ4NTRiYTY0YzFlYzA1ZDU5MTNiIiwiZG0iOjMsImZjIjoxODM1OTkxMTUsImZsIjoxNzU0MjE3OTUsImlwIjoiMTQyLjE4MS41OC41MiIsIm53IjoxMDkyMiwicGMiOjAsIm9wIjowLCJlYyI6MCwiZ20iOjAsImVwIjpudWxsLCJwciI6MjMyNjk5LCJydCI6MywicnMiOjUwMCwic2EiOiIzNCIsInNiIjoiaS0wNDZjMWNlNWRjYmExMTVjNSIsInNwIjozNzIzMDU1LCJzdCI6MTI0MzA2NiwidWsiOiJkOTU1N2Q2NS1kNWI5LTQyOTItYjg2My0xNGEyOTcyNTk3ZjQiLCJ6biI6Mjg1NDMxLCJ0cyI6MTY4MDU1NTc4MzkyMiwicG4iOiJpbmxpbmUiLCJnYyI6dHJ1ZSwiZ0MiOnRydWUsImdzIjoibm9uZSIsInR6IjoiQW1lcmljYS9OZXdfWW9yayIsInVyIjoiaHR0cDovL3d3dy5mbGlwcC5jb20ifQ&s=Mnss8P1kc37Eftik5RJvLJb4S9Y",
+                                "contents": [
+                                    {
+                                        "data": {
+                                            "customData": {
+                                                "campaignConfigUrl": "https://campaign-config.flipp.com/dist-campaign-admin/215",
+                                                "campaignNameIdentifier": "US Grocery Demo (Kroger)",
+                                                "standardHeight": 900,
+                                                "compactHeight": 700
+                                            },
+                                            "height": 1800,
+                                            "width": 300
+                                        },
+                                        "type": "raw"
+                                    }
+                                ],
+                                "creativeId": 81325690,
+                                "flightId": 175421795,
+                                "height": 1800,
+                                "impressionUrl": "https://e-11090.adzerk.net/i.gif?e=eyJ2IjoiMS4xMSIsImF2IjoxOTg4MDI3LCJhdCI6NDMwOSwiYnQiOjAsImNtIjo2MzI4NTM5MiwiY2giOjU4MDgxLCJjayI6e30sImNyIjo4MTMyNTY5MCwiZGkiOiJiOTg3MGNkYTA5MTU0NDlmOTkwZGNkZTNmNjYyNGNhMyIsImRqIjowLCJpaSI6IjJmNjYwMjMyODBmYjQ4NTRiYTY0YzFlYzA1ZDU5MTNiIiwiZG0iOjMsImZjIjoxODM1OTkxMTUsImZsIjoxNzU0MjE3OTUsImlwIjoiMTQyLjE4MS41OC41MiIsIm53IjoxMDkyMiwicGMiOjAsIm9wIjowLCJlYyI6MCwiZ20iOjAsImVwIjpudWxsLCJwciI6MjMyNjk5LCJydCI6MywicnMiOjUwMCwic2EiOiIzNCIsInNiIjoiaS0wNDZjMWNlNWRjYmExMTVjNSIsInNwIjozNzIzMDU1LCJzdCI6MTI0MzA2NiwidWsiOiJkOTU1N2Q2NS1kNWI5LTQyOTItYjg2My0xNGEyOTcyNTk3ZjQiLCJ6biI6Mjg1NDMxLCJ0cyI6MTY4MDU1NTc4MzkyMywicG4iOiJpbmxpbmUiLCJnYyI6dHJ1ZSwiZ0MiOnRydWUsImdzIjoibm9uZSIsInR6IjoiQW1lcmljYS9OZXdfWW9yayIsImJhIjoxLCJmcSI6MH0&s=Qce4_IohtESeNA_sB71Qjb4TouY",
+                                "prebid": {
+                                    "cpm": 12.34,
+                                    "creative":"creativeContent",
+                                    "creativeType": "NativeX",
+                                    "requestId": "test-imp-id"
+                                },
+                                "priorityId": 232699,
+                                "storefront": {
+                                    "campaignConfig": {
+                                        "fallbackImageUrl": "https://f.wishabi.net/arbitrary_files/115856/1666018811/115856_Featured Local Savings - Flipp Fallback - US (1).png",
+                                        "fallbackLinkUrl": "https://flipp.com/flyers/",
+                                        "tags": {
+                                            "advertiser": {
+                                                "engagement": "https://f.wishabi.net/creative/happyfruits/_itemlevelv2/apple.png?cb=[[random]]"
+                                            }
+                                        }
+                                    },
+                                    "flyer_id": 5554080,
+                                    "flyer_run_id": 873256,
+                                    "flyer_type_id": 2826,
+                                    "is_fallback": true,
+                                    "merchant": "Kroger",
+                                    "merchant_id": 2778,
+                                    "name": "Weekly Ad",
+                                    "storefront_logo_url": "https://images.wishabi.net/merchants/qX1/BGIzc9sFcA==/RackMultipart20210421-1-e3k5rx.jpeg",
+                                    "storefront_payload_url": "https://cdn-gateflipp.flippback.com/storefront-payload/v2/873256/5554080/ff14f675705934507c269b5750e124a323bc9bf60e8a6f210f422f4528b233ff?merchant_id=2778",
+                                    "valid_from": "2023-03-29 04:00:00 +0000 UTC",
+                                    "valid_to": "2023-04-05 03:59:59 +0000 UTC"
+                                },
+                                "width": 300
+                            }
+                        ]
+                    },
+                    "location": {
+                        "accuracy_radius": 5,
+                        "city": "Toronto",
+                        "country": "CA",
+                        "ip": "123.123.123.123",
+                        "postal_code": "M4S",
+                        "region": "ON",
+                        "region_name": "Ontario"
+                    }
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "bids": [
+                {
+                    "bid": {
+                        "id": "183599115",
+                        "impid": "test-imp-id",
+                        "price": 12.34,
+                        "adm": "creativeContent",
+                        "crid": "81325690",
+                        "w": 300,
+                        "h": 900
+                    },
+                    "type": "banner"
+                }
+            ]
+        }
+    ]
+}

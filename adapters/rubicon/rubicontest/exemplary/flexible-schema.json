@@ -46,60 +46,6 @@
         "lon": -122.346200
       },
       "gender": "f",
-      "data": [
-        {
-          "ext": {
-            "segtax": 4
-          },
-          "segment": [
-            {
-              "id": "idToCopy"
-            }
-          ]
-        },
-        {
-          "ext": {
-            "segtax": "someValue"
-          },
-          "segment": [
-            {
-              "id": "shouldNotBeCopied"
-            }
-          ]
-        },
-        {
-          "ext": {
-            "segtax": "4"
-          },
-          "segment": [
-            {
-              "id": "shouldNotBeCopied2"
-            }
-          ]
-        },
-        {
-          "ext": {
-            "segtax": 4
-          },
-          "segment": [
-            {
-              "id": "idToCopy2"
-            }
-          ]
-        },
-        {
-          "ext": {
-            "segtax": [
-              4
-            ]
-          },
-          "segment": [
-            {
-              "id": "shouldNotBeCopied3"
-            }
-          ]
-        }
-      ],
       "ext": {
         "data": {
           "attr1": "val1",
@@ -207,60 +153,6 @@
             }
           },
           "user": {
-            "data": [
-              {
-                "ext": {
-                  "segtax": 4
-                },
-                "segment": [
-                  {
-                    "id": "idToCopy"
-                  }
-                ]
-              },
-              {
-                "ext": {
-                  "segtax": "someValue"
-                },
-                "segment": [
-                  {
-                    "id": "shouldNotBeCopied"
-                  }
-                ]
-              },
-              {
-                "ext": {
-                  "segtax": "4"
-                },
-                "segment": [
-                  {
-                    "id": "shouldNotBeCopied2"
-                  }
-                ]
-              },
-              {
-                "ext": {
-                  "segtax": 4
-                },
-                "segment": [
-                  {
-                    "id": "idToCopy2"
-                  }
-                ]
-              },
-              {
-                "ext": {
-                  "segtax": [
-                    4
-                  ]
-                },
-                "segment": [
-                  {
-                    "id": "shouldNotBeCopied3"
-                  }
-                ]
-              }
-            ],
             "ext": {
               "rp": {
                 "target": {
@@ -282,10 +174,6 @@
                   ],
                   "attr5": [
                     "3"
-                  ],
-                  "iab": [
-                    "idToCopy",
-                    "idToCopy2"
                   ]
                 }
               }
@@ -300,7 +188,6 @@
                 "placement": 3,
                 "ext": {
                   "rp": {
-                    "size_id": 203
                   }
                 },
                 "mimes": [
@@ -342,14 +229,9 @@
                     "attr5": [
                       "3"
                     ],
-                    "pagecat": [
-                      "val1",
-                      "val2"
-                    ],
-                    "sectioncat": [
-                      "sectionCat1",
-                      "sectionCat2"
-                    ]
+                    "pbs_login": "xuser",
+                    "pbs_url": "http://hosturl.com",
+                    "pbs_version": ""
                   },
                   "track": {
                     "mint": "",
@@ -361,7 +243,8 @@
               }
             }
           ]
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,
