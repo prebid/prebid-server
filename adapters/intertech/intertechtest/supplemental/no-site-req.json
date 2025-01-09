@@ -1,0 +1,67 @@
+{
+  "mockBidRequest": {
+    "id": "test-no-site-request-id",
+    "device": {
+      "ip": "123.123.123.123",
+      "ua": "Mozilla/5.0 (X11; Linux x86_64)"
+    },
+    "imp": [
+      {
+        "id": "test-imp-no-site",
+        "tagid": "no-site-tag",
+        "banner": {
+          "format": [
+            { "w": 300, "h": 250 }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "page_id": 3003,
+            "imp_id": 5005
+          }
+        }
+      }
+    ],
+    "cur": ["USD"]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://test.intertech.com/ssp?pid=3003&imp=5005&ssp-cur=USD",
+        "body": {
+          "id": "test-no-site-request-id",
+          "imp": [
+            {
+              "id": "test-imp-no-site",
+              "tagid": "no-site-tag",
+              "banner": {
+                "w": 300,
+                "h": 250,
+                "format": [
+                  { "w": 300, "h": 250 }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "page_id": 3003,
+                  "imp_id": 5005
+                }
+              }
+            }
+          ],
+          "device": {
+            "ip": "123.123.123.123",
+            "ua": "Mozilla/5.0 (X11; Linux x86_64)"
+          },
+          "cur": ["USD"]
+        },
+        "impIDs": ["test-imp-no-site"]
+      },
+      "mockResponse": {
+        "status": 204,
+        "body": {}
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}

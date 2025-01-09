@@ -1,0 +1,78 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "device": {
+      "ip": "123.123.123.123",
+      "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+    },
+    "site": {
+      "page": "http://mypage.com"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "tagid": "test-tag",
+        "banner": {
+          "format": [
+            { "w": 300, "h": 250 }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "page_id": 1001,
+            "imp_id": 2002
+          }
+        }
+      }
+    ],
+    "cur": ["USD"]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://test.intertech.com/ssp?pid=1001&imp=2002&target-ref=http%3A%2F%2Fmypage.com&ssp-cur=USD",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "tagid": "test-tag",
+              "banner": {
+                "w": 300,
+                "h": 250,
+                "format": [
+                  { "w": 300, "h": 250 }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "page_id": 1001,
+                  "imp_id": 2002
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "http://mypage.com"
+          },
+          "device": {
+            "ip": "123.123.123.123",
+            "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+          },
+          "cur": ["USD"]
+        },
+        "impIDs": ["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 404,
+        "body": {}
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 404. Run with request.debug = 1 for more info",
+      "comparison": "literal"
+    }
+  ]
+}
