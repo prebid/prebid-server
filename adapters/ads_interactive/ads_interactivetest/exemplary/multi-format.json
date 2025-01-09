@@ -1,0 +1,105 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "device": {
+            "ip": "123.123.123.123",
+            "ua": "iPad"
+        },
+        "app": {
+            "id": "1",
+            "bundle": "com.wls.testwlsapplication"
+        },
+        "imp": [
+            {
+                "id": "test-imp-id",
+                "tagid": "test",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        },
+                        {
+                            "w": 300,
+                            "h": 600
+                        }
+                    ]
+                },
+                "video": {
+                    "mimes": [
+                        "video/mp4"
+                    ],
+                    "protocols": [
+                        2,
+                        5
+                    ],
+                    "w": 1024,
+                    "h": 576
+                },
+                "ext": {
+                    "bidder": {
+                        "endpointId": "test"
+                    }
+                }
+            }
+        ]
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "https://example.com",
+                "body": {
+                    "id": "test-request-id",
+                    "imp": [
+                        {
+                            "id": "test-imp-id",
+                            "tagid": "test",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 300,
+                                        "h": 250
+                                    },
+                                    {
+                                        "w": 300,
+                                        "h": 600
+                                    }
+                                ]
+                            },
+                            "video": {
+                                "mimes": [
+                                    "video/mp4"
+                                ],
+                                "protocols": [
+                                    2,
+                                    5
+                                ],
+                                "w": 1024,
+                                "h": 576
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "endpointId": "test",
+                                    "type": "network"
+                                }
+                            }
+                        }
+                    ],
+                    "app": {
+                        "id": "1",
+                        "bundle": "com.wls.testwlsapplication"
+                    },
+                    "device": {
+                        "ip": "123.123.123.123",
+                        "ua": "iPad"
+                    }
+                },
+                "impIDs":["test-imp-id"]
+            },
+            "mockResponse": {
+                "status": 204
+            }
+        }
+    ],
+    "expectedBidResponses": []
+}
