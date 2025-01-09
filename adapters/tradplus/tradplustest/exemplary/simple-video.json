@@ -35,6 +35,12 @@
                 "mimes": [
                   "video/mp4"
                 ]
+              },
+              "ext": {
+                "bidder": {
+                  "accountId": "fake-account-id",
+                  "zoneId": ""
+                }
               }
             }
           ]

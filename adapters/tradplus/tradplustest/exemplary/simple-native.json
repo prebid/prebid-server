@@ -29,6 +29,12 @@
               "native": {
                 "request": "{\"ver\":\"1.2\",\"context\":1,\"plcmttype\":4,\"plcmtcnt\":1,\"assets\":[{\"id\":2,\"required\":1,\"title\":{\"len\":90}},{\"id\":6,\"required\":1,\"img\":{\"type\":3,\"wmin\":128,\"hmin\":128,\"mimes\":[\"image/jpg\",\"image/jpeg\",\"image/png\"]}},{\"id\":7,\"required\":1,\"data\":{\"type\":2,\"len\":120}}]}",
                 "ver": "1.2"
+              },
+              "ext": {
+                "bidder": {
+                  "accountId": "fake-account-id",
+                  "zoneId": ""
+                }
               }
             }
           ]

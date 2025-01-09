@@ -46,8 +46,6 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestDa
 		return nil, []error{err}
 	}
 
-	request.Imp[0].Ext = nil
-
 	url, err := a.buildEndpointURL(tradplusExt)
 	if err != nil {
 		return nil, []error{err}
