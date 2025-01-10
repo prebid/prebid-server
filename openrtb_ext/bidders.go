@@ -242,6 +242,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderYieldlab,
 	BidderYieldmo,
 	BidderYieldone,
+	BidderZentotem,
 	BidderZeroClickFraud,
 	BidderZetaGlobalSsp,
 	BidderZmaticoo,
@@ -582,6 +583,7 @@ const (
 	BidderYieldlab          BidderName = "yieldlab"
 	BidderYieldmo           BidderName = "yieldmo"
 	BidderYieldone          BidderName = "yieldone"
+	BidderZentotem          BidderName = "zentotem"
 	BidderZeroClickFraud    BidderName = "zeroclickfraud"
 	BidderZetaGlobalSsp     BidderName = "zeta_global_ssp"
 	BidderZmaticoo          BidderName = "zmaticoo"
