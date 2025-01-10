@@ -317,16 +317,10 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 	recordImpMetrics(r.BidRequestWrapper, e.me)
 
 	// Retrieve host and account-level EEA countries config
-	eeaCountries := SelectEEACountries(e.privacyConfig.GDPR.EEACountries, r.Account.EEACountries)
-
-	// Create a map for efficient lookup
-	eeaCountriesMap := make(map[string]struct{})
-	for _, country := range eeaCountries {
-		eeaCountriesMap[strings.ToUpper(country)] = struct{}{}
-	}
+	eeaCountries := SelectEEACountries(e.privacyConfig.GDPR.EEACountries, r.Account.GDPR.EEACountries)
 
 	// Make our best guess if GDPR applies
-	gdprDefaultValue := e.parseGDPRDefaultValue(r.BidRequestWrapper, eeaCountriesMap)
+	gdprDefaultValue := e.parseGDPRDefaultValue(r.BidRequestWrapper, eeaCountries)
 	gdprSignal, err := getGDPR(r.BidRequestWrapper)
 	if err != nil {
 		return nil, err
@@ -580,7 +574,7 @@ func buildMultiBidMap(prebid *openrtb_ext.ExtRequestPrebid) map[string]openrtb_e
 	return multiBidMap
 }
 
-func (e *exchange) parseGDPRDefaultValue(r *openrtb_ext.RequestWrapper, eeaCountriesMap map[string]struct{}) gdpr.Signal {
+func (e *exchange) parseGDPRDefaultValue(r *openrtb_ext.RequestWrapper, eeaCountries []string) gdpr.Signal {
 	gdprDefaultValue := e.gdprDefaultValue
 
 	var geo *openrtb2.Geo
@@ -593,7 +587,7 @@ func (e *exchange) parseGDPRDefaultValue(r *openrtb_ext.RequestWrapper, eeaCount
 	if geo != nil {
 		// If we have a country set, and it is on the list, we assume GDPR applies if not set on the request.
 		// Otherwise we assume it does not apply as long as it appears "valid" (is 3 characters long).
-		if _, found := eeaCountriesMap[strings.ToUpper(geo.Country)]; found {
+		if isEEACountry(geo.Country, eeaCountries) {
 			gdprDefaultValue = gdpr.SignalYes
 		} else if len(geo.Country) == 3 {
 			// The country field is formatted properly as a three character country code
@@ -1630,4 +1624,14 @@ func setSeatNonBid(bidResponseExt *openrtb_ext.ExtBidResponse, seatNonBidBuilder
 
 	bidResponseExt.Prebid.SeatNonBid = seatNonBidBuilder.Slice()
 	return bidResponseExt
+}
+
+func isEEACountry(country string, eeaCountries []string) bool {
+	country = strings.ToUpper(country)
+	for _, c := range eeaCountries {
+		if strings.ToUpper(c) == country {
+			return true
+		}
+	}
+	return false
 }
