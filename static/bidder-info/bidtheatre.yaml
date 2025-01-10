@@ -1,0 +1,20 @@
+endpoint: "https://prebidjs-bids.bidtheatre.net/prebidjsbid"
+geoscope:
+  - EEA
+maintainer:
+  email: operations@bidtheatre.com
+gvlVendorID: 30
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  redirect:
+    url: https://match.adsby.bidtheatre.com/usersync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&cb={{.RedirectURL}}
+    userMacro: "{uid}"
