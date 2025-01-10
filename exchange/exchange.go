@@ -1632,7 +1632,7 @@ func setSeatNonBid(bidResponseExt *openrtb_ext.ExtBidResponse, seatNonBidBuilder
 }
 
 func isEEACountry(country string, eeaCountries []string) bool {
-	if eeaCountries == nil || len(eeaCountries) == 0 {
+	if len(eeaCountries) == 0 {
 		return false
 	}
 
