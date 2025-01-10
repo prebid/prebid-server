@@ -1,0 +1,107 @@
+{
+    "mockBidRequest": {
+      "id": "test-multi-format",
+      "imp": [{
+        "id": "001",
+        "banner": {
+          "w": 300,
+          "h": 600
+        },
+        "video": {
+          "w": 900,
+          "h": 250,
+          "mimes": ["video/mp4"]
+        },
+        "ext": {
+          "bidder": {
+            "placement_id": "placement-id-1"
+          }
+        }
+      }],
+      "site": {
+        "domain": "https://test.com",
+        "page": "https://test.com/2016/06/12"
+      },
+      "cur": [
+        "USD"
+      ],
+      "device": {
+        "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36",
+        "ip": "127.0.0.1",
+        "language": "EN"
+      },
+      "tmax": 500
+    },
+    "httpCalls": [{
+      "expectedRequest": {
+        "method": "POST",
+        "body": {
+            "imps": [{
+              "bid_id": "test-multi-format",
+              "ext": {
+                "gpid": ""
+              },
+              "imp_id": "001",
+              "media_types": {
+                "banner": {
+                  "sizes": [
+                    [
+                      300,
+                      600
+                    ]
+                  ]
+                },
+                "video": {},
+                "audio": {}
+              },
+              "zone_id": {
+                "placementId": "placement-id-1"
+              }
+            }],
+            "site": {
+              "domain": "https://test.com",
+              "referrer": "https://test.com/2016/06/12"
+            }
+          },
+        "impIDs": [
+            "001"
+          ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "bids": [{
+            "bid_id": "01",
+            "imp_id": "001",
+            "cpm": 1.00,
+            "cid": "1002088",
+            "crid": "1000763-1002088",
+            "adid": "1002088",
+            "w": "300",
+            "h": "250",
+            "seat": "resetdigital",
+            "html": "<script src=\"https://data.resetdigital.co/evts?S0B=1&R0E=1&R0M=3_3&testad=US-HEADER-04&R0A=1000048_1001096_1001117_1627360746&R0P=resetio_1234_muscleandfitness.com_Site_1_Banner&R0L=*_*_*_*_*&R0D=*_*_*_*_*_*&R0B=*_*_*\" type=\"text/javascript\"></script><image src='https://adsreq.resetdigital.co?brid=0000000000000001' /><image src='https://sync2.resetdigital.co/hbsync?ck=0000000000000001' />"
+          }]
+        }
+      }
+    }],
+  
+    "expectedBidResponses": [{
+      "currency": "USD",
+      "bids": [{
+        "bid": {
+          "adm": "<script src=\"https://data.resetdigital.co/evts?S0B=1&R0E=1&R0M=3_3&testad=US-HEADER-04&R0A=1000048_1001096_1001117_1627360746&R0P=resetio_1234_muscleandfitness.com_Site_1_Banner&R0L=*_*_*_*_*&R0D=*_*_*_*_*_*&R0B=*_*_*\" type=\"text/javascript\"></script><image src='https://adsreq.resetdigital.co?brid=0000000000000001' /><image src='https://sync2.resetdigital.co/hbsync?ck=0000000000000001' />",
+          "cid": "1002088",
+          "crid": "1000763-1002088",
+          "id": "01",
+          "impid": "001",
+          "price": 1.00,
+          "w": 300,
+          "h": 250
+        },
+        "type": "video",
+        "seat": "resetdigital"
+      }]
+    }]
+  }
+  
