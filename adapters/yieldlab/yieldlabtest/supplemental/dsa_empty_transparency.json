@@ -83,7 +83,7 @@
             "169.254.13.37"
           ]
         },
-        "uri": "https://ad.yieldlab.net/testing/12345?consent=BOlOrv1OlOr2EAAABADECg-AAAApp7v______9______9uz_Ov_v_f__33e8__9v_l_7_-___u_-3zd4u_1vf99yfm1-7etr3tp_87ues2_Xur__79__3z3_9phP78k89r7337Ew-v02&content=json&gdpr=1&ids=ylid%3A34a53e82-0dc3-4815-8b7e-b725ede0361c&lat=51.499488&lon=-0.128953&pvid=true&sizes=12345%3A728x90&t=key1%3Dvalue1%26key2%3Dvalue2&ts=testing&yl_rtb_connectiontype=6&yl_rtb_devicetype=4&yl_rtb_ifa=hello-ads",
+        "uri": "https://ad.yieldlab.net/testing/12345?content=json&gdpr=1&gdpr_consent=BOlOrv1OlOr2EAAABADECg-AAAApp7v______9______9uz_Ov_v_f__33e8__9v_l_7_-___u_-3zd4u_1vf99yfm1-7etr3tp_87ues2_Xur__79__3z3_9phP78k89r7337Ew-v02&ids=ylid%3A34a53e82-0dc3-4815-8b7e-b725ede0361c&lat=51.499488&lon=-0.128953&pvid=true&sizes=12345%3A728x90&t=key1%3Dvalue1%26key2%3Dvalue2&ts=testing&yl_rtb_connectiontype=6&yl_rtb_devicetype=4&yl_rtb_ifa=hello-ads",
         "impIDs": ["test-imp-id"]
       },
       "mockResponse": {
@@ -115,7 +115,7 @@
       "bids": [
         {
           "bid": {
-            "adm": "<script src=\"https://ad.yieldlab.net/d/12345/123456789/728x90?consent=BOlOrv1OlOr2EAAABADECg-AAAApp7v______9______9uz_Ov_v_f__33e8__9v_l_7_-___u_-3zd4u_1vf99yfm1-7etr3tp_87ues2_Xur__79__3z3_9phP78k89r7337Ew-v02&gdpr=1&id=abc&ids=ylid%3A34a53e82-0dc3-4815-8b7e-b725ede0361c&pvid=40cb3251-1e1e-4cfd-8edc-7d32dc1a21e5&ts=testing\"></script>",
+            "adm": "<script src=\"https://ad.yieldlab.net/d/12345/123456789/728x90?gdpr=1&gdpr_consent=BOlOrv1OlOr2EAAABADECg-AAAApp7v______9______9uz_Ov_v_f__33e8__9v_l_7_-___u_-3zd4u_1vf99yfm1-7etr3tp_87ues2_Xur__79__3z3_9phP78k89r7337Ew-v02&id=abc&ids=ylid%3A34a53e82-0dc3-4815-8b7e-b725ede0361c&pvid=40cb3251-1e1e-4cfd-8edc-7d32dc1a21e5&ts=testing\"></script>",
             "crid": "12345123433",
             "dealid": "1234",
             "ext": {
