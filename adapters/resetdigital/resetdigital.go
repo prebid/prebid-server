@@ -207,51 +207,65 @@ func processDataFromRequest(requestData *openrtb2.BidRequest, imp openrtb2.Imp, 
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	// Return early if the response contains no content
 	if adapters.IsResponseStatusCodeNoContent(responseData) {
 		return nil, nil
 	}
 
+	// Check for errors in the response status code
 	if err := adapters.CheckResponseStatusCodeForErrors(responseData); err != nil {
 		return nil, []error{err}
 	}
 
+	// Parse the response body into a single bid response
 	var response resetDigitalBidResponse
 	if err := json.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}
 
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
-
-	var errs []error
-	requestImps := make(map[string]openrtb2.Imp)
-	for _, imp := range request.Imp {
-		requestImps[imp.ID] = imp
+	// Ensure there is exactly one bid in the response
+	if len(response.Bids) != 1 {
+		return nil, []error{fmt.Errorf("expected exactly one bid in the response, but got %d", len(response.Bids))}
 	}
 
-	for i := range response.Bids {
-		resetDigitalBid := &response.Bids[i]
+	// Extract the single bid
+	resetDigitalBid := &response.Bids[0]
 
-		bid, err := getBidFromResponse(resetDigitalBid)
-		if bid == nil {
-			errs = append(errs, err)
-			continue
+	// Map the incoming impression to its ID for media type determination
+	requestImp, found := findRequestImpByID(request.Imp, resetDigitalBid.ImpID)
+	if !found {
+		return nil, []error{fmt.Errorf("no matching impression found for ImpID %s", resetDigitalBid.ImpID)}
+	}
+
+	// Convert the bid into an OpenRTB bid
+	bid, err := getBidFromResponse(resetDigitalBid)
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	// Determine the bid type based on the impression
+	bidType := GetMediaTypeForImp(requestImp)
+
+	// Construct the bidder response
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
+	bidResponse.Currency = "USD" // Default currency
+	bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+		Bid:     bid,
+		BidType: bidType,
+		Seat:    openrtb_ext.BidderName(resetDigitalBid.Seat),
+	})
+
+	return bidResponse, nil
+}
+
+// findRequestImpByID searches for an impression by its ID in the list of impressions
+func findRequestImpByID(imps []openrtb2.Imp, impID string) (openrtb2.Imp, bool) {
+	for _, imp := range imps {
+		if imp.ID == impID {
+			return imp, true
 		}
-
-		bidType := GetMediaTypeForImp(requestImps[bid.ImpID])
-
-		b := &adapters.TypedBid{
-			Bid:     bid,
-			BidType: bidType,
-			Seat:    openrtb_ext.BidderName(resetDigitalBid.Seat),
-		}
-		bidResponse.Bids = append(bidResponse.Bids, b)
 	}
-
-	if len(request.Cur) == 0 {
-		bidResponse.Currency = "USD"
-	}
-
-	return bidResponse, errs
+	return openrtb2.Imp{}, false
 }
 
 func getBidFromResponse(bidResponse *resetDigitalBid) (*openrtb2.Bid, error) {
