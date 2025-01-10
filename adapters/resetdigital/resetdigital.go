@@ -224,9 +224,9 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	// Ensure there is exactly one bid in the response
-	// if len(response.Bids) != 1 {
-	// 	return nil, []error{fmt.Errorf("expected exactly one bid in the response, but got %d", len(response.Bids))}
-	// }
+	if len(response.Bids) != 1 {
+		return nil, []error{fmt.Errorf("expected exactly one bid in the response, but got %d", len(response.Bids))}
+	}
 
 	// Extract the single bid
 	resetDigitalBid := &response.Bids[0]
