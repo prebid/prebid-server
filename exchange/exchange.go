@@ -316,8 +316,13 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 
 	recordImpMetrics(r.BidRequestWrapper, e.me)
 
+	var accountEEACountries []string
+	if r.Account.GDPR.EEACountries != nil {
+		accountEEACountries = r.Account.GDPR.EEACountries
+	}
+
 	// Retrieve host and account-level EEA countries config
-	eeaCountries := SelectEEACountries(e.privacyConfig.GDPR.EEACountries, r.Account.GDPR.EEACountries)
+	eeaCountries := SelectEEACountries(e.privacyConfig.GDPR.EEACountries, accountEEACountries)
 
 	// Make our best guess if GDPR applies
 	gdprDefaultValue := e.parseGDPRDefaultValue(r.BidRequestWrapper, eeaCountries)
