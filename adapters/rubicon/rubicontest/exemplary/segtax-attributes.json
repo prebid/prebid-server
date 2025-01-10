@@ -408,11 +408,7 @@
                     "pbadslot": "pbadslot",
                     "pbs_login": "xuser",
                     "pbs_url": "http://hosturl.com",
-                    "pbs_version": "",
-                    "pagecat": [
-                      "val1",
-                      "val2"
-                    ]
+                    "pbs_version": ""
                   },
                   "track": {
                     "mint": "",
