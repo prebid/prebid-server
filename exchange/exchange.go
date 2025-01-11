@@ -592,7 +592,7 @@ func (e *exchange) parseGDPRDefaultValue(r *openrtb_ext.RequestWrapper, eeaCount
 	if geo != nil {
 		// If we have a country set, and it is on the list, we assume GDPR applies if not set on the request.
 		// Otherwise we assume it does not apply as long as it appears "valid" (is 3 characters long).
-		if isEEACountry(geo.Country, eeaCountries) {
+		if _, found := e.privacyConfig.GDPR.EEACountriesMap[strings.ToUpper(geo.Country)]; found || isEEACountry(geo.Country, eeaCountries) {
 			gdprDefaultValue = gdpr.SignalYes
 		} else if len(geo.Country) == 3 {
 			// The country field is formatted properly as a three character country code
