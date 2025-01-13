@@ -20,8 +20,8 @@ capabilities:
       - native
 userSync:
   redirect:
-    url: "https://rtb.adup-tech.com/service/usersync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
+    url: "https://rtb.d.adup-tech.com/service/sync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
     userMacro: "[UID]"
   iframe:
-    url: "https://rtb.adup-tech.com/service/usersync?iframe=1&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
+    url: "https://rtb.d.adup-tech.com/service/sync?iframe=1&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
     userMacro: "[UID]"

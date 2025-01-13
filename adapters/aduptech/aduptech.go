@@ -27,7 +27,11 @@ type ExtraInfo struct {
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	var extraInfo ExtraInfo
 	if err := jsonutil.Unmarshal([]byte(config.ExtraAdapterInfo), &extraInfo); err != nil {
-		return nil, fmt.Errorf("invalid extra info: %v", err)
+		return nil, fmt.Errorf("invalid extra info: %w", err)
+	}
+
+	if extraInfo.TargetCurrency == "" {
+		return nil, fmt.Errorf("invalid extra info: TargetCurrency is empty, pls check")
 	}
 
 	bidder := &adapter{
@@ -69,27 +73,30 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	return []*adapters.RequestData{requestData}, nil
 }
 
+// convertCurrency attempts to convert a given value from the specified currency (cur) to the
+// target currency specified in the adapter's extraInfo. If the conversion directly to the
+// target currency fails due to a ConversionNotFoundError, it attempts an intermediate conversion
+// through USD. Returns the converted value or an error if conversion fails.
 func (a *adapter) convertCurrency(value float64, cur string, reqInfo *adapters.ExtraRequestInfo) (float64, error) {
 	convertedValue, err := reqInfo.ConvertCurrency(value, cur, a.extraInfo.TargetCurrency)
 
 	if err != nil {
 		var convErr currency.ConversionNotFoundError
-		if errors.As(err, &convErr) {
+		if !errors.As(err, &convErr) {
+			return 0, err
+		}
 
-			// try again by first converting to USD
-			// then convert to target_currency
-			convertedValue, err = reqInfo.ConvertCurrency(value, cur, "USD")
+		// try again by first converting to USD
+		// then convert to target_currency
+		convertedValue, err = reqInfo.ConvertCurrency(value, cur, "USD")
 
-			if err != nil {
-				return 0, err
-			}
+		if err != nil {
+			return 0, err
+		}
 
-			convertedValue, err = reqInfo.ConvertCurrency(convertedValue, "USD", a.extraInfo.TargetCurrency)
+		convertedValue, err = reqInfo.ConvertCurrency(convertedValue, "USD", a.extraInfo.TargetCurrency)
 
-			if err != nil {
-				return 0, err
-			}
-		} else {
+		if err != nil {
 			return 0, err
 		}
 	}
@@ -102,14 +109,14 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		return nil, nil
 	case http.StatusBadRequest:
 		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Unexpected status code: 400. Run with request.debug = 1 for more info."),
+			Message: "Unexpected status code: 400. Run with request.debug = 1 for more info.",
 		}}
 	case http.StatusOK:
 		// we don't need to do anything here and this is just so we can use the default case for the unexpected status code
 		break
 	default:
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info.", responseData.StatusCode),
+			Message: fmt.Sprintf("Unexpected status code: %d.", responseData.StatusCode),
 		}}
 
 	}
