@@ -25,9 +25,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 
 // MakeRequests prepares and serializes HTTP requests to be sent to the Pixfuture endpoint.
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	if len(request.Imp) == 0 {
-		return nil, []error{&errortypes.BadInput{Message: "No impressions in the bid request"}}
-	}
 	requestJSON, err := jsonutil.Marshal(request)
 	if err != nil {
 		return nil, []error{err}
@@ -61,22 +58,17 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 
 // MakeBids parses the HTTP response from the Pixfuture endpoint and generates a BidderResponse.
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if responseData.StatusCode == http.StatusNoContent {
+	// Handle No Content response
+	if adapters.IsResponseStatusCodeNoContent(responseData) {
 		return nil, nil
 	}
 
-	if responseData.StatusCode == http.StatusBadRequest {
-		return nil, []error{&errortypes.BadInput{
-			Message: "Unexpected status code: 400. Bad request from publisher. Run with request.debug = 1 for more info.",
-		}}
+	// Check for errors in response status code
+	if err := adapters.CheckResponseStatusCodeForErrors(responseData); err != nil {
+		return nil, []error{err}
 	}
 
-	if responseData.StatusCode != http.StatusOK {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info.", responseData.StatusCode),
-		}}
-	}
-
+	// Parse the response body
 	var response openrtb2.BidResponse
 	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
@@ -93,6 +85,11 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 				errors = append(errors, err)
 				continue
 			}
+
+			// Set the MType explicitly in the bid
+			mType := openrtb2.MType(bidType)
+			seatBid.Bid[i].MType = mType
+
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &seatBid.Bid[i],
 				BidType: bidType,
