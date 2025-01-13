@@ -58,7 +58,7 @@
             {
               "seat": "958",
               "bid": [{
-                "id": "7706636740145184841",
+                "id":123,
                 "impid": "test-imp-id",
                 "price": 0.500000,
                 "adm": "some-test-ad",
@@ -74,22 +74,11 @@
       }
     }
   }],
-
-  "expectedBidResponses": [{
-    "currency": "EUR",
-    "bids": [{
-      "bid": {
-        "id": "7706636740145184841",
-        "impid": "test-imp-id",
-        "price": 0.500000,
-        "adm": "some-test-ad",
-        "adomain": ["example.com"],
-        "crid": "29681110",
-        "h": 250,
-        "w": 300,
-        "mtype": 1
-      },
-      "type": "banner"
-    }]
-  }]
+  "expectedBidResponses": [],
+  "expectedMakeBidsErrors": [ 
+    {
+      "value": "cannot unmarshal openrtb2.Bid.ID: expects \" or n, but found 1",
+      "comparison": "literal" 
+    }
+  ]
 }

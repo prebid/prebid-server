@@ -81,7 +81,7 @@
       }
     }
   }],
-  "expectedBidResponses": [],
+  "expectedBidResponses": [{"currency":"EUR","bids":[]}],
   "expectedMakeBidsErrors": [ 
     {
       "value": "Unknown markup type: 3",
