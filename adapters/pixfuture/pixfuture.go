@@ -87,8 +87,8 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 			}
 
 			// Set the MType explicitly in the bid
-			mType := openrtb2.MType(bidType)
-			seatBid.Bid[i].MType = mType
+			//mType := openrtb2.MType(bidType)
+			//seatBid.Bid[i].MType = mType
 
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &seatBid.Bid[i],
