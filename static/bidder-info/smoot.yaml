@@ -1,0 +1,18 @@
+endpoint: 'https://endpoint1.smoot.ai/pserver'
+maintainer:
+  email: 'info@smoot.ai'
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  redirect:
+    url: 'https://usync.smxconv.com/pbserver?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redir={{.RedirectURL}}'
+    userMacro: '[UID]'
