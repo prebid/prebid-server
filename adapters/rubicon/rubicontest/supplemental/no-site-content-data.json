@@ -18,60 +18,6 @@
       }
     },
     "user": {
-      "data": [
-        {
-          "ext": {
-            "segtax": 4
-          },
-          "segment": [
-            {
-              "id": "idToCopy"
-            }
-          ]
-        },
-        {
-          "ext": {
-            "segtax": "someValue"
-          },
-          "segment": [
-            {
-              "id": "shouldNotBeCopied"
-            }
-          ]
-        },
-        {
-          "ext": {
-            "segtax": "4"
-          },
-          "segment": [
-            {
-              "id": "shouldNotBeCopied2"
-            }
-          ]
-        },
-        {
-          "ext": {
-            "segtax": 4
-          },
-          "segment": [
-            {
-              "id": "idToCopy2"
-            }
-          ]
-        },
-        {
-          "ext": {
-            "segtax": [
-              4
-            ]
-          },
-          "segment": [
-            {
-              "id": "shouldNotBeCopied3"
-            }
-          ]
-        }
-      ]
     },
     "imp": [
       {
@@ -137,67 +83,9 @@
             }
           },
           "user": {
-            "data": [
-              {
-                "ext": {
-                  "segtax": 4
-                },
-                "segment": [
-                  {
-                    "id": "idToCopy"
-                  }
-                ]
-              },
-              {
-                "ext": {
-                  "segtax": "someValue"
-                },
-                "segment": [
-                  {
-                    "id": "shouldNotBeCopied"
-                  }
-                ]
-              },
-              {
-                "ext": {
-                  "segtax": "4"
-                },
-                "segment": [
-                  {
-                    "id": "shouldNotBeCopied2"
-                  }
-                ]
-              },
-              {
-                "ext": {
-                  "segtax": 4
-                },
-                "segment": [
-                  {
-                    "id": "idToCopy2"
-                  }
-                ]
-              },
-              {
-                "ext": {
-                  "segtax": [
-                    4
-                  ]
-                },
-                "segment": [
-                  {
-                    "id": "shouldNotBeCopied3"
-                  }
-                ]
-              }
-            ],
             "ext": {
               "rp": {
                 "target": {
-                  "iab": [
-                    "idToCopy",
-                    "idToCopy2"
-                  ]
                 }
               }
             }
@@ -215,7 +103,6 @@
                 "placement": 3,
                 "ext": {
                   "rp": {
-                    "size_id": 203
                   }
                 },
                 "mimes": [
@@ -231,10 +118,6 @@
               "ext": {
                 "rp": {
                   "target": {
-                    "pagecat": [
-                      "val1",
-                      "val2"
-                    ],
                     "pbs_login": "xuser",
                     "pbs_url": "http://hosturl.com",
                     "pbs_version": ""

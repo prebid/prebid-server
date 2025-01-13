@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/golang-collections/collections/stack"
+
 	"github.com/prebid/prebid-server/v3/version"
 
 	"github.com/prebid/prebid-server/v3/adapters"
@@ -18,7 +20,6 @@ import (
 	"github.com/prebid/prebid-server/v3/util/maputil"
 
 	"github.com/buger/jsonparser"
-	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/openrtb/v20/openrtb2"
 )
 
@@ -172,34 +173,6 @@ type rubiconBid struct {
 type extPrebid struct {
 	Prebid *openrtb_ext.ExtBidPrebid `json:"prebid,omitempty"`
 	Bidder json.RawMessage           `json:"bidder,omitempty"`
-}
-
-// defines the contract for bidrequest.user.ext.eids[i].ext
-type rubiconUserExtEidExt struct {
-	Segments []string `json:"segments,omitempty"`
-}
-
-type mappedRubiconUidsParam struct {
-	segments    []string
-	liverampIdl string
-}
-
-func resolveVideoSizeId(placement adcom1.VideoPlacementSubtype, instl int8, impId string) (sizeID int, err error) {
-	if placement != 0 {
-		if placement == 1 {
-			return 201, nil
-		}
-		if placement == 3 {
-			return 203, nil
-		}
-	}
-
-	if instl == 1 {
-		return 202, nil
-	}
-	return 0, &errortypes.BadInput{
-		Message: fmt.Sprintf("video.size_id can not be resolved in impression with id : %s", impId),
-	}
 }
 
 func appendTrackerToUrl(uri string, tracker string) (res string) {
@@ -374,23 +347,18 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 		if isVideo {
 			videoCopy := *imp.Video
 
-			videoSizeId := rubiconExt.Video.VideoSizeID
-			if videoSizeId == 0 {
-				resolvedSizeId, err := resolveVideoSizeId(imp.Video.Placement, imp.Instl, imp.ID)
-				if err != nil {
-					errs = append(errs, err)
-					continue
-				}
-				videoSizeId = resolvedSizeId
-			}
-
 			// if imp.rwdd = 1, set imp.video.ext.videotype = "rewarded"
 			var videoType = ""
 			if imp.Rwdd == 1 {
 				videoType = "rewarded"
 				imp.Rwdd = 0
 			}
-			videoExt := rubiconVideoExt{Skip: rubiconExt.Video.Skip, SkipDelay: rubiconExt.Video.SkipDelay, VideoType: videoType, RP: rubiconVideoExtRP{SizeID: videoSizeId}}
+			videoExt := rubiconVideoExt{
+				Skip:      rubiconExt.Video.Skip,
+				SkipDelay: rubiconExt.Video.SkipDelay,
+				VideoType: videoType,
+				RP:        rubiconVideoExtRP{SizeID: rubiconExt.Video.VideoSizeID},
+			}
 			videoCopy.Ext, err = json.Marshal(&videoExt)
 			imp.Video = &videoCopy
 			imp.Banner = nil
@@ -436,7 +404,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			siteExtRP := rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: int(siteId)}}
 			if siteCopy.Content != nil {
 				siteTarget := make(map[string]interface{})
-				updateExtWithIabAttribute(siteTarget, siteCopy.Content.Data, []int{1, 2, 5, 6})
+				updateExtWithIabAndSegtaxAttribute(siteTarget, siteCopy.Content.Data, []int{1, 2, 5, 6})
 				if len(siteTarget) > 0 {
 					updatedSiteTarget, err := json.Marshal(siteTarget)
 					if err != nil {
@@ -680,20 +648,8 @@ func (a *RubiconAdapter) updateImpRpTarget(extImp rubiconExtImpBidder, extImpRub
 		if err != nil {
 			return nil, err
 		}
-		if len(site.SectionCat) > 0 {
-			addStringArrayAttribute(site.SectionCat, target, "sectioncat")
-		}
-		if len(site.PageCat) > 0 {
-			addStringArrayAttribute(site.PageCat, target, "pagecat")
-		}
 		if site.Page != "" {
 			addStringAttribute(site.Page, target, "page")
-		}
-		if site.Ref != "" {
-			addStringAttribute(site.Ref, target, "ref")
-		}
-		if site.Search != "" {
-			addStringAttribute(site.Search, target, "search")
 		}
 	} else {
 		appExtData, _, _, err := jsonparser.Get(app.Ext, "data")
@@ -703,12 +659,6 @@ func (a *RubiconAdapter) updateImpRpTarget(extImp rubiconExtImpBidder, extImpRub
 		err = populateFirstPartyDataAttributes(appExtData, target)
 		if err != nil {
 			return nil, err
-		}
-		if len(app.SectionCat) > 0 {
-			addStringArrayAttribute(app.SectionCat, target, "sectioncat")
-		}
-		if len(app.PageCat) > 0 {
-			addStringArrayAttribute(app.PageCat, target, "pagecat")
 		}
 	}
 
@@ -803,7 +753,7 @@ func updateUserRpTargetWithFpdAttributes(visitor json.RawMessage, user openrtb2.
 	if err != nil {
 		return nil, err
 	}
-	updateExtWithIabAttribute(target, user.Data, []int{4})
+	updateExtWithIabAndSegtaxAttribute(target, user.Data, []int{4})
 
 	updatedTarget, err := json.Marshal(target)
 	if err != nil {
@@ -812,13 +762,106 @@ func updateUserRpTargetWithFpdAttributes(visitor json.RawMessage, user openrtb2.
 	return updatedTarget, nil
 }
 
-func updateExtWithIabAttribute(target map[string]interface{}, data []openrtb2.Data, segTaxes []int) {
-	var segmentIdsToCopy = getSegmentIdsToCopy(data, segTaxes)
-	if len(segmentIdsToCopy) == 0 {
+func updateExtWithIabAndSegtaxAttribute(target map[string]interface{}, data []openrtb2.Data, segTaxes []int) {
+	taxonomyIdToSegments := getTaxonomyIdToSegments(data)
+	if len(taxonomyIdToSegments) == 0 {
 		return
 	}
 
-	target["iab"] = segmentIdsToCopy
+	relevantSegments := pickRelevantSegments(taxonomyIdToSegments)
+	groupedSegments := groupSegments(relevantSegments, segTaxes)
+
+	for key, value := range groupedSegments {
+		target[key] = value
+	}
+}
+
+func getTaxonomyIdToSegments(data []openrtb2.Data) map[int]*stack.Stack {
+	var taxonomyIdToSegments = make(map[int]*stack.Stack)
+	for _, dataRecord := range data {
+		if dataRecord.Ext == nil {
+			continue
+		}
+
+		var dataRecordExt rubiconDataExt
+		err := json.Unmarshal(dataRecord.Ext, &dataRecordExt)
+		if err != nil {
+			continue
+		}
+
+		taxonomyId := dataRecordExt.SegTax
+		originalSegments := dataRecord.Segment
+		if len(originalSegments) == 0 {
+			continue
+		}
+
+		segments, exists := taxonomyIdToSegments[taxonomyId]
+		if !exists {
+			segments = stack.New()
+			taxonomyIdToSegments[taxonomyId] = segments
+		}
+
+		for _, originalSegment := range originalSegments {
+			if originalSegment.ID != "" {
+				segments.Push(originalSegment)
+			}
+		}
+
+		if segments.Len() == 0 {
+			delete(taxonomyIdToSegments, taxonomyId)
+		}
+	}
+
+	return taxonomyIdToSegments
+}
+
+func pickRelevantSegments(taxonomyIdToSegments map[int]*stack.Stack) map[int][]string {
+	var relevantSegments = make(map[int][]string)
+	taxonomyIds := make([]int, 0)
+
+	for taxonomyId := range taxonomyIdToSegments {
+		taxonomyIds = append(taxonomyIds, taxonomyId)
+	}
+
+	i := 0
+	consumedSegmentsCount := 0
+	for consumedSegmentsCount < 100 && len(taxonomyIds) > 0 {
+		taxonomyIdIndex := i % len(taxonomyIds)
+		taxonomyId := taxonomyIds[taxonomyIdIndex]
+		currentSegments := taxonomyIdToSegments[taxonomyId]
+		lastSegment := currentSegments.Pop().(openrtb2.Segment)
+
+		if _, exists := relevantSegments[taxonomyId]; !exists {
+			relevantSegments[taxonomyId] = make([]string, 0)
+		}
+		relevantSegments[taxonomyId] = append(relevantSegments[taxonomyId], lastSegment.ID)
+		consumedSegmentsCount++
+
+		if currentSegments.Len() == 0 {
+			taxonomyIds = append(taxonomyIds[:taxonomyIdIndex], taxonomyIds[taxonomyIdIndex+1:]...)
+			i--
+		}
+		i++
+	}
+
+	return relevantSegments
+}
+
+func groupSegments(taxonomyIdToSegmentsIds map[int][]string, segTaxes []int) map[string][]string {
+	var groupedSegments = make(map[string][]string)
+	for taxonomyId, segmentsIds := range taxonomyIdToSegmentsIds {
+		segmentName := "iab"
+		if !contains(segTaxes, taxonomyId) {
+			segmentName = "tax" + strconv.Itoa(taxonomyId)
+		}
+
+		if _, exists := groupedSegments[segmentName]; !exists {
+			groupedSegments[segmentName] = make([]string, 0)
+		}
+		groupedSegments[segmentName] = append(groupedSegments[segmentName], segmentsIds...)
+	}
+
+	return groupedSegments
 }
 
 func populateFirstPartyDataAttributes(source json.RawMessage, target map[string]interface{}) error {
@@ -895,26 +938,6 @@ func mapFromRawJSON(message json.RawMessage) (map[string]interface{}, error) {
 		return nil, err
 	}
 	return targetAsMap, nil
-}
-
-func getSegmentIdsToCopy(data []openrtb2.Data, segTaxValues []int) []string {
-	var segmentIdsToCopy = make([]string, 0, len(data))
-
-	for _, dataRecord := range data {
-		if dataRecord.Ext != nil {
-			var dataExtObject rubiconDataExt
-			err := jsonutil.Unmarshal(dataRecord.Ext, &dataExtObject)
-			if err != nil {
-				continue
-			}
-			if contains(segTaxValues, dataExtObject.SegTax) {
-				for _, segment := range dataRecord.Segment {
-					segmentIdsToCopy = append(segmentIdsToCopy, segment.ID)
-				}
-			}
-		}
-	}
-	return segmentIdsToCopy
 }
 
 func contains(s []int, e int) bool {
