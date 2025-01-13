@@ -1,9 +1,9 @@
 package devicedetection
 
 import (
+	"github.com/prebid/prebid-server/v3/logger"
 	"strconv"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
 
@@ -102,18 +102,18 @@ func (x deviceInfoExtractor) getValue(results Results, propertyName deviceInfoPr
 		",",
 	)
 	if err != nil {
-		glog.Errorf("Failed to get results values string.")
+		logger.Log.Errorf("Failed to get results values string.")
 		return ""
 	}
 
 	hasValues, err := results.HasValues(string(propertyName))
 	if err != nil {
-		glog.Errorf("Failed to check if a matched value exists for property %s.\n", propertyName)
+		logger.Log.Errorf("Failed to check if a matched value exists for property %s.\n", propertyName)
 		return ""
 	}
 
 	if !hasValues {
-		glog.Warningf("Property %s does not have a matched value.\n", propertyName)
+		logger.Log.Warningf("Property %s does not have a matched value.\n", propertyName)
 		return "Unknown"
 	}
 

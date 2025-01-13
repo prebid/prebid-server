@@ -1,10 +1,10 @@
 package server
 
 import (
+	"github.com/prebid/prebid-server/v3/logger"
 	"net/http"
 	"strconv"
 
-	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/prebid/prebid-server/v3/config"
@@ -15,7 +15,7 @@ func newPrometheusServer(cfg *config.Configuration, metrics *metricsconfig.Detai
 	proMetrics := metrics.PrometheusMetrics
 
 	if proMetrics == nil {
-		glog.Fatal("Prometheus metrics configured, but a Prometheus metrics engine was not found. Cannot set up a Prometheus listener.")
+		logger.Log.Fatal("Prometheus metrics configured, but a Prometheus metrics engine was not found. Cannot set up a Prometheus listener.")
 	}
 	return &http.Server{
 		Addr: cfg.Host + ":" + strconv.Itoa(cfg.Metrics.Prometheus.Port),
@@ -30,5 +30,5 @@ func newPrometheusServer(cfg *config.Configuration, metrics *metricsconfig.Detai
 type loggerForPrometheus struct{}
 
 func (loggerForPrometheus) Println(v ...interface{}) {
-	glog.Warningln(v...)
+	logger.Log.Warningln(v...)
 }
