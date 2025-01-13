@@ -1,11 +1,11 @@
 package endpoints
 
 import (
+	"github.com/prebid/prebid-server/v3/logger"
 	"net/http"
 	"time"
 
 	"github.com/prebid/prebid-server/v3/currency"
-	"github.com/prebid/prebid-server/v3/di"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
@@ -62,7 +62,7 @@ func NewCurrencyRatesEndpoint(rateConverter rateConverter, fetchingInterval time
 	return func(w http.ResponseWriter, _ *http.Request) {
 		jsonOutput, err := jsonutil.Marshal(currencyRateInfo)
 		if err != nil {
-			di.Log.Errorf("/currency/rates Critical error when trying to marshal currencyRateInfo: %v", err)
+			logger.Log.Errorf("/currency/rates Critical error when trying to marshal currencyRateInfo: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}

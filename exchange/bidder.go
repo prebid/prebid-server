@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/prebid/prebid-server/v3/logger"
 	"io"
 	"net/http"
 	"net/http/httptrace"
@@ -19,7 +20,6 @@ import (
 	"github.com/prebid/prebid-server/v3/bidadjustment"
 	"github.com/prebid/prebid-server/v3/config/util"
 	"github.com/prebid/prebid-server/v3/currency"
-	"github.com/prebid/prebid-server/v3/di"
 	"github.com/prebid/prebid-server/v3/exchange/entities"
 	"github.com/prebid/prebid-server/v3/experiment/adscert"
 	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
@@ -527,7 +527,7 @@ func makeExt(httpInfo *httpCallInfo) *openrtb_ext.ExtHttpCall {
 // doRequest makes a request, handles the response, and returns the data needed by the
 // Bidder interface.
 func (bidder *BidderAdapter) doRequest(ctx context.Context, req *adapters.RequestData, bidderRequestStartTime time.Time, tmaxAdjustments *TmaxAdjustmentsPreprocessed) *httpCallInfo {
-	return bidder.doRequestImpl(ctx, req, di.Log.Warningf, bidderRequestStartTime, tmaxAdjustments)
+	return bidder.doRequestImpl(ctx, req, logger.Log.Warningf, bidderRequestStartTime, tmaxAdjustments)
 }
 
 func (bidder *BidderAdapter) doRequestImpl(ctx context.Context, req *adapters.RequestData, logger util.LogMsg, bidderRequestStartTime time.Time, tmaxAdjustments *TmaxAdjustmentsPreprocessed) *httpCallInfo {

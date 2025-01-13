@@ -2,11 +2,10 @@ package config
 
 import (
 	"fmt"
+	log "github.com/prebid/prebid-server/v3/logger"
 	"reflect"
 	"regexp"
 	"strings"
-
-	"github.com/prebid/prebid-server/v3/di"
 )
 
 type logMsg func(string, ...interface{})
@@ -20,7 +19,7 @@ var blocklistregexp = []*regexp.Regexp{
 // prefix if you want that name to be logged. Structs will append .<fieldname> recursively to the prefix
 // to document deeper structure.
 func logGeneral(v reflect.Value, prefix string) {
-	logGeneralWithLogger(v, prefix, di.Log.Infof)
+	logGeneralWithLogger(v, prefix, log.Log.Infof)
 }
 
 func logGeneralWithLogger(v reflect.Value, prefix string, logger logMsg) {
@@ -45,7 +44,7 @@ func logGeneralWithLogger(v reflect.Value, prefix string, logger logMsg) {
 
 func logStructWithLogger(v reflect.Value, prefix string, logger logMsg) {
 	if v.Kind() != reflect.Struct {
-		di.Log.Fatalf("LogStruct called on type %s, whuch is not a struct!", v.Type().String())
+		log.Log.Fatalf("LogStruct called on type %s, whuch is not a struct!", v.Type().String())
 	}
 	t := v.Type()
 	for i := 0; i < t.NumField(); i++ {
@@ -60,7 +59,7 @@ func logStructWithLogger(v reflect.Value, prefix string, logger logMsg) {
 
 func logMapWithLogger(v reflect.Value, prefix string, logger logMsg) {
 	if v.Kind() != reflect.Map {
-		di.Log.Fatalf("LogMap called on type %s, whuch is not a map!", v.Type().String())
+		log.Log.Fatalf("LogMap called on type %s, whuch is not a map!", v.Type().String())
 	}
 	for _, k := range v.MapKeys() {
 		if k.Kind() == reflect.String && !allowedName(k.String()) {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/prebid/prebid-server/v3/logger"
 	"io"
 	"net/http"
 	"net/url"
@@ -13,7 +14,6 @@ import (
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
-	"github.com/prebid/prebid-server/v3/di"
 	"golang.org/x/net/context/ctxhttp"
 )
 
@@ -55,9 +55,9 @@ func NewFetcher(client *http.Client, endpoint string) *HttpFetcher {
 	// `&request-ids=...&imp-ids=...`.
 
 	if _, err := url.Parse(endpoint); err != nil {
-		di.Log.Fatalf(`Invalid endpoint "%s": %v`, endpoint, err)
+		logger.Log.Fatalf(`Invalid endpoint "%s": %v`, endpoint, err)
 	}
-	di.Log.Infof("Making http_fetcher for endpoint %v", endpoint)
+	logger.Log.Infof("Making http_fetcher for endpoint %v", endpoint)
 
 	urlPrefix := endpoint
 	if strings.Contains(endpoint, "?") {

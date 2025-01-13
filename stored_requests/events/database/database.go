@@ -5,11 +5,11 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"github.com/prebid/prebid-server/v3/logger"
 	"net"
 	"time"
 
 	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/di"
 	"github.com/prebid/prebid-server/v3/metrics"
 	"github.com/prebid/prebid-server/v3/stored_requests/backends/db_provider"
 	"github.com/prebid/prebid-server/v3/stored_requests/events"
@@ -49,7 +49,7 @@ type DatabaseEventProducer struct {
 
 func NewDatabaseEventProducer(cfg DatabaseEventProducerConfig) (eventProducer *DatabaseEventProducer) {
 	if cfg.Provider == nil {
-		di.Log.Fatalf("The Database Stored %s Loader needs a database connection to work.", cfg.RequestType)
+		logger.Log.Fatalf("The Database Stored %s Loader needs a database connection to work.", cfg.RequestType)
 	}
 
 	return &DatabaseEventProducer{
@@ -88,7 +88,7 @@ func (e *DatabaseEventProducer) fetchAll() (fetchErr error) {
 	e.recordFetchTime(elapsedTime, metrics.FetchAll)
 
 	if err != nil {
-		di.Log.Warningf("Failed to fetch all Stored %s data from the DB: %v", e.cfg.RequestType, err)
+		logger.Log.Warningf("Failed to fetch all Stored %s data from the DB: %v", e.cfg.RequestType, err)
 		if _, ok := err.(net.Error); ok {
 			e.recordError(metrics.StoredDataErrorNetwork)
 		} else {
@@ -99,13 +99,13 @@ func (e *DatabaseEventProducer) fetchAll() (fetchErr error) {
 
 	defer func() {
 		if err := rows.Close(); err != nil {
-			di.Log.Warningf("Failed to close the Stored %s DB connection: %v", e.cfg.RequestType, err)
+			logger.Log.Warningf("Failed to close the Stored %s DB connection: %v", e.cfg.RequestType, err)
 			e.recordError(metrics.StoredDataErrorUndefined)
 			fetchErr = err
 		}
 	}()
 	if err := e.sendEvents(rows); err != nil {
-		di.Log.Warningf("Failed to load all Stored %s data from the DB: %v", e.cfg.RequestType, err)
+		logger.Log.Warningf("Failed to load all Stored %s data from the DB: %v", e.cfg.RequestType, err)
 		e.recordError(metrics.StoredDataErrorUndefined)
 		return err
 	}
@@ -130,7 +130,7 @@ func (e *DatabaseEventProducer) fetchDelta() (fetchErr error) {
 	e.recordFetchTime(elapsedTime, metrics.FetchDelta)
 
 	if err != nil {
-		di.Log.Warningf("Failed to fetch updated Stored %s data from the DB: %v", e.cfg.RequestType, err)
+		logger.Log.Warningf("Failed to fetch updated Stored %s data from the DB: %v", e.cfg.RequestType, err)
 		if _, ok := err.(net.Error); ok {
 			e.recordError(metrics.StoredDataErrorNetwork)
 		} else {
@@ -141,13 +141,13 @@ func (e *DatabaseEventProducer) fetchDelta() (fetchErr error) {
 
 	defer func() {
 		if err := rows.Close(); err != nil {
-			di.Log.Warningf("Failed to close the Stored %s DB connection: %v", e.cfg.RequestType, err)
+			logger.Log.Warningf("Failed to close the Stored %s DB connection: %v", e.cfg.RequestType, err)
 			e.recordError(metrics.StoredDataErrorUndefined)
 			fetchErr = err
 		}
 	}()
 	if err := e.sendEvents(rows); err != nil {
-		di.Log.Warningf("Failed to load updated Stored %s data from the DB: %v", e.cfg.RequestType, err)
+		logger.Log.Warningf("Failed to load updated Stored %s data from the DB: %v", e.cfg.RequestType, err)
 		e.recordError(metrics.StoredDataErrorUndefined)
 		return err
 	}
@@ -213,7 +213,7 @@ func (e *DatabaseEventProducer) sendEvents(rows *sql.Rows) (err error) {
 				storedRespData[id] = data
 			}
 		default:
-			di.Log.Warningf("Stored Data with id=%s has invalid type: %s. This will be ignored.", id, dataType)
+			logger.Log.Warningf("Stored Data with id=%s has invalid type: %s. This will be ignored.", id, dataType)
 		}
 	}
 

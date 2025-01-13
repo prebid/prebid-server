@@ -3,9 +3,9 @@ package db_provider
 import (
 	"context"
 	"database/sql"
+	"github.com/prebid/prebid-server/v3/logger"
 
 	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/di"
 )
 
 type DbProvider interface {
@@ -31,15 +31,15 @@ func NewDbProvider(dataType config.DataType, cfg config.DatabaseConnection) DbPr
 			cfg: cfg,
 		}
 	default:
-		di.Log.Fatalf("Unsupported database driver %s", cfg.Driver)
+		logger.Log.Fatalf("Unsupported database driver %s", cfg.Driver)
 		return nil
 	}
 
 	if err := provider.Open(); err != nil {
-		di.Log.Fatalf("Failed to open %s database connection: %v", dataType, err)
+		logger.Log.Fatalf("Failed to open %s database connection: %v", dataType, err)
 	}
 	if err := provider.Ping(); err != nil {
-		di.Log.Fatalf("Failed to ping %s database: %v", dataType, err)
+		logger.Log.Fatalf("Failed to ping %s database: %v", dataType, err)
 	}
 
 	return provider

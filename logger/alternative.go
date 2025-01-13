@@ -1,6 +1,6 @@
 //go:build custom_logger
 
-package log
+package logger
 
 import (
 	"fmt"
@@ -69,6 +69,6 @@ func (logger *SlogWrapper) Fatalf(format string, args ...any) {
 
 var logInstance = &SlogWrapper{1}
 
-func ProvideLogger() interfaces.ILogger {
+func ProvideLogger() interfaces.Logger {
 	return logInstance
 }

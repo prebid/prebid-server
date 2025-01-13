@@ -1,13 +1,13 @@
 package info
 
 import (
+	"github.com/prebid/prebid-server/v3/logger"
 	"net/http"
 	"sort"
 	"strings"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/di"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
@@ -18,22 +18,22 @@ var invalidBaseAdaptersOnlyMsg = []byte(`Invalid value for 'baseadaptersonly' qu
 func NewBiddersEndpoint(bidders config.BidderInfos) httprouter.Handle {
 	responseAll, err := prepareBiddersResponseAll(bidders)
 	if err != nil {
-		di.Log.Fatalf("error creating /info/bidders endpoint all bidders response: %v", err)
+		logger.Log.Fatalf("error creating /info/bidders endpoint all bidders response: %v", err)
 	}
 
 	responseAllBaseOnly, err := prepareBiddersResponseAllBaseOnly(bidders)
 	if err != nil {
-		di.Log.Fatalf("error creating /info/bidders endpoint all bidders (base adapters only) response: %v", err)
+		logger.Log.Fatalf("error creating /info/bidders endpoint all bidders (base adapters only) response: %v", err)
 	}
 
 	responseEnabledOnly, err := prepareBiddersResponseEnabledOnly(bidders)
 	if err != nil {
-		di.Log.Fatalf("error creating /info/bidders endpoint enabled only response: %v", err)
+		logger.Log.Fatalf("error creating /info/bidders endpoint enabled only response: %v", err)
 	}
 
 	responseEnabledOnlyBaseOnly, err := prepareBiddersResponseEnabledOnlyBaseOnly(bidders)
 	if err != nil {
-		di.Log.Fatalf("error creating /info/bidders endpoint enabled only (base adapters only) response: %v", err)
+		logger.Log.Fatalf("error creating /info/bidders endpoint enabled only (base adapters only) response: %v", err)
 	}
 
 	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -137,6 +137,6 @@ func writeResponse(w http.ResponseWriter, data []byte) {
 
 func writeWithErrorHandling(w http.ResponseWriter, data []byte) {
 	if _, err := w.Write(data); err != nil {
-		di.Log.Errorf("error writing response to /info/bidders: %v", err)
+		logger.Log.Errorf("error writing response to /info/bidders: %v", err)
 	}
 }

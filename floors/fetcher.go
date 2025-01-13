@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/prebid/prebid-server/v3/logger"
 	"io"
 	"math"
 	"net/http"
@@ -15,7 +16,6 @@ import (
 	validator "github.com/asaskevich/govalidator"
 	"github.com/coocood/freecache"
 	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/di"
 	"github.com/prebid/prebid-server/v3/metrics"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/timeutil"
@@ -90,7 +90,7 @@ func (fq *FetchQueue) Top() *fetchInfo {
 }
 
 func workerPanicHandler(p interface{}) {
-	di.Log.Errorf("floor fetcher worker panicked: %v", p)
+	logger.Log.Errorf("floor fetcher worker panicked: %v", p)
 }
 
 func NewPriceFloorFetcher(config config.PriceFloors, httpClient *http.Client, metricEngine metrics.MetricsEngine) *PriceFloorFetcher {
@@ -165,7 +165,7 @@ func (f *PriceFloorFetcher) worker(fetchConfig fetchInfo) {
 		}
 		floorData, err := json.Marshal(floorData)
 		if err != nil {
-			di.Log.Errorf("Error while marshaling fetched floor data for url %s", fetchConfig.AccountFloorFetch.URL)
+			logger.Log.Errorf("Error while marshaling fetched floor data for url %s", fetchConfig.AccountFloorFetch.URL)
 		} else {
 			f.SetWithExpiry(fetchConfig.AccountFloorFetch.URL, floorData, cacheExpiry)
 		}
@@ -224,7 +224,7 @@ func (f *PriceFloorFetcher) Fetcher() {
 			}
 		case <-f.done:
 			ticker.Stop()
-			di.Log.Info("Price Floor fetcher terminated")
+			logger.Log.Info("Price Floor fetcher terminated")
 			return
 		}
 	}
@@ -233,23 +233,23 @@ func (f *PriceFloorFetcher) Fetcher() {
 func (f *PriceFloorFetcher) fetchAndValidate(config config.AccountFloorFetch) (*openrtb_ext.PriceFloorRules, int) {
 	floorResp, maxAge, err := f.fetchFloorRulesFromURL(config)
 	if floorResp == nil || err != nil {
-		di.Log.Errorf("Error while fetching floor data from URL: %s, reason : %s", config.URL, err.Error())
+		logger.Log.Errorf("Error while fetching floor data from URL: %s, reason : %s", config.URL, err.Error())
 		return nil, 0
 	}
 
 	if len(floorResp) > (config.MaxFileSizeKB * 1024) {
-		di.Log.Errorf("Recieved invalid floor data from URL: %s, reason : floor file size is greater than MaxFileSize", config.URL)
+		logger.Log.Errorf("Recieved invalid floor data from URL: %s, reason : floor file size is greater than MaxFileSize", config.URL)
 		return nil, 0
 	}
 
 	var priceFloors openrtb_ext.PriceFloorRules
 	if err = json.Unmarshal(floorResp, &priceFloors.Data); err != nil {
-		di.Log.Errorf("Recieved invalid price floor json from URL: %s", config.URL)
+		logger.Log.Errorf("Recieved invalid price floor json from URL: %s", config.URL)
 		return nil, 0
 	}
 
 	if err := validateRules(config, &priceFloors); err != nil {
-		di.Log.Errorf("Validation failed for floor JSON from URL: %s, reason: %s", config.URL, err.Error())
+		logger.Log.Errorf("Validation failed for floor JSON from URL: %s, reason: %s", config.URL, err.Error())
 		return nil, 0
 	}
 
@@ -280,10 +280,10 @@ func (f *PriceFloorFetcher) fetchFloorRulesFromURL(config config.AccountFloorFet
 	if maxAgeStr := httpResp.Header.Get("max-age"); maxAgeStr != "" {
 		maxAge, err = strconv.Atoi(maxAgeStr)
 		if err != nil {
-			di.Log.Errorf("max-age in header is malformed for url %s", config.URL)
+			logger.Log.Errorf("max-age in header is malformed for url %s", config.URL)
 		}
 		if maxAge <= config.Period || maxAge > math.MaxInt32 {
-			di.Log.Errorf("Invalid max-age = %s provided, value should be valid integer and should be within (%v, %v)", maxAgeStr, config.Period, math.MaxInt32)
+			logger.Log.Errorf("Invalid max-age = %s provided, value should be valid integer and should be within (%v, %v)", maxAgeStr, config.Period, math.MaxInt32)
 		}
 	}
 

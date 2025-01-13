@@ -1,10 +1,10 @@
 package devicedetection
 
 import (
+	"github.com/prebid/prebid-server/v3/logger"
 	"strconv"
 
 	"github.com/pkg/errors"
-	"github.com/prebid/prebid-server/v3/di"
 )
 
 // deviceInfoExtractor is a struct that contains the methods to extract device information
@@ -102,18 +102,18 @@ func (x deviceInfoExtractor) getValue(results Results, propertyName deviceInfoPr
 		",",
 	)
 	if err != nil {
-		di.Log.Errorf("Failed to get results values string.")
+		logger.Log.Errorf("Failed to get results values string.")
 		return ""
 	}
 
 	hasValues, err := results.HasValues(string(propertyName))
 	if err != nil {
-		di.Log.Errorf("Failed to check if a matched value exists for property %s.\n", propertyName)
+		logger.Log.Errorf("Failed to check if a matched value exists for property %s.\n", propertyName)
 		return ""
 	}
 
 	if !hasValues {
-		di.Log.Warningf("Property %s does not have a matched value.\n", propertyName)
+		logger.Log.Warningf("Property %s does not have a matched value.\n", propertyName)
 		return "Unknown"
 	}
 

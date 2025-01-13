@@ -1,11 +1,11 @@
 package server
 
 import (
+	"github.com/prebid/prebid-server/v3/logger"
 	"net"
 	"strings"
 	"time"
 
-	"github.com/prebid/prebid-server/v3/di"
 	"github.com/prebid/prebid-server/v3/metrics"
 )
 
@@ -31,7 +31,7 @@ func (l *monitorableConnection) Close() error {
 		// in the core Go libs: https://github.com/golang/go/issues/4373#issuecomment-347680321
 		errString := err.Error()
 		if !strings.Contains(errString, "use of closed network connection") {
-			di.Log.Errorf("Error closing connection: %s", errString)
+			logger.Log.Errorf("Error closing connection: %s", errString)
 		}
 		l.metrics.RecordConnectionClose(false)
 	}
@@ -41,7 +41,7 @@ func (l *monitorableConnection) Close() error {
 func (ln *monitorableListener) Accept() (net.Conn, error) {
 	tc, err := ln.Listener.Accept()
 	if err != nil {
-		di.Log.Errorf("Error accepting connection: %v", err)
+		logger.Log.Errorf("Error accepting connection: %v", err)
 		ln.metrics.RecordConnectionAccept(false)
 		return tc, err
 	}

@@ -2,6 +2,7 @@ package pubstack
 
 import (
 	"fmt"
+	"github.com/prebid/prebid-server/v3/logger"
 	"net/http"
 	"os"
 	"os/signal"
@@ -10,8 +11,6 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
-	"github.com/prebid/prebid-server/v3/di"
-
 	"github.com/prebid/prebid-server/v3/analytics"
 	"github.com/prebid/prebid-server/v3/analytics/pubstack/eventchannel"
 	"github.com/prebid/prebid-server/v3/analytics/pubstack/helpers"
@@ -64,7 +63,7 @@ func NewModule(client *http.Client, scope, endpoint, configRefreshDelay string, 
 }
 
 func NewModuleWithConfigTask(client *http.Client, scope, endpoint string, maxEventCount int, maxByteSize, maxTime string, configTask ConfigUpdateTask, clock clock.Clock) (analytics.Module, error) {
-	di.Log.Infof("[pubstack] Initializing module scope=%s endpoint=%s\n", scope, endpoint)
+	logger.Log.Infof("[pubstack] Initializing module scope=%s endpoint=%s\n", scope, endpoint)
 
 	// parse args
 	bufferCfg, err := newBufferConfig(maxEventCount, maxByteSize, maxTime)
@@ -103,7 +102,7 @@ func NewModuleWithConfigTask(client *http.Client, scope, endpoint string, maxEve
 	configChannel := configTask.Start(pb.stopCh)
 	go pb.start(configChannel)
 
-	di.Log.Info("[pubstack] Pubstack analytics configured and ready")
+	logger.Log.Info("[pubstack] Pubstack analytics configured and ready")
 	return &pb, nil
 }
 
@@ -118,7 +117,7 @@ func (p *PubstackModule) LogAuctionObject(ao *analytics.AuctionObject) {
 	// serialize event
 	payload, err := helpers.JsonifyAuctionObject(ao, p.scope)
 	if err != nil {
-		di.Log.Warning("[pubstack] Cannot serialize auction")
+		logger.Log.Warning("[pubstack] Cannot serialize auction")
 		return
 	}
 
@@ -139,7 +138,7 @@ func (p *PubstackModule) LogVideoObject(vo *analytics.VideoObject) {
 	// serialize event
 	payload, err := helpers.JsonifyVideoObject(vo, p.scope)
 	if err != nil {
-		di.Log.Warning("[pubstack] Cannot serialize video")
+		logger.Log.Warning("[pubstack] Cannot serialize video")
 		return
 	}
 
@@ -157,7 +156,7 @@ func (p *PubstackModule) LogSetUIDObject(so *analytics.SetUIDObject) {
 	// serialize event
 	payload, err := helpers.JsonifySetUIDObject(so, p.scope)
 	if err != nil {
-		di.Log.Warning("[pubstack] Cannot serialize video")
+		logger.Log.Warning("[pubstack] Cannot serialize video")
 		return
 	}
 
@@ -175,7 +174,7 @@ func (p *PubstackModule) LogCookieSyncObject(cso *analytics.CookieSyncObject) {
 	// serialize event
 	payload, err := helpers.JsonifyCookieSync(cso, p.scope)
 	if err != nil {
-		di.Log.Warning("[pubstack] Cannot serialize video")
+		logger.Log.Warning("[pubstack] Cannot serialize video")
 		return
 	}
 
@@ -193,7 +192,7 @@ func (p *PubstackModule) LogAmpObject(ao *analytics.AmpObject) {
 	// serialize event
 	payload, err := helpers.JsonifyAmpObject(ao, p.scope)
 	if err != nil {
-		di.Log.Warning("[pubstack] Cannot serialize video")
+		logger.Log.Warning("[pubstack] Cannot serialize video")
 		return
 	}
 
@@ -203,7 +202,7 @@ func (p *PubstackModule) LogAmpObject(ao *analytics.AmpObject) {
 // Shutdown - no op since the analytic module already implements system signal handling
 // and trying to close a closed channel will cause panic
 func (p *PubstackModule) Shutdown() {
-	di.Log.Info("[PubstackModule] Shutdown")
+	logger.Log.Info("[PubstackModule] Shutdown")
 }
 
 func (p *PubstackModule) start(c <-chan *Configuration) {
@@ -216,7 +215,7 @@ func (p *PubstackModule) start(c <-chan *Configuration) {
 			return
 		case config := <-c:
 			p.updateConfig(config)
-			di.Log.Infof("[pubstack] Updating config: %v", p.cfg)
+			logger.Log.Infof("[pubstack] Updating config: %v", p.cfg)
 		}
 	}
 }

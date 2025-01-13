@@ -3,11 +3,10 @@ package filesystem
 import (
 	"bytes"
 	"fmt"
-	"github.com/prebid/prebid-server/v3/di"
-
 	cglog "github.com/chasex/glog"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/analytics"
+	"github.com/prebid/prebid-server/v3/logger"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
@@ -94,7 +93,7 @@ func (f *FileLogger) LogNotificationEventObject(ne *analytics.NotificationEvent)
 // Shutdown the logger
 func (f *FileLogger) Shutdown() {
 	// clear all pending buffered data in case there is any
-	di.Log.Info("[FileLogger] Shutdown, trying to flush buffer")
+	logger.Log.Info("[FileLogger] Shutdown, trying to flush buffer")
 	f.Logger.Flush()
 }
 

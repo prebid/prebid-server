@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/prebid/prebid-server/v3/logger"
 	"net/url"
 	"reflect"
 	"strings"
@@ -11,7 +12,6 @@ import (
 
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/di"
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
@@ -151,11 +151,11 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 	errs = cfg.ExtCacheURL.validate(errs)
 	errs = cfg.AccountDefaults.PriceFloors.validate(errs)
 	if cfg.AccountDefaults.Disabled {
-		di.Log.Warning(`With account_defaults.disabled=true, host-defined accounts must exist and have "disabled":false. All other requests will be rejected.`)
+		logger.Log.Warning(`With account_defaults.disabled=true, host-defined accounts must exist and have "disabled":false. All other requests will be rejected.`)
 	}
 
 	if cfg.AccountDefaults.Events.Enabled {
-		di.Log.Warning(`account_defaults.events has no effect as the feature is under development.`)
+		logger.Log.Warning(`account_defaults.events has no effect as the feature is under development.`)
 	}
 
 	errs = cfg.Experiment.validate(errs)
@@ -267,7 +267,7 @@ func (cfg *GDPR) validate(v *viper.Viper, errs []error) []error {
 		errs = append(errs, fmt.Errorf("gdpr.host_vendor_id must be in the range [0, %d]. Got %d", 0xffff, cfg.HostVendorID))
 	}
 	if cfg.HostVendorID == 0 {
-		di.Log.Warning("gdpr.host_vendor_id was not specified. Host company GDPR checks will be skipped.")
+		logger.Log.Warning("gdpr.host_vendor_id was not specified. Host company GDPR checks will be skipped.")
 	}
 	if cfg.AMPException {
 		errs = append(errs, fmt.Errorf("gdpr.amp_exception has been discontinued and must be removed from your config. If you need to disable GDPR for AMP, you may do so per-account (gdpr.integration_enabled.amp) or at the host level for the default account (account_defaults.gdpr.integration_enabled.amp)"))
@@ -725,7 +725,7 @@ func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName openrtb_ex
 	}
 
 	if err := isValidCookieSize(c.HostCookie.MaxCookieSizeBytes); err != nil {
-		di.Log.Fatal(fmt.Printf("Max cookie size %d cannot be less than %d \n", c.HostCookie.MaxCookieSizeBytes, MIN_COOKIE_SIZE_BYTES))
+		logger.Log.Fatal(fmt.Printf("Max cookie size %d cannot be less than %d \n", c.HostCookie.MaxCookieSizeBytes, MIN_COOKIE_SIZE_BYTES))
 		return nil, err
 	}
 
@@ -815,7 +815,7 @@ func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName openrtb_ex
 	}
 	c.BidderInfos = mergedBidderInfos
 
-	di.Log.Info("Logging the resolved configuration:")
+	logger.Log.Info("Logging the resolved configuration:")
 	logGeneral(reflect.ValueOf(c), "  \t")
 	if errs := c.validate(v); len(errs) > 0 {
 		return &c, errortypes.NewAggregateError("validation errors", errs)
@@ -858,7 +858,7 @@ func setConfigBidderInfoNillableFields(v *viper.Viper, bidderInfos BidderInfos) 
 func (cfg *Configuration) MarshalAccountDefaults() error {
 	var err error
 	if cfg.accountDefaultsJSON, err = jsonutil.Marshal(cfg.AccountDefaults); err != nil {
-		di.Log.Warningf("converting %+v to json: %v", cfg.AccountDefaults, err)
+		logger.Log.Warningf("converting %+v to json: %v", cfg.AccountDefaults, err)
 	}
 	return err
 }

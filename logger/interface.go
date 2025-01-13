@@ -1,6 +1,6 @@
-package interfaces
+package logger
 
-type ILogger interface {
+type Logger interface {
 	Info(args ...any)
 	Infof(format string, args ...any)
 

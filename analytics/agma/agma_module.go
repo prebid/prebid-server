@@ -3,6 +3,7 @@ package agma
 import (
 	"bytes"
 	"errors"
+	"github.com/prebid/prebid-server/v3/logger"
 	"net/http"
 	"os"
 	"os/signal"
@@ -15,7 +16,6 @@ import (
 	"github.com/prebid/go-gdpr/vendorconsent"
 	"github.com/prebid/prebid-server/v3/analytics"
 	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/di"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
@@ -93,7 +93,7 @@ func (l *AgmaLogger) start() {
 	for {
 		select {
 		case <-l.sigTermCh:
-			di.Log.Infof("[AgmaAnalytics] Received Close, trying to flush buffer")
+			logger.Log.Infof("[AgmaAnalytics] Received Close, trying to flush buffer")
 			l.flush()
 			return
 		case event := <-l.bufferCh:
@@ -139,7 +139,7 @@ func (l *AgmaLogger) flush() {
 	if err != nil {
 		l.reset()
 		l.mux.Unlock()
-		di.Log.Warning("[AgmaAnalytics] fail to copy the buffer")
+		logger.Log.Warning("[AgmaAnalytics] fail to copy the buffer")
 		return
 	}
 
@@ -223,7 +223,7 @@ func (l *AgmaLogger) LogAuctionObject(event *analytics.AuctionObject) {
 	}
 	data, err := serializeAnayltics(event.RequestWrapper, EventTypeAuction, code, event.StartTime)
 	if err != nil {
-		di.Log.Errorf("[AgmaAnalytics] Error serializing auction object: %v", err)
+		logger.Log.Errorf("[AgmaAnalytics] Error serializing auction object: %v", err)
 		return
 	}
 	l.bufferCh <- data
@@ -239,7 +239,7 @@ func (l *AgmaLogger) LogAmpObject(event *analytics.AmpObject) {
 	}
 	data, err := serializeAnayltics(event.RequestWrapper, EventTypeAmp, code, event.StartTime)
 	if err != nil {
-		di.Log.Errorf("[AgmaAnalytics] Error serializing amp object: %v", err)
+		logger.Log.Errorf("[AgmaAnalytics] Error serializing amp object: %v", err)
 		return
 	}
 	l.bufferCh <- data
@@ -255,14 +255,14 @@ func (l *AgmaLogger) LogVideoObject(event *analytics.VideoObject) {
 	}
 	data, err := serializeAnayltics(event.RequestWrapper, EventTypeVideo, code, event.StartTime)
 	if err != nil {
-		di.Log.Errorf("[AgmaAnalytics] Error serializing video object: %v", err)
+		logger.Log.Errorf("[AgmaAnalytics] Error serializing video object: %v", err)
 		return
 	}
 	l.bufferCh <- data
 }
 
 func (l *AgmaLogger) Shutdown() {
-	di.Log.Info("[AgmaAnalytics] Shutdown, trying to flush buffer")
+	logger.Log.Info("[AgmaAnalytics] Shutdown, trying to flush buffer")
 	l.flush() // mutex safe
 }
 

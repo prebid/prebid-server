@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/prebid/prebid-server/v3/logger"
 	"math/rand"
 	"net/url"
 	"runtime/debug"
@@ -44,7 +45,6 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/openrtb/v20/openrtb3"
-	"github.com/prebid/prebid-server/v3/di"
 )
 
 type extCacheInstructions struct {
@@ -728,7 +728,7 @@ func (e *exchange) getAllBids(
 		bidderRunner := e.recoverSafely(bidderRequests, func(bidderRequest BidderRequest, conversions currency.Conversions) {
 			// Passing in aName so a doesn't change out from under the go routine
 			if bidderRequest.BidderLabels.Adapter == "" {
-				di.Log.Errorf("Exchange: bidlables for %s (%s) missing adapter string", bidderRequest.BidderName, bidderRequest.BidderCoreName)
+				logger.Log.Errorf("Exchange: bidlables for %s (%s) missing adapter string", bidderRequest.BidderName, bidderRequest.BidderCoreName)
 				bidderRequest.BidderLabels.Adapter = bidderRequest.BidderCoreName
 			}
 			brw := new(bidResponseWrapper)
@@ -857,7 +857,7 @@ func (e *exchange) recoverSafely(bidderRequests []BidderRequest,
 					allBidders = sb.String()[:sb.Len()-1]
 				}
 
-				di.Log.Errorf("OpenRTB auction recovered panic from Bidder %s: %v. "+
+				logger.Log.Errorf("OpenRTB auction recovered panic from Bidder %s: %v. "+
 					"Account id: %s, All Bidders: %s, Stack trace is: %v",
 					bidderRequest.BidderCoreName, r, bidderRequest.BidderLabels.PubID, allBidders, string(debug.Stack()))
 				e.me.RecordAdapterPanic(bidderRequest.BidderLabels)

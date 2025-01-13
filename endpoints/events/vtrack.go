@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/prebid/prebid-server/v3/logger"
 	"io"
 	"net/http"
 	"strings"
@@ -13,7 +14,6 @@ import (
 	accountService "github.com/prebid/prebid-server/v3/account"
 	"github.com/prebid/prebid-server/v3/analytics"
 	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/di"
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/metrics"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
@@ -213,7 +213,7 @@ func (v *vtrackEndpoint) handleVTrackRequest(ctx context.Context, req *BidCacheR
 
 	// handle pbs caching errors
 	if len(errs) != 0 {
-		di.Log.Errorf("Error(s) updating vast: %v", errs)
+		logger.Log.Errorf("Error(s) updating vast: %v", errs)
 		return nil, errs
 	}
 

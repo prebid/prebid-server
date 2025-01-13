@@ -2,10 +2,10 @@ package memory
 
 import (
 	"encoding/json"
+	"github.com/prebid/prebid-server/v3/logger"
 	"sync"
 
 	"github.com/coocood/freecache"
-	"github.com/prebid/prebid-server/v3/di"
 )
 
 // This file contains an interface and some wrapper types for various types of "map-like" structures
@@ -52,14 +52,14 @@ func (m *pbsLRUCache) Get(id string) (json.RawMessage, bool) {
 		return val, true
 	}
 	if err != freecache.ErrNotFound {
-		di.Log.Errorf("unexpected error from freecache: %v", err)
+		logger.Log.Errorf("unexpected error from freecache: %v", err)
 	}
 	return val, false
 }
 
 func (m *pbsLRUCache) Set(id string, value json.RawMessage) {
 	if err := m.Cache.Set([]byte(id), value, m.ttlSeconds); err != nil {
-		di.Log.Errorf("error saving value in freecache: %v", err)
+		logger.Log.Errorf("error saving value in freecache: %v", err)
 	}
 }
 
