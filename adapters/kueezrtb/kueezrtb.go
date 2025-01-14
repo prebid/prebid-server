@@ -3,16 +3,14 @@ package kueezrtb
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"net/url"
-	"strings"
-
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"net/http"
+	"net/url"
 )
 
 type adapter struct {
@@ -118,7 +116,7 @@ func extractCid(imp *openrtb2.Imp) (string, error) {
 	if err := jsonutil.Unmarshal(bidderExt.Bidder, &impExt); err != nil {
 		return "", fmt.Errorf("unmarshal ImpExtkueez: %w", err)
 	}
-	return strings.TrimSpace(impExt.ConnectionId), nil
+	return impExt.ConnectionId, nil
 }
 
 func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
