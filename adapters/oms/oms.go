@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
@@ -12,6 +13,16 @@ import (
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
+
+type pbsExt struct {
+	Bidder genericPID `json:"bidder"`
+	Tid    string     `json:"tid"`
+}
+
+type genericPID struct {
+	Pid         string `json:"pid"`
+	PublisherID int    `json:"publisherId"`
+}
 
 type adapter struct {
 	endpoint string
@@ -31,9 +42,23 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		return nil, []error{err}
 	}
 
+	var publisherID string
+	if len(request.Imp[0].Ext) > 0 {
+		ext := pbsExt{}
+		err = json.Unmarshal(request.Imp[0].Ext, &ext)
+		if err != nil {
+			return nil, []error{err}
+		}
+
+		publisherID = ext.Bidder.Pid
+		if publisherID == "" && ext.Bidder.PublisherID > 0 {
+			publisherID = strconv.Itoa(ext.Bidder.PublisherID)
+		}
+	}
+
 	requestData := &adapters.RequestData{
 		Method: "POST",
-		Uri:    a.endpoint,
+		Uri:    a.endpoint + fmt.Sprintf("?publisherId=%v", publisherID),
 		Body:   requestJSON,
 		ImpIDs: openrtb_ext.GetImpIDs(request.Imp),
 	}
@@ -42,7 +67,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-
 	if responseData.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -72,12 +96,40 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 	for _, seatBid := range response.SeatBid {
 		for i := range seatBid.Bid {
+			bidType := getBidType(seatBid.Bid[i].MType)
+
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     &seatBid.Bid[i],
-				BidType: openrtb_ext.BidTypeBanner,
+				Bid:      &seatBid.Bid[i],
+				BidType:  bidType,
+				BidVideo: getBidVideo(bidType, &seatBid.Bid[i]),
 			})
 		}
 	}
 
 	return bidResponse, nil
+}
+
+func getBidType(markupType openrtb2.MarkupType) openrtb_ext.BidType {
+	switch markupType {
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo
+	default:
+		return openrtb_ext.BidTypeBanner
+	}
+}
+
+func getBidVideo(bidType openrtb_ext.BidType, bid *openrtb2.Bid) *openrtb_ext.ExtBidPrebidVideo {
+	if bidType != openrtb_ext.BidTypeVideo {
+		return nil
+	}
+
+	var primaryCategory string
+	if len(bid.Cat) > 0 {
+		primaryCategory = bid.Cat[0]
+	}
+
+	return &openrtb_ext.ExtBidPrebidVideo{
+		Duration:        int(bid.Dur),
+		PrimaryCategory: primaryCategory,
+	}
 }

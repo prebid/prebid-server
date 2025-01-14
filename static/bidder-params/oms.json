@@ -6,9 +6,25 @@
   "properties": {
     "pid": {
       "type": "string",
-      "description": "An id used to identify OMS publisher.",
+      "description": "Deprecated: An id used to identify OMS publisher.",
       "minLength": 5
+    },
+    "publisherId": {
+      "type": "integer",
+      "description": "An ID used to identify OMS publisher.",
+      "minimum": 10000
     }
   },
-  "required": ["pid"]
+  "anyOf": [
+    {
+      "required": [
+        "pid"
+      ]
+    },
+    {
+      "required": [
+        "publisherId"
+      ]
+    }
+  ]
 }
