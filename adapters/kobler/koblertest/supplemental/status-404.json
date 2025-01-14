@@ -1,0 +1,75 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "device": {
+      "devicetype": 2
+    },
+    "site": {
+      "page": "http://example.com"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "tagid": "test",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 320,
+              "h": 100
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://fake.endpoint",
+        "body": {
+          "id": "test-request-id",
+          "device": {
+            "devicetype": 2
+          },
+          "site": {
+            "page": "http://example.com"
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "tagid": "test",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  },
+                  {
+                    "w": 320,
+                    "h": 100
+                  }
+                ]
+              }
+            }
+          ],
+          "cur": ["USD"]
+        },
+        "impIDs": ["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 404,
+        "body": {}
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 404. Run with request.debug = 1 for more info.",
+      "comparison": "literal"
+    }
+  ]
+}
