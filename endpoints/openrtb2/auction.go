@@ -1293,12 +1293,8 @@ func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases 
 				return append(errL, fmt.Errorf("request.user.eids[%d].uids must contain at least one element or be undefined", eidIndex))
 			}
 
-			for uidIndex, uid := range eid.UIDs {
-				if uid.ID == "" {
-					return append(errL, fmt.Errorf("request.user.eids[%d].uids[%d] missing required field: \"id\"", eidIndex, uidIndex))
-				}
-			}
 		}
+		req.User.EIDs = validEids
 	}
 
 	return errL
@@ -1309,7 +1305,7 @@ func validateEIDs(eids []openrtb2.EID) ([]openrtb2.EID, []error) {
 	validEIDs := make([]openrtb2.EID, 0, len(eids))
 
 	for eidIndex, eid := range eids {
-		validUIDs, uidErrors := validateUIDs(eid.UIDs)
+		validUIDs, uidErrors := validateUIDs(eid.UIDs, eidIndex)
 		errorsList = append(errorsList, uidErrors...)
 
 		if len(validUIDs) > 0 {
@@ -1326,7 +1322,7 @@ func validateEIDs(eids []openrtb2.EID) ([]openrtb2.EID, []error) {
 	return validEIDs, errorsList
 }
 
-func validateUIDs(uids []openrtb2.UID) ([]openrtb2.UID, []error) {
+func validateUIDs(uids []openrtb2.UID, eidIndex int) ([]openrtb2.UID, []error) {
 	var validUIDs []openrtb2.UID
 	var uidErrors []error
 
@@ -1335,7 +1331,7 @@ func validateUIDs(uids []openrtb2.UID) ([]openrtb2.UID, []error) {
 			validUIDs = append(validUIDs, uid)
 		} else {
 			uidErrors = append(uidErrors, &errortypes.Warning{
-				Message:     fmt.Sprintf("request.user.eids.uids[%d] contains empty ids and is removed from the request", uidIndex),
+				Message:     fmt.Sprintf("request.user.eids[%d].uids[%d] contains empty ids and is removed from the request", eidIndex, uidIndex),
 				WarningCode: errortypes.InvalidUserUIDsWarningCode,
 			})
 		}
