@@ -1,10 +1,11 @@
 package hooks
 
 import (
+	"slices"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/di"
 	"github.com/prebid/prebid-server/v3/hooks/hookstage"
 )
 
@@ -69,11 +70,12 @@ type HookWrapper[T any] struct {
 
 // NewExecutionPlanBuilder returns a new instance of the ExecutionPlanBuilder interface.
 // Depending on the hooks' status, method returns a real PlanBuilder or the EmptyPlanBuilder.
-func NewExecutionPlanBuilder(hooks config.Hooks, repo HookRepository) ExecutionPlanBuilder {
+func NewExecutionPlanBuilder(hooks config.Hooks, repo HookRepository, disabledModules []string) ExecutionPlanBuilder {
 	if hooks.Enabled {
 		return PlanBuilder{
-			hooks: hooks,
-			repo:  repo,
+			hooks:           hooks,
+			repo:            repo,
+			disabledModules: disabledModules,
 		}
 	}
 	return EmptyPlanBuilder{}
@@ -82,8 +84,9 @@ func NewExecutionPlanBuilder(hooks config.Hooks, repo HookRepository) ExecutionP
 // PlanBuilder is a concrete implementation of the ExecutionPlanBuilder interface.
 // Which returns hook execution plans for specific stage defined by the hook config.
 type PlanBuilder struct {
-	hooks config.Hooks
-	repo  HookRepository
+	hooks           config.Hooks
+	repo            HookRepository
+	disabledModules []string
 }
 
 func (p PlanBuilder) PlanForEntrypointStage(endpoint string) Plan[hookstage.Entrypoint] {
@@ -93,6 +96,7 @@ func (p PlanBuilder) PlanForEntrypointStage(endpoint string) Plan[hookstage.Entr
 		endpoint,
 		StageEntrypoint,
 		p.repo.GetEntrypointHook,
+		p.disabledModules,
 	)
 }
 
@@ -103,6 +107,7 @@ func (p PlanBuilder) PlanForRawAuctionStage(endpoint string, account *config.Acc
 		endpoint,
 		StageRawAuctionRequest,
 		p.repo.GetRawAuctionHook,
+		p.disabledModules,
 	)
 }
 
@@ -113,6 +118,7 @@ func (p PlanBuilder) PlanForProcessedAuctionStage(endpoint string, account *conf
 		endpoint,
 		StageProcessedAuctionRequest,
 		p.repo.GetProcessedAuctionHook,
+		p.disabledModules,
 	)
 }
 
@@ -123,6 +129,7 @@ func (p PlanBuilder) PlanForBidderRequestStage(endpoint string, account *config.
 		endpoint,
 		StageBidderRequest,
 		p.repo.GetBidderRequestHook,
+		p.disabledModules,
 	)
 }
 
@@ -133,6 +140,7 @@ func (p PlanBuilder) PlanForRawBidderResponseStage(endpoint string, account *con
 		endpoint,
 		StageRawBidderResponse,
 		p.repo.GetRawBidderResponseHook,
+		p.disabledModules,
 	)
 }
 
@@ -143,6 +151,7 @@ func (p PlanBuilder) PlanForAllProcessedBidResponsesStage(endpoint string, accou
 		endpoint,
 		StageAllProcessedBidResponses,
 		p.repo.GetAllProcessedBidResponsesHook,
+		p.disabledModules,
 	)
 }
 
@@ -153,6 +162,7 @@ func (p PlanBuilder) PlanForAuctionResponseStage(endpoint string, account *confi
 		endpoint,
 		StageAuctionResponse,
 		p.repo.GetAuctionResponseHook,
+		p.disabledModules,
 	)
 }
 
@@ -164,22 +174,23 @@ func getMergedPlan[T any](
 	endpoint string,
 	stage Stage,
 	getHookFn hookFn[T],
+	disabledModules []string,
 ) Plan[T] {
 	accountPlan := cfg.DefaultAccountExecutionPlan
 	if account != nil && account.Hooks.ExecutionPlan.Endpoints != nil {
 		accountPlan = account.Hooks.ExecutionPlan
 	}
 
-	plan := getPlan(getHookFn, cfg.HostExecutionPlan, endpoint, stage)
-	plan = append(plan, getPlan(getHookFn, accountPlan, endpoint, stage)...)
+	plan := getPlan(getHookFn, cfg.HostExecutionPlan, disabledModules, endpoint, stage)
+	plan = append(plan, getPlan(getHookFn, accountPlan, disabledModules, endpoint, stage)...)
 
 	return plan
 }
 
-func getPlan[T any](getHookFn hookFn[T], cfg config.HookExecutionPlan, endpoint string, stage Stage) Plan[T] {
+func getPlan[T any](getHookFn hookFn[T], cfg config.HookExecutionPlan, disabledModules []string, endpoint string, stage Stage) Plan[T] {
 	plan := make(Plan[T], 0, len(cfg.Endpoints[endpoint].Stages[stage.String()].Groups))
 	for _, groupCfg := range cfg.Endpoints[endpoint].Stages[stage.String()].Groups {
-		group := getGroup(getHookFn, groupCfg)
+		group := getGroup(getHookFn, groupCfg, disabledModules)
 		if len(group.Hooks) > 0 {
 			plan = append(plan, group)
 		}
@@ -188,17 +199,19 @@ func getPlan[T any](getHookFn hookFn[T], cfg config.HookExecutionPlan, endpoint 
 	return plan
 }
 
-func getGroup[T any](getHookFn hookFn[T], cfg config.HookExecutionGroup) Group[T] {
+func getGroup[T any](getHookFn hookFn[T], cfg config.HookExecutionGroup, disabledModules []string) Group[T] {
 	group := Group[T]{
 		Timeout: time.Duration(cfg.Timeout) * time.Millisecond,
 		Hooks:   make([]HookWrapper[T], 0, len(cfg.HookSequence)),
 	}
-
 	for _, hookCfg := range cfg.HookSequence {
+		if slices.Contains(disabledModules, hookCfg.ModuleCode) {
+			continue
+		}
 		if h, ok := getHookFn(hookCfg.ModuleCode); ok {
 			group.Hooks = append(group.Hooks, HookWrapper[T]{Module: hookCfg.ModuleCode, Code: hookCfg.HookImplCode, Hook: h})
 		} else {
-			glog.Warningf("Not found hook while building hook execution plan: %s %s", hookCfg.ModuleCode, hookCfg.HookImplCode)
+			di.Logger.Warningf("Not found hook while building hook execution plan: %s %s", hookCfg.ModuleCode, hookCfg.HookImplCode)
 		}
 	}
 
