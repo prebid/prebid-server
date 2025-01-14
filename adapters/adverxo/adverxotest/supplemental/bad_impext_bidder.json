@@ -1,0 +1,23 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [{"w": 320, "h": 50}]
+        },
+        "ext": {
+          "bidder": "badBidder"
+        }
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "imp test-imp-id: unable to unmarshal ext.bidder: json: cannot unmarshal string into Go value of type openrtb_ext.ImpExtAdverxo",
+      "comparison": "literal"
+    }
+  ]
+}
