@@ -206,6 +206,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			continue
 		}
 		httpRequests = append(httpRequests, newHttpRequest)
+		// We only support one impression per request
+		// So return on the first working one
 		break
 	}
 
