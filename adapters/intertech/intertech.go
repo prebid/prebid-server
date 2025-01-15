@@ -115,8 +115,8 @@ func updateBanner(banner *openrtb2.Banner) (*openrtb2.Banner, error) {
 }
 
 func (a *adapter) modifyUrl(extImp openrtb_ext.ExtImpIntertech, referer, cur string) string {
-	pageStr := strconv.Itoa(int(extImp.PageID))
-	impStr := strconv.Itoa(int(extImp.ImpID))
+	pageStr := strconv.Itoa(extImp.PageID)
+	impStr := strconv.Itoa(extImp.ImpID)
 
 	resolvedUrl := strings.ReplaceAll(a.endpoint, pageIDMacro, url.QueryEscape(pageStr))
 	resolvedUrl = strings.ReplaceAll(resolvedUrl, impIDMacro, url.QueryEscape(impStr))
