@@ -29,7 +29,7 @@ import (
 	"github.com/prebid/prebid-server/v3/privacysandbox"
 	"github.com/prebid/prebid-server/v3/schain"
 	"golang.org/x/net/publicsuffix"
-	jsonpatch "gopkg.in/evanphx/json-patch.v4"
+	jsonpatch "gopkg.in/evanphx/json-patch.v5"
 
 	accountService "github.com/prebid/prebid-server/v3/account"
 	"github.com/prebid/prebid-server/v3/analytics"
