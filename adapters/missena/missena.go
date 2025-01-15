@@ -1,7 +1,6 @@
 package missena
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -149,7 +148,7 @@ func (a *adapter) makeRequest(imp openrtb2.Imp, request *openrtb2.BidRequest, re
 		Version: version.Ver,
 	}
 
-	body, err := json.Marshal(missenaRequest)
+	body, err := jsonutil.Marshal(missenaRequest)
 	if err != nil {
 		return nil, err
 	}
