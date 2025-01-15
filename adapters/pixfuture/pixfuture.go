@@ -1,6 +1,7 @@
 package pixfuture
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -24,21 +25,48 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 }
 
 // MakeRequests prepares and serializes HTTP requests to be sent to the Pixfuture endpoint.
-func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	requestJSON, err := jsonutil.Marshal(request)
-	if err != nil {
-		return nil, []error{err}
+func (a *adapter) MakeRequests(bidRequest *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	var errs []error
+
+	// Validate the bid request
+	if bidRequest == nil || len(bidRequest.Imp) == 0 {
+		errs = append(errs, fmt.Errorf("no valid impressions in bid request"))
+		return nil, errs
 	}
 
-	requestData := &adapters.RequestData{
+	// Process impressions
+	var validImpressions []openrtb2.Imp
+	for _, imp := range bidRequest.Imp {
+		if imp.Banner == nil && imp.Video == nil {
+			errs = append(errs, fmt.Errorf("unsupported impression type for impID: %s", imp.ID))
+			continue
+		}
+		validImpressions = append(validImpressions, imp)
+	}
+
+	if len(validImpressions) == 0 {
+		errs = append(errs, fmt.Errorf("no valid impressions after filtering"))
+		return nil, errs
+	}
+
+	// Create the outgoing request
+	bidRequest.Imp = validImpressions
+	body, err := json.Marshal(bidRequest)
+	if err != nil {
+		errs = append(errs, fmt.Errorf("failed to marshal bid request: %v", err))
+		return nil, errs
+	}
+
+	request := &adapters.RequestData{
 		Method: "POST",
 		Uri:    a.endpoint,
-		Body:   requestJSON,
+		Body:   body,
 		Headers: http.Header{
 			"Content-Type": []string{"application/json"},
 		},
 	}
-	return []*adapters.RequestData{requestData}, nil
+
+	return []*adapters.RequestData{request}, errs
 }
 
 // getMediaTypeForBid extracts the bid type based on the bid extension data.
