@@ -38,10 +38,15 @@ var validParams = []string{
 	`{"placementId": "1"}`,
 	`{"endpointId": "test"}`,
 	`{"endpointId": "1"}`,
+	`{"placementId": "test", "unknownField": "value"}`,
 }
 
 var invalidParams = []string{
+	`{}`,
 	`{"placementId": 42}`,
 	`{"endpointId": 42}`,
 	`{"placementId": "1", "endpointId": "1"}`,
+	`{"placementId": ""}`,
+	`{"endpointId": ""}`,
+	`{"randomField": "value"}`,
 }

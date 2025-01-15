@@ -35,7 +35,7 @@
     },
     "expectedMakeRequestsErrors": [
         {
-            "value": "json: cannot unmarshal array into Go struct field ImpExtAdsInteractive.endpointId of type string",
+            "value": "cannot unmarshal openrtb_ext.ImpExtAdsInteractive.EndpointID: expects \" or n, but found [",
             "comparison": "literal"
         }
     ]

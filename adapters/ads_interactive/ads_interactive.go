@@ -9,6 +9,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -36,18 +37,18 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	var errs []error
 	var adapterRequests []*adapters.RequestData
 
-	reqCopy := *request
 	for _, imp := range request.Imp {
+		reqCopy := *request
 		reqCopy.Imp = []openrtb2.Imp{imp}
 
 		var bidderExt adapters.ExtImpBidder
 		var adsInteractiveExt openrtb_ext.ImpExtAdsInteractive
 
-		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			errs = append(errs, err)
 			continue
 		}
-		if err := json.Unmarshal(bidderExt.Bidder, &adsInteractiveExt); err != nil {
+		if err := jsonutil.Unmarshal(bidderExt.Bidder, &adsInteractiveExt); err != nil {
 			errs = append(errs, err)
 			continue
 		}
@@ -116,7 +117,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	var response openrtb2.BidResponse
-	if err := json.Unmarshal(responseData.Body, &response); err != nil {
+	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}
 
