@@ -1,0 +1,90 @@
+{
+  "mockBidRequest": {
+    "id": "testid",
+    "imp": [
+      {
+        "id": "testimpid",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 640,
+          "h": 480
+        },
+        "ext": {
+          "bidder": {
+            "adUnitId": 3,
+            "auth": "qwerty"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://example.com/auction?id=3&auth=qwerty",
+        "body":{
+          "id": "testid",
+          "imp": [{
+            "id": "testimpid",
+            "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 640,
+                "h": 480
+              },
+              "ext": {
+                "bidder": {
+                    "adUnitId": 3,
+                    "auth": "qwerty"
+                }
+              }
+          }]
+        },
+        "impIDs":["testimpid"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "crid": "24080",
+                  "adid": "2068416",
+                  "price": 0.01,
+                  "id": "testid",
+                  "impid": "testimpid",
+                  "cid": "8048",
+                  "mtype": 2
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "crid": "24080",
+            "adid": "2068416",
+            "price": 0.01,
+            "id": "testid",
+            "impid": "testimpid",
+            "cid": "8048",
+            "mtype": 2
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

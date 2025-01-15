@@ -45,6 +45,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderAdtelligent,
 	BidderAdTonos,
 	BidderAdvangelists,
+	BidderAdverxo,
 	BidderAdView,
 	BidderAdxcg,
 	BidderAdyoulike,
@@ -139,6 +140,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderKidoz,
 	BidderKiviads,
 	BidderLmKiviads,
+	BidderKobler,
 	BidderKrushmedia,
 	BidderLemmadigital,
 	BidderLimelightDigital,
@@ -384,6 +386,7 @@ const (
 	BidderAdTonos           BidderName = "adtonos"
 	BidderAdtelligent       BidderName = "adtelligent"
 	BidderAdvangelists      BidderName = "advangelists"
+	BidderAdverxo           BidderName = "adverxo"
 	BidderAdView            BidderName = "adview"
 	BidderAdxcg             BidderName = "adxcg"
 	BidderAdyoulike         BidderName = "adyoulike"
@@ -478,6 +481,7 @@ const (
 	BidderKidoz             BidderName = "kidoz"
 	BidderKiviads           BidderName = "kiviads"
 	BidderLmKiviads         BidderName = "lm_kiviads"
+	BidderKobler            BidderName = "kobler"
 	BidderKrushmedia        BidderName = "krushmedia"
 	BidderLemmadigital      BidderName = "lemmadigital"
 	BidderLimelightDigital  BidderName = "limelightDigital"
