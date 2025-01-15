@@ -187,7 +187,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		var bidderExt adapters.ExtImpBidder
 		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			errors = append(errors, &errortypes.BadInput{
-				Message: "Error parsing bidderExt object",
+				Message: fmt.Sprintf("Error parsing bidderExt object: %v, input: %s", err, string(imp.Ext)),
 			})
 			continue
 		}
