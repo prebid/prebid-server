@@ -53,6 +53,7 @@ type rubiconExtImpBidder struct {
 	Bidder  openrtb_ext.ExtImpRubicon `json:"bidder"`
 	Gpid    string                    `json:"gpid"`
 	Skadn   json.RawMessage           `json:"skadn,omitempty"`
+	Tid     string                    `json:"tid"`
 	Data    json.RawMessage           `json:"data"`
 	Context rubiconContext            `json:"context"`
 }
@@ -86,6 +87,7 @@ type rubiconImpExt struct {
 	RP    rubiconImpExtRP `json:"rp,omitempty"`
 	GPID  string          `json:"gpid,omitempty"`
 	Skadn json.RawMessage `json:"skadn,omitempty"`
+	Tid   string          `json:"tid,omitempty"`
 }
 
 type rubiconImpExtRP struct {
@@ -275,6 +277,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			},
 			GPID:  bidderExt.Gpid,
 			Skadn: bidderExt.Skadn,
+			Tid:   bidderExt.Tid,
 		}
 
 		imp.Ext, err = json.Marshal(&impExt)
