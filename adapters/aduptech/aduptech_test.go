@@ -12,8 +12,18 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderAdUpTech, config.Adapter{
-		Endpoint: "https://example.com/rtb/bid", ExtraAdapterInfo: "{\"target_currency\": \"EUR\"}"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+	bidder, buildErr := Builder(
+		openrtb_ext.BidderAdUpTech,
+		config.Adapter{
+			Endpoint:         "https://example.com/rtb/bid",
+			ExtraAdapterInfo: `{"target_currency": "EUR"}`,
+		},
+		config.Server{
+			ExternalUrl: "http://hosturl.com",
+			GvlID:       1,
+			DataCenter:  "2",
+		},
+	)
 
 	require.NoError(t, buildErr, "Builder returned unexpected error")
 
@@ -21,8 +31,18 @@ func TestJsonSamples(t *testing.T) {
 }
 
 func TestInvalidExtraAdapterInfo(t *testing.T) {
-	_, buildErr := Builder(openrtb_ext.BidderAdUpTech, config.Adapter{
-		Endpoint: "https://example.com/rtb/bid", ExtraAdapterInfo: "{\"foo\": \"bar\"}"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+	_, buildErr := Builder(
+		openrtb_ext.BidderAdUpTech,
+		config.Adapter{
+			Endpoint:         "https://example.com/rtb/bid",
+			ExtraAdapterInfo: `{"foo": "bar"}`,
+		},
+		config.Server{
+			ExternalUrl: "http://hosturl.com",
+			GvlID:       1,
+			DataCenter:  "2",
+		},
+	)
 
 	assert.EqualError(t, buildErr, "invalid extra info: TargetCurrency is empty, pls check")
 }

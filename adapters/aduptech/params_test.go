@@ -26,7 +26,12 @@ func TestValidParams(t *testing.T) {
 	}
 
 	for _, validParam := range validParams {
-		assert.NoErrorf(t, validator.Validate(openrtb_ext.BidderAdUpTech, json.RawMessage(validParam)), "Schema rejected Aduptech params: %s", validParam)
+		assert.NoErrorf(
+			t,
+			validator.Validate(openrtb_ext.BidderAdUpTech, json.RawMessage(validParam)),
+			"Schema rejected Aduptech params: %s",
+			validParam,
+		)
 	}
 }
 
@@ -56,6 +61,11 @@ func TestInvalidParams(t *testing.T) {
 	}
 
 	for _, invalidParam := range invalidParams {
-		assert.Errorf(t, validator.Validate(openrtb_ext.BidderAdUpTech, json.RawMessage(invalidParam)), "Schema allowed unexpected params: %s", invalidParam)
+		assert.Errorf(
+			t,
+			validator.Validate(openrtb_ext.BidderAdUpTech, json.RawMessage(invalidParam)),
+			"Schema allowed unexpected params: %s",
+			invalidParam,
+		)
 	}
 }
