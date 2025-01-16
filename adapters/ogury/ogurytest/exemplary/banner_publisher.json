@@ -1,6 +1,6 @@
 {
   "mockBidRequest": {
-    "id": "test-request-id",
+    "id": "test-publiser-id",
     "site": {
       "publisher": {
         "id": "pub123"
@@ -12,7 +12,9 @@
         "banner": {
           "format": [{"w": 128, "h": 100}]
         },
-        "ext": {}
+        "ext": {
+          "gpid": "global position id"
+        }
       }
     ]
   },
@@ -22,7 +24,7 @@
       "expectedRequest": {
         "uri": "http://ogury.example.com",
         "body": {
-          "id": "test-request-id",
+          "id": "test-publiser-id",
           "site": {
             "publisher": {
               "id": "pub123"
@@ -35,7 +37,9 @@
               "banner": {
                 "format": [{"w": 128, "h": 100}]
               },
-              "ext": {}
+              "ext": {
+                "gpid": "global position id"
+              }
             }
           ]
         },
@@ -44,7 +48,7 @@
       "mockResponse": {
         "status": 200,
         "body": {
-          "id": "test-request-id",
+          "id": "test-publiser-id",
           "cur": "USD",
           "seatbid": [
             {
