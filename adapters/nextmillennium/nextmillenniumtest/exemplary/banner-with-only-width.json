@@ -29,7 +29,9 @@
             "domain": "www.example.com"
           },
           "ext": {
-            "nextMillennium": {},
+            "nextMillennium": {
+              "nm_version": "v1.0.0"
+            },
             "prebid": {
               "storedrequest": {
                 "id": "g7819;;www.example.com"
