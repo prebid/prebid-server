@@ -1,0 +1,109 @@
+{
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "prebid.org"
+    },
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "banner": {
+          "w": 240,
+          "h": 400
+        },
+        "ext": {
+          "bidder": {
+            "cId": "test_cid_123"
+          }
+        }
+      }
+    ],
+    "tmax": 5000
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://prebidsrvr.kueezrtb.com/openrtb/test_cid_123",
+        "body": {
+          "id": "some-request-id",
+          "site": {
+            "page": "prebid.org"
+          },
+          "imp": [
+            {
+              "id": "some-impression-id",
+              "banner": {
+                "w": 240,
+                "h": 400
+              },
+              "ext": {
+                "bidder": {
+                  "cId": "test_cid_123"
+                }
+              }
+            }
+          ],
+          "tmax": 5000
+        },
+        "impIDs": [
+          "some-impression-id"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "some-request-id",
+          "cur": "",
+          "bidid": "some-bid-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "exp": 60,
+                  "adm": "<div>Some creative</div>",
+                  "burl": "",
+                  "iurl": "http://prebidsrvr.kueezrtb.com/creative.jpg",
+                  "lurl": "",
+                  "nurl": "",
+                  "id": "some-bid-id",
+                  "impid": "some-impression-id",
+                  "h": 400,
+                  "w": 240,
+                  "price": 1,
+                  "dealid": "deal123",
+                  "adomain": [
+                    "test.com"
+                  ],
+                  "adid": "some-ad-id",
+                  "cid": "test",
+                  "attr": [],
+                  "cat": [],
+                  "crid": "some-creative-id",
+                  "ext": {},
+                  "hratio": 0,
+                  "language": "",
+                  "protocol": 0,
+                  "qagmediarating": 0,
+                  "tactic": "",
+                  "wratio": 0,
+                  "mtype": 8
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": []
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Could not define bid type for imp: some-impression-id",
+      "comparison": "literal"
+    }
+  ]
+}
