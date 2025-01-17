@@ -11,7 +11,7 @@ enabling bidders to make better-informed targeting and optimization decisions.
 
 #### Device Field Enrichment
 
-The WURFL module populates missing or empty fields in ortb2.device with the following data:
+The WURFL module populates **missing or empty fields** in `ortb2.device` with the following data:
 
 - **make**: Manufacturer of the device (e.g., "Apple", "Samsung").
 - **model**: Device model (e.g., "iPhone 14", "Galaxy S22").
@@ -22,7 +22,17 @@ The WURFL module populates missing or empty fields in ortb2.device with the foll
 - **ppi**: Screen pixels per inch (PPI).
 - **pixelratio**: Screen pixel density ratio.
 - **devicetype**: Device type (e.g., mobile, tablet, desktop).
-- **Note**: If these fields are already populated in the bid request, the module will not overwrite them.
+
+> **Note**: If these fields are already populated in the bid request, the module will not overwrite them.
+
+#### Publisher-Specific Enrichment
+
+Device enrichment is selectively enabled for publishers based on their **account ID**.
+The module identifies publishers through the following fields:
+
+- `site.publisher.id` (for web environments).
+- `app.publisher.id` (for mobile app environments).
+- `dooh.publisher.id` (for digital out-of-home environments).
 
 ### Build prerequisites
 
