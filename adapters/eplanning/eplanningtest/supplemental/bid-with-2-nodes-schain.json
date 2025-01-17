@@ -18,6 +18,12 @@
 			  "sid": "abcd",
 			  "hp": 1,
 			  "ext": 1
+			},
+			{
+			  "asi": "exchange3.com",
+			  "sid": "abcdf",
+			  "hp": 1,
+			  "ext": 1
 			}
 		  ]
 		}

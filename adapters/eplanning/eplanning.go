@@ -196,7 +196,7 @@ func (adapter *EPlanningAdapter) MakeRequests(request *openrtb2.BidRequest, reqI
 		query.Set("vv", vastVersionDefault)
 	}
 	if request.Source != nil && request.Source.Ext != nil {
-		if openRtbSchain := unmarshalSupplyChain(request); openRtbSchain != nil && len(openRtbSchain.Nodes) > 2 {
+		if openRtbSchain := unmarshalSupplyChain(request); openRtbSchain != nil && len(openRtbSchain.Nodes) <= 2 {
 			if schainValue := makeSupplyChain(*openRtbSchain); schainValue != "" {
 				query.Set("sch", schainValue)
 			}
