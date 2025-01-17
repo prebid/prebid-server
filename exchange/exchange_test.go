@@ -6351,6 +6351,33 @@ func TestBidsToUpdate(t *testing.T) {
 	}
 }
 
+func TestIsEEACountry(t *testing.T) {
+	eeaCountries := []string{"FRA", "DEU", "ITA", "ESP", "NLD"}
+
+	tests := []struct {
+		name     string
+		country  string
+		eeaList  []string
+		expected bool
+	}{
+		{"Country in EEA", "FRA", eeaCountries, true},
+		{"Country in EEA lowercase", "fra", eeaCountries, true},
+		{"Country not in EEA", "USA", eeaCountries, false},
+		{"Empty country string", "", eeaCountries, false},
+		{"EEA list is empty", "FRA", []string{}, false},
+		{"EEA list is nil", "FRA", nil, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isEEACountry(tt.country, tt.eeaList)
+			if result != tt.expected {
+				t.Errorf("isEEACountry(%s, %v) = %v; want %v", tt.country, tt.eeaList, result, tt.expected)
+			}
+		})
+	}
+}
+
 type mockRequestValidator struct {
 	errors []error
 }
