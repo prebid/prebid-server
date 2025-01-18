@@ -1,0 +1,73 @@
+{
+    "mockBidRequest": {
+      "id": "test-invalid-device",
+      "imp": [{
+        "id": "001",
+        "banner": {
+          "h": 300,
+          "w": 250
+        },
+        "ext": {
+          "bidder": {
+            "placement_id": "placement-id-1"
+          }
+        }
+      }],
+      "site": {
+        "domain": "https://test.com",
+        "page": "https://test.com/2016/06/12"
+      },
+      "cur": [
+        "USD"
+      ]
+    },
+    "httpCalls": [{
+      "expectedRequest": {
+        "method": "POST",
+        "body": {
+          "imps": [{
+            "bid_id": "test-invalid-device",
+            "ext": {
+              "gpid": ""
+            },
+            "imp_id": "001",
+            "media_types": {
+              "banner": {
+                "sizes": [
+                  [
+                    250,
+                    300
+                  ]
+                ]
+              },
+              "video": {},
+              "audio": {}
+            },
+            "zone_id": {
+              "placementId": "placement-id-1"
+            }
+          }],
+          "site": {
+            "domain": "https://test.com",
+            "referrer": "https://test.com/2016/06/12"
+          }
+        },
+        "impIDs": [
+          "001"
+        ]
+      },
+      "mockResponse": {
+        "status": 400,
+        "body": {
+          "error": "Unexpected status code: 400. Run with request.debug = 1 for more info"
+        }
+      }
+    }],
+    "expectedMakeBidsErrors": [
+        {
+          "value": "Unexpected status code: 400. Run with request.debug = 1 for more info",
+          "comparison": "literal"
+        }
+      ]
+  }
+  
