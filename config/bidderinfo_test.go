@@ -47,6 +47,7 @@ endpointCompression: GZIP
 openrtb:
   version: 2.6
   gpp-supported: true
+  multiformat-supported: false
 endpoint: https://endpoint.com
 disabled: false
 extra_info: extra-info
@@ -115,6 +116,11 @@ func TestLoadBidderInfoFromDisk(t *testing.T) {
 					UserMacro:   "#UID",
 				},
 				SupportCORS: &trueValue,
+			},
+			OpenRTB: &OpenRTBInfo{
+				Version:              "",
+				GPPSupported:         false,
+				MultiformatSupported: true,
 			},
 		},
 	}
@@ -205,8 +211,9 @@ func TestProcessBidderInfo(t *testing.T) {
 					},
 					ModifyingVastXmlAllowed: true,
 					OpenRTB: &OpenRTBInfo{
-						GPPSupported: true,
-						Version:      "2.6",
+						GPPSupported:         true,
+						Version:              "2.6",
+						MultiformatSupported: false,
 					},
 					PlatformID: "123",
 					Syncer: &Syncer{
@@ -256,8 +263,9 @@ func TestProcessBidderInfo(t *testing.T) {
 					},
 					ModifyingVastXmlAllowed: true,
 					OpenRTB: &OpenRTBInfo{
-						GPPSupported: true,
-						Version:      "2.6",
+						GPPSupported:         true,
+						Version:              "2.6",
+						MultiformatSupported: false,
 					},
 					PlatformID: "123",
 					Syncer: &Syncer{

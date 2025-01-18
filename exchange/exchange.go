@@ -398,8 +398,11 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 		} else if r.Account.AlternateBidderCodes != nil {
 			alternateBidderCodes = *r.Account.AlternateBidderCodes
 		}
+
+		preferredMediaType := buildBidderPreferredMediaTypeMap(requestExtPrebid, &r.Account)
+
 		var extraRespInfo extraAuctionResponseInfo
-		adapterBids, adapterExtra, extraRespInfo = e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, accountDebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride, alternateBidderCodes, requestExtLegacy.Prebid.Experiment, r.HookExecutor, r.StartTime, bidAdjustmentRules, r.TmaxAdjustments, responseDebugAllow)
+		adapterBids, adapterExtra, extraRespInfo = e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, accountDebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride, alternateBidderCodes, requestExtLegacy.Prebid.Experiment, r.HookExecutor, r.StartTime, bidAdjustmentRules, r.TmaxAdjustments, responseDebugAllow, preferredMediaType)
 		fledge = extraRespInfo.fledge
 		anyBidsReturned = extraRespInfo.bidsFound
 		r.BidderResponseStartTime = extraRespInfo.bidderResponseStartTime
@@ -545,6 +548,27 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 		BidResponse:    bidResponse,
 		ExtBidResponse: bidResponseExt,
 	}, nil
+}
+
+// buildBidderPreferredMediaTypeMap reads the preferred media type from the request and account and returns a map of bidder to preferred media type. Preference given to the request over account.
+func buildBidderPreferredMediaTypeMap(prebid *openrtb_ext.ExtRequestPrebid, account *config.Account) openrtb_ext.PreferedMediaType {
+	preferredMediaType := make(openrtb_ext.PreferedMediaType)
+
+	if account.PreferredMediaType != nil {
+		for bidder, mediaType := range account.PreferredMediaType {
+			preferredMediaType[bidder] = mediaType
+		}
+	}
+
+	if prebid != nil && prebid.BidderControls != nil {
+		for bidder, bidderControl := range prebid.BidderControls {
+			if bidderControl.PreferredMediaType != "" {
+				preferredMediaType[bidder] = bidderControl.PreferredMediaType
+			}
+		}
+	}
+
+	return preferredMediaType
 }
 
 func buildMultiBidMap(prebid *openrtb_ext.ExtRequestPrebid) map[string]openrtb_ext.ExtMultiBid {
@@ -711,7 +735,8 @@ func (e *exchange) getAllBids(
 	pbsRequestStartTime time.Time,
 	bidAdjustmentRules map[string][]openrtb_ext.Adjustment,
 	tmaxAdjustments *TmaxAdjustmentsPreprocessed,
-	responseDebugAllowed bool) (
+	responseDebugAllowed bool,
+	preferredMediaType openrtb_ext.PreferedMediaType) (
 	map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid,
 	map[openrtb_ext.BidderName]*seatResponseExtra,
 	extraAuctionResponseInfo) {
@@ -743,6 +768,7 @@ func (e *exchange) getAllBids(
 			reqInfo := adapters.NewExtraRequestInfo(conversions)
 			reqInfo.PbsEntryPoint = bidderRequest.BidderLabels.RType
 			reqInfo.GlobalPrivacyControlHeader = globalPrivacyControlHeader
+			reqInfo.PreferredMediaType = preferredMediaType[bidder.BidderName]
 
 			bidReqOptions := bidRequestOptions{
 				accountDebugAllowed:    accountDebugAllowed,

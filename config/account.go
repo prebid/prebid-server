@@ -25,23 +25,24 @@ const (
 
 // Account represents a publisher account configuration
 type Account struct {
-	ID                      string                                      `mapstructure:"id" json:"id"`
-	Disabled                bool                                        `mapstructure:"disabled" json:"disabled"`
-	CacheTTL                DefaultTTLs                                 `mapstructure:"cache_ttl" json:"cache_ttl"`
-	CCPA                    AccountCCPA                                 `mapstructure:"ccpa" json:"ccpa"`
-	GDPR                    AccountGDPR                                 `mapstructure:"gdpr" json:"gdpr"`
-	DebugAllow              bool                                        `mapstructure:"debug_allow" json:"debug_allow"`
-	DefaultIntegration      string                                      `mapstructure:"default_integration" json:"default_integration"`
-	CookieSync              CookieSync                                  `mapstructure:"cookie_sync" json:"cookie_sync"`
-	Events                  Events                                      `mapstructure:"events" json:"events"` // Don't enable this feature. It is still under developmment - https://github.com/prebid/prebid-server/issues/1725
-	TruncateTargetAttribute *int                                        `mapstructure:"truncate_target_attr" json:"truncate_target_attr"`
-	AlternateBidderCodes    *openrtb_ext.ExtAlternateBidderCodes        `mapstructure:"alternatebiddercodes" json:"alternatebiddercodes"`
-	Hooks                   AccountHooks                                `mapstructure:"hooks" json:"hooks"`
-	PriceFloors             AccountPriceFloors                          `mapstructure:"price_floors" json:"price_floors"`
-	Validations             Validations                                 `mapstructure:"validations" json:"validations"`
-	DefaultBidLimit         int                                         `mapstructure:"default_bid_limit" json:"default_bid_limit"`
-	BidAdjustments          *openrtb_ext.ExtRequestPrebidBidAdjustments `mapstructure:"bidadjustments" json:"bidadjustments"`
-	Privacy                 AccountPrivacy                              `mapstructure:"privacy" json:"privacy"`
+	ID                      string                                         `mapstructure:"id" json:"id"`
+	Disabled                bool                                           `mapstructure:"disabled" json:"disabled"`
+	CacheTTL                DefaultTTLs                                    `mapstructure:"cache_ttl" json:"cache_ttl"`
+	CCPA                    AccountCCPA                                    `mapstructure:"ccpa" json:"ccpa"`
+	GDPR                    AccountGDPR                                    `mapstructure:"gdpr" json:"gdpr"`
+	DebugAllow              bool                                           `mapstructure:"debug_allow" json:"debug_allow"`
+	DefaultIntegration      string                                         `mapstructure:"default_integration" json:"default_integration"`
+	CookieSync              CookieSync                                     `mapstructure:"cookie_sync" json:"cookie_sync"`
+	Events                  Events                                         `mapstructure:"events" json:"events"` // Don't enable this feature. It is still under developmment - https://github.com/prebid/prebid-server/issues/1725
+	TruncateTargetAttribute *int                                           `mapstructure:"truncate_target_attr" json:"truncate_target_attr"`
+	AlternateBidderCodes    *openrtb_ext.ExtAlternateBidderCodes           `mapstructure:"alternatebiddercodes" json:"alternatebiddercodes"`
+	Hooks                   AccountHooks                                   `mapstructure:"hooks" json:"hooks"`
+	PriceFloors             AccountPriceFloors                             `mapstructure:"price_floors" json:"price_floors"`
+	Validations             Validations                                    `mapstructure:"validations" json:"validations"`
+	DefaultBidLimit         int                                            `mapstructure:"default_bid_limit" json:"default_bid_limit"`
+	BidAdjustments          *openrtb_ext.ExtRequestPrebidBidAdjustments    `mapstructure:"bidadjustments" json:"bidadjustments"`
+	Privacy                 AccountPrivacy                                 `mapstructure:"privacy" json:"privacy"`
+	PreferredMediaType      map[openrtb_ext.BidderName]openrtb_ext.BidType `mapstructure:"preferredmediatype" json:"preferredmediatype"`
 }
 
 // CookieSync represents the account-level defaults for the cookie sync endpoint.

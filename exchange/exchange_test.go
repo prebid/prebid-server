@@ -5180,6 +5180,7 @@ func TestGetAllBids(t *testing.T) {
 		bidAdjustmentRules         map[string][]openrtb_ext.Adjustment
 		tmaxAdjustments            *TmaxAdjustmentsPreprocessed
 		adapterMap                 map[openrtb_ext.BidderName]AdaptedBidder
+		preferredMediaTypes        map[openrtb_ext.BidderName]openrtb_ext.BidType
 	}
 	type testResults struct {
 		adapterBids   map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid
@@ -5472,7 +5473,7 @@ func TestGetAllBids(t *testing.T) {
 
 			adapterBids, adapterExtra, extraRespInfo := e.getAllBids(context.Background(), test.in.bidderRequests, test.in.bidAdjustments,
 				test.in.conversions, test.in.accountDebugAllowed, test.in.globalPrivacyControlHeader, test.in.headerDebugAllowed, test.in.alternateBidderCodes, test.in.experiment,
-				test.in.hookExecutor, test.in.pbsRequestStartTime, test.in.bidAdjustmentRules, test.in.tmaxAdjustments, false)
+				test.in.hookExecutor, test.in.pbsRequestStartTime, test.in.bidAdjustmentRules, test.in.tmaxAdjustments, false, test.in.preferredMediaTypes)
 
 			assert.Equalf(t, test.expected.extraRespInfo.bidsFound, extraRespInfo.bidsFound, "extraRespInfo.bidsFound mismatch")
 			assert.Equalf(t, test.expected.adapterBids, adapterBids, "adapterBids mismatch")
@@ -6347,6 +6348,86 @@ func TestBidsToUpdate(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			assert.Equal(t, tc.expected, bidsToUpdate(tc.in.multiBid, tc.in.bidder), tc.desc)
+		})
+	}
+}
+
+func TestBuildBidderPreferredMediaTypeMap(t *testing.T) {
+	tests := []struct {
+		name             string
+		extRequestPrebid *openrtb_ext.ExtRequestPrebid
+		account          *config.Account
+		expected         openrtb_ext.PreferedMediaType
+	}{
+		{
+			name:             "Nil account and request preferred media type",
+			extRequestPrebid: nil,
+			account:          &config.Account{},
+			expected:         openrtb_ext.PreferedMediaType{},
+		},
+		{
+			name:             "Account preferred media type only",
+			extRequestPrebid: nil,
+			account: &config.Account{
+				PreferredMediaType: map[openrtb_ext.BidderName]openrtb_ext.BidType{
+					"bidderA": openrtb_ext.BidTypeBanner,
+				},
+			},
+			expected: openrtb_ext.PreferedMediaType{
+				"bidderA": openrtb_ext.BidTypeBanner,
+			},
+		},
+		{
+			name: "Request preferred media type only",
+			extRequestPrebid: &openrtb_ext.ExtRequestPrebid{
+				BidderControls: map[openrtb_ext.BidderName]openrtb_ext.BidderControl{
+					"bidderB": {PreferredMediaType: openrtb_ext.BidTypeVideo},
+				},
+			},
+			account: &config.Account{},
+			expected: openrtb_ext.PreferedMediaType{
+				"bidderB": openrtb_ext.BidTypeVideo,
+			},
+		},
+		{
+			name: "Account and request preferred media type",
+			extRequestPrebid: &openrtb_ext.ExtRequestPrebid{
+				BidderControls: map[openrtb_ext.BidderName]openrtb_ext.BidderControl{
+					"bidderB": {PreferredMediaType: openrtb_ext.BidTypeVideo},
+				},
+			},
+			account: &config.Account{
+				PreferredMediaType: map[openrtb_ext.BidderName]openrtb_ext.BidType{
+					"bidderA": openrtb_ext.BidTypeBanner,
+				},
+			},
+			expected: openrtb_ext.PreferedMediaType{
+				"bidderA": openrtb_ext.BidTypeBanner,
+				"bidderB": openrtb_ext.BidTypeVideo,
+			},
+		},
+		{
+			name: "Request overrides account preferred media type",
+			extRequestPrebid: &openrtb_ext.ExtRequestPrebid{
+				BidderControls: map[openrtb_ext.BidderName]openrtb_ext.BidderControl{
+					"bidderA": {PreferredMediaType: openrtb_ext.BidTypeVideo},
+				},
+			},
+			account: &config.Account{
+				PreferredMediaType: map[openrtb_ext.BidderName]openrtb_ext.BidType{
+					"bidderA": openrtb_ext.BidTypeBanner,
+				},
+			},
+			expected: openrtb_ext.PreferedMediaType{
+				"bidderA": openrtb_ext.BidTypeVideo,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := buildBidderPreferredMediaTypeMap(tt.extRequestPrebid, tt.account)
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }
