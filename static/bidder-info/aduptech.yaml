@@ -1,0 +1,27 @@
+endpoint: "https://rtb.d.adup-tech.com/rtb/bid"
+extra_info: "{\"target_currency\": \"EUR\"}"
+geoscope:
+  - EEA
+  - CHE
+  - GBR
+maintainer:
+  email: "support@adup-tech.com"
+gvlVendorID: 647
+openrtb:
+  version: 2.6
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - native
+userSync:
+  redirect:
+    url: "https://rtb.d.adup-tech.com/service/sync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
+    userMacro: "[UID]"
+  iframe:
+    url: "https://rtb.d.adup-tech.com/service/sync?iframe=1&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
+    userMacro: "[UID]"
