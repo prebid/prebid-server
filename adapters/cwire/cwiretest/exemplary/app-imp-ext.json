@@ -1,0 +1,160 @@
+{
+  "mockBidRequest": {
+    "id": "80ce30c53c16e6ede735f123ef6e32361bfc7b22",
+    "cur": [
+      "CHF"
+    ],
+    "imp": [
+      {
+        "id": "102",
+        "banner": {
+          "h": 250,
+          "w": 300,
+          "pos": 0
+        },
+        "ext": {
+          "bidder": {
+            "cwcreative": "9999",
+            "placementId": 15,
+            "domainId": 42
+          }
+        }
+      }
+    ],
+    "app": {
+      "publisher": {
+        "id": "123456789"
+      },
+      "cat": [
+        "IAB22-1"
+      ],
+      "bundle": "com.app.awesome",
+      "name": "Awesome App",
+      "domain": "awesomeapp.com",
+      "id": "123456789"
+    },
+    "device": {
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:108.0) Gecko/20100101 Firefox/108.0"
+    },
+    "user": {
+      "id": "55816b39711f9b5acf3b90e313ed29e51665623f",
+      "geo": {
+        "country": "ch",
+        "region": "basel-stadt",
+        "city": "basel"
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://cwi.re/prebid/adapter-endpoint",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
+        "body": {
+          "id": "80ce30c53c16e6ede735f123ef6e32361bfc7b22",
+          "cur": [
+            "CHF"
+          ],
+          "imp": [
+            {
+              "id": "102",
+              "banner": {
+                "h": 250,
+                "w": 300,
+                "pos": 0
+              },
+              "ext": {
+                "bidder": {
+                  "cwcreative": "9999",
+                  "placementId": 15,
+                  "domainId": 42
+                }
+              }
+            }
+          ],
+          "app": {
+            "publisher": {
+              "id": "123456789"
+            },
+            "cat": [
+              "IAB22-1"
+            ],
+            "bundle": "com.app.awesome",
+            "name": "Awesome App",
+            "domain": "awesomeapp.com",
+            "id": "123456789"
+          },
+          "device": {
+            "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:108.0) Gecko/20100101 Firefox/108.0"
+          },
+          "user": {
+            "id": "55816b39711f9b5acf3b90e313ed29e51665623f",
+            "geo": {
+              "country": "ch",
+              "region": "basel-stadt",
+              "city": "basel"
+            }
+          }
+        },
+        "impIDs": [
+          "102"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "headers": {},
+        "body": {
+          "id": "80ce30c53c16e6ede735f123ef6e32361bfc7b22",
+          "cur": "CHF",
+          "seatbid": [
+            {
+              "seat": "cwire",
+              "group": 0,
+              "bid": [
+                {
+                  "id": "333",
+                  "impid": "102",
+                  "price": 8.00,
+                  "crid": "9999",
+                  "adm": "<h3>Example Ad</h3>",
+                  "w": 1,
+                  "h": 1,
+                  "nurl": "https://embed.cwi.re/delivery/prebid-server/win/333",
+                  "mtype": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "CHF",
+      "bids": [
+        {
+          "bid": {
+            "id": "333",
+            "impid": "102",
+            "price": 8.00,
+            "crid": "9999",
+            "adm": "<h3>Example Ad</h3>",
+            "w": 1,
+            "h": 1,
+            "nurl": "https://embed.cwi.re/delivery/prebid-server/win/333",
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
