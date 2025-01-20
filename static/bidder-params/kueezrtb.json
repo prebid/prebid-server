@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Kueez RTB Adapter Params",
+  "description": "A schema which validates params accepted by the Kueez RTB adapter",
+  "type": "object",
+  "properties": {
+    "cId": {
+      "type": "string",
+      "description": "The connection id.",
+      "minLength": 1,
+      "pattern": "^[a-zA-Z0-9_]+$"
+    }
+  },
+  "required": [
+    "cId"
+  ],
+  "additionalProperties": false
+}
