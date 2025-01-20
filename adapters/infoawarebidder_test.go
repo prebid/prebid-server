@@ -201,6 +201,293 @@ func TestImpFiltering(t *testing.T) {
 	}
 }
 
+func TestFilterMultiformatImps(t *testing.T) {
+
+	testCases := []struct {
+		description        string
+		inBidRequest       *openrtb2.BidRequest
+		preferredMediaType openrtb_ext.BidType
+		expectedErrors     []error
+		expectedImps       []openrtb2.Imp
+	}{
+
+		{
+			description: "Impression with multi-format not present",
+			inBidRequest: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{ID: "imp-1", Banner: &openrtb2.Banner{}},
+				},
+			},
+			preferredMediaType: openrtb_ext.BidTypeBanner,
+			expectedErrors:     nil,
+			expectedImps: []openrtb2.Imp{
+				{ID: "imp-1", Banner: &openrtb2.Banner{}},
+			},
+		},
+		{
+			description: "Multiformat impression with preferred media type present",
+			inBidRequest: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{ID: "imp-1", Banner: &openrtb2.Banner{}, Video: &openrtb2.Video{}},
+					{ID: "imp-2", Banner: &openrtb2.Banner{}},
+				},
+			},
+			preferredMediaType: openrtb_ext.BidTypeBanner,
+			expectedErrors:     nil,
+			expectedImps: []openrtb2.Imp{
+				{ID: "imp-1", Banner: &openrtb2.Banner{}},
+				{ID: "imp-2", Banner: &openrtb2.Banner{}},
+			},
+		},
+		{
+			description: "Multiformat impression with preferred media type not present",
+			inBidRequest: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{ID: "imp-1", Banner: &openrtb2.Banner{}, Native: &openrtb2.Native{}},
+					{ID: "imp-2", Banner: &openrtb2.Banner{}, Audio: &openrtb2.Audio{}},
+				},
+			},
+			preferredMediaType: openrtb_ext.BidTypeVideo,
+			expectedErrors: []error{
+				&errortypes.BadInput{Message: "Imp imp-1 does not have a valid VIDEO media type."},
+				&errortypes.BadInput{Message: "Imp imp-2 does not have a valid VIDEO media type."},
+				&errortypes.BadInput{Message: "Bid request contains 0 impressions after filtering."},
+			},
+			expectedImps: nil,
+		},
+		{
+			description: "Multiformat impressions with preferred media type present in imp-1 and not in imp-2",
+			inBidRequest: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{ID: "imp-1", Banner: &openrtb2.Banner{}, Video: &openrtb2.Video{}},
+					{ID: "imp-2", Video: &openrtb2.Video{}, Native: &openrtb2.Native{}},
+				},
+			},
+			preferredMediaType: openrtb_ext.BidTypeBanner,
+			expectedErrors: []error{
+				&errortypes.BadInput{Message: "Imp imp-2 does not have a valid BANNER media type."},
+			},
+			expectedImps: []openrtb2.Imp{
+				{ID: "imp-1", Banner: &openrtb2.Banner{}},
+			},
+		},
+		{
+			description: "Impression with no adformat present",
+			inBidRequest: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{ID: "imp-1"},
+				},
+			},
+			preferredMediaType: openrtb_ext.BidTypeBanner,
+			expectedErrors:     nil,
+			expectedImps: []openrtb2.Imp{
+				{ID: "imp-1"},
+			},
+		},
+		{
+			description: "Multiformat impression with preferred media type not present in the request or account config",
+			inBidRequest: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{ID: "imp-1", Banner: &openrtb2.Banner{}, Video: &openrtb2.Video{}, Audio: &openrtb2.Audio{}, Native: &openrtb2.Native{}},
+				},
+			},
+			preferredMediaType: "",
+			expectedErrors:     nil,
+			expectedImps: []openrtb2.Imp{
+				{ID: "imp-1", Banner: &openrtb2.Banner{}, Video: &openrtb2.Video{}, Audio: &openrtb2.Audio{}, Native: &openrtb2.Native{}},
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		actualImps, actualErrs := adapters.FilterMultiformatImps(test.inBidRequest, test.preferredMediaType)
+		assert.Equal(t, test.expectedErrors, actualErrs, test.description+":Errors")
+		assert.Equal(t, test.expectedImps, actualImps, test.description+":Imps")
+	}
+}
+
+func TestAdjustImpForPreferredMediaType(t *testing.T) {
+	testCases := []struct {
+		description        string
+		inImp              openrtb2.Imp
+		preferredMediaType openrtb_ext.BidType
+		expectedImp        openrtb2.Imp
+		expectedError      error
+	}{
+		{
+			description: "Multiformat impression with all media types and preferred media type Banner",
+			inImp: openrtb2.Imp{
+				ID:     "imp-1",
+				Banner: &openrtb2.Banner{},
+				Video:  &openrtb2.Video{},
+				Audio:  &openrtb2.Audio{},
+				Native: &openrtb2.Native{},
+			},
+			preferredMediaType: openrtb_ext.BidTypeBanner,
+			expectedImp: openrtb2.Imp{
+				ID:     "imp-1",
+				Banner: &openrtb2.Banner{},
+			},
+			expectedError: nil,
+		},
+		{
+			description: "Multiformat impression with all media types and preferred media type Video",
+			inImp: openrtb2.Imp{
+				ID:     "imp-1",
+				Banner: &openrtb2.Banner{},
+				Video:  &openrtb2.Video{},
+				Audio:  &openrtb2.Audio{},
+				Native: &openrtb2.Native{},
+			},
+			preferredMediaType: openrtb_ext.BidTypeVideo,
+			expectedImp: openrtb2.Imp{
+				ID:    "imp-1",
+				Video: &openrtb2.Video{},
+			},
+			expectedError: nil,
+		},
+		{
+			description: "Multiformat impression with all media types and preferred media type Audio",
+			inImp: openrtb2.Imp{
+				ID:     "imp-1",
+				Banner: &openrtb2.Banner{},
+				Video:  &openrtb2.Video{},
+				Audio:  &openrtb2.Audio{},
+				Native: &openrtb2.Native{},
+			},
+			preferredMediaType: openrtb_ext.BidTypeAudio,
+			expectedImp: openrtb2.Imp{
+				ID:    "imp-1",
+				Audio: &openrtb2.Audio{},
+			},
+			expectedError: nil,
+		},
+		{
+			description: "Multiformat impression with all media types and preferred media type Native",
+			inImp: openrtb2.Imp{
+				ID:     "imp-1",
+				Banner: &openrtb2.Banner{},
+				Video:  &openrtb2.Video{},
+				Audio:  &openrtb2.Audio{},
+				Native: &openrtb2.Native{},
+			},
+			preferredMediaType: openrtb_ext.BidTypeNative,
+			expectedImp: openrtb2.Imp{
+				ID:     "imp-1",
+				Native: &openrtb2.Native{},
+			},
+			expectedError: nil,
+		},
+		{
+			description: "Invalid Banner media type",
+			inImp: openrtb2.Imp{
+				ID:    "imp-1",
+				Video: &openrtb2.Video{},
+			},
+			preferredMediaType: openrtb_ext.BidTypeBanner,
+			expectedImp:        openrtb2.Imp{},
+			expectedError:      &errortypes.BadInput{Message: "Imp imp-1 does not have a valid BANNER media type."},
+		},
+		{
+			description: "Invalid Video media type",
+			inImp: openrtb2.Imp{
+				ID:     "imp-1",
+				Banner: &openrtb2.Banner{},
+			},
+			preferredMediaType: openrtb_ext.BidTypeVideo,
+			expectedImp:        openrtb2.Imp{},
+			expectedError:      &errortypes.BadInput{Message: "Imp imp-1 does not have a valid VIDEO media type."},
+		},
+		{
+			description: "Invalid Audio media type",
+			inImp: openrtb2.Imp{
+				ID:     "imp-1",
+				Banner: &openrtb2.Banner{},
+			},
+			preferredMediaType: openrtb_ext.BidTypeAudio,
+			expectedImp:        openrtb2.Imp{},
+			expectedError:      &errortypes.BadInput{Message: "Imp imp-1 does not have a valid AUDIO media type."},
+		},
+		{
+			description: "Invalid Native media type",
+			inImp: openrtb2.Imp{
+				ID:     "imp-1",
+				Banner: &openrtb2.Banner{},
+			},
+			preferredMediaType: openrtb_ext.BidTypeNative,
+			expectedImp:        openrtb2.Imp{},
+			expectedError:      &errortypes.BadInput{Message: "Imp imp-1 does not have a valid NATIVE media type."},
+		},
+		{
+			description: "Invalid preferred media type",
+			inImp: openrtb2.Imp{
+				ID:     "imp-1",
+				Banner: &openrtb2.Banner{},
+			},
+			preferredMediaType: "invalid",
+			expectedImp:        openrtb2.Imp{},
+			expectedError:      &errortypes.BadInput{Message: "Imp imp-1 has an invalid preferred media type: invalid."},
+		},
+	}
+
+	for _, test := range testCases {
+		err := adapters.AdjustImpForPreferredMediaType(&test.inImp, test.preferredMediaType)
+		if test.expectedError != nil {
+			assert.EqualError(t, err, test.expectedError.Error(), test.description)
+		} else {
+			assert.NoError(t, err, test.description)
+			assert.Equal(t, test.expectedImp, test.inImp, test.description)
+		}
+	}
+}
+
+func TestIsMultiFormatSupported(t *testing.T) {
+	trueValue, falseValue := true, false
+	testCases := []struct {
+		description string
+		bidderInfo  config.BidderInfo
+		expected    bool
+	}{
+		{
+			description: "MultiformatSupported is true",
+			bidderInfo: config.BidderInfo{
+				OpenRTB: &config.OpenRTBInfo{
+					MultiformatSupported: &trueValue,
+				},
+			},
+			expected: true,
+		},
+		{
+			description: "MultiformatSupported is false",
+			bidderInfo: config.BidderInfo{
+				OpenRTB: &config.OpenRTBInfo{
+					MultiformatSupported: &falseValue,
+				},
+			},
+			expected: false,
+		},
+		{
+			description: "MultiformatSupported is nil",
+			bidderInfo: config.BidderInfo{
+				OpenRTB: &config.OpenRTBInfo{
+					MultiformatSupported: nil,
+				},
+			},
+			expected: true,
+		},
+		{
+			description: "OpenRTB is nil",
+			bidderInfo:  config.BidderInfo{},
+			expected:    true,
+		},
+	}
+
+	for _, test := range testCases {
+		result := adapters.IsMultiFormatSupported(test.bidderInfo)
+		assert.Equal(t, test.expected, result, test.description)
+	}
+}
+
 type mockBidder struct {
 }
 

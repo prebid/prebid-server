@@ -96,8 +96,9 @@ type AdapterXAPI struct {
 // Version is not yet actively supported
 // GPPSupported is not yet actively supported
 type OpenRTBInfo struct {
-	Version      string `yaml:"version" mapstructure:"version"`
-	GPPSupported bool   `yaml:"gpp-supported" mapstructure:"gpp-supported"`
+	Version              string `yaml:"version" mapstructure:"version"`
+	GPPSupported         bool   `yaml:"gpp-supported" mapstructure:"gpp-supported"`
+	MultiformatSupported *bool  `yaml:"multiformat-supported" mapstructure:"multiformat-supported"`
 }
 
 // Syncer specifies the user sync settings for a bidder. This struct is shared by the account config,
