@@ -10,6 +10,7 @@ import (
 	"github.com/prebid/prebid-server/v3/analytics/clients"
 	"github.com/prebid/prebid-server/v3/analytics/filesystem"
 	"github.com/prebid/prebid-server/v3/analytics/pubstack"
+	"github.com/prebid/prebid-server/v3/analytics/pubxai"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/ortb"
@@ -42,6 +43,24 @@ func New(analytics *config.Analytics) analytics.Runner {
 		} else {
 			glog.Errorf("Could not initialize PubstackModule: %v", err)
 		}
+	}
+	if analytics.Pubxai.Enabled {
+		pubxaiModule, err := pubxai.InitializePubxAIModule(
+			clients.GetDefaultHttpInstance(),
+			analytics.Pubxai.Publisherid,
+			analytics.Pubxai.Endpoint,
+			analytics.Pubxai.BufferInterval,
+			analytics.Pubxai.BufferSize,
+			analytics.Pubxai.SamplingPercentage,
+			analytics.Pubxai.ConfigurationRefreshInterval,
+			clock.New(),
+		)
+		if err == nil {
+			modules["pubxai"] = pubxaiModule
+		} else {
+			glog.Errorf("Could not initialize Pubxai Module: %v", err)
+		}
+
 	}
 
 	if analytics.Agma.Enabled {
