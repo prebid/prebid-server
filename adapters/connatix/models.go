@@ -17,9 +17,8 @@ type impExt struct {
 }
 
 type impExtConnatix struct {
-	PlacementId string `json:"placementId,omitempty"`
-	DeclaredViewabilityPercentage float64 `json:"declaredViewabilityPercentage,omitempty"`
-    DetectedViewabilityPercentage float64 `json:"detectedViewabilityPercentage,omitempty"`
+	PlacementId           string  `json:"placementId,omitempty"`
+	ViewabilityPercentage float64 `json:"viewabilityPercentage,omitempty"`
 }
 
 type bidExt struct {

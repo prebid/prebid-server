@@ -44,8 +44,7 @@
           "ext": {
             "bidder": {
               "placementId": "some-placement-id",
-              "declaredViewabilityPercentage": 0.6,
-              "detectedViewabilityPercentage": 0.4
+              "viewabilityPercentage": 0.6
             }
           }
         }
@@ -81,8 +80,7 @@
                 "ext": {
                   "connatix": {
                     "placementId": "some-placement-id",
-                    "declaredViewabilityPercentage": 0.6,
-                    "detectedViewabilityPercentage": 0.4
+                    "viewabilityPercentage": 0.6
                   }
                 }
               }
