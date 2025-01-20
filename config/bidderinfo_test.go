@@ -117,23 +117,21 @@ func TestLoadBidderInfoFromDisk(t *testing.T) {
 				},
 				SupportCORS: &trueValue,
 			},
-			OpenRTB: &OpenRTBInfo{
-				Version:              "",
-				GPPSupported:         false,
-				MultiformatSupported: true,
-			},
 		},
 	}
 	assert.Equal(t, expected, infos)
 }
 
 func TestProcessBidderInfo(t *testing.T) {
+	falseValue := false
+
 	testCases := []struct {
 		description         string
 		bidderInfos         map[string][]byte
 		expectedBidderInfos BidderInfos
 		expectError         string
 	}{
+
 		{
 			description: "Valid bidder info",
 			bidderInfos: map[string][]byte{
@@ -213,7 +211,7 @@ func TestProcessBidderInfo(t *testing.T) {
 					OpenRTB: &OpenRTBInfo{
 						GPPSupported:         true,
 						Version:              "2.6",
-						MultiformatSupported: false,
+						MultiformatSupported: &falseValue,
 					},
 					PlatformID: "123",
 					Syncer: &Syncer{
@@ -265,7 +263,7 @@ func TestProcessBidderInfo(t *testing.T) {
 					OpenRTB: &OpenRTBInfo{
 						GPPSupported:         true,
 						Version:              "2.6",
-						MultiformatSupported: false,
+						MultiformatSupported: &falseValue,
 					},
 					PlatformID: "123",
 					Syncer: &Syncer{
@@ -293,6 +291,9 @@ func TestProcessBidderInfo(t *testing.T) {
 }
 
 func TestProcessAliasBidderInfo(t *testing.T) {
+
+	trueValue := true
+
 	parentWithSyncerKey := BidderInfo{
 		AppSecret: "app-secret",
 		Capabilities: &CapabilitiesInfo{
@@ -321,8 +322,9 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 		},
 		ModifyingVastXmlAllowed: true,
 		OpenRTB: &OpenRTBInfo{
-			GPPSupported: true,
-			Version:      "2.6",
+			GPPSupported:         true,
+			Version:              "2.6",
+			MultiformatSupported: &trueValue,
 		},
 		PlatformID: "123",
 		Syncer: &Syncer{
@@ -368,8 +370,9 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 		},
 		ModifyingVastXmlAllowed: false,
 		OpenRTB: &OpenRTBInfo{
-			GPPSupported: false,
-			Version:      "2.5",
+			GPPSupported:         false,
+			Version:              "2.5",
+			MultiformatSupported: &trueValue,
 		},
 		PlatformID: "456",
 		Syncer: &Syncer{
@@ -1895,7 +1898,7 @@ func TestApplyBidderInfoConfigOverridesInvalid(t *testing.T) {
 func TestReadFullYamlBidderConfig(t *testing.T) {
 	bidder := "bidderA"
 	bidderInf := BidderInfo{}
-
+	falseValue := false
 	err := yaml.Unmarshal([]byte(fullBidderYAMLConfig), &bidderInf)
 	require.NoError(t, err)
 
@@ -1942,8 +1945,9 @@ func TestReadFullYamlBidderConfig(t *testing.T) {
 			},
 			EndpointCompression: "GZIP",
 			OpenRTB: &OpenRTBInfo{
-				GPPSupported: true,
-				Version:      "2.6",
+				GPPSupported:         true,
+				Version:              "2.6",
+				MultiformatSupported: &falseValue,
 			},
 			Disabled:         false,
 			ExtraAdapterInfo: "extra-info",

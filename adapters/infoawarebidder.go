@@ -264,8 +264,8 @@ func AdjustImpForPreferredMediaType(imp openrtb2.Imp, preferredMediaType openrtb
 }
 
 func IsMultiFormatSupported(bidderInfo config.BidderInfo) bool {
-	if bidderInfo.OpenRTB != nil {
-		return bidderInfo.OpenRTB.MultiformatSupported
+	if bidderInfo.OpenRTB != nil && bidderInfo.OpenRTB.MultiformatSupported != nil {
+		return *bidderInfo.OpenRTB.MultiformatSupported
 	}
 	return true
 }

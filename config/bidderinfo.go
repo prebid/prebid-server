@@ -98,7 +98,7 @@ type AdapterXAPI struct {
 type OpenRTBInfo struct {
 	Version              string `yaml:"version" mapstructure:"version"`
 	GPPSupported         bool   `yaml:"gpp-supported" mapstructure:"gpp-supported"`
-	MultiformatSupported bool   `yaml:"multiformat-supported" mapstructure:"multiformat-supported"`
+	MultiformatSupported *bool  `yaml:"multiformat-supported" mapstructure:"multiformat-supported"`
 }
 
 // Syncer specifies the user sync settings for a bidder. This struct is shared by the account config,
@@ -273,7 +273,6 @@ func processBidderInfos(reader InfoReader, normalizeBidderName openrtb_ext.Bidde
 		bidderName := strings.Split(fileName, ".")
 		if len(bidderName) == 2 && bidderName[1] == "yaml" {
 			info := BidderInfo{}
-			info.SetDefaults()
 			if err := yaml.Unmarshal(data, &info); err != nil {
 				return nil, fmt.Errorf("error parsing config for bidder %s: %v", fileName, err)
 			}
@@ -309,14 +308,6 @@ func processBidderInfos(reader InfoReader, normalizeBidderName openrtb_ext.Bidde
 		}
 	}
 	return processBidderAliases(aliasNillableFieldsByBidder, bidderInfos)
-}
-
-func (b *BidderInfo) SetDefaults() {
-	if b.OpenRTB == nil {
-		b.OpenRTB = &OpenRTBInfo{
-			MultiformatSupported: true, // Default value
-		}
-	}
 }
 
 func processBidderAliases(aliasNillableFieldsByBidder map[string]aliasNillableFields, bidderInfos BidderInfos) (BidderInfos, error) {
