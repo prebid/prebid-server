@@ -436,7 +436,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			rubiconRequest.App = &appCopy
 		}
 
-		if request.Source != nil || rubiconExt.PChain != "" {
+		if request.Source != nil {
 			var sourceCopy openrtb2.Source
 			if request.Source != nil {
 				sourceCopy = *request.Source
@@ -463,10 +463,6 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 					errs = append(errs, err)
 					continue
 				}
-			}
-
-			if rubiconExt.PChain != "" {
-				sourceCopy.PChain = rubiconExt.PChain
 			}
 
 			rubiconRequest.Source = &sourceCopy
