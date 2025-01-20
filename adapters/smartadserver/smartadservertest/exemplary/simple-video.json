@@ -68,6 +68,7 @@
                 "price": 0.500000,
                 "adm": "some-test-ad",
                 "crid": "crid_10",
+                "mtype": 2,
                 "h": 576,
                 "w": 1024
               }]
@@ -90,6 +91,7 @@
             "price": 0.5,
             "adm": "some-test-ad",
             "crid": "crid_10",
+            "mtype": 2,
             "w": 1024,
             "h": 576
           },

@@ -1,0 +1,114 @@
+{
+    "mockBidRequest": {
+      "id": "test-request-multi-id",
+      "imp": [
+        {
+          "id": "test-imp-id-1",
+          "native": {
+            "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":25}},{\"id\":2,\"required\":1,\"data\":{\"type\":2,\"len\":90}},{\"id\":3,\"data\":{\"type\":12,\"len\":15}},{\"id\":4,\"required\":1,\"img\":{\"type\":3,\"wmin\":1200,\"hmin\":627}},{\"id\":5,\"required\":1,\"img\":{\"type\":1,\"wmin\":100,\"hmin\":100}},{\"id\":6,\"data\":{\"type\":3,\"len\":5}},{\"id\":7,\"data\":{\"type\":6}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1]}]}",
+            "ver": "1.2",
+            "api": [
+              3,
+              5,
+              6
+            ]
+          },
+          "audio": {
+            "mimes": ["audio/mp3"],
+            "protocols": [1]
+          },
+          "ext": {
+            "bidder": {
+              "siteId": 1,
+              "pageId": 2,
+              "formatId": 3,
+              "networkId": 73
+            }
+          }
+        }
+      ]
+    },
+  
+    "httpCalls": [
+      {
+        "expectedRequest": {
+          "uri": "https://ssb.smartadserver.com/api/bid?callerId=5",
+          "body": {
+            "id": "test-request-multi-id",
+            "imp": [
+              {
+                "id": "test-imp-id-1",
+                "native": {
+                  "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":25}},{\"id\":2,\"required\":1,\"data\":{\"type\":2,\"len\":90}},{\"id\":3,\"data\":{\"type\":12,\"len\":15}},{\"id\":4,\"required\":1,\"img\":{\"type\":3,\"wmin\":1200,\"hmin\":627}},{\"id\":5,\"required\":1,\"img\":{\"type\":1,\"wmin\":100,\"hmin\":100}},{\"id\":6,\"data\":{\"type\":3,\"len\":5}},{\"id\":7,\"data\":{\"type\":6}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1]}]}",
+                  "ver": "1.2",
+                  "api": [
+                    3,
+                    5,
+                    6
+                  ]
+                },
+                "audio": {
+                  "mimes": ["audio/mp3"],
+                  "protocols": [1]
+                },
+                "ext": {
+                  "bidder": {
+                    "siteId": 1,
+                    "pageId": 2,
+                    "formatId": 3,
+                    "networkId": 73
+                  }
+                }
+              }
+            ],
+            "site": {
+              "publisher": {
+                "id": "73"
+              }
+            }
+          },
+          "impIDs":["test-imp-id-1"]
+        },
+        "mockResponse": {
+          "status": 200,
+          "body": {
+            "id": "test-request-multi-type",
+            "seatbid": [
+                {
+                "seat": "smartadserver",
+                "bid": [{
+                    "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                    "impid": "test-imp-id-audio",
+                    "price": 0.500000,
+                    "adm": "some-test-ad",
+                    "crid": "crid_10",
+                    "mtype": 3
+                }]
+                }
+            ],
+            "cur": "USD"
+          }
+        }
+      }
+    ],
+  
+    "expectedBidResponses": [
+      {
+        "currency": "USD",
+        "bids": [
+          {
+            "bid": {
+              "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+              "impid": "test-imp-id-audio",
+              "price": 0.5,
+              "adm": "some-test-ad",
+              "crid": "crid_10",
+              "mtype": 3
+            },
+            "type": "audio"
+          }
+        ]
+      }
+    ]
+  }
+  

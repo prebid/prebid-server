@@ -4,6 +4,10 @@
     "description": "A schema which validates params accepted by the Blue adapter",
     "type": "object",
     "properties": {
+        "placementId": {
+            "type": "string",
+            "description": "Placement ID provided by Blue"
+        },
         "publisherId": {
             "type": "string",
             "description": "The publisher’s ID provided by Blue"

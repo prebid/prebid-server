@@ -45,6 +45,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderAdtelligent,
 	BidderAdTonos,
 	BidderAdvangelists,
+	BidderAdverxo,
 	BidderAdView,
 	BidderAdxcg,
 	BidderAdyoulike,
@@ -127,6 +128,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderImprovedigital,
 	BidderInfyTV,
 	BidderInMobi,
+	BidderInsticator,
 	BidderInteractiveoffers,
 	BidderInvibes,
 	BidderIQX,
@@ -138,7 +140,9 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderKidoz,
 	BidderKiviads,
 	BidderLmKiviads,
+	BidderKobler,
 	BidderKrushmedia,
+	BidderKueezRTB,
 	BidderLemmadigital,
 	BidderLimelightDigital,
 	BidderLockerDome,
@@ -383,6 +387,7 @@ const (
 	BidderAdTonos           BidderName = "adtonos"
 	BidderAdtelligent       BidderName = "adtelligent"
 	BidderAdvangelists      BidderName = "advangelists"
+	BidderAdverxo           BidderName = "adverxo"
 	BidderAdView            BidderName = "adview"
 	BidderAdxcg             BidderName = "adxcg"
 	BidderAdyoulike         BidderName = "adyoulike"
@@ -465,6 +470,7 @@ const (
 	BidderImprovedigital    BidderName = "improvedigital"
 	BidderInfyTV            BidderName = "infytv"
 	BidderInMobi            BidderName = "inmobi"
+	BidderInsticator        BidderName = "insticator"
 	BidderInteractiveoffers BidderName = "interactiveoffers"
 	BidderInvibes           BidderName = "invibes"
 	BidderIQX               BidderName = "iqx"
@@ -476,7 +482,9 @@ const (
 	BidderKidoz             BidderName = "kidoz"
 	BidderKiviads           BidderName = "kiviads"
 	BidderLmKiviads         BidderName = "lm_kiviads"
+	BidderKobler            BidderName = "kobler"
 	BidderKrushmedia        BidderName = "krushmedia"
+	BidderKueezRTB          BidderName = "kueezrtb"
 	BidderLemmadigital      BidderName = "lemmadigital"
 	BidderLimelightDigital  BidderName = "limelightDigital"
 	BidderLockerDome        BidderName = "lockerdome"

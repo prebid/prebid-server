@@ -76,8 +76,9 @@ func (s *SovrnAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 
 		imp.TagID = tagId
 
-		if imp.BidFloor == 0 && sovrnExt.BidFloor > 0 {
-			imp.BidFloor = sovrnExt.BidFloor
+		extBidFloor := getExtBidFloor(sovrnExt)
+		if imp.BidFloor == 0 && extBidFloor > 0 {
+			imp.BidFloor = extBidFloor
 		}
 
 		var impExtBuffer []byte
@@ -189,6 +190,18 @@ func (s *SovrnAdapter) MakeBids(request *openrtb2.BidRequest, bidderRequest *ada
 	}
 
 	return response, errs
+}
+
+func getExtBidFloor(sovrnExt openrtb_ext.ExtImpSovrn) float64 {
+	switch v := sovrnExt.BidFloor.(type) {
+	case string:
+		if numValue, err := strconv.ParseFloat(v, 64); err == nil {
+			return numValue
+		}
+	case float64:
+		return v
+	}
+	return 0
 }
 
 func getTagId(sovrnExt openrtb_ext.ExtImpSovrn) string {

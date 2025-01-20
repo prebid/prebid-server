@@ -94,7 +94,6 @@
 			}
 		}
     },
-  
     "expectedMakeRequestsErrors": [
         {
             "value": "Invalid adSlot AdTag_Div1@",

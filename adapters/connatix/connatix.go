@@ -200,6 +200,8 @@ func buildRequestImp(imp *openrtb2.Imp, ext impExtIncoming, displayManagerVer st
 	impExt := impExt{
 		Connatix: impExtConnatix{
 			PlacementId: ext.Bidder.PlacementId,
+			DeclaredViewabilityPercentage: ext.Bidder.DeclaredViewabilityPercentage,
+            DetectedViewabilityPercentage: ext.Bidder.DetectedViewabilityPercentage,
 		},
 	}
 

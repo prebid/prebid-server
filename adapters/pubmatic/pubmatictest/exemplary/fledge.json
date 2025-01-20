@@ -47,7 +47,7 @@
               }
             }
           ],
-          "ext": {"prebid":{}}
+          "ext": {}
         },
         "impIDs":["test-imp-id"]
       },

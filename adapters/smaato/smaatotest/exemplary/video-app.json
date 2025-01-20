@@ -165,7 +165,7 @@
                         "keywords": "keywords"
                     },
                     "ext": {
-                        "client": "prebid_server_1.1"
+                        "client": "prebid_server_1.2"
                     }
                 },
                 "impIDs":["postbid_iframe"]

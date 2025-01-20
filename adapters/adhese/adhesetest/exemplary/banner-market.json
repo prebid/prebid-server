@@ -1,29 +1,30 @@
 {
   "mockBidRequest": {
     "id": "test-req",
+    "user": {
+      "ext": {
+        "consent": "dummy"
+      }
+    },
     "imp": [
       {
         "id": "test-req",
         "banner": {
-          "format": [
-            {
-              "w": 300,
-              "h": 250
-            }
-          ]
+          "w": 300,
+          "h": 250
         },
         "ext": {
           "bidder": {
+            "location": "pbs_test",
+            "format": "pbs_mr",
             "account": "market",
-            "location": "_adhese_prebid_demo_",
-            "format": "leaderboard",
-            "targets": 
-            {
+            "targets": {
               "ci": ["gent", "brussels"],
               "ag": ["55"],
               "tl": ["all"]
             }
-          }
+          },
+          "tid": "6811e2a1-3649-4e54-ba03-c9b1401ae728"
         }
       }
     ],
@@ -31,71 +32,99 @@
       "id": "test",
       "publisher": {
         "id": "123"
-      },
-      "page": "dummy"
+      }
     }
   },
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://ads-market.adhese.com/json/sl_adhese_prebid_demo_-leaderboard/ag55/cigent;brussels/tlall/xfdummy",
-        "impIDs":["test-req"]
+        "uri": "https://market.foo.bar/",
+        "impIDs": ["test-req"],
+        "body": {
+          "id": "test-req",
+          "imp": [
+            {
+              "banner": {
+                "h": 250,
+                "w": 300
+              },
+              "ext": {
+                "adhese": {
+                  "SL": ["pbs_test-pbs_mr"],
+                  "ag": ["55"],
+                  "ci": ["gent", "brussels"],
+                  "tl": ["all"]
+                }
+              },
+              "id": "test-req"
+            }
+          ],
+          "site": {
+            "id": "test",
+            "publisher": {
+              "id": "123"
+            }
+          },
+          "user": {
+            "ext": {
+              "consent": "dummy"
+            }
+          }
+        }
       },
       "mockResponse": {
         "status": 200,
-        "body": [{
-          "origin": "APPNEXUS",
-          "originInstance": "",
-          "ext": "js",
-          "slotName": "_main_page_-leaderboard",
-          "adType": "leaderboard",
-          "originData": {
-            "seatbid": [
-              {
-                "bid": [
-                  {
-                    "crid": "60613369",
-                    "dealid": null
-                  }
-                ],
-                "seat": "958"
-              }
-            ]
-          },
-          "width": "728",
-          "height": "90",
-          "body": "<div style='background-color:red; height:250px; width:300px'></div>",
-          "tracker": "https://hosts-demo.adhese.com/rtb_gateway/handlers/client/track/?id=a2f39296-6dd0-4b3c-be85-7baa22e7ff4a",
-          "impressionCounter": "https://hosts-demo.adhese.com/rtb_gateway/handlers/client/track/?id=a2f39296-6dd0-4b3c-be85-7baa22e7ff4a",
-          "extension": {
-            "prebid": {
-              "cpm": {
-                "amount": "1",
-                "currency": "USD"
-              }
+        "body": {
+          "id": "test-req",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "price": 1.087,
+                  "adm": "<html><body style=\\\"margin:0%\\\"><a href=\\\"http://dev.tokyo.iponweb.net/click/KqFxs5SWsPYVXsL3wNKozGVQHK0aIuJ7t4amL-rK1dP0KFlKd3Z.K-Ch.NZ5GYKUyKRDAU794n-hSF9-LWCpovlxqPY49KxpP97JlRh2ux4f.kndmby6vvs0hXLFu4r0WBlhUT9qANUJZJ2bsvPV3kF4a6k60.wwL36qDxplquNmhT5mxsORhcUjFbDP1Sc0KNOfqf6kys.YEQ3VB8XvPK.1m.kZ2lCH6zP30PnHTdQO.6zyDRjFASwdDW-ayaRAiTWMeqpRzQlBMyG3MzWg6VgOclmvkn6BdlvNooBrQg2aIfYeNs8WMQ8LGKgjtH6ADbmE00uWsKQJaAMCrxFROhUVLvYGa.T.KDiHMDR6.FPQ5TCG.GrUS95X4c1S1w0ln7W9UKVh-Q3T7Qr6kj9VbyvtkLVhMhVT5Gnk4dw01Xneb4eih8hK8qU5urejYRdeVW3iFTx.MModFQw2WfarrFoeyB.Sjc5lbYcFDce5QlLoDXV14faAz6WSylogVnkHdCP9oTOuGMDeC752tCZt36HWbXucBBseAmi5njcmdfpF//http%3A%2F%2Fwww.chris.com\\\" target=\\\"_blank\\\"><img style=\\\"border: 0;\\\" border=\\\"0\\\" width=\\\"300\\\" height=\\\"250\\\" src=\\\"http://test.360yield.com/file/226569/LeftAligned_blue.png\\\" alt=\\\"\\\"/></a><img src=\\\"http://dev.tokyo.iponweb.net/imp_pixel?ic=KqFxs3bhZwS9j9reQlSW5affOay54sEDsEqQzNMeQr0olHvVZJJVG8HOZ.mPgdCcksXTG1UvtBnYVxu2F0jlB76NSwEQaxULkEsUfXMPbKKkP8v0tLFkLeF1iDgO9bjAJmxyVYtIA4C-hGy80tDfcltIKfy1JNz-zf7E0XNHKo1T8yGugThU2Uo65uR1v8jsYEFh3VmpI2pUvQgKAspX.WLBmON8jCfPuHCZr2dpyVhJ50PBavKBsON0gcwc5iwNhiF-.RFbqkmAZOXtt1DluDjddZelUghV8FnKLV1OAaJvHeMaeSwMYEYs355-53R3szvp2s9yvFDTI9P5X9Z.a0uMtuXoHyqjUFn79MCnntwYtqPxu9Ho17jgB2w4HCI2qd3bhEJG04lC-pDMOUkrD19.-ivMBkdYVKgl-5b13gS2e9absDIuy.1YWsdex3PTGXDMr68kpHI9lisCMd7EEWLQep-J37l1HyVZqT63cPvpim3siP6smbiAiR8lzu6JUKHgglc0oYWAVBCL4cwA4qKKqvpRrL8xQ4vRG8V9DPI8\\\" alt=\\\" \\\" style=\\\"display:none\\\"/><improvedigital_ad_output_information tp_id=\\\"\\\" buyer_id=\\\"0\\\" rtb_advertiser=\\\"\\\" campaign_id=\\\"284945\\\" line_item_id=\\\"367603\\\" creative_id=\\\"456851\\\" crid=\\\"0\\\" placement_id=\\\"1071749\\\"></improvedigital_ad_output_information></body></html><div style=\\\"position: absolute; left: 0px; top: 0px; visibility: hidden;\\\"><img src=\\\"http://127.0.0.1:8080/rtb_gateway/handlers/client/track/?id=0a9348ab-973d-4596-9ee8-bafa4e5d0865\\\" border=\\\"0\\\" width=\\\"1\\\" height=\\\"1\\\" alt=\\\"\\\" style=\\\"display:none\\\"></div>",
+                  "w": 300,
+                  "h": 250,
+                  "crid": "demo-475",
+                  "dealid": "demo-234",
+                  "ext": {
+                    "adhese": {
+                      "adType": "leaderboard",
+                      "adFormat": "superadformat"
+                    }
+                  },
+                  "id": "a5ec99e8-aa6b-42f4-bf8b-b68dabf96caf",
+                  "impid": "imp_id"
+                }
+              ]
             }
-          }
-        }]
+          ],
+          "cur": "USD"
+        }
       }
     }
   ],
   "expectedBidResponses": [
     {
       "currency": "USD",
-        "bids": [
-          {
-            "bid": {
-              "adm": "<div style='background-color:red; height:250px; width:300px'></div>",
-              "w": 728,
-              "h": 90,
-              "id": "",
-              "impid": "",
-              "crid": "60613369",
-              "price": 1.000000
-            },
-            "type": "banner"
-          }
-        ]
+      "bids": [
+        {
+          "bid": {
+            "adm": "<html><body style=\\\"margin:0%\\\"><a href=\\\"http://dev.tokyo.iponweb.net/click/KqFxs5SWsPYVXsL3wNKozGVQHK0aIuJ7t4amL-rK1dP0KFlKd3Z.K-Ch.NZ5GYKUyKRDAU794n-hSF9-LWCpovlxqPY49KxpP97JlRh2ux4f.kndmby6vvs0hXLFu4r0WBlhUT9qANUJZJ2bsvPV3kF4a6k60.wwL36qDxplquNmhT5mxsORhcUjFbDP1Sc0KNOfqf6kys.YEQ3VB8XvPK.1m.kZ2lCH6zP30PnHTdQO.6zyDRjFASwdDW-ayaRAiTWMeqpRzQlBMyG3MzWg6VgOclmvkn6BdlvNooBrQg2aIfYeNs8WMQ8LGKgjtH6ADbmE00uWsKQJaAMCrxFROhUVLvYGa.T.KDiHMDR6.FPQ5TCG.GrUS95X4c1S1w0ln7W9UKVh-Q3T7Qr6kj9VbyvtkLVhMhVT5Gnk4dw01Xneb4eih8hK8qU5urejYRdeVW3iFTx.MModFQw2WfarrFoeyB.Sjc5lbYcFDce5QlLoDXV14faAz6WSylogVnkHdCP9oTOuGMDeC752tCZt36HWbXucBBseAmi5njcmdfpF//http%3A%2F%2Fwww.chris.com\\\" target=\\\"_blank\\\"><img style=\\\"border: 0;\\\" border=\\\"0\\\" width=\\\"300\\\" height=\\\"250\\\" src=\\\"http://test.360yield.com/file/226569/LeftAligned_blue.png\\\" alt=\\\"\\\"/></a><img src=\\\"http://dev.tokyo.iponweb.net/imp_pixel?ic=KqFxs3bhZwS9j9reQlSW5affOay54sEDsEqQzNMeQr0olHvVZJJVG8HOZ.mPgdCcksXTG1UvtBnYVxu2F0jlB76NSwEQaxULkEsUfXMPbKKkP8v0tLFkLeF1iDgO9bjAJmxyVYtIA4C-hGy80tDfcltIKfy1JNz-zf7E0XNHKo1T8yGugThU2Uo65uR1v8jsYEFh3VmpI2pUvQgKAspX.WLBmON8jCfPuHCZr2dpyVhJ50PBavKBsON0gcwc5iwNhiF-.RFbqkmAZOXtt1DluDjddZelUghV8FnKLV1OAaJvHeMaeSwMYEYs355-53R3szvp2s9yvFDTI9P5X9Z.a0uMtuXoHyqjUFn79MCnntwYtqPxu9Ho17jgB2w4HCI2qd3bhEJG04lC-pDMOUkrD19.-ivMBkdYVKgl-5b13gS2e9absDIuy.1YWsdex3PTGXDMr68kpHI9lisCMd7EEWLQep-J37l1HyVZqT63cPvpim3siP6smbiAiR8lzu6JUKHgglc0oYWAVBCL4cwA4qKKqvpRrL8xQ4vRG8V9DPI8\\\" alt=\\\" \\\" style=\\\"display:none\\\"/><improvedigital_ad_output_information tp_id=\\\"\\\" buyer_id=\\\"0\\\" rtb_advertiser=\\\"\\\" campaign_id=\\\"284945\\\" line_item_id=\\\"367603\\\" creative_id=\\\"456851\\\" crid=\\\"0\\\" placement_id=\\\"1071749\\\"></improvedigital_ad_output_information></body></html><div style=\\\"position: absolute; left: 0px; top: 0px; visibility: hidden;\\\"><img src=\\\"http://127.0.0.1:8080/rtb_gateway/handlers/client/track/?id=0a9348ab-973d-4596-9ee8-bafa4e5d0865\\\" border=\\\"0\\\" width=\\\"1\\\" height=\\\"1\\\" alt=\\\"\\\" style=\\\"display:none\\\"></div>",
+            "w": 300,
+            "h": 250,
+            "id": "a5ec99e8-aa6b-42f4-bf8b-b68dabf96caf",
+            "impid": "imp_id",
+            "crid": "demo-475",
+            "dealid": "demo-234",
+            "price": 1.087,
+            "ext": {
+              "adType": "leaderboard",
+              "adFormat": "superadformat"
+            }
+          },
+          "type": "banner"
+        }
+      ]
     }
   ]
 }
