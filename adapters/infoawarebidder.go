@@ -188,18 +188,21 @@ func parseBidderInfo(info config.BidderInfo) parsedBidderInfo {
 	return parsedInfo
 }
 
-// filterMultiformatSupported should read bidder info for multi-format support and if bidder does not support multi-format requests, then send only prefered media type in the request
+// FilterMultiformatImps filters impressions based on the preferred media type if the bidder does not support multiformat.
+// It returns the updated list of impressions and any errors encountered during the filtering process.
 func FilterMultiformatImps(bidRequest *openrtb2.BidRequest, preferredMediaType openrtb_ext.BidType) ([]openrtb2.Imp, []error) {
-
 	var updatedImps []openrtb2.Imp
 	var errs []error
 
 	for _, imp := range bidRequest.Imp {
-		processedImp, err := AdjustImpForPreferredMediaType(imp, preferredMediaType)
-		if err != nil {
-			errs = append(errs, err)
+		if IsMultiFormat(imp) && preferredMediaType != "" {
+			if err := AdjustImpForPreferredMediaType(&imp, preferredMediaType); err != nil {
+				errs = append(errs, err)
+				continue
+			}
+			updatedImps = append(updatedImps, imp)
 		} else {
-			updatedImps = append(updatedImps, *processedImp)
+			updatedImps = append(updatedImps, imp)
 		}
 	}
 
@@ -210,57 +213,49 @@ func FilterMultiformatImps(bidRequest *openrtb2.BidRequest, preferredMediaType o
 	return updatedImps, errs
 }
 
-func AdjustImpForPreferredMediaType(imp openrtb2.Imp, preferredMediaType openrtb_ext.BidType) (*openrtb2.Imp, error) {
-	if !IsMultiFormat(imp) {
-		// If the impression is not multi-format, return it as-is.
-		return &imp, nil
-	}
+// AdjustImpForPreferredMediaType modifies the given impression to retain only the preferred media type.
+// It returns the updated impression and any error encountered during the adjustment process.
+func AdjustImpForPreferredMediaType(imp *openrtb2.Imp, preferredMediaType openrtb_ext.BidType) error {
 
-	if preferredMediaType == "" {
-		return &imp, nil
-	}
-
-	// Create a copy of the Imp and clear irrelevant media types based on the preferred media type.
-	updatedImp := imp
-
+	// Clear irrelevant media types based on the preferred media type.
 	switch preferredMediaType {
 	case openrtb_ext.BidTypeBanner:
 		if imp.Banner != nil {
-			updatedImp.Video = nil
-			updatedImp.Audio = nil
-			updatedImp.Native = nil
+			imp.Video = nil
+			imp.Audio = nil
+			imp.Native = nil
 		} else {
-			return nil, &errortypes.BadInput{Message: fmt.Sprintf("Imp %s does not have a valid BANNER media type.", imp.ID)}
+			return &errortypes.BadInput{Message: fmt.Sprintf("Imp %s does not have a valid BANNER media type.", imp.ID)}
 		}
 	case openrtb_ext.BidTypeVideo:
 		if imp.Video != nil {
-			updatedImp.Banner = nil
-			updatedImp.Audio = nil
-			updatedImp.Native = nil
+			imp.Banner = nil
+			imp.Audio = nil
+			imp.Native = nil
 		} else {
-			return nil, &errortypes.BadInput{Message: fmt.Sprintf("Imp %s does not have a valid VIDEO media type.", imp.ID)}
+			return &errortypes.BadInput{Message: fmt.Sprintf("Imp %s does not have a valid VIDEO media type.", imp.ID)}
 		}
 	case openrtb_ext.BidTypeAudio:
 		if imp.Audio != nil {
-			updatedImp.Banner = nil
-			updatedImp.Video = nil
-			updatedImp.Native = nil
+			imp.Banner = nil
+			imp.Video = nil
+			imp.Native = nil
 		} else {
-			return nil, &errortypes.BadInput{Message: fmt.Sprintf("Imp %s does not have a valid AUDIO media type.", imp.ID)}
+			return &errortypes.BadInput{Message: fmt.Sprintf("Imp %s does not have a valid AUDIO media type.", imp.ID)}
 		}
 	case openrtb_ext.BidTypeNative:
 		if imp.Native != nil {
-			updatedImp.Banner = nil
-			updatedImp.Video = nil
-			updatedImp.Audio = nil
+			imp.Banner = nil
+			imp.Video = nil
+			imp.Audio = nil
 		} else {
-			return nil, &errortypes.BadInput{Message: fmt.Sprintf("Imp %s does not have a valid NATIVE media type.", imp.ID)}
+			return &errortypes.BadInput{Message: fmt.Sprintf("Imp %s does not have a valid NATIVE media type.", imp.ID)}
 		}
 	default:
-		return nil, &errortypes.BadInput{Message: fmt.Sprintf("Imp %s has an invalid preferred media type: %s.", imp.ID, preferredMediaType)}
+		return &errortypes.BadInput{Message: fmt.Sprintf("Imp %s has an invalid preferred media type: %s.", imp.ID, preferredMediaType)}
 	}
 
-	return &updatedImp, nil
+	return nil
 }
 
 func IsMultiFormatSupported(bidderInfo config.BidderInfo) bool {

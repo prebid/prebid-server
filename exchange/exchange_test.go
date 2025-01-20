@@ -6352,7 +6352,7 @@ func TestBidsToUpdate(t *testing.T) {
 	}
 }
 
-func TestBuildBidderPreferredMediaTypeMap(t *testing.T) {
+func TestGetBidderPreferredMediaTypeMap(t *testing.T) {
 	tests := []struct {
 		name             string
 		extRequestPrebid *openrtb_ext.ExtRequestPrebid
@@ -6426,7 +6426,7 @@ func TestBuildBidderPreferredMediaTypeMap(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := buildBidderPreferredMediaTypeMap(tt.extRequestPrebid, tt.account)
+			result := getBidderPreferredMediaTypeMap(tt.extRequestPrebid, tt.account)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
