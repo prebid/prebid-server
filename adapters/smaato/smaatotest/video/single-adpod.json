@@ -180,7 +180,7 @@
                         }
                     },
                     "ext": {
-                        "client": "prebid_server_1.1"
+                        "client": "prebid_server_1.2"
                     }
                 },
                 "impIDs":["1_1","1_2"]

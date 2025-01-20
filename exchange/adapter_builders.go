@@ -29,6 +29,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/adtonos"
 	"github.com/prebid/prebid-server/v3/adapters/adtrgtme"
 	"github.com/prebid/prebid-server/v3/adapters/advangelists"
+	"github.com/prebid/prebid-server/v3/adapters/adverxo"
 	"github.com/prebid/prebid-server/v3/adapters/adview"
 	"github.com/prebid/prebid-server/v3/adapters/adxcg"
 	"github.com/prebid/prebid-server/v3/adapters/adyoulike"
@@ -110,6 +111,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/improvedigital"
 	"github.com/prebid/prebid-server/v3/adapters/infytv"
 	"github.com/prebid/prebid-server/v3/adapters/inmobi"
+	"github.com/prebid/prebid-server/v3/adapters/insticator"
 	"github.com/prebid/prebid-server/v3/adapters/interactiveoffers"
 	"github.com/prebid/prebid-server/v3/adapters/invibes"
 	"github.com/prebid/prebid-server/v3/adapters/iqx"
@@ -120,7 +122,9 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/kayzen"
 	"github.com/prebid/prebid-server/v3/adapters/kidoz"
 	"github.com/prebid/prebid-server/v3/adapters/kiviads"
+	"github.com/prebid/prebid-server/v3/adapters/kobler"
 	"github.com/prebid/prebid-server/v3/adapters/krushmedia"
+	"github.com/prebid/prebid-server/v3/adapters/kueezrtb"
 	"github.com/prebid/prebid-server/v3/adapters/lemmadigital"
 	"github.com/prebid/prebid-server/v3/adapters/limelightDigital"
 	lmkiviads "github.com/prebid/prebid-server/v3/adapters/lm_kiviads"
@@ -260,6 +264,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderAdtelligent:       adtelligent.Builder,
 		openrtb_ext.BidderAdTonos:           adtonos.Builder,
 		openrtb_ext.BidderAdvangelists:      advangelists.Builder,
+		openrtb_ext.BidderAdverxo:           adverxo.Builder,
 		openrtb_ext.BidderAdView:            adview.Builder,
 		openrtb_ext.BidderAdxcg:             adxcg.Builder,
 		openrtb_ext.BidderAdyoulike:         adyoulike.Builder,
@@ -342,6 +347,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderImprovedigital:    improvedigital.Builder,
 		openrtb_ext.BidderInfyTV:            infytv.Builder,
 		openrtb_ext.BidderInMobi:            inmobi.Builder,
+		openrtb_ext.BidderInsticator:        insticator.Builder,
 		openrtb_ext.BidderInteractiveoffers: interactiveoffers.Builder,
 		openrtb_ext.BidderInvibes:           invibes.Builder,
 		openrtb_ext.BidderIQX:               iqx.Builder,
@@ -353,7 +359,9 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderKidoz:             kidoz.Builder,
 		openrtb_ext.BidderKiviads:           kiviads.Builder,
 		openrtb_ext.BidderLmKiviads:         lmkiviads.Builder,
+		openrtb_ext.BidderKobler:            kobler.Builder,
 		openrtb_ext.BidderKrushmedia:        krushmedia.Builder,
+		openrtb_ext.BidderKueezRTB:          kueezrtb.Builder,
 		openrtb_ext.BidderLemmadigital:      lemmadigital.Builder,
 		openrtb_ext.BidderVungle:            vungle.Builder,
 		openrtb_ext.BidderLimelightDigital:  limelightDigital.Builder,

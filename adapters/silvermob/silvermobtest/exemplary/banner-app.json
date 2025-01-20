@@ -115,6 +115,7 @@
                     "id": "a3ae1b4e2fc24a4fb45540082e98e161",
                     "impid": "1",
                     "price": 3.5,
+                    "mtype": 1,
                     "adm": "awesome-markup",
                     "adomain": [
                       "awesome.com"
@@ -147,6 +148,7 @@
               "id": "a3ae1b4e2fc24a4fb45540082e98e161",
               "impid": "1",
               "price": 3.5,
+              "mtype": 1,
               "adm": "awesome-markup",
               "adomain": [
                 "awesome.com"
