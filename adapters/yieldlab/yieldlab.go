@@ -86,7 +86,7 @@ func (a *YieldlabAdapter) makeEndpointURL(req *openrtb2.BidRequest, params *open
 		q.Set("gdpr", gdpr)
 	}
 	if consent != "" {
-		q.Set("consent", consent)
+		q.Set("gdpr_consent", consent)
 	}
 
 	if req.Source != nil && req.Source.Ext != nil {
@@ -448,7 +448,7 @@ func (a *YieldlabAdapter) makeAdSourceURL(req *openrtb2.BidRequest, ext *openrtb
 	gdpr, consent, err := a.getGDPR(req)
 	if err == nil && gdpr != "" && consent != "" {
 		val.Set("gdpr", gdpr)
-		val.Set("consent", consent)
+		val.Set("gdpr_consent", consent)
 	}
 
 	return fmt.Sprintf(adSourceURL, ext.AdslotID, ext.SupplyID, res.Adsize, val.Encode())
