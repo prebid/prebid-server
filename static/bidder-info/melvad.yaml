@@ -1,0 +1,20 @@
+endpoint: "https://rtb.bidder.melvad.com/ssps/1/prebid"
+maintainer:
+  email: support@melvad.com
+endpointCompression: gzip
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  redirect:
+    url: https://sync.dmp.melvad.com/match/1?ssp_id=11&rt={{.RedirectURL}}&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&wu=1
+    userMacro: '{{oui}}'
