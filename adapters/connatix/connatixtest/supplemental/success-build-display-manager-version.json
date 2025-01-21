@@ -43,7 +43,8 @@
           },
           "ext": {
             "bidder": {
-              "placementId": "some-placement-id"
+              "placementId": "some-placement-id",
+              "viewabilityPercentage": 0.6
             }
           }
         }
@@ -78,7 +79,8 @@
                 "displaymanagerver": "test-1.0.0",
                 "ext": {
                   "connatix": {
-                    "placementId": "some-placement-id"
+                    "placementId": "some-placement-id",
+                    "viewabilityPercentage": 0.6
                   }
                 }
               }
