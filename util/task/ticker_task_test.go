@@ -63,6 +63,28 @@ func TestStartWithSingleRun(t *testing.T) {
 	assert.Equal(t, expectedRuns, runner.RunCount(), "runner should not run after Stop is called")
 }
 
+func TestStartFunctionWithSingleRun(t *testing.T) {
+	// Setup Initial Run Only:
+	expectedRuns := 1
+	runner := NewMockRunner(expectedRuns)
+	interval := 0 * time.Millisecond // forces a single run
+	ticker := task.NewTickerTask(interval, task.RunnerFunc(runner.Run))
+
+	// Execute:
+	ticker.Start()
+
+	// Verify:
+	select {
+	case <-runner.ExpectationMet:
+	case <-time.After(250 * time.Millisecond):
+		assert.Failf(t, "Runner Calls", "expected %v calls, observed %v calls", expectedRuns, runner.RunCount())
+	}
+
+	// Verify No Additional Runs:
+	time.Sleep(50 * time.Millisecond)
+	assert.Equal(t, expectedRuns, runner.RunCount(), "runner should not run after Stop is called")
+}
+
 func TestStartWithPeriodicRun(t *testing.T) {
 	// Setup Initial Run + One Periodic Run:
 	expectedRuns := 2

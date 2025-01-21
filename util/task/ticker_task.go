@@ -8,10 +8,18 @@ type Runner interface {
 	Run() error
 }
 
+type RunnerFunc func() error
+
 type TickerTask struct {
 	interval time.Duration
 	runner   Runner
 	done     chan struct{}
+}
+
+var _ Runner = RunnerFunc(nil)
+
+func (r RunnerFunc) Run() error {
+	return r()
 }
 
 func NewTickerTask(interval time.Duration, runner Runner) *TickerTask {
