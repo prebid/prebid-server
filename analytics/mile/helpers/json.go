@@ -22,13 +22,15 @@ func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]MileAnal
 			//}
 		}
 
-		fmt.Println(string(ao.RequestWrapper.Imp[0].Ext), "ext")
+		fmt.Println(ao.RequestWrapper, "ext")
 
 		var confBidders ImpressionsExt
 
-		err := json.Unmarshal(ao.RequestWrapper.Imp[0].Ext, &confBidders)
-		if err != nil {
-			return nil, err
+		if ao.RequestWrapper != nil {
+			err := json.Unmarshal(ao.RequestWrapper.Imp[0].Ext, &confBidders)
+			if err != nil {
+				return nil, err
+			}
 		}
 		configuredBidders := make([]string, len(confBidders.Prebid.Bidder))
 		i := 0
@@ -45,7 +47,7 @@ func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]MileAnal
 				logEntry := MileAnalyticsEvent{
 					//SessionID: ao.RequestWrapper
 					Ip:              ao.RequestWrapper.Device.IP,
-					Timestamp:       time.Now().Unix(),
+					Timestamp:       time.Now().UTC().Unix() * 1000,
 					ServerTimestamp: -1,
 					//ClientVersion: ao.RequestWrapper.Ext.
 					Ua:                ao.RequestWrapper.Device.UA,
