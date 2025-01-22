@@ -31,7 +31,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	}
 
 	if extraInfo.TargetCurrency == "" {
-		return nil, fmt.Errorf("invalid extra info: TargetCurrency is empty, pls check")
+		return nil, errors.New("invalid extra info: TargetCurrency is empty, pls check")
 	}
 
 	bidder := &adapter{
@@ -104,21 +104,12 @@ func (a *adapter) convertCurrency(value float64, cur string, reqInfo *adapters.E
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	switch responseData.StatusCode {
-	case http.StatusNoContent:
+	if adapters.IsResponseStatusCodeNoContent(responseData) {
 		return nil, nil
-	case http.StatusBadRequest:
-		return nil, []error{&errortypes.BadInput{
-			Message: "Unexpected status code: 400. Run with request.debug = 1 for more info.",
-		}}
-	case http.StatusOK:
-		// we don't need to do anything here and this is just so we can use the default case for the unexpected status code
-		break
-	default:
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d.", responseData.StatusCode),
-		}}
+	}
 
+	if err := adapters.CheckResponseStatusCodeForErrors(responseData); err != nil {
+		return nil, []error{err}
 	}
 
 	var response openrtb2.BidResponse
