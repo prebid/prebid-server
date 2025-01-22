@@ -55,6 +55,9 @@ var validParams = []string{
 	`{"placementId":123,"pageId":321,"cwcreative":"3746"}`,
 	`{"placementId":123,"pageId":321}`,
 	`{"placementId":123}`,
+	`{"placementId":123,"domainId":333,"pageId":321,"cwcreative":"3746"}`,
+	`{"placementId":123,"domainId":333,"pageId":321}`,
+	`{"placementId":123},"domainId":333}`,
 	`{}`,
 }
 

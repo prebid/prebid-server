@@ -1,0 +1,103 @@
+{
+  "mockBidRequest": {
+    "id": "test-native-request-id",
+    "device": {
+      "ip": "123.123.123.123",
+      "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 10_3 like Mac OS X)"
+    },
+    "site": {
+      "page": "nativepage"
+    },
+    "imp": [
+      {
+        "id": "test-native-imp-id",
+        "tagid": "test-native-tag",
+        "native": {
+          "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":25}}],\"eventtrackers\":[{\"event\":1,\"method\":1}],\"ver\":\"1.2\"}"
+        },
+        "ext": {
+          "bidder": {
+            "page_id": 3003,
+            "imp_id": 4004
+          }
+        }
+      }
+    ],
+    "cur": ["USD"]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://test.intertech.com/ssp?pid=3003&imp=4004&target-ref=nativepage&ssp-cur=USD",
+        "body": {
+          "id": "test-native-request-id",
+          "imp": [
+            {
+              "id": "test-native-imp-id",
+              "tagid": "test-native-tag",
+              "native": {
+                "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":25}}],\"eventtrackers\":[{\"event\":1,\"method\":1}],\"ver\":\"1.2\"}"
+              },
+              "ext": {
+                "bidder": {
+                  "page_id": 3003,
+                  "imp_id": 4004
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "nativepage"
+          },
+          "device": {
+            "ip": "123.123.123.123",
+            "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 10_3 like Mac OS X)"
+          },
+          "cur": ["USD"]
+        },
+        "impIDs": ["test-native-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-native-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "intertech",
+              "bid": [
+                {
+                  "id": "test_native_bid_id",
+                  "impid": "test-native-imp-id",
+                  "price": 1.0,
+                  "adm": "{\"native\":{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"title\":{\"text\":\"Test Native Title\"}}],\"link\":{\"url\":\"http://example.com\"},\"imptrackers\":[\"http://example.com/imp\"]}}",
+                  "cid": "test_native_cid",
+                  "crid": "test_native_crid",
+                  "mtype": 4
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "test_native_bid_id",
+            "impid": "test-native-imp-id",
+            "price": 1.0,
+            "adm": "{\"native\":{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"title\":{\"text\":\"Test Native Title\"}}],\"link\":{\"url\":\"http://example.com\"},\"imptrackers\":[\"http://example.com/imp\"]}}",
+            "cid": "test_native_cid",
+            "crid": "test_native_crid",
+            "mtype": 4
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}
