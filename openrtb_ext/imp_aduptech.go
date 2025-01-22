@@ -6,6 +6,7 @@ type ExtImpAduptech struct {
 	Publisher string          `json:"publisher"`
 	Placement string          `json:"placement"`
 	Query     string          `json:"query"`
-	AdTest    string          `json:"adtest"`
+	AdTest    bool            `json:"adtest"`
+	Debug     bool            `json:"debug,omitempty"`
 	Ext       json.RawMessage `json:"ext,omitempty"`
 }

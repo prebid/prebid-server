@@ -10,7 +10,9 @@ import (
 )
 
 var validParams = []string{
+	`{ "publisher": "1", "placement": "2" }`,
 	`{ "publisher": "123456789", "placement": "234567890" }`,
+	`{ "publisher": "123456789", "placement": "234567890", "query": "" }`,
 	`{ "publisher": "123456789", "placement": "234567890", "query": "test" }`,
 	`{ "publisher": "123456789", "placement": "234567890", "adtest": true }`,
 	`{ "publisher": "123456789", "placement": "234567890", "debug": true }`,
@@ -46,6 +48,7 @@ var invalidParams = []string{
 	`{ "publisher": "123456789" }`,
 	`{ "placement": "234567890" }`,
 	`{ "publisher": null, "placement": null }`,
+	`{ "publisher": "", "placement": "" }`,
 	`{ "publisher": "123456789", "placement": "234567890", "query": null }`,
 	`{ "publisher": "123456789", "placement": "234567890", "adtest": null }`,
 	`{ "publisher": "123456789", "placement": "234567890", "debug": null }`,

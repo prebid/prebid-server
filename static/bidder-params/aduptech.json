@@ -7,10 +7,12 @@
     "properties": {
       "publisher": {
         "type": "string",
+        "minLength": 1,
         "description": "Unique publisher identifier."
       },
       "placement": {
         "type": "string",
+        "minLength": 1,
         "description": "Unique placement identifier per publisher."
       },
       "query": {
