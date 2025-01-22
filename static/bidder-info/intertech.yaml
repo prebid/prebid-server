@@ -1,0 +1,15 @@
+# This adapter is ported from PBS-Java to PBS-Go by Prebid. Please open a GitHub issue instead of 
+# directly contacting the maintainer for technical issues.
+endpoint: https://prebid.intertechsrvcs.com/prebid/{{.PageID}}?imp-id={{.ImpID}}&ssp-id=10500
+endpointCompression: GZIP
+maintainer:
+  email: prebid@intertechsrvcs.com
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - native
+userSync:
+  redirect:
+    url: https://prebid.intertechsrvcs.com/mapuid/intertech/?ssp-id=10500&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&location=
+    userMacro: "{UID}"
