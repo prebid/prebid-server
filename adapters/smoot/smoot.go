@@ -80,7 +80,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		adapterRequests = append(adapterRequests, adapterReq)
 	}
 
-	return adapterRequests, nil
+	return adapterRequests, errs
 }
 
 func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, error) {
@@ -93,7 +93,7 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestDa
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 	return &adapters.RequestData{
-		Method:  "POST",
+		Method:  http.MethodPost,
 		Uri:     a.endpoint,
 		Body:    reqJSON,
 		Headers: headers,

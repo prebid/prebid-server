@@ -1,0 +1,19 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "ext": {
+          "bidder": 999
+        }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "expect { or n, but found 9",
+      "comparison": "literal"
+    }
+  ]
+}
