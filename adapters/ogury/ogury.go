@@ -49,6 +49,7 @@ func (a adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapter
 		for key, value := range impExtBidderHoist {
 			impExt[key] = value
 		}
+		delete(impExt, openrtb_ext.PrebidExtBidderKey)
 
 		ext, err := jsonutil.Marshal(impExt)
 		if err != nil {
@@ -89,7 +90,7 @@ func (a adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapter
 		return nil, []error{&errortypes.BadInput{
 			Message: "Invalid request. assetKey/adUnitId or request.site.publisher.id required",
 		}}
-	} else if len(impsWithOguryParams) > 0 && len(impsWithOguryParams) < len(request.Imp) {
+	} else if len(impsWithOguryParams) > 0 {
 		request.Imp = impsWithOguryParams
 	}
 

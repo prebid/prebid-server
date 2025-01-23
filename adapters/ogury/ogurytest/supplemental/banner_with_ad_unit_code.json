@@ -38,10 +38,6 @@
                 "gpid": "global position id",
                 "assetKey": "OGY",
                 "adUnitId": "123",
-                "bidder": {
-                  "assetKey": "OGY",
-                  "adUnitId": "123"
-                },
                 "prebid": {
                   "adunitcode": "ad-unit-code"
                 }

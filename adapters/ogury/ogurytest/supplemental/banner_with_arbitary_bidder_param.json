@@ -12,7 +12,7 @@
           "bidder": {
             "assetKey": "OGY",
             "adUnitId": "123",
-            "testcampaign": "test123"
+            "testKey": "test123"
           }
         }
       }
@@ -36,12 +36,7 @@
                 "gpid": "global position id",
                 "assetKey": "OGY",
                 "adUnitId": "123",
-                "testcampaign": "test123",
-                "bidder": {
-                  "assetKey": "OGY",
-                  "adUnitId": "123",
-                  "testcampaign": "test123"
-                }
+                "testKey": "test123"
               }
             }
           ]
