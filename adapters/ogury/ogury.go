@@ -54,7 +54,7 @@ func (a adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapter
 		ext, err := jsonutil.Marshal(impExt)
 		if err != nil {
 			return nil, append(errors, &errortypes.BadInput{
-				Message: "Error while marshaling Imp.Ext bidder exension",
+				Message: "Error while marshaling Imp.Ext bidder extension",
 			})
 		}
 		request.Imp[i].Ext = ext
