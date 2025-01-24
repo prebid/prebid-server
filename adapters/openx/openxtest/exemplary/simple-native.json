@@ -4,8 +4,9 @@
     "imp": [
       {
         "id": "test-imp-id",
-        "banner": {
-          "format": [{"w": 728, "h": 90}]
+        "native": {
+          "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1200,\"hmin\":627}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]}]}",
+          "ver": "1.2"
         },
         "ext": {
           "bidder": {
@@ -26,8 +27,9 @@
           "imp": [
             {
               "id": "test-imp-id",
-              "banner": {
-                "format": [{"w": 728, "h": 90}]
+              "native": {
+                "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1200,\"hmin\":627}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]}]}",
+                "ver": "1.2"
               },
               "tagid": "539439964"
             }
@@ -43,6 +45,7 @@
         "status": 200,
         "body": {
           "id": "test-request-id",
+          "cur": "USD",
           "seatbid": [
             {
               "seat": "openx",
@@ -52,12 +55,11 @@
                 "price": 0.500000,
                 "adm": "{\"ver\": \"1.2\", \"assets\": [{\"id\": 1, \"required\": 1,\"title\": {\"text\": \"OpenX (Title)\"}}], \"link\": {\"url\": \"https://www.openx.com/\"}, \"eventtrackers\":[{\"event\":1,\"method\":1,\"url\":\"http://example.com/impression\"}]}",
                 "crid": "crid_10",
-                "h": 90,
-                "w": 728
+                "w": 300,
+                "h": 200
               }]
             }
-          ],
-          "cur": "USD"
+          ]
         }
       }
     }
@@ -74,10 +76,10 @@
             "price": 0.5,
             "adm": "{\"ver\": \"1.2\", \"assets\": [{\"id\": 1, \"required\": 1,\"title\": {\"text\": \"OpenX (Title)\"}}], \"link\": {\"url\": \"https://www.openx.com/\"}, \"eventtrackers\":[{\"event\":1,\"method\":1,\"url\":\"http://example.com/impression\"}]}",
             "crid": "crid_10",
-            "w": 728,
-            "h": 90
+            "w": 300,
+            "h": 200
           },
-          "type": "banner"
+          "type": "native"
         }
       ]
     }
