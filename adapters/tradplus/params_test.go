@@ -36,7 +36,7 @@ func TestInvalidParams(t *testing.T) {
 
 var validParams = []string{
 	`{"accountId": "11233", "zoneId": ""}`,
-	`{"accountId": "aaa", "accountId": "us"}`,
+	`{"accountId": "aaa", "zoneId": "us"}`,
 	`{"accountId": "aa", "accountId": "sin"}`,
 }
 
@@ -48,7 +48,6 @@ var invalidParams = []string{
 	`{"accountId": {"test":1}}`,
 	`{"accountId": true}`,
 	`{"accountId": null}`,
-	`{"zoneId": "aaa"}`,
 	`{"zoneId": "aaa"}`,
 	`{"zoneId": null}`,
 }
