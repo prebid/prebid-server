@@ -207,46 +207,37 @@ func processDataFromRequest(requestData *openrtb2.BidRequest, imp openrtb2.Imp, 
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	// Return early if the response contains no content
 	if adapters.IsResponseStatusCodeNoContent(responseData) {
 		return nil, nil
 	}
 
-	// Check for errors in the response status code
 	if err := adapters.CheckResponseStatusCodeForErrors(responseData); err != nil {
 		return nil, []error{err}
 	}
 
-	// Parse the response body into a single bid response
 	var response resetDigitalBidResponse
 	if err := json.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}
 
-	// Ensure there is exactly one bid in the response
 	if len(response.Bids) != 1 {
 		return nil, []error{fmt.Errorf("expected exactly one bid in the response, but got %d", len(response.Bids))}
 	}
 
-	// Extract the single bid
 	resetDigitalBid := &response.Bids[0]
 
-	// Map the incoming impression to its ID for media type determination
 	requestImp, found := findRequestImpByID(request.Imp, resetDigitalBid.ImpID)
 	if !found {
 		return nil, []error{fmt.Errorf("no matching impression found for ImpID %s", resetDigitalBid.ImpID)}
 	}
 
-	// Convert the bid into an OpenRTB bid
 	bid, err := getBidFromResponse(resetDigitalBid)
 	if err != nil {
 		return nil, []error{err}
 	}
 
-	// Determine the bid type based on the impression
 	bidType := GetMediaTypeForImp(requestImp)
 
-	// Construct the bidder response
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
 	bidResponse.Currency = "USD" // Default currency
 	bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
