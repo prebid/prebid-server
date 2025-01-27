@@ -170,6 +170,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderNativo,
 	BidderNextMillennium,
 	BidderNoBid,
+	BidderOgury,
 	BidderOms,
 	BidderOneTag,
 	BidderOpenWeb,
@@ -222,6 +223,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderTheadx,
 	BidderTheTradeDesk,
 	BidderTpmn,
+	BidderTradPlus,
 	BidderTrafficGate,
 	BidderTriplelift,
 	BidderTripleliftNative,
@@ -514,6 +516,7 @@ const (
 	BidderNativo            BidderName = "nativo"
 	BidderNextMillennium    BidderName = "nextmillennium"
 	BidderNoBid             BidderName = "nobid"
+	BidderOgury             BidderName = "ogury"
 	BidderOms               BidderName = "oms"
 	BidderOneTag            BidderName = "onetag"
 	BidderOpenWeb           BidderName = "openweb"
@@ -566,6 +569,7 @@ const (
 	BidderTheadx            BidderName = "theadx"
 	BidderTheTradeDesk      BidderName = "thetradedesk"
 	BidderTpmn              BidderName = "tpmn"
+	BidderTradPlus          BidderName = "tradplus"
 	BidderTrafficGate       BidderName = "trafficgate"
 	BidderTriplelift        BidderName = "triplelift"
 	BidderTripleliftNative  BidderName = "triplelift_native"
