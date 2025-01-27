@@ -23,6 +23,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/adprime"
 	"github.com/prebid/prebid-server/v3/adapters/adquery"
 	"github.com/prebid/prebid-server/v3/adapters/adrino"
+	"github.com/prebid/prebid-server/v3/adapters/ads_interactive"
 	"github.com/prebid/prebid-server/v3/adapters/adsinteractive"
 	"github.com/prebid/prebid-server/v3/adapters/adtarget"
 	"github.com/prebid/prebid-server/v3/adapters/adtelligent"
@@ -113,6 +114,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/inmobi"
 	"github.com/prebid/prebid-server/v3/adapters/insticator"
 	"github.com/prebid/prebid-server/v3/adapters/interactiveoffers"
+	"github.com/prebid/prebid-server/v3/adapters/intertech"
 	"github.com/prebid/prebid-server/v3/adapters/invibes"
 	"github.com/prebid/prebid-server/v3/adapters/iqx"
 	"github.com/prebid/prebid-server/v3/adapters/iqzone"
@@ -150,6 +152,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/nativo"
 	"github.com/prebid/prebid-server/v3/adapters/nextmillennium"
 	"github.com/prebid/prebid-server/v3/adapters/nobid"
+	"github.com/prebid/prebid-server/v3/adapters/ogury"
 	"github.com/prebid/prebid-server/v3/adapters/oms"
 	"github.com/prebid/prebid-server/v3/adapters/onetag"
 	"github.com/prebid/prebid-server/v3/adapters/openweb"
@@ -202,6 +205,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/theadx"
 	"github.com/prebid/prebid-server/v3/adapters/thetradedesk"
 	"github.com/prebid/prebid-server/v3/adapters/tpmn"
+	"github.com/prebid/prebid-server/v3/adapters/tradplus"
 	"github.com/prebid/prebid-server/v3/adapters/trafficgate"
 	"github.com/prebid/prebid-server/v3/adapters/triplelift"
 	"github.com/prebid/prebid-server/v3/adapters/triplelift_native"
@@ -258,6 +262,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderAdprime:           adprime.Builder,
 		openrtb_ext.BidderAdquery:           adquery.Builder,
 		openrtb_ext.BidderAdrino:            adrino.Builder,
+		openrtb_ext.BidderAdsInteractive:    ads_interactive.Builder,
 		openrtb_ext.BidderAdsinteractive:    adsinteractive.Builder,
 		openrtb_ext.BidderAdtarget:          adtarget.Builder,
 		openrtb_ext.BidderAdtrgtme:          adtrgtme.Builder,
@@ -349,6 +354,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderInMobi:            inmobi.Builder,
 		openrtb_ext.BidderInsticator:        insticator.Builder,
 		openrtb_ext.BidderInteractiveoffers: interactiveoffers.Builder,
+		openrtb_ext.BidderIntertech:         intertech.Builder,
 		openrtb_ext.BidderInvibes:           invibes.Builder,
 		openrtb_ext.BidderIQX:               iqx.Builder,
 		openrtb_ext.BidderIQZone:            iqzone.Builder,
@@ -388,6 +394,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderNativo:            nativo.Builder,
 		openrtb_ext.BidderNextMillennium:    nextmillennium.Builder,
 		openrtb_ext.BidderNoBid:             nobid.Builder,
+		openrtb_ext.BidderOgury:             ogury.Builder,
 		openrtb_ext.BidderOms:               oms.Builder,
 		openrtb_ext.BidderOneTag:            onetag.Builder,
 		openrtb_ext.BidderOpenWeb:           openweb.Builder,
@@ -440,6 +447,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderTheadx:            theadx.Builder,
 		openrtb_ext.BidderTheTradeDesk:      thetradedesk.Builder,
 		openrtb_ext.BidderTpmn:              tpmn.Builder,
+		openrtb_ext.BidderTradPlus:          tradplus.Builder,
 		openrtb_ext.BidderTrafficGate:       trafficgate.Builder,
 		openrtb_ext.BidderTriplelift:        triplelift.Builder,
 		openrtb_ext.BidderTripleliftNative:  triplelift_native.Builder,
