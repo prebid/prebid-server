@@ -2,11 +2,13 @@ package hookexecution
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/hooks"
 	"github.com/prebid/prebid-server/v3/hooks/hookstage"
@@ -75,7 +77,7 @@ func executeGroup[H any, P any](
 		wg.Add(1)
 		go func(hw hooks.HookWrapper[H], moduleCtx hookstage.ModuleInvocationContext) {
 			defer wg.Done()
-			executeHook(moduleCtx, hw, newPayload, hookHandler, group.Timeout, resp, rejected)
+			executeHook(executionCtx, moduleCtx, hw, newPayload, hookHandler, group.Timeout, resp, rejected)
 		}(hook, mCtx)
 	}
 
@@ -90,6 +92,7 @@ func executeGroup[H any, P any](
 }
 
 func executeHook[H any, P any](
+	executionCtx executionContext,
 	moduleCtx hookstage.ModuleInvocationContext,
 	hw hooks.HookWrapper[H],
 	payload P,
@@ -102,31 +105,60 @@ func executeHook[H any, P any](
 	startTime := time.Now()
 	hookId := HookID{ModuleCode: hw.Module, HookImplCode: hw.Code}
 
-	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), timeout)
-		defer cancel()
-		result, err := hookHandler(ctx, moduleCtx, hw.Hook, payload)
-		hookRespCh <- hookResponse[P]{
-			Result: result,
-			Err:    err,
-		}
-	}()
+	ctx, cancel := context.WithTimeout(executionCtx.ctx, timeout)
+	defer cancel()
 
-	select {
-	case res := <-hookRespCh:
-		res.HookID = hookId
-		res.ExecutionTime = time.Since(startTime)
-		resp <- res
-	case <-time.After(timeout):
-		resp <- hookResponse[P]{
-			Err:           TimeoutError{},
-			ExecutionTime: time.Since(startTime),
-			HookID:        hookId,
-			Result:        hookstage.HookResult[P]{},
+	// Only execute the hook if it's not already canceled
+	if ctx.Err() == nil {
+		// Execute the hook in the background
+		go func() {
+			// Recover from panics and send the error to the response channel so the app doesn't die.
+			defer func() {
+				if r := recover(); r != nil {
+					var err error
+					var ok bool
+					if err, ok = r.(error); !ok {
+						err = fmt.Errorf("panic during hook execution: %v", r)
+					}
+					hookRespCh <- hookResponse[P]{
+						Err: err,
+					}
+					glog.Errorf("%v", err)
+				}
+			}()
+
+			result, err := hookHandler(ctx, moduleCtx, hw.Hook, payload)
+			hookRespCh <- hookResponse[P]{
+				Result: result,
+				Err:    err,
+			}
+		}()
+
+		// Figure out what the hook did and return if success or rejected
+		select {
+		case res := <-hookRespCh:
+			res.HookID = hookId
+			res.ExecutionTime = time.Since(startTime)
+			resp <- res
+			return
+		case <-ctx.Done():
+			// fall through to the error handler
+		case <-rejected:
+			return
 		}
-	case <-rejected:
-		return
 	}
+
+	// Handle the context error case - either immediately, or after timeout.
+	theResp := hookResponse[P]{
+		Err:           ctx.Err(),
+		ExecutionTime: time.Since(startTime),
+		HookID:        hookId,
+		Result:        hookstage.HookResult[P]{},
+	}
+	if errors.Is(theResp.Err, context.DeadlineExceeded) {
+		theResp.Err = TimeoutError{}
+	}
+	resp <- theResp
 }
 
 func collectHookResponses[P any](resp <-chan hookResponse[P], rejected chan<- struct{}) []hookResponse[P] {
