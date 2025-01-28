@@ -1,0 +1,128 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 980,
+              "h": 240
+            },
+            {
+              "w": 980,
+              "h": 300
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "73b20b3a-12a0-4869-b54e-8d42b55786ee"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "prebid.org"
+    },
+    "device": {
+      "ip": "81.227.82.28"
+    }
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://any.url",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 980,
+                    "h": 240
+                  },
+                  {
+                    "w": 980,
+                    "h": 300
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "publisherId": "73b20b3a-12a0-4869-b54e-8d42b55786ee"
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "prebid.org"
+          },
+          "device": {
+            "ip": "81.227.82.28"
+          }
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "5",
+              "bid": [
+                {
+                  "id": "test-imp-id",
+                  "impid": "test-imp-id",
+                  "price": 5.08712911605835,
+                  "adm": "<script type=\"text\/javascript\">\n    var uri = 'https:\/\/adsby.bidtheatre.com\/imp?z=27025&a=1915538&so=1&ex=36&eb=3672319&xs=940698616&wp=${AUCTION_PRICE}&su=unknown&es=prebid.org&tag=unspec_980_300&kuid=eab9340e-8731-4027-9ada-57b554c75501&dealId=&mp=&ma=eyJjZCI6ZmFsc2UsInN0IjoxLCJtbGF0Ijo1OS4zMjkzLCJhZGMiOi0xLCJtb3JnIjoidGVsaWEgbmV0d29yayBzZXJ2aWNlcyIsIm1sc2NvcmUiOjAuMDczMTkwMTc0OTk2ODUyODcsIm16aXAiOiIxMTEyMCIsImJpcCI6IjgxLjIyNy44Mi4yOCIsImFnaWQiOjM1NjI3MDIsIm1sbW9kZWwiOiJtYXN0ZXJfbWxfY2xrXzU0MyIsInVhIjoiY3VybFwvNy44Ny4wIiwiYnJyZSI6ImFiIiwibWxvbiI6MTguMDY4NiwibXJlZ2lvbiI6ImFiIiwiZHQiOjgsImJyY28iOiJzd2UiLCJtY2l0eSI6InN0b2NraG9sbSIsImJyY2kiOiJzdG9ja2hvbG0iLCJwYWdldXJsIjoicHJlYmlkLm9yZyIsImltcGlkIjoieDM2X2FzeC1iLXMyXzc4MTc1MTk2NTcxMDMzNjUyMDciLCJtY291bnRyeSI6InN3ZSIsInRzIjoxNzMyMTEyNzMxNjgyfQ%3D%3D&usersync=1&cd=0&impId=x36_asx-b-s2_7817519657103365207&gdpr=0&gdpr_consent=&cb0=&rnd=' + new String (Math.random()).substring (2, 11);\n    document.write('<sc'+'ript type=\"text\/javascript\" src=\"'+uri+'\" charset=\"ISO-8859-1\"><\/sc'+'ript>');\n<\/script>",
+                  "adid": "1915538",
+                  "cid": "c154375",
+                  "crid": "1915538",
+                  "w": 980,
+                  "h": 240,
+                  "ext": {
+                    "prebid": {
+                      "type": "banner"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids":[
+        {
+          "currency": "USD",
+          "bid":  {
+            "id": "test-imp-id",
+            "impid": "test-imp-id",
+            "price": 5.08712911605835,
+            "adm": "<script type=\"text\/javascript\">\n    var uri = 'https:\/\/adsby.bidtheatre.com\/imp?z=27025&a=1915538&so=1&ex=36&eb=3672319&xs=940698616&wp=5.08712911605835&su=unknown&es=prebid.org&tag=unspec_980_300&kuid=eab9340e-8731-4027-9ada-57b554c75501&dealId=&mp=&ma=eyJjZCI6ZmFsc2UsInN0IjoxLCJtbGF0Ijo1OS4zMjkzLCJhZGMiOi0xLCJtb3JnIjoidGVsaWEgbmV0d29yayBzZXJ2aWNlcyIsIm1sc2NvcmUiOjAuMDczMTkwMTc0OTk2ODUyODcsIm16aXAiOiIxMTEyMCIsImJpcCI6IjgxLjIyNy44Mi4yOCIsImFnaWQiOjM1NjI3MDIsIm1sbW9kZWwiOiJtYXN0ZXJfbWxfY2xrXzU0MyIsInVhIjoiY3VybFwvNy44Ny4wIiwiYnJyZSI6ImFiIiwibWxvbiI6MTguMDY4NiwibXJlZ2lvbiI6ImFiIiwiZHQiOjgsImJyY28iOiJzd2UiLCJtY2l0eSI6InN0b2NraG9sbSIsImJyY2kiOiJzdG9ja2hvbG0iLCJwYWdldXJsIjoicHJlYmlkLm9yZyIsImltcGlkIjoieDM2X2FzeC1iLXMyXzc4MTc1MTk2NTcxMDMzNjUyMDciLCJtY291bnRyeSI6InN3ZSIsInRzIjoxNzMyMTEyNzMxNjgyfQ%3D%3D&usersync=1&cd=0&impId=x36_asx-b-s2_7817519657103365207&gdpr=0&gdpr_consent=&cb0=&rnd=' + new String (Math.random()).substring (2, 11);\n    document.write('<sc'+'ript type=\"text\/javascript\" src=\"'+uri+'\" charset=\"ISO-8859-1\"><\/sc'+'ript>');\n<\/script>",
+            "adid": "1915538",
+            "cid": "c154375",
+            "crid": "1915538",
+            "w": 980,
+            "h": 240,
+            "ext": {
+              "prebid": {
+                "type": "banner"
+              }
+            }
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

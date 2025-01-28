@@ -74,6 +74,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderBidmyadz,
 	BidderBidsCube,
 	BidderBidstack,
+	BidderBidtheatre,
 	BidderBigoAd,
 	BidderBlasto,
 	BidderBliink,
@@ -421,6 +422,7 @@ const (
 	BidderBidmyadz          BidderName = "bidmyadz"
 	BidderBidsCube          BidderName = "bidscube"
 	BidderBidstack          BidderName = "bidstack"
+	BidderBidtheatre        BidderName = "bidtheatre"
 	BidderBigoAd            BidderName = "bigoad"
 	BidderBlasto            BidderName = "blasto"
 	BidderBliink            BidderName = "bliink"
