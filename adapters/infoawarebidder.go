@@ -72,6 +72,16 @@ func (i *InfoAwareBidder) MakeRequests(request *openrtb2.BidRequest, reqInfo *Ex
 		request.Imp = filteredImps
 		errs = append(errs, newErrs...)
 	}
+
+	//if bidder doesnt support multiformat, send only preferred media type in the request
+	if !i.info.multiformat {
+		var newErrs []error
+		request.Imp, newErrs = FilterMultiformatImps(request, reqInfo.PreferredMediaType)
+		if newErrs != nil {
+			errs = append(errs, newErrs...)
+		}
+	}
+
 	reqs, delegateErrs := i.Bidder.MakeRequests(request, reqInfo)
 	return reqs, append(errs, delegateErrs...)
 }
@@ -140,9 +150,10 @@ func filterImps(imps []openrtb2.Imp, numToFilter int) ([]openrtb2.Imp, []error) 
 
 // Structs to handle parsed bidder info, so we aren't reparsing every request
 type parsedBidderInfo struct {
-	app  parsedSupports
-	site parsedSupports
-	dooh parsedSupports
+	app         parsedSupports
+	site        parsedSupports
+	dooh        parsedSupports
+	multiformat bool
 }
 
 type parsedSupports struct {
@@ -172,5 +183,101 @@ func parseBidderInfo(info config.BidderInfo) parsedBidderInfo {
 		parsedInfo.dooh.enabled = true
 		parsedInfo.dooh.banner, parsedInfo.dooh.video, parsedInfo.dooh.audio, parsedInfo.dooh.native = parseAllowedTypes(info.Capabilities.DOOH.MediaTypes)
 	}
+	parsedInfo.multiformat = IsMultiFormatSupported(info)
+
 	return parsedInfo
+}
+
+// FilterMultiformatImps filters impressions based on the preferred media type if the bidder does not support multiformat.
+// It returns the updated list of impressions and any errors encountered during the filtering process.
+func FilterMultiformatImps(bidRequest *openrtb2.BidRequest, preferredMediaType openrtb_ext.BidType) ([]openrtb2.Imp, []error) {
+	var updatedImps []openrtb2.Imp
+	var errs []error
+
+	for _, imp := range bidRequest.Imp {
+		if IsMultiFormat(imp) && preferredMediaType != "" {
+			if err := AdjustImpForPreferredMediaType(&imp, preferredMediaType); err != nil {
+				errs = append(errs, err)
+				continue
+			}
+			updatedImps = append(updatedImps, imp)
+		} else {
+			updatedImps = append(updatedImps, imp)
+		}
+	}
+
+	if len(updatedImps) == 0 {
+		errs = append(errs, &errortypes.BadInput{Message: "Bid request contains 0 impressions after filtering."})
+	}
+
+	return updatedImps, errs
+}
+
+// AdjustImpForPreferredMediaType modifies the given impression to retain only the preferred media type.
+// It returns the updated impression and any error encountered during the adjustment process.
+func AdjustImpForPreferredMediaType(imp *openrtb2.Imp, preferredMediaType openrtb_ext.BidType) error {
+
+	// Clear irrelevant media types based on the preferred media type.
+	switch preferredMediaType {
+	case openrtb_ext.BidTypeBanner:
+		if imp.Banner != nil {
+			imp.Video = nil
+			imp.Audio = nil
+			imp.Native = nil
+		} else {
+			return &errortypes.BadInput{Message: fmt.Sprintf("Imp %s does not have a valid BANNER media type.", imp.ID)}
+		}
+	case openrtb_ext.BidTypeVideo:
+		if imp.Video != nil {
+			imp.Banner = nil
+			imp.Audio = nil
+			imp.Native = nil
+		} else {
+			return &errortypes.BadInput{Message: fmt.Sprintf("Imp %s does not have a valid VIDEO media type.", imp.ID)}
+		}
+	case openrtb_ext.BidTypeAudio:
+		if imp.Audio != nil {
+			imp.Banner = nil
+			imp.Video = nil
+			imp.Native = nil
+		} else {
+			return &errortypes.BadInput{Message: fmt.Sprintf("Imp %s does not have a valid AUDIO media type.", imp.ID)}
+		}
+	case openrtb_ext.BidTypeNative:
+		if imp.Native != nil {
+			imp.Banner = nil
+			imp.Video = nil
+			imp.Audio = nil
+		} else {
+			return &errortypes.BadInput{Message: fmt.Sprintf("Imp %s does not have a valid NATIVE media type.", imp.ID)}
+		}
+	default:
+		return &errortypes.BadInput{Message: fmt.Sprintf("Imp %s has an invalid preferred media type: %s.", imp.ID, preferredMediaType)}
+	}
+
+	return nil
+}
+
+func IsMultiFormatSupported(bidderInfo config.BidderInfo) bool {
+	if bidderInfo.OpenRTB != nil && bidderInfo.OpenRTB.MultiformatSupported != nil {
+		return *bidderInfo.OpenRTB.MultiformatSupported
+	}
+	return true
+}
+
+func IsMultiFormat(imp openrtb2.Imp) bool {
+	count := 0
+	if imp.Banner != nil {
+		count++
+	}
+	if imp.Video != nil {
+		count++
+	}
+	if imp.Audio != nil {
+		count++
+	}
+	if imp.Native != nil {
+		count++
+	}
+	return count > 1
 }
