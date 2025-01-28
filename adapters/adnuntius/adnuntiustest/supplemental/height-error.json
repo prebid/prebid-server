@@ -60,6 +60,7 @@
 									"destinationUrls": {
 										"url": "http://www.google.com"
 									},
+									"advertiserDomains": ["google.com"],
 									"bid": {
 										"amount": 20.0,
 										"currency": "NOK"
