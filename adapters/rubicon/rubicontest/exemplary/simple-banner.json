@@ -299,9 +299,6 @@
             "id": "1",
             "bundle": "com.wls.testwlsapplication"
           },
-          "source": {
-            "pchain": "pchain"
-          },
           "imp": [
             {
               "id": "test-imp-id",

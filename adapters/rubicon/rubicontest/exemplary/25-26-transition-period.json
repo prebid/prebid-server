@@ -323,7 +323,6 @@
             "bundle": "com.wls.testwlsapplication"
           },
           "source": {
-            "pchain": "pchain",
             "ext": {
               "schain": {
                 "complete": 0,
