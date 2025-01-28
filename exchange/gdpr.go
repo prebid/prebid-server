@@ -40,3 +40,15 @@ func enforceGDPR(signal gdpr.Signal, defaultValue gdpr.Signal, channelEnabled bo
 	gdprApplies := signal == gdpr.SignalYes || (signal == gdpr.SignalAmbiguous && defaultValue == gdpr.SignalYes)
 	return gdprApplies && channelEnabled
 }
+
+// SelectEEACountries selects the EEA countries based on host and account configurations.
+// Account-level configuration takes precedence over the host-level configuration.
+func SelectEEACountries(hostEEACountries []string, accountEEACountries []string) []string {
+	// If account-level configuration is provided, it takes precedence.
+	if len(accountEEACountries) > 0 {
+		return accountEEACountries
+	}
+
+	// Otherwise, return the host-level configuration.
+	return hostEEACountries
+}
