@@ -1,0 +1,17 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "ext": 123
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "expect { or n, but found 1",
+      "comparison": "literal"
+    }
+  ]
+}
