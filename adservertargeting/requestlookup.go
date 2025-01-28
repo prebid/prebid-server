@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/buger/jsonparser"
-	"github.com/pkg/errors"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
@@ -93,7 +92,7 @@ func getValueFromQueryParam(path string, queryParams url.Values) (json.RawMessag
 		if val != "" {
 			return json.RawMessage(val), nil
 		} else {
-			return nil, errors.Errorf("value not found for path: %s", path)
+			return nil, fmt.Errorf("value not found for path: %s", path)
 		}
 	}
 	return nil, nil

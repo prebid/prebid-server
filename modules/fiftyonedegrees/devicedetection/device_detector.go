@@ -1,9 +1,10 @@
 package devicedetection
 
 import (
+	"fmt"
+
 	"github.com/51Degrees/device-detection-go/v4/dd"
 	"github.com/51Degrees/device-detection-go/v4/onpremise"
-	"github.com/pkg/errors"
 )
 
 type engine interface {
@@ -28,7 +29,7 @@ func newDeviceDetector(cfg *dd.ConfigHash, moduleConfig *config) (*defaultDevice
 		engineOptions...,
 	)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create onpremise engine.")
+		return nil, fmt.Errorf("failed to create onpremise engine: %w", err)
 	}
 
 	deviceDetector := &defaultDeviceDetector{
@@ -147,7 +148,7 @@ func (x defaultDeviceDetector) getSupportedHeaders() []dd.EvidenceKey {
 func (x defaultDeviceDetector) getDeviceInfo(evidence []onpremise.Evidence, ua string) (*deviceInfo, error) {
 	results, err := x.engine.Process(evidence)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to process evidence")
+		return nil, fmt.Errorf("failed to process evidence: %w", err)
 	}
 	defer results.Free()
 
