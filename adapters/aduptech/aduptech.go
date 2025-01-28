@@ -9,10 +9,11 @@ import (
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/currency"
+	prebidcurrency "github.com/prebid/prebid-server/v3/currency"
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"golang.org/x/text/currency"
 )
 
 type adapter struct {
@@ -33,6 +34,12 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	if extraInfo.TargetCurrency == "" {
 		return nil, errors.New("invalid extra info: TargetCurrency is empty, pls check")
 	}
+
+	parsedCurrency, err := currency.ParseISO(extraInfo.TargetCurrency)
+	if err != nil {
+		return nil, fmt.Errorf("invalid extra info: invalid TargetCurrency %s, pls check", extraInfo.TargetCurrency)
+	}
+	extraInfo.TargetCurrency = parsedCurrency.String()
 
 	bidder := &adapter{
 		endpoint:  config.Endpoint,
@@ -81,7 +88,7 @@ func (a *adapter) convertCurrency(value float64, cur string, reqInfo *adapters.E
 	convertedValue, err := reqInfo.ConvertCurrency(value, cur, a.extraInfo.TargetCurrency)
 
 	if err != nil {
-		var convErr currency.ConversionNotFoundError
+		var convErr prebidcurrency.ConversionNotFoundError
 		if !errors.As(err, &convErr) {
 			return 0, err
 		}

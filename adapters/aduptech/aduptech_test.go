@@ -46,3 +46,20 @@ func TestInvalidExtraAdapterInfo(t *testing.T) {
 
 	assert.EqualError(t, buildErr, "invalid extra info: TargetCurrency is empty, pls check")
 }
+
+func TestInvalidTargetCurrency(t *testing.T) {
+	_, buildErr := Builder(
+		openrtb_ext.BidderAdUpTech,
+		config.Adapter{
+			Endpoint:         "https://example.com/rtb/bid",
+			ExtraAdapterInfo: `{"target_currency": "INVALID"}`,
+		},
+		config.Server{
+			ExternalUrl: "http://hosturl.com",
+			GvlID:       1,
+			DataCenter:  "2",
+		},
+	)
+
+	assert.EqualError(t, buildErr, "invalid extra info: invalid TargetCurrency INVALID, pls check")
+}
