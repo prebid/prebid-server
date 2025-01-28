@@ -33,7 +33,9 @@
         "body":{
           "id": "testid",
           "ext": {
-            "nextMillennium": {},
+            "nextMillennium": {
+              "nm_version": "v1.0.0"
+            },
             "prebid": {
               "storedrequest": {
                 "id": "7819"
