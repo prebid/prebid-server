@@ -37,5 +37,5 @@
     }
   },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request: request.user.eids[0] missing required field: \"source\"\n"
+  "expectedErrorMessage": "Invalid request: request.user.eids[0] missing required field: \"source\""
 }
