@@ -69,11 +69,13 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
 	bidResponse.Currency = response.Cur
+	var errors []error
 	for _, seatBid := range response.SeatBid {
 		for i := range seatBid.Bid {
 			resolveMacros(&seatBid.Bid[i])
 			bidType, err := getMediaTypeForBid(seatBid.Bid[i])
 			if err != nil {
+				errors = append(errors, err)
 				continue
 			}
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
@@ -82,7 +84,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 			})
 		}
 	}
-	return bidResponse, nil
+	return bidResponse, errors
 }
 
 func resolveMacros(bid *openrtb2.Bid) {
