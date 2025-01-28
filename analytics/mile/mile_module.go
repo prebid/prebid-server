@@ -216,13 +216,15 @@ func (m *MileModule) LogAmpObject(ao *analytics.AmpObject) {
 	}
 
 	// serialize event
-	payload, err := helpers.JsonifyAmpObject(ao, m.scope)
+	events, err := helpers.JsonifyAmpObject(ao, m.scope)
 	if err != nil {
 		glog.Warning("[mile] Cannot serialize video")
 		return
 	}
 
-	m.eventChannels[amp].Push(payload)
+	for _, event := range events {
+		m.eventChannels[auction].Push(&event)
+	}
 }
 
 func (m *MileModule) start(c <-chan *Configuration) {
