@@ -4,11 +4,11 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"github.com/prebid/prebid-server/v3/logger"
 	"net/http"
 	"net/url"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/server/ssl"
@@ -69,9 +69,7 @@ func (deps *UserSyncDeps) OptOut(w http.ResponseWriter, r *http.Request, _ httpr
 
 	err := deps.VerifyRecaptcha(rr)
 	if err != nil {
-		if glog.V(2) {
-			glog.Infof("Opt Out failed recaptcha: %v", err)
-		}
+		logger.Log.Infof("Opt Out failed recaptcha: %v", err)
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
