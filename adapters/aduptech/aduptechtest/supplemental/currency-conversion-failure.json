@@ -38,7 +38,7 @@
   "expectedBidResponses": [],
   "expectedMakeRequestsErrors": [
     {
-      "value": "Currency conversion rate not found: 'USD' => 'EUR'",
+      "value": "Currency conversion rate not found from 'AUD' to 'EUR'. Error converting from 'USD' to 'EUR': Currency conversion rate not found: 'USD' => 'EUR'",
       "comparison": "literal"
     }
   ]

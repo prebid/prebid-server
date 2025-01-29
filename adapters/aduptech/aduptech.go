@@ -98,13 +98,13 @@ func (a *adapter) convertCurrency(value float64, cur string, reqInfo *adapters.E
 		convertedValue, err = reqInfo.ConvertCurrency(value, cur, "USD")
 
 		if err != nil {
-			return 0, err
+			return 0, fmt.Errorf("Currency conversion rate not found from '%s' to '%s'. Error converting from '%s' to 'USD': %w", cur, a.extraInfo.TargetCurrency, cur, err)
 		}
 
 		convertedValue, err = reqInfo.ConvertCurrency(convertedValue, "USD", a.extraInfo.TargetCurrency)
 
 		if err != nil {
-			return 0, err
+			return 0, fmt.Errorf("Currency conversion rate not found from '%s' to '%s'. Error converting from 'USD' to '%s': %w", cur, a.extraInfo.TargetCurrency, a.extraInfo.TargetCurrency, err)
 		}
 	}
 	return convertedValue, nil
