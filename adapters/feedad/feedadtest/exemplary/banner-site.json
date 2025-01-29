@@ -3,7 +3,7 @@
     "id": "some-request-id",
     "device": {
       "ua": "test-user-agent",
-      "ip": "123.123.123.123",
+      "ipv6": "2001:db8:3333:4444:5555:6666:7777:8888",
       "language": "en",
       "dnt": 0
     },
@@ -62,7 +62,7 @@
             "1.0.0"
           ],
           "X-Forwarded-For": [
-            "123.123.123.123"
+            "2001:db8:3333:4444:5555:6666:7777:8888"
           ],
           "X-Openrtb-Version": [
             "2.5"
@@ -73,7 +73,7 @@
           "id": "some-request-id",
           "device": {
             "ua": "test-user-agent",
-            "ip": "123.123.123.123",
+            "ipv6": "2001:db8:3333:4444:5555:6666:7777:8888",
             "language": "en",
             "dnt": 0
           },
