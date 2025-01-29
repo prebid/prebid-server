@@ -60,7 +60,7 @@
             "2.5"
           ]
         },
-        "uri": "https://ortb.feedad.com/1/prebid/requests",
+        "uri": "https://example.com/1/prebid/requests",
         "body": {
           "id": "some-request-id",
           "device": {

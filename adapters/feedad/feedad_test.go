@@ -12,7 +12,7 @@ func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(
 		openrtb_ext.BidderFeedAd,
 		config.Adapter{
-			Endpoint: "https://ortb.feedad.com/1/prebid/requests",
+			Endpoint: "https://example.com/1/prebid/requests",
 		},
 		config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"},
 	)
