@@ -53,7 +53,7 @@ func (a *adapter) MakeRequests(bidRequest *openrtb2.BidRequest, reqInfo *adapter
 	bidRequest.Imp = validImpressions
 	body, err := json.Marshal(bidRequest)
 	if err != nil {
-		errs = append(errs, fmt.Errorf("failed to marshal bid request: %v", err))
+		errs = append(errs, fmt.Errorf("failed to marshal bid request: %w", err))
 		return nil, errs
 	}
 
