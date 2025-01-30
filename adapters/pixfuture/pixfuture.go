@@ -36,7 +36,8 @@ func (a *adapter) MakeRequests(bidRequest *openrtb2.BidRequest, reqInfo *adapter
 
 	// Process impressions
 	var validImpressions []openrtb2.Imp
-	for _, imp := range bidRequest.Imp {
+	for i := range bidRequest.Imp {
+		imp := &bidRequest.Imp[i]
 		if imp.Banner == nil && imp.Video == nil {
 			errs = append(errs, fmt.Errorf("unsupported impression type for impID: %s", imp.ID))
 			continue
