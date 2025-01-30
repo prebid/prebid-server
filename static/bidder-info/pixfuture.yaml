@@ -13,4 +13,4 @@ capabilities:
       - video
 userSync:
   redirect:
-    url: "https://sync.pixfuture.com/sync?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
+    url: "https://sync.pixfuture.com/cookiesync?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
