@@ -2,17 +2,6 @@ aliasOf: "xeworks"
 endpoint: "http://rtb.connektai.live/?pid={{.SourceId}}&host={{.Host}}&s=pbs"
 maintainer:
   email: "adops@connekt.ai"
-capabilities:
-  app:
-    mediaTypes:
-      - banner
-      - video
-      - native
-  site:
-    mediaTypes:
-      - banner
-      - video
-      - native
 userSync:
   # connektai supports user syncing, but requires configuration by the host. contact this
   # bidder directly at the email address in this file to ask about enabling user sync.
