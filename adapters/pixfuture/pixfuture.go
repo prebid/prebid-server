@@ -45,7 +45,7 @@ func (a *adapter) MakeRequests(bidRequest *openrtb2.BidRequest, reqInfo *adapter
 	}
 
 	if len(validImpressions) == 0 {
-		errs = append(errs, fmt.Errorf("no valid impressions after filtering"))
+		errs = append(errs, errors.New("no valid impressions after filtering"))
 		return nil, errs
 	}
 
