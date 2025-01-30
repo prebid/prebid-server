@@ -118,7 +118,6 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 				bidErrors = append(bidErrors, err)
 				continue
 			}
-
 			bidderResponse.Bids = append(bidderResponse.Bids, typedBid)
 		}
 	}

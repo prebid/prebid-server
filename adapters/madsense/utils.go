@@ -2,12 +2,13 @@ package madsense
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
-	"net/http"
 )
 
 func parseImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpMadSense, error) {
