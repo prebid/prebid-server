@@ -316,13 +316,8 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 
 	recordImpMetrics(r.BidRequestWrapper, e.me)
 
-	var accountEEACountries []string
-	if r.Account.GDPR.EEACountries != nil {
-		accountEEACountries = r.Account.GDPR.EEACountries
-	}
-
-	// Retrieve host and account-level EEA countries config
-	eeaCountries := SelectEEACountries(e.privacyConfig.GDPR.EEACountries, accountEEACountries)
+	// Retrieve EEA countries configuration from either host or account settings
+	eeaCountries := selectEEACountries(e.privacyConfig.GDPR.EEACountries, r.Account.GDPR.EEACountries)
 
 	// Make our best guess if GDPR applies
 	gdprDefaultValue := e.parseGDPRDefaultValue(r.BidRequestWrapper, eeaCountries)
@@ -590,12 +585,11 @@ func (e *exchange) parseGDPRDefaultValue(r *openrtb_ext.RequestWrapper, eeaCount
 	}
 
 	if geo != nil {
-		// If we have a country set, and it is on the list, we assume GDPR applies if not set on the request.
-		// Otherwise we assume it does not apply as long as it appears "valid" (is 3 characters long).
-		if _, found := e.privacyConfig.GDPR.EEACountriesMap[strings.ToUpper(geo.Country)]; found || isEEACountry(geo.Country, eeaCountries) {
+		// If the country is in the EEA list, GDPR applies.
+		// Otherwise, if the country code is properly formatted (3 characters), GDPR does not apply.
+		if isEEACountry(geo.Country, eeaCountries) {
 			gdprDefaultValue = gdpr.SignalYes
 		} else if len(geo.Country) == 3 {
-			// The country field is formatted properly as a three character country code
 			gdprDefaultValue = gdpr.SignalNo
 		}
 	}

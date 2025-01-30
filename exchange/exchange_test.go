@@ -6360,20 +6360,48 @@ func TestIsEEACountry(t *testing.T) {
 		eeaList  []string
 		expected bool
 	}{
-		{"Country in EEA", "FRA", eeaCountries, true},
-		{"Country in EEA lowercase", "fra", eeaCountries, true},
-		{"Country not in EEA", "USA", eeaCountries, false},
-		{"Empty country string", "", eeaCountries, false},
-		{"EEA list is empty", "FRA", []string{}, false},
-		{"EEA list is nil", "FRA", nil, false},
+		{
+			name:     "Country_in_EEA",
+			country:  "FRA",
+			eeaList:  eeaCountries,
+			expected: true,
+		},
+		{
+			name:     "Country_in_EEA_lowercase",
+			country:  "fra",
+			eeaList:  eeaCountries,
+			expected: true,
+		},
+		{
+			name:     "Country_not_in_EEA",
+			country:  "USA",
+			eeaList:  eeaCountries,
+			expected: false,
+		},
+		{
+			name:     "Empty_country_string",
+			country:  "",
+			eeaList:  eeaCountries,
+			expected: false,
+		},
+		{
+			name:     "EEA_list_is_empty",
+			country:  "FRA",
+			eeaList:  []string{},
+			expected: false,
+		},
+		{
+			name:     "EEA_list_is_nil",
+			country:  "FRA",
+			eeaList:  nil,
+			expected: false,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := isEEACountry(tt.country, tt.eeaList)
-			if result != tt.expected {
-				t.Errorf("isEEACountry(%s, %v) = %v; want %v", tt.country, tt.eeaList, result, tt.expected)
-			}
+			assert.Equal(t, tt.expected, result, "isEEACountry(%s, %v)", tt.country, tt.eeaList)
 		})
 	}
 }
