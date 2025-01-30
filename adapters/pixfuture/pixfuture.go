@@ -1,7 +1,7 @@
 package pixfuture
 
 import (
-	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -114,10 +114,6 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 				errors = append(errors, err)
 				continue
 			}
-
-			// Set the MType explicitly in the bid
-			//mType := openrtb2.MType(bidType)
-			//seatBid.Bid[i].MType = mType
 
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &seatBid.Bid[i],
