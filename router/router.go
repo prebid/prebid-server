@@ -1,6 +1,7 @@
 package router
 
 import (
+	"compress/gzip"
 	"context"
 	"crypto/tls"
 	"encoding/json"
@@ -255,13 +256,13 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		videoEndpoint = aspects.QueuedRequestTimeout(videoEndpoint, cfg.RequestTimeoutHeaders, r.MetricsEngine, metrics.ReqTypeVideo)
 	}
 
-	r.POST("/openrtb2/auction", openrtbEndpoint)
-	r.POST("/openrtb2/video", videoEndpoint)
-	r.GET("/openrtb2/amp", ampEndpoint)
-	r.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint(cfg.BidderInfos))
-	r.GET("/info/bidders/:bidderName", infoEndpoints.NewBiddersDetailEndpoint(cfg.BidderInfos))
-	r.GET("/bidders/params", NewJsonDirectoryServer(schemaDirectory, paramsValidator))
-	r.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncersByBidder, cfg, gdprPermsBuilder, tcf2CfgBuilder, r.MetricsEngine, analyticsRunner, accounts, activeBidders).Handle)
+	r.POST("/openrtb2/auction", gzipMiddleware(openrtbEndpoint))
+	r.POST("/openrtb2/video", gzipMiddleware(videoEndpoint))
+	r.GET("/openrtb2/amp", gzipMiddleware(ampEndpoint))
+	r.GET("/info/bidders", gzipMiddleware(infoEndpoints.NewBiddersEndpoint(cfg.BidderInfos)))
+	r.GET("/info/bidders/:bidderName", gzipMiddleware(infoEndpoints.NewBiddersDetailEndpoint(cfg.BidderInfos)))
+	r.GET("/bidders/params", gzipMiddleware(NewJsonDirectoryServer(schemaDirectory, paramsValidator)))
+	r.POST("/cookie_sync", gzipMiddleware(endpoints.NewCookieSyncEndpoint(syncersByBidder, cfg, gdprPermsBuilder, tcf2CfgBuilder, r.MetricsEngine, analyticsRunner, accounts, activeBidders).Handle))
 	r.GET("/status", endpoints.NewStatusEndpoint(cfg.StatusResponse))
 	r.GET("/", serveIndex)
 	r.Handler("GET", "/version", endpoints.NewVersionEndpoint(version.Ver, version.Rev))
@@ -378,4 +379,32 @@ func readDefaultRequestFromFile(defReqConfig config.DefReqConfig) []byte {
 	}
 
 	return defaultRequestJSON
+}
+
+type gzipResponseWriter struct {
+	http.ResponseWriter
+	Writer *gzip.Writer
+}
+
+func (w *gzipResponseWriter) Write(b []byte) (int, error) {
+	return w.Writer.Write(b)
+}
+
+// gzipMiddleware checks if the client supports GZIP and compresses the response accordingly
+func gzipMiddleware(next httprouter.Handle) httprouter.Handle {
+	return httprouter.Handle(func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+			// Client does not support GZIP, continue without modification
+			next(w, r, ps)
+			return
+		}
+
+		// Client supports GZIP, modify response
+		w.Header().Set("Content-Encoding", "gzip")
+		gz := gzip.NewWriter(w)
+		defer gz.Close()
+
+		gzw := &gzipResponseWriter{ResponseWriter: w, Writer: gz}
+		next(gzw, r, ps)
+	})
 }
