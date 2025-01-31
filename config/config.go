@@ -1174,8 +1174,8 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.BindEnv("gdpr.default_value")
 	v.SetDefault("gdpr.enabled", true)
 	v.SetDefault("gdpr.host_vendor_id", 0)
-	v.SetDefault("gdpr.timeouts_ms.init_vendorlist_fetches", 30000)
-	v.SetDefault("gdpr.timeouts_ms.active_vendorlist_fetch", 30000)
+	v.SetDefault("gdpr.timeouts_ms.init_vendorlist_fetches", 0)
+	v.SetDefault("gdpr.timeouts_ms.active_vendorlist_fetch", 0)
 	v.SetDefault("gdpr.non_standard_publishers", []string{""})
 	v.SetDefault("gdpr.live_gvl_refresh_interval_seconds", 86400) // 1 day
 	v.SetDefault("gdpr.tcf2.enabled", true)
