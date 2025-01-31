@@ -28,12 +28,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 func (a *adapter) MakeRequests(bidRequest *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 
-	// Validate the bid request
-	if bidRequest == nil || len(bidRequest.Imp) == 0 {
-		errs = append(errs, fmt.Errorf("no valid impressions in bid request"))
-		return nil, errs
-	}
-
 	// Process impressions
 	var validImpressions []openrtb2.Imp
 	for i := range bidRequest.Imp {
@@ -59,7 +53,7 @@ func (a *adapter) MakeRequests(bidRequest *openrtb2.BidRequest, reqInfo *adapter
 	}
 
 	request := &adapters.RequestData{
-		Method: "POST",
+		Method: http.MethodPost,
 		Uri:    a.endpoint,
 		Body:   body,
 		Headers: http.Header{
