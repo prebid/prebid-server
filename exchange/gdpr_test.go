@@ -202,7 +202,7 @@ func TestSelectEEACountries(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.description, func(t *testing.T) {
 			result := selectEEACountries(tt.hostEEACountries, tt.accountEEACountries)
-			assert.Equal(t, tt.expected, result, tt.description)
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }

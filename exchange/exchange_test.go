@@ -2114,9 +2114,10 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 	}
 
 	var s struct{}
-	eeac := make(map[string]struct{})
-	for _, c := range []string{"FIN", "FRA", "GUF"} {
-		eeac[c] = s
+	eeacMap := make(map[string]struct{})
+	eeac := []string{"FIN", "FRA", "GUF"}
+	for _, c := range eeac {
+		eeacMap[c] = s
 	}
 
 	var gdprDefaultValue string
@@ -2136,7 +2137,8 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		GDPR: config.GDPR{
 			Enabled:         spec.GDPREnabled,
 			DefaultValue:    gdprDefaultValue,
-			EEACountriesMap: eeac,
+			EEACountries:    eeac,
+			EEACountriesMap: eeacMap,
 			TCF2: config.TCF2{
 				Enabled: spec.GDPREnabled,
 			},
@@ -2192,6 +2194,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 			PriceFloors: config.AccountPriceFloors{Enabled: spec.AccountFloorsEnabled, EnforceDealFloors: spec.AccountEnforceDealFloors},
 			Privacy:     spec.AccountPrivacy,
 			Validations: spec.AccountConfigBidValidation,
+			GDPR:        config.AccountGDPR{EEACountries: spec.AccountEEACountries},
 		},
 		UserSyncs:     mockIdFetcher(spec.IncomingRequest.Usersyncs),
 		ImpExtInfoMap: impExtInfoMap,
@@ -5518,6 +5521,7 @@ type exchangeSpec struct {
 	Server                     exchangeServer         `json:"server,omitempty"`
 	AccountPrivacy             config.AccountPrivacy  `json:"accountPrivacy,omitempty"`
 	ORTBVersion                map[string]string      `json:"ortbversion"`
+	AccountEEACountries        []string               `json:"account_eea_countries"`
 }
 
 type multiBidSpec struct {
