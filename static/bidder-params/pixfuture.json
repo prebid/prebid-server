@@ -3,11 +3,11 @@
     "title": "PixFuture Adapter Params",
     "description": "A schema which validates params accepted by the PixFuture adapter",
     "type": "object",
-    
-    "properties": {
+     "properties": {
       "pix_id": {
         "type": "string",
-        "description": "PixFuture placement ID"
+        "description": "PixFuture placement ID",
+	"minLength": 3
       }
     },
     
