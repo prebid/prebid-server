@@ -36,7 +36,7 @@ func (a *adapter) MakeRequests(bidRequest *openrtb2.BidRequest, reqInfo *adapter
 			errs = append(errs, fmt.Errorf("unsupported impression type for impID: %s", imp.ID))
 			continue
 		}
-		validImpressions = append(validImpressions, imp)
+		validImpressions = append(validImpressions, *imp)
 	}
 
 	if len(validImpressions) == 0 {
