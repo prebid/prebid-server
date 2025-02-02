@@ -57,4 +57,5 @@ var invalidParams = []string{
 	`{}`,
 	`{"pid": "0"}`,
 	`{"publisherId": 9999}`,
+	`{"publisherId": "99999"}`,
 }

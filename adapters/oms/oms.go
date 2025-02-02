@@ -45,7 +45,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	var publisherID string
 	if len(request.Imp[0].Ext) > 0 {
 		ext := pbsExt{}
-		err = json.Unmarshal(request.Imp[0].Ext, &ext)
+		err = jsonutil.Unmarshal(request.Imp[0].Ext, &ext)
 		if err != nil {
 			return nil, []error{err}
 		}
@@ -58,7 +58,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	requestData := &adapters.RequestData{
 		Method: "POST",
-		Uri:    a.endpoint + fmt.Sprintf("?publisherId=%v", publisherID),
+		Uri:    fmt.Sprintf("%s?publisherId=%v", a.endpoint, publisherID),
 		Body:   requestJSON,
 		ImpIDs: openrtb_ext.GetImpIDs(request.Imp),
 	}
@@ -94,6 +94,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	if len(response.Cur) == 0 {
 		bidResponse.Currency = response.Cur
 	}
+
 	for _, seatBid := range response.SeatBid {
 		for i := range seatBid.Bid {
 			bidType := getBidType(seatBid.Bid[i].MType)
