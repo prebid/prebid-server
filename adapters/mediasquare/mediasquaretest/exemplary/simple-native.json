@@ -10,33 +10,7 @@
         "banner": null,
         "video": null,
         "native": {
-          "ext": {
-            "title": { "required": true, "len": 80 },
-            "body": { "required": true },
-            "icon": {
-              "required": false,
-              "aspect_ratio": {
-                "min_width": 50,
-                "min_height": 50,
-                "ratio_width": 2,
-                "ratio_height": 3
-              }
-            },
-            "image": {
-              "required": false,
-              "aspect_ratio": {
-                "min_width": 300,
-                "min_height": 200,
-                "ratio_width": 2,
-                "ratio_height": 3
-              }
-            },
-            "clickUrl": { "required": true },
-            "sizes": [
-              [970, 250],
-              [728, 90]
-            ]
-          }
+          "request": "request-test"
         },
         "ext": {
           "bidder": {
@@ -90,54 +64,10 @@
               "auctionid": "70e5672c-515b-406e-967c-fcc2b04de04f",
               "bidid": "2c35e25e-e7d3-41bf-b810-06a449f456b9",
               "mediatypes": {
-                "video": null,
-                "banner": null,
-                "native": {
-                  "address": null,
-                  "title": { "required": true, "len": 80 },
-                  "body": { "required": true },
-                  "body2": null,
-                  "type": "native",
-                  "cta": null,
-                  "displayUrl": null,
-                  "downloads": null,
-                  "icon": {
-                    "required": false,
-                    "aspect_ratio": {
-                      "min_width": 50,
-                      "min_height": 50,
-                      "ratio_width": 2,
-                      "ratio_height": 3
-                    }
-                  },
-                  "image": {
-                    "required": false,
-                    "aspect_ratio": {
-                      "min_width": 300,
-                      "min_height": 200,
-                      "ratio_width": 2,
-                      "ratio_height": 3
-                    }
-                  },
-                  "likes": null,
-                  "phone": null,
-                  "price": null,
-                  "privacyIcon": null,
-                  "privacyLink": null,
-                  "rating": null,
-                  "saleprice": null,
-                  "sizes": [
-                    [970, 250],
-                    [728, 90]
-                  ],
-                  "sponsoredBy": null,
-                  "clickUrl": { "required": true }
-                }
+                "native_request": "request-test"
               },
               "floor": {
-                "*": { "floor": 1, "currency": "USD" },
-                "970x250": { "floor": 1, "currency": "USD" },
-                "728x90": { "floor": 1, "currency": "USD" }
+                "*": { "floor": 1, "currency": "USD" }
               }
             }
           ],
@@ -184,12 +114,12 @@
           "responses": [
             {
               "bid_id": "4e2d4580c1da1",
-              "bidder": "fakeBidder",
+              "bidder": "msq_test",
               "code": "test/publishername_atf_desktop_rg_pave",
               "cpm": 1,
               "increment": 1,
               "currency": "USD",
-              "creative_id": "fakeBidder|fakeCreative",
+              "creative_id": "msq_test|fakeCreative",
               "net_revenue": true,
               "transaction_id": "4e2d4580c1da1",
               "ttl": 20000,
@@ -216,7 +146,7 @@
             "impid": "4e2d4580c1da1",
             "price": 1,
             "adomain": ["mediasquare.fr"],
-            "crid": "fakeBidder|fakeCreative",
+            "crid": "msq_test|fakeCreative",
             "mtype": 4
           },
           "bidmeta": {

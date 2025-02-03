@@ -16,11 +16,11 @@ type parserDSA struct {
 func (parser *parserDSA) setContent(extJsonBytes []byte) error {
 	if len(extJsonBytes) > 0 {
 		if err := jsonutil.Unmarshal(extJsonBytes, parser); err != nil {
-			return errorWritter("<setContent(*parserDSA)> extJsonBytes", err, false)
+			return errorWriter("<setContent(*parserDSA)> extJsonBytes", err, false)
 		}
 		return nil
 	}
-	return errorWritter("<setContent(*parserDSA)> extJsonBytes", nil, true)
+	return errorWriter("<setContent(*parserDSA)> extJsonBytes", nil, true)
 }
 
 // getValue: Returns the DSA value as a string, defaultly returns empty-string.
@@ -45,11 +45,11 @@ type parserGDPR struct {
 func (parser *parserGDPR) setContent(extJsonBytes []byte) error {
 	if len(extJsonBytes) > 0 {
 		if err := jsonutil.Unmarshal(extJsonBytes, parser); err != nil {
-			return errorWritter("<setContent(*parserGDPR)> extJsonBytes", err, false)
+			return errorWriter("<setContent(*parserGDPR)> extJsonBytes", err, false)
 		}
 		return nil
 	}
-	return errorWritter("<setContent(*parserGDPR)> extJsonBytes", nil, true)
+	return errorWriter("<setContent(*parserGDPR)> extJsonBytes", nil, true)
 }
 
 // value: Returns the consent or GDPR-string depending of the parserGDPR content, defaulty return empty-string.

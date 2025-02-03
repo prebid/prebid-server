@@ -12,7 +12,7 @@
         },
         "ext": {
           "bidder": {
-            "owner": "test",
+            "owner": "msq_test",
             "code": "publishername_atf_desktop_rg_pave"
           }
         }
@@ -30,7 +30,7 @@
         },
         "ext": {
           "bidder": {
-            "owner": "test",
+            "owner": "msq_test",
             "code": "publishername_atf_desktop_rg_pave"
           }
         }
@@ -43,6 +43,7 @@
         "banner": null,
         "video": null,
         "native": {
+          "request": "request-test",
           "ext": {
             "title": { "required": true, "len": 80 },
             "body": { "required": true },
@@ -73,7 +74,7 @@
         },
         "ext": {
           "bidder": {
-            "owner": "test",
+            "owner": "msq_test",
             "code": "publishername_atf_desktop_rg_pave"
           }
         }
@@ -100,7 +101,7 @@
         },
         "ext": {
           "bidder": {
-            "owner": "test",
+            "owner": "msq_test",
             "code": "publishername_atf_desktop_rg_video"
           }
         }
@@ -148,13 +149,11 @@
               "auctionid": "70e5672c-515b-406e-967c-fcc2b04de04f",
               "bidid": "2c35e25e-e7d3-41bf-b810-06a449f456b9",
               "code": "publishername_atf_desktop_rg_pave",
-              "owner": "test",
+              "owner": "msq_test",
               "mediatypes": {
                 "banner": {
                   "sizes": [[970, 250]]
-                },
-                "video": null,
-                "native": null
+                }
               },
               "floor": {
                 "970x250": {
@@ -168,7 +167,7 @@
               "auctionid": "70e5672c-515b-406e-967c-fcc2b04de04f",
               "bidid": "2059a3e6-71a3-43ea-8290-b5ceb13d35a8",
               "code": "publishername_atf_desktop_rg_pave",
-              "owner": "test",
+              "owner": "msq_test",
               "mediatypes": {
                 "banner": {
                   "sizes": [
@@ -176,9 +175,7 @@
                     [300, 600],
                     [120, 600]
                   ]
-                },
-                "video": null,
-                "native": null
+                }
               },
               "floor": {
                 "120x600": {
@@ -196,93 +193,39 @@
               }
             },
             {
-              "owner": "test",
+              "owner": "msq_test",
               "code": "publishername_atf_desktop_rg_pave",
               "adunit": "msq_tag_200123_native",
               "auctionid": "70e5672c-515b-406e-967c-fcc2b04de04f",
               "bidid": "2c35e25e-e7d3-41bf-b810-06a449f456c9",
               "mediatypes": {
-                "video": null,
-                "banner": null,
-                "native": {
-                  "address": null,
-                  "title": { "required": true, "len": 80 },
-                  "body": { "required": true },
-                  "body2": null,
-                  "type": "native",
-                  "cta": null,
-                  "displayUrl": null,
-                  "downloads": null,
-                  "icon": {
-                    "required": false,
-                    "aspect_ratio": {
-                      "min_width": 50,
-                      "min_height": 50,
-                      "ratio_width": 2,
-                      "ratio_height": 3
-                    }
-                  },
-                  "image": {
-                    "required": false,
-                    "aspect_ratio": {
-                      "min_width": 300,
-                      "min_height": 200,
-                      "ratio_width": 2,
-                      "ratio_height": 3
-                    }
-                  },
-                  "likes": null,
-                  "phone": null,
-                  "price": null,
-                  "privacyIcon": null,
-                  "privacyLink": null,
-                  "rating": null,
-                  "saleprice": null,
-                  "sizes": [
-                    [970, 250],
-                    [728, 90]
-                  ],
-                  "sponsoredBy": null,
-                  "clickUrl": { "required": true }
-                }
+                "native_request": "request-test"
               },
               "floor": {
-                "*": { "floor": 1, "currency": "USD" },
-                "970x250": { "floor": 1, "currency": "USD" },
-                "728x90": { "floor": 1, "currency": "USD" }
+                "*": { "floor": 1, "currency": "USD" }
               }
             },
             {
-              "owner": "test",
+              "owner": "msq_test",
               "code": "publishername_atf_desktop_rg_video",
               "adunit": "msq_tag_200123_native",
               "auctionid": "70e5672c-515b-406e-967c-fcc2b04de04f",
               "bidid": "2c35e25e-e7d3-41bf-b810-06a449f456d9",
               "mediatypes": {
                 "video": {
+                  "ext": {
+                    "context": "context-test",
+                    "linearity": 0,
+                    "playersize": [[800, 600]]
+                  },
                   "mimes": ["video/mp4"],
-                  "minbitrate": null,
-                  "maxbitrate": null,
                   "minduration": 10,
                   "maxduration": 23,
                   "placement": 1,
-                  "linearity": 0,
                   "w": 800,
                   "h": 600,
-                  "playbackmethod": null,
-                  "playersize": [[800, 600]],
-                  "api": null,
-                  "boxingallower": null,
-                  "context": "context-test",
-                  "delivery": null,
-                  "plcmt": 1,
-                  "protocols": null,
-                  "skip": null,
-                  "skipafter": null,
-                  "startdelay": null
-                },
-                "banner": null,
-                "native": null
+                  "plcmt": 1
+                }
               },
               "floor": {
                 "*": { "floor": 1 },
@@ -339,12 +282,12 @@
             {
               "ad": "\u003c!-- This is an example --\u003e",
               "bid_id": "2c35e25e-e7d3-41bf-b810-06a449f456b9",
-              "bidder": "fakeBidder",
+              "bidder": "msq_test",
               "code": "test/publishername_atf_desktop_rg_pave",
               "cpm": 2,
               "increment": 2,
               "currency": "USD",
-              "creative_id": "fakeBidder|fakeCreative",
+              "creative_id": "msq_test|fakeCreative",
               "width": 250,
               "net_revenue": true,
               "transaction_id": "2c35e25e-e7d3-41bf-b810-06a449f456b9",
@@ -355,12 +298,12 @@
             {
               "ad": "\u003c!-- This is an example --\u003e",
               "bid_id": "2059a3e6-71a3-43ea-8290-b5ceb13d35a8",
-              "bidder": "fakeBidder",
+              "bidder": "msq_test",
               "code": "test/publishername_atf_desktop_rg_pave",
               "cpm": 0.02,
               "increment": 0.02,
               "currency": "USD",
-              "creative_id": "fakeBidder|fakeCreative",
+              "creative_id": "msq_test|fakeCreative",
               "width": 250,
               "net_revenue": true,
               "transaction_id": "2059a3e6-71a3-43ea-8290-b5ceb13d35a8",
@@ -370,12 +313,12 @@
             },
             {
               "bid_id": "2c35e25e-e7d3-41bf-b810-06a449f456c9",
-              "bidder": "fakeBidder",
+              "bidder": "msq_test",
               "code": "test/publishername_atf_desktop_rg_pave",
               "cpm": 2,
               "increment": 2,
               "currency": "USD",
-              "creative_id": "fakeBidder|fakeCreative",
+              "creative_id": "msq_test|fakeCreative",
               "net_revenue": true,
               "transaction_id": "2c35e25e-e7d3-41bf-b810-06a449f456c9",
               "ttl": 20000,
@@ -388,12 +331,12 @@
             },
             {
               "bid_id": "2c35e25e-e7d3-41bf-b810-06a449f456d9",
-              "bidder": "fakeBidder",
+              "bidder": "msq_test",
               "code": "test/publishername_atf_desktop_rg_video",
               "cpm": 2,
               "increment": 2,
               "currency": "USD",
-              "creative_id": "fakeBidder|fakeCreative",
+              "creative_id": "msq_test|fakeCreative",
               "net_revenue": true,
               "transaction_id": "2c35e25e-e7d3-41bf-b810-06a449f456d9",
               "ttl": 20000,
@@ -438,7 +381,7 @@
             "price": 2,
             "adm": "\u003c!-- This is an example --\u003e",
             "adomain": ["mediasquare.fr"],
-            "crid": "fakeBidder|fakeCreative",
+            "crid": "msq_test|fakeCreative",
             "w": 250,
             "mtype": 1
           },
@@ -455,7 +398,7 @@
             "price": 0.02,
             "adm": "\u003c!-- This is an example --\u003e",
             "adomain": ["mediasquare.fr"],
-            "crid": "fakeBidder|fakeCreative",
+            "crid": "msq_test|fakeCreative",
             "w": 250,
             "mtype": 1
           },
@@ -471,7 +414,7 @@
             "impid": "2c35e25e-e7d3-41bf-b810-06a449f456c9",
             "price": 2,
             "adomain": ["mediasquare.fr"],
-            "crid": "fakeBidder|fakeCreative",
+            "crid": "msq_test|fakeCreative",
             "mtype": 4
           },
           "BidMeta": {
@@ -486,7 +429,7 @@
             "impid": "2c35e25e-e7d3-41bf-b810-06a449f456d9",
             "price": 2,
             "adomain": ["mediasquare.fr"],
-            "crid": "fakeBidder|fakeCreative",
+            "crid": "msq_test|fakeCreative",
             "mtype": 2
           },
           "BidMeta": {

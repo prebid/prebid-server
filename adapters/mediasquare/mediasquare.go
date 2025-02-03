@@ -28,7 +28,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		errs        []error
 	)
 	if request == nil || request.Imp == nil {
-		errs = append(errs, errorWritter("<MakeRequests> request", nil, true))
+		errs = append(errs, errorWriter("<MakeRequests> request", nil, true))
 		return nil, errs
 	}
 
@@ -46,17 +46,17 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		)
 
 		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
-			errs = append(errs, errorWritter("<MakeRequests> imp[ext]", err, len(imp.Ext) == 0))
+			errs = append(errs, errorWriter("<MakeRequests> imp[ext]", err, len(imp.Ext) == 0))
 			continue
 		}
 		if err := jsonutil.Unmarshal(bidderExt.Bidder, &msqExt); err != nil {
-			errs = append(errs, errorWritter("<MakeRequests> imp-bidder[ext]", err, len(bidderExt.Bidder) == 0))
+			errs = append(errs, errorWriter("<MakeRequests> imp-bidder[ext]", err, len(bidderExt.Bidder) == 0))
 			continue
 		}
 		currentCode.Owner = msqExt.Owner
 		currentCode.Code = msqExt.Code
 
-		if ok := currentCode.setContent(imp); ok {
+		if currentCode.setContent(imp) {
 			msqParams.Codes = append(msqParams.Codes, currentCode)
 		}
 	}
@@ -73,7 +73,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 func (a *adapter) makeRequest(request *openrtb2.BidRequest, msqParams *msqParameters) (requestData *adapters.RequestData, err error) {
 	var requestJsonBytes []byte
 	if msqParams == nil {
-		err = errorWritter("<makeRequest> msqParams", nil, true)
+		err = errorWriter("<makeRequest> msqParams", nil, true)
 		return
 	}
 	if requestJsonBytes, err = jsonutil.Marshal(msqParams); err == nil {
@@ -86,7 +86,7 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest, msqParams *msqParame
 			ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 		}
 	} else {
-		err = errorWritter("<makeRequest> jsonutil.Marshal", err, false)
+		err = errorWriter("<makeRequest> jsonutil.Marshal", err, false)
 	}
 
 	return
@@ -112,8 +112,15 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	var msqResp msqResponse
 	if err := jsonutil.Unmarshal(response.Body, &msqResp); err != nil {
 		errs = []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("<MakeBids> Unexprected status code: %d. Bad server response: %s.",
+			Message: fmt.Sprintf("<MakeBids> Unexpected status code: %d. Bad server response: %s.",
 				http.StatusNotAcceptable, err.Error())},
+		}
+		return bidderResponse, errs
+	}
+	if len(msqResp.Responses) == 0 {
+		errs = []error{&errortypes.BadServerResponse{
+			Message: fmt.Sprintf("<MakeBids> Unexpected status code: %d. No responses found into body content.",
+				http.StatusNoContent)},
 		}
 		return bidderResponse, errs
 	}

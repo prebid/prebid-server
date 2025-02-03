@@ -14,22 +14,15 @@ var headerList = map[string][]string{
 	"Accept":       {"application/json"},
 }
 
-var mediaTypeList = map[openrtb_ext.BidType]openrtb2.MarkupType{
-	"banner": openrtb2.MarkupBanner,
-	"video":  openrtb2.MarkupVideo,
-	"audio":  openrtb2.MarkupAudio,
-	"native": openrtb2.MarkupNative,
-}
-
 // mType: Returns the openrtb2.MarkupType from an msqResponseBids.
 func (msqBids *msqResponseBids) mType() openrtb2.MarkupType {
 	switch {
 	case msqBids.Video != nil:
-		return mediaTypeList["video"]
+		return openrtb2.MarkupVideo
 	case msqBids.Native != nil:
-		return mediaTypeList["native"]
+		return openrtb2.MarkupNative
 	default:
-		return mediaTypeList["banner"]
+		return openrtb2.MarkupBanner
 	}
 }
 
@@ -93,14 +86,8 @@ func ptrInt8ToBool(i *int8) bool {
 	return false
 }
 
-// intToPtrInt: Returns a ptr_int(*int) for which *ptr_int = i.
-func intToPtrInt(i int) *int {
-	val := int(i)
-	return &val
-}
-
-// errorWritter: Returns a Custom error message.
-func errorWritter(referer string, err error, isEmpty bool) error {
+// errorWriter: Returns a Custom error message.
+func errorWriter(referer string, err error, isEmpty bool) error {
 	if isEmpty {
 		return fmt.Errorf("%s: is empty.", referer)
 	}

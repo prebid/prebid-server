@@ -81,7 +81,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "<MakeBids> Unexprected status code: 406. Bad server response: cannot unmarshal mediasquare.msqResponse.Responses: decode slice: expect [ or n, but found \".",
+      "value": "<MakeBids> Unexpected status code: 406. Bad server response: cannot unmarshal mediasquare.msqResponse.Responses: decode slice: expect [ or n, but found \".",
       "comparison": "literal"
     }
   ]

@@ -3,7 +3,7 @@ endpointCompression: gzip
 gvlVendorID: 791
 modifyingVastXmlAllowed: true
 maintainer:
-  email: "alexandre.harribey@mediasquare.fr"
+  email: "tech@mediasquare.fr"
 capabilities:
   app:
     mediaTypes:

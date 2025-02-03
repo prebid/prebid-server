@@ -16,7 +16,7 @@
         "native": { "request": "" },
         "ext": {
           "bidder": {
-            "owner": "test",
+            "owner": "msq_test",
             "code": "publishername_atf_desktop_rg_pave"
           }
         }
@@ -48,42 +48,7 @@
       "expectedRequest": {
         "uri": "https://pbs-front.mediasquare.fr/msq_prebid",
         "body": {
-          "codes": [
-            {
-              "adunit": "",
-              "auctionid": "id-ok",
-              "bidid": "42",
-              "code": "publishername_atf_desktop_rg_pave",
-              "owner": "test",
-              "mediatypes": {
-                "banner": null,
-                "video": null,
-                "native": {
-                  "title": null,
-                  "icon": null,
-                  "image": null,
-                  "clickUrl": null,
-                  "displayUrl": null,
-                  "privacyLink": null,
-                  "privacyIcon": null,
-                  "cta": null,
-                  "rating": null,
-                  "downloads": null,
-                  "likes": null,
-                  "price": null,
-                  "saleprice": null,
-                  "address": null,
-                  "phone": null,
-                  "body": null,
-                  "body2": null,
-                  "sponsoredBy": null,
-                  "sizes": null,
-                  "type": "native"
-                }
-              },
-              "floor": { "*": {} }
-            }
-          ],
+          "codes": null,
           "gdpr": { "consent_required": false, "consent_string": "" },
           "type": "pbs",
           "dsa": "",
@@ -119,10 +84,10 @@
       }
     }
   ],
-  "expectedBidResponses": [
+  "expectedMakeBidsErrors": [
     {
-      "currency": "USD",
-      "bids": []
+      "value": "<MakeBids> Unexpected status code: 204. No responses found into body content.",
+      "comparison": "literal"
     }
   ]
 }

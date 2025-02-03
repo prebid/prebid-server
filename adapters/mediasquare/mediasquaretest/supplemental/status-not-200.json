@@ -77,29 +77,19 @@
               "bidid": "2c35e25e-e7d3-41bf-b810-06a449f456b9",
               "mediatypes": {
                 "video": {
+                  "ext": {
+                    "linearity": 0,
+                    "context": "context-test",
+                    "playersize": [[800, 600]]
+                  },
                   "mimes": ["video/mp4"],
-                  "minbitrate": null,
-                  "maxbitrate": null,
                   "minduration": 10,
                   "maxduration": 23,
                   "placement": 1,
-                  "linearity": 0,
                   "w": 800,
                   "h": 600,
-                  "playbackmethod": null,
-                  "playersize": [[800, 600]],
-                  "api": null,
-                  "boxingallower": null,
-                  "context": "context-test",
-                  "delivery": null,
-                  "plcmt": 1,
-                  "protocols": null,
-                  "skip": null,
-                  "skipafter": null,
-                  "startdelay": null
-                },
-                "banner": null,
-                "native": null
+                  "plcmt": 1
+                }
               },
               "floor": {
                 "*": { "floor": 1 },
