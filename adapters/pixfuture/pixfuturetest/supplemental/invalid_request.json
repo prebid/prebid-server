@@ -1,0 +1,9 @@
+{
+  "status": 500,
+  "errors": [
+    {
+      "code": "request_marshalling_error",
+      "message": "Failed to marshal bid request: invalid JSON format."
+    }
+  ]
+}
