@@ -9,19 +9,17 @@ import (
 	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 const (
-	isRewardedInventory              = "is_rewarded_inventory"
-	stateRewardedInventoryEnable     = "1"
-	consentProvidersSettingsInputKey = "ConsentedProvidersSettings"
-	consentProvidersSettingsOutKey   = "consented_providers_settings"
-	consentedProvidersKey            = "consented_providers"
-	publisherEndpointParam           = "{PublisherId}"
+	isRewardedInventory          = "is_rewarded_inventory"
+	stateRewardedInventoryEnable = "1"
+	publisherEndpointParam       = "{PublisherId}"
 )
 
 type ImprovedigitalAdapter struct {
@@ -75,17 +73,6 @@ func (a *ImprovedigitalAdapter) makeRequest(request openrtb2.BidRequest, imp ope
 
 	request.Imp = []openrtb2.Imp{imp}
 
-	userExtAddtlConsent, err := a.getAdditionalConsentProvidersUserExt(request)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(userExtAddtlConsent) > 0 {
-		userCopy := *request.User
-		userCopy.Ext = userExtAddtlConsent
-		request.User = &userCopy
-	}
-
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
 		return nil, err
@@ -123,7 +110,7 @@ func (a *ImprovedigitalAdapter) MakeBids(internalRequest *openrtb2.BidRequest, e
 
 	var bidResp openrtb2.BidResponse
 	var impMap = make(map[string]openrtb2.Imp)
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
@@ -159,7 +146,7 @@ func (a *ImprovedigitalAdapter) MakeBids(internalRequest *openrtb2.BidRequest, e
 
 		if bid.Ext != nil {
 			var bidExt BidExt
-			err = json.Unmarshal(bid.Ext, &bidExt)
+			err = jsonutil.Unmarshal(bid.Ext, &bidExt)
 			if err != nil {
 				return nil, []error{err}
 			}
@@ -255,72 +242,9 @@ func isMultiFormatImp(imp openrtb2.Imp) bool {
 	return formatCount > 1
 }
 
-// This method responsible to clone request and convert additional consent providers string to array when additional consent provider found
-func (a *ImprovedigitalAdapter) getAdditionalConsentProvidersUserExt(request openrtb2.BidRequest) ([]byte, error) {
-	var cpStr string
-
-	// If user/user.ext not defined, no need to parse additional consent
-	if request.User == nil || request.User.Ext == nil {
-		return nil, nil
-	}
-
-	// Start validating additional consent
-	// Check key exist user.ext.ConsentedProvidersSettings
-	var userExtMap = make(map[string]json.RawMessage)
-	if err := json.Unmarshal(request.User.Ext, &userExtMap); err != nil {
-		return nil, err
-	}
-
-	cpsMapValue, cpsJSONFound := userExtMap[consentProvidersSettingsInputKey]
-	if !cpsJSONFound {
-		return nil, nil
-	}
-
-	// Check key exist user.ext.ConsentedProvidersSettings.consented_providers
-	var cpMap = make(map[string]json.RawMessage)
-	if err := json.Unmarshal(cpsMapValue, &cpMap); err != nil {
-		return nil, err
-	}
-
-	cpMapValue, cpJSONFound := cpMap[consentedProvidersKey]
-	if !cpJSONFound {
-		return nil, nil
-	}
-	// End validating additional consent
-
-	// Trim enclosing quotes after casting json.RawMessage to string
-	consentStr := strings.Trim((string)(cpMapValue), "\"")
-	// Split by ~ and take only the second string (if exists) as the consented providers spec
-	var consentStrParts = strings.Split(consentStr, "~")
-	if len(consentStrParts) < 2 {
-		return nil, nil
-	}
-	cpStr = strings.TrimSpace(consentStrParts[1])
-	if len(cpStr) == 0 {
-		return nil, nil
-	}
-
-	// Prepare consent providers string
-	cpStr = fmt.Sprintf("[%s]", strings.Replace(cpStr, ".", ",", -1))
-	cpMap[consentedProvidersKey] = json.RawMessage(cpStr)
-
-	cpJSON, err := json.Marshal(cpMap)
-	if err != nil {
-		return nil, err
-	}
-	userExtMap[consentProvidersSettingsOutKey] = cpJSON
-
-	extJson, err := json.Marshal(userExtMap)
-	if err != nil {
-		return nil, err
-	}
-
-	return extJson, nil
-}
-
 func getImpExtWithRewardedInventory(imp openrtb2.Imp) ([]byte, error) {
 	var ext = make(map[string]json.RawMessage)
-	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &ext); err != nil {
 		return nil, err
 	}
 
@@ -330,7 +254,7 @@ func getImpExtWithRewardedInventory(imp openrtb2.Imp) ([]byte, error) {
 	}
 
 	var prebidMap = make(map[string]json.RawMessage)
-	if err := json.Unmarshal(prebidJSONValue, &prebidMap); err != nil {
+	if err := jsonutil.Unmarshal(prebidJSONValue, &prebidMap); err != nil {
 		return nil, err
 	}
 
@@ -351,7 +275,7 @@ func (a *ImprovedigitalAdapter) buildEndpointURL(imp openrtb2.Imp) string {
 	publisherEndpoint := ""
 	var impBidder ImpExtBidder
 
-	err := json.Unmarshal(imp.Ext, &impBidder)
+	err := jsonutil.Unmarshal(imp.Ext, &impBidder)
 	if err == nil && impBidder.Bidder.PublisherID != 0 {
 		publisherEndpoint = strconv.Itoa(impBidder.Bidder.PublisherID) + "/"
 	}

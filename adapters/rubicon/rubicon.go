@@ -8,14 +8,16 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/maputil"
+	"github.com/prebid/prebid-server/v3/version"
+
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/maputil"
 
 	"github.com/buger/jsonparser"
-	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/openrtb/v20/openrtb2"
 )
 
@@ -25,6 +27,7 @@ var bannerExtContent = []byte(`{"rp":{"mime":"text/html"}}`)
 
 type RubiconAdapter struct {
 	URI          string
+	externalURI  string
 	XAPIUsername string
 	XAPIPassword string
 }
@@ -170,34 +173,6 @@ type extPrebid struct {
 	Bidder json.RawMessage           `json:"bidder,omitempty"`
 }
 
-// defines the contract for bidrequest.user.ext.eids[i].ext
-type rubiconUserExtEidExt struct {
-	Segments []string `json:"segments,omitempty"`
-}
-
-type mappedRubiconUidsParam struct {
-	segments    []string
-	liverampIdl string
-}
-
-func resolveVideoSizeId(placement adcom1.VideoPlacementSubtype, instl int8, impId string) (sizeID int, err error) {
-	if placement != 0 {
-		if placement == 1 {
-			return 201, nil
-		}
-		if placement == 3 {
-			return 203, nil
-		}
-	}
-
-	if instl == 1 {
-		return 202, nil
-	}
-	return 0, &errortypes.BadInput{
-		Message: fmt.Sprintf("video.size_id can not be resolved in impression with id : %s", impId),
-	}
-}
-
 func appendTrackerToUrl(uri string, tracker string) (res string) {
 	// Append integration method. Adapter init happens once
 	urlObject, err := url.Parse(uri)
@@ -219,6 +194,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 
 	bidder := &RubiconAdapter{
 		URI:          uri,
+		externalURI:  server.ExternalUrl,
 		XAPIUsername: config.XAPI.Username,
 		XAPIPassword: config.XAPI.Password,
 	}
@@ -271,7 +247,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 	rubiconRequest := *request
 	for imp, bidderExt := range impsToExtMap {
 		rubiconExt := bidderExt.Bidder
-		target, err := updateImpRpTargetWithFpdAttributes(bidderExt, rubiconExt, *imp, request.Site, request.App)
+		target, err := a.updateImpRpTarget(bidderExt, rubiconExt, *imp, request.Site, request.App)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -317,9 +293,11 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			continue
 		}
 
-		if resolvedBidFloor > 0 {
-			imp.BidFloorCur = "USD"
+		if resolvedBidFloor >= 0 {
 			imp.BidFloor = resolvedBidFloor
+			if imp.BidFloorCur != "" {
+				imp.BidFloorCur = "USD"
+			}
 		}
 
 		if request.User != nil {
@@ -367,23 +345,18 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 		if isVideo {
 			videoCopy := *imp.Video
 
-			videoSizeId := rubiconExt.Video.VideoSizeID
-			if videoSizeId == 0 {
-				resolvedSizeId, err := resolveVideoSizeId(imp.Video.Placement, imp.Instl, imp.ID)
-				if err != nil {
-					errs = append(errs, err)
-					continue
-				}
-				videoSizeId = resolvedSizeId
-			}
-
 			// if imp.rwdd = 1, set imp.video.ext.videotype = "rewarded"
 			var videoType = ""
 			if imp.Rwdd == 1 {
 				videoType = "rewarded"
 				imp.Rwdd = 0
 			}
-			videoExt := rubiconVideoExt{Skip: rubiconExt.Video.Skip, SkipDelay: rubiconExt.Video.SkipDelay, VideoType: videoType, RP: rubiconVideoExtRP{SizeID: videoSizeId}}
+			videoExt := rubiconVideoExt{
+				Skip:      rubiconExt.Video.Skip,
+				SkipDelay: rubiconExt.Video.SkipDelay,
+				VideoType: videoType,
+				RP:        rubiconVideoExtRP{SizeID: rubiconExt.Video.VideoSizeID},
+			}
 			videoCopy.Ext, err = json.Marshal(&videoExt)
 			imp.Video = &videoCopy
 			imp.Banner = nil
@@ -474,7 +447,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			if sourceCopy.SChain != nil {
 				var sourceCopyExt openrtb_ext.ExtSource
 				if sourceCopy.Ext != nil {
-					if err = json.Unmarshal(sourceCopy.Ext, &sourceCopyExt); err != nil {
+					if err = jsonutil.Unmarshal(sourceCopy.Ext, &sourceCopyExt); err != nil {
 						errs = append(errs, &errortypes.BadInput{Message: err.Error()})
 						continue
 					}
@@ -504,7 +477,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 
 			var regsCopyExt openrtb_ext.ExtRegs
 			if regsCopy.Ext != nil {
-				if err = json.Unmarshal(regsCopy.Ext, &regsCopyExt); err != nil {
+				if err = jsonutil.Unmarshal(regsCopy.Ext, &regsCopyExt); err != nil {
 					errs = append(errs, &errortypes.BadInput{Message: err.Error()})
 					continue
 				}
@@ -572,7 +545,7 @@ func createImpsToExtMap(imps []openrtb2.Imp) (map[*openrtb2.Imp]rubiconExtImpBid
 	for _, imp := range imps {
 		impCopy := imp
 		var bidderExt rubiconExtImpBidder
-		if err = json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		if err = jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			errs = append(errs, &errortypes.BadInput{
 				Message: err.Error(),
 			})
@@ -648,7 +621,7 @@ func resolveBidFloor(bidFloor float64, bidFloorCur string, reqInfo *adapters.Ext
 	return bidFloor, nil
 }
 
-func updateImpRpTargetWithFpdAttributes(extImp rubiconExtImpBidder, extImpRubicon openrtb_ext.ExtImpRubicon,
+func (a *RubiconAdapter) updateImpRpTarget(extImp rubiconExtImpBidder, extImpRubicon openrtb_ext.ExtImpRubicon,
 	imp openrtb2.Imp, site *openrtb2.Site, app *openrtb2.App) (json.RawMessage, error) {
 
 	existingTarget, _, _, err := jsonparser.Get(imp.Ext, "rp", "target")
@@ -673,20 +646,8 @@ func updateImpRpTargetWithFpdAttributes(extImp rubiconExtImpBidder, extImpRubico
 		if err != nil {
 			return nil, err
 		}
-		if len(site.SectionCat) > 0 {
-			addStringArrayAttribute(site.SectionCat, target, "sectioncat")
-		}
-		if len(site.PageCat) > 0 {
-			addStringArrayAttribute(site.PageCat, target, "pagecat")
-		}
 		if site.Page != "" {
 			addStringAttribute(site.Page, target, "page")
-		}
-		if site.Ref != "" {
-			addStringAttribute(site.Ref, target, "ref")
-		}
-		if site.Search != "" {
-			addStringAttribute(site.Search, target, "search")
 		}
 	} else {
 		appExtData, _, _, err := jsonparser.Get(app.Ext, "data")
@@ -696,12 +657,6 @@ func updateImpRpTargetWithFpdAttributes(extImp rubiconExtImpBidder, extImpRubico
 		err = populateFirstPartyDataAttributes(appExtData, target)
 		if err != nil {
 			return nil, err
-		}
-		if len(app.SectionCat) > 0 {
-			addStringArrayAttribute(app.SectionCat, target, "sectioncat")
-		}
-		if len(app.PageCat) > 0 {
-			addStringArrayAttribute(app.PageCat, target, "pagecat")
 		}
 	}
 
@@ -716,14 +671,14 @@ func updateImpRpTargetWithFpdAttributes(extImp rubiconExtImpBidder, extImpRubico
 
 	var data rubiconData
 	if len(extImp.Data) > 0 {
-		err := json.Unmarshal(extImp.Data, &data)
+		err := jsonutil.Unmarshal(extImp.Data, &data)
 		if err != nil {
 			return nil, err
 		}
 	}
 	var contextData rubiconData
 	if len(extImp.Context.Data) > 0 {
-		err := json.Unmarshal(extImp.Context.Data, &contextData)
+		err := jsonutil.Unmarshal(extImp.Context.Data, &contextData)
 		if err != nil {
 			return nil, err
 		}
@@ -741,6 +696,11 @@ func updateImpRpTargetWithFpdAttributes(extImp rubiconExtImpBidder, extImpRubico
 	if len(extImpRubicon.Keywords) > 0 {
 		addStringArrayAttribute(extImpRubicon.Keywords, target, "keywords")
 	}
+
+	target["pbs_login"] = a.XAPIUsername
+	target["pbs_version"] = version.Ver
+	target["pbs_url"] = a.externalURI
+
 	updatedTarget, err := json.Marshal(target)
 	if err != nil {
 		return nil, err
@@ -878,7 +838,7 @@ func rawJSONToMap(message json.RawMessage) (map[string]interface{}, error) {
 
 func mapFromRawJSON(message json.RawMessage) (map[string]interface{}, error) {
 	targetAsMap := make(map[string]interface{})
-	err := json.Unmarshal(message, &targetAsMap)
+	err := jsonutil.Unmarshal(message, &targetAsMap)
 	if err != nil {
 		return nil, err
 	}
@@ -891,7 +851,7 @@ func getSegmentIdsToCopy(data []openrtb2.Data, segTaxValues []int) []string {
 	for _, dataRecord := range data {
 		if dataRecord.Ext != nil {
 			var dataExtObject rubiconDataExt
-			err := json.Unmarshal(dataRecord.Ext, &dataExtObject)
+			err := jsonutil.Unmarshal(dataRecord.Ext, &dataExtObject)
 			if err != nil {
 				continue
 			}
@@ -937,7 +897,7 @@ func resolveNativeObject(native *openrtb2.Native, target map[string]interface{})
 		return native, nil
 	}
 
-	err := json.Unmarshal([]byte(native.Request), &target)
+	err := jsonutil.Unmarshal([]byte(native.Request), &target)
 	if err != nil {
 		return nil, err
 	}
@@ -962,7 +922,7 @@ func resolveNativeObject(native *openrtb2.Native, target map[string]interface{})
 
 func setImpNative(jsonData []byte, requestNative map[string]interface{}) ([]byte, error) {
 	var jsonMap map[string]interface{}
-	if err := json.Unmarshal(jsonData, &jsonMap); err != nil {
+	if err := jsonutil.Unmarshal(jsonData, &jsonMap); err != nil {
 		return jsonData, err
 	}
 
@@ -1007,14 +967,14 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb2.BidRequest, external
 	}
 
 	var bidResp rubiconBidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: err.Error(),
 		}}
 	}
 
 	var bidReq openrtb2.BidRequest
-	if err := json.Unmarshal(externalRequest.Body, &bidReq); err != nil {
+	if err := jsonutil.Unmarshal(externalRequest.Body, &bidReq); err != nil {
 		return nil, []error{err}
 	}
 
@@ -1069,7 +1029,7 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb2.BidRequest, external
 
 				rubiconBidAsBytes, _ := json.Marshal(bid)
 				if len(rubiconBidAsBytes) > 0 {
-					err = json.Unmarshal(rubiconBidAsBytes, &ortbBid)
+					err = jsonutil.Unmarshal(rubiconBidAsBytes, &ortbBid)
 					if err != nil {
 						return nil, []error{err}
 					}
@@ -1093,12 +1053,12 @@ func mapImpIdToCpmOverride(imps []openrtb2.Imp) map[string]float64 {
 	impIdToCmpOverride := make(map[string]float64)
 	for _, imp := range imps {
 		var bidderExt adapters.ExtImpBidder
-		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			continue
 		}
 
 		var rubiconExt openrtb_ext.ExtImpRubicon
-		if err := json.Unmarshal(bidderExt.Bidder, &rubiconExt); err != nil {
+		if err := jsonutil.Unmarshal(bidderExt.Bidder, &rubiconExt); err != nil {
 			continue
 		}
 
@@ -1124,7 +1084,7 @@ func resolveAdm(bid rubiconBid) string {
 
 func cmpOverrideFromBidRequest(bidRequest *openrtb2.BidRequest) float64 {
 	var bidRequestExt bidRequestExt
-	if err := json.Unmarshal(bidRequest.Ext, &bidRequestExt); err != nil {
+	if err := jsonutil.Unmarshal(bidRequest.Ext, &bidRequestExt); err != nil {
 		return 0
 	}
 
@@ -1137,7 +1097,7 @@ func updateBidExtWithMetaNetworkId(bid rubiconBid, buyer int) json.RawMessage {
 	}
 	var bidExt *extPrebid
 	if bid.Ext != nil {
-		if err := json.Unmarshal(bid.Ext, &bidExt); err != nil {
+		if err := jsonutil.Unmarshal(bid.Ext, &bidExt); err != nil {
 			return nil
 		}
 	}

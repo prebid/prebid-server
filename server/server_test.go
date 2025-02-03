@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/v2/config"
-	metricsconfig "github.com/prebid/prebid-server/v2/metrics/config"
+	"github.com/prebid/prebid-server/v3/config"
+	metricsconfig "github.com/prebid/prebid-server/v3/metrics/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

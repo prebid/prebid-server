@@ -1,5 +1,6 @@
 {
   "mockBidRequest": {
+    "cur": ["USD"],
     "id": "some-request-id",
     "site": {
       "page": "http://tester.go.sonobi.com",
@@ -48,6 +49,7 @@
         },
         "uri": "https://apex.go.sonobi.com/prebid?partnerid=71d9d3d8af",
         "body": {
+          "cur": ["USD"],
           "id": "some-request-id",
           "imp": [
             {

@@ -9,11 +9,12 @@ import (
 	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/macros"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 const DefaultClient = "app"
@@ -121,7 +122,7 @@ func (ads *AdopplerAdapter) MakeBids(
 	}
 
 	var bidResp openrtb2.BidResponse
-	err := json.Unmarshal(resp.Body, &bidResp)
+	err := jsonutil.Unmarshal(resp.Body, &bidResp)
 	if err != nil {
 		err := &errortypes.BadServerResponse{
 			Message: fmt.Sprintf("invalid body: %s", err.Error()),
@@ -206,13 +207,13 @@ func (ads *AdopplerAdapter) bidUri(ext *openrtb_ext.ExtImpAdoppler) (string, err
 
 func unmarshalExt(ext json.RawMessage) (*openrtb_ext.ExtImpAdoppler, error) {
 	var bext adapters.ExtImpBidder
-	err := json.Unmarshal(ext, &bext)
+	err := jsonutil.Unmarshal(ext, &bext)
 	if err != nil {
 		return nil, err
 	}
 
 	var adsExt openrtb_ext.ExtImpAdoppler
-	err = json.Unmarshal(bext.Bidder, &adsExt)
+	err = jsonutil.Unmarshal(bext.Bidder, &adsExt)
 	if err != nil {
 		return nil, err
 	}
@@ -228,7 +229,7 @@ func unmarshalAdsExt(ext json.RawMessage) (*adsImpExt, error) {
 	var e struct {
 		Ads *adsImpExt `json:"ads"`
 	}
-	err := json.Unmarshal(ext, &e)
+	err := jsonutil.Unmarshal(ext, &e)
 
 	return e.Ads, err
 }

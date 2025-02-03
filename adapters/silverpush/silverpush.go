@@ -6,11 +6,12 @@ import (
 	"net/http"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 )
 
 const (
@@ -118,11 +119,11 @@ func setUser(req *openrtb2.BidRequest) error {
 	var userExtRaw map[string]json.RawMessage
 
 	if req.User != nil && req.User.Ext != nil {
-		if err := json.Unmarshal(req.User.Ext, &userExtRaw); err != nil {
+		if err := jsonutil.Unmarshal(req.User.Ext, &userExtRaw); err != nil {
 			return &errortypes.BadInput{Message: "Invalid user.ext."}
 		}
 		if userExtDataRaw, ok := userExtRaw["data"]; ok {
-			if err := json.Unmarshal(userExtDataRaw, &extUser); err != nil {
+			if err := jsonutil.Unmarshal(userExtDataRaw, &extUser); err != nil {
 				return &errortypes.BadInput{Message: "Invalid user.ext.data."}
 			}
 			var userCopy = *req.User
@@ -217,13 +218,13 @@ func setBannerDimension(banner *openrtb2.Banner) (*openrtb2.Banner, error) {
 
 func setPublisherId(req *openrtb2.BidRequest, imp *openrtb2.Imp, impExt *openrtb_ext.ImpExtSilverpush) error {
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
 
-	if err := json.Unmarshal(bidderExt.Bidder, impExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, impExt); err != nil {
 		return &errortypes.BadInput{
 			Message: err.Error(),
 		}
@@ -283,7 +284,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 
 	var bidResp openrtb2.BidResponse
 
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 

@@ -39,11 +39,15 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderAdprime,
 	BidderAdquery,
 	BidderAdrino,
+	BidderAdsInteractive,
 	BidderAdsinteractive,
 	BidderAdtarget,
 	BidderAdtrgtme,
 	BidderAdtelligent,
+	BidderAdTonos,
+	BidderAdUpTech,
 	BidderAdvangelists,
+	BidderAdverxo,
 	BidderAdView,
 	BidderAdxcg,
 	BidderAdyoulike,
@@ -67,6 +71,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderBetween,
 	BidderBeyondMedia,
 	BidderBidmachine,
+	BidderBidmatic,
 	BidderBidmyadz,
 	BidderBidsCube,
 	BidderBidstack,
@@ -86,9 +91,11 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderColossus,
 	BidderCompass,
 	BidderConcert,
+	BidderConnatix,
 	BidderConnectAd,
 	BidderConsumable,
 	BidderConversant,
+	BidderCopper6ssp,
 	BidderCpmstar,
 	BidderCriteo,
 	BidderCWire,
@@ -106,7 +113,9 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderEmxDigital,
 	BidderEPlanning,
 	BidderEpom,
+	BidderEscalax,
 	BidderEVolution,
+	BidderFeedAd,
 	BidderFlipp,
 	BidderFreewheelSSP,
 	BidderFRVRAdNetwork,
@@ -122,7 +131,9 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderImprovedigital,
 	BidderInfyTV,
 	BidderInMobi,
+	BidderInsticator,
 	BidderInteractiveoffers,
+	BidderIntertech,
 	BidderInvibes,
 	BidderIQX,
 	BidderIQZone,
@@ -133,7 +144,9 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderKidoz,
 	BidderKiviads,
 	BidderLmKiviads,
+	BidderKobler,
 	BidderKrushmedia,
+	BidderKueezRTB,
 	BidderLemmadigital,
 	BidderLimelightDigital,
 	BidderLockerDome,
@@ -147,19 +160,25 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderMediafuse,
 	BidderMediaGo,
 	BidderMedianet,
+	BidderMeloZen,
+	BidderMetaX,
 	BidderMgid,
 	BidderMgidX,
 	BidderMinuteMedia,
+	BidderMissena,
 	BidderMobfoxpb,
 	BidderMobileFuse,
 	BidderMotorik,
+	BidderNativo,
 	BidderNextMillennium,
 	BidderNoBid,
+	BidderOgury,
 	BidderOms,
 	BidderOneTag,
 	BidderOpenWeb,
 	BidderOpenx,
 	BidderOperaads,
+	BidderOraki,
 	BidderOrbidder,
 	BidderOutbrain,
 	BidderOwnAdx,
@@ -171,8 +190,10 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderPubnative,
 	BidderPulsepoint,
 	BidderPWBid,
+	BidderQT,
 	BidderReadpeak,
 	BidderRelevantDigital,
+	BidderResetDigital,
 	BidderRevcontent,
 	BidderRichaudience,
 	BidderRise,
@@ -203,7 +224,9 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderTeads,
 	BidderTelaria,
 	BidderTheadx,
+	BidderTheTradeDesk,
 	BidderTpmn,
+	BidderTradPlus,
 	BidderTrafficGate,
 	BidderTriplelift,
 	BidderTripleliftNative,
@@ -265,7 +288,8 @@ const (
 	BidderReservedPrebid  BidderName = "prebid"  // Reserved for Prebid Server configuration.
 	BidderReservedSKAdN   BidderName = "skadn"   // Reserved for Apple's SKAdNetwork OpenRTB extension.
 	BidderReservedTID     BidderName = "tid"     // Reserved for Per-Impression Transactions IDs for Multi-Impression Bid Requests.
-	BidderReservedAE      BidderName = "ae"      // Reserved for FLEDGE Auction Environment
+	BidderReservedAE      BidderName = "ae"      // Reserved for PAAPI Auction Environment.
+	BidderReservedIGS     BidderName = "igs"     // Reserved for PAAPI Interest Group Seller object.
 )
 
 // IsBidderNameReserved returns true if the specified name is a case insensitive match for a reserved bidder name.
@@ -306,10 +330,14 @@ func IsBidderNameReserved(name string) bool {
 		return true
 	}
 
+	if strings.EqualFold(name, string(BidderReservedIGS)) {
+		return true
+	}
+
 	return false
 }
 
-// IsPotentialBidder returns true if the name is not reserved witbin the imp[].ext context
+// IsPotentialBidder returns true if the name is not reserved within the imp[].ext context
 func IsPotentialBidder(name string) bool {
 	switch BidderName(name) {
 	case BidderReservedContext:
@@ -325,6 +353,8 @@ func IsPotentialBidder(name string) bool {
 	case BidderReservedTID:
 		return false
 	case BidderReservedAE:
+		return false
+	case BidderReservedIGS:
 		return false
 	default:
 		return true
@@ -358,11 +388,15 @@ const (
 	BidderAdprime           BidderName = "adprime"
 	BidderAdquery           BidderName = "adquery"
 	BidderAdrino            BidderName = "adrino"
+	BidderAdsInteractive    BidderName = "ads_interactive"
 	BidderAdsinteractive    BidderName = "adsinteractive"
 	BidderAdtarget          BidderName = "adtarget"
 	BidderAdtrgtme          BidderName = "adtrgtme"
+	BidderAdTonos           BidderName = "adtonos"
 	BidderAdtelligent       BidderName = "adtelligent"
+	BidderAdUpTech          BidderName = "aduptech"
 	BidderAdvangelists      BidderName = "advangelists"
+	BidderAdverxo           BidderName = "adverxo"
 	BidderAdView            BidderName = "adview"
 	BidderAdxcg             BidderName = "adxcg"
 	BidderAdyoulike         BidderName = "adyoulike"
@@ -386,6 +420,7 @@ const (
 	BidderBetween           BidderName = "between"
 	BidderBeyondMedia       BidderName = "beyondmedia"
 	BidderBidmachine        BidderName = "bidmachine"
+	BidderBidmatic          BidderName = "bidmatic"
 	BidderBidmyadz          BidderName = "bidmyadz"
 	BidderBidsCube          BidderName = "bidscube"
 	BidderBidstack          BidderName = "bidstack"
@@ -405,9 +440,11 @@ const (
 	BidderColossus          BidderName = "colossus"
 	BidderCompass           BidderName = "compass"
 	BidderConcert           BidderName = "concert"
+	BidderConnatix          BidderName = "connatix"
 	BidderConnectAd         BidderName = "connectad"
 	BidderConsumable        BidderName = "consumable"
 	BidderConversant        BidderName = "conversant"
+	BidderCopper6ssp        BidderName = "copper6ssp"
 	BidderCpmstar           BidderName = "cpmstar"
 	BidderCriteo            BidderName = "criteo"
 	BidderCWire             BidderName = "cwire"
@@ -425,7 +462,9 @@ const (
 	BidderEmxDigital        BidderName = "emx_digital"
 	BidderEPlanning         BidderName = "eplanning"
 	BidderEpom              BidderName = "epom"
+	BidderEscalax           BidderName = "escalax"
 	BidderEVolution         BidderName = "e_volution"
+	BidderFeedAd            BidderName = "feedad"
 	BidderFlipp             BidderName = "flipp"
 	BidderFreewheelSSP      BidderName = "freewheelssp"
 	BidderFRVRAdNetwork     BidderName = "frvradn"
@@ -441,7 +480,9 @@ const (
 	BidderImprovedigital    BidderName = "improvedigital"
 	BidderInfyTV            BidderName = "infytv"
 	BidderInMobi            BidderName = "inmobi"
+	BidderInsticator        BidderName = "insticator"
 	BidderInteractiveoffers BidderName = "interactiveoffers"
+	BidderIntertech         BidderName = "intertech"
 	BidderInvibes           BidderName = "invibes"
 	BidderIQX               BidderName = "iqx"
 	BidderIQZone            BidderName = "iqzone"
@@ -452,7 +493,9 @@ const (
 	BidderKidoz             BidderName = "kidoz"
 	BidderKiviads           BidderName = "kiviads"
 	BidderLmKiviads         BidderName = "lm_kiviads"
+	BidderKobler            BidderName = "kobler"
 	BidderKrushmedia        BidderName = "krushmedia"
+	BidderKueezRTB          BidderName = "kueezrtb"
 	BidderLemmadigital      BidderName = "lemmadigital"
 	BidderLimelightDigital  BidderName = "limelightDigital"
 	BidderLockerDome        BidderName = "lockerdome"
@@ -466,19 +509,25 @@ const (
 	BidderMediafuse         BidderName = "mediafuse"
 	BidderMediaGo           BidderName = "mediago"
 	BidderMedianet          BidderName = "medianet"
+	BidderMeloZen           BidderName = "melozen"
+	BidderMetaX             BidderName = "metax"
 	BidderMgid              BidderName = "mgid"
 	BidderMgidX             BidderName = "mgidX"
 	BidderMinuteMedia       BidderName = "minutemedia"
+	BidderMissena           BidderName = "missena"
 	BidderMobfoxpb          BidderName = "mobfoxpb"
 	BidderMobileFuse        BidderName = "mobilefuse"
 	BidderMotorik           BidderName = "motorik"
+	BidderNativo            BidderName = "nativo"
 	BidderNextMillennium    BidderName = "nextmillennium"
 	BidderNoBid             BidderName = "nobid"
+	BidderOgury             BidderName = "ogury"
 	BidderOms               BidderName = "oms"
 	BidderOneTag            BidderName = "onetag"
 	BidderOpenWeb           BidderName = "openweb"
 	BidderOpenx             BidderName = "openx"
 	BidderOperaads          BidderName = "operaads"
+	BidderOraki             BidderName = "oraki"
 	BidderOrbidder          BidderName = "orbidder"
 	BidderOutbrain          BidderName = "outbrain"
 	BidderOwnAdx            BidderName = "ownadx"
@@ -490,8 +539,10 @@ const (
 	BidderPubnative         BidderName = "pubnative"
 	BidderPulsepoint        BidderName = "pulsepoint"
 	BidderPWBid             BidderName = "pwbid"
+	BidderQT                BidderName = "qt"
 	BidderReadpeak          BidderName = "readpeak"
 	BidderRelevantDigital   BidderName = "relevantdigital"
+	BidderResetDigital      BidderName = "resetdigital"
 	BidderRevcontent        BidderName = "revcontent"
 	BidderRichaudience      BidderName = "richaudience"
 	BidderRise              BidderName = "rise"
@@ -522,7 +573,9 @@ const (
 	BidderTeads             BidderName = "teads"
 	BidderTelaria           BidderName = "telaria"
 	BidderTheadx            BidderName = "theadx"
+	BidderTheTradeDesk      BidderName = "thetradedesk"
 	BidderTpmn              BidderName = "tpmn"
+	BidderTradPlus          BidderName = "tradplus"
 	BidderTrafficGate       BidderName = "trafficgate"
 	BidderTriplelift        BidderName = "triplelift"
 	BidderTripleliftNative  BidderName = "triplelift_native"

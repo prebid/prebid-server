@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -39,10 +39,17 @@ func TestValidateImpExt(t *testing.T) {
 			"Unknown bidder tests",
 			[]testCase{
 				{
+					description:    "Unknown Bidder + Empty Prebid Bidder",
+					impExt:         json.RawMessage(`{"prebid":{"bidder":{}}, "unknownbidder":{"placement_id":555}}`),
+					expectedImpExt: `{"prebid":{"bidder":{}}, "unknownbidder":{"placement_id":555}}`,
+					expectedErrs:   []error{errors.New("request.imp[0].ext.prebid.bidder must contain at least one bidder")},
+				},
+				{
 					description:    "Unknown Bidder only",
 					impExt:         json.RawMessage(`{"unknownbidder":{"placement_id":555}}`),
 					expectedImpExt: `{"unknownbidder":{"placement_id":555}}`,
-					expectedErrs:   []error{errors.New("request.imp[0].ext.prebid.bidder contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?")},
+					expectedErrs: []error{&errortypes.Warning{Message: ("request.imp[0].ext contains unknown bidder: 'unknownbidder', ignoring")},
+						errors.New("request.imp[0].ext.prebid.bidder must contain at least one bidder")},
 				},
 				{
 					description:    "Unknown Prebid Ext Bidder only",
@@ -60,19 +67,26 @@ func TestValidateImpExt(t *testing.T) {
 					description:    "Unknown Bidder + First Party Data Context",
 					impExt:         json.RawMessage(`{"unknownbidder":{"placement_id":555} ,"context":{"data":{"keywords":"prebid server example"}}}`),
 					expectedImpExt: `{"unknownbidder":{"placement_id":555},"context":{"data":{"keywords":"prebid server example"}}}`,
-					expectedErrs:   []error{errors.New("request.imp[0].ext.prebid.bidder contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?")},
+					expectedErrs: []error{&errortypes.Warning{Message: ("request.imp[0].ext contains unknown bidder: 'unknownbidder', ignoring")},
+						errors.New("request.imp[0].ext.prebid.bidder must contain at least one bidder"),
+					},
 				},
 				{
 					description:    "Unknown Bidder + Disabled Bidder",
 					impExt:         json.RawMessage(`{"unknownbidder":{"placement_id":555},"disabledbidder":{"foo":"bar"}}`),
 					expectedImpExt: `{"unknownbidder":{"placement_id":555},"disabledbidder":{"foo":"bar"}}`,
-					expectedErrs:   []error{errors.New("request.imp[0].ext.prebid.bidder contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?")},
+					expectedErrs: []error{&errortypes.Warning{Message: ("request.imp[0].ext contains unknown bidder: 'unknownbidder', ignoring")},
+						&errortypes.BidderTemporarilyDisabled{Message: ("The bidder 'disabledbidder' has been disabled.")},
+						errors.New("request.imp[0].ext.prebid.bidder must contain at least one bidder"),
+					},
 				},
 				{
 					description:    "Unknown Bidder + Disabled Prebid Ext Bidder",
 					impExt:         json.RawMessage(`{"unknownbidder":{"placement_id":555},"prebid":{"bidder":{"disabledbidder":{"foo":"bar"}}}}`),
 					expectedImpExt: `{"unknownbidder":{"placement_id":555},"prebid":{"bidder":{"disabledbidder":{"foo":"bar"}}}}`,
-					expectedErrs:   []error{errors.New("request.imp[0].ext.prebid.bidder contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?")},
+					expectedErrs: []error{&errortypes.BidderTemporarilyDisabled{Message: ("The bidder 'disabledbidder' has been disabled.")},
+						errors.New("request.imp[0].ext.prebid.bidder must contain at least one bidder"),
+					},
 				},
 			},
 		},
@@ -141,6 +155,15 @@ func TestValidateImpExt(t *testing.T) {
 					expectedErrs:   []error{},
 				},
 				{
+					// Since prebid.bidder object is present - bidders expected to be within it
+					// So even though appnexus is a valid bidder - it is ignored and considered to be an arbitrary field
+					// If there was no prebid.bidder then appnexus would have been considered a bidder.
+					description:    "Valid bidder root ext + Empty Prebid Bidder",
+					impExt:         json.RawMessage(`{"prebid":{"bidder":{}}, "appnexus":{"placement_id":555}}`),
+					expectedImpExt: `{"prebid":{"bidder":{}}, "appnexus":{"placement_id":555}}`,
+					expectedErrs:   []error{errors.New("request.imp[0].ext.prebid.bidder must contain at least one bidder")},
+				},
+				{
 					description:    "Valid bidder in prebid field",
 					impExt:         json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placement_id":555}}}}`),
 					expectedImpExt: `{"prebid":{"bidder":{"appnexus":{"placement_id":555}}}}`,
@@ -161,8 +184,8 @@ func TestValidateImpExt(t *testing.T) {
 				{
 					description:    "Valid Bidder + Unknown Bidder",
 					impExt:         json.RawMessage(`{"appnexus":{"placement_id":555},"unknownbidder":{"placement_id":555}}`),
-					expectedImpExt: `{"appnexus":{"placement_id":555},"unknownbidder":{"placement_id":555}}`,
-					expectedErrs:   []error{errors.New("request.imp[0].ext.prebid.bidder contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?")},
+					expectedImpExt: `{"prebid":{"bidder":{"appnexus":{"placement_id":555}}}, "unknownbidder":{"placement_id":555}}`,
+					expectedErrs:   []error{&errortypes.Warning{Message: ("request.imp[0].ext contains unknown bidder: 'unknownbidder', ignoring")}},
 				},
 				{
 					description:    "Valid Bidder + Disabled Bidder",
@@ -179,14 +202,22 @@ func TestValidateImpExt(t *testing.T) {
 				{
 					description:    "Valid Bidder + Disabled Bidder + Unknown Bidder + First Party Data Context",
 					impExt:         json.RawMessage(`{"appnexus":{"placement_id":555},"disabledbidder":{"foo":"bar"},"unknownbidder":{"placement_id":555},"context":{"data":{"keywords":"prebid server example"}}}`),
-					expectedImpExt: `{"appnexus":{"placement_id":555},"disabledbidder":{"foo":"bar"},"unknownbidder":{"placement_id":555},"context":{"data":{"keywords":"prebid server example"}}}`,
-					expectedErrs:   []error{errors.New("request.imp[0].ext.prebid.bidder contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?")},
+					expectedImpExt: `{"prebid":{"bidder":{"appnexus":{"placement_id":555}}}, "unknownbidder":{"placement_id":555},"context":{"data":{"keywords":"prebid server example"}}}`,
+					expectedErrs: []error{&errortypes.Warning{Message: ("request.imp[0].ext contains unknown bidder: 'unknownbidder', ignoring")},
+						&errortypes.BidderTemporarilyDisabled{Message: "The bidder 'disabledbidder' has been disabled."},
+					},
 				},
 				{
-					description:    "Valid Prebid Ext Bidder + Disabled Bidder Ext",
+					description:    "Valid Prebid Ext Bidder + Disabled Prebid Bidder Ext",
 					impExt:         json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placement_id":555},"disabledbidder":{"foo":"bar"}}}}`),
 					expectedImpExt: `{"prebid":{"bidder":{"appnexus":{"placement_id": 555}}}}`,
 					expectedErrs:   []error{&errortypes.BidderTemporarilyDisabled{Message: "The bidder 'disabledbidder' has been disabled."}},
+				},
+				{
+					description:    "Valid Prebid Ext Bidder + Arbitrary Key Ext",
+					impExt:         json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placement_id": 555}}},"arbitraryKey":{"placement_id":555}}`),
+					expectedImpExt: `{"prebid":{"bidder":{"appnexus":{"placement_id": 555}}},"arbitraryKey":{"placement_id":555}}`,
+					expectedErrs:   []error{},
 				},
 				{
 					description:    "Valid Prebid Ext Bidder + Disabled Ext Bidder + First Party Data Context",
@@ -195,7 +226,7 @@ func TestValidateImpExt(t *testing.T) {
 					expectedErrs:   []error{&errortypes.BidderTemporarilyDisabled{Message: "The bidder 'disabledbidder' has been disabled."}},
 				},
 				{
-					description:    "Valid Prebid Ext Bidder + Disabled Ext Bidder + Unknown Ext + First Party Data Context",
+					description:    "Valid Prebid Ext Bidder + Disabled Prebid Ext Bidder + Unknown Prebid Ext + First Party Data Context",
 					impExt:         json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placement_id":555},"disabledbidder":{"foo":"bar"},"unknownbidder":{"placement_id":555}}},"context":{"data":{"keywords":"prebid server example"}}}`),
 					expectedImpExt: `{"prebid":{"bidder":{"appnexus":{"placement_id":555},"disabledbidder":{"foo":"bar"},"unknownbidder":{"placement_id":555}}},"context":{"data":{"keywords":"prebid server example"}}}`,
 					expectedErrs:   []error{errors.New("request.imp[0].ext.prebid.bidder contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?")},
@@ -252,7 +283,7 @@ func TestValidateImpExt(t *testing.T) {
 				} else {
 					assert.Empty(t, imp.Ext, "imp.ext expected to be empty but was: %s. Test: %s. %s\n", string(imp.Ext), group.description, test.description)
 				}
-				assert.Equal(t, test.expectedErrs, errs, "errs slice does not match expected. Test: %s. %s\n", group.description, test.description)
+				assert.ElementsMatch(t, test.expectedErrs, errs, "errs slice does not match expected. Test: %s. %s\n", group.description, test.description)
 			})
 		}
 	}

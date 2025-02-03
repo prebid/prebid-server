@@ -6,10 +6,11 @@ import (
 	"net/http"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 const unexpectedStatusCodeMessage = "Unexpected status code: %d. Run with request.debug = 1 for more info"
@@ -43,7 +44,7 @@ func (adapter *LockerDomeAdapter) MakeRequests(openRTBRequest *openrtb2.BidReque
 			continue
 		}
 		var bidderExt adapters.ExtImpBidder
-		err := json.Unmarshal(openRTBRequest.Imp[i].Ext, &bidderExt)
+		err := jsonutil.Unmarshal(openRTBRequest.Imp[i].Ext, &bidderExt)
 		if err != nil { // lockerdometest/supplemental/no_ext.json
 			err = &errortypes.BadInput{
 				Message: "ext was not provided.",
@@ -52,7 +53,7 @@ func (adapter *LockerDomeAdapter) MakeRequests(openRTBRequest *openrtb2.BidReque
 			continue
 		}
 		var lockerdomeExt openrtb_ext.ExtImpLockerDome
-		err = json.Unmarshal(bidderExt.Bidder, &lockerdomeExt)
+		err = jsonutil.Unmarshal(bidderExt.Bidder, &lockerdomeExt)
 		if err != nil { // lockerdometest/supplemental/no_adUnitId_param.json
 			err = &errortypes.BadInput{
 				Message: "ext.bidder.adUnitId was not provided.",
@@ -129,7 +130,7 @@ func (adapter *LockerDomeAdapter) MakeBids(openRTBRequest *openrtb2.BidRequest, 
 	}
 
 	var openRTBBidderResponse openrtb2.BidResponse
-	if err := json.Unmarshal(bidderRawResponse.Body, &openRTBBidderResponse); err != nil {
+	if err := jsonutil.Unmarshal(bidderRawResponse.Body, &openRTBBidderResponse); err != nil {
 		return nil, []error{
 			fmt.Errorf("Error unmarshaling LockerDome bid response - %s", err.Error()),
 		}

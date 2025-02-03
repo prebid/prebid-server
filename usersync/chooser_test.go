@@ -4,13 +4,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"github.com/prebid/prebid-server/v2/macros"
+	"github.com/prebid/prebid-server/v3/macros"
 )
 
 func TestNewChooser(t *testing.T) {
@@ -153,7 +153,7 @@ func TestChooserChoose(t *testing.T) {
 			bidderNamesLookup:  normalizedBidderNamesLookup,
 			expected: Result{
 				Status:           StatusOK,
-				BiddersEvaluated: []BidderEvaluation{{Bidder: "c", SyncerKey: "keyC", Status: StatusTypeNotSupported}},
+				BiddersEvaluated: []BidderEvaluation{{Bidder: "c", SyncerKey: "keyC", Status: StatusRejectedByFilter}},
 				SyncersChosen:    []SyncerChoice{},
 			},
 		},
@@ -228,7 +228,7 @@ func TestChooserChoose(t *testing.T) {
 			bidderNamesLookup:  normalizedBidderNamesLookup,
 			expected: Result{
 				Status:           StatusOK,
-				BiddersEvaluated: []BidderEvaluation{{Bidder: "c", SyncerKey: "keyC", Status: StatusTypeNotSupported}, {Bidder: "a", SyncerKey: "keyA", Status: StatusOK}},
+				BiddersEvaluated: []BidderEvaluation{{Bidder: "c", SyncerKey: "keyC", Status: StatusRejectedByFilter}, {Bidder: "a", SyncerKey: "keyA", Status: StatusOK}},
 				SyncersChosen:    []SyncerChoice{syncerChoiceA},
 			},
 		},
@@ -243,7 +243,7 @@ func TestChooserChoose(t *testing.T) {
 			bidderNamesLookup:  normalizedBidderNamesLookup,
 			expected: Result{
 				Status:           StatusOK,
-				BiddersEvaluated: []BidderEvaluation{{Bidder: "a", SyncerKey: "keyA", Status: StatusOK}, {Bidder: "c", SyncerKey: "keyC", Status: StatusTypeNotSupported}},
+				BiddersEvaluated: []BidderEvaluation{{Bidder: "a", SyncerKey: "keyA", Status: StatusOK}, {Bidder: "c", SyncerKey: "keyC", Status: StatusRejectedByFilter}},
 				SyncersChosen:    []SyncerChoice{syncerChoiceA},
 			},
 		},
@@ -531,7 +531,7 @@ func TestChooserEvaluate(t *testing.T) {
 			givenSyncTypeFilter:         syncTypeFilter,
 			normalizedBidderNamesLookup: normalizedBidderNamesLookup,
 			expectedSyncer:              nil,
-			expectedEvaluation:          BidderEvaluation{Bidder: "b", SyncerKey: "keyB", Status: StatusTypeNotSupported},
+			expectedEvaluation:          BidderEvaluation{Bidder: "b", SyncerKey: "keyB", Status: StatusRejectedByFilter},
 		},
 		{
 			description:                 "Already Synced",

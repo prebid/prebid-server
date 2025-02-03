@@ -6,7 +6,7 @@ import (
 	"github.com/prebid/go-gdpr/api"
 	"github.com/prebid/go-gdpr/consentconstants"
 	tcf2 "github.com/prebid/go-gdpr/vendorconsent/tcf2"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 const noBidder openrtb_ext.BidderName = ""
@@ -56,33 +56,36 @@ func (p *permissionsImpl) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 }
 
 // AuctionActivitiesAllowed determines whether auction activities are permitted for a given bidder
-func (p *permissionsImpl) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (permissions AuctionPermissions, err error) {
+func (p *permissionsImpl) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) AuctionPermissions {
 	if _, ok := p.nonStandardPublishers[p.publisherID]; ok {
-		return AllowAll, nil
+		return AllowAll
 	}
+
 	if p.gdprSignal != SignalYes {
-		return AllowAll, nil
+		return AllowAll
 	}
+
 	if p.consent == "" {
-		return p.defaultPermissions(), nil
+		return p.defaultPermissions()
 	}
+
 	pc, err := parseConsent(p.consent)
 	if err != nil {
-		return p.defaultPermissions(), err
+		return p.defaultPermissions()
 	}
+
 	vendorID, _ := p.resolveVendorID(bidderCoreName, bidder)
 	vendor, err := p.getVendor(ctx, vendorID, *pc)
 	if err != nil {
-		return p.defaultPermissions(), err
+		return p.defaultPermissions()
 	}
+
 	vendorInfo := VendorInfo{vendorID: vendorID, vendor: vendor}
-
-	permissions = AuctionPermissions{}
-	permissions.AllowBidRequest = p.allowBidRequest(bidderCoreName, pc.consentMeta, vendorInfo)
-	permissions.PassGeo = p.allowGeo(bidderCoreName, pc.consentMeta, vendor)
-	permissions.PassID = p.allowID(bidderCoreName, pc.consentMeta, vendorInfo)
-
-	return permissions, nil
+	return AuctionPermissions{
+		AllowBidRequest: p.allowBidRequest(bidderCoreName, pc.consentMeta, vendorInfo),
+		PassGeo:         p.allowGeo(bidderCoreName, pc.consentMeta, vendor),
+		PassID:          p.allowID(bidderCoreName, pc.consentMeta, vendorInfo),
+	}
 }
 
 // defaultPermissions returns a permissions object that denies passing user IDs while
@@ -222,6 +225,6 @@ func (a AlwaysAllow) HostCookiesAllowed(ctx context.Context) (bool, error) {
 func (a AlwaysAllow) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName) (bool, error) {
 	return true, nil
 }
-func (a AlwaysAllow) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (permissions AuctionPermissions, err error) {
-	return AllowAll, nil
+func (a AlwaysAllow) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) AuctionPermissions {
+	return AllowAll
 }

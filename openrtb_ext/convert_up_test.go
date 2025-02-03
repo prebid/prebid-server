@@ -417,12 +417,12 @@ func TestMoveRewardedFromPrebidExtTo26(t *testing.T) {
 		{
 			description: "Not Present - Null Prebid Ext",
 			givenImp:    openrtb2.Imp{Ext: json.RawMessage(`{"prebid":null}`)},
-			expectedImp: openrtb2.Imp{}, // empty prebid object pruned by RebuildImp
+			expectedImp: openrtb2.Imp{Ext: json.RawMessage(`{"prebid":null}`)},
 		},
 		{
 			description: "Not Present - Empty Prebid Ext",
 			givenImp:    openrtb2.Imp{Ext: json.RawMessage(`{"prebid":{}}`)},
-			expectedImp: openrtb2.Imp{}, // empty prebid object pruned by RebuildImp
+			expectedImp: openrtb2.Imp{Ext: json.RawMessage(`{"prebid":{}}`)},
 		},
 		{
 			description: "Prebid Ext Migrated To 2.6",

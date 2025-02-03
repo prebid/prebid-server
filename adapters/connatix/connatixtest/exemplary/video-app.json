@@ -1,0 +1,157 @@
+{
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "device": {
+      "ua": "test-user-agent",
+      "ip": "123.123.123.123",
+      "language": "en",
+      "dnt": 0
+    },
+    "tmax": 1000,
+    "user": {
+      "buyeruid": "some-user"
+    },
+    "app": {
+      "publisher": {
+        "id": "123456789"
+      },
+      "cat": [
+        "IAB22-1"
+      ],
+      "bundle": "com.app.awesome",
+      "name": "Awesome App",
+      "domain": "awesomeapp.com",
+      "id": "123456789"
+    },
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "tagid": "some-tag-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 640,
+          "h": 480,
+          "minduration": 120,
+          "maxduration": 150
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "some-placement-id"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://example.com",
+        "body": {
+          "id": "some-request-id",
+          "device": {
+            "ua": "test-user-agent",
+            "ip": "123.123.123.123",
+            "language": "en",
+            "dnt": 0
+          },
+          "imp": [
+            {
+              "id": "some-impression-id",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "minduration": 120,
+                "maxduration": 150,
+                "w": 640,
+                "h": 480
+              },
+              "tagid": "some-tag-id",
+              "ext": {
+                "connatix": {
+                  "placementId": "some-placement-id"
+                }
+              }
+            }
+          ],
+          "app": {
+            "id": "123456789",
+            "name": "Awesome App",
+            "bundle": "com.app.awesome",
+            "domain": "awesomeapp.com",
+            "cat": [
+              "IAB22-1"
+            ],
+            "publisher": {
+              "id": "123456789"
+            }
+          },
+          "user": {
+            "buyeruid": "some-user"
+          },
+          "tmax": 1000
+        },
+        "impIDs":["some-impression-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "some-response-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "b3ae1b4e2fc24a4fb45540082e98e161",
+                  "impid": "some-impression-id",
+                  "price": 3.1,
+                  "adm": "some-test-vast-ad",
+                  "adomain": [
+                    "awesome.com"
+                  ],
+                  "crid": "112233",
+                  "w": 1280,
+                  "h": 720,
+                  "ext": {
+                    "connatix": {
+                      "mediaType": "video"
+                    }
+                  }
+                }
+              ],
+              "seat": "connatix"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids":[
+        {
+          "bid":  {
+            "id": "b3ae1b4e2fc24a4fb45540082e98e161",
+            "impid": "some-impression-id",
+            "price": 3.1,
+            "adm": "some-test-vast-ad",
+            "crid": "112233",
+            "adomain": [
+              "awesome.com"
+            ],
+            "w": 1280,
+            "h": 720,
+            "ext": {
+              "connatix": {
+                "mediaType": "video"
+              }
+            }
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

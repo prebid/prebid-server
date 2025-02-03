@@ -7,16 +7,16 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 var invalidEnabledOnlyMsg = []byte(`Invalid value for 'enabledonly' query param, must be of boolean type`)
 var invalidBaseAdaptersOnlyMsg = []byte(`Invalid value for 'baseadaptersonly' query param, must be of boolean type`)
 
 // NewBiddersEndpoint builds a handler for the /info/bidders endpoint.
-func NewBiddersEndpoint(bidders config.BidderInfos, aliases map[string]string) httprouter.Handle {
-	responseAll, err := prepareBiddersResponseAll(bidders, aliases)
+func NewBiddersEndpoint(bidders config.BidderInfos) httprouter.Handle {
+	responseAll, err := prepareBiddersResponseAll(bidders)
 	if err != nil {
 		glog.Fatalf("error creating /info/bidders endpoint all bidders response: %v", err)
 	}
@@ -26,7 +26,7 @@ func NewBiddersEndpoint(bidders config.BidderInfos, aliases map[string]string) h
 		glog.Fatalf("error creating /info/bidders endpoint all bidders (base adapters only) response: %v", err)
 	}
 
-	responseEnabledOnly, err := prepareBiddersResponseEnabledOnly(bidders, aliases)
+	responseEnabledOnly, err := prepareBiddersResponseEnabledOnly(bidders)
 	if err != nil {
 		glog.Fatalf("error creating /info/bidders endpoint enabled only response: %v", err)
 	}
@@ -76,7 +76,6 @@ func readQueryFlag(r *http.Request, queryParam string) (flag, ok bool) {
 	q := r.URL.Query()
 
 	v, exists := q[queryParam]
-
 	if !exists || len(v) == 0 {
 		return false, true
 	}
@@ -91,64 +90,39 @@ func readQueryFlag(r *http.Request, queryParam string) (flag, ok bool) {
 	}
 }
 
-func prepareBiddersResponseAll(bidders config.BidderInfos, aliases map[string]string) ([]byte, error) {
-	bidderNames := make([]string, 0, len(bidders)+len(aliases))
+type bidderPredicate func(config.BidderInfo) bool
 
-	for name := range bidders {
-		bidderNames = append(bidderNames, name)
-	}
+func prepareResponse(bidders config.BidderInfos, p bidderPredicate) ([]byte, error) {
+	bidderNames := make([]string, 0, len(bidders))
 
-	for name := range aliases {
-		bidderNames = append(bidderNames, name)
+	for name, info := range bidders {
+		if p(info) {
+			bidderNames = append(bidderNames, name)
+		}
 	}
 
 	sort.Strings(bidderNames)
 	return jsonutil.Marshal(bidderNames)
+}
+
+func prepareBiddersResponseAll(bidders config.BidderInfos) ([]byte, error) {
+	filterNone := func(_ config.BidderInfo) bool { return true }
+	return prepareResponse(bidders, filterNone)
 }
 
 func prepareBiddersResponseAllBaseOnly(bidders config.BidderInfos) ([]byte, error) {
-	bidderNames := make([]string, 0, len(bidders))
-
-	for name, info := range bidders {
-		if len(info.AliasOf) == 0 {
-			bidderNames = append(bidderNames, name)
-		}
-	}
-
-	sort.Strings(bidderNames)
-	return jsonutil.Marshal(bidderNames)
+	filterBaseOnly := func(info config.BidderInfo) bool { return len(info.AliasOf) == 0 }
+	return prepareResponse(bidders, filterBaseOnly)
 }
 
-func prepareBiddersResponseEnabledOnly(bidders config.BidderInfos, aliases map[string]string) ([]byte, error) {
-	bidderNames := make([]string, 0, len(bidders)+len(aliases))
-
-	for name, info := range bidders {
-		if info.IsEnabled() {
-			bidderNames = append(bidderNames, name)
-		}
-	}
-
-	for name, bidder := range aliases {
-		if info, ok := bidders[bidder]; ok && info.IsEnabled() {
-			bidderNames = append(bidderNames, name)
-		}
-	}
-
-	sort.Strings(bidderNames)
-	return jsonutil.Marshal(bidderNames)
+func prepareBiddersResponseEnabledOnly(bidders config.BidderInfos) ([]byte, error) {
+	filterEnabledOnly := func(info config.BidderInfo) bool { return info.IsEnabled() }
+	return prepareResponse(bidders, filterEnabledOnly)
 }
 
 func prepareBiddersResponseEnabledOnlyBaseOnly(bidders config.BidderInfos) ([]byte, error) {
-	bidderNames := make([]string, 0, len(bidders))
-
-	for name, info := range bidders {
-		if info.IsEnabled() && len(info.AliasOf) == 0 {
-			bidderNames = append(bidderNames, name)
-		}
-	}
-
-	sort.Strings(bidderNames)
-	return jsonutil.Marshal(bidderNames)
+	filterEnabledOnlyBaseOnly := func(info config.BidderInfo) bool { return info.IsEnabled() && len(info.AliasOf) == 0 }
+	return prepareResponse(bidders, filterEnabledOnlyBaseOnly)
 }
 
 func writeBadRequest(w http.ResponseWriter, data []byte) {

@@ -1,0 +1,116 @@
+{
+  "mockBidRequest": {
+    "id": "request_id",
+    "imp": [
+      {
+        "id": "imp_id",
+        "banner": {
+          "w": 300,
+          "h": 600
+        },
+        "ext": {
+          "bidder": {
+            "adUnitId": 520,
+            "auth": "tokenExample1"
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "www.example.com",
+      "page": "http://www.example.com"
+    },
+    "cur": [
+      "USD"
+    ],
+    "device": {
+      "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36",
+      "ip": "127.0.0.1",
+      "language": "EN"
+    },
+    "tmax": 500
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://example.com/auction?id=520&auth=tokenExample1",
+        "body": {
+          "id": "request_id",
+          "imp": [
+            {
+              "id": "imp_id",
+              "banner": {
+                "w": 300,
+                "h": 600
+              },
+              "ext": {
+                "bidder": {
+                  "adUnitId": 520,
+                  "auth": "tokenExample1"
+                }
+              }
+            }
+          ],
+          "site": {
+            "domain": "www.example.com",
+            "page": "http://www.example.com"
+          },
+          "cur": [
+            "USD"
+          ],
+          "device": {
+            "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36",
+            "ip": "127.0.0.1",
+            "language": "EN"
+          },
+          "tmax": 500
+        },
+        "impIDs":["imp_id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "headers": {},
+        "body": {
+          "id": "request_id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid_id",
+                  "impid": "imp_id",
+                  "price": 1.25,
+                  "crid": "crid",
+                  "adm": "<html>content prc=${AUCTION_PRICE}</html>",
+                  "h": 600,
+                  "w": 300,
+                  "mtype": 1
+                }
+              ]
+            }
+          ],
+          "bidid": "bid_id",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "bid_id",
+            "impid": "imp_id",
+            "price": 1.25,
+            "adm": "<html>content prc=1.25</html>",
+            "crid": "crid",
+            "w": 300,
+            "h": 600,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

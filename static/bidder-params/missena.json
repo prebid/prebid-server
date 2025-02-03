@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Missena Adapter Params",
+  "description": "A schema which validates params accepted by the Missena adapter",
+  "type": "object",
+  "properties": {
+    "apiKey": {
+      "type": "string",
+      "description": "API Key",
+      "minLength": 1
+    },
+    "placement": {
+      "type": "string",
+      "description": "Placement Type (Sticky, Header, ...)"
+    },
+    "test": {
+      "type": "string",
+      "description": "Test Mode"
+    }
+  },
+  "required": [
+    "apiKey"
+  ]
+}

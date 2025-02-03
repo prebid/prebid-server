@@ -13,23 +13,28 @@ import (
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/go-gdpr/vendorconsent"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/uuidutil"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/uuidutil"
 )
 
 const (
-	bannerType      = "banner"
-	inlineDivName   = "inline"
-	flippBidder     = "flipp"
-	defaultCurrency = "USD"
+	bannerType                  = "banner"
+	inlineDivName               = "inline"
+	flippBidder                 = "flipp"
+	defaultCurrency             = "USD"
+	defaultStandardHeight int64 = 2400
+	defaultCompactHeight  int64 = 600
 )
 
 var (
-	count    int64 = 1
-	adTypes        = []int64{4309, 641}
-	dtxTypes       = []int64{5061}
+	count          int64 = 1
+	adTypes              = []int64{4309, 641}
+	dtxTypes             = []int64{5061}
+	flippExtParams openrtb_ext.ImpExtFlipp
+	customDataKey  string
 )
 
 type adapter struct {
@@ -94,7 +99,7 @@ func (a *adapter) processImp(request *openrtb2.BidRequest, imp openrtb2.Imp) (*a
 	if err != nil {
 		return nil, fmt.Errorf("flipp params not found. %v", err)
 	}
-	err = json.Unmarshal(params, &flippExtParams)
+	err = jsonutil.Unmarshal(params, &flippExtParams)
 	if err != nil {
 		return nil, fmt.Errorf("unable to extract flipp params. %v", err)
 	}
@@ -191,17 +196,25 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	var campaignResponseBody CampaignResponseBody
-	if err := json.Unmarshal(responseData.Body, &campaignResponseBody); err != nil {
+	if err := jsonutil.Unmarshal(responseData.Body, &campaignResponseBody); err != nil {
 		return nil, []error{err}
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
 	bidResponse.Currency = defaultCurrency
 	for _, imp := range request.Imp {
+		params, _, _, err := jsonparser.Get(imp.Ext, "bidder")
+		if err != nil {
+			return nil, []error{fmt.Errorf("flipp params not found. %v", err)}
+		}
+		err = jsonutil.Unmarshal(params, &flippExtParams)
+		if err != nil {
+			return nil, []error{fmt.Errorf("unable to extract flipp params. %v", err)}
+		}
 		for _, decision := range campaignResponseBody.Decisions.Inline {
 			if *decision.Prebid.RequestID == imp.ID {
 				b := &adapters.TypedBid{
-					Bid:     buildBid(decision, imp.ID),
+					Bid:     buildBid(decision, imp.ID, flippExtParams),
 					BidType: openrtb_ext.BidType(bannerType),
 				}
 				bidResponse.Bids = append(bidResponse.Bids, b)
@@ -218,7 +231,7 @@ func getAdTypes(creativeType string) []int64 {
 	return adTypes
 }
 
-func buildBid(decision *InlineModel, impId string) *openrtb2.Bid {
+func buildBid(decision *InlineModel, impId string, flippExtParams openrtb_ext.ImpExtFlipp) *openrtb2.Bid {
 	bid := &openrtb2.Bid{
 		CrID:  fmt.Sprint(decision.CreativeID),
 		Price: *decision.Prebid.Cpm,
@@ -230,7 +243,27 @@ func buildBid(decision *InlineModel, impId string) *openrtb2.Bid {
 		if decision.Contents[0].Data.Width != 0 {
 			bid.W = decision.Contents[0].Data.Width
 		}
-		bid.H = 0
+
+		if flippExtParams.Options.StartCompact {
+			bid.H = defaultCompactHeight
+		} else {
+			bid.H = defaultStandardHeight
+		}
+
+		if customDataInterface := decision.Contents[0].Data.CustomData; customDataInterface != nil {
+			if customDataMap, ok := customDataInterface.(map[string]interface{}); ok {
+				customDataKey := "standardHeight"
+				if flippExtParams.Options.StartCompact {
+					customDataKey = "compactHeight"
+				}
+
+				if value, exists := customDataMap[customDataKey]; exists {
+					if floatVal, ok := value.(float64); ok {
+						bid.H = int64(floatVal)
+					}
+				}
+			}
+		}
 	}
 	return bid
 }
@@ -248,7 +281,7 @@ func paramsUserKeyPermitted(request *openrtb2.BidRequest) bool {
 		var extData struct {
 			TransmitEids *bool `json:"transmitEids,omitempty"`
 		}
-		if err := json.Unmarshal(request.Ext, &extData); err == nil {
+		if err := jsonutil.Unmarshal(request.Ext, &extData); err == nil {
 			if extData.TransmitEids != nil && !*extData.TransmitEids {
 				return false
 			}

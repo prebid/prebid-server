@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/prebid/prebid-server/v2/util/task"
+	"github.com/prebid/prebid-server/v3/util/task"
 )
 
 // ConfigUpdateTask publishes configurations until the stop channel is signaled.

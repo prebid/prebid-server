@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 )
@@ -41,7 +42,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		requests := []*adapters.RequestData{
 			{
 				Method:  "POST",
-				Uri:     "https://e.serverbid.com/sb/rtb",
+				Uri:     a.endpoint + "/sb/rtb",
 				Body:    bodyBytes,
 				Headers: headers,
 				ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
@@ -63,7 +64,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		requests := []*adapters.RequestData{
 			{
 				Method:  "POST",
-				Uri:     "https://e.serverbid.com/rtb/bid?s=" + consumableExt.PlacementId,
+				Uri:     a.endpoint + "/rtb/bid?s=" + consumableExt.PlacementId,
 				Body:    bodyBytes,
 				Headers: headers,
 				ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
@@ -71,8 +72,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		}
 		return requests, errs
 	}
-
 }
+
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if adapters.IsResponseStatusCodeNoContent(responseData) {
 		return nil, nil
@@ -83,7 +84,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	var response openrtb2.BidResponse
-	if err := json.Unmarshal(responseData.Body, &response); err != nil {
+	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}
 
@@ -144,14 +145,14 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 
 func extractExtensions(impression openrtb2.Imp) (*adapters.ExtImpBidder, *openrtb_ext.ExtImpConsumable, []error) {
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(impression.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(impression.Ext, &bidderExt); err != nil {
 		return nil, nil, []error{&errortypes.BadInput{
 			Message: err.Error(),
 		}}
 	}
 
 	var consumableExt openrtb_ext.ExtImpConsumable
-	if err := json.Unmarshal(bidderExt.Bidder, &consumableExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &consumableExt); err != nil {
 		return nil, nil, []error{&errortypes.BadInput{
 			Message: err.Error(),
 		}}

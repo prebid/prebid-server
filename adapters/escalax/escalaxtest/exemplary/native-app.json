@@ -1,0 +1,151 @@
+{
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "device": {
+      "ua": "test-user-agent",
+      "ip": "123.123.123.123",
+      "language": "en",
+      "dnt": 0
+    },
+    "tmax": 1000,
+    "user": {
+      "buyeruid": "awesome-user"
+    },
+    "app": {
+      "publisher": {
+        "id": "123456789"
+      },
+      "cat": [
+        "IAB22-1"
+      ],
+      "bundle": "com.app.awesome",
+      "name": "Awesome App",
+      "domain": "awesomeapp.com",
+      "id": "123456789"
+    },
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "tagid": "ogTAGID",
+        "native": {
+          "ver": "1.1",
+          "request": "{\"adunit\":2,\"assets\":[{\"id\":3,\"img\":{\"h\":120,\"hmin\":0,\"type\":3,\"w\":180,\"wmin\":0},\"required\":1},{\"id\":0,\"required\":1,\"title\":{\"len\":25}},{\"data\":{\"len\":25,\"type\":1},\"id\":4,\"required\":1},{\"data\":{\"len\":140,\"type\":2},\"id\":6,\"required\":1}],\"context\":1,\"layout\":1,\"contextsubtype\":11,\"plcmtcnt\":1,\"plcmttype\":2,\"ver\":\"1.1\",\"ext\":{\"banner\":{\"w\":320,\"h\":50}}}"
+        },
+        "ext": {
+          "bidder": {
+            "accountId": "accountId",
+            "sourceId": "sourceId"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "X-Openrtb-Version": [
+            "2.5"
+          ],
+          "User-Agent": [
+            "test-user-agent"
+          ],
+          "X-Forwarded-For": [
+            "123.123.123.123"
+          ]
+        },
+        "uri": "http://bidder_us.escalax.io/?partner=sourceId&token=accountId&type=pbs",
+        "body": {
+          "id": "some-request-id",
+          "device": {
+            "ua": "test-user-agent",
+            "ip": "123.123.123.123",
+            "language": "en",
+            "dnt": 0
+          },
+          "imp": [
+            {
+              "id": "some-impression-id",
+              "native": {
+                "ver": "1.1",
+                "request": "{\"adunit\":2,\"assets\":[{\"id\":3,\"img\":{\"h\":120,\"hmin\":0,\"type\":3,\"w\":180,\"wmin\":0},\"required\":1},{\"id\":0,\"required\":1,\"title\":{\"len\":25}},{\"data\":{\"len\":25,\"type\":1},\"id\":4,\"required\":1},{\"data\":{\"len\":140,\"type\":2},\"id\":6,\"required\":1}],\"context\":1,\"layout\":1,\"contextsubtype\":11,\"plcmtcnt\":1,\"plcmttype\":2,\"ver\":\"1.1\",\"ext\":{\"banner\":{\"w\":320,\"h\":50}}}"
+              },
+              "tagid": "ogTAGID"
+            }
+          ],
+          "app": {
+            "id": "123456789",
+            "name": "Awesome App",
+            "bundle": "com.app.awesome",
+            "domain": "awesomeapp.com",
+            "cat": [
+              "IAB22-1"
+            ],
+            "publisher": {
+              "id": "123456789"
+            }
+          },
+          "user": {
+            "buyeruid": "awesome-user"
+          },
+          "tmax": 1000
+        },
+        "impIDs": [
+          "some-impression-id"
+        ]
+      },
+      "mockResponse": {
+      "status": 200,
+        "body": {
+          "id": "awesome-resp-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "a3ae1b4e2fc24a4fb45540082e98e161",
+                  "impid": "some-impression-id",
+                  "price": 3.5,
+                  "adm": "awesome-markup",
+                  "adomain": [
+                    "awesome.com"
+                  ],
+                  "crid": "20",
+                  "mtype": 4
+                }
+              ],
+              "type": "native",
+              "seat": "escalax"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "a3ae1b4e2fc24a4fb45540082e98e161",
+            "impid": "some-impression-id",
+            "price": 3.5,
+            "adm": "awesome-markup",
+            "crid": "20",
+            "adomain": [
+              "awesome.com"
+            ],
+            "mtype": 4
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}
