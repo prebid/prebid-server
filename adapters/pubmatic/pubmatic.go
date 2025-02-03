@@ -34,6 +34,7 @@ type pubmaticBidExt struct {
 	VideoCreativeInfo  *pubmaticBidExtVideo `json:"video,omitempty"`
 	Marketplace        string               `json:"marketplace,omitempty"`
 	PrebidDealPriority int                  `json:"prebiddealpriority,omitempty"`
+	InBannerVideo      bool                 `json:"ibv,omitempty"`
 }
 
 type pubmaticWrapperExt struct {
@@ -461,6 +462,7 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 				bid.Cat = bid.Cat[0:1]
 			}
 
+			MType := getMediaTypeForBid(&bid)
 			typedBid := &adapters.TypedBid{
 				Bid:      &bid,
 				BidType:  openrtb_ext.BidTypeBanner,
@@ -473,7 +475,7 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 				errs = append(errs, err)
 			} else if bidExt != nil {
 				typedBid.Seat = openrtb_ext.BidderName(bidExt.Marketplace)
-				typedBid.BidType = getBidType(bidExt)
+				typedBid.BidType = getMediaTypeForBid(&bid)
 				if bidExt.PrebidDealPriority > 0 {
 					typedBid.DealPriority = bidExt.PrebidDealPriority
 				}
@@ -481,6 +483,11 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 				if bidExt.VideoCreativeInfo != nil && bidExt.VideoCreativeInfo.Duration != nil {
 					typedBid.BidVideo.Duration = *bidExt.VideoCreativeInfo.Duration
 				}
+
+				if bidExt.InBannerVideo {
+					MType = openrtb_ext.BidTypeVideo
+				}
+				typedBid.BidMeta = &openrtb_ext.ExtBidPrebidMeta{MediaType: string(MType)}
 			}
 
 			if typedBid.BidType == openrtb_ext.BidTypeNative {
@@ -637,24 +644,26 @@ func getStringArray(array []interface{}) []string {
 	return aString
 }
 
-// getBidType returns the bid type specified in the response bid.ext
-func getBidType(bidExt *pubmaticBidExt) openrtb_ext.BidType {
+// getMediaType returns the bid type specified in the response bid.ext
+func getMediaTypeForBid(bid *openrtb2.Bid) openrtb_ext.BidType {
 	// setting "banner" as the default bid type
-	bidType := openrtb_ext.BidTypeBanner
-	if bidExt != nil && bidExt.BidType != nil {
-		switch *bidExt.BidType {
-		case 0:
-			bidType = openrtb_ext.BidTypeBanner
-		case 1:
-			bidType = openrtb_ext.BidTypeVideo
-		case 2:
-			bidType = openrtb_ext.BidTypeNative
+	mType := openrtb_ext.BidTypeBanner
+	if bid != nil {
+		switch bid.MType {
+		case openrtb2.MarkupBanner:
+			mType = openrtb_ext.BidTypeBanner
+		case openrtb2.MarkupVideo:
+			mType = openrtb_ext.BidTypeVideo
+		case openrtb2.MarkupAudio:
+			mType = openrtb_ext.BidTypeAudio
+		case openrtb2.MarkupNative:
+			mType = openrtb_ext.BidTypeNative
 		default:
 			// default value is banner
-			bidType = openrtb_ext.BidTypeBanner
+			mType = openrtb_ext.BidTypeBanner
 		}
 	}
-	return bidType
+	return mType
 }
 
 // Builder builds a new instance of the Pubmatic adapter for the given bidder with the given config.

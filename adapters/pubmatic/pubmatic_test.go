@@ -26,51 +26,47 @@ func TestJsonSamples(t *testing.T) {
 	adapterstest.RunJSONBidderTest(t, "pubmatictest", bidder)
 }
 
-func TestGetBidTypeVideo(t *testing.T) {
-	pubmaticExt := &pubmaticBidExt{}
-	pubmaticExt.BidType = new(int)
-	*pubmaticExt.BidType = 1
-	actualBidTypeValue := getBidType(pubmaticExt)
-	if actualBidTypeValue != openrtb_ext.BidTypeVideo {
-		t.Errorf("Expected Bid Type value was: %v, actual value is: %v", openrtb_ext.BidTypeVideo, actualBidTypeValue)
-	}
-}
-
-func TestGetBidTypeForMissingBidTypeExt(t *testing.T) {
-	pubmaticExt := &pubmaticBidExt{}
-	actualBidTypeValue := getBidType(pubmaticExt)
-	// banner is the default bid type when no bidType key is present in the bid.ext
-	if actualBidTypeValue != "banner" {
-		t.Errorf("Expected Bid Type value was: banner, actual value is: %v", actualBidTypeValue)
-	}
-}
-
-func TestGetBidTypeBanner(t *testing.T) {
-	pubmaticExt := &pubmaticBidExt{}
-	pubmaticExt.BidType = new(int)
-	*pubmaticExt.BidType = 0
-	actualBidTypeValue := getBidType(pubmaticExt)
-	if actualBidTypeValue != openrtb_ext.BidTypeBanner {
+func TestGetMediaTypeForBidBanner(t *testing.T) {
+	Bid := openrtb2.Bid{}
+	Bid.MType = 1
+	actualBidTypeValue := string(getMediaTypeForBid(&Bid))
+	if actualBidTypeValue != string(openrtb_ext.BidTypeBanner) {
 		t.Errorf("Expected Bid Type value was: %v, actual value is: %v", openrtb_ext.BidTypeBanner, actualBidTypeValue)
 	}
 }
 
-func TestGetBidTypeNative(t *testing.T) {
-	pubmaticExt := &pubmaticBidExt{}
-	pubmaticExt.BidType = new(int)
-	*pubmaticExt.BidType = 2
-	actualBidTypeValue := getBidType(pubmaticExt)
-	if actualBidTypeValue != openrtb_ext.BidTypeNative {
+func TestGetMediaTypeForBidVideo(t *testing.T) {
+	Bid := openrtb2.Bid{}
+	Bid.MType = 2
+	actualBidTypeValue := string(getMediaTypeForBid(&Bid))
+	if actualBidTypeValue != string(openrtb_ext.BidTypeVideo) {
+		t.Errorf("Expected Bid Type value was: %v, actual value is: %v", openrtb_ext.BidTypeVideo, actualBidTypeValue)
+	}
+}
+
+func TestGetMediaTypeForBidAudio(t *testing.T) {
+	Bid := openrtb2.Bid{}
+	Bid.MType = 3
+	actualBidTypeValue := string(getMediaTypeForBid(&Bid))
+	if actualBidTypeValue != string(openrtb_ext.BidTypeAudio) {
+		t.Errorf("Expected Bid Type value was: %v, actual value is: %v", openrtb_ext.BidTypeAudio, actualBidTypeValue)
+	}
+}
+
+func TestGetMediaTypeForBidNative(t *testing.T) {
+	Bid := openrtb2.Bid{}
+	Bid.MType = 4
+	actualBidTypeValue := string(getMediaTypeForBid(&Bid))
+	if actualBidTypeValue != string(openrtb_ext.BidTypeNative) {
 		t.Errorf("Expected Bid Type value was: %v, actual value is: %v", openrtb_ext.BidTypeNative, actualBidTypeValue)
 	}
 }
 
-func TestGetBidTypeForUnsupportedCode(t *testing.T) {
-	pubmaticExt := &pubmaticBidExt{}
-	pubmaticExt.BidType = new(int)
-	*pubmaticExt.BidType = 99
-	actualBidTypeValue := getBidType(pubmaticExt)
-	if actualBidTypeValue != openrtb_ext.BidTypeBanner {
+func TestGetMediaTypeForBidForUnsupportedCode(t *testing.T) {
+	Bid := openrtb2.Bid{}
+	Bid.MType = 44
+	actualBidTypeValue := string(getMediaTypeForBid(&Bid))
+	if actualBidTypeValue != string(openrtb_ext.BidTypeBanner) {
 		t.Errorf("Expected Bid Type value was: %v, actual value is: %v", openrtb_ext.BidTypeBanner, actualBidTypeValue)
 	}
 }
@@ -421,6 +417,24 @@ func TestPubmaticAdapter_MakeBids(t *testing.T) {
 						DealPriority: 1,
 						BidType:      openrtb_ext.BidTypeBanner,
 						BidVideo:     &openrtb_ext.ExtBidPrebidVideo{},
+						BidMeta: &openrtb_ext.ExtBidPrebidMeta{
+							AdapterCode:          "",
+							AdvertiserDomains:    nil,
+							AdvertiserID:         0,
+							AdvertiserName:       "",
+							AgencyID:             0,
+							AgencyName:           "",
+							DChain:               nil,
+							DemandSource:         "",
+							MediaType:            "banner",
+							NetworkID:            0,
+							NetworkName:          "",
+							RendererName:         "",
+							RendererVersion:      "",
+							RendererData:         nil,
+							RendererUrl:          "",
+							SecondaryCategoryIDs: nil,
+						},
 					},
 				},
 				Currency: "USD",
@@ -453,6 +467,75 @@ func TestPubmaticAdapter_MakeBids(t *testing.T) {
 						},
 						BidType:  openrtb_ext.BidTypeBanner,
 						BidVideo: &openrtb_ext.ExtBidPrebidVideo{},
+						BidMeta: &openrtb_ext.ExtBidPrebidMeta{
+							AdapterCode:          "",
+							AdvertiserDomains:    nil,
+							AdvertiserID:         0,
+							AdvertiserName:       "",
+							AgencyID:             0,
+							AgencyName:           "",
+							DChain:               nil,
+							DemandSource:         "",
+							MediaType:            "banner",
+							NetworkID:            0,
+							NetworkName:          "",
+							RendererName:         "",
+							RendererVersion:      "",
+							RendererData:         nil,
+							RendererUrl:          "",
+							SecondaryCategoryIDs: nil,
+						},
+					},
+				},
+				Currency: "USD",
+			},
+		},
+		{
+			name: "bid_ext_InBannerVideo_is_true",
+			args: args{
+				response: &adapters.ResponseData{
+					StatusCode: http.StatusOK,
+					Body:       []byte(`{"id": "test-request-id", "seatbid":[{"seat": "958", "bid":[{"id": "7706636740145184841", "impid": "test-imp-id", "price": 0.500000, "adid": "29681110", "adm": "some-test-ad", "adomain":["pubmatic.com"], "crid": "29681110", "h": 250, "w": 300, "dealid": "testdeal", "mtype": 1, "ext":{"dspid": 6, "deal_channel": 1, "prebiddealpriority": -1, "ibv": true}}]}], "bidid": "5778926625248726496", "cur": "USD"}`),
+				},
+			},
+			wantErr: nil,
+			wantResp: &adapters.BidderResponse{
+				Bids: []*adapters.TypedBid{
+					{
+						Bid: &openrtb2.Bid{
+							ID:      "7706636740145184841",
+							ImpID:   "test-imp-id",
+							Price:   0.500000,
+							AdID:    "29681110",
+							AdM:     "some-test-ad",
+							ADomain: []string{"pubmatic.com"},
+							CrID:    "29681110",
+							H:       250,
+							W:       300,
+							DealID:  "testdeal",
+							MType:   1,
+							Ext:     json.RawMessage(`{"dspid": 6, "deal_channel": 1, "prebiddealpriority": -1, "ibv": true}`),
+						},
+						BidType:  openrtb_ext.BidTypeBanner,
+						BidVideo: &openrtb_ext.ExtBidPrebidVideo{},
+						BidMeta: &openrtb_ext.ExtBidPrebidMeta{
+							AdapterCode:          "",
+							AdvertiserDomains:    nil,
+							AdvertiserID:         0,
+							AdvertiserName:       "",
+							AgencyID:             0,
+							AgencyName:           "",
+							DChain:               nil,
+							DemandSource:         "",
+							MediaType:            "video",
+							NetworkID:            0,
+							NetworkName:          "",
+							RendererName:         "",
+							RendererVersion:      "",
+							RendererData:         nil,
+							RendererUrl:          "",
+							SecondaryCategoryIDs: nil,
+						},
 					},
 				},
 				Currency: "USD",

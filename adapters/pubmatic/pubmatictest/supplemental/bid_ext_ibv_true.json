@@ -123,13 +123,22 @@
                   "w": 300,
                   "dealid":"test deal",
                   "cat" : ["IAB-1", "IAB-2"], 
-                  "mtype":2,
+                  "mtype": 2,
                   "ext": {
                     "dspid": 6,
                     "deal_channel": 1,
                     "BidType": 1,
+                    "ibv":true,
                     "video" : {
                       "duration" : 5  
+                    },
+                    "prebid": {
+                        "bidid": "ab61bf03-f06a-477f-abc4-bc1f209804b7",
+                        "meta": {
+                            "adaptercode": "pubmatic",
+                            "mediatype": "video"
+                        },
+                        "type": "banner"
                     }
                   }
                 }]
@@ -161,13 +170,22 @@
               "w": 300,
               "h": 250,
               "dealid":"test deal",
-              "mtype":2,
+              "mtype": 2,
               "ext": {
+                "ibv":true,
                 "dspid": 6,
                 "deal_channel": 1,
                 "BidType": 1,
                 "video" : {
                   "duration" : 5  
+                },
+                "prebid": {
+                    "bidid": "ab61bf03-f06a-477f-abc4-bc1f209804b7",
+                    "meta": {
+                        "adaptercode": "pubmatic",
+                        "mediatype": "video"
+                    },
+                    "type": "banner"
                 }
               }
             },
