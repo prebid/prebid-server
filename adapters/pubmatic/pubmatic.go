@@ -475,7 +475,7 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 				errs = append(errs, err)
 			} else if bidExt != nil {
 				typedBid.Seat = openrtb_ext.BidderName(bidExt.Marketplace)
-				typedBid.BidType = getMediaTypeForBid(&bid)
+				typedBid.BidType = MType
 				if bidExt.PrebidDealPriority > 0 {
 					typedBid.DealPriority = bidExt.PrebidDealPriority
 				}
