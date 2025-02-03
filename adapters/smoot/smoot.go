@@ -58,7 +58,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		if smootExt.PlacementID != "" {
 			impExt.SmootBidderExt.PlacementID = smootExt.PlacementID
 			impExt.SmootBidderExt.Type = "publisher"
-		} else if smootExt.EndpointID != "" {
+		} else {
 			impExt.SmootBidderExt.EndpointID = smootExt.EndpointID
 			impExt.SmootBidderExt.Type = "network"
 		}
