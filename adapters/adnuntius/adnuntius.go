@@ -169,7 +169,7 @@ func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter, noCookies bool
 	}
 
 	q.Set("tzo", fmt.Sprint(tzo))
-	q.Set("format", "prebid")
+	q.Set("format", "prebidServer")
 
 	url := endpointUrl + "?" + q.Encode()
 	return url, nil

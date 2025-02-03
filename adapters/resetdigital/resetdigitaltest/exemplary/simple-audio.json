@@ -1,0 +1,176 @@
+{
+  "mockBidRequest": {
+    "id": "12345",
+    "at": 1,
+    "bcat": [
+      "IAB24",
+      "IAB25",
+      "IAB26"
+    ],
+    "cur": [
+      "USD"
+    ],
+    "source": {
+      "fd": 0,
+      "tid": "00000FBCE10DE8FA",
+      "schain": {
+        "complete": 1,
+        "ver": "1.0",
+        "nodes": [
+          {
+            "asi": "resetdigital.co",
+            "sid": "176",
+            "hp": 1
+          }
+        ]
+      }
+    },
+    "device": {
+      "ip": "35.146.176.97",
+      "js": 1,
+      "language": "en",
+      "ua": "PostmanRuntime/7.42.0"
+    },
+    "user": {
+      "id": "000011200BA1065C",
+      "buyeruid": "000011200BA1065C"
+    },
+    "app": {
+      "id": "test.com",
+      "bundle": "test.com",
+      "name": "test.com",
+      "content": {
+        "livestream": 1,
+        "genre": "F%C3%BAtbol",
+        "cat": [
+          ""
+        ],
+        "language": "es"
+      },
+      "publisher": {
+        "id": "176"
+      },
+      "keywords": ""
+    },
+    "imp": [
+      {
+        "id": "001",
+        "bidfloor": 1.429,
+        "tagid": "667",
+        "secure": 1,
+        "audio": {
+          "protocols": [
+            2,
+            3,
+            5,
+            6
+          ],
+          "mimes": [
+            "audio/mp4",
+            "audio/mp3"
+          ],
+          "api": [],
+          "minduration": 15,
+          "maxduration": 60,
+          "startdelay": -1
+        },
+        "ext": {
+          "bidder": {
+            "placement_id": "placement-id-1"
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "https://test.com",
+      "page": "https://test.com/2016/06/12"
+    },
+    "cur": [
+      "USD"
+    ],
+    "device": {
+      "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36",
+      "ip": "127.0.0.1",
+      "language": "EN"
+    },
+    "tmax": 400
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "method": "POST",
+        "body": {
+          "imps": [
+            {
+              "bid_id": "12345",
+              "ext": {
+                "gpid": ""
+              },
+              "imp_id": "001",
+              "media_types": {
+                "banner": {},
+                "video": {},
+                "audio": {
+                  "mimes": [
+                    "audio/mp4",
+                    "audio/mp3"
+                  ]
+                }
+              },
+              "zone_id": {
+                "placementId": "placement-id-1"
+              }
+            }
+          ],
+          "site": {
+            "domain": "https://test.com",
+            "referrer": "https://test.com/2016/06/12"
+          }
+        },
+        "impIDs": [
+          "001"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "bids": [
+            {
+              "bid_id": "01",
+              "imp_id": "001",
+              "cpm": 9.11,
+              "dealid": "RD-1000164",
+              "cid": "1000048-1002918",
+              "crid": "1003893",
+              "adid": "1003893",
+              "language": "en",
+              "w": "0",
+              "h": "0",
+              "seat": "resetdigital",
+              "html": "test markup"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "adm": "test markup",
+            "cid": "1000048-1002918",
+            "crid": "1003893",
+            "id": "01",
+            "impid": "001",
+            "price": 9.11
+          },
+          "type": "audio",
+          "seat": "resetdigital"
+        }
+      ]
+    }
+  ]
+}

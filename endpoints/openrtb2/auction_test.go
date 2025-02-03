@@ -3977,6 +3977,7 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 		expectedImpExt     json.RawMessage
 		expectedReqExt     json.RawMessage
 		expectedErrorCount int
+		expectedErrors     []error
 	}{
 		{
 			name:               "add missing bidder-params from req.ext.prebid.bidderparams to imp[].ext.prebid.bidder",
@@ -3994,10 +3995,16 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 		},
 		{
 			name:               "add missing bidder-params from req.ext.prebid.bidderparams to imp[].ext for backward compatibility",
-			givenRequestBody:   validRequest(t, "req-ext-bidder-params-backward-compatible-merge.json"),
-			expectedImpExt:     getObject(t, "req-ext-bidder-params-backward-compatible-merge.json", "expectedImpExt"),
-			expectedReqExt:     getObject(t, "req-ext-bidder-params-backward-compatible-merge.json", "expectedReqExt"),
-			expectedErrorCount: 0,
+			givenRequestBody:   validRequest(t, "req-ext-bidder-params-promotion.json"),
+			expectedImpExt:     getObject(t, "req-ext-bidder-params-promotion.json", "expectedImpExt"),
+			expectedReqExt:     getObject(t, "req-ext-bidder-params-promotion.json", "expectedReqExt"),
+			expectedErrorCount: 1,
+			expectedErrors: []error{
+				&errortypes.Warning{
+					WarningCode: 0,
+					Message:     "request.imp[0].ext contains unknown bidder: 'arbitraryObject', ignoring",
+				},
+			},
 		},
 	}
 	for _, test := range tests {
@@ -4054,6 +4061,8 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 			assert.Equal(t, eReqE, reqE, "req.Ext should match")
 
 			assert.Len(t, errL, test.expectedErrorCount, "error length should match")
+
+			assert.Equal(t, errL, test.expectedErrors)
 		})
 	}
 }
@@ -4658,7 +4667,7 @@ func TestValidateStoredResp(t *testing.T) {
 			storedBidResponses:        stored_responses.ImpBidderStoredResp{"Some-Imp-ID": {"appnexus": json.RawMessage(`{"test":true}`), "rubicon": json.RawMessage(`{"test":true}`)}},
 		},
 		{
-			description: "One imp with 2 stored bid responses and 1 bidders in imp.ext and 1 in imp.ext.prebid.bidder, expect validate request to throw no errors",
+			description: "One imp with 1 stored bid response and 1 ignored bidder in imp.ext and 1 included bidder in imp.ext.prebid.bidder, expect validate request to throw no errors",
 			givenRequestWrapper: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					ID:  "Some-ID",
@@ -4685,7 +4694,7 @@ func TestValidateStoredResp(t *testing.T) {
 			},
 			expectedErrorList:         []error{},
 			hasStoredAuctionResponses: false,
-			storedBidResponses:        stored_responses.ImpBidderStoredResp{"Some-Imp-ID": {"appnexus": json.RawMessage(`{"test":true}`), "telaria": json.RawMessage(`{"test":true}`)}},
+			storedBidResponses:        stored_responses.ImpBidderStoredResp{"Some-Imp-ID": {"telaria": json.RawMessage(`{"test":true}`)}},
 		},
 		{
 			description: "One imp with 2 stored bid responses and 1 bidders in imp.ext and 1 in imp.ext.prebid.bidder that is not defined in stored bid responses, expect validate request to throw an error",
