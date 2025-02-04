@@ -1285,14 +1285,9 @@ func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases 
 			errL = append(errL, eidErrors...)
 		}
 		for eidIndex, eid := range validEids {
-			if eid.Source == "" {
-				return append(errL, fmt.Errorf("request.user.eids[%d] missing required field: \"source\"", eidIndex))
-			}
-
 			if len(eid.UIDs) == 0 {
 				return append(errL, fmt.Errorf("request.user.eids[%d].uids must contain at least one element or be undefined", eidIndex))
 			}
-
 		}
 		req.User.EIDs = validEids
 	}
@@ -1305,6 +1300,13 @@ func validateEIDs(eids []openrtb2.EID) ([]openrtb2.EID, []error) {
 	validEIDs := make([]openrtb2.EID, 0, len(eids))
 
 	for eidIndex, eid := range eids {
+		if eid.Source == "" {
+			errorsList = append(errorsList, &errortypes.Warning{
+				Message:     fmt.Sprintf("request.user.eids[%d] missing required field: source", eidIndex),
+				WarningCode: errortypes.InvalidUserEIDsWarningCode,
+			})
+			continue
+		}
 		validUIDs, uidErrors := validateUIDs(eid.UIDs, eidIndex)
 		errorsList = append(errorsList, uidErrors...)
 
