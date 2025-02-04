@@ -118,6 +118,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/mobilefuse"
 	"github.com/prebid/prebid-server/adapters/motorik"
 	"github.com/prebid/prebid-server/adapters/nanointeractive"
+	"github.com/prebid/prebid-server/adapters/nativo"
 	"github.com/prebid/prebid-server/adapters/nextmillennium"
 	"github.com/prebid/prebid-server/adapters/ninthdecimal"
 	"github.com/prebid/prebid-server/adapters/nobid"
@@ -309,6 +310,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderMobfoxpb:          mobfoxpb.Builder,
 		openrtb_ext.BidderMobileFuse:        mobilefuse.Builder,
 		openrtb_ext.BidderMotorik:           motorik.Builder,
+		openrtb_ext.BidderNativo:            nativo.Builder,
 		openrtb_ext.BidderNanoInteractive:   nanointeractive.Builder,
 		openrtb_ext.BidderNextMillennium:    nextmillennium.Builder,
 		openrtb_ext.BidderNinthDecimal:      ninthdecimal.Builder,
