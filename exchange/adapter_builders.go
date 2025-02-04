@@ -39,6 +39,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/algorix"
 	"github.com/prebid/prebid-server/v3/adapters/alkimi"
 	"github.com/prebid/prebid-server/v3/adapters/amx"
+	"github.com/prebid/prebid-server/v3/adapters/aniview"
 	"github.com/prebid/prebid-server/v3/adapters/apacdex"
 	"github.com/prebid/prebid-server/v3/adapters/appnexus"
 	"github.com/prebid/prebid-server/v3/adapters/appush"
@@ -408,6 +409,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderPGAMSsp:           pgamssp.Builder,
 		openrtb_ext.BidderPlaydigo:          playdigo.Builder,
 		openrtb_ext.BidderPubmatic:          pubmatic.Builder,
+		openrtb_ext.BidderAniview:           aniview.Builder,
 		openrtb_ext.BidderPubnative:         pubnative.Builder,
 		openrtb_ext.BidderPubrise:           pubrise.Builder,
 		openrtb_ext.BidderPulsepoint:        pulsepoint.Builder,

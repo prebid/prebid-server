@@ -1,0 +1,29 @@
+endpoint: "https://rtb.aniview.com/sspRTB1"
+maintainer:
+  email: "olly@auth.inc"
+gvlVendorID: 76
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  dooh:
+    mediaTypes:
+      - audio
+      - video
+      - native
+userSync:
+  iframe:
+    url: "https://player.aniview.com/ssync/ssync.html?pid=6756fbbdad0a03d1f605e926&gdpr=&consent=&ccpa=&r=[.RedirectURL]"
+    userMacro: ""
+  redirect:
+    url: "https://player.aniview.com/ssync/1234/ssync.html?pid=1234&r=https%3A%2F%2Fyour.sync.url%2Fsync%3Fuid%3D%5BAV_UID%5D"
+    userMacro: "#AV_UID"
+openrtb:
+  gpp-supported: true
