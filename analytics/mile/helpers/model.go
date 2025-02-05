@@ -200,3 +200,17 @@ type ImpressionsExt struct {
 		Bidder map[string]interface{} `json:"bidder"`
 	} `json:"prebid"`
 }
+
+type RespExt struct {
+	ResponseTimeMillis map[string]int64 `json:"responsetimemillis"`
+}
+
+func (r *RespExt) getTimeoutBidders(timeout int64) []string {
+	timeouts := []string{}
+	for bidder, responseTime := range r.ResponseTimeMillis {
+		if responseTime > timeout {
+			timeouts = append(timeouts, bidder)
+		}
+	}
+	return timeouts
+}

@@ -12,37 +12,50 @@ func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]MileAnal
 	var events []MileAnalyticsEvent
 	if ao != nil {
 
-		var bidBiders []string
-		//var configuredBidders []string
-		if ao.Response != nil {
+		for _, imp := range ao.RequestWrapper.Imp {
 
-			for _, i := range ao.Response.SeatBid {
-				bidBiders = append(bidBiders, i.Seat)
+			var bidBiders []string
+			var winningBidder, winningSize string
+			var winningPrice float64 = 0
+			if ao.Response != nil {
+
+				for _, seatBid := range ao.Response.SeatBid {
+					for _, bid := range seatBid.Bid {
+						if bid.ImpID == imp.ID {
+							bidBiders = append(bidBiders, seatBid.Seat)
+							winningBidder = seatBid.Seat
+							if bid.Price > winningPrice {
+								winningPrice = bid.Price
+								winningBidder = seatBid.Seat
+								//winningSize = bid.Ext.
+							}
+						}
+					}
+				}
 			}
-			//}
-		}
 
-		fmt.Println(ao.RequestWrapper, "ext")
+			fmt.Println(ao.RequestWrapper, "ext")
 
-		var confBidders ImpressionsExt
-
-		if ao.RequestWrapper != nil {
-			err := json.Unmarshal(ao.RequestWrapper.Imp[0].Ext, &confBidders)
+			var confBidders ImpressionsExt
+			if ao.RequestWrapper != nil {
+				err := json.Unmarshal(imp.Ext, &confBidders)
+				if err != nil {
+					return nil, err
+				}
+			}
+			configuredBidders := make([]string, len(confBidders.Prebid.Bidder))
+			i := 0
+			for k := range confBidders.Prebid.Bidder {
+				configuredBidders[i] = k
+				i++
+			}
+			var respExt RespExt
+			err := json.Unmarshal(ao.RequestWrapper.Ext, &respExt)
 			if err != nil {
 				return nil, err
 			}
-		}
-		configuredBidders := make([]string, len(confBidders.Prebid.Bidder))
-		i := 0
-		for k := range confBidders.Prebid.Bidder {
-			configuredBidders[i] = k
-			i++
-		}
-		fmt.Println(configuredBidders)
 
-		if ao.RequestWrapper != nil {
-
-			for range ao.RequestWrapper.Imp {
+			if ao.RequestWrapper != nil {
 
 				logEntry := MileAnalyticsEvent{
 					//SessionID: ao.RequestWrapper
@@ -66,6 +79,9 @@ func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]MileAnal
 					Section:           "",
 					BidBidders:        bidBiders,
 					ConfiguredBidders: configuredBidders,
+					TimedOutBidder:    respExt.getTimeoutBidders(ao.RequestWrapper.TMax),
+					WinningBidder:     winningBidder,
+					WinningSize:       winningSize,
 					ConfiguredTimeout: ao.RequestWrapper.TMax,
 					MetaData:          map[string][]string{"prebid_server": []string{"1"}},
 					//Viewability: ao.RequestWrapper.
