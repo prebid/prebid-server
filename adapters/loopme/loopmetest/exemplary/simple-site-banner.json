@@ -29,7 +29,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://prebid.loopmertb.com",
+        "uri": "http://loopme.example.com",
         "headers": {
           "Accept": [
             "application/json"

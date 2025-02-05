@@ -3,12 +3,12 @@ package loopme
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/v3/errortypes"
 	"net/http"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
@@ -20,8 +20,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	errs := make([]error, 0, len(request.Imp))
 
 	reqDatas := make([]*adapters.RequestData, 0, len(request.Imp))
-	for _, imp := range request.Imp {
 
+	for _, imp := range request.Imp {
 		requestCopy := *request
 		requestCopy.Imp = []openrtb2.Imp{imp}
 		reqJSON, err := json.Marshal(requestCopy)
@@ -34,7 +34,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		headers.Add("Content-Type", "application/json;charset=utf-8")
 		headers.Add("Accept", "application/json")
 		reqDatas = append(reqDatas, &adapters.RequestData{
-			Method:  "POST",
+			Method:  http.MethodPost,
 			Uri:     a.endpoint,
 			Body:    reqJSON,
 			Headers: headers,
@@ -64,7 +64,7 @@ func (a *adapter) MakeBids(bidReq *openrtb2.BidRequest, reqData *adapters.Reques
 	}
 
 	errs := make([]error, 0, len(bidResp.SeatBid[0].Bid))
-	bids := make([]*adapters.TypedBid, 0, len(bidResp.SeatBid[0].Bid))
+	resp := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
 
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
@@ -74,24 +74,20 @@ func (a *adapter) MakeBids(bidReq *openrtb2.BidRequest, reqData *adapters.Reques
 				errs = append(errs, err)
 				continue
 			}
-			bids = append(bids, &adapters.TypedBid{
+			resp.Bids = append(resp.Bids, &adapters.TypedBid{
 				Bid:     bid,
 				BidType: bidType,
 			})
 		}
 	}
-	if len(bids) > 0 {
-		resp := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
-		if len(bidResp.Cur) != 0 {
-			resp.Currency = bidResp.Cur
-		}
-		for _, bid := range bids {
-			resp.Bids = append(resp.Bids, bid)
-		}
-		return resp, errs
-	} else {
+
+	if len(resp.Bids) == 0 {
 		return nil, errs
 	}
+	if len(bidResp.Cur) != 0 {
+		resp.Currency = bidResp.Cur
+	}
+	return resp, errs
 }
 
 func getBidType(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {

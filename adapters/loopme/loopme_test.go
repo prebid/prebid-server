@@ -1,17 +1,18 @@
 package loopme
 
 import (
+	"testing"
+
 	"github.com/prebid/prebid-server/v3/adapters/adapterstest"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"testing"
 )
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(
 		openrtb_ext.BidderLoopme,
 		config.Adapter{
-			Endpoint: "http://prebid.loopmertb.com",
+			Endpoint: "http://loopme.example.com",
 		},
 		config.Server{
 			ExternalUrl: "http://hosturl.com",

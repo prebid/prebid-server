@@ -2,8 +2,9 @@ package loopme
 
 import (
 	"encoding/json"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"testing"
+
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 // This file actually intends to test static/bidder-params/loopme.json
@@ -40,6 +41,9 @@ func TestInvalidParams(t *testing.T) {
 
 var validParams = []string{
 	`{"publisherId": "10000000"}`,
+	`{"publisherId": "10000001", "bundleId": "4321"}`,
+	`{"publisherId": "10000002", "placementId": "8888"}`,
+	`{"publisherId": "10000003", "bundleId": "5432", "placementId": "7777"}`,
 }
 
 var invalidParams = []string{
@@ -51,8 +55,30 @@ var invalidParams = []string{
 	`[]`,
 	`{"publisherId": ""}`,
 	`{"placementId": ""}`,
+	`{"bundleId": ""}`,
 	`{"publisherId": "", "placementId": ""}`,
+	`{"publisherId": "", "bundleId": ""}`,
+	`{"placementId": "", "bundleId": ""}`,
+	`{"publisherId": "", "placementId": "", "bundleId": ""}`,
+	`{"publisherId": 0}`,
+	`{"placementId": 0}`,
+	`{"bundleId": 0}`,
 	`{"publisherId": 0, "placementId": 0}`,
-	`{"publisherId": 10000000, "placementId": 0}`,
-	`{"publisherId": 0, "placementId": 100000}`,
+	`{"publisherId": 0, "bundleId": 0}`,
+	`{"placementId": 0, "bundleId": 0}`,
+	`{"publisherId": 0, "placementId": 0, "bundleId": 0}`,
+	`{"publisherId": "10000000", "placementId": 0}`,
+	`{"publisherId": "10000000", "placementId": 100000}`,
+	`{"publisherId": "10000000", "bundleId": 0}`,
+	`{"publisherId": "10000000", "bundleId": 100000}`,
+	`{"placementId": "10000000", "bundleId": 0}`,
+	`{"placementId": "10000000", "bundleId": 100000}`,
+	`{"publisherId": "10000000", "placementId": "", "bundleId": ""}`,
+	`{"publisherId": "", "placementId": "100000", "bundleId": ""}`,
+	`{"publisherId": "", "placementId": "", "bundleId": "bundle_id_test"}`,
+	`{"unknownField": "value"}`,
+	`{"bundleId": []}`,
+	`{"placementId": {}}`,
+	`{"publisherId": null}`,
+	`{"bundleId": null}`,
 }

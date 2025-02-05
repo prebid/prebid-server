@@ -30,7 +30,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://prebid.loopmertb.com",
+        "uri": "http://loopme.example.com",
         "body": {
           "id": "test-request-id",
           "site": {
