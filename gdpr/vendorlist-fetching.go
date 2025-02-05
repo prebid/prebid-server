@@ -14,7 +14,7 @@ import (
 	"github.com/prebid/go-gdpr/api"
 	"github.com/prebid/go-gdpr/vendorlist"
 	"github.com/prebid/go-gdpr/vendorlist2"
-	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v3/config"
 	"golang.org/x/net/context/ctxhttp"
 )
 

@@ -31,7 +31,7 @@
 	"httpCalls": [
 		{
 			"expectedRequest": {
-				"uri": "http://whatever.url?format=prebid&noCookies=true&tzo=0",
+				"uri": "http://whatever.url?format=prebidServer&noCookies=true&tzo=0",
 				"body": {
 					"adUnits": [
 						{

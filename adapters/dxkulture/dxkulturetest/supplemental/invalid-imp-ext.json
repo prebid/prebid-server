@@ -31,7 +31,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "Ignoring imp id=test-imp-id, error while decoding extImpBidder, err: json: cannot unmarshal string into Go value of type adapters.ExtImpBidder",
+      "value": "Ignoring imp id=test-imp-id, error while decoding extImpBidder, err: expect { or n, but found \"",
       "comparison": "literal"
     }
   ]

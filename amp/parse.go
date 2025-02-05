@@ -10,10 +10,10 @@ import (
 	tcf2 "github.com/prebid/go-gdpr/vendorconsent/tcf2"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/privacy"
-	"github.com/prebid/prebid-server/v2/privacy/ccpa"
-	"github.com/prebid/prebid-server/v2/privacy/gdpr"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/privacy"
+	"github.com/prebid/prebid-server/v3/privacy/ccpa"
+	"github.com/prebid/prebid-server/v3/privacy/gdpr"
 )
 
 // Params defines the parameters of an AMP request.
@@ -117,7 +117,7 @@ func buildGdprTCF2ConsentWriter(ampParams Params) gdpr.ConsentWriter {
 		// set regs.ext.gdpr if non-nil gdpr_applies was set to true
 		gdprValue = parseGdprApplies(ampParams.GdprApplies)
 	}
-	writer.RegExtGDPR = &gdprValue
+	writer.GDPR = &gdprValue
 
 	return writer
 }

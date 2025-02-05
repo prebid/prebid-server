@@ -1,0 +1,239 @@
+{
+    "requestType": "openrtb2-web",
+    "ortbversion": {
+        "appnexus":"2.6",
+        "rubicon":"2.6"
+    },
+    "incomingRequest": {
+        "ortbRequest": {
+            "id": "some-request-id",
+            "site": {
+                "page": "test.somepage.com"
+            },
+            "user": {
+                "id": "reqUserID",
+                "keywords": "userKeyword!",
+                "eids": [
+                    {
+                        "source": "reqeid1",
+                        "uids": [
+                            {
+                                "id": "reqeiduid1"
+                            }
+                        ]
+                    },
+                    {
+                        "source": "reqieid2",
+                        "uids": [
+                            {
+                                "id": "reqeiduid2"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "imp": [
+                {
+                    "id": "some-imp-id",
+                    "banner": {
+                        "format": [
+                            {
+                                "w": 600,
+                                "h": 500
+                            },
+                            {
+                                "w": 300,
+                                "h": 600
+                            }
+                        ]
+                    },
+                    "ext": {
+                        "prebid": {
+                            "bidder": {
+                                "appnexus": {
+                                    "placementId": 1
+                                },
+                                "rubicon": {
+                                    "accountId": 1,
+                                    "siteId": 2,
+                                    "zoneId": 3
+                                }
+                            }
+                        }
+                    }
+                }
+            ],
+            "ext": {
+                "prebid": {
+                    "data": {
+                        "eidpermissions": [
+                            {
+                                "source": "reqeid1",
+                                "bidders": [
+                                    "rubicon"
+                                ]
+                            }
+                        ],
+                        "bidders": [
+                            "appnexus",
+                            "rubicon"
+                        ]
+                    },
+                    "bidderconfig": [
+                        {
+                            "bidders": [
+                                "appnexus"
+                            ],
+                            "config": {
+                                "ortb2": {
+                                    "site": {
+                                        "domain": "fpd_appnexus_site_domain",
+                                        "page": "fpd_appnexus_site_page"
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "bidders": [
+                                "rubicon"
+                            ],
+                            "config": {
+                                "ortb2": {
+                                    "user": {
+                                        "id": "fpdSiteId!4",
+                                        "yob": 2000,
+                                        "keywords": "fpd keywords",
+                                        "eids": [
+                                            {
+                                                "source": "fpdeid1",
+                                                "uids": [
+                                                    {
+                                                        "id": "fpdeiduid1"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "source": "fpdeid2",
+                                                "uids": [
+                                                    {
+                                                        "id": "fpdeiduid1"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    },
+    "outgoingRequests": {
+        "appnexus": {
+            "expectRequest": {
+                "ortbRequest": {
+                    "id": "some-request-id",
+                    "imp": [
+                        {
+                            "id": "some-imp-id",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 600,
+                                        "h": 500
+                                    },
+                                    {
+                                        "w": 300,
+                                        "h": 600
+                                    }
+                                ]
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "placementId": 1
+                                }
+                            }
+                        }
+                    ],
+                    "site": {
+                        "domain": "fpd_appnexus_site_domain",
+                        "page": "fpd_appnexus_site_page"
+                    },
+                    "user": {
+                        "id": "reqUserID",
+                        "keywords": "userKeyword!",
+                        "eids": [
+                            {
+                                "source": "reqieid2",
+                                "uids": [
+                                    {
+                                        "id": "reqeiduid2"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        "rubicon": {
+            "expectRequest": {
+                "ortbRequest": {
+                    "id": "some-request-id",
+                    "imp": [
+                        {
+                            "id": "some-imp-id",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 600,
+                                        "h": 500
+                                    },
+                                    {
+                                        "w": 300,
+                                        "h": 600
+                                    }
+                                ]
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "accountId": 1,
+                                    "siteId": 2,
+                                    "zoneId": 3
+                                }
+                            }
+                        }
+                    ],
+                    "site": {
+                        "page": "test.somepage.com"
+                    },
+                    "user": {
+                        "id": "fpdSiteId!4",
+                        "yob": 2000,
+                        "keywords": "fpd keywords",
+                        "eids": [
+                            {
+                                "source": "fpdeid1",
+                                "uids": [
+                                    {
+                                        "id": "fpdeiduid1"
+                                    }
+                                ]
+                            },
+                            {
+                                "source": "fpdeid2",
+                                "uids": [
+                                    {
+                                        "id": "fpdeiduid1"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    }
+}

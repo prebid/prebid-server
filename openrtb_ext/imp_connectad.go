@@ -1,6 +1,6 @@
 package openrtb_ext
 
-import "github.com/prebid/prebid-server/v2/util/jsonutil"
+import "github.com/prebid/prebid-server/v3/util/jsonutil"
 
 type ExtImpConnectAd struct {
 	NetworkID jsonutil.StringInt `json:"networkId"`

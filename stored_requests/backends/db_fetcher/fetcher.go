@@ -7,8 +7,8 @@ import (
 	"github.com/lib/pq"
 
 	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/v2/stored_requests"
-	"github.com/prebid/prebid-server/v2/stored_requests/backends/db_provider"
+	"github.com/prebid/prebid-server/v3/stored_requests"
+	"github.com/prebid/prebid-server/v3/stored_requests/backends/db_provider"
 )
 
 func NewFetcher(

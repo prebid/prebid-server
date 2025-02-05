@@ -4,7 +4,7 @@ import (
 	"slices"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 )
 
 func CloneDataSlice(s []openrtb2.Data) []openrtb2.Data {
@@ -274,6 +274,22 @@ func CloneBidRequestPartial(s *openrtb2.BidRequest) *openrtb2.BidRequest {
 	c.Device = CloneDevice(s.Device)
 	c.User = CloneUser(s.User)
 	c.Source = CloneSource(s.Source)
+
+	return &c
+}
+
+func CloneRegs(s *openrtb2.Regs) *openrtb2.Regs {
+	if s == nil {
+		return nil
+	}
+
+	// Shallow Copy (Value Fields)
+	c := *s
+
+	// Deep Copy (Pointers)
+	c.GDPR = ptrutil.Clone(s.GDPR)
+	c.GPPSID = slices.Clone(s.GPPSID)
+	c.Ext = slices.Clone(s.Ext)
 
 	return &c
 }

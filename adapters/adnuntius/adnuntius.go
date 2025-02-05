@@ -10,11 +10,12 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/timeutil"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/timeutil"
 )
 
 type QueryString map[string]string
@@ -140,7 +141,7 @@ func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter, noCookies bool
 	if !noCookies {
 		var deviceExt extDeviceAdnuntius
 		if ortbRequest.Device != nil && ortbRequest.Device.Ext != nil {
-			if err := json.Unmarshal(ortbRequest.Device.Ext, &deviceExt); err != nil {
+			if err := jsonutil.Unmarshal(ortbRequest.Device.Ext, &deviceExt); err != nil {
 				return "", []error{fmt.Errorf("failed to parse Adnuntius endpoint: %v", err)}
 			}
 		}
@@ -168,7 +169,7 @@ func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter, noCookies bool
 	}
 
 	q.Set("tzo", fmt.Sprint(tzo))
-	q.Set("format", "prebid")
+	q.Set("format", "prebidServer")
 
 	url := endpointUrl + "?" + q.Encode()
 	return url, nil
@@ -211,14 +212,14 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 		}
 
 		var bidderExt adapters.ExtImpBidder
-		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			return nil, []error{&errortypes.BadInput{
 				Message: fmt.Sprintf("Error unmarshalling ExtImpBidder: %s", err.Error()),
 			}}
 		}
 
 		var adnuntiusExt openrtb_ext.ImpExtAdnunitus
-		if err := json.Unmarshal(bidderExt.Bidder, &adnuntiusExt); err != nil {
+		if err := jsonutil.Unmarshal(bidderExt.Bidder, &adnuntiusExt); err != nil {
 			return nil, []error{&errortypes.BadInput{
 				Message: fmt.Sprintf("Error unmarshalling ExtImpValues: %s", err.Error()),
 			}}
@@ -273,7 +274,7 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 
 		var extUser openrtb_ext.ExtUser
 		if ortbRequest.User != nil && ortbRequest.User.Ext != nil {
-			if err := json.Unmarshal(ortbRequest.User.Ext, &extUser); err != nil {
+			if err := jsonutil.Unmarshal(ortbRequest.User.Ext, &extUser); err != nil {
 				return nil, []error{fmt.Errorf("failed to parse Ext User: %v", err)}
 			}
 		}
@@ -328,7 +329,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, externalRequest *adapte
 	}
 
 	var adnResponse AdnResponse
-	if err := json.Unmarshal(response.Body, &adnResponse); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &adnResponse); err != nil {
 		return nil, []error{err}
 	}
 
@@ -343,7 +344,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, externalRequest *adapte
 func getSiteExtAsKv(request *openrtb2.BidRequest) (siteExt, error) {
 	var extSite siteExt
 	if request.Site != nil && request.Site.Ext != nil {
-		if err := json.Unmarshal(request.Site.Ext, &extSite); err != nil {
+		if err := jsonutil.Unmarshal(request.Site.Ext, &extSite); err != nil {
 			return extSite, fmt.Errorf("failed to parse ExtSite in Adnuntius: %v", err)
 		}
 	}
@@ -355,7 +356,7 @@ func getGDPR(request *openrtb2.BidRequest) (string, string, error) {
 	gdpr := ""
 	var extRegs openrtb_ext.ExtRegs
 	if request.Regs != nil && request.Regs.Ext != nil {
-		if err := json.Unmarshal(request.Regs.Ext, &extRegs); err != nil {
+		if err := jsonutil.Unmarshal(request.Regs.Ext, &extRegs); err != nil {
 			return "", "", fmt.Errorf("failed to parse ExtRegs in Adnuntius GDPR check: %v", err)
 		}
 		if extRegs.GDPR != nil && (*extRegs.GDPR == 0 || *extRegs.GDPR == 1) {
@@ -366,7 +367,7 @@ func getGDPR(request *openrtb2.BidRequest) (string, string, error) {
 	consent := ""
 	if request.User != nil && request.User.Ext != nil {
 		var extUser openrtb_ext.ExtUser
-		if err := json.Unmarshal(request.User.Ext, &extUser); err != nil {
+		if err := jsonutil.Unmarshal(request.User.Ext, &extUser); err != nil {
 			return "", "", fmt.Errorf("failed to parse ExtUser in Adnuntius GDPR check: %v", err)
 		}
 		consent = extUser.Consent
@@ -381,7 +382,7 @@ func generateReturnExt(ad Ad, request *openrtb2.BidRequest) (json.RawMessage, er
 
 	var requestRegsExt *openrtb_ext.ExtRegs
 	if request.Regs != nil && request.Regs.Ext != nil {
-		if err := json.Unmarshal(request.Regs.Ext, &requestRegsExt); err != nil {
+		if err := jsonutil.Unmarshal(request.Regs.Ext, &requestRegsExt); err != nil {
 
 			return nil, fmt.Errorf("Failed to parse Ext information in Adnuntius: %v", err)
 		}
@@ -428,14 +429,14 @@ func generateAdResponse(ad Ad, imp openrtb2.Imp, html string, request *openrtb2.
 	price := ad.Bid.Amount
 
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, []error{&errortypes.BadInput{
 			Message: fmt.Sprintf("Error unmarshalling ExtImpBidder: %s", err.Error()),
 		}}
 	}
 
 	var adnuntiusExt openrtb_ext.ImpExtAdnunitus
-	if err := json.Unmarshal(bidderExt.Bidder, &adnuntiusExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &adnuntiusExt); err != nil {
 		return nil, []error{&errortypes.BadInput{
 			Message: fmt.Sprintf("Error unmarshalling ExtImpValues: %s", err.Error()),
 		}}

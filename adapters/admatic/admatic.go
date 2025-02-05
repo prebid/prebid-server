@@ -7,11 +7,12 @@ import (
 	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/macros"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -34,6 +35,22 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	var requests []*adapters.RequestData
 	var errs []error
 
+	headers := http.Header{}
+	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
+	if request.Device != nil {
+		if len(request.Device.UA) > 0 {
+			headers.Add("User-Agent", request.Device.UA)
+		}
+
+		if len(request.Device.IPv6) > 0 {
+			headers.Add("X-Forwarded-For", request.Device.IPv6)
+		}
+
+		if len(request.Device.IP) > 0 {
+			headers.Add("X-Forwarded-For", request.Device.IP)
+		}
+	}
 	requestCopy := *request
 	for _, imp := range request.Imp {
 		requestCopy.Imp = []openrtb2.Imp{imp}
@@ -51,10 +68,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		}
 
 		request := &adapters.RequestData{
-			Method: http.MethodPost,
-			Body:   requestJSON,
-			Uri:    endpoint,
-			ImpIDs: openrtb_ext.GetImpIDs(requestCopy.Imp),
+			Method:  http.MethodPost,
+			Body:    requestJSON,
+			Uri:     endpoint,
+			Headers: headers,
+			ImpIDs:  openrtb_ext.GetImpIDs(requestCopy.Imp),
 		}
 
 		requests = append(requests, request)
@@ -65,14 +83,14 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 func (a *adapter) buildEndpointFromRequest(imp *openrtb2.Imp) (string, error) {
 	var impExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &impExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &impExt); err != nil {
 		return "", &errortypes.BadInput{
 			Message: fmt.Sprintf("Failed to deserialize bidder impression extension: %v", err),
 		}
 	}
 
 	var admaticExt openrtb_ext.ImpExtAdmatic
-	if err := json.Unmarshal(impExt.Bidder, &admaticExt); err != nil {
+	if err := jsonutil.Unmarshal(impExt.Bidder, &admaticExt); err != nil {
 		return "", &errortypes.BadInput{
 			Message: fmt.Sprintf("Failed to deserialize AdMatic extension: %v", err),
 		}
@@ -95,7 +113,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		return nil, []error{err}
 	}
 	var response openrtb2.BidResponse
-	if err := json.Unmarshal(responseData.Body, &response); err != nil {
+	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}
 
