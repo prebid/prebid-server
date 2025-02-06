@@ -1,6 +1,10 @@
 {
   "mockBidRequest": {
     "id": "test-request-id",
+    "app": {
+      "id": "1",
+      "bundle": "com.wls.testwlsapplication"
+    },
     "imp": [
       {
         "id": "test-imp-id",
