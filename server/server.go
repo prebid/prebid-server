@@ -27,7 +27,7 @@ func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.H
 	stopAdmin := make(chan os.Signal)
 	stopMain := make(chan os.Signal)
 	stopPrometheus := make(chan os.Signal)
-	var stopChannels = []chan<- os.Signal{stopMain}
+	stopChannels := []chan<- os.Signal{stopMain}
 	done := make(chan struct{})
 
 	if cfg.UnixSocketEnable && len(cfg.UnixSocketName) > 0 { // start the unix_socket server if config enable-it.
