@@ -30,6 +30,7 @@ import (
 	"github.com/prebid/prebid-server/v3/hooks"
 	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
 	"github.com/prebid/prebid-server/v3/hooks/hookstage"
+	"github.com/prebid/prebid-server/v3/hooks/hookstage/mocks"
 	"github.com/prebid/prebid-server/v3/metrics"
 	metricsConfig "github.com/prebid/prebid-server/v3/metrics/config"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
@@ -40,6 +41,8 @@ import (
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"github.com/prebid/prebid-server/v3/util/ptrutil"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 const jsonFileExtension string = ".json"
@@ -5997,4 +6000,51 @@ func sortUserData(user *openrtb2.User) {
 			})
 		}
 	}
+}
+
+func TestRequestContextPropagates(t *testing.T) {
+	type testKeyType int
+	const testKey testKeyType = iota
+
+	reqBody := validRequest(t, "site.json")
+	mockEntrypoint := mocks.NewEntrypoint(t)
+	mockEntrypoint.On("HandleEntrypointHook", mock.Anything, mock.Anything, mock.Anything).
+		Run(func(args mock.Arguments) {
+			ctx := args.Get(0).(context.Context)
+			assert.Equal(t, "testing", ctx.Value(testKey))
+		}).
+		Return(hookstage.HookResult[hookstage.EntrypointPayload]{}, nil)
+	deps := &endpointDeps{
+		fakeUUIDGenerator{},
+		&mockExchange{},
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
+		&mockStoredReqFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: int64(len(reqBody))},
+		&metricsConfig.NilMetricsEngine{},
+		analyticsBuild.New(&config.Analytics{}),
+		map[string]string{},
+		false,
+		[]byte{},
+		openrtb_ext.BuildBidderMap(),
+		nil,
+		nil,
+		hardcodedResponseIPValidator{response: true},
+		empty_fetcher.EmptyFetcher{},
+		mockPlanBuilder{entrypointPlan: makePlan[hookstage.Entrypoint](mockEntrypoint)},
+		nil,
+		openrtb_ext.NormalizeBidderName,
+	}
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
+	ctx := context.WithValue(context.Background(), testKey, "testing")
+	req = req.WithContext(ctx)
+	deps.Auction(rec, req, nil)
+	assert.EqualValues(t, http.StatusOK, rec.Code, rec.Result().Status)
+	resp := rec.Result()
+	require.NotNil(t, resp.Body)
+	data, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	assert.True(t, json.Valid(data), "Response is not valid JSON")
 }
