@@ -29,6 +29,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/adtelligent"
 	"github.com/prebid/prebid-server/v3/adapters/adtonos"
 	"github.com/prebid/prebid-server/v3/adapters/adtrgtme"
+	"github.com/prebid/prebid-server/v3/adapters/aduptech"
 	"github.com/prebid/prebid-server/v3/adapters/advangelists"
 	"github.com/prebid/prebid-server/v3/adapters/adverxo"
 	"github.com/prebid/prebid-server/v3/adapters/adview"
@@ -58,6 +59,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/bidmyadz"
 	"github.com/prebid/prebid-server/v3/adapters/bidscube"
 	"github.com/prebid/prebid-server/v3/adapters/bidstack"
+	"github.com/prebid/prebid-server/v3/adapters/bidtheatre"
 	"github.com/prebid/prebid-server/v3/adapters/bigoad"
 	"github.com/prebid/prebid-server/v3/adapters/blasto"
 	"github.com/prebid/prebid-server/v3/adapters/bliink"
@@ -97,6 +99,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/eplanning"
 	"github.com/prebid/prebid-server/v3/adapters/epom"
 	"github.com/prebid/prebid-server/v3/adapters/escalax"
+	"github.com/prebid/prebid-server/v3/adapters/feedad"
 	"github.com/prebid/prebid-server/v3/adapters/flipp"
 	"github.com/prebid/prebid-server/v3/adapters/freewheelssp"
 	"github.com/prebid/prebid-server/v3/adapters/frvradn"
@@ -173,6 +176,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/qt"
 	"github.com/prebid/prebid-server/v3/adapters/readpeak"
 	"github.com/prebid/prebid-server/v3/adapters/relevantdigital"
+	"github.com/prebid/prebid-server/v3/adapters/resetdigital"
 	"github.com/prebid/prebid-server/v3/adapters/revcontent"
 	"github.com/prebid/prebid-server/v3/adapters/richaudience"
 	"github.com/prebid/prebid-server/v3/adapters/rise"
@@ -268,6 +272,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderAdtrgtme:          adtrgtme.Builder,
 		openrtb_ext.BidderAdtelligent:       adtelligent.Builder,
 		openrtb_ext.BidderAdTonos:           adtonos.Builder,
+		openrtb_ext.BidderAdUpTech:          aduptech.Builder,
 		openrtb_ext.BidderAdvangelists:      advangelists.Builder,
 		openrtb_ext.BidderAdverxo:           adverxo.Builder,
 		openrtb_ext.BidderAdView:            adview.Builder,
@@ -297,6 +302,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderBidmyadz:          bidmyadz.Builder,
 		openrtb_ext.BidderBidsCube:          bidscube.Builder,
 		openrtb_ext.BidderBidstack:          bidstack.Builder,
+		openrtb_ext.BidderBidtheatre:        bidtheatre.Builder,
 		openrtb_ext.BidderBigoAd:            bigoad.Builder,
 		openrtb_ext.BidderBlasto:            blasto.Builder,
 		openrtb_ext.BidderBliink:            bliink.Builder,
@@ -337,6 +343,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderEpom:              epom.Builder,
 		openrtb_ext.BidderEscalax:           escalax.Builder,
 		openrtb_ext.BidderEVolution:         evolution.Builder,
+		openrtb_ext.BidderFeedAd:            feedad.Builder,
 		openrtb_ext.BidderFlipp:             flipp.Builder,
 		openrtb_ext.BidderFreewheelSSP:      freewheelssp.Builder,
 		openrtb_ext.BidderFRVRAdNetwork:     frvradn.Builder,
@@ -415,6 +422,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderQT:                qt.Builder,
 		openrtb_ext.BidderReadpeak:          readpeak.Builder,
 		openrtb_ext.BidderRelevantDigital:   relevantdigital.Builder,
+		openrtb_ext.BidderResetDigital:      resetdigital.Builder,
 		openrtb_ext.BidderRevcontent:        revcontent.Builder,
 		openrtb_ext.BidderRichaudience:      richaudience.Builder,
 		openrtb_ext.BidderRise:              rise.Builder,

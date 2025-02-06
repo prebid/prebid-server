@@ -45,6 +45,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderAdtrgtme,
 	BidderAdtelligent,
 	BidderAdTonos,
+	BidderAdUpTech,
 	BidderAdvangelists,
 	BidderAdverxo,
 	BidderAdView,
@@ -74,6 +75,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderBidmyadz,
 	BidderBidsCube,
 	BidderBidstack,
+	BidderBidtheatre,
 	BidderBigoAd,
 	BidderBlasto,
 	BidderBliink,
@@ -114,6 +116,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderEpom,
 	BidderEscalax,
 	BidderEVolution,
+	BidderFeedAd,
 	BidderFlipp,
 	BidderFreewheelSSP,
 	BidderFRVRAdNetwork,
@@ -191,6 +194,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderQT,
 	BidderReadpeak,
 	BidderRelevantDigital,
+	BidderResetDigital,
 	BidderRevcontent,
 	BidderRichaudience,
 	BidderRise,
@@ -391,6 +395,7 @@ const (
 	BidderAdtrgtme          BidderName = "adtrgtme"
 	BidderAdTonos           BidderName = "adtonos"
 	BidderAdtelligent       BidderName = "adtelligent"
+	BidderAdUpTech          BidderName = "aduptech"
 	BidderAdvangelists      BidderName = "advangelists"
 	BidderAdverxo           BidderName = "adverxo"
 	BidderAdView            BidderName = "adview"
@@ -420,6 +425,7 @@ const (
 	BidderBidmyadz          BidderName = "bidmyadz"
 	BidderBidsCube          BidderName = "bidscube"
 	BidderBidstack          BidderName = "bidstack"
+	BidderBidtheatre        BidderName = "bidtheatre"
 	BidderBigoAd            BidderName = "bigoad"
 	BidderBlasto            BidderName = "blasto"
 	BidderBliink            BidderName = "bliink"
@@ -460,6 +466,7 @@ const (
 	BidderEpom              BidderName = "epom"
 	BidderEscalax           BidderName = "escalax"
 	BidderEVolution         BidderName = "e_volution"
+	BidderFeedAd            BidderName = "feedad"
 	BidderFlipp             BidderName = "flipp"
 	BidderFreewheelSSP      BidderName = "freewheelssp"
 	BidderFRVRAdNetwork     BidderName = "frvradn"
@@ -537,6 +544,7 @@ const (
 	BidderQT                BidderName = "qt"
 	BidderReadpeak          BidderName = "readpeak"
 	BidderRelevantDigital   BidderName = "relevantdigital"
+	BidderResetDigital      BidderName = "resetdigital"
 	BidderRevcontent        BidderName = "revcontent"
 	BidderRichaudience      BidderName = "richaudience"
 	BidderRise              BidderName = "rise"
