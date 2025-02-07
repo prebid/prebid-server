@@ -32,9 +32,10 @@ const (
 )
 
 type ResolvedFirstPartyData struct {
-	Site *openrtb2.Site
-	App  *openrtb2.App
-	User *openrtb2.User
+	Site   *openrtb2.Site
+	App    *openrtb2.App
+	User   *openrtb2.User
+	Device *openrtb2.Device
 }
 
 // ExtractGlobalFPD extracts request level FPD from the request and removes req.{site,app,user}.ext.data if exists
@@ -159,11 +160,47 @@ func ResolveFPD(bidRequest *openrtb2.BidRequest, fpdBidderConfigData map[openrtb
 		}
 		resolvedFpdConfig.Site = newSite
 
+		newDevice, err := resolveDevice(fpdConfig, bidRequest.Device)
+		if err != nil {
+			errL = append(errL, err)
+		}
+		resolvedFpdConfig.Device = newDevice
+
 		if len(errL) == 0 {
 			resolvedFpd[openrtb_ext.BidderName(bidderName)] = resolvedFpdConfig
 		}
 	}
 	return resolvedFpd, errL
+}
+
+// resolveDevice merges the device information from the FPD (First Party Data) configuration
+// with the device information provided in the bid request. It returns a new Device object
+// that contains the merged data.
+func resolveDevice(fpdConfig *openrtb_ext.ORTB2, bidRequestDevice *openrtb2.Device) (*openrtb2.Device, error) {
+	var fpdConfigDevice json.RawMessage
+
+	if fpdConfig != nil && fpdConfig.Device != nil {
+		fpdConfigDevice = fpdConfig.Device
+	}
+
+	if bidRequestDevice == nil && fpdConfigDevice == nil {
+		return nil, nil
+	}
+
+	var newDevice *openrtb2.Device
+	if bidRequestDevice != nil {
+		newDevice = ptrutil.Clone(bidRequestDevice)
+	} else {
+		newDevice = &openrtb2.Device{}
+	}
+
+	if fpdConfigDevice != nil {
+		if err := jsonutil.MergeClone(newDevice, fpdConfigDevice); err != nil {
+			return nil, formatMergeCloneError(err)
+		}
+	}
+
+	return newDevice, nil
 }
 
 func resolveUser(fpdConfig *openrtb_ext.ORTB2, bidRequestUser *openrtb2.User, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data, bidderName string) (*openrtb2.User, error) {
@@ -377,6 +414,7 @@ func ExtractBidderConfigFPD(reqExt *openrtb_ext.RequestExt) (map[openrtb_ext.Bid
 					fpdBidderData.Site = bidderConfig.Config.ORTB2.Site
 					fpdBidderData.App = bidderConfig.Config.ORTB2.App
 					fpdBidderData.User = bidderConfig.Config.ORTB2.User
+					fpdBidderData.Device = bidderConfig.Config.ORTB2.Device
 				}
 
 				fpd[bidderName] = fpdBidderData

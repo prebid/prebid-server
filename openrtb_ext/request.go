@@ -118,10 +118,11 @@ type Config struct {
 	ORTB2 *ORTB2 `json:"ortb2,omitempty"`
 }
 
-type ORTB2 struct { //First party data
-	Site json.RawMessage `json:"site,omitempty"`
-	App  json.RawMessage `json:"app,omitempty"`
-	User json.RawMessage `json:"user,omitempty"`
+type ORTB2 struct { // First party data
+	Site   json.RawMessage `json:"site,omitempty"`
+	App    json.RawMessage `json:"app,omitempty"`
+	User   json.RawMessage `json:"user,omitempty"`
+	Device json.RawMessage `json:"device,omitempty"`
 }
 
 type ExtRequestCurrency struct {
