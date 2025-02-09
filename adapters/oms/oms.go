@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
@@ -42,7 +41,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		return nil, []error{err}
 	}
 
-	var publisherID string
+	var uri string = a.endpoint
 	if len(request.Imp[0].Ext) > 0 {
 		ext := pbsExt{}
 		err = jsonutil.Unmarshal(request.Imp[0].Ext, &ext)
@@ -50,15 +49,15 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			return nil, []error{err}
 		}
 
-		publisherID = ext.Bidder.Pid
-		if publisherID == "" && ext.Bidder.PublisherID > 0 {
-			publisherID = strconv.Itoa(ext.Bidder.PublisherID)
+		uri = fmt.Sprintf("%s?publisherId=%s", a.endpoint, ext.Bidder.Pid)
+		if ext.Bidder.Pid == "" && ext.Bidder.PublisherID > 0 {
+			uri = fmt.Sprintf("%s?publisherId=%d", a.endpoint, ext.Bidder.PublisherID)
 		}
 	}
 
 	requestData := &adapters.RequestData{
 		Method: "POST",
-		Uri:    fmt.Sprintf("%s?publisherId=%v", a.endpoint, publisherID),
+		Uri:    uri,
 		Body:   requestJSON,
 		ImpIDs: openrtb_ext.GetImpIDs(request.Imp),
 	}
