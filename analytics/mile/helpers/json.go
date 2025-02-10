@@ -11,85 +11,88 @@ func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]MileAnal
 	//var logEntry *MileAnalyticsEvent
 	var events []MileAnalyticsEvent
 	if ao != nil {
+		if ao.RequestWrapper != nil {
+			for _, imp := range ao.RequestWrapper.Imp {
 
-		for _, imp := range ao.RequestWrapper.Imp {
+				var bidBiders []string
+				var winningBidder, winningSize string
+				var winningPrice float64 = 0
+				if ao.Response != nil {
+					if ao.Response.SeatBid != nil {
 
-			var bidBiders []string
-			var winningBidder, winningSize string
-			var winningPrice float64 = 0
-			if ao.Response != nil {
-
-				for _, seatBid := range ao.Response.SeatBid {
-					for _, bid := range seatBid.Bid {
-						if bid.ImpID == imp.ID {
-							bidBiders = append(bidBiders, seatBid.Seat)
-							winningBidder = seatBid.Seat
-							if bid.Price > winningPrice {
-								winningPrice = bid.Price
-								winningBidder = seatBid.Seat
-								//winningSize = bid.Ext.
+						for _, seatBid := range ao.Response.SeatBid {
+							for _, bid := range seatBid.Bid {
+								if bid.ImpID == imp.ID {
+									bidBiders = append(bidBiders, seatBid.Seat)
+									winningBidder = seatBid.Seat
+									if bid.Price > winningPrice {
+										winningPrice = bid.Price
+										winningBidder = seatBid.Seat
+										//winningSize = bid.Ext.
+									}
+								}
 							}
 						}
 					}
 				}
-			}
 
-			fmt.Println(ao.RequestWrapper, "ext")
+				fmt.Println(ao.RequestWrapper, "ext")
 
-			var confBidders ImpressionsExt
-			if ao.RequestWrapper != nil {
+				var confBidders ImpressionsExt
+				//if ao.RequestWrapper != nil {
 				err := json.Unmarshal(imp.Ext, &confBidders)
 				if err != nil {
 					return nil, err
+					//}
 				}
-			}
-			configuredBidders := make([]string, len(confBidders.Prebid.Bidder))
-			i := 0
-			for k := range confBidders.Prebid.Bidder {
-				configuredBidders[i] = k
-				i++
-			}
-			var respExt RespExt
-			err := json.Unmarshal(ao.RequestWrapper.Ext, &respExt)
-			if err != nil {
-				return nil, err
-			}
-
-			if ao.RequestWrapper != nil {
-
-				logEntry := MileAnalyticsEvent{
-					//SessionID: ao.RequestWrapper
-					Ip:              ao.RequestWrapper.Device.IP,
-					Timestamp:       time.Now().UTC().Unix() * 1000,
-					ServerTimestamp: -1,
-					//ClientVersion: ao.RequestWrapper.Ext.
-					Ua:                ao.RequestWrapper.Device.UA,
-					ArbitraryData:     "",
-					Device:            ao.RequestWrapper.Device.Model,
-					Publisher:         ao.RequestWrapper.Site.Publisher.Domain,
-					Site:              ao.RequestWrapper.Site.Domain,
-					ReferrerURL:       ao.RequestWrapper.Site.Ref,
-					AdvertiserName:    "",
-					AuctionID:         ao.RequestWrapper.ID,
-					Page:              ao.RequestWrapper.Site.Page,
-					YetiSiteID:        ao.RequestWrapper.Site.ID,
-					YetiPublisherID:   ao.RequestWrapper.Site.Publisher.ID,
-					SessionID:         "",
-					EventType:         "pbs_agg_adunit",
-					Section:           "",
-					BidBidders:        bidBiders,
-					ConfiguredBidders: configuredBidders,
-					TimedOutBidder:    respExt.getTimeoutBidders(ao.RequestWrapper.TMax),
-					WinningBidder:     winningBidder,
-					WinningSize:       winningSize,
-					ConfiguredTimeout: ao.RequestWrapper.TMax,
-					MetaData:          map[string][]string{"prebid_server": []string{"1"}},
-					//Viewability: ao.RequestWrapper.
-					//WinningSize: ao.Response.SeatBi
-					IsPBS: true,
+				configuredBidders := make([]string, len(confBidders.Prebid.Bidder))
+				i := 0
+				for k := range confBidders.Prebid.Bidder {
+					configuredBidders[i] = k
+					i++
+				}
+				var respExt RespExt
+				err = json.Unmarshal(ao.Response.Ext, &respExt)
+				if err != nil {
+					return nil, err
 				}
 
-				events = append(events, logEntry)
+				if ao.RequestWrapper != nil {
+
+					logEntry := MileAnalyticsEvent{
+						//SessionID: ao.RequestWrapper
+						Ip:              ao.RequestWrapper.Device.IP,
+						Timestamp:       time.Now().UTC().Unix() * 1000,
+						ServerTimestamp: -1,
+						//ClientVersion: ao.RequestWrapper.Ext.
+						Ua:                ao.RequestWrapper.Device.UA,
+						ArbitraryData:     "",
+						Device:            ao.RequestWrapper.Device.Model,
+						Publisher:         ao.RequestWrapper.Site.Publisher.Domain,
+						Site:              ao.RequestWrapper.Site.Domain,
+						ReferrerURL:       ao.RequestWrapper.Site.Ref,
+						AdvertiserName:    "",
+						AuctionID:         ao.RequestWrapper.ID,
+						Page:              ao.RequestWrapper.Site.Page,
+						YetiSiteID:        ao.RequestWrapper.Site.ID,
+						YetiPublisherID:   ao.RequestWrapper.Site.Publisher.ID,
+						SessionID:         "",
+						EventType:         "pbs_agg_adunit",
+						Section:           "",
+						BidBidders:        bidBiders,
+						ConfiguredBidders: configuredBidders,
+						TimedOutBidder:    respExt.getTimeoutBidders(ao.RequestWrapper.TMax),
+						WinningBidder:     winningBidder,
+						WinningSize:       winningSize,
+						ConfiguredTimeout: ao.RequestWrapper.TMax,
+						MetaData:          map[string][]string{"prebid_server": []string{"1"}},
+						//Viewability: ao.RequestWrapper.
+						//WinningSize: ao.Response.SeatBi
+						IsPBS: true,
+					}
+
+					events = append(events, logEntry)
+				}
 			}
 		}
 
