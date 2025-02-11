@@ -122,8 +122,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 	for _, seatBid := range response.SeatBid {
 		for i := range seatBid.Bid {
-			bid := seatBid.Bid[i]
-			bidType, err := getBidType(bid)
+			bidType, err := getBidType(&seatBid.Bid[i])
 			if err != nil {
 				return nil, []error{err}
 			}
@@ -138,7 +137,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	return bidResponse, nil
 }
 
-func getBidType(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+func getBidType(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 	// determinate media type by bid response field mtype
 	switch bid.MType {
 	case openrtb2.MarkupBanner:
