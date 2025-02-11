@@ -45,6 +45,7 @@ var validParams = []string{
 	`{"publisherId": 12345}`,
 	`{"publisherId": 123456}`,
 	`{"publisherId": 12345,"pid": "12345"}`,
+	`{"publisherId": 10000}`,
 }
 
 var invalidParams = []string{
