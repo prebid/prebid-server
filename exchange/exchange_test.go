@@ -2194,7 +2194,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 			PriceFloors: config.AccountPriceFloors{Enabled: spec.AccountFloorsEnabled, EnforceDealFloors: spec.AccountEnforceDealFloors},
 			Privacy:     spec.AccountPrivacy,
 			Validations: spec.AccountConfigBidValidation,
-			//			GDPR:        config.AccountGDPR{EEACountries: spec.AccountEEACountries},
+			GDPR:        config.AccountGDPR{EEACountries: spec.AccountEEACountries},
 		},
 		UserSyncs:     mockIdFetcher(spec.IncomingRequest.Usersyncs),
 		ImpExtInfoMap: impExtInfoMap,
@@ -5521,7 +5521,7 @@ type exchangeSpec struct {
 	Server                     exchangeServer         `json:"server,omitempty"`
 	AccountPrivacy             config.AccountPrivacy  `json:"accountPrivacy,omitempty"`
 	ORTBVersion                map[string]string      `json:"ortbversion"`
-	//AccountEEACountries        []string               `json:"account_eea_countries"`
+	AccountEEACountries        []string               `json:"account_eea_countries"`
 }
 
 type multiBidSpec struct {
