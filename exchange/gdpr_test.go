@@ -156,43 +156,43 @@ func TestSelectEEACountries(t *testing.T) {
 		expected            []string
 	}{
 		{
-			description:         "Account EEA countries provided, return account's",
+			description:         "Account_EEA_countries_provided",
 			hostEEACountries:    []string{"UK", "DE"},
 			accountEEACountries: []string{"FR", "IT"},
 			expected:            []string{"FR", "IT"},
 		},
 		{
-			description:         "Account is nil, return host's",
+			description:         "Account_is_nil",
 			hostEEACountries:    []string{"UK"},
 			accountEEACountries: nil,
 			expected:            []string{"UK"},
 		},
 		{
-			description:         "Both nil, return nil",
+			description:         "Both_nil",
 			hostEEACountries:    nil,
 			accountEEACountries: nil,
 			expected:            nil,
 		},
 		{
-			description:         "Account is empty slice, return empty slice",
+			description:         "Account_is_empty_slice",
 			hostEEACountries:    []string{"UK"},
 			accountEEACountries: []string{},
 			expected:            []string{},
 		},
 		{
-			description:         "Host is nil, account provided",
+			description:         "Host_is_nil",
 			hostEEACountries:    nil,
 			accountEEACountries: []string{"DE"},
 			expected:            []string{"DE"},
 		},
 		{
-			description:         "Host and account both non-nil, return account",
+			description:         "Host_and_account_both_non-nil",
 			hostEEACountries:    []string{"UK"},
 			accountEEACountries: []string{"FR"},
 			expected:            []string{"FR"},
 		},
 		{
-			description:         "Host is empty slice, account is nil",
+			description:         "Host_is_empty_slice,_account_is_nil",
 			hostEEACountries:    []string{},
 			accountEEACountries: nil,
 			expected:            []string{},
