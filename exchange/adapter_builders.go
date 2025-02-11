@@ -196,6 +196,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/smartx"
 	"github.com/prebid/prebid-server/v3/adapters/smartyads"
 	"github.com/prebid/prebid-server/v3/adapters/smilewanted"
+	"github.com/prebid/prebid-server/v3/adapters/smoot"
 	"github.com/prebid/prebid-server/v3/adapters/smrtconnect"
 	"github.com/prebid/prebid-server/v3/adapters/sonobi"
 	"github.com/prebid/prebid-server/v3/adapters/sovrn"
@@ -442,6 +443,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderSmartx:            smartx.Builder,
 		openrtb_ext.BidderSmartyAds:         smartyads.Builder,
 		openrtb_ext.BidderSmileWanted:       smilewanted.Builder,
+		openrtb_ext.BidderSmoot:             smoot.Builder,
 		openrtb_ext.BidderSmrtconnect:       smrtconnect.Builder,
 		openrtb_ext.BidderSonobi:            sonobi.Builder,
 		openrtb_ext.BidderSovrn:             sovrn.Builder,
