@@ -4,30 +4,40 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"strings"
 	"testing"
 	"testing/iotest"
+	"time"
 
-	"github.com/prebid/prebid-server/analytics"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/gdpr"
-	"github.com/prebid/prebid-server/metrics"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/privacy"
-	"github.com/prebid/prebid-server/privacy/ccpa"
-	gdprPrivacy "github.com/prebid/prebid-server/privacy/gdpr"
-	gppPrivacy "github.com/prebid/prebid-server/privacy/gpp"
-	"github.com/prebid/prebid-server/usersync"
-	"github.com/prebid/prebid-server/util/ptrutil"
-
+	"github.com/prebid/prebid-server/v3/analytics"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/gdpr"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/metrics"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/privacy"
+	"github.com/prebid/prebid-server/v3/privacy/ccpa"
+	"github.com/prebid/prebid-server/v3/usersync"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
+
+// fakeTime implements the Time interface
+type fakeTime struct {
+	time time.Time
+}
+
+func (ft *fakeTime) Now() time.Time {
+	return ft.time
+}
 
 func TestNewCookieSyncEndpoint(t *testing.T) {
 	var (
@@ -43,18 +53,21 @@ func TestNewCookieSyncEndpoint(t *testing.T) {
 		configGDPR        = config.GDPR{HostVendorID: 42}
 		configCCPAEnforce = true
 		metrics           = metrics.MetricsEngineMock{}
-		analytics         = MockAnalytics{}
+		analytics         = MockAnalyticsRunner{}
 		fetcher           = FakeAccountsFetcher{}
 		bidders           = map[string]openrtb_ext.BidderName{"bidderA": openrtb_ext.BidderName("bidderA"), "bidderB": openrtb_ext.BidderName("bidderB")}
+		bidderInfo        = map[string]config.BidderInfo{"bidderA": {}, "bidderB": {}}
+		biddersKnown      = map[string]struct{}{"bidderA": {}, "bidderB": {}}
 	)
 
 	endpoint := NewCookieSyncEndpoint(
 		syncersByBidder,
 		&config.Configuration{
-			UserSync:   configUserSync,
-			HostCookie: configHostCookie,
-			GDPR:       configGDPR,
-			CCPA:       config.CCPA{Enforce: configCCPAEnforce},
+			UserSync:    configUserSync,
+			HostCookie:  configHostCookie,
+			GDPR:        configGDPR,
+			CCPA:        config.CCPA{Enforce: configCCPAEnforce},
+			BidderInfos: bidderInfo,
 		},
 		gdprPermsBuilder,
 		tcf2ConfigBuilder,
@@ -66,12 +79,13 @@ func TestNewCookieSyncEndpoint(t *testing.T) {
 	result := endpoint.(*cookieSyncEndpoint)
 
 	expected := &cookieSyncEndpoint{
-		chooser: usersync.NewChooser(syncersByBidder),
+		chooser: usersync.NewChooser(syncersByBidder, biddersKnown, bidderInfo),
 		config: &config.Configuration{
-			UserSync:   configUserSync,
-			HostCookie: configHostCookie,
-			GDPR:       configGDPR,
-			CCPA:       config.CCPA{Enforce: configCCPAEnforce},
+			UserSync:    configUserSync,
+			HostCookie:  configHostCookie,
+			GDPR:        configGDPR,
+			CCPA:        config.CCPA{Enforce: configCCPAEnforce},
+			BidderInfos: bidderInfo,
 		},
 		privacyConfig: usersyncPrivacyConfig{
 			gdprConfig:             configGDPR,
@@ -88,7 +102,7 @@ func TestNewCookieSyncEndpoint(t *testing.T) {
 	assert.IsType(t, &cookieSyncEndpoint{}, endpoint)
 
 	assert.Equal(t, expected.config, result.config)
-	assert.Equal(t, expected.chooser, result.chooser)
+	assert.ObjectsAreEqualValues(expected.chooser, result.chooser)
 	assert.Equal(t, expected.metrics, result.metrics)
 	assert.Equal(t, expected.pbsAnalytics, result.pbsAnalytics)
 	assert.Equal(t, expected.accountsFetcher, result.accountsFetcher)
@@ -102,20 +116,22 @@ func TestCookieSyncHandle(t *testing.T) {
 	syncTypeExpected := []usersync.SyncType{usersync.SyncTypeIFrame, usersync.SyncTypeRedirect}
 	sync := usersync.Sync{URL: "aURL", Type: usersync.SyncTypeRedirect, SupportCORS: true}
 	syncer := MockSyncer{}
-	syncer.On("GetSync", syncTypeExpected, privacy.Policies{}).Return(sync, nil).Maybe()
+	syncer.On("GetSync", syncTypeExpected, macros.UserSyncPrivacy{}).Return(sync, nil).Maybe()
 
 	cookieWithSyncs := usersync.NewCookie()
 	cookieWithSyncs.Sync("foo", "anyID")
 
 	testCases := []struct {
-		description              string
-		givenCookie              *usersync.Cookie
-		givenBody                io.Reader
-		givenChooserResult       usersync.Result
-		expectedStatusCode       int
-		expectedBody             string
-		setMetricsExpectations   func(*metrics.MetricsEngineMock)
-		setAnalyticsExpectations func(*MockAnalytics)
+		description                     string
+		givenCookie                     *usersync.Cookie
+		givenBody                       io.Reader
+		givenChooserResult              usersync.Result
+		givenAccountData                map[string]json.RawMessage
+		expectedStatusCode              int
+		expectedBody                    string
+		setMetricsExpectations          func(*metrics.MetricsEngineMock)
+		setAnalyticsExpectations        func(*MockAnalyticsRunner)
+		expectedCookieDeprecationHeader bool
 	}{
 		{
 			description: "Request With Cookie",
@@ -134,7 +150,7 @@ func TestCookieSyncHandle(t *testing.T) {
 				m.On("RecordCookieSync", metrics.CookieSyncOK).Once()
 				m.On("RecordSyncerRequest", "aSyncer", metrics.SyncerCookieSyncOK).Once()
 			},
-			setAnalyticsExpectations: func(a *MockAnalytics) {
+			setAnalyticsExpectations: func(a *MockAnalyticsRunner) {
 				expected := analytics.CookieSyncObject{
 					Status: 200,
 					Errors: nil,
@@ -166,7 +182,7 @@ func TestCookieSyncHandle(t *testing.T) {
 				m.On("RecordCookieSync", metrics.CookieSyncOK).Once()
 				m.On("RecordSyncerRequest", "aSyncer", metrics.SyncerCookieSyncOK).Once()
 			},
-			setAnalyticsExpectations: func(a *MockAnalytics) {
+			setAnalyticsExpectations: func(a *MockAnalyticsRunner) {
 				expected := analytics.CookieSyncObject{
 					Status: 200,
 					Errors: nil,
@@ -191,14 +207,14 @@ func TestCookieSyncHandle(t *testing.T) {
 				SyncersChosen:    []usersync.SyncerChoice{{Bidder: "a", Syncer: &syncer}},
 			},
 			expectedStatusCode: 400,
-			expectedBody:       `JSON parsing failed: invalid character 'm' looking for beginning of value` + "\n",
+			expectedBody:       `JSON parsing failed: expect { or n, but found m` + "\n",
 			setMetricsExpectations: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordCookieSync", metrics.CookieSyncBadRequest).Once()
 			},
-			setAnalyticsExpectations: func(a *MockAnalytics) {
+			setAnalyticsExpectations: func(a *MockAnalyticsRunner) {
 				expected := analytics.CookieSyncObject{
 					Status:       400,
-					Errors:       []error{errors.New("JSON parsing failed: invalid character 'm' looking for beginning of value")},
+					Errors:       []error{errors.New("JSON parsing failed: expect { or n, but found m")},
 					BidderStatus: []*analytics.CookieSyncBidder{},
 				}
 				a.On("LogCookieSyncObject", &expected).Once()
@@ -218,7 +234,7 @@ func TestCookieSyncHandle(t *testing.T) {
 			setMetricsExpectations: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordCookieSync", metrics.CookieSyncOptOut).Once()
 			},
-			setAnalyticsExpectations: func(a *MockAnalytics) {
+			setAnalyticsExpectations: func(a *MockAnalyticsRunner) {
 				expected := analytics.CookieSyncObject{
 					Status:       401,
 					Errors:       []error{errors.New("User has opted out")},
@@ -232,7 +248,7 @@ func TestCookieSyncHandle(t *testing.T) {
 			givenCookie: cookieWithSyncs,
 			givenBody:   strings.NewReader(`{}`),
 			givenChooserResult: usersync.Result{
-				Status:           usersync.StatusBlockedByGDPR,
+				Status:           usersync.StatusBlockedByPrivacy,
 				BiddersEvaluated: []usersync.BidderEvaluation{{Bidder: "a", SyncerKey: "aSyncer", Status: usersync.StatusOK}},
 				SyncersChosen:    []usersync.SyncerChoice{{Bidder: "a", Syncer: &syncer}},
 			},
@@ -241,11 +257,79 @@ func TestCookieSyncHandle(t *testing.T) {
 			setMetricsExpectations: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordCookieSync", metrics.CookieSyncGDPRHostCookieBlocked).Once()
 			},
-			setAnalyticsExpectations: func(a *MockAnalytics) {
+			setAnalyticsExpectations: func(a *MockAnalyticsRunner) {
 				expected := analytics.CookieSyncObject{
 					Status:       200,
 					Errors:       nil,
 					BidderStatus: []*analytics.CookieSyncBidder{},
+				}
+				a.On("LogCookieSyncObject", &expected).Once()
+			},
+		},
+		{
+			description: "Debug Check",
+			givenCookie: cookieWithSyncs,
+			givenBody:   strings.NewReader(`{"debug": true}`),
+			givenChooserResult: usersync.Result{
+				Status:           usersync.StatusOK,
+				BiddersEvaluated: []usersync.BidderEvaluation{{Bidder: "a", SyncerKey: "aSyncer", Status: usersync.StatusAlreadySynced}},
+				SyncersChosen:    []usersync.SyncerChoice{{Bidder: "a", Syncer: &syncer}},
+			},
+			expectedStatusCode: 200,
+			expectedBody: `{"status":"ok","bidder_status":[` +
+				`{"bidder":"a","no_cookie":true,"usersync":{"url":"aURL","type":"redirect","supportCORS":true}}` +
+				`],"debug":[{"bidder":"a","error":"Already in sync"}]}` + "\n",
+			setMetricsExpectations: func(m *metrics.MetricsEngineMock) {
+				m.On("RecordCookieSync", metrics.CookieSyncOK).Once()
+				m.On("RecordSyncerRequest", "aSyncer", metrics.SyncerCookieSyncAlreadySynced).Once()
+			},
+			setAnalyticsExpectations: func(a *MockAnalyticsRunner) {
+				expected := analytics.CookieSyncObject{
+					Status: 200,
+					Errors: nil,
+					BidderStatus: []*analytics.CookieSyncBidder{
+						{
+							BidderCode:   "a",
+							NoCookie:     true,
+							UsersyncInfo: &analytics.UsersyncInfo{URL: "aURL", Type: "redirect", SupportCORS: true},
+						},
+					},
+				}
+				a.On("LogCookieSyncObject", &expected).Once()
+			},
+		},
+		{
+			description: "CookieDeprecation-Set",
+			givenCookie: cookieWithSyncs,
+			givenBody:   strings.NewReader(`{"account": "testAccount"}`),
+			givenChooserResult: usersync.Result{
+				Status:           usersync.StatusOK,
+				BiddersEvaluated: []usersync.BidderEvaluation{{Bidder: "a", SyncerKey: "aSyncer", Status: usersync.StatusAlreadySynced}},
+				SyncersChosen:    []usersync.SyncerChoice{{Bidder: "a", Syncer: &syncer}},
+			},
+			givenAccountData: map[string]json.RawMessage{
+				"testAccount": json.RawMessage(`{"id":"1","privacy":{"privacysandbox":{"cookiedeprecation":{"enabled":true,"ttlsec":86400}}}}`),
+			},
+			expectedStatusCode:              200,
+			expectedCookieDeprecationHeader: true,
+			expectedBody: `{"status":"ok","bidder_status":[` +
+				`{"bidder":"a","no_cookie":true,"usersync":{"url":"aURL","type":"redirect","supportCORS":true}}` +
+				`]}` + "\n",
+			setMetricsExpectations: func(m *metrics.MetricsEngineMock) {
+				m.On("RecordCookieSync", metrics.CookieSyncOK).Once()
+				m.On("RecordSyncerRequest", "aSyncer", metrics.SyncerCookieSyncAlreadySynced).Once()
+			},
+			setAnalyticsExpectations: func(a *MockAnalyticsRunner) {
+				expected := analytics.CookieSyncObject{
+					Status: 200,
+					Errors: nil,
+					BidderStatus: []*analytics.CookieSyncBidder{
+						{
+							BidderCode:   "a",
+							NoCookie:     true,
+							UsersyncInfo: &analytics.UsersyncInfo{URL: "aURL", Type: "redirect", SupportCORS: true},
+						},
+					},
 				}
 				a.On("LogCookieSyncObject", &expected).Once()
 			},
@@ -256,10 +340,12 @@ func TestCookieSyncHandle(t *testing.T) {
 		mockMetrics := metrics.MetricsEngineMock{}
 		test.setMetricsExpectations(&mockMetrics)
 
-		mockAnalytics := MockAnalytics{}
+		mockAnalytics := MockAnalyticsRunner{}
 		test.setAnalyticsExpectations(&mockAnalytics)
 
-		fakeAccountFetcher := FakeAccountsFetcher{}
+		fakeAccountFetcher := FakeAccountsFetcher{
+			AccountData: test.givenAccountData,
+		}
 
 		gdprPermsBuilder := fakePermissionsBuilder{
 			permissions: &fakePermissions{},
@@ -294,6 +380,7 @@ func TestCookieSyncHandle(t *testing.T) {
 			metrics:         &mockMetrics,
 			pbsAnalytics:    &mockAnalytics,
 			accountsFetcher: &fakeAccountFetcher,
+			time:            &fakeTime{time: time.Date(2024, 2, 22, 9, 42, 4, 13, time.UTC)},
 		}
 		assert.NoError(t, endpoint.config.MarshalAccountDefaults())
 
@@ -301,6 +388,16 @@ func TestCookieSyncHandle(t *testing.T) {
 
 		assert.Equal(t, test.expectedStatusCode, writer.Code, test.description+":status_code")
 		assert.Equal(t, test.expectedBody, writer.Body.String(), test.description+":body")
+
+		gotCookie := writer.Header().Get("Set-Cookie")
+		if test.expectedCookieDeprecationHeader {
+			wantCookieTTL := endpoint.time.Now().Add(time.Second * time.Duration(86400)).UTC().Format(http.TimeFormat)
+			wantCookie := fmt.Sprintf("receive-cookie-deprecation=1; Path=/; Expires=%v; HttpOnly; Secure; SameSite=None; Partitioned;", wantCookieTTL)
+			assert.Equal(t, wantCookie, gotCookie, test.description)
+		} else {
+			assert.Empty(t, gotCookie, test.description)
+		}
+
 		mockMetrics.AssertExpectations(t)
 		mockAnalytics.AssertExpectations(t)
 	}
@@ -366,7 +463,7 @@ func TestExtractGDPRSignal(t *testing.T) {
 			expected: testOutput{
 				gdprSignal: gdpr.SignalAmbiguous,
 				gdprString: "2",
-				err:        &errortypes.BadInput{"GDPR signal should be integer 0 or 1"},
+				err:        &errortypes.BadInput{Message: "GDPR signal should be integer 0 or 1"},
 			},
 		},
 		{
@@ -398,8 +495,9 @@ func TestExtractPrivacyPolicies(t *testing.T) {
 		usersyncDefaultGDPRValue string
 	}
 	type testOutput struct {
-		policies   privacy.Policies
+		macros     macros.UserSyncPrivacy
 		gdprSignal gdpr.Signal
+		policies   privacy.Policies
 		err        error
 	}
 	testCases := []struct {
@@ -413,8 +511,9 @@ func TestExtractPrivacyPolicies(t *testing.T) {
 				request: cookieSyncRequest{GPP: "malformedGPPString"},
 			},
 			expected: testOutput{
-				policies:   privacy.Policies{},
+				macros:     macros.UserSyncPrivacy{},
 				gdprSignal: gdpr.SignalNo,
+				policies:   privacy.Policies{},
 				err:        errors.New("error parsing GPP header, header must have type=3"),
 			},
 		},
@@ -423,14 +522,15 @@ func TestExtractPrivacyPolicies(t *testing.T) {
 			in: testInput{
 				request: cookieSyncRequest{
 					GPP:       "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN",
-					GPPSid:    "malformed",
+					GPPSID:    "malformed",
 					USPrivacy: "1YYY",
 				},
 			},
 			expected: testOutput{
-				policies:   privacy.Policies{},
+				macros:     macros.UserSyncPrivacy{},
 				gdprSignal: gdpr.SignalNo,
-				err:        &strconv.NumError{"ParseInt", "malformed", strconv.ErrSyntax},
+				policies:   privacy.Policies{},
+				err:        &strconv.NumError{Func: "ParseInt", Num: "malformed", Err: strconv.ErrSyntax},
 			},
 		},
 		{
@@ -438,13 +538,14 @@ func TestExtractPrivacyPolicies(t *testing.T) {
 			in: testInput{
 				request: cookieSyncRequest{
 					GPP:       "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN",
-					GPPSid:    "6",
+					GPPSID:    "6",
 					USPrivacy: "1YYY",
 				},
 			},
 			expected: testOutput{
-				policies:   privacy.Policies{},
+				macros:     macros.UserSyncPrivacy{},
 				gdprSignal: gdpr.SignalNo,
+				policies:   privacy.Policies{},
 				err:        errors.New("request.us_privacy consent does not match uspv1"),
 			},
 		},
@@ -453,40 +554,36 @@ func TestExtractPrivacyPolicies(t *testing.T) {
 			in: testInput{
 				request: cookieSyncRequest{
 					GPP:    "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN",
-					GPPSid: "6",
+					GPPSID: "6",
 				},
 			},
 			expected: testOutput{
-				policies: privacy.Policies{
-					GDPR: gdprPrivacy.Policy{
-						Signal:  "0",
-						Consent: "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
-					},
-					CCPA: ccpa.Policy{
-						Consent: "1YNN",
-					},
-					GPP: gppPrivacy.Policy{
-						Consent: "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN",
-						RawSID:  "6",
-					},
+				macros: macros.UserSyncPrivacy{
+					GDPR:        "0",
+					GDPRConsent: "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+					USPrivacy:   "1YNN",
+					GPP:         "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN",
+					GPPSID:      "6",
 				},
 				gdprSignal: gdpr.SignalNo,
+				policies:   privacy.Policies{GPPSID: []int8{6}},
 				err:        nil,
 			},
 		},
 	}
 	for _, tc := range testCases {
-		// run
-		outPolicies, outSignal, outErr := extractPrivacyPolicies(tc.in.request, tc.in.usersyncDefaultGDPRValue)
-		// assertions
-		assert.Equal(t, tc.expected.policies, outPolicies, tc.desc)
+		outMacros, outSignal, outPolicies, outErr := extractPrivacyPolicies(tc.in.request, tc.in.usersyncDefaultGDPRValue)
+
+		assert.Equal(t, tc.expected.macros, outMacros, tc.desc)
 		assert.Equal(t, tc.expected.gdprSignal, outSignal, tc.desc)
+		assert.Equal(t, tc.expected.policies, outPolicies, tc.desc)
 		assert.Equal(t, tc.expected.err, outErr, tc.desc)
 	}
 }
 
 func TestCookieSyncParseRequest(t *testing.T) {
 	expectedCCPAParsedPolicy, _ := ccpa.Policy{Consent: "1NYN"}.Parse(map[string]struct{}{})
+	emptyActivityPoliciesRequest := privacy.NewRequestFromPolicies(privacy.Policies{})
 
 	testCases := []struct {
 		description          string
@@ -496,7 +593,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 		givenCCPAEnabled     bool
 		givenAccountRequired bool
 		expectedError        string
-		expectedPrivacy      privacy.Policies
+		expectedPrivacy      macros.UserSyncPrivacy
 		expectedRequest      usersync.Request
 	}{
 
@@ -516,23 +613,17 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
 			givenConfig: config.UserSync{
+				PriorityGroups: [][]string{{"a", "b", "c"}},
 				Cooperative: config.UserSyncCooperative{
 					EnabledByDefault: false,
-					PriorityGroups:   [][]string{{"a", "b", "c"}},
 				},
 			},
-			expectedPrivacy: privacy.Policies{
-				GDPR: gdprPrivacy.Policy{
-					Signal:  "1",
-					Consent: "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
-				},
-				CCPA: ccpa.Policy{
-					Consent: "1NYN",
-				},
-				GPP: gppPrivacy.Policy{
-					Consent: "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
-					RawSID:  "2",
-				},
+			expectedPrivacy: macros.UserSyncPrivacy{
+				GDPR:        "1",
+				GDPRConsent: "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+				USPrivacy:   "1NYN",
+				GPP:         "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+				GPPSID:      "2",
 			},
 			expectedRequest: usersync.Request{
 				Bidders: []string{"a", "b"},
@@ -544,11 +635,14 @@ func TestCookieSyncParseRequest(t *testing.T) {
 				Privacy: usersyncPrivacy{
 					gdprPermissions:  &fakePermissions{},
 					ccpaParsedPolicy: expectedCCPAParsedPolicy,
+					activityRequest:  privacy.NewRequestFromPolicies(privacy.Policies{GPPSID: []int8{2}}),
+					gdprSignal:       1,
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
 					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
 					Redirect: usersync.NewSpecificBidderFilter([]string{"b"}, usersync.BidderFilterModeExclude),
 				},
+				GPPSID: "2",
 			},
 		},
 		{
@@ -563,19 +657,15 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
 			givenConfig: config.UserSync{
+				PriorityGroups: [][]string{{"a", "b", "c"}},
 				Cooperative: config.UserSyncCooperative{
 					EnabledByDefault: false,
-					PriorityGroups:   [][]string{{"a", "b", "c"}},
 				},
 			},
-			expectedPrivacy: privacy.Policies{
-				GDPR: gdprPrivacy.Policy{
-					Signal:  "1",
-					Consent: "anyGDPRConsent",
-				},
-				CCPA: ccpa.Policy{
-					Consent: "1NYN",
-				},
+			expectedPrivacy: macros.UserSyncPrivacy{
+				GDPR:        "1",
+				GDPRConsent: "anyGDPRConsent",
+				USPrivacy:   "1NYN",
 			},
 			expectedRequest: usersync.Request{
 				Bidders: []string{"a", "b"},
@@ -587,6 +677,8 @@ func TestCookieSyncParseRequest(t *testing.T) {
 				Privacy: usersyncPrivacy{
 					gdprPermissions:  &fakePermissions{},
 					ccpaParsedPolicy: expectedCCPAParsedPolicy,
+					activityRequest:  emptyActivityPoliciesRequest,
+					gdprSignal:       1,
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
 					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
@@ -599,10 +691,13 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			givenBody:        strings.NewReader(`{}`),
 			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
-			expectedPrivacy:  privacy.Policies{},
+			expectedPrivacy:  macros.UserSyncPrivacy{},
 			expectedRequest: usersync.Request{
+				Limit: math.MaxInt,
 				Privacy: usersyncPrivacy{
 					gdprPermissions: &fakePermissions{},
+					activityRequest: emptyActivityPoliciesRequest,
+					gdprSignal:      -1,
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
 					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
@@ -616,19 +711,22 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
 			givenConfig: config.UserSync{
+				PriorityGroups: [][]string{{"a", "b", "c"}},
 				Cooperative: config.UserSyncCooperative{
 					EnabledByDefault: true,
-					PriorityGroups:   [][]string{{"a", "b", "c"}},
 				},
 			},
-			expectedPrivacy: privacy.Policies{},
+			expectedPrivacy: macros.UserSyncPrivacy{},
 			expectedRequest: usersync.Request{
 				Cooperative: usersync.Cooperative{
 					Enabled:        true,
 					PriorityGroups: [][]string{{"a", "b", "c"}},
 				},
+				Limit: math.MaxInt,
 				Privacy: usersyncPrivacy{
 					gdprPermissions: &fakePermissions{},
+					activityRequest: emptyActivityPoliciesRequest,
+					gdprSignal:      -1,
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
 					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
@@ -642,19 +740,22 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
 			givenConfig: config.UserSync{
+				PriorityGroups: [][]string{{"a", "b", "c"}},
 				Cooperative: config.UserSyncCooperative{
 					EnabledByDefault: false,
-					PriorityGroups:   [][]string{{"a", "b", "c"}},
 				},
 			},
-			expectedPrivacy: privacy.Policies{},
+			expectedPrivacy: macros.UserSyncPrivacy{},
 			expectedRequest: usersync.Request{
 				Cooperative: usersync.Cooperative{
 					Enabled:        false,
 					PriorityGroups: [][]string{{"a", "b", "c"}},
 				},
+				Limit: math.MaxInt,
 				Privacy: usersyncPrivacy{
 					gdprPermissions: &fakePermissions{},
+					activityRequest: emptyActivityPoliciesRequest,
+					gdprSignal:      -1,
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
 					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
@@ -668,19 +769,22 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
 			givenConfig: config.UserSync{
+				PriorityGroups: [][]string{{"a", "b", "c"}},
 				Cooperative: config.UserSyncCooperative{
 					EnabledByDefault: true,
-					PriorityGroups:   [][]string{{"a", "b", "c"}},
 				},
 			},
-			expectedPrivacy: privacy.Policies{},
+			expectedPrivacy: macros.UserSyncPrivacy{},
 			expectedRequest: usersync.Request{
 				Cooperative: usersync.Cooperative{
 					Enabled:        false,
 					PriorityGroups: [][]string{{"a", "b", "c"}},
 				},
+				Limit: math.MaxInt,
 				Privacy: usersyncPrivacy{
 					gdprPermissions: &fakePermissions{},
+					activityRequest: emptyActivityPoliciesRequest,
+					gdprSignal:      -1,
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
 					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
@@ -694,19 +798,22 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
 			givenConfig: config.UserSync{
+				PriorityGroups: [][]string{{"a", "b", "c"}},
 				Cooperative: config.UserSyncCooperative{
 					EnabledByDefault: false,
-					PriorityGroups:   [][]string{{"a", "b", "c"}},
 				},
 			},
-			expectedPrivacy: privacy.Policies{},
+			expectedPrivacy: macros.UserSyncPrivacy{},
 			expectedRequest: usersync.Request{
 				Cooperative: usersync.Cooperative{
 					Enabled:        false,
 					PriorityGroups: [][]string{{"a", "b", "c"}},
 				},
+				Limit: math.MaxInt,
 				Privacy: usersyncPrivacy{
 					gdprPermissions: &fakePermissions{},
+					activityRequest: emptyActivityPoliciesRequest,
+					gdprSignal:      -1,
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
 					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
@@ -720,19 +827,22 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
 			givenConfig: config.UserSync{
+				PriorityGroups: [][]string{{"a", "b", "c"}},
 				Cooperative: config.UserSyncCooperative{
 					EnabledByDefault: true,
-					PriorityGroups:   [][]string{{"a", "b", "c"}},
 				},
 			},
-			expectedPrivacy: privacy.Policies{},
+			expectedPrivacy: macros.UserSyncPrivacy{},
 			expectedRequest: usersync.Request{
 				Cooperative: usersync.Cooperative{
 					Enabled:        true,
 					PriorityGroups: [][]string{{"a", "b", "c"}},
 				},
+				Limit: math.MaxInt,
 				Privacy: usersyncPrivacy{
 					gdprPermissions: &fakePermissions{},
+					activityRequest: emptyActivityPoliciesRequest,
+					gdprSignal:      -1,
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
 					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
@@ -746,19 +856,22 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
 			givenConfig: config.UserSync{
+				PriorityGroups: [][]string{{"a", "b", "c"}},
 				Cooperative: config.UserSyncCooperative{
 					EnabledByDefault: false,
-					PriorityGroups:   [][]string{{"a", "b", "c"}},
 				},
 			},
-			expectedPrivacy: privacy.Policies{},
+			expectedPrivacy: macros.UserSyncPrivacy{},
 			expectedRequest: usersync.Request{
 				Cooperative: usersync.Cooperative{
 					Enabled:        true,
 					PriorityGroups: [][]string{{"a", "b", "c"}},
 				},
+				Limit: math.MaxInt,
 				Privacy: usersyncPrivacy{
 					gdprPermissions: &fakePermissions{},
+					activityRequest: emptyActivityPoliciesRequest,
+					gdprSignal:      -1,
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
 					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
@@ -771,10 +884,13 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			givenBody:        strings.NewReader(`{"us_privacy":"invalid"}`),
 			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
-			expectedPrivacy:  privacy.Policies{},
+			expectedPrivacy:  macros.UserSyncPrivacy{},
 			expectedRequest: usersync.Request{
+				Limit: math.MaxInt,
 				Privacy: usersyncPrivacy{
 					gdprPermissions: &fakePermissions{},
+					activityRequest: emptyActivityPoliciesRequest,
+					gdprSignal:      -1,
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
 					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
@@ -787,13 +903,15 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			givenBody:        strings.NewReader(`{"us_privacy":"1NYN"}`),
 			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: false,
-			expectedPrivacy: privacy.Policies{
-				CCPA: ccpa.Policy{
-					Consent: "1NYN"},
+			expectedPrivacy: macros.UserSyncPrivacy{
+				USPrivacy: "1NYN",
 			},
 			expectedRequest: usersync.Request{
+				Limit: math.MaxInt,
 				Privacy: usersyncPrivacy{
 					gdprPermissions: &fakePermissions{},
+					activityRequest: emptyActivityPoliciesRequest,
+					gdprSignal:      -1,
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
 					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
@@ -806,7 +924,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			givenBody:        strings.NewReader(`malformed`),
 			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
-			expectedError:    "JSON parsing failed: invalid character 'm' looking for beginning of value",
+			expectedError:    "JSON parsing failed: expect { or n, but found m",
 		},
 		{
 			description:      "Invalid Type Filter",
@@ -827,12 +945,15 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			givenBody:        strings.NewReader(`{"gdpr":0}`),
 			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
-			expectedPrivacy: privacy.Policies{
-				GDPR: gdprPrivacy.Policy{Signal: "0"},
+			expectedPrivacy: macros.UserSyncPrivacy{
+				GDPR: "0",
 			},
 			expectedRequest: usersync.Request{
+				Limit: math.MaxInt,
 				Privacy: usersyncPrivacy{
 					gdprPermissions: &fakePermissions{},
+					activityRequest: emptyActivityPoliciesRequest,
+					gdprSignal:      0,
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
 					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
@@ -852,12 +973,15 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			givenBody:        strings.NewReader(`{}`),
 			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
-			expectedPrivacy: privacy.Policies{
-				GDPR: gdprPrivacy.Policy{Signal: ""},
+			expectedPrivacy: macros.UserSyncPrivacy{
+				GDPR: "",
 			},
 			expectedRequest: usersync.Request{
+				Limit: math.MaxInt,
 				Privacy: usersyncPrivacy{
 					gdprPermissions: &fakePermissions{},
+					activityRequest: emptyActivityPoliciesRequest,
+					gdprSignal:      -1,
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
 					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
@@ -889,11 +1013,10 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
 			givenConfig: config.UserSync{
-				Cooperative: config.UserSyncCooperative{
-					PriorityGroups: [][]string{{"a", "b", "c"}},
-				},
+				PriorityGroups: [][]string{{"a", "b", "c"}},
+				Cooperative:    config.UserSyncCooperative{},
 			},
-			expectedPrivacy: privacy.Policies{},
+			expectedPrivacy: macros.UserSyncPrivacy{},
 			expectedRequest: usersync.Request{
 				Bidders: []string{"a", "b"},
 				Cooperative: usersync.Cooperative{
@@ -903,6 +1026,8 @@ func TestCookieSyncParseRequest(t *testing.T) {
 				Limit: 30,
 				Privacy: usersyncPrivacy{
 					gdprPermissions: &fakePermissions{},
+					activityRequest: emptyActivityPoliciesRequest,
+					gdprSignal:      -1,
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
 					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
@@ -919,12 +1044,12 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
 			givenConfig: config.UserSync{
+				PriorityGroups: [][]string{{"a", "b", "c"}},
 				Cooperative: config.UserSyncCooperative{
 					EnabledByDefault: false,
-					PriorityGroups:   [][]string{{"a", "b", "c"}},
 				},
 			},
-			expectedPrivacy: privacy.Policies{},
+			expectedPrivacy: macros.UserSyncPrivacy{},
 			expectedRequest: usersync.Request{
 				Bidders: []string{"a", "b"},
 				Cooperative: usersync.Cooperative{
@@ -934,6 +1059,8 @@ func TestCookieSyncParseRequest(t *testing.T) {
 				Limit: 20,
 				Privacy: usersyncPrivacy{
 					gdprPermissions: &fakePermissions{},
+					activityRequest: emptyActivityPoliciesRequest,
+					gdprSignal:      -1,
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
 					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
@@ -950,12 +1077,12 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
 			givenConfig: config.UserSync{
+				PriorityGroups: [][]string{{"a", "b", "c"}},
 				Cooperative: config.UserSyncCooperative{
 					EnabledByDefault: false,
-					PriorityGroups:   [][]string{{"a", "b", "c"}},
 				},
 			},
-			expectedPrivacy: privacy.Policies{},
+			expectedPrivacy: macros.UserSyncPrivacy{},
 			expectedRequest: usersync.Request{
 				Bidders: []string{"a", "b"},
 				Cooperative: usersync.Cooperative{
@@ -965,6 +1092,8 @@ func TestCookieSyncParseRequest(t *testing.T) {
 				Limit: 20,
 				Privacy: usersyncPrivacy{
 					gdprPermissions: &fakePermissions{},
+					activityRequest: emptyActivityPoliciesRequest,
+					gdprSignal:      0,
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
 					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
@@ -973,38 +1102,6 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			},
 			expectedError:        errCookieSyncAccountBlocked.Error(),
 			givenAccountRequired: true,
-		},
-
-		{
-			description: "Account Defaults - Invalid Activities",
-			givenBody: strings.NewReader(`{` +
-				`"bidders":["a", "b"],` +
-				`"account":"ValidAccountInvalidActivities"` +
-				`}`),
-			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
-			givenCCPAEnabled: true,
-			givenConfig: config.UserSync{
-				Cooperative: config.UserSyncCooperative{
-					EnabledByDefault: false,
-					PriorityGroups:   [][]string{{"a", "b", "c"}},
-				},
-			},
-			expectedPrivacy: privacy.Policies{},
-			expectedRequest: usersync.Request{
-				Bidders: []string{"a", "b"},
-				Cooperative: usersync.Cooperative{
-					Enabled:        false,
-					PriorityGroups: [][]string{{"a", "b", "c"}},
-				},
-				Limit: 0,
-				Privacy: usersyncPrivacy{
-					gdprPermissions: &fakePermissions{},
-				},
-				SyncTypeFilter: usersync.SyncTypeFilter{
-					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
-					Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
-				},
-			},
 		},
 	}
 
@@ -1036,7 +1133,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			}},
 		}
 		assert.NoError(t, endpoint.config.MarshalAccountDefaults())
-		request, privacyPolicies, err := endpoint.parseRequest(httpRequest)
+		request, privacyPolicies, _, err := endpoint.parseRequest(httpRequest)
 
 		if test.expectedError == "" {
 			assert.NoError(t, err, test.description+":err")
@@ -1050,152 +1147,242 @@ func TestCookieSyncParseRequest(t *testing.T) {
 	}
 }
 
-func TestSetLimit(t *testing.T) {
-	intNegative1 := -1
-	int20 := 20
-	int30 := 30
-	int40 := 40
+func TestGetEffectiveLimit(t *testing.T) {
+	intNegative := ptrutil.ToPtr(-1)
+	int0 := ptrutil.ToPtr(0)
+	int30 := ptrutil.ToPtr(30)
+	int40 := ptrutil.ToPtr(40)
+	intMax := ptrutil.ToPtr(math.MaxInt)
 
-	testCases := []struct {
-		description     string
+	tests := []struct {
+		name          string
+		reqLimit      *int
+		defaultLimit  *int
+		expectedLimit int
+	}{
+		{
+			name:          "nil",
+			reqLimit:      nil,
+			defaultLimit:  nil,
+			expectedLimit: math.MaxInt,
+		},
+		{
+			name:          "req_limit_negative",
+			reqLimit:      intNegative,
+			defaultLimit:  nil,
+			expectedLimit: math.MaxInt,
+		},
+		{
+			name:          "req_limit_zero",
+			reqLimit:      int0,
+			defaultLimit:  nil,
+			expectedLimit: math.MaxInt,
+		},
+		{
+			name:          "req_limit_in_range",
+			reqLimit:      int30,
+			defaultLimit:  nil,
+			expectedLimit: 30,
+		},
+		{
+			name:          "req_limit_at_max",
+			reqLimit:      intMax,
+			defaultLimit:  nil,
+			expectedLimit: math.MaxInt,
+		},
+		{
+			name:          "default_limit_negative",
+			reqLimit:      nil,
+			defaultLimit:  intNegative,
+			expectedLimit: math.MaxInt,
+		},
+		{
+			name:          "default_limit_zero",
+			reqLimit:      nil,
+			defaultLimit:  intNegative,
+			expectedLimit: math.MaxInt,
+		},
+		{
+			name:          "default_limit_in_range",
+			reqLimit:      nil,
+			defaultLimit:  int30,
+			expectedLimit: 30,
+		},
+		{
+			name:          "default_limit_at_max",
+			reqLimit:      nil,
+			defaultLimit:  intMax,
+			expectedLimit: math.MaxInt,
+		},
+		{
+			name:          "both_in_range",
+			reqLimit:      int30,
+			defaultLimit:  int40,
+			expectedLimit: 30,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result := getEffectiveLimit(test.reqLimit, test.defaultLimit)
+			assert.Equal(t, test.expectedLimit, result)
+		})
+	}
+}
+
+func TestGetEffectiveMaxLimit(t *testing.T) {
+	intNegative := ptrutil.ToPtr(-1)
+	int0 := ptrutil.ToPtr(0)
+	int30 := ptrutil.ToPtr(30)
+	intMax := ptrutil.ToPtr(math.MaxInt)
+
+	tests := []struct {
+		name          string
+		maxLimit      *int
+		expectedLimit int
+	}{
+		{
+			name:          "nil",
+			maxLimit:      nil,
+			expectedLimit: math.MaxInt,
+		},
+		{
+			name:          "req_limit_negative",
+			maxLimit:      intNegative,
+			expectedLimit: math.MaxInt,
+		},
+		{
+			name:          "req_limit_zero",
+			maxLimit:      int0,
+			expectedLimit: math.MaxInt,
+		},
+		{
+			name:          "req_limit_in_range",
+			maxLimit:      int30,
+			expectedLimit: 30,
+		},
+		{
+			name:          "req_limit_too_large",
+			maxLimit:      intMax,
+			expectedLimit: math.MaxInt,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result := getEffectiveMaxLimit(test.maxLimit)
+			assert.Equal(t, test.expectedLimit, result)
+		})
+	}
+}
+
+func TestSetLimit(t *testing.T) {
+	intNegative := ptrutil.ToPtr(-1)
+	int0 := ptrutil.ToPtr(0)
+	int10 := ptrutil.ToPtr(10)
+	int20 := ptrutil.ToPtr(20)
+	int30 := ptrutil.ToPtr(30)
+	intMax := ptrutil.ToPtr(math.MaxInt)
+
+	tests := []struct {
+		name            string
 		givenRequest    cookieSyncRequest
 		givenAccount    *config.Account
 		expectedRequest cookieSyncRequest
 	}{
 		{
-			description: "Default Limit is Applied (request limit = 0)",
+			name: "nil_limits",
 			givenRequest: cookieSyncRequest{
-				Limit: 0,
-			},
-			givenAccount: &config.Account{
-				CookieSync: config.CookieSync{
-					DefaultLimit: &int20,
-				},
-			},
-			expectedRequest: cookieSyncRequest{
-				Limit: 20,
-			},
-		},
-		{
-			description: "Default Limit is Not Applied (default limit not set)",
-			givenRequest: cookieSyncRequest{
-				Limit: 0,
+				Limit: nil,
 			},
 			givenAccount: &config.Account{
 				CookieSync: config.CookieSync{
 					DefaultLimit: nil,
+					MaxLimit:     nil,
 				},
 			},
 			expectedRequest: cookieSyncRequest{
-				Limit: 0,
+				Limit: intMax,
 			},
 		},
 		{
-			description: "Default Limit is Not Applied (request limit > 0)",
+			name: "limit_negative",
 			givenRequest: cookieSyncRequest{
-				Limit: 10,
+				Limit: intNegative,
 			},
 			givenAccount: &config.Account{
 				CookieSync: config.CookieSync{
-					DefaultLimit: &int20,
+					DefaultLimit: int20,
 				},
 			},
 			expectedRequest: cookieSyncRequest{
-				Limit: 10,
+				Limit: intMax,
 			},
 		},
 		{
-			description: "Max Limit is Applied (request limit <= 0)",
+			name: "limit_zero",
 			givenRequest: cookieSyncRequest{
-				Limit: 0,
+				Limit: int0,
 			},
 			givenAccount: &config.Account{
 				CookieSync: config.CookieSync{
-					MaxLimit: &int30,
+					DefaultLimit: int20,
 				},
 			},
 			expectedRequest: cookieSyncRequest{
-				Limit: 30,
+				Limit: intMax,
 			},
 		},
 		{
-			description: "Max Limit is Applied (0 < max < limit)",
+			name: "limit_less_than_max",
 			givenRequest: cookieSyncRequest{
-				Limit: 40,
+				Limit: int10,
 			},
 			givenAccount: &config.Account{
 				CookieSync: config.CookieSync{
-					MaxLimit: &int30,
+					DefaultLimit: int20,
+					MaxLimit:     int30,
 				},
 			},
 			expectedRequest: cookieSyncRequest{
-				Limit: 30,
+				Limit: int10,
 			},
 		},
 		{
-			description: "Max Limit is Not Applied (max not set)",
+			name: "limit_greater_than_max",
 			givenRequest: cookieSyncRequest{
-				Limit: 10,
+				Limit: int30,
 			},
 			givenAccount: &config.Account{
 				CookieSync: config.CookieSync{
-					MaxLimit: nil,
+					DefaultLimit: int20,
+					MaxLimit:     int10,
 				},
 			},
 			expectedRequest: cookieSyncRequest{
-				Limit: 10,
+				Limit: int10,
 			},
 		},
 		{
-			description: "Max Limit is Not Applied (0 < limit < max)",
+			name: "limit_at_max",
 			givenRequest: cookieSyncRequest{
-				Limit: 10,
+				Limit: intMax,
 			},
 			givenAccount: &config.Account{
-				CookieSync: config.CookieSync{
-					MaxLimit: &int30,
-				},
+				CookieSync: config.CookieSync{},
 			},
 			expectedRequest: cookieSyncRequest{
-				Limit: 10,
-			},
-		},
-		{
-			description: "Max Limit is Applied After applying the default",
-			givenRequest: cookieSyncRequest{
-				Limit: 0,
-			},
-			givenAccount: &config.Account{
-				CookieSync: config.CookieSync{
-					DefaultLimit: &int40,
-					MaxLimit:     &int30,
-				},
-			},
-			expectedRequest: cookieSyncRequest{
-				Limit: 30,
-			},
-		},
-		{
-			description: "Negative Value Check",
-			givenRequest: cookieSyncRequest{
-				Limit: 0,
-			},
-			givenAccount: &config.Account{
-				CookieSync: config.CookieSync{
-					DefaultLimit: &intNegative1,
-					MaxLimit:     &intNegative1,
-				},
-			},
-			expectedRequest: cookieSyncRequest{
-				Limit: 0,
+				Limit: intMax,
 			},
 		},
 	}
 
-	for _, test := range testCases {
-		endpoint := cookieSyncEndpoint{}
-		request := endpoint.setLimit(test.givenRequest, test.givenAccount.CookieSync)
-		assert.Equal(t, test.expectedRequest, request, test.description)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			endpoint := cookieSyncEndpoint{}
+			request := endpoint.setLimit(test.givenRequest, test.givenAccount.CookieSync)
+			assert.Equal(t, test.expectedRequest, request)
+		})
 	}
 }
 
@@ -1277,7 +1464,7 @@ func TestSetCooperativeSync(t *testing.T) {
 func TestWriteParseRequestErrorMetrics(t *testing.T) {
 	err := errors.New("anyError")
 
-	mockAnalytics := MockAnalytics{}
+	mockAnalytics := MockAnalyticsRunner{}
 	mockAnalytics.On("LogCookieSyncObject", mock.Anything)
 	writer := httptest.NewRecorder()
 
@@ -1500,7 +1687,7 @@ func TestParseBidderFilter(t *testing.T) {
 func TestCookieSyncHandleError(t *testing.T) {
 	err := errors.New("anyError")
 
-	mockAnalytics := MockAnalytics{}
+	mockAnalytics := MockAnalyticsRunner{}
 	mockAnalytics.On("LogCookieSyncObject", mock.Anything)
 	writer := httptest.NewRecorder()
 
@@ -1537,14 +1724,14 @@ func TestCookieSyncWriteBidderMetrics(t *testing.T) {
 		},
 		{
 			description: "One - Blocked By GDPR",
-			given:       []usersync.BidderEvaluation{{Bidder: "a", SyncerKey: "aSyncer", Status: usersync.StatusBlockedByGDPR}},
+			given:       []usersync.BidderEvaluation{{Bidder: "a", SyncerKey: "aSyncer", Status: usersync.StatusBlockedByPrivacy}},
 			setExpectations: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordSyncerRequest", "aSyncer", metrics.SyncerCookieSyncPrivacyBlocked).Once()
 			},
 		},
 		{
 			description: "One - Blocked By CCPA",
-			given:       []usersync.BidderEvaluation{{Bidder: "a", SyncerKey: "aSyncer", Status: usersync.StatusBlockedByCCPA}},
+			given:       []usersync.BidderEvaluation{{Bidder: "a", SyncerKey: "aSyncer", Status: usersync.StatusBlockedByPrivacy}},
 			setExpectations: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordSyncerRequest", "aSyncer", metrics.SyncerCookieSyncPrivacyBlocked).Once()
 			},
@@ -1557,10 +1744,10 @@ func TestCookieSyncWriteBidderMetrics(t *testing.T) {
 			},
 		},
 		{
-			description: "One - Type Not Supported",
-			given:       []usersync.BidderEvaluation{{Bidder: "a", SyncerKey: "aSyncer", Status: usersync.StatusTypeNotSupported}},
+			description: "One - Rejected By Filter",
+			given:       []usersync.BidderEvaluation{{Bidder: "a", SyncerKey: "aSyncer", Status: usersync.StatusRejectedByFilter}},
 			setExpectations: func(m *metrics.MetricsEngineMock) {
-				m.On("RecordSyncerRequest", "aSyncer", metrics.SyncerCookieSyncTypeNotSupported).Once()
+				m.On("RecordSyncerRequest", "aSyncer", metrics.SyncerCookieSyncRejectedByFilter).Once()
 			},
 		},
 		{
@@ -1593,26 +1780,38 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 		Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
 	}
 	syncTypeExpected := []usersync.SyncType{usersync.SyncTypeRedirect}
-	privacyPolicies := privacy.Policies{CCPA: ccpa.Policy{Consent: "anyConsent"}}
+	privacyMacros := macros.UserSyncPrivacy{USPrivacy: "anyConsent"}
 
 	// The & in the URL is necessary to test proper JSON encoding.
 	syncA := usersync.Sync{URL: "https://syncA.com/sync?a=1&b=2", Type: usersync.SyncTypeRedirect, SupportCORS: true}
 	syncerA := MockSyncer{}
-	syncerA.On("GetSync", syncTypeExpected, privacyPolicies).Return(syncA, nil).Maybe()
+	syncerA.On("GetSync", syncTypeExpected, privacyMacros).Return(syncA, nil).Maybe()
 
 	// The & in the URL is necessary to test proper JSON encoding.
 	syncB := usersync.Sync{URL: "https://syncB.com/sync?a=1&b=2", Type: usersync.SyncTypeRedirect, SupportCORS: false}
 	syncerB := MockSyncer{}
-	syncerB.On("GetSync", syncTypeExpected, privacyPolicies).Return(syncB, nil).Maybe()
+	syncerB.On("GetSync", syncTypeExpected, privacyMacros).Return(syncB, nil).Maybe()
 
 	syncWithError := usersync.Sync{}
 	syncerWithError := MockSyncer{}
-	syncerWithError.On("GetSync", syncTypeExpected, privacyPolicies).Return(syncWithError, errors.New("anyError")).Maybe()
+	syncerWithError.On("GetSync", syncTypeExpected, privacyMacros).Return(syncWithError, errors.New("anyError")).Maybe()
+
+	bidderEvalForDebug := []usersync.BidderEvaluation{
+		{Bidder: "Bidder1", Status: usersync.StatusAlreadySynced},
+		{Bidder: "Bidder2", Status: usersync.StatusUnknownBidder},
+		{Bidder: "Bidder3", Status: usersync.StatusUnconfiguredBidder},
+		{Bidder: "Bidder4", Status: usersync.StatusBlockedByPrivacy},
+		{Bidder: "Bidder5", Status: usersync.StatusRejectedByFilter},
+		{Bidder: "Bidder6", Status: usersync.StatusBlockedByUserOptOut},
+		{Bidder: "Bidder7", Status: usersync.StatusBlockedByDisabledUsersync},
+		{Bidder: "BidderA", Status: usersync.StatusDuplicate, SyncerKey: "syncerB"},
+	}
 
 	testCases := []struct {
 		description         string
 		givenCookieHasSyncs bool
 		givenSyncersChosen  []usersync.SyncerChoice
+		givenDebug          bool
 		expectedJSON        string
 		expectedAnalytics   analytics.CookieSyncObject
 	}{
@@ -1690,10 +1889,18 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 			expectedJSON:        `{"status":"no_cookie","bidder_status":[]}` + "\n",
 			expectedAnalytics:   analytics.CookieSyncObject{Status: 200, BidderStatus: []*analytics.CookieSyncBidder{}},
 		},
+		{
+			description:         "Debug is true, should see all rejected bidder eval statuses in response",
+			givenCookieHasSyncs: true,
+			givenDebug:          true,
+			givenSyncersChosen:  []usersync.SyncerChoice{},
+			expectedJSON:        `{"status":"ok","bidder_status":[],"debug":[{"bidder":"Bidder1","error":"Already in sync"},{"bidder":"Bidder2","error":"Unsupported bidder"},{"bidder":"Bidder3","error":"No sync config"},{"bidder":"Bidder4","error":"Rejected by privacy"},{"bidder":"Bidder5","error":"Rejected by request filter"},{"bidder":"Bidder6","error":"Status blocked by user opt out"},{"bidder":"Bidder7","error":"Sync disabled by config"},{"bidder":"BidderA","error":"Duplicate bidder synced as syncerB"}]}` + "\n",
+			expectedAnalytics:   analytics.CookieSyncObject{Status: 200, BidderStatus: []*analytics.CookieSyncBidder{}},
+		},
 	}
 
 	for _, test := range testCases {
-		mockAnalytics := MockAnalytics{}
+		mockAnalytics := MockAnalyticsRunner{}
 		mockAnalytics.On("LogCookieSyncObject", &test.expectedAnalytics).Once()
 
 		cookie := usersync.NewCookie()
@@ -1705,7 +1912,14 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 
 		writer := httptest.NewRecorder()
 		endpoint := cookieSyncEndpoint{pbsAnalytics: &mockAnalytics}
-		endpoint.handleResponse(writer, syncTypeFilter, cookie, privacyPolicies, test.givenSyncersChosen)
+
+		var bidderEval []usersync.BidderEvaluation
+		if test.givenDebug {
+			bidderEval = bidderEvalForDebug
+		} else {
+			bidderEval = []usersync.BidderEvaluation{}
+		}
+		endpoint.handleResponse(writer, syncTypeFilter, cookie, privacyMacros, test.givenSyncersChosen, bidderEval, test.givenDebug)
 
 		if assert.Equal(t, writer.Code, http.StatusOK, test.description+":http_status") {
 			assert.Equal(t, writer.Header().Get("Content-Type"), "application/json; charset=utf-8", test.description+":http_header")
@@ -1934,14 +2148,46 @@ func TestCookieSyncActivityControlIntegration(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			activities, err := privacy.NewActivityControl(test.accountPrivacy)
-			assert.NoError(t, err)
+			activities := privacy.NewActivityControl(test.accountPrivacy)
 			up := usersyncPrivacy{
 				activityControl: activities,
 			}
 			actualResult := up.ActivityAllowsUserSync(test.bidderName)
 			assert.Equal(t, test.expectedResult, actualResult)
 		})
+	}
+}
+
+func TestUsersyncPrivacyGDPRInScope(t *testing.T) {
+	testCases := []struct {
+		description     string
+		givenGdprSignal gdpr.Signal
+		expected        bool
+	}{
+		{
+			description:     "GDPR Signal Yes",
+			givenGdprSignal: gdpr.SignalYes,
+			expected:        true,
+		},
+		{
+			description:     "GDPR Signal No",
+			givenGdprSignal: gdpr.SignalNo,
+			expected:        false,
+		},
+		{
+			description:     "GDPR Signal Ambigious",
+			givenGdprSignal: gdpr.SignalAmbiguous,
+			expected:        false,
+		},
+	}
+
+	for _, test := range testCases {
+		privacy := usersyncPrivacy{
+			gdprSignal: test.givenGdprSignal,
+		}
+
+		result := privacy.GDPRInScope()
+		assert.Equal(t, test.expected, result, test.description)
 	}
 }
 
@@ -1968,7 +2214,7 @@ func TestCombineErrors(t *testing.T) {
 		},
 		{
 			description:    "Special Case: blocked (rejected via block list)",
-			givenErrorList: []error{&errortypes.BlacklistedAcct{}},
+			givenErrorList: []error{&errortypes.AccountDisabled{}},
 			expectedError:  errCookieSyncAccountBlocked,
 		},
 		{
@@ -1983,7 +2229,7 @@ func TestCombineErrors(t *testing.T) {
 		},
 		{
 			description:    "Special Case: multiple special cases, first one wins",
-			givenErrorList: []error{&errortypes.BlacklistedAcct{}, &errortypes.AcctRequired{}, &errortypes.MalformedAcct{}},
+			givenErrorList: []error{&errortypes.AccountDisabled{}, &errortypes.AcctRequired{}, &errortypes.MalformedAcct{}},
 			expectedError:  errCookieSyncAccountBlocked,
 		},
 	}
@@ -2011,7 +2257,7 @@ func (m *MockSyncer) Key() string {
 	return args.String(0)
 }
 
-func (m *MockSyncer) DefaultSyncType() usersync.SyncType {
+func (m *MockSyncer) DefaultResponseFormat() usersync.SyncType {
 	args := m.Called()
 	return args.Get(0).(usersync.SyncType)
 }
@@ -2021,37 +2267,41 @@ func (m *MockSyncer) SupportsType(syncTypes []usersync.SyncType) bool {
 	return args.Bool(0)
 }
 
-func (m *MockSyncer) GetSync(syncTypes []usersync.SyncType, privacyPolicies privacy.Policies) (usersync.Sync, error) {
-	args := m.Called(syncTypes, privacyPolicies)
+func (m *MockSyncer) GetSync(syncTypes []usersync.SyncType, privacyMacros macros.UserSyncPrivacy) (usersync.Sync, error) {
+	args := m.Called(syncTypes, privacyMacros)
 	return args.Get(0).(usersync.Sync), args.Error(1)
 }
 
-type MockAnalytics struct {
+type MockAnalyticsRunner struct {
 	mock.Mock
 }
 
-func (m *MockAnalytics) LogAuctionObject(obj *analytics.AuctionObject) {
+func (m *MockAnalyticsRunner) LogAuctionObject(obj *analytics.AuctionObject, ac privacy.ActivityControl) {
+	m.Called(obj, ac)
+}
+
+func (m *MockAnalyticsRunner) LogVideoObject(obj *analytics.VideoObject, ac privacy.ActivityControl) {
+	m.Called(obj, ac)
+}
+
+func (m *MockAnalyticsRunner) LogCookieSyncObject(obj *analytics.CookieSyncObject) {
 	m.Called(obj)
 }
 
-func (m *MockAnalytics) LogVideoObject(obj *analytics.VideoObject) {
+func (m *MockAnalyticsRunner) LogSetUIDObject(obj *analytics.SetUIDObject) {
 	m.Called(obj)
 }
 
-func (m *MockAnalytics) LogCookieSyncObject(obj *analytics.CookieSyncObject) {
-	m.Called(obj)
+func (m *MockAnalyticsRunner) LogAmpObject(obj *analytics.AmpObject, ac privacy.ActivityControl) {
+	m.Called(obj, ac)
 }
 
-func (m *MockAnalytics) LogSetUIDObject(obj *analytics.SetUIDObject) {
-	m.Called(obj)
+func (m *MockAnalyticsRunner) LogNotificationEventObject(obj *analytics.NotificationEvent, ac privacy.ActivityControl) {
+	m.Called(obj, ac)
 }
 
-func (m *MockAnalytics) LogAmpObject(obj *analytics.AmpObject) {
-	m.Called(obj)
-}
-
-func (m *MockAnalytics) LogNotificationEventObject(obj *analytics.NotificationEvent) {
-	m.Called(obj)
+func (m *MockAnalyticsRunner) Shutdown() {
+	m.Called()
 }
 
 type MockGDPRPerms struct {
@@ -2068,17 +2318,17 @@ func (m *MockGDPRPerms) BidderSyncAllowed(ctx context.Context, bidder openrtb_ex
 	return args.Bool(0), args.Error(1)
 }
 
-func (m *MockGDPRPerms) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (permissions gdpr.AuctionPermissions, err error) {
+func (m *MockGDPRPerms) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) gdpr.AuctionPermissions {
 	args := m.Called(ctx, bidderCoreName, bidder)
-	return args.Get(0).(gdpr.AuctionPermissions), args.Error(1)
+	return args.Get(0).(gdpr.AuctionPermissions)
 }
 
 type FakeAccountsFetcher struct {
 	AccountData map[string]json.RawMessage
 }
 
-func (f FakeAccountsFetcher) FetchAccount(ctx context.Context, defaultAccountJSON json.RawMessage, accountID string) (json.RawMessage, []error) {
-	defaultAccountJSON = json.RawMessage(`{"disabled":false}`)
+func (f FakeAccountsFetcher) FetchAccount(ctx context.Context, _ json.RawMessage, accountID string) (json.RawMessage, []error) {
+	defaultAccountJSON := json.RawMessage(`{"disabled":false}`)
 
 	if accountID == metrics.PublisherUnknown {
 		return defaultAccountJSON, nil
@@ -2100,10 +2350,10 @@ func (p *fakePermissions) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 	return true, nil
 }
 
-func (p *fakePermissions) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (permissions gdpr.AuctionPermissions, err error) {
+func (p *fakePermissions) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) gdpr.AuctionPermissions {
 	return gdpr.AuctionPermissions{
 		AllowBidRequest: true,
-	}, nil
+	}
 }
 
 func getDefaultActivityConfig(componentName string, allow bool) *config.AccountPrivacy {
@@ -2122,5 +2372,133 @@ func getDefaultActivityConfig(componentName string, allow bool) *config.AccountP
 				},
 			},
 		},
+	}
+}
+
+func TestSetCookieDeprecationHeader(t *testing.T) {
+	getTestRequest := func(addCookie bool) *http.Request {
+		r := httptest.NewRequest("POST", "/cookie_sync", nil)
+		if addCookie {
+			r.AddCookie(&http.Cookie{Name: receiveCookieDeprecation, Value: "1"})
+		}
+		return r
+	}
+
+	tests := []struct {
+		name                            string
+		responseWriter                  http.ResponseWriter
+		request                         *http.Request
+		account                         *config.Account
+		expectedCookieDeprecationHeader bool
+	}{
+		{
+			name:                            "not-present-account-nil",
+			request:                         getTestRequest(false),
+			responseWriter:                  httptest.NewRecorder(),
+			account:                         nil,
+			expectedCookieDeprecationHeader: false,
+		},
+		{
+			name:           "not-present-cookiedeprecation-disabled",
+			request:        getTestRequest(false),
+			responseWriter: httptest.NewRecorder(),
+			account: &config.Account{
+				Privacy: config.AccountPrivacy{
+					PrivacySandbox: config.PrivacySandbox{
+						CookieDeprecation: config.CookieDeprecation{
+							Enabled: false,
+						},
+					},
+				},
+			},
+			expectedCookieDeprecationHeader: false,
+		},
+		{
+			name:           "present-cookiedeprecation-disabled",
+			request:        getTestRequest(true),
+			responseWriter: httptest.NewRecorder(),
+			account: &config.Account{
+				Privacy: config.AccountPrivacy{
+					PrivacySandbox: config.PrivacySandbox{
+						CookieDeprecation: config.CookieDeprecation{
+							Enabled: false,
+						},
+					},
+				},
+			},
+			expectedCookieDeprecationHeader: false,
+		},
+		{
+			name:           "present-cookiedeprecation-enabled",
+			request:        getTestRequest(true),
+			responseWriter: httptest.NewRecorder(),
+			account: &config.Account{
+				Privacy: config.AccountPrivacy{
+					PrivacySandbox: config.PrivacySandbox{
+						CookieDeprecation: config.CookieDeprecation{
+							Enabled: true,
+							TTLSec:  86400,
+						},
+					},
+				},
+			},
+
+			expectedCookieDeprecationHeader: false,
+		},
+		{
+			name:                            "present-account-nil",
+			request:                         getTestRequest(true),
+			responseWriter:                  httptest.NewRecorder(),
+			account:                         nil,
+			expectedCookieDeprecationHeader: false,
+		},
+		{
+			name:           "not-present-cookiedeprecation-enabled",
+			request:        getTestRequest(false),
+			responseWriter: httptest.NewRecorder(),
+			account: &config.Account{
+				Privacy: config.AccountPrivacy{
+					PrivacySandbox: config.PrivacySandbox{
+						CookieDeprecation: config.CookieDeprecation{
+							Enabled: true,
+							TTLSec:  86400,
+						},
+					},
+				},
+			},
+			expectedCookieDeprecationHeader: true,
+		},
+		{
+			name:           "failed-to-read-cookiedeprecation-enabled",
+			request:        &http.Request{}, // nil cookie. error: http: named cookie not present
+			responseWriter: httptest.NewRecorder(),
+			account: &config.Account{
+				Privacy: config.AccountPrivacy{
+					PrivacySandbox: config.PrivacySandbox{
+						CookieDeprecation: config.CookieDeprecation{
+							Enabled: true,
+							TTLSec:  86400,
+						},
+					},
+				},
+			},
+			expectedCookieDeprecationHeader: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := &cookieSyncEndpoint{
+				time: &fakeTime{time: time.Date(2024, 2, 22, 9, 42, 4, 13, time.UTC)},
+			}
+			c.setCookieDeprecationHeader(tt.responseWriter, tt.request, tt.account)
+			gotCookie := tt.responseWriter.Header().Get("Set-Cookie")
+			if tt.expectedCookieDeprecationHeader {
+				wantCookieTTL := c.time.Now().Add(time.Second * time.Duration(86400)).UTC().Format(http.TimeFormat)
+				wantCookie := fmt.Sprintf("receive-cookie-deprecation=1; Path=/; Expires=%v; HttpOnly; Secure; SameSite=None; Partitioned;", wantCookieTTL)
+				assert.Equal(t, wantCookie, gotCookie, ":set_cookie_deprecation_header")
+			} else {
+				assert.Empty(t, gotCookie, ":set_cookie_deprecation_header")
+			}
+		})
 	}
 }

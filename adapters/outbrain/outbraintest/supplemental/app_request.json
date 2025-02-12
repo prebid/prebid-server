@@ -78,7 +78,8 @@
             "h": 735,
             "w": 392
           }
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,

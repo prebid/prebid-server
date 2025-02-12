@@ -164,6 +164,8 @@
                             "ext": {
                                 "origbidcpm": 24,
                                 "prebid": {
+                                    "meta": {
+                                    },
                                     "type": "native",
                                     "targeting": {
                                         "hb_bidder": "appnexus",
@@ -191,6 +193,8 @@
                             "ext": {
                                 "origbidcpm": 29,
                                 "prebid": {
+                                    "meta": {
+                                    },
                                     "targeting": {
                                         "hb_bidder": "appnexus",
                                         "hb_bidder_appnexus": "appnexus",

@@ -8,16 +8,22 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 )
 
 type SovrnAdapter struct {
 	URI string
+}
+
+type sovrnImpExt struct {
+	Bidder     openrtb_ext.ExtImpSovrn `json:"bidder"`
+	AdUnitCode string                  `json:"adunitcode,omitempty"`
 }
 
 func (s *SovrnAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -45,7 +51,7 @@ func (s *SovrnAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 
 	for _, imp := range request.Imp {
 		var bidderExt adapters.ExtImpBidder
-		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			errs = append(errs, &errortypes.BadInput{
 				Message: err.Error(),
 			})
@@ -53,7 +59,7 @@ func (s *SovrnAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 		}
 
 		var sovrnExt openrtb_ext.ExtImpSovrn
-		if err := json.Unmarshal(bidderExt.Bidder, &sovrnExt); err != nil {
+		if err := jsonutil.Unmarshal(bidderExt.Bidder, &sovrnExt); err != nil {
 			errs = append(errs, &errortypes.BadInput{
 				Message: err.Error(),
 			})
@@ -70,15 +76,29 @@ func (s *SovrnAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 
 		imp.TagID = tagId
 
-		if imp.BidFloor == 0 && sovrnExt.BidFloor > 0 {
-			imp.BidFloor = sovrnExt.BidFloor
+		extBidFloor := getExtBidFloor(sovrnExt)
+		if imp.BidFloor == 0 && extBidFloor > 0 {
+			imp.BidFloor = extBidFloor
 		}
+
+		var impExtBuffer []byte
+		impExtBuffer, err = json.Marshal(&sovrnImpExt{
+			Bidder:     sovrnExt,
+			AdUnitCode: sovrnExt.AdUnitCode,
+		})
+		if err != nil {
+			errs = append(errs, &errortypes.BadInput{
+				Message: err.Error(),
+			})
+			continue
+		}
+
+		imp.Ext = impExtBuffer
 
 		// Validate video params if appropriate
 		video := imp.Video
 		if video != nil {
 			if video.MIMEs == nil ||
-				video.MinDuration == 0 ||
 				video.MaxDuration == 0 ||
 				video.Protocols == nil {
 				errs = append(errs, &errortypes.BadInput{
@@ -108,6 +128,7 @@ func (s *SovrnAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 		Uri:     s.URI,
 		Body:    reqJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, errs
 }
 
@@ -135,7 +156,7 @@ func (s *SovrnAdapter) MakeBids(request *openrtb2.BidRequest, bidderRequest *ada
 	}
 
 	var bidResponse openrtb2.BidResponse
-	if err := json.Unmarshal(bidderResponse.Body, &bidResponse); err != nil {
+	if err := jsonutil.Unmarshal(bidderResponse.Body, &bidResponse); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: err.Error(),
 		}}
@@ -169,6 +190,18 @@ func (s *SovrnAdapter) MakeBids(request *openrtb2.BidRequest, bidderRequest *ada
 	}
 
 	return response, errs
+}
+
+func getExtBidFloor(sovrnExt openrtb_ext.ExtImpSovrn) float64 {
+	switch v := sovrnExt.BidFloor.(type) {
+	case string:
+		if numValue, err := strconv.ParseFloat(v, 64); err == nil {
+			return numValue
+		}
+	case float64:
+		return v
+	}
+	return 0
 }
 
 func getTagId(sovrnExt openrtb_ext.ExtImpSovrn) string {

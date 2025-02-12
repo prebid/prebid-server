@@ -10,9 +10,10 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/metrics"
-	metricsConf "github.com/prebid/prebid-server/metrics/config"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/metrics"
+	metricsConf "github.com/prebid/prebid-server/v3/metrics/config"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -297,7 +298,7 @@ func newHandler(numResponses int) http.HandlerFunc {
 			resp.Responses[i].UUID = strconv.Itoa(i)
 		}
 
-		respBytes, _ := json.Marshal(resp)
+		respBytes, _ := jsonutil.Marshal(resp)
 		w.Write(respBytes)
 	})
 }

@@ -1,0 +1,9 @@
+endpoint: "https://bid.zmaticoo.com/prebid/bid"
+maintainer:
+  email: "adam.li@eclicktech.com.cn"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native

@@ -12,70 +12,65 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/analytics"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/metrics"
-	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/v3/analytics"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/metrics"
+	"github.com/prebid/prebid-server/v3/privacy"
+	"github.com/prebid/prebid-server/v3/stored_requests"
 	"github.com/stretchr/testify/assert"
 )
 
-// Mock Analytics Module
 type eventsMockAnalyticsModule struct {
 	Fail    bool
 	Error   error
 	Invoked bool
 }
 
-func (e *eventsMockAnalyticsModule) LogAuctionObject(ao *analytics.AuctionObject) {
+func (e *eventsMockAnalyticsModule) LogAuctionObject(ao *analytics.AuctionObject, _ privacy.ActivityControl) {
 	if e.Fail {
 		panic(e.Error)
 	}
-	return
 }
 
-func (e *eventsMockAnalyticsModule) LogVideoObject(vo *analytics.VideoObject) {
+func (e *eventsMockAnalyticsModule) LogVideoObject(vo *analytics.VideoObject, _ privacy.ActivityControl) {
 	if e.Fail {
 		panic(e.Error)
 	}
-	return
 }
 
 func (e *eventsMockAnalyticsModule) LogCookieSyncObject(cso *analytics.CookieSyncObject) {
 	if e.Fail {
 		panic(e.Error)
 	}
-	return
 }
 
 func (e *eventsMockAnalyticsModule) LogSetUIDObject(so *analytics.SetUIDObject) {
 	if e.Fail {
 		panic(e.Error)
 	}
-	return
 }
 
-func (e *eventsMockAnalyticsModule) LogAmpObject(ao *analytics.AmpObject) {
+func (e *eventsMockAnalyticsModule) LogAmpObject(ao *analytics.AmpObject, _ privacy.ActivityControl) {
 	if e.Fail {
 		panic(e.Error)
 	}
-	return
 }
 
-func (e *eventsMockAnalyticsModule) LogNotificationEventObject(ne *analytics.NotificationEvent) {
+func (e *eventsMockAnalyticsModule) LogNotificationEventObject(ne *analytics.NotificationEvent, _ privacy.ActivityControl) {
 	if e.Fail {
 		panic(e.Error)
 	}
 	e.Invoked = true
-
-	return
 }
 
-// Mock Account fetcher
+func (e *eventsMockAnalyticsModule) Shutdown() {}
+
 var mockAccountData = map[string]json.RawMessage{
 	"events_enabled":  json.RawMessage(`{"events": {"enabled":true}}`),
 	"events_disabled": json.RawMessage(`{"events": {"enabled":false}}`),
 	"malformed_acct":  json.RawMessage(`{"events": {"enabled":"invalid type"}}`),
+	"disabled_acct":   json.RawMessage(`{"disabled": true}`),
 }
 
 type mockAccountsFetcher struct {
@@ -102,7 +97,7 @@ func (maf mockAccountsFetcher) FetchAccount(ctx context.Context, defaultAccountJ
 		return nil, []error{maf.Error}
 	}
 
-	return nil, []error{stored_requests.NotFoundError{accountID, "Account"}}
+	return nil, []error{stored_requests.NotFoundError{ID: accountID, DataType: "Account"}}
 }
 
 // Tests
@@ -656,6 +651,19 @@ func TestShouldParseEventCorrectly(t *testing.T) {
 				BidID:     "bidId",
 				Timestamp: 0,
 				Analytics: analytics.Enabled,
+			},
+		},
+		"case insensitive bidder name": {
+			req: httptest.NewRequest("GET", "/event?t=win&b=bidId&f=b&ts=1000&x=1&a=accountId&bidder=RubiCon&int=intType", strings.NewReader("")),
+			expected: &analytics.EventRequest{
+				Type:        analytics.Win,
+				BidID:       "bidId",
+				Timestamp:   1000,
+				Bidder:      "rubicon",
+				AccountID:   "",
+				Format:      analytics.Blank,
+				Analytics:   analytics.Enabled,
+				Integration: "intType",
 			},
 		},
 	}

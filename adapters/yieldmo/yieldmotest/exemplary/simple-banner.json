@@ -21,6 +21,15 @@
     ],
     "site": {
       "id": "fake-site-id"
+    },
+    "regs": {
+      "coppa": 1,
+      "ext": {
+        "gdpr": 1,
+        "us_privacy": "uspConsentString",
+        "gpp": "gppString",
+        "gpp_sid": [6]
+      }
     }
   },
   "httpCalls": [
@@ -47,8 +56,18 @@
           ],
           "site": {
             "id": "fake-site-id"
+          },
+          "regs": {
+            "coppa": 1,
+            "ext": {
+              "gdpr": 1,
+              "us_privacy": "uspConsentString",
+              "gpp": "gppString",
+              "gpp_sid": [6]
+            }
           }
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,
@@ -65,7 +84,11 @@
                   "adm": "some-test-ad",
                   "crid": "crid_10",
                   "h": 250,
-                  "w": 300
+                  "w": 300,
+                  "ext":
+                    {
+                      "mediatype": "banner"
+                    }
                 }
               ]
             }
@@ -87,7 +110,11 @@
             "adm": "some-test-ad",
             "crid": "crid_10",
             "w": 300,
-            "h": 250
+            "h": 250,
+            "ext":
+            {
+              "mediatype": "banner"
+            }
           },
           "type": "banner"
         }

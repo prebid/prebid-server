@@ -1,16 +1,4 @@
-endpoint: "http://useast.quantumdex.io/auction/pbs"
-maintainer:
-  email: "support@apacdex.com"
-modifyingVastXmlAllowed: false
-capabilities:
-  app:
-    mediaTypes:
-      - banner
-      - video
-  site:
-    mediaTypes:
-      - banner
-      - video
+aliasOf: "apacdex"
 userSync:
   iframe:
     url: https://sync.quantumdex.io/usersync/pbs?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&r={{.RedirectURL}}

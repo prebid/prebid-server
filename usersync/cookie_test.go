@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -380,82 +380,155 @@ func TestWriteCookieUserAgent(t *testing.T) {
 func TestPrepareCookieForWrite(t *testing.T) {
 	encoder := Base64Encoder{}
 	decoder := Base64Decoder{}
-	cookieToSend := &Cookie{
+
+	mainCookie := &Cookie{
 		uids: map[string]UIDEntry{
-			"1": newTempId("1234567890123456789012345678901234567890123456", 7),
-			"7": newTempId("abcdefghijklmnopqrstuvwxy", 1),
-			"2": newTempId("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 6),
-			"3": newTempId("123456789012345678901234567896123456789012345678", 5),
-			"4": newTempId("aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ", 4),
-			"5": newTempId("12345678901234567890123456789012345678901234567890", 3),
-			"6": newTempId("abcdefghij", 2),
+			"mainUID": newTempId("1234567890123456789012345678901234567890123456", 7),
+			"2":       newTempId("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 6),
+			"3":       newTempId("123456789012345678901234567896123456789012345678", 5),
+			"4":       newTempId("aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ", 4),
+			"5":       newTempId("12345678901234567890123456789012345678901234567890", 3),
+			"6":       newTempId("abcdefghij", 2),
+			"7":       newTempId("abcdefghijklmnopqrstuvwxy", 1),
 		},
 		optOut: false,
+	}
+
+	errorCookie := &Cookie{
+		uids: map[string]UIDEntry{
+			"syncerNotPriority": newTempId("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 7),
+			"2":                 newTempId("1234567890123456789012345678901234567890123456", 7), // Priority Element
+		},
+		optOut: false,
+	}
+
+	ejector := &PriorityBidderEjector{
+		PriorityGroups: [][]string{
+			{"mainUID"},
+			{"2", "3"},
+			{"4", "5", "6"},
+			{"7"},
+		},
+		SyncersByBidder: map[string]Syncer{
+			"mainUID": fakeSyncer{
+				key: "mainUID",
+			},
+			"2": fakeSyncer{
+				key: "2",
+			},
+			"3": fakeSyncer{
+				key: "3",
+			},
+			"4": fakeSyncer{
+				key: "4",
+			},
+			"5": fakeSyncer{
+				key: "5",
+			},
+			"6": fakeSyncer{
+				key: "6",
+			},
+			"mistmatchedBidder": fakeSyncer{
+				key: "7",
+			},
+		},
+		TieEjector: &OldestEjector{},
 	}
 
 	testCases := []struct {
 		name                     string
 		givenMaxCookieSize       int
+		givenCookieToSend        *Cookie
+		givenIsSyncerPriority    bool
 		expectedRemainingUidKeys []string
+		expectedError            error
 	}{
 		{
-			name:               "no-uids-ejected",
-			givenMaxCookieSize: 2000,
+			name:                  "no-uids-ejected",
+			givenMaxCookieSize:    2000,
+			givenCookieToSend:     mainCookie,
+			givenIsSyncerPriority: true,
 			expectedRemainingUidKeys: []string{
-				"1", "2", "3", "4", "5", "6", "7",
+				"mainUID", "2", "3", "4", "5", "6", "7",
 			},
 		},
 		{
-			name:               "no-uids-ejected-2",
-			givenMaxCookieSize: 0,
+			name:               "invalid-max-size",
+			givenMaxCookieSize: -100,
+			givenCookieToSend:  mainCookie,
 			expectedRemainingUidKeys: []string{
-				"1", "2", "3", "4", "5", "6", "7",
+				"mainUID", "2", "3", "4", "5", "6", "7",
 			},
 		},
 		{
-			name:               "one-uid-ejected",
-			givenMaxCookieSize: 900,
+			name:                  "syncer-is-not-priority",
+			givenMaxCookieSize:    100,
+			givenCookieToSend:     errorCookie,
+			givenIsSyncerPriority: false,
+			expectedError:         errors.New("syncer key is not a priority, and there are only priority elements left"),
+		},
+		{
+			name:                  "no-uids-ejected-2",
+			givenMaxCookieSize:    0,
+			givenCookieToSend:     mainCookie,
+			givenIsSyncerPriority: true,
 			expectedRemainingUidKeys: []string{
-				"1", "2", "3", "4", "5", "6",
+				"mainUID", "2", "3", "4", "5", "6", "7",
 			},
 		},
 		{
-			name:               "four-uids-ejected",
-			givenMaxCookieSize: 500,
+			name:                  "one-uid-ejected",
+			givenMaxCookieSize:    900,
+			givenCookieToSend:     mainCookie,
+			givenIsSyncerPriority: true,
 			expectedRemainingUidKeys: []string{
-				"1", "2", "3",
+				"mainUID", "2", "3", "4", "5", "6",
 			},
 		},
 		{
-			name:               "all-but-one-uids-ejected",
-			givenMaxCookieSize: 300,
+			name:                  "four-uids-ejected",
+			givenMaxCookieSize:    500,
+			givenCookieToSend:     mainCookie,
+			givenIsSyncerPriority: true,
 			expectedRemainingUidKeys: []string{
-				"1",
+				"mainUID", "2", "3",
 			},
 		},
 		{
-			name:                     "all-uids-ejected",
+			name:                  "all-but-one-uids-ejected",
+			givenMaxCookieSize:    300,
+			givenCookieToSend:     mainCookie,
+			givenIsSyncerPriority: true,
+			expectedRemainingUidKeys: []string{
+				"mainUID",
+			},
+		},
+		{
+			name:                     "only-main-uid-left",
 			givenMaxCookieSize:       100,
-			expectedRemainingUidKeys: []string{},
-		},
-		{
-			name:                     "invalid-max-size",
-			givenMaxCookieSize:       -100,
+			givenCookieToSend:        mainCookie,
+			expectedError:            errors.New("uid that's trying to be synced is bigger than MaxCookieSize"),
 			expectedRemainingUidKeys: []string{},
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			encodedCookie, err := cookieToSend.PrepareCookieForWrite(&config.HostCookie{MaxCookieSizeBytes: test.givenMaxCookieSize}, encoder)
-			assert.NoError(t, err)
-			decodedCookie := decoder.Decode(encodedCookie)
+			ejector.IsSyncerPriority = test.givenIsSyncerPriority
+			encodedCookie, err := test.givenCookieToSend.PrepareCookieForWrite(&config.HostCookie{MaxCookieSizeBytes: test.givenMaxCookieSize}, encoder, ejector)
 
-			for _, key := range test.expectedRemainingUidKeys {
-				_, ok := decodedCookie.uids[key]
-				assert.Equal(t, true, ok)
+			if test.expectedError != nil {
+				assert.Equal(t, test.expectedError, err)
+			} else {
+				assert.NoError(t, err)
+				decodedCookie := decoder.Decode(encodedCookie)
+
+				for _, key := range test.expectedRemainingUidKeys {
+					_, ok := decodedCookie.uids[key]
+					assert.Equal(t, true, ok)
+				}
+				assert.Equal(t, len(decodedCookie.uids), len(test.expectedRemainingUidKeys))
 			}
-			assert.Equal(t, len(decodedCookie.uids), len(test.expectedRemainingUidKeys))
 		})
 	}
 }
@@ -573,13 +646,13 @@ func TestReadCookieOptOut(t *testing.T) {
 	optOutCookieValue := "optOutCookieValue"
 	decoder := Base64Decoder{}
 
-	cookie := *(&Cookie{
+	cookie := Cookie{
 		uids: map[string]UIDEntry{
 			"foo": newTempId("fooID", 1),
 			"bar": newTempId("barID", 2),
 		},
 		optOut: false,
-	})
+	}
 
 	existingCookie, _ := ToHTTPCookie(&cookie)
 

@@ -1,0 +1,18 @@
+endpoint: "https://pbid.lemmamedia.com/lemma/servad?src=prebid&pid={{.PublisherID}}&aid={{.AdUnit}}"
+maintainer:
+  email: support@lemmatechnologies.com
+endpointCompression: gzip
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  iframe:
+    url: "https://sync.lemmadigital.com/setuid?publisher=850&redirect={{.RedirectURL}}"
+    userMacro: "${UUID}"

@@ -1,0 +1,2 @@
+endpoint: "http://ads-pbs.rtb-greedygame.com/openrtb/{{.PublisherID}}?host={{.Host}}"
+aliasOf: "limelightDigital"

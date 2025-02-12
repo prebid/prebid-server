@@ -2,6 +2,8 @@ endpoint: "https://btlr.sharethrough.com/universal/v1?supply_id=FGMrCMMc"
 maintainer:
   email: pubgrowth.engineering@sharethrough.com
 gvlVendorID: 80
+openrtb:
+  version: 2.6
 capabilities:
   app:
     mediaTypes:
@@ -15,5 +17,5 @@ capabilities:
       - native
 userSync:
   redirect:
-    url: https://match.sharethrough.com/FGMrCMMc/v1?redirectUri={{.RedirectURL}}
+    url: https://match.sharethrough.com/FGMrCMMc/v1?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirectUri={{.RedirectURL}}
     userMacro: $UID

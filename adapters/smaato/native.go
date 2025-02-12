@@ -3,7 +3,9 @@ package smaato
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/errortypes"
+
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type nativeAd struct {
@@ -12,7 +14,7 @@ type nativeAd struct {
 
 func extractAdmNative(adMarkup string) (string, error) {
 	var nativeAd nativeAd
-	if err := json.Unmarshal([]byte(adMarkup), &nativeAd); err != nil {
+	if err := jsonutil.Unmarshal([]byte(adMarkup), &nativeAd); err != nil {
 		return "", &errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Invalid ad markup %s.", adMarkup),
 		}

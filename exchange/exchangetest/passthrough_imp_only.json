@@ -144,6 +144,8 @@
                                 "someField": "someValue",
                                 "origbidcpm": 0.3,
                                 "prebid": {
+                                    "meta": {
+                                    },
                                     "type": "video",
                                     "passthrough": {
                                         "imp_passthrough_val": 20
@@ -162,6 +164,8 @@
                                 "someField": "someValue",
                                 "origbidcpm": 0.3,
                                 "prebid": {
+                                    "meta": {
+                                    },
                                     "type": "video"
                                 }
                             }

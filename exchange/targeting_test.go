@@ -8,17 +8,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/currency"
-	"github.com/prebid/prebid-server/exchange/entities"
-	"github.com/prebid/prebid-server/gdpr"
-	"github.com/prebid/prebid-server/hooks/hookexecution"
-	metricsConfig "github.com/prebid/prebid-server/metrics/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/util/ptrutil"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/currency"
+	"github.com/prebid/prebid-server/v3/exchange/entities"
+	"github.com/prebid/prebid-server/v3/gdpr"
+	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
+	metricsConfig "github.com/prebid/prebid-server/v3/metrics/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -101,7 +102,7 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 		currencyConverter: currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
 		gdprDefaultValue:  gdpr.SignalYes,
 		categoriesFetcher: categoriesFetcher,
-		bidIDGenerator:    &mockBidIDGenerator{false, false},
+		bidIDGenerator:    &fakeBidIDGenerator{GenerateBidID: false, ReturnError: false},
 	}
 	ex.requestSplitter = requestSplitter{
 		me:               ex.me,
@@ -182,7 +183,7 @@ func buildParams(t *testing.T, mockBids map[openrtb_ext.BidderName][]*openrtb2.B
 
 	paramsPrebid["bidder"] = paramsPrebidBidders
 	params["prebid"] = paramsPrebid
-	ext, err := json.Marshal(params)
+	ext, err := jsonutil.Marshal(params)
 	if err != nil {
 		t.Fatalf("Failed to make imp exts: %v", err)
 	}
@@ -224,7 +225,7 @@ func buildBidMap(seatBids []openrtb2.SeatBid, numBids int) map[string]*openrtb2.
 func parseTargets(t *testing.T, bid *openrtb2.Bid) map[string]string {
 	t.Helper()
 	var parsed openrtb_ext.ExtBid
-	if err := json.Unmarshal(bid.Ext, &parsed); err != nil {
+	if err := jsonutil.UnmarshalValid(bid.Ext, &parsed); err != nil {
 		t.Fatalf("Unexpected error parsing targeting params: %v", err)
 	}
 	return parsed.Prebid.Targeting
@@ -318,6 +319,11 @@ var bid2p166 *openrtb2.Bid = &openrtb2.Bid{
 	Price: 1.66,
 }
 
+var bid175 *openrtb2.Bid = &openrtb2.Bid{
+	Price:  1.75,
+	DealID: "mydeal2",
+}
+
 var (
 	truncateTargetAttrValue10       int = 10
 	truncateTargetAttrValue5        int = 5
@@ -338,7 +344,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 			includeWinners:   true,
 		},
 		Auction: auction{
-			winningBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
+			allBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
 				"ImpId-1": {
 					openrtb_ext.BidderAppnexus: {{
 						Bid:     bid123,
@@ -373,7 +379,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 			includeBidderKeys: true,
 		},
 		Auction: auction{
-			winningBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
+			allBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
 				"ImpId-1": {
 					openrtb_ext.BidderAppnexus: {{
 						Bid:     bid123,
@@ -409,6 +415,54 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 		TruncateTargetAttr: nil,
 	},
 	{
+		Description: "Targeting with alwaysIncludeDeals",
+		TargetData: targetData{
+			priceGranularity:   lookupPriceGranularity("med"),
+			alwaysIncludeDeals: true,
+		},
+		Auction: auction{
+			allBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
+				"ImpId-1": {
+					openrtb_ext.BidderAppnexus: {{
+						Bid:     bid111,
+						BidType: openrtb_ext.BidTypeBanner,
+					}},
+					openrtb_ext.BidderRubicon: {{
+						Bid:     bid175,
+						BidType: openrtb_ext.BidTypeBanner,
+					}},
+					openrtb_ext.BidderPubmatic: {{
+						Bid:     bid123,
+						BidType: openrtb_ext.BidTypeBanner,
+					}},
+				},
+			},
+		},
+		ExpectedPbsBids: map[string]map[openrtb_ext.BidderName][]ExpectedPbsBid{
+			"ImpId-1": {
+				openrtb_ext.BidderAppnexus: []ExpectedPbsBid{
+					{
+						BidTargets: map[string]string{
+							"hb_bidder_appnexus": "appnexus",
+							"hb_pb_appnexus":     "1.10",
+							"hb_deal_appnexus":   "mydeal",
+						},
+					},
+				},
+				openrtb_ext.BidderRubicon: []ExpectedPbsBid{
+					{
+						BidTargets: map[string]string{
+							"hb_bidder_rubicon": "rubicon",
+							"hb_pb_rubicon":     "1.70",
+							"hb_deal_rubicon":   "mydeal2",
+						},
+					},
+				},
+			},
+		},
+		TruncateTargetAttr: nil,
+	},
+	{
 		Description: "Full basic targeting with hd_format",
 		TargetData: targetData{
 			priceGranularity:  lookupPriceGranularity("med"),
@@ -417,7 +471,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 			includeFormat:     true,
 		},
 		Auction: auction{
-			winningBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
+			allBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
 				"ImpId-1": {
 					openrtb_ext.BidderAppnexus: {{
 						Bid:     bid123,
@@ -466,7 +520,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 			cachePath:         "cache",
 		},
 		Auction: auction{
-			winningBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
+			allBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
 				"ImpId-1": {
 					openrtb_ext.BidderAppnexus: {{
 						Bid:     bid123,
@@ -519,7 +573,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 			includeBidderKeys: true,
 		},
 		Auction: auction{
-			winningBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
+			allBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
 				"ImpId-1": {
 					openrtb_ext.BidderAppnexus: {{
 						Bid:     bid123,
@@ -549,7 +603,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 			includeBidderKeys: true,
 		},
 		Auction: auction{
-			winningBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
+			allBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
 				"ImpId-1": {
 					openrtb_ext.BidderAppnexus: {{
 						Bid:     bid123,
@@ -591,7 +645,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 			includeBidderKeys: true,
 		},
 		Auction: auction{
-			winningBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
+			allBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
 				"ImpId-1": {
 					openrtb_ext.BidderAppnexus: {{
 						Bid:     bid123,
@@ -633,7 +687,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 			includeBidderKeys: true,
 		},
 		Auction: auction{
-			winningBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
+			allBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
 				"ImpId-1": {
 					openrtb_ext.BidderAppnexus: {{
 						Bid:     bid123,
@@ -675,7 +729,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 			includeWinners:   true,
 		},
 		Auction: auction{
-			winningBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
+			allBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
 				"ImpId-1": {
 					openrtb_ext.BidderAppnexus: {{
 						Bid:     bid123,
@@ -710,7 +764,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 			includeWinners:   true,
 		},
 		Auction: auction{
-			winningBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
+			allBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
 				"ImpId-1": {
 					openrtb_ext.BidderAppnexus: {{
 						Bid:     bid123,
@@ -745,7 +799,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 			includeWinners:   true,
 		},
 		Auction: auction{
-			winningBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
+			allBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
 				"ImpId-1": {
 					openrtb_ext.BidderAppnexus: {{
 						Bid:     bid123,
@@ -782,7 +836,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 			includeFormat:     true,
 		},
 		Auction: auction{
-			winningBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
+			allBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
 				"ImpId-1": {
 					openrtb_ext.BidderAppnexus: {
 						{
@@ -917,7 +971,7 @@ func TestSetTargeting(t *testing.T) {
 		auc.setRoundedPrices(test.TargetData)
 		winningBids := make(map[string]*entities.PbsOrtbBid)
 		// Set winning bids from the auction data
-		for imp, bidsByBidder := range auc.winningBidsByBidder {
+		for imp, bidsByBidder := range auc.allBidsByBidder {
 			for _, bids := range bidsByBidder {
 				for _, bid := range bids {
 					if winningBid, ok := winningBids[imp]; ok {
@@ -938,12 +992,12 @@ func TestSetTargeting(t *testing.T) {
 				for i, expected := range expectedTargets {
 					assert.Equal(t,
 						expected.BidTargets,
-						auc.winningBidsByBidder[imp][bidder][i].BidTargets,
+						auc.allBidsByBidder[imp][bidder][i].BidTargets,
 						"Test: %s\nTargeting failed for bidder %s on imp %s.",
 						test.Description,
 						string(bidder),
 						imp)
-					assert.Equal(t, expected.TargetBidderCode, auc.winningBidsByBidder[imp][bidder][i].TargetBidderCode)
+					assert.Equal(t, expected.TargetBidderCode, auc.allBidsByBidder[imp][bidder][i].TargetBidderCode)
 				}
 			}
 		}

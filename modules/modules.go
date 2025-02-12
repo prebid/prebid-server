@@ -5,9 +5,10 @@ import (
 	"fmt"
 
 	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/hooks"
-	"github.com/prebid/prebid-server/modules/moduledeps"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/hooks"
+	"github.com/prebid/prebid-server/v3/modules/moduledeps"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 //go:generate go run ./generator/buildergen.go
@@ -58,7 +59,7 @@ func (m *builder) Build(
 
 			id := fmt.Sprintf("%s.%s", vendor, moduleName)
 			if data, ok := cfg[vendor][moduleName]; ok {
-				if conf, err = json.Marshal(data); err != nil {
+				if conf, err = jsonutil.Marshal(data); err != nil {
 					return nil, nil, fmt.Errorf(`failed to marshal "%s" module config: %s`, id, err)
 				}
 

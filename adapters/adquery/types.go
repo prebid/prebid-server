@@ -1,6 +1,6 @@
 package adquery
 
-import "github.com/prebid/prebid-server/openrtb_ext"
+import "github.com/prebid/prebid-server/v3/openrtb_ext"
 
 type BidderRequest struct {
 	V                   string `json:"v"`
@@ -10,6 +10,9 @@ type BidderRequest struct {
 	AdUnitCode          string `json:"adUnitCode"`
 	BidQid              string `json:"bidQid"`
 	BidId               string `json:"bidId"`
+	BidIp               string `json:"bidIp"`
+	BidIpv6             string `json:"bidIpv6"`
+	BidUa               string `json:"bidUa"`
 	Bidder              string `json:"bidder"`
 	BidPageUrl          string `json:"bidPageUrl"`
 	BidderRequestId     string `json:"bidderRequestId"`

@@ -5,15 +5,19 @@ const (
 	UnknownErrorCode = 999
 	TimeoutErrorCode = iota
 	BadInputErrorCode
-	BlacklistedAppErrorCode
+	BlockedAppErrorCode
 	BadServerResponseErrorCode
 	FailedToRequestBidsErrorCode
 	BidderTemporarilyDisabledErrorCode
-	BlacklistedAcctErrorCode
+	AccountDisabledErrorCode
 	AcctRequiredErrorCode
 	NoConversionRateErrorCode
 	MalformedAcctErrorCode
 	ModuleRejectionErrorCode
+	TmaxTimeoutErrorCode
+	FailedToMarshalErrorCode
+	FailedToUnmarshalErrorCode
+	InvalidImpFirstPartyDataErrorCode
 )
 
 // Defines numeric codes for well-known warnings.
@@ -28,6 +32,9 @@ const (
 	AdServerTargetingWarningCode
 	BidAdjustmentWarningCode
 	FloorBidRejectionWarningCode
+	InvalidBidResponseDSAWarningCode
+	SecCookieDeprecationLenWarningCode
+	SecBrowsingTopicsWarningCode
 )
 
 // Coder provides an error or warning code with severity.

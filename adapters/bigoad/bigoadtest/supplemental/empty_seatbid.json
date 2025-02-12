@@ -1,0 +1,125 @@
+{
+    "mockBidRequest": {
+        "id": "some-request-id",
+        "device": {
+            "ua": "test-user-agent",
+            "ip": "123.123.123.123",
+            "language": "en",
+            "dnt": 0
+        },
+        "tmax": 1000,
+        "user": {
+            "buyeruid": "awesome-user"
+        },
+        "app": {
+            "publisher": {
+                "id": "123456789"
+            },
+            "cat": [
+                "IAB22-1"
+            ],
+            "bundle": "com.app.awesome",
+            "name": "Awesome App",
+            "domain": "awesomeapp.com",
+            "id": "123456789"
+        },
+        "imp": [
+            {
+                "id": "some-impression-id",
+                "tagid": "ogTAGID",
+                "video": {
+                    "mimes": [
+                        "video/mp4"
+                    ],
+                    "w": 640,
+                    "h": 480,
+                    "minduration": 120,
+                    "maxduration": 150
+                },
+                "ext": {
+                    "bidder": {
+                        "sspid": "sspid"
+                    }
+                }
+            }
+        ]
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "headers": {
+                    "Content-Type": [
+                        "application/json;charset=utf-8"
+                    ],
+                    "Accept": [
+                        "application/json"
+                    ],
+                    "X-Openrtb-Version": [
+                        "2.5"
+                    ]
+                },
+                "uri": "https://api.imotech.tech/Ad/GetAdOut?sspid=sspid",
+                "body": {
+                    "id": "some-request-id",
+                    "device": {
+                        "ua": "test-user-agent",
+                        "ip": "123.123.123.123",
+                        "language": "en",
+                        "dnt": 0
+                    },
+                    "imp": [
+                        {
+                            "id": "some-impression-id",
+                            "video": {
+                                "mimes": [
+                                    "video/mp4"
+                                ],
+                                "minduration": 120,
+                                "maxduration": 150,
+                                "w": 640,
+                                "h": 480
+                            },
+                            "tagid": "ogTAGID",
+                            "ext": {
+                                "sspid": "sspid"
+                            }
+                        }
+                    ],
+                    "app": {
+                        "id": "123456789",
+                        "name": "Awesome App",
+                        "bundle": "com.app.awesome",
+                        "domain": "awesomeapp.com",
+                        "cat": [
+                            "IAB22-1"
+                        ],
+                        "publisher": {
+                            "id": "123456789"
+                        }
+                    },
+                    "user": {
+                        "buyeruid": "awesome-user"
+                    },
+                    "tmax": 1000
+                },
+                "impIDs": [
+                    "some-impression-id"
+                ]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "test-request-id",
+                    "seatbid": []
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [],
+    "expectedMakeBidsErrors": [
+        {
+            "value": "Empty SeatBid array",
+            "comparison": "literal"
+        }
+    ]
+}

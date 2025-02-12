@@ -53,13 +53,13 @@
                       }
                   },
                   "ext": {
-                      "prebid": {},
                       "wrapper": {
                           "profile": 5123,
                           "version": 1
                       }
                   }
-              }
+              },
+              "impIDs":["test-native-imp"]
           },
           "mockResponse": {
               "status": 200,

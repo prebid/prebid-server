@@ -415,7 +415,6 @@
                 "placement": 3,
                 "ext": {
                   "rp": {
-                    "size_id": 203
                   }
                 },
                 "mimes": [
@@ -459,21 +458,10 @@
                     "page": [
                       "somePage"
                     ],
-                    "ref": [
-                      "someRef"
-                    ],
-                    "search": [
-                      "someSearch"
-                    ],
-                    "pagecat": [
-                      "val1",
-                      "val2"
-                    ],
-                    "sectioncat": [
-                      "sectionCat1",
-                      "sectionCat2"
-                    ],
-                    "dfp_ad_unit_code": "adSlotFromData"
+                    "dfp_ad_unit_code": "adSlotFromData",
+                    "pbs_login": "xuser",
+                    "pbs_url": "http://hosturl.com",
+                    "pbs_version": ""
                   },
                   "track": {
                     "mint": "",
@@ -484,7 +472,8 @@
               }
             }
           ]
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,

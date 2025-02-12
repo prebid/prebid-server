@@ -1,0 +1,70 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "app": {
+            "bundle": "com.prebid"
+        },
+        "device": {
+            "ifa":"87857b31-8942-4646-ae80-ab9c95bf3fab"
+        },
+        "imp": [
+            {
+                "id": "test-imp-id",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        }
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "ppid": "mabidder-test"
+                    }
+                }
+            }
+        ]
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "https://prebid.ecdrsvc.com/pbs",
+                "body": {
+                    "id": "test-request-id",
+                    "app": {
+                        "bundle": "com.prebid"
+                    },
+                    "device": {
+                        "ifa":"87857b31-8942-4646-ae80-ab9c95bf3fab"
+                    },
+                    "imp": [
+                        {
+                            "id": "test-imp-id",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 300,
+                                        "h": 250
+                                    }
+                                ]
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "ppid": "mabidder-test"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "impIDs":["test-imp-id"]
+            },
+            "mockResponse": {
+                "status": 204,
+                "body": {
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": []
+}

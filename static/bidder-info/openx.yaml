@@ -2,15 +2,18 @@ endpoint: "http://rtb.openx.net/prebid"
 maintainer:
   email: "prebid@openx.com"
 gvlVendorID: 69
+endpointCompression: gzip
 capabilities:
   app:
     mediaTypes:
       - banner
       - video
+      - native
   site:
     mediaTypes:
       - banner
       - video
+      - native
 modifyingVastXmlAllowed: true
 userSync:
   iframe:
@@ -19,4 +22,6 @@ userSync:
   redirect:
     url: "https://rtb.openx.net/sync/prebid?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r={{.RedirectURL}}"
     userMacro: "${UID}"
+openrtb:
+  version: 2.6
 

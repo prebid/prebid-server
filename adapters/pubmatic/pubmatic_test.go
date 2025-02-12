@@ -7,11 +7,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/adapters/adapterstest"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/adapters/adapterstest"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -80,27 +80,37 @@ func TestParseImpressionObject(t *testing.T) {
 		imp                      *openrtb2.Imp
 		extractWrapperExtFromImp bool
 		extractPubIDFromImp      bool
+		displayManager           string
+		displayManagerVer        string
+	}
+	type want struct {
+		bidfloor          float64
+		impExt            json.RawMessage
+		displayManager    string
+		displayManagerVer string
 	}
 	tests := []struct {
 		name                string
 		args                args
 		expectedWrapperExt  *pubmaticWrapperExt
 		expectedPublisherId string
+		want                want
 		wantErr             bool
-		expectedBidfloor    float64
 	}{
 		{
-			name: "imp.bidfloor empty and kadfloor set",
+			name: "imp.bidfloor_empty_and_kadfloor_set",
 			args: args{
 				imp: &openrtb2.Imp{
 					Video: &openrtb2.Video{},
 					Ext:   json.RawMessage(`{"bidder":{"kadfloor":"0.12"}}`),
 				},
 			},
-			expectedBidfloor: 0.12,
+			want: want{
+				bidfloor: 0.12,
+			},
 		},
 		{
-			name: "imp.bidfloor set and kadfloor empty",
+			name: "imp.bidfloor_set_and_kadfloor_empty",
 			args: args{
 				imp: &openrtb2.Imp{
 					BidFloor: 0.12,
@@ -108,10 +118,12 @@ func TestParseImpressionObject(t *testing.T) {
 					Ext:      json.RawMessage(`{"bidder":{}}`),
 				},
 			},
-			expectedBidfloor: 0.12,
+			want: want{
+				bidfloor: 0.12,
+			},
 		},
 		{
-			name: "imp.bidfloor set and kadfloor invalid",
+			name: "imp.bidfloor_set_and_kadfloor_invalid",
 			args: args{
 				imp: &openrtb2.Imp{
 					BidFloor: 0.12,
@@ -119,10 +131,11 @@ func TestParseImpressionObject(t *testing.T) {
 					Ext:      json.RawMessage(`{"bidder":{"kadfloor":"aaa"}}`),
 				},
 			},
-			expectedBidfloor: 0.12,
-		},
+			want: want{
+				bidfloor: 0.12,
+			}},
 		{
-			name: "imp.bidfloor set and kadfloor set, higher imp.bidfloor",
+			name: "imp.bidfloor_set_and_kadfloor_set_higher_imp.bidfloor",
 			args: args{
 				imp: &openrtb2.Imp{
 					BidFloor: 0.12,
@@ -130,10 +143,11 @@ func TestParseImpressionObject(t *testing.T) {
 					Ext:      json.RawMessage(`{"bidder":{"kadfloor":"0.11"}}`),
 				},
 			},
-			expectedBidfloor: 0.12,
-		},
+			want: want{
+				bidfloor: 0.12,
+			}},
 		{
-			name: "imp.bidfloor set and kadfloor set, higher kadfloor",
+			name: "imp.bidfloor_set_and_kadfloor_set,_higher_kadfloor",
 			args: args{
 				imp: &openrtb2.Imp{
 					BidFloor: 0.12,
@@ -141,10 +155,11 @@ func TestParseImpressionObject(t *testing.T) {
 					Ext:      json.RawMessage(`{"bidder":{"kadfloor":"0.13"}}`),
 				},
 			},
-			expectedBidfloor: 0.13,
-		},
+			want: want{
+				bidfloor: 0.13,
+			}},
 		{
-			name: "kadfloor string set with whitespace",
+			name: "kadfloor_string_set_with_whitespace",
 			args: args{
 				imp: &openrtb2.Imp{
 					BidFloor: 0.12,
@@ -152,16 +167,72 @@ func TestParseImpressionObject(t *testing.T) {
 					Ext:      json.RawMessage(`{"bidder":{"kadfloor":" \t  0.13  "}}`),
 				},
 			},
-			expectedBidfloor: 0.13,
+			want: want{
+				bidfloor: 0.13,
+			}},
+		{
+			name: "Populate_imp.displaymanager_and_imp.displaymanagerver_if_both_are_empty_in_imp",
+			args: args{
+				imp: &openrtb2.Imp{
+					Video: &openrtb2.Video{},
+					Ext:   json.RawMessage(`{"bidder":{"kadfloor":"0.12"}}`),
+				},
+				displayManager:    "prebid-mobile",
+				displayManagerVer: "1.0.0",
+			},
+			want: want{
+				bidfloor:          0.12,
+				impExt:            json.RawMessage(nil),
+				displayManager:    "prebid-mobile",
+				displayManagerVer: "1.0.0",
+			},
+		},
+		{
+			name: "do_not_populate_imp.displaymanager_and_imp.displaymanagerver_in_imp_if_only_displaymanager_or_displaymanagerver_is_present_in_args",
+			args: args{
+				imp: &openrtb2.Imp{
+					Video:             &openrtb2.Video{},
+					Ext:               json.RawMessage(`{"bidder":{"kadfloor":"0.12"}}`),
+					DisplayManagerVer: "1.0.0",
+				},
+				displayManager:    "prebid-mobile",
+				displayManagerVer: "1.0.0",
+			},
+			want: want{
+				bidfloor:          0.12,
+				impExt:            json.RawMessage(nil),
+				displayManagerVer: "1.0.0",
+			},
+		},
+		{
+			name: "do_not_populate_imp.displaymanager_and_imp.displaymanagerver_if_already_present_in_imp",
+			args: args{
+				imp: &openrtb2.Imp{
+					Video:             &openrtb2.Video{},
+					Ext:               json.RawMessage(`{"bidder":{"kadfloor":"0.12"}}`),
+					DisplayManager:    "prebid-mobile",
+					DisplayManagerVer: "1.0.0",
+				},
+				displayManager:    "prebid-android",
+				displayManagerVer: "2.0.0",
+			},
+			want: want{
+				bidfloor:          0.12,
+				impExt:            json.RawMessage(nil),
+				displayManager:    "prebid-mobile",
+				displayManagerVer: "1.0.0",
+			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			receivedWrapperExt, receivedPublisherId, err := parseImpressionObject(tt.args.imp, tt.args.extractWrapperExtFromImp, tt.args.extractPubIDFromImp)
+			receivedWrapperExt, receivedPublisherId, err := parseImpressionObject(tt.args.imp, tt.args.extractWrapperExtFromImp, tt.args.extractPubIDFromImp, tt.args.displayManager, tt.args.displayManagerVer)
 			assert.Equal(t, tt.wantErr, err != nil)
 			assert.Equal(t, tt.expectedWrapperExt, receivedWrapperExt)
 			assert.Equal(t, tt.expectedPublisherId, receivedPublisherId)
-			assert.Equal(t, tt.expectedBidfloor, tt.args.imp.BidFloor)
+			assert.Equal(t, tt.want.bidfloor, tt.args.imp.BidFloor)
+			assert.Equal(t, tt.want.displayManager, tt.args.imp.DisplayManager)
+			assert.Equal(t, tt.want.displayManagerVer, tt.args.imp.DisplayManagerVer)
 		})
 	}
 }
@@ -177,37 +248,31 @@ func TestExtractPubmaticExtFromRequest(t *testing.T) {
 		wantErr        bool
 	}{
 		{
-			name: "nil request",
+			name: "nil_request",
 			args: args{
 				request: nil,
 			},
 			wantErr: false,
 		},
 		{
-			name: "nil req.ext",
+			name: "nil_req.ext",
 			args: args{
 				request: &openrtb2.BidRequest{Ext: nil},
 			},
 			wantErr: false,
 		},
 		{
-			name: "Pubmatic wrapper ext missing/empty (empty bidderparms)",
+			name: "Pubmatic_wrapper_ext_missing/empty_(empty_bidderparms)",
 			args: args{
 				request: &openrtb2.BidRequest{
 					Ext: json.RawMessage(`{"prebid":{"bidderparams":{}}}`),
 				},
 			},
-			expectedReqExt: extRequestAdServer{
-				ExtRequest: openrtb_ext.ExtRequest{
-					Prebid: openrtb_ext.ExtRequestPrebid{
-						BidderParams: json.RawMessage("{}"),
-					},
-				},
-			},
-			wantErr: false,
+			expectedReqExt: extRequestAdServer{},
+			wantErr:        false,
 		},
 		{
-			name: "Only Pubmatic wrapper ext present",
+			name: "Only_Pubmatic_wrapper_ext_present",
 			args: args{
 				request: &openrtb2.BidRequest{
 					Ext: json.RawMessage(`{"prebid":{"bidderparams":{"wrapper":{"profile":123,"version":456}}}}`),
@@ -215,16 +280,11 @@ func TestExtractPubmaticExtFromRequest(t *testing.T) {
 			},
 			expectedReqExt: extRequestAdServer{
 				Wrapper: &pubmaticWrapperExt{ProfileID: 123, VersionID: 456},
-				ExtRequest: openrtb_ext.ExtRequest{
-					Prebid: openrtb_ext.ExtRequestPrebid{
-						BidderParams: json.RawMessage(`{"wrapper":{"profile":123,"version":456}}`),
-					},
-				},
 			},
 			wantErr: false,
 		},
 		{
-			name: "Invalid Pubmatic wrapper ext",
+			name: "Invalid_Pubmatic_wrapper_ext",
 			args: args{
 				request: &openrtb2.BidRequest{
 					Ext: json.RawMessage(`{"prebid":{"bidderparams":"}}}`),
@@ -233,7 +293,7 @@ func TestExtractPubmaticExtFromRequest(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Valid Pubmatic acat ext",
+			name: "Valid_Pubmatic_acat_ext",
 			args: args{
 				request: &openrtb2.BidRequest{
 					Ext: json.RawMessage(`{"prebid":{"bidderparams":{"acat":[" drg \t","dlu","ssr"],"wrapper":{"profile":123,"version":456}}}}`),
@@ -242,16 +302,11 @@ func TestExtractPubmaticExtFromRequest(t *testing.T) {
 			expectedReqExt: extRequestAdServer{
 				Wrapper: &pubmaticWrapperExt{ProfileID: 123, VersionID: 456},
 				Acat:    []string{"drg", "dlu", "ssr"},
-				ExtRequest: openrtb_ext.ExtRequest{
-					Prebid: openrtb_ext.ExtRequestPrebid{
-						BidderParams: json.RawMessage(`{"acat":[" drg \t","dlu","ssr"],"wrapper":{"profile":123,"version":456}}`),
-					},
-				},
 			},
 			wantErr: false,
 		},
 		{
-			name: "Invalid Pubmatic acat ext",
+			name: "Invalid_Pubmatic_acat_ext",
 			args: args{
 				request: &openrtb2.BidRequest{
 					Ext: json.RawMessage(`{"prebid":{"bidderparams":{"acat":[1,3,4],"wrapper":{"profile":123,"version":456}}}}`),
@@ -259,16 +314,11 @@ func TestExtractPubmaticExtFromRequest(t *testing.T) {
 			},
 			expectedReqExt: extRequestAdServer{
 				Wrapper: &pubmaticWrapperExt{ProfileID: 123, VersionID: 456},
-				ExtRequest: openrtb_ext.ExtRequest{
-					Prebid: openrtb_ext.ExtRequestPrebid{
-						BidderParams: json.RawMessage(`{"acat":[1,3,4],"wrapper":{"profile":123,"version":456}}`),
-					},
-				},
 			},
 			wantErr: true,
 		},
 		{
-			name: "Valid Pubmatic marketplace ext",
+			name: "Valid_Pubmatic_marketplace_ext",
 			args: args{
 				request: &openrtb2.BidRequest{
 					Ext: json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":{"pubmatic":{"enabled":true,"allowedbiddercodes":["groupm"]}}},"bidderparams":{"wrapper":{"profile":123,"version":456}}}}`),
@@ -277,12 +327,6 @@ func TestExtractPubmaticExtFromRequest(t *testing.T) {
 			expectedReqExt: extRequestAdServer{
 				Marketplace: &marketplaceReqExt{AllowedBidders: []string{"pubmatic", "groupm"}},
 				Wrapper:     &pubmaticWrapperExt{ProfileID: 123, VersionID: 456},
-				ExtRequest: openrtb_ext.ExtRequest{
-					Prebid: openrtb_ext.ExtRequestPrebid{
-						BidderParams:         json.RawMessage(`{"wrapper":{"profile":123,"version":456}}`),
-						AlternateBidderCodes: &openrtb_ext.ExtAlternateBidderCodes{Enabled: true, Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{"pubmatic": {Enabled: true, AllowedBidderCodes: []string{"groupm"}}}},
-					},
-				},
 			},
 			wantErr: false,
 		},
@@ -314,7 +358,7 @@ func TestPubmaticAdapter_MakeRequests(t *testing.T) {
 		// Happy paths covered by TestJsonSamples()
 		// Covering only error scenarios here
 		{
-			name: "invalid bidderparams",
+			name: "invalid_bidderparams",
 			args: args{
 				request: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"bidderparams":{"wrapper":"123"}}}`)},
 			},
@@ -350,7 +394,7 @@ func TestPubmaticAdapter_MakeBids(t *testing.T) {
 		wantResp *adapters.BidderResponse
 	}{
 		{
-			name: "happy path, valid response with all bid params",
+			name: "happy_path,_valid_response_with_all_bid_params",
 			args: args{
 				response: &adapters.ResponseData{
 					StatusCode: http.StatusOK,
@@ -383,7 +427,7 @@ func TestPubmaticAdapter_MakeBids(t *testing.T) {
 			},
 		},
 		{
-			name: "ignore invalid prebiddealpriority",
+			name: "ignore_invalid_prebiddealpriority",
 			args: args{
 				response: &adapters.ResponseData{
 					StatusCode: http.StatusOK,
@@ -437,56 +481,56 @@ func Test_getAlternateBidderCodesFromRequest(t *testing.T) {
 		want []string
 	}{
 		{
-			name: "request.ext nil",
+			name: "request.ext_nil",
 			args: args{
 				bidRequest: &openrtb2.BidRequest{Ext: nil},
 			},
 			want: nil,
 		},
 		{
-			name: "alternatebiddercodes not present in request.ext",
+			name: "alternatebiddercodes_not_present_in_request.ext",
 			args: args{
 				bidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{}}`)},
 			},
 			want: nil,
 		},
 		{
-			name: "alternatebiddercodes feature disabled",
+			name: "alternatebiddercodes_feature_disabled",
 			args: args{
 				bidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":false,"bidders":{"pubmatic":{"enabled":true,"allowedbiddercodes":["groupm"]}}}}}`)},
 			},
 			want: []string{"pubmatic"},
 		},
 		{
-			name: "alternatebiddercodes disabled at bidder level",
+			name: "alternatebiddercodes_disabled_at_bidder_level",
 			args: args{
 				bidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":{"pubmatic":{"enabled":false,"allowedbiddercodes":["groupm"]}}}}}`)},
 			},
 			want: []string{"pubmatic"},
 		},
 		{
-			name: "alternatebiddercodes list not defined",
+			name: "alternatebiddercodes_list_not_defined",
 			args: args{
 				bidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":{"pubmatic":{"enabled":true}}}}}`)},
 			},
 			want: []string{"all"},
 		},
 		{
-			name: "wildcard in alternatebiddercodes list",
+			name: "wildcard_in_alternatebiddercodes_list",
 			args: args{
 				bidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":{"pubmatic":{"enabled":true,"allowedbiddercodes":["*"]}}}}}`)},
 			},
 			want: []string{"all"},
 		},
 		{
-			name: "empty alternatebiddercodes list",
+			name: "empty_alternatebiddercodes_list",
 			args: args{
 				bidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":{"pubmatic":{"enabled":true,"allowedbiddercodes":[]}}}}}`)},
 			},
 			want: []string{"pubmatic"},
 		},
 		{
-			name: "only groupm in alternatebiddercodes allowed",
+			name: "only_groupm_in_alternatebiddercodes_allowed",
 			args: args{
 				bidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":{"pubmatic":{"enabled":true,"allowedbiddercodes":["groupm"]}}}}}`)},
 			},
@@ -520,7 +564,7 @@ func TestPopulateFirstPartyDataImpAttributes(t *testing.T) {
 		expectedImpExt map[string]interface{}
 	}{
 		{
-			name: "Only Targeting present in imp.ext.data",
+			name: "Only_Targeting_present_in_imp.ext.data",
 			args: args{
 				data:      json.RawMessage(`{"sport":["rugby","cricket"]}`),
 				impExtMap: map[string]interface{}{},
@@ -530,7 +574,7 @@ func TestPopulateFirstPartyDataImpAttributes(t *testing.T) {
 			},
 		},
 		{
-			name: "Targeting and adserver object present in imp.ext.data",
+			name: "Targeting_and_adserver_object_present_in_imp.ext.data",
 			args: args{
 				data:      json.RawMessage(`{"adserver": {"name": "gam","adslot": "/1111/home"},"pbadslot": "/2222/home","sport":["rugby","cricket"]}`),
 				impExtMap: map[string]interface{}{},
@@ -541,7 +585,7 @@ func TestPopulateFirstPartyDataImpAttributes(t *testing.T) {
 			},
 		},
 		{
-			name: "Targeting and pbadslot key present in imp.ext.data ",
+			name: "Targeting_and_pbadslot_key_present_in_imp.ext.data",
 			args: args{
 				data:      json.RawMessage(`{"pbadslot": "/2222/home","sport":["rugby","cricket"]}`),
 				impExtMap: map[string]interface{}{},
@@ -552,7 +596,7 @@ func TestPopulateFirstPartyDataImpAttributes(t *testing.T) {
 			},
 		},
 		{
-			name: "Targeting and Invalid Adserver object in imp.ext.data",
+			name: "Targeting_and_Invalid_Adserver_object_in_imp.ext.data",
 			args: args{
 				data:      json.RawMessage(`{"adserver": "invalid","sport":["rugby","cricket"]}`),
 				impExtMap: map[string]interface{}{},
@@ -562,7 +606,7 @@ func TestPopulateFirstPartyDataImpAttributes(t *testing.T) {
 			},
 		},
 		{
-			name: "key_val already present in imp.ext.data",
+			name: "key_val_already_present_in_imp.ext.data",
 			args: args{
 				data: json.RawMessage(`{"sport":["rugby","cricket"]}`),
 				impExtMap: map[string]interface{}{
@@ -574,7 +618,7 @@ func TestPopulateFirstPartyDataImpAttributes(t *testing.T) {
 			},
 		},
 		{
-			name: "int data present in imp.ext.data",
+			name: "int_data_present_in_imp.ext.data",
 			args: args{
 				data:      json.RawMessage(`{"age": 25}`),
 				impExtMap: map[string]interface{}{},
@@ -584,7 +628,7 @@ func TestPopulateFirstPartyDataImpAttributes(t *testing.T) {
 			},
 		},
 		{
-			name: "float data present in imp.ext.data",
+			name: "float_data_present_in_imp.ext.data",
 			args: args{
 				data:      json.RawMessage(`{"floor": 0.15}`),
 				impExtMap: map[string]interface{}{},
@@ -594,7 +638,7 @@ func TestPopulateFirstPartyDataImpAttributes(t *testing.T) {
 			},
 		},
 		{
-			name: "bool data present in imp.ext.data",
+			name: "bool_data_present_in_imp.ext.data",
 			args: args{
 				data:      json.RawMessage(`{"k1": true}`),
 				impExtMap: map[string]interface{}{},
@@ -604,7 +648,7 @@ func TestPopulateFirstPartyDataImpAttributes(t *testing.T) {
 			},
 		},
 		{
-			name: "imp.ext.data is not present",
+			name: "imp.ext.data_is_not_present",
 			args: args{
 				data:      nil,
 				impExtMap: map[string]interface{}{},
@@ -612,7 +656,7 @@ func TestPopulateFirstPartyDataImpAttributes(t *testing.T) {
 			expectedImpExt: map[string]interface{}{},
 		},
 		{
-			name: "string with spaces present in imp.ext.data",
+			name: "string_with_spaces_present_in_imp.ext.data",
 			args: args{
 				data:      json.RawMessage(`{"  category  ": "   cinema  "}`),
 				impExtMap: map[string]interface{}{},
@@ -622,7 +666,7 @@ func TestPopulateFirstPartyDataImpAttributes(t *testing.T) {
 			},
 		},
 		{
-			name: "string array with spaces present in imp.ext.data",
+			name: "string_array_with_spaces_present_in_imp.ext.data",
 			args: args{
 				data:      json.RawMessage(`{"  country\t": ["  India", "\tChina  "]}`),
 				impExtMap: map[string]interface{}{},
@@ -632,7 +676,7 @@ func TestPopulateFirstPartyDataImpAttributes(t *testing.T) {
 			},
 		},
 		{
-			name: "Invalid data present in imp.ext.data",
+			name: "Invalid_data_present_in_imp.ext.data",
 			args: args{
 				data:      json.RawMessage(`{"country": [1, "India"],"category":"movies"}`),
 				impExtMap: map[string]interface{}{},
@@ -672,12 +716,12 @@ func TestGetStringArray(t *testing.T) {
 		output []string
 	}{
 		{
-			name:   "Valid String Array",
+			name:   "Valid_String_Array",
 			input:  append(make([]interface{}, 0), "hello", "world"),
 			output: []string{"hello", "world"},
 		},
 		{
-			name:   "Invalid String Array",
+			name:   "Invalid_String_Array",
 			input:  append(make([]interface{}, 0), 1, 2),
 			output: nil,
 		},
@@ -697,14 +741,14 @@ func TestGetMapFromJSON(t *testing.T) {
 		output map[string]interface{}
 	}{
 		{
-			name:  "Valid JSON",
+			name:  "Valid_JSON",
 			input: json.RawMessage(`{"buyid":"testBuyId"}`),
 			output: map[string]interface{}{
 				"buyid": "testBuyId",
 			},
 		},
 		{
-			name:   "Invalid JSON",
+			name:   "Invalid_JSON",
 			input:  json.RawMessage(`{"buyid":}`),
 			output: nil,
 		},
@@ -713,6 +757,135 @@ func TestGetMapFromJSON(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := getMapFromJSON(tt.input)
 			assert.Equal(t, tt.output, got)
+		})
+	}
+}
+
+func TestGetDisplayManagerAndVer(t *testing.T) {
+	type args struct {
+		app *openrtb2.App
+	}
+	type want struct {
+		displayManager    string
+		displayManagerVer string
+	}
+	tests := []struct {
+		name string
+		args args
+		want want
+	}{
+		{
+			name: "request_app_object_is_not_nil_but_app.ext_has_no_source_and_version",
+			args: args{
+
+				app: &openrtb2.App{
+					Name: "AutoScout24",
+					Ext:  json.RawMessage(`{}`),
+				},
+			},
+			want: want{
+				displayManager:    "",
+				displayManagerVer: "",
+			},
+		},
+		{
+			name: "request_app_object_is_not_nil_and_app.ext_has_source_and_version",
+			args: args{
+
+				app: &openrtb2.App{
+					Name: "AutoScout24",
+					Ext:  json.RawMessage(`{"source":"prebid-mobile","version":"1.0.0"}`),
+				},
+			},
+			want: want{
+				displayManager:    "prebid-mobile",
+				displayManagerVer: "1.0.0",
+			},
+		},
+		{
+			name: "request_app_object_is_not_nil_and_app.ext.prebid_has_source_and_version",
+			args: args{
+				app: &openrtb2.App{
+					Name: "AutoScout24",
+					Ext:  json.RawMessage(`{"prebid":{"source":"prebid-mobile","version":"1.0.0"}}`),
+				},
+			},
+			want: want{
+				displayManager:    "prebid-mobile",
+				displayManagerVer: "1.0.0",
+			},
+		},
+		{
+			name: "request_app_object_is_not_nil_and_app.ext_has_only_version",
+			args: args{
+				app: &openrtb2.App{
+					Name: "AutoScout24",
+					Ext:  json.RawMessage(`{"version":"1.0.0"}`),
+				},
+			},
+			want: want{
+				displayManager:    "",
+				displayManagerVer: "",
+			},
+		},
+		{
+			name: "request_app_object_is_not_nil_and_app.ext_has_only_source",
+			args: args{
+				app: &openrtb2.App{
+					Name: "AutoScout24",
+					Ext:  json.RawMessage(`{"source":"prebid-mobile"}`),
+				},
+			},
+			want: want{
+				displayManager:    "",
+				displayManagerVer: "",
+			},
+		},
+		{
+			name: "request_app_object_is_not_nil_and_app.ext_have_empty_source_but_version_is_present",
+			args: args{
+				app: &openrtb2.App{
+					Name: "AutoScout24",
+					Ext:  json.RawMessage(`{"source":"", "version":"1.0.0"}`),
+				},
+			},
+			want: want{
+				displayManager:    "",
+				displayManagerVer: "",
+			},
+		},
+		{
+			name: "request_app_object_is_not_nil_and_app.ext_have_empty_version_but_source_is_present",
+			args: args{
+				app: &openrtb2.App{
+					Name: "AutoScout24",
+					Ext:  json.RawMessage(`{"source":"prebid-mobile", "version":""}`),
+				},
+			},
+			want: want{
+				displayManager:    "",
+				displayManagerVer: "",
+			},
+		},
+		{
+			name: "request_app_object_is_not_nil_and_both_app.ext_and_app.ext.prebid_have_source_and_version",
+			args: args{
+				app: &openrtb2.App{
+					Name: "AutoScout24",
+					Ext:  json.RawMessage(`{"source":"prebid-mobile-android","version":"2.0.0","prebid":{"source":"prebid-mobile","version":"1.0.0"}}`),
+				},
+			},
+			want: want{
+				displayManager:    "prebid-mobile",
+				displayManagerVer: "1.0.0",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			displayManager, displayManagerVer := getDisplayManagerAndVer(tt.args.app)
+			assert.Equal(t, tt.want.displayManager, displayManager)
+			assert.Equal(t, tt.want.displayManagerVer, displayManagerVer)
 		})
 	}
 }

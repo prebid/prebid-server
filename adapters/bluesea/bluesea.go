@@ -6,11 +6,12 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -67,6 +68,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			Uri:     fmt.Sprintf("%s?%s", a.endpoint, queryString),
 			Body:    reqJson,
 			Headers: headers,
+			ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 		}
 		requestDatas = append(requestDatas, requestData)
 	}
@@ -81,14 +83,14 @@ func extraImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpBluesea, error) {
 	var impExt adapters.ExtImpBidder
 	var blueseaImpExt openrtb_ext.ExtImpBluesea
 
-	err := json.Unmarshal(imp.Ext, &impExt)
+	err := jsonutil.Unmarshal(imp.Ext, &impExt)
 	if err != nil {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("Error in parsing imp.ext. err = %v, imp.ext = %v", err.Error(), string(imp.Ext)),
 		}
 	}
 
-	err = json.Unmarshal(impExt.Bidder, &blueseaImpExt)
+	err = jsonutil.Unmarshal(impExt.Bidder, &blueseaImpExt)
 	if err != nil {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("Error in parsing imp.ext.bidder. err = %v, bidder = %v", err.Error(), string(impExt.Bidder)),
@@ -96,7 +98,7 @@ func extraImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpBluesea, error) {
 	}
 	if len(blueseaImpExt.PubId) == 0 || len(blueseaImpExt.Token) == 0 {
 		return nil, &errortypes.BadInput{
-			Message: fmt.Sprintf("Error in parsing imp.ext.bidder, empty pubid or token"),
+			Message: "Error in parsing imp.ext.bidder, empty pubid or token",
 		}
 	}
 	return &blueseaImpExt, nil
@@ -113,7 +115,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	}
 
 	var blueseaResponse openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &blueseaResponse); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &blueseaResponse); err != nil {
 		return nil, []error{fmt.Errorf("Error in parsing bidresponse body")}
 	}
 
@@ -144,7 +146,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 func getMediaTypeForBid(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 
 	var bidExt blueseaBidExt
-	if err := json.Unmarshal(bid.Ext, &bidExt); err != nil {
+	if err := jsonutil.Unmarshal(bid.Ext, &bidExt); err != nil {
 		return "", fmt.Errorf("Error in parsing bid.ext")
 	}
 

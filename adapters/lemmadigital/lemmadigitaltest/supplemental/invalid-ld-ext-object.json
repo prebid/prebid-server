@@ -1,0 +1,42 @@
+{
+  "expectedMakeRequestsErrors": [{
+    "value": "Invalid imp.ext for impression index 0. Error Infomation: expect { or n, but found",
+    "comparison": "startswith"
+  }],
+  "mockBidRequest": {
+    "app": {
+      "bundle": "com.ld.test",
+      "cat": [
+        "IAB-1"
+      ],
+      "domain": "ld.com",
+      "id": "1",
+      "name": "LD Test",
+      "publisher": {
+        "id": "1"
+      }
+    },
+    "device": {
+      "dnt": 0,
+      "ip": "0.0.0.0",
+      "language": "en",
+      "ua": "user-agent"
+    },
+    "id": "test-request-id-video",
+    "imp": [{
+      "id": "test-imp-id-video",
+      "video": {
+        "h": 1080,
+        "mimes": [
+          "video/mp4"
+        ],
+        "protocols": [
+          1
+        ],
+        "w": 1920
+      }
+    }],
+    "tmax": 1000
+  },
+  "httpCalls": []
+}

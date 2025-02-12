@@ -47,11 +47,11 @@
 			}
 		]
 	},
-	
+
 	"httpCalls": [
 		{
 			"expectedRequest": {
-				"uri": "http://whatever.url?format=json&tzo=0",
+				"uri": "http://whatever.url?format=prebidServer&tzo=0",
 				"body": {
 					"adUnits": [
 						{
@@ -67,7 +67,8 @@
 					],
 					"context": "prebid.org",
 					"metaData": {}
-				}
+				},
+				"impIDs":["test-imp-id","test-imp-id-2"]
 			},
 			"mockResponse": {
 				"status": 200,
@@ -83,6 +84,7 @@
 									"destinationUrls": {
 										"url": "http://www.google.com"
 									},
+									"advertiserDomains": ["google.com"],
 									"bid": {
 										"amount": 20.0,
 										"currency": "NOK"
@@ -105,6 +107,7 @@
 									"destinationUrls": {
 										"url": "http://www.google.com"
 									},
+									"advertiserDomains": ["google.com"],
 									"bid": {
 										"amount": 20.0,
 										"currency": "NOK"
@@ -158,6 +161,6 @@
 			],
 			"currency": "NOK"
 		}
-	
+
     ]
 }

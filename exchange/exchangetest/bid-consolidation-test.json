@@ -127,6 +127,8 @@
               "ext": {
                 "origbidcpm": 0.4,
                 "prebid": {
+                  "meta": {
+                  },
                   "type": "video"
                 }
               }
@@ -146,6 +148,8 @@
               "ext": {
                 "origbidcpm": 0.3,
                 "prebid": {
+                  "meta": {
+                  },
                   "type": "video"
                 }
               }
@@ -160,6 +164,8 @@
               "ext": {
                 "origbidcpm": 0.6,
                 "prebid": {
+                  "meta": {
+                  },
                   "type": "video"
                 }
               }

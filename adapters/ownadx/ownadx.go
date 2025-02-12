@@ -3,14 +3,16 @@ package ownadx
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 	"text/template"
+
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -44,7 +46,8 @@ func (adapter *adapter) getRequestData(bidRequest *openrtb2.BidRequest, impExt *
 		Method:  "POST",
 		Uri:     url,
 		Body:    reqJSON,
-		Headers: headers}, nil
+		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(pbidRequest.Imp)}, nil
 
 }
 func createBidRequest(rtbBidRequest *openrtb2.BidRequest, imps []openrtb2.Imp) *openrtb2.BidRequest {
@@ -54,23 +57,23 @@ func createBidRequest(rtbBidRequest *openrtb2.BidRequest, imps []openrtb2.Imp) *
 }
 func (adapter *adapter) buildEndpointURL(params *openrtb_ext.ExtImpOwnAdx) (string, error) {
 	endpointParams := macros.EndpointTemplateParams{
-		ZoneID:    params.SspId,
-		AccountID: params.SeatId,
-		SourceId:  params.TokenId,
+		SspID:   params.SspId, // Macro
+		SeatID:  params.SeatId,
+		TokenID: params.TokenId,
 	}
 	return macros.ResolveMacros(adapter.endpoint, endpointParams)
 }
 
 func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpOwnAdx, error) {
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: "Bidder extension not valid or can't be unmarshalled",
 		}
 	}
 
 	var ownAdxExt openrtb_ext.ExtImpOwnAdx
-	if err := json.Unmarshal(bidderExt.Bidder, &ownAdxExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &ownAdxExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: "Error while unmarshaling bidder extension",
 		}
@@ -122,6 +125,7 @@ func groupImpsByExt(imps []openrtb2.Imp) (map[openrtb_ext.ExtImpOwnAdx][]openrtb
 }
 
 func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -140,34 +144,34 @@ func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 		}
 	}
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{
 			&errortypes.BadServerResponse{
-				Message: fmt.Sprintf("Bad server response "),
+				Message: "Bad server response ",
 			},
 		}
 	}
 	if len(bidResp.SeatBid) == 0 {
 		return nil, []error{
 			&errortypes.BadServerResponse{
-				Message: fmt.Sprintf("Array SeatBid cannot be empty "),
+				Message: "Array SeatBid cannot be empty ",
 			},
 		}
 	}
 
 	seatBid := bidResp.SeatBid[0]
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
+
 	if len(seatBid.Bid) == 0 {
 		return nil, []error{
 			&errortypes.BadServerResponse{
-				Message: fmt.Sprintf("Bid cannot be empty "),
+				Message: "Bid cannot be empty ",
 			},
 		}
 	}
 	for i := 0; i < len(seatBid.Bid); i++ {
 		var bidType openrtb_ext.BidType
 		bid := seatBid.Bid[i]
-
 		bidType, err := getMediaType(bid)
 		if err != nil {
 			return nil, []error{&errortypes.BadServerResponse{

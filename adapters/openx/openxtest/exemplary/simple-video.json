@@ -42,7 +42,8 @@
             "bc": "hb_pbs_1.0.0",
             "delDomain": "se-demo-d.openx.net"
           }
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,
@@ -59,7 +60,10 @@
                 "adm": "some-test-ad",
                 "crid": "crid_10",
                 "w": 1024,
-                "h": 576
+                "h": 576,
+                "cattax": 1,
+                "cat": ["IAB20"],
+                "dur": 30
               }]
             }
           ]
@@ -81,7 +85,14 @@
             "adm": "some-test-ad",
             "crid": "crid_10",
             "w": 1024,
-            "h": 576
+            "h": 576,
+            "cattax": 1,
+            "cat": ["IAB20"],
+            "dur": 30
+          },
+          "video": {
+            "duration": 30,
+            "primary_category": "IAB20"
           },
           "type": "video"
         }

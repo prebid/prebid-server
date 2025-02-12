@@ -4,11 +4,8 @@ import (
 	"testing"
 	"text/template"
 
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/privacy"
-	"github.com/prebid/prebid-server/privacy/ccpa"
-	"github.com/prebid/prebid-server/privacy/gdpr"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/macros"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,7 +13,7 @@ func TestNewSyncer(t *testing.T) {
 	var (
 		supportCORS      = true
 		hostConfig       = config.UserSync{ExternalURL: "http://host.com", RedirectURL: "{{.ExternalURL}}/host"}
-		macroValues      = macros.UserSyncTemplateParams{GDPR: "A", GDPRConsent: "B", USPrivacy: "C"}
+		macroValues      = macros.UserSyncPrivacy{GDPR: "A", GDPRConsent: "B", USPrivacy: "C"}
 		iframeConfig     = &config.SyncerEndpoint{URL: "https://bidder.com/iframe?redirect={{.RedirectURL}}"}
 		redirectConfig   = &config.SyncerEndpoint{URL: "https://bidder.com/redirect?redirect={{.RedirectURL}}"}
 		errParseConfig   = &config.SyncerEndpoint{URL: "{{malformed}}"}
@@ -30,6 +27,7 @@ func TestNewSyncer(t *testing.T) {
 		givenIFrameConfig   *config.SyncerEndpoint
 		givenRedirectConfig *config.SyncerEndpoint
 		givenExternalURL    string
+		givenForceType      string
 		expectedError       string
 		expectedDefault     SyncType
 		expectedIFrame      string
@@ -186,7 +184,7 @@ func TestBuildTemplate(t *testing.T) {
 		key           = "anyKey"
 		syncTypeValue = "x"
 		hostConfig    = config.UserSync{ExternalURL: "http://host.com", RedirectURL: "{{.ExternalURL}}/host"}
-		macroValues   = macros.UserSyncTemplateParams{GDPR: "A", GDPRConsent: "B", USPrivacy: "C", GPP: "D", GPPSID: "1"}
+		macroValues   = macros.UserSyncPrivacy{GDPR: "A", GDPRConsent: "B", USPrivacy: "C", GPP: "D", GPPSID: "1"}
 	)
 
 	testCases := []struct {
@@ -325,7 +323,7 @@ func TestBuildTemplate(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		result, err := buildTemplate(key, syncTypeValue, hostConfig, test.givenSyncerExternalURL, test.givenSyncerEndpoint)
+		result, err := buildTemplate(key, syncTypeValue, hostConfig, test.givenSyncerExternalURL, test.givenSyncerEndpoint, "")
 
 		if test.expectedError == "" {
 			assert.NoError(t, err, test.description+":err")
@@ -451,7 +449,7 @@ func TestValidateTemplate(t *testing.T) {
 		{
 			description:   "Contains Unrecognized Macro",
 			given:         template.Must(template.New("test").Parse("invalid:{{.DoesNotExist}}")),
-			expectedError: "template: test:1:10: executing \"test\" at <.DoesNotExist>: can't evaluate field DoesNotExist in type macros.UserSyncTemplateParams",
+			expectedError: "template: test:1:10: executing \"test\" at <.DoesNotExist>: can't evaluate field DoesNotExist in type macros.UserSyncPrivacy",
 		},
 		{
 			description:   "Not A Url",
@@ -483,7 +481,36 @@ func TestSyncerKey(t *testing.T) {
 
 func TestSyncerDefaultSyncType(t *testing.T) {
 	syncer := standardSyncer{defaultSyncType: SyncTypeRedirect}
-	assert.Equal(t, SyncTypeRedirect, syncer.DefaultSyncType())
+	assert.Equal(t, SyncTypeRedirect, syncer.DefaultResponseFormat())
+}
+
+func TestSyncerDefaultResponseFormat(t *testing.T) {
+	testCases := []struct {
+		description      string
+		givenSyncer      standardSyncer
+		expectedSyncType SyncType
+	}{
+		{
+			description:      "IFrame",
+			givenSyncer:      standardSyncer{formatOverride: config.SyncResponseFormatIFrame},
+			expectedSyncType: SyncTypeIFrame,
+		},
+		{
+			description:      "Default with Redirect Override",
+			givenSyncer:      standardSyncer{defaultSyncType: SyncTypeIFrame, formatOverride: config.SyncResponseFormatRedirect},
+			expectedSyncType: SyncTypeRedirect,
+		},
+		{
+			description:      "Default with no override",
+			givenSyncer:      standardSyncer{defaultSyncType: SyncTypeRedirect},
+			expectedSyncType: SyncTypeRedirect,
+		},
+	}
+
+	for _, test := range testCases {
+		syncType := test.givenSyncer.DefaultResponseFormat()
+		assert.Equal(t, test.expectedSyncType, syncType, test.description)
+	}
 }
 
 func TestSyncerSupportsType(t *testing.T) {
@@ -636,45 +663,45 @@ func TestSyncerGetSync(t *testing.T) {
 	)
 
 	testCases := []struct {
-		description          string
-		givenSyncer          standardSyncer
-		givenSyncTypes       []SyncType
-		givenPrivacyPolicies privacy.Policies
-		expectedError        string
-		expectedSync         Sync
+		description    string
+		givenSyncer    standardSyncer
+		givenSyncTypes []SyncType
+		givenMacros    macros.UserSyncPrivacy
+		expectedError  string
+		expectedSync   Sync
 	}{
 		{
-			description:          "No Sync Types",
-			givenSyncer:          standardSyncer{iframe: iframeTemplate, redirect: redirectTemplate},
-			givenSyncTypes:       []SyncType{},
-			givenPrivacyPolicies: privacy.Policies{GDPR: gdpr.Policy{Signal: "A", Consent: "B"}, CCPA: ccpa.Policy{Consent: "C"}},
-			expectedError:        "no sync types provided",
+			description:    "No Sync Types",
+			givenSyncer:    standardSyncer{iframe: iframeTemplate, redirect: redirectTemplate},
+			givenSyncTypes: []SyncType{},
+			givenMacros:    macros.UserSyncPrivacy{GDPR: "A", GDPRConsent: "B", USPrivacy: "C"},
+			expectedError:  "no sync types provided",
 		},
 		{
-			description:          "IFrame",
-			givenSyncer:          standardSyncer{iframe: iframeTemplate, redirect: redirectTemplate},
-			givenSyncTypes:       []SyncType{SyncTypeIFrame},
-			givenPrivacyPolicies: privacy.Policies{GDPR: gdpr.Policy{Signal: "A", Consent: "B"}, CCPA: ccpa.Policy{Consent: "C"}},
-			expectedSync:         Sync{URL: "iframe,gdpr:A,gdprconsent:B,ccpa:C", Type: SyncTypeIFrame, SupportCORS: false},
+			description:    "IFrame",
+			givenSyncer:    standardSyncer{iframe: iframeTemplate, redirect: redirectTemplate},
+			givenSyncTypes: []SyncType{SyncTypeIFrame},
+			givenMacros:    macros.UserSyncPrivacy{GDPR: "A", GDPRConsent: "B", USPrivacy: "C"},
+			expectedSync:   Sync{URL: "iframe,gdpr:A,gdprconsent:B,ccpa:C", Type: SyncTypeIFrame, SupportCORS: false},
 		},
 		{
-			description:          "Redirect",
-			givenSyncer:          standardSyncer{iframe: iframeTemplate, redirect: redirectTemplate},
-			givenSyncTypes:       []SyncType{SyncTypeRedirect},
-			givenPrivacyPolicies: privacy.Policies{GDPR: gdpr.Policy{Signal: "A", Consent: "B"}, CCPA: ccpa.Policy{Consent: "C"}},
-			expectedSync:         Sync{URL: "redirect,gdpr:A,gdprconsent:B,ccpa:C", Type: SyncTypeRedirect, SupportCORS: false},
+			description:    "Redirect",
+			givenSyncer:    standardSyncer{iframe: iframeTemplate, redirect: redirectTemplate},
+			givenSyncTypes: []SyncType{SyncTypeRedirect},
+			givenMacros:    macros.UserSyncPrivacy{GDPR: "A", GDPRConsent: "B", USPrivacy: "C"},
+			expectedSync:   Sync{URL: "redirect,gdpr:A,gdprconsent:B,ccpa:C", Type: SyncTypeRedirect, SupportCORS: false},
 		},
 		{
-			description:          "Macro Error",
-			givenSyncer:          standardSyncer{iframe: malformedTemplate},
-			givenSyncTypes:       []SyncType{SyncTypeIFrame},
-			givenPrivacyPolicies: privacy.Policies{GDPR: gdpr.Policy{Signal: "A", Consent: "B"}, CCPA: ccpa.Policy{Consent: "C"}},
-			expectedError:        "template: test:1:20: executing \"test\" at <.DoesNotExist>: can't evaluate field DoesNotExist in type macros.UserSyncTemplateParams",
+			description:    "Macro Error",
+			givenSyncer:    standardSyncer{iframe: malformedTemplate},
+			givenSyncTypes: []SyncType{SyncTypeIFrame},
+			givenMacros:    macros.UserSyncPrivacy{GDPR: "A", GDPRConsent: "B", USPrivacy: "C"},
+			expectedError:  "template: test:1:20: executing \"test\" at <.DoesNotExist>: can't evaluate field DoesNotExist in type macros.UserSyncPrivacy",
 		},
 	}
 
 	for _, test := range testCases {
-		result, err := test.givenSyncer.GetSync(test.givenSyncTypes, test.givenPrivacyPolicies)
+		result, err := test.givenSyncer.GetSync(test.givenSyncTypes, test.givenMacros)
 
 		if test.expectedError == "" {
 			assert.NoError(t, err, test.description+":err")

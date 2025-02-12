@@ -13,34 +13,41 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/buger/jsonparser"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/julienschmidt/httprouter"
-	"github.com/prebid/openrtb/v19/native1"
-	nativeRequests "github.com/prebid/openrtb/v19/native1/request"
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/analytics"
-	analyticsConf "github.com/prebid/prebid-server/analytics/config"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/exchange"
-	"github.com/prebid/prebid-server/hooks"
-	"github.com/prebid/prebid-server/hooks/hookexecution"
-	"github.com/prebid/prebid-server/hooks/hookstage"
-	"github.com/prebid/prebid-server/metrics"
-	metricsConfig "github.com/prebid/prebid-server/metrics/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
-	"github.com/prebid/prebid-server/stored_responses"
-	"github.com/prebid/prebid-server/util/iputil"
-	"github.com/prebid/prebid-server/util/ptrutil"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/analytics"
+	analyticsBuild "github.com/prebid/prebid-server/v3/analytics/build"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/exchange"
+	"github.com/prebid/prebid-server/v3/hooks"
+	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v3/hooks/hookstage"
+	"github.com/prebid/prebid-server/v3/metrics"
+	metricsConfig "github.com/prebid/prebid-server/v3/metrics/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/ortb"
+	"github.com/prebid/prebid-server/v3/stored_requests/backends/empty_fetcher"
+	"github.com/prebid/prebid-server/v3/stored_responses"
+	"github.com/prebid/prebid-server/v3/util/iputil"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
 
 const jsonFileExtension string = ".json"
+
+func TestMain(m *testing.M) {
+	jsoniter.RegisterExtension(&jsonutil.RawMessageExtension{})
+	os.Exit(m.Run())
+}
 
 func TestJsonSampleRequests(t *testing.T) {
 	testSuites := []struct {
@@ -64,16 +71,20 @@ func TestJsonSampleRequests(t *testing.T) {
 			"invalid-native",
 		},
 		{
-			"Makes sure we handle (default) aliased bidders properly",
+			"Makes sure we handle aliased bidders properly",
 			"aliased",
+		},
+		{
+			"Makes sure we handle alternate bidder codes properly",
+			"alternate-bidder-code",
 		},
 		{
 			"Asserts we return 500s on requests referencing accounts with malformed configs.",
 			"account-malformed",
 		},
 		{
-			"Asserts we return 503s on requests with blacklisted accounts and apps.",
-			"blacklisted",
+			"Asserts we return 503s on requests with blocked apps.",
+			"blocked",
 		},
 		{
 			"Assert that requests that come with no user id nor app id return error if the `AccountRequired` field in the `config.Configuration` structure is set to true",
@@ -158,18 +169,35 @@ func runJsonBasedTest(t *testing.T, filename, desc string) {
 	// Build endpoint for testing. If no error, run test case
 	cfg := &config.Configuration{MaxRequestSize: maxSize}
 	if test.Config != nil {
-		cfg.BlacklistedApps = test.Config.BlacklistedApps
-		cfg.BlacklistedAppMap = test.Config.getBlacklistedAppMap()
-		cfg.BlacklistedAccts = test.Config.BlacklistedAccounts
-		cfg.BlacklistedAcctMap = test.Config.getBlackListedAccountMap()
+		cfg.BlockedApps = test.Config.BlockedApps
+		cfg.BlockedAppsLookup = test.Config.getBlockedAppLookup()
 		cfg.AccountRequired = test.Config.AccountRequired
 	}
 	cfg.MarshalAccountDefaults()
 	test.endpointType = OPENRTB_ENDPOINT
 
-	auctionEndpointHandler, _, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg)
+	auctionEndpointHandler, ex, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg)
 	if assert.NoError(t, err) {
 		assert.NotPanics(t, func() { runEndToEndTest(t, auctionEndpointHandler, test, fileData, filename) }, filename)
+	}
+
+	if test.ExpectedValidatedBidReq != nil {
+		// compare as json to ignore whitespace and ext field ordering
+		actualJson, err := jsonutil.Marshal(ex.actualValidatedBidReq)
+		if assert.NoError(t, err, "Error converting actual bid request to json. Test file: %s", filename) {
+			assert.JSONEq(t, string(test.ExpectedValidatedBidReq), string(actualJson), "Not the expected validated request. Test file: %s", filename)
+		}
+	}
+	if test.ExpectedMockBidderRequests != nil {
+		for bidder, req := range test.ExpectedMockBidderRequests {
+			a, ok := ex.adapters[openrtb_ext.BidderName(bidder)]
+			if !ok {
+				t.Fatalf("Unexpected bidder %s has an expected mock bidder request. Test file: %s", bidder, filename)
+			}
+			aa := a.(*exchange.BidderAdapter)
+			ma := aa.Bidder.(*mockAdapter)
+			assert.JSONEq(t, string(req), string(ma.requestData[0]), "Not the expected mock bidder request for bidder %s. Test file: %s", bidder, filename)
+		}
 	}
 
 	// Close servers regardless if the test case was run or not
@@ -194,7 +222,7 @@ func runEndToEndTest(t *testing.T, auctionEndpointHandler httprouter.Handle, tes
 
 	// Either assert bid response or expected error
 	if len(test.ExpectedErrorMessage) > 0 {
-		assert.True(t, strings.HasPrefix(actualJsonBidResponse, test.ExpectedErrorMessage), "Actual: %s \nExpected: %s. Filename: %s \n", actualJsonBidResponse, test.ExpectedErrorMessage, testFile)
+		assert.Contains(t, actualJsonBidResponse, test.ExpectedErrorMessage, "Actual: %s \nExpected: %s. Filename: %s \n", actualJsonBidResponse, test.ExpectedErrorMessage, testFile)
 	}
 
 	if len(test.ExpectedBidResponse) > 0 {
@@ -202,10 +230,10 @@ func runEndToEndTest(t *testing.T, auctionEndpointHandler httprouter.Handle, tes
 		var actualBidResponse openrtb2.BidResponse
 		var err error
 
-		err = json.Unmarshal(test.ExpectedBidResponse, &expectedBidResponse)
+		err = jsonutil.Unmarshal(test.ExpectedBidResponse, &expectedBidResponse)
 		if assert.NoError(t, err, "Could not unmarshal expected bidResponse taken from test file.\n Test file: %s\n Error:%s\n", testFile, err) {
-			err = json.Unmarshal([]byte(actualJsonBidResponse), &actualBidResponse)
-			if assert.NoError(t, err, "Could not unmarshal actual bidResponse from auction.\n Test file: %s\n Error:%s\n", testFile, err) {
+			err = jsonutil.UnmarshalValid([]byte(actualJsonBidResponse), &actualBidResponse)
+			if assert.NoError(t, err, "Could not unmarshal actual bidResponse from auction.\n Test file: %s\n Error:%s\n actualJsonBidResponse: %s", testFile, err, actualJsonBidResponse) {
 				assertBidResponseEqual(t, testFile, expectedBidResponse, actualBidResponse)
 			}
 		}
@@ -224,13 +252,13 @@ func compareWarnings(t *testing.T, expectedBidResponseExt, actualBidResponseExt 
 		}
 
 		var expectedWarn []openrtb_ext.ExtBidderMessage
-		err = json.Unmarshal(expectedWarnings, &expectedWarn)
+		err = jsonutil.UnmarshalValid(expectedWarnings, &expectedWarn)
 		if err != nil {
 			assert.Fail(t, "error unmarshalling expected warnings data from response extension")
 		}
 
 		var actualWarn []openrtb_ext.ExtBidderMessage
-		err = json.Unmarshal(actualWarnings, &actualWarn)
+		err = jsonutil.UnmarshalValid(actualWarnings, &actualWarn)
 		if err != nil {
 			assert.Fail(t, "error unmarshalling actual warnings data from response extension")
 		}
@@ -444,12 +472,12 @@ func TestExplicitUserId(t *testing.T) {
 	endpoint, _ := NewEndpoint(
 		fakeUUIDGenerator{},
 		ex,
-		mockBidderParamValidator{},
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		cfg,
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -478,8 +506,8 @@ func TestExplicitUserId(t *testing.T) {
 // processes aliases before it processes stored imps.  Changing that order
 // would probably cause this test to fail.
 func TestBadAliasRequests(t *testing.T) {
-	doBadAliasRequest(t, "sample-requests/invalid-stored/bad_stored_imp.json", "Invalid request: Invalid JSON in Default Request Settings: invalid character '\"' after object key:value pair at offset 51\n")
-	doBadAliasRequest(t, "sample-requests/invalid-stored/bad_incoming_imp.json", "Invalid request: Invalid JSON in Incoming Request: invalid character '\"' after object key:value pair at offset 230\n")
+	doBadAliasRequest(t, "sample-requests/invalid-stored/bad_stored_imp.json", "Invalid request: Invalid JSON Document\n")
+	doBadAliasRequest(t, "sample-requests/invalid-stored/bad_incoming_imp.json", "Invalid request: Invalid JSON Document\n")
 }
 
 // doBadAliasRequest() is a customized variation of doRequest(), above
@@ -502,12 +530,12 @@ func doBadAliasRequest(t *testing.T, filename string, expectMsg string) {
 	endpoint, _ := NewEndpoint(
 		fakeUUIDGenerator{},
 		&nobidExchange{},
-		mockBidderParamValidator{},
+		ortb.NewRequestValidator(bidderMap, disabledBidders, mockBidderParamValidator{}),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		disabledBidders,
 		aliasJSON,
 		bidderMap,
@@ -557,12 +585,13 @@ func TestNilExchange(t *testing.T) {
 	_, err := NewEndpoint(
 		fakeUUIDGenerator{},
 		nil,
-		mockBidderParamValidator{},
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{},
+		analyticsBuild.New(&config.Analytics{}),
+		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
@@ -575,32 +604,6 @@ func TestNilExchange(t *testing.T) {
 	}
 }
 
-// TestNilValidator makes sure we fail when given nil for the BidderParamValidator.
-func TestNilValidator(t *testing.T) {
-	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
-	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
-	_, err := NewEndpoint(
-		fakeUUIDGenerator{},
-		&nobidExchange{},
-		nil,
-		empty_fetcher.EmptyFetcher{},
-		empty_fetcher.EmptyFetcher{},
-		&config.Configuration{MaxRequestSize: maxSize},
-		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
-		map[string]string{},
-		[]byte{},
-		openrtb_ext.BuildBidderMap(),
-		empty_fetcher.EmptyFetcher{},
-		hooks.EmptyPlanBuilder{},
-		nil,
-	)
-
-	if err == nil {
-		t.Errorf("NewEndpoint should return an error when given a nil BidderParamValidator.")
-	}
-}
-
 // TestExchangeError makes sure we return a 500 if the exchange auction fails.
 func TestExchangeError(t *testing.T) {
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
@@ -608,12 +611,12 @@ func TestExchangeError(t *testing.T) {
 	endpoint, _ := NewEndpoint(
 		fakeUUIDGenerator{},
 		&brokenExchange{},
-		mockBidderParamValidator{},
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -735,12 +738,12 @@ func TestImplicitIPsEndToEnd(t *testing.T) {
 		endpoint, _ := NewEndpoint(
 			fakeUUIDGenerator{},
 			exchange,
-			mockBidderParamValidator{},
+			ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 			&mockStoredReqFetcher{},
 			empty_fetcher.EmptyFetcher{},
 			cfg,
 			&metricsConfig.NilMetricsEngine{},
-			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+			analyticsBuild.New(&config.Analytics{}),
 			map[string]string{},
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
@@ -935,12 +938,12 @@ func TestImplicitDNTEndToEnd(t *testing.T) {
 		endpoint, _ := NewEndpoint(
 			fakeUUIDGenerator{},
 			exchange,
-			mockBidderParamValidator{},
+			ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 			&mockStoredReqFetcher{},
 			empty_fetcher.EmptyFetcher{},
 			&config.Configuration{MaxRequestSize: maxSize},
 			&metricsConfig.NilMetricsEngine{},
-			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+			analyticsBuild.New(&config.Analytics{}),
 			map[string]string{},
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
@@ -1171,13 +1174,13 @@ func TestStoredRequests(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&nobidExchange{},
-		mockBidderParamValidator{},
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -1188,6 +1191,7 @@ func TestStoredRequests(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	testStoreVideoAttr := []bool{true, true, false, false, false}
@@ -1541,17 +1545,92 @@ func TestMergeBidderParamsImpExtPrebid(t *testing.T) {
 	}
 }
 
+func TestValidateExactlyOneInventoryType(t *testing.T) {
+
+	testCases := []struct {
+		description         string
+		givenRequestWrapper *openrtb_ext.RequestWrapper
+		expectedError       error
+	}{
+		{
+			description:         "None provided - invalid",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
+			expectedError:       errors.New("One of request.site or request.app or request.dooh must be defined"),
+		},
+		{
+			description: "Only site provided",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				Site: &openrtb2.Site{},
+			}},
+			expectedError: nil,
+		},
+		{
+			description: "Only app provided",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				App: &openrtb2.App{},
+			}},
+			expectedError: nil,
+		},
+		{
+			description: "Only dooh provided",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				DOOH: &openrtb2.DOOH{},
+			}},
+			expectedError: nil,
+		},
+		{
+			description: "Two provided (site+app) - invalid",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				Site: &openrtb2.Site{},
+				App:  &openrtb2.App{},
+			}},
+			expectedError: errors.New("No more than one of request.site or request.app or request.dooh can be defined"),
+		},
+		{
+			description: "Two provided (site+dooh) - invalid",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				Site: &openrtb2.Site{},
+				DOOH: &openrtb2.DOOH{},
+			}},
+			expectedError: errors.New("No more than one of request.site or request.app or request.dooh can be defined"),
+		},
+		{
+			description: "Two provided (app+dooh) - invalid",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				App:  &openrtb2.App{},
+				DOOH: &openrtb2.DOOH{},
+			}},
+			expectedError: errors.New("No more than one of request.site or request.app or request.dooh can be defined"),
+		},
+		{
+			description: "Three provided - invalid",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				Site: &openrtb2.Site{},
+				App:  &openrtb2.App{},
+				DOOH: &openrtb2.DOOH{},
+			}},
+			expectedError: errors.New("No more than one of request.site or request.app or request.dooh can be defined"),
+		},
+	}
+
+	for _, test := range testCases {
+		error := validateExactlyOneInventoryType(test.givenRequestWrapper)
+		assert.Equalf(t, test.expectedError, error, "Error doesn't match: %s\n", test.description)
+	}
+
+}
+
 func TestValidateRequest(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&nobidExchange{},
-		mockBidderParamValidator{},
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -1562,12 +1641,15 @@ func TestValidateRequest(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	testCases := []struct {
 		description           string
 		givenIsAmp            bool
 		givenRequestWrapper   *openrtb_ext.RequestWrapper
+		givenHttpRequest      *http.Request
+		givenAccount          *config.Account
 		expectedErrorList     []error
 		expectedChannelObject *openrtb_ext.ExtRequestPrebidChannel
 	}{
@@ -1725,10 +1807,70 @@ func TestValidateRequest(t *testing.T) {
 			expectedErrorList:     []error{},
 			expectedChannelObject: &openrtb_ext.ExtRequestPrebidChannel{Name: appChannel, Version: ""},
 		},
+		{
+			description: "Minimum required site attributes missing",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID:   "Some-ID",
+					Site: &openrtb2.Site{},
+					Imp: []openrtb2.Imp{
+						{
+							ID: "Some-Imp-ID",
+							Banner: &openrtb2.Banner{
+								Format: []openrtb2.Format{
+									{
+										W: 600,
+										H: 500,
+									},
+									{
+										W: 300,
+										H: 600,
+									},
+								},
+							},
+							Ext: []byte(`{"appnexus":{"placementId": 12345678}}`),
+						},
+					},
+				},
+			},
+			expectedErrorList: []error{
+				errors.New("request.site should include at least one of request.site.id or request.site.page."),
+			},
+		},
+		{
+			description: "Minimum required DOOH attributes missing",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID:   "Some-ID",
+					DOOH: &openrtb2.DOOH{},
+					Imp: []openrtb2.Imp{
+						{
+							ID: "Some-Imp-ID",
+							Banner: &openrtb2.Banner{
+								Format: []openrtb2.Format{
+									{
+										W: 600,
+										H: 500,
+									},
+									{
+										W: 300,
+										H: 600,
+									},
+								},
+							},
+							Ext: []byte(`{"appnexus":{"placementId": 12345678}}`),
+						},
+					},
+				},
+			},
+			expectedErrorList: []error{
+				errors.New("request.dooh should include at least one of request.dooh.id or request.dooh.venuetype."),
+			},
+		},
 	}
 
 	for _, test := range testCases {
-		errorList := deps.validateRequest(test.givenRequestWrapper, test.givenIsAmp, false, nil, false)
+		errorList := deps.validateRequest(test.givenAccount, test.givenHttpRequest, test.givenRequestWrapper, test.givenIsAmp, false, nil, false)
 		assert.Equalf(t, test.expectedErrorList, errorList, "Error doesn't match: %s\n", test.description)
 
 		if len(errorList) == 0 {
@@ -1772,7 +1914,7 @@ func TestValidateRequestExt(t *testing.T) {
 		{
 			description:     "prebid cache - bids - wrong type",
 			givenRequestExt: json.RawMessage(`{"prebid":{"cache":{"bids":true}}}`),
-			expectedErrors:  []string{`json: cannot unmarshal bool into Go struct field ExtRequestPrebidCache.cache.bids of type openrtb_ext.ExtRequestPrebidCacheBids`},
+			expectedErrors:  []string{"cannot unmarshal openrtb_ext.ExtRequestPrebidCache.Bids: expect { or n, but found t"},
 		},
 		{
 			description:     "prebid cache - bids - provided",
@@ -1786,7 +1928,7 @@ func TestValidateRequestExt(t *testing.T) {
 		{
 			description:     "prebid cache - vastxml - wrong type",
 			givenRequestExt: json.RawMessage(`{"prebid":{"cache":{"vastxml":true}}}`),
-			expectedErrors:  []string{`json: cannot unmarshal bool into Go struct field ExtRequestPrebidCache.cache.vastxml of type openrtb_ext.ExtRequestPrebidCacheVAST`},
+			expectedErrors:  []string{"cannot unmarshal openrtb_ext.ExtRequestPrebidCache.VastXML: expect { or n, but found t"},
 		},
 		{
 			description:     "prebid cache - vastxml - provided",
@@ -1797,9 +1939,13 @@ func TestValidateRequestExt(t *testing.T) {
 			givenRequestExt: json.RawMessage(`{"prebid":{"cache":{"bids":{},"vastxml":{}}}}`),
 		},
 		{
-			description:     "prebid targeting", // test integration with validateTargeting
-			givenRequestExt: json.RawMessage(`{"prebid":{"targeting":{}}}`),
-			expectedErrors:  []string{"ext.prebid.targeting: At least one of includewinners or includebidderkeys must be enabled to enable targeting support"},
+			description:     "prebid price granularity invalid",
+			givenRequestExt: json.RawMessage(`{"prebid":{"targeting":{"pricegranularity":{"precision":-1,"ranges":[{"min":0,"max":20,"increment":0.1}]}}}}`),
+			expectedErrors:  []string{"Price granularity error: precision must be non-negative"},
+		},
+		{
+			description:     "prebid native media type price granualrity valid",
+			givenRequestExt: json.RawMessage(`{"prebid":{"targeting":{"mediatypepricegranularity":{"native":{"precision":3,"ranges":[{"max":20,"increment":4.5}]}}}}}`),
 		},
 		{
 			description:     "valid multibid",
@@ -1841,74 +1987,8 @@ func TestValidateTargeting(t *testing.T) {
 			expectedError:  nil,
 		},
 		{
-			name:           "empty",
-			givenTargeting: &openrtb_ext.ExtRequestTargeting{},
-			expectedError:  errors.New("ext.prebid.targeting: At least one of includewinners or includebidderkeys must be enabled to enable targeting support"),
-		},
-		{
-			name: "includewinners nil, includebidderkeys false",
+			name: "pricegranularity-ranges-out-of-order",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeBidderKeys: ptrutil.ToPtr(false),
-			},
-			expectedError: errors.New("ext.prebid.targeting: At least one of includewinners or includebidderkeys must be enabled to enable targeting support"),
-		},
-		{
-			name: "includewinners nil, includebidderkeys true",
-			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeBidderKeys: ptrutil.ToPtr(true),
-			},
-			expectedError: nil,
-		},
-		{
-			name: "includewinners false, includebidderkeys nil",
-			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners: ptrutil.ToPtr(false),
-			},
-			expectedError: errors.New("ext.prebid.targeting: At least one of includewinners or includebidderkeys must be enabled to enable targeting support"),
-		},
-		{
-			name: "includewinners true, includebidderkeys nil",
-			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners: ptrutil.ToPtr(true),
-			},
-			expectedError: nil,
-		},
-		{
-			name: "all false",
-			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners:    ptrutil.ToPtr(false),
-				IncludeBidderKeys: ptrutil.ToPtr(false),
-			},
-			expectedError: errors.New("ext.prebid.targeting: At least one of includewinners or includebidderkeys must be enabled to enable targeting support"),
-		},
-		{
-			name: "includewinners false, includebidderkeys true",
-			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners:    ptrutil.ToPtr(false),
-				IncludeBidderKeys: ptrutil.ToPtr(true),
-			},
-			expectedError: nil,
-		},
-		{
-			name: "includewinners false, includebidderkeys true",
-			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners:    ptrutil.ToPtr(true),
-				IncludeBidderKeys: ptrutil.ToPtr(false),
-			},
-			expectedError: nil,
-		},
-		{
-			name: "includewinners true, includebidderkeys true",
-			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners:    ptrutil.ToPtr(true),
-				IncludeBidderKeys: ptrutil.ToPtr(true),
-			},
-			expectedError: nil,
-		},
-		{
-			name: "price granularity ranges out of order",
-			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners: ptrutil.ToPtr(true),
 				PriceGranularity: &openrtb_ext.PriceGranularity{
 					Precision: ptrutil.ToPtr(2),
 					Ranges: []openrtb_ext.GranularityRange{
@@ -1920,10 +2000,16 @@ func TestValidateTargeting(t *testing.T) {
 			expectedError: errors.New(`Price granularity error: range list must be ordered with increasing "max"`),
 		},
 		{
-			name: "media type price granularity video correct",
+			name: "mediatypepricegranularity-nil",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners: ptrutil.ToPtr(true),
-				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
+				MediaTypePriceGranularity: nil,
+			},
+			expectedError: nil,
+		},
+		{
+			name: "mediatypepricegranularity-video-ok",
+			givenTargeting: &openrtb_ext.ExtRequestTargeting{
+				MediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{
 					Video: &openrtb_ext.PriceGranularity{
 						Precision: ptrutil.ToPtr(2),
 						Ranges: []openrtb_ext.GranularityRange{
@@ -1935,10 +2021,9 @@ func TestValidateTargeting(t *testing.T) {
 			expectedError: nil,
 		},
 		{
-			name: "media type price granularity banner correct",
+			name: "mediatypepricegranularity-banner-ok",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners: ptrutil.ToPtr(true),
-				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
+				MediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{
 					Banner: &openrtb_ext.PriceGranularity{
 						Precision: ptrutil.ToPtr(2),
 						Ranges: []openrtb_ext.GranularityRange{
@@ -1950,10 +2035,9 @@ func TestValidateTargeting(t *testing.T) {
 			expectedError: nil,
 		},
 		{
-			name: "media type price granularity native correct",
+			name: "mediatypepricegranularity-native-ok",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners: ptrutil.ToPtr(true),
-				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
+				MediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{
 					Native: &openrtb_ext.PriceGranularity{
 						Precision: ptrutil.ToPtr(2),
 						Ranges: []openrtb_ext.GranularityRange{
@@ -1965,10 +2049,9 @@ func TestValidateTargeting(t *testing.T) {
 			expectedError: nil,
 		},
 		{
-			name: "media type price granularity video and banner correct",
+			name: "mediatypepricegranularity-video+banner-ok",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners: ptrutil.ToPtr(true),
-				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
+				MediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{
 					Banner: &openrtb_ext.PriceGranularity{
 						Precision: ptrutil.ToPtr(2),
 						Ranges: []openrtb_ext.GranularityRange{
@@ -1986,10 +2069,9 @@ func TestValidateTargeting(t *testing.T) {
 			expectedError: nil,
 		},
 		{
-			name: "media type price granularity video incorrect",
+			name: "mediatypepricegranularity-video-invalid",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners: ptrutil.ToPtr(true),
-				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
+				MediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{
 					Video: &openrtb_ext.PriceGranularity{
 						Precision: ptrutil.ToPtr(2),
 						Ranges: []openrtb_ext.GranularityRange{
@@ -2001,10 +2083,9 @@ func TestValidateTargeting(t *testing.T) {
 			expectedError: errors.New("Price granularity error: increment must be a nonzero positive number"),
 		},
 		{
-			name: "media type price granularity banner incorrect",
+			name: "mediatypepricegranularity-banner-invalid",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners: ptrutil.ToPtr(true),
-				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
+				MediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{
 					Banner: &openrtb_ext.PriceGranularity{
 						Precision: ptrutil.ToPtr(2),
 						Ranges: []openrtb_ext.GranularityRange{
@@ -2016,10 +2097,9 @@ func TestValidateTargeting(t *testing.T) {
 			expectedError: errors.New("Price granularity error: range list must be ordered with increasing \"max\""),
 		},
 		{
-			name: "media type price granularity native incorrect",
+			name: "mediatypepricegranularity-native-invalid",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners: ptrutil.ToPtr(true),
-				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
+				MediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{
 					Native: &openrtb_ext.PriceGranularity{
 						Precision: ptrutil.ToPtr(2),
 						Ranges: []openrtb_ext.GranularityRange{
@@ -2031,10 +2111,9 @@ func TestValidateTargeting(t *testing.T) {
 			expectedError: errors.New("Price granularity error: range list must be ordered with increasing \"max\""),
 		},
 		{
-			name: "media type price granularity video correct and banner incorrect",
+			name: "mediatypepricegranularity-video-ok-banner-invalid",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners: ptrutil.ToPtr(true),
-				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
+				MediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{
 					Banner: &openrtb_ext.PriceGranularity{
 						Precision: ptrutil.ToPtr(2),
 						Ranges: []openrtb_ext.GranularityRange{
@@ -2052,10 +2131,9 @@ func TestValidateTargeting(t *testing.T) {
 			expectedError: errors.New("Price granularity error: range list must be ordered with increasing \"max\""),
 		},
 		{
-			name: "media type price granularity native incorrect and banner correct",
+			name: "mediatypepricegranularity-native-invalid-banner-ok",
 			givenTargeting: &openrtb_ext.ExtRequestTargeting{
-				IncludeWinners: ptrutil.ToPtr(true),
-				MediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{
+				MediaTypePriceGranularity: &openrtb_ext.MediaTypePriceGranularity{
 					Native: &openrtb_ext.PriceGranularity{
 						Precision: ptrutil.ToPtr(2),
 						Ranges: []openrtb_ext.GranularityRange{
@@ -2076,7 +2154,7 @@ func TestValidateTargeting(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.expectedError, validateTargeting(tc.givenTargeting), "Targeting")
+			assert.Equal(t, tc.expectedError, validateTargeting(tc.givenTargeting))
 		})
 	}
 }
@@ -2264,13 +2342,13 @@ func TestSetIntegrationType(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&nobidExchange{},
-		mockBidderParamValidator{},
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -2281,6 +2359,7 @@ func TestSetIntegrationType(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	testCases := []struct {
@@ -2330,13 +2409,13 @@ func TestStoredRequestGenerateUuid(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{id: "foo", err: nil},
 		&nobidExchange{},
-		mockBidderParamValidator{},
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -2347,6 +2426,7 @@ func TestStoredRequestGenerateUuid(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	req := &openrtb2.BidRequest{}
@@ -2418,7 +2498,7 @@ func TestStoredRequestGenerateUuid(t *testing.T) {
 		newRequest, _, errList := deps.processStoredRequests(json.RawMessage(test.givenRawData), impInfo, storedRequests, storedImps, storedBidRequestId, hasStoredBidRequest)
 		assert.Empty(t, errList, test.description)
 
-		if err := json.Unmarshal(newRequest, req); err != nil {
+		if err := jsonutil.UnmarshalValid(newRequest, req); err != nil {
 			t.Errorf("processStoredRequests Error: %s", err.Error())
 		}
 		if test.expectedCur != "" {
@@ -2434,13 +2514,13 @@ func TestOversizedRequest(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&nobidExchange{},
-		mockBidderParamValidator{},
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: int64(len(reqBody) - 1)},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -2451,6 +2531,7 @@ func TestOversizedRequest(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -2473,13 +2554,13 @@ func TestRequestSizeEdgeCase(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&nobidExchange{},
-		mockBidderParamValidator{},
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: int64(len(reqBody))},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -2490,6 +2571,7 @@ func TestRequestSizeEdgeCase(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -2511,12 +2593,12 @@ func TestNoEncoding(t *testing.T) {
 	endpoint, _ := NewEndpoint(
 		fakeUUIDGenerator{},
 		&mockExchange{},
-		mockBidderParamValidator{},
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -2596,12 +2678,12 @@ func TestContentType(t *testing.T) {
 	endpoint, _ := NewEndpoint(
 		fakeUUIDGenerator{},
 		&mockExchange{},
-		mockBidderParamValidator{},
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -2615,238 +2697,6 @@ func TestContentType(t *testing.T) {
 
 	if recorder.Header().Get("Content-Type") != "application/json" {
 		t.Errorf("Content-Type should be application/json. Got %s", recorder.Header().Get("Content-Type"))
-	}
-}
-
-func TestValidateImpExt(t *testing.T) {
-	type testCase struct {
-		description    string
-		impExt         json.RawMessage
-		expectedImpExt string
-		expectedErrs   []error
-	}
-	testGroups := []struct {
-		description string
-		testCases   []testCase
-	}{
-		{
-			"Empty",
-			[]testCase{
-				{
-					description:    "Empty",
-					impExt:         nil,
-					expectedImpExt: "",
-					expectedErrs:   []error{errors.New("request.imp[0].ext is required")},
-				},
-			},
-		},
-		{
-			"Unknown bidder tests",
-			[]testCase{
-				{
-					description:    "Unknown Bidder only",
-					impExt:         json.RawMessage(`{"unknownbidder":{"placement_id":555}}`),
-					expectedImpExt: `{"unknownbidder":{"placement_id":555}}`,
-					expectedErrs:   []error{errors.New("request.imp[0].ext.prebid.bidder contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?")},
-				},
-				{
-					description:    "Unknown Prebid Ext Bidder only",
-					impExt:         json.RawMessage(`{"prebid":{"bidder":{"unknownbidder":{"placement_id":555}}}}`),
-					expectedImpExt: `{"prebid":{"bidder":{"unknownbidder":{"placement_id":555}}}}`,
-					expectedErrs:   []error{errors.New("request.imp[0].ext.prebid.bidder contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?")},
-				},
-				{
-					description:    "Unknown Prebid Ext Bidder + First Party Data Context",
-					impExt:         json.RawMessage(`{"prebid":{"bidder":{"unknownbidder":{"placement_id":555}}},"context":{"data":{"keywords":"prebid server example"}}}`),
-					expectedImpExt: `{"prebid":{"bidder":{"unknownbidder":{"placement_id":555}}},"context":{"data":{"keywords":"prebid server example"}}}`,
-					expectedErrs:   []error{errors.New("request.imp[0].ext.prebid.bidder contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?")},
-				},
-				{
-					description:    "Unknown Bidder + First Party Data Context",
-					impExt:         json.RawMessage(`{"unknownbidder":{"placement_id":555} ,"context":{"data":{"keywords":"prebid server example"}}}`),
-					expectedImpExt: `{"unknownbidder":{"placement_id":555},"context":{"data":{"keywords":"prebid server example"}}}`,
-					expectedErrs:   []error{errors.New("request.imp[0].ext.prebid.bidder contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?")},
-				},
-				{
-					description:    "Unknown Bidder + Disabled Bidder",
-					impExt:         json.RawMessage(`{"unknownbidder":{"placement_id":555},"disabledbidder":{"foo":"bar"}}`),
-					expectedImpExt: `{"unknownbidder":{"placement_id":555},"disabledbidder":{"foo":"bar"}}`,
-					expectedErrs:   []error{errors.New("request.imp[0].ext.prebid.bidder contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?")},
-				},
-				{
-					description:    "Unknown Bidder + Disabled Prebid Ext Bidder",
-					impExt:         json.RawMessage(`{"unknownbidder":{"placement_id":555},"prebid":{"bidder":{"disabledbidder":{"foo":"bar"}}}}`),
-					expectedImpExt: `{"unknownbidder":{"placement_id":555},"prebid":{"bidder":{"disabledbidder":{"foo":"bar"}}}}`,
-					expectedErrs:   []error{errors.New("request.imp[0].ext.prebid.bidder contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?")},
-				},
-			},
-		},
-		{
-			"Disabled bidder tests",
-			[]testCase{
-				{
-					description:    "Disabled Bidder",
-					impExt:         json.RawMessage(`{"disabledbidder":{"foo":"bar"}}`),
-					expectedImpExt: `{"disabledbidder":{"foo":"bar"}}`,
-					expectedErrs: []error{
-						&errortypes.BidderTemporarilyDisabled{Message: "The bidder 'disabledbidder' has been disabled."},
-						errors.New("request.imp[0].ext.prebid.bidder must contain at least one bidder"),
-					},
-					// if only bidder(s) found in request.imp[x].ext.{biddername} or request.imp[x].ext.prebid.bidder.{biddername} are disabled, return error
-				},
-				{
-					description:    "Disabled Prebid Ext Bidder",
-					impExt:         json.RawMessage(`{"prebid":{"bidder":{"disabledbidder":{"foo":"bar"}}}}`),
-					expectedImpExt: `{"prebid":{"bidder":{"disabledbidder":{"foo":"bar"}}}}`,
-					expectedErrs: []error{
-						&errortypes.BidderTemporarilyDisabled{Message: "The bidder 'disabledbidder' has been disabled."},
-						errors.New("request.imp[0].ext.prebid.bidder must contain at least one bidder"),
-					},
-				},
-				{
-					description:    "Disabled Bidder + First Party Data Context",
-					impExt:         json.RawMessage(`{"disabledbidder":{"foo":"bar"},"context":{"data":{"keywords":"prebid server example"}}}`),
-					expectedImpExt: `{"disabledbidder":{"foo":"bar"},"context":{"data":{"keywords":"prebid server example"}}}`,
-					expectedErrs: []error{
-						&errortypes.BidderTemporarilyDisabled{Message: "The bidder 'disabledbidder' has been disabled."},
-						errors.New("request.imp[0].ext.prebid.bidder must contain at least one bidder"),
-					},
-				},
-				{
-					description:    "Disabled Prebid Ext Bidder + First Party Data Context",
-					impExt:         json.RawMessage(`{"prebid":{"bidder":{"disabledbidder":{"foo":"bar"}}},"context":{"data":{"keywords":"prebid server example"}}}`),
-					expectedImpExt: `{"prebid":{"bidder":{"disabledbidder":{"foo":"bar"}}},"context":{"data":{"keywords":"prebid server example"}}}`,
-					expectedErrs: []error{
-						&errortypes.BidderTemporarilyDisabled{Message: "The bidder 'disabledbidder' has been disabled."},
-						errors.New("request.imp[0].ext.prebid.bidder must contain at least one bidder"),
-					},
-				},
-			},
-		},
-		{
-			"First Party only",
-			[]testCase{
-				{
-					description:    "First Party Data Context",
-					impExt:         json.RawMessage(`{"context":{"data":{"keywords":"prebid server example"}}}`),
-					expectedImpExt: `{"context":{"data":{"keywords":"prebid server example"}}}`,
-					expectedErrs: []error{
-						errors.New("request.imp[0].ext.prebid.bidder must contain at least one bidder"),
-					},
-				},
-			},
-		},
-		{
-			"Valid bidder tests",
-			[]testCase{
-				{
-					description:    "Valid bidder root ext",
-					impExt:         json.RawMessage(`{"appnexus":{"placement_id":555}}`),
-					expectedImpExt: `{"prebid":{"bidder":{"appnexus":{"placement_id":555}}}}`,
-					expectedErrs:   []error{},
-				},
-				{
-					description:    "Valid bidder in prebid field",
-					impExt:         json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placement_id":555}}}}`),
-					expectedImpExt: `{"prebid":{"bidder":{"appnexus":{"placement_id":555}}}}`,
-					expectedErrs:   []error{},
-				},
-				{
-					description:    "Valid Bidder + First Party Data Context",
-					impExt:         json.RawMessage(`{"appnexus":{"placement_id":555},"context":{"data":{"keywords":"prebid server example"}}}`),
-					expectedImpExt: `{"prebid":{"bidder":{"appnexus":{"placement_id":555}}},"context":{"data":{"keywords":"prebid server example"}}}`,
-					expectedErrs:   []error{},
-				},
-				{
-					description:    "Valid Prebid Ext Bidder + First Party Data Context",
-					impExt:         json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placement_id":555}}} ,"context":{"data":{"keywords":"prebid server example"}}}`),
-					expectedImpExt: `{"prebid":{"bidder":{"appnexus":{"placement_id":555}}},"context":{"data":{"keywords":"prebid server example"}}}`,
-					expectedErrs:   []error{},
-				},
-				{
-					description:    "Valid Bidder + Unknown Bidder",
-					impExt:         json.RawMessage(`{"appnexus":{"placement_id":555},"unknownbidder":{"placement_id":555}}`),
-					expectedImpExt: `{"appnexus":{"placement_id":555},"unknownbidder":{"placement_id":555}}`,
-					expectedErrs:   []error{errors.New("request.imp[0].ext.prebid.bidder contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?")},
-				},
-				{
-					description:    "Valid Bidder + Disabled Bidder",
-					impExt:         json.RawMessage(`{"appnexus":{"placement_id":555},"disabledbidder":{"foo":"bar"}}`),
-					expectedImpExt: `{"prebid":{"bidder":{"appnexus":{"placement_id":555}}}}`,
-					expectedErrs:   []error{&errortypes.BidderTemporarilyDisabled{Message: "The bidder 'disabledbidder' has been disabled."}},
-				},
-				{
-					description:    "Valid Bidder + Disabled Bidder + First Party Data Context",
-					impExt:         json.RawMessage(`{"appnexus":{"placement_id":555},"disabledbidder":{"foo":"bar"},"context":{"data":{"keywords":"prebid server example"}}}`),
-					expectedImpExt: `{"prebid":{"bidder":{"appnexus":{"placement_id":555}}},"context":{"data":{"keywords":"prebid server example"}}}`,
-					expectedErrs:   []error{&errortypes.BidderTemporarilyDisabled{Message: "The bidder 'disabledbidder' has been disabled."}},
-				},
-				{
-					description:    "Valid Bidder + Disabled Bidder + Unknown Bidder + First Party Data Context",
-					impExt:         json.RawMessage(`{"appnexus":{"placement_id":555},"disabledbidder":{"foo":"bar"},"unknownbidder":{"placement_id":555},"context":{"data":{"keywords":"prebid server example"}}}`),
-					expectedImpExt: `{"appnexus":{"placement_id":555},"disabledbidder":{"foo":"bar"},"unknownbidder":{"placement_id":555},"context":{"data":{"keywords":"prebid server example"}}}`,
-					expectedErrs:   []error{errors.New("request.imp[0].ext.prebid.bidder contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?")},
-				},
-				{
-					description:    "Valid Prebid Ext Bidder + Disabled Bidder Ext",
-					impExt:         json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placement_id":555},"disabledbidder":{"foo":"bar"}}}}`),
-					expectedImpExt: `{"prebid":{"bidder":{"appnexus":{"placement_id": 555}}}}`,
-					expectedErrs:   []error{&errortypes.BidderTemporarilyDisabled{Message: "The bidder 'disabledbidder' has been disabled."}},
-				},
-				{
-					description:    "Valid Prebid Ext Bidder + Disabled Ext Bidder + First Party Data Context",
-					impExt:         json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placement_id":555},"disabledbidder":{"foo":"bar"}}},"context":{"data":{"keywords":"prebid server example"}}}`),
-					expectedImpExt: `{"prebid":{"bidder":{"appnexus":{"placement_id": 555}}},"context":{"data":{"keywords":"prebid server example"}}}`,
-					expectedErrs:   []error{&errortypes.BidderTemporarilyDisabled{Message: "The bidder 'disabledbidder' has been disabled."}},
-				},
-				{
-					description:    "Valid Prebid Ext Bidder + Disabled Ext Bidder + Unknown Ext + First Party Data Context",
-					impExt:         json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placement_id":555},"disabledbidder":{"foo":"bar"},"unknownbidder":{"placement_id":555}}},"context":{"data":{"keywords":"prebid server example"}}}`),
-					expectedImpExt: `{"prebid":{"bidder":{"appnexus":{"placement_id":555},"disabledbidder":{"foo":"bar"},"unknownbidder":{"placement_id":555}}},"context":{"data":{"keywords":"prebid server example"}}}`,
-					expectedErrs:   []error{errors.New("request.imp[0].ext.prebid.bidder contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?")},
-				},
-			},
-		},
-	}
-
-	deps := &endpointDeps{
-		fakeUUIDGenerator{},
-		&nobidExchange{},
-		mockBidderParamValidator{},
-		&mockStoredReqFetcher{},
-		empty_fetcher.EmptyFetcher{},
-		empty_fetcher.EmptyFetcher{},
-		&config.Configuration{MaxRequestSize: int64(8096)},
-		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
-		map[string]string{"disabledbidder": "The bidder 'disabledbidder' has been disabled."},
-		false,
-		[]byte{},
-		openrtb_ext.BuildBidderMap(),
-		nil,
-		nil,
-		hardcodedResponseIPValidator{response: true},
-		empty_fetcher.EmptyFetcher{},
-		hooks.EmptyPlanBuilder{},
-		nil,
-	}
-
-	for _, group := range testGroups {
-		for _, test := range group.testCases {
-			imp := &openrtb2.Imp{Ext: test.impExt}
-			impWrapper := &openrtb_ext.ImpWrapper{Imp: imp}
-
-			errs := deps.validateImpExt(impWrapper, nil, 0, false, nil)
-
-			assert.NoError(t, impWrapper.RebuildImp(), test.description+":rebuild_imp")
-
-			if len(test.expectedImpExt) > 0 {
-				assert.JSONEq(t, test.expectedImpExt, string(imp.Ext), "imp.ext JSON does not match expected. Test: %s. %s\n", group.description, test.description)
-			} else {
-				assert.Empty(t, imp.Ext, "imp.ext expected to be empty but was: %s. Test: %s. %s\n", string(imp.Ext), group.description, test.description)
-			}
-			assert.Equal(t, test.expectedErrs, errs, "errs slice does not match expected. Test: %s. %s\n", group.description, test.description)
-		}
 	}
 }
 
@@ -2865,13 +2715,13 @@ func TestCurrencyTrunc(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&nobidExchange{},
-		mockBidderParamValidator{},
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -2882,6 +2732,7 @@ func TestCurrencyTrunc(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	ui := int64(1)
@@ -2903,7 +2754,7 @@ func TestCurrencyTrunc(t *testing.T) {
 		Cur: []string{"USD", "EUR"},
 	}
 
-	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
+	errL := deps.validateRequest(nil, nil, &openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
 
 	expectedError := errortypes.Warning{Message: "A prebid request can only process one currency. Taking the first currency in the list, USD, as the active currency"}
 	assert.ElementsMatch(t, errL, []error{&expectedError})
@@ -2913,13 +2764,13 @@ func TestCCPAInvalid(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&nobidExchange{},
-		mockBidderParamValidator{},
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -2930,6 +2781,7 @@ func TestCCPAInvalid(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	ui := int64(1)
@@ -2949,11 +2801,11 @@ func TestCCPAInvalid(t *testing.T) {
 			ID: "anySiteID",
 		},
 		Regs: &openrtb2.Regs{
-			Ext: json.RawMessage(`{"us_privacy": "invalid by length"}`),
+			USPrivacy: "invalid by length",
 		},
 	}
 
-	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
+	errL := deps.validateRequest(nil, nil, &openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
 
 	expectedWarning := errortypes.Warning{
 		Message:     "CCPA consent is invalid and will be ignored. (request.regs.ext.us_privacy must contain 4 characters)",
@@ -2965,13 +2817,13 @@ func TestNoSaleInvalid(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&nobidExchange{},
-		mockBidderParamValidator{},
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -2982,6 +2834,7 @@ func TestNoSaleInvalid(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	ui := int64(1)
@@ -3006,7 +2859,7 @@ func TestNoSaleInvalid(t *testing.T) {
 		Ext: json.RawMessage(`{"prebid": {"nosale": ["*", "appnexus"]} }`),
 	}
 
-	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
+	errL := deps.validateRequest(nil, nil, &openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
 
 	expectedError := errors.New("request.ext.prebid.nosale is invalid: can only specify all bidders if no other bidders are provided")
 	assert.ElementsMatch(t, errL, []error{expectedError})
@@ -3020,13 +2873,13 @@ func TestValidateSourceTID(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&nobidExchange{},
-		mockBidderParamValidator{},
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		cfg,
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -3037,6 +2890,7 @@ func TestValidateSourceTID(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	ui := int64(1)
@@ -3057,7 +2911,7 @@ func TestValidateSourceTID(t *testing.T) {
 		},
 	}
 
-	deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
+	deps.validateRequest(nil, nil, &openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
 	assert.NotEmpty(t, req.Source.TID, "Expected req.Source.TID to be filled with a randomly generated UID")
 }
 
@@ -3065,13 +2919,13 @@ func TestSChainInvalid(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&nobidExchange{},
-		mockBidderParamValidator{},
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -3082,6 +2936,7 @@ func TestSChainInvalid(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	ui := int64(1)
@@ -3103,138 +2958,82 @@ func TestSChainInvalid(t *testing.T) {
 		Ext: json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller1.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}, {"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller2.com","sid":"00002","rid":"BidRequest2","hp":1}],"ver":"1.0"}}]}}`),
 	}
 
-	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
+	errL := deps.validateRequest(nil, nil, &openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
 
 	expectedError := errors.New("request.ext.prebid.schains contains multiple schains for bidder appnexus; it must contain no more than one per bidder.")
 	assert.ElementsMatch(t, errL, []error{expectedError})
 }
 
-func TestMapSChains(t *testing.T) {
-	const seller1SChain string = `"schain":{"complete":1,"nodes":[{"asi":"directseller1.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}`
-	const seller2SChain string = `"schain":{"complete":2,"nodes":[{"asi":"directseller2.com","sid":"00002","rid":"BidRequest2","hp":2}],"ver":"2.0"}`
-
-	seller1SChainUnpacked := openrtb2.SupplyChain{
-		Complete: 1,
-		Nodes: []openrtb2.SupplyChainNode{{
-			ASI: "directseller1.com",
-			SID: "00001",
-			RID: "BidRequest1",
-			HP:  openrtb2.Int8Ptr(1),
-		}},
-		Ver: "1.0",
-	}
-
-	tests := []struct {
-		description         string
-		bidRequest          openrtb2.BidRequest
-		wantReqExtSChain    *openrtb2.SupplyChain
-		wantSourceExtSChain *openrtb2.SupplyChain
-		wantError           bool
+func TestSearchAccountID(t *testing.T) {
+	// Correctness for lookup within Publisher object left to TestGetAccountID
+	// This however tests the expected lookup paths in outer site, app and dooh
+	testCases := []struct {
+		description       string
+		request           []byte
+		expectedAccID     string
+		expectedError     error
+		expectedIsAppReq  bool
+		expectedIsSiteReq bool
+		expectedIsDOOHReq bool
 	}{
 		{
-			description: "invalid req.ext",
-			bidRequest: openrtb2.BidRequest{
-				Ext: json.RawMessage(`{"prebid":{"schains":invalid}}`),
-				Source: &openrtb2.Source{
-					Ext: json.RawMessage(`{}`),
-				},
-			},
-			wantError: true,
+			description:       "No publisher available",
+			request:           []byte(`{}`),
+			expectedAccID:     "",
+			expectedError:     nil,
+			expectedIsAppReq:  false,
+			expectedIsDOOHReq: false,
 		},
 		{
-			description: "invalid source.ext",
-			bidRequest: openrtb2.BidRequest{
-				Ext: json.RawMessage(`{}`),
-				Source: &openrtb2.Source{
-					Ext: json.RawMessage(`{"schain":invalid}}`),
-				},
-			},
-			wantError: true,
+			description:       "Publisher.ID doesn't exist",
+			request:           []byte(`{"site":{"publisher":{}}}`),
+			expectedAccID:     "",
+			expectedError:     nil,
+			expectedIsAppReq:  false,
+			expectedIsDOOHReq: false,
 		},
 		{
-			description: "req.ext.prebid.schains, req.source.ext.schain and req.ext.schain are nil",
-			bidRequest: openrtb2.BidRequest{
-				Ext: json.RawMessage(`{}`),
-				Source: &openrtb2.Source{
-					Ext: json.RawMessage(`{}`),
-				},
-			},
-			wantReqExtSChain:    nil,
-			wantSourceExtSChain: nil,
+			description:       "Publisher.ID not a string",
+			request:           []byte(`{"site":{"publisher":{"id":42}}}`),
+			expectedAccID:     "",
+			expectedError:     errors.New("site.publisher.id must be a string"),
+			expectedIsAppReq:  false,
+			expectedIsDOOHReq: false,
 		},
 		{
-			description: "req.ext.prebid.schains is not nil",
-			bidRequest: openrtb2.BidRequest{
-				Ext: json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],` + seller1SChain + `}]}}`),
-				Source: &openrtb2.Source{
-					Ext: json.RawMessage(`{}`),
-				},
-			},
-			wantReqExtSChain:    nil,
-			wantSourceExtSChain: nil,
+			description:       "Publisher available in request.site",
+			request:           []byte(`{"site":{"publisher":{"id":"42"}}}`),
+			expectedAccID:     "42",
+			expectedError:     nil,
+			expectedIsAppReq:  false,
+			expectedIsDOOHReq: false,
 		},
 		{
-			description: "req.source.ext is not nil",
-			bidRequest: openrtb2.BidRequest{
-				Ext: json.RawMessage(`{}`),
-				Source: &openrtb2.Source{
-					Ext: json.RawMessage(`{` + seller1SChain + `}`),
-				},
-			},
-			wantReqExtSChain:    nil,
-			wantSourceExtSChain: &seller1SChainUnpacked,
+			description:       "Publisher available in request.app",
+			request:           []byte(`{"app":{"publisher":{"id":"42"}}}`),
+			expectedAccID:     "42",
+			expectedError:     nil,
+			expectedIsAppReq:  true,
+			expectedIsDOOHReq: false,
 		},
 		{
-			description: "req.ext.schain is not nil",
-			bidRequest: openrtb2.BidRequest{
-				Ext: json.RawMessage(`{` + seller1SChain + `}`),
-				Source: &openrtb2.Source{
-					Ext: json.RawMessage(`{}`),
-				},
-			},
-			wantReqExtSChain:    nil,
-			wantSourceExtSChain: &seller1SChainUnpacked,
-		},
-		{
-			description: "req.source.ext.schain and req.ext.schain are not nil",
-			bidRequest: openrtb2.BidRequest{
-				Ext: json.RawMessage(`{` + seller2SChain + `}`),
-				Source: &openrtb2.Source{
-					Ext: json.RawMessage(`{` + seller1SChain + `}`),
-				},
-			},
-			wantReqExtSChain:    nil,
-			wantSourceExtSChain: &seller1SChainUnpacked,
+			description:       "Publisher available in request.dooh",
+			request:           []byte(`{"dooh":{"publisher":{"id":"42"}}}`),
+			expectedAccID:     "42",
+			expectedError:     nil,
+			expectedIsAppReq:  false,
+			expectedIsDOOHReq: true,
 		},
 	}
 
-	for _, test := range tests {
-		reqWrapper := openrtb_ext.RequestWrapper{
-			BidRequest: &test.bidRequest,
-		}
-
-		err := mapSChains(&reqWrapper)
-
-		if test.wantError {
-			assert.NotNil(t, err, test.description)
-		} else {
-			assert.Nil(t, err, test.description)
-
-			reqExt, err := reqWrapper.GetRequestExt()
-			if err != nil {
-				assert.Fail(t, "Error getting request ext from wrapper", test.description)
-			}
-			reqExtSChain := reqExt.GetSChain()
-			assert.Equal(t, test.wantReqExtSChain, reqExtSChain, test.description)
-
-			sourceExt, err := reqWrapper.GetSourceExt()
-			if err != nil {
-				assert.Fail(t, "Error getting source ext from wrapper", test.description)
-			}
-			sourceExtSChain := sourceExt.GetSChain()
-			assert.Equal(t, test.wantSourceExtSChain, sourceExtSChain, test.description)
-		}
+	for _, test := range testCases {
+		accountId, isAppReq, isDOOHReq, err := searchAccountId(test.request)
+		assert.Equal(t, test.expectedAccID, accountId, "searchAccountID should return expected account ID for test case: %s", test.description)
+		assert.Equal(t, test.expectedIsAppReq, isAppReq, "searchAccountID should return expected isAppReq for test case: %s", test.description)
+		assert.Equal(t, test.expectedIsDOOHReq, isDOOHReq, "searchAccountID should return expected isDOOHReq for test case: %s", test.description)
+		assert.Equal(t, test.expectedError, err, "searchAccountID should return expected error for test case: %s", test.description)
 	}
+
 }
 
 func TestGetAccountID(t *testing.T) {
@@ -3245,7 +3044,7 @@ func TestGetAccountID(t *testing.T) {
 			ParentAccount: &testParentAccount,
 		},
 	}
-	testPubExtJSON, err := json.Marshal(testPubExt)
+	testPubExtJSON, err := jsonutil.Marshal(testPubExt)
 	assert.NoError(t, err)
 
 	testCases := []struct {
@@ -3561,13 +3360,13 @@ func TestEidPermissionsInvalid(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&nobidExchange{},
-		mockBidderParamValidator{},
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -3578,6 +3377,7 @@ func TestEidPermissionsInvalid(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	ui := int64(1)
@@ -3599,7 +3399,7 @@ func TestEidPermissionsInvalid(t *testing.T) {
 		Ext: json.RawMessage(`{"prebid": {"data": {"eidpermissions": [{"source":"a", "bidders":[]}]} } }`),
 	}
 
-	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
+	errL := deps.validateRequest(nil, nil, &openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
 
 	expectedError := errors.New(`request.ext.prebid.data.eidpermissions[0] missing or empty required field: "bidders"`)
 	assert.ElementsMatch(t, errL, []error{expectedError})
@@ -3610,44 +3410,51 @@ func TestValidateEidPermissions(t *testing.T) {
 	knownAliases := map[string]string{"b": "b"}
 
 	testCases := []struct {
-		description   string
+		name          string
 		request       *openrtb_ext.ExtRequest
 		expectedError error
 	}{
 		{
-			description:   "Valid - Empty ext",
+			name:          "valid-empty-ext",
 			request:       &openrtb_ext.ExtRequest{},
 			expectedError: nil,
 		},
 		{
-			description:   "Valid - Nil ext.prebid.data",
+			name:          "valid-nil-ext.prebid.data",
 			request:       &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{}},
 			expectedError: nil,
 		},
 		{
-			description:   "Valid - Empty ext.prebid.data",
+			name:          "valid-empty-ext.prebid.data",
 			request:       &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{}}},
 			expectedError: nil,
 		},
 		{
-			description:   "Valid - Nil ext.prebid.data.eidpermissions",
+			name:          "valid-nil-ext.prebid.data.eidpermissions",
 			request:       &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: nil}}},
 			expectedError: nil,
 		},
 		{
-			description:   "Valid - None",
+			name:          "valid-none",
 			request:       &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{}}}},
 			expectedError: nil,
 		},
 		{
-			description: "Valid - One",
+			name: "valid-one",
 			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "sourceA", Bidders: []string{"a"}},
 			}}}},
 			expectedError: nil,
 		},
 		{
-			description: "Valid - Many",
+			name: "valid-one-case-insensitive",
+			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+				{Source: "sourceA", Bidders: []string{"A"}},
+			}}}},
+			expectedError: nil,
+		},
+		{
+			name: "valid-many",
 			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "sourceA", Bidders: []string{"a"}},
 				{Source: "sourceB", Bidders: []string{"a"}},
@@ -3655,7 +3462,7 @@ func TestValidateEidPermissions(t *testing.T) {
 			expectedError: nil,
 		},
 		{
-			description: "Invalid - Missing Source",
+			name: "invalid-missing-source",
 			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "sourceA", Bidders: []string{"a"}},
 				{Bidders: []string{"a"}},
@@ -3663,7 +3470,7 @@ func TestValidateEidPermissions(t *testing.T) {
 			expectedError: errors.New(`request.ext.prebid.data.eidpermissions[1] missing required field: "source"`),
 		},
 		{
-			description: "Invalid - Duplicate Source",
+			name: "invalid-duplicate-source",
 			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "sourceA", Bidders: []string{"a"}},
 				{Source: "sourceA", Bidders: []string{"a"}},
@@ -3671,7 +3478,7 @@ func TestValidateEidPermissions(t *testing.T) {
 			expectedError: errors.New(`request.ext.prebid.data.eidpermissions[1] duplicate entry with field: "source"`),
 		},
 		{
-			description: "Invalid - Missing Bidders - Nil",
+			name: "invalid-missing-bidders-nil",
 			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "sourceA", Bidders: []string{"a"}},
 				{Source: "sourceB"},
@@ -3679,7 +3486,7 @@ func TestValidateEidPermissions(t *testing.T) {
 			expectedError: errors.New(`request.ext.prebid.data.eidpermissions[1] missing or empty required field: "bidders"`),
 		},
 		{
-			description: "Invalid - Missing Bidders - Empty",
+			name: "invalid-missing-bidders-empty",
 			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "sourceA", Bidders: []string{"a"}},
 				{Source: "sourceB", Bidders: []string{}},
@@ -3687,19 +3494,28 @@ func TestValidateEidPermissions(t *testing.T) {
 			expectedError: errors.New(`request.ext.prebid.data.eidpermissions[1] missing or empty required field: "bidders"`),
 		},
 		{
-			description: "Invalid - Invalid Bidders",
+			name: "invalid-invalid-bidders",
 			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "sourceA", Bidders: []string{"a"}},
 				{Source: "sourceB", Bidders: []string{"z"}},
 			}}}},
 			expectedError: errors.New(`request.ext.prebid.data.eidpermissions[1] contains unrecognized bidder "z"`),
 		},
+		{
+			name: "invalid-alias-case-sensitive",
+			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+				{Source: "sourceA", Bidders: []string{"B"}},
+			}}}},
+			expectedError: errors.New(`request.ext.prebid.data.eidpermissions[0] contains unrecognized bidder "B"`),
+		},
 	}
 
-	endpoint := &endpointDeps{bidderMap: knownBidders}
+	endpoint := &endpointDeps{bidderMap: knownBidders, normalizeBidderName: fakeNormalizeBidderName}
 	for _, test := range testCases {
-		result := endpoint.validateEidPermissions(test.request.Prebid.Data, knownAliases)
-		assert.Equal(t, test.expectedError, result, test.description)
+		t.Run(test.name, func(t *testing.T) {
+			result := endpoint.validateEidPermissions(test.request.Prebid.Data, knownAliases)
+			assert.Equal(t, test.expectedError, result)
+		})
 	}
 }
 
@@ -3733,6 +3549,13 @@ func TestValidateBidders(t *testing.T) {
 			expectedError: nil,
 		},
 		{
+			description:   "Valid - One Core Bidder - Case Insensitive",
+			bidders:       []string{"A"},
+			knownBidders:  map[string]openrtb_ext.BidderName{"a": openrtb_ext.BidderName("a")},
+			knownAliases:  map[string]string{"c": "c"},
+			expectedError: nil,
+		},
+		{
 			description:   "Valid - Many Core Bidders",
 			bidders:       []string{"a", "b"},
 			knownBidders:  map[string]openrtb_ext.BidderName{"a": openrtb_ext.BidderName("a"), "b": openrtb_ext.BidderName("b")},
@@ -3745,6 +3568,13 @@ func TestValidateBidders(t *testing.T) {
 			knownBidders:  map[string]openrtb_ext.BidderName{"a": openrtb_ext.BidderName("a")},
 			knownAliases:  map[string]string{"c": "c"},
 			expectedError: nil,
+		},
+		{
+			description:   "Valid - One Alias Bidder - Case Sensitive",
+			bidders:       []string{"C"},
+			knownBidders:  map[string]openrtb_ext.BidderName{"a": openrtb_ext.BidderName("a")},
+			knownAliases:  map[string]string{"c": "c"},
+			expectedError: errors.New(`unrecognized bidder "C"`),
 		},
 		{
 			description:   "Valid - Many Alias Bidders",
@@ -3766,13 +3596,6 @@ func TestValidateBidders(t *testing.T) {
 			knownBidders:  map[string]openrtb_ext.BidderName{"a": openrtb_ext.BidderName("a")},
 			knownAliases:  map[string]string{"c": "c"},
 			expectedError: errors.New(`unrecognized bidder "z"`),
-		},
-		{
-			description:   "Invalid - Unknown Bidder Case Sensitive",
-			bidders:       []string{"A"},
-			knownBidders:  map[string]openrtb_ext.BidderName{"a": openrtb_ext.BidderName("a")},
-			knownAliases:  map[string]string{"c": "c"},
-			expectedError: errors.New(`unrecognized bidder "A"`),
 		},
 		{
 			description:   "Invalid - Unknown Bidder With Known Bidders",
@@ -3804,8 +3627,9 @@ func TestValidateBidders(t *testing.T) {
 		},
 	}
 
+	endpoint := &endpointDeps{normalizeBidderName: fakeNormalizeBidderName}
 	for _, test := range testCases {
-		result := validateBidders(test.bidders, test.knownBidders, test.knownAliases)
+		result := endpoint.validateBidders(test.bidders, test.knownBidders, test.knownAliases)
 		assert.Equal(t, test.expectedError, result, test.description)
 	}
 }
@@ -3816,12 +3640,12 @@ func TestIOS14EndToEnd(t *testing.T) {
 	endpoint, _ := NewEndpoint(
 		fakeUUIDGenerator{},
 		exchange,
-		mockBidderParamValidator{},
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -3878,13 +3702,13 @@ func TestAuctionWarnings(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&warningsCheckExchange{},
-		mockBidderParamValidator{},
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -3895,6 +3719,7 @@ func TestAuctionWarnings(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
@@ -3924,13 +3749,13 @@ func TestParseRequestParseImpInfoError(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&warningsCheckExchange{},
-		mockBidderParamValidator{},
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: int64(len(reqBody))},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -3941,6 +3766,7 @@ func TestParseRequestParseImpInfoError(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
@@ -3952,7 +3778,7 @@ func TestParseRequestParseImpInfoError(t *testing.T) {
 	assert.Nil(t, resReq, "Result request should be nil due to incorrect imp")
 	assert.Nil(t, impExtInfoMap, "Impression info map should be nil due to incorrect imp")
 	assert.Len(t, errL, 1, "One error should be returned")
-	assert.Contains(t, errL[0].Error(), "echovideoattrs of type bool", "Incorrect error message")
+	assert.Contains(t, errL[0].Error(), "cannot unmarshal openrtb_ext.Options.EchoVideoAttrs", "Incorrect error message")
 }
 
 func TestParseGzipedRequest(t *testing.T) {
@@ -4004,13 +3830,13 @@ func TestParseGzipedRequest(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&warningsCheckExchange{},
-		mockBidderParamValidator{},
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: int64(50), Compression: config.Compression{Request: config.CompressionInfo{GZIP: false}}},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -4021,6 +3847,7 @@ func TestParseGzipedRequest(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
@@ -4055,435 +3882,16 @@ func TestParseGzipedRequest(t *testing.T) {
 	}
 }
 
-func TestValidateNativeContextTypes(t *testing.T) {
-	impIndex := 4
-
-	testCases := []struct {
-		description      string
-		givenContextType native1.ContextType
-		givenSubType     native1.ContextSubType
-		expectedError    string
-	}{
-		{
-			description:      "No Types Specified",
-			givenContextType: 0,
-			givenSubType:     0,
-			expectedError:    "",
-		},
-		{
-			description:      "All Types Exchange Specific",
-			givenContextType: 500,
-			givenSubType:     500,
-			expectedError:    "",
-		},
-		{
-			description:      "Context Type Known Value - Sub Type Unspecified",
-			givenContextType: 1,
-			givenSubType:     0,
-			expectedError:    "",
-		},
-		{
-			description:      "Context Type Negative",
-			givenContextType: -1,
-			givenSubType:     0,
-			expectedError:    "request.imp[4].native.request.context is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
-		},
-		{
-			description:      "Context Type Just Above Range",
-			givenContextType: 4, // Range is currently 1-3
-			givenSubType:     0,
-			expectedError:    "request.imp[4].native.request.context is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
-		},
-		{
-			description:      "Sub Type Negative",
-			givenContextType: 1,
-			givenSubType:     -1,
-			expectedError:    "request.imp[4].native.request.contextsubtype value can't be less than 0. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
-		},
-		{
-			description:      "Content - Sub Type Just Below Range",
-			givenContextType: 1, // Content constant
-			givenSubType:     9, // Content range is currently 10-15
-			expectedError:    "request.imp[4].native.request.contextsubtype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
-		},
-		{
-			description:      "Content - Sub Type In Range",
-			givenContextType: 1,  // Content constant
-			givenSubType:     10, // Content range is currently 10-15
-			expectedError:    "",
-		},
-		{
-			description:      "Content - Sub Type In Range - Context Type Exchange Specific Boundary",
-			givenContextType: 500,
-			givenSubType:     10, // Content range is currently 10-15
-			expectedError:    "",
-		},
-		{
-			description:      "Content - Sub Type In Range - Context Type Exchange Specific Boundary + 1",
-			givenContextType: 501,
-			givenSubType:     10, // Content range is currently 10-15
-			expectedError:    "",
-		},
-		{
-			description:      "Content - Sub Type Just Above Range",
-			givenContextType: 1,  // Content constant
-			givenSubType:     16, // Content range is currently 10-15
-			expectedError:    "request.imp[4].native.request.contextsubtype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
-		},
-		{
-			description:      "Content - Sub Type Exchange Specific Boundary",
-			givenContextType: 1, // Content constant
-			givenSubType:     500,
-			expectedError:    "",
-		},
-		{
-			description:      "Content - Sub Type Exchange Specific Boundary + 1",
-			givenContextType: 1, // Content constant
-			givenSubType:     501,
-			expectedError:    "",
-		},
-		{
-			description:      "Content - Invalid Context Type",
-			givenContextType: 2,  // Not content constant
-			givenSubType:     10, // Content range is currently 10-15
-			expectedError:    "request.imp[4].native.request.context is 2, but contextsubtype is 10. This is an invalid combination. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
-		},
-		{
-			description:      "Social - Sub Type Just Below Range",
-			givenContextType: 2,  // Social constant
-			givenSubType:     19, // Social range is currently 20-22
-			expectedError:    "request.imp[4].native.request.contextsubtype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
-		},
-		{
-			description:      "Social - Sub Type In Range",
-			givenContextType: 2,  // Social constant
-			givenSubType:     20, // Social range is currently 20-22
-			expectedError:    "",
-		},
-		{
-			description:      "Social - Sub Type In Range - Context Type Exchange Specific Boundary",
-			givenContextType: 500,
-			givenSubType:     20, // Social range is currently 20-22
-			expectedError:    "",
-		},
-		{
-			description:      "Social - Sub Type In Range - Context Type Exchange Specific Boundary + 1",
-			givenContextType: 501,
-			givenSubType:     20, // Social range is currently 20-22
-			expectedError:    "",
-		},
-		{
-			description:      "Social - Sub Type Just Above Range",
-			givenContextType: 2,  // Social constant
-			givenSubType:     23, // Social range is currently 20-22
-			expectedError:    "request.imp[4].native.request.contextsubtype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
-		},
-		{
-			description:      "Social - Sub Type Exchange Specific Boundary",
-			givenContextType: 2, // Social constant
-			givenSubType:     500,
-			expectedError:    "",
-		},
-		{
-			description:      "Social - Sub Type Exchange Specific Boundary + 1",
-			givenContextType: 2, // Social constant
-			givenSubType:     501,
-			expectedError:    "",
-		},
-		{
-			description:      "Social - Invalid Context Type",
-			givenContextType: 3,  // Not social constant
-			givenSubType:     20, // Social range is currently 20-22
-			expectedError:    "request.imp[4].native.request.context is 3, but contextsubtype is 20. This is an invalid combination. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
-		},
-		{
-			description:      "Product - Sub Type Just Below Range",
-			givenContextType: 3,  // Product constant
-			givenSubType:     29, // Product range is currently 30-32
-			expectedError:    "request.imp[4].native.request.contextsubtype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
-		},
-		{
-			description:      "Product - Sub Type In Range",
-			givenContextType: 3,  // Product constant
-			givenSubType:     30, // Product range is currently 30-32
-			expectedError:    "",
-		},
-		{
-			description:      "Product - Sub Type In Range - Context Type Exchange Specific Boundary",
-			givenContextType: 500,
-			givenSubType:     30, // Product range is currently 30-32
-			expectedError:    "",
-		},
-		{
-			description:      "Product - Sub Type In Range - Context Type Exchange Specific Boundary + 1",
-			givenContextType: 501,
-			givenSubType:     30, // Product range is currently 30-32
-			expectedError:    "",
-		},
-		{
-			description:      "Product - Sub Type Just Above Range",
-			givenContextType: 3,  // Product constant
-			givenSubType:     33, // Product range is currently 30-32
-			expectedError:    "request.imp[4].native.request.contextsubtype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
-		},
-		{
-			description:      "Product - Sub Type Exchange Specific Boundary",
-			givenContextType: 3, // Product constant
-			givenSubType:     500,
-			expectedError:    "",
-		},
-		{
-			description:      "Product - Sub Type Exchange Specific Boundary + 1",
-			givenContextType: 3, // Product constant
-			givenSubType:     501,
-			expectedError:    "",
-		},
-		{
-			description:      "Product - Invalid Context Type",
-			givenContextType: 1,  // Not product constant
-			givenSubType:     30, // Product range is currently 30-32
-			expectedError:    "request.imp[4].native.request.context is 1, but contextsubtype is 30. This is an invalid combination. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
-		},
-	}
-
-	for _, test := range testCases {
-		err := validateNativeContextTypes(test.givenContextType, test.givenSubType, impIndex)
-		if test.expectedError == "" {
-			assert.NoError(t, err, test.description)
-		} else {
-			assert.EqualError(t, err, test.expectedError, test.description)
-		}
-	}
-}
-
-func TestValidateNativePlacementType(t *testing.T) {
-	impIndex := 4
-
-	testCases := []struct {
-		description        string
-		givenPlacementType native1.PlacementType
-		expectedError      string
-	}{
-		{
-			description:        "Not Specified",
-			givenPlacementType: 0,
-			expectedError:      "",
-		},
-		{
-			description:        "Known Value",
-			givenPlacementType: 1, // Range is currently 1-4
-			expectedError:      "",
-		},
-		{
-			description:        "Exchange Specific - Boundary",
-			givenPlacementType: 500,
-			expectedError:      "",
-		},
-		{
-			description:        "Exchange Specific - Boundary + 1",
-			givenPlacementType: 501,
-			expectedError:      "",
-		},
-		{
-			description:        "Negative",
-			givenPlacementType: -1,
-			expectedError:      "request.imp[4].native.request.plcmttype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=40",
-		},
-		{
-			description:        "Just Above Range",
-			givenPlacementType: 5, // Range is currently 1-4
-			expectedError:      "request.imp[4].native.request.plcmttype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=40",
-		},
-	}
-
-	for _, test := range testCases {
-		err := validateNativePlacementType(test.givenPlacementType, impIndex)
-		if test.expectedError == "" {
-			assert.NoError(t, err, test.description)
-		} else {
-			assert.EqualError(t, err, test.expectedError, test.description)
-		}
-	}
-}
-
-func TestValidateNativeEventTracker(t *testing.T) {
-	impIndex := 4
-	eventIndex := 8
-
-	testCases := []struct {
-		description   string
-		givenEvent    nativeRequests.EventTracker
-		expectedError string
-	}{
-		{
-			description: "Valid",
-			givenEvent: nativeRequests.EventTracker{
-				Event:   1,
-				Methods: []native1.EventTrackingMethod{1},
-			},
-			expectedError: "",
-		},
-		{
-			description: "Event - Exchange Specific - Boundary",
-			givenEvent: nativeRequests.EventTracker{
-				Event:   500,
-				Methods: []native1.EventTrackingMethod{1},
-			},
-			expectedError: "",
-		},
-		{
-			description: "Event - Exchange Specific - Boundary + 1",
-			givenEvent: nativeRequests.EventTracker{
-				Event:   501,
-				Methods: []native1.EventTrackingMethod{1},
-			},
-			expectedError: "",
-		},
-		{
-			description: "Event - Negative",
-			givenEvent: nativeRequests.EventTracker{
-				Event:   -1,
-				Methods: []native1.EventTrackingMethod{1},
-			},
-			expectedError: "request.imp[4].native.request.eventtrackers[8].event is invalid. See section 7.6: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=43",
-		},
-		{
-			description: "Event - Just Above Range",
-			givenEvent: nativeRequests.EventTracker{
-				Event:   5, // Range is currently 1-4
-				Methods: []native1.EventTrackingMethod{1},
-			},
-			expectedError: "request.imp[4].native.request.eventtrackers[8].event is invalid. See section 7.6: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=43",
-		},
-		{
-			description: "Methods - Many Valid",
-			givenEvent: nativeRequests.EventTracker{
-				Event:   1,
-				Methods: []native1.EventTrackingMethod{1, 2},
-			},
-			expectedError: "",
-		},
-		{
-			description: "Methods - Empty",
-			givenEvent: nativeRequests.EventTracker{
-				Event:   1,
-				Methods: []native1.EventTrackingMethod{},
-			},
-			expectedError: "request.imp[4].native.request.eventtrackers[8].method is required. See section 7.7: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=43",
-		},
-		{
-			description: "Methods - Exchange Specific - Boundary",
-			givenEvent: nativeRequests.EventTracker{
-				Event:   1,
-				Methods: []native1.EventTrackingMethod{500},
-			},
-			expectedError: "",
-		},
-		{
-			description: "Methods - Exchange Specific - Boundary + 1",
-			givenEvent: nativeRequests.EventTracker{
-				Event:   1,
-				Methods: []native1.EventTrackingMethod{501},
-			},
-			expectedError: "",
-		},
-		{
-			description: "Methods - Negative",
-			givenEvent: nativeRequests.EventTracker{
-				Event:   1,
-				Methods: []native1.EventTrackingMethod{-1},
-			},
-			expectedError: "request.imp[4].native.request.eventtrackers[8].methods[0] is invalid. See section 7.7: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=43",
-		},
-		{
-			description: "Methods - Just Above Range",
-			givenEvent: nativeRequests.EventTracker{
-				Event:   1,
-				Methods: []native1.EventTrackingMethod{3}, // Known values are currently 1-2
-			},
-			expectedError: "request.imp[4].native.request.eventtrackers[8].methods[0] is invalid. See section 7.7: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=43",
-		},
-		{
-			description: "Methods - Mixed Valid + Invalid",
-			givenEvent: nativeRequests.EventTracker{
-				Event:   1,
-				Methods: []native1.EventTrackingMethod{1, -1},
-			},
-			expectedError: "request.imp[4].native.request.eventtrackers[8].methods[1] is invalid. See section 7.7: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=43",
-		},
-	}
-
-	for _, test := range testCases {
-		err := validateNativeEventTracker(test.givenEvent, impIndex, eventIndex)
-		if test.expectedError == "" {
-			assert.NoError(t, err, test.description)
-		} else {
-			assert.EqualError(t, err, test.expectedError, test.description)
-		}
-	}
-}
-
-func TestValidateNativeAssetData(t *testing.T) {
-	impIndex := 4
-	assetIndex := 8
-
-	testCases := []struct {
-		description   string
-		givenData     nativeRequests.Data
-		expectedError string
-	}{
-		{
-			description:   "Valid",
-			givenData:     nativeRequests.Data{Type: 1},
-			expectedError: "",
-		},
-		{
-			description:   "Exchange Specific - Boundary",
-			givenData:     nativeRequests.Data{Type: 500},
-			expectedError: "",
-		},
-		{
-			description:   "Exchange Specific - Boundary + 1",
-			givenData:     nativeRequests.Data{Type: 501},
-			expectedError: "",
-		},
-		{
-			description:   "Not Specified",
-			givenData:     nativeRequests.Data{},
-			expectedError: "request.imp[4].native.request.assets[8].data.type is invalid. See section 7.4: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=40",
-		},
-		{
-			description:   "Negative",
-			givenData:     nativeRequests.Data{Type: -1},
-			expectedError: "request.imp[4].native.request.assets[8].data.type is invalid. See section 7.4: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=40",
-		},
-		{
-			description:   "Just Above Range",
-			givenData:     nativeRequests.Data{Type: 13}, // Range is currently 1-12
-			expectedError: "request.imp[4].native.request.assets[8].data.type is invalid. See section 7.4: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=40",
-		},
-	}
-
-	for _, test := range testCases {
-		err := validateNativeAssetData(&test.givenData, impIndex, assetIndex)
-		if test.expectedError == "" {
-			assert.NoError(t, err, test.description)
-		} else {
-			assert.EqualError(t, err, test.expectedError, test.description)
-		}
-	}
-}
-
 func TestAuctionResponseHeaders(t *testing.T) {
 	testCases := []struct {
 		description     string
-		requestBody     string
+		httpRequest     *http.Request
 		expectedStatus  int
 		expectedHeaders func(http.Header)
 	}{
 		{
 			description:    "Success Response",
-			requestBody:    validRequest(t, "site.json"),
+			httpRequest:    httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json"))),
 			expectedStatus: 200,
 			expectedHeaders: func(h http.Header) {
 				h.Set("X-Prebid", "pbs-go/unknown")
@@ -4492,10 +3900,37 @@ func TestAuctionResponseHeaders(t *testing.T) {
 		},
 		{
 			description:    "Failure Response",
-			requestBody:    "{}",
+			httpRequest:    httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader("{}")),
 			expectedStatus: 400,
 			expectedHeaders: func(h http.Header) {
 				h.Set("X-Prebid", "pbs-go/unknown")
+			},
+		},
+		{
+			description: "Success Response with Chrome BrowsingTopicsHeader",
+			httpRequest: func() *http.Request {
+				httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
+				httpReq.Header.Add(secBrowsingTopics, "sample-value")
+				return httpReq
+			}(),
+			expectedStatus: 200,
+			expectedHeaders: func(h http.Header) {
+				h.Set("X-Prebid", "pbs-go/unknown")
+				h.Set("Content-Type", "application/json")
+				h.Set("Observe-Browsing-Topics", "?1")
+			},
+		},
+		{
+			description: "Failure Response with Chrome BrowsingTopicsHeader",
+			httpRequest: func() *http.Request {
+				httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader("{}"))
+				httpReq.Header.Add(secBrowsingTopics, "sample-value")
+				return httpReq
+			}(),
+			expectedStatus: 400,
+			expectedHeaders: func(h http.Header) {
+				h.Set("X-Prebid", "pbs-go/unknown")
+				h.Set("Observe-Browsing-Topics", "?1")
 			},
 		},
 	}
@@ -4504,12 +3939,12 @@ func TestAuctionResponseHeaders(t *testing.T) {
 	endpoint, _ := NewEndpoint(
 		fakeUUIDGenerator{},
 		exchange,
-		mockBidderParamValidator{},
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -4519,10 +3954,9 @@ func TestAuctionResponseHeaders(t *testing.T) {
 	)
 
 	for _, test := range testCases {
-		httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.requestBody))
 		recorder := httptest.NewRecorder()
 
-		endpoint(recorder, httpReq, nil)
+		endpoint(recorder, test.httpRequest, nil)
 
 		expectedHeaders := http.Header{}
 		test.expectedHeaders(expectedHeaders)
@@ -4536,38 +3970,6 @@ func TestAuctionResponseHeaders(t *testing.T) {
 
 // Test stored request data
 
-func TestValidateBanner(t *testing.T) {
-	impIndex := 0
-
-	testCases := []struct {
-		description    string
-		banner         *openrtb2.Banner
-		impIndex       int
-		isInterstitial bool
-		expectedError  error
-	}{
-		{
-			description:    "isInterstitial Equals False (not set to 1)",
-			banner:         &openrtb2.Banner{W: nil, H: nil, Format: nil},
-			impIndex:       impIndex,
-			isInterstitial: false,
-			expectedError:  errors.New("request.imp[0].banner has no sizes. Define \"w\" and \"h\", or include \"format\" elements."),
-		},
-		{
-			description:    "isInterstitial Equals True (is set to 1)",
-			banner:         &openrtb2.Banner{W: nil, H: nil, Format: nil},
-			impIndex:       impIndex,
-			isInterstitial: true,
-			expectedError:  nil,
-		},
-	}
-
-	for _, test := range testCases {
-		result := validateBanner(test.banner, test.impIndex, test.isInterstitial)
-		assert.Equal(t, test.expectedError, result, test.description)
-	}
-}
-
 func TestParseRequestMergeBidderParams(t *testing.T) {
 	tests := []struct {
 		name               string
@@ -4575,6 +3977,7 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 		expectedImpExt     json.RawMessage
 		expectedReqExt     json.RawMessage
 		expectedErrorCount int
+		expectedErrors     []error
 	}{
 		{
 			name:               "add missing bidder-params from req.ext.prebid.bidderparams to imp[].ext.prebid.bidder",
@@ -4592,10 +3995,16 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 		},
 		{
 			name:               "add missing bidder-params from req.ext.prebid.bidderparams to imp[].ext for backward compatibility",
-			givenRequestBody:   validRequest(t, "req-ext-bidder-params-backward-compatible-merge.json"),
-			expectedImpExt:     getObject(t, "req-ext-bidder-params-backward-compatible-merge.json", "expectedImpExt"),
-			expectedReqExt:     getObject(t, "req-ext-bidder-params-backward-compatible-merge.json", "expectedReqExt"),
-			expectedErrorCount: 0,
+			givenRequestBody:   validRequest(t, "req-ext-bidder-params-promotion.json"),
+			expectedImpExt:     getObject(t, "req-ext-bidder-params-promotion.json", "expectedImpExt"),
+			expectedReqExt:     getObject(t, "req-ext-bidder-params-promotion.json", "expectedReqExt"),
+			expectedErrorCount: 1,
+			expectedErrors: []error{
+				&errortypes.Warning{
+					WarningCode: 0,
+					Message:     "request.imp[0].ext contains unknown bidder: 'arbitraryObject', ignoring",
+				},
+			},
 		},
 	}
 	for _, test := range tests {
@@ -4604,13 +4013,13 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 			deps := &endpointDeps{
 				fakeUUIDGenerator{},
 				&warningsCheckExchange{},
-				mockBidderParamValidator{},
+				ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 				&mockStoredReqFetcher{},
 				empty_fetcher.EmptyFetcher{},
 				empty_fetcher.EmptyFetcher{},
 				&config.Configuration{MaxRequestSize: int64(len(test.givenRequestBody))},
 				&metricsConfig.NilMetricsEngine{},
-				analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+				analyticsBuild.New(&config.Analytics{}),
 				map[string]string{},
 				false,
 				[]byte{},
@@ -4621,6 +4030,7 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 				empty_fetcher.EmptyFetcher{},
 				hooks.EmptyPlanBuilder{},
 				nil,
+				openrtb_ext.NormalizeBidderName,
 			}
 
 			hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
@@ -4632,25 +4042,27 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 			assert.NoError(t, resReq.RebuildRequest())
 
 			var expIExt, iExt map[string]interface{}
-			err := json.Unmarshal(test.expectedImpExt, &expIExt)
+			err := jsonutil.UnmarshalValid(test.expectedImpExt, &expIExt)
 			assert.Nil(t, err, "unmarshal() should return nil error")
 
 			assert.NotNil(t, resReq.BidRequest.Imp[0].Ext, "imp[0].Ext should not be nil")
-			err = json.Unmarshal(resReq.BidRequest.Imp[0].Ext, &iExt)
+			err = jsonutil.UnmarshalValid(resReq.BidRequest.Imp[0].Ext, &iExt)
 			assert.Nil(t, err, "unmarshal() should return nil error")
 
 			assert.Equal(t, expIExt, iExt, "bidderparams in imp[].Ext should match")
 
 			var eReqE, reqE map[string]interface{}
-			err = json.Unmarshal(test.expectedReqExt, &eReqE)
+			err = jsonutil.UnmarshalValid(test.expectedReqExt, &eReqE)
 			assert.Nil(t, err, "unmarshal() should return nil error")
 
-			err = json.Unmarshal(resReq.BidRequest.Ext, &reqE)
+			err = jsonutil.UnmarshalValid(resReq.BidRequest.Ext, &reqE)
 			assert.Nil(t, err, "unmarshal() should return nil error")
 
 			assert.Equal(t, eReqE, reqE, "req.Ext should match")
 
 			assert.Len(t, errL, test.expectedErrorCount, "error length should match")
+
+			assert.Equal(t, errL, test.expectedErrors)
 		})
 	}
 }
@@ -4707,13 +4119,13 @@ func TestParseRequestStoredResponses(t *testing.T) {
 			deps := &endpointDeps{
 				fakeUUIDGenerator{},
 				&warningsCheckExchange{},
-				mockBidderParamValidator{},
+				ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 				&mockStoredReqFetcher{},
 				empty_fetcher.EmptyFetcher{},
 				empty_fetcher.EmptyFetcher{},
 				&config.Configuration{MaxRequestSize: int64(len(test.givenRequestBody))},
 				&metricsConfig.NilMetricsEngine{},
-				analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+				analyticsBuild.New(&config.Analytics{}),
 				map[string]string{},
 				false,
 				[]byte{},
@@ -4724,6 +4136,7 @@ func TestParseRequestStoredResponses(t *testing.T) {
 				&mockStoredResponseFetcher{mockStoredResponses},
 				hooks.EmptyPlanBuilder{},
 				nil,
+				openrtb_ext.NormalizeBidderName,
 			}
 
 			hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
@@ -4743,11 +4156,13 @@ func TestParseRequestStoredResponses(t *testing.T) {
 }
 
 func TestParseRequestStoredBidResponses(t *testing.T) {
-	bidRespId1 := json.RawMessage(`{"id": "resp_id1", "seatbid": [{"bid": [{"id": "bid_id1"}], "seat": "testBidder1"}], "bidid": "123", "cur": "USD"}`)
-	bidRespId2 := json.RawMessage(`{"id": "resp_id2", "seatbid": [{"bid": [{"id": "bid_id2"}], "seat": "testBidder2"}], "bidid": "124", "cur": "USD"}`)
+	bidRespId1 := json.RawMessage(`{"id": "resp_id1", "seatbid": [{"bid": [{"id": "bid_id1"}], "seat": "telaria"}], "bidid": "123", "cur": "USD"}`)
+	bidRespId2 := json.RawMessage(`{"id": "resp_id2", "seatbid": [{"bid": [{"id": "bid_id2"}], "seat": "amx"}], "bidid": "124", "cur": "USD"}`)
+	bidRespId3 := json.RawMessage(`{"id": "resp_id3", "seatbid": [{"bid": [{"id": "bid_id3"}], "seat": "APPNEXUS"}], "bidid": "125", "cur": "USD"}`)
 	mockStoredBidResponses := map[string]json.RawMessage{
 		"bidResponseId1": bidRespId1,
 		"bidResponseId2": bidRespId2,
+		"bidResponseId3": bidRespId3,
 	}
 
 	tests := []struct {
@@ -4761,7 +4176,23 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 			name:             "req imp has valid stored bid response",
 			givenRequestBody: validRequest(t, "imp-with-stored-bid-resp.json"),
 			expectedStoredBidResponses: map[string]map[string]json.RawMessage{
-				"imp-id1": {"testBidder1": bidRespId1},
+				"imp-id1": {"telaria": bidRespId1},
+			},
+			expectedErrorCount: 0,
+		},
+		{
+			name:             "req imp has valid stored bid response with case not-matching bidder name",
+			givenRequestBody: validRequest(t, "imp-with-stored-bid-resp-case-not-matching-bidder-name.json"),
+			expectedStoredBidResponses: map[string]map[string]json.RawMessage{
+				"imp-id3": {"appnexus": bidRespId3},
+			},
+			expectedErrorCount: 0,
+		},
+		{
+			name:             "req imp has valid stored bid response with case matching bidder name",
+			givenRequestBody: validRequest(t, "imp-with-stored-bid-resp-case-matching-bidder-name.json"),
+			expectedStoredBidResponses: map[string]map[string]json.RawMessage{
+				"imp-id3": {"appnexus": bidRespId3},
 			},
 			expectedErrorCount: 0,
 		},
@@ -4769,8 +4200,8 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 			name:             "req has two imps with valid stored bid responses",
 			givenRequestBody: validRequest(t, "req-two-imps-stored-bid-responses.json"),
 			expectedStoredBidResponses: map[string]map[string]json.RawMessage{
-				"imp-id1": {"testBidder1": bidRespId1},
-				"imp-id2": {"testBidder2": bidRespId2},
+				"imp-id1": {"telaria": bidRespId1},
+				"imp-id2": {"amx": bidRespId2},
 			},
 			expectedErrorCount: 0,
 		},
@@ -4778,7 +4209,7 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 			name:             "req has two imps one with valid stored bid responses and another one without stored bid responses",
 			givenRequestBody: validRequest(t, "req-two-imps-with-and-without-stored-bid-responses.json"),
 			expectedStoredBidResponses: map[string]map[string]json.RawMessage{
-				"imp-id2": {"testBidder2": bidRespId2},
+				"imp-id2": {"amx": bidRespId2},
 			},
 			expectedErrorCount: 0,
 		},
@@ -4786,7 +4217,13 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 			name:                       "req has two imps with missing stored bid responses",
 			givenRequestBody:           validRequest(t, "req-two-imps-missing-stored-bid-response.json"),
 			expectedStoredBidResponses: nil,
-			expectedErrorCount:         2,
+			expectedErrorCount:         1,
+		},
+		{
+			name:                       "req imp has valid stored bid response with non existing bidder name",
+			givenRequestBody:           validRequest(t, "imp-with-stored-bid-resp-non-existing-bidder-name.json"),
+			expectedStoredBidResponses: nil,
+			expectedErrorCount:         1,
 		},
 	}
 	for _, test := range tests {
@@ -4795,31 +4232,32 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 			deps := &endpointDeps{
 				fakeUUIDGenerator{},
 				&warningsCheckExchange{},
-				mockBidderParamValidator{},
+				ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 				&mockStoredReqFetcher{},
 				empty_fetcher.EmptyFetcher{},
 				empty_fetcher.EmptyFetcher{},
 				&config.Configuration{MaxRequestSize: int64(len(test.givenRequestBody))},
 				&metricsConfig.NilMetricsEngine{},
-				analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+				analyticsBuild.New(&config.Analytics{}),
 				map[string]string{},
 				false,
 				[]byte{},
-				map[string]openrtb_ext.BidderName{"testBidder1": "testBidder1", "testBidder2": "testBidder2"},
+				map[string]openrtb_ext.BidderName{"telaria": "telaria", "amx": "amx", "appnexus": "appnexus"},
 				nil,
 				nil,
 				hardcodedResponseIPValidator{response: true},
 				&mockStoredResponseFetcher{mockStoredBidResponses},
 				hooks.EmptyPlanBuilder{},
 				nil,
+				openrtb_ext.NormalizeBidderName,
 			}
 
 			hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
 
 			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
 			_, _, _, storedBidResponses, _, _, errL := deps.parseRequest(req, &metrics.Labels{}, hookExecutor)
-
 			if test.expectedErrorCount == 0 {
+				assert.Empty(t, errL)
 				assert.Equal(t, test.expectedStoredBidResponses, storedBidResponses, "stored responses should match")
 			} else {
 				assert.Contains(t, errL[0].Error(), test.expectedError, "error should match")
@@ -4832,13 +4270,13 @@ func TestValidateStoredResp(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&nobidExchange{},
-		mockBidderParamValidator{},
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
 		false,
 		[]byte{},
@@ -4849,11 +4287,14 @@ func TestValidateStoredResp(t *testing.T) {
 		&mockStoredResponseFetcher{},
 		hooks.EmptyPlanBuilder{},
 		nil,
+		openrtb_ext.NormalizeBidderName,
 	}
 
 	testCases := []struct {
 		description               string
 		givenRequestWrapper       *openrtb_ext.RequestWrapper
+		givenHttpRequest          *http.Request
+		givenAccount              *config.Account
 		expectedErrorList         []error
 		hasStoredAuctionResponses bool
 		storedBidResponses        stored_responses.ImpBidderStoredResp
@@ -5226,7 +4667,7 @@ func TestValidateStoredResp(t *testing.T) {
 			storedBidResponses:        stored_responses.ImpBidderStoredResp{"Some-Imp-ID": {"appnexus": json.RawMessage(`{"test":true}`), "rubicon": json.RawMessage(`{"test":true}`)}},
 		},
 		{
-			description: "One imp with 2 stored bid responses and 1 bidders in imp.ext and 1 in imp.ext.prebid.bidder, expect validate request to throw no errors",
+			description: "One imp with 1 stored bid response and 1 ignored bidder in imp.ext and 1 included bidder in imp.ext.prebid.bidder, expect validate request to throw no errors",
 			givenRequestWrapper: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					ID:  "Some-ID",
@@ -5253,7 +4694,7 @@ func TestValidateStoredResp(t *testing.T) {
 			},
 			expectedErrorList:         []error{},
 			hasStoredAuctionResponses: false,
-			storedBidResponses:        stored_responses.ImpBidderStoredResp{"Some-Imp-ID": {"appnexus": json.RawMessage(`{"test":true}`), "telaria": json.RawMessage(`{"test":true}`)}},
+			storedBidResponses:        stored_responses.ImpBidderStoredResp{"Some-Imp-ID": {"telaria": json.RawMessage(`{"test":true}`)}},
 		},
 		{
 			description: "One imp with 2 stored bid responses and 1 bidders in imp.ext and 1 in imp.ext.prebid.bidder that is not defined in stored bid responses, expect validate request to throw an error",
@@ -5394,8 +4835,10 @@ func TestValidateStoredResp(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		errorList := deps.validateRequest(test.givenRequestWrapper, false, test.hasStoredAuctionResponses, test.storedBidResponses, false)
-		assert.Equalf(t, test.expectedErrorList, errorList, "Error doesn't match: %s\n", test.description)
+		t.Run(test.description, func(t *testing.T) {
+			errorList := deps.validateRequest(test.givenAccount, test.givenHttpRequest, test.givenRequestWrapper, false, test.hasStoredAuctionResponses, test.storedBidResponses, false)
+			assert.Equalf(t, test.expectedErrorList, errorList, "Error doesn't match: %s\n", test.description)
+		})
 	}
 }
 
@@ -5495,11 +4938,11 @@ func TestValidResponseAfterExecutingStages(t *testing.T) {
 			var actualExt openrtb_ext.ExtBidResponse
 			var expectedExt openrtb_ext.ExtBidResponse
 
-			assert.NoError(t, json.Unmarshal(test.ExpectedBidResponse, &expectedResp), "Unable to unmarshal expected BidResponse.")
-			assert.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &actualResp), "Unable to unmarshal actual BidResponse.")
+			assert.NoError(t, jsonutil.UnmarshalValid(test.ExpectedBidResponse, &expectedResp), "Unable to unmarshal expected BidResponse.")
+			assert.NoError(t, jsonutil.UnmarshalValid(recorder.Body.Bytes(), &actualResp), "Unable to unmarshal actual BidResponse.")
 			if expectedResp.Ext != nil {
-				assert.NoError(t, json.Unmarshal(expectedResp.Ext, &expectedExt), "Unable to unmarshal expected ExtBidResponse.")
-				assert.NoError(t, json.Unmarshal(actualResp.Ext, &actualExt), "Unable to unmarshal actual ExtBidResponse.")
+				assert.NoError(t, jsonutil.UnmarshalValid(expectedResp.Ext, &expectedExt), "Unable to unmarshal expected ExtBidResponse.")
+				assert.NoError(t, jsonutil.UnmarshalValid(actualResp.Ext, &actualExt), "Unable to unmarshal actual ExtBidResponse.")
 			}
 
 			assertBidResponseEqual(t, tc.file, expectedResp, actualResp)
@@ -5585,7 +5028,7 @@ func TestSendAuctionResponse_LogsErrors(t *testing.T) {
 			ao := analytics.AuctionObject{}
 			account := &config.Account{DebugAllow: true}
 
-			labels, ao = sendAuctionResponse(writer, test.hookExecutor, test.response, test.request, account, labels, ao)
+			_, ao = sendAuctionResponse(writer, test.hookExecutor, test.response, test.request, account, labels, ao)
 
 			assert.Equal(t, ao.Errors, test.expectedErrors, "Invalid errors.")
 			assert.Equal(t, test.expectedStatus, ao.Status, "Invalid HTTP response status.")
@@ -5645,13 +5088,13 @@ func TestParseRequestMultiBid(t *testing.T) {
 			deps := &endpointDeps{
 				fakeUUIDGenerator{},
 				&warningsCheckExchange{},
-				mockBidderParamValidator{},
+				ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
 				&mockStoredReqFetcher{},
 				empty_fetcher.EmptyFetcher{},
 				empty_fetcher.EmptyFetcher{},
 				&config.Configuration{MaxRequestSize: int64(len(test.givenRequestBody))},
 				&metricsConfig.NilMetricsEngine{},
-				analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+				analyticsBuild.New(&config.Analytics{}),
 				map[string]string{},
 				false,
 				[]byte{},
@@ -5662,6 +5105,7 @@ func TestParseRequestMultiBid(t *testing.T) {
 				empty_fetcher.EmptyFetcher{},
 				hooks.EmptyPlanBuilder{},
 				nil,
+				openrtb_ext.NormalizeBidderName,
 			}
 
 			hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
@@ -5700,7 +5144,7 @@ func getObject(t *testing.T, filename, key string) json.RawMessage {
 	assert.NoError(t, err, "Error jsonparsing root.mockBidRequest from file %s. Desc: %v.", filename, err)
 
 	var obj json.RawMessage
-	err = json.Unmarshal(testBidRequest, &obj)
+	err = jsonutil.UnmarshalValid(testBidRequest, &obj)
 	if err != nil {
 		t.Fatalf("Failed to fetch object with key '%s' ... got error: %v", key, err)
 	}
@@ -5769,5 +5213,788 @@ func TestSetSeatNonBidRaw(t *testing.T) {
 				t.Errorf("setSeatNonBidRaw() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
+	}
+}
+
+func TestValidateAliases(t *testing.T) {
+	deps := &endpointDeps{
+		disabledBidders: map[string]string{"rubicon": "rubicon"},
+		bidderMap:       map[string]openrtb_ext.BidderName{"appnexus": openrtb_ext.BidderName("appnexus")},
+	}
+
+	testCases := []struct {
+		description     string
+		aliases         map[string]string
+		expectedAliases map[string]string
+		expectedError   error
+	}{
+		{
+			description:     "valid case",
+			aliases:         map[string]string{"test": "appnexus"},
+			expectedAliases: map[string]string{"test": "appnexus"},
+			expectedError:   nil,
+		},
+		{
+			description:     "valid case - case insensitive",
+			aliases:         map[string]string{"test": "Appnexus"},
+			expectedAliases: map[string]string{"test": "appnexus"},
+			expectedError:   nil,
+		},
+		{
+			description:     "disabled bidder",
+			aliases:         map[string]string{"test": "rubicon"},
+			expectedAliases: nil,
+			expectedError:   errors.New("request.ext.prebid.aliases.test refers to disabled bidder: rubicon"),
+		},
+		{
+			description:     "coreBidderName not found",
+			aliases:         map[string]string{"test": "anyBidder"},
+			expectedAliases: nil,
+			expectedError:   errors.New("request.ext.prebid.aliases.test refers to unknown bidder: anyBidder"),
+		},
+		{
+			description:     "alias name is coreBidder name",
+			aliases:         map[string]string{"appnexus": "appnexus"},
+			expectedAliases: nil,
+			expectedError:   errors.New("request.ext.prebid.aliases.appnexus defines a no-op alias. Choose a different alias, or remove this entry."),
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.description, func(t *testing.T) {
+			err := deps.validateAliases(testCase.aliases)
+			if err != nil {
+				assert.Equal(t, testCase.expectedError, err)
+			} else {
+				assert.ObjectsAreEqualValues(testCase.expectedAliases, map[string]string{"test": "appnexus"})
+			}
+		})
+	}
+}
+
+func fakeNormalizeBidderName(name string) (openrtb_ext.BidderName, bool) {
+	return openrtb_ext.BidderName(strings.ToLower(name)), true
+}
+
+func TestValidateOrFillCookieDeprecation(t *testing.T) {
+	type args struct {
+		httpReq *http.Request
+		req     *openrtb_ext.RequestWrapper
+		account config.Account
+	}
+	tests := []struct {
+		name          string
+		args          args
+		wantDeviceExt json.RawMessage
+		wantErr       error
+	}{
+		{
+			name:          "account-nil",
+			wantDeviceExt: nil,
+			wantErr:       nil,
+		},
+		{
+			name: "cookie-deprecation-not-enabled",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{secCookieDeprecation: []string{"example_label_1"}},
+				},
+				req: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{},
+				},
+			},
+			wantDeviceExt: nil,
+			wantErr:       nil,
+		},
+		{
+			name: "cookie-deprecation-disabled-explicitly",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{secCookieDeprecation: []string{"example_label_1"}},
+				},
+				req: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{},
+				},
+				account: config.Account{
+					Privacy: config.AccountPrivacy{
+						PrivacySandbox: config.PrivacySandbox{
+							CookieDeprecation: config.CookieDeprecation{
+								Enabled: false,
+							},
+						},
+					},
+				},
+			},
+			wantDeviceExt: nil,
+			wantErr:       nil,
+		},
+		{
+			name: "cookie-deprecation-enabled-header-not-present-in-request",
+			args: args{
+				httpReq: &http.Request{},
+				req: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{},
+				},
+				account: config.Account{
+					Privacy: config.AccountPrivacy{
+						PrivacySandbox: config.PrivacySandbox{
+							CookieDeprecation: config.CookieDeprecation{
+								Enabled: true,
+							},
+						},
+					},
+				},
+			},
+			wantDeviceExt: nil,
+			wantErr:       nil,
+		},
+		{
+			name: "header-present-request-device-nil",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{secCookieDeprecation: []string{"example_label_1"}},
+				},
+				req: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{},
+				},
+				account: config.Account{
+					Privacy: config.AccountPrivacy{
+						PrivacySandbox: config.PrivacySandbox{
+							CookieDeprecation: config.CookieDeprecation{
+								Enabled: true,
+							},
+						},
+					},
+				},
+			},
+			wantDeviceExt: json.RawMessage(`{"cdep":"example_label_1"}`),
+			wantErr:       nil,
+		},
+		{
+			name: "header-present-request-device-ext-nil",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{secCookieDeprecation: []string{"example_label_1"}},
+				},
+				req: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						Device: &openrtb2.Device{
+							Ext: nil,
+						},
+					},
+				},
+				account: config.Account{
+					Privacy: config.AccountPrivacy{
+						PrivacySandbox: config.PrivacySandbox{
+							CookieDeprecation: config.CookieDeprecation{
+								Enabled: true,
+							},
+						},
+					},
+				},
+			},
+			wantDeviceExt: json.RawMessage(`{"cdep":"example_label_1"}`),
+			wantErr:       nil,
+		},
+		{
+			name: "header-present-request-device-ext-not-nil",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{secCookieDeprecation: []string{"example_label_1"}},
+				},
+				req: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						Device: &openrtb2.Device{
+							Ext: json.RawMessage(`{"foo":"bar"}`),
+						},
+					},
+				},
+				account: config.Account{
+					Privacy: config.AccountPrivacy{
+						PrivacySandbox: config.PrivacySandbox{
+							CookieDeprecation: config.CookieDeprecation{
+								Enabled: true,
+							},
+						},
+					},
+				},
+			},
+			wantDeviceExt: json.RawMessage(`{"cdep":"example_label_1","foo":"bar"}`),
+			wantErr:       nil,
+		},
+		{
+			name: "header-present-with-length-more-than-100",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{secCookieDeprecation: []string{"zjfXqGxXFI8yura8AhQl1DK2EMMmryrC8haEpAlwjoerrFfEo2MQTXUq6cSmLohI8gjsnkGU4oAzvXd4TTAESzEKsoYjRJ2zKxmEa"}},
+				},
+				req: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						Device: &openrtb2.Device{
+							Ext: json.RawMessage(`{"foo":"bar"}`),
+						},
+					},
+				},
+				account: config.Account{
+					Privacy: config.AccountPrivacy{
+						PrivacySandbox: config.PrivacySandbox{
+							CookieDeprecation: config.CookieDeprecation{
+								Enabled: true,
+							},
+						},
+					},
+				},
+			},
+			wantDeviceExt: json.RawMessage(`{"foo":"bar"}`),
+			wantErr: &errortypes.Warning{
+				Message:     "request.device.ext.cdep must not exceed 100 characters",
+				WarningCode: errortypes.SecCookieDeprecationLenWarningCode,
+			},
+		},
+		{
+			name: "header-present-request-device-ext-cdep-present",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{secCookieDeprecation: []string{"example_label_1"}},
+				},
+				req: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						Device: &openrtb2.Device{
+							Ext: json.RawMessage(`{"foo":"bar","cdep":"example_label_2"}`),
+						},
+					},
+				},
+				account: config.Account{
+					Privacy: config.AccountPrivacy{
+						PrivacySandbox: config.PrivacySandbox{
+							CookieDeprecation: config.CookieDeprecation{
+								Enabled: true,
+							},
+						},
+					},
+				},
+			},
+			wantDeviceExt: json.RawMessage(`{"foo":"bar","cdep":"example_label_2"}`),
+			wantErr:       nil,
+		},
+		{
+			name: "header-present-request-device-ext-invalid",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{secCookieDeprecation: []string{"example_label_1"}},
+				},
+				req: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						Device: &openrtb2.Device{
+							Ext: json.RawMessage(`{`),
+						},
+					},
+				},
+				account: config.Account{
+					Privacy: config.AccountPrivacy{
+						PrivacySandbox: config.PrivacySandbox{
+							CookieDeprecation: config.CookieDeprecation{
+								Enabled: true,
+							},
+						},
+					},
+				},
+			},
+			wantDeviceExt: json.RawMessage(`{`),
+			wantErr: &errortypes.FailedToUnmarshal{
+				Message: "expects \" or n, but found \x00",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateOrFillCookieDeprecation(tt.args.httpReq, tt.args.req, &tt.args.account)
+			assert.Equal(t, tt.wantErr, err)
+			if tt.args.req != nil {
+				err := tt.args.req.RebuildRequest()
+				assert.NoError(t, err)
+			}
+			if tt.wantDeviceExt == nil {
+				if tt.args.req != nil && tt.args.req.Device != nil {
+					assert.Nil(t, tt.args.req.Device.Ext)
+				}
+			} else {
+				assert.Equal(t, string(tt.wantDeviceExt), string(tt.args.req.Device.Ext))
+			}
+		})
+	}
+}
+
+func TestSetGPCImplicitly(t *testing.T) {
+	testCases := []struct {
+		description  string
+		header       string
+		regs         *openrtb2.Regs
+		expectError  bool
+		expectedRegs *openrtb2.Regs
+	}{
+		{
+			description: "regs_ext_gpc_not_set_and_header_is_1",
+			header:      "1",
+			regs: &openrtb2.Regs{
+				Ext: []byte(`{}`),
+			},
+			expectError: false,
+			expectedRegs: &openrtb2.Regs{
+				Ext: []byte(`{"gpc":"1"}`),
+			},
+		},
+		{
+			description: "sec_gpc_header_not_set_gpc_should_not_be_modified",
+			header:      "",
+			regs: &openrtb2.Regs{
+				Ext: []byte(`{}`),
+			},
+			expectError: false,
+			expectedRegs: &openrtb2.Regs{
+				Ext: []byte(`{}`),
+			},
+		},
+		{
+			description: "sec_gpc_header_set_to_2_gpc_should_not_be_modified",
+			header:      "2",
+			regs: &openrtb2.Regs{
+				Ext: []byte(`{}`),
+			},
+			expectError: false,
+			expectedRegs: &openrtb2.Regs{
+				Ext: []byte(`{}`),
+			},
+		},
+		{
+			description: "sec_gpc_header_set_to_1_and_regs_ext_contains_other_data",
+			header:      "1",
+			regs: &openrtb2.Regs{
+				Ext: []byte(`{"some_other_field":"some_value"}`),
+			},
+			expectError: false,
+			expectedRegs: &openrtb2.Regs{
+				Ext: []byte(`{"some_other_field":"some_value","gpc":"1"}`),
+			},
+		},
+		{
+			description: "regs_ext_gpc_not_set_and_header_not_set",
+			header:      "",
+			regs: &openrtb2.Regs{
+				Ext: []byte(`{}`),
+			},
+			expectError: false,
+			expectedRegs: &openrtb2.Regs{
+				Ext: []byte(`{}`),
+			},
+		},
+		{
+			description: "regs_ext_gpc_not_set_and_header_not_1",
+			header:      "0",
+			regs: &openrtb2.Regs{
+				Ext: []byte(`{}`),
+			},
+			expectError: false,
+			expectedRegs: &openrtb2.Regs{
+				Ext: []byte(`{}`),
+			},
+		},
+		{
+			description: "regs_ext_gpc_is_1_and_header_is_1",
+			header:      "1",
+			regs: &openrtb2.Regs{
+				Ext: []byte(`{"gpc":"1"}`),
+			},
+			expectError: false,
+			expectedRegs: &openrtb2.Regs{
+				Ext: []byte(`{"gpc":"1"}`),
+			},
+		},
+		{
+			description: "regs_ext_gpc_is_1_and_header_not_1",
+			header:      "0",
+			regs: &openrtb2.Regs{
+				Ext: []byte(`{"gpc":"1"}`),
+			},
+			expectError: false,
+			expectedRegs: &openrtb2.Regs{
+				Ext: []byte(`{"gpc":"1"}`),
+			},
+		},
+		{
+			description: "regs_ext_other_data_and_header_is_1",
+			header:      "1",
+			regs: &openrtb2.Regs{
+				Ext: []byte(`{"other":"value"}`),
+			},
+			expectError: false,
+			expectedRegs: &openrtb2.Regs{
+				Ext: []byte(`{"other":"value","gpc":"1"}`),
+			},
+		},
+		{
+			description: "regs_nil_and_header_is_1",
+			header:      "1",
+			regs:        nil,
+			expectError: false,
+			expectedRegs: &openrtb2.Regs{
+				Ext: []byte(`{"gpc":"1"}`),
+			},
+		},
+		{
+			description:  "regs_nil_and_header_not_set",
+			header:       "",
+			regs:         nil,
+			expectError:  false,
+			expectedRegs: nil,
+		},
+		{
+			description: "regs_ext_is_nil_and_header_not_set",
+			header:      "",
+			regs: &openrtb2.Regs{
+				Ext: nil,
+			},
+			expectError: false,
+			expectedRegs: &openrtb2.Regs{
+				Ext: nil,
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.description, func(t *testing.T) {
+			httpReq := &http.Request{
+				Header: http.Header{
+					http.CanonicalHeaderKey("Sec-GPC"): []string{test.header},
+				},
+			}
+
+			r := &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: test.regs,
+				},
+			}
+
+			err := setGPCImplicitly(httpReq, r)
+
+			if test.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.NoError(t, r.RebuildRequest())
+			if test.expectedRegs == nil {
+				assert.Nil(t, r.BidRequest.Regs)
+			} else if test.expectedRegs.Ext == nil {
+				assert.Nil(t, r.BidRequest.Regs.Ext)
+			} else {
+				assert.JSONEq(t, string(test.expectedRegs.Ext), string(r.BidRequest.Regs.Ext))
+			}
+		})
+	}
+}
+
+func TestValidateRequestCookieDeprecation(t *testing.T) {
+	testCases :=
+		[]struct {
+			name         string
+			givenAccount *config.Account
+			httpReq      *http.Request
+			reqWrapper   *openrtb_ext.RequestWrapper
+			wantErrs     []error
+			wantCDep     string
+		}{
+			{
+				name: "header-with-length-less-than-100",
+				httpReq: func() *http.Request {
+					req := httptest.NewRequest("POST", "/openrtb2/auction", nil)
+					req.Header.Set(secCookieDeprecation, "sample-value")
+					return req
+				}(),
+				givenAccount: &config.Account{
+					ID: "1",
+					Privacy: config.AccountPrivacy{
+						PrivacySandbox: config.PrivacySandbox{
+							CookieDeprecation: config.CookieDeprecation{
+								Enabled: true,
+								TTLSec:  86400,
+							},
+						},
+					},
+				},
+				reqWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						ID:  "Some-ID",
+						App: &openrtb2.App{},
+						Imp: []openrtb2.Imp{
+							{
+								ID: "Some-Imp-ID",
+								Banner: &openrtb2.Banner{
+									Format: []openrtb2.Format{
+										{
+											W: 600,
+											H: 500,
+										},
+										{
+											W: 300,
+											H: 600,
+										},
+									},
+								},
+								Ext: []byte(`{"pubmatic":{"publisherId": 12345678}}`),
+							},
+						},
+					},
+				},
+				wantErrs: []error{},
+				wantCDep: "sample-value",
+			},
+			{
+				name: "header-with-length-more-than-100",
+				httpReq: func() *http.Request {
+					req := httptest.NewRequest("POST", "/openrtb2/auction", nil)
+					req.Header.Set(secCookieDeprecation, "zjfXqGxXFI8yura8AhQl1DK2EMMmryrC8haEpAlwjoerrFfEo2MQTXUq6cSmLohI8gjsnkGU4oAzvXd4TTAESzEKsoYjRJ2zKxmEa")
+					return req
+				}(),
+				givenAccount: &config.Account{
+					ID: "1",
+					Privacy: config.AccountPrivacy{
+						PrivacySandbox: config.PrivacySandbox{
+							CookieDeprecation: config.CookieDeprecation{
+								Enabled: true,
+								TTLSec:  86400,
+							},
+						},
+					},
+				},
+				reqWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						ID:  "Some-ID",
+						App: &openrtb2.App{},
+						Imp: []openrtb2.Imp{
+							{
+								ID: "Some-Imp-ID",
+								Banner: &openrtb2.Banner{
+									Format: []openrtb2.Format{
+										{
+											W: 600,
+											H: 500,
+										},
+										{
+											W: 300,
+											H: 600,
+										},
+									},
+								},
+								Ext: []byte(`{"pubmatic":{"publisherId": 12345678}}`),
+							},
+						},
+					},
+				},
+				wantErrs: []error{
+					&errortypes.Warning{
+						Message:     "request.device.ext.cdep must not exceed 100 characters",
+						WarningCode: errortypes.SecCookieDeprecationLenWarningCode,
+					},
+				},
+				wantCDep: "",
+			},
+		}
+
+	deps := &endpointDeps{
+		fakeUUIDGenerator{},
+		&warningsCheckExchange{},
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
+		&mockStoredReqFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		&mockAccountFetcher{},
+		&config.Configuration{},
+		&metricsConfig.NilMetricsEngine{},
+		analyticsBuild.New(&config.Analytics{}),
+		map[string]string{},
+		false,
+		[]byte{},
+		openrtb_ext.BuildBidderMap(),
+		nil,
+		nil,
+		hardcodedResponseIPValidator{response: true},
+		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
+		nil,
+		openrtb_ext.NormalizeBidderName,
+	}
+
+	for _, test := range testCases {
+		errs := deps.validateRequest(test.givenAccount, test.httpReq, test.reqWrapper, false, false, stored_responses.ImpBidderStoredResp{}, false)
+		assert.Equal(t, test.wantErrs, errs)
+		test.reqWrapper.RebuildRequest()
+		deviceExt, err := test.reqWrapper.GetDeviceExt()
+		assert.NoError(t, err)
+		assert.Equal(t, test.wantCDep, deviceExt.GetCDep())
+	}
+}
+
+func TestSetSecBrowsingTopicsImplicitly(t *testing.T) {
+	type args struct {
+		httpReq *http.Request
+		r       *openrtb_ext.RequestWrapper
+		account *config.Account
+	}
+	tests := []struct {
+		name     string
+		args     args
+		wantUser *openrtb2.User
+	}{
+		{
+			name: "empty HTTP request, no change in user data",
+			args: args{
+				httpReq: &http.Request{},
+				r:       &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
+				account: &config.Account{Privacy: config.AccountPrivacy{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "ads.pubmatic.com"}}},
+			},
+			wantUser: nil,
+		},
+		{
+			name: "valid topic in request but topicsdomain not configured by host, no change in user data",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{
+						secBrowsingTopics: []string{"(1);v=chrome.1:1:2, ();p=P00000000000"},
+					},
+				},
+				r:       &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
+				account: &config.Account{Privacy: config.AccountPrivacy{PrivacySandbox: config.PrivacySandbox{TopicsDomain: ""}}},
+			},
+			wantUser: nil,
+		},
+		{
+			name: "valid topic in request and topicsdomain configured by host, topics copied to user data",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{
+						secBrowsingTopics: []string{"(1);v=chrome.1:1:2, ();p=P00000000000"},
+					},
+				},
+				r:       &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
+				account: &config.Account{Privacy: config.AccountPrivacy{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "ads.pubmatic.com"}}},
+			},
+			wantUser: &openrtb2.User{
+				Data: []openrtb2.Data{
+					{
+						Name: "ads.pubmatic.com",
+						Segment: []openrtb2.Segment{
+							{
+								ID: "1",
+							},
+						},
+						Ext: json.RawMessage(`{"segtax":600,"segclass":"2"}`),
+					},
+				},
+			},
+		},
+		{
+			name: "valid empty topic in request, no change in user data",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{
+						secBrowsingTopics: []string{"();p=P0000000000000000000000000000000"},
+					},
+				},
+				r:       &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
+				account: &config.Account{Privacy: config.AccountPrivacy{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "ads.pubmatic.com"}}},
+			},
+			wantUser: nil,
+		},
+		{
+			name: "request with a few valid topics (including duplicate topics, segIDs, matching segtax, segclass, etc) and a few invalid topics(different invalid format), only valid and unique topics copied/merged to/with user data",
+			args: args{
+				httpReq: &http.Request{
+					Header: http.Header{
+						secBrowsingTopics: []string{"(1);v=chrome.1:1:2, (1 2);v=chrome.1:1:2,(4);v=chrome.1:1:2,();p=P0000000000,(4);v=chrome.1, 5);v=chrome.1, (6;v=chrome.1, ();v=chrome.1, (	);v=chrome.1, (1);v=chrome.1:1:2, (1 2 4		6 7			4567	  ) ; v=chrome.1: 2 : 3,();p=P0000000000"},
+					},
+				},
+				r: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+					User: &openrtb2.User{
+						Data: []openrtb2.Data{
+							{
+								Name: "chrome.com",
+								Segment: []openrtb2.Segment{
+									{ID: "1"},
+								},
+								Ext: json.RawMessage(`{"segtax":603,"segclass":"4"}`),
+							},
+							{
+								Name: "ads.pubmatic.com",
+								Segment: []openrtb2.Segment{
+									{ID: "1"},
+									{ID: "3"},
+								},
+								Ext: json.RawMessage(`{"segtax":600,"segclass":"2"}`),
+							},
+						},
+					},
+				}},
+				account: &config.Account{Privacy: config.AccountPrivacy{PrivacySandbox: config.PrivacySandbox{TopicsDomain: "ads.pubmatic.com"}}},
+			},
+			wantUser: &openrtb2.User{
+				Data: []openrtb2.Data{
+					{
+						Name: "chrome.com",
+						Segment: []openrtb2.Segment{
+							{ID: "1"},
+						},
+						Ext: json.RawMessage(`{"segtax":603,"segclass":"4"}`),
+					},
+					{
+						Name: "ads.pubmatic.com",
+						Segment: []openrtb2.Segment{
+							{ID: "1"},
+							{ID: "2"},
+							{ID: "3"},
+							{ID: "4"},
+						},
+						Ext: json.RawMessage(`{"segtax":600,"segclass":"2"}`),
+					},
+					{
+						Name: "ads.pubmatic.com",
+						Segment: []openrtb2.Segment{
+							{ID: "1"},
+							{ID: "2"},
+							{ID: "4"},
+							{ID: "6"},
+							{ID: "7"},
+							{ID: "4567"},
+						},
+						Ext: json.RawMessage(`{"segtax":601,"segclass":"3"}`),
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			setSecBrowsingTopicsImplicitly(tt.args.httpReq, tt.args.r, tt.args.account)
+
+			// sequence is not guaranteed we're using a map to filter segids
+			sortUserData(tt.wantUser)
+			sortUserData(tt.args.r.User)
+			assert.Equal(t, tt.wantUser, tt.args.r.User, tt.name)
+		})
+	}
+}
+
+func sortUserData(user *openrtb2.User) {
+	if user != nil {
+		sort.Slice(user.Data, func(i, j int) bool {
+			if user.Data[i].Name == user.Data[j].Name {
+				return string(user.Data[i].Ext) < string(user.Data[j].Ext)
+			}
+			return user.Data[i].Name < user.Data[j].Name
+		})
+		for g := range user.Data {
+			sort.Slice(user.Data[g].Segment, func(i, j int) bool {
+				return user.Data[g].Segment[i].ID < user.Data[g].Segment[j].ID
+			})
+		}
 	}
 }

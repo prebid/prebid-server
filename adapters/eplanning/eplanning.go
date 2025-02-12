@@ -1,7 +1,6 @@
 package eplanning
 
 import (
-	"encoding/json"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -11,12 +10,13 @@ import (
 
 	"fmt"
 
-	"github.com/prebid/openrtb/v19/adcom1"
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/adcom1"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 
 	"strconv"
 )
@@ -204,6 +204,7 @@ func (adapter *EPlanningAdapter) MakeRequests(request *openrtb2.BidRequest, reqI
 		Uri:     uri,
 		Body:    body,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}
 
 	requests := []*adapters.RequestData{&requestData}
@@ -242,7 +243,7 @@ func cleanName(name string) string {
 func verifyImp(imp *openrtb2.Imp, isMobile bool, impType int) (*openrtb_ext.ExtImpEPlanning, error) {
 	var bidderExt adapters.ExtImpBidder
 
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("Ignoring imp id=%s, error while decoding extImpBidder, err: %s", imp.ID, err),
 		}
@@ -267,7 +268,7 @@ func verifyImp(imp *openrtb2.Imp, isMobile bool, impType int) (*openrtb_ext.ExtI
 	}
 
 	impExt := openrtb_ext.ExtImpEPlanning{}
-	err := json.Unmarshal(bidderExt.Bidder, &impExt)
+	err := jsonutil.Unmarshal(bidderExt.Bidder, &impExt)
 	if err != nil {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("Ignoring imp id=%s, error while decoding impExt, err: %s", imp.ID, err),
@@ -310,8 +311,8 @@ func searchSizePriority(hashedFormats map[string]int, format []openrtb2.Format, 
 
 func getSizeFromImp(imp *openrtb2.Imp, isMobile bool) (int64, int64) {
 
-	if imp.Video != nil && imp.Video.W > 0 && imp.Video.H > 0 {
-		return imp.Video.W, imp.Video.H
+	if imp.Video != nil && imp.Video.W != nil && *imp.Video.W > 0 && imp.Video.H != nil && *imp.Video.H > 0 {
+		return *imp.Video.W, *imp.Video.H
 	}
 
 	if imp.Banner != nil {
@@ -363,7 +364,7 @@ func (adapter *EPlanningAdapter) MakeBids(internalRequest *openrtb2.BidRequest, 
 	}
 
 	var parsedResponse hbResponse
-	if err := json.Unmarshal(response.Body, &parsedResponse); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &parsedResponse); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Error unmarshaling HB response: %s", err.Error()),
 		}}

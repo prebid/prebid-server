@@ -4,6 +4,12 @@ import (
 	"encoding/json"
 )
 
+// impExt defines the outgoing data contract.
+type impExt struct {
+	Appnexus impExtAppnexus `json:"appnexus"`
+	GPID     string         `json:"gpid,omitempty"`
+}
+
 type impExtAppnexus struct {
 	PlacementID       int             `json:"placement_id,omitempty"`
 	Keywords          string          `json:"keywords,omitempty"`
@@ -12,10 +18,6 @@ type impExtAppnexus struct {
 	PrivateSizes      json.RawMessage `json:"private_sizes,omitempty"`
 	ExtInvCode        string          `json:"ext_inv_code,omitempty"`
 	ExternalImpID     string          `json:"external_imp_id,omitempty"`
-}
-
-type impExt struct {
-	Appnexus impExtAppnexus `json:"appnexus"`
 }
 
 type bidExtVideo struct {

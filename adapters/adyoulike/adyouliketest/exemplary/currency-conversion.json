@@ -74,7 +74,8 @@
                 }
               }
              }
-          }
+          },
+          "impIDs":["banner-imp-id"]
         },
         "mockResponse": {
           "status": 200,

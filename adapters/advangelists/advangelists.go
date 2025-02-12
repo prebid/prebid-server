@@ -6,12 +6,13 @@ import (
 	"net/http"
 	"text/template"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type AdvangelistsAdapter struct {
@@ -129,13 +130,13 @@ func compatBannerImpression(imp *openrtb2.Imp) error {
 
 func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpAdvangelists, error) {
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
 	var advangelistsExt openrtb_ext.ExtImpAdvangelists
-	if err := json.Unmarshal(bidderExt.Bidder, &advangelistsExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &advangelistsExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: err.Error(),
 		}
@@ -164,7 +165,8 @@ func (adapter *AdvangelistsAdapter) buildAdapterRequest(prebidBidRequest *openrt
 		Method:  "POST",
 		Uri:     url,
 		Body:    reqJSON,
-		Headers: headers}, nil
+		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(imps)}, nil
 }
 
 func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ExtImpAdvangelists, imps []openrtb2.Imp) *openrtb2.BidRequest {
@@ -198,7 +200,7 @@ func (adapter *AdvangelistsAdapter) buildEndpointURL(params *openrtb_ext.ExtImpA
 
 // MakeBids translates advangelists bid response to prebid-server specific format
 func (adapter *AdvangelistsAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	var msg = ""
+	var msg string
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -207,7 +209,7 @@ func (adapter *AdvangelistsAdapter) MakeBids(internalRequest *openrtb2.BidReques
 		return nil, []error{&errortypes.BadServerResponse{Message: msg}}
 	}
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		msg = fmt.Sprintf("Bad server response: %d", err)
 		return nil, []error{&errortypes.BadServerResponse{Message: msg}}
 	}

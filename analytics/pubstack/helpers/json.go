@@ -1,11 +1,11 @@
 package helpers
 
 import (
-	"encoding/json"
 	"fmt"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/analytics"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/analytics"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]byte, error) {
@@ -26,7 +26,7 @@ func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]byte, er
 		}
 	}
 
-	b, err := json.Marshal(&struct {
+	b, err := jsonutil.Marshal(&struct {
 		Scope string `json:"scope"`
 		*logAuction
 	}{
@@ -59,7 +59,7 @@ func JsonifyVideoObject(vo *analytics.VideoObject, scope string) ([]byte, error)
 		}
 	}
 
-	b, err := json.Marshal(&struct {
+	b, err := jsonutil.Marshal(&struct {
 		Scope string `json:"scope"`
 		*logVideo
 	}{
@@ -84,7 +84,7 @@ func JsonifyCookieSync(cso *analytics.CookieSyncObject, scope string) ([]byte, e
 		}
 	}
 
-	b, err := json.Marshal(&struct {
+	b, err := jsonutil.Marshal(&struct {
 		Scope string `json:"scope"`
 		*logUserSync
 	}{
@@ -111,7 +111,7 @@ func JsonifySetUIDObject(so *analytics.SetUIDObject, scope string) ([]byte, erro
 		}
 	}
 
-	b, err := json.Marshal(&struct {
+	b, err := jsonutil.Marshal(&struct {
 		Scope string `json:"scope"`
 		*logSetUID
 	}{
@@ -145,7 +145,7 @@ func JsonifyAmpObject(ao *analytics.AmpObject, scope string) ([]byte, error) {
 		}
 	}
 
-	b, err := json.Marshal(&struct {
+	b, err := jsonutil.Marshal(&struct {
 		Scope string `json:"scope"`
 		*logAMP
 	}{

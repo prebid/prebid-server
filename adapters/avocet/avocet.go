@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/prebid/openrtb/v19/adcom1"
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/adcom1"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 // AvocetAdapter implements a adapters.Bidder compatible with the Avocet advertising platform.
@@ -38,6 +39,7 @@ func (a *AvocetAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adap
 		Uri:     a.Endpoint,
 		Body:    body,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}
 	return []*adapters.RequestData{reqData}, nil
 }
@@ -70,7 +72,7 @@ func (a *AvocetAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 	}
 
 	var br openrtb2.BidResponse
-	err := json.Unmarshal(response.Body, &br)
+	err := jsonutil.Unmarshal(response.Body, &br)
 	if err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: err.Error(),
@@ -83,7 +85,7 @@ func (a *AvocetAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 		for j := range br.SeatBid[i].Bid {
 			var ext avocetBidExt
 			if len(br.SeatBid[i].Bid[j].Ext) > 0 {
-				err := json.Unmarshal(br.SeatBid[i].Bid[j].Ext, &ext)
+				err := jsonutil.Unmarshal(br.SeatBid[i].Bid[j].Ext, &ext)
 				if err != nil {
 					errs = append(errs, err)
 					continue
@@ -101,6 +103,9 @@ func (a *AvocetAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 			}
 			bidResponse.Bids = append(bidResponse.Bids, tbid)
 		}
+	}
+	if len(errs) > 0 {
+		return nil, errs
 	}
 	return bidResponse, nil
 }

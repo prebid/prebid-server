@@ -1,16 +1,13 @@
-endpoint: "https://bidder.adquery.io/prebid/bid"
+endpoint: https://bidder2.adquery.io/prebid/bid
 maintainer:
   email: prebid@adquery.io
-#endpointCompression: gzip # disabled because otherwise bidder responds with {data:null}
 gvlVendorID: 902
 capabilities:
-#  app: # disabled because currently it's only a site, not an app (?)
-#    mediaTypes:
-#      - banner
   site:
     mediaTypes:
       - banner
 userSync:
-  redirect:
-    url: https://bidder.adquery.io/prebid/userSync?1=1&gdpr={{.GDPR}}&consent={{.GDPRConsent}}&ccpa_consent={{.USPrivacy}}&redirect={{.RedirectURL}}
+  iframe:
+    url: https://api.adquery.io/storage?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&ccpa_consent={{.USPrivacy}}&redirect={{.RedirectURL}}
     userMacro: $UID
+    

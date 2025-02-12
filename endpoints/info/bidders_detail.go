@@ -8,8 +8,9 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 const (
@@ -18,16 +19,21 @@ const (
 )
 
 // NewBiddersDetailEndpoint builds a handler for the /info/bidders/<bidder> endpoint.
-func NewBiddersDetailEndpoint(bidders config.BidderInfos, aliases map[string]string) httprouter.Handle {
-	responses, err := prepareBiddersDetailResponse(bidders, aliases)
+func NewBiddersDetailEndpoint(bidders config.BidderInfos) httprouter.Handle {
+	responses, err := prepareBiddersDetailResponse(bidders)
 	if err != nil {
 		glog.Fatalf("error creating /info/bidders/<bidder> endpoint response: %v", err)
 	}
 
 	return func(w http.ResponseWriter, _ *http.Request, ps httprouter.Params) {
 		bidder := ps.ByName("bidderName")
+		bidderName, found := getNormalizedBidderName(bidder)
 
-		if response, ok := responses[bidder]; ok {
+		if !found {
+			w.WriteHeader(http.StatusNotFound)
+		}
+
+		if response, ok := responses[bidderName]; ok {
 			w.Header().Set("Content-Type", "application/json")
 			if _, err := w.Write(response); err != nil {
 				glog.Errorf("error writing response to /info/bidders/%s: %v", bidder, err)
@@ -38,11 +44,21 @@ func NewBiddersDetailEndpoint(bidders config.BidderInfos, aliases map[string]str
 	}
 }
 
-func prepareBiddersDetailResponse(bidders config.BidderInfos, aliases map[string]string) (map[string][]byte, error) {
-	details, err := mapDetails(bidders, aliases)
-	if err != nil {
-		return nil, err
+func getNormalizedBidderName(bidderName string) (string, bool) {
+	if strings.ToLower(bidderName) == "all" {
+		return "all", true
 	}
+
+	bidderNameNormalized, ok := openrtb_ext.NormalizeBidderName(bidderName)
+	if !ok {
+		return "", false
+	}
+
+	return bidderNameNormalized.String(), true
+}
+
+func prepareBiddersDetailResponse(bidders config.BidderInfos) (map[string][]byte, error) {
+	details := mapDetails(bidders)
 
 	responses, err := marshalDetailsResponse(details)
 	if err != nil {
@@ -58,32 +74,21 @@ func prepareBiddersDetailResponse(bidders config.BidderInfos, aliases map[string
 	return responses, nil
 }
 
-func mapDetails(bidders config.BidderInfos, aliases map[string]string) (map[string]bidderDetail, error) {
+func mapDetails(bidders config.BidderInfos) map[string]bidderDetail {
 	details := map[string]bidderDetail{}
 
 	for bidderName, bidderInfo := range bidders {
 		details[bidderName] = mapDetailFromConfig(bidderInfo)
 	}
 
-	for aliasName, bidderName := range aliases {
-		aliasBaseInfo, aliasBaseInfoFound := details[bidderName]
-		if !aliasBaseInfoFound {
-			return nil, fmt.Errorf("base adapter %s for alias %s not found", bidderName, aliasName)
-		}
-
-		aliasInfo := aliasBaseInfo
-		aliasInfo.AliasOf = bidderName
-		details[aliasName] = aliasInfo
-	}
-
-	return details, nil
+	return details
 }
 
 func marshalDetailsResponse(details map[string]bidderDetail) (map[string][]byte, error) {
 	responses := map[string][]byte{}
 
 	for bidder, detail := range details {
-		json, err := json.Marshal(detail)
+		json, err := jsonutil.Marshal(detail)
 		if err != nil {
 			return nil, fmt.Errorf("unable to marshal info for bidder %s: %v", bidder, err)
 		}
@@ -100,7 +105,7 @@ func marshalAllResponse(responses map[string][]byte) ([]byte, error) {
 		responsesJSON[k] = json.RawMessage(v)
 	}
 
-	json, err := json.Marshal(responsesJSON)
+	json, err := jsonutil.Marshal(responsesJSON)
 	if err != nil {
 		return nil, fmt.Errorf("unable to marshal info for bidder all: %v", err)
 	}
@@ -122,6 +127,7 @@ type maintainer struct {
 type capabilities struct {
 	App  *platform `json:"app,omitempty"`
 	Site *platform `json:"site,omitempty"`
+	DOOH *platform `json:"dooh,omitempty"`
 }
 
 type platform struct {
@@ -130,6 +136,8 @@ type platform struct {
 
 func mapDetailFromConfig(c config.BidderInfo) bidderDetail {
 	var bidderDetail bidderDetail
+
+	bidderDetail.AliasOf = c.AliasOf
 
 	if c.Maintainer != nil {
 		bidderDetail.Maintainer = &maintainer{
@@ -155,6 +163,12 @@ func mapDetailFromConfig(c config.BidderInfo) bidderDetail {
 			if c.Capabilities.Site != nil {
 				bidderDetail.Capabilities.Site = &platform{
 					MediaTypes: mapMediaTypes(c.Capabilities.Site.MediaTypes),
+				}
+			}
+
+			if c.Capabilities.DOOH != nil {
+				bidderDetail.Capabilities.DOOH = &platform{
+					MediaTypes: mapMediaTypes(c.Capabilities.DOOH.MediaTypes),
 				}
 			}
 		}

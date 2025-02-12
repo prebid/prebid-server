@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type InMobiAdapter struct {
@@ -53,6 +54,7 @@ func (a *InMobiAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adap
 		Uri:     a.endPoint,
 		Body:    reqJson,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, errs
 }
 
@@ -68,7 +70,7 @@ func (a *InMobiAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 	}
 
 	var serverBidResponse openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &serverBidResponse); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &serverBidResponse); err != nil {
 		return nil, []error{err}
 	}
 
@@ -76,7 +78,10 @@ func (a *InMobiAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 
 	for _, sb := range serverBidResponse.SeatBid {
 		for i := range sb.Bid {
-			mediaType := getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp)
+			mediaType, err := getMediaTypeForImp(sb.Bid[i])
+			if err != nil {
+				return nil, []error{err}
+			}
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &sb.Bid[i],
 				BidType: mediaType,
@@ -89,14 +94,14 @@ func (a *InMobiAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 
 func preprocess(imp *openrtb2.Imp) error {
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
 
 	var inMobiExt openrtb_ext.ExtImpInMobi
-	if err := json.Unmarshal(bidderExt.Bidder, &inMobiExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &inMobiExt); err != nil {
 		return &errortypes.BadInput{Message: "bad InMobi bidder ext"}
 	}
 
@@ -117,18 +122,17 @@ func preprocess(imp *openrtb2.Imp) error {
 	return nil
 }
 
-func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
-	mediaType := openrtb_ext.BidTypeBanner
-	for _, imp := range imps {
-		if imp.ID == impId {
-			if imp.Video != nil {
-				mediaType = openrtb_ext.BidTypeVideo
-			}
-			if imp.Native != nil {
-				mediaType = openrtb_ext.BidTypeNative
-			}
-			break
+func getMediaTypeForImp(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative, nil
+	default:
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Unsupported mtype %d for bid %s", bid.MType, bid.ID),
 		}
 	}
-	return mediaType
 }

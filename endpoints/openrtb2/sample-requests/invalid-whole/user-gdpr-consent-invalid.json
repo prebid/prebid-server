@@ -41,5 +41,5 @@
     }
   },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request: request.user.ext object is not valid: json: cannot unmarshal number into Go value of type string"
+  "expectedErrorMessage": "Invalid request: req.user.ext is invalid: expects \" or n, but found 2"
 }

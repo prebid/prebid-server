@@ -1,29 +1,31 @@
 package prometheusmetrics
 
 import (
-	"github.com/prebid/prebid-server/metrics"
+	"github.com/prebid/prebid-server/v3/metrics"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
 func preloadLabelValues(m *Metrics, syncerKeys []string, moduleStageNames map[string][]string) {
 	var (
-		setUidStatusValues        = setUidStatusesAsString()
-		adapterErrorValues        = adapterErrorsAsString()
-		adapterValues             = adaptersAsString()
+		adapterErrorValues        = enumAsString(metrics.AdapterErrors())
+		adapterValues             = enumAsLowerCaseString(openrtb_ext.CoreBidderNames())
 		bidTypeValues             = []string{markupDeliveryAdm, markupDeliveryNurl}
 		boolValues                = boolValuesAsString()
-		cacheResultValues         = cacheResultsAsString()
+		cacheResultValues         = enumAsString(metrics.CacheResults())
 		connectionErrorValues     = []string{connectionAcceptError, connectionCloseError}
-		cookieValues              = cookieTypesAsString()
-		cookieSyncStatusValues    = cookieSyncStatusesAsString()
-		overheadTypes             = overheadTypesAsString()
-		requestTypeValues         = requestTypesAsString()
-		requestStatusValues       = requestStatusesAsString()
-		storedDataFetchTypeValues = storedDataFetchTypesAsString()
-		storedDataErrorValues     = storedDataErrorsAsString()
-		syncerRequestStatusValues = syncerRequestStatusesAsString()
-		syncerSetsStatusValues    = syncerSetStatusesAsString()
+		cookieSyncStatusValues    = enumAsString(metrics.CookieSyncStatuses())
+		cookieValues              = enumAsString(metrics.CookieTypes())
+		overheadTypes             = enumAsString(metrics.OverheadTypes())
+		requestStatusValues       = enumAsString(metrics.RequestStatuses())
+		requestTypeValues         = enumAsString(metrics.RequestTypes())
+		setUidStatusValues        = enumAsString(metrics.SetUidStatuses())
 		sourceValues              = []string{sourceRequest}
+		storedDataErrorValues     = enumAsString(metrics.StoredDataErrors())
+		storedDataFetchTypeValues = enumAsString(metrics.StoredDataFetchTypes())
+		syncerRequestStatusValues = enumAsString(metrics.SyncerRequestStatuses())
+		syncerSetsStatusValues    = enumAsString(metrics.SyncerSetUidStatuses())
+		tcfVersionValues          = enumAsString(metrics.TCFVersions())
 	)
 
 	preloadLabelValuesForCounter(m.connectionsError, map[string][]string{
@@ -224,8 +226,14 @@ func preloadLabelValues(m *Metrics, syncerKeys []string, moduleStageNames map[st
 
 	preloadLabelValuesForCounter(m.privacyTCF, map[string][]string{
 		sourceLabel:  sourceValues,
-		versionLabel: tcfVersionsAsString(),
+		versionLabel: tcfVersionValues,
 	})
+
+	if !m.metricsDisabled.AdapterBuyerUIDScrubbed {
+		preloadLabelValuesForCounter(m.adapterScrubbedBuyerUIDs, map[string][]string{
+			adapterLabel: adapterValues,
+		})
+	}
 
 	if !m.metricsDisabled.AdapterGDPRRequestBlocked {
 		preloadLabelValuesForCounter(m.adapterGDPRBlockedRequests, map[string][]string{

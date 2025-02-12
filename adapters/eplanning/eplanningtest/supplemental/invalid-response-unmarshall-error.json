@@ -22,7 +22,8 @@
       {
         "expectedRequest": {
           "uri": "http://rtb.e-planning.net/pbs/1/12345/1/FILE/ROS?e=testadunitcode%3A600x300&ncb=1&ur=FILE",
-          "body": {}
+          "body": {},
+          "impIDs":["test-imp-id"]
         },
         "mockResponse": {
           "status": 200,
@@ -47,8 +48,8 @@
 
     "expectedMakeBidsErrors": [
       {
-        "value": "Error unmarshaling HB response: json: cannot unmarshal string into Go struct field (hbResponseAd\\.sp\\.a\\.w|hbResponseAd\\.w) of type uint64",
-        "comparison": "regex"
+        "value": "Error unmarshaling HB response: cannot unmarshal eplanning.hbResponseAd.Width: unexpected character",
+        "comparison": "startswith"
       }
     ]
   }

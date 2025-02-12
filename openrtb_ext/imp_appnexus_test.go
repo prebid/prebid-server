@@ -1,9 +1,9 @@
 package openrtb_ext
 
 import (
-	"encoding/json"
 	"testing"
 
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -31,7 +31,7 @@ func TestKeywordsUnmarshalJSON(t *testing.T) {
 
 	for _, test := range validTestCases {
 		var keywords keywords
-		assert.NoError(t, json.Unmarshal(test.input, &keywords), test.desc)
+		assert.NoError(t, jsonutil.UnmarshalValid(test.input, &keywords), test.desc)
 		assert.Equal(t, test.expected, keywords.Keywords.String())
 	}
 
@@ -42,6 +42,6 @@ func TestKeywordsUnmarshalJSON(t *testing.T) {
 
 	for _, test := range invalidTestCases {
 		var keywords keywords
-		assert.Error(t, json.Unmarshal(test.input, &keywords), test.desc)
+		assert.Error(t, jsonutil.UnmarshalValid(test.input, &keywords), test.desc)
 	}
 }

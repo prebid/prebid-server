@@ -1,0 +1,154 @@
+{
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "prebid.org"
+    },
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "minduration": 1,
+          "maxduration": 2,
+          "protocols": [
+            1,
+            2,
+            5
+          ],
+          "w": 300,
+          "h": 250,
+          "startdelay": 1,
+          "placement": 1,
+          "playbackmethod": [
+            2
+          ],
+          "api": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "cId": "test_cid_123"
+          }
+        }
+      }
+    ],
+    "tmax": 5000
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://prebid-server.cootlogix.com/openrtb/test_cid_123",
+        "body": {
+          "id": "some-request-id",
+          "site": {
+            "page": "prebid.org"
+          },
+          "imp": [
+            {
+              "id": "some-impression-id",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "minduration": 1,
+                "maxduration": 2,
+                "protocols": [
+                  1,
+                  2,
+                  5
+                ],
+                "w": 300,
+                "h": 250,
+                "startdelay": 1,
+                "placement": 1,
+                "playbackmethod": [
+                  2
+                ],
+                "api": [
+                  1,
+                  2,
+                  3,
+                  4
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "cId": "test_cid_123"
+                }
+              }
+            }
+          ],
+          "tmax": 5000
+        },
+        "impIDs": [
+          "some-impression-id"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "some-request-id",
+          "cur": "",
+          "bidid": "some-bid-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "exp": 60,
+                  "adm": "<VAST version=\"3.0\"><Ad id=\"some-ad-id\"><InLine><AdSystem>Some Ad System</AdSystem><AdTitle>Some Ad Title</AdTitle><Impression id=\"some-impression-id\"><![CDATA[http://prebid-server.cootlogix.com/impression]]></Impression><Creatives><Creative><Linear><Duration>00:00:02</Duration><MediaFiles><MediaFile delivery=\"progressive\" type=\"video/mp4\" width=\"300\" height=\"250\"><![CDATA[http://prebid-server.cootlogix.com/creative.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
+                  "id": "some-bid-id",
+                  "impid": "some-impression-id",
+                  "h": 250,
+                  "w": 300,
+                  "price": 1,
+                  "dealid": "deal123",
+                  "adomain": [
+                    "test.com"
+                  ],
+                  "adid": "some-ad-id",
+                  "cid": "test",
+                  "crid": "some-creative-id",
+                  "mtype": 2
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "exp": 60,
+            "adm": "<VAST version=\"3.0\"><Ad id=\"some-ad-id\"><InLine><AdSystem>Some Ad System</AdSystem><AdTitle>Some Ad Title</AdTitle><Impression id=\"some-impression-id\"><![CDATA[http://prebid-server.cootlogix.com/impression]]></Impression><Creatives><Creative><Linear><Duration>00:00:02</Duration><MediaFiles><MediaFile delivery=\"progressive\" type=\"video/mp4\" width=\"300\" height=\"250\"><![CDATA[http://prebid-server.cootlogix.com/creative.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
+            "id": "some-bid-id",
+            "impid": "some-impression-id",
+            "h": 250,
+            "w": 300,
+            "price": 1,
+            "dealid": "deal123",
+            "adomain": [
+              "test.com"
+            ],
+            "adid": "some-ad-id",
+            "cid": "test",
+            "crid": "some-creative-id",
+            "mtype": 2
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ],
+  "expectedMakeBidsErrors": []
+}

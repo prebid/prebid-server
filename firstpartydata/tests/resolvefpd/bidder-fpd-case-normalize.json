@@ -1,0 +1,25 @@
+{
+  "description": "Bidder FPD defined with a case insensitive bidder",
+  "inputRequestData": {
+    "app": {
+      "id": "reqUserID"
+    }
+  },
+  "biddersWithGlobalFPD": [
+    "APPNEXUS"
+  ],
+  "bidderConfigFPD": {
+    "appnexus": {
+      "app": {
+        "id": "apnAppId"
+      }
+    }
+  },
+  "outputRequestData": {
+    "appnexus": {
+      "app": {
+        "id": "apnAppId"
+      }
+    }
+  }
+}

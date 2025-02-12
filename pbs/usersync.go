@@ -10,9 +10,9 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/server/ssl"
-	"github.com/prebid/prebid-server/usersync"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/server/ssl"
+	"github.com/prebid/prebid-server/v3/usersync"
 )
 
 // Recaptcha code from https://github.com/haisum/recaptcha/blob/master/recaptcha.go
@@ -22,6 +22,7 @@ type UserSyncDeps struct {
 	ExternalUrl      string
 	RecaptchaSecret  string
 	HostCookieConfig *config.HostCookie
+	PriorityGroups   [][]string
 }
 
 // Struct for parsing json in google's response
@@ -81,7 +82,7 @@ func (deps *UserSyncDeps) OptOut(w http.ResponseWriter, r *http.Request, _ httpr
 	pc.SetOptOut(optout != "")
 
 	// Write Cookie
-	encodedCookie, err := pc.PrepareCookieForWrite(deps.HostCookieConfig, encoder)
+	encodedCookie, err := encoder.Encode(pc)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return

@@ -12,18 +12,19 @@ import (
 	"github.com/julienschmidt/httprouter"
 	gpplib "github.com/prebid/go-gpp"
 	gppConstants "github.com/prebid/go-gpp/constants"
-	accountService "github.com/prebid/prebid-server/account"
-	"github.com/prebid/prebid-server/analytics"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/gdpr"
-	"github.com/prebid/prebid-server/metrics"
-	"github.com/prebid/prebid-server/privacy"
-	gppPrivacy "github.com/prebid/prebid-server/privacy/gpp"
-	"github.com/prebid/prebid-server/stored_requests"
-	"github.com/prebid/prebid-server/usersync"
-	"github.com/prebid/prebid-server/util/httputil"
-	stringutil "github.com/prebid/prebid-server/util/stringutil"
+	accountService "github.com/prebid/prebid-server/v3/account"
+	"github.com/prebid/prebid-server/v3/analytics"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/gdpr"
+	"github.com/prebid/prebid-server/v3/metrics"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/privacy"
+	gppPrivacy "github.com/prebid/prebid-server/v3/privacy/gpp"
+	"github.com/prebid/prebid-server/v3/stored_requests"
+	"github.com/prebid/prebid-server/v3/usersync"
+	"github.com/prebid/prebid-server/v3/util/httputil"
+	stringutil "github.com/prebid/prebid-server/v3/util/stringutil"
 )
 
 const (
@@ -36,7 +37,7 @@ const (
 
 const uidCookieName = "uids"
 
-func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, gdprPermsBuilder gdpr.PermissionsBuilder, tcf2CfgBuilder gdpr.TCF2ConfigBuilder, pbsanalytics analytics.PBSAnalyticsModule, accountsFetcher stored_requests.AccountFetcher, metricsEngine metrics.MetricsEngine) httprouter.Handle {
+func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, gdprPermsBuilder gdpr.PermissionsBuilder, tcf2CfgBuilder gdpr.TCF2ConfigBuilder, analyticsRunner analytics.Runner, accountsFetcher stored_requests.AccountFetcher, metricsEngine metrics.MetricsEngine) httprouter.Handle {
 	encoder := usersync.Base64Encoder{}
 	decoder := usersync.Base64Decoder{}
 
@@ -46,13 +47,11 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 			Errors: make([]error, 0),
 		}
 
-		defer pbsanalytics.LogSetUIDObject(&so)
+		defer analyticsRunner.LogSetUIDObject(&so)
 
 		cookie := usersync.ReadCookie(r, decoder, &cfg.HostCookie)
 		if !cookie.AllowSyncs() {
-			w.WriteHeader(http.StatusUnauthorized)
-			metricsEngine.RecordSetUid(metrics.SetUidOptOut)
-			so.Status = http.StatusUnauthorized
+			handleBadStatus(w, http.StatusUnauthorized, metrics.SetUidOptOut, nil, metricsEngine, &so)
 			return
 		}
 		usersync.SyncHostCookie(r, cookie, &cfg.HostCookie)
@@ -61,22 +60,14 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 
 		syncer, bidderName, err := getSyncer(query, syncersByBidder)
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(err.Error()))
-			metricsEngine.RecordSetUid(metrics.SetUidSyncerUnknown)
-			so.Errors = []error{err}
-			so.Status = http.StatusBadRequest
+			handleBadStatus(w, http.StatusBadRequest, metrics.SetUidSyncerUnknown, err, metricsEngine, &so)
 			return
 		}
 		so.Bidder = syncer.Key()
 
 		responseFormat, err := getResponseFormat(query, syncer)
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(err.Error()))
-			metricsEngine.RecordSetUid(metrics.SetUidBadRequest)
-			so.Errors = []error{err}
-			so.Status = http.StatusBadRequest
+			handleBadStatus(w, http.StatusBadRequest, metrics.SetUidBadRequest, err, metricsEngine, &so)
 			return
 		}
 
@@ -86,33 +77,43 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 		}
 		account, fetchErrs := accountService.GetAccount(context.Background(), cfg, accountsFetcher, accountID, metricsEngine)
 		if len(fetchErrs) > 0 {
-			w.WriteHeader(http.StatusBadRequest)
+			var metricValue metrics.SetUidStatus
 			err := combineErrors(fetchErrs)
-			w.Write([]byte(err.Error()))
 			switch err {
 			case errCookieSyncAccountBlocked:
-				metricsEngine.RecordSetUid(metrics.SetUidAccountBlocked)
+				metricValue = metrics.SetUidAccountBlocked
 			case errCookieSyncAccountConfigMalformed:
-				metricsEngine.RecordSetUid(metrics.SetUidAccountConfigMalformed)
+				metricValue = metrics.SetUidAccountConfigMalformed
 			case errCookieSyncAccountInvalid:
-				metricsEngine.RecordSetUid(metrics.SetUidAccountInvalid)
+				metricValue = metrics.SetUidAccountInvalid
 			default:
-				metricsEngine.RecordSetUid(metrics.SetUidBadRequest)
+				metricValue = metrics.SetUidBadRequest
 			}
+			handleBadStatus(w, http.StatusBadRequest, metricValue, err, metricsEngine, &so)
+			return
+		}
+
+		activityControl := privacy.NewActivityControl(&account.Privacy)
+
+		gppSID, err := stringutil.StrToInt8Slice(query.Get("gpp_sid"))
+		if err != nil {
+			err := fmt.Errorf("invalid gpp_sid encoding, must be a csv list of integers")
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(err.Error()))
+			metricsEngine.RecordSetUid(metrics.SetUidBadRequest)
 			so.Errors = []error{err}
 			so.Status = http.StatusBadRequest
 			return
 		}
 
-		activities, activitiesErr := privacy.NewActivityControl(&account.Privacy)
-		if activitiesErr != nil {
-			if errortypes.ContainsFatalError([]error{activitiesErr}) {
-				activities = privacy.ActivityControl{}
-			}
+		policies := privacy.Policies{
+			GPPSID: gppSID,
 		}
 
-		userSyncActivityAllowed := activities.Allow(privacy.ActivitySyncUser,
-			privacy.Component{Type: privacy.ComponentTypeBidder, Name: bidderName})
+		userSyncActivityAllowed := activityControl.Allow(privacy.ActivitySyncUser,
+			privacy.Component{Type: privacy.ComponentTypeBidder, Name: bidderName},
+			privacy.NewRequestFromPolicies(policies))
+
 		if !userSyncActivityAllowed {
 			w.WriteHeader(http.StatusUnavailableForLegalReasons)
 			return
@@ -122,29 +123,22 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 		if err != nil {
 			// Only exit if non-warning
 			if !errortypes.IsWarning(err) {
-				w.WriteHeader(http.StatusBadRequest)
-				w.Write([]byte(err.Error()))
-				metricsEngine.RecordSetUid(metrics.SetUidBadRequest)
-				so.Errors = []error{err}
-				so.Status = http.StatusBadRequest
+				handleBadStatus(w, http.StatusBadRequest, metrics.SetUidBadRequest, err, metricsEngine, &so)
 				return
 			}
-			w.Write([]byte("Warning: " + err.Error()))
 		}
 
 		tcf2Cfg := tcf2CfgBuilder(cfg.GDPR.TCF2, account.GDPR)
 
 		if shouldReturn, status, body := preventSyncsGDPR(gdprRequestInfo, gdprPermsBuilder, tcf2Cfg); shouldReturn {
-			w.WriteHeader(status)
-			w.Write([]byte(body))
+			var metricValue metrics.SetUidStatus
 			switch status {
 			case http.StatusBadRequest:
-				metricsEngine.RecordSetUid(metrics.SetUidBadRequest)
+				metricValue = metrics.SetUidBadRequest
 			case http.StatusUnavailableForLegalReasons:
-				metricsEngine.RecordSetUid(metrics.SetUidGDPRHostCookieBlocked)
+				metricValue = metrics.SetUidGDPRHostCookieBlocked
 			}
-			so.Errors = []error{errors.New(body)}
-			so.Status = status
+			handleBadStatus(w, status, metricValue, errors.New(body), metricsEngine, &so)
 			return
 		}
 
@@ -164,14 +158,22 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 
 		setSiteCookie := siteCookieCheck(r.UserAgent())
 
+		// Priority Ejector Set Up
+		priorityEjector := &usersync.PriorityBidderEjector{PriorityGroups: cfg.UserSync.PriorityGroups, TieEjector: &usersync.OldestEjector{}, SyncersByBidder: syncersByBidder}
+		priorityEjector.IsSyncerPriority = isSyncerPriority(bidderName, cfg.UserSync.PriorityGroups)
+
 		// Write Cookie
-		encodedCookie, err := cookie.PrepareCookieForWrite(&cfg.HostCookie, encoder)
+		encodedCookie, err := cookie.PrepareCookieForWrite(&cfg.HostCookie, encoder, priorityEjector)
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			metricsEngine.RecordSetUid(metrics.SetUidBadRequest)
-			so.Errors = []error{err}
-			so.Status = http.StatusBadRequest
-			return
+			if err.Error() == errSyncerIsNotPriority.Error() {
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte("Warning: " + err.Error() + ", cookie not updated"))
+				so.Status = http.StatusOK
+				return
+			} else {
+				handleBadStatus(w, http.StatusBadRequest, metrics.SetUidBadRequest, err, metricsEngine, &so)
+				return
+			}
 		}
 		usersync.WriteCookie(w, encodedCookie, &cfg.HostCookie, setSiteCookie)
 
@@ -220,18 +222,14 @@ func extractGDPRInfo(query url.Values) (reqInfo gdpr.RequestInfo, err error) {
 
 // parseGDPRFromGPP parses and validates the "gpp_sid" and "gpp" query fields.
 func parseGDPRFromGPP(query url.Values) (gdpr.RequestInfo, error) {
-	var gdprSignal gdpr.Signal = gdpr.SignalAmbiguous
-	var gdprConsent string = ""
-	var err error
-
-	gdprSignal, err = parseSignalFromGppSidStr(query.Get("gpp_sid"))
+	gdprSignal, err := parseSignalFromGppSidStr(query.Get("gpp_sid"))
 	if err != nil {
 		return gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous}, err
 	}
 
-	gdprConsent, err = parseConsentFromGppStr(query.Get("gpp"))
-	if err != nil {
-		return gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous}, err
+	gdprConsent, errs := parseConsentFromGppStr(query.Get("gpp"))
+	if len(errs) > 0 {
+		return gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous}, errs[0]
 	}
 
 	return gdpr.RequestInfo{
@@ -303,13 +301,13 @@ func parseSignalFromGppSidStr(strSID string) (gdpr.Signal, error) {
 	return gdprSignal, nil
 }
 
-func parseConsentFromGppStr(gppQueryValue string) (string, error) {
+func parseConsentFromGppStr(gppQueryValue string) (string, []error) {
 	var gdprConsent string
 
 	if len(gppQueryValue) > 0 {
-		gpp, err := gpplib.Parse(gppQueryValue)
-		if err != nil {
-			return "", err
+		gpp, errs := gpplib.Parse(gppQueryValue)
+		if len(errs) > 0 {
+			return "", errs
 		}
 
 		if i := gppPrivacy.IndexOfSID(gpp, gppConstants.SectionTCFEU2); i >= 0 {
@@ -327,12 +325,29 @@ func getSyncer(query url.Values, syncersByBidder map[string]usersync.Syncer) (us
 		return nil, "", errors.New(`"bidder" query param is required`)
 	}
 
-	syncer, syncerExists := syncersByBidder[bidder]
+	// case insensitive comparison
+	bidderNormalized, bidderFound := openrtb_ext.NormalizeBidderName(bidder)
+	if !bidderFound {
+		return nil, "", errors.New("The bidder name provided is not supported by Prebid Server")
+	}
+
+	syncer, syncerExists := syncersByBidder[bidderNormalized.String()]
 	if !syncerExists {
 		return nil, "", errors.New("The bidder name provided is not supported by Prebid Server")
 	}
 
 	return syncer, bidder, nil
+}
+
+func isSyncerPriority(bidderNameFromSyncerQuery string, priorityGroups [][]string) bool {
+	for _, group := range priorityGroups {
+		for _, bidder := range group {
+			if strings.EqualFold(bidderNameFromSyncerQuery, bidder) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // getResponseFormat reads the format query parameter or falls back to the syncer's default.
@@ -343,7 +358,7 @@ func getResponseFormat(query url.Values, syncer usersync.Syncer) (string, error)
 	formatEmpty := len(format) == 0 || format[0] == ""
 
 	if !formatProvided || formatEmpty {
-		switch syncer.DefaultSyncType() {
+		switch syncer.DefaultResponseFormat() {
 		case usersync.SyncTypeIFrame:
 			return "b", nil
 		case usersync.SyncTypeRedirect:
@@ -409,4 +424,15 @@ func preventSyncsGDPR(gdprRequestInfo gdpr.RequestInfo, permsBuilder gdpr.Permis
 	}
 
 	return true, http.StatusUnavailableForLegalReasons, "The gdpr_consent string prevents cookies from being saved"
+}
+
+func handleBadStatus(w http.ResponseWriter, status int, metricValue metrics.SetUidStatus, err error, me metrics.MetricsEngine, so *analytics.SetUIDObject) {
+	w.WriteHeader(status)
+	me.RecordSetUid(metricValue)
+	so.Status = status
+
+	if err != nil {
+		so.Errors = []error{err}
+		w.Write([]byte(err.Error()))
+	}
 }

@@ -3,6 +3,9 @@ extra_info: "https://medianet.golang.pbs.com"
 maintainer:
   email: "prebid-support@media.net"
 gvlVendorID: 142
+endpointCompression: gzip
+openrtb:
+  version: 2.6
 modifyingVastXmlAllowed: true
 capabilities:
   app:
@@ -16,6 +19,9 @@ capabilities:
       - video
       - native
 userSync:
+  iframe:
+    url: https://hbx.media.net/checksync.php?cid=8CUEHS6F9&cs=87&type=mpbc&cv=37&vsSync=1&uspstring={{.USPrivacy}}&gdpr={{.GDPR}}&gdprstring={{.GDPRConsent}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirect={{.RedirectURL}}
+    userMacro: "<vsid>"
   redirect:
-    url: https://hbx.media.net/cksync.php?cs=1&type=pbs&ovsid=setstatuscode&bidder=medianet&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
+    url: https://hbx.media.net/cksync.php?cs=1&type=pbs&ovsid=setstatuscode&bidder=medianet&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}
     userMacro: "<vsid>"

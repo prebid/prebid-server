@@ -5,13 +5,13 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/adapters/appnexus"
-	"github.com/prebid/prebid-server/adapters/rubicon"
-	"github.com/prebid/prebid-server/config"
-	metrics "github.com/prebid/prebid-server/metrics/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/adapters/appnexus"
+	"github.com/prebid/prebid-server/v3/adapters/rubicon"
+	"github.com/prebid/prebid-server/v3/config"
+	metrics "github.com/prebid/prebid-server/v3/metrics/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -66,13 +66,6 @@ func TestBuildAdapters(t *testing.T) {
 			bidderInfos: map[string]config.BidderInfo{"unknown": {}, "appNexus": {}},
 			expectedErrors: []error{
 				errors.New("unknown: unknown bidder"),
-			},
-		},
-		{
-			description: "Alias feature disabled",
-			bidderInfos: map[string]config.BidderInfo{"appNexus": {AliasOf: "rubicon"}},
-			expectedErrors: []error{
-				errors.New("This feature is currently under development"),
 			},
 		},
 	}

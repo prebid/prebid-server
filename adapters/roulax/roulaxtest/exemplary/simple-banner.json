@@ -1,0 +1,116 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 300
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "PublisherPath": "72721",
+            "Pid": "mvo",
+            "zone": "1r"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://dsp.rcoreads.com/api/vidmate?pid=vidmate_android_banner",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  },
+                  {
+                    "w": 300,
+                    "h": 300
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "PublisherPath": "72721",
+                  "Pid": "mvo",
+                  "zone": "1r"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "958",
+              "bid": [
+                {
+                  "id": "7706636740145184841",
+                  "impid": "test-imp-id",
+                  "price": 0.500000,
+                  "adid": "29681110",
+                  "adm": "some-test-ad",
+                  "adomain": [
+                    "yahoo.com"
+                  ],
+                  "cid": "958",
+                  "crid": "29681110",
+                  "h": 250,
+                  "w": 300,
+                  "mtype": 1
+                }
+              ]
+            }
+          ],
+          "bidid": "5778926625248726496",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [{
+        "bid": {
+          "id": "7706636740145184841",
+          "impid": "test-imp-id",
+          "price": 0.5,
+          "adm": "some-test-ad",
+          "adid": "29681110",
+          "adomain": [
+            "yahoo.com"
+          ],
+          "cid": "958",
+          "crid": "29681110",
+          "w": 300,
+          "h": 250,
+          "mtype": 1
+        },
+        "type": "banner"
+      }]
+    }
+  ]
+}

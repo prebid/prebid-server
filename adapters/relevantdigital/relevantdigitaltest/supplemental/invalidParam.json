@@ -1,0 +1,42 @@
+{
+    "mockBidRequest": {
+        "id": "3621f78b-abdf-4562-8eca-1c5e893387d0",
+        "imp": [
+            {
+                "id": "div-1",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        }
+                    ]
+                }
+            },
+            {
+                "id": "div-1",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        }
+                    ]
+                },
+                "ext": {
+                }
+            }
+        ]
+    },
+    "expectedMakeRequestsErrors": [
+        {
+            "value": "imp.ext not provided",
+            "comparison": "literal"
+        },
+        {
+            "value": "ext.bidder not provided",
+            "comparison": "literal"
+        }
+    ],
+    "expectedBidResponses": []
+}

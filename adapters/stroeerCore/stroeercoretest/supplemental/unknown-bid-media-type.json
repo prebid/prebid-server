@@ -1,0 +1,194 @@
+{
+  "mockBidRequest": {
+    "id": "id",
+    "imp": [
+      {
+        "id": "banner-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 200
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "sid": "tagid"
+          }
+        }
+      },
+      {
+        "id": "banner-2",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 200
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "sid": "tagid"
+          }
+        }
+      },
+      {
+        "id": "banner-3",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 200
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "sid": "tagid"
+          }
+        }
+      }
+    ],
+    "user": {
+      "buyeruid": "test-buyer-user-id"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Accept": ["application/json"],
+          "Content-Type": ["application/json;charset=utf-8"]
+        },
+        "uri": "http://localhost/s2sdsh",
+        "body": {
+          "id": "id",
+          "imp": [
+            {
+              "id": "banner-1",
+              "tagid": "tagid",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 200
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "sid": "tagid"
+                }
+              }
+            },
+            {
+              "id": "banner-2",
+              "tagid": "tagid",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 200
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "sid": "tagid"
+                }
+              }
+            },
+            {
+              "id": "banner-3",
+              "tagid": "tagid",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 200
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "sid": "tagid"
+                }
+              }
+            }
+          ],
+          "user": {
+            "buyeruid": "test-buyer-user-id"
+          }
+        },
+        "impIDs":["banner-1","banner-2","banner-3"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "bids": [
+            {
+              "id": "3929239282-01",
+              "bidId": "banner-1",
+              "cpm": 2,
+              "width": 300,
+              "height": 200,
+              "ad": "banner ad 1",
+              "crid": "qwert",
+              "mtype": "unknown"
+            },
+            {
+              "id": "3929239282-02",
+              "bidId": "banner-2",
+              "cpm": 2,
+              "width": 300,
+              "height": 200,
+              "ad": "banner ad 2",
+              "crid": "qwert"
+            },
+            {
+              "id": "3929239282-03",
+              "bidId": "banner-3",
+              "cpm": 2,
+              "width": 300,
+              "height": 200,
+              "ad": "banner ad 3",
+              "crid": "qwert",
+              "mtype": "banner"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids" : [{
+        "bid": {
+          "id": "3929239282-03",
+          "impid": "banner-3",
+          "price": 2,
+          "adm": "banner ad 3",
+          "w": 300,
+          "h": 200,
+          "crid": "qwert",
+          "mtype": 1
+        },
+        "type": "banner"
+      }]
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Bid media type error: unable to determine media type for bid with id \"banner-1\"",
+      "comparison": "literal"
+    },
+    {
+      "value": "Bid media type error: unable to determine media type for bid with id \"banner-2\"",
+      "comparison": "literal"
+    }
+  ]
+}

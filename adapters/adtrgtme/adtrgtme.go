@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -57,6 +58,7 @@ func (v *adapter) MakeRequests(
 			Uri:     v.buildRequestURI(siteID),
 			Body:    requestBody,
 			Headers: makeRequestHeaders(openRTBRequest),
+			ImpIDs:  openrtb_ext.GetImpIDs(requestCopy.Imp),
 		}
 
 		requests = append(requests, requestData)
@@ -66,13 +68,13 @@ func (v *adapter) MakeRequests(
 
 func getSiteIDFromImp(imp *openrtb2.Imp) (uint64, error) {
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return 0, &errortypes.BadInput{
 			Message: "ext.bidder not provided",
 		}
 	}
 	var ext openrtb_ext.ExtImpAdtrgtme
-	if err := json.Unmarshal(bidderExt.Bidder, &ext); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &ext); err != nil {
 		return 0, &errortypes.BadInput{
 			Message: "ext.bidder not provided",
 		}
@@ -146,7 +148,7 @@ func (v *adapter) MakeBids(
 	}
 
 	var response openrtb2.BidResponse
-	if err := json.Unmarshal(bidderRawResponse.Body, &response); err != nil {
+	if err := jsonutil.Unmarshal(bidderRawResponse.Body, &response); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: "Bad Server Response",
 		}}

@@ -86,8 +86,7 @@
               "tagid": "123456",
               "ext": {
                 "bidder": {
-                  "tagid": "123456",
-                  "anotherid": "654321"
+                  "tagid": "123456"
                 }
               }
             }
@@ -120,7 +119,8 @@
             "dnt": 0,
             "language": "en"
           }
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,

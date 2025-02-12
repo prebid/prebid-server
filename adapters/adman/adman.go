@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 // AdmanAdapter struct
@@ -38,12 +39,12 @@ func (a *AdmanAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 		reqCopy.Imp = []openrtb2.Imp{imp}
 
 		var bidderExt adapters.ExtImpBidder
-		if err = json.Unmarshal(reqCopy.Imp[0].Ext, &bidderExt); err != nil {
+		if err = jsonutil.Unmarshal(reqCopy.Imp[0].Ext, &bidderExt); err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		if err = json.Unmarshal(bidderExt.Bidder, &admanExt); err != nil {
+		if err = jsonutil.Unmarshal(bidderExt.Bidder, &admanExt); err != nil {
 			errs = append(errs, err)
 			continue
 		}
@@ -78,6 +79,7 @@ func (a *AdmanAdapter) makeRequest(request *openrtb2.BidRequest) (*adapters.Requ
 		Uri:     a.URI,
 		Body:    reqJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}, errs
 }
 
@@ -97,7 +99,7 @@ func (a *AdmanAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRe
 
 	var bidResp openrtb2.BidResponse
 
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 

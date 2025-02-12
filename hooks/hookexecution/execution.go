@@ -7,9 +7,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/prebid/prebid-server/hooks"
-	"github.com/prebid/prebid-server/hooks/hookstage"
-	"github.com/prebid/prebid-server/metrics"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/hooks"
+	"github.com/prebid/prebid-server/v3/hooks/hookstage"
+	"github.com/prebid/prebid-server/v3/metrics"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/ortb"
+	"github.com/prebid/prebid-server/v3/privacy"
+	"github.com/prebid/prebid-server/v3/util/iputil"
 )
 
 type hookResponse[T any] struct {
@@ -66,10 +71,11 @@ func executeGroup[H any, P any](
 
 	for _, hook := range group.Hooks {
 		mCtx := executionCtx.getModuleContext(hook.Module)
+		newPayload := handleModuleActivities(hook.Code, executionCtx.activityControl, payload, executionCtx.account)
 		wg.Add(1)
 		go func(hw hooks.HookWrapper[H], moduleCtx hookstage.ModuleInvocationContext) {
 			defer wg.Done()
-			executeHook(moduleCtx, hw, payload, hookHandler, group.Timeout, resp, rejected)
+			executeHook(moduleCtx, hw, newPayload, hookHandler, group.Timeout, resp, rejected)
 		}(hook, mCtx)
 	}
 
@@ -176,7 +182,7 @@ func handleHookResponse[P any](
 	metricEngine metrics.MetricsEngine,
 ) (P, HookOutcome, *RejectError) {
 	var rejectErr *RejectError
-	labels := metrics.ModuleLabels{Module: moduleReplacer.Replace(hr.HookID.ModuleCode), Stage: ctx.stage, AccountID: ctx.accountId}
+	labels := metrics.ModuleLabels{Module: moduleReplacer.Replace(hr.HookID.ModuleCode), Stage: ctx.stage, AccountID: ctx.accountID}
 	metricEngine.RecordModuleCalled(labels, hr.ExecutionTime)
 
 	hookOutcome := HookOutcome{
@@ -310,4 +316,48 @@ func handleHookMutations[P any](
 	}
 
 	return payload
+}
+
+func handleModuleActivities[P any](hookCode string, activityControl privacy.ActivityControl, payload P, account *config.Account) P {
+	payloadData, ok := any(&payload).(hookstage.RequestUpdater)
+	if !ok {
+		return payload
+	}
+
+	scopeGeneral := privacy.Component{Type: privacy.ComponentTypeGeneral, Name: hookCode}
+	transmitUserFPDActivityAllowed := activityControl.Allow(privacy.ActivityTransmitUserFPD, scopeGeneral, privacy.ActivityRequest{})
+	transmitPreciseGeoActivityAllowed := activityControl.Allow(privacy.ActivityTransmitPreciseGeo, scopeGeneral, privacy.ActivityRequest{})
+
+	if transmitUserFPDActivityAllowed && transmitPreciseGeoActivityAllowed {
+		return payload
+	}
+
+	// changes need to be applied to new payload and leave original payload unchanged
+	bidderReq := payloadData.GetBidderRequestPayload()
+
+	bidderReqCopy := &openrtb_ext.RequestWrapper{
+		BidRequest: ortb.CloneBidRequestPartial(bidderReq.BidRequest),
+	}
+
+	if !transmitUserFPDActivityAllowed {
+		privacy.ScrubUserFPD(bidderReqCopy)
+	}
+	if !transmitPreciseGeoActivityAllowed {
+		var ipConf privacy.IPConf
+		if account != nil {
+			ipConf = privacy.IPConf{IPV6: account.Privacy.IPv6Config, IPV4: account.Privacy.IPv4Config}
+		} else {
+			ipConf = privacy.IPConf{
+				IPV6: config.IPv6{AnonKeepBits: iputil.IPv6DefaultMaskingBitSize},
+				IPV4: config.IPv4{AnonKeepBits: iputil.IPv4DefaultMaskingBitSize}}
+		}
+
+		privacy.ScrubGeoAndDeviceIP(bidderReqCopy, ipConf)
+	}
+
+	var newPayload = payload
+	var np = any(&newPayload).(hookstage.RequestUpdater)
+	np.SetBidderRequestPayload(bidderReqCopy)
+	return newPayload
+
 }

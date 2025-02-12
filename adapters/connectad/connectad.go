@@ -7,11 +7,12 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type ConnectAdAdapter struct {
@@ -32,14 +33,14 @@ func (a *ConnectAdAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 
 	if errs := preprocess(request); len(errs) > 0 {
 		return nil, append(errs, &errortypes.BadInput{
-			Message: fmt.Sprintf("Error in preprocess of Imp"),
+			Message: "Error in preprocess of Imp",
 		})
 	}
 
 	data, err := json.Marshal(request)
 	if err != nil {
 		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Error in packaging request to JSON"),
+			Message: "Error in packaging request to JSON",
 		}}
 	}
 
@@ -66,6 +67,7 @@ func (a *ConnectAdAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 		Uri:     a.endpoint,
 		Body:    data,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, errs
 }
 
@@ -83,7 +85,7 @@ func (a *ConnectAdAdapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapter
 
 	var bidResp openrtb2.BidResponse
 
-	if err := json.Unmarshal(httpRes.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(httpRes.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Unable to unpackage bid response. Error: %s", err.Error()),
 		}}
@@ -138,15 +140,13 @@ func preprocess(request *openrtb2.BidRequest) []error {
 }
 
 func addImpInfo(imp *openrtb2.Imp, secure *int8, cadExt *openrtb_ext.ExtImpConnectAd) {
-	imp.TagID = strconv.Itoa(cadExt.SiteID)
+	imp.TagID = strconv.Itoa(int(cadExt.SiteID))
 	imp.Secure = secure
 
 	if cadExt.Bidfloor != 0 {
 		imp.BidFloor = cadExt.Bidfloor
 		imp.BidFloorCur = "USD"
 	}
-
-	return
 }
 
 func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue string) {
@@ -157,14 +157,14 @@ func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue str
 
 func unpackImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpConnectAd, error) {
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("Impression id=%s has an Error: %s", imp.ID, err.Error()),
 		}
 	}
 
 	var cadExt openrtb_ext.ExtImpConnectAd
-	if err := json.Unmarshal(bidderExt.Bidder, &cadExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &cadExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("Impression id=%s, has invalid Ext", imp.ID),
 		}
@@ -184,7 +184,7 @@ func buildImpBanner(imp *openrtb2.Imp) error {
 
 	if imp.Banner == nil {
 		return &errortypes.BadInput{
-			Message: fmt.Sprintf("We need a Banner Object in the request"),
+			Message: "We need a Banner Object in the request",
 		}
 	}
 
@@ -194,7 +194,7 @@ func buildImpBanner(imp *openrtb2.Imp) error {
 
 		if len(banner.Format) == 0 {
 			return &errortypes.BadInput{
-				Message: fmt.Sprintf("At least one size is required"),
+				Message: "At least one size is required",
 			}
 		}
 		format := banner.Format[0]

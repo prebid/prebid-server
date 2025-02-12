@@ -1,13 +1,13 @@
 package version
 
 import (
-	"encoding/json"
 	"testing"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 func TestBuildXPrebidHeader(t *testing.T) {
@@ -134,12 +134,12 @@ func TestBuildXPrebidHeaderForRequest(t *testing.T) {
 	for _, test := range testCases {
 		req := &openrtb2.BidRequest{}
 		if test.requestExt != nil {
-			reqExt, err := json.Marshal(test.requestExt)
+			reqExt, err := jsonutil.Marshal(test.requestExt)
 			assert.NoError(t, err, test.description+":err marshalling reqExt")
 			req.Ext = reqExt
 		}
 		if test.requestAppExt != nil {
-			reqAppExt, err := json.Marshal(test.requestAppExt)
+			reqAppExt, err := jsonutil.Marshal(test.requestAppExt)
 			assert.NoError(t, err, test.description+":err marshalling reqAppExt")
 			req.App = &openrtb2.App{Ext: reqAppExt}
 		}

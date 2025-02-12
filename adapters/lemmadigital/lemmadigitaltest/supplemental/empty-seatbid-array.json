@@ -1,0 +1,102 @@
+{
+  "mockBidRequest": {
+    "app": {
+      "bundle": "com.ld.test",
+      "cat": [
+        "IAB-1"
+      ],
+      "domain": "ld.com",
+      "id": "1",
+      "name": "LD Test",
+      "publisher": {
+        "id": "1"
+      }
+    },
+    "device": {
+      "dnt": 0,
+      "ip": "0.0.0.0",
+      "language": "en",
+      "ua": "user-agent"
+    },
+    "id": "test-request-id-video",
+    "imp": [{
+      "ext": {
+        "bidder": {
+          "aid": 1,
+          "pid": 1
+        }
+      },
+      "id": "test-imp-id-video",
+      "video": {
+        "h": 1080,
+        "mimes": [
+          "video/mp4"
+        ],
+        "protocols": [
+          1
+        ],
+        "w": 1920
+      }
+    }],
+    "tmax": 1000
+  },
+  "httpCalls": [{
+    "expectedRequest": {
+      "uri": "https://test.lemmaurl.com/lemma/servad?src=prebid&pid=1&aid=1",
+      "body": {
+        "app": {
+          "bundle": "com.ld.test",
+          "cat": [
+            "IAB-1"
+          ],
+          "domain": "ld.com",
+          "id": "1",
+          "name": "LD Test",
+          "publisher": {
+            "id": "1"
+          }
+        },
+        "device": {
+          "dnt": 0,
+          "ip": "0.0.0.0",
+          "language": "en",
+          "ua": "user-agent"
+        },
+        "id": "test-request-id-video",
+        "imp": [{
+          "ext": {
+            "bidder": {
+              "aid": 1,
+              "pid": 1
+            }
+          },
+          "id": "test-imp-id-video",
+          "video": {
+            "h": 1080,
+            "mimes": [
+              "video/mp4"
+            ],
+            "protocols": [
+              1
+            ],
+            "w": 1920
+          }
+        }],
+        "tmax": 1000
+      },
+      "impIDs":["test-imp-id-video"]
+    },
+    "mockResponse": {
+      "status": 200,
+      "body": {
+        "id": "test-1",
+        "seatbid": [],
+        "cur": "USD"
+      }
+    }
+  }],
+  "expectedBidResponses": [{
+    "currency": "USD",
+    "bids": []
+}]
+}

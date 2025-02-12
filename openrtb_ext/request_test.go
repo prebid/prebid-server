@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/util/ptrutil"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -37,7 +38,7 @@ func TestGranularityUnmarshal(t *testing.T) {
 	for _, tg := range testGroups {
 		for i, tc := range tg.in {
 			var resolved PriceGranularity
-			err := json.Unmarshal(tc.json, &resolved)
+			err := jsonutil.UnmarshalValid(tc.json, &resolved)
 
 			// Assert validation error
 			if tg.expectError && !assert.Errorf(t, err, "%s test case %d", tg.desc, i) {
