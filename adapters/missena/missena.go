@@ -22,6 +22,7 @@ type adapter struct {
 
 type MissenaAdRequest struct {
 	Adunit           string                `json:"adunit,omitempty"`
+	BuyerUID         string                `json:"buyeruid,omitempty"`
 	COPPA            int8                  `json:"coppa,omitempty"`
 	Currency         string                `json:"currency,omitempty"`
 	EIDs             []openrtb2.EID        `json:"userEids,omitempty"`
@@ -127,6 +128,7 @@ func (a *adapter) makeRequest(imp openrtb2.Imp, request *openrtb2.BidRequest, re
 
 	missenaRequest := MissenaAdRequest{
 		Adunit:           imp.ID,
+		BuyerUID:         request.User.BuyerUID,
 		COPPA:            request.Regs.COPPA,
 		Currency:         cur,
 		EIDs:             request.User.EIDs,
