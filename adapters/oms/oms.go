@@ -13,16 +13,6 @@ import (
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
-type pbsExt struct {
-	Bidder genericPID `json:"bidder"`
-	Tid    string     `json:"tid"`
-}
-
-type genericPID struct {
-	Pid         string `json:"pid"`
-	PublisherID int    `json:"publisherId"`
-}
-
 type adapter struct {
 	endpoint string
 }
@@ -43,15 +33,19 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	var uri string = a.endpoint
 	if len(request.Imp[0].Ext) > 0 {
-		ext := pbsExt{}
-		err = jsonutil.Unmarshal(request.Imp[0].Ext, &ext)
-		if err != nil {
+		var bidderExt adapters.ExtImpBidder
+		if err := jsonutil.Unmarshal(request.Imp[0].Ext, &bidderExt); err != nil {
 			return nil, []error{err}
 		}
 
-		uri = fmt.Sprintf("%s?publisherId=%s", a.endpoint, ext.Bidder.Pid)
-		if ext.Bidder.Pid == "" && ext.Bidder.PublisherID > 0 {
-			uri = fmt.Sprintf("%s?publisherId=%d", a.endpoint, ext.Bidder.PublisherID)
+		var omsImpExt openrtb_ext.ExtImpOms
+		if err := jsonutil.Unmarshal(bidderExt.Bidder, &omsImpExt); err != nil {
+			return nil, []error{err}
+		}
+
+		uri = fmt.Sprintf("%s?publisherId=%s", a.endpoint, omsImpExt.Pid)
+		if omsImpExt.Pid == "" && omsImpExt.PublisherID > 0 {
+			uri = fmt.Sprintf("%s?publisherId=%d", a.endpoint, omsImpExt.PublisherID)
 		}
 	}
 
