@@ -2,25 +2,26 @@ package main
 
 import (
 	"flag"
-	"math/rand"
 	"net/http"
 	"path/filepath"
 	"runtime"
 	"time"
 
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/currency"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/router"
-	"github.com/prebid/prebid-server/v2/server"
-	"github.com/prebid/prebid-server/v2/util/task"
+	jsoniter "github.com/json-iterator/go"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/currency"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/router"
+	"github.com/prebid/prebid-server/v3/server"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/task"
 
 	"github.com/golang/glog"
 	"github.com/spf13/viper"
 )
 
 func init() {
-	rand.Seed(time.Now().UnixNano())
+	jsoniter.RegisterExtension(&jsonutil.RawMessageExtension{})
 }
 
 func main() {
@@ -77,7 +78,9 @@ func serve(cfg *config.Configuration) error {
 	}
 
 	corsRouter := router.SupportCORS(r)
-	server.Listen(cfg, router.NoCache{Handler: corsRouter}, router.Admin(currencyConverter, fetchingInterval), r.MetricsEngine)
+	if err := server.Listen(cfg, router.NoCache{Handler: corsRouter}, router.Admin(currencyConverter, fetchingInterval), r.MetricsEngine); err != nil {
+		glog.Fatalf("prebid-server returned an error: %v", err)
+	}
 
 	r.Shutdown()
 	return nil

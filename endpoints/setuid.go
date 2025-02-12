@@ -12,19 +12,19 @@ import (
 	"github.com/julienschmidt/httprouter"
 	gpplib "github.com/prebid/go-gpp"
 	gppConstants "github.com/prebid/go-gpp/constants"
-	accountService "github.com/prebid/prebid-server/v2/account"
-	"github.com/prebid/prebid-server/v2/analytics"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/gdpr"
-	"github.com/prebid/prebid-server/v2/metrics"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/privacy"
-	gppPrivacy "github.com/prebid/prebid-server/v2/privacy/gpp"
-	"github.com/prebid/prebid-server/v2/stored_requests"
-	"github.com/prebid/prebid-server/v2/usersync"
-	"github.com/prebid/prebid-server/v2/util/httputil"
-	stringutil "github.com/prebid/prebid-server/v2/util/stringutil"
+	accountService "github.com/prebid/prebid-server/v3/account"
+	"github.com/prebid/prebid-server/v3/analytics"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/gdpr"
+	"github.com/prebid/prebid-server/v3/metrics"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/privacy"
+	gppPrivacy "github.com/prebid/prebid-server/v3/privacy/gpp"
+	"github.com/prebid/prebid-server/v3/stored_requests"
+	"github.com/prebid/prebid-server/v3/usersync"
+	"github.com/prebid/prebid-server/v3/util/httputil"
+	stringutil "github.com/prebid/prebid-server/v3/util/stringutil"
 )
 
 const (
@@ -222,18 +222,14 @@ func extractGDPRInfo(query url.Values) (reqInfo gdpr.RequestInfo, err error) {
 
 // parseGDPRFromGPP parses and validates the "gpp_sid" and "gpp" query fields.
 func parseGDPRFromGPP(query url.Values) (gdpr.RequestInfo, error) {
-	var gdprSignal gdpr.Signal = gdpr.SignalAmbiguous
-	var gdprConsent string = ""
-	var err error
-
-	gdprSignal, err = parseSignalFromGppSidStr(query.Get("gpp_sid"))
+	gdprSignal, err := parseSignalFromGppSidStr(query.Get("gpp_sid"))
 	if err != nil {
 		return gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous}, err
 	}
 
-	gdprConsent, err = parseConsentFromGppStr(query.Get("gpp"))
-	if err != nil {
-		return gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous}, err
+	gdprConsent, errs := parseConsentFromGppStr(query.Get("gpp"))
+	if len(errs) > 0 {
+		return gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous}, errs[0]
 	}
 
 	return gdpr.RequestInfo{
@@ -305,13 +301,13 @@ func parseSignalFromGppSidStr(strSID string) (gdpr.Signal, error) {
 	return gdprSignal, nil
 }
 
-func parseConsentFromGppStr(gppQueryValue string) (string, error) {
+func parseConsentFromGppStr(gppQueryValue string) (string, []error) {
 	var gdprConsent string
 
 	if len(gppQueryValue) > 0 {
-		gpp, err := gpplib.Parse(gppQueryValue)
-		if err != nil {
-			return "", err
+		gpp, errs := gpplib.Parse(gppQueryValue)
+		if len(errs) > 0 {
+			return "", errs
 		}
 
 		if i := gppPrivacy.IndexOfSID(gpp, gppConstants.SectionTCFEU2); i >= 0 {

@@ -1,0 +1,22 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Trustedstack Adapter Params",
+    "description": "A schema which validates params accepted by the Trustedstack adapter",
+    "type": "object",
+    "properties": {
+      "cid": {
+        "type": "string",
+        "minLength": 1,
+        "description": "The customer id provided by Trustedstack."
+      },
+      "crid": {
+        "type": "string",
+        "minLength": 1,
+        "description": "The placement id provided by Trustedstack."
+      }
+    },
+    "required": [
+      "cid",
+      "crid"
+    ]
+}

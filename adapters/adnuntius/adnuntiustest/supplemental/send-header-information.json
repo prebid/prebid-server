@@ -50,7 +50,7 @@
 						"Mozilla/5.0 (Linux; Android 8.0; Pixel 2 Build/OPD3.170816.012) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.93 Mobile Safari/537.36"
 					]
 				},
-				"uri": "http://whatever.url?format=json&tzo=0",
+				"uri": "http://whatever.url?format=prebidServer&tzo=0",
 				"body": {
 					"adUnits": [
 						{
@@ -63,7 +63,8 @@
 						"usi": "1kjh3429kjh295jkl"
 					},
 					"context": "unknown"
-				}
+				},
+				"impIDs":["test-imp-id"]
 			},
 			"mockResponse": {
 				"status": 200,
@@ -79,6 +80,7 @@
 									"destinationUrls": {
 										"url": "http://www.google.com"
 									},
+									"advertiserDomains": ["google.com"],
 									"bid": {
 										"amount": 20.0,
 										"currency": "NOK"

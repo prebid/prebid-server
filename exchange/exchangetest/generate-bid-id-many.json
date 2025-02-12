@@ -1,0 +1,170 @@
+{
+  "bidIDGenerator": {
+    "generateBidID": true,
+    "returnError": false
+  },
+  "incomingRequest": {
+    "ortbRequest": {
+      "id": "some-request-id",
+      "site": {
+        "page": "test.somepage.com"
+      },
+      "imp": [
+        {
+          "id": "imp-id-1",
+          "video": {
+            "mimes": [
+              "video/mp4"
+            ]
+          },
+          "ext": {
+            "prebid": {
+              "bidder": {
+                "appnexus": {
+                  "placementId": 1
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "outgoingRequests": {
+    "appnexus": {
+      "mockResponse": {
+        "pbsSeatBids": [
+          {
+            "pbsBids": [
+              {
+                "ortbBid": {
+                  "id": "apn-bid-1",
+                  "impid": "imp-id-1",
+                  "price": 0.3,
+                  "w": 200,
+                  "h": 250,
+                  "crid": "creative-1",
+                  "cat": [
+                    "IAB1-1"
+                  ]
+                },
+                "bidType": "video",
+                "bidVideo": {
+                  "duration": 30
+                }
+              },
+              {
+                "ortbBid": {
+                  "id": "apn-bid-2",
+                  "impid": "imp-id-1",
+                  "price": 0.3,
+                  "w": 200,
+                  "h": 250,
+                  "crid": "creative-1",
+                  "cat": [
+                    "IAB1-1"
+                  ]
+                },
+                "bidType": "video",
+                "bidVideo": {
+                  "duration": 30,
+                  "PrimaryCategory": ""
+                }
+              }
+            ],
+            "seat": "appnexus"
+          }
+        ]
+      }
+    }
+  },
+  "response": {
+    "bids": {
+      "id": "some-request-id",
+      "seatbid": [
+        {
+          "seat": "appnexus",
+          "bid": [
+            {
+              "id": "apn-bid-1",
+              "impid": "imp-id-1",
+              "price": 0.3,
+              "w": 200,
+              "h": 250,
+              "crid": "creative-1",
+              "cat": [
+                "IAB1-1"
+              ],
+              "ext": {
+                "origbidcpm": 0.3,
+                "prebid": {
+                  "meta": {
+                  },
+                  "bidid": "bid-appnexus-1",
+                  "type": "video",
+                  "video": {
+                    "duration": 30,
+                    "primary_category": ""
+                  }
+                }
+              }
+            },
+            {
+              "id": "apn-bid-2",
+              "impid": "imp-id-1",
+              "price": 0.3,
+              "w": 200,
+              "h": 250,
+              "crid": "creative-1",
+              "cat": [
+                "IAB1-1"
+              ],
+              "ext": {
+                "origbidcpm": 0.3,
+                "prebid": {
+                  "meta": {
+                  },
+                  "bidid": "bid-appnexus-2",
+                  "type": "video",
+                  "video": {
+                    "duration": 30,
+                    "primary_category": ""
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "ext": {
+      "debug": {
+        "resolvedrequest": {
+          "id": "some-request-id",
+          "imp": [
+            {
+              "id": "imp-id-1",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ]
+              },
+              "ext": {
+                "prebid": {
+                  "bidder": {
+                    "appnexus": {
+                      "placementId": 1
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "test.somepage.com"
+          }
+        }
+      }
+    }
+  }
+}

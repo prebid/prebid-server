@@ -96,7 +96,8 @@
             "buyeruid": "awesome-user"
           },
           "tmax": 1000
-        }
+        },
+        "impIDs":["some-impression-id"]
       },
       "mockResponse": {
         "status": 200,
@@ -115,7 +116,11 @@
                   ],
                   "crid": "20",
                   "w": 1280,
-                  "h": 720
+                  "h": 720,
+                  "mtype": 2,
+                  "ext": {
+                    "formattype": 1
+                  }
                 }
               ],
               "seat": "adview"
@@ -147,7 +152,11 @@
               "awesome.com"
             ],
             "w": 1280,
-            "h": 720
+            "h": 720,
+            "mtype": 2,
+            "ext": {
+              "formattype": 1
+            }
           },
           "type": "video"
         }

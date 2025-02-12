@@ -106,7 +106,8 @@
           "user": {
             "id": "test-user-id"
           }
-        }
+        },
+        "impIDs":["test-bid-id"]
       },
       "mockResponse": {
         "status": 200,

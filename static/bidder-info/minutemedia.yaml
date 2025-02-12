@@ -1,0 +1,18 @@
+endpoint: "https://pbs.minutemedia-prebid.com/pbs-mm"
+maintainer:
+  email: hb@minutemedia.com
+gvlVendorID: 918
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  iframe:
+    url: https://pbs-cs.minutemedia-prebid.com/pbs-iframe?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirect={{.RedirectURL}}
+    userMacro: "[PBS_UID]"

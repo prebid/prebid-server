@@ -2,10 +2,9 @@ package gdpr
 
 import (
 	tcf2 "github.com/prebid/go-gdpr/vendorconsent/tcf2"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
-// BasicEnforcement determines if legal basis is satisfied for a given purpose and bidder using
+// BasicEnforcement determines if legal basis is satisfied for a given purpose and bidder/analytics adapter using
 // the TCF2 basic enforcement algorithm. The algorithm is a high-level mode of consent confirmation
 // that looks for a good-faith indication that the user has provided consent or legal basis signals
 // necessary to perform a privacy-protected activity. The algorithm does not involve the GVL.
@@ -14,21 +13,21 @@ type BasicEnforcement struct {
 	cfg purposeConfig
 }
 
-// LegalBasis determines if legal basis is satisfied for a given purpose and bidder based on user consent
+// LegalBasis determines if legal basis is satisfied for a given purpose and bidder/analytics adapter based on user consent
 // and legal basis signals.
-func (be *BasicEnforcement) LegalBasis(vendorInfo VendorInfo, bidder openrtb_ext.BidderName, consent tcf2.ConsentMetadata, overrides Overrides) bool {
+func (be *BasicEnforcement) LegalBasis(vendorInfo VendorInfo, name string, consent tcf2.ConsentMetadata, overrides Overrides) bool {
 	enforcePurpose, enforceVendors := be.applyEnforceOverrides(overrides)
 
 	if !enforcePurpose && !enforceVendors {
 		return true
 	}
-	if be.cfg.vendorException(bidder) && !overrides.blockVendorExceptions {
+	if be.cfg.vendorException(name) && !overrides.blockVendorExceptions {
 		return true
 	}
-	if !enforcePurpose && be.cfg.basicEnforcementVendor(bidder) {
+	if !enforcePurpose && be.cfg.basicEnforcementVendor(name) {
 		return true
 	}
-	if enforcePurpose && consent.PurposeAllowed(be.cfg.PurposeID) && be.cfg.basicEnforcementVendor(bidder) {
+	if enforcePurpose && consent.PurposeAllowed(be.cfg.PurposeID) && be.cfg.basicEnforcementVendor(name) {
 		return true
 	}
 	if enforcePurpose && consent.PurposeLITransparency(be.cfg.PurposeID) && overrides.allowLITransparency {

@@ -8,12 +8,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/prebid/openrtb/v19/adcom1"
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/openrtb/v20/adcom1"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 )
 
 const Seat = "beachfront"
@@ -152,6 +154,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 				Uri:     a.bannerEndpoint,
 				Body:    bytes,
 				Headers: headers,
+				ImpIDs:  getBannerImpIDs(beachfrontRequests.Banner.Slots),
 			}
 
 			nurlBump++
@@ -173,6 +176,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 				Uri:     a.extraInfo.VideoEndpoint + "=" + beachfrontRequests.ADMVideo[j].AppId,
 				Body:    bytes,
 				Headers: headers,
+				ImpIDs:  openrtb_ext.GetImpIDs(beachfrontRequests.ADMVideo[j].Request.Imp),
 			}
 
 			admBump++
@@ -192,6 +196,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 				Uri:     a.extraInfo.VideoEndpoint + "=" + beachfrontRequests.NurlVideo[j].AppId + nurlVideoEndpointSuffix,
 				Body:    bytes,
 				Headers: headers,
+				ImpIDs:  openrtb_ext.GetImpIDs(beachfrontRequests.NurlVideo[j].Request.Imp),
 			}
 		} else {
 			errs = append(errs, err)
@@ -269,7 +274,7 @@ func getAppId(ext openrtb_ext.ExtImpBeachfront, media openrtb_ext.BidType) (stri
 
 func getSchain(request *openrtb2.BidRequest) (openrtb_ext.ExtRequestPrebidSChain, error) {
 	var schain openrtb_ext.ExtRequestPrebidSChain
-	return schain, json.Unmarshal(request.Source.Ext, &schain)
+	return schain, jsonutil.Unmarshal(request.Source.Ext, &schain)
 }
 
 func getBannerRequest(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) (beachfrontBannerRequest, []error) {
@@ -475,9 +480,20 @@ func getVideoRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraReque
 			}
 		}
 
-		if imp.Video.H == 0 && imp.Video.W == 0 {
-			imp.Video.W = defaultVideoWidth
-			imp.Video.H = defaultVideoHeight
+		wNilOrZero := imp.Video.W == nil || *imp.Video.W == 0
+		hNilOrZero := imp.Video.H == nil || *imp.Video.H == 0
+		if wNilOrZero || hNilOrZero {
+			videoCopy := *imp.Video
+
+			if wNilOrZero {
+				videoCopy.W = ptrutil.ToPtr[int64](defaultVideoWidth)
+			}
+
+			if hNilOrZero {
+				videoCopy.H = ptrutil.ToPtr[int64](defaultVideoHeight)
+			}
+
+			imp.Video = &videoCopy
 		}
 
 		if len(bfReqs[i].Request.Cur) == 0 {
@@ -525,7 +541,7 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb2.BidRequest, exter
 	var errs = make([]error, 0)
 	var xtrnal openrtb2.BidRequest
 
-	if err := json.Unmarshal(externalRequest.Body, &xtrnal); err != nil {
+	if err := jsonutil.Unmarshal(externalRequest.Body, &xtrnal); err != nil {
 		errs = append(errs, err)
 	} else {
 		bids, errs = postprocess(response, xtrnal, externalRequest.Uri, internalRequest.ID)
@@ -540,7 +556,7 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb2.BidRequest, exter
 
 	for i := 0; i < len(bids); i++ {
 
-		if err := json.Unmarshal(bids[i].Ext, &dur); err == nil && dur.Duration > 0 {
+		if err := jsonutil.Unmarshal(bids[i].Ext, &dur); err == nil && dur.Duration > 0 {
 
 			impVideo := openrtb_ext.ExtBidPrebidVideo{
 				Duration: int(dur.Duration),
@@ -627,9 +643,9 @@ func postprocess(response *adapters.ResponseData, xtrnal openrtb2.BidRequest, ur
 
 	var openrtbResp openrtb2.BidResponse
 
-	if err := json.Unmarshal(response.Body, &openrtbResp); err != nil || len(openrtbResp.SeatBid) == 0 {
+	if err := jsonutil.Unmarshal(response.Body, &openrtbResp); err != nil || len(openrtbResp.SeatBid) == 0 {
 
-		if err := json.Unmarshal(response.Body, &beachfrontResp); err != nil {
+		if err := jsonutil.Unmarshal(response.Body, &beachfrontResp); err != nil {
 			return nil, []error{&errortypes.BadServerResponse{
 				Message: "server response failed to unmarshal as valid rtb. Run with request.debug = 1 for more info",
 			}}
@@ -672,8 +688,8 @@ func postprocessVideo(bids []openrtb2.Bid, xtrnal openrtb2.BidRequest, uri strin
 
 			bids[i].CrID = crid
 			bids[i].ImpID = xtrnal.Imp[i].ID
-			bids[i].H = xtrnal.Imp[i].Video.H
-			bids[i].W = xtrnal.Imp[i].Video.W
+			bids[i].H = ptrutil.ValueOrDefault(xtrnal.Imp[i].Video.H)
+			bids[i].W = ptrutil.ValueOrDefault(xtrnal.Imp[i].Video.W)
 			bids[i].ID = fmt.Sprintf("%sNurlVideo", xtrnal.Imp[i].ID)
 		}
 
@@ -700,13 +716,13 @@ func getBeachfrontExtension(imp openrtb2.Imp) (openrtb_ext.ExtImpBeachfront, err
 	var bidderExt adapters.ExtImpBidder
 	var beachfrontExt openrtb_ext.ExtImpBeachfront
 
-	if err = json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err = jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return beachfrontExt, &errortypes.BadInput{
 			Message: fmt.Sprintf("ignoring imp id=%s, error while decoding extImpBidder, err: %s", imp.ID, err),
 		}
 	}
 
-	if err = json.Unmarshal(bidderExt.Bidder, &beachfrontExt); err != nil {
+	if err = jsonutil.Unmarshal(bidderExt.Bidder, &beachfrontExt); err != nil {
 		return beachfrontExt, &errortypes.BadInput{
 			Message: fmt.Sprintf("ignoring imp id=%s, error while decoding extImpBeachfront, err: %s", imp.ID, err),
 		}
@@ -768,7 +784,7 @@ func getExtraInfo(v string) (ExtraInfo, error) {
 	}
 
 	var extraInfo ExtraInfo
-	if err := json.Unmarshal([]byte(v), &extraInfo); err != nil {
+	if err := jsonutil.Unmarshal([]byte(v), &extraInfo); err != nil {
 		return extraInfo, fmt.Errorf("invalid extra info: %v", err)
 	}
 
@@ -783,4 +799,12 @@ func getDefaultExtraInfo() ExtraInfo {
 	return ExtraInfo{
 		VideoEndpoint: defaultVideoEndpoint,
 	}
+}
+
+func getBannerImpIDs(bfs []beachfrontSlot) []string {
+	impIDs := make([]string, len(bfs))
+	for i := range bfs {
+		impIDs[i] = bfs[i].Slot
+	}
+	return impIDs
 }

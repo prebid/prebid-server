@@ -164,7 +164,8 @@
           },
           "version": "3.4",
           "clientAdRequestId": "a3b18c5b-6708-4bb7-b41b-40ed37d89561"
-        }
+        },
+        "impIDs":["PrebidMobile"]
       },
       "mockResponse": {
         "status": 200,

@@ -1,10 +1,15 @@
 package jsonutil
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"strings"
 	"testing"
+	"unsafe"
 
+	jsoniter "github.com/json-iterator/go"
+	"github.com/modern-go/reflect2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -239,4 +244,81 @@ func TestTryExtractErrorMessage(t *testing.T) {
 			assert.Equal(t, test.expectedMsg, result)
 		})
 	}
+}
+
+func TestCreateEncoder(t *testing.T) {
+	testCases := []struct {
+		desc               string
+		inType             reflect2.Type
+		expectedValEncoder jsoniter.ValEncoder
+	}{
+		{
+			desc:               "With_extension",
+			inType:             reflect2.TypeOfPtr((*jsoniter.Any)(nil)).Elem(),
+			expectedValEncoder: nil,
+		},
+		{
+			desc:               "No_extension",
+			inType:             reflect2.TypeOfPtr(&json.RawMessage{}).Elem(),
+			expectedValEncoder: &rawMessageCodec{},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			extension := &RawMessageExtension{}
+			encoder := extension.CreateEncoder(tc.inType)
+			assert.IsType(t, encoder, tc.expectedValEncoder)
+		})
+	}
+}
+
+func TestEncode(t *testing.T) {
+	jsonBlob := json.RawMessage(`{
+  "properties": {
+    "string": "Blanks spaces in between words to not be removed if compacted",
+    "integer": 5,
+    "string_array": [
+      "string array elem one",
+      "string array elem two"
+    ]
+  }
+}`)
+
+	t.Run(
+		"Nil_pointer",
+		func(t *testing.T) {
+			// set test
+			encoder := &rawMessageCodec{}
+			output := bytes.NewBuffer([]byte{})
+			stream := jsoniter.NewStream(jsonConfigValidationOn, output, len(jsonBlob))
+
+			// run
+			encoder.Encode(nil, stream)
+
+			// assertions
+			assert.Equal(t, "", output.String())
+			assert.Equal(t, true, encoder.IsEmpty(nil))
+		},
+	)
+	t.Run(
+		"json.RawMessage_compact_JSON",
+		func(t *testing.T) {
+			// set test
+			encoder := &rawMessageCodec{}
+			output := bytes.NewBuffer([]byte{})
+			stream := jsoniter.NewStream(jsonConfigValidationOn, output, len(jsonBlob))
+
+			// run
+			encoder.Encode(unsafe.Pointer(&jsonBlob), stream)
+
+			// assertions
+			assert.Equal(
+				t,
+				`{"properties":{"string":"Blanks spaces in between words to not be removed if compacted","integer":5,"string_array":["string array elem one","string array elem two"]}}`,
+				output.String(),
+			)
+			assert.Equal(t, false, encoder.IsEmpty(unsafe.Pointer(&jsonBlob)))
+		},
+	)
 }

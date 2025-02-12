@@ -5,15 +5,15 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/exchange/entities"
-	"github.com/prebid/prebid-server/v2/hooks"
-	"github.com/prebid/prebid-server/v2/hooks/hookstage"
-	"github.com/prebid/prebid-server/v2/metrics"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/privacy"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/exchange/entities"
+	"github.com/prebid/prebid-server/v3/hooks"
+	"github.com/prebid/prebid-server/v3/hooks/hookstage"
+	"github.com/prebid/prebid-server/v3/metrics"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/privacy"
 )
 
 const (
@@ -202,7 +202,7 @@ func (e *hookExecutor) ExecuteBidderRequestStage(req *openrtb_ext.RequestWrapper
 	stageName := hooks.StageBidderRequest.String()
 	executionCtx := e.newContext(stageName)
 	payload := hookstage.BidderRequestPayload{Request: req, Bidder: bidder}
-	outcome, payload, contexts, reject := executeStage(executionCtx, plan, payload, handler, e.metricEngine)
+	outcome, _, contexts, reject := executeStage(executionCtx, plan, payload, handler, e.metricEngine)
 	outcome.Entity = entity(bidder)
 	outcome.Stage = stageName
 
@@ -229,10 +229,10 @@ func (e *hookExecutor) ExecuteRawBidderResponseStage(response *adapters.BidderRe
 
 	stageName := hooks.StageRawBidderResponse.String()
 	executionCtx := e.newContext(stageName)
-	payload := hookstage.RawBidderResponsePayload{Bids: response.Bids, Bidder: bidder}
+	payload := hookstage.RawBidderResponsePayload{BidderResponse: response, Bidder: bidder}
 
 	outcome, payload, contexts, reject := executeStage(executionCtx, plan, payload, handler, e.metricEngine)
-	response.Bids = payload.Bids
+	response = payload.BidderResponse
 	outcome.Entity = entity(bidder)
 	outcome.Stage = stageName
 

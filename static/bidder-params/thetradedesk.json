@@ -1,0 +1,13 @@
+{
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"title": "The Trade Desk Adapter Params",
+	"description": "A schema which validates params accepted by the The Trade Desk adapter",
+	"type": "object",
+	"properties": {
+		"publisherId": {
+			"type": "string",
+			"description": "An ID which identifies the publisher"
+		}
+	},
+	"required": ["publisherId"]
+}

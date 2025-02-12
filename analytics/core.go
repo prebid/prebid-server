@@ -3,10 +3,10 @@ package analytics
 import (
 	"time"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/hooks/hookexecution"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 // Module must be implemented by analytics modules to extract the required information and logging
@@ -19,6 +19,7 @@ type Module interface {
 	LogSetUIDObject(*SetUIDObject)
 	LogAmpObject(*AmpObject)
 	LogNotificationEventObject(*NotificationEvent)
+	Shutdown()
 }
 
 // Loggable object of a transaction at /openrtb2/auction endpoint

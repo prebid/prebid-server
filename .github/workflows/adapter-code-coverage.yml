@@ -1,29 +1,32 @@
-name: Adapter code coverage
+name: Adapter Code Coverage
+
 on:
   pull_request_target:
     paths: ["adapters/*/*.go"]
+
 permissions:
   pull-requests: write
   contents: write
+
 jobs:
   run-coverage:
     runs-on: ubuntu-latest
     steps:
       - name: Install Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
-          go-version: 1.20.5
+          go-version: 1.23.4
 
-      - name: Checkout pull request branch
-        uses: actions/checkout@v3
+      - name: Checkout Code
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
           ref: ${{github.event.pull_request.head.ref}}
           repository: ${{github.event.pull_request.head.repo.full_name}}
 
-      - name: Get adapter directories
+      - name: Discover Adapter Directories
         id: get_directories
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           result-encoding: string
           script: |
@@ -36,10 +39,11 @@ jobs:
               return ""
             }
             const helper = utils.diffHelper({github, context})
-            const files = await helper.getDirectories(directoryExtractor)
-            return files.length == 0 ? "" : JSON.stringify(files);
+            const directories = await helper.getDirectories(directoryExtractor)
+            // run coverage for maximum of 2 directories
+            return (directories.length == 0 || directories.length > 2) ? "" : JSON.stringify(directories)
 
-      - name: Run coverage tests
+      - name: Run Coverage Tests
         id: run_coverage
         if: steps.get_directories.outputs.result != ''
         run: |
@@ -66,14 +70,14 @@ jobs:
           cd ..
           rm -f -r ./*
 
-      - name: Checkout coverage-preview branch
-        uses: actions/checkout@v3
+      - name: Checkout Coverage Preview Branch
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
           ref: coverage-preview
           repository: prebid/prebid-server
 
-      - name: Commit coverage files to coverage-preview branch
+      - name: Upload Coverage Results
         if: steps.run_coverage.outputs.coverage_dir != ''
         id: commit_coverage
         run: |
@@ -87,13 +91,13 @@ jobs:
           git push origin coverage-preview
           echo "remote_coverage_preview_dir=${directory}" >> $GITHUB_OUTPUT
 
-      - name: Checkout master branch
+      - name: Checkout Master Branch
         if: steps.get_directories.outputs.result != ''
         run: git checkout master
 
-      - name: Add coverage summary to pull request
+      - name: Add Coverage Summary To Pull Request
         if: steps.run_coverage.outputs.coverage_dir != '' && steps.commit_coverage.outputs.remote_coverage_preview_dir != ''
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           script: |
             const utils = require('./.github/workflows/helpers/pull-request-utils.js')

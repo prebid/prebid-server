@@ -47,7 +47,8 @@
           "InvibBVLog": true,
           "VideoAdDebug": true,
           "Width": ""
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 500

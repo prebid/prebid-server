@@ -3,7 +3,7 @@
     "id": "testid",
     "imp": [
       {
-        "id": "testimpid",
+        "id": "123654",
         "banner": {
           "format": [
             {
@@ -44,10 +44,17 @@
         "body":{
           "id": "testid",
           "ext": {
-            "nextMillennium": {},
+            "nextMillennium": {
+              "nm_version": "v1.0.0"
+            },
             "prebid": {
               "storedrequest": {
                 "id": "g7819;320x250;www.example.com"
+              },
+              "server": {
+                "datacenter": "2",
+                "externalurl": "http://hosturl.com",
+               "gvlid": 1
               }
             }
           },
@@ -75,7 +82,7 @@
                   }
                 }
               },
-              "id": "testimpid"
+              "id": "123654"
             }
           ],
           "site": {
@@ -88,7 +95,8 @@
               "domain": "example.com"
             }
           }
-        }
+        },
+        "impIDs":["123654"]
       },
       "mockResponse": {
         "status": 200,
@@ -105,7 +113,8 @@
                   "adid": "96846035",
                   "adomain": ["test.addomain.com"],
                   "w": 300,
-                  "h": 250
+                  "h": 250,
+                  "mtype":1
                 }
               ]
             }
@@ -129,7 +138,8 @@
             "adid": "96846035",
             "adomain": ["test.addomain.com"],
             "w": 300,
-            "h": 250
+            "h": 250,
+            "mtype":1
           },
           "type": "banner"
         }

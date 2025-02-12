@@ -164,7 +164,8 @@
             "siteId": "113932",
             "zoneId": "535510"
           },
-          "gpid": "gpid"
+          "gpid": "gpid",
+          "tid": "tid"
         }
       }
     ]
@@ -300,7 +301,6 @@
                 "placement": 3,
                 "ext": {
                   "rp": {
-                    "size_id": 203
                   }
                 },
                 "mimes": [
@@ -342,14 +342,9 @@
                     "attr5": [
                       "3"
                     ],
-                    "pagecat": [
-                      "val1",
-                      "val2"
-                    ],
-                    "sectioncat": [
-                      "sectionCat1",
-                      "sectionCat2"
-                    ]
+                    "pbs_login": "xuser",
+                    "pbs_url": "http://hosturl.com",
+                    "pbs_version": ""
                   },
                   "track": {
                     "mint": "",
@@ -357,11 +352,13 @@
                   },
                   "zone_id": 535510
                 },
-                "gpid": "gpid"
+                "gpid": "gpid",
+                "tid": "tid"
               }
             }
           ]
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,

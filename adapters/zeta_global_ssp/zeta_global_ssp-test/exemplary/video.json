@@ -74,7 +74,8 @@
             "h": 900
           },
           "test": 1
-        }
+        },
+        "impIDs":["some-impression-id"]
       },
       "mockResponse": {
         "status": 200,

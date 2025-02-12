@@ -14,13 +14,11 @@
           }
         },
         "instl": 1,
+        "rwdd": 1,
         "ext": {
           "bidder": {
             "unit": "539439964",
             "delDomain": "se-demo-d.openx.net"
-          },
-          "prebid": {
-            "is_rewarded_inventory": 1
           }
         }
       }
@@ -46,14 +44,16 @@
                 }
               },
               "tagid": "539439964",
-              "instl": 1
+              "instl": 1,
+              "rwdd": 1
             }
           ],
           "ext": {
             "bc": "hb_pbs_1.0.0",
             "delDomain": "se-demo-d.openx.net"
           }
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,

@@ -55,7 +55,8 @@
           "user": {
             "buyeruid": "A-38327932832"
           }
-        }
+        },
+        "impIDs":["video-adunit-2"]
       },
       "mockResponse": {
         "status": 200,

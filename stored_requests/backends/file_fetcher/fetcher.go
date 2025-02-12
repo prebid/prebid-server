@@ -3,12 +3,13 @@ package file_fetcher
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
 
-	"github.com/prebid/prebid-server/v2/stored_requests"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/stored_requests"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 )
 
@@ -35,8 +36,15 @@ func (fetcher *eagerFetcher) FetchRequests(ctx context.Context, requestIDs []str
 	return storedRequests, storedImpressions, errs
 }
 
+// Fetch Responses - Implements the interface to read the stored response information from the fetcher's FileSystem, the directory name is "stored_responses"
 func (fetcher *eagerFetcher) FetchResponses(ctx context.Context, ids []string) (data map[string]json.RawMessage, errs []error) {
-	return nil, nil
+	storedRespFS, found := fetcher.FileSystem.Directories["stored_responses"]
+	if !found {
+		return nil, append(errs, errors.New(`no "stored_responses" directory found`))
+	}
+
+	data = storedRespFS.Files
+	return data, appendErrors("Response", ids, data, nil)
 }
 
 // FetchAccount fetches the host account configuration for a publisher

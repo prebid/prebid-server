@@ -9,11 +9,11 @@ import (
 
 	tcf2 "github.com/prebid/go-gdpr/vendorconsent/tcf2"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/privacy"
-	"github.com/prebid/prebid-server/v2/privacy/ccpa"
-	"github.com/prebid/prebid-server/v2/privacy/gdpr"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/privacy"
+	"github.com/prebid/prebid-server/v3/privacy/ccpa"
+	"github.com/prebid/prebid-server/v3/privacy/gdpr"
 )
 
 // Params defines the parameters of an AMP request.
@@ -73,7 +73,7 @@ func ReadPolicy(ampParams Params, pbsConfigGDPREnabled bool) (privacy.PolicyWrit
 			warningMsg = validateTCf2ConsentString(ampParams.Consent)
 		}
 	case ConsentUSPrivacy:
-		rv = ccpa.ConsentWriter{ampParams.Consent}
+		rv = ccpa.ConsentWriter{Consent: ampParams.Consent}
 		if ccpa.ValidateConsent(ampParams.Consent) {
 			if parseGdprApplies(ampParams.GdprApplies) == 1 {
 				// Log warning because AMP request comes with both a valid CCPA string and gdpr_applies set to true
@@ -85,7 +85,7 @@ func ReadPolicy(ampParams Params, pbsConfigGDPREnabled bool) (privacy.PolicyWrit
 		}
 	default:
 		if ccpa.ValidateConsent(ampParams.Consent) {
-			rv = ccpa.ConsentWriter{ampParams.Consent}
+			rv = ccpa.ConsentWriter{Consent: ampParams.Consent}
 			if parseGdprApplies(ampParams.GdprApplies) == 1 {
 				warningMsg = "AMP request gdpr_applies value was ignored because provided consent string is a CCPA consent string"
 			}
@@ -117,7 +117,7 @@ func buildGdprTCF2ConsentWriter(ampParams Params) gdpr.ConsentWriter {
 		// set regs.ext.gdpr if non-nil gdpr_applies was set to true
 		gdprValue = parseGdprApplies(ampParams.GdprApplies)
 	}
-	writer.RegExtGDPR = &gdprValue
+	writer.GDPR = &gdprValue
 
 	return writer
 }

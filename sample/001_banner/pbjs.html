@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        div.adslot {
+            border-color: red;
+            border-style: solid;
+            width: 300px;
+            height: 600px;
+        }
+        p.description {
+            border-style: solid;
+        }
+    </style>
+    <script src="//cdn.jsdelivr.net/npm/prebid.js@latest/dist/not-for-prod/prebid.js" defer></script>
+    <script defer>
+
+        var sizes = [
+            [300, 250],
+            [300, 600]
+        ];
+
+        // use the cool "Prebid Less" feature https://docs.prebid.org/dev-docs/adunit-reference.html#stored-imp
+        var adUnits = [
+            {
+                code: 'test-div-1',
+                mediaTypes: {
+                    banner: {
+                        sizes: sizes
+                    }
+                },
+	        bids: [{
+	            module: "pbsBidAdapter",
+	            ortb2Imp: {
+		      ext: { prebid: { storedrequest: { id: 'test-imp-id' }}}
+                    }
+                }]
+            }
+        ]
+
+        function renderAllAdUnits() {
+            var winners = pbjs.getHighestCpmBids();
+            for (var i = 0; i < winners.length; i++) {
+                renderOne(winners[i]);
+            }
+        }
+
+        // create an iframe in the div and write the winning ad into it
+        function renderOne(winningBid) {
+            if (winningBid && winningBid.adId) {
+                var div = document.getElementById(winningBid.adUnitCode);
+                if (div) {
+                    const iframe = document.createElement('iframe');
+                    iframe.scrolling = 'no';
+                    iframe.frameBorder = '0';
+                    iframe.marginHeight = '0';
+                    iframe.marginHeight = '0';
+                    iframe.name = `prebid_ads_iframe_${winningBid.adUnitCode}`;
+                    iframe.title = '3rd party ad content';
+                    iframe.sandbox.add(
+                        'allow-forms',
+                        'allow-popups',
+                        'allow-popups-to-escape-sandbox',
+                        'allow-same-origin',
+                        'allow-scripts',
+                        'allow-top-navigation-by-user-activation'
+                    );
+                    iframe.setAttribute('aria-label', 'Advertisment');
+                    iframe.style.setProperty('border', '0');
+                    iframe.style.setProperty('margin', '0');
+                    iframe.style.setProperty('overflow', 'hidden');
+                    div.appendChild(iframe);
+                    const iframeDoc = iframe.contentWindow.document;
+                    pbjs.renderAd(iframeDoc, winningBid.adId);
+                }
+            }
+        }
+
+    </script>
+    <script defer>
+        var pbjs = pbjs || {};
+        pbjs.que = pbjs.que || [];
+
+        pbjs.que.push(function () {
+            pbjs.setConfig({
+                s2sConfig: [{
+                    accountId: '1',
+                    adapter: "prebidServer",
+                    enabled: true,
+                    endpoint: {
+                        noP1Consent: "http://localhost:8000/openrtb2/auction",
+                        p1Consent: 'http://localhost:8000/openrtb2/auction',
+                    },
+                    timeout: 1000,
+                    debug: true,
+                    allowUnknownBidderCodes: true
+                }],
+            })
+
+            pbjs.addAdUnits(adUnits);
+            pbjs.requestBids({
+                bidsBackHandler: renderAllAdUnits
+            })
+        });
+    </script>
+
+</head>
+
+<body>
+    <h1>001_banner</h1>
+    <p class="description">
+        This demo uses Prebid.js to interact with Prebid Server to fill the ad slot <strong>test-div-1</strong>
+        The auction request to Prebid Server uses a stored request, which in turn links to a stored response.</br>
+        Look for the <strong>/auction</strong> request in your browser's developer tool to inspect the request
+        and response.
+    </p>
+    <h2>&#8595I am ad unit test-div-1 &#8595</h2>
+        <div id="test-div-1">
+        </div>
+</body>
+</html>

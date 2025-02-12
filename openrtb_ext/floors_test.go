@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -327,7 +327,7 @@ func TestFloorRulesDeepCopy(t *testing.T) {
 				Data: &PriceFloorData{
 					Currency:            "INR",
 					SkipRate:            0,
-					FloorsSchemaVersion: "2",
+					FloorsSchemaVersion: 2,
 					ModelTimestamp:      123,
 					ModelGroups: []PriceFloorModelGroup{
 						{
@@ -370,7 +370,7 @@ func TestFloorRulesDeepCopy(t *testing.T) {
 				Data: &PriceFloorData{
 					Currency:            "INR",
 					SkipRate:            0,
-					FloorsSchemaVersion: "2",
+					FloorsSchemaVersion: 2,
 					ModelTimestamp:      123,
 					ModelGroups: []PriceFloorModelGroup{
 						{

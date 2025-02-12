@@ -1,8 +1,8 @@
 package ortb2blocking
 
 import (
-	"github.com/prebid/prebid-server/v2/hooks/hookanalytics"
-	"github.com/prebid/prebid-server/v2/hooks/hookstage"
+	"github.com/prebid/prebid-server/v3/hooks/hookanalytics"
+	"github.com/prebid/prebid-server/v3/hooks/hookstage"
 )
 
 const enforceBlockingTag = "enforce_blocking"

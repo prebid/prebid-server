@@ -7,12 +7,13 @@ import (
 	"strconv"
 	"text/template"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/macros"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -38,14 +39,14 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	}
 
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(request.Imp[0].Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(request.Imp[0].Ext, &bidderExt); err != nil {
 		return nil, []error{&errortypes.BadInput{
 			Message: fmt.Sprintf("Invalid imp.ext for impression index %d. Error Infomation: %s", 0, err.Error()),
 		}}
 	}
 
 	var impExt openrtb_ext.ImpExtLemmaDigital
-	if err := json.Unmarshal(bidderExt.Bidder, &impExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &impExt); err != nil {
 		return nil, []error{&errortypes.BadInput{
 			Message: fmt.Sprintf("Invalid imp.ext.bidder for impression index %d. Error Infomation: %s", 0, err.Error()),
 		}}
@@ -65,6 +66,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		Method: "POST",
 		Uri:    endpoint,
 		Body:   requestJSON,
+		ImpIDs: openrtb_ext.GetImpIDs(request.Imp),
 	}
 
 	return []*adapters.RequestData{requestData}, nil
@@ -80,7 +82,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	var response openrtb2.BidResponse
-	if err := json.Unmarshal(responseData.Body, &response); err != nil {
+	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}
 
@@ -93,15 +95,14 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	if len(response.Cur) > 0 {
 		bidResponse.Currency = response.Cur
 	}
-	for _, seatBid := range response.SeatBid {
-		for i := range seatBid.Bid {
+	if len(response.SeatBid) > 0 {
+		for i := range response.SeatBid[0].Bid {
 			b := &adapters.TypedBid{
-				Bid:     &seatBid.Bid[i],
+				Bid:     &response.SeatBid[0].Bid[i],
 				BidType: bidType,
 			}
 			bidResponse.Bids = append(bidResponse.Bids, b)
 		}
-		break
 	}
 
 	return bidResponse, nil

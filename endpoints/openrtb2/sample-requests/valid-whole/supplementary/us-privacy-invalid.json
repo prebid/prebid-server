@@ -35,9 +35,7 @@
       }
     ],
     "regs": {
-      "ext": {
-        "us_privacy": "{invalid}"
-      }
+      "us_privacy": "{invalid}"
     },
     "user": {
       "ext": {}

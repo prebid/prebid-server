@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "MinuteMedia Adapter Params",
+  "description": "A schema which validates params accepted by the MinuteMedia adapter",
+  "type": "object",
+  "properties": {
+    "org": {
+      "type": "string",
+      "description": "The organization ID.",
+      "minLength": 1
+    }
+  },
+  "required": ["org"]
+}

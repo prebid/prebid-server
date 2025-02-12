@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
-	"github.com/prebid/prebid-server/v2/util/timeutil"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/timeutil"
 )
 
 // RateConverter holds the currencies conversion rates dictionary
@@ -138,8 +138,7 @@ func (rc *RateConverter) checkStaleRates() bool {
 
 // GetInfo returns setup information about the converter
 func (rc *RateConverter) GetInfo() ConverterInfo {
-	var rates *map[string]map[string]float64
-	rates = rc.Rates().GetRates()
+	var rates *map[string]map[string]float64 = rc.Rates().GetRates()
 	return converterInfo{
 		source:      rc.syncSourceURL,
 		lastUpdated: rc.LastUpdated(),

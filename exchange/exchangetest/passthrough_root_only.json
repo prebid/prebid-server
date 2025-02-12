@@ -102,7 +102,6 @@
                             "ext": {
                                 "prebid": {
                                     "meta": {
-                                        "adaptercode": "appnexus"
                                     },
                                     "type": "video"
                                 },

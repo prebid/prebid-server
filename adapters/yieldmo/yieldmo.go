@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type YieldmoAdapter struct {
@@ -36,23 +38,10 @@ type ExtBid struct {
 
 func (a *YieldmoAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
-	var adapterRequests []*adapters.RequestData
 
-	adapterReq, errors := a.makeRequest(request)
-	if adapterReq != nil {
-		adapterRequests = append(adapterRequests, adapterReq)
-	}
-	errs = append(errs, errors...)
+	preprocessErrors := preprocess(request, reqInfo)
 
-	return adapterRequests, errors
-}
-
-func (a *YieldmoAdapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, []error) {
-	var errs []error
-
-	if err := preprocess(request); err != nil {
-		errs = append(errs, err)
-	}
+	errs = append(errs, preprocessErrors...)
 
 	// Last Step
 	reqJSON, err := json.Marshal(request)
@@ -64,32 +53,47 @@ func (a *YieldmoAdapter) makeRequest(request *openrtb2.BidRequest) (*adapters.Re
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 
-	return &adapters.RequestData{
+	return []*adapters.RequestData{{
 		Method:  "POST",
 		Uri:     a.endpoint,
 		Body:    reqJSON,
 		Headers: headers,
-	}, errs
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
+	}}, errs
 }
 
 // Mutate the request to get it ready to send to yieldmo.
-func preprocess(request *openrtb2.BidRequest) error {
+func preprocess(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) []error {
+	var errs []error
+
 	for i := 0; i < len(request.Imp); i++ {
 		var imp = request.Imp[i]
 		var bidderExt ExtImpBidderYieldmo
 
-		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-			return &errortypes.BadInput{
-				Message: err.Error(),
+		if imp.BidFloor > 0 && imp.BidFloorCur != "" && strings.ToUpper(imp.BidFloorCur) != "USD" {
+			floor, err := reqInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, "USD")
+			if err != nil {
+				errs = append(errs, &errortypes.BadInput{
+					Message: fmt.Sprintf("Unable to convert provided bid floor currency from %s to USD", imp.BidFloorCur),
+				})
+			} else {
+				request.Imp[i].BidFloorCur = "USD"
+				request.Imp[i].BidFloor = floor
 			}
+		}
+
+		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
+			errs = append(errs, &errortypes.BadInput{
+				Message: err.Error(),
+			})
 		}
 
 		var yieldmoExt openrtb_ext.ExtImpYieldmo
 
-		if err := json.Unmarshal(bidderExt.Bidder, &yieldmoExt); err != nil {
-			return &errortypes.BadInput{
+		if err := jsonutil.Unmarshal(bidderExt.Bidder, &yieldmoExt); err != nil {
+			errs = append(errs, &errortypes.BadInput{
 				Message: err.Error(),
-			}
+			})
 		}
 
 		var impExt Ext
@@ -103,15 +107,15 @@ func preprocess(request *openrtb2.BidRequest) error {
 
 		impExtJSON, err := json.Marshal(impExt)
 		if err != nil {
-			return &errortypes.BadInput{
+			errs = append(errs, &errortypes.BadInput{
 				Message: err.Error(),
-			}
+			})
 		}
 
 		request.Imp[i].Ext = impExtJSON
 	}
 
-	return nil
+	return errs
 }
 
 // MakeBids make the bids for the bid response.
@@ -134,7 +138,7 @@ func (a *YieldmoAdapter) MakeBids(internalRequest *openrtb2.BidRequest, external
 
 	var bidResp openrtb2.BidResponse
 
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
@@ -167,7 +171,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 // Retrieve the media type corresponding to the bid from the bid.ext object
 func getMediaTypeForImp(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 	var bidExt ExtBid
-	if err := json.Unmarshal(bid.Ext, &bidExt); err != nil {
+	if err := jsonutil.Unmarshal(bid.Ext, &bidExt); err != nil {
 		return "", &errortypes.BadInput{Message: err.Error()}
 	}
 

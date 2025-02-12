@@ -1,0 +1,22 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "native": {
+          "request": ""
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+  ],
+  "expectedBidResponses": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "invalid imp.ext, expect { or n, but found",
+      "comparison": "startswith"
+    }
+  ]
+}

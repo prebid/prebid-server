@@ -10,17 +10,17 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 
 	"github.com/julienschmidt/httprouter"
-	accountService "github.com/prebid/prebid-server/v2/account"
-	"github.com/prebid/prebid-server/v2/analytics"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/metrics"
-	"github.com/prebid/prebid-server/v2/privacy"
-	"github.com/prebid/prebid-server/v2/stored_requests"
-	"github.com/prebid/prebid-server/v2/util/httputil"
+	accountService "github.com/prebid/prebid-server/v3/account"
+	"github.com/prebid/prebid-server/v3/analytics"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/metrics"
+	"github.com/prebid/prebid-server/v3/privacy"
+	"github.com/prebid/prebid-server/v3/stored_requests"
+	"github.com/prebid/prebid-server/v3/util/httputil"
 )
 
 const (
@@ -70,7 +70,7 @@ func (e *eventEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprou
 		w.WriteHeader(http.StatusBadRequest)
 
 		for _, err := range errs {
-			w.Write([]byte(fmt.Sprintf("invalid request: %s\n", err.Error())))
+			fmt.Fprintf(w, "invalid request: %s\n", err.Error())
 		}
 
 		return
@@ -81,7 +81,7 @@ func (e *eventEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprou
 
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(fmt.Sprintf("Account '%s' is required query parameter and can't be empty", AccountIdParameter)))
+		fmt.Fprintf(w, "Account '%s' is required query parameter and can't be empty", AccountIdParameter)
 		return
 	}
 	eventRequest.AccountID = accountId
@@ -105,7 +105,7 @@ func (e *eventEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprou
 		w.WriteHeader(status)
 
 		for _, message := range messages {
-			w.Write([]byte(fmt.Sprintf("Invalid request: %s\n", message)))
+			fmt.Fprintf(w, "Invalid request: %s\n", message)
 		}
 		return
 	}
@@ -113,7 +113,7 @@ func (e *eventEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprou
 	// Check if events are enabled for the account
 	if !account.Events.Enabled {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(fmt.Sprintf("Account '%s' doesn't support events", eventRequest.AccountID)))
+		fmt.Fprintf(w, "Account '%s' doesn't support events", eventRequest.AccountID)
 		return
 	}
 
@@ -216,7 +216,7 @@ func HandleAccountServiceErrors(errs []error) (status int, messages []string) {
 
 		errCode := errortypes.ReadCode(er)
 
-		if errCode == errortypes.BlacklistedAppErrorCode || errCode == errortypes.AccountDisabledErrorCode {
+		if errCode == errortypes.BlockedAppErrorCode || errCode == errortypes.AccountDisabledErrorCode {
 			status = http.StatusServiceUnavailable
 		}
 		if errCode == errortypes.MalformedAcctErrorCode {

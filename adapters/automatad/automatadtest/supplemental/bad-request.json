@@ -52,7 +52,8 @@
 					"site": {
 						"id": "123"
 					}
-				}
+				},
+				"impIDs":["test-banner-imp-id"]
 			},
 			"mockResponse": {
 				"status": 400,

@@ -1,0 +1,233 @@
+{
+  "mockBidRequest": {
+    "id": "request_id",
+    "imp": [
+      {
+        "id": "invalid_width",
+        "banner": {
+          "w": 0,
+          "h": 600
+        },
+        "ext": {
+          "bidder": {
+            "page_id": 111,
+            "imp_id": 1
+          }
+        }
+      },
+      {
+        "id": "invalid_height",
+        "banner": {
+          "w": 400,
+          "h": 0
+        },
+        "ext": {
+          "bidder": {
+            "page_id": 222,
+            "imp_id": 2
+          }
+        }
+      },
+      {
+        "id": "invalid_size",
+        "banner": {
+          "w": 0,
+          "h": 0
+        },
+        "ext": {
+          "bidder": {
+            "page_id": 222,
+            "imp_id": 3
+          }
+        }
+      },
+      {
+        "id": "invalid_no_size_no_formats",
+        "banner": {},
+        "ext": {
+          "bidder": {
+            "page_id": 222,
+            "imp_id": 5
+          }
+        }
+      },
+      {
+        "id": "invalid_size",
+        "banner": {
+          "w": 0,
+          "h": 0
+        },
+        "ext": {
+          "bidder": {
+            "page_id": 222,
+            "imp_id": 3
+          }
+        }
+      },
+      {
+        "id": "no_size_but_valid_formats",
+        "banner": {
+          "format": [
+            {
+              "w": 600,
+              "h": 500
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "page_id": 222,
+            "imp_id": 4
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "www.example.com",
+      "page": "http://www.example.com"
+    },
+    "cur": [
+      "USD"
+    ],
+    "device": {
+      "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36",
+      "ip": "127.0.0.1"
+    },
+    "tmax": 500
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bs-metadsp.yandex.ru/prebid/222?imp-id=4&ssp-cur=USD&ssp-id=10500&target-ref=www.example.com",
+        "headers": {
+          "User-Agent": [
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36"
+          ],
+          "X-Forwarded-For": [
+            "127.0.0.1"
+          ],
+          "X-Real-Ip": [
+            "127.0.0.1"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Referer": [
+            "http://www.example.com"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
+        "body": {
+          "id": "request_id",
+          "imp": [
+            {
+              "id": "no_size_but_valid_formats",
+              "banner": {
+                "w": 600,
+                "h": 500,
+                "format": [
+                  {
+                    "w": 600,
+                    "h": 500
+                  },
+                  {
+                    "w": 300,
+                    "h": 600
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "page_id": 222,
+                  "imp_id": 4
+                }
+              }
+            }
+          ],
+          "site": {
+            "domain": "www.example.com",
+            "page": "http://www.example.com"
+          },
+          "cur": [
+            "USD"
+          ],
+          "device": {
+            "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36",
+            "ip": "127.0.0.1"
+          },
+          "tmax": 500
+        },
+        "impIDs":["no_size_but_valid_formats"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "headers": {},
+        "body": {
+          "id": "request_id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid_id4",
+                  "impid": "no_size_but_valid_formats",
+                  "price": 1.25,
+                  "crid": "crid",
+                  "adm": "adm001",
+                  "h": 800,
+                  "w": 400
+                }
+              ]
+            }
+          ],
+          "bidid": "bid_id"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "bid_id4",
+            "impid": "no_size_but_valid_formats",
+            "price": 1.25,
+            "adm": "adm001",
+            "crid": "crid",
+            "w": 400,
+            "h": 800
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Invalid size",
+      "comparison": "regex"
+    },
+    {
+      "value": "Invalid size",
+      "comparison": "regex"
+    },
+    {
+      "value": "Invalid size",
+      "comparison": "regex"
+    },
+    {
+      "value": "Invalid size",
+      "comparison": "regex"
+    },
+    {
+      "value": "Invalid size",
+      "comparison": "regex"
+    }
+  ]
+}

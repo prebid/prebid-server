@@ -88,7 +88,6 @@
                 "origbidcpm": 0.01,
                 "prebid": {
                   "meta": {
-                    "adaptercode": "appnexus"
                   },
                   "type": "banner",
                   "targeting": {

@@ -1,7 +1,7 @@
 {
     "expectedMakeRequestsErrors": [{
-      "value": "Invalid imp.ext.bidder for impression index 0. Error Infomation: json: cannot unmarshal string into Go struct field ImpExtLemmaDigital.pid of type int",
-      "comparison": "literal"
+      "value": "Invalid imp.ext.bidder for impression index 0. Error Infomation: cannot unmarshal openrtb_ext.ImpExtLemmaDigital.PublisherId: unexpected character",
+      "comparison": "startswith"
     }],
     "mockBidRequest": {
       "app": {

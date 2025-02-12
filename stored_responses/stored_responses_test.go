@@ -6,76 +6,10 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
-
-func TestRemoveImpsWithStoredResponses(t *testing.T) {
-	bidRespId1 := json.RawMessage(`{"id": "resp_id1"}`)
-	testCases := []struct {
-		description        string
-		reqIn              *openrtb2.BidRequest
-		storedBidResponses ImpBidderStoredResp
-		expectedImps       []openrtb2.Imp
-	}{
-		{
-			description: "request with imps and stored bid response for this imp",
-			reqIn: &openrtb2.BidRequest{Imp: []openrtb2.Imp{
-				{ID: "imp-id1"},
-			}},
-			storedBidResponses: ImpBidderStoredResp{
-				"imp-id1": {"appnexus": bidRespId1},
-			},
-			expectedImps: nil,
-		},
-		{
-			description: "request with imps and stored bid response for one of these imp",
-			reqIn: &openrtb2.BidRequest{Imp: []openrtb2.Imp{
-				{ID: "imp-id1"},
-				{ID: "imp-id2"},
-			}},
-			storedBidResponses: ImpBidderStoredResp{
-				"imp-id1": {"appnexus": bidRespId1},
-			},
-			expectedImps: []openrtb2.Imp{
-				{
-					ID: "imp-id2",
-				},
-			},
-		},
-		{
-			description: "request with imps and stored bid response for both of these imp",
-			reqIn: &openrtb2.BidRequest{Imp: []openrtb2.Imp{
-				{ID: "imp-id1"},
-				{ID: "imp-id2"},
-			}},
-			storedBidResponses: ImpBidderStoredResp{
-				"imp-id1": {"appnexus": bidRespId1},
-				"imp-id2": {"appnexus": bidRespId1},
-			},
-			expectedImps: nil,
-		},
-		{
-			description: "request with imps and no stored bid responses",
-			reqIn: &openrtb2.BidRequest{Imp: []openrtb2.Imp{
-				{ID: "imp-id1"},
-				{ID: "imp-id2"},
-			}},
-			storedBidResponses: nil,
-
-			expectedImps: []openrtb2.Imp{
-				{ID: "imp-id1"},
-				{ID: "imp-id2"},
-			},
-		},
-	}
-	for _, testCase := range testCases {
-		request := testCase.reqIn
-		removeImpsWithStoredResponses(request, testCase.storedBidResponses)
-		assert.Equal(t, testCase.expectedImps, request.Imp, "incorrect Impressions for testCase %s", testCase.description)
-	}
-}
 
 func TestBuildStoredBidResponses(t *testing.T) {
 	bidRespId1 := json.RawMessage(`{"id": "resp_id1"}`)
@@ -258,7 +192,7 @@ func TestProcessStoredAuctionAndBidResponsesErrors(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
 			rw := &openrtb_ext.RequestWrapper{BidRequest: &test.request}
-			_, _, _, errorList := ProcessStoredResponses(nil, rw, nil)
+			_, _, _, errorList := ProcessStoredResponses(context.TODO(), rw, nil)
 			assert.Equalf(t, test.expectedErrorList, errorList, "Error doesn't match: %s\n", test.description)
 		})
 	}
@@ -663,7 +597,7 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
 			rw := openrtb_ext.RequestWrapper{BidRequest: &test.request}
-			storedAuctionResponses, storedBidResponses, bidderImpReplaceImpId, errorList := ProcessStoredResponses(nil, &rw, fetcher)
+			storedAuctionResponses, storedBidResponses, bidderImpReplaceImpId, errorList := ProcessStoredResponses(context.TODO(), &rw, fetcher)
 			assert.Equal(t, test.expectedStoredAuctionResponses, storedAuctionResponses)
 			assert.Equal(t, test.expectedStoredBidResponses, storedBidResponses)
 			assert.Equal(t, test.expectedBidderImpReplaceImpID, bidderImpReplaceImpId)
@@ -866,7 +800,7 @@ func TestProcessStoredResponsesNotFoundResponse(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
 			rw := openrtb_ext.RequestWrapper{BidRequest: &test.request}
-			_, _, _, errorList := ProcessStoredResponses(nil, &rw, fetcher)
+			_, _, _, errorList := ProcessStoredResponses(context.TODO(), &rw, fetcher)
 			for _, err := range test.expectedErrors {
 				assert.Contains(t, errorList, err)
 			}

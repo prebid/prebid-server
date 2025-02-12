@@ -21,8 +21,8 @@
 
   "expectedMakeRequestsErrors": [
     {
-      "value": "Cannot Resolve host or sourceId: unexpected end of JSON input",
-      "comparison": "literal"
+      "value": "Cannot Resolve host or sourceId: expect { or n, but found",
+      "comparison": "startswith"
     } 
   ]
 

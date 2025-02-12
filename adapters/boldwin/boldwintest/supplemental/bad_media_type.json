@@ -44,7 +44,8 @@
                     "ip": "123.123.123.123",
                     "ifa": "sdjfksdf-dfsds-dsdg-dsgg"
                 }
-            }
+            },
+            "impIDs":["test-imp-id"]
 		},
 		"mockResponse": {
 			"status": 200,
@@ -79,7 +80,7 @@
     }],
     "expectedMakeBidsErrors": [
         {
-          "value": "Failed to find impression \"test-imp-id\"",
+          "value": "Unable to fetch mediaType in multi-format: test-imp-id",
           "comparison": "literal"
         }
     ]

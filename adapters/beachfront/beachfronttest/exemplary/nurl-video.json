@@ -59,7 +59,8 @@
           "cur": [
             "USD"
           ]
-        }
+        },
+        "impIDs":["video1"]
       },
       "mockResponse": {
         "status": 200,

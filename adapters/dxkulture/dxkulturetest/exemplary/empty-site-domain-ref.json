@@ -86,7 +86,8 @@
           "site": {
             "page": "http://site.com/page"
           }
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,

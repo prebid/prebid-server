@@ -8,9 +8,10 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/v2/currency"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/currency"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 )
 
 const (
@@ -291,8 +292,8 @@ func getSizeValue(imp *openrtb2.Imp) string {
 	if imp.Banner != nil {
 		width, height = getBannerSize(imp)
 	} else if imp.Video != nil {
-		width = imp.Video.W
-		height = imp.Video.H
+		width = ptrutil.ValueOrDefault(imp.Video.W)
+		height = ptrutil.ValueOrDefault(imp.Video.H)
 	}
 
 	if width != 0 && height != 0 {

@@ -121,7 +121,8 @@
           "user": {
             "buyeruid": "test-buyer-user-id"
           }
-        }
+        },
+        "impIDs":["banner-1","banner-2","banner-3"]
       },
       "mockResponse": {
         "status": 200,

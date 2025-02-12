@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/metrics"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/metrics"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prometheus/client_golang/prometheus"
 	promCollector "github.com/prometheus/client_golang/prometheus/collectors"
 )
@@ -70,6 +70,7 @@ type Metrics struct {
 	adapterReusedConnections              *prometheus.CounterVec
 	adapterCreatedConnections             *prometheus.CounterVec
 	adapterConnectionWaitTime             *prometheus.HistogramVec
+	adapterScrubbedBuyerUIDs              *prometheus.CounterVec
 	adapterGDPRBlockedRequests            *prometheus.CounterVec
 	adapterBidResponseValidationSizeError *prometheus.CounterVec
 	adapterBidResponseValidationSizeWarn  *prometheus.CounterVec
@@ -334,6 +335,12 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"Count of total requests to Prebid Server where the LMT flag was set by source",
 		[]string{sourceLabel})
 
+	if !metrics.metricsDisabled.AdapterBuyerUIDScrubbed {
+		metrics.adapterScrubbedBuyerUIDs = newCounter(cfg, reg,
+			"adapter_buyeruids_scrubbed",
+			"Count of total bidder requests with a scrubbed buyeruid due to a privacy policy",
+			[]string{adapterLabel})
+	}
 	if !metrics.metricsDisabled.AdapterGDPRRequestBlocked {
 		metrics.adapterGDPRBlockedRequests = newCounter(cfg, reg,
 			"adapter_gdpr_requests_blocked",
@@ -950,6 +957,16 @@ func (m *Metrics) RecordRequestPrivacy(privacy metrics.PrivacyLabels) {
 			sourceLabel: sourceRequest,
 		}).Inc()
 	}
+}
+
+func (m *Metrics) RecordAdapterBuyerUIDScrubbed(adapterName openrtb_ext.BidderName) {
+	if m.metricsDisabled.AdapterBuyerUIDScrubbed {
+		return
+	}
+
+	m.adapterScrubbedBuyerUIDs.With(prometheus.Labels{
+		adapterLabel: strings.ToLower(string(adapterName)),
+	}).Inc()
 }
 
 func (m *Metrics) RecordAdapterGDPRRequestBlocked(adapterName openrtb_ext.BidderName) {

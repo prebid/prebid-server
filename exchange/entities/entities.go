@@ -1,8 +1,8 @@
 package entities
 
 import (
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 // PbsOrtbSeatBid is a SeatBid returned by an AdaptedBidder.
@@ -50,4 +50,5 @@ type PbsOrtbBid struct {
 	OriginalBidCPM    float64
 	OriginalBidCur    string
 	TargetBidderCode  string
+	AdapterCode       openrtb_ext.BidderName
 }

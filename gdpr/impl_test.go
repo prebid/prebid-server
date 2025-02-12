@@ -9,8 +9,8 @@ import (
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/go-gdpr/vendorlist"
 	"github.com/prebid/go-gdpr/vendorlist2"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -335,9 +335,8 @@ func TestAllowActivities(t *testing.T) {
 		perms.gdprSignal = tt.gdpr
 		perms.publisherID = tt.publisherID
 
-		permissions, err := perms.AuctionActivitiesAllowed(context.Background(), tt.bidderCoreName, tt.bidderName)
+		permissions := perms.AuctionActivitiesAllowed(context.Background(), tt.bidderCoreName, tt.bidderName)
 
-		assert.Nil(t, err, tt.description)
 		assert.Equal(t, tt.passID, permissions.PassID, tt.description)
 	}
 }
@@ -350,7 +349,7 @@ func TestAllowActivitiesBidderWithoutGVLID(t *testing.T) {
 	tests := []struct {
 		name                    string
 		enforceAlgoID           config.TCF2EnforcementAlgo
-		vendorExceptions        map[openrtb_ext.BidderName]struct{}
+		vendorExceptions        map[string]struct{}
 		basicEnforcementVendors map[string]struct{}
 		consent                 string
 		allowBidRequest         bool
@@ -364,7 +363,7 @@ func TestAllowActivitiesBidderWithoutGVLID(t *testing.T) {
 		{
 			name:             "full_enforcement_vendor_exception_user_consents_to_purpose_2",
 			enforceAlgoID:    config.TCF2FullEnforcement,
-			vendorExceptions: map[openrtb_ext.BidderName]struct{}{bidderWithoutGVLID: {}},
+			vendorExceptions: map[string]struct{}{string(bidderWithoutGVLID): {}},
 			consent:          purpose2Consent,
 			allowBidRequest:  true,
 			passID:           true,
@@ -375,7 +374,7 @@ func TestAllowActivitiesBidderWithoutGVLID(t *testing.T) {
 		},
 		{
 			name:             "basic_enforcement_vendor_exception_user_consents_to_purpose_2",
-			vendorExceptions: map[openrtb_ext.BidderName]struct{}{bidderWithoutGVLID: {}},
+			vendorExceptions: map[string]struct{}{string(bidderWithoutGVLID): {}},
 			consent:          purpose2Consent,
 			allowBidRequest:  true,
 			passID:           true,
@@ -437,8 +436,7 @@ func TestAllowActivitiesBidderWithoutGVLID(t *testing.T) {
 				purposeEnforcerBuilder: NewPurposeEnforcerBuilder(&tcf2AggConfig),
 			}
 
-			permissions, err := perms.AuctionActivitiesAllowed(context.Background(), bidderWithoutGVLID, bidderWithoutGVLID)
-			assert.NoError(t, err)
+			permissions := perms.AuctionActivitiesAllowed(context.Background(), bidderWithoutGVLID, bidderWithoutGVLID)
 			assert.Equal(t, tt.allowBidRequest, permissions.AllowBidRequest)
 			assert.Equal(t, tt.passID, permissions.PassID)
 		})
@@ -658,8 +656,7 @@ func TestAllowActivitiesGeoAndID(t *testing.T) {
 		perms.consent = td.consent
 		perms.purposeEnforcerBuilder = NewPurposeEnforcerBuilder(&tcf2AggConfig)
 
-		permissions, err := perms.AuctionActivitiesAllowed(context.Background(), td.bidderCoreName, td.bidder)
-		assert.NoErrorf(t, err, "Error processing AuctionActivitiesAllowed for %s", td.description)
+		permissions := perms.AuctionActivitiesAllowed(context.Background(), td.bidderCoreName, td.bidder)
 		assert.EqualValuesf(t, td.allowBidRequest, permissions.AllowBidRequest, "AllowBid failure on %s", td.description)
 		assert.EqualValuesf(t, td.passGeo, permissions.PassGeo, "PassGeo failure on %s", td.description)
 		assert.EqualValuesf(t, td.passID, permissions.PassID, "PassID failure on %s", td.description)
@@ -695,8 +692,7 @@ func TestAllowActivitiesWhitelist(t *testing.T) {
 	}
 
 	// Assert that an item that otherwise would not be allowed PI access, gets approved because it is found in the GDPR.NonStandardPublishers array
-	permissions, err := perms.AuctionActivitiesAllowed(context.Background(), openrtb_ext.BidderAppnexus, openrtb_ext.BidderAppnexus)
-	assert.NoErrorf(t, err, "Error processing AuctionActivitiesAllowed")
+	permissions := perms.AuctionActivitiesAllowed(context.Background(), openrtb_ext.BidderAppnexus, openrtb_ext.BidderAppnexus)
 	assert.EqualValuesf(t, true, permissions.PassGeo, "PassGeo failure")
 	assert.EqualValuesf(t, true, permissions.PassID, "PassID failure")
 }
@@ -767,8 +763,7 @@ func TestAllowActivitiesPubRestrict(t *testing.T) {
 		perms.aliasGVLIDs = td.aliasGVLIDs
 		perms.consent = td.consent
 
-		permissions, err := perms.AuctionActivitiesAllowed(context.Background(), td.bidderCoreName, td.bidder)
-		assert.NoErrorf(t, err, "Error processing AuctionActivitiesAllowed for %s", td.description)
+		permissions := perms.AuctionActivitiesAllowed(context.Background(), td.bidderCoreName, td.bidder)
 		assert.EqualValuesf(t, td.passGeo, permissions.PassGeo, "PassGeo failure on %s", td.description)
 		assert.EqualValuesf(t, td.passID, permissions.PassID, "PassID failure on %s", td.description)
 	}
@@ -1101,8 +1096,7 @@ func TestAllowActivitiesBidRequests(t *testing.T) {
 		perms.cfg = &tcf2AggConfig
 		perms.purposeEnforcerBuilder = NewPurposeEnforcerBuilder(&tcf2AggConfig)
 
-		permissions, err := perms.AuctionActivitiesAllowed(context.Background(), td.bidderCoreName, td.bidder)
-		assert.NoErrorf(t, err, "Error processing AuctionActivitiesAllowed for %s", td.description)
+		permissions := perms.AuctionActivitiesAllowed(context.Background(), td.bidderCoreName, td.bidder)
 		assert.EqualValuesf(t, td.allowBidRequest, permissions.AllowBidRequest, "AllowBid failure on %s", td.description)
 		assert.EqualValuesf(t, td.passGeo, permissions.PassGeo, "PassGeo failure on %s", td.description)
 		assert.EqualValuesf(t, td.passID, permissions.PassID, "PassID failure on %s", td.description)
@@ -1110,12 +1104,13 @@ func TestAllowActivitiesBidRequests(t *testing.T) {
 }
 
 func TestAllowActivitiesVendorException(t *testing.T) {
+	appnexus := string(openrtb_ext.BidderAppnexus)
 	noPurposeOrVendorConsentAndPubRestrictsP2 := "CPF_61ePF_61eFxAAAENAiCAAAAAAAAAAAAAACEAAAACEAAgAgAA"
 	noPurposeOrVendorConsentAndPubRestrictsNone := "CPF_61ePF_61eFxAAAENAiCAAAAAAAAAAAAAACEAAAAA"
 
 	testDefs := []struct {
 		description           string
-		p2VendorExceptionMap  map[openrtb_ext.BidderName]struct{}
+		p2VendorExceptionMap  map[string]struct{}
 		sf1VendorExceptionMap map[openrtb_ext.BidderName]struct{}
 		bidder                openrtb_ext.BidderName
 		consent               string
@@ -1126,7 +1121,7 @@ func TestAllowActivitiesVendorException(t *testing.T) {
 	}{
 		{
 			description:          "Bid/ID blocked by publisher - p2 enabled with p2 vendor exception, pub restricts p2 for vendor",
-			p2VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderAppnexus: {}},
+			p2VendorExceptionMap: map[string]struct{}{appnexus: {}},
 			bidder:               openrtb_ext.BidderAppnexus,
 			bidderCoreName:       openrtb_ext.BidderAppnexus,
 			consent:              noPurposeOrVendorConsentAndPubRestrictsP2,
@@ -1136,7 +1131,7 @@ func TestAllowActivitiesVendorException(t *testing.T) {
 		},
 		{
 			description:           "Bid/ID allowed by vendor exception - p2 enabled with p2 vendor exception, pub restricts none",
-			p2VendorExceptionMap:  map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderAppnexus: {}},
+			p2VendorExceptionMap:  map[string]struct{}{appnexus: {}},
 			sf1VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 			bidder:                openrtb_ext.BidderAppnexus,
 			bidderCoreName:        openrtb_ext.BidderAppnexus,
@@ -1147,7 +1142,7 @@ func TestAllowActivitiesVendorException(t *testing.T) {
 		},
 		{
 			description:           "Geo blocked - sf1 enabled but no consent",
-			p2VendorExceptionMap:  map[openrtb_ext.BidderName]struct{}{},
+			p2VendorExceptionMap:  map[string]struct{}{},
 			sf1VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 			bidder:                openrtb_ext.BidderAppnexus,
 			bidderCoreName:        openrtb_ext.BidderAppnexus,
@@ -1158,7 +1153,7 @@ func TestAllowActivitiesVendorException(t *testing.T) {
 		},
 		{
 			description:           "Geo allowed by vendor exception - sf1 enabled with sf1 vendor exception",
-			p2VendorExceptionMap:  map[openrtb_ext.BidderName]struct{}{},
+			p2VendorExceptionMap:  map[string]struct{}{},
 			sf1VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderAppnexus: {}},
 			bidder:                openrtb_ext.BidderAppnexus,
 			bidderCoreName:        openrtb_ext.BidderAppnexus,
@@ -1195,8 +1190,7 @@ func TestAllowActivitiesVendorException(t *testing.T) {
 		perms.cfg = &tcf2AggConfig
 		perms.purposeEnforcerBuilder = NewPurposeEnforcerBuilder(&tcf2AggConfig)
 
-		permissions, err := perms.AuctionActivitiesAllowed(context.Background(), td.bidderCoreName, td.bidder)
-		assert.NoErrorf(t, err, "Error processing AuctionActivitiesAllowed for %s", td.description)
+		permissions := perms.AuctionActivitiesAllowed(context.Background(), td.bidderCoreName, td.bidder)
 		assert.EqualValuesf(t, td.allowBidRequest, permissions.AllowBidRequest, "AllowBid failure on %s", td.description)
 		assert.EqualValuesf(t, td.passGeo, permissions.PassGeo, "PassGeo failure on %s", td.description)
 		assert.EqualValuesf(t, td.passID, permissions.PassID, "PassID failure on %s", td.description)
@@ -1204,33 +1198,34 @@ func TestAllowActivitiesVendorException(t *testing.T) {
 }
 
 func TestBidderSyncAllowedVendorException(t *testing.T) {
+	appnexus := string(openrtb_ext.BidderAppnexus)
 	noPurposeOrVendorConsentAndPubRestrictsP1 := "CPF_61ePF_61eFxAAAENAiCAAAAAAAAAAAAAAQAAAAAAAAAAIIACACA"
 	noPurposeOrVendorConsentAndPubRestrictsNone := "CPF_61ePF_61eFxAAAENAiCAAAAAAAAAAAAAACEAAAAA"
 
 	testDefs := []struct {
 		description          string
-		p1VendorExceptionMap map[openrtb_ext.BidderName]struct{}
+		p1VendorExceptionMap map[string]struct{}
 		bidder               openrtb_ext.BidderName
 		consent              string
 		allowSync            bool
 	}{
 		{
 			description:          "Sync blocked by no consent - p1 enabled, no p1 vendor exception, pub restricts none",
-			p1VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			p1VendorExceptionMap: map[string]struct{}{},
 			bidder:               openrtb_ext.BidderAppnexus,
 			consent:              noPurposeOrVendorConsentAndPubRestrictsNone,
 			allowSync:            false,
 		},
 		{
 			description:          "Sync blocked by publisher - p1 enabled with p1 vendor exception, pub restricts p1 for vendor",
-			p1VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderAppnexus: {}},
+			p1VendorExceptionMap: map[string]struct{}{appnexus: {}},
 			bidder:               openrtb_ext.BidderAppnexus,
 			consent:              noPurposeOrVendorConsentAndPubRestrictsP1,
 			allowSync:            false,
 		},
 		{
 			description:          "Sync allowed by vendor exception - p1 enabled with p1 vendor exception, pub restricts none",
-			p1VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderAppnexus: {}},
+			p1VendorExceptionMap: map[string]struct{}{appnexus: {}},
 			bidder:               openrtb_ext.BidderAppnexus,
 			consent:              noPurposeOrVendorConsentAndPubRestrictsNone,
 			allowSync:            true,

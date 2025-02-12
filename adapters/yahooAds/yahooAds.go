@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 )
 
 type adapter struct {
@@ -32,7 +34,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 	for idx, imp := range request.Imp {
 		var bidderExt adapters.ExtImpBidder
-		err := json.Unmarshal(imp.Ext, &bidderExt)
+		err := jsonutil.Unmarshal(imp.Ext, &bidderExt)
 		if err != nil {
 			err = &errortypes.BadInput{
 				Message: fmt.Sprintf("imp #%d: ext.bidder not provided", idx),
@@ -42,7 +44,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		}
 
 		var yahooAdsExt openrtb_ext.ExtImpYahooAds
-		err = json.Unmarshal(bidderExt.Bidder, &yahooAdsExt)
+		err = jsonutil.Unmarshal(bidderExt.Bidder, &yahooAdsExt)
 		if err != nil {
 			err = &errortypes.BadInput{
 				Message: fmt.Sprintf("imp #%d: %s", idx, err.Error()),
@@ -80,6 +82,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			Uri:     a.URI,
 			Body:    reqJSON,
 			Headers: headers,
+			ImpIDs:  openrtb_ext.GetImpIDs(reqCopy.Imp),
 		})
 	}
 
@@ -99,7 +102,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	}
 
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Bad server response: %d.", err),
 		}}
@@ -175,12 +178,14 @@ func changeRequestForBidService(request *openrtb2.BidRequest, extension *openrtb
 			requestRegs.Ext = json.RawMessage("{}")
 		}
 		var regsExt map[string]json.RawMessage
-		err := json.Unmarshal(requestRegs.Ext, &regsExt)
+		err := jsonutil.Unmarshal(requestRegs.Ext, &regsExt)
 		if err != nil {
 			return err
 		}
 		regsExt["gpp"], err = json.Marshal(&requestRegs.GPP)
-
+		if err != nil {
+			return fmt.Errorf("failed to marshal requestRegs.GPP: %v", err)
+		}
 		if requestRegs.GPPSID != nil {
 			regsExt["gpp_sid"], err = json.Marshal(&requestRegs.GPPSID)
 			if err != nil {
@@ -212,8 +217,8 @@ func validateBanner(banner *openrtb2.Banner) error {
 		return fmt.Errorf("No sizes provided for Banner %v", banner.Format)
 	}
 
-	banner.W = openrtb2.Int64Ptr(banner.Format[0].W)
-	banner.H = openrtb2.Int64Ptr(banner.Format[0].H)
+	banner.W = ptrutil.ToPtr(banner.Format[0].W)
+	banner.H = ptrutil.ToPtr(banner.Format[0].H)
 
 	return nil
 }

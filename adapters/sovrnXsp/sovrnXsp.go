@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 )
 
 type adapter struct {
@@ -20,9 +21,9 @@ type adapter struct {
 // bidExt.CreativeType values.
 const (
 	creativeTypeBanner int = 0
-	creativeTypeVideo      = 1
-	creativeTypeNative     = 2
-	creativeTypeAudio      = 3
+	creativeTypeVideo  int = 1
+	creativeTypeNative int = 2
+	creativeTypeAudio  int = 3
 )
 
 // Bid response extension from XSP.
@@ -49,7 +50,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		}
 
 		var bidderExt adapters.ExtImpBidder
-		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			err = &errortypes.BadInput{
 				Message: fmt.Sprintf("imp #%d: ext.bidder not provided", idx),
 			}
@@ -58,7 +59,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		}
 
 		var xspExt openrtb_ext.ExtImpSovrnXsp
-		if err := json.Unmarshal(bidderExt.Bidder, &xspExt); err != nil {
+		if err := jsonutil.Unmarshal(bidderExt.Bidder, &xspExt); err != nil {
 			err = &errortypes.BadInput{
 				Message: fmt.Sprintf("imp #%d: %s", idx, err.Error()),
 			}
@@ -98,6 +99,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		Uri:     a.Endpoint,
 		Body:    requestJson,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, errors
 }
 
@@ -110,7 +112,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	var response openrtb2.BidResponse
-	if err := json.Unmarshal(responseData.Body, &response); err != nil {
+	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}
 
@@ -121,7 +123,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		for _, bid := range seatBid.Bid {
 			bid := bid
 			var ext bidExt
-			if err := json.Unmarshal(bid.Ext, &ext); err != nil {
+			if err := jsonutil.Unmarshal(bid.Ext, &ext); err != nil {
 				errors = append(errors, err)
 				continue
 			}

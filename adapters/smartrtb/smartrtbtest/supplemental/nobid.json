@@ -59,7 +59,8 @@
           "ext": {
             "pub_id": "test"
           }
-        }
+        },
+        "impIDs":["imp123"]
       },
       "mockResponse": {
         "status": 204

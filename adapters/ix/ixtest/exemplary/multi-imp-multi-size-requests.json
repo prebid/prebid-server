@@ -145,7 +145,8 @@
                             "id": "569749"
                         }
                     }
-                }
+                },
+                "impIDs":["test-imp-id-1","test-imp-id-2","test-imp-id-3"]
             },
             "mockResponse": {
                 "status": 200,

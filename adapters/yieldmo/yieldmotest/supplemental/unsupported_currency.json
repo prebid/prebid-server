@@ -1,0 +1,109 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "bidfloor": 1.0,
+        "bidfloorcur": "EUR",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "123"
+          }
+        }
+      }
+    ],
+    "site": {
+      "id": "fake-site-id"
+    },
+    "regs": {
+      "coppa": 1,
+      "ext": {
+        "gdpr": 1,
+        "us_privacy": "uspConsentString",
+        "gpp": "gppString",
+        "gpp_sid": [6]
+      }
+    },
+    "ext": {
+      "prebid": {
+        "currency": {
+          "rates": {
+            "EUR": {
+              "GBP": 0.85
+            }
+          }
+        }
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://ads.yieldmo.com/openrtb2",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "bidfloor": 1.0,
+              "bidfloorcur": "EUR",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "placement_id": "123"
+              }
+            }
+          ],
+          "site": {
+            "id": "fake-site-id"
+          },
+          "regs": {
+            "coppa": 1,
+            "ext": {
+              "gdpr": 1,
+              "us_privacy": "uspConsentString",
+              "gpp": "gppString",
+              "gpp_sid": [6]
+            }
+          },
+          "ext": {
+            "prebid": {
+              "currency": {
+                "rates": {
+                  "EUR": {
+                    "GBP": 0.85
+                  }
+                }
+              }
+            }
+          }
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 204
+      }
+    }
+  ],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Unable to convert provided bid floor currency from EUR to USD",
+      "comparison": "literal"
+    }
+  ]
+}

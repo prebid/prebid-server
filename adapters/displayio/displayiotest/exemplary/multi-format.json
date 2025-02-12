@@ -1,0 +1,147 @@
+{
+  "mockBidRequest": {
+    "id": "requestId10111011101110111011",
+    "app": {
+      "id": "1011"
+    },
+    "imp": [
+      {
+        "id": "impId10111011101110111011",
+        "tagid": "1011",
+        "ext": {
+          "bidder": {
+            "placementId": "1011",
+            "publisherId": "101",
+            "inventoryId": "1011"
+          }
+        },
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "protocols": [
+            2,
+            5
+          ],
+          "w": 640,
+          "h": 480
+        },
+        "bidfloor": 0.5,
+        "bidfloorcur": "USD"
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://adapter.endpoint/?macro=101",
+        "body": {
+          "id": "requestId10111011101110111011",
+          "app": {
+            "id": "1011"
+          },
+          "imp": [
+            {
+              "id": "impId10111011101110111011",
+              "tagid": "1011",
+              "ext": {
+                "bidder": {
+                  "placementId": "1011",
+                  "publisherId": "101",
+                  "inventoryId": "1011"
+                }
+              },
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "protocols": [
+                  2,
+                  5
+                ],
+                "w": 640,
+                "h": 480
+              },
+              "bidfloor": 0.5,
+              "bidfloorcur": "USD"
+            }
+          ],
+          "ext": {
+            "displayio": {
+              "placementId": "1011",
+              "inventoryId": "1011"
+            }
+          }
+        },
+        "impIDs": [
+          "impId10111011101110111011"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "bidid": "5778926625248726496",
+          "seatbid": [
+            {
+              "seat": "seat1",
+              "bid": [
+                {
+                  "id": "12345",
+                  "impid": "impId10111011101110111011",
+                  "price": 0.01,
+                  "adm": "<html/>",
+                  "adomain": [
+                    "domain.test"
+                  ],
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 1
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "12345",
+            "impid": "impId10111011101110111011",
+            "price": 0.01,
+            "adm": "<html/>",
+            "adomain": [
+              "domain.test"
+            ],
+            "w": 300,
+            "h": 250,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

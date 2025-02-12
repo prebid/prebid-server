@@ -3,7 +3,7 @@ package moduledeps
 import (
 	"net/http"
 
-	"github.com/prebid/prebid-server/v2/currency"
+	"github.com/prebid/prebid-server/v3/currency"
 )
 
 // ModuleDeps provides dependencies that custom modules may need for hooks execution.

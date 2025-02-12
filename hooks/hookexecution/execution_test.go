@@ -1,13 +1,14 @@
 package hookexecution
 
 import (
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/hooks/hookstage"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/privacy"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/hooks/hookstage"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/privacy"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -175,7 +176,7 @@ func TestHandleModuleActivitiesProcessedAuctionRequestPayload(t *testing.T) {
 			//check input payload didn't change
 			origInPayloadData := test.inPayloadData
 			activityControl := privacy.NewActivityControl(test.privacyConfig)
-			account := &config.Account{Privacy: config.AccountPrivacy{IPv6Config: config.IPv6{testIPv6ScrubBytes}}}
+			account := &config.Account{Privacy: config.AccountPrivacy{IPv6Config: config.IPv6{AnonKeepBits: testIPv6ScrubBytes}}}
 			newPayload := handleModuleActivities(test.hookCode, activityControl, test.inPayloadData, account)
 			assert.Equal(t, test.expectedPayloadData.Request.BidRequest, newPayload.Request.BidRequest)
 			assert.Equal(t, origInPayloadData, test.inPayloadData)

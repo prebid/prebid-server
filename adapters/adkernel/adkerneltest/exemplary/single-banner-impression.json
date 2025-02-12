@@ -48,7 +48,8 @@
             "buyeruid": "A-38327932832"
           },
           "cur": ["TYR"]
-        }
+        },
+        "impIDs":["adunit-1"]
       },
       "mockResponse": {
         "status": 200,
@@ -64,6 +65,7 @@
                   "adid": "19005",
                   "adm": "<!-- admarkup -->",
                   "cat": ["IAB2"],
+                  "mtype": 1,
                   "adomain": ["test.com"],
                   "h": 250,
                   "w": 300
@@ -92,7 +94,8 @@
             "crid": "19005",
             "w": 300,
             "h": 250,
-            "cat": ["IAB2"]
+            "cat": ["IAB2"],
+            "mtype": 1
           },
           "type": "banner"
         }

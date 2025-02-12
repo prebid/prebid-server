@@ -3,7 +3,7 @@ package metrics
 import (
 	"time"
 
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -154,6 +154,11 @@ func (me *MetricsEngineMock) RecordTimeoutNotice(success bool) {
 // RecordRequestPrivacy mock
 func (me *MetricsEngineMock) RecordRequestPrivacy(privacy PrivacyLabels) {
 	me.Called(privacy)
+}
+
+// RecordAdapterBuyerUIDScrubbed mock
+func (me *MetricsEngineMock) RecordAdapterBuyerUIDScrubbed(adapterName openrtb_ext.BidderName) {
+	me.Called(adapterName)
 }
 
 // RecordAdapterGDPRRequestBlocked mock

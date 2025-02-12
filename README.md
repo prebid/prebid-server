@@ -29,17 +29,22 @@ The quickest way to host Prebid Server is to deploy our [official Docker image](
 
 For deploying a fork, you can create a custom Docker container using the command:
 ``` bash
-docker build -t prebid-server .
+docker build --platform linux/amd64 -t prebid-server .
 ```
 or compile a standalone binary using the command:
 ``` bash
 go build .
 ```
+**Note:** if building from source there are a couple dependencies to be aware of: 
+1. *Compile-time*. Some modules ship native code that requires `cgo` (comes with the `go` compiler) being enabled - by default it is and environment variable `CGO_ENABLED=1` do NOT set it to `0`.
+2. *Compile-time*. `cgo` depends on the C-compiler, which usually is `gcc`, but can be changed by setting the value of `CC` env var, f.e. `CC=clang`.  On ubuntu `gcc` can be installed via `sudo apt-get install gcc`. 
+3. *Runtime*. Some modules require `libatomic`.  On ubuntu it is installed by running `sudo apt-get install libatomic1`.  `libatomic1` is a dependency of `gcc`, so if you are building with `gcc` and running on the same machine, it is likely that `libatomic1` is already installed.   
+
 Ensure that you deploy the `/static` directory, as Prebid Server requires those files at startup.
 
 ## Developing
 
-Prebid Server requires [Go](https://go.dev) version 1.19 or newer. You can develop on any operating system that Go supports; however, please note that our helper scripts are written in bash.
+Prebid Server requires [Go](https://go.dev) version 1.22 or newer. You can develop on any operating system that Go supports; however, please note that our helper scripts are written in bash.
 
 1. Clone The Repository
 ``` bash
@@ -98,10 +103,16 @@ Bid Adapters transform OpenRTB requests and responses for communicating with a b
 Analytics Modules enable business intelligence tools to collect data from Prebid Server to provide publishers and hosts with valuable insights into their header bidding traffic. We welcome you to contribute a module for your platform. Refer to our guide on [building an analytics module](https://docs.prebid.org/prebid-server/developers/pbs-build-an-analytics-adapter.html) for further information.
 
 ### Auction Module
-Auction Modules allow hosts to extend the behavior of Prebid Server at specfic spots in the auction pipeline using existing modules or by developing custom functionality. Auction Modules may provide creative validation, traffic optimization, and real time data services amoung many other potential uses. We welcome vendors and community members to contribute modules that publishers and hosts may find useful. Consult our guide on [building an auction module](https://docs.prebid.org/prebid-server/developers/add-a-module.html) for more information.
+Auction Modules allow hosts to extend the behavior of Prebid Server at specfic spots in the auction pipeline using existing modules or by developing custom functionality. Auction Modules may provide creative validation, traffic optimization, and real time data services among many other potential uses. We welcome vendors and community members to contribute modules that publishers and hosts may find useful. Consult our guide on [building an auction module](https://docs.prebid.org/prebid-server/developers/add-a-module.html) for more information.
 
 ### Feature
 We welcome everyone to contribute to this project by implementing a specification or by proposing a new feature. Please review the [prioritized project board](https://github.com/orgs/prebid/projects/4), where you can select an issue labeled "Ready For Dev". To avoid redundant effort, kindly leave a comment on the issue stating your intention to take it on. To propose a feature, [open a new issue](https://github.com/prebid/prebid-server/issues/new/choose) with as much detail as possible for consideration by the Prebid Server Committee.
 
 ### Bug Fix
 Bug reports may be submitted by [opening a new issue](https://github.com/prebid/prebid-server/issues/new/choose) and describing the error in detail with the steps to reproduce and example data. A member of the core development team will validate the bug and discuss next steps. You're encouraged to open an exploratory draft pull request to either demonstrate the bug by adding a test or offering a potential fix.
+The quickest way to start developing Prebid Server in a reproducible environment isolated from your host OS
+is by using Visual Studio Code with [Remote Container Setup](devcontainer.md).
+
+## Learning Materials
+
+To understand more about how Prebid Server in Go works and quickly spins up sample instances, refer to the `sample` folder which describes various structured and integrated examples. The examples are designed to run on any platform that supports `docker` container.

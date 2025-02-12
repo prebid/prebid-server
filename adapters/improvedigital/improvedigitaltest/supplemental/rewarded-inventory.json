@@ -93,7 +93,8 @@
               }
             }
           ]
-        }
+        },
+        "impIDs":["rewarded-inventory-imp-id-true"]
       },
       "mockResponse": {
         "status": 200,
@@ -129,7 +130,8 @@
               }
             }
           ]
-        }
+        },
+        "impIDs":["rewarded-inventory-imp-id-false"]
       },
       "mockResponse": {
         "status": 200,
@@ -163,7 +165,8 @@
               }
             }
           ]
-        }
+        },
+        "impIDs":["rewarded-inventory-imp-id-not-defined"]
       },
       "mockResponse": {
         "status": 200,

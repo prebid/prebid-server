@@ -44,7 +44,8 @@
             "page": "https://good.site/url"
           },
           "ext": {}
-        }
+        },
+        "impIDs":["test-native-imp"]
       },
       "mockResponse": {
         "status": 200,

@@ -8,11 +8,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 const (
@@ -41,7 +42,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 	for _, imp := range request.Imp {
 		ext, err := parseExt(imp.Ext)
 		if err != nil {
-			errs = append(errs, &errortypes.BadInput{err.Error()})
+			errs = append(errs, &errortypes.BadInput{Message: err.Error()})
 			continue
 		}
 
@@ -55,6 +56,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 			Uri:     a.endpoint,
 			Body:    requestJSON,
 			Headers: headers,
+			ImpIDs:  []string{imp.ID},
 		}
 		result = append(result, data)
 	}
@@ -159,13 +161,13 @@ func buildRequest(bidReq *openrtb2.BidRequest, imp *openrtb2.Imp, ext *openrtb_e
 
 func parseExt(ext json.RawMessage) (*openrtb_ext.ImpExtAdQuery, error) {
 	var bext adapters.ExtImpBidder
-	err := json.Unmarshal(ext, &bext)
+	err := jsonutil.Unmarshal(ext, &bext)
 	if err != nil {
 		return nil, err
 	}
 
 	var adsExt openrtb_ext.ImpExtAdQuery
-	err = json.Unmarshal(bext.Bidder, &adsExt)
+	err = jsonutil.Unmarshal(bext.Bidder, &adsExt)
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +178,7 @@ func parseExt(ext json.RawMessage) (*openrtb_ext.ImpExtAdQuery, error) {
 
 func parseResponseJson(respBody []byte) (*ResponseData, float64, int64, int64, []error) {
 	var response ResponseAdQuery
-	if err := json.Unmarshal(respBody, &response); err != nil {
+	if err := jsonutil.Unmarshal(respBody, &response); err != nil {
 		return nil, 0, 0, 0, []error{err}
 	}
 

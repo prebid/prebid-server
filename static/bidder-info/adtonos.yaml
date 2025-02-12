@@ -1,0 +1,24 @@
+endpoint: https://exchange.adtonos.com/bid/{{.PublisherID}}
+maintainer:
+  email: support@adtonos.com
+gvlVendorID: 682
+geoscope:
+  - global
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - audio
+      # NOTE: This is purely an audio ad exchange - video ads are synthesized from audio ads for compatibility
+      # with mobile games that only understand video mimetypes. The visual layer is just a placeholder.
+      - video
+  site:
+    mediaTypes:
+      - audio
+  dooh:
+    mediaTypes:
+      - audio
+userSync:
+  redirect:
+    url: https://play.adtonos.com/redir?to={{.RedirectURL}}
+    userMacro: '@UUID@'

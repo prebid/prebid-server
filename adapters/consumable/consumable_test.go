@@ -2,18 +2,21 @@ package consumable
 
 import (
 	"encoding/json"
-	"github.com/prebid/openrtb/v19/adcom1"
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/adapters/adapterstest"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"testing"
+
+	"github.com/prebid/openrtb/v20/adcom1"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/adapters/adapterstest"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 )
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderConsumable, config.Adapter{
-		Endpoint: "http://ib.adnxs.com/openrtb2"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+		Endpoint: "https://e.serverbid.com",
+	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -26,23 +29,25 @@ func TestConsumableMakeBidsWithCategoryDuration(t *testing.T) {
 	bidder := &adapter{}
 
 	mockedReq := &openrtb2.BidRequest{
-		Imp: []openrtb2.Imp{{
-			ID: "1_1",
-			Video: &openrtb2.Video{
-				W:           640,
-				H:           360,
-				MIMEs:       []string{"video/mp4"},
-				MaxDuration: 60,
-				Protocols:   []adcom1.MediaCreativeSubtype{2, 3, 5, 6},
-			},
-			Ext: json.RawMessage(
-				`{
+		Imp: []openrtb2.Imp{
+			{
+				ID: "1_1",
+				Video: &openrtb2.Video{
+					W:           ptrutil.ToPtr[int64](640),
+					H:           ptrutil.ToPtr[int64](360),
+					MIMEs:       []string{"video/mp4"},
+					MaxDuration: 60,
+					Protocols:   []adcom1.MediaCreativeSubtype{2, 3, 5, 6},
+				},
+				Ext: json.RawMessage(
+					`{
 					"prebid": {},
 					"bidder": {
 						"placementId": "123456"
 					}
 				}`,
-			)},
+				),
+			},
 		},
 	}
 	mockedExtReq := &adapters.RequestData{}

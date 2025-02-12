@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/prebid/go-gdpr/consentconstants"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -476,48 +476,40 @@ func TestPurposeVendorExceptions(t *testing.T) {
 	tests := []struct {
 		description              string
 		givePurposeConfigNil     bool
-		givePurpose1ExceptionMap map[openrtb_ext.BidderName]struct{}
-		givePurpose2ExceptionMap map[openrtb_ext.BidderName]struct{}
+		givePurpose1ExceptionMap map[string]struct{}
+		givePurpose2ExceptionMap map[string]struct{}
 		givePurpose              consentconstants.Purpose
-		wantExceptionMap         map[openrtb_ext.BidderName]struct{}
-		wantExceptionMapSet      bool
+		wantExceptionMap         map[string]struct{}
 	}{
 		{
 			description:          "Purpose config is nil",
 			givePurposeConfigNil: true,
 			givePurpose:          1,
-			// wantExceptionMap:     map[openrtb_ext.BidderName]struct{}{},
-			wantExceptionMap:    nil,
-			wantExceptionMapSet: false,
+			wantExceptionMap:     nil,
 		},
 		{
-			description: "Nil - exception map not defined for purpose",
-			givePurpose: 1,
-			// wantExceptionMap:    map[openrtb_ext.BidderName]struct{}{},
-			wantExceptionMap:    nil,
-			wantExceptionMapSet: false,
+			description:      "Nil - exception map not defined for purpose",
+			givePurpose:      1,
+			wantExceptionMap: nil,
 		},
 		{
 			description:              "Empty - exception map empty for purpose",
 			givePurpose:              1,
-			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{},
-			wantExceptionMap:         map[openrtb_ext.BidderName]struct{}{},
-			wantExceptionMapSet:      true,
+			givePurpose1ExceptionMap: map[string]struct{}{},
+			wantExceptionMap:         map[string]struct{}{},
 		},
 		{
 			description:              "Nonempty - exception map with multiple entries for purpose",
 			givePurpose:              1,
-			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
-			wantExceptionMap:         map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
-			wantExceptionMapSet:      true,
+			givePurpose1ExceptionMap: map[string]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
+			wantExceptionMap:         map[string]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
 		},
 		{
 			description:              "Nonempty - exception map with multiple entries for different purpose",
 			givePurpose:              2,
-			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
-			givePurpose2ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "openx": {}},
-			wantExceptionMap:         map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "openx": {}},
-			wantExceptionMapSet:      true,
+			givePurpose1ExceptionMap: map[string]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
+			givePurpose2ExceptionMap: map[string]struct{}{"rubicon": {}, "appnexus": {}, "openx": {}},
+			wantExceptionMap:         map[string]struct{}{"rubicon": {}, "appnexus": {}, "openx": {}},
 		},
 	}
 
@@ -538,7 +530,11 @@ func TestPurposeVendorExceptions(t *testing.T) {
 		value, present := accountGDPR.PurposeVendorExceptions(tt.givePurpose)
 
 		assert.Equal(t, tt.wantExceptionMap, value, tt.description)
-		assert.Equal(t, tt.wantExceptionMapSet, present, tt.description)
+		if tt.wantExceptionMap == nil {
+			assert.Equal(t, false, present)
+		} else {
+			assert.Equal(t, true, present)
+		}
 	}
 }
 
