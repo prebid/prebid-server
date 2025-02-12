@@ -1241,7 +1241,7 @@ func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.Bid
 	}.Builder
 
 	testExchange := exchange.NewExchange(adapterMap,
-
+		nil,
 		&wellBehavedCache{},
 		cfg,
 		requestValidator,

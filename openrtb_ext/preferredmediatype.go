@@ -1,3 +1,3 @@
 package openrtb_ext
 
-type PreferedMediaType map[BidderName]BidType
+type PreferredMediaType map[BidderName]BidType

@@ -17,8 +17,15 @@ import (
 )
 
 var (
-	infoEnabled  = config.BidderInfo{Disabled: false}
-	infoDisabled = config.BidderInfo{Disabled: true}
+	falseValue          = false
+	infoEnabled         = config.BidderInfo{Disabled: false}
+	infoDisabled        = config.BidderInfo{Disabled: true}
+	multiformatDisabled = config.BidderInfo{
+		Disabled: false,
+		OpenRTB: &config.OpenRTBInfo{
+			MultiformatSupported: &falseValue,
+		},
+	}
 )
 
 func TestBuildAdapters(t *testing.T) {
@@ -36,10 +43,11 @@ func TestBuildAdapters(t *testing.T) {
 	rubiconBidderValidated := addValidatedBidderMiddleware(rubiconBidderAdapted)
 
 	testCases := []struct {
-		description     string
-		bidderInfos     map[string]config.BidderInfo
-		expectedBidders map[openrtb_ext.BidderName]AdaptedBidder
-		expectedErrors  []error
+		description                 string
+		bidderInfos                 map[string]config.BidderInfo
+		expectedBidders             map[openrtb_ext.BidderName]AdaptedBidder
+		expectedSingleFormatBidders map[openrtb_ext.BidderName]bool
+		expectedErrors              []error
 	}{
 		{
 			description:     "No Bidders",
@@ -68,12 +76,27 @@ func TestBuildAdapters(t *testing.T) {
 				errors.New("unknown: unknown bidder"),
 			},
 		},
+		{
+			description: "Bidders with multiformat Support Disabled",
+			bidderInfos: map[string]config.BidderInfo{"appnexus": multiformatDisabled, "rubicon": multiformatDisabled},
+			expectedBidders: map[openrtb_ext.BidderName]AdaptedBidder{
+				openrtb_ext.BidderAppnexus: appnexusValidated,
+				openrtb_ext.BidderRubicon:  rubiconBidderValidated,
+			},
+			expectedSingleFormatBidders: map[openrtb_ext.BidderName]bool{
+				openrtb_ext.BidderAppnexus: true,
+				openrtb_ext.BidderRubicon:  true,
+			},
+		},
 	}
 
 	cfg := &config.Configuration{}
 	for _, test := range testCases {
-		bidders, errs := BuildAdapters(client, cfg, test.bidderInfos, metricEngine)
+		bidders, singleFormatBidders, errs := BuildAdapters(client, cfg, test.bidderInfos, metricEngine)
 		assert.Equal(t, test.expectedBidders, bidders, test.description+":bidders")
+		if test.expectedSingleFormatBidders != nil {
+			assert.Equal(t, test.expectedSingleFormatBidders, singleFormatBidders, test.description+":singleFormatBidders")
+		}
 		assert.ElementsMatch(t, test.expectedErrors, errs, test.description+":errors")
 	}
 }
@@ -152,7 +175,7 @@ func TestBuildBidders(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		bidders, errs := buildBidders(test.bidderInfos, test.builders, server)
+		bidders, _, errs := buildBidders(test.bidderInfos, test.builders, server)
 
 		// For Test Setup Convenience
 		if test.expectedBidders == nil {

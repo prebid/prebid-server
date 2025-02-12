@@ -54,65 +54,75 @@ func (i *InfoAwareBidder) MakeRequests(request *openrtb2.BidRequest, reqInfo *Ex
 		allowedMediaTypes = i.info.dooh
 	}
 
-	// Filtering imps is quite expensive (array filter with large, non-pointer elements)... but should be rare,
-	// because it only happens if the publisher makes a really bad request.
-	//
-	// To avoid allocating new arrays and copying in the normal case, we'll make one pass to
-	// see if any imps need to be removed, and another to do the removing if necessary.
-	numToFilter, errs := pruneImps(request.Imp, allowedMediaTypes)
+	updated, updatedImps, errs := pruneImps(request.Imp, allowedMediaTypes, i.info.multiformat, reqInfo.PreferredMediaType)
+	if updated {
+		request.Imp = updatedImps
+	}
 
-	// If all imps in bid request come with unsupported media types, exit
-	if numToFilter == len(request.Imp) {
+	// If all imps in bid request are invalid, exit
+	if len(request.Imp) == 0 {
 		return nil, append(errs, &errortypes.Warning{Message: "Bid request didn't contain media types supported by the bidder"})
-	}
-
-	if numToFilter != 0 {
-		// Filter out imps with unsupported media types
-		filteredImps, newErrs := filterImps(request.Imp, numToFilter)
-		request.Imp = filteredImps
-		errs = append(errs, newErrs...)
-	}
-
-	//if bidder doesnt support multiformat, send only preferred media type in the request
-	if !i.info.multiformat {
-		var newErrs []error
-		request.Imp, newErrs = FilterMultiformatImps(request, reqInfo.PreferredMediaType)
-		if newErrs != nil {
-			errs = append(errs, newErrs...)
-		}
 	}
 
 	reqs, delegateErrs := i.Bidder.MakeRequests(request, reqInfo)
 	return reqs, append(errs, delegateErrs...)
 }
 
-// pruneImps trims invalid media types from each imp, and returns true if any of the
-// Imps have _no_ valid Media Types left.
-func pruneImps(imps []openrtb2.Imp, allowedTypes parsedSupports) (int, []error) {
-	numToFilter := 0
+// pruneImps trims imps that don't match the allowed types and removes imps that don't have the allowed types.
+// It also handles multi-format restrictions if the bidder doesn't support multi-format impressions.
+func pruneImps(imps []openrtb2.Imp, allowedTypes parsedSupports, multiformatSupport bool, preferredMediaType openrtb_ext.BidType) (bool, []openrtb2.Imp, []error) {
+	var updated bool
 	var errs []error
+	writeIndex := 0
+
 	for i := 0; i < len(imps); i++ {
-		if !allowedTypes.banner && imps[i].Banner != nil {
-			imps[i].Banner = nil
+		imp := &imps[i] // Work with pointer to avoid copying
+
+		// Prune unsupported media types
+		if !allowedTypes.banner && imp.Banner != nil {
+			imp.Banner = nil
 			errs = append(errs, &errortypes.Warning{Message: fmt.Sprintf("request.imp[%d] uses banner, but this bidder doesn't support it", i)})
 		}
-		if !allowedTypes.video && imps[i].Video != nil {
-			imps[i].Video = nil
+		if !allowedTypes.video && imp.Video != nil {
+			imp.Video = nil
 			errs = append(errs, &errortypes.Warning{Message: fmt.Sprintf("request.imp[%d] uses video, but this bidder doesn't support it", i)})
 		}
-		if !allowedTypes.audio && imps[i].Audio != nil {
-			imps[i].Audio = nil
+		if !allowedTypes.audio && imp.Audio != nil {
+			imp.Audio = nil
 			errs = append(errs, &errortypes.Warning{Message: fmt.Sprintf("request.imp[%d] uses audio, but this bidder doesn't support it", i)})
 		}
-		if !allowedTypes.native && imps[i].Native != nil {
-			imps[i].Native = nil
+		if !allowedTypes.native && imp.Native != nil {
+			imp.Native = nil
 			errs = append(errs, &errortypes.Warning{Message: fmt.Sprintf("request.imp[%d] uses native, but this bidder doesn't support it", i)})
 		}
-		if !hasAnyTypes(&imps[i]) {
-			numToFilter = numToFilter + 1
+
+		// Skip if all media types are gone
+		if !hasAnyTypes(imp) {
+			errs = append(errs, &errortypes.BadInput{Message: fmt.Sprintf("request.imp[%d] has no supported MediaTypes. It will be ignored", i)})
+			updated = true
+			continue
 		}
+
+		// Handle multi-format restrictions
+		if !multiformatSupport && IsMultiFormat(*imp) && preferredMediaType != "" {
+			if err := AdjustImpForPreferredMediaType(imp, preferredMediaType); err != nil {
+				errs = append(errs, err)
+				updated = true
+				continue
+			}
+		}
+
+		// Move valid imp to the correct position
+		if updated {
+			imps[writeIndex] = imps[i]
+		}
+		writeIndex++
 	}
-	return numToFilter, errs
+	// If updated, return the modified slice; otherwise, return the original slice
+	if updated {
+		return true, imps[:writeIndex], errs
+	}
+	return false, imps, errs
 }
 
 func parseAllowedTypes(allowedTypes []openrtb_ext.BidType) (allowBanner bool, allowVideo bool, allowAudio bool, allowNative bool) {
@@ -133,19 +143,6 @@ func parseAllowedTypes(allowedTypes []openrtb_ext.BidType) (allowBanner bool, al
 
 func hasAnyTypes(imp *openrtb2.Imp) bool {
 	return imp.Banner != nil || imp.Video != nil || imp.Audio != nil || imp.Native != nil
-}
-
-func filterImps(imps []openrtb2.Imp, numToFilter int) ([]openrtb2.Imp, []error) {
-	newImps := make([]openrtb2.Imp, 0, len(imps)-numToFilter)
-	errs := make([]error, 0, numToFilter)
-	for i := 0; i < len(imps); i++ {
-		if hasAnyTypes(&imps[i]) {
-			newImps = append(newImps, imps[i])
-		} else {
-			errs = append(errs, &errortypes.BadInput{Message: fmt.Sprintf("request.imp[%d] has no supported MediaTypes. It will be ignored", i)})
-		}
-	}
-	return newImps, errs
 }
 
 // Structs to handle parsed bidder info, so we aren't reparsing every request

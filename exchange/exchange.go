@@ -85,6 +85,7 @@ type exchange struct {
 	macroReplacer            macros.Replacer
 	priceFloorEnabled        bool
 	priceFloorFetcher        floors.FloorFetcher
+	singleFormatBidders      map[openrtb_ext.BidderName]bool
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -136,7 +137,7 @@ func (randomDeduplicateBidBooleanGenerator) Generate() bool {
 	return rand.Intn(100) < 50
 }
 
-func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, requestValidator ortb.RequestValidator, syncersByBidder map[string]usersync.Syncer, metricsEngine metrics.MetricsEngine, infos config.BidderInfos, gdprPermsBuilder gdpr.PermissionsBuilder, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher, adsCertSigner adscert.Signer, macroReplacer macros.Replacer, priceFloorFetcher floors.FloorFetcher) Exchange {
+func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, singleFormatBidders map[openrtb_ext.BidderName]bool, cache prebid_cache_client.Client, cfg *config.Configuration, requestValidator ortb.RequestValidator, syncersByBidder map[string]usersync.Syncer, metricsEngine metrics.MetricsEngine, infos config.BidderInfos, gdprPermsBuilder gdpr.PermissionsBuilder, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher, adsCertSigner adscert.Signer, macroReplacer macros.Replacer, priceFloorFetcher floors.FloorFetcher) Exchange {
 	bidderToSyncerKey := map[string]string{}
 	for bidder, syncer := range syncersByBidder {
 		bidderToSyncerKey[bidder] = syncer.Key()
@@ -184,6 +185,7 @@ func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid
 		macroReplacer:            macroReplacer,
 		priceFloorEnabled:        cfg.PriceFloors.Enabled,
 		priceFloorFetcher:        priceFloorFetcher,
+		singleFormatBidders:      singleFormatBidders,
 	}
 }
 
@@ -399,7 +401,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 			alternateBidderCodes = *r.Account.AlternateBidderCodes
 		}
 
-		preferredMediaType := getBidderPreferredMediaTypeMap(requestExtPrebid, &r.Account)
+		preferredMediaType := getBidderPreferredMediaTypeMap(requestExtPrebid, &r.Account, liveAdapters, e.singleFormatBidders)
 
 		var extraRespInfo extraAuctionResponseInfo
 		adapterBids, adapterExtra, extraRespInfo = e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, accountDebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride, alternateBidderCodes, requestExtLegacy.Prebid.Experiment, r.HookExecutor, r.StartTime, bidAdjustmentRules, r.TmaxAdjustments, responseDebugAllow, preferredMediaType)
@@ -551,18 +553,26 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 }
 
 // getBidderPreferredMediaTypeMap reads the preferred media type from the request and account and returns a map of bidder to preferred media type. Preference given to the request over account.
-func getBidderPreferredMediaTypeMap(prebid *openrtb_ext.ExtRequestPrebid, account *config.Account) openrtb_ext.PreferedMediaType {
-	preferredMediaType := make(openrtb_ext.PreferedMediaType)
+func getBidderPreferredMediaTypeMap(prebid *openrtb_ext.ExtRequestPrebid, account *config.Account, liveBidders []openrtb_ext.BidderName, singleFormatBidders map[openrtb_ext.BidderName]bool) openrtb_ext.PreferredMediaType {
+	preferredMediaType := make(openrtb_ext.PreferredMediaType)
 
-	for bidder, mediaType := range account.PreferredMediaType {
-		preferredMediaType[bidder] = mediaType
+	// Skip if no bidders are present in singleFormatBidders
+	if len(singleFormatBidders) == 0 {
+		return nil
 	}
 
-	if prebid != nil && prebid.BidderControls != nil {
-		for bidder, bidderControl := range prebid.BidderControls {
-			if bidderControl.PreferredMediaType != "" {
-				preferredMediaType[bidder] = bidderControl.PreferredMediaType
-			}
+	for _, liveBidder := range liveBidders {
+
+		// Skip if the bidder is not present in singleFormatBidders
+		if !singleFormatBidders[liveBidder] {
+			continue
+		}
+
+		//read preferred media type from request, if not present read from account config
+		if prebid != nil && prebid.BidderControls != nil && prebid.BidderControls[liveBidder].PreferredMediaType != "" {
+			preferredMediaType[liveBidder] = prebid.BidderControls[liveBidder].PreferredMediaType
+		} else if account != nil && account.PreferredMediaType != nil && account.PreferredMediaType[liveBidder] != "" {
+			preferredMediaType[liveBidder] = account.PreferredMediaType[liveBidder]
 		}
 	}
 
@@ -734,7 +744,7 @@ func (e *exchange) getAllBids(
 	bidAdjustmentRules map[string][]openrtb_ext.Adjustment,
 	tmaxAdjustments *TmaxAdjustmentsPreprocessed,
 	responseDebugAllowed bool,
-	preferredMediaType openrtb_ext.PreferedMediaType) (
+	preferredMediaType openrtb_ext.PreferredMediaType) (
 	map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid,
 	map[openrtb_ext.BidderName]*seatResponseExtra,
 	extraAuctionResponseInfo) {
@@ -766,8 +776,10 @@ func (e *exchange) getAllBids(
 			reqInfo := adapters.NewExtraRequestInfo(conversions)
 			reqInfo.PbsEntryPoint = bidderRequest.BidderLabels.RType
 			reqInfo.GlobalPrivacyControlHeader = globalPrivacyControlHeader
-			reqInfo.PreferredMediaType = preferredMediaType[bidder.BidderName]
 
+			if preferredMediaType != nil {
+				reqInfo.PreferredMediaType = preferredMediaType[bidder.BidderName]
+			}
 			bidReqOptions := bidRequestOptions{
 				accountDebugAllowed:    accountDebugAllowed,
 				headerDebugAllowed:     headerDebugAllowed,

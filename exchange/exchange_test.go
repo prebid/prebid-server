@@ -71,7 +71,7 @@ func TestNewExchange(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	adapters, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.NilMetricsEngine{})
+	adapters, _, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.NilMetricsEngine{})
 	if adaptersErr != nil {
 		t.Fatalf("Error intializing adapters: %v", adaptersErr)
 	}
@@ -84,7 +84,7 @@ func TestNewExchange(t *testing.T) {
 		},
 	}.Builder
 
-	e := NewExchange(adapters, nil, cfg, &mockRequestValidator{}, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil).(*exchange)
+	e := NewExchange(adapters, nil, nil, cfg, &mockRequestValidator{}, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil).(*exchange)
 	for _, bidderName := range knownAdapters {
 		if _, ok := e.adapterMap[bidderName]; !ok {
 			if biddersInfo[string(bidderName)].IsEnabled() {
@@ -121,7 +121,7 @@ func TestCharacterEscape(t *testing.T) {
 
 	defer server.Close()
 
-	adapters, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.NilMetricsEngine{})
+	adapters, _, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.NilMetricsEngine{})
 	if adaptersErr != nil {
 		t.Fatalf("Error intializing adapters: %v", adaptersErr)
 	}
@@ -134,7 +134,7 @@ func TestCharacterEscape(t *testing.T) {
 		},
 	}.Builder
 
-	e := NewExchange(adapters, nil, cfg, &mockRequestValidator{}, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil).(*exchange)
+	e := NewExchange(adapters, nil, nil, cfg, &mockRequestValidator{}, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil).(*exchange)
 
 	// 	3) Build all the parameters e.buildBidResponse(ctx.Background(), liveA... ) needs
 	//liveAdapters []openrtb_ext.BidderName,
@@ -1224,7 +1224,7 @@ func TestGetBidCacheInfoEndToEnd(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	adapters, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.NilMetricsEngine{})
+	adapters, _, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.NilMetricsEngine{})
 	if adaptersErr != nil {
 		t.Fatalf("Error intializing adapters: %v", adaptersErr)
 	}
@@ -1237,7 +1237,7 @@ func TestGetBidCacheInfoEndToEnd(t *testing.T) {
 		},
 	}.Builder
 
-	e := NewExchange(adapters, pbc, cfg, &mockRequestValidator{}, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil).(*exchange)
+	e := NewExchange(adapters, nil, pbc, cfg, &mockRequestValidator{}, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil).(*exchange)
 	// 	3) Build all the parameters e.buildBidResponse(ctx.Background(), liveA... ) needs
 	liveAdapters := []openrtb_ext.BidderName{bidderName}
 
@@ -1583,7 +1583,7 @@ func TestBidResponseCurrency(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	adapters, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.NilMetricsEngine{})
+	adapters, _, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.NilMetricsEngine{})
 	if adaptersErr != nil {
 		t.Fatalf("Error intializing adapters: %v", adaptersErr)
 	}
@@ -1596,7 +1596,7 @@ func TestBidResponseCurrency(t *testing.T) {
 		},
 	}.Builder
 
-	e := NewExchange(adapters, nil, cfg, &mockRequestValidator{}, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil).(*exchange)
+	e := NewExchange(adapters, nil, nil, cfg, &mockRequestValidator{}, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil).(*exchange)
 
 	liveAdapters := make([]openrtb_ext.BidderName, 1)
 	liveAdapters[0] = "appnexus"
@@ -1739,12 +1739,12 @@ func TestBidResponseImpExtInfo(t *testing.T) {
 
 	biddersInfo := config.BidderInfos{"appnexus": config.BidderInfo{Endpoint: "http://ib.adnxs.com"}}
 
-	adapters, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.NilMetricsEngine{})
+	adapters, _, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.NilMetricsEngine{})
 	if adaptersErr != nil {
 		t.Fatalf("Error intializing adapters: %v", adaptersErr)
 	}
 
-	e := NewExchange(adapters, nil, cfg, &mockRequestValidator{}, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, nil, gdprPermsBuilder, nil, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil).(*exchange)
+	e := NewExchange(adapters, nil, nil, cfg, &mockRequestValidator{}, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, nil, gdprPermsBuilder, nil, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil).(*exchange)
 
 	liveAdapters := make([]openrtb_ext.BidderName, 1)
 	liveAdapters[0] = "appnexus"
@@ -1815,7 +1815,7 @@ func TestRaceIntegration(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	adapters, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.NilMetricsEngine{})
+	adapters, _, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.NilMetricsEngine{})
 	if adaptersErr != nil {
 		t.Fatalf("Error intializing adapters: %v", adaptersErr)
 	}
@@ -1838,7 +1838,7 @@ func TestRaceIntegration(t *testing.T) {
 		},
 	}.Builder
 
-	ex := NewExchange(adapters, &wellBehavedCache{}, cfg, &mockRequestValidator{}, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, &nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil).(*exchange)
+	ex := NewExchange(adapters, nil, &wellBehavedCache{}, cfg, &mockRequestValidator{}, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, &nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil).(*exchange)
 	_, err = ex.HoldAuction(context.Background(), auctionRequest, &debugLog)
 	if err != nil {
 		t.Errorf("HoldAuction returned unexpected error: %v", err)
@@ -1923,7 +1923,7 @@ func TestPanicRecovery(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	adapters, adaptersErr := BuildAdapters(&http.Client{}, cfg, biddersInfo, &metricsConf.NilMetricsEngine{})
+	adapters, _, adaptersErr := BuildAdapters(&http.Client{}, cfg, biddersInfo, &metricsConf.NilMetricsEngine{})
 	if adaptersErr != nil {
 		t.Fatalf("Error intializing adapters: %v", adaptersErr)
 	}
@@ -1936,7 +1936,7 @@ func TestPanicRecovery(t *testing.T) {
 		},
 	}.Builder
 
-	e := NewExchange(adapters, nil, cfg, &mockRequestValidator{}, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil).(*exchange)
+	e := NewExchange(adapters, nil, nil, cfg, &mockRequestValidator{}, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil).(*exchange)
 
 	chBids := make(chan *bidResponseWrapper, 1)
 	panicker := func(bidderRequest BidderRequest, conversions currency.Conversions) {
@@ -1989,7 +1989,7 @@ func TestPanicRecoveryHighLevel(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	adapters, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.NilMetricsEngine{})
+	adapters, _, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.NilMetricsEngine{})
 	if adaptersErr != nil {
 		t.Fatalf("Error intializing adapters: %v", adaptersErr)
 	}
@@ -2006,7 +2006,7 @@ func TestPanicRecoveryHighLevel(t *testing.T) {
 			allowAllBidders: true,
 		},
 	}.Builder
-	e := NewExchange(adapters, &mockCache{}, cfg, &mockRequestValidator{}, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, categoriesFetcher, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil).(*exchange)
+	e := NewExchange(adapters, nil, &mockCache{}, cfg, &mockRequestValidator{}, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, categoriesFetcher, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil).(*exchange)
 
 	e.adapterMap[openrtb_ext.BidderBeachfront] = panicingAdapter{}
 	e.adapterMap[openrtb_ext.BidderAppnexus] = panicingAdapter{}
@@ -4568,7 +4568,7 @@ func TestPassExperimentConfigsToHoldAuction(t *testing.T) {
 
 	signer := MockSigner{}
 
-	adapters, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.NilMetricsEngine{})
+	adapters, _, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.NilMetricsEngine{})
 	if adaptersErr != nil {
 		t.Fatalf("Error intializing adapters: %v", adaptersErr)
 	}
@@ -4581,7 +4581,7 @@ func TestPassExperimentConfigsToHoldAuction(t *testing.T) {
 		},
 	}.Builder
 
-	e := NewExchange(adapters, nil, cfg, &mockRequestValidator{}, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &signer, macros.NewStringIndexBasedReplacer(), nil).(*exchange)
+	e := NewExchange(adapters, nil, nil, cfg, &mockRequestValidator{}, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &signer, macros.NewStringIndexBasedReplacer(), nil).(*exchange)
 
 	// Define mock incoming bid requeset
 	mockBidRequest := &openrtb2.BidRequest{
@@ -6354,44 +6354,52 @@ func TestBidsToUpdate(t *testing.T) {
 
 func TestGetBidderPreferredMediaTypeMap(t *testing.T) {
 	tests := []struct {
-		name             string
-		extRequestPrebid *openrtb_ext.ExtRequestPrebid
-		account          *config.Account
-		expected         openrtb_ext.PreferedMediaType
+		name                string
+		prebid              *openrtb_ext.ExtRequestPrebid
+		account             *config.Account
+		liveBidders         []openrtb_ext.BidderName
+		singleFormatBidders map[openrtb_ext.BidderName]bool
+		expected            openrtb_ext.PreferredMediaType
 	}{
 		{
-			name:             "Nil account and request preferred media type",
-			extRequestPrebid: nil,
-			account:          &config.Account{},
-			expected:         openrtb_ext.PreferedMediaType{},
+			name:                "Nil account and request preferred media type",
+			prebid:              nil,
+			account:             &config.Account{},
+			liveBidders:         []openrtb_ext.BidderName{"bidderA"},
+			singleFormatBidders: map[openrtb_ext.BidderName]bool{"bidderA": true},
+			expected:            openrtb_ext.PreferredMediaType{},
 		},
 		{
-			name:             "Account preferred media type only",
-			extRequestPrebid: nil,
+			name:   "Account preferred media type only",
+			prebid: nil,
 			account: &config.Account{
 				PreferredMediaType: map[openrtb_ext.BidderName]openrtb_ext.BidType{
 					"bidderA": openrtb_ext.BidTypeBanner,
 				},
 			},
-			expected: openrtb_ext.PreferedMediaType{
+			liveBidders:         []openrtb_ext.BidderName{"bidderA"},
+			singleFormatBidders: map[openrtb_ext.BidderName]bool{"bidderA": true},
+			expected: openrtb_ext.PreferredMediaType{
 				"bidderA": openrtb_ext.BidTypeBanner,
 			},
 		},
 		{
 			name: "Request preferred media type only",
-			extRequestPrebid: &openrtb_ext.ExtRequestPrebid{
+			prebid: &openrtb_ext.ExtRequestPrebid{
 				BidderControls: map[openrtb_ext.BidderName]openrtb_ext.BidderControl{
 					"bidderB": {PreferredMediaType: openrtb_ext.BidTypeVideo},
 				},
 			},
-			account: &config.Account{},
-			expected: openrtb_ext.PreferedMediaType{
+			account:             &config.Account{},
+			liveBidders:         []openrtb_ext.BidderName{"bidderB"},
+			singleFormatBidders: map[openrtb_ext.BidderName]bool{"bidderB": true},
+			expected: openrtb_ext.PreferredMediaType{
 				"bidderB": openrtb_ext.BidTypeVideo,
 			},
 		},
 		{
 			name: "Account and request preferred media type",
-			extRequestPrebid: &openrtb_ext.ExtRequestPrebid{
+			prebid: &openrtb_ext.ExtRequestPrebid{
 				BidderControls: map[openrtb_ext.BidderName]openrtb_ext.BidderControl{
 					"bidderB": {PreferredMediaType: openrtb_ext.BidTypeVideo},
 				},
@@ -6401,14 +6409,16 @@ func TestGetBidderPreferredMediaTypeMap(t *testing.T) {
 					"bidderA": openrtb_ext.BidTypeBanner,
 				},
 			},
-			expected: openrtb_ext.PreferedMediaType{
+			liveBidders:         []openrtb_ext.BidderName{"bidderA", "bidderB", "bidderC"},
+			singleFormatBidders: map[openrtb_ext.BidderName]bool{"bidderA": true, "bidderB": true},
+			expected: openrtb_ext.PreferredMediaType{
 				"bidderA": openrtb_ext.BidTypeBanner,
 				"bidderB": openrtb_ext.BidTypeVideo,
 			},
 		},
 		{
 			name: "Request overrides account preferred media type",
-			extRequestPrebid: &openrtb_ext.ExtRequestPrebid{
+			prebid: &openrtb_ext.ExtRequestPrebid{
 				BidderControls: map[openrtb_ext.BidderName]openrtb_ext.BidderControl{
 					"bidderA": {PreferredMediaType: openrtb_ext.BidTypeVideo},
 				},
@@ -6418,15 +6428,66 @@ func TestGetBidderPreferredMediaTypeMap(t *testing.T) {
 					"bidderA": openrtb_ext.BidTypeBanner,
 				},
 			},
-			expected: openrtb_ext.PreferedMediaType{
+			liveBidders:         []openrtb_ext.BidderName{"bidderA"},
+			singleFormatBidders: map[openrtb_ext.BidderName]bool{"bidderA": true},
+			expected: openrtb_ext.PreferredMediaType{
 				"bidderA": openrtb_ext.BidTypeVideo,
 			},
+		},
+		{
+			name: "Bidder not in singleFormatBidders",
+			prebid: &openrtb_ext.ExtRequestPrebid{
+				BidderControls: map[openrtb_ext.BidderName]openrtb_ext.BidderControl{
+					"bidderA": {PreferredMediaType: openrtb_ext.BidTypeVideo},
+				},
+			},
+			account: &config.Account{
+				PreferredMediaType: map[openrtb_ext.BidderName]openrtb_ext.BidType{
+					"bidderA": openrtb_ext.BidTypeBanner,
+				},
+			},
+			liveBidders:         []openrtb_ext.BidderName{"bidderA"},
+			singleFormatBidders: map[openrtb_ext.BidderName]bool{"bidderB": true},
+			expected:            openrtb_ext.PreferredMediaType{},
+		},
+		{
+			name: "No bidders in singleFormatBidders",
+			prebid: &openrtb_ext.ExtRequestPrebid{
+				BidderControls: map[openrtb_ext.BidderName]openrtb_ext.BidderControl{
+					"bidderA": {PreferredMediaType: openrtb_ext.BidTypeVideo},
+				},
+			},
+			account: &config.Account{
+				PreferredMediaType: map[openrtb_ext.BidderName]openrtb_ext.BidType{
+					"bidderA": openrtb_ext.BidTypeBanner,
+				},
+			},
+			liveBidders:         []openrtb_ext.BidderName{"bidderA"},
+			singleFormatBidders: make(map[openrtb_ext.BidderName]bool),
+			expected:            nil,
+		},
+		{
+			name: "Different bidders in singleFormatBidders than liveBidders",
+			prebid: &openrtb_ext.ExtRequestPrebid{
+				BidderControls: map[openrtb_ext.BidderName]openrtb_ext.BidderControl{
+					"bidderA": {PreferredMediaType: openrtb_ext.BidTypeVideo},
+				},
+			},
+			account: &config.Account{
+				PreferredMediaType: map[openrtb_ext.BidderName]openrtb_ext.BidType{
+					"bidderC": openrtb_ext.BidTypeBanner,
+					"bidderD": openrtb_ext.BidTypeVideo,
+				},
+			},
+			liveBidders:         []openrtb_ext.BidderName{"bidderA", "bidderB"},
+			singleFormatBidders: map[openrtb_ext.BidderName]bool{"bidderC": true, "bidderD": true},
+			expected:            openrtb_ext.PreferredMediaType{},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := getBidderPreferredMediaTypeMap(tt.extRequestPrebid, tt.account)
+			result := getBidderPreferredMediaTypeMap(tt.prebid, tt.account, tt.liveBidders, tt.singleFormatBidders)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
