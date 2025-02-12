@@ -12,5 +12,5 @@ capabilities:
       - banner
 userSync:
   iframe:
-    url: https://sync.missena.io/iframe?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&t=YOUR_API_KEY&redirect={{.RedirectURL}}
+    url: https://sync.missena.io/iframe?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
     userMacro: $UID
