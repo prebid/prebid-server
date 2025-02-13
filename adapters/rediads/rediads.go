@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/config"
@@ -44,6 +45,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			})
 			continue
 		}
+		// Remove "prebid" and "bidder" from imp.Ext
+		newExt := jsonparser.Delete(imp.Ext, "prebid")
+		newExt = jsonparser.Delete(newExt, "bidder")
+		imp.Ext = newExt
 
 		// Unmarshal custom bidder params
 		if err := jsonutil.Unmarshal(bidderExt.Bidder, &rediadsExt); err != nil {
@@ -66,19 +71,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			accountID = rediadsExt.AccountID
 			endpoint = rediadsExt.Endpoint
 		}
-	
 		// Set tagid in the imp object
 		imp.TagID = rediadsExt.Slot
-		bidderExt.Bidder = nil
-
-		newExt, err := jsonutil.Marshal(bidderExt)
-		if err != nil {
-			errors = append(errors, &errortypes.BadInput{
-				Message: fmt.Sprintf("Failed to marshal bidderExt for impression %s", imp.ID),
-			})
-			continue
-		}
-		imp.Ext = newExt
 		request.Imp[i] = imp
 	}
 
@@ -129,7 +123,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	return []*adapters.RequestData{requestData}, errors
 }
-
 
 func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 	if bid.Ext != nil {
