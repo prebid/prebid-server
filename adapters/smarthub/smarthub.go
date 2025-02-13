@@ -62,10 +62,7 @@ func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtSmartHub) (string, err
 	endpointParams := macros.EndpointTemplateParams{
 		AccountID: params.Seat,
 		SourceId:  params.Token,
-	}
-
-	if params.PartnerName != "" {
-		endpointParams.Host = params.PartnerName
+		Host:      params.PartnerName,
 	}
 
 	return macros.ResolveMacros(a.endpoint, endpointParams)
