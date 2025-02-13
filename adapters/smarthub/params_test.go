@@ -40,6 +40,10 @@ var invalidParams = []string{
 	`{"partnerName":"", "seat":"", "token":""}`,
 	`{"partnerName":"partnertest", "seat":"9Q20EdGxzgWdfPYShScl", "token":""}`,
 	`{"partnerName":"partnertest", "seat":"", "token":"alNYtemWggraDVbhJrsOs9pXc3Eld32E"}`,
+	`{"partnerName":""}`,
+	`{"partnerName":"1"}`,
+	`{"seat":"1"}`,
+	`{"token":"1"}`,
 }
 
 func TestInvalidParams(t *testing.T) {
