@@ -186,6 +186,79 @@ func TestGetRate_ReverseConversion(t *testing.T) {
 	}
 }
 
+func TestGetRate_IntermediateConversion(t *testing.T) {
+
+	// Setup:
+	rates := NewRates(map[string]map[string]float64{
+		"USD": {
+			"SEK": 10.23842,
+			"NOK": 10.47089,
+		},
+		"EUR": {
+			"THB": 35.23842,
+			"ZAR": 18.47089,
+		},
+	})
+
+	testCases := []struct {
+		from         string
+		to           string
+		expectedRate float64
+		description  string
+		hasError     bool
+	}{
+		{
+			from:         "NOK",
+			to:           "SEK",
+			expectedRate: 0.9777984488424574,
+			hasError:     false,
+			description:  "case 1 - Both rates are present in intermediate USD currency",
+		},
+		{
+			from:         "SEK",
+			to:           "NOK",
+			expectedRate: 1 / 0.9777984488424574,
+			hasError:     false,
+			description:  "case 2 - Both rates are present in intermediate USD currency inverse",
+		},
+		{
+			from:         "THB",
+			to:           "ZAR",
+			expectedRate: 0.5241690745498806,
+			hasError:     false,
+			description:  "case 3 - Both rates are present in intermediate EUR currency",
+		},
+		{
+			from:         "ZAR",
+			to:           "THB",
+			expectedRate: 1 / 0.5241690745498806,
+			hasError:     false,
+			description:  "case 4 - Both rates are present in intermediate EUR currency inverse",
+		},
+		{
+			from:         "NOK",
+			to:           "ZAR",
+			expectedRate: 0,
+			hasError:     true,
+			description:  "case 5 - Rates are present in different intermediate currencies, unable to convert error should be returned",
+		},
+	}
+
+	for _, tc := range testCases {
+		// Execute:
+		rate, err := rates.GetRate(tc.from, tc.to)
+
+		// Verify:
+		if tc.hasError {
+			assert.NotNil(t, err, "err shouldn't be nil")
+			assert.Equal(t, float64(0), rate, "rate should be 0")
+		} else {
+			assert.Nil(t, err, "err should be nil: "+tc.description)
+			assert.Equal(t, tc.expectedRate, rate, "rate doesn't match the expected one: "+tc.description)
+		}
+	}
+}
+
 func TestGetRate_EmptyRates(t *testing.T) {
 
 	// Setup:

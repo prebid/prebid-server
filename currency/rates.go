@@ -46,6 +46,19 @@ func (r *Rates) GetRate(from, to string) (float64, error) {
 			// In case we have an entry TO -> FROM
 			return 1 / conversion, nil
 		}
+
+		// Try to find currency rates via intermediate currency
+		for _, units := range r.Conversions {
+			toConversion, toPresent := units[toUnit.String()]
+			if !toPresent {
+				continue
+			}
+			fromConversion, fromPresent := units[fromUnit.String()]
+			if fromPresent {
+				return toConversion / fromConversion, nil
+			}
+		}
+
 		return 0, ConversionNotFoundError{FromCur: fromUnit.String(), ToCur: toUnit.String()}
 	}
 	return 0, errors.New("rates are nil")
