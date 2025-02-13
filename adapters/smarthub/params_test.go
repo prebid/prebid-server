@@ -35,11 +35,9 @@ var invalidParams = []string{
 	`{"partnerName":"partnertest"}`,
 	`{"seat":"9Q20EdGxzgWdfPYShScl"}`,
 	`{"token":"Y9Evrh40ejsrCR4EtidUt1cSxhJsz8X1"}`,
-	`{"seat":"9Q20EdGxzgWdfPYShScl", "token":"alNYtemWggraDVbhJrsOs9pXc3Eld32E"}`,
 	`{"partnerName":"partnertest", "token":"LNywdP2ebX5iETF8gvBeEoB6Cam64eeq"}`,
 	`{"partnerName":"partnertest", "seat":"9Q20EdGxzgWdfPYShScl"}`,
 	`{"partnerName":"", "seat":"", "token":""}`,
-	`{"partnerName":"", "seat":"9Q20EdGxzgWdfPYShScl", "token":"alNYtemWggraDVbhJrsOs9pXc3Eld32E"}`,
 	`{"partnerName":"partnertest", "seat":"9Q20EdGxzgWdfPYShScl", "token":""}`,
 	`{"partnerName":"partnertest", "seat":"", "token":"alNYtemWggraDVbhJrsOs9pXc3Eld32E"}`,
 }

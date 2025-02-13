@@ -60,10 +60,14 @@ func (a *adapter) getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtSmartHub,
 
 func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtSmartHub) (string, error) {
 	endpointParams := macros.EndpointTemplateParams{
-		Host:      params.PartnerName,
 		AccountID: params.Seat,
 		SourceId:  params.Token,
 	}
+
+	if params.PartnerName != "" {
+		endpointParams.Host = params.PartnerName
+	}
+
 	return macros.ResolveMacros(a.endpoint, endpointParams)
 }
 
