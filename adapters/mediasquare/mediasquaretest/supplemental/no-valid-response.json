@@ -1,0 +1,88 @@
+{
+  "mockBidRequest": {
+    "imp": [
+      {
+        "id": "2c35e25e-e7d3-41bf-b810-06a449f456b9",
+        "bidfloor": 1,
+        "tagid": "msq_tag_200123_native",
+        "banner": null,
+        "native": null,
+        "video": {
+          "mimes": ["video/mp4"],
+          "minduration": 10,
+          "maxduration": 23,
+          "placement": 1,
+          "w": 800,
+          "h": 600,
+          "plcmt": 1,
+          "ext": {
+            "context": "context-test",
+            "linearity": 0,
+            "playersize": [[800, 600]]
+          }
+        },
+        "ext": null
+      }
+    ],
+    "app": null,
+    "device": null,
+    "regs": {
+      "gdpr": null,
+      "ext": {
+        "dsa": null
+      }
+    },
+    "user": {
+      "ext": {
+        "consent": null
+      }
+    },
+    "test": 1
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "<MakeRequests> imp-bidder[ext]: is empty.",
+      "comparison": "literal"
+    }
+  ],
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://pbs-front.mediasquare.fr/msq_prebid",
+        "body": {
+          "codes": null,
+          "gdpr": {
+            "consent_string": "",
+            "consent_required": false
+          },
+          "type": "pbs",
+          "dsa": "",
+          "tech": {
+            "device": null,
+            "app": null
+          },
+          "test": true
+        },
+        "impIDs": ["2c35e25e-e7d3-41bf-b810-06a449f456b9"]
+      },
+
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "infos": {
+            "version": "42",
+            "description": "test-description",
+            "hostname": null
+          },
+          "responses": "lol"
+        }
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "<MakeBids> Unexpected status code: 406. Bad server response: cannot unmarshal mediasquare.msqResponse.Responses: decode slice: expect [ or n, but found \".",
+      "comparison": "literal"
+    }
+  ]
+}

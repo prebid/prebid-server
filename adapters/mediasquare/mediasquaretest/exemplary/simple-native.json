@@ -1,0 +1,163 @@
+{
+  "mockBidRequest": {
+    "id": "70e5672c-515b-406e-967c-fcc2b04de04f",
+    "imp": [
+      {
+        "id": "2c35e25e-e7d3-41bf-b810-06a449f456b9",
+        "bidfloor": 1,
+        "bidfloorcur": "USD",
+        "tagid": "msq_tag_200123_native",
+        "banner": null,
+        "video": null,
+        "native": {
+          "request": "request-test"
+        },
+        "ext": {
+          "bidder": {
+            "owner": "test",
+            "code": "publishername_atf_desktop_rg_pave"
+          }
+        }
+      }
+    ],
+    "app": {
+      "content": {},
+      "domain": "debug.mediasquare.fr",
+      "id": "app-id-test",
+      "name": "debug.mediasquare.fr",
+      "publisher": {
+        "id": "MEDIA_SQUARE"
+      }
+    },
+    "device": {
+      "devicetype": 1,
+      "geo": {
+        "country": "FRA",
+        "ipservice": 3
+      },
+      "ip": "92.154.6.0",
+      "language": "fr",
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+    },
+    "regs": {
+      "gdpr": 1,
+      "ext": {
+        "dsa": "mediasquare-test"
+      }
+    },
+    "user": {
+      "consent": "there-is-a-real-cs-in-it"
+    },
+    "test": 1
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://pbs-front.mediasquare.fr/msq_prebid",
+        "body": {
+          "codes": [
+            {
+              "owner": "test",
+              "code": "publishername_atf_desktop_rg_pave",
+              "adunit": "msq_tag_200123_native",
+              "auctionid": "70e5672c-515b-406e-967c-fcc2b04de04f",
+              "bidid": "2c35e25e-e7d3-41bf-b810-06a449f456b9",
+              "mediatypes": {
+                "native_request": "request-test"
+              },
+              "floor": {
+                "*": { "floor": 1, "currency": "USD" }
+              }
+            }
+          ],
+          "gdpr": {
+            "consent_string": "there-is-a-real-cs-in-it",
+            "consent_required": true
+          },
+          "type": "pbs",
+          "dsa": "mediasquare-test",
+          "tech": {
+            "device": {
+              "geo": {
+                "ipservice": 3,
+                "country": "FRA"
+              },
+              "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+              "ip": "92.154.6.0",
+              "devicetype": 1,
+              "language": "fr"
+            },
+            "app": {
+              "id": "app-id-test",
+              "name": "debug.mediasquare.fr",
+              "domain": "debug.mediasquare.fr",
+              "publisher": {
+                "id": "MEDIA_SQUARE"
+              },
+              "content": {}
+            }
+          },
+          "test": true
+        },
+        "impIDs": ["2c35e25e-e7d3-41bf-b810-06a449f456b9"]
+      },
+
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "infos": {
+            "version": "1.6.1",
+            "description": "mediasquare prebid client endpoint"
+          },
+          "cookies": null,
+          "responses": [
+            {
+              "bid_id": "4e2d4580c1da1",
+              "bidder": "msq_test",
+              "code": "test/publishername_atf_desktop_rg_pave",
+              "cpm": 1,
+              "increment": 1,
+              "currency": "USD",
+              "creative_id": "msq_test|fakeCreative",
+              "net_revenue": true,
+              "transaction_id": "4e2d4580c1da1",
+              "ttl": 20000,
+              "native": {
+                "clickUrl": "http: //i.am.a/URL",
+                "title": "Learn about this awesome thing"
+              },
+              "adomain": ["mediasquare.fr"],
+              "hasConsent": true
+            }
+          ],
+          "Calc_cpm": { "4e2d4580c1da1": { "TmpCpmMax": 0, "CpmMax": 1 } }
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "Currency": "USD",
+      "Bids": [
+        {
+          "bid": {
+            "id": "",
+            "impid": "4e2d4580c1da1",
+            "price": 1,
+            "adomain": ["mediasquare.fr"],
+            "crid": "msq_test|fakeCreative",
+            "mtype": 4
+          },
+          "bidmeta": {
+            "advertiserDomains": ["mediasquare.fr"],
+            "mediaType": "native"
+          },
+          "type": "native",
+          "bidvideo": null,
+          "dealpriority": 0
+        }
+      ]
+    }
+  ]
+}

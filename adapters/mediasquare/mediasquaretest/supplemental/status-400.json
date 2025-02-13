@@ -1,0 +1,143 @@
+{
+  "mockBidRequest": {
+    "id": "70e5672c-515b-406e-967c-fcc2b04de04f",
+    "imp": [
+      {
+        "id": "2c35e25e-e7d3-41bf-b810-06a449f456b9",
+        "bidfloor": 1,
+        "tagid": "msq_tag_200123_native",
+        "banner": null,
+        "native": null,
+        "video": {
+          "mimes": ["video/mp4"],
+          "minduration": 10,
+          "maxduration": 23,
+          "placement": 1,
+          "w": 800,
+          "h": 600,
+          "plcmt": 1,
+          "ext": {
+            "context": "context-test",
+            "linearity": 0,
+            "playersize": [[800, 600]]
+          }
+        },
+        "ext": {
+          "bidder": {
+            "owner": "test",
+            "code": "publishername_atf_desktop_rg_video"
+          }
+        }
+      }
+    ],
+    "app": {
+      "content": {},
+      "domain": "debug.mediasquare.fr",
+      "id": "app-id-test",
+      "name": "debug.mediasquare.fr",
+      "publisher": {
+        "id": "MEDIA_SQUARE"
+      }
+    },
+    "device": {
+      "devicetype": 1,
+      "geo": {
+        "country": "FRA",
+        "ipservice": 3
+      },
+      "ip": "92.154.6.0",
+      "language": "fr",
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+    },
+    "regs": {
+      "gdpr": 1,
+      "ext": {
+        "dsa": null
+      }
+    },
+    "user": {
+      "ext": {
+        "consent": "consent-covering"
+      }
+    },
+    "test": 1
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://pbs-front.mediasquare.fr/msq_prebid",
+        "body": {
+          "codes": [
+            {
+              "owner": "test",
+              "code": "publishername_atf_desktop_rg_video",
+              "adunit": "msq_tag_200123_native",
+              "auctionid": "70e5672c-515b-406e-967c-fcc2b04de04f",
+              "bidid": "2c35e25e-e7d3-41bf-b810-06a449f456b9",
+              "mediatypes": {
+                "video": {
+                  "ext": {
+                    "linearity": 0,
+                    "playersize": [[800, 600]],
+                    "context": "context-test"
+                  },
+                  "mimes": ["video/mp4"],
+                  "minduration": 10,
+                  "maxduration": 23,
+                  "placement": 1,
+                  "w": 800,
+                  "h": 600,
+                  "plcmt": 1
+                }
+              },
+              "floor": {
+                "*": { "floor": 1 },
+                "800x600": { "floor": 1 }
+              }
+            }
+          ],
+          "gdpr": {
+            "consent_string": "consent-covering",
+            "consent_required": true
+          },
+          "type": "pbs",
+          "dsa": "",
+          "tech": {
+            "device": {
+              "geo": {
+                "ipservice": 3,
+                "country": "FRA"
+              },
+              "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+              "ip": "92.154.6.0",
+              "devicetype": 1,
+              "language": "fr"
+            },
+            "app": {
+              "id": "app-id-test",
+              "name": "debug.mediasquare.fr",
+              "domain": "debug.mediasquare.fr",
+              "publisher": {
+                "id": "MEDIA_SQUARE"
+              },
+              "content": {}
+            }
+          },
+          "test": true
+        },
+        "impIDs": ["2c35e25e-e7d3-41bf-b810-06a449f456b9"]
+      },
+      "mockResponse": {
+        "status": 400,
+        "body": null
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "<MakeBids> Unexpected status code: 400.",
+      "comparison": "literal"
+    }
+  ]
+}
