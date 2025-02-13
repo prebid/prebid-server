@@ -14,7 +14,6 @@
       "ext": {
         "bidder": {
           "account_id": "123",
-          "site": "rediads.com",
           "slot": "12345"
         }
       }
@@ -22,8 +21,9 @@
   ],
   "site": {
     "page": "https://rediads.com",
+    "domain": "rediads.com",
     "publisher": {
-      "id": "1234"
+      "domain": "rediads.com"
     }
   },
   "device": {

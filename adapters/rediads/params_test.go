@@ -34,8 +34,8 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
-	`{"account_id": "123", "site": "rediads.com"}`,
-	`{"account_id": "123", "site": "rediads.com", "slot": "12345"}`,
+	`{"account_id": "123"}`,
+	`{"account_id": "123", "slot": "12345"}`,
 }
 
 var invalidParams = []string{

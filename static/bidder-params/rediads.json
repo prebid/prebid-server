@@ -7,13 +7,10 @@
     "account_id": {
       "type": "string"
     },
-    "site": {
-      "type": "string"
-    },
     "slot": {
       "type": "string"
     },
-    "ssi": {
+    "endpoint": {
       "type": "string"
     }
   },

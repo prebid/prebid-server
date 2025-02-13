@@ -11,7 +11,7 @@ import (
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderRediads, config.Adapter{
 		Endpoint: "https://bidding.rediads.com/openrtb2/auction"},
-		config.Server{ExternalUrl: "https://rediads.com", GvlID: 1, DataCenter: "2"})
+		config.Server{ExternalUrl: "https://rediads.com"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)

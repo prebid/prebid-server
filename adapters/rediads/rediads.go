@@ -1,7 +1,6 @@
 package rediads
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -11,8 +10,6 @@ import (
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
-	jsonpatch "gopkg.in/evanphx/json-patch.v4"
-
 )
 
 type adapter struct {
@@ -30,7 +27,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errors []error
 	var accountID string
-	var site string
+	var endpoint string
 
 	fmt.Println("request MakeRequests")
 
@@ -65,47 +62,23 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		}
 
 		// Set accountID and slot to use in request.ext
-		if accountID == "" || site == "" {
+		if accountID == "" || endpoint == "" {
 			accountID = rediadsExt.AccountID
-			site = rediadsExt.Site
+			endpoint = rediadsExt.Endpoint
 		}
-
-		// Add stored request ID if SSI is true
-		// if rediadsExt.SSI != "" {			
-			storedReqId := fmt.Sprintf("%s_%s", rediadsExt.AccountID, rediadsExt.Site)
-			if rediadsExt.Slot != "" {
-				storedReqId = fmt.Sprintf("%s_%s", storedReqId, rediadsExt.Slot)
-			}
 	
-			storedReqIdMap := map[string]interface{}{
-				"prebid": map[string]interface{}{
-					"storedrequest": map[string]interface{}{
-						"id": storedReqId,
-					},
-				},
-			}
-
-			// Marshal the map into JSON
-			storedReqIdJSON, err := json.Marshal(storedReqIdMap)
-			if err != nil {
-				errors = append(errors, &errortypes.BadInput{
-					Message: fmt.Sprintf("Error in Marshaling rediads ext"),
-				})
-				continue
-			}
-
-			// Apply the patch to imp.Ext
-			imp.Ext, err = jsonpatch.MergePatch(imp.Ext, storedReqIdJSON)
-			if err != nil {
-				errors = append(errors, &errortypes.BadInput{
-					Message: fmt.Sprintf("Error in merging rediads ext to request ext"),
-				})
-				continue
-			}
-		// }
-
 		// Set tagid in the imp object
 		imp.TagID = rediadsExt.Slot
+		bidderExt.Bidder = nil
+
+		newExt, err := jsonutil.Marshal(bidderExt)
+		if err != nil {
+			errors = append(errors, &errortypes.BadInput{
+				Message: fmt.Sprintf("Failed to marshal bidderExt for impression %s", imp.ID),
+			})
+			continue
+		}
+		imp.Ext = newExt
 		request.Imp[i] = imp
 	}
 
@@ -138,10 +111,18 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		return nil, []error{err}
 	}
 
+	finalEndpoint := a.endpoint
+	if endpoint != "" {
+		finalEndpoint = endpoint
+	}
+
+	fmt.Println("request requestJSON", string(requestJSON))
+	fmt.Println("finalEndpoint", finalEndpoint)
+
 	// Build adapters.RequestData
 	requestData := &adapters.RequestData{
 		Method: "POST",
-		Uri:    a.endpoint,
+		Uri:    finalEndpoint,
 		Body:   requestJSON,
 		ImpIDs: openrtb_ext.GetImpIDs(request.Imp),
 	}
