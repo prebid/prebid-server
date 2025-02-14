@@ -1,0 +1,2 @@
+endpoint: "https://adinify-prebid.attekmi.com/pbserver/?seat={{.AccountID}}&token={{.SourceId}}"
+aliasOf: "smarthub"
