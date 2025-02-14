@@ -35,6 +35,8 @@ const (
 	InvalidBidResponseDSAWarningCode
 	SecCookieDeprecationLenWarningCode
 	SecBrowsingTopicsWarningCode
+	InvalidUserEIDsWarningCode
+	InvalidUserUIDsWarningCode
 )
 
 // Coder provides an error or warning code with severity.
