@@ -29,20 +29,32 @@ func Builder(_ openrtb_ext.BidderName, config config.Adapter, server config.Serv
 // MakeRequests makes outgoing HTTP requests to Seedtag endpoint.
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
+	var errors []error
+	imps := make([]openrtb2.Imp, 0, len(request.Imp))
+
 	for _, imp := range request.Imp {
 		// Convert Floor into USD
 		if imp.BidFloor > 0 && imp.BidFloorCur != "" && strings.ToUpper(imp.BidFloorCur) != "USD" {
 			convertedValue, err := reqInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, "USD")
 			if err != nil {
-				return nil, []error{err}
+				errors = append(errors, err)
+				continue
 			}
 
 			imp.BidFloorCur = "USD"
 			imp.BidFloor = convertedValue
 		}
+
+		imps = append(imps, imp)
 	}
 
-	requestJSON, err := json.Marshal(request)
+	if len(imps) < 1 {
+		return nil, errors
+	}
+
+	requestCopy := *request
+	requestCopy.Imp = imps
+	requestJSON, err := json.Marshal(requestCopy)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -51,10 +63,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		Method: http.MethodPost,
 		Uri:    a.endpoint,
 		Body:   requestJSON,
-		ImpIDs: openrtb_ext.GetImpIDs(request.Imp),
+		ImpIDs: openrtb_ext.GetImpIDs(requestCopy.Imp),
 	}
 
-	return []*adapters.RequestData{requestData}, nil
+	return []*adapters.RequestData{requestData}, errors
 }
 
 // MakeBids unpacks the server's response into Bids.
