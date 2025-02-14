@@ -11,6 +11,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/adapters/adapterstest"
 	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
@@ -26,48 +27,73 @@ func TestJsonSamples(t *testing.T) {
 	adapterstest.RunJSONBidderTest(t, "pubmatictest", bidder)
 }
 
-func TestGetMediaTypeForBidBanner(t *testing.T) {
-	Bid := openrtb2.Bid{}
-	Bid.MType = 1
-	actualBidTypeValue := string(getMediaTypeForBid(&Bid))
-	if actualBidTypeValue != string(openrtb_ext.BidTypeBanner) {
-		t.Errorf("Expected Bid Type value was: %v, actual value is: %v", openrtb_ext.BidTypeBanner, actualBidTypeValue)
+func TestGetMediaTypeForBid(t *testing.T) {
+	tests := []struct {
+		name            string
+		mType           openrtb2.MarkupType
+		expectedBidType openrtb_ext.BidType
+		expectedError   error
+	}{
+		{
+			name:            "Test Banner Bid Type",
+			mType:           1,
+			expectedBidType: openrtb_ext.BidTypeBanner,
+			expectedError:   nil,
+		},
+		{
+			name:            "Test Video Bid Type",
+			mType:           2,
+			expectedBidType: openrtb_ext.BidTypeVideo,
+			expectedError:   nil,
+		},
+		{
+			name:            "Test Audio Bid Type",
+			mType:           3,
+			expectedBidType: openrtb_ext.BidTypeAudio,
+			expectedError:   nil,
+		},
+		{
+			name:            "Test Native Bid Type",
+			mType:           4,
+			expectedBidType: openrtb_ext.BidTypeNative,
+			expectedError:   nil,
+		},
+		{
+			name:            "Test Unsupported MType (Invalid MType)",
+			mType:           44,
+			expectedBidType: "", // default value for unsupported types
+			expectedError:   &errortypes.BadServerResponse{Message: "failed to parse bid mtype (44) for impression id  "},
+		},
+		{
+			name:            "Test Default MType (MType 0 or Not Set)",
+			mType:           0,  // This represents the default case where MType is not explicitly set
+			expectedBidType: "", // Default is empty and return error
+			expectedError:   &errortypes.BadServerResponse{Message: "failed to parse bid mtype (0) for impression id  "},
+		},
 	}
-}
 
-func TestGetMediaTypeForBidVideo(t *testing.T) {
-	Bid := openrtb2.Bid{}
-	Bid.MType = 2
-	actualBidTypeValue := string(getMediaTypeForBid(&Bid))
-	if actualBidTypeValue != string(openrtb_ext.BidTypeVideo) {
-		t.Errorf("Expected Bid Type value was: %v, actual value is: %v", openrtb_ext.BidTypeVideo, actualBidTypeValue)
-	}
-}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a bid with the given mType
+			Bid := openrtb2.Bid{
+				MType: tt.mType,
+			}
 
-func TestGetMediaTypeForBidAudio(t *testing.T) {
-	Bid := openrtb2.Bid{}
-	Bid.MType = 3
-	actualBidTypeValue := string(getMediaTypeForBid(&Bid))
-	if actualBidTypeValue != string(openrtb_ext.BidTypeAudio) {
-		t.Errorf("Expected Bid Type value was: %v, actual value is: %v", openrtb_ext.BidTypeAudio, actualBidTypeValue)
-	}
-}
+			// Call the function and check the result
+			actualBidTypeValue, actualError := getMediaTypeForBid(&Bid)
 
-func TestGetMediaTypeForBidNative(t *testing.T) {
-	Bid := openrtb2.Bid{}
-	Bid.MType = 4
-	actualBidTypeValue := string(getMediaTypeForBid(&Bid))
-	if actualBidTypeValue != string(openrtb_ext.BidTypeNative) {
-		t.Errorf("Expected Bid Type value was: %v, actual value is: %v", openrtb_ext.BidTypeNative, actualBidTypeValue)
-	}
-}
+			// Check the bid type
+			if actualBidTypeValue != tt.expectedBidType {
+				t.Errorf("Expected Bid Type value was: %v, actual value is: %v", tt.expectedBidType, actualBidTypeValue)
+			}
 
-func TestGetMediaTypeForBidForUnsupportedCode(t *testing.T) {
-	Bid := openrtb2.Bid{}
-	Bid.MType = 44
-	actualBidTypeValue := string(getMediaTypeForBid(&Bid))
-	if actualBidTypeValue != string(openrtb_ext.BidTypeBanner) {
-		t.Errorf("Expected Bid Type value was: %v, actual value is: %v", openrtb_ext.BidTypeBanner, actualBidTypeValue)
+			// Check if error matches
+			if tt.expectedError != nil && actualError == nil {
+				t.Errorf("Expected error: %v, but got nil", tt.expectedError)
+			} else if tt.expectedError != nil && actualError != nil && actualError.Error() != tt.expectedError.Error() {
+				t.Errorf("Expected error: %v, but got: %v", tt.expectedError, actualError)
+			}
+		})
 	}
 }
 
@@ -394,7 +420,7 @@ func TestPubmaticAdapter_MakeBids(t *testing.T) {
 			args: args{
 				response: &adapters.ResponseData{
 					StatusCode: http.StatusOK,
-					Body:       []byte(`{"id": "test-request-id", "seatbid":[{"seat": "958", "bid":[{"id": "7706636740145184841", "impid": "test-imp-id", "price": 0.500000, "adid": "29681110", "adm": "some-test-ad", "adomain":["pubmatic.com"], "crid": "29681110", "h": 250, "w": 300, "dealid": "testdeal", "ext":{"dspid": 6, "deal_channel": 1, "prebiddealpriority": 1}}]}], "bidid": "5778926625248726496", "cur": "USD"}`),
+					Body:       []byte(`{"id": "test-request-id", "seatbid":[{"seat": "958", "bid":[{"id": "7706636740145184841", "impid": "test-imp-id", "price": 0.500000, "adid": "29681110", "adm": "some-test-ad", "adomain":["pubmatic.com"], "crid": "29681110", "h": 250, "w": 300, "dealid": "testdeal", "mtype": 1, "ext":{"dspid": 6, "deal_channel": 1, "prebiddealpriority": 1}}]}], "bidid": "5778926625248726496", "cur": "USD"}`),
 				},
 			},
 			wantErr: nil,
@@ -412,6 +438,7 @@ func TestPubmaticAdapter_MakeBids(t *testing.T) {
 							H:       250,
 							W:       300,
 							DealID:  "testdeal",
+							MType:   1,
 							Ext:     json.RawMessage(`{"dspid": 6, "deal_channel": 1, "prebiddealpriority": 1}`),
 						},
 						DealPriority: 1,
@@ -445,7 +472,7 @@ func TestPubmaticAdapter_MakeBids(t *testing.T) {
 			args: args{
 				response: &adapters.ResponseData{
 					StatusCode: http.StatusOK,
-					Body:       []byte(`{"id": "test-request-id", "seatbid":[{"seat": "958", "bid":[{"id": "7706636740145184841", "impid": "test-imp-id", "price": 0.500000, "adid": "29681110", "adm": "some-test-ad", "adomain":["pubmatic.com"], "crid": "29681110", "h": 250, "w": 300, "dealid": "testdeal", "ext":{"dspid": 6, "deal_channel": 1, "prebiddealpriority": -1}}]}], "bidid": "5778926625248726496", "cur": "USD"}`),
+					Body:       []byte(`{"id": "test-request-id", "seatbid":[{"seat": "958", "bid":[{"id": "7706636740145184841", "impid": "test-imp-id", "price": 0.500000, "adid": "29681110", "adm": "some-test-ad", "adomain":["pubmatic.com"], "crid": "29681110", "h": 250, "w": 300, "dealid": "testdeal","mtype": 1, "ext":{"dspid": 6, "deal_channel": 1, "prebiddealpriority": -1}}]}], "bidid": "5778926625248726496", "cur": "USD"}`),
 				},
 			},
 			wantErr: nil,
@@ -463,6 +490,7 @@ func TestPubmaticAdapter_MakeBids(t *testing.T) {
 							H:       250,
 							W:       300,
 							DealID:  "testdeal",
+							MType:   1,
 							Ext:     json.RawMessage(`{"dspid": 6, "deal_channel": 1, "prebiddealpriority": -1}`),
 						},
 						BidType:  openrtb_ext.BidTypeBanner,
