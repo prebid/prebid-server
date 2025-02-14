@@ -489,10 +489,10 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 					typedBid.BidVideo.Duration = *bidExt.VideoCreativeInfo.Duration
 				}
 
-				if bidExt.InBannerVideo {
-					mType = openrtb_ext.BidTypeVideo
-				}
 				typedBid.BidMeta = &openrtb_ext.ExtBidPrebidMeta{MediaType: string(mType)}
+				if bidExt.InBannerVideo {
+					typedBid.BidMeta.MediaType = string(openrtb_ext.BidTypeVideo)
+				}
 			}
 
 			if typedBid.BidType == openrtb_ext.BidTypeNative {
