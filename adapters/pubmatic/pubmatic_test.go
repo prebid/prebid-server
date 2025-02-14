@@ -29,65 +29,58 @@ func TestJsonSamples(t *testing.T) {
 
 func TestGetMediaTypeForBid(t *testing.T) {
 	tests := []struct {
-		name            string
-		mType           openrtb2.MarkupType
-		expectedBidType openrtb_ext.BidType
-		expectedError   error
+		name          string
+		mType         openrtb2.MarkupType
+		expectedMType openrtb_ext.BidType
+		expectedError error
 	}{
 		{
-			name:            "Test Banner Bid Type",
-			mType:           1,
-			expectedBidType: openrtb_ext.BidTypeBanner,
-			expectedError:   nil,
+			name:          "Test Banner Bid Type",
+			mType:         1,
+			expectedMType: openrtb_ext.BidTypeBanner,
+			expectedError: nil,
 		},
 		{
-			name:            "Test Video Bid Type",
-			mType:           2,
-			expectedBidType: openrtb_ext.BidTypeVideo,
-			expectedError:   nil,
+			name:          "Test Video Bid Type",
+			mType:         2,
+			expectedMType: openrtb_ext.BidTypeVideo,
+			expectedError: nil,
 		},
 		{
-			name:            "Test Audio Bid Type",
-			mType:           3,
-			expectedBidType: openrtb_ext.BidTypeAudio,
-			expectedError:   nil,
+			name:          "Test Audio Bid Type",
+			mType:         3,
+			expectedMType: openrtb_ext.BidTypeAudio,
+			expectedError: nil,
 		},
 		{
-			name:            "Test Native Bid Type",
-			mType:           4,
-			expectedBidType: openrtb_ext.BidTypeNative,
-			expectedError:   nil,
+			name:          "Test Native Bid Type",
+			mType:         4,
+			expectedMType: openrtb_ext.BidTypeNative,
+			expectedError: nil,
 		},
 		{
-			name:            "Test Unsupported MType (Invalid MType)",
-			mType:           44,
-			expectedBidType: "", // default value for unsupported types
-			expectedError:   &errortypes.BadServerResponse{Message: "failed to parse bid mtype (44) for impression id  "},
+			name:          "Test Unsupported MType (Invalid MType)",
+			mType:         44,
+			expectedMType: "", // default value for unsupported types
+			expectedError: &errortypes.BadServerResponse{Message: "failed to parse bid mtype (44) for impression id  "},
 		},
 		{
-			name:            "Test Default MType (MType 0 or Not Set)",
-			mType:           0,  // This represents the default case where MType is not explicitly set
-			expectedBidType: "", // Default is empty and return error
-			expectedError:   &errortypes.BadServerResponse{Message: "failed to parse bid mtype (0) for impression id  "},
+			name:          "Test Default MType (MType 0 or Not Set)",
+			mType:         0,  // This represents the default case where MType is not explicitly set
+			expectedMType: "", // Default is empty and return error
+			expectedError: &errortypes.BadServerResponse{Message: "failed to parse bid mtype (0) for impression id  "},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Create a bid with the given mType
 			Bid := openrtb2.Bid{
 				MType: tt.mType,
 			}
-
-			// Call the function and check the result
 			actualBidTypeValue, actualError := getMediaTypeForBid(&Bid)
-
-			// Check the bid type
-			if actualBidTypeValue != tt.expectedBidType {
-				t.Errorf("Expected Bid Type value was: %v, actual value is: %v", tt.expectedBidType, actualBidTypeValue)
+			if actualBidTypeValue != tt.expectedMType {
+				t.Errorf("Expected Bid Type value was: %v, actual value is: %v", tt.expectedMType, actualBidTypeValue)
 			}
-
-			// Check if error matches
 			if tt.expectedError != nil && actualError == nil {
 				t.Errorf("Expected error: %v, but got nil", tt.expectedError)
 			} else if tt.expectedError != nil && actualError != nil && actualError.Error() != tt.expectedError.Error() {
