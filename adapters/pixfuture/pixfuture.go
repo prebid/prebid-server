@@ -28,28 +28,10 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 func (a *adapter) MakeRequests(bidRequest *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 
-	// Process impressions
-	var validImpressions []openrtb2.Imp
-	for i := range bidRequest.Imp {
-		imp := &bidRequest.Imp[i]
-		if imp.Banner == nil && imp.Video == nil {
-			errs = append(errs, fmt.Errorf("unsupported impression type for impID: %s", imp.ID))
-			continue
-		}
-		validImpressions = append(validImpressions, *imp)
-	}
-
-	if len(validImpressions) == 0 {
-		errs = append(errs, errors.New("no valid impressions after filtering"))
-		return nil, errs
-	}
-
 	// Create the outgoing request
-	bidRequest.Imp = validImpressions
 	body, err := jsonutil.Marshal(bidRequest)
 	if err != nil {
-		errs = append(errs, fmt.Errorf("failed to marshal bid request: %w", err))
-		return nil, errs
+		return nil, []error{fmt.Errorf("failed to marshal bid request: %w", err)}
 	}
 
 	request := &adapters.RequestData{
@@ -61,7 +43,7 @@ func (a *adapter) MakeRequests(bidRequest *openrtb2.BidRequest, reqInfo *adapter
 		},
 	}
 
-	return []*adapters.RequestData{request}, errs
+	return []*adapters.RequestData{request}, nil
 }
 
 // getMediaTypeForBid extracts the bid type based on the bid extension data.
