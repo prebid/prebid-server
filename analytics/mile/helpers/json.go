@@ -3,13 +3,17 @@ package helpers
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/getsentry/sentry-go"
 	"github.com/prebid/prebid-server/v3/analytics"
 	"time"
 )
 
 func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]MileAnalyticsEvent, error) {
 	//var logEntry *MileAnalyticsEvent
+	defer sentry.Recover()
+
 	var events []MileAnalyticsEvent
+	fmt.Println(ao.RequestWrapper.DOOH.Domain)
 	if ao != nil {
 		if ao.RequestWrapper != nil {
 			for _, imp := range ao.RequestWrapper.Imp {
@@ -35,8 +39,6 @@ func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]MileAnal
 						}
 					}
 				}
-
-				fmt.Println(ao.RequestWrapper, "ext")
 
 				var confBidders ImpressionsExt
 				//if ao.RequestWrapper != nil {
@@ -85,7 +87,10 @@ func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]MileAnal
 						WinningBidder:     winningBidder,
 						WinningSize:       winningSize,
 						ConfiguredTimeout: ao.RequestWrapper.TMax,
-						MetaData:          map[string][]string{"prebid_server": []string{"1"}},
+						MetaData: map[string][]string{
+							"prebid_server": []string{"1"},
+							"amp":           []string{"1"},
+						},
 						//Viewability: ao.RequestWrapper.
 						//WinningSize: ao.Response.SeatBi
 						IsPBS: true,
@@ -125,7 +130,7 @@ func JsonifyVideoObject(vo *analytics.VideoObject, scope string) (*MileAnalytics
 }
 
 func JsonifyAmpObject(ao *analytics.AmpObject, scope string) ([]MileAnalyticsEvent, error) {
-	//var logEntry *MileAnalyticsEvent
+	defer sentry.Recover()
 	var events []MileAnalyticsEvent
 	if ao != nil {
 
@@ -138,8 +143,6 @@ func JsonifyAmpObject(ao *analytics.AmpObject, scope string) ([]MileAnalyticsEve
 			}
 			//}
 		}
-
-		fmt.Println(ao.RequestWrapper, "ext")
 
 		var confBidders ImpressionsExt
 
@@ -155,8 +158,6 @@ func JsonifyAmpObject(ao *analytics.AmpObject, scope string) ([]MileAnalyticsEve
 			configuredBidders[i] = k
 			i++
 		}
-		fmt.Println(configuredBidders)
-
 		if ao.RequestWrapper != nil {
 
 			for range ao.RequestWrapper.Imp {

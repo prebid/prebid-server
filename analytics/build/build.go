@@ -61,7 +61,7 @@ func New(analytics *config.Analytics) analytics.Runner {
 
 	if analytics.Mile.Enabled {
 		mileConfig := mile.BuildConfig(analytics.Mile.Scope,
-			analytics.Mile.Endpoint, "auction")
+			analytics.Mile.Endpoint, "amp")
 
 		fmt.Println(mileConfig)
 

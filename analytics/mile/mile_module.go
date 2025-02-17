@@ -2,6 +2,8 @@ package mile
 
 import (
 	"fmt"
+	"github.com/getsentry/sentry-go"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -63,6 +65,22 @@ func NewModule(client *http.Client, scope, endpoint, configRefreshDelay string, 
 	return NewModuleWithConfigTask(client, scope, endpoint, maxEventCount, maxByteSize, maxTime, configUpdateTask, clock)
 }
 
+func loadSentry() {
+	err := sentry.Init(sentry.ClientOptions{
+		Dsn: "https://52ba2fbdf01d4f7c8921ee775f05cb06@sentry.mile.so/13",
+		// Set TracesSampleRate to 1.0 to capture 100%
+		// of transactions for performance monitoring.
+		// We recommend adjusting this value in production,
+		TracesSampleRate: 1.0,
+	})
+	if err != nil {
+		log.Fatalf("sentry.Init: %s", err)
+	}
+
+	defer sentry.Flush(2 * time.Second)
+
+}
+
 func NewModuleWithConfig(client *http.Client, scope, endpoint string, config *Configuration, maxEventCount int, maxByteSize, maxTime string, clock clock.Clock) (analytics.Module, error) {
 
 	bufferCfg, err := newBufferConfig(maxEventCount, maxByteSize, maxTime)
@@ -82,6 +100,7 @@ func NewModuleWithConfig(client *http.Client, scope, endpoint string, config *Co
 	}
 
 	mm.updateConfig(config)
+	loadSentry()
 
 	return &mm, nil
 }
@@ -143,6 +162,7 @@ func (m *MileModule) LogAuctionObject(ao *analytics.AuctionObject) {
 
 	if err != nil {
 		glog.Warning("[mile] Cannot serialize auction")
+		sentry.CaptureException(err)
 		return
 	}
 	for _, event := range events {
@@ -219,6 +239,7 @@ func (m *MileModule) LogAmpObject(ao *analytics.AmpObject) {
 	events, err := helpers.JsonifyAmpObject(ao, m.scope)
 	if err != nil {
 		glog.Warning("[mile] Cannot serialize video")
+		sentry.CaptureException(err)
 		return
 	}
 

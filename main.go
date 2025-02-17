@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"log"
 	"net/http"
 	"path/filepath"
 	"runtime"
@@ -19,8 +18,6 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/spf13/viper"
-
-	"github.com/getsentry/sentry-go"
 )
 
 func init() {
@@ -67,24 +64,7 @@ func loadConfig(bidderInfos config.BidderInfos) (*config.Configuration, error) {
 	return config.New(v, bidderInfos, openrtb_ext.NormalizeBidderName)
 }
 
-func loadSentry() {
-	err := sentry.Init(sentry.ClientOptions{
-		Dsn: "https://52ba2fbdf01d4f7c8921ee775f05cb06@sentry.mile.so/13",
-		// Set TracesSampleRate to 1.0 to capture 100%
-		// of transactions for performance monitoring.
-		// We recommend adjusting this value in production,
-		TracesSampleRate: 1.0,
-	})
-	if err != nil {
-		log.Fatalf("sentry.Init: %s", err)
-	}
-
-	//defer sentry.Flush(2 * time.Second)
-
-}
-
 func serve(cfg *config.Configuration) error {
-	loadSentry()
 
 	fetchingInterval := time.Duration(cfg.CurrencyConverter.FetchIntervalSeconds) * time.Second
 	staleRatesThreshold := time.Duration(cfg.CurrencyConverter.StaleRatesSeconds) * time.Second
