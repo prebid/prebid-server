@@ -30,8 +30,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	var accountID string
 	var endpoint string
 
-	fmt.Println("request MakeRequests")
-
 	// Iterate through all impressions in the request
 	for i, imp := range request.Imp {
 		// Extract and validate bidder-specific params from imp.Ext
@@ -72,7 +70,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			endpoint = rediadsExt.Endpoint
 		}
 		// Set tagid in the imp object
-		imp.TagID = rediadsExt.Slot
+		if rediadsExt.Slot != "" {
+			imp.TagID = rediadsExt.Slot
+		}
 		request.Imp[i] = imp
 	}
 
@@ -109,9 +109,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	if endpoint != "" {
 		finalEndpoint = endpoint
 	}
-
-	fmt.Println("request requestJSON", string(requestJSON))
-	fmt.Println("finalEndpoint", finalEndpoint)
 
 	// Build adapters.RequestData
 	requestData := &adapters.RequestData{

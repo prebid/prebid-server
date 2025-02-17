@@ -1,5 +1,3 @@
-# We have the following regional endpoint domains: us-east and us-west
-# Please deploy this config in each of your datacenters with the appropriate regional subdomain
 endpoint: "http://localhost:8080/openrtb2/auction"
 # endpointCompression: gzip
 geoscope:
