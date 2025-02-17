@@ -88,6 +88,8 @@
               "ext": {
                 "origbidcpm": 0.01,
                 "prebid": {
+                  "meta": {
+                  },
                   "cache": {
                     "bids": {
                       "cacheId": "0",

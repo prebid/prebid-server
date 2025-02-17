@@ -1,0 +1,64 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 50
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "pubId": "fake-pub-id",
+            "zoneId": "sin"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bid.zmaticoo.com/prebid/bid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 50
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "pubId": "fake-pub-id",
+                  "zoneId": "sin"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 400,
+        "body": {}
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "comparison": "literal",
+      "value": "Unexpected status code: 400."
+    }
+  ]
+}

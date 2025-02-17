@@ -1,0 +1,144 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "device": {
+            "ip": "123.123.123.123",
+            "ua": "iPad"
+        },
+        "site": {
+            "domain": "www.example.com",
+            "page": "http://www.example.com",
+            "publisher": {
+                "domain": "example.com"
+            },
+            "ext": {
+                "amp": 0
+            }
+        },
+        "imp": [
+            {
+                "id": "test-imp-id",
+                "tagid": "test",
+                "audio": {
+                    "mimes": [
+                        "audio/mpeg",
+                        "audio/mp3"
+                    ],
+                    "minduration": 5,
+                    "maxduration": 30,
+                    "minbitrate": 32,
+                    "maxbitrate": 128
+                },
+                "bidfloor": 0.7,
+                "bidfloorcur": "USD",
+                "ext": {
+                    "bidder": {
+                        "token": "XXX",
+                        "bidFloor": 0.5
+                    }
+                }
+            }
+        ]
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "https://exchange.alkimi-onboarding.com/server/bid",
+                "body": {
+                    "id": "test-request-id",
+                    "imp": [
+                        {
+                            "id": "test-imp-id",
+                            "tagid": "test",
+                            "audio": {
+                                "mimes": [
+                                    "audio/mpeg",
+                                    "audio/mp3"
+                                ],
+                                "minduration": 5,
+                                "maxduration": 30,
+                                "minbitrate": 32,
+                                "maxbitrate": 128
+                            },
+                            "bidfloor": 0.7,
+                            "bidfloorcur": "USD",
+                            "ext": {
+                                "bidder": {
+                                    "token": "XXX",
+                                    "bidFloor": 0.5,
+                                    "adUnitCode": "test-imp-id",
+                                    "exp": 0,
+                                    "instl": 0
+                                }
+                            }
+                        }
+                    ],
+                    "site": {
+                        "domain": "www.example.com",
+                        "page": "http://www.example.com",
+                        "publisher": {
+                            "domain": "example.com"
+                        },
+                        "ext": {
+                            "amp": 0
+                        }
+                    },
+                    "device": {
+                        "ip": "123.123.123.123",
+                        "ua": "iPad"
+                    }
+                },
+                "impIDs":["test-imp-id"]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "test-request-id",
+                    "seatbid": [
+                        {
+                            "bid": [
+                                {
+                                    "id": "test_bid_id",
+                                    "impid": "test-imp-id",
+                                    "price": 0.9,
+                                    "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\" ?><VAST version=\"2.0\"><Ad id=\"128a6.44d74.46b3\"><InLine><Error><![CDATA[http:\/\/example.net\/hbx\/verr?e=]]><\/Error><Impression><![CDATA[http:\/\/example.net\/hbx\/vimp?lid=test&aid=testapp]]><\/Impression><Creatives><Creative sequence=\"1\"><Linear><Duration>00:00:15<\/Duration><TrackingEvents><Tracking event=\"firstQuartile\"><![CDATA[https:\/\/example.com?event=first_quartile]]><\/Tracking><\/TrackingEvents><VideoClicks><ClickThrough><![CDATA[http:\/\/example.com]]><\/ClickThrough><\/VideoClicks><MediaFiles><MediaFile delivery=\"progressive\" width=\"16\" height=\"9\" type=\"audio\/mp3\" bitrate=\"128\"><![CDATA[https:\/\/example.com\/media.mp4]]><\/MediaFile><\/MediaFiles><\/Linear><\/Creative><\/Creatives><\/InLine><\/Ad><\/VAST>",
+                                    "cid": "test_cid",
+                                    "crid": "test_crid",
+                                    "ext": {
+                                        "prebid": {
+                                            "type": "audio"
+                                        }
+                                    }
+                                }
+                            ],
+                            "seat": "alkimi"
+                        }
+                    ],
+                    "cur": "USD"
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "bids": [
+                {
+                    "bid": {
+                        "id": "test_bid_id",
+                        "impid": "test-imp-id",
+                        "price": 0.9,
+                        "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\" ?><VAST version=\"2.0\"><Ad id=\"128a6.44d74.46b3\"><InLine><Error><![CDATA[http:\/\/example.net\/hbx\/verr?e=]]><\/Error><Impression><![CDATA[http:\/\/example.net\/hbx\/vimp?lid=test&aid=testapp]]><\/Impression><Creatives><Creative sequence=\"1\"><Linear><Duration>00:00:15<\/Duration><TrackingEvents><Tracking event=\"firstQuartile\"><![CDATA[https:\/\/example.com?event=first_quartile]]><\/Tracking><\/TrackingEvents><VideoClicks><ClickThrough><![CDATA[http:\/\/example.com]]><\/ClickThrough><\/VideoClicks><MediaFiles><MediaFile delivery=\"progressive\" width=\"16\" height=\"9\" type=\"audio\/mp3\" bitrate=\"128\"><![CDATA[https:\/\/example.com\/media.mp4]]><\/MediaFile><\/MediaFiles><\/Linear><\/Creative><\/Creatives><\/InLine><\/Ad><\/VAST>",
+                        "cid": "test_cid",
+                        "crid": "test_crid",
+                        "ext": {
+                            "prebid": {
+                                "type": "audio"
+                            }
+                        }
+                    },
+                    "type": "audio"
+                }
+            ]
+        }
+    ]
+}

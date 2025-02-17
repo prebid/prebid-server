@@ -1,18 +1,4 @@
-endpoint: "https://adx.adform.net/adx/openrtb"
-maintainer:
-  email: "scope.sspp@adform.com"
-gvlVendorID: 50
-capabilities:
-  app:
-    mediaTypes:
-      - banner
-      - native
-      - video
-  site:
-    mediaTypes:
-      - banner
-      - native
-      - video
+aliasOf: adf
 userSync:
   redirect:
     url: "https://cm.adform.net/cookie?redirect_url={{.RedirectURL}}"

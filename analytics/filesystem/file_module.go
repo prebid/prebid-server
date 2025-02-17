@@ -2,12 +2,12 @@ package filesystem
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 
 	"github.com/chasex/glog"
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/analytics"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/analytics"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
 type RequestType string
@@ -86,7 +86,7 @@ func (f *FileLogger) LogNotificationEventObject(ne *analytics.NotificationEvent)
 }
 
 // Method to initialize the analytic module
-func NewFileLogger(filename string) (analytics.PBSAnalyticsModule, error) {
+func NewFileLogger(filename string) (analytics.Module, error) {
 	options := glog.LogOptions{
 		File:  filename,
 		Flag:  glog.LstdFlags,
@@ -120,7 +120,7 @@ func jsonifyAuctionObject(ao *analytics.AuctionObject) string {
 		}
 	}
 
-	b, err := json.Marshal(&struct {
+	b, err := jsonutil.Marshal(&struct {
 		Type RequestType `json:"type"`
 		*logAuction
 	}{
@@ -153,7 +153,7 @@ func jsonifyVideoObject(vo *analytics.VideoObject) string {
 		}
 	}
 
-	b, err := json.Marshal(&struct {
+	b, err := jsonutil.Marshal(&struct {
 		Type RequestType `json:"type"`
 		*logVideo
 	}{
@@ -178,7 +178,7 @@ func jsonifyCookieSync(cso *analytics.CookieSyncObject) string {
 		}
 	}
 
-	b, err := json.Marshal(&struct {
+	b, err := jsonutil.Marshal(&struct {
 		Type RequestType `json:"type"`
 		*logUserSync
 	}{
@@ -205,7 +205,7 @@ func jsonifySetUIDObject(so *analytics.SetUIDObject) string {
 		}
 	}
 
-	b, err := json.Marshal(&struct {
+	b, err := jsonutil.Marshal(&struct {
 		Type RequestType `json:"type"`
 		*logSetUID
 	}{
@@ -239,7 +239,7 @@ func jsonifyAmpObject(ao *analytics.AmpObject) string {
 		}
 	}
 
-	b, err := json.Marshal(&struct {
+	b, err := jsonutil.Marshal(&struct {
 		Type RequestType `json:"type"`
 		*logAMP
 	}{
@@ -263,7 +263,7 @@ func jsonifyNotificationEventObject(ne *analytics.NotificationEvent) string {
 		}
 	}
 
-	b, err := json.Marshal(&struct {
+	b, err := jsonutil.Marshal(&struct {
 		Type RequestType `json:"type"`
 		*logNotificationEvent
 	}{

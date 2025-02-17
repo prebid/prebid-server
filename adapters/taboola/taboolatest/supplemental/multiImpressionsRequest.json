@@ -107,7 +107,8 @@
             "h": 300,
             "w": 300
           }
-        }
+        },
+        "impIDs":["impression-id-1","impression-id-2"]
       },
       "mockResponse": {
         "status": 200,

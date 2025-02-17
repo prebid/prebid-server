@@ -1,7 +1,6 @@
 package http_fetcher
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -10,7 +9,8 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/v2/stored_requests"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
 	"github.com/golang/glog"
@@ -142,7 +142,7 @@ func (fetcher *HttpFetcher) FetchAccounts(ctx context.Context, accountIDs []stri
 		}
 	}
 	var responseData accountsResponseContract
-	if err = json.Unmarshal(respBytes, &responseData); err != nil {
+	if err = jsonutil.UnmarshalValid(respBytes, &responseData); err != nil {
 		return nil, []error{
 			fmt.Errorf(`Error fetching accounts %v via http: failed to parse response: %v`, accountIDs, err),
 		}
@@ -207,9 +207,12 @@ func (fetcher *HttpFetcher) FetchCategories(ctx context.Context, primaryAdServer
 	defer httpResp.Body.Close()
 
 	respBytes, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return "", fmt.Errorf("Unable to read response body: %v", err)
+	}
 	tmp := make(map[string]stored_requests.Category)
 
-	if err := json.Unmarshal(respBytes, &tmp); err != nil {
+	if err := jsonutil.UnmarshalValid(respBytes, &tmp); err != nil {
 		return "", fmt.Errorf("Unable to unmarshal categories for adserver: '%s', publisherId: '%s'", primaryAdServer, publisherId)
 	}
 	fetcher.Categories[dataName] = tmp
@@ -249,7 +252,7 @@ func unpackResponse(resp *http.Response) (requestData map[string]json.RawMessage
 
 	if resp.StatusCode == http.StatusOK {
 		var responseObj responseContract
-		if err := json.Unmarshal(respBytes, &responseObj); err != nil {
+		if err := jsonutil.UnmarshalValid(respBytes, &responseObj); err != nil {
 			errs = append(errs, err)
 			return
 		}
@@ -269,7 +272,7 @@ func unpackResponse(resp *http.Response) (requestData map[string]json.RawMessage
 
 func convertNullsToErrs(m map[string]json.RawMessage, dataType string, errs []error) []error {
 	for id, val := range m {
-		if bytes.Equal(val, []byte("null")) {
+		if val == nil {
 			delete(m, id)
 			errs = append(errs, stored_requests.NotFoundError{
 				ID:       id,

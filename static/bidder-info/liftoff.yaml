@@ -1,9 +1,0 @@
-endpoint: "https://rtb.ads.vungle.com/bid/t/c770f32"
-maintainer:
-  email: platform-ssp@liftoff.io
-endpointCompression: gzip
-modifyingVastXmlAllowed: true
-capabilities:
-  app:
-    mediaTypes:
-      - video

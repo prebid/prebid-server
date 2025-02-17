@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type adapter struct {
@@ -106,7 +106,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		}
 
 		if imp.Video != nil {
-			if imp.Video.W == 0 || imp.Video.H == 0 {
+			if imp.Video.W == nil || *imp.Video.W == 0 || imp.Video.H == nil || *imp.Video.H == 0 {
 				errs = append(errs, &errortypes.BadInput{
 					Message: "request.Video.Sizes is required",
 				})
@@ -129,6 +129,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			Uri:     a.endpoint,
 			Body:    req,
 			Headers: raiHeaders,
+			ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 		})
 
 	}
@@ -179,8 +180,8 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 				bidType := getMediaType(seatBid.Bid[i].ImpID, reqBid)
 
 				if bidType == "video" {
-					seatBid.Bid[i].W = reqBid.Video.W
-					seatBid.Bid[i].H = reqBid.Video.H
+					seatBid.Bid[i].W = *reqBid.Video.W
+					seatBid.Bid[i].H = *reqBid.Video.H
 				}
 
 				b := &adapters.TypedBid{

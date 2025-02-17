@@ -27,7 +27,7 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "https://mockup.seeding-alliance.de/",
+                "uri": "https://mockup.seeding-alliance.de/?ssp=pbs",
                 "body": {
                     "cur": [
                         "EUR"
@@ -53,7 +53,8 @@
                             "name": "foo"
                         }
                     }
-                }
+                },
+                "impIDs":["test-imp-id"]
             },
             "mockResponse": {
                 "status": 200,

@@ -111,7 +111,8 @@
               "custom": "1234"
             }
           }
-        }
+        },
+        "impIDs":["some-impression-id"]
       },
       "mockResponse": {
         "status": 200,

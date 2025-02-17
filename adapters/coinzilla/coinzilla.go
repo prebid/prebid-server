@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/errortypes"
 )
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
@@ -46,6 +46,7 @@ func (adapter *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest, reqInf
 		Uri:     adapter.endpoint,
 		Body:    openRTBRequestJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(openRTBRequest.Imp),
 	}
 	requestsToBidder = append(requestsToBidder, requestToBidder)
 

@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/util/ptrutil"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -41,6 +42,7 @@ func TestCloneRequestWrapper(t *testing.T) {
 				appExt:    &AppExt{prebidDirty: true},
 				regExt:    &RegExt{usPrivacy: "foo"},
 				siteExt:   &SiteExt{amp: ptrutil.ToPtr[int8](1)},
+				doohExt:   &DOOHExt{},
 				sourceExt: &SourceExt{schainDirty: true},
 			},
 			reqWrapCopy: &RequestWrapper{
@@ -60,6 +62,7 @@ func TestCloneRequestWrapper(t *testing.T) {
 				appExt:    &AppExt{prebidDirty: true},
 				regExt:    &RegExt{usPrivacy: "foo"},
 				siteExt:   &SiteExt{amp: ptrutil.ToPtr[int8](1)},
+				doohExt:   &DOOHExt{},
 				sourceExt: &SourceExt{schainDirty: true},
 			},
 			mutator: func(t *testing.T, reqWrap *RequestWrapper) {},
@@ -83,6 +86,7 @@ func TestCloneRequestWrapper(t *testing.T) {
 				appExt:    &AppExt{prebidDirty: true},
 				regExt:    &RegExt{usPrivacy: "foo"},
 				siteExt:   &SiteExt{amp: ptrutil.ToPtr[int8](1)},
+				doohExt:   &DOOHExt{},
 				sourceExt: &SourceExt{schainDirty: true},
 			},
 			reqWrapCopy: &RequestWrapper{
@@ -102,6 +106,7 @@ func TestCloneRequestWrapper(t *testing.T) {
 				appExt:    &AppExt{prebidDirty: true},
 				regExt:    &RegExt{usPrivacy: "foo"},
 				siteExt:   &SiteExt{amp: ptrutil.ToPtr[int8](1)},
+				doohExt:   &DOOHExt{},
 				sourceExt: &SourceExt{schainDirty: true},
 			},
 			mutator: func(t *testing.T, reqWrap *RequestWrapper) {
@@ -115,6 +120,7 @@ func TestCloneRequestWrapper(t *testing.T) {
 				reqWrap.appExt = nil
 				reqWrap.regExt = nil
 				reqWrap.siteExt = nil
+				reqWrap.doohExt = nil
 				reqWrap.sourceExt = nil
 			},
 		},
@@ -699,7 +705,7 @@ func TestCloneUserExt(t *testing.T) {
 				eids[0].UIDs[1].ID = "G2"
 				eids[1].UIDs[0].AType = 0
 				eids[0].UIDs = append(eids[0].UIDs, openrtb2.UID{ID: "Z", AType: 2})
-				eids = append(eids, openrtb2.EID{Source: "Blank"})
+				eids = append(eids, openrtb2.EID{Source: "Blank"}) //nolint: ineffassign, staticcheck // this value of `eids` is never used (staticcheck)
 				userExt.eids = nil
 			},
 		},
@@ -761,13 +767,13 @@ func TestRebuildDeviceExt(t *testing.T) {
 		{
 			description:             "Nil - Dirty",
 			request:                 openrtb2.BidRequest{},
-			requestDeviceExtWrapper: DeviceExt{prebid: &prebidContent1, prebidDirty: true},
-			expectedRequest:         openrtb2.BidRequest{Device: &openrtb2.Device{Ext: json.RawMessage(`{"prebid":{"interstitial":{"minwidthperc":1,"minheightperc":0}}}`)}},
+			requestDeviceExtWrapper: DeviceExt{prebid: &prebidContent1, prebidDirty: true, cdep: "1", cdepDirty: true},
+			expectedRequest:         openrtb2.BidRequest{Device: &openrtb2.Device{Ext: json.RawMessage(`{"cdep":"1","prebid":{"interstitial":{"minwidthperc":1,"minheightperc":0}}}`)}},
 		},
 		{
 			description:             "Nil - Dirty - No Change",
 			request:                 openrtb2.BidRequest{},
-			requestDeviceExtWrapper: DeviceExt{prebid: nil, prebidDirty: true},
+			requestDeviceExtWrapper: DeviceExt{prebid: nil, prebidDirty: true, cdep: "", cdepDirty: true},
 			expectedRequest:         openrtb2.BidRequest{},
 		},
 		{
@@ -779,37 +785,37 @@ func TestRebuildDeviceExt(t *testing.T) {
 		{
 			description:             "Empty - Dirty",
 			request:                 openrtb2.BidRequest{Device: &openrtb2.Device{}},
-			requestDeviceExtWrapper: DeviceExt{prebid: &prebidContent1, prebidDirty: true},
-			expectedRequest:         openrtb2.BidRequest{Device: &openrtb2.Device{Ext: json.RawMessage(`{"prebid":{"interstitial":{"minwidthperc":1,"minheightperc":0}}}`)}},
+			requestDeviceExtWrapper: DeviceExt{prebid: &prebidContent1, prebidDirty: true, cdep: "1", cdepDirty: true},
+			expectedRequest:         openrtb2.BidRequest{Device: &openrtb2.Device{Ext: json.RawMessage(`{"cdep":"1","prebid":{"interstitial":{"minwidthperc":1,"minheightperc":0}}}`)}},
 		},
 		{
 			description:             "Empty - Dirty - No Change",
 			request:                 openrtb2.BidRequest{Device: &openrtb2.Device{}},
-			requestDeviceExtWrapper: DeviceExt{prebid: nil, prebidDirty: true},
+			requestDeviceExtWrapper: DeviceExt{prebid: nil, prebidDirty: true, cdep: "", cdepDirty: true},
 			expectedRequest:         openrtb2.BidRequest{Device: &openrtb2.Device{}},
 		},
 		{
 			description:             "Populated - Not Dirty",
-			request:                 openrtb2.BidRequest{Device: &openrtb2.Device{Ext: json.RawMessage(`{"prebid":{"interstitial":{"minwidthperc":1,"minheightperc":0}}}`)}},
+			request:                 openrtb2.BidRequest{Device: &openrtb2.Device{Ext: json.RawMessage(`{"cdep":"1","prebid":{"interstitial":{"minwidthperc":1,"minheightperc":0}}}`)}},
 			requestDeviceExtWrapper: DeviceExt{},
-			expectedRequest:         openrtb2.BidRequest{Device: &openrtb2.Device{Ext: json.RawMessage(`{"prebid":{"interstitial":{"minwidthperc":1,"minheightperc":0}}}`)}},
+			expectedRequest:         openrtb2.BidRequest{Device: &openrtb2.Device{Ext: json.RawMessage(`{"cdep":"1","prebid":{"interstitial":{"minwidthperc":1,"minheightperc":0}}}`)}},
 		},
 		{
 			description:             "Populated - Dirty",
-			request:                 openrtb2.BidRequest{Device: &openrtb2.Device{Ext: json.RawMessage(`{"prebid":{"interstitial":{"minwidthperc":1,"minheightperc":0}}}`)}},
-			requestDeviceExtWrapper: DeviceExt{prebid: &prebidContent2, prebidDirty: true},
-			expectedRequest:         openrtb2.BidRequest{Device: &openrtb2.Device{Ext: json.RawMessage(`{"prebid":{"interstitial":{"minwidthperc":2,"minheightperc":0}}}`)}},
+			request:                 openrtb2.BidRequest{Device: &openrtb2.Device{Ext: json.RawMessage(`{"cdep":"1","prebid":{"interstitial":{"minwidthperc":1,"minheightperc":0}}}`)}},
+			requestDeviceExtWrapper: DeviceExt{prebid: &prebidContent2, prebidDirty: true, cdep: "2", cdepDirty: true},
+			expectedRequest:         openrtb2.BidRequest{Device: &openrtb2.Device{Ext: json.RawMessage(`{"cdep":"2","prebid":{"interstitial":{"minwidthperc":2,"minheightperc":0}}}`)}},
 		},
 		{
 			description:             "Populated - Dirty - No Change",
-			request:                 openrtb2.BidRequest{Device: &openrtb2.Device{Ext: json.RawMessage(`{"prebid":{"interstitial":{"minwidthperc":1,"minheightperc":0}}}`)}},
-			requestDeviceExtWrapper: DeviceExt{prebid: &prebidContent1, prebidDirty: true},
-			expectedRequest:         openrtb2.BidRequest{Device: &openrtb2.Device{Ext: json.RawMessage(`{"prebid":{"interstitial":{"minwidthperc":1,"minheightperc":0}}}`)}},
+			request:                 openrtb2.BidRequest{Device: &openrtb2.Device{Ext: json.RawMessage(`{"cdep":"1","prebid":{"interstitial":{"minwidthperc":1,"minheightperc":0}}}`)}},
+			requestDeviceExtWrapper: DeviceExt{prebid: &prebidContent1, prebidDirty: true, cdep: "1", cdepDirty: true},
+			expectedRequest:         openrtb2.BidRequest{Device: &openrtb2.Device{Ext: json.RawMessage(`{"cdep":"1","prebid":{"interstitial":{"minwidthperc":1,"minheightperc":0}}}`)}},
 		},
 		{
 			description:             "Populated - Dirty - Cleared",
-			request:                 openrtb2.BidRequest{Device: &openrtb2.Device{Ext: json.RawMessage(`{"prebid":{"interstitial":{"minwidthperc":1,"minheightperc":0}}}`)}},
-			requestDeviceExtWrapper: DeviceExt{prebid: nil, prebidDirty: true},
+			request:                 openrtb2.BidRequest{Device: &openrtb2.Device{Ext: json.RawMessage(`{"cdep":"1","prebid":{"interstitial":{"minwidthperc":1,"minheightperc":0}}}`)}},
+			requestDeviceExtWrapper: DeviceExt{prebid: nil, prebidDirty: true, cdep: "", cdepDirty: true},
 			expectedRequest:         openrtb2.BidRequest{Device: &openrtb2.Device{}},
 		},
 	}
@@ -1008,6 +1014,8 @@ func TestCloneDeviceExt(t *testing.T) {
 				prebid: &ExtDevicePrebid{
 					Interstitial: &ExtDeviceInt{MinWidthPerc: 65.0, MinHeightPerc: 75.0},
 				},
+				cdep:      "1",
+				cdepDirty: true,
 			},
 			devExtCopy: &DeviceExt{
 				ext:      map[string]json.RawMessage{"A": json.RawMessage(`{}`), "B": json.RawMessage(`{"foo":"bar"}`)},
@@ -1015,6 +1023,8 @@ func TestCloneDeviceExt(t *testing.T) {
 				prebid: &ExtDevicePrebid{
 					Interstitial: &ExtDeviceInt{MinWidthPerc: 65.0, MinHeightPerc: 75.0},
 				},
+				cdep:      "1",
+				cdepDirty: true,
 			},
 			mutator: func(t *testing.T, devExt *DeviceExt) {},
 		},
@@ -1026,6 +1036,8 @@ func TestCloneDeviceExt(t *testing.T) {
 				prebid: &ExtDevicePrebid{
 					Interstitial: &ExtDeviceInt{MinWidthPerc: 65.0, MinHeightPerc: 75.0},
 				},
+				cdep:      "1",
+				cdepDirty: true,
 			},
 			devExtCopy: &DeviceExt{
 				ext:      map[string]json.RawMessage{"A": json.RawMessage(`{}`), "B": json.RawMessage(`{"foo":"bar"}`)},
@@ -1033,6 +1045,8 @@ func TestCloneDeviceExt(t *testing.T) {
 				prebid: &ExtDevicePrebid{
 					Interstitial: &ExtDeviceInt{MinWidthPerc: 65, MinHeightPerc: 75},
 				},
+				cdep:      "1",
+				cdepDirty: true,
 			},
 			mutator: func(t *testing.T, devExt *DeviceExt) {
 				devExt.ext["A"] = json.RawMessage(`"string"`)
@@ -1041,6 +1055,8 @@ func TestCloneDeviceExt(t *testing.T) {
 				devExt.prebid.Interstitial.MinHeightPerc = 55
 				devExt.prebid.Interstitial = &ExtDeviceInt{MinWidthPerc: 80}
 				devExt.prebid = nil
+				devExt.cdep = ""
+				devExt.cdepDirty = true
 			},
 		},
 	}
@@ -1202,6 +1218,141 @@ func TestCloneAppExt(t *testing.T) {
 			clone := test.appExt.Clone()
 			test.mutator(t, test.appExt)
 			assert.Equal(t, test.appExtCopy, clone)
+		})
+	}
+}
+
+func TestRebuildDOOHExt(t *testing.T) {
+	// These permutations look a bit wonky
+	// Since DOOHExt currently exists for consistency but there isn't a single field
+	// expected - hence unable to test dirty and variations
+	// Once one is established, updated the permutations below similar to TestRebuildAppExt example
+	testCases := []struct {
+		description           string
+		request               openrtb2.BidRequest
+		requestDOOHExtWrapper DOOHExt
+		expectedRequest       openrtb2.BidRequest
+	}{
+		{
+			description:           "Nil - Not Dirty",
+			request:               openrtb2.BidRequest{},
+			requestDOOHExtWrapper: DOOHExt{},
+			expectedRequest:       openrtb2.BidRequest{},
+		},
+		{
+			description:           "Nil - Dirty",
+			request:               openrtb2.BidRequest{},
+			requestDOOHExtWrapper: DOOHExt{},
+			expectedRequest:       openrtb2.BidRequest{DOOH: nil},
+		},
+		{
+			description:           "Nil - Dirty - No Change",
+			request:               openrtb2.BidRequest{},
+			requestDOOHExtWrapper: DOOHExt{},
+			expectedRequest:       openrtb2.BidRequest{},
+		},
+		{
+			description:           "Empty - Not Dirty",
+			request:               openrtb2.BidRequest{DOOH: &openrtb2.DOOH{}},
+			requestDOOHExtWrapper: DOOHExt{},
+			expectedRequest:       openrtb2.BidRequest{DOOH: &openrtb2.DOOH{}},
+		},
+		{
+			description:           "Empty - Dirty",
+			request:               openrtb2.BidRequest{DOOH: &openrtb2.DOOH{}},
+			requestDOOHExtWrapper: DOOHExt{},
+			expectedRequest:       openrtb2.BidRequest{DOOH: &openrtb2.DOOH{}},
+		},
+		{
+			description:           "Empty - Dirty - No Change",
+			request:               openrtb2.BidRequest{DOOH: &openrtb2.DOOH{}},
+			requestDOOHExtWrapper: DOOHExt{},
+			expectedRequest:       openrtb2.BidRequest{DOOH: &openrtb2.DOOH{}},
+		},
+		{
+			description:           "Populated - Not Dirty",
+			request:               openrtb2.BidRequest{DOOH: &openrtb2.DOOH{Ext: json.RawMessage(`{}`)}},
+			requestDOOHExtWrapper: DOOHExt{},
+			expectedRequest:       openrtb2.BidRequest{DOOH: &openrtb2.DOOH{Ext: json.RawMessage(`{}`)}},
+		},
+		{
+			description:           "Populated - Dirty",
+			request:               openrtb2.BidRequest{DOOH: &openrtb2.DOOH{Ext: json.RawMessage(`{}`)}},
+			requestDOOHExtWrapper: DOOHExt{},
+			expectedRequest:       openrtb2.BidRequest{DOOH: &openrtb2.DOOH{Ext: json.RawMessage(`{}`)}},
+		},
+		{
+			description:           "Populated - Dirty - No Change",
+			request:               openrtb2.BidRequest{DOOH: &openrtb2.DOOH{Ext: json.RawMessage(`{}`)}},
+			requestDOOHExtWrapper: DOOHExt{},
+			expectedRequest:       openrtb2.BidRequest{DOOH: &openrtb2.DOOH{Ext: json.RawMessage(`{}`)}},
+		},
+		{
+			description:           "Populated - Dirty - Cleared",
+			request:               openrtb2.BidRequest{DOOH: &openrtb2.DOOH{Ext: json.RawMessage(`{}`)}},
+			requestDOOHExtWrapper: DOOHExt{},
+			expectedRequest:       openrtb2.BidRequest{DOOH: &openrtb2.DOOH{Ext: json.RawMessage(`{}`)}},
+		},
+	}
+
+	for _, test := range testCases {
+		// create required filed in the test loop to keep test declaration easier to read
+		test.requestDOOHExtWrapper.ext = make(map[string]json.RawMessage)
+
+		w := RequestWrapper{BidRequest: &test.request, doohExt: &test.requestDOOHExtWrapper}
+		w.RebuildRequest()
+		assert.Equal(t, test.expectedRequest, *w.BidRequest, test.description)
+	}
+}
+
+func TestCloneDOOHExt(t *testing.T) {
+	testCases := []struct {
+		name        string
+		DOOHExt     *DOOHExt
+		DOOHExtCopy *DOOHExt                             // manual copy of above ext object to verify against
+		mutator     func(t *testing.T, DOOHExt *DOOHExt) // function to modify the Ext object
+	}{
+		{
+			name:        "Nil", // Verify the nil case
+			DOOHExt:     nil,
+			DOOHExtCopy: nil,
+			mutator:     func(t *testing.T, DOOHExt *DOOHExt) {},
+		},
+		{
+			name: "NoMutate",
+			DOOHExt: &DOOHExt{
+				ext:      map[string]json.RawMessage{"A": json.RawMessage(`X`), "B": json.RawMessage(`Y`)},
+				extDirty: true,
+			},
+			DOOHExtCopy: &DOOHExt{
+				ext:      map[string]json.RawMessage{"A": json.RawMessage(`X`), "B": json.RawMessage(`Y`)},
+				extDirty: true,
+			},
+			mutator: func(t *testing.T, DOOHExt *DOOHExt) {},
+		},
+		{
+			name: "General",
+			DOOHExt: &DOOHExt{
+				ext:      map[string]json.RawMessage{"A": json.RawMessage(`X`), "B": json.RawMessage(`Y`)},
+				extDirty: true,
+			},
+			DOOHExtCopy: &DOOHExt{
+				ext:      map[string]json.RawMessage{"A": json.RawMessage(`X`), "B": json.RawMessage(`Y`)},
+				extDirty: true,
+			},
+			mutator: func(t *testing.T, DOOHExt *DOOHExt) {
+				DOOHExt.ext["A"] = json.RawMessage(`"string"`)
+				DOOHExt.ext["C"] = json.RawMessage(`{}`)
+				DOOHExt.extDirty = false
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			clone := test.DOOHExt.Clone()
+			test.mutator(t, test.DOOHExt)
+			assert.Equal(t, test.DOOHExtCopy, clone)
 		})
 	}
 }
@@ -1652,10 +1803,10 @@ func TestImpWrapperGetImpExt(t *testing.T) {
 	var isRewardedInventoryOne int8 = 1
 
 	testCases := []struct {
-		description    string
-		givenWrapper   ImpWrapper
-		expectedImpExt ImpExt
-		expectedError  string
+		description       string
+		givenWrapper      ImpWrapper
+		expectedImpExt    ImpExt
+		expectedErrorType error
 	}{
 		{
 			description:    "Empty",
@@ -1693,21 +1844,21 @@ func TestImpWrapperGetImpExt(t *testing.T) {
 			expectedImpExt: ImpExt{ext: map[string]json.RawMessage{"foo": json.RawMessage("bar")}},
 		},
 		{
-			description:   "Error - Ext",
-			givenWrapper:  ImpWrapper{Imp: &openrtb2.Imp{Ext: json.RawMessage(`malformed`)}},
-			expectedError: "invalid character 'm' looking for beginning of value",
+			description:       "Error - Ext",
+			givenWrapper:      ImpWrapper{Imp: &openrtb2.Imp{Ext: json.RawMessage(`malformed`)}},
+			expectedErrorType: &errortypes.FailedToUnmarshal{},
 		},
 		{
-			description:   "Error - Ext - Prebid",
-			givenWrapper:  ImpWrapper{Imp: &openrtb2.Imp{Ext: json.RawMessage(`{"prebid":malformed}`)}},
-			expectedError: "invalid character 'm' looking for beginning of value",
+			description:       "Error - Ext - Prebid",
+			givenWrapper:      ImpWrapper{Imp: &openrtb2.Imp{Ext: json.RawMessage(`{"prebid":malformed}`)}},
+			expectedErrorType: &errortypes.FailedToUnmarshal{},
 		},
 	}
 
 	for _, test := range testCases {
 		impExt, err := test.givenWrapper.GetImpExt()
-		if test.expectedError != "" {
-			assert.EqualError(t, err, test.expectedError, test.description)
+		if test.expectedErrorType != nil {
+			assert.IsType(t, test.expectedErrorType, err)
 		} else {
 			assert.NoError(t, err, test.description)
 			assert.Equal(t, test.expectedImpExt, *impExt, test.description)
@@ -1907,4 +2058,293 @@ func TestCloneImpExt(t *testing.T) {
 			assert.Equal(t, test.impExtCopy, clone)
 		})
 	}
+}
+
+func TestRebuildRegExt(t *testing.T) {
+	strA := "a"
+	strB := "b"
+
+	tests := []struct {
+		name            string
+		request         openrtb2.BidRequest
+		regExt          RegExt
+		expectedRequest openrtb2.BidRequest
+	}{
+		{
+			name:            "req_regs_nil_-_not_dirty_-_no_change",
+			request:         openrtb2.BidRequest{},
+			regExt:          RegExt{},
+			expectedRequest: openrtb2.BidRequest{},
+		},
+		{
+			name:    "req_regs_nil_-_dirty_and_different_-_change",
+			request: openrtb2.BidRequest{},
+			regExt:  RegExt{dsa: &ExtRegsDSA{Required: ptrutil.ToPtr[int8](1)}, dsaDirty: true, gdpr: ptrutil.ToPtr[int8](1), gdprDirty: true, usPrivacy: strA, usPrivacyDirty: true},
+			expectedRequest: openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{
+					Ext: json.RawMessage(`{"dsa":{"dsarequired":1},"gdpr":1,"us_privacy":"a"}`),
+				},
+			},
+		},
+		{
+			name:            "req_regs_ext_nil_-_not_dirty_-_no_change",
+			request:         openrtb2.BidRequest{Regs: &openrtb2.Regs{}},
+			regExt:          RegExt{},
+			expectedRequest: openrtb2.BidRequest{Regs: &openrtb2.Regs{}},
+		},
+		{
+			name:    "req_regs_ext_nil_-_dirty_and_different_-_change",
+			request: openrtb2.BidRequest{Regs: &openrtb2.Regs{}},
+			regExt:  RegExt{dsa: &ExtRegsDSA{Required: ptrutil.ToPtr[int8](1)}, dsaDirty: true, gdpr: ptrutil.ToPtr[int8](1), gdprDirty: true, usPrivacy: strA, usPrivacyDirty: true},
+			expectedRequest: openrtb2.BidRequest{
+				Regs: &openrtb2.Regs{
+					Ext: json.RawMessage(`{"dsa":{"dsarequired":1},"gdpr":1,"us_privacy":"a"}`),
+				},
+			},
+		},
+		{
+			name:            "req_regs_dsa_populated_-_not_dirty_-_no_change",
+			request:         openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"dsa":{"dsarequired":1}}`)}},
+			regExt:          RegExt{},
+			expectedRequest: openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"dsa":{"dsarequired":1}}`)}},
+		},
+		{
+			name:            "req_regs_dsa_populated_-_dirty_and_different-_change",
+			request:         openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"dsa":{"dsarequired":1}}`)}},
+			regExt:          RegExt{dsa: &ExtRegsDSA{Required: ptrutil.ToPtr[int8](2)}, dsaDirty: true},
+			expectedRequest: openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"dsa":{"dsarequired":2}}`)}},
+		},
+		{
+			name:            "req_regs_dsa_populated_-_dirty_and_same_-_no_change",
+			request:         openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"dsa":{"dsarequired":1}}`)}},
+			regExt:          RegExt{dsa: &ExtRegsDSA{Required: ptrutil.ToPtr[int8](1)}, dsaDirty: true},
+			expectedRequest: openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"dsa":{"dsarequired":1}}`)}},
+		},
+		{
+			name:            "req_regs_dsa_populated_-_dirty_and_nil_-_cleared",
+			request:         openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{}`)}},
+			regExt:          RegExt{dsa: nil, dsaDirty: true},
+			expectedRequest: openrtb2.BidRequest{Regs: &openrtb2.Regs{}},
+		},
+		{
+			name:            "req_regs_gdpr_populated_-_not_dirty_-_no_change",
+			request:         openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"gdpr":1}`)}},
+			regExt:          RegExt{},
+			expectedRequest: openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"gdpr":1}`)}},
+		},
+		{
+			name:            "req_regs_gdpr_populated_-_dirty_and_different-_change",
+			request:         openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"gdpr":1}`)}},
+			regExt:          RegExt{gdpr: ptrutil.ToPtr[int8](0), gdprDirty: true},
+			expectedRequest: openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"gdpr":0}`)}},
+		},
+		{
+			name:            "req_regs_gdpr_populated_-_dirty_and_same_-_no_change",
+			request:         openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"gdpr":1}`)}},
+			regExt:          RegExt{gdpr: ptrutil.ToPtr[int8](1), gdprDirty: true},
+			expectedRequest: openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"gdpr":1}`)}},
+		},
+		{
+			name:            "req_regs_gdpr_populated_-_dirty_and_nil_-_cleared",
+			request:         openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{}`)}},
+			regExt:          RegExt{gdpr: nil, gdprDirty: true},
+			expectedRequest: openrtb2.BidRequest{Regs: &openrtb2.Regs{}},
+		},
+		{
+			name:            "req_regs_usprivacy_populated_-_not_dirty_-_no_change",
+			request:         openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":"a"}`)}},
+			regExt:          RegExt{},
+			expectedRequest: openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":"a"}`)}},
+		},
+		{
+			name:            "req_regs_usprivacy_populated_-_dirty_and_different-_change",
+			request:         openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":"a"}`)}},
+			regExt:          RegExt{usPrivacy: strB, usPrivacyDirty: true},
+			expectedRequest: openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":"b"}`)}},
+		},
+		{
+			name:            "req_regs_usprivacy_populated_-_dirty_and_same_-_no_change",
+			request:         openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":"a"}`)}},
+			regExt:          RegExt{usPrivacy: strA, usPrivacyDirty: true},
+			expectedRequest: openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":"a"}`)}},
+		},
+		{
+			name:            "req_regs_usprivacy_populated_-_dirty_and_nil_-_cleared",
+			request:         openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":"a"}`)}},
+			regExt:          RegExt{usPrivacy: "", usPrivacyDirty: true},
+			expectedRequest: openrtb2.BidRequest{Regs: &openrtb2.Regs{}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.regExt.ext = make(map[string]json.RawMessage)
+
+			w := RequestWrapper{BidRequest: &tt.request, regExt: &tt.regExt}
+			w.RebuildRequest()
+			assert.Equal(t, tt.expectedRequest, *w.BidRequest)
+		})
+	}
+}
+
+func TestRegExtUnmarshal(t *testing.T) {
+	tests := []struct {
+		name            string
+		regExt          *RegExt
+		extJson         json.RawMessage
+		expectDSA       *ExtRegsDSA
+		expectGDPR      *int8
+		expectUSPrivacy string
+		expectError     bool
+	}{
+		{
+			name: "RegExt.ext_not_empty_and_not_dirtyr",
+			regExt: &RegExt{
+				ext: map[string]json.RawMessage{"dsa": json.RawMessage(`{}`)},
+			},
+			extJson:     json.RawMessage{},
+			expectError: false,
+		},
+		{
+			name:        "RegExt.ext_empty_and_dirty",
+			regExt:      &RegExt{extDirty: true},
+			extJson:     json.RawMessage(`{"dsa":{"dsarequired":1}}`),
+			expectError: false,
+		},
+		{
+			name: "nothing_to_unmarshal",
+			regExt: &RegExt{
+				ext: map[string]json.RawMessage{},
+			},
+			extJson:     json.RawMessage{},
+			expectError: false,
+		},
+		// DSA
+		{
+			name:    "valid_dsa_json",
+			regExt:  &RegExt{},
+			extJson: json.RawMessage(`{"dsa":{"dsarequired":1}}`),
+			expectDSA: &ExtRegsDSA{
+				Required: ptrutil.ToPtr[int8](1),
+			},
+			expectError: false,
+		},
+		{
+			name:    "malformed_dsa_json",
+			regExt:  &RegExt{},
+			extJson: json.RawMessage(`{"dsa":{"dsarequired":""}}`),
+			expectDSA: &ExtRegsDSA{
+				Required: ptrutil.ToPtr[int8](0),
+			},
+			expectError: true,
+		},
+		// GDPR
+		{
+			name:        "valid_gdpr_json",
+			regExt:      &RegExt{},
+			extJson:     json.RawMessage(`{"gdpr":1}`),
+			expectGDPR:  ptrutil.ToPtr[int8](1),
+			expectError: false,
+		},
+		{
+			name:        "malformed_gdpr_json",
+			regExt:      &RegExt{},
+			extJson:     json.RawMessage(`{"gdpr":""}`),
+			expectGDPR:  ptrutil.ToPtr[int8](0),
+			expectError: true,
+		},
+		// us_privacy
+		{
+			name:            "valid_usprivacy_json",
+			regExt:          &RegExt{},
+			extJson:         json.RawMessage(`{"us_privacy":"consent"}`),
+			expectUSPrivacy: "consent",
+			expectError:     false,
+		},
+		{
+			name:        "malformed_usprivacy_json",
+			regExt:      &RegExt{},
+			extJson:     json.RawMessage(`{"us_privacy":1}`),
+			expectError: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.regExt.unmarshal(tt.extJson)
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, tt.expectDSA, tt.regExt.dsa)
+			assert.Equal(t, tt.expectGDPR, tt.regExt.gdpr)
+			assert.Equal(t, tt.expectUSPrivacy, tt.regExt.usPrivacy)
+		})
+	}
+}
+
+func TestRegExtGetExtSetExt(t *testing.T) {
+	regExt := &RegExt{}
+	regExtJSON := regExt.GetExt()
+	assert.Equal(t, regExtJSON, map[string]json.RawMessage{})
+	assert.False(t, regExt.Dirty())
+
+	rawJSON := map[string]json.RawMessage{
+		"dsa":       json.RawMessage(`{}`),
+		"gdpr":      json.RawMessage(`1`),
+		"usprivacy": json.RawMessage(`"consent"`),
+	}
+	regExt.SetExt(rawJSON)
+	assert.True(t, regExt.Dirty())
+
+	regExtJSON = regExt.GetExt()
+	assert.Equal(t, regExtJSON, rawJSON)
+	assert.NotSame(t, regExtJSON, rawJSON)
+}
+
+func TestRegExtGetDSASetDSA(t *testing.T) {
+	regExt := &RegExt{}
+	regExtDSA := regExt.GetDSA()
+	assert.Nil(t, regExtDSA)
+	assert.False(t, regExt.Dirty())
+
+	dsa := &ExtRegsDSA{
+		Required: ptrutil.ToPtr[int8](2),
+	}
+	regExt.SetDSA(dsa)
+	assert.True(t, regExt.Dirty())
+
+	regExtDSA = regExt.GetDSA()
+	assert.Equal(t, regExtDSA, dsa)
+	assert.NotSame(t, regExtDSA, dsa)
+}
+
+func TestRegExtGetUSPrivacySetUSPrivacy(t *testing.T) {
+	regExt := &RegExt{}
+	regExtUSPrivacy := regExt.GetUSPrivacy()
+	assert.Equal(t, regExtUSPrivacy, "")
+	assert.False(t, regExt.Dirty())
+
+	usprivacy := "consent"
+	regExt.SetUSPrivacy(usprivacy)
+	assert.True(t, regExt.Dirty())
+
+	regExtUSPrivacy = regExt.GetUSPrivacy()
+	assert.Equal(t, regExtUSPrivacy, usprivacy)
+	assert.NotSame(t, regExtUSPrivacy, usprivacy)
+}
+
+func TestRegExtGetGDPRSetGDPR(t *testing.T) {
+	regExt := &RegExt{}
+	regExtGDPR := regExt.GetGDPR()
+	assert.Nil(t, regExtGDPR)
+	assert.False(t, regExt.Dirty())
+
+	gdpr := ptrutil.ToPtr[int8](1)
+	regExt.SetGDPR(gdpr)
+	assert.True(t, regExt.Dirty())
+
+	regExtGDPR = regExt.GetGDPR()
+	assert.Equal(t, regExtGDPR, gdpr)
+	assert.NotSame(t, regExtGDPR, gdpr)
 }

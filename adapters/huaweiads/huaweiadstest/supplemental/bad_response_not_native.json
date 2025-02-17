@@ -5,7 +5,7 @@
       {
         "id": "test-imp-id",
         "native": {
-          "request": "{\"context\":2,\"contextsubtype\":20,\"plcmttype\":1,\"plcmtcnt\":1,\"seq\":0,\"aurlsupport\":0,\"durlsupport\":0,\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]}],\"privacy\":0,\"assets\":[{\"id\":100,\"title\":{\"len\":90},\"required\":1},{\"id\":101,\"img\":{\"type\":3,\"wmin\":200,\"hmin\":200},\"required\":1},{\"id\":107,\"video\":{\"mimes\":[\"mp4\"],\"minduration\":100,\"maxduration\":100,\"protocols\":[1,2]},\"required\":1},{\"id\":105,\"data\":{\"type\":2,\"len\":90},\"required\":1}],\"ver\":\"1.2\"}",
+          "request": "{\"context\":2,\"contextsubtype\":20,\"plcmttype\":1,\"plcmtcnt\":1,\"seq\":0,\"aurlsupport\":0,\"durlsupport\":0,\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]}],\"privacy\":0,\"assets\":[{\"id\":100,\"title\":{\"len\":90},\"required\":1},{\"id\":107,\"video\":{\"mimes\":[\"mp4\"],\"minduration\":100,\"maxduration\":100,\"protocols\":[1,2]},\"required\":1},{\"id\":105,\"data\":{\"type\":2,\"len\":90},\"required\":1}],\"ver\":\"1.2\"}",
           "ver": "1.2"
         },
         "ext": {
@@ -91,6 +91,40 @@
               "adtype": 3,
               "slotid": "m8x9x3rzff",
               "test": 1,
+              "format": [
+                {
+                    "w": 225,
+                    "h": 150
+                },
+                {
+                    "w": 1080,
+                    "h": 607
+                },
+                {
+                    "w": 300,
+                    "h": 250
+                },
+                {
+                    "w": 1080,
+                    "h": 1620
+                },
+                {
+                    "w": 1280,
+                    "h": 720
+                },
+                {
+                    "w": 640,
+                    "h": 360
+                },
+                {
+                    "w": 1080,
+                    "h": 1920
+                },
+                {
+                    "w": 720,
+                    "h": 1280
+                }
+            ],
               "detailedCreativeTypeList": [
                 "903"
               ]
@@ -123,7 +157,8 @@
           },
           "version": "3.4",
           "clientAdRequestId": "test-req-id"
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,

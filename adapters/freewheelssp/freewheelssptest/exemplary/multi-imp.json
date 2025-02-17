@@ -72,7 +72,8 @@
           "Componentid": [
             "prebid-go"
           ]
-        }
+        },
+        "impIDs":["imp-1","imp-2"]
       },
       "mockResponse": {
         "status": 200,
@@ -88,7 +89,10 @@
                   "adid": "7857",
                   "adm": "<?xml version='1.0' encoding='UTF-8'?><VAST version='2.0'></VAST>",
                   "cid": "4001",
-                  "crid": "7857"
+                  "crid": "7857",
+                  "adomain":["freewheel.com"],
+                  "cat": ["IAB10"],
+                  "dur": 14
                 },
                 {
                   "id": "12346_freewheelssp-test_2",
@@ -97,7 +101,9 @@
                   "adid": "7933",
                   "adm": "<?xml version='1.0' encoding='UTF-8'?><VAST version='2.0'></VAST>",
                   "cid": "3476",
-                  "crid": "7933"
+                  "crid": "7933",
+                  "adomain":["freewheel.com"],
+                  "dur":10
                 }
               ],
               "seat": "freewheelsspTv"
@@ -122,9 +128,16 @@
             "adid": "7857",
             "adm": "<?xml version='1.0' encoding='UTF-8'?><VAST version='2.0'></VAST>",
             "cid": "4001",
-            "crid": "7857"
+            "crid": "7857",
+            "adomain":["freewheel.com"],
+            "cat": ["IAB10"],
+            "dur": 14
           },
-          "type": "video"
+          "type": "video",
+          "video" : {
+            "duration" : 14,
+            "primary_category": "IAB10"
+          }
         },
         {
           "bid":  {
@@ -134,9 +147,14 @@
             "adid": "7933",
             "adm": "<?xml version='1.0' encoding='UTF-8'?><VAST version='2.0'></VAST>",
             "cid": "3476",
-            "crid": "7933"
+            "crid": "7933",
+            "adomain":["freewheel.com"],
+            "dur":10
           },
-          "type": "video"
+          "type": "video",
+          "video" : {
+            "duration" : 10
+          }
         }
       ]
     }

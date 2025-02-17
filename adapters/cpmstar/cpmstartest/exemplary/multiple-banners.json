@@ -1,0 +1,154 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-banner-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": 154,
+            "subpoolId": 123
+          }
+        }
+      },
+      {
+        "id": "test-banner-imp-id-2",
+        "banner": {
+          "format": [
+            {
+              "w": 728,
+              "h": 90
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": 154,
+            "subpoolId": 500
+          }
+        }
+      }
+    ],
+    "site": {
+      "id": "fake-site-id"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "//host",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-banner-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "placementId": 154,
+                "subpoolId": 123
+              }
+            },
+            {
+              "id": "test-banner-imp-id-2",
+              "banner": {
+                "format": [
+                  {
+                    "w": 728,
+                    "h": 90
+                  }
+                ]
+              },
+              "ext": {
+                "placementId": 154,
+                "subpoolId": 500
+              }
+            }              
+          ],
+          "site": {
+            "id": "fake-site-id"
+          }
+        },
+        "impIDs":["test-banner-imp-id", "test-banner-imp-id-2"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "cpmstar",
+              "bid": [
+                {
+                  "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                  "impid": "test-banner-imp-id",
+                  "price": 0.500000,
+                  "adm": "some-test-ad",
+                  "crid": "crid_10",
+                  "h": 250,
+                  "w": 300
+                },
+                {
+                  "id": "06f0f605-0359-4b2d-9916-e4f06a4cdc1d",
+                  "impid": "test-banner-imp-id-2",
+                  "price": 1.000000,
+                  "adm": "some-test-ad-2",
+                  "crid": "crid_11",
+                  "h": 90,
+                  "w": 728
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+            "impid": "test-banner-imp-id",
+            "price": 0.5,
+            "adm": "some-test-ad",
+            "crid": "crid_10",
+            "w": 300,
+            "h": 250
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "06f0f605-0359-4b2d-9916-e4f06a4cdc1d",
+            "impid": "test-banner-imp-id-2",
+            "price": 1.0,
+            "adm": "some-test-ad-2",
+            "crid": "crid_11",
+            "w": 728,
+            "h": 90
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
+  

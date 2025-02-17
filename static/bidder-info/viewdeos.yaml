@@ -1,16 +1,8 @@
+aliasOf: adtelligent
 endpoint: "http://ghb.sync.viewdeos.com/pbs/ortb"
 maintainer:
   email: "contact@viewdeos.com"
 gvlVendorID: 924
-capabilities:
-  app:
-    mediaTypes:
-      - banner
-      - video
-  site:
-    mediaTypes:
-      - banner
-      - video
 userSync:
   # viewdeos supports user syncing, but requires configuration by the host. contact this
   # bidder directly at the email address in this file to ask about enabling user sync.

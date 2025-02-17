@@ -12,18 +12,19 @@ import (
 	"github.com/julienschmidt/httprouter"
 	gpplib "github.com/prebid/go-gpp"
 	gppConstants "github.com/prebid/go-gpp/constants"
-	accountService "github.com/prebid/prebid-server/account"
-	"github.com/prebid/prebid-server/analytics"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/gdpr"
-	"github.com/prebid/prebid-server/metrics"
-	"github.com/prebid/prebid-server/privacy"
-	gppPrivacy "github.com/prebid/prebid-server/privacy/gpp"
-	"github.com/prebid/prebid-server/stored_requests"
-	"github.com/prebid/prebid-server/usersync"
-	"github.com/prebid/prebid-server/util/httputil"
-	stringutil "github.com/prebid/prebid-server/util/stringutil"
+	accountService "github.com/prebid/prebid-server/v2/account"
+	"github.com/prebid/prebid-server/v2/analytics"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/gdpr"
+	"github.com/prebid/prebid-server/v2/metrics"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/privacy"
+	gppPrivacy "github.com/prebid/prebid-server/v2/privacy/gpp"
+	"github.com/prebid/prebid-server/v2/stored_requests"
+	"github.com/prebid/prebid-server/v2/usersync"
+	"github.com/prebid/prebid-server/v2/util/httputil"
+	stringutil "github.com/prebid/prebid-server/v2/util/stringutil"
 )
 
 const (
@@ -36,7 +37,7 @@ const (
 
 const uidCookieName = "uids"
 
-func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, gdprPermsBuilder gdpr.PermissionsBuilder, tcf2CfgBuilder gdpr.TCF2ConfigBuilder, pbsanalytics analytics.PBSAnalyticsModule, accountsFetcher stored_requests.AccountFetcher, metricsEngine metrics.MetricsEngine) httprouter.Handle {
+func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, gdprPermsBuilder gdpr.PermissionsBuilder, tcf2CfgBuilder gdpr.TCF2ConfigBuilder, analyticsRunner analytics.Runner, accountsFetcher stored_requests.AccountFetcher, metricsEngine metrics.MetricsEngine) httprouter.Handle {
 	encoder := usersync.Base64Encoder{}
 	decoder := usersync.Base64Decoder{}
 
@@ -46,7 +47,7 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 			Errors: make([]error, 0),
 		}
 
-		defer pbsanalytics.LogSetUIDObject(&so)
+		defer analyticsRunner.LogSetUIDObject(&so)
 
 		cookie := usersync.ReadCookie(r, decoder, &cfg.HostCookie)
 		if !cookie.AllowSyncs() {
@@ -125,7 +126,6 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 				handleBadStatus(w, http.StatusBadRequest, metrics.SetUidBadRequest, err, metricsEngine, &so)
 				return
 			}
-			w.Write([]byte("Warning: " + err.Error()))
 		}
 
 		tcf2Cfg := tcf2CfgBuilder(cfg.GDPR.TCF2, account.GDPR)
@@ -222,18 +222,14 @@ func extractGDPRInfo(query url.Values) (reqInfo gdpr.RequestInfo, err error) {
 
 // parseGDPRFromGPP parses and validates the "gpp_sid" and "gpp" query fields.
 func parseGDPRFromGPP(query url.Values) (gdpr.RequestInfo, error) {
-	var gdprSignal gdpr.Signal = gdpr.SignalAmbiguous
-	var gdprConsent string = ""
-	var err error
-
-	gdprSignal, err = parseSignalFromGppSidStr(query.Get("gpp_sid"))
+	gdprSignal, err := parseSignalFromGppSidStr(query.Get("gpp_sid"))
 	if err != nil {
 		return gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous}, err
 	}
 
-	gdprConsent, err = parseConsentFromGppStr(query.Get("gpp"))
-	if err != nil {
-		return gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous}, err
+	gdprConsent, errs := parseConsentFromGppStr(query.Get("gpp"))
+	if len(errs) > 0 {
+		return gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous}, errs[0]
 	}
 
 	return gdpr.RequestInfo{
@@ -305,13 +301,13 @@ func parseSignalFromGppSidStr(strSID string) (gdpr.Signal, error) {
 	return gdprSignal, nil
 }
 
-func parseConsentFromGppStr(gppQueryValue string) (string, error) {
+func parseConsentFromGppStr(gppQueryValue string) (string, []error) {
 	var gdprConsent string
 
 	if len(gppQueryValue) > 0 {
-		gpp, err := gpplib.Parse(gppQueryValue)
-		if err != nil {
-			return "", err
+		gpp, errs := gpplib.Parse(gppQueryValue)
+		if len(errs) > 0 {
+			return "", errs
 		}
 
 		if i := gppPrivacy.IndexOfSID(gpp, gppConstants.SectionTCFEU2); i >= 0 {
@@ -329,7 +325,13 @@ func getSyncer(query url.Values, syncersByBidder map[string]usersync.Syncer) (us
 		return nil, "", errors.New(`"bidder" query param is required`)
 	}
 
-	syncer, syncerExists := syncersByBidder[bidder]
+	// case insensitive comparison
+	bidderNormalized, bidderFound := openrtb_ext.NormalizeBidderName(bidder)
+	if !bidderFound {
+		return nil, "", errors.New("The bidder name provided is not supported by Prebid Server")
+	}
+
+	syncer, syncerExists := syncersByBidder[bidderNormalized.String()]
 	if !syncerExists {
 		return nil, "", errors.New("The bidder name provided is not supported by Prebid Server")
 	}
@@ -340,7 +342,7 @@ func getSyncer(query url.Values, syncersByBidder map[string]usersync.Syncer) (us
 func isSyncerPriority(bidderNameFromSyncerQuery string, priorityGroups [][]string) bool {
 	for _, group := range priorityGroups {
 		for _, bidder := range group {
-			if bidderNameFromSyncerQuery == bidder {
+			if strings.EqualFold(bidderNameFromSyncerQuery, bidder) {
 				return true
 			}
 		}
@@ -356,7 +358,7 @@ func getResponseFormat(query url.Values, syncer usersync.Syncer) (string, error)
 	formatEmpty := len(format) == 0 || format[0] == ""
 
 	if !formatProvided || formatEmpty {
-		switch syncer.DefaultSyncType() {
+		switch syncer.DefaultResponseFormat() {
 		case usersync.SyncTypeIFrame:
 			return "b", nil
 		case usersync.SyncTypeRedirect:

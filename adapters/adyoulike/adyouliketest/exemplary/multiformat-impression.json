@@ -95,7 +95,8 @@
                 "tagid": "123123"
               }
             ]
-          }
+          },
+          "impIDs":["banner-imp-id","video-imp-id","native-imp-id"]
         },
         "mockResponse": {
           "status": 200,

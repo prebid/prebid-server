@@ -1,6 +1,6 @@
 endpoint: "http://smartssp-us-east.iqzone.com/pserver"
 maintainer:
-  email: "smartssp@iqzone.com"
+  email: "adops@iqzone.com"
 capabilities:
   site:
     mediaTypes:

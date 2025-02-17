@@ -1,0 +1,16 @@
+endpoint: "https://server.playdigo.com/pserver"
+geoscope:
+  - USA
+maintainer:
+  email: "yr@playdigo.com"
+capabilities:
+  site:
+    mediaTypes:
+    - banner
+    - video
+    - native
+  app:
+    mediaTypes:
+    - banner
+    - video
+    - native

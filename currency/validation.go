@@ -5,8 +5,8 @@ import (
 
 	"golang.org/x/text/currency"
 
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 // ValidateCustomRates throws a bad input error if any of the 3-digit currency codes found in

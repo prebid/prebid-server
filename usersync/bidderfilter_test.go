@@ -1,6 +1,7 @@
 package usersync
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -68,6 +69,12 @@ func TestSpecificBidderFilter(t *testing.T) {
 			bidders:     []string{bidder},
 			mode:        BidderFilterMode(-1),
 			expected:    false,
+		},
+		{
+			description: "Case Insensitive Include - One",
+			bidders:     []string{strings.ToUpper(bidder)},
+			mode:        BidderFilterModeInclude,
+			expected:    true,
 		},
 	}
 

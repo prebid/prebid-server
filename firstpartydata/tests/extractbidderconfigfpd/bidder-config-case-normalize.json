@@ -1,0 +1,28 @@
+{
+  "description": "Extracts bidder configs for a bidder, normalizing the case for a known bidder",
+  "inputRequestData": {
+    "data": {},
+    "bidderconfig": [
+      {
+        "bidders": [
+          "APPNexus"
+        ],
+        "config": {
+          "ortb2": {
+            "site": {
+              "id": "apnSiteId"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "outputRequestData": {},
+  "bidderConfigFPD": {
+    "appnexus": {
+      "site": {
+        "id": "apnSiteId"
+      }
+    }
+  }
+}

@@ -5,4 +5,5 @@ type ImpExtAdnunitus struct {
 	Network   string `json:"network"`
 	NoCookies bool   `json:"noCookies"`
 	MaxDeals  int    `json:"maxDeals"`
+	BidType   string `json:"bidType,omitempty"`
 }

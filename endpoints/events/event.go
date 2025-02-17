@@ -10,14 +10,17 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+
 	"github.com/julienschmidt/httprouter"
-	accountService "github.com/prebid/prebid-server/account"
-	"github.com/prebid/prebid-server/analytics"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/metrics"
-	"github.com/prebid/prebid-server/stored_requests"
-	"github.com/prebid/prebid-server/util/httputil"
+	accountService "github.com/prebid/prebid-server/v2/account"
+	"github.com/prebid/prebid-server/v2/analytics"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/metrics"
+	"github.com/prebid/prebid-server/v2/privacy"
+	"github.com/prebid/prebid-server/v2/stored_requests"
+	"github.com/prebid/prebid-server/v2/util/httputil"
 )
 
 const (
@@ -40,13 +43,13 @@ const integrationParamMaxLength = 64
 
 type eventEndpoint struct {
 	Accounts      stored_requests.AccountFetcher
-	Analytics     analytics.PBSAnalyticsModule
+	Analytics     analytics.Runner
 	Cfg           *config.Configuration
 	TrackingPixel *httputil.Pixel
 	MetricsEngine metrics.MetricsEngine
 }
 
-func NewEventEndpoint(cfg *config.Configuration, accounts stored_requests.AccountFetcher, analytics analytics.PBSAnalyticsModule, me metrics.MetricsEngine) httprouter.Handle {
+func NewEventEndpoint(cfg *config.Configuration, accounts stored_requests.AccountFetcher, analytics analytics.Runner, me metrics.MetricsEngine) httprouter.Handle {
 	ee := &eventEndpoint{
 		Accounts:      accounts,
 		Analytics:     analytics,
@@ -67,7 +70,7 @@ func (e *eventEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprou
 		w.WriteHeader(http.StatusBadRequest)
 
 		for _, err := range errs {
-			w.Write([]byte(fmt.Sprintf("invalid request: %s\n", err.Error())))
+			fmt.Fprintf(w, "invalid request: %s\n", err.Error())
 		}
 
 		return
@@ -78,7 +81,7 @@ func (e *eventEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprou
 
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(fmt.Sprintf("Account '%s' is required query parameter and can't be empty", AccountIdParameter)))
+		fmt.Fprintf(w, "Account '%s' is required query parameter and can't be empty", AccountIdParameter)
 		return
 	}
 	eventRequest.AccountID = accountId
@@ -102,23 +105,25 @@ func (e *eventEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprou
 		w.WriteHeader(status)
 
 		for _, message := range messages {
-			w.Write([]byte(fmt.Sprintf("Invalid request: %s\n", message)))
+			fmt.Fprintf(w, "Invalid request: %s\n", message)
 		}
 		return
 	}
 
 	// Check if events are enabled for the account
-	if !account.Events.IsEnabled() {
+	if !account.Events.Enabled {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(fmt.Sprintf("Account '%s' doesn't support events", eventRequest.AccountID)))
+		fmt.Fprintf(w, "Account '%s' doesn't support events", eventRequest.AccountID)
 		return
 	}
+
+	activities := privacy.NewActivityControl(&account.Privacy)
 
 	// handle notification event
 	e.Analytics.LogNotificationEventObject(&analytics.NotificationEvent{
 		Request: eventRequest,
 		Account: account,
-	})
+	}, activities)
 
 	// Add tracking pixel if format == image
 	if eventRequest.Format == analytics.Image {
@@ -185,7 +190,12 @@ func ParseEventRequest(r *http.Request) (*analytics.EventRequest, []error) {
 	}
 
 	// Bidder
-	event.Bidder = r.URL.Query().Get(BidderParameter)
+	bidderName := r.URL.Query().Get(BidderParameter)
+	if normalisedBidderName, ok := openrtb_ext.NormalizeBidderName(bidderName); ok {
+		bidderName = normalisedBidderName.String()
+	}
+
+	event.Bidder = bidderName
 
 	return event, errs
 }
@@ -206,7 +216,7 @@ func HandleAccountServiceErrors(errs []error) (status int, messages []string) {
 
 		errCode := errortypes.ReadCode(er)
 
-		if errCode == errortypes.BlacklistedAppErrorCode || errCode == errortypes.BlacklistedAcctErrorCode {
+		if errCode == errortypes.BlacklistedAppErrorCode || errCode == errortypes.AccountDisabledErrorCode {
 			status = http.StatusServiceUnavailable
 		}
 		if errCode == errortypes.MalformedAcctErrorCode {

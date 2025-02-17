@@ -5,6 +5,9 @@
     "at": 1,
     "tmax": 5000
   },
+  "biddersWithGlobalFPD": [
+    "appnexus"
+  ],
   "bidderConfigFPD": {
     "appnexus": {
       "user": {
@@ -21,11 +24,12 @@
       }
     }
   },
-  "outputRequestData": {},
+  "outputRequestData": {
+    "appnexus": {}
+  },
   "validationErrors": [
     {
       "Message": "incorrect First Party Data for bidder appnexus: User object is not defined in request, but defined in FPD config"
     }
   ]
 }
-

@@ -1,0 +1,39 @@
+{
+  "description": "request with impression with stored bid response with case matching bidder name",
+  "mockBidRequest": {
+    "id": "request-with-stored-resp",
+    "site": {
+      "page": "test.somepage.com"
+    },
+    "imp": [
+      {
+        "id": "imp-id3",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          },
+          "prebid": {
+            "storedbidresponse": [
+              {
+                "bidder": "appnexus",
+                "id": "bidResponseId3"
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "user": {
+      "yob": 1989
+    }
+  },
+  "expectedReturnCode": 200
+}

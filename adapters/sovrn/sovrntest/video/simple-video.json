@@ -10,7 +10,6 @@
           "video/3gpp",
           "video/x-ms-wmv"
         ],
-        "minduration": 5,
         "maxduration": 30,
         "protocols": [
           4,
@@ -79,7 +78,6 @@
                   "video/3gpp",
                   "video/x-ms-wmv"
                 ],
-                "minduration": 5,
                 "maxduration": 30,
                 "protocols": [
                   4,
@@ -109,7 +107,8 @@
             "dnt": 0,
             "language": "en"
           }
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,

@@ -1,0 +1,203 @@
+{
+  "mockBidRequest": {
+    "id": "auction-id",
+    "cur": [
+      "EUR"
+    ],
+    "imp": [
+      {
+        "id": "1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "sid": "123456"
+          }
+        }
+      }
+    ],
+    "device": {
+      "ip": "123.123.123.123"
+    },
+    "site": {
+      "domain": "www.publisher.com",
+      "page": "http://www.publisher.com/some/path"
+    },
+    "user": {
+      "buyeruid": "test-buyer-user-id"
+    },
+    "regs": {
+      "ext": {
+        "dsa": {
+          "dsarequired": 3,
+          "pubrender": 0,
+          "datatopub": 2,
+          "transparency": [
+            {
+              "domain": "example-platform.com",
+              "dsaparams": [
+                1
+              ]
+            },
+            {
+              "domain": "example-ssp.com",
+              "dsaparams": [
+                1,
+                2
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ]
+        },
+        "uri": "http://localhost/s2sdsh",
+        "body": {
+          "id": "auction-id",
+          "cur": [
+            "EUR"
+          ],
+          "imp": [
+            {
+              "id": "1",
+              "tagid": "123456",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 600
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "sid": "123456"
+                }
+              }
+            }
+          ],
+          "device": {
+            "ip": "123.123.123.123"
+          },
+          "site": {
+            "domain": "www.publisher.com",
+            "page": "http://www.publisher.com/some/path"
+          },
+          "user": {
+            "buyeruid": "test-buyer-user-id"
+          },
+          "regs": {
+            "ext": {
+              "dsa": {
+                "dsarequired": 3,
+                "pubrender": 0,
+                "datatopub": 2,
+                "transparency": [
+                  {
+                    "domain": "example-platform.com",
+                    "dsaparams": [
+                      1
+                    ]
+                  },
+                  {
+                    "domain": "example-ssp.com",
+                    "dsaparams": [
+                      1,
+                      2
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "impIDs":["1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "bids": [
+            {
+              "id": "1829273982920-01",
+              "bidId": "1",
+              "cpm": 2,
+              "width": 300,
+              "height": 600,
+              "ad": "advert",
+              "crid": "wasd",
+              "mtype": "banner",
+              "dsa": {
+                "behalf": "Advertiser A",
+                "paid": "Advertiser B",
+                "transparency": [
+                  {
+                    "domain": "example-domain.com",
+                    "dsaparams": [
+                      1,
+                      2
+                    ]
+                  }
+                ],
+                "adrender": 1
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "1829273982920-01",
+            "impid": "1",
+            "price": 2,
+            "adm": "advert",
+            "w": 300,
+            "h": 600,
+            "crid": "wasd",
+            "mtype": 1,
+            "ext": {
+              "dsa": {
+                "behalf": "Advertiser A",
+                "paid": "Advertiser B",
+                "transparency": [
+                  {
+                    "domain": "example-domain.com",
+                    "dsaparams": [
+                      1,
+                      2
+                    ]
+                  }
+                ],
+                "adrender": 1
+              }
+            }
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

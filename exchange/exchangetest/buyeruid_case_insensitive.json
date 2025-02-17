@@ -1,0 +1,144 @@
+{
+  "incomingRequest": {
+    "ortbRequest": {
+      "id": "some-request-id",
+      "site": {
+        "page": "test.somepage.com"
+      },
+      "user": {
+        "id": "userId",
+        "ext": {
+          "prebid": {
+            "buyeruids": {
+              "APPnexUS": "12345"
+            }
+          }
+        }
+      },
+      "imp": [
+        {
+          "id": "my-imp-id",
+          "video": {
+            "mimes": [
+              "video/mp4"
+            ]
+          },
+          "ext": {
+            "prebid": {
+              "bidder": {
+                "APPnexus": {
+                  "placementId": 1
+                },
+                "appNEXUS": {
+                  "placementId": 2
+                },
+                "amx": {}
+              }
+            }
+          }
+        }
+      ],
+      "ext": {
+        "prebid": {
+          "aliases": {
+            "APPnexus": "appnexus",
+            "appNEXUS": "appnexus"
+          }
+        }
+      }
+    }
+  },
+  "outgoingRequests": {
+    "APPnexus": {
+      "expectRequest": {
+        "ortbRequest": {
+          "id": "some-request-id",
+          "site": {
+            "page": "test.somepage.com"
+          },
+          "user": {
+            "id": "userId",
+            "buyeruid": "12345"
+          },
+          "imp": [
+            {
+              "id": "my-imp-id",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "appNEXUS": {
+      "expectRequest": {
+        "ortbRequest": {
+          "id": "some-request-id",
+          "site": {
+            "page": "test.somepage.com"
+          },
+          "user": {
+            "id": "userId",
+            "buyeruid": "12345"
+          },
+          "imp": [
+            {
+              "id": "my-imp-id",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": 2
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "amx": {
+      "expectRequest": {
+        "ortbRequest": {
+          "id": "some-request-id",
+          "site": {
+            "page": "test.somepage.com"
+          },
+          "user": {
+            "id": "userId"
+          },
+          "imp": [
+            {
+              "id": "my-imp-id",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ]
+              },
+              "ext": {
+                "bidder": {
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  "response": {
+    "bids": {
+      "id": "some-request-id",
+      "ext": {}
+    }
+  }
+}

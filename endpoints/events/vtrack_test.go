@@ -12,9 +12,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/prebid_cache_client"
-	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/prebid_cache_client"
+	"github.com/prebid/prebid-server/v2/stored_requests"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -28,15 +30,17 @@ const (
 
 // Mock pbs cache client
 type vtrackMockCacheClient struct {
-	Fail  bool
-	Error error
-	Uuids []string
+	Fail   bool
+	Error  error
+	Uuids  []string
+	Values []prebid_cache_client.Cacheable
 }
 
 func (m *vtrackMockCacheClient) PutJson(ctx context.Context, values []prebid_cache_client.Cacheable) ([]string, []error) {
 	if m.Fail {
 		return []string{}, []error{m.Error}
 	}
+	m.Values = values
 	return m.Uuids, []error{}
 }
 func (m *vtrackMockCacheClient) GetExtCacheData() (scheme string, host string, path string) {
@@ -64,10 +68,11 @@ func TestShouldRespondWithBadRequestWhenAccountParameterIsMissing(t *testing.T) 
 	recorder := httptest.NewRecorder()
 
 	e := vtrackEndpoint{
-		Cfg:         cfg,
-		BidderInfos: nil,
-		Cache:       mockCacheClient,
-		Accounts:    mockAccountsFetcher,
+		Cfg:                 cfg,
+		BidderInfos:         nil,
+		Cache:               mockCacheClient,
+		Accounts:            mockAccountsFetcher,
+		normalizeBidderName: openrtb_ext.NormalizeBidderName,
 	}
 
 	// execute
@@ -105,10 +110,11 @@ func TestShouldRespondWithBadRequestWhenRequestBodyIsEmpty(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
 	e := vtrackEndpoint{
-		Cfg:         cfg,
-		BidderInfos: nil,
-		Cache:       mockCacheClient,
-		Accounts:    mockAccountsFetcher,
+		Cfg:                 cfg,
+		BidderInfos:         nil,
+		Cache:               mockCacheClient,
+		Accounts:            mockAccountsFetcher,
+		normalizeBidderName: openrtb_ext.NormalizeBidderName,
 	}
 
 	// execute
@@ -146,10 +152,11 @@ func TestShouldRespondWithBadRequestWhenRequestBodyIsInvalid(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
 	e := vtrackEndpoint{
-		Cfg:         cfg,
-		BidderInfos: nil,
-		Cache:       mockCacheClient,
-		Accounts:    mockAccountsFetcher,
+		Cfg:                 cfg,
+		BidderInfos:         nil,
+		Cache:               mockCacheClient,
+		Accounts:            mockAccountsFetcher,
+		normalizeBidderName: openrtb_ext.NormalizeBidderName,
 	}
 
 	// execute
@@ -180,7 +187,7 @@ func TestShouldRespondWithBadRequestWhenBidIdIsMissing(t *testing.T) {
 		},
 	}
 
-	reqData, err := json.Marshal(data)
+	reqData, err := jsonutil.Marshal(data)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -190,10 +197,11 @@ func TestShouldRespondWithBadRequestWhenBidIdIsMissing(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
 	e := vtrackEndpoint{
-		Cfg:         cfg,
-		BidderInfos: nil,
-		Cache:       mockCacheClient,
-		Accounts:    mockAccountsFetcher,
+		Cfg:                 cfg,
+		BidderInfos:         nil,
+		Cache:               mockCacheClient,
+		Accounts:            mockAccountsFetcher,
+		normalizeBidderName: openrtb_ext.NormalizeBidderName,
 	}
 
 	// execute
@@ -232,7 +240,7 @@ func TestShouldRespondWithBadRequestWhenBidderIsMissing(t *testing.T) {
 		},
 	}
 
-	reqData, err := json.Marshal(data)
+	reqData, err := jsonutil.Marshal(data)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -242,10 +250,11 @@ func TestShouldRespondWithBadRequestWhenBidderIsMissing(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
 	e := vtrackEndpoint{
-		Cfg:         cfg,
-		BidderInfos: nil,
-		Cache:       mockCacheClient,
-		Accounts:    mockAccountsFetcher,
+		Cfg:                 cfg,
+		BidderInfos:         nil,
+		Cache:               mockCacheClient,
+		Accounts:            mockAccountsFetcher,
+		normalizeBidderName: openrtb_ext.NormalizeBidderName,
 	}
 
 	// execute
@@ -291,10 +300,11 @@ func TestShouldRespondWithInternalServerErrorWhenPbsCacheClientFails(t *testing.
 	recorder := httptest.NewRecorder()
 
 	e := vtrackEndpoint{
-		Cfg:         cfg,
-		BidderInfos: nil,
-		Cache:       mockCacheClient,
-		Accounts:    mockAccountsFetcher,
+		Cfg:                 cfg,
+		BidderInfos:         nil,
+		Cache:               mockCacheClient,
+		Accounts:            mockAccountsFetcher,
+		normalizeBidderName: openrtb_ext.NormalizeBidderName,
 	}
 
 	// execute
@@ -340,10 +350,11 @@ func TestShouldTolerateAccountNotFound(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
 	e := vtrackEndpoint{
-		Cfg:         cfg,
-		BidderInfos: nil,
-		Cache:       mockCacheClient,
-		Accounts:    mockAccountsFetcher,
+		Cfg:                 cfg,
+		BidderInfos:         nil,
+		Cache:               mockCacheClient,
+		Accounts:            mockAccountsFetcher,
+		normalizeBidderName: openrtb_ext.NormalizeBidderName,
 	}
 
 	// execute
@@ -397,10 +408,11 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastNotAllowe
 	recorder := httptest.NewRecorder()
 
 	e := vtrackEndpoint{
-		Cfg:         cfg,
-		BidderInfos: bidderInfos,
-		Cache:       mockCacheClient,
-		Accounts:    mockAccountsFetcher,
+		Cfg:                 cfg,
+		BidderInfos:         bidderInfos,
+		Cache:               mockCacheClient,
+		Accounts:            mockAccountsFetcher,
+		normalizeBidderName: openrtb_ext.NormalizeBidderName,
 	}
 
 	// execute
@@ -459,11 +471,15 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastAllowed(t
 
 	recorder := httptest.NewRecorder()
 
+	var mockNormalizeBidderName openrtb_ext.BidderNameNormalizer = func(name string) (openrtb_ext.BidderName, bool) {
+		return openrtb_ext.BidderName(name), true
+	}
 	e := vtrackEndpoint{
-		Cfg:         cfg,
-		BidderInfos: bidderInfos,
-		Cache:       mockCacheClient,
-		Accounts:    mockAccountsFetcher,
+		Cfg:                 cfg,
+		BidderInfos:         bidderInfos,
+		Cache:               mockCacheClient,
+		Accounts:            mockAccountsFetcher,
+		normalizeBidderName: mockNormalizeBidderName,
 	}
 
 	// execute
@@ -478,6 +494,95 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastAllowed(t
 	assert.Equal(t, 200, recorder.Result().StatusCode, "Expected 200 when account is not found and request is valid")
 	assert.Equal(t, "{\"responses\":[{\"uuid\":\"uuid1\"},{\"uuid\":\"uuid2\"}]}", string(d), "Expected 200 when account is found and request is valid")
 	assert.Equal(t, "application/json", recorder.Header().Get("Content-Type"))
+	assert.Len(t, mockCacheClient.Values, 2)
+	assert.Contains(t, string(mockCacheClient.Values[0].Data), "bidder=bidder")
+	assert.Contains(t, string(mockCacheClient.Values[1].Data), "bidder=updatable_bidder")
+}
+
+func TestShouldSendToCacheExpectedPutsAndUpdatableCaseSensitiveBiddersWhenBidderVastAllowed(t *testing.T) {
+	// mock pbs cache client
+	mockCacheClient := &vtrackMockCacheClient{
+		Fail:  false,
+		Uuids: []string{"uuid1", "uuid2"},
+	}
+
+	// mock AccountsFetcher
+	mockAccountsFetcher := &mockAccountsFetcher{
+		Fail: false,
+	}
+
+	// config
+	cfg := &config.Configuration{
+		MaxRequestSize: maxSize, VTrack: config.VTrack{
+			TimeoutMS: int64(2000), AllowUnknownBidder: false,
+		},
+		AccountDefaults: config.Account{},
+	}
+	cfg.MarshalAccountDefaults()
+
+	// bidder info
+	bidderInfos := make(config.BidderInfos)
+	bidderInfos["appnexus"] = config.BidderInfo{
+		Disabled:                false,
+		ModifyingVastXmlAllowed: true,
+	}
+
+	d, err := getVTrackRequestData(true, true)
+	assert.NoError(t, err)
+
+	cacheReq := &BidCacheRequest{
+		Puts: []prebid_cache_client.Cacheable{
+			{
+				Type:       prebid_cache_client.TypeXML,
+				BidID:      "bidId1",
+				Bidder:     "APPNEXUS", // case sensitive name
+				Data:       d,
+				TTLSeconds: 3600,
+				Timestamp:  1000,
+			},
+			{
+				Type:       prebid_cache_client.TypeXML,
+				BidID:      "bidId2",
+				Bidder:     "ApPnExUs", // case sensitive name
+				Data:       d,
+				TTLSeconds: 3600,
+				Timestamp:  1000,
+			},
+		},
+	}
+	buf := &bytes.Buffer{}
+	enc := json.NewEncoder(buf)
+	enc.SetEscapeHTML(false)
+	err = enc.Encode(cacheReq)
+	assert.NoError(t, err)
+	data := buf.String()
+
+	req := httptest.NewRequest("POST", "/vtrack?a=events_enabled", strings.NewReader(data))
+
+	recorder := httptest.NewRecorder()
+	e := vtrackEndpoint{
+		Cfg:                 cfg,
+		BidderInfos:         bidderInfos,
+		Cache:               mockCacheClient,
+		Accounts:            mockAccountsFetcher,
+		normalizeBidderName: openrtb_ext.NormalizeBidderName,
+	}
+
+	// execute
+	e.Handle(recorder, req, nil)
+
+	d, err = io.ReadAll(recorder.Result().Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// validate
+	assert.Equal(t, 200, recorder.Result().StatusCode, "Expected 200 when account is not found and request is valid")
+	assert.Equal(t, "{\"responses\":[{\"uuid\":\"uuid1\"},{\"uuid\":\"uuid2\"}]}", string(d), "Expected 200 when account is found and request is valid")
+	assert.Equal(t, "application/json", recorder.Header().Get("Content-Type"))
+	assert.Len(t, mockCacheClient.Values, 2)
+	assert.Contains(t, string(mockCacheClient.Values[0].Data), "bidder=APPNEXUS")
+	assert.Contains(t, string(mockCacheClient.Values[1].Data), "bidder=ApPnExUs")
 }
 
 func TestShouldSendToCacheExpectedPutsAndUpdatableUnknownBiddersWhenUnknownBidderIsAllowed(t *testing.T) {
@@ -515,10 +620,11 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableUnknownBiddersWhenUnknownBidde
 	recorder := httptest.NewRecorder()
 
 	e := vtrackEndpoint{
-		Cfg:         cfg,
-		BidderInfos: bidderInfos,
-		Cache:       mockCacheClient,
-		Accounts:    mockAccountsFetcher,
+		Cfg:                 cfg,
+		BidderInfos:         bidderInfos,
+		Cache:               mockCacheClient,
+		Accounts:            mockAccountsFetcher,
+		normalizeBidderName: openrtb_ext.NormalizeBidderName,
 	}
 
 	// execute
@@ -571,10 +677,11 @@ func TestShouldReturnBadRequestWhenRequestExceedsMaxRequestSize(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
 	e := vtrackEndpoint{
-		Cfg:         cfg,
-		BidderInfos: bidderInfos,
-		Cache:       mockCacheClient,
-		Accounts:    mockAccountsFetcher,
+		Cfg:                 cfg,
+		BidderInfos:         bidderInfos,
+		Cache:               mockCacheClient,
+		Accounts:            mockAccountsFetcher,
+		normalizeBidderName: openrtb_ext.NormalizeBidderName,
 	}
 
 	// execute
@@ -615,10 +722,11 @@ func TestShouldRespondWithInternalErrorPbsCacheIsNotConfigured(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
 	e := vtrackEndpoint{
-		Cfg:         cfg,
-		BidderInfos: nil,
-		Cache:       nil,
-		Accounts:    mockAccountsFetcher,
+		Cfg:                 cfg,
+		BidderInfos:         nil,
+		Cache:               nil,
+		Accounts:            mockAccountsFetcher,
+		normalizeBidderName: openrtb_ext.NormalizeBidderName,
 	}
 
 	// execute

@@ -1,0 +1,19 @@
+endpoint: "http://rtb.boldwin.live?pid={{.SourceId}}&host={{.Host}}&pbs=1"
+maintainer:
+  email: "prebid@bold-win.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  # BoldwinX supports user syncing, but requires configuration by the host. contact this
+  # bidder directly at the email address in this file to ask about enabling user sync.
+  supports:
+    - redirect

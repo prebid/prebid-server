@@ -11,11 +11,12 @@ import (
 
 	"golang.org/x/text/currency"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 )
 
 // YieldlabAdapter connects the Yieldlab API to prebid server
@@ -66,8 +67,8 @@ func (a *YieldlabAdapter) makeEndpointURL(req *openrtb2.BidRequest, params *open
 		}
 
 		if req.Device.Geo != nil {
-			q.Set("lat", fmt.Sprintf("%v", req.Device.Geo.Lat))
-			q.Set("lon", fmt.Sprintf("%v", req.Device.Geo.Lon))
+			q.Set("lat", fmt.Sprintf("%v", ptrutil.ValueOrDefault(req.Device.Geo.Lat)))
+			q.Set("lon", fmt.Sprintf("%v", ptrutil.ValueOrDefault(req.Device.Geo.Lon)))
 		}
 	}
 
@@ -95,9 +96,92 @@ func (a *YieldlabAdapter) makeEndpointURL(req *openrtb2.BidRequest, params *open
 		}
 	}
 
+	dsa, err := getDSA(req)
+	if err != nil {
+		return "", err
+	}
+	if dsa != nil {
+		if dsa.Required != nil {
+			q.Set("dsarequired", strconv.Itoa(*dsa.Required))
+		}
+		if dsa.PubRender != nil {
+			q.Set("dsapubrender", strconv.Itoa(*dsa.PubRender))
+		}
+		if dsa.DataToPub != nil {
+			q.Set("dsadatatopub", strconv.Itoa(*dsa.DataToPub))
+		}
+		if len(dsa.Transparency) != 0 {
+			transparencyParam := makeDSATransparencyURLParam(dsa.Transparency)
+			if len(transparencyParam) != 0 {
+				q.Set("dsatransparency", transparencyParam)
+			}
+		}
+	}
+
 	uri.RawQuery = q.Encode()
 
 	return uri.String(), nil
+}
+
+// getDSA extracts the Digital Service Act (DSA) properties from the request.
+func getDSA(req *openrtb2.BidRequest) (*dsaRequest, error) {
+	if req.Regs == nil || req.Regs.Ext == nil {
+		return nil, nil
+	}
+
+	var extRegs openRTBExtRegsWithDSA
+	err := json.Unmarshal(req.Regs.Ext, &extRegs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse Regs.Ext object from Yieldlab response: %v", err)
+	}
+
+	return extRegs.DSA, nil
+}
+
+// makeDSATransparencyURLParam creates the transparency url parameter
+// as specified by the OpenRTB 2.X DSA Transparency community extension.
+//
+// Example result: platform1domain.com~1~~SSP2domain.com~1_2
+func makeDSATransparencyURLParam(transparencyObjects []dsaTransparency) string {
+	valueSeparator, itemSeparator, objectSeparator := "_", "~", "~~"
+
+	var b strings.Builder
+
+	concatParams := func(params []int) {
+		b.WriteString(strconv.Itoa(params[0]))
+		for _, param := range params[1:] {
+			b.WriteString(valueSeparator)
+			b.WriteString(strconv.Itoa(param))
+		}
+	}
+
+	concatTransparency := func(object dsaTransparency) {
+		if len(object.Domain) == 0 {
+			return
+		}
+
+		b.WriteString(object.Domain)
+		if len(object.Params) != 0 {
+			b.WriteString(itemSeparator)
+			concatParams(object.Params)
+		}
+	}
+
+	concatTransparencies := func(objects []dsaTransparency) {
+		if len(objects) == 0 {
+			return
+		}
+
+		concatTransparency(objects[0])
+		for _, obj := range objects[1:] {
+			b.WriteString(objectSeparator)
+			concatTransparency(obj)
+		}
+	}
+
+	concatTransparencies(transparencyObjects)
+
+	return b.String()
 }
 
 func (a *YieldlabAdapter) makeFormats(req *openrtb2.BidRequest) (bool, string) {
@@ -177,6 +261,7 @@ func (a *YieldlabAdapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters
 		Method:  "GET",
 		Uri:     bidURL,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, nil
 }
 
@@ -252,6 +337,7 @@ func (a *YieldlabAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 		}
 	}
 
+	var bidErrors []error
 	for _, bid := range bids {
 		width, height, err := splitSize(bid.Adsize)
 		if err != nil {
@@ -268,7 +354,13 @@ func (a *YieldlabAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 		if imp, exists := adslotToImpMap[strconv.FormatUint(bid.ID, 10)]; !exists {
 			continue
 		} else {
-			var bidType openrtb_ext.BidType
+			extJson, err := makeResponseExt(bid)
+			if err != nil {
+				bidErrors = append(bidErrors, err)
+				// skip as bids with missing ext.dsa will be discarded anyway
+				continue
+			}
+
 			responseBid := &openrtb2.Bid{
 				ID:     strconv.FormatUint(bid.ID, 10),
 				Price:  float64(bid.Price) / 100,
@@ -277,8 +369,10 @@ func (a *YieldlabAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 				DealID: strconv.FormatUint(bid.Pid, 10),
 				W:      int64(width),
 				H:      int64(height),
+				Ext:    extJson,
 			}
 
+			var bidType openrtb_ext.BidType
 			if imp.Video != nil {
 				bidType = openrtb_ext.BidTypeVideo
 				responseBid.NURL = a.makeAdSourceURL(internalRequest, req, bid)
@@ -298,7 +392,18 @@ func (a *YieldlabAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 		}
 	}
 
-	return bidderResponse, nil
+	return bidderResponse, bidErrors
+}
+
+func makeResponseExt(bid *bidResponse) (json.RawMessage, error) {
+	if bid.DSA != nil {
+		extJson, err := json.Marshal(responseExtWithDSA{*bid.DSA})
+		if err != nil {
+			return nil, fmt.Errorf("failed to make JSON for seatbid.bid.ext for adslotID %v. This is most likely a programming issue", bid.ID)
+		}
+		return extJson, nil
+	}
+	return nil, nil
 }
 
 func (a *YieldlabAdapter) findBidReq(adslotID uint64, params []*openrtb_ext.ExtImpYieldlab) *openrtb_ext.ExtImpYieldlab {
@@ -393,20 +498,20 @@ func makeSupplyChain(openRtbSchain openrtb2.SupplyChain) string {
 
 // makeNodeValue converts any known value type from a schain node to a string and does URL encoding if necessary.
 func makeNodeValue(nodeParam any) string {
-	switch nodeParam.(type) {
+	switch nodeParam := nodeParam.(type) {
 	case string:
-		return url.QueryEscape(nodeParam.(string))
+		return url.QueryEscape(nodeParam)
 	case *int8:
-		pointer := nodeParam.(*int8)
+		pointer := nodeParam
 		if pointer == nil {
 			return ""
 		}
 		return makeNodeValue(int(*pointer))
 	case int:
-		return strconv.Itoa(nodeParam.(int))
+		return strconv.Itoa(nodeParam)
 	case json.RawMessage:
-		if freeFormData := nodeParam.(json.RawMessage); freeFormData != nil {
-			freeFormJson, err := json.Marshal(freeFormData)
+		if nodeParam != nil {
+			freeFormJson, err := json.Marshal(nodeParam)
 			if err != nil {
 				return ""
 			}

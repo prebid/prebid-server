@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 const displayManager string = "di_prebid"
@@ -143,6 +143,7 @@ func (d *DeepintentAdapter) preprocess(request openrtb2.BidRequest) (*adapters.R
 		Uri:     d.URI,
 		Body:    reqJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}, errs
 }
 
@@ -150,7 +151,7 @@ func buildImpBanner(imp *openrtb2.Imp) error {
 
 	if imp.Banner == nil {
 		return &errortypes.BadInput{
-			Message: fmt.Sprintf("We need a Banner Object in the request"),
+			Message: "We need a Banner Object in the request",
 		}
 	}
 
@@ -160,7 +161,7 @@ func buildImpBanner(imp *openrtb2.Imp) error {
 
 		if len(banner.Format) == 0 {
 			return &errortypes.BadInput{
-				Message: fmt.Sprintf("At least one size is required"),
+				Message: "At least one size is required",
 			}
 		}
 		format := banner.Format[0]

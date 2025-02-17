@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Online Media Solutions Adapter Params",
+  "description": "A schema which validates params accepted by the OMS adapter",
+  "type": "object",
+  "properties": {
+    "pid": {
+      "type": "string",
+      "description": "An id used to identify OMS publisher.",
+      "minLength": 5
+    }
+  },
+  "required": ["pid"]
+}

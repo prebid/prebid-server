@@ -49,7 +49,8 @@
   "httpCalls": [
     {
         "expectedRequest": {
-          "uri": "https://myao.adocean.pl/_10000000/ad.json?aid=adoceanmyaozpniqismex%3Aao-test&aosspsizes=myaozpniqismex~300x250&devmake=&devmodel=&devos=&devosv=&dpidmd5=&id=tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7&nc=1&nosecure=1&pbsrv_v=1.3.0"
+          "uri": "https://myao.adocean.pl/_10000000/ad.json?aid=adoceanmyaozpniqismex%3Aao-test&aosspsizes=myaozpniqismex~300x250&devmake=&devmodel=&devos=&devosv=&dpidmd5=&id=tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7&nc=1&nosecure=1&pbsrv_v=1.3.0",
+          "impIDs":["ao-test"]
         },
       "mockResponse": {
         "status": 200,

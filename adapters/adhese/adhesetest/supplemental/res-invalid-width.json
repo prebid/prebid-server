@@ -38,7 +38,8 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://ads-market.adhese.com/json/sl_adhese_prebid_demo_-leaderboard/ag55/cigent;brussels/tlall/xfdummy"
+        "uri": "https://ads-market.adhese.com/json/sl_adhese_prebid_demo_-leaderboard/ag55/cigent;brussels/tlall/xfdummy",
+        "impIDs":["test-req"]
       },
       "mockResponse": {
         "status": 200,

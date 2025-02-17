@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "smartclip.tv Adapter Params",
+  "description": "A schema which validates params accepted by the smartclip.tv adapter",
+  "type": "object",
+  "properties": {
+    "tagId": {
+      "type": "string",
+      "description": "Ad tag ID"
+    },
+    "publisherId": {
+      "type": "string",
+      "description": "Publisher ID"
+    },
+    "siteId": {
+      "type": "string",
+      "description": "Site ID"
+    },
+    "appId": {
+      "type": "string",
+      "description": "App ID"
+    },
+    "bundleId": {
+      "type": "string",
+      "description": "Bundle ID"
+    },
+    "storeUrl": {
+      "type": "string",
+      "description": "AppStore URL"
+    }
+  },
+  "oneOf": [
+    { "required": ["siteId"] },
+    { "required": ["appId"] }
+  ],
+  "required": ["tagId", "publisherId"]
+}

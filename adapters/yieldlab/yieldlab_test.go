@@ -5,12 +5,12 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/prebid/prebid-server/adapters/adapterstest"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/adapters/adapterstest"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 const testURL = "https://ad.yieldlab.net/testing/"
@@ -255,6 +255,98 @@ func Test_makeSupplyChain(t *testing.T) {
 			assert.Equal(t, test.expected, actual)
 		})
 	}
+}
+
+func Test_makeDSATransparencyUrlParam(t *testing.T) {
+	tests := []struct {
+		name           string
+		transparencies []dsaTransparency
+		expected       string
+	}{
+		{
+			name:           "No transparency objects",
+			transparencies: []dsaTransparency{},
+			expected:       "",
+		},
+		{
+			name:           "Nil transparency",
+			transparencies: nil,
+			expected:       "",
+		},
+		{
+			name: "Params without a domain",
+			transparencies: []dsaTransparency{
+				{
+					Params: []int{1, 2},
+				},
+			},
+			expected: "",
+		},
+		{
+			name: "Params without a params",
+			transparencies: []dsaTransparency{
+				{
+					Domain: "domain.com",
+				},
+			},
+			expected: "domain.com",
+		},
+		{
+			name: "One object; No Params",
+			transparencies: []dsaTransparency{
+				{
+					Domain: "domain.com",
+					Params: []int{},
+				},
+			},
+			expected: "domain.com",
+		},
+		{
+			name: "One object; One Param",
+			transparencies: []dsaTransparency{
+				{
+					Domain: "domain.com",
+					Params: []int{1},
+				},
+			},
+			expected: "domain.com~1",
+		},
+		{
+			name: "Three domain objects",
+			transparencies: []dsaTransparency{
+				{
+					Domain: "domain1.com",
+					Params: []int{1, 2},
+				},
+				{
+					Domain: "domain2.com",
+					Params: []int{3, 4},
+				},
+				{
+					Domain: "domain3.com",
+					Params: []int{5, 6},
+				},
+			},
+			expected: "domain1.com~1_2~~domain2.com~3_4~~domain3.com~5_6",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			actual := makeDSATransparencyURLParam(test.transparencies)
+			assert.Equal(t, test.expected, actual)
+		})
+	}
+}
+
+func Test_getDSA_invalidRequestExt(t *testing.T) {
+	req := &openrtb2.BidRequest{
+		Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"DSA":"wrongValueType"}`)},
+	}
+
+	dsa, err := getDSA(req)
+
+	assert.NotNil(t, err)
+	assert.Nil(t, dsa)
 }
 
 func TestYieldlabAdapter_makeEndpointURL_invalidEndpoint(t *testing.T) {

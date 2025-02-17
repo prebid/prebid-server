@@ -1,0 +1,12 @@
+endpoint: "http://xsp.lijit.com/json/rtb/prebid/server"
+maintainer:
+  email: "sovrnoss@sovrn.com"
+endpointCompression: gzip
+gvlVendorID: 13
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native

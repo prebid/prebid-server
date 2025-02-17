@@ -98,7 +98,8 @@
             "ip": "8.8.8.12"
           },
           "tmax": 500
-        }
+        },
+        "impIDs":["some-impression-id1","some-impression-id2"]
       },
       "mockResponse": {
         "status": 200,

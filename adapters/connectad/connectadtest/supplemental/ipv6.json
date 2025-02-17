@@ -73,7 +73,8 @@
               "ipv6": "2001:0db8:0a0b:12f0:0000:0000:0000:0001",
               "dnt": 1
             }
-          }
+          },
+          "impIDs":["test-banner-imp-id"]
         },
         "mockResponse": {
           "status": 200,

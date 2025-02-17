@@ -1,0 +1,14 @@
+endpoint: "https://sg.ads.lemmatechnologies.com/lemma/servad?pid={{.PublisherID}}&aid={{.AdUnit}}"
+maintainer:
+  email: support@lemmatechnologies.com
+endpointCompression: gzip
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video

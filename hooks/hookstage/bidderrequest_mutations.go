@@ -3,8 +3,9 @@ package hookstage
 import (
 	"errors"
 
-	"github.com/prebid/openrtb/v19/adcom1"
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+
+	"github.com/prebid/openrtb/v20/adcom1"
 )
 
 func (c *ChangeSet[T]) BidderRequest() ChangeSetBidderRequest[T] {
@@ -31,12 +32,12 @@ func (c ChangeSetBidderRequest[T]) BApp() ChangeSetBApp[T] {
 	return ChangeSetBApp[T]{changeSetBidderRequest: c}
 }
 
-func (c ChangeSetBidderRequest[T]) castPayload(p T) (*openrtb2.BidRequest, error) {
+func (c ChangeSetBidderRequest[T]) castPayload(p T) (*openrtb_ext.RequestWrapper, error) {
 	if payload, ok := any(p).(BidderRequestPayload); ok {
-		if payload.BidRequest == nil {
-			return nil, errors.New("empty BidRequest provided")
+		if payload.Request == nil || payload.Request.BidRequest == nil {
+			return nil, errors.New("payload contains a nil bid request")
 		}
-		return payload.BidRequest, nil
+		return payload.Request, nil
 	}
 	return nil, errors.New("failed to cast BidderRequestPayload")
 }

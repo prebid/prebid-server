@@ -1,0 +1,48 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "device": {
+      "ifa": "87857b31-8942-4646-ae80-ab9c95bf3fab"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "protocols": [
+            2,
+            5
+          ],
+          "w": 1024,
+          "h": 576,
+          "ext": {
+            "foo": "bar"
+          }
+        },
+        "ext": {
+          "prebid": {
+            "is_rewarded_inventory": 1
+          },
+          "bidder": {
+            "app_store_id": "123",
+            "placement_reference_id": "123"
+          }
+        }
+      }
+    ],
+    "user": {
+      "buyeruid": "123"
+    }
+  },
+  "httpCalls": [],
+  "expectedBidResponses": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "failed constructing app, must have app or site object in bid request",
+      "comparison": "literal"
+    }
+  ],
+  "expectedMakeBidsErrors": []
+}

@@ -79,6 +79,8 @@
               "ext": {
                 "origbidcpm": 0.71,
                 "prebid": {
+                  "meta": {
+                  },
                   "type": "banner"
                 }
               }
@@ -93,6 +95,8 @@
               "ext": {
                 "origbidcpm": 0.21,
                 "prebid": {
+                  "meta": {
+                  },
                   "type": "banner"
                 }
               }

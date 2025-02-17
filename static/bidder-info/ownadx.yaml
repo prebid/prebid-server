@@ -10,3 +10,9 @@ capabilities:
     mediaTypes:
       - banner
       - video
+
+userSync:
+  redirect:
+    url: "https://sync.spoutroserve.com/user-sync?t=image&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&s3={{.RedirectURL}}"
+    userMacro: "{USER_ID}"
+endpointCompression: "GZIP"

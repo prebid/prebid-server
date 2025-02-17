@@ -1,14 +1,14 @@
 package info
 
 import (
-	"encoding/json"
 	"net/http"
 	"sort"
 	"strings"
 
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
-	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 )
 
 var invalidEnabledOnlyMsg = []byte(`Invalid value for 'enabledonly' query param, must be of boolean type`)
@@ -103,7 +103,7 @@ func prepareBiddersResponseAll(bidders config.BidderInfos, aliases map[string]st
 	}
 
 	sort.Strings(bidderNames)
-	return json.Marshal(bidderNames)
+	return jsonutil.Marshal(bidderNames)
 }
 
 func prepareBiddersResponseAllBaseOnly(bidders config.BidderInfos) ([]byte, error) {
@@ -116,7 +116,7 @@ func prepareBiddersResponseAllBaseOnly(bidders config.BidderInfos) ([]byte, erro
 	}
 
 	sort.Strings(bidderNames)
-	return json.Marshal(bidderNames)
+	return jsonutil.Marshal(bidderNames)
 }
 
 func prepareBiddersResponseEnabledOnly(bidders config.BidderInfos, aliases map[string]string) ([]byte, error) {
@@ -135,8 +135,7 @@ func prepareBiddersResponseEnabledOnly(bidders config.BidderInfos, aliases map[s
 	}
 
 	sort.Strings(bidderNames)
-
-	return json.Marshal(bidderNames)
+	return jsonutil.Marshal(bidderNames)
 }
 
 func prepareBiddersResponseEnabledOnlyBaseOnly(bidders config.BidderInfos) ([]byte, error) {
@@ -149,7 +148,7 @@ func prepareBiddersResponseEnabledOnlyBaseOnly(bidders config.BidderInfos) ([]by
 	}
 
 	sort.Strings(bidderNames)
-	return json.Marshal(bidderNames)
+	return jsonutil.Marshal(bidderNames)
 }
 
 func writeBadRequest(w http.ResponseWriter, data []byte) {

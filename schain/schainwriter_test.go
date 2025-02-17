@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
+
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -76,7 +78,7 @@ func TestSChainWriter(t *testing.T) {
 			giveRequest: openrtb2.BidRequest{
 				Ext: json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],` + seller1SChain + `}]}}`),
 				Source: &openrtb2.Source{
-					FD:     1,
+					FD:     openrtb2.Int8Ptr(1),
 					TID:    "tid data",
 					PChain: "pchain data",
 					Ext:    json.RawMessage(`{` + seller2SChain + `}`),
@@ -86,7 +88,7 @@ func TestSChainWriter(t *testing.T) {
 			wantRequest: openrtb2.BidRequest{
 				Ext: json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],` + seller1SChain + `}]}}`),
 				Source: &openrtb2.Source{
-					FD:     1,
+					FD:     openrtb2.Int8Ptr(1),
 					TID:    "tid data",
 					PChain: "pchain data",
 					Ext:    json.RawMessage(`{` + seller1SChain + `}`),
@@ -197,7 +199,7 @@ func TestSChainWriter(t *testing.T) {
 		var reqExt *openrtb_ext.ExtRequest
 		if tt.giveRequest.Ext != nil {
 			reqExt = &openrtb_ext.ExtRequest{}
-			err := json.Unmarshal(tt.giveRequest.Ext, reqExt)
+			err := jsonutil.UnmarshalValid(tt.giveRequest.Ext, reqExt)
 			if err != nil {
 				t.Error("Unable to unmarshal request.ext")
 			}

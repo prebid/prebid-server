@@ -17,12 +17,12 @@
           ]
         },
         "ext": {
-          "appnexus": {
+          "telaria": {
             "placementId": 12883451
           },
           "prebid": {
             "storedbidresponse": [
-              {"bidder":"testBidder1", "id": "bidResponseId1"}
+              {"bidder":"telaria", "id": "bidResponseId1"}
             ]
           }
         }
@@ -38,12 +38,10 @@
           ]
         },
         "ext": {
-          "appnexus": {
-            "placementId": 12883451
-          },
+          "amx": {},
           "prebid": {
             "storedbidresponse": [
-              {"bidder":"testBidder2", "id": "bidResponseId2"}
+              {"bidder":"amx", "id": "bidResponseId2"}
             ]
           }
         }

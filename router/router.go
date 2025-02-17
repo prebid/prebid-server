@@ -10,32 +10,35 @@ import (
 	"strings"
 	"time"
 
-	analyticsConf "github.com/prebid/prebid-server/analytics/config"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/currency"
-	"github.com/prebid/prebid-server/endpoints"
-	"github.com/prebid/prebid-server/endpoints/events"
-	infoEndpoints "github.com/prebid/prebid-server/endpoints/info"
-	"github.com/prebid/prebid-server/endpoints/openrtb2"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/exchange"
-	"github.com/prebid/prebid-server/experiment/adscert"
-	"github.com/prebid/prebid-server/gdpr"
-	"github.com/prebid/prebid-server/hooks"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/metrics"
-	metricsConf "github.com/prebid/prebid-server/metrics/config"
-	"github.com/prebid/prebid-server/modules"
-	"github.com/prebid/prebid-server/modules/moduledeps"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbs"
-	pbc "github.com/prebid/prebid-server/prebid_cache_client"
-	"github.com/prebid/prebid-server/router/aspects"
-	"github.com/prebid/prebid-server/server/ssl"
-	storedRequestsConf "github.com/prebid/prebid-server/stored_requests/config"
-	"github.com/prebid/prebid-server/usersync"
-	"github.com/prebid/prebid-server/util/uuidutil"
-	"github.com/prebid/prebid-server/version"
+	analyticsBuild "github.com/prebid/prebid-server/v2/analytics/build"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/currency"
+	"github.com/prebid/prebid-server/v2/endpoints"
+	"github.com/prebid/prebid-server/v2/endpoints/events"
+	infoEndpoints "github.com/prebid/prebid-server/v2/endpoints/info"
+	"github.com/prebid/prebid-server/v2/endpoints/openrtb2"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/exchange"
+	"github.com/prebid/prebid-server/v2/experiment/adscert"
+	"github.com/prebid/prebid-server/v2/floors"
+	"github.com/prebid/prebid-server/v2/gdpr"
+	"github.com/prebid/prebid-server/v2/hooks"
+	"github.com/prebid/prebid-server/v2/macros"
+	"github.com/prebid/prebid-server/v2/metrics"
+	metricsConf "github.com/prebid/prebid-server/v2/metrics/config"
+	"github.com/prebid/prebid-server/v2/modules"
+	"github.com/prebid/prebid-server/v2/modules/moduledeps"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/ortb"
+	"github.com/prebid/prebid-server/v2/pbs"
+	pbc "github.com/prebid/prebid-server/v2/prebid_cache_client"
+	"github.com/prebid/prebid-server/v2/router/aspects"
+	"github.com/prebid/prebid-server/v2/server/ssl"
+	storedRequestsConf "github.com/prebid/prebid-server/v2/stored_requests/config"
+	"github.com/prebid/prebid-server/v2/usersync"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v2/util/uuidutil"
+	"github.com/prebid/prebid-server/v2/version"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/golang/glog"
@@ -91,7 +94,7 @@ func newJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.Bidder
 		data[aliasName] = bidderData
 	}
 
-	response, err := json.Marshal(data)
+	response, err := jsonutil.Marshal(data)
 	if err != nil {
 		glog.Fatalf("Failed to marshal bidder param JSON-schema: %v", err)
 	}
@@ -161,6 +164,16 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		},
 	}
 
+	floorFechterHttpClient := &http.Client{
+		Transport: &http.Transport{
+			Proxy:               http.ProxyFromEnvironment,
+			MaxConnsPerHost:     cfg.PriceFloors.Fetcher.HttpClient.MaxConnsPerHost,
+			MaxIdleConns:        cfg.PriceFloors.Fetcher.HttpClient.MaxIdleConns,
+			MaxIdleConnsPerHost: cfg.PriceFloors.Fetcher.HttpClient.MaxIdleConnsPerHost,
+			IdleConnTimeout:     time.Duration(cfg.PriceFloors.Fetcher.HttpClient.IdleConnTimeout) * time.Second,
+		},
+	}
+
 	if err := checkSupportedUserSyncEndpoints(cfg.BidderInfos); err != nil {
 		return nil, err
 	}
@@ -179,7 +192,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		syncerKeys = append(syncerKeys, k)
 	}
 
-	moduleDeps := moduledeps.ModuleDeps{HTTPClient: generalHttpClient}
+	moduleDeps := moduledeps.ModuleDeps{HTTPClient: generalHttpClient, RateConvertor: rateConvertor}
 	repo, moduleStageNames, err := modules.NewBuilder().Build(cfg.Hooks.Modules, moduleDeps)
 	if err != nil {
 		glog.Fatalf("Failed to init hook modules: %v", err)
@@ -191,7 +204,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	// todo(zachbadgett): better shutdown
 	r.Shutdown = shutdown
 
-	pbsAnalytics := analyticsConf.NewPBSAnalytics(&cfg.Analytics)
+	analyticsRunner := analyticsBuild.New(&cfg.Analytics)
 
 	paramsValidator, err := openrtb_ext.NewBidderParamsValidator(schemaDirectory)
 	if err != nil {
@@ -223,22 +236,25 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		glog.Fatalf("Failed to create ads cert signer: %v", err)
 	}
 
+	requestValidator := ortb.NewRequestValidator(activeBidders, disabledBidders, paramsValidator)
+	priceFloorFetcher := floors.NewPriceFloorFetcher(cfg.PriceFloors, floorFechterHttpClient, r.MetricsEngine)
+
 	tmaxAdjustments := exchange.ProcessTMaxAdjustments(cfg.TmaxAdjustments)
 	planBuilder := hooks.NewExecutionPlanBuilder(cfg.Hooks, repo)
 	macroReplacer := macros.NewStringIndexBasedReplacer()
-	theExchange := exchange.NewExchange(adapters, cacheClient, cfg, syncersByBidder, r.MetricsEngine, cfg.BidderInfos, gdprPermsBuilder, rateConvertor, categoriesFetcher, adsCertSigner, macroReplacer)
+	theExchange := exchange.NewExchange(adapters, cacheClient, cfg, requestValidator, syncersByBidder, r.MetricsEngine, cfg.BidderInfos, gdprPermsBuilder, rateConvertor, categoriesFetcher, adsCertSigner, macroReplacer, priceFloorFetcher)
 	var uuidGenerator uuidutil.UUIDRandomGenerator
-	openrtbEndpoint, err := openrtb2.NewEndpoint(uuidGenerator, theExchange, paramsValidator, fetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBidders, storedRespFetcher, planBuilder, tmaxAdjustments)
+	openrtbEndpoint, err := openrtb2.NewEndpoint(uuidGenerator, theExchange, requestValidator, fetcher, accounts, cfg, r.MetricsEngine, analyticsRunner, disabledBidders, defReqJSON, activeBidders, storedRespFetcher, planBuilder, tmaxAdjustments)
 	if err != nil {
 		glog.Fatalf("Failed to create the openrtb2 endpoint handler. %v", err)
 	}
 
-	ampEndpoint, err := openrtb2.NewAmpEndpoint(uuidGenerator, theExchange, paramsValidator, ampFetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBidders, storedRespFetcher, planBuilder, tmaxAdjustments)
+	ampEndpoint, err := openrtb2.NewAmpEndpoint(uuidGenerator, theExchange, requestValidator, ampFetcher, accounts, cfg, r.MetricsEngine, analyticsRunner, disabledBidders, defReqJSON, activeBidders, storedRespFetcher, planBuilder, tmaxAdjustments)
 	if err != nil {
 		glog.Fatalf("Failed to create the amp endpoint handler. %v", err)
 	}
 
-	videoEndpoint, err := openrtb2.NewVideoEndpoint(uuidGenerator, theExchange, paramsValidator, fetcher, videoFetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBidders, cacheClient, tmaxAdjustments)
+	videoEndpoint, err := openrtb2.NewVideoEndpoint(uuidGenerator, theExchange, requestValidator, fetcher, videoFetcher, accounts, cfg, r.MetricsEngine, analyticsRunner, disabledBidders, defReqJSON, activeBidders, cacheClient, tmaxAdjustments)
 	if err != nil {
 		glog.Fatalf("Failed to create the video endpoint handler. %v", err)
 	}
@@ -254,7 +270,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	r.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint(cfg.BidderInfos, defaultAliases))
 	r.GET("/info/bidders/:bidderName", infoEndpoints.NewBiddersDetailEndpoint(cfg.BidderInfos, defaultAliases))
 	r.GET("/bidders/params", NewJsonDirectoryServer(schemaDirectory, paramsValidator, defaultAliases))
-	r.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncersByBidder, cfg, gdprPermsBuilder, tcf2CfgBuilder, r.MetricsEngine, pbsAnalytics, accounts, activeBidders).Handle)
+	r.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncersByBidder, cfg, gdprPermsBuilder, tcf2CfgBuilder, r.MetricsEngine, analyticsRunner, accounts, activeBidders).Handle)
 	r.GET("/status", endpoints.NewStatusEndpoint(cfg.StatusResponse))
 	r.GET("/", serveIndex)
 	r.Handler("GET", "/version", endpoints.NewVersionEndpoint(version.Ver, version.Rev))
@@ -267,7 +283,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	}
 
 	// event endpoint
-	eventEndpoint := events.NewEventEndpoint(cfg, accounts, pbsAnalytics, r.MetricsEngine)
+	eventEndpoint := events.NewEventEndpoint(cfg, accounts, analyticsRunner, r.MetricsEngine)
 	r.GET("/event", eventEndpoint)
 
 	userSyncDeps := &pbs.UserSyncDeps{
@@ -277,7 +293,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		PriorityGroups:   cfg.UserSync.PriorityGroups,
 	}
 
-	r.GET("/setuid", endpoints.NewSetUIDEndpoint(cfg, syncersByBidder, gdprPermsBuilder, tcf2CfgBuilder, pbsAnalytics, accounts, r.MetricsEngine))
+	r.GET("/setuid", endpoints.NewSetUIDEndpoint(cfg, syncersByBidder, gdprPermsBuilder, tcf2CfgBuilder, analyticsRunner, accounts, r.MetricsEngine))
 	r.GET("/getuids", endpoints.NewGetUIDsEndpoint(cfg.HostCookie))
 	r.POST("/optout", userSyncDeps.OptOut)
 	r.GET("/optout", userSyncDeps.OptOut)
@@ -358,8 +374,8 @@ func readDefaultRequest(defReqConfig config.DefReqConfig) (map[string]string, []
 			return aliases, []byte{}
 		}
 
-		if err := json.Unmarshal(defReqJSON, defReq); err != nil {
-			// we might not have aliases defined, but will atleast show that the JSON file is parsable.
+		if err := jsonutil.UnmarshalValid(defReqJSON, defReq); err != nil {
+			// we might not have aliases defined, but will at least show that the JSON file is parsable.
 			glog.Fatalf("error parsing alias json in file %s: %v", defReqConfig.FileSystem.FileName, err)
 			return aliases, []byte{}
 		}

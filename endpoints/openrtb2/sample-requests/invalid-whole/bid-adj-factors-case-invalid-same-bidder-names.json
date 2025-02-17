@@ -1,0 +1,81 @@
+{
+    "description": "This demonstrates a request with bidadjustmentfactors that have multiple of the same bidder is invalid request",
+    "config": {
+        "mockBidders": [
+            {
+                "bidderName": "appnexus",
+                "currency": "USD",
+                "price": 1.00
+            }
+        ]
+    },
+    "mockBidRequest": {
+        "id": "some-request-id",
+        "site": {
+            "page": "prebid.org"
+        },
+        "user": {
+            "ext": {
+                "consent": "gdpr-consent-string"
+            }
+        },
+        "regs": {
+            "ext": {
+                "gdpr": 1,
+                "us_privacy": "1NYN"
+            }
+        },
+        "imp": [
+            {
+                "id": "some-impression-id",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        },
+                        {
+                            "w": 300,
+                            "h": 600
+                        }
+                    ]
+                },
+                "ext": {
+                    "Appnexus": {
+                        "placementId": 12883451
+                    }
+                }
+            }
+        ],
+        "tmax": 500,
+        "ext": {
+            "prebid": {
+                "bidadjustmentfactors": {
+                    "APPNEXUS": 1.01,
+                    "Appnexus": 2.00
+                },
+                "cache": {
+                    "bids": {}
+                },
+                "channel": {
+                    "name": "video",
+                    "version": "1.0"
+                },
+                "targeting": {
+                    "includewinners": false,
+                    "pricegranularity": {
+                        "precision": 2,
+                        "ranges": [
+                            {
+                                "max": 20,
+                                "increment": 0.10
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    },
+    "expectedReturnCode": 400,
+    "expectedErrorMessage": "Invalid request: cannot have multiple bidders that differ only in case style"
+}

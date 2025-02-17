@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Concert Adapter Params",
+  "description": "A schema which validates params accepted by the Concert adapter",
+  "type": "object",
+  "properties": {
+    "partnerId": {
+        "type": "string",
+        "description": "The partner id assigned by concert.",
+        "minLength": 1
+    },
+    "placementId": {
+        "type": "integer",
+        "description": "The placement id."
+    },
+    "site": {
+        "type": "string",
+        "description": "The site name."
+    },
+    "slot": {
+        "type": "string",
+        "description": "The slot name."
+    },
+    "sizes": {
+        "type": "array",
+        "description": "All sizes this ad unit accepts.",
+        "items": {
+            "type": "array",
+            "items": {
+                "type": "integer"
+            },
+            "minItems": 2,
+            "maxItems": 2
+        }
+    }
+  },
+  "required": ["partnerId"]
+}

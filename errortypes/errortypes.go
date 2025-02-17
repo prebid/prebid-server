@@ -20,6 +20,25 @@ func (err *Timeout) Severity() Severity {
 	return SeverityFatal
 }
 
+// TmaxTimeout should be used to flag that remaining tmax duration is not enough to get response from bidder
+//
+// TmaxTimeout will not be written to the app log, since it's not an actionable item for the Prebid Server hosts.
+type TmaxTimeout struct {
+	Message string
+}
+
+func (err *TmaxTimeout) Error() string {
+	return err.Message
+}
+
+func (err *TmaxTimeout) Code() int {
+	return TmaxTimeoutErrorCode
+}
+
+func (err *TmaxTimeout) Severity() Severity {
+	return SeverityFatal
+}
+
 // BadInput should be used when returning errors which are caused by bad input.
 // It should _not_ be used if the error is a server-side issue (e.g. failed to send the external request).
 //
@@ -60,23 +79,20 @@ func (err *BlacklistedApp) Severity() Severity {
 	return SeverityFatal
 }
 
-// BlacklistedAcct should be used when a request account ID matches an entry in the BlacklistedAccts
-// environment variable array
-//
-// These errors will be written to  http.ResponseWriter before canceling execution
-type BlacklistedAcct struct {
+// AccountDisabled should be used when a request an account is specifically disabled in account config.
+type AccountDisabled struct {
 	Message string
 }
 
-func (err *BlacklistedAcct) Error() string {
+func (err *AccountDisabled) Error() string {
 	return err.Message
 }
 
-func (err *BlacklistedAcct) Code() int {
-	return BlacklistedAcctErrorCode
+func (err *AccountDisabled) Code() int {
+	return AccountDisabledErrorCode
 }
 
-func (err *BlacklistedAcct) Severity() Severity {
+func (err *AccountDisabled) Severity() Severity {
 	return SeverityFatal
 }
 
@@ -200,4 +216,79 @@ func (err *Warning) Code() int {
 
 func (err *Warning) Severity() Severity {
 	return SeverityWarning
+}
+
+// FailedToUnmarshal should be used to represent errors that occur when unmarshaling raw json.
+type FailedToUnmarshal struct {
+	Message string
+}
+
+func (err *FailedToUnmarshal) Error() string {
+	return err.Message
+}
+
+func (err *FailedToUnmarshal) Code() int {
+	return FailedToUnmarshalErrorCode
+}
+
+func (err *FailedToUnmarshal) Severity() Severity {
+	return SeverityFatal
+}
+
+// FailedToMarshal should be used to represent errors that occur when marshaling to a byte slice.
+type FailedToMarshal struct {
+	Message string
+}
+
+func (err *FailedToMarshal) Error() string {
+	return err.Message
+}
+
+func (err *FailedToMarshal) Code() int {
+	return FailedToMarshalErrorCode
+}
+
+func (err *FailedToMarshal) Severity() Severity {
+	return SeverityFatal
+}
+
+// DebugWarning is a generic non-fatal error used in debug mode. Throughout the codebase, an error can
+// only be a warning if it's of the type defined below
+type DebugWarning struct {
+	Message     string
+	WarningCode int
+}
+
+func (err *DebugWarning) Error() string {
+	return err.Message
+}
+
+func (err *DebugWarning) Code() int {
+	return err.WarningCode
+}
+
+func (err *DebugWarning) Severity() Severity {
+	return SeverityWarning
+}
+
+func (err *DebugWarning) Scope() Scope {
+	return ScopeDebug
+}
+
+// InvalidImpFirstPartyData should be used when the retrieved account config cannot be unmarshaled
+// These errors will be written to http.ResponseWriter before canceling execution
+type InvalidImpFirstPartyData struct {
+	Message string
+}
+
+func (err *InvalidImpFirstPartyData) Error() string {
+	return err.Message
+}
+
+func (err *InvalidImpFirstPartyData) Code() int {
+	return InvalidImpFirstPartyDataErrorCode
+}
+
+func (err *InvalidImpFirstPartyData) Severity() Severity {
+	return SeverityFatal
 }

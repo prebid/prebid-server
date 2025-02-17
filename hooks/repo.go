@@ -3,7 +3,7 @@ package hooks
 import (
 	"fmt"
 
-	"github.com/prebid/prebid-server/hooks/hookstage"
+	"github.com/prebid/prebid-server/v2/hooks/hookstage"
 )
 
 // HookRepository is the interface that exposes methods

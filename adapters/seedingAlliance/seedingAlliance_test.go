@@ -4,17 +4,17 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/adapters/adapterstest"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/adapters/adapterstest"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderSeedingAlliance, config.Adapter{
-		Endpoint: "https://mockup.seeding-alliance.de/",
+		Endpoint: "https://mockup.seeding-alliance.de/?ssp={{.AccountID}}",
 	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -134,20 +134,29 @@ func TestGetMediaTypeForBid(t *testing.T) {
 	}
 }
 
-func TestAddTagID(t *testing.T) {
+func TestGetExtInfo(t *testing.T) {
+	type args struct {
+		adUnitId  string
+		seatId    string
+		accountId string
+	}
 	tests := []struct {
-		name    string
-		want    string
-		data    string
-		wantErr bool
+		name              string
+		expectedAdUnitID  string
+		expectedAccountId string
+		data              args
+		wantErr           bool
 	}{
-		{"regular case", "abc123", "abc123", false},
-		{"nil case", "", "", false},
-		{"unmarshal err case", "", "", true},
+		{"regular case", "abc123", "pbs", args{adUnitId: "abc123"}, false},
+		{"nil case", "", "pbs", args{adUnitId: ""}, false},
+		{"unmarshal err case", "", "pbs", args{adUnitId: ""}, true},
+		{"seatId case", "abc123", "seat1", args{adUnitId: "abc123", seatId: "seat1"}, false},
+		{"accountId case", "abc123", "account1", args{adUnitId: "abc123", accountId: "account1"}, false},
+		{"accountId and seatId case", "abc123", "account1", args{adUnitId: "abc123", accountId: "account1", seatId: "seat1"}, false},
 	}
 
 	for _, test := range tests {
-		extSA, err := json.Marshal(openrtb_ext.ImpExtSeedingAlliance{AdUnitID: test.data})
+		extSA, err := json.Marshal(openrtb_ext.ImpExtSeedingAlliance{AdUnitID: test.data.adUnitId, SeatID: test.data.seatId, AccountID: test.data.accountId})
 		if err != nil {
 			t.Fatalf("unexpected error %v", err)
 		}
@@ -162,16 +171,20 @@ func TestAddTagID(t *testing.T) {
 		}
 
 		ortbImp := openrtb2.Imp{Ext: extBidder}
-
-		if err := addTagID(&ortbImp); err != nil {
+		accountId, err := getExtInfo(&ortbImp)
+		if err != nil {
 			if test.wantErr {
 				continue
 			}
 			t.Fatalf("unexpected error %v", err)
 		}
 
-		if test.want != ortbImp.TagID {
-			t.Fatalf("want: %v, got: %v", test.want, ortbImp.TagID)
+		if test.expectedAdUnitID != ortbImp.TagID {
+			t.Fatalf("want: %v, got: %v", test.expectedAdUnitID, ortbImp.TagID)
+		}
+
+		if test.expectedAccountId != accountId {
+			t.Fatalf("want: %v, got: %v", test.expectedAccountId, accountId)
 		}
 	}
 }

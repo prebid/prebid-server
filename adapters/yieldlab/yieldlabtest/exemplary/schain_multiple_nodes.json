@@ -91,7 +91,8 @@
             "169.254.13.37"
           ]
         },
-        "uri": "https://ad.yieldlab.net/testing/12345?content=json&ids=ylid%3A34a53e82-0dc3-4815-8b7e-b725ede0361c&lat=51.499488&lon=-0.128953&pvid=true&schain=1.0%2C1%21exchange1.com%2C1234%2C1%2C%2C%2C%2C%2522text%2522%21exchange2.com%2Cabcd%2C1%2C%2C%2C%2C1&sizes=12345%3A728x90&t=key1%3Dvalue1%26key2%3Dvalue2&ts=testing&yl_rtb_connectiontype=6&yl_rtb_devicetype=4&yl_rtb_ifa=hello-ads"
+        "uri": "https://ad.yieldlab.net/testing/12345?content=json&ids=ylid%3A34a53e82-0dc3-4815-8b7e-b725ede0361c&lat=51.499488&lon=-0.128953&pvid=true&schain=1.0%2C1%21exchange1.com%2C1234%2C1%2C%2C%2C%2C%2522text%2522%21exchange2.com%2Cabcd%2C1%2C%2C%2C%2C1&sizes=12345%3A728x90&t=key1%3Dvalue1%26key2%3Dvalue2&ts=testing&yl_rtb_connectiontype=6&yl_rtb_devicetype=4&yl_rtb_ifa=hello-ads",
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,

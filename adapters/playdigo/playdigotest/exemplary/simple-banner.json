@@ -1,0 +1,136 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "device": {
+            "ip": "123.123.123.123",
+            "ua": "iPad"
+        },
+        "app": {
+            "id": "1",
+            "bundle": "com.wls.testwlsapplication"
+        },
+        "imp": [
+            {
+                "id": "test-imp-id",
+                "tagid": "test",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        },
+                        {
+                            "w": 300,
+                            "h": 600
+                        }
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "placementId": "test"
+                    }
+                }
+            }
+        ]
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "https://server.playdigo.com/pserver",
+                "body": {
+                    "id": "test-request-id",
+                    "imp": [
+                        {
+                            "id": "test-imp-id",
+                            "tagid": "test",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 300,
+                                        "h": 250
+                                    },
+                                    {
+                                        "w": 300,
+                                        "h": 600
+                                    }
+                                ]
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "placementId": "test",
+                                    "type": "publisher"
+                                }
+                            }
+                        }
+                    ],
+                    "app": {
+                        "id": "1",
+                        "bundle": "com.wls.testwlsapplication"
+                    },
+                    "device": {
+                        "ip": "123.123.123.123",
+                        "ua": "iPad"
+                    }
+                },
+                "impIDs":["test-imp-id"]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "test-request-id",
+                    "seatbid": [
+                        {
+                            "bid": [
+                                {
+                                    "id": "test_bid_id",
+                                    "impid": "test-imp-id",
+                                    "price": 0.27543,
+                                    "adm": "<iframe id=\"adm-banner-16\" width=\"300\" height=\"250\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"https://server.playdigo.com/pserver&k=882b2510ed6d6c94fa69c99aa522a708\"></iframe>",
+                                    "cid": "test_cid",
+                                    "crid": "test_crid",
+                                    "dealid": "test_dealid",
+                                    "mtype": 1,
+                                    "w": 300,
+                                    "h": 250,
+                                    "ext": {
+                                        "prebid": {
+                                            "type": "banner"
+                                        }
+                                    }
+                                }
+                            ],
+                            "seat": "playdigo"
+                        }
+                    ],
+                    "cur": "USD"
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "bids": [
+                {
+                    "bid": {
+                        "id": "test_bid_id",
+                        "impid": "test-imp-id",
+                        "price": 0.27543,
+                        "adm": "<iframe id=\"adm-banner-16\" width=\"300\" height=\"250\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"https://server.playdigo.com/pserver&k=882b2510ed6d6c94fa69c99aa522a708\"></iframe>",
+                        "cid": "test_cid",
+                        "crid": "test_crid",
+                        "dealid": "test_dealid",
+                        "mtype": 1,
+                        "w": 300,
+                        "h": 250,
+                        "ext": {
+                            "prebid": {
+                                "type": "banner"
+                            }
+                        }
+                    },
+                    "type": "banner"
+                }
+            ]
+        }
+    ]
+}

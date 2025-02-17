@@ -36,6 +36,7 @@ func ConvertDownTo25(r *RequestWrapper) error {
 	clear26Fields(r)
 	clear202211Fields(r)
 	clear202303Fields(r)
+	clear202309Fields(r)
 
 	return nil
 }
@@ -305,6 +306,30 @@ func clear202303Fields(r *RequestWrapper) {
 
 		if video := imp.Video; video != nil {
 			video.Plcmt = 0
+		}
+	}
+}
+
+// clear202309Fields sets all fields introduced in OpenRTB 2.6-202309 to default values
+// which will cause them to be omitted during json marshal.
+func clear202309Fields(r *RequestWrapper) {
+	r.ACat = nil
+
+	for _, imp := range r.GetImp() {
+		if audio := imp.Audio; audio != nil {
+			audio.DurFloors = nil
+		}
+
+		if video := imp.Video; video != nil {
+			video.DurFloors = nil
+		}
+
+		if pmp := imp.PMP; pmp != nil {
+			for i := range pmp.Deals {
+				pmp.Deals[i].Guar = 0
+				pmp.Deals[i].MinCPMPerSec = 0
+				pmp.Deals[i].DurFloors = nil
+			}
 		}
 	}
 }

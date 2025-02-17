@@ -54,7 +54,8 @@
   "httpCalls": [
     {
         "expectedRequest": {
-          "uri": "https://myao.adocean.pl/_10000000/ad.json?aid=adoceanmyaozpniqismex%3Aao-test&aosspsizes=myaozpniqismex~300x250&app=1&appbundle=12345&appdomain=example.com&appname=Weather+App&devmake=&devmodel=&devos=iOS&devosv=&id=tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7&ifa=f2ba45ece57cff9477d5a8083b138c9a&nc=1&nosecure=1&pbsrv_v=1.3.0"
+          "uri": "https://myao.adocean.pl/_10000000/ad.json?aid=adoceanmyaozpniqismex%3Aao-test&aosspsizes=myaozpniqismex~300x250&app=1&appbundle=12345&appdomain=example.com&appname=Weather+App&devmake=&devmodel=&devos=iOS&devosv=&id=tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7&ifa=f2ba45ece57cff9477d5a8083b138c9a&nc=1&nosecure=1&pbsrv_v=1.3.0",
+          "impIDs":["ao-test"]
         },
       "mockResponse": {
         "status": 200,

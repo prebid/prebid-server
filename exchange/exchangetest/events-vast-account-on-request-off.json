@@ -126,6 +126,8 @@
               "ext": {
                 "origbidcpm": 0.51,
                 "prebid": {
+                  "meta": {
+                  },
                   "type": "video"
                 }
               }
@@ -147,6 +149,8 @@
               "ext": {
                 "origbidcpm": 0.71,
                 "prebid": {
+                  "meta": {
+                  },
                   "type": "video",
                   "targeting": {
                     "hb_bidder": "appnexus",
@@ -171,6 +175,8 @@
               "ext": {
                 "origbidcpm": 0.21,
                 "prebid": {
+                  "meta": {
+                  },
                   "type": "video"
                 }
               }

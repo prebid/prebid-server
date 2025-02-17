@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,8 +17,8 @@ func AssertEqualModulesData(t *testing.T, expectedData, actualData json.RawMessa
 	var expectedModulesOutcome ModulesOutcome
 	var actualModulesOutcome ModulesOutcome
 
-	assert.NoError(t, json.Unmarshal(expectedData, &expectedModulesOutcome), "Failed to unmarshal expected modules data.")
-	assert.NoError(t, json.Unmarshal(actualData, &actualModulesOutcome), "Failed to unmarshal actual modules data.")
+	assert.NoError(t, jsonutil.UnmarshalValid(expectedData, &expectedModulesOutcome), "Failed to unmarshal expected modules data.")
+	assert.NoError(t, jsonutil.UnmarshalValid(actualData, &actualModulesOutcome), "Failed to unmarshal actual modules data.")
 	assert.Equal(t, expectedModulesOutcome.Errors, actualModulesOutcome.Errors, "Invalid error messages.")
 	assert.Equal(t, expectedModulesOutcome.Warnings, actualModulesOutcome.Warnings, "Invalid warning messages.")
 

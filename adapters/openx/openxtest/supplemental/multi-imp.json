@@ -84,7 +84,8 @@
             "bc": "hb_pbs_1.0.0",
             "delDomain": "se-demo-d.openx.net"
           }
-        }
+        },
+        "impIDs":["banner-imp-1","banner-imp-2","multi-type-imp"]
       },
       "mockResponse": {
         "status": 200,
@@ -131,7 +132,8 @@
             "bc": "hb_pbs_1.0.0",
             "delDomain": "se-demo-d.openx.net"
           }
-        }
+        },
+        "impIDs":["video-imp-1"]
       },
       "mockResponse": {
         "status": 200,
@@ -168,7 +170,8 @@
             "bc": "hb_pbs_1.0.0",
             "delDomain": "se-demo-d.openx.net"
           }
-        }
+        },
+        "impIDs":["video-imp-2"]
       },
       "mockResponse": {
         "status": 200,

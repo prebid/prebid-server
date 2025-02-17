@@ -5,9 +5,10 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/openrtb/v19/openrtb3"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb3"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -42,7 +43,7 @@ func TestExtractAdServerTargeting(t *testing.T) {
 	p := "https://www.test-url.com?ampkey=testAmpKey&data-override-height=400"
 	u, _ := url.Parse(p)
 	params := u.Query()
-	reqBytes, err := json.Marshal(r)
+	reqBytes, err := jsonutil.Marshal(r)
 	assert.NoError(t, err, "unexpected req marshal error")
 
 	res, warnings := collect(rw, reqBytes, params)
@@ -248,7 +249,7 @@ func TestProcessAdServerTargetingFull(t *testing.T) {
 
 	bidResponseExt := &openrtb_ext.ExtBidResponse{Warnings: make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage)}
 
-	reqBytes, err := json.Marshal(r)
+	reqBytes, err := jsonutil.Marshal(r)
 	assert.NoError(t, err, "unexpected req marshal error")
 	targetingKeyLen := 0
 	resResp := Apply(rw, reqBytes, resp, params, bidResponseExt, &targetingKeyLen)
@@ -331,7 +332,7 @@ func TestProcessAdServerTargetingWarnings(t *testing.T) {
 
 	bidResponseExt := &openrtb_ext.ExtBidResponse{Warnings: make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage)}
 
-	reqBytes, err := json.Marshal(r)
+	reqBytes, err := jsonutil.Marshal(r)
 	assert.NoError(t, err, "unexpected req marshal error")
 	resResp := Apply(rw, reqBytes, resp, params, bidResponseExt, nil)
 	assert.Len(t, resResp.SeatBid, 2, "Incorrect response: seat bid number")

@@ -40,6 +40,28 @@
                         "placementId": 13244
                     }
                 }
+            },
+            {
+                "id": "test-multi-format-id-with-mtype",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        }
+                    ]
+                },
+                "video": {
+                    "mimes": ["video/mp4"],
+                    "protocols": [2, 5],
+                    "w": 1920,
+                    "h": 1080
+                },
+                "ext": {
+                    "bidder": {
+                        "placementId": 13244
+                    }
+                }
             }
         ]
     },
@@ -76,7 +98,8 @@
                             }
                         }
                     ]
-                }
+                },
+                "impIDs":["test-imp-id-banner"]
             },
             "mockResponse": {
                 "status": 200,
@@ -134,7 +157,8 @@
                             }
                         }
                     ]
-                }
+                },
+                "impIDs":["test-imp-id-video"]
             },
             "mockResponse": {
                 "status": 200,
@@ -152,6 +176,72 @@
                                     "crid": "1234567",
                                     "w": 1920,
                                     "h": 1080
+                                }
+                            ]
+                        }
+                    ],
+                    "cur": "USD"
+                }
+            }
+        },
+        {
+            "expectedRequest": {
+                "uri": "http://localhost/pbs",
+                "body": {
+                    "id": "test-request-id",
+                    "app": {
+                        "id": "appID",
+                        "publisher": {
+                            "id": "uniq_pub_id"
+                        }
+                    },
+                    "device": {
+                        "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36"
+                    },
+                    "imp": [
+                        {
+                            "id": "test-multi-format-id-with-mtype",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 300,
+                                        "h": 250
+                                    }
+                                ]
+                            },
+                            "video": {
+                                "mimes": ["video/mp4"],
+                                "protocols": [2, 5],
+                                "w": 1920,
+                                "h": 1080
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "placementId": 13244
+                                }
+                            }
+                        }
+                    ]
+                },
+                "impIDs":["test-multi-format-id-with-mtype"]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "test-request-id",
+                    "seatbid": [
+                        {
+                            "seat": "improvedigital",
+                            "bid": [
+                                {
+                                    "id": "randomid2",
+                                    "impid": "test-multi-format-id-with-mtype",
+                                    "price": 0.5,
+                                    "adm": "some-test-ad-vast",
+                                    "crid": "1234567",
+                                    "w": 1920,
+                                    "h": 1080,
+                                    "mtype": 1
                                 }
                             ]
                         }
@@ -195,6 +285,24 @@
                         "h": 1080
                     },
                     "type": "video"
+                }
+            ]
+        },
+        {
+            "currency": "USD",
+            "bids": [
+                {
+                    "bid": {
+                        "id": "randomid2",
+                        "impid": "test-multi-format-id-with-mtype",
+                        "price": 0.5,
+                        "adm": "some-test-ad-vast",
+                        "crid": "1234567",
+                        "w": 1920,
+                        "h": 1080,
+                        "mtype": 1
+                    },
+                    "type": "banner"
                 }
             ]
         }

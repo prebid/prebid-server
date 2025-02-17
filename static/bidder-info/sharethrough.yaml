@@ -15,5 +15,5 @@ capabilities:
       - native
 userSync:
   redirect:
-    url: https://match.sharethrough.com/FGMrCMMc/v1?redirectUri={{.RedirectURL}}
+    url: https://match.sharethrough.com/FGMrCMMc/v1?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirectUri={{.RedirectURL}}
     userMacro: $UID

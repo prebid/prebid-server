@@ -1,0 +1,16 @@
+endpoint: "http://ssp.dauup.com/pserver"
+maintainer:
+  email: "audit@edge226.com"
+gvlVendorID: 1202
+capabilities:
+  site:
+    mediaTypes:
+    - banner
+    - video
+    - native
+    
+  app:
+    mediaTypes:
+    - banner
+    - video
+    - native

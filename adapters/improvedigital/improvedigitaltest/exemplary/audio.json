@@ -1,0 +1,170 @@
+{
+  "mockBidRequest": {
+    "id": "26f14780-8ef8-4f41-b70c-c4d062237df6",
+    "source": {
+      "tid": "26f14780-8ef8-4f41-b70c-c4d062237df6",
+      "ext": {
+        "schain": {
+          "ver": "1.0",
+          "complete": 1,
+          "nodes": [
+            { "asi": "example.com", "hp": 1, "sid": "1234abc" }
+          ]
+        }
+      }
+    },
+    "tmax": 1000,
+    "imp": [
+      {
+        "id": "audio",
+        "audio": {
+          "mimes": ["audio/mp3"],
+          "protocols": [2, 5]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": 13244
+          }
+        }
+      }
+    ],
+    "ext": {
+      "prebid": {
+        "targeting": {
+          "includewinners": true,
+          "includebidderkeys": false
+        }
+      }
+    },
+    "site": {
+      "publisher": { "id": "pubid" },
+      "page": "example.com"
+    },
+    "device": { "w": 1581, "h": 922, "ip": "1.1.1.1" },
+    "regs": { "ext": { "gdpr": 0 } },
+    "user": {
+      "ext": {
+        "consent": "XYZ"
+      }
+    }
+  },
+  "httpcalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://localhost/pbs",
+        "body": {
+          "id": "26f14780-8ef8-4f41-b70c-c4d062237df6",
+          "imp": [
+            {
+              "id": "audio",
+              "audio": {
+                "mimes": ["audio/mp3"],
+                "protocols": [2, 5]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": 13244
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "example.com",
+            "publisher": { "id": "pubid" }
+          },
+          "device": {
+            "ip": "1.1.1.1",
+            "h": 922,
+            "w": 1581
+          },
+          "user": {
+            "ext": {
+              "consent": "XYZ"
+            }
+          },
+          "tmax": 1000,
+          "source": {
+            "tid": "26f14780-8ef8-4f41-b70c-c4d062237df6",
+            "ext": {
+              "schain": {
+                "ver": "1.0",
+                "complete": 1,
+                "nodes": [
+                  {
+                    "asi": "example.com",
+                    "hp": 1,
+                    "sid": "1234abc"
+                  }
+                ]
+              }
+            }
+          },
+          "regs": { "ext": { "gdpr": 0 } },
+          "ext": {
+            "prebid": {
+              "targeting": {
+                "includewinners": true,
+                "includebidderkeys": false
+              }
+            }
+          }
+        },
+        "impIDs":["audio"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "26f14780-8ef8-4f41-b70c-c4d062237df6",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "ext": {
+                    "improvedigital": {
+                      "brand_name": "AdvertiserABC",
+                      "bidder_id": 301
+                    }
+                  },
+                  "crid": "14065",
+                  "id": "d4f04449-ba04-4d7c-bb34-dc0fc5240f59",
+                  "price": 0.01,
+                  "adm": "some-test-ad-vast",
+                  "adomain": ["example.com"],
+                  "impid": "audio",
+                  "cid": "25076"
+                }
+              ],
+              "seat": "improvedigital"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "d4f04449-ba04-4d7c-bb34-dc0fc5240f59",
+            "impid": "audio",
+            "price": 0.01,
+            "adm": "some-test-ad-vast",
+            "adomain": ["example.com"],
+            "cid": "25076",
+            "crid": "14065",
+            "ext": {
+              "improvedigital": {
+                "brand_name": "AdvertiserABC",
+                "bidder_id": 301
+              }
+            }
+          },
+          "type": "audio"
+        }
+      ]
+    }
+  ]
+}
