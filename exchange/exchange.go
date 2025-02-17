@@ -461,7 +461,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 			}
 		}
 
-		evTracking := getEventTracking(requestExtPrebid, r.StartTime, &r.Account, e.bidderInfo, e.externalURL)
+		evTracking := getEventTracking(requestExtPrebid, r.StartTime, &r.Account, e.bidderInfo, e.externalURL, macros.NewProvider(r.BidRequestWrapper))
 		adapterBids = evTracking.modifyBidsForEvents(adapterBids)
 
 		r.HookExecutor.ExecuteAllProcessedBidResponsesStage(adapterBids)
