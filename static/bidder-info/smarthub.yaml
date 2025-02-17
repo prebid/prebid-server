@@ -1,6 +1,6 @@
-endpoint: "http://prebid.smart-hub.io/pbserver?partnerName={{.Host}}&seat={{.AccountID}}&token={{.SourceId}}"
+endpoint: "https://prebid.attekmi.com/pbserver?partnerName={{.Host}}&seat={{.AccountID}}&token={{.SourceId}}"
 maintainer:
-  email: "support@smart-hub.io"
+  email: "prebid@attekmi.com"
 capabilities:
   app:
     mediaTypes:
@@ -13,7 +13,7 @@ capabilities:
       - video
       - native
 userSync:
-  # smarthub supports user syncing, but requires configuration by the host. contact this
+  # Attekmi supports user syncing, but requires configuration by the host. contact this
   # bidder directly at the email address in this file to ask about enabling user sync.
   supports:
     - redirect

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ogury Adapter Params",
+  "description": "A schema which validates params accepted by the Ogury adapter",
+  "type": "object",
+
+  "properties": {
+    "assetKey": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Ogury provided id for you site."
+    },
+    "adUnitId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Ogury provided id for you placement."
+    }
+  },
+
+  "allOf": [
+    {
+      "if": { "required": ["assetKey"] },
+      "then": { "required": ["adUnitId"] }
+    },
+    {
+      "if": { "required": ["adUnitId"] },
+      "then": { "required": ["assetKey"] }
+    }
+  ]
+}

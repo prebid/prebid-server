@@ -148,6 +148,65 @@ func TestGetConsent(t *testing.T) {
 	}
 }
 
+func TestSelectEEACountries(t *testing.T) {
+	tests := []struct {
+		description         string
+		hostEEACountries    []string
+		accountEEACountries []string
+		expected            []string
+	}{
+		{
+			description:         "Account_EEA_countries_provided",
+			hostEEACountries:    []string{"UK", "DE"},
+			accountEEACountries: []string{"FR", "IT"},
+			expected:            []string{"FR", "IT"},
+		},
+		{
+			description:         "Account_is_nil",
+			hostEEACountries:    []string{"UK"},
+			accountEEACountries: nil,
+			expected:            []string{"UK"},
+		},
+		{
+			description:         "Both_nil",
+			hostEEACountries:    nil,
+			accountEEACountries: nil,
+			expected:            nil,
+		},
+		{
+			description:         "Account_is_empty_slice",
+			hostEEACountries:    []string{"UK"},
+			accountEEACountries: []string{},
+			expected:            []string{},
+		},
+		{
+			description:         "Host_is_nil",
+			hostEEACountries:    nil,
+			accountEEACountries: []string{"DE"},
+			expected:            []string{"DE"},
+		},
+		{
+			description:         "Host_and_account_both_non-nil",
+			hostEEACountries:    []string{"UK"},
+			accountEEACountries: []string{"FR"},
+			expected:            []string{"FR"},
+		},
+		{
+			description:         "Host_is_empty_slice,_account_is_nil",
+			hostEEACountries:    []string{},
+			accountEEACountries: nil,
+			expected:            []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.description, func(t *testing.T) {
+			result := selectEEACountries(tt.hostEEACountries, tt.accountEEACountries)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
 var upsv1Section mockGPPSection = mockGPPSection{sectionID: 6, value: "1YNY"}
 var tcf1Section mockGPPSection = mockGPPSection{sectionID: 2, value: "BOS2bx5OS2bx5ABABBAAABoAAAAAFA"}
 

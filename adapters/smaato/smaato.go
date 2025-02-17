@@ -18,7 +18,7 @@ import (
 	"github.com/prebid/prebid-server/v3/util/timeutil"
 )
 
-const clientVersion = "prebid_server_1.1"
+const clientVersion = "prebid_server_1.2"
 
 type adMarkupType string
 
@@ -472,14 +472,13 @@ func setImpForAdspace(imp *openrtb2.Imp) error {
 		return &errortypes.BadInput{Message: "Missing adspaceId parameter."}
 	}
 
-	impExt, err := makeImpExt(&imp.Ext)
+	err = removeBidderNodeFromImpExt(imp)
 	if err != nil {
 		return err
 	}
 
 	if imp.Banner != nil || imp.Video != nil || imp.Native != nil {
 		imp.TagID = adSpaceID
-		imp.Ext = impExt
 		return nil
 	}
 
@@ -491,12 +490,13 @@ func setImpForAdBreak(imps []openrtb2.Imp) error {
 		return &errortypes.BadInput{Message: "No impressions in bid request."}
 	}
 
-	adBreakID, err := jsonparser.GetString(imps[0].Ext, "bidder", "adbreakId")
+	firstImp := imps[0]
+	adBreakID, err := jsonparser.GetString(firstImp.Ext, "bidder", "adbreakId")
 	if err != nil {
 		return &errortypes.BadInput{Message: "Missing adbreakId parameter."}
 	}
 
-	impExt, err := makeImpExt(&imps[0].Ext)
+	err = removeBidderNodeFromImpExt(&firstImp)
 	if err != nil {
 		return err
 	}
@@ -513,31 +513,32 @@ func setImpForAdBreak(imps []openrtb2.Imp) error {
 		imps[i].Video = &videoCopy
 	}
 
-	imps[0].Ext = impExt
+	imps[0].Ext = firstImp.Ext
 
 	return nil
 }
 
-func makeImpExt(impExtRaw *json.RawMessage) (json.RawMessage, error) {
-	var impExt openrtb_ext.ExtImpExtraDataSmaato
+func removeBidderNodeFromImpExt(imp *openrtb2.Imp) error {
+	if imp.Ext == nil {
+		return nil
+	}
+	updatedExt := jsonparser.Delete(imp.Ext, "bidder")
+	isEmpty := true
+	err := jsonparser.ObjectEach(updatedExt, func(key []byte, value []byte, dataType jsonparser.ValueType, offset int) error {
+		isEmpty = false
+		return nil
+	})
 
-	if err := jsonutil.Unmarshal(*impExtRaw, &impExt); err != nil {
-		return nil, &errortypes.BadInput{Message: "Invalid imp.ext."}
+	if err != nil {
+		return err
 	}
 
-	if impExtSkadnRaw := impExt.Skadn; impExtSkadnRaw != nil {
-		var impExtSkadn map[string]json.RawMessage
-
-		if err := jsonutil.Unmarshal(impExtSkadnRaw, &impExtSkadn); err != nil {
-			return nil, &errortypes.BadInput{Message: "Invalid imp.ext.skadn."}
-		}
-	}
-
-	if impExtJson, err := json.Marshal(impExt); string(impExtJson) != "{}" {
-		return impExtJson, err
+	if isEmpty {
+		imp.Ext = nil
 	} else {
-		return nil, nil
+		imp.Ext = updatedExt
 	}
+	return nil
 }
 
 func groupImpressionsByPod(imps []openrtb2.Imp) (map[string]([]openrtb2.Imp), []string, []error) {

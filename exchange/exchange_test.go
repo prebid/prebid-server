@@ -2117,9 +2117,10 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 	}
 
 	var s struct{}
-	eeac := make(map[string]struct{})
-	for _, c := range []string{"FIN", "FRA", "GUF"} {
-		eeac[c] = s
+	eeacMap := make(map[string]struct{})
+	eeac := []string{"FIN", "FRA", "GUF"}
+	for _, c := range eeac {
+		eeacMap[c] = s
 	}
 
 	var gdprDefaultValue string
@@ -2139,7 +2140,8 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		GDPR: config.GDPR{
 			Enabled:         spec.GDPREnabled,
 			DefaultValue:    gdprDefaultValue,
-			EEACountriesMap: eeac,
+			EEACountries:    eeac,
+			EEACountriesMap: eeacMap,
 			TCF2: config.TCF2{
 				Enabled: spec.GDPREnabled,
 			},
@@ -2195,6 +2197,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 			PriceFloors: config.AccountPriceFloors{Enabled: spec.AccountFloorsEnabled, EnforceDealFloors: spec.AccountEnforceDealFloors},
 			Privacy:     spec.AccountPrivacy,
 			Validations: spec.AccountConfigBidValidation,
+			GDPR:        config.AccountGDPR{EEACountries: spec.AccountEEACountries},
 		},
 		UserSyncs:     mockIdFetcher(spec.IncomingRequest.Usersyncs),
 		ImpExtInfoMap: impExtInfoMap,
@@ -5521,6 +5524,7 @@ type exchangeSpec struct {
 	Server                     exchangeServer         `json:"server,omitempty"`
 	AccountPrivacy             config.AccountPrivacy  `json:"accountPrivacy,omitempty"`
 	ORTBVersion                map[string]string      `json:"ortbversion"`
+	AccountEEACountries        []string               `json:"account_eea_countries"`
 }
 
 type multiBidSpec struct {
@@ -6354,6 +6358,61 @@ func TestBidsToUpdate(t *testing.T) {
 	}
 }
 
+func TestIsEEACountry(t *testing.T) {
+	eeaCountries := []string{"FRA", "DEU", "ITA", "ESP", "NLD"}
+
+	tests := []struct {
+		name     string
+		country  string
+		eeaList  []string
+		expected bool
+	}{
+		{
+			name:     "Country_in_EEA",
+			country:  "FRA",
+			eeaList:  eeaCountries,
+			expected: true,
+		},
+		{
+			name:     "Country_in_EEA_lowercase",
+			country:  "fra",
+			eeaList:  eeaCountries,
+			expected: true,
+		},
+		{
+			name:     "Country_not_in_EEA",
+			country:  "USA",
+			eeaList:  eeaCountries,
+			expected: false,
+		},
+		{
+			name:     "Empty_country_string",
+			country:  "",
+			eeaList:  eeaCountries,
+			expected: false,
+		},
+		{
+			name:     "EEA_list_is_empty",
+			country:  "FRA",
+			eeaList:  []string{},
+			expected: false,
+		},
+		{
+			name:     "EEA_list_is_nil",
+			country:  "FRA",
+			eeaList:  nil,
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isEEACountry(tt.country, tt.eeaList)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
 type mockRequestValidator struct {
 	errors []error
 }
@@ -6373,6 +6432,7 @@ func TestParseGDPRDefaultValue(t *testing.T) {
 		defaultValue  gdpr.Signal
 		privacyConfig config.Privacy
 		req           *openrtb2.BidRequest
+		eeaCountries  []string
 		account       config.Account
 		consent       string
 		output        gdpr.Signal
@@ -6382,6 +6442,7 @@ func TestParseGDPRDefaultValue(t *testing.T) {
 			gdpr.SignalYes,
 			config.Privacy{},
 			&openrtb2.BidRequest{},
+			[]string{},
 			config.Account{},
 			"",
 			gdpr.SignalYes,
@@ -6391,6 +6452,7 @@ func TestParseGDPRDefaultValue(t *testing.T) {
 			gdpr.SignalNo,
 			config.Privacy{},
 			&openrtb2.BidRequest{},
+			[]string{},
 			config.Account{},
 			"",
 			gdpr.SignalNo,
@@ -6398,15 +6460,12 @@ func TestParseGDPRDefaultValue(t *testing.T) {
 		{
 			"Exchange default value is SignalNo, User is in EEA, Device is not in EEA",
 			gdpr.SignalNo,
-			config.Privacy{
-				GDPR: config.GDPR{
-					EEACountriesMap: map[string]struct{}{"ALA": {}},
-				},
-			},
+			config.Privacy{},
 			&openrtb2.BidRequest{
 				Device: &openrtb2.Device{Geo: &openrtb2.Geo{Country: "USA"}},
 				User:   &openrtb2.User{Geo: &openrtb2.Geo{Country: "ALA"}},
 			},
+			[]string{"ALA"},
 			config.Account{
 				GDPR: config.AccountGDPR{
 					ConsentStringMeansInScope: nil,
@@ -6418,15 +6477,12 @@ func TestParseGDPRDefaultValue(t *testing.T) {
 		{
 			"Exchange default value is SignalNo, User is not in EEA, Device is not in EEA",
 			gdpr.SignalNo,
-			config.Privacy{
-				GDPR: config.GDPR{
-					EEACountriesMap: map[string]struct{}{"ALA": {}},
-				},
-			},
+			config.Privacy{},
 			&openrtb2.BidRequest{
 				Device: &openrtb2.Device{Geo: &openrtb2.Geo{Country: "USA"}},
 				User:   &openrtb2.User{Geo: &openrtb2.Geo{Country: "USA"}},
 			},
+			[]string{"ALA"},
 			config.Account{
 				GDPR: config.AccountGDPR{
 					ConsentStringMeansInScope: nil,
@@ -6438,14 +6494,11 @@ func TestParseGDPRDefaultValue(t *testing.T) {
 		{
 			"Exchange default value is SignalNo, Device is in EEA",
 			gdpr.SignalNo,
-			config.Privacy{
-				GDPR: config.GDPR{
-					EEACountriesMap: map[string]struct{}{"ALA": {}},
-				},
-			},
+			config.Privacy{},
 			&openrtb2.BidRequest{
 				Device: &openrtb2.Device{Geo: &openrtb2.Geo{Country: "ALA"}},
 			},
+			[]string{"ALA"},
 			config.Account{
 				GDPR: config.AccountGDPR{
 					ConsentStringMeansInScope: nil,
@@ -6457,14 +6510,11 @@ func TestParseGDPRDefaultValue(t *testing.T) {
 		{
 			"Exchange default value is SignalNo, Device is not in EEA",
 			gdpr.SignalNo,
-			config.Privacy{
-				GDPR: config.GDPR{
-					EEACountriesMap: map[string]struct{}{"ALA": {}},
-				},
-			},
+			config.Privacy{},
 			&openrtb2.BidRequest{
 				Device: &openrtb2.Device{Geo: &openrtb2.Geo{Country: "USA"}},
 			},
+			[]string{"ALA"},
 			config.Account{
 				GDPR: config.AccountGDPR{
 					ConsentStringMeansInScope: nil,
@@ -6478,6 +6528,7 @@ func TestParseGDPRDefaultValue(t *testing.T) {
 			gdpr.SignalNo,
 			config.Privacy{},
 			&openrtb2.BidRequest{},
+			[]string{},
 			config.Account{
 				GDPR: config.AccountGDPR{
 					ConsentStringMeansInScope: &boolTrue,
@@ -6491,6 +6542,7 @@ func TestParseGDPRDefaultValue(t *testing.T) {
 			gdpr.SignalNo,
 			config.Privacy{},
 			&openrtb2.BidRequest{},
+			[]string{},
 			config.Account{
 				GDPR: config.AccountGDPR{
 					ConsentStringMeansInScope: &boolFalse,
@@ -6504,6 +6556,7 @@ func TestParseGDPRDefaultValue(t *testing.T) {
 			gdpr.SignalNo,
 			config.Privacy{},
 			&openrtb2.BidRequest{},
+			[]string{},
 			config.Account{
 				GDPR: config.AccountGDPR{
 					ConsentStringMeansInScope: &boolTrue,
@@ -6517,6 +6570,7 @@ func TestParseGDPRDefaultValue(t *testing.T) {
 			gdpr.SignalNo,
 			config.Privacy{},
 			&openrtb2.BidRequest{},
+			[]string{},
 			config.Account{
 				GDPR: config.AccountGDPR{
 					ConsentStringMeansInScope: &boolTrue,
@@ -6534,6 +6588,7 @@ func TestParseGDPRDefaultValue(t *testing.T) {
 				},
 			},
 			&openrtb2.BidRequest{},
+			[]string{},
 			config.Account{
 				GDPR: config.AccountGDPR{
 					ConsentStringMeansInScope: nil,
@@ -6547,13 +6602,13 @@ func TestParseGDPRDefaultValue(t *testing.T) {
 			gdpr.SignalNo,
 			config.Privacy{
 				GDPR: config.GDPR{
-					EEACountriesMap:           map[string]struct{}{"ALA": {}},
 					ConsentStringMeansInScope: true,
 				},
 			},
 			&openrtb2.BidRequest{
 				Device: &openrtb2.Device{Geo: &openrtb2.Geo{Country: "USA"}},
 			},
+			[]string{"ALA"},
 			config.Account{},
 			"CPuKGCPPuKGCPNEAAAENCZCAAAAAAAAAAAAAAAAAAAAA",
 			gdpr.SignalNo,
@@ -6563,13 +6618,13 @@ func TestParseGDPRDefaultValue(t *testing.T) {
 			gdpr.SignalNo,
 			config.Privacy{
 				GDPR: config.GDPR{
-					EEACountriesMap:           map[string]struct{}{"ALA": {}},
 					ConsentStringMeansInScope: true,
 				},
 			},
 			&openrtb2.BidRequest{
 				Device: &openrtb2.Device{Geo: &openrtb2.Geo{Country: ""}},
 			},
+			[]string{"ALA"},
 			config.Account{},
 			"CPuKGCPPuKGCPNEAAAENCZCAAAAAAAAAAAAAAAAAAAAA",
 			gdpr.SignalYes,
@@ -6584,7 +6639,7 @@ func TestParseGDPRDefaultValue(t *testing.T) {
 			req := &openrtb_ext.RequestWrapper{BidRequest: test.req}
 			parsedConsent, _ := vendorconsent.ParseString(test.consent)
 
-			assert.Equal(t, test.output, e.parseGDPRDefaultValue(req, test.account, parsedConsent))
+			assert.Equal(t, test.output, e.parseGDPRDefaultValue(req, test.eeaCountries, test.account, parsedConsent))
 		})
 	}
 }
@@ -6600,6 +6655,7 @@ func TestExtractRequestPrivacyGDPR(t *testing.T) {
 	tests := []struct {
 		name           string
 		req            *openrtb2.BidRequest
+		eeaCountries   []string
 		account        config.Account
 		tcf2config     gdpr.TCF2ConfigReader
 		legacyLabels   metrics.Labels
@@ -6610,6 +6666,7 @@ func TestExtractRequestPrivacyGDPR(t *testing.T) {
 		{
 			"Request without consent, default no, signal ambiguous, channel disabled",
 			&openrtb2.BidRequest{},
+			[]string{},
 			config.Account{},
 			gdpr.NewTCF2Config(config.TCF2{Enabled: false}, config.AccountGDPR{}),
 			metrics.Labels{},
@@ -6626,6 +6683,7 @@ func TestExtractRequestPrivacyGDPR(t *testing.T) {
 		{
 			"Request without consent, default no, signal ambiguous, channel enabled",
 			&openrtb2.BidRequest{},
+			[]string{},
 			config.Account{},
 			gdpr.NewTCF2Config(config.TCF2{Enabled: true}, config.AccountGDPR{}),
 			metrics.Labels{},
@@ -6645,6 +6703,7 @@ func TestExtractRequestPrivacyGDPR(t *testing.T) {
 				Regs: &openrtb2.Regs{GDPR: &SignalYes},
 				User: &openrtb2.User{Consent: "CPuKGCPPuKGCPNEAAAENCZCAAAAAAAAAAAAAAAAAAAAA"},
 			},
+			[]string{},
 			config.Account{},
 			gdpr.NewTCF2Config(config.TCF2{Enabled: true}, config.AccountGDPR{}),
 			metrics.Labels{},
@@ -6664,6 +6723,7 @@ func TestExtractRequestPrivacyGDPR(t *testing.T) {
 				Regs: &openrtb2.Regs{GDPR: &SignalNo},
 				User: &openrtb2.User{Consent: "CPuKGCPPuKGCPNEAAAENCZCAAAAAAAAAAAAAAAAAAAAA"},
 			},
+			[]string{},
 			config.Account{},
 			gdpr.NewTCF2Config(config.TCF2{Enabled: true}, config.AccountGDPR{}),
 			metrics.Labels{},
@@ -6683,6 +6743,7 @@ func TestExtractRequestPrivacyGDPR(t *testing.T) {
 				Regs: &openrtb2.Regs{GDPR: &SignalYes},
 				User: &openrtb2.User{Consent: "CPuKGCPPuKGCPNEAAAENCZCAAAAAAAAAAAAAAAAAAAAA"},
 			},
+			[]string{},
 			config.Account{GDPR: config.AccountGDPR{ConsentStringMeansInScope: &BoolTrue}},
 			gdpr.NewTCF2Config(config.TCF2{Enabled: true}, config.AccountGDPR{}),
 			metrics.Labels{},
@@ -6702,6 +6763,7 @@ func TestExtractRequestPrivacyGDPR(t *testing.T) {
 				Regs: &openrtb2.Regs{GDPR: &SignalInvalid},
 				User: &openrtb2.User{Consent: "CPuKGCPPuKGCPNEAAAENCZCAAAAAAAAAAAAAAAAAAAAA"},
 			},
+			[]string{},
 			config.Account{},
 			gdpr.NewTCF2Config(config.TCF2{Enabled: true}, config.AccountGDPR{}),
 			metrics.Labels{},
@@ -6715,6 +6777,7 @@ func TestExtractRequestPrivacyGDPR(t *testing.T) {
 				Regs: &openrtb2.Regs{GPP: "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1NYN", GPPSID: []int8{2, 6}},
 				User: &openrtb2.User{},
 			},
+			[]string{},
 			config.Account{},
 			gdpr.NewTCF2Config(config.TCF2{Enabled: true}, config.AccountGDPR{}),
 			metrics.Labels{},
@@ -6734,6 +6797,7 @@ func TestExtractRequestPrivacyGDPR(t *testing.T) {
 				Regs: &openrtb2.Regs{GPP: "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1NYN", GPPSID: []int8{2, 6}},
 				User: &openrtb2.User{},
 			},
+			[]string{},
 			config.Account{},
 			gdpr.NewTCF2Config(config.TCF2{Enabled: true}, config.AccountGDPR{}),
 			metrics.Labels{},
@@ -6772,7 +6836,7 @@ func TestExtractRequestPrivacyGDPR(t *testing.T) {
 			auctionRequest.TCF2Config = test.tcf2config
 			auctionRequest.LegacyLabels = test.legacyLabels
 
-			output, errs := e.extractRequestPrivacy(auctionRequest)
+			output, errs := e.extractRequestPrivacy(auctionRequest, test.eeaCountries)
 			assert.True(t, reflect.DeepEqual(test.requestPrivacy, output), "expected output to match. Expected: %+v, Got: %+v", test.requestPrivacy, output)
 			assert.Equal(t, test.errsCount, len(errs))
 			if test.errsHaveFatal {
@@ -6833,7 +6897,7 @@ func TestExtractRequestPrivacyLMT(t *testing.T) {
 			auctionRequest.BidRequestWrapper = &openrtb_ext.RequestWrapper{BidRequest: test.req}
 			auctionRequest.TCF2Config = gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{})
 
-			output, _ := e.extractRequestPrivacy(auctionRequest)
+			output, _ := e.extractRequestPrivacy(auctionRequest, []string{})
 			assert.Equal(t, test.expected, output.LMTEnforced)
 		})
 	}
@@ -6868,7 +6932,7 @@ func TestExtractRequestPrivacyCOPPA(t *testing.T) {
 			auctionRequest.BidRequestWrapper = &openrtb_ext.RequestWrapper{BidRequest: test.req}
 			auctionRequest.TCF2Config = gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{})
 
-			output, _ := e.extractRequestPrivacy(auctionRequest)
+			output, _ := e.extractRequestPrivacy(auctionRequest, []string{})
 			assert.Equal(t, test.expected, output.COPPAEnforced)
 		})
 	}

@@ -58,29 +58,44 @@ func TestContainsFatalError(t *testing.T) {
 
 func TestFirstFatalErrors(t *testing.T) {
 	fatalError := &stubError{severity: SeverityFatal}
-	fatalError2 := &stubError{severity: SeverityFatal}
 	notFatalError := &stubError{severity: SeverityWarning}
 	unknownSeverityError := errors.New("anyError")
 
-	tests := []struct {
-		errors []error
-		first  error
+	testCases := []struct {
+		description   string
+		errors        []error
+		shouldBeError error
 	}{
-		{[]error{}, nil},
-		{[]error{fatalError}, fatalError},
-		{[]error{fatalError2}, fatalError2},
-		{[]error{notFatalError}, nil},
-		{[]error{unknownSeverityError}, unknownSeverityError},
-		{[]error{notFatalError, unknownSeverityError}, unknownSeverityError},
-		{[]error{fatalError, fatalError2}, fatalError},
-		{[]error{fatalError2, fatalError}, fatalError2},
-		{[]error{notFatalError, fatalError, fatalError2}, fatalError},
-		{[]error{fatalError2, unknownSeverityError, fatalError}, fatalError},
-		{[]error{notFatalError, fatalError2, unknownSeverityError, fatalError}, fatalError2},
+		{
+			description:   "None",
+			errors:        []error{},
+			shouldBeError: nil,
+		},
+		{
+			description:   "One - Fatal",
+			errors:        []error{fatalError},
+			shouldBeError: fatalError,
+		},
+		{
+			description:   "One - Not Fatal",
+			errors:        []error{notFatalError},
+			shouldBeError: nil,
+		},
+		{
+			description:   "Mixed - Skip Not Fatal",
+			errors:        []error{notFatalError, fatalError},
+			shouldBeError: fatalError,
+		},
+		{
+			description:   "Mixed",
+			errors:        []error{unknownSeverityError, fatalError, notFatalError},
+			shouldBeError: unknownSeverityError,
+		},
 	}
 
-	for _, test := range tests {
-		assert.Equal(t, test.first, FirstFatalError(test.errors), "FirstFatalError(%v)", test.errors)
+	for _, tc := range testCases {
+		result := FirstFatalError(tc.errors)
+		assert.Equal(t, tc.shouldBeError, result)
 	}
 }
 

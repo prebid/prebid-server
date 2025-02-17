@@ -160,6 +160,7 @@ type AccountGDPR struct {
 	PurposeConfigs            map[consentconstants.Purpose]*AccountGDPRPurpose
 	PurposeOneTreatment       AccountGDPRPurposeOneTreatment `mapstructure:"purpose_one_treatment" json:"purpose_one_treatment"`
 	SpecialFeature1           AccountGDPRSpecialFeature      `mapstructure:"special_feature1" json:"special_feature1"`
+	EEACountries              []string                       `mapstructure:"eea_countries" json:"eea_countries"`
 	ConsentStringMeansInScope *bool                          `mapstructure:"consent_string_means_in_scope" json:"consent_string_means_in_scope"`
 }
 

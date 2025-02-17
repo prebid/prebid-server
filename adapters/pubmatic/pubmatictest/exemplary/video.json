@@ -53,7 +53,6 @@
         }
       }
     },
-  
     "httpCalls": [
       {
         "expectedRequest": {
@@ -100,12 +99,7 @@
                     "profile": 5123,
                     "version":1
                 },
-                "acat": ["drg","dlu","ssr"],
-                "prebid": {
-                  "bidderparams": {
-                    "acat": ["drg","dlu","ssr"]
-                  }
-                }
+                "acat": ["drg","dlu","ssr"]
             }
           },
           "impIDs":["test-video-imp"]

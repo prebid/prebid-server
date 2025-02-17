@@ -149,7 +149,7 @@ func (a *SmartAdserverAdapter) MakeBids(internalRequest *openrtb2.BidRequest, ex
 			bid := sb.Bid[i]
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &bid,
-				BidType: getMediaTypeForImp(bid.ImpID, internalRequest.Imp),
+				BidType: getBidTypeFromMarkupType(bid.MType),
 			})
 
 		}
@@ -172,16 +172,17 @@ func (a *SmartAdserverAdapter) BuildEndpointURL(params *openrtb_ext.ExtImpSmarta
 	return uri.String(), nil
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
-	for _, imp := range imps {
-		if imp.ID == impID {
-			if imp.Video != nil {
-				return openrtb_ext.BidTypeVideo
-			} else if imp.Native != nil {
-				return openrtb_ext.BidTypeNative
-			}
-			return openrtb_ext.BidTypeBanner
-		}
+func getBidTypeFromMarkupType(mtype openrtb2.MarkupType) openrtb_ext.BidType {
+	switch mtype {
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo
+	case openrtb2.MarkupAudio:
+		return openrtb_ext.BidTypeAudio
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative
+	default:
+		return openrtb_ext.BidTypeBanner
 	}
-	return openrtb_ext.BidTypeBanner
 }

@@ -1,4 +1,4 @@
-endpoint: "https://ssp.wp.pl/bidder/"
+endpoint: "https://ssp.wp.pl/v1/bidder/prebidserver"
 maintainer:
   email: "prebid-dev@grupawp.pl"
 gvlVendorID: 676
