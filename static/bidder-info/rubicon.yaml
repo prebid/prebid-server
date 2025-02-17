@@ -1,6 +1,10 @@
 # Contact global-support@magnite.com to ask about enabling a connection to the Magnite (formerly Rubicon) exchange.
 # We have the following regional endpoint domains: exapi-us-east, exapi-us-west, exapi-apac, exapi-eu
 # Please deploy this config in each of your datacenters with the appropriate regional subdomain
+
+# NOTE: Values in this file can (and often should) be overridden by pbs.json,
+# pbs.yaml, or environment variables.
+
 endpoint: "https://REGION.rubiconproject.com/a/api/exchange"
 endpointCompression: GZIP
 geoscope:
