@@ -77,21 +77,22 @@ func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter, noCookies bool
 	return url, nil
 }
 
-func getImpSizes(imp openrtb2.Imp) [][]int64 {
+func getImpSizes(imp openrtb2.Imp, bidType string) [][]int64 {
+	if bidType == "banner" {
+		if imp.Banner != nil {
+			if len(imp.Banner.Format) > 0 {
+				sizes := make([][]int64, len(imp.Banner.Format))
+				for i, format := range imp.Banner.Format {
+					sizes[i] = []int64{format.W, format.H}
+				}
 
-	if len(imp.Banner.Format) > 0 {
-		sizes := make([][]int64, len(imp.Banner.Format))
-		for i, format := range imp.Banner.Format {
-			sizes[i] = []int64{format.W, format.H}
+				return sizes
+			} else if imp.Banner.W != nil && imp.Banner.H != nil {
+				size := make([][]int64, 1)
+				size[0] = []int64{*imp.Banner.W, *imp.Banner.H}
+				return size
+			}
 		}
-
-		return sizes
-	}
-
-	if imp.Banner.W != nil && imp.Banner.H != nil {
-		size := make([][]int64, 1)
-		size[0] = []int64{*imp.Banner.W, *imp.Banner.H}
-		return size
 	}
 
 	return nil
@@ -168,12 +169,12 @@ func generateReturnExt(ad Ad, request *openrtb2.BidRequest) (json.RawMessage, er
 }
 
 func generateAdUnit(imp openrtb2.Imp, adnuntiusExt openrtb_ext.ImpExtAdnunitus, bidType string) adnRequestAdunit {
-	var adUnit adnRequestAdunit
-	adUnit = adnRequestAdunit{
+	adUnit := adnRequestAdunit{
 		AuId:       adnuntiusExt.Auid,
 		TargetId:   fmt.Sprintf("%s-%s:%s", adnuntiusExt.Auid, imp.ID, bidType),
-		Dimensions: getImpSizes(imp),
+		Dimensions: getImpSizes(imp, bidType),
 	}
+
 	if adnuntiusExt.MaxDeals > 0 {
 		adUnit.MaxDeals = adnuntiusExt.MaxDeals
 	}

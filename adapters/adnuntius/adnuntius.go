@@ -171,7 +171,6 @@ func generateBidResponse(adnResponse *AdnResponse, request *openrtb2.BidRequest)
 	/* Check the ad unit response to see if there are any multi ad  */
 	for _, adnRespAdunit := range adnResponse.AdUnits {
 		result := strings.Split(adnRespAdunit.TargetId, ":")
-		fmt.Println("result", result[0])
 		if adnRespAdunit.MatchedAdCount > 0 {
 			adunitMediaTypeMap[result[0]] = append(adunitMediaTypeMap[result[0]], adnRespAdunit)
 		}
@@ -179,11 +178,9 @@ func generateBidResponse(adnResponse *AdnResponse, request *openrtb2.BidRequest)
 
 	/* Compare price if there are multiple media types */
 	for targetId, mappedAdunit := range adunitMediaTypeMap {
-		fmt.Println("TARGET", targetId)
 		highestBidAtIndex := 0
 		if len(mappedAdunit) > 1 {
-			for index, mapped := range mappedAdunit {
-				fmt.Println(index, mapped.TargetId, mappedAdunit[index].Ads[0].Bid.Amount)
+			for index := range mappedAdunit {
 				if mappedAdunit[index].Ads[0].Bid.Amount > mappedAdunit[highestBidAtIndex].Ads[0].Bid.Amount {
 					highestBidAtIndex = index
 				}
