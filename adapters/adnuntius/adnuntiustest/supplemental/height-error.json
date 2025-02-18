@@ -54,6 +54,7 @@
 						{
 							"auId": "0000000000000123",
 							"targetId": "123-test-imp-id",
+							"matchedAdCount": 1,
 							"html": "<ADCODE>",
 							"responseId": "adn-rsp-900646517",
 							"ads": [
