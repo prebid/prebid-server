@@ -36,7 +36,8 @@
                     "adUnits": [
                         {
                             "auId": "123",
-                            "targetId": "123-test-imp-id",
+                            "targetId": "123-test-imp-id:banner",
+                            "nativeRequest": {},
 							"dimensions": [[300,250],[300,600]]
                         }
                     ],
@@ -51,7 +52,7 @@
                     "adUnits": [
                         {
                             "auId": "0000000000000123",
-                            "targetId": "123-test-imp-id",
+                            "targetId": "123-test-imp-id:banner",
                             "html": "<ADCODE>",
                             "responseId": "adn-rsp-900646517",
                             "ads": [

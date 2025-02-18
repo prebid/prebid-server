@@ -56,12 +56,13 @@
 					"adUnits": [
 						{
 							"auId": "123",
-							"targetId": "123-test-imp-id",
+							"targetId": "123-test-imp-id:banner",
+							"nativeRequest": {},
 							"dimensions": [[300,250],[300,600]]
 						},
             {
 							"auId": "456",
-							"targetId": "456-test-imp-id-2",
+							"targetId": "456-test-imp-id-2:banner",
 							"dimensions": [[300,250],[300,600]]
 						}
 					],

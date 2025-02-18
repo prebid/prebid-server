@@ -37,7 +37,8 @@
 					"adUnits": [
 						{
 							"auId": "123",
-							"targetId": "123-test-imp-id",
+							"targetId": "123-test-imp-id:banner",
+							"nativeRequest": {},
 							"dimensions": [[300,250],[300,600]],
 							"maxDeals": 2
 						}
@@ -143,6 +144,7 @@
 						"adomain": ["google.com"],
 						"cid": "q7y9qm5b0xt9htrv",
 						"crid": "jn9hpzvlsf8cpdmm",
+						"mtype": 1,
 						"w": 300,
 						"h": 250
 					},
