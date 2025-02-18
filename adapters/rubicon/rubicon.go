@@ -20,7 +20,6 @@ import (
 	"github.com/prebid/prebid-server/v3/util/maputil"
 
 	"github.com/buger/jsonparser"
-	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/openrtb/v20/openrtb2"
 )
 
@@ -54,6 +53,7 @@ type rubiconExtImpBidder struct {
 	Bidder  openrtb_ext.ExtImpRubicon `json:"bidder"`
 	Gpid    string                    `json:"gpid"`
 	Skadn   json.RawMessage           `json:"skadn,omitempty"`
+	Tid     string                    `json:"tid"`
 	Data    json.RawMessage           `json:"data"`
 	Context rubiconContext            `json:"context"`
 }
@@ -87,6 +87,7 @@ type rubiconImpExt struct {
 	RP    rubiconImpExtRP `json:"rp,omitempty"`
 	GPID  string          `json:"gpid,omitempty"`
 	Skadn json.RawMessage `json:"skadn,omitempty"`
+	Tid   string          `json:"tid,omitempty"`
 }
 
 type rubiconImpExtRP struct {
@@ -174,34 +175,6 @@ type rubiconBid struct {
 type extPrebid struct {
 	Prebid *openrtb_ext.ExtBidPrebid `json:"prebid,omitempty"`
 	Bidder json.RawMessage           `json:"bidder,omitempty"`
-}
-
-// defines the contract for bidrequest.user.ext.eids[i].ext
-type rubiconUserExtEidExt struct {
-	Segments []string `json:"segments,omitempty"`
-}
-
-type mappedRubiconUidsParam struct {
-	segments    []string
-	liverampIdl string
-}
-
-func resolveVideoSizeId(placement adcom1.VideoPlacementSubtype, instl int8, impId string) (sizeID int, err error) {
-	if placement != 0 {
-		if placement == 1 {
-			return 201, nil
-		}
-		if placement == 3 {
-			return 203, nil
-		}
-	}
-
-	if instl == 1 {
-		return 202, nil
-	}
-	return 0, &errortypes.BadInput{
-		Message: fmt.Sprintf("video.size_id can not be resolved in impression with id : %s", impId),
-	}
 }
 
 func appendTrackerToUrl(uri string, tracker string) (res string) {
@@ -304,6 +277,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			},
 			GPID:  bidderExt.Gpid,
 			Skadn: bidderExt.Skadn,
+			Tid:   bidderExt.Tid,
 		}
 
 		imp.Ext, err = json.Marshal(&impExt)
@@ -376,23 +350,18 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 		if isVideo {
 			videoCopy := *imp.Video
 
-			videoSizeId := rubiconExt.Video.VideoSizeID
-			if videoSizeId == 0 {
-				resolvedSizeId, err := resolveVideoSizeId(imp.Video.Placement, imp.Instl, imp.ID)
-				if err != nil {
-					errs = append(errs, err)
-					continue
-				}
-				videoSizeId = resolvedSizeId
-			}
-
 			// if imp.rwdd = 1, set imp.video.ext.videotype = "rewarded"
 			var videoType = ""
 			if imp.Rwdd == 1 {
 				videoType = "rewarded"
 				imp.Rwdd = 0
 			}
-			videoExt := rubiconVideoExt{Skip: rubiconExt.Video.Skip, SkipDelay: rubiconExt.Video.SkipDelay, VideoType: videoType, RP: rubiconVideoExtRP{SizeID: videoSizeId}}
+			videoExt := rubiconVideoExt{
+				Skip:      rubiconExt.Video.Skip,
+				SkipDelay: rubiconExt.Video.SkipDelay,
+				VideoType: videoType,
+				RP:        rubiconVideoExtRP{SizeID: rubiconExt.Video.VideoSizeID},
+			}
 			videoCopy.Ext, err = json.Marshal(&videoExt)
 			imp.Video = &videoCopy
 			imp.Banner = nil
@@ -682,20 +651,8 @@ func (a *RubiconAdapter) updateImpRpTarget(extImp rubiconExtImpBidder, extImpRub
 		if err != nil {
 			return nil, err
 		}
-		if len(site.SectionCat) > 0 {
-			addStringArrayAttribute(site.SectionCat, target, "sectioncat")
-		}
-		if len(site.PageCat) > 0 {
-			addStringArrayAttribute(site.PageCat, target, "pagecat")
-		}
 		if site.Page != "" {
 			addStringAttribute(site.Page, target, "page")
-		}
-		if site.Ref != "" {
-			addStringAttribute(site.Ref, target, "ref")
-		}
-		if site.Search != "" {
-			addStringAttribute(site.Search, target, "search")
 		}
 	} else {
 		appExtData, _, _, err := jsonparser.Get(app.Ext, "data")
@@ -705,12 +662,6 @@ func (a *RubiconAdapter) updateImpRpTarget(extImp rubiconExtImpBidder, extImpRub
 		err = populateFirstPartyDataAttributes(appExtData, target)
 		if err != nil {
 			return nil, err
-		}
-		if len(app.SectionCat) > 0 {
-			addStringArrayAttribute(app.SectionCat, target, "sectioncat")
-		}
-		if len(app.PageCat) > 0 {
-			addStringArrayAttribute(app.PageCat, target, "pagecat")
 		}
 	}
 

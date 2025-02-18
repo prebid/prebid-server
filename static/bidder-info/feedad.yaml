@@ -1,0 +1,17 @@
+endpoint: "https://ortb.feedad.com/1/prebid/requests"
+endpointCompression: gzip
+maintainer:
+  email: support@feedad.com
+gvlVendorID: 781
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner
+userSync:
+  iframe:
+    url: https://ortb.feedad.com/1/usersyncs/supply?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
+    userMacro: $UID

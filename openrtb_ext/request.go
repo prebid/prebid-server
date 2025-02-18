@@ -191,21 +191,21 @@ type Adjustment struct {
 
 // ExtRequestTargeting defines the contract for bidrequest.ext.prebid.targeting
 type ExtRequestTargeting struct {
-	PriceGranularity          *PriceGranularity         `json:"pricegranularity,omitempty"`
-	MediaTypePriceGranularity MediaTypePriceGranularity `json:"mediatypepricegranularity,omitempty"`
-	IncludeWinners            *bool                     `json:"includewinners,omitempty"`
-	IncludeBidderKeys         *bool                     `json:"includebidderkeys,omitempty"`
-	IncludeBrandCategory      *ExtIncludeBrandCategory  `json:"includebrandcategory,omitempty"`
-	IncludeFormat             bool                      `json:"includeformat,omitempty"`
-	DurationRangeSec          []int                     `json:"durationrangesec,omitempty"`
-	PreferDeals               bool                      `json:"preferdeals,omitempty"`
-	AppendBidderNames         bool                      `json:"appendbiddernames,omitempty"`
-	AlwaysIncludeDeals        bool                      `json:"alwaysincludedeals,omitempty"`
+	PriceGranularity          *PriceGranularity          `json:"pricegranularity,omitempty"`
+	MediaTypePriceGranularity *MediaTypePriceGranularity `json:"mediatypepricegranularity,omitempty"`
+	IncludeWinners            *bool                      `json:"includewinners,omitempty"`
+	IncludeBidderKeys         *bool                      `json:"includebidderkeys,omitempty"`
+	IncludeBrandCategory      *ExtIncludeBrandCategory   `json:"includebrandcategory,omitempty"`
+	IncludeFormat             bool                       `json:"includeformat,omitempty"`
+	DurationRangeSec          []int                      `json:"durationrangesec,omitempty"`
+	PreferDeals               bool                       `json:"preferdeals,omitempty"`
+	AppendBidderNames         bool                       `json:"appendbiddernames,omitempty"`
+	AlwaysIncludeDeals        bool                       `json:"alwaysincludedeals,omitempty"`
 }
 
 type ExtIncludeBrandCategory struct {
-	PrimaryAdServer     int    `json:"primaryadserver"`
-	Publisher           string `json:"publisher"`
+	PrimaryAdServer     int    `json:"primaryadserver,omitempty"`
+	Publisher           string `json:"publisher,omitempty"`
 	WithCategory        bool   `json:"withcategory"`
 	TranslateCategories *bool  `json:"translatecategories,omitempty"`
 }

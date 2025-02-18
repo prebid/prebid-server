@@ -132,7 +132,6 @@
                 "placement": 3,
                 "ext": {
                   "rp": {
-                    "size_id": 203
                   }
                 },
                 "mimes": [
@@ -156,12 +155,6 @@
                     ],
                     "page": [
                       "somePage"
-                    ],
-                    "ref": [
-                      "someRef"
-                    ],
-                    "search": [
-                      "someSearch"
                     ],
                     "dfp_ad_unit_code": "someAdSlot",
                     "pbs_login": "xuser",

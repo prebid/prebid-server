@@ -46,6 +46,7 @@
           },
           "bidder": {
             "video": {
+              "size_id": 10
             },
             "accountId": 1001,
             "siteId": 113932,
@@ -109,7 +110,7 @@
                 "placement": 3,
                 "ext": {
                   "rp": {
-                    "size_id": 203
+                    "size_id": 10
                   }
                 },
                 "mimes": [
@@ -126,10 +127,6 @@
                 "rp": {
                   "target": {
                     "pbadslot": "pbadslot",
-                    "pagecat": [
-                      "val1",
-                      "val2"
-                    ],
                     "pbs_login": "xuser",
                     "pbs_url": "http://hosturl.com",
                     "pbs_version": ""
