@@ -9,15 +9,20 @@ import (
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/modern-go/reflect2"
-	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v3/errortypes"
 )
 
-var comma = byte(',')
-var colon = byte(':')
-var sqBracket = byte(']')
-var closingCurlyBracket = byte('}')
+const (
+	comma               byte = ','
+	colon               byte = ':'
+	sqBracket           byte = ']'
+	closingCurlyBracket byte = '}'
+)
 
-// Finds element in json byte array with any level of nesting
+// RawMessage to allow replacing json with jsonutil
+type RawMessage = json.RawMessage
+
+// FindElement finds element in json byte array with any level of nesting
 func FindElement(extension []byte, elementNames ...string) (bool, int64, int64, error) {
 	elementName := elementNames[0]
 	buf := bytes.NewBuffer(extension)
@@ -100,7 +105,7 @@ func FindElement(extension []byte, elementNames ...string) (bool, int64, int64, 
 	return found, startIndex, endIndex, nil
 }
 
-// Drops element from json byte array
+// DropElement drops element from json byte array
 // - Doesn't support drop element from json list
 // - Keys in the path can skip levels
 // - First found element will be removed

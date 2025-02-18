@@ -68,8 +68,8 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "Error while decoding imp[0].ext: json: cannot unmarshal string into Go struct field ExtImpUnicorn.bidder.accountId of type int",
-      "comparison": "literal"
+      "value": "Error while decoding imp[0].ext: cannot unmarshal openrtb_ext.ExtImpUnicorn.AccountID: unexpected character",
+      "comparison": "startswith"
     }
   ]
 }

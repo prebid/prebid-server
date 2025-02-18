@@ -1,7 +1,6 @@
 package eplanning
 
 import (
-	"encoding/json"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -13,10 +12,11 @@ import (
 
 	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 
 	"strconv"
 )
@@ -243,7 +243,7 @@ func cleanName(name string) string {
 func verifyImp(imp *openrtb2.Imp, isMobile bool, impType int) (*openrtb_ext.ExtImpEPlanning, error) {
 	var bidderExt adapters.ExtImpBidder
 
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("Ignoring imp id=%s, error while decoding extImpBidder, err: %s", imp.ID, err),
 		}
@@ -268,7 +268,7 @@ func verifyImp(imp *openrtb2.Imp, isMobile bool, impType int) (*openrtb_ext.ExtI
 	}
 
 	impExt := openrtb_ext.ExtImpEPlanning{}
-	err := json.Unmarshal(bidderExt.Bidder, &impExt)
+	err := jsonutil.Unmarshal(bidderExt.Bidder, &impExt)
 	if err != nil {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("Ignoring imp id=%s, error while decoding impExt, err: %s", imp.ID, err),
@@ -364,7 +364,7 @@ func (adapter *EPlanningAdapter) MakeBids(internalRequest *openrtb2.BidRequest, 
 	}
 
 	var parsedResponse hbResponse
-	if err := json.Unmarshal(response.Body, &parsedResponse); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &parsedResponse); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Error unmarshaling HB response: %s", err.Error()),
 		}}

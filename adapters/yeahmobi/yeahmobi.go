@@ -8,11 +8,12 @@ import (
 	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/macros"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -85,7 +86,7 @@ func transform(request *openrtb2.BidRequest) {
 		if imp.Native != nil {
 			var nativeRequest map[string]interface{}
 			nativeCopyRequest := make(map[string]interface{})
-			err := json.Unmarshal([]byte(request.Imp[i].Native.Request), &nativeRequest)
+			err := jsonutil.Unmarshal([]byte(request.Imp[i].Native.Request), &nativeRequest)
 			//just ignore the bad native request
 			if err == nil {
 				_, exists := nativeRequest["native"]
@@ -114,12 +115,12 @@ func getYeahmobiExt(request *openrtb2.BidRequest) (*openrtb_ext.ExtImpYeahmobi, 
 
 	for _, imp := range request.Imp {
 		var extBidder adapters.ExtImpBidder
-		err := json.Unmarshal(imp.Ext, &extBidder)
+		err := jsonutil.Unmarshal(imp.Ext, &extBidder)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
-		err = json.Unmarshal(extBidder.Bidder, &extImpYeahmobi)
+		err = jsonutil.Unmarshal(extBidder.Bidder, &extImpYeahmobi)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -151,7 +152,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 		}}
 	}
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
@@ -166,7 +167,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 			}
 			if bid.Ext != nil {
 				var bidExt *yeahmobiBidExt
-				err := json.Unmarshal(bid.Ext, &bidExt)
+				err := jsonutil.Unmarshal(bid.Ext, &bidExt)
 				if err != nil {
 					return nil, []error{fmt.Errorf("bid.ext json unmarshal error")}
 				} else if bidExt != nil {

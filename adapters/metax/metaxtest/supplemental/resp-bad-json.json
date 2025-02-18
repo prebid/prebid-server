@@ -73,8 +73,8 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "json: cannot unmarshal*",
-      "comparison": "regex"
+      "value": "expect { or n, but found \"",
+      "comparison": "literal"
     }
   ]
 }

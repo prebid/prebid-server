@@ -7,10 +7,11 @@ import (
 	"net/url"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 const nbrHeaderName = "x-nbr"
@@ -63,7 +64,7 @@ func (adapter *AMXAdapter) MakeRequests(request *openrtb2.BidRequest, req *adapt
 	var publisherID string
 	for idx, imp := range reqCopy.Imp {
 		var params amxExt
-		if err := json.Unmarshal(imp.Ext, &params); err == nil {
+		if err := jsonutil.Unmarshal(imp.Ext, &params); err == nil {
 			if params.Bidder.TagID != "" {
 				publisherID = params.Bidder.TagID
 			}
@@ -141,7 +142,7 @@ func (adapter *AMXAdapter) MakeBids(request *openrtb2.BidRequest, externalReques
 	}
 
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
@@ -188,7 +189,7 @@ func getBidExt(ext json.RawMessage) (amxBidExt, error) {
 	}
 
 	var bidExt amxBidExt
-	err := json.Unmarshal(ext, &bidExt)
+	err := jsonutil.Unmarshal(ext, &bidExt)
 	return bidExt, err
 }
 

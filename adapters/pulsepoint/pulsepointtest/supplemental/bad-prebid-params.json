@@ -24,7 +24,7 @@
     },
     "httpCalls": [],
     "expectedMakeRequestsErrors": [{
-        "value": "Value looks like Number/Boolean/None, but can't find its end: ',' or '}' symbol",
+        "value": "cannot unmarshal openrtb_ext.ExtImpPulsePoint.TagID: Value looks like Number/Boolean/None, but can't find its end: ',' or '}' symbol",
         "comparison": "literal"
     }],
     "expectedBidResponses": [],

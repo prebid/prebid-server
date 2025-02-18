@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 // This file actually intends to test static/bidder-params/criteo.json
@@ -48,6 +48,14 @@ var validParams = []string{
 	`{"zoneId": 123456, "networkId": 78910}`,
 	`{"zoneid": 0, "networkid": 0}`,
 	`{"zoneId": 0, "networkId": 0}`,
+	`{"zoneid": 123456, "pubid": "testpubid"}`,
+	`{"zoneid": 123456, "uid": 100}`,
+	`{"zoneid": 123456, "networkid": 78910, "pubid": "testpubid"}`,
+	`{"zoneid": 123456, "networkid": 78910, "uid": 100}`,
+	`{"zoneid": 123456, "networkid": 78910, "uid": 100, "pubid": "testpubid"}`,
+	`{"networkId": 78910, "pubid": "testpubid"}`,
+	`{"networkid": 78910, "uid": 100}`,
+	`{"networkid": 78910, "uid": 100, "pubid": "testpubid"}`,
 }
 
 var invalidParams = []string{
@@ -67,4 +75,7 @@ var invalidParams = []string{
 	`{"zoneid": -1}`,
 	`{"networkid": -1}`,
 	`{"zoneid": -1, "networkid": -1}`,
+	`{"zoneid": 0, "networkid": 0, "pubid": ""}`,
+	`{"zoneid": 0, "networkid": 0, "pubid": null}`,
+	`{"zoneid": 0, "networkid": 0, "uid": null}`,
 }

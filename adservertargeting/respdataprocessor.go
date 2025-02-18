@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 )
 
@@ -170,7 +169,7 @@ func getRespData(bidderResp *openrtb2.BidResponse, field string) (string, error)
 		return fmt.Sprint(bidderResp.NBR.Val()), nil
 
 	default:
-		return "", errors.Errorf("key not found for field in bid response: %s", field)
+		return "", fmt.Errorf("key not found for field in bid response: %s", field)
 	}
 
 }

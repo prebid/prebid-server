@@ -7,10 +7,11 @@ import (
 	"net/url"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type UcfunnelAdapter struct {
@@ -44,12 +45,12 @@ func (a *UcfunnelAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 
 	var errs []error
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
 	var bidReq openrtb2.BidRequest
-	if err := json.Unmarshal(externalRequest.Body, &bidReq); err != nil {
+	if err := jsonutil.Unmarshal(externalRequest.Body, &bidReq); err != nil {
 		return nil, []error{err}
 	}
 
@@ -105,7 +106,7 @@ func (a *UcfunnelAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ad
 func getPartnerId(request *openrtb2.BidRequest) (string, []error) {
 	var ext ExtBidderUcfunnel
 	var errs = []error{}
-	err := json.Unmarshal(request.Imp[0].Ext, &ext)
+	err := jsonutil.Unmarshal(request.Imp[0].Ext, &ext)
 	if err != nil {
 		errs = append(errs, err)
 		return "", errs

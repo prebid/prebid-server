@@ -30,7 +30,7 @@
 	"httpCalls": [
 		{
 			"expectedRequest": {
-				"uri": "http://whatever.url?format=prebid&tzo=0",
+				"uri": "http://whatever.url?format=prebidServer&tzo=0",
 				"body": {
 					"adUnits": [
 						{
@@ -60,6 +60,7 @@
 									"destinationUrls": {
 										"url": "http://www.google.com"
 									},
+									"advertiserDomains": ["google.com"],
 									"bid": {
 										"amount": 20.0,
 										"currency": "NOK"
@@ -82,7 +83,7 @@
 	],
 	"expectedMakeBidsErrors": [
 		{
-			"value": "json: cannot unmarshal number into Go struct field Ad.AdUnits.Ads.CreativeHeight of type string",
+			"value": "cannot unmarshal adnuntius.Ad.CreativeHeight: expects \" or n, but found 2",
 			"comparison": "literal"
 		}
 	]

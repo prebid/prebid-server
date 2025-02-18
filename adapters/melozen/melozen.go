@@ -8,11 +8,12 @@ import (
 	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/macros"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -44,12 +45,12 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	for _, imp := range request.Imp {
 		// Extract Melozen Params
 		var strImpExt adapters.ExtImpBidder
-		if err := json.Unmarshal(imp.Ext, &strImpExt); err != nil {
+		if err := jsonutil.Unmarshal(imp.Ext, &strImpExt); err != nil {
 			errors = append(errors, err)
 			continue
 		}
 		var strImpParams openrtb_ext.ImpExtMeloZen
-		if err := json.Unmarshal(strImpExt.Bidder, &strImpParams); err != nil {
+		if err := jsonutil.Unmarshal(strImpExt.Bidder, &strImpParams); err != nil {
 			errors = append(errors, err)
 			continue
 		}
@@ -109,12 +110,12 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	var bidReq openrtb2.BidRequest
-	if err := json.Unmarshal(requestData.Body, &bidReq); err != nil {
+	if err := jsonutil.Unmarshal(requestData.Body, &bidReq); err != nil {
 		return nil, []error{err}
 	}
 
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
@@ -173,7 +174,7 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 
 	if bid.Ext != nil {
 		var bidExt openrtb_ext.ExtBid
-		err := json.Unmarshal(bid.Ext, &bidExt)
+		err := jsonutil.Unmarshal(bid.Ext, &bidExt)
 		if err == nil && bidExt.Prebid != nil {
 			return openrtb_ext.ParseBidType(string(bidExt.Prebid.Type))
 		}

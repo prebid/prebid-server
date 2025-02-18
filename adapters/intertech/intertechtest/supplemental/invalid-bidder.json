@@ -1,0 +1,28 @@
+{
+  "mockBidRequest": {
+    "id": "test-req-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": "badBidder"
+        }
+      }
+    ]
+  },
+  
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "imp #test-imp-id: unable to parse intertech ext: expect { or n, but found \"",
+      "comparison": "literal"
+    }
+  ]
+}

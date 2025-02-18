@@ -14,8 +14,16 @@
       "description": "An ID which identifies the sovrn ad tag (DEPRECATED, use \"tagid\" instead)"
     },
     "bidfloor": {
-      "type": "number",
-      "description": "The minimium acceptable bid, in CPM, using US Dollars"
+      "anyOf": [
+        {
+          "type": "number",
+          "description": "The minimum acceptable bid, in CPM, using US Dollars"
+        },
+        {
+          "type": "string",
+          "description": "The minimum acceptable bid, in CPM, using US Dollars (as a string)"
+        }
+      ]
     },
     "adunitcode": {
       "type": "string",
