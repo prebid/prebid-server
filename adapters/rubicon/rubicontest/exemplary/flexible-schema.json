@@ -144,7 +144,7 @@
           "data": {
             "adserver": {
               "name": "gam",
-              "adslot": "adSlotFromContextData"
+              "adslot": "adSlotFromData"
             },
             "dataAttr1": "dataVal1",
             "dataAttr2": "dataVal2"
@@ -308,7 +308,7 @@
               "ext": {
                 "rp": {
                   "target": {
-                    "dfp_ad_unit_code": "adSlotFromContextData",
+                    "dfp_ad_unit_code": "adSlotFromData",
                     "dataAttr1": [
                       "dataVal1"
                     ],
