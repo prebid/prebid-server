@@ -47,7 +47,7 @@ type rubiconExtImpBidder struct {
 	Bidder openrtb_ext.ExtImpRubicon `json:"bidder"`
 	Gpid   string                    `json:"gpid"`
 	Skadn  json.RawMessage           `json:"skadn,omitempty"`
-	Tid     string                    `json:"tid"`
+	Tid    string                    `json:"tid"`
 	Data   json.RawMessage           `json:"data"`
 }
 
@@ -698,7 +698,7 @@ func (a *RubiconAdapter) updateImpRpTarget(extImp rubiconExtImpBidder, extImpRub
 }
 
 func extractDfpAdUnitCode(data rubiconData) string {
-	if data.AdServer.Name == "gam" && data.AdServer.AdSlot != "" {
+	if data.AdServer.Name == "gam" && len(data.AdServer.AdSlot) != 0 {
 		return data.AdServer.AdSlot
 	}
 
