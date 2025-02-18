@@ -7,11 +7,11 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type BeintooAdapter struct {
@@ -23,11 +23,11 @@ func (a *BeintooAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 
 	if len(request.Imp) == 0 {
 		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("No Imps in Bid Request"),
+			Message: "No Imps in Bid Request",
 		}}
 	}
 
-	if errors := preprocess(request); errors != nil && len(errors) > 0 {
+	if errors := preprocess(request); len(errors) > 0 {
 		return nil, append(errors, &errortypes.BadInput{
 			Message: fmt.Sprintf("Error in preprocess of Imp, err: %s", errors),
 		})
@@ -36,7 +36,7 @@ func (a *BeintooAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 	data, err := json.Marshal(request)
 	if err != nil {
 		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Error in packaging request to JSON"),
+			Message: "Error in packaging request to JSON",
 		}}
 	}
 
@@ -61,6 +61,7 @@ func (a *BeintooAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 		Uri:     a.endpoint,
 		Body:    data,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, errors
 }
 
@@ -94,7 +95,7 @@ func buildImpBanner(imp *openrtb2.Imp) error {
 
 	if imp.Banner == nil {
 		return &errortypes.BadInput{
-			Message: fmt.Sprintf("Request needs to include a Banner object"),
+			Message: "Request needs to include a Banner object",
 		}
 	}
 
@@ -104,7 +105,7 @@ func buildImpBanner(imp *openrtb2.Imp) error {
 	if banner.W == nil && banner.H == nil {
 		if len(banner.Format) == 0 {
 			return &errortypes.BadInput{
-				Message: fmt.Sprintf("Need at least one size to build request"),
+				Message: "Need at least one size to build request",
 			}
 		}
 		format := banner.Format[0]
@@ -132,8 +133,6 @@ func addImpProps(imp *openrtb2.Imp, secure *int8, BeintooExt *openrtb_ext.ExtImp
 			imp.BidFloor = bidFloor
 		}
 	}
-
-	return
 }
 
 // Adding header fields to request header

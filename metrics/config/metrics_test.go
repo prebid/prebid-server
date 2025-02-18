@@ -2,12 +2,13 @@ package config
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
-	mainConfig "github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/metrics"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	mainConfig "github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/metrics"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 
 	gometrics "github.com/rcrowley/go-metrics"
 )
@@ -47,8 +48,7 @@ func TestMultiMetricsEngine(t *testing.T) {
 	engineList := make(MultiMetricsEngine, 2)
 	engineList[0] = goEngine
 	engineList[1] = &NilMetricsEngine{}
-	var metricsEngine metrics.MetricsEngine
-	metricsEngine = &engineList
+	var metricsEngine metrics.MetricsEngine = &engineList
 	labels := metrics.Labels{
 		Source:        metrics.DemandWeb,
 		RType:         metrics.ReqTypeORTB2Web,
@@ -142,6 +142,7 @@ func TestMultiMetricsEngine(t *testing.T) {
 	metricsEngine.RecordStoredImpCacheResult(metrics.CacheHit, 5)
 	metricsEngine.RecordAccountCacheResult(metrics.CacheHit, 6)
 
+	metricsEngine.RecordAdapterBuyerUIDScrubbed(openrtb_ext.BidderAppnexus)
 	metricsEngine.RecordAdapterGDPRRequestBlocked(openrtb_ext.BidderAppnexus)
 
 	metricsEngine.RecordRequestQueueTime(false, metrics.ReqTypeVideo, time.Duration(1))
@@ -168,13 +169,14 @@ func TestMultiMetricsEngine(t *testing.T) {
 	VerifyMetrics(t, "Request", goEngine.RequestStatuses[metrics.ReqTypeORTB2Web][metrics.RequestStatusOK].Count(), 5)
 	VerifyMetrics(t, "ImpMeter", goEngine.ImpMeter.Count(), 8)
 	VerifyMetrics(t, "NoCookieMeter", goEngine.NoCookieMeter.Count(), 0)
-	VerifyMetrics(t, "AdapterMetrics.Pubmatic.GotBidsMeter", goEngine.AdapterMetrics[openrtb_ext.BidderPubmatic].GotBidsMeter.Count(), 5)
-	VerifyMetrics(t, "AdapterMetrics.Pubmatic.NoBidMeter", goEngine.AdapterMetrics[openrtb_ext.BidderPubmatic].NoBidMeter.Count(), 0)
+
+	VerifyMetrics(t, "AdapterMetrics.pubmatic.GotBidsMeter", goEngine.AdapterMetrics[strings.ToLower(string(openrtb_ext.BidderPubmatic))].GotBidsMeter.Count(), 5)
+	VerifyMetrics(t, "AdapterMetrics.pubmatic.NoBidMeter", goEngine.AdapterMetrics[strings.ToLower(string(openrtb_ext.BidderPubmatic))].NoBidMeter.Count(), 0)
 	for _, err := range metrics.AdapterErrors() {
-		VerifyMetrics(t, "AdapterMetrics.Pubmatic.Request.ErrorMeter."+string(err), goEngine.AdapterMetrics[openrtb_ext.BidderPubmatic].ErrorMeters[err].Count(), 0)
+		VerifyMetrics(t, "AdapterMetrics.pubmatic.Request.ErrorMeter."+string(err), goEngine.AdapterMetrics[strings.ToLower(string(openrtb_ext.BidderPubmatic))].ErrorMeters[err].Count(), 0)
 	}
-	VerifyMetrics(t, "AdapterMetrics.AppNexus.GotBidsMeter", goEngine.AdapterMetrics[openrtb_ext.BidderAppnexus].GotBidsMeter.Count(), 0)
-	VerifyMetrics(t, "AdapterMetrics.AppNexus.NoBidMeter", goEngine.AdapterMetrics[openrtb_ext.BidderAppnexus].NoBidMeter.Count(), 5)
+	VerifyMetrics(t, "AdapterMetrics.appnexus.GotBidsMeter", goEngine.AdapterMetrics[strings.ToLower(string(openrtb_ext.BidderAppnexus))].GotBidsMeter.Count(), 0)
+	VerifyMetrics(t, "AdapterMetrics.appnexus.NoBidMeter", goEngine.AdapterMetrics[strings.ToLower(string(openrtb_ext.BidderAppnexus))].NoBidMeter.Count(), 5)
 
 	VerifyMetrics(t, "RecordRequestQueueTime.Video.Rejected", goEngine.RequestsQueueTimer[metrics.ReqTypeVideo][false].Count(), 1)
 	VerifyMetrics(t, "RecordRequestQueueTime.Video.Accepted", goEngine.RequestsQueueTimer[metrics.ReqTypeVideo][true].Count(), 0)
@@ -186,7 +188,8 @@ func TestMultiMetricsEngine(t *testing.T) {
 	VerifyMetrics(t, "StoredImpCache.Hit", goEngine.StoredImpCacheMeter[metrics.CacheHit].Count(), 5)
 	VerifyMetrics(t, "AccountCache.Hit", goEngine.AccountCacheMeter[metrics.CacheHit].Count(), 6)
 
-	VerifyMetrics(t, "AdapterMetrics.AppNexus.GDPRRequestBlocked", goEngine.AdapterMetrics[openrtb_ext.BidderAppnexus].GDPRRequestBlocked.Count(), 1)
+	VerifyMetrics(t, "AdapterMetrics.appNexus.BuyerUIDScrubbed", goEngine.AdapterMetrics[strings.ToLower(string(openrtb_ext.BidderAppnexus))].BuyerUIDScrubbed.Count(), 1)
+	VerifyMetrics(t, "AdapterMetrics.appNexus.GDPRRequestBlocked", goEngine.AdapterMetrics[strings.ToLower(string(openrtb_ext.BidderAppnexus))].GDPRRequestBlocked.Count(), 1)
 
 	// verify that each module has its own metric recorded
 	for module, stages := range modulesStages {

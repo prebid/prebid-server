@@ -8,12 +8,12 @@ import (
 	"strconv"
 	"text/template"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/macros"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type BetweenAdapter struct {
@@ -24,11 +24,11 @@ func (a *BetweenAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 	var errors []error
 	if len(request.Imp) == 0 {
 		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("No valid Imps in Bid Request"),
+			Message: "No valid Imps in Bid Request",
 		}}
 	}
 	ext, errors := preprocess(request)
-	if errors != nil && len(errors) > 0 {
+	if len(errors) > 0 {
 		return nil, errors
 	}
 	endpoint, err := a.buildEndpointURL(ext)
@@ -40,7 +40,7 @@ func (a *BetweenAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 	data, err := json.Marshal(request)
 	if err != nil {
 		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Error in packaging request to JSON"),
+			Message: "Error in packaging request to JSON",
 		}}
 	}
 	headers := http.Header{}
@@ -63,6 +63,7 @@ func (a *BetweenAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 		Uri:     endpoint,
 		Body:    data,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, errors
 }
 
@@ -102,14 +103,14 @@ func (a *BetweenAdapter) buildEndpointURL(e *openrtb_ext.ExtImpBetween) (string,
 func buildImpBanner(imp *openrtb2.Imp) error {
 	if imp.Banner == nil {
 		return &errortypes.BadInput{
-			Message: fmt.Sprintf("Request needs to include a Banner object"),
+			Message: "Request needs to include a Banner object",
 		}
 	}
 	banner := *imp.Banner
 	if banner.W == nil && banner.H == nil {
 		if len(banner.Format) == 0 {
 			return &errortypes.BadInput{
-				Message: fmt.Sprintf("Need at least one size to build request"),
+				Message: "Need at least one size to build request",
 			}
 		}
 		format := banner.Format[0]

@@ -10,11 +10,11 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 const (
@@ -128,6 +128,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		Method: http.MethodPost,
 		Uri:    requestURL.String(),
 		Body:   requestJSON,
+		ImpIDs: getImpIDs(formattedRequest.Imp),
 	}
 
 	return []*adapters.RequestData{requestData}, nil
@@ -395,4 +396,13 @@ func formatSspBcRequest(request *openrtb2.BidRequest) (*openrtb2.BidRequest, err
 	}
 
 	return request, nil
+}
+
+// getImpIDs uses imp.TagID instead of imp.ID as formattedRequest stores imp.ID in imp.TagID
+func getImpIDs(imps []openrtb2.Imp) []string {
+	impIDs := make([]string, len(imps))
+	for i := range imps {
+		impIDs[i] = imps[i].TagID
+	}
+	return impIDs
 }

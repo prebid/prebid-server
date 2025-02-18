@@ -6,10 +6,10 @@ import (
 
 	gpplib "github.com/prebid/go-gpp"
 	gppConstants "github.com/prebid/go-gpp/constants"
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	gppPolicy "github.com/prebid/prebid-server/privacy/gpp"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	gppPolicy "github.com/prebid/prebid-server/v2/privacy/gpp"
 )
 
 // Policy represents the CCPA regulatory information from an OpenRTB bid request.

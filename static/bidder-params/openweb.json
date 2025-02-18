@@ -2,25 +2,34 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "title": "OpenWeb Adapter Params",
   "description": "A schema which validates params accepted by the OpenWeb adapter",
-
   "type": "object",
   "properties": {
     "placementId": {
-      "type": "integer",
-      "description": "An ID which identifies this placement of the impression"
-    },
-    "siteId": {
-      "type": "integer",
-      "description": "An ID which identifies the site selling the impression"
+      "type": "string",
+      "description": "An ID which identifies this placement of the impression",
+      "minLength": 1
     },
     "aid": {
       "type": "integer",
-      "description": "An ID which identifies the channel"
+      "description": "Deprecated: An ID which identifies the channel"
     },
-    "bidFloor": {
-      "type": "number",
-      "description": "BidFloor, US Dollars"
+    "org": {
+      "type": "string",
+      "description": "The organization ID.",
+      "minLength": 1
     }
   },
-  "required": ["aid"]
+  "required": [ "placementId" ],
+  "oneOf": [
+    {
+      "required": [
+        "aid"
+      ]
+    },
+    {
+      "required": [
+        "org"
+      ]
+    }
+  ]
 }

@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/prebid/go-gdpr/consentconstants"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -14,68 +14,46 @@ func TestAccountGDPREnabledForChannelType(t *testing.T) {
 	trueValue, falseValue := true, false
 
 	tests := []struct {
-		description                      string
-		giveChannelType                  ChannelType
-		giveGDPREnabled                  *bool
-		giveWebGDPREnabled               *bool
-		giveWebGDPREnabledForIntegration *bool
-		wantEnabled                      *bool
+		description        string
+		giveChannelType    ChannelType
+		giveGDPREnabled    *bool
+		giveWebGDPREnabled *bool
+		wantEnabled        *bool
 	}{
 		{
-			description:                      "GDPR Web channel enabled, general GDPR disabled",
-			giveChannelType:                  ChannelWeb,
-			giveGDPREnabled:                  &falseValue,
-			giveWebGDPREnabled:               &trueValue,
-			giveWebGDPREnabledForIntegration: nil,
-			wantEnabled:                      &trueValue,
+			description:        "GDPR Web channel enabled, general GDPR disabled",
+			giveChannelType:    ChannelWeb,
+			giveGDPREnabled:    &falseValue,
+			giveWebGDPREnabled: &trueValue,
+			wantEnabled:        &trueValue,
 		},
 		{
-			description:                      "GDPR Web channel disabled, general GDPR enabled",
-			giveChannelType:                  ChannelWeb,
-			giveGDPREnabled:                  &trueValue,
-			giveWebGDPREnabled:               &falseValue,
-			giveWebGDPREnabledForIntegration: nil,
-			wantEnabled:                      &falseValue,
+			description:        "GDPR Web channel disabled, general GDPR enabled",
+			giveChannelType:    ChannelWeb,
+			giveGDPREnabled:    &trueValue,
+			giveWebGDPREnabled: &falseValue,
+			wantEnabled:        &falseValue,
 		},
 		{
-			description:                      "GDPR Web channel unspecified, general GDPR disabled",
-			giveChannelType:                  ChannelWeb,
-			giveGDPREnabled:                  &falseValue,
-			giveWebGDPREnabled:               nil,
-			giveWebGDPREnabledForIntegration: nil,
-			wantEnabled:                      &falseValue,
+			description:        "GDPR Web channel unspecified, general GDPR disabled",
+			giveChannelType:    ChannelWeb,
+			giveGDPREnabled:    &falseValue,
+			giveWebGDPREnabled: nil,
+			wantEnabled:        &falseValue,
 		},
 		{
-			description:                      "GDPR Web channel unspecified, general GDPR enabled",
-			giveChannelType:                  ChannelWeb,
-			giveGDPREnabled:                  &trueValue,
-			giveWebGDPREnabled:               nil,
-			giveWebGDPREnabledForIntegration: nil,
-			wantEnabled:                      &trueValue,
+			description:        "GDPR Web channel unspecified, general GDPR enabled",
+			giveChannelType:    ChannelWeb,
+			giveGDPREnabled:    &trueValue,
+			giveWebGDPREnabled: nil,
+			wantEnabled:        &trueValue,
 		},
 		{
-			description:                      "GDPR Web channel unspecified, general GDPR unspecified",
-			giveChannelType:                  ChannelWeb,
-			giveGDPREnabled:                  nil,
-			giveWebGDPREnabled:               nil,
-			giveWebGDPREnabledForIntegration: nil,
-			wantEnabled:                      nil,
-		},
-		{
-			description:                      "Inegration Enabled is set, and channel enabled isn't",
-			giveChannelType:                  ChannelWeb,
-			giveGDPREnabled:                  &falseValue,
-			giveWebGDPREnabled:               nil,
-			giveWebGDPREnabledForIntegration: &trueValue,
-			wantEnabled:                      &trueValue,
-		},
-		{
-			description:                      "Inegration Enabled is set, and channel enabled is set, channel should have precedence",
-			giveChannelType:                  ChannelWeb,
-			giveGDPREnabled:                  &falseValue,
-			giveWebGDPREnabled:               &trueValue,
-			giveWebGDPREnabledForIntegration: &falseValue,
-			wantEnabled:                      &trueValue,
+			description:        "GDPR Web channel unspecified, general GDPR unspecified",
+			giveChannelType:    ChannelWeb,
+			giveGDPREnabled:    nil,
+			giveWebGDPREnabled: nil,
+			wantEnabled:        nil,
 		},
 	}
 
@@ -85,9 +63,6 @@ func TestAccountGDPREnabledForChannelType(t *testing.T) {
 				Enabled: tt.giveGDPREnabled,
 				ChannelEnabled: AccountChannel{
 					Web: tt.giveWebGDPREnabled,
-				},
-				IntegrationEnabled: AccountChannel{
-					Web: tt.giveWebGDPREnabledForIntegration,
 				},
 			},
 		}
@@ -107,68 +82,46 @@ func TestAccountCCPAEnabledForChannelType(t *testing.T) {
 	trueValue, falseValue := true, false
 
 	tests := []struct {
-		description                      string
-		giveChannelType                  ChannelType
-		giveCCPAEnabled                  *bool
-		giveWebCCPAEnabled               *bool
-		giveWebCCPAEnabledForIntegration *bool
-		wantEnabled                      *bool
+		description        string
+		giveChannelType    ChannelType
+		giveCCPAEnabled    *bool
+		giveWebCCPAEnabled *bool
+		wantEnabled        *bool
 	}{
 		{
-			description:                      "CCPA Web channel enabled, general CCPA disabled",
-			giveChannelType:                  ChannelWeb,
-			giveCCPAEnabled:                  &falseValue,
-			giveWebCCPAEnabled:               &trueValue,
-			giveWebCCPAEnabledForIntegration: nil,
-			wantEnabled:                      &trueValue,
+			description:        "CCPA Web channel enabled, general CCPA disabled",
+			giveChannelType:    ChannelWeb,
+			giveCCPAEnabled:    &falseValue,
+			giveWebCCPAEnabled: &trueValue,
+			wantEnabled:        &trueValue,
 		},
 		{
-			description:                      "CCPA Web channel disabled, general CCPA enabled",
-			giveChannelType:                  ChannelWeb,
-			giveCCPAEnabled:                  &trueValue,
-			giveWebCCPAEnabled:               &falseValue,
-			giveWebCCPAEnabledForIntegration: nil,
-			wantEnabled:                      &falseValue,
+			description:        "CCPA Web channel disabled, general CCPA enabled",
+			giveChannelType:    ChannelWeb,
+			giveCCPAEnabled:    &trueValue,
+			giveWebCCPAEnabled: &falseValue,
+			wantEnabled:        &falseValue,
 		},
 		{
-			description:                      "CCPA Web channel unspecified, general CCPA disabled",
-			giveChannelType:                  ChannelWeb,
-			giveCCPAEnabled:                  &falseValue,
-			giveWebCCPAEnabled:               nil,
-			giveWebCCPAEnabledForIntegration: nil,
-			wantEnabled:                      &falseValue,
+			description:        "CCPA Web channel unspecified, general CCPA disabled",
+			giveChannelType:    ChannelWeb,
+			giveCCPAEnabled:    &falseValue,
+			giveWebCCPAEnabled: nil,
+			wantEnabled:        &falseValue,
 		},
 		{
-			description:                      "CCPA Web channel unspecified, general CCPA enabled",
-			giveChannelType:                  ChannelWeb,
-			giveCCPAEnabled:                  &trueValue,
-			giveWebCCPAEnabled:               nil,
-			giveWebCCPAEnabledForIntegration: nil,
-			wantEnabled:                      &trueValue,
+			description:        "CCPA Web channel unspecified, general CCPA enabled",
+			giveChannelType:    ChannelWeb,
+			giveCCPAEnabled:    &trueValue,
+			giveWebCCPAEnabled: nil,
+			wantEnabled:        &trueValue,
 		},
 		{
-			description:                      "CCPA Web channel unspecified, general CCPA unspecified",
-			giveChannelType:                  ChannelWeb,
-			giveCCPAEnabled:                  nil,
-			giveWebCCPAEnabled:               nil,
-			giveWebCCPAEnabledForIntegration: nil,
-			wantEnabled:                      nil,
-		},
-		{
-			description:                      "Inegration Enabled is set, and channel enabled isn't",
-			giveChannelType:                  ChannelWeb,
-			giveCCPAEnabled:                  &falseValue,
-			giveWebCCPAEnabled:               nil,
-			giveWebCCPAEnabledForIntegration: &trueValue,
-			wantEnabled:                      &trueValue,
-		},
-		{
-			description:                      "Inegration Enabled is set, and channel enabled is set, channel should have precedence",
-			giveChannelType:                  ChannelWeb,
-			giveCCPAEnabled:                  &falseValue,
-			giveWebCCPAEnabled:               &trueValue,
-			giveWebCCPAEnabledForIntegration: &falseValue,
-			wantEnabled:                      &trueValue,
+			description:        "CCPA Web channel unspecified, general CCPA unspecified",
+			giveChannelType:    ChannelWeb,
+			giveCCPAEnabled:    nil,
+			giveWebCCPAEnabled: nil,
+			wantEnabled:        nil,
 		},
 	}
 
@@ -178,9 +131,6 @@ func TestAccountCCPAEnabledForChannelType(t *testing.T) {
 				Enabled: tt.giveCCPAEnabled,
 				ChannelEnabled: AccountChannel{
 					Web: tt.giveWebCCPAEnabled,
-				},
-				IntegrationEnabled: AccountChannel{
-					Web: tt.giveWebCCPAEnabledForIntegration,
 				},
 			},
 		}
@@ -205,6 +155,7 @@ func TestAccountChannelGetByChannelType(t *testing.T) {
 		giveAppEnabled   *bool
 		giveVideoEnabled *bool
 		giveWebEnabled   *bool
+		giveDOOHEnabled  *bool
 		giveChannelType  ChannelType
 		wantEnabled      *bool
 	}{
@@ -276,6 +227,23 @@ func TestAccountChannelGetByChannelType(t *testing.T) {
 			giveChannelType: ChannelWeb,
 			wantEnabled:     &trueValue,
 		},
+		{
+			description:     "DOOH channel setting unspecified, returns nil",
+			giveChannelType: ChannelDOOH,
+			wantEnabled:     nil,
+		},
+		{
+			description:     "DOOH channel disabled, returns false",
+			giveDOOHEnabled: &falseValue,
+			giveChannelType: ChannelDOOH,
+			wantEnabled:     &falseValue,
+		},
+		{
+			description:     "DOOH channel enabled, returns true",
+			giveDOOHEnabled: &trueValue,
+			giveChannelType: ChannelDOOH,
+			wantEnabled:     &trueValue,
+		},
 	}
 
 	for _, tt := range tests {
@@ -284,6 +252,7 @@ func TestAccountChannelGetByChannelType(t *testing.T) {
 			App:   tt.giveAppEnabled,
 			Video: tt.giveVideoEnabled,
 			Web:   tt.giveWebEnabled,
+			DOOH:  tt.giveDOOHEnabled,
 		}
 
 		result := accountChannel.GetByChannelType(tt.giveChannelType)
@@ -507,48 +476,40 @@ func TestPurposeVendorExceptions(t *testing.T) {
 	tests := []struct {
 		description              string
 		givePurposeConfigNil     bool
-		givePurpose1ExceptionMap map[openrtb_ext.BidderName]struct{}
-		givePurpose2ExceptionMap map[openrtb_ext.BidderName]struct{}
+		givePurpose1ExceptionMap map[string]struct{}
+		givePurpose2ExceptionMap map[string]struct{}
 		givePurpose              consentconstants.Purpose
-		wantExceptionMap         map[openrtb_ext.BidderName]struct{}
-		wantExceptionMapSet      bool
+		wantExceptionMap         map[string]struct{}
 	}{
 		{
 			description:          "Purpose config is nil",
 			givePurposeConfigNil: true,
 			givePurpose:          1,
-			// wantExceptionMap:     map[openrtb_ext.BidderName]struct{}{},
-			wantExceptionMap:    nil,
-			wantExceptionMapSet: false,
+			wantExceptionMap:     nil,
 		},
 		{
-			description: "Nil - exception map not defined for purpose",
-			givePurpose: 1,
-			// wantExceptionMap:    map[openrtb_ext.BidderName]struct{}{},
-			wantExceptionMap:    nil,
-			wantExceptionMapSet: false,
+			description:      "Nil - exception map not defined for purpose",
+			givePurpose:      1,
+			wantExceptionMap: nil,
 		},
 		{
 			description:              "Empty - exception map empty for purpose",
 			givePurpose:              1,
-			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{},
-			wantExceptionMap:         map[openrtb_ext.BidderName]struct{}{},
-			wantExceptionMapSet:      true,
+			givePurpose1ExceptionMap: map[string]struct{}{},
+			wantExceptionMap:         map[string]struct{}{},
 		},
 		{
 			description:              "Nonempty - exception map with multiple entries for purpose",
 			givePurpose:              1,
-			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
-			wantExceptionMap:         map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
-			wantExceptionMapSet:      true,
+			givePurpose1ExceptionMap: map[string]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
+			wantExceptionMap:         map[string]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
 		},
 		{
 			description:              "Nonempty - exception map with multiple entries for different purpose",
 			givePurpose:              2,
-			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
-			givePurpose2ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "openx": {}},
-			wantExceptionMap:         map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "openx": {}},
-			wantExceptionMapSet:      true,
+			givePurpose1ExceptionMap: map[string]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
+			givePurpose2ExceptionMap: map[string]struct{}{"rubicon": {}, "appnexus": {}, "openx": {}},
+			wantExceptionMap:         map[string]struct{}{"rubicon": {}, "appnexus": {}, "openx": {}},
 		},
 	}
 
@@ -569,7 +530,11 @@ func TestPurposeVendorExceptions(t *testing.T) {
 		value, present := accountGDPR.PurposeVendorExceptions(tt.givePurpose)
 
 		assert.Equal(t, tt.wantExceptionMap, value, tt.description)
-		assert.Equal(t, tt.wantExceptionMapSet, present, tt.description)
+		if tt.wantExceptionMap == nil {
+			assert.Equal(t, false, present)
+		} else {
+			assert.Equal(t, true, present)
+		}
 	}
 }
 
@@ -825,41 +790,7 @@ func TestModulesGetConfig(t *testing.T) {
 	}
 }
 
-func TestAccountChannelIsSet(t *testing.T) {
-	trueBool := true
-	falseBool := false
-
-	testCases := []struct {
-		name                string
-		givenAccountChannel *AccountChannel
-		expected            bool
-	}{
-		{
-			name:                "AccountChannelSetAllFields",
-			givenAccountChannel: &AccountChannel{AMP: &trueBool, App: &falseBool, Video: &falseBool, Web: &falseBool},
-			expected:            true,
-		},
-		{
-			name:                "AccountChannelNotSet",
-			givenAccountChannel: &AccountChannel{},
-			expected:            false,
-		},
-		{
-			name:                "AccountChannelSetAmpOnly",
-			givenAccountChannel: &AccountChannel{AMP: &trueBool},
-			expected:            true,
-		},
-	}
-
-	for _, test := range testCases {
-		t.Run(test.name, func(t *testing.T) {
-			assert.Equal(t, test.expected, test.givenAccountChannel.IsSet())
-		})
-	}
-}
-
 func TestAccountPriceFloorsValidate(t *testing.T) {
-
 	tests := []struct {
 		description string
 		pf          *AccountPriceFloors
@@ -871,12 +802,22 @@ func TestAccountPriceFloorsValidate(t *testing.T) {
 				EnforceFloorsRate: 100,
 				MaxRule:           200,
 				MaxSchemaDims:     10,
+				Fetcher: AccountFloorFetch{
+					Period:  300,
+					MaxAge:  600,
+					Timeout: 12,
+				},
 			},
 		},
 		{
 			description: "Invalid configuration: EnforceFloorRate:110",
 			pf: &AccountPriceFloors{
 				EnforceFloorsRate: 110,
+				Fetcher: AccountFloorFetch{
+					Period:  300,
+					MaxAge:  600,
+					Timeout: 12,
+				},
 			},
 			want: []error{errors.New("account_defaults.price_floors.enforce_floors_rate should be between 0 and 100")},
 		},
@@ -884,6 +825,11 @@ func TestAccountPriceFloorsValidate(t *testing.T) {
 			description: "Invalid configuration: EnforceFloorRate:-10",
 			pf: &AccountPriceFloors{
 				EnforceFloorsRate: -10,
+				Fetcher: AccountFloorFetch{
+					Period:  300,
+					MaxAge:  600,
+					Timeout: 12,
+				},
 			},
 			want: []error{errors.New("account_defaults.price_floors.enforce_floors_rate should be between 0 and 100")},
 		},
@@ -891,6 +837,11 @@ func TestAccountPriceFloorsValidate(t *testing.T) {
 			description: "Invalid configuration: MaxRule:-20",
 			pf: &AccountPriceFloors{
 				MaxRule: -20,
+				Fetcher: AccountFloorFetch{
+					Period:  300,
+					MaxAge:  600,
+					Timeout: 12,
+				},
 			},
 			want: []error{errors.New("account_defaults.price_floors.max_rules should be between 0 and 2147483647")},
 		},
@@ -898,8 +849,115 @@ func TestAccountPriceFloorsValidate(t *testing.T) {
 			description: "Invalid configuration: MaxSchemaDims:100",
 			pf: &AccountPriceFloors{
 				MaxSchemaDims: 100,
+				Fetcher: AccountFloorFetch{
+					Period:  300,
+					MaxAge:  600,
+					Timeout: 12,
+				},
 			},
 			want: []error{errors.New("account_defaults.price_floors.max_schema_dims should be between 0 and 20")},
+		},
+		{
+			description: "Invalid period for fetch",
+			pf: &AccountPriceFloors{
+				EnforceFloorsRate: 100,
+				MaxRule:           200,
+				MaxSchemaDims:     10,
+				Fetcher: AccountFloorFetch{
+					Period:  100,
+					MaxAge:  600,
+					Timeout: 12,
+				},
+			},
+			want: []error{errors.New("account_defaults.price_floors.fetch.period_sec should not be less than 300 seconds")},
+		},
+		{
+			description: "Invalid max age for fetch",
+			pf: &AccountPriceFloors{
+				EnforceFloorsRate: 100,
+				MaxRule:           200,
+				MaxSchemaDims:     10,
+				Fetcher: AccountFloorFetch{
+					Period:  300,
+					MaxAge:  500,
+					Timeout: 12,
+				},
+			},
+			want: []error{errors.New("account_defaults.price_floors.fetch.max_age_sec should not be less than 600 seconds and greater than maximum integer value")},
+		},
+		{
+			description: "Period is greater than max age",
+			pf: &AccountPriceFloors{
+				EnforceFloorsRate: 100,
+				MaxRule:           200,
+				MaxSchemaDims:     10,
+				Fetcher: AccountFloorFetch{
+					Period:  700,
+					MaxAge:  600,
+					Timeout: 12,
+				},
+			},
+			want: []error{errors.New("account_defaults.price_floors.fetch.period_sec should be less than account_defaults.price_floors.fetch.max_age_sec")},
+		},
+		{
+			description: "Invalid timeout",
+			pf: &AccountPriceFloors{
+				EnforceFloorsRate: 100,
+				MaxRule:           200,
+				MaxSchemaDims:     10,
+				Fetcher: AccountFloorFetch{
+					Period:  300,
+					MaxAge:  600,
+					Timeout: 4,
+				},
+			},
+			want: []error{errors.New("account_defaults.price_floors.fetch.timeout_ms should be between 10 to 10,000 miliseconds")},
+		},
+		{
+			description: "Invalid Max Rules",
+			pf: &AccountPriceFloors{
+				EnforceFloorsRate: 100,
+				MaxRule:           200,
+				MaxSchemaDims:     10,
+				Fetcher: AccountFloorFetch{
+					Period:   300,
+					MaxAge:   600,
+					Timeout:  12,
+					MaxRules: -2,
+				},
+			},
+			want: []error{errors.New("account_defaults.price_floors.fetch.max_rules should be greater than or equal to 0")},
+		},
+		{
+			description: "Invalid Max File size",
+			pf: &AccountPriceFloors{
+				EnforceFloorsRate: 100,
+				MaxRule:           200,
+				MaxSchemaDims:     10,
+				Fetcher: AccountFloorFetch{
+					Period:        300,
+					MaxAge:        600,
+					Timeout:       12,
+					MaxFileSizeKB: -1,
+				},
+			},
+			want: []error{errors.New("account_defaults.price_floors.fetch.max_file_size_kb should be greater than or equal to 0")},
+		},
+		{
+			description: "Invalid max_schema_dims",
+			pf: &AccountPriceFloors{
+				EnforceFloorsRate: 100,
+				MaxRule:           200,
+				MaxSchemaDims:     10,
+				Fetcher: AccountFloorFetch{
+					Period:        300,
+					MaxAge:        600,
+					Timeout:       12,
+					MaxFileSizeKB: 10,
+					MaxSchemaDims: 40,
+				},
+			},
+			want: []error{errors.New("account_defaults.price_floors.fetch.max_schema_dims should not be less than 0 and greater than 20")},
 		},
 	}
 	for _, tt := range tests {

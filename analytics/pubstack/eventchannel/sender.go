@@ -3,10 +3,11 @@ package eventchannel
 import (
 	"bytes"
 	"fmt"
-	"github.com/golang/glog"
 	"net/http"
 	"net/url"
 	"path"
+
+	"github.com/golang/glog"
 )
 
 type Sender = func(payload []byte) error
@@ -26,6 +27,7 @@ func NewHttpSender(client *http.Client, endpoint string) Sender {
 		if err != nil {
 			return err
 		}
+		resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
 			glog.Errorf("[pubstack] Wrong code received %d instead of %d", resp.StatusCode, http.StatusOK)

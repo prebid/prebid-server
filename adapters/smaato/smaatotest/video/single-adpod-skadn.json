@@ -221,9 +221,10 @@
                         }
                     },
                     "ext": {
-                        "client": "prebid_server_0.6"
+                        "client": "prebid_server_0.7"
                     }
-                }
+                },
+                "impIDs":["1_1","1_2"]
             },
             "mockResponse": {
                 "status": 200,

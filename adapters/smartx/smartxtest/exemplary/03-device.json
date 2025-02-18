@@ -1,0 +1,122 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id-video",
+    "device": {
+      "ua": "Mozilla/5.0 (Linux; Android 12; SAMSUNG SM-G780G) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/17.0 Chrome/96.0.4664.104 Mobile Safari/537.36",
+      "geo": {
+        "lat": 48.1663,
+        "lon": 11.5683,
+        "type": 2,
+        "country": "DEU",
+        "region": "BY",
+        "city": "Munich",
+        "zip": "81249",
+        "ipservice": 3
+      },
+      "dnt": 0,
+      "lmt": 0,
+      "ip": "0.0.0.0",
+      "devicetype": 4,
+      "make": "Samsung",
+      "model": "SM-G780G",
+      "os": "Android",
+      "language": "en"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ]
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bid.smartclip.net/bid/1005",
+        "body": {
+          "id": "test-request-id-video",
+          "device": {
+            "ua": "Mozilla/5.0 (Linux; Android 12; SAMSUNG SM-G780G) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/17.0 Chrome/96.0.4664.104 Mobile Safari/537.36",
+            "geo": {
+              "lat": 48.1663,
+              "lon": 11.5683,
+              "type": 2,
+              "country": "DEU",
+              "region": "BY",
+              "city": "Munich",
+              "zip": "81249",
+              "ipservice": 3
+            },
+            "dnt": 0,
+            "lmt": 0,
+            "ip": "0.0.0.0",
+            "devicetype": 4,
+            "make": "Samsung",
+            "model": "SM-G780G",
+            "os": "Android",
+            "language": "en"
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ]
+              }
+            }
+          ]
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id-video",
+          "seatbid": [
+            {
+              "seat": "smartadserver",
+              "bid": [
+                {
+                  "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                  "impid": "test-imp-id-video",
+                  "price": 0.500000,
+                  "adm": "some-test-ad",
+                  "crid": "crid_10",
+                  "h": 576,
+                  "w": 1024,
+                  "mtype": 2
+                }
+              ]
+            }
+          ],
+          "cur": "EUR"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+            "impid": "test-imp-id-video",
+            "price": 0.500000,
+            "adm": "some-test-ad",
+            "crid": "crid_10",
+            "h": 576,
+            "w": 1024,
+            "mtype": 2
+          },
+          "currency": "EUR",
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

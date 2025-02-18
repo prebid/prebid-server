@@ -87,6 +87,8 @@
               "ext": {
                 "origbidcpm": 0.01,
                 "prebid": {
+                  "meta": {
+                  },
                   "type": "banner",
                   "targeting": {
                     "hb_bidder": "appnexus",

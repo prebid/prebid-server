@@ -20,6 +20,9 @@
       "gender": "M"
     }
   },
+  "biddersWithGlobalFPD": [
+    "appnexus"
+  ],
   "bidderConfigFPD": {
     "appnexus": {
       "app": {
@@ -43,4 +46,3 @@
     }
   ]
 }
-

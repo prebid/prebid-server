@@ -14,6 +14,10 @@
         "banner" : {
           "format": [{"w": 300,"h": 250}]
         },
+        "native" : {
+          "request": "{native: \"request\"}",
+          "ver": "1.2"
+        },
         "ext": {
           "bidder": {
             "zoneId": 102,
@@ -36,14 +40,29 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://pbs.adksrv.com/hb?zone=102",
+        "uri": "http://pbs.adksrv.com/hb?zone=102",
         "body": {
           "id": "0000000000001",
           "imp": [
             {
-              "id": "multi-adunit",
+              "id": "multi-adunitb__mf",
               "banner": {
                 "format": [{"w": 300, "h": 250}]
+              }
+            },
+            {
+              "id": "multi-adunitv__mf",
+              "video": {
+                "mimes": ["video/mp4"],
+                "w": 640,
+                "h": 480
+              }
+            },
+            {
+              "id": "multi-adunitn__mf",
+              "native" : {
+                "request": "{native: \"request\"}",
+                "ver": "1.2"
               }
             }
           ],
@@ -54,7 +73,8 @@
           "user": {
             "buyeruid": "A-38327932832"
           }
-        }
+        },
+        "impIDs":["multi-adunitb__mf", "multi-adunitv__mf", "multi-adunitn__mf"]
       },
       "mockResponse": {
         "status": 200,
@@ -65,12 +85,39 @@
               "bid": [
                 {
                   "id": "bid02",
-                  "impid": "multi-adunit",
+                  "impid": "multi-adunitb__mf",
                   "price": 2.25,
                   "cid": "1001",
                   "crid": "2002",
                   "adid": "2002",
                   "adm": "<!-- admarkup -->",
+                  "mtype": 1,
+                  "adomain": [
+                    "tag-example.com"
+                  ]
+                },
+                {
+                  "id": "bid03",
+                  "impid": "multi-adunitn__mf",
+                  "price": 1.25,
+                  "cid": "601",
+                  "crid": "702",
+                  "adid": "702",
+                  "adm": "<!-- native response -->",
+                  "mtype": 4,
+                  "adomain": [
+                    "tag-example.com"
+                  ]
+                },
+                {
+                  "id": "bid04",
+                  "impid": "multi-adunita__mf",
+                  "price": 1.0,
+                  "cid": "161",
+                  "crid": "172",
+                  "adid": "172",
+                  "nurl": "http://adkernel.com/win?f=nurl",
+                  "mtype": 3,
                   "adomain": [
                     "tag-example.com"
                   ]
@@ -98,9 +145,42 @@
             ],
             "cid": "1001",
             "adid": "2002",
-            "crid": "2002"
+            "crid": "2002",
+            "mtype": 1
           },
           "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "bid03",
+            "impid": "multi-adunit",
+            "price": 1.25,
+            "adm": "<!-- native response -->",
+            "adomain": [
+              "tag-example.com"
+            ],
+            "cid": "601",
+            "crid": "702",
+            "adid": "702",
+            "mtype": 4
+          },
+          "type": "native"
+        },
+        {
+          "bid": {
+            "id": "bid04",
+            "impid": "multi-adunit",
+            "price": 1.0,
+            "nurl": "http://adkernel.com/win?f=nurl",
+            "adomain": [
+              "tag-example.com"
+            ],
+            "cid": "161",
+            "crid": "172",
+            "adid": "172",
+            "mtype": 3
+          },
+          "type": "audio"
         }
       ]
     }

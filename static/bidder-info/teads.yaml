@@ -1,0 +1,9 @@
+endpoint: "https://psrv.teads.tv/prebid-server/bid-request"
+maintainer:
+  email: "innov-ssp@teads.tv"
+gvlVendorID: 132
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video

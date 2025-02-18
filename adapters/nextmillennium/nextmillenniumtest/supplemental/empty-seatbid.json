@@ -33,9 +33,15 @@
         "body": {
           "id": "testid",
           "ext": {
+            "nextMillennium": {},
             "prebid": {
               "storedrequest": {
                 "id": "7819"
+              },
+              "server": {
+                "datacenter": "2",
+                "externalurl": "http://hosturl.com",
+               "gvlid": 1
               }
             }
           },
@@ -56,6 +62,7 @@
                 "w": 320
               },
               "ext": {
+                "nextMillennium": {},
                 "prebid": {
                   "storedrequest": {
                     "id": "7819"
@@ -65,7 +72,8 @@
               "id": "testimpid"
             }
           ]
-        }
+        },
+        "impIDs":["testimpid"]
       },
       "mockResponse": {
         "status": 200,

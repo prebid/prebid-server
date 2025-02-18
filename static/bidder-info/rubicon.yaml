@@ -1,5 +1,19 @@
-endpoint: "http://exapi-us-east.rubiconproject.com/a/api/exchange.json"
+# Contact global-support@magnite.com to ask about enabling a connection to the Magnite (formerly Rubicon) exchange.
+# We have the following regional endpoint domains: exapi-us-east, exapi-us-west, exapi-apac, exapi-eu
+# Please deploy this config in each of your datacenters with the appropriate regional subdomain
+
+# NOTE: Values in this file can (and often should) be overridden by pbs.json,
+# pbs.yaml, or environment variables.
+
+endpoint: "https://REGION.rubiconproject.com/a/api/exchange"
+endpointCompression: GZIP
+geoscope:
+  - global
 disabled: true
+xapi:
+  username: GET_FROM_MAGNITE
+  password: GET_FROM_MAGNITE
+  tracker: SAME_AS_USERNAME
 maintainer:
   email: "header-bidding@rubiconproject.com"
 gvlVendorID: 52
@@ -15,7 +29,6 @@ capabilities:
       - video
       - native
 userSync:
-  # rubicon supports user syncing, but requires configuration by the host. contact this
-  # bidder directly at the email address in this file to ask about enabling user sync.
+  # rubicon supports user syncing, but requires configuration. Please contact global-support@magnite.com.
   supports:
     - redirect

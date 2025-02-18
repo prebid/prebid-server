@@ -3,7 +3,7 @@ package gdpr
 import (
 	"strconv"
 
-	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/v2/errortypes"
 )
 
 type Signal int

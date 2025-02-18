@@ -1,0 +1,260 @@
+{
+  "incomingRequest": {
+    "ortbRequest": {
+      "id": "some-request-id",
+      "site": {
+        "page": "test.somepage.com"
+      },
+      "imp": [
+        {
+          "id": "imp-id-1",
+          "video": {
+            "mimes": [
+              "video/mp4"
+            ]
+          },
+          "ext": {
+            "prebid": {
+              "bidder": {
+                "pubmatic": {
+                  "publisherId": 5890
+                },
+                "appnexus": {
+                  "placementId": 1
+                }
+              }
+            }
+          }
+        }
+      ],
+      "ext": {
+        "prebid": {
+          "alternatebiddercodes": {
+            "enabled": true,
+            "bidders": {
+              "PUBmatic": {
+                "enabled": true,
+                "allowedbiddercodes": [
+                  "groupm"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "outgoingRequests": {
+    "pubmatic": {
+      "expectRequest": {
+        "ortbRequest": {
+          "id": "some-request-id",
+          "site": {
+            "page": "test.somepage.com"
+          },
+          "imp": [
+            {
+              "id": "imp-id-1",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "publisherId": 5890
+                }
+              }
+            }
+          ],
+          "ext": {
+            "prebid": {
+              "alternatebiddercodes": {
+                "enabled": true,
+                "bidders": {
+                  "pubmatic": {
+                    "enabled": true,
+                    "allowedbiddercodes": [
+                      "groupm"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "mockResponse": {
+        "pbsSeatBids": [
+          {
+            "pbsBids": [
+              {
+                "ortbBid": {
+                  "id": "pubmatic-bid-1",
+                  "impid": "imp-id-1",
+                  "price": 0.71
+                },
+                "bidType": "video",
+                "bidMeta": {}
+              }
+            ],
+            "seat": "pubmatic"
+          },
+          {
+            "pbsBids": [
+              {
+                "ortbBid": {
+                  "id": "pubmatic-bid-2",
+                  "impid": "imp-id-1",
+                  "price": 0.51
+                },
+                "bidType": "video",
+                "bidMeta": {}
+              }
+            ],
+            "seat": "groupm"
+          }
+        ]
+      }
+    },
+    "appnexus": {
+      "expectRequest": {
+        "ortbRequest": {
+          "id": "some-request-id",
+          "site": {
+            "page": "test.somepage.com"
+          },
+          "imp": [
+            {
+              "id": "imp-id-1",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": 1
+                }
+              }
+            }
+          ],
+          "ext": {
+            "prebid": {
+              "alternatebiddercodes": {
+                "enabled": true,
+                "bidders": null
+              }
+            }
+          }
+        }
+      },
+      "mockResponse": {
+        "pbsSeatBids": [
+          {
+            "pbsBids": [
+              {
+                "ortbBid": {
+                  "id": "appnexus-bid-1",
+                  "impid": "imp-id-1",
+                  "price": 0.3
+                },
+                "bidType": "banner",
+                "bidMeta": {}
+              }
+            ],
+            "seat": "appnexus"
+          },
+          {
+            "pbsBids": [
+              {
+                "ortbBid": {
+                  "id": "appnexus-bid-2",
+                  "impid": "imp-id-1",
+                  "price": 0.3
+                },
+                "bidType": "banner",
+                "bidMeta": {
+                }
+              }
+            ],
+            "seat": "groupm"
+          }
+        ]
+      }
+    }
+  },
+  "response": {
+    "bids": {
+      "id": "some-request-id",
+      "seatbid": [
+        {
+          "seat": "groupm",
+          "bid": [
+            {
+              "id": "pubmatic-bid-2",
+              "impid": "imp-id-1",
+              "price": 0.51,
+              "ext": {
+                "origbidcpm": 0.51,
+                "prebid": {
+                  "meta": {},
+                  "type": "video"
+                }
+              }
+            },
+            {
+              "id": "appnexus-bid-2",
+              "impid": "imp-id-1",
+              "price": 0.3,
+              "ext": {
+                "origbidcpm": 0.3,
+                "prebid": {
+                  "meta": {
+                  },
+                  "type": "banner"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "seat": "pubmatic",
+          "bid": [
+            {
+              "id": "pubmatic-bid-1",
+              "impid": "imp-id-1",
+              "price": 0.71,
+              "ext": {
+                "origbidcpm": 0.71,
+                "prebid": {
+                  "meta": {
+                  },
+                  "type": "video"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "seat": "appnexus",
+          "bid": [
+            {
+              "id": "appnexus-bid-1",
+              "impid": "imp-id-1",
+              "price": 0.3,
+              "ext": {
+                "origbidcpm": 0.3,
+                "prebid": {
+                  "meta": {
+                  },
+                  "type": "banner"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

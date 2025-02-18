@@ -3,7 +3,7 @@ package hookstage
 import (
 	"errors"
 
-	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/v2/adapters"
 )
 
 func (c *ChangeSet[T]) RawBidderResponse() ChangeSetRawBidderResponse[T] {

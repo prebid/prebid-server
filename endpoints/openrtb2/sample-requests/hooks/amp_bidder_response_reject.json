@@ -4,7 +4,7 @@
   "config": {
     "mockBidders": [
       {"bidderName": "appnexus", "currency": "USD", "price": 2},
-      {"bidderName": "applogy", "currency": "USD", "price": 1}
+      {"bidderName": "rubicon", "currency": "USD", "price": 1}
     ]
   },
   "mockBidRequest": {
@@ -29,7 +29,7 @@
               "appnexus": {
                 "placementId": 12883451
               },
-              "applogy": {
+              "rubicon": {
                 "placementId": 12883451
               }
             }
@@ -42,23 +42,23 @@
         "debug": true,
         "aliases": {
           "unknown": "appnexus",
-          "foo": "applogy"
+          "foo": "rubicon"
         }
       }
     }
   },
   "expectedAmpResponse": {
     "targeting": {
-      "hb_bidder": "applogy",
-      "hb_bidder_applogy": "applogy",
+      "hb_bidder": "rubicon",
+      "hb_bidder_rubicon": "rubicon",
       "hb_cache_host": "www.pbcserver.com",
-      "hb_cache_host_applog": "www.pbcserver.com",
+      "hb_cache_host_rubico": "www.pbcserver.com",
       "hb_cache_id": "0",
-      "hb_cache_id_applogy": "0",
+      "hb_cache_id_rubicon": "0",
       "hb_cache_path": "/pbcache/endpoint",
-      "hb_cache_path_applog": "/pbcache/endpoint",
+      "hb_cache_path_rubico": "/pbcache/endpoint",
       "hb_pb": "1.00",
-      "hb_pb_applogy": "1.00"
+      "hb_pb_rubicon": "1.00"
     },
     "ortb2": {
       "ext": {
@@ -103,7 +103,7 @@
                       ]
                     },
                     {
-                      "entity": "applogy",
+                      "entity": "rubicon",
                       "groups": [
                         {
                           "invocation_results": [

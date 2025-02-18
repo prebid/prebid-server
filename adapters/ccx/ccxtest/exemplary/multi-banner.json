@@ -85,7 +85,8 @@
              "gdpr":1
             }
           }
-        }
+        },
+        "impIDs":["test-imp-id-1","test-imp-id-2"]
       },
       "mockResponse": {
         "status": 200,

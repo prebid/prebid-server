@@ -20,6 +20,10 @@
     "slot": {
       "type": "integer",
       "description": "A slot id used to identify a slot placement mapped to a GumGum zone or publisher"
+    }, 
+    "product": {
+      "type": "string",
+      "description": "Product param that allow support for Desktop Skins - display and video"
     }
   },
   "anyOf": [

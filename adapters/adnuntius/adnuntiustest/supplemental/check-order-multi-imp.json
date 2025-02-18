@@ -67,7 +67,8 @@
 					],
 					"context": "prebid.org",
 					"metaData": {}
-				}
+				},
+				"impIDs":["test-imp-id","test-imp-id-2"]
 			},
 			"mockResponse": {
 				"status": 200,

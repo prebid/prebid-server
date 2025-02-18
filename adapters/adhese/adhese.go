@@ -10,12 +10,12 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/macros"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type AdheseAdapter struct {
@@ -124,6 +124,7 @@ func (a *AdheseAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adap
 	return []*adapters.RequestData{{
 		Method: "GET",
 		Uri:    complete_url,
+		ImpIDs: []string{imp.ID},
 	}}, errs
 }
 
@@ -141,6 +142,9 @@ func (a *AdheseAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 		return nil, []error{err, WrapServerError(fmt.Sprintf("Response %v could not be parsed as generic Adhese bid.", string(response.Body)))}
 	}
 
+	if len(adheseBidResponseArray) == 0 {
+		return nil, nil
+	}
 	var adheseBid = adheseBidResponseArray[0]
 
 	if adheseBid.Origin == "JERLICIA" {

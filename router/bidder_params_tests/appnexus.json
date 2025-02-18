@@ -1,0 +1,27 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Sample schema",
+    "description": "A sample schema to test the bidder/params endpoint",
+    "type": "object",
+    "properties": {
+        "integer_param": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "A customer id"
+        },
+        "string_param_1": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Text with blanks in between"
+        },
+        "string_param_2": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Text_with_no_blanks_in_between"
+        }
+    },
+    "required": [
+        "integer_param",
+        "string_param_2"
+    ]
+}

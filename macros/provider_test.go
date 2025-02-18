@@ -3,9 +3,9 @@ package macros
 import (
 	"testing"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/exchange/entities"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/exchange/entities"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -199,7 +199,7 @@ func TestPopulateRequestMacros(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			b := &macroProvider{
+			b := &MacroProvider{
 				macros: map[string]string{},
 			}
 			b.populateRequestMacros(tt.args.reqWrapper)
@@ -300,7 +300,7 @@ func TestPopulateBidMacros(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			b := &macroProvider{
+			b := &MacroProvider{
 				macros: map[string]string{},
 			}
 			b.PopulateBidMacros(tt.args.bid, tt.args.seat)
@@ -401,7 +401,7 @@ func TestPopulateEventMacros(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			b := &macroProvider{
+			b := &MacroProvider{
 				macros: map[string]string{},
 			}
 			b.PopulateEventMacros(tt.args.vastCreativeID, tt.args.eventType, tt.args.vastEvent)

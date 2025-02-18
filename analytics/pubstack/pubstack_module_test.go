@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
-	"github.com/prebid/prebid-server/analytics"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/analytics"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -50,47 +50,47 @@ func TestNewModuleSuccess(t *testing.T) {
 	tests := []struct {
 		description string
 		feature     string
-		logObject   func(analytics.PBSAnalyticsModule)
+		logObject   func(analytics.Module)
 	}{
 		{
 			description: "auction events are only published when logging an auction object with auction feature on",
 			feature:     auction,
-			logObject: func(module analytics.PBSAnalyticsModule) {
+			logObject: func(module analytics.Module) {
 				module.LogAuctionObject(&analytics.AuctionObject{Status: http.StatusOK})
 			},
 		},
 		{
 			description: "AMP events are only published when logging an AMP object with AMP feature on",
 			feature:     amp,
-			logObject: func(module analytics.PBSAnalyticsModule) {
+			logObject: func(module analytics.Module) {
 				module.LogAmpObject(&analytics.AmpObject{Status: http.StatusOK})
 			},
 		},
 		{
 			description: "video events are only published when logging a video object with video feature on",
 			feature:     video,
-			logObject: func(module analytics.PBSAnalyticsModule) {
+			logObject: func(module analytics.Module) {
 				module.LogVideoObject(&analytics.VideoObject{Status: http.StatusOK})
 			},
 		},
 		{
 			description: "cookie events are only published when logging a cookie object with cookie feature on",
 			feature:     cookieSync,
-			logObject: func(module analytics.PBSAnalyticsModule) {
+			logObject: func(module analytics.Module) {
 				module.LogCookieSyncObject(&analytics.CookieSyncObject{Status: http.StatusOK})
 			},
 		},
 		{
 			description: "setUID events are only published when logging a setUID object with setUID feature on",
 			feature:     setUID,
-			logObject: func(module analytics.PBSAnalyticsModule) {
+			logObject: func(module analytics.Module) {
 				module.LogSetUIDObject(&analytics.SetUIDObject{Status: http.StatusOK})
 			},
 		},
 		{
 			description: "Ignore excluded fields from marshal",
 			feature:     auction,
-			logObject: func(module analytics.PBSAnalyticsModule) {
+			logObject: func(module analytics.Module) {
 				module.LogAuctionObject(&analytics.AuctionObject{
 					RequestWrapper: &openrtb_ext.RequestWrapper{},
 					SeatNonBid: []openrtb_ext.SeatNonBid{

@@ -7,8 +7,8 @@ import (
 
 	gpplib "github.com/prebid/go-gpp"
 	gppConstants "github.com/prebid/go-gpp/constants"
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -921,4 +921,8 @@ func (ms mockGPPSection) GetID() gppConstants.SectionID {
 
 func (ms mockGPPSection) GetValue() string {
 	return ms.value
+}
+
+func (ms mockGPPSection) Encode(bool) []byte {
+	return nil
 }

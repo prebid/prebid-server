@@ -3,14 +3,15 @@ package ownadx
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 	"text/template"
+
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/macros"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type adapter struct {
@@ -44,7 +45,8 @@ func (adapter *adapter) getRequestData(bidRequest *openrtb2.BidRequest, impExt *
 		Method:  "POST",
 		Uri:     url,
 		Body:    reqJSON,
-		Headers: headers}, nil
+		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(pbidRequest.Imp)}, nil
 
 }
 func createBidRequest(rtbBidRequest *openrtb2.BidRequest, imps []openrtb2.Imp) *openrtb2.BidRequest {
@@ -143,14 +145,14 @@ func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{
 			&errortypes.BadServerResponse{
-				Message: fmt.Sprintf("Bad server response "),
+				Message: "Bad server response ",
 			},
 		}
 	}
 	if len(bidResp.SeatBid) == 0 {
 		return nil, []error{
 			&errortypes.BadServerResponse{
-				Message: fmt.Sprintf("Array SeatBid cannot be empty "),
+				Message: "Array SeatBid cannot be empty ",
 			},
 		}
 	}
@@ -160,7 +162,7 @@ func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 	if len(seatBid.Bid) == 0 {
 		return nil, []error{
 			&errortypes.BadServerResponse{
-				Message: fmt.Sprintf("Bid cannot be empty "),
+				Message: "Bid cannot be empty ",
 			},
 		}
 	}

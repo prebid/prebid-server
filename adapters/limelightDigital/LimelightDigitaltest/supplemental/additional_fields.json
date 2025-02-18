@@ -42,7 +42,8 @@
               }
             }
           ]
-        }
+        },
+        "impIDs":["test-banner-id"]
       },
       "mockResponse": {
         "status": 200,

@@ -3,7 +3,7 @@ package hookstage
 import (
 	"context"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 )
 
 // AuctionResponse hooks are invoked at the very end of request processing.

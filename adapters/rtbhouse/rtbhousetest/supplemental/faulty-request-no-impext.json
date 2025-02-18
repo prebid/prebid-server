@@ -1,0 +1,25 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "banner-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        }
+      }
+    ],
+    "ext": {}
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Bidder extension not provided or can't be unmarshalled",
+      "comparison": "literal"
+    }
+  ]
+}

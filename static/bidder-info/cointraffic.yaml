@@ -1,0 +1,10 @@
+endpoint: "https://apps.adsgravity.io/pbs/v1/request"
+maintainer:
+  email: tech@cointraffic.io
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner

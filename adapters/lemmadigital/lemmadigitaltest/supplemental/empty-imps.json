@@ -1,0 +1,18 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id-video",
+        "imp": [],
+        "site": {
+            "publisher": {
+                "id": "1"
+            }
+        }
+    },
+
+    "httpCalls": [],
+    "expectedBidResponses": [],
+    "expectedMakeRequestsErrors": [{
+        "value": "Impression array should not be empty",
+        "comparison": "literal"
+    }]
+}

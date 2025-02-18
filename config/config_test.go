@@ -5,14 +5,13 @@ import (
 	"errors"
 	"net"
 	"os"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/prebid/go-gdpr/consentconstants"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/util/ptrutil"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
@@ -35,7 +34,6 @@ var bidderInfos = BidderInfos{
 				MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner},
 			},
 		},
-		UserSyncURL: "http://bidder2.com/usersync",
 	},
 }
 
@@ -160,6 +158,7 @@ func TestDefaults(t *testing.T) {
 	cmpBools(t, "account_debug", true, cfg.Metrics.Disabled.AccountDebug)
 	cmpBools(t, "account_stored_responses", true, cfg.Metrics.Disabled.AccountStoredResponses)
 	cmpBools(t, "adapter_connections_metrics", true, cfg.Metrics.Disabled.AdapterConnectionMetrics)
+	cmpBools(t, "adapter_buyeruid_scrubbed", true, cfg.Metrics.Disabled.AdapterBuyerUIDScrubbed)
 	cmpBools(t, "adapter_gdpr_request_blocked", false, cfg.Metrics.Disabled.AdapterGDPRRequestBlocked)
 	cmpStrings(t, "certificates_file", "", cfg.PemCertsFile)
 	cmpInts(t, "stored_requests_timeout_ms", 50, cfg.StoredRequestsTimeout)
@@ -179,9 +178,16 @@ func TestDefaults(t *testing.T) {
 
 	//Assert the price floor default values
 	cmpBools(t, "price_floors.enabled", false, cfg.PriceFloors.Enabled)
+	cmpInts(t, "price_floors.fetcher.worker", 20, cfg.PriceFloors.Fetcher.Worker)
+	cmpInts(t, "price_floors.fetcher.capacity", 20000, cfg.PriceFloors.Fetcher.Capacity)
+	cmpInts(t, "price_floors.fetcher.cache_size_mb", 64, cfg.PriceFloors.Fetcher.CacheSize)
+	cmpInts(t, "price_floors.fetcher.http_client.max_connections_per_host", 0, cfg.PriceFloors.Fetcher.HttpClient.MaxConnsPerHost)
+	cmpInts(t, "price_floors.fetcher.http_client.max_idle_connections", 40, cfg.PriceFloors.Fetcher.HttpClient.MaxIdleConns)
+	cmpInts(t, "price_floors.fetcher.http_client.max_idle_connections_per_host", 2, cfg.PriceFloors.Fetcher.HttpClient.MaxIdleConnsPerHost)
+	cmpInts(t, "price_floors.fetcher.http_client.idle_connection_timeout_seconds", 60, cfg.PriceFloors.Fetcher.HttpClient.IdleConnTimeout)
+	cmpInts(t, "price_floors.fetcher.max_retries", 10, cfg.PriceFloors.Fetcher.MaxRetries)
 
 	// Assert compression related defaults
-	cmpBools(t, "enable_gzip", false, cfg.EnableGzip)
 	cmpBools(t, "compression.request.enable_gzip", false, cfg.Compression.Request.GZIP)
 	cmpBools(t, "compression.response.enable_gzip", false, cfg.Compression.Response.GZIP)
 
@@ -192,8 +198,19 @@ func TestDefaults(t *testing.T) {
 	cmpBools(t, "account_defaults.price_floors.use_dynamic_data", false, cfg.AccountDefaults.PriceFloors.UseDynamicData)
 	cmpInts(t, "account_defaults.price_floors.max_rules", 100, cfg.AccountDefaults.PriceFloors.MaxRule)
 	cmpInts(t, "account_defaults.price_floors.max_schema_dims", 3, cfg.AccountDefaults.PriceFloors.MaxSchemaDims)
-	cmpBools(t, "account_defaults.events_enabled", *cfg.AccountDefaults.EventsEnabled, false)
-	cmpNils(t, "account_defaults.events.enabled", cfg.AccountDefaults.Events.Enabled)
+	cmpBools(t, "account_defaults.price_floors.fetch.enabled", false, cfg.AccountDefaults.PriceFloors.Fetcher.Enabled)
+	cmpStrings(t, "account_defaults.price_floors.fetch.url", "", cfg.AccountDefaults.PriceFloors.Fetcher.URL)
+	cmpInts(t, "account_defaults.price_floors.fetch.timeout_ms", 3000, cfg.AccountDefaults.PriceFloors.Fetcher.Timeout)
+	cmpInts(t, "account_defaults.price_floors.fetch.max_file_size_kb", 100, cfg.AccountDefaults.PriceFloors.Fetcher.MaxFileSizeKB)
+	cmpInts(t, "account_defaults.price_floors.fetch.max_rules", 1000, cfg.AccountDefaults.PriceFloors.Fetcher.MaxRules)
+	cmpInts(t, "account_defaults.price_floors.fetch.period_sec", 3600, cfg.AccountDefaults.PriceFloors.Fetcher.Period)
+	cmpInts(t, "account_defaults.price_floors.fetch.max_age_sec", 86400, cfg.AccountDefaults.PriceFloors.Fetcher.MaxAge)
+	cmpInts(t, "account_defaults.price_floors.fetch.max_schema_dims", 0, cfg.AccountDefaults.PriceFloors.Fetcher.MaxSchemaDims)
+	cmpStrings(t, "account_defaults.privacy.topicsdomain", "", cfg.AccountDefaults.Privacy.PrivacySandbox.TopicsDomain)
+	cmpBools(t, "account_defaults.privacy.privacysandbox.cookiedeprecation.enabled", false, cfg.AccountDefaults.Privacy.PrivacySandbox.CookieDeprecation.Enabled)
+	cmpInts(t, "account_defaults.privacy.privacysandbox.cookiedeprecation.ttl_sec", 604800, cfg.AccountDefaults.Privacy.PrivacySandbox.CookieDeprecation.TTLSec)
+
+	cmpBools(t, "account_defaults.events.enabled", false, cfg.AccountDefaults.Events.Enabled)
 
 	cmpBools(t, "hooks.enabled", false, cfg.Hooks.Enabled)
 	cmpStrings(t, "validations.banner_creative_max_size", "skip", cfg.Validations.BannerCreativeMaxSize)
@@ -211,97 +228,95 @@ func TestDefaults(t *testing.T) {
 	cmpInts(t, "account_defaults.privacy.ipv4.anon_keep_bits", 24, cfg.AccountDefaults.Privacy.IPv4Config.AnonKeepBits)
 
 	//Assert purpose VendorExceptionMap hash tables were built correctly
+	cmpBools(t, "analytics.agma.enabled", false, cfg.Analytics.Agma.Enabled)
+	cmpStrings(t, "analytics.agma.endpoint.timeout", "2s", cfg.Analytics.Agma.Endpoint.Timeout)
+	cmpBools(t, "analytics.agma.endpoint.gzip", false, cfg.Analytics.Agma.Endpoint.Gzip)
+	cmpStrings(t, "analytics.agma.endppoint.url", "https://go.pbs.agma-analytics.de/v1/prebid-server", cfg.Analytics.Agma.Endpoint.Url)
+	cmpStrings(t, "analytics.agma.buffers.size", "2MB", cfg.Analytics.Agma.Buffers.BufferSize)
+	cmpInts(t, "analytics.agma.buffers.count", 100, cfg.Analytics.Agma.Buffers.EventCount)
+	cmpStrings(t, "analytics.agma.buffers.timeout", "15m", cfg.Analytics.Agma.Buffers.Timeout)
+	cmpInts(t, "analytics.agma.accounts", 0, len(cfg.Analytics.Agma.Accounts))
 	expectedTCF2 := TCF2{
 		Enabled: true,
 		Purpose1: TCF2Purpose{
-			Enabled:            true,
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
-			VendorExceptions:   []openrtb_ext.BidderName{},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			VendorExceptions:   []string{},
+			VendorExceptionMap: map[string]struct{}{},
 		},
 		Purpose2: TCF2Purpose{
-			Enabled:            true,
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
-			VendorExceptions:   []openrtb_ext.BidderName{},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			VendorExceptions:   []string{},
+			VendorExceptionMap: map[string]struct{}{},
 		},
 		Purpose3: TCF2Purpose{
-			Enabled:            true,
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
-			VendorExceptions:   []openrtb_ext.BidderName{},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			VendorExceptions:   []string{},
+			VendorExceptionMap: map[string]struct{}{},
 		},
 		Purpose4: TCF2Purpose{
-			Enabled:            true,
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
-			VendorExceptions:   []openrtb_ext.BidderName{},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			VendorExceptions:   []string{},
+			VendorExceptionMap: map[string]struct{}{},
 		},
 		Purpose5: TCF2Purpose{
-			Enabled:            true,
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
-			VendorExceptions:   []openrtb_ext.BidderName{},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			VendorExceptions:   []string{},
+			VendorExceptionMap: map[string]struct{}{},
 		},
 		Purpose6: TCF2Purpose{
-			Enabled:            true,
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
-			VendorExceptions:   []openrtb_ext.BidderName{},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			VendorExceptions:   []string{},
+			VendorExceptionMap: map[string]struct{}{},
 		},
 		Purpose7: TCF2Purpose{
-			Enabled:            true,
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
-			VendorExceptions:   []openrtb_ext.BidderName{},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			VendorExceptions:   []string{},
+			VendorExceptionMap: map[string]struct{}{},
 		},
 		Purpose8: TCF2Purpose{
-			Enabled:            true,
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
-			VendorExceptions:   []openrtb_ext.BidderName{},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			VendorExceptions:   []string{},
+			VendorExceptionMap: map[string]struct{}{},
 		},
 		Purpose9: TCF2Purpose{
-			Enabled:            true,
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
-			VendorExceptions:   []openrtb_ext.BidderName{},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			VendorExceptions:   []string{},
+			VendorExceptionMap: map[string]struct{}{},
 		},
 		Purpose10: TCF2Purpose{
-			Enabled:            true,
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
-			VendorExceptions:   []openrtb_ext.BidderName{},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			VendorExceptions:   []string{},
+			VendorExceptionMap: map[string]struct{}{},
 		},
 		SpecialFeature1: TCF2SpecialFeature{
 			Enforce:            true,
@@ -340,7 +355,6 @@ gdpr:
       enforce_vendors: false
       vendor_exceptions: ["foo1a", "foo1b"]
     purpose2:
-      enabled: false
       enforce_algo: "full"
       enforce_purpose: false
       enforce_vendors: false
@@ -388,7 +402,6 @@ host: prebid-server.prebid.org
 port: 1234
 admin_port: 5678
 stored_requests_timeout_ms: 75
-enable_gzip: false
 compression:
     request:
         enable_gzip: true
@@ -435,6 +448,7 @@ metrics:
     account_debug: false
     account_stored_responses: false
     adapter_connections_metrics: true
+    adapter_buyeruid_scrubbed: false
     adapter_gdpr_request_blocked: true
     account_modules_metrics: true
 blacklisted_apps: ["spamAppID","sketchy-app-id"]
@@ -470,8 +484,17 @@ hooks:
     enabled: true
 price_floors:
     enabled: true
+    fetcher:
+      worker: 20
+      capacity: 20000
+      cache_size_mb: 8
+      http_client:
+        max_connections_per_host: 5
+        max_idle_connections: 1
+        max_idle_connections_per_host: 2
+        idle_connection_timeout_seconds: 10
+      max_retries: 5
 account_defaults:
-    events_enabled: false
     events:
         enabled: true
     price_floors:
@@ -482,22 +505,62 @@ account_defaults:
         use_dynamic_data: true
         max_rules: 120
         max_schema_dims: 5
+        fetch:
+          enabled: true
+          url: http://test.com/floors
+          timeout_ms: 500
+          max_file_size_kb: 200
+          max_rules: 500
+          period_sec: 2000
+          max_age_sec: 6000
+          max_schema_dims: 10
+    bidadjustments:
+        mediatype:
+            '*':
+                '*':
+                    '*':
+                        - adjtype: multiplier
+                          value: 1.01
+                          currency: USD
+            video-instream:
+                bidder:
+                    deal_id:
+                        - adjtype: cpm
+                          value: 1.02
+                          currency: EUR
     privacy:
         ipv6:
             anon_keep_bits: 50
         ipv4:
             anon_keep_bits: 20
+        dsa:
+            default: "{\"dsarequired\":3,\"pubrender\":1,\"datatopub\":2,\"transparency\":[{\"domain\":\"domain.com\",\"dsaparams\":[1]}]}"
+            gdpr_only: true
+        privacysandbox:
+            topicsdomain: "test.com"
+            cookiedeprecation:
+                enabled: true
+                ttl_sec: 86400
 tmax_adjustments:
   enabled: true
   bidder_response_duration_min_ms: 700
   bidder_network_latency_buffer_ms: 100
   pbs_response_preparation_duration_ms: 100
-`)
-
-var oldStoredRequestsConfig = []byte(`
-stored_requests:
-  filesystem: true
-  directorypath: "/somepath"
+analytics:
+  agma:
+    enabled: true
+    endpoint:
+      url: "http://test.com"
+      timeout: "5s"
+      gzip: false
+    buffers:
+      size: 10MB
+      count: 111
+      timeout: 5m
+    accounts:
+    - code: agma-code
+      publisher_id: publisher-id
+      site_app_id: site-or-app-id
 `)
 
 func cmpStrings(t *testing.T, key, expected, actual string) {
@@ -584,6 +647,14 @@ func TestFullConfig(t *testing.T) {
 
 	//Assert the price floor values
 	cmpBools(t, "price_floors.enabled", true, cfg.PriceFloors.Enabled)
+	cmpInts(t, "price_floors.fetcher.worker", 20, cfg.PriceFloors.Fetcher.Worker)
+	cmpInts(t, "price_floors.fetcher.capacity", 20000, cfg.PriceFloors.Fetcher.Capacity)
+	cmpInts(t, "price_floors.fetcher.cache_size_mb", 8, cfg.PriceFloors.Fetcher.CacheSize)
+	cmpInts(t, "price_floors.fetcher.http_client.max_connections_per_host", 5, cfg.PriceFloors.Fetcher.HttpClient.MaxConnsPerHost)
+	cmpInts(t, "price_floors.fetcher.http_client.max_idle_connections", 1, cfg.PriceFloors.Fetcher.HttpClient.MaxIdleConns)
+	cmpInts(t, "price_floors.fetcher.http_client.max_idle_connections_per_host", 2, cfg.PriceFloors.Fetcher.HttpClient.MaxIdleConnsPerHost)
+	cmpInts(t, "price_floors.fetcher.http_client.idle_connection_timeout_seconds", 10, cfg.PriceFloors.Fetcher.HttpClient.IdleConnTimeout)
+	cmpInts(t, "price_floors.fetcher.max_retries", 5, cfg.PriceFloors.Fetcher.MaxRetries)
 	cmpBools(t, "account_defaults.price_floors.enabled", true, cfg.AccountDefaults.PriceFloors.Enabled)
 	cmpInts(t, "account_defaults.price_floors.enforce_floors_rate", 50, cfg.AccountDefaults.PriceFloors.EnforceFloorsRate)
 	cmpBools(t, "account_defaults.price_floors.adjust_for_bid_adjustment", false, cfg.AccountDefaults.PriceFloors.AdjustForBidAdjustment)
@@ -591,14 +662,43 @@ func TestFullConfig(t *testing.T) {
 	cmpBools(t, "account_defaults.price_floors.use_dynamic_data", true, cfg.AccountDefaults.PriceFloors.UseDynamicData)
 	cmpInts(t, "account_defaults.price_floors.max_rules", 120, cfg.AccountDefaults.PriceFloors.MaxRule)
 	cmpInts(t, "account_defaults.price_floors.max_schema_dims", 5, cfg.AccountDefaults.PriceFloors.MaxSchemaDims)
-	cmpBools(t, "account_defaults.events_enabled", *cfg.AccountDefaults.EventsEnabled, true)
-	cmpNils(t, "account_defaults.events.enabled", cfg.AccountDefaults.Events.Enabled)
+	cmpBools(t, "account_defaults.price_floors.fetch.enabled", true, cfg.AccountDefaults.PriceFloors.Fetcher.Enabled)
+	cmpStrings(t, "account_defaults.price_floors.fetch.url", "http://test.com/floors", cfg.AccountDefaults.PriceFloors.Fetcher.URL)
+	cmpInts(t, "account_defaults.price_floors.fetch.timeout_ms", 500, cfg.AccountDefaults.PriceFloors.Fetcher.Timeout)
+	cmpInts(t, "account_defaults.price_floors.fetch.max_file_size_kb", 200, cfg.AccountDefaults.PriceFloors.Fetcher.MaxFileSizeKB)
+	cmpInts(t, "account_defaults.price_floors.fetch.max_rules", 500, cfg.AccountDefaults.PriceFloors.Fetcher.MaxRules)
+	cmpInts(t, "account_defaults.price_floors.fetch.period_sec", 2000, cfg.AccountDefaults.PriceFloors.Fetcher.Period)
+	cmpInts(t, "account_defaults.price_floors.fetch.max_age_sec", 6000, cfg.AccountDefaults.PriceFloors.Fetcher.MaxAge)
+	cmpInts(t, "account_defaults.price_floors.fetch.max_schema_dims", 10, cfg.AccountDefaults.PriceFloors.Fetcher.MaxSchemaDims)
+
+	// Assert the DSA was correctly unmarshalled and DefaultUnpacked was built correctly
+	expectedDSA := AccountDSA{
+		Default: "{\"dsarequired\":3,\"pubrender\":1,\"datatopub\":2,\"transparency\":[{\"domain\":\"domain.com\",\"dsaparams\":[1]}]}",
+		DefaultUnpacked: &openrtb_ext.ExtRegsDSA{
+			Required:  ptrutil.ToPtr[int8](3),
+			PubRender: ptrutil.ToPtr[int8](1),
+			DataToPub: ptrutil.ToPtr[int8](2),
+			Transparency: []openrtb_ext.ExtBidDSATransparency{
+				{
+					Domain: "domain.com",
+					Params: []int{1},
+				},
+			},
+		},
+		GDPROnly: true,
+	}
+	assert.Equal(t, &expectedDSA, cfg.AccountDefaults.Privacy.DSA)
+
+	cmpBools(t, "account_defaults.events.enabled", true, cfg.AccountDefaults.Events.Enabled)
 
 	cmpInts(t, "account_defaults.privacy.ipv6.anon_keep_bits", 50, cfg.AccountDefaults.Privacy.IPv6Config.AnonKeepBits)
 	cmpInts(t, "account_defaults.privacy.ipv4.anon_keep_bits", 20, cfg.AccountDefaults.Privacy.IPv4Config.AnonKeepBits)
 
+	cmpStrings(t, "account_defaults.privacy.topicsdomain", "test.com", cfg.AccountDefaults.Privacy.PrivacySandbox.TopicsDomain)
+	cmpBools(t, "account_defaults.privacy.cookiedeprecation.enabled", true, cfg.AccountDefaults.Privacy.PrivacySandbox.CookieDeprecation.Enabled)
+	cmpInts(t, "account_defaults.privacy.cookiedeprecation.ttl_sec", 86400, cfg.AccountDefaults.Privacy.PrivacySandbox.CookieDeprecation.TTLSec)
+
 	// Assert compression related defaults
-	cmpBools(t, "enable_gzip", false, cfg.EnableGzip)
 	cmpBools(t, "compression.request.enable_gzip", true, cfg.Compression.Request.GZIP)
 	cmpBools(t, "compression.response.enable_gzip", false, cfg.Compression.Response.GZIP)
 
@@ -626,94 +726,84 @@ func TestFullConfig(t *testing.T) {
 	expectedTCF2 := TCF2{
 		Enabled: true,
 		Purpose1: TCF2Purpose{
-			Enabled:            true, // true by default
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
-			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo1a"), openrtb_ext.BidderName("foo1b")},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo1a"): {}, openrtb_ext.BidderName("foo1b"): {}},
+			VendorExceptions:   []string{"foo1a", "foo1b"},
+			VendorExceptionMap: map[string]struct{}{"foo1a": {}, "foo1b": {}},
 		},
 		Purpose2: TCF2Purpose{
-			Enabled:            false,
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     false,
 			EnforceVendors:     false,
-			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo2")},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo2"): {}},
+			VendorExceptions:   []string{"foo2"},
+			VendorExceptionMap: map[string]struct{}{"foo2": {}},
 		},
 		Purpose3: TCF2Purpose{
-			Enabled:            true, // true by default
 			EnforceAlgo:        TCF2EnforceAlgoBasic,
 			EnforceAlgoID:      TCF2BasicEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
-			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo3")},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo3"): {}},
+			VendorExceptions:   []string{"foo3"},
+			VendorExceptionMap: map[string]struct{}{"foo3": {}},
 		},
 		Purpose4: TCF2Purpose{
-			Enabled:            true, // true by default
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
-			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo4")},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo4"): {}},
+			VendorExceptions:   []string{"foo4"},
+			VendorExceptionMap: map[string]struct{}{"foo4": {}},
 		},
 		Purpose5: TCF2Purpose{
-			Enabled:            true, // true by default
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
-			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo5")},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo5"): {}},
+			VendorExceptions:   []string{"foo5"},
+			VendorExceptionMap: map[string]struct{}{"foo5": {}},
 		},
 		Purpose6: TCF2Purpose{
-			Enabled:            true, // true by default
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
-			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo6")},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo6"): {}},
+			VendorExceptions:   []string{"foo6"},
+			VendorExceptionMap: map[string]struct{}{"foo6": {}},
 		},
 		Purpose7: TCF2Purpose{
-			Enabled:            true, // true by default
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
-			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo7")},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo7"): {}},
+			VendorExceptions:   []string{"foo7"},
+			VendorExceptionMap: map[string]struct{}{"foo7": {}},
 		},
 		Purpose8: TCF2Purpose{
-			Enabled:            true, // true by default
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
-			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo8")},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo8"): {}},
+			VendorExceptions:   []string{"foo8"},
+			VendorExceptionMap: map[string]struct{}{"foo8": {}},
 		},
 		Purpose9: TCF2Purpose{
-			Enabled:            true, // true by default
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
-			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo9")},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo9"): {}},
+			VendorExceptions:   []string{"foo9"},
+			VendorExceptionMap: map[string]struct{}{"foo9": {}},
 		},
 		Purpose10: TCF2Purpose{
-			Enabled:            true, // true by default
 			EnforceAlgo:        TCF2EnforceAlgoFull,
 			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
-			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo10")},
-			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo10"): {}},
+			VendorExceptions:   []string{"foo10"},
+			VendorExceptionMap: map[string]struct{}{"foo10": {}},
 		},
 		SpecialFeature1: TCF2SpecialFeature{
 			Enforce:            true, // true by default
@@ -737,7 +827,23 @@ func TestFullConfig(t *testing.T) {
 		9:  &expectedTCF2.Purpose9,
 		10: &expectedTCF2.Purpose10,
 	}
+
+	expectedBidAdjustments := &openrtb_ext.ExtRequestPrebidBidAdjustments{
+		MediaType: openrtb_ext.MediaType{
+			WildCard: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+				"*": {
+					"*": []openrtb_ext.Adjustment{{Type: "multiplier", Value: 1.01, Currency: "USD"}},
+				},
+			},
+			VideoInstream: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+				"bidder": {
+					"deal_id": []openrtb_ext.Adjustment{{Type: "cpm", Value: 1.02, Currency: "EUR"}},
+				},
+			},
+		},
+	}
 	assert.Equal(t, expectedTCF2, cfg.GDPR.TCF2, "gdpr.tcf2")
+	assert.Equal(t, expectedBidAdjustments, cfg.AccountDefaults.BidAdjustments)
 
 	cmpStrings(t, "currency_converter.fetch_url", "https://currency.prebid.org", cfg.CurrencyConverter.FetchURL)
 	cmpInts(t, "currency_converter.fetch_interval_seconds", 1800, cfg.CurrencyConverter.FetchIntervalSeconds)
@@ -757,6 +863,7 @@ func TestFullConfig(t *testing.T) {
 	cmpBools(t, "account_debug", false, cfg.Metrics.Disabled.AccountDebug)
 	cmpBools(t, "account_stored_responses", false, cfg.Metrics.Disabled.AccountStoredResponses)
 	cmpBools(t, "adapter_connections_metrics", true, cfg.Metrics.Disabled.AdapterConnectionMetrics)
+	cmpBools(t, "adapter_buyeruid_scrubbed", false, cfg.Metrics.Disabled.AdapterBuyerUIDScrubbed)
 	cmpBools(t, "adapter_gdpr_request_blocked", true, cfg.Metrics.Disabled.AdapterGDPRRequestBlocked)
 	cmpStrings(t, "certificates_file", "/etc/ssl/cert.pem", cfg.PemCertsFile)
 	cmpStrings(t, "request_validation.ipv4_private_networks", "1.1.1.0/24", cfg.RequestValidation.IPv4PrivateNetworks[0])
@@ -773,6 +880,16 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "experiment.adscert.remote.signing_timeout_ms", 10, cfg.Experiment.AdCerts.Remote.SigningTimeoutMs)
 	cmpBools(t, "hooks.enabled", true, cfg.Hooks.Enabled)
 	cmpBools(t, "account_modules_metrics", true, cfg.Metrics.Disabled.AccountModulesMetrics)
+	cmpBools(t, "analytics.agma.enabled", true, cfg.Analytics.Agma.Enabled)
+	cmpStrings(t, "analytics.agma.endpoint.timeout", "5s", cfg.Analytics.Agma.Endpoint.Timeout)
+	cmpBools(t, "analytics.agma.endpoint.gzip", false, cfg.Analytics.Agma.Endpoint.Gzip)
+	cmpStrings(t, "analytics.agma.endpoint.url", "http://test.com", cfg.Analytics.Agma.Endpoint.Url)
+	cmpStrings(t, "analytics.agma.buffers.size", "10MB", cfg.Analytics.Agma.Buffers.BufferSize)
+	cmpInts(t, "analytics.agma.buffers.count", 111, cfg.Analytics.Agma.Buffers.EventCount)
+	cmpStrings(t, "analytics.agma.buffers.timeout", "5m", cfg.Analytics.Agma.Buffers.Timeout)
+	cmpStrings(t, "analytics.agma.accounts.0.publisher_id", "publisher-id", cfg.Analytics.Agma.Accounts[0].PublisherId)
+	cmpStrings(t, "analytics.agma.accounts.0.code", "agma-code", cfg.Analytics.Agma.Accounts[0].Code)
+	cmpStrings(t, "analytics.agma.accounts.0.site_app_id", "site-or-app-id", cfg.Analytics.Agma.Accounts[0].SiteAppId)
 }
 
 func TestValidateConfig(t *testing.T) {
@@ -792,13 +909,13 @@ func TestValidateConfig(t *testing.T) {
 				Purpose10: TCF2Purpose{EnforceAlgo: TCF2EnforceAlgoFull},
 			},
 		},
-		StoredRequestsTimeout: 50,
 		StoredRequests: StoredRequests{
 			Files: FileFetcherConfig{Enabled: true},
 			InMemoryCache: InMemoryCache{
 				Type: "none",
 			},
 		},
+		StoredRequestsTimeout: 50,
 		StoredVideo: StoredRequests{
 			Files: FileFetcherConfig{Enabled: true},
 			InMemoryCache: InMemoryCache{
@@ -812,6 +929,15 @@ func TestValidateConfig(t *testing.T) {
 			Files:         FileFetcherConfig{Enabled: true},
 			InMemoryCache: InMemoryCache{Type: "none"},
 		},
+		AccountDefaults: Account{
+			PriceFloors: AccountPriceFloors{
+				Fetcher: AccountFloorFetch{
+					Timeout: 100,
+					Period:  300,
+					MaxAge:  600,
+				},
+			},
+		},
 	}
 
 	v := viper.New()
@@ -822,36 +948,15 @@ func TestValidateConfig(t *testing.T) {
 	assert.Nil(t, err, "OpenRTB filesystem config should work. %v", err)
 }
 
-func TestMigrateConfig(t *testing.T) {
-	v := viper.New()
-	SetupViper(v, "", bidderInfos)
-	v.Set("gdpr.default_value", "0")
-	v.SetConfigType("yaml")
-	v.ReadConfig(bytes.NewBuffer(oldStoredRequestsConfig))
-	migrateConfig(v)
-	cfg, err := New(v, bidderInfos, mockNormalizeBidderName)
-	assert.NoError(t, err, "Setting up config should work but it doesn't")
-	cmpBools(t, "stored_requests.filesystem.enabled", true, cfg.StoredRequests.Files.Enabled)
-	cmpStrings(t, "stored_requests.filesystem.path", "/somepath", cfg.StoredRequests.Files.Path)
-}
-
 func TestMigrateConfigFromEnv(t *testing.T) {
-	if oldval, ok := os.LookupEnv("PBS_STORED_REQUESTS_FILESYSTEM"); ok {
-		defer os.Setenv("PBS_STORED_REQUESTS_FILESYSTEM", oldval)
-	} else {
-		defer os.Unsetenv("PBS_STORED_REQUESTS_FILESYSTEM")
-	}
-
 	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_BIDDER1_ENDPOINT"); ok {
 		defer os.Setenv("PBS_ADAPTERS_BIDDER1_ENDPOINT", oldval)
 	} else {
 		defer os.Unsetenv("PBS_ADAPTERS_BIDDER1_ENDPOINT")
 	}
 
-	os.Setenv("PBS_STORED_REQUESTS_FILESYSTEM", "true")
 	os.Setenv("PBS_ADAPTERS_BIDDER1_ENDPOINT", "http://bidder1_override.com")
 	cfg, _ := newDefaultConfig(t)
-	cmpBools(t, "stored_requests.filesystem.enabled", true, cfg.StoredRequests.Files.Enabled)
 	cmpStrings(t, "adapters.bidder1.endpoint", "http://bidder1_override.com", cfg.BidderInfos["bidder1"].Endpoint)
 }
 
@@ -899,7 +1004,6 @@ func TestUserSyncFromEnv(t *testing.T) {
 	assert.Equal(t, "http://somedifferent.url/sync?redirect={{.RedirectURL}}", cfg.BidderInfos["bidder2"].Syncer.IFrame.URL)
 	assert.Nil(t, cfg.BidderInfos["bidder2"].Syncer.Redirect)
 	assert.Nil(t, cfg.BidderInfos["bidder2"].Syncer.SupportCORS)
-
 }
 
 func TestBidderInfoFromEnv(t *testing.T) {
@@ -981,1692 +1085,6 @@ func TestBidderInfoFromEnv(t *testing.T) {
 	assert.Equal(t, "username_override", cfg.BidderInfos["bidder1"].XAPI.Username)
 
 	assert.Equal(t, "2.6", cfg.BidderInfos["bidder1"].OpenRTB.Version)
-}
-
-func TestMigrateConfigPurposeOneTreatment(t *testing.T) {
-	oldPurposeOneTreatmentConfig := []byte(`
-      gdpr:
-        tcf2:
-          purpose_one_treatement:
-            enabled: true
-            access_allowed: true
-    `)
-	newPurposeOneTreatmentConfig := []byte(`
-      gdpr:
-        tcf2:
-          purpose_one_treatment:
-            enabled: true
-            access_allowed: true
-    `)
-	oldAndNewPurposeOneTreatmentConfig := []byte(`
-      gdpr:
-        tcf2:
-          purpose_one_treatement:
-            enabled: false
-            access_allowed: true
-          purpose_one_treatment:
-            enabled: true
-            access_allowed: false
-    `)
-
-	tests := []struct {
-		description                        string
-		config                             []byte
-		wantPurpose1TreatmentEnabled       bool
-		wantPurpose1TreatmentAccessAllowed bool
-	}{
-		{
-			description: "New config and old config not set",
-			config:      []byte{},
-		},
-		{
-			description:                        "New config not set, old config set",
-			config:                             oldPurposeOneTreatmentConfig,
-			wantPurpose1TreatmentEnabled:       true,
-			wantPurpose1TreatmentAccessAllowed: true,
-		},
-		{
-			description:                        "New config set, old config not set",
-			config:                             newPurposeOneTreatmentConfig,
-			wantPurpose1TreatmentEnabled:       true,
-			wantPurpose1TreatmentAccessAllowed: true,
-		},
-		{
-			description:                        "New config and old config set",
-			config:                             oldAndNewPurposeOneTreatmentConfig,
-			wantPurpose1TreatmentEnabled:       true,
-			wantPurpose1TreatmentAccessAllowed: false,
-		},
-	}
-
-	for _, tt := range tests {
-		v := viper.New()
-		v.SetConfigType("yaml")
-		v.ReadConfig(bytes.NewBuffer(tt.config))
-
-		migrateConfigPurposeOneTreatment(v)
-
-		if len(tt.config) > 0 {
-			assert.Equal(t, tt.wantPurpose1TreatmentEnabled, v.Get("gdpr.tcf2.purpose_one_treatment.enabled").(bool), tt.description)
-			assert.Equal(t, tt.wantPurpose1TreatmentAccessAllowed, v.Get("gdpr.tcf2.purpose_one_treatment.access_allowed").(bool), tt.description)
-		} else {
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose_one_treatment.enabled"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose_one_treatment.access_allowed"), tt.description)
-		}
-	}
-}
-
-func TestMigrateConfigSpecialFeature1(t *testing.T) {
-	oldSpecialFeature1Config := []byte(`
-      gdpr:
-        tcf2:
-          special_purpose1:
-            enabled: true
-            vendor_exceptions: ["appnexus"]
-    `)
-	newSpecialFeature1Config := []byte(`
-      gdpr:
-        tcf2:
-          special_feature1:
-            enforce: true
-            vendor_exceptions: ["appnexus"]
-    `)
-	oldAndNewSpecialFeature1Config := []byte(`
-      gdpr:
-        tcf2:
-          special_purpose1:
-            enabled: false
-            vendor_exceptions: ["appnexus"]
-          special_feature1:
-            enforce: true
-            vendor_exceptions: ["rubicon"]
-    `)
-
-	tests := []struct {
-		description                         string
-		config                              []byte
-		wantSpecialFeature1Enforce          bool
-		wantSpecialFeature1VendorExceptions []string
-	}{
-		{
-			description: "New config and old config not set",
-			config:      []byte{},
-		},
-		{
-			description:                         "New config not set, old config set",
-			config:                              oldSpecialFeature1Config,
-			wantSpecialFeature1Enforce:          true,
-			wantSpecialFeature1VendorExceptions: []string{"appnexus"},
-		},
-		{
-			description:                         "New config set, old config not set",
-			config:                              newSpecialFeature1Config,
-			wantSpecialFeature1Enforce:          true,
-			wantSpecialFeature1VendorExceptions: []string{"appnexus"},
-		},
-		{
-			description:                         "New config and old config set",
-			config:                              oldAndNewSpecialFeature1Config,
-			wantSpecialFeature1Enforce:          true,
-			wantSpecialFeature1VendorExceptions: []string{"rubicon"},
-		},
-	}
-
-	for _, tt := range tests {
-		v := viper.New()
-		v.SetConfigType("yaml")
-		v.ReadConfig(bytes.NewBuffer(tt.config))
-
-		migrateConfigSpecialFeature1(v)
-
-		if len(tt.config) > 0 {
-			assert.Equal(t, tt.wantSpecialFeature1Enforce, v.Get("gdpr.tcf2.special_feature1.enforce").(bool), tt.description)
-			assert.Equal(t, tt.wantSpecialFeature1VendorExceptions, v.GetStringSlice("gdpr.tcf2.special_feature1.vendor_exceptions"), tt.description)
-		} else {
-			assert.Nil(t, v.Get("gdpr.tcf2.special_feature1.enforce"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.special_feature1.vendor_exceptions"), tt.description)
-		}
-
-		var c Configuration
-		err := v.Unmarshal(&c)
-		assert.NoError(t, err, tt.description)
-		assert.Equal(t, tt.wantSpecialFeature1Enforce, c.GDPR.TCF2.SpecialFeature1.Enforce, tt.description)
-
-		// convert expected vendor exceptions to type BidderName
-		expectedVendorExceptions := make([]openrtb_ext.BidderName, 0, 0)
-		for _, ve := range tt.wantSpecialFeature1VendorExceptions {
-			expectedVendorExceptions = append(expectedVendorExceptions, openrtb_ext.BidderName(ve))
-		}
-		assert.ElementsMatch(t, expectedVendorExceptions, c.GDPR.TCF2.SpecialFeature1.VendorExceptions, tt.description)
-	}
-}
-
-func TestMigrateConfigTCF2PurposeEnabledFlags(t *testing.T) {
-	trueStr := "true"
-	falseStr := "false"
-
-	tests := []struct {
-		description                 string
-		config                      []byte
-		wantPurpose1EnforcePurpose  string
-		wantPurpose2EnforcePurpose  string
-		wantPurpose3EnforcePurpose  string
-		wantPurpose4EnforcePurpose  string
-		wantPurpose5EnforcePurpose  string
-		wantPurpose6EnforcePurpose  string
-		wantPurpose7EnforcePurpose  string
-		wantPurpose8EnforcePurpose  string
-		wantPurpose9EnforcePurpose  string
-		wantPurpose10EnforcePurpose string
-		wantPurpose1Enabled         string
-		wantPurpose2Enabled         string
-		wantPurpose3Enabled         string
-		wantPurpose4Enabled         string
-		wantPurpose5Enabled         string
-		wantPurpose6Enabled         string
-		wantPurpose7Enabled         string
-		wantPurpose8Enabled         string
-		wantPurpose9Enabled         string
-		wantPurpose10Enabled        string
-	}{
-		{
-			description: "New config and old config flags not set",
-			config:      []byte{},
-		},
-		{
-			description: "New config not set, old config set - use old flags",
-			config: []byte(`
-              gdpr:
-                tcf2:
-                  purpose1:
-                    enabled: false
-                  purpose2:
-                    enabled: true
-                  purpose3:
-                    enabled: false
-                  purpose4:
-                    enabled: true
-                  purpose5:
-                    enabled: false
-                  purpose6:
-                    enabled: true
-                  purpose7:
-                    enabled: false
-                  purpose8:
-                    enabled: true
-                  purpose9:
-                    enabled: false
-                  purpose10:
-                    enabled: true
-            `),
-			wantPurpose1EnforcePurpose:  falseStr,
-			wantPurpose2EnforcePurpose:  trueStr,
-			wantPurpose3EnforcePurpose:  falseStr,
-			wantPurpose4EnforcePurpose:  trueStr,
-			wantPurpose5EnforcePurpose:  falseStr,
-			wantPurpose6EnforcePurpose:  trueStr,
-			wantPurpose7EnforcePurpose:  falseStr,
-			wantPurpose8EnforcePurpose:  trueStr,
-			wantPurpose9EnforcePurpose:  falseStr,
-			wantPurpose10EnforcePurpose: trueStr,
-			wantPurpose1Enabled:         falseStr,
-			wantPurpose2Enabled:         trueStr,
-			wantPurpose3Enabled:         falseStr,
-			wantPurpose4Enabled:         trueStr,
-			wantPurpose5Enabled:         falseStr,
-			wantPurpose6Enabled:         trueStr,
-			wantPurpose7Enabled:         falseStr,
-			wantPurpose8Enabled:         trueStr,
-			wantPurpose9Enabled:         falseStr,
-			wantPurpose10Enabled:        trueStr,
-		},
-		{
-			description: "New config flags set, old config flags not set - use new flags",
-			config: []byte(`
-              gdpr:
-                tcf2:
-                  purpose1:
-                    enforce_purpose: true
-                  purpose2:
-                    enforce_purpose: false
-                  purpose3:
-                    enforce_purpose: true
-                  purpose4:
-                    enforce_purpose: false
-                  purpose5:
-                    enforce_purpose: true
-                  purpose6:
-                    enforce_purpose: false
-                  purpose7:
-                    enforce_purpose: true
-                  purpose8:
-                    enforce_purpose: false
-                  purpose9:
-                    enforce_purpose: true
-                  purpose10:
-                    enforce_purpose: false
-            `),
-			wantPurpose1EnforcePurpose:  trueStr,
-			wantPurpose2EnforcePurpose:  falseStr,
-			wantPurpose3EnforcePurpose:  trueStr,
-			wantPurpose4EnforcePurpose:  falseStr,
-			wantPurpose5EnforcePurpose:  trueStr,
-			wantPurpose6EnforcePurpose:  falseStr,
-			wantPurpose7EnforcePurpose:  trueStr,
-			wantPurpose8EnforcePurpose:  falseStr,
-			wantPurpose9EnforcePurpose:  trueStr,
-			wantPurpose10EnforcePurpose: falseStr,
-			wantPurpose1Enabled:         trueStr,
-			wantPurpose2Enabled:         falseStr,
-			wantPurpose3Enabled:         trueStr,
-			wantPurpose4Enabled:         falseStr,
-			wantPurpose5Enabled:         trueStr,
-			wantPurpose6Enabled:         falseStr,
-			wantPurpose7Enabled:         trueStr,
-			wantPurpose8Enabled:         falseStr,
-			wantPurpose9Enabled:         trueStr,
-			wantPurpose10Enabled:        falseStr,
-		},
-		{
-			description: "New config flags and old config flags set - use new flags",
-			config: []byte(`
-              gdpr:
-                tcf2:
-                  purpose1:
-                    enabled: false
-                    enforce_purpose: true
-                  purpose2:
-                    enabled: false
-                    enforce_purpose: true
-                  purpose3:
-                    enabled: false
-                    enforce_purpose: true
-                  purpose4:
-                    enabled: false
-                    enforce_purpose: true
-                  purpose5:
-                    enabled: false
-                    enforce_purpose: true
-                  purpose6:
-                    enabled: false
-                    enforce_purpose: true
-                  purpose7:
-                    enabled: false
-                    enforce_purpose: true
-                  purpose8:
-                    enabled: false
-                    enforce_purpose: true
-                  purpose9:
-                    enabled: false
-                    enforce_purpose: true
-                  purpose10:
-                    enabled: false
-                    enforce_purpose: true
-              `),
-			wantPurpose1EnforcePurpose:  trueStr,
-			wantPurpose2EnforcePurpose:  trueStr,
-			wantPurpose3EnforcePurpose:  trueStr,
-			wantPurpose4EnforcePurpose:  trueStr,
-			wantPurpose5EnforcePurpose:  trueStr,
-			wantPurpose6EnforcePurpose:  trueStr,
-			wantPurpose7EnforcePurpose:  trueStr,
-			wantPurpose8EnforcePurpose:  trueStr,
-			wantPurpose9EnforcePurpose:  trueStr,
-			wantPurpose10EnforcePurpose: trueStr,
-			wantPurpose1Enabled:         trueStr,
-			wantPurpose2Enabled:         trueStr,
-			wantPurpose3Enabled:         trueStr,
-			wantPurpose4Enabled:         trueStr,
-			wantPurpose5Enabled:         trueStr,
-			wantPurpose6Enabled:         trueStr,
-			wantPurpose7Enabled:         trueStr,
-			wantPurpose8Enabled:         trueStr,
-			wantPurpose9Enabled:         trueStr,
-			wantPurpose10Enabled:        trueStr,
-		},
-	}
-
-	for _, tt := range tests {
-		v := viper.New()
-		v.SetConfigType("yaml")
-		v.ReadConfig(bytes.NewBuffer(tt.config))
-
-		migrateConfigTCF2PurposeEnabledFlags(v)
-
-		if len(tt.config) > 0 {
-			assert.Equal(t, tt.wantPurpose1EnforcePurpose, v.GetString("gdpr.tcf2.purpose1.enforce_purpose"), tt.description)
-			assert.Equal(t, tt.wantPurpose2EnforcePurpose, v.GetString("gdpr.tcf2.purpose2.enforce_purpose"), tt.description)
-			assert.Equal(t, tt.wantPurpose3EnforcePurpose, v.GetString("gdpr.tcf2.purpose3.enforce_purpose"), tt.description)
-			assert.Equal(t, tt.wantPurpose4EnforcePurpose, v.GetString("gdpr.tcf2.purpose4.enforce_purpose"), tt.description)
-			assert.Equal(t, tt.wantPurpose5EnforcePurpose, v.GetString("gdpr.tcf2.purpose5.enforce_purpose"), tt.description)
-			assert.Equal(t, tt.wantPurpose6EnforcePurpose, v.GetString("gdpr.tcf2.purpose6.enforce_purpose"), tt.description)
-			assert.Equal(t, tt.wantPurpose7EnforcePurpose, v.GetString("gdpr.tcf2.purpose7.enforce_purpose"), tt.description)
-			assert.Equal(t, tt.wantPurpose8EnforcePurpose, v.GetString("gdpr.tcf2.purpose8.enforce_purpose"), tt.description)
-			assert.Equal(t, tt.wantPurpose9EnforcePurpose, v.GetString("gdpr.tcf2.purpose9.enforce_purpose"), tt.description)
-			assert.Equal(t, tt.wantPurpose10EnforcePurpose, v.GetString("gdpr.tcf2.purpose10.enforce_purpose"), tt.description)
-			assert.Equal(t, tt.wantPurpose1Enabled, v.GetString("gdpr.tcf2.purpose1.enabled"), tt.description)
-			assert.Equal(t, tt.wantPurpose2Enabled, v.GetString("gdpr.tcf2.purpose2.enabled"), tt.description)
-			assert.Equal(t, tt.wantPurpose3Enabled, v.GetString("gdpr.tcf2.purpose3.enabled"), tt.description)
-			assert.Equal(t, tt.wantPurpose4Enabled, v.GetString("gdpr.tcf2.purpose4.enabled"), tt.description)
-			assert.Equal(t, tt.wantPurpose5Enabled, v.GetString("gdpr.tcf2.purpose5.enabled"), tt.description)
-			assert.Equal(t, tt.wantPurpose6Enabled, v.GetString("gdpr.tcf2.purpose6.enabled"), tt.description)
-			assert.Equal(t, tt.wantPurpose7Enabled, v.GetString("gdpr.tcf2.purpose7.enabled"), tt.description)
-			assert.Equal(t, tt.wantPurpose8Enabled, v.GetString("gdpr.tcf2.purpose8.enabled"), tt.description)
-			assert.Equal(t, tt.wantPurpose9Enabled, v.GetString("gdpr.tcf2.purpose9.enabled"), tt.description)
-			assert.Equal(t, tt.wantPurpose10Enabled, v.GetString("gdpr.tcf2.purpose10.enabled"), tt.description)
-		} else {
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose1.enforce_purpose"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose2.enforce_purpose"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose3.enforce_purpose"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose4.enforce_purpose"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose5.enforce_purpose"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose6.enforce_purpose"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose7.enforce_purpose"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose8.enforce_purpose"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose9.enforce_purpose"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose10.enforce_purpose"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose1.enabled"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose2.enabled"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose3.enabled"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose4.enabled"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose5.enabled"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose6.enabled"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose7.enabled"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose8.enabled"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose9.enabled"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose10.enabled"), tt.description)
-		}
-	}
-}
-
-func TestMigrateConfigTCF2PurposeFlags(t *testing.T) {
-	tests := []struct {
-		description                string
-		config                     []byte
-		wantPurpose1EnforceAlgo    string
-		wantPurpose1EnforcePurpose bool
-		wantPurpose1Enabled        bool
-	}{
-		{
-			description: "enforce_purpose does not set enforce_algo but sets enabled",
-			config: []byte(`
-              gdpr:
-                tcf2:
-                  purpose1:
-                    enforce_algo: "off"
-                    enforce_purpose: "full"
-                    enabled: false
-                  purpose2:
-                    enforce_purpose: "full"
-                    enabled: false
-                  purpose3:
-                    enabled: false
-            `),
-			wantPurpose1EnforceAlgo:    "off",
-			wantPurpose1EnforcePurpose: true,
-			wantPurpose1Enabled:        true,
-		},
-		{
-			description: "enforce_purpose sets enforce_algo and enabled",
-			config: []byte(`
-              gdpr:
-                tcf2:
-                  purpose1:
-                    enforce_purpose: "full"
-                    enabled: false
-            `),
-			wantPurpose1EnforceAlgo:    "full",
-			wantPurpose1EnforcePurpose: true,
-			wantPurpose1Enabled:        true,
-		},
-		{
-			description: "enforce_purpose does not set enforce_algo or enabled",
-			config: []byte(`
-              gdpr:
-                tcf2:
-                  purpose1:
-                    enabled: false
-            `),
-			wantPurpose1EnforceAlgo:    "",
-			wantPurpose1EnforcePurpose: false,
-			wantPurpose1Enabled:        false,
-		},
-	}
-
-	for _, tt := range tests {
-		v := viper.New()
-		v.SetConfigType("yaml")
-		v.ReadConfig(bytes.NewBuffer(tt.config))
-
-		migrateConfigTCF2PurposeFlags(v)
-
-		assert.Equal(t, tt.wantPurpose1EnforceAlgo, v.GetString("gdpr.tcf2.purpose1.enforce_algo"), tt.description)
-		assert.Equal(t, tt.wantPurpose1EnforcePurpose, v.GetBool("gdpr.tcf2.purpose1.enforce_purpose"), tt.description)
-		assert.Equal(t, tt.wantPurpose1Enabled, v.GetBool("gdpr.tcf2.purpose1.enabled"), tt.description)
-	}
-
-}
-
-func TestMigrateConfigTCF2EnforcePurposeFlags(t *testing.T) {
-	trueStr := "true"
-	falseStr := "false"
-
-	tests := []struct {
-		description                 string
-		config                      []byte
-		wantEnforceAlgosSet         bool
-		wantPurpose1EnforceAlgo     string
-		wantPurpose2EnforceAlgo     string
-		wantPurpose3EnforceAlgo     string
-		wantPurpose4EnforceAlgo     string
-		wantPurpose5EnforceAlgo     string
-		wantPurpose6EnforceAlgo     string
-		wantPurpose7EnforceAlgo     string
-		wantPurpose8EnforceAlgo     string
-		wantPurpose9EnforceAlgo     string
-		wantPurpose10EnforceAlgo    string
-		wantEnforcePurposesSet      bool
-		wantPurpose1EnforcePurpose  string
-		wantPurpose2EnforcePurpose  string
-		wantPurpose3EnforcePurpose  string
-		wantPurpose4EnforcePurpose  string
-		wantPurpose5EnforcePurpose  string
-		wantPurpose6EnforcePurpose  string
-		wantPurpose7EnforcePurpose  string
-		wantPurpose8EnforcePurpose  string
-		wantPurpose9EnforcePurpose  string
-		wantPurpose10EnforcePurpose string
-	}{
-		{
-			description:            "enforce_algo and enforce_purpose are not set",
-			config:                 []byte{},
-			wantEnforceAlgosSet:    false,
-			wantEnforcePurposesSet: false,
-		},
-		{
-			description: "enforce_algo not set; set it based on enforce_purpose string value",
-			config: []byte(`
-              gdpr:
-                tcf2:
-                  purpose1:
-                    enforce_purpose: "full"
-                  purpose2:
-                    enforce_purpose: "no"
-                  purpose3:
-                    enforce_purpose: "full"
-                  purpose4:
-                    enforce_purpose: "no"
-                  purpose5:
-                    enforce_purpose: "full"
-                  purpose6:
-                    enforce_purpose: "no"
-                  purpose7:
-                    enforce_purpose: "full"
-                  purpose8:
-                    enforce_purpose: "no"
-                  purpose9:
-                    enforce_purpose: "full"
-                  purpose10:
-                    enforce_purpose: "no"
-            `),
-			wantEnforceAlgosSet:         true,
-			wantPurpose1EnforceAlgo:     TCF2EnforceAlgoFull,
-			wantPurpose2EnforceAlgo:     TCF2EnforceAlgoFull,
-			wantPurpose3EnforceAlgo:     TCF2EnforceAlgoFull,
-			wantPurpose4EnforceAlgo:     TCF2EnforceAlgoFull,
-			wantPurpose5EnforceAlgo:     TCF2EnforceAlgoFull,
-			wantPurpose6EnforceAlgo:     TCF2EnforceAlgoFull,
-			wantPurpose7EnforceAlgo:     TCF2EnforceAlgoFull,
-			wantPurpose8EnforceAlgo:     TCF2EnforceAlgoFull,
-			wantPurpose9EnforceAlgo:     TCF2EnforceAlgoFull,
-			wantPurpose10EnforceAlgo:    TCF2EnforceAlgoFull,
-			wantEnforcePurposesSet:      true,
-			wantPurpose1EnforcePurpose:  trueStr,
-			wantPurpose2EnforcePurpose:  falseStr,
-			wantPurpose3EnforcePurpose:  trueStr,
-			wantPurpose4EnforcePurpose:  falseStr,
-			wantPurpose5EnforcePurpose:  trueStr,
-			wantPurpose6EnforcePurpose:  falseStr,
-			wantPurpose7EnforcePurpose:  trueStr,
-			wantPurpose8EnforcePurpose:  falseStr,
-			wantPurpose9EnforcePurpose:  trueStr,
-			wantPurpose10EnforcePurpose: falseStr,
-		},
-		{
-			description: "enforce_algo not set; don't set it based on enforce_purpose bool value",
-			config: []byte(`
-              gdpr:
-                tcf2:
-                  purpose1:
-                    enforce_purpose: true
-                  purpose2:
-                    enforce_purpose: false
-                  purpose3:
-                    enforce_purpose: true
-                  purpose4:
-                    enforce_purpose: false
-                  purpose5:
-                    enforce_purpose: true
-                  purpose6:
-                    enforce_purpose: false
-                  purpose7:
-                    enforce_purpose: true
-                  purpose8:
-                    enforce_purpose: false
-                  purpose9:
-                    enforce_purpose: true
-                  purpose10:
-                    enforce_purpose: false
-            `),
-			wantEnforceAlgosSet:         false,
-			wantEnforcePurposesSet:      true,
-			wantPurpose1EnforcePurpose:  trueStr,
-			wantPurpose2EnforcePurpose:  falseStr,
-			wantPurpose3EnforcePurpose:  trueStr,
-			wantPurpose4EnforcePurpose:  falseStr,
-			wantPurpose5EnforcePurpose:  trueStr,
-			wantPurpose6EnforcePurpose:  falseStr,
-			wantPurpose7EnforcePurpose:  trueStr,
-			wantPurpose8EnforcePurpose:  falseStr,
-			wantPurpose9EnforcePurpose:  trueStr,
-			wantPurpose10EnforcePurpose: falseStr,
-		},
-		{
-			description: "enforce_algo is set and enforce_purpose is not; enforce_algo is unchanged",
-			config: []byte(`
-              gdpr:
-                tcf2:
-                  purpose1:
-                    enforce_algo: "full"
-                  purpose2:
-                    enforce_algo: "full"
-                  purpose3:
-                    enforce_algo: "full"
-                  purpose4:
-                    enforce_algo: "full"
-                  purpose5:
-                    enforce_algo: "full"
-                  purpose6:
-                    enforce_algo: "full"
-                  purpose7:
-                    enforce_algo: "full"
-                  purpose8:
-                    enforce_algo: "full"
-                  purpose9:
-                    enforce_algo: "full"
-                  purpose10:
-                    enforce_algo: "full"
-            `),
-			wantEnforceAlgosSet:      true,
-			wantPurpose1EnforceAlgo:  TCF2EnforceAlgoFull,
-			wantPurpose2EnforceAlgo:  TCF2EnforceAlgoFull,
-			wantPurpose3EnforceAlgo:  TCF2EnforceAlgoFull,
-			wantPurpose4EnforceAlgo:  TCF2EnforceAlgoFull,
-			wantPurpose5EnforceAlgo:  TCF2EnforceAlgoFull,
-			wantPurpose6EnforceAlgo:  TCF2EnforceAlgoFull,
-			wantPurpose7EnforceAlgo:  TCF2EnforceAlgoFull,
-			wantPurpose8EnforceAlgo:  TCF2EnforceAlgoFull,
-			wantPurpose9EnforceAlgo:  TCF2EnforceAlgoFull,
-			wantPurpose10EnforceAlgo: TCF2EnforceAlgoFull,
-			wantEnforcePurposesSet:   false,
-		},
-		{
-			description: "enforce_algo and enforce_purpose are set; enforce_algo is unchanged",
-			config: []byte(`
-              gdpr:
-                tcf2:
-                  purpose1:
-                    enforce_algo: "full"
-                    enforce_purpose: "no"
-                  purpose2:
-                    enforce_algo: "full"
-                    enforce_purpose: "no"
-                  purpose3:
-                    enforce_algo: "full"
-                    enforce_purpose: "no"
-                  purpose4:
-                    enforce_algo: "full"
-                    enforce_purpose: "no"
-                  purpose5:
-                    enforce_algo: "full"
-                    enforce_purpose: "no"
-                  purpose6:
-                    enforce_algo: "full"
-                    enforce_purpose: "no"
-                  purpose7:
-                    enforce_algo: "full"
-                    enforce_purpose: "no"
-                  purpose8:
-                    enforce_algo: "full"
-                    enforce_purpose: "no"
-                  purpose9:
-                    enforce_algo: "full"
-                    enforce_purpose: "no"
-                  purpose10:
-                    enforce_algo: "full"
-                    enforce_purpose: "no"
-            `),
-			wantEnforceAlgosSet:         true,
-			wantPurpose1EnforceAlgo:     TCF2EnforceAlgoFull,
-			wantPurpose2EnforceAlgo:     TCF2EnforceAlgoFull,
-			wantPurpose3EnforceAlgo:     TCF2EnforceAlgoFull,
-			wantPurpose4EnforceAlgo:     TCF2EnforceAlgoFull,
-			wantPurpose5EnforceAlgo:     TCF2EnforceAlgoFull,
-			wantPurpose6EnforceAlgo:     TCF2EnforceAlgoFull,
-			wantPurpose7EnforceAlgo:     TCF2EnforceAlgoFull,
-			wantPurpose8EnforceAlgo:     TCF2EnforceAlgoFull,
-			wantPurpose9EnforceAlgo:     TCF2EnforceAlgoFull,
-			wantPurpose10EnforceAlgo:    TCF2EnforceAlgoFull,
-			wantEnforcePurposesSet:      true,
-			wantPurpose1EnforcePurpose:  falseStr,
-			wantPurpose2EnforcePurpose:  falseStr,
-			wantPurpose3EnforcePurpose:  falseStr,
-			wantPurpose4EnforcePurpose:  falseStr,
-			wantPurpose5EnforcePurpose:  falseStr,
-			wantPurpose6EnforcePurpose:  falseStr,
-			wantPurpose7EnforcePurpose:  falseStr,
-			wantPurpose8EnforcePurpose:  falseStr,
-			wantPurpose9EnforcePurpose:  falseStr,
-			wantPurpose10EnforcePurpose: falseStr,
-		},
-	}
-
-	for _, tt := range tests {
-		v := viper.New()
-		v.SetConfigType("yaml")
-		v.ReadConfig(bytes.NewBuffer(tt.config))
-
-		migrateConfigTCF2EnforcePurposeFlags(v)
-
-		if tt.wantEnforceAlgosSet {
-			assert.Equal(t, tt.wantPurpose1EnforceAlgo, v.GetString("gdpr.tcf2.purpose1.enforce_algo"), tt.description)
-			assert.Equal(t, tt.wantPurpose2EnforceAlgo, v.GetString("gdpr.tcf2.purpose2.enforce_algo"), tt.description)
-			assert.Equal(t, tt.wantPurpose3EnforceAlgo, v.GetString("gdpr.tcf2.purpose3.enforce_algo"), tt.description)
-			assert.Equal(t, tt.wantPurpose4EnforceAlgo, v.GetString("gdpr.tcf2.purpose4.enforce_algo"), tt.description)
-			assert.Equal(t, tt.wantPurpose5EnforceAlgo, v.GetString("gdpr.tcf2.purpose5.enforce_algo"), tt.description)
-			assert.Equal(t, tt.wantPurpose6EnforceAlgo, v.GetString("gdpr.tcf2.purpose6.enforce_algo"), tt.description)
-			assert.Equal(t, tt.wantPurpose7EnforceAlgo, v.GetString("gdpr.tcf2.purpose7.enforce_algo"), tt.description)
-			assert.Equal(t, tt.wantPurpose8EnforceAlgo, v.GetString("gdpr.tcf2.purpose8.enforce_algo"), tt.description)
-			assert.Equal(t, tt.wantPurpose9EnforceAlgo, v.GetString("gdpr.tcf2.purpose9.enforce_algo"), tt.description)
-			assert.Equal(t, tt.wantPurpose10EnforceAlgo, v.GetString("gdpr.tcf2.purpose10.enforce_algo"), tt.description)
-		} else {
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose1.enforce_algo"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose2.enforce_algo"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose3.enforce_algo"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose4.enforce_algo"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose5.enforce_algo"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose6.enforce_algo"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose7.enforce_algo"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose8.enforce_algo"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose9.enforce_algo"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose10.enforce_algo"), tt.description)
-		}
-
-		if tt.wantEnforcePurposesSet {
-			assert.Equal(t, tt.wantPurpose1EnforcePurpose, v.GetString("gdpr.tcf2.purpose1.enforce_purpose"), tt.description)
-			assert.Equal(t, tt.wantPurpose2EnforcePurpose, v.GetString("gdpr.tcf2.purpose2.enforce_purpose"), tt.description)
-			assert.Equal(t, tt.wantPurpose3EnforcePurpose, v.GetString("gdpr.tcf2.purpose3.enforce_purpose"), tt.description)
-			assert.Equal(t, tt.wantPurpose4EnforcePurpose, v.GetString("gdpr.tcf2.purpose4.enforce_purpose"), tt.description)
-			assert.Equal(t, tt.wantPurpose5EnforcePurpose, v.GetString("gdpr.tcf2.purpose5.enforce_purpose"), tt.description)
-			assert.Equal(t, tt.wantPurpose6EnforcePurpose, v.GetString("gdpr.tcf2.purpose6.enforce_purpose"), tt.description)
-			assert.Equal(t, tt.wantPurpose7EnforcePurpose, v.GetString("gdpr.tcf2.purpose7.enforce_purpose"), tt.description)
-			assert.Equal(t, tt.wantPurpose8EnforcePurpose, v.GetString("gdpr.tcf2.purpose8.enforce_purpose"), tt.description)
-			assert.Equal(t, tt.wantPurpose9EnforcePurpose, v.GetString("gdpr.tcf2.purpose9.enforce_purpose"), tt.description)
-			assert.Equal(t, tt.wantPurpose10EnforcePurpose, v.GetString("gdpr.tcf2.purpose10.enforce_purpose"), tt.description)
-		} else {
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose1.enforce_purpose"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose2.enforce_purpose"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose3.enforce_purpose"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose4.enforce_purpose"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose5.enforce_purpose"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose6.enforce_purpose"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose7.enforce_purpose"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose8.enforce_purpose"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose9.enforce_purpose"), tt.description)
-			assert.Nil(t, v.Get("gdpr.tcf2.purpose10.enforce_purpose"), tt.description)
-		}
-	}
-}
-
-func TestMigrateConfigDatabaseConnection(t *testing.T) {
-	type configs struct {
-		old  []byte
-		new  []byte
-		both []byte
-	}
-
-	// Stored Requests Config Migration
-	storedReqestsConfigs := configs{
-		old: []byte(`
-      stored_requests:
-        postgres:
-          connection:
-            dbname: "old_connection_dbname"
-            host: "old_connection_host"
-            port: 1000
-            user: "old_connection_user"
-            password: "old_connection_password"
-          fetcher:
-            query: "old_fetcher_query"
-            amp_query: "old_fetcher_amp_query"
-          initialize_caches:
-            timeout_ms: 1000
-            query: "old_initialize_caches_query"
-            amp_query: "old_initialize_caches_amp_query"
-          poll_for_updates:
-            refresh_rate_seconds: 1000
-            timeout_ms: 1000
-            query: "old_poll_for_updates_query"
-            amp_query: "old_poll_for_updates_amp_query"
-    `),
-		new: []byte(`
-      stored_requests:
-        database:
-          connection:
-            dbname: "new_connection_dbname"
-            host: "new_connection_host"
-            port: 2000
-            user: "new_connection_user"
-            password: "new_connection_password"
-          fetcher:
-            query: "new_fetcher_query"
-            amp_query: "new_fetcher_amp_query"
-          initialize_caches:
-            timeout_ms: 2000
-            query: "new_initialize_caches_query"
-            amp_query: "new_initialize_caches_amp_query"
-          poll_for_updates:
-            refresh_rate_seconds: 2000
-            timeout_ms: 2000
-            query: "new_poll_for_updates_query"
-            amp_query: "new_poll_for_updates_amp_query"
-    `),
-		both: []byte(`
-      stored_requests:
-        postgres:
-          connection:
-            dbname: "old_connection_dbname"
-            host: "old_connection_host"
-            port: 1000
-            user: "old_connection_user"
-            password: "old_connection_password"
-          fetcher:
-            query: "old_fetcher_query"
-            amp_query: "old_fetcher_amp_query"
-          initialize_caches:
-            timeout_ms: 1000
-            query: "old_initialize_caches_query"
-            amp_query: "old_initialize_caches_amp_query"
-          poll_for_updates:
-            refresh_rate_seconds: 1000
-            timeout_ms: 1000
-            query: "old_poll_for_updates_query"
-            amp_query: "old_poll_for_updates_amp_query"
-        database:
-          connection:
-            dbname: "new_connection_dbname"
-            host: "new_connection_host"
-            port: 2000
-            user: "new_connection_user"
-            password: "new_connection_password"
-          fetcher:
-            query: "new_fetcher_query"
-            amp_query: "new_fetcher_amp_query"
-          initialize_caches:
-            timeout_ms: 2000
-            query: "new_initialize_caches_query"
-            amp_query: "new_initialize_caches_amp_query"
-          poll_for_updates:
-            refresh_rate_seconds: 2000
-            timeout_ms: 2000
-            query: "new_poll_for_updates_query"
-            amp_query: "new_poll_for_updates_amp_query"
-    `),
-	}
-
-	storedRequestsTests := []struct {
-		description string
-		config      []byte
-
-		want_connection_dbname                     string
-		want_connection_host                       string
-		want_connection_port                       int
-		want_connection_user                       string
-		want_connection_password                   string
-		want_fetcher_query                         string
-		want_fetcher_amp_query                     string
-		want_initialize_caches_timeout_ms          int
-		want_initialize_caches_query               string
-		want_initialize_caches_amp_query           string
-		want_poll_for_updates_refresh_rate_seconds int
-		want_poll_for_updates_timeout_ms           int
-		want_poll_for_updates_query                string
-		want_poll_for_updates_amp_query            string
-	}{
-		{
-			description: "New config and old config not set",
-			config:      []byte{},
-		},
-		{
-			description: "New config not set, old config set",
-			config:      storedReqestsConfigs.old,
-
-			want_connection_dbname:                     "old_connection_dbname",
-			want_connection_host:                       "old_connection_host",
-			want_connection_port:                       1000,
-			want_connection_user:                       "old_connection_user",
-			want_connection_password:                   "old_connection_password",
-			want_fetcher_query:                         "old_fetcher_query",
-			want_fetcher_amp_query:                     "old_fetcher_amp_query",
-			want_initialize_caches_timeout_ms:          1000,
-			want_initialize_caches_query:               "old_initialize_caches_query",
-			want_initialize_caches_amp_query:           "old_initialize_caches_amp_query",
-			want_poll_for_updates_refresh_rate_seconds: 1000,
-			want_poll_for_updates_timeout_ms:           1000,
-			want_poll_for_updates_query:                "old_poll_for_updates_query",
-			want_poll_for_updates_amp_query:            "old_poll_for_updates_amp_query",
-		},
-		{
-			description: "New config set, old config not set",
-			config:      storedReqestsConfigs.new,
-
-			want_connection_dbname:                     "new_connection_dbname",
-			want_connection_host:                       "new_connection_host",
-			want_connection_port:                       2000,
-			want_connection_user:                       "new_connection_user",
-			want_connection_password:                   "new_connection_password",
-			want_fetcher_query:                         "new_fetcher_query",
-			want_fetcher_amp_query:                     "new_fetcher_amp_query",
-			want_initialize_caches_timeout_ms:          2000,
-			want_initialize_caches_query:               "new_initialize_caches_query",
-			want_initialize_caches_amp_query:           "new_initialize_caches_amp_query",
-			want_poll_for_updates_refresh_rate_seconds: 2000,
-			want_poll_for_updates_timeout_ms:           2000,
-			want_poll_for_updates_query:                "new_poll_for_updates_query",
-			want_poll_for_updates_amp_query:            "new_poll_for_updates_amp_query",
-		},
-		{
-			description: "New config and old config set",
-			config:      storedReqestsConfigs.both,
-
-			want_connection_dbname:                     "new_connection_dbname",
-			want_connection_host:                       "new_connection_host",
-			want_connection_port:                       2000,
-			want_connection_user:                       "new_connection_user",
-			want_connection_password:                   "new_connection_password",
-			want_fetcher_query:                         "new_fetcher_query",
-			want_fetcher_amp_query:                     "new_fetcher_amp_query",
-			want_initialize_caches_timeout_ms:          2000,
-			want_initialize_caches_query:               "new_initialize_caches_query",
-			want_initialize_caches_amp_query:           "new_initialize_caches_amp_query",
-			want_poll_for_updates_refresh_rate_seconds: 2000,
-			want_poll_for_updates_timeout_ms:           2000,
-			want_poll_for_updates_query:                "new_poll_for_updates_query",
-			want_poll_for_updates_amp_query:            "new_poll_for_updates_amp_query",
-		},
-	}
-
-	for _, tt := range storedRequestsTests {
-		v := viper.New()
-		v.SetConfigType("yaml")
-		v.ReadConfig(bytes.NewBuffer(tt.config))
-
-		migrateConfigDatabaseConnection(v)
-
-		if len(tt.config) > 0 {
-			assert.Equal(t, tt.want_connection_dbname, v.GetString("stored_requests.database.connection.dbname"), tt.description)
-			assert.Equal(t, tt.want_connection_host, v.GetString("stored_requests.database.connection.host"), tt.description)
-			assert.Equal(t, tt.want_connection_port, v.GetInt("stored_requests.database.connection.port"), tt.description)
-			assert.Equal(t, tt.want_connection_user, v.GetString("stored_requests.database.connection.user"), tt.description)
-			assert.Equal(t, tt.want_connection_password, v.GetString("stored_requests.database.connection.password"), tt.description)
-			assert.Equal(t, tt.want_fetcher_query, v.GetString("stored_requests.database.fetcher.query"), tt.description)
-			assert.Equal(t, tt.want_fetcher_amp_query, v.GetString("stored_requests.database.fetcher.amp_query"), tt.description)
-			assert.Equal(t, tt.want_initialize_caches_timeout_ms, v.GetInt("stored_requests.database.initialize_caches.timeout_ms"), tt.description)
-			assert.Equal(t, tt.want_initialize_caches_query, v.GetString("stored_requests.database.initialize_caches.query"), tt.description)
-			assert.Equal(t, tt.want_initialize_caches_amp_query, v.GetString("stored_requests.database.initialize_caches.amp_query"), tt.description)
-			assert.Equal(t, tt.want_poll_for_updates_refresh_rate_seconds, v.GetInt("stored_requests.database.poll_for_updates.refresh_rate_seconds"), tt.description)
-			assert.Equal(t, tt.want_poll_for_updates_timeout_ms, v.GetInt("stored_requests.database.poll_for_updates.timeout_ms"), tt.description)
-			assert.Equal(t, tt.want_poll_for_updates_query, v.GetString("stored_requests.database.poll_for_updates.query"), tt.description)
-			assert.Equal(t, tt.want_poll_for_updates_amp_query, v.GetString("stored_requests.database.poll_for_updates.amp_query"), tt.description)
-		} else {
-			assert.Nil(t, v.Get("stored_requests.database.connection.dbname"), tt.description)
-			assert.Nil(t, v.Get("stored_requests.database.connection.host"), tt.description)
-			assert.Nil(t, v.Get("stored_requests.database.connection.port"), tt.description)
-			assert.Nil(t, v.Get("stored_requests.database.connection.user"), tt.description)
-			assert.Nil(t, v.Get("stored_requests.database.connection.password"), tt.description)
-			assert.Nil(t, v.Get("stored_requests.database.fetcher.query"), tt.description)
-			assert.Nil(t, v.Get("stored_requests.database.fetcher.amp_query"), tt.description)
-			assert.Nil(t, v.Get("stored_requests.database.initialize_caches.timeout_ms"), tt.description)
-			assert.Nil(t, v.Get("stored_requests.database.initialize_caches.query"), tt.description)
-			assert.Nil(t, v.Get("stored_requests.database.initialize_caches.amp_query"), tt.description)
-			assert.Nil(t, v.Get("stored_requests.database.poll_for_updates.refresh_rate_seconds"), tt.description)
-			assert.Nil(t, v.Get("stored_requests.database.poll_for_updates.timeout_ms"), tt.description)
-			assert.Nil(t, v.Get("stored_requests.database.poll_for_updates.query"), tt.description)
-			assert.Nil(t, v.Get("stored_requests.database.poll_for_updates.amp_query"), tt.description)
-		}
-	}
-
-	// Stored Video Reqs Config Migration
-	storedVideoReqsConfigs := configs{
-		old: []byte(`
-      stored_video_req:
-        postgres:
-          connection:
-            dbname: "old_connection_dbname"
-            host: "old_connection_host"
-            port: 1000
-            user: "old_connection_user"
-            password: "old_connection_password"
-          fetcher:
-            query: "old_fetcher_query"
-          initialize_caches:
-            timeout_ms: 1000
-            query: "old_initialize_caches_query"
-          poll_for_updates:
-            refresh_rate_seconds: 1000
-            timeout_ms: 1000
-            query: "old_poll_for_updates_query"
-    `),
-		new: []byte(`
-      stored_video_req:
-        database:
-          connection:
-            dbname: "new_connection_dbname"
-            host: "new_connection_host"
-            port: 2000
-            user: "new_connection_user"
-            password: "new_connection_password"
-          fetcher:
-            query: "new_fetcher_query"
-          initialize_caches:
-            timeout_ms: 2000
-            query: "new_initialize_caches_query"
-          poll_for_updates:
-            refresh_rate_seconds: 2000
-            timeout_ms: 2000
-            query: "new_poll_for_updates_query"
-    `),
-		both: []byte(`
-      stored_video_req:
-        postgres:
-          connection:
-            dbname: "old_connection_dbname"
-            host: "old_connection_host"
-            port: 1000
-            user: "old_connection_user"
-            password: "old_connection_password"
-          fetcher:
-            query: "old_fetcher_query"
-          initialize_caches:
-            timeout_ms: 1000
-            query: "old_initialize_caches_query"
-          poll_for_updates:
-            refresh_rate_seconds: 1000
-            timeout_ms: 1000
-            query: "old_poll_for_updates_query"
-        database:
-          connection:
-            dbname: "new_connection_dbname"
-            host: "new_connection_host"
-            port: 2000
-            user: "new_connection_user"
-            password: "new_connection_password"
-          fetcher:
-            query: "new_fetcher_query"
-          initialize_caches:
-            timeout_ms: 2000
-            query: "new_initialize_caches_query"
-          poll_for_updates:
-            refresh_rate_seconds: 2000
-            timeout_ms: 2000
-            query: "new_poll_for_updates_query"
-    `),
-	}
-
-	storedVideoReqsTests := []struct {
-		description string
-		config      []byte
-
-		want_connection_dbname                     string
-		want_connection_host                       string
-		want_connection_port                       int
-		want_connection_user                       string
-		want_connection_password                   string
-		want_fetcher_query                         string
-		want_initialize_caches_timeout_ms          int
-		want_initialize_caches_query               string
-		want_poll_for_updates_refresh_rate_seconds int
-		want_poll_for_updates_timeout_ms           int
-		want_poll_for_updates_query                string
-	}{
-		{
-			description: "New config and old config not set",
-			config:      []byte{},
-		},
-		{
-			description: "New config not set, old config set",
-			config:      storedVideoReqsConfigs.old,
-
-			want_connection_dbname:                     "old_connection_dbname",
-			want_connection_host:                       "old_connection_host",
-			want_connection_port:                       1000,
-			want_connection_user:                       "old_connection_user",
-			want_connection_password:                   "old_connection_password",
-			want_fetcher_query:                         "old_fetcher_query",
-			want_initialize_caches_timeout_ms:          1000,
-			want_initialize_caches_query:               "old_initialize_caches_query",
-			want_poll_for_updates_refresh_rate_seconds: 1000,
-			want_poll_for_updates_timeout_ms:           1000,
-			want_poll_for_updates_query:                "old_poll_for_updates_query",
-		},
-		{
-			description: "New config set, old config not set",
-			config:      storedVideoReqsConfigs.new,
-
-			want_connection_dbname:                     "new_connection_dbname",
-			want_connection_host:                       "new_connection_host",
-			want_connection_port:                       2000,
-			want_connection_user:                       "new_connection_user",
-			want_connection_password:                   "new_connection_password",
-			want_fetcher_query:                         "new_fetcher_query",
-			want_initialize_caches_timeout_ms:          2000,
-			want_initialize_caches_query:               "new_initialize_caches_query",
-			want_poll_for_updates_refresh_rate_seconds: 2000,
-			want_poll_for_updates_timeout_ms:           2000,
-			want_poll_for_updates_query:                "new_poll_for_updates_query",
-		},
-		{
-			description: "New config and old config set",
-			config:      storedVideoReqsConfigs.both,
-
-			want_connection_dbname:                     "new_connection_dbname",
-			want_connection_host:                       "new_connection_host",
-			want_connection_port:                       2000,
-			want_connection_user:                       "new_connection_user",
-			want_connection_password:                   "new_connection_password",
-			want_fetcher_query:                         "new_fetcher_query",
-			want_initialize_caches_timeout_ms:          2000,
-			want_initialize_caches_query:               "new_initialize_caches_query",
-			want_poll_for_updates_refresh_rate_seconds: 2000,
-			want_poll_for_updates_timeout_ms:           2000,
-			want_poll_for_updates_query:                "new_poll_for_updates_query",
-		},
-	}
-
-	for _, tt := range storedVideoReqsTests {
-		v := viper.New()
-		v.SetConfigType("yaml")
-		v.ReadConfig(bytes.NewBuffer(tt.config))
-
-		migrateConfigDatabaseConnection(v)
-
-		if len(tt.config) > 0 {
-			assert.Equal(t, tt.want_connection_dbname, v.Get("stored_video_req.database.connection.dbname").(string), tt.description)
-			assert.Equal(t, tt.want_connection_host, v.Get("stored_video_req.database.connection.host").(string), tt.description)
-			assert.Equal(t, tt.want_connection_port, v.Get("stored_video_req.database.connection.port").(int), tt.description)
-			assert.Equal(t, tt.want_connection_user, v.Get("stored_video_req.database.connection.user").(string), tt.description)
-			assert.Equal(t, tt.want_connection_password, v.Get("stored_video_req.database.connection.password").(string), tt.description)
-			assert.Equal(t, tt.want_fetcher_query, v.Get("stored_video_req.database.fetcher.query").(string), tt.description)
-			assert.Equal(t, tt.want_initialize_caches_timeout_ms, v.Get("stored_video_req.database.initialize_caches.timeout_ms").(int), tt.description)
-			assert.Equal(t, tt.want_initialize_caches_query, v.Get("stored_video_req.database.initialize_caches.query").(string), tt.description)
-			assert.Equal(t, tt.want_poll_for_updates_refresh_rate_seconds, v.Get("stored_video_req.database.poll_for_updates.refresh_rate_seconds").(int), tt.description)
-			assert.Equal(t, tt.want_poll_for_updates_timeout_ms, v.Get("stored_video_req.database.poll_for_updates.timeout_ms").(int), tt.description)
-			assert.Equal(t, tt.want_poll_for_updates_query, v.Get("stored_video_req.database.poll_for_updates.query").(string), tt.description)
-		} else {
-			assert.Nil(t, v.Get("stored_video_req.database.connection.dbname"), tt.description)
-			assert.Nil(t, v.Get("stored_video_req.database.connection.host"), tt.description)
-			assert.Nil(t, v.Get("stored_video_req.database.connection.port"), tt.description)
-			assert.Nil(t, v.Get("stored_video_req.database.connection.user"), tt.description)
-			assert.Nil(t, v.Get("stored_video_req.database.connection.password"), tt.description)
-			assert.Nil(t, v.Get("stored_video_req.database.fetcher.query"), tt.description)
-			assert.Nil(t, v.Get("stored_video_req.database.initialize_caches.timeout_ms"), tt.description)
-			assert.Nil(t, v.Get("stored_video_req.database.initialize_caches.query"), tt.description)
-			assert.Nil(t, v.Get("stored_video_req.database.poll_for_updates.refresh_rate_seconds"), tt.description)
-			assert.Nil(t, v.Get("stored_video_req.database.poll_for_updates.timeout_ms"), tt.description)
-			assert.Nil(t, v.Get("stored_video_req.database.poll_for_updates.query"), tt.description)
-		}
-	}
-
-	// Stored Responses Config Migration
-	storedResponsesConfigs := configs{
-		old: []byte(`
-      stored_responses:
-        postgres:
-          connection:
-            dbname: "old_connection_dbname"
-            host: "old_connection_host"
-            port: 1000
-            user: "old_connection_user"
-            password: "old_connection_password"
-          fetcher:
-            query: "old_fetcher_query"
-          initialize_caches:
-            timeout_ms: 1000
-            query: "old_initialize_caches_query"
-          poll_for_updates:
-            refresh_rate_seconds: 1000
-            timeout_ms: 1000
-            query: "old_poll_for_updates_query"
-    `),
-		new: []byte(`
-      stored_responses:
-        database:
-          connection:
-            dbname: "new_connection_dbname"
-            host: "new_connection_host"
-            port: 2000
-            user: "new_connection_user"
-            password: "new_connection_password"
-          fetcher:
-            query: "new_fetcher_query"
-          initialize_caches:
-            timeout_ms: 2000
-            query: "new_initialize_caches_query"
-          poll_for_updates:
-            refresh_rate_seconds: 2000
-            timeout_ms: 2000
-            query: "new_poll_for_updates_query"
-    `),
-		both: []byte(`
-      stored_responses:
-        postgres:
-          connection:
-            dbname: "old_connection_dbname"
-            host: "old_connection_host"
-            port: 1000
-            user: "old_connection_user"
-            password: "old_connection_password"
-          fetcher:
-            query: "old_fetcher_query"
-          initialize_caches:
-            timeout_ms: 1000
-            query: "old_initialize_caches_query"
-          poll_for_updates:
-            refresh_rate_seconds: 1000
-            timeout_ms: 1000
-            query: "old_poll_for_updates_query"
-        database:
-          connection:
-            dbname: "new_connection_dbname"
-            host: "new_connection_host"
-            port: 2000
-            user: "new_connection_user"
-            password: "new_connection_password"
-          fetcher:
-            query: "new_fetcher_query"
-          initialize_caches:
-            timeout_ms: 2000
-            query: "new_initialize_caches_query"
-          poll_for_updates:
-            refresh_rate_seconds: 2000
-            timeout_ms: 2000
-            query: "new_poll_for_updates_query"
-    `),
-	}
-
-	storedResponsesTests := []struct {
-		description string
-		config      []byte
-
-		want_connection_dbname                     string
-		want_connection_host                       string
-		want_connection_port                       int
-		want_connection_user                       string
-		want_connection_password                   string
-		want_fetcher_query                         string
-		want_initialize_caches_timeout_ms          int
-		want_initialize_caches_query               string
-		want_poll_for_updates_refresh_rate_seconds int
-		want_poll_for_updates_timeout_ms           int
-		want_poll_for_updates_query                string
-	}{
-		{
-			description: "New config and old config not set",
-			config:      []byte{},
-		},
-		{
-			description: "New config not set, old config set",
-			config:      storedResponsesConfigs.old,
-
-			want_connection_dbname:                     "old_connection_dbname",
-			want_connection_host:                       "old_connection_host",
-			want_connection_port:                       1000,
-			want_connection_user:                       "old_connection_user",
-			want_connection_password:                   "old_connection_password",
-			want_fetcher_query:                         "old_fetcher_query",
-			want_initialize_caches_timeout_ms:          1000,
-			want_initialize_caches_query:               "old_initialize_caches_query",
-			want_poll_for_updates_refresh_rate_seconds: 1000,
-			want_poll_for_updates_timeout_ms:           1000,
-			want_poll_for_updates_query:                "old_poll_for_updates_query",
-		},
-		{
-			description: "New config set, old config not set",
-			config:      storedResponsesConfigs.new,
-
-			want_connection_dbname:                     "new_connection_dbname",
-			want_connection_host:                       "new_connection_host",
-			want_connection_port:                       2000,
-			want_connection_user:                       "new_connection_user",
-			want_connection_password:                   "new_connection_password",
-			want_fetcher_query:                         "new_fetcher_query",
-			want_initialize_caches_timeout_ms:          2000,
-			want_initialize_caches_query:               "new_initialize_caches_query",
-			want_poll_for_updates_refresh_rate_seconds: 2000,
-			want_poll_for_updates_timeout_ms:           2000,
-			want_poll_for_updates_query:                "new_poll_for_updates_query",
-		},
-		{
-			description: "New config and old config set",
-			config:      storedResponsesConfigs.both,
-
-			want_connection_dbname:                     "new_connection_dbname",
-			want_connection_host:                       "new_connection_host",
-			want_connection_port:                       2000,
-			want_connection_user:                       "new_connection_user",
-			want_connection_password:                   "new_connection_password",
-			want_fetcher_query:                         "new_fetcher_query",
-			want_initialize_caches_timeout_ms:          2000,
-			want_initialize_caches_query:               "new_initialize_caches_query",
-			want_poll_for_updates_refresh_rate_seconds: 2000,
-			want_poll_for_updates_timeout_ms:           2000,
-			want_poll_for_updates_query:                "new_poll_for_updates_query",
-		},
-	}
-
-	for _, tt := range storedResponsesTests {
-		v := viper.New()
-		v.SetConfigType("yaml")
-		v.ReadConfig(bytes.NewBuffer(tt.config))
-
-		migrateConfigDatabaseConnection(v)
-
-		if len(tt.config) > 0 {
-			assert.Equal(t, tt.want_connection_dbname, v.Get("stored_responses.database.connection.dbname").(string), tt.description)
-			assert.Equal(t, tt.want_connection_host, v.Get("stored_responses.database.connection.host").(string), tt.description)
-			assert.Equal(t, tt.want_connection_port, v.Get("stored_responses.database.connection.port").(int), tt.description)
-			assert.Equal(t, tt.want_connection_user, v.Get("stored_responses.database.connection.user").(string), tt.description)
-			assert.Equal(t, tt.want_connection_password, v.Get("stored_responses.database.connection.password").(string), tt.description)
-			assert.Equal(t, tt.want_fetcher_query, v.Get("stored_responses.database.fetcher.query").(string), tt.description)
-			assert.Equal(t, tt.want_initialize_caches_timeout_ms, v.Get("stored_responses.database.initialize_caches.timeout_ms").(int), tt.description)
-			assert.Equal(t, tt.want_initialize_caches_query, v.Get("stored_responses.database.initialize_caches.query").(string), tt.description)
-			assert.Equal(t, tt.want_poll_for_updates_refresh_rate_seconds, v.Get("stored_responses.database.poll_for_updates.refresh_rate_seconds").(int), tt.description)
-			assert.Equal(t, tt.want_poll_for_updates_timeout_ms, v.Get("stored_responses.database.poll_for_updates.timeout_ms").(int), tt.description)
-			assert.Equal(t, tt.want_poll_for_updates_query, v.Get("stored_responses.database.poll_for_updates.query").(string), tt.description)
-		} else {
-			assert.Nil(t, v.Get("stored_responses.database.connection.dbname"), tt.description)
-			assert.Nil(t, v.Get("stored_responses.database.connection.host"), tt.description)
-			assert.Nil(t, v.Get("stored_responses.database.connection.port"), tt.description)
-			assert.Nil(t, v.Get("stored_responses.database.connection.user"), tt.description)
-			assert.Nil(t, v.Get("stored_responses.database.connection.password"), tt.description)
-			assert.Nil(t, v.Get("stored_responses.database.fetcher.query"), tt.description)
-			assert.Nil(t, v.Get("stored_responses.database.initialize_caches.timeout_ms"), tt.description)
-			assert.Nil(t, v.Get("stored_responses.database.initialize_caches.query"), tt.description)
-			assert.Nil(t, v.Get("stored_responses.database.poll_for_updates.refresh_rate_seconds"), tt.description)
-			assert.Nil(t, v.Get("stored_responses.database.poll_for_updates.timeout_ms"), tt.description)
-			assert.Nil(t, v.Get("stored_responses.database.poll_for_updates.query"), tt.description)
-		}
-	}
-}
-
-func TestMigrateConfigDatabaseConnectionUsingEnvVars(t *testing.T) {
-	tests := []struct {
-		description        string
-		prefix             string
-		setDatabaseEnvVars bool
-		setPostgresEnvVars bool
-	}{
-		{
-			description:        "stored requests old config set",
-			prefix:             "stored_requests",
-			setPostgresEnvVars: true,
-		},
-		{
-			description:        "stored requests new config set",
-			prefix:             "stored_requests",
-			setDatabaseEnvVars: true,
-		},
-		{
-			description:        "stored requests old and new config set",
-			prefix:             "stored_requests",
-			setDatabaseEnvVars: true,
-			setPostgresEnvVars: true,
-		},
-		{
-			description:        "stored video requests old config set",
-			prefix:             "stored_video_req",
-			setPostgresEnvVars: true,
-		},
-		{
-			description:        "stored video requests new config set",
-			prefix:             "stored_video_req",
-			setDatabaseEnvVars: true,
-		},
-		{
-			description:        "stored video requests old and new config set",
-			prefix:             "stored_video_req",
-			setDatabaseEnvVars: true,
-			setPostgresEnvVars: true,
-		},
-		{
-			description:        "stored responses old config set",
-			prefix:             "stored_responses",
-			setPostgresEnvVars: true,
-		},
-		{
-			description:        "stored responses new config set",
-			prefix:             "stored_responses",
-			setDatabaseEnvVars: true,
-		},
-		{
-			description:        "stored responses old and new config set",
-			prefix:             "stored_responses",
-			setDatabaseEnvVars: true,
-			setPostgresEnvVars: true,
-		},
-	}
-
-	pgValues := map[string]string{
-		"CONNECTION_DBNAME":                     "pg-dbname",
-		"CONNECTION_HOST":                       "pg-host",
-		"CONNECTION_PORT":                       "1",
-		"CONNECTION_USER":                       "pg-user",
-		"CONNECTION_PASSWORD":                   "pg-password",
-		"FETCHER_QUERY":                         "pg-fetcher-query",
-		"FETCHER_AMP_QUERY":                     "pg-fetcher-amp-query",
-		"INITIALIZE_CACHES_TIMEOUT_MS":          "2",
-		"INITIALIZE_CACHES_QUERY":               "pg-init-caches-query",
-		"INITIALIZE_CACHES_AMP_QUERY":           "pg-init-caches-amp-query",
-		"POLL_FOR_UPDATES_REFRESH_RATE_SECONDS": "3",
-		"POLL_FOR_UPDATES_TIMEOUT_MS":           "4",
-		"POLL_FOR_UPDATES_QUERY":                "pg-poll-query $LAST_UPDATED",
-		"POLL_FOR_UPDATES_AMP_QUERY":            "pg-poll-amp-query $LAST_UPDATED",
-	}
-	dbValues := map[string]string{
-		"CONNECTION_DBNAME":                     "db-dbname",
-		"CONNECTION_HOST":                       "db-host",
-		"CONNECTION_PORT":                       "5",
-		"CONNECTION_USER":                       "db-user",
-		"CONNECTION_PASSWORD":                   "db-password",
-		"FETCHER_QUERY":                         "db-fetcher-query",
-		"FETCHER_AMP_QUERY":                     "db-fetcher-amp-query",
-		"INITIALIZE_CACHES_TIMEOUT_MS":          "6",
-		"INITIALIZE_CACHES_QUERY":               "db-init-caches-query",
-		"INITIALIZE_CACHES_AMP_QUERY":           "db-init-caches-amp-query",
-		"POLL_FOR_UPDATES_REFRESH_RATE_SECONDS": "7",
-		"POLL_FOR_UPDATES_TIMEOUT_MS":           "8",
-		"POLL_FOR_UPDATES_QUERY":                "db-poll-query $LAST_UPDATED",
-		"POLL_FOR_UPDATES_AMP_QUERY":            "db-poll-amp-query $LAST_UPDATED",
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.description, func(t *testing.T) {
-			prefix := "PBS_" + strings.ToUpper(tt.prefix)
-
-			// validation rules require in memory cache type to not be "none"
-			// given that we want to set the poll for update queries to non-empty values
-			envVarName := prefix + "_IN_MEMORY_CACHE_TYPE"
-			if oldval, ok := os.LookupEnv(envVarName); ok {
-				defer os.Setenv(envVarName, oldval)
-			} else {
-				defer os.Unsetenv(envVarName)
-			}
-			os.Setenv(envVarName, "unbounded")
-
-			if tt.setPostgresEnvVars {
-				for suffix, v := range pgValues {
-					envVarName := prefix + "_POSTGRES_" + suffix
-					if oldval, ok := os.LookupEnv(envVarName); ok {
-						defer os.Setenv(envVarName, oldval)
-					} else {
-						defer os.Unsetenv(envVarName)
-					}
-					os.Setenv(envVarName, v)
-				}
-			}
-			if tt.setDatabaseEnvVars {
-				for suffix, v := range dbValues {
-					envVarName := prefix + "_DATABASE_" + suffix
-					if oldval, ok := os.LookupEnv(envVarName); ok {
-						defer os.Setenv(envVarName, oldval)
-					} else {
-						defer os.Unsetenv(envVarName)
-					}
-					os.Setenv(envVarName, v)
-				}
-			}
-
-			c, _ := newDefaultConfig(t)
-
-			expectedDatabaseValues := map[string]string{}
-			if tt.setDatabaseEnvVars {
-				expectedDatabaseValues = dbValues
-			} else if tt.setPostgresEnvVars {
-				expectedDatabaseValues = pgValues
-			}
-
-			if tt.prefix == "stored_requests" {
-				assert.Equal(t, expectedDatabaseValues["CONNECTION_DBNAME"], c.StoredRequests.Database.ConnectionInfo.Database, tt.description)
-				assert.Equal(t, expectedDatabaseValues["CONNECTION_HOST"], c.StoredRequests.Database.ConnectionInfo.Host, tt.description)
-				assert.Equal(t, expectedDatabaseValues["CONNECTION_PORT"], strconv.Itoa(c.StoredRequests.Database.ConnectionInfo.Port), tt.description)
-				assert.Equal(t, expectedDatabaseValues["CONNECTION_USER"], c.StoredRequests.Database.ConnectionInfo.Username, tt.description)
-				assert.Equal(t, expectedDatabaseValues["CONNECTION_PASSWORD"], c.StoredRequests.Database.ConnectionInfo.Password, tt.description)
-				assert.Equal(t, expectedDatabaseValues["FETCHER_QUERY"], c.StoredRequests.Database.FetcherQueries.QueryTemplate, tt.description)
-				assert.Equal(t, expectedDatabaseValues["INITIALIZE_CACHES_TIMEOUT_MS"], strconv.Itoa(c.StoredRequests.Database.CacheInitialization.Timeout), tt.description)
-				assert.Equal(t, expectedDatabaseValues["INITIALIZE_CACHES_QUERY"], c.StoredRequests.Database.CacheInitialization.Query, tt.description)
-				assert.Equal(t, expectedDatabaseValues["POLL_FOR_UPDATES_REFRESH_RATE_SECONDS"], strconv.Itoa(c.StoredRequests.Database.PollUpdates.RefreshRate), tt.description)
-				assert.Equal(t, expectedDatabaseValues["POLL_FOR_UPDATES_TIMEOUT_MS"], strconv.Itoa(c.StoredRequests.Database.PollUpdates.Timeout), tt.description)
-				assert.Equal(t, expectedDatabaseValues["POLL_FOR_UPDATES_QUERY"], c.StoredRequests.Database.PollUpdates.Query, tt.description)
-				// AMP queries are only migrated for stored requests
-				assert.Equal(t, expectedDatabaseValues["FETCHER_AMP_QUERY"], c.StoredRequests.Database.FetcherQueries.AmpQueryTemplate, tt.description)
-				assert.Equal(t, expectedDatabaseValues["INITIALIZE_CACHES_AMP_QUERY"], c.StoredRequests.Database.CacheInitialization.AmpQuery, tt.description)
-				assert.Equal(t, expectedDatabaseValues["POLL_FOR_UPDATES_AMP_QUERY"], c.StoredRequests.Database.PollUpdates.AmpQuery, tt.description)
-			} else if tt.prefix == "stored_video_req" {
-				assert.Equal(t, expectedDatabaseValues["CONNECTION_DBNAME"], c.StoredVideo.Database.ConnectionInfo.Database, tt.description)
-				assert.Equal(t, expectedDatabaseValues["CONNECTION_HOST"], c.StoredVideo.Database.ConnectionInfo.Host, tt.description)
-				assert.Equal(t, expectedDatabaseValues["CONNECTION_PORT"], strconv.Itoa(c.StoredVideo.Database.ConnectionInfo.Port), tt.description)
-				assert.Equal(t, expectedDatabaseValues["CONNECTION_USER"], c.StoredVideo.Database.ConnectionInfo.Username, tt.description)
-				assert.Equal(t, expectedDatabaseValues["CONNECTION_PASSWORD"], c.StoredVideo.Database.ConnectionInfo.Password, tt.description)
-				assert.Equal(t, expectedDatabaseValues["FETCHER_QUERY"], c.StoredVideo.Database.FetcherQueries.QueryTemplate, tt.description)
-				assert.Equal(t, expectedDatabaseValues["INITIALIZE_CACHES_TIMEOUT_MS"], strconv.Itoa(c.StoredVideo.Database.CacheInitialization.Timeout), tt.description)
-				assert.Equal(t, expectedDatabaseValues["INITIALIZE_CACHES_QUERY"], c.StoredVideo.Database.CacheInitialization.Query, tt.description)
-				assert.Equal(t, expectedDatabaseValues["POLL_FOR_UPDATES_REFRESH_RATE_SECONDS"], strconv.Itoa(c.StoredVideo.Database.PollUpdates.RefreshRate), tt.description)
-				assert.Equal(t, expectedDatabaseValues["POLL_FOR_UPDATES_TIMEOUT_MS"], strconv.Itoa(c.StoredVideo.Database.PollUpdates.Timeout), tt.description)
-				assert.Equal(t, expectedDatabaseValues["POLL_FOR_UPDATES_QUERY"], c.StoredVideo.Database.PollUpdates.Query, tt.description)
-				assert.Empty(t, c.StoredVideo.Database.FetcherQueries.AmpQueryTemplate, tt.description)
-				assert.Empty(t, c.StoredVideo.Database.CacheInitialization.AmpQuery, tt.description)
-				assert.Empty(t, c.StoredVideo.Database.PollUpdates.AmpQuery, tt.description)
-			} else {
-				assert.Equal(t, expectedDatabaseValues["CONNECTION_DBNAME"], c.StoredResponses.Database.ConnectionInfo.Database, tt.description)
-				assert.Equal(t, expectedDatabaseValues["CONNECTION_HOST"], c.StoredResponses.Database.ConnectionInfo.Host, tt.description)
-				assert.Equal(t, expectedDatabaseValues["CONNECTION_PORT"], strconv.Itoa(c.StoredResponses.Database.ConnectionInfo.Port), tt.description)
-				assert.Equal(t, expectedDatabaseValues["CONNECTION_USER"], c.StoredResponses.Database.ConnectionInfo.Username, tt.description)
-				assert.Equal(t, expectedDatabaseValues["CONNECTION_PASSWORD"], c.StoredResponses.Database.ConnectionInfo.Password, tt.description)
-				assert.Equal(t, expectedDatabaseValues["FETCHER_QUERY"], c.StoredResponses.Database.FetcherQueries.QueryTemplate, tt.description)
-				assert.Equal(t, expectedDatabaseValues["INITIALIZE_CACHES_TIMEOUT_MS"], strconv.Itoa(c.StoredResponses.Database.CacheInitialization.Timeout), tt.description)
-				assert.Equal(t, expectedDatabaseValues["INITIALIZE_CACHES_QUERY"], c.StoredResponses.Database.CacheInitialization.Query, tt.description)
-				assert.Equal(t, expectedDatabaseValues["POLL_FOR_UPDATES_REFRESH_RATE_SECONDS"], strconv.Itoa(c.StoredResponses.Database.PollUpdates.RefreshRate), tt.description)
-				assert.Equal(t, expectedDatabaseValues["POLL_FOR_UPDATES_TIMEOUT_MS"], strconv.Itoa(c.StoredResponses.Database.PollUpdates.Timeout), tt.description)
-				assert.Equal(t, expectedDatabaseValues["POLL_FOR_UPDATES_QUERY"], c.StoredResponses.Database.PollUpdates.Query, tt.description)
-				assert.Empty(t, c.StoredResponses.Database.FetcherQueries.AmpQueryTemplate, tt.description)
-				assert.Empty(t, c.StoredResponses.Database.CacheInitialization.AmpQuery, tt.description)
-				assert.Empty(t, c.StoredResponses.Database.PollUpdates.AmpQuery, tt.description)
-			}
-		})
-	}
-}
-
-func TestMigrateConfigDatabaseQueryParams(t *testing.T) {
-
-	config := []byte(`
-    stored_requests:
-      postgres:
-        fetcher:
-          query:
-            SELECT * FROM Table1 WHERE id in (%REQUEST_ID_LIST%)
-            UNION ALL
-            SELECT * FROM Table2 WHERE id in (%IMP_ID_LIST%)
-            UNION ALL
-            SELECT * FROM Table3 WHERE id in (%ID_LIST%)
-          amp_query:
-            SELECT * FROM Table1 WHERE id in (%REQUEST_ID_LIST%)
-            UNION ALL
-            SELECT * FROM Table2 WHERE id in (%IMP_ID_LIST%)
-            UNION ALL
-            SELECT * FROM Table3 WHERE id in (%ID_LIST%)
-        poll_for_updates:
-          query: "SELECT * FROM Table1 WHERE last_updated > $1 UNION ALL SELECT * FROM Table2 WHERE last_updated > $1"
-          amp_query: "SELECT * FROM Table1 WHERE last_updated > $1 UNION ALL SELECT * FROM Table2 WHERE last_updated > $1"
-    stored_video_req:
-      postgres:
-        fetcher:
-          query:
-            SELECT * FROM Table1 WHERE id in (%REQUEST_ID_LIST%)
-            UNION ALL
-            SELECT * FROM Table2 WHERE id in (%IMP_ID_LIST%)
-            UNION ALL
-            SELECT * FROM Table3 WHERE id in (%ID_LIST%)
-          amp_query:
-            SELECT * FROM Table1 WHERE id in (%REQUEST_ID_LIST%)
-            UNION ALL
-            SELECT * FROM Table2 WHERE id in (%IMP_ID_LIST%)
-            UNION ALL
-            SELECT * FROM Table3 WHERE id in (%ID_LIST%)
-        poll_for_updates:
-          query: "SELECT * FROM Table1 WHERE last_updated > $1 UNION ALL SELECT * FROM Table2 WHERE last_updated > $1"
-          amp_query: "SELECT * FROM Table1 WHERE last_updated > $1 UNION ALL SELECT * FROM Table2 WHERE last_updated > $1"
-    stored_responses:
-      postgres:
-        fetcher:
-          query: 
-            SELECT * FROM Table1 WHERE id in (%REQUEST_ID_LIST%)
-            UNION ALL
-            SELECT * FROM Table2 WHERE id in (%IMP_ID_LIST%)
-            UNION ALL
-            SELECT * FROM Table3 WHERE id in (%ID_LIST%)
-          amp_query:
-            SELECT * FROM Table1 WHERE id in (%REQUEST_ID_LIST%)
-            UNION ALL
-            SELECT * FROM Table2 WHERE id in (%IMP_ID_LIST%)
-            UNION ALL
-            SELECT * FROM Table3 WHERE id in (%ID_LIST%)
-        poll_for_updates:
-          query: "SELECT * FROM Table1 WHERE last_updated > $1 UNION ALL SELECT * FROM Table2 WHERE last_updated > $1"
-          amp_query: "SELECT * FROM Table1 WHERE last_updated > $1 UNION ALL SELECT * FROM Table2 WHERE last_updated > $1"
-  `)
-
-	want_queries := struct {
-		fetcher_query              string
-		fetcher_amp_query          string
-		poll_for_updates_query     string
-		poll_for_updates_amp_query string
-	}{
-		fetcher_query: "SELECT * FROM Table1 WHERE id in ($REQUEST_ID_LIST) " +
-			"UNION ALL " +
-			"SELECT * FROM Table2 WHERE id in ($IMP_ID_LIST) " +
-			"UNION ALL " +
-			"SELECT * FROM Table3 WHERE id in ($ID_LIST)",
-		fetcher_amp_query: "SELECT * FROM Table1 WHERE id in ($REQUEST_ID_LIST) " +
-			"UNION ALL " +
-			"SELECT * FROM Table2 WHERE id in ($IMP_ID_LIST) " +
-			"UNION ALL " +
-			"SELECT * FROM Table3 WHERE id in ($ID_LIST)",
-		poll_for_updates_query:     "SELECT * FROM Table1 WHERE last_updated > $LAST_UPDATED UNION ALL SELECT * FROM Table2 WHERE last_updated > $LAST_UPDATED",
-		poll_for_updates_amp_query: "SELECT * FROM Table1 WHERE last_updated > $LAST_UPDATED UNION ALL SELECT * FROM Table2 WHERE last_updated > $LAST_UPDATED",
-	}
-
-	v := viper.New()
-	v.SetConfigType("yaml")
-	err := v.ReadConfig(bytes.NewBuffer(config))
-	assert.NoError(t, err)
-
-	migrateConfigDatabaseConnection(v)
-
-	// stored_requests queries
-	assert.Equal(t, want_queries.fetcher_query, v.GetString("stored_requests.database.fetcher.query"))
-	assert.Equal(t, want_queries.fetcher_amp_query, v.GetString("stored_requests.database.fetcher.amp_query"))
-	assert.Equal(t, want_queries.poll_for_updates_query, v.GetString("stored_requests.database.poll_for_updates.query"))
-	assert.Equal(t, want_queries.poll_for_updates_amp_query, v.GetString("stored_requests.database.poll_for_updates.amp_query"))
-
-	// stored_video_req queries
-	assert.Equal(t, want_queries.fetcher_query, v.GetString("stored_video_req.database.fetcher.query"))
-	assert.Equal(t, want_queries.fetcher_amp_query, v.GetString("stored_video_req.database.fetcher.amp_query"))
-	assert.Equal(t, want_queries.poll_for_updates_query, v.GetString("stored_video_req.database.poll_for_updates.query"))
-	assert.Equal(t, want_queries.poll_for_updates_amp_query, v.GetString("stored_video_req.database.poll_for_updates.amp_query"))
-
-	// stored_responses queries
-	assert.Equal(t, want_queries.fetcher_query, v.GetString("stored_responses.database.fetcher.query"))
-	assert.Equal(t, want_queries.fetcher_amp_query, v.GetString("stored_responses.database.fetcher.amp_query"))
-	assert.Equal(t, want_queries.poll_for_updates_query, v.GetString("stored_responses.database.poll_for_updates.query"))
-	assert.Equal(t, want_queries.poll_for_updates_amp_query, v.GetString("stored_responses.database.poll_for_updates.amp_query"))
-}
-
-func TestMigrateConfigCompression(t *testing.T) {
-	testCases := []struct {
-		desc                string
-		config              []byte
-		wantEnableGZIP      bool
-		wantReqGZIPEnabled  bool
-		wantRespGZIPEnabled bool
-	}{
-
-		{
-			desc:                "New config and old config not set",
-			config:              []byte{},
-			wantEnableGZIP:      false,
-			wantReqGZIPEnabled:  false,
-			wantRespGZIPEnabled: false,
-		},
-		{
-			desc: "Old config set, new config not set",
-			config: []byte(`
-                    enable_gzip: true
-                    `),
-			wantEnableGZIP:      true,
-			wantRespGZIPEnabled: true,
-			wantReqGZIPEnabled:  false,
-		},
-		{
-			desc: "Old config not set, new config set",
-			config: []byte(`
-                    compression:
-                        response:
-                            enable_gzip: true
-                        request:
-                            enable_gzip: false
-                    `),
-			wantEnableGZIP:      false,
-			wantRespGZIPEnabled: true,
-			wantReqGZIPEnabled:  false,
-		},
-		{
-			desc: "Old config set and new config set",
-			config: []byte(`
-                    enable_gzip: true
-                    compression:
-                        response:
-                            enable_gzip: false
-                        request:
-                            enable_gzip: true
-                    `),
-			wantEnableGZIP:      true,
-			wantRespGZIPEnabled: false,
-			wantReqGZIPEnabled:  true,
-		},
-	}
-
-	for _, test := range testCases {
-		v := viper.New()
-		v.SetConfigType("yaml")
-		err := v.ReadConfig(bytes.NewBuffer(test.config))
-		assert.NoError(t, err)
-
-		migrateConfigCompression(v)
-
-		assert.Equal(t, test.wantEnableGZIP, v.GetBool("enable_gzip"), test.desc)
-		assert.Equal(t, test.wantReqGZIPEnabled, v.GetBool("compression.request.enable_gzip"), test.desc)
-		assert.Equal(t, test.wantRespGZIPEnabled, v.GetBool("compression.response.enable_gzip"), test.desc)
-	}
 }
 
 func TestIsConfigInfoPresent(t *testing.T) {
@@ -3052,6 +1470,155 @@ func TestSpecialFeature1VendorExceptionMap(t *testing.T) {
 	}
 }
 
+func TestSetConfigBidderInfoNillableFields(t *testing.T) {
+	falseValue := false
+	trueValue := true
+
+	bidder1ConfigFalses := []byte(`
+    adapters:
+      bidder1:
+        disabled: false
+        modifyingVastXmlAllowed: false`)
+	bidder1ConfigTrues := []byte(`
+    adapters:
+      bidder1:
+        disabled: true
+        modifyingVastXmlAllowed: true`)
+	bidder1ConfigNils := []byte(`
+    adapters:
+      bidder1:
+        disabled: null
+        modifyingVastXmlAllowed: null`)
+	bidder1Bidder2ConfigMixed := []byte(`
+    adapters:
+      bidder1:
+        disabled: true
+        modifyingVastXmlAllowed: false
+      bidder2:
+        disabled: false
+        modifyingVastXmlAllowed: true`)
+
+	tests := []struct {
+		name        string
+		rawConfig   []byte
+		bidderInfos BidderInfos
+		expected    nillableFieldBidderInfos
+		expectError bool
+	}{
+		{
+			name:     "viper and bidder infos are nil",
+			expected: nil,
+		},
+		{
+			name:        "viper is nil",
+			bidderInfos: map[string]BidderInfo{},
+			expected:    nil,
+		},
+		{
+			name:      "bidder infos is nil",
+			rawConfig: []byte{},
+			expected:  nil,
+		},
+		{
+			name:        "bidder infos is empty",
+			bidderInfos: map[string]BidderInfo{},
+			expected:    nil,
+		},
+		{
+			name: "one: bidder info has nillable fields as false, viper has as nil",
+			bidderInfos: map[string]BidderInfo{
+				"bidder1": {Disabled: false, ModifyingVastXmlAllowed: false},
+			},
+			rawConfig: bidder1ConfigNils,
+			expected: nillableFieldBidderInfos{
+				"bidder1": nillableFieldBidderInfo{
+					nillableFields: bidderInfoNillableFields{
+						Disabled:                nil,
+						ModifyingVastXmlAllowed: nil,
+					},
+					bidderInfo: BidderInfo{Disabled: false, ModifyingVastXmlAllowed: false},
+				},
+			},
+		},
+		{
+			name: "one: bidder info has nillable fields as false, viper has as false",
+			bidderInfos: map[string]BidderInfo{
+				"bidder1": {Disabled: false, ModifyingVastXmlAllowed: false},
+			},
+			rawConfig: bidder1ConfigFalses,
+			expected: nillableFieldBidderInfos{
+				"bidder1": nillableFieldBidderInfo{
+					nillableFields: bidderInfoNillableFields{
+						Disabled:                &falseValue,
+						ModifyingVastXmlAllowed: &falseValue,
+					},
+					bidderInfo: BidderInfo{Disabled: false, ModifyingVastXmlAllowed: false},
+				},
+			},
+		},
+		{
+			name: "one: bidder info has nillable fields as false, viper has as true",
+			bidderInfos: map[string]BidderInfo{
+				"bidder1": {Disabled: false, ModifyingVastXmlAllowed: false},
+			},
+			rawConfig: bidder1ConfigTrues,
+			expected: nillableFieldBidderInfos{
+				"bidder1": nillableFieldBidderInfo{
+					nillableFields: bidderInfoNillableFields{
+						Disabled:                &trueValue,
+						ModifyingVastXmlAllowed: &trueValue,
+					},
+					bidderInfo: BidderInfo{Disabled: false, ModifyingVastXmlAllowed: false},
+				},
+			},
+		},
+		{
+			name: "many with extra info: bidder infos have nillable fields as false and true, viper has as true and false",
+			bidderInfos: map[string]BidderInfo{
+				"bidder1": {Disabled: false, ModifyingVastXmlAllowed: true, Endpoint: "endpoint a"},
+				"bidder2": {Disabled: true, ModifyingVastXmlAllowed: false, Endpoint: "endpoint b"},
+			},
+			rawConfig: bidder1Bidder2ConfigMixed,
+			expected: nillableFieldBidderInfos{
+				"bidder1": nillableFieldBidderInfo{
+					nillableFields: bidderInfoNillableFields{
+						Disabled:                &trueValue,
+						ModifyingVastXmlAllowed: &falseValue,
+					},
+					bidderInfo: BidderInfo{Disabled: false, ModifyingVastXmlAllowed: true, Endpoint: "endpoint a"},
+				},
+				"bidder2": nillableFieldBidderInfo{
+					nillableFields: bidderInfoNillableFields{
+						Disabled:                &falseValue,
+						ModifyingVastXmlAllowed: &trueValue,
+					},
+					bidderInfo: BidderInfo{Disabled: true, ModifyingVastXmlAllowed: false, Endpoint: "endpoint b"},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := viper.New()
+			v.SetConfigType("yaml")
+			for bidderName := range tt.bidderInfos {
+				setBidderDefaults(v, strings.ToLower(bidderName))
+			}
+			v.ReadConfig(bytes.NewBuffer(tt.rawConfig))
+
+			result, err := setConfigBidderInfoNillableFields(v, tt.bidderInfos)
+
+			assert.Equal(t, tt.expected, result)
+			if tt.expectError {
+				assert.NotNil(t, err)
+			} else {
+				assert.Nil(t, err)
+			}
+		})
+	}
+}
+
 func TestTCF2PurposeEnforced(t *testing.T) {
 	tests := []struct {
 		description          string
@@ -3221,40 +1788,40 @@ func TestTCF2PurposeVendorExceptions(t *testing.T) {
 	tests := []struct {
 		description              string
 		givePurposeConfigNil     bool
-		givePurpose1ExceptionMap map[openrtb_ext.BidderName]struct{}
-		givePurpose2ExceptionMap map[openrtb_ext.BidderName]struct{}
+		givePurpose1ExceptionMap map[string]struct{}
+		givePurpose2ExceptionMap map[string]struct{}
 		givePurpose              consentconstants.Purpose
-		wantExceptionMap         map[openrtb_ext.BidderName]struct{}
+		wantExceptionMap         map[string]struct{}
 	}{
 		{
 			description:          "Purpose config is nil",
 			givePurposeConfigNil: true,
 			givePurpose:          1,
-			wantExceptionMap:     map[openrtb_ext.BidderName]struct{}{},
+			wantExceptionMap:     map[string]struct{}{},
 		},
 		{
 			description:      "Nil - exception map not defined for purpose",
 			givePurpose:      1,
-			wantExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			wantExceptionMap: map[string]struct{}{},
 		},
 		{
 			description:              "Empty - exception map empty for purpose",
 			givePurpose:              1,
-			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{},
-			wantExceptionMap:         map[openrtb_ext.BidderName]struct{}{},
+			givePurpose1ExceptionMap: map[string]struct{}{},
+			wantExceptionMap:         map[string]struct{}{},
 		},
 		{
 			description:              "Nonempty - exception map with multiple entries for purpose",
 			givePurpose:              1,
-			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
-			wantExceptionMap:         map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
+			givePurpose1ExceptionMap: map[string]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
+			wantExceptionMap:         map[string]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
 		},
 		{
 			description:              "Nonempty - exception map with multiple entries for different purpose",
 			givePurpose:              2,
-			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
-			givePurpose2ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "openx": {}},
-			wantExceptionMap:         map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "openx": {}},
+			givePurpose1ExceptionMap: map[string]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
+			givePurpose2ExceptionMap: map[string]struct{}{"rubicon": {}, "appnexus": {}, "openx": {}},
+			wantExceptionMap:         map[string]struct{}{"rubicon": {}, "appnexus": {}, "openx": {}},
 		},
 	}
 
@@ -3329,51 +1896,69 @@ func TestTCF2FeatureOneVendorException(t *testing.T) {
 	}
 }
 
-func TestMigrateConfigEventsEnabled(t *testing.T) {
-	testCases := []struct {
-		name                  string
-		oldFieldValue         *bool
-		newFieldValue         *bool
-		expectedOldFieldValue *bool
-		expectedNewFieldValue *bool
+func TestUnpackDSADefault(t *testing.T) {
+	tests := []struct {
+		name      string
+		giveDSA   *AccountDSA
+		wantError bool
 	}{
 		{
-			name:                  "Both old and new fields are nil",
-			oldFieldValue:         nil,
-			newFieldValue:         nil,
-			expectedOldFieldValue: nil,
-			expectedNewFieldValue: nil,
+			name:      "nil",
+			giveDSA:   nil,
+			wantError: false,
 		},
 		{
-			name:                  "Only old field is set",
-			oldFieldValue:         ptrutil.ToPtr(true),
-			newFieldValue:         nil,
-			expectedOldFieldValue: ptrutil.ToPtr(true),
-			expectedNewFieldValue: nil,
+			name: "empty",
+			giveDSA: &AccountDSA{
+				Default: "",
+			},
+			wantError: false,
 		},
 		{
-			name:                  "Only new field is set",
-			oldFieldValue:         nil,
-			newFieldValue:         ptrutil.ToPtr(true),
-			expectedOldFieldValue: ptrutil.ToPtr(true),
-			expectedNewFieldValue: nil,
+			name: "empty_json",
+			giveDSA: &AccountDSA{
+				Default: "{}",
+			},
+			wantError: false,
 		},
 		{
-			name:                  "Both old and new fields are set, override old field with new field value",
-			oldFieldValue:         ptrutil.ToPtr(false),
-			newFieldValue:         ptrutil.ToPtr(true),
-			expectedOldFieldValue: ptrutil.ToPtr(true),
-			expectedNewFieldValue: nil,
+			name: "well_formed",
+			giveDSA: &AccountDSA{
+				Default: "{\"dsarequired\":3,\"pubrender\":1,\"datatopub\":2,\"transparency\":[{\"domain\":\"domain.com\",\"dsaparams\":[1]}]}",
+			},
+			wantError: false,
+		},
+		{
+			name: "well_formed_with_extra_fields",
+			giveDSA: &AccountDSA{
+				Default: "{\"unmappedkey\":\"unmappedvalue\",\"dsarequired\":3,\"pubrender\":1,\"datatopub\":2,\"transparency\":[{\"domain\":\"domain.com\",\"dsaparams\":[1]}]}",
+			},
+			wantError: false,
+		},
+		{
+			name: "invalid_type",
+			giveDSA: &AccountDSA{
+				Default: "{\"dsarequired\":\"invalid\",\"pubrender\":1,\"datatopub\":2,\"transparency\":[{\"domain\":\"domain.com\",\"dsaparams\":[1]}]}",
+			},
+			wantError: true,
+		},
+		{
+			name: "invalid_malformed_missing_colon",
+			giveDSA: &AccountDSA{
+				Default: "{\"dsarequired\"3,\"pubrender\":1,\"datatopub\":2,\"transparency\":[{\"domain\":\"domain.com\",\"dsaparams\":[1]}]}",
+			},
+			wantError: true,
 		},
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			updatedOldFieldValue, updatedNewFieldValue := migrateConfigEventsEnabled(tc.oldFieldValue, tc.newFieldValue)
-
-			assert.Equal(t, tc.expectedOldFieldValue, updatedOldFieldValue)
-			assert.Nil(t, updatedNewFieldValue)
-			assert.Nil(t, tc.expectedNewFieldValue)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := UnpackDSADefault(tt.giveDSA)
+			if tt.wantError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }

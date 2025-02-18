@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type adapter struct {
@@ -67,6 +67,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			Uri:     fmt.Sprintf("%s?%s", a.endpoint, queryString),
 			Body:    reqJson,
 			Headers: headers,
+			ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 		}
 		requestDatas = append(requestDatas, requestData)
 	}
@@ -96,7 +97,7 @@ func extraImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpBluesea, error) {
 	}
 	if len(blueseaImpExt.PubId) == 0 || len(blueseaImpExt.Token) == 0 {
 		return nil, &errortypes.BadInput{
-			Message: fmt.Sprintf("Error in parsing imp.ext.bidder, empty pubid or token"),
+			Message: "Error in parsing imp.ext.bidder, empty pubid or token",
 		}
 	}
 	return &blueseaImpExt, nil

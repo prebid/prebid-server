@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 const Endpoint = "https://ads.tremorhub.com/ad/rtb/prebid"
@@ -200,11 +200,14 @@ func (a *TelariaAdapter) MakeRequests(requestIn *openrtb2.BidRequest, reqInfo *a
 		return nil, []error{err}
 	}
 
+	if telariaImpExt == nil {
+		return nil, []error{&errortypes.BadInput{Message: "Telaria: nil ExtImpTelaria object"}}
+	}
 	// Swap the tagID with adCode
 	imp.TagID = telariaImpExt.AdCode
 
 	// Add the Extra from Imp to the top level Ext
-	if telariaImpExt != nil && telariaImpExt.Extra != nil {
+	if telariaImpExt.Extra != nil {
 		request.Ext, err = json.Marshal(&telariaBidExt{Extra: telariaImpExt.Extra})
 		if err != nil {
 			return nil, []error{err}
@@ -228,6 +231,7 @@ func (a *TelariaAdapter) MakeRequests(requestIn *openrtb2.BidRequest, reqInfo *a
 		Uri:     a.FetchEndpoint(),
 		Body:    reqJSON,
 		Headers: *GetHeaders(&request),
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, nil
 }
 

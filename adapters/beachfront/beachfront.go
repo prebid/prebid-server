@@ -8,12 +8,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/prebid/openrtb/v19/adcom1"
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/adcom1"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 )
 
 const Seat = "beachfront"
@@ -152,6 +153,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 				Uri:     a.bannerEndpoint,
 				Body:    bytes,
 				Headers: headers,
+				ImpIDs:  getBannerImpIDs(beachfrontRequests.Banner.Slots),
 			}
 
 			nurlBump++
@@ -173,6 +175,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 				Uri:     a.extraInfo.VideoEndpoint + "=" + beachfrontRequests.ADMVideo[j].AppId,
 				Body:    bytes,
 				Headers: headers,
+				ImpIDs:  openrtb_ext.GetImpIDs(beachfrontRequests.ADMVideo[j].Request.Imp),
 			}
 
 			admBump++
@@ -192,6 +195,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 				Uri:     a.extraInfo.VideoEndpoint + "=" + beachfrontRequests.NurlVideo[j].AppId + nurlVideoEndpointSuffix,
 				Body:    bytes,
 				Headers: headers,
+				ImpIDs:  openrtb_ext.GetImpIDs(beachfrontRequests.NurlVideo[j].Request.Imp),
 			}
 		} else {
 			errs = append(errs, err)
@@ -475,9 +479,20 @@ func getVideoRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraReque
 			}
 		}
 
-		if imp.Video.H == 0 && imp.Video.W == 0 {
-			imp.Video.W = defaultVideoWidth
-			imp.Video.H = defaultVideoHeight
+		wNilOrZero := imp.Video.W == nil || *imp.Video.W == 0
+		hNilOrZero := imp.Video.H == nil || *imp.Video.H == 0
+		if wNilOrZero || hNilOrZero {
+			videoCopy := *imp.Video
+
+			if wNilOrZero {
+				videoCopy.W = ptrutil.ToPtr[int64](defaultVideoWidth)
+			}
+
+			if hNilOrZero {
+				videoCopy.H = ptrutil.ToPtr[int64](defaultVideoHeight)
+			}
+
+			imp.Video = &videoCopy
 		}
 
 		if len(bfReqs[i].Request.Cur) == 0 {
@@ -672,8 +687,8 @@ func postprocessVideo(bids []openrtb2.Bid, xtrnal openrtb2.BidRequest, uri strin
 
 			bids[i].CrID = crid
 			bids[i].ImpID = xtrnal.Imp[i].ID
-			bids[i].H = xtrnal.Imp[i].Video.H
-			bids[i].W = xtrnal.Imp[i].Video.W
+			bids[i].H = ptrutil.ValueOrDefault(xtrnal.Imp[i].Video.H)
+			bids[i].W = ptrutil.ValueOrDefault(xtrnal.Imp[i].Video.W)
 			bids[i].ID = fmt.Sprintf("%sNurlVideo", xtrnal.Imp[i].ID)
 		}
 
@@ -783,4 +798,12 @@ func getDefaultExtraInfo() ExtraInfo {
 	return ExtraInfo{
 		VideoEndpoint: defaultVideoEndpoint,
 	}
+}
+
+func getBannerImpIDs(bfs []beachfrontSlot) []string {
+	impIDs := make([]string, len(bfs))
+	for i := range bfs {
+		impIDs[i] = bfs[i].Slot
+	}
+	return impIDs
 }

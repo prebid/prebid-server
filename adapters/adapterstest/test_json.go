@@ -10,11 +10,13 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/mitchellh/copystructure"
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/currency"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/currency"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 	"github.com/yudai/gojsondiff"
 	"github.com/yudai/gojsondiff/formatter"
@@ -200,6 +202,7 @@ type httpRequest struct {
 	Body    json.RawMessage `json:"body"`
 	Uri     string          `json:"uri"`
 	Headers http.Header     `json:"headers"`
+	ImpIDs  []string        `json:"impIDs"`
 }
 
 type httpResponse struct {
@@ -317,6 +320,15 @@ func diffHttpRequests(description string, actual *adapters.RequestData, expected
 		if err := diffJson(description, actualHeader, expectedHeader); err != nil {
 			return err
 		}
+	}
+
+	if len(expected.ImpIDs) < 1 {
+		return fmt.Errorf(`expected.ImpIDs must contain at least one imp ID`)
+	}
+
+	opt := cmpopts.SortSlices(func(a, b string) bool { return a < b })
+	if !cmp.Equal(expected.ImpIDs, actual.ImpIDs, opt) {
+		return fmt.Errorf(`%s actual.ImpIDs "%q" do not match expected "%q"`, description, actual.ImpIDs, expected.ImpIDs)
 	}
 	return diffJson(description, actual.Body, expected.Body)
 }

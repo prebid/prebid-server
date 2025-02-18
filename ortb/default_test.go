@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/util/ptrutil"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 )
 
 func TestSetDefaults(t *testing.T) {
@@ -31,7 +33,7 @@ func TestSetDefaults(t *testing.T) {
 			name:            "malformed request.ext",
 			givenRequest:    openrtb2.BidRequest{Ext: json.RawMessage(`malformed`)},
 			expectedRequest: openrtb2.BidRequest{Ext: json.RawMessage(`malformed`)},
-			expectedErr:     "invalid character 'm' looking for beginning of value",
+			expectedErr:     "expect { or n, but found m",
 		},
 		{
 			name:            "targeting", // tests integration with setDefaultsTargeting
@@ -55,6 +57,7 @@ func TestSetDefaults(t *testing.T) {
 			// assert error
 			if len(test.expectedErr) > 0 {
 				assert.EqualError(t, err, test.expectedErr, "Error")
+				assert.IsType(t, &errortypes.FailedToUnmarshal{}, err)
 			}
 
 			// rebuild request
@@ -66,10 +69,10 @@ func TestSetDefaults(t *testing.T) {
 				assert.Equal(t, &test.expectedRequest, wrapper.BidRequest, "Request")
 			} else {
 				// assert request as json to ignore order in ext fields
-				expectedRequestJSON, err := json.Marshal(test.expectedRequest)
+				expectedRequestJSON, err := jsonutil.Marshal(test.expectedRequest)
 				require.NoError(t, err, "Marshal Expected Request")
 
-				actualRequestJSON, err := json.Marshal(wrapper.BidRequest)
+				actualRequestJSON, err := jsonutil.Marshal(wrapper.BidRequest)
 				require.NoError(t, err, "Marshal Actual Request")
 
 				assert.JSONEq(t, string(expectedRequestJSON), string(actualRequestJSON), "Request")

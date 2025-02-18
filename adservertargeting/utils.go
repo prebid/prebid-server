@@ -1,11 +1,12 @@
 package adservertargeting
 
 import (
+	"strings"
+
 	"github.com/buger/jsonparser"
 	"github.com/pkg/errors"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"strings"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 func splitAndGet(path string, data []byte, delimiter string) (string, error) {

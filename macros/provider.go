@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/prebid/prebid-server/exchange/entities"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/exchange/entities"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 const (
@@ -33,19 +33,19 @@ const (
 	CustomMacroPrefix = "PBS-MACRO-"
 )
 
-type macroProvider struct {
+type MacroProvider struct {
 	// macros map stores macros key values
 	macros map[string]string
 }
 
 // NewBuilder returns the instance of macro buidler
-func NewProvider(reqWrapper *openrtb_ext.RequestWrapper) *macroProvider {
-	macroProvider := &macroProvider{macros: map[string]string{}}
+func NewProvider(reqWrapper *openrtb_ext.RequestWrapper) *MacroProvider {
+	macroProvider := &MacroProvider{macros: map[string]string{}}
 	macroProvider.populateRequestMacros(reqWrapper)
 	return macroProvider
 }
 
-func (b *macroProvider) populateRequestMacros(reqWrapper *openrtb_ext.RequestWrapper) {
+func (b *MacroProvider) populateRequestMacros(reqWrapper *openrtb_ext.RequestWrapper) {
 	b.macros[MacroKeyTimestamp] = strconv.Itoa(int(time.Now().Unix()))
 	reqExt, err := reqWrapper.GetRequestExt()
 	if err == nil && reqExt != nil {
@@ -114,11 +114,11 @@ func (b *macroProvider) populateRequestMacros(reqWrapper *openrtb_ext.RequestWra
 
 }
 
-func (b *macroProvider) GetMacro(key string) string {
+func (b *MacroProvider) GetMacro(key string) string {
 	return url.QueryEscape(b.macros[key])
 }
 
-func (b *macroProvider) PopulateBidMacros(bid *entities.PbsOrtbBid, seat string) {
+func (b *MacroProvider) PopulateBidMacros(bid *entities.PbsOrtbBid, seat string) {
 	if bid.Bid != nil {
 		if bid.GeneratedBidID != "" {
 			b.macros[MacroKeyBidID] = bid.GeneratedBidID
@@ -129,7 +129,7 @@ func (b *macroProvider) PopulateBidMacros(bid *entities.PbsOrtbBid, seat string)
 	b.macros[MacroKeyBidder] = seat
 }
 
-func (b *macroProvider) PopulateEventMacros(vastCreativeID, eventType, vastEvent string) {
+func (b *MacroProvider) PopulateEventMacros(vastCreativeID, eventType, vastEvent string) {
 	b.macros[MacroKeyVastCRTID] = vastCreativeID
 	b.macros[MacroKeyEventType] = eventType
 	b.macros[MacroKeyVastEvent] = vastEvent

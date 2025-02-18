@@ -10,6 +10,11 @@
             "page": "http://www.example.com/test?flipp-content-code=publisher-test"
         },
         "user": {
+            "consent": "CP0xeHPP0xeHPBcABBENAgCAAPAAAAAAAGcgAAAAAAAA"
+        },
+        "regs": {
+            "coppa": 0,
+            "gdpr": 0
         },
         "imp": [
             {
@@ -79,7 +84,8 @@
                     "user":{
                        "key":"abc123"
                     }
-                }
+                },
+                "impIDs":["test-imp-id"]
             },
             "mockResponse": {
                 "status": 200,

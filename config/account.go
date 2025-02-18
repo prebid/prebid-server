@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/prebid/go-gdpr/consentconstants"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/util/iputil"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/util/iputil"
 )
 
 // ChannelType enumerates the values of integrations Prebid Server can configure for an account
@@ -20,6 +20,7 @@ const (
 	ChannelApp   ChannelType = "app"
 	ChannelVideo ChannelType = "video"
 	ChannelWeb   ChannelType = "web"
+	ChannelDOOH  ChannelType = "dooh"
 )
 
 // Account represents a publisher account configuration
@@ -27,7 +28,6 @@ type Account struct {
 	ID                      string                                      `mapstructure:"id" json:"id"`
 	Disabled                bool                                        `mapstructure:"disabled" json:"disabled"`
 	CacheTTL                DefaultTTLs                                 `mapstructure:"cache_ttl" json:"cache_ttl"`
-	EventsEnabled           *bool                                       `mapstructure:"events_enabled" json:"events_enabled"` // Deprecated: Use events.enabled instead.
 	CCPA                    AccountCCPA                                 `mapstructure:"ccpa" json:"ccpa"`
 	GDPR                    AccountGDPR                                 `mapstructure:"gdpr" json:"gdpr"`
 	DebugAllow              bool                                        `mapstructure:"debug_allow" json:"debug_allow"`
@@ -53,23 +53,35 @@ type CookieSync struct {
 
 // AccountCCPA represents account-specific CCPA configuration
 type AccountCCPA struct {
-	Enabled            *bool          `mapstructure:"enabled" json:"enabled,omitempty"`
-	IntegrationEnabled AccountChannel `mapstructure:"integration_enabled" json:"integration_enabled"`
-	ChannelEnabled     AccountChannel `mapstructure:"channel_enabled" json:"channel_enabled"`
+	Enabled        *bool          `mapstructure:"enabled" json:"enabled,omitempty"`
+	ChannelEnabled AccountChannel `mapstructure:"channel_enabled" json:"channel_enabled"`
 }
 
 type AccountPriceFloors struct {
-	Enabled                bool `mapstructure:"enabled" json:"enabled"`
-	EnforceFloorsRate      int  `mapstructure:"enforce_floors_rate" json:"enforce_floors_rate"`
-	AdjustForBidAdjustment bool `mapstructure:"adjust_for_bid_adjustment" json:"adjust_for_bid_adjustment"`
-	EnforceDealFloors      bool `mapstructure:"enforce_deal_floors" json:"enforce_deal_floors"`
-	UseDynamicData         bool `mapstructure:"use_dynamic_data" json:"use_dynamic_data"`
-	MaxRule                int  `mapstructure:"max_rules" json:"max_rules"`
-	MaxSchemaDims          int  `mapstructure:"max_schema_dims" json:"max_schema_dims"`
+	Enabled                bool              `mapstructure:"enabled" json:"enabled"`
+	EnforceFloorsRate      int               `mapstructure:"enforce_floors_rate" json:"enforce_floors_rate"`
+	AdjustForBidAdjustment bool              `mapstructure:"adjust_for_bid_adjustment" json:"adjust_for_bid_adjustment"`
+	EnforceDealFloors      bool              `mapstructure:"enforce_deal_floors" json:"enforce_deal_floors"`
+	UseDynamicData         bool              `mapstructure:"use_dynamic_data" json:"use_dynamic_data"`
+	MaxRule                int               `mapstructure:"max_rules" json:"max_rules"`
+	MaxSchemaDims          int               `mapstructure:"max_schema_dims" json:"max_schema_dims"`
+	Fetcher                AccountFloorFetch `mapstructure:"fetch" json:"fetch"`
+}
+
+// AccountFloorFetch defines the configuration for dynamic floors fetching.
+type AccountFloorFetch struct {
+	Enabled       bool   `mapstructure:"enabled" json:"enabled"`
+	URL           string `mapstructure:"url" json:"url"`
+	Timeout       int    `mapstructure:"timeout_ms" json:"timeout_ms"`
+	MaxFileSizeKB int    `mapstructure:"max_file_size_kb" json:"max_file_size_kb"`
+	MaxRules      int    `mapstructure:"max_rules" json:"max_rules"`
+	MaxAge        int    `mapstructure:"max_age_sec" json:"max_age_sec"`
+	Period        int    `mapstructure:"period_sec" json:"period_sec"`
+	MaxSchemaDims int    `mapstructure:"max_schema_dims" json:"max_schema_dims"`
+	AccountID     string `mapstructure:"accountID" json:"accountID"`
 }
 
 func (pf *AccountPriceFloors) validate(errs []error) []error {
-
 	if pf.EnforceFloorsRate < 0 || pf.EnforceFloorsRate > 100 {
 		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.enforce_floors_rate should be between 0 and 100`))
 	}
@@ -80,6 +92,34 @@ func (pf *AccountPriceFloors) validate(errs []error) []error {
 
 	if pf.MaxSchemaDims < 0 || pf.MaxSchemaDims > 20 {
 		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.max_schema_dims should be between 0 and 20`))
+	}
+
+	if pf.Fetcher.Period > pf.Fetcher.MaxAge {
+		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.fetch.period_sec should be less than account_defaults.price_floors.fetch.max_age_sec`))
+	}
+
+	if pf.Fetcher.Period < 300 {
+		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.fetch.period_sec should not be less than 300 seconds`))
+	}
+
+	if pf.Fetcher.MaxAge < 600 {
+		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.fetch.max_age_sec should not be less than 600 seconds and greater than maximum integer value`))
+	}
+
+	if !(pf.Fetcher.Timeout > 10 && pf.Fetcher.Timeout < 10000) {
+		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.fetch.timeout_ms should be between 10 to 10,000 miliseconds`))
+	}
+
+	if pf.Fetcher.MaxRules < 0 {
+		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.fetch.max_rules should be greater than or equal to 0`))
+	}
+
+	if pf.Fetcher.MaxFileSizeKB < 0 {
+		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.fetch.max_file_size_kb should be greater than or equal to 0`))
+	}
+
+	if !(pf.Fetcher.MaxSchemaDims >= 0 && pf.Fetcher.MaxSchemaDims < 20) {
+		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.fetch.max_schema_dims should not be less than 0 and greater than 20`))
 	}
 
 	return errs
@@ -94,17 +134,14 @@ func (pf *AccountPriceFloors) IsAdjustForBidAdjustmentEnabled() bool {
 func (a *AccountCCPA) EnabledForChannelType(channelType ChannelType) *bool {
 	if channelEnabled := a.ChannelEnabled.GetByChannelType(channelType); channelEnabled != nil {
 		return channelEnabled
-	} else if integrationEnabled := a.IntegrationEnabled.GetByChannelType(channelType); integrationEnabled != nil {
-		return integrationEnabled
 	}
 	return a.Enabled
 }
 
 // AccountGDPR represents account-specific GDPR configuration
 type AccountGDPR struct {
-	Enabled            *bool          `mapstructure:"enabled" json:"enabled,omitempty"`
-	IntegrationEnabled AccountChannel `mapstructure:"integration_enabled" json:"integration_enabled"`
-	ChannelEnabled     AccountChannel `mapstructure:"channel_enabled" json:"channel_enabled"`
+	Enabled        *bool          `mapstructure:"enabled" json:"enabled,omitempty"`
+	ChannelEnabled AccountChannel `mapstructure:"channel_enabled" json:"channel_enabled"`
 	// Array of basic enforcement vendors that is used to create the hash table so vendor names can be instantly accessed
 	BasicEnforcementVendors    []string `mapstructure:"basic_enforcement_vendors" json:"basic_enforcement_vendors"`
 	BasicEnforcementVendorsMap map[string]struct{}
@@ -129,8 +166,6 @@ type AccountGDPR struct {
 func (a *AccountGDPR) EnabledForChannelType(channelType ChannelType) *bool {
 	if channelEnabled := a.ChannelEnabled.GetByChannelType(channelType); channelEnabled != nil {
 		return channelEnabled
-	} else if integrationEnabled := a.IntegrationEnabled.GetByChannelType(channelType); integrationEnabled != nil {
-		return integrationEnabled
 	}
 	return a.Enabled
 }
@@ -192,7 +227,7 @@ func (a *AccountGDPR) PurposeEnforcingVendors(purpose consentconstants.Purpose) 
 }
 
 // PurposeVendorExceptions returns the vendor exception map for a given purpose.
-func (a *AccountGDPR) PurposeVendorExceptions(purpose consentconstants.Purpose) (value map[openrtb_ext.BidderName]struct{}, exists bool) {
+func (a *AccountGDPR) PurposeVendorExceptions(purpose consentconstants.Purpose) (value map[string]struct{}, exists bool) {
 	c, exists := a.PurposeConfigs[purpose]
 
 	if exists && c.VendorExceptionMap != nil {
@@ -227,8 +262,8 @@ type AccountGDPRPurpose struct {
 	EnforcePurpose *bool `mapstructure:"enforce_purpose" json:"enforce_purpose,omitempty"`
 	EnforceVendors *bool `mapstructure:"enforce_vendors" json:"enforce_vendors,omitempty"`
 	// Array of vendor exceptions that is used to create the hash table VendorExceptionMap so vendor names can be instantly accessed
-	VendorExceptions   []openrtb_ext.BidderName `mapstructure:"vendor_exceptions" json:"vendor_exceptions"`
-	VendorExceptionMap map[openrtb_ext.BidderName]struct{}
+	VendorExceptions   []string `mapstructure:"vendor_exceptions" json:"vendor_exceptions"`
+	VendorExceptionMap map[string]struct{}
 }
 
 // AccountGDPRSpecialFeature represents account-specific GDPR special feature configuration
@@ -251,6 +286,7 @@ type AccountChannel struct {
 	App   *bool `mapstructure:"app" json:"app,omitempty"`
 	Video *bool `mapstructure:"video" json:"video,omitempty"`
 	Web   *bool `mapstructure:"web" json:"web,omitempty"`
+	DOOH  *bool `mapstructure:"dooh" json:"dooh,omitempty"`
 }
 
 // GetByChannelType looks up the account integration enabled setting for the specified channel type
@@ -266,6 +302,8 @@ func (a *AccountChannel) GetByChannelType(channelType ChannelType) *bool {
 		channelEnabled = a.Video
 	case ChannelWeb:
 		channelEnabled = a.Web
+	case ChannelDOOH:
+		channelEnabled = a.DOOH
 	}
 
 	return channelEnabled
@@ -295,14 +333,29 @@ func (m AccountModules) ModuleConfig(id string) (json.RawMessage, error) {
 	return m[vendor][module], nil
 }
 
-func (a *AccountChannel) IsSet() bool {
-	return a.AMP != nil || a.App != nil || a.Video != nil || a.Web != nil
-}
-
 type AccountPrivacy struct {
 	AllowActivities *AllowActivities `mapstructure:"allowactivities" json:"allowactivities"`
+	DSA             *AccountDSA      `mapstructure:"dsa" json:"dsa"`
 	IPv6Config      IPv6             `mapstructure:"ipv6" json:"ipv6"`
 	IPv4Config      IPv4             `mapstructure:"ipv4" json:"ipv4"`
+	PrivacySandbox  PrivacySandbox   `mapstructure:"privacysandbox" json:"privacysandbox"`
+}
+
+type PrivacySandbox struct {
+	TopicsDomain      string            `mapstructure:"topicsdomain"`
+	CookieDeprecation CookieDeprecation `mapstructure:"cookiedeprecation"`
+}
+
+type CookieDeprecation struct {
+	Enabled bool `mapstructure:"enabled"`
+	TTLSec  int  `mapstructure:"ttl_sec"`
+}
+
+// AccountDSA represents DSA configuration
+type AccountDSA struct {
+	Default         string `mapstructure:"default" json:"default"`
+	DefaultUnpacked *openrtb_ext.ExtRegsDSA
+	GDPROnly        bool `mapstructure:"gdpr_only" json:"gdpr_only"`
 }
 
 type IPv6 struct {

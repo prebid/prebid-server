@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/prebid/openrtb/v19/adcom1"
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/adcom1"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type TtxAdapter struct {
@@ -114,6 +114,7 @@ func (a *TtxAdapter) makeRequest(request openrtb2.BidRequest, impList []openrtb2
 		Uri:     a.endpoint,
 		Body:    reqJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}, nil
 }
 
@@ -243,8 +244,8 @@ func (a *TtxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequ
 
 func validateVideoParams(video *openrtb2.Video, prod string) (*openrtb2.Video, error) {
 	videoCopy := *video
-	if videoCopy.W == 0 ||
-		videoCopy.H == 0 ||
+	if (videoCopy.W == nil || *videoCopy.W == 0) ||
+		(videoCopy.H == nil || *videoCopy.H == 0) ||
 		videoCopy.Protocols == nil ||
 		videoCopy.MIMEs == nil ||
 		videoCopy.PlaybackMethod == nil {

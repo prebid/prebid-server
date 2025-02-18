@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type GamoshiAdapter struct {
@@ -55,7 +55,7 @@ func (a *GamoshiAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 
 	if !validImpExists {
 		err := &errortypes.BadInput{
-			Message: fmt.Sprintf("No valid impression in the bid request"),
+			Message: "No valid impression in the bid request",
 		}
 		errs = append(errs, err)
 		return nil, errs
@@ -120,6 +120,7 @@ func (a *GamoshiAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 		Uri:     thisURI,
 		Body:    reqJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, errors
 }
 

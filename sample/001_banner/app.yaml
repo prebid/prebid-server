@@ -1,0 +1,20 @@
+port: 8000 # main auction server port
+admin_port: 6060 # admin server listening port
+
+external_url: localhost # host url of all 2 servers above
+status_response: "ok" # default response string for /status endpoint
+
+gdpr:
+  default_value: "0" # disable gdpr, explicitly specifying a default value is a requirement in prebid server config
+
+# set up stored request storage using local file system
+stored_requests:
+  filesystem: 
+    enabled: true
+    directorypath: ./stored_requests/data/by_id
+
+# set up stored response storage using local file system
+stored_responses:
+  filesystem:
+    enabled: true
+    directorypath: ./stored_responses/data/by_id

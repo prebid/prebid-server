@@ -1,14 +1,160 @@
 # Configuration
 
-Configuration is handled by [Viper](https://github.com/spf13/viper), which supports [many ways](https://github.com/spf13/viper#why-viper) of setting config values.
+Prebid Server is configured using environment variables, a `pbs.json` file, or a `pbs.yaml` file, in that order of precedence. Configuration files are read from either the application directory or `/etc/config`. 
 
-As a general rule, Prebid Server will log its resolved config values on startup and exit immediately if they're not valid.
+Upon starting, Prebid Server logs the resolved configuration to standard out with passwords and secrets redacted. If there's an error with the configuration, the application will log the error and exit.
 
-For development, it's easiest to define your config inside a `pbs.yaml` file in the project root.
+# Sections
+> [!IMPORTANT]
+> As we are still developing this guide, please refer to the [configuration structures in code](../../config/config.go) for a complete definition of the options.
 
-## Available options
+- [General](#general)
+- [Privacy](#privacy)
+  - [GDPR](#gdpr)
 
-For now, see [the contract classes](../../config/config.go) in the code.
 
-Also note that `Viper` will also read environment variables for config values. Prebid Server will look for the prefix `PBS_` on the environment variables, and map underscores (`_`)
-to periods. For example, to set `host_cookie.ttl_days` via an environment variable, set `PBS_HOST_COOKIE_TTL_DAYS` to the desired value.
+# General
+
+### `external_url`
+String value that specifies the external url to reach your Prebid Server instance. It's used for event tracking and user sync callbacks, and is shared with bidders in outgoing requests at `req.ext.prebid.server.externalurl`. Defaults to empty.
+
+<details>
+  <summary>Example</summary>
+  <p>
+
+  JSON:
+  ```
+  {
+    "external_url": "https://your-pbs-server.com"
+  }
+  ```
+
+  YAML:
+  ```
+  external_url: https://your-pbs-server.com
+  ```
+
+  Environment Variable:
+  ```
+  PBS_EXTERNAL_URL: https://your-pbs-server.com
+  ```
+
+  </p>
+</details>
+
+### `host`
+String value that specifies the address the server will listen to for connections.  If the value is empty, Prebid Server will listen on all available addresses, which is a common configuration. This value is also used for the Prometheus endpoint, if enabled. Defaults to empty.
+
+<details>
+  <summary>Example</summary>
+  <p>
+
+  JSON:
+  ```
+  {
+    "host": "127.0.0.1"
+  }
+  ```
+
+  YAML:
+  ```
+  host: 127.0.0.1
+  ```
+
+  Environment Variable:
+  ```
+  PBS_HOST: 127.0.0.1
+  ```
+
+  </p>
+</details>
+
+### `port`
+Integer value that specifies the port the server will listen to for connections. Defaults to `8000`.
+
+<details>
+  <summary>Example</summary>
+  <p>
+
+  JSON:
+  ```
+  {
+    "port": 8000
+  }
+  ```
+
+  YAML:
+  ```
+  port: 8000
+  ```
+
+  Environment Variable:
+  ```
+  PBS_PORT: 8000
+  ```
+
+  </p>
+</details>
+
+# Privacy
+
+## GDPR
+
+### `gdpr.enabled`
+Boolean value that determines if GDPR processing for TCF signals is enabled. Defaults to `true`.
+<details>
+  <summary>Example</summary>
+  <p>
+
+  JSON:
+  ```
+  {
+    "gdpr": {
+      "enabled": true
+    }
+  }
+  ```
+
+  YAML:
+  ```
+  gdpr:
+    enabled: true
+  ```
+
+  Environment Variable:
+  ```
+  PBS_GDPR_ENABLED: true
+  ```
+
+  </p>
+</details>
+
+
+### `gdpr.default_value` (required)
+String value that determines whether GDPR is enabled when no regulatory signal is available in the request. A value of `"0"` disables it by default and a value of `"1"` enables it. This is a required configuration value with no default.
+<details>
+  <summary>Example</summary>
+  <p>
+
+  JSON:
+  ```
+  {
+    "gdpr": {
+      "default_value": "0"
+    }
+  }
+  ```
+
+  YAML:
+  ```
+  gdpr:
+    default_value: "0"
+  ```
+
+  Environment Variable:
+  ```
+  PBS_GDPR_DEFAULT_VALUE: 0
+  ```
+
+  </p>
+</details>

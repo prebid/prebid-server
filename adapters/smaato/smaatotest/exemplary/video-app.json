@@ -165,9 +165,10 @@
                         "keywords": "keywords"
                     },
                     "ext": {
-                        "client": "prebid_server_0.6"
+                        "client": "prebid_server_0.7"
                     }
-                }
+                },
+                "impIDs":["postbid_iframe"]
             },
             "mockResponse": {
                 "status": 200,

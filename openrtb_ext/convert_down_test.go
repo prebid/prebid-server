@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prebid/openrtb/v19/adcom1"
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/adcom1"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -14,7 +16,7 @@ func TestConvertDownTo25(t *testing.T) {
 		name            string
 		givenRequest    openrtb2.BidRequest
 		expectedRequest openrtb2.BidRequest
-		expectedErr     string
+		expectedErrType error
 	}{
 		{
 			name: "2.6-to-2.5",
@@ -60,11 +62,21 @@ func TestConvertDownTo25(t *testing.T) {
 			name: "2.6-202303-dropped", // integration with clear202303Fields
 			givenRequest: openrtb2.BidRequest{
 				ID:  "anyID",
-				Imp: []openrtb2.Imp{{ID: "1", Refresh: &openrtb2.Refresh{Count: 1}}},
+				Imp: []openrtb2.Imp{{ID: "1", Refresh: &openrtb2.Refresh{Count: ptrutil.ToPtr(1)}}},
 			},
 			expectedRequest: openrtb2.BidRequest{
 				ID:  "anyID",
 				Imp: []openrtb2.Imp{{ID: "1"}},
+			},
+		},
+		{
+			name: "2.6-202309-dropped", // integration with clear202309Fields
+			givenRequest: openrtb2.BidRequest{
+				ID:   "anyID",
+				ACat: []string{"anyACat"},
+			},
+			expectedRequest: openrtb2.BidRequest{
+				ID: "anyID",
 			},
 		},
 		{
@@ -87,12 +99,12 @@ func TestConvertDownTo25(t *testing.T) {
 			},
 		},
 		{
-			name: "malformed-shhain",
+			name: "malformed-schain",
 			givenRequest: openrtb2.BidRequest{
 				ID:     "anyID",
 				Source: &openrtb2.Source{SChain: &openrtb2.SupplyChain{Complete: 1, Nodes: []openrtb2.SupplyChainNode{}, Ver: "2"}, Ext: json.RawMessage(`malformed`)},
 			},
-			expectedErr: "invalid character 'm' looking for beginning of value",
+			expectedErrType: &errortypes.FailedToUnmarshal{},
 		},
 		{
 			name: "malformed-gdpr",
@@ -100,7 +112,7 @@ func TestConvertDownTo25(t *testing.T) {
 				ID:   "anyID",
 				Regs: &openrtb2.Regs{GDPR: openrtb2.Int8Ptr(1), Ext: json.RawMessage(`malformed`)},
 			},
-			expectedErr: "invalid character 'm' looking for beginning of value",
+			expectedErrType: &errortypes.FailedToUnmarshal{},
 		},
 		{
 			name: "malformed-consent",
@@ -108,7 +120,7 @@ func TestConvertDownTo25(t *testing.T) {
 				ID:   "anyID",
 				User: &openrtb2.User{Consent: "1", Ext: json.RawMessage(`malformed`)},
 			},
-			expectedErr: "invalid character 'm' looking for beginning of value",
+			expectedErrType: &errortypes.FailedToUnmarshal{},
 		},
 		{
 			name: "malformed-usprivacy",
@@ -116,7 +128,7 @@ func TestConvertDownTo25(t *testing.T) {
 				ID:   "anyID",
 				Regs: &openrtb2.Regs{USPrivacy: "3", Ext: json.RawMessage(`malformed`)},
 			},
-			expectedErr: "invalid character 'm' looking for beginning of value",
+			expectedErrType: &errortypes.FailedToUnmarshal{},
 		},
 		{
 			name: "malformed-eid",
@@ -124,7 +136,7 @@ func TestConvertDownTo25(t *testing.T) {
 				ID:   "anyID",
 				User: &openrtb2.User{EIDs: []openrtb2.EID{{Source: "42"}}, Ext: json.RawMessage(`malformed`)},
 			},
-			expectedErr: "invalid character 'm' looking for beginning of value",
+			expectedErrType: &errortypes.FailedToUnmarshal{},
 		},
 		{
 			name: "malformed-imp",
@@ -132,7 +144,7 @@ func TestConvertDownTo25(t *testing.T) {
 				ID:  "anyID",
 				Imp: []openrtb2.Imp{{Rwdd: 1, Ext: json.RawMessage(`malformed`)}},
 			},
-			expectedErr: "invalid character 'm' looking for beginning of value",
+			expectedErrType: &errortypes.FailedToUnmarshal{},
 		},
 	}
 
@@ -141,8 +153,8 @@ func TestConvertDownTo25(t *testing.T) {
 			w := &RequestWrapper{BidRequest: &test.givenRequest}
 			err := ConvertDownTo25(w)
 
-			if len(test.expectedErr) > 0 {
-				assert.EqualError(t, err, test.expectedErr, "error")
+			if test.expectedErrType != nil {
+				assert.IsType(t, test.expectedErrType, err)
 			} else {
 				assert.NoError(t, w.RebuildRequest(), "error")
 				assert.Equal(t, test.expectedRequest, *w.BidRequest, "result")
@@ -162,7 +174,7 @@ func TestMoveSupplyChainFrom26To25(t *testing.T) {
 		name            string
 		givenRequest    openrtb2.BidRequest
 		expectedRequest openrtb2.BidRequest
-		expectedErr     string
+		expectedErrType error
 	}{
 		{
 			name:            "notpresent-source",
@@ -185,9 +197,9 @@ func TestMoveSupplyChainFrom26To25(t *testing.T) {
 			expectedRequest: openrtb2.BidRequest{Source: &openrtb2.Source{Ext: schain1Json}},
 		},
 		{
-			name:         "malformed",
-			givenRequest: openrtb2.BidRequest{Source: &openrtb2.Source{SChain: schain1, Ext: json.RawMessage(`malformed`)}},
-			expectedErr:  "invalid character 'm' looking for beginning of value",
+			name:            "malformed",
+			givenRequest:    openrtb2.BidRequest{Source: &openrtb2.Source{SChain: schain1, Ext: json.RawMessage(`malformed`)}},
+			expectedErrType: &errortypes.FailedToUnmarshal{},
 		},
 	}
 
@@ -196,8 +208,8 @@ func TestMoveSupplyChainFrom26To25(t *testing.T) {
 			w := &RequestWrapper{BidRequest: &test.givenRequest}
 			err := moveSupplyChainFrom26To25(w)
 
-			if len(test.expectedErr) > 0 {
-				assert.EqualError(t, err, test.expectedErr, "error")
+			if test.expectedErrType != nil {
+				assert.IsType(t, test.expectedErrType, err)
 			} else {
 				assert.NoError(t, w.RebuildRequest(), "error")
 				assert.Equal(t, test.expectedRequest, *w.BidRequest, "result")
@@ -211,7 +223,7 @@ func TestMoveGDPRFrom26To25(t *testing.T) {
 		name            string
 		givenRequest    openrtb2.BidRequest
 		expectedRequest openrtb2.BidRequest
-		expectedErr     string
+		expectedErrType error
 	}{
 		{
 			name:            "notpresent-regs",
@@ -234,9 +246,9 @@ func TestMoveGDPRFrom26To25(t *testing.T) {
 			expectedRequest: openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"gdpr":0}`)}},
 		},
 		{
-			name:         "malformed",
-			givenRequest: openrtb2.BidRequest{Regs: &openrtb2.Regs{GDPR: openrtb2.Int8Ptr(0), Ext: json.RawMessage(`malformed`)}},
-			expectedErr:  "invalid character 'm' looking for beginning of value",
+			name:            "malformed",
+			givenRequest:    openrtb2.BidRequest{Regs: &openrtb2.Regs{GDPR: openrtb2.Int8Ptr(0), Ext: json.RawMessage(`malformed`)}},
+			expectedErrType: &errortypes.FailedToUnmarshal{},
 		},
 	}
 
@@ -245,8 +257,8 @@ func TestMoveGDPRFrom26To25(t *testing.T) {
 			w := &RequestWrapper{BidRequest: &test.givenRequest}
 			err := moveGDPRFrom26To25(w)
 
-			if len(test.expectedErr) > 0 {
-				assert.EqualError(t, err, test.expectedErr, "error")
+			if test.expectedErrType != nil {
+				assert.IsType(t, test.expectedErrType, err)
 			} else {
 				assert.NoError(t, w.RebuildRequest(), "error")
 				assert.Equal(t, test.expectedRequest, *w.BidRequest, "result")
@@ -260,7 +272,7 @@ func TestMoveConsentFrom26To25(t *testing.T) {
 		name            string
 		givenRequest    openrtb2.BidRequest
 		expectedRequest openrtb2.BidRequest
-		expectedErr     string
+		expectedErrType error
 	}{
 		{
 			name:            "notpresent-user",
@@ -283,9 +295,9 @@ func TestMoveConsentFrom26To25(t *testing.T) {
 			expectedRequest: openrtb2.BidRequest{User: &openrtb2.User{Ext: json.RawMessage(`{"consent":"1"}`)}},
 		},
 		{
-			name:         "malformed",
-			givenRequest: openrtb2.BidRequest{User: &openrtb2.User{Consent: "1", Ext: json.RawMessage(`malformed`)}},
-			expectedErr:  "invalid character 'm' looking for beginning of value",
+			name:            "malformed",
+			givenRequest:    openrtb2.BidRequest{User: &openrtb2.User{Consent: "1", Ext: json.RawMessage(`malformed`)}},
+			expectedErrType: &errortypes.FailedToUnmarshal{},
 		},
 	}
 
@@ -294,8 +306,8 @@ func TestMoveConsentFrom26To25(t *testing.T) {
 			w := &RequestWrapper{BidRequest: &test.givenRequest}
 			err := moveConsentFrom26To25(w)
 
-			if len(test.expectedErr) > 0 {
-				assert.EqualError(t, err, test.expectedErr, "error")
+			if test.expectedErrType != nil {
+				assert.IsType(t, test.expectedErrType, err)
 			} else {
 				assert.NoError(t, w.RebuildRequest(), "error")
 				assert.Equal(t, test.expectedRequest, *w.BidRequest, "result")
@@ -309,7 +321,7 @@ func TestMoveUSPrivacyFrom26To25(t *testing.T) {
 		name            string
 		givenRequest    openrtb2.BidRequest
 		expectedRequest openrtb2.BidRequest
-		expectedErr     string
+		expectedErrType error
 	}{
 		{
 			name:            "notpresent-regs",
@@ -332,9 +344,9 @@ func TestMoveUSPrivacyFrom26To25(t *testing.T) {
 			expectedRequest: openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":"1"}`)}},
 		},
 		{
-			name:         "malformed",
-			givenRequest: openrtb2.BidRequest{Regs: &openrtb2.Regs{USPrivacy: "1", Ext: json.RawMessage(`malformed`)}},
-			expectedErr:  "invalid character 'm' looking for beginning of value",
+			name:            "malformed",
+			givenRequest:    openrtb2.BidRequest{Regs: &openrtb2.Regs{USPrivacy: "1", Ext: json.RawMessage(`malformed`)}},
+			expectedErrType: &errortypes.FailedToUnmarshal{},
 		},
 	}
 
@@ -343,8 +355,8 @@ func TestMoveUSPrivacyFrom26To25(t *testing.T) {
 			w := &RequestWrapper{BidRequest: &test.givenRequest}
 			err := moveUSPrivacyFrom26To25(w)
 
-			if len(test.expectedErr) > 0 {
-				assert.EqualError(t, err, test.expectedErr, "error")
+			if test.expectedErrType != nil {
+				assert.IsType(t, test.expectedErrType, err)
 			} else {
 				assert.NoError(t, w.RebuildRequest(), "error")
 				assert.Equal(t, test.expectedRequest, *w.BidRequest, "result")
@@ -364,7 +376,7 @@ func TestMoveEIDFrom26To25(t *testing.T) {
 		name            string
 		givenRequest    openrtb2.BidRequest
 		expectedRequest openrtb2.BidRequest
-		expectedErr     string
+		expectedErrType error
 	}{
 		{
 			name:            "notpresent-user",
@@ -392,9 +404,9 @@ func TestMoveEIDFrom26To25(t *testing.T) {
 			expectedRequest: openrtb2.BidRequest{User: &openrtb2.User{Ext: eid1Json}},
 		},
 		{
-			name:         "malformed",
-			givenRequest: openrtb2.BidRequest{User: &openrtb2.User{EIDs: eid1, Ext: json.RawMessage(`malformed`)}},
-			expectedErr:  "invalid character 'm' looking for beginning of value",
+			name:            "malformed",
+			givenRequest:    openrtb2.BidRequest{User: &openrtb2.User{EIDs: eid1, Ext: json.RawMessage(`malformed`)}},
+			expectedErrType: &errortypes.FailedToUnmarshal{},
 		},
 	}
 
@@ -403,8 +415,8 @@ func TestMoveEIDFrom26To25(t *testing.T) {
 			w := &RequestWrapper{BidRequest: &test.givenRequest}
 			err := moveEIDFrom26To25(w)
 
-			if len(test.expectedErr) > 0 {
-				assert.EqualError(t, err, test.expectedErr, "error")
+			if test.expectedErrType != nil {
+				assert.IsType(t, test.expectedErrType, err)
 			} else {
 				assert.NoError(t, w.RebuildRequest(), "error")
 				assert.Equal(t, test.expectedRequest, *w.BidRequest, "result")
@@ -415,10 +427,10 @@ func TestMoveEIDFrom26To25(t *testing.T) {
 
 func TestMoveRewardedFrom26ToPrebidExt(t *testing.T) {
 	testCases := []struct {
-		name        string
-		givenImp    openrtb2.Imp
-		expectedImp openrtb2.Imp
-		expectedErr string
+		name            string
+		givenImp        openrtb2.Imp
+		expectedImp     openrtb2.Imp
+		expectedErrType error
 	}{
 		{
 			name:        "notpresent-prebid",
@@ -436,9 +448,9 @@ func TestMoveRewardedFrom26ToPrebidExt(t *testing.T) {
 			expectedImp: openrtb2.Imp{Ext: json.RawMessage(`{"prebid":{"is_rewarded_inventory":1}}`)},
 		},
 		{
-			name:        "Malformed",
-			givenImp:    openrtb2.Imp{Rwdd: 1, Ext: json.RawMessage(`malformed`)},
-			expectedErr: "invalid character 'm' looking for beginning of value",
+			name:            "Malformed",
+			givenImp:        openrtb2.Imp{Rwdd: 1, Ext: json.RawMessage(`malformed`)},
+			expectedErrType: &errortypes.FailedToUnmarshal{},
 		},
 	}
 
@@ -447,8 +459,8 @@ func TestMoveRewardedFrom26ToPrebidExt(t *testing.T) {
 			w := &ImpWrapper{Imp: &test.givenImp}
 			err := moveRewardedFrom26ToPrebidExt(w)
 
-			if len(test.expectedErr) > 0 {
-				assert.EqualError(t, err, test.expectedErr, "error")
+			if test.expectedErrType != nil {
+				assert.IsType(t, test.expectedErrType, err)
 			} else {
 				assert.NoError(t, w.RebuildImp(), "error")
 				assert.Equal(t, test.expectedImp, *w.Imp, "result")
@@ -682,7 +694,7 @@ func TestClear202303Fields(t *testing.T) {
 			{
 				ID:      "imp1",
 				Video:   &openrtb2.Video{PodID: "1", Plcmt: adcom1.VideoPlcmtInstream},
-				Refresh: &openrtb2.Refresh{Count: 1},
+				Refresh: &openrtb2.Refresh{Count: ptrutil.ToPtr(1)},
 			},
 		},
 	}
@@ -699,5 +711,52 @@ func TestClear202303Fields(t *testing.T) {
 
 	r := &RequestWrapper{BidRequest: &given}
 	clear202303Fields(r)
+	assert.Equal(t, expected, given)
+}
+
+func TestClear202309Fields(t *testing.T) {
+	givenDurFloors := []openrtb2.DurFloors{{MinDur: 15, MaxDur: 30, BidFloor: 100}}
+
+	given := openrtb2.BidRequest{
+		ID:   "anyID",
+		ACat: []string{"acat1", "acat2"},
+		Imp: []openrtb2.Imp{
+			{
+				ID:    "imp1",
+				Audio: &openrtb2.Audio{PodID: "1", DurFloors: givenDurFloors},
+			},
+			{
+				ID:    "imp2",
+				Video: &openrtb2.Video{PodID: "2", DurFloors: givenDurFloors},
+				PMP: &openrtb2.PMP{
+					PrivateAuction: 1,
+					Deals: []openrtb2.Deal{
+						{ID: "deal1", BidFloor: 200, Guar: 1, MinCPMPerSec: 2, DurFloors: givenDurFloors}},
+				},
+			},
+		},
+	}
+
+	expected := openrtb2.BidRequest{
+		ID: "anyID",
+		Imp: []openrtb2.Imp{
+			{
+				ID:    "imp1",
+				Audio: &openrtb2.Audio{PodID: "1"},
+			},
+			{
+				ID:    "imp2",
+				Video: &openrtb2.Video{PodID: "2"},
+				PMP: &openrtb2.PMP{
+					PrivateAuction: 1,
+					Deals: []openrtb2.Deal{
+						{ID: "deal1", BidFloor: 200}},
+				},
+			},
+		},
+	}
+
+	r := &RequestWrapper{BidRequest: &given}
+	clear202309Fields(r)
 	assert.Equal(t, expected, given)
 }

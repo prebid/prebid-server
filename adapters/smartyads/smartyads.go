@@ -7,12 +7,12 @@ import (
 	"strconv"
 	"text/template"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/prebid/prebid-server/v2/macros"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 )
 
 type SmartyAdsAdapter struct {
@@ -103,6 +103,7 @@ func (a *SmartyAdsAdapter) MakeRequests(
 		Body:    reqJSON,
 		Uri:     url,
 		Headers: *GetHeaders(openRTBRequest),
+		ImpIDs:  openrtb_ext.GetImpIDs(openRTBRequest.Imp),
 	}}, nil
 }
 

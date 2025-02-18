@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -646,13 +646,13 @@ func TestReadCookieOptOut(t *testing.T) {
 	optOutCookieValue := "optOutCookieValue"
 	decoder := Base64Decoder{}
 
-	cookie := *(&Cookie{
+	cookie := Cookie{
 		uids: map[string]UIDEntry{
 			"foo": newTempId("fooID", 1),
 			"bar": newTempId("barID", 2),
 		},
 		optOut: false,
-	})
+	}
 
 	existingCookie, _ := ToHTTPCookie(&cookie)
 

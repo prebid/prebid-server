@@ -6,11 +6,12 @@ on:
       releaseType:
         type: choice
         options:
+          - major
           - minor
           - patch
         default: minor
         required: true
-        description: 'minor: v0.X.0, patch: v0.0.X'
+        description: 'major: vX.0.0, minor: v0.X.0, patch: v0.0.X'
       debug:
         type: boolean
         default: true
@@ -24,13 +25,25 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          repository: ${{ github.repository }}
+          ref: master
       - name: Check user permission
-        uses: actions-cool/check-user-permission@v2.2.0
+        uses: actions/github-script@v7
         id: check
         with:
-          require: 'write'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          result-encoding: string
+          script: |
+            const utils = require('./.github/workflows/helpers/pull-request-utils.js')
+            const helper = utils.userHelper({github, context, user: '${{ github.actor }}'})
+            const hasPermission = await helper.hasWritePermissions()
+            return hasPermission
     outputs:
-      hasWritePermission: ${{ steps.check.outputs.require-result }}
+      hasWritePermission: ${{ steps.check.outputs.result }}
 
   build-master:
     name: Build master
@@ -39,7 +52,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@master
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
           repository: ${{ github.repository }}
@@ -51,13 +64,12 @@ jobs:
   publish-tag:
     name: Publish tag
     needs: build-master
-    if: contains(needs.check-permission.outputs.hasWritePermission, 'true')
     permissions:
       contents: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Prebid Server
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Create & publish tag
@@ -78,11 +90,18 @@ jobs:
 
           nextTag=''
           releaseType=${{ inputs.releaseType }}
-          if [ $releaseType == "minor" ]; then
-            # increment minor version and reset patch version
-            nextTag=$(echo "${currentTag}" | awk -F. '{OFS="."; $2+=1; $3=0; print $0}')
+          if [ $releaseType == "major" ]; then
+              # PBS-GO skipped the v1.0.0 major release - https://github.com/prebid/prebid-server/issues/3068
+              # If the current tag is v0.x.x, the script sets the next release tag to v2.0.0
+              # Otherwise, the script increments the major version by 1 and sets the minor and patch versions to zero
+              # For example, v2.x.x will be incremented to v3.0.0
+              major=$(echo "${currentTag}" | awk -F. '{gsub(/^v/, "", $1); if($1 == 0) $1=2; else $1+=1; print $1}')
+              nextTag="v${major}.0.0"
+          elif [ $releaseType == "minor" ]; then
+              # Increment minor version and reset patch version
+              nextTag=$(echo "${currentTag}" | awk -F. '{OFS="."; $2+=1; $3=0; print $0}')
           else
-            # increment patch version
+            # Increment patch version
             nextTag=$(echo "${currentTag}" | awk -F. '{OFS="."; $3+=1; print $0}')
           fi
 
@@ -103,7 +122,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Prebid Server
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Build image

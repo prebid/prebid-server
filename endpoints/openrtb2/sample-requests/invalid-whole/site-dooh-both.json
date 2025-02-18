@@ -1,0 +1,27 @@
+{
+  "description": "Bid request comes with both site and dooh fields, it should only come with one",
+  "mockBidRequest": {
+    "id": "req-id",
+    "site": {
+      "page": "test.mysite.com"
+    },
+    "dooh": {},
+    "imp": [
+      {
+        "id": "imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+            ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          }
+        }
+      }
+    ]
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: No more than one of request.site or request.app or request.dooh can be defined\n"
+}
