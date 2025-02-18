@@ -832,8 +832,7 @@ func pickRelevantSegments(taxonomyIdToSegments map[int]*list.List) map[int][]str
 		taxonomyId := taxonomyIds[taxonomyIdIndex]
 		currentSegments := taxonomyIdToSegments[taxonomyId]
 
-		lastElement := currentSegments.Back()
-		lastSegment := currentSegments.Remove(lastElement).(openrtb2.Segment)
+		lastSegment := currentSegments.Remove(currentSegments.Back()).(*list.Element).Value.(openrtb2.Segment)
 
 		if _, exists := relevantSegments[taxonomyId]; !exists {
 			relevantSegments[taxonomyId] = make([]string, 0)
