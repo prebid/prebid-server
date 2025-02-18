@@ -2,7 +2,6 @@ package helpers
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/getsentry/sentry-go"
 	"github.com/prebid/prebid-server/v3/analytics"
 	"time"
@@ -13,7 +12,6 @@ func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]MileAnal
 	defer sentry.Recover()
 
 	var events []MileAnalyticsEvent
-	fmt.Println(ao.RequestWrapper.DOOH.Domain)
 	if ao != nil {
 		if ao.RequestWrapper != nil {
 			for _, imp := range ao.RequestWrapper.Imp {

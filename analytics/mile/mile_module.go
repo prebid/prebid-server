@@ -228,6 +228,7 @@ func (m *MileModule) LogCookieSyncObject(cso *analytics.CookieSyncObject) {
 }
 
 func (m *MileModule) LogAmpObject(ao *analytics.AmpObject) {
+	defer sentry.Recover()
 	m.muxConfig.RLock()
 	defer m.muxConfig.RUnlock()
 
