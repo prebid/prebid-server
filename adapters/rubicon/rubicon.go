@@ -1,14 +1,13 @@
 package rubicon
 
 import (
+	"container/list"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
-
-	"github.com/golang-collections/collections/stack"
 
 	"github.com/prebid/prebid-server/v3/version"
 
@@ -779,8 +778,8 @@ func updateExtWithIabAndSegtaxAttribute(target map[string]interface{}, data []op
 	}
 }
 
-func getTaxonomyIdToSegments(data []openrtb2.Data) map[int]*stack.Stack {
-	var taxonomyIdToSegments = make(map[int]*stack.Stack)
+func getTaxonomyIdToSegments(data []openrtb2.Data) map[int]*list.List {
+	var taxonomyIdToSegments = make(map[int]*list.List)
 	for _, dataRecord := range data {
 		if dataRecord.Ext == nil {
 			continue
@@ -800,13 +799,13 @@ func getTaxonomyIdToSegments(data []openrtb2.Data) map[int]*stack.Stack {
 
 		segments, exists := taxonomyIdToSegments[taxonomyId]
 		if !exists {
-			segments = stack.New()
+			segments = list.New()
 			taxonomyIdToSegments[taxonomyId] = segments
 		}
 
 		for _, originalSegment := range originalSegments {
 			if originalSegment.ID != "" {
-				segments.Push(originalSegment)
+				segments.PushBack(&list.Element{Value: originalSegment})
 			}
 		}
 
@@ -818,7 +817,7 @@ func getTaxonomyIdToSegments(data []openrtb2.Data) map[int]*stack.Stack {
 	return taxonomyIdToSegments
 }
 
-func pickRelevantSegments(taxonomyIdToSegments map[int]*stack.Stack) map[int][]string {
+func pickRelevantSegments(taxonomyIdToSegments map[int]*list.List) map[int][]string {
 	var relevantSegments = make(map[int][]string)
 	taxonomyIds := make([]int, 0)
 
@@ -832,7 +831,9 @@ func pickRelevantSegments(taxonomyIdToSegments map[int]*stack.Stack) map[int][]s
 		taxonomyIdIndex := i % len(taxonomyIds)
 		taxonomyId := taxonomyIds[taxonomyIdIndex]
 		currentSegments := taxonomyIdToSegments[taxonomyId]
-		lastSegment := currentSegments.Pop().(openrtb2.Segment)
+
+		lastElement := currentSegments.Back()
+		lastSegment := currentSegments.Remove(lastElement).(openrtb2.Segment)
 
 		if _, exists := relevantSegments[taxonomyId]; !exists {
 			relevantSegments[taxonomyId] = make([]string, 0)
