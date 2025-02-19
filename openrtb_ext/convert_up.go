@@ -193,7 +193,6 @@ func moveEIDFrom25To26(r *RequestWrapper) {
 	r.User.EIDs = existingEIDs
 }
 
-
 // moveRewardedFromPrebidExtTo26 modifies the impression to move the Prebid specific
 // rewarded video signal (imp[].ext.prebid.is_rewarded_inventory) to the OpenRTB 2.6
 // location (imp[].rwdd). If the OpenRTB 2.6 location is already present the Prebid
