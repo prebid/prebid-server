@@ -434,37 +434,26 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			rubiconRequest.App = &appCopy
 		}
 
-		if request.Source != nil || rubiconExt.PChain != "" {
-			var sourceCopy openrtb2.Source
-			if request.Source != nil {
-				sourceCopy = *request.Source
-			} else {
-				sourceCopy = openrtb2.Source{}
-			}
+		if request.Source != nil && request.Source.SChain != nil {
+			sourceCopy := *request.Source
 
-			if sourceCopy.SChain != nil {
-				var sourceCopyExt openrtb_ext.ExtSource
-				if sourceCopy.Ext != nil {
-					if err = jsonutil.Unmarshal(sourceCopy.Ext, &sourceCopyExt); err != nil {
-						errs = append(errs, &errortypes.BadInput{Message: err.Error()})
-						continue
-					}
-				} else {
-					sourceCopyExt = openrtb_ext.ExtSource{}
-				}
-
-				sourceCopyExt.SChain = sourceCopy.SChain
-				sourceCopy.SChain = nil
-
-				sourceCopy.Ext, err = json.Marshal(&sourceCopyExt)
-				if err != nil {
-					errs = append(errs, err)
+			var sourceCopyExt openrtb_ext.ExtSource
+			if sourceCopy.Ext != nil {
+				if err = jsonutil.Unmarshal(sourceCopy.Ext, &sourceCopyExt); err != nil {
+					errs = append(errs, &errortypes.BadInput{Message: err.Error()})
 					continue
 				}
+			} else {
+				sourceCopyExt = openrtb_ext.ExtSource{}
 			}
 
-			if rubiconExt.PChain != "" {
-				sourceCopy.PChain = rubiconExt.PChain
+			sourceCopyExt.SChain = sourceCopy.SChain
+			sourceCopy.SChain = nil
+
+			sourceCopy.Ext, err = json.Marshal(&sourceCopyExt)
+			if err != nil {
+				errs = append(errs, err)
+				continue
 			}
 
 			rubiconRequest.Source = &sourceCopy

@@ -131,8 +131,7 @@
           "bidder": {
             "accountId": 1001,
             "siteId": 113932,
-            "zoneId": 535510,
-            "pchain": "pchain"
+            "zoneId": 535510
           },
           "skadn": {
             "version": "1.0",
@@ -298,9 +297,6 @@
           "app": {
             "id": "1",
             "bundle": "com.wls.testwlsapplication"
-          },
-          "source": {
-            "pchain": "pchain"
           },
           "imp": [
             {
