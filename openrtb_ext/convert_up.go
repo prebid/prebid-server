@@ -168,30 +168,31 @@ func moveEIDFrom25To26(r *RequestWrapper) {
 		return
 	}
 
-	// If 2.6 location is present, append only new eids based on 'source'
+	// If 2.6 location is present, append only new eids based on 'source'.
 	existingEIDs := r.User.EIDs
 	for _, eid25 := range *eids25 {
-		// We only compare if both 'source' fields are non-nil.
-		// Adjust this if you need special handling for nil sources.
-		if eid25.Source == nil {
-			// Example: always append if source is nil:
+		// If source is empty, decide what to do. Example: always append if empty
+		if eid25.Source == "" {
 			existingEIDs = append(existingEIDs, eid25)
 			continue
 		}
 
 		found := false
 		for _, eid26 := range existingEIDs {
-			if eid26.Source != nil && *eid25.Source == *eid26.Source {
+			// Compare strings directly
+			if eid25.Source == eid26.Source {
 				found = true
 				break
 			}
 		}
+
 		if !found {
 			existingEIDs = append(existingEIDs, eid25)
 		}
 	}
 	r.User.EIDs = existingEIDs
 }
+
 
 // moveRewardedFromPrebidExtTo26 modifies the impression to move the Prebid specific
 // rewarded video signal (imp[].ext.prebid.is_rewarded_inventory) to the OpenRTB 2.6
