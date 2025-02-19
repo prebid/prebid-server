@@ -94,7 +94,7 @@ func (c *EventChannel) reset() {
 func (c *EventChannel) flush() {
 	c.muxGzBuffer.Lock()
 	defer c.muxGzBuffer.Unlock()
-	fmt.Println(c.metrics.eventCount, "evec")
+	fmt.Print(c.metrics.eventCount, " evec; ")
 
 	if c.metrics.eventCount == 0 { //|| c.metrics.bufferSize == 0 {
 		return
