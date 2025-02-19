@@ -378,7 +378,7 @@ func TestMoveEIDFrom25To26(t *testing.T) {
 			givenRequest: openrtb2.BidRequest{
 				User: &openrtb2.User{
 					EIDs: []openrtb2.EID{{Source: "1"}},
-					Ext:  json.RawMessage(`{"eids":[{"source":"2"}]}`),
+					Ext:  eid2Json,
 				},
 			},
 			expectedRequest: openrtb2.BidRequest{
@@ -392,7 +392,7 @@ func TestMoveEIDFrom25To26(t *testing.T) {
 			givenRequest: openrtb2.BidRequest{
 				User: &openrtb2.User{
 					EIDs: []openrtb2.EID{{Source: "1"}},
-					Ext:  json.RawMessage(`{"eids":[{"source":"1"}]}`),
+					Ext:  eid1Json,
 				},
 			},
 			expectedRequest: openrtb2.BidRequest{
