@@ -147,18 +147,53 @@ func moveUSPrivacyFrom25To26(r *RequestWrapper) {
 
 // moveEIDFrom25To26 modifies the request to move the OpenRTB 2.5 external identifiers
 // (req.user.ext.eids) to the OpenRTB 2.6 location (req.user.eids). If the OpenRTB 2.6
-// location is already present the OpenRTB 2.5 external identifiers is dropped.
+// location is already present the OpenRTB 2.5 external identifiers are appended for 
+// sources not already in the eids array
 func moveEIDFrom25To26(r *RequestWrapper) {
-	// read and clear 2.5 location
-	userExt, _ := r.GetUserExt()
-	eid25 := userExt.GetEid()
-	userExt.SetEid(nil)
+    // Read 2.5 location
+    userExt, _ := r.GetUserExt()
+    eids25 := userExt.GetEid()
 
-	// move to 2.6 location
-	if eid25 != nil && r.User.EIDs == nil {
-		r.User.EIDs = *eid25
-	}
+    // Clear 2.5 location
+    userExt.SetEid(nil)
+
+    // If there's no eids25, there's nothing to move or merge
+    if eids25 == nil || len(*eids25) == 0 {
+        return
+    }
+
+    // If there's no 2.6 location, simply set eids
+    if r.User.EIDs == nil {
+        r.User.EIDs = *eids25
+        return
+    }
+
+    // If 2.6 location is present, append only new eids based on 'source'
+    existingEIDs := r.User.EIDs
+    for _, eid25 := range *eids25 {
+        // We only compare if both 'source' fields are non-nil.
+        // Adjust logic if you need to handle nil sources differently.
+        if eid25.Source == nil {
+            // If your spec allows a nil source and you want to handle it,
+            // you may choose to always append or skip. Example: always append:
+            existingEIDs = append(existingEIDs, eid25)
+            continue
+        }
+
+        found := false
+        for _, eid26 := range existingEIDs {
+            if eid26.Source != nil && *eid25.Source == *eid26.Source {
+                found = true
+                break
+            }
+        }
+        if !found {
+            existingEIDs = append(existingEIDs, eid25)
+        }
+    }
+    r.User.EIDs = existingEIDs
 }
+
 
 // moveRewardedFromPrebidExtTo26 modifies the impression to move the Prebid specific
 // rewarded video signal (imp[].ext.prebid.is_rewarded_inventory) to the OpenRTB 2.6
