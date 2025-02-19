@@ -3,7 +3,6 @@ package zeta_global_ssp
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/v3/macros"
 	"net/http"
 	"strconv"
 	"text/template"
@@ -12,6 +11,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
