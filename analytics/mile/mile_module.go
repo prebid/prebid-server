@@ -84,6 +84,7 @@ func loadSentry() {
 func NewModuleWithConfig(client *http.Client, scope, endpoint string, config *Configuration, maxEventCount int, maxByteSize, maxTime string, clock clock.Clock) (analytics.Module, error) {
 
 	bufferCfg, err := newBufferConfig(maxEventCount, maxByteSize, maxTime)
+
 	if err != nil {
 		return nil, fmt.Errorf("fail to parse the module args, arg=analytics.pubstack.buffers, :%v", err)
 	}
@@ -245,7 +246,7 @@ func (m *MileModule) LogAmpObject(ao *analytics.AmpObject) {
 	}
 
 	for _, event := range events {
-		m.eventChannels[auction].Push(&event)
+		m.eventChannels[amp].Push(&event)
 	}
 }
 
