@@ -171,7 +171,7 @@ func moveEIDFrom25To26(r *RequestWrapper) {
 	// If 2.6 location is present, append only new eids based on 'source'.
 	existingEIDs := r.User.EIDs
 	for _, eid25 := range *eids25 {
-		// If source is empty, decide what to do. Example: always append if empty
+		// If source is empty, append
 		if eid25.Source == "" {
 			existingEIDs = append(existingEIDs, eid25)
 			continue
