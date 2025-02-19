@@ -375,33 +375,31 @@ func TestMoveEIDFrom25To26(t *testing.T) {
 		},
 		{
 			description: "2.5 Appended Because Different Source from all 2.6 eids",
-  			givenRequest: openrtb2.BidRequest{
-    				User: &openrtb2.User{
-      					EIDs: []openrtb2.EID{{Source: "1"}},
-      					Ext:  json.RawMessage(`{"eids":[{"source":"2"}]}`),
-    				},
-  			},
-  			expectedRequest: openrtb2.BidRequest{
-    				User: &openrtb2.User{
-      					// We now expect both EIDs to be present
-      					EIDs: []openrtb2.EID{{Source: "1"}, {Source: "2"}},
-    				},
-  			},
+			givenRequest: openrtb2.BidRequest{
+				User: &openrtb2.User{
+					EIDs: []openrtb2.EID{{Source: "1"}},
+					Ext:  json.RawMessage(`{"eids":[{"source":"2"}]}`),
+				},
+			},
+			expectedRequest: openrtb2.BidRequest{
+				User: &openrtb2.User{
+					EIDs: []openrtb2.EID{{Source: "1"}, {Source: "2"}},
+				},
+			},
 		},
 		{
 			description: "2.5 Not Appended Because Same Source exists IN 2.6",
-  			givenRequest: openrtb2.BidRequest{
-    				User: &openrtb2.User{
-      					EIDs: []openrtb2.EID{{Source: "1"}},              
-     					Ext:  json.RawMessage(`{"eids":[{"source":"1"}]}`),
-    				},
-  			},
-  			expectedRequest: openrtb2.BidRequest{
-    				User: &openrtb2.User{
-      					// We do NOT expect a duplicate {Source:"1"} to be appended
-      					EIDs: []openrtb2.EID{{Source: "1"}},
-    				},
-  			},
+			givenRequest: openrtb2.BidRequest{
+				User: &openrtb2.User{
+					EIDs: []openrtb2.EID{{Source: "1"}},
+					Ext:  json.RawMessage(`{"eids":[{"source":"1"}]}`),
+				},
+			},
+			expectedRequest: openrtb2.BidRequest{
+				User: &openrtb2.User{
+					EIDs: []openrtb2.EID{{Source: "1"}},
+				},
+			},
 		},
 		{
 			description:     "2.6 Left Alone",
