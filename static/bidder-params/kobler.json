@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Kobler Adapter Params",
+  "description": "A schema which validates params accepted by the Kobler adapter",
+  "type": "object",
+
+  "properties": {
+    "test": {
+      "type": "boolean",
+      "description": "Whether the request is for testing only. When multiple ad units are submitted together, it is enough to set this parameter on the first one."
+    }
+  }
+}

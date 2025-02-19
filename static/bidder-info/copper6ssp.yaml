@@ -1,4 +1,5 @@
-endpoint: "https://endpoint.copper6.com/"
+endpoint: "https://endpoint.copper6.com/pserver"
+gvlVendorID: 1356
 maintainer:
   email: "info@copper6.com"
 capabilities:
