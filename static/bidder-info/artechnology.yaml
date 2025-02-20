@@ -1,0 +1,2 @@
+endpoint: "https://artechnology-prebid.attekmi.com/pbserver/?seat={{.AccountID}}&token={{.SourceId}}"
+aliasOf: "smarthub"
