@@ -196,12 +196,9 @@ func (adapter *EPlanningAdapter) MakeRequests(request *openrtb2.BidRequest, reqI
 		query.Set("vv", vastVersionDefault)
 	}
 	if request.Source != nil && request.Source.Ext != nil {
-		if openRtbSchain := unmarshalSupplyChain(request); openRtbSchain != nil && len(openRtbSchain.Nodes) <= 2 {
-			if schainValue := makeSupplyChain(*openRtbSchain); schainValue != "" {
-				query.Set("sch", schainValue)
-			}
-		}
+		setSchain(request.Source.Ext, &query)
 	}
+
 	uriObj.RawQuery = query.Encode()
 	uri := uriObj.String()
 
@@ -218,9 +215,19 @@ func (adapter *EPlanningAdapter) MakeRequests(request *openrtb2.BidRequest, reqI
 	return requests, errors
 }
 
-func unmarshalSupplyChain(req *openrtb2.BidRequest) *openrtb2.SupplyChain {
+func setSchain(ext json.RawMessage, query *url.Values) {
+	openRtbSchain := unmarshalSupplyChain(ext)
+	if openRtbSchain == nil || len(openRtbSchain.Nodes) > 2 {
+		return
+	}
+	if schainValue := makeSupplyChain(*openRtbSchain); schainValue != "" {
+		query.Set("sch", schainValue)
+	}
+}
+
+func unmarshalSupplyChain(ext json.RawMessage) *openrtb2.SupplyChain {
 	var extSChain openrtb_ext.ExtRequestPrebidSChain
-	err := jsonutil.Unmarshal(req.Source.Ext, &extSChain)
+	err := jsonutil.Unmarshal(ext, &extSChain)
 	if err != nil {
 		return nil
 	}
