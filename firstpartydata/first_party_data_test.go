@@ -519,6 +519,12 @@ func TestExtractBidderConfigFPD(t *testing.T) {
 				} else {
 					assert.Nil(t, results[bidderName].User, "user expected to be nil")
 				}
+
+				if expectedFPD.Device != nil {
+					assert.JSONEq(t, string(expectedFPD.Device), string(results[bidderName].Device), "device is incorrect")
+				} else {
+					assert.Nil(t, results[bidderName].Device, "device expected to be nil")
+				}
 			}
 		})
 	}
@@ -624,6 +630,14 @@ func TestResolveFPD(t *testing.T) {
 						outputReq.User.Ext = nil
 						assert.JSONEq(t, string(expectedUserExt), string(resUserExt), "user.ext is incorrect")
 						assert.Equal(t, outputReq.User, bidderFPD.User, "User is incorrect")
+					}
+					if outputReq.Device != nil && len(outputReq.Device.Ext) > 0 {
+						resDeviceExt := bidderFPD.Device.Ext
+						expectedDeviceExt := outputReq.Device.Ext
+						bidderFPD.Device.Ext = nil
+						outputReq.Device.Ext = nil
+						assert.JSONEq(t, string(expectedDeviceExt), string(resDeviceExt), "device.ext is incorrect")
+						assert.Equal(t, outputReq.Device, bidderFPD.Device, "Device is incorrect")
 					}
 				}
 			} else {
@@ -1207,6 +1221,78 @@ func TestResolveApp(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, test.expectedApp, resultApp, "Result app is incorrect")
+			}
+		})
+	}
+}
+
+func TestResolveDevice(t *testing.T) {
+	testCases := []struct {
+		description      string
+		fpdConfig        *openrtb_ext.ORTB2
+		bidRequestDevice *openrtb2.Device
+		expectedDevice   *openrtb2.Device
+		expectError      string
+	}{
+		{
+			description:    "FPD config and bid request device are not specified",
+			expectedDevice: nil,
+		},
+		{
+			description: "FPD config device only is specified",
+			fpdConfig:   &openrtb_ext.ORTB2{Device: json.RawMessage(`{"ua":"test-user-agent"}`)},
+			expectedDevice: &openrtb2.Device{
+				UA: "test-user-agent",
+			},
+		},
+		{
+			description:      "FPD config and bid request device are specified",
+			fpdConfig:        &openrtb_ext.ORTB2{Device: json.RawMessage(`{"ua":"test-user-agent-1"}`)},
+			bidRequestDevice: &openrtb2.Device{UA: "test-user-agent-2"},
+			expectedDevice:   &openrtb2.Device{UA: "test-user-agent-1"},
+		},
+		{
+			description:      "Bid request device only is specified",
+			bidRequestDevice: &openrtb2.Device{UA: "test-user-agent"},
+			expectedDevice:   &openrtb2.Device{UA: "test-user-agent"},
+		},
+		{
+			description: "FPD config device with ext, bid request device with ext",
+			fpdConfig:   &openrtb_ext.ORTB2{Device: json.RawMessage(`{"ua":"test-user-agent-1","ext":{"test":1}}`)},
+			bidRequestDevice: &openrtb2.Device{
+				UA:  "test-user-agent-2",
+				Ext: json.RawMessage(`{"test":2,"key":"value"}`),
+			},
+			expectedDevice: &openrtb2.Device{
+				UA:  "test-user-agent-1",
+				Ext: json.RawMessage(`{"key":"value","test":1}`),
+			},
+		},
+		{
+			description:      "Bid request device with ext only is specified",
+			bidRequestDevice: &openrtb2.Device{UA: "test-user-agent", Ext: json.RawMessage(`{"customData":true}`)},
+			expectedDevice:   &openrtb2.Device{UA: "test-user-agent", Ext: json.RawMessage(`{"customData":true}`)},
+		},
+		{
+			description: "FPD config device with malformed ext",
+			fpdConfig:   &openrtb_ext.ORTB2{Device: json.RawMessage(`{"ua":"test-user-agent-1","ext":{malformed}}`)},
+			bidRequestDevice: &openrtb2.Device{
+				UA:  "test-user-agent-2",
+				Ext: json.RawMessage(`{"test":2,"key":"value"}`),
+			},
+			expectError: "invalid first party data ext",
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.description, func(t *testing.T) {
+			resultDevice, err := resolveDevice(test.fpdConfig, test.bidRequestDevice)
+
+			if len(test.expectError) > 0 {
+				assert.EqualError(t, err, test.expectError)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, test.expectedDevice, resultDevice, "Result device is incorrect")
 			}
 		})
 	}
