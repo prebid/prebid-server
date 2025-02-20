@@ -83,6 +83,10 @@ func TestAccountFetcher(t *testing.T) {
 	assertErrorCount(t, 0, errs)
 	assert.JSONEq(t, `{"disabled":false, "events_enabled":true, "id":"valid" }`, string(account))
 
+	account, errs = fetcher.FetchAccount(context.Background(), nil, "valid")
+	assertErrorCount(t, 0, errs)
+	assert.JSONEq(t, `{"disabled":false, "id":"valid" }`, string(account))
+
 	_, errs = fetcher.FetchAccount(context.Background(), json.RawMessage(`{"events_enabled":true}`), "nonexistent")
 	assertErrorCount(t, 1, errs)
 	assert.Error(t, errs[0])
