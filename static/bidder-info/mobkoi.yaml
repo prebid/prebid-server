@@ -1,0 +1,18 @@
+endpoint: "https://adserver.maximus.mobkoi.com/bid"
+endpointCompression: gzip
+geoscope:
+  - USA
+  - CAN
+maintainer:
+  email: prebid-maintainer@example.com
+gvlVendorID: 898
+modifyingVastXmlAllowed: true
+openrtb:
+  version: 2.6
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner
