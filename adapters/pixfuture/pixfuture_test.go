@@ -28,7 +28,7 @@ func TestAdapter_MakeRequests(t *testing.T) {
 				{
 					ID:     "test-imp-id",
 					Banner: &openrtb2.Banner{W: int64Ptr(300), H: int64Ptr(250)},
-					Ext:    jsonRawExt(`{"bidder":{"siteId":"123"}}`),
+					Ext:    json.RawMessage(`{"bidder":{"siteId":"123", "placementId":"456"}}`),
 				},
 			},
 		}
