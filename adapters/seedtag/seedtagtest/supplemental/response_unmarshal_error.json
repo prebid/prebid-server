@@ -1,0 +1,113 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "site": {
+            "publisher": {
+                "id": "foo",
+                "name": "foo"
+            }
+        },
+        "imp": [
+            {
+                "id": "test-imp-id",
+                "video": {
+                    "mimes": [
+                        "video/mp4",
+                        "video/3gpp",
+                        "video/x-ms-wmv"
+                    ],
+                    "maxduration": 30,
+                    "protocols": [
+                        4,
+                        5,
+                        6,
+                        8
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "adUnitId": "example-tag-id"
+                    }
+                }
+            }
+        ]
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "http://url.seedtag.com",
+                "body": {
+                    "id": "test-request-id",
+                    "imp": [
+                        {
+                            "id": "test-imp-id",
+                            "video": {
+                                "mimes": [
+                                    "video/mp4",
+                                    "video/3gpp",
+                                    "video/x-ms-wmv"
+                                ],
+                                "maxduration": 30,
+                                "protocols": [
+                                    4,
+                                    5,
+                                    6,
+                                    8
+                                ]
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "adUnitId": "example-tag-id"
+                                }
+                            }
+                        }
+                    ],
+                    "site": {
+                        "publisher": {
+                            "id": "foo",
+                            "name": "foo"
+                        }
+                    }
+                },
+                "impIDs":["test-imp-id"]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "test-request-id",
+                    "seatbid": [
+                        {
+                            "seat": "123",
+                            "bid": [
+                                {
+                                    "id": "7706636740145184841",
+                                    "impid": "test-imp-id",
+                                    "price": 0.5,
+                                    "adid": "12341234",
+                                    "adm": "some-test-ad",
+                                    "adomain": [
+                                        "domain.com"
+                                    ],
+                                    "iurl": "http://abc.com/cr?id=12341234",
+                                    "cid": "123",
+                                    "crid": "12341234",
+                                    "h": 250,
+                                    "w": 300,
+                                    "mtype": "video"
+                                }
+                            ]
+                        }
+                    ],
+                    "bidid": "5778926625248726496",
+                    "cur": "USD"
+                }
+            }
+        }
+    ],
+    "expectedMakeBidsErrors": [
+        {
+            "value": "cannot unmarshal",
+            "comparison": "startswith"
+        }
+    ]
+}
