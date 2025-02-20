@@ -27,7 +27,7 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "https://s.seedtag.com",
+                "uri": "http://url.seedtag.com",
                 "body": {
                     "id": "test-request-id",
                     "imp": [
@@ -62,7 +62,7 @@
     ],
     "expectedMakeBidsErrors": [
         {
-            "value": "unexpected status code: 404. Run with request.debug = 1 for more info",
+            "value": "Unexpected status code: 404. Run with request.debug = 1 for more info",
             "comparison": "literal"
         }
     ]

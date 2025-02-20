@@ -40,4 +40,5 @@ var validParams = []string{
 var invalidParams = []string{
 	`{"adUnitId": 123}`,
 	`{"adUnitId": ""}`,
+	`{}`,
 }

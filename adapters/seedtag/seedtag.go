@@ -1,15 +1,13 @@
 package seedtag
 
 import (
-	"encoding/json"
-	"fmt"
+	"errors"
 	"net/http"
 	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
@@ -54,7 +52,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 	requestCopy := *request
 	requestCopy.Imp = imps
-	requestJSON, err := json.Marshal(requestCopy)
+	requestJSON, err := jsonutil.Marshal(requestCopy)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -71,18 +69,13 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 // MakeBids unpacks the server's response into Bids.
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if responseData.StatusCode == http.StatusNoContent {
+	if adapters.IsResponseStatusCodeNoContent(responseData) {
 		return nil, nil
 	}
 
-	if responseData.StatusCode == http.StatusBadRequest {
-		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("unexpected status code: %d. Run with request.debug = 1 for more info", responseData.StatusCode),
-		}}
-	}
-
-	if responseData.StatusCode != http.StatusOK {
-		return nil, []error{fmt.Errorf("unexpected status code: %d. Run with request.debug = 1 for more info", responseData.StatusCode)}
+	err := adapters.CheckResponseStatusCodeForErrors(responseData)
+	if err != nil {
+		return nil, []error{err}
 	}
 
 	var response openrtb2.BidResponse
@@ -90,7 +83,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		return nil, []error{err}
 	}
 
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(requestData.ImpIDs))
 
 	var errs []error
 
@@ -121,7 +114,7 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 	case 2:
 		return openrtb_ext.BidTypeVideo, nil
 	default:
-		return "", fmt.Errorf("bid.MType invalid")
+		return "", errors.New("bid.MType invalid")
 	}
 
 }

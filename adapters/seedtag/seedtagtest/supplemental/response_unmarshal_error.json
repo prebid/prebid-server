@@ -93,7 +93,7 @@
                                     "crid": "12341234",
                                     "h": 250,
                                     "w": 300,
-                                    "mtype": 0
+                                    "mtype": "video"
                                 }
                             ]
                         }
@@ -104,16 +104,10 @@
             }
         }
     ],
-    "expectedBidResponses": [
-        {
-            "currency": "USD",
-            "bids": []
-        }
-    ],
     "expectedMakeBidsErrors": [
         {
-            "value": "bid.MType invalid",
-            "comparison": "literal"
+            "value": "cannot unmarshal",
+            "comparison": "startswith"
         }
     ]
 }

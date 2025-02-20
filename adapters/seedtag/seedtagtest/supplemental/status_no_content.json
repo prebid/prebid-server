@@ -27,7 +27,7 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "https://s.seedtag.com",
+                "uri": "http://url.seedtag.com",
                 "body": {
                     "id": "test-request-id",
                     "imp": [
