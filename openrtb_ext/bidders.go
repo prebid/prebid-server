@@ -198,7 +198,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderRelevantDigital,
 	BidderResetDigital,
 	BidderRevcontent,
-	BidderRediads,
 	BidderRichaudience,
 	BidderRise,
 	BidderRoulax,

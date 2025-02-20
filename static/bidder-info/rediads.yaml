@@ -1,4 +1,4 @@
-endpoint: "http://localhost:8080/openrtb2/auction"
+endpoint: "https://bidding.rediads.com/openrtb2/auction"
 # endpointCompression: gzip
 geoscope:
   - global

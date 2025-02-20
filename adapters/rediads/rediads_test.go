@@ -1,6 +1,7 @@
 package rediads
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/prebid/prebid-server/v3/adapters/adapterstest"
@@ -12,6 +13,8 @@ func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderRediads, config.Adapter{
 		Endpoint: "https://bidding.rediads.com/openrtb2/auction"},
 		config.Server{ExternalUrl: "https://rediads.com"})
+
+	fmt.Println("bidder", bidder)
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
