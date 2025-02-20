@@ -1,5 +1,6 @@
 package openrtb_ext
 
 type ImpExtPixfuture struct {
-	PixID string `json:"pix_id"`
+	SiteID      string `json:"siteId"`
+	PlacementID string `json:"placementId"`
 }
