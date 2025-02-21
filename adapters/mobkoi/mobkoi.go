@@ -21,14 +21,8 @@ type adapter struct {
 	endpoint string
 }
 
-type Ext struct {
-	Prebid struct {
-		Bidder struct {
-			Mobkoi struct {
-				PlacementId string `json:"placementId"`
-			} `json:"mobkoi"`
-		} `json:"bidder"`
-	} `json:"prebid"`
+type ExtBidder struct {
+	Bidder openrtb_ext.ImpExtMobkoi `json:"bidder"`
 }
 
 // Builder builds a new instance of the {bidder} adapter for the given bidder with the given config.
@@ -40,12 +34,13 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	ext := Ext{}
+	ext := ExtBidder{}
 	if err := jsonutil.Unmarshal(request.Imp[0].Ext, &ext); err != nil {
 		return nil, []error{err}
 	}
 
-	request.Imp[0].TagID = ext.Prebid.Bidder.Mobkoi.PlacementId
+	request.Imp[0].TagID = ext.Bidder.PlacementID
+	request.User.Ext = []byte(fmt.Sprintf(`{"consent":"%s"}`, request.User.Consent))
 
 	requestJSON, err := jsonutil.Marshal(request)
 	if err != nil {
