@@ -1,7 +1,6 @@
 package rediads
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/prebid/prebid-server/v3/adapters/adapterstest"
