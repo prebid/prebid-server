@@ -14,8 +14,6 @@ func TestJsonSamples(t *testing.T) {
 		Endpoint: "https://fake.test.io/pserver"},
 		config.Server{ExternalUrl: "http://hosturl.com"})
 
-	fmt.Println("bidder", bidder)
-
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
