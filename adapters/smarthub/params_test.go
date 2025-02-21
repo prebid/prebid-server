@@ -9,6 +9,8 @@ import (
 
 var validParams = []string{
 	`{"partnerName":"partnertest", "seat":"9Q20EdGxzgWdfPYShScl", "token":"eKmw6alpP3zWQhRCe3flOpz0wpuwRFjW"}`,
+	`{"partnerName":"", "seat":"1", "token":"1"}`,
+	`{"seat":"1", "token":"1"}`,
 }
 
 func TestValidParams(t *testing.T) {
