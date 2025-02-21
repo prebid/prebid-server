@@ -11,8 +11,8 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderRediads, config.Adapter{
-		Endpoint: "https://bidding.rediads.com/openrtb2/auction"},
-		config.Server{ExternalUrl: "https://rediads.com"})
+		Endpoint: "https://fake.test.io/pserver"},
+		config.Server{ExternalUrl: "http://hosturl.com"})
 
 	fmt.Println("bidder", bidder)
 
