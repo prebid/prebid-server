@@ -98,7 +98,7 @@ func (a *adapter) getEndPoint(ext *openrtb_ext.ExtImpMissena) (string, error) {
 }
 
 func (a *adapter) makeRequest(imp openrtb2.Imp, request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo, params *openrtb_ext.ExtImpMissena, gdprApplies bool, consentString string) (*adapters.RequestData, error) {
-	url, err := a.getEndPoint(params)
+	endpointURL, err := a.getEndPoint(params)
 	if err != nil {
 		return nil, err
 	}
@@ -169,11 +169,16 @@ func (a *adapter) makeRequest(imp openrtb2.Imp, request *openrtb2.BidRequest, re
 	}
 	if request.Site != nil {
 		headers.Add("Referer", request.Site.Page)
+		pageURL, err := url.Parse(request.Site.Page)
+		if err == nil {
+			origin := fmt.Sprintf("%s://%s", pageURL.Scheme, pageURL.Host)
+			headers.Add("Origin", origin)
+		}
 	}
 
 	return &adapters.RequestData{
 		Method:  "POST",
-		Uri:     url,
+		Uri:     endpointURL,
 		Headers: headers,
 		Body:    body,
 		ImpIDs:  []string{imp.ID},

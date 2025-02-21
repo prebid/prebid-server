@@ -48,7 +48,8 @@
           "Accept": ["application/json"],
           "User-Agent": ["test-user-agent"],
           "X-Forwarded-For": ["123.123.123.123"],
-          "Referer": ["https://example.com/page"]
+          "Referer": ["https://example.com/page"],
+          "Origin": ["https://example.com"]
         },
         "body": {
           "adunit": "test-imp-id",
