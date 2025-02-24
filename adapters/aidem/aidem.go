@@ -21,20 +21,12 @@ type adapter struct {
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
-	requestCopy := *request
-	supportedImps, err := getSupportedImps(requestCopy.Imp)
+	reqJson, err := json.Marshal(request)
 	if err != nil {
 		return nil, []error{err}
 	}
 
-	requestCopy.Imp = supportedImps
-
-	reqJson, err := json.Marshal(requestCopy)
-	if err != nil {
-		return nil, []error{err}
-	}
-
-	impExt, err := getImpressionExt(&requestCopy.Imp[0])
+	impExt, err := getImpressionExt(&request.Imp[0])
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -52,7 +44,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		Uri:     url,
 		Body:    reqJson,
 		Headers: headers,
-		ImpIDs:  openrtb_ext.GetImpIDs(requestCopy.Imp),
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, nil
 }
 
@@ -120,6 +112,10 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 		return openrtb_ext.BidTypeBanner, nil
 	case openrtb2.MarkupVideo:
 		return openrtb_ext.BidTypeVideo, nil
+	case openrtb2.MarkupAudio:
+		return openrtb_ext.BidTypeAudio, nil
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative, nil
 	default:
 		return "", fmt.Errorf("Unable to fetch mediaType in multi-format: %s", bid.ImpID)
 	}
@@ -139,21 +135,6 @@ func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpAidem, error) {
 		}
 	}
 	return &AIDEMExt, nil
-}
-
-func getSupportedImps(imps []openrtb2.Imp) ([]openrtb2.Imp, error) {
-	var supportedImps []openrtb2.Imp
-	for _, imp := range imps {
-		if imp.Banner != nil || imp.Video != nil {
-			supportedImps = append(supportedImps, imp)
-		}
-	}
-	if len(supportedImps) == 0 {
-		return nil, &errortypes.BadInput{
-			Message: "No supported formats (banner or video) found",
-		}
-	}
-	return supportedImps, nil
 }
 
 // Builds enpoint url based on adapter-specific pub settings from imp.ext

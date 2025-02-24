@@ -35,37 +35,6 @@
                         "publisherId": "1234"
                     }
                 }
-            },
-            {
-                "id": "3",
-                "audio": {
-                    "mimes": [
-                        "audio/mp4"
-                    ],
-                    "protocols": [
-                        9,
-                        10
-                    ]
-                },
-                "ext": {
-                    "bidder": {
-                        "siteId": "TCID",
-                        "publisherId": "1234"
-                    }
-                }
-            },
-            {
-                "id": "4",
-                "native": {
-                    "ver": "1.2",
-                    "request": "request"
-                },
-                "ext": {
-                    "bidder": {
-                        "siteId": "TCID",
-                        "publisherId": "1234"
-                    }
-                }
             }
         ]
     },
@@ -112,10 +81,7 @@
                         }
                     ]
                 },
-                "impIDs": [
-                    "1",
-                    "2"
-                ]
+                "impIDs":["1","2"]
             },
             "mockResponse": {
                 "status": 200,
