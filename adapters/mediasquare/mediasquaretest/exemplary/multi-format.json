@@ -1,0 +1,444 @@
+{
+  "mockBidRequest": {
+    "id": "70e5672c-515b-406e-967c-fcc2b04de04f",
+    "imp": [
+      {
+        "id": "2c35e25e-e7d3-41bf-b810-06a449f456b9",
+        "bidfloor": 1,
+        "bidfloorcur": "USD",
+        "banner": {
+          "w": 970,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "owner": "msq_test",
+            "code": "publishername_atf_desktop_rg_pave"
+          }
+        }
+      },
+      {
+        "id": "2059a3e6-71a3-43ea-8290-b5ceb13d35a8",
+        "bidfloor": 0.01,
+        "bidfloorcur": "USD",
+        "banner": {
+          "format": [
+            { "w": 300, "h": 250 },
+            { "w": 300, "h": 600 },
+            { "w": 120, "h": 600 }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "owner": "msq_test",
+            "code": "publishername_atf_desktop_rg_pave"
+          }
+        }
+      },
+      {
+        "id": "2c35e25e-e7d3-41bf-b810-06a449f456c9",
+        "bidfloor": 1,
+        "bidfloorcur": "USD",
+        "tagid": "msq_tag_200123_native",
+        "banner": null,
+        "video": null,
+        "native": {
+          "request": "request-test",
+          "ext": {
+            "title": { "required": true, "len": 80 },
+            "body": { "required": true },
+            "icon": {
+              "required": false,
+              "aspect_ratio": {
+                "min_width": 50,
+                "min_height": 50,
+                "ratio_width": 2,
+                "ratio_height": 3
+              }
+            },
+            "image": {
+              "required": false,
+              "aspect_ratio": {
+                "min_width": 300,
+                "min_height": 200,
+                "ratio_width": 2,
+                "ratio_height": 3
+              }
+            },
+            "clickUrl": { "required": true },
+            "sizes": [
+              [970, 250],
+              [728, 90]
+            ]
+          }
+        },
+        "ext": {
+          "bidder": {
+            "owner": "msq_test",
+            "code": "publishername_atf_desktop_rg_pave"
+          }
+        }
+      },
+      {
+        "id": "2c35e25e-e7d3-41bf-b810-06a449f456d9",
+        "bidfloor": 1,
+        "tagid": "msq_tag_200123_native",
+        "banner": null,
+        "native": null,
+        "video": {
+          "mimes": ["video/mp4"],
+          "minduration": 10,
+          "maxduration": 23,
+          "placement": 1,
+          "w": 800,
+          "h": 600,
+          "plcmt": 1,
+          "ext": {
+            "context": "context-test",
+            "linearity": 0,
+            "playersize": [[800, 600]]
+          }
+        },
+        "ext": {
+          "bidder": {
+            "owner": "msq_test",
+            "code": "publishername_atf_desktop_rg_video"
+          }
+        }
+      }
+    ],
+    "app": {
+      "content": {},
+      "domain": "debug.mediasquare.fr",
+      "id": "app-id-test",
+      "name": "debug.mediasquare.fr",
+      "publisher": {
+        "id": "MEDIA_SQUARE"
+      }
+    },
+    "device": {
+      "devicetype": 1,
+      "geo": {
+        "country": "FRA",
+        "ipservice": 3
+      },
+      "ip": "92.154.6.0",
+      "language": "fr",
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+    },
+    "regs": {
+      "gdpr": 1,
+      "ext": {
+        "dsa": "mediasquare-test"
+      }
+    },
+    "user": {
+      "consent": "there-is-a-real-cs-in-it"
+    },
+    "test": 1
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://pbs-front.mediasquare.fr/msq_prebid",
+        "body": {
+          "codes": [
+            {
+              "adunit": "",
+              "auctionid": "70e5672c-515b-406e-967c-fcc2b04de04f",
+              "bidid": "2c35e25e-e7d3-41bf-b810-06a449f456b9",
+              "code": "publishername_atf_desktop_rg_pave",
+              "owner": "msq_test",
+              "mediatypes": {
+                "banner": {
+                  "sizes": [[970, 250]]
+                }
+              },
+              "floor": {
+                "970x250": {
+                  "floor": 1,
+                  "currency": "USD"
+                }
+              }
+            },
+            {
+              "adunit": "",
+              "auctionid": "70e5672c-515b-406e-967c-fcc2b04de04f",
+              "bidid": "2059a3e6-71a3-43ea-8290-b5ceb13d35a8",
+              "code": "publishername_atf_desktop_rg_pave",
+              "owner": "msq_test",
+              "mediatypes": {
+                "banner": {
+                  "sizes": [
+                    [300, 250],
+                    [300, 600],
+                    [120, 600]
+                  ]
+                }
+              },
+              "floor": {
+                "120x600": {
+                  "floor": 0.01,
+                  "currency": "USD"
+                },
+                "300x250": {
+                  "floor": 0.01,
+                  "currency": "USD"
+                },
+                "300x600": {
+                  "floor": 0.01,
+                  "currency": "USD"
+                }
+              }
+            },
+            {
+              "owner": "msq_test",
+              "code": "publishername_atf_desktop_rg_pave",
+              "adunit": "msq_tag_200123_native",
+              "auctionid": "70e5672c-515b-406e-967c-fcc2b04de04f",
+              "bidid": "2c35e25e-e7d3-41bf-b810-06a449f456c9",
+              "mediatypes": {
+                "native_request": "request-test"
+              },
+              "floor": {
+                "*": { "floor": 1, "currency": "USD" }
+              }
+            },
+            {
+              "owner": "msq_test",
+              "code": "publishername_atf_desktop_rg_video",
+              "adunit": "msq_tag_200123_native",
+              "auctionid": "70e5672c-515b-406e-967c-fcc2b04de04f",
+              "bidid": "2c35e25e-e7d3-41bf-b810-06a449f456d9",
+              "mediatypes": {
+                "video": {
+                  "ext": {
+                    "context": "context-test",
+                    "linearity": 0,
+                    "playersize": [[800, 600]]
+                  },
+                  "mimes": ["video/mp4"],
+                  "minduration": 10,
+                  "maxduration": 23,
+                  "placement": 1,
+                  "w": 800,
+                  "h": 600,
+                  "plcmt": 1
+                }
+              },
+              "floor": {
+                "*": { "floor": 1 },
+                "800x600": { "floor": 1 }
+              }
+            }
+          ],
+          "gdpr": {
+            "consent_required": true,
+            "consent_string": "there-is-a-real-cs-in-it"
+          },
+          "dsa": "mediasquare-test",
+          "tech": {
+            "device": {
+              "geo": {
+                "ipservice": 3,
+                "country": "FRA"
+              },
+              "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+              "ip": "92.154.6.0",
+              "devicetype": 1,
+              "language": "fr"
+            },
+            "app": {
+              "id": "app-id-test",
+              "name": "debug.mediasquare.fr",
+              "domain": "debug.mediasquare.fr",
+              "publisher": {
+                "id": "MEDIA_SQUARE"
+              },
+              "content": {}
+            }
+          },
+          "type": "pbs",
+          "test": true
+        },
+        "impIDs": [
+          "2c35e25e-e7d3-41bf-b810-06a449f456b9",
+          "2059a3e6-71a3-43ea-8290-b5ceb13d35a8",
+          "2c35e25e-e7d3-41bf-b810-06a449f456c9",
+          "2c35e25e-e7d3-41bf-b810-06a449f456d9"
+        ]
+      },
+
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "infos": {
+            "version": "1.6.1",
+            "description": "mediasquare prebid client endpoint"
+          },
+          "cookies": null,
+          "responses": [
+            {
+              "ad": "\u003c!-- This is an example --\u003e",
+              "bid_id": "2c35e25e-e7d3-41bf-b810-06a449f456b9",
+              "bidder": "msq_test",
+              "code": "test/publishername_atf_desktop_rg_pave",
+              "cpm": 2,
+              "increment": 2,
+              "currency": "USD",
+              "creative_id": "msq_test|fakeCreative",
+              "width": 250,
+              "net_revenue": true,
+              "transaction_id": "2c35e25e-e7d3-41bf-b810-06a449f456b9",
+              "ttl": 20000,
+              "adomain": ["mediasquare.fr"],
+              "hasConsent": true
+            },
+            {
+              "ad": "\u003c!-- This is an example --\u003e",
+              "bid_id": "2059a3e6-71a3-43ea-8290-b5ceb13d35a8",
+              "bidder": "msq_test",
+              "code": "test/publishername_atf_desktop_rg_pave",
+              "cpm": 0.02,
+              "increment": 0.02,
+              "currency": "USD",
+              "creative_id": "msq_test|fakeCreative",
+              "width": 250,
+              "net_revenue": true,
+              "transaction_id": "2059a3e6-71a3-43ea-8290-b5ceb13d35a8",
+              "ttl": 20000,
+              "adomain": ["mediasquare.fr"],
+              "hasConsent": true
+            },
+            {
+              "bid_id": "2c35e25e-e7d3-41bf-b810-06a449f456c9",
+              "bidder": "msq_test",
+              "code": "test/publishername_atf_desktop_rg_pave",
+              "cpm": 2,
+              "increment": 2,
+              "currency": "USD",
+              "creative_id": "msq_test|fakeCreative",
+              "net_revenue": true,
+              "transaction_id": "2c35e25e-e7d3-41bf-b810-06a449f456c9",
+              "ttl": 20000,
+              "native": {
+                "clickUrl": "http: //i.am.a/URL",
+                "title": "Learn about this awesome thing"
+              },
+              "adomain": ["mediasquare.fr"],
+              "hasConsent": true
+            },
+            {
+              "bid_id": "2c35e25e-e7d3-41bf-b810-06a449f456d9",
+              "bidder": "msq_test",
+              "code": "test/publishername_atf_desktop_rg_video",
+              "cpm": 2,
+              "increment": 2,
+              "currency": "USD",
+              "creative_id": "msq_test|fakeCreative",
+              "net_revenue": true,
+              "transaction_id": "2c35e25e-e7d3-41bf-b810-06a449f456d9",
+              "ttl": 20000,
+              "video": {
+                "xml": "Some Xml Vast",
+                "url": "https://dummy.domain.tv/some_vast"
+              },
+              "adomain": ["mediasquare.fr"],
+              "hasConsent": true
+            }
+          ],
+          "Calc_cpm": {
+            "2059a3e6-71a3-43ea-8290-b5ceb13d35a8": {
+              "TmpCpmMax": 0,
+              "CpmMax": 0.02
+            },
+            "2c35e25e-e7d3-41bf-b810-06a449f456b9": {
+              "TmpCpmMax": 0,
+              "CpmMax": 2
+            },
+            "2c35e25e-e7d3-41bf-b810-06a449f456c9": {
+              "TmpCpmMax": 0,
+              "CpmMax": 2
+            },
+            "2c35e25e-e7d3-41bf-b810-06a449f456d9": {
+              "TmpCpmMax": 0,
+              "CpmMax": 2
+            }
+          }
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "Currency": "USD",
+      "Bids": [
+        {
+          "Bid": {
+            "id": "",
+            "impid": "2c35e25e-e7d3-41bf-b810-06a449f456b9",
+            "price": 2,
+            "adm": "\u003c!-- This is an example --\u003e",
+            "adomain": ["mediasquare.fr"],
+            "crid": "msq_test|fakeCreative",
+            "w": 250,
+            "mtype": 1
+          },
+          "BidMeta": {
+            "advertiserDomains": ["mediasquare.fr"],
+            "mediaType": "banner"
+          },
+          "type": "banner"
+        },
+        {
+          "Bid": {
+            "id": "",
+            "impid": "2059a3e6-71a3-43ea-8290-b5ceb13d35a8",
+            "price": 0.02,
+            "adm": "\u003c!-- This is an example --\u003e",
+            "adomain": ["mediasquare.fr"],
+            "crid": "msq_test|fakeCreative",
+            "w": 250,
+            "mtype": 1
+          },
+          "BidMeta": {
+            "advertiserDomains": ["mediasquare.fr"],
+            "mediaType": "banner"
+          },
+          "type": "banner"
+        },
+        {
+          "Bid": {
+            "id": "",
+            "impid": "2c35e25e-e7d3-41bf-b810-06a449f456c9",
+            "price": 2,
+            "adomain": ["mediasquare.fr"],
+            "crid": "msq_test|fakeCreative",
+            "mtype": 4
+          },
+          "BidMeta": {
+            "advertiserDomains": ["mediasquare.fr"],
+            "mediaType": "native"
+          },
+          "type": "native"
+        },
+        {
+          "Bid": {
+            "id": "",
+            "impid": "2c35e25e-e7d3-41bf-b810-06a449f456d9",
+            "price": 2,
+            "adomain": ["mediasquare.fr"],
+            "crid": "msq_test|fakeCreative",
+            "mtype": 2
+          },
+          "BidMeta": {
+            "advertiserDomains": ["mediasquare.fr"],
+            "mediaType": "video"
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}
