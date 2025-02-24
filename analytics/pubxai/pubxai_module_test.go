@@ -197,10 +197,11 @@ func TestPubxaiModule_start(t *testing.T) {
 
 			if tt.expectUpdate {
 				mockAuctionBidsQueue.On("UpdateConfig", tt.newConfig.BufferInterval, tt.newConfig.BufferSize).Return(nil).Run(func(args mock.Arguments) {
-					// Signal done after the update is complete
 					done <- struct{}{}
 				})
-				mockWinBidsQueue.On("UpdateConfig", tt.newConfig.BufferInterval, tt.newConfig.BufferSize).Return(nil)
+				mockWinBidsQueue.On("UpdateConfig", tt.newConfig.BufferInterval, tt.newConfig.BufferSize).Return(nil).Run(func(args mock.Arguments) {
+					done <- struct{}{}
+				})
 			}
 
 			go p.start(configChan)
