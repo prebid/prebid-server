@@ -242,7 +242,6 @@ func (m *MileModule) LogAmpObject(ao *analytics.AmpObject) {
 	if err != nil {
 		glog.Warning("[mile] Cannot serialize video")
 		sentry.CaptureException(err)
-		return
 	}
 
 	for _, event := range events {
