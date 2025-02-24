@@ -1,7 +1,0 @@
-{
-  "status": 200,
-  "bidResponse": {
-    "seatBid": []
-  },
-  "message": "No valid bids available."
-}

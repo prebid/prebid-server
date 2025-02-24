@@ -1,9 +1,0 @@
-{
-  "status": 502,
-  "errors": [
-    {
-      "code": "bad_gateway",
-      "message": "Pixfuture endpoint returned an unexpected status code: 502."
-    }
-  ]
-}
