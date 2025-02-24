@@ -137,8 +137,9 @@ func JsonifyAmpObject(ao *analytics.AmpObject, scope string) ([]MileAnalyticsEve
 			for _, imp := range ao.RequestWrapper.Imp {
 
 				var bidBiders []string
+				var bidbiddersMap map[string]struct{}
 				var winningBidder, winningSize string
-				var winningPrice float64 = 0
+				var winningPrice float64 = 0.0
 				if ao.AuctionResponse != nil {
 					if ao.AuctionResponse.SeatBid != nil {
 
@@ -146,6 +147,7 @@ func JsonifyAmpObject(ao *analytics.AmpObject, scope string) ([]MileAnalyticsEve
 							for _, bid := range seatBid.Bid {
 								if bid.ImpID == imp.ID {
 									bidBiders = append(bidBiders, seatBid.Seat)
+									bidbiddersMap[seatBid.Seat] = struct{}{}
 									winningBidder = seatBid.Seat
 									if bid.Price > winningPrice {
 										winningPrice = bid.Price
@@ -158,18 +160,26 @@ func JsonifyAmpObject(ao *analytics.AmpObject, scope string) ([]MileAnalyticsEve
 					}
 				}
 
-				var confBidders ImpressionsExt
+				var impExt ImpressionsExt
 				//if ao.RequestWrapper != nil {
-				err := json.Unmarshal(imp.Ext, &confBidders)
+				err := json.Unmarshal(imp.Ext, &impExt)
 				if err != nil {
 					return nil, err
 					//}
 				}
-				configuredBidders := make([]string, len(confBidders.Prebid.Bidder))
+				configuredBidders := make([]string, len(impExt.Prebid.Bidder))
 				i := 0
-				for k := range confBidders.Prebid.Bidder {
+				for k := range impExt.Prebid.Bidder {
 					configuredBidders[i] = k
 					i++
+				}
+
+				var noBidBidders []string
+				for bidder, _ := range impExt.Prebid.Bidder {
+					if _, found := bidbiddersMap[bidder]; !found {
+						noBidBidders = append(noBidBidders, bidder)
+					}
+
 				}
 				var respExt RespExt
 				err = json.Unmarshal(ao.AuctionResponse.Ext, &respExt)
@@ -201,10 +211,13 @@ func JsonifyAmpObject(ao *analytics.AmpObject, scope string) ([]MileAnalyticsEve
 						Section:           "",
 						BidBidders:        bidBiders,
 						ConfiguredBidders: configuredBidders,
+						NoBidBidders:      noBidBidders,
 						TimedOutBidder:    respExt.getTimeoutBidders(ao.RequestWrapper.TMax),
 						WinningBidder:     winningBidder,
+						Cpm:               winningPrice,
 						WinningSize:       winningSize,
 						ConfiguredTimeout: ao.RequestWrapper.TMax,
+						ResponseTimes:     respExt.ResponseTimeMillis,
 						MetaData: map[string][]string{
 							"prebid_server": []string{"1"},
 							"amp":           []string{"1"},
