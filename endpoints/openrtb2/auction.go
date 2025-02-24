@@ -2030,6 +2030,20 @@ func getJsonSyntaxError(testJSON []byte) (bool, string) {
 }
 
 func (deps *endpointDeps) getStoredRequests(ctx context.Context, requestJson []byte, impInfo []ImpExtPrebidData) (string, bool, map[string]json.RawMessage, map[string]json.RawMessage, []error) {
+	if isDbFetched(requestJson) {
+		dbReqMap, dbImpMap, parseErrs := parseDbStoredMaps(requestJson)
+		if len(parseErrs) > 0 {
+			return "", false, nil, nil, parseErrs
+		}
+
+		// same parameters as normal
+		storedBidRequestId, hasStoredBidRequest, err := getStoredRequestId(requestJson)
+		if err != nil {
+			return "", false, nil, nil, []error{err}
+		}
+
+		return storedBidRequestId, hasStoredBidRequest, dbReqMap, dbImpMap, nil
+	}
 	// Parse the Stored Request IDs from the BidRequest and Imps.
 	storedBidRequestId, hasStoredBidRequest, err := getStoredRequestId(requestJson)
 	if err != nil {
