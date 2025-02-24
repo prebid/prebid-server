@@ -1,0 +1,93 @@
+{
+  "mockBidRequest": {
+    "id": "id-ok",
+    "imp": [
+      { "id": "0" },
+      { "id": "1", "ext": { "id-1": "content-1" } },
+      { "id": "-42", "ext": { "prebid": -42 } },
+      { "id": "-1", "ext": { "bidder": {} } },
+      {
+        "id": "-0",
+        "native": { "request": "" },
+        "ext": { "bidder": { "owner": "test", "code": 0 } }
+      },
+      {
+        "id": "42",
+        "native": { "request": "" },
+        "ext": {
+          "bidder": {
+            "owner": "msq_test",
+            "code": "publishername_atf_desktop_rg_pave"
+          }
+        }
+      }
+    ],
+    "test": 1
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "<MakeRequests> imp[ext]: is empty.",
+      "comparison": "literal"
+    },
+    {
+      "value": "<MakeRequests> imp-bidder[ext]: is empty.",
+      "comparison": "literal"
+    },
+    {
+      "value": "<MakeRequests> imp[ext]: cannot unmarshal adapters.ExtImpBidder.Prebid: expect { or n, but found -",
+      "comparison": "literal"
+    },
+    {
+      "value": "<MakeRequests> imp-bidder[ext]: cannot unmarshal openrtb_ext.ImpExtMediasquare.Code: expects \" or n, but found 0",
+      "comparison": "literal"
+    }
+  ],
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://pbs-front.mediasquare.fr/msq_prebid",
+        "body": {
+          "codes": null,
+          "gdpr": { "consent_required": false, "consent_string": "" },
+          "type": "pbs",
+          "dsa": "",
+          "tech": { "device": null, "app": null },
+          "test": true
+        },
+        "impIDs": ["0", "1", "-42", "-1", "-0", "42"]
+      },
+
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "id-ok",
+          "seatbid": [
+            {
+              "seat": "mediasquare",
+              "bid": [
+                {
+                  "id": "42",
+                  "impid": "1",
+                  "price": 1.5,
+                  "adm": "some-test-ad",
+                  "crid": "test-crid",
+                  "h": 50,
+                  "w": 320,
+                  "mtype": 1
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "<MakeBids> Unexpected status code: 204. No responses found into body content.",
+      "comparison": "literal"
+    }
+  ]
+}
