@@ -1,9 +1,0 @@
-{
-  "status": 500,
-  "errors": [
-    {
-      "code": "bid_type_parsing_error",
-      "message": "Failed to parse impression \"imp-456\" mediatype."
-    }
-  ]
-}
