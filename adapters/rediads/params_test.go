@@ -36,8 +36,9 @@ func TestInvalidParams(t *testing.T) {
 var validParams = []string{
 	`{"account_id": "123"}`,
 	`{"account_id": "123", "slot": "12345"}`,
+	`{"account_id": "123", "slot": "12345", "endpoint": "https://bidding.rediads.com/openrtb2/auction"}`,
 }
 
 var invalidParams = []string{
-	`{"account": 42}`,
+	`{"account": 42}`, `{}`,
 }
