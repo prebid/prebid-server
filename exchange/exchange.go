@@ -544,6 +544,12 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 	}
 	bidResponseExt = setSeatNonBid(bidResponseExt, seatNonBidBuilder)
 
+	if err = ctx.Err(); err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			err = &errortypes.Timeout{Message: err.Error()}
+		}
+		return nil, err
+	}
 	return &AuctionResponse{
 		BidResponse:    bidResponse,
 		ExtBidResponse: bidResponseExt,

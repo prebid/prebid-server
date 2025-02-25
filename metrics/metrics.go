@@ -237,6 +237,7 @@ const (
 	RequestStatusBlockedApp       RequestStatus = "blockedapp"
 	RequestStatusQueueTimeout     RequestStatus = "queuetimeout"
 	RequestStatusAccountConfigErr RequestStatus = "acctconfigerr"
+	RequestStatusTimeout          RequestStatus = "timeout"
 )
 
 func RequestStatuses() []RequestStatus {
@@ -248,6 +249,7 @@ func RequestStatuses() []RequestStatus {
 		RequestStatusBlockedApp,
 		RequestStatusQueueTimeout,
 		RequestStatusAccountConfigErr,
+		RequestStatusTimeout,
 	}
 }
 
