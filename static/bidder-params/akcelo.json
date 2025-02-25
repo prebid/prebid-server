@@ -5,11 +5,11 @@
   "type": "object",
   "properties": {
     "adUnitID": {
-      "type": "string",
+      "type": "number",
       "description": "The identifier of the site. Will be provided by your account manager."
     },
     "siteId": {
-      "type": "string",
+      "type": "number",
       "description": "The identifier of the ad unit. Will be provided by your account manager."
     },
     "test": {

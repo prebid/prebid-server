@@ -156,7 +156,7 @@ func getBidType(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 		case 4:
 			return openrtb_ext.BidTypeNative, nil
 		default:
-			return "", fmt.Errorf("unable to fetch media type %d", bid.MType)
+			return "", fmt.Errorf("unable to get media type %d", bid.MType)
 		}
 	}
 	var bidExt openrtb_ext.ExtBid
