@@ -1,22 +1,24 @@
 package akcelo
 
 import (
-	"encoding/json"
 	"fmt"
+	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
-	"github.com/tidwall/gjson"
-	"github.com/tidwall/sjson"
 	"net/http"
 	"net/url"
 )
 
 type adapter struct {
 	uri url.URL
+}
+
+type extObj struct {
+	Akcelo openrtb_ext.ExtImpAkcelo `json:"akcelo"`
 }
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
@@ -47,23 +49,6 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	return extractBids(bidResponse)
 }
 
-func createSitePublisher(bidRequest *openrtb2.BidRequest) *openrtb2.BidRequest {
-	akceloRequest := *bidRequest
-	if akceloRequest.Site == nil {
-		akceloRequest.Site = &openrtb2.Site{}
-	} else {
-		siteCopy := *akceloRequest.Site
-		akceloRequest.Site = &siteCopy
-	}
-	if akceloRequest.Site.Publisher == nil {
-		akceloRequest.Site.Publisher = &openrtb2.Publisher{}
-	} else {
-		publisherCopy := *akceloRequest.Site.Publisher
-		akceloRequest.Site.Publisher = &publisherCopy
-	}
-	return &akceloRequest
-}
-
 func (a *adapter) prepareBidRequest(bidRequest *openrtb2.BidRequest) ([]*adapters.RequestData, []error) {
 	bidRequest = createSitePublisher(bidRequest)
 	requestData := make([]*adapters.RequestData, 0, 1)
@@ -86,16 +71,14 @@ func (a *adapter) prepareBidRequest(bidRequest *openrtb2.BidRequest) ([]*adapter
 	}
 
 	if len(bidRequest.Imp) > 0 {
-		parentAccount := gjson.Get(string(bidRequest.Imp[0].Ext), "akcelo.siteId").String()
-		var publisherExt = openrtb_ext.ExtPublisher{}
-		publisherExt.Prebid = &openrtb_ext.ExtPublisherPrebid{}
-		publisherExt.Prebid.ParentAccount = &parentAccount
-		bidRequest.Site.Publisher.Ext, _ = json.Marshal(&publisherExt)
+		if err := configureParentAccount(bidRequest); err != nil {
+			return nil, []error{err}
+		}
 	} else {
 		return nil, []error{&errortypes.BadInput{Message: fmt.Sprintf("No valid Imp")}}
 	}
 
-	var resultBidRequest, err = json.Marshal(bidRequest)
+	var resultBidRequest, err = jsonutil.Marshal(bidRequest)
 	if err != nil {
 		errs = append(errs, err)
 	}
@@ -110,20 +93,53 @@ func (a *adapter) prepareBidRequest(bidRequest *openrtb2.BidRequest) ([]*adapter
 	return requestData, errs
 }
 
+func createSitePublisher(bidRequest *openrtb2.BidRequest) *openrtb2.BidRequest {
+	akceloRequest := *bidRequest
+	if akceloRequest.Site == nil {
+		akceloRequest.Site = &openrtb2.Site{}
+	} else {
+		siteCopy := *akceloRequest.Site
+		akceloRequest.Site = &siteCopy
+	}
+	if akceloRequest.Site.Publisher == nil {
+		akceloRequest.Site.Publisher = &openrtb2.Publisher{}
+	} else {
+		publisherCopy := *akceloRequest.Site.Publisher
+		akceloRequest.Site.Publisher = &publisherCopy
+	}
+	return &akceloRequest
+}
+
+func configureParentAccount(bidRequest *openrtb2.BidRequest) error {
+	parentAccount, _, _, err := jsonparser.Get(bidRequest.Imp[0].Ext, "akcelo", "siteId")
+	if err != nil {
+		return &errortypes.BadInput{Message: fmt.Sprintf("Cannot find valid siteId")}
+	}
+	var publisherExt = openrtb_ext.ExtPublisher{}
+	publisherExt.Prebid = &openrtb_ext.ExtPublisherPrebid{}
+	var parentAccountStr = string(parentAccount)
+	publisherExt.Prebid.ParentAccount = &parentAccountStr
+	bidRequest.Site.Publisher.Ext, _ = jsonutil.Marshal(&publisherExt)
+	return nil
+}
+
 func (a *adapter) prepareImp(imp openrtb2.Imp) (*openrtb2.Imp, error) {
 	var extBidder adapters.ExtImpBidder
-	err := jsonutil.Unmarshal(imp.Ext, &extBidder)
-	if err == nil {
-		var out, err = sjson.Set(string(imp.Ext), "akcelo", extBidder.Bidder)
-		if err != nil {
-			return nil, &errortypes.BadInput{Message: fmt.Sprintf("Cannot set akcelo parameters : %s", imp.ID)}
-		}
-		out, _ = sjson.Delete(out, "bidder")
-		imp.Ext = json.RawMessage(out)
-		return &imp, nil
-	} else {
+	if err := jsonutil.Unmarshal(imp.Ext, &extBidder); err != nil {
 		return nil, &errortypes.BadInput{Message: fmt.Sprintf("Unsupported imp : %s", imp.ID)}
 	}
+
+	var extAkcelo openrtb_ext.ExtImpAkcelo
+	if err := jsonutil.Unmarshal(extBidder.Bidder, &extAkcelo); err != nil {
+		return nil, &errortypes.BadInput{Message: fmt.Sprintf("Unsupported imp : %s", imp.ID)}
+	}
+
+	extJson, err := jsonutil.Marshal(extObj{Akcelo: extAkcelo})
+	if err != nil {
+		return nil, &errortypes.BadInput{Message: fmt.Sprintf("Cannot set akcelo parameters : %s", imp.ID)}
+	}
+	imp.Ext = extJson
+	return &imp, nil
 }
 
 func extractBids(bidResponse openrtb2.BidResponse) (*adapters.BidderResponse, []error) {
@@ -159,13 +175,14 @@ func getBidType(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 			return "", fmt.Errorf("unable to get media type %d", bid.MType)
 		}
 	}
-	var bidExt openrtb_ext.ExtBid
-	err := json.Unmarshal(bid.Ext, &bidExt)
-	if err != nil {
-		return "", err
-	}
-	if bidExt.Prebid != nil {
-		return openrtb_ext.ParseBidType(string(bidExt.Prebid.Type))
+	if bid.Ext != nil {
+		var bidExt openrtb_ext.ExtBid
+		if err := jsonutil.Unmarshal(bid.Ext, &bidExt); err != nil {
+			return "", err
+		}
+		if bidExt.Prebid != nil {
+			return openrtb_ext.ParseBidType(string(bidExt.Prebid.Type))
+		}
 	}
 	return "", fmt.Errorf("missing media type for bid: %s", bid.ID)
 }

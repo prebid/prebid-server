@@ -10,8 +10,8 @@
         },
         "ext": {
           "bidder": {
-            "adUnitId": "123",
-            "siteId": "456"
+            "adUnitId": 123,
+            "siteId": 456
           }
         }
       }
@@ -38,8 +38,8 @@
               },
               "ext": {
                 "akcelo": {
-                  "adUnitId": "123",
-                  "siteId": "456"
+                  "adUnitId": 123,
+                  "siteId": 456
                 }
               }
             }
