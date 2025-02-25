@@ -13,16 +13,16 @@ import (
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
-const (
-	defaultAdserverBaseURL = "https://adserver.maximus.mobkoi.com"
-)
-
 type adapter struct {
 	endpoint string
 }
 
-type ExtBidder struct {
+type BidderExt struct {
 	Bidder openrtb_ext.ImpExtMobkoi `json:"bidder"`
+}
+
+type UserExt struct {
+	Consent string `json:"consent"`
 }
 
 // Builder builds a new instance of the {bidder} adapter for the given bidder with the given config.
@@ -34,13 +34,31 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	ext := ExtBidder{}
+	ext := BidderExt{}
 	if err := jsonutil.Unmarshal(request.Imp[0].Ext, &ext); err != nil {
 		return nil, []error{err}
 	}
 
-	request.Imp[0].TagID = ext.Bidder.PlacementID
-	request.User.Ext = []byte(fmt.Sprintf(`{"consent":"%s"}`, request.User.Consent))
+	if request.Imp[0].TagID == "" {
+		request.Imp[0].TagID = ext.Bidder.PlacementID
+	}
+
+	uri := a.endpoint
+	if ext.Bidder.AdServerBaseUrl != "" {
+		uri = ext.Bidder.AdServerBaseUrl + "/bid"
+	}
+
+	if request.User.Consent != "" {
+		user := *request.User
+		userExt, err := jsonutil.Marshal(UserExt{
+			Consent: user.Consent,
+		})
+		if err != nil {
+			return nil, []error{err}
+		}
+		user.Ext = userExt
+		request.User = &user
+	}
 
 	requestJSON, err := jsonutil.Marshal(request)
 	if err != nil {
@@ -53,7 +71,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	requestData := &adapters.RequestData{
 		Method:  "POST",
-		Uri:     a.endpoint,
+		Uri:     uri,
 		Body:    requestJSON,
 		Headers: headers,
 		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
@@ -92,11 +110,11 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	for _, seatBid := range response.SeatBid {
 		for _, bid := range seatBid.Bid {
 			macros := map[string]string{
-				"${AUCTION_PRICE}":        fmt.Sprintf("%.4f", bid.Price),
+				"${AUCTION_PRICE}":        fmt.Sprintf("%.2f", bid.Price),
 				"${AUCTION_IMP_ID}":       bid.ImpID,
 				"${AUCTION_CURRENCY}":     response.Cur,
 				"${AUCTION_BID_ID}":       bid.ID,
-				"${BIDDING_API_BASE_URL}": defaultAdserverBaseURL,
+				"${BIDDING_API_BASE_URL}": strings.TrimSuffix(requestData.Uri, "/bid"),
 				"${CREATIVE_ID}":          bid.CrID,
 				"${CAMPAIGN_ID}":          bid.CID,
 				"${ORTB_ID}":              bid.ID,

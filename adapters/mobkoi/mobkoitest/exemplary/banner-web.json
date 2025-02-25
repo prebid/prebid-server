@@ -9,7 +9,8 @@
     },
     "tmax": 1000,
     "user": {
-      "buyeruid": "awesome-user"
+      "buyeruid": "awesome-user",
+      "consent": "consent-string"
     },
     "site": {
       "page": "test.com",
@@ -20,18 +21,15 @@
     "imp": [
       {
         "id": "some-impression-id1",
-        "tagid": "ogTAGID",
+        "tagid": "",
         "banner": {
-          "w":320,
-          "h":50
+          "w": 320,
+          "h": 50
         },
         "ext": {
-          "prebid": {
-            "bidder": {
-              "mobkoi": {
-                "placementId": "placementId"
-              }
-            }
+          "bidder": {
+            "placementId": "placementId",
+            "adServerBaseUrl": "http://dev.mobkoi.com"
           }
         }
       }
@@ -48,7 +46,7 @@
             "application/json"
           ]
         },
-        "uri": "http://any.url",
+        "uri": "http://dev.mobkoi.com/bid",
         "body": {
           "id": "some-request-id",
           "device": {
@@ -62,16 +60,13 @@
               "id": "some-impression-id1",
               "tagid": "placementId",
               "banner": {
-                "w":320,
-                "h":50
+                "w": 320,
+                "h": 50
               },
               "ext": {
-                "prebid": {
-                  "bidder": {
-                    "mobkoi": {
-                      "placementId": "placementId"
-                    }
-                  }
+                "bidder": {
+                  "placementId": "placementId",
+                  "adServerBaseUrl": "http://dev.mobkoi.com"
                 }
               }
             }
@@ -83,11 +78,17 @@
             }
           },
           "user": {
-            "buyeruid": "awesome-user"
+            "buyeruid": "awesome-user",
+            "consent": "consent-string",
+            "ext": {
+              "consent": "consent-string"
+            }
           },
           "tmax": 1000
         },
-        "impIDs":["some-impression-id1"]
+        "impIDs": [
+          "some-impression-id1"
+        ]
       },
       "mockResponse": {
         "status": 200,
@@ -106,7 +107,9 @@
                   ],
                   "crid": "20",
                   "w": 320,
-                  "h": 50
+                  "h": 50,
+                  "lurl": "${BIDDING_API_BASE_URL}/loss?price=${AUCTION_PRICE}&impression_id=${AUCTION_IMP_ID}&currency=${AUCTION_CURRENCY}&campaign_id=${CAMPAIGN_ID}&creative_id=${CREATIVE_ID}&bid_id=${ORTB_ID}",
+                  "nurl": "${BIDDING_API_BASE_URL}/win?price=${AUCTION_PRICE}&impression_id=${AUCTION_IMP_ID}&currency=${AUCTION_CURRENCY}&campaign_id=${CAMPAIGN_ID}&creative_id=${CREATIVE_ID}&bid_id=${ORTB_ID}"
                 }
               ],
               "type": "banner",
@@ -120,9 +123,9 @@
   ],
   "expectedBidResponses": [
     {
-      "bids":[
+      "bids": [
         {
-          "bid":  {
+          "bid": {
             "id": "a3ae1b4e2fc24a4fb45540082e98e161",
             "impid": "some-impression-id1",
             "price": 3.5,
@@ -132,7 +135,9 @@
               "awesome.com"
             ],
             "w": 320,
-            "h": 50
+            "h": 50,
+            "lurl": "http://dev.mobkoi.com/loss?price=3.50&impression_id=some-impression-id1&currency=USD&campaign_id=&creative_id=20&bid_id=a3ae1b4e2fc24a4fb45540082e98e161",
+            "nurl": "http://dev.mobkoi.com/win?price=3.50&impression_id=some-impression-id1&currency=USD&campaign_id=&creative_id=20&bid_id=a3ae1b4e2fc24a4fb45540082e98e161"
           },
           "type": "banner",
           "seat": "mobkoi"
