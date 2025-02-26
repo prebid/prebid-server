@@ -109,6 +109,9 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 	for _, seatBid := range response.SeatBid {
 		for _, bid := range seatBid.Bid {
+			// Shadow to avoid loop var issue with Go < 1.22
+			bid := bid
+
 			macros := map[string]string{
 				"${AUCTION_PRICE}":        fmt.Sprintf("%.2f", bid.Price),
 				"${AUCTION_IMP_ID}":       bid.ImpID,
