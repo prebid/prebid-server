@@ -1,0 +1,16 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Seedtag Adapter Params",
+    "description": "A schema which validates params accepted by the Seedtag adapter",
+    "type": "object",
+    "properties": {
+        "adUnitId": {
+            "type": "string",
+            "description": "Ad Unit ID",
+            "minLength": 1
+        }
+    },
+    "required": [
+        "adUnitId"
+    ]
+}
