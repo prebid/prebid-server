@@ -33,10 +33,6 @@ type RubiconAdapter struct {
 	XAPIPassword string
 }
 
-type rubiconContext struct {
-	Data json.RawMessage `json:"data"`
-}
-
 type rubiconData struct {
 	AdServer rubiconAdServer `json:"adserver"`
 	PbAdSlot string          `json:"pbadslot"`
@@ -48,13 +44,12 @@ type rubiconAdServer struct {
 }
 
 type rubiconExtImpBidder struct {
-	Prebid  *openrtb_ext.ExtImpPrebid `json:"prebid"`
-	Bidder  openrtb_ext.ExtImpRubicon `json:"bidder"`
-	Gpid    string                    `json:"gpid"`
-	Skadn   json.RawMessage           `json:"skadn,omitempty"`
-	Tid     string                    `json:"tid"`
-	Data    json.RawMessage           `json:"data"`
-	Context rubiconContext            `json:"context"`
+	Prebid *openrtb_ext.ExtImpPrebid `json:"prebid"`
+	Bidder openrtb_ext.ExtImpRubicon `json:"bidder"`
+	Gpid   string                    `json:"gpid"`
+	Skadn  json.RawMessage           `json:"skadn,omitempty"`
+	Tid    string                    `json:"tid"`
+	Data   json.RawMessage           `json:"data"`
 }
 
 type bidRequestExt struct {
@@ -440,37 +435,26 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			rubiconRequest.App = &appCopy
 		}
 
-		if request.Source != nil || rubiconExt.PChain != "" {
-			var sourceCopy openrtb2.Source
-			if request.Source != nil {
-				sourceCopy = *request.Source
-			} else {
-				sourceCopy = openrtb2.Source{}
-			}
+		if request.Source != nil && request.Source.SChain != nil {
+			sourceCopy := *request.Source
 
-			if sourceCopy.SChain != nil {
-				var sourceCopyExt openrtb_ext.ExtSource
-				if sourceCopy.Ext != nil {
-					if err = jsonutil.Unmarshal(sourceCopy.Ext, &sourceCopyExt); err != nil {
-						errs = append(errs, &errortypes.BadInput{Message: err.Error()})
-						continue
-					}
-				} else {
-					sourceCopyExt = openrtb_ext.ExtSource{}
-				}
-
-				sourceCopyExt.SChain = sourceCopy.SChain
-				sourceCopy.SChain = nil
-
-				sourceCopy.Ext, err = json.Marshal(&sourceCopyExt)
-				if err != nil {
-					errs = append(errs, err)
+			var sourceCopyExt openrtb_ext.ExtSource
+			if sourceCopy.Ext != nil {
+				if err = jsonutil.Unmarshal(sourceCopy.Ext, &sourceCopyExt); err != nil {
+					errs = append(errs, &errortypes.BadInput{Message: err.Error()})
 					continue
 				}
+			} else {
+				sourceCopyExt = openrtb_ext.ExtSource{}
 			}
 
-			if rubiconExt.PChain != "" {
-				sourceCopy.PChain = rubiconExt.PChain
+			sourceCopyExt.SChain = sourceCopy.SChain
+			sourceCopy.SChain = nil
+
+			sourceCopy.Ext, err = json.Marshal(&sourceCopyExt)
+			if err != nil {
+				errs = append(errs, err)
+				continue
 			}
 
 			rubiconRequest.Source = &sourceCopy
@@ -664,9 +648,7 @@ func (a *RubiconAdapter) updateImpRpTarget(extImp rubiconExtImpBidder, extImpRub
 		}
 	}
 
-	if len(extImp.Context.Data) > 0 {
-		err = populateFirstPartyDataAttributes(extImp.Context.Data, target)
-	} else if len(extImp.Data) > 0 {
+	if len(extImp.Data) > 0 {
 		err = populateFirstPartyDataAttributes(extImp.Data, target)
 	}
 	if isNotKeyPathError(err) {
@@ -680,18 +662,11 @@ func (a *RubiconAdapter) updateImpRpTarget(extImp rubiconExtImpBidder, extImpRub
 			return nil, err
 		}
 	}
-	var contextData rubiconData
-	if len(extImp.Context.Data) > 0 {
-		err := jsonutil.Unmarshal(extImp.Context.Data, &contextData)
-		if err != nil {
-			return nil, err
-		}
-	}
 
 	if data.PbAdSlot != "" {
 		target["pbadslot"] = data.PbAdSlot
 	} else {
-		dfpAdUnitCode := extractDfpAdUnitCode(data, contextData)
+		dfpAdUnitCode := extractDfpAdUnitCode(data)
 		if dfpAdUnitCode != "" {
 			target["dfp_ad_unit_code"] = dfpAdUnitCode
 		}
@@ -712,10 +687,8 @@ func (a *RubiconAdapter) updateImpRpTarget(extImp rubiconExtImpBidder, extImpRub
 	return updatedTarget, nil
 }
 
-func extractDfpAdUnitCode(data rubiconData, contextData rubiconData) string {
-	if contextData.AdServer.Name == "gam" && contextData.AdServer.AdSlot != "" {
-		return contextData.AdServer.AdSlot
-	} else if data.AdServer.Name == "gam" && data.AdServer.AdSlot != "" {
+func extractDfpAdUnitCode(data rubiconData) string {
+	if data.AdServer.Name == "gam" && len(data.AdServer.AdSlot) != 0 {
 		return data.AdServer.AdSlot
 	}
 

@@ -11,7 +11,18 @@
       "ua": "random user agent"
     },
     "user": {
-      "buyeruid": "oms-user-id"
+      "ext": {
+        "eids": [
+          {
+            "source": "oms.com",
+            "uids": [
+              {
+                "id": "oms-eid"
+              }
+            ]
+          }
+        ]
+      }
     },
     "imp": [
       {
@@ -26,7 +37,7 @@
         },
         "ext": {
           "bidder": {
-            "pid": "12345"
+            "publisherId": 12345
           }
         }
       }
@@ -49,7 +60,18 @@
             "ua": "random user agent"
           },
           "user": {
-            "buyeruid": "oms-user-id"
+            "ext": {
+              "eids": [
+                {
+                  "source": "oms.com",
+                  "uids": [
+                    {
+                      "id": "oms-eid"
+                    }
+                  ]
+                }
+              ]
+            }
           },
           "imp": [
             {
@@ -64,7 +86,7 @@
               },
               "ext": {
                 "bidder": {
-                  "pid": "12345"
+                  "publisherId": 12345
                 }
               }
             }
@@ -75,7 +97,6 @@
       "mockResponse": {
         "status": 200,
         "body": {
-          "id": "test-request-id",
           "currency": "USD",
           "seatbid": [
             {

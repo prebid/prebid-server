@@ -87,21 +87,13 @@
           "h": 576
         },
         "ext": {
-          "context": {
-            "data": {
-              "adserver": {
-                "name": "gam",
-                "adslot": "adSlotFromContextData"
-              },
-              "dataAttr1": "dataVal1",
-              "dataAttr2": "dataVal2"
-            }
-          },
           "data": {
             "adserver": {
               "name": "gam",
               "adslot": "adSlotFromData"
-            }
+            },
+            "dataAttr1": "dataVal1",
+            "dataAttr2": "dataVal2"
           },
           "bidder": {
             "video": {
@@ -204,7 +196,7 @@
               "ext": {
                 "rp": {
                   "target": {
-                    "dfp_ad_unit_code": "adSlotFromContextData",
+                    "dfp_ad_unit_code": "adSlotFromData",
                     "dataAttr1": [
                       "dataVal1"
                     ],
@@ -246,7 +238,9 @@
             }
           ]
         },
-        "impIDs":["test-imp-id"]
+        "impIDs": [
+          "test-imp-id"
+        ]
       },
       "mockResponse": {
         "status": 200,
