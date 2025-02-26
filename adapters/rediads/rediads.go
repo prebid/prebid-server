@@ -2,8 +2,6 @@ package rediads
 
 import (
 	"fmt"
-	"net/http"
-
 	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
@@ -56,19 +54,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			continue
 		}
 
-		// Validate required params
-		if rediadsExt.AccountID == "" {
-			errors = append(errors, &errortypes.BadInput{
-				Message: fmt.Sprintf("Missing account_id in impression %s", imp.ID),
-			})
-			continue
-		}
+		// Set accountID and slot to use in publisher id and imp tag id respectively
+		accountID = rediadsExt.AccountID
+		endpoint = rediadsExt.Endpoint
 
-		// Set accountID and slot to use in request.ext
-		if accountID == "" || endpoint == "" {
-			accountID = rediadsExt.AccountID
-			endpoint = rediadsExt.Endpoint
-		}
 		// Set tagid in the imp object
 		if rediadsExt.Slot != "" {
 			imp.TagID = rediadsExt.Slot
@@ -132,28 +121,16 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 	case openrtb2.MarkupNative:
 		return openrtb_ext.BidTypeNative, nil
 	default:
-		return "", &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Failed to parse media type for bid: \"%s\"", bid.ImpID),
-		}
+		return "", fmt.Errorf("could not define media type for impression: %s", bid.ImpID)
 	}
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if responseData.StatusCode == http.StatusNoContent {
+	if adapters.IsResponseStatusCodeNoContent(responseData) {
 		return nil, nil
 	}
 
-	if responseData.StatusCode == http.StatusBadRequest {
-		err := &errortypes.BadInput{
-			Message: "Unexpected status code: 400. Bad request from publisher. Run with request.debug = 1 for more info.",
-		}
-		return nil, []error{err}
-	}
-
-	if responseData.StatusCode != http.StatusOK {
-		err := &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info.", responseData.StatusCode),
-		}
+	if err := adapters.CheckResponseStatusCodeForErrors(responseData); err != nil {
 		return nil, []error{err}
 	}
 
