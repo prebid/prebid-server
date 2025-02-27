@@ -1,8 +1,7 @@
-endpoint: "https://adserver.dev.mobkoi.com/bid"
+endpoint: "https://adserver.maximus.mobkoi.com/bid"
 maintainer:
   email: platformteam@mobkoi.com
 gvlVendorID: 898
-modifyingVastXmlAllowed: true
 openrtb:
   version: 2.6
 capabilities:
