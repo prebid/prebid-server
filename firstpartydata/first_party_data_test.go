@@ -2,6 +2,7 @@ package firstpartydata
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -1282,6 +1283,50 @@ func TestResolveDevice(t *testing.T) {
 			},
 			expectError: "invalid first party data ext",
 		},
+		{
+			description: "Device with negative width should fail validation",
+			fpdConfig:   &openrtb_ext.ORTB2{Device: json.RawMessage(`{"w":-10}`)},
+			expectError: "request.device.w must be a positive number",
+		},
+		{
+			description: "Device with negative height should fail validation",
+			fpdConfig:   &openrtb_ext.ORTB2{Device: json.RawMessage(`{"h":-20}`)},
+			expectError: "request.device.h must be a positive number",
+		},
+		{
+			description: "Device with negative PPI should fail validation",
+			fpdConfig:   &openrtb_ext.ORTB2{Device: json.RawMessage(`{"ppi":-300}`)},
+			expectError: "request.device.ppi must be a positive number",
+		},
+		{
+			description: "Device with negative geo accuracy should fail validation",
+			fpdConfig:   &openrtb_ext.ORTB2{Device: json.RawMessage(`{"geo":{"accuracy":-5}}`)},
+			expectError: "request.device.geo.accuracy must be a positive number",
+		},
+		{
+			description: "Merging valid device properties should pass validation",
+			fpdConfig:   &openrtb_ext.ORTB2{Device: json.RawMessage(`{"w":100,"h":200,"ppi":300}`)},
+			bidRequestDevice: &openrtb2.Device{
+				UA:  "test-user-agent",
+				Geo: &openrtb2.Geo{Accuracy: 10},
+			},
+			expectedDevice: &openrtb2.Device{
+				UA:  "test-user-agent",
+				W:   100,
+				H:   200,
+				PPI: 300,
+				Geo: &openrtb2.Geo{Accuracy: 10},
+			},
+		},
+		{
+			description: "Resulting merged device with negative values should fail validation",
+			fpdConfig:   &openrtb_ext.ORTB2{Device: json.RawMessage(`{"w":-100}`)},
+			bidRequestDevice: &openrtb2.Device{
+				UA: "test-user-agent",
+				H:  200,
+			},
+			expectError: "request.device.w must be a positive number",
+		},
 	}
 
 	for _, test := range testCases {
@@ -1369,4 +1414,79 @@ type fpdFileForResolveFPD struct {
 	BidderConfigFPD      map[openrtb_ext.BidderName]*openrtb_ext.ORTB2  `json:"bidderConfigFPD,omitempty"`
 	GlobalFPD            map[string]json.RawMessage                     `json:"globalFPD,omitempty"`
 	ValidationErrors     []*errortypes.BadInput                         `json:"validationErrors,omitempty"`
+}
+
+func TestValidateDevice(t *testing.T) {
+	tests := []struct {
+		name          string
+		device        *openrtb2.Device
+		expectedError error
+	}{
+		{
+			name:          "nil device",
+			device:        nil,
+			expectedError: nil,
+		},
+		{
+			name:          "valid device",
+			device:        &openrtb2.Device{W: 0, H: 0, PPI: 0},
+			expectedError: nil,
+		},
+		{
+			name:          "valid device with positive values",
+			device:        &openrtb2.Device{W: 300, H: 250, PPI: 326},
+			expectedError: nil,
+		},
+		{
+			name:          "negative width",
+			device:        &openrtb2.Device{W: -1, H: 0, PPI: 0},
+			expectedError: errors.New("request.device.w must be a positive number"),
+		},
+		{
+			name:          "negative height",
+			device:        &openrtb2.Device{W: 0, H: -1, PPI: 0},
+			expectedError: errors.New("request.device.h must be a positive number"),
+		},
+		{
+			name:          "negative PPI",
+			device:        &openrtb2.Device{W: 0, H: 0, PPI: -1},
+			expectedError: errors.New("request.device.ppi must be a positive number"),
+		},
+		{
+			name:          "nil geo",
+			device:        &openrtb2.Device{W: 0, H: 0, PPI: 0, Geo: nil},
+			expectedError: nil,
+		},
+		{
+			name:          "valid geo accuracy",
+			device:        &openrtb2.Device{W: 0, H: 0, PPI: 0, Geo: &openrtb2.Geo{Accuracy: 0}},
+			expectedError: nil,
+		},
+		{
+			name:          "positive geo accuracy",
+			device:        &openrtb2.Device{W: 0, H: 0, PPI: 0, Geo: &openrtb2.Geo{Accuracy: 10}},
+			expectedError: nil,
+		},
+		{
+			name:          "negative geo accuracy",
+			device:        &openrtb2.Device{W: 0, H: 0, PPI: 0, Geo: &openrtb2.Geo{Accuracy: -1}},
+			expectedError: errors.New("request.device.geo.accuracy must be a positive number"),
+		},
+		{
+			name:          "mixed valid and invalid fields",
+			device:        &openrtb2.Device{W: 300, H: -1, PPI: -2, Geo: &openrtb2.Geo{Accuracy: -3}},
+			expectedError: errors.New("request.device.h must be a positive number"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateDevice(tt.device)
+			if tt.expectedError == nil {
+				assert.NoError(t, err)
+			} else {
+				assert.EqualError(t, err, tt.expectedError.Error())
+			}
+		})
+	}
 }
