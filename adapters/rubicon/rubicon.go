@@ -1,7 +1,6 @@
 package rubicon
 
 import (
-	"container/list"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -737,22 +736,8 @@ func updateUserRpTargetWithFpdAttributes(visitor json.RawMessage, user openrtb2.
 	return updatedTarget, nil
 }
 
-func updateExtWithIabAndSegtaxAttribute(target map[string]interface{}, data []openrtb2.Data, segTaxes []int) {
-	taxonomyIdToSegments := getTaxonomyIdToSegments(data)
-	if len(taxonomyIdToSegments) == 0 {
-		return
-	}
-
-	relevantSegments := pickRelevantSegments(taxonomyIdToSegments)
-	groupedSegments := groupSegments(relevantSegments, segTaxes)
-
-	for key, value := range groupedSegments {
-		target[key] = value
-	}
-}
-
-func getTaxonomyIdToSegments(data []openrtb2.Data) map[int]*list.List {
-	var taxonomyIdToSegments = make(map[int]*list.List)
+func updateExtWithIabAndSegtaxAttribute(target map[string]interface{}, data []openrtb2.Data, iabTaxes []int) {
+	consumedSegmentsCount := 0
 	for _, dataRecord := range data {
 		if dataRecord.Ext == nil {
 			continue
@@ -764,80 +749,43 @@ func getTaxonomyIdToSegments(data []openrtb2.Data) map[int]*list.List {
 			continue
 		}
 
-		taxonomyId := dataRecordExt.SegTax
 		originalSegments := dataRecord.Segment
 		if len(originalSegments) == 0 {
 			continue
 		}
 
-		segments, exists := taxonomyIdToSegments[taxonomyId]
+		taxName := resolveTaxName(dataRecordExt.SegTax, iabTaxes)
+		segmentsIds := make([]string, len(originalSegments))
+		for i, segment := range originalSegments {
+			segmentsIds[i] = segment.ID
+		}
+
+		consumedSegmentsCount += len(originalSegments)
+		sliceSize := len(originalSegments)
+		if consumedSegmentsCount > 100 {
+			sliceSize -= consumedSegmentsCount - 100
+		}
+		truncatedSegmentsIds := segmentsIds[:sliceSize]
+
+		ids, exists := target[taxName]
 		if !exists {
-			segments = list.New()
-			taxonomyIdToSegments[taxonomyId] = segments
+			target[taxName] = truncatedSegmentsIds
+		} else {
+			target[taxName] = append(ids.([]string), truncatedSegmentsIds...)
 		}
 
-		for _, originalSegment := range originalSegments {
-			if originalSegment.ID != "" {
-				segments.PushBack(&list.Element{Value: originalSegment})
-			}
-		}
-
-		if segments.Len() == 0 {
-			delete(taxonomyIdToSegments, taxonomyId)
+		if consumedSegmentsCount >= 100 {
+			break
 		}
 	}
-
-	return taxonomyIdToSegments
 }
 
-func pickRelevantSegments(taxonomyIdToSegments map[int]*list.List) map[int][]string {
-	var relevantSegments = make(map[int][]string)
-	taxonomyIds := make([]int, 0)
-
-	for taxonomyId := range taxonomyIdToSegments {
-		taxonomyIds = append(taxonomyIds, taxonomyId)
+func resolveTaxName(taxonomyId int, iabTaxes []int) string {
+	if !contains(iabTaxes, taxonomyId) {
+		return "tax" + strconv.Itoa(taxonomyId)
 	}
 
-	i := 0
-	consumedSegmentsCount := 0
-	for consumedSegmentsCount < 100 && len(taxonomyIds) > 0 {
-		taxonomyIdIndex := i % len(taxonomyIds)
-		taxonomyId := taxonomyIds[taxonomyIdIndex]
-		currentSegments := taxonomyIdToSegments[taxonomyId]
-
-		lastSegment := currentSegments.Remove(currentSegments.Back()).(*list.Element).Value.(openrtb2.Segment)
-
-		if _, exists := relevantSegments[taxonomyId]; !exists {
-			relevantSegments[taxonomyId] = make([]string, 0)
-		}
-		relevantSegments[taxonomyId] = append(relevantSegments[taxonomyId], lastSegment.ID)
-		consumedSegmentsCount++
-
-		if currentSegments.Len() == 0 {
-			taxonomyIds = append(taxonomyIds[:taxonomyIdIndex], taxonomyIds[taxonomyIdIndex+1:]...)
-			i--
-		}
-		i++
-	}
-
-	return relevantSegments
-}
-
-func groupSegments(taxonomyIdToSegmentsIds map[int][]string, segTaxes []int) map[string][]string {
-	var groupedSegments = make(map[string][]string)
-	for taxonomyId, segmentsIds := range taxonomyIdToSegmentsIds {
-		segmentName := "iab"
-		if !contains(segTaxes, taxonomyId) {
-			segmentName = "tax" + strconv.Itoa(taxonomyId)
-		}
-
-		if _, exists := groupedSegments[segmentName]; !exists {
-			groupedSegments[segmentName] = make([]string, 0)
-		}
-		groupedSegments[segmentName] = append(groupedSegments[segmentName], segmentsIds...)
-	}
-
-	return groupedSegments
+	return "iab"
 }
 
 func populateFirstPartyDataAttributes(source json.RawMessage, target map[string]interface{}) error {

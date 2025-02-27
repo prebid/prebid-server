@@ -825,9 +825,9 @@ func TestOpenRTBRequestWithTooManySegments(t *testing.T) {
 			Content: &openrtb2.Content{
 				Data: []openrtb2.Data{
 					generateDataEntry(5, 50, 100),
-					generateDataEntry(6, 100, 150),
 					generateDataEntry(500, 3, 8),
-					generateDataEntry(600, 1, 2),
+					generateDataEntry(600, 1, 3),
+					generateDataEntry(6, 100, 150),
 				},
 			},
 		},
@@ -853,20 +853,20 @@ func TestOpenRTBRequestWithTooManySegments(t *testing.T) {
 	siteErr = json.Unmarshal(siteExt.RP.Target, &siteExtRpTarget)
 	assert.NoError(t, userErr, "Error unmarshalling request.site.ext.rp.target object.")
 
-	generateDescRange := func(from int, to int) []string {
+	generateRange := func(from int, to int) []string {
 		a := make([]string, to-from)
 		for i := 0; i < to-from; i++ {
-			a[i] = strconv.Itoa(to - i - 1)
+			a[i] = strconv.Itoa(from + i)
 		}
 
 		return a
 	}
 
-	assert.Equal(t, userExtRpTarget["iab"], generateDescRange(50, 150))
+	assert.Equal(t, userExtRpTarget["iab"], generateRange(1, 101))
 
-	assert.ElementsMatch(t, siteExtRpTarget["iab"], append(generateDescRange(53, 100), generateDescRange(103, 150)...))
-	assert.ElementsMatch(t, siteExtRpTarget["tax500"], generateDescRange(3, 8))
-	assert.ElementsMatch(t, siteExtRpTarget["tax600"], generateDescRange(1, 2))
+	assert.Equal(t, siteExtRpTarget["iab"], generateRange(50, 143))
+	assert.Equal(t, siteExtRpTarget["tax500"], generateRange(3, 8))
+	assert.Equal(t, siteExtRpTarget["tax600"], generateRange(1, 3))
 }
 
 func TestOpenRTBEmptyResponse(t *testing.T) {

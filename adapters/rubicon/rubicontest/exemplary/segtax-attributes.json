@@ -264,8 +264,8 @@
                 "site_id": 113932,
                 "target": {
                   "iab": [
-                    "segmentId2",
                     "segmentId1",
+                    "segmentId2",
                     "segmentId3"
                   ],
                   "tax10": [
@@ -352,8 +352,8 @@
               "rp": {
                 "target": {
                   "iab": [
-                    "idToCopy2",
-                    "idToCopy"
+                    "idToCopy",
+                    "idToCopy2"
                   ],
                   "tax2": [
                     "idToCopy3"
