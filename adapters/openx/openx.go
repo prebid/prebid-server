@@ -236,7 +236,7 @@ func (a *OpenxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRe
 		for i := range sb.Bid {
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:      &sb.Bid[i],
-				BidType:  getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp),
+				BidType:  getBidType(sb.Bid[i].MType, sb.Bid[i].ImpID, internalRequest.Imp),
 				BidVideo: getBidVideo(&sb.Bid[i]),
 			})
 		}
@@ -252,6 +252,19 @@ func getBidVideo(bid *openrtb2.Bid) *openrtb_ext.ExtBidPrebidVideo {
 	return &openrtb_ext.ExtBidPrebidVideo{
 		PrimaryCategory: primaryCategory,
 		Duration:        int(bid.Dur),
+	}
+}
+
+func getBidType(mtype openrtb2.MarkupType, impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
+	switch mtype {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative
+	default:
+		return getMediaTypeForImp(impId, imps)
 	}
 }
 

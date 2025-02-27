@@ -63,7 +63,8 @@
                 "h": 576,
                 "cattax": 1,
                 "cat": ["IAB20"],
-                "dur": 30
+                "dur": 30,
+                "mtype": 2
               }]
             }
           ]
@@ -88,7 +89,8 @@
             "h": 576,
             "cattax": 1,
             "cat": ["IAB20"],
-            "dur": 30
+            "dur": 30,
+            "mtype": 2
           },
           "video": {
             "duration": 30,
