@@ -1,0 +1,21 @@
+endpoint: "http://localhost:7826/adx/rtb?x-net-id={{.PublisherID}}&x-net-token={{.TokenID}}"
+endpointCompression: gzip
+maintainer:
+  email: "tangyang@flat-ads.com"
+openrtb:
+  version: 2.6
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  redirect:
+    url: http://localhost:7802/cms/user_sync?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
+    userMacro: $UID

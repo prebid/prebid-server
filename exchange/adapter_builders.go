@@ -100,6 +100,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/epom"
 	"github.com/prebid/prebid-server/v3/adapters/escalax"
 	"github.com/prebid/prebid-server/v3/adapters/feedad"
+	"github.com/prebid/prebid-server/v3/adapters/flatads"
 	"github.com/prebid/prebid-server/v3/adapters/flipp"
 	"github.com/prebid/prebid-server/v3/adapters/freewheelssp"
 	"github.com/prebid/prebid-server/v3/adapters/frvradn"
@@ -347,6 +348,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderEscalax:           escalax.Builder,
 		openrtb_ext.BidderEVolution:         evolution.Builder,
 		openrtb_ext.BidderFeedAd:            feedad.Builder,
+		openrtb_ext.BidderFlatads:           flatads.Builder,
 		openrtb_ext.BidderFlipp:             flipp.Builder,
 		openrtb_ext.BidderFreewheelSSP:      freewheelssp.Builder,
 		openrtb_ext.BidderFRVRAdNetwork:     frvradn.Builder,
