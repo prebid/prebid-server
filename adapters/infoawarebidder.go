@@ -185,31 +185,6 @@ func parseBidderInfo(info config.BidderInfo) parsedBidderInfo {
 	return parsedInfo
 }
 
-// FilterMultiformatImps filters impressions based on the preferred media type if the bidder does not support multiformat.
-// It returns the updated list of impressions and any errors encountered during the filtering process.
-func FilterMultiformatImps(bidRequest *openrtb2.BidRequest, preferredMediaType openrtb_ext.BidType) ([]openrtb2.Imp, []error) {
-	var updatedImps []openrtb2.Imp
-	var errs []error
-
-	for _, imp := range bidRequest.Imp {
-		if IsMultiFormat(imp) && preferredMediaType != "" {
-			if err := AdjustImpForPreferredMediaType(&imp, preferredMediaType); err != nil {
-				errs = append(errs, err)
-				continue
-			}
-			updatedImps = append(updatedImps, imp)
-		} else {
-			updatedImps = append(updatedImps, imp)
-		}
-	}
-
-	if len(updatedImps) == 0 {
-		errs = append(errs, &errortypes.BadInput{Message: "Bid request contains 0 impressions after filtering."})
-	}
-
-	return updatedImps, errs
-}
-
 // AdjustImpForPreferredMediaType modifies the given impression to retain only the preferred media type.
 // It returns the updated impression and any error encountered during the adjustment process.
 func AdjustImpForPreferredMediaType(imp *openrtb2.Imp, preferredMediaType openrtb_ext.BidType) error {
