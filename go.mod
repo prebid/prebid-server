@@ -1,6 +1,6 @@
 module github.com/prebid/prebid-server/v3
 
-go 1.22
+go 1.23
 
 retract v3.0.0 // Forgot to update major version in import path and module name
 
@@ -19,14 +19,13 @@ require (
 	github.com/docker/go-units v0.4.0
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/gofrs/uuid v4.2.0+incompatible
-	github.com/golang/glog v1.1.0
+	github.com/golang/glog v1.2.4
 	github.com/google/go-cmp v0.6.0
 	github.com/json-iterator/go v1.1.12
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/lib/pq v1.10.4
 	github.com/mitchellh/copystructure v1.2.0
 	github.com/modern-go/reflect2 v1.0.2
-	github.com/pkg/errors v0.9.1
 	github.com/prebid/go-gdpr v1.12.0
 	github.com/prebid/go-gpp v0.2.0
 	github.com/prebid/openrtb/v20 v20.3.0
@@ -64,6 +63,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.1 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/common v0.32.1 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
