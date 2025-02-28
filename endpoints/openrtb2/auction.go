@@ -1284,11 +1284,6 @@ func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases 
 		if len(eidErrors) > 0 {
 			errL = append(errL, eidErrors...)
 		}
-		for eidIndex, eid := range validEids {
-			if len(eid.UIDs) == 0 {
-				return append(errL, fmt.Errorf("request.user.eids[%d].uids must contain at least one element or be undefined", eidIndex))
-			}
-		}
 		req.User.EIDs = validEids
 	}
 
