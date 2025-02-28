@@ -17,11 +17,12 @@
     ],
     "device": {
       "ua": "user-agent",
-      "ip": "1.2.3.4"
+      "ipv6": "2001:db8:3333:4444:5555:6666:7777:8888"
     },
     "site": {
       "domain": "domain.com",
-      "page": "http://domain.com/page"
+      "page": "http://domain.com/page",
+      "ref": "https://example.com/page"
     }
   },
   "httpCalls": [
@@ -45,10 +46,13 @@
             "user-agent"
           ],
           "X-Forwarded-For": [
-            "1.2.3.4"
+            "2001:db8:3333:4444:5555:6666:7777:8888"
+          ],
+          "Referer": [
+            "https://example.com/page"
           ]
         },
-        "uri": "https://ads.madsense.io/pbs?company_id=9876543",
+        "uri": "https://test.localhost.com?company_id=9876543",
         "body": {
           "id": "test-request-id",
           "imp": [
@@ -67,11 +71,12 @@
           ],
           "device": {
             "ua": "user-agent",
-            "ip": "1.2.3.4"
+            "ipv6": "2001:db8:3333:4444:5555:6666:7777:8888"
           },
           "site": {
             "domain": "domain.com",
-            "page": "http://domain.com/page"
+            "page": "http://domain.com/page",
+            "ref": "https://example.com/page"
           }
         },
         "impIDs":["test-imp-id"]

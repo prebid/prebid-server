@@ -44,7 +44,7 @@
             "1.2.3.4"
           ]
         },
-        "uri": "https://ads.madsense.io/pbs?company_id=9876543",
+        "uri": "https://test.localhost.com?company_id=9876543",
         "body": {
           "id": "test-request-id",
           "imp": [

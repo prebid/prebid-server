@@ -6,7 +6,8 @@
   "properties": {
     "company_id": {
       "type": "string",
-      "description": "An id used to identify madSense company"
+      "description": "An id used to identify madSense company",
+      "minLength": 1
     }
   },
   "required": ["company_id"]

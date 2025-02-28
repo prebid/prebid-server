@@ -58,7 +58,7 @@
     {
       "expectedRequest": {
         "method": "POST",
-        "uri": "https://ads.madsense.io/pbs?company_id=9876543",
+        "uri": "https://test.localhost.com?company_id=9876543",
         "headers": {
           "Accept": [
             "application/json"
@@ -171,7 +171,7 @@
     {
       "expectedRequest": {
         "method": "POST",
-        "uri": "https://ads.madsense.io/pbs?company_id=9876543",
+        "uri": "https://test.localhost.com?company_id=9876543",
         "headers": {
           "Accept": [
             "application/json"

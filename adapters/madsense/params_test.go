@@ -52,4 +52,5 @@ var invalidParams = []string{
 	`{}`,
 	`{"companyId": "987654a"}`,
 	`{"companyId": "98765432"}`,
+	`{"company_id": ""}`,
 }

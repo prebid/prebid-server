@@ -25,14 +25,14 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	return bidder, nil
 }
 
-func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) (requests []*adapters.RequestData, errors []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	reqs := make([]*adapters.RequestData, 0, len(request.Imp))
 	var errs []error
 
 	appendReq := func(imps []openrtb2.Imp) {
 		req, err := a.makeRequest(request, imps)
 		if err != nil {
-			errors = append(errors, err)
+			errs = append(errs, err)
 			return
 		}
 		if req != nil {

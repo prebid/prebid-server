@@ -5,11 +5,12 @@
       {
         "id": "test-imp-id",
         "video": {
-          "mimes": [
-            "video/mp4"
-          ],
           "w": 1920,
-          "h": 1080
+          "h": 1080,
+          "mimes": [
+            "video/x-flv",
+            "video/mp4"
+          ]
         },
         "ext": {
           "bidder": {
@@ -18,25 +19,28 @@
         }
       }
     ],
-    "app": {
-      "bundle": "54321"
-    },
     "device": {
-      "ip": "1.2.3.4",
-      "ua": "user-agent"
+      "ua": "user-agent",
+      "ip": "1.2.3.4"
+    },
+    "site": {
+      "domain": "domain.com",
+      "page": "page.com/test"
     }
   },
   "httpCalls": [
     {
       "expectedRequest": {
         "method": "POST",
-        "uri": "https://test.localhost.com?company_id=9876543",
         "headers": {
           "Accept": [
             "application/json"
           ],
           "Content-Type": [
             "application/json;charset=utf-8"
+          ],
+          "Origin": [
+            "domain.com"
           ],
           "X-Openrtb-Version": [
             "2.6"
@@ -48,17 +52,19 @@
             "1.2.3.4"
           ]
         },
+        "uri": "https://test.localhost.com?company_id=9876543",
         "body": {
           "id": "test-request-id",
           "imp": [
             {
               "id": "test-imp-id",
               "video": {
-                "mimes": [
-                  "video/mp4"
-                ],
                 "w": 1920,
-                "h": 1080
+                "h": 1080,
+                "mimes": [
+                  "video/x-flv",
+                  "video/mp4"
+                ]
               },
               "ext": {
                 "bidder": {
@@ -68,25 +74,25 @@
             }
           ],
           "device": {
-            "ip": "1.2.3.4",
-            "ua": "user-agent"
+            "ua": "user-agent",
+            "ip": "1.2.3.4"
           },
-          "app": {
-            "bundle": "54321"
+          "site": {
+            "domain": "domain.com",
+            "page": "page.com/test"
           }
         },
         "impIDs":["test-imp-id"]
       },
       "mockResponse": {
-        "status": 500
+        "status": 400
       }
     }
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "Unexpected status code: 500. Run with request.debug = 1 for more info",
+      "value": "Unexpected status code: 400. Run with request.debug = 1 for more info",
       "comparison": "literal"
     }
   ]
 }
-
