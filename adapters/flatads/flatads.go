@@ -37,7 +37,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
-	headers.Add("X-OpenRTB-Version", "2.6")
+	//headers.Add("X-OpenRTB-Version", "2.6")
 	if request.Device != nil {
 		if len(request.Device.UA) > 0 {
 			headers.Add("User-Agent", request.Device.UA)
