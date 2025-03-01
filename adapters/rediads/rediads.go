@@ -116,7 +116,7 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 		return openrtb_ext.BidTypeBanner, nil
 	case openrtb2.MarkupVideo:
 		return openrtb_ext.BidTypeVideo, nil
-	case 0:
+	case openrtb2.MarkupAudio:
 		return openrtb_ext.BidTypeAudio, nil
 	case openrtb2.MarkupNative:
 		return openrtb_ext.BidTypeNative, nil
@@ -141,13 +141,11 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
 	bidResponse.Currency = response.Cur
-	var errors []error
 	for _, seatBid := range response.SeatBid {
 		for i, bid := range seatBid.Bid {
 			bidType, err := getMediaTypeForBid(bid)
 			if err != nil {
-				errors = append(errors, err)
-				continue
+				return nil, []error{err}
 			}
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &seatBid.Bid[i],

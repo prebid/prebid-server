@@ -23,6 +23,7 @@
                         10
                     ]
                 },
+                "mtype": 3, 
                 "ext": {
                     "bidder": {
                         "account_id": "569749"
@@ -49,8 +50,7 @@
                                     10
                                 ]
                             },
-                            "ext": {
-                            }
+                            "ext": {}
                         }
                     ],
                     "device": {
@@ -65,7 +65,7 @@
                         }
                     }
                 },
-                "impIDs":["test-imp-id"]
+                "impIDs": ["test-imp-id"]
             },
             "mockResponse": {
                 "status": 200,
@@ -78,6 +78,7 @@
                                 {
                                     "id": "7706636740145184841",
                                     "impid": "test-imp-id",
+                                    "mtype": 3, 
                                     "price": 0.5,
                                     "adid": "29681110",
                                     "adm": "some-test-ad",
@@ -104,6 +105,7 @@
                     "bid": {
                         "id": "7706636740145184841",
                         "impid": "test-imp-id",
+                        "mtype": 3, 
                         "price": 0.5,
                         "adid": "29681110",
                         "adm": "some-test-ad",

@@ -14,7 +14,7 @@
         "imp": [
             {
                 "id": "test-imp-id",
-                "tagid": "test",
+                "tagid": "234",
                 "banner": {
                     "format": [
                         {
@@ -29,7 +29,8 @@
                 },
                 "ext": {
                     "bidder": {
-                        "account_id": "999"
+                        "account_id": "999",
+                        "slot": "234"
                     }
                 }
             }
@@ -44,7 +45,7 @@
                     "imp": [
                         {
                             "id": "test-imp-id",
-                            "tagid": "test",
+                            "tagid": "234",
                             "banner": {
                                 "format": [
                                     {

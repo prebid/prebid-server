@@ -7,12 +7,15 @@
       },
       "app": {
           "id": "1",
-          "bundle": "com.wls.testwlsapplication"
+          "bundle": "com.wls.testwlsapplication",
+          "publisher": {
+            "id": "com.wls.testwlsapplication"
+        }
       },
       "imp": [
           {
               "id": "test-imp-id",
-              "tagid": "234",
+              "tagid": "test",
               "banner": {
                   "format": [
                       {
@@ -27,8 +30,7 @@
               },
               "ext": {
                   "bidder": {
-                      "account_id": "999",
-                      "slot": "234"
+                      "account_id": "999"
                   }
               }
           }
@@ -43,7 +45,7 @@
                   "imp": [
                       {
                           "id": "test-imp-id",
-                          "tagid": "234",
+                          "tagid": "test",
                           "banner": {
                               "format": [
                                   {
