@@ -1,7 +1,6 @@
 package madsense
 
 import (
-	"encoding/json"
 	"net/http"
 	"net/url"
 
@@ -68,7 +67,7 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest, imps []openrtb2.Imp)
 	}
 
 	request.Imp = imps
-	body, err := json.Marshal(request)
+	body, err := jsonutil.Marshal(request)
 	if err != nil {
 		return nil, err
 	}
