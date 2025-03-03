@@ -1,69 +1,72 @@
 {
   "mockBidRequest": {
-    "id": "1",
-    "site": {
-      "domain": "test.com",
-      "page": "http://test.com",
-      "ref": "",
-      "publisher": {}
-    },
+    "id": "test-request-id",
     "imp": [
       {
-        "id": "i3",
-        "video": {
-          "w": 300,
-          "h": 250,
-          "pos": 1,
-          "mimes": [
-            "video/mp4"
+        "id": "test-imp-bad",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
           ]
         },
-        "metric": [],
         "ext": {
           "bidder": {
-            "seatId":"prebid",
+            "seatId": "",
+            "tagId": ""
+          }
+        }
+      },
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "seatId": "prebid",
             "tagId": "demo1"
           }
         }
       }
     ]
   },
+
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://pbs.technoratimedia.com/openrtb/bids/prebid?src=pbs-go%2F1.0.0&adapter=imds",
+        "uri": "http://pbs.technoratimedia.com/openrtb/bids/prebid?src=pbs-go%2F1.0.0&adapter=advertising",
         "body": {
-          "id": "1",
-          "site": {
-            "domain": "test.com",
-            "page": "http://test.com",
-            "publisher": {}
-          },
+          "id": "test-request-id",
           "ext": {
             "seatId": "prebid"
           },
           "imp": [
             {
-              "id": "i3",
+              "id":"test-imp-id",
               "tagid": "demo1",
-              "video": {
-                "w": 300,
-                "h": 250,
-                "pos": 1,
-                "mimes": [
-                  "video/mp4"
+              "banner": {
+                "format": [
+                  {"w":300,"h":250}
                 ]
               },
               "ext": {
-                "bidder":{
-                  "seatId":"prebid",
+                "bidder": {
+                  "seatId": "prebid",
                   "tagId": "demo1"
                 }
               }
             }
           ]
         },
-        "impIDs":["i3"]
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,
@@ -73,9 +76,9 @@
             {
               "bid": [
                 {
-                  "id": "video-request-id",
-                  "impid": "i3",
-                  "price": 2.693309696244891,
+                  "id": "test-request-id",
+                  "impid": "test-imp-id",
+                  "price": 2.69,
                   "adomain": [
                     "psacentral.org"
                   ],
@@ -83,17 +86,17 @@
                   "crid": "mock-cid",
                   "ext": {
                     "prebid": {
-                      "type": "video"
+                      "type": "banner"
                     }
                   }
                 }
               ],
-              "seat": "imds"
+              "seat": "advertising"
             }
           ],
           "ext": {
             "responsetimemillis": {
-              "imds": 339
+              "advertising": 339
             }
           }
         }
@@ -112,17 +115,23 @@
             "cid": "mock-crid",
             "crid": "mock-cid",
             "ext": {
-                "prebid": {
-                "type": "video"
+              "prebid": {
+                "type": "banner"
               }
             },
-            "id": "video-request-id",
-            "impid": "i3",
-            "price": 2.693309696244891
+            "id": "test-request-id",
+            "impid": "test-imp-id",
+            "price": 2.69
           },
-          "type": "video"
+          "type": "banner"
         }
       ]
+    }
+  ],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Invalid Impression",
+      "comparison": "literal"
     }
   ]
 }

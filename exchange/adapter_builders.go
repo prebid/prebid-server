@@ -31,6 +31,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/adtrgtme"
 	"github.com/prebid/prebid-server/v3/adapters/aduptech"
 	"github.com/prebid/prebid-server/v3/adapters/advangelists"
+	"github.com/prebid/prebid-server/v3/adapters/advertising"
 	"github.com/prebid/prebid-server/v3/adapters/adverxo"
 	"github.com/prebid/prebid-server/v3/adapters/adview"
 	"github.com/prebid/prebid-server/v3/adapters/adxcg"
@@ -110,7 +111,6 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/grid"
 	"github.com/prebid/prebid-server/v3/adapters/gumgum"
 	"github.com/prebid/prebid-server/v3/adapters/huaweiads"
-	"github.com/prebid/prebid-server/v3/adapters/imds"
 	"github.com/prebid/prebid-server/v3/adapters/impactify"
 	"github.com/prebid/prebid-server/v3/adapters/improvedigital"
 	"github.com/prebid/prebid-server/v3/adapters/infytv"
@@ -358,7 +358,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderGrid:              grid.Builder,
 		openrtb_ext.BidderGumGum:            gumgum.Builder,
 		openrtb_ext.BidderHuaweiAds:         huaweiads.Builder,
-		openrtb_ext.BidderImds:              imds.Builder,
+		openrtb_ext.BidderAdvertising:       advertising.Builder,
 		openrtb_ext.BidderImpactify:         impactify.Builder,
 		openrtb_ext.BidderImprovedigital:    improvedigital.Builder,
 		openrtb_ext.BidderInfyTV:            infytv.Builder,
