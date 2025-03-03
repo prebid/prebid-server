@@ -1,7 +1,6 @@
 endpoint: "https://s2s.sportslocalmedia.com/openrtb2/auction"
 maintainer:
   email: "tech@akcelo.io"
-gvlVendorID: 0
 capabilities:
   site:
     mediaTypes:

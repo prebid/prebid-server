@@ -6,11 +6,11 @@
   "properties": {
     "adUnitID": {
       "type": "number",
-      "description": "The identifier of the site. Will be provided by your account manager."
+      "description": "The identifier of the ad unit. Will be provided by your account manager."
     },
     "siteId": {
       "type": "number",
-      "description": "The identifier of the ad unit. Will be provided by your account manager."
+      "description": "The identifier of the site. Will be provided by your account manager."
     },
     "test": {
       "type": "number",

@@ -56,7 +56,6 @@ func (a *adapter) prepareBidRequest(bidRequest *openrtb2.BidRequest) ([]*adapter
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
-	headers.Add("User-Agent", "prebid-server/1.0")
 
 	var errs []error
 	for i, imp := range bidRequest.Imp {
