@@ -3,10 +3,12 @@ package hookexecution
 import (
 	"context"
 	"fmt"
+	"runtime/debug"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/hooks"
 	"github.com/prebid/prebid-server/v3/hooks/hookstage"
@@ -103,6 +105,13 @@ func executeHook[H any, P any](
 	hookId := HookID{ModuleCode: hw.Module, HookImplCode: hw.Code}
 
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				glog.Errorf("OpenRTB auction recovered panic in module hook %s.%s: %v, Stack trace is: %v",
+					hw.Module, hw.Code, r, string(debug.Stack()))
+			}
+		}()
+
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 		result, err := hookHandler(ctx, moduleCtx, hw.Hook, payload)
