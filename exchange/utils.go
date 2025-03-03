@@ -1009,6 +1009,10 @@ func applyFPD(fpd map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyD
 		reqWrapper.App = fpdToApply.App
 	}
 
+	if fpdToApply.Device != nil {
+		reqWrapper.Device = fpdToApply.Device
+	}
+
 	if fpdToApply.User != nil {
 		if reqWrapper.User != nil {
 			if len(reqWrapper.User.BuyerUID) > 0 {
