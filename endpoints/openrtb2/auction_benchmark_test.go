@@ -99,6 +99,7 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 		&adscert.NilSigner{},
 		macros.NewStringIndexBasedReplacer(),
 		nil,
+		&exchange.NilGeoLocationResolver{},
 	)
 
 	endpoint, _ := NewEndpoint(
