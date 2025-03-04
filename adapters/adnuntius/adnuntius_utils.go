@@ -30,21 +30,28 @@ func setHeaders(ortbRequest openrtb2.BidRequest) http.Header {
 
 func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter, noCookies bool) (string, []error) {
 	uri, err := url.Parse(a.endpoint)
-	endpointUrl := a.endpoint
 	if err != nil {
 		return "", []error{fmt.Errorf("failed to parse Adnuntius endpoint: %v", err)}
 	}
 
 	gdpr, consent, err := getGDPR(&ortbRequest)
 	if err != nil {
-		return "", []error{fmt.Errorf("failed to parse Adnuntius endpoint: %v", err)}
+		return "", []error{fmt.Errorf("failed to parse GDPR information: %v", err)}
+	}
+
+	if gdpr != "" {
+		extraInfoURI, err := url.Parse(a.extraInfo)
+		if err != nil {
+			return "", []error{fmt.Errorf("invalid extraInfo URL: %v", err)}
+		}
+		uri = extraInfoURI
 	}
 
 	if !noCookies {
 		var deviceExt extDeviceAdnuntius
 		if ortbRequest.Device != nil && ortbRequest.Device.Ext != nil {
 			if err := jsonutil.Unmarshal(ortbRequest.Device.Ext, &deviceExt); err != nil {
-				return "", []error{fmt.Errorf("failed to parse Adnuntius endpoint: %v", err)}
+				return "", []error{fmt.Errorf("failed to parse device ext: %v", err)}
 			}
 		}
 
@@ -58,7 +65,6 @@ func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter, noCookies bool
 
 	q := uri.Query()
 	if gdpr != "" {
-		endpointUrl = a.extraInfo
 		q.Set("gdpr", gdpr)
 	}
 
@@ -70,11 +76,14 @@ func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter, noCookies bool
 		q.Set("noCookies", "true")
 	}
 
-	q.Set("tzo", fmt.Sprint(tzo))
+	q.Set("tzo", strconv.Itoa(tzo))
 	q.Set("format", "prebidServer")
 
-	url := endpointUrl + "?" + q.Encode()
-	return url, nil
+	// Set the query params to the URI
+	uri.RawQuery = q.Encode()
+
+	// Return the correctly formatted URL
+	return uri.String(), nil
 }
 
 func getImpSizes(imp openrtb2.Imp, bidType string) [][]int64 {
@@ -158,7 +167,7 @@ func generateReturnExt(ad Ad, request *openrtb2.BidRequest) (json.RawMessage, er
 			},
 		}
 
-		returnExt, err := json.Marshal(ext)
+		returnExt, err := jsonutil.Marshal(ext)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to parse Ext information in Adnuntius: %v", err)
 		}
@@ -189,13 +198,13 @@ func generateAdUnit(imp openrtb2.Imp, adnuntiusExt openrtb_ext.ImpExtAdnunitus, 
 */
 func convertMarkupTypeToBidType(markupType openrtb2.MarkupType) openrtb_ext.BidType {
 	switch markupType {
-	case 1:
+	case openrtb2.MarkupBanner:
 		return openrtb_ext.BidTypeBanner
-	case 2:
+	case openrtb2.MarkupVideo:
 		return openrtb_ext.BidTypeVideo
-	case 3:
+	case openrtb2.MarkupAudio:
 		return openrtb_ext.BidTypeAudio
-	case 4:
+	case openrtb2.MarkupNative:
 		return openrtb_ext.BidTypeNative
 	}
 	return openrtb_ext.BidTypeBanner

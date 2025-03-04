@@ -77,7 +77,7 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 			adUnit.AdType = "NATIVE"
 			nativeRequest := json.RawMessage{}
 
-			if err := json.Unmarshal([]byte(imp.Native.Request), &nativeRequest); err != nil {
+			if err := jsonutil.Unmarshal([]byte(imp.Native.Request), &nativeRequest); err != nil {
 				return nil, []error{&errortypes.BadInput{
 					Message: fmt.Sprintf("Error unmarshalling Native: %s", err.Error()),
 				}}
@@ -206,40 +206,36 @@ func generateBidResponse(adnResponse *AdnResponse, request *openrtb2.BidRequest)
 
 			ad := adunit.Ads[0]
 			html := adunit.Html
-			var bidType openrtb2.MarkupType = 1
+			var mType openrtb2.MarkupType = openrtb2.MarkupBanner
 
 			currency = ad.Bid.Currency
 			native, _, _, _ := jsonparser.Get(adunit.NativeJson, "ortb")
 
 			if native != nil {
 				html = string(native)
-				bidType = 4
+				mType = openrtb2.MarkupNative
 			}
 
-			adBid, err := generateAdResponse(ad, imp, html, bidType, request)
+			adBid, err := generateAdResponse(ad, imp, html, mType, request)
 			if err != nil {
-				return nil, []error{&errortypes.BadInput{
-					Message: "Error at ad generation",
-				}}
+				return nil, err
 			}
 
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     adBid,
-				BidType: convertMarkupTypeToBidType(bidType),
+				BidType: convertMarkupTypeToBidType(mType),
 			})
 
 			for _, deal := range adunit.Deals {
-				bidType = 1
-				dealBid, err := generateAdResponse(deal, imp, deal.Html, bidType, request)
+				mType = 1
+				dealBid, err := generateAdResponse(deal, imp, deal.Html, mType, request)
 				if err != nil {
-					return nil, []error{&errortypes.BadInput{
-						Message: "Error at ad generation",
-					}}
+					return nil, err
 				}
 
 				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 					Bid:     dealBid,
-					BidType: convertMarkupTypeToBidType(bidType),
+					BidType: convertMarkupTypeToBidType(mType),
 				})
 			}
 		}
@@ -279,28 +275,28 @@ func generateAdResponse(ad Ad, imp openrtb2.Imp, html string, mType openrtb2.Mar
 
 	creativeWidth, widthErr := strconv.ParseInt(ad.CreativeWidth, 10, 64)
 	if widthErr != nil {
-		return nil, []error{&errortypes.BadInput{
+		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Value of width: %s is not a string", ad.CreativeWidth),
 		}}
 	}
 
 	creativeHeight, heightErr := strconv.ParseInt(ad.CreativeHeight, 10, 64)
 	if heightErr != nil {
-		return nil, []error{&errortypes.BadInput{
+		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Value of height: %s is not a string", ad.CreativeHeight),
 		}}
 	}
 
 	var bidderExt adapters.ExtImpBidder
 	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return nil, []error{&errortypes.BadInput{
+		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Error unmarshalling ExtImpBidder: %s", err.Error()),
 		}}
 	}
 
 	var adnuntiusExt openrtb_ext.ImpExtAdnunitus
 	if err := jsonutil.Unmarshal(bidderExt.Bidder, &adnuntiusExt); err != nil {
-		return nil, []error{&errortypes.BadInput{
+		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Error unmarshalling ExtImpValues: %s", err.Error()),
 		}}
 	}
@@ -317,7 +313,7 @@ func generateAdResponse(ad Ad, imp openrtb2.Imp, html string, mType openrtb2.Mar
 
 	extJson, err := generateReturnExt(ad, request)
 	if err != nil {
-		return nil, []error{&errortypes.BadInput{
+		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Error extracting Ext: %s", err.Error()),
 		}}
 	}
