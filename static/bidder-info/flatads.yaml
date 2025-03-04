@@ -17,5 +17,5 @@ capabilities:
       - native
 userSync:
   redirect:
-    url: http://localhost:7802/cms/user_sync?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
+    url: https://api.flowsixteen.com/api/tracker/cms/user_sync?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
     userMacro: $UID
