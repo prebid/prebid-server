@@ -76,7 +76,7 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 
 	nilMetrics := &metricsConfig.NilMetricsEngine{}
 
-	adapters, adaptersErr := exchange.BuildAdapters(server.Client(), &config.Configuration{}, infos, nilMetrics)
+	adapters, singleFormatBidders, adaptersErr := exchange.BuildAdapters(server.Client(), &config.Configuration{}, infos, nilMetrics)
 	if adaptersErr != nil {
 		b.Fatal("unable to build adapters")
 	}
@@ -87,6 +87,7 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 
 	exchange := exchange.NewExchange(
 		adapters,
+		singleFormatBidders,
 		nil,
 		&config.Configuration{},
 		requestValidator,
