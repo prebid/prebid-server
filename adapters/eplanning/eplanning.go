@@ -1,12 +1,12 @@
 package eplanning
 
 import (
+	"encoding/json"
 	"math/rand"
 	"net/http"
 	"net/url"
-	"strings"
-
 	"regexp"
+	"strings"
 
 	"fmt"
 
@@ -195,6 +195,9 @@ func (adapter *EPlanningAdapter) MakeRequests(request *openrtb2.BidRequest, reqI
 		query.Set("vctx", strconv.Itoa(impType))
 		query.Set("vv", vastVersionDefault)
 	}
+	if request.Source != nil && request.Source.Ext != nil {
+		setSchain(request.Source.Ext, &query)
+	}
 
 	uriObj.RawQuery = query.Encode()
 	uri := uriObj.String()
@@ -210,6 +213,78 @@ func (adapter *EPlanningAdapter) MakeRequests(request *openrtb2.BidRequest, reqI
 	requests := []*adapters.RequestData{&requestData}
 
 	return requests, errors
+}
+
+func setSchain(ext json.RawMessage, query *url.Values) {
+	openRtbSchain := unmarshalSupplyChain(ext)
+	if openRtbSchain == nil || len(openRtbSchain.Nodes) > 2 {
+		return
+	}
+	if schainValue := makeSupplyChain(*openRtbSchain); schainValue != "" {
+		query.Set("sch", schainValue)
+	}
+}
+
+func unmarshalSupplyChain(ext json.RawMessage) *openrtb2.SupplyChain {
+	var extSChain openrtb_ext.ExtRequestPrebidSChain
+	err := jsonutil.Unmarshal(ext, &extSChain)
+	if err != nil {
+		return nil
+	}
+	return &extSChain.SChain
+}
+
+func makeSupplyChain(openRtbSchain openrtb2.SupplyChain) string {
+	if len(openRtbSchain.Nodes) == 0 {
+		return ""
+	}
+
+	const schainPrefixFmt = "%s,%d"
+	const schainNodeFmt = "!%s,%s,%s,%s,%s,%s,%s"
+	schainPrefix := fmt.Sprintf(schainPrefixFmt, openRtbSchain.Ver, openRtbSchain.Complete)
+	var sb strings.Builder
+	sb.WriteString(schainPrefix)
+	for _, node := range openRtbSchain.Nodes {
+		// has to be in order: asi,sid,hp,rid,name,domain,ext
+		schainNode := fmt.Sprintf(
+			schainNodeFmt,
+			makeNodeValue(node.ASI),
+			makeNodeValue(node.SID),
+			makeNodeValue(node.HP),
+			makeNodeValue(node.RID),
+			makeNodeValue(node.Name),
+			makeNodeValue(node.Domain),
+			makeNodeValue(node.Ext),
+		)
+		sb.WriteString(schainNode)
+	}
+	return sb.String()
+}
+
+func makeNodeValue(nodeParam any) string {
+	switch nodeParam := nodeParam.(type) {
+	case string:
+		return url.QueryEscape(nodeParam)
+	case *int8:
+		pointer := nodeParam
+		if pointer == nil {
+			return ""
+		}
+		return makeNodeValue(int(*pointer))
+	case int:
+		return strconv.Itoa(nodeParam)
+	case json.RawMessage:
+		if nodeParam != nil {
+			freeFormJson, err := json.Marshal(nodeParam)
+			if err != nil {
+				return ""
+			}
+			return makeNodeValue(string(freeFormJson))
+		}
+		return ""
+	default:
+		return ""
+	}
 }
 
 func isMobileDevice(request *openrtb2.BidRequest) bool {
