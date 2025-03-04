@@ -137,7 +137,7 @@ func JsonifyAmpObject(ao *analytics.AmpObject, scope string) ([]MileAnalyticsEve
 			for _, imp := range ao.RequestWrapper.Imp {
 
 				var bidBiders []string
-				var bidbiddersMap map[string]struct{}
+				bidbiddersMap := make(map[string]struct{})
 				var winningBidder, winningSize string
 				var winningPrice float64 = 0.0
 				if ao.AuctionResponse != nil {
