@@ -11,18 +11,17 @@
     "imp": [
       {
         "id": "some-impression-id",
-        "banner": {
-          "w": 300,
-          "h": 250,
-          "format": [
-            {
-              "w": 300,
-              "h": 250
-            },
-            {
-              "w": 300,
-              "h": 600
-            }
+        "audio": {
+          "minduration": 5,
+          "maxduration": 30,
+          "minbitrate": 300,
+          "maxbitrate": 1500,
+          "api": [1, 2],
+          "protocols": [9, 10],
+          "mimes": [
+            "audio/aac",
+            "audio/mp4",
+            "audio/mpeg"
           ]
         },
         "ext": {
@@ -52,19 +51,18 @@
           "imp": [
             {
               "id": "some-impression-id",
-              "banner": {
-                "format": [
-                  {
-                    "w": 300,
-                    "h": 250
-                  },
-                  {
-                    "w": 300,
-                    "h": 600
-                  }
-                ],
-                "w": 300,
-                "h": 250
+              "audio": {
+                "minduration": 5,
+                "maxduration": 30,
+                "minbitrate": 300,
+                "maxbitrate": 1500,
+                "api": [1, 2],
+                "protocols": [9, 10],
+                "mimes": [
+                  "audio/aac",
+                  "audio/mp4",
+                  "audio/mpeg"
+                ]
               }
             }
           ],
@@ -91,14 +89,17 @@
                   "id": "1",
                   "impid": "some-impression-id",
                   "price": 1.234,
-                  "adm": "<script type=\"text/javascript\" src=\"http://some-url\"></script>",
+                  "adm": "<VAST>TAG</VAST>",
                   "adomain": [
                     "some-adomain"
                   ],
                   "cid": "1234",
                   "crid": "2345",
-                  "h": 1,
-                  "w": 1
+                  "ext": {
+                    "prebid": {
+                      "type": "audio"
+                    }
+                  }
                 }
               ],
               "seat": "zeta_global_ssp"
@@ -110,11 +111,30 @@
       }
     }
   ],
-  "expectedBidResponses": [{"currency":"USD","bids":[]}],
-  "expectedMakeBidsErrors": [
+  "expectedBidResponses": [
     {
-      "value": "Failed to parse impression \"some-impression-id\" mediatype",
-      "comparison": "literal"
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "1",
+            "impid": "some-impression-id",
+            "price": 1.234,
+            "adm": "<VAST>TAG</VAST>",
+            "adomain": [
+              "some-adomain"
+            ],
+            "cid": "1234",
+            "crid": "2345",
+            "ext": {
+              "prebid": {
+                "type": "audio"
+              }
+            }
+          },
+          "type": "audio"
+        }
+      ]
     }
   ]
 }
