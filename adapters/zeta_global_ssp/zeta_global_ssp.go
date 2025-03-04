@@ -67,13 +67,13 @@ func (a *adapter) getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ImpExtZetaGl
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: "ext.bidder not provided",
+			Message: "imp.ext not provided or cannot be unmarshalled",
 		}
 	}
 	var zetaSspImpExt openrtb_ext.ImpExtZetaGlobalSsp
 	if err := json.Unmarshal(bidderExt.Bidder, &zetaSspImpExt); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: "ext.bidder not provided",
+			Message: "imp.ext.bidder not provided or cannot be unmarshalled",
 		}
 	}
 	imp.Ext = nil
