@@ -41,7 +41,7 @@
             "123.123.123.123"
           ]
         },
-        "uri": "http://localhost:7826/adx/rtb?x-net-id=1111&x-net-token=66668888",
+        "uri": "https://bid.rtbshark.com/api/rtbs/adx/rtb?x-net-id=1111&x-net-token=66668888",
         "body": {
           "id": "test-request-id",
           "device": {
