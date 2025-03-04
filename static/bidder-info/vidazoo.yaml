@@ -18,3 +18,4 @@ userSync:
     userMacro: ${userId}
 openrtb:
   gpp_supported: true
+  version: 2.6
