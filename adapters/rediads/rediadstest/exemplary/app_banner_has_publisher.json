@@ -7,9 +7,9 @@
       },
       "app": {
           "id": "1",
-          "bundle": "com.wls.testwlsapplication",
+          "bundle": "com.rediads.testrediadsapplication",
           "publisher": {
-            "id": "com.wls.testwlsapplication"
+            "id": "com.rediads.testrediadsapplication"
         }
       },
       "imp": [
@@ -64,7 +64,7 @@
                   ],
                   "app": {
                       "id": "1",
-                      "bundle": "com.wls.testwlsapplication",
+                      "bundle": "com.rediads.testrediadsapplication",
                       "publisher": {
                         "id": "999"
                       }
