@@ -121,32 +121,45 @@ func TestConfigServiceImpl_Start(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			httpClient := &http.Client{}
-			pubxId := "testPublisher"
-			endpoint := "http://example.com"
+			// Create test server with mock response
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				config := &Configuration{
+					PublisherId:        "testPublisher",
+					BufferInterval:     "30s",
+					BufferSize:         "100",
+					SamplingPercentage: 50,
+				}
+				w.WriteHeader(http.StatusOK)
+				json.NewEncoder(w).Encode(config)
+			}))
+			defer server.Close()
 
-			configService, err := NewConfigService(httpClient, pubxId, endpoint, tt.refreshInterval)
+			configService, err := NewConfigService(server.Client(), "testPublisher", server.URL, tt.refreshInterval)
 			assert.NoError(t, err)
 
 			configImpl := configService.(*ConfigServiceImpl)
 			stop := make(chan struct{})
-			done := make(chan struct{})
 
 			configChan := configImpl.Start(stop)
 			assert.NotNil(t, configChan)
 
-			// Signal completion after a brief interval
-			go func() {
-				time.Sleep(10 * time.Millisecond)
-				close(stop)
-				done <- struct{}{}
-			}()
-
+			// Verify we can receive from the config channel
 			select {
-			case <-done:
-				// Success: service started and stopped
-			case <-time.After(time.Second):
-				t.Fatal("timeout waiting for service to stop")
+			case _, ok := <-configChan:
+				assert.True(t, ok, "should receive initial configuration")
+			case <-time.After(100 * time.Millisecond):
+				t.Fatal("timeout waiting for initial configuration")
+			}
+
+			// Stop the service
+			close(stop)
+
+			// Verify the channel is closed
+			select {
+			case _, ok := <-stop:
+				assert.False(t, ok, "config channel should be closed")
+			case <-time.After(100 * time.Millisecond):
+				t.Fatal("timeout waiting for channel to close")
 			}
 		})
 	}
