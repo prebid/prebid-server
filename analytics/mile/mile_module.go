@@ -240,7 +240,8 @@ func (m *MileModule) LogAmpObject(ao *analytics.AmpObject) {
 	// serialize event
 	events, err := helpers.JsonifyAmpObject(ao, m.scope)
 	if err != nil {
-		glog.Warning("[mile] Cannot serialize video")
+		glog.Warning("[mile] Cannot serialize amp")
+		glog.Warning(err.Error())
 		sentry.CaptureException(err)
 	}
 
