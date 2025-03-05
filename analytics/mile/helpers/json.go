@@ -138,12 +138,12 @@ func JsonifyAmpObject(ao *analytics.AmpObject, scope string) ([]MileAnalyticsEve
 
 				var sizeRequested []string
 				for _, format := range imp.Banner.Format {
-					size := fmt.Sprintf("%sx%s", format.W, format.H)
+					size := fmt.Sprintf("%dx%d", format.W, format.H)
 					sizeRequested = append(sizeRequested, size)
 				}
 
 				var bidBiders []string
-				var sizePrize map[string]map[string]float64
+				sizePrize := make(map[string]map[string]float64)
 				bidbiddersMap := make(map[string]struct{})
 				var winningBidder, winningSize string
 				var winningPrice float64 = 0.0
@@ -156,7 +156,7 @@ func JsonifyAmpObject(ao *analytics.AmpObject, scope string) ([]MileAnalyticsEve
 							for _, bid := range seatBid.Bid {
 								if bid.ImpID == imp.ID {
 
-									size := fmt.Sprintf("%sx%s", bid.W, bid.H)
+									size := fmt.Sprintf("%dx%d", bid.W, bid.H)
 									sizePrize[seatBid.Seat] = map[string]float64{size: bid.Price}
 
 									bidBiders = append(bidBiders, seatBid.Seat)
