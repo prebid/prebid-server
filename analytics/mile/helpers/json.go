@@ -136,16 +136,29 @@ func JsonifyAmpObject(ao *analytics.AmpObject, scope string) ([]MileAnalyticsEve
 		if ao.RequestWrapper != nil {
 			for _, imp := range ao.RequestWrapper.Imp {
 
+				var sizeRequested []string
+				for _, format := range imp.Banner.Format {
+					size := fmt.Sprintf("%sx%s", format.W, format.H)
+					sizeRequested = append(sizeRequested, size)
+				}
+
 				var bidBiders []string
+				var sizePrize map[string]map[string]float64
 				bidbiddersMap := make(map[string]struct{})
 				var winningBidder, winningSize string
 				var winningPrice float64 = 0.0
+
+				// Evaluate bids
 				if ao.AuctionResponse != nil {
 					if ao.AuctionResponse.SeatBid != nil {
 
 						for _, seatBid := range ao.AuctionResponse.SeatBid {
 							for _, bid := range seatBid.Bid {
 								if bid.ImpID == imp.ID {
+
+									size := fmt.Sprintf("%sx%s", bid.W, bid.H)
+									sizePrize[seatBid.Seat] = map[string]float64{size: bid.Price}
+
 									bidBiders = append(bidBiders, seatBid.Seat)
 									bidbiddersMap[seatBid.Seat] = struct{}{}
 									winningBidder = seatBid.Seat
@@ -209,11 +222,13 @@ func JsonifyAmpObject(ao *analytics.AmpObject, scope string) ([]MileAnalyticsEve
 						SessionID:         "",
 						EventType:         "pbs_agg_adunit",
 						Section:           "",
+						SizesRequested:    sizeRequested,
 						BidBidders:        bidBiders,
 						ConfiguredBidders: configuredBidders,
 						NoBidBidders:      noBidBidders,
 						TimedOutBidder:    respExt.getTimeoutBidders(ao.RequestWrapper.TMax),
 						WinningBidder:     winningBidder,
+						SizePrice:         sizePrize,
 						Cpm:               winningPrice,
 						WinningSize:       winningSize,
 						ConfiguredTimeout: ao.RequestWrapper.TMax,
