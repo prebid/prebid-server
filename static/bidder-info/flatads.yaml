@@ -1,7 +1,7 @@
 endpoint: "https://bid.rtbshark.com/api/rtbs/adx/rtb?x-net-id={{.PublisherID}}&x-net-token={{.TokenID}}"
 endpointCompression: gzip
 maintainer:
-  email: "tangyang@flat-ads.com"
+  email: "business@flat-ads.com"
 openrtb:
   version: 2.6
 capabilities:
