@@ -142,15 +142,21 @@ func adjustRequest(
 		}
 	}
 
-	if request.Site == nil {
-		request.Site = &openrtb2.Site{}
+	if request.App != nil {
+		if request.App.Publisher == nil {
+			request.App.Publisher = &openrtb2.Publisher{}
+		}
+
+		request.App.Publisher.ID = publisherId
 	}
 
-	if request.Site.Publisher == nil {
-		request.Site.Publisher = &openrtb2.Publisher{}
-	}
+	if request.Site != nil {
+		if request.Site.Publisher == nil {
+			request.Site.Publisher = &openrtb2.Publisher{}
+		}
 
-	request.Site.Publisher.ID = publisherId
+		request.Site.Publisher.ID = publisherId
+	}
 
 	return request, nil
 }

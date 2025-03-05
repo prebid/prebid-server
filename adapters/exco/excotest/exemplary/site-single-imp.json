@@ -60,7 +60,7 @@
             "application/json;charset=utf-8"
           ]
         },
-        "impIDs":["imp-1"]
+        "impIDs": ["imp-1"]
       },
       "mockResponse": {
         "status": 200,
