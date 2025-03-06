@@ -207,6 +207,7 @@ func JsonifyAmpObject(ao *analytics.AmpObject, scope string) ([]MileAnalyticsEve
 						Ip:              ao.RequestWrapper.Device.IP,
 						Timestamp:       time.Now().UTC().Unix() * 1000,
 						ServerTimestamp: -1,
+						GptAdUnit:       imp.ID,
 						//ClientVersion: ao.RequestWrapper.Ext.
 						Ua:                ao.RequestWrapper.Device.UA,
 						ArbitraryData:     "",
