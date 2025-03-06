@@ -5,7 +5,7 @@ endpoint: "https://REGION.rubiconproject.com/a/api/exchange"
 endpointCompression: GZIP
 geoscope:
   - global
-disabled: true
+disabled: false
 xapi:
   username: GET_FROM_MAGNITE
   password: GET_FROM_MAGNITE
