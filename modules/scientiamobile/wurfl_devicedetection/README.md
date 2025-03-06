@@ -20,8 +20,9 @@ The WURFL module populates **missing or empty fields** in `ortb2.device` with th
 - **h**: Screen height in pixels.
 - **w**: Screen width in pixels.
 - **ppi**: Screen pixels per inch (PPI).
-- **pixelratio**: Screen pixel density ratio.
+- **pxratio**: Screen pixel density ratio.
 - **devicetype**: Device type (e.g., mobile, tablet, desktop).
+- **js**: Support for JavaScript, where 0 = no, 1 = yes
 
 > **Note**: If these fields are already populated in the bid request, the module will not overwrite them.
 
