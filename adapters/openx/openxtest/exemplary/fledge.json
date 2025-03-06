@@ -57,7 +57,8 @@
                 "adm": "some-test-ad",
                 "crid": "crid_10",
                 "h": 90,
-                "w": 728
+                "w": 728,
+                "mtype": 1
               }]
             }
           ],
@@ -91,7 +92,8 @@
             "adm": "some-test-ad",
             "crid": "crid_10",
             "w": 728,
-            "h": 90
+            "h": 90,
+            "mtype": 1
           },
           "type": "banner"
         }
