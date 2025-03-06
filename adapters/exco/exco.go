@@ -63,11 +63,6 @@ func (a *adapter) MakeBids(
 		return nil, []error{err}
 	}
 
-	var appnexusResponse openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &appnexusResponse); err != nil {
-		return nil, []error{err}
-	}
-
 	var bidResponse openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResponse); err != nil {
 		return nil, []error{err}
