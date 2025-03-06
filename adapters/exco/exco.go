@@ -111,7 +111,7 @@ func getMediaTypeForBid(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 	case 2:
 		return openrtb_ext.BidTypeVideo, nil
 	default:
-		return "", fmt.Errorf("unrecognized bid_ad_type in response from appnexus: %d", bid.MType)
+		return "", fmt.Errorf("unrecognized bid_ad_type in response from exco: %d", bid.MType)
 	}
 }
 
@@ -121,25 +121,36 @@ func adjustRequest(
 	var publisherId string
 
 	for i := range request.Imp {
-		var impExt openrtb_ext.ExtImpPrebid
+		imp := &request.Imp[i]
 
-		if request.Imp[i].Ext != nil {
-			if err := json.Unmarshal(request.Imp[i].Ext, &impExt); err != nil {
-				continue
-			}
-
-			if err := json.Unmarshal(impExt.Bidder["tagId"], &request.Imp[i].TagID); err != nil {
-				return request, &errortypes.BadInput{
-					Message: fmt.Sprintf("Invalid imp.ext.bidder for impression index %d. Error Infomation: %s", i, "Missing tagId"),
-				}
-			}
-
-			if err := json.Unmarshal(impExt.Bidder["publisherId"], &publisherId); err != nil {
-				return request, &errortypes.BadInput{
-					Message: fmt.Sprintf("Invalid imp.ext.bidder for impression index %d. Error Infomation: %s", i, "Missing publisherId"),
-				}
+		var bidderExt adapters.ExtImpBidder
+		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+			return request, &errortypes.BadInput{
+				Message: fmt.Sprintf("Invalid imp.ext for impression index %d. Error Infomation: %s", i, err.Error()),
 			}
 		}
+
+		var impExt openrtb_ext.ImpExtExco
+		if err := json.Unmarshal(bidderExt.Bidder, &impExt); err != nil {
+			return request, &errortypes.BadInput{
+				Message: fmt.Sprintf("Invalid imp.ext.bidder for impression index %d. Error Infomation: %s", i, err.Error()),
+			}
+		}
+
+		if impExt.PublisherId == "" {
+			return request, &errortypes.BadInput{
+				Message: fmt.Sprintf("Invalid imp.ext.bidder for impression index %d. Error Infomation: %s", i, "Missing publisherId"),
+			}
+		}
+
+		if impExt.TagId == "" {
+			return request, &errortypes.BadInput{
+				Message: fmt.Sprintf("Invalid imp.ext.bidder for impression index %d. Error Infomation: %s", i, "Missing tagId"),
+			}
+		}
+
+		publisherId = impExt.PublisherId
+		imp.TagID = impExt.TagId
 	}
 
 	if request.App != nil {
