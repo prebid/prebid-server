@@ -4,8 +4,10 @@ import (
 	"flag"
 	"math/rand"
 	"net/http"
+	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/prebid/prebid-server/config"
@@ -59,7 +61,17 @@ const infoDirectory = "./static/bidder-info"
 
 func loadConfig(bidderInfos config.BidderInfos) (*config.Configuration, error) {
 	v := viper.New()
-	config.SetupViper(v, configFileName, bidderInfos)
+	mspConfigFileName := configFileName
+	envVar := strings.ToLower(os.Getenv("MSP_RUN_MODE"))
+
+	switch envVar {
+	case "mspai_staging":
+		mspConfigFileName = "./msp_config/mspai-stage"
+	case "mspai_prod":
+		mspConfigFileName = "./msp_config/mspai-prod"
+	}
+
+	config.SetupViper(v, mspConfigFileName, bidderInfos)
 	return config.New(v, bidderInfos, openrtb_ext.NormalizeBidderName)
 }
 
