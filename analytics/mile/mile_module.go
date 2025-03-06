@@ -71,7 +71,7 @@ func loadSentry() {
 		// Set TracesSampleRate to 1.0 to capture 100%
 		// of transactions for performance monitoring.
 		// We recommend adjusting this value in production,
-		TracesSampleRate: 1.0,
+		TracesSampleRate: 0.15,
 	})
 	if err != nil {
 		log.Fatalf("sentry.Init: %s", err)
@@ -240,7 +240,6 @@ func (m *MileModule) LogAmpObject(ao *analytics.AmpObject) {
 	// serialize event
 	events, err := helpers.JsonifyAmpObject(ao, m.scope)
 	if err != nil {
-		glog.Warning("[mile] Cannot serialize amp")
 		sentry.CaptureException(err)
 	}
 
