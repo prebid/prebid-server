@@ -12,11 +12,11 @@ import (
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
-type ExcoAdapter struct {
+type adapter struct {
 	endpoint string
 }
 
-func (a *ExcoAdapter) MakeRequests(
+func (a *adapter) MakeRequests(
 	request *openrtb2.BidRequest,
 	reqInfo *adapters.ExtraRequestInfo,
 ) ([]*adapters.RequestData, []error) {
@@ -50,7 +50,7 @@ func (a *ExcoAdapter) MakeRequests(
 	return []*adapters.RequestData{reqData}, errs
 }
 
-func (a *ExcoAdapter) MakeBids(
+func (a *adapter) MakeBids(
 	internalRequest *openrtb2.BidRequest,
 	externalRequest *adapters.RequestData,
 	response *adapters.ResponseData,
@@ -76,15 +76,17 @@ func (a *ExcoAdapter) MakeBids(
 	var errs []error
 	bidderResponse := adapters.NewBidderResponse()
 	for _, seatBid := range bidResponse.SeatBid {
-		for _, bid := range seatBid.Bid {
-			bidType, err := getMediaTypeForBid(&bid)
+		for i := range seatBid.Bid {
+			bid := &seatBid.Bid[i]
+
+			bidType, err := getMediaTypeForBid(bid)
 			if err != nil {
 				errs = append(errs, err)
 				continue
 			}
 
 			bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
-				Bid:     &bid,
+				Bid:     bid,
 				BidType: bidType,
 			})
 		}
@@ -98,7 +100,7 @@ func Builder(
 	config config.Adapter,
 	server config.Server,
 ) (adapters.Bidder, error) {
-	return &ExcoAdapter{
+	return &adapter{
 		endpoint: config.Endpoint,
 	}, nil
 }
