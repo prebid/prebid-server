@@ -1,0 +1,30 @@
+{
+  "mockBidRequest": {
+    "id": "exco-test",
+    "site": {
+      "page": "prebid.org"
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "video": {
+          "mimes": ["video/mp4"],
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "accountId": "exco-accountId",
+            "publisherId": "exco-publisherId"
+          }
+        }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Invalid imp.ext.bidder for impression index 0. Error Infomation: Missing tagId",
+      "comparison": "literal"
+    }
+  ]
+}
