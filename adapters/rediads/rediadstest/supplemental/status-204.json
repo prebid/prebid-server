@@ -25,7 +25,7 @@
         ],
         "app": {
             "id": "1",
-            "bundle": "com.wls.testwlsapplication"
+            "bundle": "com.rediads.testrediadsapplication"
         },
         "device": {
             "ip": "123.123.123.123",
@@ -58,7 +58,7 @@
                 ],
                 "app": {
                     "id": "1",
-                    "bundle": "com.wls.testwlsapplication",
+                    "bundle": "com.rediads.testrediadsapplication",
                     "publisher": {
                         "id": "999"
                     }
