@@ -29,12 +29,12 @@
     }],
     "tmax": 1000,
     "user": {
-      "eids": [{
+    "eids": [{
         "source": "source1",
-        "uids": [{}]
-      }]
-    }
+        "uids": []
+    }]
+}
   },
-  "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request: request.user.eids[0].uids[0] missing required field: \"id\"\n"
+  "expectedReturnCode": 200,
+  "expectedErrorMessage": "request.user.eids[0] (source: source1) removed due to empty uids"
 }
