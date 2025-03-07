@@ -1,0 +1,37 @@
+{
+	"mockBidRequest": {
+		"id": "test-request-id",
+		"user": {
+			"ext":""
+		},
+		"imp": [
+			{
+				"id": "test-imp-id",
+				"banner": {
+					"format": [
+						{
+							"w": 300,
+							"h": 250
+						},
+						{
+							"w": 300,
+							"h": 600
+						}
+					]
+				},
+				"ext": {
+					"bidder": {
+						"auId": "123"
+					}
+				}
+			}
+		]
+	},
+	"expectedMakeRequestsErrors": [
+		{
+			"value": "failed to parse URL: [failed to parse GDPR information: failed to parse ExtUser in Adnuntius GDPR check: expect { or n, but found \"]",
+			"comparison": "literal"
+		}
+	]
+
+}
