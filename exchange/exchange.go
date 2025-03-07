@@ -316,8 +316,11 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 
 	recordImpMetrics(r.BidRequestWrapper, e.me)
 
+	// Retrieve EEA countries configuration from either host or account settings
+	eeaCountries := selectEEACountries(e.privacyConfig.GDPR.EEACountries, r.Account.GDPR.EEACountries)
+
 	// Make our best guess if GDPR applies
-	gdprDefaultValue := e.parseGDPRDefaultValue(r.BidRequestWrapper)
+	gdprDefaultValue := e.parseGDPRDefaultValue(r.BidRequestWrapper, eeaCountries)
 	gdprSignal, err := getGDPR(r.BidRequestWrapper)
 	if err != nil {
 		return nil, err
@@ -571,7 +574,7 @@ func buildMultiBidMap(prebid *openrtb_ext.ExtRequestPrebid) map[string]openrtb_e
 	return multiBidMap
 }
 
-func (e *exchange) parseGDPRDefaultValue(r *openrtb_ext.RequestWrapper) gdpr.Signal {
+func (e *exchange) parseGDPRDefaultValue(r *openrtb_ext.RequestWrapper, eeaCountries []string) gdpr.Signal {
 	gdprDefaultValue := e.gdprDefaultValue
 
 	var geo *openrtb2.Geo
@@ -582,12 +585,11 @@ func (e *exchange) parseGDPRDefaultValue(r *openrtb_ext.RequestWrapper) gdpr.Sig
 	}
 
 	if geo != nil {
-		// If we have a country set, and it is on the list, we assume GDPR applies if not set on the request.
-		// Otherwise we assume it does not apply as long as it appears "valid" (is 3 characters long).
-		if _, found := e.privacyConfig.GDPR.EEACountriesMap[strings.ToUpper(geo.Country)]; found {
+		// If the country is in the EEA list, GDPR applies.
+		// Otherwise, if the country code is properly formatted (3 characters), GDPR does not apply.
+		if isEEACountry(geo.Country, eeaCountries) {
 			gdprDefaultValue = gdpr.SignalYes
 		} else if len(geo.Country) == 3 {
-			// The country field is formatted properly as a three character country code
 			gdprDefaultValue = gdpr.SignalNo
 		}
 	}
@@ -1621,4 +1623,18 @@ func setSeatNonBid(bidResponseExt *openrtb_ext.ExtBidResponse, seatNonBidBuilder
 
 	bidResponseExt.Prebid.SeatNonBid = seatNonBidBuilder.Slice()
 	return bidResponseExt
+}
+
+func isEEACountry(country string, eeaCountries []string) bool {
+	if len(eeaCountries) == 0 {
+		return false
+	}
+
+	country = strings.ToUpper(country)
+	for _, c := range eeaCountries {
+		if strings.ToUpper(c) == country {
+			return true
+		}
+	}
+	return false
 }

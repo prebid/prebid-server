@@ -479,12 +479,10 @@ func TestOpenRTBRequestWithImpAndAdSlotIncluded(t *testing.T) {
 					"inventory": {"key1" : "val1"},
 					"visitor": {"key2" : "val2"}
 				},
-				"context": {
-					"data": {
-                        "adserver": {
-                             "adslot": "/test-adslot",
-                             "name": "gam"
-                        }
+				"data": {
+					"adserver": {
+						 "adslot": "/test-adslot",
+						 "name": "gam"
 					}
 				}
 			}`),
