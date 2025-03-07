@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"golang.org/x/text/currency"
 )
 
 func TestUnMarshallRates(t *testing.T) {
@@ -186,8 +187,7 @@ func TestGetRate_ReverseConversion(t *testing.T) {
 	}
 }
 
-func TestGetRate_IntermediateConversion(t *testing.T) {
-
+func TestGetRate_FindConversionRate(t *testing.T) {
 	// Setup:
 	rates := NewRates(map[string]map[string]float64{
 		"USD": {
@@ -246,7 +246,16 @@ func TestGetRate_IntermediateConversion(t *testing.T) {
 
 	for _, tc := range testCases {
 		// Execute:
-		rate, err := rates.GetRate(tc.from, tc.to)
+		fromUnit, err := currency.ParseISO(tc.from)
+		if err != nil {
+			t.Errorf("Expected no error, but got: %v", err)
+		}
+		toUnit, err := currency.ParseISO(tc.to)
+		if err != nil {
+			t.Errorf("Expected no error, but got: %v", err)
+		}
+
+		rate, err := FindConversionRate(rates, fromUnit, toUnit)
 
 		// Verify:
 		if tc.hasError {
