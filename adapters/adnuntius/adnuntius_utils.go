@@ -190,12 +190,6 @@ func generateAdUnit(imp openrtb2.Imp, adnuntiusExt openrtb_ext.ImpExtAdnunitus, 
 	return adUnit
 }
 
-/*
-1 = Banner
-2 = Video
-3 = Audio
-4 = Native
-*/
 func convertMarkupTypeToBidType(markupType openrtb2.MarkupType) openrtb_ext.BidType {
 	switch markupType {
 	case openrtb2.MarkupBanner:
