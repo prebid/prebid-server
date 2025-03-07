@@ -84,7 +84,3 @@ type adnRequest struct {
 	Context   string             `json:"context,omitempty"`
 	KeyValues interface{}        `json:"kv,omitempty"`
 }
-
-type RequestExt struct {
-	Bidder adnRequestAdunit `json:"bidder"`
-}

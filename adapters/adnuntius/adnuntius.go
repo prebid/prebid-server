@@ -33,6 +33,10 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	return bidder, nil
 }
 
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	return a.generateRequests(*request)
+}
+
 func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters.RequestData, []error) {
 	var requestData []*adapters.RequestData
 	networkAdunitMap := make(map[string][]adnRequestAdunit)
@@ -158,8 +162,30 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 	return requestData, nil
 }
 
-func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	return a.generateRequests(*request)
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	if response.StatusCode == http.StatusBadRequest {
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("Status code: %d, Request malformed", response.StatusCode),
+		}}
+	}
+
+	if response.StatusCode != http.StatusOK {
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Status code: %d, Something went wrong with your request", response.StatusCode),
+		}}
+	}
+
+	var adnResponse AdnResponse
+	if err := jsonutil.Unmarshal(response.Body, &adnResponse); err != nil {
+		return nil, []error{err}
+	}
+
+	bidResponse, bidErr := generateBidResponse(&adnResponse, request)
+	if bidErr != nil {
+		return nil, bidErr
+	}
+
+	return bidResponse, nil
 }
 
 func generateBidResponse(adnResponse *AdnResponse, request *openrtb2.BidRequest) (*adapters.BidderResponse, []error) {
@@ -244,35 +270,7 @@ func generateBidResponse(adnResponse *AdnResponse, request *openrtb2.BidRequest)
 	return bidResponse, nil
 }
 
-func (a *adapter) MakeBids(request *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-
-	if response.StatusCode == http.StatusBadRequest {
-		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Status code: %d, Request malformed", response.StatusCode),
-		}}
-	}
-
-	if response.StatusCode != http.StatusOK {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Status code: %d, Something went wrong with your request", response.StatusCode),
-		}}
-	}
-
-	var adnResponse AdnResponse
-	if err := jsonutil.Unmarshal(response.Body, &adnResponse); err != nil {
-		return nil, []error{err}
-	}
-
-	bidResponse, bidErr := generateBidResponse(&adnResponse, request)
-	if bidErr != nil {
-		return nil, bidErr
-	}
-
-	return bidResponse, nil
-}
-
 func generateAdResponse(ad Ad, imp openrtb2.Imp, html string, mType openrtb2.MarkupType, request *openrtb2.BidRequest) (*openrtb2.Bid, []error) {
-
 	creativeWidth, widthErr := strconv.ParseInt(ad.CreativeWidth, 10, 64)
 	if widthErr != nil {
 		return nil, []error{&errortypes.BadServerResponse{

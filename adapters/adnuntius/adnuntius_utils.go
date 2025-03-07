@@ -200,10 +200,6 @@ func convertMarkupTypeToBidType(markupType openrtb2.MarkupType) openrtb_ext.BidT
 	switch markupType {
 	case openrtb2.MarkupBanner:
 		return openrtb_ext.BidTypeBanner
-	case openrtb2.MarkupVideo:
-		return openrtb_ext.BidTypeVideo
-	case openrtb2.MarkupAudio:
-		return openrtb_ext.BidTypeAudio
 	case openrtb2.MarkupNative:
 		return openrtb_ext.BidTypeNative
 	}
