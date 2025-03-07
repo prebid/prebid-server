@@ -120,7 +120,9 @@ func (c *EventChannel) flush() {
 
 	// send events (async)
 	err := c.send(c.buff)
-	fmt.Println(err)
+	if err != nil {
+		fmt.Println(err)
+	}
 }
 
 func (c *EventChannel) start() {

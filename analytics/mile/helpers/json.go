@@ -104,7 +104,6 @@ func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]MileAnal
 
 	//events = append(events, logEntry)
 	return events, nil
-
 }
 
 func JsonifyVideoObject(vo *analytics.VideoObject, scope string) (*MileAnalyticsEvent, error) {
@@ -198,6 +197,12 @@ func JsonifyAmpObject(ao *analytics.AmpObject, scope string) ([]MileAnalyticsEve
 				err = json.Unmarshal(ao.AuctionResponse.Ext, &respExt)
 				if err != nil {
 					return nil, err
+				}
+				if respExt.Errors != nil {
+					for bidder, err := range respExt.Errors {
+						errString := fmt.Errorf("%v: %+v", bidder, err)
+						sentry.CaptureException(errString)
+					}
 				}
 
 				if ao.RequestWrapper != nil {

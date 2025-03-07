@@ -202,15 +202,27 @@ type ImpressionsExt struct {
 }
 
 type RespExt struct {
-	ResponseTimeMillis map[string]int64 `json:"responsetimemillis"`
+	ResponseTimeMillis map[string]int64       `json:"responsetimemillis"`
+	Errors             map[string][]ErrStruct `json:"errors"`
+}
+
+type ErrStruct struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
 }
 
 func (r *RespExt) getTimeoutBidders(timeout int64) []string {
 	timeouts := []string{}
-	for bidder, responseTime := range r.ResponseTimeMillis {
-		if responseTime > timeout {
-			timeouts = append(timeouts, bidder)
+	if r.Errors != nil {
+		for bidder, bidderError := range r.Errors {
+			for _, err := range bidderError {
+				if err.Message == "context deadline exceeded" {
+					timeouts = append(timeouts, bidder)
+				}
+			}
+
 		}
+
 	}
 	return timeouts
 }
