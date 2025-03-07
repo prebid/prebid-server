@@ -29,12 +29,12 @@
     }],
     "tmax": 1000,
     "user": {
-      "eids": [{
+    "eids": [{
         "source": "source1",
-        "uids": [{}]
-      }]
-    }
+        "uids": []
+    }]
+}
   },
   "expectedReturnCode": 200,
-  "expectedErrorMessage": "request.user.eids[0] (source: source1) contains only empty uids and is removed from the request"
+  "expectedErrorMessage": "request.user.eids[0] (source: source1) removed due to empty uids"
 }

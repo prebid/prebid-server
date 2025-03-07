@@ -1297,7 +1297,7 @@ func validateEIDs(eids []openrtb2.EID) ([]openrtb2.EID, []error) {
 	for eidIndex, eid := range eids {
 		if eid.Source == "" {
 			errorsList = append(errorsList, &errortypes.Warning{
-				Message:     fmt.Sprintf("request.user.eids[%d] missing required field: source", eidIndex),
+				Message:     fmt.Sprintf("request.user.eids[%d] removed due to missing source", eidIndex),
 				WarningCode: errortypes.InvalidUserEIDsWarningCode,
 			})
 			continue
@@ -1310,7 +1310,7 @@ func validateEIDs(eids []openrtb2.EID) ([]openrtb2.EID, []error) {
 			validEIDs = append(validEIDs, eid)
 		} else {
 			errorsList = append(errorsList, &errortypes.Warning{
-				Message:     fmt.Sprintf("request.user.eids[%d] (source: %s) contains only empty uids and is removed from the request", eidIndex, eid.Source),
+				Message:     fmt.Sprintf("request.user.eids[%d] (source: %s) removed due to empty uids", eidIndex, eid.Source),
 				WarningCode: errortypes.InvalidUserEIDsWarningCode,
 			})
 		}
@@ -1328,7 +1328,7 @@ func validateUIDs(uids []openrtb2.UID, eidIndex int) ([]openrtb2.UID, []error) {
 			validUIDs = append(validUIDs, uid)
 		} else {
 			uidErrors = append(uidErrors, &errortypes.Warning{
-				Message:     fmt.Sprintf("request.user.eids[%d].uids[%d] contains empty ids and is removed from the request", eidIndex, uidIndex),
+				Message:     fmt.Sprintf("request.user.eids[%d].uids[%d] removed due to empty ids", eidIndex, uidIndex),
 				WarningCode: errortypes.InvalidUserUIDsWarningCode,
 			})
 		}

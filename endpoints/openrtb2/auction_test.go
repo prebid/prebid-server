@@ -6026,8 +6026,8 @@ func TestValidateEIDs(t *testing.T) {
 			expected:  []openrtb2.EID{},
 			numErrors: 2,
 			expectedErrorMessages: []string{
-				"request.user.eids[0].uids[0] contains empty ids and is removed from the request",
-				"request.user.eids[0] (source: src2) contains only empty uids and is removed from the request",
+				"request.user.eids[0].uids[0] removed due to empty ids",
+				"request.user.eids[0] (source: src2) removed due to empty uids",
 			},
 		},
 		{
@@ -6043,10 +6043,10 @@ func TestValidateEIDs(t *testing.T) {
 			},
 			numErrors: 4,
 			expectedErrorMessages: []string{
-				"request.user.eids[1].uids[0] contains empty ids and is removed from the request",
-				"request.user.eids[2].uids[0] contains empty ids and is removed from the request",
-				"request.user.eids[2].uids[1] contains empty ids and is removed from the request",
-				"request.user.eids[2] (source: src5) contains only empty uids and is removed from the request",
+				"request.user.eids[1].uids[0] removed due to empty ids",
+				"request.user.eids[2].uids[0] removed due to empty ids",
+				"request.user.eids[2].uids[1] removed due to empty ids",
+				"request.user.eids[2] (source: src5) removed due to empty uids",
 			},
 		},
 		{
@@ -6057,9 +6057,38 @@ func TestValidateEIDs(t *testing.T) {
 			expected:  []openrtb2.EID{},
 			numErrors: 3,
 			expectedErrorMessages: []string{
-				"request.user.eids[0].uids[0] contains empty ids and is removed from the request",
-				"request.user.eids[0].uids[1] contains empty ids and is removed from the request",
-				"request.user.eids[0] (source: src6) contains only empty uids and is removed from the request",
+				"request.user.eids[0].uids[0] removed due to empty ids",
+				"request.user.eids[0].uids[1] removed due to empty ids",
+				"request.user.eids[0] (source: src6) removed due to empty uids",
+			},
+		},
+		{
+			name:                  "eid_nil",
+			input:                 nil,
+			expected:              nil,
+			numErrors:             0,
+			expectedErrorMessages: nil,
+		},
+		{
+			name: "eid_uid_nil",
+			input: []openrtb2.EID{
+				{Source: "src7", UIDs: nil},
+			},
+			expected:  []openrtb2.EID{},
+			numErrors: 1,
+			expectedErrorMessages: []string{
+				"request.user.eids[0] (source: src7) removed due to empty uids",
+			},
+		},
+		{
+			name: "source_missing",
+			input: []openrtb2.EID{
+				{UIDs: []openrtb2.UID{{ID: "id1"}}},
+			},
+			expected:  []openrtb2.EID{},
+			numErrors: 1,
+			expectedErrorMessages: []string{
+				"request.user.eids[0] removed due to missing source",
 			},
 		},
 	}
@@ -6072,22 +6101,11 @@ func TestValidateEIDs(t *testing.T) {
 			assert.Equal(t, tc.numErrors, len(errorsList))
 
 			// Assert error messages
-			if tc.numErrors > 0 {
-				var errorMessages []string
-				for _, err := range errorsList {
-					if warning, ok := err.(*errortypes.Warning); ok {
-						errorMessages = append(errorMessages, warning.Message)
-					}
-				}
-
-				for i, expectedMsg := range tc.expectedErrorMessages {
-					if i >= len(errorMessages) {
-						t.Errorf("Expected error message %q but got none", expectedMsg)
-					} else if expectedMsg != errorMessages[i] {
-						t.Errorf("Expected error message %q but got %q", expectedMsg, errorMessages[i])
-					}
-				}
+			assert.Equal(t, len(tc.expectedErrorMessages), len(errorsList))
+			for _, err := range errorsList {
+				assert.Contains(t, tc.expectedErrorMessages, err.Error())
 			}
+
 		})
 	}
 }
@@ -6120,11 +6138,11 @@ func TestValidateUIDs(t *testing.T) {
 			expectedValidUIDs: nil,
 			expectedErrors: []error{
 				&errortypes.Warning{
-					Message:     "request.user.eids[0].uids[0] contains empty ids and is removed from the request",
+					Message:     "request.user.eids[0].uids[0] removed due to empty ids",
 					WarningCode: errortypes.InvalidUserUIDsWarningCode,
 				},
 				&errortypes.Warning{
-					Message:     "request.user.eids[0].uids[1] contains empty ids and is removed from the request",
+					Message:     "request.user.eids[0].uids[1] removed due to empty ids",
 					WarningCode: errortypes.InvalidUserUIDsWarningCode,
 				},
 			},
@@ -6143,11 +6161,11 @@ func TestValidateUIDs(t *testing.T) {
 			},
 			expectedErrors: []error{
 				&errortypes.Warning{
-					Message:     "request.user.eids[0].uids[1] contains empty ids and is removed from the request",
+					Message:     "request.user.eids[0].uids[1] removed due to empty ids",
 					WarningCode: errortypes.InvalidUserUIDsWarningCode,
 				},
 				&errortypes.Warning{
-					Message:     "request.user.eids[0].uids[3] contains empty ids and is removed from the request",
+					Message:     "request.user.eids[0].uids[3] removed due to empty ids",
 					WarningCode: errortypes.InvalidUserUIDsWarningCode,
 				},
 			},
@@ -6170,21 +6188,21 @@ func TestValidateUIDs(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			validUIDs, errorsList := validateUIDs(tc.input, 0)
 
-			assert.ElementsMatch(t, tc.expectedValidUIDs, validUIDs, "Valid UIDs mismatch")
-			assert.ElementsMatch(t, tc.expectedErrors, errorsList, "Errors mismatch")
+			assert.ElementsMatch(t, tc.expectedValidUIDs, validUIDs)
+			assert.ElementsMatch(t, tc.expectedErrors, errorsList)
 		})
 	}
 }
 func TestValidateUser(t *testing.T) {
 
 	testCases := []struct {
-		description  string
+		name         string
 		req          *openrtb_ext.RequestWrapper
 		expectedErr  []error
 		expectedEids []openrtb2.EID
 	}{
 		{
-			description: "Valid user with Geo accuracy",
+			name: "Valid_user_with_Geo_accuracy",
 			req: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					User: &openrtb2.User{
@@ -6197,7 +6215,7 @@ func TestValidateUser(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
-			description: "Invalid user with negative Geo accuracy",
+			name: "Invalid_user_with_negative_Geo_accuracy",
 			req: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					User: &openrtb2.User{
@@ -6210,7 +6228,7 @@ func TestValidateUser(t *testing.T) {
 			expectedErr: []error{errors.New("request.user.geo.accuracy must be a positive number")},
 		},
 		{
-			description: "Invalid user.ext.prebid with empty buyeruids",
+			name: "Invalid_user.ext.prebid_with_empty_buyeruids",
 			req: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					User: &openrtb2.User{
@@ -6221,7 +6239,7 @@ func TestValidateUser(t *testing.T) {
 			expectedErr: []error{errors.New(`request.user.ext.prebid requires a "buyeruids" property with at least one ID defined. If none exist, then request.user.ext.prebid should not be defined.`)},
 		},
 		{
-			description: "Invalid user.eids with empty id",
+			name: "Invalid_user.eids_with_empty_id",
 			req: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					User: &openrtb2.User{
@@ -6237,16 +6255,16 @@ func TestValidateUser(t *testing.T) {
 				},
 			},
 			expectedErr: []error{&errortypes.Warning{
-				Message:     "request.user.eids[0].uids[0] contains empty ids and is removed from the request",
+				Message:     "request.user.eids[0].uids[0] removed due to empty ids",
 				WarningCode: errortypes.InvalidUserUIDsWarningCode,
 			}, &errortypes.Warning{
-				Message:     "request.user.eids[0] (source: source) contains only empty uids and is removed from the request",
+				Message:     "request.user.eids[0] (source: source) removed due to empty uids",
 				WarningCode: errortypes.InvalidUserEIDsWarningCode,
 			}},
 			expectedEids: nil,
 		},
 		{
-			description: "Valid user.eids with UID1 id",
+			name: "Valid_user.eids_with_UID1_id",
 			req: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					User: &openrtb2.User{
@@ -6272,7 +6290,7 @@ func TestValidateUser(t *testing.T) {
 			},
 		},
 		{
-			description: "user.eids with empty UIDs",
+			name: "user.eids_with_empty_UIDs",
 			req: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					User: &openrtb2.User{
@@ -6289,18 +6307,18 @@ func TestValidateUser(t *testing.T) {
 			},
 			expectedErr: []error{
 				&errortypes.Warning{
-					Message:     "request.user.eids[0].uids[0] contains empty ids and is removed from the request",
+					Message:     "request.user.eids[0].uids[0] removed due to empty ids",
 					WarningCode: errortypes.InvalidUserUIDsWarningCode,
 				},
 				&errortypes.Warning{
-					Message:     "request.user.eids[0] (source: source) contains only empty uids and is removed from the request",
+					Message:     "request.user.eids[0] (source: source) removed due to empty uids",
 					WarningCode: errortypes.InvalidUserEIDsWarningCode,
 				},
 			},
 			expectedEids: nil,
 		},
 		{
-			description: "user.eids with empty UIDs",
+			name: "user.eids_with_empty_UIDs",
 			req: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					User: &openrtb2.User{
@@ -6315,14 +6333,14 @@ func TestValidateUser(t *testing.T) {
 			},
 			expectedErr: []error{
 				&errortypes.Warning{
-					Message:     "request.user.eids[0] (source: source) contains only empty uids and is removed from the request",
+					Message:     "request.user.eids[0] (source: source) removed due to empty uids",
 					WarningCode: errortypes.InvalidUserEIDsWarningCode,
 				},
 			},
 			expectedEids: nil,
 		},
 		{
-			description: "user.eids with No UIDs",
+			name: "user.eids_with_No_UIDs",
 			req: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					User: &openrtb2.User{
@@ -6336,7 +6354,7 @@ func TestValidateUser(t *testing.T) {
 			},
 			expectedErr: []error{
 				&errortypes.Warning{
-					Message:     "request.user.eids[0] (source: source) contains only empty uids and is removed from the request",
+					Message:     "request.user.eids[0] (source: source) removed due to empty uids",
 					WarningCode: errortypes.InvalidUserEIDsWarningCode,
 				},
 			},
@@ -6345,7 +6363,7 @@ func TestValidateUser(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		t.Run(test.description, func(t *testing.T) {
+		t.Run(test.name, func(t *testing.T) {
 			deps := &endpointDeps{
 				bidderMap: map[string]openrtb_ext.BidderName{
 					"appnexus": "appnexus",

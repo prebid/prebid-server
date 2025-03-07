@@ -37,5 +37,12 @@
     }
   },
   "expectedReturnCode": 200,
-  "expectedErrorMessage": "request.user.eids[0] missing required field: source"
+  "expectedBidResponse": {
+    "ext": {
+      "warnings": {
+        "source": "prebid-server",
+        "message": "request.user.eids[0] missing required field: source"
+      }
+    }
+  }
 }
