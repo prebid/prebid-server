@@ -1,4 +1,4 @@
-endpoint: "https://adserver.maximus.mobkoi.com/bid"
+endpoint: "https://pbs.maximus.mobkoi.com/bid"
 maintainer:
   email: platformteam@mobkoi.com
 gvlVendorID: 898

@@ -3,7 +3,6 @@ package mobkoi
 import (
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
@@ -48,7 +47,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		uri = ext.Bidder.AdServerBaseUrl + "/bid"
 	}
 
-	if request.User.Consent != "" {
+	if request.User != nil && request.User.Consent != "" {
 		user := *request.User
 		userExt, err := jsonutil.Marshal(UserExt{
 			Consent: user.Consent,
@@ -112,21 +111,6 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 			// Shadow to avoid loop var issue with Go < 1.22
 			bid := bid
 
-			macros := map[string]string{
-				"${AUCTION_PRICE}":        fmt.Sprintf("%.2f", bid.Price),
-				"${AUCTION_IMP_ID}":       bid.ImpID,
-				"${AUCTION_CURRENCY}":     response.Cur,
-				"${AUCTION_BID_ID}":       bid.ID,
-				"${BIDDING_API_BASE_URL}": strings.TrimSuffix(requestData.Uri, "/bid"),
-				"${CREATIVE_ID}":          bid.CrID,
-				"${CAMPAIGN_ID}":          bid.CID,
-				"${ORTB_ID}":              bid.ID,
-			}
-
-			bid.AdM = replaceMacros(bid.AdM, macros)
-			bid.NURL = replaceMacros(bid.NURL, macros)
-			bid.LURL = replaceMacros(bid.LURL, macros)
-
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &bid,
 				BidType: openrtb_ext.BidTypeBanner,
@@ -136,14 +120,4 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		}
 	}
 	return bidResponse, nil
-}
-
-func replaceMacros(input string, macros map[string]string) string {
-	var pairs []string
-	for key, value := range macros {
-		pairs = append(pairs, key, value)
-	}
-
-	replacer := strings.NewReplacer(pairs...)
-	return replacer.Replace(input)
 }

@@ -96,22 +96,7 @@
           "id": "awesome-resp-id",
           "seatbid": [
             {
-              "bid": [
-                {
-                  "id": "a3ae1b4e2fc24a4fb45540082e98e161",
-                  "impid": "some-impression-id1",
-                  "price": 3.5,
-                  "adm": "awesome-markup",
-                  "adomain": [
-                    "awesome.com"
-                  ],
-                  "crid": "20",
-                  "w": 320,
-                  "h": 50,
-                  "lurl": "mobkoi/loss",
-                  "nurl": "mobkoi/win"
-                }
-              ],
+              "bid": {},
               "type": "banner",
               "seat": "mobkoi"
             }
@@ -121,28 +106,11 @@
       }
     }
   ],
-  "expectedBidResponses": [
+  "expectedBidResponses": [],
+  "expectedMakeBidsErrors": [
     {
-      "bids": [
-        {
-          "bid": {
-            "id": "a3ae1b4e2fc24a4fb45540082e98e161",
-            "impid": "some-impression-id1",
-            "price": 3.5,
-            "adm": "awesome-markup",
-            "crid": "20",
-            "adomain": [
-              "awesome.com"
-            ],
-            "w": 320,
-            "h": 50,
-            "lurl": "mobkoi/loss",
-            "nurl": "mobkoi/win"
-          },
-          "type": "banner",
-          "seat": "mobkoi"
-        }
-      ]
+      "value": "cannot unmarshal .*",
+      "comparison": "regex"
     }
   ]
 }
