@@ -10,7 +10,7 @@
     },
     "adServerBaseUrl": {
       "type": "string",
-      "description": "Mobkoi's ad server url, optional"
+      "description": "Mobkoi's ad server url"
     }
   },
   "required": [
