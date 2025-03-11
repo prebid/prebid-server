@@ -72,22 +72,23 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest, imps []openrtb2.Imp)
 		return nil, err
 	}
 
+	companyId := ext.CompanyId
 	if request.Test == 1 {
-		ext.CompanyId = "test"
+		companyId = "test"
 	}
 
 	return &adapters.RequestData{
 		Method:  http.MethodPost,
-		Uri:     a.getEndpointURL(ext),
+		Uri:     a.getEndpointURL(companyId),
 		Body:    body,
 		Headers: getHeaders(request),
 		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}, nil
 }
 
-func (a *adapter) getEndpointURL(ext *openrtb_ext.ExtImpMadSense) string {
+func (a *adapter) getEndpointURL(companyId string) string {
 	params := url.Values{}
-	params.Add("company_id", ext.CompanyId)
+	params.Add("company_id", companyId)
 	return a.endpoint + "?" + params.Encode()
 }
 
