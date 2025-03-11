@@ -23,7 +23,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "Invalid imp.ext.bidder for impression index 0. Error Infomation: Missing publisherId",
+      "value": "Invalid imp.ext.bidder for impression index 0. Error Information: Missing publisherId",
       "comparison": "literal"
     }
   ]
