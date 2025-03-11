@@ -21,7 +21,7 @@ jobs:
   check-permission:
     name: Check permission
     if: contains(github.ref, 'refs/heads/master')
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
@@ -49,7 +49,7 @@ jobs:
     name: Build master
     needs: check-permission
     if: contains(needs.check-permission.outputs.hasWritePermission, 'true')
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -66,7 +66,7 @@ jobs:
     needs: build-master
     permissions:
       contents: write
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Prebid Server
         uses: actions/checkout@v4
@@ -119,7 +119,7 @@ jobs:
     name: Publish docker image
     needs: publish-tag
     if: contains(inputs.debug, 'false')
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Prebid Server
         uses: actions/checkout@v4
@@ -144,7 +144,7 @@ jobs:
     if: contains(inputs.debug, 'false')
     permissions:
       contents: write
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Prebid Server
         uses: actions/checkout@v3
