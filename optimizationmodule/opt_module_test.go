@@ -24,3 +24,7 @@ func TestExecuteRules(t *testing.T) {
 	assert.Equal(t, "127.0.0.1", rw.Device.IP)
 	assert.NoError(t, err, "unexpected error")
 }
+
+func TestBuildRulesTree(t *testing.T) {
+	BuildRulesTree(GetConf())
+}

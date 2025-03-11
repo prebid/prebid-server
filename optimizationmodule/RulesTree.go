@@ -24,8 +24,8 @@ func Build(config json.RawMessage) Rules {
 		Root: &Node{
 			Function: NewDeviceCountry([]string{"USA"}),
 			Children: map[string]*Node{
-				"yes": &Node{Function: NewSetDevIp([]string{"127.0.0.1"})}, //can have children
-				"no":  &Node{Function: NewSetDevIp([]string{"127.0.0.2"})}, // can have children
+				"yes": &Node{Function: NewSetDevIp(json.RawMessage(`127.0.0.1`))}, //can have children
+				"no":  &Node{Function: NewSetDevIp(json.RawMessage(`127.0.0.2`))}, // can have children
 			},
 		},
 	}
