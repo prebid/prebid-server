@@ -16,6 +16,16 @@ type adapter struct {
 	endpoint string
 }
 
+func Builder(
+	bidderName openrtb_ext.BidderName,
+	config config.Adapter,
+	server config.Server,
+) (adapters.Bidder, error) {
+	return &adapter{
+		endpoint: config.Endpoint,
+	}, nil
+}
+
 func (a *adapter) MakeRequests(
 	request *openrtb2.BidRequest,
 	reqInfo *adapters.ExtraRequestInfo,
@@ -23,7 +33,6 @@ func (a *adapter) MakeRequests(
 	var errs []error
 
 	adjustedReq, err := adjustRequest(request)
-
 	if err != nil {
 		errs = append(errs, err)
 		return nil, errs
@@ -90,16 +99,6 @@ func (a *adapter) MakeBids(
 	return bidderResponse, errs
 }
 
-func Builder(
-	bidderName openrtb_ext.BidderName,
-	config config.Adapter,
-	server config.Server,
-) (adapters.Bidder, error) {
-	return &adapter{
-		endpoint: config.Endpoint,
-	}, nil
-}
-
 // getMediaTypeForBid determines which type of bid.
 func getMediaTypeForBid(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 	switch bid.MType {
@@ -122,27 +121,27 @@ func adjustRequest(
 
 		var bidderExt adapters.ExtImpBidder
 		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-			return request, &errortypes.BadInput{
-				Message: fmt.Sprintf("Invalid imp.ext for impression index %d. Error Infomation: %s", i, err.Error()),
+			return nil, &errortypes.BadInput{
+				Message: fmt.Sprintf("Invalid imp.ext for impression index %d. Error Information: %s", i, err.Error()),
 			}
 		}
 
 		var impExt openrtb_ext.ImpExtExco
 		if err := json.Unmarshal(bidderExt.Bidder, &impExt); err != nil {
-			return request, &errortypes.BadInput{
-				Message: fmt.Sprintf("Invalid imp.ext.bidder for impression index %d. Error Infomation: %s", i, err.Error()),
+			return nil, &errortypes.BadInput{
+				Message: fmt.Sprintf("Invalid imp.ext.bidder for impression index %d. Error Information: %s", i, err.Error()),
 			}
 		}
 
 		if impExt.PublisherId == "" {
-			return request, &errortypes.BadInput{
-				Message: fmt.Sprintf("Invalid imp.ext.bidder for impression index %d. Error Infomation: %s", i, "Missing publisherId"),
+			return nil, &errortypes.BadInput{
+				Message: fmt.Sprintf("Invalid imp.ext.bidder for impression index %d. Error Information: %s", i, "Missing publisherId"),
 			}
 		}
 
 		if impExt.TagId == "" {
-			return request, &errortypes.BadInput{
-				Message: fmt.Sprintf("Invalid imp.ext.bidder for impression index %d. Error Infomation: %s", i, "Missing tagId"),
+			return nil, &errortypes.BadInput{
+				Message: fmt.Sprintf("Invalid imp.ext.bidder for impression index %d. Error Information: %s", i, "Missing tagId"),
 			}
 		}
 
