@@ -26,9 +26,7 @@
           ]
         },
         "ext": {
-          "bidder": {
-            "sid": 11
-          }
+          "bidder": {}
         }
       }
     ],
@@ -46,7 +44,7 @@
             "application/json;charset=utf-8"
           ]
         },
-        "uri": "https://ssp.disqus.com/bid/prebid-server?sid=11",
+        "uri": "https://ssp.disqus.com/bid/prebid-server?sid=0",
         "body": {
           "id": "some-request-id",
           "imp": [
@@ -98,7 +96,12 @@
                   "cid": "1234",
                   "crid": "2345",
                   "h": 1,
-                  "w": 1
+                  "w": 1,
+                  "ext": {
+                    "prebid": {
+                      "type": "banner"
+                    }
+                  }
                 }
               ],
               "seat": "zeta_global_ssp"
@@ -110,11 +113,32 @@
       }
     }
   ],
-  "expectedBidResponses": [{"currency":"USD","bids":[]}],
-  "expectedMakeBidsErrors": [
+  "expectedBidResponses": [
     {
-      "value": "Failed to parse impression \"some-impression-id\" mediatype",
-      "comparison": "literal"
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "1",
+            "impid": "some-impression-id",
+            "price": 1.234,
+            "adm": "<script type=\"text/javascript\" src=\"http://some-url\"></script>",
+            "adomain": [
+              "some-adomain"
+            ],
+            "cid": "1234",
+            "crid": "2345",
+            "h": 1,
+            "w": 1,
+            "ext": {
+              "prebid": {
+                "type": "banner"
+              }
+            }
+          },
+          "type": "banner"
+        }
+      ]
     }
   ]
 }
