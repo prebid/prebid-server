@@ -122,11 +122,13 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		bidResponse.Currency = response.Cur
 	}
 
+	var errors []error
 	for _, seatBid := range response.SeatBid {
 		for i := range seatBid.Bid {
 			bidMediaType, err := getMediaTypeForBid(seatBid.Bid[i].ImpID, request.Imp)
 			if err != nil {
-				return nil, []error{err}
+				errors = append(errors, err)
+				continue
 			}
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &seatBid.Bid[i],
@@ -134,7 +136,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 			})
 		}
 	}
-	return bidResponse, nil
+	return bidResponse, errors
 }
 
 func getMediaTypeForBid(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
