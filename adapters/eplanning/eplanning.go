@@ -196,7 +196,11 @@ func (adapter *EPlanningAdapter) MakeRequests(request *openrtb2.BidRequest, reqI
 		query.Set("vv", vastVersionDefault)
 	}
 	if request.Source != nil && request.Source.Ext != nil {
-		setSchain(request.Source.Ext, &query)
+		err := setSchain(request.Source.Ext, &query)
+		if err != nil {
+			errors = append(errors, err)
+			return nil, errors
+		}
 	}
 
 	uriObj.RawQuery = query.Encode()
@@ -215,28 +219,39 @@ func (adapter *EPlanningAdapter) MakeRequests(request *openrtb2.BidRequest, reqI
 	return requests, errors
 }
 
-func setSchain(ext json.RawMessage, query *url.Values) {
-	openRtbSchain := unmarshalSupplyChain(ext)
-	if openRtbSchain == nil || len(openRtbSchain.Nodes) > 2 {
-		return
+func setSchain(ext json.RawMessage, query *url.Values) error {
+	openRtbSchain, err := unmarshalSupplyChain(ext)
+	if err != nil {
+		return err
 	}
-	if schainValue := makeSupplyChain(*openRtbSchain); schainValue != "" {
+	if openRtbSchain == nil || len(openRtbSchain.Nodes) > 2 {
+		return nil
+	}
+
+	schainValue, err := makeSupplyChain(*openRtbSchain)
+	if err != nil {
+		return err
+	}
+
+	if schainValue != "" {
 		query.Set("sch", schainValue)
 	}
+
+	return nil
 }
 
-func unmarshalSupplyChain(ext json.RawMessage) *openrtb2.SupplyChain {
+func unmarshalSupplyChain(ext json.RawMessage) (*openrtb2.SupplyChain, error) {
 	var extSChain openrtb_ext.ExtRequestPrebidSChain
 	err := jsonutil.Unmarshal(ext, &extSChain)
 	if err != nil {
-		return nil
+		return nil, err
 	}
-	return &extSChain.SChain
+	return &extSChain.SChain, nil
 }
 
-func makeSupplyChain(openRtbSchain openrtb2.SupplyChain) string {
+func makeSupplyChain(openRtbSchain openrtb2.SupplyChain) (string, error) {
 	if len(openRtbSchain.Nodes) == 0 {
-		return ""
+		return "", nil
 	}
 
 	const schainPrefixFmt = "%s,%d"
@@ -245,45 +260,57 @@ func makeSupplyChain(openRtbSchain openrtb2.SupplyChain) string {
 	var sb strings.Builder
 	sb.WriteString(schainPrefix)
 	for _, node := range openRtbSchain.Nodes {
-		// has to be in order: asi,sid,hp,rid,name,domain,ext
-		schainNode := fmt.Sprintf(
-			schainNodeFmt,
-			makeNodeValue(node.ASI),
-			makeNodeValue(node.SID),
-			makeNodeValue(node.HP),
-			makeNodeValue(node.RID),
-			makeNodeValue(node.Name),
-			makeNodeValue(node.Domain),
-			makeNodeValue(node.Ext),
-		)
+		nodeValues := []any{
+			node.ASI, node.SID, node.HP, node.RID, node.Name, node.Domain, node.Ext,
+		}
+		formattedValues, err := formatNodeValues(nodeValues)
+		if err != nil {
+			return "", err
+		}
+
+		schainNode := fmt.Sprintf(schainNodeFmt, formattedValues...)
 		sb.WriteString(schainNode)
 	}
-	return sb.String()
+
+	return sb.String(), nil
 }
 
-func makeNodeValue(nodeParam any) string {
+func formatNodeValues(nodeValues []any) ([]any, error) {
+	var formattedValues []any
+	for _, value := range nodeValues {
+		formattedValue, err := makeNodeValue(value)
+		if err != nil {
+			return nil, err
+		}
+		formattedValues = append(formattedValues, formattedValue)
+	}
+	return formattedValues, nil
+}
+
+func makeNodeValue(nodeParam any) (string, error) {
 	switch nodeParam := nodeParam.(type) {
 	case string:
-		return url.QueryEscape(nodeParam)
+		// url.QueryEscape() follows the application/x-www-form-urlencoded convention, which encodes spaces as + and RFC 3986 encodes as %20
+		return strings.ReplaceAll(url.QueryEscape(nodeParam), "+", "%20"), nil
 	case *int8:
 		pointer := nodeParam
 		if pointer == nil {
-			return ""
+			return "", nil
 		}
 		return makeNodeValue(int(*pointer))
 	case int:
-		return strconv.Itoa(nodeParam)
+		return strconv.Itoa(nodeParam), nil
 	case json.RawMessage:
 		if nodeParam != nil {
 			freeFormJson, err := json.Marshal(nodeParam)
 			if err != nil {
-				return ""
+				return "", err
 			}
 			return makeNodeValue(string(freeFormJson))
 		}
-		return ""
+		return "", nil
 	default:
-		return ""
+		return "", nil
 	}
 }
 
