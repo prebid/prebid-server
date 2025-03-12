@@ -24,7 +24,7 @@
 
   "expectedMakeRequestsErrors": [
     {
-      "value": "cannot unmarshal openrtb_ext.ExtImpImds.SeatId: expects \" or n, but found 1",
+      "value": "cannot unmarshal openrtb_ext.ExtImpAdvertising.SeatId: expects \" or n, but found 1",
       "comparison": "literal"
     }
   ]

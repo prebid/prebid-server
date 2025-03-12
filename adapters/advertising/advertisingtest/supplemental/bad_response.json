@@ -29,7 +29,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://pbs.technoratimedia.com/openrtb/bids/prebid?src=pbs-go%2F1.0.0&adapter=imds",
+        "uri": "http://pbs.technoratimedia.com/openrtb/bids/prebid?src=pbs-go%2F1.0.0&adapter=advertising",
         "body": {
           "id": "test-request-id",
           "ext": {
@@ -57,15 +57,15 @@
         "impIDs":["test-imp-id"]
       },
       "mockResponse": {
-        "status": 400,
-        "body": {}
+        "status": 200,
+        "body": "{\"id\"data.lost"
       }
     }
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "Unexpected status code: 400. Run with request.debug = 1 for more info",
-      "comparison": "literal"
+      "comparison": "literal",
+      "value": "expect { or n, but found \""
     }
   ]
 }
