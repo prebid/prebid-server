@@ -39,20 +39,18 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		}
 	}
 
-	var videoImps, bannerImps []openrtb2.Imp
-	for _, imp := range request.Imp {
+	var videoImps []openrtb2.Imp
+	for i := range request.Imp {
+		imp := &request.Imp[i]
 		if imp.Banner != nil {
-			bannerImps = append(bannerImps, imp)
+			appendReq(request.Imp[i : i+1])
 		} else if imp.Video != nil {
-			videoImps = append(videoImps, imp)
+			videoImps = append(videoImps, request.Imp[i])
 		}
 	}
 
 	// we support video podding, so we want to send all video impressions in a single request
 	appendReq(videoImps)
-	for _, bannerImp := range bannerImps {
-		appendReq([]openrtb2.Imp{bannerImp})
-	}
 
 	return reqs, errs
 }
@@ -110,9 +108,10 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 
 	var bidErrors []error
 	bidderResponse := adapters.NewBidderResponseWithBidsCapacity(1)
-	for _, seatBid := range resp.SeatBid {
-		for i := range seatBid.Bid {
-			bid := &seatBid.Bid[i]
+	for i := range resp.SeatBid {
+		seatBid := &resp.SeatBid[i]
+		for j := range seatBid.Bid {
+			bid := &seatBid.Bid[j]
 			typedBid, err := getTypedBidFromBid(bid)
 			if err != nil {
 				bidErrors = append(bidErrors, err)

@@ -33,27 +33,27 @@ func parseImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpMadSense, error) {
 
 func getHeaders(request *openrtb2.BidRequest) http.Header {
 	headers := http.Header{}
-	headers.Add("Content-Type", "application/json;charset=utf-8")
-	headers.Add("Accept", "application/json")
-	headers.Add("X-Openrtb-Version", "2.6")
+	headers.Set("Content-Type", "application/json;charset=utf-8")
+	headers.Set("Accept", "application/json")
+	headers.Set("X-Openrtb-Version", "2.6")
 
 	if request.Device != nil {
 		if len(request.Device.UA) > 0 {
-			headers.Add("User-Agent", request.Device.UA)
+			headers.Set("User-Agent", request.Device.UA)
 		}
 
 		if len(request.Device.IP) > 0 {
-			headers.Add("X-Forwarded-For", request.Device.IP)
+			headers.Set("X-Forwarded-For", request.Device.IP)
 		}
 
 		if len(request.Device.IPv6) > 0 {
-			headers.Add("X-Forwarded-For", request.Device.IPv6)
+			headers.Set("X-Forwarded-For", request.Device.IPv6)
 		}
 	}
 
 	if request.Site != nil {
 		if request.Site.Domain != "" {
-			headers.Add("Origin", request.Site.Domain)
+			headers.Set("Origin", request.Site.Domain)
 		}
 		if request.Site.Ref != "" {
 			headers.Set("Referer", request.Site.Ref)
