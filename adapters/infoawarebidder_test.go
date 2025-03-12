@@ -253,7 +253,10 @@ func TestImpFilteringForMultiFormatRequests(t *testing.T) {
 			inExtraRequestInfo: &ExtraRequestInfo{
 				PreferredMediaType: openrtb_ext.BidTypeBanner,
 			},
-			expectedErrors: nil,
+			expectedErrors: []error{
+				&errortypes.Warning{Message: "Imp imp-1 uses video, removing video as the bidder doesn't support multi-format"},
+				&errortypes.Warning{Message: "Imp imp-2 uses native, removing native as the bidder doesn't support multi-format"},
+			},
 			expectedImpLen: 2,
 		},
 		{
@@ -282,8 +285,9 @@ func TestImpFilteringForMultiFormatRequests(t *testing.T) {
 				PreferredMediaType: openrtb_ext.BidTypeBanner,
 			},
 			expectedErrors: []error{
-				&errortypes.BadInput{Message: "Imp imp-2 does not have a valid BANNER media type."},
-				&errortypes.BadInput{Message: "Imp imp-3 does not have a valid BANNER media type."},
+				&errortypes.Warning{Message: "Imp imp-1 uses video, removing video as the bidder doesn't support multi-format"},
+				&errortypes.BadInput{Message: "Imp imp-2 does not have a preferred BANNER media type. It will be ignored."},
+				&errortypes.BadInput{Message: "Imp imp-3 does not have a preferred BANNER media type. It will be ignored."},
 			},
 			expectedImpLen: 1,
 		},
@@ -308,9 +312,29 @@ func TestImpFilteringForMultiFormatRequests(t *testing.T) {
 				PreferredMediaType: openrtb_ext.BidTypeAudio,
 			},
 			expectedErrors: []error{
-				&errortypes.BadInput{Message: "Imp imp-1 does not have a valid AUDIO media type."},
-				&errortypes.BadInput{Message: "Imp imp-2 does not have a valid AUDIO media type."},
+				&errortypes.BadInput{Message: "Imp imp-1 does not have a preferred AUDIO media type. It will be ignored."},
+				&errortypes.BadInput{Message: "Imp imp-2 does not have a preferred AUDIO media type. It will be ignored."},
 				&errortypes.BadInput{Message: "Bid request didn't contain media types supported by the bidder"},
+			},
+			expectedImpLen: 0,
+		},
+		{
+			description: "preferred media type not defined, MakeRequest() call not expected",
+			inBidRequest: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{
+						ID:     "imp-1",
+						Banner: &openrtb2.Banner{},
+						Video:  &openrtb2.Video{},
+					},
+				},
+				Site: &openrtb2.Site{},
+			},
+			inExtraRequestInfo: &ExtraRequestInfo{
+				PreferredMediaType: "",
+			},
+			expectedErrors: []error{
+				&errortypes.BadInput{Message: "Removing the imp imp-1 as the bidder does not support multi-format and preferred media type is not defined for the bidder"},
 			},
 			expectedImpLen: 0,
 		},
@@ -332,7 +356,7 @@ func TestAdjustImpForPreferredMediaType(t *testing.T) {
 		inImp              openrtb2.Imp
 		preferredMediaType openrtb_ext.BidType
 		expectedImp        openrtb2.Imp
-		expectedError      error
+		expectedErrors     []error
 	}{
 		{
 			description: "Multiformat impression with all media types and preferred media type Banner",
@@ -348,7 +372,11 @@ func TestAdjustImpForPreferredMediaType(t *testing.T) {
 				ID:     "imp-1",
 				Banner: &openrtb2.Banner{},
 			},
-			expectedError: nil,
+			expectedErrors: []error{
+				&errortypes.Warning{Message: "Imp imp-1 uses video, removing video as the bidder doesn't support multi-format"},
+				&errortypes.Warning{Message: "Imp imp-1 uses audio, removing audio as the bidder doesn't support multi-format"},
+				&errortypes.Warning{Message: "Imp imp-1 uses native, removing native as the bidder doesn't support multi-format"},
+			},
 		},
 		{
 			description: "Multiformat impression with all media types and preferred media type Video",
@@ -364,7 +392,11 @@ func TestAdjustImpForPreferredMediaType(t *testing.T) {
 				ID:    "imp-1",
 				Video: &openrtb2.Video{},
 			},
-			expectedError: nil,
+			expectedErrors: []error{
+				&errortypes.Warning{Message: "Imp imp-1 uses banner, removing banner as the bidder doesn't support multi-format"},
+				&errortypes.Warning{Message: "Imp imp-1 uses audio, removing audio as the bidder doesn't support multi-format"},
+				&errortypes.Warning{Message: "Imp imp-1 uses native, removing native as the bidder doesn't support multi-format"},
+			},
 		},
 		{
 			description: "Multiformat impression with all media types and preferred media type Audio",
@@ -380,7 +412,11 @@ func TestAdjustImpForPreferredMediaType(t *testing.T) {
 				ID:    "imp-1",
 				Audio: &openrtb2.Audio{},
 			},
-			expectedError: nil,
+			expectedErrors: []error{
+				&errortypes.Warning{Message: "Imp imp-1 uses banner, removing banner as the bidder doesn't support multi-format"},
+				&errortypes.Warning{Message: "Imp imp-1 uses video, removing video as the bidder doesn't support multi-format"},
+				&errortypes.Warning{Message: "Imp imp-1 uses native, removing native as the bidder doesn't support multi-format"},
+			},
 		},
 		{
 			description: "Multiformat impression with all media types and preferred media type Native",
@@ -396,7 +432,11 @@ func TestAdjustImpForPreferredMediaType(t *testing.T) {
 				ID:     "imp-1",
 				Native: &openrtb2.Native{},
 			},
-			expectedError: nil,
+			expectedErrors: []error{
+				&errortypes.Warning{Message: "Imp imp-1 uses banner, removing banner as the bidder doesn't support multi-format"},
+				&errortypes.Warning{Message: "Imp imp-1 uses video, removing video as the bidder doesn't support multi-format"},
+				&errortypes.Warning{Message: "Imp imp-1 uses audio, removing audio as the bidder doesn't support multi-format"},
+			},
 		},
 		{
 			description: "Invalid Banner media type",
@@ -406,7 +446,9 @@ func TestAdjustImpForPreferredMediaType(t *testing.T) {
 			},
 			preferredMediaType: openrtb_ext.BidTypeBanner,
 			expectedImp:        openrtb2.Imp{},
-			expectedError:      &errortypes.BadInput{Message: "Imp imp-1 does not have a valid BANNER media type."},
+			expectedErrors: []error{
+				&errortypes.BadInput{Message: "Imp imp-1 does not have a preferred BANNER media type. It will be ignored."},
+			},
 		},
 		{
 			description: "Invalid Video media type",
@@ -416,7 +458,9 @@ func TestAdjustImpForPreferredMediaType(t *testing.T) {
 			},
 			preferredMediaType: openrtb_ext.BidTypeVideo,
 			expectedImp:        openrtb2.Imp{},
-			expectedError:      &errortypes.BadInput{Message: "Imp imp-1 does not have a valid VIDEO media type."},
+			expectedErrors: []error{
+				&errortypes.BadInput{Message: "Imp imp-1 does not have a preferred VIDEO media type. It will be ignored."},
+			},
 		},
 		{
 			description: "Invalid Audio media type",
@@ -426,7 +470,9 @@ func TestAdjustImpForPreferredMediaType(t *testing.T) {
 			},
 			preferredMediaType: openrtb_ext.BidTypeAudio,
 			expectedImp:        openrtb2.Imp{},
-			expectedError:      &errortypes.BadInput{Message: "Imp imp-1 does not have a valid AUDIO media type."},
+			expectedErrors: []error{
+				&errortypes.BadInput{Message: "Imp imp-1 does not have a preferred AUDIO media type. It will be ignored."},
+			},
 		},
 		{
 			description: "Invalid Native media type",
@@ -436,7 +482,9 @@ func TestAdjustImpForPreferredMediaType(t *testing.T) {
 			},
 			preferredMediaType: openrtb_ext.BidTypeNative,
 			expectedImp:        openrtb2.Imp{},
-			expectedError:      &errortypes.BadInput{Message: "Imp imp-1 does not have a valid NATIVE media type."},
+			expectedErrors: []error{
+				&errortypes.BadInput{Message: "Imp imp-1 does not have a preferred NATIVE media type. It will be ignored."},
+			},
 		},
 		{
 			description: "Invalid preferred media type",
@@ -446,16 +494,19 @@ func TestAdjustImpForPreferredMediaType(t *testing.T) {
 			},
 			preferredMediaType: "invalid",
 			expectedImp:        openrtb2.Imp{},
-			expectedError:      &errortypes.BadInput{Message: "Imp imp-1 has an invalid preferred media type: invalid."},
+			expectedErrors: []error{
+				&errortypes.BadInput{Message: "Imp imp-1 has an invalid preferred media type: invalid. It will be ignored."},
+			},
 		},
 	}
 
 	for _, test := range testCases {
-		err := AdjustImpForPreferredMediaType(&test.inImp, test.preferredMediaType)
-		if test.expectedError != nil {
-			assert.EqualError(t, err, test.expectedError.Error(), test.description)
+		_, actualErrs := AdjustImpForPreferredMediaType(&test.inImp, test.preferredMediaType)
+		if test.expectedErrors != nil {
+			for i, expectedErr := range test.expectedErrors {
+				assert.EqualError(t, expectedErr, actualErrs[i].Error(), "Test failed. Error[%d] in error list mismatch: %s", i, test.description)
+			}
 		} else {
-			assert.NoError(t, err, test.description)
 			assert.Equal(t, test.expectedImp, test.inImp, test.description)
 		}
 	}
@@ -633,7 +684,9 @@ func TestPruneImps(t *testing.T) {
 			preferredMediaType: openrtb_ext.BidTypeBanner,
 			expectedUpdated:    false,
 			expectedImps:       []openrtb2.Imp{{ID: "imp-1", Banner: &openrtb2.Banner{}}},
-			expectedErrors:     nil,
+			expectedErrors: []error{
+				&errortypes.Warning{Message: "Imp imp-1 uses video, removing video as the bidder doesn't support multi-format"},
+			},
 		},
 		{
 			description: "Filter out unsupported multiformat, preferred media type is video",
@@ -648,7 +701,9 @@ func TestPruneImps(t *testing.T) {
 			preferredMediaType: openrtb_ext.BidTypeVideo,
 			expectedUpdated:    false,
 			expectedImps:       []openrtb2.Imp{{ID: "imp-1", Video: &openrtb2.Video{}}},
-			expectedErrors:     nil,
+			expectedErrors: []error{
+				&errortypes.Warning{Message: "Imp imp-1 uses banner, removing banner as the bidder doesn't support multi-format"},
+			},
 		},
 		{
 			description: "Filter out unsupported multiformat, preferred media type is video and not present in any imp",
@@ -665,7 +720,7 @@ func TestPruneImps(t *testing.T) {
 			expectedUpdated:    true,
 			expectedImps:       []openrtb2.Imp{},
 			expectedErrors: []error{
-				&errortypes.BadInput{Message: "Imp imp-1 does not have a valid VIDEO media type."},
+				&errortypes.BadInput{Message: "Imp imp-1 does not have a preferred VIDEO media type. It will be ignored."},
 			},
 		},
 		{
@@ -684,7 +739,8 @@ func TestPruneImps(t *testing.T) {
 			expectedUpdated:    true,
 			expectedImps:       []openrtb2.Imp{{ID: "imp-1", Video: &openrtb2.Video{}}},
 			expectedErrors: []error{
-				&errortypes.BadInput{Message: "Imp imp-2 does not have a valid VIDEO media type."},
+				&errortypes.Warning{Message: "Imp imp-1 uses banner, removing banner as the bidder doesn't support multi-format"},
+				&errortypes.BadInput{Message: "Imp imp-2 does not have a preferred VIDEO media type. It will be ignored."},
 			},
 		},
 		{
@@ -703,6 +759,7 @@ func TestPruneImps(t *testing.T) {
 			expectedImps:       []openrtb2.Imp{{ID: "imp-1", Video: &openrtb2.Video{}}},
 			expectedErrors: []error{
 				&errortypes.Warning{Message: "request.imp[0] uses native, but this bidder doesn't support it"},
+				&errortypes.Warning{Message: "Imp imp-1 uses banner, removing banner as the bidder doesn't support multi-format"},
 			},
 		},
 	}
