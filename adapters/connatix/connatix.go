@@ -168,17 +168,13 @@ func splitRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, uri string
 			if len(userID) > 0 {
 				queryParams := url.Values{}
 
-				if strings.HasPrefix(userID, "1-") {
-					queryParams.Add("dc", "us-east-2")
-				}
-
-				if strings.HasPrefix(userID, "2-") {
-					queryParams.Add("dc", "us-west-2")
-				}
-
-				if strings.HasPrefix(userID, "3-") {
-					queryParams.Add("dc", "eu-west-1")
-				}
+                if strings.HasPrefix(userID, "1-") {
+                    queryParams.Add("dc", "us-east-2")
+                } else if strings.HasPrefix(userID, "2-") {
+                    queryParams.Add("dc", "us-west-2")
+                } else if strings.HasPrefix(userID, "3-") {
+                    queryParams.Add("dc", "eu-west-1")
+                }
 
 				endpoint.RawQuery = queryParams.Encode()
 			}
