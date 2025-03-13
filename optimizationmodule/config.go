@@ -9,7 +9,7 @@ func GetConf() json.RawMessage {
     "schema": [
     {
       "function": "deviceCountry",
-      "args": ["JPN"]
+      "args": ["USA"]
     },
     {
       "function": "dataCenters",
@@ -24,7 +24,7 @@ func GetConf() json.RawMessage {
       "conditions": ["true", "true", "amp"],
       "results": [
         {
-          "function": "excludeBidders",
+          "function": "setDeviceIP",
           "args": [
             {
               "bidders": ["bidderA"]

@@ -1,8 +1,6 @@
 package optimizationmodule
 
 import (
-	"encoding/json"
-	"fmt"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
@@ -16,25 +14,8 @@ type Node struct {
 	Children map[string]*Node
 }
 
-func Build(config json.RawMessage) Rules {
-	//parse config json
-
-	//stub for prototype
-	rules := Rules{
-		Root: &Node{
-			Function: NewDeviceCountry([]string{"USA"}),
-			Children: map[string]*Node{
-				"yes": &Node{Function: NewSetDevIp(json.RawMessage(`127.0.0.1`))}, //can have children
-				"no":  &Node{Function: NewSetDevIp(json.RawMessage(`127.0.0.2`))}, // can have children
-			},
-		},
-	}
-	return rules
-}
-
 func (r *Rules) Execute(rw *openrtb_ext.RequestWrapper) error {
-	res, err := r.Root.ProcessNode(rw)
-	fmt.Println(res)
+	_, err := r.Root.ProcessNode(rw)
 	return err
 }
 
@@ -48,4 +29,23 @@ func (n *Node) ProcessNode(rw *openrtb_ext.RequestWrapper) (string, error) {
 		return res, err
 	}
 	return next.ProcessNode(rw)
+}
+
+func ExecuteFlat(r *Rules, rw *openrtb_ext.RequestWrapper) (string, error) {
+	currNode := r.Root
+
+	for len(currNode.Children) > 0 {
+		// schema function
+		res, _ := currNode.Function.Call(rw)
+
+		next := currNode.Children[res]
+
+		if next != nil {
+			currNode = next
+		}
+	}
+	// result function, should be a list of func
+	res, err := currNode.Function.Call(rw)
+	return res, err
+
 }

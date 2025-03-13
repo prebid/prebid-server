@@ -24,9 +24,9 @@ func (dc *DeviceCountry) Call(wrapper *openrtb_ext.RequestWrapper) (string, erro
 	contains := slices.Contains(dc.countryCodes, wrapper.Device.Geo.Country)
 	//convert result to string
 	if contains {
-		return "yes", nil
+		return "true", nil
 	}
-	return "no", nil
+	return "false", nil
 }
 
 type Datacenters struct {
@@ -56,8 +56,9 @@ func NewChannel() Function {
 }
 
 func (c *Channel) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
-	reqExt, err := wrapper.GetRequestExt()
-	return reqExt.GetPrebid().Channel.Name, err //channel.Name?
+	//reqExt, err := wrapper.GetRequestExt()
+	//return reqExt.GetPrebid().Channel.Name, err //channel.Name?
+	return wrapper.Device.Geo.City, nil
 }
 
 // ----------result functions---------
