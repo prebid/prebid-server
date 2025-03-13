@@ -45,7 +45,7 @@ require (
 	golang.org/x/net v0.33.0
 	golang.org/x/text v0.21.0
 	google.golang.org/grpc v1.56.3
-	gopkg.in/evanphx/json-patch.v4 v4.12.0
+	gopkg.in/evanphx/json-patch.v5 v5.9.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
