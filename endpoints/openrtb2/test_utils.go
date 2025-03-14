@@ -41,7 +41,7 @@ import (
 	"github.com/prebid/prebid-server/v3/util/iputil"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"github.com/prebid/prebid-server/v3/util/uuidutil"
-	jsonpatch "gopkg.in/evanphx/json-patch.v4"
+	jsonpatch "gopkg.in/evanphx/json-patch.v5"
 )
 
 // In this file we define:
