@@ -197,7 +197,13 @@
                                 }
                             }
                         }
-                    ]
+                    ],
+                    "ext": {
+                        "ixdiag": {
+                            "pbsp": "go",
+                            "pbsv": "unknown"
+                        }
+                    }
                 },
                 "impIDs":["test-imp-id-1","test-imp-id-2","test-imp-id-3","test-imp-id-4","test-imp-id-5"]
             },
