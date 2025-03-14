@@ -1,50 +1,46 @@
 package pixfuture
 
 import (
-	"fmt"
+	"encoding/json"
 	"testing"
 
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/stretchr/testify/assert"
 )
 
-func TestPixfutureParams(t *testing.T) {
-	testCases := []struct {
-		name          string
-		params        openrtb_ext.ImpExtPixfuture
-		expectedError string
-	}{
-		{
-			name: "Valid Params",
-			params: openrtb_ext.ImpExtPixfuture{
-				PlacementID: "123",
-			},
-			expectedError: "",
-		},
-		{
-			name: "Missing PlacementID",
-			params: openrtb_ext.ImpExtPixfuture{
-				PlacementID: "",
-			},
-			expectedError: "PlacementID is required",
-		},
+func TestValidParams(t *testing.T) {
+	validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
+	if err != nil {
+		t.Fatalf("Failed to fetch the json schema. %v", err)
 	}
 
-	for _, test := range testCases {
-		t.Run(test.name, func(t *testing.T) {
-			err := validatePixfutureParams(test.params)
-			if test.expectedError == "" {
-				assert.NoError(t, err)
-			} else {
-				assert.EqualError(t, err, test.expectedError)
-			}
-		})
+	for _, p := range validParams {
+		if err := validator.Validate(openrtb_ext.BidderPixfuture, json.RawMessage(p)); err != nil {
+			t.Errorf("Schema rejected valid params: %s", p)
+		}
 	}
 }
 
-func validatePixfutureParams(params openrtb_ext.ImpExtPixfuture) error {
-	if params.PlacementID == "" {
-		return fmt.Errorf("PlacementID is required")
+func TestInvalidParams(t *testing.T) {
+	validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
+	if err != nil {
+		t.Fatalf("Failed to fetch the json schema. %v", err)
 	}
-	return nil
+
+	for _, p := range invalidParams {
+		if err := validator.Validate(openrtb_ext.BidderPixfuture, json.RawMessage(p)); err == nil {
+			t.Errorf("Schema allowed invalid params: %s", p)
+		}
+	}
+}
+
+var validParams = []string{
+	`{"pix_id": "123"}`,    // Minimum length satisfied
+	`{"pix_id": "abcdef"}`, // Longer valid string
+}
+
+var invalidParams = []string{
+	`{"pix_id": 123}`,  // Wrong type (integer)
+	`{"pix_id": "ab"}`, // Too short (minLength: 3)
+	`{}`,               // Missing required pix_id
+	`{"pix_id": ""}`,   // Empty string (violates minLength)
 }
