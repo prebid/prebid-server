@@ -1,0 +1,23 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "imp1",
+        "ext": {
+          "bidder": {
+            "pix_id": "123"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [],
+  "expectedBidResponses": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Banner, Native, or Video impression required",
+      "comparison": "literal"
+    }
+  ]
+}
