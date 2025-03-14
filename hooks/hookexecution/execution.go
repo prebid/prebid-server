@@ -73,6 +73,7 @@ func executeGroup[H any, P any](
 
 	for _, hook := range group.Hooks {
 		mCtx := executionCtx.getModuleContext(hook.Module)
+		mCtx.HookImplCode = hook.Code
 		newPayload := handleModuleActivities(hook.Code, executionCtx.activityControl, payload, executionCtx.account)
 		wg.Add(1)
 		go func(hw hooks.HookWrapper[H], moduleCtx hookstage.ModuleInvocationContext) {
