@@ -2,15 +2,13 @@ package pixfuture
 
 import (
 	"encoding/json"
-	"log"
-	"net/http"
-	"strconv"
-
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"net/http"
+	"strconv"
 )
 
 type adapter struct {
@@ -25,14 +23,13 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	if request == nil || len(request.Imp) == 0 {
-		log.Println("No impressions in bid request")
 		return nil, []error{&errortypes.BadInput{Message: "No impressions in bid request"}}
 	}
 
 	var errs []error
 	var adapterRequests []*adapters.RequestData
 
-	for i, imp := range request.Imp {
+	for _, imp := range request.Imp {
 
 		// Log raw imp.Ext for debugging
 
