@@ -2,13 +2,14 @@ package pixfuture
 
 import (
 	"encoding/json"
+	"net/http"
+	"strconv"
+
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"net/http"
-	"strconv"
 )
 
 type adapter struct {
@@ -111,13 +112,13 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 		seatBid := &bidResp.SeatBid[i]
 		for j := range seatBid.Bid {
 			bid := &seatBid.Bid[j]
-			bidType, err := getMediaTypeForBid(bid)
+			bidType, err := getMediaTypeForBid(*bid)
 			if err != nil {
 				errs = append(errs, &errortypes.BadServerResponse{Message: "Failed to parse impression \"" + bid.ImpID + "\" mediatype"})
 				continue
 			}
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     &bid,
+				Bid:     bid,
 				BidType: bidType,
 			})
 		}
