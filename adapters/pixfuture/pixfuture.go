@@ -1,9 +1,10 @@
 package pixfuture
 
 import (
-	"encoding/json"
 	"net/http"
 	"strconv"
+
+	jsoniter "github.com/json-iterator/go"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
@@ -12,8 +13,17 @@ import (
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
+var jsonIter = jsoniter.ConfigCompatibleWithStandardLibrary
+
 type adapter struct {
 	endpoint string
+}
+
+// PixfutureExt defines the bidder-specific extension for Pixfuture.
+type PixfutureExt struct {
+	Bidder struct {
+		PixID string `json:"pix_id"`
+	} `json:"bidder"`
 }
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
@@ -30,18 +40,13 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	var errs []error
 	var adapterRequests []*adapters.RequestData
 
-	for _, imp := range request.Imp {
+	for i := range request.Imp {
+		imp := &request.Imp[i]
 
 		// Log raw imp.Ext for debugging
 
-		// Define struct to match the expected nesting in the JSON
-		var ext struct {
-			Bidder struct {
-				PixID string `json:"pix_id"`
-			} `json:"bidder"`
-		}
-
-		if err := json.Unmarshal(imp.Ext, &ext); err != nil {
+		var ext PixfutureExt
+		if err := jsonIter.Unmarshal(imp.Ext, &ext); err != nil {
 			errs = append(errs, &errortypes.BadInput{Message: "Invalid impression extension"})
 			continue
 		}
@@ -65,7 +70,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			continue
 		}
 
-		reqJSON, err := json.Marshal(request)
+		reqJSON, err := jsonIter.Marshal(request)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -76,7 +81,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		headers.Set("Accept", "application/json")
 
 		adapterRequests = append(adapterRequests, &adapters.RequestData{
-			Method:  "POST",
+			Method:  http.MethodPost,
 			Uri:     a.endpoint,
 			Body:    reqJSON,
 			Headers: headers,
@@ -100,7 +105,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	}
 
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonIter.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{Message: "Invalid response format: " + err.Error()}}
 	}
 
@@ -139,7 +144,7 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 			Type string `json:"type"`
 		} `json:"prebid"`
 	}
-	if err := json.Unmarshal(bid.Ext, &ext); err != nil {
+	if err := jsonIter.Unmarshal(bid.Ext, &ext); err != nil {
 		return "", err
 	}
 

@@ -14,6 +14,7 @@ import (
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // int64Ptr is a helper function to create a pointer to an int64 value
@@ -25,37 +26,28 @@ func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderPixfuture, config.Adapter{
 		Endpoint: "http://any.url",
 	}, config.Server{})
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
+	require.NoError(t, buildErr, "Builder returned unexpected error")
 
 	dirs := []string{"pixfuturetest/exemplary", "pixfuturetest/supplemental"}
 
 	for _, dir := range dirs {
 		t.Run(dir, func(t *testing.T) {
 			files, err := filepath.Glob(filepath.Join(dir, "*.json"))
-			if err != nil {
-				t.Fatalf("Failed to glob JSON files in %s: %v", dir, err)
-			}
+			require.NoErrorf(t, err, "Failed to glob JSON files in %s", dir)
 			t.Logf("Found %d JSON files in %s", len(files), dir)
 
 			for _, file := range files {
 				t.Run(filepath.Base(file), func(t *testing.T) {
 					tmpDir, err := ioutil.TempDir("", "pixfuture_test_")
-					if err != nil {
-						t.Fatalf("Failed to create temp dir: %v", err)
-					}
+					require.NoError(t, err, "Failed to create temp dir")
 					defer os.RemoveAll(tmpDir)
 
 					src := file
 					dst := filepath.Join(tmpDir, filepath.Base(file))
 					input, err := ioutil.ReadFile(src)
-					if err != nil {
-						t.Fatalf("Failed to read %s: %v", src, err)
-					}
-					if err := ioutil.WriteFile(dst, input, 0644); err != nil {
-						t.Fatalf("Failed to write %s: %v", dst, err)
-					}
+					require.NoErrorf(t, err, "Failed to read %s", src)
+					err = ioutil.WriteFile(dst, input, 0644)
+					require.NoErrorf(t, err, "Failed to write %s", dst)
 
 					t.Logf("Testing JSON file: %s", file)
 					adapterstest.RunJSONBidderTest(t, tmpDir, bidder)
