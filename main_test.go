@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v3/config"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/spf13/viper"

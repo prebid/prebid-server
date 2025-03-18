@@ -25,7 +25,7 @@
 
   "expectedMakeRequestsErrors": [
     {
-      "value": "json: cannot unmarshal array into Go struct field rubiconExtImpBidder.bidder of type openrtb_ext.ExtImpRubicon",
+      "value": "cannot unmarshal rubicon.rubiconExtImpBidder.Bidder: expect { or n, but found [",
       "comparison": "literal"
     }
   ]

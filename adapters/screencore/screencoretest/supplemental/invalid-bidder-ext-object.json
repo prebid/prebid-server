@@ -1,7 +1,7 @@
 {
   "expectedMakeRequestsErrors": [
     {
-      "value": "Error parsing bidderExt - json: cannot unmarshal string into Go value of type openrtb_ext.ExtScreencore",
+      "value": "Error parsing bidderExt - expect { or n, but found \"",
       "comparison": "literal"
     }
   ],

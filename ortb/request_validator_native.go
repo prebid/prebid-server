@@ -8,8 +8,8 @@ import (
 	"github.com/prebid/openrtb/v20/native1"
 	nativeRequests "github.com/prebid/openrtb/v20/native1/request"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 // fillAndValidateNative validates the request, and assigns the Asset IDs as recommended by the Native v1.2 spec.

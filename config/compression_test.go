@@ -3,7 +3,7 @@ package config
 import (
 	"testing"
 
-	"github.com/prebid/prebid-server/v2/util/httputil"
+	"github.com/prebid/prebid-server/v3/util/httputil"
 	"github.com/stretchr/testify/assert"
 )
 

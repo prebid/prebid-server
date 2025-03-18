@@ -168,7 +168,7 @@ func moveRewardedFromPrebidExtTo26(i *ImpWrapper) {
 	// read and clear prebid ext
 	impExt, _ := i.GetImpExt()
 	rwddPrebidExt := (*int8)(nil)
-	if p := impExt.GetPrebid(); p != nil {
+	if p := impExt.GetPrebid(); p != nil && p.IsRewardedInventory != nil {
 		rwddPrebidExt = p.IsRewardedInventory
 		p.IsRewardedInventory = nil
 		impExt.SetPrebid(p)

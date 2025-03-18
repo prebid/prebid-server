@@ -5,14 +5,16 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 const (
@@ -106,14 +108,14 @@ func (adapter *RTBHouseAdapter) MakeRequests(
 
 func getImpressionExt(imp openrtb2.Imp) (*openrtb_ext.ExtImpRTBHouse, error) {
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: "Bidder extension not provided or can't be unmarshalled",
 		}
 	}
 
 	var rtbhouseExt openrtb_ext.ExtImpRTBHouse
-	if err := json.Unmarshal(bidderExt.Bidder, &rtbhouseExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &rtbhouseExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: "Error while unmarshaling bidder extension",
 		}
@@ -152,7 +154,7 @@ func (adapter *RTBHouseAdapter) MakeBids(
 	}
 
 	var openRTBBidderResponse openrtb2.BidResponse
-	if err := json.Unmarshal(bidderRawResponse.Body, &openRTBBidderResponse); err != nil {
+	if err := jsonutil.Unmarshal(bidderRawResponse.Body, &openRTBBidderResponse); err != nil {
 		return nil, []error{err}
 	}
 
@@ -161,8 +163,9 @@ func (adapter *RTBHouseAdapter) MakeBids(
 	var typedBid *adapters.TypedBid
 	for _, seatBid := range openRTBBidderResponse.SeatBid {
 		for _, bid := range seatBid.Bid {
-			bid := bid // pin! -> https://github.com/kyoh86/scopelint#whats-this
+			bid := bid
 			bidType, err := getMediaTypeForBid(bid)
+			resolveMacros(&bid)
 			if err != nil {
 				errs = append(errs, err)
 				continue
@@ -205,7 +208,7 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 
 func getNativeAdm(adm string) (string, error) {
 	nativeAdm := make(map[string]interface{})
-	err := json.Unmarshal([]byte(adm), &nativeAdm)
+	err := jsonutil.Unmarshal([]byte(adm), &nativeAdm)
 	if err != nil {
 		return adm, errors.New("unable to unmarshal native adm")
 	}
@@ -221,4 +224,12 @@ func getNativeAdm(adm string) (string, error) {
 	}
 
 	return adm, nil
+}
+
+func resolveMacros(bid *openrtb2.Bid) {
+	if bid != nil {
+		price := strconv.FormatFloat(bid.Price, 'f', -1, 64)
+		bid.NURL = strings.Replace(bid.NURL, "${AUCTION_PRICE}", price, -1)
+		bid.AdM = strings.Replace(bid.AdM, "${AUCTION_PRICE}", price, -1)
+	}
 }

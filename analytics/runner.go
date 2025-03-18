@@ -1,7 +1,7 @@
 package analytics
 
 import (
-	"github.com/prebid/prebid-server/v2/privacy"
+	"github.com/prebid/prebid-server/v3/privacy"
 )
 
 type Runner interface {

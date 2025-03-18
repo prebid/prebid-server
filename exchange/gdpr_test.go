@@ -1,14 +1,14 @@
 package exchange
 
 import (
-	"encoding/json"
 	"testing"
 
 	gpplib "github.com/prebid/go-gpp"
 	gppConstants "github.com/prebid/go-gpp/constants"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/gdpr"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/gdpr"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,17 +21,17 @@ func TestGetGDPR(t *testing.T) {
 	}{
 		{
 			description: "Regs Ext GDPR = 0",
-			giveRegs:    &openrtb2.Regs{Ext: json.RawMessage(`{"gdpr": 0}`)},
+			giveRegs:    &openrtb2.Regs{GDPR: ptrutil.ToPtr[int8](0)},
 			wantGDPR:    gdpr.SignalNo,
 		},
 		{
 			description: "Regs Ext GDPR = 1",
-			giveRegs:    &openrtb2.Regs{Ext: json.RawMessage(`{"gdpr": 1}`)},
+			giveRegs:    &openrtb2.Regs{GDPR: ptrutil.ToPtr[int8](1)},
 			wantGDPR:    gdpr.SignalYes,
 		},
 		{
 			description: "Regs Ext GDPR = null",
-			giveRegs:    &openrtb2.Regs{Ext: json.RawMessage(`{"gdpr": null}`)},
+			giveRegs:    &openrtb2.Regs{GDPR: nil},
 			wantGDPR:    gdpr.SignalAmbiguous,
 		},
 		{
@@ -40,29 +40,18 @@ func TestGetGDPR(t *testing.T) {
 			wantGDPR:    gdpr.SignalAmbiguous,
 		},
 		{
-			description: "Regs Ext is nil",
-			giveRegs:    &openrtb2.Regs{Ext: nil},
-			wantGDPR:    gdpr.SignalAmbiguous,
-		},
-		{
-			description: "JSON unmarshal error",
-			giveRegs:    &openrtb2.Regs{Ext: json.RawMessage(`{"`)},
-			wantGDPR:    gdpr.SignalAmbiguous,
-			wantError:   true,
-		},
-		{
 			description: "Regs Ext GDPR = null, GPPSID has tcf2",
-			giveRegs:    &openrtb2.Regs{Ext: json.RawMessage(`{"gdpr": null}`), GPPSID: []int8{2}},
+			giveRegs:    &openrtb2.Regs{GDPR: nil, GPPSID: []int8{2}},
 			wantGDPR:    gdpr.SignalYes,
 		},
 		{
 			description: "Regs Ext GDPR = 1, GPPSID has uspv1",
-			giveRegs:    &openrtb2.Regs{Ext: json.RawMessage(`{"gdpr": 1}`), GPPSID: []int8{6}},
+			giveRegs:    &openrtb2.Regs{GDPR: ptrutil.ToPtr[int8](1), GPPSID: []int8{6}},
 			wantGDPR:    gdpr.SignalNo,
 		},
 		{
 			description: "Regs Ext GDPR = 0, GPPSID has tcf2",
-			giveRegs:    &openrtb2.Regs{Ext: json.RawMessage(`{"gdpr": 0}`), GPPSID: []int8{2}},
+			giveRegs:    &openrtb2.Regs{GDPR: ptrutil.ToPtr[int8](0), GPPSID: []int8{2}},
 			wantGDPR:    gdpr.SignalYes,
 		},
 		{
@@ -105,18 +94,13 @@ func TestGetConsent(t *testing.T) {
 		wantError   bool
 	}{
 		{
-			description: "User Ext Consent is not empty",
-			giveUser:    &openrtb2.User{Ext: json.RawMessage(`{"consent": "BOS2bx5OS2bx5ABABBAAABoAAAAAFA"}`)},
+			description: "User Consent is not empty",
+			giveUser:    &openrtb2.User{Consent: "BOS2bx5OS2bx5ABABBAAABoAAAAAFA"},
 			wantConsent: "BOS2bx5OS2bx5ABABBAAABoAAAAAFA",
 		},
 		{
-			description: "User Ext Consent is empty",
-			giveUser:    &openrtb2.User{Ext: json.RawMessage(`{"consent": ""}`)},
-			wantConsent: "",
-		},
-		{
-			description: "User Ext is nil",
-			giveUser:    &openrtb2.User{Ext: nil},
+			description: "User Consent is empty",
+			giveUser:    &openrtb2.User{Consent: ""},
 			wantConsent: "",
 		},
 		{
@@ -125,26 +109,20 @@ func TestGetConsent(t *testing.T) {
 			wantConsent: "",
 		},
 		{
-			description: "JSON unmarshal error",
-			giveUser:    &openrtb2.User{Ext: json.RawMessage(`{`)},
-			wantConsent: "",
-			wantError:   true,
-		},
-		{
-			description: "User Ext is nil, GPP has no GDPR",
-			giveUser:    &openrtb2.User{Ext: nil},
+			description: "User is nil, GPP has no GDPR",
+			giveUser:    nil,
 			giveGPP:     gpplib.GppContainer{Version: 1, SectionTypes: []gppConstants.SectionID{6}, Sections: []gpplib.Section{&upsv1Section}},
 			wantConsent: "",
 		},
 		{
-			description: "User Ext is nil, GPP has GDPR",
-			giveUser:    &openrtb2.User{Ext: nil},
+			description: "User is nil, GPP has GDPR",
+			giveUser:    nil,
 			giveGPP:     gpplib.GppContainer{Version: 1, SectionTypes: []gppConstants.SectionID{2}, Sections: []gpplib.Section{&tcf1Section}},
 			wantConsent: "BOS2bx5OS2bx5ABABBAAABoAAAAAFA",
 		},
 		{
-			description: "User Ext has GDPR, GPP has GDPR",
-			giveUser:    &openrtb2.User{Ext: json.RawMessage(`{"consent": "BSOMECONSENT"}`)},
+			description: "User has GDPR, GPP has GDPR",
+			giveUser:    &openrtb2.User{Consent: "BSOMECONSENT"},
 			giveGPP:     gpplib.GppContainer{Version: 1, SectionTypes: []gppConstants.SectionID{2}, Sections: []gpplib.Section{&tcf1Section}},
 			wantConsent: "BOS2bx5OS2bx5ABABBAAABoAAAAAFA",
 		},
@@ -166,6 +144,65 @@ func TestGetConsent(t *testing.T) {
 			} else {
 				assert.Nil(t, err, tt.description)
 			}
+		})
+	}
+}
+
+func TestSelectEEACountries(t *testing.T) {
+	tests := []struct {
+		description         string
+		hostEEACountries    []string
+		accountEEACountries []string
+		expected            []string
+	}{
+		{
+			description:         "Account_EEA_countries_provided",
+			hostEEACountries:    []string{"UK", "DE"},
+			accountEEACountries: []string{"FR", "IT"},
+			expected:            []string{"FR", "IT"},
+		},
+		{
+			description:         "Account_is_nil",
+			hostEEACountries:    []string{"UK"},
+			accountEEACountries: nil,
+			expected:            []string{"UK"},
+		},
+		{
+			description:         "Both_nil",
+			hostEEACountries:    nil,
+			accountEEACountries: nil,
+			expected:            nil,
+		},
+		{
+			description:         "Account_is_empty_slice",
+			hostEEACountries:    []string{"UK"},
+			accountEEACountries: []string{},
+			expected:            []string{},
+		},
+		{
+			description:         "Host_is_nil",
+			hostEEACountries:    nil,
+			accountEEACountries: []string{"DE"},
+			expected:            []string{"DE"},
+		},
+		{
+			description:         "Host_and_account_both_non-nil",
+			hostEEACountries:    []string{"UK"},
+			accountEEACountries: []string{"FR"},
+			expected:            []string{"FR"},
+		},
+		{
+			description:         "Host_is_empty_slice,_account_is_nil",
+			hostEEACountries:    []string{},
+			accountEEACountries: nil,
+			expected:            []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.description, func(t *testing.T) {
+			result := selectEEACountries(tt.hostEEACountries, tt.accountEEACountries)
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }

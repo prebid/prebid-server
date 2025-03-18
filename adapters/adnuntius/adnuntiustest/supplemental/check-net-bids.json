@@ -31,7 +31,7 @@
 	"httpCalls": [
 		{
 			"expectedRequest": {
-				"uri": "http://whatever.url?format=json&tzo=0",
+				"uri": "http://whatever.url?format=prebidServer&tzo=0",
 				"body": {
 					"adUnits": [
 						{
@@ -61,6 +61,7 @@
 									"destinationUrls": {
 										"url": "http://www.google.com"
 									},
+									"advertiserDomains": ["google.com"],
 									"bid": { "amount": 20.0, "currency": "NOK" },
 									"grossBid": {"amount": 0.1, "currency": "NOK"},
 									"netBid": {"amount": 0.075, "currency": "NOK"},

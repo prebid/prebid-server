@@ -28,7 +28,7 @@
 
   "expectedMakeRequestsErrors": [
     {
-      "value": "Failed to unmarshal ext.bidder impID: test-imp-id err: json: cannot unmarshal number into Go struct field ExtImpAJA.asi of type string",
+      "value": "Failed to unmarshal ext.bidder impID: test-imp-id err: cannot unmarshal openrtb_ext.ExtImpAJA.AdSpotID: expects \" or n, but found 1",
       "comparison": "literal"
     }
 

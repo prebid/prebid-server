@@ -7,10 +7,11 @@ import (
 	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/macros"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -33,11 +34,11 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 // getImpAdotExt parses and return first imp ext or nil
 func getImpRoulaxExt(imp *openrtb2.Imp) (openrtb_ext.ExtImpRoulax, error) {
 	var extBidder adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &extBidder); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &extBidder); err != nil {
 		return openrtb_ext.ExtImpRoulax{}, err
 	}
 	var extImpRoulax openrtb_ext.ExtImpRoulax
-	if err := json.Unmarshal(extBidder.Bidder, &extImpRoulax); err != nil {
+	if err := jsonutil.Unmarshal(extBidder.Bidder, &extImpRoulax); err != nil {
 		return openrtb_ext.ExtImpRoulax{}, err
 	}
 	return extImpRoulax, nil
@@ -80,7 +81,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 		return nil, []error{err}
 	}
 	var response openrtb2.BidResponse
-	if err := json.Unmarshal(responseData.Body, &response); err != nil {
+	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))

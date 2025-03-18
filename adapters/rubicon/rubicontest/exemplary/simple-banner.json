@@ -131,8 +131,7 @@
           "bidder": {
             "accountId": 1001,
             "siteId": 113932,
-            "zoneId": 535510,
-            "pchain": "pchain"
+            "zoneId": 535510
           },
           "skadn": {
             "version": "1.0",
@@ -299,9 +298,6 @@
             "id": "1",
             "bundle": "com.wls.testwlsapplication"
           },
-          "source": {
-            "pchain": "pchain"
-          },
           "imp": [
             {
               "id": "test-imp-id",
@@ -320,10 +316,9 @@
                 "rp": {
                   "target": {
                     "pbadslot": "pbadslot",
-                    "pagecat": [
-                      "val1",
-                      "val2"
-                    ]
+                    "pbs_login": "xuser",
+                    "pbs_url": "http://hosturl.com",
+                    "pbs_version": ""
                   },
                   "track": {
                     "mint": "",

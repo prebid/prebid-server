@@ -7,11 +7,16 @@ capabilities:
     mediaTypes:
       - banner
       - video
+      - native
   app:
     mediaTypes:
       - banner
       - video
+      - native
 userSync:
+  iframe:
+    url: "https://sync.go.sonobi.com/uc.html?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&loc={{.RedirectURL}}"
+    userMacro: "[UID]"
   redirect:
     url: "https://sync.go.sonobi.com/us.gif?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&loc={{.RedirectURL}}"
     userMacro: "[UID]"

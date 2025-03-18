@@ -7,10 +7,11 @@ import (
 
 	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 // AvocetAdapter implements a adapters.Bidder compatible with the Avocet advertising platform.
@@ -71,7 +72,7 @@ func (a *AvocetAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 	}
 
 	var br openrtb2.BidResponse
-	err := json.Unmarshal(response.Body, &br)
+	err := jsonutil.Unmarshal(response.Body, &br)
 	if err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: err.Error(),
@@ -84,7 +85,7 @@ func (a *AvocetAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 		for j := range br.SeatBid[i].Bid {
 			var ext avocetBidExt
 			if len(br.SeatBid[i].Bid[j].Ext) > 0 {
-				err := json.Unmarshal(br.SeatBid[i].Bid[j].Ext, &ext)
+				err := jsonutil.Unmarshal(br.SeatBid[i].Bid[j].Ext, &ext)
 				if err != nil {
 					errs = append(errs, err)
 					continue

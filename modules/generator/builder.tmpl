@@ -2,7 +2,7 @@ package modules
 import (
 {{- range $vendor, $modules := .}}
     {{- range $module := $modules}}
-        {{$vendor}}{{$module | Title}} "github.com/prebid/prebid-server/v2/modules/{{$vendor}}/{{$module}}"
+        {{$vendor}}{{$module | Title}} "github.com/prebid/prebid-server/v3/modules/{{$vendor}}/{{$module}}"
     {{- end}}
 {{- end}}
 )

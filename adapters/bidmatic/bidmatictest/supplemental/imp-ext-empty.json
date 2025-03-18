@@ -1,0 +1,21 @@
+{
+  "mockBidRequest": {
+    "id": "unsupported-native-request",
+    "imp": [
+      {
+        "id": "unsupported-native-imp",
+        "video": {
+          "w": 100,
+          "h": 200
+        }
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "ignoring imp id=unsupported-native-imp, extImpBidder is empty",
+      "comparison": "literal"
+    }
+  ]
+}

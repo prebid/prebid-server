@@ -15,10 +15,10 @@ import (
 	validator "github.com/asaskevich/govalidator"
 	"github.com/coocood/freecache"
 	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/metrics"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/timeutil"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/metrics"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/timeutil"
 )
 
 var refetchCheckInterval = 300
@@ -309,8 +309,8 @@ func validateRules(config config.AccountFloorFetch, priceFloors *openrtb_ext.Pri
 		return errors.New("skip rate should be greater than or equal to 0 and less than 100")
 	}
 
-	if priceFloors.Data.FetchRate != nil && (*priceFloors.Data.FetchRate < dataRateMin || *priceFloors.Data.FetchRate > dataRateMax) {
-		return errors.New("FetchRate should be greater than or equal to 0 and less than or equal to 100")
+	if priceFloors.Data.UseFetchDataRate != nil && (*priceFloors.Data.UseFetchDataRate < dataRateMin || *priceFloors.Data.UseFetchDataRate > dataRateMax) {
+		return errors.New("usefetchdatarate should be greater than or equal to 0 and less than or equal to 100")
 	}
 
 	for _, modelGroup := range priceFloors.Data.ModelGroups {
