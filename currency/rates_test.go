@@ -187,8 +187,7 @@ func TestGetRate_ReverseConversion(t *testing.T) {
 	}
 }
 
-func TestGetRate_FindConversionRate(t *testing.T) {
-	// Setup:
+func TestGetRate_FindIntermediateConversionRate(t *testing.T) {
 	rates := NewRates(map[string]map[string]float64{
 		"USD": {
 			"SEK": 10.23842,
@@ -201,70 +200,66 @@ func TestGetRate_FindConversionRate(t *testing.T) {
 	})
 
 	testCases := []struct {
+		description  string
 		from         string
 		to           string
 		expectedRate float64
-		description  string
 		hasError     bool
 	}{
 		{
+			description:  "in_same_intermediate_USD_currency",
 			from:         "NOK",
 			to:           "SEK",
 			expectedRate: 0.9777984488424574,
-			hasError:     false,
-			description:  "case 1 - Both rates are present in intermediate USD currency",
 		},
 		{
+			description:  "in_same_intermediate_USD_currency_inverse",
 			from:         "SEK",
 			to:           "NOK",
 			expectedRate: 1 / 0.9777984488424574,
-			hasError:     false,
-			description:  "case 2 - Both rates are present in intermediate USD currency inverse",
 		},
 		{
+			description:  "in_same_intermediate_EUR_currency",
 			from:         "THB",
 			to:           "ZAR",
 			expectedRate: 0.5241690745498806,
-			hasError:     false,
-			description:  "case 3 - Both rates are present in intermediate EUR currency",
 		},
 		{
+			description:  "in_same_intermediate_EUR_currency_inverse",
 			from:         "ZAR",
 			to:           "THB",
 			expectedRate: 1 / 0.5241690745498806,
-			hasError:     false,
-			description:  "case 4 - Both rates are present in intermediate EUR currency inverse",
 		},
 		{
+			description:  "in_different_intermediate_currencies",
 			from:         "NOK",
 			to:           "ZAR",
 			expectedRate: 0,
 			hasError:     true,
-			description:  "case 5 - Rates are present in different intermediate currencies, unable to convert error should be returned",
 		},
 	}
 
 	for _, tc := range testCases {
-		// Execute:
-		fromUnit, err := currency.ParseISO(tc.from)
-		if err != nil {
-			t.Errorf("Expected no error, but got: %v", err)
-		}
-		toUnit, err := currency.ParseISO(tc.to)
-		if err != nil {
-			t.Errorf("Expected no error, but got: %v", err)
-		}
+		t.Run(tc.description, func(t *testing.T) {
+			fromUnit, err := currency.ParseISO(tc.from)
+			if err != nil {
+				t.Errorf("Expected no error, but got: %v", err)
+			}
+			toUnit, err := currency.ParseISO(tc.to)
+			if err != nil {
+				t.Errorf("Expected no error, but got: %v", err)
+			}
 
-		rate, err := FindConversionRate(rates, fromUnit, toUnit)
+			rate, err := FindIntermediateConversionRate(rates, fromUnit, toUnit)
 
-		// Verify:
-		if tc.hasError {
-			assert.NotNil(t, err, "err shouldn't be nil")
-			assert.Equal(t, float64(0), rate, "rate should be 0")
-		} else {
-			assert.Nil(t, err, "err should be nil: "+tc.description)
-			assert.Equal(t, tc.expectedRate, rate, "rate doesn't match the expected one: "+tc.description)
-		}
+			if tc.hasError {
+				assert.NotNil(t, err)
+				assert.Equal(t, float64(0), rate)
+			} else {
+				assert.Nil(t, err)
+				assert.Equal(t, tc.expectedRate, rate)
+			}
+		})
 	}
 }
 
