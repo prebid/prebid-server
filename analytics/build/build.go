@@ -11,6 +11,7 @@ import (
 	"github.com/prebid/prebid-server/v3/analytics/filesystem"
 	"github.com/prebid/prebid-server/v3/analytics/pubstack"
 	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/gdpr"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/ortb"
 	"github.com/prebid/prebid-server/v3/privacy"
@@ -62,17 +63,24 @@ func New(analytics *config.Analytics) analytics.Runner {
 // Collection of all the correctly configured analytics modules - implements the PBSAnalyticsModule interface
 type enabledAnalytics map[string]analytics.Module
 
-func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac privacy.ActivityControl) {
+func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac privacy.ActivityControl, pp gdpr.PrivacyPolicy) {
 	for name, module := range ea {
-		if isAllowed, cloneBidderReq := evaluateActivities(ao.RequestWrapper, ac, name); isAllowed {
-			if cloneBidderReq != nil {
-				ao.RequestWrapper = cloneBidderReq
-			}
-			cloneReq := updateReqWrapperForAnalytics(ao.RequestWrapper, name, cloneBidderReq != nil)
-			module.LogAuctionObject(ao)
-			if cloneReq != nil {
-				ao.RequestWrapper = cloneReq
-			}
+		var isAllowed bool
+		var cloneBidderReq *openrtb_ext.RequestWrapper
+
+		if isAllowed, cloneBidderReq = evaluateActivities(ao.RequestWrapper, ac, name); !isAllowed {
+			continue
+		}
+		if !pp.Allow(ctx.Background, name) {
+			continue
+		}
+		if cloneBidderReq != nil {
+			ao.RequestWrapper = cloneBidderReq
+		}
+		cloneReq := updateReqWrapperForAnalytics(ao.RequestWrapper, name, cloneBidderReq != nil)
+		module.LogAuctionObject(ao)
+		if cloneReq != nil {
+			ao.RequestWrapper = cloneReq
 		}
 	}
 }
