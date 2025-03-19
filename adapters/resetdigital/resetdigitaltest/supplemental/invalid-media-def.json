@@ -1,0 +1,35 @@
+{
+    "mockBidRequest": {
+      "id": "12345",
+      "imp": [{
+        "id": "001",
+          "ext": {
+            "bidder": {
+              "placement_id": "placement-id-1"
+            }
+          }
+      }],
+      "site": {
+        "domain": "https://test.com",
+        "page": "https://test.com/2016/06/12"
+      },
+      "cur": [
+        "USD"
+      ],
+      "device": {
+        "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36",
+        "ip": "127.0.0.1",
+        "language": "EN"
+      },
+      "tmax": 500,
+      "debug": 1 
+    },
+    "httpCalls": [],
+    "expectedMakeRequestsErrors": [
+      {
+        "value": "failed to find matching imp for bid 001",
+        "comparison": "literal"
+      }
+    ],
+    "expectedBidResponses": []
+  }

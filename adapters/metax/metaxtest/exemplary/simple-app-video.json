@@ -98,7 +98,12 @@
                   "crid": "test-crid",
                   "w": 1024,
                   "h": 576,
-                  "mtype": 2
+                  "mtype": 2,
+                  "dur": 15,
+                  "cat": [
+                    "IAB1-5",
+                    "IAB1-6"
+                  ]
                 }
               ]
             }
@@ -120,9 +125,18 @@
             "crid": "test-crid",
             "w": 1024,
             "h": 576,
-            "mtype": 2
+            "mtype": 2,
+            "dur": 15,
+            "cat": [
+              "IAB1-5",
+              "IAB1-6"
+            ]
           },
-          "type": "video"
+          "type": "video",
+          "video": {
+            "duration": 15,
+            "primary_category": "IAB1-5"
+          }
         }
       ]
     }

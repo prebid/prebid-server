@@ -34,15 +34,18 @@ type openxRespExt struct {
 
 func (a *OpenxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
-	var bannerImps []openrtb2.Imp
+	var bannerAndNativeImps []openrtb2.Imp
 	var videoImps []openrtb2.Imp
 
 	for _, imp := range request.Imp {
-		// OpenX doesn't allow multi-type imp. Banner takes priority over video.
+		// OpenX doesn't allow multi-type imp. Banner takes priority over video and video takes priority over native
+		// Openx also wants to send banner and native imps in one request
 		if imp.Banner != nil {
-			bannerImps = append(bannerImps, imp)
+			bannerAndNativeImps = append(bannerAndNativeImps, imp)
 		} else if imp.Video != nil {
 			videoImps = append(videoImps, imp)
+		} else if imp.Native != nil {
+			bannerAndNativeImps = append(bannerAndNativeImps, imp)
 		}
 	}
 
@@ -50,7 +53,7 @@ func (a *OpenxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 	// Make a copy as we don't want to change the original request
 	reqCopy := *request
 
-	reqCopy.Imp = bannerImps
+	reqCopy.Imp = bannerAndNativeImps
 	adapterReq, errors := a.makeRequest(&reqCopy)
 	if adapterReq != nil {
 		adapterRequests = append(adapterRequests, adapterReq)
@@ -256,12 +259,17 @@ func getBidVideo(bid *openrtb2.Bid) *openrtb_ext.ExtBidPrebidVideo {
 //
 // OpenX doesn't support multi-type impressions.
 // If both banner and video exist, take banner as we do not want in-banner video.
+// If both video and native exist and banner is nil, take video.
+// If both banner and native exist, take banner.
+// If all of the types (banner, video, native) exist, take banner.
 func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
 		if imp.ID == impId {
 			if imp.Banner == nil && imp.Video != nil {
 				mediaType = openrtb_ext.BidTypeVideo
+			} else if imp.Banner == nil && imp.Native != nil {
+				mediaType = openrtb_ext.BidTypeNative
 			}
 			return mediaType
 		}

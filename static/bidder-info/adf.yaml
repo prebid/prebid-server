@@ -23,5 +23,5 @@ capabilities:
       - video
 userSync:
   redirect:
-    url: "https://cm.adform.net/cookie?redirect_url={{.RedirectURL}}"
+    url: "https://c1.adform.net/cookie?redirect_url={{.RedirectURL}}"
     userMacro: "$UID"

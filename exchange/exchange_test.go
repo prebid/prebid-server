@@ -46,7 +46,7 @@ import (
 	"github.com/prebid/prebid-server/v3/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	jsonpatch "gopkg.in/evanphx/json-patch.v4"
+	jsonpatch "gopkg.in/evanphx/json-patch.v5"
 )
 
 func TestNewExchange(t *testing.T) {
@@ -2114,9 +2114,10 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 	}
 
 	var s struct{}
-	eeac := make(map[string]struct{})
-	for _, c := range []string{"FIN", "FRA", "GUF"} {
-		eeac[c] = s
+	eeacMap := make(map[string]struct{})
+	eeac := []string{"FIN", "FRA", "GUF"}
+	for _, c := range eeac {
+		eeacMap[c] = s
 	}
 
 	var gdprDefaultValue string
@@ -2136,7 +2137,8 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		GDPR: config.GDPR{
 			Enabled:         spec.GDPREnabled,
 			DefaultValue:    gdprDefaultValue,
-			EEACountriesMap: eeac,
+			EEACountries:    eeac,
+			EEACountriesMap: eeacMap,
 			TCF2: config.TCF2{
 				Enabled: spec.GDPREnabled,
 			},
@@ -2192,6 +2194,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 			PriceFloors: config.AccountPriceFloors{Enabled: spec.AccountFloorsEnabled, EnforceDealFloors: spec.AccountEnforceDealFloors},
 			Privacy:     spec.AccountPrivacy,
 			Validations: spec.AccountConfigBidValidation,
+			GDPR:        config.AccountGDPR{EEACountries: spec.AccountEEACountries},
 		},
 		UserSyncs:     mockIdFetcher(spec.IncomingRequest.Usersyncs),
 		ImpExtInfoMap: impExtInfoMap,
@@ -5518,6 +5521,7 @@ type exchangeSpec struct {
 	Server                     exchangeServer         `json:"server,omitempty"`
 	AccountPrivacy             config.AccountPrivacy  `json:"accountPrivacy,omitempty"`
 	ORTBVersion                map[string]string      `json:"ortbversion"`
+	AccountEEACountries        []string               `json:"account_eea_countries"`
 }
 
 type multiBidSpec struct {
@@ -6347,6 +6351,61 @@ func TestBidsToUpdate(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			assert.Equal(t, tc.expected, bidsToUpdate(tc.in.multiBid, tc.in.bidder), tc.desc)
+		})
+	}
+}
+
+func TestIsEEACountry(t *testing.T) {
+	eeaCountries := []string{"FRA", "DEU", "ITA", "ESP", "NLD"}
+
+	tests := []struct {
+		name     string
+		country  string
+		eeaList  []string
+		expected bool
+	}{
+		{
+			name:     "Country_in_EEA",
+			country:  "FRA",
+			eeaList:  eeaCountries,
+			expected: true,
+		},
+		{
+			name:     "Country_in_EEA_lowercase",
+			country:  "fra",
+			eeaList:  eeaCountries,
+			expected: true,
+		},
+		{
+			name:     "Country_not_in_EEA",
+			country:  "USA",
+			eeaList:  eeaCountries,
+			expected: false,
+		},
+		{
+			name:     "Empty_country_string",
+			country:  "",
+			eeaList:  eeaCountries,
+			expected: false,
+		},
+		{
+			name:     "EEA_list_is_empty",
+			country:  "FRA",
+			eeaList:  []string{},
+			expected: false,
+		},
+		{
+			name:     "EEA_list_is_nil",
+			country:  "FRA",
+			eeaList:  nil,
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isEEACountry(tt.country, tt.eeaList)
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }

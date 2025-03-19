@@ -1,0 +1,13 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Reset Digital Adapter Params",
+    "description": "A schema which validates params accepted by the Reset Digital adapter",
+    "type": "object",
+    "properties": {
+        "placement_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Placement ID for the Reset Digital ad unit. This is the identifier for the ad unit on the Reset Digital platform, and its optional"
+        }
+    }
+}
