@@ -746,3 +746,11 @@ func TestShutdownFlush(t *testing.T) {
 	mockReader.AssertCalled(t, "Read")
 	mockReader.AssertNumberOfCalls(t, "Read", 1)
 }
+
+// buffer must implement:
+// type Reader interface {
+// 	Read(buf []byte) (n int, err error)
+// }
+// type Writer interface {
+//     Write(p []byte) (n int, err error)
+// }

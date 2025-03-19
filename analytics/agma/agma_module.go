@@ -1,8 +1,10 @@
 package agma
 
 import (
+	"bufio"
 	"bytes"
 	"errors"
+	"io"
 	"net/http"
 	"os"
 	"os/signal"
@@ -36,12 +38,12 @@ type AgmaLogger struct {
 	maxDuration       time.Duration
 	mux               sync.RWMutex
 	sigTermCh         chan os.Signal
-	buffer            bytes.Buffer
+	buffer            io.ReadWriter
 	read              func([]byte, bytes.Buffer) (int, error)
 	bufferCh          chan []byte
 }
 
-func newAgmaLogger(cfg config.AgmaAnalytics, sender httpSender, clock clock.Clock) (*AgmaLogger, error) {
+func newAgmaLogger(cfg config.AgmaAnalytics, sender httpSender, clock clock.Clock, buffer io.ReadWriter) (*AgmaLogger, error) {
 	pSize, err := units.FromHumanSize(cfg.Buffers.BufferSize)
 	if err != nil {
 		return nil, err
@@ -54,7 +56,7 @@ func newAgmaLogger(cfg config.AgmaAnalytics, sender httpSender, clock clock.Cloc
 		return nil, errors.New("Please configure at least one account for Agma Analytics")
 	}
 
-	buffer := bytes.Buffer{}
+	//buffer := bytes.Buffer{}
 	buffer.Write([]byte("["))
 
 	return &AgmaLogger{
@@ -80,7 +82,15 @@ func NewModule(httpClient *http.Client, cfg config.AgmaAnalytics, clock clock.Cl
 		return nil, err
 	}
 
-	m, err := newAgmaLogger(cfg, sender, clock)
+	//reader := bufio.NewReader(&bytes.Buffer{})
+	//writer := bufio.NewWriter(&bytes.Buffer{})
+	b := bytes.Buffer{}
+	//buffer := bufio.NewReadWriter(bufio.NewReader(&bytes.Buffer{}), writer)
+	buffer := bufio.NewReadWriter(bufio.NewReader(&b), bufio.NewWriter(&b))
+	//buffer := bufio.NewReadWriter(&b, &b)
+	//
+
+	m, err := newAgmaLogger(cfg, sender, clock, buffer)
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +133,7 @@ func (l *AgmaLogger) bufferEvent(data []byte) {
 func (l *AgmaLogger) isFull() bool {
 	l.mux.RLock()
 	defer l.mux.RUnlock()
-	return l.eventCount >= l.maxEventCount || int64(l.buffer.Len()) >= l.maxBufferByteSize
+	return l.eventCount >= l.maxEventCount || int64(l.buffer.Size()) >= l.maxBufferByteSize
 }
 
 func (l *AgmaLogger) flush() {
@@ -140,8 +150,8 @@ func (l *AgmaLogger) flush() {
 
 	payload := make([]byte, l.buffer.Len())
 	numBytesCopied, err := l.read(payload, l.buffer)
-	l.reset()
-	l.mux.Unlock()
+	defer l.reset()
+	defer l.mux.Unlock()
 	if err != nil || numBytesCopied == 0 {
 		glog.Warning("[AgmaAnalytics] fail to copy the buffer")
 		return
