@@ -404,7 +404,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 			alternateBidderCodes = *r.Account.AlternateBidderCodes
 		}
 
-		preferredMediaType := getBidderPreferredMediaTypeMap(requestExtPrebid, &r.Account, liveAdapters, e.singleFormatBidders)
+		preferredMediaType := getBidderPreferredMediaType(requestExtPrebid, &r.Account, liveAdapters, e.singleFormatBidders)
 
 		var extraRespInfo extraAuctionResponseInfo
 		adapterBids, adapterExtra, extraRespInfo = e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, accountDebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride, alternateBidderCodes, requestExtLegacy.Prebid.Experiment, r.HookExecutor, r.StartTime, bidAdjustmentRules, r.TmaxAdjustments, responseDebugAllow, preferredMediaType)
@@ -555,8 +555,8 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 	}, nil
 }
 
-// getBidderPreferredMediaTypeMap reads the preferred media type from the request and account and returns a map of bidder to preferred media type. Preference given to the request over account.
-func getBidderPreferredMediaTypeMap(prebid *openrtb_ext.ExtRequestPrebid, account *config.Account, liveBidders []openrtb_ext.BidderName, singleFormatBidders map[openrtb_ext.BidderName]bool) openrtb_ext.PreferredMediaType {
+// getBidderPreferredMediaType reads the preferred media type from the request and account and returns a map of bidder to preferred media type. Preference given to the request over account.
+func getBidderPreferredMediaType(prebid *openrtb_ext.ExtRequestPrebid, account *config.Account, liveBidders []openrtb_ext.BidderName, singleFormatBidders map[openrtb_ext.BidderName]bool) openrtb_ext.PreferredMediaType {
 	preferredMediaType := make(openrtb_ext.PreferredMediaType)
 
 	// Skip if no bidders are present in singleFormatBidders

@@ -97,25 +97,19 @@ func pruneImps(imps []openrtb2.Imp, allowedTypes parsedSupports, multiformatSupp
 		}
 
 		// Skip if all media types are gone
-		if !hasAnyTypes(imp) {
+		numOfFormats := countNumberOfFormats(imp)
+		if numOfFormats == 0 {
 			errs = append(errs, &errortypes.BadInput{Message: fmt.Sprintf("request.imp[%d] has no supported MediaTypes. It will be ignored", i)})
 			updated = true
 			continue
 		}
 
 		// Handle multi-format restrictions for bidders that don't support multi-format impressions
-		if !multiformatSupport && IsMultiFormat(*imp) {
+		if !multiformatSupport && numOfFormats > 1 {
 
-			//remove imp if preferred media type is not defined
-			if preferredMediaType == "" {
-				errs = append(errs, &errortypes.BadInput{Message: fmt.Sprintf("Removing the imp %s as the bidder does not support multi-format and preferred media type is not defined for the bidder", imp.ID)})
-				updated = true
-				continue
-			}
+			removeImp, multiformatErrs := adjustImpForPreferredMediaType(imp, preferredMediaType)
 
-			removeImp, multiformatErrs := AdjustImpForPreferredMediaType(imp, preferredMediaType)
-
-			//remove the Imp if the bidder doesn't support the preferred media type
+			//remove the Imp if the bidder doesn't support the preferred media type or preferred media type is not defined
 			if removeImp {
 				errs = append(errs, multiformatErrs...)
 				updated = true
@@ -156,8 +150,21 @@ func parseAllowedTypes(allowedTypes []openrtb_ext.BidType) (allowBanner bool, al
 	return
 }
 
-func hasAnyTypes(imp *openrtb2.Imp) bool {
-	return imp.Banner != nil || imp.Video != nil || imp.Audio != nil || imp.Native != nil
+func countNumberOfFormats(imp *openrtb2.Imp) int {
+	count := 0
+	if imp.Banner != nil {
+		count++
+	}
+	if imp.Video != nil {
+		count++
+	}
+	if imp.Audio != nil {
+		count++
+	}
+	if imp.Native != nil {
+		count++
+	}
+	return count
 }
 
 // Structs to handle parsed bidder info, so we aren't reparsing every request
@@ -200,91 +207,84 @@ func parseBidderInfo(info config.BidderInfo) parsedBidderInfo {
 	return parsedInfo
 }
 
-// AdjustImpForPreferredMediaType modifies the given impression to retain only the preferred media type.
+// adjustImpForPreferredMediaType modifies the given impression to retain only the preferred media type.
 // It returns the updated impression and any error encountered during the adjustment process.
-func AdjustImpForPreferredMediaType(imp *openrtb2.Imp, preferredMediaType openrtb_ext.BidType) (bool, []error) {
+func adjustImpForPreferredMediaType(imp *openrtb2.Imp, preferredMediaType openrtb_ext.BidType) (bool, []error) {
 	var errors []error
 	var removeImp bool
 	// Clear irrelevant media types based on the preferred media type.
 	switch preferredMediaType {
 	case openrtb_ext.BidTypeBanner:
 		if imp.Banner != nil {
-			if imp.Video != nil {
-				addWarning(&errors, imp.ID, openrtb_ext.BidTypeVideo)
-				imp.Video = nil
-			}
-			if imp.Audio != nil {
-				addWarning(&errors, imp.ID, openrtb_ext.BidTypeAudio)
-				imp.Audio = nil
-			}
-			if imp.Native != nil {
-				addWarning(&errors, imp.ID, openrtb_ext.BidTypeNative)
-				imp.Native = nil
-			}
+			removeVideo(imp, &errors)
+			removeAudio(imp, &errors)
+			removeNative(imp, &errors)
 		} else {
-			removeImp = true
-			return removeImp, []error{&errortypes.BadInput{Message: fmt.Sprintf("Imp %s does not have a preferred BANNER media type. It will be ignored.", imp.ID)}}
+			return true, []error{&errortypes.BadInput{Message: fmt.Sprintf("Imp %s does not have a preferred BANNER media type. It will be ignored.", imp.ID)}}
 		}
 	case openrtb_ext.BidTypeVideo:
 		if imp.Video != nil {
-			if imp.Banner != nil {
-				addWarning(&errors, imp.ID, openrtb_ext.BidTypeBanner)
-				imp.Banner = nil
-			}
-			if imp.Audio != nil {
-				addWarning(&errors, imp.ID, openrtb_ext.BidTypeAudio)
-				imp.Audio = nil
-			}
-			if imp.Native != nil {
-				addWarning(&errors, imp.ID, openrtb_ext.BidTypeNative)
-				imp.Native = nil
-			}
+			removeBanner(imp, &errors)
+			removeAudio(imp, &errors)
+			removeNative(imp, &errors)
 		} else {
-			removeImp = true
-			return removeImp, []error{&errortypes.BadInput{Message: fmt.Sprintf("Imp %s does not have a preferred VIDEO media type. It will be ignored.", imp.ID)}}
+			return true, []error{&errortypes.BadInput{Message: fmt.Sprintf("Imp %s does not have a preferred VIDEO media type. It will be ignored.", imp.ID)}}
 		}
 	case openrtb_ext.BidTypeAudio:
 		if imp.Audio != nil {
-			if imp.Banner != nil {
-				addWarning(&errors, imp.ID, openrtb_ext.BidTypeBanner)
-				imp.Banner = nil
-			}
-			if imp.Video != nil {
-				addWarning(&errors, imp.ID, openrtb_ext.BidTypeVideo)
-				imp.Video = nil
-			}
-			if imp.Native != nil {
-				addWarning(&errors, imp.ID, openrtb_ext.BidTypeNative)
-				imp.Native = nil
-			}
+			removeBanner(imp, &errors)
+			removeVideo(imp, &errors)
+			removeNative(imp, &errors)
 		} else {
-			removeImp = true
-			return removeImp, []error{&errortypes.BadInput{Message: fmt.Sprintf("Imp %s does not have a preferred AUDIO media type. It will be ignored.", imp.ID)}}
+			return true, []error{&errortypes.BadInput{Message: fmt.Sprintf("Imp %s does not have a preferred AUDIO media type. It will be ignored.", imp.ID)}}
 		}
 	case openrtb_ext.BidTypeNative:
 		if imp.Native != nil {
-			if imp.Banner != nil {
-				addWarning(&errors, imp.ID, openrtb_ext.BidTypeBanner)
-				imp.Banner = nil
-			}
-			if imp.Video != nil {
-				addWarning(&errors, imp.ID, openrtb_ext.BidTypeVideo)
-				imp.Video = nil
-			}
-			if imp.Audio != nil {
-				addWarning(&errors, imp.ID, openrtb_ext.BidTypeAudio)
-				imp.Audio = nil
-			}
+			removeBanner(imp, &errors)
+			removeVideo(imp, &errors)
+			removeAudio(imp, &errors)
 		} else {
-			removeImp = true
-			return removeImp, []error{&errortypes.BadInput{Message: fmt.Sprintf("Imp %s does not have a preferred NATIVE media type. It will be ignored.", imp.ID)}}
+			return true, []error{&errortypes.BadInput{Message: fmt.Sprintf("Imp %s does not have a preferred NATIVE media type. It will be ignored.", imp.ID)}}
 		}
+	case "":
+		return true, []error{&errortypes.BadInput{Message: fmt.Sprintf("Removing the imp %s as the bidder does not support multi-format and preferred media type is not defined for the bidder", imp.ID)}}
 	default:
-		removeImp = true
-		return removeImp, []error{&errortypes.BadInput{Message: fmt.Sprintf("Imp %s has an invalid preferred media type: %s. It will be ignored.", imp.ID, preferredMediaType)}}
+		return true, []error{&errortypes.BadInput{Message: fmt.Sprintf("Imp %s has an invalid preferred media type: %s. It will be ignored.", imp.ID, preferredMediaType)}}
 	}
 
 	return removeImp, errors
+}
+
+// Function to remove the banner media type from the impression and add a warning.
+func removeBanner(imp *openrtb2.Imp, errors *[]error) {
+	if imp.Banner != nil {
+		addWarning(errors, imp.ID, openrtb_ext.BidTypeBanner)
+		imp.Banner = nil
+	}
+}
+
+// Function to remove the video media type from the impression and add a warning.
+func removeVideo(imp *openrtb2.Imp, errors *[]error) {
+	if imp.Video != nil {
+		addWarning(errors, imp.ID, openrtb_ext.BidTypeVideo)
+		imp.Video = nil
+	}
+}
+
+// Function to remove the Native media type from the impression and add a warning.
+func removeNative(imp *openrtb2.Imp, errors *[]error) {
+	if imp.Native != nil {
+		addWarning(errors, imp.ID, openrtb_ext.BidTypeNative)
+		imp.Native = nil
+	}
+}
+
+// Function to remove the Audio media type from the impression and add a warning.
+func removeAudio(imp *openrtb2.Imp, errors *[]error) {
+	if imp.Audio != nil {
+		addWarning(errors, imp.ID, openrtb_ext.BidTypeAudio)
+		imp.Audio = nil
+	}
 }
 
 // Function to add a warning message to the list.
@@ -297,21 +297,4 @@ func IsMultiFormatSupported(bidderInfo config.BidderInfo) bool {
 		return *bidderInfo.OpenRTB.MultiformatSupported
 	}
 	return true
-}
-
-func IsMultiFormat(imp openrtb2.Imp) bool {
-	count := 0
-	if imp.Banner != nil {
-		count++
-	}
-	if imp.Video != nil {
-		count++
-	}
-	if imp.Audio != nil {
-		count++
-	}
-	if imp.Native != nil {
-		count++
-	}
-	return count > 1
 }

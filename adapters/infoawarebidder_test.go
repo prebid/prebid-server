@@ -498,10 +498,25 @@ func TestAdjustImpForPreferredMediaType(t *testing.T) {
 				&errortypes.BadInput{Message: "Imp imp-1 has an invalid preferred media type: invalid. It will be ignored."},
 			},
 		},
+		{
+			description: "Multiformat impression with preferred media type not defined",
+			inImp: openrtb2.Imp{
+				ID:     "imp-1",
+				Banner: &openrtb2.Banner{},
+				Video:  &openrtb2.Video{},
+				Audio:  &openrtb2.Audio{},
+				Native: &openrtb2.Native{},
+			},
+			preferredMediaType: "",
+			expectedImp:        openrtb2.Imp{},
+			expectedErrors: []error{
+				&errortypes.BadInput{Message: "Removing the imp imp-1 as the bidder does not support multi-format and preferred media type is not defined for the bidder"},
+			},
+		},
 	}
 
 	for _, test := range testCases {
-		_, actualErrs := AdjustImpForPreferredMediaType(&test.inImp, test.preferredMediaType)
+		_, actualErrs := adjustImpForPreferredMediaType(&test.inImp, test.preferredMediaType)
 		if test.expectedErrors != nil {
 			for i, expectedErr := range test.expectedErrors {
 				assert.EqualError(t, expectedErr, actualErrs[i].Error(), "Test failed. Error[%d] in error list mismatch: %s", i, test.description)
