@@ -1,5 +1,5 @@
 {
-  "description": "Bid request with user.eids array element that does not contain source field",
+  "description": "Bid request where a request.user.eids.uids array element is missing its id field",
   "mockBidRequest": {
     "id": "anyRequestID",
     "site": {
@@ -29,13 +29,12 @@
     }],
     "tmax": 1000,
     "user": {
-      "eids": [{
-        "uids": [{
-          "id": "A"
-        }]
-      }]
-    }
+    "eids": [{
+        "source": "source1",
+        "uids": []
+    }]
+}
   },
-  "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request: request.user.eids[0] missing required field: \"source\"\n"
+  "expectedReturnCode": 200,
+  "expectedErrorMessage": "request.user.eids[0] (source: source1) removed due to empty uids"
 }
