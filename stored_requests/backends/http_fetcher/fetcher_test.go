@@ -309,7 +309,7 @@ func newFetcherBrokenBackend() (fetcher *HttpFetcher, closer func()) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 	server := httptest.NewServer(http.HandlerFunc(handler))
-	return NewFetcher(server.Client(), server.URL), server.Close
+	return NewFetcher(server.Client(), server.URL, false), server.Close
 }
 
 func newFetcherBadJSON() (fetcher *HttpFetcher, closer func()) {
@@ -317,7 +317,7 @@ func newFetcherBadJSON() (fetcher *HttpFetcher, closer func()) {
 		w.Write([]byte(`broken JSON`))
 	}
 	server := httptest.NewServer(http.HandlerFunc(handler))
-	return NewFetcher(server.Client(), server.URL), server.Close
+	return NewFetcher(server.Client(), server.URL, false), server.Close
 }
 
 func newEmptyFetcher(t *testing.T, expectReqIDs []string, expectImpIDs []string, useRfcCompliantBuilder bool) (fetcher *HttpFetcher, closer func()) {
