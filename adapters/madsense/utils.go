@@ -16,7 +16,7 @@ func parseImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpMadSense, error) {
 
 	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: fmt.Sprintf("Error while decoding extImpBidder, err: %v", err),
+			Message: fmt.Sprintf("Error while decoding imp.Ext, err: %v", err),
 		}
 	}
 
@@ -24,7 +24,7 @@ func parseImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpMadSense, error) {
 	err := jsonutil.Unmarshal(bidderExt.Bidder, &ext)
 	if err != nil {
 		return nil, &errortypes.BadInput{
-			Message: fmt.Sprintf("Error while decoding impExt, err: %v", err),
+			Message: fmt.Sprintf("Error while decoding bidderExt.Bidder, err: %v", err),
 		}
 	}
 
