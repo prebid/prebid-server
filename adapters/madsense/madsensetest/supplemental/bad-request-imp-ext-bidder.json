@@ -10,7 +10,8 @@
           ],
           "w": 1920,
           "h": 1080
-        }
+        },
+        "ext": {}
       }
     ],
     "app": {
@@ -25,7 +26,7 @@
   "expectedBidResponses": [],
   "expectedMakeRequestsErrors": [
     {
-      "value": "Error while decoding imp.Ext",
+      "value": "Error while decoding bidderExt.Bidder",
       "comparison": "startswith"
     }
   ]
