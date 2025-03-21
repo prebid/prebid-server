@@ -1,4 +1,4 @@
-endpoint: "http://prebid-server.smilewanted.com"
+endpoint: "https://prebid-server.smilewanted.com"
 maintainer:
   email: "tech@smilewanted.com"
 gvlVendorID: 639
