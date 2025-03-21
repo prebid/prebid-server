@@ -472,4 +472,5 @@ type MetricsEngine interface {
 	RecordModuleSuccessRejected(labels ModuleLabels)
 	RecordModuleExecutionError(labels ModuleLabels)
 	RecordModuleTimeout(labels ModuleLabels)
+	RecordGeoLocationRequest(success bool)
 }
