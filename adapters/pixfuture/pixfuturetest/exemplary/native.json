@@ -1,0 +1,97 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "imp1",
+        "native": {
+          "request": "{\"ver\":\"1.2\",\"context\":1,\"plcmttype\":1,\"assets\":[]}",
+          "ver": "1.2"
+        },
+        "ext": {
+          "tid": "2045c5a8-a768-469c-b922-cddecd2c51d3",
+          "data": {},
+          "bidder": {
+            "pix_id": "55463"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://any.url",
+        "headers": {
+          "Content-Type": ["application/json"],
+          "Accept": ["application/json"]
+        },
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "imp1",
+              "native": {
+                "request": "{\"ver\":\"1.2\",\"context\":1,\"plcmttype\":1,\"assets\":[]}",
+                "ver": "1.2"
+              },
+              "ext": {
+                "tid": "2045c5a8-a768-469c-b922-cddecd2c51d3",
+                "data": {},
+                "bidder": {
+                  "pix_id": "55463"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": ["imp1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-response-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid1",
+                  "impid": "imp1",
+                  "price": 1.23,
+                  "adm": "{\"ver\":\"1.2\",\"native\":{\"assets\":[]}}",
+                  "ext": {
+                    "prebid": {
+                      "type": "native"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "bid1",
+            "impid": "imp1",
+            "price": 1.23,
+            "adm": "{\"ver\":\"1.2\",\"native\":{\"assets\":[]}}",
+            "ext": {
+              "prebid": {
+                "type": "native"
+              }
+            }
+          },
+          "type": "native"
+        }
+      ],
+      "currency": "USD"
+    }
+  ]
+}
