@@ -53,7 +53,8 @@
                 "adm": "{\"ver\": \"1.2\", \"assets\": [{\"id\": 1, \"required\": 1,\"title\": {\"text\": \"OpenX (Title)\"}}], \"link\": {\"url\": \"https://www.openx.com/\"}, \"eventtrackers\":[{\"event\":1,\"method\":1,\"url\":\"http://example.com/impression\"}]}",
                 "crid": "crid_10",
                 "h": 90,
-                "w": 728
+                "w": 728,
+                "mtype": 1
               }]
             }
           ],
@@ -75,7 +76,8 @@
             "adm": "{\"ver\": \"1.2\", \"assets\": [{\"id\": 1, \"required\": 1,\"title\": {\"text\": \"OpenX (Title)\"}}], \"link\": {\"url\": \"https://www.openx.com/\"}, \"eventtrackers\":[{\"event\":1,\"method\":1,\"url\":\"http://example.com/impression\"}]}",
             "crid": "crid_10",
             "w": 728,
-            "h": 90
+            "h": 90,
+            "mtype": 1
           },
           "type": "banner"
         }
