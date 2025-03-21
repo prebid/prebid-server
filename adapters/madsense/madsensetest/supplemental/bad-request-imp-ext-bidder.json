@@ -25,7 +25,7 @@
   "expectedBidResponses": [],
   "expectedMakeRequestsErrors": [
     {
-      "value": "Error while decoding extImpBidder",
+      "value": "Error while decoding imp.Ext",
       "comparison": "startswith"
     }
   ]

@@ -26,7 +26,7 @@
   "expectedBidResponses": [],
   "expectedMakeRequestsErrors": [
     {
-      "value": "Error while decoding impExt",
+      "value": "Error while decoding bidderExt.Bidder",
       "comparison": "startswith"
     }
   ]
