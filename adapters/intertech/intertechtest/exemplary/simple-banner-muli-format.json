@@ -1,0 +1,115 @@
+{
+  "mockBidRequest": {
+    "id": "request-id-1",
+    "device": {
+      "ip": "123.123.123.123",
+      "ua": "Mozilla/5.0 (X11; Linux x86_64)"
+    },
+    "site": {
+      "page": "http://bannercheck.com"
+    },
+    "imp": [
+      {
+        "id": "imp-id-1",
+        "tagid": "tag-id-1",
+        "banner": {
+          "format": [
+            { "w": 728, "h": 90 },
+            { "w": 300, "h": 250 }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "page_id": 1111,
+            "imp_id": 2222
+          }
+        }
+      }
+    ],
+    "cur": ["USD"]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://test.intertech.com/ssp?pid=1111&imp=2222&target-ref=http%3A%2F%2Fbannercheck.com&ssp-cur=USD",
+        "body": {
+          "id": "request-id-1",
+          "imp": [
+            {
+              "id": "imp-id-1",
+              "tagid": "tag-id-1",
+              "banner": {
+                "w": 728,
+                "h": 90,
+                "format": [
+                  { "w": 728, "h": 90 },
+                  { "w": 300, "h": 250 }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "page_id": 1111,
+                  "imp_id": 2222
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "http://bannercheck.com"
+          },
+          "device": {
+            "ip": "123.123.123.123",
+            "ua": "Mozilla/5.0 (X11; Linux x86_64)"
+          },
+          "cur": ["USD"]
+        },
+        "impIDs": ["imp-id-1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "request-id-1",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "intertech",
+              "bid": [
+                {
+                  "id": "bid-id-1",
+                  "impid": "imp-id-1",
+                  "price": 0.7,
+                  "adm": "<html><body><h1>Test Banner 728x90</h1></body></html>",
+                  "cid": "campaign-id-1",
+                  "crid": "creative-id-1",
+                  "w": 728,
+                  "h": 90,
+                  "mtype": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-id-1",
+            "impid": "imp-id-1",
+            "price": 0.7,
+            "adm": "<html><body><h1>Test Banner 728x90</h1></body></html>",
+            "cid": "campaign-id-1",
+            "crid": "creative-id-1",
+            "w": 728,
+            "h": 90,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
