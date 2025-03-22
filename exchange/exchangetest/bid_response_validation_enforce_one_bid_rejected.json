@@ -191,31 +191,29 @@
                         "message": "bidResponse rejected: size WxH"
                     }
                 ]
-            },
-            "prebid": {
-                "seatnonbid": [
+            }
+        },
+        "seatnonbids": [
+            {
+                "nonbid": [
                     {
-                        "nonbid": [
-                            {
-                                "impid": "some-imp-id",
-                                "statuscode": 351,
-                                "ext": {
-                                    "prebid": {
-                                        "bid": {
-                                            "price": 0.3,
-                                            "w": 200,
-                                            "h": 500,
-                                            "origbidcpm": 0.3
-                                        }
-                                    }
+                        "impid": "some-imp-id",
+                        "statuscode": 351,
+                        "ext": {
+                            "prebid": {
+                                "bid": {
+                                    "price": 0.3,
+                                    "w": 200,
+                                    "h": 500,
+                                    "origbidcpm": 0.3
                                 }
                             }
-                        ],
-                        "seat": "appnexus",
-                        "ext": null
+                        }
                     }
-                ]
+                ],
+                "seat": "appnexus",
+                "ext": null
             }
-        }
+        ]
     }
 }

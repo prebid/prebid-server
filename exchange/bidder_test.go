@@ -3110,7 +3110,7 @@ func TestSeatNonBid(t *testing.T) {
 	}
 	type expect struct {
 		seatBids    []*entities.PbsOrtbSeatBid
-		seatNonBids SeatNonBidBuilder
+		seatNonBids openrtb_ext.SeatNonBidBuilder
 		errors      []error
 	}
 	testCases := []struct {
@@ -3130,10 +3130,10 @@ func TestSeatNonBid(t *testing.T) {
 				client:         &http.Client{Timeout: time.Nanosecond}, // for timeout
 			},
 			expect: expect{
-				seatNonBids: SeatNonBidBuilder{
+				seatNonBids: openrtb_ext.SeatNonBidBuilder{
 					"pubmatic": {{
 						ImpId:      "1234",
-						StatusCode: int(ErrorTimeout),
+						StatusCode: int(openrtb_ext.ErrorTimeout),
 					}},
 				},
 				errors:   []error{&errortypes.Timeout{Message: context.DeadlineExceeded.Error()}},
@@ -3150,10 +3150,10 @@ func TestSeatNonBid(t *testing.T) {
 				},
 			},
 			expect: expect{
-				seatNonBids: SeatNonBidBuilder{
+				seatNonBids: openrtb_ext.SeatNonBidBuilder{
 					"appnexus": {
-						{ImpId: "1234", StatusCode: int(ErrorBidderUnreachable)},
-						{ImpId: "4567", StatusCode: int(ErrorBidderUnreachable)},
+						{ImpId: "1234", StatusCode: int(openrtb_ext.ErrorBidderUnreachable)},
+						{ImpId: "4567", StatusCode: int(openrtb_ext.ErrorBidderUnreachable)},
 					},
 				},
 				seatBids: []*entities.PbsOrtbSeatBid{{Bids: []*entities.PbsOrtbBid{}, Currency: "USD", Seat: "appnexus", HttpCalls: []*openrtb_ext.ExtHttpCall{}}},
@@ -3171,7 +3171,7 @@ func TestSeatNonBid(t *testing.T) {
 				},
 			},
 			expect: expect{
-				seatNonBids: SeatNonBidBuilder{},
+				seatNonBids: openrtb_ext.SeatNonBidBuilder{},
 				seatBids:    []*entities.PbsOrtbSeatBid{{Bids: []*entities.PbsOrtbBid{}, Currency: "USD", HttpCalls: []*openrtb_ext.ExtHttpCall{}}},
 				errors:      []error{&url.Error{Op: "Get", URL: "", Err: errors.New("some_error")}},
 			},

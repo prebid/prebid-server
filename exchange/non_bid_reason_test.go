@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -17,7 +18,7 @@ func Test_httpInfoToNonBidReason(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want NonBidReason
+		want openrtb_ext.NonBidReason
 	}{
 		{
 			name: "error-timeout",
@@ -26,7 +27,7 @@ func Test_httpInfoToNonBidReason(t *testing.T) {
 					err: &errortypes.Timeout{},
 				},
 			},
-			want: ErrorTimeout,
+			want: openrtb_ext.ErrorTimeout,
 		},
 		{
 			name: "error-general",
@@ -35,7 +36,7 @@ func Test_httpInfoToNonBidReason(t *testing.T) {
 					err: errors.New("some_error"),
 				},
 			},
-			want: ErrorGeneral,
+			want: openrtb_ext.ErrorGeneral,
 		},
 		{
 			name: "error-bidderUnreachable",
@@ -44,7 +45,7 @@ func Test_httpInfoToNonBidReason(t *testing.T) {
 					err: syscall.ECONNREFUSED,
 				},
 			},
-			want: ErrorBidderUnreachable,
+			want: openrtb_ext.ErrorBidderUnreachable,
 		},
 		{
 			name: "error-biddersUnreachable-no-such-host",
@@ -53,7 +54,7 @@ func Test_httpInfoToNonBidReason(t *testing.T) {
 					err: &net.DNSError{IsNotFound: true},
 				},
 			},
-			want: ErrorBidderUnreachable,
+			want: openrtb_ext.ErrorBidderUnreachable,
 		},
 	}
 	for _, tt := range tests {

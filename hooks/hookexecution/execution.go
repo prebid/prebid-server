@@ -202,6 +202,7 @@ func handleHookResponse[P any](
 		Warnings:      hr.Result.Warnings,
 		DebugMessages: hr.Result.DebugMessages,
 		AnalyticsTags: hr.Result.AnalyticsTags,
+		SeatNonBid:    hr.Result.SeatNonBid,
 		ExecutionTime: ExecutionTime{ExecutionTimeMillis: hr.ExecutionTime},
 	}
 

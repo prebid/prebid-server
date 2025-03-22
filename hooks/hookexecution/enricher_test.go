@@ -31,14 +31,15 @@ type GroupOutcomeTest struct {
 
 type HookOutcomeTest struct {
 	ExecutionTime
-	AnalyticsTags hookanalytics.Analytics `json:"analytics_tags"`
-	HookID        HookID                  `json:"hook_id"`
-	Status        Status                  `json:"status"`
-	Action        Action                  `json:"action"`
-	Message       string                  `json:"message"`
-	DebugMessages []string                `json:"debug_messages"`
-	Errors        []string                `json:"errors"`
-	Warnings      []string                `json:"warnings"`
+	AnalyticsTags hookanalytics.Analytics       `json:"analytics_tags"`
+	HookID        HookID                        `json:"hook_id"`
+	Status        Status                        `json:"status"`
+	Action        Action                        `json:"action"`
+	Message       string                        `json:"message"`
+	DebugMessages []string                      `json:"debug_messages"`
+	Errors        []string                      `json:"errors"`
+	Warnings      []string                      `json:"warnings"`
+	SeatNonBid    openrtb_ext.SeatNonBidBuilder `json:"seatnonbid"`
 }
 
 func TestEnrichBidResponse(t *testing.T) {

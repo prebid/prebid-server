@@ -1451,8 +1451,11 @@ func (s formatOverrideSpec) execute(t *testing.T) {
 }
 
 type mockAmpExchange struct {
-	lastRequest *openrtb2.BidRequest
-	requestExt  json.RawMessage
+	lastRequest        *openrtb2.BidRequest
+	requestExt         json.RawMessage
+	returnError        bool
+	setBidRequestToNil bool
+	seatNonBid         openrtb_ext.SeatNonBidBuilder
 }
 
 var expectedErrorsFromHoldAuction map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage = map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage{
@@ -1465,6 +1468,13 @@ var expectedErrorsFromHoldAuction map[openrtb_ext.BidderName][]openrtb_ext.ExtBi
 }
 
 func (m *mockAmpExchange) HoldAuction(ctx context.Context, auctionRequest *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*exchange.AuctionResponse, error) {
+	if m.returnError {
+		return nil, hookexecution.RejectError{
+			NBR:   1,
+			Stage: hooks.StageBidderRequest.String(),
+			Hook:  hookexecution.HookID{ModuleCode: "foobar", HookImplCode: "foo"},
+		}
+	}
 	r := auctionRequest.BidRequestWrapper
 	m.lastRequest = r.BidRequest
 
@@ -1498,7 +1508,11 @@ func (m *mockAmpExchange) HoldAuction(ctx context.Context, auctionRequest *excha
 		response.Ext = json.RawMessage(fmt.Sprintf(`{"debug": {"httpcalls": {}, "resolvedrequest": %s}}`, resolvedRequest))
 	}
 
-	return &exchange.AuctionResponse{BidResponse: response}, nil
+	if m.setBidRequestToNil {
+		auctionRequest.BidRequestWrapper.BidRequest = nil
+	}
+
+	return &exchange.AuctionResponse{BidResponse: response, SeatNonBid: m.seatNonBid}, nil
 }
 
 type mockAmpExchangeWarnings struct{}
@@ -1674,16 +1688,21 @@ func (logger mockLogger) Shutdown() {}
 
 func TestBuildAmpObject(t *testing.T) {
 	testCases := []struct {
-		description       string
-		inTagId           string
-		exchange          *mockAmpExchange
-		inStoredRequest   json.RawMessage
-		expectedAmpObject *analytics.AmpObject
+		description                string
+		inTagId                    string
+		exchange                   *mockAmpExchange
+		inStoredRequest            json.RawMessage
+		planBuilder                hooks.ExecutionPlanBuilder
+		returnErrorFromHoldAuction bool
+		setRequestToNil            bool
+		seatNonBidFromHoldAuction  openrtb_ext.SeatNonBidBuilder
+		expectedAmpObject          *analytics.AmpObject
 	}{
 		{
 			description:     "Stored Amp request with nil body. Only the error gets logged",
 			inTagId:         "test",
 			inStoredRequest: nil,
+			planBuilder:     hooks.EmptyPlanBuilder{},
 			expectedAmpObject: &analytics.AmpObject{
 				Status: http.StatusOK,
 				Errors: []error{fmt.Errorf("unexpected end of JSON input")},
@@ -1693,24 +1712,163 @@ func TestBuildAmpObject(t *testing.T) {
 			description:     "Stored Amp request with no imps that should return error. Only the error gets logged",
 			inTagId:         "test",
 			inStoredRequest: json.RawMessage(`{"id":"some-request-id","site":{"page":"prebid.org"},"imp":[],"tmax":500}`),
+			planBuilder:     hooks.EmptyPlanBuilder{},
 			expectedAmpObject: &analytics.AmpObject{
 				Status: http.StatusOK,
 				Errors: []error{fmt.Errorf("data for tag_id='test' does not define the required imp array")},
 			},
 		},
 		{
-			description:     "Wrong tag_id, error gets logged",
+			description:     "Wrong tag_id, error and seatnonbid gets logged",
 			inTagId:         "unknown",
 			inStoredRequest: json.RawMessage(`{"id":"some-request-id","site":{"page":"prebid.org"},"imp":[{"id":"some-impression-id","banner":{"format":[{"w":300,"h":250}]},"ext":{"prebid":{"bidder":{"appnexus":{"placementId":12883451}}}}}],"tmax":500}`),
+			planBuilder:     mockPlanBuilder{entrypointPlan: makePlan[hookstage.Entrypoint](mockSeatNonBidHook{})},
 			expectedAmpObject: &analytics.AmpObject{
 				Status: http.StatusOK,
 				Errors: []error{fmt.Errorf("unexpected end of JSON input")},
+				SeatNonBid: []openrtb_ext.SeatNonBid{
+					{
+						Seat: "pubmatic",
+						NonBid: []openrtb_ext.NonBid{
+							{
+								ImpId:      "imp",
+								StatusCode: 100,
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			description:                "AmpObject should contain seatNonBid when holdAuction returns error",
+			inTagId:                    "test",
+			inStoredRequest:            json.RawMessage(`{"id":"some-request-id","site":{"page":"prebid.org"},"imp":[{"id":"some-impression-id","banner":{"format":[{"w":300,"h":250}]},"ext":{"prebid":{"bidder":{"appnexus":{"placementId":12883451}}}}}],"tmax":500}`),
+			planBuilder:                mockPlanBuilder{entrypointPlan: makePlan[hookstage.Entrypoint](mockSeatNonBidHook{})},
+			returnErrorFromHoldAuction: true,
+			expectedAmpObject: &analytics.AmpObject{
+				Status: http.StatusInternalServerError,
+				Errors: []error{
+					fmt.Errorf("[Module foobar (hook: foo) rejected request with code 1 at bidder_request stage]"),
+				},
+				RequestWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						ID: "some-request-id",
+						Device: &openrtb2.Device{
+							IP: "192.0.2.1",
+						},
+						Site: &openrtb2.Site{
+							Page: "prebid.org",
+							Ext:  json.RawMessage(`{"amp":1}`),
+						},
+						Imp: []openrtb2.Imp{
+							{
+								ID: "some-impression-id",
+								Banner: &openrtb2.Banner{
+									Format: []openrtb2.Format{
+										{
+											W: 300,
+											H: 250,
+										},
+									},
+								},
+								Secure: func(val int8) *int8 { return &val }(1), //(*int8)(1),
+								Ext:    json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placementId":12883451}}}}`),
+							},
+						},
+						AT:   1,
+						TMax: 500,
+						Ext:  json.RawMessage(`{"prebid":{"cache":{"bids":{}},"channel":{"name":"amp","version":""},"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"mediatypepricegranularity":{},"includewinners":true,"includebidderkeys":true}}}`),
+					},
+				},
+				Origin: "",
+				SeatNonBid: []openrtb_ext.SeatNonBid{
+					{
+						Seat: "pubmatic",
+						NonBid: []openrtb_ext.NonBid{
+							{
+								ImpId:      "imp",
+								StatusCode: 100,
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			description:               "AmpObject should contain seatNonBid when RebuildRequest returns error after holdAuction",
+			inTagId:                   "test",
+			inStoredRequest:           json.RawMessage(`{"id":"some-request-id","site":{"page":"prebid.org"},"imp":[{"id":"some-impression-id","banner":{"format":[{"w":300,"h":250}]},"ext":{"prebid":{"bidder":{"appnexus":{"placementId":12883451}}}}}],"tmax":500}`),
+			planBuilder:               mockPlanBuilder{entrypointPlan: makePlan[hookstage.Entrypoint](mockSeatNonBidHook{})},
+			setRequestToNil:           true,
+			seatNonBidFromHoldAuction: getNonBids(map[string][]openrtb_ext.NonBidParams{"pubmatic": {{Bid: &openrtb2.Bid{ImpID: "imp1"}, NonBidReason: 100}}}),
+			expectedAmpObject: &analytics.AmpObject{
+				Status: http.StatusInternalServerError,
+				Errors: []error{
+					fmt.Errorf("[Module foobar (hook: foo) rejected request with code 1 at bidder_request stage]"),
+				},
+				RequestWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						ID: "some-request-id",
+						Device: &openrtb2.Device{
+							IP: "192.0.2.1",
+						},
+						Site: &openrtb2.Site{
+							Page: "prebid.org",
+							Ext:  json.RawMessage(`{"amp":1}`),
+						},
+						Imp: []openrtb2.Imp{
+							{
+								ID: "some-impression-id",
+								Banner: &openrtb2.Banner{
+									Format: []openrtb2.Format{
+										{
+											W: 300,
+											H: 250,
+										},
+									},
+								},
+								Secure: func(val int8) *int8 { return &val }(1),
+								Ext:    json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placementId":12883451}}}}`),
+							},
+						},
+						AT:   1,
+						TMax: 500,
+						Ext:  json.RawMessage(`{"prebid":{"cache":{"bids":{}},"channel":{"name":"amp","version":""},"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"mediatypepricegranularity":{},"includewinners":true,"includebidderkeys":true}}}`),
+					},
+				},
+				AuctionResponse: &openrtb2.BidResponse{
+					SeatBid: []openrtb2.SeatBid{{
+						Bid: []openrtb2.Bid{{
+							AdM: "<script></script>",
+							Ext: json.RawMessage(`{ "prebid": {"targeting": { "hb_pb": "1.20", "hb_appnexus_pb": "1.20", "hb_cache_id": "some_id"}}}`),
+						}},
+						Seat: "",
+					}},
+					Ext: json.RawMessage(`{ "errors": {"openx":[ { "code": 1, "message": "The request exceeded the timeout allocated" } ] } }`),
+				},
+				Origin: "",
+				SeatNonBid: []openrtb_ext.SeatNonBid{
+					{
+						Seat: "pubmatic",
+						NonBid: []openrtb_ext.NonBid{
+							{
+								ImpId:      "imp1",
+								StatusCode: 100,
+							},
+							{
+								ImpId:      "imp",
+								StatusCode: 100,
+							},
+						},
+					},
+				},
 			},
 		},
 		{
 			description:     "Valid stored Amp request, correct tag_id, a valid response should be logged",
 			inTagId:         "test",
 			inStoredRequest: json.RawMessage(`{"id":"some-request-id","site":{"page":"prebid.org"},"imp":[{"id":"some-impression-id","banner":{"format":[{"w":300,"h":250}]},"ext":{"prebid":{"bidder":{"appnexus":{"placementId":12883451}}}}}],"tmax":500}`),
+			planBuilder:     hooks.EmptyPlanBuilder{},
 			expectedAmpObject: &analytics.AmpObject{
 				Status: http.StatusOK,
 				Errors: nil,
@@ -1767,6 +1925,7 @@ func TestBuildAmpObject(t *testing.T) {
 			inTagId:         "test",
 			inStoredRequest: json.RawMessage(`{"id":"some-request-id","site":{"page":"prebid.org"},"imp":[{"id":"some-impression-id","banner":{"format":[{"w":300,"h":250}]},"ext":{"prebid":{"bidder":{"appnexus":{"placementId":12883451}}}}}],"tmax":500}`),
 			exchange:        &mockAmpExchange{requestExt: json.RawMessage(`{ "prebid": {"targeting": { "test_key": "test_value", "hb_appnexus_pb": "9999" } }, "errors": {"openx":[ { "code": 1, "message": "The request exceeded the timeout allocated" } ] } }`)},
+			planBuilder:     hooks.EmptyPlanBuilder{},
 			expectedAmpObject: &analytics.AmpObject{
 				Status: http.StatusOK,
 				Errors: nil,
@@ -1828,9 +1987,13 @@ func TestBuildAmpObject(t *testing.T) {
 		// Set up test, declare a new mock logger every time
 		exchange := test.exchange
 		if exchange == nil {
-			exchange = &mockAmpExchange{}
+			exchange = &mockAmpExchange{
+				returnError:        test.returnErrorFromHoldAuction,
+				setBidRequestToNil: test.setRequestToNil,
+				seatNonBid:         test.seatNonBidFromHoldAuction,
+			}
 		}
-		actualAmpObject, endpoint := ampObjectTestSetup(t, test.inTagId, test.inStoredRequest, false, exchange)
+		actualAmpObject, endpoint := ampObjectTestSetup(t, test.inTagId, test.inStoredRequest, false, exchange, test.planBuilder)
 		// Run test
 		endpoint(recorder, request, nil)
 
@@ -1849,6 +2012,7 @@ func TestBuildAmpObject(t *testing.T) {
 		assert.Equalf(t, test.expectedAmpObject.AuctionResponse, actualAmpObject.AuctionResponse, "Amp Object BidResponse doesn't match expected: %s\n", test.description)
 		assert.Equalf(t, test.expectedAmpObject.AmpTargetingValues, actualAmpObject.AmpTargetingValues, "Amp Object AmpTargetingValues doesn't match expected: %s\n", test.description)
 		assert.Equalf(t, test.expectedAmpObject.Origin, actualAmpObject.Origin, "Amp Object Origin field doesn't match expected: %s\n", test.description)
+		assert.Equalf(t, test.expectedAmpObject.SeatNonBid, actualAmpObject.SeatNonBid, "Amp Object SeatNonBid field doesn't match expected: %s\n", test.description)
 	}
 }
 
@@ -1904,13 +2068,13 @@ func TestIdGeneration(t *testing.T) {
 
 	for _, test := range testCases {
 		// Set up and run test
-		actualAmpObject, endpoint := ampObjectTestSetup(t, "test", test.givenInStoredRequest, test.givenGenerateRequestID, &mockAmpExchange{})
+		actualAmpObject, endpoint := ampObjectTestSetup(t, "test", test.givenInStoredRequest, test.givenGenerateRequestID, &mockAmpExchange{}, hooks.EmptyPlanBuilder{})
 		endpoint(recorder, request, nil)
 		assert.Equalf(t, test.expectedID, actualAmpObject.RequestWrapper.ID, "Bid Request ID is incorrect: %s\n", test.description)
 	}
 }
 
-func ampObjectTestSetup(t *testing.T, inTagId string, inStoredRequest json.RawMessage, generateRequestID bool, exchange *mockAmpExchange) (*analytics.AmpObject, httprouter.Handle) {
+func ampObjectTestSetup(t *testing.T, inTagId string, inStoredRequest json.RawMessage, generateRequestID bool, exchange *mockAmpExchange, planBuilder hooks.ExecutionPlanBuilder) (*analytics.AmpObject, httprouter.Handle) {
 	actualAmpObject := analytics.AmpObject{}
 	logger := newMockLogger(&actualAmpObject, nil)
 
@@ -1933,7 +2097,7 @@ func ampObjectTestSetup(t *testing.T, inTagId string, inStoredRequest json.RawMe
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
-		hooks.EmptyPlanBuilder{},
+		planBuilder,
 		nil,
 	)
 	return &actualAmpObject, endpoint
@@ -2250,61 +2414,114 @@ func TestValidAmpResponseWhenRequestRejected(t *testing.T) {
 	}
 }
 
-func TestSendAmpResponse_LogsErrors(t *testing.T) {
+func TestSendAmpResponse(t *testing.T) {
+	type want struct {
+		errors     []error
+		status     int
+		seatNonBid []openrtb_ext.SeatNonBid
+	}
 	testCases := []struct {
-		description    string
-		expectedErrors []error
-		expectedStatus int
-		writer         http.ResponseWriter
-		request        *openrtb2.BidRequest
-		response       *openrtb2.BidResponse
-		hookExecutor   hookexecution.HookStageExecutor
+		description  string
+		writer       http.ResponseWriter
+		request      *openrtb2.BidRequest
+		response     *openrtb2.BidResponse
+		hookExecutor hookexecution.HookStageExecutor
+		want         want
 	}{
 		{
 			description: "Error logged when bid.ext unmarshal fails",
-			expectedErrors: []error{
-				errors.New("Critical error while unpacking AMP targets: expect { or n, but found \""),
+			want: want{
+				errors: []error{
+					errors.New("Critical error while unpacking AMP targets: expect { or n, but found \""),
+				},
+				status: http.StatusInternalServerError,
 			},
-			expectedStatus: http.StatusInternalServerError,
-			writer:         httptest.NewRecorder(),
-			request:        &openrtb2.BidRequest{ID: "some-id", Test: 1},
+			writer:  httptest.NewRecorder(),
+			request: &openrtb2.BidRequest{ID: "some-id", Test: 1},
 			response: &openrtb2.BidResponse{ID: "some-id", SeatBid: []openrtb2.SeatBid{
 				{Bid: []openrtb2.Bid{{Ext: json.RawMessage(`"hb_cache_id`)}}},
 			}},
-			hookExecutor: &hookexecution.EmptyHookExecutor{},
+			hookExecutor: hookexecution.EmptyHookExecutor{},
+		},
+		{
+			description: "Capture seatNonBid when bid.ext unmarshal fails",
+			want: want{
+				errors: []error{
+					errors.New("Critical error while unpacking AMP targets: expect { or n, but found \""),
+				},
+				status: http.StatusInternalServerError,
+				seatNonBid: []openrtb_ext.SeatNonBid{
+					{
+						Seat: "pubmatic",
+						NonBid: []openrtb_ext.NonBid{
+							{
+								ImpId:      "imp",
+								StatusCode: 100,
+							},
+						},
+					},
+				},
+			},
+			writer:  httptest.NewRecorder(),
+			request: &openrtb2.BidRequest{ID: "some-id", Test: 1},
+			response: &openrtb2.BidResponse{ID: "some-id", SeatBid: []openrtb2.SeatBid{
+				{Bid: []openrtb2.Bid{{Ext: json.RawMessage(`"hb_cache_id`)}}},
+			}},
+			hookExecutor: &mockStageExecutor{
+				outcomes: []hookexecution.StageOutcome{
+					{
+						Groups: []hookexecution.GroupOutcome{
+							{
+								InvocationResults: []hookexecution.HookOutcome{
+									{
+										Status:     hookexecution.StatusSuccess,
+										SeatNonBid: getNonBids(map[string][]openrtb_ext.NonBidParams{"pubmatic": {{Bid: &openrtb2.Bid{ImpID: "imp"}, NonBidReason: 100}}}),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 		{
 			description: "Error logged when test mode activated but no debug present in response",
-			expectedErrors: []error{
-				errors.New("test set on request but debug not present in response"),
+			want: want{
+				errors: []error{
+					errors.New("test set on request but debug not present in response"),
+				},
+				status: 0,
 			},
-			expectedStatus: 0,
-			writer:         httptest.NewRecorder(),
-			request:        &openrtb2.BidRequest{ID: "some-id", Test: 1},
-			response:       &openrtb2.BidResponse{ID: "some-id", Ext: json.RawMessage("{}")},
-			hookExecutor:   &hookexecution.EmptyHookExecutor{},
+			writer:       httptest.NewRecorder(),
+			request:      &openrtb2.BidRequest{ID: "some-id", Test: 1},
+			response:     &openrtb2.BidResponse{ID: "some-id", Ext: json.RawMessage("{}")},
+			hookExecutor: &hookexecution.EmptyHookExecutor{},
 		},
 		{
 			description: "Error logged when response encoding fails",
-			expectedErrors: []error{
-				errors.New("/openrtb2/amp Failed to send response: failed writing response"),
+			want: want{
+				errors: []error{
+					errors.New("/openrtb2/amp Failed to send response: failed writing response"),
+				},
+				status: 0,
 			},
-			expectedStatus: 0,
-			writer:         errorResponseWriter{},
-			request:        &openrtb2.BidRequest{ID: "some-id", Test: 1},
-			response:       &openrtb2.BidResponse{ID: "some-id", Ext: json.RawMessage(`{"debug": {}}`)},
-			hookExecutor:   &hookexecution.EmptyHookExecutor{},
+			writer:       errorResponseWriter{},
+			request:      &openrtb2.BidRequest{ID: "some-id", Test: 1},
+			response:     &openrtb2.BidResponse{ID: "some-id", Ext: json.RawMessage(`{"debug": {}}`)},
+			hookExecutor: &hookexecution.EmptyHookExecutor{},
 		},
 		{
 			description: "Error logged if hook enrichment returns warnings",
-			expectedErrors: []error{
-				errors.New("Value is not a string: 1"),
-				errors.New("Value is not a boolean: active"),
+			want: want{
+				errors: []error{
+					errors.New("Value is not a string: 1"),
+					errors.New("Value is not a boolean: active"),
+				},
+				status: 0,
 			},
-			expectedStatus: 0,
-			writer:         httptest.NewRecorder(),
-			request:        &openrtb2.BidRequest{ID: "some-id", Ext: json.RawMessage(`{"prebid": {"debug": "active", "trace": 1}}`)},
-			response:       &openrtb2.BidResponse{ID: "some-id", Ext: json.RawMessage("{}")},
+			writer:   httptest.NewRecorder(),
+			request:  &openrtb2.BidRequest{ID: "some-id", Ext: json.RawMessage(`{"prebid": {"debug": "active", "trace": 1}}`)},
+			response: &openrtb2.BidResponse{ID: "some-id", Ext: json.RawMessage("{}")},
 			hookExecutor: &mockStageExecutor{
 				outcomes: []hookexecution.StageOutcome{
 					{
@@ -2338,10 +2555,11 @@ func TestSendAmpResponse_LogsErrors(t *testing.T) {
 			account := &config.Account{DebugAllow: true}
 			reqWrapper := openrtb_ext.RequestWrapper{BidRequest: test.request}
 
-			_, ao = sendAmpResponse(test.writer, test.hookExecutor, &exchange.AuctionResponse{BidResponse: test.response}, &reqWrapper, account, labels, ao, nil)
+			_, ao = sendAmpResponse(test.writer, test.hookExecutor, &exchange.AuctionResponse{BidResponse: test.response}, &reqWrapper, account, labels, ao, nil, openrtb_ext.SeatNonBidBuilder{})
 
-			assert.Equal(t, test.expectedErrors, ao.Errors, "Invalid errors.")
-			assert.Equal(t, test.expectedStatus, ao.Status, "Invalid HTTP response status.")
+			assert.Equal(t, test.want.errors, ao.Errors, "Invalid errors.")
+			assert.Equal(t, test.want.status, ao.Status, "Invalid HTTP response status.")
+			assert.Equal(t, test.want.seatNonBid, ao.SeatNonBid, "Invalid seatNonBid.")
 		})
 	}
 }
@@ -2358,63 +2576,205 @@ func (e errorResponseWriter) Write(bytes []byte) (int, error) {
 
 func (e errorResponseWriter) WriteHeader(statusCode int) {}
 
-func TestSetSeatNonBid(t *testing.T) {
+func TestGetExtBidResponse(t *testing.T) {
 	type args struct {
-		finalExtBidResponse *openrtb_ext.ExtBidResponse
-		request             *openrtb_ext.RequestWrapper
-		auctionResponse     *exchange.AuctionResponse
+		hookExecutor    hookexecution.HookStageExecutor
+		auctionResponse *exchange.AuctionResponse
+		reqWrapper      *openrtb_ext.RequestWrapper
+		account         *config.Account
+		ao              analytics.AmpObject
+		errs            []error
+		seatNonBid      openrtb_ext.SeatNonBidBuilder
+	}
+	type want struct {
+		respExt openrtb_ext.ExtBidResponse
+		ao      analytics.AmpObject
 	}
 	tests := []struct {
 		name string
 		args args
-		want bool
+		want want
 	}{
 		{
-			name: "nil-auctionResponse",
-			args: args{auctionResponse: nil},
-			want: false,
+			name: "seatNonBid: returnallbidstatus is true and nonBids is empty",
+			args: args{
+				hookExecutor: mockStageExecutor{
+					outcomes: []hookexecution.StageOutcome{},
+				},
+				auctionResponse: &exchange.AuctionResponse{
+					BidResponse: &openrtb2.BidResponse{
+						Ext: json.RawMessage(`{}`),
+					},
+				},
+				reqWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						Ext: json.RawMessage(`{"prebid":{"returnallbidstatus": true}}`),
+					},
+				},
+			},
+			want: want{
+				respExt: openrtb_ext.ExtBidResponse{
+					Warnings: make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage),
+				},
+				ao: analytics.AmpObject{
+					SeatNonBid: nil,
+				},
+			},
 		},
 		{
-			name: "nil-request",
-			args: args{auctionResponse: &exchange.AuctionResponse{}, request: nil},
-			want: false,
+			name: "seatNonBid: returnallbidstatus is true and nonBids is present",
+			args: args{
+				hookExecutor: mockStageExecutor{
+					outcomes: []hookexecution.StageOutcome{
+						{
+							Groups: []hookexecution.GroupOutcome{
+								{
+									InvocationResults: []hookexecution.HookOutcome{
+										{
+											Status:     hookexecution.StatusSuccess,
+											SeatNonBid: getNonBids(map[string][]openrtb_ext.NonBidParams{"pubmatic": {{Bid: &openrtb2.Bid{ImpID: "imp"}, NonBidReason: 100}}}),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				auctionResponse: &exchange.AuctionResponse{
+					BidResponse: &openrtb2.BidResponse{
+						Ext: json.RawMessage(`{}`),
+					},
+				},
+				reqWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						Ext: json.RawMessage(`{"prebid":{"returnallbidstatus": true}}`),
+					},
+				},
+				ao: analytics.AmpObject{},
+				seatNonBid: getNonBids(map[string][]openrtb_ext.NonBidParams{
+					"pubmatic": {{Bid: &openrtb2.Bid{ImpID: "imp1"}, NonBidReason: 100}},
+				}),
+			},
+			want: want{
+				respExt: openrtb_ext.ExtBidResponse{
+					Warnings: make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage),
+					Prebid: &openrtb_ext.ExtResponsePrebid{
+						SeatNonBid: []openrtb_ext.SeatNonBid{
+							{
+								NonBid: []openrtb_ext.NonBid{
+									{
+										ImpId:      "imp1",
+										StatusCode: 100,
+									},
+									{
+										ImpId:      "imp",
+										StatusCode: 100,
+									},
+								},
+								Seat: "pubmatic",
+							},
+						},
+					},
+				},
+				ao: analytics.AmpObject{
+					SeatNonBid: []openrtb_ext.SeatNonBid{
+						{
+							NonBid: []openrtb_ext.NonBid{
+								{
+									ImpId:      "imp1",
+									StatusCode: 100,
+								},
+								{
+									ImpId:      "imp",
+									StatusCode: 100,
+								},
+							},
+							Seat: "pubmatic",
+						},
+					},
+				},
+			},
 		},
 		{
-			name: "invalid-req-ext",
-			args: args{auctionResponse: &exchange.AuctionResponse{}, request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: []byte(`invalid json`)}}},
-			want: false,
+			name: "seatNonBid: returnallbidstatus is false and nonBids is present",
+			args: args{
+				hookExecutor: mockStageExecutor{},
+				auctionResponse: &exchange.AuctionResponse{
+					BidResponse: &openrtb2.BidResponse{
+						Ext: json.RawMessage(`{}`),
+					},
+				},
+				reqWrapper: &openrtb_ext.RequestWrapper{
+					BidRequest: &openrtb2.BidRequest{
+						Ext: json.RawMessage(`{"prebid":{"returnallbidstatus": false}}`),
+					},
+				},
+				ao: analytics.AmpObject{},
+				seatNonBid: getNonBids(map[string][]openrtb_ext.NonBidParams{
+					"pubmatic": {{Bid: &openrtb2.Bid{ImpID: "imp1"}, NonBidReason: 100}},
+				}),
+			},
+			want: want{
+				respExt: openrtb_ext.ExtBidResponse{
+					Warnings: make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage),
+				},
+				ao: analytics.AmpObject{
+					SeatNonBid: []openrtb_ext.SeatNonBid{
+						{
+							NonBid: []openrtb_ext.NonBid{
+								{
+									ImpId:      "imp1",
+									StatusCode: 100,
+								},
+							},
+							Seat: "pubmatic",
+						},
+					},
+				},
+			},
 		},
 		{
-			name: "nil-prebid",
-			args: args{auctionResponse: &exchange.AuctionResponse{}, request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: nil}}},
-			want: false,
-		},
-		{
-			name: "returnallbidstatus-is-false",
-			args: args{auctionResponse: &exchange.AuctionResponse{}, request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid" : {"returnallbidstatus" : false}}`)}}},
-			want: false,
-		},
-		{
-			name: "finalExtBidResponse-is-nil",
-			args: args{finalExtBidResponse: nil},
-			want: false,
-		},
-		{
-			name: "returnallbidstatus-is-true-and-responseExt.Prebid-is-nil",
-			args: args{finalExtBidResponse: &openrtb_ext.ExtBidResponse{Prebid: nil}, auctionResponse: &exchange.AuctionResponse{}, request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid" : {"returnallbidstatus" : true}}`)}}},
-			want: true,
-		},
-		{
-			name: "returnallbidstatus-is-true-and-responseExt.Prebid-is-not-nil",
-			args: args{finalExtBidResponse: &openrtb_ext.ExtBidResponse{Prebid: nil}, auctionResponse: &exchange.AuctionResponse{}, request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid" : {"returnallbidstatus" : true}}`)}}},
-			want: true,
+			name: "seatNonBid: reqWrapper is nil and nonBids is present then AmpObject should contain seatnonbid",
+			args: args{
+				hookExecutor: mockStageExecutor{
+					outcomes: []hookexecution.StageOutcome{},
+				},
+				auctionResponse: &exchange.AuctionResponse{
+					BidResponse: &openrtb2.BidResponse{
+						Ext: json.RawMessage(`{}`),
+					},
+				},
+				reqWrapper: nil,
+				seatNonBid: getNonBids(map[string][]openrtb_ext.NonBidParams{
+					"pubmatic": {{Bid: &openrtb2.Bid{ImpID: "imp1"}, NonBidReason: 100}},
+				}),
+				ao: analytics.AmpObject{},
+			},
+			want: want{
+				respExt: openrtb_ext.ExtBidResponse{
+					Warnings: make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage),
+				},
+				ao: analytics.AmpObject{
+					SeatNonBid: []openrtb_ext.SeatNonBid{
+						{
+							NonBid: []openrtb_ext.NonBid{
+								{
+									ImpId:      "imp1",
+									StatusCode: 100,
+								},
+							},
+							Seat: "pubmatic",
+						},
+					},
+				},
+			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := setSeatNonBid(tt.args.finalExtBidResponse, tt.args.request, tt.args.auctionResponse); got != tt.want {
-				t.Errorf("setSeatNonBid() = %v, want %v", got, tt.want)
-			}
+			ao, ext := getExtBidResponse(tt.args.hookExecutor, tt.args.auctionResponse, tt.args.reqWrapper, tt.args.account, tt.args.ao, tt.args.errs, tt.args.seatNonBid)
+			assert.Equal(t, tt.want.respExt, ext, "Found invalid bidResponseExt")
+			assert.Equal(t, tt.want.ao.SeatNonBid, ao.SeatNonBid, "Found invalid seatNonBid in ampObject")
 		})
 	}
 }
