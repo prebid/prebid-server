@@ -1,7 +1,7 @@
 FROM ubuntu:22.04 AS build
 RUN apt-get update && \
     apt-get -y upgrade && \
-    apt-get install -y wget
+    apt-get install -y --no-install-recommends wget ca-certificates
 WORKDIR /tmp
 RUN wget https://dl.google.com/go/go1.24.0.linux-amd64.tar.gz && \
     tar -xf go1.24.0.linux-amd64.tar.gz && \
@@ -14,7 +14,7 @@ ENV GOPROXY="https://proxy.golang.org"
 
 # Installing gcc as cgo uses it to build native code of some modules
 RUN apt-get update && \
-    apt-get install -y git gcc && \
+    apt-get install -y --no-install-recommends git gcc build-essential && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # CGO must be enabled because some modules depend on native C code
@@ -37,10 +37,10 @@ RUN chmod -R a+r static/ stored_requests/data
 
 # Installing libatomic1 as it is a runtime dependency for some modules
 RUN apt-get update && \
-    apt-get install -y ca-certificates mtr libatomic1 && \
+    apt-get install -y --no-install-recommends ca-certificates mtr libatomic1 && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-RUN adduser prebid_user
-USER prebid_user
+RUN addgroup --system --gid 2001 prebidgroup && adduser --system --uid 1001 --ingroup prebidgroup prebid
+USER prebid
 EXPOSE 8000
 EXPOSE 6060
 ENTRYPOINT ["/usr/local/bin/prebid-server"]
