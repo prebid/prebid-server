@@ -69,25 +69,20 @@ func executeGroup[H any, P any](
 ) (GroupOutcome, P, groupModuleContext, *RejectError) {
 	var wg sync.WaitGroup
 	rejected := make(chan struct{})
-	resp := make(chan hookResponse[P], len(group.Hooks))
+	hookResponses := make([]hookResponse[P], len(group.Hooks))
 
-	for _, hook := range group.Hooks {
+	for i, hook := range group.Hooks {
 		mCtx := executionCtx.getModuleContext(hook.Module)
 		mCtx.HookImplCode = hook.Code
 		newPayload := handleModuleActivities(hook.Code, executionCtx.activityControl, payload, executionCtx.account)
 		wg.Add(1)
 		go func(hw hooks.HookWrapper[H], moduleCtx hookstage.ModuleInvocationContext) {
 			defer wg.Done()
-			executeHook(moduleCtx, hw, newPayload, hookHandler, group.Timeout, resp, rejected)
+			executeHook(moduleCtx, hw, newPayload, hookHandler, group.Timeout, &hookResponses[i], rejected)
 		}(hook, mCtx)
 	}
 
-	go func() {
-		wg.Wait()
-		close(resp)
-	}()
-
-	hookResponses := collectHookResponses(resp, rejected)
+	wg.Wait()
 
 	return handleHookResponses(executionCtx, hookResponses, payload, metricEngine)
 }
@@ -98,7 +93,7 @@ func executeHook[H any, P any](
 	payload P,
 	hookHandler hookHandler[H, P],
 	timeout time.Duration,
-	resp chan<- hookResponse[P],
+	resp *hookResponse[P],
 	rejected <-chan struct{},
 ) {
 	hookRespCh := make(chan hookResponse[P], 1)
@@ -126,9 +121,9 @@ func executeHook[H any, P any](
 	case res := <-hookRespCh:
 		res.HookID = hookId
 		res.ExecutionTime = time.Since(startTime)
-		resp <- res
+		*resp = res
 	case <-time.After(timeout):
-		resp <- hookResponse[P]{
+		*resp = hookResponse[P]{
 			Err:           TimeoutError{},
 			ExecutionTime: time.Since(startTime),
 			HookID:        hookId,
@@ -137,19 +132,6 @@ func executeHook[H any, P any](
 	case <-rejected:
 		return
 	}
-}
-
-func collectHookResponses[P any](resp <-chan hookResponse[P], rejected chan<- struct{}) []hookResponse[P] {
-	hookResponses := make([]hookResponse[P], 0)
-	for r := range resp {
-		hookResponses = append(hookResponses, r)
-		if r.Result.Reject {
-			close(rejected)
-			break
-		}
-	}
-
-	return hookResponses
 }
 
 func handleHookResponses[P any](
