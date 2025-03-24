@@ -87,7 +87,6 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 
 	exchange := exchange.NewExchange(
 		adapters,
-		singleFormatBidders,
 		nil,
 		&config.Configuration{},
 		requestValidator,
@@ -100,6 +99,7 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 		&adscert.NilSigner{},
 		macros.NewStringIndexBasedReplacer(),
 		nil,
+		singleFormatBidders,
 	)
 
 	endpoint, _ := NewEndpoint(
