@@ -69,6 +69,7 @@ func executeGroup[H any, P any](
 ) (GroupOutcome, P, groupModuleContext, *RejectError) {
 	var wg sync.WaitGroup
 	rejected := make(chan struct{})
+	rejectOnce := &sync.Once{}
 	hookResponses := make([]hookResponse[P], len(group.Hooks))
 
 	for i, hook := range group.Hooks {
@@ -78,7 +79,11 @@ func executeGroup[H any, P any](
 		wg.Add(1)
 		go func(hw hooks.HookWrapper[H], moduleCtx hookstage.ModuleInvocationContext) {
 			defer wg.Done()
-			executeHook(moduleCtx, hw, newPayload, hookHandler, group.Timeout, &hookResponses[i], rejected)
+			if executeHook(moduleCtx, hw, newPayload, hookHandler, group.Timeout, &hookResponses[i], rejected) {
+				rejectOnce.Do(func() {
+					close(rejected)
+				})
+			}
 		}(hook, mCtx)
 	}
 
@@ -95,7 +100,7 @@ func executeHook[H any, P any](
 	timeout time.Duration,
 	resp *hookResponse[P],
 	rejected <-chan struct{},
-) {
+) bool {
 	hookRespCh := make(chan hookResponse[P], 1)
 	startTime := time.Now()
 	hookId := HookID{ModuleCode: hw.Module, HookImplCode: hw.Code}
@@ -130,8 +135,9 @@ func executeHook[H any, P any](
 			Result:        hookstage.HookResult[P]{},
 		}
 	case <-rejected:
-		return
+		return true
 	}
+	return resp.Result.Reject
 }
 
 func handleHookResponses[P any](
