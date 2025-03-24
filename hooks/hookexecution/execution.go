@@ -133,6 +133,7 @@ func executeHook[H any, P any](
 		res.HookID = hookId
 		res.ExecutionTime = time.Since(startTime)
 		*resp = res
+		return res.Result.Reject
 	case <-time.After(timeout):
 		*resp = hookResponse[P]{
 			Err:           TimeoutError{},
@@ -140,11 +141,11 @@ func executeHook[H any, P any](
 			HookID:        hookId,
 			Result:        hookstage.HookResult[P]{},
 		}
+		return false
 	case <-rejected:
 		// In this path, rejected has already been reported; no need to report it again.
 		return false
 	}
-	return resp.Result.Reject
 }
 
 func handleHookResponses[P any](
