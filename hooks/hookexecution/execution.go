@@ -69,7 +69,14 @@ func executeGroup[H any, P any](
 ) (GroupOutcome, P, groupModuleContext, *RejectError) {
 	var wg sync.WaitGroup
 	rejected := make(chan struct{})
-	var rejectOnce sync.Once
+	var rejectedOnce sync.Once
+	closeRejectedOnce := func() {
+		rejectedOnce.Do(func() {
+			close(rejected)
+		})
+	}
+	// Ensure the channel is closed when the function returns.
+	defer closeRejectedOnce()
 	hookResponses := make([]hookResponse[P], len(group.Hooks))
 
 	for i, hook := range group.Hooks {
@@ -80,9 +87,7 @@ func executeGroup[H any, P any](
 			defer wg.Done()
 			if executeHook(moduleCtx, hw, newPayload, hookHandler, group.Timeout, &hookResponses[i], rejected) {
 				// When the first hook rejects, close the channel to signal all other hooks to stop.
-				rejectOnce.Do(func() {
-					close(rejected)
-				})
+				closeRejectedOnce()
 			}
 		}(hook, mCtx)
 	}
