@@ -80,6 +80,7 @@ func executeGroup[H any, P any](
 		go func(hw hooks.HookWrapper[H], moduleCtx hookstage.ModuleInvocationContext) {
 			defer wg.Done()
 			if executeHook(moduleCtx, hw, newPayload, hookHandler, group.Timeout, &hookResponses[i], rejected) {
+				// When the first hook rejects, close the channel to signal all other hooks to stop.
 				rejectOnce.Do(func() {
 					close(rejected)
 				})
@@ -92,6 +93,7 @@ func executeGroup[H any, P any](
 	return handleHookResponses(executionCtx, hookResponses, payload, metricEngine)
 }
 
+// executeHook executes a single hook and returns the rejected status.
 func executeHook[H any, P any](
 	moduleCtx hookstage.ModuleInvocationContext,
 	hw hooks.HookWrapper[H],
@@ -135,7 +137,8 @@ func executeHook[H any, P any](
 			Result:        hookstage.HookResult[P]{},
 		}
 	case <-rejected:
-		return true
+		// In this path, rejected has already been reported; no need to report it again.
+		return false
 	}
 	return resp.Result.Reject
 }
