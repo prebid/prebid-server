@@ -1,4 +1,4 @@
-FROM ubuntu:20.04 AS build
+FROM ubuntu:22.04 AS build
 RUN apt-get update && \
     apt-get -y upgrade && \
     apt-get install -y --no-install-recommends wget ca-certificates
@@ -26,7 +26,7 @@ ARG TEST="true"
 # RUN if [ "$TEST" != "false" ]; then ./validate.sh ; fi
 RUN go build -mod=vendor .
 
-FROM ubuntu:20.04 AS release
+FROM ubuntu:22.04 AS release
 LABEL maintainer="hans.hjort@xandr.com" 
 WORKDIR /usr/local/bin/
 COPY --from=build /app/prebid-server .
