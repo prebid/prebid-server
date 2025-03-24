@@ -83,13 +83,13 @@ func executeGroup[H any, P any](
 		mCtx := executionCtx.getModuleContext(hook.Module)
 		newPayload := handleModuleActivities(hook.Code, executionCtx.activityControl, payload, executionCtx.account)
 		wg.Add(1)
-		go func(hw hooks.HookWrapper[H], moduleCtx hookstage.ModuleInvocationContext) {
+		go func(hw hooks.HookWrapper[H], hookResp *hookResponse[P], moduleCtx hookstage.ModuleInvocationContext) {
 			defer wg.Done()
-			if executeHook(moduleCtx, hw, newPayload, hookHandler, group.Timeout, &hookResponses[i], rejected) {
+			if executeHook(moduleCtx, hw, newPayload, hookHandler, group.Timeout, hookResp, rejected) {
 				// When the first hook rejects, close the channel to signal all other hooks to stop.
 				closeRejectedOnce()
 			}
-		}(hook, mCtx)
+		}(hook, &hookResponses[i], mCtx)
 	}
 
 	wg.Wait()
