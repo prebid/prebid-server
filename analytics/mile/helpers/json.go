@@ -255,8 +255,10 @@ func JsonifyAmpObject(ao *analytics.AmpObject, scope string) ([]MileAnalyticsEve
 
 	}
 	if ao.Errors != nil {
-		err := fmt.Errorf("%v", ao.Errors)
-		return events, err
+		if len(ao.Errors) > 0 {
+			err := fmt.Errorf("%v", ao.Errors)
+			return events, err
+		}
 	}
 
 	//events = append(events, logEntry)
