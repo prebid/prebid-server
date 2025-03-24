@@ -46,13 +46,14 @@ func TestBuildAdapters(t *testing.T) {
 		description                 string
 		bidderInfos                 map[string]config.BidderInfo
 		expectedBidders             map[openrtb_ext.BidderName]AdaptedBidder
-		expectedSingleFormatBidders map[openrtb_ext.BidderName]bool
+		expectedSingleFormatBidders map[openrtb_ext.BidderName]struct{}
 		expectedErrors              []error
 	}{
 		{
-			description:     "No Bidders",
-			bidderInfos:     map[string]config.BidderInfo{},
-			expectedBidders: map[openrtb_ext.BidderName]AdaptedBidder{},
+			description:                 "No Bidders",
+			bidderInfos:                 map[string]config.BidderInfo{},
+			expectedBidders:             map[openrtb_ext.BidderName]AdaptedBidder{},
+			expectedSingleFormatBidders: map[openrtb_ext.BidderName]struct{}{},
 		},
 		{
 			description: "One Bidder",
@@ -60,6 +61,7 @@ func TestBuildAdapters(t *testing.T) {
 			expectedBidders: map[openrtb_ext.BidderName]AdaptedBidder{
 				openrtb_ext.BidderAppnexus: appnexusValidated,
 			},
+			expectedSingleFormatBidders: map[openrtb_ext.BidderName]struct{}{},
 		},
 		{
 			description: "Many Bidders",
@@ -68,6 +70,7 @@ func TestBuildAdapters(t *testing.T) {
 				openrtb_ext.BidderAppnexus: appnexusValidated,
 				openrtb_ext.BidderRubicon:  rubiconBidderValidated,
 			},
+			expectedSingleFormatBidders: map[openrtb_ext.BidderName]struct{}{},
 		},
 		{
 			description: "Invalid - Builder Errors",
@@ -75,6 +78,7 @@ func TestBuildAdapters(t *testing.T) {
 			expectedErrors: []error{
 				errors.New("unknown: unknown bidder"),
 			},
+			expectedSingleFormatBidders: nil,
 		},
 		{
 			description: "Bidders with multiformat Support Disabled",
@@ -83,9 +87,9 @@ func TestBuildAdapters(t *testing.T) {
 				openrtb_ext.BidderAppnexus: appnexusValidated,
 				openrtb_ext.BidderRubicon:  rubiconBidderValidated,
 			},
-			expectedSingleFormatBidders: map[openrtb_ext.BidderName]bool{
-				openrtb_ext.BidderAppnexus: true,
-				openrtb_ext.BidderRubicon:  true,
+			expectedSingleFormatBidders: map[openrtb_ext.BidderName]struct{}{
+				openrtb_ext.BidderAppnexus: {},
+				openrtb_ext.BidderRubicon:  {},
 			},
 		},
 	}
@@ -94,9 +98,9 @@ func TestBuildAdapters(t *testing.T) {
 	for _, test := range testCases {
 		bidders, singleFormatBidders, errs := BuildAdapters(client, cfg, test.bidderInfos, metricEngine)
 		assert.Equal(t, test.expectedBidders, bidders, test.description+":bidders")
-		if test.expectedSingleFormatBidders != nil {
-			assert.Equal(t, test.expectedSingleFormatBidders, singleFormatBidders, test.description+":singleFormatBidders")
-		}
+
+		assert.Equal(t, test.expectedSingleFormatBidders, singleFormatBidders, test.description+":singleFormatBidders")
+
 		assert.ElementsMatch(t, test.expectedErrors, errs, test.description+":errors")
 	}
 }

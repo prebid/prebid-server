@@ -233,7 +233,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	tmaxAdjustments := exchange.ProcessTMaxAdjustments(cfg.TmaxAdjustments)
 	planBuilder := hooks.NewExecutionPlanBuilder(cfg.Hooks, repo)
 	macroReplacer := macros.NewStringIndexBasedReplacer()
-	theExchange := exchange.NewExchange(adapters, singleFormatAdapters, cacheClient, cfg, requestValidator, syncersByBidder, r.MetricsEngine, cfg.BidderInfos, gdprPermsBuilder, rateConvertor, categoriesFetcher, adsCertSigner, macroReplacer, priceFloorFetcher)
+	theExchange := exchange.NewExchange(adapters, cacheClient, cfg, requestValidator, syncersByBidder, r.MetricsEngine, cfg.BidderInfos, gdprPermsBuilder, rateConvertor, categoriesFetcher, adsCertSigner, macroReplacer, priceFloorFetcher, singleFormatAdapters)
 	var uuidGenerator uuidutil.UUIDRandomGenerator
 	openrtbEndpoint, err := openrtb2.NewEndpoint(uuidGenerator, theExchange, requestValidator, fetcher, accounts, cfg, r.MetricsEngine, analyticsRunner, disabledBidders, defReqJSON, activeBidders, storedRespFetcher, planBuilder, tmaxAdjustments)
 	if err != nil {

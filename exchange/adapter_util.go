@@ -10,7 +10,7 @@ import (
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
-func BuildAdapters(client *http.Client, cfg *config.Configuration, infos config.BidderInfos, me metrics.MetricsEngine) (map[openrtb_ext.BidderName]AdaptedBidder, map[openrtb_ext.BidderName]bool, []error) {
+func BuildAdapters(client *http.Client, cfg *config.Configuration, infos config.BidderInfos, me metrics.MetricsEngine) (map[openrtb_ext.BidderName]AdaptedBidder, map[openrtb_ext.BidderName]struct{}, []error) {
 	server := config.Server{ExternalUrl: cfg.ExternalURL, GvlID: cfg.GDPR.HostVendorID, DataCenter: cfg.DataCenter}
 	bidders, singleFormatBidders, errs := buildBidders(infos, newAdapterBuilders(), server)
 
@@ -28,9 +28,9 @@ func BuildAdapters(client *http.Client, cfg *config.Configuration, infos config.
 	return exchangeBidders, singleFormatBidders, nil
 }
 
-func buildBidders(infos config.BidderInfos, builders map[openrtb_ext.BidderName]adapters.Builder, server config.Server) (map[openrtb_ext.BidderName]adapters.Bidder, map[openrtb_ext.BidderName]bool, []error) {
+func buildBidders(infos config.BidderInfos, builders map[openrtb_ext.BidderName]adapters.Builder, server config.Server) (map[openrtb_ext.BidderName]adapters.Bidder, map[openrtb_ext.BidderName]struct{}, []error) {
 	bidders := make(map[openrtb_ext.BidderName]adapters.Bidder)
-	singleFormatBidders := make(map[openrtb_ext.BidderName]bool)
+	singleFormatBidders := make(map[openrtb_ext.BidderName]struct{})
 	var errs []error
 
 	for bidder, info := range infos {
@@ -63,7 +63,7 @@ func buildBidders(infos config.BidderInfos, builders map[openrtb_ext.BidderName]
 			}
 			bidders[bidderName] = adapters.BuildInfoAwareBidder(bidderInstance, info)
 			if !adapters.IsMultiFormatSupported(info) {
-				singleFormatBidders[bidderName] = true
+				singleFormatBidders[bidderName] = struct{}{}
 			}
 		}
 	}

@@ -1239,7 +1239,7 @@ func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.Bid
 	if len(testCfg.MockBidders) == 0 {
 		testCfg.MockBidders = append(testCfg.MockBidders, mockBidderHandler{BidderName: "appnexus", Currency: "USD", Price: 0.00})
 	}
-	singleFormatBidders := make(map[openrtb_ext.BidderName]bool)
+	singleFormatBidders := make(map[openrtb_ext.BidderName]struct{})
 	for _, mockBidder := range testCfg.MockBidders {
 		bidServer := httptest.NewServer(http.HandlerFunc(mockBidder.bid))
 		bidderAdapter := &mockAdapter{mockServerURL: bidServer.URL, seat: mockBidder.Seat}
@@ -1251,7 +1251,7 @@ func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.Bid
 		mockBidServersArray = append(mockBidServersArray, bidServer)
 
 		if bidderInfo := bidderInfos[string(bidderName)]; bidderInfo.OpenRTB != nil && bidderInfo.OpenRTB.MultiformatSupported != nil && !*bidderInfo.OpenRTB.MultiformatSupported {
-			singleFormatBidders[bidderName] = true
+			singleFormatBidders[bidderName] = struct{}{}
 		}
 	}
 
@@ -1263,7 +1263,6 @@ func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.Bid
 	}.Builder
 
 	testExchange := exchange.NewExchange(adapterMap,
-		singleFormatBidders,
 		&wellBehavedCache{},
 		cfg,
 		requestValidator,
@@ -1276,6 +1275,7 @@ func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.Bid
 		&adscert.NilSigner{},
 		macros.NewStringIndexBasedReplacer(),
 		nil,
+		singleFormatBidders,
 	)
 
 	testExchange = &exchangeTestWrapper{

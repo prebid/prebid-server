@@ -26,7 +26,7 @@
         }
       },
      "preferredmediatype":{
-      "pubmatic" : "banner"
+      "pubmatic" : "video"
      }
     },
     "mockBidRequest": {
@@ -133,16 +133,14 @@
             "imp": [
               {
                 "id": "some-impression-id",
-                "banner": {
-                  "format": [
-                    {
-                      "w": 300,
-                      "h": 250
-                    },
-                    {
-                      "w": 300,
-                      "h": 600
-                    }
+                "video": {
+                  "w": 640,
+                  "h": 480,
+                  "mimes": [
+                    "video/mp4"
+                  ],
+                  "protocols": [
+                    2, 3, 5, 6
                   ]
                 },
                 "ext": {
