@@ -69,7 +69,7 @@ func executeGroup[H any, P any](
 ) (GroupOutcome, P, groupModuleContext, *RejectError) {
 	var wg sync.WaitGroup
 	rejected := make(chan struct{})
-	rejectOnce := &sync.Once{}
+	var rejectOnce sync.Once
 	hookResponses := make([]hookResponse[P], len(group.Hooks))
 
 	for i, hook := range group.Hooks {
