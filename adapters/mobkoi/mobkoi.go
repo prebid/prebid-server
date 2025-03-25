@@ -2,6 +2,8 @@ package mobkoi
 
 import (
 	"net/http"
+	"net/url"
+	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
@@ -42,7 +44,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	uri := a.endpoint
 	if ext.Bidder.AdServerBaseUrl != "" {
-		uri = ext.Bidder.AdServerBaseUrl + "/bid"
+		baseURL, err := url.ParseRequestURI(ext.Bidder.AdServerBaseUrl)
+		if err == nil { // Ensure parsing doesn't fail
+			baseURL.Path = strings.TrimRight(baseURL.Path, "/") + "/bid"
+			uri = baseURL.String()
+		}
 	}
 
 	if request.User != nil && request.User.Consent != "" {
