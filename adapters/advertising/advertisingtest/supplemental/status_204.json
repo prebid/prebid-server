@@ -4,8 +4,17 @@
     "imp": [
       {
         "id": "test-imp-id",
-        "audio": {
-          "mimes": ["video/mp4"]
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
         },
         "ext": {
           "bidder": {
@@ -20,7 +29,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://pbs.technoratimedia.com/openrtb/bids/prebid?src=pbs-go%2F1.0.0&adapter=imds",
+        "uri": "http://pbs.technoratimedia.com/openrtb/bids/prebid?src=pbs-go%2F1.0.0&adapter=advertising",
         "body": {
           "id": "test-request-id",
           "ext": {
@@ -30,8 +39,11 @@
             {
               "id":"test-imp-id",
               "tagid": "demo1",
-              "audio": {
-                "mimes": ["video/mp4"]
+              "banner": {
+                "format": [
+                  {"w":300,"h":250},
+                  {"w":300,"h":600}
+                ]
               },
               "ext": {
                 "bidder": {
@@ -45,25 +57,12 @@
         "impIDs":["test-imp-id"]
       },
       "mockResponse": {
-        "status": 200,
+        "status": 204,
         "body": {
-          "id": "1",
-          "seatbid": [
-            {
-              "bid": [
-                {
-                  "id": "audio-request-id",
-                  "impid": "test-imp-id"
-                }
-              ]
-            }
-          ]
+
         }
       }
     }
   ],
-  "expectedBidResponses": [
-    {
-    }
-  ]
+  "expectedBidResponses": []
 }
