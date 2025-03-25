@@ -1014,3 +1014,27 @@ func TestIPMaskingValidate(t *testing.T) {
 		})
 	}
 }
+
+func TestGeoLocation(t *testing.T) {
+	tests := []struct {
+		geoloc   *AccountGeoLocation
+		expected bool
+	}{
+		{
+			geoloc: &AccountGeoLocation{
+				Enabled: true,
+			},
+			expected: true,
+		},
+		{
+			geoloc: &AccountGeoLocation{
+				Enabled: false,
+			},
+			expected: false,
+		},
+	}
+
+	for _, test := range tests {
+		assert.Equal(t, test.expected, test.geoloc.IsGeoLocationEnabled())
+	}
+}
