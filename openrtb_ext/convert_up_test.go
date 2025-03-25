@@ -374,9 +374,32 @@ func TestMoveEIDFrom25To26(t *testing.T) {
 			expectedRequest: openrtb2.BidRequest{User: &openrtb2.User{EIDs: eid1}},
 		},
 		{
-			description:     "2.5 Dropped",
-			givenRequest:    openrtb2.BidRequest{User: &openrtb2.User{EIDs: eid1, Ext: eid2Json}},
-			expectedRequest: openrtb2.BidRequest{User: &openrtb2.User{EIDs: eid1}},
+			description: "2.5 Appended Because Different Source from all 2.6 eids",
+			givenRequest: openrtb2.BidRequest{
+				User: &openrtb2.User{
+					EIDs: []openrtb2.EID{{Source: "1"}},
+					Ext:  eid2Json,
+				},
+			},
+			expectedRequest: openrtb2.BidRequest{
+				User: &openrtb2.User{
+					EIDs: []openrtb2.EID{{Source: "1"}, {Source: "2"}},
+				},
+			},
+		},
+		{
+			description: "2.5 Not Appended Because Same Source exists IN 2.6",
+			givenRequest: openrtb2.BidRequest{
+				User: &openrtb2.User{
+					EIDs: []openrtb2.EID{{Source: "1"}},
+					Ext:  eid1Json,
+				},
+			},
+			expectedRequest: openrtb2.BidRequest{
+				User: &openrtb2.User{
+					EIDs: []openrtb2.EID{{Source: "1"}},
+				},
+			},
 		},
 		{
 			description:     "2.6 Left Alone",
