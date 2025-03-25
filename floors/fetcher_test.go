@@ -834,9 +834,18 @@ func TestFetcherWhenRequestGetSameURLInrequest(t *testing.T) {
 		fetcherInstance.Fetch(fetchConfig)
 	}
 
-	assert.Never(t, func() bool { return len(fetcherInstance.fetchQueue) > 1 }, time.Duration(2*time.Second), 100*time.Millisecond, "Queue Got more than one entry")
-	assert.Never(t, func() bool { return len(fetcherInstance.fetchInProgress) > 1 }, time.Duration(2*time.Second), 100*time.Millisecond, "Map Got more than one entry")
+	t.Parallel()
 
+	assert.Never(t, func() bool {
+		fetcherInstance.mu.Lock()
+		defer fetcherInstance.mu.Unlock()
+
+		return fetcherInstance.fetchQueue.Len() > 1
+	}, 2*time.Second, 100*time.Millisecond, "Queue Got more than one entry")
+
+	assert.Never(t, func() bool {
+		return len(fetcherInstance.fetchInProgress) > 1
+	}, 2*time.Second, 100*time.Millisecond, "Map Got more than one entry")
 }
 
 func TestFetcherDataPresentInCache(t *testing.T) {
@@ -1270,8 +1279,18 @@ func TestFetcherWhenRequestGetDifferentURLInrequest(t *testing.T) {
 		fetcherInstance.Fetch(fetchConfig)
 	}
 
-	assert.Never(t, func() bool { return len(fetcherInstance.fetchQueue) > 10 }, time.Duration(2*time.Second), 100*time.Millisecond, "Queue Got more than one entry")
-	assert.Never(t, func() bool { return len(fetcherInstance.fetchInProgress) > 10 }, time.Duration(2*time.Second), 100*time.Millisecond, "Map Got more than one entry")
+	t.Parallel()
+
+	assert.Never(t, func() bool {
+		fetcherInstance.mu.Lock()
+		defer fetcherInstance.mu.Unlock()
+
+		return fetcherInstance.fetchQueue.Len() > 10
+	}, 2*time.Second, 100*time.Millisecond, "Queue Got more than one entry")
+
+	assert.Never(t, func() bool {
+		return len(fetcherInstance.fetchInProgress) > 10
+	}, 2*time.Second, 100*time.Millisecond, "Map Got more than one entry")
 }
 
 func TestFetchWhenPriceFloorsDisabled(t *testing.T) {
