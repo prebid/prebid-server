@@ -214,13 +214,8 @@ type ErrStruct struct {
 func (r *RespExt) getTimeoutBidders(timeout int64) []string {
 	timeouts := []string{}
 	if r.Errors != nil {
-		for bidder, bidderError := range r.Errors {
-			for _, err := range bidderError {
-				if err.Message == "context deadline exceeded" {
-					timeouts = append(timeouts, bidder)
-				}
-			}
-
+		for bidder, _ := range r.Errors {
+			timeouts = append(timeouts, bidder)
 		}
 
 	}

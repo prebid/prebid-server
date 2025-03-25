@@ -86,6 +86,7 @@ func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]MileAnal
 						WinningBidder:     winningBidder,
 						WinningSize:       winningSize,
 						ConfiguredTimeout: ao.RequestWrapper.TMax,
+						FloorPrice:        imp.BidFloor,
 						MetaData: map[string][]string{
 							"prebid_server": []string{"1"},
 							"amp":           []string{"1"},
