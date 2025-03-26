@@ -1,0 +1,83 @@
+{
+  "description": "Tests an unknown bid type response",
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "imp1",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "pix_id": "123"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://any.url",
+        "headers": {
+          "Content-Type": ["application/json"],
+          "Accept": ["application/json"]
+        },
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "imp1",
+              "banner": {
+                "w": 300,
+                "h": 250
+              },
+              "ext": {
+                "bidder": {
+                  "pix_id": "123"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": ["imp1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "headers": {
+          "Content-Type": ["application/json"]
+        },
+        "body": {
+          "id": "test-response-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid1",
+                  "impid": "imp1",
+                  "price": 1.23,
+                  "adm": "<div>Ad</div>",
+                  "ext": {
+                    "prebid": {
+                      "type": "unknown"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Failed to parse impression \"imp1\" mediatype",
+      "comparison": "literal"
+    }
+  ]
+}
