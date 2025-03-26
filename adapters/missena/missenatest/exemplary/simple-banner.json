@@ -32,8 +32,7 @@
         "ext": {
           "bidder": {
             "apiKey": "test-api-key",
-            "placement": "test-placement",
-            "test": "1"
+            "placement": "test-placement"
           }
         }
       }
@@ -58,8 +57,7 @@
           "currency": "EUR",
           "ik": "test-request-id",
           "params": {
-            "placement": "test-placement",
-            "test": "1"
+            "placement": "test-placement"
           },
           "referer": "https://example.com/page",
           "referer_canonical": "example.com",
