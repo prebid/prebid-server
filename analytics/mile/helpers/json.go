@@ -240,6 +240,7 @@ func JsonifyAmpObject(ao *analytics.AmpObject, scope string) ([]MileAnalyticsEve
 						WinningSize:       winningSize,
 						ConfiguredTimeout: ao.RequestWrapper.TMax,
 						ResponseTimes:     respExt.ResponseTimeMillis,
+						FloorPrice:        imp.BidFloor,
 						MetaData: map[string][]string{
 							"prebid_server": []string{"1"},
 							"amp":           []string{"1"},
