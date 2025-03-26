@@ -52,7 +52,7 @@ type BidServerResponse struct {
 type UserParams struct {
 	Formats   []string       `json:"formats,omitempty"`
 	Placement string         `json:"placement,omitempty" default:"sticky"`
-	Sample    string         `json:"sample,omitempty"`
+	TestMode  string         `json:"test,omitempty"`
 	Settings  map[string]any `json:"settings,omitempty"`
 }
 
@@ -145,6 +145,7 @@ func (a *adapter) makeRequest(imp openrtb2.Imp, request *openrtb2.BidRequest, re
 		UserParams: UserParams{
 			Formats:   params.Formats,
 			Placement: params.Placement,
+			TestMode:  params.TestMode,
 			Settings:  params.Settings,
 		},
 		Version: version.Ver,
