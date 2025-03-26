@@ -1,0 +1,2 @@
+endpoint: "http://ads-pbs.9dots.ortb.net/openrtb/{{.PublisherID}}?host={{.Host}}"
+aliasOf: "limelightDigital"
