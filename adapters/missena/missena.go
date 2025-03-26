@@ -126,19 +126,38 @@ func (a *adapter) makeRequest(imp openrtb2.Imp, request *openrtb2.BidRequest, re
 		schain = request.Source.SChain
 	}
 
+	var buyerUID string
+	var eids []openrtb2.EID
+	var coppa int8
+	var referer, refererCanonical string
+
+	if request.User != nil {
+		buyerUID = request.User.BuyerUID
+		eids = request.User.EIDs
+	}
+
+	if request.Regs != nil {
+		coppa = request.Regs.COPPA
+	}
+
+	if request.Site != nil {
+		referer = request.Site.Page
+		refererCanonical = request.Site.Domain
+	}
+
 	missenaRequest := MissenaAdRequest{
 		Adunit:           imp.ID,
-		BuyerUID:         request.User.BuyerUID,
-		COPPA:            request.Regs.COPPA,
+		BuyerUID:         buyerUID,
+		COPPA:            coppa,
 		Currency:         cur,
-		EIDs:             request.User.EIDs,
+		EIDs:             eids,
 		Floor:            floor,
 		FloorCurrency:    floorCur,
 		GDPR:             gdprApplies,
 		GDPRConsent:      consentString,
 		IdempotencyKey:   request.ID,
-		Referer:          request.Site.Page,
-		RefererCanonical: request.Site.Domain,
+		Referer:          referer,
+		RefererCanonical: refererCanonical,
 		RequestID:        request.ID,
 		SChain:           schain,
 		Timeout:          request.TMax,
@@ -168,7 +187,7 @@ func (a *adapter) makeRequest(imp openrtb2.Imp, request *openrtb2.BidRequest, re
 			headers.Add("X-Forwarded-For", request.Device.IPv6)
 		}
 	}
-	if request.Site != nil {
+	if request.Site != nil && request.Site.Page != "" {
 		headers.Add("Referer", request.Site.Page)
 		pageURL, err := url.Parse(request.Site.Page)
 		if err == nil {
