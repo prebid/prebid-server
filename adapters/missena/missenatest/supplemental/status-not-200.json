@@ -58,7 +58,8 @@
           "currency": "EUR",
           "ik": "test-request-id",
           "params": {
-            "placement": "test-placement"
+            "placement": "test-placement",
+            "test": "1"
           },
           "referer": "https://example.com/page",
           "referer_canonical": "example.com",
