@@ -1,2 +1,0 @@
-endpoint: "http://ads-pbs.bidder-embi.media/openrtb/{{.PublisherID}}?host={{.Host}}"
-aliasOf: "limelightDigital"
