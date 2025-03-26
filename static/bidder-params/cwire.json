@@ -8,9 +8,13 @@
       "type": "integer",
       "description": "An ID which identifies this placement of the impression"
     },
-    "pageId": {
+    "domainId": {
       "type": "integer",
       "description": "An ID which identifies the site selling the impression"
+    },
+    "pageId": {
+      "type": "integer",
+      "description": "An ID which identifies the site selling the impression (deprecated)"
     },
     "cwcreative": {
       "type": "string",

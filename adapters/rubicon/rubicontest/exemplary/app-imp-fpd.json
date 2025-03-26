@@ -46,6 +46,60 @@
         "lon": -122.346200
       },
       "gender": "f",
+      "data": [
+        {
+          "ext": {
+            "segtax": 4
+          },
+          "segment": [
+            {
+              "id": "idToCopy"
+            }
+          ]
+        },
+        {
+          "ext": {
+            "segtax": "someValue"
+          },
+          "segment": [
+            {
+              "id": "shouldNotBeCopied"
+            }
+          ]
+        },
+        {
+          "ext": {
+            "segtax": "4"
+          },
+          "segment": [
+            {
+              "id": "shouldNotBeCopied2"
+            }
+          ]
+        },
+        {
+          "ext": {
+            "segtax": 4
+          },
+          "segment": [
+            {
+              "id": "idToCopy2"
+            }
+          ]
+        },
+        {
+          "ext": {
+            "segtax": [
+              4
+            ]
+          },
+          "segment": [
+            {
+              "id": "shouldNotBeCopied3"
+            }
+          ]
+        }
+      ],
       "ext": {
         "data": {
           "attr1": "val1",
@@ -87,21 +141,13 @@
           "h": 576
         },
         "ext": {
-          "context": {
-            "data": {
-              "adserver": {
-                "name": "gam",
-                "adslot": "adSlotFromContextData"
-              },
-              "dataAttr1": "dataVal1",
-              "dataAttr2": "dataVal2"
-            }
-          },
           "data": {
             "adserver": {
               "name": "gam",
               "adslot": "adSlotFromData"
-            }
+            },
+            "dataAttr1": "dataVal1",
+            "dataAttr2": "dataVal2"
           },
           "bidder": {
             "video": {
@@ -153,6 +199,60 @@
             }
           },
           "user": {
+            "data": [
+              {
+                "ext": {
+                  "segtax": 4
+                },
+                "segment": [
+                  {
+                    "id": "idToCopy"
+                  }
+                ]
+              },
+              {
+                "ext": {
+                  "segtax": "someValue"
+                },
+                "segment": [
+                  {
+                    "id": "shouldNotBeCopied"
+                  }
+                ]
+              },
+              {
+                "ext": {
+                  "segtax": "4"
+                },
+                "segment": [
+                  {
+                    "id": "shouldNotBeCopied2"
+                  }
+                ]
+              },
+              {
+                "ext": {
+                  "segtax": 4
+                },
+                "segment": [
+                  {
+                    "id": "idToCopy2"
+                  }
+                ]
+              },
+              {
+                "ext": {
+                  "segtax": [
+                    4
+                  ]
+                },
+                "segment": [
+                  {
+                    "id": "shouldNotBeCopied3"
+                  }
+                ]
+              }
+            ],
             "ext": {
               "rp": {
                 "target": {
@@ -174,6 +274,10 @@
                   ],
                   "attr5": [
                     "3"
+                  ],
+                  "iab": [
+                    "idToCopy",
+                    "idToCopy2"
                   ]
                 }
               }
@@ -203,7 +307,7 @@
               "ext": {
                 "rp": {
                   "target": {
-                    "dfp_ad_unit_code": "adSlotFromContextData",
+                    "dfp_ad_unit_code": "adSlotFromData",
                     "dataAttr1": [
                       "dataVal1"
                     ],
@@ -244,7 +348,9 @@
             }
           ]
         },
-        "impIDs":["test-imp-id"]
+        "impIDs": [
+          "test-imp-id"
+        ]
       },
       "mockResponse": {
         "status": 200,
