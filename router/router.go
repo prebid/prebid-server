@@ -213,7 +213,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	gvlVendorIDs := cfg.BidderInfos.ToGVLVendorIDMap()
 	vendorListFetcher := gdpr.NewVendorListFetcher(context.Background(), cfg.GDPR, generalHttpClient, gdpr.VendorListURLMaker)
 	gdprPermsBuilder := gdpr.NewPermissionsBuilder(cfg.GDPR, gvlVendorIDs, vendorListFetcher)
-	gdprAnalyticsPolicyBuilder := gdpr.NewAnalyticsPolicyBuilder(cfg.GDPR, gvlVendorIDs, vendorListFetcher) //TODO: do we need gvlVendorIDs too?
+	gdprAnalyticsPolicyBuilder := gdpr.NewAnalyticsPolicyBuilder(cfg.GDPR, gvlVendorIDs, vendorListFetcher)
 	tcf2CfgBuilder := gdpr.NewTCF2Config
 
 	cacheClient := pbc.NewClient(cacheHttpClient, &cfg.CacheURL, &cfg.ExtCacheURL, r.MetricsEngine)

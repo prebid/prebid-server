@@ -12,7 +12,8 @@ import (
 
 // PrivacyPolicy indicates whether an analytics adapter is allowed to perform some activity
 type PrivacyPolicy interface {
-	Allow(ctx context.Context, name string) (bool, error)
+	SetContext(ctx context.Context)
+	Allow(name string) bool
 }
 
 // PrivacyPolicyBuilder is a builder function that generates an object that implements the PrivacyPolicy interface
@@ -56,34 +57,39 @@ type analyticsPolicy struct {
 	cfg        TCF2ConfigReader
 	consent    string
 	gdprSignal Signal
+	ctx        context.Context
+}
+
+func (ap *analyticsPolicy) SetContext(ctx context.Context) {
+	ap.ctx = ctx
 }
 
 // Allow determines whether analytics are permitted for a given analytics module
-func (ap *analyticsPolicy) Allow(ctx context.Context, name string) (bool, error) {
+func (ap *analyticsPolicy) Allow(name string) (bool) {
 	if ap.gdprSignal != SignalYes {
-		return true, nil
+		return true
 	}
 	if ap.consent == "" {
-		return ap.defaultPermissions(), nil
+		return ap.defaultPermissions()
 	}
 
 	pc, err := parseConsent(ap.consent)
 	if err != nil {
-		return ap.defaultPermissions(), nil
+		return ap.defaultPermissions()
 	}
 
 	// returns 0 if not found
 	vendorID := ap.vendorIDs[openrtb_ext.BidderName(name)]
 
-	vendor, err := ap.getVendor(ctx, vendorID, *pc)
+	vendor, err := ap.getVendor(ap.ctx, vendorID, *pc)
 	if err != nil {
-		return ap.defaultPermissions(), nil
+		return ap.defaultPermissions()
 	}
 
 	enforcer := ap.purposeEnforcerBuilder(consentconstants.Purpose(7), name)
 
 	vendorInfo := VendorInfo{vendorID: vendorID, vendor: vendor}
-	return enforcer.LegalBasis(vendorInfo, name, pc.consentMeta, Overrides{}), nil
+	return enforcer.LegalBasis(vendorInfo, name, pc.consentMeta, Overrides{})
 }
 
 // defaultPermissions denies sending information to an analytics adapter when purpose 7 is
@@ -109,7 +115,11 @@ func (ap *analyticsPolicy) getVendor(ctx context.Context, vendorID uint16, pc pa
 // permits sending data to analytics adapters
 type AllowAllAnalytics struct{}
 
+func (aaa *AllowAllAnalytics) SetContext(ctx context.Context) {
+	return
+}
+
 // Allow satisfies the PrivacyPolicy interface always returning true
-func (aaa *AllowAllAnalytics) Allow(ctx context.Context, name string) (bool, error) {
-	return true, nil
+func (aaa *AllowAllAnalytics) Allow(name string) (bool) {
+	return true
 }

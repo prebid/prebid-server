@@ -1,6 +1,7 @@
 package build
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/benbjohnson/clock"
@@ -62,6 +63,14 @@ func New(analytics *config.Analytics) analytics.Runner {
 
 // Collection of all the correctly configured analytics modules - implements the PBSAnalyticsModule interface
 type enabledAnalytics map[string]analytics.Module
+// type enabledAnalytics {
+// 	modules map[string]analytics.Module
+// 	ctx     context.Context
+// }
+
+// func (ea enabledAnalytics) SetContext(ctx context.Context) {
+// 	ea.ctx = ctx
+// }
 
 func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac privacy.ActivityControl, pp gdpr.PrivacyPolicy) {
 	for name, module := range ea {
@@ -71,7 +80,7 @@ func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac priv
 		if isAllowed, cloneBidderReq = evaluateActivities(ao.RequestWrapper, ac, name); !isAllowed {
 			continue
 		}
-		if !pp.Allow(ctx.Background, name) {
+		if !pp.Allow(name) {
 			continue
 		}
 		if cloneBidderReq != nil {

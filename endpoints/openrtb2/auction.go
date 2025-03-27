@@ -121,7 +121,7 @@ func NewEndpoint(
 		cfg,
 		metricsEngine,
 		analyticsRunner,
-		gdprPrivacyPolicyBuilder,
+		gdprAnalyticsPolicyBuilder,
 		disabledBidders,
 		defRequest,
 		defReqJSON,
@@ -224,6 +224,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		ctx, cancel = context.WithDeadline(ctx, start.Add(timeout))
 		defer cancel()
 	}
+	
 
 	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, account.GDPR)
 
@@ -248,6 +249,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	channelEnabled := tcf2Config.ChannelEnabled(exchange.ChannelTypeMap[labels.RType]) //TODO: try to pass this down to exchange/utils
 	if gdprApplies && channelEnabled {
 		analyticsPolicy = deps.gdprPrivacyPolicyBuilder(tcf2Config, gdprSignal, consent)
+		analyticsPolicy.SetContext(ctx)
 	}
 
 	// Read Usersyncs/Cookie
