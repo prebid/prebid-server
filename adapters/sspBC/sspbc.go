@@ -10,11 +10,12 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 const (
@@ -128,6 +129,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		Method: http.MethodPost,
 		Uri:    requestURL.String(),
 		Body:   requestJSON,
+		ImpIDs: getImpIDs(formattedRequest.Imp),
 	}
 
 	return []*adapters.RequestData{requestData}, nil
@@ -146,7 +148,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	}
 
 	var response openrtb2.BidResponse
-	if err := json.Unmarshal(externalResponse.Body, &response); err != nil {
+	if err := jsonutil.Unmarshal(externalResponse.Body, &response); err != nil {
 		return nil, []error{err}
 	}
 
@@ -191,7 +193,7 @@ func (a *adapter) impToBid(internalRequest *openrtb2.BidRequest, seatBid openrtb
 
 	// read additional data from proxy
 	var bidDataExt responseExt
-	if err := json.Unmarshal(bid.Ext, &bidDataExt); err != nil {
+	if err := jsonutil.Unmarshal(bid.Ext, &bidDataExt); err != nil {
 		return err
 	}
 	/*
@@ -288,8 +290,8 @@ func getBidParameters(imp openrtb2.Imp) openrtb_ext.ExtImpSspbc {
 	var extBidder adapters.ExtImpBidder
 	var extSSP openrtb_ext.ExtImpSspbc
 
-	if err := json.Unmarshal(imp.Ext, &extBidder); err == nil {
-		_ = json.Unmarshal(extBidder.Bidder, &extSSP)
+	if err := jsonutil.Unmarshal(imp.Ext, &extBidder); err == nil {
+		_ = jsonutil.Unmarshal(extBidder.Bidder, &extSSP)
 	}
 
 	return extSSP
@@ -395,4 +397,13 @@ func formatSspBcRequest(request *openrtb2.BidRequest) (*openrtb2.BidRequest, err
 	}
 
 	return request, nil
+}
+
+// getImpIDs uses imp.TagID instead of imp.ID as formattedRequest stores imp.ID in imp.TagID
+func getImpIDs(imps []openrtb2.Imp) []string {
+	impIDs := make([]string, len(imps))
+	for i := range imps {
+		impIDs[i] = imps[i].TagID
+	}
+	return impIDs
 }

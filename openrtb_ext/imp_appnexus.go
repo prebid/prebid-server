@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 // ExtImpAppnexus defines the contract for bidrequest.imp[i].ext.prebid.bidder.appnexus

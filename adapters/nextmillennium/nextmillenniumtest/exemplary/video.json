@@ -1,0 +1,121 @@
+{
+    "mockBidRequest": {
+      "id": "testid",
+      "imp": [
+        {
+          "id": "123654",
+          "video": {
+            "mimes": [
+                "video/mp4"
+            ],
+            "protocols": [
+                2
+            ],
+            "w": 1024,
+            "h": 576
+            },
+            "ext": {
+                "bidder": {
+                "placement_id": "7819"
+                }
+          }
+        }
+      ]
+    },
+  
+    "httpCalls": [
+      {
+        "expectedRequest": {
+          "uri": "https://pbs.nextmillmedia.com/openrtb2/auction",
+          "body":{
+            "id": "testid",
+            "ext": {
+              "nextMillennium": {
+                "nm_version": "v1.0.0"
+              },
+              "prebid": {
+                "storedrequest": {
+                  "id": "7819"
+                },
+                "server": {
+                  "datacenter": "2",
+                  "externalurl": "http://hosturl.com",
+                 "gvlid": 1
+                }
+              }
+            },
+            "imp": [
+              {
+                "video": {
+                    "mimes": [
+                        "video/mp4"
+                    ],
+                    "protocols": [
+                        2
+                    ],
+                    "w": 1024,
+                    "h": 576
+                },
+                "ext": {
+                  "nextMillennium": {},
+                  "prebid": {
+                    "storedrequest": {
+                      "id": "7819"
+                    }
+                  }
+                },
+                "id": "123654"
+              }
+            ]
+          },
+          "impIDs": ["123654"]
+        },
+        "mockResponse": {
+          "status": 200,
+          "body": {
+            "id": "f7b3d2da-e762-410c-b069-424f92c4c4b2",
+            "seatbid": [
+              {
+                "bid": [
+                  {
+                    "impid": "123654",
+                    "id": "7457329903666272789",
+                    "price": 0.5,
+                    "adm": "Hello! It\"s a test ad!",
+                    "adid": "96846035",
+                    "adomain": ["test.addomain.com"],
+                    "w": 300,
+                    "h": 250,
+                    "mtype":2
+                  }
+                ]
+              }
+            ],
+            "cur": "USD"
+          }
+        }
+      }
+    ],
+  
+    "expectedBidResponses": [
+      {
+        "currency": "USD",
+        "bids": [
+          {
+            "bid": {
+              "id": "7457329903666272789",
+              "impid": "123654",
+              "price": 0.5,
+              "adm": "Hello! It\"s a test ad!",
+              "adid": "96846035",
+              "adomain": ["test.addomain.com"],
+              "w": 300,
+              "h": 250,
+              "mtype":2
+            },
+            "type": "video"
+          }
+        ]
+      }
+    ]
+  }

@@ -5,7 +5,7 @@
       {
         "id": "test-imp-id",
         "native": {
-          "request": "{\"context\":2,\"contextsubtype\":20,\"plcmttype\":1,\"plcmtcnt\":1,\"seq\":0,\"aurlsupport\":0,\"durlsupport\":0,\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]}],\"privacy\":0,\"assets\":[{\"id\":100,\"title\":{\"len\":90},\"required\":1},{\"id\":101,\"img\":{\"type\":3,\"w\":200,\"h\":300,\"wmin\":300,\"hmin\":200},\"required\":1},{\"id\":102,\"img\":{\"type\":3,\"w\":400,\"h\":500,\"wmin\":400,\"hmin\":500},\"required\":1},{\"id\":103,\"img\":{\"type\":3,\"w\":300,\"h\":250,\"wmin\":300,\"hmin\":250},\"required\":1},{\"id\":105,\"data\":{\"type\":2,\"len\":90},\"required\":1}],\"ver\":\"1.2\"}",
+          "request": "{\"context\":2,\"contextsubtype\":20,\"plcmttype\":1,\"plcmtcnt\":1,\"seq\":0,\"aurlsupport\":0,\"durlsupport\":0,\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]}],\"privacy\":0,\"assets\":[{\"id\":100,\"title\":{\"len\":90},\"required\":1},{\"id\":101,\"img\":{\"type\":3,\"wmin\":1080,\"hmin\":607},\"required\":1},{\"id\":107,\"video\":{\"mimes\":[\"mp4\"],\"minduration\":100,\"maxduration\":100,\"protocols\":[1,2]},\"required\":1},{\"id\":105,\"data\":{\"type\":2,\"len\":90},\"required\":1}],\"ver\":\"1.2\"}",
           "ver": "1.2"
         },
         "ext": {
@@ -21,14 +21,15 @@
       }
     ],
     "app": {
-      "bundle": "com.huawei.p11",
+      "bundle": "com.huawei.browser",
       "name": "Huawei Browser",
       "ver": "9.1.0.301"
     },
     "device": {
       "ua": "useragent",
       "h": 1920,
-      "language": "en",
+      "language": "zh",
+      "geoCountry": "CH",
       "model": "COL-TEST",
       "os": "android",
       "osv": "10.0.0",
@@ -38,10 +39,12 @@
       "ip": "152.193.6.74",
       "pxratio": 23.01,
       "geo": {
-        "country": "ARG"
+        "country": ""
       }
     },
     "user": {
+      "id": "db089de9-a62e-4861-a881-0ff15e052516",
+      "buyeruid": "v4_bidder_token",
       "ext": {
         "data": {
           "gaid": [
@@ -80,44 +83,28 @@
         "body": {
           "app": {
             "lang": "en",
-            "country": "AR",
+            "country": "ZA",
             "name": "Huawei Browser",
-            "pkgname": "com.example.pkgname2",
+            "pkgname": "com.huawei.browser",
             "version": "9.1.0.301"
           },
           "multislot": [
             {
               "adtype": 3,
               "slotid": "u42ohmaufh",
-              "detailedCreativeTypeList": [
-                "901",
-                "905"
-              ],
-              "format": [
-                {
-                    "w": 200,
-                    "h": 300
-                },
-                {
-                    "w": 400,
-                    "h": 500
-                },
-                {
-                    "w": 300,
-                    "h": 250
-                }
-            ],
+              "detailedCreativeTypeList":["903","901","904","905"],
+              "format":[{"w":225,"h":150},{"w":1080,"h":607},{"w":300,"h":250},{"w":1080,"h":1620},{"w":1280,"h":720},{"w":640,"h":360},{"w":1080,"h":1920},{"w":720,"h":1280}],
               "test": 1
             }
           ],
           "device": {
             "height": 1920,
-            "language": "en",
+            "language": "zh",
             "oaid": "oaid",
             "os": "android",
             "type": 4,
             "ip": "152.193.6.74",
-            "localeCountry": "AR",
+            "localeCountry": "ZA",
             "pxratio": 23.01,
             "model": "COL-TEST",
             "width": 1080,
@@ -126,7 +113,7 @@
             "useragent": "useragent",
             "version": "10.0.0",
             "maker": "huawei",
-            "belongCountry": "AR"
+            "belongCountry": "ZA"
           },
           "geo": {
           },
@@ -137,7 +124,8 @@
           },
           "version": "3.4",
           "clientAdRequestId": "test-req-id"
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,
@@ -156,7 +144,7 @@
                   "metaData": {
                     "adSign": "2",
                     "apkInfo": {
-                      "appIcon": "https://icon.png",
+                      "appIcon": "https://pps-icon.png",
                       "appName": "%E6%89%8B%E6%9C%BA%E6%B7%98%E5%AE%9D",
                       "fileSize": 118902470,
                       "packageName": "com.demo.package",
@@ -181,80 +169,61 @@
                         "height": 160,
                         "imageType": "img",
                         "sha256": "042479eccbda9a8d7d3aa3da73c42486854407835623a30ffff875cb578242d0",
-                        "url": "https://icon1.png",
-                        "width": 160
-                      },
-                      {
-                        "checkSha256Flag": 1,
-                        "fileSize": 10797,
-                        "height": 320,
-                        "imageType": "img",
-                        "sha256": "042479eccbda9a8d7d3aa3da73c42486854407835623a30ffff875cb578242d0",
-                        "url": "https://icon2.png",
+                        "url": "https://pps-icon.png",
                         "width": 160
                       }
                     ],
                     "imageInfo": [
                       {
                         "checkSha256Flag": 0,
-                        "height": 350,
+                        "height": 607,
                         "imageType": "img",
                         "sha256": "8baa56fdb2702b9fb044d95b328936160cd245764375cdb25a4ab504f4ae2e19",
                         "url": "http://image1.jpg",
-                        "width": 400
-                      },
-                      {
-                        "checkSha256Flag": 0,
-                        "height": 300,
-                        "imageType": "img",
-                        "sha256": "8baa56fdb2702b9fb044d95b328936160cd245764375cdb25a4ab504f4ae2e19",
-                        "url": "http://image2.jpg",
-                        "width": 400
-                      },
-                      {
-                        "checkSha256Flag": 0,
-                        "height": 300,
-                        "imageType": "img",
-                        "sha256": "8baa56fdb2702b9fb044d95b328936160cd245764375cdb25a4ab504f4ae2e19",
-                        "url": "http://image3.jpg",
-                        "width": 400
+                        "width": 1080
                       }
                     ],
                     "label": "%E6%89%8B%E6%9C%BA%E6%B7%98%E5%AE%9D",
                     "landingPageType": "3",
                     "marketAppId": "C101219405",
                     "title": "%2Ftest%2F",
-                    "description": "this is a test ad"
+                    "description": "this is a test ad",
+                    "videoInfo": {
+                      "autoPlayAreaRatio": 100,
+                      "autoStopPlayAreaRatio": 10,
+                      "checkSha256Flag": 1,
+                      "sha256": "aa08c8ffce82bbcd37cabefd6c8972b407de48f0b4e332e06d4cc18d25377d77",
+                      "timeBeforeVideoAutoPlay": 50,
+                      "videoAutoPlayOnWifi": "y",
+                      "videoAutoPlayWithSound": "n",
+                      "videoDownloadUrl": "https://video.mp4",
+                      "videoDuration": 6038,
+                      "videoFileSize": 949951,
+                      "videoPlayMode": 2,
+                      "videoRatio": 0.5625,
+                      "width": 600,
+                      "height": 500
+                    }
                   },
                   "monitor": [
                     {
+                      "eventType": "vastError",
+                      "url": [
+                        "http://test/vastError"
+                      ]
+                    },
+                    {
                       "eventType": "click",
                       "url": [
-                        "http://test/click"
+                        "http://test/click",
+                        "http://test/dspclick"
                       ]
                     },
                     {
                       "eventType": "imp",
                       "url": [
-                        "http://test/imp"
-                      ]
-                    },
-                    {
-                      "eventType": "download",
-                      "url": [
-                        "http://test/download"
-                      ]
-                    },
-                    {
-                      "eventType": "install",
-                      "url": [
-                        "http://test/install"
-                      ]
-                    },
-                    {
-                      "eventType": "downloadstart",
-                      "url": [
-                        "http://test/downloadstart"
+                        "http://test/imp",
+                        "http://test/dspimp"
                       ]
                     },
                     {
@@ -272,7 +241,8 @@
                     {
                       "eventType": "playEnd",
                       "url": [
-                        "http://test/playEnd"
+                        "http://test/playEnd1",
+                        "http://test/playEnd2"
                       ]
                     },
                     {
@@ -332,12 +302,12 @@
               "huaweiads"
             ],
             "crid": "58022259",
-            "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":100,\"title\":{\"text\":\"/test/\",\"len\":6}},{\"id\":101,\"img\":{\"type\":3,\"url\":\"http://image1.jpg\",\"w\":400,\"h\":350}},{\"id\":102,\"img\":{\"type\":3,\"url\":\"http://image2.jpg\",\"w\":400,\"h\":300}},{\"id\":103,\"img\":{\"type\":3,\"url\":\"http://image3.jpg\",\"w\":400,\"h\":300}},{\"id\":105,\"data\":{\"label\":\"desc\",\"value\":\"this is a test ad\"}}],\"link\":{\"url\":\"https://ads.huawei.com/usermgtportal/home/index.html#/\",\"clicktrackers\":[\"http://test/click\"]},\"eventtrackers\":[{\"event\":1,\"method\":1,\"url\":\"http://test/imp\"}]}",
+            "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":100,\"title\":{\"text\":\"/test/\",\"len\":6}},{\"id\":101,\"img\":{\"type\":3,\"url\":\"http://image1.jpg\",\"w\":1080,\"h\":607}},{\"id\":107,\"video\":{\"vasttag\":\"<?xml version=\\\"1.0\\\" encoding=\\\"UTF-8\\\"?><VAST version=\\\"3.0\\\"><Ad id=\\\"58022259\\\"><InLine><AdSystem>HuaweiAds</AdSystem><AdTitle>/test/</AdTitle><Error><![CDATA[http://test/vastError&et=[ERRORCODE]]]></Error><Impression><![CDATA[http://test/imp]]></Impression><Impression><![CDATA[http://test/dspimp]]></Impression><Creatives><Creative adId=\\\"58022259\\\" id=\\\"58022259\\\"><Linear><Duration>00:00:06.038</Duration><TrackingEvents><Tracking event=\\\"skip\\\"><![CDATA[http://test/userclose]]></Tracking><Tracking event=\\\"closeLinear\\\"><![CDATA[http://test/userclose]]></Tracking><Tracking event=\\\"start\\\"><![CDATA[http://test/playStart]]></Tracking><Tracking event=\\\"complete\\\"><![CDATA[http://test/playEnd1]]></Tracking><Tracking event=\\\"complete\\\"><![CDATA[http://test/playEnd2]]></Tracking><Tracking event=\\\"resume\\\"><![CDATA[http://test/playResume]]></Tracking><Tracking event=\\\"pause\\\"><![CDATA[http://test/playPause]]></Tracking></TrackingEvents><VideoClicks><ClickThrough><![CDATA[https://ads.huawei.com/usermgtportal/home/index.html#/]]></ClickThrough><ClickTracking><![CDATA[http://test/click]]></ClickTracking><ClickTracking><![CDATA[http://test/dspclick]]></ClickTracking></VideoClicks><MediaFiles><MediaFile delivery=\\\"progressive\\\" type=\\\"video/mp4\\\" width=\\\"600\\\" height=\\\"500\\\" scalable=\\\"true\\\" maintainAspectRatio=\\\"true\\\"> <![CDATA[https://video.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>\"}},{\"id\":105,\"data\":{\"label\":\"desc\",\"value\":\"this is a test ad\"}}],\"link\":{\"url\":\"https://ads.huawei.com/usermgtportal/home/index.html#/\",\"clicktrackers\":[\"http://test/click\",\"http://test/dspclick\"]},\"eventtrackers\":[{\"event\":1,\"method\":1,\"url\":\"http://test/imp\"},{\"event\":1,\"method\":1,\"url\":\"http://test/dspimp\"}]}",
             "id": "test-imp-id",
             "impid": "test-imp-id",
             "price": 2.8,
-            "h": 350,
-            "w": 400
+            "h": 500,
+            "w": 600
           },
           "type": "native"
         }

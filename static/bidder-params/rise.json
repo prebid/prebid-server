@@ -11,10 +11,22 @@
     "publisher_id": {
       "type": "string",
       "description": "Deprecated, use org instead."
+    },
+    "placementId": {
+      "type": "string",
+      "description": "Placement ID."
     }
   },
   "oneOf": [
-    { "required": ["org"] },
-    { "required": ["publisher_id"] }
+    {
+      "required": [
+        "org"
+      ]
+    },
+    {
+      "required": [
+        "publisher_id"
+      ]
+    }
   ]
 }

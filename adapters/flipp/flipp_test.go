@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters/adapterstest"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/adapters/adapterstest"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -23,7 +24,8 @@ func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderFlipp, config.Adapter{
 		Endpoint: "http://example.com/pserver"},
 		config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
-	uuidGenerator = TestUUIDGenerator{}
+
+	setFakeUUIDGenerator(bidder)
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -32,8 +34,12 @@ func TestJsonSamples(t *testing.T) {
 	adapterstest.RunJSONBidderTest(t, "flipptest", bidder)
 }
 
-func TestParamsUserKeyPermitted(t *testing.T) {
+func setFakeUUIDGenerator(bidder adapters.Bidder) {
+	bidderFlipp, _ := bidder.(*adapter)
+	bidderFlipp.uuidGenerator = TestUUIDGenerator{}
+}
 
+func TestParamsUserKeyPermitted(t *testing.T) {
 	t.Run("Coppa is in effect", func(t *testing.T) {
 		request := &openrtb2.BidRequest{
 			Regs: &openrtb2.Regs{

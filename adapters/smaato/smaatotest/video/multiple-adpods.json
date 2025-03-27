@@ -234,12 +234,16 @@
                         }
                     },
                     "ext": {
-                        "client": "prebid_server_0.6"
+                        "client": "prebid_server_1.2"
                     }
-                }
+                },
+                "impIDs":["1_1","1_2"]
             },
             "mockResponse": {
                 "status": 200,
+                "headers": {
+                    "X-Smt-Adtype": ["Video"]
+                },
                 "body": {
                     "id": "5ebea288-f13a-4754-be6d-4ade66c68877",
                     "seatbid": [
@@ -386,12 +390,16 @@
                         }
                     },
                     "ext": {
-                        "client": "prebid_server_0.6"
+                        "client": "prebid_server_1.2"
                     }
-                }
+                },
+                "impIDs":["2_1","2_2"]
             },
             "mockResponse": {
                 "status": 200,
+                "headers": {
+                    "X-Smt-Adtype": ["Video"]
+                },
                 "body": {
                     "id": "5ebea288-f13a-4754-be6d-4ade66c68877",
                     "seatbid": [

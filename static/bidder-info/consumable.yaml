@@ -1,11 +1,14 @@
-endpoint: "https://e.serverbid.com/api/v2"
+endpoint: "https://e.serverbid.com"
 maintainer:
   email: "prebid@consumable.com"
 gvlVendorID: 591
+endpointCompression: gzip
 capabilities:
   app:
     mediaTypes:
     - banner
+    - video
+    - audio
   site:
     mediaTypes:
     - banner

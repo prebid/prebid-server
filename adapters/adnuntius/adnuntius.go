@@ -9,12 +9,13 @@ import (
 	"strings"
 
 	"github.com/buger/jsonparser"
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/timeutil"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/timeutil"
 )
 
 type QueryString map[string]string
@@ -33,6 +34,14 @@ type adnAdunit struct {
 type extDeviceAdnuntius struct {
 	NoCookies bool `json:"noCookies,omitempty"`
 }
+type siteExt struct {
+	Data interface{} `json:"data"`
+}
+
+type adnAdvertiser struct {
+	LegalName string `json:"legalName,omitempty"`
+	Name      string `json:"name,omitempty"`
+}
 
 type Ad struct {
 	Bid struct {
@@ -45,14 +54,16 @@ type Ad struct {
 	GrossBid struct {
 		Amount float64
 	}
-	DealID          string `json:"dealId,omitempty"`
-	AdId            string
-	CreativeWidth   string
-	CreativeHeight  string
-	CreativeId      string
-	LineItemId      string
-	Html            string
-	DestinationUrls map[string]string
+	DealID            string `json:"dealId,omitempty"`
+	AdId              string
+	CreativeWidth     string
+	CreativeHeight    string
+	CreativeId        string
+	LineItemId        string
+	Html              string
+	DestinationUrls   map[string]string
+	AdvertiserDomains []string
+	Advertiser        adnAdvertiser `json:"advertiser,omitempty"`
 }
 
 type AdUnit struct {
@@ -71,9 +82,10 @@ type adnMetaData struct {
 	Usi string `json:"usi,omitempty"`
 }
 type adnRequest struct {
-	AdUnits  []adnAdunit `json:"adUnits"`
-	MetaData adnMetaData `json:"metaData,omitempty"`
-	Context  string      `json:"context,omitempty"`
+	AdUnits   []adnAdunit `json:"adUnits"`
+	MetaData  adnMetaData `json:"metaData,omitempty"`
+	Context   string      `json:"context,omitempty"`
+	KeyValues interface{} `json:"kv,omitempty"`
 }
 
 type RequestExt struct {
@@ -130,7 +142,7 @@ func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter, noCookies bool
 	if !noCookies {
 		var deviceExt extDeviceAdnuntius
 		if ortbRequest.Device != nil && ortbRequest.Device.Ext != nil {
-			if err := json.Unmarshal(ortbRequest.Device.Ext, &deviceExt); err != nil {
+			if err := jsonutil.Unmarshal(ortbRequest.Device.Ext, &deviceExt); err != nil {
 				return "", []error{fmt.Errorf("failed to parse Adnuntius endpoint: %v", err)}
 			}
 		}
@@ -138,7 +150,6 @@ func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter, noCookies bool
 		if deviceExt.NoCookies {
 			noCookies = true
 		}
-
 	}
 
 	_, offset := a.time.Now().Zone()
@@ -159,7 +170,7 @@ func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter, noCookies bool
 	}
 
 	q.Set("tzo", fmt.Sprint(tzo))
-	q.Set("format", "json")
+	q.Set("format", "prebidServer")
 
 	url := endpointUrl + "?" + q.Encode()
 	return url, nil
@@ -202,20 +213,20 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 		}
 
 		var bidderExt adapters.ExtImpBidder
-		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			return nil, []error{&errortypes.BadInput{
 				Message: fmt.Sprintf("Error unmarshalling ExtImpBidder: %s", err.Error()),
 			}}
 		}
 
 		var adnuntiusExt openrtb_ext.ImpExtAdnunitus
-		if err := json.Unmarshal(bidderExt.Bidder, &adnuntiusExt); err != nil {
+		if err := jsonutil.Unmarshal(bidderExt.Bidder, &adnuntiusExt); err != nil {
 			return nil, []error{&errortypes.BadInput{
 				Message: fmt.Sprintf("Error unmarshalling ExtImpValues: %s", err.Error()),
 			}}
 		}
 
-		if adnuntiusExt.NoCookies == true {
+		if adnuntiusExt.NoCookies {
 			noCookies = true
 		}
 
@@ -249,11 +260,31 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 		site = ortbRequest.Site.Page
 	}
 
+	extSite, erro := getSiteExtAsKv(&ortbRequest)
+	if erro != nil {
+		return nil, []error{fmt.Errorf("failed to parse site Ext: %v", err)}
+	}
+
 	for _, networkAdunits := range networkAdunitMap {
 
 		adnuntiusRequest := adnRequest{
-			AdUnits: networkAdunits,
-			Context: site,
+			AdUnits:   networkAdunits,
+			Context:   site,
+			KeyValues: extSite.Data,
+		}
+
+		var extUser openrtb_ext.ExtUser
+		if ortbRequest.User != nil && ortbRequest.User.Ext != nil {
+			if err := jsonutil.Unmarshal(ortbRequest.User.Ext, &extUser); err != nil {
+				return nil, []error{fmt.Errorf("failed to parse Ext User: %v", err)}
+			}
+		}
+
+		// Will change when our adserver can accept multiple user IDS
+		if extUser.Eids != nil && len(extUser.Eids) > 0 {
+			if len(extUser.Eids[0].UIDs) > 0 {
+				adnuntiusRequest.MetaData.Usi = extUser.Eids[0].UIDs[0].ID
+			}
 		}
 
 		ortbUser := ortbRequest.User
@@ -276,6 +307,7 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 			Uri:     endpoint,
 			Body:    adnJson,
 			Headers: headers,
+			ImpIDs:  openrtb_ext.GetImpIDs(ortbRequest.Imp),
 		})
 
 	}
@@ -298,7 +330,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, externalRequest *adapte
 	}
 
 	var adnResponse AdnResponse
-	if err := json.Unmarshal(response.Body, &adnResponse); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &adnResponse); err != nil {
 		return nil, []error{err}
 	}
 
@@ -310,12 +342,22 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, externalRequest *adapte
 	return bidResponse, nil
 }
 
+func getSiteExtAsKv(request *openrtb2.BidRequest) (siteExt, error) {
+	var extSite siteExt
+	if request.Site != nil && request.Site.Ext != nil {
+		if err := jsonutil.Unmarshal(request.Site.Ext, &extSite); err != nil {
+			return extSite, fmt.Errorf("failed to parse ExtSite in Adnuntius: %v", err)
+		}
+	}
+	return extSite, nil
+}
+
 func getGDPR(request *openrtb2.BidRequest) (string, string, error) {
 
 	gdpr := ""
 	var extRegs openrtb_ext.ExtRegs
 	if request.Regs != nil && request.Regs.Ext != nil {
-		if err := json.Unmarshal(request.Regs.Ext, &extRegs); err != nil {
+		if err := jsonutil.Unmarshal(request.Regs.Ext, &extRegs); err != nil {
 			return "", "", fmt.Errorf("failed to parse ExtRegs in Adnuntius GDPR check: %v", err)
 		}
 		if extRegs.GDPR != nil && (*extRegs.GDPR == 0 || *extRegs.GDPR == 1) {
@@ -326,13 +368,47 @@ func getGDPR(request *openrtb2.BidRequest) (string, string, error) {
 	consent := ""
 	if request.User != nil && request.User.Ext != nil {
 		var extUser openrtb_ext.ExtUser
-		if err := json.Unmarshal(request.User.Ext, &extUser); err != nil {
+		if err := jsonutil.Unmarshal(request.User.Ext, &extUser); err != nil {
 			return "", "", fmt.Errorf("failed to parse ExtUser in Adnuntius GDPR check: %v", err)
 		}
 		consent = extUser.Consent
 	}
 
 	return gdpr, consent, nil
+}
+
+func generateReturnExt(ad Ad, request *openrtb2.BidRequest) (json.RawMessage, error) {
+	// We always force the publisher to render
+	var adRender int8 = 0
+
+	var requestRegsExt *openrtb_ext.ExtRegs
+	if request.Regs != nil && request.Regs.Ext != nil {
+		if err := jsonutil.Unmarshal(request.Regs.Ext, &requestRegsExt); err != nil {
+
+			return nil, fmt.Errorf("Failed to parse Ext information in Adnuntius: %v", err)
+		}
+	}
+
+	if ad.Advertiser.Name != "" && requestRegsExt != nil && requestRegsExt.DSA != nil {
+		legalName := ad.Advertiser.Name
+		if ad.Advertiser.LegalName != "" {
+			legalName = ad.Advertiser.LegalName
+		}
+		ext := &openrtb_ext.ExtBid{
+			DSA: &openrtb_ext.ExtBidDSA{
+				AdRender: &adRender,
+				Paid:     legalName,
+				Behalf:   legalName,
+			},
+		}
+		returnExt, err := json.Marshal(ext)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to parse Ext information in Adnuntius: %v", err)
+		}
+
+		return returnExt, nil
+	}
+	return nil, nil
 }
 
 func generateAdResponse(ad Ad, imp openrtb2.Imp, html string, request *openrtb2.BidRequest) (*openrtb2.Bid, []error) {
@@ -354,14 +430,14 @@ func generateAdResponse(ad Ad, imp openrtb2.Imp, html string, request *openrtb2.
 	price := ad.Bid.Amount
 
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, []error{&errortypes.BadInput{
 			Message: fmt.Sprintf("Error unmarshalling ExtImpBidder: %s", err.Error()),
 		}}
 	}
 
 	var adnuntiusExt openrtb_ext.ImpExtAdnunitus
-	if err := json.Unmarshal(bidderExt.Bidder, &adnuntiusExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &adnuntiusExt); err != nil {
 		return nil, []error{&errortypes.BadInput{
 			Message: fmt.Sprintf("Error unmarshalling ExtImpValues: %s", err.Error()),
 		}}
@@ -376,11 +452,11 @@ func generateAdResponse(ad Ad, imp openrtb2.Imp, html string, request *openrtb2.
 		}
 	}
 
-	adDomain := []string{}
-	for _, url := range ad.DestinationUrls {
-		domainArray := strings.Split(url, "/")
-		domain := strings.Replace(domainArray[2], "www.", "", -1)
-		adDomain = append(adDomain, domain)
+	extJson, err := generateReturnExt(ad, request)
+	if err != nil {
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("Error extracting Ext: %s", err.Error()),
+		}}
 	}
 
 	bid := openrtb2.Bid{
@@ -394,7 +470,8 @@ func generateAdResponse(ad Ad, imp openrtb2.Imp, html string, request *openrtb2.
 		CrID:    ad.CreativeId,
 		Price:   price * 1000,
 		AdM:     html,
-		ADomain: adDomain,
+		ADomain: ad.AdvertiserDomains,
+		Ext:     extJson,
 	}
 	return &bid, nil
 
@@ -429,7 +506,7 @@ func generateBidResponse(adnResponse *AdnResponse, request *openrtb2.BidRequest)
 			adBid, err := generateAdResponse(ad, imp, adunit.Html, request)
 			if err != nil {
 				return nil, []error{&errortypes.BadInput{
-					Message: fmt.Sprintf("Error at ad generation"),
+					Message: "Error at ad generation",
 				}}
 			}
 
@@ -442,7 +519,7 @@ func generateBidResponse(adnResponse *AdnResponse, request *openrtb2.BidRequest)
 				dealBid, err := generateAdResponse(deal, imp, deal.Html, request)
 				if err != nil {
 					return nil, []error{&errortypes.BadInput{
-						Message: fmt.Sprintf("Error at ad generation"),
+						Message: "Error at ad generation",
 					}}
 				}
 

@@ -11,10 +11,10 @@ on:
 jobs:
   build:
     name: Trivy
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           # Resolves to empty string for push events and falls back to HEAD.
           ref: ${{ github.event.pull_request.head.sha }}
@@ -29,6 +29,6 @@ jobs:
           severity: 'CRITICAL,HIGH'
           
       - name: Upload Results To GitHub Security Tab
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-results.sarif'

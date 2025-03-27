@@ -5,7 +5,12 @@
       {
         "id": "test-imp-id",
         "banner": {
-          "format": [{ "w": 728, "h": 250 }]
+          "format": [
+            {
+              "w": 728,
+              "h": 250
+            }
+          ]
         },
         "ext": {
           "bidder": {
@@ -36,71 +41,70 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://e.serverbid.com/api/v2",
-        "headers": {
-          "Accept": ["application/json"],
-          "Content-Type": ["application/json"],
-          "User-Agent": [
-            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.91 Safari/537.36"
-          ],
-          "X-Forwarded-For": ["123.123.123.123"],
-          "Forwarded": ["for=123.123.123.123"],
-          "Origin": ["http://www.some.com"],
-          "Referer": ["http://www.some.com/page-where-ad-will-be-shown"]
-        },
+        "uri": "https://e.serverbid.com/sb/rtb",
         "body": {
-          "content": {
-            "id": "1009680902",
-            "title": "What You Know Bout Love",
-            "context": 3,
-            "url": "https://www.deezer.com/track/1009680902",
-            "artist": "Pop Smoke",
-            "album": "Shoot For The Stars Aim For The Moon"
+          "device": {
+            "ip": "123.123.123.123",
+            "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.91 Safari/537.36"
           },
-          "placements": [
+          "id": "test-request-id",
+          "imp": [
             {
-              "adTypes": [2730],
-              "divName": "test-imp-id",
-              "networkId": 11,
-              "siteId": 32,
-              "unitId": 42
+              "banner": {
+                "format": [
+                  {
+                    "h": 250,
+                    "w": 728
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "networkId": 11,
+                  "siteId": 32,
+                  "unitId": 42
+                }
+              },
+              "id": "test-imp-id"
             }
           ],
-          "schain": {
-            "complete": 0,
-            "nodes": null,
-            "ver": ""
-          },
-          "networkId": 11,
-          "siteId": 32,
-          "unitId": 42,
-          "time": 1451651415,
-          "url": "http://www.some.com/page-where-ad-will-be-shown",
-          "includePricingData": true,
-          "user": {},
-          "enableBotFiltering": true,
-          "parallel": true
-        }
+          "site": {
+            "content": {
+              "album": "Shoot For The Stars Aim For The Moon",
+              "artist": "Pop Smoke",
+              "context": 3,
+              "id": "1009680902",
+              "title": "What You Know Bout Love",
+              "url": "https://www.deezer.com/track/1009680902"
+            },
+            "domain": "www.some.com",
+            "page": "http://www.some.com/page-where-ad-will-be-shown"
+          }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,
         "body": {
-          "decisions": {
-            "test-imp-id": {
-              "adId": 1234567890,
-              "pricing": {
-                "clearPrice": 0.5
-              },
-              "width": 728,
-              "height": 250,
-              "impressionUrl": "http://localhost:8080/shown",
-              "contents": [
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "bmtm",
+              "bid": [
                 {
-                  "body": "<blink>Remember this: https://www.google.com/search?q=blink+tag ?</blink>"
+                  "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                  "impid": "test-imp-id",
+                  "price": 0.500000,
+                  "adm": "some-test-ad",
+                  "crid": "crid_10",
+                  "h": 90,
+                  "w": 728,
+                  "mtype": 1
                 }
               ]
             }
-          }
+          ],
+          "cur": "USD"
         }
       }
     }
@@ -111,14 +115,14 @@
       "bids": [
         {
           "bid": {
-            "id": "test-request-id",
+            "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
             "impid": "test-imp-id",
             "price": 0.5,
-            "adm": "<blink>Remember this: https://www.google.com/search?q=blink+tag ?</blink>",
-            "crid": "1234567890",
-            "exp": 30,
+            "adm": "some-test-ad",
+            "crid": "crid_10",
             "w": 728,
-            "h": 250
+            "h": 90,
+            "mtype": 1
           },
           "type": "banner"
         }

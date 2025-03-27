@@ -9,9 +9,9 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/prebid/prebid-server/v2/stored_requests"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
-	jsonpatch "gopkg.in/evanphx/json-patch.v4"
+	"github.com/prebid/prebid-server/v3/stored_requests"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	jsonpatch "gopkg.in/evanphx/json-patch.v5"
 
 	"github.com/golang/glog"
 	"golang.org/x/net/context/ctxhttp"
@@ -164,6 +164,9 @@ func (fetcher *HttpFetcher) FetchAccount(ctx context.Context, accountDefaultsJSO
 			DataType: "Account",
 		}}
 	}
+	if accountDefaultsJSON == nil {
+		return accountJSON, nil
+	}
 	completeJSON, err := jsonpatch.MergePatch(accountDefaultsJSON, accountJSON)
 	if err != nil {
 		return nil, []error{err}
@@ -207,6 +210,9 @@ func (fetcher *HttpFetcher) FetchCategories(ctx context.Context, primaryAdServer
 	defer httpResp.Body.Close()
 
 	respBytes, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return "", fmt.Errorf("Unable to read response body: %v", err)
+	}
 	tmp := make(map[string]stored_requests.Category)
 
 	if err := jsonutil.UnmarshalValid(respBytes, &tmp); err != nil {

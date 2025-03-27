@@ -88,7 +88,8 @@
               "id": "pubid"
             }
           }
-        }
+        },
+        "impIDs":["id"]
       },
       "mockResponse": {
         "status": 200,
@@ -98,7 +99,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "json: cannot unmarshal string into Go value of type openrtb2.BidResponse",
+      "value": "expect { or n, but found \"",
       "comparison": "literal"
     }
   ],

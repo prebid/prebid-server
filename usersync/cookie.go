@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 const uidCookieName = "uids"
@@ -225,7 +225,7 @@ type cookieJson struct {
 	OptOut bool                `json:"optout,omitempty"`
 }
 
-func (cookie *Cookie) MarshalJSON() ([]byte, error) {
+func (cookie *Cookie) MarshalJSON() ([]byte, error) { // nosemgrep: marshal-json-pointer-receiver
 	return jsonutil.Marshal(cookieJson{
 		UIDs:   cookie.uids,
 		OptOut: cookie.optOut,

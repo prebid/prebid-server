@@ -134,7 +134,8 @@
             "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/537.13 (KHTML, like Gecko) Version / 5.1 .7 Safari / 534.57 .2",
             "ip": "123.145.167.10"
           }
-        }
+        },
+        "impIDs":["test-imp-id","test-imp-video-id"]
       },
       "mockResponse": {
         "status": 200,

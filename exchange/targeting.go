@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 const MaxKeyLength = 20
@@ -26,6 +26,7 @@ type targetData struct {
 	includeCacheVast          bool
 	includeFormat             bool
 	preferDeals               bool
+	alwaysIncludeDeals        bool
 	// cacheHost and cachePath exist to supply cache host and path as targeting parameters
 	cacheHost string
 	cachePath string
@@ -38,7 +39,7 @@ type targetData struct {
 // it's ok if those stay in the auction. For now, this method implements a very naive cache strategy.
 // In the future, we should implement a more clever retry & backoff strategy to balance the success rate & performance.
 func (targData *targetData) setTargeting(auc *auction, isApp bool, categoryMapping map[string]string, truncateTargetAttr *int, multiBidMap map[string]openrtb_ext.ExtMultiBid) {
-	for impId, topBidsPerImp := range auc.winningBidsByBidder {
+	for impId, topBidsPerImp := range auc.allBidsByBidder {
 		overallWinner := auc.winningBids[impId]
 		for originalBidderName, topBidsPerBidder := range topBidsPerImp {
 			targetingBidderCode := originalBidderName
@@ -61,40 +62,42 @@ func (targData *targetData) setTargeting(auc *auction, isApp bool, categoryMappi
 
 				isOverallWinner := overallWinner == topBid
 
+				bidHasDeal := len(topBid.Bid.DealID) > 0
+
 				targets := make(map[string]string, 10)
 				if cpm, ok := auc.roundedPrices[topBid]; ok {
-					targData.addKeys(targets, openrtb_ext.HbpbConstantKey, cpm, targetingBidderCode, isOverallWinner, truncateTargetAttr)
+					targData.addKeys(targets, openrtb_ext.HbpbConstantKey, cpm, targetingBidderCode, isOverallWinner, truncateTargetAttr, bidHasDeal)
 				}
-				targData.addKeys(targets, openrtb_ext.HbBidderConstantKey, string(targetingBidderCode), targetingBidderCode, isOverallWinner, truncateTargetAttr)
+				targData.addKeys(targets, openrtb_ext.HbBidderConstantKey, string(targetingBidderCode), targetingBidderCode, isOverallWinner, truncateTargetAttr, bidHasDeal)
 				if hbSize := makeHbSize(topBid.Bid); hbSize != "" {
-					targData.addKeys(targets, openrtb_ext.HbSizeConstantKey, hbSize, targetingBidderCode, isOverallWinner, truncateTargetAttr)
+					targData.addKeys(targets, openrtb_ext.HbSizeConstantKey, hbSize, targetingBidderCode, isOverallWinner, truncateTargetAttr, bidHasDeal)
 				}
 				if cacheID, ok := auc.cacheIds[topBid.Bid]; ok {
-					targData.addKeys(targets, openrtb_ext.HbCacheKey, cacheID, targetingBidderCode, isOverallWinner, truncateTargetAttr)
+					targData.addKeys(targets, openrtb_ext.HbCacheKey, cacheID, targetingBidderCode, isOverallWinner, truncateTargetAttr, bidHasDeal)
 				}
 				if vastID, ok := auc.vastCacheIds[topBid.Bid]; ok {
-					targData.addKeys(targets, openrtb_ext.HbVastCacheKey, vastID, targetingBidderCode, isOverallWinner, truncateTargetAttr)
+					targData.addKeys(targets, openrtb_ext.HbVastCacheKey, vastID, targetingBidderCode, isOverallWinner, truncateTargetAttr, bidHasDeal)
 				}
 				if targData.includeFormat {
-					targData.addKeys(targets, openrtb_ext.HbFormatKey, string(topBid.BidType), targetingBidderCode, isOverallWinner, truncateTargetAttr)
+					targData.addKeys(targets, openrtb_ext.HbFormatKey, string(topBid.BidType), targetingBidderCode, isOverallWinner, truncateTargetAttr, bidHasDeal)
 				}
 
 				if targData.cacheHost != "" {
-					targData.addKeys(targets, openrtb_ext.HbConstantCacheHostKey, targData.cacheHost, targetingBidderCode, isOverallWinner, truncateTargetAttr)
+					targData.addKeys(targets, openrtb_ext.HbConstantCacheHostKey, targData.cacheHost, targetingBidderCode, isOverallWinner, truncateTargetAttr, bidHasDeal)
 				}
 				if targData.cachePath != "" {
-					targData.addKeys(targets, openrtb_ext.HbConstantCachePathKey, targData.cachePath, targetingBidderCode, isOverallWinner, truncateTargetAttr)
+					targData.addKeys(targets, openrtb_ext.HbConstantCachePathKey, targData.cachePath, targetingBidderCode, isOverallWinner, truncateTargetAttr, bidHasDeal)
 				}
 
-				if deal := topBid.Bid.DealID; len(deal) > 0 {
-					targData.addKeys(targets, openrtb_ext.HbDealIDConstantKey, deal, targetingBidderCode, isOverallWinner, truncateTargetAttr)
+				if bidHasDeal {
+					targData.addKeys(targets, openrtb_ext.HbDealIDConstantKey, topBid.Bid.DealID, targetingBidderCode, isOverallWinner, truncateTargetAttr, bidHasDeal)
 				}
 
 				if isApp {
-					targData.addKeys(targets, openrtb_ext.HbEnvKey, openrtb_ext.HbEnvKeyApp, targetingBidderCode, isOverallWinner, truncateTargetAttr)
+					targData.addKeys(targets, openrtb_ext.HbEnvKey, openrtb_ext.HbEnvKeyApp, targetingBidderCode, isOverallWinner, truncateTargetAttr, bidHasDeal)
 				}
 				if len(categoryMapping) > 0 {
-					targData.addKeys(targets, openrtb_ext.HbCategoryDurationKey, categoryMapping[topBid.Bid.ID], targetingBidderCode, isOverallWinner, truncateTargetAttr)
+					targData.addKeys(targets, openrtb_ext.HbCategoryDurationKey, categoryMapping[topBid.Bid.ID], targetingBidderCode, isOverallWinner, truncateTargetAttr, bidHasDeal)
 				}
 				topBid.BidTargets = targets
 			}
@@ -102,7 +105,7 @@ func (targData *targetData) setTargeting(auc *auction, isApp bool, categoryMappi
 	}
 }
 
-func (targData *targetData) addKeys(keys map[string]string, key openrtb_ext.TargetingKey, value string, bidderName openrtb_ext.BidderName, overallWinner bool, truncateTargetAttr *int) {
+func (targData *targetData) addKeys(keys map[string]string, key openrtb_ext.TargetingKey, value string, bidderName openrtb_ext.BidderName, overallWinner bool, truncateTargetAttr *int, bidHasDeal bool) {
 	var maxLength int
 	if truncateTargetAttr != nil {
 		maxLength = *truncateTargetAttr
@@ -112,7 +115,7 @@ func (targData *targetData) addKeys(keys map[string]string, key openrtb_ext.Targ
 	} else {
 		maxLength = MaxKeyLength
 	}
-	if targData.includeBidderKeys {
+	if targData.includeBidderKeys || (targData.alwaysIncludeDeals && bidHasDeal) {
 		keys[key.BidderKey(bidderName, maxLength)] = value
 	}
 	if targData.includeWinners && overallWinner {

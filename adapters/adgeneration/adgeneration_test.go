@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/adapters/adapterstest"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/adapters/adapterstest"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -259,6 +259,7 @@ func checkBidResponse(t *testing.T, bidderResponse *adapters.BidderResponse, exp
 	var expectedCrID string = "Dummy_supership.jp"
 	var extectedDealID string = "test-deal-id"
 
+	//nolint: staticcheck // false positive SA5011: possible nil pointer dereference
 	assert.Equal(t, expectedCurrency, bidderResponse.Currency)
 	assert.Equal(t, 1, len(bidderResponse.Bids))
 	assert.Equal(t, expectedID, bidderResponse.Bids[0].Bid.ID)

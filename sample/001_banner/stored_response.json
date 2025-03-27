@@ -1,0 +1,46 @@
+{
+    "id": "test-auction-id",
+    "seatbid": [
+        {
+            "bid": [
+                {
+                    "id": "test-bid-id",
+                    "impid": "test-div-1",
+                    "price": 1,
+                    "adm": "<img src =\"http://files.prebid.org/creatives/prebid300x250.png\" />",
+                    "adomain": [
+                        "www.addomain.com"
+                    ],
+                    "iurl": "http://localhost11",
+                    "crid": "creative111",
+                    "w": 300,
+                    "h": 250,
+                    "mtype": 1,
+                    "ext": {
+                        "bidtype": 0,
+                        "dspid": 6,
+                        "origbidcpm": 1,
+                        "origbidcur": "USD",
+                        "prebid": {
+                            "meta": {
+                                "adaptercode": "pubmatic"
+                            },
+                            "targeting": {
+                                "hb_bidder": "pubmatic",
+                                "hb_pb": "1.00",
+                                "hb_size": "300x250"
+                            },
+                            "type": "banner",
+                            "video": {
+                                "duration": 0,
+                                "primary_category": ""
+                            }
+                        }
+                    }
+                }
+            ],
+            "seat": "pubmatic"
+        }
+    ],
+    "cur": "USD"
+}

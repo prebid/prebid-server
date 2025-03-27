@@ -6,7 +6,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"golang.org/x/text/currency"
 )
 
 func TestUnMarshallRates(t *testing.T) {
@@ -183,6 +184,82 @@ func TestGetRate_ReverseConversion(t *testing.T) {
 		// Verify:
 		assert.Nil(t, err, "err should be nil: "+tc.description)
 		assert.Equal(t, tc.expectedRate, rate, "rate doesn't match the expected one: "+tc.description)
+	}
+}
+
+func TestGetRate_FindIntermediateConversionRate(t *testing.T) {
+	rates := NewRates(map[string]map[string]float64{
+		"USD": {
+			"SEK": 10.23842,
+			"NOK": 10.47089,
+		},
+		"EUR": {
+			"THB": 35.23842,
+			"ZAR": 18.47089,
+		},
+	})
+
+	testCases := []struct {
+		description  string
+		from         string
+		to           string
+		expectedRate float64
+		hasError     bool
+	}{
+		{
+			description:  "in_same_intermediate_USD_currency",
+			from:         "NOK",
+			to:           "SEK",
+			expectedRate: 0.9777984488424574,
+		},
+		{
+			description:  "in_same_intermediate_USD_currency_inverse",
+			from:         "SEK",
+			to:           "NOK",
+			expectedRate: 1 / 0.9777984488424574,
+		},
+		{
+			description:  "in_same_intermediate_EUR_currency",
+			from:         "THB",
+			to:           "ZAR",
+			expectedRate: 0.5241690745498806,
+		},
+		{
+			description:  "in_same_intermediate_EUR_currency_inverse",
+			from:         "ZAR",
+			to:           "THB",
+			expectedRate: 1 / 0.5241690745498806,
+		},
+		{
+			description:  "in_different_intermediate_currencies",
+			from:         "NOK",
+			to:           "ZAR",
+			expectedRate: 0,
+			hasError:     true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			fromUnit, err := currency.ParseISO(tc.from)
+			if err != nil {
+				t.Errorf("Expected no error, but got: %v", err)
+			}
+			toUnit, err := currency.ParseISO(tc.to)
+			if err != nil {
+				t.Errorf("Expected no error, but got: %v", err)
+			}
+
+			rate, err := FindIntermediateConversionRate(rates, fromUnit, toUnit)
+
+			if tc.hasError {
+				assert.NotNil(t, err)
+				assert.Equal(t, float64(0), rate)
+			} else {
+				assert.Nil(t, err)
+				assert.Equal(t, tc.expectedRate, rate)
+			}
+		})
 	}
 }
 

@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/metrics"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/metrics"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
@@ -64,7 +64,7 @@ func TestMetricCountGatekeeping(t *testing.T) {
 	// Verify Per-Adapter Cardinality
 	// - This assertion provides a warning for newly added adapter metrics. Threre are 40+ adapters which makes the
 	//   cost of new per-adapter metrics rather expensive. Thought should be given when adding new per-adapter metrics.
-	assert.True(t, perAdapterCardinalityCount <= 30, "Per-Adapter Cardinality count equals %d \n", perAdapterCardinalityCount)
+	assert.True(t, perAdapterCardinalityCount <= 31, "Per-Adapter Cardinality count equals %d \n", perAdapterCardinalityCount)
 }
 
 func TestConnectionMetrics(t *testing.T) {
@@ -141,7 +141,7 @@ func TestConnectionMetrics(t *testing.T) {
 func TestRequestMetric(t *testing.T) {
 	m := createMetricsForTesting()
 	requestType := metrics.ReqTypeORTB2Web
-	requestStatus := metrics.RequestStatusBlacklisted
+	requestStatus := metrics.RequestStatusBlockedApp
 
 	m.RecordRequest(metrics.Labels{
 		RType:         requestType,
@@ -285,7 +285,7 @@ func TestRequestMetricWithoutCookie(t *testing.T) {
 	performTest := func(m *Metrics, cookieFlag metrics.CookieFlag) {
 		m.RecordRequest(metrics.Labels{
 			RType:         requestType,
-			RequestStatus: metrics.RequestStatusBlacklisted,
+			RequestStatus: metrics.RequestStatusBlockedApp,
 			CookieFlag:    cookieFlag,
 		})
 	}
@@ -337,7 +337,7 @@ func TestAccountMetric(t *testing.T) {
 	performTest := func(m *Metrics, pubID string) {
 		m.RecordRequest(metrics.Labels{
 			RType:         metrics.ReqTypeORTB2Web,
-			RequestStatus: metrics.RequestStatusBlacklisted,
+			RequestStatus: metrics.RequestStatusBlockedApp,
 			PubID:         pubID,
 		})
 	}
@@ -1235,7 +1235,7 @@ func TestRecordSyncerRequestMetric(t *testing.T) {
 			label:  "already_synced",
 		},
 		{
-			status: metrics.SyncerCookieSyncTypeNotSupported,
+			status: metrics.SyncerCookieSyncRejectedByFilter,
 			label:  "type_not_supported",
 		},
 	}
@@ -1635,6 +1635,7 @@ func TestDisabledMetrics(t *testing.T) {
 		Namespace: "prebid",
 		Subsystem: "server",
 	}, config.DisabledMetrics{
+		AdapterBuyerUIDScrubbed:   true,
 		AdapterConnectionMetrics:  true,
 		AdapterGDPRRequestBlocked: true,
 	},
@@ -1642,6 +1643,7 @@ func TestDisabledMetrics(t *testing.T) {
 
 	// Assert counter vector was not initialized
 	assert.Nil(t, prometheusMetrics.adapterReusedConnections, "Counter Vector adapterReusedConnections should be nil")
+	assert.Nil(t, prometheusMetrics.adapterScrubbedBuyerUIDs, "Counter Vector adapterScrubbedBuyerUIDs should be nil")
 	assert.Nil(t, prometheusMetrics.adapterCreatedConnections, "Counter Vector adapterCreatedConnections should be nil")
 	assert.Nil(t, prometheusMetrics.adapterConnectionWaitTime, "Counter Vector adapterConnectionWaitTime should be nil")
 	assert.Nil(t, prometheusMetrics.adapterGDPRBlockedRequests, "Counter Vector adapterGDPRBlockedRequests should be nil")
@@ -1755,7 +1757,7 @@ func getHistogramFromHistogramVecByTwoKeys(histogram *prometheus.HistogramVec, l
 	processMetrics(histogram, func(m dto.Metric) {
 		for ind, label := range m.GetLabel() {
 			if label.GetName() == label1Key && label.GetValue() == label1Value {
-				valInd := ind
+				var valInd int
 				if ind == 1 {
 					valInd = 0
 				} else {
@@ -1787,6 +1789,45 @@ func processMetrics(collector prometheus.Collector, handler func(m dto.Metric)) 
 func assertHistogram(t *testing.T, name string, histogram dto.Histogram, expectedCount uint64, expectedSum float64) {
 	assert.Equal(t, expectedCount, histogram.GetSampleCount(), name+":count")
 	assert.Equal(t, expectedSum, histogram.GetSampleSum(), name+":sum")
+}
+
+func TestRecordAdapterBuyerUIDScrubbed(t *testing.T) {
+
+	tests := []struct {
+		name          string
+		disabled      bool
+		expectedCount float64
+	}{
+		{
+			name:          "enabled",
+			disabled:      false,
+			expectedCount: 1,
+		},
+		{
+			name:          "disabled",
+			disabled:      true,
+			expectedCount: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := createMetricsForTesting()
+			m.metricsDisabled.AdapterBuyerUIDScrubbed = tt.disabled
+			adapterName := openrtb_ext.BidderName("AnyName")
+			lowerCasedAdapterName := "anyname"
+			m.RecordAdapterBuyerUIDScrubbed(adapterName)
+
+			assertCounterVecValue(t,
+				"Increment adapter buyeruid scrubbed counter",
+				"adapter_buyeruids_scrubbed",
+				m.adapterScrubbedBuyerUIDs,
+				tt.expectedCount,
+				prometheus.Labels{
+					adapterLabel: lowerCasedAdapterName,
+				})
+		})
+	}
 }
 
 func TestRecordAdapterGDPRRequestBlocked(t *testing.T) {

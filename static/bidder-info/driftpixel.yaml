@@ -1,0 +1,18 @@
+endpoint: "http://rtb.driftpixel.live?pid={{.SourceId}}&host={{.Host}}&pbs=1"
+maintainer:
+  email: "developer@driftpixel.ai"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  redirect:
+    url: "https://sync.driftpixel.live/psync?t=s&e=0&gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&cb={{.RedirectURL}}"
+    userMacro: "%USER_ID%"

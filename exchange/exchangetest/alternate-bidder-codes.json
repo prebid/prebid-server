@@ -95,9 +95,7 @@
                   "price": 0.71
                 },
                 "bidType": "video",
-                "bidMeta": {
-                  "adaptercode": "pubmatic"
-                }
+                "bidMeta": {}
               }
             ],
             "seat": "pubmatic"
@@ -111,9 +109,7 @@
                   "price": 0.51
                 },
                 "bidType": "video",
-                "bidMeta": {
-                  "adaptercode": "pubmatic"
-                }
+                "bidMeta": {}
               }
             ],
             "seat": "groupm"
@@ -164,9 +160,7 @@
                   "price": 0.3
                 },
                 "bidType": "banner",
-                "bidMeta": {
-                  "adaptercode": "appnexus"
-                }
+                "bidMeta": {}
               }
             ],
             "seat": "appnexus"
@@ -181,7 +175,6 @@
                 },
                 "bidType": "banner",
                 "bidMeta": {
-                  "adaptercode": "appnexus"
                 }
               }
             ],
@@ -205,9 +198,7 @@
               "ext": {
                 "origbidcpm": 0.51,
                 "prebid": {
-                  "meta": {
-                    "adaptercode": "groupm"
-                  },
+                  "meta": {},
                   "type": "video"
                 }
               }
@@ -220,7 +211,6 @@
                 "origbidcpm": 0.3,
                 "prebid": {
                   "meta": {
-                    "adaptercode": "groupm"
                   },
                   "type": "banner"
                 }
@@ -239,7 +229,6 @@
                 "origbidcpm": 0.71,
                 "prebid": {
                   "meta": {
-                    "adaptercode": "pubmatic"
                   },
                   "type": "video"
                 }
@@ -258,7 +247,6 @@
                 "origbidcpm": 0.3,
                 "prebid": {
                   "meta": {
-                    "adaptercode": "appnexus"
                   },
                   "type": "banner"
                 }

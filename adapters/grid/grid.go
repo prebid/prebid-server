@@ -2,17 +2,19 @@ package grid
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"sort"
 	"strings"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/maputil"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/maputil"
 )
 
 type GridAdapter struct {
@@ -121,7 +123,7 @@ func buildConsolidatedKeywordsReqExt(openRTBUser, openRTBSite string, firstImpEx
 }
 func parseExtToMap(ext json.RawMessage) map[string]interface{} {
 	var root map[string]interface{}
-	if err := json.Unmarshal(ext, &root); err != nil {
+	if err := jsonutil.Unmarshal(ext, &root); err != nil {
 		return make(map[string]interface{})
 	}
 	return root
@@ -251,10 +253,10 @@ func processImp(imp *openrtb2.Imp) error {
 	// get the grid extension
 	var ext adapters.ExtImpBidder
 	var gridExt openrtb_ext.ExtImpGrid
-	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &ext); err != nil {
 		return err
 	}
-	if err := json.Unmarshal(ext.Bidder, &gridExt); err != nil {
+	if err := jsonutil.Unmarshal(ext.Bidder, &gridExt); err != nil {
 		return err
 	}
 
@@ -270,7 +272,7 @@ func processImp(imp *openrtb2.Imp) error {
 
 func setImpExtData(imp openrtb2.Imp) openrtb2.Imp {
 	var ext ExtImp
-	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &ext); err != nil {
 		return imp
 	}
 	if ext.Data != nil && ext.Data.AdServer != nil && ext.Data.AdServer.AdSlot != "" {
@@ -287,7 +289,7 @@ func fixNative(req json.RawMessage) (json.RawMessage, error) {
 	var gridReq map[string]interface{}
 	var parsedRequest map[string]interface{}
 
-	if err := json.Unmarshal(req, &gridReq); err != nil {
+	if err := jsonutil.Unmarshal(req, &gridReq); err != nil {
 		return req, nil
 	}
 	if imps, exists := maputil.ReadEmbeddedSlice(gridReq, "imp"); exists {
@@ -298,7 +300,7 @@ func fixNative(req json.RawMessage) (json.RawMessage, error) {
 					request, hasRequest := maputil.ReadEmbeddedString(native, "request")
 					if hasRequest {
 						delete(native, "request")
-						if err := json.Unmarshal([]byte(request), &parsedRequest); err == nil {
+						if err := jsonutil.Unmarshal([]byte(request), &parsedRequest); err == nil {
 							native["request_native"] = parsedRequest
 						} else {
 							native["request_native"] = request
@@ -363,6 +365,7 @@ func (a *GridAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapte
 		Uri:     a.endpoint,
 		Body:    fixedReqJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, errors
 }
 
@@ -385,7 +388,7 @@ func (a *GridAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReq
 	}
 
 	var bidResp GridResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
@@ -393,8 +396,12 @@ func (a *GridAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReq
 
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
-			bidMeta, err := getBidMeta(sb.Bid[i].Ext)
+			bidMeta, err := getBidMeta(sb.Bid[i].Ext) //nolint: ineffassign,staticcheck // ineffectual assignment to err
+
 			bidType, err := getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp, sb.Bid[i])
+			if err != nil {
+				return nil, []error{err}
+			}
 			if sb.Bid[i].AdmNative != nil && sb.Bid[i].AdM == "" {
 				if bytes, err := json.Marshal(sb.Bid[i].AdmNative); err == nil {
 					sb.Bid[i].AdM = string(bytes)
@@ -426,9 +433,12 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 }
 
 func getBidMeta(ext json.RawMessage) (*openrtb_ext.ExtBidPrebidMeta, error) {
+	if ext == nil {
+		return nil, errors.New("nil ext passed to getBidMeta")
+	}
 	var bidExt GridBidExt
 
-	if err := json.Unmarshal(ext, &bidExt); err != nil {
+	if err := jsonutil.Unmarshal(ext, &bidExt); err != nil {
 		return nil, err
 	}
 	var bidMeta *openrtb_ext.ExtBidPrebidMeta

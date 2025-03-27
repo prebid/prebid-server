@@ -56,7 +56,8 @@
               "video": {"mimes": ["video/mp4"]}
             }
           ]
-        }
+        },
+        "impIDs":["banner-adunit-1","video-adunit-2"]
       },
       "mockResponse": {
         "status": 200,

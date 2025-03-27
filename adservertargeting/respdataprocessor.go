@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
-	jsonpatch "gopkg.in/evanphx/json-patch.v4"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	jsonpatch "gopkg.in/evanphx/json-patch.v5"
 )
 
 const MaxKeyLength = 20
@@ -82,13 +81,13 @@ func buildBidExt(targetingData map[string]string,
 	}
 	bidExtTargeting, err := jsonutil.Marshal(bidExtTargetingData)
 	if err != nil {
-		warnings = append(warnings, createWarning(err.Error()))
+		warnings = append(warnings, createWarning(err.Error())) //nolint: ineffassign,staticcheck
 		return nil
 	}
 
 	newExt, err := jsonpatch.MergePatch(bid.Ext, bidExtTargeting)
 	if err != nil {
-		warnings = append(warnings, createWarning(err.Error()))
+		warnings = append(warnings, createWarning(err.Error())) //nolint: ineffassign,staticcheck
 		return nil
 	}
 	return newExt
@@ -170,7 +169,7 @@ func getRespData(bidderResp *openrtb2.BidResponse, field string) (string, error)
 		return fmt.Sprint(bidderResp.NBR.Val()), nil
 
 	default:
-		return "", errors.Errorf("key not found for field in bid response: %s", field)
+		return "", fmt.Errorf("key not found for field in bid response: %s", field)
 	}
 
 }

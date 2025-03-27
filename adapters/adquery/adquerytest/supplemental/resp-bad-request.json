@@ -56,7 +56,8 @@
           "sizes": "320x100,300x250",
           "type": "banner",
           "v": "server"
-        }
+        },
+        "impIDs":["1"]
       },
       "mockResponse": {
         "status": 400,

@@ -6,12 +6,13 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 const adapterId = 4
@@ -62,6 +63,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		Method: "POST",
 		Uri:    a.endpoint,
 		Body:   requestJSON,
+		ImpIDs: openrtb_ext.GetImpIDs(reqCopy.Imp),
 	}
 
 	return []*adapters.RequestData{requestData}, errs
@@ -87,7 +89,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	var response openrtb2.BidResponse
-	if err := json.Unmarshal(responseData.Body, &response); err != nil {
+	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}
 
@@ -164,7 +166,7 @@ func getImpsAndPublisherId(bidRequest *openrtb2.BidRequest) ([]openrtb2.Imp, int
 
 	for _, imp := range bidRequest.Imp {
 		var ext impExt
-		if err := json.Unmarshal(imp.Ext, &ext); err != nil {
+		if err := jsonutil.Unmarshal(imp.Ext, &ext); err != nil {
 			errs = append(errs, getInvalidImpErr(imp.ID, err))
 			continue
 		}

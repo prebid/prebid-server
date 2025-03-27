@@ -92,7 +92,8 @@
             "buyeruid": "189f4055-78a3-46eb-b7fd-0915a1a43bd2a",
             "ext": {}
           }
-        }
+        },
+        "impIDs":["div-gpt-ad-1460505748561-0"]
       },
       "mockResponse": {
         "status": 200,

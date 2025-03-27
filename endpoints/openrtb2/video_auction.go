@@ -16,29 +16,29 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/v2/hooks"
-	"github.com/prebid/prebid-server/v2/hooks/hookexecution"
-	"github.com/prebid/prebid-server/v2/ortb"
-	"github.com/prebid/prebid-server/v2/privacy"
-	jsonpatch "gopkg.in/evanphx/json-patch.v4"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/hooks"
+	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v3/ortb"
+	"github.com/prebid/prebid-server/v3/privacy"
+	jsonpatch "gopkg.in/evanphx/json-patch.v5"
 
-	accountService "github.com/prebid/prebid-server/v2/account"
-	"github.com/prebid/prebid-server/v2/analytics"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/exchange"
-	"github.com/prebid/prebid-server/v2/metrics"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/prebid_cache_client"
-	"github.com/prebid/prebid-server/v2/stored_requests"
-	"github.com/prebid/prebid-server/v2/stored_requests/backends/empty_fetcher"
-	"github.com/prebid/prebid-server/v2/usersync"
-	"github.com/prebid/prebid-server/v2/util/iputil"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
-	"github.com/prebid/prebid-server/v2/util/uuidutil"
-	"github.com/prebid/prebid-server/v2/version"
+	accountService "github.com/prebid/prebid-server/v3/account"
+	"github.com/prebid/prebid-server/v3/analytics"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/exchange"
+	"github.com/prebid/prebid-server/v3/metrics"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/prebid_cache_client"
+	"github.com/prebid/prebid-server/v3/stored_requests"
+	"github.com/prebid/prebid-server/v3/stored_requests/backends/empty_fetcher"
+	"github.com/prebid/prebid-server/v3/usersync"
+	"github.com/prebid/prebid-server/v3/util/iputil"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
+	"github.com/prebid/prebid-server/v3/util/uuidutil"
+	"github.com/prebid/prebid-server/v3/version"
 )
 
 var defaultRequestTimeout int64 = 5000
@@ -46,7 +46,7 @@ var defaultRequestTimeout int64 = 5000
 func NewVideoEndpoint(
 	uuidGenerator uuidutil.UUIDGenerator,
 	ex exchange.Exchange,
-	validator openrtb_ext.BidderParamValidator,
+	requestValidator ortb.RequestValidator,
 	requestsById stored_requests.Fetcher,
 	videoFetcher stored_requests.Fetcher,
 	accounts stored_requests.AccountFetcher,
@@ -60,7 +60,7 @@ func NewVideoEndpoint(
 	tmaxAdjustments *exchange.TmaxAdjustmentsPreprocessed,
 ) (httprouter.Handle, error) {
 
-	if ex == nil || validator == nil || requestsById == nil || accounts == nil || cfg == nil || met == nil {
+	if ex == nil || requestValidator == nil || requestsById == nil || accounts == nil || cfg == nil || met == nil {
 		return nil, errors.New("NewVideoEndpoint requires non-nil arguments.")
 	}
 
@@ -76,7 +76,7 @@ func NewVideoEndpoint(
 	return httprouter.Handle((&endpointDeps{
 		uuidGenerator,
 		ex,
-		validator,
+		requestValidator,
 		requestsById,
 		videoFetcher,
 		accounts,
@@ -165,6 +165,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	}()
 
 	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
+	setBrowsingTopicsHeader(w, r)
 
 	lr := &io.LimitedReader{
 		R: r.Body,
@@ -259,16 +260,12 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	// all code after this line should use the bidReqWrapper instead of bidReq directly
 	bidReqWrapper := &openrtb_ext.RequestWrapper{BidRequest: bidReq}
 
-	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
-	deps.setFieldsImplicitly(r, bidReqWrapper)
-
-	if err := ortb.SetDefaults(bidReqWrapper); err != nil {
-		handleError(&labels, w, errL, &vo, &debugLog)
+	if err := openrtb_ext.ConvertUpTo26(bidReqWrapper); err != nil {
+		handleError(&labels, w, []error{err}, &vo, &debugLog)
 		return
 	}
 
-	errL = deps.validateRequest(bidReqWrapper, false, false, nil, false)
-	if errortypes.ContainsFatalError(errL) {
+	if err := ortb.SetDefaults(bidReqWrapper); err != nil {
 		handleError(&labels, w, errL, &vo, &debugLog)
 		return
 	}
@@ -306,7 +303,21 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
+	if errs := deps.setFieldsImplicitly(r, bidReqWrapper, account); len(errs) > 0 {
+		errL = append(errL, errs...)
+	}
+
+	errs := deps.validateRequest(account, r, bidReqWrapper, false, false, nil, false)
+	errL = append(errL, errs...)
+	if errortypes.ContainsFatalError(errL) {
+		handleError(&labels, w, errL, &vo, &debugLog)
+		return
+	}
+
 	activityControl = privacy.NewActivityControl(&account.Privacy)
+
+	warnings := errortypes.WarningOnly(errL)
 
 	secGPC := r.Header.Get("Sec-GPC")
 	auctionRequest := &exchange.AuctionRequest{
@@ -316,6 +327,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		RequestType:                labels.RType,
 		StartTime:                  start,
 		LegacyLabels:               labels,
+		Warnings:                   warnings,
 		GlobalPrivacyControlHeader: secGPC,
 		PubID:                      labels.PubID,
 		HookExecutor:               hookexecution.EmptyHookExecutor{},
@@ -404,9 +416,9 @@ func handleError(labels *metrics.Labels, w http.ResponseWriter, errL []error, vo
 	var status int = http.StatusInternalServerError
 	for _, er := range errL {
 		erVal := errortypes.ReadCode(er)
-		if erVal == errortypes.BlacklistedAppErrorCode || erVal == errortypes.AccountDisabledErrorCode {
+		if erVal == errortypes.BlockedAppErrorCode || erVal == errortypes.AccountDisabledErrorCode {
 			status = http.StatusServiceUnavailable
-			labels.RequestStatus = metrics.RequestStatusBlacklisted
+			labels.RequestStatus = metrics.RequestStatusBlockedApp
 			break
 		} else if erVal == errortypes.AcctRequiredErrorCode {
 			status = http.StatusBadRequest
@@ -496,7 +508,7 @@ func createImpressionTemplate(imp openrtb2.Imp, video *openrtb2.Video) openrtb2.
 }
 
 func (deps *endpointDeps) loadStoredImp(storedImpId string) (openrtb2.Imp, []error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(storedRequestTimeoutMillis)*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(deps.cfg.StoredRequestsTimeout)*time.Millisecond)
 	defer cancel()
 
 	impr := openrtb2.Imp{}
@@ -806,8 +818,8 @@ func (deps *endpointDeps) validateVideoRequest(req *openrtb_ext.BidRequestVideo)
 		errL = append(errL, err)
 	} else if req.App != nil {
 		if req.App.ID != "" {
-			if _, found := deps.cfg.BlacklistedAppMap[req.App.ID]; found {
-				err := &errortypes.BlacklistedApp{Message: fmt.Sprintf("Prebid-server does not process requests from App ID: %s", req.App.ID)}
+			if _, found := deps.cfg.BlockedAppsLookup[req.App.ID]; found {
+				err := &errortypes.BlockedApp{Message: fmt.Sprintf("Prebid-server does not process requests from App ID: %s", req.App.ID)}
 				errL = append(errL, err)
 				return errL, podErrors
 			}

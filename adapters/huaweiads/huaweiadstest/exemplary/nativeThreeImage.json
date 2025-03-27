@@ -91,6 +91,7 @@
               "slotid": "u42ohmaufh",
               "detailedCreativeTypeList": [
                 "901",
+                "904",
                 "905"
               ],
               "format": [
@@ -137,7 +138,8 @@
           },
           "version": "3.4",
           "clientAdRequestId": "test-req-id"
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,

@@ -1,8 +1,8 @@
 package prometheusmetrics
 
 import (
-	"github.com/prebid/prebid-server/v2/metrics"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/metrics"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -228,6 +228,12 @@ func preloadLabelValues(m *Metrics, syncerKeys []string, moduleStageNames map[st
 		sourceLabel:  sourceValues,
 		versionLabel: tcfVersionValues,
 	})
+
+	if !m.metricsDisabled.AdapterBuyerUIDScrubbed {
+		preloadLabelValuesForCounter(m.adapterScrubbedBuyerUIDs, map[string][]string{
+			adapterLabel: adapterValues,
+		})
+	}
 
 	if !m.metricsDisabled.AdapterGDPRRequestBlocked {
 		preloadLabelValuesForCounter(m.adapterGDPRBlockedRequests, map[string][]string{

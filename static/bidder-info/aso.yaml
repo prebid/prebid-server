@@ -1,0 +1,21 @@
+endpoint: "https://srv.aso1.net/pbs/bidder?zid={{.ZoneID}}"
+maintainer:
+  email: "support@adsrv.org"
+
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  # Adserver.Online supports user syncing, but requires configuration by the host.Contact this
+  # bidder directly at the email address in this file to ask about enabling user sync.
+  supports:
+    - redirect
+    - iframe

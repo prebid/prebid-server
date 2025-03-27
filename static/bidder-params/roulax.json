@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Roulax Adapter Params",
+  "description": "A schema which validates params accepted by the Roulax adapter",
+  "type": "object",
+  "properties": {
+    "PId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "PID"
+    },
+    "PublisherPath": {
+      "type": "string",
+      "minLength": 1,
+      "description": "PublisherPath"
+    }
+  },
+  "required": ["Pid", "PublisherPath"]
+}

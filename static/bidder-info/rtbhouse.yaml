@@ -1,12 +1,30 @@
+# Contact prebid@rtbhouse.com to ask about enabling a connection to the bidder.
+# Please configure the following endpoints for your datacenter
+# EMEA
 endpoint: "http://prebidserver-s2s-ams.creativecdn.com/bidder/prebidserver/bids"
+# US East
+# endpoint: "http://prebidserver-s2s-ash.creativecdn.com/bidder/prebidserver/bids"
+# US West
+# endpoint: "http://prebidserver-s2s-phx.creativecdn.com/bidder/prebidserver/bids"
+# APAC
+# endpoint: "http://prebidserver-s2s-sin.creativecdn.com/bidder/prebidserver/bids"
+geoscope:
+  - global
+openrtb:
+  version: 2.6  
 maintainer:
   email: "prebid@rtbhouse.com"
 endpointCompression: gzip
 gvlVendorID: 16
 capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - native
   site:
     mediaTypes:
       - banner
+      - native
 userSync:
   # rtbhouse supports user syncing, but requires configuration by the host. contact this
   # bidder directly at the email address in this file to ask about enabling user sync.

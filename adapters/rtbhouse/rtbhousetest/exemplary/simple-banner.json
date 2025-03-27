@@ -39,7 +39,8 @@
                         "bidder": {}
                     }
                 }]
-            }
+            },
+            "impIDs":["test-imp-id"]
         },
         "mockResponse": {
             "status": 200,
@@ -56,7 +57,8 @@
                         "cid": "987",
                         "crid": "12345678",
                         "h": 250,
-                        "w": 300
+                        "w": 300,
+                        "mtype": 1
                     }]
                 }],
                 "cur": "USD"
@@ -76,7 +78,8 @@
                 "cid": "987",
                 "crid": "12345678",
                 "w": 300,
-                "h": 250
+                "h": 250,
+                "mtype": 1
             },
             "type": "banner"
         }]

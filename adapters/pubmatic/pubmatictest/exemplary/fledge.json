@@ -47,8 +47,9 @@
               }
             }
           ],
-          "ext": {"prebid":{}}
-        }
+          "ext": {}
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,

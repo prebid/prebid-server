@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -244,13 +245,13 @@ func TestScrubGEO(t *testing.T) {
 			name:           "nil_user_geo",
 			userIn:         &openrtb2.User{ID: "ID", Geo: nil},
 			expectedUser:   &openrtb2.User{ID: "ID", Geo: nil},
-			deviceIn:       &openrtb2.Device{Geo: &openrtb2.Geo{Lat: 123.123}},
-			expectedDevice: &openrtb2.Device{Geo: &openrtb2.Geo{Lat: 123.12}},
+			deviceIn:       &openrtb2.Device{Geo: &openrtb2.Geo{Lat: ptrutil.ToPtr(123.123)}},
+			expectedDevice: &openrtb2.Device{Geo: &openrtb2.Geo{Lat: ptrutil.ToPtr(123.12)}},
 		},
 		{
 			name:           "with_user_geo",
-			userIn:         &openrtb2.User{ID: "ID", Geo: &openrtb2.Geo{Lat: 123.123}},
-			expectedUser:   &openrtb2.User{ID: "ID", Geo: &openrtb2.Geo{Lat: 123.12}},
+			userIn:         &openrtb2.User{ID: "ID", Geo: &openrtb2.Geo{Lat: ptrutil.ToPtr(123.123)}},
+			expectedUser:   &openrtb2.User{ID: "ID", Geo: &openrtb2.Geo{Lat: ptrutil.ToPtr(123.12)}},
 			deviceIn:       &openrtb2.Device{},
 			expectedDevice: &openrtb2.Device{},
 		},
@@ -265,15 +266,15 @@ func TestScrubGEO(t *testing.T) {
 			name:           "with_device_geo",
 			userIn:         &openrtb2.User{},
 			expectedUser:   &openrtb2.User{},
-			deviceIn:       &openrtb2.Device{Geo: &openrtb2.Geo{Lat: 123.123}},
-			expectedDevice: &openrtb2.Device{Geo: &openrtb2.Geo{Lat: 123.12}},
+			deviceIn:       &openrtb2.Device{Geo: &openrtb2.Geo{Lat: ptrutil.ToPtr(123.123)}},
+			expectedDevice: &openrtb2.Device{Geo: &openrtb2.Geo{Lat: ptrutil.ToPtr(123.12)}},
 		},
 		{
 			name:           "with_user_and_device_geo",
-			userIn:         &openrtb2.User{ID: "ID", Geo: &openrtb2.Geo{Lat: 123.123}},
-			expectedUser:   &openrtb2.User{ID: "ID", Geo: &openrtb2.Geo{Lat: 123.12}},
-			deviceIn:       &openrtb2.Device{Geo: &openrtb2.Geo{Lat: 123.123}},
-			expectedDevice: &openrtb2.Device{Geo: &openrtb2.Geo{Lat: 123.12}},
+			userIn:         &openrtb2.User{ID: "ID", Geo: &openrtb2.Geo{Lat: ptrutil.ToPtr(123.123)}},
+			expectedUser:   &openrtb2.User{ID: "ID", Geo: &openrtb2.Geo{Lat: ptrutil.ToPtr(123.12)}},
+			deviceIn:       &openrtb2.Device{Geo: &openrtb2.Geo{Lat: ptrutil.ToPtr(123.123)}},
+			expectedDevice: &openrtb2.Device{Geo: &openrtb2.Geo{Lat: ptrutil.ToPtr(123.12)}},
 		},
 	}
 	for _, test := range testCases {
@@ -311,7 +312,7 @@ func TestScrubGeoFull(t *testing.T) {
 		},
 		{
 			name:           "with_user_geo",
-			userIn:         &openrtb2.User{ID: "ID", Geo: &openrtb2.Geo{Lat: 123.123}},
+			userIn:         &openrtb2.User{ID: "ID", Geo: &openrtb2.Geo{Lat: ptrutil.ToPtr(123.123)}},
 			expectedUser:   &openrtb2.User{ID: "ID", Geo: &openrtb2.Geo{}},
 			deviceIn:       &openrtb2.Device{},
 			expectedDevice: &openrtb2.Device{},
@@ -327,14 +328,14 @@ func TestScrubGeoFull(t *testing.T) {
 			name:           "with_device_geo",
 			userIn:         &openrtb2.User{},
 			expectedUser:   &openrtb2.User{},
-			deviceIn:       &openrtb2.Device{Geo: &openrtb2.Geo{Lat: 123.123}},
+			deviceIn:       &openrtb2.Device{Geo: &openrtb2.Geo{Lat: ptrutil.ToPtr(123.123)}},
 			expectedDevice: &openrtb2.Device{Geo: &openrtb2.Geo{}},
 		},
 		{
 			name:           "with_user_and_device_geo",
-			userIn:         &openrtb2.User{ID: "ID", Geo: &openrtb2.Geo{Lat: 123.123}},
+			userIn:         &openrtb2.User{ID: "ID", Geo: &openrtb2.Geo{Lat: ptrutil.ToPtr(123.123)}},
 			expectedUser:   &openrtb2.User{ID: "ID", Geo: &openrtb2.Geo{}},
-			deviceIn:       &openrtb2.Device{Geo: &openrtb2.Geo{Lat: 123.123}},
+			deviceIn:       &openrtb2.Device{Geo: &openrtb2.Geo{Lat: ptrutil.ToPtr(123.123)}},
 			expectedDevice: &openrtb2.Device{Geo: &openrtb2.Geo{}},
 		},
 	}
@@ -416,15 +417,15 @@ func TestScrubIP(t *testing.T) {
 
 func TestScrubGeoPrecision(t *testing.T) {
 	geo := &openrtb2.Geo{
-		Lat:   123.456,
-		Lon:   678.89,
+		Lat:   ptrutil.ToPtr(123.456),
+		Lon:   ptrutil.ToPtr(678.89),
 		Metro: "some metro",
 		City:  "some city",
 		ZIP:   "some zip",
 	}
 	geoExpected := &openrtb2.Geo{
-		Lat:   123.46,
-		Lon:   678.89,
+		Lat:   ptrutil.ToPtr(123.46),
+		Lon:   ptrutil.ToPtr(678.89),
 		Metro: "some metro",
 		City:  "some city",
 		ZIP:   "some zip",

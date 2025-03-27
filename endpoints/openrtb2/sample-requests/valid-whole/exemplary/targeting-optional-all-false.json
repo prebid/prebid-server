@@ -1,0 +1,69 @@
+{
+    "description": "Targeting flags are all set to false, request is still valid, but no targeting data should be present in bids",
+    "config": {
+      "mockBidders": [
+        {
+          "bidderName": "appnexus",
+          "currency": "USD",
+          "price": 0.00
+        }
+      ]
+    },
+    "mockBidRequest": {
+      "id": "some-request-id",
+      "site": {
+        "page": "prebid.org"
+      },
+      "imp": [
+        {
+          "id": "some-impression-id",
+          "banner": {
+            "format": [
+              {
+                "w": 300,
+                "h": 250
+              },
+              {
+                "w": 300,
+                "h": 600
+              }
+            ]
+          },
+          "ext": {
+            "appnexus": {
+              "placementId": 12883451
+            }
+          }
+        }
+      ],
+      "tmax": 500,
+      "ext": {
+        "prebid": {
+          "targeting": {
+            "includewinners": false,
+            "includebidderkeys": false,
+            "includeformat": false
+          }
+        }
+      }
+    },
+    "expectedBidResponse": {
+      "id": "some-request-id",
+      "seatbid": [
+        {
+          "bid": [
+            {
+              "id": "appnexus-bid",
+              "impid": "some-impression-id",
+              "price": 0
+            }
+          ],
+          "seat": "appnexus"
+        }
+      ],
+      "bidid": "test bid id",
+      "cur": "USD",
+      "nbr": 0
+    },
+    "expectedReturnCode": 200
+  }

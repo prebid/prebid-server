@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/prebid/prebid-server/v2/adapters/adapterstest"
+	"github.com/prebid/prebid-server/v3/adapters/adapterstest"
 )
 
 const (
@@ -182,19 +182,24 @@ func TestMakeBids(t *testing.T) {
 	}
 
 	type testCase struct {
-		bidType openrtb_ext.BidType
-		adm     string
-		extRaw  string
-		valid   bool
+		bidType      openrtb_ext.BidType
+		adm          string
+		extRaw       string
+		seatName     string
+		demandSource string
+		valid        bool
 	}
 
 	tests := []testCase{
-		{openrtb_ext.BidTypeNative, `{"assets":[]}`, `{"ct":10}`, true},
-		{openrtb_ext.BidTypeBanner, sampleDisplayADM, `{"ct": 1}`, true},
-		{openrtb_ext.BidTypeBanner, sampleDisplayADM, `{"ct": "invalid"}`, false},
-		{openrtb_ext.BidTypeBanner, sampleDisplayADM, `{}`, true},
-		{openrtb_ext.BidTypeVideo, sampleVastADM, `{"startdelay": 1}`, true},
-		{openrtb_ext.BidTypeBanner, sampleVastADM, `{"ct": 1}`, true}, // the server shouldn't do this
+		{openrtb_ext.BidTypeNative, `{"assets":[]}`, `{"ct":10}`, "", "", true},
+		{openrtb_ext.BidTypeBanner, sampleDisplayADM, `{"ct": 1}`, "", "", true},
+		{openrtb_ext.BidTypeBanner, sampleDisplayADM, `{"ct": "invalid"}`, "", "", false},
+		{openrtb_ext.BidTypeBanner, sampleDisplayADM, `{}`, "", "", true},
+		{openrtb_ext.BidTypeBanner, sampleDisplayADM, `{"bc": "amx-pmp"}`, "amx-pmp", "", true},
+		{openrtb_ext.BidTypeBanner, sampleDisplayADM, `{"ds": "pmp-1"}`, "", "pmp-1", true},
+		{openrtb_ext.BidTypeBanner, sampleDisplayADM, `{"bc": "amx-pmp", "ds": "pmp-1"}`, "amx-pmp", "pmp-1", true},
+		{openrtb_ext.BidTypeVideo, sampleVastADM, `{"startdelay": 1}`, "", "", true},
+		{openrtb_ext.BidTypeBanner, sampleVastADM, `{"ct": 1}`, "", "", true}, // the server shouldn't do this
 	}
 
 	for _, test := range tests {
@@ -233,6 +238,10 @@ func TestMakeBids(t *testing.T) {
 
 		assert.Len(t, bids.Bids, 1)
 		assert.Equal(t, test.bidType, bids.Bids[0].BidType)
+
+		br := bids.Bids[0]
+		assert.Equal(t, openrtb_ext.BidderName(test.seatName), br.Seat)
+		assert.Equal(t, test.demandSource, br.BidMeta.DemandSource)
 	}
 
 }

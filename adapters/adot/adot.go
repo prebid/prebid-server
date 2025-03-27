@@ -7,11 +7,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -60,6 +61,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		Uri:     endpoint,
 		Body:    reqJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, nil
 }
 
@@ -83,7 +85,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	}
 
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
@@ -115,7 +117,7 @@ func getMediaTypeForBid(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 	}
 
 	var impExt adotBidExt
-	if err := json.Unmarshal(bid.Ext, &impExt); err == nil {
+	if err := jsonutil.Unmarshal(bid.Ext, &impExt); err == nil {
 		switch impExt.Adot.MediaType {
 		case string(openrtb_ext.BidTypeBanner):
 			return openrtb_ext.BidTypeBanner, nil
@@ -143,11 +145,11 @@ func resolveMacros(bid *openrtb2.Bid) {
 func getImpAdotExt(imp *openrtb2.Imp) *openrtb_ext.ExtImpAdot {
 	var extImpAdot openrtb_ext.ExtImpAdot
 	var extBidder adapters.ExtImpBidder
-	err := json.Unmarshal(imp.Ext, &extBidder)
+	err := jsonutil.Unmarshal(imp.Ext, &extBidder)
 	if err != nil {
 		return nil
 	}
-	err = json.Unmarshal(extBidder.Bidder, &extImpAdot)
+	err = jsonutil.Unmarshal(extBidder.Bidder, &extImpAdot)
 	if err != nil {
 		return nil
 	}

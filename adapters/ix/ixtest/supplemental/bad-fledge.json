@@ -71,7 +71,8 @@
                             "id": "569749"
                         }
                     }
-                }
+                },
+                "impIDs":["test-imp-id"]
             },
             "mockResponse": {
                 "status": 200,
@@ -127,7 +128,7 @@
     ],
     "expectedMakeBidsErrors": [
         {
-            "value": "json: cannot unmarshal number into Go struct field auctionConfig.protectedAudienceAuctionConfigs.bidId of type string",
+            "value": "cannot unmarshal ix.auctionConfig.BidId: expects \" or n, but found 1",
             "comparison": "literal"
         }
     ]

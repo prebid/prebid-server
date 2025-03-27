@@ -1,0 +1,128 @@
+{
+  "mockBidRequest": {
+    "id": "req-id-banner",
+    "imp": [
+      {
+        "id": "imp-id-banner",
+        "banner": {
+          "format": [
+            {
+              "w": 640,
+              "h": 400
+            },
+            {
+              "w": 320,
+              "h": 300
+            }    
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "siteId": "site-id-b",
+            "publisherId": "publisher-id-b",
+            "tagId": "tag-id-b",
+            "bidfloor": 5.0
+          }
+        }
+      }
+    ],
+    "app": {
+      "id": "some-app-id-b",
+      "domain": "app.test.com",
+      "publisher": {
+        "id": "some-pub-id-b"
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://dsp.readpeak.com/header/prebid",
+        "body": {
+          "id": "req-id-banner",
+          "imp": [
+            {
+              "id": "imp-id-banner",
+              "tagid": "tag-id-b",
+              "bidfloor": 5.0,
+              "banner": {
+                "format": [
+                  {
+                    "w": 640,
+                    "h": 400
+                  },
+                  {
+                    "w": 320,
+                    "h": 300
+                  }    
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "siteId": "site-id-b",
+                  "publisherId": "publisher-id-b",
+                  "tagId": "tag-id-b",
+                  "bidfloor": 5.0
+                }
+              }
+            }
+          ],
+          "app": {
+            "id": "site-id-b",
+            "publisher": {
+              "id": "publisher-id-b"
+            },
+            "domain": "app.test.com"
+          }
+        },
+        "impIDs":["imp-id-banner"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "req-id-banner",
+          "seatbid": [
+            {
+              "seat": "bid",
+              "bid": [
+                {
+                  "id": "test-bid-id-banner",
+                  "impid": "imp-id-banner",
+                  "price": 0.500000,
+                  "adm": "<html><body>some-test-ad-banner<img src='http://test.com/burl?p=${AUCTION_PRICE}'></body></html>",
+                  "crid": "123",
+                  "w": 640,
+                  "h": 400,
+                  "burl": "http://test.com/burl?p=${AUCTION_PRICE}",
+                  "mtype": 1
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-bid-id-banner",
+            "impid": "imp-id-banner",
+            "price": 0.5,
+            "adm": "<html><body>some-test-ad-banner<img src='http://test.com/burl?p=0.5'></body></html>",
+            "crid": "123",
+            "w": 640,
+            "h": 400,
+            "burl": "http://test.com/burl?p=0.5",
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

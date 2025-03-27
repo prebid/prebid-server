@@ -62,7 +62,7 @@
             "2.5"
           ]
         },
-        "uri": "https://ads.kulture.media/pbs?placement_id=placement123&publisher_id=test",
+        "uri": "https://ads.dxkulture.com/pbs?placement_id=placement123&publisher_id=test",
         "body": {
           "id": "test-request-id",
           "test": 1,
@@ -98,7 +98,8 @@
             "page": "http://site.com/page",
             "ref": "http://site.com/ref"
           }
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,

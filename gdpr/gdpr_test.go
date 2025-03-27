@@ -6,8 +6,8 @@ import (
 
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/go-gdpr/vendorlist"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -60,6 +60,6 @@ type fakePurposeEnforcerBuilder struct {
 	purposeEnforcer PurposeEnforcer
 }
 
-func (fpeb fakePurposeEnforcerBuilder) Builder(consentconstants.Purpose, openrtb_ext.BidderName) PurposeEnforcer {
+func (fpeb fakePurposeEnforcerBuilder) Builder(consentconstants.Purpose, string) PurposeEnforcer {
 	return fpeb.purposeEnforcer
 }

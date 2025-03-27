@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	metrics "github.com/rcrowley/go-metrics"
 )
 
@@ -99,6 +99,7 @@ type AdapterMetrics struct {
 	ConnCreated        metrics.Counter
 	ConnReused         metrics.Counter
 	ConnWaitTime       metrics.Timer
+	BuyerUIDScrubbed   metrics.Meter
 	GDPRRequestBlocked metrics.Meter
 
 	BidValidationCreativeSizeErrorMeter metrics.Meter
@@ -406,6 +407,9 @@ func makeBlankAdapterMetrics(disabledMetrics config.DisabledMetrics) *AdapterMet
 		newAdapter.ConnReused = metrics.NilCounter{}
 		newAdapter.ConnWaitTime = &metrics.NilTimer{}
 	}
+	if !disabledMetrics.AdapterBuyerUIDScrubbed {
+		newAdapter.BuyerUIDScrubbed = blankMeter
+	}
 	if !disabledMetrics.AdapterGDPRRequestBlocked {
 		newAdapter.GDPRRequestBlocked = blankMeter
 	}
@@ -484,6 +488,7 @@ func registerAdapterMetrics(registry metrics.Registry, adapterOrAccount string, 
 		am.BidsReceivedMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.bids_received", adapterOrAccount, exchange), registry)
 	}
 	am.PanicMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.requests.panic", adapterOrAccount, exchange), registry)
+	am.BuyerUIDScrubbed = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.buyeruid_scrubbed", adapterOrAccount, exchange), registry)
 	am.GDPRRequestBlocked = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.gdpr_request_blocked", adapterOrAccount, exchange), registry)
 
 	am.BidValidationCreativeSizeErrorMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.response.validation.size.err", adapterOrAccount, exchange), registry)
@@ -924,6 +929,21 @@ func (me *Metrics) RecordRequestPrivacy(privacy PrivacyLabels) {
 	if privacy.LMTEnforced {
 		me.PrivacyLMTRequest.Mark(1)
 	}
+}
+
+func (me *Metrics) RecordAdapterBuyerUIDScrubbed(adapterName openrtb_ext.BidderName) {
+	adapterStr := adapterName.String()
+	if me.MetricsDisabled.AdapterBuyerUIDScrubbed {
+		return
+	}
+
+	am, ok := me.AdapterMetrics[strings.ToLower(adapterStr)]
+	if !ok {
+		glog.Errorf("Trying to log adapter buyeruid scrubbed metric for %s: adapter not found", adapterStr)
+		return
+	}
+
+	am.BuyerUIDScrubbed.Mark(1)
 }
 
 func (me *Metrics) RecordAdapterGDPRRequestBlocked(adapterName openrtb_ext.BidderName) {

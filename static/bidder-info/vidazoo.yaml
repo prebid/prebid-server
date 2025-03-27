@@ -1,0 +1,21 @@
+endpoint: "https://prebidsrvr.cootlogix.com/openrtb/"
+maintainer:
+  email: "dev@vidazoo.com"
+gvlVendorID: 744
+endpointCompression: gzip
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  iframe:
+    url: https://sync.cootlogix.com/api/user/html/pbs_sync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}
+    userMacro: ${userId}
+openrtb:
+  gpp_supported: true
+  version: 2.6

@@ -11,6 +11,9 @@ capabilities:
       - native
 userSync:
   redirect:
-    url: "https://crb.kargo.com/api/v1/dsync/PrebidServer?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&r={{.RedirectURL}}"
+    url: "https://crb.kargo.com/api/v1/dsync/PrebidServer?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&r={{.RedirectURL}}"
     userMacro: "$UID"
 endpointCompression: "GZIP"
+openrtb:
+  version: 2.6
+  gpp-supported: true

@@ -1,0 +1,236 @@
+{
+  "mockBidRequest": {
+    "id": "447a0a1d-389d-4730-a418-3777e95de7bd",
+    "imp": [
+      {
+        "id": "1_1",
+        "video": {
+          "mimes": [
+            "video/mp4",
+            "video/3gpp"
+          ],
+          "minduration": 5,
+          "maxduration": 30,
+          "protocols": [
+            7
+          ],
+          "w": 1024,
+          "h": 768,
+          "startdelay": 0,
+          "linearity": 1,
+          "skip": 1,
+          "skipmin": 5,
+          "api": [
+            7
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "1100042525",
+            "adbreakId": "400000001"
+          }
+        }
+      },
+      {
+        "id": "1_2",
+        "video": {
+          "mimes": [
+            "video/mp4",
+            "video/3gpp"
+          ],
+          "minduration": 5,
+          "maxduration": 30,
+          "protocols": [
+            7
+          ],
+          "w": 1024,
+          "h": 768,
+          "startdelay": 0,
+          "linearity": 1,
+          "skip": 1,
+          "skipmin": 5,
+          "api": [
+            7
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "1100042525",
+            "adbreakId": "400000001"
+          }
+        }
+      }
+    ],
+    "site": {
+      "publisher": {
+        "id": "1100042525"
+      },
+      "content": {
+        "title": "a-title",
+        "season": "a-season",
+        "series": "a-series",
+        "episode": 1,
+        "len": 900,
+        "livestream": 1
+      }
+    },
+    "device": {
+      "ua": "test-user-agent"
+    },
+    "user": {
+      "ext": {
+        "data": {}
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
+        "uri": "https://prebid/bidder",
+        "body": {
+          "id": "447a0a1d-389d-4730-a418-3777e95de7bd",
+          "imp": [
+            {
+              "id": "1_1",
+              "tagid": "400000001",
+              "video": {
+                "w": 1024,
+                "h": 768,
+                "mimes": [
+                  "video/mp4",
+                  "video/3gpp"
+                ],
+                "minduration": 5,
+                "startdelay": 0,
+                "linearity": 1,
+                "maxduration": 30,
+                "skip": 1,
+                "protocols": [
+                  7
+                ],
+                "skipmin": 5,
+                "api": [
+                  7
+                ],
+                "sequence": 1,
+                "ext": {
+                  "context": "adpod"
+                }
+              }
+            },
+            {
+              "id": "1_2",
+              "tagid": "400000001",
+              "video": {
+                "w": 1024,
+                "h": 768,
+                "mimes": [
+                  "video/mp4",
+                  "video/3gpp"
+                ],
+                "minduration": 5,
+                "startdelay": 0,
+                "linearity": 1,
+                "maxduration": 30,
+                "skip": 1,
+                "protocols": [
+                  7
+                ],
+                "skipmin": 5,
+                "api": [
+                  7
+                ],
+                "sequence": 2,
+                "ext": {
+                  "context": "adpod"
+                }
+              }
+            }
+          ],
+          "user": {
+            "ext": {
+            }
+          },
+          "device": {
+            "ua": "test-user-agent"
+          },
+          "site": {
+            "publisher": {
+              "id": "1100042525"
+            },
+            "content": {
+              "title": "a-title",
+              "season": "a-season",
+              "series": "a-series",
+              "episode": 1,
+              "len": 900,
+              "livestream": 1
+            }
+          },
+          "ext": {
+            "client": "prebid_server_1.2"
+          }
+        },
+        "impIDs": [
+          "1_1",
+          "1_2"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "headers": {
+          "X-Smt-Adtype": null
+        },
+        "body": {
+          "id": "5ebea288-f13a-4754-be6d-4ade66c68877",
+          "seatbid": [
+            {
+              "seat": "CM6523",
+              "bid": [
+                {
+                  "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?><VAST version=\"2.0\"></VAST>",
+                  "adomain": [
+                    "smaato.com"
+                  ],
+                  "bidderName": "smaato",
+                  "cid": "CM6523",
+                  "crid": "CR69381",
+                  "id": "6906aae8-7f74-4edd-9a4f-f49379a3cadd",
+                  "impid": "1_1",
+                  "iurl": "https://iurl",
+                  "nurl": "https://nurl",
+                  "price": 0.01,
+                  "w": 1024,
+                  "h": 768,
+                  "cat": [
+                    "IAB1"
+                  ],
+                  "ext": {
+                    "duration": 5
+                  }
+                }
+              ]
+            }
+          ],
+          "bidid": "04db8629-179d-4bcd-acce-e54722969006",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "X-Smt-Adtype header is missing.",
+      "comparison": "literal"
+    }
+  ],
+  "expectedBidResponses": []
+}

@@ -3,8 +3,8 @@ package usersync
 import (
 	"strings"
 
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 // Chooser determines which syncers are eligible for a given request.
@@ -86,8 +86,8 @@ const (
 	// StatusUnknownBidder specifies a requested bidder is unknown to Prebid Server.
 	StatusUnknownBidder
 
-	// StatusTypeNotSupported specifies a requested sync type is not supported by a specific bidder.
-	StatusTypeNotSupported
+	// StatusRejectedByFilter specifies a requested sync type is not supported by a specific bidder.
+	StatusRejectedByFilter
 
 	// StatusDuplicate specifies the bidder is a duplicate or shared a syncer key with another bidder choice.
 	StatusDuplicate
@@ -100,6 +100,9 @@ const (
 
 	// StatusUnconfiguredBidder refers to a bidder who hasn't been configured to have a syncer key, but is known by Prebid Server
 	StatusUnconfiguredBidder
+
+	// StatusBlockedByDisabledUsersync refers to a bidder who won't be synced because it's been disabled in its config by the host
+	StatusBlockedByDisabledUsersync
 )
 
 // Privacy determines which privacy policies will be enforced for a user sync request.
@@ -178,7 +181,7 @@ func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}
 	syncersSeen[syncer.Key()] = struct{}{}
 
 	if !syncer.SupportsType(syncTypeFilter.ForBidder(strings.ToLower(bidder))) {
-		return nil, BidderEvaluation{Status: StatusTypeNotSupported, Bidder: bidder, SyncerKey: syncer.Key()}
+		return nil, BidderEvaluation{Status: StatusRejectedByFilter, Bidder: bidder, SyncerKey: syncer.Key()}
 	}
 
 	if cookie.HasLiveSync(syncer.Key()) {
@@ -192,6 +195,10 @@ func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}
 
 	if !privacy.GDPRAllowsBidderSync(bidderNormalized.String()) {
 		return nil, BidderEvaluation{Status: StatusBlockedByPrivacy, Bidder: bidder, SyncerKey: syncer.Key()}
+	}
+
+	if c.bidderInfo[bidder].Syncer != nil && c.bidderInfo[bidder].Syncer.Enabled != nil && !*c.bidderInfo[bidder].Syncer.Enabled {
+		return nil, BidderEvaluation{Status: StatusBlockedByDisabledUsersync, Bidder: bidder, SyncerKey: syncer.Key()}
 	}
 
 	if privacy.GDPRInScope() && c.bidderInfo[bidder].Syncer != nil && c.bidderInfo[bidder].Syncer.SkipWhen != nil && c.bidderInfo[bidder].Syncer.SkipWhen.GDPR {

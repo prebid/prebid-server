@@ -12,18 +12,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/v2/analytics"
-	analyticsBuild "github.com/prebid/prebid-server/v2/analytics/build"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/gdpr"
-	"github.com/prebid/prebid-server/v2/macros"
-	"github.com/prebid/prebid-server/v2/metrics"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/usersync"
+	"github.com/prebid/prebid-server/v3/analytics"
+	analyticsBuild "github.com/prebid/prebid-server/v3/analytics/build"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/gdpr"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/metrics"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/usersync"
 	"github.com/stretchr/testify/assert"
 
-	metricsConf "github.com/prebid/prebid-server/v2/metrics/config"
+	metricsConf "github.com/prebid/prebid-server/v3/metrics/config"
 )
 
 func TestSetUIDEndpoint(t *testing.T) {
@@ -34,6 +34,7 @@ func TestSetUIDEndpoint(t *testing.T) {
 		gdprAllowsHostCookies  bool
 		gdprReturnsError       bool
 		gdprMalformed          bool
+		formatOverride         string
 		expectedSyncs          map[string]string
 		expectedBody           string
 		expectedStatusCode     int
@@ -217,15 +218,25 @@ func TestSetUIDEndpoint(t *testing.T) {
 		},
 		{
 			uri: "/setuid?bidder=pubmatic&uid=123&gpp_sid=2,4&gpp=DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA" +
-				"gdpr=1&gdpr_consent=BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw",
+				"&gdpr=1&gdpr_consent=BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw",
 			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
 			gdprAllowsHostCookies:  true,
 			existingSyncs:          nil,
 			expectedSyncs:          map[string]string{"pubmatic": "123"},
 			expectedStatusCode:     http.StatusOK,
-			expectedBody:           "Warning: 'gpp' value will be used over the one found in the deprecated 'gdpr_consent' field.",
-			expectedHeaders:        map[string]string{"Content-Type": "text/plain; charset=utf-8"},
-			description:            "Sets uid for a bidder allowed by GDPR in GPP, throws warning because GDPR legacy values weren't used",
+			expectedHeaders:        map[string]string{"Content-Type": "text/html", "Content-Length": "0"},
+			description:            "GPP value will be used over the one found in the deprecated GDPR consent field for iframe format",
+		},
+		{
+			uri: "/setuid?f=i&bidder=pubmatic&uid=123&gpp_sid=2,4&gpp=DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA" +
+				"&gdpr=1&gdpr_consent=BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw",
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			gdprAllowsHostCookies:  true,
+			existingSyncs:          nil,
+			expectedSyncs:          map[string]string{"pubmatic": "123"},
+			expectedStatusCode:     http.StatusOK,
+			expectedHeaders:        map[string]string{"Content-Type": "image/png", "Content-Length": "86"},
+			description:            "GPP value will be used over the one found in the deprecated GDPR consent field for redirect format",
 		},
 		{
 			uri:                    "/setuid?bidder=pubmatic&uid=123&gdpr=1&gdpr_consent=malformed",
@@ -336,6 +347,17 @@ func TestSetUIDEndpoint(t *testing.T) {
 			expectedStatusCode:     http.StatusBadRequest,
 			expectedBody:           "invalid gpp_sid encoding, must be a csv list of integers",
 		},
+		{
+			uri:                    "/setuid?bidder=pubmatic&uid=123",
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			existingSyncs:          nil,
+			gdprAllowsHostCookies:  true,
+			formatOverride:         "i",
+			expectedSyncs:          map[string]string{"pubmatic": "123"},
+			expectedStatusCode:     http.StatusOK,
+			expectedHeaders:        map[string]string{"Content-Length": "86", "Content-Type": "image/png"},
+			description:            "Format not provided in URL, but formatOverride is defined",
+		},
 	}
 
 	analytics := analyticsBuild.New(&config.Analytics{})
@@ -343,7 +365,7 @@ func TestSetUIDEndpoint(t *testing.T) {
 
 	for _, test := range testCases {
 		response := doRequest(makeRequest(test.uri, test.existingSyncs), analytics, metrics,
-			test.syncersBidderNameToKey, test.gdprAllowsHostCookies, test.gdprReturnsError, test.gdprMalformed, false, 0, nil)
+			test.syncersBidderNameToKey, test.gdprAllowsHostCookies, test.gdprReturnsError, test.gdprMalformed, false, 0, nil, test.formatOverride)
 		assert.Equal(t, test.expectedStatusCode, response.Code, "Test Case: %s. /setuid returned unexpected error code", test.description)
 
 		if test.expectedSyncs != nil {
@@ -467,7 +489,7 @@ func TestSetUIDPriorityEjection(t *testing.T) {
 		request.AddCookie(httpCookie)
 
 		// Make Request to /setuid
-		response := doRequest(request, analytics, &metricsConf.NilMetricsEngine{}, syncersByBidder, true, false, false, false, test.givenMaxCookieSize, test.givenPriorityGroups)
+		response := doRequest(request, analytics, &metricsConf.NilMetricsEngine{}, syncersByBidder, true, false, false, false, test.givenMaxCookieSize, test.givenPriorityGroups, "")
 
 		if test.expectedWarning != "" {
 			assert.Equal(t, test.expectedWarning, response.Body.String(), test.description)
@@ -553,7 +575,7 @@ func TestParseSignalFromGPPSID(t *testing.T) {
 func TestParseConsentFromGppStr(t *testing.T) {
 	type testOutput struct {
 		gdprConsent string
-		err         error
+		err         []error
 	}
 	testCases := []struct {
 		desc       string
@@ -573,7 +595,7 @@ func TestParseConsentFromGppStr(t *testing.T) {
 			inGppQuery: "malformed",
 			expected: testOutput{
 				gdprConsent: "",
-				err:         errors.New(`error parsing GPP header, base64 decoding: illegal base64 data at input byte 8`),
+				err:         []error{errors.New(`error parsing GPP header, header must have type=3`)},
 			},
 		},
 		{
@@ -597,7 +619,7 @@ func TestParseConsentFromGppStr(t *testing.T) {
 		outConsent, outErr := parseConsentFromGppStr(tc.inGppQuery)
 
 		assert.Equal(t, tc.expected.gdprConsent, outConsent, tc.desc)
-		assert.Equal(t, tc.expected.err, outErr, tc.desc)
+		assert.ElementsMatch(t, tc.expected.err, outErr, tc.desc)
 	}
 }
 
@@ -636,7 +658,7 @@ func TestParseGDPRFromGPP(t *testing.T) {
 					inUri: "/setuid?gpp=malformed",
 					expected: testOutput{
 						reqInfo: gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous},
-						err:     errors.New("error parsing GPP header, base64 decoding: illegal base64 data at input byte 8"),
+						err:     errors.New("error parsing GPP header, header must have type=3"),
 					},
 				},
 				{
@@ -911,7 +933,7 @@ func TestExtractGDPRInfo(t *testing.T) {
 					inUri: "/setuid?gpp=malformed&gpp_sid=2",
 					expected: testOutput{
 						requestInfo: gdpr.RequestInfo{GDPRSignal: gdpr.SignalAmbiguous},
-						err:         errors.New("error parsing GPP header, base64 decoding: illegal base64 data at input byte 8"),
+						err:         errors.New("error parsing GPP header, header must have type=3"),
 					},
 				},
 				{
@@ -1333,7 +1355,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 		for _, v := range test.cookies {
 			addCookie(req, v)
 		}
-		response := doRequest(req, analyticsEngine, metricsEngine, test.syncersBidderNameToKey, test.gdprAllowsHostCookies, false, false, test.cfgAccountRequired, 0, nil)
+		response := doRequest(req, analyticsEngine, metricsEngine, test.syncersBidderNameToKey, test.gdprAllowsHostCookies, false, false, test.cfgAccountRequired, 0, nil, "")
 
 		assert.Equal(t, test.expectedResponseCode, response.Code, test.description)
 		analyticsEngine.AssertExpectations(t)
@@ -1349,7 +1371,7 @@ func TestOptedOut(t *testing.T) {
 	syncersBidderNameToKey := map[string]string{"pubmatic": "pubmatic"}
 	analytics := analyticsBuild.New(&config.Analytics{})
 	metrics := &metricsConf.NilMetricsEngine{}
-	response := doRequest(request, analytics, metrics, syncersBidderNameToKey, true, false, false, false, 0, nil)
+	response := doRequest(request, analytics, metrics, syncersBidderNameToKey, true, false, false, false, 0, nil, "")
 
 	assert.Equal(t, http.StatusUnauthorized, response.Code)
 }
@@ -1444,6 +1466,30 @@ func TestGetResponseFormat(t *testing.T) {
 			syncer:         fakeSyncer{key: "a", defaultSyncType: usersync.SyncTypeRedirect},
 			expectedFormat: "i",
 			description:    "parameter given is empty (by empty item), use default sync type redirect",
+		},
+		{
+			urlValues:      url.Values{"f": []string{""}},
+			syncer:         fakeSyncer{key: "a", defaultSyncType: usersync.SyncTypeRedirect},
+			expectedFormat: "i",
+			description:    "parameter given is empty (by empty item), use default sync type redirect",
+		},
+		{
+			urlValues:      url.Values{"f": []string{}},
+			syncer:         fakeSyncer{key: "a", formatOverride: "i"},
+			expectedFormat: "i",
+			description:    "format not provided, but formatOverride is defined, expect i",
+		},
+		{
+			urlValues:      url.Values{"f": []string{}},
+			syncer:         fakeSyncer{key: "a", formatOverride: "b"},
+			expectedFormat: "b",
+			description:    "format not provided, but formatOverride is defined, expect b",
+		},
+		{
+			urlValues:      url.Values{"f": []string{}},
+			syncer:         fakeSyncer{key: "a", formatOverride: "b", defaultSyncType: usersync.SyncTypeRedirect},
+			expectedFormat: "b",
+			description:    "format not provided, default is defined but formatOverride is defined as well, expect b",
 		},
 	}
 
@@ -1544,7 +1590,7 @@ func makeRequest(uri string, existingSyncs map[string]string) *http.Request {
 	return request
 }
 
-func doRequest(req *http.Request, analytics analytics.Runner, metrics metrics.MetricsEngine, syncersBidderNameToKey map[string]string, gdprAllowsHostCookies, gdprReturnsError, gdprReturnsMalformedError, cfgAccountRequired bool, maxCookieSize int, priorityGroups [][]string) *httptest.ResponseRecorder {
+func doRequest(req *http.Request, analytics analytics.Runner, metrics metrics.MetricsEngine, syncersBidderNameToKey map[string]string, gdprAllowsHostCookies, gdprReturnsError, gdprReturnsMalformedError, cfgAccountRequired bool, maxCookieSize int, priorityGroups [][]string, formatOverride string) *httptest.ResponseRecorder {
 	cfg := config.Configuration{
 		AccountRequired: cfgAccountRequired,
 		AccountDefaults: config.Account{},
@@ -1575,7 +1621,7 @@ func doRequest(req *http.Request, analytics analytics.Runner, metrics metrics.Me
 
 	syncersByBidder := make(map[string]usersync.Syncer)
 	for bidderName, syncerKey := range syncersBidderNameToKey {
-		syncersByBidder[bidderName] = fakeSyncer{key: syncerKey, defaultSyncType: usersync.SyncTypeIFrame}
+		syncersByBidder[bidderName] = fakeSyncer{key: syncerKey, defaultSyncType: usersync.SyncTypeIFrame, formatOverride: formatOverride}
 		if priorityGroups == nil {
 			cfg.UserSync.PriorityGroups = [][]string{{}}
 			cfg.UserSync.PriorityGroups[0] = append(cfg.UserSync.PriorityGroups[0], bidderName)
@@ -1655,25 +1701,33 @@ func (g *fakePermsSetUID) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 	return false, nil
 }
 
-func (g *fakePermsSetUID) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (permissions gdpr.AuctionPermissions, err error) {
+func (g *fakePermsSetUID) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) gdpr.AuctionPermissions {
 	return gdpr.AuctionPermissions{
 		AllowBidRequest: g.personalInfoAllowed,
 		PassGeo:         g.personalInfoAllowed,
 		PassID:          g.personalInfoAllowed,
-	}, nil
+	}
 }
 
 type fakeSyncer struct {
 	key             string
 	defaultSyncType usersync.SyncType
+	formatOverride  string
 }
 
 func (s fakeSyncer) Key() string {
 	return s.key
 }
 
-func (s fakeSyncer) DefaultSyncType() usersync.SyncType {
-	return s.defaultSyncType
+func (s fakeSyncer) DefaultResponseFormat() usersync.SyncType {
+	switch s.formatOverride {
+	case "b":
+		return usersync.SyncTypeIFrame
+	case "i":
+		return usersync.SyncTypeRedirect
+	default:
+		return s.defaultSyncType
+	}
 }
 
 func (s fakeSyncer) SupportsType(syncTypes []usersync.SyncType) bool {

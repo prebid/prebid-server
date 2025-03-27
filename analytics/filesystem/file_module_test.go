@@ -6,13 +6,26 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/prebid/prebid-server/v2/analytics"
-	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v3/analytics"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/stretchr/testify/mock"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 )
 
 const TEST_DIR string = "testFiles"
+
+type MockLogger struct {
+	mock.Mock
+}
+
+func (ml *MockLogger) Debug(v ...interface{}) {
+	ml.Called(v)
+}
+
+func (ml *MockLogger) Flush() {
+	ml.Called()
+}
 
 func TestAmpObject_ToJson(t *testing.T) {
 	ao := &analytics.AmpObject{
@@ -96,4 +109,16 @@ func TestFileLogger_LogObjects(t *testing.T) {
 	} else {
 		t.Fatalf("Couldn't initialize file logger: %v", err)
 	}
+}
+
+func TestFileLoggerShutdown(t *testing.T) {
+	mockLogger := &MockLogger{}
+	fl := &FileLogger{
+		Logger: mockLogger,
+	}
+	mockLogger.On("Flush").Return(nil)
+
+	fl.Shutdown()
+
+	mockLogger.AssertNumberOfCalls(t, "Flush", 1)
 }

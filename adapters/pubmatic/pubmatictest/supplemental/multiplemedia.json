@@ -25,7 +25,6 @@
         "id": "siteID"
         }
     },
-  
     "httpCalls": [
         {
           "expectedRequest": {
@@ -54,10 +53,9 @@
                       "id": "999"
                   }
               },
-              "ext" : {
-                "prebid": {}
-              }
-            }
+              "ext" : {}
+            },
+            "impIDs":["multiple-media-imp"]
           },
           "mockResponse": {
             "status": 200,

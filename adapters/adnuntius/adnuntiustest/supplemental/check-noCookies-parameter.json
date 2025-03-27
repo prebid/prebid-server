@@ -31,7 +31,7 @@
 	"httpCalls": [
 		{
 			"expectedRequest": {
-				"uri": "http://whatever.url?format=json&noCookies=true&tzo=0",
+				"uri": "http://whatever.url?format=prebidServer&noCookies=true&tzo=0",
 				"body": {
 					"adUnits": [
 						{
@@ -44,7 +44,8 @@
 						"usi": "1kjh3429kjh295jkl"
 					},
 					"context": "unknown"
-				}
+				},
+				"impIDs":["test-imp-id"]
 			},
 			"mockResponse": {
 				"status": 200,
@@ -60,6 +61,7 @@
 									"destinationUrls": {
 										"url": "http://www.google.com"
 									},
+									"advertiserDomains": ["google.com"],
 									"bid": {
 										"amount": 20.0,
 										"currency": "NOK"

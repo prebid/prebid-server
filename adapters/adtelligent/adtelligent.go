@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type AdtelligentAdapter struct {
@@ -74,6 +75,7 @@ func (a *AdtelligentAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo 
 			Uri:     a.endpoint + fmt.Sprintf("?aid=%d", sourceId),
 			Body:    body,
 			Headers: headers,
+			ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 		})
 	}
 
@@ -92,7 +94,7 @@ func (a *AdtelligentAdapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapt
 	}
 
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(httpRes.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(httpRes.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("error while decoding response, err: %s", err),
 		}}
@@ -154,14 +156,14 @@ func validateImpression(imp *openrtb2.Imp) (int, error) {
 
 	var bidderExt adapters.ExtImpBidder
 
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return 0, &errortypes.BadInput{
 			Message: fmt.Sprintf("ignoring imp id=%s, error while decoding extImpBidder, err: %s", imp.ID, err),
 		}
 	}
 
 	impExt := openrtb_ext.ExtImpAdtelligent{}
-	err := json.Unmarshal(bidderExt.Bidder, &impExt)
+	err := jsonutil.Unmarshal(bidderExt.Bidder, &impExt)
 	if err != nil {
 		return 0, &errortypes.BadInput{
 			Message: fmt.Sprintf("ignoring imp id=%s, error while decoding impExt, err: %s", imp.ID, err),
@@ -174,6 +176,11 @@ func validateImpression(imp *openrtb2.Imp) (int, error) {
 	impExtBuffer, err = json.Marshal(&adtelligentImpExt{
 		Adtelligent: impExt,
 	})
+	if err != nil {
+		return 0, &errortypes.BadInput{
+			Message: fmt.Sprintf("ignoring imp id=%s, error while marshaling impExt, err: %s", imp.ID, err),
+		}
+	}
 
 	if impExt.BidFloor > 0 {
 		imp.BidFloor = impExt.BidFloor
@@ -181,7 +188,13 @@ func validateImpression(imp *openrtb2.Imp) (int, error) {
 
 	imp.Ext = impExtBuffer
 
-	return impExt.SourceId, nil
+	aid, err := impExt.SourceId.Int64()
+	if err != nil {
+		return 0, &errortypes.BadInput{
+			Message: fmt.Sprintf("ignoring imp id=%s, aid parsing err: %s", imp.ID, err),
+		}
+	}
+	return int(aid), nil
 }
 
 // Builder builds a new instance of the Adtelligent adapter for the given bidder with the given config.

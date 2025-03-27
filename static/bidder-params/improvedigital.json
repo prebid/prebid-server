@@ -7,16 +7,12 @@
         "placementId": {
             "type": "integer",
             "minimum": 1,
-            "description": "An ID which identifies this placement of the impression"
+            "description": "The placement ID from Improve Digital"
         },
         "publisherId": {
             "type": "integer",
             "minimum": 1,
-            "description": "An ID which identifies publisher. Required when using a placementKey"
-        },
-        "placementKey": {
-            "type": "string",
-            "description": "An uniq name which identifies this placement of the impression. Must be used with publisherId"
+            "description": "The publisher ID from Improve Digital"
         },
         "keyValues": {
             "type": "object",
@@ -32,13 +28,12 @@
                     "type": "integer"
                 }
             },
-            "required": ["w", "h"],
+            "required": [
+                "w",
+                "h"
+            ],
             "description": "Placement size"
         }
     },
-    "oneOf": [{
-        "required": ["placementId"]
-    }, {
-        "required": ["publisherId", "placementKey"]
-    }]
+    "required": ["placementId"]
 }

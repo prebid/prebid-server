@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/IABTechLab/adscert/pkg/adscert/api"
-	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v3/config"
 	"github.com/stretchr/testify/assert"
 )
 

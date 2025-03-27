@@ -40,7 +40,8 @@
       {
         "expectedRequest": {
           "uri": "http://rtb.e-planning.net/pbs/1/12345/1/mx.com.xeu/ROS?app=1&appid=%5Ba-f0-9%5D%7B16%7D&appn=MobileExchange&e=testadunitcode%3A600x300&ifa=3B8E2335-Z049&ip=123.123.123.123&ncb=1",
-          "body": {}
+          "body": {},
+          "impIDs":["test-imp-id"]
         },
         "mockResponse": {
           "status": 200,

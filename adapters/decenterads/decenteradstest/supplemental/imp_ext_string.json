@@ -30,7 +30,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "unable to parse bidder parameers: json: cannot unmarshal string into Go value of type map[string]json.RawMessage",
+      "value": "unable to parse bidder parameers: expect { or n, but found \"",
       "comparison": "literal"
     }
   ]

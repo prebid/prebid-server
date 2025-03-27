@@ -3,9 +3,9 @@ package macros
 import (
 	"testing"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/v2/exchange/entities"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/exchange/entities"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -132,7 +132,7 @@ func TestPopulateRequestMacros(t *testing.T) {
 			args: args{
 				reqWrapper: &openrtb_ext.RequestWrapper{
 					BidRequest: &openrtb2.BidRequest{
-						User: &openrtb2.User{Ext: []byte(`{"consent":"1" }`)},
+						User: &openrtb2.User{Consent: "1", Ext: []byte(`{"consent":"2" }`)},
 						Ext:  []byte(`{"prebid":{"integration":"testIntegration"}}`),
 					},
 				},
@@ -189,7 +189,7 @@ func TestPopulateRequestMacros(t *testing.T) {
 						Device: &openrtb2.Device{
 							Lmt: &lmt,
 						},
-						User: &openrtb2.User{Ext: []byte(`{"consent":"1" }`)},
+						User: &openrtb2.User{Consent: "1", Ext: []byte(`{"consent":"2" }`)},
 						Ext:  []byte(`{"prebid":{"channel": {"name":"test1"},"macros":{"CUSTOMMACR1":"value1"}}}`),
 					},
 				},
@@ -199,7 +199,7 @@ func TestPopulateRequestMacros(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			b := &macroProvider{
+			b := &MacroProvider{
 				macros: map[string]string{},
 			}
 			b.populateRequestMacros(tt.args.reqWrapper)
@@ -300,7 +300,7 @@ func TestPopulateBidMacros(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			b := &macroProvider{
+			b := &MacroProvider{
 				macros: map[string]string{},
 			}
 			b.PopulateBidMacros(tt.args.bid, tt.args.seat)
@@ -401,7 +401,7 @@ func TestPopulateEventMacros(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			b := &macroProvider{
+			b := &MacroProvider{
 				macros: map[string]string{},
 			}
 			b.PopulateEventMacros(tt.args.vastCreativeID, tt.args.eventType, tt.args.vastEvent)

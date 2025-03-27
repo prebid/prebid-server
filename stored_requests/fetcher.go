@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/prebid/prebid-server/v2/metrics"
+	"github.com/prebid/prebid-server/v3/metrics"
 )
 
 // Fetcher knows how to fetch Stored Request data by id.

@@ -84,7 +84,8 @@
             "buyeruid": "test-user-id"
           },
           "tmax": 1000
-        }
+        },
+        "impIDs":["test-unsupported-imp-id"]
       },
       "mockResponse": {
         "status": 200,

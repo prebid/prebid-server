@@ -1,6 +1,6 @@
 endpoint: "https://s2shb.ssp.yahoo.com/admax/bid/partners/PBS"
 maintainer:
-  email: "hb-fe-tech@yahooinc.com"
+  email: "prebid-tech-team@yahooinc.com"
 gvlVendorID: 25
 capabilities:
   app:

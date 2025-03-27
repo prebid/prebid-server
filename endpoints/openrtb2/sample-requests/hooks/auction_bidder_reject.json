@@ -32,7 +32,7 @@
         }
       }
     ],
-    "tmax": 50,
+    "tmax": 500,
     "test": 1,
     "ext": {
       "prebid": {

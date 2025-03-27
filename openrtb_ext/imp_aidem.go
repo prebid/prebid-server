@@ -1,8 +1,8 @@
 package openrtb_ext
 
-type ImpExtFoo struct {
-	SiteID      string `json:"siteId"`
-	PublisherID string `json:"publisherId"`
-	PlacementID string `json:"placementId"`
+type ExtImpAidem struct {
+	PlacementId string `json:"placementId"`
+	SiteId      string `json:"siteId"`
+	PublisherId string `json:"publisherId"`
 	RateLimit   string `json:"rateLimit"`
 }
