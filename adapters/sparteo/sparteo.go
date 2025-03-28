@@ -34,17 +34,13 @@ func parseExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpSparteo, error) {
 
 	bidderExtErr := jsonutil.Unmarshal(imp.Ext, &bidderExt)
 	if bidderExtErr != nil {
-		return nil, &errortypes.BadInput{
-			Message: fmt.Sprintf("Ignoring imp id=%s, error while decoding extImpBidder, err: %s", imp.ID, bidderExtErr),
-		}
+		return nil, fmt.Errorf("ignoring imp id=%s, error while decoding extImpBidder, err: %s", imp.ID, bidderExtErr)
 	}
 
 	impExt := openrtb_ext.ExtImpSparteo{}
 	sparteoExtErr := jsonutil.Unmarshal(bidderExt.Bidder, &impExt)
 	if sparteoExtErr != nil {
-		return nil, &errortypes.BadInput{
-			Message: fmt.Sprintf("Ignoring imp id=%s, error while decoding impExt, err: %s", imp.ID, sparteoExtErr),
-		}
+		return nil, fmt.Errorf("ignoring imp id=%s, error while decoding impExt, err: %s", imp.ID, sparteoExtErr)
 	}
 
 	return &impExt, nil
@@ -72,9 +68,7 @@ func (a *adapter) MakeRequests(req *openrtb2.BidRequest, reqInfo *adapters.Extra
 
 		var extMap map[string]interface{}
 		if err := json.Unmarshal(imp.Ext, &extMap); err != nil {
-			errs = append(errs, &errortypes.BadInput{
-				Message: fmt.Sprintf("Ignoring imp id=%s, error while unmarshaling ext, err: %s", imp.ID, err),
-			})
+			errs = append(errs, fmt.Errorf("ignoring imp id=%s, error while unmarshaling ext, err: %s", imp.ID, err))
 			continue
 		}
 
@@ -101,9 +95,7 @@ func (a *adapter) MakeRequests(req *openrtb2.BidRequest, reqInfo *adapters.Extra
 
 		updatedExt, err := json.Marshal(extMap)
 		if err != nil {
-			errs = append(errs, &errortypes.BadInput{
-				Message: fmt.Sprintf("Ignoring imp id=%s, error while marshaling updated ext, err: %s", imp.ID, err),
-			})
+			errs = append(errs, fmt.Errorf("ignoring imp id=%s, error while marshaling updated ext, err: %s", imp.ID, err))
 			continue
 		}
 
@@ -150,7 +142,7 @@ func (a *adapter) MakeRequests(req *openrtb2.BidRequest, reqInfo *adapters.Extra
 	}
 
 	requestData := &adapters.RequestData{
-		Method: "POST",
+		Method: http.MethodPost,
 		Uri:    a.endpoint,
 		Body:   body,
 		ImpIDs: openrtb_ext.GetImpIDs(req.Imp),
@@ -163,14 +155,12 @@ func (a *adapter) MakeRequests(req *openrtb2.BidRequest, reqInfo *adapters.Extra
 }
 
 func (a *adapter) MakeBids(req *openrtb2.BidRequest, reqData *adapters.RequestData, respData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if respData.StatusCode == http.StatusNoContent {
+	if adapters.IsResponseStatusCodeNoContent(respData) {
 		return nil, nil
 	}
 
-	if respData.StatusCode != http.StatusOK {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d.", respData.StatusCode),
-		}}
+	if err := adapters.CheckResponseStatusCodeForErrors(respData); err != nil {
+		return nil, []error{err}
 	}
 
 	var bidResp openrtb2.BidResponse
@@ -187,6 +177,18 @@ func (a *adapter) MakeBids(req *openrtb2.BidRequest, reqData *adapters.RequestDa
 			if err != nil {
 				continue
 			}
+
+			switch bidType {
+			case openrtb_ext.BidTypeBanner:
+				seatBid.Bid[i].MType = openrtb2.MarkupBanner
+			case openrtb_ext.BidTypeVideo:
+				seatBid.Bid[i].MType = openrtb2.MarkupVideo
+			case openrtb_ext.BidTypeNative:
+				seatBid.Bid[i].MType = openrtb2.MarkupNative
+			default:
+				continue
+			}
+
 			bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
 				Bid:     &seatBid.Bid[i],
 				BidType: bidType,
@@ -204,14 +206,14 @@ func (a *adapter) getMediaType(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 	}
 	bidExt := wrapper.Prebid
 
-	mediaMap := map[string]openrtb_ext.BidType{
-		"video":  openrtb_ext.BidTypeVideo,
-		"banner": openrtb_ext.BidTypeBanner,
-		"native": openrtb_ext.BidTypeNative,
+	bidType, err := openrtb_ext.ParseBidType(string(bidExt.Type))
+	if err != nil {
+		return "", fmt.Errorf("error parsing bid type for bid id=%s: %v", bid.ID, err)
 	}
 
-	if mt, ok := mediaMap[string(bidExt.Type)]; ok {
-		return mt, nil
+	if bidType == openrtb_ext.BidTypeAudio {
+		return "", fmt.Errorf("bid type %q is not supported for bid id=%s", bidExt.Type, bid.ID)
 	}
-	return "", fmt.Errorf("unknown bid type %q for bid id=%s", bidExt.Type, bid.ID)
+
+	return bidType, nil
 }
