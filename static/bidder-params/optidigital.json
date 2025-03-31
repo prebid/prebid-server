@@ -1,0 +1,26 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Optidigital Adapter Params",
+    "description": "A schema which validates params accepted by the Optidigital adapter",
+    "type": "object",
+  
+    "properties": {
+        "publisherId": {
+            "type": "string",
+            "description": "Publisher ID"
+        },
+        "placementId": {
+            "type": "string",
+            "description": "Placement ID"
+        },
+        "pageTemplate": {
+            "type": "string",
+            "description": "Page Template"
+        }
+    },
+
+    "required":[
+        "publisherId",
+        "placementId"
+    ]
+  }
