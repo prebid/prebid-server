@@ -8,32 +8,32 @@ import (
 )
 
 func TestIntStringUnmarshalJSON(t *testing.T) {
-	tests := []struct{
+	tests := []struct {
 		name        string
 		jsonData    json.RawMessage
 		expectError bool
 		want        string
 	}{
 		{
-			name: "null",
-			jsonData: []byte(`{"item_id": null}`),
-			want: "",
+			name:        "null",
+			jsonData:    []byte(`{"item_id": null}`),
+			want:        "",
 			expectError: true,
 		},
 		{
-			name: "string",
+			name:     "string",
 			jsonData: []byte(`{"item_id": "30"}`),
-			want: "30",
+			want:     "30",
 		},
 		{
-			name: "int",
+			name:     "int",
 			jsonData: []byte(`{"item_id": 30}`),
-			want: "30",
+			want:     "30",
 		},
 		{
-			name: "error",
-			jsonData: []byte(`{"item_id": []`),
-			want: "",
+			name:        "error",
+			jsonData:    []byte(`{"item_id": []`),
+			want:        "",
 			expectError: true,
 		},
 	}
@@ -43,7 +43,7 @@ func TestIntStringUnmarshalJSON(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.name, func (t *testing.T)  {
+		t.Run(test.name, func(t *testing.T) {
 			var item Item
 			err := UnmarshalValid(test.jsonData, &item)
 			assert.Equal(t, string(test.want), string(item.ItemId))
