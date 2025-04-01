@@ -13,6 +13,10 @@
             "type": "string",
             "description": "Placement ID"
         },
+        "divId": {
+            "type": "string",
+            "description": "Div ID"
+        },
         "pageTemplate": {
             "type": "string",
             "description": "Page Template"
