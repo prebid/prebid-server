@@ -1,7 +1,7 @@
 endpoint: "https://pbs.optidigital.com/bidder/openrtb2"
 endpointCompression: gzip
 maintainer:
-  email: prebid@optidigital.com
+  email: "prebid@optidigital.com"
 gvlVendorID: 915
 openrtb:
   version: 2.6
@@ -19,5 +19,5 @@ userSync:
   supports:
     - iframe
   iframe:
-    url: https://scripts.opti-digital.com/js/presyncs2s.html?endpoint=optidigital&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir={{.RedirectURL}}
-    userMacro: $UID
+    url: "https://scripts.opti-digital.com/js/presyncs2s.html?endpoint=optidigital&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir={{.RedirectURL}}"
+    userMacro: "$UID"
