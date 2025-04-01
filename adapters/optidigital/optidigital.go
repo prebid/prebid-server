@@ -66,7 +66,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
 	bidResponse.Currency = response.Cur
-	var errors []error
+
 	for _, seatBid := range response.SeatBid {
 		for i := range seatBid.Bid {
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
@@ -75,5 +75,5 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 			})
 		}
 	}
-	return bidResponse, errors
+	return bidResponse, nil
 }
