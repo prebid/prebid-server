@@ -7,10 +7,12 @@
     "properties": {
         "publisherId": {
             "type": "string",
+            "minLength": 2,
             "description": "Publisher ID"
         },
         "placementId": {
             "type": "string",
+            "minLength": 1,
             "description": "Placement ID"
         },
         "divId": {
