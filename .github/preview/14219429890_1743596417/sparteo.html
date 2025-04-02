@@ -1,0 +1,322 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>sparteo: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/prebid/prebid-server/v3/adapters/sparteo/sparteo.go (88.8%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package sparteo
+
+import (
+        "encoding/json"
+        "fmt"
+        "net/http"
+
+        "github.com/prebid/openrtb/v20/openrtb2"
+        "github.com/prebid/prebid-server/v3/adapters"
+        "github.com/prebid/prebid-server/v3/config"
+        "github.com/prebid/prebid-server/v3/errortypes"
+        "github.com/prebid/prebid-server/v3/openrtb_ext"
+        "github.com/prebid/prebid-server/v3/util/jsonutil"
+)
+
+type adapter struct {
+        endpoint   string
+        bidderName string
+}
+
+type extBidWrapper struct {
+        Prebid openrtb_ext.ExtBidPrebid `json:"prebid"`
+}
+
+func Builder(bidderName openrtb_ext.BidderName, cfg config.Adapter, server config.Server) (adapters.Bidder, error) <span class="cov8" title="1">{
+        return &amp;adapter{
+                endpoint:   cfg.Endpoint,
+                bidderName: string(bidderName),
+        }, nil
+}</span>
+
+func parseExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpSparteo, error) <span class="cov8" title="1">{
+        var bidderExt adapters.ExtImpBidder
+
+        bidderExtErr := jsonutil.Unmarshal(imp.Ext, &amp;bidderExt)
+        if bidderExtErr != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("ignoring imp id=%s, error while decoding extImpBidder, err: %s", imp.ID, bidderExtErr)
+        }</span>
+
+        <span class="cov8" title="1">impExt := openrtb_ext.ExtImpSparteo{}
+        sparteoExtErr := jsonutil.Unmarshal(bidderExt.Bidder, &amp;impExt)
+        if sparteoExtErr != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("ignoring imp id=%s, error while decoding impExt, err: %s", imp.ID, sparteoExtErr)
+        }</span>
+
+        <span class="cov8" title="1">return &amp;impExt, nil</span>
+}
+
+func (a *adapter) MakeRequests(req *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) <span class="cov8" title="1">{
+        impressions := req.Imp
+        if len(impressions) == 0 </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadInput{Message: "No impressions in the bid request"}}
+        }</span>
+        <span class="cov8" title="1">var errs []error
+
+        var siteNetworkId string
+
+        for i, imp := range impressions </span><span class="cov8" title="1">{
+                extImpSparteo, err := parseExt(&amp;imp)
+                if err != nil </span><span class="cov8" title="1">{
+                        errs = append(errs, err)
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">if siteNetworkId == "" &amp;&amp; extImpSparteo.NetworkId != "" </span><span class="cov8" title="1">{
+                        siteNetworkId = extImpSparteo.NetworkId
+                }</span>
+
+                <span class="cov8" title="1">var extMap map[string]interface{}
+                if err := json.Unmarshal(imp.Ext, &amp;extMap); err != nil </span><span class="cov0" title="0">{
+                        errs = append(errs, fmt.Errorf("ignoring imp id=%s, error while unmarshaling ext, err: %s", imp.ID, err))
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">sparteoMap, ok := extMap["sparteo"].(map[string]interface{})
+                if !ok </span><span class="cov8" title="1">{
+                        sparteoMap = make(map[string]interface{})
+                        extMap["sparteo"] = sparteoMap
+                }</span>
+
+                <span class="cov8" title="1">paramsMap, ok := sparteoMap["params"].(map[string]interface{})
+                if !ok </span><span class="cov8" title="1">{
+                        paramsMap = make(map[string]interface{})
+                        sparteoMap["params"] = paramsMap
+                }</span>
+
+                <span class="cov8" title="1">bidderObj, ok := extMap["bidder"].(map[string]interface{})
+                if ok </span><span class="cov8" title="1">{
+                        delete(extMap, "bidder")
+
+                        for key, value := range bidderObj </span><span class="cov8" title="1">{
+                                paramsMap[key] = value
+                        }</span>
+                }
+
+                <span class="cov8" title="1">updatedExt, err := json.Marshal(extMap)
+                if err != nil </span><span class="cov0" title="0">{
+                        errs = append(errs, fmt.Errorf("ignoring imp id=%s, error while marshaling updated ext, err: %s", imp.ID, err))
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">req.Imp[i].Ext = updatedExt</span>
+        }
+
+        <span class="cov8" title="1">if req.Site != nil &amp;&amp; req.Site.Publisher != nil &amp;&amp; siteNetworkId != "" </span><span class="cov8" title="1">{
+                var pubExt map[string]interface{}
+
+                if req.Site.Publisher.Ext != nil </span><span class="cov8" title="1">{
+                        if err := json.Unmarshal(req.Site.Publisher.Ext, &amp;pubExt); err != nil </span><span class="cov8" title="1">{
+                                pubExt = make(map[string]interface{})
+                        }</span>
+                } else<span class="cov0" title="0"> {
+                        pubExt = make(map[string]interface{})
+                }</span>
+
+                <span class="cov8" title="1">var paramsMap map[string]interface{}
+                if raw, ok := pubExt["params"]; ok </span><span class="cov8" title="1">{
+                        if paramsMap, ok = raw.(map[string]interface{}); !ok </span><span class="cov8" title="1">{
+                                paramsMap = make(map[string]interface{})
+                        }</span>
+                } else<span class="cov8" title="1"> {
+                        paramsMap = make(map[string]interface{})
+                }</span>
+
+                <span class="cov8" title="1">paramsMap["networkId"] = siteNetworkId
+                pubExt["params"] = paramsMap
+
+                updatedPubExt, err := json.Marshal(pubExt)
+                if err != nil </span><span class="cov0" title="0">{
+                        errs = append(errs, &amp;errortypes.BadInput{
+                                Message: fmt.Sprintf("Error marshaling site.publisher.ext: %s", err),
+                        })
+                }</span> else<span class="cov8" title="1"> {
+                        req.Site.Publisher.Ext = json.RawMessage(updatedPubExt)
+                }</span>
+        }
+
+        <span class="cov8" title="1">body, err := json.Marshal(req)
+        if err != nil </span><span class="cov0" title="0">{
+                errs = append(errs, err)
+                return nil, errs
+        }</span>
+
+        <span class="cov8" title="1">requestData := &amp;adapters.RequestData{
+                Method: http.MethodPost,
+                Uri:    a.endpoint,
+                Body:   body,
+                ImpIDs: openrtb_ext.GetImpIDs(req.Imp),
+                Headers: http.Header{
+                        "Content-Type": []string{"application/json"},
+                },
+        }
+
+        return []*adapters.RequestData{requestData}, errs</span>
+}
+
+func (a *adapter) MakeBids(req *openrtb2.BidRequest, reqData *adapters.RequestData, respData *adapters.ResponseData) (*adapters.BidderResponse, []error) <span class="cov8" title="1">{
+        if adapters.IsResponseStatusCodeNoContent(respData) </span><span class="cov8" title="1">{
+                return nil, nil
+        }</span>
+
+        <span class="cov8" title="1">if err := adapters.CheckResponseStatusCodeForErrors(respData); err != nil </span><span class="cov8" title="1">{
+                return nil, []error{err}
+        }</span>
+
+        <span class="cov8" title="1">var bidResp openrtb2.BidResponse
+        if err := jsonutil.Unmarshal(respData.Body, &amp;bidResp); err != nil </span><span class="cov8" title="1">{
+                return nil, []error{err}
+        }</span>
+
+        <span class="cov8" title="1">bidderResponse := adapters.NewBidderResponse()
+        bidderResponse.Currency = bidResp.Cur
+
+        for _, seatBid := range bidResp.SeatBid </span><span class="cov8" title="1">{
+                for i, bid := range seatBid.Bid </span><span class="cov8" title="1">{
+                        bidType, err := a.getMediaType(&amp;bid)
+                        if err != nil </span><span class="cov8" title="1">{
+                                continue</span>
+                        }
+
+                        <span class="cov8" title="1">switch bidType </span>{
+                        case openrtb_ext.BidTypeBanner:<span class="cov8" title="1">
+                                seatBid.Bid[i].MType = openrtb2.MarkupBanner</span>
+                        case openrtb_ext.BidTypeVideo:<span class="cov8" title="1">
+                                seatBid.Bid[i].MType = openrtb2.MarkupVideo</span>
+                        case openrtb_ext.BidTypeNative:<span class="cov8" title="1">
+                                seatBid.Bid[i].MType = openrtb2.MarkupNative</span>
+                        default:<span class="cov0" title="0">
+                                continue</span>
+                        }
+
+                        <span class="cov8" title="1">bidderResponse.Bids = append(bidderResponse.Bids, &amp;adapters.TypedBid{
+                                Bid:     &amp;seatBid.Bid[i],
+                                BidType: bidType,
+                        })</span>
+                }
+        }
+
+        <span class="cov8" title="1">return bidderResponse, nil</span>
+}
+
+func (a *adapter) getMediaType(bid *openrtb2.Bid) (openrtb_ext.BidType, error) <span class="cov8" title="1">{
+        var wrapper extBidWrapper
+        if err := json.Unmarshal(bid.Ext, &amp;wrapper); err != nil </span><span class="cov8" title="1">{
+                return "", fmt.Errorf("error unmarshaling bid ext for bid id=%s: %v", bid.ID, err)
+        }</span>
+        <span class="cov8" title="1">bidExt := wrapper.Prebid
+
+        bidType, err := openrtb_ext.ParseBidType(string(bidExt.Type))
+        if err != nil </span><span class="cov8" title="1">{
+                return "", fmt.Errorf("error parsing bid type for bid id=%s: %v", bid.ID, err)
+        }</span>
+
+        <span class="cov8" title="1">if bidType == openrtb_ext.BidTypeAudio </span><span class="cov0" title="0">{
+                return "", fmt.Errorf("bid type %q is not supported for bid id=%s", bidExt.Type, bid.ID)
+        }</span>
+
+        <span class="cov8" title="1">return bidType, nil</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
