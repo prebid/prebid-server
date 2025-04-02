@@ -13,7 +13,7 @@ import (
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
-type Nexx360Adapter struct {
+type adapter struct {
 	endpoint string
 }
 
@@ -48,6 +48,7 @@ type ReqNexx360Ext struct {
 type Nexx360ResBidExt struct {
 	BidType string `json:"bidType,omitempty"`
 }
+
 
 // CALLER Info used to track Prebid Server
 // as one of the hops in the request to exchange
@@ -105,7 +106,7 @@ func makeImps(impList []openrtb2.Imp) (MakeImpOutput, error) {
 }
 
 
-func (a *Nexx360Adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var makeImp, err = makeImps(request.Imp);
 	if err != nil {
 		return nil, []error{err}
@@ -173,7 +174,7 @@ func makeReqExt(request *openrtb2.BidRequest) ([]byte, error) {
 }
 
 // MakeBids make the bids for the bid response.
-func (a *Nexx360Adapter) MakeBids(request *openrtb2.BidRequest, externalRequest *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, externalRequest *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if responseData.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -245,11 +246,6 @@ func getBidType(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 	}
 }
 
-
-// Builder builds a new instance of the nexx360 adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	bidder := &Nexx360Adapter{
-		endpoint: config.Endpoint,
-	}
-	return bidder, nil
+func  Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	return &adapter{endpoint: config.Endpoint}, nil
 }
