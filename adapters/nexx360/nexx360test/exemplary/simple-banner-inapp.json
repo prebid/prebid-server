@@ -1,0 +1,139 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app": {
+      "bundle": "test.app.bundle"
+    },
+    "device": {
+      "ifa": "test-ifa-123456",
+      "os": "android",
+      "ip": "91.199.242.236",
+      "ua": "random user agent"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "tagId": "testnexx"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://fast.nexx360.io/prebid-server?tag_id=testnexx",
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "body": {
+          "id": "test-request-id",
+          "app": {
+            "bundle": "test.app.bundle"
+          },
+          "device": {
+            "ifa": "test-ifa-123456",
+            "os": "android",
+            "ip": "91.199.242.236",
+            "ua": "random user agent"
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "nexx360": {
+                  "tagId": "testnexx"
+                }
+              }
+            }
+          ],
+          "ext": {
+            "nexx360": {
+              "caller": [
+                {
+                  "name": "Prebid-Server",
+                  "version": "n/a"
+                }
+              ]
+            }
+          }
+        },
+        "impIDs": [
+          "test-imp-id"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "currency": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "test-slot-id",
+                  "impid": "test-imp-id",
+                  "price": 0.1,
+                  "crid": "creative-123",
+                  "adm": "<h1>test ad</h1>",
+                  "w": 300,
+                  "h": 250,
+                  "ext": {
+                    "mediaType": "banner",
+                    "bidType": "banner",
+                    "tagId": "testnexx",
+                    "ssp": "test"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-slot-id",
+            "impid": "test-imp-id",
+            "price": 0.1,
+            "crid": "creative-123",
+            "adm": "<h1>test ad</h1>",
+            "w": 300,
+            "h": 250,
+            "ext": {
+              "mediaType": "banner",
+              "bidType": "banner",
+              "tagId": "testnexx",
+              "ssp": "test"
+            }
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
