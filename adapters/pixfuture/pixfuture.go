@@ -4,26 +4,16 @@ import (
 	"net/http"
 	"strconv"
 
-	jsoniter "github.com/json-iterator/go"
-
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
-
-var jsonIter = jsoniter.ConfigCompatibleWithStandardLibrary
 
 type adapter struct {
 	endpoint string
-}
-
-// PixfutureExt defines the bidder-specific extension for Pixfuture.
-type PixfutureExt struct {
-	Bidder struct {
-		PixID string `json:"pix_id"`
-	} `json:"bidder"`
 }
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
@@ -44,33 +34,21 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		imp := &request.Imp[i]
 
 		// Log raw imp.Ext for debugging
-
-		var ext PixfutureExt
-		if err := jsonIter.Unmarshal(imp.Ext, &ext); err != nil {
-			errs = append(errs, &errortypes.BadInput{Message: "Invalid impression extension"})
-			continue
+		var bidderExt adapters.ExtImpBidder
+		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
+			return nil, []error{&errortypes.BadInput{
+				Message: err.Error(),
+			}}
 		}
 
-		// Extract pix_id from the structure
-		pixID := ext.Bidder.PixID
-		idType := "pix_id"
-
-		if pixID == "" {
-			errs = append(errs, &errortypes.BadInput{Message: "Missing " + idType})
-			continue
-		}
-		if len(pixID) < 3 {
-			errs = append(errs, &errortypes.BadInput{Message: idType + " must be at least 3 characters long"})
-			continue
+		var ext openrtb_ext.ImpExtPixfuture
+		if err := jsonutil.Unmarshal(bidderExt.Bidder, &ext); err != nil {
+			return nil, []error{&errortypes.BadInput{
+				Message: err.Error(),
+			}}
 		}
 
-		// Check for supported impression types (banner, native, or video)
-		if imp.Banner == nil && imp.Native == nil && imp.Video == nil {
-			errs = append(errs, &errortypes.BadInput{Message: "Banner, Native, or Video impression required"})
-			continue
-		}
-
-		reqJSON, err := jsonIter.Marshal(request)
+		reqJSON, err := jsonutil.Marshal(request)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -105,7 +83,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	}
 
 	var bidResp openrtb2.BidResponse
-	if err := jsonIter.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{Message: "Invalid response format: " + err.Error()}}
 	}
 
@@ -144,7 +122,7 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 			Type string `json:"type"`
 		} `json:"prebid"`
 	}
-	if err := jsonIter.Unmarshal(bid.Ext, &ext); err != nil {
+	if err := jsonutil.Unmarshal(bid.Ext, &ext); err != nil {
 		return "", err
 	}
 
