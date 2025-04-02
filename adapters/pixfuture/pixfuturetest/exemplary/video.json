@@ -10,8 +10,6 @@
           "h": 360
         },
         "ext": {
-          "tid": "2045c5a8-a768-469c-b922-cddecd2c51d3",
-          "data": {},
           "bidder": {
             "pix_id": "55463"
           }
@@ -38,8 +36,6 @@
                 "h": 360
               },
               "ext": {
-                "tid": "2045c5a8-a768-469c-b922-cddecd2c51d3",
-                "data": {},
                 "bidder": {
                   "pix_id": "55463"
                 }
