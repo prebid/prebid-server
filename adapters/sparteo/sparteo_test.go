@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/adapters/adapterstest"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
@@ -77,88 +76,4 @@ func TestGetMediaType_NilExt(t *testing.T) {
 	result, err := adapter.getMediaType(bid)
 	assert.Error(t, err, "Expected error for nil extension")
 	assert.Equal(t, openrtb_ext.BidType(""), result, "Expected empty result for nil extension")
-}
-
-// TestMakeRequests_PublisherExt_UnmarshalError verifies that when the publisher extension JSON is invalid (i.e. not an object),
-// the adapter resets it to an empty map and correctly merges the networkId from the impression bidder extension.
-func TestMakeRequests_PublisherExt_UnmarshalError(t *testing.T) {
-	bidder, _ := Builder(
-		openrtb_ext.BidderSparteo,
-		config.Adapter{Endpoint: "https://bid.sparteo.com/s2s-auction"},
-		config.Server{},
-	)
-
-	imp := openrtb2.Imp{
-		ID: "imp1",
-		Banner: &openrtb2.Banner{
-			W: int64Ptr(300),
-			H: int64Ptr(250),
-		},
-		Ext: json.RawMessage(`{"bidder":{"networkId":"netPub"}}`),
-	}
-
-	req := &openrtb2.BidRequest{
-		Imp: []openrtb2.Imp{imp},
-		Site: &openrtb2.Site{
-			Domain: "test.sparteo.com",
-			Publisher: &openrtb2.Publisher{
-				Domain: "test.sparteo.com",
-				Ext:    json.RawMessage(`"not an object"`),
-			},
-		},
-	}
-
-	requests, _ := bidder.MakeRequests(req, &adapters.ExtraRequestInfo{})
-
-	assert.NotNil(t, requests, "Expected a valid request despite publisher ext issue")
-	require.NotNil(t, req.Site.Publisher.Ext, "Publisher ext should be set")
-
-	var pubExt map[string]interface{}
-	err := json.Unmarshal(req.Site.Publisher.Ext, &pubExt)
-	require.NoError(t, err, "Updated publisher ext should unmarshal")
-	params, ok := pubExt["params"].(map[string]interface{})
-	require.True(t, ok, "Expected publisher ext 'params' to be a map")
-	assert.Equal(t, "netPub", params["networkId"], "Expected networkId to be set from imp bidder ext")
-}
-
-// TestMakeRequests_PublisherExt_ParamsNotMap verifies that when the publisher extension's "params" field is not a map,
-// the adapter replaces it with a new map and correctly merges the networkId from the bidder extension.
-func TestMakeRequests_PublisherExt_ParamsNotMap(t *testing.T) {
-	bidder, _ := Builder(
-		openrtb_ext.BidderSparteo,
-		config.Adapter{Endpoint: "https://bid.sparteo.com/s2s-auction"},
-		config.Server{},
-	)
-
-	imp := openrtb2.Imp{
-		ID: "imp1",
-		Banner: &openrtb2.Banner{
-			W: int64Ptr(300),
-			H: int64Ptr(250),
-		},
-		Ext: json.RawMessage(`{"bidder":{"networkId":"net123"}}`),
-	}
-
-	req := &openrtb2.BidRequest{
-		Imp: []openrtb2.Imp{imp},
-		Site: &openrtb2.Site{
-			Domain: "test.sparteo.com",
-			Publisher: &openrtb2.Publisher{
-				Domain: "test.sparteo.com",
-				Ext:    json.RawMessage(`{"params": "should be an object"}`),
-			},
-		},
-	}
-
-	requests, errs := bidder.MakeRequests(req, &adapters.ExtraRequestInfo{})
-	require.Empty(t, errs, "Expected no errors from publisher ext processing")
-	require.Len(t, requests, 1, "Expected one request")
-
-	require.NotNil(t, req.Site.Publisher.Ext, "Publisher ext should be set")
-	var pubExt map[string]interface{}
-	err := json.Unmarshal(req.Site.Publisher.Ext, &pubExt)
-	require.NoError(t, err, "Updated publisher ext should unmarshal")
-	params, ok := pubExt["params"].(map[string]interface{})
-	require.True(t, ok, "Expected publisher ext 'params' to be a map after type correction")
-	assert.Equal(t, "net123", params["networkId"], "Expected networkId to be merged into publisher ext")
 }

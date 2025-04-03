@@ -47,15 +47,25 @@ func parseExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpSparteo, error) {
 }
 
 func (a *adapter) MakeRequests(req *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	impressions := req.Imp
-	if len(impressions) == 0 {
-		return nil, []error{&errortypes.BadInput{Message: "No impressions in the bid request"}}
-	}
-	var errs []error
+	request := *req
 
+	request.Imp = make([]openrtb2.Imp, len(req.Imp))
+	copy(request.Imp, req.Imp)
+
+	if req.Site != nil {
+		siteCopy := *req.Site
+		request.Site = &siteCopy
+	}
+
+	if req.Site != nil && req.Site.Publisher != nil {
+		publisherCopy := *req.Site.Publisher
+		request.Site.Publisher = &publisherCopy
+	}
+
+	var errs []error
 	var siteNetworkId string
 
-	for i, imp := range impressions {
+	for i, imp := range request.Imp {
 		extImpSparteo, err := parseExt(&imp)
 		if err != nil {
 			errs = append(errs, err)
@@ -99,14 +109,13 @@ func (a *adapter) MakeRequests(req *openrtb2.BidRequest, reqInfo *adapters.Extra
 			continue
 		}
 
-		req.Imp[i].Ext = updatedExt
+		request.Imp[i].Ext = updatedExt
 	}
 
-	if req.Site != nil && req.Site.Publisher != nil && siteNetworkId != "" {
+	if request.Site != nil && request.Site.Publisher != nil && siteNetworkId != "" {
 		var pubExt map[string]interface{}
-
-		if req.Site.Publisher.Ext != nil {
-			if err := json.Unmarshal(req.Site.Publisher.Ext, &pubExt); err != nil {
+		if request.Site.Publisher.Ext != nil {
+			if err := json.Unmarshal(request.Site.Publisher.Ext, &pubExt); err != nil {
 				pubExt = make(map[string]interface{})
 			}
 		} else {
@@ -131,11 +140,11 @@ func (a *adapter) MakeRequests(req *openrtb2.BidRequest, reqInfo *adapters.Extra
 				Message: fmt.Sprintf("Error marshaling site.publisher.ext: %s", err),
 			})
 		} else {
-			req.Site.Publisher.Ext = json.RawMessage(updatedPubExt)
+			request.Site.Publisher.Ext = json.RawMessage(updatedPubExt)
 		}
 	}
 
-	body, err := json.Marshal(req)
+	body, err := json.Marshal(request)
 	if err != nil {
 		errs = append(errs, err)
 		return nil, errs
@@ -145,7 +154,7 @@ func (a *adapter) MakeRequests(req *openrtb2.BidRequest, reqInfo *adapters.Extra
 		Method: http.MethodPost,
 		Uri:    a.endpoint,
 		Body:   body,
-		ImpIDs: openrtb_ext.GetImpIDs(req.Imp),
+		ImpIDs: openrtb_ext.GetImpIDs(request.Imp),
 		Headers: http.Header{
 			"Content-Type": []string{"application/json"},
 		},

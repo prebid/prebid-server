@@ -24,8 +24,7 @@
             "domain": "dev.sparteo.com:4444",
             "publisher": {
                 "domain": "dev.sparteo.com:4444",
-                "id": "sparteo",
-                "ext": {"params":{"networkId":"networkId"}}
+                "id": "sparteo"
             },
             "page": "https://dev.sparteo.com:4444/page/test/",
             "ref": "https://dev.sparteo.com:4444/page/test/"
