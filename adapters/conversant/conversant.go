@@ -189,19 +189,20 @@ func (c *ConversantAdapter) MakeBids(internalRequest *openrtb2.BidRequest, exter
 }
 
 func getBidType(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
-	bidType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
 		if imp.ID == impId {
-			if imp.Video != nil {
-				bidType = openrtb_ext.BidTypeVideo
-			}
-			if imp.Audio != nil {
-				bidType = openrtb_ext.BidTypeAudio
+			switch {
+			case imp.Native != nil:
+				return openrtb_ext.BidTypeNative
+			case imp.Audio != nil:
+				return openrtb_ext.BidTypeAudio
+			case imp.Video != nil:
+				return openrtb_ext.BidTypeVideo
 			}
 			break
 		}
 	}
-	return bidType
+	return openrtb_ext.BidTypeBanner
 }
 
 // Builder builds a new instance of the Conversant adapter for the given bidder with the given config.
