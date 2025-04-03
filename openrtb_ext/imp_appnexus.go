@@ -15,7 +15,7 @@ type ExtImpAppnexus struct {
 	LegacyTrafficSourceCode  string                 `json:"trafficSourceCode"`
 	PlacementId              jsonutil.StringInt     `json:"placement_id"`
 	InvCode                  string                 `json:"inv_code"`
-	Member                   string                 `json:"member"`
+	Member                   jsonutil.IntString     `json:"member"`
 	Keywords                 ExtImpAppnexusKeywords `json:"keywords"`
 	TrafficSourceCode        string                 `json:"traffic_source_code"`
 	Reserve                  float64                `json:"reserve"`
