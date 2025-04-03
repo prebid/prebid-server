@@ -1,0 +1,17 @@
+endpoint: "http://fast.nexx360.io/prebid-server"
+maintainer:
+  email: "tech@nexx360.io"
+endpointCompression: gzip
+geoscope:
+  - global
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
