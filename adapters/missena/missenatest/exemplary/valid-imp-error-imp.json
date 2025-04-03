@@ -1,129 +1,123 @@
 {
-    "mockBidRequest": {
-        "id": "test-request-id",
-        "tmax": 500,
-        "at": 1,
-        "cur": [
-            "EUR"
-        ],
-        "regs": {
-            "ext": {
-                "gdpr": 1
-            }
-        },
-        "user": {
-            "ext": {
-                "consent": "CO-X2XiO_eyUoAsAxBFRBECsA"
-            }
-        },
-        "device": {
-            "ip": "123.123.123.123",
-            "ua": "test-user-agent"
-        },
-        "site": {
-            "page": "https://example.com/page",
-            "domain": "example.com"
-        },
-        "imp": [
-            {
-                "id": "test-imp-id-1",
-                "banner": {
-                    "h": 50,
-                    "w": 320
-                },
-                "ext": {
-                    "bidder": {
-                        "apiKey": "test-api-key",
-                        "placement": "test-placement-1",
-                        "test": "1"
-                    }
-                }
-            },
-            {
-                "id": "test-imp-id-2",
-                "banner": {
-                    "h": 50,
-                    "w": 320
-                },
-                "ext": {
-                    "bidder": {
-                        "apiKey": "test-api-key",
-                        "placement": "test-placement-2",
-                        "test": "1"
-                    }
-                }
-            },
-            {
-                "id": "test-imp-id-3",
-                "banner": {
-                    "h": 50,
-                    "w": 320
-                },
-                "ext": {
-                    "bidder": "abc"
-                }
-            }
-        ]
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "tmax": 500,
+    "at": 1,
+    "cur": ["EUR"],
+    "regs": {
+      "ext": {
+        "gdpr": 1
+      }
     },
-    "httpCalls": [
-        {
-            "expectedRequest": {
-                "uri": "http://example.com/?t=test-api-key",
-                "headers": {
-                    "Content-Type": [
-                        "application/json;charset=utf-8"
-                    ],
-                    "Accept": [
-                        "application/json"
-                    ],
-                    "User-Agent": [
-                        "test-user-agent"
-                    ],
-                    "X-Forwarded-For": [
-                        "123.123.123.123"
-                    ],
-                    "Referer": [
-                        "https://example.com/page"
-                    ]
-                },
-                "body": {
-                    "request_id": "test-request-id",
-                    "timeout": 2000,
-                    "referer": "https://example.com/page",
-                    "referer_canonical": "example.com",
-                    "consent_string": "CO-X2XiO_eyUoAsAxBFRBECsA",
-                    "consent_required": true,
-                    "placement": "test-placement-1",
-                    "test": "1"
-                },
-                "impIDs": ["test-imp-id-1"]
-            },
-            "mockResponse": {
-                "status": 200,
-                "body": {
-                    "ad": "<div>test ad</div>",
-                    "cpm": 1.5,
-                    "currency": "EUR",
-                    "requestId": "test-request-id"
-                }
-            }
+    "user": {
+      "ext": {
+        "consent": "CO-X2XiO_eyUoAsAxBFRBECsA"
+      }
+    },
+    "device": {
+      "ip": "123.123.123.123",
+      "ua": "test-user-agent"
+    },
+    "site": {
+      "page": "https://example.com/page",
+      "domain": "example.com"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id-1",
+        "banner": {
+          "h": 50,
+          "w": 320
+        },
+        "ext": {
+          "bidder": {
+            "apiKey": "test-api-key",
+            "placement": "test-placement-1",
+            "test": "1"
+          }
         }
-    ],
-    "expectedBidResponses": [
-        {
-            "currency": "EUR",
-            "bids": [
-                {
-                    "bid": {
-                        "id": "test-request-id",
-                        "impid": "test-imp-id-1",
-                        "price": 1.5,
-                        "adm": "<div>test ad</div>",
-                        "crid": "test-request-id"
-                    },
-                    "type": "banner"
-                }
-            ]
+      },
+      {
+        "id": "test-imp-id-2",
+        "banner": {
+          "h": 50,
+          "w": 320
+        },
+        "ext": {
+          "bidder": {
+            "apiKey": "test-api-key",
+            "placement": "test-placement-2",
+            "test": "1"
+          }
         }
+      },
+      {
+        "id": "test-imp-id-3",
+        "banner": {
+          "h": 50,
+          "w": 320
+        },
+        "ext": {
+          "bidder": "abc"
+        }
+      }
     ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://example.com/?t=test-api-key",
+        "headers": {
+          "Content-Type": ["application/json;charset=utf-8"],
+          "Accept": ["application/json"],
+          "User-Agent": ["test-user-agent"],
+          "X-Forwarded-For": ["123.123.123.123"],
+          "Referer": ["https://example.com/page"],
+          "Origin": ["https://example.com"]
+        },
+        "body": {
+          "adunit": "test-imp-id-1",
+          "consent_required": true,
+          "consent_string": "CO-X2XiO_eyUoAsAxBFRBECsA",
+          "currency": "EUR",
+          "ik": "test-request-id",
+          "params": {
+            "placement": "test-placement-1",
+            "test": "1"
+          },
+          "referer": "https://example.com/page",
+          "referer_canonical": "example.com",
+          "request_id": "test-request-id",
+          "timeout": 500
+        },
+        "impIDs": ["test-imp-id-1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "ad": "<div>test ad</div>",
+          "cpm": 1.5,
+          "currency": "EUR",
+          "requestId": "test-request-id"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-request-id",
+            "impid": "test-imp-id-1",
+            "price": 1.5,
+            "adm": "<div>test ad</div>",
+            "crid": "test-request-id"
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
 }
