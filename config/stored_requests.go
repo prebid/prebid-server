@@ -107,8 +107,9 @@ type FileFetcherConfig struct {
 
 // HTTPFetcherConfig configures a stored_requests/backends/http_fetcher/fetcher.go
 type HTTPFetcherConfig struct {
-	Endpoint    string `mapstructure:"endpoint"`
-	AmpEndpoint string `mapstructure:"amp_endpoint"`
+	Endpoint               string `mapstructure:"endpoint"`
+	AmpEndpoint            string `mapstructure:"amp_endpoint"`
+	UseRfcCompliantBuilder bool   `mapstructure:"use_rfc3986_compliant_request_builder"`
 }
 
 // Migrate combined stored_requests+amp configuration to separate simple config sections
