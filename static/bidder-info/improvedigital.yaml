@@ -16,6 +16,9 @@ capabilities:
       - audio
       - native
 userSync:
+  iframe:
+    url: "https://ad.360yield.com/user_sync?rt=html&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&r={{.RedirectURL}}"
+    userMacro: "{PUB_USER_ID}"
   redirect:
     url: "https://ad.360yield.com/server_match?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&r={{.RedirectURL}}"
     userMacro: "{PUB_USER_ID}"
