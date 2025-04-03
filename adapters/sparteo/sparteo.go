@@ -1,7 +1,6 @@
 package sparteo
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -77,7 +76,7 @@ func (a *adapter) MakeRequests(req *openrtb2.BidRequest, reqInfo *adapters.Extra
 		}
 
 		var extMap map[string]interface{}
-		if err := json.Unmarshal(imp.Ext, &extMap); err != nil {
+		if err := jsonutil.Unmarshal(imp.Ext, &extMap); err != nil {
 			errs = append(errs, fmt.Errorf("ignoring imp id=%s, error while unmarshaling ext, err: %s", imp.ID, err))
 			continue
 		}
@@ -103,7 +102,7 @@ func (a *adapter) MakeRequests(req *openrtb2.BidRequest, reqInfo *adapters.Extra
 			}
 		}
 
-		updatedExt, err := json.Marshal(extMap)
+		updatedExt, err := jsonutil.Marshal(extMap)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("ignoring imp id=%s, error while marshaling updated ext, err: %s", imp.ID, err))
 			continue
@@ -115,7 +114,7 @@ func (a *adapter) MakeRequests(req *openrtb2.BidRequest, reqInfo *adapters.Extra
 	if request.Site != nil && request.Site.Publisher != nil && siteNetworkId != "" {
 		var pubExt map[string]interface{}
 		if request.Site.Publisher.Ext != nil {
-			if err := json.Unmarshal(request.Site.Publisher.Ext, &pubExt); err != nil {
+			if err := jsonutil.Unmarshal(request.Site.Publisher.Ext, &pubExt); err != nil {
 				pubExt = make(map[string]interface{})
 			}
 		} else {
@@ -134,17 +133,17 @@ func (a *adapter) MakeRequests(req *openrtb2.BidRequest, reqInfo *adapters.Extra
 		paramsMap["networkId"] = siteNetworkId
 		pubExt["params"] = paramsMap
 
-		updatedPubExt, err := json.Marshal(pubExt)
+		updatedPubExt, err := jsonutil.Marshal(pubExt)
 		if err != nil {
 			errs = append(errs, &errortypes.BadInput{
 				Message: fmt.Sprintf("Error marshaling site.publisher.ext: %s", err),
 			})
 		} else {
-			request.Site.Publisher.Ext = json.RawMessage(updatedPubExt)
+			request.Site.Publisher.Ext = jsonutil.RawMessage(updatedPubExt)
 		}
 	}
 
-	body, err := json.Marshal(request)
+	body, err := jsonutil.Marshal(request)
 	if err != nil {
 		errs = append(errs, err)
 		return nil, errs
@@ -210,7 +209,7 @@ func (a *adapter) MakeBids(req *openrtb2.BidRequest, reqData *adapters.RequestDa
 
 func (a *adapter) getMediaType(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 	var wrapper extBidWrapper
-	if err := json.Unmarshal(bid.Ext, &wrapper); err != nil {
+	if err := jsonutil.Unmarshal(bid.Ext, &wrapper); err != nil {
 		return "", fmt.Errorf("error unmarshaling bid ext for bid id=%s: %v", bid.ID, err)
 	}
 	bidExt := wrapper.Prebid

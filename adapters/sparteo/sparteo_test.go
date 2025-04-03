@@ -12,15 +12,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func int64Ptr(i int64) *int64 {
-	return &i
-}
-
 // TestBuilder verifies that the Builder function correctly creates a bidder instance.
 // It checks for errors, ensures the returned bidder is not nil, and confirms that the endpoint
 // in the adapter is set according to the configuration.
 func TestBuilder(t *testing.T) {
-	cfg := config.Adapter{Endpoint: "https://bid.sparteo.com/s2s-auction"}
+	cfg := config.Adapter{Endpoint: "https://bid-test.sparteo.com/s2s-auction"}
 	bidder, err := Builder(openrtb_ext.BidderSparteo, cfg, config.Server{GvlID: 1028})
 
 	require.NoError(t, err, "Builder returned an error")
@@ -29,13 +25,13 @@ func TestBuilder(t *testing.T) {
 	sparteoAdapter, ok := bidder.(*adapter)
 	require.True(t, ok, "Expected *adapter, got %T", bidder)
 
-	assert.Equal(t, "https://bid.sparteo.com/s2s-auction", sparteoAdapter.endpoint, "Endpoint is not correctly set")
+	assert.Equal(t, "https://bid-test.sparteo.com/s2s-auction", sparteoAdapter.endpoint, "Endpoint is not correctly set")
 }
 
 // TestJsonSamples runs JSON sample tests using the shared adapterstest framework.
 func TestJsonSamples(t *testing.T) {
 	bidder, err := Builder(openrtb_ext.BidderSparteo, config.Adapter{
-		Endpoint: "https://bid.sparteo.com/s2s-auction",
+		Endpoint: "https://bid-test.sparteo.com/s2s-auction",
 	}, config.Server{GvlID: 1028})
 	require.NoError(t, err, "Builder returned an error")
 

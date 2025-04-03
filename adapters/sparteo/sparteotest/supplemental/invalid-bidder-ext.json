@@ -22,7 +22,7 @@
     "httpCalls": [
         {
         "expectedRequest": {
-            "uri": "https://bid.sparteo.com/s2s-auction",
+            "uri": "https://bid-test.sparteo.com/s2s-auction",
             "body": {
                 "id": "test-request-id",
                 "imp": [
