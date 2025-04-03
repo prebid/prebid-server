@@ -1,0 +1,126 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "company_id": "9876543"
+          }
+        }
+      }
+    ],
+    "device": {
+      "ua": "user-agent",
+      "ipv6": "2001:db8:3333:4444:5555:6666:7777:8888"
+    },
+    "site": {
+      "domain": "domain.com",
+      "page": "http://domain.com/page",
+      "ref": "https://example.com/page"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "method": "POST",
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Origin": [
+            "domain.com"
+          ],
+          "X-Openrtb-Version": [
+            "2.6"
+          ],
+          "User-Agent": [
+            "user-agent"
+          ],
+          "X-Forwarded-For": [
+            "2001:db8:3333:4444:5555:6666:7777:8888"
+          ],
+          "Referer": [
+            "https://example.com/page"
+          ]
+        },
+        "uri": "https://test.localhost.com?company_id=9876543",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "w": 300,
+                "h": 250
+              },
+              "ext": {
+                "bidder": {
+                  "company_id": "9876543"
+                }
+              }
+            }
+          ],
+          "device": {
+            "ua": "user-agent",
+            "ipv6": "2001:db8:3333:4444:5555:6666:7777:8888"
+          },
+          "site": {
+            "domain": "domain.com",
+            "page": "http://domain.com/page",
+            "ref": "https://example.com/page"
+          }
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "884f46aa-25ab-488a-bd7e-90e3a31a03e0",
+                  "crid": "b83e6e58-9342-4e8c-bf6a-4ad09b231547",
+                  "price": 10,
+                  "impid": "test-imp-id",
+                  "adm": "<iframe width=\"300\" height=\"250\"></iframe>",
+                  "mtype": 1
+                }
+              ]
+            }
+          ],
+          "seat": "madsense"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "884f46aa-25ab-488a-bd7e-90e3a31a03e0",
+            "crid": "b83e6e58-9342-4e8c-bf6a-4ad09b231547",
+            "price": 10,
+            "impid": "test-imp-id",
+            "adm": "<iframe width=\"300\" height=\"250\"></iframe>",
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ],
+      "seat": "madsense"
+    }
+  ]
+}
