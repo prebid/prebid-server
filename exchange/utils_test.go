@@ -3794,6 +3794,17 @@ func TestApplyFPD(t *testing.T) {
 			expectedRequest:           openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}, User: &openrtb2.User{ID: "UserId", EIDs: []openrtb2.EID{{Source: "source3"}, {Source: "source4"}}}},
 			fpdUserEIDsExisted:        false,
 		},
+		{
+			description: "req.Device defined; bidderFPD.Device defined; expect request.Device to be overriden by bidderFPD.Device",
+			inputFpd: map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData{
+				"bidderNormalized": {Device: &openrtb2.Device{Make: "DeviceMake"}},
+			},
+			inputBidderName:           "bidderFromRequest",
+			inputBidderCoreName:       "bidderNormalized",
+			inputBidderIsRequestAlias: false,
+			inputRequest:              openrtb2.BidRequest{Device: &openrtb2.Device{Make: "TestDeviceMake"}},
+			expectedRequest:           openrtb2.BidRequest{Device: &openrtb2.Device{Make: "DeviceMake"}},
+		},
 	}
 
 	for _, testCase := range testCases {
