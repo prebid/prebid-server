@@ -1,0 +1,25 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "imp1",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "pix_id": ""
+        }
+      }
+    ]
+  },
+  "httpCalls": [],
+  "expectedBidResponses": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Missing pix_id",
+      "comparison": "literal"
+    }
+  ]
+}
