@@ -108,7 +108,7 @@ type MockedSender struct {
 func (m *MockedSender) Send(payload []byte) error {
 	args := m.Called(payload)
 	if m.wait == true {
-		m.wg.Done()
+		defer m.wg.Done()
 	}
 	return args.Error(0)
 }
