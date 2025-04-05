@@ -106,10 +106,10 @@ type MockedSender struct {
 }
 
 func (m *MockedSender) Send(payload []byte) error {
+	args := m.Called(payload)
 	if m.wait == true {
 		m.wg.Done()
 	}
-	args := m.Called(payload)
 	return args.Error(0)
 }
 
@@ -723,9 +723,8 @@ func TestShutdownFlush(t *testing.T) {
 			},
 		},
 	}
-	wg := sync.WaitGroup{}
 	mockedSender := new(MockedSender)
-	mockedSender.wg = wg
+	mockedSender.wg = sync.WaitGroup{}
 	mockedSender.wg.Add(1)
 	mockedSender.wait = true
 	mockedSender.On("Send", mock.Anything).Return(nil)
