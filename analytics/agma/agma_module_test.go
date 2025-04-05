@@ -101,11 +101,14 @@ var mockValidAccounts = []config.AgmaAnalyticsAccount{
 
 type MockedSender struct {
 	mock.Mock
-	wg sync.WaitGroup
+	wg   sync.WaitGroup
+	wait bool
 }
 
 func (m *MockedSender) Send(payload []byte) error {
-	defer m.wg.Done()
+	if m.wait == true {
+		m.wg.Done()
+	}
 	args := m.Called(payload)
 	return args.Error(0)
 }
@@ -454,7 +457,6 @@ func TestShouldNotTrackLog(t *testing.T) {
 			clockMock.Add(2 * time.Minute)
 			mockedSender.AssertNumberOfCalls(t, "Send", 0)
 			assert.Zero(t, logger.eventCount)
-			logger.sigTermCh <- syscall.SIGTERM
 		})
 	}
 }
@@ -480,7 +482,6 @@ func TestRaceAllEvents(t *testing.T) {
 	assert.NoError(t, err)
 
 	go logger.start()
-	defer func() { logger.sigTermCh <- syscall.SIGTERM }()
 
 	logger.LogAuctionObject(&mockValidAuctionObject)
 	logger.LogVideoObject(&mockValidVideoObject)
@@ -556,7 +557,6 @@ func TestRaceBufferCount(t *testing.T) {
 	assert.NoError(t, err)
 
 	go logger.start()
-	defer func() { logger.sigTermCh <- syscall.SIGTERM }()
 	assert.Zero(t, logger.eventCount)
 
 	// Test EventCount Buffer
@@ -608,7 +608,6 @@ func TestBufferSize(t *testing.T) {
 	assert.NoError(t, err)
 
 	go logger.start()
-	defer func() { logger.sigTermCh <- syscall.SIGTERM }()
 
 	for i := 0; i < 50; i++ {
 		logger.LogAuctionObject(&mockValidAuctionObject)
@@ -644,7 +643,6 @@ func TestBufferTime(t *testing.T) {
 	assert.NoError(t, err)
 
 	go logger.start()
-	defer func() { logger.sigTermCh <- syscall.SIGTERM }()
 
 	for i := 0; i < 5; i++ {
 		logger.LogAuctionObject(&mockValidAuctionObject)
@@ -726,21 +724,20 @@ func TestShutdownFlush(t *testing.T) {
 		},
 	}
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	mockedSender := MockedSender{wg: wg}
+	mockedSender := new(MockedSender)
+	mockedSender.wg = wg
+	mockedSender.wg.Add(1)
+	mockedSender.wait = true
 	mockedSender.On("Send", mock.Anything).Return(nil)
-
 	clockMock := clock.NewMock()
-
 	logger, err := newAgmaLogger(cfg, mockedSender.Send, clockMock)
 	assert.NoError(t, err)
 
 	go logger.start()
-	defer func() { logger.sigTermCh <- syscall.SIGTERM }()
 	logger.LogAuctionObject(&mockValidAuctionObject)
 	logger.Shutdown()
-	wg.Wait()
 
+	mockedSender.wg.Wait()
 	mockedSender.AssertCalled(t, "Send", mock.Anything)
 	mockedSender.AssertNumberOfCalls(t, "Send", 1)
 }
