@@ -733,6 +733,7 @@ func TestShutdownFlush(t *testing.T) {
 	assert.NoError(t, err)
 
 	go logger.start()
+	defer func() { logger.sigTermCh <- syscall.SIGTERM }()
 	logger.LogAuctionObject(&mockValidAuctionObject)
 	logger.Shutdown()
 
