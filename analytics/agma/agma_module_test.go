@@ -1,7 +1,6 @@
 package agma
 
 import (
-	"bytes"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -102,20 +101,13 @@ var mockValidAccounts = []config.AgmaAnalyticsAccount{
 
 type MockedSender struct {
 	mock.Mock
+	wg sync.WaitGroup
 }
 
 func (m *MockedSender) Send(payload []byte) error {
+	defer m.wg.Done()
 	args := m.Called(payload)
 	return args.Error(0)
-}
-
-type MockLoggerReader struct {
-	mock.Mock
-}
-
-func (m *MockLoggerReader) Read(p []byte, buffer bytes.Buffer) (int, error) {
-	m.Called()
-	return 0, io.EOF
 }
 
 func TestConfigParsingError(t *testing.T) {
@@ -716,6 +708,11 @@ func TestRaceEnd2End(t *testing.T) {
 
 func TestShutdownFlush(t *testing.T) {
 	cfg := config.AgmaAnalytics{
+		Enabled: true,
+		Endpoint: config.AgmaAnalyticsHttpEndpoint{
+			Url:     "http://localhost:8000/event",
+			Timeout: "5s",
+		},
 		Buffers: config.AgmaAnalyticsBuffer{
 			EventCount: 1000,
 			BufferSize: "100mb",
@@ -728,29 +725,22 @@ func TestShutdownFlush(t *testing.T) {
 			},
 		},
 	}
-	mockedSender := new(MockedSender)
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	mockedSender := MockedSender{wg: wg}
+	mockedSender.On("Send", mock.Anything).Return(nil)
+
 	clockMock := clock.NewMock()
+
 	logger, err := newAgmaLogger(cfg, mockedSender.Send, clockMock)
 	assert.NoError(t, err)
-
-	mockReader := &MockLoggerReader{}
-	mockReader.On("Read", mock.Anything)
-	logger.read = mockReader.Read
 
 	go logger.start()
 	defer func() { logger.sigTermCh <- syscall.SIGTERM }()
 	logger.LogAuctionObject(&mockValidAuctionObject)
-	time.Sleep(100 * time.Millisecond)
 	logger.Shutdown()
+	wg.Wait()
 
-	mockReader.AssertCalled(t, "Read")
-	mockReader.AssertNumberOfCalls(t, "Read", 1)
+	mockedSender.AssertCalled(t, "Send", mock.Anything)
+	mockedSender.AssertNumberOfCalls(t, "Send", 1)
 }
-
-// buffer must implement:
-// type Reader interface {
-// 	Read(buf []byte) (n int, err error)
-// }
-// type Writer interface {
-//     Write(p []byte) (n int, err error)
-// }
