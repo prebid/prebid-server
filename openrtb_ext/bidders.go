@@ -17,6 +17,10 @@ type BidderName string
 
 var aliasBidderToParent map[BidderName]BidderName = map[BidderName]BidderName{}
 
+const (
+	BidderStatic BidderName = "static"
+)
+
 var coreBidderNames []BidderName = []BidderName{
 	Bidder33Across,
 	BidderAax,
@@ -223,6 +227,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderSovrn,
 	BidderSovrnXsp,
 	BidderSspBC,
+	BidderStatic,
 	BidderStroeerCore,
 	BidderTaboola,
 	BidderTappx,
