@@ -1,0 +1,151 @@
+{
+    "mockBidRequest": {
+      "id": "some-req-id",
+      "imp": [
+        {
+          "id": "some-imp-id",
+          "native": {
+            "request": "{\"ver\":\"1.1\",\"context\":1,\"contextsubtype\":11,\"plcmttype\":4,\"plcmtcnt\":1,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":500}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1,\"hmin\":1}},{\"id\":3,\"required\":0,\"data\":{\"type\":1,\"len\":200}},{\"id\":4,\"required\":0,\"data\":{\"type\":2,\"len\":15000}},{\"id\":5,\"required\":0,\"data\":{\"type\":6,\"len\":40}},{\"id\":6,\"required\":0,\"data\":{\"type\":500}}]}",
+            "ver": "1.1"
+          },
+          "ext": {
+            "bidder": {
+              "member": 103,
+              "inv_code": "abc"
+            }
+          }
+        }
+      ],
+      "site": {
+        "domain": "prebid.org",
+        "page": "prebid.org"
+      },
+      "device": {
+        "ip": "152.193.6.74"
+      },
+      "user": {
+        "id": "db089de9-a62e-4861-a881-0ff15e052516",
+        "buyeruid": "8299345306627569435"
+      },
+      "tmax": 500
+    },
+    "httpcalls": [
+      {
+        "expectedRequest": {
+          "uri": "http://ib.adnxs.com/openrtb2?member_id=103",
+          "body": {
+            "id": "some-req-id",
+            "imp": [
+              {
+                "id": "some-imp-id",
+                "native": {
+                  "request": "{\"ver\":\"1.1\",\"context\":1,\"contextsubtype\":11,\"plcmttype\":4,\"plcmtcnt\":1,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":500}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1,\"hmin\":1}},{\"id\":3,\"required\":0,\"data\":{\"type\":1,\"len\":200}},{\"id\":4,\"required\":0,\"data\":{\"type\":2,\"len\":15000}},{\"id\":5,\"required\":0,\"data\":{\"type\":6,\"len\":40}},{\"id\":6,\"required\":0,\"data\":{\"type\":500}}]}",
+                  "ver": "1.1"
+                },
+                "tagid": "abc",
+                "ext": {
+                  "appnexus": {}
+                }
+              }
+            ],
+            "ext": {
+              "appnexus": {
+                "hb_source": 5
+              }
+            },
+            "site": {
+              "domain": "prebid.org",
+              "page": "prebid.org"
+            },
+            "device": {
+              "ip": "152.193.6.74"
+            },
+            "user": {
+              "id": "db089de9-a62e-4861-a881-0ff15e052516",
+              "buyeruid": "8299345306627569435"
+            },
+            "tmax": 500
+          },
+          "impIDs":["some-imp-id"]
+        },
+        "mockResponse": {
+          "status": 200,
+          "body": {
+            "id": "some-req-id",
+            "seatbid": [
+              {
+                "bid": [
+                  {
+                    "id": "928185755156387460",
+                    "impid": "some-imp-id",
+                    "price": 1.000000,
+                    "adid": "69595837",
+                    "adm": "{}",
+                    "adomain": [
+                      "appnexus.com"
+                    ],
+                    "iurl": "http://nym1-ib.adnxs.com/cr?id=69595837",
+                    "cid": "958",
+                    "crid": "69595837",
+                    "cat": [
+                      "IAB3-1"
+                    ],
+                    "ext": {
+                      "appnexus": {
+                        "brand_id": 350,
+                        "brand_category_id": 350,
+                        "auction_id": 5607483846416358664,
+                        "bidder_id": 2,
+                        "bid_ad_type": 3,
+                        "deal_priority": 5
+                      }
+                    }
+                  }
+                ],
+                "seat": "958"
+              }
+            ],
+            "bidid": "8141327771600527856",
+            "cur": "USD"
+          }
+        }
+      }
+    ],
+    "expectedBidResponses": [
+      {
+        "currency": "USD",
+        "bids": [
+          {
+            "bid": {
+              "id": "928185755156387460",
+              "impid": "some-imp-id",
+              "price": 1,
+              "adm": "{}",
+              "adid": "69595837",
+              "adomain": [
+                "appnexus.com"
+              ],
+              "iurl": "http://nym1-ib.adnxs.com/cr?id=69595837",
+              "cid": "958",
+              "crid": "69595837",
+              "cat": [
+                "IAB3-1"
+              ],
+              "ext": {
+                "appnexus": {
+                  "brand_id": 350,
+                  "brand_category_id": 350,
+                  "auction_id": 5607483846416358664,
+                  "bidder_id": 2,
+                  "bid_ad_type": 3,
+                  "deal_priority": 5
+                }
+              }
+            },
+            "type": "native"
+          }
+        ]
+      }
+    ]
+  }
+  
