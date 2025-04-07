@@ -1,4 +1,4 @@
-module github.com/prebid/prebid-server/v3
+module github.com/skreepatch/prebid-server/v3
 
 go 1.23.0
 
