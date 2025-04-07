@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
@@ -57,14 +58,7 @@ var CALLER = Nexx360Caller{"Prebid-Server", "n/a"}
 func makeImps(impList []openrtb2.Imp) (MakeImpOutput, error) {
 	var output MakeImpOutput
 	var imps []openrtb2.Imp
-	var tagId string
-	var placement string
 	for idx, imp := range impList {
-		if imp.Banner == nil && imp.Video == nil && imp.Audio == nil && imp.Native == nil {
-			return MakeImpOutput{}, &errortypes.BadInput{
-				Message: fmt.Sprintf("Imp ID %s must have at least one of [Banner, Video, Audio, Native] defined", imp.ID),
-			}
-		}
 		var bidderExt adapters.ExtImpBidder
 		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			return MakeImpOutput{}, &errortypes.BadInput{
@@ -94,14 +88,12 @@ func makeImps(impList []openrtb2.Imp) (MakeImpOutput, error) {
 		imp.Ext = impExtJSON
 		imps = append(imps, imp)
 		if idx == 0 {
-			tagId = nexx360Ext.TagId 
-			placement = nexx360Ext.Placement
+			output.TagId = nexx360Ext.TagId 
+			output.Placement = nexx360Ext.Placement
 		}
 		
 	}
 	output.Imp = imps
-	output.TagId = tagId
-	output.Placement = placement
 	return output, nil
 }
 
@@ -114,13 +106,21 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 	request.Imp = makeImp.Imp
 	
-	uri := a.endpoint
-	if(makeImp.Placement != "") {
-		uri = uri + "?placement=" + makeImp.Placement
+	urlBuilder, err := url.Parse(a.endpoint)
+	if err != nil {
+		return nil, []error{err}
 	}
-	if(makeImp.TagId != "") {
-		uri = uri + "?tag_id=" + makeImp.TagId
+	 
+	query := url.Values{}
+	if makeImp.Placement != "" {
+			query["placement"] = []string{makeImp.Placement}
 	}
+	if makeImp.TagId != "" {
+			query["tag_id"] = []string{makeImp.TagId}
+	}
+	urlBuilder.RawQuery = query.Encode()
+
+	uri := urlBuilder.String()
 
 
 	reqExt, err := makeReqExt(request)
