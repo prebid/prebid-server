@@ -1,0 +1,12 @@
+endpoint: "https://ads.madsense.io/pbs"
+maintainer:
+  email: "prebid@madsense.io"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
