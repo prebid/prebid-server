@@ -23,6 +23,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	gpplib "github.com/prebid/go-gpp"
 	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/analytics"
 	analyticsBuild "github.com/prebid/prebid-server/v3/analytics/build"
 	"github.com/prebid/prebid-server/v3/config"
@@ -173,6 +174,7 @@ func runJsonBasedTest(t *testing.T, filename, desc string) {
 		cfg.BlockedApps = test.Config.BlockedApps
 		cfg.BlockedAppsLookup = test.Config.getBlockedAppLookup()
 		cfg.AccountRequired = test.Config.AccountRequired
+		cfg.AccountDefaults.PreferredMediaType = test.Config.PreferredMediaType
 	}
 	cfg.MarshalAccountDefaults()
 	test.endpointType = OPENRTB_ENDPOINT
@@ -196,7 +198,7 @@ func runJsonBasedTest(t *testing.T, filename, desc string) {
 				t.Fatalf("Unexpected bidder %s has an expected mock bidder request. Test file: %s", bidder, filename)
 			}
 			aa := a.(*exchange.BidderAdapter)
-			ma := aa.Bidder.(*mockAdapter)
+			ma := aa.Bidder.(*adapters.InfoAwareBidder).Bidder.(*mockAdapter)
 			assert.JSONEq(t, string(req), string(ma.requestData[0]), "Not the expected mock bidder request for bidder %s. Test file: %s", bidder, filename)
 		}
 	}
