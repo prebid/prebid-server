@@ -19,8 +19,8 @@ type adapter struct {
 }
 
 type MakeImpOutput struct {
-	Imp []openrtb2.Imp
-	TagId string
+	Imp       []openrtb2.Imp
+	TagId     string
 	Placement string
 }
 
@@ -29,7 +29,7 @@ type Ext struct {
 }
 
 type ImpNexx360Ext struct {
-	TagId string `json:"tagId,omitempty"`
+	TagId     string `json:"tagId,omitempty"`
 	Placement string `json:"placement,omitempty"`
 }
 
@@ -49,7 +49,6 @@ type ReqNexx360Ext struct {
 type Nexx360ResBidExt struct {
 	BidType string `json:"bidType,omitempty"`
 }
-
 
 // CALLER Info used to track Prebid Server
 // as one of the hops in the request to exchange
@@ -77,7 +76,6 @@ func makeImps(impList []openrtb2.Imp) (MakeImpOutput, error) {
 		impExt.Nexx360.TagId = nexx360Ext.TagId
 		impExt.Nexx360.Placement = nexx360Ext.Placement
 
-
 		impExtJSON, err := json.Marshal(impExt)
 		if err != nil {
 			return MakeImpOutput{}, &errortypes.BadInput{
@@ -88,47 +86,44 @@ func makeImps(impList []openrtb2.Imp) (MakeImpOutput, error) {
 		imp.Ext = impExtJSON
 		imps = append(imps, imp)
 		if idx == 0 {
-			output.TagId = nexx360Ext.TagId 
+			output.TagId = nexx360Ext.TagId
 			output.Placement = nexx360Ext.Placement
 		}
-		
+
 	}
 	output.Imp = imps
 	return output, nil
 }
 
-
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var makeImp, err = makeImps(request.Imp);
+	var makeImp, err = makeImps(request.Imp)
 	if err != nil {
 		return nil, []error{err}
 	}
 
 	request.Imp = makeImp.Imp
-	
+
 	urlBuilder, err := url.Parse(a.endpoint)
 	if err != nil {
 		return nil, []error{err}
 	}
-	 
+
 	query := url.Values{}
 	if makeImp.Placement != "" {
-			query["placement"] = []string{makeImp.Placement}
+		query["placement"] = []string{makeImp.Placement}
 	}
 	if makeImp.TagId != "" {
-			query["tag_id"] = []string{makeImp.TagId}
+		query["tag_id"] = []string{makeImp.TagId}
 	}
 	urlBuilder.RawQuery = query.Encode()
 
 	uri := urlBuilder.String()
-
 
 	reqExt, err := makeReqExt(request)
 	if err != nil {
 		return nil, []error{err}
 	}
 	request.Ext = reqExt
-
 
 	// Last Step
 	reqJSON, err := json.Marshal(request)
@@ -146,7 +141,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		Body:    reqJSON,
 		Headers: headers,
 		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
-	};
+	}
 
 	return []*adapters.RequestData{adapter}, nil
 }
@@ -202,7 +197,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, externalRequest *adapte
 	var errors []error
 	for _, seatBid := range response.SeatBid {
 		for i, bid := range seatBid.Bid {
-			
+
 			bidType, err := getBidType(bid)
 			if err != nil {
 				errors = append(errors, err)
@@ -220,24 +215,24 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, externalRequest *adapte
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(Bids))
 	bidResponse.Bids = Bids
 	bidResponse.Currency = response.Cur
-	
+
 	return bidResponse, errors
 }
 
 func getBidType(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 	var bidExt Nexx360ResBidExt
 	err := jsonutil.Unmarshal(bid.Ext, &bidExt)
-	if(err == nil) {
+	if err == nil {
 		if bidExt.BidType == "video" {
 			return openrtb_ext.BidTypeVideo, nil
 		}
 		if bidExt.BidType == "audio" {
 			return openrtb_ext.BidTypeAudio, nil
 		}
-		if (bidExt.BidType == "native") {
+		if bidExt.BidType == "native" {
 			return openrtb_ext.BidTypeNative, nil
 		}
-		if (bidExt.BidType == "banner") {
+		if bidExt.BidType == "banner" {
 			return openrtb_ext.BidTypeBanner, nil
 		}
 	}
@@ -246,6 +241,6 @@ func getBidType(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 	}
 }
 
-func  Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	return &adapter{endpoint: config.Endpoint}, nil
 }
