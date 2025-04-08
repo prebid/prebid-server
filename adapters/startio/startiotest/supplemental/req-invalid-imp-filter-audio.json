@@ -1,0 +1,39 @@
+{
+  "mockBidRequest": {
+    "id": "auction-req-id-8cd85aed-25a6-4db0",
+    "imp": [
+      {
+        "id": "imp-id-4-27b9e54b56de702",
+        "ext": {
+          "prebid": {
+            "bidder": {
+              "startio": {}
+            }
+          }
+        },
+        "audio": {
+          "ver": "1.0",
+          "request": "{\"adunit\":2,\"assets\":[{\"id\":3,\"audio\":{\"dur\":30,\"min\":15,\"max\":60},\"required\":1},{\"id\":0,\"required\":1,\"title\":{\"len\":25}},{\"data\":{\"len\":25,\"type\":1},\"id\":4,\"required\":1},{\"data\":{\"len\":140,\"type\":2},\"id\":6,\"required\":1}],\"context\":2,\"layout\":1,\"contextsubtype\":15,\"plcmtcnt\":1,\"plcmttype\":3,\"ver\":\"1.0\",\"ext\":{\"audio\":{\"w\":320,\"h\":50}}}"
+        }
+      }
+    ],
+    "site": {
+      "page": "https://example.com",
+      "publisher": {
+        "id": "publisherid001"
+      },
+      "id": "4204204209"
+    },
+    "device": {
+      "ua": "Mozilla/5.0"
+    }
+  },
+  "httpCalls": [],
+  "expectedBidResponses": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "invalid bid request: at least one banner, video, or native impression is required.",
+      "comparison": "startswith"
+    }
+  ]
+}

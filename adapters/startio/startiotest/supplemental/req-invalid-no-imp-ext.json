@@ -1,0 +1,22 @@
+{
+    "mockBidRequest": {
+      "id": "auction-req-id-8cd85aed-25a6-4db0",
+      "site": {
+        "page": "https://example.com",
+        "publisher": {
+          "id": "publisherid001"
+        },
+        "id": "4204204209"
+      },
+      "device": {
+        "ua": "Mozilla/5.0"
+      }
+    },
+    "httpCalls": [],
+    "expectedMakeRequestsErrors": [
+      {
+        "value": "invalid bid request: at least one banner, video, or native impression is required.",
+        "comparison": "startswith"
+      }
+    ]
+}

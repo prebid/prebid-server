@@ -205,6 +205,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/sovrn"
 	"github.com/prebid/prebid-server/v3/adapters/sovrnXsp"
 	"github.com/prebid/prebid-server/v3/adapters/sspBC"
+	"github.com/prebid/prebid-server/v3/adapters/startio"
 	"github.com/prebid/prebid-server/v3/adapters/stroeerCore"
 	"github.com/prebid/prebid-server/v3/adapters/taboola"
 	"github.com/prebid/prebid-server/v3/adapters/tappx"
@@ -455,6 +456,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderSovrn:             sovrn.Builder,
 		openrtb_ext.BidderSovrnXsp:          sovrnXsp.Builder,
 		openrtb_ext.BidderSspBC:             sspBC.Builder,
+		openrtb_ext.BidderStartIO:           startio.Builder,
 		openrtb_ext.BidderStroeerCore:       stroeerCore.Builder,
 		openrtb_ext.BidderTaboola:           taboola.Builder,
 		openrtb_ext.BidderTappx:             tappx.Builder,
