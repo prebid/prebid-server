@@ -67,6 +67,13 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 			network = adnuntiusExt.Network
 		}
 
+		// Remove when we support video.
+		if imp.Video != nil {
+			return nil, []error{&errortypes.BadInput{
+				Message: fmt.Sprintf("ignoring imp id=%s, Adnuntius supports only native and banner", imp.ID),
+			}}
+		}
+
 		if imp.Banner != nil {
 			adUnit := generateAdUnit(imp, adnuntiusExt, "banner")
 			adUnit.AdType = ""
@@ -107,8 +114,8 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 		site = ortbRequest.Site.Page
 	}
 
-	extSite, erro := getSiteExtAsKv(&ortbRequest)
-	if erro != nil {
+	extSite, err := getSiteExtAsKv(&ortbRequest)
+	if err != nil {
 		return nil, []error{fmt.Errorf("failed to parse site Ext: %v", err)}
 	}
 
@@ -233,9 +240,18 @@ func generateBidResponse(adnResponse *AdnResponse, request *openrtb2.BidRequest)
 			ad := adunit.Ads[0]
 			html := adunit.Html
 			var mType openrtb2.MarkupType = openrtb2.MarkupBanner
+			var native []byte
 
 			currency = ad.Bid.Currency
-			native, _, _, _ := jsonparser.Get(adunit.NativeJson, "ortb")
+			if adunit.NativeJson != nil {
+				nativeJson, _, _, nativeErr := jsonparser.Get(adunit.NativeJson, "ortb")
+				if nativeErr != nil {
+					return nil, []error{&errortypes.BadServerResponse{
+						Message: fmt.Sprintf("Failed to parse native json where imp id=%s", imp.ID),
+					}}
+				}
+				native = nativeJson
+			}
 
 			if native != nil {
 				html = string(native)

@@ -12,6 +12,10 @@ import (
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
+type RequestExt struct {
+	Bidder adnRequestAdunit `json:"bidder"`
+}
+
 func setHeaders(ortbRequest openrtb2.BidRequest) http.Header {
 
 	headers := http.Header{}
@@ -107,11 +111,11 @@ func getImpSizes(imp openrtb2.Imp, bidType string) [][]int64 {
 	return nil
 }
 
-func getSiteExtAsKv(request *openrtb2.BidRequest) (siteExt, error) {
+func getSiteExtAsKv(request *openrtb2.BidRequest) (siteExt, []error) {
 	var extSite siteExt
 	if request.Site != nil && request.Site.Ext != nil {
 		if err := jsonutil.Unmarshal(request.Site.Ext, &extSite); err != nil {
-			return extSite, fmt.Errorf("failed to parse ExtSite in Adnuntius: %v", err)
+			return extSite, []error{fmt.Errorf("failed to parse site ext in Adnuntius: %v", err)}
 		}
 	}
 	return extSite, nil

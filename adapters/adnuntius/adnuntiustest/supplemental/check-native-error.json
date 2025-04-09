@@ -1,0 +1,80 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "site": {
+            "page": "prebid.org"
+        },
+        "imp": [
+            {
+                "id": "test-native-id",
+                "native": {
+				    "request": "{\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]},{\"event\":2,\"methods\":[1]}],\"assets\":[{\"id\":789,\"required\":1,\"title\":{\"len\":140}},{\"id\":1,\"required\":1,\"img\":{\"type\":3,\"w\":250,\"h\":250}},{\"id\":122,\"required\":1,\"img\":{\"type\":1,\"w\":15,\"h\":15}},{\"id\":2,\"required\":1,\"data\":{\"type\":1}},{\"id\":3,\"required\":1,\"data\":{\"type\":2}},{\"id\":4,\"required\":0,\"data\":{\"type\":3}},{\"id\":5,\"required\":0,\"data\":{\"type\":4}},{\"id\":6,\"required\":0,\"data\":{\"type\":5}},{\"id\":7,\"required\":0,\"data\":{\"type\":6}},{\"id\":8,\"required\":0,\"data\":{\"type\":7}},{\"id\":9,\"required\":0,\"data\":{\"type\":8}},{\"id\":10,\"required\":0,\"data\":{\"type\":9}},{\"id\":11,\"required\":0,\"data\":{\"type\":10}},{\"id\":12,\"required\":0,\"data\":{\"type\":11}}]}"
+                },
+                "ext": {
+                    "bidder": {
+                        "auId": "123"
+                    }
+                }
+            }
+        ]
+    },
+
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "http://whatever.url?format=prebidServer&tzo=0",
+                "body": {
+                    "adUnits": [
+                        {
+                            "auId": "123",
+                            "targetId": "123-test-native-id:native",
+                            "adType": "NATIVE",
+                            "nativeRequest":{"ortb":{"eventtrackers":[{"event":1,"methods":[1,2]},{"event":2,"methods":[1]}],"assets":[{"id":789,"required":1,"title":{"len":140}},{"id":1,"required":1,"img":{"type":3,"w":250,"h":250}},{"id":122,"required":1,"img":{"type":1,"w":15,"h":15}},{"id":2,"required":1,"data":{"type":1}},{"id":3,"required":1,"data":{"type":2}},{"id":4,"required":0,"data":{"type":3}},{"id":5,"required":0,"data":{"type":4}},{"id":6,"required":0,"data":{"type":5}},{"id":7,"required":0,"data":{"type":6}},{"id":8,"required":0,"data":{"type":7}},{"id":9,"required":0,"data":{"type":8}},{"id":10,"required":0,"data":{"type":9}},{"id":11,"required":0,"data":{"type":10}},{"id":12,"required":0,"data":{"type":11}}]}}
+                        }
+                    ],
+                    "context": "prebid.org",
+                    "metaData": {}
+                },
+                "impIDs":["test-native-id"]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "adUnits": [
+                        {
+                            "auId": "0000000000000123",
+                            "targetId": "123-test-native-id:native",
+                            "matchedAdCount": 1,
+                            "html": "<ADCODE>",
+                            "nativeJson": {},
+                            "responseId": "adn-rsp-900646517",
+                            "ads": [
+                                {
+                                    "destinationUrls": {
+                                        "url": "http://www.google.com"
+                                    },
+                                    "advertiserDomains": ["google.com"],
+                                    "bid": {
+                                        "amount": 20.0,
+                                        "currency": "NOK"
+                                    },
+                                    "adId": "adn-id-1559784094",
+                                    "creativeWidth": "980",
+                                    "creativeHeight": "240",
+                                    "creativeId": "jn9hpzvlsf8cpdmm",
+                                    "lineItemId": "q7y9qm5b0xt9htrv"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+	"expectedMakeBidsErrors": [
+		{
+			"value": "Failed to parse native json where imp id=test-native-id",
+			"comparison": "literal"
+		}
+	]
+}
