@@ -91,6 +91,8 @@ type ExtRequestPrebid struct {
 	// - basic: excludes debugmessages and analytic_tags from output
 	// any other value or an empty string disables trace output at all.
 	Trace string `json:"trace,omitempty"`
+
+	BidderControls map[BidderName]BidderControl `json:"biddercontrols,omitempty"`
 }
 
 type AdServerTarget struct {
@@ -366,6 +368,10 @@ type ExtMultiBid struct {
 	Bidders                []string `json:"bidders,omitempty"`
 	MaxBids                *int     `json:"maxbids,omitempty"`
 	TargetBidderCodePrefix string   `json:"targetbiddercodeprefix,omitempty"`
+}
+
+type BidderControl struct {
+	PreferredMediaType BidType `json:"prefmtype"`
 }
 
 func (m ExtMultiBid) String() string {

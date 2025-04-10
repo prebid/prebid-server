@@ -148,6 +148,7 @@ type ExtraRequestInfo struct {
 	PbsEntryPoint              metrics.RequestType
 	GlobalPrivacyControlHeader string
 	CurrencyConversions        currency.Conversions
+	PreferredMediaType         openrtb_ext.BidType
 }
 
 func NewExtraRequestInfo(c currency.Conversions) ExtraRequestInfo {

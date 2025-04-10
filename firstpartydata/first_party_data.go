@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	jsonpatch "gopkg.in/evanphx/json-patch.v4"
+	jsonpatch "gopkg.in/evanphx/json-patch.v5"
 
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"

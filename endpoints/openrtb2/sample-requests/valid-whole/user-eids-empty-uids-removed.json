@@ -1,0 +1,101 @@
+{
+  "description": "Bid request where a request.user.eids.uids are removed when uid is empty, ensuring no bids are returned.",
+  "mockBidRequest": {
+    "id": "anyRequestID",
+    "site": {
+      "page": "prebid.org",
+      "publisher": {
+        "id": "anyPublisher"
+      }
+    },
+    "imp": [
+      {
+        "id": "anyImpID",
+        "ext": {
+          "appnexus": {
+            "placementId": 42
+          }
+        },
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 300
+            }
+          ]
+        }
+      }
+    ],
+    "tmax": 1000,
+    "user": {
+      "eids": [
+        {
+          "source": "source-1",
+          "uids": [
+            {
+              "id": ""
+            },
+            {
+              "id": "id-a"
+            }
+          ]
+        },
+        {
+          "source": "source-2",
+          "uids": [
+            {
+              "id": "id-b"
+            }
+          ]
+        },
+        {
+          "source": "source-3",
+          "uids": [
+            {
+              "id": ""
+            },
+            {
+              "id": ""
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "expectedReturnCode": 200,
+  "expectedBidResponse": {
+    "id": "anyRequestID",
+    "cur": "USD",
+    "seatbid": [],
+    "ext": {
+      "warnings": {
+        "general": [
+          {
+            "code": 10013,
+            "message": "debug turned off for account"
+          },
+          {
+            "code": 10013,
+            "message": "request.user.eids[0].uids[0] removed due to empty ids"
+          },
+          {
+            "code": 10013,
+            "message": "request.user.eids[2].uids[0] removed due to empty ids"
+          },
+          {
+            "code": 10013,
+            "message": "request.user.eids[2].uids[1] removed due to empty ids"
+          },
+          {
+            "code": 10013,
+            "message": "request.user.eids[2] (source: source-3) removed due to empty uids"
+          }
+        ]
+      }
+    }
+  }
+}
