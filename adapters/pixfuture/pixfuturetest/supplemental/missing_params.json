@@ -9,17 +9,86 @@
           "h": 250
         },
         "ext": {
-          "pix_id": ""
+          "bidder": {
+            "pix_id": ""
+          }
         }
       }
     ]
   },
-  "httpCalls": [],
-  "expectedBidResponses": [],
-  "expectedMakeRequestsErrors": [
+  "httpCalls": [
     {
-      "value": "Missing pix_id",
-      "comparison": "literal"
+      "expectedRequest": {
+        "uri": "http://any.url",
+        "headers": {
+          "Content-Type": ["application/json"],
+          "Accept": ["application/json"]
+        },
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "imp1",
+              "banner": {
+                "w": 300,
+                "h": 250
+              },
+              "ext": {
+                "bidder": {
+                  "pix_id": ""
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": ["imp1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-response-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid1",
+                  "impid": "imp1",
+                  "price": 1.23,
+                  "adm": "<div>Banner Ad</div>",
+                  "ext": {
+                    "prebid": {
+                      "type": "banner"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
     }
-  ]
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "bid1",
+            "impid": "imp1",
+            "price": 1.23,
+            "adm": "<div>Banner Ad</div>",
+            "ext": {
+              "prebid": {
+                "type": "banner"
+              }
+            }
+          },
+          "type": "banner"
+        }
+      ],
+      "currency": "USD"
+    }
+  ],
+  "expectedMakeRequestsErrors": []
 }
