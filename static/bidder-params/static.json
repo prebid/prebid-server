@@ -1,0 +1,22 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Static Bidder Params",
+    "description": "A static bidder that always returns a configured bid.",
+    "type": "object",
+    "properties": {
+        "bid": {
+            "type": "object",
+            "properties": {
+                "id": { "type": "string" },
+                "impid": { "type": "string" },
+                "price": { "type": "number" },
+                "adm": { "type": "string" },
+                "crid": { "type": "string" },
+                "w": { "type": "integer" },
+                "h": { "type": "integer" }
+            },
+            "required": ["id", "impid", "price", "adm", "crid", "w", "h"]
+        }
+    },
+    "required": ["bid"]
+}

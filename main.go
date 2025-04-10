@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"net/http"
 	"path/filepath"
 	"runtime"
@@ -53,6 +54,7 @@ func main() {
 	if err != nil {
 		glog.Exitf("prebid-server failed: %v", err)
 	}
+
 }
 
 const configFileName = "pbs"
@@ -61,6 +63,9 @@ const infoDirectory = "./static/bidder-info"
 func loadConfig(bidderInfos config.BidderInfos) (*config.Configuration, error) {
 	v := viper.New()
 	config.SetupViper(v, configFileName, bidderInfos)
+
+	fmt.Println("📣 Loaded config file:", v.ConfigFileUsed())
+
 	return config.New(v, bidderInfos, openrtb_ext.NormalizeBidderName)
 }
 

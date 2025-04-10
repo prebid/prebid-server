@@ -1,0 +1,24 @@
+{
+  "id": "req-6060",
+  "banner": {
+    "format": [
+      {
+        "w": 300,
+        "h": 250
+      },
+      {
+        "w": 300,
+        "h": 600
+      }
+    ]
+  },
+  "ext": {
+    "prebid": {
+      "bidder": {
+        "appnexus": {
+          "placement_id": 12883451
+        }
+      }
+    }
+  }
+}
