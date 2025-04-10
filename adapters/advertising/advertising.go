@@ -1,4 +1,4 @@
-package imds
+package advertising
 
 import (
 	"encoding/json"
@@ -31,7 +31,7 @@ type ReqExt struct {
 	SeatId string `json:"seatId"`
 }
 
-// Builder builds a new instance of the Imds adapter for the given bidder with the given config.
+// Builder builds a new instance of the Advertising.com adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
@@ -61,7 +61,7 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestDa
 	var errs []error
 	var validImps []openrtb2.Imp
 	var re *ReqExt
-	var firstExtImp *openrtb_ext.ExtImpImds = nil
+	var firstExtImp *openrtb_ext.ExtImpAdvertising = nil
 
 	for _, imp := range request.Imp {
 		validExtImpObj, err := getExtImpObj(&imp) // getExtImpObj returns {seatId:"", tagId:""}
@@ -131,11 +131,11 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestDa
 }
 
 // Builds enpoint url based on adapter-specific pub settings from imp.ext
-func (adapter *adapter) buildEndpointURL(params *openrtb_ext.ExtImpImds) (string, error) {
+func (adapter *adapter) buildEndpointURL(params *openrtb_ext.ExtImpAdvertising) (string, error) {
 	return macros.ResolveMacros(adapter.EndpointTemplate, macros.EndpointTemplateParams{AccountID: url.QueryEscape(params.SeatId), SourceId: url.QueryEscape(adapterVersion)})
 }
 
-func getExtImpObj(imp *openrtb2.Imp) (*openrtb_ext.ExtImpImds, error) {
+func getExtImpObj(imp *openrtb2.Imp) (*openrtb_ext.ExtImpAdvertising, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
@@ -143,14 +143,14 @@ func getExtImpObj(imp *openrtb2.Imp) (*openrtb_ext.ExtImpImds, error) {
 		}
 	}
 
-	var imdsExt openrtb_ext.ExtImpImds
-	if err := jsonutil.Unmarshal(bidderExt.Bidder, &imdsExt); err != nil {
+	var advertisingExt openrtb_ext.ExtImpAdvertising
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &advertisingExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
 
-	return &imdsExt, nil
+	return &advertisingExt, nil
 }
 
 // MakeBids make the bids for the bid response.
