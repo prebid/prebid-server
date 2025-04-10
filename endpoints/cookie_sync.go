@@ -57,6 +57,7 @@ func NewCookieSyncEndpoint(
 	tcf2CfgBuilder gdpr.TCF2ConfigBuilder,
 	metrics metrics.MetricsEngine,
 	analyticsRunner analytics.Runner,
+	gdprAnalyticsPolicyBuilder gdpr.PrivacyPolicyBuilder,
 	accountsFetcher stored_requests.AccountFetcher,
 	bidders map[string]openrtb_ext.BidderName) HTTPRouterHandler {
 
@@ -69,11 +70,12 @@ func NewCookieSyncEndpoint(
 		chooser: usersync.NewChooser(syncersByBidder, bidderHashSet, config.BidderInfos),
 		config:  config,
 		privacyConfig: usersyncPrivacyConfig{
-			gdprConfig:             config.GDPR,
-			gdprPermissionsBuilder: gdprPermsBuilder,
-			tcf2ConfigBuilder:      tcf2CfgBuilder,
-			ccpaEnforce:            config.CCPA.Enforce,
-			bidderHashSet:          bidderHashSet,
+			gdprConfig:                 config.GDPR,
+			gdprPermissionsBuilder:     gdprPermsBuilder,
+			gdprAnalyticsPolicyBuilder: gdprAnalyticsPolicyBuilder,
+			tcf2ConfigBuilder:          tcf2CfgBuilder,
+			ccpaEnforce:                config.CCPA.Enforce,
+			bidderHashSet:              bidderHashSet,
 		},
 		metrics:         metrics,
 		pbsAnalytics:    analyticsRunner,
@@ -83,17 +85,25 @@ func NewCookieSyncEndpoint(
 }
 
 type cookieSyncEndpoint struct {
-	chooser         usersync.Chooser
-	config          *config.Configuration
-	privacyConfig   usersyncPrivacyConfig
-	metrics         metrics.MetricsEngine
-	pbsAnalytics    analytics.Runner
-	accountsFetcher stored_requests.AccountFetcher
-	time            timeutil.Time
+	chooser                    usersync.Chooser
+	config                     *config.Configuration
+	privacyConfig              usersyncPrivacyConfig
+	metrics                    metrics.MetricsEngine
+	pbsAnalytics               analytics.Runner
+	gdprAnalyticsPolicyBuilder gdpr.PrivacyPolicyBuilder
+	accountsFetcher            stored_requests.AccountFetcher
+	time                       timeutil.Time
 }
 
 func (c *cookieSyncEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	// create an allow all analytics policy object
+	// var analyticsPolicy gdpr.PrivacyPolicy
+	// analyticsPolicy = &gdpr.AllowAllAnalytics{}
+
 	request, privacyMacros, account, err := c.parseRequest(r)
+
+	// activityControl := request.Privacy.
+
 	c.setCookieDeprecationHeader(w, r, account)
 	if err != nil {
 		c.writeParseRequestErrorMetrics(err)
@@ -175,6 +185,8 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, ma
 	tcf2Cfg := c.privacyConfig.tcf2ConfigBuilder(c.privacyConfig.gdprConfig.TCF2, account.GDPR)
 	gdprPerms := c.privacyConfig.gdprPermissionsBuilder(tcf2Cfg, gdprRequestInfo)
 
+	gdprAnalyticsPolicy := c.privacyConfig.gdprAnalyticsPolicyBuilder(tcf2Cfg, gdprSignal, gdprRequestInfo.Consent)
+
 	limit := math.MaxInt
 	if request.Limit != nil {
 		limit = *request.Limit
@@ -190,6 +202,7 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, ma
 		Limit: limit,
 		Privacy: usersyncPrivacy{
 			gdprPermissions:  gdprPerms,
+			gdprAnalyticsPolicy: gdprAnalyticsPolicy,
 			ccpaParsedPolicy: ccpaParsedPolicy,
 			activityControl:  activityControl,
 			activityRequest:  privacy.NewRequestFromPolicies(privacyPolicies),
@@ -607,15 +620,17 @@ type cookieSyncResponseDebug struct {
 }
 
 type usersyncPrivacyConfig struct {
-	gdprConfig             config.GDPR
-	gdprPermissionsBuilder gdpr.PermissionsBuilder
-	tcf2ConfigBuilder      gdpr.TCF2ConfigBuilder
-	ccpaEnforce            bool
-	bidderHashSet          map[string]struct{}
+	gdprConfig                 config.GDPR
+	gdprPermissionsBuilder     gdpr.PermissionsBuilder
+	gdprAnalyticsPolicyBuilder gdpr.PrivacyPolicyBuilder
+	tcf2ConfigBuilder          gdpr.TCF2ConfigBuilder
+	ccpaEnforce                bool
+	bidderHashSet              map[string]struct{}
 }
 
 type usersyncPrivacy struct {
 	gdprPermissions  gdpr.Permissions
+	gdprAnalyticsPolicy gdpr.PrivacyPolicy 
 	ccpaParsedPolicy ccpa.ParsedPolicy
 	activityControl  privacy.ActivityControl
 	activityRequest  privacy.ActivityRequest
@@ -642,6 +657,17 @@ func (p usersyncPrivacy) ActivityAllowsUserSync(bidder string) bool {
 		privacy.ActivitySyncUser,
 		privacy.Component{Type: privacy.ComponentTypeBidder, Name: bidder},
 		p.activityRequest)
+}
+
+func (p usersyncPrivacy) ActivityAllowAnalytics(name string) bool {
+	return p.activityControl.Allow(
+		privacy.ActivityReportAnalytics,
+		privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: name},
+		privacy.ActivityRequest{}) // TODO: is this correct?
+}
+
+func (p usersyncPrivacy) GDPRAllowsAnalytics(name string) bool {
+	return p.gdprAnalyticsPolicy.Allow(name)
 }
 
 func (p usersyncPrivacy) GDPRInScope() bool {
