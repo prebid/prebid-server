@@ -1,0 +1,116 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "company_id": "9876543"
+          }
+        }
+      }
+    ],
+    "device": {
+      "ua": "user-agent",
+      "ip": "1.2.3.4"
+    },
+    "app": {
+      "bundle": "54321"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "method": "POST",
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "X-Openrtb-Version": [
+            "2.6"
+          ],
+          "User-Agent": [
+            "user-agent"
+          ],
+          "X-Forwarded-For": [
+            "1.2.3.4"
+          ]
+        },
+        "uri": "https://test.localhost.com?company_id=9876543",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "w": 300,
+                "h": 250
+              },
+              "ext": {
+                "bidder": {
+                  "company_id": "9876543"
+                }
+              }
+            }
+          ],
+          "device": {
+            "ua": "user-agent",
+            "ip": "1.2.3.4"
+          },
+          "app": {
+            "bundle": "54321"
+          }
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "884f46aa-25ab-488a-bd7e-90e3a31a03e0",
+                  "crid": "b83e6e58-9342-4e8c-bf6a-4ad09b231547",
+                  "price": 10,
+                  "impid": "test-imp-id",
+                  "adm": "<img src=\"demo ad\" width=\"300\" height=\"250\">",
+                  "mtype": 1
+                }
+              ]
+            }
+          ],
+          "seat": "madsense"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "884f46aa-25ab-488a-bd7e-90e3a31a03e0",
+            "crid": "b83e6e58-9342-4e8c-bf6a-4ad09b231547",
+            "price": 10,
+            "impid": "test-imp-id",
+            "adm": "<img src=\"demo ad\" width=\"300\" height=\"250\">",
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ],
+      "seat": "madsense"
+    }
+  ]
+}

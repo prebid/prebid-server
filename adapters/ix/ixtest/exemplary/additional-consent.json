@@ -57,6 +57,12 @@
                                 "consented_providers": [1]
                             }
                         }
+                    },
+                    "ext": {
+                         "ixdiag": {
+                            "pbsp": "go",
+                            "pbsv": "unknown"
+                         }
                     }
                 },
                 "impIDs":["test-imp-id"]

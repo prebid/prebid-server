@@ -164,27 +164,32 @@
                 {
                   "id": "banner-bid-1",
                   "impid": "banner-imp-1",
-                  "price": 0.1
+                  "price": 0.1,
+                  "mtype": 1
                 },
                 {
                   "id": "native-bid-1",
                   "impid": "native-imp-1",
-                  "price": 0.1
+                  "price": 0.1,
+                  "mtype": 4
                 },
                 {
                   "id": "banner-bid-2",
                   "impid": "banner-imp-2",
-                  "price": 0.2
+                  "price": 0.2,
+                  "mtype": 1
                 },
                 {
                   "id": "banner-native-bid-1",
                   "impid": "banner-native-imp-1",
-                  "price": 0
+                  "price": 0,
+                  "mtype": 4
                 },
                 {
                   "id": "multi-type-bid",
                   "impid": "multi-type-imp",
-                  "price": 0
+                  "price": 0,
+                  "mtype": 2
                 }
               ]
             }
@@ -222,7 +227,8 @@
                 {
                   "id": "video-bid-1",
                   "impid": "video-imp-1",
-                  "price": 0.1
+                  "price": 0.1,
+                  "mtype": 2
                 }
               ]
             }
@@ -266,7 +272,8 @@
                 {
                   "id": "video-bid-2",
                   "impid": "video-imp-2",
-                  "price": 0.2
+                  "price": 0.2,
+                  "mtype": 2
                 }
               ]
             }
@@ -308,7 +315,8 @@
                 {
                   "id": "video-native-bid-1",
                   "impid": "video-native-imp-1",
-                  "price": 0.0
+                  "price": 0.0,
+                  "mtype": 4
                 }
               ]
             }
@@ -326,7 +334,8 @@
           "bid": {
             "id": "banner-bid-1",
             "impid": "banner-imp-1",
-            "price": 0.1
+            "price": 0.1,
+            "mtype": 1
           },
           "type": "banner"
         },
@@ -334,7 +343,8 @@
           "bid": {
             "id": "native-bid-1",
             "impid": "native-imp-1",
-            "price": 0.1
+            "price": 0.1,
+            "mtype": 4
           },
           "type": "native"
         },
@@ -342,7 +352,8 @@
           "bid": {
             "id": "banner-bid-2",
             "impid": "banner-imp-2",
-            "price": 0.2
+            "price": 0.2,
+            "mtype": 1
           },
           "type": "banner"
         },
@@ -350,17 +361,19 @@
           "bid": {
             "id": "banner-native-bid-1",
             "impid": "banner-native-imp-1",
-            "price": 0
+            "price": 0,
+            "mtype": 4
           },
-          "type": "banner"
+          "type": "native"
         },
         {
           "bid": {
             "id": "multi-type-bid",
             "impid": "multi-type-imp",
-            "price": 0
+            "price": 0,
+            "mtype": 2
           },
-          "type": "banner"
+          "type": "video"
         }
       ]
     },
@@ -371,7 +384,8 @@
           "bid": {
             "id": "video-bid-1",
             "impid": "video-imp-1",
-            "price": 0.1
+            "price": 0.1,
+            "mtype": 2
           },
           "type": "video"
         }
@@ -384,7 +398,8 @@
           "bid": {
             "id": "video-bid-2",
             "impid": "video-imp-2",
-            "price": 0.2
+            "price": 0.2,
+            "mtype": 2
           },
           "type": "video"
         }
@@ -397,9 +412,10 @@
           "bid": {
             "id": "video-native-bid-1",
             "impid": "video-native-imp-1",
-            "price": 0.0
+            "price": 0.0,
+            "mtype": 4
           },
-          "type": "video"
+          "type": "native"
         }
       ]
     }

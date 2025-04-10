@@ -90,7 +90,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			continue
 		}
 
-		memberId := impExtIncoming.Bidder.Member
+		memberId := string(impExtIncoming.Bidder.Member)
 		if memberId != "" {
 			// The Appnexus API requires a Member ID in the URL. This means the request may fail if
 			// different impressions have different member IDs.
@@ -288,7 +288,7 @@ func handleLegacyParams(appnexusExt *openrtb_ext.ExtImpAppnexus) {
 }
 
 func validateAppnexusExt(appnexusExt *openrtb_ext.ExtImpAppnexus) error {
-	if appnexusExt.PlacementId == 0 && (appnexusExt.InvCode == "" || appnexusExt.Member == "") {
+	if appnexusExt.PlacementId == 0 && (appnexusExt.InvCode == "" || string(appnexusExt.Member) == "") {
 		return &errortypes.BadInput{
 			Message: "No placement or member+invcode provided",
 		}

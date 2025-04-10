@@ -19,6 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/amp"
 	"github.com/prebid/prebid-server/v3/analytics"
 	analyticsBuild "github.com/prebid/prebid-server/v3/analytics/build"
@@ -146,7 +147,7 @@ func TestGoodAmpRequests(t *testing.T) {
 						t.Fatalf("Unexpected bidder %s has an expected mock bidder request. Test file: %s", bidder, filename)
 					}
 					aa := a.(*exchange.BidderAdapter)
-					ma := aa.Bidder.(*mockAdapter)
+					ma := aa.Bidder.(*adapters.InfoAwareBidder).Bidder.(*mockAdapter)
 					assert.JSONEq(t, string(req), string(ma.requestData[0]), "Not the expected mock bidder request for bidder %s. Test file: %s", bidder, filename)
 				}
 			}
