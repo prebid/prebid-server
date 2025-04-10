@@ -2,10 +2,7 @@ package pixfuture
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -28,33 +25,7 @@ func TestJsonSamples(t *testing.T) {
 	}, config.Server{})
 	require.NoError(t, buildErr, "Builder returned unexpected error")
 
-	dirs := []string{"pixfuturetest/exemplary", "pixfuturetest/supplemental"}
-
-	for _, dir := range dirs {
-		t.Run(dir, func(t *testing.T) {
-			files, err := filepath.Glob(filepath.Join(dir, "*.json"))
-			require.NoErrorf(t, err, "Failed to glob JSON files in %s", dir)
-			t.Logf("Found %d JSON files in %s", len(files), dir)
-
-			for _, file := range files {
-				t.Run(filepath.Base(file), func(t *testing.T) {
-					tmpDir, err := ioutil.TempDir("", "pixfuture_test_")
-					require.NoError(t, err, "Failed to create temp dir")
-					defer os.RemoveAll(tmpDir)
-
-					src := file
-					dst := filepath.Join(tmpDir, filepath.Base(file))
-					input, err := ioutil.ReadFile(src)
-					require.NoErrorf(t, err, "Failed to read %s", src)
-					err = ioutil.WriteFile(dst, input, 0644)
-					require.NoErrorf(t, err, "Failed to write %s", dst)
-
-					t.Logf("Testing JSON file: %s", file)
-					adapterstest.RunJSONBidderTest(t, tmpDir, bidder)
-				})
-			}
-		})
-	}
+	adapterstest.RunJSONBidderTest(t, "pixfuturetest", bidder)
 }
 
 func TestMakeRequests(t *testing.T) {

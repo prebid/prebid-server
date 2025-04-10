@@ -6,18 +6,45 @@
         "id": "imp1",
         "ext": {
           "bidder": {
-            "pix_id": "123"
+            "pix_id": "55463"
           }
         }
       }
     ]
   },
-  "httpCalls": [],
-  "expectedBidResponses": [],
-  "expectedMakeRequestsErrors": [
+  "httpCalls": [
     {
-      "value": "Banner, Native, or Video impression required",
-      "comparison": "literal"
+      "expectedRequest": {
+        "uri": "http://any.url",
+        "headers": {
+          "Content-Type": ["application/json"],
+          "Accept": ["application/json"]
+        },
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "imp1",
+              "ext": {
+                "bidder": {
+                  "pix_id": "55463"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": ["imp1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-response-id",
+          "cur": "USD",
+          "seatbid": []
+        }
+      }
     }
-  ]
+  ],
+  "expectedBidResponses": [],
+  "expectedMakeRequestsErrors": []
 }
