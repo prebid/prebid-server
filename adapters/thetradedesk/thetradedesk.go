@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/prebid/prebid-server/v3/errortypes"
 	"net/http"
 	"regexp"
 	"text/template"
@@ -20,7 +21,8 @@ import (
 const PREBID_INTEGRATION_TYPE = "1"
 
 type adapter struct {
-	bidderEndpoint string
+	bidderEndpoint        string
+	defaultSupplySourceId string
 }
 
 type ExtImpBidderTheTradeDesk struct {
@@ -30,6 +32,8 @@ type ExtImpBidderTheTradeDesk struct {
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	pubID, err := getPublisherId(request.Imp)
 
+	//a := reqInfo.GlobalPrivacyControlHeader
+	//request.Imp[0].Ext
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -87,6 +91,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		return nil, errs
 	}
 
+	bidderEndpoint, err := a.buildEndpointURL(&request.Imp[0])
+	if err != nil {
+		return nil, []error{errors.New("Failed to build endpoint URL")}
+	}
+
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
@@ -100,24 +109,63 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	}}, errs
 }
 
+func (a *adapter) buildEndpointURL(imp *openrtb2.Imp) (string, error) {
+	template, err := template.New("endpointTemplate").Parse(a.bidderEndpoint)
+	if err != nil {
+		return "", fmt.Errorf("unable to parse endpoint url template: %v", err)
+	}
+
+	supplySourceId, err := getSupplySourceId(imp)
+	if err != nil {
+		return "", err
+	}
+	if supplySourceId == "" {
+		supplySourceId = a.defaultSupplySourceId
+	}
+
+	urlParams := macros.EndpointTemplateParams{SupplyId: supplySourceId}
+	bidderEndpoint, err := macros.ResolveMacros(template, urlParams)
+
+	if err != nil {
+		return "", fmt.Errorf("unable to resolve endpoint macros: %v", err)
+	}
+
+	return bidderEndpoint, nil
+}
+
 func getPublisherId(impressions []openrtb2.Imp) (string, error) {
 	for _, imp := range impressions {
-
-		var bidderExt ExtImpBidderTheTradeDesk
-		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		var ttdExt, err = getImpressionExt(&imp)
+		if err != nil {
 			return "", err
 		}
-
-		var ttdExt openrtb_ext.ExtImpTheTradeDesk
-		if err := jsonutil.Unmarshal(bidderExt.Bidder, &ttdExt); err != nil {
-			return "", err
-		}
-
-		if ttdExt.PublisherId != "" {
-			return ttdExt.PublisherId, nil
-		}
+		return ttdExt.SupplySourceId, nil
 	}
 	return "", nil
+}
+
+func getSupplySourceId(imp *openrtb2.Imp) (string, error) {
+	var ttdExt, err = getImpressionExt(imp)
+	if err != nil {
+		return "", err
+	}
+	return ttdExt.SupplySourceId, nil
+}
+
+func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpTheTradeDesk, error) {
+	var bidderExt adapters.ExtImpBidder
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		return nil, &errortypes.BadInput{
+			Message: "ext.bidder not provided",
+		}
+	}
+	var ttdExt openrtb_ext.ExtImpTheTradeDesk
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &ttdExt); err != nil {
+		return nil, &errortypes.BadInput{
+			Message: "ext.bidder not provided",
+		}
+	}
+	return &ttdExt, nil
 }
 
 func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
@@ -172,11 +220,6 @@ func getBidType(markupType openrtb2.MarkupType) (openrtb_ext.BidType, error) {
 }
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
-	}
-
 	if len(config.ExtraAdapterInfo) > 0 {
 		isValidEndpoint, err := regexp.Match("([a-z]+)$", []byte(config.ExtraAdapterInfo))
 		if !isValidEndpoint || err != nil {
@@ -184,14 +227,8 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 		}
 	}
 
-	urlParams := macros.EndpointTemplateParams{SupplyId: config.ExtraAdapterInfo}
-	bidderEndpoint, err := macros.ResolveMacros(template, urlParams)
-
-	if err != nil {
-		return nil, fmt.Errorf("unable to resolve endpoint macros: %v", err)
-	}
-
 	return &adapter{
-		bidderEndpoint: bidderEndpoint,
+		bidderEndpoint:        config.Endpoint,
+		defaultSupplySourceId: config.ExtraAdapterInfo,
 	}, nil
 }

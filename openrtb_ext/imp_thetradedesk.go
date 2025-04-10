@@ -4,5 +4,6 @@ package openrtb_ext
 // PublisherId is mandatory parameters, others are optional parameters
 
 type ExtImpTheTradeDesk struct {
-	PublisherId string `json:"publisherId"`
+	PublisherId    string `json:"publisherId"`
+	SupplySourceId string `json:"supplySourceId"`
 }
