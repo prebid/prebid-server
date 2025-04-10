@@ -1,0 +1,100 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "imp": [
+            {
+                "id": "div-banner-id",
+                "banner": {
+                    "topframe": 1,
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        }
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "networkId": "networkId"
+                    }
+                }
+            }
+        ],
+        "site": {
+            "domain": "dev.sparteo.com:4444",
+            "page": "https://dev.sparteo.com:4444/page/test/",
+            "ref": "https://dev.sparteo.com:4444/page/test/",
+            "publisher": {
+                "id": "sparteo",
+                "domain": "dev.sparteo.com:4444",
+                "ext": "not an object"
+            }
+        }
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "https://bid-test.sparteo.com/s2s-auction",
+                "body": {
+                    "id": "test-request-id",
+                    "imp": [
+                        {
+                            "id": "div-banner-id",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 300,
+                                        "h": 250
+                                    }
+                                ],
+                                "topframe": 1
+                            },
+                            "ext": {
+                                "sparteo": {
+                                    "params": {
+                                        "networkId": "networkId"
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    "site": {
+                        "domain": "dev.sparteo.com:4444",
+                        "page": "https://dev.sparteo.com:4444/page/test/",
+                        "publisher": {
+                            "domain": "dev.sparteo.com:4444",
+                            "ext": {
+                                "params": {
+                                    "networkId": "networkId"
+                                }
+                            },
+                            "id": "sparteo"    
+                        },
+                        "ref": "https://dev.sparteo.com:4444/page/test/"        
+                    }
+                },
+                "impIDs": [
+                    "div-banner-id"
+                ]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "test-request-id",
+                    "seatbid": []
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "id": "test-request-id",
+            "bid": [
+                {
+                    "seat": "sparteo",
+                    "bid": []
+                }
+            ]
+        }
+    ]
+}
