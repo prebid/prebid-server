@@ -7,10 +7,10 @@ import (
 
 type Runner interface {
 	LogAuctionObject(*AuctionObject, privacy.ActivityControl, gdpr.PrivacyPolicy)
-	LogVideoObject(*VideoObject, privacy.ActivityControl)
+	LogVideoObject(*VideoObject, privacy.ActivityControl, gdpr.PrivacyPolicy)
 	LogCookieSyncObject(*CookieSyncObject)
 	LogSetUIDObject(*SetUIDObject)
-	LogAmpObject(*AmpObject, privacy.ActivityControl)
+	LogAmpObject(*AmpObject, privacy.ActivityControl, gdpr.PrivacyPolicy)
 	LogNotificationEventObject(*NotificationEvent, privacy.ActivityControl)
 	Shutdown()
 }

@@ -1,4 +1,4 @@
-package exchange
+package openrtb2
 
 import (
 	"testing"

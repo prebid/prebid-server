@@ -23,6 +23,7 @@ import (
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/openrtb/v20/openrtb3"
 	"github.com/prebid/prebid-server/v3/bidadjustment"
+	"github.com/prebid/prebid-server/v3/dsa"
 	"github.com/prebid/prebid-server/v3/hooks"
 	"github.com/prebid/prebid-server/v3/ortb"
 	"github.com/prebid/prebid-server/v3/privacy"
@@ -209,8 +210,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		return
 	}
 
-	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, account.GDPR)
-
 	activityControl = privacy.NewActivityControl(&account.Privacy)
 
 	hookExecutor.SetActivityControl(activityControl)
@@ -228,28 +227,40 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, account.GDPR)
 
-	var err error
-	var errs []error
+	var gdprErrs []error
 	var gpp gpplib.GppContainer
 	if req.Regs != nil && len(req.Regs.GPP) > 0 {
-		gpp, err = gpplib.Parse(req.Regs.GPP)
-		if err != nil {
-			errs = append(errs, err)
-		}
+		gpp, gdprErrs = gpplib.Parse(req.Regs.GPP)
 	}
-	gdprSignal, err := exchange.GetGDPR(req)
+
+	// Retrieve EEA countries configuration from either host or account settings
+	eeaCountries := selectEEACountries(deps.cfg.GDPR.EEACountries, account.GDPR.EEACountries)
+
+	// Make our best guess if GDPR applies
+	gdprDefaultValue := parseGDPRDefaultValue(req, deps.cfg.GDPR.DefaultValue, eeaCountries)
+	gdprSignal, err := getGDPR(req)
 	if err != nil {
-		errs = append(errs, err)
+		gdprErrs = append(gdprErrs, err)
 	}
-	consent, err := exchange.GetConsent(req, gpp)
+	consent, err := getConsent(req, gpp)
 	if err != nil {
-		errs = append(errs, err)
+		gdprErrs = append(gdprErrs, err)
 	}
-	gdprApplies := exchange.GDPRApplies(gdprSignal, deps.cfg.GDPR.DefaultValue)        //TODO: try to pass this down to exchange/utils
-	channelEnabled := tcf2Config.ChannelEnabled(exchange.ChannelTypeMap[labels.RType]) //TODO: try to pass this down to exchange/utils
-	if gdprApplies && channelEnabled {
+	channelEnabled := tcf2Config.ChannelEnabled(exchange.ChannelTypeMap[labels.RType])
+	gdprEnforced := enforceGDPR(gdprSignal, gdprDefaultValue, channelEnabled)
+	if gdprEnforced {
 		analyticsPolicy = deps.gdprPrivacyPolicyBuilder(tcf2Config, gdprSignal, consent)
 		analyticsPolicy.SetContext(ctx)
+	}
+	dsaWriter := dsa.Writer{
+		Config:      account.Privacy.DSA,
+		GDPRInScope: gdprEnforced,
+	}
+	errL = append(errL, gdprErrs...)
+	if err := dsaWriter.Write(req); err != nil {
+		errL = append(errL, err)
+		writeError(errL, w, &labels)
+		return 
 	}
 
 	// Read Usersyncs/Cookie
@@ -266,7 +277,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 
 	// Set Integration Information
-	err := deps.setIntegrationType(req, account)
+	err = deps.setIntegrationType(req, account)
 	if err != nil {
 		errL = append(errL, err)
 		writeError(errL, w, &labels)
@@ -294,6 +305,8 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		TCF2Config:                 tcf2Config,
 		Activities:                 activityControl,
 		TmaxAdjustments:            deps.tmaxAdjustments,
+		GDPRSignal:                 gdprSignal,
+		GDPREnforced:               gdprEnforced,
 	}
 	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
 	defer func() {

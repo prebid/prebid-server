@@ -1,6 +1,10 @@
-package exchange
+package openrtb2
 
 import (
+	"strings"
+
+	"github.com/prebid/openrtb/v20/openrtb2"
+
 	gpplib "github.com/prebid/go-gpp"
 	gppConstants "github.com/prebid/go-gpp/constants"
 	"github.com/prebid/prebid-server/v3/gdpr"
@@ -48,4 +52,45 @@ func selectEEACountries(hostEEACountries []string, accountEEACountries []string)
 		return accountEEACountries
 	}
 	return hostEEACountries
+}
+
+func parseGDPRDefaultValue(r *openrtb_ext.RequestWrapper, cfgDefault string, eeaCountries []string) gdpr.Signal {
+	gdprDefaultValue := gdpr.SignalYes
+	if cfgDefault == "0" {
+		gdprDefaultValue = gdpr.SignalNo
+	}
+	
+	var geo *openrtb2.Geo
+	if r.User != nil && r.User.Geo != nil {
+		geo = r.User.Geo
+	} else if r.Device != nil && r.Device.Geo != nil {
+		geo = r.Device.Geo
+	}
+
+	if geo != nil {
+		// If the country is in the EEA list, GDPR applies.
+		// Otherwise, if the country code is properly formatted (3 characters), GDPR does not apply.
+		if isEEACountry(geo.Country, eeaCountries) {
+			gdprDefaultValue = gdpr.SignalYes
+		} else if len(geo.Country) == 3 {
+			gdprDefaultValue = gdpr.SignalNo
+		}
+	}
+
+	return gdprDefaultValue
+}
+
+// TODO: isEEACountry...
+func isEEACountry(country string, eeaCountries []string) bool {
+	if len(eeaCountries) == 0 {
+		return false
+	}
+
+	country = strings.ToUpper(country)
+	for _, c := range eeaCountries {
+		if strings.ToUpper(c) == country {
+			return true
+		}
+	}
+	return false
 }

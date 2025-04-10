@@ -1,7 +1,6 @@
 package build
 
 import (
-	"context"
 	"encoding/json"
 
 	"github.com/benbjohnson/clock"
@@ -94,19 +93,25 @@ func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac priv
 	}
 }
 
-func (ea enabledAnalytics) LogVideoObject(vo *analytics.VideoObject, ac privacy.ActivityControl) {
+func (ea enabledAnalytics) LogVideoObject(vo *analytics.VideoObject, ac privacy.ActivityControl, pp gdpr.PrivacyPolicy) {
 	for name, module := range ea {
-		if isAllowed, cloneBidderReq := evaluateActivities(vo.RequestWrapper, ac, name); isAllowed {
-			if cloneBidderReq != nil {
-				vo.RequestWrapper = cloneBidderReq
-			}
-			cloneReq := updateReqWrapperForAnalytics(vo.RequestWrapper, name, cloneBidderReq != nil)
-			module.LogVideoObject(vo)
-			if cloneReq != nil {
-				vo.RequestWrapper = cloneReq
-			}
-		}
+		var isAllowed bool
+		var cloneBidderReq *openrtb_ext.RequestWrapper
 
+		if isAllowed, cloneBidderReq = evaluateActivities(vo.RequestWrapper, ac, name); !isAllowed {
+			continue
+		}
+		if !pp.Allow(name) {
+			continue
+		}
+		if cloneBidderReq != nil {
+			vo.RequestWrapper = cloneBidderReq
+		}
+		cloneReq := updateReqWrapperForAnalytics(vo.RequestWrapper, name, cloneBidderReq != nil)
+		module.LogVideoObject(vo)
+		if cloneReq != nil {
+			vo.RequestWrapper = cloneReq
+		}
 	}
 }
 
@@ -122,17 +127,24 @@ func (ea enabledAnalytics) LogSetUIDObject(so *analytics.SetUIDObject) {
 	}
 }
 
-func (ea enabledAnalytics) LogAmpObject(ao *analytics.AmpObject, ac privacy.ActivityControl) {
+func (ea enabledAnalytics) LogAmpObject(ao *analytics.AmpObject, ac privacy.ActivityControl, pp gdpr.PrivacyPolicy) {
 	for name, module := range ea {
-		if isAllowed, cloneBidderReq := evaluateActivities(ao.RequestWrapper, ac, name); isAllowed {
-			if cloneBidderReq != nil {
-				ao.RequestWrapper = cloneBidderReq
-			}
-			cloneReq := updateReqWrapperForAnalytics(ao.RequestWrapper, name, cloneBidderReq != nil)
-			module.LogAmpObject(ao)
-			if cloneReq != nil {
-				ao.RequestWrapper = cloneReq
-			}
+		var isAllowed bool
+		var cloneBidderReq *openrtb_ext.RequestWrapper
+
+		if isAllowed, cloneBidderReq = evaluateActivities(ao.RequestWrapper, ac, name); !isAllowed {
+			continue
+		}
+		if !pp.Allow(name) {
+			continue
+		}
+		if cloneBidderReq != nil {
+			ao.RequestWrapper = cloneBidderReq
+		}
+		cloneReq := updateReqWrapperForAnalytics(ao.RequestWrapper, name, cloneBidderReq != nil)
+		module.LogAmpObject(ao)
+		if cloneReq != nil {
+			ao.RequestWrapper = cloneReq
 		}
 	}
 }
