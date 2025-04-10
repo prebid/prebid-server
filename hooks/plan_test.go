@@ -769,6 +769,72 @@ func TestPlanForAuctionResponseStage(t *testing.T) {
 		})
 	}
 }
+func TestPlan_ABTestMap_Empty(t *testing.T) {
+	cfg := config.Hooks{Enabled: true}
+	pb := NewExecutionPlanBuilder(cfg, nil)
+	abm := pb.ABTestMap()
+	assert.Equal(t, 0, len(abm))
+}
+
+func TestPlan_ABTestMap_Default(t *testing.T) {
+	boolPtr := func(b bool) *bool {
+		return &b
+	}
+
+	cfg := config.Hooks{
+		Enabled: true,
+		HostExecutionPlan: config.HookExecutionPlan{
+			ABTests: []config.ABTest{
+				{
+					Enabled:    boolPtr(true),
+					ModuleCode: "vendor.module",
+				},
+			},
+		},
+	}
+	pb := NewExecutionPlanBuilder(cfg, nil)
+	abm := pb.ABTestMap()
+	assert.Equal(t, 1, len(abm))
+	assert.Equal(t, ABTest{
+		Accounts:        nil,
+		PercentActive:   uint16(100),
+		LogAnalyticsTag: true,
+	}, abm["vendor.module"])
+}
+
+func TestPlan_ABTestMap(t *testing.T) {
+	boolPtr := func(b bool) *bool {
+		return &b
+	}
+	uint16Ptr := func(i uint16) *uint16 {
+		return &i
+	}
+
+	cfg := config.Hooks{
+		Enabled: true,
+		HostExecutionPlan: config.HookExecutionPlan{
+			ABTests: []config.ABTest{
+				{
+					ModuleCode: "vendor.module",
+					Enabled:    boolPtr(true),
+					Accounts: []interface{}{
+						0, "1", true,
+					},
+					PercentActive:   uint16Ptr(50),
+					LogAnalyticsTag: boolPtr(false),
+				},
+			},
+		},
+	}
+	pb := NewExecutionPlanBuilder(cfg, nil)
+	abm := pb.ABTestMap()
+	assert.Equal(t, 1, len(abm))
+	assert.Equal(t, ABTest{
+		Accounts:        []string{"0", "1", "true"},
+		PercentActive:   uint16(50),
+		LogAnalyticsTag: false,
+	}, abm["vendor.module"])
+}
 
 func getPlanBuilder(
 	moduleHooks map[string]interface{},

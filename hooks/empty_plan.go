@@ -36,3 +36,7 @@ func (e EmptyPlanBuilder) PlanForAllProcessedBidResponsesStage(endpoint string, 
 func (e EmptyPlanBuilder) PlanForAuctionResponseStage(endpoint string, account *config.Account) Plan[hookstage.AuctionResponse] {
 	return nil
 }
+
+func (e EmptyPlanBuilder) ABTestMap() map[string]ABTest {
+	return make(map[string]ABTest)
+}

@@ -1210,16 +1210,16 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("tmax_adjustments.pbs_response_preparation_duration_ms", 0)
 
 	/* IPv4
-	/*  Site Local: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
-	/*  Link Local: 169.254.0.0/16
-	/*  Loopback:   127.0.0.0/8
-	/*
-	/* IPv6
-	/*  Loopback:      ::1/128
-	/*  Documentation: 2001:db8::/32
-	/*  Unique Local:  fc00::/7
-	/*  Link Local:    fe80::/10
-	/*  Multicast:     ff00::/8
+	   /*  Site Local: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
+	   /*  Link Local: 169.254.0.0/16
+	   /*  Loopback:   127.0.0.0/8
+	   /*
+	   /* IPv6
+	   /*  Loopback:      ::1/128
+	   /*  Documentation: 2001:db8::/32
+	   /*  Unique Local:  fc00::/7
+	   /*  Link Local:    fe80::/10
+	   /*  Multicast:     ff00::/8
 	*/
 	v.SetDefault("request_validation.ipv4_private_networks", []string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "169.254.0.0/16", "127.0.0.0/8"})
 	v.SetDefault("request_validation.ipv6_private_networks", []string{"::1/128", "fc00::/7", "fe80::/10", "ff00::/8", "2001:db8::/32"})
@@ -1273,6 +1273,9 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("experiment.adscert.remote.signing_timeout_ms", 5)
 
 	v.SetDefault("hooks.enabled", false)
+	v.SetDefault("hooks.host_execution_plan.abtests.enabled", false)
+	v.SetDefault("hooks.host_execution_plan.abtests.percent_active", 100)
+	v.SetDefault("hooks.host_execution_plan.abtests.log_analytics_tag", true)
 
 	for bidderName := range bidderInfos {
 		setBidderDefaults(v, strings.ToLower(bidderName))

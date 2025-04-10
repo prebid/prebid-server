@@ -1559,6 +1559,10 @@ func (m mockPlanBuilder) PlanForAuctionResponseStage(_ string, _ *config.Account
 	return m.auctionResponsePlan
 }
 
+func (m mockPlanBuilder) ABTestMap() map[string]hooks.ABTest {
+	return make(map[string]hooks.ABTest)
+}
+
 func makePlan[H any](hook H) hooks.Plan[H] {
 	return hooks.Plan[H]{
 		{

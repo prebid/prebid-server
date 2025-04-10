@@ -1,6 +1,7 @@
 package hooks
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/golang/glog"
@@ -41,6 +42,7 @@ type ExecutionPlanBuilder interface {
 	PlanForRawBidderResponseStage(endpoint string, account *config.Account) Plan[hookstage.RawBidderResponse]
 	PlanForAllProcessedBidResponsesStage(endpoint string, account *config.Account) Plan[hookstage.AllProcessedBidResponses]
 	PlanForAuctionResponseStage(endpoint string, account *config.Account) Plan[hookstage.AuctionResponse]
+	ABTestMap() map[string]ABTest
 }
 
 // Plan represents a slice of groups of hooks of a specific type grouped in the established order.
@@ -65,6 +67,17 @@ type HookWrapper[T any] struct {
 	Code string
 	// Hook is an instance of the specific hook interface.
 	Hook T
+}
+
+// ABTest provides AB Test settings for a particular module where the same is applied
+type ABTest struct {
+	// Accounts is a slice of accounts that will trigger module execution
+	// An empty slice will trigger module execution for all accounts
+	Accounts []string
+	// PercentActive enables specifying the percentage of requests that will trigger module execution
+	PercentActive uint16
+	// LogAnalyticsTag specifies whether module execution result will get noted in the analytics log
+	LogAnalyticsTag bool
 }
 
 // NewExecutionPlanBuilder returns a new instance of the ExecutionPlanBuilder interface.
@@ -154,6 +167,35 @@ func (p PlanBuilder) PlanForAuctionResponseStage(endpoint string, account *confi
 		StageAuctionResponse,
 		p.repo.GetAuctionResponseHook,
 	)
+}
+
+func (p PlanBuilder) ABTestMap() map[string]ABTest {
+	abm := make(map[string]ABTest)
+	for _, abtest := range p.hooks.HostExecutionPlan.ABTests {
+		if abtest.ModuleCode == "" {
+			glog.Fatal("hooks.execution_plan.abtests 'module_code' is required")
+		}
+
+		if abtest.Enabled == nil || !*abtest.Enabled {
+			continue
+		}
+
+		var test ABTest
+		for _, account := range abtest.Accounts {
+			test.Accounts = append(test.Accounts, fmt.Sprint(account))
+		}
+
+		test.PercentActive = 100
+		if abtest.PercentActive != nil && *abtest.PercentActive < 100 {
+			test.PercentActive = *abtest.PercentActive
+		}
+
+		test.LogAnalyticsTag = abtest.LogAnalyticsTag == nil || *abtest.LogAnalyticsTag
+
+		abm[abtest.ModuleCode] = test
+	}
+
+	return abm
 }
 
 type hookFn[T any] func(moduleName string) (T, bool)
