@@ -25,7 +25,7 @@ func TestInvalidParams(t *testing.T) {
 
 	for _, p := range invalidParams {
 		err := validator.Validate(openrtb_ext.BidderAkcelo, json.RawMessage(p))
-		assert.NoError(t, err, "Schema allowed invalid params: %s", p)
+		assert.Error(t, err, "Schema allowed invalid params: %s", p)
 	}
 }
 
