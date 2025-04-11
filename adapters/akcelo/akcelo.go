@@ -147,7 +147,7 @@ func extractBids(bidResponse openrtb2.BidResponse) (*adapters.BidderResponse, []
 	bidderResponse := adapters.NewBidderResponseWithBidsCapacity(5)
 	var errs []error
 	for j := range bidResponse.SeatBid {
-		seat := &bidResponse.SeatBid[j]
+		seat := bidResponse.SeatBid[j]
 		for i := range seat.Bid {
 			bid := seat.Bid[i]
 			bidType, err := getBidType(&bid)
