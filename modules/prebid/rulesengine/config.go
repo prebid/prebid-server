@@ -20,5 +20,4 @@ func validateConfig(cfg config) error {
 }
 
 type config struct {
-	
 }

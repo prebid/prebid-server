@@ -5,11 +5,12 @@ import (
 )
 
 // at this point, we have well-formed trees (meaning the depth of the tree is the number of schema functions, all leaves are at this depth)
-func handleProcessedAuctionHook(modelGroups []cacheModelGroup, payload hookstage.ProcessedAuctionRequestPayload) (result hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload], err error) {
+func handleProcessedAuctionHook(modelGroups []cacheRuleSet, payload hookstage.ProcessedAuctionRequestPayload) (result hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload], err error) {
 
-	// determine which model group tree to run
-	// run tree
-	// run default functions if no tree leaf found
+	// TODO: traverse trees here
+	// for each rule set:
+	// 	run tree
+	// 	run default functions if no tree leaf found
 	// prepare hook result
 	// return hook result
 

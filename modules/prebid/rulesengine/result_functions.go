@@ -18,4 +18,3 @@ func (sdip *SetDeviceIp) Call(rw *openrtb_ext.RequestWrapper) (string, error) {
 	// e.g. changeSet.AddMutation(mutation, hookstage.MutationUpdate, "bidrequest", "device", "ip")
 	return "", nil
 }
-
