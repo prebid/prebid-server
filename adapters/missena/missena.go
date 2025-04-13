@@ -52,7 +52,7 @@ type BidServerResponse struct {
 type UserParams struct {
 	Formats   []string       `json:"formats,omitempty"`
 	Placement string         `json:"placement,omitempty" default:"sticky"`
-	TestMode  string         `json:"test,omitempty"`
+	TestMode  string         `json:"sample,omitempty"`
 	Settings  map[string]any `json:"settings,omitempty"`
 }
 
