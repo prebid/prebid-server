@@ -110,7 +110,6 @@ func GetActiveBidders(infos config.BidderInfos) map[string]openrtb_ext.BidderNam
 func GetDisabledBidderWarningMessages(infos config.BidderInfos) map[string]string {
 	removed := map[string]string{
 		"lifestreet":      `Bidder "lifestreet" is no longer available in Prebid Server. Please update your configuration.`,
-		"adagio":          `Bidder "adagio" is no longer available in Prebid Server. Please update your configuration.`,
 		"somoaudience":    `Bidder "somoaudience" is no longer available in Prebid Server. Please update your configuration.`,
 		"yssp":            `Bidder "yssp" is no longer available in Prebid Server. If you're looking to use the Yahoo SSP adapter, please rename it to "yahooAds" in your configuration.`,
 		"andbeyondmedia":  `Bidder "andbeyondmedia" is no longer available in Prebid Server. If you're looking to use the AndBeyond.Media SSP adapter, please rename it to "beyondmedia" in your configuration.`,
