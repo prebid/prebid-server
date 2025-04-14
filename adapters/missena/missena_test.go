@@ -10,7 +10,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderMissena, config.Adapter{
-		Endpoint: "http://example.com/"},
+		Endpoint: "http://example.com/?t={{.PublisherID}}"},
 		config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
