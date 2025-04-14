@@ -56,8 +56,8 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "Unexpected status code: 400. Bad request from publisher. Run with request.debug = 1 for more info.",
-      "comparison": "literal"
+      "value": "Unexpected status code: 400",
+      "comparison": "startswith"
     }
   ]
 }

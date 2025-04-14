@@ -1,7 +1,6 @@
 package optidigital
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -31,7 +30,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	}
 
 	requestData := &adapters.RequestData{
-		Method: "POST",
+		Method: http.MethodPost,
 		Uri:    a.endpoint,
 		Body:   requestJSON,
 		ImpIDs: openrtb_ext.GetImpIDs(request.Imp),
@@ -41,27 +40,20 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if responseData.StatusCode == http.StatusNoContent {
+
+	if adapters.IsResponseStatusCodeNoContent(responseData) {
 		return nil, nil
 	}
 
-	if responseData.StatusCode == http.StatusBadRequest {
-		err := &errortypes.BadInput{
-			Message: "Unexpected status code: 400. Bad request from publisher. Run with request.debug = 1 for more info.",
-		}
-		return nil, []error{err}
-	}
-
-	if responseData.StatusCode != http.StatusOK {
-		err := &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info.", responseData.StatusCode),
-		}
+	if err := adapters.CheckResponseStatusCodeForErrors(responseData); err != nil {
 		return nil, []error{err}
 	}
 
 	var response openrtb2.BidResponse
 	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
-		return nil, []error{err}
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: "Bad Server Response",
+		}}
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
