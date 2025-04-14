@@ -1,0 +1,21 @@
+endpoint: "http://10.67.0.52:8080/rtb?auth_token=30f2a2f62d69b71335ab34bad8022359"
+endpointCompression: gzip
+geoscope:
+  - global
+maintainer:
+  email: engineering@blis.com
+gvlVendorID: 94
+modifyingVastXmlAllowed: true
+openrtb:
+  version: 2.6
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
