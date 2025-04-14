@@ -50,14 +50,16 @@
         "impIDs": ["imp-id"]
       },
       "mockResponse": {
-        "status": 500
+        "status": 200,
+        "body": "invalid response"
       }
     }
   ],
+
   "expectedMakeBidsErrors": [
     {
-      "value": "Unexpected status code: 500",
-      "comparison": "startswith"
+      "value": "Bad Server Response",
+      "comparison": "literal"
     }
   ]
 }
