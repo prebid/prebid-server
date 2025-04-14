@@ -80,7 +80,9 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	}
 
 	for _, seatBid := range bidResponse.SeatBid {
-		for _, bid := range seatBid.Bid {
+		for i := range seatBid.Bid {
+			bid := seatBid.Bid[i]
+
 			bidType, err := getBidType(bid)
 			if err != nil {
 				errs = append(errs, err)
@@ -90,7 +92,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 			bidExt, bidExtErr := getBidExt(bid.Ext)
 			if bidExtErr != nil {
 				errs = append(errs, &errortypes.FailedToUnmarshal{
-					Message: fmt.Errorf("bid ext, err: %w", err).Error(),
+					Message: fmt.Errorf("bid ext, err: %w", bidExtErr).Error(),
 				})
 				continue
 			}
