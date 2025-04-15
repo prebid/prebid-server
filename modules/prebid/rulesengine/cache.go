@@ -1,24 +1,25 @@
 package rulesengine
 
 import (
-	// "crypto/sha256"
-	"encoding/json"
 	"sync"
 	"time"
 )
 
 // Is sync.Map the best choice for our use case? Would it better to use a go map with mutex?
+// https://pkg.go.dev/sync/atomic#Pointer
 
 // TTL expiration check every 5 min
 // When TTL expires, perform raw JSON hash diff to determine if tree rebuild is needed
 
+type hash string
+type stage string
+
 type cacheObject struct {
-    ts       time.Time
-	cfg      json.RawMessage // TODO: change to hash
-	ruleSets []cacheRuleSet
+	timestamp    time.Time
+	hashedConfig hash
+	ruleSets     map[stage][]cacheRuleSet
 }
 type cacheRuleSet struct {
-	stage       string
 	name        string
 	modelGroups []cacheModelGroup
 }
@@ -35,14 +36,13 @@ func NewCacheObject(cfg config) (cacheObject, error) {
 }
 
 type cacher interface {
-	Get(string) (*cacheObject)
+	Get(string) *cacheObject
 	Set(string, cacheObject)
 	Delete(id string)
 }
 
 type cache struct {
 	*sync.Map
-	// cache map[string]cacheObject
 }
 
 func (c *cache) Get(id string) (data *cacheObject) {
@@ -52,7 +52,7 @@ func (c *cache) Get(id string) (data *cacheObject) {
 	return nil
 }
 
-func (c *cache) Save(id string, data cacheObject) {
+func (c *cache) Set(id string, data cacheObject) {
 	c.Map.Store(id, data)
 }
 

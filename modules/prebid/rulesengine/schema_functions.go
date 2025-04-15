@@ -35,10 +35,10 @@ func (dc *deviceCountry) Call(wrapper *openrtb_ext.RequestWrapper) (string, erro
 }
 
 func NewDeviceCountry(params []string) (Function, error) {
- if len(params) != 1 {
-        return nil, errors.New("")
-    }
+	if len(params) != 1 {
+		return nil, errors.New("")
+	}
 
- // validate and parse params
- return &deviceCountry{CountryCodes: params}, nil
+	// validate and parse params
+	return &deviceCountry{CountryCodes: params}, nil
 }
