@@ -14,14 +14,10 @@ import (
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
+const defaultCurrency string = "USD"
+
 type adapter struct {
 	endpoint string
-}
-
-type MakeImpOutput struct {
-	Imp       []openrtb2.Imp
-	TagId     string
-	Placement string
 }
 
 type Ext struct {
@@ -54,20 +50,19 @@ type Nexx360ResBidExt struct {
 // as one of the hops in the request to exchange
 var CALLER = Nexx360Caller{"Prebid-Server", "n/a"}
 
-func makeImps(impList []openrtb2.Imp) (MakeImpOutput, error) {
-	var output MakeImpOutput
+func processImps(impList []openrtb2.Imp) (imp []openrtb2.Imp,  tagId string, placement string, error error) {
 	var imps []openrtb2.Imp
 	for idx, imp := range impList {
 		var bidderExt adapters.ExtImpBidder
 		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
-			return MakeImpOutput{}, &errortypes.BadInput{
+			return nil, "", "", &errortypes.BadInput{
 				Message: err.Error(),
 			}
 		}
 
 		var nexx360Ext openrtb_ext.ExtImpNexx360
 		if err := jsonutil.Unmarshal(bidderExt.Bidder, &nexx360Ext); err != nil {
-			return MakeImpOutput{}, &errortypes.BadInput{
+			return  nil, "", "", &errortypes.BadInput{
 				Message: err.Error(),
 			}
 		}
@@ -78,7 +73,7 @@ func makeImps(impList []openrtb2.Imp) (MakeImpOutput, error) {
 
 		impExtJSON, err := json.Marshal(impExt)
 		if err != nil {
-			return MakeImpOutput{}, &errortypes.BadInput{
+			return  nil, "", "", &errortypes.BadInput{
 				Message: err.Error(),
 			}
 		}
@@ -86,22 +81,32 @@ func makeImps(impList []openrtb2.Imp) (MakeImpOutput, error) {
 		imp.Ext = impExtJSON
 		imps = append(imps, imp)
 		if idx == 0 {
-			output.TagId = nexx360Ext.TagId
-			output.Placement = nexx360Ext.Placement
+			tagId = nexx360Ext.TagId
+			placement = nexx360Ext.Placement
 		}
 
 	}
-	output.Imp = imps
-	return output, nil
+	 
+	return imps, tagId, placement,  nil
+}
+
+func makeReqExt() ([]byte, error) {
+	var reqExt ReqExt
+
+	reqExt.Nexx360 = &ReqNexx360Ext{}
+	reqExt.Nexx360.Caller = make([]Nexx360Caller, 0)
+	reqExt.Nexx360.Caller = append(reqExt.Nexx360.Caller, CALLER)
+
+	return json.Marshal(reqExt)
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var makeImp, err = makeImps(request.Imp)
+	var imp, tagId, placement, err = processImps(request.Imp)
 	if err != nil {
 		return nil, []error{err}
 	}
 
-	request.Imp = makeImp.Imp
+	request.Imp = imp;
 
 	urlBuilder, err := url.Parse(a.endpoint)
 	if err != nil {
@@ -109,17 +114,17 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	}
 
 	query := url.Values{}
-	if makeImp.Placement != "" {
-		query["placement"] = []string{makeImp.Placement}
+	if placement != "" {
+		query["placement"] = []string{placement}
 	}
-	if makeImp.TagId != "" {
-		query["tag_id"] = []string{makeImp.TagId}
+	if tagId != "" {
+		query["tag_id"] = []string{tagId}
 	}
 	urlBuilder.RawQuery = query.Encode()
 
 	uri := urlBuilder.String()
 
-	reqExt, err := makeReqExt(request)
+	reqExt, err := makeReqExt()
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -146,27 +151,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	return []*adapters.RequestData{adapter}, nil
 }
 
-func makeReqExt(request *openrtb2.BidRequest) ([]byte, error) {
-	var reqExt ReqExt
 
-	if len(request.Ext) > 0 {
-		if err := jsonutil.Unmarshal(request.Ext, &reqExt); err != nil {
-			return nil, err
-		}
-	}
-
-	if reqExt.Nexx360 == nil {
-		reqExt.Nexx360 = &ReqNexx360Ext{}
-	}
-
-	if reqExt.Nexx360.Caller == nil {
-		reqExt.Nexx360.Caller = make([]Nexx360Caller, 0)
-	}
-
-	reqExt.Nexx360.Caller = append(reqExt.Nexx360.Caller, CALLER)
-
-	return json.Marshal(reqExt)
-}
 
 // MakeBids make the bids for the bid response.
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, externalRequest *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
@@ -214,7 +199,11 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, externalRequest *adapte
 	}
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(Bids))
 	bidResponse.Bids = Bids
-	bidResponse.Currency = response.Cur
+	if response.Cur != "" {
+		bidResponse.Currency = response.Cur
+	} else {
+		bidResponse.Currency = defaultCurrency
+	}
 
 	return bidResponse, errors
 }

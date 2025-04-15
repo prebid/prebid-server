@@ -16,7 +16,11 @@
         }
       }
     ],
-    "site": {}
+    "site": {},
+    "ext": {
+      "nexx360": "Prebid-Server",
+      "test": 1
+    }
   },
 
   "httpCalls": [
