@@ -1,8 +1,10 @@
-package rulesengine
+package optimization
 
 import (
 	"context"
 	"encoding/json"
+	"github.com/prebid/prebid-server/v3/modules/prebid/optimization/cache"
+	"github.com/prebid/prebid-server/v3/modules/prebid/optimization/rulesengine"
 
 	"github.com/prebid/prebid-server/v3/hooks/hookstage"
 	"github.com/prebid/prebid-server/v3/modules/moduledeps"
@@ -13,8 +15,8 @@ func Builder(_ json.RawMessage, _ moduledeps.ModuleDeps) (interface{}, error) {
 	return Module{}, nil
 }
 
-type Module struct{
-	Cache cacher
+type Module struct {
+	Cache cache.Cacher
 	// Cache map[string]CacheObject // string = account id
 }
 
@@ -26,7 +28,7 @@ func (m Module) HandleProcessedAuctionHook(
 	payload hookstage.ProcessedAuctionRequestPayload,
 ) (hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload], error) {
 	result := hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload]{}
-	
+
 	// can the module be defined in the host config? how would that be provided?
 	// if there is no account-specific config but there is a default config, would that be passed in?
 	// will also need to check miCtx.AccountID
@@ -35,21 +37,21 @@ func (m Module) HandleProcessedAuctionHook(
 	}
 
 	// if the cache contains an entry with account ID
-		// tree = cache[accountID]
+	// tree = cache[accountID]
 	// else
-		// unmarshal account config to structs --> newConfig()
-		// validate account config --> validateConfig()
-		// if validation fails
-			// return
-		// for each module group
-			// build tree for account
-			// if build tree fails (most likely due to schema/result func param type errors)
-				// return
-		// cache module groups with trees
-		// pass module groups to handleProcessedAuctionHook
+	// unmarshal account config to structs --> newConfig()
+	// validate account config --> validateConfig()
+	// if validation fails
+	// return
+	// for each module group
+	// build tree for account
+	// if build tree fails (most likely due to schema/result func param type errors)
+	// return
+	// cache module groups with trees
+	// pass module groups to handleProcessedAuctionHook
 
-	root := Node{}
-	cacheModelGroups := []cacheModelGroup{{root: root}}
+	root := rulesengine.Node{}
+	cacheModelGroups := []cache.CacheModelGroup{{Root: root}}
 
 	return handleProcessedAuctionHook(cacheModelGroups, payload)
 }

@@ -1,4 +1,4 @@
-package rulesengine
+package cache
 
 import (
 	"encoding/json"
@@ -20,5 +20,4 @@ func validateConfig(cfg config) error {
 }
 
 type config struct {
-	
 }
