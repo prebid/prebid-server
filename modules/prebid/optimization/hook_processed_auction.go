@@ -1,4 +1,4 @@
-package rulesengine
+package optimization
 
 import (
 	"github.com/prebid/prebid-server/v3/hooks/hookstage"
