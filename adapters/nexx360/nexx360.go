@@ -50,7 +50,7 @@ type Nexx360ResBidExt struct {
 // as one of the hops in the request to exchange
 var CALLER = Nexx360Caller{"Prebid-Server", "n/a"}
 
-func processImps(impList []openrtb2.Imp) (imp []openrtb2.Imp,  tagId string, placement string, error error) {
+func processImps(impList []openrtb2.Imp) (imp []openrtb2.Imp, tagId string, placement string, error error) {
 	var imps []openrtb2.Imp
 	for idx, imp := range impList {
 		var bidderExt adapters.ExtImpBidder
@@ -62,7 +62,7 @@ func processImps(impList []openrtb2.Imp) (imp []openrtb2.Imp,  tagId string, pla
 
 		var nexx360Ext openrtb_ext.ExtImpNexx360
 		if err := jsonutil.Unmarshal(bidderExt.Bidder, &nexx360Ext); err != nil {
-			return  nil, "", "", &errortypes.BadInput{
+			return nil, "", "", &errortypes.BadInput{
 				Message: err.Error(),
 			}
 		}
@@ -73,7 +73,7 @@ func processImps(impList []openrtb2.Imp) (imp []openrtb2.Imp,  tagId string, pla
 
 		impExtJSON, err := json.Marshal(impExt)
 		if err != nil {
-			return  nil, "", "", &errortypes.BadInput{
+			return nil, "", "", &errortypes.BadInput{
 				Message: err.Error(),
 			}
 		}
@@ -86,8 +86,8 @@ func processImps(impList []openrtb2.Imp) (imp []openrtb2.Imp,  tagId string, pla
 		}
 
 	}
-	 
-	return imps, tagId, placement,  nil
+
+	return imps, tagId, placement, nil
 }
 
 func makeReqExt() ([]byte, error) {
@@ -106,7 +106,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		return nil, []error{err}
 	}
 
-	request.Imp = imp;
+	request.Imp = imp
 
 	urlBuilder, err := url.Parse(a.endpoint)
 	if err != nil {
@@ -150,8 +150,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 	return []*adapters.RequestData{adapter}, nil
 }
-
-
 
 // MakeBids make the bids for the bid response.
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, externalRequest *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
