@@ -96,6 +96,17 @@
               }
             ]
           }
+        },
+        "biddercontrols":{
+          "appnexus": {
+            "prefmtype": "banner"
+          },
+          "districtm": {
+            "prefmtype": "video"
+          },
+          "rubicon": {
+            "prefmtype": "native"
+          }
         }
       }
     }
