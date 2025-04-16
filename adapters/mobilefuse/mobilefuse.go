@@ -182,10 +182,6 @@ func (adapter *MobileFuseAdapter) getEndpoint(ext *openrtb_ext.ExtImpMobileFuse)
 		return "", err
 	}
 
-	if ext.TagidSrc == "ext" {
-		url += "&tagid_src=ext"
-	}
-
 	return url, nil
 }
 
