@@ -12,6 +12,7 @@ import (
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/version"
 )
 
 const defaultCurrency string = "USD"
@@ -48,7 +49,15 @@ type Nexx360ResBidExt struct {
 
 // CALLER Info used to track Prebid Server
 // as one of the hops in the request to exchange
-var CALLER = Nexx360Caller{"Prebid-Server", "n/a"}
+
+func getVersion() string {
+	if version.Ver != "" {
+		return version.Ver
+	}
+	return "n/a"
+}
+
+var CALLER = Nexx360Caller{"Prebid-Server", getVersion()}
 
 func processImps(impList []openrtb2.Imp) (imp []openrtb2.Imp, tagId string, placement string, error error) {
 	var imps []openrtb2.Imp
