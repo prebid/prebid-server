@@ -48,7 +48,7 @@ func (g *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 					siteCopy.Publisher = &openrtb2.Publisher{ID: strconv.FormatFloat(gumgumExt.PubID, 'f', -1, 64)}
 				}
 			}
-
+            //modified Imp along with tagID is added to the request
 			validImps = append(validImps, imp)
 		}
 	}
@@ -143,6 +143,20 @@ func preprocess(imp *openrtb2.Imp) (*openrtb_ext.ExtImpGumGum, error) {
 			Message: err.Error(),
 		}
 		return nil, err
+	}
+
+    // Extract adunitid from imp.Ext
+	var adUnitID string
+	var extMap map[string]interface{}
+	if err := json.Unmarshal(imp.Ext, &extMap); err == nil {
+		if value, ok := extMap["adunitid"].(string); ok {
+			adUnitID = value
+		}
+	}
+
+	// Set adunitid to imp.TagID
+	if adUnitID != "" {
+		imp.TagID = adUnitID
 	}
 
 	if imp.Banner != nil && imp.Banner.W == nil && imp.Banner.H == nil && len(imp.Banner.Format) > 0 {
