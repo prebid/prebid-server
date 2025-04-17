@@ -111,9 +111,9 @@ func TestMakeRequests(t *testing.T) {
 					{ID: "imp1", Ext: json.RawMessage(`{"bidder":{"pix_id":"55463"}}`)},
 				},
 			},
-			wantReqs:       1,  // Updated to reflect actual behavior
-			wantErrs:       0,  // Updated to reflect actual behavior
-			wantErrMessage: "", // No error expected
+			wantReqs:       1,
+			wantErrs:       0,
+			wantErrMessage: "",
 		},
 	}
 
@@ -122,7 +122,7 @@ func TestMakeRequests(t *testing.T) {
 			reqs, errs := adapter.MakeRequests(tt.bidRequest, nil)
 			assert.Len(t, reqs, tt.wantReqs, "Request count mismatch")
 			assert.Len(t, errs, tt.wantErrs, "Error count mismatch")
-			if tt.wantErrs > 0 && len(errs) > 0 { // Added check to prevent panic
+			if tt.wantErrs > 0 && len(errs) > 0 && tt.wantErrMessage != "" {
 				assert.Contains(t, errs[0].Error(), tt.wantErrMessage, "Error message mismatch")
 			}
 			if tt.wantReqs > 0 {

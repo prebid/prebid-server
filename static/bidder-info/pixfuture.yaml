@@ -7,10 +7,12 @@ capabilities:
     mediaTypes:
       - banner
       - video
+      - native
   app:
     mediaTypes:
       - banner
       - video
+      - native
 userSync:
   redirect:
     url: "https://sync.pixfuture.com/cookiesync?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"

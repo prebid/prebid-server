@@ -29,23 +29,22 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 	var errs []error
 	var adapterRequests []*adapters.RequestData
+	headers := http.Header{}
+	headers.Set("Content-Type", "application/json")
+	headers.Set("Accept", "application/json")
 
 	for i := range request.Imp {
 		imp := &request.Imp[i]
 
-		// Log raw imp.Ext for debugging
-		var bidderExt adapters.ExtImpBidder
-		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
-			return nil, []error{&errortypes.BadInput{
-				Message: err.Error(),
-			}}
+		// Validate the Ext field
+		var bidderExt struct {
+			Bidder struct {
+				PixID string `json:"pix_id"`
+			} `json:"bidder"`
 		}
-
-		var ext openrtb_ext.ImpExtPixfuture
-		if err := jsonutil.Unmarshal(bidderExt.Bidder, &ext); err != nil {
-			return nil, []error{&errortypes.BadInput{
-				Message: err.Error(),
-			}}
+		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
+			errs = append(errs, &errortypes.BadInput{Message: "Invalid pix_id in impression ext: " + err.Error()})
+			continue
 		}
 
 		reqJSON, err := jsonutil.Marshal(request)
@@ -53,10 +52,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			errs = append(errs, err)
 			continue
 		}
-
-		headers := http.Header{}
-		headers.Set("Content-Type", "application/json")
-		headers.Set("Accept", "application/json")
 
 		adapterRequests = append(adapterRequests, &adapters.RequestData{
 			Method:  http.MethodPost,
