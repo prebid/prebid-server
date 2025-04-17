@@ -116,15 +116,16 @@ func TestGetBidType(t *testing.T) {
 	}
 }
 
-func TestGetPublisherId(t *testing.T) {
+func TestGetExtensionInfo(t *testing.T) {
 	type args struct {
 		impressions []openrtb2.Imp
 	}
 	tests := []struct {
-		name                string
-		args                args
-		expectedPublisherId string
-		wantErr             bool
+		name                   string
+		args                   args
+		expectedPublisherId    string
+		expectedSupplySourceId string
+		wantErr                bool
 	}{
 		{
 			name: "valid_publisher_Id",
@@ -132,12 +133,13 @@ func TestGetPublisherId(t *testing.T) {
 				impressions: []openrtb2.Imp{
 					{
 						Video: &openrtb2.Video{},
-						Ext:   json.RawMessage(`{"bidder":{"publisherId":"1"}}`),
+						Ext:   json.RawMessage(`{"bidder":{"publisherId":"1", "supplySourceId": "abc"}}`),
 					},
 				},
 			},
-			expectedPublisherId: "1",
-			wantErr:             false,
+			expectedPublisherId:    "1",
+			expectedSupplySourceId: "abc",
+			wantErr:                false,
 		},
 		{
 			name: "multiple_valid_publisher_Id",
@@ -145,16 +147,17 @@ func TestGetPublisherId(t *testing.T) {
 				impressions: []openrtb2.Imp{
 					{
 						Video: &openrtb2.Video{},
-						Ext:   json.RawMessage(`{"bidder":{"publisherId":"1"}}`),
+						Ext:   json.RawMessage(`{"bidder":{"publisherId":"1", "supplySourceId": "abc"}}`),
 					},
 					{
 						Video: &openrtb2.Video{},
-						Ext:   json.RawMessage(`{"bidder":{"publisherId":"2"}}`),
+						Ext:   json.RawMessage(`{"bidder":{"publisherId":"2",  "supplySourceId": "def"}}`),
 					},
 				},
 			},
-			expectedPublisherId: "1",
-			wantErr:             false,
+			expectedPublisherId:    "1",
+			expectedSupplySourceId: "abc",
+			wantErr:                false,
 		},
 		{
 			name: "not_publisherId_present",
@@ -166,8 +169,9 @@ func TestGetPublisherId(t *testing.T) {
 					},
 				},
 			},
-			expectedPublisherId: "",
-			wantErr:             false,
+			expectedPublisherId:    "",
+			expectedSupplySourceId: "",
+			wantErr:                false,
 		},
 		{
 			name: "nil_publisherId_present",
@@ -179,16 +183,18 @@ func TestGetPublisherId(t *testing.T) {
 					},
 				},
 			},
-			expectedPublisherId: "",
-			wantErr:             false,
+			expectedPublisherId:    "",
+			expectedSupplySourceId: "",
+			wantErr:                false,
 		},
 		{
 			name: "no_impressions",
 			args: args{
 				impressions: []openrtb2.Imp{},
 			},
-			expectedPublisherId: "",
-			wantErr:             false,
+			expectedPublisherId:    "",
+			expectedSupplySourceId: "",
+			wantErr:                false,
 		},
 		{
 			name: "invalid_bidder_object",
@@ -200,15 +206,17 @@ func TestGetPublisherId(t *testing.T) {
 					},
 				},
 			},
-			expectedPublisherId: "",
-			wantErr:             false,
+			expectedPublisherId:    "",
+			expectedSupplySourceId: "",
+			wantErr:                false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			publisherId, err := getPublisherId(tt.args.impressions)
+			publisherId, supplySourceId, err := getExtensionInfo(tt.args.impressions)
 			assert.Equal(t, tt.wantErr, err != nil)
 			assert.Equal(t, tt.expectedPublisherId, publisherId)
+			assert.Equal(t, tt.expectedSupplySourceId, supplySourceId)
 		})
 	}
 }
@@ -269,7 +277,8 @@ func TestTheTradeDeskAdapter_MakeRequests(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &adapter{
-				bidderEndpoint: tt.fields.URI,
+				bidderEndpointTemplate: tt.fields.URI,
+				defaultEndpoint:        "https://adsrvr.org/bid/bidder/test",
 			}
 			gotReqData, gotErr := a.MakeRequests(tt.args.request, tt.args.reqInfo)
 			assert.Equal(t, tt.wantErr, len(gotErr) != 0)
@@ -375,11 +384,57 @@ func TestTheTradeDeskAdapter_MakeBids(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &adapter{
-				bidderEndpoint: tt.fields.URI,
+				bidderEndpointTemplate: tt.fields.URI,
+				defaultEndpoint:        "https://adsrvr.org/bid/bidder/test",
 			}
 			gotResp, gotErr := a.MakeBids(tt.args.internalRequest, tt.args.externalRequest, tt.args.response)
 			assert.Equal(t, tt.wantErr, gotErr, gotErr)
 			assert.Equal(t, tt.wantResp, gotResp)
+		})
+	}
+}
+
+func TestTheTradeDeskAdapter_BuildEndpoint(t *testing.T) {
+	tests := []struct {
+		name             string
+		supplySourceId   string
+		defaultEndpoint  string
+		expectedEndpoint string
+		wantErr          []error
+	}{
+		{
+			name:             "valid_supply_source_id",
+			supplySourceId:   "pub_abc",
+			defaultEndpoint:  "https://direct.adsrvr.org/bid/bidder/default_publisher",
+			expectedEndpoint: "https://direct.adsrvr.org/bid/bidder/pub_abc",
+			wantErr:          nil,
+		},
+		{
+			name:             "empty_supply_source_id",
+			supplySourceId:   "",
+			defaultEndpoint:  "https://direct.adsrvr.org/bid/bidder/default_publisher",
+			expectedEndpoint: "https://direct.adsrvr.org/bid/bidder/default_publisher",
+			wantErr:          nil,
+		},
+		{
+			name:             "empty_ssi_and_no_default_expect_err",
+			supplySourceId:   "",
+			defaultEndpoint:  "",
+			expectedEndpoint: "",
+			wantErr:          nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := &adapter{
+				bidderEndpointTemplate: "https://direct.adsrvr.org/bid/bidder/{{.SupplyId}}",
+				defaultEndpoint:        tt.defaultEndpoint,
+			}
+			finalEndpoint, err := a.buildEndpointURL(tt.supplySourceId)
+			if tt.wantErr != nil {
+				assert.NotNil(t, err)
+			}
+			assert.Equal(t, tt.expectedEndpoint, finalEndpoint)
 		})
 	}
 }
