@@ -8,8 +8,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/golang-collections/collections/stack"
-
 	"github.com/prebid/prebid-server/v3/version"
 
 	"github.com/prebid/prebid-server/v3/adapters"
@@ -34,10 +32,6 @@ type RubiconAdapter struct {
 	XAPIPassword string
 }
 
-type rubiconContext struct {
-	Data json.RawMessage `json:"data"`
-}
-
 type rubiconData struct {
 	AdServer rubiconAdServer `json:"adserver"`
 	PbAdSlot string          `json:"pbadslot"`
@@ -49,12 +43,12 @@ type rubiconAdServer struct {
 }
 
 type rubiconExtImpBidder struct {
-	Prebid  *openrtb_ext.ExtImpPrebid `json:"prebid"`
-	Bidder  openrtb_ext.ExtImpRubicon `json:"bidder"`
-	Gpid    string                    `json:"gpid"`
-	Skadn   json.RawMessage           `json:"skadn,omitempty"`
-	Data    json.RawMessage           `json:"data"`
-	Context rubiconContext            `json:"context"`
+	Prebid *openrtb_ext.ExtImpPrebid `json:"prebid"`
+	Bidder openrtb_ext.ExtImpRubicon `json:"bidder"`
+	Gpid   string                    `json:"gpid"`
+	Skadn  json.RawMessage           `json:"skadn,omitempty"`
+	Tid    string                    `json:"tid"`
+	Data   json.RawMessage           `json:"data"`
 }
 
 type bidRequestExt struct {
@@ -86,6 +80,7 @@ type rubiconImpExt struct {
 	RP    rubiconImpExtRP `json:"rp,omitempty"`
 	GPID  string          `json:"gpid,omitempty"`
 	Skadn json.RawMessage `json:"skadn,omitempty"`
+	Tid   string          `json:"tid,omitempty"`
 }
 
 type rubiconImpExtRP struct {
@@ -275,6 +270,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			},
 			GPID:  bidderExt.Gpid,
 			Skadn: bidderExt.Skadn,
+			Tid:   bidderExt.Tid,
 		}
 
 		imp.Ext, err = json.Marshal(&impExt)
@@ -404,7 +400,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			siteExtRP := rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: int(siteId)}}
 			if siteCopy.Content != nil {
 				siteTarget := make(map[string]interface{})
-				updateExtWithIabAndSegtaxAttribute(siteTarget, siteCopy.Content.Data, []int{1, 2, 5, 6})
+				updateExtWithIabAttribute(siteTarget, siteCopy.Content.Data, []int{1, 2, 5, 6})
 				if len(siteTarget) > 0 {
 					updatedSiteTarget, err := json.Marshal(siteTarget)
 					if err != nil {
@@ -438,37 +434,26 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			rubiconRequest.App = &appCopy
 		}
 
-		if request.Source != nil || rubiconExt.PChain != "" {
-			var sourceCopy openrtb2.Source
-			if request.Source != nil {
-				sourceCopy = *request.Source
-			} else {
-				sourceCopy = openrtb2.Source{}
-			}
+		if request.Source != nil && request.Source.SChain != nil {
+			sourceCopy := *request.Source
 
-			if sourceCopy.SChain != nil {
-				var sourceCopyExt openrtb_ext.ExtSource
-				if sourceCopy.Ext != nil {
-					if err = jsonutil.Unmarshal(sourceCopy.Ext, &sourceCopyExt); err != nil {
-						errs = append(errs, &errortypes.BadInput{Message: err.Error()})
-						continue
-					}
-				} else {
-					sourceCopyExt = openrtb_ext.ExtSource{}
-				}
-
-				sourceCopyExt.SChain = sourceCopy.SChain
-				sourceCopy.SChain = nil
-
-				sourceCopy.Ext, err = json.Marshal(&sourceCopyExt)
-				if err != nil {
-					errs = append(errs, err)
+			var sourceCopyExt openrtb_ext.ExtSource
+			if sourceCopy.Ext != nil {
+				if err = jsonutil.Unmarshal(sourceCopy.Ext, &sourceCopyExt); err != nil {
+					errs = append(errs, &errortypes.BadInput{Message: err.Error()})
 					continue
 				}
+			} else {
+				sourceCopyExt = openrtb_ext.ExtSource{}
 			}
 
-			if rubiconExt.PChain != "" {
-				sourceCopy.PChain = rubiconExt.PChain
+			sourceCopyExt.SChain = sourceCopy.SChain
+			sourceCopy.SChain = nil
+
+			sourceCopy.Ext, err = json.Marshal(&sourceCopyExt)
+			if err != nil {
+				errs = append(errs, err)
+				continue
 			}
 
 			rubiconRequest.Source = &sourceCopy
@@ -662,9 +647,7 @@ func (a *RubiconAdapter) updateImpRpTarget(extImp rubiconExtImpBidder, extImpRub
 		}
 	}
 
-	if len(extImp.Context.Data) > 0 {
-		err = populateFirstPartyDataAttributes(extImp.Context.Data, target)
-	} else if len(extImp.Data) > 0 {
+	if len(extImp.Data) > 0 {
 		err = populateFirstPartyDataAttributes(extImp.Data, target)
 	}
 	if isNotKeyPathError(err) {
@@ -678,18 +661,11 @@ func (a *RubiconAdapter) updateImpRpTarget(extImp rubiconExtImpBidder, extImpRub
 			return nil, err
 		}
 	}
-	var contextData rubiconData
-	if len(extImp.Context.Data) > 0 {
-		err := jsonutil.Unmarshal(extImp.Context.Data, &contextData)
-		if err != nil {
-			return nil, err
-		}
-	}
 
 	if data.PbAdSlot != "" {
 		target["pbadslot"] = data.PbAdSlot
 	} else {
-		dfpAdUnitCode := extractDfpAdUnitCode(data, contextData)
+		dfpAdUnitCode := extractDfpAdUnitCode(data)
 		if dfpAdUnitCode != "" {
 			target["dfp_ad_unit_code"] = dfpAdUnitCode
 		}
@@ -710,10 +686,8 @@ func (a *RubiconAdapter) updateImpRpTarget(extImp rubiconExtImpBidder, extImpRub
 	return updatedTarget, nil
 }
 
-func extractDfpAdUnitCode(data rubiconData, contextData rubiconData) string {
-	if contextData.AdServer.Name == "gam" && contextData.AdServer.AdSlot != "" {
-		return contextData.AdServer.AdSlot
-	} else if data.AdServer.Name == "gam" && data.AdServer.AdSlot != "" {
+func extractDfpAdUnitCode(data rubiconData) string {
+	if data.AdServer.Name == "gam" && len(data.AdServer.AdSlot) != 0 {
 		return data.AdServer.AdSlot
 	}
 
@@ -753,7 +727,7 @@ func updateUserRpTargetWithFpdAttributes(visitor json.RawMessage, user openrtb2.
 	if err != nil {
 		return nil, err
 	}
-	updateExtWithIabAndSegtaxAttribute(target, user.Data, []int{4})
+	updateExtWithIabAttribute(target, user.Data, []int{4})
 
 	updatedTarget, err := json.Marshal(target)
 	if err != nil {
@@ -762,106 +736,13 @@ func updateUserRpTargetWithFpdAttributes(visitor json.RawMessage, user openrtb2.
 	return updatedTarget, nil
 }
 
-func updateExtWithIabAndSegtaxAttribute(target map[string]interface{}, data []openrtb2.Data, segTaxes []int) {
-	taxonomyIdToSegments := getTaxonomyIdToSegments(data)
-	if len(taxonomyIdToSegments) == 0 {
+func updateExtWithIabAttribute(target map[string]interface{}, data []openrtb2.Data, segTaxes []int) {
+	var segmentIdsToCopy = getSegmentIdsToCopy(data, segTaxes)
+	if len(segmentIdsToCopy) == 0 {
 		return
 	}
 
-	relevantSegments := pickRelevantSegments(taxonomyIdToSegments)
-	groupedSegments := groupSegments(relevantSegments, segTaxes)
-
-	for key, value := range groupedSegments {
-		target[key] = value
-	}
-}
-
-func getTaxonomyIdToSegments(data []openrtb2.Data) map[int]*stack.Stack {
-	var taxonomyIdToSegments = make(map[int]*stack.Stack)
-	for _, dataRecord := range data {
-		if dataRecord.Ext == nil {
-			continue
-		}
-
-		var dataRecordExt rubiconDataExt
-		err := json.Unmarshal(dataRecord.Ext, &dataRecordExt)
-		if err != nil {
-			continue
-		}
-
-		taxonomyId := dataRecordExt.SegTax
-		originalSegments := dataRecord.Segment
-		if len(originalSegments) == 0 {
-			continue
-		}
-
-		segments, exists := taxonomyIdToSegments[taxonomyId]
-		if !exists {
-			segments = stack.New()
-			taxonomyIdToSegments[taxonomyId] = segments
-		}
-
-		for _, originalSegment := range originalSegments {
-			if originalSegment.ID != "" {
-				segments.Push(originalSegment)
-			}
-		}
-
-		if segments.Len() == 0 {
-			delete(taxonomyIdToSegments, taxonomyId)
-		}
-	}
-
-	return taxonomyIdToSegments
-}
-
-func pickRelevantSegments(taxonomyIdToSegments map[int]*stack.Stack) map[int][]string {
-	var relevantSegments = make(map[int][]string)
-	taxonomyIds := make([]int, 0)
-
-	for taxonomyId := range taxonomyIdToSegments {
-		taxonomyIds = append(taxonomyIds, taxonomyId)
-	}
-
-	i := 0
-	consumedSegmentsCount := 0
-	for consumedSegmentsCount < 100 && len(taxonomyIds) > 0 {
-		taxonomyIdIndex := i % len(taxonomyIds)
-		taxonomyId := taxonomyIds[taxonomyIdIndex]
-		currentSegments := taxonomyIdToSegments[taxonomyId]
-		lastSegment := currentSegments.Pop().(openrtb2.Segment)
-
-		if _, exists := relevantSegments[taxonomyId]; !exists {
-			relevantSegments[taxonomyId] = make([]string, 0)
-		}
-		relevantSegments[taxonomyId] = append(relevantSegments[taxonomyId], lastSegment.ID)
-		consumedSegmentsCount++
-
-		if currentSegments.Len() == 0 {
-			taxonomyIds = append(taxonomyIds[:taxonomyIdIndex], taxonomyIds[taxonomyIdIndex+1:]...)
-			i--
-		}
-		i++
-	}
-
-	return relevantSegments
-}
-
-func groupSegments(taxonomyIdToSegmentsIds map[int][]string, segTaxes []int) map[string][]string {
-	var groupedSegments = make(map[string][]string)
-	for taxonomyId, segmentsIds := range taxonomyIdToSegmentsIds {
-		segmentName := "iab"
-		if !contains(segTaxes, taxonomyId) {
-			segmentName = "tax" + strconv.Itoa(taxonomyId)
-		}
-
-		if _, exists := groupedSegments[segmentName]; !exists {
-			groupedSegments[segmentName] = make([]string, 0)
-		}
-		groupedSegments[segmentName] = append(groupedSegments[segmentName], segmentsIds...)
-	}
-
-	return groupedSegments
+	target["iab"] = segmentIdsToCopy
 }
 
 func populateFirstPartyDataAttributes(source json.RawMessage, target map[string]interface{}) error {
@@ -938,6 +819,26 @@ func mapFromRawJSON(message json.RawMessage) (map[string]interface{}, error) {
 		return nil, err
 	}
 	return targetAsMap, nil
+}
+
+func getSegmentIdsToCopy(data []openrtb2.Data, segTaxValues []int) []string {
+	var segmentIdsToCopy = make([]string, 0, len(data))
+
+	for _, dataRecord := range data {
+		if dataRecord.Ext != nil {
+			var dataExtObject rubiconDataExt
+			err := jsonutil.Unmarshal(dataRecord.Ext, &dataExtObject)
+			if err != nil {
+				continue
+			}
+			if contains(segTaxValues, dataExtObject.SegTax) {
+				for _, segment := range dataRecord.Segment {
+					segmentIdsToCopy = append(segmentIdsToCopy, segment.ID)
+				}
+			}
+		}
+	}
+	return segmentIdsToCopy
 }
 
 func contains(s []int, e int) bool {

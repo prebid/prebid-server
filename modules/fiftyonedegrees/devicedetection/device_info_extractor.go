@@ -1,10 +1,12 @@
 package devicedetection
 
 import (
-	"github.com/prebid/prebid-server/v3/logger"
+	"fmt"
 	"strconv"
 
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"github.com/prebid/prebid-server/v3/logger"
 )
 
 // deviceInfoExtractor is a struct that contains the methods to extract device information
@@ -61,7 +63,7 @@ func (x deviceInfoExtractor) extract(results Results, ua string) (*deviceInfo, e
 	geoLocation, _ := strconv.ParseBool(x.getValue(results, deviceInfoGeoLocation))
 	deviceId, err := results.DeviceId()
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get device id.")
+		return nil, fmt.Errorf("failed to get device id: %w", err)
 	}
 	hardwareModel := x.getValue(results, deviceInfoHardwareModel)
 	hardwareFamily := x.getValue(results, deviceInfoHardwareFamily)

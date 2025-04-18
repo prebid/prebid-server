@@ -29,7 +29,7 @@ import (
 	"github.com/prebid/prebid-server/v3/privacysandbox"
 	"github.com/prebid/prebid-server/v3/schain"
 	"golang.org/x/net/publicsuffix"
-	jsonpatch "gopkg.in/evanphx/json-patch.v4"
+	jsonpatch "gopkg.in/evanphx/json-patch.v5"
 
 	accountService "github.com/prebid/prebid-server/v3/account"
 	"github.com/prebid/prebid-server/v3/analytics"
@@ -1277,23 +1277,64 @@ func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases 
 	}
 
 	// Check Universal User ID
-	for eidIndex, eid := range req.User.EIDs {
-		if eid.Source == "" {
-			return append(errL, fmt.Errorf("request.user.eids[%d] missing required field: \"source\"", eidIndex))
-		}
+	if len(req.User.EIDs) > 0 {
 
-		if len(eid.UIDs) == 0 {
-			return append(errL, fmt.Errorf("request.user.eids[%d].uids must contain at least one element or be undefined", eidIndex))
-		}
+		validEids, eidErrors := validateEIDs(req.User.EIDs)
 
-		for uidIndex, uid := range eid.UIDs {
-			if uid.ID == "" {
-				return append(errL, fmt.Errorf("request.user.eids[%d].uids[%d] missing required field: \"id\"", eidIndex, uidIndex))
-			}
+		if len(eidErrors) > 0 {
+			errL = append(errL, eidErrors...)
 		}
+		req.User.EIDs = validEids
 	}
 
 	return errL
+}
+
+func validateEIDs(eids []openrtb2.EID) ([]openrtb2.EID, []error) {
+	var errorsList []error
+	validEIDs := make([]openrtb2.EID, 0, len(eids))
+
+	for eidIndex, eid := range eids {
+		if eid.Source == "" {
+			errorsList = append(errorsList, &errortypes.Warning{
+				Message:     fmt.Sprintf("request.user.eids[%d] removed due to missing source", eidIndex),
+				WarningCode: errortypes.InvalidUserEIDsWarningCode,
+			})
+			continue
+		}
+		validUIDs, uidErrors := validateUIDs(eid.UIDs, eidIndex)
+		errorsList = append(errorsList, uidErrors...)
+
+		if len(validUIDs) > 0 {
+			eid.UIDs = validUIDs
+			validEIDs = append(validEIDs, eid)
+		} else {
+			errorsList = append(errorsList, &errortypes.Warning{
+				Message:     fmt.Sprintf("request.user.eids[%d] (source: %s) removed due to empty uids", eidIndex, eid.Source),
+				WarningCode: errortypes.InvalidUserEIDsWarningCode,
+			})
+		}
+	}
+
+	return validEIDs, errorsList
+}
+
+func validateUIDs(uids []openrtb2.UID, eidIndex int) ([]openrtb2.UID, []error) {
+	var validUIDs []openrtb2.UID
+	var uidErrors []error
+
+	for uidIndex, uid := range uids {
+		if uid.ID != "" {
+			validUIDs = append(validUIDs, uid)
+		} else {
+			uidErrors = append(uidErrors, &errortypes.Warning{
+				Message:     fmt.Sprintf("request.user.eids[%d].uids[%d] removed due to empty ids", eidIndex, uidIndex),
+				WarningCode: errortypes.InvalidUserUIDsWarningCode,
+			})
+		}
+	}
+
+	return validUIDs, uidErrors
 }
 
 func validateRegs(req *openrtb_ext.RequestWrapper, gpp gpplib.GppContainer) []error {

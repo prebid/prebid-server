@@ -1,0 +1,98 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "video": {
+          "w": 1920,
+          "h": 1080,
+          "mimes": [
+            "video/x-flv",
+            "video/mp4"
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "company_id": "9876543"
+          }
+        }
+      }
+    ],
+    "device": {
+      "ua": "user-agent",
+      "ip": "1.2.3.4"
+    },
+    "site": {
+      "domain": "domain.com",
+      "page": "page.com/test"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "method": "POST",
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Origin": [
+            "domain.com"
+          ],
+          "X-Openrtb-Version": [
+            "2.6"
+          ],
+          "User-Agent": [
+            "user-agent"
+          ],
+          "X-Forwarded-For": [
+            "1.2.3.4"
+          ]
+        },
+        "uri": "https://test.localhost.com?company_id=9876543",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "video": {
+                "w": 1920,
+                "h": 1080,
+                "mimes": [
+                  "video/x-flv",
+                  "video/mp4"
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "company_id": "9876543"
+                }
+              }
+            }
+          ],
+          "device": {
+            "ua": "user-agent",
+            "ip": "1.2.3.4"
+          },
+          "site": {
+            "domain": "domain.com",
+            "page": "page.com/test"
+          }
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 400
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 400. Run with request.debug = 1 for more info",
+      "comparison": "literal"
+    }
+  ]
+}
