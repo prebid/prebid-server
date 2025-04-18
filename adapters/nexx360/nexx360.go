@@ -15,8 +15,6 @@ import (
 	"github.com/prebid/prebid-server/v3/version"
 )
 
-const defaultCurrency string = "USD"
-
 type adapter struct {
 	endpoint string
 }
@@ -208,8 +206,6 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, externalRequest *adapte
 	bidResponse.Bids = Bids
 	if response.Cur != "" {
 		bidResponse.Currency = response.Cur
-	} else {
-		bidResponse.Currency = defaultCurrency
 	}
 
 	return bidResponse, errors
