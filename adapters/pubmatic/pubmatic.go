@@ -649,7 +649,7 @@ func getStringArray(array []interface{}) []string {
 	return aString
 }
 
-// getMediaTypeForBid returns the bid type specified in the response bid.ext
+// getMediaTypeForBid returns the Mtype
 func getMediaTypeForBid(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 	// setting "banner" as the default bid type
 	mType := openrtb_ext.BidTypeBanner
