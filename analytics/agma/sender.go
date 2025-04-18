@@ -50,7 +50,7 @@ func createHttpSender(httpClient *http.Client, endpoint config.AgmaAnalyticsHttp
 		if endpoint.Gzip {
 			requestBody, err = compressToGZIP(payload)
 			if err != nil {
-				logger.Log.Errorf("[agmaAnalytics] Compressing request failed %v", err)
+				logger.Errorf("[agmaAnalytics] Compressing request failed %v", err)
 				return err
 			}
 		} else {
@@ -59,7 +59,7 @@ func createHttpSender(httpClient *http.Client, endpoint config.AgmaAnalyticsHttp
 
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint.Url, bytes.NewBuffer(requestBody))
 		if err != nil {
-			logger.Log.Errorf("[agmaAnalytics] Creating request failed %v", err)
+			logger.Errorf("[agmaAnalytics] Creating request failed %v", err)
 			return err
 		}
 
@@ -71,12 +71,12 @@ func createHttpSender(httpClient *http.Client, endpoint config.AgmaAnalyticsHttp
 
 		resp, err := httpClient.Do(req)
 		if err != nil {
-			logger.Log.Errorf("[agmaAnalytics] Sending request failed %v", err)
+			logger.Errorf("[agmaAnalytics] Sending request failed %v", err)
 			return err
 		}
 
 		if resp.StatusCode != http.StatusOK {
-			logger.Log.Errorf("[agmaAnalytics] Wrong code received %d instead of %d", resp.StatusCode, http.StatusOK)
+			logger.Errorf("[agmaAnalytics] Wrong code received %d instead of %d", resp.StatusCode, http.StatusOK)
 			return fmt.Errorf("wrong code received %d instead of %d", resp.StatusCode, http.StatusOK)
 		}
 		return nil

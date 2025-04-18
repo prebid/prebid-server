@@ -22,7 +22,7 @@ const (
 func NewBiddersDetailEndpoint(bidders config.BidderInfos) httprouter.Handle {
 	responses, err := prepareBiddersDetailResponse(bidders)
 	if err != nil {
-		logger.Log.Fatalf("error creating /info/bidders/<bidder> endpoint response: %v", err)
+		logger.Fatalf("error creating /info/bidders/<bidder> endpoint response: %v", err)
 	}
 
 	return func(w http.ResponseWriter, _ *http.Request, ps httprouter.Params) {
@@ -36,7 +36,7 @@ func NewBiddersDetailEndpoint(bidders config.BidderInfos) httprouter.Handle {
 		if response, ok := responses[bidderName]; ok {
 			w.Header().Set("Content-Type", "application/json")
 			if _, err := w.Write(response); err != nil {
-				logger.Log.Errorf("error writing response to /info/bidders/%s: %v", bidder, err)
+				logger.Errorf("error writing response to /info/bidders/%s: %v", bidder, err)
 			}
 		} else {
 			w.WriteHeader(http.StatusNotFound)

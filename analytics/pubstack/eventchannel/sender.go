@@ -15,7 +15,7 @@ func NewHttpSender(client *http.Client, endpoint string) Sender {
 	return func(payload []byte) error {
 		req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewReader(payload))
 		if err != nil {
-			logger.Log.Error(err)
+			logger.Error(err)
 			return err
 		}
 
@@ -29,7 +29,7 @@ func NewHttpSender(client *http.Client, endpoint string) Sender {
 		resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			logger.Log.Errorf("[pubstack] Wrong code received %d instead of %d", resp.StatusCode, http.StatusOK)
+			logger.Errorf("[pubstack] Wrong code received %d instead of %d", resp.StatusCode, http.StatusOK)
 			return fmt.Errorf("wrong code received %d instead of %d", resp.StatusCode, http.StatusOK)
 		}
 		return nil
@@ -39,7 +39,7 @@ func NewHttpSender(client *http.Client, endpoint string) Sender {
 func BuildEndpointSender(client *http.Client, baseUrl string, module string) Sender {
 	endpoint, err := url.Parse(baseUrl)
 	if err != nil {
-		logger.Log.Error(err)
+		logger.Error(err)
 	}
 	endpoint.Path = path.Join(endpoint.Path, "intake", module)
 	return NewHttpSender(client, endpoint.String())

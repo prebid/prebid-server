@@ -19,10 +19,10 @@ import (
 func NewCache(size int, ttl int, dataType string) stored_requests.CacheJSON {
 	if ttl > 0 && size <= 0 {
 		// a positive ttl indicates "LRU" cache type, while unlimited size indicates an "unbounded" cache type
-		logger.Log.Fatalf("unbounded in-memory %s cache with TTL not allowed. Config validation should have caught this. Failing fast because something is buggy.", dataType)
+		logger.Fatalf("unbounded in-memory %s cache with TTL not allowed. Config validation should have caught this. Failing fast because something is buggy.", dataType)
 	}
 	if size > 0 {
-		logger.Log.Infof("Using a Stored %s in-memory cache. Max size: %d bytes. TTL: %d seconds.", dataType, size, ttl)
+		logger.Infof("Using a Stored %s in-memory cache. Max size: %d bytes. TTL: %d seconds.", dataType, size, ttl)
 		return &cache{
 			dataType: dataType,
 			cache: &pbsLRUCache{
@@ -31,7 +31,7 @@ func NewCache(size int, ttl int, dataType string) stored_requests.CacheJSON {
 			},
 		}
 	} else {
-		logger.Log.Infof("Using an unbounded Stored %s in-memory cache.", dataType)
+		logger.Infof("Using an unbounded Stored %s in-memory cache.", dataType)
 		return &cache{
 			dataType: dataType,
 			cache:    &pbsSyncMap{&sync.Map{}},

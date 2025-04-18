@@ -62,7 +62,7 @@ func NewCurrencyRatesEndpoint(rateConverter rateConverter, fetchingInterval time
 	return func(w http.ResponseWriter, _ *http.Request) {
 		jsonOutput, err := jsonutil.Marshal(currencyRateInfo)
 		if err != nil {
-			logger.Log.Errorf("/currency/rates Critical error when trying to marshal currencyRateInfo: %v", err)
+			logger.Errorf("/currency/rates Critical error when trying to marshal currencyRateInfo: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}

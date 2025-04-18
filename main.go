@@ -29,16 +29,16 @@ func main() {
 
 	bidderInfoPath, err := filepath.Abs(infoDirectory)
 	if err != nil {
-		logger.Log.Exitf("Unable to build configuration directory path: %v", err)
+		logger.Exitf("Unable to build configuration directory path: %v", err)
 	}
 
 	bidderInfos, err := config.LoadBidderInfoFromDisk(bidderInfoPath)
 	if err != nil {
-		logger.Log.Exitf("Unable to load bidder configurations: %v", err)
+		logger.Exitf("Unable to load bidder configurations: %v", err)
 	}
 	cfg, err := loadConfig(bidderInfos)
 	if err != nil {
-		logger.Log.Exitf("Configuration could not be loaded or did not pass validation: %v", err)
+		logger.Exitf("Configuration could not be loaded or did not pass validation: %v", err)
 	}
 
 	// Create a soft memory limit on the total amount of memory that PBS uses to tune the behavior
@@ -51,7 +51,7 @@ func main() {
 
 	err = serve(cfg)
 	if err != nil {
-		logger.Log.Exitf("prebid-server failed: %v", err)
+		logger.Exitf("prebid-server failed: %v", err)
 	}
 }
 
@@ -79,7 +79,7 @@ func serve(cfg *config.Configuration) error {
 
 	corsRouter := router.SupportCORS(r)
 	if err := server.Listen(cfg, router.NoCache{Handler: corsRouter}, router.Admin(currencyConverter, fetchingInterval), r.MetricsEngine); err != nil {
-		logger.Log.Fatalf("prebid-server returned an error: %v", err)
+		logger.Fatalf("prebid-server returned an error: %v", err)
 	}
 
 	r.Shutdown()

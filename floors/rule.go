@@ -74,7 +74,7 @@ func getMinFloorValue(floorExt *openrtb_ext.PriceFloorRules, imp *openrtb_ext.Im
 		floorCur = getFloorCurrency(floorExt)
 		if floorMin > 0.0 && floorMinCur != "" {
 			if floorExt.FloorMinCur != "" && impFloorCur != "" && floorExt.FloorMinCur != impFloorCur {
-				logger.Log.Warning("FloorMinCur are different in floorExt and ImpExt")
+				logger.Warning("FloorMinCur are different in floorExt and ImpExt")
 			}
 			if floorCur != "" && floorMinCur != floorCur {
 				rate, err = conversions.GetRate(floorMinCur, floorCur)

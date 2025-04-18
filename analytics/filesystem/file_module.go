@@ -93,7 +93,7 @@ func (f *FileLogger) LogNotificationEventObject(ne *analytics.NotificationEvent)
 // Shutdown the logger
 func (f *FileLogger) Shutdown() {
 	// clear all pending buffered data in case there is any
-	logger.Log.Info("[FileLogger] Shutdown, trying to flush buffer")
+	logger.Info("[FileLogger] Shutdown, trying to flush buffer")
 	f.Logger.Flush()
 }
 

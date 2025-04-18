@@ -527,7 +527,7 @@ func makeExt(httpInfo *httpCallInfo) *openrtb_ext.ExtHttpCall {
 // doRequest makes a request, handles the response, and returns the data needed by the
 // Bidder interface.
 func (bidder *BidderAdapter) doRequest(ctx context.Context, req *adapters.RequestData, bidderRequestStartTime time.Time, tmaxAdjustments *TmaxAdjustmentsPreprocessed) *httpCallInfo {
-	return bidder.doRequestImpl(ctx, req, logger.Log.Warningf, bidderRequestStartTime, tmaxAdjustments)
+	return bidder.doRequestImpl(ctx, req, logger.Warningf, bidderRequestStartTime, tmaxAdjustments)
 }
 
 func (bidder *BidderAdapter) doRequestImpl(ctx context.Context, req *adapters.RequestData, logger util.LogMsg, bidderRequestStartTime time.Time, tmaxAdjustments *TmaxAdjustmentsPreprocessed) *httpCallInfo {

@@ -23,7 +23,7 @@ func New(analytics *config.Analytics) analytics.Runner {
 		if mod, err := filesystem.NewFileLogger(analytics.File.Filename); err == nil {
 			modules["filelogger"] = mod
 		} else {
-			logger.Log.Fatalf("Could not initialize FileLogger for file %v :%v", analytics.File.Filename, err)
+			logger.Fatalf("Could not initialize FileLogger for file %v :%v", analytics.File.Filename, err)
 		}
 	}
 
@@ -40,7 +40,7 @@ func New(analytics *config.Analytics) analytics.Runner {
 		if err == nil {
 			modules["pubstack"] = pubstackModule
 		} else {
-			logger.Log.Errorf("Could not initialize PubstackModule: %v", err)
+			logger.Errorf("Could not initialize PubstackModule: %v", err)
 		}
 	}
 
@@ -52,7 +52,7 @@ func New(analytics *config.Analytics) analytics.Runner {
 		if err == nil {
 			modules["agma"] = agmaModule
 		} else {
-			logger.Log.Errorf("Could not initialize Agma Anayltics: %v", err)
+			logger.Errorf("Could not initialize Agma Anayltics: %v", err)
 		}
 	}
 

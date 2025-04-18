@@ -31,15 +31,15 @@ func NewDbProvider(dataType config.DataType, cfg config.DatabaseConnection) DbPr
 			cfg: cfg,
 		}
 	default:
-		logger.Log.Fatalf("Unsupported database driver %s", cfg.Driver)
+		logger.Fatalf("Unsupported database driver %s", cfg.Driver)
 		return nil
 	}
 
 	if err := provider.Open(); err != nil {
-		logger.Log.Fatalf("Failed to open %s database connection: %v", dataType, err)
+		logger.Fatalf("Failed to open %s database connection: %v", dataType, err)
 	}
 	if err := provider.Ping(); err != nil {
-		logger.Log.Fatalf("Failed to ping %s database: %v", dataType, err)
+		logger.Fatalf("Failed to ping %s database: %v", dataType, err)
 	}
 
 	return provider

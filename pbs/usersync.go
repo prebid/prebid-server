@@ -69,7 +69,7 @@ func (deps *UserSyncDeps) OptOut(w http.ResponseWriter, r *http.Request, _ httpr
 
 	err := deps.VerifyRecaptcha(rr)
 	if err != nil {
-		logger.Log.Infof("Opt Out failed recaptcha: %v", err)
+		logger.Infof("Opt Out failed recaptcha: %v", err)
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}

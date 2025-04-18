@@ -83,9 +83,9 @@ func (rc *RateConverter) update() error {
 	} else {
 		if rc.checkStaleRates() {
 			rc.clearRates()
-			logger.Log.Errorf("Error updating conversion rates, falling back to constant rates: %v", err)
+			logger.Errorf("Error updating conversion rates, falling back to constant rates: %v", err)
 		} else {
-			logger.Log.Errorf("Error updating conversion rates: %v", err)
+			logger.Errorf("Error updating conversion rates: %v", err)
 		}
 	}
 

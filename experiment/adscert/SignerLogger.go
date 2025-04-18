@@ -10,27 +10,27 @@ type SignerLogger struct {
 
 func (sl *SignerLogger) Debugf(format string, args ...interface{}) {
 	//there is no Debug level in glog
-	logger.Log.Infof(format, args...)
+	logger.Infof(format, args...)
 }
 
 func (sl *SignerLogger) Infof(format string, args ...interface{}) {
-	logger.Log.Infof(format, args...)
+	logger.Infof(format, args...)
 }
 
 func (sl *SignerLogger) Info(format string) {
-	logger.Log.Info(format)
+	logger.Info(format)
 }
 
 func (sl *SignerLogger) Warningf(format string, args ...interface{}) {
-	logger.Log.Warningf(format, args...)
+	logger.Warningf(format, args...)
 }
 
 func (sl *SignerLogger) Errorf(format string, args ...interface{}) {
-	logger.Log.Errorf(format, args...)
+	logger.Errorf(format, args...)
 }
 
 func (sl *SignerLogger) Fatalf(format string, args ...interface{}) {
-	logger.Log.Fatalf(format, args...)
+	logger.Fatalf(format, args...)
 }
 
 func (sl *SignerLogger) Panicf(format string, args ...interface{}) {
