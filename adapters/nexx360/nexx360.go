@@ -47,6 +47,10 @@ type Nexx360ResBidExt struct {
 	BidType string `json:"bidType,omitempty"`
 }
 
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	return &adapter{endpoint: config.Endpoint}, nil
+}
+
 // CALLER Info used to track Prebid Server
 // as one of the hops in the request to exchange
 
@@ -76,9 +80,12 @@ func processImps(impList []openrtb2.Imp) (imp []openrtb2.Imp, tagId string, plac
 			}
 		}
 
-		var impExt Ext
-		impExt.Nexx360.TagId = nexx360Ext.TagId
-		impExt.Nexx360.Placement = nexx360Ext.Placement
+		impExt := Ext{
+			Nexx360: ImpNexx360Ext{
+				TagId:     nexx360Ext.TagId,
+				Placement: nexx360Ext.Placement,
+			},
+		}
 
 		impExtJSON, err := json.Marshal(impExt)
 		if err != nil {
@@ -100,11 +107,11 @@ func processImps(impList []openrtb2.Imp) (imp []openrtb2.Imp, tagId string, plac
 }
 
 func makeReqExt() ([]byte, error) {
-	var reqExt ReqExt
-
-	reqExt.Nexx360 = &ReqNexx360Ext{}
-	reqExt.Nexx360.Caller = make([]Nexx360Caller, 0)
-	reqExt.Nexx360.Caller = append(reqExt.Nexx360.Caller, CALLER)
+	reqExt := ReqExt{
+		Nexx360: &ReqNexx360Ext{
+			Caller: []Nexx360Caller{CALLER},
+		},
+	}
 
 	return json.Marshal(reqExt)
 }
@@ -162,19 +169,12 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 // MakeBids make the bids for the bid response.
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, externalRequest *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if responseData.StatusCode == http.StatusNoContent {
+	if adapters.IsResponseStatusCodeNoContent(responseData) {
 		return nil, nil
 	}
 
-	if responseData.StatusCode == http.StatusBadRequest {
+	if err := adapters.CheckResponseStatusCodeForErrors(responseData); err != nil {
 		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Unexpected http status code: %d", responseData.StatusCode),
-		}}
-	}
-
-	if responseData.StatusCode != http.StatusOK {
-		fmt.Printf("Nexx360: Bad server response: %d\n", responseData.StatusCode)
-		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Unexpected http status code: %d", responseData.StatusCode),
 		}}
 	}
@@ -235,8 +235,4 @@ func getBidType(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 	return "", &errortypes.BadServerResponse{
 		Message: fmt.Sprintf("unable to fetch mediaType in multi-format: %s", bid.ImpID),
 	}
-}
-
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	return &adapter{endpoint: config.Endpoint}, nil
 }
