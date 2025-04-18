@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/golang/glog"
-	"github.com/pkg/errors"
 	"github.com/prebid/prebid-server/v3/logger"
 )
 
