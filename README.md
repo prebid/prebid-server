@@ -94,7 +94,15 @@ Prebid Server is not currently intended to be imported by other projects. Go Mod
 
 ## Swapping Global Dependencies
 
-Logger is a global side-effectful dependency that sometimes needs to be swapped in order to modify the behavior.  This can be done compile-time in the `di` package.  It contains the `interface` sub-package with a ILogger interface definition and `provider` with the implementation of the default logger (`providers/log/default.go`) and an example of an alternative (`providers/log/alternative.go`) logger.  Notice that the alternative logger is compiled only if a `custom_logger` build tag is specified while default logger will not be compiled in that case.  You can replace the `alternative.go` with your logger implementation, but please adhere to the interface and expose a `ProvideLogger()` function that is called by `di/di.go` to set your dependency to be used globally. This is not a dependency injection per se, but this mechanism can be extended to other similar side-effectful global dependencies besides logger.
+Logger is a global side-effectful dependency that sometimes needs to be swapped in order to modify the behavior.  
+This can be done compile-time in the `logger` package.
+It contains `Logger` interface definition and `default` and `alternative` implementation.
+The `default` logger implementation based on `github.com/golang/glog` package.
+The `alternative` logger implementation based on `log/slog` package.
+By default we use the `default` logger implementation.
+
+Notice: that the alternative logger is compiled only if the config `logger.type` will setup with `alternative` value.  You can replace the `alternative.go` with your logger implementation, but please adhere to the interface and expose a `ProvideLogger()` function that is called by `logger/interface.go` to set your dependency to be used globally. 
+This is not a dependency injection per se, but this mechanism can be extended to other similar side-effectful global dependencies besides logger.
 
 ## Contributing
 > [!IMPORTANT]

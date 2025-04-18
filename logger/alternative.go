@@ -1,13 +1,9 @@
-//go:build custom_logger
-
 package logger
 
 import (
 	"fmt"
 	"log/slog"
 	"os"
-
-	"github.com/prebid/prebid-server/v3/di/interfaces"
 )
 
 type SlogWrapper struct {
@@ -67,8 +63,8 @@ func (logger *SlogWrapper) Fatalf(format string, args ...any) {
 	os.Exit(1)
 }
 
-var logInstance = &SlogWrapper{1}
-
-func ProvideLogger() interfaces.Logger {
-	return logInstance
+func ProvideAlternativeLogger(depth int) Logger {
+	return &SlogWrapper{
+		depth: depth,
+	}
 }

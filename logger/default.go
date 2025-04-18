@@ -1,5 +1,3 @@
-//go:build !custom_logger
-
 package logger
 
 import (
@@ -50,8 +48,8 @@ func (logger *GlogLogger) Fatalf(format string, args ...any) {
 	glog.FatalDepthf(logger.depth, format, args...)
 }
 
-var logInstance = &GlogLogger{1}
-
-func ProvideLogger() Logger {
-	return logInstance
+func ProvideDefaultLogger(depth int) Logger {
+	return &GlogLogger{
+		depth: depth,
+	}
 }
