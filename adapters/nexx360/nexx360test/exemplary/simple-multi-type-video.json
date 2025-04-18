@@ -1,0 +1,178 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "id": "site-id",
+      "page": "criteo.com"
+    },
+    "device": {
+      "os": "android",
+      "ip": "91.199.242.236",
+      "ua": "random user agent"
+    },
+    "user": {
+      "ext": {
+        "eids": [
+          {
+            "source": "criteo.com",
+            "uids": [
+              {
+                "id": "criteo-eid"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "video": {
+          "mimes": ["video/mp4"],
+          "protocols": [2, 5],
+          "w": 300,
+          "h": 250
+        },
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "tagId": "testnexx"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://fast.nexx360.io/prebid-server?tag_id=testnexx",
+        "headers":  {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "body": {
+          "id": "test-request-id",
+          "site": {
+            "id": "site-id",
+            "page": "criteo.com"
+          },
+          "device": {
+            "os": "android",
+            "ip": "91.199.242.236",
+            "ua": "random user agent"
+          },
+          "user": {
+            "ext": {
+              "eids": [
+                {
+                  "source": "criteo.com",
+                  "uids": [
+                    {
+                      "id": "criteo-eid"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "video": {
+                "mimes": ["video/mp4"],
+                "protocols": [2, 5],
+                "w": 300,
+                "h": 250
+              },
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "nexx360": {
+                  "tagId": "testnexx"
+                }
+              }
+            }
+          ],
+          "ext": {
+            "nexx360": {
+              "caller": [
+                {
+                  "name": "Prebid-Server",
+                  "version": "n/a"
+                }
+              ]
+            }
+          }
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "currency": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "test-slot-id",
+                  "impid": "test-imp-id",
+                  "price": 0.1,
+                  "crid": "creative-123",
+                  "adm": "some-test-ad-vast",
+                  "h": 250,
+                  "w": 300,
+                  "ext": {
+                    "mediaType": "video",
+                    "bidType": "video",
+                    "tagId": "testnexx",
+                    "ssp": "test"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-slot-id",
+            "impid": "test-imp-id",
+            "price": 0.1,
+            "crid": "creative-123",
+            "adm": "some-test-ad-vast",
+            "h": 250,
+            "w": 300,
+           "ext": {
+              "mediaType": "video",
+              "bidType": "video",
+              "tagId": "testnexx",
+              "ssp": "test"
+            }
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}
+
