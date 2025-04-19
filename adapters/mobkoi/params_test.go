@@ -41,7 +41,9 @@ func TestInvalidParams(test *testing.T) {
 
 var validParams = []string{
 	`{"placementId":"abc"}`,
-	`{"placementId":"abc", "adServerBaseUrl":"mobkoi.com"}`,
+	`{"placementId":"abc", "adServerBaseUrl":"https://adserver.mobkoi.com"}`,
+	`{"adServerBaseUrl":"http://dev.mobkoi.com"}`,
+	`{"placementId":"abc", "adServerBaseUrl":"https://adserver.mobkoi.com"}`,
 }
 
 var invalidParams = []string{
@@ -54,4 +56,8 @@ var invalidParams = []string{
 	`{}`,
 	`{"placement_id":"abc"}`,
 	`{"placementId":123, "adServerBaseUrl":"mobkoi.com"}`,
+	`{"placementId":"abc", "adServerBaseUrl":"https://ikea.ad.com"}`,
+	`{"placementId":"abc", "adServerBaseUrl":"http://ikea.ad.com"}`,
+	`{"placementId":"abc", "adServerBaseUrl":"https://adserver.mobkoi.net"}`,
+	`{"placementId":"abc", "adServerBaseUrl":"https://mobkoi.com"}`,
 }

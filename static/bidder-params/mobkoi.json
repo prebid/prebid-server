@@ -10,10 +10,8 @@
     },
     "adServerBaseUrl": {
       "type": "string",
-      "description": "Mobkoi's ad server url"
+      "description": "Mobkoi's ad server url",
+      "pattern": "^https?://[^.]+\\.mobkoi\\.com$"
     }
-  },
-  "required": [
-    "placementId"
-  ]
+  }
 }

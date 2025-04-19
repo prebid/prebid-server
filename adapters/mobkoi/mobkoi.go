@@ -1,6 +1,7 @@
 package mobkoi
 
 import (
+	"errors"
 	"net/http"
 	"net/url"
 	"strings"
@@ -39,7 +40,13 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	}
 
 	if request.Imp[0].TagID == "" {
-		request.Imp[0].TagID = ext.Bidder.PlacementID
+		if ext.Bidder.PlacementID != "" {
+			request.Imp[0].TagID = ext.Bidder.PlacementID
+		} else {
+			return nil, []error{
+				errors.New("invalid because it comes with neither request.imp[0].tagId nor req.imp[0].ext.Bidder.placementId"),
+			}
+		}
 	}
 
 	uri := a.endpoint
