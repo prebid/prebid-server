@@ -17,20 +17,31 @@ import (
 
 // adapter is a Rise implementation of the adapters.Bidder interface.
 type adapter struct {
-	endpointURL string
+	endpointURL     string
+	testEndpointURL string
 }
+
+type bidderParameters struct {
+	Org      string
+	TestMode bool
+}
+
+const (
+	testEndpoint = "https://pbs.yellowblue.io/pbs-test"
+)
 
 func Builder(_ openrtb_ext.BidderName, config config.Adapter, _ config.Server) (adapters.Bidder, error) {
 	return &adapter{
-		endpointURL: config.Endpoint,
+		endpointURL:     config.Endpoint,
+		testEndpointURL: testEndpoint,
 	}, nil
 }
 
 // MakeRequests prepares the HTTP requests which should be made to fetch bids.
 func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) (requestsToBidder []*adapters.RequestData, errs []error) {
-	org, err := extractOrg(openRTBRequest)
+	bidderParams, err := extractBidderParams(openRTBRequest)
 	if err != nil {
-		errs = append(errs, fmt.Errorf("extractOrg: %w", err))
+		errs = append(errs, fmt.Errorf("extractBidderParams: %w", err))
 		return nil, errs
 	}
 
@@ -43,9 +54,14 @@ func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest, _ *adapters.
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 
+	endpoint := a.endpointURL
+	if bidderParams.TestMode {
+		endpoint = a.testEndpointURL
+	}
+
 	return append(requestsToBidder, &adapters.RequestData{
 		Method:  http.MethodPost,
-		Uri:     a.endpointURL + "?publisher_id=" + org,
+		Uri:     endpoint + "?publisher_id=" + bidderParams.Org,
 		Body:    openRTBRequestJSON,
 		Headers: headers,
 		ImpIDs:  openrtb_ext.GetImpIDs(openRTBRequest.Imp),
@@ -90,28 +106,33 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 	return bidResponse, errs
 }
 
-func extractOrg(openRTBRequest *openrtb2.BidRequest) (string, error) {
+func extractBidderParams(openRTBRequest *openrtb2.BidRequest) (*bidderParameters, error) {
 	var err error
+	var bidderParameters = &bidderParameters{}
+
 	for _, imp := range openRTBRequest.Imp {
 		var bidderExt adapters.ExtImpBidder
 		if err = jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
-			return "", fmt.Errorf("unmarshal bidderExt: %w", err)
+			return bidderParameters, fmt.Errorf("unmarshal bidderExt: %w", err)
 		}
 
 		var impExt openrtb_ext.ImpExtRise
 		if err = jsonutil.Unmarshal(bidderExt.Bidder, &impExt); err != nil {
-			return "", fmt.Errorf("unmarshal ImpExtRise: %w", err)
+			return bidderParameters, fmt.Errorf("unmarshal ImpExtRise: %w", err)
 		}
+		bidderParameters.TestMode = impExt.TestMode
 
 		if impExt.Org != "" {
-			return strings.TrimSpace(impExt.Org), nil
+			bidderParameters.Org = strings.TrimSpace(impExt.Org)
+			return bidderParameters, nil
 		}
 		if impExt.PublisherID != "" {
-			return strings.TrimSpace(impExt.PublisherID), nil
+			bidderParameters.Org = strings.TrimSpace(impExt.PublisherID)
+			return bidderParameters, nil
 		}
 	}
 
-	return "", errors.New("no org or publisher_id supplied")
+	return bidderParameters, errors.New("no org or publisher_id supplied")
 }
 
 func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
