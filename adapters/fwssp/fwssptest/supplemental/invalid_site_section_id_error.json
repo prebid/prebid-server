@@ -1,0 +1,31 @@
+{
+  "mockBidRequest": {
+    "id": "fwssp-test",
+    "site": {
+      "page": "prebid.org"
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "video": {
+          "mimes": ["video/mp4"],
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "network_id": "123456",
+            "profile_id": "123456:prof_12345",
+            "custom_site_section_id": 100
+          }
+        }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": ".*Invalid imp.ext for impression index 0.*",
+      "comparison": "regex"
+    }
+  ]
+}
