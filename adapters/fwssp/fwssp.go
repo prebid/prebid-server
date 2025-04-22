@@ -62,7 +62,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 }
 
 func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if response.StatusCode == http.StatusNoContent {
+	if response.StatusCode == http.StatusNoContent ||
+		(response.StatusCode == http.StatusOK && len(response.Body) == 0) {
 		return nil, nil
 	}
 
