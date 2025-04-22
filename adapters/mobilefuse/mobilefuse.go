@@ -5,19 +5,17 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/macros"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type MobileFuseAdapter struct {
-	EndpointTemplate *template.Template
+	Endpoint string
 }
 
 type ExtMf struct {
@@ -34,13 +32,8 @@ type ExtSkadn struct {
 
 // Builder builds a new instance of the MobileFuse adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
-	}
-
 	bidder := &MobileFuseAdapter{
-		EndpointTemplate: template,
+		Endpoint: string([]byte(config.Endpoint)), // deep copy
 	}
 	return bidder, nil
 }
@@ -105,11 +98,6 @@ func (adapter *MobileFuseAdapter) makeRequest(bidRequest *openrtb2.BidRequest) (
 		return nil, errs
 	}
 
-	endpoint, err := adapter.getEndpoint(mobileFuseExtension)
-	if err != nil {
-		return nil, append(errs, err)
-	}
-
 	validImps, err := getValidImps(bidRequest, mobileFuseExtension)
 	if err != nil {
 		errs = append(errs, err)
@@ -129,7 +117,7 @@ func (adapter *MobileFuseAdapter) makeRequest(bidRequest *openrtb2.BidRequest) (
 
 	return &adapters.RequestData{
 		Method:  "POST",
-		Uri:     endpoint,
+		Uri:     adapter.Endpoint,
 		Body:    body,
 		Headers: headers,
 		ImpIDs:  openrtb_ext.GetImpIDs(mobileFuseBidRequest.Imp),
@@ -172,17 +160,6 @@ func getMobileFuseExtensionForImp(imp *openrtb2.Imp, mobileFuseImpExtension *ope
 	}
 
 	return jsonutil.Unmarshal(bidder_imp_extension.Bidder, &mobileFuseImpExtension)
-}
-
-func (adapter *MobileFuseAdapter) getEndpoint(ext *openrtb_ext.ExtImpMobileFuse) (string, error) {
-	publisher_id := strconv.Itoa(ext.PublisherId)
-
-	url, err := macros.ResolveMacros(adapter.EndpointTemplate, macros.EndpointTemplateParams{PublisherID: publisher_id})
-	if err != nil {
-		return "", err
-	}
-
-	return url, nil
 }
 
 func getValidImps(bidRequest *openrtb2.BidRequest, ext *openrtb_ext.ExtImpMobileFuse) ([]openrtb2.Imp, error) {
