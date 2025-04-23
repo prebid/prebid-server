@@ -7,7 +7,7 @@ func SlicePointers[Slice ~[]T, T any](s Slice) iter.Seq2[int, *T] {
 	return func(yield func(int, *T) bool) {
 		for i := range s {
 			if !yield(i, &s[i]) {
-				break
+				return
 			}
 		}
 	}
@@ -18,7 +18,7 @@ func SlicePointerValues[Slice ~[]T, T any](s Slice) iter.Seq[*T] {
 	return func(yield func(*T) bool) {
 		for i := range s {
 			if !yield(&s[i]) {
-				break
+				return
 			}
 		}
 	}
