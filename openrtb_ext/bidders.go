@@ -157,6 +157,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderLoyal,
 	BidderLunaMedia,
 	BidderMabidder,
+	BidderMadSense,
 	BidderMadvertise,
 	BidderMarsmedia,
 	BidderMediafuse,
@@ -171,6 +172,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderMissena,
 	BidderMobfoxpb,
 	BidderMobileFuse,
+	BidderMobkoi,
 	BidderMotorik,
 	BidderNativo,
 	BidderNextMillennium,
@@ -511,6 +513,7 @@ const (
 	BidderLoyal             BidderName = "loyal"
 	BidderLunaMedia         BidderName = "lunamedia"
 	BidderMabidder          BidderName = "mabidder"
+	BidderMadSense          BidderName = "madsense"
 	BidderMadvertise        BidderName = "madvertise"
 	BidderMarsmedia         BidderName = "marsmedia"
 	BidderMediafuse         BidderName = "mediafuse"
@@ -525,6 +528,7 @@ const (
 	BidderMissena           BidderName = "missena"
 	BidderMobfoxpb          BidderName = "mobfoxpb"
 	BidderMobileFuse        BidderName = "mobilefuse"
+	BidderMobkoi            BidderName = "mobkoi"
 	BidderMotorik           BidderName = "motorik"
 	BidderNativo            BidderName = "nativo"
 	BidderNextMillennium    BidderName = "nextmillennium"

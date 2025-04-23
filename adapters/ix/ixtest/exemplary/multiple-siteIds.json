@@ -148,8 +148,10 @@
                     },
                     "ext": {
                         "ixdiag": {
-                          "multipleSiteIds": "569749, 569750, 569751",
-                          "pbjsv": "7.0.0"
+                            "multipleSiteIds": "569749, 569750, 569751",
+                            "pbjsv": "7.0.0",
+                            "pbsp": "go",
+                            "pbsv": "unknown"
                         },
                         "prebid": {
                           "channel": {
