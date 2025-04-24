@@ -1,6 +1,12 @@
 {
   "mockBidRequest": {
     "id": "test-request-id",
+    "site": {
+      "page": "test.com",
+      "publisher": {
+        "id": "123456789"
+      }
+    },
     "imp": [
       {
         "id": "imp1",
@@ -21,11 +27,21 @@
       "expectedRequest": {
         "uri": "http://any.url",
         "headers": {
-          "Content-Type": ["application/json"],
-          "Accept": ["application/json"]
+          "Content-Type": [
+            "application/json"
+          ],
+          "Accept": [
+            "application/json"
+          ]
         },
         "body": {
           "id": "test-request-id",
+          "site": {
+            "page": "test.com",
+            "publisher": {
+              "id": "123456789"
+            }
+          },
           "imp": [
             {
               "id": "imp1",
@@ -41,7 +57,9 @@
             }
           ]
         },
-        "impIDs": ["imp1"]
+        "impIDs": [
+          "imp1"
+        ]
       },
       "mockResponse": {
         "status": 200,

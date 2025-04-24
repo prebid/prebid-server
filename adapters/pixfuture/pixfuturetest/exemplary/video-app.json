@@ -1,16 +1,20 @@
 {
   "mockBidRequest": {
     "id": "test-request-id",
+    "app": {
+      "id": "app1"
+    },
     "imp": [
       {
         "id": "imp1",
-        "banner": {
-          "w": 300,
-          "h": 250
+        "video": {
+          "mimes": ["video/mp4"],
+          "w": 640,
+          "h": 360
         },
         "ext": {
           "bidder": {
-            "pix_id": "777"
+            "pix_id": "55463"
           }
         }
       }
@@ -26,16 +30,20 @@
         },
         "body": {
           "id": "test-request-id",
+          "app": {
+            "id": "app1"
+          },
           "imp": [
             {
               "id": "imp1",
-              "banner": {
-                "w": 300,
-                "h": 250
+              "video": {
+                "mimes": ["video/mp4"],
+                "w": 640,
+                "h": 360
               },
               "ext": {
                 "bidder": {
-                  "pix_id": "777"
+                  "pix_id": "55463"
                 }
               }
             }
@@ -55,10 +63,10 @@
                   "id": "bid1",
                   "impid": "imp1",
                   "price": 1.23,
-                  "adm": "<div>Banner Ad</div>",
+                  "adm": "<vast></vast>",
                   "ext": {
                     "prebid": {
-                      "type": "banner"
+                      "type": "video"
                     }
                   }
                 }
@@ -77,18 +85,17 @@
             "id": "bid1",
             "impid": "imp1",
             "price": 1.23,
-            "adm": "<div>Banner Ad</div>",
+            "adm": "<vast></vast>",
             "ext": {
               "prebid": {
-                "type": "banner"
+                "type": "video"
               }
             }
           },
-          "type": "banner"
+          "type": "video"
         }
       ],
       "currency": "USD"
     }
-  ],
-  "expectedMakeRequestsErrors": []
+  ]
 }
