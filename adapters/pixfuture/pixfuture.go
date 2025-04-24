@@ -23,9 +23,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	if request == nil || len(request.Imp) == 0 {
-		return nil, []error{&errortypes.BadInput{Message: "No impressions in bid request"}}
-	}
 
 	var errs []error
 	var adapterRequests []*adapters.RequestData
