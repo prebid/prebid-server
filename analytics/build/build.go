@@ -115,7 +115,7 @@ func (ea enabledAnalytics) LogVideoObject(vo *analytics.VideoObject, ac privacy.
 	}
 }
 
-func (ea enabledAnalytics) LogCookieSyncObject(cso *analytics.CookieSyncObject, p userSyncPrivacy) {
+// func (ea enabledAnalytics) LogCookieSyncObject(cso *analytics.CookieSyncObject, p userSyncPrivacy) {
 func (ea enabledAnalytics) LogCookieSyncObject(cso *analytics.CookieSyncObject, ac privacy.ActivityControl, pp gdpr.PrivacyPolicy) {
 	for name, module := range ea {
 		// check if the report analytics activity is allowed for this module 

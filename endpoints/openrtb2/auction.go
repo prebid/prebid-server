@@ -234,20 +234,20 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 
 	// Retrieve EEA countries configuration from either host or account settings
-	eeaCountries := selectEEACountries(deps.cfg.GDPR.EEACountries, account.GDPR.EEACountries)
+	eeaCountries := exchange.SelectEEACountries(deps.cfg.GDPR.EEACountries, account.GDPR.EEACountries)
 
 	// Make our best guess if GDPR applies
-	gdprDefaultValue := parseGDPRDefaultValue(req, deps.cfg.GDPR.DefaultValue, eeaCountries)
-	gdprSignal, err := getGDPR(req)
+	gdprDefaultValue := exchange.ParseGDPRDefaultValue(req, deps.cfg.GDPR.DefaultValue, eeaCountries)
+	gdprSignal, err := exchange.GetGDPR(req)
 	if err != nil {
 		gdprErrs = append(gdprErrs, err)
 	}
-	consent, err := getConsent(req, gpp)
+	consent, err := exchange.GetConsent(req, gpp)
 	if err != nil {
 		gdprErrs = append(gdprErrs, err)
 	}
 	channelEnabled := tcf2Config.ChannelEnabled(exchange.ChannelTypeMap[labels.RType])
-	gdprEnforced := enforceGDPR(gdprSignal, gdprDefaultValue, channelEnabled)
+	gdprEnforced := exchange.EnforceGDPR(gdprSignal, gdprDefaultValue, channelEnabled)
 	if gdprEnforced {
 		analyticsPolicy = deps.gdprPrivacyPolicyBuilder(tcf2Config, gdprSignal, consent)
 		analyticsPolicy.SetContext(ctx)

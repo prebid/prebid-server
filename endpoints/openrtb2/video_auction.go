@@ -321,20 +321,20 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	}
 
 	// Retrieve EEA countries configuration from either host or account settings
-	eeaCountries := selectEEACountries(deps.cfg.GDPR.EEACountries, account.GDPR.EEACountries)
+	eeaCountries := exchange.SelectEEACountries(deps.cfg.GDPR.EEACountries, account.GDPR.EEACountries)
 
 	// Make our best guess if GDPR applies
-	gdprDefaultValue := parseGDPRDefaultValue(bidReqWrapper, deps.cfg.GDPR.DefaultValue, eeaCountries)
-	gdprSignal, err := getGDPR(bidReqWrapper)
+	gdprDefaultValue := exchange.ParseGDPRDefaultValue(bidReqWrapper, deps.cfg.GDPR.DefaultValue, eeaCountries)
+	gdprSignal, err := exchange.GetGDPR(bidReqWrapper)
 	if err != nil {
 		gdprErrs = append(gdprErrs, err)
 	}
-	consent, err := getConsent(bidReqWrapper, gpp)
+	consent, err := exchange.GetConsent(bidReqWrapper, gpp)
 	if err != nil {
 		gdprErrs = append(gdprErrs, err)
 	}
 	channelEnabled := tcf2Config.ChannelEnabled(exchange.ChannelTypeMap[labels.RType])
-	gdprEnforced := enforceGDPR(gdprSignal, gdprDefaultValue, channelEnabled)
+	gdprEnforced := exchange.EnforceGDPR(gdprSignal, gdprDefaultValue, channelEnabled)
 	if gdprEnforced {
 		analyticsPolicy = deps.gdprPrivacyPolicyBuilder(tcf2Config, gdprSignal, consent)
 		analyticsPolicy.SetContext(ctx)

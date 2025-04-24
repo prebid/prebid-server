@@ -1,4 +1,4 @@
-package openrtb2
+package exchange
 
 import (
 	"strings"
@@ -12,8 +12,8 @@ import (
 	gppPolicy "github.com/prebid/prebid-server/v3/privacy/gpp"
 )
 
-// getGDPR will pull the gdpr flag from an openrtb request
-func getGDPR(req *openrtb_ext.RequestWrapper) (gdpr.Signal, error) {
+// GetGDPR will pull the gdpr flag from an openrtb request
+func GetGDPR(req *openrtb_ext.RequestWrapper) (gdpr.Signal, error) {
 	if req.Regs != nil && len(req.Regs.GPPSID) > 0 {
 		if gppPolicy.IsSIDInList(req.Regs.GPPSID, gppConstants.SectionTCFEU2) {
 			return gdpr.SignalYes, nil
@@ -27,8 +27,8 @@ func getGDPR(req *openrtb_ext.RequestWrapper) (gdpr.Signal, error) {
 
 }
 
-// getConsent will pull the consent string from an openrtb request
-func getConsent(req *openrtb_ext.RequestWrapper, gpp gpplib.GppContainer) (consent string, err error) {
+// GetConsent will pull the consent string from an openrtb request
+func GetConsent(req *openrtb_ext.RequestWrapper, gpp gpplib.GppContainer) (consent string, err error) {
 	if i := gppPolicy.IndexOfSID(gpp, gppConstants.SectionTCFEU2); i >= 0 {
 		consent = gpp.Sections[i].GetValue()
 		return
@@ -39,22 +39,22 @@ func getConsent(req *openrtb_ext.RequestWrapper, gpp gpplib.GppContainer) (conse
 	return
 }
 
-// enforceGDPR determines if GDPR should be enforced based on the request signal and whether the channel is enabled
-func enforceGDPR(signal gdpr.Signal, defaultValue gdpr.Signal, channelEnabled bool) bool {
+// EnforceGDPR determines if GDPR should be enforced based on the request signal and whether the channel is enabled
+func EnforceGDPR(signal gdpr.Signal, defaultValue gdpr.Signal, channelEnabled bool) bool {
 	gdprApplies := signal == gdpr.SignalYes || (signal == gdpr.SignalAmbiguous && defaultValue == gdpr.SignalYes)
 	return gdprApplies && channelEnabled
 }
 
 // SelectEEACountries selects the EEA countries based on host and account configurations.
 // Account-level configuration takes precedence over the host-level configuration.
-func selectEEACountries(hostEEACountries []string, accountEEACountries []string) []string {
+func SelectEEACountries(hostEEACountries []string, accountEEACountries []string) []string {
 	if accountEEACountries != nil {
 		return accountEEACountries
 	}
 	return hostEEACountries
 }
 
-func parseGDPRDefaultValue(r *openrtb_ext.RequestWrapper, cfgDefault string, eeaCountries []string) gdpr.Signal {
+func ParseGDPRDefaultValue(r *openrtb_ext.RequestWrapper, cfgDefault string, eeaCountries []string) gdpr.Signal {
 	gdprDefaultValue := gdpr.SignalYes
 	if cfgDefault == "0" {
 		gdprDefaultValue = gdpr.SignalNo

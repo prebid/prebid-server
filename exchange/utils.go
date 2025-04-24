@@ -113,7 +113,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		}
 	}
 
-	consent, err := getConsent(req, gpp)
+	consent, err := GetConsent(req, gpp)
 	if err != nil {
 		errs = append(errs, err)
 	}

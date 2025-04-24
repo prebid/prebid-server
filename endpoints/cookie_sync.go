@@ -411,7 +411,8 @@ func (c *cookieSyncEndpoint) handleError(w http.ResponseWriter, err error, httpS
 		Status:       httpStatus,
 		Errors:       []error{err},
 		BidderStatus: []*analytics.CookieSyncBidder{},
-	})
+	},
+	privacy.ActivityControl{}, &gdpr.AllowAllAnalytics{}) //TODO
 }
 
 func combineErrors(errs []error) error {
@@ -499,7 +500,7 @@ func (c *cookieSyncEndpoint) handleResponse(w http.ResponseWriter, tf usersync.S
 	c.pbsAnalytics.LogCookieSyncObject(&analytics.CookieSyncObject{
 		Status:       http.StatusOK,
 		BidderStatus: mapBidderStatusToAnalytics(response.BidderStatus),
-	})
+	}, privacy.ActivityControl{}, &gdpr.AllowAllAnalytics{}) //TODO
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
