@@ -168,7 +168,7 @@ func escapeTemplate(x string) string {
 	return escaped.String()
 }
 
-var templateTestValues = macros.UserSyncTemplateParams{
+var templateTestValues = macros.UserSyncPrivacy{
 	GDPR:        "anyGDPR",
 	GDPRConsent: "anyGDPRConsent",
 	USPrivacy:   "anyCCPAConsent",
@@ -225,7 +225,7 @@ func (s standardSyncer) GetSync(syncTypes []SyncType, privacyPolicies privacy.Po
 
 	syncTemplate := s.chooseTemplate(syncType)
 
-	url, err := macros.ResolveMacros(syncTemplate, macros.UserSyncTemplateParams{
+	url, err := macros.ResolveMacros(syncTemplate, macros.UserSyncPrivacy{
 		GDPR:        privacyPolicies.GDPR.Signal,
 		GDPRConsent: privacyPolicies.GDPR.Consent,
 		USPrivacy:   privacyPolicies.CCPA.Consent,

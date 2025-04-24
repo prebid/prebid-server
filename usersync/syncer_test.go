@@ -16,7 +16,7 @@ func TestNewSyncer(t *testing.T) {
 	var (
 		supportCORS      = true
 		hostConfig       = config.UserSync{ExternalURL: "http://host.com", RedirectURL: "{{.ExternalURL}}/host"}
-		macroValues      = macros.UserSyncTemplateParams{GDPR: "A", GDPRConsent: "B", USPrivacy: "C"}
+		macroValues      = macros.UserSyncPrivacy{GDPR: "A", GDPRConsent: "B", USPrivacy: "C"}
 		iframeConfig     = &config.SyncerEndpoint{URL: "https://bidder.com/iframe?redirect={{.RedirectURL}}"}
 		redirectConfig   = &config.SyncerEndpoint{URL: "https://bidder.com/redirect?redirect={{.RedirectURL}}"}
 		errParseConfig   = &config.SyncerEndpoint{URL: "{{malformed}}"}
@@ -177,7 +177,7 @@ func TestBuildTemplate(t *testing.T) {
 		key           = "anyKey"
 		syncTypeValue = "x"
 		hostConfig    = config.UserSync{ExternalURL: "http://host.com", RedirectURL: "{{.ExternalURL}}/host"}
-		macroValues   = macros.UserSyncTemplateParams{GDPR: "A", GDPRConsent: "B", USPrivacy: "C", GPP: "D", GPPSID: "1"}
+		macroValues   = macros.UserSyncPrivacy{GDPR: "A", GDPRConsent: "B", USPrivacy: "C", GPP: "D", GPPSID: "1"}
 	)
 
 	testCases := []struct {
@@ -432,7 +432,7 @@ func TestValidateTemplate(t *testing.T) {
 		{
 			description:   "Contains Unrecognized Macro",
 			given:         template.Must(template.New("test").Parse("invalid:{{.DoesNotExist}}")),
-			expectedError: "template: test:1:10: executing \"test\" at <.DoesNotExist>: can't evaluate field DoesNotExist in type macros.UserSyncTemplateParams",
+			expectedError: "template: test:1:10: executing \"test\" at <.DoesNotExist>: can't evaluate field DoesNotExist in type macros.UserSyncPrivacy",
 		},
 		{
 			description:   "Not A Url",
@@ -650,7 +650,7 @@ func TestSyncerGetSync(t *testing.T) {
 			givenSyncer:          standardSyncer{iframe: malformedTemplate},
 			givenSyncTypes:       []SyncType{SyncTypeIFrame},
 			givenPrivacyPolicies: privacy.Policies{GDPR: gdpr.Policy{Signal: "A", Consent: "B"}, CCPA: ccpa.Policy{Consent: "C"}},
-			expectedError:        "template: test:1:20: executing \"test\" at <.DoesNotExist>: can't evaluate field DoesNotExist in type macros.UserSyncTemplateParams",
+			expectedError:        "template: test:1:20: executing \"test\" at <.DoesNotExist>: can't evaluate field DoesNotExist in type macros.UserSyncPrivacy",
 		},
 	}
 

@@ -122,6 +122,7 @@ type RequestData struct {
 	Uri     string
 	Body    []byte
 	Headers http.Header
+	ImpIDs  []string
 }
 
 // ExtImpBidder can be used by Bidders to unmarshal any request.imp[i].ext.
