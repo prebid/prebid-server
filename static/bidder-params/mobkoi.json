@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Mobkoi Adapter Params",
+  "description": "A schema which validates params accepted by the Mobkoi adapter",
+  "type": "object",
+  "properties": {
+    "placementId": {
+      "type": "string",
+      "description": "Placement ID"
+    },
+    "adServerBaseUrl": {
+      "type": "string",
+      "description": "Mobkoi's ad server url",
+      "pattern": "^https?://[^.]+\\.mobkoi\\.com$"
+    }
+  }
+}
