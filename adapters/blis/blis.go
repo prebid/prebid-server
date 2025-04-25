@@ -42,8 +42,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	headers := http.Header{}
 	headers.Add("X-Supply-Partner-Id", impExtBidder.SupplyPartnerID)
 
-	request.Ext = append(request.Ext)
-
 	requestJSON, err := jsonutil.Marshal(request)
 	if err != nil {
 		return nil, []error{err}
