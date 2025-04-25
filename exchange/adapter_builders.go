@@ -240,6 +240,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/triplelift"
 	"github.com/prebid/prebid-server/v3/adapters/triplelift_native"
 	"github.com/prebid/prebid-server/v3/adapters/trustedstack"
+	"github.com/prebid/prebid-server/v3/adapters/trustx"
 	"github.com/prebid/prebid-server/v3/adapters/ucfunnel"
 	"github.com/prebid/prebid-server/v3/adapters/undertone"
 	"github.com/prebid/prebid-server/v3/adapters/unicorn"
@@ -513,6 +514,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderTriplelift:        triplelift.Builder,
 		openrtb_ext.BidderTripleliftNative:  triplelift_native.Builder,
 		openrtb_ext.BidderTrustedstack:      trustedstack.Builder,
+		openrtb_ext.BidderTrustX:            trustx.Builder,
 		openrtb_ext.BidderUcfunnel:          ucfunnel.Builder,
 		openrtb_ext.BidderUndertone:         undertone.Builder,
 		openrtb_ext.BidderUnicorn:           unicorn.Builder,
