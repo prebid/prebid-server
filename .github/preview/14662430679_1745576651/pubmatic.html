@@ -1,0 +1,801 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>pubmatic: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/prebid/prebid-server/v3/adapters/pubmatic/pubmatic.go (93.6%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package pubmatic
+
+import (
+        "encoding/json"
+        "errors"
+        "fmt"
+        "math"
+        "net/http"
+        "strconv"
+        "strings"
+
+        "github.com/prebid/prebid-server/v3/adapters"
+        "github.com/prebid/prebid-server/v3/config"
+        "github.com/prebid/prebid-server/v3/errortypes"
+        "github.com/prebid/prebid-server/v3/openrtb_ext"
+        "github.com/prebid/prebid-server/v3/util/jsonutil"
+        "github.com/prebid/prebid-server/v3/util/ptrutil"
+
+        "github.com/buger/jsonparser"
+        "github.com/prebid/openrtb/v20/openrtb2"
+)
+
+const MAX_IMPRESSIONS_PUBMATIC = 30
+
+const ae = "ae"
+
+type PubmaticAdapter struct {
+        URI        string
+        bidderName string
+}
+
+type pubmaticBidExt struct {
+        BidType            *int                 `json:"BidType,omitempty"`
+        VideoCreativeInfo  *pubmaticBidExtVideo `json:"video,omitempty"`
+        Marketplace        string               `json:"marketplace,omitempty"`
+        PrebidDealPriority int                  `json:"prebiddealpriority,omitempty"`
+        InBannerVideo      bool                 `json:"ibv,omitempty"`
+}
+
+type pubmaticWrapperExt struct {
+        ProfileID int `json:"profile,omitempty"`
+        VersionID int `json:"version,omitempty"`
+}
+
+type pubmaticBidExtVideo struct {
+        Duration *int `json:"duration,omitempty"`
+}
+
+type ExtImpBidderPubmatic struct {
+        adapters.ExtImpBidder
+        Data json.RawMessage `json:"data,omitempty"`
+        AE   int             `json:"ae,omitempty"`
+        GpId string          `json:"gpid,omitempty"`
+}
+
+type ExtAdServer struct {
+        Name   string `json:"name"`
+        AdSlot string `json:"adslot"`
+}
+
+type marketplaceReqExt struct {
+        AllowedBidders []string `json:"allowedbidders,omitempty"`
+}
+
+type extRequestAdServer struct {
+        Wrapper     *pubmaticWrapperExt `json:"wrapper,omitempty"`
+        Acat        []string            `json:"acat,omitempty"`
+        Marketplace *marketplaceReqExt  `json:"marketplace,omitempty"`
+}
+
+type respExt struct {
+        FledgeAuctionConfigs map[string]json.RawMessage `json:"fledge_auction_configs,omitempty"`
+}
+
+const (
+        dctrKeyName        = "key_val"
+        pmZoneIDKeyName    = "pmZoneId"
+        pmZoneIDKeyNameOld = "pmZoneID"
+        ImpExtAdUnitKey    = "dfp_ad_unit_code"
+        AdServerGAM        = "gam"
+        AdServerKey        = "adserver"
+        PBAdslotKey        = "pbadslot"
+        gpIdKey            = "gpid"
+)
+
+func (a *PubmaticAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) <span class="cov8" title="1">{
+        errs := make([]error, 0, len(request.Imp))
+
+        pubID := ""
+        extractWrapperExtFromImp := true
+        extractPubIDFromImp := true
+
+        displayManager, displayManagerVer := "", ""
+        if request.App != nil &amp;&amp; request.App.Ext != nil </span><span class="cov8" title="1">{
+                displayManager, displayManagerVer = getDisplayManagerAndVer(request.App)
+        }</span>
+
+        <span class="cov8" title="1">newReqExt, err := extractPubmaticExtFromRequest(request)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, []error{err}
+        }</span>
+        <span class="cov8" title="1">wrapperExt := newReqExt.Wrapper
+        if wrapperExt != nil &amp;&amp; wrapperExt.ProfileID != 0 &amp;&amp; wrapperExt.VersionID != 0 </span><span class="cov8" title="1">{
+                extractWrapperExtFromImp = false
+        }</span>
+
+        <span class="cov8" title="1">for i := 0; i &lt; len(request.Imp); i++ </span><span class="cov8" title="1">{
+                wrapperExtFromImp, pubIDFromImp, err := parseImpressionObject(&amp;request.Imp[i], extractWrapperExtFromImp, extractPubIDFromImp, displayManager, displayManagerVer)
+
+                // If the parsing is failed, remove imp and add the error.
+                if err != nil </span><span class="cov8" title="1">{
+                        errs = append(errs, err)
+                        request.Imp = append(request.Imp[:i], request.Imp[i+1:]...)
+                        i--
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">if extractWrapperExtFromImp </span><span class="cov8" title="1">{
+                        if wrapperExtFromImp != nil </span><span class="cov8" title="1">{
+                                if wrapperExt == nil </span><span class="cov8" title="1">{
+                                        wrapperExt = &amp;pubmaticWrapperExt{}
+                                }</span>
+                                <span class="cov8" title="1">if wrapperExt.ProfileID == 0 </span><span class="cov8" title="1">{
+                                        wrapperExt.ProfileID = wrapperExtFromImp.ProfileID
+                                }</span>
+                                <span class="cov8" title="1">if wrapperExt.VersionID == 0 </span><span class="cov8" title="1">{
+                                        wrapperExt.VersionID = wrapperExtFromImp.VersionID
+                                }</span>
+
+                                <span class="cov8" title="1">if wrapperExt != nil &amp;&amp; wrapperExt.ProfileID != 0 &amp;&amp; wrapperExt.VersionID != 0 </span><span class="cov8" title="1">{
+                                        extractWrapperExtFromImp = false
+                                }</span>
+                        }
+                }
+
+                <span class="cov8" title="1">if extractPubIDFromImp &amp;&amp; pubIDFromImp != "" </span><span class="cov8" title="1">{
+                        pubID = pubIDFromImp
+                        extractPubIDFromImp = false
+                }</span>
+        }
+
+        // If all the requests are invalid, Call to adaptor is skipped
+        <span class="cov8" title="1">if len(request.Imp) == 0 </span><span class="cov8" title="1">{
+                return nil, errs
+        }</span>
+
+        <span class="cov8" title="1">newReqExt.Wrapper = wrapperExt
+        rawExt, err := json.Marshal(newReqExt)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, []error{err}
+        }</span>
+        <span class="cov8" title="1">request.Ext = rawExt
+
+        if request.Site != nil </span><span class="cov8" title="1">{
+                siteCopy := *request.Site
+                if siteCopy.Publisher != nil </span><span class="cov8" title="1">{
+                        publisherCopy := *siteCopy.Publisher
+                        publisherCopy.ID = pubID
+                        siteCopy.Publisher = &amp;publisherCopy
+                }</span> else<span class="cov8" title="1"> {
+                        siteCopy.Publisher = &amp;openrtb2.Publisher{ID: pubID}
+                }</span>
+                <span class="cov8" title="1">request.Site = &amp;siteCopy</span>
+        } else<span class="cov8" title="1"> if request.App != nil </span><span class="cov8" title="1">{
+                appCopy := *request.App
+                if appCopy.Publisher != nil </span><span class="cov8" title="1">{
+                        publisherCopy := *appCopy.Publisher
+                        publisherCopy.ID = pubID
+                        appCopy.Publisher = &amp;publisherCopy
+                }</span> else<span class="cov0" title="0"> {
+                        appCopy.Publisher = &amp;openrtb2.Publisher{ID: pubID}
+                }</span>
+                <span class="cov8" title="1">request.App = &amp;appCopy</span>
+        }
+
+        <span class="cov8" title="1">reqJSON, err := json.Marshal(request)
+        if err != nil </span><span class="cov0" title="0">{
+                errs = append(errs, err)
+                return nil, errs
+        }</span>
+
+        <span class="cov8" title="1">headers := http.Header{}
+        headers.Add("Content-Type", "application/json;charset=utf-8")
+        headers.Add("Accept", "application/json")
+        return []*adapters.RequestData{{
+                Method:  "POST",
+                Uri:     a.URI,
+                Body:    reqJSON,
+                Headers: headers,
+                ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
+        }}, errs</span>
+}
+
+// validateAdslot validate the optional adslot string
+// valid formats are 'adslot@WxH', 'adslot' and no adslot
+func validateAdSlot(adslot string, imp *openrtb2.Imp) error <span class="cov8" title="1">{
+        adSlotStr := strings.TrimSpace(adslot)
+
+        if len(adSlotStr) == 0 </span><span class="cov8" title="1">{
+                return nil
+        }</span>
+
+        <span class="cov8" title="1">if !strings.Contains(adSlotStr, "@") </span><span class="cov0" title="0">{
+                imp.TagID = adSlotStr
+                return nil
+        }</span>
+
+        <span class="cov8" title="1">adSlot := strings.Split(adSlotStr, "@")
+        if len(adSlot) == 2 &amp;&amp; adSlot[0] != "" &amp;&amp; adSlot[1] != "" </span><span class="cov8" title="1">{
+                imp.TagID = strings.TrimSpace(adSlot[0])
+
+                adSize := strings.Split(strings.ToLower(adSlot[1]), "x")
+                if len(adSize) != 2 </span><span class="cov8" title="1">{
+                        return fmt.Errorf("Invalid size provided in adSlot %v", adSlotStr)
+                }</span>
+
+                <span class="cov8" title="1">width, err := strconv.Atoi(strings.TrimSpace(adSize[0]))
+                if err != nil </span><span class="cov8" title="1">{
+                        return fmt.Errorf("Invalid width provided in adSlot %v", adSlotStr)
+                }</span>
+
+                <span class="cov8" title="1">heightStr := strings.Split(adSize[1], ":")
+                height, err := strconv.Atoi(strings.TrimSpace(heightStr[0]))
+                if err != nil </span><span class="cov8" title="1">{
+                        return fmt.Errorf("Invalid height provided in adSlot %v", adSlotStr)
+                }</span>
+
+                //In case of video, size could be derived from the player size
+                <span class="cov8" title="1">if imp.Banner != nil </span><span class="cov8" title="1">{
+                        imp.Banner = assignBannerWidthAndHeight(imp.Banner, int64(width), int64(height))
+                }</span>
+        } else<span class="cov8" title="1"> {
+                return fmt.Errorf("Invalid adSlot %v", adSlotStr)
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+func assignBannerSize(banner *openrtb2.Banner) (*openrtb2.Banner, error) <span class="cov8" title="1">{
+        if banner.W != nil &amp;&amp; banner.H != nil </span><span class="cov8" title="1">{
+                return banner, nil
+        }</span>
+
+        <span class="cov8" title="1">return assignBannerWidthAndHeight(banner, banner.Format[0].W, banner.Format[0].H), nil</span>
+}
+
+func assignBannerWidthAndHeight(banner *openrtb2.Banner, w, h int64) *openrtb2.Banner <span class="cov8" title="1">{
+        bannerCopy := *banner
+        bannerCopy.W = ptrutil.ToPtr(w)
+        bannerCopy.H = ptrutil.ToPtr(h)
+        return &amp;bannerCopy
+}</span>
+
+// parseImpressionObject parse the imp to get it ready to send to pubmatic
+func parseImpressionObject(imp *openrtb2.Imp, extractWrapperExtFromImp, extractPubIDFromImp bool, displayManager, displayManagerVer string) (*pubmaticWrapperExt, string, error) <span class="cov8" title="1">{
+        var wrapExt *pubmaticWrapperExt
+        var pubID string
+
+        // PubMatic supports banner and video impressions.
+        if imp.Banner == nil &amp;&amp; imp.Video == nil &amp;&amp; imp.Native == nil </span><span class="cov8" title="1">{
+                return wrapExt, pubID, fmt.Errorf("invalid MediaType. PubMatic only supports Banner, Video and Native. Ignoring ImpID=%s", imp.ID)
+        }</span>
+
+        <span class="cov8" title="1">if imp.Audio != nil </span><span class="cov8" title="1">{
+                imp.Audio = nil
+        }</span>
+
+        // Populate imp.displaymanager and imp.displaymanagerver if the SDK failed to do it.
+        <span class="cov8" title="1">if imp.DisplayManager == "" &amp;&amp; imp.DisplayManagerVer == "" &amp;&amp; displayManager != "" &amp;&amp; displayManagerVer != "" </span><span class="cov8" title="1">{
+                imp.DisplayManager = displayManager
+                imp.DisplayManagerVer = displayManagerVer
+        }</span>
+
+        <span class="cov8" title="1">var bidderExt ExtImpBidderPubmatic
+        if err := jsonutil.Unmarshal(imp.Ext, &amp;bidderExt); err != nil </span><span class="cov0" title="0">{
+                return wrapExt, pubID, err
+        }</span>
+
+        <span class="cov8" title="1">var pubmaticExt openrtb_ext.ExtImpPubmatic
+        if err := jsonutil.Unmarshal(bidderExt.Bidder, &amp;pubmaticExt); err != nil </span><span class="cov0" title="0">{
+                return wrapExt, pubID, err
+        }</span>
+
+        <span class="cov8" title="1">if extractPubIDFromImp </span><span class="cov8" title="1">{
+                pubID = strings.TrimSpace(pubmaticExt.PublisherId)
+        }</span>
+
+        // Parse Wrapper Extension only once per request
+        <span class="cov8" title="1">if extractWrapperExtFromImp &amp;&amp; len(pubmaticExt.WrapExt) != 0 </span><span class="cov8" title="1">{
+                err := jsonutil.Unmarshal([]byte(pubmaticExt.WrapExt), &amp;wrapExt)
+                if err != nil </span><span class="cov0" title="0">{
+                        return wrapExt, pubID, fmt.Errorf("Error in Wrapper Parameters = %v  for ImpID = %v WrapperExt = %v", err.Error(), imp.ID, string(pubmaticExt.WrapExt))
+                }</span>
+        }
+
+        <span class="cov8" title="1">if err := validateAdSlot(strings.TrimSpace(pubmaticExt.AdSlot), imp); err != nil </span><span class="cov8" title="1">{
+                return wrapExt, pubID, err
+        }</span>
+
+        <span class="cov8" title="1">if imp.Banner != nil </span><span class="cov8" title="1">{
+                bannerCopy, err := assignBannerSize(imp.Banner)
+                if err != nil </span><span class="cov0" title="0">{
+                        return wrapExt, pubID, err
+                }</span>
+                <span class="cov8" title="1">imp.Banner = bannerCopy</span>
+        }
+
+        <span class="cov8" title="1">if pubmaticExt.Kadfloor != "" </span><span class="cov8" title="1">{
+                bidfloor, err := strconv.ParseFloat(strings.TrimSpace(pubmaticExt.Kadfloor), 64)
+                if err == nil </span><span class="cov8" title="1">{
+                        // In case of valid kadfloor, select maximum of original imp.bidfloor and kadfloor
+                        imp.BidFloor = math.Max(bidfloor, imp.BidFloor)
+                }</span>
+        }
+
+        <span class="cov8" title="1">extMap := make(map[string]interface{}, 0)
+        if pubmaticExt.Keywords != nil &amp;&amp; len(pubmaticExt.Keywords) != 0 </span><span class="cov8" title="1">{
+                addKeywordsToExt(pubmaticExt.Keywords, extMap)
+        }</span>
+        //Give preference to direct values of 'dctr' &amp; 'pmZoneId' params in extension
+        <span class="cov8" title="1">if pubmaticExt.Dctr != "" </span><span class="cov8" title="1">{
+                extMap[dctrKeyName] = pubmaticExt.Dctr
+        }</span>
+        <span class="cov8" title="1">if pubmaticExt.PmZoneID != "" </span><span class="cov8" title="1">{
+                extMap[pmZoneIDKeyName] = pubmaticExt.PmZoneID
+        }</span>
+
+        <span class="cov8" title="1">if len(bidderExt.Data) &gt; 0 </span><span class="cov8" title="1">{
+                populateFirstPartyDataImpAttributes(bidderExt.Data, extMap)
+        }</span>
+
+        <span class="cov8" title="1">if bidderExt.AE != 0 </span><span class="cov8" title="1">{
+                extMap[ae] = bidderExt.AE
+        }</span>
+
+        <span class="cov8" title="1">if bidderExt.GpId != "" </span><span class="cov8" title="1">{
+                extMap[gpIdKey] = bidderExt.GpId
+        }</span>
+
+        <span class="cov8" title="1">imp.Ext = nil
+        if len(extMap) &gt; 0 </span><span class="cov8" title="1">{
+                ext, err := json.Marshal(extMap)
+                if err == nil </span><span class="cov8" title="1">{
+                        imp.Ext = ext
+                }</span>
+        }
+
+        <span class="cov8" title="1">return wrapExt, pubID, nil</span>
+}
+
+// extractPubmaticExtFromRequest parse the req.ext to fetch wrapper and acat params
+func extractPubmaticExtFromRequest(request *openrtb2.BidRequest) (extRequestAdServer, error) <span class="cov8" title="1">{
+        // req.ext.prebid would always be there and Less nil cases to handle, more safe!
+        var pmReqExt extRequestAdServer
+
+        if request == nil || len(request.Ext) == 0 </span><span class="cov8" title="1">{
+                return pmReqExt, nil
+        }</span>
+
+        <span class="cov8" title="1">reqExt := &amp;openrtb_ext.ExtRequest{}
+        err := jsonutil.Unmarshal(request.Ext, &amp;reqExt)
+        if err != nil </span><span class="cov8" title="1">{
+                return pmReqExt, fmt.Errorf("error decoding Request.ext : %s", err.Error())
+        }</span>
+
+        <span class="cov8" title="1">reqExtBidderParams := make(map[string]json.RawMessage)
+        if reqExt.Prebid.BidderParams != nil </span><span class="cov8" title="1">{
+                err = jsonutil.Unmarshal(reqExt.Prebid.BidderParams, &amp;reqExtBidderParams)
+                if err != nil </span><span class="cov0" title="0">{
+                        return pmReqExt, err
+                }</span>
+        }
+
+        //get request ext bidder params
+        <span class="cov8" title="1">if wrapperObj, present := reqExtBidderParams["wrapper"]; present &amp;&amp; len(wrapperObj) != 0 </span><span class="cov8" title="1">{
+                wrpExt := &amp;pubmaticWrapperExt{}
+                err = jsonutil.Unmarshal(wrapperObj, wrpExt)
+                if err != nil </span><span class="cov8" title="1">{
+                        return pmReqExt, err
+                }</span>
+                <span class="cov8" title="1">pmReqExt.Wrapper = wrpExt</span>
+        }
+
+        <span class="cov8" title="1">if acatBytes, ok := reqExtBidderParams["acat"]; ok </span><span class="cov8" title="1">{
+                var acat []string
+                err = jsonutil.Unmarshal(acatBytes, &amp;acat)
+                if err != nil </span><span class="cov8" title="1">{
+                        return pmReqExt, err
+                }</span>
+                <span class="cov8" title="1">for i := 0; i &lt; len(acat); i++ </span><span class="cov8" title="1">{
+                        acat[i] = strings.TrimSpace(acat[i])
+                }</span>
+                <span class="cov8" title="1">pmReqExt.Acat = acat</span>
+        }
+
+        <span class="cov8" title="1">if allowedBidders := getAlternateBidderCodesFromRequestExt(reqExt); allowedBidders != nil </span><span class="cov8" title="1">{
+                pmReqExt.Marketplace = &amp;marketplaceReqExt{AllowedBidders: allowedBidders}
+        }</span>
+
+        <span class="cov8" title="1">return pmReqExt, nil</span>
+}
+
+func getAlternateBidderCodesFromRequestExt(reqExt *openrtb_ext.ExtRequest) []string <span class="cov8" title="1">{
+        if reqExt == nil || reqExt.Prebid.AlternateBidderCodes == nil </span><span class="cov8" title="1">{
+                return nil
+        }</span>
+
+        <span class="cov8" title="1">allowedBidders := []string{"pubmatic"}
+        if reqExt.Prebid.AlternateBidderCodes.Enabled </span><span class="cov8" title="1">{
+                if pmABC, ok := reqExt.Prebid.AlternateBidderCodes.Bidders["pubmatic"]; ok &amp;&amp; pmABC.Enabled </span><span class="cov8" title="1">{
+                        if pmABC.AllowedBidderCodes == nil || (len(pmABC.AllowedBidderCodes) == 1 &amp;&amp; pmABC.AllowedBidderCodes[0] == "*") </span><span class="cov8" title="1">{
+                                return []string{"all"}
+                        }</span>
+                        <span class="cov8" title="1">return append(allowedBidders, pmABC.AllowedBidderCodes...)</span>
+                }
+        }
+
+        <span class="cov8" title="1">return allowedBidders</span>
+}
+
+func addKeywordsToExt(keywords []*openrtb_ext.ExtImpPubmaticKeyVal, extMap map[string]interface{}) <span class="cov8" title="1">{
+        for _, keyVal := range keywords </span><span class="cov8" title="1">{
+                if len(keyVal.Values) == 0 </span><span class="cov0" title="0">{
+                        continue</span>
+                } else<span class="cov8" title="1"> {
+                        key := keyVal.Key
+                        if keyVal.Key == pmZoneIDKeyNameOld </span><span class="cov8" title="1">{
+                                key = pmZoneIDKeyName
+                        }</span>
+                        <span class="cov8" title="1">extMap[key] = strings.Join(keyVal.Values[:], ",")</span>
+                }
+        }
+}
+
+func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) <span class="cov8" title="1">{
+        if response.StatusCode == http.StatusNoContent </span><span class="cov0" title="0">{
+                return nil, nil
+        }</span>
+
+        <span class="cov8" title="1">if response.StatusCode == http.StatusBadRequest </span><span class="cov0" title="0">{
+                return nil, []error{&amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">if response.StatusCode != http.StatusOK </span><span class="cov0" title="0">{
+                return nil, []error{fmt.Errorf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}
+        }</span>
+
+        <span class="cov8" title="1">var bidResp openrtb2.BidResponse
+        if err := jsonutil.Unmarshal(response.Body, &amp;bidResp); err != nil </span><span class="cov0" title="0">{
+                return nil, []error{err}
+        }</span>
+
+        <span class="cov8" title="1">bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
+
+        var errs []error
+        for _, sb := range bidResp.SeatBid </span><span class="cov8" title="1">{
+                for i := 0; i &lt; len(sb.Bid); i++ </span><span class="cov8" title="1">{
+                        bid := sb.Bid[i]
+                        if len(bid.Cat) &gt; 1 </span><span class="cov8" title="1">{
+                                bid.Cat = bid.Cat[0:1]
+                        }</span>
+
+                        <span class="cov8" title="1">mType, err := getMediaTypeForBid(&amp;bid)
+                        if err != nil </span><span class="cov8" title="1">{
+                                errs = append(errs, err)
+                                continue</span>
+                        }
+
+                        <span class="cov8" title="1">typedBid := &amp;adapters.TypedBid{
+                                Bid:      &amp;bid,
+                                BidType:  openrtb_ext.BidTypeBanner,
+                                BidVideo: &amp;openrtb_ext.ExtBidPrebidVideo{},
+                        }
+
+                        var bidExt *pubmaticBidExt
+                        err = jsonutil.Unmarshal(bid.Ext, &amp;bidExt)
+                        if err != nil </span><span class="cov8" title="1">{
+                                errs = append(errs, err)
+                        }</span> else<span class="cov8" title="1"> if bidExt != nil </span><span class="cov8" title="1">{
+                                typedBid.Seat = openrtb_ext.BidderName(bidExt.Marketplace)
+                                typedBid.BidType = mType
+                                if bidExt.PrebidDealPriority &gt; 0 </span><span class="cov8" title="1">{
+                                        typedBid.DealPriority = bidExt.PrebidDealPriority
+                                }</span>
+
+                                <span class="cov8" title="1">if bidExt.VideoCreativeInfo != nil &amp;&amp; bidExt.VideoCreativeInfo.Duration != nil </span><span class="cov8" title="1">{
+                                        typedBid.BidVideo.Duration = *bidExt.VideoCreativeInfo.Duration
+                                }</span>
+
+                                <span class="cov8" title="1">typedBid.BidMeta = &amp;openrtb_ext.ExtBidPrebidMeta{MediaType: string(mType)}
+                                if bidExt.InBannerVideo </span><span class="cov8" title="1">{
+                                        typedBid.BidMeta.MediaType = string(openrtb_ext.BidTypeVideo)
+                                }</span>
+                        }
+
+                        <span class="cov8" title="1">if typedBid.BidType == openrtb_ext.BidTypeNative </span><span class="cov8" title="1">{
+                                bid.AdM, err = getNativeAdm(bid.AdM)
+                                if err != nil </span><span class="cov8" title="1">{
+                                        errs = append(errs, err)
+                                }</span>
+                        }
+
+                        <span class="cov8" title="1">bidResponse.Bids = append(bidResponse.Bids, typedBid)</span>
+                }
+        }
+        <span class="cov8" title="1">if bidResp.Cur != "" </span><span class="cov8" title="1">{
+                bidResponse.Currency = bidResp.Cur
+        }</span>
+
+        <span class="cov8" title="1">if bidResp.Ext != nil </span><span class="cov8" title="1">{
+                var bidRespExt respExt
+                if err := jsonutil.Unmarshal(bidResp.Ext, &amp;bidRespExt); err == nil &amp;&amp; bidRespExt.FledgeAuctionConfigs != nil </span><span class="cov8" title="1">{
+                        bidResponse.FledgeAuctionConfigs = make([]*openrtb_ext.FledgeAuctionConfig, 0, len(bidRespExt.FledgeAuctionConfigs))
+                        for impId, config := range bidRespExt.FledgeAuctionConfigs </span><span class="cov8" title="1">{
+                                fledgeAuctionConfig := &amp;openrtb_ext.FledgeAuctionConfig{
+                                        ImpId:  impId,
+                                        Config: config,
+                                }
+                                bidResponse.FledgeAuctionConfigs = append(bidResponse.FledgeAuctionConfigs, fledgeAuctionConfig)
+                        }</span>
+                }
+        }
+        <span class="cov8" title="1">return bidResponse, errs</span>
+}
+
+func getNativeAdm(adm string) (string, error) <span class="cov8" title="1">{
+        var err error
+        nativeAdm := make(map[string]interface{})
+        err = jsonutil.Unmarshal([]byte(adm), &amp;nativeAdm)
+        if err != nil </span><span class="cov8" title="1">{
+                return adm, errors.New("unable to unmarshal native adm")
+        }</span>
+
+        // move bid.adm.native to bid.adm
+        <span class="cov8" title="1">if _, ok := nativeAdm["native"]; ok </span><span class="cov8" title="1">{
+                //using jsonparser to avoid marshaling, encode escape, etc.
+                value, _, _, err := jsonparser.Get([]byte(adm), string(openrtb_ext.BidTypeNative))
+                if err != nil </span><span class="cov0" title="0">{
+                        return adm, errors.New("unable to get native adm")
+                }</span>
+                <span class="cov8" title="1">adm = string(value)</span>
+        }
+
+        <span class="cov8" title="1">return adm, nil</span>
+}
+
+// getMapFromJSON converts JSON to map
+func getMapFromJSON(source json.RawMessage) map[string]interface{} <span class="cov8" title="1">{
+        if source != nil </span><span class="cov8" title="1">{
+                dataMap := make(map[string]interface{})
+                err := jsonutil.Unmarshal(source, &amp;dataMap)
+                if err == nil </span><span class="cov8" title="1">{
+                        return dataMap
+                }</span>
+        }
+        <span class="cov8" title="1">return nil</span>
+}
+
+// populateFirstPartyDataImpAttributes will parse imp.ext.data and populate imp extMap
+func populateFirstPartyDataImpAttributes(data json.RawMessage, extMap map[string]interface{}) <span class="cov8" title="1">{
+
+        dataMap := getMapFromJSON(data)
+
+        if dataMap == nil </span><span class="cov8" title="1">{
+                return
+        }</span>
+
+        <span class="cov8" title="1">populateAdUnitKey(data, dataMap, extMap)
+        populateDctrKey(dataMap, extMap)</span>
+}
+
+// populateAdUnitKey parses data object to read and populate DFP adunit key
+func populateAdUnitKey(data json.RawMessage, dataMap, extMap map[string]interface{}) <span class="cov8" title="1">{
+
+        if name, err := jsonparser.GetString(data, "adserver", "name"); err == nil &amp;&amp; name == AdServerGAM </span><span class="cov8" title="1">{
+                if adslot, err := jsonparser.GetString(data, "adserver", "adslot"); err == nil &amp;&amp; adslot != "" </span><span class="cov8" title="1">{
+                        extMap[ImpExtAdUnitKey] = adslot
+                }</span>
+        }
+
+        //imp.ext.dfp_ad_unit_code is not set, then check pbadslot in imp.ext.data
+        <span class="cov8" title="1">if extMap[ImpExtAdUnitKey] == nil &amp;&amp; dataMap[PBAdslotKey] != nil </span><span class="cov8" title="1">{
+                extMap[ImpExtAdUnitKey] = dataMap[PBAdslotKey].(string)
+        }</span>
+}
+
+// populateDctrKey reads key-val pairs from imp.ext.data and add it in imp.ext.key_val
+func populateDctrKey(dataMap, extMap map[string]interface{}) <span class="cov8" title="1">{
+        var dctr strings.Builder
+
+        //append dctr key if already present in extMap
+        if extMap[dctrKeyName] != nil </span><span class="cov8" title="1">{
+                dctr.WriteString(extMap[dctrKeyName].(string))
+        }</span>
+
+        <span class="cov8" title="1">for key, val := range dataMap </span><span class="cov8" title="1">{
+
+                //ignore 'pbaslot' and 'adserver' key as they are not targeting keys
+                if key == PBAdslotKey || key == AdServerKey </span><span class="cov8" title="1">{
+                        continue</span>
+                }
+
+                //separate key-val pairs in dctr string by pipe(|)
+                <span class="cov8" title="1">if dctr.Len() &gt; 0 </span><span class="cov8" title="1">{
+                        dctr.WriteString("|")
+                }</span>
+
+                //trimming spaces from key
+                <span class="cov8" title="1">key = strings.TrimSpace(key)
+
+                switch typedValue := val.(type) </span>{
+                case string:<span class="cov8" title="1">
+                        if _, err := fmt.Fprintf(&amp;dctr, "%s=%s", key, strings.TrimSpace(typedValue)); err != nil </span><span class="cov0" title="0">{
+                                continue</span>
+                        }
+
+                case float64, bool:<span class="cov8" title="1">
+                        if _, err := fmt.Fprintf(&amp;dctr, "%s=%v", key, typedValue); err != nil </span><span class="cov0" title="0">{
+                                continue</span>
+                        }
+
+                case []interface{}:<span class="cov8" title="1">
+                        if valStrArr := getStringArray(typedValue); len(valStrArr) &gt; 0 </span><span class="cov8" title="1">{
+                                valStr := strings.Join(valStrArr[:], ",")
+                                if _, err := fmt.Fprintf(&amp;dctr, "%s=%s", key, valStr); err != nil </span><span class="cov0" title="0">{
+                                        continue</span>
+                                }
+                        }
+                }
+        }
+
+        <span class="cov8" title="1">if dctrStr := dctr.String(); dctrStr != "" </span><span class="cov8" title="1">{
+                extMap[dctrKeyName] = strings.TrimSuffix(dctrStr, "|")
+        }</span>
+}
+
+// getStringArray converts interface of type string array to string array
+func getStringArray(array []interface{}) []string <span class="cov8" title="1">{
+        aString := make([]string, len(array))
+        for i, v := range array </span><span class="cov8" title="1">{
+                if str, ok := v.(string); ok </span><span class="cov8" title="1">{
+                        aString[i] = strings.TrimSpace(str)
+                }</span> else<span class="cov8" title="1"> {
+                        return nil
+                }</span>
+        }
+        <span class="cov8" title="1">return aString</span>
+}
+
+// getMediaTypeForBid returns the Mtype
+func getMediaTypeForBid(bid *openrtb2.Bid) (openrtb_ext.BidType, error) <span class="cov8" title="1">{
+        // setting "banner" as the default bid type
+        mType := openrtb_ext.BidTypeBanner
+        if bid != nil </span><span class="cov8" title="1">{
+                switch bid.MType </span>{
+                case openrtb2.MarkupBanner:<span class="cov8" title="1">
+                        mType = openrtb_ext.BidTypeBanner</span>
+                case openrtb2.MarkupVideo:<span class="cov8" title="1">
+                        mType = openrtb_ext.BidTypeVideo</span>
+                case openrtb2.MarkupAudio:<span class="cov8" title="1">
+                        mType = openrtb_ext.BidTypeAudio</span>
+                case openrtb2.MarkupNative:<span class="cov8" title="1">
+                        mType = openrtb_ext.BidTypeNative</span>
+                default:<span class="cov8" title="1">
+                        return "", &amp;errortypes.BadServerResponse{
+                                Message: fmt.Sprintf("failed to parse bid mtype (%d) for impression id  %s", bid.MType, bid.ImpID),
+                        }</span>
+                }
+        }
+        <span class="cov8" title="1">return mType, nil</span>
+}
+
+// Builder builds a new instance of the Pubmatic adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) <span class="cov8" title="1">{
+        bidder := &amp;PubmaticAdapter{
+                URI:        config.Endpoint,
+                bidderName: string(bidderName),
+        }
+        return bidder, nil
+}</span>
+
+// getDisplayManagerAndVer returns the display manager and version from the request.app.ext or request.app.prebid.ext source and version
+func getDisplayManagerAndVer(app *openrtb2.App) (string, string) <span class="cov8" title="1">{
+        if source, err := jsonparser.GetString(app.Ext, openrtb_ext.PrebidExtKey, "source"); err == nil &amp;&amp; source != "" </span><span class="cov8" title="1">{
+                if version, err := jsonparser.GetString(app.Ext, openrtb_ext.PrebidExtKey, "version"); err == nil &amp;&amp; version != "" </span><span class="cov8" title="1">{
+                        return source, version
+                }</span>
+        }
+
+        <span class="cov8" title="1">if source, err := jsonparser.GetString(app.Ext, "source"); err == nil &amp;&amp; source != "" </span><span class="cov8" title="1">{
+                if version, err := jsonparser.GetString(app.Ext, "version"); err == nil &amp;&amp; version != "" </span><span class="cov8" title="1">{
+                        return source, version
+                }</span>
+        }
+        <span class="cov8" title="1">return "", ""</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
