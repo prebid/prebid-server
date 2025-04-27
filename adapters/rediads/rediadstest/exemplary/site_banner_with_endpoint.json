@@ -31,7 +31,7 @@
                     "bidder": {
                         "account_id": "999",
                         "slot": "234",
-                        "endpoint": "https://stagingbidding.rediads.com/openrtb2/auction"
+                        "endpoint": "bidding2"
                     }
                 }
             }
@@ -40,7 +40,7 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "https://stagingbidding.rediads.com/openrtb2/auction",
+                "uri": "https://bidding2.test.io/pserver",
                 "body": {
                     "id": "test-request-id",
                     "imp": [

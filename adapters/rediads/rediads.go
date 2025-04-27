@@ -2,6 +2,9 @@ package rediads
 
 import (
 	"fmt"
+	"net/url"
+	"strings"
+
 	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
@@ -96,7 +99,12 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	finalEndpoint := a.endpoint
 	if endpoint != "" {
-		finalEndpoint = endpoint
+		parsedURL, _ := url.Parse(finalEndpoint)
+		host := parsedURL.Host
+		parts := strings.Split(host, ".")
+		parts[0] = endpoint
+		newHost := strings.Join(parts, ".")
+		finalEndpoint = strings.Replace(finalEndpoint, host, newHost, 1)
 	}
 
 	// Build adapters.RequestData
