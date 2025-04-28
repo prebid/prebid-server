@@ -128,11 +128,15 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	}
 
 	query := url.Values{}
+
+	const placementKey = "placement"
 	if placement != "" {
-		query["placement"] = []string{placement}
+		query[placementKey] = []string{placement}
 	}
+	
+	const tagIdKey = "tag_id"
 	if tagId != "" {
-		query["tag_id"] = []string{tagId}
+		query[tagIdKey] = []string{tagId}
 	}
 	urlBuilder.RawQuery = query.Encode()
 
