@@ -133,7 +133,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	if placement != "" {
 		query[placementKey] = []string{placement}
 	}
-	
+
 	const tagIdKey = "tag_id"
 	if tagId != "" {
 		query[tagIdKey] = []string{tagId}
