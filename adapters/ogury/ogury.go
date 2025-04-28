@@ -86,7 +86,7 @@ func (a adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapter
 		}
 	}
 
-	if len(impsWithOguryParams) == 0 && (request.Site == nil || request.Site.Publisher.ID == "") {
+	if len(impsWithOguryParams) == 0 && (request.Site == nil || request.Site.Publisher == nil || request.Site.Publisher.ID == "") {
 		return nil, []error{&errortypes.BadInput{
 			Message: "Invalid request. assetKey/adUnitId or request.site.publisher.id required",
 		}}

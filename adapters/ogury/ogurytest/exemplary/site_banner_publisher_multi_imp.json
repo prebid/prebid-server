@@ -1,20 +1,29 @@
 {
   "mockBidRequest": {
-    "id": "every-param-in-imp.ext.bidder-is-hoisted-to-imp.ext",
+    "id": "every-imp-without-param-dont-filter-imps",
+    "site": {
+      "id": "1",
+      "page": "example.com",
+      "publisher": {
+        "id": "pub123"
+      }
+    },
     "imp": [
       {
-        "id": "test-imp-id",
+        "id": "imp-ad-unit-code",
         "banner": {
           "format": [{"w": 128, "h": 100}]
         },
         "ext": {
-          "gpid": "global position id",
-          "bidder": {
-            "assetKey": "OGY",
-            "adUnitId": "123",
-            "testKey": "test123"
-          }
+          "gpid": "global position id"
         }
+      },
+      {
+        "id": "imp-ad-unit-code-2",
+        "banner": {
+          "format": [{"w": 128, "h": 100}]
+        },
+        "ext": {}
       }
     ]
   },
@@ -24,24 +33,36 @@
       "expectedRequest": {
         "uri": "http://ogury.example.com",
         "body": {
-          "id": "every-param-in-imp.ext.bidder-is-hoisted-to-imp.ext",
+          "id": "every-imp-without-param-dont-filter-imps",
+          "site": {
+            "id": "1",
+            "page": "example.com",
+            "publisher": {
+              "id": "pub123"
+            }
+          },
           "imp": [
             {
-              "id":"test-imp-id",
-              "tagid": "test-imp-id",
+              "id":"imp-ad-unit-code",
+              "tagid": "imp-ad-unit-code",
               "banner": {
                 "format": [{"w": 128, "h": 100}]
               },
               "ext": {
-                "gpid": "global position id",
-                "assetKey": "OGY",
-                "adUnitId": "123",
-                "testKey": "test123"
+                "gpid": "global position id"
               }
+            },
+            {
+              "id": "imp-ad-unit-code-2",
+              "tagid": "imp-ad-unit-code-2",
+              "banner": {
+                "format": [{"w": 128, "h": 100}]
+              },
+              "ext": {}
             }
           ]
         },
-        "impIDs":["test-imp-id"]
+        "impIDs":["imp-ad-unit-code", "imp-ad-unit-code-2"]
       },
       "mockResponse": {
         "status": 200,
