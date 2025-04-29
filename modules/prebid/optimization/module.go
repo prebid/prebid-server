@@ -1,4 +1,4 @@
-package rulesengine
+package optimization
 
 import (
 	"context"

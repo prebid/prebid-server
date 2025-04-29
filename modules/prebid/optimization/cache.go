@@ -1,6 +1,7 @@
-package rulesengine
+package optimization
 
 import (
+	"github.com/prebid/prebid-server/v3/modules/prebid/optimization/rulesengine"
 	"sync"
 	"time"
 )
@@ -27,8 +28,8 @@ type cacheModelGroup struct {
 	weight       int
 	version      string
 	analyticsKey string
-	defaults     []Function
-	root         Node
+	defaults     []rulesengine.ResultFunction
+	root         rulesengine.Node
 }
 
 func NewCacheObject(cfg config) (cacheObject, error) {
