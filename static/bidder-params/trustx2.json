@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "title": "TrustX2 Adapter Params",
-  "description": "A schema which validates params accepted by the TrustX2 adapter",
+  "title": "TRUSTX 2.0 Adapter Params",
+  "description": "A schema which validates params accepted by the TRUSTX 2.0 adapter",
   "type": "object",
   "properties": {
     "publisher_id": {
