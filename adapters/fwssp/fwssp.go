@@ -52,7 +52,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	headers.Add("Componentid", "prebid-go")
 
 	requestData := &adapters.RequestData{
-		Method:  "POST",
+		Method:  http.MethodPost,
 		Uri:     a.endpoint,
 		Body:    requestJSON,
 		Headers: headers,
@@ -78,13 +78,8 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 		return nil, []error{err}
 	}
 
-	cur := bidResp.Cur
-	bidResponse := &adapters.BidderResponse{
-		Currency: cur,
-		Bids:     []*adapters.TypedBid{},
-	}
-
-	bidType := openrtb_ext.BidTypeVideo
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(internalRequest.Imp))
+	bidResponse.Currency = bidResp.Cur
 
 	for _, seatBid := range bidResp.SeatBid {
 		for i := range seatBid.Bid {
@@ -98,7 +93,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 			}
 			adTypeBid := &adapters.TypedBid{
 				Bid:      &bid,
-				BidType:  bidType,
+				BidType:  openrtb_ext.BidTypeVideo,
 				BidVideo: &bidVideo,
 			}
 			bidResponse.Bids = append(bidResponse.Bids, adTypeBid)
