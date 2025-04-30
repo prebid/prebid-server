@@ -20,12 +20,7 @@ type adapter struct {
 }
 
 type Ext struct {
-	Nexx360 ImpNexx360Ext `json:"nexx360"`
-}
-
-type ImpNexx360Ext struct {
-	TagId     string `json:"tagId,omitempty"`
-	Placement string `json:"placement,omitempty"`
+	Nexx360 json.RawMessage `json:"nexx360"`
 }
 
 type Nexx360Caller struct {
@@ -79,10 +74,7 @@ func processImps(impList []openrtb2.Imp) (imp []openrtb2.Imp, tagId string, plac
 		}
 
 		impExt := Ext{
-			Nexx360: ImpNexx360Ext{
-				TagId:     nexx360Ext.TagId,
-				Placement: nexx360Ext.Placement,
-			},
+			Nexx360: bidderExt.Bidder,
 		}
 
 		impExtJSON, err := json.Marshal(impExt)
@@ -95,6 +87,12 @@ func processImps(impList []openrtb2.Imp) (imp []openrtb2.Imp, tagId string, plac
 		imp.Ext = impExtJSON
 		imps = append(imps, imp)
 		if idx == 0 {
+			var nexx360Ext openrtb_ext.ExtImpNexx360
+			if err := jsonutil.Unmarshal(bidderExt.Bidder, &nexx360Ext); err != nil {
+				return nil, "", "", &errortypes.BadInput{
+					Message: err.Error(),
+				}
+			}
 			tagId = nexx360Ext.TagId
 			placement = nexx360Ext.Placement
 		}
