@@ -1,9 +1,10 @@
 package optimization
 
 import (
-	"github.com/prebid/prebid-server/v3/modules/prebid/optimization/rulesengine"
 	"sync"
 	"time"
+
+	"github.com/prebid/prebid-server/v3/modules/prebid/optimization/rulesengine"
 )
 
 // Is sync.Map the best choice for our use case? Would it better to use a go map with mutex?
@@ -32,7 +33,7 @@ type cacheModelGroup struct {
 	root         rulesengine.Node
 }
 
-func NewCacheObject(cfg config) (cacheObject, error) {
+func NewCacheObject(tree rulesengine.Tree) (cacheObject, error) {
 	return cacheObject{}, nil
 }
 
