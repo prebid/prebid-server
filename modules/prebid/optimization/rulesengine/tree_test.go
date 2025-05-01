@@ -2,12 +2,13 @@ package rulesengine
 
 import (
 	"encoding/json"
+	"testing"
+
 	"github.com/prebid/openrtb/v20/openrtb2"
 	structs "github.com/prebid/prebid-server/v3/modules/prebid/optimization/config"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestExecuteRules(t *testing.T) {
@@ -45,8 +46,8 @@ func BuildTestRules(t *testing.T) Tree {
 		Root: &Node{
 			SchemaFunction: devCountryFunc,
 			Children: map[string]*Node{
-				"true":  &Node{ResultFunctions: []ResultFunction{resFunctTrue}},
-				"false": &Node{ResultFunctions: []ResultFunction{resFunctFalse}},
+				"true":  {ResultFunctions: []ResultFunction{resFunctTrue}},
+				"false": {ResultFunctions: []ResultFunction{resFunctFalse}},
 			},
 		},
 	}

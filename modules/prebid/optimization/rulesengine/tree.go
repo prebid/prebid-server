@@ -49,7 +49,7 @@ func BuildRulesTree(conf structs.ModelGroup) (*Tree, error) {
 	currNode := &Node{}
 	rules := Tree{Root: currNode}
 
-	for _, rule := range conf.Rule {
+	for _, rule := range conf.Rules {
 		for ci, condition := range rule.Conditions {
 
 			if len(currNode.Children) == 0 {
