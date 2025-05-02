@@ -97,7 +97,7 @@
                               }
                           }
                       },
-                      "required": ["schema"]
+                      "required": ["schema", "rules"]
                   }
               }
             },

@@ -9,17 +9,99 @@ import (
 )
 
 func TestNewConfig(t *testing.T) {
-	expectedConf := getValidConfig()
+	testCases := []struct {
+		desc         string
+		inCfg        json.RawMessage
+		expectedConf *PbRulesEngine
+		expectedErr  error
+	}{
+		{
+			desc:        "nil input config, expect error",
+			inCfg:       nil,
+			expectedErr: errors.New("JSON schema validation: EOF"),
+		},
+		{
+			desc:        "malformed input config, expect error",
+			inCfg:       json.RawMessage(`malformed`),
+			expectedErr: errors.New("JSON schema validation: invalid character 'm' looking for beginning of value"),
+		},
+		{
+			desc:        "valid input config fails schema validation",
+			inCfg:       json.RawMessage(`{}`),
+			expectedErr: errors.New("JSON schema validation: (root): enabled is required | "),
+		},
+		{
+			desc:        "valid input config fails rule set validation",
+			inCfg:       getInvalidJsonConfig(),
+			expectedErr: errors.New("Ruleset no 0 is invalid: ModelGroup 0 number of schema functions differ from number of conditions of rule 0"),
+		},
+		{
+			desc:         "success",
+			inCfg:        getValidJsonConfig(),
+			expectedConf: getValidConfig(),
+			expectedErr:  nil,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			actualConf, err := NewConfig(tc.inCfg)
 
-	actualConf, err := NewConfig(getJsonRawConfig())
-
-	assert.NoError(t, err)
-	assert.Equal(t, expectedConf, actualConf)
+			assert.Equal(t, tc.expectedConf, actualConf)
+			assert.Equal(t, tc.expectedErr, err)
+		})
+	}
 }
 
 func TestValidateConfig(t *testing.T) {
-	err := validateConfig(getJsonRawConfig())
-	assert.NoError(t, err)
+	testCases := []struct {
+		desc         string
+		inRawCfg     json.RawMessage
+		inSchemaFile string
+		outErrMsg    string
+	}{
+		{
+			desc:         "wrong json schema file name",
+			inSchemaFile: "non-existent-file",
+			outErrMsg:    "no such file or directory",
+		},
+		{
+			desc:         "malformed json schema file name",
+			inSchemaFile: "sample-schemas/malformed.json",
+			outErrMsg:    "invalid character 'm' looking for beginning of value",
+		},
+		{
+			desc:         "nil rules engine config",
+			inSchemaFile: "rules-engine-schema.json",
+			outErrMsg:    "EOF",
+		},
+		{
+			desc:         "malformed JSON rules engine config",
+			inRawCfg:     json.RawMessage(`malformed`),
+			inSchemaFile: "rules-engine-schema.json",
+			outErrMsg:    "invalid character 'm' looking for beginning of value",
+		},
+		{
+			desc:         "JSON config did not pass schema validation",
+			inRawCfg:     json.RawMessage(`{}`),
+			inSchemaFile: "rules-engine-schema.json",
+			outErrMsg:    "(root): enabled is required",
+		},
+		{
+			desc:         "successful rules engine schema validation",
+			inRawCfg:     getValidJsonConfig(),
+			inSchemaFile: "rules-engine-schema.json",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			err := validateConfig(tc.inRawCfg, tc.inSchemaFile)
+			if len(tc.outErrMsg) > 0 {
+				assert.Contains(t, err.Error(), tc.outErrMsg)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }
 
 func TestValidateRuleSet(t *testing.T) {
@@ -121,7 +203,7 @@ func TestValidateRuleSet(t *testing.T) {
 }
 
 // Test utils
-func getJsonRawConfig() json.RawMessage {
+func getValidJsonConfig() json.RawMessage {
 	return json.RawMessage(`
   {
     "enabled": true,
@@ -213,8 +295,59 @@ func getJsonRawConfig() json.RawMessage {
 
 }
 
-func getValidConfig() PbRulesEngine {
-	return PbRulesEngine{
+func getInvalidJsonConfig() json.RawMessage {
+	return json.RawMessage(`
+  {
+    "enabled": true,
+    "ruleSets": [
+      {
+        "stage": "processed-auction-request",
+        "name": "exclude-in-jpn",
+        "modelGroups": [
+          {
+            "weight": 98,
+            "schema": [{"function": "channel"}],
+            "rules": [
+              {
+                "conditions": ["true", "amp"],
+                "results": [
+                  {
+                    "function": "excludeBidders",
+                    "args": [{"bidders": ["bidderA"], "seatNonBid": 111}]
+                  }
+                ]
+              },
+              {
+                "conditions": ["web"],
+                "results": [
+                  {
+                    "function": "excludeBidders",
+                    "args": [{"bidders": ["bidderB"], "seatNonBid": 222}]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "weight": 2,
+            "schema": [{"function": "channel"}],
+            "rules": [
+              {
+                "conditions": ["*"],
+                "results": [{"function": "includeBidders", "args": [{"bidders": ["bidderC"], "seatNonBid": 333}]}]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+`)
+
+}
+
+func getValidConfig() *PbRulesEngine {
+	return &PbRulesEngine{
 		Enabled:                       true,
 		GenerateRulesFromBidderConfig: true,
 		Timestamp:                     "20250131 00:00:00",
