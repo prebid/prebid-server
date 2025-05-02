@@ -2,6 +2,7 @@ package structs
 
 import (
 	"encoding/json"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,8 +18,106 @@ func TestNewConfig(t *testing.T) {
 }
 
 func TestValidateConfig(t *testing.T) {
-	err := ValidateConfig(getJsonRawConfig())
+	err := validateConfig(getJsonRawConfig())
 	assert.NoError(t, err)
+}
+
+func TestValidateRuleSet(t *testing.T) {
+	type testInput struct {
+		desc        string
+		ruleSet     *RuleSet
+		expectedErr error
+	}
+	testGroups := []struct {
+		groupDesc string
+		tests     []testInput
+	}{
+		{
+			groupDesc: "Error is expected",
+			tests: []testInput{
+				{
+					desc: "Unequal number of schema and result functions",
+					ruleSet: &RuleSet{
+						ModelGroups: []ModelGroup{
+							{
+								Schema: []Schema{{Func: "channel"}},
+								Rules:  []Rule{{Conditions: []string{"amp", "web"}}},
+							},
+						},
+					},
+					expectedErr: errors.New("ModelGroup 0 number of schema functions differ from number of conditions of rule 0"),
+				},
+				{
+					desc: "Weights don't add to 100",
+					ruleSet: &RuleSet{
+						ModelGroups: []ModelGroup{
+							{Weight: 50},
+							{Weight: 20},
+						},
+					},
+					expectedErr: errors.New("Model group weights do not add to 100. Sum 70"),
+				},
+				{
+					desc: "One of the weights is 100 but there's more than one modelgroup",
+					ruleSet: &RuleSet{
+						ModelGroups: []ModelGroup{
+							{Weight: 0},
+							{Weight: 100},
+						},
+					},
+					expectedErr: errors.New("Weight of model group 1 is 100, leaving no margin for other model group weights"),
+				},
+			},
+		},
+		{
+			groupDesc: "Success, expect nil error",
+			tests: []testInput{
+				{
+					desc: "Equal number of schema functions and result functions",
+					ruleSet: &RuleSet{
+						ModelGroups: []ModelGroup{
+							{
+								Schema: []Schema{
+									{Func: "deviceCountry", Args: json.RawMessage(`["USA"]`)},
+									{Func: "channel"},
+								},
+								Rules: []Rule{{Conditions: []string{"true", "web"}}},
+							},
+						},
+					},
+					expectedErr: nil,
+				},
+				{
+					desc: "Weights add up to 100",
+					ruleSet: &RuleSet{
+						ModelGroups: []ModelGroup{
+							{Weight: 98},
+							{Weight: 2},
+						},
+					},
+					expectedErr: nil,
+				},
+				{
+					desc: "All weights are 0",
+					ruleSet: &RuleSet{
+						ModelGroups: []ModelGroup{
+							{Weight: 0},
+							{Weight: 0},
+						},
+					},
+					expectedErr: nil,
+				},
+			},
+		},
+	}
+	for _, group := range testGroups {
+		for _, tc := range group.tests {
+			t.Run(group.groupDesc+"-"+tc.desc, func(t *testing.T) {
+				err := validateRuleSet(tc.ruleSet)
+				assert.Equal(t, tc.expectedErr, err)
+			})
+		}
+	}
 }
 
 // Test utils
@@ -93,6 +192,18 @@ func getJsonRawConfig() json.RawMessage {
                 ]
               }
             ]
+          },
+          {
+            "weight": 2,
+            "analyticsKey": "experiment-name",
+            "version": "3.0",
+            "schema": [{"function": "channel"}],
+            "rules": [
+              {
+                "conditions": ["*"],
+                "results": [{"function": "includeBidders", "args": [{"bidders": ["bidderC"], "seatNonBid": 333}]}]
+              }
+            ]
           }
         ]
       }
@@ -143,6 +254,25 @@ func getValidConfig() PbRulesEngine {
 							},
 							{
 								Conditions: []string{"false", "false", "*"},
+								Results: []Result{
+									{
+										Func: "includeBidders",
+										Args: json.RawMessage(`[{"bidders": ["bidderC"], "seatNonBid": 333}]`),
+									},
+								},
+							},
+						},
+					},
+					{
+						Weight:       2,
+						AnalyticsKey: "experiment-name",
+						Version:      "3.0",
+						Schema: []Schema{
+							{Func: "channel"},
+						},
+						Rules: []Rule{
+							{
+								Conditions: []string{"*"},
 								Results: []Result{
 									{
 										Func: "includeBidders",
