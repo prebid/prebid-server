@@ -129,7 +129,5 @@
       "description": "Slot ID"
     }
   },
-  "required": [
-    "enabled"
-  ]
+  "required": ["enabled", "ruleSets"]
 }

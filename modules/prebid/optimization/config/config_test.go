@@ -3,6 +3,7 @@ package structs
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,11 +29,11 @@ func TestNewConfig(t *testing.T) {
 		{
 			desc:        "valid input config fails schema validation",
 			inCfg:       json.RawMessage(`{}`),
-			expectedErr: errors.New("JSON schema validation: (root): enabled is required | "),
+			expectedErr: errors.New("JSON schema validation: [(root): enabled is required] [(root): ruleSets is required] "),
 		},
 		{
 			desc:        "valid input config fails rule set validation",
-			inCfg:       getInvalidJsonConfig(),
+			inCfg:       getInvalidRuleSetConfig(),
 			expectedErr: errors.New("Ruleset no 0 is invalid: ModelGroup 0 number of schema functions differ from number of conditions of rule 0"),
 		},
 		{
@@ -52,10 +53,9 @@ func TestNewConfig(t *testing.T) {
 	}
 }
 
-func TestValidateConfig(t *testing.T) {
+func TestCreateSchemaValidator(t *testing.T) {
 	testCases := []struct {
 		desc         string
-		inRawCfg     json.RawMessage
 		inSchemaFile string
 		outErrMsg    string
 	}{
@@ -70,37 +70,243 @@ func TestValidateConfig(t *testing.T) {
 			outErrMsg:    "invalid character 'm' looking for beginning of value",
 		},
 		{
-			desc:         "nil rules engine config",
-			inSchemaFile: "rules-engine-schema.json",
-			outErrMsg:    "EOF",
-		},
-		{
-			desc:         "malformed JSON rules engine config",
-			inRawCfg:     json.RawMessage(`malformed`),
-			inSchemaFile: "rules-engine-schema.json",
-			outErrMsg:    "invalid character 'm' looking for beginning of value",
-		},
-		{
-			desc:         "JSON config did not pass schema validation",
-			inRawCfg:     json.RawMessage(`{}`),
-			inSchemaFile: "rules-engine-schema.json",
-			outErrMsg:    "(root): enabled is required",
-		},
-		{
-			desc:         "successful rules engine schema validation",
-			inRawCfg:     getValidJsonConfig(),
-			inSchemaFile: "rules-engine-schema.json",
+			desc:         "success",
+			inSchemaFile: rulesEngineSchemaFile,
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			err := validateConfig(tc.inRawCfg, tc.inSchemaFile)
+			_, err := createSchemaValidator(tc.inSchemaFile)
 			if len(tc.outErrMsg) > 0 {
 				assert.Contains(t, err.Error(), tc.outErrMsg)
 			} else {
 				assert.NoError(t, err)
 			}
 		})
+	}
+}
+
+func TestValidateConfig(t *testing.T) {
+	validator, err := createSchemaValidator(rulesEngineSchemaFile)
+	assert.NoError(t, err, fmt.Sprintf("could not create schema validator using file %s", rulesEngineSchemaFile))
+
+	type testInput struct {
+		inConfig  json.RawMessage
+		outErrMsg string
+	}
+
+	testGroups := []struct {
+		desc  string
+		tests []testInput
+	}{
+		{
+			"nil rules engine config",
+			[]testInput{{nil, "EOF"}},
+		},
+		{
+			"malformed rules engine config",
+			[]testInput{{json.RawMessage(`malformed`), "invalid character 'm' looking for beginning of value"}},
+		},
+		{
+			"Well formed config fails schema validation",
+			[]testInput{
+				{ //0
+					json.RawMessage(`{}`),
+					"[(root): enabled is required] [(root): ruleSets is required] ",
+				},
+				{ //1
+					json.RawMessage(`{"enabled": true}`),
+					"[(root): ruleSets is required] ",
+				},
+				{ //2
+					json.RawMessage(`{"enabled": true, "ruleSets": []}`),
+					"[ruleSets: Array must have at least 1 items] ",
+				},
+				{ //3
+					json.RawMessage(`{"enabled": true, "ruleSets": [{}]}`),
+					"[ruleSets.0: stage is required] [ruleSets.0: name is required] [ruleSets.0: modelGroups is required] ",
+				},
+				{ //4
+					json.RawMessage(`{"enabled": true, "ruleSets": [{"stage":"a"}]}`),
+					"[ruleSets.0: name is required] [ruleSets.0: modelGroups is required] [ruleSets.0.stage: ruleSets.0.stage must be one of the following: \"entrypoint\", \"raw-auction\", \"processed-auction-request\", \"bidder-request\", \"raw-bidder-response\", \"all-processed-bid-responses\", \"auction-response\"] ",
+				},
+				{ //5
+					json.RawMessage(`{"enabled": true, "ruleSets": [{"stage":"entrypoint"}]}`),
+					"[ruleSets.0: name is required] [ruleSets.0: modelGroups is required] ",
+				},
+				{ //6
+					json.RawMessage(`{"enabled": true, "ruleSets": [{"stage":"entrypoint","name":"n"}]}`),
+					"[ruleSets.0: modelGroups is required] ",
+				},
+				{ //7
+					json.RawMessage(`{"enabled": true, "ruleSets": [{"stage":"entrypoint","name":"n","modelGroups":[]}]}`),
+					"[ruleSets.0.modelGroups: Array must have at least 1 items] ",
+				},
+				{ //8
+					json.RawMessage(`
+                    {
+                      "enabled": true,
+                      "ruleSets": [
+                        {
+                          "stage": "entrypoint",
+                          "name": "n",
+                          "modelGroups": [
+                            {
+                              "schema": [],
+                              "rules": [
+							    {
+								  "conditions": ["cond"],
+								  "results": [{"function": "excludeBidders"}]
+								}
+							  ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+					`),
+					"[ruleSets.0.modelGroups.0.schema: Array must have at least 1 items] ",
+				},
+				{ //9
+					json.RawMessage(`
+                    {
+                      "enabled": true,
+                      "ruleSets": [
+                        {
+                          "stage": "entrypoint",
+                          "name": "n",
+                          "modelGroups": [
+                            {
+							  "schema": [{"function":"channel"}],
+                              "rules": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+					`),
+					"[ruleSets.0.modelGroups.0.rules: Array must have at least 1 items] ",
+				},
+				{ //10
+					json.RawMessage(`
+                    {
+                      "enabled": true,
+                      "ruleSets": [
+                        {
+                          "stage": "entrypoint",
+                          "name": "someName",
+                          "modelGroups": [
+                            {
+							  "schema": [{"function":"foo"}],
+                              "rules": [
+							    {
+								  "conditions": ["cond"],
+								  "results": [{"function": "excludeBidders"}]
+								}
+							  ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+					`),
+					"[ruleSets.0.modelGroups.0.schema.0.function: ruleSets.0.modelGroups.0.schema.0.function must be one of the following: \"deviceCountry\", \"dataCenters\", \"channel\", \"eidAvailable\", \"userFpdAvailable\", \"fpdAvail\", \"gppSid\", \"tcfInScope\", \"percent\", \"prebidKey\", \"domain\", \"bundle\", \"deviceType\"] ",
+				},
+				{ //11
+					json.RawMessage(`
+                    {
+                      "enabled": true,
+                      "ruleSets": [
+                        {
+                          "stage": "entrypoint",
+                          "name": "someName",
+                          "modelGroups": [
+                            {
+							  "schema": [{"function":"channel"}],
+                              "rules": [
+							    {
+								  "conditions": [],
+								  "results": [{"function": "excludeBidders"}]
+								}
+							  ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+					`),
+					"[ruleSets.0.modelGroups.0.rules.0.conditions: Array must have at least 1 items] ",
+				},
+				{ //12
+					json.RawMessage(`
+                    {
+                      "enabled": true,
+                      "ruleSets": [
+                        {
+                          "stage": "entrypoint",
+                          "name": "someName",
+                          "modelGroups": [
+                            {
+							  "schema": [{"function":"channel"}],
+                              "rules": [
+							    {
+								  "conditions": ["cond"],
+								  "results": []
+								}
+							  ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+					`),
+					"[ruleSets.0.modelGroups.0.rules.0.results: Array must have at least 1 items] ",
+				},
+				{ //13
+					json.RawMessage(`
+                    {
+                      "enabled": true,
+                      "ruleSets": [
+                        {
+                          "stage": "entrypoint",
+                          "name": "someName",
+                          "modelGroups": [
+                            {
+							  "schema": [{"function":"channel"}],
+                              "rules": [
+							    {
+								  "conditions": ["cond"],
+								  "results": [{"function": "foobar"}]
+								}
+							  ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+					`),
+					"[ruleSets.0.modelGroups.0.rules.0.results.0.function: ruleSets.0.modelGroups.0.rules.0.results.0.function must be one of the following: \"excludeBidders\", \"includeBidders\", \"logATag\"] ",
+				},
+			},
+		},
+		{
+			"successful rules engine schema validation",
+			[]testInput{{getValidJsonConfig(), ""}},
+		},
+	}
+
+	for _, tg := range testGroups {
+		for i, tc := range tg.tests {
+			t.Run(fmt.Sprintf("%s test %d", tg.desc, i), func(t *testing.T) {
+				actualError := validateConfig(tc.inConfig, validator)
+
+				if len(tc.outErrMsg) > 0 {
+					assert.Equal(t, tc.outErrMsg, actualError.Error())
+				} else {
+					assert.NoError(t, actualError)
+				}
+			})
+		}
 	}
 }
 
@@ -295,7 +501,7 @@ func getValidJsonConfig() json.RawMessage {
 
 }
 
-func getInvalidJsonConfig() json.RawMessage {
+func getInvalidRuleSetConfig() json.RawMessage {
 	return json.RawMessage(`
   {
     "enabled": true,

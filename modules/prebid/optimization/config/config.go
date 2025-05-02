@@ -11,20 +11,19 @@ import (
 	"github.com/xeipuuv/gojsonschema"
 )
 
-const rulesEngineSchema = "rules-engine-schema.json"
+const rulesEngineSchemaFile = "rules-engine-schema.json"
 
-func validateConfig(rawCfg json.RawMessage, jsonSchemaFile string) error {
+func createSchemaValidator(jsonSchemaFile string) (*gojsonschema.Schema, error) {
 	jsonSchemaFilePath, err := filepath.Abs(jsonSchemaFile)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	schemaLoader := gojsonschema.NewReferenceLoader("file:///" + jsonSchemaFilePath)
-	schemaValidator, err := gojsonschema.NewSchema(schemaLoader)
-	if err != nil {
-		return err
-	}
+	return gojsonschema.NewSchema(schemaLoader)
+}
 
+func validateConfig(rawCfg json.RawMessage, schemaValidator *gojsonschema.Schema) error {
 	result, err := schemaValidator.Validate(gojsonschema.NewBytesLoader(rawCfg))
 	if err != nil {
 		return err
@@ -32,7 +31,7 @@ func validateConfig(rawCfg json.RawMessage, jsonSchemaFile string) error {
 	if !result.Valid() {
 		errBuilder := bytes.NewBuffer(make([]byte, 0, 300))
 		for _, err := range result.Errors() {
-			errBuilder.WriteString(err.String() + " | ")
+			errBuilder.WriteString("[" + err.String() + "] ")
 		}
 		return errors.New(errBuilder.String())
 	}
@@ -70,16 +69,21 @@ func validateRuleSet(r *RuleSet) error {
 func NewConfig(jsonCfg json.RawMessage) (*PbRulesEngine, error) {
 	cfg := &PbRulesEngine{}
 
-	if err := validateConfig(jsonCfg, rulesEngineSchema); err != nil {
+	validator, err := createSchemaValidator(rulesEngineSchemaFile)
+	if err != nil {
+		return nil, fmt.Errorf("Error creating validator: %s", err.Error())
+	}
+
+	if err = validateConfig(jsonCfg, validator); err != nil {
 		return nil, fmt.Errorf("JSON schema validation: %s", err.Error())
 	}
 
-	if err := jsonutil.UnmarshalValid(jsonCfg, cfg); err != nil {
+	if err = jsonutil.UnmarshalValid(jsonCfg, cfg); err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
 	for i := 0; i < len(cfg.RuleSets); i++ {
-		if err := validateRuleSet(&cfg.RuleSets[i]); err != nil {
+		if err = validateRuleSet(&cfg.RuleSets[i]); err != nil {
 			return nil, fmt.Errorf("Ruleset no %d is invalid: %s", i, err.Error())
 		}
 	}
