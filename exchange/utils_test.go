@@ -72,7 +72,8 @@ func (fpb fakePermissionsBuilder) Builder(gdpr.TCF2ConfigReader, gdpr.RequestInf
 }
 
 func assertReq(t *testing.T, bidderRequests []BidderRequest,
-	applyCOPPA bool, consentedVendors map[string]bool) {
+	applyCOPPA bool, consentedVendors map[string]bool,
+) {
 	// assert individual bidder requests
 	assert.NotEqual(t, bidderRequests, 0, "cleanOpenRTBRequest should split request into individual bidder requests")
 
@@ -922,7 +923,8 @@ func TestCleanOpenRTBRequestsWithBidResponses(t *testing.T) {
 					BidRequest: &openrtb2.BidRequest{Imp: nil},
 					BidderName: "bidderA",
 					BidderStoredResponses: map[string]json.RawMessage{
-						"imp-id1": bidRespId1},
+						"imp-id1": bidRespId1,
+					},
 				},
 			},
 		},
@@ -952,7 +954,8 @@ func TestCleanOpenRTBRequestsWithBidResponses(t *testing.T) {
 					}},
 					BidderName: "bidderA",
 					BidderStoredResponses: map[string]json.RawMessage{
-						"imp-id1": bidRespId1},
+						"imp-id1": bidRespId1,
+					},
 				},
 			},
 		},
@@ -983,7 +986,8 @@ func TestCleanOpenRTBRequestsWithBidResponses(t *testing.T) {
 					BidRequest: &openrtb2.BidRequest{Imp: nil},
 					BidderName: "bidderB",
 					BidderStoredResponses: map[string]json.RawMessage{
-						"imp-id1": bidRespId2},
+						"imp-id1": bidRespId2,
+					},
 				},
 			},
 		},
@@ -1013,13 +1017,15 @@ func TestCleanOpenRTBRequestsWithBidResponses(t *testing.T) {
 					}},
 					BidderName: "bidderA",
 					BidderStoredResponses: map[string]json.RawMessage{
-						"imp-id1": bidRespId1},
+						"imp-id1": bidRespId1,
+					},
 				},
 				"bidderB": {
 					BidRequest: &openrtb2.BidRequest{Imp: nil},
 					BidderName: "bidderB",
 					BidderStoredResponses: map[string]json.RawMessage{
-						"imp-id1": bidRespId2},
+						"imp-id1": bidRespId2,
+					},
 				},
 			},
 		},
@@ -1053,13 +1059,15 @@ func TestCleanOpenRTBRequestsWithBidResponses(t *testing.T) {
 					}},
 					BidderName: "bidderA",
 					BidderStoredResponses: map[string]json.RawMessage{
-						"imp-id1": bidRespId1},
+						"imp-id1": bidRespId1,
+					},
 				},
 				"bidderB": {
 					BidRequest: &openrtb2.BidRequest{Imp: nil},
 					BidderName: "bidderB",
 					BidderStoredResponses: map[string]json.RawMessage{
-						"imp-id1": bidRespId2},
+						"imp-id1": bidRespId2,
+					},
 				},
 				"bidderC": {
 					BidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{
@@ -1092,7 +1100,8 @@ func TestCleanOpenRTBRequestsWithBidResponses(t *testing.T) {
 					}},
 					BidderName: "bidderA",
 					BidderStoredResponses: map[string]json.RawMessage{
-						"imp-id2": bidRespId2},
+						"imp-id2": bidRespId2,
+					},
 				},
 			},
 		},
@@ -2106,7 +2115,6 @@ func TestParseRequestDebugValues(t *testing.T) {
 }
 
 func TestSetDebugLogValues(t *testing.T) {
-
 	type aTest struct {
 		desc               string
 		inAccountDebugFlag bool
@@ -2118,7 +2126,6 @@ func TestSetDebugLogValues(t *testing.T) {
 		desc      string
 		testCases []aTest
 	}{
-
 		{
 			"nil debug log",
 			[]aTest{
@@ -2573,7 +2580,6 @@ func TestCleanOpenRTBRequestsWithOpenRTBDowngrade(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-
 			gdprPermsBuilder := fakePermissionsBuilder{
 				permissions: &permissionsMock{
 					allowAllBidders: true,
@@ -2593,7 +2599,6 @@ func TestCleanOpenRTBRequestsWithOpenRTBDowngrade(t *testing.T) {
 			bidRequest := bidderRequests[0]
 			assert.Equal(t, test.expectRegs, bidRequest.BidRequest.Regs)
 			assert.Equal(t, test.expectUser, bidRequest.BidRequest.User)
-
 		})
 	}
 }
@@ -3016,7 +3021,6 @@ func TestRemoveUnpermissionedEids(t *testing.T) {
 		eidPermissions   []openrtb_ext.ExtRequestPrebidDataEidPermission
 		expectedUserEids []openrtb2.EID
 	}{
-
 		{
 			description: "Eids Empty",
 			userEids:    []openrtb2.EID{},
@@ -3569,7 +3573,6 @@ func TestCleanOpenRTBRequestsBuyerUID(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-
 			req := &openrtb2.BidRequest{
 				Site: &openrtb2.Site{
 					Publisher: &openrtb2.Publisher{
@@ -3804,6 +3807,17 @@ func TestApplyFPD(t *testing.T) {
 			inputBidderIsRequestAlias: false,
 			inputRequest:              openrtb2.BidRequest{Device: &openrtb2.Device{Make: "TestDeviceMake"}},
 			expectedRequest:           openrtb2.BidRequest{Device: &openrtb2.Device{Make: "DeviceMake"}},
+		},
+		{
+			description: "req.Device defined; bidderFPD.Device not defined; expect request.Device remains the same",
+			inputFpd: map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData{
+				"bidderNormalized": {Device: nil},
+			},
+			inputBidderName:           "bidderFromRequest",
+			inputBidderCoreName:       "bidderNormalized",
+			inputBidderIsRequestAlias: false,
+			inputRequest:              openrtb2.BidRequest{Device: &openrtb2.Device{Make: "TestDeviceMake"}},
+			expectedRequest:           openrtb2.BidRequest{Device: &openrtb2.Device{Make: "TestDeviceMake"}},
 		},
 	}
 
@@ -4932,7 +4946,6 @@ func TestGetPrebidMediaTypeForBid(t *testing.T) {
 			} else {
 				assert.Equal(t, tt.expectedError, err.Error())
 			}
-
 		})
 	}
 }
@@ -4988,7 +5001,6 @@ func TestGetMediaTypeForBid(t *testing.T) {
 			} else {
 				assert.Equal(t, tt.expectedError, err.Error())
 			}
-
 		})
 	}
 }
@@ -5068,8 +5080,8 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 			expectedSource:    expectedSourceDefault,
 		},
 		{
-			//remove user.eids, user.ext.data.*, user.data.*, user.{id, buyeruid, yob, gender}
-			//and device-specific IDs
+			// remove user.eids, user.ext.data.*, user.data.*, user.{id, buyeruid, yob, gender}
+			// and device-specific IDs
 			name:              "transmit_ufpd_deny",
 			req:               newBidRequest(),
 			privacyConfig:     getTransmitUFPDActivityConfig("appnexus", false),
@@ -5110,8 +5122,8 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 			expectedSource:    expectedSourceDefault,
 		},
 		{
-			//round user's geographic location by rounding off IP address and lat/lng data.
-			//this applies to both device.geo and user.geo
+			// round user's geographic location by rounding off IP address and lat/lng data.
+			// this applies to both device.geo and user.geo
 			name:              "transmit_precise_geo_deny",
 			req:               newBidRequest(),
 			privacyConfig:     getTransmitPreciseGeoActivityConfig("appnexus", false),
@@ -5155,7 +5167,7 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 			expectedSource:    expectedSourceDefault,
 		},
 		{
-			//remove source.tid and imp.ext.tid
+			// remove source.tid and imp.ext.tid
 			name:              "transmit_tid_deny",
 			req:               newBidRequest(),
 			privacyConfig:     getTransmitTIDActivityConfig("appnexus", false),
