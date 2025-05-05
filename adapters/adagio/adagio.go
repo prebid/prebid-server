@@ -39,7 +39,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 
-	// Create the request data
 	requestData := &adapters.RequestData{
 		Method:  http.MethodPost,
 		Uri:     a.endpoint,
@@ -138,7 +137,6 @@ func checkNBRCode(nbr *openrtb3.NoBidReason) error {
 }
 
 func getBidType(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
-	// determinate media type by bid response field mtype
 	switch bid.MType {
 	case openrtb2.MarkupBanner:
 		return openrtb_ext.BidTypeBanner, nil
