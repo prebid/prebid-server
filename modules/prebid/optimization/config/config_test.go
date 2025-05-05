@@ -557,9 +557,8 @@ func getInvalidRuleSetConfig() json.RawMessage {
 
 func getValidConfig() *PbRulesEngine {
 	return &PbRulesEngine{
-		Enabled:                       true,
-		GenerateRulesFromBidderConfig: true,
-		Timestamp:                     "20250131 00:00:00",
+		Enabled:   true,
+		Timestamp: "20250131 00:00:00",
 		RuleSets: []RuleSet{
 			{
 				Stage:   "processed-auction-request",

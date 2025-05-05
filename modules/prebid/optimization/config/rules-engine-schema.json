@@ -8,10 +8,6 @@
       "type": "boolean",
       "description": "pending"
     },
-    "generateRulesFromBidderConfig": {
-      "type": "boolean",
-      "description": "pending"
-    },
     "timestamp": {
       "type": "string",
       "description": "pending"
