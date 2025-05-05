@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/openrtb/v20/openrtb3"
 	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/errortypes"
@@ -64,10 +63,6 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 		return nil, []error{&errortypes.FailedToUnmarshal{Message: fmt.Errorf("bid response, err: %w", err).Error()}}
 	}
 
-	if err := checkNBRCode(bidResponse.NBR); err != nil {
-		return nil, []error{err}
-	}
-
 	if len(bidResponse.SeatBid) == 0 {
 		return nil, []error{errors.New("empty seatbid array")}
 	}
@@ -115,25 +110,6 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	}
 
 	return bidderResponse, errs
-}
-
-func checkNBRCode(nbr *openrtb3.NoBidReason) error {
-	if nbr == nil {
-		return nil
-	}
-
-	switch nbr.Val() {
-	case openrtb3.NoBidReason(1):
-		return errors.New("no bid")
-	case openrtb3.NoBidReason(599):
-		return &errortypes.Timeout{
-			Message: "Timeout",
-		}
-	default:
-		return &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected NBR code: %d", nbr.Val()),
-		}
-	}
 }
 
 func getBidType(bid openrtb2.Bid) (openrtb_ext.BidType, error) {

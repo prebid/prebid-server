@@ -102,7 +102,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "no bid",
+      "value": "empty seatbid array",
       "comparison": "literal"
     }
   ]
