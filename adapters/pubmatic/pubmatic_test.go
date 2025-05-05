@@ -74,23 +74,18 @@ func TestGetMediaTypeForBid(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			Bid := openrtb2.Bid{
+			bid := openrtb2.Bid{
 				MType: tt.mType,
 			}
-			actualBidTypeValue, actualError := getMediaTypeForBid(&Bid)
-			if actualBidTypeValue != tt.expectedMType {
-				t.Errorf("Expected Bid Type value was: %v, actual value is: %v", tt.expectedMType, actualBidTypeValue)
-			}
-			if tt.expectedError == nil {
-				if actualError != nil {
-					t.Errorf("Expected no error, but got: %v", actualError)
-				}
+
+			actualBidTypeValue, actualError := getMediaTypeForBid(&bid)
+
+			assert.Equal(t, tt.expectedMType, actualBidTypeValue, "unexpected BidType value")
+
+			if tt.expectedError != nil {
+				assert.EqualError(t, actualError, tt.expectedError.Error(), "unexpected error message")
 			} else {
-				if actualError == nil {
-					t.Errorf("Expected error: %v, but got nil", tt.expectedError)
-				} else if actualError.Error() != tt.expectedError.Error() {
-					t.Errorf("Expected error: %v, but got: %v", tt.expectedError, actualError)
-				}
+				assert.NoError(t, actualError, "expected no error but got one")
 			}
 		})
 	}
