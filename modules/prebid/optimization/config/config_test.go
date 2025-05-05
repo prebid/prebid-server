@@ -10,6 +10,9 @@ import (
 )
 
 func TestNewConfig(t *testing.T) {
+	validator, err := CreateSchemaValidator(RulesEngineSchemaFile)
+	assert.NoError(t, err, fmt.Sprintf("could not create schema validator using file %s", RulesEngineSchemaFile))
+
 	testCases := []struct {
 		desc         string
 		inCfg        json.RawMessage
@@ -45,7 +48,7 @@ func TestNewConfig(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			actualConf, err := NewConfig(tc.inCfg)
+			actualConf, err := NewConfig(tc.inCfg, validator)
 
 			assert.Equal(t, tc.expectedConf, actualConf)
 			assert.Equal(t, tc.expectedErr, err)
@@ -71,12 +74,12 @@ func TestCreateSchemaValidator(t *testing.T) {
 		},
 		{
 			desc:         "success",
-			inSchemaFile: rulesEngineSchemaFile,
+			inSchemaFile: RulesEngineSchemaFile,
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			_, err := createSchemaValidator(tc.inSchemaFile)
+			_, err := CreateSchemaValidator(tc.inSchemaFile)
 			if len(tc.outErrMsg) > 0 {
 				assert.Contains(t, err.Error(), tc.outErrMsg)
 			} else {
@@ -87,8 +90,8 @@ func TestCreateSchemaValidator(t *testing.T) {
 }
 
 func TestValidateConfig(t *testing.T) {
-	validator, err := createSchemaValidator(rulesEngineSchemaFile)
-	assert.NoError(t, err, fmt.Sprintf("could not create schema validator using file %s", rulesEngineSchemaFile))
+	validator, err := CreateSchemaValidator(RulesEngineSchemaFile)
+	assert.NoError(t, err, fmt.Sprintf("could not create schema validator using file %s", RulesEngineSchemaFile))
 
 	type testInput struct {
 		inConfig  json.RawMessage
@@ -572,6 +575,7 @@ func getValidConfig() *PbRulesEngine {
 							{Func: "dataCenters", Args: json.RawMessage(`["us-east", "us-west"]`)},
 							{Func: "channel"},
 						},
+						Default: []Result{},
 						Rules: []Rule{
 							{
 								Conditions: []string{"true", "true", "amp"},

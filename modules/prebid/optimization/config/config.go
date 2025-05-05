@@ -11,9 +11,9 @@ import (
 	"github.com/xeipuuv/gojsonschema"
 )
 
-const rulesEngineSchemaFile = "rules-engine-schema.json"
+const RulesEngineSchemaFile = "rules-engine-schema.json"
 
-func createSchemaValidator(jsonSchemaFile string) (*gojsonschema.Schema, error) {
+func CreateSchemaValidator(jsonSchemaFile string) (*gojsonschema.Schema, error) {
 	jsonSchemaFilePath, err := filepath.Abs(jsonSchemaFile)
 	if err != nil {
 		return nil, err
@@ -66,24 +66,19 @@ func validateRuleSet(r *RuleSet) error {
 	return nil
 }
 
-func NewConfig(jsonCfg json.RawMessage) (*PbRulesEngine, error) {
+func NewConfig(jsonCfg json.RawMessage, validator *gojsonschema.Schema) (*PbRulesEngine, error) {
 	cfg := &PbRulesEngine{}
 
-	validator, err := createSchemaValidator(rulesEngineSchemaFile)
-	if err != nil {
-		return nil, fmt.Errorf("Error creating validator: %s", err.Error())
-	}
-
-	if err = validateConfig(jsonCfg, validator); err != nil {
+	if err := validateConfig(jsonCfg, validator); err != nil {
 		return nil, fmt.Errorf("JSON schema validation: %s", err.Error())
 	}
 
-	if err = jsonutil.UnmarshalValid(jsonCfg, cfg); err != nil {
+	if err := jsonutil.UnmarshalValid(jsonCfg, cfg); err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
 	for i := 0; i < len(cfg.RuleSets); i++ {
-		if err = validateRuleSet(&cfg.RuleSets[i]); err != nil {
+		if err := validateRuleSet(&cfg.RuleSets[i]); err != nil {
 			return nil, fmt.Errorf("Ruleset no %d is invalid: %s", i, err.Error())
 		}
 	}

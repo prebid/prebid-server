@@ -23,8 +23,9 @@ type ModelGroup struct {
 	AnalyticsKey string
 	Version      string
 
-	Schema []Schema `json:"schema,omitempty"`
-	Rules  []Rule   `json:"rules,omitempty"`
+	Schema  []Schema `json:"schema,omitempty"`
+	Rules   []Rule   `json:"rules,omitempty"`
+	Default []Result `json:"default,omitempty"`
 }
 
 type Schema struct {
