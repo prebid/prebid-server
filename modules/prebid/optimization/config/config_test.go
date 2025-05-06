@@ -155,6 +155,58 @@ func TestValidateConfig(t *testing.T) {
                           "name": "n",
                           "modelGroups": [
                             {
+                              "weight": 101,
+							  "schema": [{"function":"channel"}],
+                              "rules": [
+							    {
+								  "conditions": ["cond"],
+								  "results": [{"function": "excludeBidders"}]
+								}
+							  ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+					`),
+					"[ruleSets.0.modelGroups.0.weight: Must be less than or equal to 100] ",
+				},
+				{ //9
+					json.RawMessage(`
+                    {
+                      "enabled": true,
+                      "ruleSets": [
+                        {
+                          "stage": "entrypoint",
+                          "name": "n",
+                          "modelGroups": [
+                            {
+                              "weight": -1,
+							  "schema": [{"function":"channel"}],
+                              "rules": [
+							    {
+								  "conditions": ["cond"],
+								  "results": [{"function": "excludeBidders"}]
+								}
+							  ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+					`),
+					"[ruleSets.0.modelGroups.0.weight: Must be greater than or equal to 0] ",
+				},
+				{ //10
+					json.RawMessage(`
+                    {
+                      "enabled": true,
+                      "ruleSets": [
+                        {
+                          "stage": "entrypoint",
+                          "name": "n",
+                          "modelGroups": [
+                            {
                               "schema": [],
                               "rules": [
 							    {
@@ -170,7 +222,7 @@ func TestValidateConfig(t *testing.T) {
 					`),
 					"[ruleSets.0.modelGroups.0.schema: Array must have at least 1 items] ",
 				},
-				{ //9
+				{ //11
 					json.RawMessage(`
                     {
                       "enabled": true,
@@ -190,7 +242,7 @@ func TestValidateConfig(t *testing.T) {
 					`),
 					"[ruleSets.0.modelGroups.0.rules: Array must have at least 1 items] ",
 				},
-				{ //10
+				{ //12
 					json.RawMessage(`
                     {
                       "enabled": true,
@@ -215,7 +267,7 @@ func TestValidateConfig(t *testing.T) {
 					`),
 					"[ruleSets.0.modelGroups.0.schema.0.function: ruleSets.0.modelGroups.0.schema.0.function must be one of the following: \"deviceCountry\", \"dataCenters\", \"channel\", \"eidAvailable\", \"userFpdAvailable\", \"fpdAvail\", \"gppSid\", \"tcfInScope\", \"percent\", \"prebidKey\", \"domain\", \"bundle\", \"deviceType\"] ",
 				},
-				{ //11
+				{ //13
 					json.RawMessage(`
                     {
                       "enabled": true,
@@ -240,7 +292,7 @@ func TestValidateConfig(t *testing.T) {
 					`),
 					"[ruleSets.0.modelGroups.0.rules.0.conditions: Array must have at least 1 items] ",
 				},
-				{ //12
+				{ //14
 					json.RawMessage(`
                     {
                       "enabled": true,
@@ -265,7 +317,7 @@ func TestValidateConfig(t *testing.T) {
 					`),
 					"[ruleSets.0.modelGroups.0.rules.0.results: Array must have at least 1 items] ",
 				},
-				{ //13
+				{ //15
 					json.RawMessage(`
                     {
                       "enabled": true,
@@ -314,100 +366,74 @@ func TestValidateConfig(t *testing.T) {
 }
 
 func TestValidateRuleSet(t *testing.T) {
-	type testInput struct {
+	testCases := []struct {
 		desc        string
 		ruleSet     *RuleSet
 		expectedErr error
-	}
-	testGroups := []struct {
-		groupDesc string
-		tests     []testInput
 	}{
 		{
-			groupDesc: "Error is expected",
-			tests: []testInput{
-				{
-					desc: "Unequal number of schema and result functions",
-					ruleSet: &RuleSet{
-						ModelGroups: []ModelGroup{
-							{
-								Schema: []Schema{{Func: "channel"}},
-								Rules:  []Rule{{Conditions: []string{"amp", "web"}}},
-							},
-						},
+			desc: "Error is expected. Unequal number of schema and result functions",
+			ruleSet: &RuleSet{
+				ModelGroups: []ModelGroup{
+					{
+						Schema: []Schema{{Func: "channel"}},
+						Rules:  []Rule{{Conditions: []string{"amp", "web"}}},
 					},
-					expectedErr: errors.New("ModelGroup 0 number of schema functions differ from number of conditions of rule 0"),
-				},
-				{
-					desc: "Weights don't add to 100",
-					ruleSet: &RuleSet{
-						ModelGroups: []ModelGroup{
-							{Weight: 50},
-							{Weight: 20},
-						},
-					},
-					expectedErr: errors.New("Model group weights do not add to 100. Sum 70"),
-				},
-				{
-					desc: "One of the weights is 100 but there's more than one modelgroup",
-					ruleSet: &RuleSet{
-						ModelGroups: []ModelGroup{
-							{Weight: 0},
-							{Weight: 100},
-						},
-					},
-					expectedErr: errors.New("Weight of model group 1 is 100, leaving no margin for other model group weights"),
 				},
 			},
+			expectedErr: errors.New("ModelGroup 0 number of schema functions differ from number of conditions of rule 0"),
 		},
 		{
-			groupDesc: "Success, expect nil error",
-			tests: []testInput{
-				{
-					desc: "Equal number of schema functions and result functions",
-					ruleSet: &RuleSet{
-						ModelGroups: []ModelGroup{
-							{
-								Schema: []Schema{
-									{Func: "deviceCountry", Args: json.RawMessage(`["USA"]`)},
-									{Func: "channel"},
-								},
-								Rules: []Rule{{Conditions: []string{"true", "web"}}},
-							},
+			desc: "Success. Equal number of schema functions and result functions",
+			ruleSet: &RuleSet{
+				ModelGroups: []ModelGroup{
+					{
+						Schema: []Schema{
+							{Func: "deviceCountry", Args: json.RawMessage(`["USA"]`)},
+							{Func: "channel"},
 						},
+						Rules: []Rule{{Conditions: []string{"true", "web"}}},
 					},
-					expectedErr: nil,
-				},
-				{
-					desc: "Weights add up to 100",
-					ruleSet: &RuleSet{
-						ModelGroups: []ModelGroup{
-							{Weight: 98},
-							{Weight: 2},
-						},
-					},
-					expectedErr: nil,
-				},
-				{
-					desc: "All weights are 0",
-					ruleSet: &RuleSet{
-						ModelGroups: []ModelGroup{
-							{Weight: 0},
-							{Weight: 0},
-						},
-					},
-					expectedErr: nil,
 				},
 			},
+			expectedErr: nil,
+		},
+		{
+			desc: "Success. Weights add up to 100",
+			ruleSet: &RuleSet{
+				ModelGroups: []ModelGroup{
+					{Weight: 98},
+					{Weight: 2},
+				},
+			},
+			expectedErr: nil,
+		},
+		{
+			desc: "Success. Weights don't add to 100",
+			ruleSet: &RuleSet{
+				ModelGroups: []ModelGroup{
+					{Weight: 50},
+					{},
+				},
+			},
+			expectedErr: nil,
+		},
+		{
+			desc: "Success. All weights are 0",
+			ruleSet: &RuleSet{
+				ModelGroups: []ModelGroup{
+					{Weight: 0},
+					{Weight: 0},
+				},
+			},
+			expectedErr: nil,
 		},
 	}
-	for _, group := range testGroups {
-		for _, tc := range group.tests {
-			t.Run(group.groupDesc+"-"+tc.desc, func(t *testing.T) {
-				err := validateRuleSet(tc.ruleSet)
-				assert.Equal(t, tc.expectedErr, err)
-			})
-		}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			err := validateRuleSet(tc.ruleSet)
+			assert.Equal(t, tc.expectedErr, err)
+		})
 	}
 }
 

@@ -78,10 +78,10 @@ func validateConfig(rawCfg json.RawMessage, schemaValidator *gojsonschema.Schema
 }
 
 func validateRuleSet(r *RuleSet) error {
-	modelGroupWeights := 0
 	for i := 0; i < len(r.ModelGroups); i++ {
-		if r.ModelGroups[i].Weight == 100 && len(r.ModelGroups) > 1 {
-			return fmt.Errorf("Weight of model group %d is 100, leaving no margin for other model group weights", i)
+		// Modelgroup weight defaults to 100
+		if r.ModelGroups[i].Weight == 0 {
+			r.ModelGroups[i].Weight = 100
 		}
 
 		for j := 0; j < len(r.ModelGroups[i].Rules); j++ {
@@ -89,16 +89,6 @@ func validateRuleSet(r *RuleSet) error {
 				return fmt.Errorf("ModelGroup %d number of schema functions differ from number of conditions of rule %d", i, j)
 			}
 		}
-
-		if r.ModelGroups[i].Weight == 0 {
-			r.ModelGroups[i].Weight = 100
-		}
-
-		modelGroupWeights += r.ModelGroups[i].Weight
-	}
-
-	if modelGroupWeights != 100 && modelGroupWeights != len(r.ModelGroups)*100 {
-		return fmt.Errorf("Model group weights do not add to 100. Sum %d", modelGroupWeights)
 	}
 
 	return nil
