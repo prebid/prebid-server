@@ -1,6 +1,7 @@
 package akcelo
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -19,7 +20,7 @@ type adapter struct {
 }
 
 type extObj struct {
-	Akcelo openrtb_ext.ExtImpAkcelo `json:"akcelo"`
+	Akcelo json.RawMessage `json:"akcelo"`
 }
 
 var NoValidSiteIdError = &errortypes.BadInput{Message: "Cannot find valid siteId"}
@@ -54,16 +55,16 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 }
 
 func (a *adapter) prepareBidRequest(bidRequest *openrtb2.BidRequest) ([]*adapters.RequestData, []error) {
+	if len(bidRequest.Imp) == 0 {
+		return nil, []error{NoValidImpError}
+	}
+
 	bidRequest = createSitePublisher(bidRequest)
 	requestData := make([]*adapters.RequestData, 0, 1)
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
-
-	if len(bidRequest.Imp) == 0 {
-		return nil, []error{NoValidImpError}
-	}
 
 	var errs []error
 	for i := range bidRequest.Imp {
@@ -130,12 +131,7 @@ func (a *adapter) prepareImp(imp *openrtb2.Imp) error {
 		return &errortypes.BadInput{Message: fmt.Sprintf("Unsupported imp : %s", imp.ID)}
 	}
 
-	var extAkcelo openrtb_ext.ExtImpAkcelo
-	if err := jsonutil.Unmarshal(extBidder.Bidder, &extAkcelo); err != nil {
-		return &errortypes.BadInput{Message: fmt.Sprintf("Unsupported imp : %s", imp.ID)}
-	}
-
-	extJson, err := jsonutil.Marshal(extObj{Akcelo: extAkcelo})
+	extJson, err := jsonutil.Marshal(extObj{Akcelo: extBidder.Bidder})
 	if err != nil {
 		return &errortypes.BadInput{Message: fmt.Sprintf("Cannot set akcelo parameters : %s", imp.ID)}
 	}
