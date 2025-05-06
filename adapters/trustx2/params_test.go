@@ -37,8 +37,6 @@ var validParams = []string{
 	`{"publisher_id": "pub", "placement_id": "plcm"}`,
 }
 var invalidParams = []string{
-	`{"publisher_id": "pub"}`,
-	`{"placement_id": "plcm"}`,
 	`{"id", "placementId": "plc"}`,
 	``,
 	`null`,

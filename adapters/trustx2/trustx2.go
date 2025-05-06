@@ -108,8 +108,7 @@ func parseImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpTrustX2, error) {
 	}
 
 	ext := openrtb_ext.ExtImpTrustX2{}
-	err := jsonutil.Unmarshal(bidderExt.Bidder, &ext)
-	if err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &ext); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("Error while decoding bidderExt.Bidder, err: %v", err),
 		}
