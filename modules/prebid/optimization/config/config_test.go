@@ -195,7 +195,7 @@ func TestValidateConfig(t *testing.T) {
                       ]
                     }
 					`),
-					"[ruleSets.0.modelGroups.0.weight: Must be greater than or equal to 0] ",
+					"[ruleSets.0.modelGroups.0.weight: Must be greater than or equal to 1] ",
 				},
 				{ //10
 					json.RawMessage(`
@@ -451,7 +451,7 @@ func getValidJsonConfig() json.RawMessage {
         "version": "1234",
         "modelGroups": [
           {
-            "weight": 98,
+            "weight": 100,
             "analyticsKey": "experiment-name",
             "version": "4567",
             "schema": [
@@ -511,7 +511,7 @@ func getValidJsonConfig() json.RawMessage {
             ]
           },
           {
-            "weight": 2,
+            "weight": 1,
             "analyticsKey": "experiment-name",
             "version": "3.0",
             "schema": [{"function": "channel"}],
@@ -592,7 +592,7 @@ func getValidConfig() *PbRulesEngine {
 				Version: "1234",
 				ModelGroups: []ModelGroup{
 					{
-						Weight:       98,
+						Weight:       100,
 						AnalyticsKey: "experiment-name",
 						Version:      "4567",
 						Schema: []Schema{
@@ -632,7 +632,7 @@ func getValidConfig() *PbRulesEngine {
 						},
 					},
 					{
-						Weight:       2,
+						Weight:       1,
 						AnalyticsKey: "experiment-name",
 						Version:      "3.0",
 						Schema: []Schema{
