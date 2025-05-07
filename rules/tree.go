@@ -5,14 +5,14 @@ import (
 )
 
 // Node...
-type Node [T1 any, T2 any] struct {
+type Node[T1 any, T2 any] struct {
 	SchemaFunction  SchemaFunction[T1]
 	ResultFunctions []ResultFunction[T2]
 	Children        map[string]*Node[T1, T2]
 }
 
 // Tree...
-type Tree [T1 any, T2 any] struct {
+type Tree[T1 any, T2 any] struct {
 	Root *Node[T1, T2]
 }
 
@@ -20,7 +20,7 @@ type Tree [T1 any, T2 any] struct {
 // to execute that returns a result that is used to compare against the node values on the level below it.
 // If the result matches one of the node values on the next level, we move to that node, otherwise we exit.
 // If a leaf node is reached, it's result functions are executed on the provided result payload.
-func(t *Tree[T1, T2]) Run(payload *T1, result *T2) error {
+func (t *Tree[T1, T2]) Run(payload *T1, result *T2) error {
 	currNode := t.Root
 
 	for len(currNode.Children) > 0 {
@@ -37,7 +37,7 @@ func(t *Tree[T1, T2]) Run(payload *T1, result *T2) error {
 
 	// TODO: handle default - does that belong here or in the builder function?
 	// if !currNode.IsLeaf() {
-		// should we put default result functions on every node or on the tree?
+	// should we put default result functions on every node or on the tree?
 	// }
 
 	for _, rf := range currNode.ResultFunctions {
@@ -50,7 +50,7 @@ func(t *Tree[T1, T2]) Run(payload *T1, result *T2) error {
 }
 
 // Valid ensures that the tree is well-formed meaning that every leaf is at the same level
-func(t *Tree[T1, T2]) validate() error {
+func (t *Tree[T1, T2]) validate() error {
 	//TODO
 	return nil
 }

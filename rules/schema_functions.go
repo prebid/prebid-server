@@ -14,7 +14,7 @@ import (
 )
 
 // SchemaFunction...
-type SchemaFunction [T any] interface {
+type SchemaFunction[T any] interface {
 	Call(payload *T) (string, error)
 }
 
@@ -58,7 +58,6 @@ func NewRequestSchemaFunction(name string, params json.RawMessage) (SchemaFuncti
 	}
 }
 
-// 
 func NewDeviceCountryIn(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
 	var args []interface{}
 
@@ -89,7 +88,6 @@ func (dci *deviceCountryIn) Call(wrapper *openrtb_ext.RequestWrapper) (string, e
 	return "false", nil
 }
 
-
 func NewDeviceCountry(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
 	var args []interface{}
 
@@ -102,7 +100,7 @@ func NewDeviceCountry(params json.RawMessage) (SchemaFunction[openrtb_ext.Reques
 	return &deviceCountry{}, nil
 }
 
-type deviceCountry struct {}
+type deviceCountry struct{}
 
 func (dc *deviceCountry) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
 	if wrapper.Device == nil && wrapper.Device.Geo != nil && len(wrapper.Device.Geo.Country) == 0 {
@@ -112,7 +110,6 @@ func (dc *deviceCountry) Call(wrapper *openrtb_ext.RequestWrapper) (string, erro
 }
 
 // ------------datacenters------------------
-
 
 type dataCenter struct {
 	DataCenters []string

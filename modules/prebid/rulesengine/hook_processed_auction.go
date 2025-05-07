@@ -7,7 +7,7 @@ import (
 
 func handleProcessedAuctionHook(
 	ruleSets []cacheRuleSet[openrtb_ext.RequestWrapper, hs.ChangeSet[hs.ProcessedAuctionRequestPayload]],
-	payload  hs.ProcessedAuctionRequestPayload) (hs.HookResult[hs.ProcessedAuctionRequestPayload], error) {
+	payload hs.ProcessedAuctionRequestPayload) (hs.HookResult[hs.ProcessedAuctionRequestPayload], error) {
 
 	result := hs.HookResult[hs.ProcessedAuctionRequestPayload]{
 		ChangeSet: hs.ChangeSet[hs.ProcessedAuctionRequestPayload]{},

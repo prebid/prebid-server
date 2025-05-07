@@ -16,8 +16,8 @@ type hash = string
 type stage = string
 
 type cacheEntry struct {
-	timestamp    time.Time
-	hashedConfig hash
+	timestamp                               time.Time
+	hashedConfig                            hash
 	ruleSetsForProcessedAuctionRequestStage []cacheRuleSet[openrtb_ext.RequestWrapper, hs.ChangeSet[hs.ProcessedAuctionRequestPayload]]
 }
 type cacheRuleSet[T1 any, T2 any] struct {
@@ -48,7 +48,7 @@ func NewCacheEntry(cfg *config.PbRulesEngine, cfgRaw *json.RawMessage) (cacheEnt
 		}
 		crs, err := createCacheRuleSet(&ruleSet)
 		if err != nil {
-			// TODO: log error / metric --> 
+			// TODO: log error / metric -->
 			continue
 		}
 
@@ -69,7 +69,7 @@ func createCacheRuleSet(cfg *config.RuleSet) (cacheRuleSet[openrtb_ext.RequestWr
 	for _, modelGroup := range cfg.ModelGroups {
 		tree, err := rules.NewTree[openrtb_ext.RequestWrapper, hs.ChangeSet[hs.ProcessedAuctionRequestPayload]](
 			&treeBuilder[openrtb_ext.RequestWrapper, hs.ChangeSet[hs.ProcessedAuctionRequestPayload]]{
-				Config: modelGroup,
+				Config:            modelGroup,
 				SchemaFuncFactory: rules.NewRequestSchemaFunction,
 				ResultFuncFactory: NewProcessedAuctionRequestResultFunction,
 			},
@@ -93,7 +93,7 @@ func createCacheRuleSet(cfg *config.RuleSet) (cacheRuleSet[openrtb_ext.RequestWr
 // hashConfig generates a hash of the JSON configuration
 // This is used to determine if the configuration has changed and if the trees need to be rebuilt
 // The hash is a SHA256 hash of the JSON configuration and is stored as a string
-func hashConfig(cfg *json.RawMessage) (hash) {
+func hashConfig(cfg *json.RawMessage) hash {
 	if cfg == nil {
 		return ""
 	}

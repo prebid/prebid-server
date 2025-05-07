@@ -9,7 +9,7 @@ import (
 // It implements the TreeBuilder interface and is used to build a tree structure
 // based on the provided configuration.
 type treeBuilder[T1 any, T2 any] struct {
-	Config config.ModelGroup
+	Config            config.ModelGroup
 	SchemaFuncFactory rules.SchemaFuncFactory[T1]
 	ResultFuncFactory rules.ResultFuncFactory[T2]
 }

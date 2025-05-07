@@ -38,7 +38,7 @@ func (tb *treeManager) Run(c cacher) error {
 			if err != nil {
 				// TODO: log error / metric
 				break
-			}			
+			}
 
 			newCacheObj, err := NewCacheEntry(parsedCfg, req.config)
 			if err != nil {
