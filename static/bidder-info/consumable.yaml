@@ -1,4 +1,4 @@
-endpoint: "https://e.serverbid.com/api/v2"
+endpoint: "https://e.serverbid.com"
 maintainer:
   email: "prebid@consumable.com"
 gvlVendorID: 591

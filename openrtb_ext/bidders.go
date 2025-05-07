@@ -45,6 +45,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderAdtrgtme,
 	BidderAdtelligent,
 	BidderAdTonos,
+	BidderAdUpTech,
 	BidderAdvangelists,
 	BidderAdverxo,
 	BidderAdView,
@@ -74,6 +75,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderBidmyadz,
 	BidderBidsCube,
 	BidderBidstack,
+	BidderBidtheatre,
 	BidderBigoAd,
 	BidderBlasto,
 	BidderBliink,
@@ -114,6 +116,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderEpom,
 	BidderEscalax,
 	BidderEVolution,
+	BidderFeedAd,
 	BidderFlipp,
 	BidderFreewheelSSP,
 	BidderFRVRAdNetwork,
@@ -150,14 +153,17 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderLockerDome,
 	BidderLogan,
 	BidderLogicad,
+	BidderLoopme,
 	BidderLoyal,
 	BidderLunaMedia,
 	BidderMabidder,
+	BidderMadSense,
 	BidderMadvertise,
 	BidderMarsmedia,
 	BidderMediafuse,
 	BidderMediaGo,
 	BidderMedianet,
+	BidderMediasquare,
 	BidderMeloZen,
 	BidderMetaX,
 	BidderMgid,
@@ -166,6 +172,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderMissena,
 	BidderMobfoxpb,
 	BidderMobileFuse,
+	BidderMobkoi,
 	BidderMotorik,
 	BidderNativo,
 	BidderNextMillennium,
@@ -199,6 +206,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderRTBHouse,
 	BidderRubicon,
 	BidderSeedingAlliance,
+	BidderSeedtag,
 	BidderSaLunaMedia,
 	BidderScreencore,
 	BidderSharethrough,
@@ -211,6 +219,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderSmartx,
 	BidderSmartyAds,
 	BidderSmileWanted,
+	BidderSmoot,
 	BidderSmrtconnect,
 	BidderSonobi,
 	BidderSovrn,
@@ -392,6 +401,7 @@ const (
 	BidderAdtrgtme          BidderName = "adtrgtme"
 	BidderAdTonos           BidderName = "adtonos"
 	BidderAdtelligent       BidderName = "adtelligent"
+	BidderAdUpTech          BidderName = "aduptech"
 	BidderAdvangelists      BidderName = "advangelists"
 	BidderAdverxo           BidderName = "adverxo"
 	BidderAdView            BidderName = "adview"
@@ -421,6 +431,7 @@ const (
 	BidderBidmyadz          BidderName = "bidmyadz"
 	BidderBidsCube          BidderName = "bidscube"
 	BidderBidstack          BidderName = "bidstack"
+	BidderBidtheatre        BidderName = "bidtheatre"
 	BidderBigoAd            BidderName = "bigoad"
 	BidderBlasto            BidderName = "blasto"
 	BidderBliink            BidderName = "bliink"
@@ -461,6 +472,7 @@ const (
 	BidderEpom              BidderName = "epom"
 	BidderEscalax           BidderName = "escalax"
 	BidderEVolution         BidderName = "e_volution"
+	BidderFeedAd            BidderName = "feedad"
 	BidderFlipp             BidderName = "flipp"
 	BidderFreewheelSSP      BidderName = "freewheelssp"
 	BidderFRVRAdNetwork     BidderName = "frvradn"
@@ -497,14 +509,17 @@ const (
 	BidderLockerDome        BidderName = "lockerdome"
 	BidderLogan             BidderName = "logan"
 	BidderLogicad           BidderName = "logicad"
+	BidderLoopme            BidderName = "loopme"
 	BidderLoyal             BidderName = "loyal"
 	BidderLunaMedia         BidderName = "lunamedia"
 	BidderMabidder          BidderName = "mabidder"
+	BidderMadSense          BidderName = "madsense"
 	BidderMadvertise        BidderName = "madvertise"
 	BidderMarsmedia         BidderName = "marsmedia"
 	BidderMediafuse         BidderName = "mediafuse"
 	BidderMediaGo           BidderName = "mediago"
 	BidderMedianet          BidderName = "medianet"
+	BidderMediasquare       BidderName = "mediasquare"
 	BidderMeloZen           BidderName = "melozen"
 	BidderMetaX             BidderName = "metax"
 	BidderMgid              BidderName = "mgid"
@@ -513,6 +528,7 @@ const (
 	BidderMissena           BidderName = "missena"
 	BidderMobfoxpb          BidderName = "mobfoxpb"
 	BidderMobileFuse        BidderName = "mobilefuse"
+	BidderMobkoi            BidderName = "mobkoi"
 	BidderMotorik           BidderName = "motorik"
 	BidderNativo            BidderName = "nativo"
 	BidderNextMillennium    BidderName = "nextmillennium"
@@ -546,6 +562,7 @@ const (
 	BidderRTBHouse          BidderName = "rtbhouse"
 	BidderRubicon           BidderName = "rubicon"
 	BidderSeedingAlliance   BidderName = "seedingAlliance"
+	BidderSeedtag           BidderName = "seedtag"
 	BidderSaLunaMedia       BidderName = "sa_lunamedia"
 	BidderScreencore        BidderName = "screencore"
 	BidderSharethrough      BidderName = "sharethrough"
@@ -558,6 +575,7 @@ const (
 	BidderSmartx            BidderName = "smartx"
 	BidderSmartyAds         BidderName = "smartyads"
 	BidderSmileWanted       BidderName = "smilewanted"
+	BidderSmoot             BidderName = "smoot"
 	BidderSmrtconnect       BidderName = "smrtconnect"
 	BidderSonobi            BidderName = "sonobi"
 	BidderSovrn             BidderName = "sovrn"

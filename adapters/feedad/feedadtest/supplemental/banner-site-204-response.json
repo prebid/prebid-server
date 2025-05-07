@@ -1,0 +1,118 @@
+{
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "tmax": 1000,
+    "user": {
+      "buyeruid": "awesome-user"
+    },
+    "site": {
+      "page": "test.com",
+      "publisher": {
+        "id": "123456789"
+      }
+    },
+    "imp": [
+      {
+        "id": "some-impression-id1",
+        "tagid": "ogTAGID",
+        "banner": {
+          "w": 320,
+          "h": 50
+        },
+        "ext": {
+          "bidder": {
+            "clientToken": "some-client-token",
+            "placementId": "some-placement-id"
+          }
+        }
+      },
+      {
+        "id": "some-impression-id2",
+        "tagid": "ogTAGID",
+        "banner": {
+          "w": 320,
+          "h": 50
+        },
+        "ext": {
+          "bidder": {
+            "clientToken": "some-client-token",
+            "placementId": "some-placement-id"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "X-Fa-Pbs-Adapter-Version": [
+            "1.0.0"
+          ],
+          "X-Openrtb-Version": [
+            "2.5"
+          ]
+        },
+        "uri": "https://example.com/1/prebid/requests",
+        "body": {
+          "id": "some-request-id",
+          "imp": [
+            {
+              "id": "some-impression-id1",
+              "tagid": "ogTAGID",
+              "banner": {
+                "w": 320,
+                "h": 50
+              },
+              "ext": {
+                "bidder": {
+                  "clientToken": "some-client-token",
+                  "placementId": "some-placement-id"
+                }
+              }
+            },
+            {
+              "id": "some-impression-id2",
+              "tagid": "ogTAGID",
+              "banner": {
+                "w": 320,
+                "h": 50
+              },
+              "ext": {
+                "bidder": {
+                  "clientToken": "some-client-token",
+                  "placementId": "some-placement-id"
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "test.com",
+            "publisher": {
+              "id": "123456789"
+            }
+          },
+          "user": {
+            "buyeruid": "awesome-user"
+          },
+          "tmax": 1000
+        },
+        "impIDs": [
+          "some-impression-id1",
+          "some-impression-id2"
+        ]
+      },
+      "mockResponse": {
+        "status": 204,
+        "body": {}
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}
