@@ -13,7 +13,8 @@ type Node[T1 any, T2 any] struct {
 
 // Tree...
 type Tree[T1 any, T2 any] struct {
-	Root *Node[T1, T2]
+	Root             *Node[T1, T2]
+	DefaultFunctions []ResultFunction[T2]
 }
 
 // Run attempts to walk down the tree from the root to a leaf node. Each node references a schema function
@@ -29,23 +30,24 @@ func (t *Tree[T1, T2]) Run(payload *T1, result *T2) error {
 			return err
 		}
 
-		next := currNode.Children[res]
-		if next != nil {
-			currNode = next
+		currNode := currNode.Children[res] // can we use exist?
+		if currNode == nil {
+			break
 		}
 	}
 
-	// TODO: handle default - does that belong here or in the builder function?
-	// if !currNode.IsLeaf() {
-	// should we put default result functions on every node or on the tree?
-	// }
+	resultFuncs := t.DefaultFunctions
+	if currNode != nil {
+		resultFuncs = currNode.ResultFunctions
+	}
 
-	for _, rf := range currNode.ResultFunctions {
+	for _, rf := range resultFuncs {
 		err := rf.Call(result)
 		if err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 

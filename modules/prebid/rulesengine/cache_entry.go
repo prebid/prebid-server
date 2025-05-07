@@ -13,7 +13,6 @@ import (
 )
 
 type hash = string
-type stage = string
 
 type cacheEntry struct {
 	timestamp                               time.Time
@@ -28,7 +27,6 @@ type cacheModelGroup[T1 any, T2 any] struct {
 	weight       int
 	version      string
 	analyticsKey string
-	defaults     []rules.ResultFunction[T2] // can this be set on the tree somehow instead?
 	tree         rules.Tree[T1, T2]
 }
 

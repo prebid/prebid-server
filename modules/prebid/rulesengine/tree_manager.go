@@ -30,6 +30,7 @@ func (tb *treeManager) Run(c cacher) error {
 			}
 
 			cacheObj := c.Get(req.accountID)
+
 			if cacheObj != nil && !rebuildTrees(cacheObj, req.config) {
 				break
 			}
