@@ -1,0 +1,127 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Prebid Optimization Rules Engine Module",
+  "description": "A schema which validates rules engine params",
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "description": "pending"
+    },
+    "timestamp": {
+      "type": "string",
+      "description": "pending"
+    },
+    "ruleSets": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "stage": {
+            "type": "string",
+              "enum": ["entrypoint", "raw-auction", "processed-auction-request", "bidder-request", "raw-bidder-response", "all-processed-bid-responses", "auction-response"]
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "version": {
+            "type": "string"
+          },
+          "modelGroups": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "properties": {
+                "weight": {
+                  "type": "number",
+                  "minimum": 1,
+                  "maximum": 100
+                },
+                "analyticsKey": {
+                  "type": "string"
+                },
+                "version": {
+                  "type": "string"
+                },
+                "schema": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "function": {
+                        "type": "string",
+                          "enum": ["deviceCountry", "dataCenters", "channel", "eidAvailable", "userFpdAvailable", "fpdAvail", "gppSid", "tcfInScope", "percent", "prebidKey", "domain", "bundle", "deviceType"]
+                      },
+                      "args": {
+                        "type": "array"
+                      }
+                    },
+                    "required": ["function"]
+                  }
+                },
+                "default": {
+                  "description": "Just like rules[i].results but optional",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "function": {
+                        "type": "string",
+                        "enum": ["excludeBidders", "includeBidders", "logATag"]
+                      },
+                      "args": {
+                        "type": "array"
+                      }
+                    },
+                    "required": ["function"]
+                  }
+                },
+                "rules": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "conditions": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "results": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "function": {
+                              "type": "string",
+                              "enum": ["excludeBidders", "includeBidders", "logATag"]
+                            },
+                            "args": {
+                              "type": "array"
+                            }
+                          },
+                          "required": ["function"]
+                        }
+                      }
+                    },
+                    "required": ["conditions", "results"]
+                  }
+                }
+              },
+              "required": ["schema", "rules"]
+            }
+          }
+        },
+        "required": ["stage", "name", "modelGroups"]
+      }
+    }
+  },
+  "required": ["enabled", "ruleSets"]
+}

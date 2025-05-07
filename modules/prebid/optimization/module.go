@@ -9,6 +9,7 @@ import (
 
 	"github.com/prebid/prebid-server/v3/hooks/hookstage"
 	"github.com/prebid/prebid-server/v3/modules/moduledeps"
+	structs "github.com/prebid/prebid-server/v3/modules/prebid/optimization/config"
 	"github.com/prebid/prebid-server/v3/util/timeutil"
 )
 
@@ -18,8 +19,14 @@ const fiveMinutes = time.Duration(300) * time.Second
 // off a go routine that builds tree structures that represent rule sets optimized for finding
 // a rule to applies for a given request.
 func Builder(_ json.RawMessage, _ moduledeps.ModuleDeps) (interface{}, error) {
+	schemaValidator, err := structs.CreateSchemaValidator(structs.RulesEngineSchemaFile)
+	if err != nil {
+		return nil, err
+	}
+
 	tb := treeBuilder{
-		requests: make(chan buildInstruction),
+		requests:        make(chan buildInstruction),
+		schemaValidator: schemaValidator,
 	}
 	c := cache{}
 

@@ -5,6 +5,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"time"
+
+	"github.com/xeipuuv/gojsonschema"
 )
 
 // buildInstruction specifies the criteria needed to build the tree structures for an account
@@ -15,7 +17,8 @@ type buildInstruction struct {
 
 // treeBuilder represents the component that generates trees
 type treeBuilder struct {
-	requests chan buildInstruction
+	requests        chan buildInstruction
+	schemaValidator *gojsonschema.Schema
 }
 
 // Run reads build instructions from a channel, and if the trees for the rule sets for a given account
