@@ -1,4 +1,4 @@
-package rulesengine
+package rules
 
 import (
 	"encoding/json"

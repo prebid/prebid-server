@@ -1,27 +1,35 @@
-package rulesengine
+package rules
 
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/rand"
+	"slices"
+
 	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"github.com/prebid/prebid-server/v3/util/ptrutil"
-	"math/rand"
-	"slices"
 )
 
-type SchemaFunction interface {
-	Call(wrapper *openrtb_ext.RequestWrapper) (string, error)
+// SchemaFunction...
+type SchemaFunction [T any] interface {
+	Call(payload *T) (string, error)
 }
 
-func NewSchemaFunctionFactory(name string, params json.RawMessage) (SchemaFunction, error) {
+// NewRequestSchemaFunction returns the specified schema function that operates on a request payload along with
+// any schema function args validation errors that occurred during instantiation
+func NewRequestSchemaFunction(name string, params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
 	switch name {
 	case "deviceCountry":
 		return NewDeviceCountry(params)
-	case "dataCenters":
+	case "deviceCountryIn":
+		return NewDeviceCountryIn(params)
+	case "dataCenter":
 		return NewDataCenter(params)
+	case "dataCenterIn":
+		return NewDataCenterIn(params)
 	case "channel":
 		return NewChannel()
 	case "eidAvailable":
@@ -50,41 +58,67 @@ func NewSchemaFunctionFactory(name string, params json.RawMessage) (SchemaFuncti
 	}
 }
 
-// ------------deviceCountry------------------
-type deviceCountry struct {
+// 
+func NewDeviceCountryIn(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
+	var args []interface{}
+
+	if err := jsonutil.Unmarshal(params, &args); err != nil {
+		return nil, err
+	}
+	if len(args) != 1 {
+		return nil, errors.New("deviceCountryIn expects one argument")
+	}
+	countryCodes, ok := args[0].([]string)
+	if !ok {
+		return nil, errors.New("deviceCountryIn arg 0 must be an array of strings")
+	}
+	return &deviceCountryIn{CountryCodes: countryCodes}, nil
+}
+
+type deviceCountryIn struct {
 	CountryCodes []string
 }
 
-func NewDeviceCountry(params json.RawMessage) (SchemaFunction, error) {
-	var devCountry []string
-	if err := jsonutil.Unmarshal(params, &devCountry); err != nil {
-		return nil, err
-	}
-	return &deviceCountry{CountryCodes: devCountry}, nil
-}
-
-func (dc *deviceCountry) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
+func (dci *deviceCountryIn) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
 	if wrapper.Device == nil && wrapper.Device.Geo != nil && len(wrapper.Device.Geo.Country) == 0 {
-		return "", fmt.Errorf("reqiuest.Device.Geo.Country is not present in request")
+		return "false", nil
 	}
-
-	if len(dc.CountryCodes) == 0 {
-		return wrapper.Device.Geo.Country, nil
-	}
-
-	if contains := slices.Contains(dc.CountryCodes, wrapper.Device.Geo.Country); contains {
+	if contains := slices.Contains(dci.CountryCodes, wrapper.Device.Geo.Country); contains {
 		return "true", nil
 	}
 	return "false", nil
 }
 
+
+func NewDeviceCountry(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
+	var args []interface{}
+
+	if err := jsonutil.Unmarshal(params, &args); err != nil {
+		return nil, err
+	}
+	if len(args) > 0 {
+		return nil, errors.New("deviceCountry expects 0 arguments")
+	}
+	return &deviceCountry{}, nil
+}
+
+type deviceCountry struct {}
+
+func (dc *deviceCountry) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
+	if wrapper.Device == nil && wrapper.Device.Geo != nil && len(wrapper.Device.Geo.Country) == 0 {
+		return "", fmt.Errorf("request.Device.Geo.Country is not present in request")
+	}
+	return wrapper.Device.Geo.Country, nil
+}
+
 // ------------datacenters------------------
+
 
 type dataCenter struct {
 	DataCenters []string
 }
 
-func NewDataCenter(params json.RawMessage) (SchemaFunction, error) {
+func NewDataCenter(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
 	var dc []string
 	if err := jsonutil.Unmarshal(params, &dc); err != nil {
 		return nil, err
@@ -110,12 +144,21 @@ func (dc *dataCenter) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) 
 	return "false", nil
 }
 
+// TODO
+func NewDataCenterIn(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
+	var dc []string
+	if err := jsonutil.Unmarshal(params, &dc); err != nil {
+		return nil, err
+	}
+	return &dataCenter{DataCenters: dc}, nil
+}
+
 // ------------channel------------------
 type channel struct {
 	// no params
 }
 
-func NewChannel() (SchemaFunction, error) {
+func NewChannel() (SchemaFunction[openrtb_ext.RequestWrapper], error) {
 	return &channel{}, nil
 }
 
@@ -141,7 +184,8 @@ type eidAvailable struct {
 	eids []string
 }
 
-func NewAidAvailable(params json.RawMessage) (SchemaFunction, error) {
+// New
+func NewAidAvailable(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
 	var eidsParam []string
 	if err := jsonutil.Unmarshal(params, &eidsParam); err != nil {
 		return nil, err
@@ -180,7 +224,7 @@ type userFpdAvailable struct {
 	// no params
 }
 
-func NewUserFpdAvailable() (SchemaFunction, error) {
+func NewUserFpdAvailable() (SchemaFunction[openrtb_ext.RequestWrapper], error) {
 	return &userFpdAvailable{}, nil
 }
 
@@ -193,7 +237,7 @@ type fpdAvail struct {
 	// no params
 }
 
-func NewFpdAvail() (SchemaFunction, error) {
+func NewFpdAvail() (SchemaFunction[openrtb_ext.RequestWrapper], error) {
 	return &fpdAvail{}, nil
 }
 
@@ -236,7 +280,7 @@ type gppSid struct {
 	gppSids []int8
 }
 
-func NewGppSid(params json.RawMessage) (SchemaFunction, error) {
+func NewGppSid(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
 	var gppSidIn []int8
 	if err := jsonutil.Unmarshal(params, &gppSidIn); err != nil {
 		return nil, err
@@ -260,7 +304,7 @@ type tcfInScope struct {
 	// no params
 }
 
-func NewTcfInScope() (SchemaFunction, error) {
+func NewTcfInScope() (SchemaFunction[openrtb_ext.RequestWrapper], error) {
 	return &tcfInScope{}, nil
 }
 
@@ -276,7 +320,7 @@ type percent struct {
 	value int
 }
 
-func NewPercent(params json.RawMessage) (SchemaFunction, error) {
+func NewPercent(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
 	var percentValue int
 	if err := jsonutil.Unmarshal(params, &percentValue); err != nil {
 		return nil, err
@@ -304,7 +348,7 @@ type prebidKey struct {
 	key string
 }
 
-func NewPrebidKey(params json.RawMessage) (SchemaFunction, error) {
+func NewPrebidKey(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
 	var newKey string
 	if err := jsonutil.Unmarshal(params, &newKey); err != nil {
 		return nil, err
@@ -330,7 +374,7 @@ type domain struct {
 	domainNames []string
 }
 
-func NewDomain(params json.RawMessage) (SchemaFunction, error) {
+func NewDomain(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
 	var newdomains []string
 	if err := jsonutil.Unmarshal(params, &newdomains); err != nil {
 		return nil, err
@@ -363,7 +407,7 @@ type bundle struct {
 	bundleNames []string
 }
 
-func NewBundle(params json.RawMessage) (SchemaFunction, error) {
+func NewBundle(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
 	var newBundles []string
 	if err := jsonutil.Unmarshal(params, &newBundles); err != nil {
 		return nil, err
@@ -391,7 +435,7 @@ type deviceType struct {
 	types []string
 }
 
-func NewDeviceType(params json.RawMessage) (SchemaFunction, error) {
+func NewDeviceType(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
 	var deviceTypes []string
 	if err := jsonutil.Unmarshal(params, &deviceTypes); err != nil {
 		return nil, err
