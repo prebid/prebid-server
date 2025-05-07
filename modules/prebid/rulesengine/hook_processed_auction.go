@@ -1,18 +1,27 @@
-package optimization
+package rulesengine
 
 import (
-	"github.com/prebid/prebid-server/v3/hooks/hookstage"
+	hs "github.com/prebid/prebid-server/v3/hooks/hookstage"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
-// at this point, we have well-formed trees (meaning the depth of the tree is the number of schema functions, all leaves are at this depth)
-func handleProcessedAuctionHook(modelGroups []cacheRuleSet, payload hookstage.ProcessedAuctionRequestPayload) (result hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload], err error) {
+func handleProcessedAuctionHook(
+	ruleSets []cacheRuleSet[openrtb_ext.RequestWrapper, hs.ChangeSet[hs.ProcessedAuctionRequestPayload]],
+	payload  hs.ProcessedAuctionRequestPayload) (hs.HookResult[hs.ProcessedAuctionRequestPayload], error) {
 
-	// TODO: traverse trees here
-	// for each rule set:
-	// 	run tree
-	// 	run default functions if no tree leaf found
-	// prepare hook result
-	// return hook result
+	result := hs.HookResult[hs.ProcessedAuctionRequestPayload]{
+		ChangeSet: hs.ChangeSet[hs.ProcessedAuctionRequestPayload]{},
+	}
 
-	return hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload]{}, nil
+	for _, ruleSet := range ruleSets {
+		for _, modelGroup := range ruleSet.modelGroups {
+			err := modelGroup.tree.Run(payload.Request, &result.ChangeSet)
+			if err != nil {
+				//TODO: classify errors as warnings or errors
+				result.Errors = append(result.Errors, err.Error())
+			}
+		}
+	}
+
+	return result, nil
 }

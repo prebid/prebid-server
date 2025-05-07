@@ -3,16 +3,20 @@ package rulesengine
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/v3/hooks/hookstage"
+
+	hs "github.com/prebid/prebid-server/v3/hooks/hookstage"
+	"github.com/prebid/prebid-server/v3/rules"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
-// hookstage.BidderRequestPayload - maybe different?
-type ResultFunction interface {
-	AddChangeSet(*hookstage.ChangeSet[hookstage.BidderRequestPayload]) error
-}
-
-func NewResultFunctionFactory(name string, params json.RawMessage) (ResultFunction, error) {
+// NewProcessedAuctionRequestResultFunction is a factory function that creates a new result function based on the provided name and parameters.
+// It returns an error if the function name is not recognized or if there is an issue with the parameters.
+// The function name is case insensitive.
+// The parameters are expected to be in JSON format and will be unmarshalled into the appropriate struct.
+// The function returns a rules.ResultFunction that can be used to modify the ProcessedAuctionRequestPayload in the ChangeSet.
+// The function is used to create result functions for the rules engine in the Prebid Server.
+func NewProcessedAuctionRequestResultFunction(name string, params json.RawMessage) (rules.ResultFunction[hs.ChangeSet[hs.ProcessedAuctionRequestPayload]], error) {
+	//TODO: make case insensitive converting to lower case
 	switch name {
 	case "excludeBidders":
 		return NewExcludeBidders(params)
@@ -25,7 +29,7 @@ func NewResultFunctionFactory(name string, params json.RawMessage) (ResultFuncti
 	}
 }
 
-// used in both ExckudeBiddeers and IncludeBidders
+// ResultFuncParams is a struct that holds parameters for result functions and is used in ExcludeBidders and IncludeBidders.
 type ResultFuncParams struct {
 	Bidders        []string
 	SeatNonBid     int
@@ -33,9 +37,12 @@ type ResultFuncParams struct {
 	IfSyncedId     bool
 }
 
-//---------------ExcludeBidders--------------
-
-func NewExcludeBidders(params json.RawMessage) (ResultFunction, error) {
+// NewExcludeBidders is a factory function that creates a new ExcludeBidders result function.
+// It takes a JSON raw message as input, unmarshals it into a slice of ResultFuncParams,
+// and returns an ExcludeBidders instance.
+// The function returns an error if there is an issue with the unmarshalling process.
+// The ExcludeBidders function is used to modify the ProcessedAuctionRequestPayload in the ChangeSet.
+func NewExcludeBidders(params json.RawMessage) (rules.ResultFunction[hs.ChangeSet[hs.ProcessedAuctionRequestPayload]], error) {
 	var excludeBiddersParams []ResultFuncParams
 	if err := jsonutil.Unmarshal(params, &excludeBiddersParams); err != nil {
 		return nil, err
@@ -43,12 +50,13 @@ func NewExcludeBidders(params json.RawMessage) (ResultFunction, error) {
 	return &ExcludeBidders{Args: excludeBiddersParams}, nil
 }
 
+// ExcludeBidders is a struct that holds parameters for excluding bidders in the rules engine.
 type ExcludeBidders struct {
 	Args []ResultFuncParams
 }
 
-// do we need to return error?
-func (eb *ExcludeBidders) AddChangeSet(changeSet *hookstage.ChangeSet[hookstage.BidderRequestPayload]) error {
+// Call is a method that applies the changes specified in the ExcludeBidders instance to the provided ChangeSet by creating a mutation.
+func (eb *ExcludeBidders) Call(changeSet *hs.ChangeSet[hs.ProcessedAuctionRequestPayload]) error {
 	//  create a change set which captures the changes we want to apply
 	// this function should NOT perform any modifications to the request
 	for _, arg := range eb.Args {
@@ -58,9 +66,12 @@ func (eb *ExcludeBidders) AddChangeSet(changeSet *hookstage.ChangeSet[hookstage.
 	return nil
 }
 
-//---------------IncludeBidders--------------
-
-func NewIncludeBidders(params json.RawMessage) (ResultFunction, error) {
+// NewIncludeBidders is a factory function that creates a new IncludeBidders result function.
+// It takes a JSON raw message as input, unmarshals it into a slice of ResultFuncParams,
+// and returns an IncludeBidders instance.
+// The function returns an error if there is an issue with the unmarshalling process.
+// The IncludeBidders function is used to modify the ProcessedAuctionRequestPayload in the ChangeSet.
+func NewIncludeBidders(params json.RawMessage) (rules.ResultFunction[hs.ChangeSet[hs.ProcessedAuctionRequestPayload]], error) {
 	var includeBiddersParams []ResultFuncParams
 	if err := jsonutil.Unmarshal(params, &includeBiddersParams); err != nil {
 		return nil, err
@@ -68,12 +79,13 @@ func NewIncludeBidders(params json.RawMessage) (ResultFunction, error) {
 	return &IncludeBidders{Args: includeBiddersParams}, nil
 }
 
+// IncludeBidders is a struct that holds parameters for including bidders in the rules engine.
 type IncludeBidders struct {
 	Args []ResultFuncParams
 }
 
-// do we need to return error?
-func (eb *IncludeBidders) AddChangeSet(changeSet *hookstage.ChangeSet[hookstage.BidderRequestPayload]) error {
+// Call is a method that applies the changes specified in the IncludeBidders instance to the provided ChangeSet by creating a mutation.
+func (eb *IncludeBidders) Call(changeSet *hs.ChangeSet[hs.ProcessedAuctionRequestPayload]) error {
 	//  create a change set which captures the changes we want to apply
 	// this function should NOT perform any modifications to the request
 	for _, arg := range eb.Args {
@@ -83,13 +95,17 @@ func (eb *IncludeBidders) AddChangeSet(changeSet *hookstage.ChangeSet[hookstage.
 	return nil
 }
 
-// ---------------LogATag--------------
-
+// LogATagParams is a struct that holds parameters for the LogATag result function.
 type LogATagParams struct {
 	AnalyticsValue string
 }
 
-func NewLogATag(params json.RawMessage) (ResultFunction, error) {
+// NewLogATag is a factory function that creates a new LogATag result function.
+// It takes a JSON raw message as input, unmarshals it into a LogATagParams struct,
+// and returns a LogATag instance.
+// The function returns an error if there is an issue with the unmarshalling process.
+// The LogATag function is used to modify the ProcessedAuctionRequestPayload in the ChangeSet.
+func NewLogATag(params json.RawMessage) (rules.ResultFunction[hs.ChangeSet[hs.ProcessedAuctionRequestPayload]], error) {
 	var logATagParams LogATagParams
 	if err := jsonutil.Unmarshal(params, &logATagParams); err != nil {
 		return nil, err
@@ -97,12 +113,13 @@ func NewLogATag(params json.RawMessage) (ResultFunction, error) {
 	return &LogATag{Args: logATagParams}, nil
 }
 
+// LogATag is a struct that holds parameters for the LogATag result function.
 type LogATag struct {
 	Args LogATagParams
 }
 
-// do we need to return error?
-func (lt *LogATag) AddChangeSet(changeSet *hookstage.ChangeSet[hookstage.BidderRequestPayload]) error {
+// Call is a method that applies the changes specified in the LogATag instance to the provided ChangeSet by creating a mutation
+func (lt *LogATag) Call(changeSet *hs.ChangeSet[hs.ProcessedAuctionRequestPayload]) error {
 	//  create a change set which captures the changes we want to apply
 	// this function should NOT perform any modifications to the request
 
