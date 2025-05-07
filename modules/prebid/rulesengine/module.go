@@ -1,4 +1,4 @@
-package optimization
+package rulesengine
 
 import (
 	"context"
@@ -7,9 +7,9 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/prebid/prebid-server/v3/hooks/hookstage"
+	hs "github.com/prebid/prebid-server/v3/hooks/hookstage"
 	"github.com/prebid/prebid-server/v3/modules/moduledeps"
-	structs "github.com/prebid/prebid-server/v3/modules/prebid/optimization/config"
+	"github.com/prebid/prebid-server/v3/modules/prebid/rulesengine/config"
 	"github.com/prebid/prebid-server/v3/util/timeutil"
 )
 
@@ -19,39 +19,39 @@ const fiveMinutes = time.Duration(300) * time.Second
 // off a go routine that builds tree structures that represent rule sets optimized for finding
 // a rule to applies for a given request.
 func Builder(_ json.RawMessage, _ moduledeps.ModuleDeps) (interface{}, error) {
-	schemaValidator, err := structs.CreateSchemaValidator(structs.RulesEngineSchemaFile)
+	schemaValidator, err := config.CreateSchemaValidator(config.RulesEngineSchemaFile)
 	if err != nil {
 		return nil, err
 	}
 
-	tb := treeBuilder{
+	tm := treeManager{
 		requests:        make(chan buildInstruction),
 		schemaValidator: schemaValidator,
 	}
 	c := cache{}
 
-	go tb.Run(&c)
+	go tm.Run(&c)
 
 	return Module{
 		Cache:       &c,
-		TreeBuilder: &tb,
+		TreeManager: &tm,
 	}, nil
 }
 
 // Module represents the rules engine module
 type Module struct {
 	Cache       cacher
-	TreeBuilder *treeBuilder
+	TreeManager *treeManager
 }
 
 // HandleProcessedAuctionHook updates field on openrtb2.BidRequest.
 // Fields are updated only if request satisfies conditions provided by the module config.
 func (m Module) HandleProcessedAuctionHook(
 	_ context.Context,
-	miCtx hookstage.ModuleInvocationContext,
-	payload hookstage.ProcessedAuctionRequestPayload,
-) (hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload], error) {
-	result := hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload]{}
+	miCtx hs.ModuleInvocationContext,
+	payload hs.ProcessedAuctionRequestPayload,
+) (hs.HookResult[hs.ProcessedAuctionRequestPayload], error) {
+	result := hs.HookResult[hs.ProcessedAuctionRequestPayload]{}
 
 	// AccountConfig will either be an account-specific config or the default account config
 	// AccountConfig only contains the config block for this module
@@ -67,10 +67,10 @@ func (m Module) HandleProcessedAuctionHook(
 			accountID: miCtx.AccountID,
 			config:    &miCtx.AccountConfig,
 		}
-		m.TreeBuilder.requests <- bi
+		m.TreeManager.requests <- bi
 
 		// TODO: return with reject or no reject, possible config option
-		return hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload]{}, nil
+		return hs.HookResult[hs.ProcessedAuctionRequestPayload]{}, nil
 	}
 	// cache hit
 	if rebuildTrees(co, &miCtx.AccountConfig) {
@@ -78,16 +78,16 @@ func (m Module) HandleProcessedAuctionHook(
 			accountID: miCtx.AccountID,
 			config:    &miCtx.AccountConfig,
 		}
-		m.TreeBuilder.requests <- bi
+		m.TreeManager.requests <- bi
 	}
 
-	ruleSets := co.ruleSets["processed-auction-request"]
+	ruleSets := co.ruleSetsForProcessedAuctionRequestStage
 
 	return handleProcessedAuctionHook(ruleSets, payload)
 }
 
 // rebuildTrees returns true if the trees for this account need to be rebuilt; false otherwise
-func rebuildTrees(co *cacheObject, jsonConfig *json.RawMessage) bool {
+func rebuildTrees(co *cacheEntry, jsonConfig *json.RawMessage) bool {
 	if !expired(&timeutil.RealTime{}, co.timestamp) {
 		return false
 	}
