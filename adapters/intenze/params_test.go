@@ -1,4 +1,4 @@
-package gothamads
+package intenze
 
 import (
 	"encoding/json"
@@ -18,8 +18,8 @@ func TestValidParams(t *testing.T) {
 	}
 
 	for _, validParam := range validParams {
-		if err := validator.Validate(openrtb_ext.BidderGothamads, json.RawMessage(validParam)); err != nil {
-			t.Errorf("Schema rejected Gothamads params: %s", validParam)
+		if err := validator.Validate(openrtb_ext.BidderIntenze, json.RawMessage(validParam)); err != nil {
+			t.Errorf("Schema rejected Intenze params: %s", validParam)
 		}
 	}
 }
@@ -43,7 +43,7 @@ func TestInvalidParams(t *testing.T) {
 	}
 
 	for _, invalidParam := range invalidParams {
-		if err := validator.Validate(openrtb_ext.BidderGothamads, json.RawMessage(invalidParam)); err == nil {
+		if err := validator.Validate(openrtb_ext.BidderIntenze, json.RawMessage(invalidParam)); err == nil {
 			t.Errorf("Schema allowed unexpected params: %s", invalidParam)
 		}
 	}

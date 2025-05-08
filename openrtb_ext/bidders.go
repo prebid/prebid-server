@@ -123,7 +123,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderGamma,
 	BidderGamoshi,
 	BidderGlobalsun,
-	BidderGothamads,
 	BidderGrid,
 	BidderGumGum,
 	BidderHuaweiAds,
@@ -133,6 +132,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderInfyTV,
 	BidderInMobi,
 	BidderInsticator,
+	BidderIntenze,
 	BidderInteractiveoffers,
 	BidderIntertech,
 	BidderInvibes,
@@ -479,7 +479,6 @@ const (
 	BidderGamma             BidderName = "gamma"
 	BidderGamoshi           BidderName = "gamoshi"
 	BidderGlobalsun         BidderName = "globalsun"
-	BidderGothamads         BidderName = "gothamads"
 	BidderGrid              BidderName = "grid"
 	BidderGumGum            BidderName = "gumgum"
 	BidderHuaweiAds         BidderName = "huaweiads"
@@ -489,6 +488,7 @@ const (
 	BidderInfyTV            BidderName = "infytv"
 	BidderInMobi            BidderName = "inmobi"
 	BidderInsticator        BidderName = "insticator"
+	BidderIntenze           BidderName = "intenze"
 	BidderInteractiveoffers BidderName = "interactiveoffers"
 	BidderIntertech         BidderName = "intertech"
 	BidderInvibes           BidderName = "invibes"
