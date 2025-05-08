@@ -24,3 +24,4 @@ userSync:
 openrtb:
   version: 2.6
   gpp-supported: true
+endpointCompression: gzip
