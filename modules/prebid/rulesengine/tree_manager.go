@@ -47,7 +47,7 @@ func (tb *treeManager) Run(c cacher) error {
 				break
 			}
 
-			c.Set(req.accountID, newCacheObj)
+			c.Set(req.accountID, &newCacheObj)
 		}
 		// case TODO: do we need to handle some shutdown signal?
 	}
