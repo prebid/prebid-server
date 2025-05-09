@@ -1,2 +1,2 @@
-endpoint: "http://ads-dot-pbs.ortb.net/openrtb/{{.PublisherID}}?host={{.Host}}"
+endpoint: "http://ads-dot-pbs.ortb.net/openrtb/{{.PublisherID}}"
 aliasOf: "limelightDigital"
