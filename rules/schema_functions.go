@@ -29,6 +29,8 @@ const (
 	Domain           = "domain"
 	Bundle           = "bundle"
 	DeviceType       = "deviceType"
+	AdUnitCode       = "adUnitCode"
+	MediaTypes       = "mediaTypes"
 )
 
 // SchemaFunction...

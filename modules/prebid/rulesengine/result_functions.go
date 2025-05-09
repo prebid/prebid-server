@@ -9,6 +9,12 @@ import (
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
+const (
+	ExcludeBiddersName = "excludeBidders"
+	IncludeBiddersName = "includeBidders"
+	LogATagName        = "logATag"
+)
+
 // NewProcessedAuctionRequestResultFunction is a factory function that creates a new result function based on the provided name and parameters.
 // It returns an error if the function name is not recognized or if there is an issue with the parameters.
 // The function name is case insensitive.
@@ -18,11 +24,11 @@ import (
 func NewProcessedAuctionRequestResultFunction(name string, params json.RawMessage) (rules.ResultFunction[hs.ChangeSet[hs.ProcessedAuctionRequestPayload]], error) {
 	//TODO: make case insensitive converting to lower case
 	switch name {
-	case "excludeBidders":
+	case ExcludeBiddersName:
 		return NewExcludeBidders(params)
-	case "includeBidders":
+	case IncludeBiddersName:
 		return NewIncludeBidders(params)
-	case "logATag":
+	case LogATagName:
 		return NewLogATag(params)
 	default:
 		return nil, fmt.Errorf("result function %s was not created", name)
@@ -47,12 +53,13 @@ func NewExcludeBidders(params json.RawMessage) (rules.ResultFunction[hs.ChangeSe
 	if err := jsonutil.Unmarshal(params, &excludeBiddersParams); err != nil {
 		return nil, err
 	}
-	return &ExcludeBidders{Args: excludeBiddersParams}, nil
+	return &ExcludeBidders{Args: excludeBiddersParams, funcName: ExcludeBiddersName}, nil
 }
 
 // ExcludeBidders is a struct that holds parameters for excluding bidders in the rules engine.
 type ExcludeBidders struct {
-	Args []ResultFuncParams
+	funcName string
+	Args     []ResultFuncParams
 }
 
 // Call is a method that applies the changes specified in the ExcludeBidders instance to the provided ChangeSet by creating a mutation.
@@ -76,19 +83,41 @@ func NewIncludeBidders(params json.RawMessage) (rules.ResultFunction[hs.ChangeSe
 	if err := jsonutil.Unmarshal(params, &includeBiddersParams); err != nil {
 		return nil, err
 	}
-	return &IncludeBidders{Args: includeBiddersParams}, nil
+	return &IncludeBidders{Args: includeBiddersParams, funcName: IncludeBiddersName}, nil
 }
 
 // IncludeBidders is a struct that holds parameters for including bidders in the rules engine.
 type IncludeBidders struct {
-	Args []ResultFuncParams
+	funcName string
+	Args     []ResultFuncParams
 }
 
 // Call is a method that applies the changes specified in the IncludeBidders instance to the provided ChangeSet by creating a mutation.
 func (eb *IncludeBidders) Call(changeSet *hs.ChangeSet[hs.ProcessedAuctionRequestPayload], schemaFunctionsResults map[string]string) error {
 	//  create a change set which captures the changes we want to apply
 	// this function should NOT perform any modifications to the request
+
+	if adUnitCode, ok := schemaFunctionsResults[rules.AdUnitCode]; ok {
+		if adUnitCode != "*" { // wildcard
+			// add comparison logic
+		}
+	}
+
+	if mediaType, ok := schemaFunctionsResults[rules.MediaTypes]; ok {
+		if mediaType != "*" { // wildcard
+			// add comparison logic
+		}
+	}
+
+	/*if len{analyticsKey} > 0{
+		//create an analytics tag
+	}*/
+
 	for _, arg := range eb.Args {
+		if arg.IfSyncedId {
+
+		}
+
 		// changeSet.BidderRequest().Bidders().Add(arg.Bidders) - example
 		changeSet.BidderRequest().BAdv().Update(arg.Bidders) // write mutation functions
 	}
@@ -110,12 +139,13 @@ func NewLogATag(params json.RawMessage) (rules.ResultFunction[hs.ChangeSet[hs.Pr
 	if err := jsonutil.Unmarshal(params, &logATagParams); err != nil {
 		return nil, err
 	}
-	return &LogATag{Args: logATagParams}, nil
+	return &LogATag{Args: logATagParams, funcName: LogATagName}, nil
 }
 
 // LogATag is a struct that holds parameters for the LogATag result function.
 type LogATag struct {
-	Args LogATagParams
+	funcName string
+	Args     LogATagParams
 }
 
 // Call is a method that applies the changes specified in the LogATag instance to the provided ChangeSet by creating a mutation
