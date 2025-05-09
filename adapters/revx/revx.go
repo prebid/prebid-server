@@ -13,19 +13,19 @@ import (
 )
 
 // RevXAdapter struct
-type RevXAdapter struct {
+type adapter struct {
 	endPoint string
 }
 
 // Builder builds a new instance of the RevX adapter.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	return &RevXAdapter{
+	return &adapter{
 		endPoint: config.Endpoint, // Default endpoint
 	}, nil
 }
 
 // MakeRequests handles the OpenRTB bid request and returns адаптер.RequestData
-func (a *RevXAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var requests []*adapters.RequestData
 	var errors []error
 
@@ -77,7 +77,7 @@ func (a *RevXAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapte
 }
 
 // MakeBids handles the OpenRTB bid response.
-func (a *RevXAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if externalRequest == nil {
 		return nil, nil
 	}
