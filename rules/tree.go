@@ -24,11 +24,15 @@ type Tree[T1 any, T2 any] struct {
 func (t *Tree[T1, T2]) Run(payload *T1, result *T2) error {
 	currNode := t.Root
 
+	//needed for result function
+	schemaFunctionResults := make(map[string]string)
+
 	for len(currNode.Children) > 0 {
-		res, err := currNode.SchemaFunction.Call(payload)
+		res, funcName, err := currNode.SchemaFunction.Call(payload)
 		if err != nil {
 			return err
 		}
+		schemaFunctionResults[funcName] = res
 
 		currNode := currNode.Children[res] // can we use exist?
 		if currNode == nil {
@@ -42,7 +46,7 @@ func (t *Tree[T1, T2]) Run(payload *T1, result *T2) error {
 	}
 
 	for _, rf := range resultFuncs {
-		err := rf.Call(result)
+		err := rf.Call(result, schemaFunctionResults)
 		if err != nil {
 			return err
 		}

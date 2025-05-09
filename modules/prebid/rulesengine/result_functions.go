@@ -56,7 +56,7 @@ type ExcludeBidders struct {
 }
 
 // Call is a method that applies the changes specified in the ExcludeBidders instance to the provided ChangeSet by creating a mutation.
-func (eb *ExcludeBidders) Call(changeSet *hs.ChangeSet[hs.ProcessedAuctionRequestPayload]) error {
+func (eb *ExcludeBidders) Call(changeSet *hs.ChangeSet[hs.ProcessedAuctionRequestPayload], schemaFunctionsResults map[string]string) error {
 	//  create a change set which captures the changes we want to apply
 	// this function should NOT perform any modifications to the request
 	for _, arg := range eb.Args {
@@ -85,7 +85,7 @@ type IncludeBidders struct {
 }
 
 // Call is a method that applies the changes specified in the IncludeBidders instance to the provided ChangeSet by creating a mutation.
-func (eb *IncludeBidders) Call(changeSet *hs.ChangeSet[hs.ProcessedAuctionRequestPayload]) error {
+func (eb *IncludeBidders) Call(changeSet *hs.ChangeSet[hs.ProcessedAuctionRequestPayload], schemaFunctionsResults map[string]string) error {
 	//  create a change set which captures the changes we want to apply
 	// this function should NOT perform any modifications to the request
 	for _, arg := range eb.Args {
@@ -119,7 +119,7 @@ type LogATag struct {
 }
 
 // Call is a method that applies the changes specified in the LogATag instance to the provided ChangeSet by creating a mutation
-func (lt *LogATag) Call(changeSet *hs.ChangeSet[hs.ProcessedAuctionRequestPayload]) error {
+func (lt *LogATag) Call(changeSet *hs.ChangeSet[hs.ProcessedAuctionRequestPayload], schemaFunctionsResults map[string]string) error {
 	//  create a change set which captures the changes we want to apply
 	// this function should NOT perform any modifications to the request
 
