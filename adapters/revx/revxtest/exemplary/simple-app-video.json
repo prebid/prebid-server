@@ -1,0 +1,122 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app": {
+      "publisher": {
+        "name": "PUB123"
+      }
+    },
+    "imp": [
+      {
+        "id": "imp-id",
+        "video": {
+          "mimes": [
+            "application/x-mpegURL",
+            "video/mp4"
+          ],
+          "protocols": [
+            2,
+            5
+          ],
+          "w": 640,
+          "h": 480,
+          "placement": 1
+        },
+        "ext": {
+          "bidder": {
+            "pubname": "PUB123"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri":  "prebid-use.atomex.net/ag=PUB123",
+        "body": {
+          "id": "test-request-id",
+          "app": {
+            "publisher": {
+              "name": "PUB123"
+            }
+          },
+          "imp": [
+            {
+              "id": "imp-id",
+              "video": {
+                "mimes": [
+                  "application/x-mpegURL",
+                  "video/mp4"
+                ],
+                "protocols": [
+                  2,
+                  5
+                ],
+                "w": 640,
+                "h": 480,
+                "placement": 1
+              },
+              "ext": {
+              "bidder": {
+                "pubname": "PUB123"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-id"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "interactiveoffers",
+              "bid": [
+                {
+                  "id": "randomid",
+                  "impid": "imp-id",
+                  "price": 0.5,
+                  "adid": "12345678",
+                  "adm": "<VAST version=\"3.0\"></VAST>",
+                  "cid": "987",
+                  "crid": "12345678",
+                  "w": 640,
+                  "h": 480,
+                  "mtype": 2
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "randomid",
+            "impid": "imp-id",
+            "price": 0.5,
+            "adm": "<VAST version=\"3.0\"></VAST>",
+            "adid": "12345678",
+            "cid": "987",
+            "crid": "12345678",
+            "w": 640,
+            "h": 480,
+            "mtype": 2
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}
