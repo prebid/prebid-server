@@ -27,6 +27,8 @@ type treeBuilder[T1 any, T2 any] struct {
 func (tb *treeBuilder[T1, T2]) Build(tree *rules.Tree[T1, T2]) error {
 	currNode := tree.Root
 
+	tree.DefaultFunctions = tb.buildDefaultFunctions()
+
 	for _, rule := range tb.Config.Rules {
 		for ci, condition := range rule.Conditions {
 
@@ -61,4 +63,21 @@ func (tb *treeBuilder[T1, T2]) Build(tree *rules.Tree[T1, T2]) error {
 	}
 
 	return nil
+}
+
+func (tb *treeBuilder[T1, T2]) buildDefaultFunctions() []rules.ResultFunction[T2] {
+	if len(tb.Config.Default) == 0 {
+		return nil
+	}
+
+	defaultFunct := make([]rules.ResultFunction[T2], 0, len(tb.Config.Default))
+	for _, res := range tb.Config.Default {
+		resFunc, err := tb.ResultFuncFactory(res.Func, res.Args)
+		if err != nil {
+			return nil
+		}
+		defaultFunct = append(defaultFunct, resFunc)
+	}
+
+	return defaultFunct
 }
