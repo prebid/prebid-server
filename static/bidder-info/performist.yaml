@@ -1,2 +1,2 @@
-endpoint: "http://ads-pbs.performserv.com/openrtb/{{.PublisherID}}?host={{.Host}}"
+endpoint: "http://ads-pbs.performserv.com/openrtb/{{.PublisherID}}"
 aliasOf: "limelightDigital"
