@@ -145,19 +145,21 @@ func preprocess(imp *openrtb2.Imp) (*openrtb_ext.ExtImpGumGum, error) {
 		return nil, err
 	}
 
-    // Extract adunitid from imp.Ext
-	var adUnitID string
-	var extMap map[string]interface{}
-	if err := json.Unmarshal(imp.Ext, &extMap); err == nil {
-		if value, ok := extMap["adunitid"].(string); ok {
-			adUnitID = value
-		}
-	}
+    // Extract adunitcode from imp.Ext
+    var adUnitCode string
+    var extMap map[string]interface{}
+    if err := json.Unmarshal(imp.Ext, &extMap); err == nil {
+    	if prebid, ok := extMap["prebid"].(map[string]interface{}); ok {
+    		if value, ok := prebid["adunitcode"].(string); ok {
+    			adUnitCode = value
+    		}
+    	}
+    }
 
-	// Set adunitid to imp.TagID
-	if adUnitID != "" {
-		imp.TagID = adUnitID
-	}
+    // Set adunitcode to imp.TagID
+    if adUnitCode != "" {
+    	imp.TagID = adUnitCode
+    }
 
 	if imp.Banner != nil && imp.Banner.W == nil && imp.Banner.H == nil && len(imp.Banner.Format) > 0 {
 		bannerCopy := *imp.Banner
