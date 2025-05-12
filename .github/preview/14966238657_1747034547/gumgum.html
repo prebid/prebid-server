@@ -1,0 +1,348 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>gumgum: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/prebid/prebid-server/v3/adapters/gumgum/gumgum.go (81.7%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package gumgum
+
+import (
+        "encoding/json"
+        "fmt"
+        "net/http"
+        "strconv"
+        "strings"
+
+        "github.com/prebid/openrtb/v20/openrtb2"
+        "github.com/prebid/prebid-server/v3/adapters"
+        "github.com/prebid/prebid-server/v3/config"
+        "github.com/prebid/prebid-server/v3/errortypes"
+        "github.com/prebid/prebid-server/v3/openrtb_ext"
+        "github.com/prebid/prebid-server/v3/util/jsonutil"
+)
+
+// adapter implements Bidder interface.
+type adapter struct {
+        URI string
+}
+
+// MakeRequests makes the HTTP requests which should be made to fetch bids.
+func (g *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) <span class="cov8" title="1">{
+        var validImps []openrtb2.Imp
+        var siteCopy openrtb2.Site
+        if request.Site != nil </span><span class="cov8" title="1">{
+                siteCopy = *request.Site
+        }</span>
+
+        <span class="cov8" title="1">numRequests := len(request.Imp)
+        errs := make([]error, 0, numRequests)
+
+        for i := 0; i &lt; numRequests; i++ </span><span class="cov8" title="1">{
+                imp := request.Imp[i]
+                gumgumExt, err := preprocess(&amp;imp)
+                if err != nil </span><span class="cov0" title="0">{
+                        errs = append(errs, err)
+                }</span> else<span class="cov8" title="1"> {
+                        if gumgumExt.Zone != "" </span><span class="cov8" title="1">{
+                                siteCopy.ID = gumgumExt.Zone
+                        }</span>
+
+                        <span class="cov8" title="1">if gumgumExt.PubID != 0 </span><span class="cov8" title="1">{
+                                if siteCopy.Publisher != nil </span><span class="cov8" title="1">{
+                                        siteCopy.Publisher.ID = strconv.FormatFloat(gumgumExt.PubID, 'f', -1, 64)
+                                }</span> else<span class="cov8" title="1"> {
+                                        siteCopy.Publisher = &amp;openrtb2.Publisher{ID: strconv.FormatFloat(gumgumExt.PubID, 'f', -1, 64)}
+                                }</span>
+                        }
+            //modified Imp along with tagID is added to the request
+                        <span class="cov8" title="1">validImps = append(validImps, imp)</span>
+                }
+        }
+
+        <span class="cov8" title="1">if len(validImps) == 0 </span><span class="cov0" title="0">{
+                return nil, errs
+        }</span>
+
+        <span class="cov8" title="1">request.Imp = validImps
+
+        if request.Site != nil </span><span class="cov8" title="1">{
+                request.Site = &amp;siteCopy
+        }</span>
+
+        <span class="cov8" title="1">reqJSON, err := json.Marshal(request)
+        if err != nil </span><span class="cov0" title="0">{
+                errs = append(errs, err)
+                return nil, errs
+        }</span>
+
+        <span class="cov8" title="1">headers := http.Header{}
+        headers.Add("Content-Type", "application/json;charset=utf-8")
+        headers.Add("Accept", "application/json")
+        return []*adapters.RequestData{{
+                Method:  "POST",
+                Uri:     g.URI,
+                Body:    reqJSON,
+                Headers: headers,
+                ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
+        }}, errs</span>
+}
+
+// MakeBids unpacks the server's response into Bids.
+func (g *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) <span class="cov8" title="1">{
+        if response.StatusCode == http.StatusNoContent </span><span class="cov0" title="0">{
+                return nil, nil
+        }</span>
+
+        <span class="cov8" title="1">if response.StatusCode == http.StatusBadRequest </span><span class="cov0" title="0">{
+                return nil, []error{&amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("Bad user input: HTTP status %d", response.StatusCode),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">if response.StatusCode != http.StatusOK </span><span class="cov0" title="0">{
+                return nil, []error{&amp;errortypes.BadServerResponse{
+                        Message: fmt.Sprintf("Bad server response: HTTP status %d", response.StatusCode),
+                }}
+        }</span>
+        <span class="cov8" title="1">var bidResp openrtb2.BidResponse
+        if err := jsonutil.Unmarshal(response.Body, &amp;bidResp); err != nil </span><span class="cov0" title="0">{
+                return nil, []error{&amp;errortypes.BadServerResponse{
+                        Message: fmt.Sprintf("Bad server response: %d. ", err),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">var errs []error
+        bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
+
+        for _, sb := range bidResp.SeatBid </span><span class="cov8" title="1">{
+                for i := range sb.Bid </span><span class="cov8" title="1">{
+                        mediaType := getMediaTypeForImpID(sb.Bid[i].ImpID, internalRequest.Imp)
+                        if mediaType == openrtb_ext.BidTypeVideo </span><span class="cov8" title="1">{
+                                price := strconv.FormatFloat(sb.Bid[i].Price, 'f', -1, 64)
+                                sb.Bid[i].AdM = strings.Replace(sb.Bid[i].AdM, "${AUCTION_PRICE}", price, -1)
+                        }</span>
+
+                        <span class="cov8" title="1">bidResponse.Bids = append(bidResponse.Bids, &amp;adapters.TypedBid{
+                                Bid:     &amp;sb.Bid[i],
+                                BidType: mediaType,
+                        })</span>
+                }
+        }
+        <span class="cov8" title="1">if bidResp.Cur != "" </span><span class="cov8" title="1">{
+                bidResponse.Currency = bidResp.Cur
+        }</span>
+        <span class="cov8" title="1">return bidResponse, errs</span>
+}
+
+func preprocess(imp *openrtb2.Imp) (*openrtb_ext.ExtImpGumGum, error) <span class="cov8" title="1">{
+        var bidderExt adapters.ExtImpBidder
+        if err := jsonutil.Unmarshal(imp.Ext, &amp;bidderExt); err != nil </span><span class="cov0" title="0">{
+                err = &amp;errortypes.BadInput{
+                        Message: err.Error(),
+                }
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">var gumgumExt openrtb_ext.ExtImpGumGum
+        if err := jsonutil.Unmarshal(bidderExt.Bidder, &amp;gumgumExt); err != nil </span><span class="cov0" title="0">{
+                err = &amp;errortypes.BadInput{
+                        Message: err.Error(),
+                }
+                return nil, err
+        }</span>
+
+    // Extract adunitcode from imp.Ext
+    <span class="cov8" title="1">var adUnitCode string
+    var extMap map[string]interface{}
+    if err := json.Unmarshal(imp.Ext, &amp;extMap); err == nil </span><span class="cov8" title="1">{
+            if prebid, ok := extMap["prebid"].(map[string]interface{}); ok </span><span class="cov0" title="0">{
+                    if value, ok := prebid["adunitcode"].(string); ok </span><span class="cov0" title="0">{
+                            adUnitCode = value
+                    }</span>
+            }
+    }
+
+    // Set adunitcode to imp.TagID
+    <span class="cov8" title="1">if adUnitCode != "" </span><span class="cov0" title="0">{
+            imp.TagID = adUnitCode
+    }</span>
+
+        <span class="cov8" title="1">if imp.Banner != nil &amp;&amp; imp.Banner.W == nil &amp;&amp; imp.Banner.H == nil &amp;&amp; len(imp.Banner.Format) &gt; 0 </span><span class="cov8" title="1">{
+                bannerCopy := *imp.Banner
+                format := bannerCopy.Format[0]
+                bannerCopy.W = &amp;(format.W)
+                bannerCopy.H = &amp;(format.H)
+
+                if gumgumExt.Slot != 0 </span><span class="cov8" title="1">{
+                        var err error
+                        bannerExt := getBiggerFormat(bannerCopy.Format, gumgumExt.Slot)
+                        bannerCopy.Ext, err = json.Marshal(&amp;bannerExt)
+                        if err != nil </span><span class="cov0" title="0">{
+                                return nil, err
+                        }</span>
+                }
+
+                <span class="cov8" title="1">imp.Banner = &amp;bannerCopy</span>
+        }
+
+        <span class="cov8" title="1">if imp.Video != nil </span><span class="cov8" title="1">{
+                if gumgumExt.IrisID != "" </span><span class="cov8" title="1">{
+                        var err error
+                        videoCopy := *imp.Video
+                        videoExt := openrtb_ext.ExtImpGumGumVideo{IrisID: gumgumExt.IrisID}
+                        videoCopy.Ext, err = json.Marshal(&amp;videoExt)
+                        if err != nil </span><span class="cov0" title="0">{
+                                return nil, err
+                        }</span>
+                        <span class="cov8" title="1">imp.Video = &amp;videoCopy</span>
+                }
+        }
+
+        <span class="cov8" title="1">if gumgumExt.Product != "" </span><span class="cov0" title="0">{
+                var err error
+                imp.Ext, err = json.Marshal(map[string]string{"product": gumgumExt.Product})
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, err
+                }</span>
+        }
+
+        <span class="cov8" title="1">return &amp;gumgumExt, nil</span>
+}
+
+func getBiggerFormat(formatList []openrtb2.Format, slot float64) openrtb_ext.ExtImpGumGumBanner <span class="cov8" title="1">{
+        maxw := int64(0)
+        maxh := int64(0)
+        greatestVal := int64(0)
+        for _, size := range formatList </span><span class="cov8" title="1">{
+                var biggerSide int64
+                if size.W &gt; size.H </span><span class="cov8" title="1">{
+                        biggerSide = size.W
+                }</span> else<span class="cov8" title="1"> {
+                        biggerSide = size.H
+                }</span>
+
+                <span class="cov8" title="1">if biggerSide &gt; greatestVal || (biggerSide == greatestVal &amp;&amp; size.W &gt;= maxw &amp;&amp; size.H &gt;= maxh) </span><span class="cov8" title="1">{
+                        greatestVal = biggerSide
+                        maxh = size.H
+                        maxw = size.W
+                }</span>
+        }
+
+        <span class="cov8" title="1">bannerExt := openrtb_ext.ExtImpGumGumBanner{Si: slot, MaxW: float64(maxw), MaxH: float64(maxh)}
+
+        return bannerExt</span>
+}
+
+func getMediaTypeForImpID(impID string, imps []openrtb2.Imp) openrtb_ext.BidType <span class="cov8" title="1">{
+        for _, imp := range imps </span><span class="cov8" title="1">{
+                if imp.ID == impID &amp;&amp; imp.Banner != nil </span><span class="cov8" title="1">{
+                        return openrtb_ext.BidTypeBanner
+                }</span>
+        }
+        <span class="cov8" title="1">return openrtb_ext.BidTypeVideo</span>
+}
+
+// Builder builds a new instance of the GumGum adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) <span class="cov8" title="1">{
+        bidder := &amp;adapter{
+                URI: config.Endpoint,
+        }
+        return bidder, nil
+}</span>
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
