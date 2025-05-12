@@ -18,7 +18,8 @@
                             "h": 250
                         }
                     ]
-                }
+                },
+                "tagid": "ad-slot-standard"
             },
             {
                 "id": "slot-onecode",
@@ -31,7 +32,8 @@
                             "h": 600
                         }
                     ]
-                }
+                },
+                "tagid": "ad-slot-onecode"
             }
         ],
         "site": {
@@ -54,64 +56,64 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "http://ssp.wp.test/bidder/?bdver=5.8&inver=4",
+                "uri": "http://ssp.wp.test/bidder/?bdver=5.8",
                 "body": {
-                    "id": "test-request",
-                    "imp": [
-                        {
-                            "id": "slot-standard",
-                            "banner": {
-                                "format": [
-                                    {
-                                        "w": 300,
-                                        "h": 250
+                    "bidRequest": {
+                        "id": "test-request",
+                        "imp": [
+                            {
+                                "id": "slot-standard",
+                                "banner": {
+                                    "format": [
+                                        {
+                                            "w": 300,
+                                            "h": 250
+                                        }
+                                    ]
+                                },
+                                "tagid": "ad-slot-standard",
+                                "secure": 1,
+                                "ext": {
+                                    "bidder": {
+                                        "siteId": "237503",
+                                        "id": "005"
                                     }
-                                ]
-                            },
-                            "tagid": "slot-standard",
-                            "secure": 1,
-                            "ext": {
-                                "data": {
-                                    "pbslot": "slot-standard",
-                                    "pbsize": "300x250"
                                 }
+                            },
+                            {
+                                "id": "slot-onecode",
+                                "banner": {
+                                    "format": [
+                                        {
+                                            "w": 300,
+                                            "h": 600
+                                        }
+                                    ]
+                                },
+                                "tagid": "ad-slot-onecode",
+                                "secure": 1,
+                                "ext": {}
                             }
+                        ],
+                        "site": {
+                            "domain": "test.page",
+                            "page": "https://test.page/",
+                            "ref": "https://test.referer/"
                         },
-                        {
-                            "id": "slot-onecode",
-                            "banner": {
-                                "format": [
-                                    {
-                                        "w": 300,
-                                        "h": 600
-                                    }
-                                ]
-                            },
-                            "tagid": "slot-onecode",
-                            "secure": 1,
+                        "user": {
                             "ext": {
-                                "data": {
-                                    "pbslot": "slot-onecode",
-                                    "pbsize": "300x600"
-                                }
+                                "consent": "test_consent"
+                            },
+                            "buyeruid": "test_user"
+                        },
+                        "regs": {
+                            "ext": {
+                                "gdpr": 1
                             }
                         }
-                    ],
-                    "site": {
-                        "domain": "test.page",
-                        "page": "https://test.page/",
-                        "ref": "https://test.referer/"
                     },
-                    "user": {
-                        "ext": {
-                            "consent": "test_consent"
-                        },
-                        "buyeruid": "test_user"
-                    },
-                    "regs": {
-                        "ext": {
-                            "gdpr": 1
-                        }
+                    "requestInfo": {
+                        "PbsEntryPoint": ""
                     }
                 },
                 "impIDs":["slot-standard","slot-onecode"]
@@ -131,7 +133,9 @@
                                     ],
                                     "crid": "1234",
                                     "ext": {
-                                        "adlabel": "Reklama",
+                                        "external": "1",
+                                        "platform": "prebidserver",
+                                        "pricepl": 0.123,
                                         "pubid": "431",
                                         "siteid": "237503",
                                         "slotid": "005",
@@ -141,7 +145,8 @@
                                     "h": 250,
                                     "id": "response-005",
                                     "impid": "slot-standard",
-                                    "price": 20
+                                    "price": 20,
+                                    "mtype": 1
                                 }
                             ],
                             "seat": "sspbc-test"
@@ -155,7 +160,9 @@
                                     ],
                                     "crid": "5678",
                                     "ext": {
-                                        "adlabel": "Reklama",
+                                        "external": "1",
+                                        "platform": "prebidserver",
+                                        "pricepl": 0.123,
                                         "pubid": "431",
                                         "siteid": "237503",
                                         "slotid": "037",
@@ -165,7 +172,8 @@
                                     "h": 600,
                                     "id": "response-037",
                                     "impid": "slot-onecode",
-                                    "price": 10
+                                    "price": 10,
+                                    "mtype": 1
                                 }
                             ],
                             "seat": "sspbc-test"
@@ -193,12 +201,15 @@
                         "w": 300,
                         "h": 250,
                         "ext": {
-                            "adlabel": "Reklama",
+                            "external": "1",
+                            "platform": "prebidserver",
+                            "pricepl": 0.123,
                             "pubid": "431",
                             "siteid": "237503",
                             "slotid": "005",
                             "tagid": "slot-standard"
-                        }
+                        },
+                        "mtype": 1
                     },
                     "type": "banner"
                 },
@@ -215,12 +226,15 @@
                         "w": 300,
                         "h": 600,
                         "ext": {
-                            "adlabel": "Reklama",
+                            "external": "1",
+                            "platform": "prebidserver",
+                            "pricepl": 0.123,
                             "pubid": "431",
                             "siteid": "237503",
                             "slotid": "037",
                             "tagid": "slot-onecode"
-                        }
+                        },
+                        "mtype": 1
                     },
                     "type": "banner"
                 }
