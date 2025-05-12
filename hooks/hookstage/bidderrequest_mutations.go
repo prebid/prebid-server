@@ -1,6 +1,7 @@
 package hookstage
 
 import (
+	"encoding/json"
 	"errors"
 
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
@@ -30,6 +31,10 @@ func (c ChangeSetBidderRequest[T]) CatTax() ChangeSetCatTax[T] {
 
 func (c ChangeSetBidderRequest[T]) BApp() ChangeSetBApp[T] {
 	return ChangeSetBApp[T]{changeSetBidderRequest: c}
+}
+
+func (c ChangeSetBidderRequest[T]) Bidders() ChangeBidders[T] {
+	return ChangeBidders[T]{changeSetBidderRequest: c}
 }
 
 func (c ChangeSetBidderRequest[T]) castPayload(p T) (*openrtb_ext.RequestWrapper, error) {
@@ -96,4 +101,66 @@ func (c ChangeSetBApp[T]) Update(bapp []string) {
 		}
 		return p, err
 	}, MutationUpdate, "bidrequest", "bapp")
+}
+
+type ChangeBidders[T any] struct {
+	changeSetBidderRequest ChangeSetBidderRequest[T]
+}
+
+func (c ChangeBidders[T]) Add(bidders []string) {
+	c.changeSetBidderRequest.changeSet.AddMutation(func(p T) (T, error) {
+		bidRequest, err := c.changeSetBidderRequest.castPayload(p)
+		if err == nil {
+			for _, impWrapper := range bidRequest.GetImp() {
+
+				impExt, impExtErr := impWrapper.GetImpExt()
+				if err != nil {
+					return p, impExtErr
+				}
+				impPrebid := impExt.GetPrebid()
+				impBidders := impPrebid.Bidder
+
+				newBidders := make(map[string]json.RawMessage, 0)
+
+				for _, bidder := range bidders {
+					if bidderParams, ok := impBidders[bidder]; ok {
+						// keep only bidders that are present in bidders []string
+						newBidders[bidder] = bidderParams
+					}
+				}
+				impPrebid.Bidder = newBidders
+			}
+		}
+		return p, err
+	}, MutationAdd, "bidrequest", "imp", "ext", "prebid", "bidders")
+}
+
+func (c ChangeBidders[T]) Delete(bidders []string) {
+	c.changeSetBidderRequest.changeSet.AddMutation(func(p T) (T, error) {
+		bidRequest, err := c.changeSetBidderRequest.castPayload(p)
+		if err == nil {
+			if err == nil {
+				for _, impWrapper := range bidRequest.GetImp() {
+
+					impExt, impExtErr := impWrapper.GetImpExt()
+					if err != nil {
+						return p, impExtErr
+					}
+					impPrebid := impExt.GetPrebid()
+					impBidders := impPrebid.Bidder
+
+					newBidders := make(map[string]json.RawMessage, 0)
+
+					for _, bidder := range bidders {
+						if bidderParams, ok := impBidders[bidder]; !ok {
+							// remove bidders that are present in bidders []string
+							newBidders[bidder] = bidderParams
+						}
+					}
+					impPrebid.Bidder = newBidders
+				}
+			}
+		}
+		return p, err
+	}, MutationDelete, "bidrequest", "imp", "ext", "prebid", "bidders")
 }

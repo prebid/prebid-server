@@ -118,8 +118,8 @@ func (eb *IncludeBidders) Call(changeSet *hs.ChangeSet[hs.ProcessedAuctionReques
 
 		}
 
-		// changeSet.BidderRequest().Bidders().Add(arg.Bidders) - example
-		changeSet.BidderRequest().BAdv().Update(arg.Bidders) // write mutation functions
+		changeSet.BidderRequest().Bidders().Add(arg.Bidders)
+		// changeSet.BidderRequest().Bidders().Delete(arg.Bidders) -> delete bidders
 	}
 	return nil
 }
