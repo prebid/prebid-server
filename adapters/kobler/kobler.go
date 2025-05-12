@@ -161,7 +161,9 @@ func convertImpCurrency(imp *openrtb2.Imp, reqInfo *adapters.ExtraRequestInfo) e
 }
 
 func sanitizeRequest(request openrtb2.BidRequest) *openrtb2.BidRequest {
-	request.Device = sanitizeDevice(*request.Device)
+	if request.Device != nil {
+		request.Device = sanitizeDevice(*request.Device)
+	}
 	request.User = nil
 
 	return &request
