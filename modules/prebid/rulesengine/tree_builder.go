@@ -11,7 +11,7 @@ import (
 type treeBuilder[T1 any, T2 any] struct {
 	Config            config.ModelGroup
 	SchemaFuncFactory rules.SchemaFuncFactory[T1]
-	ResultFuncFactory rules.ResultFuncFactory[T2]
+	ResultFuncFactory rules.ResultFuncFactory[T1, T2]
 }
 
 // Build constructs the tree based on the provided configuration.
