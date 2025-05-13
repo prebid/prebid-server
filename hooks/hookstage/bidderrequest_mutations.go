@@ -107,60 +107,23 @@ type ChangeBidders[T any] struct {
 	changeSetBidderRequest ChangeSetBidderRequest[T]
 }
 
-func (c ChangeBidders[T]) Add(bidders []string) {
+func (c ChangeBidders[T]) Update(impIdToBidders map[string]map[string]json.RawMessage) {
 	c.changeSetBidderRequest.changeSet.AddMutation(func(p T) (T, error) {
 		bidRequest, err := c.changeSetBidderRequest.castPayload(p)
 		if err == nil {
 			for _, impWrapper := range bidRequest.GetImp() {
-
-				impExt, impExtErr := impWrapper.GetImpExt()
-				if err != nil {
-					return p, impExtErr
-				}
-				impPrebid := impExt.GetPrebid()
-				impBidders := impPrebid.Bidder
-
-				newBidders := make(map[string]json.RawMessage, 0)
-
-				for _, bidder := range bidders {
-					if bidderParams, ok := impBidders[bidder]; ok {
-						// keep only bidders that are present in bidders []string
-						newBidders[bidder] = bidderParams
-					}
-				}
-				impPrebid.Bidder = newBidders
-			}
-		}
-		return p, err
-	}, MutationAdd, "bidrequest", "imp", "ext", "prebid", "bidders")
-}
-
-func (c ChangeBidders[T]) Delete(bidders []string) {
-	c.changeSetBidderRequest.changeSet.AddMutation(func(p T) (T, error) {
-		bidRequest, err := c.changeSetBidderRequest.castPayload(p)
-		if err == nil {
-			if err == nil {
-				for _, impWrapper := range bidRequest.GetImp() {
-
+				if impBidders, ok := impIdToBidders[impWrapper.ID]; ok {
 					impExt, impExtErr := impWrapper.GetImpExt()
 					if err != nil {
 						return p, impExtErr
 					}
 					impPrebid := impExt.GetPrebid()
-					impBidders := impPrebid.Bidder
 
-					newBidders := make(map[string]json.RawMessage, 0)
+					impPrebid.Bidder = impBidders
 
-					for _, bidder := range bidders {
-						if bidderParams, ok := impBidders[bidder]; !ok {
-							// remove bidders that are present in bidders []string
-							newBidders[bidder] = bidderParams
-						}
-					}
-					impPrebid.Bidder = newBidders
 				}
 			}
 		}
 		return p, err
-	}, MutationDelete, "bidrequest", "imp", "ext", "prebid", "bidders")
+	}, MutationUpdate, "bidrequest", "imp", "ext", "prebid", "bidders")
 }

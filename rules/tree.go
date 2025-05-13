@@ -25,14 +25,16 @@ func (t *Tree[T1, T2]) Run(payload *T1, result *T2) error {
 	currNode := t.Root
 
 	//needed for result function
-	schemaFunctionResults := make(map[string]string)
+	resFuncMeta := ResultFuncMetadata{SchemaFunctionResults: make([]SchemaFunctionStep, 0)}
 
 	for len(currNode.Children) > 0 {
 		res, funcName, err := currNode.SchemaFunction.Call(payload)
 		if err != nil {
 			return err
 		}
-		schemaFunctionResults[funcName] = res
+
+		step := SchemaFunctionStep{FuncName: funcName, FuncResult: res}
+		resFuncMeta.SchemaFunctionResults = append(resFuncMeta.SchemaFunctionResults, step)
 
 		currNode := currNode.Children[res] // can we use exist?
 		if currNode == nil {
@@ -46,7 +48,7 @@ func (t *Tree[T1, T2]) Run(payload *T1, result *T2) error {
 	}
 
 	for _, rf := range resultFuncs {
-		err := rf.Call(result, schemaFunctionResults)
+		err := rf.Call(result, resFuncMeta)
 		if err != nil {
 			return err
 		}
@@ -95,3 +97,16 @@ type SchemaFuncFactory[T any] func(string, json.RawMessage) (SchemaFunction[T], 
 // and returns a ResultFunction and an error.
 // It is used to create result functions for the tree nodes based on the provided configuration.
 type ResultFuncFactory[T any] func(string, json.RawMessage) (ResultFunction[T], error)
+
+type ResultFuncMetadata struct {
+	SchemaFunctionResults []SchemaFunctionStep
+	AnalyticsKey          string
+	RuleFired             string
+	ModelVersion          string
+	Validation            bool
+}
+
+type SchemaFunctionStep struct {
+	FuncName   string
+	FuncResult string
+}

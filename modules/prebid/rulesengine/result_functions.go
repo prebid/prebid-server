@@ -63,7 +63,7 @@ type ExcludeBidders struct {
 }
 
 // Call is a method that applies the changes specified in the ExcludeBidders instance to the provided ChangeSet by creating a mutation.
-func (eb *ExcludeBidders) Call(changeSet *hs.ChangeSet[hs.ProcessedAuctionRequestPayload], schemaFunctionsResults map[string]string) error {
+func (eb *ExcludeBidders) Call(changeSet *hs.ChangeSet[hs.ProcessedAuctionRequestPayload], funcMeta rules.ResultFuncMetadata) error {
 	//  create a change set which captures the changes we want to apply
 	// this function should NOT perform any modifications to the request
 	for _, arg := range eb.Args {
@@ -93,19 +93,20 @@ type IncludeBidders struct {
 }
 
 // Call is a method that applies the changes specified in the IncludeBidders instance to the provided ChangeSet by creating a mutation.
-func (eb *IncludeBidders) Call(changeSet *hs.ChangeSet[hs.ProcessedAuctionRequestPayload], schemaFunctionsResults map[string]string) error {
-	//  create a change set which captures the changes we want to apply
+func (eb *IncludeBidders) Call(changeSet *hs.ChangeSet[hs.ProcessedAuctionRequestPayload], funcMeta rules.ResultFuncMetadata) error {
+	// create a change set which captures the changes we want to apply
 	// this function should NOT perform any modifications to the request
 
-	if adUnitCode, ok := schemaFunctionsResults[rules.AdUnitCode]; ok {
-		if adUnitCode != "*" { // wildcard
-			// add comparison logic
+	for _, meta := range funcMeta.SchemaFunctionResults {
+		if meta.FuncName == rules.AdUnitCode {
+			if meta.FuncResult != "*" { // wildcard
+				// add comparison logic
+			}
 		}
-	}
-
-	if mediaType, ok := schemaFunctionsResults[rules.MediaTypes]; ok {
-		if mediaType != "*" { // wildcard
-			// add comparison logic
+		if meta.FuncName == rules.MediaTypes {
+			if meta.FuncResult != "*" { // wildcard
+				// add comparison logic
+			}
 		}
 	}
 
@@ -113,13 +114,15 @@ func (eb *IncludeBidders) Call(changeSet *hs.ChangeSet[hs.ProcessedAuctionReques
 		//create an analytics tag
 	}*/
 
+	// maybe merge all args into one to remove for loop - in res funct constructor NewIncludeBidders
 	for _, arg := range eb.Args {
 		if arg.IfSyncedId {
-
+			// possibly modify args.bidders
 		}
+		// build map[impId] to map [bidder] to bidder params
+		impIdToBidders := make(map[string]map[string]json.RawMessage)
 
-		changeSet.BidderRequest().Bidders().Add(arg.Bidders)
-		// changeSet.BidderRequest().Bidders().Delete(arg.Bidders) -> delete bidders
+		changeSet.BidderRequest().Bidders().Update(impIdToBidders)
 	}
 	return nil
 }
@@ -149,7 +152,7 @@ type LogATag struct {
 }
 
 // Call is a method that applies the changes specified in the LogATag instance to the provided ChangeSet by creating a mutation
-func (lt *LogATag) Call(changeSet *hs.ChangeSet[hs.ProcessedAuctionRequestPayload], schemaFunctionsResults map[string]string) error {
+func (lt *LogATag) Call(changeSet *hs.ChangeSet[hs.ProcessedAuctionRequestPayload], funcMeta rules.ResultFuncMetadata) error {
 	//  create a change set which captures the changes we want to apply
 	// this function should NOT perform any modifications to the request
 
