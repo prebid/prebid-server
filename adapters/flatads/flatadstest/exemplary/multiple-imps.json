@@ -37,8 +37,8 @@
         },
         "ext": {
           "bidder": {
-            "token": "66668888",
-            "publisherId": "1111"
+            "token": "22223333",
+            "publisherId": "2222"
           }
         }
       }
@@ -118,7 +118,7 @@
     },
     {
       "expectedRequest": {
-        "uri": "https://bid.rtbshark.com/api/rtbs/adx/rtb?x-net-id=1111&x-net-token=66668888",
+        "uri": "https://bid.rtbshark.com/api/rtbs/adx/rtb?x-net-id=2222&x-net-token=22223333",
         "body": {
           "id": "test-request-id-banner",
           "device": {
@@ -140,8 +140,8 @@
               },
               "ext": {
                 "bidder": {
-                  "token": "66668888",
-                  "publisherId": "1111"
+                  "token": "22223333",
+                  "publisherId": "2222"
                 }
               }
             }

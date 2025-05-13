@@ -6,11 +6,13 @@
   "properties": {
     "token": {
       "type": "string",
-      "description": "Token of the publisher"
+      "description": "Token of the publisher",
+      "minLength": 1
     },
     "publisherId": {
       "type": "string",
-      "description": "Flatads Publisher Id"
+      "description": "Flatads Publisher Id",
+      "minLength": 1
     }
   },
   "required": [

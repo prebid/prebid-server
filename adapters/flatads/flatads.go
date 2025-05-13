@@ -50,8 +50,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			headers.Add("X-Forwarded-For", request.Device.IP)
 		}
 	}
-	requestCopy := *request
 	for _, imp := range request.Imp {
+		requestCopy := *request
 		requestCopy.Imp = []openrtb2.Imp{imp}
 
 		endpoint, err := a.buildEndpointFromRequest(&imp)
@@ -66,7 +66,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			continue
 		}
 
-		request := &adapters.RequestData{
+		r := &adapters.RequestData{
 			Method:  http.MethodPost,
 			Body:    requestJSON,
 			Uri:     endpoint,
@@ -74,7 +74,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			ImpIDs:  openrtb_ext.GetImpIDs(requestCopy.Imp),
 		}
 
-		requests = append(requests, request)
+		requests = append(requests, r)
 	}
 
 	return requests, errs
