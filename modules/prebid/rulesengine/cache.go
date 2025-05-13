@@ -67,15 +67,14 @@ func (c *cache) Delete(id string) {
 		return
 	}
 
-	c.Lock()
-	defer c.Unlock()
-
 	m1 := c.m.Load().(map[accountID]*cacheEntry)
 	if _, exists := m1[accountID(id)]; !exists {
 		return
 	}
 
 	// Copy map onto another map to make it thread-safe
+	c.Lock()
+	defer c.Unlock()
 	m2 := make(map[accountID]*cacheEntry)
 	for k, v := range m1 {
 		// skip the element we want to delete
