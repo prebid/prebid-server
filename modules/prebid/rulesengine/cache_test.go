@@ -8,7 +8,7 @@ import (
 
 func TestGet(t *testing.T) {
 	innerStorage := map[accountID]*cacheEntry{
-		accountID("account-id-one"): {
+		"account-id-one": {
 			hashedConfig: "hash1",
 		},
 	}
@@ -43,7 +43,7 @@ func TestGet(t *testing.T) {
 
 func TestSet(t *testing.T) {
 	innerStorage := map[accountID]*cacheEntry{
-		accountID("account-id-one"): {
+		"account-id-one": {
 			hashedConfig: "hash1",
 		},
 	}
@@ -67,10 +67,10 @@ func TestSet(t *testing.T) {
 				hashedConfig: "hash2",
 			},
 			expectedStorage: map[accountID]*cacheEntry{
-				accountID("account-id-one"): {
+				"account-id-one": {
 					hashedConfig: "hash1",
 				},
-				accountID("account-id-two"): {
+				"account-id-two": {
 					hashedConfig: "hash2",
 				},
 			},
@@ -85,10 +85,10 @@ func TestSet(t *testing.T) {
 				hashedConfig: "updatedHash",
 			},
 			expectedStorage: map[accountID]*cacheEntry{
-				accountID("account-id-one"): {
+				"account-id-one": {
 					hashedConfig: "updatedHash",
 				},
-				accountID("account-id-two"): {
+				"account-id-two": {
 					hashedConfig: "hash2",
 				},
 			},
@@ -99,13 +99,13 @@ func TestSet(t *testing.T) {
 			inCacheEntry:      nil,
 			expectedStoredObj: nil,
 			expectedStorage: map[accountID]*cacheEntry{
-				accountID("account-id-one"): {
+				"account-id-one": {
 					hashedConfig: "updatedHash",
 				},
-				accountID("account-id-two"): {
+				"account-id-two": {
 					hashedConfig: "hash2",
 				},
-				accountID("foo-account-id"): nil,
+				"foo-account-id": nil,
 			},
 		},
 	}
@@ -127,10 +127,10 @@ func TestSet(t *testing.T) {
 
 func TestDelete(t *testing.T) {
 	originalInnerStorage := map[accountID]*cacheEntry{
-		accountID("account-id-one"): {
+		"account-id-one": {
 			hashedConfig: "hash1",
 		},
-		accountID("account-id-two"): {
+		"account-id-two": {
 			hashedConfig: "hash2",
 		},
 	}
@@ -154,7 +154,7 @@ func TestDelete(t *testing.T) {
 			desc:          "Remove a key that exists inside storage",
 			inKeyToDelete: "account-id-two",
 			expectedStorage: map[accountID]*cacheEntry{
-				accountID("account-id-one"): {
+				"account-id-one": {
 					hashedConfig: "hash1",
 				},
 			},

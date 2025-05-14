@@ -36,8 +36,10 @@ func (c *cache) Get(id accountID) *cacheEntry {
 	return nil
 }
 
-// Set stores the data parameter using the id parameter as key in a thread-safe manner. If data
-// is already found under the id key, this function swaps its value with the data parameter
+// Set stores the data parameter in the data store using the id parameter as key in a
+// thread-safe manner by copying the cache-stored map onto a new one and updating in
+// an atomic operation. Allows for rewrites: if the key is alreay found in the data
+// store, its contents get updated with the data param.
 func (c *cache) Set(id accountID, data *cacheEntry) {
 	if len(id) == 0 {
 		return
@@ -49,21 +51,21 @@ func (c *cache) Set(id accountID, data *cacheEntry) {
 	m1 := c.m.Load().(map[accountID]*cacheEntry)
 	m2 := make(map[accountID]*cacheEntry)
 
-	// Copy all values that are not under key id (if id exists in this map)
 	for k, v := range m1 {
 		if k != id {
 			m2[k] = v
 		}
 	}
 
-	// Set new value under account id even if it already exists
 	m2[id] = data
 
 	c.m.Store(m2)
 	return
 }
 
-// Delete removes a cached object without further synchronization
+// Delete removes a cached object if the id parameter is found as key to stored data in
+// the data store. To do this in a thread-safe manner, we copy the cache-stored map onto
+// a new map and simply skip the object whose key is equal to our id.
 func (c *cache) Delete(id accountID) {
 	if len(id) == 0 {
 		return
@@ -71,15 +73,14 @@ func (c *cache) Delete(id accountID) {
 
 	c.Lock()
 	defer c.Unlock()
+
 	m1 := c.m.Load().(map[accountID]*cacheEntry)
 	if _, exists := m1[id]; !exists {
 		return
 	}
 
-	// Copy map onto another map to make it thread-safe
 	m2 := make(map[accountID]*cacheEntry)
 	for k, v := range m1 {
-		// skip the element we want to delete
 		if k != id {
 			m2[k] = v
 		}
