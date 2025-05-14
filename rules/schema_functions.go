@@ -37,6 +37,7 @@ const (
 // SchemaFunction...
 type SchemaFunction[T any] interface {
 	Call(payload *T) (string, error)
+	GetName() string
 }
 
 // NewRequestSchemaFunction returns the specified schema function that operates on a request payload along with
@@ -104,6 +105,10 @@ func (dci *deviceCountryIn) Call(wrapper *openrtb_ext.RequestWrapper) (string, e
 	return "false", nil
 }
 
+func (dci *deviceCountryIn) GetName() string {
+	return DeviceCountryIn
+}
+
 type deviceCountry struct{}
 
 func NewDeviceCountry(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
@@ -115,6 +120,10 @@ func (dc *deviceCountry) Call(wrapper *openrtb_ext.RequestWrapper) (string, erro
 		return "", fmt.Errorf("request.Device.Geo.Country is not present in request")
 	}
 	return wrapper.Device.Geo.Country, nil
+}
+
+func (dci *deviceCountry) GetName() string {
+	return DeviceCountry
 }
 
 // ------------datacenters------------------
@@ -133,6 +142,10 @@ func (dc *dataCenter) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) 
 		return "", fmt.Errorf("dataCenter is not present in request")
 	}
 	return wrapper.Device.Geo.Region, nil
+}
+
+func (dci *dataCenter) GetName() string {
+	return DataCenter
 }
 
 type dataCenterIn struct {
@@ -155,6 +168,9 @@ func (dc *dataCenterIn) Call(wrapper *openrtb_ext.RequestWrapper) (string, error
 		return "true", nil
 	}
 	return "false", nil
+}
+func (dci *dataCenterIn) GetName() string {
+	return DataCenterIn
 }
 
 // ------------channel------------------
@@ -180,6 +196,10 @@ func (c *channel) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
 		return "web", nil
 	}
 	return chName, nil
+}
+
+func (c *channel) GetName() string {
+	return Channel
 }
 
 // ------------eidAvailable------------------
@@ -208,11 +228,15 @@ func (ae *eidIn) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
 	return "false", nil
 }
 
+func (ae *eidIn) GetName() string {
+	return EidIn
+}
+
 type eidAvailable struct {
 }
 
 func NewAidAvailable(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
-	return &eidAvailable{}, checkNilArgs(params, DeviceCountry)
+	return &eidAvailable{}, checkNilArgs(params, EidAvailable)
 }
 
 func (ae *eidAvailable) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
@@ -220,6 +244,9 @@ func (ae *eidAvailable) Call(wrapper *openrtb_ext.RequestWrapper) (string, error
 		return "", fmt.Errorf("request.User.EIDs is not present in request")
 	}
 	return "true", nil
+}
+func (ae *eidAvailable) GetName() string {
+	return EidAvailable
 }
 
 // ------------userFpdAvailable------------------
@@ -233,6 +260,10 @@ func NewUserFpdAvailable(params json.RawMessage) (SchemaFunction[openrtb_ext.Req
 
 func (ufpd *userFpdAvailable) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
 	return checkUserDataAndUserExtData(wrapper)
+}
+
+func (ufpd *userFpdAvailable) GetName() string {
+	return UserFpdAvailable
 }
 
 // ------------fpdAvail------------------
@@ -278,6 +309,10 @@ func (fpd *fpdAvail) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
 	return checkUserDataAndUserExtData(wrapper)
 }
 
+func (fpd *fpdAvail) GetName() string {
+	return FpdAvail
+}
+
 // ------------gppSid------------------
 type gppSidIn struct {
 	gppSids []int8
@@ -299,6 +334,10 @@ func (sid *gppSidIn) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
 	return "false", nil
 }
 
+func (sid *gppSidIn) GetName() string {
+	return GppSidIn
+}
+
 type gppSid struct {
 }
 
@@ -311,6 +350,10 @@ func (sid *gppSid) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
 		return "true", nil
 	}
 	return "false", nil
+}
+
+func (sid *gppSid) GetName() string {
+	return GppSid
 }
 
 // ------------tcfInScope------------------
@@ -327,6 +370,10 @@ func (tcf *tcfInScope) Call(wrapper *openrtb_ext.RequestWrapper) (string, error)
 		return "true", nil
 	}
 	return "false", nil
+}
+
+func (tcf *tcfInScope) GetName() string {
+	return TcfInScope
 }
 
 // ------------percent------------------
@@ -354,6 +401,10 @@ func (p *percent) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
 	return "false", nil
 }
 
+func (p *percent) GetName() string {
+	return Percent
+}
+
 // ------------prebidKey------------------
 type prebidKey struct {
 	key string
@@ -377,6 +428,10 @@ func (p *prebidKey) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
 	return reqExtPrebid.Integration, nil //stub
 }
 
+func (p *prebidKey) GetName() string {
+	return PrebidKey
+}
+
 // ------------domain------------------
 type domain struct {
 }
@@ -387,6 +442,10 @@ func NewDomain(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrappe
 
 func (d *domain) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
 	return getReqDomain(wrapper), nil
+}
+
+func (d *domain) GetName() string {
+	return Domain
 }
 
 type domainIn struct {
@@ -404,6 +463,10 @@ func (d *domainIn) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
 		return "true", nil
 	}
 	return "false", nil
+}
+
+func (d *domainIn) GetName() string {
+	return DomainIn
 }
 
 // TODO: from here
@@ -433,6 +496,9 @@ func (b *bundle) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
 		return "true", nil
 	}
 	return "false", nil
+}
+func (b *bundle) GetName() string {
+	return Bundle
 }
 
 // ------------deviceType------------------
@@ -466,6 +532,10 @@ func (d *deviceType) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
 		return "true", nil
 	}
 	return "false", nil
+}
+
+func (d *deviceType) GetName() string {
+	return DeviceType
 }
 
 // ------------mediaTypes------------------
