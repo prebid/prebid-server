@@ -391,8 +391,11 @@ func NewPercent(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapp
 }
 
 func (p *percent) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
-	percValue := 0
-	if p.value >= 100 {
+	percValue := p.value
+	if percValue < 0 {
+		percValue = 0
+	}
+	if percValue > 100 {
 		percValue = 100
 	}
 	randNum := randRange(0, 100)
