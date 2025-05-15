@@ -14,7 +14,7 @@ import (
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
-type StartioAdapter struct {
+type adapter struct {
 	endpoint string
 }
 
@@ -24,14 +24,14 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 		return nil, err
 	}
 
-	bidder := &StartioAdapter{
+	bidder := &adapter{
 		endpoint: uri.String(),
 	}
 
 	return bidder, nil
 }
 
-func (adapter *StartioAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var requests []*adapters.RequestData
 	var errors []error
 	requestCopy := *request
@@ -67,7 +67,7 @@ func (adapter *StartioAdapter) MakeRequests(request *openrtb2.BidRequest, reqInf
 	return requests, errors
 }
 
-func (adapter *StartioAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	} else if response.StatusCode != http.StatusOK {

@@ -49,7 +49,7 @@ func TestBuilder(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, bidder)
-				startioAdapter, ok := bidder.(*StartioAdapter)
+				startioAdapter, ok := bidder.(*adapter)
 				assert.True(t, ok)
 				assert.Equal(t, tc.endpoint, startioAdapter.endpoint)
 			}
@@ -108,7 +108,7 @@ func TestMakeRequests(t *testing.T) {
 		},
 	}
 
-	adapter := &StartioAdapter{endpoint: "http://test-endpoint.com"}
+	adapter := &adapter{endpoint: "http://test-endpoint.com"}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -172,7 +172,7 @@ func TestMakeBids(t *testing.T) {
 		},
 	}
 
-	adapter := &StartioAdapter{}
+	adapter := &adapter{}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
