@@ -130,8 +130,16 @@ func (ea enabledAnalytics) LogCookieSyncObject(cso *analytics.CookieSyncObject, 
 	}
 }
 
-func (ea enabledAnalytics) LogSetUIDObject(so *analytics.SetUIDObject) {
-	for _, module := range ea {
+func (ea enabledAnalytics) LogSetUIDObject(so *analytics.SetUIDObject, ac privacy.ActivityControl, pp gdpr.PrivacyPolicy) {
+	for name, module := range ea {
+		// check if the report analytics activity is allowed for this module 
+		component := privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: name}
+		if !ac.Allow(privacy.ActivityReportAnalytics, component, privacy.ActivityRequest{}) {
+			continue
+		}
+		if !pp.Allow(name) {
+			continue
+		}
 		module.LogSetUIDObject(so)
 	}
 }

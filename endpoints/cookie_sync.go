@@ -50,6 +50,11 @@ var (
 
 var cookieSyncBidderFilterAllowAll = usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude)
 
+type privacyInfo struct {
+	gdprAnalyticsPolicy gdpr.PrivacyPolicy
+	activityControl     privacy.ActivityControl
+}
+
 func NewCookieSyncEndpoint(
 	syncersByBidder map[string]usersync.Syncer,
 	config *config.Configuration,
@@ -96,18 +101,14 @@ type cookieSyncEndpoint struct {
 }
 
 func (c *cookieSyncEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	// create an allow all analytics policy object
-	// var analyticsPolicy gdpr.PrivacyPolicy
-	// analyticsPolicy = &gdpr.AllowAllAnalytics{}
-
 	request, privacyMacros, account, err := c.parseRequest(r)
 
-	// activityControl := request.Privacy.
+	privacyInfo := extractPrivacyInfo(request.Privacy)
 
 	c.setCookieDeprecationHeader(w, r, account)
 	if err != nil {
 		c.writeParseRequestErrorMetrics(err)
-		c.handleError(w, err, http.StatusBadRequest)
+		c.handleError(w, err, http.StatusBadRequest, privacyInfo)
 		return
 	}
 	decoder := usersync.Base64Decoder{}
@@ -120,14 +121,14 @@ func (c *cookieSyncEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ ht
 	switch result.Status {
 	case usersync.StatusBlockedByUserOptOut:
 		c.metrics.RecordCookieSync(metrics.CookieSyncOptOut)
-		c.handleError(w, errCookieSyncOptOut, http.StatusUnauthorized)
+		c.handleError(w, errCookieSyncOptOut, http.StatusUnauthorized, privacyInfo)
 	case usersync.StatusBlockedByPrivacy:
 		c.metrics.RecordCookieSync(metrics.CookieSyncGDPRHostCookieBlocked)
-		c.handleResponse(w, request.SyncTypeFilter, cookie, privacyMacros, nil, result.BiddersEvaluated, request.Debug)
+		c.handleResponse(w, request.SyncTypeFilter, cookie, privacyMacros, nil, result.BiddersEvaluated, privacyInfo, request.Debug)
 	case usersync.StatusOK:
 		c.metrics.RecordCookieSync(metrics.CookieSyncOK)
 		c.writeSyncerMetrics(result.BiddersEvaluated)
-		c.handleResponse(w, request.SyncTypeFilter, cookie, privacyMacros, result.SyncersChosen, result.BiddersEvaluated, request.Debug)
+		c.handleResponse(w, request.SyncTypeFilter, cookie, privacyMacros, result.SyncersChosen, result.BiddersEvaluated, privacyInfo, request.Debug)
 	}
 }
 
@@ -186,6 +187,7 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, ma
 	gdprPerms := c.privacyConfig.gdprPermissionsBuilder(tcf2Cfg, gdprRequestInfo)
 
 	gdprAnalyticsPolicy := c.privacyConfig.gdprAnalyticsPolicyBuilder(tcf2Cfg, gdprSignal, gdprRequestInfo.Consent)
+	gdprAnalyticsPolicy.SetContext(context.Background())
 
 	limit := math.MaxInt
 	if request.Limit != nil {
@@ -405,14 +407,14 @@ func parseBidderFilter(filter *cookieSyncRequestFilter) (usersync.BidderFilter, 
 	}
 }
 
-func (c *cookieSyncEndpoint) handleError(w http.ResponseWriter, err error, httpStatus int) {
+func (c *cookieSyncEndpoint) handleError(w http.ResponseWriter, err error, httpStatus int, privacyInfo privacyInfo) {
 	http.Error(w, err.Error(), httpStatus)
 	c.pbsAnalytics.LogCookieSyncObject(&analytics.CookieSyncObject{
 		Status:       httpStatus,
 		Errors:       []error{err},
 		BidderStatus: []*analytics.CookieSyncBidder{},
 	},
-	privacy.ActivityControl{}, &gdpr.AllowAllAnalytics{}) //TODO
+	privacyInfo.activityControl, privacyInfo.gdprAnalyticsPolicy)
 }
 
 func combineErrors(errs []error) error {
@@ -449,7 +451,7 @@ func (c *cookieSyncEndpoint) writeSyncerMetrics(biddersEvaluated []usersync.Bidd
 	}
 }
 
-func (c *cookieSyncEndpoint) handleResponse(w http.ResponseWriter, tf usersync.SyncTypeFilter, co *usersync.Cookie, m macros.UserSyncPrivacy, s []usersync.SyncerChoice, biddersEvaluated []usersync.BidderEvaluation, debug bool) {
+func (c *cookieSyncEndpoint) handleResponse(w http.ResponseWriter, tf usersync.SyncTypeFilter, co *usersync.Cookie, m macros.UserSyncPrivacy, s []usersync.SyncerChoice, biddersEvaluated []usersync.BidderEvaluation, privacyInfo privacyInfo, debug bool) {
 	status := "no_cookie"
 	if co.HasAnyLiveSyncs() {
 		status = "ok"
@@ -500,7 +502,7 @@ func (c *cookieSyncEndpoint) handleResponse(w http.ResponseWriter, tf usersync.S
 	c.pbsAnalytics.LogCookieSyncObject(&analytics.CookieSyncObject{
 		Status:       http.StatusOK,
 		BidderStatus: mapBidderStatusToAnalytics(response.BidderStatus),
-	}, privacy.ActivityControl{}, &gdpr.AllowAllAnalytics{}) //TODO
+	}, privacyInfo.activityControl, privacyInfo.gdprAnalyticsPolicy)
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
@@ -673,4 +675,25 @@ func (p usersyncPrivacy) GDPRAllowsAnalytics(name string) bool {
 
 func (p usersyncPrivacy) GDPRInScope() bool {
 	return p.gdprSignal == gdpr.SignalYes
+}
+
+func extractPrivacyInfo(p usersync.Privacy) privacyInfo {
+	if p == nil {
+		return privacyInfo{
+			gdprAnalyticsPolicy: &gdpr.AllowAllAnalytics{},
+			activityControl:     privacy.ActivityControl{},
+		}
+	}
+
+	v, ok := p.(usersyncPrivacy)
+	if !ok {
+		return privacyInfo{
+			gdprAnalyticsPolicy: &gdpr.AllowAllAnalytics{},
+			activityControl:     privacy.ActivityControl{},
+		}
+	}
+	return privacyInfo{
+		gdprAnalyticsPolicy: v.gdprAnalyticsPolicy,
+		activityControl:     v.activityControl,
+	}
 }
