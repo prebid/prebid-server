@@ -76,6 +76,10 @@ func (eb *ExcludeBidders) Call(req *openrtb_ext.RequestWrapper, changeSet *hs.Ch
 	return nil
 }
 
+func (eb *ExcludeBidders) Name() string {
+	return ExcludeBiddersName
+}
+
 // NewIncludeBidders is a factory function that creates a new IncludeBidders result function.
 // It takes a JSON raw message as input, unmarshals it into a slice of ResultFuncParams,
 // and returns an IncludeBidders instance.
@@ -129,6 +133,10 @@ func (eb *IncludeBidders) Call(req *openrtb_ext.RequestWrapper, changeSet *hs.Ch
 	return nil
 }
 
+func (eb *IncludeBidders) Name() string {
+	return IncludeBiddersName
+}
+
 // LogATagParams is a struct that holds parameters for the LogATag result function.
 type LogATagParams struct {
 	AnalyticsValue string
@@ -156,4 +164,8 @@ type LogATag struct {
 func (lt *LogATag) Call(req *openrtb_ext.RequestWrapper, changeSet *hs.ChangeSet[hs.ProcessedAuctionRequestPayload], funcMeta rules.ResultFuncMetadata) error {
 
 	return nil
+}
+
+func (lt *LogATag) Name() string {
+	return LogATagName
 }

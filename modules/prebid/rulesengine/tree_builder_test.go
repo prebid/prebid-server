@@ -27,6 +27,38 @@ func TestBuildTreeFullConfig(t *testing.T) {
 
 	err = builder.Build(&tree)
 	assert.NoError(t, err)
+
+	assert.Equal(t, 2, len(tree.DefaultFunctions))
+	assert.Equal(t, LogATagName, tree.DefaultFunctions[0].Name())
+	assert.Equal(t, ExcludeBiddersName, tree.DefaultFunctions[1].Name())
+
+	assert.Equal(t, rules.DeviceCountryIn, tree.Root.SchemaFunction.Name())
+	assert.Empty(t, tree.Root.ResultFunctions)
+	assert.Equal(t, 2, len(tree.Root.Children))
+
+	assert.Equal(t, 2, len(tree.Root.Children["true"].Children))
+	assert.Equal(t, rules.DataCenterIn, tree.Root.Children["true"].SchemaFunction.Name())
+
+	assert.Equal(t, 1, len(tree.Root.Children["false"].Children))
+	assert.Equal(t, rules.DataCenterIn, tree.Root.Children["false"].SchemaFunction.Name())
+
+	assert.Equal(t, 1, len(tree.Root.Children["true"].Children["true"].Children))
+	assert.Equal(t, rules.Channel, tree.Root.Children["true"].Children["true"].SchemaFunction.Name())
+
+	assert.Equal(t, 1, len(tree.Root.Children["true"].Children["false"].Children))
+	assert.Equal(t, rules.Channel, tree.Root.Children["true"].Children["false"].SchemaFunction.Name())
+
+	assert.Equal(t, 1, len(tree.Root.Children["false"].Children["false"].Children))
+	assert.Equal(t, rules.Channel, tree.Root.Children["false"].Children["false"].SchemaFunction.Name())
+
+	assert.Equal(t, 1, len(tree.Root.Children["true"].Children["true"].Children["amp"].ResultFunctions))
+	assert.Equal(t, ExcludeBiddersName, tree.Root.Children["true"].Children["true"].Children["amp"].ResultFunctions[0].Name())
+
+	assert.Equal(t, 1, len(tree.Root.Children["true"].Children["false"].Children["web"].ResultFunctions))
+	assert.Equal(t, ExcludeBiddersName, tree.Root.Children["true"].Children["false"].Children["web"].ResultFunctions[0].Name())
+
+	assert.Equal(t, 1, len(tree.Root.Children["false"].Children["false"].Children["*"].ResultFunctions))
+	assert.Equal(t, IncludeBiddersName, tree.Root.Children["false"].Children["false"].Children["*"].ResultFunctions[0].Name())
 }
 
 func GetConf() json.RawMessage {
@@ -35,16 +67,12 @@ func GetConf() json.RawMessage {
  {
      "schema": [
      {
-       "function": "deviceCountry",
-       "args": []
-     },
- 	 {
        "function": "deviceCountryIn",
-       "args": ["USA", "UKR"]
+       "args": [["USA", "UKR"]]
      },
      {
-       "function": "dataCenters",
-       "args": ["us-east", "us-west"]
+       "function": "dataCenterIn",
+       "args": [["us-east", "us-west"]]
      },
      {
        "function": "channel"
