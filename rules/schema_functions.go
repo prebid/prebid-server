@@ -629,7 +629,7 @@ func checkNilArgs(params json.RawMessage, funcName string) error {
 	return nil
 }
 
-func checkSingleArg(params json.RawMessage, funcName string) ([]interface{}, error) {
+func checkSingleArgList(params json.RawMessage, funcName string) ([]interface{}, error) {
 	var args [][]interface{}
 
 	if err := jsonutil.Unmarshal(params, &args); err != nil {
@@ -642,7 +642,7 @@ func checkSingleArg(params json.RawMessage, funcName string) ([]interface{}, err
 }
 
 func checkArgsStringList(params json.RawMessage, funcName string) ([]string, error) {
-	args, err := checkSingleArg(params, funcName)
+	args, err := checkSingleArgList(params, funcName)
 	if err != nil {
 		return nil, err
 	}
@@ -656,7 +656,7 @@ func checkArgsStringList(params json.RawMessage, funcName string) ([]string, err
 }
 
 func checkArgsInt8List(params json.RawMessage, funcName string) ([]int8, error) {
-	args, err := checkSingleArg(params, funcName)
+	args, err := checkSingleArgList(params, funcName)
 	if err != nil {
 		return nil, err
 	}
@@ -668,27 +668,11 @@ func checkArgsInt8List(params json.RawMessage, funcName string) ([]int8, error) 
 }
 
 func checkArgsInt(params json.RawMessage, funcName string) (int, error) {
-	args, err := checkSingleArg(params, funcName)
-	if err != nil {
-		return 0, err
-	}
-	value, ok := args[0].(int)
-	if !ok {
-		return 0, fmt.Errorf("%s arg 0 must be an array of ints", funcName)
-	}
-
-	return value, nil
+	//stub
+	return 0, nil
 }
 
 func checkArgsString(params json.RawMessage, funcName string) (string, error) {
-	args, err := checkSingleArg(params, funcName)
-	if err != nil {
-		return "", err
-	}
-	value, ok := args[0].(string)
-	if !ok {
-		return "", fmt.Errorf("%s arg 0 must be an array of ints", funcName)
-	}
-
-	return value, nil
+	//stub
+	return "", nil
 }
