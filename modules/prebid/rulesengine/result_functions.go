@@ -3,6 +3,7 @@ package rulesengine
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 
 	hs "github.com/prebid/prebid-server/v3/hooks/hookstage"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
@@ -69,9 +70,35 @@ type ExcludeBidders struct {
 func (eb *ExcludeBidders) Call(req *openrtb_ext.RequestWrapper, changeSet *hs.ChangeSet[hs.ProcessedAuctionRequestPayload], funcMeta rules.ResultFuncMetadata) error {
 	//  create a change set which captures the changes we want to apply
 	// this function should NOT perform any modifications to the request
+
+	for _, meta := range funcMeta.SchemaFunctionResults {
+		if meta.FuncName == rules.AdUnitCode {
+			if meta.FuncResult != "*" { // wildcard
+				// add comparison logic
+			}
+		}
+		if meta.FuncName == rules.MediaTypes {
+			if meta.FuncResult != "*" { // wildcard
+				// add comparison logic
+			}
+		}
+	}
+	/*if len{analyticsKey} > 0{
+		//create an analytics tag
+	}*/
+
+	// maybe merge all args into one to remove for loop - in res funct constructor NewIncludeBidders
 	for _, arg := range eb.Args {
-		// changeSet.BidderRequest().Bidders().Delete(arg.Bidders) - example
-		changeSet.BidderRequest().BAdv().Update(arg.Bidders) // write mutation functions
+		if arg.IfSyncedId {
+			// possibly modify args.bidders
+		}
+		// build map[impId] to map [bidder] to bidder params
+		impIdToBidders, err := buildExcludeBidders(req, arg.Bidders)
+		if err != nil {
+			return err
+		}
+
+		changeSet.BidderRequest().Bidders().Update(impIdToBidders)
 	}
 	return nil
 }
@@ -115,7 +142,6 @@ func (eb *IncludeBidders) Call(req *openrtb_ext.RequestWrapper, changeSet *hs.Ch
 			}
 		}
 	}
-
 	/*if len{analyticsKey} > 0{
 		//create an analytics tag
 	}*/
@@ -126,7 +152,10 @@ func (eb *IncludeBidders) Call(req *openrtb_ext.RequestWrapper, changeSet *hs.Ch
 			// possibly modify args.bidders
 		}
 		// build map[impId] to map [bidder] to bidder params
-		impIdToBidders := make(map[string]map[string]json.RawMessage)
+		impIdToBidders, err := buildIncludeBidders(req, arg.Bidders)
+		if err != nil {
+			return err
+		}
 
 		changeSet.BidderRequest().Bidders().Update(impIdToBidders)
 	}
@@ -168,4 +197,50 @@ func (lt *LogATag) Call(req *openrtb_ext.RequestWrapper, changeSet *hs.ChangeSet
 
 func (lt *LogATag) Name() string {
 	return LogATagName
+}
+
+func buildIncludeBidders(req *openrtb_ext.RequestWrapper, argBidders []string) (map[string]map[string]json.RawMessage, error) {
+	impIdToBidders := make(map[string]map[string]json.RawMessage)
+	for _, impWrapper := range req.GetImp() {
+		impExt, impExtErr := impWrapper.GetImpExt()
+		if impExtErr != nil {
+			return impIdToBidders, impExtErr
+		}
+		impPrebid := impExt.GetPrebid()
+		impBidders := impPrebid.Bidder
+
+		resultImpBidders := make(map[string]json.RawMessage)
+		for _, bidder := range argBidders {
+			// add only bidders from argBidders
+			if _, ok := impBidders[bidder]; ok {
+				resultImpBidders[bidder] = impBidders[bidder]
+			}
+		}
+		impIdToBidders[impWrapper.ID] = resultImpBidders
+	}
+	return impIdToBidders, nil
+}
+
+func buildExcludeBidders(req *openrtb_ext.RequestWrapper, argBidders []string) (map[string]map[string]json.RawMessage, error) {
+	impIdToBidders := make(map[string]map[string]json.RawMessage)
+	for _, impWrapper := range req.GetImp() {
+		impExt, impExtErr := impWrapper.GetImpExt()
+		if impExtErr != nil {
+			return impIdToBidders, impExtErr
+		}
+		impPrebid := impExt.GetPrebid()
+		impBidders := impPrebid.Bidder
+
+		resultImpBidders := make(map[string]json.RawMessage)
+
+		for bidderName, bidderData := range impBidders {
+			// do not add bidders from argBidders
+			if contains := slices.Contains(argBidders, bidderName); !contains {
+				resultImpBidders[bidderName] = bidderData
+			}
+		}
+
+		impIdToBidders[impWrapper.ID] = resultImpBidders
+	}
+	return impIdToBidders, nil
 }
