@@ -7,14 +7,14 @@ import (
 // Node...
 type Node[T1 any, T2 any] struct {
 	SchemaFunction  SchemaFunction[T1]
-	ResultFunctions []ResultFunction[T2]
+	ResultFunctions []ResultFunction[T1, T2]
 	Children        map[string]*Node[T1, T2]
 }
 
 // Tree...
 type Tree[T1 any, T2 any] struct {
 	Root             *Node[T1, T2]
-	DefaultFunctions []ResultFunction[T2]
+	DefaultFunctions []ResultFunction[T1, T2]
 }
 
 // Run attempts to walk down the tree from the root to a leaf node. Each node references a schema function
@@ -48,7 +48,7 @@ func (t *Tree[T1, T2]) Run(payload *T1, result *T2) error {
 	}
 
 	for _, rf := range resultFuncs {
-		err := rf.Call(result, resFuncMeta)
+		err := rf.Call(payload, result, resFuncMeta)
 		if err != nil {
 			return err
 		}
@@ -96,7 +96,7 @@ type SchemaFuncFactory[T any] func(string, json.RawMessage) (SchemaFunction[T], 
 // ResultFuncFactory is a function that takes a function name and arguments in JSON format
 // and returns a ResultFunction and an error.
 // It is used to create result functions for the tree nodes based on the provided configuration.
-type ResultFuncFactory[T any] func(string, json.RawMessage) (ResultFunction[T], error)
+type ResultFuncFactory[T1 any, T2 any] func(string, json.RawMessage) (ResultFunction[T1, T2], error)
 
 type ResultFuncMetadata struct {
 	SchemaFunctionResults []SchemaFunctionStep

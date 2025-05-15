@@ -20,22 +20,24 @@ const (
 	DataCenterIn     = "dataCenterIn"
 	Channel          = "channel"
 	EidAvailable     = "eidAvailable"
+	EidIn            = "eidAIn"
 	UserFpdAvailable = "userFpdAvailable"
 	FpdAvail         = "fpdAvail"
 	GppSid           = "gppSid"
+	GppSidIn         = "gppSidIn"
 	TcfInScope       = "tcfInScope"
 	Percent          = "percent"
 	PrebidKey        = "prebidKey"
 	Domain           = "domain"
+	DomainIn         = "domainIn"
 	Bundle           = "bundle"
 	DeviceType       = "deviceType"
-	AdUnitCode       = "adUnitCode"
-	MediaTypes       = "mediaTypes"
 )
 
 // SchemaFunction...
 type SchemaFunction[T any] interface {
-	Call(payload *T) (string, string, error)
+	Call(payload *T) (string, error)
+	Name() string
 }
 
 // NewRequestSchemaFunction returns the specified schema function that operates on a request payload along with
@@ -51,23 +53,29 @@ func NewRequestSchemaFunction(name string, params json.RawMessage) (SchemaFuncti
 	case DataCenterIn:
 		return NewDataCenterIn(params)
 	case Channel:
-		return NewChannel()
+		return NewChannel(params)
 	case EidAvailable:
-		return NewAidAvailable(params)
+		return NewEidAvailable(params)
+	case EidIn:
+		return NewEidIn(params)
 	case UserFpdAvailable:
-		return NewUserFpdAvailable()
+		return NewUserFpdAvailable(params)
 	case FpdAvail:
-		return NewFpdAvail()
+		return NewFpdAvailable(params)
 	case GppSid:
-		return NewGppSid(params)
+		return NewGppSidAvailable(params)
+	case GppSidIn:
+		return NewGppSidIn(params)
 	case TcfInScope:
-		return NewTcfInScope()
+		return NewTcfInScope(params)
 	case Percent:
 		return NewPercent(params)
 	case PrebidKey:
 		return NewPrebidKey(params)
 	case Domain:
 		return NewDomain(params)
+	case DomainIn:
+		return NewDomainIn(params)
 	case Bundle:
 		return NewBundle(params)
 	case DeviceType:
@@ -79,364 +87,395 @@ func NewRequestSchemaFunction(name string, params json.RawMessage) (SchemaFuncti
 }
 
 type deviceCountryIn struct {
-	funcName     string
 	CountryCodes []string
 }
 
 func NewDeviceCountryIn(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
-	var args []interface{}
-
-	if err := jsonutil.Unmarshal(params, &args); err != nil {
-		return nil, err
-	}
-	if len(args) != 1 {
-		return nil, errors.New("deviceCountryIn expects one argument")
-	}
-	countryCodes, ok := args[0].([]string)
-	if !ok {
-		return nil, errors.New("deviceCountryIn arg 0 must be an array of strings")
-	}
-	return &deviceCountryIn{CountryCodes: countryCodes, funcName: DeviceCountryIn}, nil
+	countryCodes, err := checkArgsStringList(params, DeviceCountryIn)
+	return &deviceCountryIn{CountryCodes: countryCodes}, err
 }
 
-func (dci *deviceCountryIn) Call(wrapper *openrtb_ext.RequestWrapper) (string, string, error) {
+func (dci *deviceCountryIn) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
 	if wrapper.Device == nil && wrapper.Device.Geo != nil && len(wrapper.Device.Geo.Country) == 0 {
-		return "false", dci.funcName, nil
+		return "false", nil
 	}
 	if contains := slices.Contains(dci.CountryCodes, wrapper.Device.Geo.Country); contains {
-		return "true", dci.funcName, nil
+		return "true", nil
 	}
-	return "false", dci.funcName, nil
+	return "false", nil
 }
 
-type deviceCountry struct {
-	funcName string
+func (dci *deviceCountryIn) Name() string {
+	return DeviceCountryIn
 }
+
+type deviceCountry struct{}
 
 func NewDeviceCountry(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
-	var args []interface{}
-
-	if err := jsonutil.Unmarshal(params, &args); err != nil {
-		return nil, err
-	}
-	if len(args) > 0 {
-		return nil, errors.New("deviceCountry expects 0 arguments")
-	}
-	return &deviceCountry{funcName: DeviceCountry}, nil
+	return &deviceCountry{}, checkNilArgs(params, DeviceCountry)
 }
 
-func (dc *deviceCountry) Call(wrapper *openrtb_ext.RequestWrapper) (string, string, error) {
+func (dc *deviceCountry) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
 	if wrapper.Device == nil && wrapper.Device.Geo != nil && len(wrapper.Device.Geo.Country) == 0 {
-		return "", dc.funcName, fmt.Errorf("request.Device.Geo.Country is not present in request")
+		return "", fmt.Errorf("request.Device.Geo.Country is not present in request")
 	}
-	return wrapper.Device.Geo.Country, dc.funcName, nil
+	return wrapper.Device.Geo.Country, nil
+}
+
+func (dci *deviceCountry) Name() string {
+	return DeviceCountry
 }
 
 // ------------datacenters------------------
 
-type dataCenter struct {
-	funcName    string
-	DataCenters []string
-}
+type dataCenter struct{}
 
 func NewDataCenter(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
-	var dc []string
-	if err := jsonutil.Unmarshal(params, &dc); err != nil {
-		return nil, err
-	}
-	return &dataCenter{DataCenters: dc, funcName: DataCenter}, nil
+	return &dataCenter{}, checkNilArgs(params, DataCenter)
 }
 
-func (dc *dataCenter) Call(wrapper *openrtb_ext.RequestWrapper) (string, string, error) {
+func (dc *dataCenter) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
 
 	// where is datacenter in bid request?
 	// logic should be the same, but read a data center value from a proper location, not wrapper.Device.Geo.Region
 	if wrapper.Device == nil && wrapper.Device.Geo != nil && len(wrapper.Device.Geo.Region) == 0 {
-		return "", dc.funcName, fmt.Errorf("reqiuest.Device.Geo.Country is not present in request")
+		return "", fmt.Errorf("dataCenter is not present in request")
 	}
-
-	if len(dc.DataCenters) == 0 {
-		return wrapper.Device.Geo.Region, dc.funcName, nil
-	}
-
-	if contains := slices.Contains(dc.DataCenters, wrapper.Device.Geo.Region); contains {
-		return "true", dc.funcName, nil
-	}
-	return "false", dc.funcName, nil
+	return wrapper.Device.Geo.Region, nil
 }
 
-// TODO
+func (dci *dataCenter) Name() string {
+	return DataCenter
+}
+
+type dataCenterIn struct {
+	DataCenters []string
+}
+
 func NewDataCenterIn(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
-	var dc []string
-	if err := jsonutil.Unmarshal(params, &dc); err != nil {
-		return nil, err
+	dataCenters, err := checkArgsStringList(params, DataCenterIn)
+	return &dataCenterIn{DataCenters: dataCenters}, err
+}
+
+func (dc *dataCenterIn) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
+
+	// where is datacenter in bid request?
+	// logic should be the same, but read a data center value from a proper location, not wrapper.Device.Geo.Region
+	if wrapper.Device == nil && wrapper.Device.Geo != nil && len(wrapper.Device.Geo.Region) == 0 {
+		return "", fmt.Errorf("reqiuest.Device.Geo.Country is not present in request")
 	}
-	return &dataCenter{DataCenters: dc}, nil
+	if contains := slices.Contains(dc.DataCenters, wrapper.Device.Geo.Region); contains {
+		return "true", nil
+	}
+	return "false", nil
+}
+func (dci *dataCenterIn) Name() string {
+	return DataCenterIn
 }
 
 // ------------channel------------------
 type channel struct {
-	funcName string
 	// no params
 }
 
-func NewChannel() (SchemaFunction[openrtb_ext.RequestWrapper], error) {
-	return &channel{funcName: Channel}, nil
+func NewChannel(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
+	return &channel{}, checkNilArgs(params, DataCenter)
 }
 
-func (c *channel) Call(wrapper *openrtb_ext.RequestWrapper) (string, string, error) {
+func (c *channel) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
 	reqExt, err := wrapper.GetRequestExt()
 	if err != nil {
-		return "", c.funcName, err
+		return "", err
 	}
 	reqExtPrebid := reqExt.GetPrebid()
 	if reqExtPrebid == nil || reqExtPrebid.Channel == nil {
-		return "", c.funcName, fmt.Errorf("reqiuest.ext.prebid or req.ext.prebid.channel is not present in request")
+		return "", fmt.Errorf("reqiuest.ext.prebid or req.ext.prebid.channel is not present in request")
 	}
 	chName := reqExtPrebid.Channel.Name
 	if chName == "pbjs" {
-		return "web", c.funcName, nil
+		return "web", nil
 	}
-	return chName, c.funcName, nil
+	return chName, nil
+}
+
+func (c *channel) Name() string {
+	return Channel
 }
 
 // ------------eidAvailable------------------
 
-type eidAvailable struct {
-	funcName string
-	eids     []string
+type eidIn struct {
+	eids []string
 }
 
 // New
-func NewAidAvailable(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
-	var eidsParam []string
-	if err := jsonutil.Unmarshal(params, &eidsParam); err != nil {
-		return nil, err
-	}
-	return &eidAvailable{eids: eidsParam, funcName: EidAvailable}, nil
+func NewEidIn(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
+	eidsParam, err := checkArgsStringList(params, EidIn)
+	return &eidIn{eids: eidsParam}, err
 }
 
-func (ae *eidAvailable) Call(wrapper *openrtb_ext.RequestWrapper) (string, string, error) {
-	// From Requirements doc:
-	// Arguments may be null in which case it returns true if user.eids array exists and is non-empty.
-	// False if user.eids doesn't exist or is empty.
+func (ei *eidIn) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
 	if wrapper.User == nil || len(wrapper.User.EIDs) == 0 {
-		return "false", ae.funcName, nil
+		return "false", nil
 	}
-
-	if len(ae.eids) == 0 {
-		return "true", ae.funcName, nil
-	}
-
-	// unit test this
-	var eidExists string
-	for _, eidParam := range ae.eids {
-		eidExists = "false"
+	for _, eidParam := range ei.eids {
 		for _, eid := range wrapper.User.EIDs {
 			if eidParam == eid.Source {
-				eidExists = "true"
-				break
+				return "true", nil
 			}
 		}
 	}
-	return eidExists, ae.funcName, nil
+	return "false", nil
+}
+
+func (ei *eidIn) Name() string {
+	return EidIn
+}
+
+type eidAvailable struct {
+}
+
+func NewEidAvailable(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
+	return &eidAvailable{}, checkNilArgs(params, EidAvailable)
+}
+
+func (ea *eidAvailable) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
+	if wrapper.User == nil || len(wrapper.User.EIDs) == 0 {
+		return "", fmt.Errorf("request.User.EIDs is not present in request")
+	}
+	return "true", nil
+}
+func (ea *eidAvailable) Name() string {
+	return EidAvailable
 }
 
 // ------------userFpdAvailable------------------
 type userFpdAvailable struct {
-	funcName string
 	// no params
 }
 
-func NewUserFpdAvailable() (SchemaFunction[openrtb_ext.RequestWrapper], error) {
-	return &userFpdAvailable{funcName: FpdAvail}, nil
+func NewUserFpdAvailable(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
+	return &userFpdAvailable{}, checkNilArgs(params, UserFpdAvailable)
 }
 
-func (ufpd *userFpdAvailable) Call(wrapper *openrtb_ext.RequestWrapper) (string, string, error) {
-	res, err := checkUserDataAndUserExtData(wrapper)
-	return res, ufpd.funcName, err
+func (ufpd *userFpdAvailable) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
+	return checkUserDataAndUserExtData(wrapper)
+}
+
+func (ufpd *userFpdAvailable) Name() string {
+	return UserFpdAvailable
 }
 
 // ------------fpdAvail------------------
-type fpdAvail struct {
-	funcName string
+type fpdAvailable struct {
 	// no params
 }
 
-func NewFpdAvail() (SchemaFunction[openrtb_ext.RequestWrapper], error) {
-	return &fpdAvail{funcName: FpdAvail}, nil
+func NewFpdAvailable(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
+	return &fpdAvailable{}, checkNilArgs(params, FpdAvail)
 }
 
-func (fpd *fpdAvail) Call(wrapper *openrtb_ext.RequestWrapper) (string, string, error) {
+func (fpd *fpdAvailable) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
 	if wrapper.Site != nil {
 		if wrapper.Site.Content != nil && len(wrapper.Site.Content.Data) > 0 {
-			return "true", fpd.funcName, nil
+			return "true", nil
 		}
 		siteExt, err := wrapper.GetSiteExt()
 		if err != nil {
-			return "false", fpd.funcName, err
+			return "false", err
 		}
 
 		ext := siteExt.GetExt()
 		if extDataPresent(ext) {
-			return "true", fpd.funcName, nil
+			return "true", nil
 		}
 	}
 
 	if wrapper.App != nil {
 		if wrapper.App.Content != nil && len(wrapper.App.Content.Data) > 0 {
-			return "true", fpd.funcName, nil
+			return "true", nil
 		}
 		appExt, err := wrapper.GetAppExt()
 		if err != nil {
-			return "false", fpd.funcName, err
+			return "false", err
 		}
 
 		ext := appExt.GetExt()
 		if extDataPresent(ext) {
-			return "true", fpd.funcName, nil
+			return "true", nil
 		}
 	}
 
-	res, err := checkUserDataAndUserExtData(wrapper)
-	return res, fpd.funcName, err
+	return checkUserDataAndUserExtData(wrapper)
+}
+
+func (fpd *fpdAvailable) Name() string {
+	return FpdAvail
 }
 
 // ------------gppSid------------------
-type gppSid struct {
-	funcName string
-	gppSids  []int8
+type gppSidIn struct {
+	gppSids []int8
 }
 
-func NewGppSid(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
-	var gppSidIn []int8
-	if err := jsonutil.Unmarshal(params, &gppSidIn); err != nil {
-		return nil, err
-	}
-	return &gppSid{gppSids: gppSidIn, funcName: GppSid}, nil
+func NewGppSidIn(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
+	gppSids, err := checkArgsInt8List(params, GppSidIn)
+	return &gppSidIn{gppSids: gppSids}, err
 }
 
-func (sid *gppSid) Call(wrapper *openrtb_ext.RequestWrapper) (string, string, error) {
+func (sid *gppSidIn) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
 	if len(sid.gppSids) > 0 && wrapper.Regs != nil && len(wrapper.Regs.GPPSID) > 0 {
 		for _, s := range sid.gppSids {
 			if contains := slices.Contains(wrapper.Regs.GPPSID, s); contains {
-				return "true", sid.funcName, nil
+				return "true", nil
 			}
 		}
 	}
-	return "false", sid.funcName, nil
+	return "false", nil
+}
+
+func (sid *gppSidIn) Name() string {
+	return GppSidIn
+}
+
+type gppSidAvailable struct {
+}
+
+func NewGppSidAvailable(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
+	return &gppSidAvailable{}, checkNilArgs(params, GppSid)
+}
+
+func (sid *gppSidAvailable) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
+	if wrapper.Regs != nil && len(wrapper.Regs.GPPSID) > 0 {
+		for _, gppSid := range wrapper.Regs.GPPSID {
+			if gppSid > 0 {
+				return "true", nil
+			}
+		}
+	}
+	return "false", nil
+}
+
+func (sid *gppSidAvailable) Name() string {
+	return GppSid
 }
 
 // ------------tcfInScope------------------
 type tcfInScope struct {
-	funcName string
 	// no params
 }
 
-func NewTcfInScope() (SchemaFunction[openrtb_ext.RequestWrapper], error) {
-	return &tcfInScope{funcName: TcfInScope}, nil
+func NewTcfInScope(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
+	return &tcfInScope{}, checkNilArgs(params, TcfInScope)
 }
 
-func (tcf *tcfInScope) Call(wrapper *openrtb_ext.RequestWrapper) (string, string, error) {
+func (tcf *tcfInScope) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
 	if wrapper.Regs != nil && wrapper.Regs.GDPR == ptrutil.ToPtr[int8](1) {
-		return "true", tcf.funcName, nil
+		return "true", nil
 	}
-	return "false", tcf.funcName, nil
+	return "false", nil
+}
+
+func (tcf *tcfInScope) Name() string {
+	return TcfInScope
 }
 
 // ------------percent------------------
 type percent struct {
-	funcName string
-	value    int
+	value int
 }
 
 func NewPercent(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
-	var percentValue int
-	if err := jsonutil.Unmarshal(params, &percentValue); err != nil {
-		return nil, err
-	}
-	return &percent{value: percentValue, funcName: Percent}, nil
+	percentValue, err := checkArgsInt(params, Percent)
+	return &percent{value: percentValue}, err
 }
 
-func (p *percent) Call(wrapper *openrtb_ext.RequestWrapper) (string, string, error) {
-	percValue := 5 //default value
-	if p.value < 0 {
+func (p *percent) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
+	percValue := p.value
+	if percValue < 0 {
 		percValue = 0
 	}
-	if p.value > 100 {
+	if percValue > 100 {
 		percValue = 100
 	}
 	randNum := randRange(0, 100)
 	if randNum < percValue {
-		return "true", p.funcName, nil
+		return "true", nil
 	}
-	return "false", p.funcName, nil
+	return "false", nil
+}
+
+func (p *percent) Name() string {
+	return Percent
 }
 
 // ------------prebidKey------------------
 type prebidKey struct {
-	funcName string
-	key      string
+	key string
 }
 
 func NewPrebidKey(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
-	var newKey string
-	if err := jsonutil.Unmarshal(params, &newKey); err != nil {
-		return nil, err
-	}
-	return &prebidKey{key: newKey, funcName: PrebidKey}, nil
+	newKey, err := checkArgsString(params, PrebidKey)
+	return &prebidKey{key: newKey}, err
 }
 
-func (p *prebidKey) Call(wrapper *openrtb_ext.RequestWrapper) (string, string, error) {
+func (p *prebidKey) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
 	reqExt, err := wrapper.GetRequestExt()
 	if err != nil {
-		return "", p.funcName, err
+		return "", err
 	}
 	reqExtPrebid := reqExt.GetPrebid()
 	// reqExtPrebid doesn't have kvps !
 	// expected impl:
 	// return reqExtPrebid.GetKVPs()[p.key], nil
 
-	return reqExtPrebid.Integration, p.funcName, nil //stub
+	return reqExtPrebid.Integration, nil //stub
+}
+
+func (p *prebidKey) Name() string {
+	return PrebidKey
 }
 
 // ------------domain------------------
 type domain struct {
-	funcName    string
-	domainNames []string
 }
 
 func NewDomain(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
-	var newdomains []string
-	if err := jsonutil.Unmarshal(params, &newdomains); err != nil {
-		return nil, err
-	}
-	return &domain{domainNames: newdomains, funcName: Domain}, nil
+	return &domain{}, checkNilArgs(params, Domain)
 }
 
-func (d *domain) Call(wrapper *openrtb_ext.RequestWrapper) (string, string, error) {
-	reqDomain := ""
-	if wrapper.Site != nil {
-		reqDomain = wrapper.Site.Domain
-	} else if wrapper.App != nil {
-		reqDomain = wrapper.App.Domain
-	} else if wrapper.DOOH != nil {
-		reqDomain = wrapper.DOOH.Domain
-	}
+func (d *domain) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
+	return getReqDomain(wrapper), nil
+}
 
-	if len(d.domainNames) == 0 {
-		return reqDomain, d.funcName, nil
-	}
+func (d *domain) Name() string {
+	return Domain
+}
 
+type domainIn struct {
+	domainNames []string
+}
+
+func NewDomainIn(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
+	newdomains, err := checkArgsStringList(params, DomainIn)
+	return &domainIn{domainNames: newdomains}, err
+}
+
+func (d *domainIn) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
+	reqDomain := getReqDomain(wrapper)
 	if contains := slices.Contains(d.domainNames, reqDomain); contains {
-		return "true", d.funcName, nil
+		return "true", nil
 	}
-	return "false", d.funcName, nil
+	return "false", nil
 }
 
+func (d *domainIn) Name() string {
+	return DomainIn
+}
+
+// TODO: from here
 // ------------bundle------------------
 type bundle struct {
-	funcName    string
 	bundleNames []string
 }
 
@@ -445,28 +484,30 @@ func NewBundle(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrappe
 	if err := jsonutil.Unmarshal(params, &newBundles); err != nil {
 		return nil, err
 	}
-	return &bundle{bundleNames: newBundles, funcName: Bundle}, nil
+	return &bundle{bundleNames: newBundles}, nil
 }
 
-func (b *bundle) Call(wrapper *openrtb_ext.RequestWrapper) (string, string, error) {
+func (b *bundle) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
 	bundleName := ""
 	if wrapper.App != nil {
 		bundleName = wrapper.App.Bundle
 	}
 	if len(b.bundleNames) == 0 {
-		return bundleName, b.funcName, nil
+		return bundleName, nil
 	}
 
 	if contains := slices.Contains(b.bundleNames, bundleName); contains {
-		return "true", b.funcName, nil
+		return "true", nil
 	}
-	return "false", b.funcName, nil
+	return "false", nil
+}
+func (b *bundle) Name() string {
+	return Bundle
 }
 
 // ------------deviceType------------------
 type deviceType struct {
-	funcName string
-	types    []string
+	types []string
 }
 
 func NewDeviceType(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
@@ -474,27 +515,31 @@ func NewDeviceType(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWr
 	if err := jsonutil.Unmarshal(params, &deviceTypes); err != nil {
 		return nil, err
 	}
-	return &deviceType{types: deviceTypes, funcName: DeviceType}, nil
+	return &deviceType{types: deviceTypes}, nil
 }
 
-func (d *deviceType) Call(wrapper *openrtb_ext.RequestWrapper) (string, string, error) {
+func (d *deviceType) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
 	devType := ""
 	if wrapper.Device != nil {
 		devTypeInt := wrapper.Device.DeviceType
 		err := errors.New("")
 		devType, err = convertDevTypeToString(devTypeInt)
 		if err != nil {
-			return "", d.funcName, err
+			return "", err
 		}
 	}
 	if len(d.types) == 0 {
-		return devType, d.funcName, nil
+		return devType, nil
 	}
 
 	if contains := slices.Contains(d.types, devType); contains {
-		return "true", d.funcName, nil
+		return "true", nil
 	}
-	return "false", d.funcName, nil
+	return "false", nil
+}
+
+func (d *deviceType) Name() string {
+	return DeviceType
 }
 
 // ------------mediaTypes------------------
@@ -525,6 +570,18 @@ func extDataPresent(ext map[string]json.RawMessage) bool {
 	return ok && len(val) > 0
 }
 
+func getReqDomain(wrapper *openrtb_ext.RequestWrapper) string {
+	reqDomain := ""
+	if wrapper.Site != nil {
+		reqDomain = wrapper.Site.Domain
+	} else if wrapper.App != nil {
+		reqDomain = wrapper.App.Domain
+	} else if wrapper.DOOH != nil {
+		reqDomain = wrapper.DOOH.Domain
+	}
+	return reqDomain
+}
+
 func randRange(min, max int) int {
 	return rand.Intn(max-min) + min
 }
@@ -550,4 +607,78 @@ func convertDevTypeToString(typeInt adcom1.DeviceType) (string, error) {
 	default:
 		return "", fmt.Errorf("Device type %d was not found", typeInt)
 	}
+}
+
+func checkNilArgs(params json.RawMessage, funcName string) error {
+	var args []interface{}
+
+	if err := jsonutil.Unmarshal(params, &args); err != nil {
+		return err
+	}
+	if len(args) > 0 {
+		return fmt.Errorf("%s expects 0 arguments", funcName)
+	}
+	return nil
+}
+
+func checkSingleArg(params json.RawMessage, funcName string) ([]interface{}, error) {
+	var args []interface{}
+
+	if err := jsonutil.Unmarshal(params, &args); err != nil {
+		return nil, err
+	}
+	if len(args) != 1 {
+		return nil, fmt.Errorf("%s expects one argument", funcName)
+	}
+	return args, nil
+}
+
+func checkArgsStringList(params json.RawMessage, funcName string) ([]string, error) {
+	args, err := checkSingleArg(params, funcName)
+	if err != nil {
+		return nil, err
+	}
+	values, ok := args[0].([]string)
+	if !ok {
+		return nil, fmt.Errorf("%s arg 0 must be an array of strings", funcName)
+	}
+	return values, nil
+}
+
+func checkArgsInt8List(params json.RawMessage, funcName string) ([]int8, error) {
+	args, err := checkSingleArg(params, funcName)
+	if err != nil {
+		return nil, err
+	}
+	values, ok := args[0].([]int8)
+	if !ok {
+		return nil, fmt.Errorf("%s arg 0 must be an array of ints", funcName)
+	}
+	return values, nil
+}
+
+func checkArgsInt(params json.RawMessage, funcName string) (int, error) {
+	args, err := checkSingleArg(params, funcName)
+	if err != nil {
+		return 0, err
+	}
+	value, ok := args[0].(int)
+	if !ok {
+		return 0, fmt.Errorf("%s arg 0 must be an array of ints", funcName)
+	}
+
+	return value, nil
+}
+
+func checkArgsString(params json.RawMessage, funcName string) (string, error) {
+	args, err := checkSingleArg(params, funcName)
+	if err != nil {
+		return "", err
+	}
+	value, ok := args[0].(string)
+	if !ok {
+		return "", fmt.Errorf("%s arg 0 must be an array of ints", funcName)
+	}
+
+	return value, nil
 }
