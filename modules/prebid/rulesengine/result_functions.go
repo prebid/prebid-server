@@ -67,18 +67,18 @@ type ExcludeBidders struct {
 }
 
 // Call is a method that applies the changes specified in the ExcludeBidders instance to the provided ChangeSet by creating a mutation.
-func (eb *ExcludeBidders) Call(req *openrtb_ext.RequestWrapper, changeSet *hs.ChangeSet[hs.ProcessedAuctionRequestPayload], funcMeta rules.ResultFuncMetadata) error {
+func (eb *ExcludeBidders) Call(req *openrtb_ext.RequestWrapper, changeSet *hs.ChangeSet[hs.ProcessedAuctionRequestPayload], meta rules.ResultFunctionMeta) error {
 	//  create a change set which captures the changes we want to apply
 	// this function should NOT perform any modifications to the request
 
-	for _, meta := range funcMeta.SchemaFunctionResults {
-		if meta.FuncName == rules.AdUnitCode {
-			if meta.FuncResult != "*" { // wildcard
+	for _, schemaResult := range meta.SchemaFunctionResults {
+		if schemaResult.FuncName == rules.AdUnitCode {
+			if schemaResult.FuncResult != "*" { // wildcard
 				// add comparison logic
 			}
 		}
-		if meta.FuncName == rules.MediaTypes {
-			if meta.FuncResult != "*" { // wildcard
+		if schemaResult.FuncName == rules.MediaTypes {
+			if schemaResult.FuncResult != "*" { // wildcard
 				// add comparison logic
 			}
 		}
@@ -126,18 +126,18 @@ type IncludeBidders struct {
 }
 
 // Call is a method that applies the changes specified in the IncludeBidders instance to the provided ChangeSet by creating a mutation.
-func (eb *IncludeBidders) Call(req *openrtb_ext.RequestWrapper, changeSet *hs.ChangeSet[hs.ProcessedAuctionRequestPayload], funcMeta rules.ResultFuncMetadata) error {
+func (eb *IncludeBidders) Call(req *openrtb_ext.RequestWrapper, changeSet *hs.ChangeSet[hs.ProcessedAuctionRequestPayload], meta rules.ResultFunctionMeta) error {
 	//  create a change set which captures the changes we want to apply
 	// this function should NOT perform any modifications to the request
 
-	for _, meta := range funcMeta.SchemaFunctionResults {
-		if meta.FuncName == rules.AdUnitCode {
-			if meta.FuncResult != "*" { // wildcard
+	for _, schemaResult := range meta.SchemaFunctionResults {
+		if schemaResult.FuncName == rules.AdUnitCode {
+			if schemaResult.FuncResult != "*" { // wildcard
 				// add comparison logic
 			}
 		}
-		if meta.FuncName == rules.MediaTypes {
-			if meta.FuncResult != "*" { // wildcard
+		if schemaResult.FuncName == rules.MediaTypes {
+			if schemaResult.FuncResult != "*" { // wildcard
 				// add comparison logic
 			}
 		}
@@ -190,7 +190,7 @@ type LogATag struct {
 }
 
 // Call is a method that applies the changes specified in the LogATag instance to the provided ChangeSet by creating a mutation
-func (lt *LogATag) Call(req *openrtb_ext.RequestWrapper, changeSet *hs.ChangeSet[hs.ProcessedAuctionRequestPayload], funcMeta rules.ResultFuncMetadata) error {
+func (lt *LogATag) Call(req *openrtb_ext.RequestWrapper, changeSet *hs.ChangeSet[hs.ProcessedAuctionRequestPayload], meta rules.ResultFunctionMeta) error {
 	//stub
 	return nil
 }

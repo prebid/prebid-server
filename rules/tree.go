@@ -24,8 +24,7 @@ type Tree[T1 any, T2 any] struct {
 func (t *Tree[T1, T2]) Run(payload *T1, result *T2) error {
 	currNode := t.Root
 
-	//needed for result function
-	resFuncMeta := ResultFuncMetadata{SchemaFunctionResults: make([]SchemaFunctionStep, 0)}
+	resFuncMeta := ResultFunctionMeta{SchemaFunctionResults: make([]SchemaFunctionStep, 0)}
 
 	for len(currNode.Children) > 0 {
 		res, err := currNode.SchemaFunction.Call(payload)

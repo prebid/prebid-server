@@ -649,7 +649,11 @@ func checkArgsStringList(params json.RawMessage, funcName string) ([]string, err
 
 	values := make([]string, len(args))
 	for i, v := range args {
-		values[i] = v.(string)
+		stringValue, ok := v.(string)
+		if !ok {
+			return nil, errors.New("error converting value to string")
+		}
+		values[i] = stringValue
 	}
 
 	return values, nil
@@ -662,7 +666,11 @@ func checkArgsInt8List(params json.RawMessage, funcName string) ([]int8, error) 
 	}
 	values := make([]int8, len(args))
 	for i, v := range args {
-		values[i] = v.(int8)
+		intValue, ok := v.(int8)
+		if !ok {
+			return nil, errors.New("error converting value to int8")
+		}
+		values[i] = intValue
 	}
 	return values, nil
 }
