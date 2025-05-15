@@ -28,12 +28,12 @@ func (t *Tree[T1, T2]) Run(payload *T1, result *T2) error {
 	resFuncMeta := ResultFuncMetadata{SchemaFunctionResults: make([]SchemaFunctionStep, 0)}
 
 	for len(currNode.Children) > 0 {
-		res, funcName, err := currNode.SchemaFunction.Call(payload)
+		res, err := currNode.SchemaFunction.Call(payload)
 		if err != nil {
 			return err
 		}
 
-		step := SchemaFunctionStep{FuncName: funcName, FuncResult: res}
+		step := SchemaFunctionStep{FuncName: currNode.SchemaFunction.Name(), FuncResult: res}
 		resFuncMeta.SchemaFunctionResults = append(resFuncMeta.SchemaFunctionResults, step)
 
 		currNode := currNode.Children[res] // can we use exist?
@@ -103,7 +103,6 @@ type ResultFuncMetadata struct {
 	AnalyticsKey          string
 	RuleFired             string
 	ModelVersion          string
-	Validation            bool
 }
 
 type SchemaFunctionStep struct {

@@ -65,12 +65,12 @@ func (tb *treeBuilder[T1, T2]) Build(tree *rules.Tree[T1, T2]) error {
 	return nil
 }
 
-func (tb *treeBuilder[T1, T2]) buildDefaultFunctions() []rules.ResultFunction[T2] {
+func (tb *treeBuilder[T1, T2]) buildDefaultFunctions() []rules.ResultFunction[T1, T2] {
 	if len(tb.Config.Default) == 0 {
 		return nil
 	}
 
-	defaultFunct := make([]rules.ResultFunction[T2], 0, len(tb.Config.Default))
+	defaultFunct := make([]rules.ResultFunction[T1, T2], 0, len(tb.Config.Default))
 	for _, res := range tb.Config.Default {
 		resFunc, err := tb.ResultFuncFactory(res.Func, res.Args)
 		if err != nil {

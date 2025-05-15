@@ -154,12 +154,6 @@ type LogATag struct {
 
 // Call is a method that applies the changes specified in the LogATag instance to the provided ChangeSet by creating a mutation
 func (lt *LogATag) Call(req *openrtb_ext.RequestWrapper, changeSet *hs.ChangeSet[hs.ProcessedAuctionRequestPayload], funcMeta rules.ResultFuncMetadata) error {
-	//  create a change set which captures the changes we want to apply
-	// this function should NOT perform any modifications to the request
-
-	// changeSet.BidderRequest().AnalyticsKey().Update(lt.AnalyticsValue) - example
-	// changeSet.BidderRequest().ModelVersion().Update(lt.AnalyticsValue) - example
-	changeSet.BidderRequest().BAdv().Update([]string{}) // write mutation functions
 
 	return nil
 }
