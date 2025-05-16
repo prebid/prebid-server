@@ -66,6 +66,8 @@
           "id": "request_id",
           "imp": [
             {
+              "displaymanager": "prebid.go",
+              "displaymanagerver": "1.1",
               "id": "imp_id1",
               "banner": {
                 "w": 300,

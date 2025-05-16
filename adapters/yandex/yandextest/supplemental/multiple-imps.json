@@ -69,6 +69,8 @@
           "id": "request_id",
           "imp": [
             {
+              "displaymanager": "prebid.go",
+              "displaymanagerver": "1.1",
               "id": "imp_id1",
               "banner": {
                 "w": 300,
@@ -148,6 +150,8 @@
           "id": "request_id",
           "imp": [
             {
+              "displaymanager": "prebid.go",
+              "displaymanagerver": "1.1",
               "id": "imp_id2",
               "banner": {
                 "w": 400,
