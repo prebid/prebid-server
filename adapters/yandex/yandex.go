@@ -9,6 +9,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/config"
@@ -17,6 +18,9 @@ import (
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
+
+const BIDDER_VERSION = "1.1"
+const BIDDER_NAME = "prebid.go"
 
 const (
 	refererQueryKey  = "target-ref"
@@ -101,13 +105,14 @@ func getHeaders(request *openrtb2.BidRequest) http.Header {
 
 	if request.Device != nil && request.Site != nil {
 		addNonEmptyHeaders(&headers, map[string]string{
-			"Referer":         request.Site.Page,
-			"Accept-Language": request.Device.Language,
-			"User-Agent":      request.Device.UA,
-			"X-Forwarded-For": request.Device.IP,
-			"X-Real-Ip":       request.Device.IP,
-			"Content-Type":    "application/json;charset=utf-8",
-			"Accept":          "application/json",
+			"Referer":           request.Site.Page,
+			"Accept-Language":   request.Device.Language,
+			"User-Agent":        request.Device.UA,
+			"X-Forwarded-For":   request.Device.IP,
+			"X-Real-Ip":         request.Device.IP,
+			"Content-Type":      "application/json;charset=utf-8",
+			"Accept":            "application/json",
+			"X-OpenRTB-Version": "2.5",
 		})
 	}
 
@@ -185,10 +190,21 @@ func mapExtToPlacementID(yandexExt openrtb_ext.ExtImpYandex) (*yandexPlacementID
 }
 
 func modifyImp(imp *openrtb2.Imp) error {
+	imp.DisplayManager = BIDDER_NAME
+	imp.DisplayManagerVer = BIDDER_VERSION
+
 	if imp.Banner != nil {
 		banner, err := modifyBanner(*imp.Banner)
 		if banner != nil {
 			imp.Banner = banner
+		}
+		return err
+	}
+
+	if imp.Video != nil {
+		video, err := modifyVideo(*imp.Video)
+		if video != nil {
+			imp.Video = video
 		}
 		return err
 	}
@@ -198,7 +214,7 @@ func modifyImp(imp *openrtb2.Imp) error {
 	}
 
 	return &errortypes.BadInput{
-		Message: fmt.Sprintf("Unsupported format. Yandex only supports banner and native types. Ignoring imp id #%s", imp.ID),
+		Message: fmt.Sprintf("Unsupported format. Yandex only supports banner, video, and native types. Ignoring imp id #%s", imp.ID),
 	}
 }
 
@@ -218,6 +234,29 @@ func modifyBanner(banner openrtb2.Banner) (*openrtb2.Banner, error) {
 	}
 
 	return &banner, nil
+}
+
+func modifyVideo(video openrtb2.Video) (*openrtb2.Video, error) {
+	if video.W == nil || video.H == nil || *video.W == 0 || *video.H == 0 {
+		return nil, &errortypes.BadInput{
+			Message: "Invalid size provided for Video",
+		}
+	}
+
+	if video.MinDuration == 0 {
+		video.MinDuration = 1
+	}
+	if video.MaxDuration == 0 {
+		video.MaxDuration = 120
+	}
+	if len(video.MIMEs) == 0 {
+		video.MIMEs = []string{"video/mp4"}
+	}
+	if len(video.Protocols) == 0 {
+		video.Protocols = []adcom1.MediaCreativeSubtype{3}
+	}
+
+	return &video, nil
 }
 
 // "Un-templates" the endpoint by replacing macroses and adding the required query parameters
@@ -333,6 +372,10 @@ func getBidType(imp openrtb2.Imp) (openrtb_ext.BidType, error) {
 
 	if imp.Banner != nil {
 		return openrtb_ext.BidTypeBanner, nil
+	}
+
+	if imp.Video != nil {
+		return openrtb_ext.BidTypeVideo, nil
 	}
 
 	return "", &errortypes.BadInput{
