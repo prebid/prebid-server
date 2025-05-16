@@ -35,7 +35,7 @@ func (t *Tree[T1, T2]) Run(payload *T1, result *T2) error {
 		step := SchemaFunctionStep{FuncName: currNode.SchemaFunction.Name(), FuncResult: res}
 		resFuncMeta.SchemaFunctionResults = append(resFuncMeta.SchemaFunctionResults, step)
 
-		currNode := currNode.Children[res] // can we use exist?
+		currNode = currNode.Children[res]
 		if currNode == nil {
 			break
 		}
