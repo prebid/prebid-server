@@ -86,10 +86,18 @@ func (a adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapter
 		}
 	}
 
-	if len(impsWithOguryParams) == 0 && (request.Site == nil || request.Site.Publisher == nil || request.Site.Publisher.ID == "") {
-		return nil, []error{&errortypes.BadInput{
-			Message: "Invalid request. assetKey/adUnitId or request.site.publisher.id required",
-		}}
+	if len(impsWithOguryParams) == 0 {
+		if request.Site != nil && (request.Site.Publisher == nil || request.Site.Publisher.ID == "") {
+			// we can serve ads with publisherId+adunitcode combination
+			return nil, []error{&errortypes.BadInput{
+				Message: "Invalid request. assetKey/adUnitId or request.site.publisher.id required",
+			}}
+		} else if request.App != nil {
+			// for app request there is no adunitcode equivalent so we can't serve ads with just the publisher id
+			return nil, []error{&errortypes.BadInput{
+				Message: "Invalid request. assetKey/adUnitId",
+			}}
+		}
 	} else if len(impsWithOguryParams) > 0 {
 		request.Imp = impsWithOguryParams
 	}
