@@ -32,6 +32,8 @@ const (
 	DomainIn         = "domainIn"
 	Bundle           = "bundle"
 	DeviceType       = "deviceType"
+	AdUnitCode       = "adUnitCode"
+	MediaTypes       = "mediaTypes"
 )
 
 // SchemaFunction...
@@ -610,7 +612,13 @@ func convertDevTypeToString(typeInt adcom1.DeviceType) (string, error) {
 }
 
 func checkNilArgs(params json.RawMessage, funcName string) error {
-	var args []interface{}
+	if params == nil {
+		// no params handling
+		// { "function": "channel"}
+		return nil
+	}
+
+	var args [][]interface{}
 
 	if err := jsonutil.Unmarshal(params, &args); err != nil {
 		return err
@@ -621,8 +629,8 @@ func checkNilArgs(params json.RawMessage, funcName string) error {
 	return nil
 }
 
-func checkSingleArg(params json.RawMessage, funcName string) ([]interface{}, error) {
-	var args []interface{}
+func checkSingleArgList(params json.RawMessage, funcName string) ([]interface{}, error) {
+	var args [][]interface{}
 
 	if err := jsonutil.Unmarshal(params, &args); err != nil {
 		return nil, err
@@ -630,55 +638,49 @@ func checkSingleArg(params json.RawMessage, funcName string) ([]interface{}, err
 	if len(args) != 1 {
 		return nil, fmt.Errorf("%s expects one argument", funcName)
 	}
-	return args, nil
+	return args[0], nil
 }
 
 func checkArgsStringList(params json.RawMessage, funcName string) ([]string, error) {
-	args, err := checkSingleArg(params, funcName)
+	args, err := checkSingleArgList(params, funcName)
 	if err != nil {
 		return nil, err
 	}
-	values, ok := args[0].([]string)
-	if !ok {
-		return nil, fmt.Errorf("%s arg 0 must be an array of strings", funcName)
+
+	values := make([]string, len(args))
+	for i, v := range args {
+		stringValue, ok := v.(string)
+		if !ok {
+			return nil, errors.New("error converting value to string")
+		}
+		values[i] = stringValue
 	}
+
 	return values, nil
 }
 
 func checkArgsInt8List(params json.RawMessage, funcName string) ([]int8, error) {
-	args, err := checkSingleArg(params, funcName)
+	args, err := checkSingleArgList(params, funcName)
 	if err != nil {
 		return nil, err
 	}
-	values, ok := args[0].([]int8)
-	if !ok {
-		return nil, fmt.Errorf("%s arg 0 must be an array of ints", funcName)
+	values := make([]int8, len(args))
+	for i, v := range args {
+		intValue, ok := v.(int8)
+		if !ok {
+			return nil, errors.New("error converting value to int8")
+		}
+		values[i] = intValue
 	}
 	return values, nil
 }
 
 func checkArgsInt(params json.RawMessage, funcName string) (int, error) {
-	args, err := checkSingleArg(params, funcName)
-	if err != nil {
-		return 0, err
-	}
-	value, ok := args[0].(int)
-	if !ok {
-		return 0, fmt.Errorf("%s arg 0 must be an array of ints", funcName)
-	}
-
-	return value, nil
+	//stub
+	return 0, nil
 }
 
 func checkArgsString(params json.RawMessage, funcName string) (string, error) {
-	args, err := checkSingleArg(params, funcName)
-	if err != nil {
-		return "", err
-	}
-	value, ok := args[0].(string)
-	if !ok {
-		return "", fmt.Errorf("%s arg 0 must be an array of ints", funcName)
-	}
-
-	return value, nil
+	//stub
+	return "", nil
 }

@@ -3,6 +3,7 @@ package rulesengine
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 
 	hs "github.com/prebid/prebid-server/v3/hooks/hookstage"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
@@ -13,6 +14,12 @@ import (
 // ProcessedAuctionResultFunc is a type alias for a result function that runs in the processed auction request stage.
 type ProcessedAuctionResultFunc = rules.ResultFunction[openrtb_ext.RequestWrapper, hs.ChangeSet[hs.ProcessedAuctionRequestPayload]]
 
+const (
+	ExcludeBiddersName = "excludeBidders"
+	IncludeBiddersName = "includeBidders"
+	LogATagName        = "logATag"
+)
+
 // NewProcessedAuctionRequestResultFunction is a factory function that creates a new result function based on the provided name and parameters.
 // It returns an error if the function name is not recognized or if there is an issue with the parameters.
 // The function name is case insensitive.
@@ -22,11 +29,11 @@ type ProcessedAuctionResultFunc = rules.ResultFunction[openrtb_ext.RequestWrappe
 func NewProcessedAuctionRequestResultFunction(name string, params json.RawMessage) (ProcessedAuctionResultFunc, error) {
 	//TODO: make case insensitive converting to lower case
 	switch name {
-	case "excludeBidders":
+	case ExcludeBiddersName:
 		return NewExcludeBidders(params)
-	case "includeBidders":
+	case IncludeBiddersName:
 		return NewIncludeBidders(params)
-	case "logATag":
+	case LogATagName:
 		return NewLogATag(params)
 	default:
 		return nil, fmt.Errorf("result function %s was not created", name)
@@ -60,14 +67,44 @@ type ExcludeBidders struct {
 }
 
 // Call is a method that applies the changes specified in the ExcludeBidders instance to the provided ChangeSet by creating a mutation.
-func (eb *ExcludeBidders) Call(req *openrtb_ext.RequestWrapper, changeSet *hs.ChangeSet[hs.ProcessedAuctionRequestPayload]) error {
+func (eb *ExcludeBidders) Call(req *openrtb_ext.RequestWrapper, changeSet *hs.ChangeSet[hs.ProcessedAuctionRequestPayload], meta rules.ResultFunctionMeta) error {
 	//  create a change set which captures the changes we want to apply
 	// this function should NOT perform any modifications to the request
+
+	for _, schemaResult := range meta.SchemaFunctionResults {
+		if schemaResult.FuncName == rules.AdUnitCode {
+			if schemaResult.FuncResult != "*" { // wildcard
+				// add comparison logic
+			}
+		}
+		if schemaResult.FuncName == rules.MediaTypes {
+			if schemaResult.FuncResult != "*" { // wildcard
+				// add comparison logic
+			}
+		}
+	}
+	/*if len{analyticsKey} > 0{
+		//create an analytics tag
+	}*/
+
+	// maybe merge all args into one to remove for loop - in res funct constructor NewIncludeBidders
 	for _, arg := range eb.Args {
-		// changeSet.BidderRequest().Bidders().Delete(arg.Bidders) - example
-		changeSet.BidderRequest().BAdv().Update(arg.Bidders) // write mutation functions
+		if arg.IfSyncedId {
+			// possibly modify args.bidders
+		}
+		// build map[impId] to map [bidder] to bidder params
+		impIdToBidders, err := buildExcludeBidders(req, arg.Bidders)
+		if err != nil {
+			return err
+		}
+
+		changeSet.BidderRequest().Bidders().Update(impIdToBidders)
 	}
 	return nil
+}
+
+func (eb *ExcludeBidders) Name() string {
+	return ExcludeBiddersName
 }
 
 // NewIncludeBidders is a factory function that creates a new IncludeBidders result function.
@@ -89,14 +126,44 @@ type IncludeBidders struct {
 }
 
 // Call is a method that applies the changes specified in the IncludeBidders instance to the provided ChangeSet by creating a mutation.
-func (eb *IncludeBidders) Call(req *openrtb_ext.RequestWrapper, changeSet *hs.ChangeSet[hs.ProcessedAuctionRequestPayload]) error {
+func (eb *IncludeBidders) Call(req *openrtb_ext.RequestWrapper, changeSet *hs.ChangeSet[hs.ProcessedAuctionRequestPayload], meta rules.ResultFunctionMeta) error {
 	//  create a change set which captures the changes we want to apply
 	// this function should NOT perform any modifications to the request
+
+	for _, schemaResult := range meta.SchemaFunctionResults {
+		if schemaResult.FuncName == rules.AdUnitCode {
+			if schemaResult.FuncResult != "*" { // wildcard
+				// add comparison logic
+			}
+		}
+		if schemaResult.FuncName == rules.MediaTypes {
+			if schemaResult.FuncResult != "*" { // wildcard
+				// add comparison logic
+			}
+		}
+	}
+	/*if len{analyticsKey} > 0{
+		//create an analytics tag
+	}*/
+
+	// maybe merge all args into one to remove for loop - in res funct constructor NewIncludeBidders
 	for _, arg := range eb.Args {
-		// changeSet.BidderRequest().Bidders().Add(arg.Bidders) - example
-		changeSet.BidderRequest().BAdv().Update(arg.Bidders) // write mutation functions
+		if arg.IfSyncedId {
+			// possibly modify args.bidders
+		}
+		// build map[impId] to map [bidder] to bidder params
+		impIdToBidders, err := buildIncludeBidders(req, arg.Bidders)
+		if err != nil {
+			return err
+		}
+
+		changeSet.BidderRequest().Bidders().Update(impIdToBidders)
 	}
 	return nil
+}
+
+func (eb *IncludeBidders) Name() string {
+	return IncludeBiddersName
 }
 
 // LogATagParams is a struct that holds parameters for the LogATag result function.
@@ -123,13 +190,57 @@ type LogATag struct {
 }
 
 // Call is a method that applies the changes specified in the LogATag instance to the provided ChangeSet by creating a mutation
-func (lt *LogATag) Call(req *openrtb_ext.RequestWrapper, changeSet *hs.ChangeSet[hs.ProcessedAuctionRequestPayload]) error {
-	//  create a change set which captures the changes we want to apply
-	// this function should NOT perform any modifications to the request
-
-	// changeSet.BidderRequest().AnalyticsKey().Update(lt.AnalyticsValue) - example
-	// changeSet.BidderRequest().ModelVersion().Update(lt.AnalyticsValue) - example
-	changeSet.BidderRequest().BAdv().Update([]string{}) // write mutation functions
-
+func (lt *LogATag) Call(req *openrtb_ext.RequestWrapper, changeSet *hs.ChangeSet[hs.ProcessedAuctionRequestPayload], meta rules.ResultFunctionMeta) error {
+	//stub
 	return nil
+}
+
+func (lt *LogATag) Name() string {
+	return LogATagName
+}
+
+func buildIncludeBidders(req *openrtb_ext.RequestWrapper, argBidders []string) (map[string]map[string]json.RawMessage, error) {
+	impIdToBidders := make(map[string]map[string]json.RawMessage)
+	for _, impWrapper := range req.GetImp() {
+		impExt, impExtErr := impWrapper.GetImpExt()
+		if impExtErr != nil {
+			return impIdToBidders, impExtErr
+		}
+		impPrebid := impExt.GetPrebid()
+		impBidders := impPrebid.Bidder
+
+		resultImpBidders := make(map[string]json.RawMessage)
+		for _, bidder := range argBidders {
+			// add only bidders from argBidders
+			if _, ok := impBidders[bidder]; ok {
+				resultImpBidders[bidder] = impBidders[bidder]
+			}
+		}
+		impIdToBidders[impWrapper.ID] = resultImpBidders
+	}
+	return impIdToBidders, nil
+}
+
+func buildExcludeBidders(req *openrtb_ext.RequestWrapper, argBidders []string) (map[string]map[string]json.RawMessage, error) {
+	impIdToBidders := make(map[string]map[string]json.RawMessage)
+	for _, impWrapper := range req.GetImp() {
+		impExt, impExtErr := impWrapper.GetImpExt()
+		if impExtErr != nil {
+			return impIdToBidders, impExtErr
+		}
+		impPrebid := impExt.GetPrebid()
+		impBidders := impPrebid.Bidder
+
+		resultImpBidders := make(map[string]json.RawMessage)
+
+		for bidderName, bidderData := range impBidders {
+			// do not add bidders from argBidders
+			if contains := slices.Contains(argBidders, bidderName); !contains {
+				resultImpBidders[bidderName] = bidderData
+			}
+		}
+
+		impIdToBidders[impWrapper.ID] = resultImpBidders
+	}
+	return impIdToBidders, nil
 }
