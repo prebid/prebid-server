@@ -1,0 +1,14 @@
+{
+    "mockBidRequest": {
+      "id": "testid",
+      "site": {
+        "id": "test",
+        "domain": "test.com"
+      }
+    },
+    "expectedMakeRequestsErrors": [
+      {
+          "value": "No impression in the bid request",
+          "comparison": "literal"
+      }]
+  }
