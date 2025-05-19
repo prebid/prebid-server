@@ -4,7 +4,11 @@
   "description": "A schema which validates params accepted by the Matterfull adapter",
   "type": "object",
   "properties": {
+<<<<<<< HEAD
     "pid": {
+=======
+    "pubid": {
+>>>>>>> da4549a5 (New Adapter: Matterfull)
       "type": "string",
       "description": "An id used to identify Matterfull publisher.",
       "minLength": 20

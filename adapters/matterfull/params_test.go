@@ -38,7 +38,11 @@ var validParams = []string{
 }
 
 var invalidParams = []string{
+<<<<<<< HEAD
 	`{"publisher": "34563434"}`,
+=======
+	`{"publisher": "19f1b372c7548ec1fe734d2c9f8dc688"}`,
+>>>>>>> da4549a5 (New Adapter: Matterfull)
 	`nil`,
 	``,
 	`[]`,

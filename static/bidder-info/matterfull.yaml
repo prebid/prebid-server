@@ -1,6 +1,10 @@
+<<<<<<< HEAD
 endpoint: "https://prebid.matterfull.co/?uqhash={{.PublisherID}}"
 openrtb:
   version: 2.6
+=======
+endpoint: "http://us.matterfull.co/?uqhash={{.PublisherID}}"
+>>>>>>> da4549a5 (New Adapter: Matterfull)
 geoscope:
   - USA
 maintainer:
