@@ -38,7 +38,7 @@ var validParams = []string{
 }
 
 var invalidParams = []string{
-	`{"publisher": "19f1b372c7548ec1fe734d2c9f8dc688"}`,
+	`{"publisher": "34563434"}`,
 	`nil`,
 	``,
 	`[]`,
