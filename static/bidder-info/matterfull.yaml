@@ -1,0 +1,14 @@
+endpoint: "http://us.matterfull.co/?uqhash={{.PublisherID}}"
+geoscope:
+  - USA
+maintainer:
+  email: "prebid_support@bematterfull.com"
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
+  app:
+    mediaTypes:
+      - banner
+      - video
