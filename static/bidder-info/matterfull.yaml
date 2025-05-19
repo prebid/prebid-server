@@ -1,4 +1,4 @@
-endpoint: "http://us.matterfull.co/?uqhash={{.PublisherID}}"
+endpoint: "https://prebid.matterfull.co/?uqhash={{.PublisherID}}"
 geoscope:
   - USA
 maintainer:
