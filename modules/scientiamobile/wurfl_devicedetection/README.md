@@ -38,7 +38,7 @@ The module identifies publishers through the following fields:
 ### Build prerequisites
 
 To build the WURFL module, you need to install the WURFL Infuze from ScientiaMobile.
-For more details, visit: [ScientiaMobile WURFL Infuze](https://www.scientiamobile.com/products/wurfl-infuze/).
+For more details, visit: [ScientiaMobile WURFL Infuze](https://docs.scientiamobile.com/documentation/infuze/infuze-c-api-user-guide).
 
 #### Note
 
