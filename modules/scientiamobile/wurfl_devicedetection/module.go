@@ -10,6 +10,7 @@ import (
 	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
 	"github.com/prebid/prebid-server/v3/hooks/hookstage"
 	"github.com/prebid/prebid-server/v3/modules/moduledeps"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"github.com/tidwall/sjson"
 )
 
@@ -165,7 +166,7 @@ func getOrtb2Device(payload []byte) (openrtb2.Device, error) {
 	if t != jsonparser.Object {
 		return device, fmt.Errorf("expecting Object, got %s", t)
 	}
-	err = json.Unmarshal(b, &device)
+	err = jsonutil.Unmarshal(b, &device)
 	return device, err
 }
 
