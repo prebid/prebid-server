@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 const (
@@ -72,7 +74,7 @@ func (wd wurflData) WurflIDToJSON() ([]byte, error) {
 		return nil, fmt.Errorf("WURFL ID does not exits")
 	}
 	m[wurflID] = v
-	return json.Marshal(m)
+	return jsonutil.Marshal(m)
 }
 
 // MarshalJSON customizes the JSON marshaling for wurflData
@@ -81,5 +83,5 @@ func (wd wurflData) MarshalJSON() ([]byte, error) {
 	for k, v := range wd {
 		m[k] = v
 	}
-	return json.Marshal(m)
+	return jsonutil.Marshal(m)
 }
