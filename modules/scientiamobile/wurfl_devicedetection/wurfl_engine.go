@@ -110,8 +110,9 @@ func (e *wurflEngine) validate() error {
 		resolutionHeightCapKey,
 		resolutionWidthCapKey,
 	}
+	m := map[string]struct{}{}
 	for _, val := range e.caps {
-		m[val] = true
+		m[val] = struct{}{}
 	}
 	missed := []string{}
 	for _, val := range requiredCaps {
