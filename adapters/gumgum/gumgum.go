@@ -137,6 +137,13 @@ func preprocess(imp *openrtb2.Imp) (*openrtb_ext.ExtImpGumGum, error) {
 		return nil, err
 	}
 
+	var fullExt openrtb_ext.ImpExtGumGum
+	if err := json.Unmarshal(imp.Ext, &fullExt); err == nil {
+		if fullExt.Prebid.AdUnitCode != "" {
+			imp.TagID = fullExt.Prebid.AdUnitCode
+		}
+	}
+
 	var gumgumExt openrtb_ext.ExtImpGumGum
 	if err := jsonutil.Unmarshal(bidderExt.Bidder, &gumgumExt); err != nil {
 		err = &errortypes.BadInput{
@@ -145,21 +152,47 @@ func preprocess(imp *openrtb2.Imp) (*openrtb_ext.ExtImpGumGum, error) {
 		return nil, err
 	}
 
-    // Extract adunitcode from imp.Ext
-    var adUnitCode string
-    var extMap map[string]interface{}
-    if err := json.Unmarshal(imp.Ext, &extMap); err == nil {
-    	if prebid, ok := extMap["prebid"].(map[string]interface{}); ok {
-    		if value, ok := prebid["adunitcode"].(string); ok {
-    			adUnitCode = value
-    		}
-    	}
-    }
+// Retain the `prebid` field in the `imp.Ext` object
+// 	extMap := map[string]interface{}{}
+// 	if err := json.Unmarshal(imp.Ext, &extMap); err == nil {
+// 		if prebid, ok := extMap["prebid"]; ok {
+// 			extMap["prebid"] = prebid
+// 		}
+// 		if bidder, ok := extMap["bidder"]; ok {
+// 			extMap["bidder"] = bidder
+// 		}
+// 		newExt, err := json.Marshal(extMap)
+// 		if err == nil {
+// 			imp.Ext = newExt
+// 		}
+// 	}
 
-    // Set adunitcode to imp.TagID
-    if adUnitCode != "" {
-    	imp.TagID = adUnitCode
-    }
+extMap := map[string]interface{}{}
+	if err := json.Unmarshal(imp.Ext, &extMap); err == nil {
+		if gumgumExt.Product != "" {
+			extMap["product"] = gumgumExt.Product
+		}
+		newExt, err := json.Marshal(extMap)
+		if err == nil {
+			imp.Ext = newExt
+		}
+	}
+
+    // Extract adunitcode from imp.Ext
+//     var adUnitCode string
+//     var extMap map[string]interface{}
+//     if err := json.Unmarshal(imp.Ext, &extMap); err == nil {
+//     	if prebid, ok := extMap["prebid"].(map[string]interface{}); ok {
+//     		if value, ok := prebid["adunitcode"].(string); ok {
+//     			adUnitCode = value
+//     		}
+//     	}
+//     }
+//
+//     // Set adunitcode to imp.TagID
+//     if adUnitCode != "" {
+//     	imp.TagID = adUnitCode
+//     }
 
 	if imp.Banner != nil && imp.Banner.W == nil && imp.Banner.H == nil && len(imp.Banner.Format) > 0 {
 		bannerCopy := *imp.Banner
