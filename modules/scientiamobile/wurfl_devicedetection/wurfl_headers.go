@@ -69,15 +69,24 @@ func makeHeaders(ortb2Device openrtb2.Device, rawHeaders map[string]string) map[
 }
 
 func makeBrandList(brandVersions []openrtb2.BrandVersion) string {
-	var result []string
+	var builder strings.Builder
+	first := true
 	for _, version := range brandVersions {
 		if version.Brand == "" {
 			continue
 		}
+		if !first {
+			builder.WriteString(", ")
+		}
+		first = false
+
 		brandName := escapeClientHintField(version.Brand)
-		result = append(result, fmt.Sprintf("%s;v=\"%s\"", brandName, strings.Join(version.Version, ".")))
+		builder.WriteString(brandName)
+		builder.WriteString(`;v="`)
+		builder.WriteString(strings.Join(version.Version, "."))
+		builder.WriteString(`"`)
 	}
-	return strings.Join(result, ", ")
+	return builder.String()
 }
 
 func escapeClientHintField(value string) string {
