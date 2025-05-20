@@ -2,6 +2,7 @@ package wurfl_devicedetection
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -11,6 +12,8 @@ import (
 const (
 	wurflID = "wurfl_id"
 )
+
+var ErrWURFLIDNotExist = errors.New("WURFL ID does not exist")
 
 // declare conformity with json.Marshaler interface
 var _ json.Marshaler = wurflData{}
@@ -71,7 +74,7 @@ func (wd wurflData) WurflIDToJSON() ([]byte, error) {
 	m := make(map[string]string)
 	v, ok := wd[wurflID]
 	if !ok {
-		return nil, fmt.Errorf("WURFL ID does not exits")
+		return nil, ErrWURFLIDNotExist
 	}
 	m[wurflID] = v
 	return jsonutil.Marshal(m)
