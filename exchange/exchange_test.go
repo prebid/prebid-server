@@ -2432,11 +2432,6 @@ func newExchangeForTests(t *testing.T, filename string, aliases map[string]strin
 		bidderToSyncerKey[string(bidderName)] = string(bidderName)
 	}
 
-	gdprDefaultValue := gdpr.SignalYes
-	if privacyConfig.GDPR.DefaultValue == "0" {
-		gdprDefaultValue = gdpr.SignalNo
-	}
-
 	var hostSChainNode *openrtb2.SupplyChainNode
 	if exSpec.HostSChainFlag {
 		hostSChainNode = &openrtb2.SupplyChainNode{
@@ -2467,7 +2462,6 @@ func newExchangeForTests(t *testing.T, filename string, aliases map[string]strin
 		cache:                    &wellBehavedCache{},
 		cacheTime:                0,
 		currencyConverter:        currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
-		gdprDefaultValue:         gdprDefaultValue,
 		gdprPermsBuilder:         gdprPermsBuilder,
 		privacyConfig:            privacyConfig,
 		categoriesFetcher:        categoriesFetcher,

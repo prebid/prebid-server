@@ -25,6 +25,7 @@ import (
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/exchange"
+	"github.com/prebid/prebid-server/v3/gdpr"
 	"github.com/prebid/prebid-server/v3/hooks"
 	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
 	"github.com/prebid/prebid-server/v3/hooks/hookstage"
@@ -221,6 +222,7 @@ func TestAMPPageInfo(t *testing.T) {
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
+		fakeAnalyticsPolicy{allow: true}.Builder,
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -2501,4 +2503,19 @@ func TestAmpAuctionDebugWarningsOnly(t *testing.T) {
 
 		assert.Equal(t, test.expectedWarnings, response.ORTB2.Ext.Warnings)
 	}
+}
+
+
+
+type fakeAnalyticsPolicy struct {
+	allow bool
+	cfg gdpr.TCF2ConfigReader
+}
+func (ap fakeAnalyticsPolicy) Allow(name string) bool {
+	return ap.allow
+}
+func (ap fakeAnalyticsPolicy) SetContext(ctx context.Context) {}
+
+func (ap fakeAnalyticsPolicy) Builder(_ gdpr.TCF2ConfigReader, _ gdpr.Signal, _ string) gdpr.PrivacyPolicy {
+	return ap
 }

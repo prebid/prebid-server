@@ -1,6 +1,7 @@
 package build
 
 import (
+	"github.com/prebid/prebid-server/v3/gdpr"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/iputil"
 
@@ -26,7 +27,7 @@ func TestSampleModule(t *testing.T) {
 		RequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: getDefaultBidRequest()},
 		Errors:         nil,
 		Response:       &openrtb2.BidResponse{},
-	}, privacy.ActivityControl{})
+	}, privacy.ActivityControl{}, &gdpr.AllowAllAnalytics{})
 	if count != 1 {
 		t.Errorf("PBSAnalyticsModule failed at LogAuctionObject")
 	}
@@ -37,22 +38,22 @@ func TestSampleModule(t *testing.T) {
 		UID:     "uid",
 		Errors:  nil,
 		Success: true,
-	})
+	}, privacy.ActivityControl{}, &gdpr.AllowAllAnalytics{})
 	if count != 2 {
 		t.Errorf("PBSAnalyticsModule failed at LogSetUIDObject")
 	}
 
-	am.LogCookieSyncObject(&analytics.CookieSyncObject{})
+	am.LogCookieSyncObject(&analytics.CookieSyncObject{}, privacy.ActivityControl{}, &gdpr.AllowAllAnalytics{})
 	if count != 3 {
 		t.Errorf("PBSAnalyticsModule failed at LogCookieSyncObject")
 	}
 
-	am.LogAmpObject(&analytics.AmpObject{RequestWrapper: &openrtb_ext.RequestWrapper{}}, privacy.ActivityControl{})
+	am.LogAmpObject(&analytics.AmpObject{RequestWrapper: &openrtb_ext.RequestWrapper{}}, privacy.ActivityControl{}, &gdpr.AllowAllAnalytics{})
 	if count != 4 {
 		t.Errorf("PBSAnalyticsModule failed at LogAmpObject")
 	}
 
-	am.LogVideoObject(&analytics.VideoObject{RequestWrapper: &openrtb_ext.RequestWrapper{}}, privacy.ActivityControl{})
+	am.LogVideoObject(&analytics.VideoObject{RequestWrapper: &openrtb_ext.RequestWrapper{}}, privacy.ActivityControl{}, &gdpr.AllowAllAnalytics{})
 	if count != 5 {
 		t.Errorf("PBSAnalyticsModule failed at LogVideoObject")
 	}
@@ -204,17 +205,17 @@ func TestSampleModuleActivitiesAllowed(t *testing.T) {
 		Response:       &openrtb2.BidResponse{},
 	}
 
-	am.LogAuctionObject(ao, acAllowed)
+	am.LogAuctionObject(ao, acAllowed, &gdpr.AllowAllAnalytics{})
 	if count != 1 {
 		t.Errorf("PBSAnalyticsModule failed at LogAuctionObject")
 	}
 
-	am.LogAmpObject(&analytics.AmpObject{RequestWrapper: &openrtb_ext.RequestWrapper{}}, acAllowed)
+	am.LogAmpObject(&analytics.AmpObject{RequestWrapper: &openrtb_ext.RequestWrapper{}}, acAllowed, &gdpr.AllowAllAnalytics{})
 	if count != 2 {
 		t.Errorf("PBSAnalyticsModule failed at LogAmpObject")
 	}
 
-	am.LogVideoObject(&analytics.VideoObject{RequestWrapper: &openrtb_ext.RequestWrapper{}}, acAllowed)
+	am.LogVideoObject(&analytics.VideoObject{RequestWrapper: &openrtb_ext.RequestWrapper{}}, acAllowed, &gdpr.AllowAllAnalytics{})
 	if count != 3 {
 		t.Errorf("PBSAnalyticsModule failed at LogVideoObject")
 	}
@@ -239,17 +240,17 @@ func TestSampleModuleActivitiesAllowedAndDenied(t *testing.T) {
 		Response:       &openrtb2.BidResponse{},
 	}
 
-	am.LogAuctionObject(ao, acAllowed)
+	am.LogAuctionObject(ao, acAllowed, &gdpr.AllowAllAnalytics{})
 	if count != 1 {
 		t.Errorf("PBSAnalyticsModule failed at LogAuctionObject")
 	}
 
-	am.LogAmpObject(&analytics.AmpObject{RequestWrapper: rw}, acAllowed)
+	am.LogAmpObject(&analytics.AmpObject{RequestWrapper: rw}, acAllowed, &gdpr.AllowAllAnalytics{})
 	if count != 2 {
 		t.Errorf("PBSAnalyticsModule failed at LogAmpObject")
 	}
 
-	am.LogVideoObject(&analytics.VideoObject{RequestWrapper: rw}, acAllowed)
+	am.LogVideoObject(&analytics.VideoObject{RequestWrapper: rw}, acAllowed, &gdpr.AllowAllAnalytics{})
 	if count != 3 {
 		t.Errorf("PBSAnalyticsModule failed at LogVideoObject")
 	}
@@ -272,17 +273,17 @@ func TestSampleModuleActivitiesDenied(t *testing.T) {
 		Response: &openrtb2.BidResponse{},
 	}
 
-	am.LogAuctionObject(ao, acDenied)
+	am.LogAuctionObject(ao, acDenied, &gdpr.AllowAllAnalytics{})
 	if count != 0 {
 		t.Errorf("PBSAnalyticsModule failed at LogAuctionObject")
 	}
 
-	am.LogAmpObject(&analytics.AmpObject{}, acDenied)
+	am.LogAmpObject(&analytics.AmpObject{}, acDenied, &gdpr.AllowAllAnalytics{})
 	if count != 0 {
 		t.Errorf("PBSAnalyticsModule failed at LogAmpObject")
 	}
 
-	am.LogVideoObject(&analytics.VideoObject{}, acDenied)
+	am.LogVideoObject(&analytics.VideoObject{}, acDenied, &gdpr.AllowAllAnalytics{})
 	if count != 0 {
 		t.Errorf("PBSAnalyticsModule failed at LogVideoObject")
 	}
@@ -532,19 +533,19 @@ func TestLogObject(t *testing.T) {
 			var loggedBidReq1, loggedBidReq2 *openrtb2.BidRequest
 			switch {
 			case test.givenAuctionObject != nil:
-				test.givenEnabledAnalytics.LogAuctionObject(test.givenAuctionObject, ac)
+				test.givenEnabledAnalytics.LogAuctionObject(test.givenAuctionObject, ac, &gdpr.AllowAllAnalytics{})
 				loggedBidReq1 = test.givenEnabledAnalytics["adapter1"].(*mockAnalytics).lastLoggedAuctionBidRequest
 				if len(test.givenEnabledAnalytics) == 2 {
 					loggedBidReq2 = test.givenEnabledAnalytics["adapter2"].(*mockAnalytics).lastLoggedAuctionBidRequest
 				}
 			case test.givenAmpObject != nil:
-				test.givenEnabledAnalytics.LogAmpObject(test.givenAmpObject, ac)
+				test.givenEnabledAnalytics.LogAmpObject(test.givenAmpObject, ac, &gdpr.AllowAllAnalytics{})
 				loggedBidReq1 = test.givenEnabledAnalytics["adapter1"].(*mockAnalytics).lastLoggedAmpBidRequest
 				if len(test.givenEnabledAnalytics) == 2 {
 					loggedBidReq2 = test.givenEnabledAnalytics["adapter2"].(*mockAnalytics).lastLoggedAmpBidRequest
 				}
 			case test.givenVideoObject != nil:
-				test.givenEnabledAnalytics.LogVideoObject(test.givenVideoObject, ac)
+				test.givenEnabledAnalytics.LogVideoObject(test.givenVideoObject, ac, &gdpr.AllowAllAnalytics{})
 				loggedBidReq1 = test.givenEnabledAnalytics["unknownAdapter"].(*mockAnalytics).lastLoggedVideoBidRequest
 			}
 
