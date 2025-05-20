@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"strconv"
 
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
@@ -82,9 +83,5 @@ func (wd wurflData) WurflIDToJSON() ([]byte, error) {
 
 // MarshalJSON customizes the JSON marshaling for wurflData
 func (wd wurflData) MarshalJSON() ([]byte, error) {
-	m := make(map[string]string)
-	for k, v := range wd {
-		m[k] = v
-	}
-	return jsonutil.Marshal(m)
+	return jsonutil.Marshal(maps.Clone(map[string]string(wd)))
 }
