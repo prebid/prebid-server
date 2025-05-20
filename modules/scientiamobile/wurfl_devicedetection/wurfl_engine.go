@@ -107,10 +107,9 @@ func (e *wurflEngine) validate() error {
 		isTabletCapKey,
 		modelNameCapKey,
 		physicalFormFactorCapKey,
-		resolutionWidthCapKey,
+		resolutionHeightCapKey,
 		resolutionWidthCapKey,
 	}
-	m := map[string]bool{}
 	for _, val := range e.caps {
 		m[val] = true
 	}
