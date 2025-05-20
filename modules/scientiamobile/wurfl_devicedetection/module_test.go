@@ -33,7 +33,7 @@ func TestBuilder(t *testing.T) {
 			validate: func(t *testing.T, module interface{}) {
 				m, ok := module.(Module)
 				assert.True(t, ok, "Module type assertion failed")
-				assert.Equal(t, map[string]bool{"pub1": true, "pub2": true}, m.allowedPublisherIDs)
+				assert.Equal(t, map[string]struct{}{"pub1": {}, "pub2": {}}, m.allowedPublisherIDs)
 				assert.True(t, m.extCaps)
 				assert.NotNil(t, m.we)
 			},
@@ -73,7 +73,7 @@ func TestHandleEntrypointHook(t *testing.T) {
 		{
 			name: "Publisher allowed with headers",
 			module: Module{
-				allowedPublisherIDs: map[string]bool{"pub1": true},
+				allowedPublisherIDs: map[string]struct{}{"pub1": {}},
 			},
 			payload: hookstage.EntrypointPayload{
 				Body: []byte(`{"site":{"publisher":{"id":"pub1"}}}`),
@@ -95,7 +95,7 @@ func TestHandleEntrypointHook(t *testing.T) {
 		{
 			name: "Publisher not allowed",
 			module: Module{
-				allowedPublisherIDs: map[string]bool{"pub1": true},
+				allowedPublisherIDs: map[string]struct{}{"pub1": {}},
 			},
 			payload: hookstage.EntrypointPayload{
 				Body: []byte(`{"site":{"publisher":{"id":"pub2"}}}`),
@@ -111,7 +111,7 @@ func TestHandleEntrypointHook(t *testing.T) {
 		{
 			name: "No publisher ID in payload",
 			module: Module{
-				allowedPublisherIDs: map[string]bool{"pub1": true},
+				allowedPublisherIDs: map[string]struct{}{"pub1": {}},
 			},
 			payload: hookstage.EntrypointPayload{
 				Body: []byte(`{}`),
@@ -127,7 +127,7 @@ func TestHandleEntrypointHook(t *testing.T) {
 		{
 			name: "Nil Request, publisher allowed",
 			module: Module{
-				allowedPublisherIDs: map[string]bool{"pub1": true},
+				allowedPublisherIDs: map[string]struct{}{"pub1": {}},
 			},
 			payload: hookstage.EntrypointPayload{
 				Body:    []byte(`{"site":{"publisher":{"id":"pub1"}}}`),
@@ -161,7 +161,7 @@ func TestHandleEntrypointHook(t *testing.T) {
 		{
 			name: "Malformed payload",
 			module: Module{
-				allowedPublisherIDs: map[string]bool{"pub1": true},
+				allowedPublisherIDs: map[string]struct{}{"pub1": {}},
 			},
 			payload: hookstage.EntrypointPayload{
 				Body: []byte(`{"site":{"publisher": `),
@@ -177,7 +177,7 @@ func TestHandleEntrypointHook(t *testing.T) {
 		{
 			name: "Empty headers",
 			module: Module{
-				allowedPublisherIDs: map[string]bool{"pub1": true},
+				allowedPublisherIDs: map[string]struct{}{"pub1": {}},
 			},
 			payload: hookstage.EntrypointPayload{
 				Body:    []byte(`{"site":{"publisher":{"id":"pub1"}}}`),
@@ -435,7 +435,7 @@ func TestIsPublisherAllowed(t *testing.T) {
 		{
 			name: "Allowed publisher - site.publisher.id",
 			module: Module{
-				allowedPublisherIDs: map[string]bool{"pub1": true},
+				allowedPublisherIDs: map[string]struct{}{"pub1": {}},
 			},
 			payload:  []byte(`{"site":{"publisher":{"id":"pub1"}}}`),
 			expected: true,
@@ -443,7 +443,7 @@ func TestIsPublisherAllowed(t *testing.T) {
 		{
 			name: "Disallowed publisher - site.publisher.id",
 			module: Module{
-				allowedPublisherIDs: map[string]bool{"pub1": true},
+				allowedPublisherIDs: map[string]struct{}{"pub1": {}},
 			},
 			payload:  []byte(`{"site":{"publisher":{"id":"pub2"}}}`),
 			expected: false,
@@ -451,7 +451,7 @@ func TestIsPublisherAllowed(t *testing.T) {
 		{
 			name: "Allowed publisher - app.publisher.id",
 			module: Module{
-				allowedPublisherIDs: map[string]bool{"pub3": true},
+				allowedPublisherIDs: map[string]struct{}{"pub3": {}},
 			},
 			payload:  []byte(`{"app":{"publisher":{"id":"pub3"}}}`),
 			expected: true,
@@ -459,7 +459,7 @@ func TestIsPublisherAllowed(t *testing.T) {
 		{
 			name: "Disallowed publisher - app.publisher.id",
 			module: Module{
-				allowedPublisherIDs: map[string]bool{"pub3": true},
+				allowedPublisherIDs: map[string]struct{}{"pub3": {}},
 			},
 			payload:  []byte(`{"app":{"publisher":{"id":"pub4"}}}`),
 			expected: false,
@@ -467,7 +467,7 @@ func TestIsPublisherAllowed(t *testing.T) {
 		{
 			name: "Allowed publisher - dooh.publisher.id",
 			module: Module{
-				allowedPublisherIDs: map[string]bool{"pub5": true},
+				allowedPublisherIDs: map[string]struct{}{"pub5": {}},
 			},
 			payload:  []byte(`{"dooh":{"publisher":{"id":"pub5"}}}`),
 			expected: true,
@@ -475,7 +475,7 @@ func TestIsPublisherAllowed(t *testing.T) {
 		{
 			name: "Disallowed publisher - dooh.publisher.id",
 			module: Module{
-				allowedPublisherIDs: map[string]bool{"pub5": true},
+				allowedPublisherIDs: map[string]struct{}{"pub5": {}},
 			},
 			payload:  []byte(`{"dooh":{"publisher":{"id":"pub6"}}}`),
 			expected: false,
@@ -483,7 +483,7 @@ func TestIsPublisherAllowed(t *testing.T) {
 		{
 			name: "Empty payload - no publisher ID",
 			module: Module{
-				allowedPublisherIDs: map[string]bool{"pub1": true},
+				allowedPublisherIDs: map[string]struct{}{"pub1": {}},
 			},
 			payload:  []byte(`{}`),
 			expected: false,
@@ -499,7 +499,7 @@ func TestIsPublisherAllowed(t *testing.T) {
 		{
 			name: "Malformed JSON - no publisher ID",
 			module: Module{
-				allowedPublisherIDs: map[string]bool{"pub1": true},
+				allowedPublisherIDs: map[string]struct{}{"pub1": {}},
 			},
 			payload:  []byte(`{"site":{"publisher":{}}`), // Missing closing braces
 			expected: false,

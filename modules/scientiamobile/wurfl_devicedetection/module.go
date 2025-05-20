@@ -47,9 +47,9 @@ func Builder(configRaw json.RawMessage, _ moduledeps.ModuleDeps) (interface{}, e
 		extCaps: cfg.ExtCaps,
 	}
 	if len(cfg.AllowedPublisherIDs) > 0 {
-		m.allowedPublisherIDs = make(map[string]bool, len(cfg.AllowedPublisherIDs))
+		m.allowedPublisherIDs = make(map[string]struct{}, len(cfg.AllowedPublisherIDs))
 		for _, v := range cfg.AllowedPublisherIDs {
-			m.allowedPublisherIDs[v] = true
+			m.allowedPublisherIDs[v] = struct{}{}
 		}
 	}
 	return m, nil
@@ -58,7 +58,7 @@ func Builder(configRaw json.RawMessage, _ moduledeps.ModuleDeps) (interface{}, e
 // Module must implement at least 1 hook interface.
 type Module struct {
 	we                  wurflDeviceDetection
-	allowedPublisherIDs map[string]bool
+	allowedPublisherIDs map[string]struct{}
 	extCaps             bool
 }
 
