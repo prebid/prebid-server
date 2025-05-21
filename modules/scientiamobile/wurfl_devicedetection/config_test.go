@@ -18,14 +18,12 @@ func TestNewConfig(t *testing.T) {
 			name: "Valid config with default cache size",
 			input: json.RawMessage(`{
 				"wurfl_snapshot_url": "http://example.com/wurfl-data",
-				"wurfl_file_dir_path": "/tmp/wurfl",
-				"wurfl_run_updater": false 
+				"wurfl_file_path": "/tmp/wurfl.zip"
 			}`),
 			expectedErr: false,
 			validate: func(t *testing.T, cfg config) {
 				assert.Equal(t, "http://example.com/wurfl-data", cfg.WURFLSnapshotURL)
-				assert.Equal(t, "/tmp/wurfl", cfg.WURFLFileDirPath)
-				assert.False(t, *cfg.WURFLRunUpdater)
+				assert.Equal(t, "/tmp/wurfl.zip", cfg.WURFLFilePath)
 				assert.Equal(t, defaultCacheSize, cfg.WURFLEngineCacheSize())
 			},
 		},
@@ -33,44 +31,32 @@ func TestNewConfig(t *testing.T) {
 			name: "Valid config with custom cache size",
 			input: json.RawMessage(`{
 				"wurfl_snapshot_url": "http://example.com/wurfl-data",
-				"wurfl_file_dir_path": "/tmp/wurfl",
+				"wurfl_file_path": "/tmp/wurfl.zip",
 				"wurfl_cache_size": 5000,
 				"wurfl_run_updater": true
 			}`),
 			expectedErr: false,
 			validate: func(t *testing.T, cfg config) {
 				assert.Equal(t, "5000", cfg.WURFLEngineCacheSize())
-				assert.True(t, *cfg.WURFLRunUpdater)
 			},
 		},
 		{
 			name: "Invalid config - missing wurfl_snapshot_url",
 			input: json.RawMessage(`{
-				"wurfl_file_dir_path": "/tmp/wurfl",
-			}`),
-			expectedErr: true,
-		},
-		{
-			name: "Invalid config - missing wurfl_file_dir_path",
-			input: json.RawMessage(`{
-				"wurfl_snapshot_url": "http://example.com/wurfl-data",
-			}`),
-			expectedErr: true,
-		},
-		{
-			name: "Default wurfl_run_updater",
-			input: json.RawMessage(`{
-				"wurfl_snapshot_url": "http://example.com/wurfl-data",
-				"wurfl_file_dir_path": "/tmp/wurfl"
+				"wurfl_file_path": "/tmp/wurfl"
 			}`),
 			expectedErr: false,
-			validate: func(t *testing.T, cfg config) {
-				assert.Nil(t, cfg.WURFLRunUpdater)
-			},
+		},
+		{
+			name: "Invalid config - missing wurfl_file_path",
+			input: json.RawMessage(`{
+				"wurfl_snapshot_url": "http://example.com/wurfl-data"
+			}`),
+			expectedErr: true,
 		},
 		{
 			name:        "Invalid config - malformed JSON",
-			input:       json.RawMessage(`{ "wurfl_snapshot_url": "http://example.com/wurfl-data", "wurfl_file_dir_path": "/tmp/wurfl",`), // Malformed JSON
+			input:       json.RawMessage(`{ "wurfl_snapshot_url": "http://example.com/wurfl-data", "wurfl_file_path": "/tmp/wurfl",`), // Malformed JSON
 			expectedErr: true,
 		},
 		{
@@ -97,15 +83,6 @@ func TestNewConfig(t *testing.T) {
 	}
 }
 
-func TestWURFLFilePath(t *testing.T) {
-	cfg := config{
-		WURFLFileDirPath: "/tmp/wurfl",
-		WURFLSnapshotURL: "http://example.com/wurfl-data/wurfl.zip",
-	}
-	expectedPath := "/tmp/wurfl/wurfl.zip"
-	assert.Equal(t, expectedPath, cfg.WURFLFilePath())
-}
-
 func TestValidate(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -116,19 +93,12 @@ func TestValidate(t *testing.T) {
 			name: "Valid config",
 			cfg: config{
 				WURFLSnapshotURL: "http://example.com/wurfl-data",
-				WURFLFileDirPath: "/tmp/wurfl",
+				WURFLFilePath:    "/tmp/wurfl.zip",
 			},
 			expectedErr: false,
 		},
 		{
-			name: "Invalid config - missing wurfl_snapshot_url",
-			cfg: config{
-				WURFLFileDirPath: "/tmp/wurfl",
-			},
-			expectedErr: true,
-		},
-		{
-			name: "Invalid config - missing wurfl_file_dir_path",
+			name: "Invalid config - missing wurfl_file_path",
 			cfg: config{
 				WURFLSnapshotURL: "http://example.com/wurfl-data",
 			},

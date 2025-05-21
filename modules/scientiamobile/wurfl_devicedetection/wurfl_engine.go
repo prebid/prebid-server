@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	wurfl "github.com/WURFL/golang-wurfl"
+	"github.com/golang/glog"
 )
 
 // declare conformity with  wurflDeviceDetection interface
@@ -14,11 +15,7 @@ var _ wurflDeviceDetection = (*wurflEngine)(nil)
 
 // newWurflEngine creates a new Enricher
 func newWurflEngine(c config) (wurflDeviceDetection, error) {
-	err := wurfl.Download(c.WURFLSnapshotURL, c.WURFLFileDirPath)
-	if err != nil {
-		return nil, err
-	}
-	wengine, err := wurfl.Create(c.WURFLFilePath(),
+	wengine, err := wurfl.Create(c.WURFLFilePath,
 		nil,
 		nil,
 		-1,
@@ -27,24 +24,6 @@ func newWurflEngine(c config) (wurflDeviceDetection, error) {
 	)
 	if err != nil {
 		return nil, err
-	}
-
-	if c.WURFLRunUpdater == nil || *c.WURFLRunUpdater {
-		uerr := wengine.SetUpdaterDataURL(c.WURFLSnapshotURL)
-		if uerr != nil {
-			return nil, fmt.Errorf("could not set WURFL Updater Snapshot URL: %sn", uerr.Error())
-		}
-
-		uerr = wengine.SetUpdaterDataFrequency(wurfl.WurflUpdaterFrequencyDaily)
-		if uerr != nil {
-			return nil, fmt.Errorf("could not set the WURFL Updater frequency: %s", uerr.Error())
-		}
-
-		uerr = wengine.UpdaterStart()
-		if uerr != nil {
-			return nil, fmt.Errorf("could not start the WURFL Updater: %s", uerr.Error())
-		}
-
 	}
 
 	caps := wengine.GetAllCaps()
@@ -58,6 +37,8 @@ func newWurflEngine(c config) (wurflDeviceDetection, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	e.startUpdater(c.WURFLSnapshotURL)
 
 	return e, nil
 }
@@ -94,6 +75,30 @@ func (e *wurflEngine) DeviceDetection(headers map[string]string) (wurflData, err
 	}
 	wurflData[wurflID] = wurflDeviceID
 	return wurflData, nil
+}
+
+func (e *wurflEngine) startUpdater(snapshotURL string) {
+	if snapshotURL == "" {
+		return
+	}
+
+	err := e.wengine.SetUpdaterDataURL(snapshotURL)
+	if err != nil {
+		glog.Errorf("could not set WURFL Updater Snapshot URL: %s", err.Error())
+		return
+	}
+
+	err = e.wengine.SetUpdaterDataFrequency(wurfl.WurflUpdaterFrequencyDaily)
+	if err != nil {
+		glog.Errorf("could not set the WURFL Updater frequency: %s", err.Error())
+		return
+	}
+
+	err = e.wengine.UpdaterStart()
+	if err != nil {
+		glog.Errorf("could not start the WURFL Updater: %s", err.Error())
+		return
+	}
 }
 
 // validate checks if the WURFL file has all the required capabilities

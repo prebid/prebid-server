@@ -25,7 +25,7 @@ func TestBuilder(t *testing.T) {
 			name: "Valid configuration",
 			configRaw: json.RawMessage(`{
 				"wurfl_snapshot_url": "http://example.com/wurfl-data",
-				"wurfl_file_dir_path": "/tmp/wurfl",
+				"wurfl_file_path": "/tmp/wurfl.zip",
 				"allowed_publisher_ids": ["pub1", "pub2"],
 				"ext_caps": true
 			}`),

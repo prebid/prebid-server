@@ -79,9 +79,8 @@ Below is a sample configuration for the WURFL module:
       "scientiamobile": {
         "wurfl_devicedetection": {
           "enabled": true,
+          "wurfl_file_path": "/path/to/wurfl.zip",
           "wurfl_snapshot_url": "<wurfl_snapshot_url>",
-          "wurfl_file_dir_path": "/tmp",
-          "wurfl_run_updater": true,
           "wurfl_cache_size": 200000,
           "allowed_publisher_ids": ["1","3"],
           "ext_caps": true
@@ -143,9 +142,8 @@ hooks:
     scientiamobile:
       wurfl_devicedetection:
         enabled: true
+        wurfl_file_path: "/path/to/wurfl.zip"
         wurfl_snapshot_url: "<wurfl_snapshot_url>"
-        wurfl_file_dir_path: "/tmp"
-        wurfl_run_updater: true
         wurfl_cache_size: 200000
         allowed_publisher_ids:
           - "1"
@@ -173,10 +171,9 @@ hooks:
 
 | Parameter                 | Requirement | Description                                                                                           |
 |---------------------------|-------------|-------------------------------------------------------------------------------------------------------|
-| **`wurfl_file_dir_path`** | Mandatory   | Path to the directory where the WURFL file is downloaded. Directory must exist and be writable.       |
-| **`wurfl_snapshot_url`**  | Mandatory   | URL of the licensed WURFL snapshot file to be downloaded when Prebid Server Java starts.             |
+| **`wurfl_file_path`** | Mandatory   | Path to the WURFL file (e.g. /path/to/wurfl.zip). |
+| **`wurfl_snapshot_url`**  | Optional    | URL of the licensed WURFL snapshot. If set, it periodically updates the WURFL file in the `wurfl_file_path` directory, which must be writable. |
 | **`wurfl_cache_size`**    | Optional    | Maximum number of devices stored in the WURFL cache. Defaults to the WURFL cache's standard size.    |
-| **`wurfl_run_updater`**   | Optional    | Enables the WURFL updater. Defaults to no updates.                                                   |
 | **`ext_caps`**            | Optional    | If `true`, the module adds all licensed capabilities to the `device.ext` object.                     |
 | **`allowed_publisher_ids`** | Optional  | List of publisher IDs permitted to use the module. Defaults to all publishers.                       |
 
@@ -184,26 +181,34 @@ A valid WURFL license must include all the required capabilities for device enri
 
 ### Launching Prebid Server with the WURFL Module
 
-1. Download dependencies:
+1. Download dependencies
 
 ```bash
 go mod download
 ```
 
-1. Copy the sample [config file](modules/scientiamobile/wurfl_devicedetection/sample/pbs-example.json):
+2. Copy the sample [config file](modules/scientiamobile/wurfl_devicedetection/sample/pbs-example.json)
 
 ```bash
 cp modules/scientiamobile/wurfl_devicedetection/sample/pbs-example.json pbs.json
 ```
 
-1. Start the server
+3. Copy the WURFL file to `wurfl_file_path`
+
+In order for the WURFL module to work, you need a WURFL file installed on your system. The WURFL Infuze package comes with a recent evaluation copy of the WURFL file called wurfl.zip.
+
+Commercial licensees of WURFL are granted access to "The Customer Vault", a personal virtual space containing purchased software licenses and weekly updated versions of the WURFL repository.
+
+For more details, visit: [ScientiaMobile WURFL Infuze](https://docs.scientiamobile.com/documentation/infuze/infuze-c-api-user-guide).
+
+4. Start the server
 
   ```bash
   go run -tags wurfl .
 ```
 
-When the server starts, it downloads the WURFL file from the `wurfl_snapshot_url` and loads it into the module.
-Please ensure that the `wurfl_snapshot_url` is correctly configured in the configuration file.
+When the server starts, it loads the WURFL file from `wurfl_file_path` into the module.
+To enable automatic updates, ensure that `wurfl_snapshot_url` is correctly configured.
 
 Sample request data for testing is available in the module's `sample` directory.
 Using the `auction` endpoint, you can observe WURFL-enriched device data in the response.
@@ -213,7 +218,7 @@ Using the `auction` endpoint, you can observe WURFL-enriched device data in the 
 To test the WURFL module without an Infuze license:
 
 ```bash
-go run wurfl .
+go run .
 ```
 
 ### Sample Response
