@@ -52,6 +52,9 @@
           "X-Forwarded-For": [
             "127.0.0.1"
           ],
+          "X-Openrtb-Version": [
+            "2.5"
+          ],
           "X-Real-Ip": [
             "127.0.0.1"
           ],
@@ -132,6 +135,9 @@
           ],
           "X-Forwarded-For": [
             "127.0.0.1"
+          ],
+          "X-Openrtb-Version": [
+            "2.5"
           ],
           "X-Real-Ip": [
             "127.0.0.1"

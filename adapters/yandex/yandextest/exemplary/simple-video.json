@@ -39,7 +39,8 @@
                     "Referer": ["http://example.com"],
                     "User-Agent": ["Mozilla/5.0"],
                     "X-Forwarded-For": ["192.168.1.1"],
-                    "X-Real-Ip": ["192.168.1.1"]
+                    "X-Real-Ip": ["192.168.1.1"],
+                    "X-Openrtb-Version": ["2.5"]
                 },
                 "body": {
                     "id": "video-request-id",
@@ -118,4 +119,4 @@
             ]
         }
     ]
-} 
+}
