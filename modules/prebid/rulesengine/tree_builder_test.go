@@ -2,13 +2,14 @@ package rulesengine
 
 import (
 	"encoding/json"
+	"testing"
+
 	hs "github.com/prebid/prebid-server/v3/hooks/hookstage"
 	"github.com/prebid/prebid-server/v3/modules/prebid/rulesengine/config"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/rules"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestBuildTreeFullConfig(t *testing.T) {
@@ -37,10 +38,10 @@ func TestBuildTreeFullConfig(t *testing.T) {
 	assert.Equal(t, 2, len(tree.Root.Children))
 
 	assert.Equal(t, 2, len(tree.Root.Children["true"].Children))
-	assert.Equal(t, rules.DataCenterIn, tree.Root.Children["true"].SchemaFunction.Name())
+	assert.Equal(t, rules.DataCentersIn, tree.Root.Children["true"].SchemaFunction.Name())
 
 	assert.Equal(t, 1, len(tree.Root.Children["false"].Children))
-	assert.Equal(t, rules.DataCenterIn, tree.Root.Children["false"].SchemaFunction.Name())
+	assert.Equal(t, rules.DataCentersIn, tree.Root.Children["false"].SchemaFunction.Name())
 
 	assert.Equal(t, 1, len(tree.Root.Children["true"].Children["true"].Children))
 	assert.Equal(t, rules.Channel, tree.Root.Children["true"].Children["true"].SchemaFunction.Name())
