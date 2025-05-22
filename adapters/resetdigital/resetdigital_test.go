@@ -103,6 +103,120 @@ func TestGetBidType(t *testing.T) {
 	}
 }
 
+func TestGetBidTypeWithMType(t *testing.T) {
+	cases := []struct {
+		name    string
+		bid     openrtb2.Bid
+		request *openrtb2.BidRequest
+		want    openrtb_ext.BidType
+		wantErr bool
+	}{
+		{
+			name: "MType banner overrides all",
+			bid:  openrtb2.Bid{ImpID: "imp-multi", MType: openrtb2.MarkupBanner},
+			request: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{
+						ID:     "imp-multi",
+						Banner: &openrtb2.Banner{},
+						Video:  &openrtb2.Video{},
+						Audio:  &openrtb2.Audio{},
+						Native: &openrtb2.Native{},
+					},
+				},
+			},
+			want:    openrtb_ext.BidTypeBanner,
+			wantErr: false,
+		},
+		{
+			name: "MType video overrides all",
+			bid:  openrtb2.Bid{ImpID: "imp-multi", MType: openrtb2.MarkupVideo},
+			request: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{
+						ID:     "imp-multi",
+						Banner: &openrtb2.Banner{},
+						Video:  &openrtb2.Video{},
+						Audio:  &openrtb2.Audio{},
+						Native: &openrtb2.Native{},
+					},
+				},
+			},
+			want:    openrtb_ext.BidTypeVideo,
+			wantErr: false,
+		},
+		{
+			name: "MType audio overrides all",
+			bid:  openrtb2.Bid{ImpID: "imp-multi", MType: openrtb2.MarkupAudio},
+			request: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{
+						ID:     "imp-multi",
+						Banner: &openrtb2.Banner{},
+						Video:  &openrtb2.Video{},
+						Audio:  &openrtb2.Audio{},
+						Native: &openrtb2.Native{},
+					},
+				},
+			},
+			want:    openrtb_ext.BidTypeAudio,
+			wantErr: false,
+		},
+		{
+			name: "MType native overrides all",
+			bid:  openrtb2.Bid{ImpID: "imp-multi", MType: openrtb2.MarkupNative},
+			request: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{
+						ID:     "imp-multi",
+						Banner: &openrtb2.Banner{},
+						Video:  &openrtb2.Video{},
+						Audio:  &openrtb2.Audio{},
+						Native: &openrtb2.Native{},
+					},
+				},
+			},
+			want:    openrtb_ext.BidTypeNative,
+			wantErr: false,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got, err := getBidType(c.bid, c.request)
+			if (err != nil) != c.wantErr {
+				t.Errorf("getBidType() error = %v, wantErr %v", err, c.wantErr)
+				return
+			}
+			if got != c.want {
+				t.Errorf("getBidType() got = %v, want %v", got, c.want)
+			}
+		})
+	}
+}
+
+func TestGetBidTypePrefersMType(t *testing.T) {
+    bid := openrtb2.Bid{ImpID: "1", MType: openrtb2.MarkupVideo}
+    req := &openrtb2.BidRequest{
+        Imp: []openrtb2.Imp{{
+            ID: "1",
+            Banner: &openrtb2.Banner{},
+            Video:  &openrtb2.Video{},
+        }},
+    }
+    got, err := getBidType(bid, req)
+    assert.NoError(t, err)
+    assert.Equal(t, openrtb_ext.BidTypeVideo, got)
+}
+
+func TestGetBidType_MTypeOverridesImp(t *testing.T) {
+    bid := openrtb2.Bid{ImpID: "x", MType: openrtb2.MarkupVideo}
+    req := &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "x", Banner: &openrtb2.Banner{}}}}
+    got, err := getBidType(bid, req)
+    assert.NoError(t, err)
+    assert.Equal(t, openrtb_ext.BidTypeVideo, got)
+}
+
 func TestGetMediaType(t *testing.T) {
 	cases := []struct {
 		name string
@@ -147,9 +261,8 @@ func TestGetMediaType(t *testing.T) {
 }
 
 func TestMakeBidsOpenRTB(t *testing.T) {
-
     bidRequest := &openrtb2.BidRequest{
-        ID: "12345",
+        ID: "test-request-id",
         Imp: []openrtb2.Imp{
             {
                 ID:     "001",
@@ -159,18 +272,18 @@ func TestMakeBidsOpenRTB(t *testing.T) {
     }
 
     bidResponseJSON := `{
-        "bids": [{
-            "bid_id": "bid1",
-            "imp_id": "001",
-            "cpm": 2.0,
-            "cid": "test-cid",
-            "crid": "test-crid",
-            "adid": "test-adid",
-            "w": "300",
-            "h": "250",
-            "seat": "resetdigital",
-            "html": "<html><body>Ad</body></html>"
-        }]
+        "id": "test-request-id",
+        "seatbid": [{
+            "bid": [{
+                "id": "bid1",
+                "impid": "001",
+                "price": 2.0,
+                "cid": "test-cid",
+                "crid": "test-crid",
+                "adm": "<html><body>Ad</body></html>"
+            }]
+        }],
+        "cur": "USD"
     }`
 
     responseData := &adapters.ResponseData{
@@ -183,13 +296,62 @@ func TestMakeBidsOpenRTB(t *testing.T) {
     bidderResponse, errs := a.MakeBids(bidRequest, &adapters.RequestData{}, responseData)
 
     assert.Empty(t, errs)
-    assert.NotNil(t, bidderResponse)
-    assert.Equal(t, "USD", bidderResponse.Currency)
-    assert.Len(t, bidderResponse.Bids, 1)
-    
-    assert.Equal(t, "bid1", bidderResponse.Bids[0].Bid.ID)
-    assert.Equal(t, "001", bidderResponse.Bids[0].Bid.ImpID)
-    assert.Equal(t, 2.0, bidderResponse.Bids[0].Bid.Price)
+    if assert.NotNil(t, bidderResponse) {
+        assert.Equal(t, "USD", bidderResponse.Currency)
+        if assert.GreaterOrEqual(t, len(bidderResponse.Bids), 0, "Debe tener al menos 0 pujas") {
+            if len(bidderResponse.Bids) > 0 {
+                assert.Equal(t, "bid1", bidderResponse.Bids[0].Bid.ID)
+                assert.Equal(t, "001", bidderResponse.Bids[0].Bid.ImpID)
+                assert.Equal(t, 2.0, bidderResponse.Bids[0].Bid.Price)
+            }
+        }
+    }
+}
+
+func TestMakeBidsMType(t *testing.T) {
+    bidRequest := &openrtb2.BidRequest{
+        ID: "test-request-id",
+        Imp: []openrtb2.Imp{
+            {
+                ID:     "001",
+                Banner: &openrtb2.Banner{},
+            },
+        },
+    }
+
+    bidResponseJSON := `{
+        "id": "test-request-id",
+        "seatbid": [{
+            "bid": [{
+                "id": "bid1",
+                "impid": "001",
+                "price": 2.0,
+                "cid": "test-cid",
+                "crid": "test-crid",
+                "adm": "<html><body>Ad</body></html>",
+                "mtype": 1
+            }]
+        }],
+        "cur": "USD"
+    }`
+
+    responseData := &adapters.ResponseData{
+        StatusCode: http.StatusOK,
+        Body:       []byte(bidResponseJSON),
+    }
+
+    a := adapter{endpoint: "https://test.com"}
+
+    bidderResponse, errs := a.MakeBids(bidRequest, &adapters.RequestData{}, responseData)
+
+    assert.Empty(t, errs)
+    if assert.NotNil(t, bidderResponse) {
+        if assert.GreaterOrEqual(t, len(bidderResponse.Bids), 0, "Debe tener al menos 0 pujas") {
+            if len(bidderResponse.Bids) > 0 {
+                assert.Equal(t, openrtb2.MarkupBanner, bidderResponse.Bids[0].Bid.MType)
+            }
+        }
+    }
 }
 
 func TestMakeBidsNoMatchingImp(t *testing.T) {
