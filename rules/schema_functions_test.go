@@ -202,6 +202,47 @@ func TestGetUserEIDS(t *testing.T) {
 	}
 }
 
+func TestNewDeviceCountryIn(t *testing.T) {
+	testCases := []struct {
+		desc               string
+		inParams           json.RawMessage
+		outDeviceCountryIn SchemaFunction[openrtb_ext.RequestWrapper]
+		outErr             error
+	}{
+		{
+			desc:               "nil json",
+			inParams:           nil,
+			outDeviceCountryIn: nil,
+			outErr:             &errortypes.FailedToUnmarshal{Message: "expect { or n, but found \x00"},
+		},
+		{
+			desc:               "malformed json",
+			inParams:           json.RawMessage(`malformed`),
+			outDeviceCountryIn: nil,
+			outErr:             &errortypes.FailedToUnmarshal{Message: "expect { or n, but found m"},
+		},
+		{
+			desc:     "array args",
+			inParams: json.RawMessage(`{"countries":["JPN"]}`),
+			outDeviceCountryIn: &deviceCountryIn{
+				Countries: []string{"JPN"},
+				CountryDirectory: map[string]struct{}{
+					"JPN": struct{}{},
+				},
+			},
+			outErr: nil,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			deviceCountryIn, err := NewDeviceCountryIn(tc.inParams)
+
+			assert.Equal(t, tc.outDeviceCountryIn, deviceCountryIn)
+			assert.Equal(t, tc.outErr, err)
+		})
+	}
+}
+
 func TestDeviceCountryIn(t *testing.T) {
 	wrapperWithCountryCode := &openrtb_ext.RequestWrapper{
 		BidRequest: &openrtb2.BidRequest{
@@ -439,7 +480,7 @@ func TestDataCentersIn(t *testing.T) {
 		{
 			desc: "wrapper.device.geo.region not found",
 			inDataCentersIn: dataCentersIn{
-				DataCenters: []string{"Europe", "Africa"},
+				DataCenterList: []string{"Europe", "Africa"},
 			},
 			inRequestWrapper:   wrapperWithRegion,
 			expectedStringBool: "false",
@@ -447,7 +488,7 @@ func TestDataCentersIn(t *testing.T) {
 		{
 			desc: "success",
 			inDataCentersIn: dataCentersIn{
-				DataCenters: []string{"Europe", "Africa", "NorthAmerica"},
+				DataCenterList: []string{"Europe", "Africa", "NorthAmerica"},
 			},
 			inRequestWrapper:   wrapperWithRegion,
 			expectedStringBool: "true",
@@ -774,7 +815,11 @@ func TestEidIn(t *testing.T) {
 				},
 			},
 			inSchemaFunc: &eidIn{
-				eids: []string{"fooSource", "barSource"},
+				eidList: []string{"fooSource", "barSource"},
+				eidDir: map[string]struct{}{
+					"fooSource": struct{}{},
+					"barSource": struct{}{},
+				},
 			},
 			result:      "false",
 			expectedErr: errors.New("request.User.EIDs is not present in request"),
@@ -793,7 +838,8 @@ func TestEidIn(t *testing.T) {
 				},
 			},
 			inSchemaFunc: &eidIn{
-				eids: []string{},
+				eidList: []string{},
+				eidDir:  make(map[string]struct{}),
 			},
 			result:      "false",
 			expectedErr: nil,
@@ -812,7 +858,11 @@ func TestEidIn(t *testing.T) {
 				},
 			},
 			inSchemaFunc: &eidIn{
-				eids: []string{"fooSource", "barSource"},
+				eidList: []string{"fooSource", "barSource"},
+				eidDir: map[string]struct{}{
+					"fooSource": struct{}{},
+					"barSource": struct{}{},
+				},
 			},
 			result:      "false",
 			expectedErr: nil,
@@ -831,7 +881,12 @@ func TestEidIn(t *testing.T) {
 				},
 			},
 			inSchemaFunc: &eidIn{
-				eids: []string{"fooSource", "barSource", "anySource"},
+				eidList: []string{"fooSource", "barSource", "anySource"},
+				eidDir: map[string]struct{}{
+					"fooSource": struct{}{},
+					"barSource": struct{}{},
+					"anySource": struct{}{},
+				},
 			},
 			result:      "true",
 			expectedErr: nil,

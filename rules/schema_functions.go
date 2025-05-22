@@ -125,7 +125,7 @@ func (dci *deviceCountryIn) Call(wrapper *openrtb_ext.RequestWrapper) (string, e
 	}
 
 	if len(deviceGeo.Country) == 0 {
-		return "false", errors.New("request.Device.Geo.Country is not present in request")
+		return "false", nil
 	}
 
 	if _, found := dci.CountryDirectory[deviceGeo.Country]; found {
@@ -188,12 +188,26 @@ func (dci *dataCenters) Name() string {
 }
 
 type dataCentersIn struct {
-	DataCenters []string
+	DataCenterList []string
+	DataCenterDir  map[string]struct{}
 }
 
 func NewDataCentersIn(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
 	dataCenters, err := checkArgsStringList(params, DataCentersIn)
-	return &dataCentersIn{DataCenters: dataCenters}, err
+	if err != nil {
+		return nil, err
+	}
+
+	schemaFunc := &dataCentersIn{
+		DataCenterList: dataCenters,
+		DataCenterDir:  make(map[string]struct{}),
+	}
+
+	for i := 0; i < len(schemaFunc.DataCenterList); i++ {
+		schemaFunc.DataCenterDir[schemaFunc.DataCenterList[i]] = struct{}{}
+	}
+
+	return schemaFunc, nil
 }
 
 func (dc *dataCentersIn) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
@@ -206,9 +220,10 @@ func (dc *dataCentersIn) Call(wrapper *openrtb_ext.RequestWrapper) (string, erro
 		return "false", errors.New("request.Device.Geo.Region is not present in request")
 	}
 
-	if contains := slices.Contains(dc.DataCenters, deviceGeo.Region); contains {
+	if _, found := dc.DataCenterDir[deviceGeo.Region]; found {
 		return "true", nil
 	}
+
 	return "false", nil
 }
 
@@ -252,32 +267,41 @@ func (c *channel) Name() string {
 // ------------eidAvailable------------------
 
 type eidIn struct {
-	eids []string
+	eidList []string
+	eidDir  map[string]struct{}
 }
 
 // New
 func NewEidIn(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
 	eidsParam, err := checkArgsStringList(params, EidIn)
-	return &eidIn{eids: eidsParam}, err
+	if err != nil {
+		return nil, err
+	}
+
+	schemaFunc := &eidIn{
+		eidList: eidsParam,
+		eidDir:  make(map[string]struct{}),
+	}
+
+	for i := 0; i < len(schemaFunc.eidList); i++ {
+		schemaFunc.eidDir[schemaFunc.eidList[i]] = struct{}{}
+	}
+
+	return schemaFunc, nil
 }
 
 func (ei *eidIn) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
+	if len(ei.eidDir) == 0 {
+		return "false", nil
+	}
+
 	eids, err := getUserEIDS(wrapper)
 	if err != nil {
 		return "false", err
 	}
 
-	if len(ei.eids) == 0 {
-		return "false", nil
-	}
-
-	reqEidSources := map[string]struct{}{}
 	for i := 0; i < len(eids); i++ {
-		reqEidSources[eids[i].Source] = struct{}{}
-	}
-
-	for i := 0; i < len(ei.eids); i++ {
-		if _, found := reqEidSources[ei.eids[i]]; found {
+		if _, found := ei.eidDir[eids[i].Source]; found {
 			return "true", nil
 		}
 	}
