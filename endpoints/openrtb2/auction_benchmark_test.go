@@ -84,6 +84,9 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 	gdprPermsBuilder := fakePermissionsBuilder{
 		permissions: &fakePermissions{},
 	}.Builder
+	analyticsPolicyBuilder := fakeAnalyticsPolicy{
+		allow: true,
+	}.Builder
 
 	exchange := exchange.NewExchange(
 		adapters,
@@ -110,6 +113,7 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 		&config.Configuration{MaxRequestSize: maxSize},
 		nilMetrics,
 		analyticsBuild.New(&config.Analytics{}),
+		analyticsPolicyBuilder,
 		map[string]string{},
 		[]byte{},
 		nil,

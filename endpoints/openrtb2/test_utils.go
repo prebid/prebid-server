@@ -1343,7 +1343,7 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 		planBuilder = hooks.EmptyPlanBuilder{}
 	}
 
-	var endpointBuilder func(uuidutil.UUIDGenerator, exchange.Exchange, ortb.RequestValidator, stored_requests.Fetcher, stored_requests.AccountFetcher, *config.Configuration, metrics.MetricsEngine, analytics.Runner, map[string]string, []byte, map[string]openrtb_ext.BidderName, stored_requests.Fetcher, hooks.ExecutionPlanBuilder, *exchange.TmaxAdjustmentsPreprocessed) (httprouter.Handle, error)
+	var endpointBuilder func(uuidutil.UUIDGenerator, exchange.Exchange, ortb.RequestValidator, stored_requests.Fetcher, stored_requests.AccountFetcher, *config.Configuration, metrics.MetricsEngine, analytics.Runner, gdpr.PrivacyPolicyBuilder, map[string]string, []byte, map[string]openrtb_ext.BidderName, stored_requests.Fetcher, hooks.ExecutionPlanBuilder, *exchange.TmaxAdjustmentsPreprocessed) (httprouter.Handle, error)
 
 	switch test.endpointType {
 	case AMP_ENDPOINT:
@@ -1351,6 +1351,10 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 	default: //case OPENRTB_ENDPOINT:
 		endpointBuilder = NewEndpoint
 	}
+
+	analyticsPolicyBuilder := fakeAnalyticsPolicy{
+		allow: true,
+	}.Builder
 
 	endpoint, err := endpointBuilder(
 		fakeUUIDGenerator{},
@@ -1361,6 +1365,7 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 		cfg,
 		met,
 		analyticsBuild.New(&config.Analytics{}),
+		analyticsPolicyBuilder,
 		disabledBidders,
 		[]byte(test.Config.AliasJSON),
 		bidderMap,
@@ -1693,3 +1698,4 @@ func (m mockUpdateHook) HandleRawAuctionHook(
 ) (hookstage.HookResult[hookstage.RawAuctionRequestPayload], error) {
 	return hookstage.HookResult[hookstage.RawAuctionRequestPayload]{}, nil
 }
+

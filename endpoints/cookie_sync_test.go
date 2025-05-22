@@ -48,6 +48,9 @@ func TestNewCookieSyncEndpoint(t *testing.T) {
 		tcf2ConfigBuilder = fakeTCF2ConfigBuilder{
 			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 		}.Builder
+		analyticsPolicyBuilder = fakeAnalyticsPolicy{
+			allow: true,
+		}.Builder
 		configUserSync    = config.UserSync{Cooperative: config.UserSyncCooperative{EnabledByDefault: true}}
 		configHostCookie  = config.HostCookie{Family: "foo"}
 		configGDPR        = config.GDPR{HostVendorID: 42}
@@ -73,6 +76,7 @@ func TestNewCookieSyncEndpoint(t *testing.T) {
 		tcf2ConfigBuilder,
 		&metrics,
 		&analytics,
+		analyticsPolicyBuilder,
 		&fetcher,
 		bidders,
 	)
@@ -1468,8 +1472,13 @@ func TestWriteParseRequestErrorMetrics(t *testing.T) {
 	mockAnalytics.On("LogCookieSyncObject", mock.Anything)
 	writer := httptest.NewRecorder()
 
+	privacyPolicy := privacyInfo{
+		gdprAnalyticsPolicy: &gdpr.AllowAllAnalytics{},
+		activityControl: privacy.ActivityControl{},
+	}
+
 	endpoint := cookieSyncEndpoint{pbsAnalytics: &mockAnalytics}
-	endpoint.handleError(writer, err, 418)
+	endpoint.handleError(writer, err, 418, privacyPolicy)
 
 	assert.Equal(t, writer.Code, 418)
 	assert.Equal(t, writer.Body.String(), "anyError\n")
@@ -1691,8 +1700,13 @@ func TestCookieSyncHandleError(t *testing.T) {
 	mockAnalytics.On("LogCookieSyncObject", mock.Anything)
 	writer := httptest.NewRecorder()
 
+	privacyPolicy := privacyInfo{
+		gdprAnalyticsPolicy: &gdpr.AllowAllAnalytics{},
+		activityControl: privacy.ActivityControl{},
+	}
+
 	endpoint := cookieSyncEndpoint{pbsAnalytics: &mockAnalytics}
-	endpoint.handleError(writer, err, 418)
+	endpoint.handleError(writer, err, 418, privacyPolicy)
 
 	assert.Equal(t, writer.Code, 418)
 	assert.Equal(t, writer.Body.String(), "anyError\n")
@@ -1919,7 +1933,13 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 		} else {
 			bidderEval = []usersync.BidderEvaluation{}
 		}
-		endpoint.handleResponse(writer, syncTypeFilter, cookie, privacyMacros, test.givenSyncersChosen, bidderEval, test.givenDebug)
+
+		privacyPolicy := privacyInfo{
+			gdprAnalyticsPolicy: &gdpr.AllowAllAnalytics{},
+			activityControl: privacy.ActivityControl{},
+		}
+
+		endpoint.handleResponse(writer, syncTypeFilter, cookie, privacyMacros, test.givenSyncersChosen, bidderEval, privacyPolicy, test.givenDebug)
 
 		if assert.Equal(t, writer.Code, http.StatusOK, test.description+":http_status") {
 			assert.Equal(t, writer.Header().Get("Content-Type"), "application/json; charset=utf-8", test.description+":http_header")
@@ -2276,24 +2296,24 @@ type MockAnalyticsRunner struct {
 	mock.Mock
 }
 
-func (m *MockAnalyticsRunner) LogAuctionObject(obj *analytics.AuctionObject, ac privacy.ActivityControl) {
-	m.Called(obj, ac)
+func (m *MockAnalyticsRunner) LogAuctionObject(obj *analytics.AuctionObject, ac privacy.ActivityControl, pp gdpr.PrivacyPolicy) {
+	m.Called(obj, ac, pp)
 }
 
-func (m *MockAnalyticsRunner) LogVideoObject(obj *analytics.VideoObject, ac privacy.ActivityControl) {
-	m.Called(obj, ac)
+func (m *MockAnalyticsRunner) LogVideoObject(obj *analytics.VideoObject, ac privacy.ActivityControl, pp gdpr.PrivacyPolicy) {
+	m.Called(obj, ac, pp)
 }
 
-func (m *MockAnalyticsRunner) LogCookieSyncObject(obj *analytics.CookieSyncObject) {
-	m.Called(obj)
+func (m *MockAnalyticsRunner) LogCookieSyncObject(obj *analytics.CookieSyncObject, ac privacy.ActivityControl, pp gdpr.PrivacyPolicy) {
+	m.Called(obj, ac, pp)
 }
 
-func (m *MockAnalyticsRunner) LogSetUIDObject(obj *analytics.SetUIDObject) {
-	m.Called(obj)
+func (m *MockAnalyticsRunner) LogSetUIDObject(obj *analytics.SetUIDObject, ac privacy.ActivityControl, pp gdpr.PrivacyPolicy) {
+	m.Called(obj, ac, pp)
 }
 
-func (m *MockAnalyticsRunner) LogAmpObject(obj *analytics.AmpObject, ac privacy.ActivityControl) {
-	m.Called(obj, ac)
+func (m *MockAnalyticsRunner) LogAmpObject(obj *analytics.AmpObject, ac privacy.ActivityControl, pp gdpr.PrivacyPolicy) {
+	m.Called(obj, ac, pp)
 }
 
 func (m *MockAnalyticsRunner) LogNotificationEventObject(obj *analytics.NotificationEvent, ac privacy.ActivityControl) {
@@ -2354,6 +2374,19 @@ func (p *fakePermissions) AuctionActivitiesAllowed(ctx context.Context, bidderCo
 	return gdpr.AuctionPermissions{
 		AllowBidRequest: true,
 	}
+}
+
+type fakeAnalyticsPolicy struct {
+	allow bool
+	cfg gdpr.TCF2ConfigReader
+}
+func (ap fakeAnalyticsPolicy) Allow(name string) bool {
+	return ap.allow
+}
+func (ap fakeAnalyticsPolicy) SetContext(ctx context.Context) {}
+
+func (ap fakeAnalyticsPolicy) Builder(_ gdpr.TCF2ConfigReader, _ gdpr.Signal, _ string) gdpr.PrivacyPolicy {
+	return ap
 }
 
 func getDefaultActivityConfig(componentName string, allow bool) *config.AccountPrivacy {

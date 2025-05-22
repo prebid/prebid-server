@@ -15,6 +15,7 @@ import (
 	"github.com/prebid/prebid-server/v3/analytics"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/gdpr"
 	"github.com/prebid/prebid-server/v3/metrics"
 	"github.com/prebid/prebid-server/v3/privacy"
 	"github.com/prebid/prebid-server/v3/stored_requests"
@@ -27,31 +28,31 @@ type eventsMockAnalyticsModule struct {
 	Invoked bool
 }
 
-func (e *eventsMockAnalyticsModule) LogAuctionObject(ao *analytics.AuctionObject, _ privacy.ActivityControl) {
+func (e *eventsMockAnalyticsModule) LogAuctionObject(ao *analytics.AuctionObject, _ privacy.ActivityControl, _ gdpr.PrivacyPolicy) {
 	if e.Fail {
 		panic(e.Error)
 	}
 }
 
-func (e *eventsMockAnalyticsModule) LogVideoObject(vo *analytics.VideoObject, _ privacy.ActivityControl) {
+func (e *eventsMockAnalyticsModule) LogVideoObject(vo *analytics.VideoObject, _ privacy.ActivityControl, _ gdpr.PrivacyPolicy) {
 	if e.Fail {
 		panic(e.Error)
 	}
 }
 
-func (e *eventsMockAnalyticsModule) LogCookieSyncObject(cso *analytics.CookieSyncObject) {
+func (e *eventsMockAnalyticsModule) LogCookieSyncObject(cso *analytics.CookieSyncObject, _ privacy.ActivityControl, _ gdpr.PrivacyPolicy) {
 	if e.Fail {
 		panic(e.Error)
 	}
 }
 
-func (e *eventsMockAnalyticsModule) LogSetUIDObject(so *analytics.SetUIDObject) {
+func (e *eventsMockAnalyticsModule) LogSetUIDObject(so *analytics.SetUIDObject, _ privacy.ActivityControl, _ gdpr.PrivacyPolicy) {
 	if e.Fail {
 		panic(e.Error)
 	}
 }
 
-func (e *eventsMockAnalyticsModule) LogAmpObject(ao *analytics.AmpObject, _ privacy.ActivityControl) {
+func (e *eventsMockAnalyticsModule) LogAmpObject(ao *analytics.AmpObject, _ privacy.ActivityControl, _ gdpr.PrivacyPolicy) {
 	if e.Fail {
 		panic(e.Error)
 	}
@@ -65,6 +66,16 @@ func (e *eventsMockAnalyticsModule) LogNotificationEventObject(ne *analytics.Not
 }
 
 func (e *eventsMockAnalyticsModule) Shutdown() {}
+
+type eventsMockGDPRPrivacyPolicy struct {
+	Fail bool
+}
+
+func (e *eventsMockGDPRPrivacyPolicy) SetContext(ctx context.Context) {}
+func (e *eventsMockGDPRPrivacyPolicy) Allow(name string) bool {
+	return !e.Fail
+}
+
 
 var mockAccountData = map[string]json.RawMessage{
 	"events_enabled":  json.RawMessage(`{"events": {"enabled":true}}`),

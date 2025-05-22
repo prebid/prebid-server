@@ -320,6 +320,7 @@ func TestGDPRConsent(t *testing.T) {
 			},
 			&metricsConfig.NilMetricsEngine{},
 			analyticsBuild.New(&config.Analytics{}),
+			fakeAnalyticsPolicy{allow: true}.Builder,
 			map[string]string{},
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
@@ -708,6 +709,7 @@ func TestCCPAConsent(t *testing.T) {
 			&config.Configuration{MaxRequestSize: maxSize},
 			&metricsConfig.NilMetricsEngine{},
 			analyticsBuild.New(&config.Analytics{}),
+			fakeAnalyticsPolicy{allow: true}.Builder,
 			map[string]string{},
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
@@ -815,6 +817,7 @@ func TestConsentWarnings(t *testing.T) {
 			&config.Configuration{MaxRequestSize: maxSize},
 			&metricsConfig.NilMetricsEngine{},
 			analyticsBuild.New(&config.Analytics{}),
+			fakeAnalyticsPolicy{allow: true}.Builder,
 			map[string]string{},
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
@@ -916,6 +919,7 @@ func TestNewAndLegacyConsentBothProvided(t *testing.T) {
 			},
 			&metricsConfig.NilMetricsEngine{},
 			analyticsBuild.New(&config.Analytics{}),
+			fakeAnalyticsPolicy{allow: true}.Builder,
 			map[string]string{},
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
@@ -964,6 +968,7 @@ func TestAMPSiteExt(t *testing.T) {
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
+		fakeAnalyticsPolicy{allow: true}.Builder,
 		nil,
 		nil,
 		openrtb_ext.BuildBidderMap(),
@@ -1029,6 +1034,7 @@ func TestAmpBadRequests(t *testing.T) {
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
+		fakeAnalyticsPolicy{allow: true}.Builder,
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -1120,6 +1126,7 @@ func TestAmpDebug(t *testing.T) {
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
+		fakeAnalyticsPolicy{allow: true}.Builder,
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -1256,6 +1263,7 @@ func TestQueryParamOverrides(t *testing.T) {
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
+		fakeAnalyticsPolicy{allow: true}.Builder,
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -1414,6 +1422,7 @@ func (s formatOverrideSpec) execute(t *testing.T) {
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
+		fakeAnalyticsPolicy{allow: true}.Builder,
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -1658,18 +1667,18 @@ func newMockLogger(ao *analytics.AmpObject, aucObj *analytics.AuctionObject) ana
 	}
 }
 
-func (logger mockLogger) LogAuctionObject(ao *analytics.AuctionObject, _ privacy.ActivityControl) {
+func (logger mockLogger) LogAuctionObject(ao *analytics.AuctionObject, _ privacy.ActivityControl, _ gdpr.PrivacyPolicy) {
 	*logger.auctionObject = *ao
 }
-func (logger mockLogger) LogVideoObject(vo *analytics.VideoObject, _ privacy.ActivityControl) {
+func (logger mockLogger) LogVideoObject(vo *analytics.VideoObject, _ privacy.ActivityControl, _ gdpr.PrivacyPolicy) {
 }
-func (logger mockLogger) LogCookieSyncObject(cookieObject *analytics.CookieSyncObject) {
+func (logger mockLogger) LogCookieSyncObject(cookieObject *analytics.CookieSyncObject, _ privacy.ActivityControl, _ gdpr.PrivacyPolicy) {
 }
-func (logger mockLogger) LogSetUIDObject(uuidObj *analytics.SetUIDObject) {
+func (logger mockLogger) LogSetUIDObject(uuidObj *analytics.SetUIDObject, _ privacy.ActivityControl, _ gdpr.PrivacyPolicy) {
 }
 func (logger mockLogger) LogNotificationEventObject(uuidObj *analytics.NotificationEvent, _ privacy.ActivityControl) {
 }
-func (logger mockLogger) LogAmpObject(ao *analytics.AmpObject, _ privacy.ActivityControl) {
+func (logger mockLogger) LogAmpObject(ao *analytics.AmpObject, _ privacy.ActivityControl, _ gdpr.PrivacyPolicy) {
 	*logger.ampObject = *ao
 }
 func (logger mockLogger) Shutdown() {}
@@ -1915,6 +1924,9 @@ func TestIdGeneration(t *testing.T) {
 func ampObjectTestSetup(t *testing.T, inTagId string, inStoredRequest json.RawMessage, generateRequestID bool, exchange *mockAmpExchange) (*analytics.AmpObject, httprouter.Handle) {
 	actualAmpObject := analytics.AmpObject{}
 	logger := newMockLogger(&actualAmpObject, nil)
+	analyticsPolicyBuilder := fakeAnalyticsPolicy{
+		allow: true,
+	}.Builder
 
 	mockAmpFetcher := &mockAmpStoredReqFetcher{
 		data: map[string]json.RawMessage{
@@ -1931,6 +1943,7 @@ func ampObjectTestSetup(t *testing.T, inTagId string, inStoredRequest json.RawMe
 		&config.Configuration{MaxRequestSize: maxSize, GenerateRequestID: generateRequestID},
 		&metricsConfig.NilMetricsEngine{},
 		logger,
+		analyticsPolicyBuilder,
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -1984,6 +1997,7 @@ func TestAmpAuctionResponseHeaders(t *testing.T) {
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
+		fakeAnalyticsPolicy{allow: true}.Builder,
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -2020,6 +2034,7 @@ func TestRequestWithTargeting(t *testing.T) {
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
+		fakeAnalyticsPolicy{allow: true}.Builder,
 		nil,
 		nil,
 		openrtb_ext.BuildBidderMap(),
@@ -2478,6 +2493,7 @@ func TestAmpAuctionDebugWarningsOnly(t *testing.T) {
 		},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
+		fakeAnalyticsPolicy{allow: true}.Builder,
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -2505,8 +2521,6 @@ func TestAmpAuctionDebugWarningsOnly(t *testing.T) {
 	}
 }
 
-
-
 type fakeAnalyticsPolicy struct {
 	allow bool
 	cfg gdpr.TCF2ConfigReader
@@ -2519,3 +2533,4 @@ func (ap fakeAnalyticsPolicy) SetContext(ctx context.Context) {}
 func (ap fakeAnalyticsPolicy) Builder(_ gdpr.TCF2ConfigReader, _ gdpr.Signal, _ string) gdpr.PrivacyPolicy {
 	return ap
 }
+
