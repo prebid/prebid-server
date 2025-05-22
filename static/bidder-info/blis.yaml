@@ -19,3 +19,7 @@ capabilities:
       - banner
       - video
       - native
+userSync:
+  redirect:
+    url: "https://tr.blismedia.com/v1/api/sync/prebid?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&r={{.RedirectURL}}"
+    userMacro: "%%BLIS_USER_TOKEN%%"
