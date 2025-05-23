@@ -124,7 +124,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 				ImpIDs:  []string{imp.ID},
 			})
 		} else {
-			/
 			reqCopy := *request
 			reqCopy.Imp = []openrtb2.Imp{imp}
 
