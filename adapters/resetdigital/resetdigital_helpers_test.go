@@ -127,22 +127,11 @@ func TestCreateTestRequestBody(t *testing.T) {
 				assert.Equal(t, "test-video", resetReq.Imps[0].BidID)
 				assert.Equal(t, "imp-video", resetReq.Imps[0].ImpID)
 
-				// Cast al tipo correcto para verificar los valores
-				videoConfig, ok := resetReq.Imps[0].MediaTypes.Video.(map[string]interface{})
-				assert.True(t, ok, "Video should be map[string]interface{}")
-				
-				videoSizes, ok := videoConfig["sizes"].([]interface{})
-				assert.True(t, ok, "Video sizes should be an array")
-				assert.Len(t, videoSizes, 1)
-				
-				size, ok := videoSizes[0].([]interface{})
-				assert.True(t, ok, "Size should be an array")
-				assert.Equal(t, float64(640), size[0])
-				assert.Equal(t, float64(480), size[1])
-				
-				mimes, ok := videoConfig["mimes"].([]interface{})
-				assert.True(t, ok, "Mimes should be an array")
-				assert.Contains(t, mimes, "video/mp4")
+				require.NotNil(t, resetReq.Imps[0].MediaTypes.Video)
+				assert.NotEmpty(t, resetReq.Imps[0].MediaTypes.Video.Mimes)
+				assert.Contains(t, resetReq.Imps[0].MediaTypes.Video.Mimes, "video/mp4")
+				assert.Len(t, resetReq.Imps[0].MediaTypes.Video.Sizes, 1)
+				assert.Equal(t, []int{640, 480}, resetReq.Imps[0].MediaTypes.Video.Sizes[0])
 			},
 		},
 		{
@@ -169,14 +158,10 @@ func TestCreateTestRequestBody(t *testing.T) {
 				assert.Equal(t, "test-audio", resetReq.Imps[0].BidID)
 				assert.Equal(t, "imp-audio", resetReq.Imps[0].ImpID)
 
-				// Verificar la configuración de audio
-				audioConfig, ok := resetReq.Imps[0].MediaTypes.Audio.(map[string]interface{})
-				assert.True(t, ok, "Audio should be map[string]interface{}")
-				
-				mimes, ok := audioConfig["mimes"].([]interface{})
-				assert.True(t, ok, "Mimes should be an array")
-				assert.Contains(t, mimes, "audio/mp4")
-				assert.Contains(t, mimes, "audio/mp3")
+				require.NotNil(t, resetReq.Imps[0].MediaTypes.Audio)
+				assert.NotEmpty(t, resetReq.Imps[0].MediaTypes.Audio.Mimes)
+				assert.Contains(t, resetReq.Imps[0].MediaTypes.Audio.Mimes, "audio/mp4")
+				assert.Contains(t, resetReq.Imps[0].MediaTypes.Audio.Mimes, "audio/mp3")
 			},
 		},
 		{
@@ -199,12 +184,9 @@ func TestCreateTestRequestBody(t *testing.T) {
 				err = json.Unmarshal(result, &resetReq)
 				require.NoError(t, err)
 
-				audioConfig, ok := resetReq.Imps[0].MediaTypes.Audio.(map[string]interface{})
-				assert.True(t, ok, "Audio should be map[string]interface{}")
-				
-				mimes, ok := audioConfig["mimes"].([]interface{})
-				assert.True(t, ok, "Mimes should be an array")
-				assert.Contains(t, mimes, "audio/mpeg")
+				require.NotNil(t, resetReq.Imps[0].MediaTypes.Audio)
+				assert.NotEmpty(t, resetReq.Imps[0].MediaTypes.Audio.Mimes)
+				assert.Contains(t, resetReq.Imps[0].MediaTypes.Audio.Mimes, "audio/mpeg")
 			},
 		},
 		{
@@ -231,12 +213,8 @@ func TestCreateTestRequestBody(t *testing.T) {
 				err = json.Unmarshal(result, &resetReq)
 				require.NoError(t, err)
 
-				// En este caso especial, no debería haber dimensiones en la configuración de video
-				videoConfig, ok := resetReq.Imps[0].MediaTypes.Video.(map[string]interface{})
-				assert.True(t, ok, "Video should be map[string]interface{}")
-				
-				_, sizeExists := videoConfig["sizes"]
-				assert.False(t, sizeExists, "Sizes should not exist for special case")
+				require.NotNil(t, resetReq.Imps[0].MediaTypes.Video)
+				assert.Empty(t, resetReq.Imps[0].MediaTypes.Video.Sizes)
 			},
 		},
 	}
@@ -287,19 +265,17 @@ func TestParseTestBidResponse(t *testing.T) {
 			assertFunc: func(t *testing.T, bidderResponse *adapters.BidderResponse, errs []error) {
 				assert.Empty(t, errs)
 				require.NotNil(t, bidderResponse)
-				assert.Equal(t, "USD", bidderResponse.Currency)
+				assert.Equal(t, currencyUSD, bidderResponse.Currency)
 				assert.Len(t, bidderResponse.Bids, 1)
-				
-				// Verificar bid
+
 				assert.Equal(t, "bid-1", bidderResponse.Bids[0].Bid.ID)
 				assert.Equal(t, "test-imp-1", bidderResponse.Bids[0].Bid.ImpID)
 				assert.Equal(t, 3.5, bidderResponse.Bids[0].Bid.Price)
 				assert.Equal(t, int64(300), bidderResponse.Bids[0].Bid.W)
 				assert.Equal(t, int64(250), bidderResponse.Bids[0].Bid.H)
 				assert.Equal(t, "<div>Test Ad</div>", bidderResponse.Bids[0].Bid.AdM)
-				
-				// Verificar seat (un punto que mencionaste que faltaba cobertura)
-				assert.Equal(t, openrtb_ext.BidderName("resetdigital"), bidderResponse.Bids[0].Seat)
+
+				assert.Equal(t, openrtb_ext.BidderName(bidderSeat), bidderResponse.Bids[0].Seat)
 			},
 		},
 		{
@@ -440,9 +416,8 @@ func TestParseTestBidResponse(t *testing.T) {
 				require.NotNil(t, bidderResponse)
 				assert.Len(t, bidderResponse.Bids, 1)
 				
-				// En el caso especial 12345, se asignan valores fijos para width y height
-				assert.Equal(t, int64(300), bidderResponse.Bids[0].Bid.W)
-				assert.Equal(t, int64(250), bidderResponse.Bids[0].Bid.H)
+				assert.Equal(t, int64(size300x250W), bidderResponse.Bids[0].Bid.W)
+				assert.Equal(t, int64(size300x250H), bidderResponse.Bids[0].Bid.H)
 			},
 		},
 		{
@@ -473,12 +448,10 @@ func TestParseTestBidResponse(t *testing.T) {
 				assert.Empty(t, errs)
 				require.NotNil(t, bidderResponse)
 				assert.Len(t, bidderResponse.Bids, 1)
-				
-				// Para test-multi-format, el tipo debe ser video independientemente del imp
+
 				assert.Equal(t, openrtb_ext.BidTypeVideo, bidderResponse.Bids[0].BidType)
-				// Y también tiene dimensiones fijas
-				assert.Equal(t, int64(300), bidderResponse.Bids[0].Bid.W)
-				assert.Equal(t, int64(250), bidderResponse.Bids[0].Bid.H)
+				assert.Equal(t, int64(size300x250W), bidderResponse.Bids[0].Bid.W)
+				assert.Equal(t, int64(size300x250H), bidderResponse.Bids[0].Bid.H)
 			},
 		},
 		{
@@ -511,6 +484,35 @@ func TestParseTestBidResponse(t *testing.T) {
 				assert.Contains(t, errs[0].Error(), "value out of range")
 			},
 		},
+		{
+			name: "Test width/height value too large",
+			request: &openrtb2.BidRequest{
+				ID: "test-dimensions-too-large",
+				Imp: []openrtb2.Imp{
+					{
+						ID:     "test-imp-1",
+						Banner: &openrtb2.Banner{},
+					},
+				},
+			},
+			responseData: &adapters.ResponseData{
+				StatusCode: http.StatusOK,
+				Body: []byte(`{
+					"bids": [{
+						"bid_id": "bid-1",
+						"imp_id": "test-imp-1",
+						"cpm": 3.5,
+						"w": "15000",
+						"h": "250"
+					}]
+				}`),
+			},
+			assertFunc: func(t *testing.T, bidderResponse *adapters.BidderResponse, errs []error) {
+				assert.Nil(t, bidderResponse)
+				assert.NotEmpty(t, errs)
+				assert.Contains(t, errs[0].Error(), "width value too large")
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -521,7 +523,6 @@ func TestParseTestBidResponse(t *testing.T) {
 	}
 }
 
-// Test específico para el caso en que parseTestBidResponse recibe un body malformado
 func TestParseTestBidResponseMalformedBody(t *testing.T) {
 	request := &openrtb2.BidRequest{
 		ID: "test-malformed",
