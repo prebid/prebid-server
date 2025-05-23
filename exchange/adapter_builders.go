@@ -10,6 +10,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/adf"
 	"github.com/prebid/prebid-server/v3/adapters/adgeneration"
 	"github.com/prebid/prebid-server/v3/adapters/adhese"
+	"github.com/prebid/prebid-server/v3/adapters/adipolo"
 	"github.com/prebid/prebid-server/v3/adapters/adkernel"
 	"github.com/prebid/prebid-server/v3/adapters/adkernelAdn"
 	"github.com/prebid/prebid-server/v3/adapters/adman"
