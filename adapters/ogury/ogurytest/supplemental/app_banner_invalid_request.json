@@ -26,7 +26,7 @@
 
   "expectedBidResponses": [],
   "expectedMakeRequestsErrors": [{
-    "value": "Invalid request. assetKey/adUnitId",
+    "value": "Invalid request. assetKey/adUnitId required",
     "comparison": "literal"
   }]
 }

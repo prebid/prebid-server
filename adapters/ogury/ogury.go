@@ -95,7 +95,7 @@ func (a adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapter
 		} else if request.App != nil {
 			// for app request there is no adunitcode equivalent so we can't serve ads with just the publisher id
 			return nil, []error{&errortypes.BadInput{
-				Message: "Invalid request. assetKey/adUnitId",
+				Message: "Invalid request. assetKey/adUnitId required",
 			}}
 		}
 	} else if len(impsWithOguryParams) > 0 {
