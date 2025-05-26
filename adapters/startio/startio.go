@@ -3,7 +3,6 @@ package startio
 import (
 	"fmt"
 	"net/http"
-	"net/url"
 	"slices"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -19,13 +18,8 @@ type adapter struct {
 }
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	uri, err := url.ParseRequestURI(config.Endpoint)
-	if err != nil {
-		return nil, err
-	}
-
 	bidder := &adapter{
-		endpoint: uri.String(),
+		endpoint: config.Endpoint,
 	}
 
 	return bidder, nil
@@ -40,12 +34,10 @@ func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adap
 		return nil, []error{err}
 	}
 
-	validImpressions, err := getValidImpressions(requestCopy.Imp)
-	if err != nil {
-		return nil, []error{err}
-	}
-	for i := range validImpressions {
-		requestCopy.Imp = []openrtb2.Imp{validImpressions[i]}
+	impressions := requestCopy.Imp
+
+	for i := range impressions {
+		requestCopy.Imp = []openrtb2.Imp{impressions[i]}
 
 		requestBody, err := jsonutil.Marshal(requestCopy)
 		if err != nil {
@@ -58,7 +50,7 @@ func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adap
 			Uri:     adapter.endpoint,
 			Body:    requestBody,
 			Headers: buildRequestHeaders(),
-			ImpIDs:  []string{validImpressions[i].ID},
+			ImpIDs:  []string{impressions[i].ID},
 		}
 
 		requests = append(requests, requestData)
@@ -68,10 +60,8 @@ func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adap
 }
 
 func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if response.StatusCode == http.StatusNoContent {
+	if adapters.IsResponseStatusCodeNoContent(response) {
 		return nil, nil
-	} else if response.StatusCode != http.StatusOK {
-		return nil, []error{wrapReqError(fmt.Sprintf("Unexpected status code: %d.", response.StatusCode))}
 	}
 
 	if err := adapters.CheckResponseStatusCodeForErrors(response); err != nil {
@@ -84,7 +74,7 @@ func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 	}
 
 	var errs []error
-	bidderResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResponse.SeatBid))
+	bidderResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResponse.SeatBid[0].Bid))
 
 	for i := range bidResponse.SeatBid {
 		for j := range bidResponse.SeatBid[i].Bid {
@@ -110,33 +100,7 @@ func validateRequest(request openrtb2.BidRequest) error {
 		return wrapReqError("unsupported currency: only USD is accepted")
 	}
 
-	if !hasSiteOrAppID(request) {
-		return wrapReqError("request must contain either site.id or app.id")
-	}
-
 	return nil
-}
-
-func getValidImpressions(imps []openrtb2.Imp) ([]openrtb2.Imp, error) {
-	var validImpressions []openrtb2.Imp
-
-	for _, imp := range imps {
-		imp.Audio = nil
-		hasValidMedia := imp.Banner != nil || imp.Video != nil || imp.Native != nil
-		if hasValidMedia {
-			validImpressions = append(validImpressions, imp)
-		}
-	}
-
-	if len(validImpressions) == 0 {
-		return nil, wrapReqError("invalid bid request: at least one banner, video, or native impression is required.")
-	}
-
-	return validImpressions, nil
-}
-
-func hasSiteOrAppID(req openrtb2.BidRequest) bool {
-	return (req.Site != nil && req.Site.ID != "") || (req.App != nil && req.App.ID != "")
 }
 
 func buildRequestHeaders() http.Header {
@@ -153,7 +117,6 @@ func isSupportedCurrency(currencies []string) bool {
 }
 
 func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
-
 	if bid.Ext != nil {
 		var bidExt openrtb_ext.ExtBid
 		err := jsonutil.Unmarshal(bid.Ext, &bidExt)
