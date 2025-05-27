@@ -33,10 +33,10 @@ func BuildTestRules() rules.Tree[openrtb_ext.RequestWrapper, hs.ChangeSet[hs.Pro
 		Root: &rules.Node[openrtb_ext.RequestWrapper, hs.ChangeSet[hs.ProcessedAuctionRequestPayload]]{
 			SchemaFunction: devCountryFunc,
 			Children: map[string]*rules.Node[openrtb_ext.RequestWrapper, hs.ChangeSet[hs.ProcessedAuctionRequestPayload]]{
-				"true": &rules.Node[openrtb_ext.RequestWrapper, hs.ChangeSet[hs.ProcessedAuctionRequestPayload]]{
+				"true": {
 					ResultFunctions: []rules.ResultFunction[openrtb_ext.RequestWrapper, hs.ChangeSet[hs.ProcessedAuctionRequestPayload]]{resFuncTrue},
 				},
-				"false": &rules.Node[openrtb_ext.RequestWrapper, hs.ChangeSet[hs.ProcessedAuctionRequestPayload]]{
+				"false": {
 					ResultFunctions: []rules.ResultFunction[openrtb_ext.RequestWrapper, hs.ChangeSet[hs.ProcessedAuctionRequestPayload]]{resFuncFalse},
 				},
 			},
