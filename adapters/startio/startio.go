@@ -92,6 +92,10 @@ func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 		}
 	}
 
+	if len(bidResponse.SeatBid) == 0 || len(bidResponse.SeatBid[0].Bid) == 0 {
+		return nil, nil
+	}
+
 	return bidderResponse, errs
 }
 
