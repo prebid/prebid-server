@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetDeviceGeo(t *testing.T) {
+func TestGetDeviceGeoCall(t *testing.T) {
 	testCases := []struct {
 		desc          string
 		inWrapper     *openrtb_ext.RequestWrapper
@@ -72,7 +72,7 @@ func TestGetDeviceGeo(t *testing.T) {
 	}
 }
 
-func TestGetExtRequestPrebid(t *testing.T) {
+func TestGetExtRequestPrebidCall(t *testing.T) {
 	testCases := []struct {
 		desc           string
 		inWrapper      *openrtb_ext.RequestWrapper
@@ -128,7 +128,7 @@ func TestGetExtRequestPrebid(t *testing.T) {
 	}
 }
 
-func TestGetUserEIDS(t *testing.T) {
+func TestGetUserEIDSCall(t *testing.T) {
 	testCases := []struct {
 		desc            string
 		inWrapper       *openrtb_ext.RequestWrapper
@@ -227,7 +227,7 @@ func TestNewDeviceCountryIn(t *testing.T) {
 			outDeviceCountryIn: &deviceCountryIn{
 				Countries: []string{"JPN"},
 				CountryDirectory: map[string]struct{}{
-					"JPN": struct{}{},
+					"JPN": {},
 				},
 			},
 			outErr: nil,
@@ -243,7 +243,7 @@ func TestNewDeviceCountryIn(t *testing.T) {
 	}
 }
 
-func TestDeviceCountryIn(t *testing.T) {
+func TestDeviceCountryInCall(t *testing.T) {
 	wrapperWithCountryCode := &openrtb_ext.RequestWrapper{
 		BidRequest: &openrtb2.BidRequest{
 			Device: &openrtb2.Device{
@@ -281,7 +281,7 @@ func TestDeviceCountryIn(t *testing.T) {
 				},
 			},
 			expectedStringBool: "false",
-			expectedError:      errors.New("request.Device.Geo.Country is not present in request"),
+			expectedError:      nil,
 		},
 		{
 			desc:               "empty country list",
@@ -294,8 +294,8 @@ func TestDeviceCountryIn(t *testing.T) {
 			desc: "wrapper.device.geo.country not found in country list",
 			inDeviceCountryIn: deviceCountryIn{
 				CountryDirectory: map[string]struct{}{
-					"USA": struct{}{},
-					"CAN": struct{}{},
+					"USA": {},
+					"CAN": {},
 				},
 			},
 			inRequestWrapper:   wrapperWithCountryCode,
@@ -305,9 +305,9 @@ func TestDeviceCountryIn(t *testing.T) {
 			desc: "success",
 			inDeviceCountryIn: deviceCountryIn{
 				CountryDirectory: map[string]struct{}{
-					"USA": struct{}{},
-					"MEX": struct{}{},
-					"CAN": struct{}{},
+					"USA": {},
+					"MEX": {},
+					"CAN": {},
 				},
 			},
 			inRequestWrapper:   wrapperWithCountryCode,
@@ -317,7 +317,6 @@ func TestDeviceCountryIn(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-
 			result, err := tc.inDeviceCountryIn.Call(tc.inRequestWrapper)
 			assert.Equal(t, tc.expectedStringBool, result)
 			assert.Equal(t, tc.expectedError, err)
@@ -325,7 +324,7 @@ func TestDeviceCountryIn(t *testing.T) {
 	}
 }
 
-func TestDeviceCountry(t *testing.T) {
+func TestDeviceCountryCall(t *testing.T) {
 	testCases := []struct {
 		desc            string
 		inWrapper       *openrtb_ext.RequestWrapper
@@ -378,7 +377,7 @@ func TestDeviceCountry(t *testing.T) {
 	}
 }
 
-func TestDataCenters(t *testing.T) {
+func TestDataCentersCall(t *testing.T) {
 	testCases := []struct {
 		desc           string
 		inWrapper      *openrtb_ext.RequestWrapper
@@ -431,7 +430,7 @@ func TestDataCenters(t *testing.T) {
 	}
 }
 
-func TestDataCentersIn(t *testing.T) {
+func TestDataCentersInCall(t *testing.T) {
 	wrapperWithRegion := &openrtb_ext.RequestWrapper{
 		BidRequest: &openrtb2.BidRequest{
 			Device: &openrtb2.Device{
@@ -471,7 +470,7 @@ func TestDataCentersIn(t *testing.T) {
 			expectedError:      errors.New("request.Device.Geo.Region is not present in request"),
 		},
 		{
-			desc:               "empty region list",
+			desc:               "empty region dir",
 			inDataCentersIn:    dataCentersIn{},
 			inRequestWrapper:   wrapperWithRegion,
 			expectedStringBool: "false",
@@ -480,15 +479,23 @@ func TestDataCentersIn(t *testing.T) {
 		{
 			desc: "wrapper.device.geo.region not found",
 			inDataCentersIn: dataCentersIn{
-				DataCenterList: []string{"Europe", "Africa"},
+				DataCenterDir: map[string]struct{}{
+					"Europe": {},
+					"Africa": {},
+				},
 			},
 			inRequestWrapper:   wrapperWithRegion,
 			expectedStringBool: "false",
+			expectedError:      nil,
 		},
 		{
 			desc: "success",
 			inDataCentersIn: dataCentersIn{
-				DataCenterList: []string{"Europe", "Africa", "NorthAmerica"},
+				DataCenterDir: map[string]struct{}{
+					"Europe":       {},
+					"Africa":       {},
+					"NorthAmerica": {},
+				},
 			},
 			inRequestWrapper:   wrapperWithRegion,
 			expectedStringBool: "true",
@@ -505,7 +512,7 @@ func TestDataCentersIn(t *testing.T) {
 	}
 }
 
-func TestChannel(t *testing.T) {
+func TestChannelCall(t *testing.T) {
 	testCases := []struct {
 		desc                string
 		inWrapper           *openrtb_ext.RequestWrapper
@@ -553,13 +560,23 @@ func TestChannel(t *testing.T) {
 			expectedError:       errors.New("req.ext.prebid.channel.name is not present in request"),
 		},
 		{
-			desc: "success",
+			desc: "success channel name found",
 			inWrapper: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					Ext: json.RawMessage(`{"prebid":{"channel":{"name":"anyName"}}}`),
 				},
 			},
 			expectedChannelName: "anyName",
+			expectedError:       nil,
+		},
+		{
+			desc: "success channel name pbjs",
+			inWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Ext: json.RawMessage(`{"prebid":{"channel":{"name":"pbjs"}}}`),
+				},
+			},
+			expectedChannelName: "web",
 			expectedError:       nil,
 		},
 	}
@@ -574,7 +591,7 @@ func TestChannel(t *testing.T) {
 	}
 }
 
-func TestEidAvailable(t *testing.T) {
+func TestEidAvailableCall(t *testing.T) {
 	testCases := []struct {
 		desc        string
 		inWrapper   *openrtb_ext.RequestWrapper
@@ -619,7 +636,7 @@ func TestEidAvailable(t *testing.T) {
 	}
 }
 
-func TestUserFpdAvailable(t *testing.T) {
+func TestUserFpdAvailableCall(t *testing.T) {
 	testCases := []struct {
 		desc        string
 		inWrapper   *openrtb_ext.RequestWrapper
@@ -692,7 +709,7 @@ func TestUserFpdAvailable(t *testing.T) {
 	}
 }
 
-func TestFpdAvailable(t *testing.T) {
+func TestFpdAvailableCall(t *testing.T) {
 	testCases := []struct {
 		desc        string
 		inWrapper   *openrtb_ext.RequestWrapper
@@ -799,7 +816,7 @@ func TestFpdAvailable(t *testing.T) {
 	}
 }
 
-func TestEidIn(t *testing.T) {
+func TestEidInCall(t *testing.T) {
 	testCases := []struct {
 		desc         string
 		inWrapper    *openrtb_ext.RequestWrapper
@@ -817,8 +834,8 @@ func TestEidIn(t *testing.T) {
 			inSchemaFunc: &eidIn{
 				eidList: []string{"fooSource", "barSource"},
 				eidDir: map[string]struct{}{
-					"fooSource": struct{}{},
-					"barSource": struct{}{},
+					"fooSource": {},
+					"barSource": {},
 				},
 			},
 			result:      "false",
@@ -860,8 +877,8 @@ func TestEidIn(t *testing.T) {
 			inSchemaFunc: &eidIn{
 				eidList: []string{"fooSource", "barSource"},
 				eidDir: map[string]struct{}{
-					"fooSource": struct{}{},
-					"barSource": struct{}{},
+					"fooSource": {},
+					"barSource": {},
 				},
 			},
 			result:      "false",
@@ -883,9 +900,9 @@ func TestEidIn(t *testing.T) {
 			inSchemaFunc: &eidIn{
 				eidList: []string{"fooSource", "barSource", "anySource"},
 				eidDir: map[string]struct{}{
-					"fooSource": struct{}{},
-					"barSource": struct{}{},
-					"anySource": struct{}{},
+					"fooSource": {},
+					"barSource": {},
+					"anySource": {},
 				},
 			},
 			result:      "true",
@@ -902,92 +919,408 @@ func TestEidIn(t *testing.T) {
 	}
 }
 
-//func TestGppSidIn(t *testing.T) {
-//	testCases := []struct {
-//		desc         string
-//		inWrapper    *openrtb_ext.RequestWrapper
-//		inSchemaFunc *gppSidIn
-//		result       string
-//		expectedErr  error
-//	}{
-//		{
-//			desc: "nil request.Regs",
-//			inWrapper: &openrtb_ext.RequestWrapper{
-//				BidRequest: &openrtb2.BidRequest{},
-//			},
-//			inSchemaFunc: &gppSidIn{
-//				gppSids: []int8{1, 2},
-//			},
-//			result:      "false",
-//			expectedErr: nil,
-//		},
-//		{
-//			desc: "empty request.User.EIDs",
-//			inWrapper: &openrtb_ext.RequestWrapper{
-//				BidRequest: &openrtb2.BidRequest{
-//					User: &openrtb2.User{
-//						EIDs: []openrtb2.EID{
-//							{
-//								Source: "anySource",
-//							},
-//						},
-//					},
-//				},
-//			},
-//			inSchemaFunc: &gppSidIn{
-//				eids: []string{},
-//			},
-//			result:      "false",
-//			expectedErr: nil,
-//		},
-//		{
-//			desc: "request.User.EIDs not found",
-//			inWrapper: &openrtb_ext.RequestWrapper{
-//				BidRequest: &openrtb2.BidRequest{
-//					User: &openrtb2.User{
-//						EIDs: []openrtb2.EID{
-//							{
-//								Source: "anySource",
-//							},
-//						},
-//					},
-//				},
-//			},
-//			inSchemaFunc: &gppSidIn{
-//				eids: []string{"fooSource", "barSource"},
-//			},
-//			result:      "false",
-//			expectedErr: nil,
-//		},
-//		{
-//			desc: "success",
-//			inWrapper: &openrtb_ext.RequestWrapper{
-//				BidRequest: &openrtb2.BidRequest{
-//					User: &openrtb2.User{
-//						EIDs: []openrtb2.EID{
-//							{
-//								Source: "anySource",
-//							},
-//						},
-//					},
-//				},
-//			},
-//			inSchemaFunc: &gppSidIn{
-//				eids: []string{"fooSource", "barSource", "anySource"},
-//			},
-//			result:      "true",
-//			expectedErr: nil,
-//		},
-//	}
-//
-//	for _, tc := range testCases {
-//		t.Run(tc.desc, func(t *testing.T) {
-//			found, err := tc.inSchemaFunc.Call(tc.inWrapper)
-//			assert.Equal(t, tc.result, found)
-//			assert.Equal(t, tc.expectedErr, err)
-//		})
-//	}
-//}
+func TestGppSidInCall(t *testing.T) {
+	testCases := []struct {
+		desc         string
+		inWrapper    *openrtb_ext.RequestWrapper
+		inSchemaFunc *gppSidIn
+		result       string
+		expectedErr  error
+	}{
+		{
+			desc:         "empty gppSidIn.gppSids",
+			inSchemaFunc: &gppSidIn{},
+			result:       "false",
+			expectedErr:  nil,
+		},
+		{
+			desc: "empty request.Regs.GPPSID",
+			inWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GPPSID: []int8{},
+					},
+				},
+			},
+			inSchemaFunc: &gppSidIn{
+				gppSids: map[int8]struct{}{
+					int8(1): {},
+				},
+			},
+			result:      "false",
+			expectedErr: errors.New("request.regs.gppsid not found"),
+		},
+		{
+			desc: "no request.Regs.GPPSID element found",
+			inWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GPPSID: []int8{int8(3)},
+					},
+				},
+			},
+			inSchemaFunc: &gppSidIn{
+				gppSids: map[int8]struct{}{
+					int8(1): {},
+					int8(2): {},
+				},
+			},
+			result:      "false",
+			expectedErr: nil,
+		},
+		{
+			desc: "Success",
+			inWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GPPSID: []int8{int8(2)},
+					},
+				},
+			},
+			inSchemaFunc: &gppSidIn{
+				gppSids: map[int8]struct{}{
+					int8(1): {},
+					int8(2): {},
+				},
+			},
+			result:      "true",
+			expectedErr: nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			found, err := tc.inSchemaFunc.Call(tc.inWrapper)
+			assert.Equal(t, tc.result, found)
+			assert.Equal(t, tc.expectedErr, err)
+		})
+	}
+}
+
+func TestGppSidAvailableCall(t *testing.T) {
+	testCases := []struct {
+		desc      string
+		inWrapper *openrtb_ext.RequestWrapper
+		result    string
+	}{
+		{
+			desc: "wrapper.Regs.GPPSID not found",
+			inWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GPPSID: []int8{},
+					},
+				},
+			},
+			result: "false",
+		},
+		{
+			desc: "success wrapper.Regs.GPPSID found",
+			inWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GPPSID: []int8{int8(2)},
+					},
+				},
+			},
+			result: "true",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			schemaFunc := &gppSidAvailable{}
+
+			result, err := schemaFunc.Call(tc.inWrapper)
+			assert.Equal(t, tc.result, result)
+			assert.Nil(t, err)
+		})
+	}
+}
+
+func TestTcfInScopeCall(t *testing.T) {
+	zeroInt8 := int8(0)
+	oneInt8 := int8(1)
+
+	testCases := []struct {
+		desc      string
+		inWrapper *openrtb_ext.RequestWrapper
+		result    string
+	}{
+		{
+			desc: "wrapper.Regs not found",
+			inWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{},
+			},
+			result: "false",
+		},
+		{
+			desc: "missing wrapper.Regs.GDPR",
+			inWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{},
+				},
+			},
+			result: "false",
+		},
+		{
+			desc: "wrapper.Regs.GDPR not equal to one",
+			inWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GDPR: &zeroInt8,
+					},
+				},
+			},
+			result: "false",
+		},
+		{
+			desc: "success",
+			inWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GDPR: &oneInt8,
+					},
+				},
+			},
+			result: "true",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			schemaFunc := &tcfInScope{}
+
+			result, err := schemaFunc.Call(tc.inWrapper)
+			assert.Equal(t, tc.result, result)
+			assert.Nil(t, err)
+		})
+	}
+}
+
+func TestPercentCall(t *testing.T) {
+	testCases := []struct {
+		desc      string
+		inPercent *percent
+		result    string
+	}{
+		{
+			desc:      "Negative",
+			inPercent: &percent{value: -1},
+			result:    "false",
+		},
+		{
+			desc:      "Zero",
+			inPercent: &percent{value: 0},
+			result:    "false",
+		},
+		{
+			desc:      "> 100",
+			inPercent: &percent{value: 150},
+			result:    "true",
+		},
+		{
+			desc:      "one hundred",
+			inPercent: &percent{value: 100},
+			result:    "true",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			result, err := tc.inPercent.Call(nil)
+
+			assert.Equal(t, tc.result, result)
+			assert.Nil(t, err)
+		})
+	}
+}
+
+func TestDomainInCall(t *testing.T) {
+	testCases := []struct {
+		desc       string
+		wrapper    *openrtb_ext.RequestWrapper
+		schemaFunc *domainIn
+		expected   string
+	}{
+		{
+			desc:       "domain not found in request",
+			wrapper:    &openrtb_ext.RequestWrapper{},
+			schemaFunc: &domainIn{},
+			expected:   "false",
+		},
+		{
+			desc: "domain not found in domainDir",
+			wrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Site: &openrtb2.Site{
+						Domain: "domain-three",
+					},
+				},
+			},
+			schemaFunc: &domainIn{
+				domainDir: map[string]struct{}{
+					"domain-one": struct{}{},
+					"domain-two": struct{}{},
+				},
+			},
+			expected: "false",
+		},
+		{
+			desc: "success",
+			wrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Site: &openrtb2.Site{
+						Domain: "domain-one",
+					},
+				},
+			},
+			schemaFunc: &domainIn{
+				domainDir: map[string]struct{}{
+					"domain-one": struct{}{},
+					"domain-two": struct{}{},
+				},
+			},
+			expected: "true",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			result, err := tc.schemaFunc.Call(tc.wrapper)
+			assert.Equal(t, tc.expected, result)
+			assert.Nil(t, err)
+		})
+	}
+}
+
+func TestBundleCall(t *testing.T) {
+	testCases := []struct {
+		desc       string
+		wrapper    *openrtb_ext.RequestWrapper
+		schemaFunc *bundle
+		expected   string
+	}{
+		{
+			desc:    "no App.Bundle in request",
+			wrapper: &openrtb_ext.RequestWrapper{},
+			schemaFunc: &bundle{
+				bundleDir: map[string]struct{}{
+					"bundle-two": struct{}{},
+				},
+			},
+			expected: "false",
+		},
+		{
+			desc: "domain not found in bundleDir",
+			wrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					App: &openrtb2.App{
+						Bundle: "bundle-one",
+					},
+				},
+			},
+			schemaFunc: &bundle{
+				bundleDir: map[string]struct{}{
+					"bundle-two": struct{}{},
+				},
+			},
+			expected: "false",
+		},
+		{
+			desc: "success",
+			wrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					App: &openrtb2.App{
+						Bundle: "bundle-two",
+					},
+				},
+			},
+			schemaFunc: &bundle{
+				bundleDir: map[string]struct{}{
+					"bundle-two": struct{}{},
+				},
+			},
+			expected: "true",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			result, err := tc.schemaFunc.Call(tc.wrapper)
+			assert.Equal(t, tc.expected, result)
+			assert.Nil(t, err)
+		})
+	}
+}
+
+func TestGetReqDomain(t *testing.T) {
+	testCases := []struct {
+		desc      string
+		inWrapper *openrtb_ext.RequestWrapper
+		expected  string
+	}{
+		{
+			desc:      "nil wrapper",
+			inWrapper: nil,
+			expected:  "",
+		},
+		{
+			desc:      "nil wrapper.BidRequest",
+			inWrapper: &openrtb_ext.RequestWrapper{},
+			expected:  "",
+		},
+		{
+			desc: "nil Site, App, and DOOH",
+			inWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{},
+			},
+			expected: "",
+		},
+		{
+			desc: "succes return Site.Domain",
+			inWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Site: &openrtb2.Site{
+						Domain: "site-domain",
+					},
+					App: &openrtb2.App{
+						Domain: "app-domain",
+					},
+					DOOH: &openrtb2.DOOH{
+						Domain: "dooh-domain",
+					},
+				},
+			},
+			expected: "site-domain",
+		},
+		{
+			desc: "succes return App.Domain",
+			inWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					App: &openrtb2.App{
+						Domain: "app-domain",
+					},
+					DOOH: &openrtb2.DOOH{
+						Domain: "dooh-domain",
+					},
+				},
+			},
+			expected: "app-domain",
+		},
+		{
+			desc: "succes return DOOH.Domain",
+			inWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					DOOH: &openrtb2.DOOH{
+						Domain: "dooh-domain",
+					},
+				},
+			},
+			expected: "dooh-domain",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			assert.Equal(t, tc.expected, getReqDomain(tc.inWrapper))
+		})
+	}
+}
 
 func TestCheckUserDataAndUserExtData(t *testing.T) {
 	testCases := []struct {
@@ -1370,6 +1703,106 @@ func TestExtDataPresent(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			assert.Equal(t, tc.found, extDataPresent(tc.inExt))
+		})
+	}
+}
+
+func TestGetRequestRegs(t *testing.T) {
+	testCases := []struct {
+		desc      string
+		inWrapper *openrtb_ext.RequestWrapper
+		result    *openrtb2.Regs
+	}{
+		{
+			desc:      "nil wrapper",
+			inWrapper: nil,
+			result:    nil,
+		},
+		{
+			desc:      "nil request",
+			inWrapper: &openrtb_ext.RequestWrapper{},
+			result:    nil,
+		},
+		{
+			desc: "nil request.Regs",
+			inWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{},
+			},
+			result: nil,
+		},
+		{
+			desc: "success",
+			inWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{},
+				},
+			},
+			result: &openrtb2.Regs{},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			assert.Equal(t, tc.result, getRequestRegs(tc.inWrapper))
+		})
+	}
+}
+func TestHasGPPIDs(t *testing.T) {
+	testCases := []struct {
+		desc      string
+		inWrapper *openrtb_ext.RequestWrapper
+		result    bool
+	}{
+		{
+			desc: "no request.Regs",
+			inWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{},
+			},
+			result: false,
+		},
+		{
+			desc: "empty request.Regs.GPPSID",
+			inWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GPPSID: []int8{},
+					},
+				},
+			},
+			result: false,
+		},
+		{
+			desc: "no non-zero element found",
+			inWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GPPSID: []int8{
+							int8(0),
+							int8(0),
+						},
+					},
+				},
+			},
+			result: false,
+		},
+		{
+			desc: "success",
+			inWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GPPSID: []int8{
+							int8(0),
+							int8(1),
+							int8(0),
+						},
+					},
+				},
+			},
+			result: true,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			assert.Equal(t, tc.result, hasGPPIDs(tc.inWrapper))
 		})
 	}
 }

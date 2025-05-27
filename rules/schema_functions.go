@@ -5,14 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
-	"slices"
 
 	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
-	"github.com/prebid/prebid-server/v3/util/ptrutil"
 )
 
 const (
@@ -188,8 +186,7 @@ func (dci *dataCenters) Name() string {
 }
 
 type dataCentersIn struct {
-	DataCenterList []string
-	DataCenterDir  map[string]struct{}
+	DataCenterDir map[string]struct{}
 }
 
 func NewDataCentersIn(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
@@ -199,12 +196,11 @@ func NewDataCentersIn(params json.RawMessage) (SchemaFunction[openrtb_ext.Reques
 	}
 
 	schemaFunc := &dataCentersIn{
-		DataCenterList: dataCenters,
-		DataCenterDir:  make(map[string]struct{}),
+		DataCenterDir: make(map[string]struct{}),
 	}
 
-	for i := 0; i < len(schemaFunc.DataCenterList); i++ {
-		schemaFunc.DataCenterDir[schemaFunc.DataCenterList[i]] = struct{}{}
+	for i := 0; i < len(dataCenters); i++ {
+		schemaFunc.DataCenterDir[dataCenters[i]] = struct{}{}
 	}
 
 	return schemaFunc, nil
@@ -271,7 +267,6 @@ type eidIn struct {
 	eidDir  map[string]struct{}
 }
 
-// New
 func NewEidIn(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
 	eidsParam, err := checkArgsStringList(params, EidIn)
 	if err != nil {
@@ -283,8 +278,8 @@ func NewEidIn(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper
 		eidDir:  make(map[string]struct{}),
 	}
 
-	for i := 0; i < len(schemaFunc.eidList); i++ {
-		schemaFunc.eidDir[schemaFunc.eidList[i]] = struct{}{}
+	for i := 0; i < len(eidsParam); i++ {
+		schemaFunc.eidDir[eidsParam[i]] = struct{}{}
 	}
 
 	return schemaFunc, nil
@@ -378,25 +373,37 @@ func (fpd *fpdAvailable) Name() string {
 
 // ------------gppSid------------------
 type gppSidIn struct {
-	gppSids []int8 // TODO: change for a map, do so in the other somethingIn schema funcs so we don't create the map at every turn
+	gppSids map[int8]struct{}
 }
 
 func NewGppSidIn(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
 	gppSids, err := checkArgsInt8List(params, GppSidIn)
-	return &gppSidIn{gppSids: gppSids}, err
+	if err != nil {
+		return nil, err
+	}
+
+	schemaFunc := &gppSidIn{
+		gppSids: make(map[int8]struct{}),
+	}
+
+	for i := 0; i < len(gppSids); i++ {
+		schemaFunc.gppSids[gppSids[i]] = struct{}{}
+	}
+
+	return schemaFunc, nil
 }
 
 func (sid *gppSidIn) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
-	if len(sid.gppSids) > 0 {
+	if len(sid.gppSids) == 0 {
 		return "false", nil
 	}
 
-	if wrapper.Regs == nil || len(wrapper.Regs.GPPSID) == 0 {
+	if !hasGPPIDs(wrapper) {
 		return "false", errors.New("request.regs.gppsid not found")
 	}
 
-	for _, s := range sid.gppSids {
-		if contains := slices.Contains(wrapper.Regs.GPPSID, s); contains {
+	for i := 0; i < len(wrapper.Regs.GPPSID); i++ {
+		if _, found := sid.gppSids[wrapper.Regs.GPPSID[i]]; found {
 			return "true", nil
 		}
 	}
@@ -416,12 +423,8 @@ func NewGppSidAvailable(params json.RawMessage) (SchemaFunction[openrtb_ext.Requ
 }
 
 func (sid *gppSidAvailable) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
-	if wrapper.Regs != nil && len(wrapper.Regs.GPPSID) > 0 {
-		for _, gppSid := range wrapper.Regs.GPPSID {
-			if gppSid > 0 {
-				return "true", nil
-			}
-		}
+	if hasGPPIDs(wrapper) {
+		return "true", nil
 	}
 	return "false", nil
 }
@@ -432,7 +435,6 @@ func (sid *gppSidAvailable) Name() string {
 
 // ------------tcfInScope------------------
 type tcfInScope struct {
-	// no params
 }
 
 func NewTcfInScope(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
@@ -440,7 +442,7 @@ func NewTcfInScope(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWr
 }
 
 func (tcf *tcfInScope) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
-	if wrapper.Regs != nil && wrapper.Regs.GDPR == ptrutil.ToPtr[int8](1) {
+	if regs := getRequestRegs(wrapper); regs != nil && regs.GDPR != nil && *regs.GDPR == int8(1) {
 		return "true", nil
 	}
 	return "false", nil
@@ -461,15 +463,15 @@ func NewPercent(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapp
 }
 
 func (p *percent) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
-	percValue := p.value
-	if percValue < 0 {
-		percValue = 0
+	pValue := p.value
+	if pValue <= 0 {
+		return "false", nil
 	}
-	if percValue > 100 {
-		percValue = 100
+	if pValue >= 100 {
+		return "true", nil
 	}
 	randNum := randRange(0, 100)
-	if randNum < percValue {
+	if randNum < pValue {
 		return "true", nil
 	}
 	return "false", nil
@@ -523,17 +525,28 @@ func (d *domain) Name() string {
 }
 
 type domainIn struct {
-	domainNames []string
+	domainDir map[string]struct{}
 }
 
 func NewDomainIn(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
 	newdomains, err := checkArgsStringList(params, DomainIn)
-	return &domainIn{domainNames: newdomains}, err
+	if err != nil {
+		return nil, err
+	}
+
+	schemaFunc := &domainIn{
+		domainDir: make(map[string]struct{}),
+	}
+
+	for i := 0; i < len(newdomains); i++ {
+		schemaFunc.domainDir[newdomains[i]] = struct{}{}
+	}
+	return schemaFunc, nil
 }
 
 func (d *domainIn) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
 	reqDomain := getReqDomain(wrapper)
-	if contains := slices.Contains(d.domainNames, reqDomain); contains {
+	if _, contains := d.domainDir[reqDomain]; contains {
 		return "true", nil
 	}
 	return "false", nil
@@ -546,7 +559,7 @@ func (d *domainIn) Name() string {
 // TODO: from here
 // ------------bundle------------------
 type bundle struct {
-	bundleNames []string
+	bundleDir map[string]struct{}
 }
 
 func NewBundle(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
@@ -554,30 +567,43 @@ func NewBundle(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrappe
 	if err := jsonutil.Unmarshal(params, &newBundles); err != nil {
 		return nil, err
 	}
-	return &bundle{bundleNames: newBundles}, nil
+
+	schemaFunc := &bundle{
+		bundleDir: make(map[string]struct{}),
+	}
+
+	for i := 0; i < len(newBundles); i++ {
+		schemaFunc.bundleDir[newBundles[i]] = struct{}{}
+	}
+
+	return schemaFunc, nil
 }
 
 func (b *bundle) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
-	bundleName := ""
-	if wrapper.App != nil {
-		bundleName = wrapper.App.Bundle
-	}
-	if len(b.bundleNames) == 0 {
-		return bundleName, nil
+	if len(b.bundleDir) == 0 {
+		return "", nil
 	}
 
-	if contains := slices.Contains(b.bundleNames, bundleName); contains {
-		return "true", nil
+	if wrapper != nil && wrapper.BidRequest != nil && wrapper.App != nil && len(wrapper.App.Bundle) > 0 {
+		if _, contains := b.bundleDir[wrapper.App.Bundle]; contains {
+			return "true", nil
+		}
 	}
+
 	return "false", nil
 }
+
 func (b *bundle) Name() string {
 	return Bundle
 }
 
+// ------------bundleIn--------------------
+// ------------mediaTypes------------------
+// ------------adUnitCode------------------
+// ------------bidPrice------------------
 // ------------deviceType------------------
 type deviceType struct {
-	types []string
+	typesDir map[string]struct{}
 }
 
 func NewDeviceType(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
@@ -585,38 +611,64 @@ func NewDeviceType(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWr
 	if err := jsonutil.Unmarshal(params, &deviceTypes); err != nil {
 		return nil, err
 	}
-	return &deviceType{types: deviceTypes}, nil
+
+	schemaFunc := &deviceType{
+		typesDir: make(map[string]struct{}),
+	}
+
+	for i := 0; i < len(deviceTypes); i++ {
+		schemaFunc.typesDir[deviceTypes[i]] = struct{}{}
+	}
+
+	return schemaFunc, nil
 }
 
 func (d *deviceType) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
-	devType := ""
-	if wrapper.Device != nil {
+	if len(d.typesDir) == 0 {
+		return "", nil
+	}
+
+	if wrapper != nil && wrapper.BidRequest != nil && wrapper.Device != nil {
 		devTypeInt := wrapper.Device.DeviceType
-		err := errors.New("")
-		devType, err = convertDevTypeToString(devTypeInt)
+		devType, err := convertDevTypeToString(devTypeInt)
 		if err != nil {
 			return "", err
 		}
-	}
-	if len(d.types) == 0 {
-		return devType, nil
-	}
 
-	if contains := slices.Contains(d.types, devType); contains {
-		return "true", nil
+		if _, contains := d.typesDir[devType]; contains {
+			return devType, nil
+		}
+
 	}
-	return "false", nil
+	return "", nil
 }
 
 func (d *deviceType) Name() string {
 	return DeviceType
 }
 
-// ------------mediaTypes------------------
-// ------------adUnitCode------------------
-// ------------bidPrice------------------
+// ------------deviceTypeIn----------------
 
 // ----------helper functions---------
+func getRequestRegs(wrapper *openrtb_ext.RequestWrapper) *openrtb2.Regs {
+	if wrapper != nil && wrapper.BidRequest != nil && wrapper.Regs != nil {
+		return wrapper.Regs
+	}
+	return nil
+}
+
+func hasGPPIDs(wrapper *openrtb_ext.RequestWrapper) bool {
+	regs := getRequestRegs(wrapper)
+	if regs != nil {
+		for i := 0; i < len(regs.GPPSID); i++ {
+			if regs.GPPSID[i] > int8(0) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func hasUserData(wrapper *openrtb_ext.RequestWrapper) bool {
 	if wrapper == nil || wrapper.BidRequest == nil || wrapper.User == nil {
 		return false
@@ -694,12 +746,14 @@ func checkAppContentDataAndAppExtData(wrapper *openrtb_ext.RequestWrapper) (stri
 
 func getReqDomain(wrapper *openrtb_ext.RequestWrapper) string {
 	reqDomain := ""
-	if wrapper.Site != nil {
-		reqDomain = wrapper.Site.Domain
-	} else if wrapper.App != nil {
-		reqDomain = wrapper.App.Domain
-	} else if wrapper.DOOH != nil {
-		reqDomain = wrapper.DOOH.Domain
+	if wrapper != nil && wrapper.BidRequest != nil {
+		if wrapper.Site != nil {
+			reqDomain = wrapper.Site.Domain
+		} else if wrapper.App != nil {
+			reqDomain = wrapper.App.Domain
+		} else if wrapper.DOOH != nil {
+			reqDomain = wrapper.DOOH.Domain
+		}
 	}
 	return reqDomain
 }
