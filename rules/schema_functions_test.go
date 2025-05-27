@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
@@ -1192,15 +1193,56 @@ func TestDomainInCall(t *testing.T) {
 
 func TestBundleCall(t *testing.T) {
 	testCases := []struct {
+		desc           string
+		wrapper        *openrtb_ext.RequestWrapper
+		expectedBundle string
+		expectedError  error
+	}{
+		{
+			desc: "wrapper.App.Bundle not found",
+			wrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					App: &openrtb2.App{Bundle: ""},
+				},
+			},
+			expectedBundle: "",
+			expectedError:  errors.New("request.app.bundle not found"),
+		},
+		{
+			desc: "success",
+			wrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					App: &openrtb2.App{
+						Bundle: "anyBundle",
+					},
+				},
+			},
+			expectedBundle: "anyBundle",
+			expectedError:  nil,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			schemaFunc := &bundle{}
+
+			result, err := schemaFunc.Call(tc.wrapper)
+			assert.Equal(t, tc.expectedBundle, result)
+			assert.Equal(t, tc.expectedError, err)
+		})
+	}
+}
+
+func TestBundleInCall(t *testing.T) {
+	testCases := []struct {
 		desc       string
 		wrapper    *openrtb_ext.RequestWrapper
-		schemaFunc *bundle
+		schemaFunc *bundleIn
 		expected   string
 	}{
 		{
 			desc:    "no App.Bundle in request",
 			wrapper: &openrtb_ext.RequestWrapper{},
-			schemaFunc: &bundle{
+			schemaFunc: &bundleIn{
 				bundleDir: map[string]struct{}{
 					"bundle-two": struct{}{},
 				},
@@ -1216,7 +1258,7 @@ func TestBundleCall(t *testing.T) {
 					},
 				},
 			},
-			schemaFunc: &bundle{
+			schemaFunc: &bundleIn{
 				bundleDir: map[string]struct{}{
 					"bundle-two": struct{}{},
 				},
@@ -1232,7 +1274,7 @@ func TestBundleCall(t *testing.T) {
 					},
 				},
 			},
-			schemaFunc: &bundle{
+			schemaFunc: &bundleIn{
 				bundleDir: map[string]struct{}{
 					"bundle-two": struct{}{},
 				},
@@ -1245,6 +1287,130 @@ func TestBundleCall(t *testing.T) {
 			result, err := tc.schemaFunc.Call(tc.wrapper)
 			assert.Equal(t, tc.expected, result)
 			assert.Nil(t, err)
+		})
+	}
+}
+
+func TestMediaTypesCall(t *testing.T) {
+	testCases := []struct {
+		desc       string
+		wrapper    *openrtb_ext.RequestWrapper
+		schemaFunc *mediaTypes
+		expected   string
+	}{
+		{
+			desc:       "empty schema function mediaType list",
+			wrapper:    &openrtb_ext.RequestWrapper{},
+			schemaFunc: &mediaTypes{},
+			expected:   "false",
+		},
+		{
+			desc: "empty request.imp array",
+			wrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{},
+				},
+			},
+			schemaFunc: &mediaTypes{
+				mediaTypesDir: map[openrtb_ext.BidType]struct{}{
+					openrtb_ext.BidTypeBanner: struct{}{},
+					openrtb_ext.BidTypeVideo:  struct{}{},
+				},
+			},
+			expected: "false",
+		},
+		{
+			desc: "imp types not found",
+			wrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{
+						{ID: "imp1", Audio: &openrtb2.Audio{}},
+						{ID: "imp2", Native: &openrtb2.Native{}},
+					},
+				},
+			},
+			schemaFunc: &mediaTypes{
+				mediaTypesDir: map[openrtb_ext.BidType]struct{}{
+					openrtb_ext.BidTypeBanner: struct{}{},
+					openrtb_ext.BidTypeVideo:  struct{}{},
+				},
+			},
+			expected: "false",
+		},
+		{
+			desc: "success",
+			wrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{
+						{ID: "imp1", Video: &openrtb2.Video{}},
+					},
+				},
+			},
+			schemaFunc: &mediaTypes{
+				mediaTypesDir: map[openrtb_ext.BidType]struct{}{
+					openrtb_ext.BidTypeBanner: struct{}{},
+					openrtb_ext.BidTypeVideo:  struct{}{},
+				},
+			},
+			expected: "true",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			result, err := tc.schemaFunc.Call(tc.wrapper)
+			assert.Equal(t, tc.expected, result)
+			assert.Nil(t, err)
+		})
+	}
+}
+
+func TestGetAppBundle(t *testing.T) {
+	testCases := []struct {
+		desc      string
+		inWrapper *openrtb_ext.RequestWrapper
+		expected  string
+	}{
+		{
+			desc:      "nil wrapper",
+			inWrapper: nil,
+			expected:  "",
+		},
+		{
+			desc:      "nil wrapper.BidRequest",
+			inWrapper: &openrtb_ext.RequestWrapper{},
+			expected:  "",
+		},
+		{
+			desc: "nil wrapper.App",
+			inWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{},
+			},
+			expected: "",
+		},
+		{
+			desc: "empty wrapper.App.Bundle",
+			inWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					App: &openrtb2.App{Bundle: ""},
+				},
+			},
+			expected: "",
+		},
+		{
+			desc: "success",
+			inWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					App: &openrtb2.App{
+						Bundle: "anyValue",
+					},
+				},
+			},
+			expected: "anyValue",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			assert.Equal(t, tc.expected, getAppBundle(tc.inWrapper))
 		})
 	}
 }
@@ -1318,6 +1484,67 @@ func TestGetReqDomain(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			assert.Equal(t, tc.expected, getReqDomain(tc.inWrapper))
+		})
+	}
+}
+
+func TestGetDeviceType(t *testing.T) {
+	testCases := []struct {
+		desc          string
+		inWrapper     *openrtb_ext.RequestWrapper
+		result        string
+		expectedError error
+	}{
+		{
+			desc:          "nil wrapper",
+			inWrapper:     nil,
+			result:        "",
+			expectedError: errors.New("request.device.devicetype not found"),
+		},
+		{
+			desc:          "nil bidrequest",
+			inWrapper:     &openrtb_ext.RequestWrapper{},
+			result:        "",
+			expectedError: errors.New("request.device.devicetype not found"),
+		},
+		{
+			desc: "nil device",
+			inWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{},
+			},
+			result:        "",
+			expectedError: errors.New("request.device.devicetype not found"),
+		},
+		{
+			desc: "unknown devicetype",
+			inWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Device: &openrtb2.Device{
+						DeviceType: adcom1.DeviceType(-1),
+					},
+				},
+			},
+			result:        "",
+			expectedError: errors.New("Device type -1 was not found"),
+		},
+		{
+			desc: "success",
+			inWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Device: &openrtb2.Device{
+						DeviceType: adcom1.DeviceMobile,
+					},
+				},
+			},
+			result:        "mobile",
+			expectedError: nil,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			result, err := getDeviceType(tc.inWrapper)
+			assert.Equal(t, tc.result, result)
+			assert.Equal(t, tc.expectedError, err)
 		})
 	}
 }
@@ -1707,6 +1934,59 @@ func TestExtDataPresent(t *testing.T) {
 	}
 }
 
+func TestGetImpArray(t *testing.T) {
+	testCases := []struct {
+		desc      string
+		inWrapper *openrtb_ext.RequestWrapper
+		imps      []openrtb2.Imp
+	}{
+		{
+			desc:      "nil wrapper",
+			inWrapper: nil,
+			imps:      nil,
+		},
+		{
+			desc:      "nil request",
+			inWrapper: &openrtb_ext.RequestWrapper{},
+			imps:      nil,
+		},
+		{
+			desc: "nil request.Imps",
+			inWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{},
+			},
+			imps: nil,
+		},
+		{
+			desc: "empty request.Imps",
+			inWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{},
+				},
+			},
+			imps: nil,
+		},
+		{
+			desc: "success",
+			inWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{
+						{ID: "imp1"},
+					},
+				},
+			},
+			imps: []openrtb2.Imp{
+				{ID: "imp1"},
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			assert.Equal(t, tc.imps, getImpArray(tc.inWrapper))
+		})
+	}
+}
+
 func TestGetRequestRegs(t *testing.T) {
 	testCases := []struct {
 		desc      string
@@ -1746,6 +2026,7 @@ func TestGetRequestRegs(t *testing.T) {
 		})
 	}
 }
+
 func TestHasGPPIDs(t *testing.T) {
 	testCases := []struct {
 		desc      string
